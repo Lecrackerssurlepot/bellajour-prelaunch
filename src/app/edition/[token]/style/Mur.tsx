@@ -1,49 +1,61 @@
 "use client";
 
 /* Le mur des styles (PRD §4.2, révision §14.6, D24 et les maquettes « Tout,
-   en vrac », « Typographies », « Modifier une partie » validées le 14/10).
+   en vrac », « Typographies », « Modifier une partie » validées le 14/10 ;
+   T-179, planches 1 et 2 du 19/10 validées par Mathias).
 
-   Un écran sans défilement de page : le bandeau des magazines (leur état),
-   puis le mur qui défile chez lui et, à droite, VOTRE COMPOSITION, fixe.
-   - « Tout » montre toutes les pièces de tous les styles MÊLÉES : une
-     couverture ici, une typographie là, une palette ailleurs. Chaque pièce
+   Un écran sans défilement de page : en tête le titre et les magazines (leur
+   état), puis le mur, sur TOUTE la largeur, qui défile chez lui, et en bas la
+   barre de la composition, toujours visible.
+   - « Tout » montre toutes les pièces de tous les styles MÊLÉES. Chaque pièce
      dit d'où elle vient, s'ajoute d'un clic, et « Voir tout le style » ouvre
      le style en entier (on peut le prendre en entier).
    - Une catégorie met d'abord le choix du client, puis ce qui va avec ses
      choix (la raison dite), puis le reste (`grouperParChoix`).
-   - « Modifier » sur une ligne de la composition ouvre SEULEMENT cette
-     partie dans un panneau latéral, le choix en haut ; « Terminé » revient.
+   - Une pièce choisie se voit de loin (cadre, sceau, « Retirer »).
+   - Chaque geste se DIT au-dessus de la barre et s'ANNULE : l'inverse
+     (`gesteInverse`) repasse par le même chemin (`jouer`, `envoyer`), vérifié
+     par les mêmes règles.
+   - « Voir ma composition » ouvre la composition en grand (la feuille) ;
+     « Modifier » sur une case ouvre SEULEMENT cette partie dans le panneau
+     latéral, et « Terminé » ramène à la feuille.
    Chaque geste s'affiche aussitôt et revient en arrière, avec une phrase, si
    le serveur refuse. Lecture seule pour l'équipe, et pour tout le monde après
-   la clôture. */
+   la clôture : la barre et la feuille se lisent, aucun geste.
+   La colonne « Votre composition » d'avant est archivée
+   (`archive/composition-colonne-2026-10/`). */
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import {
-  basculerCouverture,
-  compositionDu,
-  etatDuBrief,
-  grouperParChoix,
-  lirePiece,
-  lireTexte,
-  manquesBrief,
-  nomPiece,
-  PARTS_TEXTE,
-  patchCouvertures,
-  pieceChoisie,
-  stylesDeLaComposition,
-  type BriefLigne,
-  type Genre,
-} from "@/lib/collectif/brief";
+import { useMemo, useRef, useState } from "react";
+import { compositionDu, grouperParChoix, manquesBrief, PARTS_TEXTE, pieceChoisie, type BriefLigne, type Genre } from "@/lib/collectif/brief";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
 import type { MagazineMur, StyleMur } from "../donnees";
 import CartePiece from "./CartePiece";
-import { genre, GENRES, piecesDuGenre, piecesEnVrac, styleBrief, type PieceVue } from "./pieces";
+import { Annonce, BarreComposition, FeuilleComposition, type AnnonceVue } from "./Composition";
+import {
+  annonceDuGeste,
+  compositionVide,
+  etatDuMagazine,
+  genre,
+  GENRES,
+  gesteDeLaPiece,
+  gesteInverse,
+  ligneDeLaBarre,
+  nomPalette,
+  nomTypos,
+  piecesDuGenre,
+  piecesEnVrac,
+  preparerGeste,
+  type Geste,
+  type Partie,
+  type PieceVue,
+} from "./pieces";
 import "./style.css";
 
+export type { Partie } from "./pieces";
+
 type Filtre = "tout" | Genre;
-export type Partie = Genre | "texte";
 
 type Props = {
   token: string;
@@ -58,12 +70,11 @@ type Props = {
   partieInitiale?: Partie | null;
 };
 
-/** « Riviera (2) et Atlas » : deux pièces du même style ne répètent pas son nom. */
-function nomsGroupes(noms: string[]): string {
-  const comptes = new Map<string, number>();
-  for (const n of noms) comptes.set(n, (comptes.get(n) ?? 0) + 1);
-  return [...comptes].map(([n, k]) => (k > 1 ? `${n} (${k})` : n)).join(" et ");
-}
+/** Combien de temps une annonce reste, sans qu'on la retienne. */
+const DUREE_ANNONCE_MS = 6000;
+
+/** L'annonce affichée, avec ce qu'il faut pour la défaire. */
+type AnnonceGeste = AnnonceVue & { inverse: Geste | null; magId: string };
 
 export default function Mur(p: Props) {
   const router = useRouter();
@@ -71,8 +82,14 @@ export default function Mur(p: Props) {
   const [rang, setRang] = useState(p.rangInitial);
   const [filtre, setFiltre] = useState<Filtre>("tout");
   const [partie, setPartie] = useState<Partie | null>(p.partieInitiale ?? null);
+  const [feuille, setFeuille] = useState(false);
+  /** Le panneau d'une partie a été ouvert depuis la feuille : « Terminé » y ramène. */
+  const [retourFeuille, setRetourFeuille] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
+  const [annonce, setAnnonce] = useState<AnnonceGeste | null>(null);
+  const minuteur = useRef<number | null>(null);
+  const boutonVoir = useRef<HTMLButtonElement>(null);
   /* La copie locale des briefs : chaque geste s'affiche tout de suite. */
   const [briefs, setBriefs] = useState<Record<string, BriefLigne>>(() => Object.fromEntries(p.magazines.map((m) => [m.id, m])));
 
@@ -84,85 +101,167 @@ export default function Mur(p: Props) {
   const nbValides = p.magazines.filter((m) => briefs[m.id]?.brief_valide_le).length;
   const tousValides = p.magazines.length > 0 && nbValides === p.magazines.length;
   const suivant = p.magazines.find((m) => m.rang > rang && !briefs[m.id]?.brief_valide_le) ?? p.magazines.find((m) => !briefs[m.id]?.brief_valide_le && m.rang !== rang);
-  const nomStyle = (id: string) => p.styles.find((s) => s.id === id)?.nom ?? "un style retiré du mur";
-  const nomsStyles = (bl: BriefLigne) => stylesDeLaComposition(compositionDu(bl)).map(nomStyle);
-  const vide = c ? !c.palette && !c.typos && !c.doubles.length && !c.couvertures.length : true;
-  const source = p.magazines.find((m) => m.rang !== rang && briefs[m.id] && stylesDeLaComposition(compositionDu(briefs[m.id])).length > 0);
+  const vide = c ? compositionVide(c) : true;
+  /* Un autre magazine dont on peut reprendre la composition : la route ne reprend que palette, typographies ou doubles pages. */
+  const source = p.magazines.find((m) => {
+    if (m.rang === rang || !briefs[m.id]) return false;
+    const s = compositionDu(briefs[m.id]);
+    return Boolean(s.palette || s.typos || s.doubles.length);
+  });
   const lienStyle = (slug: string) => `/edition/${p.token}/style/${slug}?m=${rang}`;
 
-  async function envoyer(corps: Record<string, unknown>, apres: Partial<BriefLigne>) {
-    if (!mag || !b) return;
-    const avant = b;
-    setBriefs((x) => ({ ...x, [mag.id]: { ...avant, ...apres } }));
+  /* ── l'annonce : elle part seule, sauf si on la retient (survol, focus) ── */
+  function lancerMinuteur(ms: number) {
+    if (minuteur.current !== null) window.clearTimeout(minuteur.current);
+    minuteur.current = window.setTimeout(() => setAnnonce(null), ms);
+  }
+  function annoncer(a: AnnonceGeste | null) {
+    if (minuteur.current !== null) window.clearTimeout(minuteur.current);
+    minuteur.current = null;
+    setAnnonce(a);
+    if (a) lancerMinuteur(DUREE_ANNONCE_MS);
+  }
+  function retenir() {
+    if (minuteur.current !== null) window.clearTimeout(minuteur.current);
+    minuteur.current = null;
+  }
+  function relacher() {
+    if (annonce) lancerMinuteur(DUREE_ANNONCE_MS / 2);
+  }
+
+  async function envoyer(magId: string, corps: Record<string, unknown>, apres: Partial<BriefLigne>) {
+    const avant = briefs[magId];
+    if (!avant) return;
+    setBriefs((x) => ({ ...x, [magId]: { ...avant, ...apres } }));
     setOccupe(true);
     setErreur(null);
     try {
       const rep = await fetch("/api/collectif/brief", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token: p.token, magazineId: mag.id, ...corps }),
+        body: JSON.stringify({ token: p.token, magazineId: magId, ...corps }),
       });
       const json = (await rep.json().catch(() => ({}))) as { message?: string };
       if (!rep.ok) {
-        setBriefs((x) => ({ ...x, [mag.id]: avant }));
+        setBriefs((x) => ({ ...x, [magId]: avant }));
+        annoncer(null);
         setErreur(json.message ?? `Non enregistré (erreur ${rep.status}).`);
         return;
       }
       router.refresh();
     } catch {
-      setBriefs((x) => ({ ...x, [mag.id]: avant }));
+      setBriefs((x) => ({ ...x, [magId]: avant }));
+      annoncer(null);
       setErreur("Le réseau n'a pas répondu. Rien n'a changé.");
     } finally {
       setOccupe(false);
     }
   }
 
-  /** Le geste d'une pièce, vérifié ici par les MÊMES règles que le serveur avant de partir. */
-  function agirSur(piece: PieceVue) {
-    if (!b || !c) return;
-    const choisie = pieceChoisie(c, piece);
-    if (piece.genre === "couverture") {
-      const r = basculerCouverture(c.couvertures, { style_id: piece.style_id, couverture: piece.cle }, !choisie, p.aimeesMax, styleBrief(piece.style));
-      if (!r.ok) return setErreur(r.message);
-      void envoyer({ action: "couverture", styleId: piece.style_id, couverture: piece.cle, aimer: !choisie }, patchCouvertures(c.couvertures, r.aimees) as Partial<BriefLigne>);
+  /**
+   * Un geste sur la composition d'un magazine : vérifié ici par les MÊMES
+   * règles que le serveur avant de partir (`preparerGeste`), dit dans
+   * l'annonce, et annulable par son inverse quand il en a un. « Annuler »
+   * rejoue l'inverse par ce même chemin, sans nouvel « Annuler ».
+   */
+  function jouer(g: Geste, magId: string, annulable: boolean) {
+    const bl = briefs[magId];
+    const m = p.magazines.find((x) => x.id === magId);
+    if (!bl || !m || !peutAgir) return;
+    const pret = preparerGeste(g, bl, p.styles, p.aimeesMax, new Date().toISOString());
+    if (!pret.ok) {
+      annoncer(null);
+      setErreur(pret.message);
       return;
     }
-    const corps = { genre: piece.genre, styleId: piece.style_id, palette_cle: piece.cle, double: piece.cle, ajouter: !choisie };
-    const r = lirePiece(piece.genre, corps, styleBrief(piece.style), c);
-    if (!r.ok) return setErreur(r.message);
-    void envoyer({ action: "piece", ...corps }, r.patch as Partial<BriefLigne>);
+    const avant = compositionDu(bl);
+    const inverse = annulable ? gesteInverse(g, avant) : null;
+    annoncer({ texte: annonceDuGeste(g, avant, p.styles, Boolean(bl.brief_valide_le), m.rang), annulable: inverse !== null, inverse, magId });
+    void envoyer(magId, pret.corps, pret.patch);
   }
 
-  function choisirTexte(cle: string) {
-    const r = lireTexte({ texte: cle });
-    if (!r.ok) return setErreur(r.message);
-    void envoyer({ action: "texte", texte: cle }, r.patch as Partial<BriefLigne>);
+  function annuler() {
+    if (annonce?.inverse) jouer(annonce.inverse, annonce.magId, false);
   }
 
-  const carte = (piece: PieceVue, raison?: string) => (
-    <CartePiece
-      key={piece.id}
-      piece={piece}
-      choisie={c ? pieceChoisie(c, piece) : false}
-      raison={raison}
-      peutAgir={peutAgir}
-      occupe={occupe}
-      lienStyle={lienStyle(piece.style.slug)}
-      onAgir={() => agirSur(piece)}
-    />
-  );
+  function agirSur(piece: PieceVue) {
+    if (!mag || !c) return;
+    const g = gesteDeLaPiece(piece, c);
+    if (g) jouer(g, mag.id, true);
+  }
+
+  function reprendre() {
+    if (!mag || !source) return;
+    const s = briefs[source.id];
+    annoncer({ texte: `Composition du magazine ${source.rang} reprise.`, annulable: false, inverse: null, magId: mag.id });
+    void envoyer(
+      mag.id,
+      { action: "reprendre", depuisMagazineId: source.id },
+      { style_id: s.style_id, palette_cle: s.palette_cle, texte: s.texte, doubles: s.doubles, palette_style_id: s.palette_style_id, typo_style_id: s.typo_style_id, doubles_aimes: s.doubles_aimes, brief_valide_le: null }
+    );
+  }
+
+  function ouvrirFeuille() {
+    setErreur(null);
+    setFeuille(true);
+  }
+  function fermerFeuille() {
+    setFeuille(false);
+    boutonVoir.current?.focus();
+  }
+  /** « Modifier » sur une case de la feuille : le panneau de CETTE partie, puis retour à la feuille. */
+  function modifierDepuisFeuille(x: Partie) {
+    setErreur(null);
+    setFeuille(false);
+    setRetourFeuille(true);
+    setPartie(x);
+  }
+  function fermerPanneau() {
+    setPartie(null);
+    if (retourFeuille) {
+      setRetourFeuille(false);
+      setFeuille(true);
+    }
+  }
+
+  const carte = (piece: PieceVue, raison?: string) => {
+    const choisie = c ? pieceChoisie(c, piece) : false;
+    const remplace =
+      !c || choisie
+        ? null
+        : piece.genre === "palette" && c.palette
+          ? v(`Remplacera votre palette ${nomPalette(p.styles, c.palette.style_id, c.palette.cle)}`, `Remplacera ta palette ${nomPalette(p.styles, c.palette.style_id, c.palette.cle)}`)
+          : piece.genre === "typos" && c.typos
+            ? v(`Remplacera vos typographies ${nomTypos(p.styles, c.typos.style_id)}`, `Remplacera tes typographies ${nomTypos(p.styles, c.typos.style_id)}`)
+            : null;
+    return (
+      <CartePiece
+        key={piece.id}
+        piece={piece}
+        choisie={choisie}
+        raison={raison}
+        remplace={remplace}
+        peutAgir={peutAgir}
+        occupe={occupe}
+        tu={p.tu}
+        lienStyle={lienStyle(piece.style.slug)}
+        onAgir={() => agirSur(piece)}
+      />
+    );
+  };
 
   /** Une catégorie rangée : le choix, ce qui va avec, le reste. */
   function categorie(g: Genre, dansPanneau: boolean) {
     if (!c) return null;
     const groupes = grouperParChoix(piecesDuGenre(p.styles, g), c);
     const titre = genre(g).plusieurs.toLowerCase();
+    const grille = g === "couverture" ? "ec-pieces" : "ec-pieces ec-pieces--larges";
     return (
       <>
         {groupes.choisies.length || groupes.avec.length ? (
           <section className="ec-mur-groupe">
             <h3 className="ec-mur-groupe-titre">{dansPanneau ? v("Votre choix, et ce qui va avec", "Ton choix, et ce qui va avec") : "Avec vos choix"}</h3>
-            <div className={g === "couverture" ? "ec-pieces" : "ec-pieces ec-pieces--larges"}>
+            <div className={grille}>
               {groupes.choisies.map((x) => carte(x, v("Votre choix", "Ton choix")))}
               {groupes.avec.map((x) => carte(x.piece, x.raison))}
             </div>
@@ -171,56 +270,16 @@ export default function Mur(p: Props) {
         {groupes.autres.length ? (
           <section className="ec-mur-groupe">
             <h3 className="ec-mur-groupe-titre">{groupes.choisies.length || groupes.avec.length ? `Les autres ${titre}` : `Toutes les ${titre}`}</h3>
-            <div className={g === "couverture" ? "ec-pieces" : "ec-pieces ec-pieces--larges"}>{groupes.autres.map((x) => carte(x))}</div>
+            <div className={grille}>{groupes.autres.map((x) => carte(x))}</div>
           </section>
         ) : null}
       </>
     );
   }
 
-  const lignes: { partie: Partie; titre: string; valeur: string; fait: boolean; facultatif?: boolean }[] =
-    c && b
-      ? [
-          {
-            partie: "couverture",
-            titre: `Couvertures aimées, ${c.couvertures.length}${p.aimeesMax !== null ? ` sur ${p.aimeesMax}` : ""}`,
-            valeur: c.couvertures.length ? nomsGroupes(c.couvertures.map((a) => nomStyle(a.style_id))) : "Facultatif, de n'importe quel style.",
-            fait: c.couvertures.length > 0,
-            facultatif: true,
-          },
-          {
-            partie: "typos",
-            titre: "Typographies",
-            valeur: c.typos ? `${p.styles.find((s) => s.id === c.typos?.style_id)?.typos.titres ?? "Les typographies"}, ${nomPiece("typos", c.typos.style_id, p.styles)}` : "À choisir",
-            fait: Boolean(c.typos),
-          },
-          {
-            partie: "palette",
-            titre: "Palette",
-            valeur: c.palette ? nomPiece("palette", c.palette.style_id, p.styles, c.palette.cle) : "À choisir",
-            fait: Boolean(c.palette),
-          },
-          {
-            partie: "double",
-            titre: `Doubles pages, ${c.doubles.length}`,
-            valeur: c.doubles.length ? c.doubles.map((d) => nomPiece("double", d.style_id, p.styles, d.double)).join(", ") : "Au moins une à choisir",
-            fait: c.doubles.length > 0,
-          },
-          {
-            partie: "texte",
-            titre: "La place du texte",
-            valeur: PARTS_TEXTE.find((t) => t.cle === c.texte)?.libelle ?? "À choisir",
-            fait: Boolean(c.texte),
-          },
-        ]
-      : [];
-  const melange = c ? stylesDeLaComposition(c).length : 0;
   const consigne =
     filtre === "tout"
-      ? v(
-          "Prenez une couverture ici, une typographie là, une palette ailleurs. Chaque pièce dit d'où elle vient ; « Voir tout le style » montre l'ensemble.",
-          "Prends une couverture ici, une typographie là, une palette ailleurs. Chaque pièce dit d'où elle vient ; « Voir tout le style » montre l'ensemble."
-        )
+      ? "Une pièce ici, une autre là, de n'importe quel style. « Voir tout le style » montre l'ensemble."
       : filtre === "couverture"
         ? v(
             `Aimez-en${p.aimeesMax !== null ? ` ${p.aimeesMax} au plus` : ""}, de n'importe quel style : l'atelier s'en inspirera.`,
@@ -228,50 +287,43 @@ export default function Mur(p: Props) {
           )
         : v("Votre choix d'abord, puis ce qui va avec vos autres choix.", "Ton choix d'abord, puis ce qui va avec tes autres choix.");
 
+  const zoneAnnonce = (dansUnPied: boolean) => (
+    <Annonce annonce={annonce} occupe={occupe} dansUnPied={dansUnPied} onAnnuler={annuler} onRetenir={retenir} onRelacher={relacher} />
+  );
+  const repriseVue = vide && peutAgir && source ? { rang: source.rang, occupe, onReprendre: reprendre } : null;
+
   return (
     <section className="ec-ecran ec-mur">
-      <EnTeteEcran titre="Le style" sous={v("Composez librement, une pièce à la fois", "Compose librement, une pièce à la fois")} />
-
-      {p.magazines.length ? (
-        <div className="ec-st-mags">
-          <span className="ec-st-etiquette">{v("Vous préparez", "Tu prépares")}</span>
-          <div className="ec-st-mags-liste" role="group" aria-label="Magazine">
+      <EnTeteEcran titre="Le style" sous={v("Composez librement, une pièce à la fois", "Compose librement, une pièce à la fois")}>
+        {p.magazines.length ? (
+          <div className="ec-mur-mags" role="group" aria-label="Magazine">
             {p.magazines.map((m) => (
-              <button key={m.id} type="button" className="ec-st-mag" aria-pressed={m.rang === rang} onClick={() => setRang(m.rang)}>
+              <button key={m.id} type="button" className="ec-mur-mag" aria-pressed={m.rang === rang} onClick={() => setRang(m.rang)}>
                 <span>
                   Magazine {m.rang} · {m.nom}
                 </span>
-                <span className={briefs[m.id]?.brief_valide_le ? "ec-st-mag-etat ec-st-ok" : "ec-st-mag-etat"}>
-                  {etatDuBrief({ valide: Boolean(briefs[m.id]?.brief_valide_le), styles: briefs[m.id] ? nomsStyles(briefs[m.id]) : [] })}
-                </span>
+                <small className={briefs[m.id]?.brief_valide_le ? "ec-mur-mag-etat ec-st-ok" : "ec-mur-mag-etat"}>{briefs[m.id] ? etatDuMagazine(briefs[m.id]) : "À composer"}</small>
               </button>
             ))}
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </EnTeteEcran>
 
       <div className="ec-mur-corps">
         <div className="ec-mur-mur ec-defile">
-          <div className="ec-mur-intro">
-            <h2 className="ec-st-grand">{filtre === "tout" ? "Tout, en vrac" : genre(filtre).plusieurs}</h2>
-            <p className="ec-texte">{consigne}</p>
-          </div>
-          <nav className="ec-onglets" aria-label="Filtrer le mur">
-            <button type="button" className="ec-onglet" aria-pressed={filtre === "tout"} onClick={() => setFiltre("tout")}>
-              Tout
-            </button>
-            {GENRES.map((g) => (
-              <button key={g.cle} type="button" className="ec-onglet" aria-pressed={filtre === g.cle} onClick={() => setFiltre(g.cle)}>
-                {g.plusieurs}
+          <div className="ec-mur-outils">
+            <nav className="ec-onglets" aria-label="Filtrer le mur">
+              <button type="button" className="ec-onglet" aria-pressed={filtre === "tout"} onClick={() => setFiltre("tout")}>
+                Tout
               </button>
-            ))}
-          </nav>
-
-          {erreur && !partie ? (
-            <p className="ec-note ec-note--erreur" role="alert">
-              {erreur}
-            </p>
-          ) : null}
+              {GENRES.map((g) => (
+                <button key={g.cle} type="button" className="ec-onglet" aria-pressed={filtre === g.cle} onClick={() => setFiltre(g.cle)}>
+                  {g.plusieurs}
+                </button>
+              ))}
+            </nav>
+            <p className="ec-mur-consigne">{consigne}</p>
+          </div>
 
           {p.styles.length === 0 ? (
             <div className="ec-a-venir">
@@ -285,99 +337,71 @@ export default function Mur(p: Props) {
         </div>
 
         {mag && b && c ? (
-          <aside className="ec-mur-brief ec-defile" aria-labelledby="ec-brief-titre">
-            <div className="ec-mur-brief-tete">
-              <h2 className="ec-st-titre" id="ec-brief-titre">
-                {v("Votre composition", "Ta composition")}
-              </h2>
-              <span className="ec-st-accent">
-                Magazine {mag.rang} · {nbValides} brief{nbValides > 1 ? "s" : ""} validé{nbValides > 1 ? "s" : ""} sur {p.magazines.length}
-              </span>
-              <span className="ec-note">{v("Vos choix d'abord, d'où qu'ils viennent. L'atelier accorde l'ensemble.", "Tes choix d'abord, d'où qu'ils viennent. L'atelier accorde l'ensemble.")}</span>
-            </div>
-
-            {vide && peutAgir && source ? (
-              <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={occupe} onClick={() => {
-                  const s = briefs[source.id];
-                  void envoyer(
-                    { action: "reprendre", depuisMagazineId: source.id },
-                    { style_id: s.style_id, palette_cle: s.palette_cle, texte: s.texte, doubles: s.doubles, palette_style_id: s.palette_style_id, typo_style_id: s.typo_style_id, doubles_aimes: s.doubles_aimes, brief_valide_le: null }
-                  );
-                }}>
-                Reprendre la composition du magazine {source.rang}
-              </button>
-            ) : null}
-
-            <ul className="ec-mur-lignes">
-              {lignes.map((l, i) => (
-                <li key={l.partie}>
-                  <span className={l.fait ? "ec-st-signe ec-st-signe--fait" : "ec-st-signe"} aria-hidden="true">
-                    {l.fait ? "✓" : i + 1}
-                  </span>
-                  <span className="ec-mur-ligne-texte">
-                    <span className="ec-note">{l.titre}</span>
-                    <span>{l.valeur}</span>
-                  </span>
-                  {peutAgir ? (
-                    <button type="button" className="ec-st-lien" onClick={() => { setErreur(null); setPartie(l.partie); }}>
-                      {l.fait ? "Modifier" : "Choisir"}
-                    </button>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-
-            {melange > 1 ? (
-              <p className="ec-note">
-                {melange} styles mêlés : l&apos;atelier harmonise les pages et {v("vous", "te")} le montre au bon à tirer.
-              </p>
-            ) : null}
-
-            {b.brief_valide_le ? (
-              <div className="ec-mur-envoye">
-                <strong>Brief validé</strong>
-                <span className="ec-note">{v("L'atelier compose avec cette composition. Changer une pièce le remet à valider.", "L'atelier compose avec cette composition. Changer une pièce le remet à valider.")}</span>
-              </div>
-            ) : manques.length && !vide ? (
-              <p className="ec-note">Il manque {manques.join(", ")}.</p>
-            ) : null}
-
-            {peutAgir ? (
-              <div className="ec-mur-gestes">
-                {b.brief_valide_le ? (
-                  <>
-                    {suivant ? (
-                      <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setRang(suivant.rang)}>
-                        Passer au magazine {suivant.rang} →
+          <div className="ec-mur-bas">
+            {!partie && !feuille ? (
+              <>
+                {erreur ? (
+                  <div className="ec-mur-annonce-zone">
+                    <p className="ec-mur-annonce ec-mur-annonce--erreur" role="alert">
+                      <span>{erreur}</span>
+                      <button type="button" onClick={() => setErreur(null)}>
+                        Fermer
                       </button>
-                    ) : null}
-                    <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={occupe} onClick={() => void envoyer({ action: "devalider" }, { brief_valide_le: null })}>
-                      Rouvrir le brief
-                    </button>
-                  </>
+                    </p>
+                  </div>
                 ) : (
-                  <button type="button" className="ec-bouton ec-bouton--plein" disabled={occupe || manques.length > 0} onClick={() => void envoyer({ action: "valider" }, { brief_valide_le: new Date().toISOString() })}>
-                    Valider le brief du magazine {mag.rang}
-                  </button>
+                  zoneAnnonce(false)
                 )}
-              </div>
+              </>
             ) : null}
-            {p.fige ? <p className="ec-note">La collecte est close : l&apos;atelier compose avec ce brief.</p> : null}
-            {tousValides ? <p className="ec-note">Tous les briefs sont validés. L&apos;atelier commence la composition dès que les photos sont réunies.</p> : null}
-          </aside>
+            <BarreComposition c={c} styles={p.styles} rang={mag.rang} ligne={ligneDeLaBarre(b)} tu={p.tu} boutonRef={boutonVoir} onOuvrir={ouvrirFeuille} reprendre={repriseVue} />
+          </div>
         ) : null}
       </div>
 
-      {partie && c ? (
+      {feuille && mag && b && c ? (
+        <FeuilleComposition
+          b={b}
+          c={c}
+          mag={mag}
+          styles={p.styles}
+          aimeesMax={p.aimeesMax}
+          tu={p.tu}
+          peutAgir={peutAgir}
+          ecrire={p.ecrire}
+          fige={p.fige}
+          occupe={occupe}
+          erreur={erreur}
+          manques={manques}
+          suivant={suivant ? suivant.rang : null}
+          tousValides={tousValides}
+          annonce={zoneAnnonce(true)}
+          reprendre={repriseVue}
+          onFermer={fermerFeuille}
+          onModifier={modifierDepuisFeuille}
+          onValider={() => jouer({ quoi: "valider" }, mag.id, true)}
+          onRouvrir={() => jouer({ quoi: "devalider" }, mag.id, true)}
+          onPasser={() => {
+            if (!suivant) return;
+            setFeuille(false);
+            setRang(suivant.rang);
+          }}
+        />
+      ) : null}
+
+      {partie && c && mag ? (
         <Fenetre
           cote
           titre={partie === "texte" ? "La place du texte" : genre(partie).panneau}
           sous={v("Seulement ce que vous modifiez. Votre choix reste en haut.", "Seulement ce que tu modifies. Ton choix reste en haut.")}
-          onFermer={() => setPartie(null)}
+          onFermer={fermerPanneau}
           pied={
             <>
-              <span className="ec-note">{occupe ? "Enregistrement…" : "Enregistré à chaque clic"}</span>
-              <button type="button" className="ec-bouton" onClick={() => setPartie(null)}>
+              <div className="ec-mur-pied-gauche">
+                {zoneAnnonce(true)}
+                {annonce ? null : <span className="ec-note">{occupe ? "Enregistrement…" : "Enregistré à chaque clic"}</span>}
+              </div>
+              <button type="button" className="ec-bouton" onClick={fermerPanneau}>
                 Terminé
               </button>
             </>
@@ -391,7 +415,17 @@ export default function Mur(p: Props) {
           {partie === "texte" ? (
             <div className="ec-mur-textes" role="radiogroup" aria-label="La place du texte">
               {PARTS_TEXTE.map((t) => (
-                <button key={t.cle} type="button" role="radio" aria-checked={c.texte === t.cle} className="ec-mur-texte" disabled={!peutAgir || occupe} onClick={() => choisirTexte(t.cle)}>
+                <button
+                  key={t.cle}
+                  type="button"
+                  role="radio"
+                  aria-checked={c.texte === t.cle}
+                  className="ec-mur-texte"
+                  disabled={!peutAgir || occupe}
+                  onClick={() => {
+                    if (c.texte !== t.cle) jouer({ quoi: "texte", texte: t.cle }, mag.id, true);
+                  }}
+                >
                   {t.libelle}
                 </button>
               ))}

@@ -1,0 +1,831 @@
+/* Le style (révision §14.6) — le mur, un style en détail, le brief partie par
+   partie. Tout sous `.ec-espace` ; rien ne fait défiler la page, chaque zone
+   longue défile chez elle. Les pièces partagées (planches, palettes, doubles
+   pages) restent dans espace.css. */
+
+/* ─────────────────────────── les pièces communes ─────────────────────────── */
+
+.ec-espace .ec-st-etiquette {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-st-accent {
+  color: var(--ec-accent);
+  font-size: 13px;
+}
+.ec-espace .ec-st-ok {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-st-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-st-grand {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-st-geant {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(44px, 5vw, 72px);
+  line-height: 0.95;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-st-ariane {
+  color: var(--ec-muted);
+  text-decoration: none;
+}
+.ec-espace .ec-st-ariane:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-st-ariane-sep {
+  margin: 0 12px;
+  color: var(--ec-faint);
+}
+.ec-espace .ec-st-signe {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line-fort);
+  color: var(--ec-muted);
+  font-size: 11px;
+}
+.ec-espace .ec-st-signe--fait,
+.ec-espace .ec-fiche-etape--faite .ec-st-signe {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-st-lien {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-accent);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ec-espace .ec-st-lien:hover {
+  text-decoration: underline;
+}
+.ec-espace .ec-st-trois {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ec-espace .ec-st-choix {
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: var(--ec-r-champ);
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-st-choix[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-st-choix:disabled {
+  cursor: default;
+}
+
+/* Le bandeau des magazines (le mur, un style en détail). */
+.ec-espace .ec-st-mags {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 8px 14px;
+}
+.ec-espace .ec-st-mags-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-st-mag {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 52px;
+  padding: 6px 18px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-douce);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ec-espace .ec-st-mag--court {
+  min-height: 44px;
+}
+.ec-espace .ec-st-mag[aria-pressed="true"],
+.ec-espace .ec-st-mag[aria-current="true"] {
+  border-color: var(--ec-text);
+  background: var(--ec-text);
+  color: var(--ec-bg);
+}
+.ec-espace .ec-st-mag-etat {
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-st-mag[aria-pressed="true"] .ec-st-mag-etat {
+  color: inherit;
+  opacity: 0.72;
+}
+
+/* Le pied fixe (un style en détail). */
+.ec-espace .ec-st-pied {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 12px 12px 24px;
+  border-radius: var(--ec-r-carte);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-glass);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-st-pied-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+
+/* ─────────────────────────────── le mur ─────────────────────────────── */
+
+/* (0,3,0) contre l'ancienne grille d'espace.css. */
+.ec-espace .ec-mur .ec-mur-corps {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: stretch;
+}
+.ec-espace .ec-mur-mur {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px 28px 28px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-mur-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+}
+.ec-espace .ec-mur-intro .ec-texte {
+  margin: 0;
+}
+.ec-espace .ec-mur .ec-onglets {
+  margin: 0;
+}
+.ec-espace .ec-mur-brief {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 22px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-mur-brief-tete {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ec-espace .ec-mur-brief-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px dashed var(--ec-line-fort);
+}
+.ec-espace .ec-mur-lignes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ec-espace .ec-mur-lignes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-mur-ligne-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-mur-envoye {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 0;
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-mur-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-mur-gestes .ec-bouton--plein {
+  width: 100%;
+  min-height: 46px;
+}
+
+/* ─────────────────────────────── un style en détail ─────────────────────────────── */
+
+.ec-espace .ec-fiche-defile {
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+/* La barre d'étapes, collée en haut de la zone qui défile. */
+.ec-espace .ec-fiche-etapes {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 12px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-glass);
+  box-shadow: var(--ec-ombre-douce);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.ec-espace .ec-fiche-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line-fort);
+  color: var(--ec-text);
+  font-size: 13px;
+  text-decoration: none;
+}
+.ec-espace .ec-fiche-etape--faite {
+  border-color: rgba(var(--ec-ac-rgb), 0.6);
+}
+.ec-espace .ec-fiche-etape .ec-st-signe {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+.ec-espace .ec-fiche-etapes-resume {
+  margin-left: auto;
+}
+.ec-espace .ec-fiche-contenu {
+  max-width: 1240px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 28px 32px 48px;
+}
+.ec-espace .ec-fiche-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+  gap: 32px;
+  align-items: start;
+}
+.ec-espace .ec-fiche-hero-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 560px;
+}
+.ec-espace .ec-fiche-hero-texte .ec-texte,
+.ec-espace .ec-fiche-hero-texte .ec-note {
+  margin: 0;
+}
+.ec-espace .ec-fiche-couv {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-fiche-couv img {
+  display: block;
+  width: 100%;
+  border-radius: 16px;
+  box-shadow: 0 24px 50px var(--ec-ombre);
+}
+.ec-espace .ec-fiche-deux {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 40px;
+}
+.ec-espace .ec-fiche-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-margin-top: 70px;
+}
+.ec-espace .ec-fiche-section .ec-texte,
+.ec-espace .ec-fiche-section > .ec-note {
+  margin: 0;
+}
+.ec-espace .ec-fiche-section-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+/* ─────────────────────────── le brief, partie par partie ─────────────────────────── */
+
+.ec-espace .ec-bf-onglets {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-bf-onglet {
+  height: 52px;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ec-espace .ec-bf-onglet[aria-pressed="true"] {
+  border-bottom-color: var(--ec-accent);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-bf-onglets-aide {
+  margin-left: auto;
+  padding-bottom: 16px;
+}
+.ec-espace .ec-bf-corps {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+.ec-espace .ec-bf-gauche {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px 28px;
+  border-right: 1px solid var(--ec-line);
+  background: var(--ec-panel);
+}
+.ec-espace .ec-bf-couv {
+  width: 200px;
+  aspect-ratio: 210 / 297;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  box-shadow: 0 20px 44px var(--ec-ombre);
+}
+.ec-espace .ec-bf-couv img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-bf-gauche .ec-bandes {
+  width: 200px;
+  height: 26px;
+}
+.ec-espace .ec-bf-style {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-bf-gauche .ec-note {
+  margin: 0;
+}
+.ec-espace .ec-bf-gauche-pied {
+  margin-top: auto;
+}
+.ec-espace .ec-bf-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 32px;
+  max-width: 560px;
+}
+.ec-espace .ec-bf-cartes {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  padding: 24px 32px;
+}
+.ec-espace .ec-bf-carte {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+  overflow: hidden;
+}
+.ec-espace .ec-bf-carte-tete {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+.ec-espace .ec-bf-palettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-bf-palette {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ec-espace .ec-bf-pastilles {
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 4px;
+}
+.ec-espace .ec-bf-pastilles > span {
+  width: 12px;
+  height: 26px;
+}
+.ec-espace .ec-bf-vignettes {
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  overflow-y: auto;
+}
+.ec-espace .ec-bf-vignettes figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 96px;
+}
+.ec-espace .ec-bf-vignettes--doubles figure {
+  width: 160px;
+}
+.ec-espace .ec-bf-vignette {
+  display: block;
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  border-radius: 6px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+.ec-espace .ec-bf-vignette--double {
+  aspect-ratio: 3 / 2;
+}
+.ec-espace .ec-bf-vignette img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-bf-pied {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 4px;
+}
+.ec-espace .ec-bf-pied-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+}
+.ec-espace .ec-bf-pied .ec-bouton {
+  min-height: 46px;
+}
+/* Le panneau latéral : les doubles pages en deux colonnes, les couvertures en trois. */
+.ec-espace .ec-bf-grille {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.ec-espace .ec-bf-grille--deux {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ec-espace .ec-bf-couv-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-bf-couv-choix[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+
+/* ─────────────────────────────── téléphone ─────────────────────────────── */
+
+/* ─────────── les pièces du mur (D24, « Tout, en vrac ») ─────────── */
+
+.ec-espace .ec-pieces {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.ec-espace .ec-pieces--larges {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+/* « Tout, en vrac » : une mosaïque, chaque pièce à sa hauteur (une
+   couverture debout, une double page couchée). */
+.ec-espace .ec-pieces--vrac {
+  display: block;
+  columns: 4 170px;
+  column-gap: 14px;
+}
+.ec-espace .ec-pieces--vrac > .ec-piece {
+  break-inside: avoid;
+  margin-bottom: 14px;
+}
+.ec-espace .ec-piece {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--ec-line);
+  border-radius: 16px;
+  background: var(--ec-surface);
+}
+/* Une pièce choisie : un bord, comme une photo présélectionnée. */
+.ec-espace .ec-piece--choisie {
+  border-color: var(--ec-accent);
+  box-shadow: inset 0 0 0 1px var(--ec-accent);
+}
+.ec-espace .ec-piece-visuel {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-piece-visuel--large {
+  aspect-ratio: 3 / 2;
+}
+.ec-espace .ec-piece-visuel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-piece-bandes {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+.ec-espace .ec-piece-bandes > span {
+  flex: 1;
+}
+.ec-espace .ec-piece-sans {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 10px;
+  text-align: center;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-piece-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ec-espace .ec-piece-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-piece-texte strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-piece-raison {
+  font-size: 12px;
+  color: var(--ec-accent);
+}
+.ec-espace .ec-piece-pied .ec-bouton {
+  flex: none;
+}
+.ec-espace .ec-piece-style {
+  font-size: 13px;
+  color: var(--ec-accent);
+  text-decoration: none;
+}
+.ec-espace .ec-piece-style:hover {
+  text-decoration: underline;
+}
+.ec-espace .ec-mur-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.ec-espace .ec-mur-groupe-titre {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+}
+/* Dans le panneau latéral : une colonne de deux. */
+.ec-espace .ec-fenetre--cote .ec-pieces {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ec-espace .ec-mur-textes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ec-espace .ec-mur-texte {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-mur-texte[aria-checked="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-fenetre--cote .ec-fenetre-pied {
+  justify-content: space-between;
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .ec-espace .ec-st-mags {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .ec-espace .ec-mur .ec-mur-corps,
+  .ec-espace .ec-bf-corps,
+  .ec-espace .ec-fiche-hero,
+  .ec-espace .ec-fiche-deux,
+  .ec-espace .ec-bf-cartes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-mur-mur,
+  .ec-espace .ec-fiche-contenu,
+  .ec-espace .ec-bf-cartes {
+    padding: 16px;
+  }
+  .ec-espace .ec-mur .ec-mur-corps {
+    gap: 12px;
+    padding: 0 8px;
+  }
+  .ec-espace .ec-mur-brief {
+    padding: 20px 16px;
+  }
+  .ec-espace .ec-fiche-etapes {
+    padding: 8px 16px;
+  }
+  .ec-espace .ec-fiche-etapes-resume {
+    display: none;
+  }
+  .ec-espace .ec-st-pied {
+    position: sticky;
+    bottom: 8px;
+    z-index: 20;
+    flex-wrap: wrap;
+    margin: 12px 8px 8px;
+    padding: 12px 14px;
+  }
+  .ec-espace .ec-st-trois {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-bf-onglets {
+    overflow-x: auto;
+    padding: 0 16px;
+  }
+  .ec-espace .ec-bf-onglets-aide {
+    display: none;
+  }
+  .ec-espace .ec-bf-gauche {
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--ec-line);
+    padding: 20px 16px;
+  }
+  .ec-espace .ec-bf-pied {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-bf-grille {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-bf-grille--deux {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

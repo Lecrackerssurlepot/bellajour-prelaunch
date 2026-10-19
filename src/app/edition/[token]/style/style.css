@@ -3,6 +3,21 @@
    longue défile chez elle. Les pièces partagées (planches, palettes, doubles
    pages) restent dans espace.css. */
 
+/* ── deux jetons de plus, pour la composition (T-179, maquette du 19/10) :
+   l'ombre d'un objet qui flotte au-dessus du mur (la barre, l'annonce, la
+   feuille) et le voile d'accent d'une pièce choisie. Ici et pas dans
+   espace.css : seul le style s'en sert. ── */
+.bj-atelier.ec-espace {
+  --ec-ombre-haute: 0 30px 70px rgba(0, 0, 0, 0.55);
+  --ec-ombre-vignette: 0 14px 30px rgba(0, 0, 0, 0.35);
+  --ec-accent-voile: rgba(227, 162, 127, 0.07);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] {
+  --ec-ombre-haute: 0 24px 60px rgba(16, 24, 40, 0.18);
+  --ec-ombre-vignette: 0 14px 30px rgba(16, 24, 40, 0.18);
+  --ec-accent-voile: rgba(74, 144, 217, 0.06);
+}
+
 /* ─────────────────────────── les pièces communes ─────────────────────────── */
 
 .ec-espace .ec-st-etiquette {
@@ -192,20 +207,27 @@
 
 /* ─────────────────────────────── le mur ─────────────────────────────── */
 
-/* (0,3,0) contre l'ancienne grille d'espace.css. */
+/* T-179 (planche 1 du 19/10) : plus de colonne à droite. Le mur prend toute
+   la largeur et défile chez lui ; la barre de la composition reste en bas,
+   l'annonce d'un geste flotte au-dessus d'elle. (0,3,0) contre l'ancienne
+   grille d'espace.css, dont `align-items: start` réduirait la barre à son
+   contenu : on étire. */
 .ec-espace .ec-mur .ec-mur-corps {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
   align-items: stretch;
+  gap: 12px;
+  padding-bottom: 2px;
 }
 .ec-espace .ec-mur-mur {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 24px 28px 28px;
+  padding: 20px 24px 28px;
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-panneau);
   background: var(--ec-carte);
@@ -213,86 +235,627 @@
   -webkit-backdrop-filter: var(--ec-flou);
   backdrop-filter: var(--ec-flou);
 }
-.ec-espace .ec-mur-intro {
+
+/* Les magazines, à droite du titre (maquette) : un creux, le magazine ouvert
+   en relief. */
+.ec-espace .ec-mur-mags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ec-espace .ec-mur-mag {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-width: 720px;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 16px;
+  background: var(--ec-creux);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
 }
-.ec-espace .ec-mur-intro .ec-texte {
-  margin: 0;
+.ec-espace .ec-mur-mag:hover {
+  background: var(--ec-actif);
+}
+.ec-espace .ec-mur-mag[aria-pressed="true"] {
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-douce);
+  cursor: default;
+}
+.ec-espace .ec-mur-mag-etat {
+  font-size: 11.5px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-mur-mag-etat.ec-st-ok {
+  color: var(--ec-ok);
+}
+
+/* Les filtres : une pilule segmentée (maquette), la consigne à côté. */
+.ec-espace .ec-mur-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
 }
 .ec-espace .ec-mur .ec-onglets {
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
   margin: 0;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-creux);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.ec-espace .ec-mur-brief {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 24px 22px;
-  border: 1px solid var(--ec-carte-bord);
-  border-radius: var(--ec-r-panneau);
-  background: var(--ec-carte);
-  box-shadow: var(--ec-ombre-carte);
-  -webkit-backdrop-filter: var(--ec-flou);
-  backdrop-filter: var(--ec-flou);
+.ec-espace .ec-mur .ec-onglet {
+  flex: none;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
 }
-.ec-espace .ec-mur-brief-tete {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.ec-espace .ec-mur .ec-onglet[aria-pressed="true"] {
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-douce);
+  color: var(--ec-text);
+  font-weight: 400;
 }
-.ec-espace .ec-mur-brief-vide {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 16px;
-  border-radius: 20px;
-  border: 1px dashed var(--ec-line-fort);
-}
-.ec-espace .ec-mur-lignes {
-  list-style: none;
+.ec-espace .ec-mur-consigne {
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  max-width: 56ch;
+  font-size: 12.5px;
+  color: var(--ec-muted);
 }
-.ec-espace .ec-mur-lignes li {
+
+/* La barre de la composition : les choix en images, l'état, « Voir ma
+   composition ». Pleine, posée au-dessus du fond, l'ombre d'un objet qui
+   flotte (maquette « dock »). */
+.ec-espace .ec-mur-bas {
+  position: relative;
+  z-index: 5;
+  flex: none;
+}
+.ec-espace .ec-mur-barre {
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  background: var(--ec-surface);
+  padding: 10px 10px 10px 16px;
+  border: 1px solid var(--ec-line);
+  border-radius: 22px;
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-haute);
 }
-.ec-espace .ec-mur-ligne-texte {
-  flex: 1;
+.ec-espace .ec-mur-barre .ec-bouton {
+  flex: none;
+  align-self: center;
+}
+.ec-espace .ec-mur-mini {
+  flex: none;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ec-espace .ec-mur-mini > span {
+  flex: none;
+  display: block;
+  box-sizing: border-box;
+}
+.ec-espace .ec-mur-mini img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-mur-mini-couv {
+  width: 26px;
+  height: 34px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-mur-mini-double {
+  width: 40px;
+  height: 30px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-mur-mini .ec-mur-mini-ronds {
+  display: flex;
+  padding: 0 4px;
+}
+.ec-espace .ec-mur-mini-ronds i {
+  display: block;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  margin-left: -4px;
+  border: 2px solid var(--ec-carte-pleine);
+  border-radius: 50%;
+}
+.ec-espace .ec-mur-mini-ronds i:first-child {
+  margin-left: 0;
+}
+.ec-espace .ec-mur-mini .ec-mur-mini-aa {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--ec-creux);
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-mur-mini-vide {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--ec-line-fort);
+}
+.ec-espace .ec-mur-mini .ec-mur-mini-vide--double {
+  width: 40px;
+  height: 30px;
+  border-radius: 5px;
+}
+.ec-espace .ec-mur-quoi {
+  flex: 1 1 160px;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 14px;
-  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
-.ec-espace .ec-mur-envoye {
+.ec-espace .ec-mur-quoi b {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ec-text);
+}
+.ec-espace .ec-mur-quoi span {
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+
+/* L'annonce d'un geste : une pilule inversée au-dessus de la barre, qui part
+   seule ; « Annuler » rejoue le geste inverse. */
+.ec-espace .ec-mur-annonce-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 12px);
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+.ec-espace .ec-mur-annonce {
+  pointer-events: auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  max-width: min(100%, 680px);
+  margin: 0;
+  padding: 8px 8px 8px 16px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  background: var(--ec-text);
+  color: var(--ec-bg);
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: var(--ec-ombre-haute);
+}
+.ec-espace .ec-mur-annonce button {
+  flex: none;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ec-espace .ec-mur-annonce button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ec-espace .ec-mur-annonce button:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+.ec-espace .ec-mur-annonce--erreur {
+  border: 1px solid rgba(var(--ec-danger-rgb), 0.45);
+  background: var(--ec-carte-pleine);
+  color: var(--ec-danger);
+}
+/* Dans le pied de la feuille ou du panneau d'une partie : une ligne discrète
+   à sa place (la feuille de la maquette n'a qu'une pastille en pied). */
+.ec-espace .ec-mur-annonce-zone--pied {
+  position: static;
+  display: block;
+  padding: 0;
+  pointer-events: auto;
+}
+.ec-espace .ec-mur-annonce-zone--pied .ec-mur-annonce {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ec-muted);
+  font-size: 12px;
+  animation: none;
+}
+.ec-espace .ec-mur-annonce-zone--pied .ec-mur-annonce button {
+  padding: 0;
+  color: var(--ec-accent-texte);
+  font-size: 12px;
+}
+.ec-espace .ec-mur-pied-gauche {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ec-espace .ec-mur-annonce {
+    animation: ec-annonce-entre 220ms var(--ease) both;
+  }
+  @keyframes ec-annonce-entre {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+}
+
+/* ───────────── la composition ouverte (T-179, planche 2) ─────────────
+   Une feuille pleine par-dessus le mur, posée sur le voile des fenêtres ;
+   des cases sur le fond, chacune avec « Modifier ». Plein écran sur
+   téléphone. */
+.ec-espace .ec-fenetre-voile.ec-compo-voile {
+  padding: 24px;
+}
+.ec-espace .ec-compo {
+  width: min(1040px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid var(--ec-line);
+  border-radius: 26px;
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-haute);
+  color: var(--ec-text);
+}
+.ec-espace .ec-compo-tete {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 22px 22px 14px;
+}
+.ec-espace .ec-compo-titres {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
-  border-radius: 20px;
-  border: 0;
-  background: var(--ec-accent-soft);
 }
-.ec-espace .ec-mur-gestes {
+.ec-espace .ec-compo-sur,
+.ec-espace .ec-compo-styles {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ec-muted);
+}
+/* (0,2,0) contre `.bj-atelier h2` (0,1,1), qui pose 32 à 60 px. */
+.ec-espace .ec-compo-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 40px;
+  line-height: 0.95;
+  letter-spacing: 0;
+  color: var(--ec-titre);
+}
+.ec-espace .ec-compo-fermer {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 3px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ec-creux);
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ec-espace .ec-compo-fermer:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-compo-corps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 2px 22px 8px;
+}
+.ec-espace .ec-compo-reprendre {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 10px 10px 16px;
+  border-radius: 16px;
+  background: var(--ec-accent-soft);
+  font-size: 13px;
+}
+.ec-espace .ec-compo-reprendre .ec-bouton {
+  align-self: center;
+}
+.ec-espace .ec-compo-planche {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.ec-espace .ec-compo-case {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--ec-bg);
+}
+.ec-espace .ec-compo-case-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
   gap: 8px;
 }
-.ec-espace .ec-mur-gestes .ec-bouton--plein {
+.ec-espace .ec-compo-case-tete--suite {
+  margin-top: 6px;
+}
+/* (0,2,0) : un h3 sans thème global, mais `h3` porte la coupe de globals.css. */
+.ec-espace .ec-compo-case-titre {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ec-faint);
+}
+.ec-espace .ec-compo-modifier {
+  flex: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-accent-texte);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ec-espace .ec-compo-case figure {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-compo-case figcaption {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-compo-couvs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ec-espace .ec-compo-couv {
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ec-creux);
+  box-shadow: var(--ec-ombre-vignette);
+}
+.ec-espace .ec-compo-couv img,
+.ec-espace .ec-compo-double img {
+  display: block;
   width: 100%;
-  min-height: 46px;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-compo-place {
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--ec-line-fort);
+  border-radius: 8px;
+  color: var(--ec-faint);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
+}
+.ec-espace .ec-compo-place--couv {
+  aspect-ratio: 3 / 4;
+}
+.ec-espace .ec-compo-place--double {
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+}
+.ec-espace .ec-compo-place--case {
+  min-height: 96px;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+}
+.ec-espace .ec-compo-nuancier {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.ec-espace .ec-compo-nuancier > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-compo-teinte {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ec-line);
+}
+.ec-espace .ec-compo-code {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 10.5px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-compo-origine {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-compo-specimen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.ec-espace .ec-compo-echantillon {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 10px;
+  box-shadow: var(--ec-ombre-douce);
+}
+.ec-espace .ec-compo-aa {
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 0.95;
+}
+.ec-espace .ec-compo-polices {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-compo-doubles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.ec-espace .ec-compo-double {
+  aspect-ratio: 4 / 3;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-douce);
+}
+/* Le curseur de la place du texte : trois crans, le choisi en relief. */
+.ec-espace .ec-compo-jauge {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-compo-cran {
+  padding: 7px 4px;
+  border-radius: 9px;
+  color: var(--ec-muted);
+  font-size: 11.5px;
+  line-height: 1.3;
+  text-align: center;
+}
+.ec-espace .ec-compo-cran--choisi {
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-douce);
+  color: var(--ec-text);
+}
+.ec-espace .ec-compo-pied {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 14px 22px 20px;
+}
+.ec-espace .ec-compo-pied-etat {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ec-espace .ec-compo-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+  color: var(--ec-muted);
+  font-size: 12px;
+}
+.ec-espace .ec-compo-pastille--ok {
+  background: var(--ec-ok-soft);
+  color: var(--ec-ok);
+}
+.ec-espace .ec-compo-note {
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-compo-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ec-espace .ec-compo-gestes .ec-bouton {
+  align-self: center;
 }
 
 /* ─────────────────────────────── un style en détail ─────────────────────────────── */
@@ -629,10 +1192,11 @@
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
 }
 /* « Tout, en vrac » : une mosaïque, chaque pièce à sa hauteur (une
-   couverture debout, une double page couchée). */
+   couverture debout, une double page couchée). Le mur a toute la largeur
+   depuis T-179 : jusqu'à six colonnes. */
 .ec-espace .ec-pieces--vrac {
   display: block;
-  columns: 4 170px;
+  columns: 6 160px;
   column-gap: 14px;
 }
 .ec-espace .ec-pieces--vrac > .ec-piece {
@@ -640,29 +1204,45 @@
   margin-bottom: 14px;
 }
 .ec-espace .ec-piece {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid var(--ec-line);
   border-radius: 16px;
   background: var(--ec-surface);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
-/* Une pièce choisie : un bord, comme une photo présélectionnée. */
+/* Une pièce choisie se voit de loin (T-179) : un cadre épais d'accent, un
+   voile, un sceau en haut à gauche. */
 .ec-espace .ec-piece--choisie {
   border-color: var(--ec-accent);
-  box-shadow: inset 0 0 0 1px var(--ec-accent);
+  background: var(--ec-accent-voile);
+  box-shadow: 0 0 0 2px var(--ec-accent), var(--ec-ombre-douce);
 }
 .ec-espace .ec-piece-visuel {
   position: relative;
   aspect-ratio: 3 / 4;
-  border-radius: 14px;
+  border-radius: 10px;
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.05);
 }
-.ec-espace .ec-piece-visuel--large {
+.ec-espace .ec-piece-visuel--large,
+.ec-espace .ec-piece-visuel--palette {
   aspect-ratio: 3 / 2;
+}
+/* Dans « Tout », une palette se tient debout, comme une couverture (maquette). */
+.ec-espace .ec-pieces--vrac .ec-piece-visuel--palette {
+  aspect-ratio: 3 / 4;
+}
+.ec-espace .ec-piece--choisie .ec-piece-visuel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(var(--ec-noir-rgb), 0.25), transparent 40%);
+  pointer-events: none;
 }
 .ec-espace .ec-piece-visuel img {
   width: 100%;
@@ -686,33 +1266,134 @@
   text-align: center;
   color: var(--ec-muted);
 }
+/* Des typographies sans échantillon : « Aa » et leurs noms (maquette). */
+.ec-espace .ec-piece-aa {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  background: var(--ec-carte-pleine);
+}
+.ec-espace .ec-piece-aa b {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 0.9;
+}
+.ec-espace .ec-piece-aa span {
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-piece-sceau {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+/* Au survol d'une palette (ou de typographies) quand une autre est choisie :
+   ce qu'elle remplacera. */
+.ec-espace .ec-piece-remplace {
+  position: absolute;
+  z-index: 2;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-ombre-douce);
+  color: var(--ec-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  pointer-events: none;
+}
+.ec-espace .ec-piece:hover .ec-piece-remplace,
+.ec-espace .ec-piece:focus-within .ec-piece-remplace {
+  opacity: 1;
+  transform: none;
+}
 .ec-espace .ec-piece-pied {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 .ec-espace .ec-piece-texte {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  line-height: 1.35;
 }
 .ec-espace .ec-piece-texte strong {
+  font-size: 12.5px;
   font-weight: 500;
   overflow-wrap: anywhere;
 }
-.ec-espace .ec-piece-raison {
-  font-size: 12px;
-  color: var(--ec-accent);
+.ec-espace .ec-piece-origine {
+  font-size: 11.5px;
+  color: var(--ec-muted);
 }
-.ec-espace .ec-piece-pied .ec-bouton {
+.ec-espace .ec-piece-raison {
+  font-size: 11.5px;
+  color: var(--ec-accent-texte);
+}
+.ec-espace .ec-piece-geste {
   flex: none;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--ec-line-fort);
+  border-radius: 999px;
+  background: var(--ec-carte-pleine);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease);
+}
+.ec-espace .ec-piece-geste:hover {
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-piece-geste:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-piece-geste:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ec-espace .ec-piece-choisie {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 .ec-espace .ec-piece-style {
-  font-size: 13px;
-  color: var(--ec-accent);
+  font-size: 12px;
+  color: var(--ec-accent-texte);
   text-decoration: none;
 }
 .ec-espace .ec-piece-style:hover {
@@ -786,8 +1467,102 @@
     gap: 12px;
     padding: 0 8px;
   }
-  .ec-espace .ec-mur-brief {
-    padding: 20px 16px;
+  /* T-179 : sur téléphone, les magazines passent sous le titre et
+     défilent de côté ; la barre de la composition colle en bas, pleine
+     largeur, pendant que la page défile ; la feuille prend tout l'écran. */
+  .ec-espace .ec-mur .ec-ecran-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .ec-espace .ec-mur-mags {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ec-espace .ec-mur-mag {
+    flex: none;
+  }
+  .ec-espace .ec-mur-mur {
+    padding: 14px 12px 18px;
+  }
+  .ec-espace .ec-mur-consigne {
+    font-size: 12px;
+  }
+  .ec-espace .ec-mur-bas {
+    position: sticky;
+    bottom: 8px;
+    z-index: 20;
+  }
+  .ec-espace .ec-mur-barre {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "quoi quoi"
+      "reprendre reprendre"
+      "mini voir";
+    gap: 8px 12px;
+    padding: 10px 10px 10px 14px;
+  }
+  .ec-espace .ec-mur-quoi {
+    grid-area: quoi;
+  }
+  .ec-espace .ec-mur-mini {
+    grid-area: mini;
+    overflow: hidden;
+  }
+  .ec-espace .ec-mur-barre .ec-mur-reprendre {
+    grid-area: reprendre;
+    justify-self: start;
+  }
+  .ec-espace .ec-mur-barre .ec-mur-voir {
+    grid-area: voir;
+  }
+  .ec-espace .ec-mur-annonce-zone {
+    padding: 0 4px;
+  }
+  .ec-espace .ec-fenetre-voile.ec-compo-voile {
+    padding: 0;
+  }
+  .ec-espace .ec-compo {
+    width: 100%;
+    height: var(--app-height);
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+  .ec-espace .ec-compo-tete {
+    padding: 18px 16px 12px;
+  }
+  .ec-espace .ec-compo-titre {
+    font-size: 34px;
+  }
+  .ec-espace .ec-compo-corps {
+    padding: 2px 12px 12px;
+  }
+  .ec-espace .ec-compo-planche {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .ec-espace .ec-compo-pied {
+    gap: 8px;
+    padding: 10px 16px 14px;
+    box-shadow: 0 -1px 0 var(--ec-line);
+  }
+  .ec-espace .ec-compo-pied-etat {
+    flex-basis: 100%;
+    gap: 4px;
+  }
+  .ec-espace .ec-compo-gestes {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .ec-espace .ec-compo-gestes .ec-bouton {
+    align-self: stretch;
+    min-height: 42px;
   }
   .ec-espace .ec-fiche-etapes {
     padding: 8px 16px;
@@ -827,5 +1602,17 @@
   }
   .ec-espace .ec-bf-grille--deux {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Sur un téléphone, deux colonnes de pièces : une couverture reste lisible
+   et le mur reste dense. */
+@media (max-width: 560px) {
+  .ec-espace .ec-pieces--vrac {
+    columns: 2;
+    column-gap: 10px;
+  }
+  .ec-espace .ec-pieces--vrac > .ec-piece {
+    margin-bottom: 10px;
   }
 }

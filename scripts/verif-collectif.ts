@@ -160,6 +160,8 @@ import { chevauche, creneauxDuJour, creneauxLibres, heuresDeDebut, joursOuvres, 
 import { invitationIcs, replier } from "@/lib/collectif/ics";
 import { mailRendezVous } from "@/lib/collectif/mailsRdv";
 import { lireCompteAgenda } from "@/lib/collectif/agenda";
+import * as Pieces from "@/app/edition/[token]/style/pieces";
+import type { StyleMur } from "@/app/edition/[token]/donnees";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -1444,8 +1446,8 @@ titre("— D24 : le brief se compose piece par piece, de n'importe quel style �
   ok("migration 20261017 : atomique, idempotente, trois colonnes, PostgREST relit",
     /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /doubles_aimes jsonb not null default '\[\]'::jsonb/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
   const mur = lire("src/app/edition/[token]/style/Mur.tsx");
-  ok("le mur : « Tout, en vrac », les categories rangees par les choix, « Votre composition »",
-    /piecesEnVrac\(p\.styles\)/.test(mur) && /grouperParChoix\(/.test(mur) && /Votre composition/.test(mur) && /Tout, en vrac/.test(mur));
+  ok("le mur : tout en vrac, les categories rangees par les choix, la composition en barre et en feuille (T-179)",
+    /piecesEnVrac\(p\.styles\)/.test(mur) && /grouperParChoix\(/.test(mur) && /<BarreComposition\b/.test(mur) && /<FeuilleComposition\b/.test(mur) && /Votre composition/.test(lire("src/app/edition/[token]/style/Composition.tsx")));
   ok("modifier une partie : un panneau lateral, le choix en haut, « Terminé »",
     /<Fenetre\s+cote/.test(mur) && /Votre choix reste en haut/.test(mur) && /Terminé/.test(mur) && /partieInitiale=\{partie\}/.test(lire("src/app/edition/[token]/style/brief/page.tsx")));
   ok("la regle du 08/10 n'est plus ecrite a l'ecran",
@@ -1454,6 +1456,146 @@ titre("— D24 : le brief se compose piece par piece, de n'importe quel style �
   ok("un style en detail : la barre d'etapes et ses quatre ancres, « Prendre tout le style »", ["ec-etape-1", "ec-etape-2", "ec-etape-3", "ec-etape-4"].every((x) => fiche.includes(`"${x}"`)) && fiche.includes("ec-fiche-etapes") && /Prendre tout le style/.test(fiche));
   ok("l'atelier voit le style de chaque piece (T-185 : chaque piece du brief dit son style, sous sa vignette)", /typos: c\.typos \?/.test(lire("src/app/admin/collectif/donnees.ts")) && /styles mêlés : \$\{m\.brief\.styles\.join/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /className="eca-piece-style"/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
   ok("un magazine compose n'est jamais « vide » (il ne se retire pas)", /stylesDeLaComposition\(compositionDu\(m\)\)\.length === 0/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
+}
+
+titre("— T-179 : la composition en images ; chaque geste se dit et s'annule —");
+{
+  const riviera: StyleMur = {
+    id: "s1", slug: "riviera", nom: "Riviera", description: null,
+    palettes: [{ cle: "sable", nom: "Sable", couleurs: ["#e9dcc6", "#1d3557", "#2f5d8a", "#f6efe3"] }, { cle: "marine", nom: "Marine", couleurs: ["#1d3557", "#f6efe3", "#7fa7c9", "#2f5d8a"] }],
+    typos: { titres: "Fraunces", texte: "DM Sans", echantillon: "https://exemple.test/echantillon.webp" },
+    couvertures: [{ cle: "c1", url: "https://exemple.test/c1.webp", legende: "" }, { cle: "c2", url: null, legende: "" }],
+    doubles: [{ type: "aeree", url: "https://exemple.test/aeree.webp", legende: "" }, { type: "dense", url: "https://exemple.test/dense.webp", legende: "" }],
+  };
+  const archive: StyleMur = {
+    id: "s2", slug: "archive", nom: "Archive", description: null,
+    palettes: [{ cle: "sable", nom: "Sable", couleurs: ["#efe6d6", "#3b2f25", "#8a6a4b", "#d8c7ad"] }],
+    typos: { titres: "Bodoni Moda", texte: "DM Sans", echantillon: null },
+    couvertures: [{ cle: "a1", url: "https://exemple.test/a1.webp", legende: "" }],
+    doubles: [{ type: "recit", url: "https://exemple.test/recit.webp", legende: "" }],
+  };
+  const styles = [riviera, archive];
+  const vierge: BriefLigne = { style_id: null, palette_cle: null, texte: null, doubles: [], couvertures_aimees: [], brief_valide_le: null };
+  const b0: BriefLigne = { ...vierge, palette_style_id: "s1", palette_cle: "sable", texte: "peu", couvertures_aimees: [{ style_id: "s1", couverture: "c1" }], doubles_aimes: [{ style_id: "s2", double: "recit" }], doubles: ["recit"] };
+  const c0 = compositionDu(b0);
+  const appliquer = (b: BriefLigne, g: Pieces.Geste): BriefLigne => {
+    const r = Pieces.preparerGeste(g, b, styles, 3, "2026-10-19T12:00:00.000Z");
+    if (!r.ok) throw new Error(r.message);
+    return { ...b, ...r.patch };
+  };
+  const memeComposition = (a: BriefLigne, b: BriefLigne) => JSON.stringify(compositionDu(a)) === JSON.stringify(compositionDu(b));
+
+  ok("le nombre de pieces exigees vient de manquesBrief (rien n'est compte a la main)", Pieces.PIECES_EXIGEES === manquesBrief(vierge).length && Pieces.PIECES_EXIGEES === 4);
+  ok("l'etat d'un magazine dans le bandeau : « À composer », « Brief validé », « N pièces sur M exigées »",
+    Pieces.etatDuMagazine(vierge) === "À composer"
+    && Pieces.etatDuMagazine({ ...b0, brief_valide_le: "2026-10-19T10:00:00Z" }) === "Brief validé"
+    && Pieces.etatDuMagazine(b0) === "3 pièces sur 4 exigées"
+    && Pieces.etatDuMagazine({ ...vierge, texte: "peu" }) === "1 pièce sur 4 exigées"
+    && Pieces.etatDuMagazine({ ...vierge, couvertures_aimees: [{ style_id: "s1", couverture: "c1" }] }) === "0 pièce sur 4 exigées");
+  ok("la ligne de la barre : ce qui manque (manquesBrief), puis les styles meles",
+    Pieces.ligneDeLaBarre(b0) === "Il manque les typographies. 2 styles mêlés."
+    && Pieces.ligneDeLaBarre(vierge) === "Il manque la palette, les typographies, la place du texte et au moins une double page."
+    && Pieces.ligneDeLaBarre({ ...b0, typo_style_id: "s1", doubles_aimes: [{ style_id: "s1", double: "aeree" }], couvertures_aimees: [] }) === "Tout ce qu'il faut est choisi."
+    && Pieces.ligneDeLaBarre({ ...b0, typo_style_id: "s1", brief_valide_le: "2026-10-19T10:00:00Z" }) === "Brief validé. 2 styles mêlés.");
+  ok("une liste en francais : « a », « a et b », « a, b et c »",
+    Pieces.listeEnFrancais([]) === "" && Pieces.listeEnFrancais(["a"]) === "a" && Pieces.listeEnFrancais(["a", "b"]) === "a et b" && Pieces.listeEnFrancais(["a", "b", "c"]) === "a, b et c");
+  ok("la phrase des styles meles (planche 2), vous et tu",
+    Pieces.phraseDesStyles(["Riviera", "Éditorial", "Brut"], true) === "Trois styles mêlés : Riviera, Éditorial, Brut. L'atelier accorde l'ensemble et te le montre au bon à tirer."
+    && Pieces.phraseDesStyles(["Riviera", "Brut"], false).endsWith("et vous le montre au bon à tirer.")
+    && Pieces.phraseDesStyles(["Riviera"], true) === "Tout vient du style Riviera."
+    && Pieces.phraseDesStyles([], false).startsWith("Rien de choisi"));
+  const vu = Pieces.visuelsDe(c0, styles);
+  ok("la composition en images : chaque piece avec son image ou ses couleurs, et son style",
+    vu.couvertures[0]?.url === "https://exemple.test/c1.webp" && vu.couvertures[0].style === "Riviera"
+    && vu.palette?.nom === "Sable" && vu.palette.style === "Riviera" && vu.palette.couleurs.length === 4
+    && vu.typos === null
+    && vu.doubles[0]?.libelle === "Récit" && vu.doubles[0].style === "Archive" && vu.doubles[0].url === "https://exemple.test/recit.webp"
+    && Pieces.visuelsDe({ ...c0, typos: { style_id: "s2" } }, styles).typos?.polices === "Bodoni Moda et DM Sans");
+  ok("une piece d'un style retire du mur se nomme sans mentir", Pieces.visuelsDe({ ...c0, couvertures: [{ style_id: "zz", couverture: "x" }] }, styles).couvertures[0]?.style === "un style retiré du mur");
+
+  const couvC1 = { genre: "couverture" as const, style_id: "s1", cle: "c1" };
+  ok("le geste d'une piece : retirer une couverture aimee, aimer une autre ; rien pour la palette deja choisie",
+    JSON.stringify(Pieces.gesteDeLaPiece(couvC1, c0)) === JSON.stringify({ quoi: "couverture", style_id: "s1", cle: "c1", ajouter: false })
+    && (Pieces.gesteDeLaPiece({ genre: "couverture", style_id: "s2", cle: "a1" }, c0) as { ajouter: boolean }).ajouter === true
+    && Pieces.gesteDeLaPiece({ genre: "palette", style_id: "s1", cle: "sable" }, c0) === null
+    && Pieces.gesteDeLaPiece({ genre: "palette", style_id: "s1", cle: "marine" }, c0)?.quoi === "palette"
+    && Pieces.gesteDeLaPiece({ genre: "typos", style_id: "s2", cle: "" }, c0)?.quoi === "typos");
+
+  ok("l'annonce : « Palette Marine ajoutée. Elle remplace Sable. »",
+    Pieces.annonceDuGeste({ quoi: "palette", style_id: "s1", cle: "marine" }, c0, styles, false, 1) === "Palette Marine ajoutée. Elle remplace Sable.");
+  ok("l'annonce : une premiere palette ne remplace rien",
+    Pieces.annonceDuGeste({ quoi: "palette", style_id: "s1", cle: "marine" }, compositionDu(vierge), styles, false, 1) === "Palette Marine ajoutée.");
+  ok("l'annonce : deux palettes du meme nom se distinguent par leur style",
+    Pieces.annonceDuGeste({ quoi: "palette", style_id: "s2", cle: "sable" }, c0, styles, false, 1) === "Palette Sable (Archive) ajoutée. Elle remplace Sable (Riviera).");
+  ok("l'annonce : « Couverture aimée. », « Double page Dense retirée. », les typographies remplacees",
+    Pieces.annonceDuGeste({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true }, c0, styles, false, 1) === "Couverture aimée."
+    && Pieces.annonceDuGeste({ quoi: "double", style_id: "s1", cle: "dense", ajouter: false }, c0, styles, false, 1) === "Double page Dense retirée."
+    && Pieces.annonceDuGeste({ quoi: "typos", style_id: "s2" }, { ...c0, typos: { style_id: "s1" } }, styles, false, 1) === "Typographies Bodoni Moda et DM Sans ajoutées. Elles remplacent Fraunces et DM Sans.");
+  ok("l'annonce : la place du texte, la validation ; un brief valide qui change le dit",
+    Pieces.annonceDuGeste({ quoi: "texte", texte: "beaucoup" }, c0, styles, false, 1) === "Place du texte : « Beaucoup de texte ». Elle remplace « Un peu de texte »."
+    && Pieces.annonceDuGeste({ quoi: "valider" }, c0, styles, false, 2) === "Brief du magazine 2 validé."
+    && Pieces.annonceDuGeste({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true }, c0, styles, true, 1) === "Couverture aimée. Le brief est à revalider.");
+
+  ok("l'inverse : l'ancienne palette, les anciennes typographies, l'ancienne place du texte",
+    JSON.stringify(Pieces.gesteInverse({ quoi: "palette", style_id: "s1", cle: "marine" }, c0)) === JSON.stringify({ quoi: "palette", style_id: "s1", cle: "sable" })
+    && JSON.stringify(Pieces.gesteInverse({ quoi: "typos", style_id: "s2" }, { ...c0, typos: { style_id: "s1" } })) === JSON.stringify({ quoi: "typos", style_id: "s1" })
+    && JSON.stringify(Pieces.gesteInverse({ quoi: "texte", texte: "beaucoup" }, c0)) === JSON.stringify({ quoi: "texte", texte: "peu" }));
+  ok("l'inverse : rien quand il n'y avait rien avant (aucun geste n'efface une palette), ni quand rien ne change",
+    Pieces.gesteInverse({ quoi: "palette", style_id: "s1", cle: "marine" }, compositionDu(vierge)) === null
+    && Pieces.gesteInverse({ quoi: "typos", style_id: "s1" }, c0) === null
+    && Pieces.gesteInverse({ quoi: "texte", texte: "peu" }, c0) === null
+    && Pieces.gesteInverse({ quoi: "palette", style_id: "s1", cle: "sable" }, c0) === null
+    && Pieces.gesteInverse({ quoi: "couverture", style_id: "s1", cle: "c1", ajouter: true }, c0) === null);
+  ok("l'inverse : retirer ce qui a ete ajoute, rajouter ce qui a ete retire, rouvrir ce qui a ete valide",
+    (Pieces.gesteInverse({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true }, c0) as { ajouter: boolean }).ajouter === false
+    && (Pieces.gesteInverse({ quoi: "double", style_id: "s2", cle: "recit", ajouter: false }, c0) as { ajouter: boolean }).ajouter === true
+    && Pieces.gesteInverse({ quoi: "valider" }, c0)?.quoi === "devalider" && Pieces.gesteInverse({ quoi: "devalider" }, c0)?.quoi === "valider");
+
+  const allerRetour = (g: Pieces.Geste) => {
+    const apres = appliquer(b0, g);
+    const inv = Pieces.gesteInverse(g, c0);
+    return inv !== null && memeComposition(appliquer(apres, inv), b0) && !memeComposition(apres, b0);
+  };
+  ok("« Annuler » rend la composition d'avant : palette, typographies, texte, couverture, double page (aller puis retour par les memes regles)",
+    allerRetour({ quoi: "palette", style_id: "s2", cle: "sable" })
+    && (() => { const b1 = { ...b0, typo_style_id: "s1" }; const g: Pieces.Geste = { quoi: "typos", style_id: "s2" }; const inv = Pieces.gesteInverse(g, compositionDu(b1)); return inv !== null && memeComposition(appliquer(appliquer(b1, g), inv), b1); })()
+    && allerRetour({ quoi: "texte", texte: "photos" })
+    && allerRetour({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true })
+    && allerRetour({ quoi: "couverture", style_id: "s1", cle: "c1", ajouter: false })
+    && allerRetour({ quoi: "double", style_id: "s1", cle: "aeree", ajouter: true })
+    && allerRetour({ quoi: "double", style_id: "s2", cle: "recit", ajouter: false }));
+
+  const pal = Pieces.preparerGeste({ quoi: "palette", style_id: "s1", cle: "marine" }, { ...b0, brief_valide_le: "2026-10-19T10:00:00Z" }, styles, 3, "t");
+  ok("le geste part comme avant vers la route (action piece) et remet le brief a valider",
+    pal.ok && JSON.stringify(pal.corps) === JSON.stringify({ action: "piece", genre: "palette", styleId: "s1", palette_cle: "marine" }) && pal.patch.palette_style_id === "s1" && pal.patch.brief_valide_le === null);
+  const couv = Pieces.preparerGeste({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true }, b0, styles, 3, "t");
+  ok("aimer une couverture : action couverture, la liste par patchCouvertures",
+    couv.ok && JSON.stringify(couv.corps) === JSON.stringify({ action: "couverture", styleId: "s2", couverture: "a1", aimer: true }) && (couv.patch.couvertures_aimees ?? []).length === 2);
+  ok("les refus sont ceux de brief.ts, avant tout envoi : plafond des couvertures, plafond non regle, style retire, cinq doubles pages",
+    (() => { const r = Pieces.preparerGeste({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true }, b0, styles, 1, "t"); return !r.ok && r.message.includes("1 couverture au plus"); })()
+    && (() => { const r = Pieces.preparerGeste({ quoi: "couverture", style_id: "s2", cle: "a1", ajouter: true }, b0, styles, null, "t"); return !r.ok && r.message.includes("pas encore réglé"); })()
+    && (() => { const r = Pieces.preparerGeste({ quoi: "palette", style_id: "zz", cle: "x" }, b0, styles, 3, "t"); return !r.ok && r.message === "Ce style n'est pas sur le mur."; })()
+    && (() => { const plein: BriefLigne = { ...b0, doubles_aimes: ["aeree", "equilibree", "dense", "recit", "audacieuse"].map((d) => ({ style_id: "s9", double: d as "aeree" })) }; const r = Pieces.preparerGeste({ quoi: "double", style_id: "s1", cle: "aeree", ajouter: true }, plein, styles, 3, "t"); return !r.ok && r.message.includes("5 doubles pages au plus"); })());
+  ok("valider : refuse tant qu'il manque une piece (manquesBrief, la regle de la route), sinon la date du clic",
+    (() => { const r = Pieces.preparerGeste({ quoi: "valider" }, b0, styles, 3, "t"); return !r.ok && r.message === "Il manque les typographies."; })()
+    && (() => { const r = Pieces.preparerGeste({ quoi: "valider" }, { ...b0, typo_style_id: "s1" }, styles, 3, "2026-10-19T12:00:00.000Z"); return r.ok && r.patch.brief_valide_le === "2026-10-19T12:00:00.000Z" && r.corps.action === "valider"; })());
+
+  const mur = lire("src/app/edition/[token]/style/Mur.tsx");
+  const compo = lire("src/app/edition/[token]/style/Composition.tsx");
+  const carte = lire("src/app/edition/[token]/style/CartePiece.tsx");
+  const css = lire("src/app/edition/[token]/style/style.css");
+  ok("la colonne « Votre composition » est partie (archivee), le mur prend toute la largeur",
+    !/ec-mur-brief|ec-mur-lignes/.test(mur) && !/minmax\(0, 1fr\) 340px/.test(css) && existsSync(resolve(RACINE, "archive/composition-colonne-2026-10/README.md")));
+  ok("la barre : en images, l'etat, « Voir ma composition » ; collee en bas sur telephone",
+    /ligneDeLaBarre\(b\)/.test(mur) && /Voir ma composition/.test(compo) && /ec-mur-mini-vide/.test(compo) && /\.ec-mur-bas \{\s*position: sticky;\s*bottom: 8px;/.test(css));
+  ok("l'annonce dit chaque geste (role status) et « Annuler » rejoue l'inverse par le meme chemin",
+    /role="status"/.test(compo) && /Annuler/.test(compo) && /jouer\(annonce\.inverse, annonce\.magId, false\)/.test(mur) && /preparerGeste\(g, bl,/.test(mur) && /void envoyer\(magId, pret\.corps, pret\.patch\)/.test(mur));
+  ok("la feuille : portail dans .ec-contenu, « Modifier » par case, valider en bas, ou rouvrir et passer au suivant",
+    /document\.querySelector\("\.ec-contenu"\)/.test(compo) && /onModifier\(partie\)/.test(compo) && /Valider le brief du magazine/.test(compo) && /Rouvrir le brief/.test(compo) && /Passer au magazine/.test(compo) && /Continuer à composer/.test(compo));
+  ok("une piece choisie se voit de loin : sceau, « Retirer », « Choisie » ; « Aimer », « Prendre », ce qu'elle remplacera",
+    /Dans ta composition/.test(carte) && /Ta palette/.test(carte) && /Tes typographies/.test(carte) && /"Retirer"/.test(carte) && /"Aimer"/.test(carte) && /"Prendre"/.test(carte) && /Choisie/.test(carte) && /Remplacera ta palette/.test(mur));
+  ok("le bandeau des magazines dit l'etat par etatDuMagazine", /etatDuMagazine\(briefs\[m\.id\]\)/.test(mur));
+  ok("lecture seule et cloture : aucun geste, la feuille se lit", /if \(!bl \|\| !m \|\| !peutAgir\) return;/.test(mur) && /Lecture seule : vous voyez tout/.test(compo) && /La collecte est close/.test(compo));
 }
 
 titre("— revision 14.3 / 14.7 : photos et livraison —");
