@@ -102,3 +102,14 @@ export function deNom(nom: string): string {
   const n = nom.trim();
   return /^[aeiouyàâäéèêëîïôöûùü]/i.test(n) ? `d'${n}` : `de ${n}`;
 }
+
+/**
+ * Le message que l'atelier reçoit quand le responsable termine la collecte (D25, T-182) :
+ * il arrive dans la boîte de réception comme tout message du client (compteur de non-lus
+ * compris). Les nombres sont ceux de la base au moment du geste, jamais estimés.
+ */
+export function messageFinCollecte(photos: number, selection: number): string {
+  const n = (x: number) => x.toLocaleString("fr-FR");
+  const choix = selection > 0 ? `, dont ${n(selection)} dans la sélection` : "";
+  return `Collecte terminée : toutes les photos sont là (${n(photos)} photo${photos > 1 ? "s" : ""}${choix}). L'atelier peut commencer.`;
+}

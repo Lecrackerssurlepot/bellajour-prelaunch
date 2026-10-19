@@ -216,6 +216,11 @@ export type Collecte = {
   /** Les vignettes des quatre dernières photos arrivées, signées une heure (la vue d'ensemble). */
   apercus: string[];
   parProvenance: { libelle: string; n: number }[];
+  /** « Ma sélection » du client (T-182) : combien, et jusqu'à huit vignettes signées une heure. */
+  selection: number;
+  selectionApercus: string[];
+  /** Le client a terminé la collecte lui-même (D25) : qui, et quand (lu au journal). */
+  terminee: { par: string; le: string } | null;
 };
 
 /** Un contenu envoyé par le client (logo, programme, mot du dirigeant…), le plus récent d'abord. */
@@ -275,7 +280,7 @@ export async function chargerEdition(
     lireMessages(supabase, id, null),
     supabase
       .from("collectif_photos")
-      .select("id, provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le")
+      .select("id, provenance_type, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
       .eq("edition_id", id)
       .not("confirmee_le", "is", null)
       .limit(20000),
@@ -313,7 +318,12 @@ export async function chargerEdition(
     appareil_id: string | null;
     signalee: boolean;
     vignette_key: string | null;
+    preselection: boolean;
   }[];
+  const choisies = lignesPhotos.filter((p) => p.preselection);
+  const fin = ((journal.data ?? []) as { type: string; payload: Record<string, unknown> | null; created_at: string }[]).find(
+    (j) => j.type === "geste" && j.payload?.cle === "terminer_collecte"
+  );
   const collecte: Collecte = {
     total: lignesPhotos.length,
     participants: new Set(lignesPhotos.filter((p) => p.role_deposant === "participant" && p.appareil_id).map((p) => p.appareil_id)).size,
@@ -333,6 +343,16 @@ export async function chargerEdition(
       )
     ).filter((u): u is string => u !== null),
     parProvenance: resumeDeposants(lignesPhotos),
+    selection: choisies.length,
+    selectionApercus: (
+      await Promise.all(
+        choisies
+          .filter((p) => p.vignette_key)
+          .slice(0, 8)
+          .map((p) => signerOuRien(p.vignette_key))
+      )
+    ).filter((u): u is string => u !== null),
+    terminee: fin ? { par: String(fin.payload?.par ?? "le responsable"), le: fin.created_at } : null,
   };
 
   /* Les styles que les briefs nomment (chaque pièce, D24), pour les lire en clair, publiés ou non. */

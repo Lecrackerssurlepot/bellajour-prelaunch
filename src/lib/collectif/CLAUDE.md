@@ -425,6 +425,18 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - « Toutes » montre la DERNIÈRE arrivée d'abord (ce qui arrive est en haut) ; « Par jour » garde
   l'ordre des jours de prise de vue.
 
+## Terminer la collecte, la sélection vue par l'atelier (T-182, D25, 19/10)
+
+- **Le RESPONSABLE peut terminer la collecte** (`terminer_collecte`, droit et geste du même nom,
+  route `/api/collectif/collecte/terminer`) : même effet que « Clore maintenant » de l'atelier
+  (la clôture devient maintenant, les liens des participants se ferment). Deux temps
+  (`verifier: true` compte, le second appel écrit), écriture conditionnée à l'état lu (409 si
+  l'atelier a déjà clos). L'atelier l'apprend par un MESSAGE du client dans sa boîte
+  (`messageFinCollecte`, `espace.ts`) et par le journal ; AUCUN mail. Rouvrir reste à l'atelier.
+- **L'atelier voit la sélection** (« Ma sélection » du client) : nombre et huit vignettes dans
+  l'onglet Photos de la fiche, « Télécharger la sélection » (le lot avec `selection: true`, écrit
+  dans le dossier « Sélection du client »), et « Collecte terminée par … » lu au journal.
+
 ## Les mails des éditions (T-146, 15/10)
 
 - **Un seul circuit** : `mails.ts` → `envoyerMailCollectif` (coupé par défaut par

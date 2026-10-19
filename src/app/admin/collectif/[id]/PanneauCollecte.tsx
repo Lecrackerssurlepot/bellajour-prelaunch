@@ -1,13 +1,16 @@
 "use client";
 
 /* La collecte, côté atelier (PRD §8) : combien de photos, de qui, combien de
-   signalées, et le téléchargement du lot (tout, ou une provenance).
+   signalées, et le téléchargement du lot (tout, ou une provenance). Depuis
+   T-182 (19/10), la SÉLECTION du client : combien, ses vignettes, et son
+   téléchargement à part ; et « collecte terminée par le client » (D25).
 
    Le lot s'écrit DIRECTEMENT sur le disque (Chrome et Edge :
    `showDirectoryPicker`, ouvert AVANT tout `await`, comme le lot du B2C).
    Ailleurs, un fichier de liens à passer à `xargs curl -OJ`. */
 
 import { useState } from "react";
+import { formaterInstantParis } from "@/lib/collectif/dates";
 import { choisirDossier, supporteDossier } from "../../../admin/atelier/[token]/telechargement";
 
 type Ligne = { libelle: string; n: number };
@@ -19,6 +22,9 @@ export default function PanneauCollecte({
   signalees,
   parProvenance,
   sansVignette,
+  selection,
+  selectionApercus,
+  terminee,
 }: {
   id: string;
   total: number;
@@ -26,11 +32,14 @@ export default function PanneauCollecte({
   signalees: number;
   parProvenance: Ligne[];
   sansVignette: number;
+  selection: number;
+  selectionApercus: string[];
+  terminee: { par: string; le: string } | null;
 }) {
   const [etat, setEtat] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
 
-  async function telecharger(provenance: string | null) {
+  async function telecharger(provenance: string | null, choisies = false) {
     /* Le sélecteur AVANT tout aller-retour réseau : Chrome exige un clic frais. */
     const dossier = supporteDossier() ? await choisirDossier() : null;
     if (supporteDossier() && !dossier) return;
@@ -40,7 +49,7 @@ export default function PanneauCollecte({
       const rep = await fetch(`/api/admin/collectif/editions/${id}/lot`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ provenance }),
+        body: JSON.stringify({ provenance, selection: choisies }),
       });
       if (!rep.ok) throw new Error(String(rep.status));
       const { photos } = (await rep.json()) as { photos: { nom: string; url: string | null }[] };
@@ -53,7 +62,10 @@ export default function PanneauCollecte({
         setEtat(`${photos.length} liens téléchargés (xargs -n1 curl -sOJ < liens-du-lot.txt).`);
         return;
       }
-      const sous = await dossier.getDirectoryHandle(provenance ? `Lot - ${provenance.replace(/[\\/:*?"<>|]/g, " ")}` : "Lot complet", { create: true });
+      const sous = await dossier.getDirectoryHandle(
+        choisies ? "Sélection du client" : provenance ? `Lot - ${provenance.replace(/[\\/:*?"<>|]/g, " ")}` : "Lot complet",
+        { create: true }
+      );
       let faites = 0;
       const ratees: string[] = [];
       let curseur = 0;
@@ -87,6 +99,31 @@ export default function PanneauCollecte({
   return (
     <section className="ate-carte">
       <h2 className="ate-carte-titre">La collecte</h2>
+      {terminee ? (
+        <p className="eca-bandeau eca-bandeau--ok">
+          <strong>Collecte terminée par {terminee.par}</strong> le {formaterInstantParis(terminee.le)} : toutes les photos sont là.
+        </p>
+      ) : null}
+      <div className="eca-selection">
+        <div className="eca-selection-tete">
+          <span>
+            <strong>Sélection du client</strong>{" "}
+            <span className="eca-sous">{selection ? `${selection} photo${selection > 1 ? "s" : ""}` : "vide pour l'instant"}</span>
+          </span>
+          <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe || selection === 0} onClick={() => telecharger(null, true)}>
+            Télécharger la sélection
+          </button>
+        </div>
+        {selectionApercus.length ? (
+          <div className="eca-mosaique eca-mosaique--huit" aria-label="Les premières photos de la sélection du client">
+            {selectionApercus.map((u, i) => (
+              <img key={i} src={u} alt="" loading="lazy" decoding="async" />
+            ))}
+          </div>
+        ) : (
+          <p className="eca-champ-aide">Le client met de côté les photos qu&apos;il préfère (facultatif). Elles arriveront ici.</p>
+        )}
+      </div>
       <ul className="eca-mag-liste">
         <li>
           <span>Photos arrivées</span>

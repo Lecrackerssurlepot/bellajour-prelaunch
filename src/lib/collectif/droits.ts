@@ -32,6 +32,8 @@ export const DROITS = {
   signaler_photo: ["atelier", "responsable"],
   choisir_style: ["responsable"],
   valider_brief: ["responsable"],
+  /** D25 (19/10) : « Toutes les photos sont là » ; ferme les liens des participants. Rouvrir reste à l'atelier. */
+  terminer_collecte: ["responsable"],
   envoyer_contenu: ["responsable"],
   deposer_tour: ["atelier"],
   repondre_note: ["atelier"],

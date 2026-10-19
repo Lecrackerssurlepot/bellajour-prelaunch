@@ -277,9 +277,9 @@ const refuse = (r: ReturnType<typeof preparerGeste>, champ: string) => !r.ok && 
 titre("— chaque geste derive son « qui » de la matrice des droits —");
 ok("aucun geste ne redeclare ses droits : qui = DROITS[action]",
    (Object.keys(GESTES) as GesteCle[]).every((c) => quiPour(c) === DROITS[GESTES[c].action]));
-ok("seul valider_bat est un geste du responsable, tous les autres sont atelier",
+ok("valider_bat et terminer_collecte (D25, 19/10) sont les gestes du responsable, tous les autres sont atelier",
    (Object.keys(GESTES) as GesteCle[]).every((c) =>
-     c === "valider_bat"
+     c === "valider_bat" || c === "terminer_collecte"
        ? quiPour(c).length === 1 && quiPour(c)[0] === "responsable"
        : quiPour(c).length === 1 && quiPour(c)[0] === "atelier"));
 ok("l'equipe et le participant ne peuvent tenter AUCUN geste",
@@ -494,6 +494,7 @@ const attenduDroits: Record<Action, Role[]> = {
   signaler_photo: ["atelier", "responsable"],
   choisir_style: ["responsable"],
   valider_brief: ["responsable"],
+  terminer_collecte: ["responsable"],
   envoyer_contenu: ["responsable"],
   deposer_tour: ["atelier"],
   repondre_note: ["atelier"],
@@ -2041,6 +2042,33 @@ titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en d
   ok("la grille : « Toutes » commence par la derniere arrivee ; chaque photo dit qui et quand ; « N personnes » suit la meme regle que les pastilles",
     /vue === "toutes" \? \[\.\.\.dansDossier\]\.reverse\(\)/.test(photos) && /qui: role === "participant"/.test(photos) && /arrivee: p\.confirmee_le/.test(photos) && /personnes: compterPersonnes\(toutes\)/.test(photos)
       && /participants: compterPersonnes\(lignes\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+}
+
+titre("— T-182 / D25 : le responsable termine la collecte, l'atelier voit la selection —");
+{
+  const ctx = (role: "responsable" | "equipe" | "atelier", etat: "preparation" | "composition") => ({ role, etat, clotureLe: "2026-11-14T22:59:00Z", archiveLe: null, maintenant: new Date("2026-11-03T10:00:00Z"), magazines: [] });
+  const ok1 = preparerGeste("terminer_collecte", ctx("responsable", "preparation"));
+  ok("terminer : le responsable, en preparation ; la cloture devient maintenant, l'edition passe en composition (meme effet que « Clore maintenant »)",
+    ok1.ok && ok1.vers === "composition" && ok1.patch.cloture_le === "2026-11-03T10:00:00.000Z" && ok1.patch.etat === "composition");
+  ok("terminer : jamais l'equipe ni l'atelier (lui « clot »), jamais une collecte deja close ; rouvrir reste a l'atelier",
+    !preparerGeste("terminer_collecte", ctx("equipe", "preparation")).ok && !preparerGeste("terminer_collecte", ctx("atelier", "preparation")).ok
+      && !preparerGeste("terminer_collecte", ctx("responsable", "composition")).ok && !peut("responsable", "regler_edition"));
+  ok("le message a l'atelier : les vrais nombres, la selection seulement si elle existe, aucun tiret cadratin",
+    Espace.messageFinCollecte(1248, 86) === "Collecte terminée : toutes les photos sont là (1\u202f248 photos, dont 86 dans la sélection). L'atelier peut commencer."
+      && Espace.messageFinCollecte(1, 0) === "Collecte terminée : toutes les photos sont là (1 photo). L'atelier peut commencer." && !/[—–]/.test(Espace.messageFinCollecte(3, 2)));
+  const route = lire("src/app/api/collectif/collecte/terminer/route.ts");
+  ok("la route : le droit du responsable, la regle de gestes.ts, l'ecriture conditionnee a l'etat lu (409), un message et une ligne de journal, aucun mail",
+    /peut\(acces\.role, "terminer_collecte"\)/.test(route) && /preparerGeste\("terminer_collecte"/.test(route) && /\.eq\("etat", edition\.etat\)/.test(route) && /status: 409/.test(route)
+      && /ecrireMessage\(supabase, edition\.id, "client"/.test(route) && /journaliser\(supabase, \{ editionId: edition\.id \}, "geste", \{ cle: "terminer_collecte"/.test(route) && !/envoyerMail|brevo/i.test(route));
+  const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
+  ok("le tableau de bord : « Toutes les photos sont là ? » pour le responsable seulement, en DEUX temps (« Oui, terminer »)",
+    /p\.terminer && \(p\.ouverte \|\| fin === "fait"\)/.test(carte) && /Toutes les photos sont là \?/.test(carte) && /Oui, terminer/.test(carte) && /\/api\/collectif\/collecte\/terminer/.test(carte)
+      && /terminer=\{peut\(role, 'terminer_collecte'\)\}/.test(lire("src/app/edition/[token]/page.tsx")));
+  const lot = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
+  const panneau = lire("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
+  ok("l'atelier voit la selection du client (nombre, vignettes) et la telecharge a part ; « collecte terminee par » vient du journal",
+    /\(!selection \|\| p\.preselection\)/.test(lot) && /Télécharger la sélection/.test(panneau) && /selectionApercus/.test(panneau) && /"Sélection du client"/.test(panneau)
+      && /j\.payload\?\.cle === "terminer_collecte"/.test(lire("src/app/admin/collectif/donnees.ts")));
 }
 
 console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

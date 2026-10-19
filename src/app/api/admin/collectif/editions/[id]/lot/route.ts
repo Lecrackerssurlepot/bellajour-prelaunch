@@ -11,7 +11,8 @@ import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migratio
 /**
  * POST /api/admin/collectif/editions/[id]/lot — les photos à télécharger,
  * toutes ou d'une seule provenance (PRD §8 : « téléchargement du lot par
- * provenance, réutiliser lot.ts »). `{ provenance?: libellé }`.
+ * provenance, réutiliser lot.ts »). `{ provenance?: libellé, selection?: true }` :
+ * `selection` ne rend que les photos de « Ma sélection » du client (T-182).
  *
  * Rend des URL signées (deux heures) et des NOMS de fichiers (`lot.ts` :
  * le rang en tête, puis la date et la ville quand la photo les sait). Le
@@ -35,6 +36,7 @@ type Ligne = {
   lieu_ville: string | null;
   lieu_pays: string | null;
   signalee: boolean;
+  preselection: boolean;
 };
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -45,16 +47,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!estUuid(id)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
   let provenance: string | null = null;
+  let selection = false;
   try {
-    const b = (await request.json()) as { provenance?: unknown };
+    const b = (await request.json()) as { provenance?: unknown; selection?: unknown };
     provenance = typeof b.provenance === "string" && b.provenance ? b.provenance : null;
+    selection = b.selection === true;
   } catch {
     provenance = null;
   }
 
   const { data, error } = await makeSupabase()
     .from("collectif_photos")
-    .select("id, r2_key, nom_origine, provenance_type, deposant, prise_le, lieu_ville, lieu_pays, signalee")
+    .select("id, r2_key, nom_origine, provenance_type, deposant, prise_le, lieu_ville, lieu_pays, signalee, preselection")
     .eq("edition_id", id)
     .not("confirmee_le", "is", null)
     .order("confirmee_le", { ascending: true })
@@ -64,7 +68,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (tableAbsente(error.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
-  const lot = (data ?? []).filter((p) => !provenance || libelleProvenance(p.provenance_type, p.deposant) === provenance);
+  const lot = (data ?? []).filter((p) => (!provenance || libelleProvenance(p.provenance_type, p.deposant) === provenance) && (!selection || p.preselection));
   const noms = nomsDeFichiers(
     lot.map((p) => ({ nom: p.signalee ? `A-NE-PAS-PUBLIER ${p.nom_origine ?? "photo"}` : p.nom_origine, priseLe: p.prise_le, lieuVille: p.lieu_ville, lieuPays: p.lieu_pays }))
   );
@@ -77,5 +81,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       }
     })
   );
-  return NextResponse.json({ photos, provenance });
+  return NextResponse.json({ photos, provenance, selection });
 }

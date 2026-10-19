@@ -1710,6 +1710,35 @@
 .eca-root .eca-bandeau--chaud {
   background: var(--eca-chaud-fond);
 }
+/* T-182 : le client a terminé la collecte (D25), et sa sélection. */
+.eca-root .eca-bandeau--ok {
+  background: var(--eca-vert-fond, var(--eca-gris-fond));
+  margin: 0 0 12px;
+}
+.eca-root .eca-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-selection-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eca-root .eca-mosaique--huit {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+@media (max-width: 700px) {
+  .eca-root .eca-mosaique--huit {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
 .eca-root .eca-point {
   flex: none;
   width: 8px;

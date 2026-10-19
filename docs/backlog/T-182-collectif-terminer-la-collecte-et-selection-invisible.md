@@ -1,7 +1,7 @@
 ---
 id: T-182
 titre: Le responsable ne peut pas dire « toutes les photos sont là », et l'atelier ne voit pas sa sélection
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -45,4 +45,20 @@ Planche 4 telle quelle. **Tranché (D25)** : « Terminer la collecte » FERME le
 participants ; l'atelier peut rouvrir tant qu'aucun tour n'est publié.
 
 ## Ce qui a été fait
-Rien encore.
+19/10, branche `feat/collectif-terminer-la-collecte` (planche 4, D25) :
+- Droit et geste `terminer_collecte` (responsable seulement ; même effet que « Clore
+  maintenant » ; refusé à l'équipe, à l'atelier qui « clôt », et sur une collecte déjà close),
+  route `/api/collectif/collecte/terminer` (deux temps, écriture conditionnée à l'état lu,
+  journal, message dans la boîte de l'atelier, aucun mail). PRD §2 : une ligne ajoutée.
+- Tableau de bord du responsable : « Toutes les photos sont là ? » dans la carte des photos,
+  « Terminer la collecte », la fenêtre de confirmation de la planche (« Pas encore » / « Oui,
+  terminer »), puis « Collecte terminée ».
+- Atelier, onglet Photos : « Sélection du client » (nombre, huit vignettes), « Télécharger la
+  sélection » (dossier « Sélection du client »), « Collecte terminée par … le … ».
+- Harnais : six contrôles, et l'invariant « seul valider_bat est au responsable » mis à jour.
+- Vérifié au pilote, AUCUNE écriture : sur « Première édition », la bande, la fenêtre (« les
+  12 photos »), puis l'état « Collecte terminée » après la réponse factice (le POST est parti
+  vers l'interception, rien n'a été fermé en base) ; sur « Essai révision » (archivée),
+  « Sélection du client · 780 photos », huit vignettes, aucune écriture.
+Reste : la mise en page de l'onglet Photos de l'atelier suit T-185 (fiche en cartes).
+**Non vu en vrai** : une collecte réellement terminée (il faudrait fermer une vraie édition).

@@ -73,6 +73,8 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             ouverte={ouverte}
             photos={tableau.photos}
             participants={tableau.participants}
+            selection={tableau.selection}
+            terminer={peut(role, 'terminer_collecte')}
             dossiers={tableau.dossiers}
             mosaique={tableau.mosaique}
             liens={tableau.liens}
