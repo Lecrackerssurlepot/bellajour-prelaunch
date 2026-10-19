@@ -30,8 +30,9 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   (T-163), et, avant d'ouvrir `COLLECTIF_MAILS`, l'origine des liens de mail (T-164) et le frein
   de « Retrouver » (T-166). Supabase plafonne bien les réponses à 1 000 lignes (« Max rows »,
   lu par Mathias le 19/10) : T-167 à faire avant la première vraie édition.
-- **Le style d'essai « Essai technique Claude » est toujours publié en tête du mur** (T-157).
-  Mathias a retiré « Grand air » du mur le 19/10 à 10 h 29 (heure de Paris) ; question posée.
+- **Le mur des styles** (T-157, fermé) : le 19/10 à 12 h 53, sur l'accord de Mathias, le style
+  d'essai « Essai technique Claude » est retiré et « Grand air » (retiré par erreur à 10 h 29) est
+  remis. Six styles publiés : Riviera, Nuit, Éditorial, Brut, Archive, Grand air.
 
 ## 17/10/2026 — L'Édition collective est EN LIGNE sur bellajour.fr
 
