@@ -16,7 +16,8 @@ import { compositionDu, stylesDeLaComposition, type BriefLigne } from "./brief";
 import { lireInstant } from "./etats";
 import { estJour } from "./livraison";
 import { lireEntierPositif, reglerPlafondAtelier, type ReglagesPlafond } from "./plafonds";
-import { CONTENUS, REGISTRES, SEGMENTS, type CleContenu, type Registre, type Segment } from "./types";
+import { lireDemandesSaisies } from "./demandes";
+import { REGISTRES, SEGMENTS, type Registre, type Segment } from "./types";
 
 export type Erreur = { champ: string; message: string };
 
@@ -271,10 +272,11 @@ export function lireSaisieEdition(
     else e.styles_segment = seg;
   }
 
+  /* Les demandes au client (T-191) : nom, forme, clé ; les clés d'origine restent des clés texte. */
   if (present("contenus_demandes")) {
-    const brut = Array.isArray(s.contenus_demandes) ? s.contenus_demandes : [];
-    const connus = CONTENUS.map((c) => c.cle) as string[];
-    e.contenus_demandes = connus.filter((c) => brut.includes(c)) as CleContenu[];
+    const lues = lireDemandesSaisies(s.contenus_demandes);
+    for (const m of lues.erreurs) erreurs.push({ champ: "contenus_demandes", message: m });
+    e.contenus_demandes = lues.demandes;
   }
 
   if (present("invitation_texte")) e.invitation_texte = texte(s.invitation_texte, LONGUEURS.invitation_texte) || null;

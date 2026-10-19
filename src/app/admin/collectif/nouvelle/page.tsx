@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
+import { DEMANDES_PAR_DEFAUT } from "@/lib/collectif/demandes";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import "../../admin.css";
@@ -38,7 +39,7 @@ const VIERGE: ValeursEdition = {
   nb_propositions_couverture: "",
   couvertures_aimees_max: "",
   styles_segment: "tous",
-  contenus_demandes: ["logo", "programme", "mot", "liste"],
+  contenus_demandes: [...DEMANDES_PAR_DEFAUT],
   invitation_texte: "",
   responsable_email: "",
   responsable_nom: "",

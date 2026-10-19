@@ -135,3 +135,24 @@ export const MIGRATION_LIENS = "supabase/migrations/20261018_collectif_liens_rep
 export const ERREUR_LIENS_ABSENTE = "migration_liens_absente";
 export const MESSAGE_LIENS_ABSENTE =
   "La mise à jour de la base pour supprimer un lien et répondre à un message n'est pas encore appliquée (20261018_collectif_liens_reponses.sql) : rien n'a été enregistré.";
+
+/* ─────────────────────────── les demandes sur mesure (T-191, 19/10 soir) ─────────────────────────── */
+
+/**
+ * La contrainte de `collectif_contenus.type` n'accepte que les cinq clés
+ * d'origine (`check (type in ('logo', …))`). La migration la relâche : le
+ * type devient la clé d'une demande de l'édition, contrôlée par le code.
+ * Sans elle, une demande NOUVELLE se voit chez le client, mais un envoi y est
+ * refusé par la base (23514) : la route le SONDE avant d'écrire au coffre et
+ * répond un vrai 503 `migration_demandes_absente`. Les cinq clés d'origine,
+ * renommées ou non, marchent avant comme après.
+ */
+export const MIGRATION_DEMANDES = "supabase/migrations/20261021_collectif_demandes.sql";
+export const ERREUR_DEMANDES_ABSENTE = "migration_demandes_absente";
+export const MESSAGE_DEMANDES_ABSENTE =
+  "La mise à jour de la base pour les demandes sur mesure n'est pas encore appliquée (20261021_collectif_demandes.sql) : rien n'a été enregistré.";
+
+/** Une contrainte `check` refuse la ligne : pour un envoi du client, c'est la contrainte du type (la migration manque). */
+export function contrainteRefusee(code: string | null | undefined): boolean {
+  return code === "23514";
+}

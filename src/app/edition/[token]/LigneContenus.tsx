@@ -9,11 +9,18 @@
      « Ouvrir »), avec « Remplacer » sur chaque fichier et « Ajouter un autre
      fichier » ; pour le questionnaire, les réponses et « Modifier ».
    Un fichier remplacé reste à l'atelier comme ancienne version : rien ne se
-   perd. Le lien d'équipe revoit ce qui est reçu, sans rien pouvoir envoyer. */
+   perd. Le lien d'équipe revoit ce qui est reçu, sans rien pouvoir envoyer.
+
+   T-191 (19/10) : les puces sont les DEMANDES de l'atelier, sous le nom qu'il
+   a choisi (« Le mot du proviseur »), avec leur forme : un fichier refusé dit
+   pourquoi AVANT de partir (« Seulement une image »), par la même règle que
+   la route (`lireFichierDemande`). Une édition d'avant garde exactement son
+   écran (demandes héritées). */
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { contenuClient, CONTENUS_CLIENT, QUESTIONS_MOT, type ContenuClient } from "@/lib/collectif/contenus";
+import { contenuClient, QUESTIONS_MOT } from "@/lib/collectif/contenus";
+import { accepteDe, lireFichierDemande, type VueDemande } from "@/lib/collectif/demandes";
 import Fenetre from "../_composants/Fenetre";
 import { useVisionneuse } from "../_composants/Visionneuse";
 import type { EnvoiClient } from "./donnees";
@@ -21,17 +28,17 @@ import type { EnvoiClient } from "./donnees";
 /** À partir de combien de contenus demandés la ligne « À envoyer » prend toute la largeur. */
 const LIGNE_LONGUE = 3;
 
-type Props = { token: string; demandes: string[]; envois: EnvoiClient[]; ecrire: boolean; tu: boolean };
+type Props = { token: string; demandes: VueDemande[]; envois: EnvoiClient[]; ecrire: boolean; tu: boolean };
 
 export default function LigneContenus(p: Props) {
-  const [ouvert, setOuvert] = useState<ContenuClient | null>(null);
+  const [ouvert, setOuvert] = useState<VueDemande | null>(null);
   /* Ce qui vient d'être envoyé se montre TOUT DE SUITE, puce et fenêtre (la
      route rend l'envoi) : la relecture de la page le confirme ensuite, sans
      qu'on dépende d'elle (vu le 14/10 : elle n'arrive pas toujours). */
   const [ajoutes, setAjoutes] = useState<EnvoiClient[]>([]);
   const [retires, setRetires] = useState<string[]>([]);
-  const envois = courantsAffiches(p.envois, ajoutes, retires);
-  const contenus = CONTENUS_CLIENT.filter((c) => p.demandes.includes(c.cle));
+  const envois = courantsAffiches(p.envois, ajoutes, retires, p.demandes);
+  const contenus = p.demandes;
   if (!contenus.length) return null;
   /* Règle de Mathias (15/10) : à partir de TROIS choses à envoyer, la ligne
      prend toute la largeur pour qu'on les voie toutes, et le message de
@@ -58,8 +65,10 @@ export default function LigneContenus(p: Props) {
               <span className="ec-tdb-coche" aria-hidden="true">
                 {n ? "✓" : ""}
               </span>
-              {c.libelle}
-              {n > 1 ? ` · ${n} fichiers` : ""}
+              <span className="ec-tdb-puce-nom">
+                {c.libelle}
+                {n > 1 ? ` · ${n} fichiers` : ""}
+              </span>
             </button>
           );
         })}
@@ -83,11 +92,12 @@ export default function LigneContenus(p: Props) {
 }
 
 /** Les envois du serveur, plus ceux de cette page, moins les remplacés ; le questionnaire garde sa réponse la plus récente. */
-function courantsAffiches(serveur: EnvoiClient[], ajoutes: EnvoiClient[], retires: string[]): EnvoiClient[] {
+function courantsAffiches(serveur: EnvoiClient[], ajoutes: EnvoiClient[], retires: string[], demandes: VueDemande[]): EnvoiClient[] {
   const tous = [...serveur, ...ajoutes.filter((a) => !serveur.some((s) => s.id === a.id))].filter((e) => !retires.includes(e.id));
-  const mots = tous.filter((e) => contenuClient(e.type)?.mode === "questionnaire");
+  const mode = (type: string) => demandes.find((d) => d.cle === type)?.mode ?? contenuClient(type)?.mode;
+  const mots = tous.filter((e) => mode(e.type) === "questionnaire");
   const dernierMot = new Map(mots.map((e) => [e.type, e.id]));
-  return tous.filter((e) => contenuClient(e.type)?.mode !== "questionnaire" || dernierMot.get(e.type) === e.id);
+  return tous.filter((e) => mode(e.type) !== "questionnaire" || dernierMot.get(e.type) === e.id);
 }
 
 function extension(nom: string | null): string {
@@ -104,7 +114,7 @@ function FenetreContenu({
   onFermer,
 }: {
   token: string;
-  contenu: ContenuClient;
+  contenu: VueDemande;
   recus: EnvoiClient[];
   ecrire: boolean;
   tu: boolean;
@@ -160,6 +170,12 @@ function FenetreContenu({
     const lot = cible ? fichiers.slice(0, 1) : fichiers;
     let arrives = 0;
     for (const [i, f] of lot.entries()) {
+      /* La forme de la demande, AVANT de rien envoyer : la même règle que la route. */
+      const lu = lireFichierDemande(contenu, f.name, f.size, f.type);
+      if (!lu.ok) {
+        setErreur(lot.length > 1 ? `${f.name} : ${lu.message}` : lu.message);
+        break;
+      }
       setOccupe(lot.length > 1 ? `Envoi ${i + 1} sur ${lot.length}…` : "Envoi…");
       const d = new FormData();
       d.set("token", token);
@@ -193,7 +209,9 @@ function FenetreContenu({
     }
   }
 
-  const accept = contenu.extensions.map((e) => `.${e}`).join(",");
+  const accept = accepteDe(contenu);
+  /* Les réponses se rangent sous la question au vouvoiement (`QUESTIONS_MOT`) ; l'écran lit celle de l'édition. */
+  const libelleQuestion = (q: string) => contenu.questions[QUESTIONS_MOT.indexOf(q as (typeof QUESTIONS_MOT)[number])] ?? q;
   const entree = (
     <>
       <input
@@ -247,7 +265,7 @@ function FenetreContenu({
         <dl className="ec-reponses">
           {Object.entries(r.reponses ?? {}).map(([q, rep]) => (
             <div key={q}>
-              <dt>{q}</dt>
+              <dt>{libelleQuestion(q)}</dt>
               <dd>{rep}</dd>
             </div>
           ))}
@@ -328,7 +346,7 @@ function FenetreContenu({
           }}
         >
           <strong className="ec-zone-depot-titre">{v("Glissez le fichier ici", "Glisse le fichier ici")}</strong>
-          <span className="ec-note">{contenu.extensions.map((e) => e.toUpperCase()).join(", ")} · 4 Mo au plus · plusieurs fichiers possibles</span>
+          <span className="ec-note">{contenu.formats} · 4 Mo au plus · plusieurs fichiers possibles</span>
           <button type="button" className="ec-bouton" disabled={Boolean(occupe)} onClick={() => choisir(null)}>
             {occupe ? "Envoi…" : "Choisir un fichier"}
           </button>
@@ -337,7 +355,7 @@ function FenetreContenu({
       ) : (
         <div className="ec-questionnaire">
           <label className="ec-curseur">
-            {question + 1}. {QUESTIONS_MOT[question]}
+            {question + 1}. {contenu.questions[question] ?? QUESTIONS_MOT[question]}
             <textarea
               className="ec-champ ec-zone-texte"
               rows={4}

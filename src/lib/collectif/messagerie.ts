@@ -10,7 +10,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
-import { contenuClient } from "./contenus";
+import { lireDemandes, nomDeLEnvoi } from "./demandes";
 import { nomTelechargement } from "./documents";
 import { lireInstant } from "./etats";
 import { extraitDe, type Message } from "./messages";
@@ -71,19 +71,25 @@ async function habiller(supabase: SupabaseClient, editionId: string, lignes: Lig
     if (error) console.error("[collectif] documents cités illisibles", error.code, error.message);
     for (const d of data ?? []) docs.set(d.id, { libelle: d.libelle, ...(d.r2_key ? await signer(d.r2_key, d.libelle) : RIEN) });
   }
-  /* Les envois du client cités : leur contenu (« Logo »), leur nom, leur lien. */
+  /* Les envois du client cités : leur demande (« Logo », « Le mot du proviseur »), leur nom, leur lien. */
   const idsEnvois = [...new Set(lignes.map((l) => l.contenu_id).filter((x): x is string => Boolean(x)))];
   const envois = new Map<string, { libelle: string } & Signe>();
   if (idsEnvois.length) {
-    const { data, error } = await supabase
-      .from("collectif_contenus")
-      .select("id, type, nom_origine, r2_key")
-      .eq("edition_id", editionId)
-      .in("id", idsEnvois)
-      .returns<{ id: string; type: string; nom_origine: string | null; r2_key: string | null }[]>();
+    const [{ data, error }, ed] = await Promise.all([
+      supabase
+        .from("collectif_contenus")
+        .select("id, type, nom_origine, r2_key")
+        .eq("edition_id", editionId)
+        .in("id", idsEnvois)
+        .returns<{ id: string; type: string; nom_origine: string | null; r2_key: string | null }[]>(),
+      /* Les noms des demandes (T-191) : une lecture, seulement quand un message cite un envoi. */
+      supabase.from("collectif_editions").select("contenus_demandes").eq("id", editionId).maybeSingle<{ contenus_demandes: unknown }>(),
+    ]);
     if (error) console.error("[collectif] envois cités illisibles", error.code, error.message);
+    if (ed.error) console.error("[collectif] demandes illisibles", ed.error.code, ed.error.message);
+    const demandes = lireDemandes(ed.data?.contenus_demandes);
     for (const c of data ?? []) {
-      const type = contenuClient(c.type)?.libelle ?? c.type;
+      const type = nomDeLEnvoi(c.type, demandes) ?? "Un envoi";
       envois.set(c.id, {
         libelle: c.nom_origine ? `${type} · ${c.nom_origine}` : type,
         ...(c.r2_key ? await signer(c.r2_key, c.nom_origine ?? type) : RIEN),

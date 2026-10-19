@@ -451,6 +451,21 @@
 .ec-espace .ec-tdb-puce:disabled {
   cursor: default;
 }
+/* T-191 : le nom d'une demande est celui de l'atelier (80 caractères au plus) :
+   un nom long passe à la ligne dans sa puce, jamais hors de la carte. */
+.ec-espace .ec-tdb-puce {
+  max-width: 100%;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.ec-espace .ec-tdb-puce .ec-tdb-coche {
+  flex: none;
+}
+.ec-espace .ec-tdb-puce-nom {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
 .ec-espace .ec-tdb-puce--recue {
   border: 1px solid transparent;
   background: var(--ec-accent-soft);

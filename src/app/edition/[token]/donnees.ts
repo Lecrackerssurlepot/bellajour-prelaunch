@@ -14,7 +14,8 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
-import { apercuPossible, contenuClient, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
+import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
+import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
 import { arbreDesPhotos, compterPersonnes, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
@@ -148,8 +149,14 @@ export type EnvoiClient = {
  * Les envois COURANTS d'une édition (`envoisCourants`). Repli tant que la
  * migration 20261016 n'est pas passée : sans `remplace_le`, aucun fichier
  * n'est « ancien », tous se montrent.
+ *
+ * T-191 : un envoi porte le NOM de sa demande (« Le mot du proviseur ») ; celui
+ * d'une demande que l'atelier a retirée ne se montre plus au client (il reste
+ * à l'atelier).
  */
-export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
+export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_demandes">): Promise<EnvoiClient[]> {
+  const editionId = edition.id;
+  const demandes = lireDemandes(edition.contenus_demandes);
   const supabase = makeSupabase();
   const colonnes = "id, type, r2_key, nom_origine, reponses, recu_le";
   const avec = await supabase.from("collectif_contenus").select(`${colonnes}, remplace_le`).eq("edition_id", editionId).limit(500);
@@ -161,14 +168,14 @@ export async function lireEnvois(editionId: string): Promise<EnvoiClient[]> {
     if (sans.error) echec("envois du client (repli)", sans.error);
     lignes = (sans.data ?? []) as LigneEnvoi[];
   }
-  const courants = [...envoisCourants(lignes).values()].flat();
+  const courants = [...envoisCourants(lignes, (type) => modeDeLEnvoi(type, demandes)).values()].flat();
   return Promise.all(
     courants.map(async (l) => {
       const [url, telecharger] = await Promise.all([signerOuRien(l.r2_key), signerTelechargement(l.r2_key, l.nom_origine)]);
       return {
         id: l.id,
         type: l.type,
-        libelle: contenuClient(l.type)?.libelle ?? l.type,
+        libelle: nomDeLEnvoi(l.type, demandes) ?? l.type,
         nom: l.nom_origine,
         recuLe: formaterJourParis(l.recu_le),
         url,
@@ -191,7 +198,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       .not("confirmee_le", "is", null)
       .order("confirmee_le", { ascending: false })
       .limit(20000),
-    lireEnvois(edition.id),
+    lireEnvois(edition),
     supabase
       .from("collectif_messages")
       .select("texte, created_at")
