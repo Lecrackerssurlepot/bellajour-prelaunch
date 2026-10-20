@@ -1,7 +1,7 @@
 ---
 id: T-202
 titre: Les sauvegardes de la base et des photos, et les plans d'hébergement adaptés à un usage commercial, ne sont pas confirmés avant le premier vrai client
-etat: nouveau
+etat: en pause
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -24,4 +24,8 @@ le plan Vercel ; je documente la marche de restauration et j'en fais un essai su
 Dépense : avis requis.
 
 ## Ce qui a été fait
-Rien encore.
+- 20/10, décision de Mathias : « Je prends l'abonnement payant dès qu'on a signé le premier
+  contrat ! » En pause jusqu'à la signature. D'ici là : pas de sauvegarde quotidienne de la base
+  (plan gratuit Supabase), et le plan Vercel gratuit est réservé à un usage non commercial. À la
+  signature : il prend les deux plans, je vérifie les sauvegardes et j'écris la marche de
+  restauration, essayée sur une copie.
