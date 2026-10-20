@@ -30,7 +30,7 @@ import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotCo
 import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
-import FenetreLien, { FenetrePartage, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
+import FenetreLien, { FenetrePartage, FenetreQr, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
 import QrCode from "../../_composants/QrCode";
 import { useSondage } from "../../_composants/useSondage";
 
@@ -127,6 +127,7 @@ export default function Collecte(p: Props) {
   const [survol, setSurvol] = useState<string | null>(null);
   const [fenetreLien, setFenetreLien] = useState(false);
   const [partage, setPartage] = useState<LienPartage | null>(null);
+  const [grandQr, setGrandQr] = useState<LienPartage | null>(null);
   const [menu, setMenu] = useState<string | null>(null);
   const [renommer, setRenommer] = useState<{ id: string; nom: string } | null>(null);
   const [plafond, setPlafond] = useState<{ id: string | null; nom: string; valeur: number; sansLimite: boolean } | null>(null);
@@ -828,6 +829,7 @@ export default function Collecte(p: Props) {
                 menuOuvert={menu === "general"}
                 onMenu={() => setMenu((m) => (m === "general" ? null : "general"))}
                 onPartager={() => setPartage(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
+                onGrand={() => setGrandQr(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
                 onVoir={() => ouvrir("participants")}
                 actions={[{ libelle: "Changer le nombre de photos", note: "pour chaque personne", faire: () => setPlafond({ id: null, nom: liens.general.nom, valeur: p.plafondGeneral ?? Math.min(30, p.max), sansLimite: false }) }]}
               />
@@ -847,6 +849,7 @@ export default function Collecte(p: Props) {
                 menuOuvert={menu === l.id}
                 onMenu={() => setMenu((m) => (m === l.id ? null : l.id))}
                 onPartager={() => setPartage(lienDe(l.nom, l.cle, l.plafond, l.n))}
+                onGrand={() => setGrandQr(lienDe(l.nom, l.cle, l.plafond, l.n))}
                 onVoir={() => ouvrir(`lien:${l.id}`)}
                 actions={[
                   { libelle: "Changer le nom", faire: () => setRenommer({ id: l.id, nom: l.nom }) },
@@ -875,6 +878,7 @@ export default function Collecte(p: Props) {
         />
       ) : null}
       {partage ? <FenetrePartage lien={partage} contexte={contexte} onFermer={() => setPartage(null)} /> : null}
+      {grandQr ? <FenetreQr lien={grandQr} contexte={contexte} onFermer={() => setGrandQr(null)} /> : null}
       {renommer ? (
         <FenetreNom
           nom={renommer.nom}
@@ -961,6 +965,7 @@ function CarteLien(c: {
   menuOuvert: boolean;
   onMenu: () => void;
   onPartager: () => void;
+  onGrand: () => void;
   onVoir: () => void;
   actions: { libelle: string; note?: string; danger?: boolean; faire: () => void }[];
 }) {
@@ -1006,6 +1011,9 @@ function CarteLien(c: {
         </span>
         {c.ouverte ? (
           <>
+            <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={c.onGrand}>
+              Afficher en grand
+            </button>
             <button type="button" className="ec-bouton ec-bouton--petit" onClick={c.onPartager}>
               Partager
             </button>

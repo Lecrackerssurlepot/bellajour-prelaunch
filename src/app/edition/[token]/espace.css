@@ -1384,6 +1384,19 @@
 .ec-espace .ec-qr-grand {
   display: grid;
   place-items: center;
+  gap: 14px;
+}
+/* T-197 : le nom du lien sous le code, lisible de loin (le QR scotché à bord, projeté en salle). */
+.ec-espace .ec-qr-grand-nom {
+  max-width: 100%;
+  font-variant-numeric: lining-nums;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 .ec-espace .ec-qr-grand-note {
   margin: 0;
@@ -2312,13 +2325,16 @@
 }
 .ec-espace .ec-li-pied {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding-top: 12px;
   border-top: 1px solid var(--ec-line);
 }
+/* T-197 : avec « Afficher en grand » le pied a trois gestes. La règle garde 180 px au moins, sinon elle passe
+   seule sur sa ligne et les gestes tiennent dessous (sur téléphone, elle se tassait en une colonne de mots). */
 .ec-espace .ec-li-regle {
-  flex: 1;
+  flex: 1 1 180px;
   min-width: 0;
 }
 .ec-espace .ec-li-plus {
@@ -3130,6 +3146,10 @@
 .ec-espace .ec-partage--quatre {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ec-espace .ec-partage--deux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .ec-espace .ec-partage .ec-bouton {
   align-self: auto;

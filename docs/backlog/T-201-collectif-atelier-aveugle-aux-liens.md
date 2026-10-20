@@ -1,7 +1,7 @@
 ---
 id: T-201
 titre: L'atelier ne voit pas les liens de contribution d'une édition et ne peut pas en créer
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: confort
 autonomie: libre
@@ -24,4 +24,8 @@ Dans « Réglages et liens », la liste des liens de contribution (nom, plafond,
 photos) et la création d'un lien par l'atelier, journalisée.
 
 ## Ce qui a été fait
-Rien encore.
+20/10, lot « a3 » (rien de commité).
+- Onglet « Réglages et liens » : une carte « Liens de contribution » (`[id]/PanneauProvenances.tsx`) : nom, règle (« 30 photos par personne », « Sans limite »), personnes, photos, actif ou supprimé ; « Copier le lien » ; « Afficher en grand » (QR, T-197) ; et « Créer un lien » (nom + nombre de 5 à 100 ou « Sans limite », le plafond de l'atelier borne le haut ; même `Pastille` que le formulaire de l'édition). Le lien écrit s'affiche aussitôt, le nom se vide et le focus y revient pour le bateau suivant.
+- Route `POST /api/admin/collectif/editions/[id]/provenances` : l'admin revérifié (`quiEstConnecteRequete`), les mêmes règles que la création par le responsable (`lirePlafondLien`, clé aléatoire de 22 caractères), journal « Lien de dépôt créé par l'atelier (Mathias) » qui ne contient jamais la clé. Deux refus que le responsable n'a pas : nom déjà porté par un lien ouvert (409) ou réservé (« Lien général », « Le responsable », « L'atelier », « Tous les participants »), édition archivée (409). Sans la migration de la révision, 503 pour un lien plafonné.
+- Vu : création, doublon, nom réservé, nombre trop haut, « Sans limite », copie, QR en grand, 1440 et 375 (fausse base, la création y est réellement écrite par la route).
+- Reste : le refus de doublon n'existe pas côté responsable (`api/collectif/provenances`, hors lot) : deux liens du même nom restent possibles là, et sont départagés à l'affichage (« Bateau 1 (2) »). Le chemin d'écriture n'a pas été joué contre la vraie base (interdit).

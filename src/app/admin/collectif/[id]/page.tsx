@@ -16,6 +16,7 @@ import { libelleCreneau } from "@/lib/collectif/creneaux";
 import { MIGRATION_COLLECTIF, MIGRATION_RDV } from "@/lib/collectif/migration";
 import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import { etapesEdition, prochaineEtape } from "@/lib/collectif/prochaine";
+import { plafondLienMax } from "@/lib/collectif/plafonds";
 import { quandRdv } from "@/lib/collectif/boite";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import { premierNouveau } from "@/lib/collectif/nouveaux";
@@ -30,6 +31,7 @@ import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
 import PanneauRendezVous from "./PanneauRendezVous";
 import PanneauLiens from "./PanneauLiens";
+import PanneauProvenances from "./PanneauProvenances";
 import LienResponsable from "./LienResponsable";
 import EnvoiLienResponsable from "./EnvoiLienResponsable";
 import PanneauLivraison from "./PanneauLivraison";
@@ -560,6 +562,16 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
               />
               <div className="eca-pile">
                 <PanneauLiens id={e.id} liens={liens} />
+                {/* T-201 : les liens de contribution (un par bateau, par équipe), leur création, leur QR en grand (T-197). */}
+                <PanneauProvenances
+                  id={e.id}
+                  liens={lu.fiche.liens.map(({ cle, ...l }) => ({ ...l, url: `${liens.depot}?p=${cle}` }))}
+                  depot={liens.depot}
+                  max={plafondLienMax(e)}
+                  ouverte={etat === "preparation"}
+                  archivee={Boolean(e.archive_le)}
+                  cloture={e.cloture_le ? formaterJourParis(e.cloture_le) : ""}
+                />
                 <EnvoiLienResponsable id={e.id} />
               </div>
             </div>
