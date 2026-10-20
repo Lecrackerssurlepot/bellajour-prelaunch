@@ -23,7 +23,7 @@ import { useEffect, useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { DOUBLES_MAX, PARTS_TEXTE, type BriefLigne, type Composition } from "@/lib/collectif/brief";
 import type { StyleMur } from "../donnees";
-import { listeEnFrancais, phraseDesStyles, visuelsDe, type Partie } from "./pieces";
+import { listeEnFrancais, phraseDesStyles, TAILLES_AFFICHAGE, visuelsDe, type Partie } from "./pieces";
 
 const rien = () => () => {};
 
@@ -92,7 +92,7 @@ export function BarreComposition({
       <div className="ec-mur-mini" aria-hidden="true">
         {vu.couvertures.map((x) => (
           <span key={x.cle} className="ec-mur-mini-couv">
-            {x.url ? <img src={x.url} alt="" decoding="async" /> : null}
+            {x.url ? <img src={x.url} srcSet={x.srcSet ?? undefined} sizes={x.srcSet ? TAILLES_AFFICHAGE.mini : undefined} alt="" decoding="async" /> : null}
           </span>
         ))}
         {vu.palette ? (
@@ -108,7 +108,7 @@ export function BarreComposition({
         {vu.doubles.length ? (
           vu.doubles.map((x) => (
             <span key={x.cle} className="ec-mur-mini-double">
-              {x.url ? <img src={x.url} alt="" decoding="async" /> : null}
+              {x.url ? <img src={x.url} srcSet={x.srcSet ?? undefined} sizes={x.srcSet ? TAILLES_AFFICHAGE.mini : undefined} alt="" decoding="async" /> : null}
             </span>
           ))
         ) : (
@@ -255,7 +255,9 @@ export function FeuilleComposition({
             <div className="ec-compo-couvs">
               {vu.couvertures.map((x) => (
                 <figure key={x.cle}>
-                  <div className="ec-compo-couv">{x.url ? <img src={x.url} alt={`Couverture du style ${x.style}`} decoding="async" /> : null}</div>
+                  <div className="ec-compo-couv">
+                    {x.url ? <img src={x.url} srcSet={x.srcSet ?? undefined} sizes={x.srcSet ? TAILLES_AFFICHAGE.composition : undefined} alt={`Couverture du style ${x.style}`} decoding="async" /> : null}
+                  </div>
                   <figcaption>de {x.style}</figcaption>
                 </figure>
               ))}
@@ -298,7 +300,14 @@ export function FeuilleComposition({
             {vu.typos ? (
               <div className="ec-compo-specimen">
                 {vu.typos.echantillon ? (
-                  <img className="ec-compo-echantillon" src={vu.typos.echantillon} alt={`Échantillon des typographies ${vu.typos.polices}`} decoding="async" />
+                  <img
+                    className="ec-compo-echantillon"
+                    src={vu.typos.echantillon}
+                    srcSet={vu.typos.echantillonSrcSet ?? undefined}
+                    sizes={vu.typos.echantillonSrcSet ? TAILLES_AFFICHAGE.ficheEchantillon : undefined}
+                    alt={`Échantillon des typographies ${vu.typos.polices}`}
+                    decoding="async"
+                  />
                 ) : (
                   <span className="ec-compo-aa">Aa</span>
                 )}
@@ -320,7 +329,9 @@ export function FeuilleComposition({
             <div className="ec-compo-doubles">
               {vu.doubles.map((x) => (
                 <figure key={x.cle}>
-                  <div className="ec-compo-double">{x.url ? <img src={x.url} alt={`Double page ${x.libelle}, du style ${x.style}`} decoding="async" /> : null}</div>
+                  <div className="ec-compo-double">
+                    {x.url ? <img src={x.url} srcSet={x.srcSet ?? undefined} sizes={x.srcSet ? TAILLES_AFFICHAGE.composition : undefined} alt={`Double page ${x.libelle}, du style ${x.style}`} decoding="async" /> : null}
+                  </div>
                   <figcaption>
                     {x.libelle} · {x.style}
                   </figcaption>

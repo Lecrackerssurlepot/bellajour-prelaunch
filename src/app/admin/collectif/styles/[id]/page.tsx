@@ -74,6 +74,8 @@ export default async function PageStyle({ params }: { params: Promise<{ id: stri
             titres: st.typos?.titres ?? "",
             texte: st.typos?.texte ?? "",
             echantillon_key: st.typos?.echantillon_key ?? null,
+            /* T-172 : les tailles réduites repartent à l'enregistrement, sinon il les effacerait. */
+            ...(st.typos?.echantillon_tailles ? { echantillon_tailles: st.typos.echantillon_tailles } : {}),
           },
           couvertures: st.couvertures ?? [],
           doubles: TYPES_DOUBLES.map(

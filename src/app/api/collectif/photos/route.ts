@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { signerGet } from "@/lib/atelier/r2";
+import { signerGet, signerLectureVignette } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
@@ -129,9 +129,11 @@ export async function POST(request: Request) {
     tranche.map(async (p) => {
       let vignette: string | null = null;
       try {
-        /* Sans vignette (un HEIC lu par Chrome) : l'original, si le navigateur
-           sait l'afficher ; un HEIC ne s'affiche pas, la tuile le dira. */
-        if (p.vignette_key) vignette = await signerGet(p.vignette_key);
+        /* La vignette garde la même adresse une heure durant (T-176) : le navigateur
+           la sert depuis son cache. Sans vignette (un HEIC lu par Chrome) : l'original,
+           signé comme avant, si le navigateur sait l'afficher ; un HEIC ne s'affiche
+           pas, la tuile le dira. */
+        if (p.vignette_key) vignette = await signerLectureVignette(p.vignette_key);
         else if (p.mime !== "image/heic" && p.mime !== "image/heif") vignette = await signerGet(p.r2_key);
       } catch {
         vignette = null;
@@ -169,7 +171,7 @@ export async function POST(request: Request) {
         const p = [...toutes].reverse().find((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
         if (!p?.vignette_key) return;
         try {
-          couvertures[n.cle] = await signerGet(p.vignette_key);
+          couvertures[n.cle] = await signerLectureVignette(p.vignette_key);
         } catch {
           /* une couverture manquée laisse l'icône du dossier */
         }

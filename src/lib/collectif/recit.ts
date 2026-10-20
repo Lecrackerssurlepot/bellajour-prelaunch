@@ -190,6 +190,11 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Style retiré du mur par ${par}.`;
     case "style_image":
       return `Image ajoutée par ${par}.`;
+    case "style_tailles": {
+      /* T-172 : le rattrapage des images d'avant (scripts/collectif-styles-vignettes.ts). */
+      const n = typeof payload.images === "number" ? payload.images : 0;
+      return `Tailles réduites posées sur ${n} image${n > 1 ? "s" : ""} (${par}).`;
+    }
     case "mail_envoye":
       return `Mail ${libelleMail(payload.code)} envoyé à ${String(payload.a ?? "?")}.`;
     case "mail_echec":

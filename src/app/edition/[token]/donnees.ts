@@ -9,7 +9,7 @@
 
 import { cache } from "react";
 import { makeSupabase } from "@/lib/supabase";
-import { signerGet } from "@/lib/atelier/r2";
+import { signerGet, signerLectureVignette } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
@@ -17,6 +17,7 @@ import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
+import { lireTailles, srcSetDe } from "@/lib/collectif/styles";
 import { arbreDesPhotos, compterPersonnes, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
@@ -434,15 +435,20 @@ export function propositionEnAttente(d: DocumentDossier): boolean {
 
 /* ───────────────────────────── le mur des styles ───────────────────────────── */
 
+/**
+ * Un style vu par le mur. `url` est l'image MAÎTRESSE (le repli, comme avant
+ * T-172) ; `srcSet` la liste des tailles réduites et de la maîtresse, à
+ * adresses stables (T-176), absente pour une image qui n'a pas de tailles.
+ */
 export type StyleMur = {
   id: string;
   slug: string;
   nom: string;
   description: string | null;
   palettes: { cle: string; nom: string; couleurs: string[] }[];
-  typos: { titres: string; texte: string; echantillon: string | null };
-  couvertures: { cle: string; url: string | null; legende: string }[];
-  doubles: { type: string; url: string | null; legende: string }[];
+  typos: { titres: string; texte: string; echantillon: string | null; echantillonSrcSet?: string | null };
+  couvertures: { cle: string; url: string | null; legende: string; srcSet?: string | null }[];
+  doubles: { type: string; url: string | null; legende: string; srcSet?: string | null }[];
 };
 
 /** Un magazine vu par le mur : ses colonnes de brief (celles de D24 absentes avant la migration 20261017, `compositionDu` lit les deux). */
@@ -459,6 +465,28 @@ async function signerOuRien(key: string | null | undefined): Promise<string | nu
   } catch {
     return null;
   }
+}
+
+/**
+ * Une image du mur (T-172) : la maîtresse signée comme avant, et le `srcset`
+ * de ses tailles relues par `lireTailles` (une taille qui ne dérive pas de
+ * cette maîtresse est écartée), signées à adresse STABLE (`signerLectureVignette`,
+ * T-176) pour que le navigateur les garde d'une visite à l'autre.
+ */
+async function imageDuMur(slug: string, key: string | null | undefined, tailles: unknown): Promise<{ url: string | null; srcSet: string | null }> {
+  const url = await signerOuRien(key);
+  const liste = url ? lireTailles(slug, key, tailles) : [];
+  if (!liste.length) return { url, srcSet: null };
+  const signees = await Promise.all(
+    liste.map(async (t) => {
+      try {
+        return { largeur: t.largeur, url: await signerLectureVignette(t.key) };
+      } catch {
+        return { largeur: t.largeur, url: null };
+      }
+    })
+  );
+  return { url, srcSet: srcSetDe(signees) };
 }
 
 /** L'adresse qui télécharge un fichier sous son nom d'origine (`nomTelechargement`). */
@@ -505,22 +533,29 @@ export async function chargerMur(edition: EditionLigne): Promise<{ styles: Style
   type Brut = {
     id: string; slug: string; nom: string; description: string | null; segment: string;
     palettes: { cle: string; nom: string; couleurs: string[] }[] | null;
-    typos: { titres?: string; texte?: string; echantillon_key?: string | null } | null;
-    couvertures: { cle: string; image_key: string; legende: string }[] | null;
-    doubles: { type: string; image_key: string | null; legende: string }[] | null;
+    typos: { titres?: string; texte?: string; echantillon_key?: string | null; echantillon_tailles?: unknown } | null;
+    couvertures: { cle: string; image_key: string; legende: string; tailles?: unknown }[] | null;
+    doubles: { type: string; image_key: string | null; legende: string; tailles?: unknown }[] | null;
   };
   const visibles = ((st.data ?? []) as Brut[]).filter((s) => styleVisible(edition.styles_segment, s.segment));
   const styles = await Promise.all(
-    visibles.map(async (s) => ({
-      id: s.id,
-      slug: s.slug,
-      nom: s.nom,
-      description: s.description,
-      palettes: s.palettes ?? [],
-      typos: { titres: s.typos?.titres ?? "", texte: s.typos?.texte ?? "", echantillon: await signerOuRien(s.typos?.echantillon_key) },
-      couvertures: await Promise.all((s.couvertures ?? []).map(async (c) => ({ cle: c.cle, url: await signerOuRien(c.image_key), legende: c.legende }))),
-      doubles: await Promise.all((s.doubles ?? []).map(async (d) => ({ type: d.type, url: await signerOuRien(d.image_key), legende: d.legende }))),
-    }))
+    visibles.map(async (s) => {
+      const echantillon = await imageDuMur(s.slug, s.typos?.echantillon_key, s.typos?.echantillon_tailles);
+      return {
+        id: s.id,
+        slug: s.slug,
+        nom: s.nom,
+        description: s.description,
+        palettes: s.palettes ?? [],
+        typos: { titres: s.typos?.titres ?? "", texte: s.typos?.texte ?? "", echantillon: echantillon.url, echantillonSrcSet: echantillon.srcSet },
+        couvertures: await Promise.all(
+          (s.couvertures ?? []).map(async (c) => ({ cle: c.cle, legende: c.legende, ...(await imageDuMur(s.slug, c.image_key, c.tailles)) }))
+        ),
+        doubles: await Promise.all(
+          (s.doubles ?? []).map(async (d) => ({ type: d.type, legende: d.legende, ...(await imageDuMur(s.slug, d.image_key, d.tailles)) }))
+        ),
+      };
+    })
   );
   return { styles, magazines: mags };
 }

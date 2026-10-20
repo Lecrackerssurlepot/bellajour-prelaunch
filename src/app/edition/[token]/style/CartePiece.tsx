@@ -16,7 +16,7 @@
 import Link from "next/link";
 import { useId } from "react";
 import type { PieceVue } from "./pieces";
-import { genre } from "./pieces";
+import { genre, TAILLES_AFFICHAGE } from "./pieces";
 
 export default function CartePiece({
   piece,
@@ -68,7 +68,7 @@ export default function CartePiece({
             ))}
           </span>
         ) : piece.url ? (
-          <img src={piece.url} alt="" loading="lazy" decoding="async" />
+          <img src={piece.url} srcSet={piece.srcSet ?? undefined} sizes={piece.srcSet ? TAILLES_AFFICHAGE.carte : undefined} alt="" loading="lazy" decoding="async" />
         ) : piece.genre === "typos" ? (
           <span className="ec-piece-aa">
             <b>Aa</b>

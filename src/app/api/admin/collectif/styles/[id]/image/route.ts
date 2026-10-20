@@ -9,6 +9,7 @@ import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
 import { EMPLACEMENTS_IMAGE, nomImageStyle, type EmplacementImage } from "@/lib/collectif/styles";
+import { taillesPourImage } from "@/lib/collectif/taillesStyle";
 
 /**
  * POST /api/admin/collectif/styles/[id]/image?emplacement=…&cle=… — une image
@@ -24,6 +25,12 @@ import { EMPLACEMENTS_IMAGE, nomImageStyle, type EmplacementImage } from "@/lib/
  * Le nom est VERSIONNÉ (suffixe aléatoire) : remplacer une image crée un
  * nouvel objet, jamais un écrasement qu'un cache servirait encore. La clé
  * n'entre dans le style qu'à l'enregistrement de l'éditeur.
+ *
+ * T-172 : la route écrit AUSSI les tailles de 600 et 1 200 px de large
+ * (`taillesPourImage`, à côté de la maîtresse) et les rend dans `tailles` ;
+ * l'éditeur les range avec la clé, le mur les sert en `srcset`. Une
+ * production ratée ne fait pas échouer l'envoi : `tailles` est vide et le mur
+ * montrera la maîtresse, comme avant.
  */
 
 export const runtime = "nodejs";
@@ -78,12 +85,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "ecriture_impossible" }, { status: 502 });
   }
 
-  const journal = await journaliser(supabase, { styleId: id }, "style_image", { emplacement, par: prenomDe(qui) }, qui);
+  const tailles = await taillesPourImage(key, octets);
+  const journal = await journaliser(
+    supabase,
+    { styleId: id },
+    "style_image",
+    { emplacement, par: prenomDe(qui), tailles: tailles.filter((t) => t.key !== key).map((t) => t.largeur) },
+    qui
+  );
   let lecture: string | null = null;
   try {
     lecture = await signerGet(key);
   } catch {
     lecture = null;
   }
-  return NextResponse.json({ ok: true, key, url: lecture, journal }, { status: 201 });
+  return NextResponse.json({ ok: true, key, url: lecture, tailles, journal }, { status: 201 });
 }

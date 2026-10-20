@@ -199,6 +199,75 @@ export async function signerGet(
   return getSignedUrl(makeR2(), cmd, { expiresIn: ttl });
 }
 
+/* ─────────── T-176 : une vignette garde la MÊME adresse le temps d'une fenêtre ───────────
+
+   Décision de Mathias : « il faut du cache, il ne faut pas que ça recharge à
+   chaque fois ». Une adresse signée par `signerGet` change à chaque rendu
+   (`X-Amz-Date` = l'instant de la signature) : le navigateur range chaque
+   vignette sous une adresse neuve et la retélécharge, à chaque retour sur
+   Photos (environ 2,4 Mo par page de 120 vignettes, estimation de T-176).
+
+   `signerLectureVignette` signe à une date ARRONDIE au début de sa fenêtre
+   (`debutDeFenetre`) : toute la fenêtre, la même clé donne la même adresse,
+   octet pour octet, et le navigateur la sert depuis son cache. La validité
+   couvre la fenêtre PLUS une marge : signée au premier instant, l'adresse vit
+   `VIGNETTE_TTL_SECONDS` ; servie au dernier instant de la fenêtre, il lui
+   reste encore `MARGE_VIGNETTE_SECONDS`, c'est-à-dire la même heure qu'une
+   adresse de `signerGet` signée à cet instant-là. Rien ne périme plus tôt
+   qu'aujourd'hui ; une adresse peut seulement vivre jusqu'à deux heures au
+   lieu d'une.
+
+   `response-cache-control` fait partie de l'adresse signée : R2 répond alors
+   `Cache-Control: private, max-age=…` même pour une vignette déposée AVANT
+   (aucun en-tête posé à l'envoi). `private` : aucun cache partagé (proxy,
+   CDN) ne garde une image d'un dossier.
+
+   ⚠️ RÉSERVÉ AUX VIGNETTES (images dérivées, petites, immuables à leur clé).
+   Les originaux, les lots téléchargés, les PDF et les liens Cloudprinter
+   gardent `signerGet` et son TTL : ni leur durée ni leur adresse ne changent.
+   ⚠️ Les PUT SIGNÉS (`signerPut`) ne portent PAS de `Cache-Control` : le
+   navigateur devrait alors l'envoyer en en-tête, et le CORS du coffre
+   l'accepter. Ce serait changer les envois et le CORS ; l'en-tête de réponse
+   signé couvre les nouvelles vignettes comme les anciennes. Seules les
+   écritures du SERVEUR (`ecrireObjet(…, { cacheControl })`) le posent. */
+
+/** La fenêtre pendant laquelle une vignette garde la même adresse : une heure. */
+export const FENETRE_VIGNETTE_SECONDS = 60 * 60;
+/** Ce qui reste au moins de validité à une adresse servie au dernier instant de sa fenêtre : la durée d'aujourd'hui. */
+export const MARGE_VIGNETTE_SECONDS = APERCU_TTL_SECONDS;
+/** La validité d'une adresse de vignette : la fenêtre + la marge (deux heures). */
+export const VIGNETTE_TTL_SECONDS = FENETRE_VIGNETTE_SECONDS + MARGE_VIGNETTE_SECONDS;
+/** L'en-tête de cache d'une vignette : jamais plus longtemps que la vie de son adresse. */
+export const CACHE_VIGNETTE = `private, max-age=${VIGNETTE_TTL_SECONDS}`;
+
+/**
+ * Le début de la fenêtre qui contient `maintenantMs` (arrondi à la fenêtre,
+ * en UTC). PURE : testée dans scripts/verif-atelier.ts.
+ */
+export function debutDeFenetre(maintenantMs: number, fenetreSecondes = FENETRE_VIGNETTE_SECONDS): Date {
+  const f = fenetreSecondes * 1000;
+  return new Date(Math.floor(maintenantMs / f) * f);
+}
+
+/**
+ * L'adresse STABLE d'une vignette : la même pour toute la fenêtre de
+ * `maintenantMs` (une heure), valable `VIGNETTE_TTL_SECONDS` depuis le début
+ * de la fenêtre, et servie avec `CACHE_VIGNETTE`.
+ */
+export async function signerLectureVignette(key: string, maintenantMs = Date.now()): Promise<string> {
+  return signerLectureVignetteLe(key, debutDeFenetre(maintenantMs));
+}
+
+/**
+ * La même signature, à une date donnée. Pour le harnais et la vérification en
+ * direct (une adresse signée il y a 1 h 58 doit encore ouvrir, une signée il y
+ * a 2 h 02 plus) ; les écrans passent par `signerLectureVignette`.
+ */
+export async function signerLectureVignetteLe(key: string, signeLe: Date): Promise<string> {
+  const cmd = new GetObjectCommand({ Bucket: bucket(), Key: key, ResponseCacheControl: CACHE_VIGNETTE });
+  return getSignedUrl(makeR2(), cmd, { expiresIn: VIGNETTE_TTL_SECONDS, signingDate: signeLe });
+}
+
 /**
  * Un en-tête `Content-Disposition` que les deux consommateurs comprennent.
  *
@@ -315,8 +384,17 @@ export async function lireObjet(key: string, abortSignal?: AbortSignal): Promise
  * md5 (cf. `empreinteObjet`), et tout le coffre repose sur cette égalité.
  * Un souvenir n'ira jamais chez Cloudprinter, mais un coffre à deux régimes
  * d'empreinte finirait par tromper quelqu'un. Les erreurs REMONTENT.
+ *
+ * `options.cacheControl` (T-176) : l'en-tête de cache rangé AVEC l'objet,
+ * pour une vignette que le serveur écrit lui-même (`CACHE_VIGNETTE`). Sans
+ * lui, rien ne change pour les appelants d'avant.
  */
-export async function ecrireObjet(key: string, octets: Uint8Array, contentType: string): Promise<void> {
+export async function ecrireObjet(
+  key: string,
+  octets: Uint8Array,
+  contentType: string,
+  options?: { cacheControl?: string }
+): Promise<void> {
   await makeR2().send(
     new PutObjectCommand({
       Bucket: bucket(),
@@ -324,6 +402,7 @@ export async function ecrireObjet(key: string, octets: Uint8Array, contentType: 
       Body: octets,
       ContentType: contentType,
       ContentLength: octets.byteLength,
+      ...(options?.cacheControl ? { CacheControl: options.cacheControl } : {}),
     })
   );
 }

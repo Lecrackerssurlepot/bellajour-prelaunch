@@ -16,6 +16,7 @@
  * n'avoir rien du tout, et il tourne en une seconde.
  */
 
+import { createHash, createHmac } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import ts from "typescript";
@@ -344,7 +345,19 @@ import {
   remisePourRang,
 } from "@/lib/atelier/exemplaires";
 import { htCentimesPourPages, ttcPourPays, decompteExemplaires } from "@/lib/atelier/prix";
-import { estAbsenceR2, racineEffacable } from "@/lib/atelier/r2";
+import {
+  APERCU_TTL_SECONDS,
+  CACHE_VIGNETTE,
+  FENETRE_VIGNETTE_SECONDS,
+  MARGE_VIGNETTE_SECONDS,
+  VIGNETTE_TTL_SECONDS,
+  debutDeFenetre,
+  estAbsenceR2,
+  racineEffacable,
+  signerGet,
+  signerLectureVignette,
+  signerLectureVignetteLe,
+} from "@/lib/atelier/r2";
 import { formaterJour } from "@/lib/atelier/dates";
 import {
   ETATS_ENGAGES,
@@ -4050,6 +4063,55 @@ ok("500 R2 : une panne",
 ok("null/undefined ne sont jamais une absence (pas de silence par defaut)",
    !estAbsenceR2(null) && !estAbsenceR2(undefined));
 
+/* ════════ T-176 : une vignette garde la MÊME adresse le temps d'une fenêtre ════════ */
+
+titre("— T-176 : la fenêtre de signature d'une vignette (pure) —");
+{
+  const H = 3600 * 1000;
+  const t0 = Date.UTC(2026, 9, 20, 14, 0, 0, 0);
+  ok("la fenetre d'une vignette est d'une heure, la marge vaut la duree d'aujourd'hui (une heure), la validite les deux",
+     FENETRE_VIGNETTE_SECONDS === 3600 && MARGE_VIGNETTE_SECONDS === APERCU_TTL_SECONDS && VIGNETTE_TTL_SECONDS === FENETRE_VIGNETTE_SECONDS + MARGE_VIGNETTE_SECONDS);
+  ok("14:00:00.000, 14:37:12.345 et 14:59:59.999 tombent dans la meme fenetre (14:00 UTC)",
+     [t0, t0 + 37 * 60 * 1000 + 12345, t0 + H - 1].every((t) => debutDeFenetre(t).getTime() === t0));
+  ok("15:00:00.000 ouvre la fenetre suivante, 13:59:59.999 est dans la precedente",
+     debutDeFenetre(t0 + H).getTime() === t0 + H && debutDeFenetre(t0 - 1).getTime() === t0 - H);
+  /* Chaque seconde d'une fenêtre : signée au début, l'adresse n'est jamais datée dans le futur, et il lui reste au moins la marge. */
+  let pire = Infinity;
+  let futur = false;
+  for (let t = t0; t < t0 + H; t += 1000) {
+    const debut = debutDeFenetre(t).getTime();
+    if (debut > t) futur = true;
+    pire = Math.min(pire, debut + VIGNETTE_TTL_SECONDS * 1000 - t);
+  }
+  ok(`sur toute la fenetre : jamais datee dans le futur, il reste toujours au moins la marge (pire cas ${Math.round(pire / 60000)} min)`,
+     !futur && pire >= MARGE_VIGNETTE_SECONDS * 1000);
+  const maxAge = Number(/max-age=(\d+)/.exec(CACHE_VIGNETTE)?.[1]);
+  ok("l'en-tete de cache est prive (aucun cache partage ne garde une image de dossier) et ne depasse pas la vie de l'adresse",
+     /^private, max-age=\d+$/.test(CACHE_VIGNETTE) && maxAge > 0 && maxAge <= VIGNETTE_TTL_SECONDS);
+  ok("la validite reste sous le plafond des signatures S3 (7 jours)", VIGNETTE_TTL_SECONDS <= 7 * 24 * 3600);
+
+  /* Le B2C ne bouge pas : seuls les écrans collectif nommés signent en adresse stable, les PUT signés restent nus. */
+  const racine = resolve(process.cwd(), "src");
+  const fichiers = (dossier: string): string[] =>
+    readdirSync(dossier, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? fichiers(join(dossier, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [join(dossier, e.name)] : [],
+    );
+  const appelants = fichiers(racine).filter((f) => /signerLectureVignette\(/.test(readFileSync(f, "utf8"))).map((f) => f.slice(racine.length + 1)).sort();
+  ok(`signerLectureVignette n'est appele que par r2.ts et les ecrans du collectif (${appelants.join(", ")})`,
+     JSON.stringify(appelants) === JSON.stringify(["app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
+  const r2src = readFileSync(resolve(racine, "lib/atelier/r2.ts"), "utf8");
+  const corps = (nom: string) => {
+    const debut = r2src.indexOf(`export async function ${nom}(`);
+    return debut < 0 ? "" : r2src.slice(debut, r2src.indexOf("\n}\n", debut));
+  };
+  ok("les envois ne changent pas : signerPut ne porte ni Cache-Control ni date imposee (le CORS non plus)",
+     corps("signerPut").length > 0 && !/CacheControl|signingDate/.test(corps("signerPut")));
+  ok("les originaux ne changent pas : signerGet ne pose ni en-tete de cache ni date arrondie",
+     corps("signerGet").length > 0 && !/CacheControl|signingDate/.test(corps("signerGet")));
+  ok("ecrireObjet ne pose Cache-Control que si l'appelant le demande (les ecritures d'avant restent nues)",
+     /\.\.\.\(options\?\.cacheControl \? \{ CacheControl: options\.cacheControl \} : \{\}\)/.test(corps("ecrireObjet")));
+}
+
 /* ════════ T-020 : ce qui a le droit de partir chez Vercel Analytics ════════ */
 
 titre("— T-020 : cheminPublic masque le token AVANT tout envoi —");
@@ -5729,6 +5791,84 @@ titre("— l'espace avant un texte JSX qui porte une entité (SWC) —");
   );
 }
 
+
+/* ═════════ T-176 : l'adresse stable, signée pour de vrai (sans réseau) ═════════
+   De faux identifiants R2 : la signature se calcule sur place, rien ne part.
+   Puis la signature est REFAITE à la main (SigV4, node:crypto) et jugée comme
+   un coffre la juge : signature exacte, date pas dans le futur, pas périmée.
+   Vérifié en direct contre R2 le 20/10 (lecture seule, une image de style) :
+   206 et « private, max-age=7200 » au début de la fenêtre, 206 signée il y a
+   1 h 58, 403 signée il y a 2 h 02, et signerGet sans en-tête de cache. */
+const verifierT176 = async () => {
+  titre("— T-176 : deux rendus de la meme vignette donnent la MEME adresse, valable jusqu'au bout —");
+  const noms = ["R2_ENDPOINT", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME", "S3_FORCE_PATH_STYLE"] as const;
+  const avant = Object.fromEntries(noms.map((n) => [n, process.env[n]]));
+  const SECRET = "secret-fictif-du-harnais";
+  process.env.R2_ENDPOINT = "https://compte-fictif.r2.cloudflarestorage.com";
+  process.env.R2_ACCESS_KEY_ID = "AKIDHARNAIS";
+  process.env.R2_SECRET_ACCESS_KEY = SECRET;
+  process.env.R2_BUCKET_NAME = "coffre-fictif";
+  delete process.env.S3_FORCE_PATH_STYLE;
+  try {
+    const H = 3600 * 1000;
+    const t0 = Date.UTC(2026, 9, 20, 14, 0, 0, 0);
+    const cle = "collectif/editions/0b1f3c2e-4a5b-4c6d-8e9f-001122334455/photos/1b1f3c2e-4a5b-4c6d-8e9f-001122334455/vignette.jpg";
+    const rendu1 = await signerLectureVignette(cle, t0 + 12 * 60 * 1000 + 7000);
+    const rendu2 = await signerLectureVignette(cle, t0 + 52 * 60 * 1000);
+    const heureSuivante = await signerLectureVignette(cle, t0 + H + 2 * 60 * 1000);
+    ok("deux rendus a 14:12 et 14:52 : la meme adresse, octet pour octet (le navigateur la sert depuis son cache)", rendu1 === rendu2);
+    ok("a 15:02 la fenetre suivante donne une autre adresse ; une autre cle aussi",
+       heureSuivante !== rendu1 && (await signerLectureVignette(cle.replace("1b1f", "2b1f"), t0 + 12 * 60 * 1000)) !== rendu1);
+    const u = new URL(rendu1);
+    ok("l'adresse est datee du debut de la fenetre (14:00:00Z), valable deux heures, et porte l'en-tete de cache signe",
+       u.searchParams.get("X-Amz-Date") === "20261020T140000Z" && u.searchParams.get("X-Amz-Expires") === String(VIGNETTE_TTL_SECONDS)
+       && u.searchParams.get("response-cache-control") === CACHE_VIGNETTE);
+    ok("ni blanc ni virgule dans l'adresse : elle tient telle quelle dans un srcset", !/[\s,]/.test(rendu1));
+
+    /* Le coffre, rejoué : une signature SigV4 refaite à la main depuis l'adresse. */
+    const enc = (v: string) => encodeURIComponent(v).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    const hmac = (k: string | Buffer, v: string) => createHmac("sha256", k).update(v, "utf8").digest();
+    const accepte = (adresse: string, maintenantMs: number): boolean => {
+      const a = new URL(adresse);
+      const p = a.searchParams;
+      const date = p.get("X-Amz-Date") ?? "";
+      const [, jour, region, service] = (p.get("X-Amz-Credential") ?? "").split("/");
+      const requete = [
+        "GET",
+        a.pathname,
+        [...p.entries()].filter(([k]) => k !== "X-Amz-Signature").map(([k, v]) => [enc(k), enc(v)]).sort(([x], [y]) => (x < y ? -1 : x > y ? 1 : 0)).map(([k, v]) => `${k}=${v}`).join("&"),
+        `host:${a.host}\n`,
+        p.get("X-Amz-SignedHeaders") ?? "",
+        "UNSIGNED-PAYLOAD",
+      ].join("\n");
+      const aSigner = ["AWS4-HMAC-SHA256", date, `${jour}/${region}/${service}/aws4_request`, createHash("sha256").update(requete, "utf8").digest("hex")].join("\n");
+      const k = hmac(hmac(hmac(hmac(`AWS4${SECRET}`, jour), region), service), "aws4_request");
+      const juste = createHmac("sha256", k).update(aSigner, "utf8").digest("hex") === p.get("X-Amz-Signature");
+      const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(date);
+      if (!m) return false;
+      const signeMs = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+      return juste && signeMs <= maintenantMs + 15 * 60 * 1000 && maintenantMs < signeMs + Number(p.get("X-Amz-Expires")) * 1000;
+    };
+    const ttl = VIGNETTE_TTL_SECONDS * 1000;
+    ok("le coffre rejoue accepte l'adresse au debut de la fenetre, a sa derniere milliseconde, et jusqu'a la derniere seconde de sa duree",
+       accepte(rendu1, t0) && accepte(rendu1, t0 + H - 1) && accepte(rendu1, t0 + ttl - 1000));
+    ok("il la refuse une seconde apres sa duree, et refuse une adresse dont on a allonge la duree sans la resigner",
+       !accepte(rendu1, t0 + ttl + 1000) && !accepte(rendu1.replace(/X-Amz-Expires=\d+/, "X-Amz-Expires=604800"), t0 + ttl + 1000));
+    ok("servie au dernier instant de sa fenetre, il lui reste encore la marge (une heure, comme signerGet aujourd'hui)",
+       accepte(rendu1, t0 + H - 1 + MARGE_VIGNETTE_SECONDS * 1000 - 1000));
+    const leDebut = await signerLectureVignetteLe(cle, new Date(t0));
+    ok("signerLectureVignette(cle, maintenant) = signerLectureVignetteLe(cle, debutDeFenetre(maintenant))", leDebut === rendu1);
+    const original = new URL(await signerGet("numeros/abc/photos/def/original.jpg"));
+    ok("signerGet (les originaux) : une heure, sans en-tete de cache, comme avant",
+       original.searchParams.get("X-Amz-Expires") === String(APERCU_TTL_SECONDS) && !original.searchParams.has("response-cache-control"));
+  } finally {
+    for (const n of noms) {
+      if (avant[n] === undefined) delete process.env[n];
+      else process.env[n] = avant[n];
+    }
+  }
+};
+
 /* On repose le globe comme on l'a trouve : la suite du harnais ne doit pas
    heriter d'un `localStorage` qui jette. */
 delete (globalThis as { localStorage?: unknown }).localStorage;
@@ -5856,7 +5996,7 @@ const verifierProtection = async () => {
   }
 };
 
-void verifierT005().then(verifierProtection).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT176).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

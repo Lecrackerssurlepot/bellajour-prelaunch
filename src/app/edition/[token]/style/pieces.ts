@@ -36,8 +36,28 @@ export type PieceVue = PieceRef & {
   /** « Marine », « Équilibrée », « Fraunces et DM Sans »… */
   titre: string;
   url: string | null;
+  /** Les tailles réduites de l'image (T-172), `null` sans elles : l'écran montre alors `url`, la maîtresse. */
+  srcSet: string | null;
   couleurs: string[];
 };
+
+/**
+ * Les `sizes` des images de style (T-172), lus par la carte du mur, la fiche
+ * d'un style et la composition : la largeur que l'image occupe à l'écran, d'où
+ * le navigateur choisit la taille (600, 1 200 ou la maîtresse). Ils suivent
+ * les grilles de `style.css` et `espace.css` (carte de 160 à 300 px, deux
+ * colonnes sous 560 px ; couverture de la fiche 260 px, pleine largeur sous
+ * 860 px). Une estimation trop large ne casse rien, elle télécharge plus.
+ */
+export const TAILLES_AFFICHAGE = {
+  carte: "(max-width: 560px) 50vw, (max-width: 860px) 33vw, 300px",
+  ficheCouverture: "(max-width: 860px) 100vw, 260px",
+  ficheEchantillon: "(max-width: 860px) 100vw, 480px",
+  ficheDouble: "(max-width: 560px) 100vw, (max-width: 860px) 50vw, 360px",
+  ficheCouvertures: "(max-width: 860px) 50vw, 260px",
+  mini: "40px",
+  composition: "(max-width: 860px) 50vw, 240px",
+} as const;
 
 /** Une partie de la composition : un genre de pièce, ou la place du texte (le panneau « modifier une partie »). */
 export type Partie = Genre | "texte";
@@ -75,12 +95,12 @@ export function libelleDouble(type: string): string {
 function piecesDuStyle(s: StyleMur): PieceVue[] {
   const p: PieceVue[] = [];
   const typos = policesDe(s);
-  for (const c of s.couvertures) p.push({ id: `couverture:${s.id}:${c.cle}`, genre: "couverture", style_id: s.id, cle: c.cle, style: s, titre: c.legende || s.nom, url: c.url, couleurs: [] });
-  if (typos) p.push({ id: `typos:${s.id}`, genre: "typos", style_id: s.id, cle: "", style: s, titre: typos, url: s.typos.echantillon, couleurs: [] });
-  for (const pal of s.palettes) p.push({ id: `palette:${s.id}:${pal.cle}`, genre: "palette", style_id: s.id, cle: pal.cle, style: s, titre: pal.nom, url: null, couleurs: pal.couleurs });
+  for (const c of s.couvertures) p.push({ id: `couverture:${s.id}:${c.cle}`, genre: "couverture", style_id: s.id, cle: c.cle, style: s, titre: c.legende || s.nom, url: c.url, srcSet: c.srcSet ?? null, couleurs: [] });
+  if (typos) p.push({ id: `typos:${s.id}`, genre: "typos", style_id: s.id, cle: "", style: s, titre: typos, url: s.typos.echantillon, srcSet: s.typos.echantillonSrcSet ?? null, couleurs: [] });
+  for (const pal of s.palettes) p.push({ id: `palette:${s.id}:${pal.cle}`, genre: "palette", style_id: s.id, cle: pal.cle, style: s, titre: pal.nom, url: null, srcSet: null, couleurs: pal.couleurs });
   for (const d of s.doubles) {
     if (!d.url) continue;
-    p.push({ id: `double:${s.id}:${d.type}`, genre: "double", style_id: s.id, cle: d.type, style: s, titre: libelleDouble(d.type), url: d.url, couleurs: [] });
+    p.push({ id: `double:${s.id}:${d.type}`, genre: "double", style_id: s.id, cle: d.type, style: s, titre: libelleDouble(d.type), url: d.url, srcSet: d.srcSet ?? null, couleurs: [] });
   }
   return p;
 }
@@ -157,31 +177,28 @@ export function phraseDesStyles(noms: readonly string[], tu: boolean): string {
 
 /** Ce que la composition MONTRE : chaque pièce choisie avec son image ou ses couleurs, et son style. */
 export type Visuels = {
-  couvertures: { cle: string; style: string; url: string | null }[];
+  couvertures: { cle: string; style: string; url: string | null; srcSet: string | null }[];
   palette: { nom: string; style: string; couleurs: string[] } | null;
-  typos: { polices: string; titres: string; texte: string; style: string; echantillon: string | null } | null;
-  doubles: { cle: string; libelle: string; style: string; url: string | null }[];
+  typos: { polices: string; titres: string; texte: string; style: string; echantillon: string | null; echantillonSrcSet: string | null } | null;
+  doubles: { cle: string; libelle: string; style: string; url: string | null; srcSet: string | null }[];
 };
 
 export function visuelsDe(c: Composition, styles: readonly StyleMur[]): Visuels {
   const pal = c.palette ? styleDe(styles, c.palette.style_id)?.palettes.find((p) => p.cle === c.palette?.cle) : undefined;
   const ty = c.typos ? styleDe(styles, c.typos.style_id) : undefined;
   return {
-    couvertures: c.couvertures.map((a) => ({
-      cle: `${a.style_id}:${a.couverture}`,
-      style: nomStyle(styles, a.style_id),
-      url: styleDe(styles, a.style_id)?.couvertures.find((x) => x.cle === a.couverture)?.url ?? null,
-    })),
+    couvertures: c.couvertures.map((a) => {
+      const x = styleDe(styles, a.style_id)?.couvertures.find((y) => y.cle === a.couverture);
+      return { cle: `${a.style_id}:${a.couverture}`, style: nomStyle(styles, a.style_id), url: x?.url ?? null, srcSet: x?.srcSet ?? null };
+    }),
     palette: c.palette ? { nom: pal?.nom ?? "sans nom", style: nomStyle(styles, c.palette.style_id), couleurs: pal?.couleurs ?? [] } : null,
     typos: c.typos
-      ? { polices: nomTypos(styles, c.typos.style_id), titres: ty?.typos.titres ?? "", texte: ty?.typos.texte ?? "", style: nomStyle(styles, c.typos.style_id), echantillon: ty?.typos.echantillon ?? null }
+      ? { polices: nomTypos(styles, c.typos.style_id), titres: ty?.typos.titres ?? "", texte: ty?.typos.texte ?? "", style: nomStyle(styles, c.typos.style_id), echantillon: ty?.typos.echantillon ?? null, echantillonSrcSet: ty?.typos.echantillonSrcSet ?? null }
       : null,
-    doubles: c.doubles.map((d) => ({
-      cle: `${d.style_id}:${d.double}`,
-      libelle: libelleDouble(d.double),
-      style: nomStyle(styles, d.style_id),
-      url: styleDe(styles, d.style_id)?.doubles.find((x) => x.type === d.double)?.url ?? null,
-    })),
+    doubles: c.doubles.map((d) => {
+      const x = styleDe(styles, d.style_id)?.doubles.find((y) => y.type === d.double);
+      return { cle: `${d.style_id}:${d.double}`, libelle: libelleDouble(d.double), style: nomStyle(styles, d.style_id), url: x?.url ?? null, srcSet: x?.srcSet ?? null };
+    }),
   };
 }
 
