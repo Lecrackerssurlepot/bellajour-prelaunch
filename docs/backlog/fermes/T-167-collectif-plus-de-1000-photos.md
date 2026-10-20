@@ -1,7 +1,7 @@
 ---
 id: T-167
 titre: Au-delà de 1 000 photos, une édition perdrait des photos sans rien dire (grille, plafond total, lot de l'atelier)
-etat: nouveau
+etat: fermé
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -32,4 +32,7 @@ ordonnées (patron de `metriques.ts`) là où il faut les lignes. Un test au har
 lecture simulée plafonnée. **À faire avant la première vraie édition.**
 
 ## Ce qui a été fait
-Rien encore.
+- PR #271 (19/10 au soir, en production) : les lectures de `collectif_photos` passent par
+  `src/lib/collectif/lignes.ts` (tranches de 1 000, jusqu'à 100 tranches, soit 100 000 lignes, et
+  une erreur `trop_de_lignes` au-delà, jamais une troncature muette) ; les plafonds se comptent
+  en base (`collecte.ts`) ; le lot vérifie son compte avant de partir. Relu sur main le 20/10.

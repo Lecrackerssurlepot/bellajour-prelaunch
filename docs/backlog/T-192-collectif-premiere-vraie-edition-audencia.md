@@ -1,7 +1,7 @@
 ---
 id: T-192
 titre: Avant la première vraie édition (Audencia), l'envoi des photos perdait ou doublait des photos sur iPhone et en mauvais réseau, le nom des participants changeait, et le mur des styles montrait des visuels pas prêts
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -72,3 +72,6 @@ au coffre invisible → 0, 3 arrivées → 10 ; vignettes perdues après coupure
 - Édition ARCHIVÉE ensuite (lien participants : 404). Rien d'effacé.
 
 Reste : un vrai iPhone et un vrai Samsung (T-155), l'écran verrouillé en plein envoi.
+
+20/10 : PR #271 fusionnée et en production (déploiement `9924bfc` READY). Les manques trouvés en
+relisant tout le parcours pour Audencia sont ouverts à part : T-193 à T-202.

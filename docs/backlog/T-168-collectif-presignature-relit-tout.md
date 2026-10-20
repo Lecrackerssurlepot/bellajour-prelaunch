@@ -1,7 +1,7 @@
 ---
 id: T-168
 titre: Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -26,4 +26,10 @@ les lignes ; lancer les deux lectures ensemble ; ouvrir la bonne porte d'abord. 
 après sur une édition d'essai (règle : mesurer avant de conclure).
 
 ## Ce qui a été fait
-Rien encore.
+- PR #271 (19/10, en production) : l'envoi compte en base au lieu de relire les lignes
+  (`src/lib/collectif/collecte.ts:65-94`) ; banc : 500 photos au-delà du plafond, 480 déclarations
+  → 53.
+- Reste (relu le 20/10) : la grille relit TOUTES les photos à chaque page
+  (`src/app/api/collectif/photos/route.ts:81`), le tableau de bord aussi
+  (`src/app/edition/[token]/donnees.ts:208`), la fiche atelier aussi
+  (`src/app/admin/collectif/donnees.ts:358`). À mesurer sur 5 000 photos avant une grosse édition.
