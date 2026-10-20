@@ -82,7 +82,7 @@ function chargerLibheif(): Promise<Libheif> {
   return libheif;
 }
 
-const reduire = (entree: sharp.Sharp) =>
+const reduire = (entree: ReturnType<typeof sharp>) =>
   entree.resize(COTE_VIGNETTE, COTE_VIGNETTE, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: QUALITE_VIGNETTE }).toBuffer();
 
 /** HEIC → pixels → vignette. La méthode de `collectif-heic-rattrapage.ts`, chaque image libérée. */
