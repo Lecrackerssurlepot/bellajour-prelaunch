@@ -10,7 +10,20 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
-## 20/10/2026 (après-midi) — Audencia : huit lots en production, une migration à appliquer
+## 20/10/2026 (soir) — Migration 20261022 appliquée et vérifiée (T-168, T-170)
+
+- **Premier essai de Mathias : échec 42702** (« column reference "appareil" is ambiguous »),
+  `collectif_photos` ayant déjà une colonne `appareil`. La transaction avait tout annulé
+  (vérifié : ni vue, ni table, ni index). Corrigée (PR #285, colonne calculée `appareil_cle` ;
+  harnais PR #286), le corps de la vue joué d'abord en lecture sur la vraie base.
+- **Réappliquée par Mathias le 20/10, vérifiée vers 14 h 00 (Paris)** : vue `collectif_photos_resume`
+  (`security_invoker`), table `collectif_doublons` (RLS), index `collectif_photos_arrivee_idx` ;
+  anon et authenticated ne lisent ni l'une ni l'autre ; somme de la vue = 1 203 = les photos
+  confirmées ; l'API (PostgREST) lit la vue sans erreur, donc **la grille et le tableau de bord
+  passent par le résumé** (plus de relecture complète). `collectif_doublons` : 0 ligne, se
+  remplit à la lecture des empreintes ou au premier affichage d'une grille.
+
+## 20/10/2026 (après-midi) — Audencia : huit lots en production, la migration 20261022 (appliquée le soir)
 
 - **En production le 20/10**, chaque lot vérifié (tsc, lint 0 erreur, build, les deux harnais)
   puis fusionné, déploiement final `7db582b` READY vers 12 h 19 (Paris) :
@@ -26,7 +39,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
     l'atelier, grand QR imprimable ;
   - PR #281 (T-176, T-172) : vignettes en cache, tailles des images de style ;
   - PR #282 (T-169, T-170, T-168) : messagerie à paliers, doublons rapides, grille par résumé.
-- **À appliquer par Mathias : `supabase/migrations/20261022_collectif_resume_photos.sql`** (une
+- **Appliquée le soir (voir plus haut) : `supabase/migrations/20261022_collectif_resume_photos.sql`** (une
   vue, une table de cache, un index ; aucune donnée touchée). Sans elle, la grille relit tout et
   les doublons se calculent à l'affichage, comme avant : rien ne casse.
 - **L'édition Audencia** (« 60 ans », au tu, clôture le 4/11, 0 photo) vérifiée en lecture sur

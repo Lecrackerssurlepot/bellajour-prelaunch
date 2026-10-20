@@ -70,3 +70,4 @@ après sur une édition d'essai (règle : mesurer avant de conclure).
   fiche de l'atelier relisent toujours toutes les photos (la fiche : un autre lot).
 - Après la migration, à vérifier : `select sum(n) from collectif_photos_resume where edition_id =
   …` = le nombre de photos arrivées, puis une page de la grille d'une vraie édition.
+- 20/10 au soir : migration `20261022` appliquée par Mathias (après correction de la colonne `appareil`, PR #285) et vérifiée : la vue compte les 1 203 photos confirmées, l'API la lit, la grille passe par le résumé.

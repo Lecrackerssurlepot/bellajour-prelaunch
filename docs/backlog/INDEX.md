@@ -35,7 +35,7 @@ coupe les liens), un essai sur de vrais téléphones (T-155), et les décisions 
 Explication et schémas pour Mathias : l'artefact « Édition collective en clair » du 20/10.
 
 **20/10 après-midi : huit lots livrés en production** (PR #273, #276 à #282 ; détail dans
-ETAT-PRODUCTION). Il reste, pour Audencia : la migration `20261022` (Mathias), « Photos par
+ETAT-PRODUCTION). Il reste, pour Audencia (la migration `20261022` est appliquée depuis le soir) : « Photos par
 personne » à régler sur la fiche si le lien général doit servir, les planches du 20/10 à valider
 (Photos du responsable, album du bateau, email du participant, corbeille :
 https://claude.ai/artifact/3fvFwDb6HKzZx3bw5bQPpy), le texte des mails à relire, et le test avec
@@ -357,9 +357,9 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-165 | Un logo SVG déposé par un client exécute son script si l'atelier l'ouvre dans un nouvel onglet | collectif | confort | libre | nouveau (19/10) — domaine R2, pas bellajour.fr ; servir en téléchargement |
 | T-166 | « Retrouver mon espace » n'a aucun frein par appelant, une fois les mails ouverts elle peut servir à arroser de vraies adresses | collectif | confort | libre | **fermé** (fiche dans `fermes/`) — 20/10 : trois demandes par minute et par appelant (`creerPlafond(3)`, le frein de « mot de passe oublié »), 429 avant de lire le corps ; harnais |
 | T-167 | Au-delà de 1 000 photos, une édition perdrait des photos sans rien dire (grille, plafond total, lot de l'atelier) | collectif | serieux | libre | **fermé** (fiche dans `fermes/`) — 19/10, PR #271 : lecture par tranches de 1 000 (jusqu'à 100 000), comptes en base, lot vérifié |
-| T-168 | Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos | collectif | serieux | libre | en cours — 20/10 (PR #282) : grille et tableau de bord par résumé et par page ; **migration `20261022` à appliquer par Mathias** |
+| T-168 | Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos | collectif | serieux | libre | en cours — 20/10 (PR #282) : grille et tableau de bord par résumé et par page ; migration `20261022` appliquée et vérifiée le 20/10 au soir ; reste une grille de quelques milliers de photos observée |
 | T-169 | La messagerie interroge le serveur toutes les 3,5 secondes, même quand rien ne bouge | collectif | serieux | libre | en cours (20/10, PR #282) — relève à paliers (1 028 → 93 relèves par heure au repos) ; reste la consommation Vercel réelle |
-| T-170 | Le repérage des doublons devient très lent quand beaucoup de photos sont identiques, jusqu'à bloquer la grille | collectif | serieux | libre | en cours (20/10, PR #282) — 1 000 identiques : 24 s → 1 ms ; doublons rangés à part dès la migration `20261022` |
+| T-170 | Le repérage des doublons devient très lent quand beaucoup de photos sont identiques, jusqu'à bloquer la grille | collectif | serieux | libre | en cours (20/10, PR #282) — 1 000 identiques : 24 s → 1 ms ; `collectif_doublons` en place depuis le 20/10 au soir, se remplit aux prochaines photos |
 | T-171 | Une photo dont la vignette a échoué s'affiche dans la grille en original, et rien ne refait la vignette | collectif | confort | libre | en cours — 20/10 (PR #279) : le serveur refait la vignette manquante ; reste un vrai passage observé |
 | T-172 | Le mur des styles affiche les images maîtresses (jusqu'à 2 400 px et 4 Mo) dans des cartes de 300 px | collectif | serieux | libre | en cours (20/10, PR #281) — tailles 600 et 1 200 px en srcset ; les styles déjà enregistrés attendent le script (accord de Mathias) |
 | T-173 | La page Documents charge tout le tableau de bord pour afficher le nom des magazines | collectif | confort | libre | nouveau (19/10) |
