@@ -67,10 +67,27 @@ export type LigneResume = {
   vignette_le: string | null;
   vignette_photo: string | null;
   vignette_key: string | null;
+  /**
+   * La personne (migration 20261023), quand elle s'est présentée par son adresse :
+   * la vue regroupe alors par elle, et le téléphone reste vide. Absente de la vue
+   * d'avant (et des lectures qui ne la demandent pas) : `undefined`.
+   */
+  participant_id?: string | null;
 };
 
+/**
+ * Les colonnes que lisent la grille et le tableau de bord : les seize de la
+ * migration 20261022 (la personne ne leur sert pas, elles comptent par nom).
+ * Après 20261023, la même vue écarte la corbeille : rien à changer ici.
+ */
 export const COLONNES_RESUME =
   "id, role_deposant, provenance_id, provenance_type, deposant, appareil_id, n, n_selection, n_choisissables, premiere, premiere_photo, derniere, vignette_le, vignette_photo, vignette_key";
+
+/** Les mêmes, et la personne (20261023) : la liste des personnes (`personnesServeur.ts`). */
+export const COLONNES_RESUME_PERSONNES = `${COLONNES_RESUME}, participant_id`;
+
+/** La migration qui redéfinit la vue (hors corbeille, par personne). */
+export const MIGRATION_RESUME_PERSONNES = "supabase/migrations/20261023_collectif_personnes_corbeille.sql";
 
 /** La vue manque (migration non appliquée) : on relit tout, comme avant. */
 export function resumeAbsent(code: string | null | undefined): boolean {
@@ -164,6 +181,8 @@ export function couvertureDe(groupes: readonly LigneResume[], cle: string, respo
 export type PhotoResumable = LignePhoto & {
   id: string;
   appareil_id: string | null;
+  /** La personne (20261023) ; absente d'une lecture d'avant la migration. */
+  participant_id?: string | null;
   preselection: boolean;
   signalee: boolean;
   confirmee_le: string;
@@ -172,7 +191,8 @@ export type PhotoResumable = LignePhoto & {
 
 /**
  * Le résumé calculé EN MÉMOIRE, mot pour mot ce que la vue calcule en base
- * (regroupement, le téléphone gardé pour un participant seulement, `count`
+ * (regroupement, la personne quand elle est connue (20261023), le téléphone
+ * gardé pour un participant SANS personne seulement, `count`
  * et ses deux `filter`, `min` et `max` de l'arrivée, la première photo par
  * arrivée puis par id, la vignette la plus récente par arrivée puis par id).
  * Le tableau de bord s'en sert sans la migration, le harnais comme fausse
@@ -181,8 +201,9 @@ export type PhotoResumable = LignePhoto & {
 export function resumerPhotos(photos: readonly PhotoResumable[]): LigneResume[] {
   const parCle = new Map<string, LigneResume>();
   for (const p of photos) {
-    const appareil = p.role_deposant === "participant" || p.provenance_id !== null ? p.appareil_id : null;
-    const cle = JSON.stringify([p.role_deposant, p.provenance_id, p.provenance_type, p.deposant, appareil]);
+    const personne = p.participant_id ?? null;
+    const appareil = personne === null && (p.role_deposant === "participant" || p.provenance_id !== null) ? p.appareil_id : null;
+    const cle = JSON.stringify([p.role_deposant, p.provenance_id, p.provenance_type, p.deposant, appareil, personne]);
     let g = parCle.get(cle);
     if (!g) {
       g = {
@@ -192,6 +213,7 @@ export function resumerPhotos(photos: readonly PhotoResumable[]): LigneResume[] 
         provenance_type: p.provenance_type,
         deposant: p.deposant,
         appareil_id: appareil,
+        participant_id: personne,
         n: 0,
         n_selection: 0,
         n_choisissables: 0,

@@ -72,6 +72,7 @@ export const LIBELLE_CHAMP: Record<string, string> = {
   dates_texte: "Dates de l'événement",
   registre: "Le ton de l'espace",
   cloture_le: "Clôture de la collecte",
+  ouverture_le: "Ouverture du dépôt",
   livraison_prevue_le: "Livraison souhaitée",
   plafond_participant_atelier: "Photos par personne",
   plafond_total: "Photos au total",
@@ -113,6 +114,7 @@ export const ETAPE_DU_CHAMP: Record<string, CleEtape> = {
   responsable_email: "client",
   rdv_url: "client",
   cloture_le: "calendrier",
+  ouverture_le: "calendrier",
   dates_texte: "calendrier",
   livraison_prevue_le: "calendrier",
   magazines: "magazines",
@@ -136,8 +138,12 @@ export function rangEtapeDuChamp(champ: string): number {
   return i === -1 ? 0 : i;
 }
 
-/** Ce que l'écran sait de l'édition avant la saisie : les plafonds (curseur du client) et la clôture en base. */
-export type ActuelEdition = ReglagesPlafond & { cloture_le?: string | null };
+/**
+ * Ce que l'écran sait de l'édition avant la saisie : les plafonds (curseur du
+ * client), la clôture et l'ouverture en base. `ouverture_le` absente (`undefined`) :
+ * la migration 20261023 n'est pas passée.
+ */
+export type ActuelEdition = ReglagesPlafond & { cloture_le?: string | null; ouverture_le?: string | null };
 
 /** Deux instants dans la même minute : un champ `datetime-local` ne garde pas les secondes. */
 function memeMinute(t: number, iso: string | null | undefined): boolean {
@@ -242,6 +248,25 @@ export function lireSaisieEdition(
       } else if (t <= maintenant.getTime()) {
         erreurs.push({ champ: "cloture_le", message: "Clôture de la collecte : cette date est déjà passée. Choisir une date à venir." });
       } else e.cloture_le = new Date(t).toISOString();
+    }
+  }
+
+  /* L'ouverture du dépôt (planche 9B, décision 6 du 20/10, migration 20261023) : facultative, un
+     instant AVEC fuseau (l'écran convertit l'heure de Paris par `instantDeParis`), toujours avant
+     la clôture. Une ouverture passée n'est pas refusée : le lien est ouvert, c'est tout. Vide, elle
+     n'est écrite que pour EFFACER une ouverture qui existe (sans la migration, rien n'est écrit :
+     une édition se règle comme avant). Inchangée (à la minute), elle n'est pas réécrite. */
+  if (present("ouverture_le")) {
+    const brut = s.ouverture_le;
+    if (brut === null || brut === undefined || brut === "") {
+      if (mode === "modification" && actuel.ouverture_le) e.ouverture_le = null;
+    } else {
+      const t = lireInstant(brut);
+      const cloture = "cloture_le" in e ? (e.cloture_le as string | null) : (actuel.cloture_le ?? null);
+      const tCloture = cloture ? lireInstant(cloture) : null;
+      if (t === null) erreurs.push({ champ: "ouverture_le", message: "Date d'ouverture du dépôt illisible." });
+      else if (tCloture !== null && t >= tCloture) erreurs.push({ champ: "ouverture_le", message: "Ouverture du dépôt : elle doit venir avant la clôture de la collecte." });
+      else if (!(mode === "modification" && memeMinute(t, actuel.ouverture_le))) e.ouverture_le = new Date(t).toISOString();
     }
   }
 

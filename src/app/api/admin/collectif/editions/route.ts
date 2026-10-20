@@ -5,7 +5,7 @@ import { generateNumeroToken } from "@/lib/atelier/token";
 import { makeSupabase } from "@/lib/supabase";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
+import { ERREUR_MIGRATION_ABSENTE, ERREUR_PERSONNES_ABSENTE, MESSAGE_PERSONNES_ABSENTE, personnesAbsentes, tableAbsente } from "@/lib/collectif/migration";
 import { lireSaisieEdition, planMagazines } from "@/lib/collectif/saisie";
 
 /**
@@ -65,6 +65,9 @@ export async function POST(request: Request) {
       .single<{ id: string }>();
     if (error) {
       if (tableAbsente(error.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
+      /* L'ouverture du dépôt a besoin de la migration 20261023 : sans elle, rien n'est créé, et on le dit
+         (jamais une édition créée sans l'ouverture demandée, qui recevrait des photos trop tôt). */
+      if (personnesAbsentes(error)) return NextResponse.json({ error: ERREUR_PERSONNES_ABSENTE, message: MESSAGE_PERSONNES_ABSENTE }, { status: 503 });
       if (error.code === "23505") continue;
       console.error("[collectif] création d'édition échouée", error.code, error.message);
       return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });

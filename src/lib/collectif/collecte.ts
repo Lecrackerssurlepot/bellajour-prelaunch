@@ -5,8 +5,13 @@
 
 import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { FILTRE_PLACE_PERSONNE } from "./corbeille";
 import { DELAI_DECLARATION_MORTE_MS, type Existant } from "./depot";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "./horsCorbeille";
 import { enPaquets } from "./lignes";
+import { colonneAbsente } from "./migration";
+import { placeRestante, type Place, type ReglagesPlafond } from "./plafonds";
+import type { TypeProvenance } from "./types";
 
 /** Le cookie httpOnly qui porte l'appareil d'un participant (plafond PAR APPAREIL). */
 export const COOKIE_APPAREIL = "bj_depot_appareil";
@@ -54,43 +59,90 @@ export function filtreDansPlafond(maintenant: Date): string {
 /**
  * Ce qui compte dans les plafonds : les photos arrivées, et celles déclarées
  * depuis peu (`compteDansPlafond`). Une déclaration morte ne bloque personne.
- * Sur un lien de contribution (`provenanceId`), l'appareil n'est compté que
+ * Sur un lien de contribution (`provenanceId`), la personne n'est comptée que
  * sur CE lien : le plafond appartient au lien (révision §14.2).
  *
  * T-167, T-168 : deux COMPTES en base (`head`), en parallèle, jamais les
  * lignes. Lues, elles s'arrêtaient au plafond de 1 000 de l'API (le plafond
  * total ne s'appliquait plus au-delà) et chaque présignature relisait toute
  * l'édition.
+ *
+ * Planches du 20/10 (migration 20261023) :
+ * - le plafond PAR PERSONNE se compte par sa PERSONNE (`participantId`, son
+ *   adresse : tous ses téléphones) quand elle est connue, sinon par
+ *   TÉLÉPHONE comme avant (`appareil`) ;
+ * - une photo à la corbeille ne compte plus dans le TOTAL ; dans la place de
+ *   la personne, seulement si son AUTEUR l'a supprimée (`FILTRE_PLACE_PERSONNE`,
+ *   corbeille.ts). Sans la migration : aucune photo n'est à la corbeille, les
+ *   deux comptes se refont sans le filtre (`lireHorsCorbeille`).
+ * `parAppareil` garde son nom : c'est ce que la personne (ou le téléphone) a
+ * déjà déposé.
  */
 export async function compterPourPlafond(
   supabase: SupabaseClient,
   editionId: string,
   appareil: string | null,
   maintenant: Date,
-  provenanceId: string | null = null
+  provenanceId: string | null = null,
+  participantId: string | null = null
 ): Promise<Comptes | null> {
   const filtre = filtreDansPlafond(maintenant);
-  const compter = () =>
-    supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", editionId).or(filtre);
-  const duLien = () => {
-    if (!appareil) return null;
-    const q = compter().eq("appareil_id", appareil);
-    return provenanceId ? q.eq("provenance_id", provenanceId) : q;
+  /* Un compte en GET `limit(0)` (`COMPTE_SANS_LIGNE`), jamais en `head` : sans la migration, un HEAD
+     filtré sur la corbeille rend une erreur SANS code (400, corps vide, mesuré le 20/10 sur la vraie
+     base) que le repli ne reconnaîtrait pas ; le GET rend 42703 qui nomme la colonne. Aucune ligne lue. */
+  const compter = () => supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", editionId).or(filtre);
+  const deLaPersonne = (avec: boolean) => {
+    const q = participantId && avec ? compter().eq("participant_id", participantId) : appareil ? compter().eq("appareil_id", appareil) : null;
+    if (!q) return null;
+    const place = avec ? q.or(FILTRE_PLACE_PERSONNE) : q;
+    return (provenanceId ? place.eq("provenance_id", provenanceId) : place).limit(0);
   };
-  const [total, parAppareil] = await Promise.all([compter(), duLien()]);
-  for (const r of [total, parAppareil]) {
-    if (r?.error) {
-      console.error("[collectif] comptes de la collecte illisibles", r.error.code, r.error.message);
-      return null;
-    }
+  const lus = await lireHorsCorbeille(async (avec) => {
+    const [total, parPersonne] = await Promise.all([(avec ? compter().is("supprimee_le", null) : compter()).limit(0), deLaPersonne(avec)]);
+    return { total, parPersonne, error: total.error ?? parPersonne?.error ?? null };
+  });
+  const { total, parPersonne } = lus;
+  if (lus.error) {
+    console.error("[collectif] comptes de la collecte illisibles", lus.error.code, lus.error.message);
+    return null;
   }
-  /* Un compte `head` sans erreur rend toujours son nombre ; `null` serait un
+  /* Un compte exact sans erreur rend toujours son nombre ; `null` serait un
      compte perdu, et 0 ouvrirait le plafond : on refuse plutôt. */
-  if (total.count === null || (parAppareil && parAppareil.count === null)) {
+  if (total.count === null || (parPersonne && parPersonne.count === null)) {
     console.error("[collectif] comptes de la collecte illisibles : compte absent de la réponse");
     return null;
   }
-  return { total: total.count, parAppareil: parAppareil?.count ?? 0 };
+  return { total: total.count, parAppareil: parPersonne?.count ?? 0 };
+}
+
+/** Un lien de contribution tel que le dépôt le lit (`?p=`), avec les colonnes de la révision et de 20261018 quand elles sont là. */
+export type LienDeDepot = {
+  id: string;
+  type: TypeProvenance;
+  libelle: string | null;
+  sans_plafond: boolean;
+  plafond_par_personne?: number | null;
+  retire_le?: string | null;
+};
+
+/**
+ * Le lien de contribution d'une clé `?p=` (déjà validée par `estCleProvenance`),
+ * avec les replis des migrations 20261014 et 20261018 (le patron de
+ * `depot/presign`). `inconnu` : aucune ligne, ou un lien supprimé.
+ */
+export async function lireLienDeDepot(
+  supabase: SupabaseClient,
+  editionId: string,
+  cle: string
+): Promise<{ statut: "ok"; lien: LienDeDepot } | { statut: "inconnu" } | { statut: "erreur"; code: string | undefined }> {
+  const lire = (colonnes: string) =>
+    supabase.from("collectif_provenances").select(colonnes).eq("edition_id", editionId).eq("cle", cle).maybeSingle<LienDeDepot>();
+  let lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne, retire_le");
+  if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne");
+  if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond");
+  if (lu.error) return { statut: "erreur", code: lu.error.code };
+  if (!lu.data || lu.data.retire_le) return { statut: "inconnu" };
+  return { statut: "ok", lien: lu.data };
 }
 
 /**
@@ -105,19 +157,45 @@ export async function lireExistants(
 ): Promise<Map<string, Existant> | null> {
   const m = new Map<string, Existant>();
   if (!cles.length) return m;
-  const lus = await Promise.all(
-    enPaquets([...new Set(cles)]).map((paquet) =>
-      supabase.from("collectif_photos").select("id, r2_key, cle_fichier, confirmee_le").eq("edition_id", editionId).in("cle_fichier", paquet)
-    )
-  );
-  for (const { data, error } of lus) {
-    if (error) {
-      console.error("[collectif] reprise illisible", error.code, error.message);
-      return null;
-    }
-    for (const l of (data ?? []) as { id: string; r2_key: string; cle_fichier: string; confirmee_le: string | null }[]) {
-      m.set(l.cle_fichier, { id: l.id, r2_key: l.r2_key, confirmee: Boolean(l.confirmee_le) });
+  type Lu = { id: string; r2_key: string; cle_fichier: string; confirmee_le: string | null; supprimee_le?: string | null };
+  /* La corbeille est LUE, jamais filtrée ici : une photo supprimée garde sa clé de fichier
+     (unique par édition), et la redéclarer ne doit ni la dupliquer ni la ressusciter
+     (`corbeille: true`, rendu « déjà là » par planDeclaration). */
+  const lus = await lireHorsCorbeille(async (avec) => {
+    const colonnes: string = avec ? "id, r2_key, cle_fichier, confirmee_le, supprimee_le" : "id, r2_key, cle_fichier, confirmee_le";
+    const paquets = await Promise.all(
+      enPaquets([...new Set(cles)]).map((paquet) => supabase.from("collectif_photos").select(colonnes).eq("edition_id", editionId).in("cle_fichier", paquet))
+    );
+    return { paquets, error: paquets.find((p) => p.error)?.error ?? null };
+  });
+  if (lus.error) {
+    console.error("[collectif] reprise illisible", lus.error.code, lus.error.message);
+    return null;
+  }
+  for (const { data } of lus.paquets) {
+    for (const l of (data ?? []) as unknown as Lu[]) {
+      m.set(l.cle_fichier, { id: l.id, r2_key: l.r2_key, confirmee: Boolean(l.confirmee_le), ...(l.supprimee_le ? { corbeille: true } : {}) });
     }
   }
   return m;
+}
+
+/**
+ * Ce qu'un participant peut encore envoyer par ce lien (« tu peux encore en
+ * envoyer 36 », planches 6 et 7) : la règle de `depot/presign` (`placeRestante`
+ * sur les comptes de `compterPourPlafond`), jouée sans rien déclarer. `null` :
+ * comptes illisibles.
+ */
+export async function placeDuParticipant(
+  supabase: SupabaseClient,
+  edition: ReglagesPlafond & { id: string },
+  lien: LienDeDepot | null,
+  appareil: string | null,
+  participantId: string | null,
+  maintenant: Date
+): Promise<Place | null> {
+  const plafondLien = lien?.plafond_par_personne ?? null;
+  const comptes = await compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null && lien ? lien.id : null, participantId);
+  if (!comptes) return null;
+  return placeRestante(edition, { role: "participant", sansPlafond: Boolean(lien?.sans_plafond), plafondLien, dejaParAppareil: comptes.parAppareil }, comptes.total);
 }

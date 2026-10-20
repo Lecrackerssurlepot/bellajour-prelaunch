@@ -768,6 +768,31 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   exacte) et la table `FAMILLES` (les PDF des tours et les documents restent). Jamais lancé pour
   effacer : la politique (T-158) n'est pas validée.
 
+## Personnes, corbeille, album, ouverture (lot w1 du 20/10, migration 20261023)
+
+Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`. Migration
+`20261023_collectif_personnes_corbeille.sql` (écrite le 20/10, à appliquer par Mathias).
+- **Une personne, c'est son ADRESSE** (`personnes.ts`, `personnesServeur.ts`,
+  `collectif_participants`) : unique par édition, NON vérifiée. Elle reconnaît, elle n'ouvre RIEN :
+  ni suppression, ni photo d'un autre lien ou d'un autre téléphone. Un téléphone parle pour une
+  personne (`collectif_participants_appareils`). Le nom VIT sur les photos (`deposant`) : renommer
+  et fusionner réécrivent les photos ; la grille reste rangée par nom.
+- **La corbeille** (`corbeille.ts`, `corbeilleServeur.ts`) : 30 jours, puis le coffre PUIS la
+  ligne (supprimée, pas anonymisée). Un participant ne supprime que les photos de CE téléphone.
+- ⚠️ **Toute lecture qui montre ou compte des photos passe par `lireHorsCorbeille`**
+  (`horsCorbeille.ts`) et pose `.is("supprimee_le", null)` ; sans la colonne, elle se rejoue sans
+  (une erreur qui NOMME une colonne de la migration, `personnesAbsentes`). ⚠️ **Un compte filtré
+  ainsi se fait en GET `limit(0)` (`COMPTE_SANS_LIGNE`), JAMAIS en `head`** : mesuré le 20/10 sur
+  la vraie base, un HEAD filtré sur une colonne absente rend 400 sans code ni message, le repli ne
+  joue pas et le dépôt répondrait 500. Une lecture nouvelle de `collectif_photos` suit ce patron
+  (le harnais relit les sites).
+- **L'album** (`album.ts`) : une photo n'entre dans l'album des AUTRES que sous l'accord du 20/10
+  (`VERSIONS_ALBUM`). `VERSION_ACCORD` (ce que la page envoie) reste `2026-10-17` tant que la page
+  n'affiche pas la phrase de l'album.
+- **L'ouverture** (`ouverture.ts`) : avant `ouverture_le`, le participant est refusé (409
+  `depot_pas_ouvert`).
+- La purge quotidienne tourne après la relève (`purgeQuotidienne`), comme le rattrapage.
+
 ## Phase 7 : les accroches déjà posées
 
 `collectif_mails` (verrou unique `edition_id` + `code`, même mécanique que `mails_envoyes` :

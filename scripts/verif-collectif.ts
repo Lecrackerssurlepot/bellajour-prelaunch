@@ -554,15 +554,29 @@ const attenduDroits: Record<Action, Role[]> = {
   saisir_livraison: ["atelier"],
   /* T-154 (15/10) : seul le lien du responsable reçoit un code d'appareil. */
   ouvrir_sur_appareil: ["responsable"],
+  /* Planches du 20/10 (T-198, T-199) : la corbeille et les personnes au responsable et a l'atelier ;
+     defaire une fusion, effacer pour de bon : l'atelier seul ; le participant se presente, voit
+     l'album de son lien, supprime SES photos de CE telephone. */
+  gerer_corbeille: ["atelier", "responsable"],
+  gerer_personnes: ["atelier", "responsable"],
+  defaire_fusion: ["atelier"],
+  effacer_photo: ["atelier"],
+  se_presenter: ["participant"],
+  voir_album: ["participant"],
+  supprimer_ses_photos: ["participant"],
 };
 ok("chaque action, chaque role : exactement le tableau du PRD",
    ACTIONS.length === Object.keys(attenduDroits).length
    && ACTIONS.every((a) => ROLES.every((role) => peut(role, a) === attenduDroits[a].includes(role))));
-ok("L'EQUIPE N'ECRIT RIEN : aucune action d'ecriture ne l'admet",
-   ACTIONS_ECRITURE.length === ACTIONS.length - 1 && ACTIONS_ECRITURE.every((a) => !peut("equipe", a)));
+ok("L'EQUIPE N'ECRIT RIEN : aucune action d'ecriture ne l'admet (deux lectures : l'espace, l'album du participant)",
+   ACTIONS_ECRITURE.length === ACTIONS.length - 2 && ACTIONS_ECRITURE.every((a) => !peut("equipe", a)));
+ok("l'equipe ne voit pas la corbeille et ne touche a aucune personne (decision 4 du 20/10)",
+   !peut("equipe", "gerer_corbeille") && !peut("equipe", "gerer_personnes") && !peut("equipe", "voir_album"));
 ok("l'equipe voit l'espace", peut("equipe", "voir_espace"));
-ok("le participant ne fait que deposer",
-   ACTIONS.filter((a) => peut("participant", a)).join() === "deposer_photos");
+ok("le participant depose, se presente, voit l'album de son lien et supprime SES photos ; rien d'autre",
+   ACTIONS.filter((a) => peut("participant", a)).join() === "deposer_photos,se_presenter,voir_album,supprimer_ses_photos");
+ok("defaire une fusion et effacer pour de bon : l'atelier SEUL",
+   ROLES.every((r) => peut(r, "defaire_fusion") === (r === "atelier") && peut(r, "effacer_photo") === (r === "atelier")));
 ok("l'atelier ne choisit ni le style ni la couverture, et ne valide pas le BAT",
    !peut("atelier", "choisir_style") && !peut("atelier", "valider_brief")
    && !peut("atelier", "choisir_couverture") && !peut("atelier", "valider_bat"));
@@ -733,7 +747,8 @@ titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage s
   ok("les deux routes passent l'instant present ; le PATCH lit la cloture en base pour comparer",
     /lireSaisieEdition\(corps, "creation", undefined, new Date\(\)\)/.test(lire("src/app/api/admin/collectif/editions/route.ts"))
       && /lireSaisieEdition\(corps, "modification", actuel, new Date\(\)\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts"))
-      && /\.select\("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le"\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
+      && /lireActuel\("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le, ouverture_le"\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts"))
+      && /if \(lu\.error && personnesAbsentes\(lu\.error\)\) lu = await lireActuel\("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le"\)/.test(lire("src/app/api/admin/collectif/editions/[id]/route.ts")));
   ok("l'ecran ne renvoie pas une cloture inchangee en reglage (une edition close reste reglable)",
     /const clotureChangee = creation \|\| v\.cloture_local !== props\.initiales\.cloture_local;/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx"))
       && /if \(clotureChangee\) corps\.cloture_le = cloture_le;/.test(lire("src/app/admin/collectif/FormulaireEdition.tsx")));
@@ -2678,8 +2693,8 @@ titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en d
     && !A.aRelire(100_000, 0, false, 30_000) && A.aRelire(30_000, 0, true, 30_000) && !A.aRelire(29_999, 0, true, 30_000)
     && A.aRelire(20_000, 0, true, 60_000, true) && !A.aRelire(19_999, 0, true, 60_000, true));
   const etat = lire("src/app/api/collectif/photos/etat/route.ts");
-  ok("la lecture legere : le token par chargerAcces, le droit de voir, un compte en `head`, aucune ecriture, et `depuis` passe TEL QUEL (microsecondes)",
-    /chargerAcces\(/.test(etat) && /peut\(acces\.role, "voir_espace"\)/.test(etat) && /count: "exact", head: true/.test(etat) && !/\.(insert|update|upsert|delete)\(/.test(etat) && /String\(corps\.depuis\)\.trim\(\)/.test(etat) && /limit\(depuis \? ARRIVEES_LUES_MAX : 1\)/.test(etat));
+  ok("la lecture legere : le token par chargerAcces, le droit de voir, un compte SANS ligne (GET `limit(0)` depuis la corbeille du 20/10), aucune ecriture, et `depuis` passe TEL QUEL (microsecondes)",
+    /chargerAcces\(/.test(etat) && /peut\(acces\.role, "voir_espace"\)/.test(etat) && /select\("id", COMPTE_SANS_LIGNE\)/.test(etat) && /\(avec \? tete\.is\("supprimee_le", null\) : tete\)\.limit\(0\)/.test(etat) && !/\.(insert|update|upsert|delete)\(/.test(etat) && /String\(corps\.depuis\)\.trim\(\)/.test(etat) && /limit\(depuis \? ARRIVEES_LUES_MAX : 1\)/.test(etat));
   const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
   const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
   ok("l'ecran : les pastilles des la premiere personne, le nom sur chaque vignette, l'annonce et « Les voir », le sondage de 30 s (pas 3,5 s)",
@@ -2993,11 +3008,12 @@ titre("— T-192 : le nom du participant ne change plus —");
       && /\{nomFixe \? \(/.test(depot) && /il ne se change plus ensuite/.test(depot));
   const route = lire("src/app/api/collectif/depot/presign/route.ts");
   ok("la route reprend le nom deja donne par l'appareil AVANT de compter et d'ecrire, et ne le cherche que pour un participant",
-    /if \(role === "participant" && appareilLu\) \{\s*const connu = await nomDeLAppareil\(/.test(route) && /if \(connu\) deposant = connu;/.test(route)
+    /if \(role === "participant" && appareilLu && !participant\) \{\s*const connu = await nomDeLAppareil\(/.test(route) && /if \(connu\) deposant = connu;/.test(route)
+      && /if \(participant\) deposant = nomAffiche\(participant\);/.test(route)
       && route.indexOf("nomDeLAppareil(") < route.indexOf("compterPourPlafond(") && route.indexOf("nomDeLAppareil(") < route.indexOf('from("collectif_photos").insert(lignes)'));
   const connu = lire("src/lib/collectif/participantConnu.ts");
   ok("le nom de l'appareil se lit chez les PARTICIPANTS de l'edition, le libelle d'un lien n'est pas un nom, et l'appareil se compte en `head`",
-    /\.eq\("role_deposant", "participant"\)/.test(connu) && /nom\.toLowerCase\(\) !== libelle/.test(connu) && /count: "exact", head: true/.test(connu));
+    /\.eq\("role_deposant", "participant"\)/.test(connu) && /nom\.toLowerCase\(\) !== libelle/.test(connu) && /select\("id", COMPTE_SANS_LIGNE\)/.test(connu) && /\.limit\(0\)/.test(connu));
   const page = lire("src/app/depot/[token]/page.tsx");
   ok("la page lit le cookie de l'appareil (meme cookie sur tous les liens) et ne cherche rien si la collecte est close (ni si le depot n'est pas regle, T-195)",
     /\(await cookies\(\)\)\.get\(COOKIE_APPAREIL\)/.test(page) && /ouvert && regle && estAppareil\(appareil\)/.test(page));
@@ -3659,18 +3675,20 @@ async function sondeT167() {
     const avecLien = fausse((_a, rang) => ({ count: rang === 0 ? 2500 : 7, error: null }));
     const lu = await C.compterPourPlafond(avecLien.client, "ed-1", "app-1", LUNDI_MIDI, "lien-1");
     const [total, parAppareil] = avecLien.appels;
-    const tete = (a: Appel | undefined) => a?.table === "collectif_photos" && a.colonnes === "id" && JSON.stringify(a.options) === JSON.stringify({ count: "exact", head: true });
-    ok("deux comptes `head` exacts, et rien d'autre : ni lignes, ni tri, ni tranche, ni limite",
-      avecLien.appels.length === 2 && avecLien.appels.every(tete) && avecLien.appels.every((a) => !a.filtres.some((f) => /^(order|range|limit|in)/.test(f))));
-    ok("le total : l'edition ET le filtre du plafond ; par appareil : le meme, plus l'appareil et le lien",
-      total?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre}`
-        && parAppareil?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | eq provenance_id lien-1`);
+    /* Depuis la corbeille (20/10) : un compte exact en GET `limit(0)`, jamais `head` (un HEAD filtre sur une
+       colonne absente rend une erreur SANS code, mesure sur la vraie base ; le repli ne la reconnaitrait pas). */
+    const tete = (a: Appel | undefined) => a?.table === "collectif_photos" && a.colonnes === "id" && JSON.stringify(a.options) === JSON.stringify({ count: "exact" }) && a.filtres[a.filtres.length - 1] === "limit";
+    ok("deux comptes exacts SANS ligne (`limit(0)`), et rien d'autre : ni tri, ni tranche, ni `in`",
+      avecLien.appels.length === 2 && avecLien.appels.every(tete) && avecLien.appels.every((a) => !a.filtres.some((f) => /^(order|range|in)/.test(f))));
+    ok("le total : l'edition, le filtre du plafond, HORS corbeille ; par appareil : le meme, plus l'appareil, la place (une photo supprimee par son auteur la libere) et le lien",
+      total?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | is supprimee_le | limit`
+        && parAppareil?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | or supprimee_le.is.null,supprimee_par.neq.auteur | eq provenance_id lien-1 | limit`);
     ok("le compte de la base est rendu tel quel, au-dela de 1 000 (le plafond total s'applique de nouveau)",
       lu?.total === 2500 && lu.parAppareil === 7);
     const sansLien = fausse(() => ({ count: 3, error: null }));
     await C.compterPourPlafond(sansLien.client, "ed-1", "app-1", LUNDI_MIDI);
     ok("hors d'un lien a plafond : l'appareil compte sur toute l'edition (aucun filtre de lien)",
-      sansLien.appels[1]?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1`);
+      sansLien.appels[1]?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | or supprimee_le.is.null,supprimee_par.neq.auteur | limit`);
     const sansAppareil = fausse(() => ({ count: 42, error: null }));
     const seul = await C.compterPourPlafond(sansAppareil.client, "ed-1", null, LUNDI_MIDI, "lien-1");
     ok("sans appareil : un seul compte, et 0 par appareil sans requete", sansAppareil.appels.length === 1 && seul?.total === 42 && seul.parAppareil === 0);
@@ -3708,11 +3726,12 @@ async function sondeT167() {
     ok("les sept lectures de photos passent par `lireToutesLesLignes` ; plus aucun `.limit(20000)` ni `.limit(2000)` sur les photos",
       sites.every((f) => /lireToutesLesLignes<\w+>\(/.test(code(f)) && !/\.limit\((2000|20000)\)/.test(code(f))));
     const collecte = lire("src/lib/collectif/collecte.ts");
-    ok("collecte.ts : `compterPourPlafond` compte (head), lance ses deux comptes ensemble, ne lit aucune ligne",
-      /count: "exact", head: true/.test(collecte) && /Promise\.all\(\[compter\(\), duLien\(\)\]\)/.test(collecte) && !/\.limit\(/.test(collecte) && !/compteDansPlafond\(/.test(collecte));
+    ok("collecte.ts : `compterPourPlafond` compte (GET `limit(0)`, aucune ligne), lance ses deux comptes ensemble",
+      /select\("id", COMPTE_SANS_LIGNE\)/.test(collecte) && /Promise\.all\(\[\(avec \? compter\(\)\.is\("supprimee_le", null\) : compter\(\)\)\.limit\(0\), deLaPersonne\(avec\)\]\)/.test(collecte)
+        && !/\.limit\([1-9]/.test(collecte) && !/compteDansPlafond\(/.test(collecte));
 
     const lot = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
-    const iCompte = lot.indexOf('select("id", { count: "exact", head: true })');
+    const iCompte = lot.indexOf('select("id", COMPTE_SANS_LIGNE)');
     ok("le lot : le compte exact AVANT la lecture ; moins de lignes lues que de photos comptees = 500 `lot_incomplet` qui donne les deux nombres ; `total` rendu",
       iCompte > 0 && iCompte < lot.indexOf("lireToutesLesLignes<Ligne>(") && /if \(total === null \|\| data\.length < total\)/.test(lot)
         && /error: "lot_incomplet", message, lues: data\.length, total \}, \{ status: 500 \}/.test(lot) && /photos lues sur \$\{total\.toLocaleString\("fr-FR"\)\} arrivées/.test(lot)
@@ -4316,7 +4335,7 @@ async function sondeT194() {
       const morceaux = code.split("{ status: 500 }");
       return morceaux.length > 1 && morceaux.slice(0, -1).every((m) => m.slice(-420).includes(`noterEchec(supabase, edition.id, "${quoi}"`));
     };
-    ok("depot/presign : chaque refus 500 (lecture, ecriture) s'ecrit aussi au journal", chaque500(presign, "declaration") && (presign.match(/\{ status: 500 \}/g) ?? []).length === 4);
+    ok("depot/presign : chaque refus 500 (lecture, ecriture, et depuis le 20/10 la personne illisible) s'ecrit aussi au journal", chaque500(presign, "declaration") && (presign.match(/\{ status: 500 \}/g) ?? []).length === 5);
     ok("depot/complete : la lecture ratee, le coffre muet et l'ecriture refusee s'ecrivent au journal ; la reponse ne change pas",
       chaque500(completeR, "confirmation") && /noterEchec\(supabase, edition\.id, "confirmation", \{ etape: "coffre", n: pannesCoffre \}\)/.test(completeR)
         && /noterEchec\(supabase, edition\.id, "confirmation", \{ etape: "ecriture", n: ecrituresRatees \}\)/.test(completeR) && /return NextResponse\.json\(\{ confirmees, rejetees, absentes \}\);/.test(completeR));
@@ -5038,7 +5057,458 @@ async function sondeLotA4() {
       && !/\.(insert|update|upsert|delete)\(/.test(lire("src/app/api/collectif/photos/etat/route.ts")));
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(() => {
+
+/* ═══════════════ Planches du 20/10 : personnes, corbeille, album, ouverture (lot w1, migration 20261023) ═══════════════ */
+
+async function verifPersonnesCorbeille() {
+  const Pe = await import("@/lib/collectif/personnes");
+  const Co = await import("@/lib/collectif/corbeille");
+  const Al = await import("@/lib/collectif/album");
+  const Ou = await import("@/lib/collectif/ouverture");
+  const Mi = await import("@/lib/collectif/migration");
+  const Hc = await import("@/lib/collectif/horsCorbeille");
+  const Col = await import("@/lib/collectif/collecte");
+  const Rs = await import("@/lib/collectif/resumePhotos");
+  const Dos = await import("@/lib/collectif/dossiers");
+  const Dep = await import("@/lib/collectif/depot");
+  const Ps = await import("@/lib/collectif/personnesServeur");
+  const Cs = await import("@/lib/collectif/corbeilleServeur");
+  const { phraseEvenement } = await import("@/lib/collectif/recit");
+  const { randomUUID } = await import("node:crypto");
+  const silence = async <R>(f: () => Promise<R>): Promise<R> => {
+    const avant = console.error;
+    console.error = () => {};
+    try {
+      return await f();
+    } finally {
+      console.error = avant;
+    }
+  };
+
+  titre("— w1 : la personne, son adresse (personnes.ts) —");
+  ok("l'adresse : sans blanc, en minuscules ; une forme fausse, trop longue ou hors ASCII est refusee",
+    Pe.normaliserEmail("  Lea.Martin@Audencia.COM ") === "lea.martin@audencia.com" && Pe.normaliserEmail("lea@") === null && Pe.normaliserEmail("lea martin@a.fr") === null
+      && Pe.normaliserEmail(`${"a".repeat(250)}@a.fr`) === null && Pe.normaliserEmail("léa@audencia.com") === null && Pe.normaliserEmail(42) === null);
+  ok("le responsable voit l'adresse MASQUEE (« l•••@audencia.com »), l'atelier entiere, l'equipe rien",
+    Pe.masquerEmail("lea.martin@audencia.com") === "l•••@audencia.com" && Pe.emailPour("lea@a.fr", "entier") === "lea@a.fr"
+      && Pe.emailPour("lea@a.fr", "masque") === "l•••@a.fr" && Pe.emailPour("lea@a.fr", "aucun") === null && Pe.emailPour(null, "entier") === null);
+  ok("le nom compare pour PROPOSER : sans accents, sans casse, espaces resserres",
+    Pe.cleSansAccents("Léa  Martin") === Pe.cleSansAccents("lea martin") && Pe.cleSansAccents("Zoé") === "zoe" && Pe.cleSansAccents("Léa") !== Pe.cleSansAccents("Léo"));
+  const id1 = Pe.lireIdentite({ email: "lea@a.fr" }, false);
+  const id2 = Pe.lireIdentite({ email: "lea@a.fr", prenom: "Léa" }, true);
+  const id3 = Pe.lireIdentite({ email: "lea@a.fr", prenom: " Léa ", nom: " Martin " }, false);
+  ok("se presenter : l'adresse seule est une QUESTION (rien a creer), prenom sans nom un refus, les deux la personne",
+    id1.ok && id1.identite === null && !id2.ok && id2.erreur === "nom_incomplet" && /Écris/.test(id2.message)
+      && id3.ok && id3.identite?.prenom === "Léa" && id3.identite.nom === "Martin" && !Pe.lireIdentite({ email: "x" }, false).ok);
+  ok("renommer (responsable ou atelier) : prenom ET nom, 80 caracteres chacun",
+    Pe.lireRenommage({ prenom: "Léa", nom: "Martin" }).ok && !Pe.lireRenommage({ prenom: "Léa" }).ok && !Pe.lireRenommage({ prenom: "L", nom: "x".repeat(81) }).ok);
+  const u = randomUUID();
+  ok("une personne se designe par `p:<uuid>` ou `n:<nom compare>`, jamais par un libelle ; « Sans nom » ne se designe pas",
+    JSON.stringify(Pe.lireRefPersonne(`p:${u.toUpperCase()}`)) === JSON.stringify({ genre: "participant", id: u })
+      && JSON.stringify(Pe.lireRefPersonne("n:Léa  Martin")) === JSON.stringify({ genre: "nom", cle: "léa martin" })
+      && Pe.lireRefPersonne("n:") === null && Pe.lireRefPersonne("n:Sans nom") === null && Pe.lireRefPersonne("p:pas-un-uuid") === null && Pe.lireRefPersonne("Léa") === null
+      && Pe.ecrireRefPersonne({ genre: "nom", cle: "léa" }) === "n:léa");
+  const ligne = (id: string, prenom: string, nom: string, fusionne_dans: string | null = null): import("@/lib/collectif/personnes").LigneParticipant => ({
+    id, email: `${prenom.toLowerCase()}@a.fr`, prenom, nom, premier_lien_id: null, created_at: "2026-10-20T10:00:00Z", vu_le: "2026-10-20T10:00:00Z", renomme_le: null, fusionne_dans, fusionne_le: fusionne_dans ? "2026-10-20T11:00:00Z" : null,
+  });
+  const A = ligne(randomUUID(), "Léa", "Martin");
+  const B = ligne(randomUUID(), "Lea", "Martin", A.id);
+  const C = ligne(randomUUID(), "Lea", "Bis", B.id);
+  const parId = new Map([A, B, C].map((x) => [x.id, x]));
+  const boucle1 = ligne(randomUUID(), "X", "Y");
+  const boucle2 = ligne(randomUUID(), "Z", "W", boucle1.id);
+  boucle1.fusionne_dans = boucle2.id;
+  ok("une adresse d'une personne fusionnee retrouve celle qui RESTE (au bout de la chaine) ; une boucle ne devine rien",
+    Pe.auBoutDesFusions(C, parId)?.id === A.id && Pe.auBoutDesFusions(A, parId)?.id === A.id
+      && Pe.auBoutDesFusions(boucle1, new Map([boucle1, boucle2].map((x) => [x.id, x]))) === null);
+
+  const lien1 = randomUUID();
+  const lien2 = randomUUID();
+  const r = (o: Partial<import("@/lib/collectif/personnes").LigneResumePersonne>) => ({ role_deposant: "participant", provenance_id: lien1, deposant: null, appareil_id: null, participant_id: null, n: 1, derniere: "2026-10-20T12:00:00Z", ...o });
+  const personnes = Pe.listerPersonnes(
+    [A, B],
+    [
+      r({ participant_id: A.id, deposant: "Léa Martin", n: 20 }),
+      r({ participant_id: A.id, deposant: "Léa Martin", provenance_id: null, n: 4, derniere: "2026-10-21T08:00:00Z" }),
+      r({ deposant: "Lea Martin", n: 3, appareil_id: "tel-a" }),
+      r({ deposant: "Léa", n: 2, appareil_id: "tel-b" }),
+      r({ deposant: "Hugo", provenance_id: lien2, n: 7, appareil_id: "tel-c" }),
+      r({ deposant: null, n: 1, appareil_id: "tel-d" }),
+      { role_deposant: "responsable", provenance_id: null, deposant: "Mathilde", appareil_id: null, participant_id: null, n: 50, derniere: "2026-10-20T12:00:00Z" },
+    ],
+    new Map([[A.id, 2]]),
+    "masque"
+  );
+  const lea = personnes.find((p) => p.ref === `p:${A.id}`);
+  ok("la liste : une personne connue = sa ligne, ses photos de tous ses liens, ses telephones, son adresse masquee ; la fusionnee n'apparait plus",
+    lea?.n === 24 && lea.liens.length === 2 && lea.liens[0].cle === `lien:${lien1}` && lea.liens[1].cle === "participants" && lea.telephones === 2 && lea.email === "l•••@a.fr"
+      && lea.derniere === "2026-10-21T08:00:00Z" && !personnes.some((p) => p.ref === `p:${B.id}`));
+  ok("la liste : une personne d'AVANT est un nom compare (`n:`), sans adresse ; le responsable et l'atelier ne sont pas des personnes",
+    personnes.some((p) => p.ref === "n:lea martin" && !p.participant && p.email === null && p.n === 3 && p.telephones === 1)
+      && personnes.some((p) => p.ref === "n:sans nom") && !personnes.some((p) => p.nom === "Mathilde") && personnes[0].ref === `p:${A.id}`);
+  const proposees = Pe.proposerFusions(personnes);
+  ok("les doublons de noms se PROPOSENT : « Léa Martin » et « Lea Martin » (meme nom sans accent), « Léa » et « Léa Martin » (meme prenom, meme lien)",
+    proposees.some((f) => f.a === `p:${A.id}` && f.b === "n:lea martin" && f.raison === "meme_nom")
+      && proposees.some((f) => f.b === "n:léa" && f.raison === "meme_prenom"));
+  ok("…jamais « Sans nom », jamais deux personnes sans lien commun, jamais deux fois la meme paire",
+    !proposees.some((f) => f.a === "n:sans nom" || f.b === "n:sans nom") && !proposees.some((f) => f.a === "n:hugo" || f.b === "n:hugo")
+      && new Set(proposees.map((f) => [f.a, f.b].sort().join("|"))).size === proposees.length);
+  const pf = Pe.planFusion({ genre: "participant", id: A.id }, { genre: "nom", cle: "lea martin" }, "cible");
+  const pf2 = Pe.planFusion({ genre: "nom", cle: "léa" }, { genre: "participant", id: A.id }, "source");
+  ok("fusionner : celle qui a une ADRESSE reste (elle seule se retrouve sur un autre telephone) ; « le nom garde » suit le choix",
+    pf.ok && pf.reste.genre === "participant" && pf.part.genre === "nom" && pf.nomDe === "part"
+      && pf2.ok && pf2.reste.genre === "participant" && pf2.nomDe === "part"
+      && !Pe.planFusion({ genre: "nom", cle: "a" }, { genre: "nom", cle: "a" }, "cible").ok && !Pe.planFusion(null, { genre: "nom", cle: "a" }, "cible").ok);
+  ok("un nom d'avant garde sur une personne a adresse : premier mot = prenom ; un seul mot ne s'invente pas de nom",
+    JSON.stringify(Pe.decouperNom("Léa  Martin Dupont")) === JSON.stringify({ prenom: "Léa", nom: "Martin Dupont" }) && Pe.decouperNom("Léa") === null && Pe.decouperNom("") === null);
+  const ids = [randomUUID(), randomUUID(), randomUUID()];
+  const groupes = Pe.grouperAvantFusion([
+    { id: ids[0], deposant: "Lea", participant_id: null },
+    { id: ids[1], deposant: "Lea", participant_id: null },
+    { id: ids[2], deposant: "Léa Martin", participant_id: A.id },
+  ]);
+  const journal = Pe.lireFusionJournal({ reste: `p:${A.id}`, part: "n:lea", resteAvant: null, nomApres: "Léa Martin", photos: groupes });
+  ok("defaire une fusion : le journal garde CHAQUE photo et ce qu'elle portait avant ; il se relit tel quel, une forme abimee ne se relit pas",
+    groupes.length === 2 && journal?.n === 3 && journal.photos.find((g) => g.deposant === "Lea")?.ids.length === 2 && journal.reste === `p:${A.id}`
+      && Pe.lireFusionJournal({ reste: "p:x", part: "n:lea", nomApres: "a", photos: [] }) === null && Pe.lireFusionJournal({ reste: `p:${A.id}`, part: "n:lea", nomApres: "a", photos: [{ ids: ["pas-un-uuid"], deposant: null, participant_id: null }] }) === null);
+  ok("le prenom seul dans l'album (jamais le nom complet des autres)",
+    Pe.prenomPourAlbum({ prenom: "Léa", deposant: "Léa Martin" }) === "Léa" && Pe.prenomPourAlbum({ deposant: "Hugo Lefèvre" }) === "Hugo" && Pe.prenomPourAlbum({ deposant: null }) === Dos.SANS_NOM);
+
+  titre("— w1 : la corbeille (corbeille.ts) —");
+  ok("les ids d'un geste : des uuid, 500 au plus, sans doublon ; une entree illisible refuse tout le geste",
+    JSON.stringify(Co.lireIdsPhotos([ids[0], ids[0].toUpperCase(), ids[1]])) === JSON.stringify([ids[0], ids[1]]) && Co.lireIdsPhotos([ids[0], "x"]) === null
+      && Co.lireIdsPhotos([]) === null && Co.lireIdsPhotos(Array.from({ length: 501 }, () => randomUUID())) === null && Co.lireIdsPhotos(Array.from({ length: 500 }, () => randomUUID()))?.length === 500);
+  const t0 = "2026-10-01T10:00:00.000Z";
+  const apres = (jours: number) => new Date(Date.parse(t0) + jours * 86_400_000);
+  ok("30 jours : l'echeance, les jours restants (alerte sous 3), la purge exactement a 30 jours ; le seuil de la purge dit la meme chose",
+    Co.DELAI_CORBEILLE_JOURS === 30 && Co.echeanceCorbeille(t0) === "2026-10-31T10:00:00.000Z" && Co.joursRestants(t0, apres(0)) === 30 && Co.joursRestants(t0, apres(28.5)) === 2
+      && Co.joursRestants(t0, apres(40)) === 0 && !Co.aPurger(t0, apres(29.99)) && Co.aPurger(t0, apres(30)) && !Co.aPurger(null, apres(99))
+      && t0 < Co.seuilPurge(apres(30.01)) && !(t0 < Co.seuilPurge(apres(29.99))) && Co.ALERTE_JOURS === 3);
+  const ph = (o: Partial<import("@/lib/collectif/corbeille").PhotoDuParticipant>) => ({ role_deposant: "participant", provenance_id: lien1, appareil_id: "tel-a", participant_id: A.id, confirmee_le: t0, supprimee_le: null, ...o });
+  ok("un participant ne supprime QUE les photos de CE telephone et de sa personne (l'adresse, non verifiee, n'ouvre pas ce droit)",
+    Co.peutSupprimerSaPhoto(ph({}), "tel-a", A.id) && !Co.peutSupprimerSaPhoto(ph({}), "tel-b", A.id) && !Co.peutSupprimerSaPhoto(ph({}), "tel-a", B.id)
+      && !Co.peutSupprimerSaPhoto(ph({}), null, A.id) && Co.peutSupprimerSaPhoto(ph({ participant_id: null }), "tel-a", null)
+      && !Co.peutSupprimerSaPhoto(ph({ role_deposant: "responsable", provenance_id: null }), "tel-a", A.id)
+      && !Co.peutSupprimerSaPhoto(ph({ confirmee_le: null }), "tel-a", A.id) && !Co.peutSupprimerSaPhoto(ph({ supprimee_le: t0 }), "tel-a", A.id));
+  /* Le filtre de la place, lu comme PostgREST le lit (un `or` : l'une ou l'autre condition), contre la regle pure. */
+  const selonLaBase = (p: { supprimee_le?: string | null; supprimee_par?: string | null }) =>
+    Co.FILTRE_PLACE_PERSONNE.split(",").some((c) => (c === "supprimee_le.is.null" ? !p.supprimee_le : c === "supprimee_par.neq.auteur" ? p.supprimee_par != null && p.supprimee_par !== "auteur" : false));
+  const cas = [{}, { supprimee_le: t0, supprimee_par: "auteur" }, { supprimee_le: t0, supprimee_par: "responsable" }, { supprimee_le: t0, supprimee_par: "atelier" }];
+  ok("la place : une photo supprimee par son AUTEUR la libere, une photo retiree par le responsable ou l'atelier la garde ; le filtre de la base dit la meme chose",
+    cas.every((p) => selonLaBase(p) === Co.compteDansLaPlace(p)) && cas.map((p) => Co.compteDansLaPlace(p)).join() === "true,false,true,true");
+  ok("qui a supprime, dit a l'ecran (planche 5)",
+    Co.parQui("auteur", "Yanis Haddad", "Mathilde Roux") === "par son auteur, Yanis Haddad" && Co.parQui("responsable", null, "Mathilde Roux") === "par Mathilde Roux"
+      && Co.parQui("atelier", null, null) === "par l'atelier" && Co.estSupprimeePar("auteur") && !Co.estSupprimeePar("constructor"));
+  const edId = randomUUID();
+  const phId = randomUUID();
+  ok("l'effacement ne touche que les objets de la photo, sous le prefixe de SON edition (une cle etrangere est ignoree)",
+    JSON.stringify(Cs.objetsDeLaPhoto({ id: phId, r2_key: `collectif/${edId}/photos/${phId}/original.jpg`, vignette_key: `collectif/${randomUUID()}/x.jpg` }, edId))
+      === JSON.stringify([`collectif/${edId}/photos/${phId}/original.jpg`, `collectif/${edId}/photos/${phId}/vignette.jpg`]));
+
+  titre("— w1 : l'album du lien (album.ts) et l'accord du 20/10 (accord.ts) —");
+  const pa = (o: Partial<import("@/lib/collectif/album").PhotoAlbum>) => ({ role_deposant: "participant", provenance_id: lien1, confirmee_le: t0, supprimee_le: null, accord_version: "2026-10-20", ...o });
+  ok("l'album d'un lien : ses photos, arrivees, hors corbeille, SOUS l'accord du 20/10 ; celles du 17/10 n'ont jamais ete promises aux autres",
+    Al.dansLAlbum(pa({}), lien1) && !Al.dansLAlbum(pa({}), lien2) && !Al.dansLAlbum(pa({ supprimee_le: t0 }), lien1) && !Al.dansLAlbum(pa({ confirmee_le: null }), lien1)
+      && !Al.dansLAlbum(pa({ accord_version: "2026-10-17" }), lien1) && !Al.dansLAlbum(pa({ accord_version: null }), lien1));
+  ok("l'album du lien general : les photos de participant venues du lien general, jamais celles d'un lien de contribution ni du responsable",
+    Al.dansLAlbum(pa({ provenance_id: null }), null) && !Al.dansLAlbum(pa({}), null) && !Al.dansLAlbum(pa({ provenance_id: null, role_deposant: "responsable" }), null));
+  /* Le filtre ecrit pour PostgREST, rejoue sur des lignes : il retient exactement ce que `dansLAlbum` retient. */
+  const appliquer = (p: Record<string, unknown>, f: import("@/lib/collectif/album").FiltreAlbum) =>
+    f.methode === "eq" ? p[f.colonne] === f.valeur : f.methode === "is" ? p[f.colonne] === null || p[f.colonne] === undefined : f.methode === "not_is" ? p[f.colonne] !== null && p[f.colonne] !== undefined : f.valeurs.includes(p[f.colonne] as string);
+  const lignesAlbum = [pa({}), pa({ provenance_id: lien2 }), pa({ provenance_id: null }), pa({ provenance_id: null, role_deposant: "responsable" }), pa({ supprimee_le: t0 }), pa({ accord_version: "2026-10-17" }), pa({ confirmee_le: null })];
+  ok("le filtre de l'album ecrit pour la base retient EXACTEMENT les photos de `dansLAlbum`, lien de contribution comme lien general",
+    [lien1, null].every((l) => lignesAlbum.every((p) => Al.filtreAlbum(l).every((f) => appliquer(p as Record<string, unknown>, f)) === Al.dansLAlbum(p, l))));
+  ok("« a moi » : ma personne, ou, sans personne, ce telephone ; « N personnes » : une par personne, sinon par nom, « Sans nom » par telephone",
+    Al.estAMoi({ participant_id: A.id, appareil_id: "tel-z" }, A.id, "tel-a") && !Al.estAMoi({ participant_id: A.id, appareil_id: "tel-a" }, B.id, "tel-a") && Al.estAMoi({ participant_id: null, appareil_id: "tel-a" }, null, "tel-a")
+      && Al.personnesDeLAlbum([{ participant_id: A.id, deposant: "Léa Martin", appareil_id: "1" }, { participant_id: A.id, deposant: "Léa Martin", appareil_id: "2" }, { deposant: "hugo", appareil_id: "3" }, { deposant: "Hugo ", appareil_id: "4" }, { deposant: null, appareil_id: "5" }, { deposant: "", appareil_id: "6" }]) === 4);
+  ok("l'accord du 20/10 : le texte du 17/10 MOT POUR MOT, puis la phrase de l'album ; la version affichee reste celle du 17/10 tant que la page ne montre pas la phrase",
+    Accord.VERSION_ACCORD === "2026-10-17" && Accord.VERSION_ACCORD_ALBUM === "2026-10-20"
+      && (Accord.TEXTES_ACCORD.get("2026-10-20") ?? "").startsWith(Accord.TEXTES_ACCORD.get("2026-10-17") as string) && Accord.TEXTES_ACCORD.get("2026-10-20")?.endsWith(" {album}") === true
+      && [...Accord.VERSIONS_ALBUM].join() === "2026-10-20" && !Accord.VERSIONS_ALBUM.has("2026-10-17"));
+  ok("la phrase validee nomme le lien ; le lien general a son equivalent sans nom ; le serveur accepte les deux versions, aucune autre",
+    Accord.phraseAlbum(" Bateau  1 ") === "Les personnes de « Bateau 1 » verront aussi les photos que j'envoie ici." && Accord.phraseAlbum(null) === Accord.PHRASES_ALBUM.general && !Accord.phraseAlbum(null).includes("{")
+      && Accord.lireAccord({ accord: true, accordVersion: "2026-10-20" })?.version === "2026-10-20" && Accord.lireAccord({ accord: true, accordVersion: "2026-10-17" })?.version === "2026-10-17"
+      && Accord.lireAccord({ accord: true, accordVersion: "2026-10-21" }) === null && Accord.texteAccord("2026-10-21", { evenement: "a", deOrganisation: "b", lien: null }) === null
+      && Accord.texteAccord("2026-10-20", { evenement: "Week-end en mer", deOrganisation: "d'Audencia", lien: "Bateau 1" }) === `J'accepte que Bellajour utilise ces photos pour composer le magazine « Week-end en mer » d'Audencia, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit. Les personnes de « Bateau 1 » verront aussi les photos que j'envoie ici.`);
+
+  titre("— w1 : l'ouverture du depot (ouverture.ts, saisie.ts) —");
+  const ouv = "2026-11-06T07:00:00.000Z";
+  ok("sans ouverture (ou illisible) le depot est ouvert ; avant l'heure il est ferme, a l'heure il ouvre",
+    Ou.depotOuvert(null, new Date()) && Ou.depotOuvert(undefined, new Date()) && Ou.depotOuvert("le 6 novembre", new Date("2026-01-01"))
+      && !Ou.depotOuvert(ouv, new Date("2026-11-06T06:59:59Z")) && Ou.depotOuvert(ouv, new Date(ouv)));
+  ok("« Il ouvrira le vendredi 6 novembre à 8 h » (heure de Paris), « 8 h 30 » quand les minutes comptent",
+    Ou.quandOuvre(ouv) === "vendredi 6 novembre à 8 h" && Ou.quandOuvre("2026-11-06T07:30:00.000Z") === "vendredi 6 novembre à 8 h 30" && Ou.quandOuvre(null) === ""
+      && Ou.phrasesPasEncoreOuvert(ouv, "ecole_tu").quand === "Il ouvrira le vendredi 6 novembre à 8 h." && /^Garde ce lien/.test(Ou.phrasesPasEncoreOuvert(ouv, "ecole_tu").garder)
+      && Ou.messagePasOuvert(ouv) === "Le dépôt n'est pas encore ouvert : il ouvrira le vendredi 6 novembre à 8 h." && Ou.ERREUR_PAS_OUVERT === "depot_pas_ouvert");
+  const base = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
+  const LE_20 = new Date("2026-10-20T12:00:00Z");
+  const s1 = Saisie.lireSaisieEdition(base, "creation", undefined, LE_20);
+  const s2 = Saisie.lireSaisieEdition({ ...base, ouverture_le: ouv }, "creation", undefined, LE_20);
+  const s3 = Saisie.lireSaisieEdition({ ...base, ouverture_le: "2026-11-16T07:00:00.000Z" }, "creation", undefined, LE_20);
+  const actuel = { plafond_participant_atelier: null, plafond_participant_client: null, plafond_total: null, cloture_le: "2026-11-15T22:59:00.000Z", ouverture_le: ouv };
+  const s4 = Saisie.lireSaisieEdition({ ouverture_le: "2026-11-06T07:00:20.000Z" }, "modification", actuel, LE_20);
+  const s5 = Saisie.lireSaisieEdition({ ouverture_le: "" }, "modification", actuel, LE_20);
+  const s6 = Saisie.lireSaisieEdition({ ouverture_le: "" }, "modification", { ...actuel, ouverture_le: undefined }, LE_20);
+  ok("la saisie : vide, rien n'est ecrit (une edition se cree sans la migration) ; reglee, un instant ; apres la cloture, refusee a son etape",
+    s1.ok && !("ouverture_le" in s1.edition) && s2.ok && s2.edition.ouverture_le === ouv && !s3.ok && s3.erreurs[0].champ === "ouverture_le"
+      && Saisie.ETAPE_DU_CHAMP.ouverture_le === "calendrier" && Saisie.LIBELLE_CHAMP.ouverture_le === "Ouverture du dépôt"
+      && !Saisie.lireSaisieEdition({ ...base, ouverture_le: "demain" }, "creation", undefined, LE_20).ok);
+  ok("en reglage : inchangee (a la minute) elle n'est pas reecrite ; videe, elle s'efface SEULEMENT si elle existait (sans la colonne, rien ne part)",
+    s4.ok && !("ouverture_le" in s4.edition) && s5.ok && s5.edition.ouverture_le === null && s6.ok && !("ouverture_le" in s6.edition));
+
+  titre("— w1 : la migration 20261023, vue du code (repli) —");
+  ok("`personnesAbsentes` : une colonne OU une table de la migration nommee dans l'erreur (42703, PGRST204, PGRST205, 42P01) ; jamais la colonne d'une autre",
+    Mi.personnesAbsentes({ code: "42703", message: "column collectif_photos.supprimee_le does not exist" }) && Mi.personnesAbsentes({ code: "PGRST204", message: "Could not find the 'participant_id' column of 'collectif_photos' in the schema cache" })
+      && Mi.personnesAbsentes({ code: "PGRST205", message: "Could not find the table 'public.collectif_participants' in the schema cache" }) && Mi.personnesAbsentes({ code: "42703", message: "column collectif_editions.ouverture_le does not exist" })
+      && !Mi.personnesAbsentes({ code: "42703", message: "column collectif_photos.accord_version does not exist" }) && !Mi.personnesAbsentes({ code: "57014", message: "supprimee_le" })
+      && !Mi.personnesAbsentes(null) && !Mi.personnesAbsentes({ message: "" }) && Mi.MIGRATION_PERSONNES === "supabase/migrations/20261023_collectif_personnes_corbeille.sql");
+  {
+    Hc.oublierAbsence();
+    const appels: boolean[] = [];
+    const absente = { code: "42703", message: "column collectif_photos.supprimee_le does not exist" };
+    const r1 = await Hc.lireHorsCorbeille(async (avec) => (appels.push(avec), avec ? { error: absente, n: 0 } : { error: null, n: 5 }));
+    const r2 = await Hc.lireHorsCorbeille(async (avec) => (appels.push(avec), { error: null, n: avec ? -1 : 7 }));
+    Hc.oublierAbsence();
+    const r3 = await Hc.lireHorsCorbeille(async (avec) => (appels.push(avec), { error: null, n: avec ? 9 : -1 }));
+    const autre = await Hc.lireHorsCorbeille(async (avec) => (appels.push(avec), { error: { code: "42703", message: "column collectif_photos.colonne_x does not exist" }, n: avec ? 1 : 2 }));
+    const tete = await Hc.lireHorsCorbeille(async (avec) => (appels.push(avec), { error: { message: "" }, n: avec ? 1 : 2 }));
+    ok("le repli : avec le filtre d'abord ; la migration absente (nommee), la meme lecture SANS lui, et l'absence retenue une minute ; oubliee, on reessaie avec",
+      r1.n === 5 && !r1.avec && r2.n === 7 && !r2.avec && r3.n === 9 && r3.avec && JSON.stringify(appels.slice(0, 4)) === "[true,false,false,true]");
+    ok("…une colonne d'une AUTRE migration, ou une erreur sans code (un HEAD), ne leve jamais le filtre de la corbeille",
+      autre.avec && autre.n === 1 && tete.avec && tete.n === 1 && JSON.stringify(appels.slice(4)) === "[true,true]" && Hc.migrationPersonnesPresumee() && Hc.MEMOIRE_ABSENCE_MS === 60_000);
+    Hc.oublierAbsence();
+  }
+  {
+    /* compterPourPlafond contre une fausse base : la personne connue, puis la migration absente. */
+    type Appel = { colonnes: string; options: unknown; filtres: string[] };
+    const fausse = (rendre: (a: Appel, rang: number) => { count: number | null; error: { code: string; message: string } | null }) => {
+      const appels: Appel[] = [];
+      const client = {
+        from: () => ({
+          select: (colonnes: string, options?: unknown) => {
+            const a: Appel = { colonnes, options, filtres: [] };
+            const rang = appels.length;
+            appels.push(a);
+            const q = {
+              eq: (c: string, v: unknown) => (a.filtres.push(`eq ${c} ${String(v)}`), q),
+              or: (f: string) => (a.filtres.push(`or ${f}`), q),
+              is: (c: string) => (a.filtres.push(`is ${c}`), q),
+              limit: (n: number) => (a.filtres.push(`limit ${n}`), q),
+              then: (oui: (r: unknown) => unknown, non?: (e: unknown) => unknown) => Promise.resolve(rendre(a, rang)).then(oui, non),
+            };
+            return q;
+          },
+        }),
+      };
+      return { client: client as unknown as Parameters<typeof Col.compterPourPlafond>[0], appels };
+    };
+    const MIDI = new Date("2026-10-20T12:00:00Z");
+    const filtre = Col.filtreDansPlafond(MIDI);
+    Hc.oublierAbsence();
+    const connue = fausse((_a, rang) => ({ count: rang === 0 ? 100 : 12, error: null }));
+    const lu = await Col.compterPourPlafond(connue.client, "ed", "tel-a", MIDI, "lien-1", A.id);
+    ok("le plafond par PERSONNE : connue, elle se compte par sa personne (tous ses telephones), la place liberee par son auteur, sur son lien ; jamais en `head`",
+      lu?.total === 100 && lu.parAppareil === 12 && connue.appels[1]?.filtres.join(" | ") === `eq edition_id ed | or ${filtre} | eq participant_id ${A.id} | or ${Co.FILTRE_PLACE_PERSONNE} | eq provenance_id lien-1 | limit 0`
+        && connue.appels.every((a) => JSON.stringify(a.options) === JSON.stringify({ count: "exact" })));
+    Hc.oublierAbsence();
+    const sans = fausse((a) => (a.filtres.some((f) => /supprimee|participant_id/.test(f)) ? { count: null, error: { code: "42703", message: "column collectif_photos.supprimee_le does not exist" } } : { count: 3, error: null }));
+    const lu2 = await Col.compterPourPlafond(sans.client, "ed", "tel-a", MIDI, null, A.id);
+    ok("…sans la migration : les deux comptes se refont SANS la corbeille et par TELEPHONE (la personne ne peut pas etre connue), le depot continue",
+      lu2?.total === 3 && lu2.parAppareil === 3 && sans.appels.length === 4 && sans.appels[3]?.filtres.join(" | ") === `eq edition_id ed | or ${filtre} | eq appareil_id tel-a | limit 0`
+        && sans.appels[2]?.filtres.join(" | ") === `eq edition_id ed | or ${filtre} | limit 0`);
+    Hc.oublierAbsence();
+  }
+
+  titre("— w1 : la vue redefinie, en memoire et en SQL —");
+  {
+    const p = (o: Partial<import("@/lib/collectif/resumePhotos").PhotoResumable>): import("@/lib/collectif/resumePhotos").PhotoResumable => ({
+      id: randomUUID(), role_deposant: "participant", provenance_id: lien1, provenance_type: "participant", deposant: "Léa Martin", appareil_id: "tel-a", participant_id: null,
+      preselection: false, signalee: false, confirmee_le: "2026-10-20T10:00:00Z", vignette_key: null, ...o,
+    });
+    const g = Rs.resumerPhotos([p({ participant_id: A.id }), p({ participant_id: A.id, appareil_id: "tel-b" }), p({}), p({ appareil_id: "tel-b" }), p({ role_deposant: "responsable", provenance_id: null, appareil_id: "tel-r" })]);
+    const connue = g.filter((x) => x.participant_id === A.id);
+    ok("la vue regroupe par PERSONNE quand elle est connue (deux telephones, une ligne, sans telephone) ; sans personne, par telephone comme avant ; le responsable sans telephone",
+      connue.length === 1 && connue[0].n === 2 && connue[0].appareil_id === null && g.filter((x) => x.participant_id === null && x.role_deposant === "participant").length === 2
+        && g.find((x) => x.role_deposant === "responsable")?.appareil_id === null && Rs.somme(g) === 5 && Dos.compterPersonnes(g) === 1);
+    ok("la liste des personnes lit `participant_id` dans la vue ; la grille et le tableau de bord gardent les seize colonnes d'avant",
+      Rs.COLONNES_RESUME_PERSONNES === `${Rs.COLONNES_RESUME}, participant_id` && !Rs.COLONNES_RESUME.includes("participant_id"));
+  }
+  const mig = lire("supabase/migrations/20261023_collectif_personnes_corbeille.sql");
+  const ancienne = lire("supabase/migrations/20261022_collectif_resume_photos.sql");
+  const sqlSeul = (s: string) => s.split("\n").filter((l) => !/^\s*--/.test(l)).join("\n");
+  const colonnesDeLaVue = (s: string) => {
+    const corps = sqlSeul(s).slice(sqlSeul(s).indexOf("create or replace view public.collectif_photos_resume"));
+    const liste = corps.slice(corps.indexOf("select") + 6, corps.indexOf("\nfrom ("));
+    const out: string[] = [];
+    let prof = 0;
+    let mot = "";
+    for (const c of liste) {
+      if (c === "(") prof++;
+      if (c === ")") prof--;
+      if (c === "," && prof === 0) {
+        out.push(mot.trim());
+        mot = "";
+      } else mot += c;
+    }
+    out.push(mot.trim());
+    return out.map((m) => (/\bas\s+(\w+)\s*$/.exec(m)?.[1] ?? m.replace(/^p\./, "")).trim());
+  };
+  const avant = colonnesDeLaVue(ancienne);
+  const apresV = colonnesDeLaVue(mig);
+  ok("`create or replace view` : les SEIZE colonnes d'avant, dans le meme ordre, puis `participant_id` EN FIN",
+    avant.length === 16 && apresV.length === 17 && avant.every((c, i) => apresV[i] === c) && apresV[16] === "participant_id");
+  ok("la vue ecarte la corbeille, regroupe par personne, garde `appareil_cle` (jamais un `appareil` calcule : 42702 du 20/10), reste `security_invoker` et fermee",
+    /where c\.confirmee_le is not null\s+and c\.supprimee_le is null/.test(mig) && /group by p\.edition_id, p\.role_deposant, p\.provenance_id, p\.provenance_type, p\.deposant, p\.appareil_cle, p\.participant_id;/.test(mig)
+      && /when c\.participant_id is null and \(c\.role_deposant = 'participant' or c\.provenance_id is not null\)\s+then c\.appareil_id\s+end as appareil_cle/.test(mig)
+      && !/\bend as appareil\b/.test(mig) && /create or replace view public\.collectif_photos_resume\s+with \(security_invoker = true\)/.test(mig) && /revoke all on public\.collectif_photos_resume from anon, authenticated;/.test(mig));
+  ok("migration 20261023 : atomique, idempotente, deux tables RLS sans politique fermees a anon et authenticated, colonnes sans valeur par defaut, aucune ligne ecrite, PostgREST relit",
+    /^begin;$/m.test(mig) && /^commit;$/m.test(mig) && /notify pgrst, 'reload schema';/.test(mig)
+      && ["collectif_participants", "collectif_participants_appareils"].every((t) => new RegExp(`create table if not exists public\\.${t} \\(`).test(mig) && new RegExp(`alter table public\\.${t} enable row level security;`).test(mig) && new RegExp(`revoke all on public\\.${t} from anon, authenticated;`).test(mig))
+      && /add column if not exists participant_id uuid references public\.collectif_participants\(id\) on delete set null;/.test(mig) && /add column if not exists supprimee_le timestamptz;/.test(mig)
+      && /add column if not exists supprimee_par text\s+check \(supprimee_par is null or supprimee_par in \('auteur', 'responsable', 'atelier'\)\);/.test(mig) && /alter table public\.collectif_editions\s+add column if not exists ouverture_le timestamptz;/.test(mig)
+      && /constraint collectif_participants_email_unique unique \(edition_id, email\)/.test(mig) && /primary key \(edition_id, appareil_id\)/.test(mig)
+      && /if not exists \(\s*select 1 from pg_constraint where conname = 'collectif_photos_corbeille_complete'/.test(mig)
+      && !/\b(insert into|update public|delete from|truncate|drop )/i.test(sqlSeul(mig).replace(/'(?:[^']|'')*'/g, "''"))
+      && !/add column if not exists (participant_id|supprimee_le|supprimee_par|ouverture_le)[^;]*\bdefault\b/i.test(mig));
+  ok("les valeurs que le code ecrit sont celles du `check` (`supprimee_par`) ; les colonnes que le repli reconnait sont celles de la migration",
+    Co.SUPPRIMEE_PAR.every((v) => mig.includes(`'${v}'`)) && Mi.COLONNES_PERSONNES.every((c) => new RegExp(`add column if not exists ${c}\\b`).test(mig)) && Mi.TABLES_PERSONNES.every((t) => mig.includes(`public.${t}`)));
+
+  titre("— w1 : les lectures existantes ecartent la corbeille (relues dans le code) —");
+  const sitesCorbeille = [
+    "src/app/api/collectif/photos/route.ts",
+    "src/app/api/collectif/photos/etat/route.ts",
+    "src/app/api/collectif/photos/marquer/route.ts",
+    "src/app/api/collectif/collecte/terminer/route.ts",
+    "src/app/edition/[token]/donnees.ts",
+    "src/app/admin/collectif/donnees.ts",
+    "src/app/api/admin/collectif/editions/[id]/lot/route.ts",
+    "src/lib/collectif/doublonsStockes.ts",
+    "src/lib/collectif/participantConnu.ts",
+    "src/lib/collectif/collecte.ts",
+  ];
+  ok(`grille, arrivees, selection, fin de collecte, tableau de bord, fiche atelier, lot, doublons, appareil, plafond (${sitesCorbeille.length} sites) : chaque lecture passe par \`lireHorsCorbeille\` et pose le filtre`,
+    sitesCorbeille.every((f) => /lireHorsCorbeille\(/.test(lire(f)) && /\.is\("supprimee_le", null\)/.test(lire(f))));
+  ok("aucun compte filtre sur la corbeille en `head` (un HEAD sans la colonne rend une erreur sans code) : GET `limit(0)`",
+    sitesCorbeille.every((f) => {
+      const code = lire(f);
+      return !/head: true \}\)[^;]*\.is\("supprimee_le"/.test(code.replace(/\n\s*/g, " ")) && (!/COMPTE_SANS_LIGNE/.test(code) || /\.limit\(0\)/.test(code));
+    }));
+  const presign = lire("src/app/api/collectif/depot/presign/route.ts");
+  ok("depot/presign : l'ouverture refuse le PARTICIPANT avant l'heure (409), avant la lecture du lot ; la personne (adresse, sinon telephone) avant les comptes ; `participant_id` seulement connue",
+    presign.indexOf("if (role === \"participant\" && !depotOuvert(edition.ouverture_le, maintenant))") > 0 && presign.indexOf("!depotOuvert(") < presign.indexOf("Array.isArray(corps.connues)")
+      && /error: ERREUR_PAS_OUVERT, message: messagePasOuvert\(edition\.ouverture_le\)/.test(presign) && presign.indexOf("trouverParEmail(") < presign.indexOf("compterPourPlafond(")
+      && /participant\?\.id \?\? null\)/.test(presign) && /\.\.\.\(participant \? \{ participant_id: participant\.id \} : \{\}\)/.test(presign)
+      && /error: "participant_inconnu"/.test(presign) && /\.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(presign));
+  ok("apres « Ce n'est pas toi ? », le telephone ne reprend pas le nom de la personne d'avant : seules les photos SANS personne disent le nom du telephone",
+    /return \(avec \? q\.is\("participant_id", null\) : q\)\.order\("created_at", \{ ascending: false \}\)\.limit\(5\)/.test(lire("src/lib/collectif/participantConnu.ts")));
+  ok("une photo a la corbeille redeclaree : « deja la », ni dupliquee ni ressuscitee",
+    (() => {
+      const f = { cle: "a.jpg|1|2", nom: "a.jpg", taille: 1, type: "image/jpeg", tailleVignette: null, ordre: null };
+      const d = Dep.planDeclaration([f], new Map([[f.cle, { id: "x", r2_key: "k", confirmee: true, corbeille: true }]]), { illimitee: true });
+      return d[0].sorte === "deja" && "corbeille" in d[0] && d[0].corbeille === true;
+    })());
+
+  titre("— w1 : les routes nouvelles (relues dans le code) —");
+  const rParticipant = lire("src/app/api/collectif/depot/participant/route.ts");
+  const rAlbum = lire("src/app/api/collectif/depot/album/route.ts");
+  const rSupprimer = lire("src/app/api/collectif/depot/supprimer/route.ts");
+  const rCorbeille = lire("src/app/api/collectif/photos/corbeille/route.ts");
+  const rPersonnes = lire("src/app/api/collectif/personnes/route.ts");
+  const rAdmCorbeille = lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts");
+  const rAdmPersonnes = lire("src/app/api/admin/collectif/editions/[id]/personnes/route.ts");
+  ok("le participant : la porte du DEPOT seulement (jamais l'espace), son droit, un frein par appelant ; une personne ne se cree ni avant l'ouverture ni apres la cloture",
+    [rParticipant, rAlbum, rSupprimer].every((f) => /chargerAcces\(String\(corps\.token \?\? ""\), "depot"\)/.test(f)) && /peut\(acces\.role, "se_presenter"\)/.test(rParticipant)
+      && /creerPlafond\(20\)/.test(rParticipant) && /const peutCreer = ouverte && ouvertureOk;/.test(rParticipant) && /identite: peutCreer \? identite\.identite : null/.test(rParticipant)
+      && /peut\(acces\.role, "voir_album"\)/.test(rAlbum) && /peut\(acces\.role, "supprimer_ses_photos"\)/.test(rSupprimer));
+  ok("supprimer SES photos : le cookie du telephone EXIGE, la regle `peutSupprimerSaPhoto`, a la corbeille « par son auteur », jamais apres la cloture",
+    /const appareil = appareilDeRequete\(request\);\s*if \(!appareil\)/.test(rSupprimer) && /mettreALaCorbeille\(supabase, edition\.id, ids, "auteur", null, \(p\) => peutSupprimerSaPhoto\(p, appareil, participantId\)\)/.test(rSupprimer)
+      && rSupprimer.indexOf("collecteOuverte(") < rSupprimer.indexOf("mettreALaCorbeille("));
+  ok("l'album : `filtreAlbum` (lien, arrivee, corbeille, accord du 20/10), le PRENOM seul, le badge et la suppression d'apres ce telephone ; rien n'est ecrit",
+    /filtreAlbum\(provenanceId\)/.test(rAlbum) && /prenomPourAlbum\(/.test(rAlbum) && /peutSupprimerSaPhoto\(/.test(rAlbum) && !/\.(insert|update|upsert|delete)\(/.test(rAlbum) && !/deposant: p\.deposant,\s*$/m.test(rAlbum) && !/email/.test(rAlbum));
+  ok("la corbeille du responsable : `gerer_corbeille` AVANT tout, lister compris (le lien d'equipe ne la voit pas) ; supprimer « par le responsable »",
+    rCorbeille.indexOf('peut(acces.role, "gerer_corbeille")') > 0 && rCorbeille.indexOf('peut(acces.role, "gerer_corbeille")') < rCorbeille.indexOf('corps.action === "lister"')
+      && /mettreALaCorbeille\(supabase, edition\.id, ids, "responsable", null\)/.test(rCorbeille) && !/effacer/.test(rCorbeille.replace(/\/\*[\s\S]*?\*\//g, "")));
+  ok("les personnes : lister pour qui voit l'espace (adresse masquee au responsable, aucune a l'equipe) ; renommer et fusionner apres `gerer_personnes`",
+    /chargerPersonnes\(supabase, edition\.id, acces\.role === "responsable" \? "masque" : "aucun"\)/.test(rPersonnes) && rPersonnes.indexOf('peut(acces.role, "gerer_personnes")') < rPersonnes.indexOf('corps.action === "renommer"')
+      && !/defaireFusion/.test(rPersonnes));
+  ok("l'atelier : l'adresse entiere, defaire une fusion, effacer pour de bon EN DEUX TEMPS (`verifier`), le journal dit qui",
+    /chargerPersonnes\(supabase, id, "entier"\)/.test(rAdmPersonnes) && /defaireFusion\(supabase, id, corps\.evenement, par\)/.test(rAdmPersonnes)
+      && /effacerMaintenant\(supabase, id, ids, par, corps\.verifier === true\)/.test(rAdmCorbeille) && /const par = prenomDe\(qui\);/.test(rAdmCorbeille) && /const par = prenomDe\(qui\);/.test(rAdmPersonnes));
+  const releve = lire("src/app/api/atelier/mails/relever/route.ts");
+  ok("la purge des 30 jours : apres la reponse de la releve (aucun cron de plus), la meme echeance que le rattrapage",
+    releve.includes('after(() => import("@/lib/collectif/corbeilleServeur").then((m) => m.purgeQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));')
+      && releve.indexOf("purgeQuotidienne") > releve.indexOf("rattrapageQuotidien") && (JSON.parse(lire("vercel.json")) as { crons: unknown[] }).crons.length === 2);
+  const serveur = lire("src/lib/collectif/corbeilleServeur.ts");
+  const iCoffre = serveur.indexOf("objets.map((k) => supprimer(k))");
+  const iLigne = serveur.indexOf('.from("collectif_photos")\n      .delete()');
+  ok("effacer : le COFFRE d'abord, puis la ligne, seulement pour une photo dont tous les objets sont partis, et seulement encore a la corbeille",
+    iCoffre > 0 && iLigne > iCoffre && /if \(objets\.length && rendus\.every\(Boolean\)\) parties\.push\(p\.id\);/.test(serveur) && /\.delete\(\)\s*\.eq\("edition_id", editionId\)\s*\.in\("id", paquet\)\s*\.not\("supprimee_le", "is", null\)/.test(serveur));
+  ok("chaque geste de corbeille vide le cache des doublons et se journalise",
+    (serveur.match(/await invaliderDoublons\(supabase, editionId\);/g) ?? []).length === 3 && /journaliser\(supabase, \{ editionId \}, EVT_SUPPRIMEES/.test(serveur) && /journaliser\(supabase, \{ editionId \}, EVT_RESTAUREES/.test(serveur) && /journaliser\(supabase, \{ editionId \}, EVT_EFFACEES/.test(serveur));
+  {
+    const avant = process.env.COLLECTIF_OUVERT;
+    delete process.env.COLLECTIF_OUVERT;
+    let touche = false;
+    const muette = { from: () => { touche = true; throw new Error("aucune lecture attendue"); } } as unknown as Parameters<typeof Cs.purgeQuotidienne>[0];
+    const rp = await Cs.purgeQuotidienne(muette, Date.now() + 1000);
+    if (avant === undefined) delete process.env.COLLECTIF_OUVERT;
+    else process.env.COLLECTIF_OUVERT = avant;
+    ok("la purge sans COLLECTIF_OUVERT : rien, sans meme lire la base", rp === null && !touche);
+  }
+  ok("le journal dit chaque geste en francais", [
+    phraseEvenement("photos_supprimees", { n: 3, par: "auteur" }) === "3 photo(s) mise(s) à la corbeille par leur auteur.",
+    phraseEvenement("photos_effacees", { n: 2, par: "purge" }).includes("30 jours"),
+    phraseEvenement("personnes_fusionnees", { nomPart: "Lea", nomAvant: "Léa Martin", nomApres: "Léa Martin", n: 6 }).includes("« Lea » rejoint « Léa Martin »"),
+    phraseEvenement("personne_renommee", { avant: "Léa", apres: "Léa Martin", n: 4 }).includes("« Léa » devient « Léa Martin »"),
+    ["participant_presente", "telephone_oublie", "fusion_defaite", "photos_restaurees", "photos_marquees"].every((t) => phraseEvenement(t, { n: 1, prenom: "Léa" }) !== t),
+  ].every(Boolean));
+
+  titre("— w1 : se presenter, contre une fausse base (personnesServeur.ts) —");
+  {
+    type Ecrit = { table: string; quoi: string; ligne?: Record<string, unknown> };
+    const fausseBase = (connue: import("@/lib/collectif/personnes").LigneParticipant | null) => {
+      const ecrits: Ecrit[] = [];
+      const lecture = (rendu: unknown) => {
+        const q: Record<string, unknown> = {};
+        for (const m of ["select", "eq", "in", "not", "is", "order", "limit"]) q[m] = () => q;
+        q.maybeSingle = async () => ({ data: rendu, error: null });
+        q.single = async () => ({ data: rendu, error: null });
+        q.then = (oui: (r: unknown) => unknown) => Promise.resolve({ data: [], error: null }).then(oui);
+        return q;
+      };
+      const client = {
+        from: (table: string) => ({
+          select: () => lecture(table === "collectif_participants" ? connue : null),
+          insert: (ligne: Record<string, unknown>) => {
+            ecrits.push({ table, quoi: "insert", ligne });
+            const cree = { ...ligne, id: randomUUID(), created_at: "x", vu_le: "x", renomme_le: null, fusionne_dans: null, fusionne_le: null };
+            return { select: () => ({ single: async () => ({ data: cree, error: null }) }), then: (oui: (r: unknown) => unknown) => Promise.resolve({ error: null }).then(oui) };
+          },
+          upsert: async (ligne: Record<string, unknown>) => (ecrits.push({ table, quoi: "upsert", ligne }), { error: null }),
+          update: (ligne: Record<string, unknown>) => (ecrits.push({ table, quoi: "update", ligne }), { eq: async () => ({ error: null }) }),
+        }),
+      };
+      return { client: client as unknown as Parameters<typeof Ps.presenter>[0], ecrits };
+    };
+    const vide = fausseBase(null);
+    const q1 = await Ps.presenter(vide.client, { editionId: edId, email: "lea@a.fr", identite: null, provenanceId: lien1, appareil: "A".repeat(22) });
+    ok("une adresse inconnue SANS prenom ni nom : « inconnu », et RIEN n'est ecrit", q1.statut === "inconnu" && vide.ecrits.length === 0);
+    const neuve = fausseBase(null);
+    const q2 = await Ps.presenter(neuve.client, { editionId: edId, email: "lea@a.fr", identite: { prenom: "Léa", nom: "Martin" }, provenanceId: lien1, appareil: "A".repeat(22) });
+    ok("une adresse inconnue AVEC prenom et nom : la personne, puis CE telephone parle pour elle, puis le journal (adresse masquee)",
+      q2.statut === "cree" && neuve.ecrits.map((e) => `${e.table}:${e.quoi}`).join() === "collectif_participants:insert,collectif_participants_appareils:upsert,collectif_evenements:insert"
+        && neuve.ecrits[2].ligne?.type === "participant_presente" && (neuve.ecrits[2].ligne?.payload as Record<string, unknown>).a === "l***@a.fr" && !JSON.stringify(neuve.ecrits[2].ligne).includes("lea@a.fr"));
+    const deja = fausseBase(A);
+    const q3 = await Ps.presenter(deja.client, { editionId: edId, email: "léa@a.fr", identite: { prenom: "Autre", nom: "Nom" }, provenanceId: null, appareil: "B".repeat(22) });
+    ok("une adresse connue : sa personne, le nom envoye IGNORE (le participant ne se renomme pas), aucune personne creee",
+      q3.statut === "connu" && q3.participant.id === A.id && q3.nomIgnore && !deja.ecrits.some((e) => e.quoi === "insert") && deja.ecrits.some((e) => e.table === "collectif_participants_appareils" && e.quoi === "upsert"));
+    const absente = { from: () => ({ select: () => { const q: Record<string, unknown> = {}; for (const m of ["eq"]) q[m] = () => q; q.maybeSingle = async () => ({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.collectif_participants' in the schema cache" } }); return q; } }) } as unknown as Parameters<typeof Ps.presenter>[0];
+    const q4 = await silence(() => Ps.presenter(absente, { editionId: edId, email: "lea@a.fr", identite: { prenom: "L", nom: "M" }, provenanceId: null, appareil: "A".repeat(22) }));
+    ok("sans la migration : « absente » (la route repond 503 et le nomme), rien d'ecrit", q4.statut === "absente");
+  }
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

@@ -14,6 +14,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
+import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
@@ -201,7 +202,10 @@ type LignePhotoTableau = {
   vignette_key: string | null;
   confirmee_le: string;
   preselection: boolean;
+  participant_id?: string | null;
 };
+
+const COLONNES_TABLEAU = "id, signalee, role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection";
 
 /** Les vignettes de la mosaïque du tableau de bord : les plus récentes arrivées. */
 const MOSAIQUE = 6;
@@ -222,16 +226,20 @@ async function lireResumeTableau(supabase: ReturnType<typeof makeSupabase>, edit
   );
   if (!resume.error) return resume.data;
   if (!resumeAbsent(resume.error.code)) echec("résumé des photos du tableau de bord", resume.error);
-  const photos = await lireToutesLesLignes<LignePhotoTableau>(
-    () =>
-      supabase
-        .from("collectif_photos")
-        .select("id, signalee, role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection")
-        .eq("edition_id", editionId)
-        .not("confirmee_le", "is", null)
-        .returns<LignePhotoTableau[]>(),
-    { colonne: "confirmee_le", croissant: false },
-    "photos du tableau de bord"
+  /* Hors corbeille et par personne (migration 20261023, comme la vue) ; sans elle, la lecture d'avant. */
+  const photos = await lireHorsCorbeille((avec) =>
+    lireToutesLesLignes<LignePhotoTableau>(
+      () => {
+        const q = supabase
+          .from("collectif_photos")
+          .select(avec ? `${COLONNES_TABLEAU}, participant_id` : COLONNES_TABLEAU)
+          .eq("edition_id", editionId)
+          .not("confirmee_le", "is", null);
+        return (avec ? q.is("supprimee_le", null) : q).returns<LignePhotoTableau[]>();
+      },
+      { colonne: "confirmee_le", croissant: false },
+      "photos du tableau de bord"
+    )
   );
   if (photos.error) echec("photos du tableau de bord", photos.error);
   return resumerPhotos(photos.data ?? []);
@@ -242,17 +250,17 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
   const [mags, groupes, mosaiqueLue, contenus, message, provenances] = await Promise.all([
     lireMagazinesBrief(edition.id),
     lireResumeTableau(supabase, edition.id),
-    /* La mosaïque : les six dernières arrivées qui ont une vignette, et rien d'autre. */
-    supabase
-      .from("collectif_photos")
-      .select("vignette_key")
-      .eq("edition_id", edition.id)
-      .not("confirmee_le", "is", null)
-      .not("vignette_key", "is", null)
-      .order("confirmee_le", { ascending: false })
-      .order("id", { ascending: false })
-      .limit(MOSAIQUE)
-      .returns<{ vignette_key: string }[]>(),
+    /* La mosaïque : les six dernières arrivées qui ont une vignette, et rien d'autre. Hors
+       corbeille (migration 20261023) ; sans la colonne, la même lecture sans le filtre. */
+    lireHorsCorbeille((avec) => {
+      const q = supabase.from("collectif_photos").select("vignette_key").eq("edition_id", edition.id).not("confirmee_le", "is", null);
+      return (avec ? q.is("supprimee_le", null) : q)
+        .not("vignette_key", "is", null)
+        .order("confirmee_le", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(MOSAIQUE)
+        .returns<{ vignette_key: string }[]>();
+    }),
     lireEnvois(edition),
     supabase
       .from("collectif_messages")

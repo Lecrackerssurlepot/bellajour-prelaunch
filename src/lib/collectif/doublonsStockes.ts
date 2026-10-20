@@ -29,6 +29,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GroupeDoublons } from "@/lib/atelier/empreinte";
 import { calculerDoublons, lireGroupesStockes, signatureDoublons, type ResultatDoublons } from "./doublons";
+import { lireHorsCorbeille } from "./horsCorbeille";
 import { lireToutesLesLignes } from "./lignes";
 import { colonneAbsente, tableAbsente } from "./migration";
 
@@ -49,15 +50,16 @@ const PASSES_MAX = 3;
 
 /** La signature d'aujourd'hui : un compte et UNE ligne (jamais les photos). `null` si la base ne répond pas. */
 async function lireSignature(supabase: SupabaseClient, editionId: string): Promise<string | null> {
-  const { data, count, error } = await supabase
-    .from("collectif_photos")
-    .select("metadonnees_le", { count: "exact" })
-    .eq("edition_id", editionId)
-    .not("confirmee_le", "is", null)
-    .not("empreinte", "is", null)
-    .order("metadonnees_le", { ascending: false, nullsFirst: false })
-    .limit(1)
-    .returns<{ metadonnees_le: string | null }[]>();
+  /* Hors corbeille (migration 20261023) : une photo supprimée change le compte, donc la signature.
+     La corbeille vide aussi le cache à chaque geste (corbeilleServeur.ts). */
+  const { data, count, error } = await lireHorsCorbeille((avec) => {
+    const q = supabase.from("collectif_photos").select("metadonnees_le", { count: "exact" }).eq("edition_id", editionId).not("confirmee_le", "is", null);
+    return (avec ? q.is("supprimee_le", null) : q)
+      .not("empreinte", "is", null)
+      .order("metadonnees_le", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .returns<{ metadonnees_le: string | null }[]>();
+  });
   if (error) {
     console.error("[collectif] signature des doublons illisible", error.code, error.message);
     return null;
@@ -67,16 +69,15 @@ async function lireSignature(supabase: SupabaseClient, editionId: string): Promi
 
 /** Toutes les photos arrivées, quatre colonnes, dans l'ordre d'arrivée. */
 async function lireLignes(supabase: SupabaseClient, editionId: string): Promise<LigneDoublon[] | null> {
-  const { data, error } = await lireToutesLesLignes<LigneDoublon>(
-    () =>
-      supabase
-        .from("collectif_photos")
-        .select("id, empreinte, prise_le, ordre")
-        .eq("edition_id", editionId)
-        .not("confirmee_le", "is", null)
-        .returns<LigneDoublon[]>(),
-    { colonne: "confirmee_le", croissant: true },
-    "photos des doublons"
+  const { data, error } = await lireHorsCorbeille((avec) =>
+    lireToutesLesLignes<LigneDoublon>(
+      () => {
+        const q = supabase.from("collectif_photos").select("id, empreinte, prise_le, ordre").eq("edition_id", editionId).not("confirmee_le", "is", null);
+        return (avec ? q.is("supprimee_le", null) : q).returns<LigneDoublon[]>();
+      },
+      { colonne: "confirmee_le", croissant: true },
+      "photos des doublons"
+    )
   );
   if (error) {
     console.error("[collectif] photos des doublons illisibles", error.code, error.message);

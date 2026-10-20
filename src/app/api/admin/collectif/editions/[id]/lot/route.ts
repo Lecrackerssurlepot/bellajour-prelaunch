@@ -7,6 +7,7 @@ import { clePersonne } from "@/lib/collectif/dossiers";
 import { cleDuLien, dansLeLot, deposantsParLien, estCleDeLien, personneDeLaPhoto } from "@/lib/collectif/grille";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { dossierDuLot, nomsDuLotCollectif } from "@/lib/collectif/lotCollectif";
 import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
 
@@ -81,20 +82,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
      magazine sans les autres. Une photo arrivée PENDANT la lecture s'ajoute à la fin (tri
      par `confirmee_le`) : lire plus que le compte n'est pas une perte, lire moins en est une. */
   const supabase = makeSupabase();
-  const compte = await supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", id).not("confirmee_le", "is", null);
+  /* Hors corbeille (migration 20261023) : une photo supprimée ne part pas dans le lot ; sans la
+     colonne, le compte et les lignes se lisent sans le filtre. Le compte et la lecture suivent
+     LA MÊME règle (`avec` est retenu) : sinon `lot_incomplet` se tromperait. */
+  const compte = await lireHorsCorbeille((avec) => {
+    /* Le compte exact en GET `limit(0)` (aucune ligne), jamais `head` : un HEAD filtré sur la corbeille
+       rend, sans la migration, une erreur sans code que le repli ne reconnaîtrait pas (horsCorbeille.ts). */
+    const q = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", id).not("confirmee_le", "is", null);
+    return (avec ? q.is("supprimee_le", null) : q).limit(0);
+  });
   if (compte.error) {
     if (tableAbsente(compte.error.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
   const [lues, liensLus, edition] = await Promise.all([
     lireToutesLesLignes<Ligne>(
-      () =>
-        supabase
+      () => {
+        const q = supabase
           .from("collectif_photos")
           .select("id, r2_key, nom_origine, provenance_type, provenance_id, role_deposant, appareil_id, deposant, prise_le, signalee, preselection")
           .eq("edition_id", id)
-          .not("confirmee_le", "is", null)
-          .returns<Ligne[]>(),
+          .not("confirmee_le", "is", null);
+        return (compte.avec ? q.is("supprimee_le", null) : q).returns<Ligne[]>();
+      },
       { colonne: "confirmee_le", croissant: true },
       "photos du lot"
     ),

@@ -29,21 +29,68 @@
 import { parler } from "./espace";
 import type { Registre } from "./types";
 
-/** La version du texte affiché aujourd'hui : le jour où Mathias l'a choisi. */
+/**
+ * La version du texte affiché AUJOURD'HUI par `Depot.tsx` : le jour où Mathias
+ * l'a choisi. ⚠️ Elle ne passe à `VERSION_ACCORD_ALBUM` que le jour où la page
+ * AFFICHE la phrase de l'album (seconde vague des écrans du 20/10) : envoyer
+ * « 2026-10-20 » sous le texte du 17/10, ce serait enregistrer un accord que
+ * personne n'a lu.
+ */
 export const VERSION_ACCORD = "2026-10-17";
+
+/**
+ * La version du 20/10 (décision 7 de Mathias) : le texte du 17/10 MOT POUR MOT,
+ * puis la phrase de l'album (`PHRASES_ALBUM`). Une photo envoyée sous cette
+ * version entre dans l'album de son lien (album.ts) ; une photo envoyée sous
+ * celle du 17/10, jamais.
+ */
+export const VERSION_ACCORD_ALBUM = "2026-10-20";
+
+const TEXTE_17_10 =
+  "J'accepte que Bellajour utilise ces photos pour composer le magazine « {evenement} » {deOrganisation}, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit.";
 
 /**
  * Chaque version et son texte, tel que la page l'affiche. `{evenement}` et
  * `{deOrganisation}` sont les noms de l'édition (« de SKEMA », « d'Air
- * France », `deNom`). Une `Map`, jamais un objet littéral : une version
- * nommée « constructor » ne doit rien trouver (T-161).
+ * France », `deNom`) ; `{album}`, la phrase de l'album du lien
+ * (`phraseAlbum`). Une `Map`, jamais un objet littéral : une version nommée
+ * « constructor » ne doit rien trouver (T-161).
  */
 export const TEXTES_ACCORD: ReadonlyMap<string, string> = new Map([
-  [
-    "2026-10-17",
-    "J'accepte que Bellajour utilise ces photos pour composer le magazine « {evenement} » {deOrganisation}, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit.",
-  ],
+  ["2026-10-17", TEXTE_17_10],
+  ["2026-10-20", `${TEXTE_17_10} {album}`],
 ]);
+
+/** Les versions dont le texte dit que les autres personnes du lien verront les photos (album.ts). */
+export const VERSIONS_ALBUM: ReadonlySet<string> = new Set(["2026-10-20"]);
+
+/**
+ * La phrase de l'album, encadrée sous l'accord (planche 6) :
+ * - un lien de contribution : la phrase VALIDÉE par Mathias le 20/10, avec le
+ *   nom du lien (« Bateau 1 ») ;
+ * - le lien général : son équivalent sans nom de lien, PROPOSÉ par ce lot
+ *   (à relire par Mathias : c'est un texte légal).
+ * `{lien}` est le nom du lien tel que le responsable l'a écrit.
+ */
+export const PHRASES_ALBUM = {
+  lien: "Les personnes de « {lien} » verront aussi les photos que j'envoie ici.",
+  general: "Les personnes qui envoient leurs photos par ce lien verront aussi celles que j'envoie ici.",
+} as const;
+
+export function phraseAlbum(lien: string | null): string {
+  const nom = lien?.replace(/\s+/g, " ").trim() ?? "";
+  return nom ? PHRASES_ALBUM.lien.replace("{lien}", nom) : PHRASES_ALBUM.general;
+}
+
+/**
+ * Le texte d'une version, rempli : ce que la page affiche, mot pour mot.
+ * `null` pour une version inconnue (jamais un texte deviné).
+ */
+export function texteAccord(version: string, noms: { evenement: string; deOrganisation: string; lien: string | null }): string | null {
+  const modele = TEXTES_ACCORD.get(version);
+  if (modele === undefined) return null;
+  return modele.replace("{evenement}", noms.evenement).replace("{deOrganisation}", noms.deOrganisation).replace("{album}", phraseAlbum(noms.lien));
+}
 
 export type Accord = { version: string };
 

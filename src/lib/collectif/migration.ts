@@ -169,3 +169,40 @@ export const MESSAGE_DEMANDES_ABSENTE =
 export function contrainteRefusee(code: string | null | undefined): boolean {
   return code === "23514";
 }
+
+/* ─────────── les personnes, la corbeille, l'ouverture (planches du 20/10, T-198, T-199) ─────────── */
+
+/**
+ * Deux tables (`collectif_participants`, `collectif_participants_appareils`),
+ * trois colonnes de `collectif_photos` (`participant_id`, `supprimee_le`,
+ * `supprimee_par`), une de `collectif_editions` (`ouverture_le`), et la vue
+ * `collectif_photos_resume` redéfinie (hors corbeille, par personne).
+ *
+ * Sans elle, les LECTURES se replient (aucune photo n'est à la corbeille,
+ * aucune personne n'est connue, le plafond reste compté par téléphone :
+ * `horsCorbeille.ts`), et chaque ÉCRITURE nouvelle répond un vrai 503
+ * `migration_personnes_absente` qui nomme le fichier : se présenter par son
+ * adresse, supprimer, restaurer, renommer, fusionner, régler l'ouverture.
+ */
+export const MIGRATION_PERSONNES = "supabase/migrations/20261023_collectif_personnes_corbeille.sql";
+export const ERREUR_PERSONNES_ABSENTE = "migration_personnes_absente";
+export const MESSAGE_PERSONNES_ABSENTE =
+  "La mise à jour de la base pour les personnes et la corbeille n'est pas encore appliquée (20261023_collectif_personnes_corbeille.sql) : rien n'a été enregistré.";
+
+/** Les colonnes fraîches de la migration : une erreur 42703 / PGRST204 qui en nomme une dit qu'elle manque. */
+export const COLONNES_PERSONNES = ["participant_id", "supprimee_le", "supprimee_par", "ouverture_le"] as const;
+export const TABLES_PERSONNES = ["collectif_participants", "collectif_participants_appareils"] as const;
+
+/**
+ * Cette erreur dit-elle que la migration 20261023 manque ? Une colonne inconnue
+ * qui NOMME l'une des siennes (42703 en lecture, PGRST204 en écriture), ou une
+ * de ses tables inconnue (PGRST205 / 42P01). Une colonne inconnue qui n'est pas
+ * la sienne ne compte pas : son repli appartient à sa propre migration.
+ */
+export function personnesAbsentes(e: { code?: string | null; message?: string | null } | null | undefined): boolean {
+  if (!e) return false;
+  const m = e.message ?? "";
+  if (colonneAbsente(e.code)) return COLONNES_PERSONNES.some((c) => m.includes(c));
+  if (tableAbsente(e.code)) return TABLES_PERSONNES.some((t) => m.includes(t));
+  return false;
+}

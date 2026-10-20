@@ -4098,7 +4098,8 @@ titre("— T-176 : la fenêtre de signature d'une vignette (pure) —");
     );
   const appelants = fichiers(racine).filter((f) => /signerLectureVignette\(/.test(readFileSync(f, "utf8"))).map((f) => f.slice(racine.length + 1)).sort();
   ok(`signerLectureVignette n'est appele que par r2.ts et les ecrans du collectif (${appelants.join(", ")})`,
-     JSON.stringify(appelants) === JSON.stringify(["app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
+     /* Planches du 20/10 (lot w1) : l'album du participant et la corbeille (responsable, atelier) signent leurs vignettes de la même façon. */
+     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
   const r2src = readFileSync(resolve(racine, "lib/atelier/r2.ts"), "utf8");
   const corps = (nom: string) => {
     const debut = r2src.indexOf(`export async function ${nom}(`);

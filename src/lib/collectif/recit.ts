@@ -195,6 +195,35 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       const n = typeof payload.images === "number" ? payload.images : 0;
       return `Tailles réduites posées sur ${n} image${n > 1 ? "s" : ""} (${par}).`;
     }
+    /* ── les planches du 20/10 : personnes et corbeille (migration 20261023) ── */
+    case "participant_presente":
+      return `Un participant s'est présenté par son adresse : ${String(payload.prenom ?? "?")}${payload.a ? ` (${String(payload.a)})` : ""}.`;
+    case "telephone_oublie":
+      return "« Ce n'est pas toi ? » : un téléphone ne parle plus pour sa personne (ses photos lui restent).";
+    case "personne_renommee":
+      return `Personne renommée : « ${String(payload.avant ?? "?")} » devient « ${String(payload.apres ?? "?")} » (${String(payload.n ?? 0)} photo(s)).`;
+    case "personnes_fusionnees":
+      return `Personnes fusionnées : « ${String(payload.nomPart ?? "?")} » rejoint « ${String(payload.nomAvant ?? "?")} », sous le nom « ${String(payload.nomApres ?? "?")} » (${String(payload.n ?? 0)} photo(s)).`;
+    case "fusion_defaite":
+      return `Fusion défaite : ${String(payload.n ?? 0)} photo(s) rendue(s) à leur personne.`;
+    case "photos_supprimees": {
+      const qui = payload.par === "auteur" ? "par leur auteur" : payload.par === "atelier" ? "par l'atelier" : "par le responsable";
+      return `${String(payload.n ?? 0)} photo(s) mise(s) à la corbeille ${qui}.`;
+    }
+    case "photos_restaurees":
+      return `${String(payload.n ?? 0)} photo(s) restaurée(s) de la corbeille.`;
+    case "photos_effacees":
+      return payload.par === "purge"
+        ? `${String(payload.n ?? 0)} photo(s) effacée(s) pour de bon (30 jours à la corbeille).`
+        : `${String(payload.n ?? 0)} photo(s) effacée(s) pour de bon par l'atelier.`;
+    case "photos_marquees":
+      return payload.preselection === true
+        ? `${String(payload.n ?? 0)} photo(s) cochée(s) ajoutée(s) à la présélection du client.`
+        : payload.preselection === false
+          ? `${String(payload.n ?? 0)} photo(s) cochée(s) retirée(s) de la présélection du client.`
+          : payload.signalee === true
+            ? `${String(payload.n ?? 0)} photo(s) cochée(s) signalée(s) « à ne pas publier ».`
+            : `${String(payload.n ?? 0)} signalement(s) de photo retiré(s).`;
     case "mail_envoye":
       return `Mail ${libelleMail(payload.code)} envoyé à ${String(payload.a ?? "?")}.`;
     case "mail_echec":
