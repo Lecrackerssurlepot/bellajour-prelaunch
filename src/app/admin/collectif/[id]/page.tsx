@@ -5,7 +5,8 @@ import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, versChampParis } from "@/lib/collectif/dates";
-import { demandesDuFil, formaterJour } from "@/lib/collectif/livraison";
+import { A_FAIRE_DEVIS, demandesDuFil, devisAEnvoyer, formaterJour } from "@/lib/collectif/livraison";
+import { depotRegle } from "@/lib/collectif/plafonds";
 import { extraitDe } from "@/lib/collectif/messages";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
@@ -187,6 +188,14 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             ? { texte: "Brief en cours", ton: "ambre" }
             : { texte: "Brief à faire", ton: "gris" };
 
+  /* Ce qui bloque ou attend l'atelier, en tête de la vue d'ensemble.
+     T-195 : un plafond PAR PERSONNE qui manque ferme le lien des participants (la règle de
+     `placeRestante`, par `depotRegle`) ; tant que la collecte est ouverte, la fiche le dit. Un total
+     vide, lui, ne bloque rien (D27 : pas de limite pour toute l'édition), donc pas d'alerte.
+     D26 (T-152) : une proposition acceptée n'engage pas ; le devis à signer reste à envoyer. */
+  const parPersonneManque = etat === "preparation" && !depotRegle(e, { sansPlafond: false });
+  const devisEnAttente = devisAEnvoyer(documents);
+
   const pluriel = (n: number, mot: string) => `${n.toLocaleString("fr-FR")} ${mot}${n > 1 ? "s" : ""}`;
   const couverturesAimees = (n: number) => (n === 0 ? "aucune couverture aimée" : `${n} couverture${n > 1 ? "s" : ""} aimée${n > 1 ? "s" : ""}`);
 
@@ -205,6 +214,29 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           </li>
         ))}
       </ol>
+
+      {parPersonneManque || devisEnAttente.length ? (
+        <div className="eca-alertes" role="status">
+          {parPersonneManque ? (
+            <a href="?onglet=reglages" data-onglet="reglages" className="eca-bandeau eca-bandeau--chaud">
+              <span className="eca-point" aria-hidden="true" />
+              <span>
+                <strong>Photos par personne : à régler.</strong>
+                {" "}Le lien des participants reste fermé ; seuls les liens de contribution qui ont leur propre nombre reçoivent des photos. Réglages et liens →
+              </span>
+            </a>
+          ) : null}
+          {devisEnAttente.map((d) => (
+            <a key={d.id} href="?onglet=documents" data-onglet="documents" className="eca-bandeau eca-bandeau--chaud">
+              <span className="eca-point" aria-hidden="true" />
+              <span>
+                <strong>{A_FAIRE_DEVIS}</strong>
+                {` : « ${d.libelle} »${d.statut ? `, ${d.statut.charAt(0).toLowerCase()}${d.statut.slice(1)}` : ""}. Accepter n'engage pas le client : c'est le devis signé qui engage. Documents →`}
+              </span>
+            </a>
+          ))}
+        </div>
+      ) : null}
 
       <div className="eca-cartes">
         <section className="eca-carte">

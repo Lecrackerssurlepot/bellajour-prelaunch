@@ -9,10 +9,14 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formaterInstantParis } from "@/lib/collectif/dates";
 import { TYPES_DOCUMENT, TYPES_FICHIER_DOCUMENT } from "@/lib/collectif/documents";
+import { A_FAIRE_DEVIS, devisAEnvoyer } from "@/lib/collectif/livraison";
 import type { DocumentFiche } from "../donnees";
 
 export default function PanneauDocuments({ id, documents }: { id: string; documents: DocumentFiche[] }) {
   const router = useRouter();
+  /* D26 : une proposition acceptée n'engage pas ; le devis signé, si. Tant qu'aucun devis
+     n'est déposé après elle, la ligne le rappelle. */
+  const aEnvoyer = new Set(devisAEnvoyer(documents).map((d) => d.id));
   const [type, setType] = useState<string>("devis");
   const [libelle, setLibelle] = useState("");
   const [envoi, setEnvoi] = useState(false);
@@ -66,6 +70,11 @@ export default function PanneauDocuments({ id, documents }: { id: string; docume
             <li key={d.id}>
               <span>
                 {d.libelle} <span className="eca-sous">{d.libelleType}</span>
+                {aEnvoyer.has(d.id) ? (
+                  <span className="eca-afaire">
+                    <span className="eca-puce eca-puce--ambre">{A_FAIRE_DEVIS}</span>
+                  </span>
+                ) : null}
               </span>
               <span className="eca-sous">
                 {formaterInstantParis(d.quand)}

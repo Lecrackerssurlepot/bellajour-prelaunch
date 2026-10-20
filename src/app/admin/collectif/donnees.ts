@@ -244,7 +244,8 @@ export type MagazineFiche = Pick<MagazineLigne, "id" | "rang" | "nom" | "brief_v
 
 export type EntreeJournal = { id: string; quand: string; phrase: string };
 
-export type DocumentFiche = { id: string; libelle: string; libelleType: string; quand: string; par: string | null; statut: string | null };
+/** `type` (devis, proposition…) : pour « À faire : envoyer le devis à signer » (D26, `devisAEnvoyer`). */
+export type DocumentFiche = { id: string; type: string; libelle: string; libelleType: string; quand: string; par: string | null; statut: string | null };
 
 export type Collecte = {
   total: number;
@@ -533,7 +534,7 @@ export async function chargerEdition(
         )
       ),
       documents: ((docs.data ?? []) as { id: string; type: string; libelle: string; statut_texte: string | null; created_at: string; cree_par: string | null }[]).map(
-        (d) => ({ id: d.id, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par, statut: d.statut_texte })
+        (d) => ({ id: d.id, type: d.type, libelle: d.libelle, libelleType: libelleTypeDocument(d.type), quand: d.created_at, par: d.cree_par, statut: d.statut_texte })
       ),
       messages: fil.messages,
       nonLusAtelier: nonLus.error ? [] : (nonLus.data ?? []).map((m) => m.id),

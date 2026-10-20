@@ -1,7 +1,7 @@
 ---
 id: T-152
 titre: Les retours du 14/10 au soir (Notion « Lancement admin atelier Prestation B2B ») : photos rangées en dossiers, liens à part, atelier réorganisé
-etat: en-cours
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -116,9 +116,25 @@ ouvert: 2026-10-14
 ## Reste
 - ~~Mathias applique `20261017` et `20261018`~~ : appliquées le 15/10, vérifiées en SQL ; une pièce
   de chaque style, un lien supprimé, une réponse des deux côtés rejoués et relus en base.
-- Question 4 (l'acceptation d'une proposition fait-elle foi ?) : toujours ouverte.
+- ~~Question 4 (l'acceptation d'une proposition fait-elle foi ?)~~ : tranchée le 20/10 (D26),
+  voir plus bas.
 - Glisser un dossier ne marche qu'à la souris (pas au doigt) : sur téléphone, renommer et
   déposer suffisent ; à revoir si le besoin se présente.
+
+## Ce qui a été fait le 20/10 (lot a2, worktree `agent-a50f52eeeeed6d02d`, non commité)
+- D26, décision de Mathias : accepter une proposition n'engage pas, c'est le devis signé qui
+  engage. La carte du client le dit avant (« Accepter ne vous engage pas : vous recevrez ensuite
+  le devis à signer. »), pendant (« Cela ne vous engage pas : l'atelier en est prévenu et vous
+  envoie le devis à signer. C'est le devis signé qui engage. Rien n'est payé sur cette page. »)
+  et après (« L'atelier vous envoie le devis à signer : c'est lui qui engage. »), au registre
+  (`phrasesProposition`, livraison.ts).
+- Côté atelier : « À faire : envoyer le devis à signer » en tête de la vue d'ensemble et sous la
+  proposition dans « Documents du client », tant qu'aucun document « Devis signé » n'est déposé
+  APRÈS elle (`devisAEnvoyer`, livraison.ts ; choix réversible écrit dans D26).
+- Harnais : section « LOT a2 ». Captures : `g1-fiche-devis-a-envoyer.png`,
+  `g2-documents-devis-a-envoyer.png` (« Essai livraison (Claude) », archivée). La carte côté
+  client n'a pas été capturée (la seule édition qui a des propositions est archivée, son espace
+  répond 404).
 
 ## Les questions posées à Mathias
 1. Une capture de « bellajour.com/projet » (la page demande une connexion).

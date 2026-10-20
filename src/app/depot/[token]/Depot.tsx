@@ -23,6 +23,7 @@
 
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { VERSION_ACCORD } from "@/lib/collectif/accord";
+import { PHOTOS_SEULEMENT, phrasesIgnores } from "@/lib/collectif/depot";
 import { deNom } from "@/lib/collectif/espace";
 import { NOM_MAX, nomComplet, premierMot } from "@/lib/collectif/participant";
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
@@ -81,6 +82,8 @@ export default function Depot(props: Props) {
   const termine = vue.total > 0 && vue.enCours === 0 && vue.erreurs === 0;
   const recues = vue.arrivees + vue.dejaLa;
   const part = vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0;
+  /* Les fichiers écartés à l'ajout : la vidéo nommée comme telle (T-200). */
+  const ignores = phrasesIgnores(vue.ignores, vue.videos, vue.premiereVideo);
 
   if (vue.ferme) {
     return <p className="ec-dp-texte">{vue.ferme}</p>;
@@ -171,12 +174,19 @@ export default function Depot(props: Props) {
       <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => fichier.current?.click()}>
         {vue.total ? v("Ajouter d'autres photos", "Ajouter d'autres photos") : v("Choisir mes photos", "Choisir mes photos")}
       </button>
+      <p className="ec-dp-note">{PHOTOS_SEULEMENT}</p>
       {!nomPret ? (
         <p className="ec-dp-note">{v("Indiquez votre prénom et votre nom pour choisir vos photos.", "Indique ton prénom et ton nom pour choisir tes photos.")}</p>
       ) : !accord ? (
         <p className="ec-dp-note">{v("Cochez l'accord pour choisir vos photos.", "Coche l'accord pour choisir tes photos.")}</p>
       ) : null}
-      {vue.ignores && !vue.total ? <p className="ec-dp-note ec-dp-note--refus">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
+      {!vue.total
+        ? ignores.map((t) => (
+            <p key={t} className="ec-dp-note ec-dp-note--refus">
+              {t}
+            </p>
+          ))
+        : null}
 
       {vue.total ? (
         <div className="ec-dp-progres" role="status" aria-live="polite">
@@ -222,7 +232,11 @@ export default function Depot(props: Props) {
               Réessayer ({vue.erreurs})
             </button>
           ) : null}
-          {vue.ignores ? <p className="ec-dp-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
+          {ignores.map((t) => (
+            <p key={t} className="ec-dp-note">
+              {t}
+            </p>
+          ))}
         </div>
       ) : null}
 

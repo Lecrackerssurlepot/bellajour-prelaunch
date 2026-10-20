@@ -59,7 +59,10 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
     }
     case "lien_regenere": {
       const quel = LIBELLE_LIEN[String(payload.quel)] ?? "";
-      return `Lien ${quel} régénéré par ${par} : l'ancien ne fonctionne plus.`;
+      /* T-196 : les liens de contribution portent le token des participants, ils tombent avec lui. */
+      const n = typeof payload.liensCoupes === "number" ? payload.liensCoupes : 0;
+      const coupes = n > 0 ? ` ; ${n} lien${n > 1 ? "s" : ""} de contribution ${n > 1 ? "ont" : "a"} changé avec lui` : "";
+      return `Lien ${quel} régénéré par ${par} : l'ancien ne fonctionne plus${coupes}.`;
     }
     case "message_client":
       return `Message du client (${par}).`;

@@ -168,6 +168,10 @@ import { mailRendezVous } from "@/lib/collectif/mailsRdv";
 import { lireCompteAgenda } from "@/lib/collectif/agenda";
 import * as Pieces from "@/app/edition/[token]/style/pieces";
 import * as Demandes from "@/lib/collectif/demandes";
+import * as PlafondsLot from "@/lib/collectif/plafonds";
+import * as LiensLot from "@/lib/collectif/liens";
+import * as DepotLot from "@/lib/collectif/depot";
+import * as LivraisonLot from "@/lib/collectif/livraison";
 import { contrainteRefusee, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE, MIGRATION_DEMANDES } from "@/lib/collectif/migration";
 import { migrationDemandes, TYPE_SONDE } from "@/lib/collectif/sondeDemandes";
 import { estUuid } from "@/lib/collectif/cles";
@@ -484,8 +488,22 @@ const p5 = placeRestante(r(), { role: "participant", sansPlafond: true, dejaParA
 ok("un lien de provenance sans plafond : seul le total compte", !p5.illimitee && p5.place === 1000);
 const p6 = placeRestante(r({ plafond_participant_atelier: null }), part(0), 0);
 ok("plafond par personne non regle : le participant est refuse (on ne devine pas)", !p6.illimitee && p6.place === 0 && p6.borne === "plafond_non_regle");
+/* D27 (T-195, Mathias le 20/10 : « on ne sait pas forcément combien il y aura ») : un total VIDE
+   n'est plus « non réglé », il veut dire « pas de limite pour toute l'édition ». */
 const p7 = placeRestante(r({ plafond_total: null }), { role: "responsable", sansPlafond: false, dejaParAppareil: 0 }, 0);
-ok("plafond total non regle : meme le responsable est refuse", !p7.illimitee && p7.place === 0 && p7.borne === "plafond_non_regle");
+ok("D27 : total vide = pas de limite pour l'edition ; le responsable depose sans borne", p7.illimitee);
+const p7b = placeRestante(r({ plafond_total: null }), { role: "participant", sansPlafond: true, dejaParAppareil: 300 }, 50_000);
+ok("D27 : total vide, un lien « sans limite » n'a plus aucune borne", p7b.illimitee);
+const p7c = placeRestante(r({ plafond_total: null }), part(25), 50_000);
+ok("D27 : total vide, le participant garde son plafond par personne (25/30 : 5 places, bornees par la personne)",
+   !p7c.illimitee && p7c.place === 5 && p7c.borne === "plafond_participant");
+const p7d = placeRestante(r({ plafond_total: null, plafond_participant_atelier: null }), part(0), 0);
+ok("D27 : total vide ET plafond par personne vide : le lien general reste FERME (on ne devine pas)",
+   !p7d.illimitee && p7d.place === 0 && p7d.borne === "plafond_non_regle");
+ok("D27 : total vide, un lien avec son propre plafond (10) s'applique", (() => {
+  const x = placeRestante(r({ plafond_total: null, plafond_participant_atelier: null }), { role: "participant", sansPlafond: false, plafondLien: 10, dejaParAppareil: 4 }, 0);
+  return !x.illimitee && x.place === 6 && x.borne === "plafond_participant";
+})());
 const p8 = placeRestante(r(), part(40), 2100);
 ok("des compteurs au-dela du plafond ne donnent jamais une place negative", !p8.illimitee && p8.place === 0);
 
@@ -2478,8 +2496,9 @@ titre("— T-164 / T-166 : les liens des mails viennent du site, « Retrouver »
     "src/app/api/collectif/rendez-vous/route.ts",
     "src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts",
     "src/app/api/admin/collectif/editions/[id]/rendez-vous/route.ts",
+    "src/app/api/admin/collectif/editions/[id]/lien/route.ts",
   ];
-  ok("T-164 : les cinq routes qui envoient un mail d'edition prennent origineDesMails(process.env), apercu du mail compris",
+  ok("T-164 : les six routes qui envoient un mail d'edition prennent origineDesMails(process.env), apercu du mail compris (T-196 : le lien regenere)",
     ROUTES_MAIL.every((f) => /origineDesMails\(process\.env\)/.test(lire(f))));
   ok("T-164 : le code d'essai lit l'en-tete host SEUL, le mail nomme le site",
     /demanderCode\(supabase, acces\.edition, idAppareil, request\.headers\.get\("host"\), origineDesMails\(process\.env\)\)/.test(lire("src/app/api/collectif/appareil/route.ts"))
@@ -2853,8 +2872,8 @@ titre("— T-192 : le nom du participant ne change plus —");
   ok("le nom de l'appareil se lit chez les PARTICIPANTS de l'edition, le libelle d'un lien n'est pas un nom, et l'appareil se compte en `head`",
     /\.eq\("role_deposant", "participant"\)/.test(connu) && /nom\.toLowerCase\(\) !== libelle/.test(connu) && /count: "exact", head: true/.test(connu));
   const page = lire("src/app/depot/[token]/page.tsx");
-  ok("la page lit le cookie de l'appareil (meme cookie sur tous les liens) et ne cherche rien si la collecte est close",
-    /\(await cookies\(\)\)\.get\(COOKIE_APPAREIL\)/.test(page) && /ouvert && estAppareil\(appareil\)/.test(page));
+  ok("la page lit le cookie de l'appareil (meme cookie sur tous les liens) et ne cherche rien si la collecte est close (ni si le depot n'est pas regle, T-195)",
+    /\(await cookies\(\)\)\.get\(COOKIE_APPAREIL\)/.test(page) && /ouvert && regle && estAppareil\(appareil\)/.test(page));
 }
 
 titre("— T-192 : le choix du style ferme, une vitrine a la place —");
@@ -3095,6 +3114,187 @@ titre("— T-191 : les ecrans (etape 5, « À envoyer », la fiche) —");
       && /<PanneauContenus contenus=\{contenus\} demandes=\{lu\.fiche\.demandes\} \/>/.test(lire("src/app/admin/collectif/[id]/page.tsx")));
   ok("une puce au nom long passe a la ligne dans sa carte (80 caracteres), sans changer une puce courte",
     /\.ec-espace \.ec-tdb-puce-nom \{\s*min-width: 0;\s*overflow-wrap: anywhere;/.test(lire("src/app/edition/[token]/tableau.css")) && /<span className="ec-tdb-puce-nom">/.test(ligne));
+}
+
+/* ═══════════════ LOT a2 (20/10) : T-195, T-196, T-200, T-152 ═══════════════ */
+
+titre("— T-195 / D27 : un total vide = pas de limite ; le plafond par personne qui manque se dit AVANT le choix —");
+{
+  const P = PlafondsLot;
+  const rr = (p: Partial<ReglagesPlafond> = {}): ReglagesPlafond => ({ plafond_participant_atelier: 30, plafond_participant_client: null, plafond_total: 2000, ...p });
+  ok("depotRegle : un total vide ne ferme plus rien (lien general, lien sans limite, lien a plafond)",
+    P.depotRegle(rr({ plafond_total: null }), { sansPlafond: false }) && P.depotRegle(rr({ plafond_total: null }), { sansPlafond: true })
+      && P.depotRegle(rr({ plafond_total: null, plafond_participant_atelier: null }), { sansPlafond: false, plafondLien: 10 }));
+  ok("depotRegle : sans plafond par personne, le lien general est ferme (total vide ou non) ; « sans limite » et un lien a plafond propre restent ouverts",
+    !P.depotRegle(rr({ plafond_participant_atelier: null }), { sansPlafond: false }) && !P.depotRegle(rr({ plafond_participant_atelier: null, plafond_total: null }), { sansPlafond: false })
+      && P.depotRegle(rr({ plafond_participant_atelier: null }), { sansPlafond: true }) && P.depotRegle(rr({ plafond_participant_atelier: null }), { sansPlafond: false, plafondLien: 12 }));
+  ok("depotRegle est placeRestante jouee a vide : meme verdict sur 16 combinaisons", (() => {
+    for (const total of [null, 2000]) for (const atelier of [null, 30]) for (const sans of [false, true]) for (const lien of [null, 10]) {
+      const reglages = rr({ plafond_total: total, plafond_participant_atelier: atelier });
+      const p = placeRestante(reglages, { role: "participant", sansPlafond: sans, plafondLien: lien, dejaParAppareil: 0 }, 0);
+      const attendu = p.illimitee || p.borne !== "plafond_non_regle";
+      if (P.depotRegle(reglages, { sansPlafond: sans, plafondLien: lien }) !== attendu) return false;
+    }
+    return true;
+  })());
+  ok("les phrases de plafond suivent le registre : « Tu as atteint… » au tu, le vous sinon (registre inconnu compris)",
+    P.messagePlafond("plafond_participant", "ecole_tu").startsWith("Tu as atteint") && P.messagePlafond("plafond_participant", "entreprise_vous") === P.MESSAGE_PLAFOND.plafond_participant
+      && P.messagePlafond("plafond_participant", "") === P.MESSAGE_PLAFOND.plafond_participant && P.messagePlafond("plafond_total", "ecole_tu") === P.MESSAGE_PLAFOND.plafond_total
+      && (Object.keys(P.MESSAGE_PLAFOND) as (keyof typeof P.MESSAGE_PLAFOND)[]).every((k) => P.MESSAGE_PLAFOND_TU[k].length > 0 && !/\bvous\b|\bvotre\b|\bvos\b/i.test(P.MESSAGE_PLAFOND_TU[k])));
+  ok("la phrase « pas encore ouvert » nomme le plafond PAR PERSONNE, et sa suite tutoie ou vouvoie",
+    /par personne/.test(P.MESSAGE_PLAFOND.plafond_non_regle) && P.phrasesDepotPasOuvert("ecole_tu")[1].startsWith("Garde ce lien") && P.phrasesDepotPasOuvert("entreprise_vous")[1].startsWith("Gardez ce lien")
+      && P.phrasesDepotPasOuvert("ecole_tu")[0] === P.MESSAGE_PLAFOND.plafond_non_regle);
+  const presign = lire("src/app/api/collectif/depot/presign/route.ts");
+  ok("la route du depot rend la phrase au registre de l'edition (plus de MESSAGE_PLAFOND[...] en dur)",
+    /message: messagePlafond\(d\.raison, edition\.registre\)/.test(presign) && !/MESSAGE_PLAFOND\[/.test(presign));
+  const pageDepot = lire("src/app/depot/[token]/page.tsx");
+  ok("la page de depot le dit AVANT le choix : depotRegle sur le lien lu, « pas encore ouvert » au registre, et le formulaire seulement sinon",
+    /const regle = depotRegle\(edition, \{ sansPlafond: Boolean\(provenance\?\.sans_plafond\), plafondLien: provenance\?\.plafond_par_personne \?\? null \}\)/.test(pageDepot)
+      && pageDepot.indexOf("ouvert && !regle ?") > 0 && pageDepot.indexOf("phrasesDepotPasOuvert(edition.registre)") > pageDepot.indexOf("ouvert && !regle ?")
+      && pageDepot.indexOf("phrasesDepotPasOuvert(edition.registre)") < pageDepot.indexOf("<Depot"));
+  const form = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  ok("le formulaire : le total reste facultatif, vide = « sans limite », l'aide le dit ; la saisie le garde a null",
+    /"Compte tout le monde, sauf l'atelier\. Laisser vide : pas de limite pour toute l'édition\.", 1, "sans limite"\)/.test(form)
+      && (() => { const x = lireSaisieEdition({ ...creation, plafond_total: "" }, "creation"); return x.ok && x.edition.plafond_total === null; })()
+      && (() => { const x = lireSaisieEdition({ plafond_total: "" }, "modification"); return x.ok && x.edition.plafond_total === null; })());
+  const ficheA2 = lire("src/app/admin/collectif/[id]/page.tsx");
+  ok("la fiche : plus d'alerte pour un total vide ; une alerte quand le plafond par personne manque (meme regle que la page)",
+    !/plafond_total === null/.test(ficheA2) && /const parPersonneManque = etat === "preparation" && !depotRegle\(e, \{ sansPlafond: false \}\);/.test(ficheA2)
+      && /Photos par personne : à régler\./.test(ficheA2));
+}
+
+titre("— T-196 : regenerer dit ce qu'il coupe, previent le responsable, et le lien mort a sa page —");
+{
+  const L = LiensLot;
+  ok("« Ce lien ne fonctionne plus. Demande / Demandez le nouveau lien à l'organisateur. »",
+    L.lienMort(true).phrase === "Ce lien ne fonctionne plus. Demande le nouveau lien à l'organisateur."
+      && L.lienMort(false).phrase === "Ce lien ne fonctionne plus. Demandez le nouveau lien à l'organisateur." && L.lienMort(false).titre === "Ce lien ne fonctionne plus");
+  ok("le verrou du mail : un code par lien regenere (l'empreinte du NOUVEAU token, jamais le token)",
+    L.codeMailLienRegenere("depot", "a".repeat(64)) === "LIEN-depot-aaaaaaaaaa" && L.codeMailLienRegenere("depot", "b".repeat(64)) !== L.codeMailLienRegenere("depot", "a".repeat(64))
+      && L.codeMailLienRegenere("responsable", "c".repeat(64)).startsWith("LIEN-responsable-"));
+  const M = MailsTextes;
+  const T = { token_responsable: "R".repeat(32), token_equipe: "E".repeat(32), token_depot: "D".repeat(32) };
+  const ed = (registre: string) => ({ ...T, registre, evenement: "Croisière Audencia", responsable_nom: "Camille Martin", cloture_le: "2026-11-14T22:59:00.000Z" });
+  ok("seuls le lien du responsable et celui des participants previennent par mail (pas celui de l'equipe)",
+    M.lienPrevenu("responsable") && M.lienPrevenu("depot") && !M.lienPrevenu("equipe") && !M.lienPrevenu("constructor"));
+  const dResp = M.donneesLienRegenere(ed("entreprise_vous"), "responsable", "https://bellajour.fr", 0, false);
+  const mResp = M.mailLienRegenere(dResp);
+  ok("responsable : le NOUVEAU lien (son token), « l'ancien ne fonctionne plus », vous ; objet nomme l'evenement",
+    dResp.lien === `https://bellajour.fr/edition/${"R".repeat(32)}` && mResp.html.includes(dResp.lien) && mResp.texte.includes(dResp.lien)
+      && /l'ancien ne fonctionne plus/.test(mResp.texte) && mResp.sujet === "Votre nouveau lien Bellajour · Croisière Audencia" && /Bonjour Camille,/.test(mResp.texte)
+      && !mResp.texte.includes("D".repeat(32)) && !mResp.texte.includes("E".repeat(32)));
+  const mRespTu = M.mailLienRegenere(M.donneesLienRegenere(ed("ecole_tu"), "responsable", "https://bellajour.fr", 0, true));
+  ok("responsable au tu : « Ton lien a changé », et le code par appareil se dit quand il est en service",
+    mRespTu.sujet.startsWith("Ton nouveau lien") && /ton espace/.test(mRespTu.texte) && !/\bvous\b|\bvotre\b/i.test(mRespTu.texte) && /il t'envoie un code/.test(mRespTu.texte)
+      && !/code/.test(mResp.texte.replace("bellajour.fr/espace", "")));
+  const mDepot = (n: number, registre = "entreprise_vous") => M.mailLienRegenere(M.donneesLienRegenere(ed(registre), "depot", "https://bellajour.fr", n, false));
+  ok("participants : le nouveau lien en adresse, la cloture, les photos gardees, le QR code ancien qui ne marche plus",
+    mDepot(0).html.includes(`https://bellajour.fr/depot/${"D".repeat(32)}`) && /jusqu'au 14 novembre/.test(mDepot(0).texte) && /Les photos déjà reçues sont gardées\./.test(mDepot(0).texte)
+      && /ni le QR code qui y menait/.test(mDepot(0).texte) && mDepot(0).sujet === "Nouveau lien des participants · Croisière Audencia" && !mDepot(0).texte.includes("R".repeat(32)));
+  ok("participants : les liens de contribution coupes se comptent (0 : rien ; 1 : au singulier ; 8 : au pluriel), au registre",
+    !/contribution/.test(mDepot(0).texte) && /Votre lien de contribution a changé aussi/.test(mDepot(1).texte) && /Vos 8 liens de contribution ont changé aussi/.test(mDepot(8).texte)
+      && /Tes 8 liens de contribution ont changé aussi : retrouve-les dans ton espace, page Photos, onglet « Les liens »/.test(mDepot(8, "ecole_tu").texte));
+  ok("les mails du lien : aucun tiret cadratin, masculin generique, le nom echappe dans le HTML",
+    [mResp, mRespTu, mDepot(8), mDepot(8, "ecole_tu")].every((m) => !/—/.test(m.texte + m.sujet) && !/cliente/i.test(m.texte))
+      && M.mailLienRegenere(M.donneesLienRegenere({ ...ed("entreprise_vous"), evenement: "<b>x</b>" }, "depot", "https://bellajour.fr", 0, false)).html.includes("&lt;b&gt;x&lt;/b&gt;"));
+  ok("le journal : le nombre de liens de contribution changes avec le lien, jamais l'empreinte ni le token",
+    (() => { const ph = phraseEvenement("lien_regenere", { quel: "depot", par: "Mathias", ancien: "f".repeat(64), liensCoupes: 8 }); return /8 liens de contribution ont changé avec lui/.test(ph) && !ph.includes("ffff"); })()
+      && /^Lien de l'équipe régénéré par .+ : l'ancien ne fonctionne plus\.$/.test(phraseEvenement("lien_regenere", { quel: "equipe", par: "Mathias" })));
+
+  const route = lire("src/app/api/admin/collectif/editions/[id]/lien/route.ts");
+  ok("la route : la verification repond AVANT toute ecriture (rien n'est ecrit, rien ne part)",
+    route.indexOf("if (corps.verifier === true) {") > 0 && route.indexOf("if (corps.verifier === true) {") < route.indexOf(".update({ [colonne]: generateNumeroToken() })")
+      && route.indexOf("if (corps.verifier === true) {") < route.indexOf("envoyerMailCollectif({"));
+  ok("la route : les liens de contribution ACTIFS comptes (retire_le vide), repli 42703 sans la colonne, un compte exact",
+    /\.from\("collectif_provenances"\)\.select\("id", \{ count: "exact" \}\)\.eq\("edition_id", id\)\.is\("retire_le", null\)/.test(route) && /if \(!colonneAbsente\(actifs\.error\.code\)\)/.test(route));
+  ok("la route : la regeneration est conditionnee a l'ancien lien, le journal garde son EMPREINTE (jamais le token)",
+    /\.eq\("id", id\)\s*\.eq\(colonne, ancien\)/.test(route) && /"lien_regenere",\s*\{ quel, par: prenomDe\(qui\), ancien: empreinte\(ancien\)/.test(route) && !/ancien: ancien/.test(route));
+  ok("la route : le mail part par le circuit unique, verrouille, dans un try (il ne fait jamais echouer le geste), et seulement pour un lien qui previent",
+    /mail = await envoyerMailCollectif\(\{/.test(route) && /code: codeMailLienRegenere\(quel, empreinte\(apres\[colonne\]\)\)/.test(route) && /verrou: true,/.test(route)
+      && /\} catch \(e\) \{\s*console\.error\("\[collectif\] mail du lien régénéré", e\);\s*mail = "echec";/.test(route) && /if \(raison === null && lienPrevenu\(quel\) && apres\.responsable_email\)/.test(route)
+      && /a: \{ email: apres\.responsable_email, nom: apres\.responsable_nom \}/.test(route));
+  ok("la route : l'apercu GET ne sert que les deux liens qui previennent, en HTML non mis en cache",
+    /if \(!lienPrevenu\(quel\)\) return NextResponse\.json\(\{ error: "lien_inconnu" \}, \{ status: 400 \}\);/.test(route) && /"cache-control": "no-store"/.test(route));
+  const panneauL = lire("src/app/admin/collectif/[id]/PanneauLiens.tsx");
+  ok("l'ecran : « Régénérer… » verifie d'abord, dit les liens de contribution coupes et le mail (avec son apercu), puis « Confirmer »",
+    /onClick=\{\(\) => appeler\(quel, true\)\}/.test(panneauL) && /phraseContributions\(verif\.contributions\)/.test(panneauL) && /onClick=\{\(\) => appeler\(quel, false\)\}/.test(panneauL)
+      && /href=\{apercu\(quel\)\}/.test(panneauL) && /Les mails des éditions sont coupés/.test(panneauL) && /cesseront aussi de fonctionner : ils contiennent ce lien/.test(panneauL));
+
+  const lecture = lire("src/app/depot/[token]/lecture.ts");
+  const layoutLien = lire("src/app/depot/[token]/layout.tsx");
+  const mort = lire("src/app/depot/[token]/LienMort.tsx");
+  ok("le lien mort : not-found sous le layout du token, qui lui passe le registre ; la page garde notFound() (404 pour tous)",
+    /return <LienMort \/>/.test(lire("src/app/depot/[token]/not-found.tsx")) && /<FournisseurRegistre registre=\{await registreDuLien\(token\)\}>\{children\}<\/FournisseurRegistre>/.test(layoutLien)
+      && /lienMort\(useContext\(RegistreDuLien\) === 'ecole_tu'\)/.test(mort)
+      && /if \(acces\.statut === 'ferme' \|\| acces\.statut === 'introuvable'\) notFound\(\)/.test(pageDepot0()) && /if \(!lu\.data \|\| lu\.data\.retire_le\) notFound\(\)/.test(pageDepot0()));
+  ok("le lien mort : la lecture est partagee (cache) avec la page, l'ancien lien se retrouve par son empreinte, rien ne leve",
+    /export const accesDepot = cache\(\(token: string\) => chargerAcces\(token, 'depot'\)\)/.test(lecture) && /const acces = await accesDepot\(token\)/.test(pageDepot0())
+      && /\.eq\('payload->>ancien', empreinte\(token\)\)/.test(lecture) && /\} catch \{\s*return null\s*\}/.test(lecture) && !/chargerAcces\(/.test(pageDepot0()));
+  const moteurL = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("le moteur dit la meme chose si le lien meurt pendant l'envoi (404)",
+    (moteurL.match(/this\.fermer\(lienMort\(Boolean\(this\.cfg\.tu\)\)\.phrase\)/g) ?? []).length === 2 && !/n'est plus actif/.test(moteurL));
+}
+function pageDepot0(): string {
+  return lire("src/app/depot/[token]/page.tsx");
+}
+
+titre("— T-200 : les videos ne partent pas, la page le dit avant, et le refus nomme la video —");
+{
+  const D = DepotLot;
+  ok("estVideo : type video/*, ou extension de video ; jamais une photo acceptee ni un autre fichier",
+    D.estVideo("IMG_0423.MOV", "") && D.estVideo("clip", "video/quicktime") && D.estVideo("a.mp4", "video/mp4") && D.estVideo("b.3gp", "")
+      && !D.estVideo("a.jpg", "image/jpeg") && !D.estVideo("IMG_1.HEIC", "") && !D.estVideo("doc.pdf", "application/pdf") && !D.estVideo("photo.mov.jpg", ""));
+  ok("le refus nomme la video (une : son nom ; plusieurs : leur nombre), puis le reste",
+    JSON.stringify(D.phrasesIgnores(1, 1, "IMG_0423.MOV")) === JSON.stringify(["« IMG_0423.MOV » est une vidéo : seules les photos partent."])
+      && JSON.stringify(D.phrasesIgnores(3, 2, "a.mov")) === JSON.stringify(["2 vidéos ignorées : seules les photos partent.", "1 fichier ignoré : ce ne sont pas des photos."])
+      && JSON.stringify(D.phrasesIgnores(2, 0, null)) === JSON.stringify(["2 fichiers ignorés : ce ne sont pas des photos."]) && D.phrasesIgnores(0, 0, null).length === 0
+      && D.phrasesIgnores(1, 5, null).length === 1);
+  const depotTsx = lire("src/app/depot/[token]/Depot.tsx");
+  ok("la page : « Photos seulement : les vidéos ne partent pas. » sous le bouton, toujours visible ; plus de « fichier(s) ignoré(s) »",
+    D.PHOTOS_SEULEMENT === "Photos seulement : les vidéos ne partent pas." && /<\/button>\s*<p className="ec-dp-note">\{PHOTOS_SEULEMENT\}<\/p>/.test(depotTsx)
+      && /phrasesIgnores\(vue\.ignores, vue\.videos, vue\.premiereVideo\)/.test(depotTsx) && !/fichier\(s\) ignoré\(s\)/.test(depotTsx));
+  const moteurV = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("le moteur compte les videos parmi les fichiers ecartes, par la regle pure",
+    /this\.ignores\+\+;\s*if \(estVideo\(f\.name, f\.type\)\) \{\s*this\.videos\+\+;\s*this\.premiereVideo \?\?= f\.name;/.test(moteurV)
+      && /videos: 0, premiereVideo: null/.test(lire("src/app/edition/_composants/depot/useMoteur.ts")));
+}
+
+titre("— T-152 / D26 : accepter une proposition n'engage pas ; l'atelier envoie le devis a signer —");
+{
+  const V = LivraisonLot;
+  const doc = (id: string, type: string, quand: string, statut: string | null = null) => ({ id, type, quand, statut, libelle: id });
+  const docs = [
+    doc("devis-initial", "devis", "2026-10-01T10:00:00.000Z"),
+    doc("p1", "proposition", "2026-10-10T10:00:00.000Z", "Acceptée le 12 octobre 2026 à 14:03"),
+    doc("p2", "proposition", "2026-10-11T10:00:00.000Z"),
+    doc("p3", "proposition", "2026-10-12T10:00:00.000Z", "Acceptée le 13 octobre 2026 à 09:00"),
+    doc("devis-p3", "devis", "2026-10-14T10:00:00.000Z"),
+  ];
+  ok("devisAEnvoyer : une proposition acceptee sans devis depose APRES elle ; le devis du depart ne compte pas ; non acceptee : rien",
+    JSON.stringify(V.devisAEnvoyer(docs.slice(0, 4)).map((d) => d.id)) === '["p1","p3"]' && JSON.stringify(V.devisAEnvoyer(docs).map((d) => d.id)) === "[]"
+      && JSON.stringify(V.devisAEnvoyer([docs[0], docs[1]]).map((d) => d.id)) === '["p1"]' && V.devisAEnvoyer([docs[2]]).length === 0);
+  ok("propositionAcceptee lit le statut pose par la route (« Acceptée le … »)",
+    V.propositionAcceptee({ type: "proposition", statut: "Acceptée le 1 octobre" }) && !V.propositionAcceptee({ type: "devis", statut: "Acceptée le 1 octobre" })
+      && !V.propositionAcceptee({ type: "proposition", statut: null }) && /statut_texte: statut/.test(lire("src/app/api/collectif/proposition/route.ts"))
+      && lire("src/app/api/collectif/proposition/route.ts").includes(`const statut = \`${V.PREFIXE_ACCEPTEE} le \${`));
+  const vous = V.phrasesProposition(false);
+  const toi = V.phrasesProposition(true);
+  ok("la carte du client : accepter ne l'engage pas, il recevra le devis a signer ; au registre ; aucun montant",
+    /Accepter ne vous engage pas : vous recevrez ensuite le devis à signer\./.test(vous.aLire) && /Accepter ne t'engage pas : tu recevras ensuite le devis à signer\./.test(toi.aLire)
+      && /C'est le devis signé qui engage\./.test(vous.confirmer) && /C'est le devis signé qui engage\./.test(toi.confirmer)
+      && ![vous, toi].some((p) => Object.values(p).some((t) => /€|—/.test(t))) && !/\bvous\b|\bvotre\b/.test(Object.values(toi).join(" ")));
+  const carte = lire("src/app/edition/[token]/atelier/Propositions.tsx");
+  ok("la carte lit ces phrases (plus de « l'ajoute à votre édition »), avant, pendant et apres l'acceptation",
+    /const phrases = phrasesProposition\(tu\);/.test(carte) && /phrases\.aLire/.test(carte) && /<p className="ec-texte">\{phrases\.confirmer\}<\/p>/.test(carte)
+      && /\{acceptee \? <span className="ec-note">\{phrases\.apres\}<\/span> : null\}/.test(carte) && !/l'ajoute à (votre|ton) édition/.test(carte));
+  const ficheP = lire("src/app/admin/collectif/[id]/page.tsx");
+  ok("la fiche : « À faire : envoyer le devis à signer » pour chaque proposition acceptee sans devis, vers Documents ; le panneau Documents le redit",
+    V.A_FAIRE_DEVIS === "À faire : envoyer le devis à signer" && /const devisEnAttente = devisAEnvoyer\(documents\);/.test(ficheP) && /<strong>\{A_FAIRE_DEVIS\}<\/strong>/.test(ficheP)
+      && /href="\?onglet=documents" data-onglet="documents"/.test(ficheP) && /devisAEnvoyer\(documents\)/.test(lire("src/app/admin/collectif/[id]/PanneauDocuments.tsx"))
+      && /\(d\) => \(\{ id: d\.id, type: d\.type,/.test(lire("src/app/admin/collectif/donnees.ts")));
+  const decisions = lire("docs/DECISIONS.md");
+  ok("les deux decisions sont ecrites (D26 : accepter n'engage pas ; D27 : total vide = pas de limite)",
+    /^D26 \(20\/10\/2026\)/m.test(decisions) && /^D27 \(20\/10\/2026\)/m.test(decisions));
 }
 
 /* T-167 : plus de 1 000 photos. Supabase plafonne CHAQUE reponse a 1 000 lignes (« Max rows »,

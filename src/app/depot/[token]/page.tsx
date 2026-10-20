@@ -11,15 +11,15 @@ import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { formaterJour } from '@/lib/atelier/dates'
 import { makeSupabase } from '@/lib/supabase'
-import { chargerAcces } from '@/lib/collectif/acces'
 import { COOKIE_APPAREIL, estAppareil } from '@/lib/collectif/collecte'
 import { arriveesDeLAppareil, nomDeLAppareil } from '@/lib/collectif/participantConnu'
 import { estCleProvenance } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
 import { colonneAbsente, MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
-import { plafondParticipant } from '@/lib/collectif/plafonds'
+import { depotRegle, phrasesDepotPasOuvert, plafondParticipant } from '@/lib/collectif/plafonds'
 import Porte from '../../edition/_composants/Porte'
 import Depot from './Depot'
+import { accesDepot } from './lecture'
 import './depot.css'
 
 export const runtime = 'nodejs'
@@ -34,7 +34,9 @@ export default async function PageDepot({
 }) {
   const { token } = await params
   const { p } = await searchParams
-  const acces = await chargerAcces(token, 'depot')
+  /* La lecture du layout, partagée (`cache`) : un lien inconnu, régénéré ou supprimé
+     tombe sur « Ce lien ne fonctionne plus » (not-found.tsx, T-196), toujours en 404. */
+  const acces = await accesDepot(token)
 
   if (acces.statut === 'ferme' || acces.statut === 'introuvable') notFound()
   if (acces.statut === 'migration_absente') {
@@ -65,12 +67,17 @@ export default async function PageDepot({
   }
 
   const ouvert = collecteOuverte(edition.etat, edition.cloture_le, new Date())
+  /* T-195 : le plafond PAR PERSONNE qui manque (lien général, ou lien sans plafond propre ni
+     « sans limite ») ferme le dépôt. On le dit ICI, avant le choix des photos, plutôt qu'au refus
+     du serveur, une fois les photos choisies et l'accord coché. Même règle que la route
+     (`placeRestante`, jouée à vide par `depotRegle`). Un total vide ne ferme rien (D27). */
+  const regle = depotRegle(edition, { sansPlafond: Boolean(provenance?.sans_plafond), plafondLien: provenance?.plafond_par_personne ?? null })
 
   /* Le participant qui revient (même téléphone, n'importe quel lien de l'édition) :
      son nom, déjà donné, ne se change plus, et il voit ce qui est déjà arrivé. */
   const appareil = (await cookies()).get(COOKIE_APPAREIL)?.value
   const [nomConnu, dejaArrivees] =
-    ouvert && estAppareil(appareil)
+    ouvert && regle && estAppareil(appareil)
       ? await Promise.all([
           nomDeLAppareil(makeSupabase(), edition.id, appareil, provenance?.libelle ?? null),
           arriveesDeLAppareil(makeSupabase(), edition.id, appareil),
@@ -92,7 +99,15 @@ export default async function PageDepot({
           {edition.invitation_texte ??
             (tu ? 'Dépose ici tes photos de l’événement.' : 'Déposez ici vos photos de l’événement.')}
         </p>
-        {ouvert ? (
+        {ouvert && !regle ? (
+          <div className="ec-dp-ferme">
+            {phrasesDepotPasOuvert(edition.registre).map((t) => (
+              <p key={t} className="ec-dp-texte">
+                {t}
+              </p>
+            ))}
+          </div>
+        ) : ouvert ? (
           <Depot
             token={token}
             p={p ?? null}

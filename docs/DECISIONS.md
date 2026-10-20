@@ -603,3 +603,40 @@ Ce qui est tranché.
 **Conséquence :** la matrice des droits du PRD §2 gagne une ligne (le responsable termine la
 collecte) ; aucune migration.
 
+D26 (20/10/2026) — **Accepter une proposition complémentaire n'engage pas le client : c'est le
+devis signé qui engage.** Décision de Mathias du 20/10, qui ferme la question 4 de T-152
+(« L'acceptation d'une proposition fait-elle foi ? »).
+
+Ce qui est tranché.
+- « Accepter » dit à l'atelier que le client est d'accord pour la suite. L'acceptation reste
+  tracée (journal `proposition_acceptee`, message dans le fil, « Acceptée le … » sur le
+  document) mais elle ne paie rien, ne signe rien et n'engage personne.
+- La carte de la proposition le dit au client avant, pendant et après : accepter ne l'engage
+  pas, il recevra ensuite le devis à signer, et c'est le devis signé qui engage.
+- Côté atelier, une proposition acceptée devient un geste à faire : « À faire : envoyer le devis
+  à signer », dans la vue d'ensemble et dans les documents de la fiche.
+
+Ce que je décide seul, faute de mot de Mathias (réversible) :
+- Le geste sort de la liste dès qu'un document de type « Devis signé » est déposé APRÈS la
+  proposition (le devis du départ, plus ancien, ne compte pas). Aucune colonne, aucune date
+  estimée.
+
+**Conséquence :** T-152 ; aucune migration (`devisAEnvoyer`, livraison.ts).
+
+D27 (20/10/2026) — **« Photos au total » laissé vide veut dire « pas de limite pour toute
+l'édition ».** Décision de Mathias du 20/10 (T-195) : « on ne sait pas forcément combien il y
+aura ». Elle remplace, pour le total SEULEMENT, la règle du 13/10 « un plafond non réglé ferme
+le dépôt ».
+
+Ce qui est tranché.
+- Le total reste facultatif à la création et en réglages. Vide, il ne ferme plus rien : seuls
+  les plafonds par personne et par lien s'appliquent. Le formulaire le dit sous la case
+  (« Laisser vide : pas de limite pour toute l'édition »).
+- Le plafond PAR PERSONNE garde la règle d'avant : sans lui, le lien général des participants
+  (et tout lien qui n'a ni son propre nombre ni « sans limite ») reste fermé. La page de dépôt
+  le dit d'emblée, avant le choix des photos ; la fiche de l'atelier l'affiche en alerte.
+- Aucun chiffre n'est pour autant inventé : vide reste `null` en base.
+
+**Conséquence :** `placeRestante` (plafonds.ts) ne rend plus `plafond_non_regle` pour un total
+vide ; aucune migration.
+
