@@ -75,7 +75,7 @@ export async function demanderCode(supabase: SupabaseClient, edition: EditionCod
     editionId: edition.id,
     code: `CODE-${ecrit.data.id}`,
     a: { email: edition.responsable_email, nom: edition.responsable_nom },
-    mail: mailCodeAppareil({ tu: edition.registre === "ecole_tu", evenement: edition.evenement, code, duree: libelleDuree(DUREE_CODE_MS), site }),
+    mail: mailCodeAppareil({ tu: edition.registre === "ecole_tu", evenement: edition.evenement, responsable: edition.responsable_nom, code, duree: libelleDuree(DUREE_CODE_MS), site }),
     verrou: false,
     qui: null,
   });

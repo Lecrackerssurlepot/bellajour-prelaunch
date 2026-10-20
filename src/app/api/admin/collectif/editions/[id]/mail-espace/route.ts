@@ -12,9 +12,11 @@ import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migratio
 import type { EditionLigne } from "@/lib/collectif/types";
 
 /**
- * /api/admin/collectif/editions/[id]/mail-espace — « Votre espace est prêt » (T-146),
- * avec les trois liens depuis T-187. Appelée par l'onglet « Réglages et liens » ET
- * par l'écran « L'édition est créée » (`/admin/collectif/creee/[id]`).
+ * /api/admin/collectif/editions/[id]/mail-espace — « Votre espace est prêt » (T-146,
+ * T-187) : SON lien, et depuis le 20/10 (retouche de Mathias) où trouver dans
+ * l'espace ceux de l'équipe et des participants, sans les écrire. Appelée par
+ * l'onglet « Réglages et liens » ET par l'écran « L'édition est créée »
+ * (`/admin/collectif/creee/[id]`).
  *
  * GET : l'aperçu HTML du mail, tel qu'il partirait (l'atelier le relit avant).
  * POST `{ verifier: true }` : à qui, quel objet, et si les mails des éditions
@@ -41,9 +43,10 @@ async function preparer(request: Request, id: string) {
   /* L'origine du site, aussi pour l'aperçu (T-164) : l'atelier relit le mail tel qu'il partira,
      jamais avec l'adresse locale ou celle d'une version d'essai. */
   const origine = origineDesMails(process.env);
-  /* Les TROIS liens (T-187) : le sien, celui de l'équipe, celui des participants
-     (`liensEdition`, par `donneesEspacePret`). Aucun ne va au journal : le code du
-     verrou porte une empreinte du lien du responsable, jamais le lien. */
+  /* Les mêmes données que l'écran « L'édition est créée » (`donneesEspacePret`, qui lit
+     les trois tokens par `liensEdition` : l'écran montre et copie les trois liens). Le
+     MAIL n'écrit que celui du responsable. Aucun ne va au journal : le code du verrou
+     porte une empreinte du lien du responsable, jamais le lien. */
   const mail = mailEspacePret(donneesEspacePret(data, origine, controleAppareilActif(process.env)));
   return { supabase, edition: data, mail } as const;
 }

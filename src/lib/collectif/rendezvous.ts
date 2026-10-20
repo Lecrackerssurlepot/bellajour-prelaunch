@@ -296,6 +296,8 @@ export async function envoyerMailRdv(
     genre,
     tu: edition.registre === "ecole_tu",
     interlocuteur: inter.prenom,
+    /* « Bonjour Camille, » : le mail ne part qu'à l'adresse du responsable (plus bas). */
+    responsable: edition.responsable_nom,
     debut: rdv.debut,
     ancienDebut,
     dureeMinutes: REGLES_RDV.dureeMinutes,
