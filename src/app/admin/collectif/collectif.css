@@ -1866,6 +1866,10 @@
 .eca-root .eca-cartes--une {
   grid-template-columns: minmax(0, 1fr);
 }
+/* T-198, T-199 (20/10) : sous les cartes de la collecte, les personnes puis la corbeille (onglet Photos). */
+.eca-root .eca-photos-suite {
+  margin-top: 16px;
+}
 .eca-root .eca-mag-resume {
   display: flex;
   align-items: center;

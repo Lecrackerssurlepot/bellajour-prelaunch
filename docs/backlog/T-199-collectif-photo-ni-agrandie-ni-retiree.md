@@ -50,3 +50,28 @@ Contrat : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`.
   section « w1 ».
 - Reste : les écrans (agrandir, la barre d'actions, la corbeille, l'album), l'application de la
   migration par Mathias, la phrase de l'accord du lien général à relire (texte légal).
+
+20/10, lot « w2-atelier » (le CÔTÉ ATELIER de la planche 5 et le réglage de l'ouverture, planche 9B ;
+branche `w2-atelier-corbeille-personnes`, rien de commité).
+- `PanneauCorbeille.tsx` (+ `corbeille.css`) dans l'onglet Photos de la fiche : la liste de la corbeille (qui l'a
+  supprimée, quand, dans combien de jours elle part, en alerte sous trois jours : la réponse du serveur),
+  « Restaurer » une photo ou les cochées (un clic, elle revient à sa place), « Effacer maintenant… »
+  DÉFINITIF et l'atelier seul, EN DEUX TEMPS : le premier clic envoie `verifier: true` (rien n'est effacé)
+  et dit ce qui partirait, le geste armé « Effacer définitivement » n'existe qu'après ; changer la
+  sélection désarme. 502 (un objet du coffre a résisté) : l'écran dit « 1 photo résiste : le coffre n'a pas
+  répondu, elle reste à la corbeille et la purge du jour réessaiera » et ne retire de la liste que les photos
+  effacées. Au-delà de 500 photos cochées, le geste part en plusieurs envois (la route en refuse davantage).
+- « Mettre à la corbeille » depuis la fiche : NON ajouté, la fiche n'a pas de grille de photos avec
+  sélection (la route sait `supprimer`, `par: "atelier"` : l'écran qui la porte viendra avec la grille).
+- « Ouverture du dépôt » dans `FormulaireEdition` (création ET réglages, étape « Le calendrier ») : un jour
+  du calendrier Bellajour + une heure en pastille de 0 à 23 (proposée à 8 h, la phrase de la planche 9B),
+  convertie par `instantDeParis`, jamais le champ du navigateur ; « Dès la création » le vide ; avertissement
+  sur place si elle rejoint la clôture, message du serveur (422 `ouverture_le`) sous le champ ; la frise la
+  prend pour premier jalon. Affichée dans « Réglages et liens » (la carte des liens : « Pas encore ouvert :
+  le dépôt ouvre le … ») et dans la vue d'ensemble (puce).
+- Sans la migration : la corbeille et le champ le DISENT en nommant `supabase/migrations/20261023_…` et ne
+  proposent rien (la fiche lit `ouverture_le === undefined`, `/nouvelle` sonde la colonne) ; un 503
+  `migration_personnes_absente` reçu quand même est traduit de la même façon, le reste du formulaire reste intact.
+- Harnais : bloc « w2-atelier » de `scripts/verif-collectif.ts`. Vu à l'écran (Chrome headless, 1440, 1280 et
+  375) sur un faux Supabase local et un faux coffre, toute écriture du navigateur interceptée.
+- Reste : la corbeille et les gestes côté responsable et participant (autres lots), la migration.

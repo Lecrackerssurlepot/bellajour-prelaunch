@@ -1,0 +1,171 @@
+/* La corbeille d'une édition, côté atelier (planche 5 du 20/10, T-199). Importée par
+   `[id]/PanneauCorbeille.tsx`. Tout sous `.eca-root`, classes `eca-co-*` : une feuille
+   chargée ne se décharge jamais en navigation client. ⚠️ Cette feuille arrive AVANT
+   `collectif.css` dans la page (la page importe ses panneaux, puis la feuille) : pour
+   reprendre une règle de `collectif.css`, un sélecteur PLUS précis (deux classes
+   composées), jamais l'ordre. Les cartes, les puces, les bandeaux, `.eca-confirm` et
+   `.adm-btn` sont ceux de l'atelier : ici, seulement la liste. */
+
+.eca-root .eca-co-tete-droite {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.eca-root .eca-co-tete-droite .eca-lien-texte:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.eca-root .eca-co-info {
+  align-items: flex-start;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.eca-root .eca-co-info .eca-point {
+  margin-top: 7px;
+}
+
+/* La barre : tout cocher à gauche, les deux gestes à droite. */
+.eca-root .eca-co-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+.eca-root .eca-co-tout {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.eca-root .eca-co-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.eca-root .eca-co-case {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--bj-action);
+  cursor: pointer;
+}
+.eca-root .adm-btn.eca-co-danger {
+  color: var(--eca-alerte);
+  border-color: rgba(179, 65, 44, 0.3);
+}
+.eca-root .adm-btn.eca-co-danger:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(179, 65, 44, 0.14);
+}
+
+/* Le geste armé : chaud, pas bleu (c'est le seul de la fiche qui ne se rattrape pas). */
+.eca-root .eca-confirm.eca-co-confirm {
+  border-color: rgba(179, 65, 44, 0.3);
+  background: var(--eca-alerte-fond);
+}
+.eca-root .adm-btn.eca-co-effacer {
+  color: #ffffff;
+  background: var(--eca-alerte);
+  border-color: var(--eca-alerte);
+}
+.eca-root .adm-btn.eca-co-effacer:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(179, 65, 44, 0.22);
+}
+
+/* Une ligne par photo : case, vignette, qui et quand, l'échéance, « Restaurer ». */
+.eca-root .eca-co-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-co-ligne {
+  display: grid;
+  grid-template-columns: 18px 56px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-co-ligne--cochee {
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-co-vignette {
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: var(--eca-gris-signe);
+}
+.eca-root .eca-co-vignette--vide {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.15;
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-co-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-co-texte strong {
+  font-weight: 600;
+}
+.eca-root .eca-co-texte .eca-sous {
+  font-size: 12.5px;
+}
+.eca-root .eca-puce.eca-co-echeance {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-puce.eca-co-echeance--alerte {
+  background: var(--eca-alerte-fond);
+  color: var(--eca-alerte);
+  font-weight: 600;
+}
+.eca-root .eca-co-restaurer {
+  padding: 6px 16px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.eca-root .adm-btn.eca-co-suite {
+  align-self: center;
+}
+
+@media (max-width: 720px) {
+  /* Téléphone : la case, la vignette et le texte sur le premier rang ; l'échéance et « Restaurer » sous le texte. */
+  .eca-root .eca-co-ligne {
+    grid-template-columns: 18px 56px minmax(0, 1fr) auto;
+    padding: 10px;
+    gap: 6px 10px;
+  }
+  .eca-root .eca-co-texte {
+    grid-column: 3 / -1;
+  }
+  .eca-root .eca-puce.eca-co-echeance {
+    grid-column: 2 / 4;
+    justify-self: start;
+    white-space: normal;
+  }
+  .eca-root .eca-co-restaurer {
+    grid-column: 4;
+  }
+  .eca-root .eca-co-gestes {
+    width: 100%;
+  }
+  .eca-root .eca-co-gestes .adm-btn {
+    flex: 1 1 100%;
+  }
+}

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { DEMANDES_PAR_DEFAUT } from "@/lib/collectif/demandes";
+import { personnesAbsentes } from "@/lib/collectif/migration";
+import { makeSupabase } from "@/lib/supabase";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import "../../admin.css";
@@ -29,6 +31,7 @@ const VIERGE: ValeursEdition = {
   dates_texte: "",
   registre: "entreprise_vous",
   cloture_local: "",
+  ouverture_local: "",
   livraison_prevue_le: "",
   plafond_participant_atelier: "",
   plafond_total: "",
@@ -52,6 +55,14 @@ export default async function PageNouvelle() {
   if (!qui) redirect("/admin/login");
   /* L'instant présent, lu ici une fois : les raccourcis de clôture partent du jour de Paris. */
   const maintenant = new Date().toISOString();
+  /* La colonne `ouverture_le` (migration 20261023) existe-t-elle ? Une lecture d'une ligne : l'erreur qui NOMME la colonne le dit,
+     et le champ « Ouverture du dépôt » l'écrit au lieu de laisser le serveur refuser la création. Une panne autre ne ferme rien. */
+  let ouvertureIndisponible = false;
+  try {
+    ouvertureIndisponible = personnesAbsentes((await makeSupabase().from("collectif_editions").select("ouverture_le").limit(1)).error);
+  } catch {
+    ouvertureIndisponible = false;
+  }
 
   return (
     <div className="adm-root ate-root eca-root">
@@ -60,7 +71,7 @@ export default async function PageNouvelle() {
         <h1 className="eca-titre-ecran">Nouvelle édition</h1>
         <span className="eca-note">Rien ne part chez le client à cette étape</span>
       </header>
-      <FormulaireEdition mode="creation" initiales={VIERGE} maintenant={maintenant} />
+      <FormulaireEdition mode="creation" initiales={VIERGE} maintenant={maintenant} ouvertureIndisponible={ouvertureIndisponible} />
     </div>
   );
 }

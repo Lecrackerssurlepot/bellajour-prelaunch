@@ -22,6 +22,8 @@ type Props = {
   /** « photos par personne », « pages »… Affichée dès qu'un nombre est là. */
   unite: string;
   min: number;
+  /** Facultatif : un plafond (l'heure d'ouverture du dépôt tient entre 0 et 23). Les autres pastilles n'en ont pas. */
+  max?: number;
   /** Ce qu'on lit quand c'est vide : « à fixer », « facultatif ». */
   vide: string;
   /** Pour les boutons : « Moins, Par personne ». */
@@ -43,7 +45,16 @@ export default function Pastille(p: Props) {
   const moins = () => {
     if (n !== null && n > plancher) p.onChange(String(n - 1));
   };
-  const plus = () => p.onChange(String(n === null ? Math.max(plancher, 1) : n + 1));
+  const plafond = p.max ?? Infinity;
+  const plus = () => {
+    if (n !== null && n >= plafond) return;
+    p.onChange(String(n === null ? Math.min(Math.max(plancher, 1), plafond) : n + 1));
+  };
+  /* Un nombre tapé au-delà du plafond s'y arrête (les chiffres seuls passent déjà par `chiffres`). */
+  const saisi = (t: string) => {
+    const c = chiffres(t);
+    return c !== "" && Number(c) > plafond ? String(plafond) : c;
+  };
   const largeur = { "--eca-fm-chiffres": Math.max(1, (affiche || p.vide).length) } as CSSProperties;
 
   return (
@@ -64,7 +75,7 @@ export default function Pastille(p: Props) {
             aria-invalid={p.invalide ? true : undefined}
             onFocus={() => setFocus(true)}
             onBlur={() => setFocus(false)}
-            onChange={(e) => p.onChange(chiffres(e.target.value))}
+            onChange={(e) => p.onChange(saisi(e.target.value))}
             onKeyDown={(e) => {
               if (e.key === "ArrowUp") {
                 e.preventDefault();
@@ -77,7 +88,7 @@ export default function Pastille(p: Props) {
           />
           {n === null ? null : <span className="eca-fm-pas-unite">{p.unite}</span>}
         </span>
-        <button type="button" aria-label={`Plus, ${p.libelle}`} onClick={plus}>
+        <button type="button" aria-label={`Plus, ${p.libelle}`} disabled={n !== null && n >= plafond} onClick={plus}>
           +
         </button>
       </span>

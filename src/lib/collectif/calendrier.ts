@@ -13,6 +13,13 @@
 /** L'heure de clôture par défaut, heure de Paris : la collecte va jusqu'au bout du jour choisi. */
 export const HEURE_CLOTURE = "23:59";
 
+/**
+ * L'heure d'OUVERTURE du dépôt proposée quand on choisit un jour (heure de Paris), reprise de
+ * la planche 9B du 20/10 (« Il ouvrira le vendredi 6 novembre à 8 h. »). Une proposition qui
+ * se règle d'un clic sur l'heure, jamais une règle : le serveur ne connaît que l'instant écrit.
+ */
+export const HEURE_OUVERTURE = "08:00";
+
 export type Raccourci = { cle: string; libelle: string; jours?: number; mois?: number };
 
 /** Les raccourcis de la planche, dans l'ordre. Le choix au calendrier s'ajoute à l'écran. */
@@ -90,6 +97,33 @@ export function formaterJourLong(jour: string | null | undefined): string {
 export function formaterHeure(heure: string): string {
   const x = /^(\d{2}):(\d{2})$/.exec(heure);
   return x ? `${Number(x[1])} h ${x[2]}` : "";
+}
+
+/** « 08:00 » → « 8 h », « 08:30 » → « 8 h 30 » : les minutes ne s'écrivent que si elles comptent (comme `quandOuvre`). */
+export function formaterHeureCourte(heure: string): string {
+  const x = /^(\d{2}):(\d{2})$/.exec(heure);
+  if (!x) return "";
+  return x[2] === "00" ? `${Number(x[1])} h` : `${Number(x[1])} h ${x[2]}`;
+}
+
+/**
+ * Le champ d'ouverture avec une autre HEURE (la pastille « − 8 h + ») : « 2026-11-06T08:00 »
+ * et 9 donnent « 2026-11-06T09:00 ». Les minutes sont GARDÉES (une ouverture réglée à 8 h 30 par
+ * un autre geste ne perd pas ses minutes sans le dire). Vide si le champ n'a pas de jour ;
+ * l'heure est tenue entre 0 et 23.
+ */
+export function champAvecHeure(champ: string, heure: number): string {
+  const lu = lireChampCloture(champ);
+  if (!lu || !Number.isFinite(heure)) return "";
+  const h = Math.min(23, Math.max(0, Math.trunc(heure)));
+  return `${lu.jour}T${String(h).padStart(2, "0")}:${lu.heure.slice(3)}`;
+}
+
+/** « vendredi 6 novembre, 8 h » : le jour (sans l'année, elle se lit au calendrier) et l'heure courte. Vide si illisible. */
+export function phraseChampOuverture(champ: string): string {
+  const lu = lireChampCloture(champ);
+  if (!lu) return "";
+  return `${libelleJour(lu.jour).replace(/ \d{4}$/, "")}, ${formaterHeureCourte(lu.heure)}`;
 }
 
 /** La durée de la collecte, en jours du calendrier, telle que la frise l'écrit. */
