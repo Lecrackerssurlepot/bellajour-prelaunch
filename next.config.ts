@@ -1,5 +1,92 @@
 import type { NextConfig } from "next";
 
+/* ── LES EN-TÊTES DE PROTECTION (T-163, 20/10/2026) ──────────────────────
+   Avant ce jour, le site n'envoyait que `strict-transport-security` (posé par
+   Vercel). Le risque nommé par le ticket : une page tierce encadre
+   `/admin/atelier` pendant que Mathias ou Louis y est connecté, et fait
+   cliquer un geste d'écriture (envoi à l'impression, transition). Même chose
+   pour l'espace d'une édition, dont le lien circule.
+
+   Ce qui est APPLIQUÉ, sur toutes les adresses :
+   - `X-Frame-Options: DENY` et `Content-Security-Policy: frame-ancestors 'none'`
+     (le second est la règle moderne, le premier couvre les vieux navigateurs).
+     C'est la SEULE directive de CSP appliquée : elle ne touche à aucune
+     ressource de la page, elle refuse seulement d'être encadrée ;
+   - `X-Content-Type-Options: nosniff` : un fichier servi sous un faux type
+     n'est jamais exécuté comme un script ;
+   - `Referrer-Policy: strict-origin-when-cross-origin` : un site tiers ne
+     reçoit que `https://www.bellajour.fr/`, jamais le chemin. ⚠️ SAUF
+     `/edition` et `/depot`, dont les adresses PORTENT UN TOKEN : leurs layouts
+     posent déjà `referrer: 'no-referrer'` (balise meta), et l'en-tête dit la
+     même chose plus bas, après la règle générale (la dernière gagne) ;
+   - `Permissions-Policy` minimale : ni caméra, ni micro, ni position. Aucune
+     page ne s'en sert (vérifié le 20/10 : ni `getUserMedia` ni
+     `navigator.geolocation` dans `src/`). Le verrou d'écran de `/depot`
+     (`screen-wake-lock`) et le presse-papiers ne sont PAS touchés.
+
+   UNE EXCEPTION AU REFUS D'ÊTRE ENCADRÉ, et une seule : l'aperçu du mail
+   « Votre espace est prêt » (`/api/admin/collectif/editions/<id>/mail-espace`)
+   est montré dans une IFRAME de l'écran « L'édition est créée »
+   (`FinCreation.tsx`, qui lit sa hauteur par `contentDocument`). Il est donc
+   encadrable par le site lui-même (`SAMEORIGIN`, `frame-ancestors 'self'`),
+   par personne d'autre.
+
+   ET UNE CSP COMPLÈTE EN « RAPPORT SEUL » (`Content-Security-Policy-Report-Only`) :
+   elle ne bloque RIEN, le navigateur écrit seulement dans sa console ce qu'il
+   aurait refusé. Elle recense ce que les pages chargent vraiment, relevé le
+   20/10 sur le build servi en local :
+   - scripts : les nôtres, plus les scripts EN LIGNE de Next (sans nonce) et de
+     `layout.tsx` (`'unsafe-inline'`) ; `'wasm-unsafe-eval'` pour libheif
+     (WebAssembly, `public/heic/`, les HEIC de `/depot` sous Chrome) ;
+   - styles : les nôtres et les attributs `style` rendus au serveur ;
+   - images : les nôtres, `data:` (textures en ligne), `blob:` (aperçus des
+     photos choisies), le coffre R2 (vignettes et photos signées) et la photo
+     Google du compte (`*.googleusercontent.com`) ;
+   - connexions : les nôtres (dont `/_vercel/insights`, même origine) et le
+     coffre R2, où le navigateur envoie les photos en PUT signé ;
+   - cadres : les nôtres, et `https:` entier, parce que le « PDF feuilletable »
+     de `/numero` est une adresse QUELCONQUE collée par l'atelier
+     (`maquette_pdf_url`, `estUrlSure`) : aucune liste ne la couvre ;
+   - workers : les nôtres (pdf.js, la réduction des photos, libheif).
+   Stripe Checkout est une NAVIGATION (`location.href`), Canva et Google Meet
+   des liens, Brevo et Geoapify du serveur : aucun n'entre dans la page, aucun
+   n'a sa place ici.
+   ⚠️ Avant de l'APPLIQUER (renommer l'en-tête en `Content-Security-Policy`),
+   relire la console de chaque écran ; et sans point de collecte des rapports
+   (aucun `report-uri` aujourd'hui), personne d'autre que celui qui ouvre la
+   console ne voit une violation en production. */
+const COFFRE_R2 = "https://*.r2.cloudflarestorage.com";
+
+function politiqueRapportSeul(enDeveloppement: boolean, ancetres: "'none'" | "'self'"): string {
+  const directives: Array<[string, string[]]> = [
+    ["default-src", ["'self'"]],
+    /* `next dev` exige `eval` (piles d'appel de React) et sa socket de rechargement. */
+    ["script-src", ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", ...(enDeveloppement ? ["'unsafe-eval'"] : [])]],
+    ["style-src", ["'self'", "'unsafe-inline'"]],
+    ["img-src", ["'self'", "data:", "blob:", COFFRE_R2, "https://*.googleusercontent.com"]],
+    ["font-src", ["'self'", "data:"]],
+    ["connect-src", ["'self'", COFFRE_R2, ...(enDeveloppement ? ["ws:", "wss:"] : [])]],
+    ["frame-src", ["'self'", "https:"]],
+    ["worker-src", ["'self'"]],
+    ["object-src", ["'none'"]],
+    ["base-uri", ["'self'"]],
+    ["form-action", ["'self'"]],
+    ["frame-ancestors", [ancetres]],
+  ];
+  return directives.map(([nom, sources]) => `${nom} ${sources.join(" ")}`).join("; ");
+}
+
+function entetesDeProtection(enDeveloppement: boolean) {
+  return [
+    { key: "X-Frame-Options", value: "DENY" },
+    { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+    { key: "X-Content-Type-Options", value: "nosniff" },
+    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+    { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+    { key: "Content-Security-Policy-Report-Only", value: politiqueRapportSeul(enDeveloppement, "'none'") },
+  ];
+}
+
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
@@ -70,6 +157,46 @@ const nextConfig: NextConfig = {
               process.env.NODE_ENV === "production"
                 ? "public, max-age=86400, stale-while-revalidate=2592000"
                 : "no-store, must-revalidate",
+          },
+        ],
+      },
+
+      /* ── LA PROTECTION (T-163), voir en tête de fichier. L'ORDRE COMPTE :
+         quand deux règles posent la même clé sur une adresse, Next garde la
+         DERNIÈRE. La règle générale vient donc d'abord, ses deux exceptions
+         ensuite. Le harnais (`verif-atelier.ts`, « les en-têtes de
+         protection ») rejoue cet ordre adresse par adresse.
+         ⚠️ `/_vercel/` est EXCLU : ce sont les scripts de la mesure d'audience
+         (`Mesure.tsx`), inertes tant que Web Analytics n'est pas activé, et
+         ils répondent alors 404 en `text/plain`. Avec `nosniff`, Chrome ajoutait
+         à chaque page « Refused to execute script… MIME type ('text/plain') »
+         (relevé le 20/10 sur le build local) : une erreur de console de plus
+         pour un script qui ne tournait de toute façon pas. Rien à encadrer ni à
+         protéger là : des scripts et des balises de mesure. */
+      {
+        source: "/:chemin((?!_vercel/).*)",
+        headers: entetesDeProtection(process.env.NODE_ENV !== "production"),
+      },
+      /* Les adresses à token : aucun site ne doit recevoir le chemin, même
+         réduit. Les layouts le disent déjà par la balise meta ; on ne la
+         contredit pas, on la redit. */
+      {
+        source: "/edition/:chemin*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        source: "/depot/:chemin*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      /* L'aperçu du mail, encadré par `FinCreation.tsx` : par le site seul. */
+      {
+        source: "/api/admin/collectif/editions/:id/mail-espace",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: politiqueRapportSeul(process.env.NODE_ENV !== "production", "'self'"),
           },
         ],
       },

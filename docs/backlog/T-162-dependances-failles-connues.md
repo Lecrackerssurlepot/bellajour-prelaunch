@@ -48,3 +48,31 @@ ligne « Stack » du `CLAUDE.md` racine.
   existait déjà en 16.2.3 (rejoué) : sans lien avec la mise à jour.
 - Reste : **pdfjs-dist** (avec sa copie `public/pdfjs/`, puis rejouer le contrôle des bords
   T-121), **sharp** 0.35.5 (scripts d'images), **source-map-js** (outillage).
+- 20/10 : les trois, chacun seul dans le verrou, installés avec `--before=2026-10-06` (rien de
+  publié depuis moins de deux semaines n'entre, sous-dépendances comprises).
+  - **pdfjs-dist 5.7.284 → 6.4.299** (dernière 6.x, publiée le 03/10), ÉPINGLÉE à la version
+    exacte ; sa dépendance facultative `@napi-rs/canvas` (et ses binaires) 0.1.100 → 1.0.10.
+    `public/pdfjs/` recopié depuis `node_modules/pdfjs-dist/build` (octets identiques).
+    pdf.js 6 a retiré `PDFDocumentProxy.destroy()` (tsc l'a vu) ; en 5.x il ne faisait que
+    `return this.loadingTask.destroy()`, d'où `doc.loadingTask.destroy()` dans
+    `rendreBords.ts` (contrôle des bords, T-121) et `rendreTour.ts` (BAT des éditions).
+    Prouvé en A/B dans Chrome headless : le MÊME code des deux modules (empaqueté depuis le
+    dépôt), un PDF inventé de 4 pages, servi une fois avec pdf.js 5.7.284 et une fois avec
+    6.4.299 sous la CSP du site : remarques de bords identiques (page 2 « ne déborde que de
+    1,8 mm » à droite, page 3 « presque » à gauche, pages 1 et 4 muettes), rendu du BAT identique
+    (empreintes, mots lus, somme des gris de chaque page), aucune violation de CSP dans la page
+    ni dans le worker.
+  - **sharp 0.34.5 → 0.35.5** (libvips 8.17.3 → 8.18.7) ; la copie de sharp que Next portait
+    déjà (0.35.5) se confond avec celle de la racine ; `semver` de sharp 7.7.4 → 7.8.5 (le sien).
+    A/B des gestes de `src/lib/atelier/enrichissement.ts` (`lirePhoto` réel compris) et de ceux
+    des scripts d'images (`resize` inside/outside, `webp` effort 6, `extract`, `png`, `jpeg`,
+    pixels bruts RGBA) sur un JPEG, un PNG et un WebP : sorties identiques, gris 32 × 32 au bit
+    près, mêmes empreintes. Aucun script lancé (plusieurs écrivent en production) ; les `.ts` de
+    `scripts/` passent `tsc`.
+  - **source-map-js 1.2.1 → 1.2.2**, la seule ligne du verrou qui bouge.
+  - `npm audit --omit=dev` : de 4 (1 modéré, 3 hauts) à **1 modéré**, `baseline-browser-mapping`
+    2.10.18 (dépendance de `next` et de `browserslist`, outillage), hors de ce lot.
+  - Harnais (`verif-atelier.ts`) : pdfjs-dist épinglé = version installée = copie servie, octet
+    pour octet (prouvé en remettant l'ancien worker : KO).
+- Reste : **baseline-browser-mapping** (modéré, `npm audit fix` le monte en 2.11+), et
+  `eslint-config-next` 16.4.2 (T-178).

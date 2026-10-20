@@ -162,7 +162,9 @@ export async function rendrePdf(
       });
     }
   } finally {
-    await doc.destroy();
+    /* pdf.js 6 a retiré `PDFDocumentProxy.destroy()` ; en 5.x il ne faisait que
+       `return this.loadingTask.destroy()` (T-162, 20/10/2026). Même geste. */
+    await doc.loadingTask.destroy();
     for (const c of [pleine, coupee, vign]) c.width = c.height = 0;
   }
   const utiles = motsUtiles(motsBruts);

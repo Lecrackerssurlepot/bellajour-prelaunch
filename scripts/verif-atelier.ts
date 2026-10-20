@@ -5733,7 +5733,130 @@ titre("— l'espace avant un texte JSX qui porte une entité (SWC) —");
    heriter d'un `localStorage` qui jette. */
 delete (globalThis as { localStorage?: unknown }).localStorage;
 
-void verifierT005().then(() => {
+/* ═══════════════ LES EN-TÊTES DE PROTECTION (T-163, 20/10/2026) ═══════════════
+   `next.config.ts` est relu tel quel, et chaque adresse passe par le MÊME
+   comparateur de chemins que le routeur de Next (`getPathMatch` + la barre
+   finale facultative de `modifyRouteRegex`, comme
+   `server/lib/router-utils/filesystem.js` ; internes à Next : s'ils
+   déménagent, ce bloc tombe, il ne se tait pas). Sans `modifyRouteRegex`, `/`
+   ne correspondait pas à `/:chemin*` alors que le serveur l'y range (vu le
+   20/10 au `curl`). Quand deux règles posent la même clé, Next garde la
+   DERNIÈRE : c'est ce que `entetesPour` rejoue. */
+const verifierProtection = async () => {
+  titre("— les en-têtes de protection (T-163) —");
+  const { getPathMatch } = await import("next/dist/shared/lib/router/utils/path-match");
+  const { modifyRouteRegex } = await import("next/dist/lib/redirect-status");
+  const { default: config } = await import("../next.config");
+  const env = process.env as Record<string, string | undefined>;
+  const avant = env.NODE_ENV;
+  const reglesEn = async (mode: "production" | "development") => {
+    env.NODE_ENV = mode;
+    const r = config.headers ? await config.headers() : [];
+    env.NODE_ENV = avant;
+    return r;
+  };
+  const prod = await reglesEn("production");
+  const dev = await reglesEn("development");
+  const entetesPour = (regles: typeof prod, chemin: string): Map<string, string> => {
+    const m = new Map<string, string>();
+    for (const r of regles) {
+      const correspond = getPathMatch(r.source, { strict: true, removeUnnamedParams: true, regexModifier: (x) => modifyRouteRegex(x) });
+      if (correspond(chemin) === false) continue;
+      for (const h of r.headers) m.set(h.key.toLowerCase(), h.value);
+    }
+    return m;
+  };
+  const TOK = "Ab3d".repeat(8);
+  const UUID = "0f2b4c6d-1a2b-4c3d-8e9f-0a1b2c3d4e5f";
+  const partout = [
+    "/", "/magazine", "/composer", `/numero/${TOK}`, "/compte", "/cgv", "/en/cgv",
+    "/admin/login", "/admin/atelier", `/admin/atelier/${TOK}`, `/admin/collectif/${UUID}`,
+    `/admin/collectif/creee/${UUID}`, "/api/admin/atelier/transition", "/api/atelier/checkout",
+    "/images/v2/accueil/couverture-lisbonne-640.webp", "/pdfjs/pdf.min.mjs", "/heic/vignette-heic.worker.js",
+  ];
+  const aTokenDansLAdresse = [`/edition/${TOK}`, `/edition/${TOK}/photos`, "/edition/retrouver", `/depot/${TOK}`];
+  const apercuMail = `/api/admin/collectif/editions/${UUID}/mail-espace`;
+  const lesDeux = (f: (m: Map<string, string>) => boolean, chemins: string[]) =>
+    chemins.filter((c) => !f(entetesPour(prod, c)) || !f(entetesPour(dev, c)));
+
+  const refuseLeCadre = (m: Map<string, string>) =>
+    m.get("x-frame-options") === "DENY" && m.get("content-security-policy") === "frame-ancestors 'none'"
+    && /(^|; )frame-ancestors 'none'($|;)/.test(m.get("content-security-policy-report-only") ?? "");
+  const fautifsCadre = lesDeux(refuseLeCadre, [...partout, ...aTokenDansLAdresse]);
+  ok(`aucune page ne se laisse encadrer (X-Frame-Options DENY + frame-ancestors 'none')${fautifsCadre.length ? " : " + fautifsCadre.join(", ") : ""}`, fautifsCadre.length === 0);
+
+  const socle = (m: Map<string, string>) =>
+    m.get("x-content-type-options") === "nosniff"
+    && /camera=\(\)/.test(m.get("permissions-policy") ?? "") && /microphone=\(\)/.test(m.get("permissions-policy") ?? "")
+    && /geolocation=\(\)/.test(m.get("permissions-policy") ?? "");
+  const fautifsSocle = lesDeux(socle, [...partout, ...aTokenDansLAdresse, apercuMail]);
+  ok(`nosniff et Permissions-Policy (caméra, micro, position) partout${fautifsSocle.length ? " : " + fautifsSocle.join(", ") : ""}`, fautifsSocle.length === 0);
+
+  const fautifsReferent = lesDeux((m) => m.get("referrer-policy") === "strict-origin-when-cross-origin", partout);
+  ok(`Referrer-Policy strict-origin-when-cross-origin hors des adresses à token${fautifsReferent.length ? " : " + fautifsReferent.join(", ") : ""}`, fautifsReferent.length === 0);
+  const fautifsToken = lesDeux((m) => m.get("referrer-policy") === "no-referrer", aTokenDansLAdresse);
+  ok(`/edition et /depot gardent no-referrer, la règle générale ne l'écrase pas${fautifsToken.length ? " : " + fautifsToken.join(", ") : ""}`, fautifsToken.length === 0);
+  const meta = (f: string) => /referrer:\s*['"]no-referrer['"]/.test(readFileSync(resolve(process.cwd(), f), "utf8"));
+  ok("…et leurs layouts le disent aussi par la balise meta (edition/layout.tsx, depot/layout.tsx)",
+     meta("src/app/edition/layout.tsx") && meta("src/app/depot/layout.tsx"));
+
+  const mailP = entetesPour(prod, apercuMail);
+  ok("l'aperçu du mail « Votre espace est prêt » s'encadre par le site SEUL (SAMEORIGIN, frame-ancestors 'self')",
+     mailP.get("x-frame-options") === "SAMEORIGIN" && mailP.get("content-security-policy") === "frame-ancestors 'self'"
+     && /(^|; )frame-ancestors 'self'($|;)/.test(mailP.get("content-security-policy-report-only") ?? ""));
+  /* L'exception suit l'écran qui encadre : si l'iframe change d'adresse, ou si
+     une autre iframe vers le site apparaît, l'exception doit être revue. */
+  const fichiersTsx = (dossier: string): string[] =>
+    readdirSync(dossier, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? fichiersTsx(join(dossier, e.name)) : e.name.endsWith(".tsx") ? [join(dossier, e.name)] : [],
+    );
+  const racineSrc = resolve(process.cwd(), "src");
+  const cadresDuSite = fichiersTsx(racineSrc).flatMap((f) =>
+    /* `[^>]*?` : on reste DANS la balise, sinon un `<img src="/…">` plus loin compterait. */
+    [...readFileSync(f, "utf8").matchAll(/<iframe\b[^>]*?\bsrc=\{?["'`](\/[^"'`]*)["'`]/g)].map((m) => `${f.slice(racineSrc.length + 1)} → ${m[1]}`),
+  );
+  ok(`la seule iframe vers le site est l'aperçu du mail (FinCreation.tsx)${cadresDuSite.length !== 1 ? " : " + cadresDuSite.join(", ") : ""}`,
+     cadresDuSite.length === 1 && /creee\/\[id\]\/FinCreation\.tsx → \/api\/admin\/collectif\/editions\/\$\{p\.id\}\/mail-espace$/.test(cadresDuSite[0] ?? ""));
+  const vercel = entetesPour(prod, "/_vercel/insights/script.js");
+  ok("/_vercel/ (mesure d'audience inerte, 404 en text/plain) reste hors de la règle : pas de nosniff qui ajoute une erreur de console",
+     !vercel.has("x-content-type-options") && !vercel.has("x-frame-options"));
+  ok("le cache d'un jour des images est toujours là, en plus de la protection",
+     /max-age=86400/.test(entetesPour(prod, "/images/v2/x.webp").get("cache-control") ?? "")
+     && entetesPour(prod, "/images/v2/x.webp").get("x-frame-options") === "DENY");
+
+  const ro = (regles: typeof prod) => entetesPour(regles, "/composer").get("content-security-policy-report-only") ?? "";
+  const directive = (csp: string, nom: string) => (csp.split("; ").find((d) => d.startsWith(nom + " ")) ?? "").split(" ").slice(1);
+  ok("la CSP complète est en RAPPORT SEUL : aucune autre directive n'est appliquée que frame-ancestors",
+     ro(prod).length > 0 && entetesPour(prod, "/composer").get("content-security-policy") === "frame-ancestors 'none'");
+  ok("connect-src laisse partir le PUT signé vers le coffre R2 (sous-domaine du bucket)",
+     directive(ro(prod), "connect-src").includes("https://*.r2.cloudflarestorage.com")
+     && directive(ro(prod), "img-src").includes("https://*.r2.cloudflarestorage.com"));
+  ok("en production, ni 'unsafe-eval' ni socket : seulement en développement (next dev)",
+     !directive(ro(prod), "script-src").includes("'unsafe-eval'") && !directive(ro(prod), "connect-src").includes("ws:")
+     && directive(ro(dev), "script-src").includes("'unsafe-eval'"));
+  ok("libheif (WebAssembly) est prévu : 'wasm-unsafe-eval'", directive(ro(prod), "script-src").includes("'wasm-unsafe-eval'"));
+  ok("le « PDF feuilletable » de /numero est une adresse quelconque : frame-src accepte https:",
+     directive(ro(prod), "frame-src").includes("https:"));
+  const permissions = fichiersTsx(racineSrc).concat(
+    readdirSync(join(racineSrc, "lib"), { recursive: true, withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith(".ts")).map((e) => join(e.parentPath, e.name)),
+  ).filter((f) => /getUserMedia|navigator\.geolocation/.test(readFileSync(f, "utf8")));
+  ok(`aucune page ne demande la caméra, le micro ou la position (sinon, revoir Permissions-Policy)${permissions.length ? " : " + permissions.join(", ") : ""}`,
+     permissions.length === 0);
+
+  titre("— pdf.js : le paquet et sa copie servie sont la même version (T-162) —");
+  const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8")) as { dependencies: Record<string, string> };
+  const declaree = pkg.dependencies["pdfjs-dist"] ?? "";
+  const installee = (JSON.parse(readFileSync(resolve(process.cwd(), "node_modules/pdfjs-dist/package.json"), "utf8")) as { version: string }).version;
+  ok(`pdfjs-dist épinglé à une version exacte (${declaree}), celle qui est installée (${installee})`, /^\d+\.\d+\.\d+$/.test(declaree) && declaree === installee);
+  for (const f of ["pdf.min.mjs", "pdf.worker.min.mjs"]) {
+    const servi = readFileSync(resolve(process.cwd(), "public/pdfjs", f));
+    const paquet = readFileSync(resolve(process.cwd(), "node_modules/pdfjs-dist/build", f));
+    ok(`public/pdfjs/${f} est la copie EXACTE de node_modules/pdfjs-dist/build (${declaree})`, servi.equals(paquet) && servi.includes(`"${declaree}"`));
+  }
+};
+
+void verifierT005().then(verifierProtection).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
