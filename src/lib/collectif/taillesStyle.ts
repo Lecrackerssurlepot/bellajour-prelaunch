@@ -34,7 +34,9 @@ export type Production =
   | { ok: false; raison: string };
 
 /** La largeur AFFICHÉE d'une image (une orientation EXIF de 5 à 8 couche l'image : largeur et hauteur s'échangent). */
-function largeurAffichee(m: sharp.Metadata): number | null {
+type MetadonneesSharp = Awaited<ReturnType<ReturnType<typeof sharp>["metadata"]>>;
+
+function largeurAffichee(m: MetadonneesSharp): number | null {
   const l = m.orientation && m.orientation >= 5 ? m.height : m.width;
   return typeof l === "number" && l > 0 ? l : null;
 }
