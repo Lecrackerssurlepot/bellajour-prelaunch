@@ -137,6 +137,19 @@
   outline-offset: 2px;
 }
 
+/* L'heure d'ouverture du dépôt (20/10) : la pastille « − 8 h + » sous le jour choisi, son libellé et « heure de Paris » de part et d'autre. */
+.eca-root .eca-fm-heure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.eca-root .eca-fm-heure > label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--bj-text);
+}
+
 /* ─────────────── les magazines : une poubelle par ligne ─────────────── */
 
 .eca-root .eca-fm-mags {

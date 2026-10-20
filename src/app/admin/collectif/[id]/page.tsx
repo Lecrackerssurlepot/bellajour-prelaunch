@@ -20,12 +20,15 @@ import { plafondLienMax } from "@/lib/collectif/plafonds";
 import { quandRdv } from "@/lib/collectif/boite";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import { premierNouveau } from "@/lib/collectif/nouveaux";
+import { depotOuvert, quandOuvre } from "@/lib/collectif/ouverture";
 import { etiquetteMagazine } from "@/lib/collectif/saisie";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import { chargerEdition, compterConversationsEnAttente, compterNonLus } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import PanneauCollecte from "./PanneauCollecte";
 import PanneauContenus from "./PanneauContenus";
+import PanneauCorbeille from "./PanneauCorbeille";
+import PanneauPersonnes from "./PanneauPersonnes";
 import PanneauDocuments from "./PanneauDocuments";
 import PanneauGestes from "./PanneauGestes";
 import PanneauMessages from "./PanneauMessages";
@@ -132,12 +135,22 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   const listeInters = inters.ok ? inters.valeur.filter((i) => i.actif) : [];
   const maintenantRdv = new Date();
 
+  /* L'ouverture du dépôt (migration 20261023) : `undefined` = la base n'a pas la colonne (le formulaire le dit et ne propose rien),
+     `null` = ouvert dès la création, sinon le moment où les participants peuvent déposer. Une ouverture PASSÉE n'est qu'une date. */
+  const ouvertureAbsente = e.ouverture_le === undefined;
+  const ouverture: { etat: "aucune" | "avenir" | "passee"; quand: string } | null = ouvertureAbsente
+    ? null
+    : !e.ouverture_le
+      ? { etat: "aucune", quand: "" }
+      : { etat: depotOuvert(e.ouverture_le, rendu) ? "passee" : "avenir", quand: quandOuvre(e.ouverture_le) };
+
   const initiales: ValeursEdition = {
     organisation: e.organisation,
     evenement: e.evenement,
     dates_texte: e.dates_texte ?? "",
     registre: e.registre,
     cloture_local: versChampParis(e.cloture_le),
+    ouverture_local: versChampParis(e.ouverture_le ?? null),
     livraison_prevue_le: e.livraison?.prevue_le ?? "",
     plafond_participant_atelier: s(e.plafond_participant_atelier),
     plafond_total: s(e.plafond_total),
@@ -316,6 +329,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           )}
           <span className="eca-carte-pied eca-puces">
             <span className="eca-puce">{e.cloture_le ? `Clôture le ${formaterJourParis(e.cloture_le)}` : "Clôture à fixer"}</span>
+            {ouverture?.etat === "avenir" ? <span className="eca-puce eca-puce--ambre">Dépôt ouvert le {ouverture.quand}</span> : null}
             {collecte.doublons ? <span className="eca-puce">{pluriel(collecte.doublons, "doublon")}</span> : null}
             {collecte.sansVignette ? <span className="eca-puce">{collecte.sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
             {collecte.signalees ? <span className="eca-puce eca-puce--ambre">{pluriel(collecte.signalees, "signalée")}</span> : null}
@@ -515,7 +529,17 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
               })}
             </div>
           ),
-          photos: <PanneauCollecte id={e.id} {...collecte} />,
+          /* T-198, T-199 (planches 4C et 5 du 20/10) : sous la collecte, les personnes de l'édition (adresse entière, renommer,
+             fusionner, défaire) puis la corbeille (restaurer, effacer maintenant). Chacune se lit à son affichage : la fiche n'attend pas leurs routes. */
+          photos: (
+            <>
+              <PanneauCollecte id={e.id} {...collecte} />
+              <div className="eca-cartes eca-cartes--une eca-photos-suite">
+                <PanneauPersonnes id={e.id} liens={collecte.parLien.map((l) => ({ cle: l.cle, nom: l.nom }))} />
+                <PanneauCorbeille id={e.id} migrationAbsente={ouvertureAbsente} />
+              </div>
+            </>
+          ),
           messages: <PanneauMessages id={e.id} initiaux={messages} premierNouveau={premierNouveau(messages, lu.fiche.nonLusAtelier)} maintenant={rendu.toISOString()} />,
           documents: (
             <div className="eca-deux">
@@ -559,9 +583,10 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
                 maintenant={maintenantRdv.toISOString()}
                 ouverteLe={versChampParis(e.created_at).slice(0, 10)}
                 plafondClient={e.plafond_participant_client}
+                ouvertureIndisponible={ouvertureAbsente}
               />
               <div className="eca-pile">
-                <PanneauLiens id={e.id} liens={liens} />
+                <PanneauLiens id={e.id} liens={liens} ouverture={ouverture} />
                 {/* T-201 : les liens de contribution (un par bateau, par équipe), leur création, leur QR en grand (T-197). */}
                 <PanneauProvenances
                   id={e.id}

@@ -378,9 +378,9 @@ Droit `gerer_personnes` pour renommer et fusionner. Erreurs : 404 `personne_intr
 ### Le réglage de l'ouverture : `POST /api/admin/collectif/editions`, `PATCH …/editions/[id]`
 
 Champ `ouverture_le` (instant ISO avec fuseau, ou vide). 422 `saisie` (champ `ouverture_le`) ;
-503 `migration_personnes_absente` si on le règle sans la migration (rien n'est écrit). **Le champ
-n'est pas encore dans `FormulaireEdition`** (seconde vague : un jour du `Calendrier` + une heure,
-converti par `instantDeParis`, jamais un `<input type="datetime-local">`, que le harnais refuse).
+503 `migration_personnes_absente` si on le règle sans la migration (rien n'est écrit). **Le champ est
+dans `FormulaireEdition` depuis le 20/10** (un jour du `Calendrier` + une heure, converti par
+`instantDeParis`, jamais un `<input type="datetime-local">`, que le harnais refuse).
 
 ### La purge quotidienne (aucune route)
 
@@ -480,6 +480,9 @@ de test (une ligne `objets_a_effacer` puis `objets_effaces` qui nomme les mêmes
 3. Fiche de l'atelier : la corbeille (« Effacer maintenant » en deux temps ; `ratees` > 0 se dit
    « effacée ; un fichier sera retiré du coffre à la prochaine purge », plus de 502), les personnes
    (`nomPropose`) et les fusions à défaire (`interrompue` d'abord), le champ « Ouverture du dépôt ».
+   **Fait le 20/10 (lot w2-atelier)** : `PanneauCorbeille`, `PanneauPersonnes`, `FormulaireEdition` (voir T-198
+   et T-199), `ratees`, `nomPropose` et `interrompue` branchés. Pas de « mettre à la corbeille » côté atelier :
+   la fiche n'a pas de grille avec sélection.
 4. `PROJET-CONFIDENTIALITE-B2B.md` (Q6) : l'adresse d'un participant n'est **pas** effacée par la
    purge de la corbeille ni par `collectif-retention.ts` aujourd'hui ; à brancher quand la
    politique est validée (T-158, T-159). Voir C3, section 9.

@@ -864,10 +864,10 @@ titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage s
 
   const form = lire("src/app/admin/collectif/FormulaireEdition.tsx");
   const cal = lire("src/app/admin/collectif/Calendrier.tsx");
-  ok("plus AUCUN champ du navigateur pour une date, une heure ou un chiffre dans le formulaire ; le calendrier Bellajour aux trois endroits",
+  ok("plus AUCUN champ du navigateur pour une date, une heure ou un chiffre dans le formulaire ; le calendrier Bellajour aux quatre endroits (dates, clôture, livraison, ouverture du dépôt, 20/10)",
     !/type="(date|datetime-local|time|number)"/.test(form + lire("src/app/admin/collectif/Pastille.tsx") + cal)
-      && (form.match(/<Calendrier\b/g) ?? []).length === 3
-      && /mode="plage"/.test(form) && (form.match(/mode="jour"/g) ?? []).length === 2
+      && (form.match(/<Calendrier\b/g) ?? []).length === 4
+      && /mode="plage"/.test(form) && (form.match(/mode="jour"/g) ?? []).length === 3
       && /onPlage=\{\(p\) => maj\("dates_texte", textePlage\(p\)\)\}/.test(form));
   ok("la cloture au calendrier : les jours passes barres (min = aujourd'hui, venu du serveur), 23 h 59 heure de Paris par champCloture, le pied le dit",
     /libelle="Clôture de la collecte"\s*aujourdhui=\{aujourdhui\}\s*min=\{aujourdhui\}/.test(form)
@@ -2477,7 +2477,7 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     panneaux.every((t) => /className="eca-carte(?: [a-z-]+)?"/.test(t) && !/ate-carte/.test(t)) && !/style=\{\{/.test(panneaux[0] + panneaux[1])
       && /magazines: \(\s*<div className="eca-cartes eca-cartes--deux">/.test(fiche) && /<h2 className="eca-carte-titre">Journal<\/h2>/.test(fiche) && /className="eca-pieces"/.test(fiche));
   ok("fiche en cartes : les gestes dans un menu de l'en-tete, les trois liens et leur regeneration dans « Réglages et liens »",
-    /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>/.test(fiche));
+    /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\}(?: ouverture=\{ouverture\})? \/>/.test(fiche));
   const donneesFiche = lire("src/app/admin/collectif/donnees.ts");
   ok("fiche en cartes : les doublons sont le MEME resultat range que lit la page Photos du client (T-170), quatre apercus signes au plus",
     /doublons: \(\(await doublonsDeLEdition\(supabase, id, lignesPhotos\)\)\?\.groupes \?\? calculerSurLignes\(lignesPhotos\)\.groupes\)/.test(donneesFiche) && !/groupesDoublonsRapides\(/.test(donneesFiche)
@@ -4113,7 +4113,7 @@ function verifT193() {
     /Liens de contribution/.test(pProv) && /Actif/.test(pProv) && /Supprimé/.test(pProv) && /Copier le lien/.test(pProv) && /Afficher en grand/.test(pProv) && /Créer un lien/.test(pProv) && /Sans limite/.test(pProv)
       && /<Pastille/.test(pProv) && !/type="(date|datetime-local|time|number)"/.test(pProv) && /RACCOURCIS_LIEN/.test(pProv) && /CURSEUR_LIEN\.min/.test(pProv));
   ok("la carte est dans « Réglages et liens », sous les trois liens ; la fiche lui donne le plafond maximal de l'édition, l'adresse de dépôt, l'état de la collecte",
-    /<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>\s*\{\/\*[^*]*\*\/\}\s*<PanneauProvenances/.test(pageFiche) && /max=\{plafondLienMax\(e\)\}/.test(pageFiche) && /ouverte=\{etat === "preparation"\}/.test(pageFiche) && /archivee=\{Boolean\(e\.archive_le\)\}/.test(pageFiche));
+    /<PanneauLiens id=\{e\.id\} liens=\{liens\}(?: ouverture=\{ouverture\})? \/>\s*\{\/\*[^*]*\*\/\}\s*<PanneauProvenances/.test(pageFiche) && /max=\{plafondLienMax\(e\)\}/.test(pageFiche) && /ouverte=\{etat === "preparation"\}/.test(pageFiche) && /archivee=\{Boolean\(e\.archive_le\)\}/.test(pageFiche));
   ok("l'écran garde le lien écrit (dédoublonné quand la relecture le rend), vide le nom et remet le focus pour le bateau suivant",
     /setAjoutes\(\(a\) => \[\.\.\.a, \{ \.\.\.lien, url: `\$\{depot\}\?p=\$\{cle\}` \}\]\)/.test(pProv) && /ajoutes\.filter\(\(a\) => !liens\.some\(\(l\) => l\.id === a\.id\)\)/.test(pProv) && /champ\.current\?\.focus\(\)/.test(pProv));
   const donneesFiche2 = lire("src/app/admin/collectif/donnees.ts");
@@ -6261,7 +6261,186 @@ const sqlSansCommentaires = (s: string) => s.split("\n").filter((l) => !/^\s*--/
 const serveurSrc = () => lire("src/lib/collectif/corbeilleServeur.ts");
 
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(() => {
+/* ═══════════ Planches 4C et 5 du 20/10, côté ATELIER : la corbeille, les personnes, l'ouverture du dépôt (lot w2-atelier, T-198, T-199) ═══════════ */
+
+async function verifAtelierCorbeillePersonnes() {
+  const Ap = await import("@/lib/collectif/atelierPhotos");
+  const Pe = await import("@/lib/collectif/personnes");
+  const Co = await import("@/lib/collectif/corbeille");
+  const Cal = await import("@/lib/collectif/calendrier");
+  const Ou = await import("@/lib/collectif/ouverture");
+  const Mi = await import("@/lib/collectif/migration");
+  const Da = await import("@/lib/collectif/dates");
+  const Sa = await import("@/lib/collectif/saisie");
+
+  titre("— w2-atelier : les phrases de la corbeille (atelierPhotos.ts) —");
+  ok("l'échéance se dit en jours (« Effacée dans 2 jours », singulier à 1) ; à 0 le délai est passé et la purge du jour l'emporte",
+    Ap.phraseEcheance(2) === "Effacée dans 2 jours" && Ap.phraseEcheance(1) === "Effacée dans 1 jour" && Ap.phraseEcheance(13) === "Effacée dans 13 jours" && Ap.phraseEcheance(0) === "Effacée à la prochaine purge" && Ap.phraseEcheance(Number.NaN) === "Effacée à la prochaine purge");
+  ok("les dates sont celles de Paris, heure d'hiver comme d'été (« sam. 7 nov. à 15 h 02 », « sam. 17 oct., 9 h 05 »), jamais celles de la machine ; illisible : vide",
+    Ap.jourEtHeureParis("2026-11-07T14:02:00Z").replace(/ /g, " ") === "sam. 7 nov. à 15 h 02" && Ap.quandArrivee("2026-11-07T13:32:00Z").replace(/ /g, " ") === "sam. 7 nov., 14 h 32" && Ap.quandArrivee("2026-10-17T07:05:00Z").replace(/ /g, " ") === "sam. 17 oct., 9 h 05"
+      && Ap.jourEtHeureParis("pas une date") === "" && Ap.quandArrivee(null) === "");
+  ok("l'heure garde ses espaces INSÉCABLES (« 16 h 18 » ne se coupe pas en fin de ligne sur un téléphone)",
+    /^sam\. 7 nov\. à 15 h 02$/.test(Ap.jourEtHeureParis("2026-11-07T14:02:00Z")) && /, 14 h 32$/.test(Ap.quandArrivee("2026-11-07T13:32:00Z")));
+  const mille = Array.from({ length: 1201 }, (_, i) => `id${i}`);
+  const gestes = Ap.enGestes(mille);
+  ok(`« Tout cocher » d'une grande corbeille part en gestes de ${Co.PHOTOS_PAR_GESTE} photos au plus (la route refuse davantage, 400 lot_invalide), dans l'ordre, sans perte ni doublon`,
+    gestes.length === 3 && gestes.map((g) => g.length).join() === "500,500,201" && gestes.flat().join() === mille.join() && Ap.enGestes([]).length === 0 && Ap.enGestes(["a"]).length === 1);
+  const e3 = Ap.phraseEffacer(3, 3), e0 = Ap.phraseEffacer(0, 3), e2 = Ap.phraseEffacer(2, 3);
+  ok("« Effacer maintenant », premier temps : le serveur dit ce qui partirait ; DÉFINITIF dit en toutes lettres ; rien à effacer se dit et ne propose aucun geste ; une photo déjà restaurée est nommée",
+    e3.titre === "Effacer pour de bon 3 photos ?" && /définitif/.test(e3.corps) && /l'original et la vignette/.test(e3.corps) && e0.titre === "Rien à effacer" && /plus à la corbeille/.test(e0.corps)
+      && e2.titre === "Effacer pour de bon 2 photos ?" && /Sur les 3 photos cochées, 1 n'est plus à la corbeille : elle n'est pas touchée/.test(e2.corps) && Ap.phraseEffacer(1, 1).titre === "Effacer pour de bon 1 photo ?");
+  ok("les bilans : restaurer dit où la photo revient ; effacer dit ce qui est parti ET le fichier resté au coffre (audit S7 : la ligne part d'abord, la purge suivante retire le fichier)",
+    Ap.bilanRestauration(1, 0) === "1 photo restaurée : elle revient à sa place (son lien, sa personne, sa sélection)." && /3 photos restaurées : elles reviennent/.test(Ap.bilanRestauration(3, 0)) && /1 n'était plus à la corbeille/.test(Ap.bilanRestauration(2, 1)) && /Rien n'a été restauré/.test(Ap.bilanRestauration(0, 2))
+      && Ap.bilanEffacement(3, 0) === "3 photos effacées pour de bon." && Ap.bilanEffacement(2, 1) === "2 photos effacées pour de bon. Pour l'une d'elles, un fichier est resté au coffre : la purge du jour le retirera." && /Pour 2 d'entre elles, un fichier est resté au coffre/.test(Ap.bilanEffacement(3, 2)) && /^Rien n'est effacé/.test(Ap.bilanEffacement(0, 0)) && !/reste à la corbeille/.test(Ap.bilanEffacement(2, 1)));
+  const absente = Ap.phraseMigrationAbsente("La corbeille");
+  ok("sans la migration 20261023 : l'écran DIT ce qui attend, NOMME le fichier de la migration et dit que rien n'est enregistré (sobrement, sans le mot « erreur »)",
+    absente.includes(Mi.MIGRATION_PERSONNES) && /^La corbeille attend la mise à jour de la base/.test(absente) && /Rien n'est enregistré en attendant\.$/.test(absente) && !/erreur/i.test(absente) && Mi.MIGRATION_PERSONNES === "supabase/migrations/20261023_collectif_personnes_corbeille.sql");
+
+  titre("— w2-atelier : les personnes, renommer, fusionner, défaire (atelierPhotos.ts) —");
+  const pers = (o: Partial<import("@/lib/collectif/personnes").Personne> & { nom: string; ref: string; participant: boolean }): import("@/lib/collectif/personnes").Personne => ({ prenom: null, nomDeFamille: null, cle: o.nom.toLowerCase(), email: null, n: 1, liens: [], telephones: 0, derniere: null, depuis: null, ...o, nomPropose: o.nomPropose ?? null });
+  const lea = pers({ ref: "p:11111111-1111-4111-8111-111111111111", participant: true, nom: "Léa Martin", prenom: "Léa", nomDeFamille: "Martin", email: "lea.martin@audencia.com", n: 24, liens: [{ cle: "lien:b1", n: 24 }], telephones: 2 });
+  const lea2 = pers({ ref: "p:22222222-2222-4222-8222-222222222222", participant: true, nom: "Lea Martin", prenom: "Lea", nomDeFamille: "Martin", email: "lea.martin@gmail.com", n: 6, liens: [{ cle: "lien:b1", n: 6 }], telephones: 1 });
+  const leaSeule = pers({ ref: "n:léa", participant: false, nom: "Léa", n: 2, liens: [{ cle: "lien:b1", n: 2 }] });
+  const duo = pers({ ref: "n:marc roux", participant: false, nom: "Marc Roux", n: 3, liens: [{ cle: "lien:b2", n: 2 }, { cle: "participants", n: 1 }] });
+  const noms = new Map([["lien:b1", "Bateau 1"], ["lien:b2", "Bateau 2"], ["participants", "Lien général"]]);
+  ok("les liens d'une personne : un seul se nomme, plusieurs se comptent (« Bateau 2 (2), Lien général (1) ») ; un lien retiré ne montre jamais sa clé ; les téléphones, au pluriel ou absents",
+    Ap.libelleLiens(lea, noms) === "Bateau 1" && Ap.libelleLiens(duo, noms) === "Bateau 2 (2), Lien général (1)" && Ap.libelleLiens(pers({ ref: "n:x", participant: false, nom: "X", liens: [{ cle: "lien:mort", n: 1 }] }), noms) === "Lien retiré"
+      && Ap.libelleLiens(pers({ ref: "n:y", participant: false, nom: "Y" }), noms) === "aucun lien" && Ap.phraseTelephones(2) === "2 téléphones" && Ap.phraseTelephones(1) === "1 téléphone" && Ap.phraseTelephones(0) === "aucun téléphone connu");
+  ok("les deux raisons de proposer une fusion se disent comme la planche 4C ; la plus fournie reste (la cible), à égalité la première",
+    Ap.raisonFusion("meme_nom") === "même nom, sans l'accent" && Ap.raisonFusion("meme_prenom") === "même prénom, même lien" && Ap.sensDeLaFusion(lea2, lea).cible === lea && Ap.sensDeLaFusion(lea2, lea).source === lea2
+      && Ap.sensDeLaFusion(lea, lea2).cible === lea && Ap.sensDeLaFusion(pers({ ref: "n:a", participant: false, nom: "A", n: 3 }), pers({ ref: "n:b", participant: false, nom: "B", n: 3 })).cible.nom === "A");
+  const gardables = Ap.nomsGardables(lea, lea2);
+  const gardablesSeule = Ap.nomsGardables(lea, leaSeule);
+  const gardablesInverse = Ap.nomsGardables(leaSeule, lea);
+  ok("le nom gardé : deux noms à choisir (la cible d'abord) ; garder un nom d'UN SEUL MOT pour la personne qui a une adresse est grisé AVANT le clic (le serveur refuserait, 409), quel que soit le sens de la fusion ; deux noms complets ne sont jamais grisés",
+    gardables.length === 2 && gardables[0].nom === "Léa Martin" && gardables[0].garder === "cible" && gardables[1].garder === "source" && gardables.every((g) => g.refus === null)
+      && gardablesSeule[0].refus === null && gardablesSeule[1].nom === "Léa" && /Un seul mot/.test(gardablesSeule[1].refus ?? "")
+      && /Un seul mot/.test(gardablesInverse[0].refus ?? "") && gardablesInverse[1].refus === null && Pe.decouperNom("Léa") === null && Pe.decouperNom("Léa Martin")?.nom === "Martin");
+  /* La même règle que le serveur : `planFusion` + `decouperNom`. Une ancienne d'un mot qui reste cible d'une personne à adresse : la personne à adresse reste (elle seule se retrouve), son nom ne peut pas devenir « Léa ». */
+  const planInverse = Pe.planFusion(Pe.lireRefPersonne(lea.ref), Pe.lireRefPersonne(leaSeule.ref), "cible");
+  ok("…et le plan que l'écran suppose est celui du serveur : la personne à adresse reste même si elle est la source ; garder le nom d'un seul mot pour elle est refusé des deux côtés",
+    planInverse.ok && planInverse.reste.genre === "participant" && Ap.nomsGardables(leaSeule, lea).find((g) => g.garder === "cible")?.refus !== null);
+  const phrase = Ap.phraseFusion(lea, lea2, "Léa Martin");
+  ok("ce que dit la fusion (planche 4B) : le compte exact, le nom, les adresses qui suivent, rien n'est effacé et le journal permet de la défaire ; une seule photo s'accorde ; sans adresse, rien sur les adresses",
+    phrase === "Les 30 photos sont rangées sous Léa Martin, sur tous les liens. Les deux adresses mènent ensuite à cette personne, sur chacun de ses téléphones. Rien n'est effacé, et le journal garde la fusion : l'atelier peut la défaire."
+      && /^La 1 photo est rangée sous X, sur tous les liens\. L'adresse mène ensuite/.test(Ap.phraseFusion(pers({ ref: "p:33333333-3333-4333-8333-333333333333", participant: true, nom: "X", n: 1 }), pers({ ref: "n:z", participant: false, nom: "Z", n: 0 }), "X"))
+      && !/adresse/.test(Ap.phraseFusion(leaSeule, duo, "Léa")));
+  ok("les fusions passées : « Lea Martin → Léa Martin » ; « Défaire » dit ce qui revient (n photos, noms d'avant, une photo arrivée depuis reste chez celui qui est resté, un renommage depuis est défait aussi) ; singulier à 1",
+    Ap.ligneFusion({ nomPart: "Lea Martin", nomApres: "Léa Martin" }) === "Lea Martin → Léa Martin" && Ap.ligneFusion({ nomPart: null, nomApres: "Léa" }) === "Sans nom → Léa"
+      && /^6 photos reprennent leur personne et leur nom d'avant la fusion \(« Lea Martin » et « Léa Martin »\)\. Une photo arrivée depuis la fusion reste chez la personne qui est restée\. Si l'une des deux a été renommée depuis, elle reprend aussi son nom d'avant la fusion\.$/.test(Ap.phraseDefaire({ n: 6, nomAvant: "Léa Martin", nomPart: "Lea Martin" }))
+      && /^1 photo reprend sa personne et son nom d'avant la fusion\./.test(Ap.phraseDefaire({ n: 1, nomAvant: null, nomPart: null })));
+  ok("les bilans des gestes sur les personnes : la fusion dit le TOTAL lu à l'écran (le `n` du serveur ne compte que les photos réécrites), le renommage dit où le nom change, « Défaire » s'accorde",
+    Ap.bilanFusion(30, "Léa Martin") === "Fusion faite : les 30 photos sont rangées sous Léa Martin. Elle est dans « Fusions passées » : l'atelier peut la défaire." && Ap.bilanFusion(1, "X").startsWith("Fusion faite : la 1 photo est rangée sous X.")
+      && Ap.bilanRenommage("Camille Dubois", "Camille Dubois-Roy", 26) === "Camille Dubois s'appelle maintenant Camille Dubois-Roy : 26 photos renommées, dans la grille, les dossiers et le lot."
+      && Ap.bilanDefaire(6) === "Fusion défaite : 6 photos ont retrouvé leur personne et leur nom d'avant." && Ap.bilanDefaire(1) === "Fusion défaite : 1 photo a retrouvé sa personne et son nom d'avant.");
+  const tout = [e3.corps, e3.titre, e0.corps, absente, phrase, Ap.phraseDefaire({ n: 6, nomAvant: "A", nomPart: "B" }), Ap.bilanEffacement(2, 1), Ap.bilanRestauration(2, 1), Ap.phraseEcheance(2), Ap.bilanFusion(30, "Léa Martin"), Ap.bilanRenommage("A", "B", 2), Ap.bilanDefaire(2)].join(" ");
+  ok("aucun cadratin ni demi-cadratin dans une phrase de l'écran (règle des tirets, 20/10) ; aucune phrase ne tutoie (l'atelier lit « vous » ou rien)", !/[—–]/.test(tout) && !/\b(tu|ton|ta|tes)\b/i.test(tout));
+
+  titre("— w2-atelier : l'ouverture du dépôt dans le formulaire (calendrier.ts, FormulaireEdition.tsx) —");
+  ok("un jour du calendrier et une heure de Paris : « 2026-11-06T08:00 » (heure d'ouverture proposée : 8 h, la phrase de la planche 9B) ; les minutes d'une ouverture déjà réglée sont gardées quand on change l'heure ; l'heure tient entre 0 et 23",
+    Cal.HEURE_OUVERTURE === "08:00" && Cal.champCloture("2026-11-06", Cal.HEURE_OUVERTURE) === "2026-11-06T08:00" && Cal.champAvecHeure("2026-11-06T08:30", 9) === "2026-11-06T09:30" && Cal.champAvecHeure("2026-11-06T08:00", 99) === "2026-11-06T23:00"
+      && Cal.champAvecHeure("2026-11-06T08:00", -4) === "2026-11-06T00:00" && Cal.champAvecHeure("", 8) === "" && Cal.champAvecHeure("n'importe quoi", 8) === "" && Cal.champAvecHeure("2026-11-06T08:00", Number.NaN) === "");
+  ok("l'heure se dit sans minutes inutiles (« 8 h », « 8 h 30 ») et le choix se lit « vendredi 6 novembre, 8 h » (sans l'année : elle se lit au calendrier)",
+    Cal.formaterHeureCourte("08:00") === "8 h" && Cal.formaterHeureCourte("08:30") === "8 h 30" && Cal.formaterHeureCourte("00:00") === "0 h" && Cal.formaterHeureCourte("8h") === "" && Cal.phraseChampOuverture("2026-11-06T08:00") === "vendredi 6 novembre, 8 h" && Cal.phraseChampOuverture("2026-11-01T18:30") === "dimanche 1er novembre, 18 h 30" && Cal.phraseChampOuverture("") === "");
+  const iso8 = Da.instantDeParis("2026-11-06T08:00");
+  const iso8ete = Da.instantDeParis("2026-07-06T08:00");
+  ok("converti par `instantDeParis` (jamais par la machine) : 8 h à Paris = 7 h UTC l'hiver, 6 h l'été ; une heure qui n'existe pas (passage à l'heure d'été) n'est pas décalée en silence ; lu par la phrase de la page 9B, c'est la même heure",
+    iso8 === "2026-11-06T07:00:00.000Z" && iso8ete === "2026-07-06T06:00:00.000Z" && Da.instantDeParis("2026-03-29T02:30") === null && Ou.quandOuvre(iso8) === "vendredi 6 novembre à 8 h" && Da.versChampParis(iso8) === "2026-11-06T08:00");
+  const baseEd = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
+  const LE = new Date("2026-10-20T12:00:00Z");
+  const avant = Sa.lireSaisieEdition({ ...baseEd, ouverture_le: iso8 }, "creation", undefined, LE);
+  const apres = Sa.lireSaisieEdition({ ...baseEd, ouverture_le: Da.instantDeParis("2026-11-16T08:00") }, "creation", undefined, LE);
+  ok("ce que l'écran envoie est ce que la règle du serveur accepte : une ouverture avant la clôture passe, après elle est refusée (champ `ouverture_le`, étape « Le calendrier », message affichable sous le champ)",
+    avant.ok && avant.edition.ouverture_le === iso8 && !apres.ok && apres.erreurs[0].champ === "ouverture_le" && /avant la clôture/.test(apres.erreurs[0].message) && Sa.rangEtapeDuChamp("ouverture_le") === 1);
+
+  const formulaire = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  const pastille = lire("src/app/admin/collectif/Pastille.tsx");
+  const nouvelle = lire("src/app/admin/collectif/nouvelle/page.tsx");
+  const fiche = lire("src/app/admin/collectif/[id]/page.tsx");
+  const liens = lire("src/app/admin/collectif/[id]/PanneauLiens.tsx");
+  ok("le champ : un jour du calendrier existant (mode « jour », min = aujourd'hui) + une heure en pastille de 0 à 23, convertie par `instantDeParis` ; « Dès la création » le vide ; JAMAIS le champ du navigateur",
+    /libelle="Ouverture du dépôt"\s*aujourdhui=\{aujourdhui\}\s*min=\{aujourdhui\}/.test(formulaire) && /choisirOuverture\(champCloture\(jour, ouv\?\.heure \?\? HEURE_OUVERTURE\)\)/.test(formulaire)
+      && /min=\{0\}\s*max=\{23\}/.test(formulaire) && /const iso = instantDeParis\(v\.ouverture_local\);/.test(formulaire) && /Dès la création/.test(formulaire) && !/type="(date|datetime-local|time|number)"/.test(formulaire + pastille)
+      && /max\?: number;/.test(pastille) && /Number\(c\) > plafond \? String\(plafond\)/.test(pastille));
+  ok("envoyé comme la clôture : en création seulement s'il est réglé, en réglages seulement s'il a CHANGÉ (vide = l'effacer) ; une heure effacée en cours de frappe est refusée sur place ; l'édition garde le reste si elle est refusée",
+    /const ouvertureChangee = !props\.ouvertureIndisponible && \(creation \? Boolean\(v\.ouverture_local\) : v\.ouverture_local !== props\.initiales\.ouverture_local\);/.test(formulaire) && /if \(ouvertureChangee\) corps\.ouverture_le = ouverture_le;/.test(formulaire)
+      && /Ouverture du dépôt : indiquer l'heure\./.test(formulaire) && /signaler\(parChamp, Boolean\(json\.partiel\)\)/.test(formulaire) && /\{erreur\("ouverture_le"\)\}/.test(formulaire));
+  ok("avant la clôture, dit sur place : l'avertissement rouge dès que l'ouverture rejoint la clôture, et le message du serveur (422) sous le champ ; la frise prend l'ouverture pour premier jalon, la durée part d'elle",
+    /const ouvertureApresCloture = Number\.isFinite\(instantOuverture\) && Number\.isFinite\(instantCloture\) && instantOuverture >= instantCloture;/.test(formulaire) && /L'ouverture doit venir avant la clôture de la collecte\./.test(formulaire)
+      && /ouv \? "Ouverture du dépôt" : creation \? "Aujourd'hui" : "Ouverture"/.test(formulaire) && /const departDepot = ouv && ouv\.jour > aujourdhui \? ouv\.jour : aujourdhui;/.test(formulaire));
+  ok("sans la migration 20261023 : le champ le DIT en nommant le fichier et ne propose rien (la fiche lit `ouverture_le === undefined`, /nouvelle sonde la colonne), et un 503 `migration_personnes_absente` met la phrase sous le champ sans casser le reste du formulaire",
+    /const ouvertureAbsente = e\.ouverture_le === undefined;/.test(fiche) && /ouvertureIndisponible=\{ouvertureAbsente\}/.test(fiche) && /select\("ouverture_le"\)\.limit\(1\)/.test(nouvelle) && /ouvertureIndisponible=\{ouvertureIndisponible\}/.test(nouvelle)
+      && /json\.error === "migration_personnes_absente"/.test(formulaire) && /phraseMigrationAbsente\("Le réglage de l'ouverture du dépôt"\)/.test(formulaire) && /phraseMigrationAbsente\("Ce réglage"\)/.test(formulaire) && /ouverture_local: "",/.test(nouvelle));
+  ok("affichée dans « Réglages et liens » : la carte des liens dit « Pas encore ouvert : le dépôt ouvre le … » / « Ouvert depuis … » / « Ouvert dès la création » ; la vue d'ensemble signale un dépôt qui n'est pas encore ouvert",
+    /Pas encore ouvert : le dépôt ouvre le \$\{ouverture\.quand\}/.test(liens) && /Ouvert dès la création/.test(liens) && /Ouvert depuis le \$\{ouverture\.quand\}/.test(liens) && /<PanneauLiens id=\{e\.id\} liens=\{liens\} ouverture=\{ouverture\} \/>/.test(fiche)
+      && /ouverture\?\.etat === "avenir" \? <span className="eca-puce eca-puce--ambre">Dépôt ouvert le \{ouverture\.quand\}<\/span>/.test(fiche) && /depotOuvert\(e\.ouverture_le, rendu\)/.test(fiche));
+
+  titre("— w2-atelier : la corbeille et les personnes dans la fiche (PanneauCorbeille.tsx, PanneauPersonnes.tsx) —");
+  const pCorbeille = lire("src/app/admin/collectif/[id]/PanneauCorbeille.tsx");
+  const pPersonnes = lire("src/app/admin/collectif/[id]/PanneauPersonnes.tsx");
+  const routeCorbeille = lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts");
+  const routePersonnes = lire("src/app/api/admin/collectif/editions/[id]/personnes/route.ts");
+  ok("la fiche monte les deux panneaux dans l'onglet Photos, sous la collecte ; chacun lit sa route à son affichage (la fiche ne les attend pas) et le nomme dans son entête",
+    /photos: \(\s*<>\s*<PanneauCollecte id=\{e\.id\} \{\.\.\.collecte\} \/>\s*<div className="eca-cartes eca-cartes--une eca-photos-suite">\s*<PanneauPersonnes id=\{e\.id\} liens=\{collecte\.parLien\.map\(\(l\) => \(\{ cle: l\.cle, nom: l\.nom \}\)\)\} \/>\s*<PanneauCorbeille id=\{e\.id\} migrationAbsente=\{ouvertureAbsente\} \/>/.test(fiche)
+      && /useEffect\(\(\) => \{\s*if \(!migrationAbsente\) void lire\(\);\s*\}, \[lire, migrationAbsente\]\);/.test(pCorbeille) && /useEffect\(\(\) => \{\s*void lire\(\);\s*\}, \[lire\]\);/.test(pPersonnes)
+      && /await fetch\(adresse, \{ cache: "no-store" \}\)/.test(pCorbeille) && /await fetch\(adresse, \{ cache: "no-store" \}\)/.test(pPersonnes));
+  const sansCommentaires = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "");
+  const adressesCorbeille = [...sansCommentaires(pCorbeille).matchAll(/`(\/api\/[^`]+)`/g)].map((m) => m[1]);
+  const adressesPersonnes = [...sansCommentaires(pPersonnes).matchAll(/`(\/api\/[^`]+)`/g)].map((m) => m[1]);
+  ok("chaque panneau n'appelle QUE sa route de l'atelier (celle qui revérifie le cookie et journalise qui) ; jamais la route du responsable ni celle du participant",
+    adressesCorbeille.join() === "/api/admin/collectif/editions/${id}/corbeille" && adressesPersonnes.join() === "/api/admin/collectif/editions/${id}/personnes" && !/\/api\/collectif\//.test(sansCommentaires(pCorbeille + pPersonnes))
+      && /quiEstConnecteRequete\(request\)/.test(routeCorbeille) && /quiEstConnecteRequete\(request\)/.test(routePersonnes));
+  const actionsEcran = [...(pCorbeille + pPersonnes).matchAll(/action: "([a-z]+)"/g)].map((m) => m[1]);
+  ok("les gestes de l'écran sont ceux que les routes connaissent (restaurer, effacer, renommer, fusionner, defaire) avec les mêmes clés de corps ; aucun « supprimer » : la fiche n'a pas de grille de photos avec sélection, il n'est pas inventé",
+    [...new Set(actionsEcran)].sort().join() === "defaire,effacer,fusionner,renommer,restaurer" && ["restaurer", "effacer", "supprimer"].every((a) => routeCorbeille.includes(`"${a}"`)) && ["renommer", "fusionner", "defaire"].every((a) => routePersonnes.includes(`"${a}"`))
+      && /photoIds: paquet/.test(pCorbeille) && /verifier: true/.test(pCorbeille + pPersonnes) && /personne: p\.ref, prenom: renommage\.prenom, nom: renommage\.nom/.test(pPersonnes) && /source: source\.ref, cible: cible\.ref, garder: gardeEffectif/.test(pPersonnes)
+      && /evenement: f\.evenement, verifier: true/.test(pPersonnes) && /evenement: defaire\.evenement \}/.test(pPersonnes) && !/action: "supprimer"/.test(pCorbeille));
+  ok("« Effacer maintenant » en DEUX TEMPS : le premier clic vérifie (`verifier: true`, rien n'est effacé) et affiche ce qui partirait ; le bouton rouge « Effacer définitivement » n'existe qu'après, et seulement s'il reste quelque chose à effacer ; changer la sélection désarme",
+    /async function verifier\(\) \{[\s\S]*?action: "effacer", photoIds: paquet, verifier: true/.test(pCorbeille) && /async function effacer\(\) \{[\s\S]*?action: "effacer", photoIds: paquet \}/.test(pCorbeille) && pCorbeille.indexOf("async function verifier()") < pCorbeille.indexOf("async function effacer()")
+      && /\{armee\.aEffacer > 0 \? \(\s*<button type="button" className="adm-btn eca-co-effacer"/.test(pCorbeille) && /function basculer\(photo: string\) \{\s*setArmee\(null\);/.test(pCorbeille) && /function toutCocher\(\) \{\s*setArmee\(null\);/.test(pCorbeille)
+      && /if \(!armee \|\| occupe\) return;/.test(pCorbeille));
+  ok("« Effacer maintenant » rend 200 et `ratees` (audit S7, plus de 502) : l'écran retire de la liste QUE les photos effacées, dit le fichier resté au coffre, et toute autre réponse relit la liste",
+    /if \(r\.statut !== 200\) \{/.test(pCorbeille) && !/502\)/.test(pCorbeille) && /for \(const x of \(Array\.isArray\(r\.json\?\.ids\)/.test(pCorbeille) && /setPhotos\(\(p\) => p\.filter\(\(x\) => !parties\.has\(x\.id\)\)\)/.test(pCorbeille)
+      && /Des photos ont pu quitter le coffre : la liste se relit/.test(pCorbeille) && /bilanEffacement\(n, ratees\)/.test(pCorbeille));
+  ok("la corbeille dit qui, quand et dans combien de jours ; l'échéance passe en alerte sous trois jours (la réponse du serveur, pas un chiffre de l'écran) ; une photo sans aperçu le dit ; la sélection est rappelée",
+    /p\.alerte \? "eca-puce eca-co-echeance eca-co-echeance--alerte"/.test(pCorbeille) && /phraseEcheance\(p\.joursRestants\)/.test(pCorbeille) && /supprimée \$\{p\.parQui\}, \$\{jourEtHeureParis\(p\.supprimeeLe\)\}/.test(pCorbeille) && /sans aperçu/.test(pCorbeille) && /dans la sélection du client/.test(pCorbeille)
+      && !/\b3 jours\b|ALERTE_JOURS/.test(pCorbeille) && /\{jours\} jours<\/strong>/.test(pCorbeille));
+  ok("sans la migration, la lecture de la corbeille (503 `migration_personnes_absente`) met la phrase qui nomme le fichier ; les gestes d'écriture qui recevraient 503 la répètent ; la fiche tient (aucune exception, la carte reste)",
+    /rep\.status === 503 && json\?\.error === "migration_personnes_absente"/.test(pCorbeille) && /setEtat\(\{ genre: "absente" \}\)/.test(pCorbeille) && /useState<Etat>\(migrationAbsente \? \{ genre: "absente" \} : \{ genre: "chargement" \}\)/.test(pCorbeille) && (pCorbeille.match(/phraseMigrationAbsente\("La corbeille"\)/g) ?? []).length >= 4
+      && /rep\.status === 503 && json\?\.error === "migration_personnes_absente"/.test(pPersonnes) && /!lecture\.avecAdresses/.test(pPersonnes) && /const gestes = lecture\?\.avecAdresses === true;/.test(pPersonnes)
+      && /disabled=\{!gestes \|\| occupe !== null\}/.test(pPersonnes) && /phraseMigrationAbsente\(quoi\)/.test(pPersonnes));
+  ok("l'atelier voit l'adresse ENTIÈRE (la route lit `chargerPersonnes(…, \"entier\")`), jamais masquée ici ; une personne d'avant le dit (« sans adresse ») ; les doublons se PROPOSENT et « Ignorer » n'écrit rien",
+    /chargerPersonnes\(supabase, id, "entier"\)/.test(routePersonnes) && /p\.email \?\? SANS_ADRESSE/.test(pPersonnes) && /Rien n'est écrit\./.test(pPersonnes) && !/masquerEmail/.test(pPersonnes) && /Peut-être la même personne/.test(pPersonnes)
+      && !/action: "fusionner"[^}]*proposees/.test(pPersonnes));
+  ok("fusionner jamais d'office : seule la fenêtre (deux personnes, « Le nom gardé », la phrase, « Annuler ») envoie `fusionner`, sur un clic de « Fusionner » ; elle s'ouvre dans `.eca-root` par un portail (le verre d'une carte enfermerait une fenêtre fixe) et Échap la ferme",
+    (pPersonnes.match(/action: "fusionner"/g) ?? []).length === 1 && /async function fusionner\(\) \{\s*if \(!source \|\| occupe\) return;/.test(pPersonnes) && /createPortal\(contenu, hote\)/.test(pPersonnes) && /document\.querySelector\("\.eca-root"\)/.test(pPersonnes)
+      && /e\.key === "Escape"/.test(pPersonnes) && /<legend>Le nom gardé<\/legend>/.test(pPersonnes) && /disabled=\{Boolean\(g\.refus\)\}/.test(pPersonnes));
+  ok("« Défaire » en DEUX TEMPS : « Défaire… » vérifie (`verifier: true`) et montre ce qui reviendrait, « Défaire la fusion » écrit ; une fusion déjà défaite n'a pas de bouton (« Défaite »), et un 409 relit la liste",
+    /async function verifierDefaire\(f: FusionVue\)[\s\S]*?verifier: true/.test(pPersonnes) && /async function defaireLaFusion\(\)/.test(pPersonnes) && pPersonnes.indexOf("async function verifierDefaire") < pPersonnes.indexOf("async function defaireLaFusion")
+      && /\{f\.defaite \? \(\s*<span className="eca-puce eca-puce--gris">Défaite<\/span>/.test(pPersonnes) && /if \(r\.statut === 409 \|\| r\.statut === 404\) await lire\(\);/.test(pPersonnes) && /Cette fusion est déjà défaite\./.test(pPersonnes) && /phraseDefaire\(defaire\)/.test(pPersonnes));
+  ok("renommer : prénom ET nom (les deux requis pour valider), 80 caractères au plus comme le serveur, le nom d'une personne d'avant se découpe en prénom et nom ; le participant ne se renomme jamais (aucun écran ici qui ne passe par l'atelier)",
+    /maxLength=\{80\}/.test(pPersonnes) && /disabled=\{occupe !== null \|\| !renommage\.prenom\.trim\(\) \|\| !renommage\.nom\.trim\(\)\}/.test(pPersonnes) && /decouperNom\(x\.nom\) \?\? \{ prenom: x\.nom, nom: "" \}/.test(pPersonnes) && /Le participant ne le corrige pas lui-même/.test(pPersonnes));
+
+  const cssCo = lire("src/app/admin/collectif/corbeille.css");
+  const cssPe = lire("src/app/admin/collectif/personnes.css");
+  const selecteursHorsScope = [cssCo, cssPe].flatMap((css) => css.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").filter((l) => /^\.(?!eca-root)/.test(l) || /^(?:html|body|\*|:root)\b/.test(l)));
+  ok("les deux feuilles sont scopées par `.eca-root` (aucune classe courte hors scope, rien ne repeint une autre page), sans `dvh`, sans token mort (--cream, --steel, --ink), sans `!important`, sans `next/image`",
+    selecteursHorsScope.length === 0 && !/dvh|--cream|--steel|--ink|!important/.test(cssCo + cssPe) && !/next\/image/.test(pCorbeille + pPersonnes + formulaire)
+      && /@import|<link/.test(cssCo + cssPe) === false && /import "\.\.\/corbeille\.css";/.test(pCorbeille) && /import "\.\.\/personnes\.css";/.test(pPersonnes));
+  ok("chaque classe du panneau a sa règle (aucune classe `eca-co-*` ou `eca-pe-*` posée dans le balisage sans feuille) ; le balisage ne porte aucun style en ligne",
+    [...new Set([...(pCorbeille.match(/eca-co-[a-z-]+/g) ?? [])])].every((c) => cssCo.includes(`.${c}`)) && [...new Set([...(pPersonnes.match(/eca-pe-[a-z-]+/g) ?? [])])].every((c) => cssPe.includes(`.${c}`)) && !/style=\{\{/.test(pCorbeille + pPersonnes));
+}
+
+
+titre("— la fiche de l'atelier lit les nouvelles formes du durcissement (nomPropose, interrompue) —");
+{
+  const pPers = lire("src/app/admin/collectif/[id]/PanneauPersonnes.tsx");
+  ok("un autre nom tapé sous une adresse connue se DIT sur la fiche de la personne (jamais renommé d'office) ; une fusion interrompue porte « Interrompue » et reste défaisable",
+    /p\.nomPropose && !renommage/.test(pPers) && /className="eca-pe-propose"/.test(pPers) && /renommez la personne/.test(pPers)
+      && /f\.interrompue && !f\.defaite/.test(pPers) && /Interrompue<\/span>/.test(pPers) && /\.eca-root \.eca-pe-propose \{/.test(lire("src/app/admin/collectif/personnes.css")));
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

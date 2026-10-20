@@ -42,7 +42,10 @@ function phraseContributions(n: number | null): string {
     : `${n} liens de contribution actifs cesseront aussi de fonctionner : ils contiennent ce lien. Leurs nouvelles adresses seront dans « Les liens » de l'espace du responsable.`;
 }
 
-export default function PanneauLiens({ id, liens }: { id: string; liens: Record<QuelLien, string> }) {
+/** Quand le lien des participants reçoit des photos (`ouverture_le`, migration 20261023) ; `null` : la base n'a pas la colonne, on n'en dit rien. */
+export type OuvertureDuDepot = { etat: "aucune" | "avenir" | "passee"; quand: string };
+
+export default function PanneauLiens({ id, liens, ouverture = null }: { id: string; liens: Record<QuelLien, string>; ouverture?: OuvertureDuDepot | null }) {
   const router = useRouter();
   const [copie, setCopie] = useState<QuelLien | null>(null);
   const [verif, setVerif] = useState<Verif | null>(null);
@@ -104,6 +107,17 @@ export default function PanneauLiens({ id, liens }: { id: string; liens: Record<
         <div className="eca-lien" key={quel}>
           <span className="eca-lien-titre">{LIBELLE_LIEN[quel].titre}</span>
           <span className="eca-champ-aide">{LIBELLE_LIEN[quel].aide}</span>
+          {quel === "depot" && ouverture ? (
+            <span className="eca-puces">
+              <span className={ouverture.etat === "avenir" ? "eca-puce eca-puce--ambre" : "eca-puce"}>
+                {ouverture.etat === "avenir"
+                  ? `Pas encore ouvert : le dépôt ouvre le ${ouverture.quand}`
+                  : ouverture.etat === "passee"
+                    ? `Ouvert depuis le ${ouverture.quand}`
+                    : "Ouvert dès la création"}
+              </span>
+            </span>
+          ) : null}
           <div className="eca-lien-ligne">
             <input
               className="eca-input"

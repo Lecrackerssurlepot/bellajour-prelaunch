@@ -135,6 +135,20 @@ dossier du client), `styles` et `styles/[id]` (l'éditeur). Toutes ses écriture
 sont sous `/api/admin/collectif/*`, revérifient l'admin et journalisent dans
 `collectif_evenements`. Sa feuille `collectif.css` est scopée `.eca-root`.
 
+**Les personnes, la corbeille, l'ouverture du dépôt (20/10/2026, T-198, T-199, migration 20261023)** :
+l'onglet Photos de la fiche porte `PanneauPersonnes` (adresse ENTIÈRE, renommer, fusionner dans une
+fenêtre en portail, « Fusions passées » à défaire) et `PanneauCorbeille` (restaurer, « Effacer
+maintenant » en deux temps `verifier: true` puis le geste armé ; depuis l'audit S7, plus de 502 : la photo est effacée et un fichier resté au coffre se dit, retiré par la purge suivante ; un autre nom tapé sous une adresse connue et une fusion interrompue se disent aussi). Chacun lit
+sa route à son AFFICHAGE (jamais dans la page serveur), et leurs phrases vivent dans
+`lib/collectif/atelierPhotos.ts` (pur, au harnais). « Ouverture du dépôt » est dans l'étape « Le
+calendrier » de `FormulaireEdition` : un jour du `Calendrier` + une heure en `Pastille` (`max={23}`),
+`instantDeParis`, jamais un champ du navigateur. ⚠️ **Sans la migration, l'écran DIT et ne propose
+rien** : la fiche lit `ouverture_le === undefined` (même repli que `interlocuteur_cle` des rendez-vous),
+`/nouvelle` sonde la colonne, et un 503 `migration_personnes_absente` reçu quand même devient la même
+phrase (`phraseMigrationAbsente`, qui nomme le fichier). Il n'existe PAS de « mettre à la corbeille » ici :
+la fiche n'a pas de grille avec sélection. Pour tester sans toucher la production : faux Supabase local
+(+ faux coffre pour les vignettes), toute requête non-GET du navigateur interceptée (CDP).
+
 `page.tsx` (liste triée par urgence) · `[token]/page.tsx` (fiche + frise des 8 jalons + actions
 armées en deux temps + carnet de l'éditeur) · `metriques/` · `sante/` (**le seul endroit qui
 montre un mail sans template**) · `demo/` (fixtures, sans base).

@@ -1,0 +1,441 @@
+/* Les personnes d'une édition, côté atelier (planches 4B et 4C du 20/10, T-198). Importée par
+   `[id]/PanneauPersonnes.tsx`. Tout sous `.eca-root`, classes `eca-pe-*` : une feuille chargée ne
+   se décharge jamais en navigation client. ⚠️ Cette feuille arrive AVANT `collectif.css` dans la
+   page (la page importe ses panneaux, puis la feuille) : pour reprendre une règle de
+   `collectif.css`, un sélecteur PLUS précis (deux classes composées), jamais l'ordre.
+   Les cartes, les puces, les bandeaux, `.eca-confirm`, la fenêtre de verre (`.eca-fen*`) et
+   `.adm-btn` sont ceux de l'atelier. Jamais une carte dans une carte : la liste est faite de
+   pastilles claires posées sur le verre, comme « Qui a déposé » (`.eca-dep`). */
+
+.eca-root .eca-pe-tete-droite {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.eca-root .eca-pe-tete-droite .eca-lien-texte:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.eca-root .eca-pe-aide {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* La planche 4C : les personnes à gauche, la personne choisie à droite. */
+.eca-root .eca-pe-corps {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 18px 22px;
+  align-items: start;
+}
+.eca-root .eca-pe-colonne {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-pe-recherche {
+  border-radius: 999px;
+  padding: 9px 14px;
+}
+.eca-root .eca-choix.eca-pe-filtre {
+  align-self: flex-start;
+}
+.eca-root .eca-pe-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 25rem;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.eca-root .eca-pe-liste--fen {
+  max-height: 16rem;
+}
+.eca-root .eca-pe-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 14px 6px 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--eca-gris-fond);
+  color: var(--bj-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.eca-root .eca-pe-item:hover {
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-pe-item[aria-current="true"] {
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08), inset 0 0 0 1px var(--bj-action-border);
+}
+.eca-root .eca-pe-item:focus-visible {
+  outline: 2px solid var(--bj-action);
+  outline-offset: 2px;
+}
+.eca-root .eca-pe-item-nom {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-pe-item[aria-current="true"] .eca-pe-item-nom {
+  font-weight: 600;
+}
+.eca-root .eca-pe-item-n {
+  flex: none;
+  color: var(--bj-text-soft);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.eca-root .eca-pe-point {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--eca-chaud-point);
+}
+.eca-root .eca-pe-aucune {
+  margin: 4px 8px;
+  list-style: none;
+}
+
+/* Les initiales : la pastille de chaque personne, grande en tête de sa fiche. */
+.eca-root .eca-pe-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bj-action-soft);
+  color: var(--eca-bleu-encre);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.eca-root .eca-pe-ini--grand {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+}
+
+.eca-root .eca-pe-detail {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.eca-root .eca-pe-fiche {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 14px;
+}
+.eca-root .eca-pe-titres {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.eca-root .eca-pe-nom {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--bj-text);
+}
+.eca-root .eca-pe-sous {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-pe-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.eca-root .eca-pe-renommer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-pe-champs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+}
+
+/* « Peut-être la même personne » : un cadre en pointillé bleu, comme la planche (une proposition, jamais d'office). */
+.eca-root .eca-pe-doublons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--bj-action-border);
+  border-radius: 18px;
+  background: rgba(234, 242, 252, 0.45);
+}
+.eca-root .eca-pe-doublons-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.eca-root .eca-pe-doublons ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-pe-doublons li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 8px 8px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.82);
+}
+.eca-root .eca-pe-doublon-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-pe-doublon-nom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.eca-root .eca-pe-doublon-texte .eca-sous {
+  font-size: 12.5px;
+}
+
+/* Les fusions passées, sous le tout. */
+.eca-root .eca-pe-fusions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.eca-root .eca-pe-sous-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--bj-text);
+}
+.eca-root .eca-pe-fusions ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-pe-fusion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 16px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-pe-fusion--defaite {
+  opacity: 0.7;
+}
+.eca-root .eca-pe-fusion-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-pe-fusion-texte .eca-sous {
+  font-size: 12.5px;
+}
+/* La confirmation de « Défaire » pose sur une pastille grise : le bleu doux plein, pas le voile translucide de `.eca-confirm` (il y tournait au bleu soutenu). */
+.eca-root .eca-confirm.eca-pe-confirm {
+  grid-column: 1 / -1;
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-pe-toutes {
+  align-self: flex-start;
+  font-size: 13px;
+}
+
+/* La fenêtre « Fusionner deux personnes » (planche 4B) : les deux personnes côte à côte, le nom gardé, la phrase. */
+.eca-root .eca-fen.eca-pe-fen {
+  width: min(520px, 100%);
+}
+.eca-root .eca-pe-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.eca-root .eca-pe-duo-carte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-pe-duo-carte strong {
+  font-weight: 600;
+}
+.eca-root .eca-pe-duo-carte .eca-sous {
+  font-size: 12.5px;
+}
+.eca-root .eca-pe-duo-mail {
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-pe-duo-signe {
+  color: var(--bj-text-faint);
+}
+.eca-root .eca-pe-noms {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.eca-root .eca-pe-noms legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.eca-root .eca-pe-nom-choix {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+}
+.eca-root .eca-pe-nom-choix input {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: var(--bj-action);
+}
+.eca-root .eca-pe-nom-choix--on {
+  border-color: var(--bj-action);
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-pe-nom-choix--refus {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.eca-root .eca-pe-fen-texte {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-pe-fen-gestes {
+  align-items: center;
+  justify-content: flex-end;
+}
+.eca-root .eca-pe-fen-gestes .eca-lien-texte {
+  margin-right: auto;
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  /* Sous la largeur d'une tablette : la liste au-dessus, plus basse ; la personne choisie dessous. */
+  .eca-root .eca-pe-corps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-pe-liste {
+    max-height: 15rem;
+  }
+}
+@media (max-width: 560px) {
+  .eca-root .eca-pe-fiche {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .eca-root .eca-pe-gestes {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+  .eca-root .eca-pe-gestes .adm-btn {
+    flex: 1 1 0;
+  }
+  .eca-root .eca-pe-nom {
+    font-size: 26px;
+  }
+  .eca-root .eca-pe-champs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-pe-doublons li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .eca-root .eca-pe-doublons li > .adm-btn {
+    grid-column: 1 / -1;
+  }
+  .eca-root .eca-pe-fusion {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-pe-fusion > .adm-btn {
+    justify-self: start;
+  }
+  .eca-root .eca-pe-duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .eca-root .eca-pe-duo-signe {
+    justify-self: center;
+  }
+  /* Le lien « Choisir une autre personne » a sa ligne ; Annuler et Fusionner se partagent la suivante. */
+  .eca-root .eca-pe-fen-gestes .eca-lien-texte {
+    flex: 1 0 100%;
+    margin-right: 0;
+  }
+  .eca-root .eca-pe-fen-gestes .eca-bouton {
+    flex: 1 1 0;
+  }
+  .eca-root .eca-fen.eca-pe-fen {
+    padding: 18px;
+  }
+}
+
+/* Un autre nom tapé sous une adresse connue (audit S5 du 20/10) : une remarque, jamais un renommage d'office. */
+.eca-root .eca-pe-propose {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed var(--bj-action-border);
+  background: rgba(234, 242, 252, 0.45);
+  font-size: 13px;
+  line-height: 1.5;
+}

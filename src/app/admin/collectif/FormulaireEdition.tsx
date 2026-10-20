@@ -39,20 +39,25 @@ import { useCallback, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { suggestionEmail } from "@/lib/atelier/questionnaire";
 import {
+  champAvecHeure,
   champCloture,
   formaterHeure,
+  formaterHeureCourte,
   formaterJourCourt,
   HEURE_CLOTURE,
+  HEURE_OUVERTURE,
   joursEntre,
   libelleJour,
   lireChampCloture,
   lirePlage,
+  phraseChampOuverture,
   phraseDepot,
   phraseDuree,
   phraseJoursPlage,
   pucesCloture,
   textePlage,
 } from "@/lib/collectif/calendrier";
+import { phraseMigrationAbsente } from "@/lib/collectif/atelierPhotos";
 import DemandesClient from "./DemandesClient";
 import { instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { formaterJour } from "@/lib/collectif/livraison";
@@ -67,7 +72,7 @@ import "./formulaire.css";
 export type { MagazineFormulaire };
 
 /** Le calendrier ouvert, s'il y en a un (un seul à la fois). */
-type Ouvert = "dates" | "cloture" | "livraison";
+type Ouvert = "dates" | "cloture" | "livraison" | "ouverture";
 
 export type ValeursEdition = {
   organisation: string;
@@ -75,6 +80,8 @@ export type ValeursEdition = {
   dates_texte: string;
   registre: string;
   cloture_local: string;
+  /** « 2026-11-06T08:00 » (heure de Paris, sans fuseau) ; vide : le dépôt est ouvert dès la création (migration 20261023). */
+  ouverture_local: string;
   /** `AAAA-MM-JJ`. Écrit seulement à la création ; en réglages, lu pour la frise (l'onglet Livraison le règle). */
   livraison_prevue_le: string;
   plafond_participant_atelier: string;
@@ -95,7 +102,7 @@ export type ValeursEdition = {
 };
 
 type Props =
-  | { mode: "creation"; initiales: ValeursEdition; maintenant: string }
+  | { mode: "creation"; initiales: ValeursEdition; maintenant: string; ouvertureIndisponible?: boolean }
   | {
       mode: "modification";
       id: string;
@@ -104,6 +111,8 @@ type Props =
       /** Le jour où l'édition a été ouverte (`AAAA-MM-JJ`, Paris) : le premier jalon de la frise. */
       ouverteLe: string;
       plafondClient: number | null;
+      /** La base n'a pas la colonne `ouverture_le` (migration 20261023) : le champ le dit et ne propose rien. */
+      ouvertureIndisponible?: boolean;
     };
 
 type Erreurs = Record<string, string>;
@@ -152,9 +161,13 @@ export default function FormulaireEdition(props: Props) {
   const zoneDates = useRef<HTMLDivElement>(null);
   const zoneCloture = useRef<HTMLDivElement>(null);
   const zoneLivraison = useRef<HTMLDivElement>(null);
+  const zoneOuverture = useRef<HTMLDivElement>(null);
   const boutonDates = useRef<HTMLButtonElement>(null);
   const boutonCloture = useRef<HTMLButtonElement>(null);
   const boutonLivraison = useRef<HTMLButtonElement>(null);
+  const boutonOuverture = useRef<HTMLButtonElement>(null);
+  /* L'heure d'ouverture en cours de frappe : effacée un instant pour en taper une autre, elle ne change pas la valeur (null = on suit le champ). */
+  const [heureSaisie, setHeureSaisie] = useState<string | null>(null);
 
   const maintenantMs = Date.parse(props.maintenant);
   const aujourdhui = versChampParis(props.maintenant).slice(0, 10);
@@ -176,7 +189,7 @@ export default function FormulaireEdition(props: Props) {
   /* Échap, « Garder », un jour choisi : le focus revient au bouton du champ ; un clic dehors le laisse où il est. */
   const fermer = useCallback(
     (rendreFocus: boolean) => {
-      const bouton = ouvert === "dates" ? boutonDates : ouvert === "cloture" ? boutonCloture : boutonLivraison;
+      const bouton = ouvert === "dates" ? boutonDates : ouvert === "cloture" ? boutonCloture : ouvert === "ouverture" ? boutonOuverture : boutonLivraison;
       setOuvert(null);
       if (rendreFocus) bouton.current?.focus();
     },
@@ -227,6 +240,17 @@ export default function FormulaireEdition(props: Props) {
     });
   }
 
+  /* L'ouverture du dépôt : un jour du calendrier et une heure de Paris, « 2026-11-06T08:00 » ; vide = dès la création. */
+  function choisirOuverture(champ: string) {
+    maj("ouverture_local", champ);
+    setHeureSaisie(null);
+    setErreurs((x) => {
+      const reste = { ...x };
+      delete reste.ouverture_le;
+      return reste;
+    });
+  }
+
   async function envoyer() {
     if (envoi) return;
     const locales: Erreurs = {};
@@ -237,6 +261,16 @@ export default function FormulaireEdition(props: Props) {
       const iso = instantDeParis(v.cloture_local);
       if (!iso) locales.cloture_le = "Cette heure n'existe pas à Paris (changement d'heure) ou la date est illisible.";
       else cloture_le = iso;
+    }
+    /* L'ouverture du dépôt : en création seulement si elle est réglée, en réglages seulement si elle a changé
+       (vide = l'effacer). Sans la colonne (migration 20261023), le champ n'est pas proposé et rien ne part. */
+    const ouvertureChangee = !props.ouvertureIndisponible && (creation ? Boolean(v.ouverture_local) : v.ouverture_local !== props.initiales.ouverture_local);
+    let ouverture_le = "";
+    if (ouvertureChangee && v.ouverture_local) {
+      const iso = instantDeParis(v.ouverture_local);
+      if (heureSaisie === "") locales.ouverture_le = "Ouverture du dépôt : indiquer l'heure.";
+      else if (!iso) locales.ouverture_le = "Cette heure n'existe pas à Paris (changement d'heure) ou la date est illisible.";
+      else ouverture_le = iso;
     }
 
     const corps: Record<string, unknown> = {
@@ -261,6 +295,7 @@ export default function FormulaireEdition(props: Props) {
       magazines: v.magazines.map((m) => ({ id: m.id, nom: m.nom })),
     };
     if (clotureChangee) corps.cloture_le = cloture_le;
+    if (ouvertureChangee) corps.ouverture_le = ouverture_le;
     if (creation) corps.livraison_prevue_le = v.livraison_prevue_le;
 
     /* La même règle que la route, avant de rien envoyer : le champ fautif ramène à son étape. */
@@ -288,6 +323,7 @@ export default function FormulaireEdition(props: Props) {
       const json = (await rep.json().catch(() => ({}))) as {
         id?: string;
         error?: string;
+        message?: string;
         erreurs?: { champ: string; message: string }[];
         /** 409 d'un magazine commencé PENDANT l'enregistrement : le reste est écrit. */
         partiel?: boolean;
@@ -305,6 +341,13 @@ export default function FormulaireEdition(props: Props) {
           }
         } else if (json.error === "migration_collectif_absente") {
           setMessage({ ok: false, texte: "La migration collectif n'est pas appliquée." });
+        } else if (json.error === "migration_personnes_absente") {
+          /* L'ouverture réglée sans la mise à jour de la base : rien n'est écrit (le serveur refuse avant), et on le dit
+             à l'endroit du champ. Le reste du formulaire reste intact : retirer l'ouverture enregistre le reste. */
+          const phrase = phraseMigrationAbsente("Le réglage de l'ouverture du dépôt");
+          setErreurs({ ouverture_le: phrase });
+          aller(rangEtapeDuChamp("ouverture_le"));
+          setMessage({ ok: false, texte: "Rien n'est enregistré. Retirer l'ouverture pour enregistrer le reste." });
         } else {
           setMessage({ ok: false, texte: `Rien n'est enregistré (erreur ${rep.status}). Réessayer.` });
         }
@@ -489,7 +532,14 @@ export default function FormulaireEdition(props: Props) {
   /* ─────────────────────────────── la frise ─────────────────────────────── */
   const instantCloture = cloture ? Date.parse(instantDeParis(v.cloture_local) ?? "") : NaN;
   const ecart = cloture ? joursEntre(aujourdhui, cloture.jour) : null;
-  /* En création, la durée depuis aujourd'hui ; en réglages, ce qu'il reste (ou que c'est fini). */
+  /* L'ouverture du dépôt (migration 20261023) : réglée, elle devient le premier jalon de la frise, et la durée de
+     la collecte part d'elle quand elle vient après aujourd'hui (le dépôt n'est pas ouvert avant). */
+  const ouv = props.ouvertureIndisponible ? null : lireChampCloture(v.ouverture_local);
+  const instantOuverture = ouv ? Date.parse(instantDeParis(v.ouverture_local) ?? "") : NaN;
+  const ouvertureApresCloture = Number.isFinite(instantOuverture) && Number.isFinite(instantCloture) && instantOuverture >= instantCloture;
+  const departDepot = ouv && ouv.jour > aujourdhui ? ouv.jour : aujourdhui;
+  const ecartDepot = cloture ? joursEntre(departDepot, cloture.jour) : null;
+  /* En création, la durée depuis l'ouverture du dépôt ; en réglages, ce qu'il reste (ou que c'est fini). */
   const duree =
     !cloture || ecart === null
       ? null
@@ -497,16 +547,16 @@ export default function FormulaireEdition(props: Props) {
         ? "La collecte est close"
         : !creation && ecart > 0
           ? `Encore ${phraseDuree(ecart)}`
-          : phraseDuree(ecart);
+          : phraseDuree(creation && ecartDepot !== null ? ecartDepot : ecart);
   const debut = props.mode === "creation" ? aujourdhui : props.ouverteLe;
 
   const frise = (
     <div className="eca-frise" role="list" aria-label="Le calendrier de l'édition">
       <span className="eca-jalon eca-jalon--plein" role="listitem">
         <i aria-hidden="true" />
-        <b>{creation ? "Aujourd'hui" : "Ouverture"}</b>
-        <span>{formaterJourCourt(debut)}</span>
-        <span>{creation ? "les liens s'ouvrent" : "les liens se sont ouverts"}</span>
+        <b>{ouv ? "Ouverture du dépôt" : creation ? "Aujourd'hui" : "Ouverture"}</b>
+        <span>{ouv ? `${formaterJourCourt(ouv.jour)}, ${formaterHeureCourte(ouv.heure)}` : formaterJourCourt(debut)}</span>
+        <span>{ouv ? "les participants peuvent déposer" : creation ? "les liens s'ouvrent" : "les liens se sont ouverts"}</span>
       </span>
       <span className="eca-jalon" role="listitem">
         <i aria-hidden="true" />
@@ -526,6 +576,126 @@ export default function FormulaireEdition(props: Props) {
         {creation ? null : <span>{"réglée dans l'onglet Livraison"}</span>}
       </span>
       {duree ? <span className="eca-duree">{duree}</span> : null}
+    </div>
+  );
+
+  /* ─────────────────────────────── l'ouverture du dépôt ─────────────────────────────── */
+  /* Un jour du calendrier Bellajour (en JOUR, comme la clôture) et une heure de Paris en pastille, jamais le champ
+     du navigateur. Vide : le lien reçoit dès la création, comme avant. Le serveur la veut AVANT la clôture (422,
+     `ouverture_le`) ; sans la migration 20261023 le champ le dit et ne propose rien. */
+  const ecartOuverture = ouv ? joursEntre(aujourdhui, ouv.jour) : null;
+  const champOuverture = (
+    <div className="eca-champ">
+      <span className="eca-champ-label" id={`${uid}-ouverture`}>
+        Ouverture du dépôt
+      </span>
+      {props.ouvertureIndisponible ? (
+        <>
+          <span className="eca-choix-liste" role="group" aria-labelledby={`${uid}-ouverture`}>
+            <button type="button" className="eca-choix" aria-pressed="true" disabled>
+              Dès la création
+            </button>
+          </span>
+          <span className="eca-champ-aide" role="note">
+            {phraseMigrationAbsente("Ce réglage")}
+          </span>
+        </>
+      ) : (
+        <>
+          <div className="eca-cal-ancre" ref={zoneOuverture}>
+            <span className="eca-choix-liste" role="group" aria-labelledby={`${uid}-ouverture`}>
+              <button
+                type="button"
+                className="eca-choix"
+                aria-pressed={!ouv}
+                onClick={() => {
+                  setOuvert(null);
+                  choisirOuverture("");
+                }}
+              >
+                Dès la création
+              </button>
+              {ouv ? (
+                <button type="button" className="eca-choix" aria-pressed="true" onClick={() => (ouvert === "ouverture" ? fermer(false) : ouvrir("ouverture", true))}>
+                  {phraseChampOuverture(v.ouverture_local)}
+                </button>
+              ) : null}
+              <button
+                ref={boutonOuverture}
+                type="button"
+                className="eca-choix"
+                aria-haspopup="dialog"
+                aria-expanded={ouvert === "ouverture"}
+                onClick={() => {
+                  if (ouvert === "ouverture") fermer(false);
+                  else ouvrir("ouverture", true);
+                }}
+              >
+                Choisir au calendrier…
+              </button>
+            </span>
+            {ouvert === "ouverture" ? (
+              <Calendrier
+                mode="jour"
+                libelle="Ouverture du dépôt"
+                aujourdhui={aujourdhui}
+                min={aujourdhui}
+                zone={zoneOuverture}
+                focusAuDebut={focusCalendrier}
+                onFermer={fermer}
+                jour={ouv?.jour ?? null}
+                onJour={(jour) => {
+                  choisirOuverture(champCloture(jour, ouv?.heure ?? HEURE_OUVERTURE));
+                  fermer(true);
+                }}
+                pied={
+                  <>
+                    <span className="eca-cal-heure">{`à ${formaterHeureCourte(ouv?.heure ?? HEURE_OUVERTURE)}, heure de Paris`}</span>
+                    {ecartOuverture !== null && ecartOuverture >= 0 ? <span>{ecartOuverture === 0 ? "Aujourd'hui" : ecartOuverture === 1 ? "Demain" : `Dans ${ecartOuverture} jours`}</span> : null}
+                  </>
+                }
+              />
+            ) : null}
+          </div>
+          {ouv ? (
+            <span className="eca-fm-heure">
+              <label htmlFor={`${uid}-ouverture-heure`}>Heure</label>
+              <Pastille
+                id={`${uid}-ouverture-heure`}
+                valeur={heureSaisie ?? String(Number(ouv.heure.slice(0, 2)))}
+                onChange={(x) => {
+                  setHeureSaisie(x === "" ? "" : null);
+                  if (x !== "") maj("ouverture_local", champAvecHeure(v.ouverture_local, Number(x)));
+                  setErreurs((e) => {
+                    const reste = { ...e };
+                    delete reste.ouverture_le;
+                    return reste;
+                  });
+                }}
+                unite={ouv.heure.endsWith(":00") ? "h" : `h ${ouv.heure.slice(3)}`}
+                min={0}
+                max={23}
+                vide="à régler"
+                libelle="Heure d'ouverture du dépôt"
+                invalide={Boolean(erreurs.ouverture_le)}
+              />
+              <span className="eca-champ-aide">heure de Paris</span>
+            </span>
+          ) : null}
+          <span className="eca-champ-aide">
+            {ouv
+              ? "Avant ce moment, les participants ne peuvent pas déposer ; le responsable et l'atelier, si. Les liens, eux, existent déjà."
+              : "Le lien des participants reçoit des photos dès la création. Choisir un jour et une heure pour ne l'ouvrir que plus tard."}
+          </span>
+          {ouvertureApresCloture && !erreurs.ouverture_le ? (
+            <p className="eca-avert" role="note">
+              <b aria-hidden="true">!</b>
+              <span>{"L'ouverture doit venir avant la clôture de la collecte."}</span>
+            </p>
+          ) : null}
+        </>
+      )}
+      {erreur("ouverture_le")}
     </div>
   );
 
@@ -572,6 +742,7 @@ export default function FormulaireEdition(props: Props) {
     /* 2 · Le calendrier */
     <>
       {frise}
+      {champOuverture}
       <div className="eca-champ">
         <span className="eca-champ-label" id={`${uid}-cloture`}>
           Clôture de la collecte

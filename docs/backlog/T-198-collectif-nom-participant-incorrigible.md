@@ -46,3 +46,23 @@ Contrat pour la seconde vague : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEI
 - Modules : `personnes.ts` (pur), `personnesServeur.ts`. Harnais : section « w1 ».
 - Reste : les écrans (planches 4, 6, 8), l'application de la migration par Mathias, puis vérifier que
   la donnée arrive (requêtes en tête du SQL).
+
+20/10, lot « w2-atelier » (le CÔTÉ ATELIER des planches 4B et 4C, dans la fiche de l'édition, onglet
+Photos ; branche `w2-atelier-corbeille-personnes`, rien de commité).
+- `PanneauPersonnes.tsx` (+ `personnes.css`, phrases dans `src/lib/collectif/atelierPhotos.ts`) : les
+  personnes de l'édition à gauche (la plus fournie d'abord, recherche par nom ou adresse, filtre
+  « Doublons possibles »), la personne choisie à droite avec son adresse ENTIÈRE, ses liens, ses
+  téléphones, sa dernière arrivée. « Renommer » (prénom ET nom, toutes ses photos suivent), « Fusionner
+  avec… » ou « Fusionner » depuis une proposition : la fenêtre de la planche 4B (les deux personnes, « Le
+  nom gardé », la phrase qui dit le compte exact et les adresses), jamais d'office ; un nom d'un seul
+  mot refusé par le serveur pour une personne à adresse est grisé avant le clic. « Fusions passées »
+  avec « Défaire… » EN DEUX TEMPS (`verifier: true` montre ce qui reviendrait, puis le geste ; 409 si
+  déjà défaite). Les routes sont celles de l'atelier (`/api/admin/collectif/editions/[id]/personnes`).
+- Sans la migration 20261023 : la liste se lit par nom (personnes d'avant), l'écran dit « Le suivi par
+  adresse attend la mise à jour de la base : supabase/migrations/20261023_… » et grise renommer,
+  fusionner, défaire (aucun 503 à subir).
+- La fiche n'a pas de grille de photos : la planche 4C en montre une sous la personne, elle n'est pas
+  inventée (ni « Tout cocher »).
+- Harnais : bloc « w2-atelier » de `scripts/verif-collectif.ts`. Vu à l'écran (Chrome headless, 1440,
+  1280 et 375) sur un faux Supabase local, écritures interceptées.
+- Reste : la page du participant et celle du responsable (autres lots), l'application de la migration.
