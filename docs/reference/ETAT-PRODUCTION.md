@@ -1,4 +1,4 @@
-# État du système — au 19/10/2026
+# État du système — au 20/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,14 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 20/10/2026 — Migration 20261021 appliquée (T-191), abonnements à la signature (T-202)
+
+- **`20261021_collectif_demandes.sql` appliquée par Mathias le 20/10**, vérifiée en lecture vers
+  11 h 16 (Paris) : `collectif_contenus_type_forme` en place, l'ancienne contrainte à cinq valeurs
+  disparue. Les demandes sur mesure nouvelles fonctionnent.
+- **Abonnements payants (Supabase, Vercel)** : Mathias les prend à la signature du premier
+  contrat (T-202, en pause). D'ici là, pas de sauvegarde quotidienne de la base.
 
 ## 20/10/2026 — « Première édition » archivée, plus aucune édition active
 

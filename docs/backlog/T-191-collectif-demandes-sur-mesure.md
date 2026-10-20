@@ -84,3 +84,8 @@ ou un SVG » au lieu de « Une case « Logo, en vectoriel » dans son espace » 
 un questionnaire ne passe pas en fichier puis revient (« Fichier » le change en « Tout », le modèle
 « Le mot de… » refait un questionnaire). Les quatre questions au tutoiement (`QUESTIONS_MOT_TU`)
 sont une transposition à relire avec les questions d'origine (PRD §12.14).
+
+- 20/10 : **migration `20261021_collectif_demandes.sql` appliquée par Mathias**, vérifiée en lecture
+  le même jour vers 11 h 16 (Paris) : sur `collectif_contenus`, la contrainte `collectif_contenus_type_forme`
+  (1 à 64 caractères) est là et l'ancienne `collectif_contenus_type_check` (cinq valeurs) a disparu.
+  Les demandes sur mesure nouvelles ne répondent plus 503. Reste la recette de Mathias (test avec Louis).
