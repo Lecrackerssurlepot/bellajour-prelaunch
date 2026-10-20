@@ -10,6 +10,35 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 20/10/2026 (après-midi) — Audencia : huit lots en production, une migration à appliquer
+
+- **En production le 20/10**, chaque lot vérifié (tsc, lint 0 erreur, build, les deux harnais)
+  puis fusionné, déploiement final `7db582b` READY vers 12 h 19 (Paris) :
+  - PR #276 (T-158, T-159) : projet de confidentialité B2B, script d'effacement en lecture seule ;
+  - PR #273 (autre séance, T-164, T-166) : liens des mails par l'origine du site, frein de « Retrouver » ;
+  - PR #277 (T-195, T-196, T-200, T-152) : **total vide = sans limite (D27)**, vérification avant
+    Régénérer et page « Ce lien ne fonctionne plus », « Photos seulement », D26 (devis à signer) ;
+  - PR #278 (T-163, T-162) : en-têtes de protection (vus sur la version d'essai Vercel), pdf.js
+    6.4.299, sharp 0.35.5 ;
+  - PR #279 (T-194, T-171, T-160) : rattrapage des photos au coffre, vignettes par le serveur,
+    échecs au journal et bloc « Éditions » de la page Santé ;
+  - PR #280 (T-193, T-201, T-197) : l'atelier par lien et par personne, création des liens par
+    l'atelier, grand QR imprimable ;
+  - PR #281 (T-176, T-172) : vignettes en cache, tailles des images de style ;
+  - PR #282 (T-169, T-170, T-168) : messagerie à paliers, doublons rapides, grille par résumé.
+- **À appliquer par Mathias : `supabase/migrations/20261022_collectif_resume_photos.sql`** (une
+  vue, une table de cache, un index ; aucune donnée touchée). Sans elle, la grille relit tout et
+  les doublons se calculent à l'affichage, comme avant : rien ne casse.
+- **L'édition Audencia** (« 60 ans », au tu, clôture le 4/11, 0 photo) vérifiée en lecture sur
+  bellajour.fr : l'espace du responsable et le lien d'équipe s'ouvrent ; le lien « Equipe 1 »
+  (100 par personne) accepte les dépôts ; **le lien général dit « Le dépôt n'est pas encore
+  ouvert »** tant que « Photos par personne » n'est pas réglé dans la fiche. Avant la PR #277,
+  tout son dépôt (responsable compris) était fermé par le total vide.
+- Jamais lancés pour écrire : `collectif-retention.ts` et `collectif-styles-vignettes.ts`.
+- Maquettes du 20/10 (Photos du responsable, album du bateau, noms, corbeille, pages d'état) :
+  https://claude.ai/artifact/3fvFwDb6HKzZx3bw5bQPpy, copie dans
+  `docs/produit/collectif/maquettes/propositions-20-10/` ; rien codé, 16 questions posées.
+
 ## 20/10/2026 — Migration 20261021 appliquée (T-191), abonnements à la signature (T-202)
 
 - **`20261021_collectif_demandes.sql` appliquée par Mathias le 20/10**, vérifiée en lecture vers

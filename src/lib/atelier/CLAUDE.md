@@ -103,6 +103,13 @@ et sans `TAILLE_GROUPE_MAX` : un lot entier retrouvé ailleurs est le signal (le
 Les modules à effets : `mails.ts`, `r2.ts`, `cloudprinter.ts`, `paiement.ts`, `evenements.ts`,
 `apercu.ts`, `enrichissement.ts`, `geocodage.ts`. La règle de séparation est volontaire : **tout ce qui est testable sans réseau l'est**,
 et `scripts/verif-atelier.ts` le prouve à chaque exécution.
+⚠️ **`r2.ts` sert aussi l'Édition collective** (20/10/2026) : `signerLectureVignette` signe une
+VIGNETTE à l'heure ronde (même adresse une heure, valable deux, `private, max-age=7200` : le
+navigateur la garde, T-176) et n'est appelée que depuis les fichiers que le harnais nomme ;
+`signerGet`, `signerPut` et leurs durées ne changent pas. Les effacements en masse passent par
+`racineEffacable` (pure) : `supprimerPrefixe` n'accepte que `numeros/<id>/` (le geste
+« Supprimer définitivement » du B2C, inchangé au caractère près), `supprimerCoffreEdition` que
+`collectif/<uuid>/` (T-159).
 
 ## Les mails — trois garanties, dans cet ordre
 

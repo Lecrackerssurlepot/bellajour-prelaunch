@@ -53,8 +53,11 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   même message, jamais une erreur.
 - **`plafonds.ts`** — trois chiffres, aucun deviné. L'atelier échappe à tout ; le responsable et
   les provenances `sans_plafond` n'ont pas de plafond PAR PERSONNE mais le total les compte ; le
-  participant a les deux, tenu PAR APPAREIL (un frein, pas une garantie). **Un plafond `null`
-  FERME le dépôt** (`plafond_non_regle`) : on ne devine pas. Le plafond atelier qui descend
+  participant a les deux, tenu PAR APPAREIL (un frein, pas une garantie). **Un plafond PAR
+  PERSONNE `null` FERME le dépôt du participant** (`plafond_non_regle`) : on ne devine pas, et
+  `/depot` le dit AVANT le choix des photos (`depotRegle`). **Exception D27 (20/10) : un TOTAL
+  vide = pas de limite pour toute l'édition** (« on ne sait pas forcément combien il y aura »).
+  Les phrases de refus suivent le registre (`messagePlafond`). Le plafond atelier qui descend
   ramène le curseur du client dans la même écriture (sinon la contrainte de la base refuse).
 - **`cles.ts`** — tout sous `collectif/`, jamais `numeros/`. Chaque fabrique refuse un id qui
   n'est pas un uuid. Les pages d'un tour sont rangées par l'**id** du tour, pas son numéro (deux
@@ -99,7 +102,9 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
 **Phase 2 (13/10/2026), l'espace client :**
 - **`espace.ts`** (pur) — les cinq étapes du client par leur NOM (jamais « N sur M », PRD §12.11
   ouvert), `joursAvant` en jours CALENDAIRES de Paris, `parler(registre)` pour vous / tu,
-  `contenusAEnvoyer`. **`messages.ts`** (pur) — 3,5 s, `fusionnerMessages` sans doublon.
+  `contenusAEnvoyer`. **`messages.ts`** (pur) — la relève à PALIERS (T-169, 20/10) : 3,5 s après
+  un mouvement, puis 10 s, 30 s, 60 s au repos, retour immédiat à la frappe et au retour sur
+  l'onglet, rien onglet caché ; `fusionnerMessages` sans doublon.
   **`documents.ts`** (pur) — types de documents, nom de téléchargement en ASCII.
 - **`messagerie.ts`** (effets) — UNE façon de lire, écrire, marquer lu, pour le client et pour
   l'atelier. **`reponses.ts`** — 404 identique pour inconnu / archivé / fermé, 503 migration,
@@ -116,8 +121,12 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
 - **`depot.ts`** (pur) — `cleFichier` (nom|taille|date de modification de l'ORIGINAL),
   `lireDeclaration`, `planDeclaration` (déjà là / reprise sur la MÊME clé R2 / nouvelle /
   refusée ; seules les nouvelles consomment la place), `compteDansPlafond` (une déclaration
-  morte depuis 2 h ne bloque plus personne). **`doublons.ts`** — par trois tronçons (principe
-  des tiroirs), mêmes groupes que `groupesDeDoublons` : le harnais le prouve sur 25 lots.
+  morte depuis 2 h ne bloque plus personne). **`doublons.ts`** — empreinte exacte d'abord (coût
+  linéaire), quasi-doublons bornés (au-delà, `complet: false`, aucun groupe inventé), mêmes
+  groupes que `groupesDeDoublons` (T-170, 20/10 ; l'ancien découpage en tronçons est dans
+  `archive/doublons-troncons-2026-10/`). Les groupes se RANGENT dans `collectif_doublons` quand
+  les empreintes sont lues (`doublonsStockes.ts`) ; l'affichage les LIT, il ne les recalcule que
+  périmés (signature changée) ou sans la migration 20261022.
   **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
 - **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (le plafond PAR APPAREIL,
   un frein honnête), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
@@ -150,8 +159,9 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   valider. `styleVisible` : une école voit les styles « école » et « tous ».
 - Une seule route, `/api/collectif/brief`, une action par geste ; le droit change selon
   l'action (`valider_brief` pour valider ou rouvrir, `choisir_style` pour le reste).
-- Le mur et la page d'un style lisent `chargerMur` (styles PUBLIÉS et visibles, images signées
-  une heure). Un style dépublié disparaît du mur ; un brief qui le nomme reste lisible côté
+- Le mur et la page d'un style lisent `chargerMur` (styles PUBLIÉS et visibles ; les tailles
+  600 et 1 200 px d'une pièce (T-172, `taillesStyle.ts`) en `srcset`, signées à adresse stable
+  par `signerLectureVignette` ; sans tailles, l'image maîtresse). Un style dépublié disparaît du mur ; un brief qui le nomme reste lisible côté
   atelier (la fiche lit le style par son id, publié ou non).
 
 **Phase 5 (13/10/2026), le bon à tirer :**
@@ -427,8 +437,8 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **Voir arriver sans recharger** : `/api/collectif/photos/etat` est une lecture LÉGÈRE (un
   compte en `head`, et les lignes arrivées depuis la dernière vue, `ARRIVEES_LUES_MAX`). La page
   Photos l'interroge toutes les 30 s, le tableau de bord chaque minute, jamais onglet caché
-  (`useSondage`, `arrivees.ts`). ⚠️ Ne jamais sonder `/api/collectif/photos` (toutes les photos,
-  les doublons, 120 signatures) : il ne se relit qu'au clic sur « Les voir ». ⚠️ `depuis`
+  (`useSondage`, `arrivees.ts`). ⚠️ Ne jamais sonder `/api/collectif/photos` (une page, ses
+  doublons, 120 signatures) : il ne se relit qu'au clic sur « Les voir ». ⚠️ `depuis`
   voyage TEL QUE la base l'a rendu : relu par `Date`, il perd ses microsecondes et la dernière
   photo vue se recompterait. Les envois du responsable ne s'annoncent pas.
 - « Toutes » montre la DERNIÈRE arrivée d'abord (ce qui arrive est en haut) ; « Par jour » garde
@@ -715,6 +725,48 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   `ATELIER_MAILS_COUPES` coupe l'envoi lui-même et le serveur note à qui il serait parti.
 - La page « lien introuvable » (`edition/not-found.tsx`, la même pour tout lien inconnu) y renvoie ;
   le mail « Votre espace est prêt » cite l'adresse courte.
+
+## Audencia, les lots du 20/10 (T-193 à T-201, T-160, T-168 à T-176)
+
+- **Le rattrapage** (T-194, `rattrapage.ts` pur, `rattrapageServeur.ts`, `rattrapageCoffre.ts`) :
+  une ligne déclarée depuis plus de 10 min et jamais confirmée (page fermée, iPhone verrouillé)
+  est cherchée au coffre (HEAD, ou un listage au-delà de 50 lignes) et confirmée par LA fonction
+  de `depot/complete` (`confirmerArrivee`), même contrôle de taille, jamais une copie. Déclenché
+  en `after()` à l'ouverture de la fiche atelier et de la page Photos du RESPONSABLE (pas de
+  l'équipe), et chaque jour par la relève (`/api/atelier/mails/relever`, après sa réponse).
+  Verrou au journal (`rattrapage_demarre`, 15 min entre deux passages), borné, silencieux quand
+  rien n'est à faire, `photos_rattrapees` au journal quand il trouve.
+- **Les vignettes fabriquées par le serveur** (T-171, `rattrapageVignettes.ts`) : 320 px, sharp
+  pour JPEG/PNG/WebP, libheif-js pour HEIC (son propre chunk), écrite au coffre AVANT sa clé en
+  base. Après `depot/complete` et dans le rattrapage.
+- **Les pannes visibles** (T-160, `echecs.ts` pur, `noterEchec`) : type `echec` au journal,
+  payload court sans token, une ligne par minute et par geste ; bloc « Éditions » de la page
+  Santé. Branché sur `depot/presign`, `depot/complete` et le rattrapage ; les autres routes sont
+  listées dans T-160.
+- **Le lot par lien** (T-193, `lotCollectif.ts`) : `<rang> - <lien> - <personne> - <date> - <nom
+  d'origine>`, le lien est une CLÉ (`cleDuLien`, même règle que `dansLeDossier`), jamais un
+  libellé ; « Lot - <lien> », « Lot - <lien> - <personne> », sous-dossiers par lien pour tout le
+  lot. `src/lib/atelier/lot.ts` reste celui du B2C. Les liens de contribution se voient et se
+  créent depuis « Réglages et liens » (T-201, route admin `…/provenances`, journalisée), le QR
+  s'affiche en grand et s'imprime (T-197, `imprimer.ts` par `srcdoc`, jamais une page du site).
+- **Régénérer** (T-196) dit combien de liens de contribution tombent avec le lien des
+  participants (ils contiennent `token_depot`), 409 si le lien a changé entre-temps, mail au
+  responsable par le circuit unique (`mailLienRegenere`, origine `origineDesMails`, jamais un
+  en-tête : le harnais le vérifie). Un lien mort affiche « Ce lien ne fonctionne plus »
+  (`depot/[token]/not-found.tsx`, 404 pour tous, registre retrouvé par `payload.ancien`).
+- **La grille sans relecture complète** (T-168, `resumePhotos.ts` pur, `grillePhotos.ts`) : un
+  résumé par façon d'avoir déposé (vue `collectif_photos_resume`, migration 20261022) et la seule
+  page demandée, filtre du dossier traduit pour PostgREST (`enFiltresPostgrest`) ; sans la vue,
+  `grilleDepuisLignes` relit tout comme avant. La route passe DEUX signatures : `signer`
+  (vignettes, `signerLectureVignette`, adresse stable à l'heure, cache navigateur, T-176) et
+  `signerOriginal` (original de repli, `signerGet`).
+- **D26** : accepter une proposition n'engage pas, c'est le devis signé ; la fiche affiche « À
+  faire : envoyer le devis à signer » (`devisAEnvoyer`). « Photos seulement : les vidéos ne
+  partent pas » est dit avant le choix (T-200).
+- **La conservation** (T-159, `retention.ts` pur, `scripts/collectif-retention.ts`) : effacer le
+  coffre d'une édition livrée passe par `supprimerCoffreEdition` (garde `collectif/<uuid>/`
+  exacte) et la table `FAMILLES` (les PDF des tours et les documents restent). Jamais lancé pour
+  effacer : la politique (T-158) n'est pas validée.
 
 ## Phase 7 : les accroches déjà posées
 
