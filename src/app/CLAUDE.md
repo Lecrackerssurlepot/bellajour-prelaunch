@@ -158,6 +158,11 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    **Le harnais surveille** (`verif-atelier.ts`, « l'espace avant un texte JSX qui porte une
    entité ») : il lit chaque `.tsx` de `src/` et nomme le fichier et la ligne fautifs.
 
+9. **`not-found.tsx` ne reçoit que la CSS du LAYOUT, pas celle de la page** (20/10/2026). La page
+   « Ce lien ne fonctionne plus » de `/depot` restait sombre sur un téléphone en clair : sa
+   feuille n'était importée que par `page.tsx`. Tout style qui doit couvrir la 404 d'une section
+   s'importe depuis son `layout.tsx` (Next déduplique l'import).
+
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 
 `(atelier)/composer/` — six écrans. **Aucune de ces formulations n'est décorative** : chacune
