@@ -354,7 +354,10 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **Les mails** de rendez-vous ne partent que si `COLLECTIF_MAILS_RDV` est ouvert (valeur
   incomprise = fermé) et que `ATELIER_MAILS_COUPES` ne coupe pas tout ; verrou
   `collectif_mails` posé avant Brevo, retiré si Brevo refuse. Le texte vit dans `mailsRdv.ts`
-  (expéditeur `contact@bellajour.com`, le seul vérifié chez Brevo).
+  (expéditeur `contact@bellajour.com`, le seul vérifié chez Brevo) ; sa mise en page est
+  `pageMail` (mailsTextes.ts), la même que les autres mails des éditions depuis le 20/10, avec
+  « Bonjour <prénom> » (`responsable`, passé par `envoyerMailRdv`) et « Ouvrir mon espace » en
+  bouton vers « Parler à l'atelier ».
 - **Repli** : sans la migration `20261015`, sans interlocuteur, sans agenda relié ou sans le
   compte Google, l'espace garde le lien de rendez-vous de la fiche (`rdv_url`). Supprimer un
   événement directement dans Google Agenda ne prévient pas l'espace : annuler depuis la fiche.
@@ -540,6 +543,18 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   des éditions passe par lui ; son texte vit dans `mailsTextes.ts` (pur, harnais, aperçu dans
   l'atelier), jamais dans un modèle Brevo. Les mails de rendez-vous gardent leur chemin
   (`envoyerMailRdv`, `COLLECTIF_MAILS_RDV`).
+- **Une seule mise en page pour les huit mails** (relecture de Mathias du 20/10 : « aligne les
+  couleurs et les visuels ») : `pageMail` (mailsTextes.ts), importée aussi par `mailsRdv.ts`.
+  Même en-tête « Bellajour · Édition collective », UN dessin de bouton (le bleu `#4a90d9` de la
+  planche 6 ; plus de bouton noir ni de lien cuivre), les blocs sur fond Porcelaine, la même
+  signature, « Bonjour <prénom> » dès que le nom du responsable est connu (le code par appareil
+  et les rendez-vous compris), l'objet coupé par « · ». Un nouveau mail des éditions passe par
+  elle, jamais par un gabarit à lui. Le fond extérieur est Porcelaine (`#f3f4f7`, aligné à la demande de Mathias le 20/10, comme l'espace).
+- ⚠️ **Un mail qui envoie le client à un endroit de l'espace le nomme par son libellé exact**, et
+  le harnais relit ce libellé DANS l'écran (`PartageEquipe.tsx`, le menu de `verrous.ts`,
+  l'onglet de `Collecte.tsx`, « Partager » de `Liens.tsx`, WhatsApp et Mail de
+  `LienContribution.tsx`) : renommer un bouton sans le mail, c'est envoyer chercher ce qui
+  n'existe plus.
 - « Votre espace est prêt » part depuis la fiche (« Réglages et liens ») ou l'écran « L'édition
   est créée » (T-187), en deux temps ; le verrou porte l'empreinte du lien du responsable :
   régénérer le lien permet de le renvoyer.
@@ -584,11 +599,21 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   Réglages) ; l'état des mails est lu par le SERVEUR (`mailsCollectifOuverts`) : fermés, le
   bouton dit « Mails coupés : copiez les liens » et ne fait rien, « Copier les trois liens »
   (`texteTroisLiens`) devient le geste principal. L'aperçu est l'iframe du GET `mail-espace`.
-- **Le mail « Votre espace est prêt » porte les TROIS liens** (texte de la planche 6 validé par
-  Mathias le 19/10) : `donneesEspacePret` est la seule façon de l'assembler (route ET écran). Le
-  sien en bouton, l'équipe et les participants en ADRESSE écrite et cliquable (un mail ne
-  copie pas). Le journal ne voit que l'empreinte du lien du responsable et l'adresse masquée.
-  `COLLECTIF_MAILS` reste fermé : l'ouvrir attend Mathias.
+- **Le mail « Votre espace est prêt » ne porte que SON lien** (texte de la planche 6 validé par
+  Mathias le 19/10, retouché à sa demande le 20/10 : « dis plutôt où elle peut les retrouver
+  pour les envoyer directement depuis la plateforme »). Trois blocs : le sien avec « Ouvrir mon
+  espace » ; celui de l'équipe, « en bas du menu : « Partager avec mon équipe », puis
+  « Copier » » ; celui des participants, « page Photos, onglet « Les liens » : « Partager » y
+  prépare le message et le QR code ». Plus AUCUN token d'équipe ni de dépôt dans le mail (le
+  harnais le vérifie). « Le lien des participants a changé » suit la même règle : il ne l'écrit
+  plus, il dit où il est et ouvre SON espace (`espace`, ajouté à `donneesLienRegenere` ; le
+  mail ne part qu'à son adresse). `donneesEspacePret` reste la seule façon d'assembler les
+  données (route ET écran) et garde les TROIS liens : l'écran « L'édition est créée » les montre
+  et « Copier les trois liens » (`texteTroisLiens`) les copie, inchangé. Le journal ne voit que
+  l'empreinte du lien du responsable et l'adresse masquée. `COLLECTIF_MAILS` reste fermé :
+  l'ouvrir attend Mathias. ⚠️ Sur un appareil pas encore reconnu (code par appareil en
+  service), l'onglet « Les liens » ne s'affiche qu'après le code (`p.ecrire`) : le mail le dit
+  déjà par sa note « pour modifier, il vous envoie un code ».
 - **« Partager avec mon équipe »** (`PartageEquipe.tsx`, en bas du menu de la coquille) : le
   layout de l'espace ne calcule le lien d'équipe que si `voitLienEquipe` (le responsable, y
   compris sur un appareil pas encore reconnu) ; l'équipe ne le reçoit jamais dans sa page.

@@ -24,6 +24,8 @@ import "../../collectif.css";
  * cartes (chacun avec son rôle), « Envoyer à <adresse> » en deux temps sur la
  * carte du responsable, « Copier les trois liens », « Aller à la fiche », et
  * l'aperçu du VRAI mail (la route GET `mail-espace`, la même qui l'enverrait).
+ * Depuis le 20/10, le mail ne porte que le lien du responsable : il lui dit où
+ * trouver les deux autres dans son espace. L'écran, lui, les montre toujours.
  *
  * ⚠️ Rien ne part sans le second clic, et rien ne part du tout tant que
  * `COLLECTIF_MAILS` est fermé (décision de Mathias du 19/10 : « sauf le mail :

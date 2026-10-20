@@ -1,10 +1,14 @@
 "use client";
 
 /* « Partager avec mon équipe » (T-187) : le lien d'équipe, en lecture seule, que
-   le mail « Votre espace est prêt » annonce et que l'espace ne donnait nulle part.
-   Une entrée discrète en bas du menu, au-dessus du nom ; elle ouvre une fenêtre
-   avec le lien et « Copier ». Montrée au RESPONSABLE seulement (`voitLienEquipe`,
-   lu par le layout) : l'équipe l'a déjà, un participant ne voit jamais l'espace. */
+   l'espace ne donnait nulle part. Une entrée discrète en bas du menu, au-dessus du
+   nom ; elle ouvre une fenêtre avec le lien et « Copier ». Montrée au RESPONSABLE
+   seulement (`voitLienEquipe`, lu par le layout) : l'équipe l'a déjà, un
+   participant ne voit jamais l'espace.
+   ⚠️ Depuis le 20/10, le mail « Votre espace est prêt » n'écrit plus ce lien : il
+   envoie le responsable ICI, par ces mots (« Partager avec mon équipe », « en bas
+   du menu », « Copier », la phrase de la fenêtre). Le harnais relit les deux :
+   renommer l'un, c'est renommer l'autre (mailsTextes.ts). */
 
 import { useState } from "react";
 import Fenetre from "../_composants/Fenetre";

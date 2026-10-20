@@ -1,13 +1,24 @@
 /**
- * Les mails de l'Édition collective (T-146), hors rendez-vous (`mailsRdv.ts`).
+ * Les mails de l'Édition collective (T-146), et LA mise en page de tous, y
+ * compris les trois mails de rendez-vous (`mailsRdv.ts` importe `pageMail`).
  * Module PUR : aucun accès base, aucun réseau, aucune variable d'environnement.
  *
- * « Votre espace est prêt » : le texte de la planche 6 du 19/10, VALIDÉ par
- * Mathias (T-187), avec les trois liens séparés. Les autres textes : proposés
- * par Claude le 15/10, à valider. Rien ne part tant que `COLLECTIF_MAILS`
- * n'est pas ouvert (`mails.ts`) : ce sont de vrais mails à de vrais clients,
- * et l'ouvrir attend Mathias. Le texte vit ICI (et pas dans un modèle Brevo)
- * pour se relire, se tester au harnais et s'afficher en aperçu dans l'atelier.
+ * Relus par Mathias le 20/10 : tous « d'accord », avec deux retouches faites
+ * ce jour-là. (1) Une seule maison : même en-tête, même bouton bleu, même
+ * signature, « Bonjour <prénom> » partout où le nom est connu, l'objet coupé
+ * par « · ». (2) « Votre espace est prêt » ne porte plus que SON lien (le
+ * texte de la planche 6 du 19/10, retouché) : pour celui de l'équipe et celui
+ * des participants, il dit OÙ les trouver dans l'espace pour les envoyer de
+ * là ; « Le lien des participants a changé » de même. Rien ne part tant que
+ * `COLLECTIF_MAILS` n'est pas ouvert (`mails.ts`) : ce sont de vrais mails à
+ * de vrais clients, et l'ouvrir attend Mathias. Le texte vit ICI (et pas dans
+ * un modèle Brevo) pour se relire, se tester au harnais et s'afficher en
+ * aperçu dans l'atelier.
+ *
+ * ⚠️ Chaque endroit de l'espace qu'un mail nomme (« Partager avec mon
+ * équipe », la page Photos, l'onglet « Les liens », « Partager ») est relu
+ * dans les écrans par le harnais : renommer l'un sans le mail, c'est envoyer
+ * le client chercher un bouton qui n'existe plus.
  *
  * Masculin générique, vous ou tu selon le registre de l'édition, aucun tiret
  * cadratin (consigne de Mathias). Un lien vers l'espace du responsable porte
@@ -22,61 +33,80 @@ export type Mail = { sujet: string; html: string; texte: string };
 
 const ENCRE = "#1c1c1c";
 const DOUX = "#6b6b6b";
-/* Les blocs des liens (planche 6) : le fond Porcelaine, le bleu de Bellajour. */
+/* Les blocs (planche 6) : le fond Porcelaine. Le bouton : le bleu de Bellajour, le même dans les huit mails. */
 const BLOC = "#f3f4f7";
 const ACTION = "#4a90d9";
-const ACTION_TEXTE = "#1d4f8a";
 
 function echapper(t: string): string {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 /** Un paragraphe : son HTML (déjà échappé) et son texte brut. */
-type Ligne = { html: string; texte: string };
-const ligne = (t: string): Ligne => ({ html: echapper(t), texte: t });
+export type Ligne = { html: string; texte: string };
+export const ligne = (t: string): Ligne => ({ html: echapper(t), texte: t });
+
+/** Un bouton du mail. Il n'y en a qu'UN dessin, partout : le bleu de la planche 6. */
+export type Bouton = { href: string; libelle: string };
+
+const estBouton = (m: Ligne | Bouton): m is Bouton => "href" in m;
+
+function boutonHtml(b: Bouton): string {
+  return `<a href="${echapper(b.href)}" style="display:inline-block;padding:12px 22px;border-radius:999px;background:${ACTION};color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">${echapper(b.libelle)}</a>`;
+}
 
 /**
- * Un lien du mail, dans son bloc (planche 6) : un titre, une phrase, puis un
- * bouton OU l'adresse elle-même. Un mail ne sait pas « copier » : l'adresse
- * s'écrit en clair et en lien, pour qu'on la transfère telle quelle.
+ * Un bloc du mail (planche 6) : un titre, une phrase, et parfois un bouton.
+ * Depuis le 20/10, aucun bloc n'écrit plus une adresse en clair : un lien à
+ * transmettre se trouve dans l'espace, qui sait le copier et le partager.
  */
-type BlocLien = { titre: string; phrase: string; href: string; bouton?: string };
+type Bloc = { titre: string; phrase: string; bouton?: Bouton };
 
-function blocHtml(b: BlocLien): string {
-  const action = b.bouton
-    ? `<a href="${echapper(b.href)}" style="display:inline-block;padding:10px 20px;border-radius:999px;background:${ACTION};color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:14px">${echapper(b.bouton)}</a>`
-    : `<a href="${echapper(b.href)}" style="color:${ACTION_TEXTE};font-family:Arial,sans-serif;font-size:13px;line-height:1.5;word-break:break-all">${echapper(b.href)}</a>`;
+function blocHtml(b: Bloc): string {
   return `<tr><td style="padding-top:12px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BLOC};border-radius:12px"><tr><td style="padding:14px 16px">
 <div style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;color:${ENCRE}">${echapper(b.titre)}</div>
 <div style="padding-top:4px;font-family:Arial,sans-serif;font-size:13px;line-height:1.5;color:${DOUX}">${echapper(b.phrase)}</div>
-<div style="padding-top:10px">${action}</div>
+${b.bouton ? `<div style="padding-top:12px">${boutonHtml(b.bouton)}</div>` : ""}
 </td></tr></table></td></tr>`;
 }
 
-function blocTexte(b: BlocLien): string[] {
-  return ["", b.titre, b.phrase, b.bouton ? `${b.bouton} : ${b.href}` : b.href];
+function blocTexte(b: Bloc): string[] {
+  return ["", b.titre, b.phrase, ...(b.bouton ? [`${b.bouton.libelle} : ${b.bouton.href}`] : [])];
 }
 
-/** La mise en page commune : celle des mails de rendez-vous, même maison. */
-function page(p: { titre: string; bonjour: string; lignes: Ligne[]; bouton?: { href: string; libelle: string }; blocs?: BlocLien[]; notes?: Ligne[] }): { html: string; texte: string } {
-  const html = `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f6f2ec">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f2ec;padding:32px 16px"><tr><td align="center">
+/**
+ * LA mise en page des mails des éditions, rendez-vous compris : l'en-tête
+ * « Bellajour · Édition collective », le titre, « Bonjour… », le corps (des
+ * paragraphes et des boutons, dans l'ordre), les blocs, les notes en petit,
+ * la signature. Un nouveau mail des éditions passe par elle.
+ */
+export function pageMail(p: { titre: string; bonjour: string; lignes: (Ligne | Bouton)[]; blocs?: Bloc[]; notes?: Ligne[] }): { html: string; texte: string } {
+  const corps = p.lignes
+    .map((m, i) => {
+      if (estBouton(m)) return `<tr><td style="padding-top:22px">${boutonHtml(m)}</td></tr>`;
+      const apresBouton = i > 0 && estBouton(p.lignes[i - 1]);
+      return `<tr><td style="padding-top:${apresBouton ? 22 : 10}px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${ENCRE}">${m.html}</td></tr>`;
+    })
+    .join("\n");
+  const html = `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f3f4f7">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f7;padding:32px 16px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:32px">
 <tr><td style="font-family:Georgia,serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:${DOUX}">Bellajour · Édition collective</td></tr>
 <tr><td style="padding-top:12px;font-family:Georgia,serif;font-size:28px;line-height:1.2;color:${ENCRE}">${echapper(p.titre)}</td></tr>
 <tr><td style="padding-top:18px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${ENCRE}">${echapper(p.bonjour)}</td></tr>
-${p.lignes.map((l) => `<tr><td style="padding-top:10px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${ENCRE}">${l.html}</td></tr>`).join("\n")}
+${corps}
 ${(p.blocs ?? []).map(blocHtml).join("\n")}
-${p.bouton ? `<tr><td style="padding-top:22px"><a href="${echapper(p.bouton.href)}" style="display:inline-block;padding:12px 22px;border-radius:999px;background:${ENCRE};color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">${echapper(p.bouton.libelle)}</a></td></tr>` : ""}
 ${(p.notes ?? []).map((l) => `<tr><td style="padding-top:12px;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:${DOUX}">${l.html}</td></tr>`).join("\n")}
 <tr><td style="padding-top:24px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${ENCRE}">À très vite,<br>L'atelier Bellajour</td></tr>
 </table></td></tr></table></body></html>`;
+  const texteCorps = p.lignes.flatMap((m, i) => {
+    if (estBouton(m)) return ["", `${m.libelle} : ${m.href}`];
+    return i > 0 && estBouton(p.lignes[i - 1]) ? ["", m.texte] : [m.texte];
+  });
   const texte = [
     p.bonjour,
     "",
-    ...p.lignes.map((l) => l.texte),
+    ...texteCorps,
     ...(p.blocs ?? []).flatMap(blocTexte),
-    ...(p.bouton ? ["", `${p.bouton.libelle} : ${p.bouton.href}`] : []),
     ...(p.notes?.length ? ["", ...p.notes.map((l) => l.texte)] : []),
     "",
     "À très vite,",
@@ -86,7 +116,7 @@ ${(p.notes ?? []).map((l) => `<tr><td style="padding-top:12px;font-family:Arial,
 }
 
 /** « Bonjour Camille, » ; sans nom, « Bonjour, ». */
-function bonjour(nom: string | null): string {
+export function bonjour(nom: string | null): string {
   const prenom = (nom ?? "").trim().split(/\s+/)[0];
   return prenom ? `Bonjour ${prenom},` : "Bonjour,";
 }
@@ -97,9 +127,10 @@ export type DonneesEspacePret = {
   evenement: string;
   responsable: string | null;
   /**
-   * Les TROIS liens de l'édition (T-187, planche 6) : le sien (son token, il ne
-   * part qu'à son adresse), celui de l'équipe (lecture seule, à transférer),
-   * celui des participants (déposer ses photos).
+   * Les TROIS liens de l'édition (T-187) : l'écran « L'édition est créée » les
+   * montre et les copie. Le MAIL n'écrit que le sien (son token, il ne part qu'à
+   * son adresse), depuis le 20/10 : l'équipe et les participants se trouvent
+   * dans l'espace, qui les copie et les partage.
    */
   liens: { responsable: string; equipe: string; depot: string };
   /** « 28 octobre », ou null si la clôture n'est pas fixée. */
@@ -128,38 +159,52 @@ export function donneesEspacePret(
   };
 }
 
-/** Le premier mail : l'espace est ouvert, voici les trois liens. Envoyé par l'atelier depuis la fiche. */
+/**
+ * Où se trouve le lien des participants dans l'espace, et ce que l'espace en
+ * fait (`Liens.tsx` : la carte du lien général, « Partager » ; la fenêtre de
+ * partage de `LienContribution.tsx` : le QR code, le message de `partage.ts`,
+ * WhatsApp, Mail). Le même chemin pour les deux mails qui en parlent.
+ */
+function ouTrouverLienParticipants(tu: boolean, cloture: string | null, qr: "le QR code" | "le nouveau QR code"): string {
+  const pour = cloture ? `Pour que chacun dépose ses photos, jusqu'au ${cloture}.` : "Pour que chacun dépose ses photos.";
+  return tu
+    ? `${pour} Il est dans ton espace, page Photos, onglet « Les liens » : « Partager » y prépare le message et ${qr}, à envoyer par WhatsApp ou par mail.`
+    : `${pour} Il est dans votre espace, page Photos, onglet « Les liens » : « Partager » y prépare le message et ${qr}, à envoyer par WhatsApp ou par mail.`;
+}
+
+/**
+ * Le premier mail : l'espace est ouvert, voici SON lien, et où trouver les deux
+ * autres pour les envoyer depuis l'espace (retouche de Mathias du 20/10 : plus
+ * aucune adresse d'équipe ni de dépôt écrite). Envoyé par l'atelier depuis la
+ * fiche ou l'écran « L'édition est créée ».
+ */
 export function mailEspacePret(d: DonneesEspacePret): Mail {
   const v = (vous: string, toi: string) => (d.tu ? toi : vous);
   const lignes: Ligne[] = [
     ligne(
       v(
-        `L'espace de votre édition « ${d.evenement} » est ouvert. Voici vos trois liens.`,
-        `L'espace de ton édition « ${d.evenement} » est ouvert. Voici tes trois liens.`
+        `L'espace de votre édition « ${d.evenement} » est ouvert. Voici votre lien. Ceux de votre équipe et des participants vous attendent dans l'espace, prêts à envoyer.`,
+        `L'espace de ton édition « ${d.evenement} » est ouvert. Voici ton lien. Ceux de ton équipe et des participants t'attendent dans l'espace, prêts à envoyer.`
       )
     ),
   ];
-  const blocs: BlocLien[] = [
+  const blocs: Bloc[] = [
     {
       titre: v("Votre lien", "Ton lien"),
       phrase: v("Pour tout faire : photos, style, bon à tirer. Gardez-le pour vous.", "Pour tout faire : photos, style, bon à tirer. Garde-le pour toi."),
-      href: d.liens.responsable,
-      bouton: "Ouvrir mon espace",
+      bouton: { href: d.liens.responsable, libelle: "Ouvrir mon espace" },
     },
     {
       titre: v("Le lien de votre équipe", "Le lien de ton équipe"),
-      phrase: v("Lecture seule. Transférez-le à vos collègues.", "Lecture seule. Transfère-le à tes collègues."),
-      href: d.liens.equipe,
+      /* Les mots de `PartageEquipe.tsx` : la phrase de sa fenêtre, son entrée, son bouton. */
+      phrase: v(
+        "Lecture seule : votre équipe suit tout sans rien modifier. Dans votre espace, en bas du menu : « Partager avec mon équipe », puis « Copier ».",
+        "Lecture seule : ton équipe suit tout sans rien modifier. Dans ton espace, en bas du menu : « Partager avec mon équipe », puis « Copier »."
+      ),
     },
     {
       titre: "Le lien des participants",
-      phrase: d.cloture
-        ? v(
-            `Pour que chacun dépose ses photos, jusqu'au ${d.cloture}. Le QR code est dans votre espace.`,
-            `Pour que chacun dépose ses photos, jusqu'au ${d.cloture}. Le QR code est dans ton espace.`
-          )
-        : v("Pour que chacun dépose ses photos. Le QR code est dans votre espace.", "Pour que chacun dépose ses photos. Le QR code est dans ton espace."),
-      href: d.liens.depot,
+      phrase: ouTrouverLienParticipants(d.tu, d.cloture, "le QR code"),
     },
   ];
   const notes: Ligne[] = [];
@@ -174,14 +219,14 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
         )
       )
     );
-  const { html, texte } = page({
+  const { html, texte } = pageMail({
     titre: v("Votre espace est prêt", "Ton espace est prêt"),
     bonjour: bonjour(d.responsable),
     lignes,
     blocs,
     notes,
   });
-  return { sujet: `${v("Votre", "Ton")} espace Bellajour est prêt, ${d.evenement}`, html, texte };
+  return { sujet: `${v("Votre", "Ton")} espace Bellajour est prêt · ${d.evenement}`, html, texte };
 }
 
 /* ─────────────── « Votre lien a changé » (T-196, décision de Mathias du 20/10) ───────────────
@@ -190,7 +235,10 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
    l'équipe n'en a pas (il se transmet par le responsable) ; un lien de contribution
    supprimé par le responsable non plus (il ne veut peut-être plus que ces personnes
    l'aient) : sa page dit seulement « Ce lien ne fonctionne plus ». Texte proposé par
-   Claude le 20/10, à valider par Mathias ; rien ne part tant que `COLLECTIF_MAILS` est fermé. */
+   Claude le 20/10, relu par Mathias le même jour ; retouche : le nouveau lien des
+   participants ne s'écrit plus, le mail dit où il est dans l'espace (page Photos,
+   onglet « Les liens ») et ouvre SON espace. Rien ne part tant que `COLLECTIF_MAILS`
+   est fermé. */
 
 /** Les deux liens dont la régénération prévient le responsable. */
 export type LienPrevenu = "responsable" | "depot";
@@ -204,8 +252,14 @@ export type DonneesLienRegenere = {
   quel: LienPrevenu;
   evenement: string;
   responsable: string | null;
-  /** Le NOUVEAU lien : le sien (son token, il ne part qu'à son adresse) ou celui des participants. */
+  /**
+   * Le lien qui a changé, tel qu'il est maintenant : le sien ou celui des
+   * participants. Le mail ne l'écrit que pour le sien ; celui des participants
+   * se trouve dans l'espace (20/10).
+   */
   lien: string;
+  /** SON lien (son token) : le bouton « Ouvrir mon espace ». Le mail ne part qu'à son adresse. */
+  espace: string;
   /** Les liens de contribution actifs, coupés avec le lien des participants (ils portent son token). */
   contributions: number;
   /** « 28 octobre », ou null si la clôture n'est pas fixée. */
@@ -231,6 +285,7 @@ export function donneesLienRegenere(
     evenement: e.evenement,
     responsable: e.responsable_nom,
     lien: quel === "responsable" ? liens.responsable : liens.depot,
+    espace: liens.responsable,
     contributions: Math.max(0, Math.floor(contributions)),
     cloture: e.cloture_le ? formaterJourParis(e.cloture_le) || null : null,
     avecCode,
@@ -255,7 +310,7 @@ export function mailLienRegenere(d: DonneesLienRegenere): Mail {
           )
         )
       );
-    const { html, texte } = page({
+    const { html, texte } = pageMail({
       titre: v("Votre lien a changé", "Ton lien a changé"),
       bonjour: bonjour(d.responsable),
       lignes: [
@@ -265,8 +320,8 @@ export function mailLienRegenere(d: DonneesLienRegenere): Mail {
             `L'atelier a changé le lien de ton espace « ${d.evenement} » : l'ancien ne fonctionne plus. Voici le nouveau.`
           )
         ),
+        { href: d.lien, libelle: "Ouvrir mon espace" },
       ],
-      bouton: { href: d.lien, libelle: "Ouvrir mon espace" },
       notes,
     });
     return { sujet: `${v("Votre nouveau lien", "Ton nouveau lien")} Bellajour · ${d.evenement}`, html, texte };
@@ -299,20 +354,15 @@ export function mailLienRegenere(d: DonneesLienRegenere): Mail {
         )
       )
     );
-  const { html, texte } = page({
+  const { html, texte } = pageMail({
     titre: "Le lien des participants a changé",
     bonjour: bonjour(d.responsable),
     lignes,
     blocs: [
       {
         titre: "Le nouveau lien des participants",
-        phrase: d.cloture
-          ? v(
-              `Pour que chacun dépose ses photos, jusqu'au ${d.cloture}. Le nouveau QR code est dans votre espace.`,
-              `Pour que chacun dépose ses photos, jusqu'au ${d.cloture}. Le nouveau QR code est dans ton espace.`
-            )
-          : v("Pour que chacun dépose ses photos. Le nouveau QR code est dans votre espace.", "Pour que chacun dépose ses photos. Le nouveau QR code est dans ton espace."),
-        href: d.lien,
+        phrase: ouTrouverLienParticipants(d.tu, d.cloture, "le nouveau QR code"),
+        bouton: { href: d.espace, libelle: "Ouvrir mon espace" },
       },
     ],
     notes,
@@ -323,6 +373,8 @@ export function mailLienRegenere(d: DonneesLienRegenere): Mail {
 export type DonneesCodeAppareil = {
   tu: boolean;
   evenement: string;
+  /** Le nom du responsable (« Bonjour Camille, »), ou null : « Bonjour, ». Le code ne part qu'à son adresse. */
+  responsable: string | null;
   /** Les six chiffres, en clair : ce mail est le SEUL endroit où ils s'écrivent. */
   code: string;
   /** Sa durée de validité, telle qu'elle s'écrit (« 24 heures »). */
@@ -335,12 +387,13 @@ export type DonneesCodeAppareil = {
 export function mailCodeAppareil(d: DonneesCodeAppareil): Mail {
   const v = (vous: string, toi: string) => (d.tu ? toi : vous);
   const espace = `${d.code.slice(0, 3)} ${d.code.slice(3)}`;
-  const { html, texte } = page({
+  const { html, texte } = pageMail({
     titre: v("Votre code", "Ton code"),
-    bonjour: "Bonjour,",
+    bonjour: bonjour(d.responsable),
     lignes: [
       ligne(v(`Pour modifier l'espace de « ${d.evenement} » depuis ce nouvel appareil, saisissez ce code :`, `Pour modifier l'espace de « ${d.evenement} » depuis ce nouvel appareil, saisis ce code :`)),
-      { html: `<span style="display:inline-block;padding:10px 18px;border-radius:12px;background:#f6f2ec;font-family:Arial,sans-serif;font-size:28px;letter-spacing:6px;color:#1c1c1c"><strong>${espace}</strong></span>`, texte: espace },
+      /* Le code dans un bloc, du fond des blocs (Porcelaine). */
+      { html: `<span style="display:inline-block;padding:10px 18px;border-radius:12px;background:${BLOC};font-family:Arial,sans-serif;font-size:28px;letter-spacing:6px;color:${ENCRE}"><strong>${espace}</strong></span>`, texte: espace },
       ligne(`Il est valable ${d.duree}, sur l'appareil qui l'a demandé.`),
     ],
     notes: [
@@ -368,11 +421,13 @@ export type DonneesRetrouver = {
 /** « Retrouver mon espace » (T-154) : le responsable a tapé son adresse, voici son lien. */
 export function mailRetrouverEspace(d: DonneesRetrouver): Mail {
   const v = (vous: string, toi: string) => (d.tu ? toi : vous);
-  const { html, texte } = page({
+  const { html, texte } = pageMail({
     titre: v("Votre lien", "Ton lien"),
     bonjour: bonjour(d.responsable),
-    lignes: [ligne(v(`Voici le lien de votre espace « ${d.evenement} » (${d.organisation}).`, `Voici le lien de ton espace « ${d.evenement} » (${d.organisation}).`))],
-    bouton: { href: d.lien, libelle: "Ouvrir mon espace" },
+    lignes: [
+      ligne(v(`Voici le lien de votre espace « ${d.evenement} » (${d.organisation}).`, `Voici le lien de ton espace « ${d.evenement} » (${d.organisation}).`)),
+      { href: d.lien, libelle: "Ouvrir mon espace" },
+    ],
     notes: [
       ligne(v("Ce lien vous est personnel : gardez ce mail, il vous servira à revenir.", "Ce lien t'est personnel : garde ce mail, il te servira à revenir.")),
       ligne(

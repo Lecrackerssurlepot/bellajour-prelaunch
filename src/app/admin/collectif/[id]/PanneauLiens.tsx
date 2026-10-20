@@ -32,6 +32,15 @@ const PHRASE_MAIL: Record<string, string> = {
   echec: "Le mail n'est pas parti (Brevo l'a refusé ou n'a pas répondu) : prévenez le responsable vous-même.",
 };
 
+/* Le mail du lien des participants n'écrit plus le lien (20/10) : il dit où il est dans l'espace du responsable. */
+const PHRASE_MAIL_DEPOT_ENVOYE =
+  "Le responsable est prévenu par mail : le nouveau lien l'attend dans son espace, page Photos, onglet « Les liens ». Le journal le note.";
+
+function phraseMail(quel: QuelLien, etat: string): string {
+  if (quel === "depot" && etat === "envoye") return PHRASE_MAIL_DEPOT_ENVOYE;
+  return Object.hasOwn(PHRASE_MAIL, etat) ? PHRASE_MAIL[etat] : etat;
+}
+
 const prevenu = (quel: QuelLien) => quel === "responsable" || quel === "depot";
 
 function phraseContributions(n: number | null): string {
@@ -154,7 +163,9 @@ export default function PanneauLiens({ id, liens, ouverture = null }: { id: stri
                     <a className="ate-lien-discret" href={apercu(quel)} target="_blank" rel="noopener noreferrer">
                       Voir le mail
                     </a>
-                    {" "}(il montre le lien actuel ; le nouveau y prendra sa place).
+                    {quel === "depot"
+                      ? " (il n'écrit pas le lien des participants : il envoie le responsable le chercher dans son espace, page Photos, onglet « Les liens »)."
+                      : " (il montre le lien actuel ; le nouveau y prendra sa place)."}
                   </p>
                   {verif.mail.ouverts ? null : (
                     <p>
@@ -179,7 +190,7 @@ export default function PanneauLiens({ id, liens, ouverture = null }: { id: stri
           {resultat?.quel === quel ? (
             <p className={resultat.mail === "envoye" ? "eca-message" : "eca-message eca-message--erreur"} role="status">
               Lien régénéré : l&apos;ancien ne fonctionne plus.{" "}
-              {resultat.mail ? (Object.hasOwn(PHRASE_MAIL, resultat.mail) ? PHRASE_MAIL[resultat.mail] : resultat.mail) : resultat.sansMail}
+              {resultat.mail ? phraseMail(quel, resultat.mail) : resultat.sansMail}
               {prevenu(quel) ? (
                 <>
                   {" "}

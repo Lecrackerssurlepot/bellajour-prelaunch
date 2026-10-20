@@ -2089,7 +2089,7 @@ titre("— D23 / T-148 : les rendez-vous dans l'espace —");
   ok("chaque ligne repliee tient en 75 octets", replier("D".repeat(10) + "é".repeat(80)).split("\r\n").every((l) => Buffer.byteLength(l, "utf8") <= 75));
   ok("une annulation est un CANCEL", invitationIcs({ uid: "u1", sequence: 3, debut: "2026-10-15T08:30:00Z", fin: "2026-10-15T09:00:00Z", titre: "t", description: "d", lieu: null, annule: true, maintenant }).includes("METHOD:CANCEL"));
 
-  const base = { tu: false, interlocuteur: "Mathias", debut: "2026-10-15T08:30:00Z", ancienDebut: null, dureeMinutes: 30, meetUrl: "https://meet.google.com/abc", motif: "Relire le BAT", lienEspace: "https://www.bellajour.fr/edition/x/atelier" };
+  const base = { tu: false, interlocuteur: "Mathias", responsable: "Mathilde Roux", debut: "2026-10-15T08:30:00Z", ancienDebut: null, dureeMinutes: 30, meetUrl: "https://meet.google.com/abc", motif: "Relire le BAT", lienEspace: "https://www.bellajour.fr/edition/x/atelier" };
   const pris = mailRendezVous({ ...base, genre: "pris" });
   const deplace = mailRendezVous({ ...base, genre: "deplace", ancienDebut: "2026-10-14T13:30:00Z" });
   const annule = mailRendezVous({ ...base, genre: "annule" });
@@ -2097,6 +2097,25 @@ titre("— D23 / T-148 : les rendez-vous dans l'espace —");
   ok("mail deplace : l'ancien creneau est dit", deplace.texte.includes("mercredi 14 octobre à 15 h 30"));
   ok("mail annule : pas de bouton visio", !annule.html.includes("Rejoindre la visio") && annule.sujet.includes("annulé"));
   ok("mails : aucun tiret cadratin, le tu respecte le registre", [pris, deplace, annule].every((m) => !/—/.test(m.sujet + m.html + m.texte)) && mailRendezVous({ ...base, tu: true, genre: "pris" }).sujet.startsWith("Ton"));
+  {
+    /* Relecture de Mathias du 20/10 : « aligne les couleurs et les visuels ». */
+    const espaceVous = MailsTextes.mailRetrouverEspace({ tu: false, organisation: "O", evenement: "E", responsable: "Mathilde Roux", lien: "https://x/edition/A" });
+    const entete = (h: string) => h.slice(0, h.indexOf("Bonjour"));
+    const signature = (h: string) => h.slice(h.lastIndexOf("<tr>"));
+    const bouton = (h: string, libelle: string) => (h.match(new RegExp(`<a [^>]*>${libelle}</a>`)) ?? [""])[0].replace(/href="[^"]*"/, "");
+    const src = lire("src/lib/collectif/mailsRdv.ts");
+    ok("T-148 (20/10) : les mails de rendez-vous prennent LA mise en page commune (pageMail), meme en-tete, meme signature, plus de gabarit a eux",
+      /import \{[^}]*\bpageMail\b[^}]*\} from "\.\/mailsTextes";/.test(src) && !/<!doctype|<table|#[0-9a-f]{6}/i.test(src)
+        && [pris, deplace, annule].every((m) => entete(m.html.replace(/>[^<]*Rendez-vous [a-zé]+</, "><")) === entete(espaceVous.html.replace(/>Votre lien</, "><")) && signature(m.html) === signature(espaceVous.html)));
+    ok("T-148 (20/10) : « Ouvrir mon espace » est LE bouton des autres mails (bleu, plus de lien cuivre dans la phrase), vers « Parler a l'atelier »",
+      [pris, deplace, annule].every((m) => bouton(m.html, "Ouvrir mon espace") === bouton(espaceVous.html, "Ouvrir mon espace") && m.html.includes(`href="${base.lienEspace}"`) && !/b56a45|ouvrir mon espace<\/a>/.test(m.html))
+        && bouton(pris.html, "Rejoindre la visio").replace("Rejoindre la visio", "") === bouton(espaceVous.html, "Ouvrir mon espace").replace("Ouvrir mon espace", "")
+        && /Pour le déplacer ou l'annuler, passez par votre espace\.\n\nOuvrir mon espace : https:\/\/www\.bellajour\.fr\/edition\/x\/atelier/.test(pris.texte)
+        && /Pour en prendre un autre, passe par ton espace\./.test(mailRendezVous({ ...base, tu: true, genre: "annule" }).texte));
+    ok("T-148 (20/10) : « Bonjour Mathilde, » quand le nom du responsable est connu, « Bonjour, » sinon ; rendezvous.ts passe le nom de l'edition",
+      [pris, deplace, annule].every((m) => /^Bonjour Mathilde,\n/.test(m.texte) && m.html.includes(">Bonjour Mathilde,<")) && /^Bonjour,\n/.test(mailRendezVous({ ...base, responsable: null, genre: "pris" }).texte)
+        && /^Bonjour,\n/.test(mailRendezVous({ ...base, responsable: "  ", genre: "pris" }).texte) && /responsable: edition\.responsable_nom,/.test(lire("src/lib/collectif/rendezvous.ts")));
+  }
 
   const cleFausse = "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----\\n";
   const json = `{"client_email":"agenda@projet.iam.gserviceaccount.com","private_key":"${cleFausse}"}`;
@@ -2523,21 +2542,44 @@ titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut 
   const vous = textes.mailEspacePret({ ...base, tu: false });
   const toi = textes.mailEspacePret({ ...base, tu: true });
   const avecCode = textes.mailEspacePret({ ...base, tu: false, avecCode: true });
-  ok("« Votre espace est prêt » : l'evenement dans l'objet, vous ou tu, Bonjour + prenom",
-    vous.sujet === "Votre espace Bellajour est prêt, Séminaire d'automne" && toi.sujet.startsWith("Ton") && /Bonjour Camille,/.test(vous.texte)
-      && /L'espace de votre édition « Séminaire d'automne » est ouvert\. Voici vos trois liens\./.test(vous.texte) && /Voici tes trois liens\./.test(toi.texte));
-  ok("T-187 : les TROIS liens, separes, dans le HTML ET le texte (planche 6), le sien en bouton, les deux autres en adresse lisible",
-    [vous, toi].every((m) => Object.values(liens).every((l) => m.html.includes(l) && m.texte.includes(l)))
-      && (vous.html.match(/Ouvrir mon espace/g) ?? []).length === 1 && vous.html.includes(`>${liens.equipe}</a>`) && vous.html.includes(`>${liens.depot}</a>`)
+  ok("« Votre espace est prêt » : l'evenement dans l'objet apres « · » comme les autres mails (20/10), vous ou tu, Bonjour + prenom",
+    vous.sujet === "Votre espace Bellajour est prêt · Séminaire d'automne" && toi.sujet === "Ton espace Bellajour est prêt · Séminaire d'automne" && /Bonjour Camille,/.test(vous.texte)
+      && /L'espace de votre édition « Séminaire d'automne » est ouvert\. Voici votre lien\. Ceux de votre équipe et des participants vous attendent dans l'espace, prêts à envoyer\./.test(vous.texte)
+      && /L'espace de ton édition « Séminaire d'automne » est ouvert\. Voici ton lien\. Ceux de ton équipe et des participants t'attendent dans l'espace, prêts à envoyer\./.test(toi.texte)
+      && !/trois liens/.test(vous.texte + toi.texte));
+  ok("20/10 : le mail ne porte plus QUE son lien, en bouton ; AUCUN token d'equipe ni de depot (HTML, texte, objet), les trois blocs dans l'ordre",
+    [vous, toi, avecCode].every((m) => m.html.includes(liens.responsable) && m.texte.includes(`Ouvrir mon espace : ${liens.responsable}`) && ![liens.equipe, liens.depot, "EQUIPEBBBB", "DEPOTCCCC", "/depot/"].some((l) => (m.html + m.texte + m.sujet).includes(l)))
+      && (vous.html.match(/Ouvrir mon espace/g) ?? []).length === 1 && (vous.html.match(/<a /g) ?? []).length === 1
       && vous.texte.indexOf("Votre lien") < vous.texte.indexOf("Le lien de votre équipe") && vous.texte.indexOf("Le lien de votre équipe") < vous.texte.indexOf("Le lien des participants"));
-  ok("T-187 : les mots de la planche, en vous et en tu (garder le sien, transferer celui de l'equipe, le QR dans l'espace, la cloture)",
-    /Pour tout faire : photos, style, bon à tirer\. Gardez-le pour vous\./.test(vous.texte) && /Lecture seule\. Transférez-le à vos collègues\./.test(vous.texte)
-      && /Pour que chacun dépose ses photos, jusqu'au 28 octobre\. Le QR code est dans votre espace\./.test(vous.texte)
-      && /Ton lien/.test(toi.texte) && /Garde-le pour toi\./.test(toi.texte) && /Le lien de ton équipe/.test(toi.texte) && /Transfère-le à tes collègues\./.test(toi.texte) && /dans ton espace\./.test(toi.texte)
-      && !/votre|vous/i.test(toi.texte.replace(/Bellajour/g, "")) && /Pour que chacun dépose ses photos\. Le QR/.test(textes.mailEspacePret({ ...base, cloture: null, tu: false }).texte));
-  ok("« Votre espace est prêt » : aucun tiret cadratin ni demi-cadratin, rien n'est injecte sans echappement (texte ET adresses)",
+  ok("20/10 : ou trouver les deux autres liens pour les envoyer depuis l'espace, en vous et en tu (garder le sien, la cloture)",
+    /Pour tout faire : photos, style, bon à tirer\. Gardez-le pour vous\./.test(vous.texte)
+      && /Lecture seule : votre équipe suit tout sans rien modifier\. Dans votre espace, en bas du menu : « Partager avec mon équipe », puis « Copier »\./.test(vous.texte)
+      && /Pour que chacun dépose ses photos, jusqu'au 28 octobre\. Il est dans votre espace, page Photos, onglet « Les liens » : « Partager » y prépare le message et le QR code, à envoyer par WhatsApp ou par mail\./.test(vous.texte)
+      && /Ton lien/.test(toi.texte) && /Garde-le pour toi\./.test(toi.texte) && /Le lien de ton équipe/.test(toi.texte)
+      && /Lecture seule : ton équipe suit tout sans rien modifier\. Dans ton espace, en bas du menu : « Partager avec mon équipe », puis « Copier »\./.test(toi.texte)
+      && /Il est dans ton espace, page Photos, onglet « Les liens » : « Partager »/.test(toi.texte)
+      && !/votre|vous/i.test(toi.texte.replace(/Bellajour/g, "")) && /Pour que chacun dépose ses photos\. Il est dans votre espace/.test(textes.mailEspacePret({ ...base, cloture: null, tu: false }).texte));
+  ok("« Votre espace est prêt » : aucun tiret cadratin ni demi-cadratin, rien n'est injecte sans echappement (texte ET adresse)",
     ![vous, toi, avecCode].some((m) => /[—–]/.test(m.html + m.texte + m.sujet)) && textes.mailEspacePret({ ...base, tu: false, evenement: "<script>" }).html.includes("&lt;script&gt;")
-      && (() => { const m = textes.mailEspacePret({ ...base, tu: false, liens: { ...liens, equipe: 'https://x/edition/"><img src=x>' } }); return !m.html.includes('"><img') && m.html.includes("&quot;&gt;&lt;img"); })());
+      && (() => { const m = textes.mailEspacePret({ ...base, tu: false, liens: { ...liens, responsable: 'https://x/edition/"><img src=x>' } }); return !m.html.includes('"><img') && m.html.includes("&quot;&gt;&lt;img"); })());
+  {
+    /* Chaque endroit que les mails nomment EXISTE dans l'espace, sous ce libelle exact (relu dans les ecrans). */
+    const partageEquipe = lire("src/app/edition/[token]/PartageEquipe.tsx");
+    const coquille = lire("src/app/edition/[token]/Coquille.tsx");
+    const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+    const ongletLiens = lire("src/app/edition/[token]/photos/Liens.tsx");
+    const fenetrePartage = lire("src/app/edition/_composants/LienContribution.tsx");
+    const menu = lire("src/lib/collectif/verrous.ts");
+    ok("20/10 : « Partager avec mon équipe » existe EN BAS du menu (apres la nav, avant le nom), sa fenetre dit la meme phrase et porte « Copier »",
+      /<span>Partager avec mon équipe<\/span>/.test(partageEquipe) && /titre="Partager avec mon équipe"/.test(partageEquipe)
+        && partageEquipe.includes('"Lecture seule : ton équipe suit tout sans rien modifier." : "Lecture seule : votre équipe suit tout sans rien modifier."')
+        && /: "Copier"\}/.test(partageEquipe)
+        && coquille.indexOf("</nav>") < coquille.indexOf("<PartageEquipe") && coquille.indexOf("<PartageEquipe") < coquille.indexOf('className="ec-moi"'));
+    ok("20/10 : la page « Photos » du menu (jamais verrouillee), son onglet « Les liens », « Partager » sur le lien general, WhatsApp et Mail dans la fenetre",
+      /\{ cle: "photos", libelle: "Photos", segment: "photos", groupe: 1 \}/.test(menu) && /photos: null,/.test(menu)
+        && (collecte.match(/Les liens · \{nbLiens\}/g) ?? []).length === 2 && /genre="Lien général"/.test(ongletLiens) && /onClick=\{c\.onPartager\}>\s*Partager\s*<\/button>/.test(ongletLiens)
+        && /WhatsApp\s*<\/a>/.test(fenetrePartage) && /Mail\s*<\/a>/.test(fenetrePartage) && /<QrCode texte=\{lien\.url\} taille=\{136\}/.test(fenetrePartage));
+  }
   ok("« Votre espace est prêt » : le code par appareil n'est annonce QUE quand il est en service (T-154)",
     !/un code/.test(vous.texte) && /un code/.test(avecCode.texte));
   const donnees = textes.donneesEspacePret(
@@ -2555,9 +2597,14 @@ titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut 
   const routeMail = lire("src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts");
   ok("route du mail : admin revérifié, « verifier » ne fait rien partir, une edition archivee ne recoit rien, le verrou suit le lien (regenerer permet de renvoyer)",
     /quiEstConnecteRequete\(request\)/.test(routeMail) && routeMail.indexOf("corps.verifier === true") < routeMail.indexOf("envoyerMailCollectif({") && /archive_le\) return/.test(routeMail) && /createHash\("sha256"\)\.update\(p\.edition\.token_responsable\)/.test(routeMail));
-  ok("T-187 : la route lit les trois tokens et passe les TROIS liens au gabarit (donneesEspacePret, liensEdition)",
+  ok("T-187 : la route et l'ecran assemblent les MEMES donnees (donneesEspacePret, les trois liens par liensEdition pour l'ecran), et le mail rendu n'en ecrit qu'un (20/10)",
     /token_responsable, token_equipe, token_depot/.test(routeMail) && /mailEspacePret\(donneesEspacePret\(data, origine, controleAppareilActif\(process\.env\)\)\)/.test(routeMail)
-      && /liens: liensEdition\(origine, e\)/.test(lire("src/lib/collectif/mailsTextes.ts")) && !/lien: liensEdition/.test(routeMail));
+      && /liens: liensEdition\(origine, e\)/.test(lire("src/lib/collectif/mailsTextes.ts")) && !/lien: liensEdition/.test(routeMail)
+      && (() => {
+        const d = textes.donneesEspacePret({ token_responsable: "R".repeat(32), token_equipe: "E".repeat(32), token_depot: "D".repeat(32), registre: "entreprise_vous", organisation: "O", evenement: "E", responsable_nom: null, cloture_le: null }, "https://bellajour.fr", false);
+        const m = textes.mailEspacePret(d);
+        return d.liens.equipe.endsWith("E".repeat(32)) && d.liens.depot.endsWith("D".repeat(32)) && m.html.includes("R".repeat(32)) && !(m.html + m.texte).includes("E".repeat(32)) && !(m.html + m.texte).includes("D".repeat(32));
+      })());
   ok("T-187 : le journal ne garde JAMAIS un token (code = empreinte, adresse masquee, aucun lien passe a journaliser)",
     /code = corps\.renvoyer === true \? `ESPACE-\$\{empreinte\}-R/.test(routeMail) && !/journaliser/.test(routeMail)
       && (circuit.match(/journaliser\([^)]*\)/g) ?? []).every((j) => !/lien|token|mail\.html|mail\.texte/.test(j)) && /a: adresseMasquee\(p\.a\.email\)/.test(circuit));
@@ -2601,7 +2648,10 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
       && fichiers("src/app/edition/[token]", "page.tsx").every((f) => !/appareil_inconnu/.test(lire(f))));
   ok("reglages souples (Mathias, 16/10 : « il faut pas que ça soit très compliqué ») : 24 heures par code, 10 essais, 10 codes par heure ; la duree s'ecrit en clair",
     A.DUREE_CODE_MS === 24 * 60 * 60_000 && A.ESSAIS_MAX === 10 && A.CODES_PAR_HEURE === 10 && A.libelleDuree(A.DUREE_CODE_MS) === "24 heures" && A.libelleDuree(60 * 60_000) === "1 heure" && A.libelleDuree(15 * 60_000) === "15 minutes");
-  const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", code: "123456", duree: "24 heures", site: "https://bellajour.fr" });
+  const mailCode = MailsTextes.mailCodeAppareil({ tu: false, evenement: "Séminaire", responsable: "Camille Essai", code: "123456", duree: "24 heures", site: "https://bellajour.fr" });
+  ok("le mail du code (20/10) : « Bonjour Camille, » quand le nom est connu, « Bonjour, » sinon ; appareils.ts passe le nom de l'edition",
+    /^Bonjour Camille,\n/.test(mailCode.texte) && /^Bonjour,\n/.test(MailsTextes.mailCodeAppareil({ tu: true, evenement: "S", responsable: null, code: "123456", duree: "24 heures", site: "https://bellajour.fr" }).texte)
+      && /responsable: edition\.responsable_nom, code,/.test(lire("src/lib/collectif/appareils.ts")));
   ok("le mail du code : les six chiffres, la duree, d'ou vient la demande, aucun tiret cadratin",
     mailCode.sujet.includes("123 456") && mailCode.texte.includes("123 456") && /valable 24 heures/.test(mailCode.texte) && /bellajour\.fr/.test(mailCode.texte) && !/[—–]/.test(mailCode.html + mailCode.texte));
 }
@@ -3348,9 +3398,16 @@ titre("— T-196 : regenerer dit ce qu'il coupe, previent le responsable, et le 
     mRespTu.sujet.startsWith("Ton nouveau lien") && /ton espace/.test(mRespTu.texte) && !/\bvous\b|\bvotre\b/i.test(mRespTu.texte) && /il t'envoie un code/.test(mRespTu.texte)
       && !/code/.test(mResp.texte.replace("bellajour.fr/espace", "")));
   const mDepot = (n: number, registre = "entreprise_vous") => M.mailLienRegenere(M.donneesLienRegenere(ed(registre), "depot", "https://bellajour.fr", n, false));
-  ok("participants : le nouveau lien en adresse, la cloture, les photos gardees, le QR code ancien qui ne marche plus",
-    mDepot(0).html.includes(`https://bellajour.fr/depot/${"D".repeat(32)}`) && /jusqu'au 14 novembre/.test(mDepot(0).texte) && /Les photos déjà reçues sont gardées\./.test(mDepot(0).texte)
-      && /ni le QR code qui y menait/.test(mDepot(0).texte) && mDepot(0).sujet === "Nouveau lien des participants · Croisière Audencia" && !mDepot(0).texte.includes("R".repeat(32)));
+  ok("participants (20/10) : le nouveau lien n'est PLUS ecrit (ni HTML ni texte), le mail dit ou il est et ouvre SON espace ; la cloture, les photos gardees, l'ancien QR code",
+    [mDepot(0), mDepot(8, "ecole_tu")].every((m) => !(m.html + m.texte + m.sujet).includes("D".repeat(32)) && !(m.html + m.texte).includes("/depot/") && !(m.html + m.texte).includes("E".repeat(32))
+      && m.html.includes(`href="https://bellajour.fr/edition/${"R".repeat(32)}"`) && m.texte.includes(`Ouvrir mon espace : https://bellajour.fr/edition/${"R".repeat(32)}`) && (m.html.match(/<a /g) ?? []).length === 1)
+      && M.donneesLienRegenere(ed("entreprise_vous"), "depot", "https://bellajour.fr", 0, false).espace === `https://bellajour.fr/edition/${"R".repeat(32)}`
+      && /Pour que chacun dépose ses photos, jusqu'au 14 novembre\. Il est dans votre espace, page Photos, onglet « Les liens » : « Partager » y prépare le message et le nouveau QR code, à envoyer par WhatsApp ou par mail\./.test(mDepot(0).texte)
+      && /Il est dans ton espace, page Photos, onglet « Les liens » : « Partager » y prépare le message et le nouveau QR code/.test(mDepot(0, "ecole_tu").texte)
+      && /Les photos déjà reçues sont gardées\./.test(mDepot(0).texte) && /ni le QR code qui y menait/.test(mDepot(0).texte) && mDepot(0).sujet === "Nouveau lien des participants · Croisière Audencia"
+      && /^Bonjour Camille,\n/.test(mDepot(0).texte));
+  ok("le lien du responsable, lui, ne bouge pas (20/10) : son nouveau lien en bouton, rien d'autre",
+    M.donneesLienRegenere(ed("entreprise_vous"), "responsable", "https://bellajour.fr", 0, false).espace === dResp.lien && (mResp.html.match(/<a /g) ?? []).length === 1 && mResp.texte.includes(`Ouvrir mon espace : ${dResp.lien}`));
   ok("participants : les liens de contribution coupes se comptent (0 : rien ; 1 : au singulier ; 8 : au pluriel), au registre",
     !/contribution/.test(mDepot(0).texte) && /Votre lien de contribution a changé aussi/.test(mDepot(1).texte) && /Vos 8 liens de contribution ont changé aussi/.test(mDepot(8).texte)
       && /Tes 8 liens de contribution ont changé aussi : retrouve-les dans ton espace, page Photos, onglet « Les liens »/.test(mDepot(8, "ecole_tu").texte));
@@ -3379,6 +3436,10 @@ titre("— T-196 : regenerer dit ce qu'il coupe, previent le responsable, et le 
   ok("l'ecran : « Régénérer… » verifie d'abord, dit les liens de contribution coupes et le mail (avec son apercu), puis « Confirmer »",
     /onClick=\{\(\) => appeler\(quel, true\)\}/.test(panneauL) && /phraseContributions\(verif\.contributions\)/.test(panneauL) && /onClick=\{\(\) => appeler\(quel, false\)\}/.test(panneauL)
       && /href=\{apercu\(quel\)\}/.test(panneauL) && /Les mails des éditions sont coupés/.test(panneauL) && /cesseront aussi de fonctionner : ils contiennent ce lien/.test(panneauL));
+  ok("l'ecran dit vrai sur le mail des participants (20/10) : il n'ecrit pas le lien, il renvoie a l'onglet « Les liens » ; celui du responsable garde « le nouveau y prendra sa place »",
+    /quel === "depot"\s*\? " \(il n'écrit pas le lien des participants : il envoie le responsable le chercher dans son espace, page Photos, onglet « Les liens »\)\."\s*: " \(il montre le lien actuel ; le nouveau y prendra sa place\)\."/.test(panneauL)
+      && /if \(quel === "depot" && etat === "envoye"\) return PHRASE_MAIL_DEPOT_ENVOYE;/.test(panneauL) && /le nouveau lien l'attend dans son espace, page Photos, onglet « Les liens »/.test(panneauL)
+      && /phraseMail\(quel, resultat\.mail\)/.test(panneauL));
 
   const lecture = lire("src/app/depot/[token]/lecture.ts");
   const layoutLien = lire("src/app/depot/[token]/layout.tsx");

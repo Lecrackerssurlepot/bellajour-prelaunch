@@ -1,7 +1,8 @@
 "use client";
 
-/* « Votre espace est prêt » : envoyer au responsable ses trois liens (T-146,
-   T-187). L'aperçu s'ouvre dans un onglet, tel qu'il partirait ; l'envoi se
+/* « Votre espace est prêt » : envoyer au responsable son lien, et où trouver
+   dans l'espace ceux de l'équipe et des participants (T-146, T-187 ; retouche
+   de Mathias du 20/10). L'aperçu s'ouvre dans un onglet, tel qu'il partirait ; l'envoi se
    fait en deux temps (vérifier : à qui, quel objet ; puis confirmer), par le
    même flux que l'écran « L'édition est créée » (`useEnvoiEspace`). Tant que
    les mails des éditions sont fermés (`COLLECTIF_MAILS`), l'écran le dit et
@@ -15,11 +16,10 @@ export default function EnvoiLienResponsable({ id }: { id: string }) {
   return (
     <section className="eca-carte">
       <span className="eca-carte-tete">
-        <h2 className="eca-carte-titre">Envoyer ses liens au responsable</h2>
+        <h2 className="eca-carte-titre">Envoyer son lien au responsable</h2>
       </span>
       <p className="eca-champ-aide">
-        Le mail « Votre espace est prêt », avec ses trois liens : le sien, celui de l&apos;équipe, celui des participants. Il ne part
-        qu&apos;à l&apos;adresse du responsable.
+        {"Le mail « Votre espace est prêt » : son lien, et où trouver dans l'espace ceux de l'équipe et des participants, pour les envoyer de là. Il ne part qu'à l'adresse du responsable."}
       </p>
       <div className="eca-barre">
         <a className="ate-lien-discret" href={`/api/admin/collectif/editions/${id}/mail-espace`} target="_blank" rel="noopener noreferrer">
