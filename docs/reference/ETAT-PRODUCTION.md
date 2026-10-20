@@ -10,6 +10,18 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 20/10/2026 — « Première édition » archivée, plus aucune édition active
+
+- **Archivée le 20/10 à 9 h 09 (Paris), sur accord explicite de Mathias** (« Oui, archive
+  « Première édition » »), par le geste « Archiver » de l'atelier (route du geste servie en local,
+  deux temps, journal `geste` / `archiver` au nom de Mathias). C'était une édition d'essai créée
+  le 17/10, au nom d'événement injurieux, et la seule encore active.
+- Rien n'est effacé : 12 photos gardées, « Récupérer » sur la fiche la rouvre. Vérifié en
+  production : ses trois liens (dépôt, responsable, équipe) répondent 404 sur www.bellajour.fr
+  (bellajour.fr redirige d'abord vers www en 307).
+- **La base B2B n'a plus AUCUNE édition active** : le premier vrai client se crée dans
+  l'atelier (`/admin/collectif/nouvelle`).
+
 ## 19/10/2026, fin d'après-midi — L'accord des participants (T-184) : migration appliquée, PR #266 fusionnée
 
 - **`20261020_collectif_accord_participant.sql` appliquée par Mathias le 19/10 vers 16 h 30 (Paris)**,
