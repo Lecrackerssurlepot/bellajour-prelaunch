@@ -433,6 +433,26 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - « Toutes » montre la DERNIÈRE arrivée d'abord (ce qui arrive est en haut) ; « Par jour » garde
   l'ordre des jours de prise de vue.
 
+## Plus de 1 000 photos (T-167, T-168, 19/10)
+
+- ⚠️ **Supabase plafonne CHAQUE réponse à 1 000 lignes** (« Max rows », confirmé par Mathias le
+  19/10) et `.limit(20000)` ne peut que réduire : une lecture d'un coup s'arrête à 1 000, SANS
+  erreur. Toute lecture de lignes qui peut dépasser 1 000 passe par **`lireToutesLesLignes`**
+  (`lignes.ts`) : tranches de 1 000, triées par une colonne PUIS par `id` (un lot de 25 photos
+  partage le même `confirmee_le`), une tranche en erreur = toute la lecture en erreur (son code
+  gardé pour les replis), `MAX_TRANCHES` refuse au lieu de tronquer. Là où seul le nombre sert :
+  un compte `head` (`compterPourPlafond`, deux comptes en parallèle, filtre `filtreDansPlafond`
+  = `compteDansPlafond` mot pour mot, prouvé au harnais).
+- **Un filtre `.in()` voyage dans l'URL** : par paquets de `PAQUET_IN` (100) avec `enPaquets`.
+  500 uuid font 19,5 Ko d'URL, 500 clés de fichier jusqu'à 40 Ko (d'où `LOT_VERIFICATION` = 100).
+- **Le lot de l'atelier compte avant de lire** : moins de lignes lues que de photos comptées =
+  500 `lot_incomplet` avec les deux nombres, affiché par la fiche ; jamais « N photos écrites »
+  sur un lot qui en a perdu.
+- **La confirmation est idempotente** (`depot/complete`) : une photo déjà confirmée est rendue
+  telle quelle (ni redatée, ni rejournalisée, ni relue) ; l'`update` porte `.is("confirmee_le", null)`.
+- **Le journal de la fiche** ne lit pas `JOURNAL_DE_LOT` (`photos_confirmees`,
+  `metadonnees_lues`, une ligne par lot) : elles chassaient tout le reste des 100 dernières.
+
 ## Terminer la collecte, la sélection vue par l'atelier (T-182, D25, 19/10)
 
 - **Le RESPONSABLE peut terminer la collecte** (`terminer_collecte`, droit et geste du même nom,
@@ -610,6 +630,37 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   l'insertion se replie SANS les deux colonnes et le serveur le note à chaque lot. Ce repli
   d'écriture est voulu (à rebours de la révision) : bloquer tous les participants ne protégerait
   personne. Après l'avoir appliquée, vérifier que la donnée ARRIVE (`supabase/CLAUDE.md`).
+
+## La première vraie édition : l'envoi qui tient, le nom figé, le style en vitrine (T-192, 19/10 au soir)
+
+- **Le moteur et le réseau** (`moteur.ts`, prouvé sur un banc : le vrai moteur compilé, un faux
+  serveur aux mêmes règles pures, Chrome headless bridé) : une COUPURE ne brûle aucun essai (on
+  attend `online`) ; seul un refus HTTP du coffre compte (3) ; « en ligne mais sans réponse »
+  (wifi d'école qui filtre R2) a son compteur (12) et une phrase qui dit de passer en 4G.
+  Chaque POST a un garde-temps (30 s, 60 s pour `complete`) ; une réponse 200 illisible est une
+  coupure, jamais « rien d'accepté ». 404 ferme avec « Ce lien n'est plus actif », un autre 4xx
+  refuse le lot, 5xx = `serveurLent`. ⚠️ Ne pas remettre « tout statut ≠ 200 = hors ligne » :
+  un lien supprimé tournait à l'infini.
+- **La clôture** (`fermer`) refuse ce qui n'est pas parti, laisse finir ce qui est en route et
+  CONFIRME ce qui est au coffre (`confirmerRestes`) : `complete` n'a pas de verrou de clôture.
+- **La vignette repart** (4 essais) : sans elle, la grille montrait l'original (T-171).
+- **La clé d'une photo** (`cleDepot.ts`, pur) : `sel~nom|taille|date`, où la date vaut 0 si elle
+  a moins de 10 min (sur iPhone, c'est l'heure du CHOIX : la même photo re-choisie repartait en
+  double) et où le SEL de l'appareil (`bj-depot-sel`, localStorage) empêche deux participants
+  d'avoir la même clé (unique par édition : la seconde photo serait « déjà là », perdue).
+- **Moins de requêtes** : jusqu'à 40 photos préparées d'avance (8 en mémoire au plus), une
+  déclaration attend un lot de 10 quand les voies sont pleines, `place === 0` refuse d'office le
+  reste du lot (500 photos à plafond 30 : 53 déclarations au lieu de 480), confirmation groupée
+  sur 15 s. Screen Wake Lock pendant l'envoi ; une page qui a dormi n'avorte pas ses PUT.
+- **Le nom du participant ne change plus** (`participant.ts` pur, `participantConnu.ts` effets) :
+  prénom ET nom la première fois, puis « en tant que … » ; la page lit le cookie
+  `bj_depot_appareil` pour retrouver le nom et le nombre de photos arrivées ; la route
+  `depot/presign` reprend le nom de l'appareil AVANT celui du navigateur. Un téléphone prêté
+  envoie sous le nom de son propriétaire : assumé (« il ne se change plus ensuite »).
+- **Le style est FERMÉ** (`COLLECTIF_STYLES`, interrupteur.ts, absent = fermé) : `style`,
+  `style/brief`, `style/[slug]` rendent `Vitrine.tsx` (couvertures statiques déjà publiées,
+  jamais le mur ni une image signée), `/api/collectif/brief` répond 409 `styles_fermes`, le
+  tableau de bord dit « Bientôt ». Rien n'est effacé ; `COLLECTIF_STYLES=1` sur Vercel rouvre.
 
 ## Le lien du responsable : modifier demande un appareil reconnu (T-154, 15/10)
 

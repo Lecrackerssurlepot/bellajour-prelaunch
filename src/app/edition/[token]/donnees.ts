@@ -13,6 +13,7 @@ import { signerGet } from "@/lib/atelier/r2";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { compositionDu, styleVisible, stylesDeLaComposition, type BriefLigne } from "@/lib/collectif/brief";
 import { colonneAbsente } from "@/lib/collectif/migration";
+import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
@@ -187,17 +188,34 @@ export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_de
   );
 }
 
+type LignePhotoTableau = {
+  role_deposant: string;
+  appareil_id: string | null;
+  provenance_id: string | null;
+  provenance_type: string;
+  deposant: string | null;
+  vignette_key: string | null;
+  confirmee_le: string;
+  preselection: boolean;
+};
+
 export async function chargerTableau(edition: EditionLigne, origine = ""): Promise<Tableau> {
   const supabase = makeSupabase();
   const [mags, photos, contenus, message, provenances] = await Promise.all([
     lireMagazinesBrief(edition.id),
-    supabase
-      .from("collectif_photos")
-      .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection")
-      .eq("edition_id", edition.id)
-      .not("confirmee_le", "is", null)
-      .order("confirmee_le", { ascending: false })
-      .limit(20000),
+    /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
+       de la plus récente à la plus ancienne. */
+    lireToutesLesLignes<LignePhotoTableau>(
+      () =>
+        supabase
+          .from("collectif_photos")
+          .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection")
+          .eq("edition_id", edition.id)
+          .not("confirmee_le", "is", null)
+          .returns<LignePhotoTableau[]>(),
+      { colonne: "confirmee_le", croissant: false },
+      "photos du tableau de bord"
+    ),
     lireEnvois(edition),
     supabase
       .from("collectif_messages")
@@ -233,15 +251,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     };
   });
 
-  const lignes = (photos.data ?? []) as {
-    role_deposant: string;
-    appareil_id: string | null;
-    provenance_id: string | null;
-    provenance_type: string;
-    deposant: string | null;
-    vignette_key: string | null;
-    preselection: boolean;
-  }[];
+  const lignes = photos.data ?? [];
 
   /* Les dossiers : les sources qui ont reçu quelque chose (sources.ts, la même
      lecture que la colonne « Qui a déposé » de la page Photos), la plus

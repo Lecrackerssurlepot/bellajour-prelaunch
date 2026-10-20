@@ -8,8 +8,10 @@ import { notFound } from 'next/navigation'
 import { briefModifiable } from '@/lib/collectif/brief'
 import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
+import { stylesOuverts } from '@/lib/collectif/interrupteur'
 import { chargerEspace, chargerMur } from '../../donnees'
 import FicheStyle from './FicheStyle'
+import Vitrine from '../Vitrine'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -25,6 +27,8 @@ export default async function PageUnStyle({
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
+  /* Le choix du style est fermé (interrupteur.ts, 19/10 au soir) : la vitrine de nos magazines. */
+  if (!stylesOuverts()) return <Vitrine token={token} registre={edition.registre} />
   const { styles, magazines } = await chargerMur(edition)
   const style = styles.find((s) => s.slug === slug)
   if (!style || !magazines.length) notFound()

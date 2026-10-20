@@ -7,10 +7,13 @@
    (le photographe), sans plafond par personne si l'atelier ou le responsable
    l'a créé ainsi. Une clé inconnue répond comme un lien inconnu. */
 
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { formaterJour } from '@/lib/atelier/dates'
 import { makeSupabase } from '@/lib/supabase'
 import { chargerAcces } from '@/lib/collectif/acces'
+import { COOKIE_APPAREIL, estAppareil } from '@/lib/collectif/collecte'
+import { arriveesDeLAppareil, nomDeLAppareil } from '@/lib/collectif/participantConnu'
 import { estCleProvenance } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
 import { colonneAbsente, MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
@@ -63,6 +66,17 @@ export default async function PageDepot({
 
   const ouvert = collecteOuverte(edition.etat, edition.cloture_le, new Date())
 
+  /* Le participant qui revient (même téléphone, n'importe quel lien de l'édition) :
+     son nom, déjà donné, ne se change plus, et il voit ce qui est déjà arrivé. */
+  const appareil = (await cookies()).get(COOKIE_APPAREIL)?.value
+  const [nomConnu, dejaArrivees] =
+    ouvert && estAppareil(appareil)
+      ? await Promise.all([
+          nomDeLAppareil(makeSupabase(), edition.id, appareil, provenance?.libelle ?? null),
+          arriveesDeLAppareil(makeSupabase(), edition.id, appareil),
+        ])
+      : [null, 0]
+
   return (
     <main className="ec-dp">
       <div className="ec-dp-in">
@@ -88,6 +102,8 @@ export default async function PageDepot({
             cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}
             organisation={edition.organisation}
             evenement={edition.evenement}
+            nomConnu={nomConnu}
+            dejaArrivees={dejaArrivees}
           />
         ) : (
           <p className="ec-dp-texte ec-dp-ferme">

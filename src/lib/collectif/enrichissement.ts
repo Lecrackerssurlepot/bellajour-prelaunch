@@ -17,6 +17,7 @@ import { lireDepuisCoffre } from "@/lib/atelier/enrichissement";
 import { geocoderInverse } from "@/lib/atelier/geocodage";
 import { planGeocodage } from "@/lib/atelier/lieux";
 import { journaliser } from "./journal";
+import { enPaquets, lireToutesLesLignes } from "./lignes";
 
 /** Le facteur limitant est la latence R2 (même réglage que l'atelier). */
 const CONCURRENCE = 4;
@@ -86,15 +87,23 @@ export async function enrichirCollectif(
       })
     );
 
-    /* Les lieux : un appel Geoapify par LIEU, jamais par photo (planGeocodage). */
-    const { data: geo } = await supabase
-      .from("collectif_photos")
-      .select("id, gps_lat, gps_lon")
-      .eq("edition_id", editionId)
-      .not("gps_lat", "is", null)
-      .is("lieu_le", null)
-      .limit(2000)
-      .returns<{ id: string; gps_lat: number; gps_lon: number }[]>();
+    /* Les lieux : un appel Geoapify par LIEU, jamais par photo (planGeocodage).
+       T-167 : toutes les photos à situer, par tranches de 1 000 (le plafond de l'API ;
+       l'ancien `.limit(2000)` n'en rendait de toute façon que 1 000). Une lecture
+       ratée laisse les lieux pour le passage suivant, comme avant. */
+    type Geo = { id: string; gps_lat: number; gps_lon: number };
+    const { data: geo } = await lireToutesLesLignes<Geo>(
+      () =>
+        supabase
+          .from("collectif_photos")
+          .select("id, gps_lat, gps_lon")
+          .eq("edition_id", editionId)
+          .not("gps_lat", "is", null)
+          .is("lieu_le", null)
+          .returns<Geo[]>(),
+      { colonne: "created_at", croissant: true },
+      "photos à situer"
+    );
     const demandes = planGeocodage((geo ?? []).map((p) => ({ id: p.id, gpsLat: p.gps_lat, gpsLon: p.gps_lon })));
     for (const d of demandes) {
       const r = await geocoderInverse(d.lat, d.lon);
@@ -103,15 +112,20 @@ export async function enrichirCollectif(
         continue;
       }
       if (r.lieu) bilan.lieux++;
-      await supabase
-        .from("collectif_photos")
-        .update({
-          lieu_ville: r.lieu?.ville ?? null,
-          lieu_pays: r.lieu?.pays ?? null,
-          lieu_code_pays: r.lieu?.codePays ?? null,
-          lieu_le: new Date().toISOString(),
-        })
-        .in("id", d.ids);
+      /* Un lieu peut réunir toute une édition (une école, un seul endroit) : ses ids
+         partent par paquets de `PAQUET_IN`, sinon l'URL du filtre `in` dépasse la
+         limite de l'API (100 uuid font 3,9 Ko, 2 000 en feraient 78). */
+      for (const paquet of enPaquets(d.ids)) {
+        await supabase
+          .from("collectif_photos")
+          .update({
+            lieu_ville: r.lieu?.ville ?? null,
+            lieu_pays: r.lieu?.pays ?? null,
+            lieu_code_pays: r.lieu?.codePays ?? null,
+            lieu_le: new Date().toISOString(),
+          })
+          .in("id", paquet);
+      }
     }
 
     if (bilan.traitees || bilan.lieux) {

@@ -7,6 +7,7 @@ import type { Role } from "@/lib/collectif/types";
 import { dansLeDossier, type LignePhoto } from "@/lib/collectif/dossiers";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
+import { enPaquets, lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
@@ -74,32 +75,42 @@ async function toutesLesPhotos(editionId: string, responsable: string | null, ro
   const dossier = typeof dossierBrut === "string" && dossierBrut.length <= 400 ? dossierBrut : "tout";
   let n = 0;
   if (dossier === "tout" || dossier === "selection") {
+    /* Le nombre écrit vient du COMPTE de la base (T-167) : les lignes rendues par
+       `select` pourraient s'arrêter au plafond de 1 000 de l'API. */
     let requete = supabase
       .from("collectif_photos")
-      .update({ preselection })
+      .update({ preselection }, { count: "exact" })
       .eq("edition_id", editionId)
       .not("confirmee_le", "is", null)
       .eq("preselection", !preselection);
     if (preselection) requete = requete.eq("signalee", false);
-    const { data, error } = await requete.select("id");
+    const { data, error, count } = await requete.select("id");
     if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
-    n = data?.length ?? 0;
+    n = count ?? data?.length ?? 0;
   } else {
     /* « Sélectionner tout ce dossier » (T-152) : les photos du dossier, par la
-       même règle que la grille (`dansLeDossier`), puis par paquets d'ids. */
-    const { data, error } = await supabase
-      .from("collectif_photos")
-      .select("id, provenance_id, provenance_type, role_deposant, deposant, preselection, signalee")
-      .eq("edition_id", editionId)
-      .not("confirmee_le", "is", null)
-      .limit(20000)
-      .returns<(LignePhoto & { id: string; signalee: boolean })[]>();
+       même règle que la grille (`dansLeDossier`), puis par paquets d'ids.
+       T-167 : TOUTES les photos, lues par tranches de 1 000 (le plafond de
+       l'API), et des paquets de `PAQUET_IN` ids (100 uuid font 3,9 Ko d'URL,
+       500 en faisaient 19,5). */
+    type Ligne = LignePhoto & { id: string; signalee: boolean };
+    const { data, error } = await lireToutesLesLignes<Ligne>(
+      () =>
+        supabase
+          .from("collectif_photos")
+          .select("id, provenance_id, provenance_type, role_deposant, deposant, preselection, signalee")
+          .eq("edition_id", editionId)
+          .not("confirmee_le", "is", null)
+          .returns<Ligne[]>(),
+      { colonne: "confirmee_le", croissant: true },
+      "photos du dossier à sélectionner"
+    );
     if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
-    const ids = (data ?? [])
+    const ids = data
       .filter((l) => dansLeDossier(l, dossier, responsable) && Boolean(l.preselection) !== preselection && (!preselection || !l.signalee))
       .map((l) => l.id);
-    for (let i = 0; i < ids.length; i += 500) {
-      const { error: e } = await supabase.from("collectif_photos").update({ preselection }).eq("edition_id", editionId).in("id", ids.slice(i, i + 500));
+    for (const paquet of enPaquets(ids)) {
+      const { error: e } = await supabase.from("collectif_photos").update({ preselection }).eq("edition_id", editionId).in("id", paquet);
       if (e) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
     }
     n = ids.length;

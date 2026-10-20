@@ -22,6 +22,9 @@ import * as Espace from "@/lib/collectif/espace";
 import * as Appareil from "@/lib/collectif/appareil";
 import * as Appareils from "@/lib/collectif/appareils";
 import * as Accord from "@/lib/collectif/accord";
+import * as CleDepot from "@/lib/collectif/cleDepot";
+import * as Participant from "@/lib/collectif/participant";
+import { lireInterrupteur as lireInterrupteurStyles, stylesOuverts, VAR_STYLES } from "@/lib/collectif/interrupteur";
 import {
   cleContenu,
   cleCouverture,
@@ -72,7 +75,7 @@ import {
 } from "@/lib/collectif/gestes";
 import { lireInterrupteur } from "@/lib/collectif/interrupteur";
 import { basculerCouverture, briefModifiable, compositionDu, etatDuBrief, grouperParChoix, lireChoixStyle, lirePiece, lireTexte, manquesBrief, PARTS_TEXTE, patchCouvertures, raisonsDuStyle, resumeBrief, styleVisible, stylesDeLaComposition, typesDes, type BriefLigne, type Composition } from "@/lib/collectif/brief";
-import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
+import { cleFichier, compteDansPlafond, DELAI_DECLARATION_MORTE_MS, estCleFichier, lireDeclaration, LOT_DECLARATION, planDeclaration, type Existant } from "@/lib/collectif/depot";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { jourDePhoto, libelleProvenance, lireFiltre, resumeDeposants } from "@/lib/collectif/grille";
 import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, libelleRole, parler, phraseJours } from "@/lib/collectif/espace";
@@ -1078,7 +1081,7 @@ ok("la case d'accord des participants porte le texte CHOISI par Mathias le 17/10
    (() => {
      const d = lire("src/app/depot/[token]/Depot.tsx");
      return /J&apos;accepte que Bellajour utilise ces photos pour composer le magazine « \{props\.evenement\} » \{deNom\(props\.organisation\)\}, et je confirme\s+avoir le droit de les partager, y compris pour les personnes qu&apos;on y voit\./.test(d)
-       && !/\[À FIXER\]/.test(d.replace(/\/\*[\s\S]*?\*\//g, "")) && /disabled=\{!accord\}/.test(d)
+       && !/\[À FIXER\]/.test(d.replace(/\/\*[\s\S]*?\*\//g, "")) && /disabled=\{!accord \|\| !nomPret\}/.test(d)
        && Espace.deNom("SKEMA") === "de SKEMA" && Espace.deNom("Air France") === "d'Air France" && Espace.deNom("Essai neuf") === "d'Essai neuf" && Espace.deNom("Hermès") === "de Hermès";
    })());
 ok("le nom de telechargement est en ASCII sur", nomTelechargement("Facture n°3 / été", "pdf") === "Facture n 3 ete.pdf" && nomTelechargement("", "pdf") === "document.pdf");
@@ -2129,7 +2132,7 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
 
   const route = lire("src/app/api/collectif/dossiers/route.ts");
   ok("route dossiers : ranger par planDeplacement, renommer par nouveauChemin, ecrire par paquets d'ids de l'edition",
-    /planDeplacement\(source, dans, arbre\)/.test(route) && /nouveauChemin\(cheminDe\(l, edition\.responsable_nom\)\.chemin, avant, apres\)/.test(route) && /\.in\("id", ids\.slice\(i, i \+ 500\)\)/.test(route) && /"dossier_range"/.test(route));
+    /planDeplacement\(source, dans, arbre\)/.test(route) && /nouveauChemin\(cheminDe\(l, edition\.responsable_nom\)\.chemin, avant, apres\)/.test(route) && /for \(const paquet of enPaquets\(ids\)\)/.test(route) && /\.eq\("edition_id", edition\.id\)\s*\.in\("id", paquet\)/.test(route) && /"dossier_range"/.test(route));
   ok("le depot du responsable accepte un chemin de sous-dossier (170 caracteres)", /demande\.libelle\.trim\(\)\.slice\(0, 170\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
   const photos = lire("src/app/api/collectif/photos/route.ts");
   ok("route photos : la grille filtre par dansLeDossier, « en cours d'arrivee » = declarees non confirmees depuis 2 h",
@@ -2501,7 +2504,7 @@ titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en d
       && /useSondage\(/.test(carte) && /SONDAGE_TABLEAU_MS/.test(carte) && !/INTERVALLE_MESSAGES_MS/.test(collecte + carte));
   const depot = lire("src/app/depot/[token]/Depot.tsx");
   ok("le participant retrouve son prenom sur son telephone (lu sans setState d'hydratation) et il part avec les photos",
-    /useSyncExternalStore\(/.test(depot) && /moteur\.definirDeposant\(prenom\);\s*if \(e\.target\.files\) moteur\.ajouter/.test(depot));
+    /useSyncExternalStore\(/.test(depot) && /moteur\.definirDeposant\(nomEnvoye\);\s*if \(e\.target\.files\) moteur\.ajouter/.test(depot));
   const photos = lire("src/app/api/collectif/photos/route.ts");
   ok("la grille : « Toutes » commence par la derniere arrivee ; chaque photo dit qui et quand ; « N personnes » suit la meme regle que les pastilles",
     /vue === "toutes" \? \[\.\.\.dansDossier\]\.reverse\(\)/.test(photos) && /qui: role === "participant"/.test(photos) && /arrivee: p\.confirmee_le/.test(photos) && /personnes: compterPersonnes\(toutes\)/.test(photos)
@@ -2705,7 +2708,7 @@ titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le
     affiche.length > 100 && affiche === Accord.TEXTES_ACCORD.get(v));
   ok("la version courante est le jour du choix de Mathias (17/10, PR #245)", v === "2026-10-17" && Accord.TEXTES_ACCORD.has("2026-10-17"));
   ok("cocher donne la version au moteur, decocher la retire ; le bouton reste ferme sans accord",
-    /moteur\.definirAccord\(e\.target\.checked \? VERSION_ACCORD : null\)/.test(depot) && /disabled=\{!accord\}/.test(depot));
+    /moteur\.definirAccord\(e\.target\.checked \? VERSION_ACCORD : null\)/.test(depot) && /disabled=\{!accord \|\| !nomPret\}/.test(depot));
 
   const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
   ok("le moteur garde l'accord de CHAQUE photo a l'ajout (comme la provenance), n'en mele jamais deux dans un lot, et envoie `accord: true` avec la version",
@@ -2745,6 +2748,103 @@ titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le
   ok("les colonnes ecrites par la route sont exactement celles de la migration",
     Object.keys(Accord.colonnesAccord({ version: v }, t)).every((k) => new RegExp(`add column if not exists ${k}\\b`).test(mig))
       && (mig.match(/add column if not exists/g) ?? []).length === 2);
+}
+
+/* ════════════════════ T-192 : LA PREMIÈRE VRAIE ÉDITION (Audencia, 19/10 au soir) ════════════════════ */
+
+titre("— T-192 : la cle d'une photo, sur iPhone comme ailleurs —");
+{
+  const maintenant = Date.parse("2026-10-20T10:00:00Z");
+  const vieille = Date.parse("2025-06-01T12:00:00Z");
+  ok("une date de moins de dix minutes (l'heure du choix sur iPhone) ne compte pas ; une vraie date, si",
+    CleDepot.dateDeCle(maintenant - 60_000, maintenant) === 0 && CleDepot.dateDeCle(maintenant + 30_000, maintenant) === 0 && CleDepot.dateDeCle(vieille, maintenant) === vieille);
+  const f = { name: "IMG_1234.JPG", size: 2_345_678 };
+  const premier = CleDepot.cleDuFichier("abc123", { ...f, lastModified: maintenant - 1_000 }, maintenant);
+  const rechoisie = CleDepot.cleDuFichier("abc123", { ...f, lastModified: maintenant + 3_600_000 - 2_000 }, maintenant + 3_600_000);
+  ok("la MEME photo re-choisie une heure plus tard sur iPhone (date = heure du choix) garde sa cle : « deja la », jamais un double",
+    premier === rechoisie && estCleFichier(premier));
+  ok("deux appareils (deux sels) qui envoient chacun un IMG_1234.JPG de meme poids n'ont PAS la meme cle : aucune photo perdue en « deja la »",
+    CleDepot.cleDuFichier("abc123", { ...f, lastModified: 0 }, maintenant) !== CleDepot.cleDuFichier("zz9988", { ...f, lastModified: 0 }, maintenant));
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("le moteur cle chaque fichier par le sel de l'appareil (gardé dans le navigateur, repli en memoire)",
+    /cleDuFichier\(this\.sel, f, maintenant\)/.test(moteur) && /localStorage\.getItem\(CLE_SEL\)/.test(moteur) && !/cleFichier\(f\.name, f\.size, f\.lastModified\)/.test(moteur));
+}
+
+titre("— T-192 : le moteur tient une mauvaise connexion —");
+{
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("le retour du reseau relance TOUT DE SUITE (evenement online), et une coupure ne brule aucun essai",
+    /window\.addEventListener\("online", this\.auRetourDuReseau\)/.test(moteur) && /else if \(!enLigne\(\)\) \{[\s\S]{0,200}await attendreEnLigne\(\);/.test(moteur));
+  ok("seul un refus du COFFRE (une reponse HTTP) compte comme essai ; sans reponse en ligne (wifi filtre), un compteur a part, et une phrase qui dit quoi faire",
+    /if \(r\.status > 0\) \{[\s\S]{0,120}it\.essais\+\+;/.test(moteur) && /it\.essaisReseau\+\+;/.test(moteur) && /passe en 4G, puis « Réessayer »/.test(moteur));
+  ok("la vignette repart comme la photo (T-171), quatre essais au plus, sans jamais faire echouer la photo",
+    /for \(let k = 0; k < 4; k\+\+\) \{\s*if \(\(await this\.put\(it\.urlVignette, it\.vignette, "image\/jpeg"\)\)\.ok\) break;/.test(moteur));
+  ok("a la cloture, les photos deja au coffre sont CONFIRMEES avant d'etre dites refusees ; celles en route finissent leur course",
+    /void this\.confirmerRestes\(\);/.test(moteur) && /private async confirmerRestes\(\)/.test(moteur)
+      && !/it\.etat === "envoi"\) this\.finir\(it, "refuse", message\)/.test(moteur));
+  ok("un lien supprime (404) ferme l'envoi avec une phrase vraie, jamais « connexion interrompue » a l'infini ; un autre 4xx refuse le lot",
+    /if \(status === 404\) \{\s*\/\*[^*]*\*\/\s*this\.fermer\(/.test(moteur) && /status >= 400 && status < 500/.test(moteur));
+  ok("chaque requete au serveur a un garde-temps ; une reponse coupee en route se relit comme une coupure",
+    /garde\.abort\(\)/.test(moteur) && /signal: garde\.signal/.test(moteur) && /throw new Error\("réponse coupée"\)/.test(moteur));
+  ok("l'ecran reste allume pendant l'envoi (Screen Wake Lock), et une page qui a dormi n'avorte pas ses envois",
+    /navigator\.wakeLock\.request\("screen"\)/.test(moteur) && /maintenant - tic > 30_000\) dernier = maintenant/.test(moteur));
+  ok("moins de requetes : plus de place = plus de declaration pour rien ; lots plus pleins ; confirmations groupees sur 15 s",
+    /refusPlafond && json\.place === 0/.test(moteur) && /const LOT_PLEIN = 10;/.test(moteur) && /const ATTENTE_CONFIRMATION_MS = 15_000;/.test(moteur));
+  ok("re-choisir une photo refusee ou en erreur la renvoie (plafond releve) ; en route ou arrivee, elle est seulement comptee",
+    /if \(connu\.etat === "refuse" \|\| connu\.etat === "erreur"\)/.test(moteur) && /this\.dejaAjoutes\+\+/.test(moteur));
+  const depot = lire("src/app/depot/[token]/Depot.tsx");
+  const zone = lire("src/app/edition/_composants/depot/ZoneDepot.tsx");
+  ok("« Merci » et « Toutes les photos sont arrivees » seulement sans erreur : une photo qui n'est pas partie se dit",
+    /const termine = vue\.total > 0 && vue\.enCours === 0 && vue\.erreurs === 0;/.test(depot) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} photo/.test(zone));
+}
+
+titre("— T-192 : le nom du participant ne change plus —");
+{
+  ok("prenom ET nom exiges, espaces resserres, 80 caracteres au plus ; le merci prend le prenom",
+    Participant.nomComplet("  Léa ", "Martin") === "Léa Martin" && Participant.nomComplet("Léa", "  ") === null && Participant.nomComplet("", "Martin") === null
+      && Participant.nomComplet("A".repeat(60), "B".repeat(60))?.length === Participant.NOM_MAX && Participant.premierMot("Léa  Martin") === "Léa" && Participant.premierMot(null) === "");
+  const depot = lire("src/app/depot/[token]/Depot.tsx");
+  ok("l'ecran : deux champs la premiere fois, puis « en tant que … » sans champ ; le nom du serveur passe avant celui du telephone",
+    /autoComplete="given-name"/.test(depot) && /autoComplete="family-name"/.test(depot) && /const nomFixe = props\.nomConnu \?\? fige \?\? \(garde \|\| null\);/.test(depot)
+      && /\{nomFixe \? \(/.test(depot) && /il ne se change plus ensuite/.test(depot));
+  const route = lire("src/app/api/collectif/depot/presign/route.ts");
+  ok("la route reprend le nom deja donne par l'appareil AVANT de compter et d'ecrire, et ne le cherche que pour un participant",
+    /if \(role === "participant" && appareilLu\) \{\s*const connu = await nomDeLAppareil\(/.test(route) && /if \(connu\) deposant = connu;/.test(route)
+      && route.indexOf("nomDeLAppareil(") < route.indexOf("compterPourPlafond(") && route.indexOf("nomDeLAppareil(") < route.indexOf('from("collectif_photos").insert(lignes)'));
+  const connu = lire("src/lib/collectif/participantConnu.ts");
+  ok("le nom de l'appareil se lit chez les PARTICIPANTS de l'edition, le libelle d'un lien n'est pas un nom, et l'appareil se compte en `head`",
+    /\.eq\("role_deposant", "participant"\)/.test(connu) && /nom\.toLowerCase\(\) !== libelle/.test(connu) && /count: "exact", head: true/.test(connu));
+  const page = lire("src/app/depot/[token]/page.tsx");
+  ok("la page lit le cookie de l'appareil (meme cookie sur tous les liens) et ne cherche rien si la collecte est close",
+    /\(await cookies\(\)\)\.get\(COOKIE_APPAREIL\)/.test(page) && /ouvert && estAppareil\(appareil\)/.test(page));
+}
+
+titre("— T-192 : le choix du style ferme, une vitrine a la place —");
+{
+  const avant = process.env[VAR_STYLES];
+  delete process.env[VAR_STYLES];
+  const absent = stylesOuverts();
+  process.env[VAR_STYLES] = "peut-etre";
+  const incompris = stylesOuverts();
+  process.env[VAR_STYLES] = "1";
+  const oui = stylesOuverts();
+  if (avant === undefined) delete process.env[VAR_STYLES];
+  else process.env[VAR_STYLES] = avant;
+  ok("COLLECTIF_STYLES : ferme si absent ou incompris, ouvert sur un oui franc", !absent && !incompris && oui && lireInterrupteurStyles("on").ouvert);
+  for (const f of ["src/app/edition/[token]/style/page.tsx", "src/app/edition/[token]/style/brief/page.tsx", "src/app/edition/[token]/style/[slug]/page.tsx"]) {
+    const t = lire(f);
+    ok(`${f.replace("src/app/edition/[token]/", "")} : la vitrine AVANT toute lecture du mur`,
+      /if \(!stylesOuverts\(\)\) return <Vitrine /.test(t) && t.indexOf("stylesOuverts()") < t.indexOf("chargerMur("));
+  }
+  const brief = lire("src/app/api/collectif/brief/route.ts");
+  ok("la route du brief refuse tout geste tant que c'est ferme (409 styles_fermes), avant toute ecriture",
+    /if \(!stylesOuverts\(\)\) \{\s*return NextResponse\.json\(\{ error: "styles_fermes"/.test(brief) && brief.indexOf("stylesOuverts()") < brief.search(/\.(update|insert|upsert)\(/));
+  const tdb = lire("src/app/edition/[token]/page.tsx");
+  ok("le tableau de bord dit « Bientot » et mene a la vitrine, jamais au mur ni au brief", /if \(!ouverts\) return <CarteStyleBientot/.test(tdb) && /ouverts=\{stylesOuverts\(\)\}/.test(tdb));
+  const vitrine = lire("src/app/edition/[token]/style/Vitrine.tsx");
+  const chemins = [...vitrine.matchAll(/\$\{([AM])\}\/([a-z0-9-]+\.webp)/g)].map((m) => ({ A: "public/images/v2/accueil", M: "public/images/v2/magazine", C: "public/images/v2/composer" })[m[1] as "A" | "M" | "C"] + "/" + m[2]);
+  ok(`la vitrine ne montre que des images STATIQUES deja publiees, toutes presentes (${chemins.length})`, chemins.length >= 13 && chemins.every((c) => existsSync(c)) && !/signerGet|chargerMur|image_key/.test(vitrine));
+  ok("la vitrine n'a aucune couleur en dur", !/#[0-9a-f]{3,8}\b/i.test(lire("src/app/edition/[token]/style/vitrine.css")) && !/#[0-9a-f]{3,8}\b/i.test(vitrine));
 }
 
 /* ════════════════════ T-191 : LES DEMANDES SUR MESURE (planche 12 du 19/10 au soir) ════════════════════ */
@@ -2959,6 +3059,322 @@ titre("— T-191 : les ecrans (etape 5, « À envoyer », la fiche) —");
     /\.ec-espace \.ec-tdb-puce-nom \{\s*min-width: 0;\s*overflow-wrap: anywhere;/.test(lire("src/app/edition/[token]/tableau.css")) && /<span className="ec-tdb-puce-nom">/.test(ligne));
 }
 
+/* T-167 : plus de 1 000 photos. Supabase plafonne CHAQUE reponse a 1 000 lignes (« Max rows »,
+   confirme le 19/10) : joue contre une fausse base qui plafonne pareil, respecte `range` et
+   `order`, et rend les egalites dans un ordre QUELCONQUE (rebattu a chaque requete, comme
+   PostgreSQL ne promet rien entre deux lignes de meme `confirmee_le`). Sans reseau. */
+async function sondeT167() {
+  const L = await import("@/lib/collectif/lignes");
+  const C = await import("@/lib/collectif/collecte");
+  const D = await import("@/lib/collectif/depot");
+  const { randomUUID } = await import("node:crypto");
+  const { JOURNAL_DE_LOT } = await import("@/lib/collectif/recit");
+
+  /* La console du module, captee : on verifie qu'il PARLE, sans salir la sortie du harnais. */
+  const ecoute = async <R>(f: () => Promise<R>): Promise<{ r: R; dit: string[] }> => {
+    const dit: string[] = [];
+    const avant = console.error;
+    console.error = (...m: unknown[]) => void dit.push(m.map(String).join(" "));
+    try {
+      return { r: await f(), dit };
+    } finally {
+      console.error = avant;
+    }
+  };
+
+  titre("— T-167 : lire TOUTES les lignes, par tranches de 1 000 (fausse base plafonnee) —");
+  {
+    type Rangee = { id: string; confirmee_le: string };
+    type Erreur = { code: string; message: string };
+    type Reponse = { data: Rangee[] | null; error: Erreur | null };
+    type FausseRequete = { order(colonne: string, options?: { ascending?: boolean }): FausseRequete; range(de: number, a: number): Promise<Reponse> };
+    const PLAFOND_API = 1000;
+    /* 2 500 photos arrivees par lots de 25 qui partagent le meme instant ; un premier lot de 10,
+       pour que les frontieres de tranche (1 000, 2 000) tombent AU MILIEU d'un lot. Des ids
+       tires au hasard, sans rapport avec l'ordre d'arrivee. */
+    const table = (n: number): Rangee[] =>
+      Array.from({ length: n }, (_, i) => ({ id: randomUUID(), confirmee_le: new Date(Date.UTC(2026, 9, 19, 10, 0, Math.floor((i + 15) / 25))).toISOString() }));
+    const base = (rangees: Rangee[], panne?: (appel: number) => Erreur | null) => {
+      const appels: { ordres: string[]; de: number; a: number }[] = [];
+      const fabrique = (): FausseRequete => {
+        const ordres: { colonne: keyof Rangee; croissant: boolean }[] = [];
+        const requete: FausseRequete = {
+          order(colonne, options) {
+            ordres.push({ colonne: colonne as keyof Rangee, croissant: options?.ascending !== false });
+            return requete;
+          },
+          async range(de, a) {
+            const appel = appels.length;
+            appels.push({ ordres: ordres.map((o) => `${o.colonne}${o.croissant ? "" : " desc"}`), de, a });
+            const erreur = panne?.(appel) ?? null;
+            if (erreur) return { data: null, error: erreur };
+            const hasard = new Map(rangees.map((r) => [r.id, Math.random()]));
+            const triees = [...rangees].sort((x, y) => {
+              for (const o of ordres) if (x[o.colonne] !== y[o.colonne]) return (x[o.colonne] < y[o.colonne] ? -1 : 1) * (o.croissant ? 1 : -1);
+              return (hasard.get(x.id) ?? 0) - (hasard.get(y.id) ?? 0);
+            });
+            /* Le plafond de l'API : jamais plus de 1 000 lignes, quelle que soit la tranche demandee. */
+            return { data: triees.slice(de, Math.min(a + 1, de + PLAFOND_API)), error: null };
+          },
+        };
+        return requete;
+      };
+      return { fabrique, appels };
+    };
+    const sansTrouNiDoublon = (lues: readonly Rangee[], attendues: readonly Rangee[]) => {
+      const ids = new Set(lues.map((r) => r.id));
+      return lues.length === attendues.length && ids.size === lues.length && attendues.every((r) => ids.has(r.id));
+    };
+    const arrivee = { colonne: "confirmee_le", croissant: true };
+
+    const photos = table(2500);
+    ok("la fausse base est honnete : une lecture d'un seul coup (l'ancien `.limit(20000)`) rend 1 000 lignes sur 2 500",
+      ((await base(photos).fabrique().order("confirmee_le").range(0, 19999)).data ?? []).length === 1000);
+    /* Le piege que le second critere evite : paginer sur `confirmee_le` SEUL, contre la meme base. */
+    const naif = base(photos);
+    const lignesNaives: Rangee[] = [];
+    for (let de = 0; de < 2500; de += 1000) lignesNaives.push(...((await naif.fabrique().order("confirmee_le").range(de, de + 999)).data ?? []));
+    ok("sans `id` pour departager, des photos du meme instant sautent ou se repetent a la frontiere (la base le reproduit)",
+      lignesNaives.length === 2500 && !sansTrouNiDoublon(lignesNaives, photos));
+
+    const essais = await Promise.all(
+      Array.from({ length: 5 }, async () => {
+        const b = base(photos);
+        return { lu: await L.lireToutesLesLignes(b.fabrique, arrivee, "essai"), appels: b.appels };
+      })
+    );
+    ok("2 500 photos (lots de 25 au meme instant, frontieres au milieu d'un lot) : 2 500 rendues, sans trou ni doublon, cinq fois de suite",
+      essais.every(({ lu }) => lu.error === null && sansTrouNiDoublon(lu.data ?? [], photos)));
+    const premier = essais[0];
+    ok("trois tranches de 1 000 (0-999, 1000-1999, 2000-2999), chacune triee par la colonne PUIS par id",
+      premier.appels.length === 3 && premier.appels.map((x) => `${x.de}-${x.a}`).join() === "0-999,1000-1999,2000-2999"
+        && premier.appels.every((x) => x.ordres.join() === "confirmee_le,id") && L.TAILLE_TRANCHE === 1000);
+    const lues = premier.lu.data ?? [];
+    ok("l'ordre rendu est l'ordre d'arrivee, l'id departageant un meme instant",
+      lues.every((r, i) => i === 0 || lues[i - 1].confirmee_le < r.confirmee_le || (lues[i - 1].confirmee_le === r.confirmee_le && lues[i - 1].id < r.id)));
+    const b2 = base(photos);
+    const decroissant = await L.lireToutesLesLignes(b2.fabrique, { colonne: "confirmee_le", croissant: false }, "essai");
+    ok("de la plus recente a la plus ancienne : exactement l'inverse (l'id suit le meme sens)",
+      (decroissant.data ?? []).map((r) => r.id).join() === [...lues].reverse().map((r) => r.id).join() && b2.appels.every((x) => x.ordres.join() === "confirmee_le desc,id desc"));
+
+    const bords = await Promise.all([0, 999, 1000, 2000].map(async (n) => {
+      const t = table(n);
+      const b = base(t);
+      const lu = await L.lireToutesLesLignes(b.fabrique, arrivee, "essai");
+      return { n, ok: lu.error === null && sansTrouNiDoublon(lu.data ?? [], t), appels: b.appels.length };
+    }));
+    ok("0, 999, 1 000 et 2 000 lignes : tout rendu ; un multiple exact de 1 000 fait une tranche de plus, vide, pour le savoir",
+      bords.every((x) => x.ok) && bords.map((x) => x.appels).join() === "1,1,2,3");
+
+    const b3 = base(photos, (appel) => (appel === 1 ? { code: "57014", message: "canceling statement due to statement timeout" } : null));
+    const panne = await ecoute(() => L.lireToutesLesLignes(b3.fabrique, arrivee, "photos d'essai"));
+    ok("une erreur en 2e tranche : une ERREUR (son code garde), jamais les 1 000 premieres rendues comme completes, et la console le dit",
+      panne.r.data === null && panne.r.error?.code === "57014" && b3.appels.length === 2 && panne.dit.some((m) => m.includes("photos d'essai") && m.includes("tranche 2")));
+    const b4 = base(photos, (appel) => (appel === 0 ? { code: "42703", message: "column does not exist" } : null));
+    const colonne = await L.lireToutesLesLignes(b4.fabrique, arrivee, "essai");
+    ok("une colonne absente garde son code 42703 : les replis `colonneAbsente` des appelants jouent toujours",
+      colonne.data === null && colonneAbsente(colonne.error?.code) && b4.appels.length === 1);
+
+    /* Le garde-fou : une base qui ne s'arrete jamais (sans tri : seul le compte compte ici). */
+    const sansFin = (total: number) => {
+      const appels: { de: number; a: number }[] = [];
+      const fabrique = (): FausseRequete => {
+        const requete: FausseRequete = {
+          order: () => requete,
+          async range(de, a) {
+            appels.push({ de, a });
+            const n = Math.max(0, Math.min(a + 1, de + PLAFOND_API, total) - de);
+            return { data: Array.from({ length: n }, (_, k) => ({ id: String(de + k), confirmee_le: "" })), error: null };
+          },
+        };
+        return requete;
+      };
+      return { fabrique, appels };
+    };
+    const max = L.MAX_TRANCHES * L.TAILLE_TRANCHE;
+    const trop = sansFin(max + 1);
+    const arrete = await ecoute(() => L.lireToutesLesLignes(trop.fabrique, arrivee, "photos sans fin"));
+    ok(`au-dela de ${max.toLocaleString("fr-FR")} lignes : une erreur ${L.ERREUR_TROP_DE_LIGNES} dite en console, jamais une liste tronquee en silence`,
+      arrete.r.data === null && arrete.r.error?.code === L.ERREUR_TROP_DE_LIGNES && arrete.dit.some((m) => m.includes("photos sans fin"))
+        && trop.appels.length === L.MAX_TRANCHES + 1 && trop.appels[L.MAX_TRANCHES].de === max && trop.appels[L.MAX_TRANCHES].a === max);
+    const pile = sansFin(max);
+    const juste = await L.lireToutesLesLignes(pile.fabrique, arrivee, "essai");
+    ok(`exactement ${max.toLocaleString("fr-FR")} lignes : rendues en entier (une ligne de plus est demandee pour le savoir)`,
+      juste.error === null && (juste.data ?? []).length === max && pile.appels.length === L.MAX_TRANCHES + 1);
+  }
+
+  titre("— T-167 : les filtres `in` par paquets de 100 (la longueur de l'URL) —");
+  {
+    const ids = Array.from({ length: 250 }, () => randomUUID());
+    const paquets = L.enPaquets(ids);
+    ok("250 ids : trois paquets (100, 100, 50), dans l'ordre, rien de perdu ; une liste vide n'en fait aucun",
+      L.PAQUET_IN === 100 && paquets.map((p) => p.length).join() === "100,100,50" && paquets.flat().join() === ids.join() && L.enPaquets([]).length === 0);
+    const url = (valeurs: readonly string[]) => new URLSearchParams({ id: `in.(${valeurs.join(",")})` }).toString().length;
+    ok("un paquet de 100 uuid tient sous 4 Ko d'URL ; 500 en faisaient plus de 19 (mesure ici, comme le 19/10)",
+      url(paquets[0]) < 4000 && url(Array.from({ length: 500 }, () => randomUUID())) > 19000);
+    ok("la verification d'une reprise : 100 cles par appel (500 faisaient 20 a 40 Ko d'URL), pas plus qu'un paquet",
+      D.LOT_VERIFICATION === 100 && D.LOT_VERIFICATION <= L.PAQUET_IN && D.LOT_DECLARATION <= L.PAQUET_IN && D.LOT_CONFIRMATION <= L.PAQUET_IN);
+    const ecrits = ["src/app/api/collectif/photos/marquer/route.ts", "src/app/api/collectif/dossiers/route.ts", "src/lib/collectif/enrichissement.ts"].map(lire);
+    ok("« Sélectionner tout ce dossier », ranger un dossier, poser un lieu : les ids partent par `enPaquets`, plus jamais 500 d'un coup",
+      ecrits.every((s) => /for \(const paquet of enPaquets\(/.test(s) && /\.in\("id", paquet\)/.test(s) && !/i \+= 500/.test(s) && !/slice\(i, i \+ 500\)/.test(s)));
+  }
+
+  titre("— T-167 / T-168 : les comptes du plafond se font EN BASE (head), jamais en lisant les lignes —");
+  {
+    type Appel = { table: string; colonnes: string; options: unknown; filtres: string[]; valeurs: readonly string[] };
+    type Rendu = { data?: unknown; count?: number | null; error: { code: string; message: string } | null };
+    type FausseQ = {
+      eq(c: string, v: unknown): FausseQ;
+      or(f: string): FausseQ;
+      in(c: string, v: readonly string[]): FausseQ;
+      not(c: string): FausseQ;
+      is(c: string): FausseQ;
+      gt(c: string): FausseQ;
+      order(): FausseQ;
+      range(): FausseQ;
+      limit(): FausseQ;
+      then(oui: (r: Rendu) => unknown, non?: (e: unknown) => unknown): Promise<unknown>;
+    };
+    const fausse = (rendre: (a: Appel, rang: number) => Rendu) => {
+      const appels: Appel[] = [];
+      const client = {
+        from: (table: string) => ({
+          select: (colonnes: string, options?: unknown): FausseQ => {
+            const a: Appel = { table, colonnes, options, filtres: [], valeurs: [] };
+            const rang = appels.length;
+            appels.push(a);
+            const note = (f: string): FausseQ => {
+              a.filtres.push(f);
+              return q;
+            };
+            const q: FausseQ = {
+              eq: (c: string, v: unknown) => note(`eq ${c} ${String(v)}`),
+              or: (f: string) => note(`or ${f}`),
+              in: (c: string, v: readonly string[]) => {
+                a.valeurs = v;
+                return note(`in ${c}`);
+              },
+              not: (c: string) => note(`not ${c}`),
+              is: (c: string) => note(`is ${c}`),
+              gt: (c: string) => note(`gt ${c}`),
+              order: () => note("order"),
+              range: () => note("range"),
+              limit: () => note("limit"),
+              then: (oui: (r: Rendu) => unknown, non?: (e: unknown) => unknown) => Promise.resolve(rendre(a, rang)).then(oui, non),
+            };
+            return q;
+          },
+        }),
+      };
+      return { client: client as unknown as Parameters<typeof C.compterPourPlafond>[0], appels };
+    };
+    const LUNDI_MIDI = new Date("2026-10-19T12:00:00.000Z");
+    const filtre = C.filtreDansPlafond(LUNDI_MIDI);
+    const depuis = new Date(LUNDI_MIDI.getTime() - DELAI_DECLARATION_MORTE_MS).toISOString();
+    ok("le filtre de la base : arrivee, OU declaree apres maintenant - 2 h",
+      filtre === `confirmee_le.not.is.null,created_at.gt.${depuis}` && depuis === "2026-10-19T10:00:00.000Z");
+    /* Le filtre lu comme PostgREST le lit, contre la regle pure, de part et d'autre du delai. */
+    const selonLaBase = (l: { confirmee_le: string | null; created_at: string }) =>
+      filtre.split(",").some((c) => {
+        const m = /^(confirmee_le|created_at)\.(?:not\.is\.null|gt\.(.+))$/.exec(c);
+        if (!m) return false;
+        return m[2] === undefined ? l[m[1] as "confirmee_le"] !== null : Date.parse(l[m[1] as "created_at"]) > Date.parse(m[2]);
+      });
+    const ilYa = (ms: number) => new Date(LUNDI_MIDI.getTime() - ms).toISOString();
+    const cas = [
+      { confirmee_le: ilYa(5), created_at: ilYa(DELAI_DECLARATION_MORTE_MS * 9) },
+      { confirmee_le: null, created_at: ilYa(10_000) },
+      { confirmee_le: null, created_at: ilYa(DELAI_DECLARATION_MORTE_MS - 1) },
+      { confirmee_le: null, created_at: ilYa(DELAI_DECLARATION_MORTE_MS) },
+      { confirmee_le: null, created_at: ilYa(DELAI_DECLARATION_MORTE_MS + 1) },
+    ];
+    ok("le filtre de la base dit EXACTEMENT ce que dit `compteDansPlafond` (arrivee, recente, a la milliseconde du delai, morte)",
+      cas.every((l) => selonLaBase(l) === compteDansPlafond(l, LUNDI_MIDI)) && cas.map((l) => compteDansPlafond(l, LUNDI_MIDI)).join() === "true,true,true,false,false");
+
+    const avecLien = fausse((_a, rang) => ({ count: rang === 0 ? 2500 : 7, error: null }));
+    const lu = await C.compterPourPlafond(avecLien.client, "ed-1", "app-1", LUNDI_MIDI, "lien-1");
+    const [total, parAppareil] = avecLien.appels;
+    const tete = (a: Appel | undefined) => a?.table === "collectif_photos" && a.colonnes === "id" && JSON.stringify(a.options) === JSON.stringify({ count: "exact", head: true });
+    ok("deux comptes `head` exacts, et rien d'autre : ni lignes, ni tri, ni tranche, ni limite",
+      avecLien.appels.length === 2 && avecLien.appels.every(tete) && avecLien.appels.every((a) => !a.filtres.some((f) => /^(order|range|limit|in)/.test(f))));
+    ok("le total : l'edition ET le filtre du plafond ; par appareil : le meme, plus l'appareil et le lien",
+      total?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre}`
+        && parAppareil?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | eq provenance_id lien-1`);
+    ok("le compte de la base est rendu tel quel, au-dela de 1 000 (le plafond total s'applique de nouveau)",
+      lu?.total === 2500 && lu.parAppareil === 7);
+    const sansLien = fausse(() => ({ count: 3, error: null }));
+    await C.compterPourPlafond(sansLien.client, "ed-1", "app-1", LUNDI_MIDI);
+    ok("hors d'un lien a plafond : l'appareil compte sur toute l'edition (aucun filtre de lien)",
+      sansLien.appels[1]?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1`);
+    const sansAppareil = fausse(() => ({ count: 42, error: null }));
+    const seul = await C.compterPourPlafond(sansAppareil.client, "ed-1", null, LUNDI_MIDI, "lien-1");
+    ok("sans appareil : un seul compte, et 0 par appareil sans requete", sansAppareil.appels.length === 1 && seul?.total === 42 && seul.parAppareil === 0);
+    const panne = fausse((_a, rang) => ({ count: null, error: rang === 1 ? { code: "57014", message: "timeout" } : null }));
+    const muet = fausse((_a, rang) => ({ count: rang === 0 ? null : 3, error: null }));
+    /* L'une APRÈS l'autre : deux écoutes en même temps se volent la console. */
+    const enPanne = await ecoute(() => C.compterPourPlafond(panne.client, "ed-1", "app-1", LUNDI_MIDI));
+    const sansCompte = await ecoute(() => C.compterPourPlafond(muet.client, "ed-1", "app-1", LUNDI_MIDI));
+    ok("un compte en erreur, ou rendu sans nombre : null (la route repond 500), jamais 0 qui ouvrirait le plafond",
+      enPanne.r === null && sansCompte.r === null && enPanne.dit.length > 0 && sansCompte.dit.length > 0);
+
+    const cles = Array.from({ length: 250 }, (_, i) => `IMG_${i}.jpg|${1000 + i}|1760000000000`);
+    const reprise = fausse((a) => ({ data: a.valeurs.filter((_c, k) => k % 2 === 0).map((c) => ({ id: `id-${c}`, r2_key: `r2/${c}`, cle_fichier: c, confirmee_le: c.startsWith("IMG_1") ? "2026-10-19T10:00:00Z" : null })), error: null }));
+    const existants = await C.lireExistants(reprise.client, "ed-1", [...cles, cles[0]]);
+    ok("la reprise : 250 cles (un doublon ote) en trois lectures de 100 au plus, toutes sur l'edition ; ce qui est trouve est rendu",
+      reprise.appels.length === 3 && reprise.appels.every((a) => a.valeurs.length <= L.PAQUET_IN && a.filtres.join(" | ") === "eq edition_id ed-1 | in cle_fichier")
+        && reprise.appels.flatMap((a) => a.valeurs).length === 250 && existants?.size === 125 && existants.get(cles[100])?.confirmee === true && existants.get(cles[0])?.confirmee === false);
+    const reprisePanne = fausse((_a, rang) => (rang === 1 ? { data: null, error: { code: "57014", message: "timeout" } } : { data: [], error: null }));
+    ok("un paquet illisible : null (500), jamais une reprise a moitie lue",
+      (await ecoute(() => C.lireExistants(reprisePanne.client, "ed-1", cles))).r === null);
+  }
+
+  titre("— T-167 : les lectures plafonnees, la confirmation rejouee, le journal de la fiche (relus dans le code) —");
+  {
+    const sites = [
+      "src/app/api/collectif/photos/route.ts",
+      "src/app/edition/[token]/donnees.ts",
+      "src/app/admin/collectif/donnees.ts",
+      "src/app/api/admin/collectif/editions/[id]/lot/route.ts",
+      "src/app/api/collectif/photos/marquer/route.ts",
+      "src/app/api/collectif/dossiers/route.ts",
+      "src/lib/collectif/enrichissement.ts",
+    ];
+    const code = (f: string) => lire(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    ok("les sept lectures de photos passent par `lireToutesLesLignes` ; plus aucun `.limit(20000)` ni `.limit(2000)` sur les photos",
+      sites.every((f) => /lireToutesLesLignes<\w+>\(/.test(code(f)) && !/\.limit\((2000|20000)\)/.test(code(f))));
+    const collecte = lire("src/lib/collectif/collecte.ts");
+    ok("collecte.ts : `compterPourPlafond` compte (head), lance ses deux comptes ensemble, ne lit aucune ligne",
+      /count: "exact", head: true/.test(collecte) && /Promise\.all\(\[compter\(\), duLien\(\)\]\)/.test(collecte) && !/\.limit\(/.test(collecte) && !/compteDansPlafond\(/.test(collecte));
+
+    const lot = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
+    const iCompte = lot.indexOf('select("id", { count: "exact", head: true })');
+    ok("le lot : le compte exact AVANT la lecture ; moins de lignes lues que de photos comptees = 500 `lot_incomplet` qui donne les deux nombres ; `total` rendu",
+      iCompte > 0 && iCompte < lot.indexOf("lireToutesLesLignes<Ligne>(") && /if \(total === null \|\| data\.length < total\)/.test(lot)
+        && /error: "lot_incomplet", message, lues: data\.length, total \}, \{ status: 500 \}/.test(lot) && /photos lues sur \$\{total\.toLocaleString\("fr-FR"\)\} arrivées/.test(lot)
+        && /return NextResponse\.json\(\{ photos, provenance, selection, total, lues: data\.length \}\)/.test(lot));
+    const panneau = lire("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
+    ok("l'ecran du lot affiche le refus du serveur au lieu de « N photos écrites », et n'ouvre aucun dossier sur le disque",
+      /if \(!rep\.ok\) \{/.test(panneau) && /setEtat\(typeof refus\?\.message === "string" \? refus\.message :/.test(panneau)
+        && panneau.indexOf("if (!rep.ok) {") < panneau.indexOf("getDirectoryHandle("));
+
+    const complete = lire("src/app/api/collectif/depot/complete/route.ts");
+    ok("la confirmation est idempotente : `confirmee_le` lu ; une photo deja confirmee est rendue sans update ; l'update porte `.is(\"confirmee_le\", null)`",
+      /\.select\("id, r2_key, confirmee_le"\)/.test(complete) && /for \(const l of lignes\) if \(l\.confirmee_le\) confirmees\.push\(l\.id\);/.test(complete)
+        && /const aConfirmer = lignes\.filter\(\(l\) => !l\.confirmee_le\);/.test(complete) && /\.eq\("id", l\.id\)\s*\.is\("confirmee_le", null\)\s*\.select\("id"\)/.test(complete));
+    ok("seules les NOUVELLES se comptent, se journalisent et se relisent (un lot rejoue ne double rien)",
+      /"photos_confirmees", \{ n: nouvelles\.length, role: acces\.role \}/.test(complete) && /enrichirCollectif\(makeSupabase\(\), edition\.id, nouvelles\)/.test(complete)
+        && !/n: confirmees\.length/.test(complete) && /if \(ecrites\?\.length\) nouvelles\.push\(l\.id\);/.test(complete));
+
+    const fiche = lire("src/app/admin/collectif/donnees.ts");
+    ok("le journal de la fiche ne lit pas les lignes ecrites a chaque lot (`photos_confirmees`, `metadonnees_lues`) : elles ne chassent plus le reste",
+      JOURNAL_DE_LOT.join() === "photos_confirmees,metadonnees_lues"
+        && /\.not\("type", "in", `\(\$\{JOURNAL_DE_LOT\.join\(","\)\}\)`\)\s*\.order\("created_at", \{ ascending: false \}\)\s*\.limit\(100\)/.test(fiche));
+    ok("ces lignes restent ecrites et lisibles en clair ; « Collecte terminée par » (un `geste`) reste dans le journal lu",
+      JOURNAL_DE_LOT.every((t) => phraseEvenement(t, { n: 3, traitees: 3, lieux: 1 }) !== t) && !(JOURNAL_DE_LOT as readonly string[]).includes("geste")
+        && /"photos_confirmees"/.test(lire("src/app/api/collectif/depot/complete/route.ts")) && /"metadonnees_lues"/.test(lire("src/lib/collectif/enrichissement.ts")));
+  }
+}
+
 /* La sonde, jouee contre une fausse base (sans reseau) : 23514 = absente, 23503 = appliquee (et plus jamais resondee), le reste = inconnue. */
 async function sondeT191() {
   titre("— T-191 : la sonde de la migration, contre une fausse base —");
@@ -2982,7 +3398,7 @@ async function sondeT191() {
   ok("une fois vue appliquee, l'instance ne sonde plus", (await migrationDemandes(fausse("23514"))) === "appliquee" && appels.length === avant);
 }
 
-void sondeT191().then(() => {
+void sondeT191().then(sondeT167).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

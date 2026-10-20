@@ -10,6 +10,7 @@ import { jourDePhoto, TAILLE_PAGE } from "@/lib/collectif/grille";
 import { GROUPE_GENERAL } from "@/lib/collectif/partage";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
+import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
 
 /** Les dernières arrivées sous les albums d'une vue d'ensemble : une rangée. */
@@ -74,15 +75,20 @@ export async function POST(request: Request) {
   const partage = peut(acces.role, "regler_plafond_participant");
   const supabase = makeSupabase();
   const depuis = new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString();
+  /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
+     de la plus ancienne à la plus récente : `stats.derniere` est la dernière ligne. */
   const [{ data, error }, provenances, enRoute] = await Promise.all([
-    supabase
-      .from("collectif_photos")
-      .select("id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, ordre, empreinte, preselection, signalee, mime, provenance_id, role_deposant, appareil_id")
-      .eq("edition_id", edition.id)
-      .not("confirmee_le", "is", null)
-      .order("confirmee_le", { ascending: true })
-      .limit(20000)
-      .returns<Ligne[]>(),
+    lireToutesLesLignes<Ligne>(
+      () =>
+        supabase
+          .from("collectif_photos")
+          .select("id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, ordre, empreinte, preselection, signalee, mime, provenance_id, role_deposant, appareil_id")
+          .eq("edition_id", edition.id)
+          .not("confirmee_le", "is", null)
+          .returns<Ligne[]>(),
+      { colonne: "confirmee_le", croissant: true },
+      "photos de la grille"
+    ),
     lireProvenances(edition.id),
     supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", depuis),
   ]);
