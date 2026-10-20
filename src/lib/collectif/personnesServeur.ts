@@ -333,7 +333,7 @@ export async function chargerPersonnes(supabase: SupabaseClient, editionId: stri
       ),
       lireToutesLesLignes<{ participant_id: string; appareil_id: string }>(
         () => supabase.from("collectif_participants_appareils").select("participant_id, appareil_id").eq("edition_id", editionId).returns<{ participant_id: string; appareil_id: string }[]>(),
-        { colonne: "created_at", croissant: true },
+        { colonne: "created_at", croissant: true, departage: "appareil_id" },
         "téléphones des personnes"
       ),
       /* Les autres noms tapés avec une adresse connue (S5, C4) : seulement pour qui voit l'adresse. Les

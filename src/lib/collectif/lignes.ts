@@ -47,8 +47,12 @@ export interface RequeteTriable<T> {
   range(de: number, a: number): PromiseLike<{ data: T[] | null; error: ErreurLecture | null }>;
 }
 
-/** La colonne qui ordonne, et le sens. `id` départage TOUJOURS, dans le même sens. */
-export type Tri = { colonne: string; croissant: boolean };
+/**
+ * La colonne qui ordonne, et le sens. `id` départage TOUJOURS, dans le même sens, sauf pour une
+ * table SANS colonne `id` (`collectif_participants_appareils`, clé (édition, téléphone)) : elle nomme
+ * son départage, sinon PostgREST répond 42703 et toute la lecture tombe (vu en production le 20/10).
+ */
+export type Tri = { colonne: string; croissant: boolean; departage?: string };
 
 /**
  * Toutes les lignes, tranche après tranche. `requete` FABRIQUE une requête
@@ -64,7 +68,7 @@ export async function lireToutesLesLignes<T>(requete: () => RequeteTriable<T>, t
     const a = tranche === MAX_TRANCHES ? de : de + TAILLE_TRANCHE - 1;
     const { data, error } = await requete()
       .order(tri.colonne, { ascending: tri.croissant })
-      .order("id", { ascending: tri.croissant })
+      .order(tri.departage ?? "id", { ascending: tri.croissant })
       .range(de, a);
     if (error) {
       /* La première tranche échoue comme la lecture d'avant : l'appelant le dit. Une
