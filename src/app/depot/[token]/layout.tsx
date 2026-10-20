@@ -7,6 +7,10 @@
 
 import { FournisseurRegistre } from './LienMort'
 import { registreDuLien } from './lecture'
+/* La feuille est aussi importée par la page, mais `not-found.tsx` (« Ce lien ne
+   fonctionne plus ») ne reçoit que la CSS du LAYOUT : sans cette ligne, le lien
+   mort restait sombre sur un téléphone en clair (vu le 20/10). Next la dédouble. */
+import './depot.css'
 
 export default async function LayoutLienDepot({ children, params }: { children: React.ReactNode; params: Promise<{ token: string }> }) {
   const { token } = await params

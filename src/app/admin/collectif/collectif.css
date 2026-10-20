@@ -29,6 +29,14 @@
   /* Le QR code est un objet imprimé : fond blanc, modules foncés (les mêmes que `svgQr`). */
   --eca-qr-fond: #ffffff;
   --eca-qr-encre: #050505;
+  /* Cormorant Garamond écrit ses chiffres « à l'ancienne » : le 1 se lit I
+     (« Bateau I », « 18 photos » mal lues, retour du 20/10). Des chiffres
+     modernes sur tout l'admin des éditions, posés ICI une fois et hérités par
+     chaque titre (`.eca-*`, `.ate-h1`, `.ate-carte` dans ce scope) : DM Sans n'en
+     est pas changée, ses chiffres sont déjà alignés. Une règle qui écrit
+     `tabular-nums` seul REMPLACE cette valeur : sur un texte en Cormorant, écrire
+     `lining-nums tabular-nums` (voir `.eca-boite-chiffres strong`). */
+  font-variant-numeric: lining-nums;
 }
 
 /* ─────────────────────────────── l'en-tête ─────────────────────────────── */
