@@ -6,7 +6,7 @@ import { estUuid } from "@/lib/collectif/cles";
 import { lireCreneau, lireMotif } from "@/lib/collectif/creneaux";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { origineDepuis } from "@/lib/collectif/liens";
+import { origineDesMails } from "@/lib/collectif/liens";
 import { annuler, deplacer, prendre } from "@/lib/collectif/rendezvous";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
@@ -46,7 +46,8 @@ export async function POST(request: Request) {
     edition,
     par: edition.responsable_nom ?? "Le responsable",
     qui: null,
-    origine: origineDepuis(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), request.headers.get("x-forwarded-proto")),
+    /* Le lien vers l'espace qui part dans le mail : celui du site (T-164). */
+    origine: origineDesMails(process.env),
     maintenant,
   };
 

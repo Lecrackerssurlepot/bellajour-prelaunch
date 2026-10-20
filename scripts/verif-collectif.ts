@@ -82,7 +82,7 @@ import { contenusAEnvoyer, ETAPES_CLIENT, etapeClient, initiales, joursAvant, li
 import { curseur, extraitDe, filDeConversation, fusionnerMessages, INTERVALLE_MESSAGES_MS, lirePieceJointe, lireTexteMessage, MESSAGE_MAX, PIECE_MAX, texteDuMessage, type Message } from "@/lib/collectif/messages";
 import { libelleTypeDocument, lireSaisieDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, instantDeParis, versChampParis } from "@/lib/collectif/dates";
-import { lienAbrege, liensEdition, origineDepuis, texteTroisLiens } from "@/lib/collectif/liens";
+import { lienAbrege, liensEdition, ORIGINE_SITE, origineDepuis, origineDesMails, texteTroisLiens } from "@/lib/collectif/liens";
 import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { ETAPE_DU_CHAMP, ETAPES_EDITION, LIBELLE_CHAMP, lireSaisieEdition, planMagazines, rangEtapeDuChamp, type MagazineActuel } from "@/lib/collectif/saisie";
@@ -2417,12 +2417,13 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
   ok("les codes : empreinte seulement, essais comptes, expiration, frein par heure ; le code d'essai est IGNORE sur Vercel",
     /code_empreinte: empreinteCode\(appareilEmp, code\)/.test(appareils) && !/code_empreinte: code[,\s]/.test(appareils) && /essais >= ESSAIS_MAX/.test(appareils) && /expire_le/.test(appareils) && /CODES_PAR_HEURE/.test(appareils) && /localhost\|127\\\.0\\\.0\\\.1/.test(appareils) && !/!process\.env\.VERCEL/.test(appareils)
       && !/if \(!idAppareil\) return false;/.test(appareils) && /empreinte\(idAppareil \?\? "aucun-appareil"\)/.test(appareils));
-  ok("le code d'essai ne vaut QUE depuis localhost, jamais depuis bellajour.fr ni une version d'essai",
+  ok("le code d'essai ne vaut QUE pour un host localhost, jamais bellajour.fr ni une version d'essai (T-164 : le host brut, plus une origine)",
     (() => {
       const env = { COLLECTIF_CODE_ESSAI: "246810" };
-      return Appareils.codeNeuf("http://localhost:3007", env) === "246810" && Appareils.codeNeuf("http://127.0.0.1:3000", env) === "246810"
-        && Appareils.codeNeuf("https://www.bellajour.fr", env) !== "246810" && Appareils.codeNeuf("https://bellajour-prelaunch-git-x.vercel.app", env) !== "246810"
-        && Appareils.codeNeuf("http://localhost.evil.fr", env) !== "246810" && /^\d{6}$/.test(Appareils.codeNeuf("https://www.bellajour.fr", {}));
+      return Appareils.codeNeuf("localhost:3007", env) === "246810" && Appareils.codeNeuf("127.0.0.1:3000", env) === "246810" && Appareils.codeNeuf("localhost", env) === "246810"
+        && Appareils.codeNeuf("www.bellajour.fr", env) !== "246810" && Appareils.codeNeuf("bellajour-prelaunch-git-x.vercel.app", env) !== "246810"
+        && Appareils.codeNeuf("localhost.evil.fr", env) !== "246810" && Appareils.codeNeuf("http://localhost:3007", env) !== "246810" && Appareils.codeNeuf(null, env) !== "246810"
+        && /^\d{6}$/.test(Appareils.codeNeuf("www.bellajour.fr", {}));
     })());
   const routeApp = lire("src/app/api/collectif/appareil/route.ts");
   ok("la route du code : token dans le CORPS, cookie httpOnly + secure + sameSite lax, le lien d'equipe recoit « introuvable »",
@@ -2455,6 +2456,40 @@ titre("— T-154 : « Retrouver mon espace » —");
   const m = MailsTextes.mailRetrouverEspace({ tu: false, organisation: "Maison Aubier", evenement: "Séminaire", responsable: "Camille Essai", lien: "https://bellajour.fr/edition/ABC" });
   ok("le mail « Votre lien » : le lien, l'evenement, aucun tiret cadratin",
     m.texte.includes("https://bellajour.fr/edition/ABC") && m.sujet.includes("Séminaire") && /Bonjour Camille,/.test(m.texte) && !/[—–]/.test(m.html + m.texte + m.sujet));
+}
+
+titre("— T-164 / T-166 : les liens des mails viennent du site, « Retrouver » a son frein —");
+{
+  ok("T-164 : l'origine des mails est celle du site (NEXT_PUBLIC_SITE_URL, sinon www.bellajour.fr) ; une valeur douteuse retombe sur le site",
+    ORIGINE_SITE === "https://www.bellajour.fr" && origineDesMails({}) === ORIGINE_SITE
+      && origineDesMails({ NEXT_PUBLIC_SITE_URL: " https://www.bellajour.fr/ " }) === "https://www.bellajour.fr"
+      && origineDesMails({ NEXT_PUBLIC_SITE_URL: "http://localhost:3006" }) === "http://localhost:3006"
+      && origineDesMails({ NEXT_PUBLIC_SITE_URL: "http://pirate.example" }) === ORIGINE_SITE
+      && origineDesMails({ NEXT_PUBLIC_SITE_URL: "http://localhost.pirate.example" }) === ORIGINE_SITE
+      && origineDesMails({ NEXT_PUBLIC_SITE_URL: "https://bellajour.fr/edition" }) === ORIGINE_SITE
+      && origineDesMails({ NEXT_PUBLIC_SITE_URL: "javascript:alert(1)" }) === ORIGINE_SITE);
+  const routesApi = fichiers("src/app/api", "route.ts");
+  const surLEnTete = routesApi.filter((f) => /origineDepuis\(|headers\.get\(["']x-forwarded-host["']\)/.test(lire(f)));
+  ok(`T-164 : aucune route d'API ne batit un lien sur un en-tete de la requete (origineDepuis, x-forwarded-host)${surLEnTete.length ? " : " + surLEnTete.join(", ") : ""}`,
+    routesApi.length > 10 && surLEnTete.length === 0);
+  const ROUTES_MAIL = [
+    "src/app/api/collectif/retrouver/route.ts",
+    "src/app/api/collectif/appareil/route.ts",
+    "src/app/api/collectif/rendez-vous/route.ts",
+    "src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts",
+    "src/app/api/admin/collectif/editions/[id]/rendez-vous/route.ts",
+  ];
+  ok("T-164 : les cinq routes qui envoient un mail d'edition prennent origineDesMails(process.env), apercu du mail compris",
+    ROUTES_MAIL.every((f) => /origineDesMails\(process\.env\)/.test(lire(f))));
+  ok("T-164 : le code d'essai lit l'en-tete host SEUL, le mail nomme le site",
+    /demanderCode\(supabase, acces\.edition, idAppareil, request\.headers\.get\("host"\), origineDesMails\(process\.env\)\)/.test(lire("src/app/api/collectif/appareil/route.ts"))
+      && /const code = codeNeuf\(hoteRequete\);/.test(lire("src/lib/collectif/appareils.ts")) && /site \}\),/.test(lire("src/lib/collectif/appareils.ts")));
+  const r = lire("src/app/api/collectif/retrouver/route.ts");
+  const freinAvant = r.indexOf("if (tropVite(request))");
+  ok("T-166 : « Retrouver » plafonne l'APPELANT (trois demandes par minute, le plafond de « mot de passe oublie ») avant de lire le corps, 429 avec une phrase",
+    /const tropVite = creerPlafond\(3\);/.test(r) && freinAvant > 0 && freinAvant < r.indexOf("lireCorps(request)")
+      && /error: "trop_de_demandes", message: "[^"]+" \}, \{ status: 429 \}/.test(r)
+      && /creerPlafond\(3\)/.test(lire("src/app/api/compte/mot-de-passe-oublie/route.ts")));
 }
 
 titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en direct —");
