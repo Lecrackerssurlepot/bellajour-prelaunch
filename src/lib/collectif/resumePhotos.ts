@@ -38,6 +38,7 @@
 
 import { colonneAbsente, tableAbsente } from "./migration";
 import { dansLeDossier, QUI_RESPONSABLE, type LignePhoto } from "./dossiers";
+import { citerPostgrest } from "./lignes";
 
 export const VUE_RESUME = "collectif_photos_resume";
 export const MIGRATION_RESUME = "supabase/migrations/20261022_collectif_resume_photos.sql";
@@ -372,8 +373,9 @@ export type AppelFiltre =
   | { methode: "or"; filtres: string }
   | { methode: "filter"; colonne: string; operateur: "in"; valeur: string };
 
-const entreGuillemets = (v: string) => `"${v}"`;
-const liste = (valeurs: readonly string[]) => `(${valeurs.map(entreGuillemets).join(",")})`;
+/* Chaque valeur citée ET échappée (`citerPostgrest`, lignes.ts : audit du 20/10, S8). `planDuDossier` refuse
+   déjà guillemet et barre oblique inverse : la citation est la seconde ceinture, la même partout. */
+const liste = (valeurs: readonly string[]) => `(${valeurs.map(citerPostgrest).join(",")})`;
 
 export function enFiltresPostgrest(conditions: readonly Condition[]): AppelFiltre[] {
   const appels: AppelFiltre[] = [];

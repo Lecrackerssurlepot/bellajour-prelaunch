@@ -3614,6 +3614,7 @@ async function sondeT167() {
       eq(c: string, v: unknown): FausseQ;
       or(f: string): FausseQ;
       in(c: string, v: readonly string[]): FausseQ;
+      filter(c: string, op: string, v: string): FausseQ;
       not(c: string): FausseQ;
       is(c: string): FausseQ;
       gt(c: string): FausseQ;
@@ -3640,6 +3641,11 @@ async function sondeT167() {
               in: (c: string, v: readonly string[]) => {
                 a.valeurs = v;
                 return note(`in ${c}`);
+              },
+              /* Une liste citee par `listeIn` (S8 du 20/10) : relue comme PostgREST la lit. */
+              filter: (c: string, op: string, v: string) => {
+                a.valeurs = op === "in" ? (lireListePostgrest(v) ?? []) : [];
+                return note(`${op} ${c}`);
               },
               not: (c: string) => note(`not ${c}`),
               is: (c: string) => note(`is ${c}`),
@@ -3686,15 +3692,15 @@ async function sondeT167() {
     const tete = (a: Appel | undefined) => a?.table === "collectif_photos" && a.colonnes === "id" && JSON.stringify(a.options) === JSON.stringify({ count: "exact" }) && a.filtres[a.filtres.length - 1] === "limit";
     ok("deux comptes exacts SANS ligne (`limit(0)`), et rien d'autre : ni tri, ni tranche, ni `in`",
       avecLien.appels.length === 2 && avecLien.appels.every(tete) && avecLien.appels.every((a) => !a.filtres.some((f) => /^(order|range|in)/.test(f))));
-    ok("le total : l'edition, le filtre du plafond, HORS corbeille ; par appareil : le meme, plus l'appareil, la place (une photo supprimee par son auteur la libere) et le lien",
+    ok("le total : l'edition, le filtre du plafond, HORS corbeille ; par appareil : le meme, plus l'appareil, hors corbeille aussi (S4 du 20/10 : qui que soit celui qui a supprime) et le lien",
       total?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | is supprimee_le | limit`
-        && parAppareil?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | or supprimee_le.is.null,supprimee_par.neq.auteur | eq provenance_id lien-1 | limit`);
+        && parAppareil?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | is supprimee_le | eq provenance_id lien-1 | limit`);
     ok("le compte de la base est rendu tel quel, au-dela de 1 000 (le plafond total s'applique de nouveau)",
       lu?.total === 2500 && lu.parAppareil === 7);
     const sansLien = fausse(() => ({ count: 3, error: null }));
     await C.compterPourPlafond(sansLien.client, "ed-1", "app-1", LUNDI_MIDI);
     ok("hors d'un lien a plafond : l'appareil compte sur toute l'edition (aucun filtre de lien)",
-      sansLien.appels[1]?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | or supprimee_le.is.null,supprimee_par.neq.auteur | limit`);
+      sansLien.appels[1]?.filtres.join(" | ") === `eq edition_id ed-1 | or ${filtre} | eq appareil_id app-1 | is supprimee_le | limit`);
     const sansAppareil = fausse(() => ({ count: 42, error: null }));
     const seul = await C.compterPourPlafond(sansAppareil.client, "ed-1", null, LUNDI_MIDI, "lien-1");
     ok("sans appareil : un seul compte, et 0 par appareil sans requete", sansAppareil.appels.length === 1 && seul?.total === 42 && seul.parAppareil === 0);
@@ -5196,12 +5202,11 @@ async function verifPersonnesCorbeille() {
       && !Co.peutSupprimerSaPhoto(ph({}), null, A.id) && Co.peutSupprimerSaPhoto(ph({ participant_id: null }), "tel-a", null)
       && !Co.peutSupprimerSaPhoto(ph({ role_deposant: "responsable", provenance_id: null }), "tel-a", A.id)
       && !Co.peutSupprimerSaPhoto(ph({ confirmee_le: null }), "tel-a", A.id) && !Co.peutSupprimerSaPhoto(ph({ supprimee_le: t0 }), "tel-a", A.id));
-  /* Le filtre de la place, lu comme PostgREST le lit (un `or` : l'une ou l'autre condition), contre la regle pure. */
-  const selonLaBase = (p: { supprimee_le?: string | null; supprimee_par?: string | null }) =>
-    Co.FILTRE_PLACE_PERSONNE.split(",").some((c) => (c === "supprimee_le.is.null" ? !p.supprimee_le : c === "supprimee_par.neq.auteur" ? p.supprimee_par != null && p.supprimee_par !== "auteur" : false));
+  /* Le filtre de la place, lu comme PostgREST le lit (`supprimee_le is null`, le meme que le total : audit du 20/10, S4), contre la regle pure. */
+  const selonLaBase = (p: { supprimee_le?: string | null; supprimee_par?: string | null }) => p.supprimee_le === null || p.supprimee_le === undefined;
   const cas = [{}, { supprimee_le: t0, supprimee_par: "auteur" }, { supprimee_le: t0, supprimee_par: "responsable" }, { supprimee_le: t0, supprimee_par: "atelier" }];
-  ok("la place : une photo supprimee par son AUTEUR la libere, une photo retiree par le responsable ou l'atelier la garde ; le filtre de la base dit la meme chose",
-    cas.every((p) => selonLaBase(p) === Co.compteDansLaPlace(p)) && cas.map((p) => Co.compteDansLaPlace(p)).join() === "true,false,true,true");
+  ok("la place : une photo de la corbeille ne compte plus, QUI que soit celui qui l'a supprimee (S4) ; le filtre de la base dit la meme chose",
+    cas.every((p) => selonLaBase(p) === Co.compteDansLaPlace(p)) && cas.map((p) => Co.compteDansLaPlace(p)).join() === "true,false,false,false" && !("FILTRE_PLACE_PERSONNE" in Co));
   ok("qui a supprime, dit a l'ecran (planche 5)",
     Co.parQui("auteur", "Yanis Haddad", "Mathilde Roux") === "par son auteur, Yanis Haddad" && Co.parQui("responsable", null, "Mathilde Roux") === "par Mathilde Roux"
       && Co.parQui("atelier", null, null) === "par l'atelier" && Co.estSupprimeePar("auteur") && !Co.estSupprimeePar("constructor"));
@@ -5231,9 +5236,9 @@ async function verifPersonnesCorbeille() {
     Accord.VERSION_ACCORD === "2026-10-17" && Accord.VERSION_ACCORD_ALBUM === "2026-10-20"
       && (Accord.TEXTES_ACCORD.get("2026-10-20") ?? "").startsWith(Accord.TEXTES_ACCORD.get("2026-10-17") as string) && Accord.TEXTES_ACCORD.get("2026-10-20")?.endsWith(" {album}") === true
       && [...Accord.VERSIONS_ALBUM].join() === "2026-10-20" && !Accord.VERSIONS_ALBUM.has("2026-10-17"));
-  ok("la phrase validee nomme le lien ; le lien general a son equivalent sans nom ; le serveur accepte les deux versions, aucune autre",
+  ok("la phrase validee nomme le lien ; le lien general a son equivalent sans nom ; le serveur accepte les versions DEJA affichees (C5 : celle de l'album le jour ou la page la montre), aucune autre",
     Accord.phraseAlbum(" Bateau  1 ") === "Les personnes de « Bateau 1 » verront aussi les photos que j'envoie ici." && Accord.phraseAlbum(null) === Accord.PHRASES_ALBUM.general && !Accord.phraseAlbum(null).includes("{")
-      && Accord.lireAccord({ accord: true, accordVersion: "2026-10-20" })?.version === "2026-10-20" && Accord.lireAccord({ accord: true, accordVersion: "2026-10-17" })?.version === "2026-10-17"
+      && (Accord.lireAccord({ accord: true, accordVersion: "2026-10-20" }) !== null) === (Accord.VERSION_ACCORD >= "2026-10-20") && Accord.lireAccord({ accord: true, accordVersion: "2026-10-17" })?.version === "2026-10-17"
       && Accord.lireAccord({ accord: true, accordVersion: "2026-10-21" }) === null && Accord.texteAccord("2026-10-21", { evenement: "a", deOrganisation: "b", lien: null }) === null
       && Accord.texteAccord("2026-10-20", { evenement: "Week-end en mer", deOrganisation: "d'Audencia", lien: "Bateau 1" }) === `J'accepte que Bellajour utilise ces photos pour composer le magazine « Week-end en mer » d'Audencia, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit. Les personnes de « Bateau 1 » verront aussi les photos que j'envoie ici.`);
 
@@ -5313,8 +5318,8 @@ async function verifPersonnesCorbeille() {
     Hc.oublierAbsence();
     const connue = fausse((_a, rang) => ({ count: rang === 0 ? 100 : 12, error: null }));
     const lu = await Col.compterPourPlafond(connue.client, "ed", "tel-a", MIDI, "lien-1", A.id);
-    ok("le plafond par PERSONNE : connue, elle se compte par sa personne (tous ses telephones), la place liberee par son auteur, sur son lien ; jamais en `head`",
-      lu?.total === 100 && lu.parAppareil === 12 && connue.appels[1]?.filtres.join(" | ") === `eq edition_id ed | or ${filtre} | eq participant_id ${A.id} | or ${Co.FILTRE_PLACE_PERSONNE} | eq provenance_id lien-1 | limit 0`
+    ok("le plafond par PERSONNE : connue, elle se compte par sa personne (tous ses telephones), hors corbeille quel que soit qui l'a supprimee (S4), sur son lien ; jamais en `head`",
+      lu?.total === 100 && lu.parAppareil === 12 && connue.appels[1]?.filtres.join(" | ") === `eq edition_id ed | or ${filtre} | eq participant_id ${A.id} | is supprimee_le | eq provenance_id lien-1 | limit 0`
         && connue.appels.every((a) => JSON.stringify(a.options) === JSON.stringify({ count: "exact" })));
     Hc.oublierAbsence();
     const sans = fausse((a) => (a.filtres.some((f) => /supprimee|participant_id/.test(f)) ? { count: null, error: { code: "42703", message: "column collectif_photos.supprimee_le does not exist" } } : { count: 3, error: null }));
@@ -5400,11 +5405,12 @@ async function verifPersonnesCorbeille() {
       return !/head: true \}\)[^;]*\.is\("supprimee_le"/.test(code.replace(/\n\s*/g, " ")) && (!/COMPTE_SANS_LIGNE/.test(code) || /\.limit\(0\)/.test(code));
     }));
   const presign = lire("src/app/api/collectif/depot/presign/route.ts");
-  ok("depot/presign : l'ouverture refuse le PARTICIPANT avant l'heure (409), avant la lecture du lot ; la personne (adresse, sinon telephone) avant les comptes ; `participant_id` seulement connue",
+  ok("depot/presign : l'ouverture refuse le PARTICIPANT avant l'heure (409), avant la lecture du lot ; la personne de CE telephone avant les comptes, jamais une adresse du corps (S2) ; `participant_id` seulement connue",
     presign.indexOf("if (role === \"participant\" && !depotOuvert(edition.ouverture_le, maintenant))") > 0 && presign.indexOf("!depotOuvert(") < presign.indexOf("Array.isArray(corps.connues)")
-      && /error: ERREUR_PAS_OUVERT, message: messagePasOuvert\(edition\.ouverture_le\)/.test(presign) && presign.indexOf("trouverParEmail(") < presign.indexOf("compterPourPlafond(")
+      && /error: ERREUR_PAS_OUVERT, message: messagePasOuvert\(edition\.ouverture_le\)/.test(presign)
+      && presign.indexOf("participantDeLAppareil(supabase, edition.id, appareilLu)") > 0 && presign.indexOf("participantDeLAppareil(") < presign.indexOf("compterPourPlafond(")
       && /participant\?\.id \?\? null\)/.test(presign) && /\.\.\.\(participant \? \{ participant_id: participant\.id \} : \{\}\)/.test(presign)
-      && /error: "participant_inconnu"/.test(presign) && /\.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(presign));
+      && !/corps\.email|trouverParEmail|participant_inconnu|normaliserEmail/.test(presign.replace(/\/\*[\s\S]*?\*\//g, "")) && /\.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(presign));
   ok("apres « Ce n'est pas toi ? », le telephone ne reprend pas le nom de la personne d'avant : seules les photos SANS personne disent le nom du telephone",
     /return \(avec \? q\.is\("participant_id", null\) : q\)\.order\("created_at", \{ ascending: false \}\)\.limit\(5\)/.test(lire("src/lib/collectif/participantConnu.ts")));
   ok("une photo a la corbeille redeclaree : « deja la », ni dupliquee ni ressuscitee",
@@ -5422,9 +5428,9 @@ async function verifPersonnesCorbeille() {
   const rPersonnes = lire("src/app/api/collectif/personnes/route.ts");
   const rAdmCorbeille = lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts");
   const rAdmPersonnes = lire("src/app/api/admin/collectif/editions/[id]/personnes/route.ts");
-  ok("le participant : la porte du DEPOT seulement (jamais l'espace), son droit, un frein par appelant ; une personne ne se cree ni avant l'ouverture ni apres la cloture",
+  ok("le participant : la porte du DEPOT seulement (jamais l'espace), son droit, un frein par appelant ET par lien (S3) ; une personne ne se cree ni avant l'ouverture ni apres la cloture",
     [rParticipant, rAlbum, rSupprimer].every((f) => /chargerAcces\(String\(corps\.token \?\? ""\), "depot"\)/.test(f)) && /peut\(acces\.role, "se_presenter"\)/.test(rParticipant)
-      && /creerPlafond\(20\)/.test(rParticipant) && /const peutCreer = ouverte && ouvertureOk;/.test(rParticipant) && /identite: peutCreer \? identite\.identite : null/.test(rParticipant)
+      && /creerFrein\(FREINS_DEPOT\.presenter\)/.test(rParticipant) && /const peutCreer = ouverte && ouvertureOk;/.test(rParticipant) && /identite: identite\.identite,\s*peutCreer,/.test(rParticipant)
       && /peut\(acces\.role, "voir_album"\)/.test(rAlbum) && /peut\(acces\.role, "supprimer_ses_photos"\)/.test(rSupprimer));
   ok("supprimer SES photos : le cookie du telephone EXIGE, la regle `peutSupprimerSaPhoto`, a la corbeille « par son auteur », jamais apres la cloture",
     /const appareil = appareilDeRequete\(request\);\s*if \(!appareil\)/.test(rSupprimer) && /mettreALaCorbeille\(supabase, edition\.id, ids, "auteur", null, \(p\) => peutSupprimerSaPhoto\(p, appareil, participantId\)\)/.test(rSupprimer)
@@ -5445,10 +5451,16 @@ async function verifPersonnesCorbeille() {
     releve.includes('after(() => import("@/lib/collectif/corbeilleServeur").then((m) => m.purgeQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));')
       && releve.indexOf("purgeQuotidienne") > releve.indexOf("rattrapageQuotidien") && (JSON.parse(lire("vercel.json")) as { crons: unknown[] }).crons.length === 2);
   const serveur = lire("src/lib/collectif/corbeilleServeur.ts");
-  const iCoffre = serveur.indexOf("objets.map((k) => supprimer(k))");
-  const iLigne = serveur.indexOf('.from("collectif_photos")\n      .delete()');
-  ok("effacer : le COFFRE d'abord, puis la ligne, seulement pour une photo dont tous les objets sont partis, et seulement encore a la corbeille",
-    iCoffre > 0 && iLigne > iCoffre && /if \(objets\.length && rendus\.every\(Boolean\)\) parties\.push\(p\.id\);/.test(serveur) && /\.delete\(\)\s*\.eq\("edition_id", editionId\)\s*\.in\("id", paquet\)\s*\.not\("supprimee_le", "is", null\)/.test(serveur));
+  /* Audit du 20/10 (S7) : l'ordre est RENVERSE. L'intention au journal, puis la LIGNE (re-controlee, qui rend ses
+     cles), PUIS le coffre, et seulement pour les lignes parties. Prouve aussi contre une fausse base (section « durcissement »). */
+  const paquetSrc = serveur.slice(serveur.indexOf("async function effacerPaquet("), serveur.indexOf("export async function effacer("));
+  const iIntention = paquetSrc.indexOf("journaliserId(supabase, { editionId }, EVT_OBJETS_A_EFFACER");
+  const iLigne = paquetSrc.indexOf("supprimerLignes(supabase, editionId,");
+  const iCoffre = paquetSrc.indexOf("viderObjets(");
+  ok("effacer : l'INTENTION au journal, puis la LIGNE (encore a la corbeille, et pour la purge encore vieille de 30 jours) qui rend ses cles, PUIS le coffre des seules lignes parties (S7)",
+    iIntention > 0 && iLigne > iIntention && iCoffre > iLigne && /if \(!intention\) \{/.test(paquetSrc)
+      && /\.delete\(\)\.eq\("edition_id", editionId\)\.in\("id", \[\.\.\.liste\]\)\.not\("supprimee_le", "is", null\)/.test(serveur) && /\(avant \? q\.lt\("supprimee_le", avant\) : q\)\.select\("id, r2_key, vignette_key"\)/.test(serveur)
+      && /lignes\.valeur\.map\(\(l\) => \(\{ id: l\.id, objets: lireClesObjets\(objetsDeLaPhoto\(l, editionId\), editionId\) \}\)\)/.test(paquetSrc));
   ok("chaque geste de corbeille vide le cache des doublons et se journalise",
     (serveur.match(/await invaliderDoublons\(supabase, editionId\);/g) ?? []).length === 3 && /journaliser\(supabase, \{ editionId \}, EVT_SUPPRIMEES/.test(serveur) && /journaliser\(supabase, \{ editionId \}, EVT_RESTAUREES/.test(serveur) && /journaliser\(supabase, \{ editionId \}, EVT_EFFACEES/.test(serveur));
   {
@@ -5506,8 +5518,9 @@ async function verifPersonnesCorbeille() {
         && neuve.ecrits[2].ligne?.type === "participant_presente" && (neuve.ecrits[2].ligne?.payload as Record<string, unknown>).a === "l***@a.fr" && !JSON.stringify(neuve.ecrits[2].ligne).includes("lea@a.fr"));
     const deja = fausseBase(A);
     const q3 = await Ps.presenter(deja.client, { editionId: edId, email: "léa@a.fr", identite: { prenom: "Autre", nom: "Nom" }, provenanceId: null, appareil: "B".repeat(22) });
-    ok("une adresse connue : sa personne, le nom envoye IGNORE (le participant ne se renomme pas), aucune personne creee",
-      q3.statut === "connu" && q3.participant.id === A.id && q3.nomIgnore && !deja.ecrits.some((e) => e.quoi === "insert") && deja.ecrits.some((e) => e.table === "collectif_participants_appareils" && e.quoi === "upsert"));
+    ok("une adresse connue : sa personne, le nom envoye IGNORE (le participant ne se renomme pas), aucune personne creee ; la presentation se journalise (S5)",
+      q3.statut === "connu" && q3.participant.id === A.id && q3.nomIgnore && !deja.ecrits.some((e) => e.table === "collectif_participants" && e.quoi === "insert")
+        && deja.ecrits.some((e) => e.table === "collectif_participants_appareils" && e.quoi === "upsert") && deja.ecrits.some((e) => e.table === "collectif_evenements" && e.ligne?.type === "participant_retrouve"));
     const absente = { from: () => ({ select: () => { const q: Record<string, unknown> = {}; for (const m of ["eq"]) q[m] = () => q; q.maybeSingle = async () => ({ data: null, error: { code: "PGRST205", message: "Could not find the table 'public.collectif_participants' in the schema cache" } }); return q; } }) } as unknown as Parameters<typeof Ps.presenter>[0];
     const q4 = await silence(() => Ps.presenter(absente, { editionId: edId, email: "lea@a.fr", identite: { prenom: "L", nom: "M" }, provenanceId: null, appareil: "A".repeat(22) }));
     ok("sans la migration : « absente » (la route repond 503 et le nomme), rien d'ecrit", q4.statut === "absente");
@@ -5599,7 +5612,656 @@ titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, coche
 }
 
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(() => {
+/* ═══════════════ Le durcissement du lot w1 (audit de sécurité du 20/10, avant la migration 20261023) ═══════════════ */
+
+/**
+ * Une liste `in` lue comme PostgREST la lit (`("a","b\"c",d)`) : une valeur entre guillemets doubles, où `\x`
+ * vaut `x`, ou une valeur nue jusqu'à la virgule. `null` : illisible (PostgREST répondrait 400). La grammaire
+ * a été vérifiée le 20/10 contre la vraie base, en lecture seule (comptes `limit(0)` sur `collectif_editions`).
+ */
+function lireListePostgrest(v: string): string[] | null {
+  if (!v.startsWith("(") || !v.endsWith(")")) return null;
+  const s = v.slice(1, -1);
+  if (s === "") return [];
+  const out: string[] = [];
+  let i = 0;
+  for (;;) {
+    if (s[i] === '"') {
+      let val = "";
+      i++;
+      while (i < s.length && s[i] !== '"') {
+        if (s[i] === "\\" && i + 1 < s.length) {
+          val += s[i + 1];
+          i += 2;
+        } else {
+          val += s[i];
+          i++;
+        }
+      }
+      if (s[i] !== '"') return null;
+      i++;
+      out.push(val);
+    } else {
+      let j = i;
+      while (j < s.length && s[j] !== ",") j++;
+      out.push(s.slice(i, j));
+      i = j;
+    }
+    if (i >= s.length) return out;
+    if (s[i] !== ",") return null;
+    i++;
+  }
+}
+
+/** Ce que `.in(colonne, valeurs)` de postgrest-js 2.x met dans l'URL (sa source, relue le 20/10) : des guillemets autour d'une valeur qui porte `,()` seulement, rien d'échappé. */
+function listeDePostgrestJs(valeurs: readonly string[]): string {
+  return `(${[...new Set(valeurs)].map((s) => (/[,()]/.test(s) ? `"${s}"` : s)).join(",")})`;
+}
+
+type LigneMem = Record<string, unknown>;
+type RenduMem = { data: unknown; error: { code: string; message: string } | null; count?: number | null };
+type PanneMem = (q: { table: string; op: string; lignes: LigneMem[]; payload: unknown }) => { code: string; message: string } | null;
+type RequeteMem = {
+  select(c?: string, o?: Record<string, unknown>): RequeteMem;
+  insert(p: unknown): RequeteMem;
+  update(p: unknown, o?: Record<string, unknown>): RequeteMem;
+  upsert(p: unknown, o?: Record<string, unknown>): RequeteMem;
+  delete(): RequeteMem;
+  eq(c: string, v: unknown): RequeteMem;
+  is(c: string, v: unknown): RequeteMem;
+  not(c: string, op: string, v: unknown): RequeteMem;
+  in(c: string, v: readonly unknown[]): RequeteMem;
+  filter(c: string, op: string, v: string): RequeteMem;
+  or(s: string): RequeteMem;
+  lt(c: string, v: string): RequeteMem;
+  gt(c: string, v: string): RequeteMem;
+  order(c: string, o?: { ascending?: boolean }): RequeteMem;
+  range(de: number, a: number): RequeteMem;
+  limit(n: number): RequeteMem;
+  returns(): RequeteMem;
+  maybeSingle(): Promise<RenduMem>;
+  single(): Promise<RenduMem>;
+  then<T>(oui: (r: RenduMem) => T, non?: (e: unknown) => T): Promise<T>;
+};
+
+/**
+ * Une FAUSSE BASE en mémoire, qui lit les filtres comme PostgREST : `.in()` passe par ce que postgrest-js en fait
+ * vraiment (`listeDePostgrestJs`), `.filter(c, "in", …)` et `.or(…)` par `lireListePostgrest`. Les écritures
+ * s'appliquent aux tableaux ; `trace` garde l'ordre des gestes ; `panne` refuse un geste choisi.
+ */
+function baseEnMemoire(tables: Record<string, LigneMem[]>, panne: PanneMem = () => null) {
+  const trace: string[] = [];
+  let horloge = Date.parse("2026-10-20T08:00:00.000Z");
+  const instant = () => new Date((horloge += 1000)).toISOString();
+  const table = (t: string) => (tables[t] ??= []);
+  const condition = (c: string): ((l: LigneMem) => boolean) => {
+    const m = /^([a-z0-9_]+)\.(not\.is|is|eq|neq|in|gt|lt)\.([\s\S]*)$/.exec(c);
+    if (!m) throw new Error(`fausse base : condition illisible ${c}`);
+    const [, col, op, val] = m;
+    if (op === "is") return (l) => l[col] === null || l[col] === undefined;
+    if (op === "not.is") return (l) => l[col] !== null && l[col] !== undefined;
+    if (op === "eq") return (l) => String(l[col]) === val;
+    if (op === "neq") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) !== val;
+    if (op === "gt") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) > val;
+    if (op === "lt") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) < val;
+    const liste = lireListePostgrest(val);
+    if (!liste) throw new Error(`fausse base : liste illisible ${val}`);
+    return (l) => l[col] !== null && l[col] !== undefined && liste.includes(String(l[col]));
+  };
+  const decouperOu = (s: string): string[] => {
+    const out: string[] = [];
+    let prof = 0;
+    let guillemet = false;
+    let mot = "";
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (guillemet) {
+        mot += ch;
+        if (ch === "\\") mot += s[++i] ?? "";
+        else if (ch === '"') guillemet = false;
+        continue;
+      }
+      if (ch === '"') guillemet = true;
+      if (ch === "(") prof++;
+      if (ch === ")") prof--;
+      if (ch === "," && prof === 0) {
+        out.push(mot);
+        mot = "";
+        continue;
+      }
+      mot += ch;
+    }
+    out.push(mot);
+    return out;
+  };
+  const requete = (t: string): RequeteMem => {
+    let op = "select";
+    let payload: unknown = null;
+    let options: Record<string, unknown> | undefined;
+    let rendre = false;
+    const filtres: ((l: LigneMem) => boolean)[] = [];
+    const tri: { c: string; asc: boolean }[] = [];
+    let de = 0;
+    let a = Infinity;
+    let limite = Infinity;
+    const executer = async (unique: "single" | "maybe" | null): Promise<RenduMem> => {
+      const lignes = table(t);
+      const visees = op === "insert" || op === "upsert" ? [] : lignes.filter((l) => filtres.every((f) => f(l)));
+      const err = panne({ table: t, op, lignes: visees, payload });
+      if (err) return { data: null, error: err, count: null };
+      let data: LigneMem[];
+      if (op === "insert" || op === "upsert") {
+        const nouvelles: LigneMem[] = (Array.isArray(payload) ? payload : [payload]).map((p) => ({ id: randomUUIDMem(), created_at: instant(), ...(p as LigneMem) }));
+        if (op === "upsert") {
+          const cles = String(options?.onConflict ?? "id").split(",");
+          for (const n of nouvelles) {
+            const i = lignes.findIndex((l) => cles.every((k) => l[k] === n[k]));
+            if (i >= 0) lignes[i] = { ...lignes[i], ...n };
+            else lignes.push(n);
+          }
+        } else lignes.push(...nouvelles);
+        trace.push(`${op}:${t}${t === "collectif_evenements" ? `:${nouvelles.map((n) => String(n.type)).join("+")}` : ""}`);
+        data = nouvelles;
+      } else if (op === "update") {
+        for (const l of visees) Object.assign(l, payload as LigneMem);
+        trace.push(`update:${t}:${visees.length}`);
+        data = visees;
+      } else if (op === "delete") {
+        for (const l of visees) lignes.splice(lignes.indexOf(l), 1);
+        trace.push(`delete:${t}:${visees.length}`);
+        data = visees;
+      } else {
+        data = [...visees];
+        for (const k of [...tri].reverse()) {
+          data.sort((x, y) => {
+            const vx = String(x[k.c] ?? "");
+            const vy = String(y[k.c] ?? "");
+            return (vx < vy ? -1 : vx > vy ? 1 : 0) * (k.asc ? 1 : -1);
+          });
+        }
+        trace.push(`select:${t}`);
+      }
+      const count = options?.count === "exact" ? data.length : null;
+      if (op === "select") data = data.slice(de, Math.min(a + 1, de + limite));
+      else if (!rendre) data = [];
+      const copie = data.map((l) => ({ ...l }));
+      if (unique) {
+        const d = copie[0] ?? null;
+        if (unique === "single" && !d) return { data: null, error: { code: "PGRST116", message: "aucune ligne" } };
+        return { data: d, error: null };
+      }
+      return { data: copie, error: null, count };
+    };
+    const q: RequeteMem = {
+      select(_c, o) {
+        if (op === "select") options = o;
+        else rendre = true;
+        return q;
+      },
+      insert(p) {
+        op = "insert";
+        payload = p;
+        return q;
+      },
+      update(p, o) {
+        op = "update";
+        payload = p;
+        options = o;
+        return q;
+      },
+      upsert(p, o) {
+        op = "upsert";
+        payload = p;
+        options = o;
+        return q;
+      },
+      delete() {
+        op = "delete";
+        return q;
+      },
+      eq(c, v) {
+        filtres.push((l) => String(l[c]) === String(v));
+        return q;
+      },
+      is(c) {
+        filtres.push((l) => l[c] === null || l[c] === undefined);
+        return q;
+      },
+      not(c, o) {
+        if (o !== "is") throw new Error(`fausse base : not ${o}`);
+        filtres.push((l) => l[c] !== null && l[c] !== undefined);
+        return q;
+      },
+      in(c, v) {
+        const liste = lireListePostgrest(listeDePostgrestJs(v.map(String))) ?? [];
+        filtres.push((l) => l[c] !== null && l[c] !== undefined && liste.includes(String(l[c])));
+        return q;
+      },
+      filter(c, o, v) {
+        filtres.push(condition(`${c}.${o}.${v}`));
+        return q;
+      },
+      or(s) {
+        const conds = decouperOu(s).map(condition);
+        filtres.push((l) => conds.some((f) => f(l)));
+        return q;
+      },
+      lt(c, v) {
+        filtres.push(condition(`${c}.lt.${v}`));
+        return q;
+      },
+      gt(c, v) {
+        filtres.push(condition(`${c}.gt.${v}`));
+        return q;
+      },
+      order(c, o) {
+        tri.push({ c, asc: o?.ascending !== false });
+        return q;
+      },
+      range(x, y) {
+        de = x;
+        a = y;
+        return q;
+      },
+      limit(n) {
+        limite = n;
+        return q;
+      },
+      returns() {
+        return q;
+      },
+      maybeSingle: () => executer("maybe"),
+      single: () => executer("single"),
+      then: (oui, non) => executer(null).then(oui, non),
+    };
+    return q;
+  };
+  return { client: { from: (t: string) => requete(t) }, tables, trace };
+}
+
+let compteurMem = 0;
+/** Un uuid prévisible (le harnais relit l'ordre des gestes, pas les valeurs). */
+function randomUUIDMem(): string {
+  compteurMem++;
+  return `00000000-0000-4000-8000-${String(compteurMem).padStart(12, "0")}`;
+}
+
+async function verifDurcissement() {
+  const Pe = await import("@/lib/collectif/personnes");
+  const Co = await import("@/lib/collectif/corbeille");
+  const Cs = await import("@/lib/collectif/corbeilleServeur");
+  const Ps = await import("@/lib/collectif/personnesServeur");
+  const Col = await import("@/lib/collectif/collecte");
+  const Al = await import("@/lib/collectif/album");
+  const Fr = await import("@/lib/collectif/freins");
+  const Ga = await import("@/lib/compte/garde");
+  const Li = await import("@/lib/collectif/lignes");
+  const Dos = await import("@/lib/collectif/dossiers");
+  const Hc = await import("@/lib/collectif/horsCorbeille");
+  const { phraseEvenement } = await import("@/lib/collectif/recit");
+  type Client = Parameters<typeof Cs.effacer>[0];
+  const comme = (c: { from: (t: string) => RequeteMem }) => c as unknown as Client;
+  const silence = async <R>(f: () => Promise<R>): Promise<R> => {
+    const [e, l] = [console.error, console.log];
+    console.error = () => {};
+    console.log = () => {};
+    try {
+      return await f();
+    } finally {
+      console.error = e;
+      console.log = l;
+    }
+  };
+  const sansCommentaires = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const ED = "11111111-2222-4333-8444-555555555555";
+  const LIEN = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const uuid = (n: number) => `99999999-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
+  /* ─────────────── S8 : un texte de client dans un `in` ─────────────── */
+  titre("— durcissement S8 : un texte venu d'un client dans un filtre `in` (lignes.ts, `listeIn`) —");
+  const piege = 'Zed","Léa Martin';
+  ok("ce que fait `.in()` de postgrest-js (prouve le 20/10 sur la vraie base) : `Zed\",\"Léa Martin` part en DEUX valeurs, `\"Bob\"` perd ses guillemets",
+    JSON.stringify(lireListePostgrest(listeDePostgrestJs([piege]))) === JSON.stringify(["Zed", "Léa Martin"]) && JSON.stringify(lireListePostgrest(listeDePostgrestJs(['"Bob"']))) === JSON.stringify(["Bob"]));
+  const delicats = [piege, '"Bob"', "Martin (Léa), fils", "a\\b", 'x\\"y', "Léa", "", " espace ", "virgule,", "(", ")"];
+  ok("`listeIn` : chaque valeur citee ET echappee revient TELLE QUELLE (guillemets, barre oblique inverse, virgule, parentheses, espaces), sans doublon",
+    delicats.every((v) => JSON.stringify(lireListePostgrest(Li.listeIn([v]))) === JSON.stringify([v])) && JSON.stringify(lireListePostgrest(Li.listeIn(delicats))) === JSON.stringify(delicats)
+      && Li.listeIn(["a", "a"]) === '("a")' && Li.citerPostgrest('a"b\\c') === '"a\\"b\\\\c"');
+  {
+    const photo = (id: number, deposant: string) => ({ id: uuid(id), edition_id: ED, deposant, role_deposant: "participant", provenance_id: LIEN, participant_id: null, created_at: `2026-10-20T10:00:${String(id).padStart(2, "0")}.000Z` });
+    const photos = [photo(1, piege), photo(2, piege), photo(3, "Léa Martin"), photo(4, "Léa Martin"), photo(5, "Léa Martin"), photo(6, '"Bob"'), photo(7, "Bob"), photo(8, "Martin (Léa), fils"), photo(9, "Martin")];
+    const resume = [...new Set(photos.map((p) => p.deposant))].map((d, i) => ({ id: `g${i}`, edition_id: ED, deposant: d, role_deposant: "participant", provenance_id: LIEN, participant_id: null }));
+    const base = baseEnMemoire({ collectif_photos: photos.map((p) => ({ ...p })), collectif_photos_resume: resume });
+    const deposants = () => Object.fromEntries((base.tables.collectif_photos ?? []).map((p) => [String(p.id).slice(-2), String(p.deposant)]));
+    const r1 = await silence(() => Ps.renommerPersonne(comme(base.client), ED, { genre: "nom", cle: Dos.clePersonne(piege) }, { prenom: "Zed", nom: "Durand" }, null));
+    const apres1 = deposants();
+    ok("renommer `Zed\",\"Léa Martin` ne touche QUE ses deux photos : Léa Martin garde les siennes",
+      r1.statut === "ok" && r1.n === 2 && apres1["01"] === "Zed Durand" && apres1["02"] === "Zed Durand" && ["03", "04", "05"].every((k) => apres1[k] === "Léa Martin"));
+    const r2 = await silence(() => Ps.renommerPersonne(comme(base.client), ED, { genre: "nom", cle: Dos.clePersonne('"Bob"') }, { prenom: "Robert", nom: "Guillemets" }, null));
+    const apres2 = deposants();
+    ok("`\"Bob\"` reste renommable (ses guillemets font partie du nom) et le vrai « Bob » n'est pas touche",
+      r2.statut === "ok" && r2.n === 1 && apres2["06"] === "Robert Guillemets" && apres2["07"] === "Bob");
+    const r3 = await silence(() => Ps.renommerPersonne(comme(base.client), ED, { genre: "nom", cle: Dos.clePersonne("Martin (Léa), fils") }, { prenom: "Léa", nom: "Fils" }, null));
+    const apres3 = deposants();
+    ok("un nom avec virgule et parentheses se renomme seul (« Martin » a cote ne bouge pas)", r3.statut === "ok" && r3.n === 1 && apres3["08"] === "Léa Fils" && apres3["09"] === "Martin");
+    const reprise = baseEnMemoire({ collectif_photos: [{ id: uuid(20), edition_id: ED, r2_key: "k", cle_fichier: "victime.jpg|1|2", confirmee_le: "2026-10-20T10:00:00Z" }] });
+    Hc.oublierAbsence();
+    const existants = await silence(() => Col.lireExistants(comme(reprise.client), ED, ['a","victime.jpg|1|2']));
+    ok("une cle de fichier piegee (`a\",\"victime.jpg|1|2`) ne fait pas lire la photo d'un autre a la reprise", existants !== null && existants.size === 0);
+    ok("…et les sites qui mettent un texte de client dans un `in` passent par `listeIn` (noms des personnes, cles de fichier, filtres de la grille)",
+      /\.filter\("deposant", "in", listeIn\(paquet\)\)/.test(lire("src/lib/collectif/personnesServeur.ts")) && !/\.in\("deposant"/.test(lire("src/lib/collectif/personnesServeur.ts"))
+        && /\.filter\("cle_fichier", "in", listeIn\(paquet\)\)/.test(lire("src/lib/collectif/collecte.ts")) && !/\.in\("cle_fichier"/.test(lire("src/lib/collectif/collecte.ts"))
+        && /valeurs\.map\(citerPostgrest\)/.test(lire("src/lib/collectif/resumePhotos.ts")));
+  }
+
+  /* ─────────────── S1 + S5 + C4 : l'adresse d'un autre ─────────────── */
+  titre("— durcissement S1, S5, C4 : taper l'adresse d'un autre (prenom seulement, journal, nom propose) —");
+  const vue = Pe.vuePersonneConnue({ prenom: " Léa ", nom: "Martin" } as { prenom: string; nom: string });
+  ok("une personne RETROUVEE ne rend que son prenom : `nom: null`, `nomAffiche` = le prenom, jamais le nom de famille",
+    vue.prenom === "Léa" && vue.nom === null && vue.nomAffiche === "Léa" && !JSON.stringify(vue).includes("Martin"));
+  const rP = sansCommentaires(lire("src/app/api/collectif/depot/participant/route.ts"));
+  const rA = sansCommentaires(lire("src/app/api/collectif/depot/album/route.ts"));
+  ok("depot/participant : « connu » et « qui » passent par `vuePersonneConnue` ; le nom complet seulement a la CREATION ; depot/album : `moi.participant` sans nom de famille",
+    /participant: creee \? \{ prenom: participant\.prenom, nom: participant\.nom, nomAffiche: nomAffiche\(participant\) \} : vuePersonneConnue\(participant\)/.test(rP)
+      && /reponseConnue\(lu\.valeur, appareilLu, \{ statut: "connu" \}, false\)/.test(rP) && /r\.statut === "cree"\s*\);/.test(rP) && !/function vuePersonne\b/.test(rP)
+      && /const personne = moi \? vuePersonneConnue\(moi\) : null;/.test(rA) && /participant: personne \? \{ prenom: personne\.prenom, nom: personne\.nom \} : null/.test(rA) && !/moi\.nom\b/.test(rA));
+  {
+    const A = { id: uuid(30), edition_id: ED, email: "lea.martin@audencia.com", prenom: "Léa", nom: "Martin", premier_lien_id: null, created_at: "2026-10-19T10:00:00.000Z", vu_le: "2026-10-19T10:00:00.000Z", renomme_le: null, fusionne_dans: null, fusionne_le: null };
+    const TEL = "T".repeat(22);
+    const base = baseEnMemoire({ collectif_participants: [{ ...A }] });
+    const memeNom = await silence(() => Ps.presenter(comme(base.client), { editionId: ED, email: A.email, identite: { prenom: "léa", nom: " MARTIN " }, provenanceId: LIEN, appareil: TEL }));
+    const traceMeme = base.trace.filter((x) => x.startsWith("insert:collectif_evenements"));
+    const autre = await silence(() => Ps.presenter(comme(base.client), { editionId: ED, email: A.email, identite: { prenom: "Léa", nom: "Dupont" }, provenanceId: LIEN, appareil: TEL }));
+    const evts = (base.tables.collectif_evenements ?? []) as LigneMem[];
+    const dif = evts.find((e) => e.type === "participant_nom_different");
+    const tout = JSON.stringify(evts.map((e) => e.payload));
+    ok("S1 : le nom tape est IGNORE et `nomIgnore` le dit TOUJOURS (bon nom ou non) : comparer et le dire serait un oracle du nom de famille",
+      memeNom.statut === "connu" && memeNom.nomIgnore === true && autre.statut === "connu" && autre.nomIgnore === true);
+    ok("S5 : chaque presentation d'une adresse connue se journalise (`participant_retrouve`) ; le bon nom n'ecrit pas de « nom different »",
+      traceMeme.join() === "insert:collectif_evenements:participant_retrouve" && evts.filter((e) => e.type === "participant_retrouve").length === 2 && memeNom.statut === "connu" && memeNom.journal);
+    ok("S5 : un AUTRE nom avec une adresse connue → `participant_nom_different` : les deux noms, l'adresse MASQUEE, ni adresse en clair, ni telephone, ni token",
+      dif !== undefined && (dif.payload as LigneMem).nom === "Léa Martin" && (dif.payload as LigneMem).propose === "Léa Dupont" && (dif.payload as LigneMem).a === "l***@audencia.com"
+        && (dif.payload as LigneMem).personne === `p:${A.id}` && !tout.includes(A.email) && !tout.includes(TEL) && (base.tables.collectif_participants?.[0] as LigneMem).nom === "Martin");
+    ok("…dit en francais au journal de la fiche", phraseEvenement("participant_nom_different", (dif?.payload ?? {}) as Record<string, unknown>).includes("« Léa Dupont » au lieu de « Léa Martin »")
+      && phraseEvenement("participant_retrouve", { prenom: "Léa", a: "l***@a.fr" }) !== "participant_retrouve" && phraseEvenement("fusion_interrompue", {}) !== "fusion_interrompue");
+    /* C4 : la liste des personnes, contre la meme fausse base. */
+    (base.tables.collectif_photos_resume ??= []).push({ id: "g-a", edition_id: ED, role_deposant: "participant", provenance_id: LIEN, provenance_type: "participant", deposant: "Léa Martin", appareil_id: null, participant_id: A.id, n: 3, n_selection: 0, n_choisissables: 3, premiere: "x", premiere_photo: "x", derniere: "2026-10-20T09:00:00.000Z", vignette_le: null, vignette_photo: null, vignette_key: null });
+    const avantListe = base.trace.length;
+    const resp = await silence(() => Ps.chargerPersonnes(comme(base.client), ED, "masque"));
+    const lueResp = base.trace.slice(avantListe).includes("select:collectif_evenements");
+    const avantEquipe = base.trace.length;
+    const equipe = await silence(() => Ps.chargerPersonnes(comme(base.client), ED, "aucun"));
+    const lueEquipe = base.trace.slice(avantEquipe).includes("select:collectif_evenements");
+    const lea = resp.statut === "ok" ? resp.valeur.personnes.find((p) => p.ref === `p:${A.id}`) : undefined;
+    const leaEq = equipe.statut === "ok" ? equipe.valeur.personnes.find((p) => p.ref === `p:${A.id}`) : undefined;
+    ok("C4 : la liste du responsable (et de l'atelier) porte `nomPropose` : le dernier autre nom, et sa date ; l'equipe ne le voit pas (le journal n'est meme pas lu)",
+      lea?.nomPropose?.nom === "Léa Dupont" && typeof lea.nomPropose.le === "string" && lueResp && leaEq !== undefined && leaEq.nomPropose === null && !lueEquipe);
+    const P = { ...A, renomme_le: null as string | null };
+    const ev = (le: string, propose: string, personne = `p:${A.id}`) => ({ type: "participant_nom_different", payload: { personne, propose }, created_at: le });
+    const np = Pe.nomsProposes([ev("2026-10-20T10:00:00.000Z", "Léa Dupont"), ev("2026-10-20T11:00:00.000Z", "Lea Durand"), ev("2026-10-20T09:00:00.000Z", "Zoé")], [P]);
+    const apresRenommage = Pe.nomsProposes([ev("2026-10-20T10:00:00.000Z", "Léa Dupont")], [{ ...P, renomme_le: "2026-10-20T10:30:00.000Z" }]);
+    const dejaLeSien = Pe.nomsProposes([ev("2026-10-20T10:00:00.000Z", "léa  MARTIN")], [P]);
+    const fusionnee = Pe.nomsProposes([ev("2026-10-20T10:00:00.000Z", "Léa Dupont")], [{ ...P, fusionne_dans: uuid(31) }]);
+    ok("`nomsProposes` : le plus RECENT gagne ; un renommage plus recent l'efface (le responsable a tranche) ; son propre nom ou une personne fusionnee ne proposent rien",
+      np.get(A.id)?.nom === "Lea Durand" && np.get(A.id)?.le === "2026-10-20T11:00:00.000Z" && apresRenommage.size === 0 && dejaLeSien.size === 0 && fusionnee.size === 0 && Pe.nomsProposes([ev("2026-10-20T10:00:00.000Z", "X", "n:x")], [P]).size === 0);
+  }
+
+  /* ─────────────── S2 + S4 : presign et la place ─────────────── */
+  titre("— durcissement S2, S4 : presign ne lit plus d'adresse ; la corbeille rend la place —");
+  const rPresign = sansCommentaires(lire("src/app/api/collectif/depot/presign/route.ts"));
+  ok("S2 : presign IGNORE `email` : la personne est celle de CE telephone (`participantDeLAppareil`), plus aucun « inconnu » ni 409 qui dirait si une adresse existe",
+    !/corps\.email|trouverParEmail|participant_inconnu|email_invalide|normaliserEmail/.test(rPresign) && /if \(role === "participant" && appareilLu\) \{\s*const lu = await participantDeLAppareil\(supabase, edition\.id, appareilLu\);/.test(rPresign));
+  ok("S4 : une photo de la corbeille ne compte plus dans la place de sa personne, QUI que soit celui qui l'a supprimee",
+    ["auteur", "responsable", "atelier"].every((par) => !Co.compteDansLaPlace({ supprimee_le: "2026-10-20T10:00:00Z", supprimee_par: par })) && Co.compteDansLaPlace({ supprimee_le: null }));
+  {
+    const filtres: string[] = [];
+    const q = {
+      eq: (c: string, v: unknown) => (filtres.push(`eq ${c} ${String(v)}`), q),
+      or: (f: string) => (filtres.push(`or ${f}`), q),
+      is: (c: string) => (filtres.push(`is ${c}`), q),
+      limit: () => q,
+      then: (oui: (r: unknown) => unknown) => Promise.resolve({ count: 1, error: null }).then(oui),
+    };
+    const client = { from: () => ({ select: () => (filtres.push("|"), q) }) } as unknown as Parameters<typeof Col.compterPourPlafond>[0];
+    Hc.oublierAbsence();
+    await Col.compterPourPlafond(client, "ed", "tel", new Date("2026-10-20T12:00:00Z"), null, "p-1");
+    const personne = filtres.join(" ").split("|")[2] ?? "";
+    ok("…en base : le compte de la personne porte `supprimee_le is null`, et plus rien sur `supprimee_par`", /is supprimee_le/.test(personne) && !/supprimee_par/.test(filtres.join(" ")));
+  }
+
+  /* ─────────────── S3 : le frein ─────────────── */
+  titre("— durcissement S3, C1 : le frein par adresse du client ET par lien (freins.ts, compte/garde.ts) —");
+  const req = (h: Record<string, string>) => new Request("https://www.bellajour.fr/api/collectif/depot/participant", { method: "POST", headers: h });
+  ok("l'adresse du client : Cloudflare (`cf-connecting-ip`) s'il la pose, sinon la PREMIERE de `x-forwarded-for` (Vercel), sinon `x-real-ip` ; une valeur sans forme d'adresse est ignoree",
+    Ga.ipDuClient(req({ "cf-connecting-ip": "203.0.113.7", "x-forwarded-for": "198.51.100.1" })) === "203.0.113.7" && Ga.ipDuClient(req({ "x-forwarded-for": "198.51.100.1, 10.0.0.1" })) === "198.51.100.1"
+      && Ga.ipDuClient(req({ "x-real-ip": "2001:db8::1" })) === "2001:db8::1" && Ga.ipDuClient(req({ "cf-connecting-ip": "pas une ip", "x-forwarded-for": "198.51.100.1" })) === "198.51.100.1" && Ga.ipDuClient(req({})) === "inconnu");
+  ok("le second frein lit l'adresse qui se CONNECTE a Vercel : un `cf-connecting-ip` forge n'y change rien",
+    Ga.ipDeConnexion(req({ "cf-connecting-ip": "203.0.113.7", "x-forwarded-for": "198.51.100.1" })) === "198.51.100.1");
+  {
+    const avant = process.env.NODE_ENV;
+    /* `process.env.X = undefined` ECRIT la chaine « undefined » : on efface, on ne remet pas. */
+    const remettre = (v: string | undefined) => {
+      if (v === undefined) delete (process.env as Record<string, string | undefined>).NODE_ENV;
+      else (process.env as Record<string, string | undefined>).NODE_ENV = v;
+    };
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    const frein = Ga.creerFrein(Fr.FREINS_DEPOT.presenter);
+    const plafondAncien = Ga.creerPlafond(20);
+    remettre(avant);
+    const TOKEN = "AbCdEfGhIjKlMnOpQrStUvWxYz012345";
+    const campus = Fr.cleFreinDepot("192.0.2.10", TOKEN);
+    let refuses = 0;
+    for (let i = 0; i < 160; i++) if (frein(campus)) refuses++;
+    let ancienRefuse = 0;
+    for (let i = 0; i < 160; i++) if (plafondAncien(req({ "x-forwarded-for": "192.0.2.10" }))) ancienRefuse++;
+    ok("80 personnes derriere le Wi-Fi du campus, deux presentations chacune, dans la meme minute : AUCUNE refusee (l'ancien `creerPlafond(20)` en refusait 140)",
+      refuses === 0 && ancienRefuse === 140);
+    for (let i = 160; i < Fr.FREINS_DEPOT.presenter; i++) frein(campus);
+    ok("…au-dela du seuil, la meme adresse sur le meme lien est freinee ; un autre lien ou une autre adresse ne l'est pas",
+      frein(campus) && !frein(Fr.cleFreinDepot("192.0.2.10", "Z".repeat(32))) && !frein(Fr.cleFreinDepot("192.0.2.11", TOKEN)));
+    ok("la cle ne garde pas le token entier (12 caracteres), et des seuils penses pour une classe ; le frein large au-dessus",
+      !Fr.cleFreinDepot("1.2.3.4", TOKEN).includes(TOKEN) && Fr.cleFreinDepot("1.2.3.4", TOKEN) === `1.2.3.4|${TOKEN.slice(-12)}` && Fr.cleFreinDepot("1.2.3.4", 42) === "1.2.3.4|"
+        && Fr.FREINS_DEPOT.presenter >= 160 && Fr.FREINS_DEPOT.album >= Fr.FREINS_DEPOT.presenter && Fr.FREIN_LARGE > Fr.FREINS_DEPOT.album);
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    const trois = Ga.creerPlafond(3);
+    remettre(avant);
+    const r = req({ "x-forwarded-for": "198.51.100.9" });
+    ok("`creerPlafond` des autres routes ne change pas : la meme regle par `x-forwarded-for` brut (3 passent, la 4e est freinee)",
+      !trois(r) && !trois(r) && !trois(r) && trois(r) && !trois(req({ "x-forwarded-for": "198.51.100.8" })));
+  }
+  const rSup = sansCommentaires(lire("src/app/api/collectif/depot/supprimer/route.ts"));
+  ok("depot/participant ne freine QUE `presenter` (ni `qui`, ni `oublier`), par adresse du client ET par lien, plus le frein large ; plus de `creerPlafond(20)`",
+    /if \(action === "presenter" && \(freinPresenter\(cleFreinDepot\(ipDuClient\(request\), corps\.token\)\) \|\| freinLarge\(ipDeConnexion\(request\)\)\)\)/.test(rP)
+      && (rP.match(/freinPresenter\(/g) ?? []).length === 1 && !/creerPlafond/.test(rP) && rP.indexOf("freinPresenter(cleFreinDepot") < rP.indexOf("chargerAcces("));
+  ok("C1 : un frein sur `depot/album` et `depot/supprimer`, avant toute lecture de la base",
+    /creerFrein\(FREINS_DEPOT\.album\)/.test(rA) && rA.indexOf("freinAlbum(cleFreinDepot(ipDuClient(request), corps.token))") > 0 && rA.indexOf("freinAlbum(") < rA.indexOf("chargerAcces(")
+      && /creerFrein\(FREINS_DEPOT\.supprimer\)/.test(rSup) && rSup.indexOf("freinSupprimer(cleFreinDepot(ipDuClient(request), corps.token))") > 0 && rSup.indexOf("freinSupprimer(") < rSup.indexOf("chargerAcces("));
+
+  /* ─────────────── S6 + C5 : l'album et l'accord ─────────────── */
+  titre("— durcissement S6, C5 : l'album ne signe jamais l'original ; l'accord de l'album seulement le jour ou la page l'affiche —");
+  ok("S6 : l'album ne signe QUE la vignette (l'original porte l'EXIF et le GPS) ; sans vignette, `vignette: null`",
+    !/signerGet/.test(rA) && /if \(p\.vignette_key\) vignette = await signerLectureVignette\(p\.vignette_key\);/.test(rA) && !/else if \(p\.mime/.test(rA));
+  const versions = [...Accord.TEXTES_ACCORD.keys()];
+  ok("C5 : une version n'est acceptee que si elle est CONNUE et pas plus recente que `VERSION_ACCORD` (le texte affiche) ; aujourd'hui « 2026-10-17 » seule",
+    versions.every((v) => Accord.versionAcceptee(v) === v <= Accord.VERSION_ACCORD) && versions.every((v) => (Accord.lireAccord({ accord: true, accordVersion: v }) !== null) === Accord.versionAcceptee(v))
+      && Accord.versionAcceptee(Accord.VERSION_ACCORD) && !Accord.versionAcceptee("2099-01-01") && !Accord.versionAcceptee("2000-01-01") && !Accord.versionAcceptee(20261017)
+      && (Accord.VERSION_ACCORD !== "2026-10-17" || (!Accord.versionAcceptee("2026-10-20") && Accord.lireAccord({ accord: true, accordVersion: "2026-10-20" }) === null)));
+  ok("…`accordAJour` compare a la version AFFICHEE (`VERSION_ACCORD`), la seule que le serveur prend de neuf",
+    /accordAJour: comptes\.accord === VERSION_ACCORD,/.test(rP) && !/VERSION_ACCORD_ALBUM/.test(rP));
+
+  /* ─────────────── C1 : les comptes de l'album ─────────────── */
+  titre("— durcissement C1 : l'album compte dans une vue, il ne relit plus toutes les photos du lien —");
+  {
+    type Brute = { participant_id: string | null; deposant: string | null; appareil_id: string | null; provenance_id: string | null; role_deposant: string; accord_version: string | null };
+    const brutes: Brute[] = [
+      { participant_id: "p1", deposant: "Léa Martin", appareil_id: "t1", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-20" },
+      { participant_id: "p1", deposant: "Léa Martin", appareil_id: "t2", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-20" },
+      { participant_id: null, deposant: "Hugo", appareil_id: "t3", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-20" },
+      { participant_id: null, deposant: "hugo ", appareil_id: "t4", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-20" },
+      { participant_id: null, deposant: null, appareil_id: "t5", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-20" },
+      { participant_id: null, deposant: null, appareil_id: "t5", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-20" },
+      { participant_id: null, deposant: "Zoé", appareil_id: "t6", provenance_id: LIEN, role_deposant: "participant", accord_version: "2026-10-17" },
+    ];
+    /* Le miroir de la vue `collectif_photos_album` : regrouper comme le SQL (le telephone seulement sans personne). */
+    const groupes = new Map<string, LigneVueAlbumMem>();
+    for (const b of brutes.filter((x) => x.accord_version === "2026-10-20")) {
+      const tel = b.participant_id ? null : b.appareil_id;
+      const cle = JSON.stringify([b.role_deposant, b.provenance_id, b.accord_version, b.participant_id, b.deposant, tel]);
+      const g = groupes.get(cle) ?? { id: cle, participant_id: b.participant_id, deposant: b.deposant, appareil_id: tel, n: 0 };
+      g.n++;
+      groupes.set(cle, g);
+    }
+    const c = Al.comptesDeLAlbum([...groupes.values()]);
+    ok("les comptes de la vue disent la meme chose que la relecture complete : 6 photos, 3 personnes (une par personne, par nom, « Sans nom » par telephone)",
+      c.photos === 6 && c.personnes === Al.personnesDeLAlbum(brutes.filter((x) => x.accord_version === "2026-10-20")) && c.personnes === 3 && groupes.size === 4);
+    ok("le filtre pose sur la vue : celui de l'album, SANS l'arrivee ni la corbeille, que la vue ecarte elle-meme",
+      [LIEN, null].every((l) => JSON.stringify(Al.filtreVueAlbum(l)) === JSON.stringify(Al.filtreAlbum(l).filter((f) => f.colonne !== "confirmee_le" && f.colonne !== "supprimee_le")))
+        && Al.filtreVueAlbum(null).some((f) => f.colonne === "accord_version") && !Al.filtreVueAlbum(null).some((f) => f.colonne === "supprimee_le"));
+    const mig = lire("supabase/migrations/20261023_collectif_personnes_corbeille.sql");
+    const vueSql = mig.slice(mig.indexOf("create or replace view public.collectif_photos_album"), mig.indexOf("revoke all on public.collectif_photos_album"));
+    ok("la vue (migration 20261023, NON appliquee) : arrivees, hors corbeille, par lien, version, personne, nom, telephone sans personne ; `security_invoker`, fermee a anon et authenticated",
+      vueSql.length > 0 && /with \(security_invoker = true\)/.test(vueSql) && /where c\.confirmee_le is not null\s+and c\.supprimee_le is null/.test(vueSql)
+        && /case when c\.participant_id is null then c\.appareil_id end as appareil_cle/.test(vueSql) && /p\.appareil_cle as appareil_id/.test(vueSql)
+        && /group by p\.edition_id, p\.role_deposant, p\.provenance_id, p\.accord_version, p\.participant_id, p\.deposant, p\.appareil_cle;/.test(vueSql)
+        && Al.COLONNES_VUE_ALBUM.split(", ").every((col) => col === "n" ? /count\(\*\)::integer as n/.test(vueSql) : new RegExp(`(as ${col}\\b|p\\.${col},)`).test(vueSql) || col === "id")
+        && /revoke all on public\.collectif_photos_album from anon, authenticated;/.test(mig) && !/2026-10-\d\d/.test(sqlSansCommentaires(vueSql)));
+    ok("la route : page 0 lit la VUE ; sans elle, un compte en GET `limit(0)` (jamais `head`) et `personnes: null`, jamais un nombre devine ; plus de relecture des photos du lien pour compter",
+      /supabase\.from\(VUE_ALBUM\)\.select\(COLONNES_VUE_ALBUM\)/.test(rA) && /requete\(avec, "id", true\)\.limit\(0\)/.test(rA) && /select\(colonnes, compte \? COMPTE_SANS_LIGNE : undefined\)/.test(rA)
+        && /return \{ photos: c\.count, personnes: null \};/.test(rA) && !/head: true/.test(rA) && !/lireToutesLesLignes<\{ id: string; deposant/.test(rA) && !/personnesDeLAlbum\(tous/.test(rA));
+  }
+
+  /* ─────────────── S7 + C2 : effacer pour de bon ─────────────── */
+  titre("— durcissement S7, C2 : la LIGNE d'abord (re-controlee), puis le coffre ; ce qui resiste se retente —");
+  {
+    const cles = (id: string) => ({ r2_key: `collectif/${ED}/photos/${id}/original.jpg`, vignette_key: `collectif/${ED}/photos/${id}/vignette.jpg` });
+    const corb = (id: string, supprimee_le: string | null) => ({ id, edition_id: ED, ...cles(id), supprimee_le, supprimee_par: supprimee_le ? "responsable" : null, confirmee_le: "2026-09-01T09:00:00.000Z" });
+    const VIEUX = "2026-09-01T10:00:00.000Z";
+    const SEUIL = Co.seuilPurge(new Date("2026-10-20T12:00:00.000Z"));
+    const [p1, p2, p3, p4] = [uuid(41), uuid(42), uuid(43), uuid(44)];
+    /* p3 a ete RESTAUREE entre la lecture et l'effacement ; p4 a ete restauree puis remise a la corbeille AUJOURD'HUI. */
+    const base = baseEnMemoire({ collectif_photos: [corb(p1, VIEUX), corb(p2, VIEUX), corb(p3, null), corb(p4, "2026-10-20T11:00:00.000Z")] });
+    const coffre = new Set([p1, p2, p3, p4].flatMap((id) => Object.values(cles(id))));
+    const resiste = new Set([cles(p2).r2_key]);
+    const effaceur = async (k: string) => {
+      base.trace.push(`r2:${k.split("/")[3]?.slice(-2)}/${k.split("/").pop()}`);
+      if (resiste.has(k)) return false;
+      coffre.delete(k);
+      return true;
+    };
+    const lues = [p1, p2, p3, p4].map((id) => ({ id, ...cles(id) }));
+    const r = await silence(() => Cs.effacer(comme(base.client), ED, lues, "purge", null, Infinity, SEUIL, effaceur));
+    const t = base.trace;
+    const iIntention = t.indexOf("insert:collectif_evenements:objets_a_effacer");
+    const iLigne = t.findIndex((x) => x.startsWith("delete:collectif_photos"));
+    const iCoffre = t.findIndex((x) => x.startsWith("r2:"));
+    ok("l'ordre : l'INTENTION au journal, puis la LIGNE, PUIS le coffre, puis ce qui est regle (`objets_effaces`)",
+      iIntention >= 0 && iLigne > iIntention && iCoffre > iLigne && t.indexOf("insert:collectif_evenements:objets_effaces") > iCoffre);
+    ok("la ligne est RE-CONTROLEE : une photo restauree entre-temps, ou remise a la corbeille trop recemment, reste en base avec TOUS ses objets",
+      r.statut === "ok" && r.valeur.n === 2 && r.valeur.ids.includes(p1) && r.valeur.ids.includes(p2) && (base.tables.collectif_photos ?? []).map((l) => l.id).sort().join() === [p3, p4].sort().join()
+        && [p3, p4].every((id) => coffre.has(cles(id).r2_key) && coffre.has(cles(id).vignette_key)) && !t.some((x) => /^r2:4[34]\//.test(x)));
+    ok("un objet qui resiste : la ligne est partie quand meme (jamais une photo vide restaurable), `ratees` le dit, l'echec est note",
+      r.statut === "ok" && r.valeur.ratees === 1 && coffre.has(cles(p2).r2_key) && !coffre.has(cles(p2).vignette_key) && !coffre.has(cles(p1).r2_key)
+        && (base.tables.collectif_evenements ?? []).some((e) => e.type === "echec" && (e.payload as LigneMem).quoi === "corbeille"));
+    const evts = () => (base.tables.collectif_evenements ?? []).map((e) => ({ id: String(e.id), edition_id: String(e.edition_id), type: String(e.type), payload: e.payload as Record<string, unknown>, created_at: String(e.created_at) }));
+    const intention = (base.tables.collectif_evenements ?? []).find((e) => e.type === "objets_a_effacer");
+    const payloadIntention = JSON.stringify(intention?.payload ?? {});
+    ok("l'intention ne porte que des CLES du coffre (et un nombre) : ni nom, ni adresse, ni token",
+      Object.keys((intention?.payload ?? {}) as LigneMem).sort().join() === "cles,n" && ((intention?.payload as LigneMem).cles as string[]).every((k) => k.startsWith(`collectif/${ED}/photos/`)) && !/@|deposant|Léa/.test(payloadIntention));
+    const PLUS_TARD = new Date("2026-10-20T12:00:00.000Z");
+    const enAttente = Co.objetsEnAttente(evts(), PLUS_TARD);
+    ok("ce qui reste a effacer : la SEULE cle qui a resiste (les objets des photos restaurees sont regles : a garder)",
+      enAttente.length === 1 && enAttente[0].cles.join() === cles(p2).r2_key && enAttente[0].editionId === ED && Co.objetsEnAttente(evts(), new Date("2026-10-20T08:05:00.000Z")).length === 0);
+    resiste.clear();
+    const rep = await silence(() => Cs.reprendreObjets(comme(base.client), Infinity, PLUS_TARD, effaceur));
+    ok("la purge suivante la RETENTE et la regle ; ensuite plus rien n'attend", rep !== null && rep.effaces === 1 && !coffre.has(cles(p2).r2_key) && Co.objetsEnAttente(evts(), PLUS_TARD).length === 0
+      && (base.tables.collectif_evenements ?? []).some((e) => e.type === "objets_effaces" && (e.payload as LigneMem).reprise === true));
+
+    /* Une intention dont le journal de fin s'est perdu, sur une photo dont la ligne EXISTE encore : la reprise garde tout. */
+    const p5 = uuid(45);
+    const garde = baseEnMemoire({
+      collectif_photos: [{ ...corb(p5, null), vignette_key: null }],
+      collectif_evenements: [{ id: uuid(46), edition_id: ED, type: "objets_a_effacer", payload: { cles: Object.values(cles(p5)), n: 1 }, created_at: "2026-10-20T07:00:00.000Z" }],
+    });
+    const touches: string[] = [];
+    const rep2 = await silence(() => Cs.reprendreObjets(comme(garde.client), Infinity, PLUS_TARD, async (k) => (touches.push(k), true)));
+    ok("la reprise n'efface JAMAIS une cle qu'une ligne porte encore (meme la vignette rangee sous son id, `vignette_key` vide) : elle la regle « a garder »",
+      rep2 !== null && touches.length === 0 && rep2.gardes === 2 && Co.objetsEnAttente((garde.tables.collectif_evenements ?? []).map((e) => ({ id: String(e.id), edition_id: String(e.edition_id), type: String(e.type), payload: e.payload as Record<string, unknown>, created_at: String(e.created_at) })), PLUS_TARD).length === 0);
+
+    /* Sans intention ecrite, rien ne part. */
+    const p6 = uuid(47);
+    const sansJournal = baseEnMemoire({ collectif_photos: [corb(p6, VIEUX)] }, (q) => (q.table === "collectif_evenements" && q.op === "insert" && (q.payload as LigneMem)?.type === "objets_a_effacer" ? { code: "57014", message: "timeout" } : null));
+    const touches3: string[] = [];
+    const r3 = await silence(() => Cs.effacer(comme(sansJournal.client), ED, [{ id: p6, ...cles(p6) }], "atelier", "Mathias", Infinity, null, async (k) => (touches3.push(k), true)));
+    ok("l'intention ne s'ecrit pas : NI la ligne NI le coffre ne bougent (un objet dont on perdrait la trace ne se retenterait jamais)",
+      r3.statut === "erreur" && touches3.length === 0 && (sansJournal.tables.collectif_photos ?? []).length === 1 && !sansJournal.trace.some((x) => x.startsWith("delete:collectif_photos")));
+
+    /* Une ligne coincee ne retient pas les autres. */
+    const [q1, q2, q3] = [uuid(51), uuid(52), uuid(53)];
+    const coincee = baseEnMemoire({ collectif_photos: [corb(q1, VIEUX), corb(q2, VIEUX), corb(q3, VIEUX)] }, (q) => (q.table === "collectif_photos" && q.op === "delete" && q.lignes.some((l) => l.id === q2) ? { code: "23503", message: "contrainte" } : null));
+    const r4 = await silence(() => Cs.effacer(comme(coincee.client), ED, [q1, q2, q3].map((id) => ({ id, ...cles(id) })), "purge", null, Infinity, SEUIL, async () => true));
+    ok("une ligne que la base refuse ne retient pas les autres : le paquet se rejoue photo par photo, elle seule reste",
+      r4.statut === "ok" && r4.valeur.n === 2 && (coincee.tables.collectif_photos ?? []).map((l) => l.id).join() === q2);
+    ok("« Effacer maintenant » : 200 et `ratees` (la photo est effacee de la base, son objet sera retente), plus de 502",
+      !/status: r\.valeur\.ratees \? 502/.test(lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts")) && /return NextResponse\.json\(\{ ok: true, \.\.\.r\.valeur \}\);/.test(lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts")));
+    ok("les cles d'une intention sont relues SANS confiance : sous le prefixe de SON edition, jamais `..`, jamais une autre edition",
+      JSON.stringify(Co.lireClesObjets([`collectif/${ED}/photos/${p1}/original.jpg`, `collectif/${uuid(1)}/photos/x/original.jpg`, `collectif/${ED}/../numeros/x`, "numeros/x", 42], ED)) === JSON.stringify([`collectif/${ED}/photos/${p1}/original.jpg`])
+        && Co.photoDeLaCle(`collectif/${ED}/photos/${p1}/vignette.jpg`, ED) === p1 && Co.photoDeLaCle(`collectif/${uuid(1)}/photos/${p1}/vignette.jpg`, ED) === null);
+    ok("la purge reprend d'abord ce qui attend, puis efface la ligne re-controlee contre le seuil de 30 jours",
+      /await reprendreObjets\(supabase, jusqua, new Date\(\), effaceur\);/.test(serveurSrc()) && /effacer\(supabase, editionId, photos, "purge", null, jusqua, seuil, effaceur\)/.test(serveurSrc()));
+  }
+
+  /* ─────────────── S9 : la fusion ─────────────── */
+  titre("— durcissement S9 : la fusion journalise AVANT d'ecrire ; defaire remet d'aplomb une fusion interrompue —");
+  {
+    const pers = (id: string, prenom: string, nom: string) => ({ id, edition_id: ED, email: `${prenom.toLowerCase()}@a.fr`, prenom, nom, premier_lien_id: null, created_at: "2026-10-19T10:00:00.000Z", vu_le: "2026-10-19T10:00:00.000Z", renomme_le: null, fusionne_dans: null, fusionne_le: null });
+    const A = pers(uuid(61), "Léa", "Martin");
+    const B = pers(uuid(62), "Lea", "Bis");
+    const ph = (n: number, qui: typeof A) => ({ id: uuid(n), edition_id: ED, deposant: `${qui.prenom} ${qui.nom}`, participant_id: qui.id, role_deposant: "participant", provenance_id: LIEN, created_at: `2026-10-20T09:00:${String(n).padStart(2, "0")}.000Z` });
+    const photos = () => [ph(71, A), ph(72, A), ph(73, B), ph(74, B), ph(75, B)];
+    const plan = { reste: { genre: "participant", id: A.id } as const, part: { genre: "participant", id: B.id } as const, nomDe: "reste" as const };
+    const etat = (b: ReturnType<typeof baseEnMemoire>) => (b.tables.collectif_photos ?? []).map((p) => `${String(p.id).slice(-2)}:${String(p.participant_id).slice(-2)}:${String(p.deposant)}`).join(" | ");
+
+    const sansJournal = baseEnMemoire({ collectif_participants: [{ ...A }, { ...B }], collectif_photos: photos() }, (q) => (q.table === "collectif_evenements" && q.op === "insert" ? { code: "57014", message: "timeout" } : null));
+    const avant = etat(sansJournal);
+    const r1 = await silence(() => Ps.fusionnerPersonnes(comme(sansJournal.client), ED, plan, "Mathias"));
+    ok("le journal de la fusion ne s'ecrit pas : RIEN n'est ecrit (ni photo, ni personne)",
+      r1.statut === "erreur" && etat(sansJournal) === avant && !sansJournal.trace.some((x) => x.startsWith("update:")) && (sansJournal.tables.collectif_participants?.[1] as LigneMem).fusionne_dans === null);
+
+    const coupee = baseEnMemoire({ collectif_participants: [{ ...A }, { ...B }], collectif_photos: photos() }, (q) => (q.table === "collectif_participants" && q.op === "update" && "fusionne_dans" in ((q.payload ?? {}) as LigneMem) && (q.payload as LigneMem).fusionne_dans !== null ? { code: "57014", message: "timeout" } : null));
+    const initial = etat(coupee);
+    const r2 = await silence(() => Ps.fusionnerPersonnes(comme(coupee.client), ED, plan, "Mathias"));
+    const iJournal = coupee.trace.indexOf("insert:collectif_evenements:personnes_fusionnees");
+    const iPhotos = coupee.trace.findIndex((x) => x.startsWith("update:collectif_photos"));
+    const evtFusion = (coupee.tables.collectif_evenements ?? []).find((e) => e.type === "personnes_fusionnees");
+    const auMilieu = etat(coupee);
+    ok("le journal (l'etat d'avant de CHAQUE photo) part AVANT la premiere ecriture ; une panne au milieu se dit (`fusion_interrompue`)",
+      r2.statut === "erreur" && iJournal >= 0 && iPhotos > iJournal && coupee.trace.includes("insert:collectif_evenements:fusion_interrompue") && auMilieu !== initial
+        && JSON.stringify(((evtFusion?.payload as LigneMem).photos as { ids: string[] }[]).flatMap((g) => g.ids).sort()) === JSON.stringify([uuid(73), uuid(74), uuid(75)]));
+    const fusions = await silence(() => Ps.lireFusions(comme(coupee.client), ED));
+    const f = fusions.statut === "ok" ? fusions.valeur[0] : undefined;
+    const d = f ? await silence(() => Ps.defaireFusion(comme(coupee.client), ED, f.evenement, "Mathias")) : null;
+    ok("l'atelier la voit interrompue et la DEFAIT : chaque photo revient a sa personne et a son nom d'avant",
+      f !== undefined && f.interrompue && !f.defaite && d?.statut === "ok" && etat(coupee) === initial && (coupee.tables.collectif_participants?.[1] as LigneMem).fusionne_dans === null);
+    const entiere = baseEnMemoire({ collectif_participants: [{ ...A }, { ...B }], collectif_photos: photos() });
+    const r3 = await silence(() => Ps.fusionnerPersonnes(comme(entiere.client), ED, plan, "Mathias"));
+    const lues = await silence(() => Ps.lireFusions(comme(entiere.client), ED));
+    ok("une fusion entiere : le journal d'abord, toutes les photos chez celle qui reste, l'autre pointe vers elle, rien d'interrompu",
+      r3.statut === "ok" && r3.n === 3 && etat(entiere).split(" | ").every((x) => x.includes(`:${A.id.slice(-2)}:Léa Martin`)) && (entiere.tables.collectif_participants?.[1] as LigneMem).fusionne_dans === A.id
+        && lues.statut === "ok" && lues.valeur.length === 1 && !lues.valeur[0].interrompue && entiere.trace.indexOf("insert:collectif_evenements:personnes_fusionnees") < entiere.trace.findIndex((x) => x.startsWith("update:")));
+  }
+
+  /* ─────────────── C3 : en attente ─────────────── */
+  titre("— durcissement : ce qui attend Mathias (C3), et le contrat —");
+  const contrat = lire("docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md");
+  ok("le contrat porte « Changements du durcissement » et dit C3 EN ATTENTE (la politique de confidentialite n'est pas tranchee)",
+    /## 9\. Changements du durcissement/.test(contrat) && /C3[^\n]*en attente/i.test(contrat) && /cf-connecting-ip/.test(contrat) && /nomPropose/.test(contrat) && /objets_a_effacer/.test(contrat));
+}
+
+type LigneVueAlbumMem = { id: string; participant_id: string | null; deposant: string | null; appareil_id: string | null; n: number };
+const sqlSansCommentaires = (s: string) => s.split("\n").filter((l) => !/^\s*--/.test(l)).join("\n");
+const serveurSrc = () => lire("src/lib/collectif/corbeilleServeur.ts");
+
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

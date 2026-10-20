@@ -200,6 +200,17 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Un participant s'est présenté par son adresse : ${String(payload.prenom ?? "?")}${payload.a ? ` (${String(payload.a)})` : ""}.`;
     case "telephone_oublie":
       return "« Ce n'est pas toi ? » : un téléphone ne parle plus pour sa personne (ses photos lui restent).";
+    /* ── l'audit du 20/10 (S5, S7, S9) ── */
+    case "participant_retrouve":
+      return `Adresse retrouvée : ${String(payload.prenom ?? "?")}${payload.a ? ` (${String(payload.a)})` : ""} s'est présenté de nouveau.`;
+    case "participant_nom_different":
+      return `Une adresse connue${payload.a ? ` (${String(payload.a)})` : ""} a été présentée sous un autre nom : « ${String(payload.propose ?? "?")} » au lieu de « ${String(payload.nom ?? "?")} ». Le nom n'a pas changé ; le responsable peut le corriger.`;
+    case "fusion_interrompue":
+      return "Fusion interrompue au milieu : la défaire remet chaque photo à sa personne.";
+    case "objets_a_effacer":
+      return `Effacement du coffre préparé (${String(payload.n ?? 0)} photo(s)).`;
+    case "objets_effaces":
+      return payload.reprise === true ? "Effacement du coffre repris : des objets restés sont partis." : "Effacement du coffre fait.";
     case "personne_renommee":
       return `Personne renommée : « ${String(payload.avant ?? "?")} » devient « ${String(payload.apres ?? "?")} » (${String(payload.n ?? 0)} photo(s)).`;
     case "personnes_fusionnees":

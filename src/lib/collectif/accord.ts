@@ -100,13 +100,28 @@ export function accordExige(role: string): boolean {
 }
 
 /**
+ * Une version que le SERVEUR accepte (audit du 20/10, C5) : connue
+ * (`TEXTES_ACCORD`) ET pas plus récente que `VERSION_ACCORD`, le texte que la
+ * page affiche aujourd'hui. Les versions sont des jours `AAAA-MM-JJ` : l'ordre
+ * des chaînes est celui des jours. Ainsi « 2026-10-20 » (l'album) n'est
+ * acceptée que le jour où la page l'AFFICHE : qui l'enverrait avant, depuis un
+ * script ou un vieil onglet, entrerait dans l'album des autres sans avoir lu la
+ * phrase. Une version plus ancienne, encore affichée par un onglet resté
+ * ouvert, reste acceptée : c'est le texte qu'il a lu.
+ */
+export function versionAcceptee(version: unknown): version is string {
+  return typeof version === "string" && TEXTES_ACCORD.has(version) && version <= VERSION_ACCORD;
+}
+
+/**
  * L'accord porté par le corps d'une déclaration : `accord: true` (le booléen,
- * pas la chaîne) ET une version connue. Rien d'autre ne vaut accord.
+ * pas la chaîne) ET une version acceptée (`versionAcceptee`). Rien d'autre ne
+ * vaut accord.
  */
 export function lireAccord(corps: Record<string, unknown>): Accord | null {
   if (corps.accord !== true) return null;
   const version = corps.accordVersion;
-  return typeof version === "string" && TEXTES_ACCORD.has(version) ? { version } : null;
+  return versionAcceptee(version) ? { version } : null;
 }
 
 /** Le code du refus, que le moteur sait lire. */

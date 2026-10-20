@@ -14,9 +14,10 @@ import { lireCorps, repondreChangement } from "@/lib/collectif/reponses";
  * migration 20261023). Le cookie de l'atelier, REVÉRIFIÉ ici, et le journal
  * dit QUI (`prenomDe`).
  *
- * - `GET` : chaque personne avec son adresse ENTIÈRE (l'atelier seul la voit),
- *   les fusions proposées, et les fusions faites (la plus récente d'abord, et si
- *   elles sont défaites), pour pouvoir les défaire.
+ * - `GET` : chaque personne avec son adresse ENTIÈRE (l'atelier seul la voit) et
+ *   le dernier autre nom tapé avec son adresse (`nomPropose`), les fusions
+ *   proposées, et les fusions faites (la plus récente d'abord, si elles sont
+ *   défaites, ou interrompues au milieu : `interrompue`), pour pouvoir les défaire.
  * - `POST { action: "renommer", personne, prenom, nom }`.
  * - `POST { action: "fusionner", source, cible, garder? }` (comme le responsable).
  * - `POST { action: "defaire", evenement, verifier? }` : DÉFAIRE une fusion
@@ -42,7 +43,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       ...personnes.valeur,
       fusions:
         fusions.statut === "ok"
-          ? fusions.valeur.map((f) => ({ evenement: f.evenement, le: f.le, qui: f.qui, reste: f.fusion.reste, part: f.fusion.part, nomAvant: f.nomAvant, nomPart: f.nomPart, nomApres: f.fusion.nomApres, n: f.fusion.n, defaite: f.defaite }))
+          ? fusions.valeur.map((f) => ({ evenement: f.evenement, le: f.le, qui: f.qui, reste: f.fusion.reste, part: f.fusion.part, nomAvant: f.nomAvant, nomPart: f.nomPart, nomApres: f.fusion.nomApres, n: f.fusion.n, defaite: f.defaite, interrompue: f.interrompue }))
           : [],
     },
     { headers: { "cache-control": "private, no-store" } }

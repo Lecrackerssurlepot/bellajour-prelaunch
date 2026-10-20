@@ -94,6 +94,34 @@ export function filtreAlbum(provenanceId: string | null): FiltreAlbum[] {
   ];
 }
 
+/* ─────────────────────── les comptes de l'album, sans relire ses photos (C1) ─────────────────────── */
+
+/**
+ * La vue `collectif_photos_album` (migration 20261023) : une ligne par lien,
+ * version d'accord, personne, nom et (pour un participant sans personne)
+ * téléphone, avec son nombre de photos ARRIVÉES et HORS corbeille. La page 0 de
+ * l'album y lit « 214 photos, 9 personnes » en quelques lignes, au lieu de
+ * relire toutes les photos du lien à chaque ouverture (audit du 20/10, C1).
+ */
+export const VUE_ALBUM = "collectif_photos_album";
+export const COLONNES_VUE_ALBUM = "id, participant_id, deposant, appareil_id, n";
+
+export type LigneVueAlbum = { id: string; participant_id: string | null; deposant: string | null; appareil_id: string | null; n: number };
+
+/**
+ * Le filtre de l'album posé sur la vue : celui de `filtreAlbum` SANS l'arrivée
+ * ni la corbeille, que la vue écarte elle-même (`where c.confirmee_le is not
+ * null and c.supprimee_le is null` : le harnais relit le SQL).
+ */
+export function filtreVueAlbum(provenanceId: string | null): FiltreAlbum[] {
+  return filtreAlbum(provenanceId).filter((f) => f.colonne !== "confirmee_le" && f.colonne !== "supprimee_le");
+}
+
+/** « 214 photos, 9 personnes » d'après les lignes de la vue (le même compte des personnes que `personnesDeLAlbum`). */
+export function comptesDeLAlbum(lignes: readonly LigneVueAlbum[]): { photos: number; personnes: number } {
+  return { photos: lignes.reduce((s, l) => s + l.n, 0), personnes: personnesDeLAlbum(lignes) };
+}
+
 /** Combien de PERSONNES dans l'album (« 9 personnes ») : une par personne connue, sinon une par nom, « Sans nom » par téléphone. */
 export function personnesDeLAlbum(lignes: readonly { participant_id?: string | null; deposant: string | null; appareil_id: string | null }[]): number {
   const vus = new Set<string>();

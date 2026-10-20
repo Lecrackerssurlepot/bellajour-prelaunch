@@ -33,6 +33,7 @@
 
 import { clePersonne, deParticipant, nomDePersonne, SANS_NOM } from "./dossiers";
 import { NOM_MAX, nettoyerMorceau } from "./participant";
+import { compareInstants } from "./resumePhotos";
 
 /* ─────────────────────────────── l'adresse ─────────────────────────────── */
 
@@ -80,6 +81,21 @@ export function cleSansAccents(nom: string | null | undefined): string {
 /** « Prénom Nom », tel que la photo le porte (`deposant`). */
 export function nomAffiche(p: { prenom: string; nom: string }): string {
   return `${nettoyerMorceau(p.prenom)} ${nettoyerMorceau(p.nom)}`.trim().slice(0, NOM_MAX);
+}
+
+/**
+ * Ce qu'un participant LIT d'une personne retrouvée par son adresse (audit du
+ * 20/10, S1) : son PRÉNOM, jamais son nom de famille. L'adresse n'est pas
+ * vérifiée : qui tape celle de quelqu'un lit son prénom et son nombre de
+ * photos (décision acceptée), rien de plus. Vaut pour « connu » et « qui »
+ * (`depot/participant`) et pour `moi.participant` (`depot/album`) : un
+ * téléphone parle pour la personne dont on a TAPÉ l'adresse. Seule la création
+ * (`cree`) redit ce qui vient d'être tapé. `nom: null` et `nomAffiche` = le
+ * prénom : la forme de la réponse ne change pas, le nom de famille n'y est plus.
+ */
+export function vuePersonneConnue(p: { prenom: string }): { prenom: string; nom: null; nomAffiche: string } {
+  const prenom = nettoyerMorceau(p.prenom).slice(0, NOM_MAX);
+  return { prenom, nom: null, nomAffiche: prenom };
 }
 
 /** Le prénom seul, pour l'album (« Léa ») : décision du 20/10, jamais le nom complet des autres. */
@@ -225,7 +241,18 @@ export type Personne = {
   derniere: string | null;
   /** Quand elle s'est présentée la première fois (une personne d'avant : `null`). */
   depuis: string | null;
+  /**
+   * Le dernier AUTRE nom tapé avec son adresse (audit du 20/10, S5/C4) : quelqu'un
+   * s'est présenté sous son adresse avec un prénom ou un nom différent (une faute
+   * de frappe, ou quelqu'un qui squatte l'adresse). Le responsable et l'atelier le
+   * voient pour pouvoir corriger ; jamais l'équipe. `null` : rien, ou déjà réglé
+   * par un renommage plus récent.
+   */
+  nomPropose: NomPropose | null;
 };
+
+/** Un nom tapé avec une adresse connue, différent du sien, et quand (`participant_nom_different`). */
+export type NomPropose = { nom: string; le: string };
 
 const cleLien = (provenanceId: string | null) => (provenanceId ? `lien:${provenanceId}` : "participants");
 
@@ -234,19 +261,23 @@ const cleLien = (provenanceId: string | null) => (provenanceId ? `lien:${provena
  * les personnes d'avant (des photos de participant sans personne, un nom
  * comparé chacune). Une personne fusionnée n'apparaît plus : ses photos sont
  * chez celle qui reste. Les photos du responsable et de l'atelier ne font pas
- * de personne. La plus fournie d'abord, puis par nom.
+ * de personne. La plus fournie d'abord, puis par nom. `proposes` : les autres
+ * noms tapés avec une adresse connue (`nomsProposes`), montrés seulement à qui
+ * voit l'adresse (le responsable, l'atelier : jamais l'équipe).
  */
 export function listerPersonnes(
   participants: readonly LigneParticipant[],
   resume: readonly LigneResumePersonne[],
   telephones: ReadonlyMap<string, number>,
-  vue: VueEmail
+  vue: VueEmail,
+  proposes: ReadonlyMap<string, NomPropose> = new Map()
 ): Personne[] {
   const parId = new Map<string, Personne>();
   for (const p of participants) {
     if (p.fusionne_dans) continue;
     const nom = nomAffiche(p);
     parId.set(p.id, {
+      nomPropose: vue === "aucun" ? null : proposes.get(p.id) ?? null,
       ref: `p:${p.id}`,
       participant: true,
       nom,
@@ -285,7 +316,7 @@ export function listerPersonnes(
     const cle = clePersonne(nom);
     let a = anciennes.get(cle);
     if (!a) {
-      a = { ref: `n:${cle}`, participant: false, nom, prenom: null, nomDeFamille: null, cle, email: null, n: 0, liens: [], telephones: 0, derniere: null, depuis: null, graphies: new Map(), appareils: new Set() };
+      a = { ref: `n:${cle}`, participant: false, nom, prenom: null, nomDeFamille: null, cle, email: null, n: 0, liens: [], telephones: 0, derniere: null, depuis: null, nomPropose: null, graphies: new Map(), appareils: new Set() };
       anciennes.set(cle, a);
     }
     a.n += g.n;
@@ -444,3 +475,48 @@ export const EVT_PRESENTE = "participant_presente";
 export const EVT_RENOMME = "personne_renommee";
 export const EVT_FUSION = "personnes_fusionnees";
 export const EVT_FUSION_DEFAITE = "fusion_defaite";
+/** Une fusion écrite en partie (une écriture a échoué APRÈS son journal) : défaire la remet d'aplomb. */
+export const EVT_FUSION_INTERROMPUE = "fusion_interrompue";
+/** Une adresse CONNUE présentée de nouveau (n'importe quel téléphone) : adresse masquée, ni token ni téléphone. */
+export const EVT_RETROUVE = "participant_retrouve";
+/** …avec un prénom ou un nom DIFFÉRENT du sien : les deux noms, l'adresse masquée (S5). */
+export const EVT_NOM_DIFFERENT = "participant_nom_different";
+
+/* ─────────────────────── un autre nom tapé avec une adresse connue ─────────────────────── */
+
+/**
+ * Le nom tapé diffère-t-il de celui de la personne ? Comparé comme la grille
+ * compare deux noms (`clePersonne` : sans la casse ni les espaces) ; une simple
+ * majuscule n'est pas un autre nom.
+ */
+export function nomDifferent(tape: Identite, personne: { prenom: string; nom: string }): boolean {
+  return clePersonne(nomAffiche(tape)) !== clePersonne(nomAffiche(personne));
+}
+
+/** Une ligne du journal telle que `nomsProposes` la lit. */
+export type EvenementNom = { type: string; payload: Record<string, unknown> | null; created_at: string };
+
+/**
+ * Le DERNIER autre nom tapé pour chaque personne (`participant_nom_different`,
+ * payload `{ personne: "p:<uuid>", propose }`), tant qu'il vaut d'être montré :
+ * - plus récent que son dernier renommage (après, le responsable a tranché) ;
+ * - encore différent de son nom d'aujourd'hui.
+ * Une personne fusionnée ailleurs n'a plus de ligne dans la liste : rien.
+ */
+export function nomsProposes(evenements: readonly EvenementNom[], participants: readonly LigneParticipant[]): Map<string, NomPropose> {
+  const parId = new Map(participants.map((p) => [p.id, p]));
+  const out = new Map<string, NomPropose>();
+  for (const e of evenements) {
+    if (e.type !== EVT_NOM_DIFFERENT) continue;
+    const ref = lireRefPersonne(e.payload?.personne);
+    const propose = typeof e.payload?.propose === "string" ? nettoyerMorceau(e.payload.propose).slice(0, NOM_MAX) : "";
+    if (!ref || ref.genre !== "participant" || !propose) continue;
+    const p = parId.get(ref.id);
+    if (!p || p.fusionne_dans) continue;
+    if (p.renomme_le && compareInstants(e.created_at, p.renomme_le) <= 0) continue;
+    if (clePersonne(propose) === clePersonne(nomAffiche(p))) continue;
+    const deja = out.get(p.id);
+    if (!deja || compareInstants(e.created_at, deja.le) > 0) out.set(p.id, { nom: propose, le: e.created_at });
+  }
+  return out;
+}

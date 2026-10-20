@@ -27,10 +27,23 @@
  *   qui tape l'adresse de quelqu'un ne doit pas pouvoir effacer ses photos.
  *   Le téléphone, lui, ne se tape pas.
  *
- * LA PLACE DANS LE PLAFOND (décision 2 du 20/10) : une photo supprimée par SON
- * AUTEUR libère sa place ; une photo retirée par le responsable ou l'atelier
- * la garde (sinon un dépôt indésirable se renverrait sans fin). Le total de
- * l'édition, lui, ne compte plus aucune photo de la corbeille.
+ * LA PLACE DANS LE PLAFOND (audit du 20/10, S4, qui remplace la règle du lot
+ * w1) : une photo à la corbeille ne compte plus NULLE PART, ni dans le total de
+ * l'édition ni dans la place de la personne, quel que soit qui l'a supprimée.
+ * L'adresse n'étant pas vérifiée, un farceur qui envoie sous l'adresse de
+ * quelqu'un épuisait sa place, et le nettoyage du responsable ne la lui rendait
+ * pas. Le dépôt indésirable ne se renvoie pas en boucle pour autant : la même
+ * photo rechoisie reste « déjà là » par sa clé de fichier (`planDeclaration`).
+ *
+ * L'EFFACEMENT POUR DE BON (purge des 30 jours, « Effacer maintenant ») suit un
+ * ordre, et chaque pas se lit au journal (S7, C2) : l'INTENTION d'abord
+ * (`objets_a_effacer`, les clés du coffre seulement), puis la LIGNE, supprimée
+ * sous condition (toujours à la corbeille et, pour la purge, toujours plus
+ * vieille que 30 jours) en rendant ses clés, PUIS le coffre, puis ce qui est
+ * réglé (`objets_effaces`). Un objet qui résiste reste dans l'intention et se
+ * retente aux passages suivants (`objetsEnAttente`) : « Restaurer » ne peut plus
+ * ressusciter une photo dont l'original est déjà effacé, et une ligne coincée
+ * ne retient plus la purge des autres.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
@@ -116,16 +129,13 @@ export function peutSupprimerSaPhoto(photo: PhotoDuParticipant, appareil: string
 }
 
 /**
- * Le filtre PostgREST du plafond PAR PERSONNE : une photo à la corbeille ne
- * compte plus si son AUTEUR l'a supprimée (sa place se libère), elle compte
- * encore si le responsable ou l'atelier l'a retirée. Se cumule en ET avec le
- * filtre de `filtreDansPlafond` (collecte.ts).
+ * Une photo compte-t-elle dans la place de sa personne ? Seulement hors de la
+ * corbeille, QUI que soit celui qui l'a supprimée (S4). En base, c'est le même
+ * filtre que le total (`supprimee_le is null`, `compterPourPlafond`) : le
+ * harnais compare les deux. `supprimee_par` n'y entre plus.
  */
-export const FILTRE_PLACE_PERSONNE = "supprimee_le.is.null,supprimee_par.neq.auteur";
-
-/** La même règle, en mémoire (le harnais compare les deux). */
 export function compteDansLaPlace(p: { supprimee_le?: string | null; supprimee_par?: string | null }): boolean {
-  return !p.supprimee_le || p.supprimee_par !== "auteur";
+  return !p.supprimee_le;
 }
 
 /** « supprimée par son auteur, Yanis Haddad », « par Mathilde Roux », « par l'atelier » (planche 5). */
@@ -139,3 +149,81 @@ export function parQui(par: string | null, deposant: string | null, responsable:
 export const EVT_SUPPRIMEES = "photos_supprimees";
 export const EVT_RESTAUREES = "photos_restaurees";
 export const EVT_EFFACEES = "photos_effacees";
+/** L'intention d'effacer des objets du coffre, écrite AVANT la ligne : `{ cles, n }`, des clés R2 et rien d'autre. */
+export const EVT_OBJETS_A_EFFACER = "objets_a_effacer";
+/** Ce qui est réglé d'une intention : `{ evenement, cles }` (partis, ou gardés parce qu'une ligne les porte encore). */
+export const EVT_OBJETS_EFFACES = "objets_effaces";
+
+/* ─────────────────────── les objets du coffre encore à effacer ─────────────────────── */
+
+/**
+ * Une intention n'est reprise qu'une fois VIEILLE de ce délai : l'effacement qui
+ * l'a écrite a fini (une requête vit 300 s au plus, la relève moins). Sinon la
+ * reprise croiserait un effacement en cours et classerait « à garder » une clé
+ * dont la ligne est sur le point de partir.
+ */
+export const DELAI_REPRISE_MS = 15 * 60 * 1000;
+
+/** Au plus, par passage : le reste attend le lendemain. */
+export const REPRISE_MAX_CLES = 500;
+
+const UUID_MIN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const CLE_OBJET = new RegExp(`^collectif/(${UUID_MIN})/[A-Za-z0-9._/-]+$`);
+const CLE_PHOTO = new RegExp(`^collectif/(${UUID_MIN})/photos/(${UUID_MIN})/`);
+
+/** Les clés d'une intention, relues SANS confiance : sous `collectif/<uuid de l'édition>/` seulement, jamais `..`. */
+export function lireClesObjets(v: unknown, editionId: string): string[] {
+  if (!Array.isArray(v)) return [];
+  const ed = editionId.toLowerCase();
+  return [...new Set(v.filter((k): k is string => typeof k === "string" && k.length <= 300 && !k.includes("..") && CLE_OBJET.exec(k)?.[1] === ed))];
+}
+
+/** Une ligne du journal telle que la reprise la lit. */
+export type EvenementObjets = { id: string; edition_id: string | null; type: string; payload: Record<string, unknown> | null; created_at: string };
+
+export type ObjetsEnAttente = { editionId: string; evenement: string; cles: string[] };
+
+/**
+ * Les clés de chaque intention qui ne sont pas encore réglées (aucun
+ * `objets_effaces` de la même édition ne les nomme), pour les intentions
+ * vieilles d'au moins `DELAI_REPRISE_MS`. La plus ancienne d'abord.
+ */
+export function objetsEnAttente(evenements: readonly EvenementObjets[], maintenant: Date): ObjetsEnAttente[] {
+  const reglees = new Map<string, Set<string>>();
+  for (const e of evenements) {
+    if (e.type !== EVT_OBJETS_EFFACES || typeof e.payload?.evenement !== "string" || !e.edition_id) continue;
+    const cle = `${e.edition_id}|${e.payload.evenement}`;
+    const s = reglees.get(cle) ?? new Set<string>();
+    for (const k of lireClesObjets(e.payload.cles, e.edition_id)) s.add(k);
+    reglees.set(cle, s);
+  }
+  const limite = maintenant.getTime() - DELAI_REPRISE_MS;
+  const out: ObjetsEnAttente[] = [];
+  const intentions = evenements.filter((e) => e.type === EVT_OBJETS_A_EFFACER && e.edition_id).sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+  for (const e of intentions) {
+    const t = Date.parse(e.created_at);
+    if (!Number.isFinite(t) || t > limite || !e.edition_id) continue;
+    const faites = reglees.get(`${e.edition_id}|${e.id}`);
+    const cles = lireClesObjets(e.payload?.cles, e.edition_id).filter((k) => !faites?.has(k));
+    if (cles.length) out.push({ editionId: e.edition_id, evenement: e.id, cles });
+  }
+  return out;
+}
+
+/** L'id de la photo qu'une clé du coffre range (`collectif/<édition>/photos/<id>/…`), ou `null`. */
+export function photoDeLaCle(cle: string, editionId: string): string | null {
+  const m = CLE_PHOTO.exec(cle);
+  return m && m[1] === editionId.toLowerCase() ? m[2] : null;
+}
+
+/**
+ * Les clés qu'aucune ligne ne porte plus : seules celles-là s'effacent. Une
+ * ligne qui existe encore (restaurée entre-temps, ou que la base a refusé de
+ * supprimer) garde TOUS ses objets : son original, sa vignette, et la vignette
+ * rangée à côté sous son id.
+ */
+export function clesLibres(cles: readonly string[], editionId: string, lignes: readonly { id: string; r2_key: string | null; vignette_key: string | null }[]): string[] {
+  const ids = new Set(lignes.map((l) => l.id.toLowerCase()));
+  const portees = new Set(lignes.flatMap((l) => [l.r2_key, l.vignette_key]).filter((k): k is string => typeof k === "string"));
+  return cles.filter((k) => !portees.has(k) && !ids.has(photoDeLaCle(k, editionId) ?? ""));
+}

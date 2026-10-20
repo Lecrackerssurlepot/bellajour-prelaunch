@@ -101,3 +101,31 @@ export function enPaquets<T>(liste: readonly T[], taille: number = PAQUET_IN): T
   for (let i = 0; i < liste.length; i += pas) paquets.push(liste.slice(i, i + pas));
   return paquets;
 }
+
+/* ─────────────────────── un texte venu d'un client dans un `in` ─────────────────────── */
+
+/**
+ * ⚠️ `.in(colonne, valeurs)` de postgrest-js NE PROTÈGE PAS un texte venu d'un
+ * client (audit du 20/10, S8). Il n'entoure de guillemets qu'une valeur qui
+ * porte `,`, `(` ou `)`, et n'échappe RIEN dedans. Or PostgREST lit un `"`
+ * comme une fin de valeur et `\` comme un échappement :
+ * - le nom `Zed","Léa Martin` partait en `in.("Zed","Léa Martin")` : DEUX
+ *   valeurs, et renommer « Zed » renommait aussi les photos de Léa Martin ;
+ * - le nom `"Bob"` partait en `in.("Bob")` : la base cherchait `Bob`, la
+ *   personne `"Bob"` n'était plus renommable (et un vrai « Bob » l'était à sa place).
+ *
+ * D'où UNE façon de citer : chaque valeur entre guillemets doubles, `\` écrit
+ * `\\` et `"` écrit `\"` (la grammaire de PostgREST, vérifiée le 20/10 contre
+ * la vraie base, en lecture seule). Toute valeur de texte qui vient d'un client
+ * (un nom, une clé de fichier) entre dans un `in` par `listeIn`, posée par
+ * `.filter(colonne, "in", listeIn(valeurs))`, jamais par `.in()`. Les uuid et
+ * les constantes du code n'en ont pas besoin. Pur : le harnais le rejoue.
+ */
+export function citerPostgrest(valeur: string): string {
+  return `"${valeur.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/** `("a","b\"c")` : la liste d'un filtre `in`, chaque valeur citée (`citerPostgrest`), sans doublon. */
+export function listeIn(valeurs: readonly string[]): string {
+  return `(${[...new Set(valeurs)].map(citerPostgrest).join(",")})`;
+}

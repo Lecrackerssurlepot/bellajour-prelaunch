@@ -18,23 +18,29 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { adresseMasquee } from "./appareil";
 import { deParticipant, clePersonne } from "./dossiers";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "./horsCorbeille";
-import { journaliser } from "./journal";
-import { enPaquets, lireToutesLesLignes } from "./lignes";
+import { journaliser, journaliserId } from "./journal";
+import { enPaquets, lireToutesLesLignes, listeIn } from "./lignes";
 import { personnesAbsentes, tableAbsente } from "./migration";
 import {
   COLONNES_PARTICIPANT,
   decouperNom,
   EVT_FUSION,
   EVT_FUSION_DEFAITE,
+  EVT_FUSION_INTERROMPUE,
+  EVT_NOM_DIFFERENT,
   EVT_PRESENTE,
   EVT_RENOMME,
+  EVT_RETROUVE,
   FUSIONS_MAX,
   grouperAvantFusion,
   lireFusionJournal,
   listerPersonnes,
   nomAffiche,
+  nomDifferent,
+  nomsProposes,
   proposerFusions,
   ecrireRefPersonne,
+  type EvenementNom,
   type FusionJournal,
   type FusionProposee,
   type Identite,
@@ -124,7 +130,7 @@ export async function participantDeLAppareil(supabase: SupabaseClient, editionId
 /* ─────────────────────────── se présenter ─────────────────────────── */
 
 export type Presentation =
-  | { statut: "connu"; participant: LigneParticipant; nomIgnore: boolean }
+  | { statut: "connu"; participant: LigneParticipant; nomIgnore: boolean; journal: boolean }
   | { statut: "cree"; participant: LigneParticipant; journal: boolean }
   /** L'adresse n'est pas connue et la page n'a pas encore donné prénom et nom : rien n'est écrit. */
   | { statut: "inconnu" }
@@ -134,21 +140,30 @@ export type Presentation =
 /**
  * Se présenter sur un lien de dépôt : l'adresse connue retrouve sa personne
  * (le nom envoyé est IGNORÉ : le participant ne se renomme pas), inconnue elle
- * en crée une si prénom et nom sont là. Puis CE téléphone parle pour elle
+ * en crée une si prénom et nom sont là ET que `peutCreer` (ni avant
+ * l'ouverture, ni après la clôture). Puis CE téléphone parle pour elle
  * (`collectif_participants_appareils`, une ligne par téléphone et par
  * édition : un téléphone déjà tenu par quelqu'un d'autre change de personne,
  * les photos restent à la leur).
+ *
+ * Audit du 20/10 (S5, C4) : une adresse CONNUE se journalise à chaque
+ * présentation (`participant_retrouve`, adresse masquée, ni token ni
+ * téléphone) et, si le nom tapé n'est pas le sien, `participant_nom_different`
+ * avec les deux noms : la liste des personnes le montre au responsable
+ * (`nomPropose`), qui peut corriger. `nomIgnore` vaut dès qu'un nom est tapé,
+ * qu'il soit le bon ou non : comparer et le dire rendrait un oracle du nom de
+ * famille, lettre à lettre (S1).
  */
 export async function presenter(
   supabase: SupabaseClient,
-  p: { editionId: string; email: string; identite: Identite | null; provenanceId: string | null; appareil: string }
+  p: { editionId: string; email: string; identite: Identite | null; provenanceId: string | null; appareil: string; peutCreer?: boolean }
 ): Promise<Presentation> {
   const lue = await trouverParEmail(supabase, p.editionId, p.email);
   if (lue.statut !== "ok") return lue;
   let participant = lue.valeur;
   let cree = false;
   if (!participant) {
-    if (!p.identite) return { statut: "inconnu" };
+    if (!p.identite || p.peutCreer === false) return { statut: "inconnu" };
     const { data, error } = await supabase
       .from("collectif_participants")
       .insert({ edition_id: p.editionId, email: p.email, prenom: p.identite.prenom, nom: p.identite.nom, premier_lien_id: p.provenanceId })
@@ -180,8 +195,16 @@ export async function presenter(
     /* La dernière visite : un repère pour l'atelier, jamais un refus si elle ne s'écrit pas. */
     const { error } = await supabase.from("collectif_participants").update({ vu_le: maintenant }).eq("id", participant.id);
     if (error) console.error("[collectif] visite de la personne non notée", error.code);
-    const nomIgnore = p.identite !== null && clePersonne(nomAffiche(p.identite)) !== clePersonne(nomAffiche(participant));
-    return { statut: "connu", participant, nomIgnore };
+    const personne = ecrireRefPersonne({ genre: "participant", id: participant.id });
+    const a = adresseMasquee(participant.email);
+    const autreNom = p.identite !== null && nomDifferent(p.identite, participant);
+    const [retrouve, different] = await Promise.all([
+      journaliser(supabase, { editionId: p.editionId }, EVT_RETROUVE, { personne, prenom: participant.prenom, lien: p.provenanceId, a }, null),
+      autreNom && p.identite
+        ? journaliser(supabase, { editionId: p.editionId }, EVT_NOM_DIFFERENT, { personne, a, nom: nomAffiche(participant), propose: nomAffiche(p.identite), lien: p.provenanceId }, null)
+        : Promise.resolve(true),
+    ]);
+    return { statut: "connu", participant, nomIgnore: p.identite !== null, journal: retrouve && different };
   }
   const journal = await journaliser(
     supabase,
@@ -300,8 +323,9 @@ export async function chargerPersonnes(supabase: SupabaseClient, editionId: stri
 
   let participants: LigneParticipant[] = [];
   const telephones = new Map<string, number>();
+  let autresNoms: EvenementNom[] = [];
   if (avecAdresses) {
-    const [lus, tels] = await Promise.all([
+    const [lus, tels, noms] = await Promise.all([
       lireToutesLesLignes<LigneParticipant>(
         () => supabase.from("collectif_participants").select(COLONNES_PARTICIPANT).eq("edition_id", editionId).returns<LigneParticipant[]>(),
         { colonne: "created_at", croissant: true },
@@ -312,15 +336,33 @@ export async function chargerPersonnes(supabase: SupabaseClient, editionId: stri
         { colonne: "created_at", croissant: true },
         "téléphones des personnes"
       ),
+      /* Les autres noms tapés avec une adresse connue (S5, C4) : seulement pour qui voit l'adresse. Les
+         plus récents d'abord ; 500 suffisent (le dernier par personne compte). */
+      vue === "aucun"
+        ? Promise.resolve({ data: [] as EvenementNom[], error: null })
+        : supabase
+            .from("collectif_evenements")
+            .select("type, payload, created_at")
+            .eq("edition_id", editionId)
+            .eq("type", EVT_NOM_DIFFERENT)
+            .order("created_at", { ascending: false })
+            .limit(PROPOSES_LUS)
+            .returns<EvenementNom[]>(),
     ]);
     if (lus.error) return echec(lus.error);
     if (tels.error) return echec(tels.error);
     participants = lus.data;
     for (const t of tels.data) telephones.set(t.participant_id, (telephones.get(t.participant_id) ?? 0) + 1);
+    /* Un journal illisible ne cache pas la liste : les noms proposés manquent, et on le dit en console. */
+    if (noms.error) console.error("[collectif] autres noms des personnes illisibles", noms.error.code);
+    else autresNoms = noms.data ?? [];
   }
-  const personnes = listerPersonnes(participants, lignes, telephones, avecAdresses ? vue : "aucun");
+  const personnes = listerPersonnes(participants, lignes, telephones, avecAdresses ? vue : "aucun", nomsProposes(autresNoms, participants));
   return { statut: "ok", valeur: { personnes, proposees: proposerFusions(personnes), avecAdresses } };
 }
+
+/** Combien de `participant_nom_different` la liste relit au plus (les plus récents). */
+export const PROPOSES_LUS = 500;
 
 /* ─────────────────────────── renommer ─────────────────────────── */
 
@@ -361,6 +403,8 @@ async function photosDe(supabase: SupabaseClient, editionId: string, ref: RefPer
   if (graphies.statut !== "ok") return graphies;
   const toutes: L[] = [];
   for (const paquet of enPaquets(graphies.valeur)) {
+    /* ⚠️ Un nom vient d'un PARTICIPANT, tel qu'il l'a tapé : cité par `listeIn` (S8), jamais par `.in()`.
+       `Zed","Léa Martin` y partait en deux valeurs et renommait aussi Léa Martin ; `"Bob"` y perdait ses guillemets. */
     const lu = await lireToutesLesLignes<L>(
       () =>
         supabase
@@ -368,7 +412,7 @@ async function photosDe(supabase: SupabaseClient, editionId: string, ref: RefPer
           .select("id, deposant, participant_id, role_deposant, provenance_id, created_at")
           .eq("edition_id", editionId)
           .is("participant_id", null)
-          .in("deposant", paquet)
+          .filter("deposant", "in", listeIn(paquet))
           .returns<L[]>(),
       { colonne: "created_at", croissant: true },
       "photos d'un nom"
@@ -491,18 +535,10 @@ export async function fusionnerPersonnes(
   ];
   const journalPhotos = grouperAvantFusion(aReecrire);
 
-  /* L'ordre : la personne qui reste (son nom), puis les photos, puis la personne qui part (`fusionne_dans`).
-     Une panne au milieu laisse des photos à réécrire, jamais une personne qui pointe vers un nom qui ne la porte pas. */
-  if (renommage && idReste) {
-    const { error } = await supabase.from("collectif_participants").update({ prenom: renommage.prenom, nom: renommage.nom, renomme_le: new Date().toISOString() }).eq("id", idReste);
-    if (error) return echec(error);
-  }
-  const ecrit = await reecrire(supabase, editionId, aReecrire.map((p) => p.id), idReste ? { deposant: nomApres, participant_id: idReste } : { deposant: nomApres });
-  if (ecrit.statut !== "ok") return ecrit;
-  if (lignePart.valeur && idReste) {
-    const { error } = await supabase.from("collectif_participants").update({ fusionne_dans: idReste, fusionne_le: new Date().toISOString() }).eq("id", lignePart.valeur.id);
-    if (error) return echec(error);
-  }
+  /* S9 (audit du 20/10) : le JOURNAL D'ABORD, avec l'état d'avant de chaque photo et du nom de la
+     personne qui reste. Sans lui, rien n'est écrit : une fusion que l'on ne saurait pas défaire ne
+     se fait pas. Une panne au milieu des écritures laisse un journal complet, que « défaire » rejoue
+     (`defaireFusion` remet chaque photo telle que le journal la décrit, déjà réécrite ou non). */
   const payload: FusionJournal & { nomAvant: string | null; nomPart: string | null } = {
     reste: ecrireRefPersonne(plan.reste),
     part: ecrireRefPersonne(plan.part),
@@ -513,29 +549,55 @@ export async function fusionnerPersonnes(
     nomAvant: nomReste,
     nomPart,
   };
-  const { data: evt, error: errJournal } = await supabase
-    .from("collectif_evenements")
-    .insert({ edition_id: editionId, style_id: null, type: EVT_FUSION, payload, qui })
-    .select("id")
-    .maybeSingle<{ id: string }>();
-  if (errJournal) console.error("[collectif] journal de la fusion non écrit", errJournal.code, errJournal.message);
-  return { statut: "ok", n: ecrit.valeur, journal: !errJournal, nom: nomApres, evenement: evt?.id };
+  const evenement = await journaliserId(supabase, { editionId }, EVT_FUSION, payload, qui);
+  if (!evenement) return { statut: "erreur", code: "journal" };
+
+  /* L'ordre : la personne qui reste (son nom), puis les photos, puis la personne qui part (`fusionne_dans`).
+     Une panne au milieu laisse des photos à réécrire, jamais une personne qui pointe vers un nom qui ne la
+     porte pas ; elle se dit au journal (`fusion_interrompue`) et l'atelier la défait. */
+  const interrompre = async (panne: Panne): Promise<Panne & { evenement: string }> => {
+    await journaliser(supabase, { editionId }, EVT_FUSION_INTERROMPUE, { evenement }, qui);
+    return { ...panne, evenement };
+  };
+  if (renommage && idReste) {
+    const { error } = await supabase.from("collectif_participants").update({ prenom: renommage.prenom, nom: renommage.nom, renomme_le: new Date().toISOString() }).eq("id", idReste);
+    if (error) return interrompre(echec(error));
+  }
+  const ecrit = await reecrire(supabase, editionId, aReecrire.map((p) => p.id), idReste ? { deposant: nomApres, participant_id: idReste } : { deposant: nomApres });
+  if (ecrit.statut !== "ok") return interrompre(ecrit);
+  if (lignePart.valeur && idReste) {
+    const { error } = await supabase.from("collectif_participants").update({ fusionne_dans: idReste, fusionne_le: new Date().toISOString() }).eq("id", lignePart.valeur.id);
+    if (error) return interrompre(echec(error));
+  }
+  return { statut: "ok", n: ecrit.valeur, journal: true, nom: nomApres, evenement };
 }
 
-export type FusionLue = { evenement: string; le: string; qui: string | null; fusion: FusionJournal; nomAvant: string | null; nomPart: string | null; defaite: boolean };
+export type FusionLue = {
+  evenement: string;
+  le: string;
+  qui: string | null;
+  fusion: FusionJournal;
+  nomAvant: string | null;
+  nomPart: string | null;
+  defaite: boolean;
+  /** Une écriture a échoué après le journal (S9) : la fusion est à moitié faite, « défaire » la remet d'aplomb. */
+  interrompue: boolean;
+};
 
-/** Les fusions de l'édition, la plus récente d'abord, et si elles sont défaites (pour l'atelier). */
+/** Les fusions de l'édition, la plus récente d'abord, et si elles sont défaites ou interrompues (pour l'atelier). */
 export async function lireFusions(supabase: SupabaseClient, editionId: string): Promise<Issue<FusionLue[]>> {
   const { data, error } = await supabase
     .from("collectif_evenements")
     .select("id, type, payload, qui, created_at")
     .eq("edition_id", editionId)
-    .in("type", [EVT_FUSION, EVT_FUSION_DEFAITE])
+    .in("type", [EVT_FUSION, EVT_FUSION_DEFAITE, EVT_FUSION_INTERROMPUE])
     .order("created_at", { ascending: false })
     .limit(200)
     .returns<{ id: string; type: string; payload: Record<string, unknown>; qui: string | null; created_at: string }[]>();
   if (error) return tableAbsente(error.code) ? { statut: "absente" } : { statut: "erreur", code: error.code };
-  const defaites = new Set((data ?? []).filter((e) => e.type === EVT_FUSION_DEFAITE && typeof e.payload?.evenement === "string").map((e) => e.payload.evenement as string));
+  const designees = (type: string) => new Set((data ?? []).filter((e) => e.type === type && typeof e.payload?.evenement === "string").map((e) => e.payload.evenement as string));
+  const defaites = designees(EVT_FUSION_DEFAITE);
+  const interrompues = designees(EVT_FUSION_INTERROMPUE);
   const fusions: FusionLue[] = [];
   for (const e of data ?? []) {
     if (e.type !== EVT_FUSION) continue;
@@ -549,6 +611,7 @@ export async function lireFusions(supabase: SupabaseClient, editionId: string): 
       nomAvant: typeof e.payload.nomAvant === "string" ? e.payload.nomAvant : null,
       nomPart: typeof e.payload.nomPart === "string" ? e.payload.nomPart : null,
       defaite: defaites.has(e.id),
+      interrompue: interrompues.has(e.id),
     });
   }
   return { statut: "ok", valeur: fusions };

@@ -52,8 +52,8 @@ Chargé dès qu'on touche une route.
 | `/api/admin/atelier/souvenir` | relit les DEUX PDF du coffre (jusqu'à 130 Mo chacun, `maxDuration` 300), écrit un nouvel objet R2, remplace `souvenir_pdf_key` et **supprime l'ancien objet**. Deux appelants navigateur (le panneau après `envoyer_impression`, le bouton de la carte Impression). Depuis le 21/09 (T-122) **un seul passage à la fois** : verrou dans le journal (`souvenir_demarre` → `souvenir_genere` / `souvenir_echoue`, règle pure `etatGenerationSouvenir`), 409 `deja_en_cours` sinon ; la fiche relit le même journal pour éteindre le bouton |
 | `/api/admin/atelier/relance` | **un mail réel** à un client, sans changer d'état. N'accepte aucun motif en entrée : la règle (`evaluerRelance`) est relue côté serveur au clic |
 | `/api/webhook` | mails F1/S1/P3/A3/relance, `assign_numero_fondateur`, crédits de parrainage |
-| `/api/atelier/mails/relever` | **envois multiples** en un passage ; depuis le 20/10 (T-194), APRÈS sa réponse (`after()`), le rattrapage quotidien des photos d'édition arrivées au coffre sans confirmation (confirme, fabrique les vignettes manquantes, journalise ; aucun mail) ; et (lot w1, migration 20261023) **la purge de la corbeille des éditions : DELETE R2 irréversible** des photos à la corbeille depuis 30 jours, puis leurs lignes (`purgeQuotidienne`, 500 au plus, silencieuse sans la migration) |
-| `/api/admin/collectif/editions/[id]/corbeille` (`effacer`) | **DELETE R2 irréversible** (« Effacer maintenant », l'atelier seul, `verifier: true` d'abord) ; `supprimer` / `restaurer` ne touchent que la base |
+| `/api/atelier/mails/relever` | **envois multiples** en un passage ; depuis le 20/10 (T-194), APRÈS sa réponse (`after()`), le rattrapage quotidien des photos d'édition arrivées au coffre sans confirmation (confirme, fabrique les vignettes manquantes, journalise ; aucun mail) ; et (lot w1, migration 20261023) **la purge de la corbeille des éditions : DELETE de lignes puis DELETE R2 irréversible** des photos à la corbeille depuis 30 jours (`purgeQuotidienne`, 500 au plus, silencieuse sans la migration) ; depuis l'audit du 20/10 la LIGNE part d'abord (re-contrôlée), le coffre ensuite, et un objet qui résiste est retenté aux passages suivants (`reprendreObjets`, journal `objets_a_effacer` / `objets_effaces`) |
+| `/api/admin/collectif/editions/[id]/corbeille` (`effacer`) | **DELETE de lignes puis DELETE R2 irréversible** (« Effacer maintenant », l'atelier seul, `verifier: true` d'abord ; 200 avec `ratees`, plus de 502) ; `supprimer` / `restaurer` ne touchent que la base |
 | `/api/collectif/depot/supprimer`, `/api/collectif/photos/corbeille` | mettent à la corbeille (restaurable 30 jours), rien au coffre ; le participant seulement pour les photos de SON téléphone |
 | `/api/atelier/numero` | crée le dossier + **M0 programmé chez Brevo pour +15 min** (T-116) ; le PATCH de consentement annule ce M0 puis envoie M1 |
 | `/api/atelier/photos/complete` | confirme les photos ; **au premier lot confirmé, annule le M0 programmé** (T-116, `annulerMailProgramme`) ; depuis le 21/09 (T-123) lit en tâche de fond (`after()`, après la réponse) la date, le GPS, l'appareil, les dimensions et l'empreinte des photos confirmées (`enrichirDossier`, best-effort strict, `maxDuration` 60) |
@@ -104,7 +104,13 @@ Lire le résultat, rendre 500 sinon (T-038).
   pas de zod. Les corps de POST sont typés `unknown` puis inspectés. Suivre ce style.
 - **Le rate-limit est une `Map` en mémoire de processus** : sur Vercel il n'est PAS partagé entre
   instances. Il freine un script naïf, il n'arrête pas une attaque. Ne pas le présenter comme
-  une protection.
+  une protection. `creerPlafond` compte par l'en-tête `x-forwarded-for` brut ; une route publique
+  que toute une classe ouvre en même temps (le dépôt des éditions) compte par `creerFrein` avec une
+  clé « adresse du client + lien » (`ipDuClient`, `freins.ts`) et un second frein large par
+  `ipDeConnexion` : `cf-connecting-ip` se forge en visant *.vercel.app directement.
+- **Un texte venu d'un client n'entre jamais dans `.in()`** de supabase-js : il n'est pas échappé
+  (`Zed","Léa Martin` part en deux valeurs). `listeIn` (`collectif/lignes.ts`) par
+  `.filter(colonne, "in", …)`.
 - **Un lien qui part par mail prend l'origine du SITE** (`NEXT_PUBLIC_SITE_URL`), jamais un
   en-tête de la requête : `host` et surtout `x-forwarded-host` s'écrivent par l'appelant, et une
   route publique enverrait un vrai mail de Bellajour qui mène chez lui. Côté particuliers, c'est
