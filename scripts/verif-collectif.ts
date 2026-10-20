@@ -3596,16 +3596,20 @@ async function sondeT167() {
         && panneau.indexOf("if (!rep.ok) {") < panneau.indexOf("getDirectoryHandle("));
 
     const complete = lire("src/app/api/collectif/depot/complete/route.ts");
+    /* T-194 : l'update vit dans `confirmerArrivee` (rattrapageCoffre.ts), partagee avec le rattrapage. */
+    const coffreConf = lire("src/lib/collectif/rattrapageCoffre.ts");
     ok("la confirmation est idempotente : `confirmee_le` lu ; une photo deja confirmee est rendue sans update ; l'update porte `.is(\"confirmee_le\", null)`",
-      /\.select\("id, r2_key, confirmee_le"\)/.test(complete) && /for \(const l of lignes\) if \(l\.confirmee_le\) confirmees\.push\(l\.id\);/.test(complete)
-        && /const aConfirmer = lignes\.filter\(\(l\) => !l\.confirmee_le\);/.test(complete) && /\.eq\("id", l\.id\)\s*\.is\("confirmee_le", null\)\s*\.select\("id"\)/.test(complete));
+      /\.select\("id, r2_key, confirmee_le, mime"\)/.test(complete) && /for \(const l of lignes\) if \(l\.confirmee_le\) confirmees\.push\(l\.id\);/.test(complete)
+        && /const aConfirmer = lignes\.filter\(\(l\) => !l\.confirmee_le\);/.test(complete) && /confirmerArrivee\(supabase, edition\.id, l, tete\.taille, maintenant\)/.test(complete)
+        && /\.eq\("id", ligne\.id\)\s*\.is\("confirmee_le", null\)\s*\.select\("id"\)/.test(coffreConf));
     ok("seules les NOUVELLES se comptent, se journalisent et se relisent (un lot rejoue ne double rien)",
       /"photos_confirmees", \{ n: nouvelles\.length, role: acces\.role \}/.test(complete) && /enrichirCollectif\(makeSupabase\(\), edition\.id, nouvelles\)/.test(complete)
-        && !/n: confirmees\.length/.test(complete) && /if \(ecrites\?\.length\) nouvelles\.push\(l\.id\);/.test(complete));
+        && !/n: confirmees\.length/.test(complete) && /if \(r\.statut === "nouvelle"\) \{\s*nouvelles\.push\(l\.id\);/.test(complete)
+        && /return ecrites\?\.length \? \{ statut: "nouvelle"/.test(coffreConf));
 
     const fiche = lire("src/app/admin/collectif/donnees.ts");
-    ok("le journal de la fiche ne lit pas les lignes ecrites a chaque lot (`photos_confirmees`, `metadonnees_lues`) : elles ne chassent plus le reste",
-      JOURNAL_DE_LOT.join() === "photos_confirmees,metadonnees_lues"
+    ok("le journal de la fiche ne lit pas les lignes ecrites a chaque lot (`photos_confirmees`, `metadonnees_lues`, et depuis T-194 la machinerie du rattrapage) : elles ne chassent plus le reste",
+      JOURNAL_DE_LOT.join() === "photos_confirmees,metadonnees_lues,rattrapage_demarre,rattrapage_fini,vignettes_fabriquees"
         && /\.not\("type", "in", `\(\$\{JOURNAL_DE_LOT\.join\(","\)\}\)`\)\s*\.order\("created_at", \{ ascending: false \}\)\s*\.limit\(100\)/.test(fiche));
     ok("ces lignes restent ecrites et lisibles en clair ; « Collecte terminée par » (un `geste`) reste dans le journal lu",
       JOURNAL_DE_LOT.every((t) => phraseEvenement(t, { n: 3, traitees: 3, lieux: 1 }) !== t) && !(JOURNAL_DE_LOT as readonly string[]).includes("geste")
@@ -3811,7 +3815,391 @@ async function sondeT191() {
   ok("une fois vue appliquee, l'instance ne sonde plus", (await migrationDemandes(fausse("23514"))) === "appliquee" && appels.length === avant);
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(() => {
+/* T-194 (le rattrapage des photos au coffre jamais confirmees), T-171 (la vignette fabriquee par
+   le serveur), T-160 (les echecs au journal, le bloc « Editions » de la page Sante). Les regles
+   pures, puis le passage ENTIER joue contre une fausse base et un faux coffre, puis le code relu. */
+async function sondeT194() {
+  const R = await import("@/lib/collectif/rattrapage");
+  const E = await import("@/lib/collectif/echecs");
+  const S = await import("@/lib/collectif/rattrapageServeur");
+  const J = await import("@/lib/collectif/echecsJournal");
+  const { JOURNAL_DE_LOT: LOT, phraseEvenement: phrase } = await import("@/lib/collectif/recit");
+  const { MAX_FILE_BYTES } = await import("@/lib/atelier/formats");
+  const { randomUUID } = await import("node:crypto");
+  const MIN = 60 * 1000;
+  const T0 = Date.parse("2026-10-20T12:00:00.000Z");
+  const iso = (ms: number) => new Date(ms).toISOString();
+
+  titre("— T-194 : qui examiner, et comment —");
+  {
+    const l = (minutes: number, confirmee_le: string | null = null) => ({ confirmee_le, created_at: iso(T0 - minutes * MIN) });
+    ok("une ligne declaree depuis moins de dix minutes est laissee au navigateur ; a dix minutes, on la regarde",
+      R.DELAI_AVANT_RATTRAPAGE_MS === 10 * MIN && !R.estCandidate(l(9), new Date(T0)) && R.estCandidate(l(10), new Date(T0)) && R.estCandidate(l(600), new Date(T0)));
+    ok("une ligne confirmee, ou une date illisible, n'est jamais candidate",
+      !R.estCandidate(l(60, iso(T0)), new Date(T0)) && !R.estCandidate({ confirmee_le: null, created_at: "le 4 octobre" }, new Date(T0)));
+    ok("le filtre de la base dit la meme chose (lte seuil = dix minutes avant)", R.seuilCandidates(new Date(T0)) === iso(T0 - 10 * MIN));
+    ok("peu de lignes : une tete chacune ; au-dela de 50 : la liste du dossier ; aucune : rien",
+      R.strategie(0) === "rien" && R.strategie(1) === "tetes" && R.strategie(R.TETES_DIRECTES_MAX) === "tetes" && R.strategie(R.TETES_DIRECTES_MAX + 1) === "liste");
+    const c = (id: string, minutes: number) => ({ id, r2_key: `k/${id}`, created_at: iso(T0 - minutes * MIN) });
+    const plan = R.aExaminer([c("a", 30), c("b", 20), c("c", 40), c("d", 20)], new Set(["k/a", "k/b", "k/d"]), 2);
+    ok("par la liste : seules les lignes au coffre, les plus recentes d'abord, bornees ; le reste compte (absentes, reportees)",
+      plan.examiner.map((x) => x.id).join() === "d,b" && plan.absentes === 1 && plan.reportees === 1);
+    ok("par les tetes : toutes les lignes sont examinees", R.aExaminer([c("a", 30), c("b", 20)], null).examiner.length === 2);
+  }
+
+  titre("— T-194 : la tete, le verdict, le patch : LES MEMES que depot/complete —");
+  {
+    ok("absente, panne, trop lourde (un octet de trop), arrivee (au maximum pile)",
+      R.issueTete({ statut: "absente" }) === "absente" && R.issueTete({ statut: "panne" }) === "panne"
+        && R.issueTete({ statut: "presente", taille: MAX_FILE_BYTES + 1 }) === "trop_lourde" && R.issueTete({ statut: "presente", taille: MAX_FILE_BYTES }) === "arrivee");
+    const p = R.patchConfirmation(1234, "2026-10-20T12:00:00.000Z", "v/key", 2000, 512 * 1024);
+    ok("le patch : trois champs exactement (taille, confirmee_le, vignette_key) ; ni l'accord, ni le participant, ni la provenance",
+      Object.keys(p).sort().join() === "confirmee_le,taille,vignette_key" && p.vignette_key === "v/key" && p.taille === 1234);
+    ok("la vignette n'est notee que si elle est au coffre ET sous 512 Ko",
+      R.patchConfirmation(1, "x", "v", null, 512 * 1024).vignette_key === null && R.patchConfirmation(1, "x", "v", 512 * 1024 + 1, 512 * 1024).vignette_key === null
+        && R.patchConfirmation(1, "x", "v", 512 * 1024, 512 * 1024).vignette_key === "v");
+  }
+
+  titre("— T-194 : un seul passage a la fois, par le journal —");
+  {
+    let n = 0;
+    const ev = (type: string, secondes: number, payload: Record<string, unknown>) => ({ id: `e${n++}`, type, payload, created_at: iso(T0 - secondes * 1000) });
+    const dem = (p: string, s: number) => ev(R.EVT_RATTRAPAGE_DEMARRE, s, { passage: p });
+    const fin = (p: string, s: number, extra: Record<string, unknown> = {}) => ev(R.EVT_RATTRAPAGE_FINI, s, { demarre: p, ...extra });
+    ok("journal vide : libre", R.etatVerrou([], T0).libre);
+    ok("un demarrage sans fin depuis 10 s : en cours", !R.etatVerrou([dem("p1", 10)], T0).libre && (R.etatVerrou([dem("p1", 10)], T0) as { raison: string }).raison === "en_cours");
+    ok("un demarrage sans fin depuis plus que la fenetre (60 s) : libre (la fonction qui l'a pose est morte)", R.etatVerrou([dem("p1", 61)], T0).libre);
+    ok("une fin qui nomme le passage le ferme ; une fin recente met au repos (15 min)",
+      (R.etatVerrou([dem("p1", 30), fin("p1", 20)], T0) as { raison?: string }).raison === "repos" && R.etatVerrou([dem("p1", 30 * 60), fin("p1", 20 * 60)], T0).libre);
+    ok("une fin qui ne nomme pas CE passage ne le ferme pas", (R.etatVerrou([dem("p1", 10), fin("p2", 5)], T0) as { raison?: string }).raison === "en_cours");
+    ok("une cession ne met pas au repos (elle n'a rien regarde)", R.etatVerrou([dem("p1", 30 * 60), fin("p1", 20 * 60), dem("p2", 70), fin("p2", 69, { cede: true })], T0).libre);
+    ok("un age negatif (horloge de la base en avance) reste en cours", (R.etatVerrou([dem("p1", -2)], T0) as { raison?: string }).raison === "en_cours");
+    ok("deux demarrages croises : le plus RECENT cede, le plus ancien continue",
+      R.doitCeder([dem("vieux", 3), dem("moi", 1)], "moi", T0) && !R.doitCeder([dem("moi", 3), dem("jeune", 1)], "moi", T0));
+    ok("au meme instant : l'identifiant du passage departage (un seul cede)",
+      R.doitCeder([dem("a", 1), dem("b", 1)], "b", T0) !== R.doitCeder([dem("a", 1), dem("b", 1)], "a", T0));
+    ok("un ancien deja ferme, ou son propre demarrage introuvable : on ne cede pas",
+      !R.doitCeder([dem("vieux", 3), fin("vieux", 2), dem("moi", 1)], "moi", T0) && !R.doitCeder([dem("vieux", 3)], "moi", T0));
+    ok("les vignettes impossibles des derniers passages sont retenues (on ne les retente pas a chaque ouverture)",
+      [...R.impossiblesRecentes([fin("p1", 10, { impossibles: ["x", "y"] }), ev(R.EVT_PHOTOS_RATTRAPEES, 5, { demarre: "p2", impossibles: ["z", 3] })])].sort().join() === "x,y,z");
+    ok("la fenetre du verrou vaut la maxDuration des trois appelants ; le budget et l'echeance de la releve tiennent dedans",
+      R.FENETRE_VERROU_RATTRAPAGE_MS === 60 * 1000 && R.BUDGET_RATTRAPAGE_MS < R.FENETRE_VERROU_RATTRAPAGE_MS && R.ECHEANCE_RELEVE_MS < 60 * 1000
+        && /export const maxDuration = 60;/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /export const maxDuration = 60\n/.test(lire("src/app/edition/[token]/photos/page.tsx"))
+        && /export const maxDuration = 60;/.test(lire("src/app/api/atelier/mails/relever/route.ts")));
+  }
+
+  titre("— T-171 : quelle vignette, par qui, combien par passage —");
+  {
+    const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const heic = new Uint8Array([0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63]);
+    const rien = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    ok("les OCTETS decident : un JPEG annonce HEIC passe par sharp, un HEIC annonce JPEG par libheif ; illisible et inconnu : aucune",
+      R.fabriquePour(jpeg, "image/heic") === "sharp" && R.fabriquePour(heic, "image/jpeg") === "heic" && R.fabriquePour(rien, "image/heif") === "heic" && R.fabriquePour(rien, "image/jpeg") === null);
+    const ph = (id: string, mime: string) => ({ id, mime });
+    const plan = R.planVignettes([ph("r1", "image/jpeg"), ph("r2", "image/heic")], [ph("r1", "image/jpeg"), ph("a1", "image/png"), ph("x", "image/jpeg"), ph("a2", "image/heic"), ph("a3", "image/heic")], new Set(["x"]), { maxSharp: 2, maxHeic: 1 });
+    ok("les retrouvees d'abord, sans doublon, hors des impossibles ; deux files bornees (sharp, HEIC) ; le reste reporte",
+      plan.sharp.map((p) => p.id).join() === "r1,a1" && plan.heic.map((p) => p.id).join() === "r2" && plan.reportees === 2);
+    const worker = lire("src/app/(atelier)/composer/depot/reduire.worker.js");
+    ok("320 px, qualite 72 : les jumeaux du navigateur (reduire.worker.js)",
+      R.COTE_VIGNETTE === 320 && new RegExp(`const COTE_VIGNETTE = ${R.COTE_VIGNETTE}\\b`).test(worker) && new RegExp(`const QUALITE_VIGNETTE = 0\\.${R.QUALITE_VIGNETTE}\\b`).test(worker));
+    const vig = lire("src/lib/collectif/rattrapageVignettes.ts");
+    ok("la vignette au coffre AVANT la cle en base, et la cle seulement si elle est encore vide ; l'orientation EXIF appliquee (rotate)",
+      vig.indexOf("await ecrireObjet(key") > 0 && vig.indexOf("await ecrireObjet(key") < vig.indexOf('.update({ vignette_key: key })') && /\.update\(\{ vignette_key: key \}\)\.eq\("id", p\.id\)\.is\("vignette_key", null\)/.test(vig)
+        && /\.rotate\(\)/.test(vig));
+    ok("libheif : la meme bibliotheque que le navigateur et le script, epinglee, chargee a la premiere photo HEIC seulement",
+      /"libheif-js": "1\.19\.8"/.test(lire("package.json")) && /import\("libheif-js\/wasm-bundle"\)/.test(vig) && !/^import .*libheif/m.test(vig));
+    const complete = lire("src/app/api/collectif/depot/complete/route.ts");
+    ok("depot/complete : la vignette qui manque se fabrique APRES la reponse et AVANT la lecture des metadonnees (l'empreinte se lit sur elle)",
+      complete.indexOf("vignettesManquantes(edition.id, sansVignette)") > 0 && complete.indexOf("vignettesManquantes(edition.id, sansVignette)") < complete.indexOf("await enrichirCollectif(makeSupabase(), edition.id, nouvelles)")
+        && /if \(!r\.vignette\) sansVignette\.push/.test(complete));
+  }
+
+  titre("— T-194 : le passage quotidien —");
+  {
+    const e = (id: string, etat: string, cloture_le: string | null, extra: Record<string, string | null> = {}) => ({ id, etat, cloture_le, archive_le: null, photos_supprimees_le: null, etat_maj_le: null, ...extra });
+    const choisies = R.editionsDuPassageQuotidien([
+      e("ouverte", "preparation", null),
+      e("future", "preparation", iso(T0 + 5 * 24 * 60 * MIN)),
+      e("hier", "preparation", iso(T0 - 24 * 60 * MIN)),
+      e("vieille", "preparation", iso(T0 - 3 * 24 * 60 * MIN)),
+      e("archivee", "preparation", null, { archive_le: iso(T0) }),
+      e("videe", "preparation", null, { photos_supprimees_le: iso(T0) }),
+      e("close-main", "composition", null, { etat_maj_le: iso(T0 - 60 * MIN) }),
+      e("illisible", "preparation", "le 4 octobre"),
+    ], new Date(T0)).map((x) => x.id);
+    ok("en collecte, ou close depuis moins de deux jours ; jamais archivee ni videe ; une date illisible n'entre pas",
+      choisies.join() === "ouverte,future,hier,close-main");
+    ok("aucun cron neuf : vercel.json garde ses deux taches", (JSON.parse(lire("vercel.json")).crons ?? []).length === 2);
+    const releve = lire("src/app/api/atelier/mails/relever/route.ts");
+    const lance = 'after(() => import("@/lib/collectif/rattrapageServeur").then((m) => m.rattrapageQuotidien(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));';
+    ok("la releve des particuliers le lance APRES sa reponse (after), juste apres le secret, module charge a ce moment-la seulement ; rien d'autre ne change a son balayage",
+      releve.includes(lance) && releve.indexOf("if (!autorise(request))") < releve.indexOf(lance) && releve.indexOf(lance) < releve.indexOf('.from("numeros")')
+        && !/^import .*rattrapageServeur/m.test(releve));
+    const avant = process.env.COLLECTIF_OUVERT;
+    delete process.env.COLLECTIF_OUVERT;
+    let touche = false;
+    const muette = { from: () => { touche = true; throw new Error("aucune lecture attendue"); } } as unknown as Parameters<typeof S.rattrapageQuotidien>[0];
+    const r = await S.rattrapageQuotidien(muette, Date.now() + 1000);
+    if (avant !== undefined) process.env.COLLECTIF_OUVERT = avant;
+    ok("COLLECTIF_OUVERT ferme : le passage quotidien ne lit rien", r === null && !touche);
+    const fiche = lire("src/app/admin/collectif/[id]/page.tsx");
+    const photos = lire("src/app/edition/[token]/photos/page.tsx");
+    ok("la fiche et la page Photos du responsable le lancent en after() (la page part d'abord), module charge a ce moment-la seulement ; le lien de l'equipe ne lance rien",
+      fiche.includes('after(() => import("@/lib/collectif/rattrapageServeur").then((m) => m.rattraperEdition(makeSupabase(), e.id, { declencheur: "fiche" })));')
+        && /if \(role === 'responsable' \|\| acces\.appareilInconnu\) \{\s*after\(\(\) => import\('@\/lib\/collectif\/rattrapageServeur'\)\.then\(\(m\) => m\.rattraperEdition\(makeSupabase\(\), edition\.id, \{ declencheur: 'photos' \}\)\)\)/.test(photos)
+        && ![fiche, photos].some((f) => /^import .*rattrapageServeur/m.test(f)));
+  }
+
+  titre("— T-194 : le journal du rattrapage —");
+  {
+    const b = R.bilanVide();
+    b.retrouvees = 3; b.candidates = 7; b.absentes = 4;
+    b.vignettes.impossibles = Array.from({ length: 40 }, (_, i) => `id-${i}`);
+    const f = R.finDePassage("p1", "fiche", b);
+    ok("au moins une retrouvee : `photos_rattrapees` (lu sur la fiche) ; aucune : `rattrapage_fini` (cache)",
+      f.type === R.EVT_PHOTOS_RATTRAPEES && R.finDePassage("p1", "fiche", R.bilanVide()).type === R.EVT_RATTRAPAGE_FINI);
+    ok("la fin nomme son passage, dit les nombres, garde 25 impossibles au plus, et ne porte aucune cle du coffre",
+      f.payload.demarre === "p1" && f.payload.n === 3 && f.payload.absentes === 4 && (f.payload.impossibles as string[]).length === R.IMPOSSIBLES_MAX && !/collectif\//.test(JSON.stringify(f.payload)));
+    ok("la machinerie (demarrage, fin sans photo, vignettes d'un lot) est cachee du journal de la fiche ; les photos retrouvees et les echecs y restent",
+      [R.EVT_RATTRAPAGE_DEMARRE, R.EVT_RATTRAPAGE_FINI, "vignettes_fabriquees"].every((t) => (LOT as readonly string[]).includes(t))
+        && ![R.EVT_PHOTOS_RATTRAPEES, E.EVT_ECHEC].some((t) => (LOT as readonly string[]).includes(t)));
+    ok("chaque ligne nouvelle se lit en francais", [R.EVT_RATTRAPAGE_DEMARRE, R.EVT_RATTRAPAGE_FINI, R.EVT_PHOTOS_RATTRAPEES, "vignettes_fabriquees", E.EVT_ECHEC].every((t) => phrase(t, { n: 2, quoi: "confirmation" }) !== t)
+      && /2 photo\(s\) retrouvée\(s\)/.test(phrase(R.EVT_PHOTOS_RATTRAPEES, { n: 2 })));
+  }
+
+  titre("— T-160 : un echec au journal, court, sans secret, freine —");
+  {
+    const jeton = "Abcdefghijklmnopqrstuvwxyz012345";
+    const p = E.payloadEchec("declaration", { etape: "lecture", code: "PGRST204", n: 3.7, ...({ message: `cle ${jeton}`, token: jeton } as object) }, 2);
+    ok("seulement quoi, etape, code, n, repetitions ; un nombre entier ; jamais un message brut",
+      Object.keys(p).sort().join() === "code,etape,n,quoi,repetitions" && p.n === 3 && p.repetitions === 2 && !JSON.stringify(p).includes(jeton));
+    ok("un code qui ressemble a un token est masque ; une etape inconnue est ignoree",
+      !JSON.stringify(E.payloadEchec("confirmation", { code: jeton })).includes(jeton) && !("etape" in E.payloadEchec("confirmation", { etape: "nimporte" as never })));
+    const a = E.freinerEchec(undefined, T0);
+    const b2 = E.freinerEchec(a.etat, T0 + 10 * 1000);
+    const c = E.freinerEchec(b2.etat, T0 + 20 * 1000);
+    const d = E.freinerEchec(c.etat, T0 + 61 * 1000);
+    ok("le frein : la premiere passe, les suivantes de la minute se comptent, la premiere d'apres porte leur nombre",
+      a.ecrire && a.repetitions === 0 && !b2.ecrire && !c.ecrire && d.ecrire && d.repetitions === 2 && E.INTERVALLE_ECHEC_MS === 60 * 1000);
+    ok("la phrase : le geste, le nombre, l'etape, le code", E.phraseEchec({ quoi: "confirmation", etape: "coffre", n: 3, code: "57014" }) === "Confirmation de photos impossible (3 photos) : le coffre n'a pas répondu, code 57014.");
+
+    const inserts: { table: string; ligne: Record<string, unknown> }[] = [];
+    const base = { from: (table: string) => ({ insert: async (ligne: Record<string, unknown>) => (inserts.push({ table, ligne }), { error: null }) }) } as unknown as Parameters<typeof J.noterEchec>[0];
+    const ed = randomUUID();
+    const un = await J.noterEchec(base, ed, "confirmation", { etape: "coffre", n: 2 });
+    const deux = await J.noterEchec(base, ed, "confirmation", { etape: "coffre", n: 5 });
+    const autre = await J.noterEchec(base, ed, "confirmation", { etape: "ecriture", n: 1 });
+    ok("noterEchec : une ligne `echec` dans collectif_evenements, sur l'edition ; la meme dans la minute est comptee, une autre etape passe",
+      un && deux && autre && inserts.length === 2 && inserts.every((i) => i.table === "collectif_evenements" && i.ligne.type === "echec" && i.ligne.edition_id === ed)
+        && (inserts[0].ligne.payload as Record<string, unknown>).n === 2 && (inserts[1].ligne.payload as Record<string, unknown>).etape === "ecriture");
+    const panne = { from: () => { throw new Error("base tombee"); } } as unknown as Parameters<typeof J.noterEchec>[0];
+    const avantErr = console.error;
+    console.error = () => {};
+    const tombe = await J.noterEchec(panne, randomUUID(), "declaration", { etape: "ecriture" });
+    console.error = avantErr;
+    ok("une base tombee : false, jamais une exception (le geste qui l'a constate a deja sa reponse)", tombe === false);
+
+    const presign = lire("src/app/api/collectif/depot/presign/route.ts");
+    const completeR = lire("src/app/api/collectif/depot/complete/route.ts");
+    const chaque500 = (code: string, quoi: string) => {
+      const morceaux = code.split("{ status: 500 }");
+      return morceaux.length > 1 && morceaux.slice(0, -1).every((m) => m.slice(-420).includes(`noterEchec(supabase, edition.id, "${quoi}"`));
+    };
+    ok("depot/presign : chaque refus 500 (lecture, ecriture) s'ecrit aussi au journal", chaque500(presign, "declaration") && (presign.match(/\{ status: 500 \}/g) ?? []).length === 4);
+    ok("depot/complete : la lecture ratee, le coffre muet et l'ecriture refusee s'ecrivent au journal ; la reponse ne change pas",
+      chaque500(completeR, "confirmation") && /noterEchec\(supabase, edition\.id, "confirmation", \{ etape: "coffre", n: pannesCoffre \}\)/.test(completeR)
+        && /noterEchec\(supabase, edition\.id, "confirmation", \{ etape: "ecriture", n: ecrituresRatees \}\)/.test(completeR) && /return NextResponse\.json\(\{ confirmees, rejetees, absentes \}\);/.test(completeR));
+    ok("aucun echec ne nomme le token ni le message brut d'une erreur",
+      ![presign, completeR, lire("src/lib/collectif/rattrapageServeur.ts")].some((f) => /noterEchec\([^)]*(token|\.message)/.test(f)));
+  }
+
+  titre("— T-160 : le bloc « Editions » de la page Sante —");
+  {
+    const s = (extra: Partial<Parameters<typeof E.constatEdition>[0]>) => E.constatEdition({ id: "e1", organisation: "Audencia", evenement: "Course croisiere", echecs: [], enAttente: 0, sansVignette: 0, dernierRattrapage: null, ...extra }, (x) => x.slice(0, 16));
+    ok("rien a dire : rien", s({}) === null);
+    const rouge = s({ echecs: Array.from({ length: 8 }, (_, i) => ({ payload: { quoi: "declaration", etape: "lecture" }, created_at: iso(T0 - i * MIN) })) });
+    ok("un echec : rouge ; les cinq plus recents d'abord, le reste compte", rouge?.gravite === "rouge" && rouge.lignes.length === E.ECHECS_MONTRES + 1 && rouge.lignes[0].startsWith(iso(T0).slice(0, 16)) && /Et 3 échec/.test(rouge.lignes[5]));
+    const orange = s({ enAttente: 4, sansVignette: 2, dernierRattrapage: { payload: { n: 1, absentes: 4 }, created_at: iso(T0) } });
+    ok("des photos en attente ou sans vignette : orange, avec le dernier rattrapage et ce qu'il a trouve",
+      orange?.gravite === "orange" && orange.lignes.length === 2 && /4 photo\(s\) déclarée\(s\)/.test(orange.lignes[0]) && /1 retrouvée\(s\), 4 absente\(s\)/.test(orange.lignes[0]) && /2 photo\(s\) sans vignette/.test(orange.lignes[1]));
+    ok("un compte impossible se DIT, il ne passe jamais pour zero", (s({ enAttente: null, sansVignette: null })?.lignes ?? []).every((l) => /n'a pas pu se faire/.test(l)));
+    ok("une heure d'attente : l'URL signee a expire", E.ATTENTE_SIGNALEE_MS === 60 * MIN && E.FENETRE_ECHECS_MS === 7 * 24 * 60 * MIN);
+    const page = lire("src/app/admin/atelier/sante/page.tsx");
+    const charge = lire("src/app/admin/atelier/sante/editions.ts");
+    ok("la page lit les editions EN MEME TEMPS que les dossiers ; ferme (COLLECTIF_OUVERT), le bloc n'existe pas ; aucun token lu",
+      /Promise\.all\(\[\s*chargerSante\(\),\s*chargerSanteEditions\(\)/.test(page) && /<BlocEditions sante=\{editions\} \/>/.test(page)
+        && /if \(!collectifOuvert\(\)\) return \{ ouvert: false \};/.test(charge) && !/token/.test(charge));
+  }
+
+  titre("— T-194 : le passage entier, contre une fausse base et un faux coffre —");
+  {
+    type Ev = { id: string; edition_id: string; type: string; payload: Record<string, unknown>; created_at: string; qui: string | null };
+    type Ph = { id: string; edition_id: string; r2_key: string; created_at: string; confirmee_le: string | null; mime: string | null; taille: number | null; vignette_key: string | null };
+    type Filtre = [string, ...unknown[]];
+    const monde = (photos: Ph[], journal: Ev[] = [], options: { journalIllisible?: boolean; apresDemarrage?: (j: Ev[]) => void } = {}) => {
+      const inserts: Ev[] = [];
+      const client = {
+        from(table: string) {
+          const f: Filtre[] = [];
+          let op = "select";
+          let valeurs: Record<string, unknown> = {};
+          const b: Record<string, unknown> = {};
+          for (const nom of ["eq", "is", "lte", "lt", "gte", "not", "in", "order", "limit", "range", "returns"]) b[nom] = (...a: unknown[]) => (f.push([nom, ...a]), b);
+          b.select = () => b;
+          b.insert = (v: Record<string, unknown>) => ((op = "insert"), (valeurs = v), b);
+          b.update = (v: Record<string, unknown>) => ((op = "update"), (valeurs = v), b);
+          b.then = (ok2: (r: unknown) => unknown, ko2: (e: unknown) => unknown) => {
+            const val = (nom: string, col: string) => f.find((x) => x[0] === nom && x[1] === col);
+            let r: { data: unknown; error: { code: string; message: string } | null } = { data: null, error: null };
+            if (table === "collectif_evenements" && op === "insert") {
+              const e: Ev = { id: randomUUID(), edition_id: String(valeurs.edition_id), type: String(valeurs.type), payload: valeurs.payload as Record<string, unknown>, qui: null, created_at: new Date().toISOString() };
+              journal.push(e);
+              inserts.push(e);
+              if (e.type === R.EVT_RATTRAPAGE_DEMARRE) options.apresDemarrage?.(journal);
+            } else if (table === "collectif_evenements") {
+              if (options.journalIllisible) r = { data: null, error: { code: "57014", message: "timeout" } };
+              else {
+                const types = (val("in", "type")?.[2] as string[]) ?? [];
+                const lim = Number(val("limit", undefined as never)?.[1] ?? f.find((x) => x[0] === "limit")?.[1] ?? 1000);
+                r = { data: journal.filter((e) => types.includes(e.type)).sort((x, y) => (x.created_at < y.created_at ? 1 : -1)).slice(0, lim), error: null };
+              }
+            } else if (table === "collectif_photos") {
+              if (val("is", "confirmee_le")) {
+                const seuil = String(val("lte", "created_at")?.[2]);
+                const range = f.find((x) => x[0] === "range") as [string, number, number] | undefined;
+                const lignes = photos.filter((p) => !p.confirmee_le && p.created_at <= seuil).sort((x, y) => (x.created_at === y.created_at ? (x.id < y.id ? 1 : -1) : x.created_at < y.created_at ? 1 : -1));
+                r = { data: range ? lignes.slice(range[1], range[2] + 1) : lignes, error: null };
+              } else r = { data: photos.filter((p) => p.confirmee_le && !p.vignette_key), error: null };
+            }
+            return Promise.resolve(r).then(ok2, ko2);
+          };
+          return b;
+        },
+      } as unknown as Parameters<typeof S.rattraperEdition>[0];
+      return { client, inserts, journal };
+    };
+    const ED = randomUUID();
+    const photo = (minutes: number, extra: Partial<Ph> = {}): Ph => {
+      const id = randomUUID();
+      return { id, edition_id: ED, r2_key: `collectif/${ED}/photos/${id}/original.jpg`, created_at: new Date(Date.now() - minutes * MIN).toISOString(), confirmee_le: null, mime: "image/jpeg", taille: null, vignette_key: null, ...extra };
+    };
+    const coffre = (presentes: Map<string, number | "panne">, opts: { liste?: Set<string> | null; ecritureRefusee?: boolean } = {}) => {
+      const appels = { tetes: [] as string[], confirmees: [] as string[], listes: 0, enrichies: [] as string[], vignettes: [] as string[] };
+      const outils: Parameters<typeof S.rattraperEdition>[3] = {
+        tete: async (k) => (appels.tetes.push(k), presentes.has(k) ? (presentes.get(k) === "panne" ? { statut: "panne" } : { statut: "presente", taille: presentes.get(k) as number }) : { statut: "absente" }),
+        liste: async () => (appels.listes++, opts.liste === undefined ? new Set(presentes.keys()) : opts.liste),
+        confirmer: async (_s, _e, l) => (opts.ecritureRefusee ? { statut: "erreur", code: "23514" } : (appels.confirmees.push(l.id), { statut: "nouvelle", vignette: false })),
+        vignettes: async (_s, _e, prio) => (appels.vignettes.push(...prio.map((p) => p.id)), { faites: prio.length, ratees: 0, impossibles: [], reportees: 0 }),
+        enrichir: async (_s, _e, ids) => (appels.enrichies.push(...(ids ?? [])), { traitees: 0, datees: 0, geolocalisees: 0, ratees: 0, lieux: 0 }),
+      };
+      return { outils, appels };
+    };
+    const silence = async <T,>(f: () => Promise<T>) => {
+      const a = console.error;
+      const b = console.log;
+      console.error = () => {};
+      console.log = () => {};
+      try {
+        return await f();
+      } finally {
+        console.error = a;
+        console.log = b;
+      }
+    };
+
+    /* 1. Rien a faire : aucune ecriture. */
+    {
+      const m = monde([photo(5), photo(60, { confirmee_le: iso(Date.now()), vignette_key: "v" })]);
+      const c = coffre(new Map());
+      const r = await S.rattraperEdition(m.client, ED, { declencheur: "fiche" }, c.outils);
+      ok("rien a faire (une ligne de cinq minutes, une photo complete) : rien d'ecrit, rien demande au coffre", r.statut === "rien" && m.inserts.length === 0 && c.appels.tetes.length === 0);
+    }
+    /* 2. Le cas d'Audencia : trois photos, deux au coffre. */
+    const a = photo(30), b = photo(20), absente = photo(15), jeune = photo(3);
+    const m2 = monde([a, b, absente, jeune]);
+    const c2 = coffre(new Map([[a.r2_key, 1000], [b.r2_key, 2000]]));
+    const r2 = await silence(() => S.rattraperEdition(m2.client, ED, { declencheur: "fiche" }, c2.outils));
+    ok("deux photos au coffre sur trois lignes declarees depuis plus de dix minutes : deux confirmees, une absente, la ligne de trois minutes jamais regardee",
+      r2.statut === "fait" && r2.bilan.retrouvees === 2 && r2.bilan.absentes === 1 && c2.appels.confirmees.sort().join() === [a.id, b.id].sort().join() && !c2.appels.tetes.includes(jeune.r2_key));
+    const types2 = m2.inserts.map((e) => e.type);
+    ok("le journal : un demarrage, puis `photos_rattrapees` qui nomme son passage, avec le nombre",
+      types2.join() === `${R.EVT_RATTRAPAGE_DEMARRE},${R.EVT_PHOTOS_RATTRAPEES}` && m2.inserts[1].payload.demarre === m2.inserts[0].payload.passage && m2.inserts[1].payload.n === 2 && m2.inserts[1].payload.par === "fiche");
+    ok("les retrouvees sans vignette ont la leur, puis leurs metadonnees se lisent (comme apres depot/complete)",
+      c2.appels.vignettes.sort().join() === [a.id, b.id].sort().join() && c2.appels.enrichies.sort().join() === [a.id, b.id].sort().join());
+    ok("aucune ligne du journal ne porte une cle du coffre ni un token", !m2.inserts.some((e) => /collectif\/|[A-Za-z0-9]{32}/.test(JSON.stringify(e.payload))));
+    /* 3. Rouvert aussitot : au repos. */
+    const r3 = await S.rattraperEdition(m2.client, ED, { declencheur: "photos" }, c2.outils);
+    ok("la fiche rouverte aussitot : au repos, rien d'ecrit (la ligne absente reste candidate)", r3.statut === "repos" && m2.inserts.length === 2);
+    /* 4. Un passage tourne deja. */
+    {
+      const m = monde([photo(30)], [{ id: "x", edition_id: ED, type: R.EVT_RATTRAPAGE_DEMARRE, payload: { passage: "autre" }, created_at: new Date(Date.now() - 10 * 1000).toISOString(), qui: null }]);
+      const c = coffre(new Map());
+      const r = await S.rattraperEdition(m.client, ED, { declencheur: "releve" }, c.outils);
+      ok("un passage tourne depuis 10 s : on n'y touche pas", r.statut === "en_cours" && m.inserts.length === 0 && c.appels.tetes.length === 0);
+    }
+    /* 5. Deux passages se croisent : le plus recent cede. */
+    {
+      const p = photo(30);
+      const m = monde([p], [], {
+        apresDemarrage: (j) => {
+          if (!j.some((e) => e.payload.passage === "plus-ancien")) j.push({ id: "y", edition_id: ED, type: R.EVT_RATTRAPAGE_DEMARRE, payload: { passage: "plus-ancien" }, created_at: new Date(Date.now() - 2000).toISOString(), qui: null });
+        },
+      });
+      const c = coffre(new Map([[p.r2_key, 10]]));
+      const r = await S.rattraperEdition(m.client, ED, { declencheur: "fiche" }, c.outils);
+      const finale = m.inserts.at(-1);
+      ok("deux demarrages croises : le plus recent cede (une fin `cede`), sans toucher au coffre", r.statut === "cede" && c.appels.tetes.length === 0 && finale?.type === R.EVT_RATTRAPAGE_FINI && finale.payload.cede === true);
+    }
+    /* 6. Trop lourde, panne du coffre, ecriture refusee. */
+    {
+      const lourde = photo(30), muette = photo(25), ok3 = photo(20);
+      const m = monde([lourde, muette, ok3]);
+      const c = coffre(new Map<string, number | "panne">([[lourde.r2_key, MAX_FILE_BYTES + 1], [muette.r2_key, "panne"], [ok3.r2_key, 5]]), { ecritureRefusee: true });
+      const r = await silence(() => S.rattraperEdition(m.client, ED, { declencheur: "fiche" }, c.outils));
+      const echecs = m.inserts.filter((e) => e.type === "echec").map((e) => `${e.payload.quoi}/${e.payload.etape}/${e.payload.n}`);
+      ok("trop lourde : laissee telle quelle (comptee, jamais effacee) ; coffre muet et ecriture refusee : des echecs au journal",
+        r.statut === "fait" && r.bilan.tropLourdes === 1 && r.bilan.pannes.coffre === 1 && r.bilan.pannes.ecriture === 1 && r.bilan.retrouvees === 0
+          && echecs.includes("rattrapage/coffre/1") && echecs.includes("rattrapage/ecriture/1") && m.inserts.some((e) => e.type === R.EVT_RATTRAPAGE_FINI));
+    }
+    /* 7. Beaucoup de lignes mortes : la liste du coffre d'abord. */
+    {
+      const lignes = Array.from({ length: 60 }, (_, i) => photo(30 + i));
+      const presentes = new Map(lignes.slice(0, 5).map((l) => [l.r2_key, 100] as [string, number]));
+      const m = monde(lignes);
+      const c = coffre(presentes);
+      const r = await silence(() => S.rattraperEdition(m.client, ED, { declencheur: "releve" }, c.outils));
+      ok("60 lignes declarees (un wifi filtre) : UNE liste du dossier, une tete pour les 5 presentes seulement, 55 absentes",
+        r.statut === "fait" && c.appels.listes === 1 && c.appels.tetes.length === 5 && r.bilan.retrouvees === 5 && r.bilan.absentes === 55);
+      /* Une autre edition : le frein des echecs (une ligne par minute et par etape) a deja vu ED. */
+      const m8 = monde(Array.from({ length: 60 }, (_, i) => photo(30 + i)));
+      const c8 = coffre(new Map(), { liste: null });
+      const r8 = await silence(() => S.rattraperEdition(m8.client, randomUUID(), { declencheur: "releve" }, c8.outils));
+      ok("la liste ne repond pas : on ne conclut RIEN (aucune absente comptee, aucune tete), un echec au journal",
+        r8.bilan.absentes === 0 && c8.appels.tetes.length === 0 && r8.bilan.pannes.coffre === 1 && m8.inserts.some((e) => e.type === "echec" && e.payload.etape === "coffre"));
+    }
+    /* 8. Le journal illisible : pas de passage « au cas ou ». */
+    {
+      const m = monde([photo(30)], [], { journalIllisible: true });
+      const c = coffre(new Map());
+      const r = await silence(() => S.rattraperEdition(m.client, ED, { declencheur: "fiche" }, c.outils));
+      ok("journal illisible : pas de verrou, donc pas de passage ; un echec de lecture est note",
+        r.statut === "erreur" && c.appels.tetes.length === 0 && !m.inserts.some((e) => e.type === R.EVT_RATTRAPAGE_DEMARRE) && m.inserts.some((e) => e.type === "echec" && e.payload.etape === "lecture"));
+    }
+    /* 9. L'echeance passee : rien de nouveau ne commence, et la fin le dit. */
+    {
+      const p = photo(30);
+      const m = monde([p]);
+      const c = coffre(new Map([[p.r2_key, 10]]));
+      const r = await silence(() => S.rattraperEdition(m.client, ED, { declencheur: "releve", jusqua: Date.now() - 1 }, c.outils));
+      ok("l'echeance passee : aucune tete, la ligne est reportee au passage suivant, le verrou est rendu", r.bilan.reportees === 1 && c.appels.tetes.length === 0 && m.inserts.at(-1)?.payload.reportees === 1);
+    }
+    const serveur = lire("src/lib/collectif/rattrapageServeur.ts");
+    ok("le rattrapage confirme par LA fonction de depot/complete (`confirmerArrivee`), jamais une copie",
+      /confirmer: confirmerArrivee/.test(serveur) && /import \{ clesDuCoffre, confirmerArrivee, teteObjet \} from "\.\/rattrapageCoffre";/.test(serveur) && !/\.update\(/.test(serveur));
+  }
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

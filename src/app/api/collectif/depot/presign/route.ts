@@ -9,6 +9,7 @@ import { clePhoto, cleVignette } from "@/lib/collectif/cles";
 import { appareilDeRequete, compterPourPlafond, COOKIE_APPAREIL, lireExistants, nouvelAppareil } from "@/lib/collectif/collecte";
 import { estCleFichier, LOT_VERIFICATION, lireDeclaration, planDeclaration } from "@/lib/collectif/depot";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
+import { noterEchec } from "@/lib/collectif/echecsJournal";
 import { collecteOuverte } from "@/lib/collectif/etats";
 import { NOM_MAX } from "@/lib/collectif/participant";
 import { nomDeLAppareil } from "@/lib/collectif/participantConnu";
@@ -39,6 +40,11 @@ import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
  * Le plafond par personne est tenu PAR APPAREIL (cookie httpOnly posé ici) :
  * un frein honnête. Le plafond total est tenu ici, côté serveur. Après la
  * clôture, la route répond 409 `depot_ferme` (aucun cron : l'état effectif).
+ *
+ * T-160 : un refus pour une raison SERVEUR (une lecture ratée, une écriture
+ * refusée) s'écrit aussi au journal de l'édition (`noterEchec`), jamais avec
+ * le token ni le message brut. Les refus normaux (plafond, accord, lot
+ * illisible, deux onglets qui se croisent) n'en sont pas.
  */
 
 export const runtime = "nodejs";
@@ -70,7 +76,10 @@ export async function POST(request: Request) {
   if (Array.isArray(corps.connues)) {
     const cles = corps.connues.filter(estCleFichier).slice(0, LOT_VERIFICATION);
     const existants = await lireExistants(supabase, edition.id, cles);
-    if (!existants) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    if (!existants) {
+      await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", n: cles.length });
+      return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    }
     return NextResponse.json({ confirmees: [...existants.entries()].filter(([, e]) => e.confirmee).map(([c]) => c) });
   }
 
@@ -102,7 +111,10 @@ export async function POST(request: Request) {
     if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne");
     if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond");
     const { data: prov, error } = lu;
-    if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    if (error) {
+      await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", code: error.code, n: declaration.fichiers.length });
+      return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    }
     /* Un lien supprimé (migration 20261018) ne reçoit plus rien. */
     if (!prov || prov.retire_le) return NextResponse.json({ error: "provenance_inconnue" }, { status: 404 });
     provenanceId = prov.id;
@@ -136,7 +148,10 @@ export async function POST(request: Request) {
     compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null),
     lireExistants(supabase, edition.id, declaration.fichiers.map((f) => f.cle)),
   ]);
-  if (!comptes || !existants) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  if (!comptes || !existants) {
+    await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", n: declaration.fichiers.length });
+    return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  }
   const place = placeRestante(edition, { role, sansPlafond, plafondLien, dejaParAppareil: comptes.parAppareil }, comptes.total);
   const decisions = planDeclaration(declaration.fichiers, existants, place);
 
@@ -177,6 +192,7 @@ export async function POST(request: Request) {
          rejoue, et la reprise le reconnaîtra. */
       if (error.code === "23505") return NextResponse.json({ error: "reessayer" }, { status: 409 });
       console.error("[collectif] déclaration non écrite", error.code, error.message);
+      await noterEchec(supabase, edition.id, "declaration", { etape: "ecriture", code: error.code, n: lignes.length });
       return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
     }
   }

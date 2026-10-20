@@ -1,7 +1,7 @@
 ---
 id: T-194
 titre: Une photo arrivée au coffre mais pas encore confirmée (page fermée, téléphone verrouillé) reste invisible pour toujours
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: libre
@@ -28,4 +28,30 @@ avec le même contrôle de taille que `depot/complete`. Journaliser le nombre ra
 sur la règle pure.
 
 ## Ce qui a été fait
-Rien encore.
+20/10 (lot a1, branche de travail, non fusionné) :
+- **La règle pure** `src/lib/collectif/rattrapage.ts` : une ligne déclarée depuis plus de 10 min
+  (`DELAI_AVANT_RATTRAPAGE_MS`, dates lues par `lireInstant`, jamais `Date.parse` seul), au plus
+  50 lignes une tête (HEAD) chacune, au-delà une LISTE du dossier du coffre d'abord (un wifi filtré
+  laisse des centaines de lignes mortes), les plus récentes d'abord, 500 confirmations par passage.
+  Le verdict (`issueTete`) et le patch (`patchConfirmation` : `taille`, `confirmee_le`,
+  `vignette_key`, rien d'autre) sont LES MÊMES que `depot/complete`. Une photo trop lourde n'est
+  pas effacée ici (on ne fait rien, comme demandé). L'accord et le participant ont été écrits à la
+  déclaration : la confirmation n'y touche pas.
+- **Une seule confirmation** : `confirmerArrivee` (`rattrapageCoffre.ts`) sert à `depot/complete`
+  ET au rattrapage, avec la garde `.is("confirmee_le", null)` (idempotente par la base).
+- **Le verrou au journal** (patron `souvenir_demarre`) : `rattrapage_demarre` (`payload.passage`,
+  tiré par le serveur) puis `photos_rattrapees` (au moins une, lu sur la fiche) ou
+  `rattrapage_fini` (aucune, caché par `JOURNAL_DE_LOT`). Fenêtre 60 s = `maxDuration` des trois
+  appelants ; repos de 15 min entre deux passages ; deux démarrages croisés : le plus récent cède.
+  Un passage qui n'a rien à faire n'écrit RIEN. Journal illisible : pas de passage.
+- **Les déclencheurs, sans cron neuf** : la fiche de l'atelier et la page Photos du responsable
+  (`after()`, module chargé seulement à ce moment-là ; le lien de l'équipe ne déclenche rien), et la
+  relève quotidienne existante (`/api/atelier/mails/relever`, `after()` juste après le secret,
+  échéance 50 s, éditions en collecte ou closes depuis moins de 2 jours, coupé sans
+  `COLLECTIF_OUVERT`). Trois lignes dans la relève, rien d'autre n'y change.
+- Harnais `verif-collectif.ts` : règles pures, puis le passage ENTIER joué contre une fausse base et
+  un faux coffre (rien à faire, Audencia, repos, en cours, cession, trop lourde, panne, liste,
+  journal illisible, échéance) : TOUT PASSE.
+
+Reste : vérifier en production qu'un passage réel retrouve une photo (une ligne `photos_rattrapees`
+et `confirmee_le` posé) ; je ne l'ai pas fait (base de production, aucune écriture permise).

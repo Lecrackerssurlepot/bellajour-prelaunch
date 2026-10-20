@@ -52,8 +52,9 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
+import { ECHEANCE_RELEVE_MS } from "@/lib/collectif/rattrapage";
 import {
   lireNumerosMail,
   codesPour,
@@ -140,11 +141,20 @@ const ETATS_BALAYES = [
 ];
 
 async function relever(request: Request) {
+  const debut = Date.now();
   if (!autorise(request)) {
     /* 404 et pas 403 : une route d'administration n'a pas à confirmer son
        existence à qui ne connaît pas le secret. */
     return NextResponse.json({ error: "introuvable" }, { status: 404 });
   }
+
+  /* T-194 — HORS DES TROIS CHOSES CI-DESSUS, et après la réponse : le seul cron
+     quotidien du plan Hobby passe aussi sur les éditions collectives en collecte
+     pour retrouver les photos arrivées au coffre sans confirmation. `after()` :
+     la relève des particuliers répond d'abord, telle quelle ; le passage des
+     éditions ne lève jamais, ne touche à aucune table des particuliers, et se
+     coupe seul sans COLLECTIF_OUVERT. Son module ne se charge qu'à ce moment-là. */
+  after(() => import("@/lib/collectif/rattrapageServeur").then((m) => m.rattrapageQuotidien(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
 
   try {
     const supabase = makeSupabase();
