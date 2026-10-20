@@ -89,13 +89,23 @@ import { ETAPE_DU_CHAMP, ETAPES_EDITION, LIBELLE_CHAMP, lireSaisieEdition, planM
 import * as Saisie from "@/lib/collectif/saisie";
 import * as Calendrier from "@/lib/collectif/calendrier";
 import {
+  cleTailleImage,
   estCleImageStyle,
+  LARGEURS_REDUITES,
+  largeursAProduire,
   lireSaisieStyle,
+  lireTailles,
+  listeDesTailles,
   manquesPourPublier,
   nomImageStyle,
   slugDepuisNom,
+  srcSetDe,
+  tailleUtile,
   TYPES_DOUBLES,
+  type TailleImage,
 } from "@/lib/collectif/styles";
+import { ecrireTailles, MIME_TAILLE, produireTailles } from "@/lib/collectif/taillesStyle";
+import sharp from "sharp";
 import { MIGRATION_COLLECTIF, TABLES_COLLECTIF, tableAbsente } from "@/lib/collectif/migration";
 import {
   lireEntierPositif,
@@ -1027,6 +1037,106 @@ ok("sans palette, sans typo, sans couverture, une double sans image : quatre man
 ok("le nom d'une image est versionne et sur",
    nomImageStyle("couverture", "c1", "a1b2c3", "webp") === "couverture-c1-a1b2c3.webp"
    && nomImageStyle("double", "../x", "ZZ", "jpg") === "double-x-0000.jpg");
+
+/* ═══════════════════════════ T-172 : LES TAILLES RÉDUITES D'UNE IMAGE DE STYLE ═══════════════════════════ */
+
+titre("— T-172 : une image de style a ses tailles de 600 et 1 200 px, servies en srcset (la regle, pure) —");
+{
+  const m = img("couverture-c1-a1b2c3d4e5f6.webp");
+  ok("la cle d'une taille est a cote de sa maitresse, en WebP, separee par un tiret bas",
+     cleTailleImage(m, 600) === "collectif/styles/riviera/couverture-c1-a1b2c3d4e5f6_w600.webp"
+     && cleTailleImage(img("double-dense-ab12.jpg"), 1200) === "collectif/styles/riviera/double-dense-ab12_w1200.webp"
+     && estCleImageStyle("riviera", cleTailleImage(m, 600)));
+  ok("aucun nom de maitresse ne ressemble a une taille : nomImageStyle n'ecrit jamais de tiret bas",
+     ["couverture", "double", "echantillon"].every((e) => !nomImageStyle(e as "couverture", "w600_x", "abcd1234", "webp").includes("_")));
+  ok("les largeurs : 600 et 1 200 ; on n'agrandit jamais (2 400 → les deux, 1 000 → 600, 600 → rien)",
+     JSON.stringify(LARGEURS_REDUITES) === "[600,1200]" && JSON.stringify(largeursAProduire(2400)) === "[600,1200]"
+     && JSON.stringify(largeursAProduire(1000)) === "[600]" && largeursAProduire(600).length === 0 && largeursAProduire(0).length === 0 && largeursAProduire(Number.NaN).length === 0);
+  ok("une taille plus lourde que sa maitresse ne sert a rien : ecartee", tailleUtile(8000, 19000) && !tailleUtile(19000, 19000) && !tailleUtile(30000, 19000) && !tailleUtile(0, 19000));
+  const bonnes: TailleImage[] = [{ largeur: 2400, key: m }, { largeur: 1200, key: cleTailleImage(m, 1200) }, { largeur: 600, key: cleTailleImage(m, 600) }];
+  const lues = lireTailles("riviera", m, bonnes);
+  ok("lireTailles garde les tailles qui DERIVENT de la maitresse et la maitresse, de la plus etroite a la plus large",
+     JSON.stringify(lues.map((t) => t.largeur)) === "[600,1200,2400]" && lues[2].key === m);
+  const autre = img("couverture-c1-ffffffffffff.webp");
+  ok("les tailles d'une AUTRE maitresse (image remplacee, liste gardee par l'ecran) sont ecartees : jamais une vignette d'une autre image",
+     lireTailles("riviera", autre, bonnes).length === 0
+     && lireTailles("riviera", m, [{ largeur: 600, key: cleTailleImage(autre, 600) }, { largeur: 2400, key: m }]).length === 0);
+  ok("une taille d'un autre style, une largeur inconnue, une cle hors du style : ecartees",
+     lireTailles("autre", m, bonnes).length === 0
+     && lireTailles("riviera", m, [{ largeur: 800, key: cleTailleImage(m, 800) }, { largeur: 2400, key: m }]).length === 0
+     && lireTailles("riviera", "numeros/x/y.webp", bonnes).length === 0);
+  ok("sans taille reduite, ou une liste illisible : [] (l'ecran garde la maitresse)",
+     lireTailles("riviera", m, [{ largeur: 2400, key: m }]).length === 0 && lireTailles("riviera", m, "600").length === 0 && lireTailles("riviera", m, null).length === 0
+     && lireTailles("riviera", m, [{ largeur: "600", key: cleTailleImage(m, 600) }]).length === 0);
+  ok("une taille aussi large que la maitresse ne sert a rien : ecartee",
+     JSON.stringify(lireTailles("riviera", m, [{ largeur: 600, key: cleTailleImage(m, 600) }, { largeur: 1200, key: cleTailleImage(m, 1200) }, { largeur: 1000, key: m }]).map((t) => t.largeur)) === "[600,1000]");
+  const liste = listeDesTailles(m, 2400, [{ largeur: 600, key: cleTailleImage(m, 600) }, { largeur: 1200, key: cleTailleImage(m, 1200) }]);
+  ok("aller-retour : ce que la route rend (listeDesTailles), la saisie le garde tel quel (lireTailles)",
+     JSON.stringify(lireTailles("riviera", m, liste)) === JSON.stringify(liste) && listeDesTailles(m, 2400, []).length === 0);
+  ok("srcSetDe : « url 600w, url 1200w » ; une adresse avec un blanc ou une virgule est ecartee ; rien = null",
+     srcSetDe([{ largeur: 600, url: "https://a/x?s=1%2C2" }, { largeur: 1200, url: "https://a/y" }]) === "https://a/x?s=1%2C2 600w, https://a/y 1200w"
+     && srcSetDe([{ largeur: 600, url: "https://a/x?s=1,2" }, { largeur: 1200, url: null }, { largeur: 2400, url: "https://a/ y" }]) === null && srcSetDe([]) === null);
+
+  /* La saisie de l'éditeur : les tailles valides restent, les autres tombent, et sans elles rien ne change. */
+  const couv = (tailles: unknown) => lireSaisieStyle({ couvertures: [{ cle: "c1", image_key: m, legende: "", tailles }] }, "modification", "riviera");
+  const gardee = couv(liste);
+  ok("un enregistrement de l'editeur GARDE les tailles valides d'une couverture (sinon il les effacerait)",
+     gardee.ok && JSON.stringify((gardee.patch.couvertures as { tailles?: unknown }[])[0].tailles) === JSON.stringify(liste));
+  const perimee = couv(listeDesTailles(autre, 2400, [{ largeur: 600, key: cleTailleImage(autre, 600) }]));
+  ok("…et laisse tomber celles d'une autre image ; sans tailles, la couverture est ecrite exactement comme avant",
+     perimee.ok && !("tailles" in (perimee.patch.couvertures as object[])[0])
+     && (() => { const x = couv(undefined); return x.ok && JSON.stringify(x.patch.couvertures) === JSON.stringify([{ cle: "c1", image_key: m, legende: "" }]); })());
+  const dm = img("double-dense-ab12cd34.webp");
+  const dbl2 = lireSaisieStyle({ doubles: [{ type: "dense", image_key: dm, legende: "", tailles: listeDesTailles(dm, 1800, [{ largeur: 600, key: cleTailleImage(dm, 600) }]) }] }, "modification", "riviera");
+  const em = img("echantillon-typo-ab12cd34.webp");
+  const ty = lireSaisieStyle({ typos: { titres: "Fraunces", texte: "Inter", echantillon_key: em, echantillon_tailles: listeDesTailles(em, 1600, [{ largeur: 600, key: cleTailleImage(em, 600) }]) } }, "modification", "riviera");
+  ok("les doubles pages et l'echantillon des typographies gardent aussi leurs tailles",
+     dbl2.ok && ((dbl2.patch.doubles as { type: string; tailles?: TailleImage[] }[]).find((d) => d.type === "dense")?.tailles?.length ?? 0) === 2
+     && ty.ok && ((ty.patch.typos as { echantillon_tailles?: TailleImage[] }).echantillon_tailles?.length ?? 0) === 2
+     && (() => { const x = lireSaisieStyle({ typos: { titres: "F", texte: "I", echantillon_key: em } }, "modification", "riviera"); return x.ok && !("echantillon_tailles" in (x.patch.typos as object)); })());
+
+  /* Le chemin dans le code : l'envoi, l'éditeur, le mur, les écrans. */
+  const routeImage = lire("src/app/api/admin/collectif/styles/[id]/image/route.ts");
+  ok("la route d'envoi ecrit la maitresse PUIS ses tailles, et les rend ; une production ratee n'echoue pas l'envoi",
+     routeImage.indexOf("await ecrireObjet(key, octets, type)") > 0 && routeImage.indexOf("await ecrireObjet(key, octets, type)") < routeImage.indexOf("const tailles = await taillesPourImage(key, octets)")
+     && /NextResponse\.json\(\{ ok: true, key, url: lecture, tailles, journal \}/.test(routeImage) && /tailles: tailles\.filter/.test(routeImage));
+  const fabrique = lire("src/lib/collectif/taillesStyle.ts");
+  ok("la fabrique : sharp, jamais la maitresse reecrite, l'en-tete de cache range avec l'objet (T-176), aucune exception",
+     /from "sharp"/.test(fabrique) && /ecrireObjet\(t\.key, t\.octets, MIME_TAILLE, \{ cacheControl: CACHE_VIGNETTE \}\)/.test(fabrique) && !/ecrireObjet\(imageKey/.test(fabrique)
+     && /if \(!tailleUtile\(sortie\.byteLength, octets\.byteLength\)\) continue;/.test(fabrique) && MIME_TAILLE === "image/webp");
+  const editeur = lire("src/app/admin/collectif/styles/[id]/EditeurStyle.tsx");
+  ok("l'editeur range les tailles AVEC la cle, a chaque envoi (couverture, double page, echantillon)",
+     /image_key: envoi\.key, legende: "", tailles: envoi\.tailles/.test(editeur) && /image_key: envoi\.key, tailles: envoi\.tailles/.test(editeur) && /echantillon_key: envoi\.key, echantillon_tailles: envoi\.tailles/.test(editeur));
+  ok("la page de l'editeur lui rend les tailles de l'echantillon (les couvertures et doubles passent entieres)",
+     /echantillon_tailles: st\.typos\.echantillon_tailles/.test(lire("src/app/admin/collectif/styles/[id]/page.tsx")));
+  const donneesMur = lire("src/app/edition/[token]/donnees.ts");
+  const mur172 = donneesMur.slice(donneesMur.indexOf("async function imageDuMur("), donneesMur.indexOf("/* ───────────────────────────── le bon à tirer"));
+  ok("le mur relit les tailles (lireTailles), les signe a adresse stable (T-176) et en fait un srcset ; la maitresse reste le repli",
+     /const url = await signerOuRien\(key\)/.test(mur172) && /lireTailles\(slug, key, tailles\)/.test(mur172) && /signerLectureVignette\(t\.key\)/.test(mur172) && /srcSetDe\(signees\)/.test(mur172)
+     && /imageDuMur\(s\.slug, c\.image_key, c\.tailles\)/.test(mur172) && /imageDuMur\(s\.slug, d\.image_key, d\.tailles\)/.test(mur172) && /imageDuMur\(s\.slug, s\.typos\?\.echantillon_key, s\.typos\?\.echantillon_tailles\)/.test(mur172));
+  const imagesDe = (f: string) => [...lire(f).matchAll(/<img\b[\s\S]*?\/>/g)].map((x) => x[0]);
+  const ecrans: [string, number][] = [
+    ["src/app/edition/[token]/style/CartePiece.tsx", 1],
+    ["src/app/edition/[token]/style/[slug]/FicheStyle.tsx", 4],
+    ["src/app/edition/[token]/style/Composition.tsx", 5],
+  ];
+  ok("la carte du mur, la fiche d'un style et la composition : chaque image de style a son srcSet ET ses sizes (TAILLES_AFFICHAGE)",
+     ecrans.every(([f, n]) => { const l = imagesDe(f).filter((x) => /srcSet=/.test(x)); return l.length === n && l.every((x) => /sizes=\{[^}]*TAILLES_AFFICHAGE\./.test(x)); }));
+  ok("la vitrine (choix du style ferme en production) ne change pas : aucune taille du mur, aucune signature",
+     !/TAILLES_AFFICHAGE|srcSetDe|tailles/.test(lire("src/app/edition/[token]/style/Vitrine.tsx")));
+  const photos176 = lire("src/app/api/collectif/photos/route.ts");
+  ok("T-176 : la grille et les couvertures de dossiers signent leurs VIGNETTES a adresse stable ; l'original de repli reste signe comme avant",
+     /if \(p\.vignette_key\) vignette = await signerLectureVignette\(p\.vignette_key\)/.test(photos176) && /else if \(p\.mime !== "image\/heic" && p\.mime !== "image\/heif"\) vignette = await signerGet\(p\.r2_key\)/.test(photos176)
+     && !/signerLectureVignette\(p\.r2_key\)/.test(photos176));
+  const script = lire("scripts/collectif-styles-vignettes.ts");
+  ok("le rattrapage : lecture seule sans --vraiment (rien au coffre, rien en base), ecrit seulement si la ligne n'a pas bouge, journalise",
+     /if \(!vraiment\) \{[\s\S]*?return \{ quoi: "faite"/.test(script) && script.indexOf("if (!vraiment) {") < script.indexOf("await ecrireTailles(")
+     && script.indexOf("if (!vraiment || !faites.length) continue;") < script.indexOf(".update(") && /\.eq\("maj_le", s\.maj_le\)/.test(script) && /"style_tailles"/.test(script)
+     && (script.match(/ecrireTailles\(|\.update\(|\.insert\(|journaliser\(/g) ?? []).length === 3 && script.indexOf(".update(") < script.indexOf("await journaliser("));
+  ok("…et sa ligne est dans scripts/CLAUDE.md, avec --vraiment a l'accord de Mathias",
+     /`collectif-styles-vignettes\.ts`[^\n]*--vraiment[^\n]*Mathias/.test(lire("scripts/CLAUDE.md")));
+  ok("le journal dit le rattrapage", phraseEvenement("style_tailles", { par: "rattrapage T-172", images: 3 }) === "Tailles réduites posées sur 3 images (rattrapage T-172).");
+}
 
 /* ═══════════════════════════ PHASE 1 : LISTE, FICHE, JOURNAL ═══════════════════════════ */
 
@@ -2242,7 +2352,7 @@ titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ari
   ok("vues d'ensemble : « vous » = les photos du responsable, « liens » = celles des participants", D.dansLeDossier(r(null, "responsable"), "vous", "C") && !D.dansLeDossier(r(null, "participant"), "vous", "C") && D.dansLeDossier(r(null, "participant"), "liens", "C") && D.dansLeDossier(r("x", "participant"), "liens", "C") && !D.dansLeDossier(r(null, "atelier"), "liens", "C"));
   const route = lire("src/app/api/collectif/photos/route.ts");
   ok("route photos : une vue d'ensemble ne signe aucune PAGE de grille (les huit dernieres arrivees seulement), une couverture par dossier ou lien",
-    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerGet\(p\.vignette_key\)/.test(route)
+    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerLectureVignette\(p\.vignette_key\)/.test(route)
     && /const ARRIVEES = 8;/.test(route) && /sansGrille \? dansDossier\.slice\(-ARRIVEES\)\.reverse\(\)/.test(route));
   const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
   ok("Photos : dossiers et liens en vignettes, sous-dossiers en petites vignettes, personnes d'un lien en pastilles, fil d'Ariane",
@@ -4385,7 +4495,43 @@ async function sondeT194() {
   }
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(() => {
+/* T-172 : la fabrique des tailles, jouée sur des images fabriquées (sharp, sans réseau ni coffre). */
+async function sondeT172() {
+  titre("— T-172 : les tailles fabriquees pour de vrai (sharp, en memoire) —");
+  const motif = (l: number, h: number) => {
+    const px = Buffer.alloc(l * h * 3);
+    for (let y = 0; y < h; y++) for (let x = 0; x < l; x++) {
+      const i = (y * l + x) * 3;
+      px[i] = (x * 7 + y * 3) % 256;
+      px[i + 1] = (x * y) % 251;
+      px[i + 2] = ((x >> 3) ^ (y >> 3)) * 9 % 256;
+    }
+    return sharp(px, { raw: { width: l, height: h, channels: 3 } });
+  };
+  const key = "collectif/styles/riviera/double-dense-ab12cd34.webp";
+  const grande = new Uint8Array(await motif(1800, 1200).webp({ quality: 86 }).toBuffer());
+  const p1 = await produireTailles(key, grande);
+  const dims = p1.ok ? await Promise.all(p1.tailles.map(async (t) => { const m = await sharp(Buffer.from(t.octets)).metadata(); return `${t.largeur}:${m.format}:${m.width}x${m.height}`; })) : [];
+  ok(`une maitresse de 1 800 px : 600 et 1 200 px de large, en WebP, aux bonnes proportions (${dims.join(", ")})`,
+     p1.ok && p1.largeur === 1800 && JSON.stringify(dims) === JSON.stringify(["600:webp:600x400", "1200:webp:1200x800"])
+     && p1.tailles.every((t) => t.key === cleTailleImage(key, t.largeur) && t.octets.byteLength < grande.byteLength));
+  ok("ce que la route garderait, la saisie le relit tel quel",
+     p1.ok && JSON.stringify(lireTailles("riviera", key, listeDesTailles(key, p1.largeur, p1.tailles))) === JSON.stringify(listeDesTailles(key, p1.largeur, p1.tailles)));
+  const debout = await produireTailles(key, new Uint8Array(await motif(1000, 1400).webp({ quality: 86 }).toBuffer()));
+  ok("une couverture debout de 1 000 px de large : seulement 600 (on n'agrandit jamais)", debout.ok && debout.largeur === 1000 && JSON.stringify(debout.tailles.map((t) => t.largeur)) === "[600]");
+  const petite = await produireTailles(key, new Uint8Array(await motif(500, 700).webp().toBuffer()));
+  ok("une image de 500 px : aucune taille, la maitresse reste seule", petite.ok && petite.tailles.length === 0 && (await ecrireTailles(key, petite as Extract<typeof petite, { ok: true }>)).ok);
+  /* Une photo couchée par l'EXIF (orientation 6) : 1 600 × 1 200 stockée, 1 200 de large à l'écran. */
+  const couchee = new Uint8Array(await motif(1600, 1200).jpeg().withMetadata({ orientation: 6 }).toBuffer());
+  const pc = await produireTailles(key, couchee);
+  const pcDims = pc.ok && pc.tailles[0] ? await sharp(Buffer.from(pc.tailles[0].octets)).metadata() : null;
+  ok("une image tournee par l'EXIF se mesure et se reduit A L'ENDROIT (1 200 px de large affiches → 600 x 800)",
+     pc.ok && pc.largeur === 1200 && pc.tailles.length === 1 && pcDims?.width === 600 && pcDims?.height === 800);
+  const casse = await produireTailles(key, new Uint8Array([1, 2, 3, 4, 5]));
+  ok("des octets illisibles : un refus dit, jamais une exception (l'envoi de la maitresse ne tombe pas)", !casse.ok && typeof casse.raison === "string");
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

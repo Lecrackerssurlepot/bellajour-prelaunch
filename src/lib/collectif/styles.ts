@@ -31,9 +31,15 @@ export const TYPES_DOUBLES = [
 export type TypeDouble = (typeof TYPES_DOUBLES)[number]["cle"];
 
 export type Palette = { cle: string; nom: string; couleurs: string[] };
-export type Typos = { titres: string; texte: string; echantillon_key: string | null };
-export type CouvertureStyle = { cle: string; image_key: string; legende: string };
-export type DoubleStyle = { type: TypeDouble; image_key: string | null; legende: string };
+/**
+ * Une taille servie d'une image de style (T-172) : sa largeur en pixels et sa
+ * clé au coffre. Les tailles réduites (`cleTailleImage`) ET la maîtresse, sous
+ * sa propre clé, avec sa largeur : c'est la liste `srcset` du mur.
+ */
+export type TailleImage = { largeur: number; key: string };
+export type Typos = { titres: string; texte: string; echantillon_key: string | null; echantillon_tailles?: TailleImage[] };
+export type CouvertureStyle = { cle: string; image_key: string; legende: string; tailles?: TailleImage[] };
+export type DoubleStyle = { type: TypeDouble; image_key: string | null; legende: string; tailles?: TailleImage[] };
 
 /** Le nombre de couleurs d'une palette (PRD §8 : « nom + 4 couleurs »). */
 export const COULEURS_PAR_PALETTE = 4;
@@ -94,6 +100,97 @@ export function nomImageStyle(
   return `${emplacement}-${c}-${a}.${extension}`;
 }
 
+/* ─────────── T-172 : les tailles réduites d'une image de style ───────────
+
+   Une pièce de style est gardée jusqu'à 2 400 px et 4 Mo (`reduireImage.ts`),
+   et le mur la montre dans une carte de 300 px. À l'enregistrement de l'image,
+   le serveur en écrit aussi une version de 600 px et une de 1 200 px de LARGE
+   (`taillesStyle.ts`), rangées à côté de la maîtresse ; le style les garde
+   dans `tailles`, et le mur les sert en `srcset`. Sans tailles (une image
+   d'avant, ou une production ratée), l'écran montre la maîtresse, comme
+   avant. Les images d'avant : `scripts/collectif-styles-vignettes.ts`. */
+
+/** Les largeurs produites : la carte du mur (600 sur un écran dense), la fiche d'un style (1 200). */
+export const LARGEURS_REDUITES = [600, 1200] as const;
+
+/** Une largeur au-delà ne vient pas de `reduireImage` (2 400 au plus) : une garde, pas une règle. */
+const LARGEUR_LUE_MAX = 10000;
+
+/**
+ * La clé d'une taille réduite, à côté de sa maîtresse :
+ * `…/couverture-c1-a1b2c3.webp` → `…/couverture-c1-a1b2c3_w600.webp`.
+ * Toujours en WebP. Le tiret bas sépare : `nomImageStyle` n'en écrit jamais,
+ * donc aucun nom de maîtresse ne ressemble à celui d'une taille.
+ */
+export function cleTailleImage(imageKey: string, largeur: number): string {
+  return `${imageKey.replace(/\.[a-z0-9]+$/i, "")}_w${largeur}.webp`;
+}
+
+/** Les largeurs à produire pour une maîtresse de cette largeur : seulement les plus ÉTROITES (on n'agrandit jamais). */
+export function largeursAProduire(largeurMaitresse: number): number[] {
+  if (!Number.isInteger(largeurMaitresse) || largeurMaitresse <= 0) return [];
+  return LARGEURS_REDUITES.filter((l) => l < largeurMaitresse);
+}
+
+/**
+ * Une taille réduite plus lourde que sa maîtresse (une maîtresse déjà très
+ * compressée) ne ferait que coûter plus : elle n'est pas gardée.
+ */
+export function tailleUtile(octetsTaille: number, octetsMaitresse: number): boolean {
+  return octetsTaille > 0 && octetsTaille < octetsMaitresse;
+}
+
+/**
+ * La liste que le style garde pour une image : les tailles réduites écrites,
+ * puis la maîtresse avec sa largeur, de la plus étroite à la plus large. Vide
+ * sans taille réduite (l'écran garde alors la maîtresse seule). C'est ce que
+ * la route rend et ce que `lireTailles` relit : le harnais prouve l'aller-retour.
+ */
+export function listeDesTailles(imageKey: string, largeurMaitresse: number, reduites: readonly TailleImage[]): TailleImage[] {
+  if (!reduites.length) return [];
+  return [...reduites.map(({ largeur, key }) => ({ largeur, key })), { largeur: largeurMaitresse, key: imageKey }].sort((a, b) => a.largeur - b.largeur);
+}
+
+/**
+ * Les tailles d'une image relues (saisie de l'éditeur, ligne de la base).
+ * Ne restent que celles qui DÉRIVENT de cette maîtresse (`cleTailleImage`),
+ * et la maîtresse elle-même avec sa largeur. Les tailles d'une autre image
+ * (une maîtresse remplacée dont l'écran aurait gardé la liste) sont écartées :
+ * jamais une vignette qui montrerait une autre image que celle du style.
+ * Sans aucune taille réduite : `[]`, et l'écran garde la maîtresse seule.
+ */
+export function lireTailles(slug: string, imageKey: unknown, brut: unknown): TailleImage[] {
+  if (!estCleImageStyle(slug, imageKey) || !Array.isArray(brut)) return [];
+  const reduites = new Map<number, TailleImage>();
+  let maitresse: TailleImage | null = null;
+  for (const t of brut.slice(0, 8)) {
+    const x = (t ?? {}) as Record<string, unknown>;
+    const largeur = x.largeur;
+    if (typeof largeur !== "number" || !Number.isInteger(largeur) || largeur <= 0 || largeur > LARGEUR_LUE_MAX) continue;
+    if (x.key === imageKey) {
+      maitresse ??= { largeur, key: imageKey };
+    } else if ((LARGEURS_REDUITES as readonly number[]).includes(largeur) && x.key === cleTailleImage(imageKey, largeur)) {
+      reduites.set(largeur, { largeur, key: x.key });
+    }
+  }
+  const utiles = [...reduites.values()].filter((t) => !maitresse || t.largeur < maitresse.largeur);
+  if (!utiles.length) return [];
+  return [...utiles, ...(maitresse ? [maitresse] : [])].sort((a, b) => a.largeur - b.largeur);
+}
+
+/**
+ * La valeur `srcset` (« url 600w, url 1200w, url 2400w »), ou `null` : l'écran
+ * garde alors la maîtresse seule. Une adresse avec un blanc ou une virgule
+ * couperait la liste en deux : elle est écartée (une adresse signée les
+ * encode, `%20` et `%2C`, le harnais le vérifie).
+ */
+export function srcSetDe(entrees: readonly { largeur: number; url: string | null }[]): string | null {
+  const l = entrees.filter(
+    (e): e is { largeur: number; url: string } => typeof e.url === "string" && e.url.length > 0 && !/[\s,]/.test(e.url) && e.largeur > 0
+  );
+  return l.length ? l.map((e) => `${e.url} ${e.largeur}w`).join(", ") : null;
+}
+
 function texte(v: unknown, max: number): string {
   return typeof v === "string" ? v.trim().slice(0, max) : "";
 }
@@ -136,10 +233,12 @@ function lireTypos(v: unknown, slug: string, erreurs: Erreur[]): Typos {
   if (echantillon !== null && echantillon !== undefined && echantillon !== "" && !estCleImageStyle(slug, echantillon)) {
     erreurs.push({ champ: "typos", message: "L'échantillon de typographie n'est pas une image de ce style." });
   }
+  const tailles = lireTailles(slug, echantillon, t.echantillon_tailles);
   return {
     titres: texte(t.titres, 60),
     texte: texte(t.texte, 60),
     echantillon_key: estCleImageStyle(slug, echantillon) ? echantillon : null,
+    ...(tailles.length ? { echantillon_tailles: tailles } : {}),
   };
 }
 
@@ -159,7 +258,8 @@ function lireCouvertures(v: unknown, slug: string, erreurs: Erreur[]): Couvertur
       continue;
     }
     vues.add(cle);
-    sortie.push({ cle, image_key: c.image_key, legende: texte(c.legende, 120) });
+    const tailles = lireTailles(slug, c.image_key, c.tailles);
+    sortie.push({ cle, image_key: c.image_key, legende: texte(c.legende, 120), ...(tailles.length ? { tailles } : {}) });
   }
   return sortie;
 }
@@ -173,10 +273,12 @@ function lireDoubles(v: unknown, slug: string, erreurs: Erreur[]): DoubleStyle[]
     if (image !== null && image !== undefined && image !== "" && !estCleImageStyle(slug, image)) {
       erreurs.push({ champ: "doubles", message: "Une double page n'a pas d'image de ce style." });
     }
+    const tailles = lireTailles(slug, image, d.tailles);
     return {
       type: cle,
       image_key: estCleImageStyle(slug, image) ? image : null,
       legende: texte(d.legende, 160),
+      ...(tailles.length ? { tailles } : {}),
     };
   });
 }

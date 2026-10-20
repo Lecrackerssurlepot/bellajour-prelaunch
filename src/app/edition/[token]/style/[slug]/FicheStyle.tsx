@@ -21,6 +21,7 @@ import { compositionDu, DESCRIPTION_DOUBLE, PARTS_TEXTE, stylesDeLaComposition }
 import { TYPES_DOUBLES, type TypeDouble } from "@/lib/collectif/styles";
 import { EnTeteEcran } from "../../../_composants/Ecran";
 import type { MagazineMur, StyleMur } from "../../donnees";
+import { TAILLES_AFFICHAGE } from "../pieces";
 import "../style.css";
 
 type Props = {
@@ -162,7 +163,15 @@ export default function FicheStyle(p: Props) {
               </p>
             </div>
             <div className="ec-fiche-couv">
-              {p.style.couvertures[0]?.url ? <img src={p.style.couvertures[0].url} alt={`Couverture ${p.style.nom}`} decoding="async" /> : null}
+              {p.style.couvertures[0]?.url ? (
+                <img
+                  src={p.style.couvertures[0].url}
+                  srcSet={p.style.couvertures[0].srcSet ?? undefined}
+                  sizes={p.style.couvertures[0].srcSet ? TAILLES_AFFICHAGE.ficheCouverture : undefined}
+                  alt={`Couverture ${p.style.nom}`}
+                  decoding="async"
+                />
+              ) : null}
               {paletteChoisie ? (
                 <div className="ec-bandes" aria-label={`Palette ${paletteChoisie.nom}`}>
                   {paletteChoisie.couleurs.map((c, i) => (
@@ -199,7 +208,16 @@ export default function FicheStyle(p: Props) {
               <p className="ec-texte">
                 Titres · <strong>{p.style.typos.titres || "à venir"}</strong> · Texte · <strong>{p.style.typos.texte || "à venir"}</strong>
               </p>
-              {p.style.typos.echantillon ? <img className="ec-echantillon" src={p.style.typos.echantillon} alt="Échantillon des typographies" decoding="async" /> : null}
+              {p.style.typos.echantillon ? (
+                <img
+                  className="ec-echantillon"
+                  src={p.style.typos.echantillon}
+                  srcSet={p.style.typos.echantillonSrcSet ?? undefined}
+                  sizes={p.style.typos.echantillonSrcSet ? TAILLES_AFFICHAGE.ficheEchantillon : undefined}
+                  alt="Échantillon des typographies"
+                  decoding="async"
+                />
+              ) : null}
               <p className="ec-texte">Quelle place pour le texte ?</p>
               <div className="ec-st-trois">
                 {PARTS_TEXTE.map((t) => (
@@ -239,7 +257,9 @@ export default function FicheStyle(p: Props) {
                     disabled={!peutAgir}
                     onClick={() => setDoubles((l) => (choisie ? l.filter((x) => x !== t.cle) : [...l, t.cle]))}
                   >
-                    <span className="ec-double-image">{d?.url ? <img src={d.url} alt="" loading="lazy" decoding="async" /> : null}</span>
+                    <span className="ec-double-image">
+                      {d?.url ? <img src={d.url} srcSet={d.srcSet ?? undefined} sizes={d.srcSet ? TAILLES_AFFICHAGE.ficheDouble : undefined} alt="" loading="lazy" decoding="async" /> : null}
+                    </span>
                     <span className="ec-planche-nom">{t.libelle}</span>
                     <span className="ec-note">{d?.legende || DESCRIPTION_DOUBLE[t.cle as TypeDouble]}</span>
                   </button>
@@ -265,7 +285,9 @@ export default function FicheStyle(p: Props) {
               <div className="ec-planches">
                 {p.style.couvertures.map((c) => (
                   <figure key={c.cle} className="ec-planche">
-                    <div className="ec-planche-image">{c.url ? <img src={c.url} alt="" loading="lazy" decoding="async" /> : null}</div>
+                    <div className="ec-planche-image">
+                      {c.url ? <img src={c.url} srcSet={c.srcSet ?? undefined} sizes={c.srcSet ? TAILLES_AFFICHAGE.ficheCouvertures : undefined} alt="" loading="lazy" decoding="async" /> : null}
+                    </div>
                     {c.legende ? <figcaption className="ec-note">{c.legende}</figcaption> : null}
                     {peutAgir ? (
                       <button

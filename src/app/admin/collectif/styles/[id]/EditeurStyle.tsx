@@ -8,7 +8,12 @@
    le style qu'à « Enregistrer ». Publier relit `manquesPourPublier` : le
    bouton dit ce qui manque, et le serveur refuse de toute façon un style
    incomplet. Rien ne s'efface : retirer une image la sort du style, pas du
-   coffre. */
+   coffre.
+
+   T-172 : la route rend aussi les tailles réduites de l'image (600 et
+   1 200 px) ; elles entrent dans le style AVEC sa clé, et seulement avec
+   elle (une image remplacée remplace ses tailles). `lireSaisieStyle` écarte
+   de toute façon une taille qui ne dérive pas de la clé enregistrée. */
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,6 +25,7 @@ import {
   type DoubleStyle,
   type EmplacementImage,
   type Palette,
+  type TailleImage,
   type Typos,
 } from "@/lib/collectif/styles";
 import type { Segment } from "@/lib/collectif/types";
@@ -85,7 +91,7 @@ export default function EditeurStyle({
     setMessage(null);
   };
 
-  async function envoyerImage(fichier: File, emplacement: EmplacementImage, cle: string): Promise<string | null> {
+  async function envoyerImage(fichier: File, emplacement: EmplacementImage, cle: string): Promise<{ key: string; tailles: TailleImage[] } | null> {
     setEnvois((n) => n + 1);
     try {
       const { blob, type } = await reduireImage(fichier);
@@ -93,13 +99,13 @@ export default function EditeurStyle({
         `/api/admin/collectif/styles/${initial.id}/image?emplacement=${emplacement}&cle=${encodeURIComponent(cle)}`,
         { method: "POST", headers: { "content-type": type }, body: blob }
       );
-      const json = (await rep.json().catch(() => ({}))) as { key?: string; url?: string | null; message?: string };
+      const json = (await rep.json().catch(() => ({}))) as { key?: string; url?: string | null; tailles?: TailleImage[]; message?: string };
       if (!rep.ok || !json.key) {
         setMessage({ ok: false, texte: json.message ?? `« ${fichier.name} » n'est pas parti (erreur ${rep.status}).` });
         return null;
       }
       if (json.url) setImages((m) => ({ ...m, [json.key as string]: json.url as string }));
-      return json.key;
+      return { key: json.key, tailles: Array.isArray(json.tailles) ? json.tailles : [] };
     } catch (e) {
       setMessage({ ok: false, texte: e instanceof Error ? e.message : `« ${fichier.name} » n'est pas parti.` });
       return null;
@@ -112,22 +118,22 @@ export default function EditeurStyle({
     if (!fichiers) return;
     for (const f of Array.from(fichiers)) {
       const cle = cleAleatoire();
-      const key = await envoyerImage(f, "couverture", cle);
-      if (key) setS((x) => ({ ...x, couvertures: [...x.couvertures, { cle, image_key: key, legende: "" }] }));
+      const envoi = await envoyerImage(f, "couverture", cle);
+      if (envoi) setS((x) => ({ ...x, couvertures: [...x.couvertures, { cle, image_key: envoi.key, legende: "", tailles: envoi.tailles }] }));
     }
     if (fichierCouvertures.current) fichierCouvertures.current.value = "";
   }
 
   async function remplacerDouble(i: number, fichier: File | undefined) {
     if (!fichier) return;
-    const key = await envoyerImage(fichier, "double", s.doubles[i].type);
-    if (key) setS((x) => ({ ...x, doubles: x.doubles.map((d, j) => (j === i ? { ...d, image_key: key } : d)) }));
+    const envoi = await envoyerImage(fichier, "double", s.doubles[i].type);
+    if (envoi) setS((x) => ({ ...x, doubles: x.doubles.map((d, j) => (j === i ? { ...d, image_key: envoi.key, tailles: envoi.tailles } : d)) }));
   }
 
   async function remplacerEchantillon(fichier: File | undefined) {
     if (!fichier) return;
-    const key = await envoyerImage(fichier, "echantillon", "typo");
-    if (key) setS((x) => ({ ...x, typos: { ...x.typos, echantillon_key: key } }));
+    const envoi = await envoyerImage(fichier, "echantillon", "typo");
+    if (envoi) setS((x) => ({ ...x, typos: { ...x.typos, echantillon_key: envoi.key, echantillon_tailles: envoi.tailles } }));
   }
 
   async function enregistrer(publier?: boolean) {

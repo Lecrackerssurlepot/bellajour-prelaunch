@@ -7,7 +7,13 @@
    2400 px de côté, largement de quoi remplir un mur et une page de style.
 
    WebP si le navigateur sait l'écrire, JPEG sinon (Safari ancien) : on lit
-   le type du Blob rendu, on ne le suppose pas. */
+   le type du Blob rendu, on ne le suppose pas.
+
+   Cette image est la MAÎTRESSE. Le mur ne la sert plus dans ses cartes de
+   300 px (T-172) : à l'envoi, le SERVEUR en écrit aussi une version de 600 et
+   une de 1 200 px de large (`@/lib/collectif/taillesStyle`, sharp), une seule
+   fabrique pour la route et le rattrapage des images d'avant. Rien ne se
+   réduit deux fois ici : le corps envoyé reste une seule image. */
 
 export const COTE_MAX = 2400;
 export const OCTETS_MAX = 4 * 1024 * 1024;
