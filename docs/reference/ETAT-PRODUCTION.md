@@ -10,6 +10,28 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 20/10/2026 (soir) — Les mails des éditions OUVERTS ; les planches en production
+
+- **`COLLECTIF_MAILS=1` en Production SEULEMENT** (id `F0IOl6vMYid9qUGW`), posée le 20/10 au soir
+  sur l'accord de Mathias (« tu peux ouvrir les mails »), après sa relecture des huit mails
+  (v2 : une mise en page, liens de l'équipe et des participants remplacés par « où les trouver
+  dans l'espace », PR #297). Pas en Preview : elle lit la même base. Lue par le premier
+  déploiement de production qui suit (celui de cette PR). Restent FERMÉS : `COLLECTIF_MAILS_RDV`
+  (rendez-vous) et `COLLECTIF_CODE_APPAREIL` (code par appareil). Aucun mail ne part tout seul :
+  « Votre espace est prêt » est un geste de l'atelier (deux temps), « Le lien a changé » suit une
+  régénération, « Retrouver mon espace » une demande du responsable.
+- **En production** : #294 (liste des personnes), #295 (page Photos : Supprimer, corbeille,
+  personne), #296 (page des participants, `VERSION_ACCORD` = 2026-10-20), #297 (mails), #298
+  (projets légaux, rien dans src/). **Migration 20261023 APPLIQUÉE par Mathias le 20/10 au soir**,
+  vérifiée en SQL (tables, colonnes, deux vues, index, RLS ; 1 203 = 1 203 = 1 203) et par
+  PostgREST. Sondé : le lien « Equipe 1 » d'Audencia montre l'adresse, sa phrase et la phrase de
+  l'album ; les liens GÉNÉRAUX d'Audencia et de « Encore · Promo 26 » (édition de test de
+  Mathias) disent « pas encore ouvert » (« Photos par personne » vide).
+- **Confidentialité** : réponses de Mathias aux onze questions (toutes d'accord ; le fichier du
+  magazine terminé gardé **10 ans**, jamais réutilisé sans l'accord du client). Projets dans
+  `docs/produit/collectif/projets-legaux-20-10/` ; rien en ligne avant son accord texte par texte
+  et la relecture juridique.
+
 ## 20/10/2026 (fin d'après-midi) — Les planches d'Audencia : vague 1 en production, migration 20261023 à appliquer
 
 Mathias a validé les planches du 20/10 (« Je valide », avec les seize recommandations) puis, sur

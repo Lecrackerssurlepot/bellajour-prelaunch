@@ -516,7 +516,7 @@ d'audience (§8.1).
 | Photos (originaux et images réduites), informations qu'elles contiennent (date, appareil, coordonnées GPS, ville, empreinte, nom du fichier), pages du bon à tirer, versions intermédiaires du magazine, contenus envoyés, pièces jointes **[CONDITION : effacement à 30 jours en service]** | supprimés 30 jours après la livraison du magazine |
 | Photo supprimée par le responsable, par l'atelier ou par la personne qui l'a envoyée **[CONDITION : migration 20261023 appliquée]** | 30 jours au plus dans une corbeille, où le responsable et l'atelier peuvent la restaurer, puis effacée définitivement |
 | Adresse e-mail du participant **[CONDITION : effacée par le même passage]** | effacée avec les photos, 30 jours après la livraison |
-| Fichier du magazine terminé | [À FIXER : nombre d'années], pour permettre une réimpression ; jamais réutilisé sans l'accord du client |
+| Fichier du magazine terminé | 10 ans, pour permettre une réimpression ; jamais réutilisé sans l'accord du client |
 | Preuve de l'accord du participant (nom, version du texte, date et heure) | conservée après l'effacement des photos, [À FIXER : durée], le temps qu'une réclamation sur le magazine reste possible |
 | Devis signé, factures, propositions | 10 ans (Código Comercial, art. 40 ; CIVA / SAF-T) |
 | Coordonnées du responsable, messages, journal des actions | [À FIXER : durée] |
