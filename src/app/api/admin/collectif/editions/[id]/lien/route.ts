@@ -8,7 +8,7 @@ import { controleAppareilActif, empreinte } from "@/lib/collectif/appareil";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { codeMailLienRegenere, COLONNE_LIEN, origineDepuis, QUELS_LIENS, type QuelLien } from "@/lib/collectif/liens";
+import { codeMailLienRegenere, COLONNE_LIEN, origineDesMails, QUELS_LIENS, type QuelLien } from "@/lib/collectif/liens";
 import { envoyerMailCollectif, mailsCollectifOuverts, VAR_MAILS_COLLECTIF, type EtatEnvoi } from "@/lib/collectif/mails";
 import { donneesLienRegenere, lienPrevenu, mailLienRegenere, type LienPrevenu } from "@/lib/collectif/mailsTextes";
 import { colonneAbsente, ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
@@ -82,10 +82,6 @@ async function compterContributions(supabase: SupabaseClient, id: string): Promi
   return tous.error ? null : (tous.count ?? 0);
 }
 
-function origineDe(request: Request): string {
-  return origineDepuis(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), request.headers.get("x-forwarded-proto"));
-}
-
 /** Pourquoi aucun mail ne partira (ou `null` : il partira, si `COLLECTIF_MAILS` est ouvert). */
 function sansMail(e: Lue, quel: QuelLien): string | null {
   if (!lienPrevenu(quel)) return "Le lien de l'équipe se transmet par le responsable : aucun mail ne part.";
@@ -107,7 +103,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const lu = await lireEdition(supabase, g.id);
   if ("refus" in lu) return lu.refus;
   const contributions = quel === "depot" ? await compterContributions(supabase, g.id) : 0;
-  const mail = mailPour(lu.edition, quel, origineDe(request), contributions);
+  const mail = mailPour(lu.edition, quel, origineDesMails(process.env), contributions);
   return new NextResponse(mail.html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
 }
 
@@ -128,7 +124,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const supabase = makeSupabase();
   const lu = await lireEdition(supabase, id);
   if ("refus" in lu) return lu.refus;
-  const origine = origineDe(request);
+  /* Le lien qui part par mail prend l'origine du site, jamais un en-tête (T-164). */
+  const origine = origineDesMails(process.env);
   const contributions = quel === "depot" ? await compterContributions(supabase, id) : 0;
 
   /* La vérification : rien n'est écrit, rien ne part. */

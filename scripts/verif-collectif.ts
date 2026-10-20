@@ -2496,8 +2496,9 @@ titre("— T-164 / T-166 : les liens des mails viennent du site, « Retrouver »
     "src/app/api/collectif/rendez-vous/route.ts",
     "src/app/api/admin/collectif/editions/[id]/mail-espace/route.ts",
     "src/app/api/admin/collectif/editions/[id]/rendez-vous/route.ts",
+    "src/app/api/admin/collectif/editions/[id]/lien/route.ts",
   ];
-  ok("T-164 : les cinq routes qui envoient un mail d'edition prennent origineDesMails(process.env), apercu du mail compris",
+  ok("T-164 : les six routes qui envoient un mail d'edition prennent origineDesMails(process.env), apercu du mail compris (T-196 : le lien regenere)",
     ROUTES_MAIL.every((f) => /origineDesMails\(process\.env\)/.test(lire(f))));
   ok("T-164 : le code d'essai lit l'en-tete host SEUL, le mail nomme le site",
     /demanderCode\(supabase, acces\.edition, idAppareil, request\.headers\.get\("host"\), origineDesMails\(process\.env\)\)/.test(lire("src/app/api/collectif/appareil/route.ts"))
