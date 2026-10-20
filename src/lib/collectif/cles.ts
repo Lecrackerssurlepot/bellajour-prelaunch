@@ -4,9 +4,12 @@
  *
  * `r2.ts` (atelier) signe et lit N'IMPORTE QUELLE clé : seules les clés sont
  * propres au B2B, et elles vivent ici. Tout part sous `collectif/`, jamais
- * sous `numeros/` : le garde-fou de `supprimerPrefixe` (atelier) n'accepte
- * que `numeros/<id>/`, une clé collective ne peut donc pas être balayée par
- * une suppression de dossier B2C, et réciproquement.
+ * sous `numeros/`. L'effacement en masse a DEUX portes, chacune sa racine
+ * (`racineEffacable`, r2.ts, T-159) : `supprimerPrefixe` n'accepte que
+ * `numeros/<id>/` (une suppression de dossier B2C ne balaie jamais une clé
+ * collective), `supprimerCoffreEdition` n'accepte que `collectif/<uuid>/`,
+ * c'est-à-dire exactement `prefixeEdition(id)` : ni « collectif/ » seul, ni
+ * les styles, ni un uuid mal formé. Les deux harnais le prouvent.
  *
  * ⚠️ Chaque fabrique REFUSE un identifiant qui n'a pas la forme attendue : un
  * `../` glissé dans un id ferait écrire ailleurs dans le coffre.
