@@ -54,3 +54,4 @@ Regrouper par empreinte exacte d'abord (une table de hachage, coût linéaire), 
 - Après la migration, à vérifier (le repli efface en silence) : `select edition_id, signature,
   photos, complet, jsonb_array_length(groupes) from collectif_doublons;` doit montrer une ligne
   par édition dès qu'un lot a été lu, et la signature doit suivre les lots.
+- 20/10 au soir : table `collectif_doublons` en place (migration `20261022` appliquée et vérifiée) ; 0 ligne, elle se remplit à la lecture des empreintes ou au premier affichage.
