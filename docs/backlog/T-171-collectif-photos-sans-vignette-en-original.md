@@ -1,7 +1,7 @@
 ---
 id: T-171
 titre: Une photo dont la vignette a échoué s'affiche dans la grille en original, et rien ne refait la vignette
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: confort
 autonomie: libre
@@ -25,4 +25,7 @@ modèle de `vignettes-rattrapage.ts` ; en attendant, la fiche montre déjà le c
 (`sansVignette`).
 
 ## Ce qui a été fait
-Rien encore.
+- PR #271 (19/10, en production) : une vignette perdue pendant une coupure est renvoyée (4 essais,
+  `moteur.ts:756-765`) ; banc : 4/24, 4/12 et 24/24 vignettes perdues → aucune.
+- Reste : après 4 échecs, la grille sert l'original (`photos/route.ts:132-135`) et rien ne refait
+  la vignette côté serveur.

@@ -24,6 +24,16 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (20/10/2026 : Audencia, la première vraie édition)
+
+Le parcours complet a été relu sur main pour une édition de 80 personnes sur 8 bateaux. L'envoi
+tient le mauvais réseau et l'iPhone depuis le 19/10 (T-192, PR #271, essai réel 324/324). Ce qui
+manque est ouvert en T-193 à T-202. **Avant de remettre l'espace à Audencia** : T-193 (le lot par
+bateau), T-194 (photos au coffre non confirmées), T-195 (plafond total vide), T-196 (régénérer
+coupe les liens), un essai sur de vrais téléphones (T-155), et les décisions de Mathias : T-200
+(vidéos), T-202 (sauvegardes et plans), T-158 et T-159 (confidentialité, conservation).
+Explication et schémas pour Mathias : l'artefact « Édition collective en clair » du 20/10.
+
 ## Où on en est (19/10/2026 : l'Édition collective en ligne, audits de sécurité et de performance)
 
 L'Édition collective est ouverte en production depuis le 17/10 ; les 7 éditions d'essai sont
@@ -339,11 +349,11 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-164 | Les liens des mails d'une édition prennent leur adresse dans un en-tête de la requête, que l'appelant peut écrire | collectif | serieux | libre | **fermé** (fiche dans `fermes/`) — 20/10 : cinq routes de mail, pas une ; les liens des mails prennent `origineDesMails` (le site), le code d'essai lit `host` seul ; harnais |
 | T-165 | Un logo SVG déposé par un client exécute son script si l'atelier l'ouvre dans un nouvel onglet | collectif | confort | libre | nouveau (19/10) — domaine R2, pas bellajour.fr ; servir en téléchargement |
 | T-166 | « Retrouver mon espace » n'a aucun frein par appelant, une fois les mails ouverts elle peut servir à arroser de vraies adresses | collectif | confort | libre | **fermé** (fiche dans `fermes/`) — 20/10 : trois demandes par minute et par appelant (`creerPlafond(3)`, le frein de « mot de passe oublié »), 429 avant de lire le corps ; harnais |
-| T-167 | Au-delà de 1 000 photos, une édition perdrait des photos sans rien dire (grille, plafond total, lot de l'atelier) | collectif | serieux | libre | nouveau (19/10) — sept lectures comptent sur `.limit(20000)` ; Supabase plafonne à 1 000 (confirmé par Mathias le 19/10) ; AVANT la première vraie édition |
-| T-168 | Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos | collectif | serieux | libre | nouveau (19/10) — ≈ 200 Mo lus pour une édition de 2 000 photos (calculé) |
+| T-167 | Au-delà de 1 000 photos, une édition perdrait des photos sans rien dire (grille, plafond total, lot de l'atelier) | collectif | serieux | libre | **fermé** (fiche dans `fermes/`) — 19/10, PR #271 : lecture par tranches de 1 000 (jusqu'à 100 000), comptes en base, lot vérifié |
+| T-168 | Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos | collectif | serieux | libre | en cours — l'envoi compte en base (PR #271) ; reste la grille, le tableau de bord et la fiche qui relisent toutes les photos |
 | T-169 | La messagerie interroge le serveur toutes les 3,5 secondes, même quand rien ne bouge | collectif | serieux | libre | nouveau (19/10) — ≈ 180 000 appels par mois et par onglet ouvert (calculé), quota Hobby à vérifier |
 | T-170 | Le repérage des doublons devient très lent quand beaucoup de photos sont identiques, jusqu'à bloquer la grille | collectif | serieux | libre | nouveau (19/10) — 16 s pour 1 000 empreintes identiques (mesuré) |
-| T-171 | Une photo dont la vignette a échoué s'affiche dans la grille en original, et rien ne refait la vignette | collectif | confort | libre | nouveau (19/10) — 28 photos sur 879 en base |
+| T-171 | Une photo dont la vignette a échoué s'affiche dans la grille en original, et rien ne refait la vignette | collectif | confort | libre | en cours — vignette renvoyée après coupure (PR #271) ; reste la vignette refaite côté serveur |
 | T-172 | Le mur des styles affiche les images maîtresses (jusqu'à 2 400 px et 4 Mo) dans des cartes de 300 px | collectif | serieux | libre | nouveau (19/10) — premier écran du client, poids réel non mesuré |
 | T-173 | La page Documents charge tout le tableau de bord pour afficher le nom des magazines | collectif | confort | libre | nouveau (19/10) |
 | T-174 | La page produit précharge 333 Ko qu'elle n'utilise pas, un quart des données mobiles | front | confort | libre | nouveau (19/10) — mesuré en mobile lent |
@@ -363,4 +373,15 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-188 | Dans la messagerie de l'atelier, on ne voit ni quels messages sont nouveaux, ni qu'un message arrive sans recharger | collectif | serieux | libre | en cours — livré le 19/10 (PR #261, planche 8) ; reste un vrai message non lu (montré sur données fournies) |
 | T-189 | Les dates du formulaire d'une édition passent par le calendrier du navigateur, et les dates de l'événement ne sont qu'un texte | collectif | confort | libre | en cours — livré le 19/10 au soir (PR #267, planche 9) ; reste la recette de Mathias |
 | T-190 | Dans le formulaire d'une édition, on ne retire que le dernier magazine, les chiffres ont les flèches du navigateur, et rien ne montre où va le message d'accueil | collectif | confort | libre | en cours — livré le 19/10 au soir (PR #267, planches 10 et 11) ; reste la recette (la suppression d'un magazine vide n'a été vue qu'au harnais) |
-| T-191 | L'atelier ne peut demander au client que cinq contenus figés, sans choisir leur nom ni les fichiers acceptés | collectif | serieux | avis-requis | en cours — livré le 19/10 au soir (PR #268, planche 12) ; **migration `20261021_collectif_demandes.sql` à appliquer par Mathias** (sans elle, une demande nouvelle répond 503) |
+| T-191 | L'atelier ne peut demander au client que cinq contenus figés, sans choisir leur nom ni les fichiers acceptés | collectif | serieux | avis-requis | en cours — livré le 19/10 (PR #268, planche 12) ; migration `20261021` appliquée par Mathias et vérifiée le 20/10 ; reste la recette |
+| T-192 | Avant la première vraie édition (Audencia), l'envoi des photos perdait ou doublait des photos sur iPhone et en mauvais réseau, le nom des participants changeait, et le mur des styles montrait des visuels pas prêts | collectif | serieux | libre | en cours — PR #271 en production, essai réel 324/324 sans doublon ; reste un vrai iPhone, un vrai Samsung, l'écran verrouillé (T-155) |
+| T-193 | L'atelier ne retrouve pas les bateaux, ni regroupement ni téléchargement par lien, et le nom des fichiers ne dit ni la personne ni le lien | collectif | serieux | libre | nouveau (20/10) — AVANT Audencia |
+| T-194 | Une photo arrivée au coffre mais pas encore confirmée (page fermée, téléphone verrouillé) reste invisible pour toujours | collectif | serieux | libre | nouveau (20/10) — AVANT Audencia |
+| T-195 | Un plafond total laissé vide ferme le dépôt pour tout le monde, et le participant ne l'apprend qu'après avoir choisi ses photos | collectif | serieux | libre | nouveau (20/10) — AVANT Audencia |
+| T-196 | Régénérer le lien des participants coupe d'un coup tous les liens de contribution, sans prévenir | collectif | serieux | libre | nouveau (20/10) — AVANT Audencia |
+| T-197 | Le grand QR code « à projeter ou à imprimer » existe mais aucun écran ne l'ouvre | collectif | confort | libre | nouveau (20/10) |
+| T-198 | Le nom d'un participant ne se corrige nulle part, et « Léa » et « Lea » font deux personnes | collectif | confort | libre | nouveau (20/10) |
+| T-199 | Le responsable ne peut ni agrandir, ni signaler, ni retirer une photo, et personne ne peut supprimer une photo déposée | collectif | serieux | avis-requis | nouveau (20/10) — la suppression attend Mathias |
+| T-200 | Les vidéos sont refusées avec « ce ne sont pas des photos », sans que la page le dise avant le choix | collectif | confort | libre | nouveau (20/10) — décision de Mathias : refuser en le disant, ou accepter |
+| T-201 | L'atelier ne voit pas les liens de contribution d'une édition et ne peut pas en créer | collectif | confort | libre | nouveau (20/10) |
+| T-202 | Les sauvegardes de la base et des photos, et les plans d'hébergement adaptés à un usage commercial, ne sont pas confirmés avant le premier vrai client | collectif | serieux | avis-requis | en pause (20/10) — Mathias prend les abonnements à la signature du premier contrat |
