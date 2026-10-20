@@ -179,6 +179,7 @@ import { invitationIcs, replier } from "@/lib/collectif/ics";
 import { mailRendezVous } from "@/lib/collectif/mailsRdv";
 import { lireCompteAgenda } from "@/lib/collectif/agenda";
 import * as Pieces from "@/app/edition/[token]/style/pieces";
+import * as FiltresPhotos from "@/app/edition/[token]/photos/filtres";
 import * as Demandes from "@/lib/collectif/demandes";
 import * as PlafondsLot from "@/lib/collectif/plafonds";
 import * as LiensLot from "@/lib/collectif/liens";
@@ -201,6 +202,9 @@ const titre = (t: string) => console.log(`\n${t}`);
 
 const RACINE = process.cwd();
 const lire = (chemin: string) => readFileSync(resolve(RACINE, chemin), "utf8");
+/* La page Photos du responsable : depuis le 20/10 (planches 1, 2, 3), plusieurs fichiers (Collecte, Listes, Grille,
+   Agrandir, Liens). Les épreuves qui relisaient l'ancien Collecte.tsx relisent la page entière, même intention. */
+const lirePagePhotos = () => fichiersParSuffixe("src/app/edition/[token]/photos", /\.tsx$/).map(lire).join("\n");
 
 /* ════════════════════════════ L'INTERRUPTEUR ════════════════════════════ */
 
@@ -2040,15 +2044,16 @@ titre("— T-179 : la composition en images ; chaque geste se dit et s'annule �
 
 titre("— revision 14.3 / 14.7 : photos et livraison —");
 {
-  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const collecte = lirePagePhotos();
   ok("Photos : le chargement par pages observe SA zone de defilement (root), nul sur telephone",
     /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
   ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
     /<FenetreLien\b/.test(collecte) && !/type: "photographe"/.test(collecte));
   ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille), sur le dossier ouvert",
     /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /envoi\.ouvrir\?\.\(\{ dossier:/.test(collecte));
-  ok("Photos (T-152, 15/10) : des rayons au-dessus des photos (plus de grande colonne), Toutes / Par jour / Doublons, la selection facultative, plus de pastilles de filtres",
-    /className="ec-ph-rayons"/.test(collecte) && !/aria-label="Les dossiers"/.test(collecte) && /Par jour/.test(collecte) && /Doublons/.test(collecte) && /Ma sélection/.test(collecte) && /facultatif/.test(collecte) && !/cle: "signalees"/.test(collecte));
+  ok("Photos (planches du 20/10) : une colonne de LISTES qui trient et filtrent (Lien, Personne avec recherche, Jour, Afficher), Tout / Par lien, Par jour, Doublons, la selection facultative ; plus de rayons ni d'arbre de dossiers",
+    /aria-label="Trier et filtrer"/.test(collecte) && /Chercher une personne/.test(collecte) && /Ranger par jour de prise de vue/.test(collecte) && /Par jour/.test(collecte) && /Doublons/.test(collecte) && /Ma sélection/.test(collecte) && /facultatif/.test(collecte)
+      && /Par lien/.test(collecte) && !/className="ec-ph-rayons"/.test(collecte) && !/aria-label="Les dossiers"/.test(collecte) && !/cle: "signalees"/.test(collecte));
   const livraison = lire("src/app/edition/[token]/livraison/page.tsx");
   ok("Livraison : l'en-tete commun et « Écrire à l'atelier » vers Parler a l'atelier",
     /<EnTeteEcran titre="Livraison"/.test(livraison) && livraison.includes("cheminSection(token, 'atelier')") && !livraison.includes("cheminSection(token, 'dossier')"));
@@ -2123,12 +2128,12 @@ titre("— retours de Mathias du 14/10 —");
     /ev\.key === "Enter" && !ev\.shiftKey && !ev\.nativeEvent\.isComposing/.test(parler) && !/ev\.metaKey \|\| ev\.ctrlKey\)\) void soumettre/.test(parler));
 
   /* 7 : la présélection se marque par un BORD, et se fait ou se défait d'un geste. */
-  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
-  const css = lire("src/app/edition/[token]/espace.css");
-  ok("presélection : un bord autour de la photo choisie, trace EN DEDANS (la tuile rogne sa peinture), ni case ni coche",
-    /\.ec-tuile--choisie \.ec-tuile-image \{\s*outline: 3px solid var\(--ec-accent\);\s*outline-offset: -3px;/.test(css) && !/type="checkbox"/.test(collecte) && !/[✓✔]/.test(collecte));
-  ok("selection : « Sélectionner tout ce dossier », « Vider la sélection » dans Ma sélection",
-    /Sélectionner tout ce dossier/.test(collecte) && /Vider la sélection/.test(collecte) && /toutes: true, preselection, dossier/.test(collecte));
+  const collecte = lirePagePhotos();
+  const cssPhotos = lire("src/app/edition/[token]/photos/photos.css");
+  ok("Ma sélection se marque par l'ETOILE, cocher par un bord trace EN DEDANS (la tuile rogne sa peinture) ; aucune case du navigateur, aucun ✓ en texte",
+    /\.ec-espace \.ec-ph-t--cochee::after \{[^}]*box-shadow: inset 0 0 0 3px var\(--ec-accent\)/.test(cssPhotos) && /ec-ph-t-etoile--on/.test(collecte) && !/type="checkbox"/.test(collecte) && !/[✓✔]/.test(collecte));
+  ok("cocher : « Tout cocher (N) » coche la vue, la barre d'actions (Ajouter à ma sélection, Retirer de ma sélection, Ne pas publier) ; « Vider la sélection » dans Ma sélection ; toute la vue cochée = UNE écriture",
+    /Tout cocher \(\$\{nombre\(totalVue\)\}\)/.test(collecte) && /Ajouter à ma sélection/.test(collecte) && /Retirer<span className="ec-ph-act-long"> de ma sélection<\/span>/.test(collecte) && /Ne pas publier/.test(collecte) && /Vider la sélection/.test(collecte) && /toutes: true, preselection, dossier/.test(collecte));
   const marquer = lire("src/app/api/collectif/photos/marquer/route.ts");
   ok("tout selectionner : le droit preselectionner, jamais une photo signalee, journalise",
     /corps\.toutes === true/.test(marquer) && /peut\(role, "preselectionner"\)/.test(marquer) && /if \(preselection\) requete = requete\.eq\("signalee", false\)/.test(marquer) && /"preselection_toutes" : "preselection_aucune"/.test(marquer));
@@ -2180,7 +2185,7 @@ titre("— retours de Mathias du 14/10 —");
 
 titre("— retours du 14/10 : les envois du client et les dossiers —");
 {
-  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const collecte = lirePagePhotos();
   const mig = lire("supabase/migrations/20261016_collectif_envois.sql");
   ok("migration 20261016 : atomique, idempotente, trois colonnes, PostgREST relit",
     /^begin;/m.test(mig) && /^commit;/m.test(mig) && (mig.match(/add column if not exists/g) ?? []).length === 3 && /remplace_le timestamptz/.test(mig) && /contenu_id uuid/.test(mig) && /on delete set null/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
@@ -2227,8 +2232,8 @@ titre("— retours du 14/10 : les envois du client et les dossiers —");
   const dossiers = lire("src/app/api/collectif/dossiers/route.ts");
   ok("dossiers : le droit du responsable, l'edition filtree, journalise ; « Mes photos » rend son propre nom",
     /peut\(acces\.role, "regler_plafond_participant"\)/.test(dossiers) && /\.eq\("edition_id", edition\.id\)/.test(dossiers) && /"dossier_renomme"/.test(dossiers) && /deposantPour\(n, edition\.responsable_nom\)/.test(dossiers));
-  ok("dossiers : le crayon d'une vignette ou du titre (double clic sur le titre), Entree garde, Echap annule",
-    /className="ec-ph-album-renommer"/.test(collecte) && /onDoubleClick=\{\(\) => p\.ecrire && courant\?\.renommable/.test(collecte) && /e\.key === "Enter"/.test(collecte) && /e\.key === "Escape"/.test(collecte));
+  ok("dossiers : le crayon du titre (un dossier du responsable, le nom d'un lien), double clic sur le titre, Entree garde, Echap annule",
+    /className="ec-ph-renommer"/.test(collecte) && /onDoubleClick=\{\(\) => renommable && commencerRenommer\(\)\}/.test(collecte) && /e\.key === "Enter"/.test(collecte) && /e\.key === "Escape"/.test(collecte));
   ok("le journal dit le renommage et le remplacement",
     /devient « La soirée »/.test(phraseEvenement("dossier_renomme", { avant: "Mes photos", apres: "La soirée" })) && /ancienne version reste/.test(phraseEvenement("contenu_remplace", { type: "Logo", nom: "logo.png" })));
 
@@ -2310,10 +2315,10 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
   ok("migration 20261018 : atomique, idempotente, retire_le et reponse_a, PostgREST relit",
     /^begin;/m.test(mig) && /^commit;/m.test(mig) && /retire_le timestamptz/.test(mig) && /reponse_a uuid/.test(mig) && /notify pgrst, 'reload schema'/.test(mig));
 
-  const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
-  ok("Photos : plus de « Signaler », plus de barre de presélection, les grands chiffres en tete",
+  const page = lirePagePhotos();
+  ok("Photos : plus de « Signaler » (le geste s'appelle « Ne pas publier »), plus de barre de presélection, les grands chiffres en tete",
     !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photos reçues/.test(page));
-  ok("Photos : ranger en glissant (draggable, onDrop), « + Nouveau dossier » ouvre le depot sur un nom neuf",
+  ok("Photos : ranger un dossier du responsable en le glissant (draggable, onDrop, dans la liste de « Mes photos »), « + Nouveau dossier » ouvre le depot sur un nom neuf",
     /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
   const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
   ok("deposer : « Dans quel dossier ? », les dossiers existants ou un nom neuf, un seul bouton",
@@ -2381,9 +2386,10 @@ titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ari
     (route.match(/const sansGrille = d\.seulementArbre \|\| estVueEnsemble\(dossier\)/g) ?? []).length === 2 && (route.match(/suivante: !sansGrille &&/g) ?? []).length === 2
     && /couvertures\[n\.cle\] = await c\.signer\(p\.vignette_key\)/.test(route) && /couvertures\[n\.cle\] = await c\.signer\(cle\)/.test(route)
     && /const ARRIVEES = 8;/.test(route) && /sansGrille \? dansDossier\.slice\(-ARRIVEES\)\.reverse\(\)/.test(route) && /lecture\.page\(conditions, TRI_TOUTES, 0, ARRIVEES - 1\)/.test(route));
-  const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
-  ok("Photos : dossiers et liens en vignettes, sous-dossiers en petites vignettes, personnes d'un lien en pastilles, fil d'Ariane",
-    /className="ec-ph-albums"/.test(page) && /ec-ph-albums--petits/.test(page) && /className="ec-ph-personnes"/.test(page) && /className="ec-ph-fil"/.test(page) && existsSync(resolve(RACINE, "archive/photos-colonne-2026-10/README.md")));
+  const page = lirePagePhotos();
+  ok("Photos (planches du 20/10) : « Par lien », un album par lien ; le lien ouvert montre ses personnes DANS la même liste, « Mes photos » ses dossiers et sous-dossiers ; fil d'Ariane « Par lien › » ; l'ancienne page archivée",
+    /className=\{n\.n \? "ec-ph-carte" : "ec-ph-carte ec-ph-carte--vide"\}/.test(page) && /Personnes · \$\{ouvert\.nom\}/.test(page) && /ec-ph-li--sous/.test(page) && /className="ec-ph-fil"/.test(page)
+      && existsSync(resolve(RACINE, "archive/photos-colonne-2026-10/README.md")) && existsSync(resolve(RACINE, "archive/photos-rayons-2026-10/README.md")) && existsSync(resolve(RACINE, "archive/photos-rayons-2026-10/Collecte.tsx")));
 }
 
 titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de reception, fiche en onglets) —");
@@ -2435,7 +2441,7 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     const tab = lire("src/app/edition/[token]/tableau.css");
     const tdb = lire("src/app/edition/[token]/page.tsx");
     const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
-    const col = lire("src/app/edition/[token]/photos/Collecte.tsx");
+    const col = lirePagePhotos();
     ok("maquettes : la nuit, la lueur cuivree en haut a DROITE ; le jour, le bleu en haut a gauche",
       /\.ec-espace \.ec-coquille::before \{[^}]*right: -200px;[^}]*top: -260px;/.test(css) && /\[data-ec-mode="jour"\] \.ec-coquille::before \{[^}]*left: -160px;/.test(css));
     ok("maquettes : jour | nuit en deux boutons (soleil et lune), le mode en cours eclaire",
@@ -2454,8 +2460,8 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     ok("tableau de bord : a partir de TROIS contenus, « À envoyer » prend toute la largeur et le message passe dessous (regle de Mathias)",
       /const LIGNE_LONGUE = 3;/.test(lire("src/app/edition/[token]/LigneContenus.tsx")) && /contenus\.length >= LIGNE_LONGUE/.test(lire("src/app/edition/[token]/LigneContenus.tsx"))
       && /\.ec-tdb-grille > \.ec-tdb-ligne--longue,\s*\.ec-espace \.ec-tdb-grille > \.ec-tdb-ligne--longue \+ \.ec-tdb-message \{\s*grid-column: 1 \/ -1;/.test(tab));
-    ok("Photos : le nombre POSE sur la couverture d'un album, « Dernières arrivées » sous les albums, les rayons DANS le panneau",
-      /<span className="ec-ph-album-n">/.test(col) && /Dernières arrivées/.test(col) && col.indexOf('className="ec-ph-rayons"') > col.indexOf('"ec-ph-principal"'));
+    ok("Photos : « Dernières arrivées » sous les albums des liens, la colonne de listes DANS le panneau de verre",
+      /Dernières arrivées/.test(col) && col.indexOf('aria-label="Trier et filtrer"') > col.indexOf('"ec-ph-panneau'));
   }
 
   /* 15/10 : la fiche en cartes (maquette « Atelier, la fiche » validée par Mathias). */
@@ -2695,10 +2701,10 @@ titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en d
   const etat = lire("src/app/api/collectif/photos/etat/route.ts");
   ok("la lecture legere : le token par chargerAcces, le droit de voir, un compte SANS ligne (GET `limit(0)` depuis la corbeille du 20/10), aucune ecriture, et `depuis` passe TEL QUEL (microsecondes)",
     /chargerAcces\(/.test(etat) && /peut\(acces\.role, "voir_espace"\)/.test(etat) && /select\("id", COMPTE_SANS_LIGNE\)/.test(etat) && /\(avec \? tete\.is\("supprimee_le", null\) : tete\)\.limit\(0\)/.test(etat) && !/\.(insert|update|upsert|delete)\(/.test(etat) && /String\(corps\.depuis\)\.trim\(\)/.test(etat) && /limit\(depuis \? ARRIVEES_LUES_MAX : 1\)/.test(etat));
-  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const collecte = lirePagePhotos();
   const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
-  ok("l'ecran : les pastilles des la premiere personne, le nom sur chaque vignette, l'annonce et « Les voir », le sondage de 30 s (pas 3,5 s)",
-    /lienDuDossier\.enfants\.length >= 1/.test(collecte) && /className="ec-ph-qui"/.test(collecte) && /className="ec-ph-annonce"/.test(collecte) && /Les voir/.test(collecte) && /useSondage\(/.test(collecte) && /SONDAGE_PHOTOS_MS/.test(collecte)
+  ok("l'ecran : les personnes listees des la premiere, le nom sur chaque vignette (les initiales au telephone), l'annonce et « Les voir », le sondage de 30 s (pas 3,5 s)",
+    /gens\.length >= 1/.test(collecte) && /className="ec-ph-qui"/.test(collecte) && /className="ec-ph-qui-ini"/.test(collecte) && /className="ec-ph-annonce[ "]/.test(collecte) && /Les voir/.test(collecte) && /useSondage\(/.test(collecte) && /SONDAGE_PHOTOS_MS/.test(collecte)
       && /useSondage\(/.test(carte) && /SONDAGE_TABLEAU_MS/.test(carte) && !/INTERVALLE_MESSAGES_MS/.test(collecte + carte));
   const depot = lire("src/app/depot/[token]/Depot.tsx");
   ok("le participant retrouve son prenom sur son telephone (lu sans setState d'hydratation) et il part avec les photos",
@@ -4062,7 +4068,7 @@ function verifT193() {
   ok("la page imprimée : une feuille A4, un seul QR, le nom en titre ÉCHAPPÉ (jamais du HTML venu d'un nom de lien), le lien lui-même n'est pas écrit en clair",
     /@page\{size:A4/.test(page) && (page.match(/<svg /g) ?? []).length === 1 && /<h1>&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;<\/h1>/.test(page) && !page.includes("<img") && !page.includes("https://bellajour.fr/depot"));
   const vueQr = lire("src/app/edition/_composants/LienContribution.tsx");
-  const vueCollecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const vueCollecte = lirePagePhotos();
   ok("côté responsable : la fenêtre du grand QR n'est plus orpheline (`<FenetreQr` appelée depuis chaque carte de lien), un bouton « Afficher en grand » par carte, ouvert depuis le lien général comme depuis un lien de contribution",
     /<FenetreQr lien=\{grandQr\}/.test(vueCollecte) && (vueCollecte.match(/onGrand=\{\(\) => setGrandQr\(/g) ?? []).length === 2 && /Afficher en grand/.test(vueCollecte));
   ok("la fenêtre dit le NOM du lien sous le code (en grand), imprime la page A4 du nom et du code, et garde « Télécharger le QR »",
@@ -5507,6 +5513,91 @@ async function verifPersonnesCorbeille() {
     ok("sans la migration : « absente » (la route repond 503 et le nomme), rien d'ecrit", q4.statut === "absente");
   }
 }
+
+
+/* ════════════════════════════ LA PAGE PHOTOS DU RESPONSABLE (planches 1, 2, 3 du 20/10, T-193, T-199) ════════════════════════════ */
+
+titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, cocher, agrandir —");
+{
+  const F = FiltresPhotos;
+  const V = F.FILTRES_VIDES;
+  const L = "lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455";
+  /* Les listes, traduites pour la route existante : la clé la plus précise gagne, « Ma sélection » est un dossier à part, Doublons une vue. */
+  const q = (f: Partial<FiltresPhotos.Filtres>) => F.requeteDe({ ...V, ...f });
+  ok("listes → route : rien = tout ; « Par lien » = les albums ; un lien, sa personne, un dossier du responsable : la clé la plus précise",
+    JSON.stringify(q({})) === '{"dossier":"tout","vue":"toutes"}' && q({ mode: "liens" }).dossier === "liens" && q({ lien: L }).dossier === L
+      && q({ lien: L, personne: "pers:x:léa" }).dossier === "pers:x:léa" && q({ lien: "vous", dossier: "resp:organisateur:La soirée" }).dossier === "resp:organisateur:La soirée");
+  ok("listes → route : « Ma sélection » l'emporte sur tout ; « Doublons » est une vue qui se croise ; un jour ou l'ordre « Par jour » lisent la vue rangée par jour",
+    q({ lien: L, selection: true }).dossier === "selection" && q({ lien: L, doublons: true }).vue === "doublons" && q({ lien: L, doublons: true }).dossier === L
+      && q({ jour: "2026-11-07" }).vue === "jour" && q({ ordre: "jour" }).vue === "jour");
+  ok("choisir un lien retire « Ma sélection » (elle ne se croise pas) ; choisir « Ma sélection » retire lien, dossier et personne",
+    !F.avecLien({ ...V, selection: true }, L).selection && F.avecLien({ ...V, personne: "pers:a:b" }, L).personne === null
+      && JSON.stringify(F.avecSelection({ ...V, lien: L, personne: "pers:a:b", dossier: "resp:organisateur:" }, true)) === JSON.stringify({ ...V, selection: true }));
+  const cles = ["selection", "liens", "vous", "participants", "atelier", L, "resp:organisateur:La soirée", "pers:0b1f3c2e-4a5b-4c6d-8e9f-001122334455:léa martin", "pers:general:camille roux", "qui:léa martin", "qui:@responsable"];
+  ok("`?dossier=` du tableau de bord : chaque clé se relit en listes et redonne la MÊME clé à la route (tout, liens, lien, personne, dossier)",
+    cles.every((c) => F.requeteDe(F.filtresDepuis(c)).dossier === c) && F.requeteDe(F.filtresDepuis("tout")).dossier === "tout" && F.requeteDe(F.filtresDepuis("n'importe quoi")).dossier === "tout");
+  ok("l'adresse garde l'endroit : un lien coché dans « Tout » se rouvre dans « Tout » (`mode=tout`) ; « Par lien » se rouvre en albums",
+    F.adresseDe({ ...V, lien: L }) === `?dossier=${encodeURIComponent(L)}&mode=tout` && F.filtresDepuis(L, true).mode === "tout" && F.filtresDepuis(L).mode === "liens"
+      && F.adresseDe(V) === "" && F.adresseDe({ ...V, mode: "liens" }) === "?dossier=liens");
+  /* Le jour : filtré dans le navigateur sur les pages rangées par jour ; un nombre ne s'affiche que COMPLET. */
+  const ph = (jourCle: string) => ({ jourCle });
+  const j1 = F.joursVus([ph("2026-11-06"), ph("2026-11-06"), ph("2026-11-07")], false);
+  const j2 = F.joursVus([ph("2026-11-06"), ph("2026-11-07")], true);
+  ok("les jours lus : un jour est complet quand le suivant a commencé ou que la vue est lue jusqu'au bout (aucun nombre deviné)",
+    j1.length === 2 && j1[0].n === 2 && j1[0].complet && !j1[1].complet && j2.every((j) => j.complet));
+  ok("un jour choisi : on lit la page suivante tant que le dernier cliché lu n'a pas passé ce jour ; plus rien à lire = on s'arrête",
+    F.jourEncoreALire([ph("2026-11-06")], "2026-11-06", 1, true) && !F.jourEncoreALire([ph("2026-11-07")], "2026-11-06", 1, true) && !F.jourEncoreALire([ph("2026-11-06")], "2026-11-06", null, true)
+      && F.jourEncoreALire([ph("2026-11-07")], "2026-11-06", 1, false));
+  ok("les jours se lisent SANS fuseau : « samedi 7 novembre », « sam. 7 nov. », une photo sans date dit son jour d'arrivée",
+    F.jourLong("2026-11-07") === "samedi 7 novembre" && F.jourCourt("2026-11-07") === "sam. 7 nov." && F.jourLong("2026-11-01") === "dimanche 1er novembre" && F.jourLong("~2026-10-18") === "Sans date, arrivées le 18 octobre");
+  ok("l'arrivée à l'heure de Paris (hiver comme été) : « samedi 7 novembre, 14 h 32 » (heure d hiver), « sam. 17 oct., 9 h 05 » (heure d été)",
+    F.arriveeLongue("2026-11-07T13:32:00Z") === "samedi 7 novembre, 14 h 32" && F.arriveeCourte("2026-10-17T07:05:00Z") === "sam. 17 oct., 9 h 05" && F.arriveeLongue("pas une date") === "");
+  ok("le téléphone : « 12 nouvelles · Léa, Hugo et 1 autre », les initiales sur les vignettes",
+    F.annonceCourte(12, ["Léa Martin", "Hugo Lefèvre", "Sarah Cohen"], 3) === "12 nouvelles · Léa, Hugo et 1 autre" && F.annonceCourte(1, ["Léa Martin"], 1) === "1 nouvelle · Léa"
+      && F.annonceCourte(2, ["Sans nom"], 1) === "2 nouvelles" && F.initialesDe("Léa Martin") === "LM" && F.initialesDe("Sans nom") === "?" && F.initialesDe("Zoé") === "ZO");
+  const noeud = (cle: string, nom: string, enfants: Dossiers.Noeud[] = [], n = 1): Dossiers.Noeud => ({ cle, nom, n, enfants, renommable: false, deplacable: false, accueille: false });
+  const arbreF: Dossiers.Arbre = {
+    vous: [noeud("resp:organisateur:", "Mes photos", [], 4)],
+    liens: [noeud("participants", "Tous les participants"), noeud("lien:b10", "Bateau 10", [noeud("pers:b10:léa martin", "Léa Martin")]), noeud("lien:b2", "Bateau 2", [noeud("pers:b2:léa martin", "Léa Martin"), noeud("pers:b2:hugo", "Hugo")])],
+    atelier: noeud("atelier", "L'atelier"),
+    personnes: [],
+  };
+  ok("l'ordre des liens : par nom naturel (« Bateau 2 » avant « Bateau 10 »), puis le lien général, « Mes photos », l'atelier",
+    F.liensDansLOrdre(arbreF, true).map((x) => x.cle).join() === "lien:b2,lien:b10,participants,vous,atelier" && F.lienDe(arbreF, "vous", true)?.n === 4);
+  ok("la photo agrandie dit son lien sans deviner : le lien ouvert, sinon le SEUL lien où ce nom apparaît ; deux « Léa Martin » = rien",
+    F.lienDeLaPhoto(arbreF, { role: "participant", qui: "Hugo" }, undefined) === "Bateau 2" && F.lienDeLaPhoto(arbreF, { role: "participant", qui: "Léa Martin" }, undefined) === null
+      && F.lienDeLaPhoto(arbreF, { role: "participant", qui: "Léa Martin" }, arbreF.liens[1]) === "Bateau 10" && F.lienDeLaPhoto(arbreF, { role: "responsable", qui: "M" }, undefined) === "Mes photos");
+
+  const page = lirePagePhotos();
+  const grilleTsx = lire("src/app/edition/[token]/photos/Grille.tsx");
+  const agrandir = lire("src/app/edition/[token]/photos/Agrandir.tsx");
+  const collecteTsx = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const css = lire("src/app/edition/[token]/photos/photos.css");
+  ok("toucher une photo l'AGRANDIT (le mode « cocher » coche) ; l'étoile garde Ma sélection en un clic ; l'appui long ouvre « cocher » au téléphone",
+    /if \(g\.cocher && g\.ecrire\) g\.onCocher\(ph\.id, e\.shiftKey\);\s*else g\.onOuvrir\(ph\.id\);/.test(grilleTsx) && /onOuvrir=\{setAgrandi\}/.test(collecteTsx) && /onEtoile=\{\(ph\) => void basculer\(ph\)\}/.test(collecteTsx)
+      && /APPUI_LONG_MS = 450/.test(grilleTsx) && /g\.onAppuiLong\(ph\.id\)/.test(grilleTsx) && /-webkit-touch-callout: none/.test(css));
+  ok("la photo agrandie : précédente / suivante au clavier, balayage au téléphone, Échap ferme ; ouverte DANS la colonne de contenu (portail) ; qui, quel lien, quand",
+    /e\.key === "ArrowLeft"/.test(agrandir) && /e\.key === "ArrowRight"/.test(agrandir) && /e\.key === "Escape"/.test(agrandir) && /onTouchEnd=/.test(agrandir) && /Math\.abs\(dx\) > 50/.test(agrandir)
+      && /document\.querySelector\("\.ec-contenu"\)/.test(agrandir) && /createPortal\(vue, hote\)/.test(agrandir) && /<dt>Lien<\/dt>/.test(agrandir) && /<dt>Arrivée<\/dt>/.test(agrandir) && /<dt>Prise<\/dt>/.test(agrandir));
+  ok("« Ne pas publier » passe par la route existante (`signalee`), réversible (« Annuler ») ; « Supprimer » n'a pas de bouton tant que sa route n'existe pas (seconde vague)",
+    /signalee: oui/.test(collecteTsx) && /\(\) => \(\{ signalee: true \}\)/.test(collecteTsx) && /\(\) => \(\{ signalee: false \}\)/.test(collecteTsx) && /Annuler/.test(collecteTsx)
+      && /a\.onSupprimer \?/.test(agrandir) && !/onSupprimer=/.test(collecteTsx) && !/Corbeille/.test(page.replace(/\/\*[\s\S]*?\*\//g, "")));
+  const appels = [...page.matchAll(/(?:fetch|appeler)\("(\/api\/[^"]+)"/g)].map((m) => m[1]);
+  const permis = new Set(["/api/collectif/photos", "/api/collectif/photos/etat", "/api/collectif/photos/marquer", "/api/collectif/dossiers", "/api/collectif/provenances", "/api/collectif/plafond"]);
+  ok(`la page n'appelle que les routes EXISTANTES (${[...new Set(appels)].length} adresses : photos, etat, marquer, dossiers, provenances, plafond)`, appels.length > 0 && appels.every((a) => permis.has(a)));
+  ok("le lien d'équipe n'écrit rien : ni case, ni étoile qui écrive, ni barre d'actions, ni geste dans la photo agrandie, ni dépôt",
+    /\{g\.ecrire \? \(\s*<button\s*type="button"\s*className="ec-ph-t-case"/.test(grilleTsx) && /\{p\.ecrire && nbCoches > 0 \? \(\s*<div className="ec-ph-barre-actions/.test(collecteTsx) && /\{a\.ecrire \? \(\s*<div className="ec-ag-gestes">/.test(agrandir)
+      && /const cocherActif = p\.ecrire && /.test(collecteTsx) && /\{p\.ecrire && p\.ouverte && envoi\.ouvrir && !cocherActif && !envoiVisible \?/.test(collecteTsx));
+  const tel = css.slice(css.indexOf("@media (max-width: 860px) {\n  /* La page défile"));
+  ok("téléphone : rien ne défile de côté (aucun overflow-x), 4 colonnes, la barre collée en haut, la barre d'actions fixe sous le pouce, la feuille du bas ; pas de dvh",
+    tel.length > 1000 && !/overflow-x/.test(tel) && /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);\s*gap: 2px;/.test(tel) && /\.ec-ph-moutils,\s*\.ec-espace \.ec-ph-barre-cocher \{\s*position: sticky;/.test(tel)
+      && /\.ec-ph-bas \{\s*position: fixed;/.test(tel) && /\.ec-ph-feuille \{\s*position: absolute;/.test(tel) && !/dvh/.test(css));
+  ok("les chiffres en Cormorant passent en chiffres modernes (« Bateau 1 », jamais « Bateau I »)",
+    /\.ec-espace \.ec-collecte,\s*\.ec-espace \.ec-ag,[^{]*\{\s*font-variant-numeric: lining-nums;\s*font-feature-settings: "lnum" 1;/.test(css));
+  ok("la grille garde ses performances : 120 par page, l'IntersectionObserver sur SA zone, la tuile hors écran ne se peint pas",
+    /root: racine/.test(collecteTsx) && /content-visibility: auto;/.test(css) && /charger\(suivante, f\)/.test(collecteTsx) && Grille.TAILLE_PAGE === 120);
+}
+
 
 void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
