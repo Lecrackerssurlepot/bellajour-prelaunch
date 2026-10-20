@@ -1,0 +1,16 @@
+/* Le bloc « Éditions » de la page Santé (T-160). Scopé sous `.adm-root` :
+   les cartes elles-mêmes sont celles des constats (`.ate-sante`, atelier.css). */
+
+.adm-root .ate-sante-bloc {
+  margin: var(--bj-sp-6) 0 var(--bj-sp-3);
+}
+
+.adm-root .ate-sante-bloc-lien {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--bj-action-border);
+}
+
+.adm-root .ate-sante-bloc-lien:hover {
+  color: var(--bj-action);
+}

@@ -1,14 +1,17 @@
 import { after, NextResponse } from "next/server";
-import { MAX_FILE_BYTES } from "@/lib/atelier/formats";
-import { MAX_VIGNETTE_BYTES, supprimer, tailleReelle } from "@/lib/atelier/r2";
+import { supprimer } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAccesDepot } from "@/lib/collectif/acces";
 import { cleVignette } from "@/lib/collectif/cles";
 import { LOT_CONFIRMATION } from "@/lib/collectif/depot";
 import { peut } from "@/lib/collectif/droits";
+import { noterEchec } from "@/lib/collectif/echecsJournal";
 import { enrichirCollectif } from "@/lib/collectif/enrichissement";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
+import { BUDGET_RATTRAPAGE_MS, issueTete } from "@/lib/collectif/rattrapage";
+import { confirmerArrivee, teteObjet } from "@/lib/collectif/rattrapageCoffre";
+import { fabriquerVignettes, type PhotoSansVignette } from "@/lib/collectif/rattrapageVignettes";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
@@ -25,13 +28,37 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * quelle, ni redatée, ni rejournalisée, ni relue. Sans cela, un lot rejoué
  * redatait ses photos (elles remontaient en tête des arrivées) et doublait la
  * ligne `photos_confirmees` du journal.
+ *
+ * La confirmation elle-même est `confirmerArrivee` (rattrapageCoffre.ts) : LA
+ * même que celle du rattrapage (T-194), qui retrouve les photos arrivées dont
+ * le navigateur n'a jamais envoyé la confirmation (page fermée, iPhone
+ * verrouillé).
+ *
+ * T-171 : une photo confirmée ici SANS vignette (le navigateur n'a pas su la
+ * faire, ou ses quatre essais sont perdus) a sa vignette fabriquée par le
+ * serveur, après la réponse et AVANT la lecture des métadonnées (l'empreinte
+ * se lit sur la vignette). Bornée (`fabriquerVignettes`).
+ *
+ * T-160 : une lecture ratée, un coffre qui ne répond pas, une écriture
+ * refusée s'écrivent AUSSI au journal de l'édition (`noterEchec`). La réponse
+ * au navigateur ne change pas.
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-type Ligne = { id: string; r2_key: string; confirmee_le: string | null };
+type Ligne = { id: string; r2_key: string; confirmee_le: string | null; mime: string | null };
+
+/** T-171 : la vignette que le navigateur n'a pas déposée, fabriquée après la réponse, bornée. */
+async function vignettesManquantes(editionId: string, photos: PhotoSansVignette[]): Promise<void> {
+  const supabase = makeSupabase();
+  const b = await fabriquerVignettes(supabase, editionId, photos, { jusqua: Date.now() + BUDGET_RATTRAPAGE_MS });
+  if (b.faites || b.ratees || b.impossibles.length) {
+    await journaliser(supabase, { editionId }, "vignettes_fabriquees", { n: b.faites, ratees: b.ratees, impossibles: b.impossibles.length, reportees: b.reportees }, null);
+  }
+  if (b.ratees) await noterEchec(supabase, editionId, "vignette", { n: b.ratees });
+}
 
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
@@ -52,11 +79,14 @@ export async function POST(request: Request) {
   const supabase = makeSupabase();
   const { data, error } = await supabase
     .from("collectif_photos")
-    .select("id, r2_key, confirmee_le")
+    .select("id, r2_key, confirmee_le, mime")
     .eq("edition_id", edition.id)
     .in("id", ids)
     .returns<Ligne[]>();
-  if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  if (error) {
+    await noterEchec(supabase, edition.id, "confirmation", { etape: "lecture", code: error.code, n: ids.length });
+    return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  }
 
   const confirmees: string[] = [];
   /* Les photos confirmées PAR CET APPEL : seules elles se comptent, se journalisent et
@@ -65,6 +95,11 @@ export async function POST(request: Request) {
   const nouvelles: string[] = [];
   const rejetees: { id: string; raison: string }[] = [];
   const absentes: string[] = [];
+  /* T-171 : les nouvelles dont le navigateur n'a pas déposé la vignette. */
+  const sansVignette: PhotoSansVignette[] = [];
+  /* T-160 : ce qui a raté côté serveur (la réponse, elle, ne change pas). */
+  let pannesCoffre = 0;
+  let ecrituresRatees = 0;
   const maintenant = new Date().toISOString();
   const lignes = data ?? [];
   for (const l of lignes) if (l.confirmee_le) confirmees.push(l.id);
@@ -73,36 +108,39 @@ export async function POST(request: Request) {
   for (let i = 0; i < aConfirmer.length; i += 8) {
     await Promise.all(
       aConfirmer.slice(i, i + 8).map(async (l) => {
-        const taille = await tailleReelle(l.r2_key);
-        if (taille === null) {
+        const tete = await teteObjet(l.r2_key);
+        const issue = issueTete(tete);
+        /* Une panne du coffre se répond comme une absence (le navigateur la renverra), mais elle se compte. */
+        if (tete.statut !== "presente") {
+          if (issue === "panne") pannesCoffre++;
           absentes.push(l.id);
           return;
         }
-        const vKey = cleVignette(edition.id, l.id);
-        if (taille > MAX_FILE_BYTES) {
-          await Promise.all([supprimer(l.r2_key), supprimer(vKey)]);
+        if (issue === "trop_lourde") {
+          await Promise.all([supprimer(l.r2_key), supprimer(cleVignette(edition.id, l.id))]);
           await supabase.from("collectif_photos").delete().eq("id", l.id);
           rejetees.push({ id: l.id, raison: "trop_volumineuse" });
           return;
         }
-        const tv = await tailleReelle(vKey);
         /* `confirmee_le` encore vide : deux appels du même lot en même temps ne datent la
-           photo qu'une fois ; celui qui arrive second la trouve confirmée (aucune ligne
-           rendue) et la rend sans la compter. */
-        const { data: ecrites, error: e } = await supabase
-          .from("collectif_photos")
-          .update({ taille, confirmee_le: maintenant, vignette_key: tv !== null && tv <= MAX_VIGNETTE_BYTES ? vKey : null })
-          .eq("id", l.id)
-          .is("confirmee_le", null)
-          .select("id");
-        if (e) absentes.push(l.id);
-        else {
+           photo qu'une fois ; celui qui arrive second la trouve confirmée et la rend sans
+           la compter (`confirmerArrivee`, la même que celle du rattrapage). */
+        const r = await confirmerArrivee(supabase, edition.id, l, tete.taille, maintenant);
+        if (r.statut === "erreur") {
+          ecrituresRatees++;
+          absentes.push(l.id);
+        } else {
           confirmees.push(l.id);
-          if (ecrites?.length) nouvelles.push(l.id);
+          if (r.statut === "nouvelle") {
+            nouvelles.push(l.id);
+            if (!r.vignette) sansVignette.push({ id: l.id, r2_key: l.r2_key, mime: l.mime, taille: tete.taille, metadonnees_le: null, empreinte: null });
+          }
         }
       })
     );
   }
+  if (pannesCoffre) await noterEchec(supabase, edition.id, "confirmation", { etape: "coffre", n: pannesCoffre });
+  if (ecrituresRatees) await noterEchec(supabase, edition.id, "confirmation", { etape: "ecriture", n: ecrituresRatees });
   /* Une id inconnue de cette édition : ni confirmée, ni absente. Rendue
      comme rejetée, pour que le navigateur cesse de la renvoyer. */
   for (const id of ids) {
@@ -111,7 +149,11 @@ export async function POST(request: Request) {
 
   if (nouvelles.length) {
     await journaliser(supabase, { editionId: edition.id }, "photos_confirmees", { n: nouvelles.length, role: acces.role }, null);
-    after(() => enrichirCollectif(makeSupabase(), edition.id, nouvelles));
+    after(async () => {
+      /* Les vignettes D'ABORD : l'empreinte des métadonnées se lit sur elles. */
+      if (sansVignette.length) await vignettesManquantes(edition.id, sansVignette);
+      await enrichirCollectif(makeSupabase(), edition.id, nouvelles);
+    });
   }
   return NextResponse.json({ confirmees, rejetees, absentes });
 }

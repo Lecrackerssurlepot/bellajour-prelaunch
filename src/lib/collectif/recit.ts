@@ -6,6 +6,7 @@
  * jamais sa valeur : le journal se lit à l'écran, et un token lu est un accès.
  */
 
+import { EVT_ECHEC, phraseEchec } from "./echecs";
 import { GESTES, type GesteCle } from "./gestes";
 import { LIBELLE_CHAMP } from "./saisie";
 
@@ -31,9 +32,12 @@ function champs(v: unknown): string {
  * Les lignes écrites UNE FOIS PAR LOT de photos (25 au plus) : des centaines
  * par édition. La fiche de l'atelier ne les lit pas dans son journal (ses 100
  * dernières lignes), sinon elles chassaient tout le reste (T-167). Elles
- * restent écrites et lisibles en base.
+ * restent écrites et lisibles en base. Depuis T-194 et T-171, aussi la
+ * machinerie du rattrapage (un démarrage, une fin sans photo retrouvée) et les
+ * vignettes fabriquées après un lot ; `photos_rattrapees` (au moins une photo
+ * retrouvée) et `echec` restent lus.
  */
-export const JOURNAL_DE_LOT = ["photos_confirmees", "metadonnees_lues"] as const;
+export const JOURNAL_DE_LOT = ["photos_confirmees", "metadonnees_lues", "rattrapage_demarre", "rattrapage_fini", "vignettes_fabriquees"] as const;
 
 /** Une ligne de journal → une phrase. Un type inconnu reste lisible (son nom brut). */
 export function phraseEvenement(type: string, payload: Record<string, unknown>): string {
@@ -76,6 +80,16 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `${String(payload.n)} photo(s) arrivée(s) (${payload.role === "responsable" ? "le responsable" : "un participant"}).`;
     case "metadonnees_lues":
       return `Métadonnées lues : ${String(payload.traitees ?? 0)} photo(s), ${String(payload.lieux ?? 0)} lieu(x).`;
+    case "photos_rattrapees":
+      return `${String(payload.n ?? 0)} photo(s) retrouvée(s) au coffre sans confirmation (page fermée avant la fin de l'envoi), confirmée(s) par le serveur.`;
+    case "rattrapage_demarre":
+      return `Rattrapage des photos lancé (${String(payload.candidates ?? 0)} à regarder).`;
+    case "rattrapage_fini":
+      return payload.cede === true ? "Rattrapage des photos : un autre passage tournait déjà." : `Rattrapage des photos : aucune photo retrouvée (${String(payload.absentes ?? 0)} absente(s) du coffre).`;
+    case "vignettes_fabriquees":
+      return `Vignettes fabriquées par le serveur : ${String(payload.n ?? 0)} (${String(payload.ratees ?? 0)} ratée(s)).`;
+    case EVT_ECHEC:
+      return phraseEchec(payload);
     case "photo_preselectionnee":
       return "Une photo ajoutée à la présélection du client.";
     case "photo_deselectionnee":

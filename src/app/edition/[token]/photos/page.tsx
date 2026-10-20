@@ -7,7 +7,9 @@
 
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
+import { after } from 'next/server'
 import { formaterJour } from '@/lib/atelier/dates'
+import { makeSupabase } from '@/lib/supabase'
 import { peut } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
 import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
@@ -17,6 +19,9 @@ import Collecte from './Collecte'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+/* T-194 : le rattrapage des photos tourne APRÈS la page (`after`), dans la même fonction.
+   Littéral (Next le lit au build) ; égal à `FENETRE_VERROU_RATTRAPAGE_MS`, tenu au harnais. */
+export const maxDuration = 60
 
 export default async function PagePhotos({
   params,
@@ -30,6 +35,12 @@ export default async function PagePhotos({
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
+  /* T-194 : sur le lien du RESPONSABLE (reconnu ou non), les photos arrivées au coffre sans
+     confirmation sont retrouvées après la réponse. Le lien de l'équipe ne déclenche rien. Le
+     module (sharp, libheif, le coffre) ne se charge qu'à ce moment-là, jamais avant la page. */
+  if (role === 'responsable' || acces.appareilInconnu) {
+    after(() => import('@/lib/collectif/rattrapageServeur').then((m) => m.rattraperEdition(makeSupabase(), edition.id, { declencheur: 'photos' })))
+  }
 
   const h = await headers()
   const origine = origineDepuis(h.get('x-forwarded-host') ?? h.get('host'), h.get('x-forwarded-proto'))

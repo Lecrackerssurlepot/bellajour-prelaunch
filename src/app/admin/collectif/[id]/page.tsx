@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { after } from "next/server";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
@@ -56,6 +57,9 @@ import "../collectif.css";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/* T-194 : le rattrapage des photos tourne APRÈS la page (`after`), dans la même fonction.
+   Littéral (Next le lit au build) ; égal à `FENETRE_VERROU_RATTRAPAGE_MS`, tenu au harnais. */
+export const maxDuration = 60;
 
 export const metadata = { title: "Atelier — édition collective", robots: { index: false, follow: false } };
 
@@ -110,6 +114,9 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   }
   if (!lu.fiche) notFound();
   const { edition: e, etat, magazines, journal, documents, messages, collecte, contenus } = lu.fiche;
+  /* T-194 : les photos arrivées au coffre sans confirmation, retrouvées après la réponse (sans ralentir la fiche).
+     Le module (sharp, libheif, le coffre) ne se charge qu'à ce moment-là : jamais sur le chemin de la page. */
+  after(() => import("@/lib/collectif/rattrapageServeur").then((m) => m.rattraperEdition(makeSupabase(), e.id, { declencheur: "fiche" })));
 
   const h = await headers();
   const origine = origineDepuis(h.get("x-forwarded-host") ?? h.get("host"), h.get("x-forwarded-proto"));

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { chargerSante } from "../sante";
+import BlocEditions from "./BlocEditions";
+import { chargerSanteEditions } from "./editions";
 import "../../admin.css";
 import "../atelier.css";
 
@@ -22,7 +24,11 @@ export default async function PageSante() {
   const qui = await quiEstConnecte();
   if (!qui) redirect("/admin/login");
 
-  const sante = await chargerSante();
+  /* T-160 : les éditions se lisent EN MÊME TEMPS que les dossiers ; un échec de leur lecture se dit dans leur bloc. */
+  const [sante, editions] = await Promise.all([
+    chargerSante(),
+    chargerSanteEditions().catch((e: unknown) => ({ ouvert: true as const, erreur: `Les éditions n'ont pas pu se lire (${(e as Error)?.message ?? "?"}).`, nbEditions: 0, constats: [] })),
+  ]);
 
   return (
     <div className="adm-root ate-root">
@@ -78,6 +84,8 @@ export default async function PageSante() {
           </section>
         ))
       )}
+
+      <BlocEditions sante={editions} />
 
       <p className="adm-fetched ate-pied">
         Lu le{" "}
