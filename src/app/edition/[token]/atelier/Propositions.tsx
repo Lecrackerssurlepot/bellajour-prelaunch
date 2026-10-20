@@ -3,11 +3,14 @@
 /* Une proposition complémentaire, en carte DANS le fil (révision §14.5) : le
    document vient de l'atelier (contenu et montant), « Ouvrir » le lit.
    « Accepter » se fait en deux gestes et ne paie rien : un message part à
-   l'atelier, le journal le garde, le document le dit. */
+   l'atelier, le journal le garde, le document le dit.
+   D26 (20/10, décision de Mathias) : accepter n'ENGAGE pas, c'est le devis
+   signé qui engage ; la carte le dit avant, pendant et après (`phrasesProposition`). */
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formaterHeureParis } from "@/lib/collectif/dates";
+import { phrasesProposition, PREFIXE_ACCEPTEE } from "@/lib/collectif/livraison";
 import type { Message } from "@/lib/collectif/messages";
 import { useVisionneuse } from "../../_composants/Visionneuse";
 import type { DocumentDossier } from "../donnees";
@@ -35,7 +38,8 @@ export default function CarteProposition({
   /* Acceptée ici même : les boutons disparaissent sans attendre le
      rafraîchissement de la page (mesuré à 1,4 s), un second clic serait refusé. */
   const [accepteeIci, setAccepteeIci] = useState(false);
-  const acceptee = Boolean(d.statut?.startsWith("Acceptée")) || accepteeIci;
+  const acceptee = Boolean(d.statut?.startsWith(PREFIXE_ACCEPTEE)) || accepteeIci;
+  const phrases = phrasesProposition(tu);
 
   async function repondre(reponse: "accepter" | "reparler") {
     setOccupe(true);
@@ -70,17 +74,11 @@ export default function CarteProposition({
     <div className="ec-parler-carte ec-parler-carte--proposition">
       <span className="ec-parler-etiquette ec-parler-accent">Proposition complémentaire</span>
       <strong>{d.libelle}</strong>
-      <span className="ec-note">
-        {d.statut ?? (acceptee ? "Acceptée à l'instant" : v("Proposée par l'atelier : à lire, puis à accepter ou à rediscuter.", "Proposée par l'atelier : à lire, puis à accepter ou à rediscuter."))}
-      </span>
+      <span className="ec-note">{d.statut ?? (acceptee ? "Acceptée à l'instant" : phrases.aLire)}</span>
+      {acceptee ? <span className="ec-note">{phrases.apres}</span> : null}
       {confirmer ? (
         <div className="ec-confirmer">
-          <p className="ec-texte">
-            {v(
-              "Accepter cette proposition ? L'atelier en est prévenu et l'ajoute à votre édition. Rien n'est payé sur cette page.",
-              "Accepter cette proposition ? L'atelier en est prévenu et l'ajoute à ton édition. Rien n'est payé sur cette page."
-            )}
-          </p>
+          <p className="ec-texte">{phrases.confirmer}</p>
           <div className="ec-actions">
             <button type="button" className="ec-bouton ec-bouton--petit" disabled={occupe} onClick={() => repondre("accepter")}>
               Oui, j&apos;accepte

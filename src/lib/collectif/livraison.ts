@@ -79,6 +79,52 @@ export function messageProposition(reponse: "accepter" | "reparler", libelle: st
     : `Je souhaite reparler de la proposition complémentaire « ${libelle} ».`;
 }
 
+/* ─────────────────────── accepter n'engage pas (D26, T-152) ───────────────────────
+   Décision de Mathias du 20/10 : accepter une proposition complémentaire n'engage
+   PAS le client ; c'est le DEVIS SIGNÉ qui engage. L'acceptation reste tracée
+   (journal, message, « Acceptée le … » sur le document), et elle crée un geste
+   pour l'atelier : lui envoyer le devis à signer. */
+
+/** Le début de `statut_texte` d'une proposition acceptée (« Acceptée le 20 octobre 2026 à 14:03 », route `proposition`). */
+export const PREFIXE_ACCEPTEE = "Acceptée";
+
+/** Ce que la fiche de l'atelier montre pour une proposition acceptée sans devis déposé après elle. */
+export const A_FAIRE_DEVIS = "À faire : envoyer le devis à signer";
+
+export function propositionAcceptee(d: { type: string; statut: string | null }): boolean {
+  return d.type === "proposition" && Boolean(d.statut?.startsWith(PREFIXE_ACCEPTEE));
+}
+
+/** Ce que la carte de proposition dit au client, au registre (D26). */
+export function phrasesProposition(tu: boolean): { aLire: string; confirmer: string; apres: string } {
+  return tu
+    ? {
+        aLire: "Proposée par l'atelier : à lire, puis à accepter ou à rediscuter. Accepter ne t'engage pas : tu recevras ensuite le devis à signer.",
+        confirmer: "Accepter cette proposition ? Cela ne t'engage pas : l'atelier en est prévenu et t'envoie le devis à signer. C'est le devis signé qui engage. Rien n'est payé sur cette page.",
+        apres: "L'atelier t'envoie le devis à signer : c'est lui qui engage.",
+      }
+    : {
+        aLire: "Proposée par l'atelier : à lire, puis à accepter ou à rediscuter. Accepter ne vous engage pas : vous recevrez ensuite le devis à signer.",
+        confirmer: "Accepter cette proposition ? Cela ne vous engage pas : l'atelier en est prévenu et vous envoie le devis à signer. C'est le devis signé qui engage. Rien n'est payé sur cette page.",
+        apres: "L'atelier vous envoie le devis à signer : c'est lui qui engage.",
+      };
+}
+
+/**
+ * Les propositions acceptées dont le devis à signer reste à envoyer : ce que la
+ * fiche de l'atelier montre en « À faire ». Une proposition sort de la liste dès
+ * qu'un document de type `devis` est déposé APRÈS elle (le devis qui la suit ;
+ * le devis du départ est plus ancien qu'elle). Aucune date estimée, aucun montant.
+ */
+export function devisAEnvoyer<D extends { id: string; type: string; statut: string | null; quand: string }>(documents: readonly D[]): D[] {
+  const devis = documents.filter((d) => d.type === "devis").map((d) => Date.parse(d.quand)).filter(Number.isFinite);
+  return documents.filter((d) => {
+    if (!propositionAcceptee(d)) return false;
+    const posee = Date.parse(d.quand);
+    return !devis.some((t) => Number.isFinite(posee) && t > posee);
+  });
+}
+
 /* ─────────────────────────── la livraison ─────────────────────────── */
 
 /** Ce que l'atelier règle à la main : l'adresse, et le jour prévu s'il le connaît. */

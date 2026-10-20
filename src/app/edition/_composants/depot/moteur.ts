@@ -46,7 +46,8 @@
 import { reduire } from "@/app/(atelier)/composer/depot/pool";
 import { estHeic, resoudreMime } from "@/lib/atelier/formats";
 import { vignetteHeic } from "./heic";
-import { LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION } from "@/lib/collectif/depot";
+import { estVideo, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION } from "@/lib/collectif/depot";
+import { lienMort } from "@/lib/collectif/liens";
 import { cleDuFichier } from "@/lib/collectif/cleDepot";
 import { ERREUR_ACCORD } from "@/lib/collectif/accord";
 
@@ -130,6 +131,9 @@ export type Vue = {
   serveurLent: boolean;
   /** Les fichiers ignorés à l'ajout (pas des images). */
   ignores: number;
+  /** Parmi eux, les vidéos (T-200 : refusées, décision de Mathias), et le nom de la première pour la nommer. */
+  videos: number;
+  premiereVideo: string | null;
   /** Les fichiers choisis une seconde fois pendant CET envoi : sautés, et dits (retours du 14/10, point 8). */
   dejaAjoutes: number;
 };
@@ -243,6 +247,8 @@ export class MoteurDepot {
   private abonnes = new Set<() => void>();
   private compteur = 0;
   private ignores = 0;
+  private videos = 0;
+  private premiereVideo: string | null = null;
   private dejaAjoutes = 0;
   private ferme: string | null = null;
   private horsLigne = false;
@@ -339,6 +345,8 @@ export class MoteurDepot {
       horsLigne: this.horsLigne,
       serveurLent: this.serveurLent && !this.horsLigne,
       ignores: this.ignores,
+      videos: this.videos,
+      premiereVideo: this.premiereVideo,
       dejaAjoutes: this.dejaAjoutes,
     };
     this.cache = { version: this.version, vue };
@@ -426,6 +434,10 @@ export class MoteurDepot {
       const mime = resoudreMime(f.name, f.type);
       if (!mime) {
         this.ignores++;
+        if (estVideo(f.name, f.type)) {
+          this.videos++;
+          this.premiereVideo ??= f.name;
+        }
         continue;
       }
       const cle = cleDuFichier(this.sel, f, maintenant);
@@ -634,7 +646,7 @@ export class MoteurDepot {
       }
       if (status === 404) {
         /* Un lien supprimé, une édition archivée : aucun réseau n'y changera rien. */
-        this.fermer(this.v("Ce lien n'est plus actif : demandez-en un nouveau à l'organisateur.", "Ce lien n'est plus actif : demande-en un nouveau à l'organisateur."));
+        this.fermer(lienMort(Boolean(this.cfg.tu)).phrase);
         return;
       }
       if (status >= 400 && status < 500) {
@@ -802,7 +814,7 @@ export class MoteurDepot {
     try {
       const { status, json } = await poster("/api/collectif/depot/complete", { token: this.cfg.token, photoIds: lot.map((i) => i.photoId) }, DELAI_CONFIRMATION_MS);
       if (status === 404) {
-        this.fermer(this.v("Ce lien n'est plus actif : demandez-en un nouveau à l'organisateur.", "Ce lien n'est plus actif : demande-en un nouveau à l'organisateur."));
+        this.fermer(lienMort(Boolean(this.cfg.tu)).phrase);
         return;
       }
       if (status !== 200) {

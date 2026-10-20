@@ -2596,3 +2596,16 @@
     position: static;
   }
 }
+
+/* T-195, T-152 (20/10) : ce qui bloque ou attend l'atelier, en tête de la vue d'ensemble
+   (le plafond par personne qui manque, le devis à signer d'une proposition acceptée). */
+.eca-root .eca-alertes {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+/* Sous une proposition acceptée, dans « Documents du client ». */
+.eca-root .eca-afaire {
+  display: block;
+  margin-top: 6px;
+}

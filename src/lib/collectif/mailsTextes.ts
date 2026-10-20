@@ -184,6 +184,142 @@ export function mailEspacePret(d: DonneesEspacePret): Mail {
   return { sujet: `${v("Votre", "Ton")} espace Bellajour est prêt, ${d.evenement}`, html, texte };
 }
 
+/* ─────────────── « Votre lien a changé » (T-196, décision de Mathias du 20/10) ───────────────
+   Quand l'ATELIER régénère le lien du responsable ou celui des participants, le
+   responsable apprend que l'ancien ne marche plus et reçoit le nouveau. Le lien de
+   l'équipe n'en a pas (il se transmet par le responsable) ; un lien de contribution
+   supprimé par le responsable non plus (il ne veut peut-être plus que ces personnes
+   l'aient) : sa page dit seulement « Ce lien ne fonctionne plus ». Texte proposé par
+   Claude le 20/10, à valider par Mathias ; rien ne part tant que `COLLECTIF_MAILS` est fermé. */
+
+/** Les deux liens dont la régénération prévient le responsable. */
+export type LienPrevenu = "responsable" | "depot";
+
+export function lienPrevenu(quel: string): quel is LienPrevenu {
+  return quel === "responsable" || quel === "depot";
+}
+
+export type DonneesLienRegenere = {
+  tu: boolean;
+  quel: LienPrevenu;
+  evenement: string;
+  responsable: string | null;
+  /** Le NOUVEAU lien : le sien (son token, il ne part qu'à son adresse) ou celui des participants. */
+  lien: string;
+  /** Les liens de contribution actifs, coupés avec le lien des participants (ils portent son token). */
+  contributions: number;
+  /** « 28 octobre », ou null si la clôture n'est pas fixée. */
+  cloture: string | null;
+  /** Le code par appareil (T-154) est en service : un nouveau lien du responsable rend ses appareils inconnus. */
+  avecCode: boolean;
+  /** L'adresse courte pour retrouver son lien (« bellajour.fr/espace »), ou null. */
+  retrouver: string | null;
+};
+
+/** Ce que le mail lit d'une édition (APRÈS la régénération : les tokens sont les nouveaux). La route ET l'aperçu passent par ici. */
+export function donneesLienRegenere(
+  e: TokensEdition & { registre: string; evenement: string; responsable_nom: string | null; cloture_le: string | null },
+  quel: LienPrevenu,
+  origine: string,
+  contributions: number,
+  avecCode: boolean
+): DonneesLienRegenere {
+  const liens = liensEdition(origine, e);
+  return {
+    tu: e.registre === "ecole_tu",
+    quel,
+    evenement: e.evenement,
+    responsable: e.responsable_nom,
+    lien: quel === "responsable" ? liens.responsable : liens.depot,
+    contributions: Math.max(0, Math.floor(contributions)),
+    cloture: e.cloture_le ? formaterJourParis(e.cloture_le) || null : null,
+    avecCode,
+    retrouver: origine ? `${origine.replace(/^https?:\/\//, "")}/espace` : null,
+  };
+}
+
+export function mailLienRegenere(d: DonneesLienRegenere): Mail {
+  const v = (vous: string, toi: string) => (d.tu ? toi : vous);
+  const notes: Ligne[] = [];
+  if (d.retrouver)
+    notes.push(ligne(v(`Lien perdu ? Retrouvez-le à tout moment sur ${d.retrouver}.`, `Lien perdu ? Retrouve-le à tout moment sur ${d.retrouver}.`)));
+
+  if (d.quel === "responsable") {
+    notes.unshift(ligne(v("Ce lien vous est personnel : gardez ce mail, il vous servira à revenir.", "Ce lien t'est personnel : garde ce mail, il te servira à revenir.")));
+    if (d.avecCode)
+      notes.push(
+        ligne(
+          v(
+            "Sur chaque téléphone ou ordinateur, l'espace s'ouvre d'abord en lecture : pour modifier, il vous envoie un code à cette adresse.",
+            "Sur chaque téléphone ou ordinateur, l'espace s'ouvre d'abord en lecture : pour modifier, il t'envoie un code à cette adresse."
+          )
+        )
+      );
+    const { html, texte } = page({
+      titre: v("Votre lien a changé", "Ton lien a changé"),
+      bonjour: bonjour(d.responsable),
+      lignes: [
+        ligne(
+          v(
+            `L'atelier a changé le lien de votre espace « ${d.evenement} » : l'ancien ne fonctionne plus. Voici le nouveau.`,
+            `L'atelier a changé le lien de ton espace « ${d.evenement} » : l'ancien ne fonctionne plus. Voici le nouveau.`
+          )
+        ),
+      ],
+      bouton: { href: d.lien, libelle: "Ouvrir mon espace" },
+      notes,
+    });
+    return { sujet: `${v("Votre nouveau lien", "Ton nouveau lien")} Bellajour · ${d.evenement}`, html, texte };
+  }
+
+  const lignes: Ligne[] = [
+    ligne(
+      v(
+        `L'atelier a changé le lien des participants de « ${d.evenement} » : l'ancien ne fonctionne plus, ni le QR code qui y menait. Partagez le nouveau à sa place.`,
+        `L'atelier a changé le lien des participants de « ${d.evenement} » : l'ancien ne fonctionne plus, ni le QR code qui y menait. Partage le nouveau à sa place.`
+      )
+    ),
+    ligne("Les photos déjà reçues sont gardées."),
+  ];
+  if (d.contributions === 1)
+    lignes.push(
+      ligne(
+        v(
+          "Votre lien de contribution a changé aussi : retrouvez-le dans votre espace, page Photos, onglet « Les liens », et partagez-le de nouveau.",
+          "Ton lien de contribution a changé aussi : retrouve-le dans ton espace, page Photos, onglet « Les liens », et partage-le de nouveau."
+        )
+      )
+    );
+  else if (d.contributions > 1)
+    lignes.push(
+      ligne(
+        v(
+          `Vos ${d.contributions} liens de contribution ont changé aussi : retrouvez-les dans votre espace, page Photos, onglet « Les liens », et partagez-les de nouveau.`,
+          `Tes ${d.contributions} liens de contribution ont changé aussi : retrouve-les dans ton espace, page Photos, onglet « Les liens », et partage-les de nouveau.`
+        )
+      )
+    );
+  const { html, texte } = page({
+    titre: "Le lien des participants a changé",
+    bonjour: bonjour(d.responsable),
+    lignes,
+    blocs: [
+      {
+        titre: "Le nouveau lien des participants",
+        phrase: d.cloture
+          ? v(
+              `Pour que chacun dépose ses photos, jusqu'au ${d.cloture}. Le nouveau QR code est dans votre espace.`,
+              `Pour que chacun dépose ses photos, jusqu'au ${d.cloture}. Le nouveau QR code est dans ton espace.`
+            )
+          : v("Pour que chacun dépose ses photos. Le nouveau QR code est dans votre espace.", "Pour que chacun dépose ses photos. Le nouveau QR code est dans ton espace."),
+        href: d.lien,
+      },
+    ],
+    notes,
+  });
+  return { sujet: `Nouveau lien des participants · ${d.evenement}`, html, texte };
+}
+
 export type DonneesCodeAppareil = {
   tu: boolean;
   evenement: string;

@@ -7,8 +7,11 @@
  * modification (même règle, deux écrans).
  *
  * ⚠️ AUCUN CHIFFRE PRÉ-REMPLI. Un champ chiffré laissé vide vaut `null`, et la
- * fiche l'affiche `[À FIXER]`. Un dépôt dont le plafond n'est pas réglé est
- * refusé (plafonds.ts) : on ne devine rien.
+ * fiche l'affiche `[À FIXER]`. Un dépôt dont le plafond PAR PERSONNE n'est pas
+ * réglé est refusé (plafonds.ts) : on ne devine rien. Seule exception, décidée
+ * par Mathias le 20/10 (D27, T-195) : « Photos au total » laissé vide veut dire
+ * « pas de limite pour toute l'édition » (« on ne sait pas forcément combien il
+ * y aura ») ; il reste facultatif et ne ferme plus rien.
  */
 
 import { EMAIL_PATTERN, suggestionEmail } from "@/lib/atelier/questionnaire";

@@ -92,3 +92,23 @@ export function texteTroisLiens(l: Record<QuelLien, string>): string {
     `Le lien des participants, pour déposer ses photos : ${l.depot}`,
   ].join("\n");
 }
+
+/**
+ * Un lien de dépôt qui ne mène plus nulle part (T-196, 20/10) : régénéré par
+ * l'atelier, supprimé par le responsable (un lien de bateau), ou inconnu. La
+ * page `/depot/[token]` le dit en clair, au registre de l'édition quand on la
+ * retrouve (vous sinon), et le moteur d'envoi dit la même chose si le lien
+ * meurt pendant un envoi. Le code HTTP, lui, reste 404 dans tous les cas : un
+ * lien régénéré ne se distingue pas d'un lien qui n'a jamais existé
+ * (`reponses.ts`, pas d'annuaire).
+ */
+export function lienMort(tu: boolean): { titre: string; suite: string; phrase: string } {
+  const titre = "Ce lien ne fonctionne plus";
+  const suite = tu ? "Demande le nouveau lien à l'organisateur." : "Demandez le nouveau lien à l'organisateur.";
+  return { titre, suite, phrase: `${titre}. ${suite}` };
+}
+
+/** Le code du verrou du mail « votre lien a changé » (T-196) : un par lien régénéré, jamais deux fois le même. */
+export function codeMailLienRegenere(quel: QuelLien, empreinteNouveau: string): string {
+  return `LIEN-${quel}-${empreinteNouveau.slice(0, 10)}`;
+}

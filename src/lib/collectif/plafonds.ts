@@ -6,7 +6,10 @@
  * - `plafond_participant_atelier` : le plus que l'atelier autorise par personne ;
  * - `plafond_participant_client` : ce que le responsable a réglé au curseur,
  *   toujours ≤ le précédent (contrainte en base ET ici) ;
- * - `plafond_total` : le plus pour toute l'édition, tenu côté serveur.
+ * - `plafond_total` : le plus pour toute l'édition, tenu côté serveur ;
+ *   VIDE, il veut dire « pas de limite pour toute l'édition » (D27, décision
+ *   de Mathias du 20/10 : « on ne sait pas forcément combien il y aura ») :
+ *   seuls les plafonds par personne et par lien s'appliquent alors.
  *
  * Qui y est soumis (choix du 13/10/2026, à la validation du plan de la phase 0) :
  * - l'ATELIER échappe à tout ;
@@ -17,9 +20,13 @@
  *   (un cookie) : c'est un frein honnête, pas une garantie, et l'écran ne
  *   prétend pas le contraire. Le total, lui, ne se contourne pas.
  *
- * ⚠️ UN PLAFOND NON RÉGLÉ FERME, IL N'OUVRE PAS. `null` veut dire « l'atelier
- * n'a pas encore saisi le chiffre » : on refuse le dépôt avec une phrase qui
- * le dit, plutôt que d'ouvrir sans limite ou d'inventer une valeur.
+ * ⚠️ UN PLAFOND PAR PERSONNE NON RÉGLÉ FERME, IL N'OUVRE PAS. `null` veut dire
+ * « l'atelier n'a pas encore saisi le chiffre » : on refuse le dépôt du
+ * participant (lien général, ou lien sans plafond propre ni « sans limite »)
+ * avec une phrase qui le dit, plutôt que d'ouvrir sans limite ou d'inventer
+ * une valeur. La page de dépôt le dit AVANT le choix des photos (`depotRegle`).
+ * Le TOTAL est l'exception (D27) : vide, il n'est pas « non réglé », il est
+ * « sans limite ».
  */
 
 import type { RoleDeposant } from "./types";
@@ -32,15 +39,40 @@ export type ReglagesPlafond = {
 
 export type RaisonPlafond = "plafond_participant" | "plafond_total" | "plafond_non_regle";
 
-/** Ce que l'écran dit quand un dépôt est refusé ou tronqué. */
+/** Ce que l'écran dit quand un dépôt est refusé ou tronqué (au vouvoiement ; `messagePlafond` suit le registre). */
 export const MESSAGE_PLAFOND: Record<RaisonPlafond, string> = {
   plafond_participant:
     "Vous avez atteint le nombre de photos prévu par personne sur cet appareil.",
   plafond_total:
     "L'édition a reçu toutes les photos prévues. L'atelier peut relever ce plafond.",
   plafond_non_regle:
-    "Le dépôt n'est pas encore ouvert : le nombre de photos n'a pas été réglé par l'atelier.",
+    "Le dépôt n'est pas encore ouvert : le nombre de photos par personne n'a pas été réglé par l'atelier.",
 };
+
+/** Les mêmes phrases au tutoiement (une édition `ecole_tu`, T-195). Seule la première parle à quelqu'un. */
+export const MESSAGE_PLAFOND_TU: Record<RaisonPlafond, string> = {
+  plafond_participant:
+    "Tu as atteint le nombre de photos prévu par personne sur cet appareil.",
+  plafond_total: MESSAGE_PLAFOND.plafond_total,
+  plafond_non_regle: MESSAGE_PLAFOND.plafond_non_regle,
+};
+
+/** La phrase d'un refus, au registre de l'édition (vous par défaut, comme `parler`). */
+export function messagePlafond(raison: RaisonPlafond, registre: string): string {
+  return (registre === "ecole_tu" ? MESSAGE_PLAFOND_TU : MESSAGE_PLAFOND)[raison];
+}
+
+/**
+ * Ce que dit la page `/depot/[token]` AVANT le choix des photos quand un plafond
+ * manque (T-195) : la phrase du refus, puis ce qu'il faut faire. Sans elle, le
+ * participant choisissait ses photos, cochait l'accord, et tout était refusé.
+ */
+export function phrasesDepotPasOuvert(registre: string): [string, string] {
+  return [
+    MESSAGE_PLAFOND.plafond_non_regle,
+    registre === "ecole_tu" ? "Garde ce lien : il fonctionnera dès que ce sera fait." : "Gardez ce lien : il fonctionnera dès que ce sera fait.",
+  ];
+}
 
 /** Un entier ≥ 1 saisi à l'écran, `null` pour un champ vide, `undefined` si illisible. */
 export function lireEntierPositif(v: unknown): number | null | undefined {
@@ -137,23 +169,39 @@ export type Place =
 export function placeRestante(r: ReglagesPlafond, d: Deposant, totalEdition: number): Place {
   if (d.role === "atelier") return { illimitee: true };
 
-  if (r.plafond_total === null) return { illimitee: false, place: 0, borne: "plafond_non_regle" };
-  const resteTotal = Math.max(0, r.plafond_total - Math.max(0, totalEdition));
+  /* D27 (20/10) : un total vide = pas de limite pour toute l'édition, jamais un refus. */
+  const resteTotal = r.plafond_total === null ? null : Math.max(0, r.plafond_total - Math.max(0, totalEdition));
 
   if (d.role === "responsable" || d.sansPlafond) {
-    return { illimitee: false, place: resteTotal, borne: "plafond_total" };
+    return resteTotal === null ? { illimitee: true } : { illimitee: false, place: resteTotal, borne: "plafond_total" };
   }
 
-  /* Un lien de contribution porte son plafond ; sinon, celui de l'édition. */
+  /* Un lien de contribution porte son plafond ; sinon, celui de l'édition. Sans l'un ni
+     l'autre, le dépôt du participant reste FERMÉ, total vide ou non. */
   const parPersonne = d.plafondLien ?? plafondParticipant(r);
   if (parPersonne === null) return { illimitee: false, place: 0, borne: "plafond_non_regle" };
   const restePerso = Math.max(0, parPersonne - Math.max(0, d.dejaParAppareil));
+  if (resteTotal === null) return { illimitee: false, place: restePerso, borne: "plafond_participant" };
 
   /* À égalité, c'est le total qui est cité : « l'édition est pleine » est
      plus vrai que « vous avez assez déposé » quand les deux le sont. */
   return restePerso < resteTotal
     ? { illimitee: false, place: restePerso, borne: "plafond_participant" }
     : { illimitee: false, place: resteTotal, borne: "plafond_total" };
+}
+
+/**
+ * Un participant peut-il déposer AU MOINS en principe par ce lien (T-195) ?
+ * La règle de `placeRestante` elle-même, jouée à vide (personne n'a encore
+ * rien déposé) : `false` exactement quand elle rendrait `plafond_non_regle`,
+ * c'est-à-dire quand le lien n'a ni plafond propre ni « sans limite » et que
+ * l'atelier n'a pas réglé le plafond par personne (un total vide ne ferme plus
+ * rien, D27). La page le dit avant le choix des photos ; la fiche de l'atelier
+ * le dit en alerte.
+ */
+export function depotRegle(r: ReglagesPlafond, lien: { sansPlafond: boolean; plafondLien?: number | null }): boolean {
+  const p = placeRestante(r, { role: "participant", sansPlafond: lien.sansPlafond, plafondLien: lien.plafondLien ?? null, dejaParAppareil: 0 }, 0);
+  return p.illimitee || p.borne !== "plafond_non_regle";
 }
 
 export type Tranche = {

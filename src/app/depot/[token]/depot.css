@@ -98,6 +98,10 @@
   border: 1px solid var(--dp-filet);
   border-radius: 18px;
 }
+/* T-195 : « pas encore ouvert » en deux phrases, dans le même cadre. */
+.bj-atelier .ec-dp-ferme > .ec-dp-texte + .ec-dp-texte {
+  margin-top: 8px;
+}
 .bj-atelier .ec-dp-form {
   display: flex;
   flex-direction: column;

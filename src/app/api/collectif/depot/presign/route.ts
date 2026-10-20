@@ -13,7 +13,7 @@ import { collecteOuverte } from "@/lib/collectif/etats";
 import { NOM_MAX } from "@/lib/collectif/participant";
 import { nomDeLAppareil } from "@/lib/collectif/participantConnu";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { MESSAGE_PLAFOND, placeRestante } from "@/lib/collectif/plafonds";
+import { messagePlafond, placeRestante } from "@/lib/collectif/plafonds";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
 
@@ -186,7 +186,8 @@ export async function POST(request: Request) {
       const d = decisions[i];
       if (d.sorte === "deja") return { cle: f.cle, deja: true, photoId: d.id };
       if (d.sorte === "double") return { cle: f.cle, double: true };
-      if (d.sorte === "refusee") return { cle: f.cle, erreur: d.raison, message: MESSAGE_PLAFOND[d.raison] };
+      /* La phrase suit le registre de l'édition (T-195) : « Tu as atteint… » sur une édition au tu. */
+      if (d.sorte === "refusee") return { cle: f.cle, erreur: d.raison, message: messagePlafond(d.raison, edition.registre) };
       const photoId = d.sorte === "reprise" ? d.id : (ids.get(f.cle) as string);
       const key = d.sorte === "reprise" ? d.r2_key : clePhoto(edition.id, photoId, f.type);
       const vignetteKey = cleVignette(edition.id, photoId);

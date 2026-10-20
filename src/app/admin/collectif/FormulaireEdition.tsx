@@ -762,7 +762,8 @@ export default function FormulaireEdition(props: Props) {
     <>
       <div className="eca-deux-champs">
         {chiffre("plafond_participant_atelier", "Par personne", "photos par personne", "Le responsable peut baisser ce nombre, jamais le dépasser.", 1)}
-        {chiffre("plafond_total", "Pour toute l'édition", "photos au total", "Compte tout le monde, sauf l'atelier.", 1)}
+        {/* D27 (T-195, Mathias le 20/10) : vide = pas de limite pour toute l'édition, jamais un chiffre deviné. */}
+        {chiffre("plafond_total", "Pour toute l'édition", "photos au total", "Compte tout le monde, sauf l'atelier. Laisser vide : pas de limite pour toute l'édition.", 1, "sans limite")}
       </div>
       {props.mode === "modification" ? (
         <p className="eca-champ-aide">

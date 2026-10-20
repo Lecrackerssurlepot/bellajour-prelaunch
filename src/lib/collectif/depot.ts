@@ -145,3 +145,37 @@ export function compteDansPlafond(l: { confirmee_le: string | null; created_at: 
   const t = Date.parse(l.created_at);
   return Number.isFinite(t) && maintenant.getTime() - t < DELAI_DECLARATION_MORTE_MS;
 }
+
+/* ─────────── les vidéos (T-200 : refusées, décision de Mathias du 20/10) ───────────
+   Un magazine n'imprime pas de vidéo. Elles étaient déjà écartées à l'ajout (le
+   format n'est pas une photo), mais la page ne le disait qu'APRÈS le choix, et
+   d'un « ce ne sont pas des photos » qui ne nommait rien. Une Live Photo d'iPhone
+   part comme une photo : seule sa partie vidéo reste. */
+
+/** Les extensions de vidéo d'un téléphone ou d'un appareil (le type arrive parfois vide, iCloud). */
+const EXTENSIONS_VIDEO = /\.(mov|mp4|m4v|3gp|3g2|avi|mkv|webm|mts|m2ts|wmv)$/i;
+
+/** Ce fichier est-il une vidéo ? Par le type annoncé, sinon par l'extension. Une photo acceptée n'en est jamais une. */
+export function estVideo(nom: string, type: string): boolean {
+  if (resoudreMime(nom, type)) return false;
+  return (type || "").trim().toLowerCase().startsWith("video/") || EXTENSIONS_VIDEO.test(nom.trim());
+}
+
+/** La ligne discrète de la page de dépôt, AVANT le choix des photos (T-200). */
+export const PHOTOS_SEULEMENT = "Photos seulement : les vidéos ne partent pas.";
+
+/**
+ * Les fichiers écartés à l'ajout, dits par ce qu'ils sont : la vidéo NOMMÉE
+ * (une seule : son nom ; plusieurs : leur nombre), puis le reste. `videos` est
+ * compté parmi `ignores`.
+ */
+export function phrasesIgnores(ignores: number, videos: number, premiereVideo: string | null): string[] {
+  const total = Math.max(0, Math.floor(ignores));
+  const v = Math.min(total, Math.max(0, Math.floor(videos)));
+  const autres = total - v;
+  const phrases: string[] = [];
+  if (v === 1) phrases.push(premiereVideo ? `« ${premiereVideo} » est une vidéo : seules les photos partent.` : "1 vidéo ignorée : seules les photos partent.");
+  else if (v > 1) phrases.push(`${v} vidéos ignorées : seules les photos partent.`);
+  if (autres) phrases.push(`${autres} fichier${autres > 1 ? "s" : ""} ignoré${autres > 1 ? "s" : ""} : ce ne sont pas des photos.`);
+  return phrases;
+}
