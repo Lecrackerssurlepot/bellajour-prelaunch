@@ -17,6 +17,7 @@ import {
   type LigneGrille,
   type LignePage,
 } from "@/lib/collectif/grillePhotos";
+import { compterCorbeille } from "@/lib/collectif/corbeilleServeur";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
@@ -30,7 +31,12 @@ import { lireProvenances } from "@/app/edition/[token]/donnees";
  * responsable ou équipe : voir n'écrit rien).
  * - `dossier` : la clé d'un dossier de l'arbre (`dossiers.ts`), « tout » par
  *   défaut, « selection » pour « Ma sélection » ;
- * - `vue` : `toutes`, `jour` (rangées par jour) ou `doublons`.
+ * - `vue` : `toutes`, `jour` (rangées par jour), `doublons` ou `signalees`
+ *   (« Ne pas publier », lot w2 du 20/10 : la plus récente d'abord).
+ * Chaque vignette porte `signalee` et `grande` (l'original signé s'il
+ * s'affiche, sinon la vignette) ; `compteurs.signalees` compte les « Ne pas
+ * publier » du dossier, `stats.corbeille` la corbeille (null sans la
+ * migration 20261023, ou pour l'équipe).
  *
  * T-168 (20/10) : l'arbre, les personnes et les comptes se lisent sur le
  * RÉSUMÉ en base (`collectif_photos_resume`, quelques dizaines de lignes), et
@@ -68,7 +74,7 @@ export async function POST(request: Request) {
   const depuis = new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString();
   /* Le résumé (par tranches de 1 000, comme toute lecture qui peut dépasser le plafond de l'API,
      T-167), les liens et les déclarations en route, ensemble. */
-  const [resume, provenances, enRoute] = await Promise.all([
+  const [resume, provenances, enRoute, corbeille] = await Promise.all([
     lireToutesLesLignes<LigneResume>(
       () => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", edition.id).returns<LigneResume[]>(),
       { colonne: "id", croissant: true },
@@ -76,8 +82,10 @@ export async function POST(request: Request) {
     ),
     lireProvenances(edition.id),
     supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", depuis),
+    /* La ligne « Corbeille » (lot w2) : un compte sans ligne, `null` sans la migration 20261023. L'équipe ne la voit pas. */
+    peut(acces.role, "gerer_corbeille") ? compterCorbeille(supabase, edition.id) : Promise.resolve(null),
   ]);
-  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute.count ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle) };
+  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute.count ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle), corbeille };
 
   if (!resume.error) {
     const doublons = await doublonsDeLEdition(supabase, edition.id);
@@ -157,6 +165,15 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
       const { count, error } = await lireHorsCorbeille((avec) => base(conditions, avec, true).in("id", [...ids]).limit(0));
       if (error || count === null) {
         console.error("[collectif] doublons du dossier non comptés", error?.code, error?.message);
+        return null;
+      }
+      return count;
+    },
+    /* « Ne pas publier » du dossier (lot w2) : le même plan, la colonne `signalee` en plus, un compte sans ligne. */
+    async compterFiltre(conditions) {
+      const { count, error } = await lireHorsCorbeille((avec) => base(conditions, avec, true).limit(0));
+      if (error || count === null) {
+        console.error("[collectif] photos du dossier non comptées", error?.code, error?.message);
         return null;
       }
       return count;

@@ -824,6 +824,14 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   une panne au milieu écrit `fusion_interrompue` et « défaire » la remet d'aplomb.
 - **En attente de Mathias (C3)** : noms au journal après la purge, adresse jamais purgée ; dépend
   de la politique de confidentialité.
+- **La grille du responsable (lot w2)** rend `signalee` et `grande` sur chaque vignette (l'original
+  signé pour JPEG, PNG, WebP, `afficheEnGrand` ; la vignette pour un HEIC), `compteurs.signalees`
+  et la vue `signalees` (« Ne pas publier » : le plan VÉRIFIÉ du dossier + la condition `signalee`,
+  jamais posée par `planDuDossier`, comptée par `LectureGrille.compterFiltre`, un GET `limit(0)`),
+  `stats.corbeille` (`compterCorbeille`, `null` sans la migration ou pour l'équipe). Les deux
+  lectures (résumé et repli) rendent la même réponse pour les quatre vues (harnais a4). Les cochées
+  s'écrivent par lots de 500 (`photoIds`), jamais une requête par photo. Sans la migration, la page
+  dit « La mise à jour de la base n'est pas encore appliquée », jamais le message de la route.
 
 ## Phase 7 : les accroches déjà posées
 

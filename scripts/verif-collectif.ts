@@ -4907,7 +4907,7 @@ async function sondeLotA4() {
   const compteA4 = { lignes: 0, requetes: 0, comptes: 0 };
   const versPage = (p: LG): import("@/lib/collectif/grillePhotos").LignePage => ({
     id: p.id, vignette_key: p.vignette_key, r2_key: p.r2_key, nom_origine: p.nom_origine, provenance_type: p.provenance_type, deposant: p.deposant,
-    prise_le: p.prise_le, confirmee_le: p.confirmee_le, preselection: p.preselection, mime: p.mime, provenance_id: p.provenance_id, role_deposant: p.role_deposant,
+    prise_le: p.prise_le, confirmee_le: p.confirmee_le, preselection: p.preselection, signalee: p.signalee, mime: p.mime, provenance_id: p.provenance_id, role_deposant: p.role_deposant,
   });
   const lectureA4: import("@/lib/collectif/grillePhotos").LectureGrille = {
     async page(conditions, tri, de, a) {
@@ -4928,6 +4928,11 @@ async function sondeLotA4() {
       compteA4.comptes++;
       const voulus = new Set(ids);
       return toutesA4.filter((p) => voulus.has(p.id) && R.correspond(p, conditions)).length;
+    },
+    /* Lot w2 : le compte des « Ne pas publier » d'un dossier, sans ligne, comme `compter`. */
+    async compterFiltre(conditions) {
+      compteA4.comptes++;
+      return toutesA4.filter((p) => R.correspond(p, conditions)).length;
     },
   };
   const contexteA4 = (partage: boolean) => ({ edition: editionA4, provenances: liensA4, partage, enCours: 7, signer: async (cle: string) => `signe:${cle}`, signerOriginal: async (cle: string) => `signe:${cle}` });
@@ -5592,15 +5597,17 @@ titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, coche
   ok("la photo agrandie : précédente / suivante au clavier, balayage au téléphone, Échap ferme ; ouverte DANS la colonne de contenu (portail) ; qui, quel lien, quand",
     /e\.key === "ArrowLeft"/.test(agrandir) && /e\.key === "ArrowRight"/.test(agrandir) && /e\.key === "Escape"/.test(agrandir) && /onTouchEnd=/.test(agrandir) && /Math\.abs\(dx\) > 50/.test(agrandir)
       && /document\.querySelector\("\.ec-contenu"\)/.test(agrandir) && /createPortal\(vue, hote\)/.test(agrandir) && /<dt>Lien<\/dt>/.test(agrandir) && /<dt>Arrivée<\/dt>/.test(agrandir) && /<dt>Prise<\/dt>/.test(agrandir));
-  ok("« Ne pas publier » passe par la route existante (`signalee`), réversible (« Annuler ») ; « Supprimer » n'a pas de bouton tant que sa route n'existe pas (seconde vague)",
-    /signalee: oui/.test(collecteTsx) && /\(\) => \(\{ signalee: true \}\)/.test(collecteTsx) && /\(\) => \(\{ signalee: false \}\)/.test(collecteTsx) && /Annuler/.test(collecteTsx)
-      && /a\.onSupprimer \?/.test(agrandir) && !/onSupprimer=/.test(collecteTsx) && !/Corbeille/.test(page.replace(/\/\*[\s\S]*?\*\//g, "")));
+  /* Lot w2 : la même intention (Ne pas publier réversible) ; « Supprimer » a désormais son bouton, branché sur la corbeille, jamais pour l'équipe. */
+  ok("« Ne pas publier » passe par la route existante (`signalee`), réversible (« Annuler ») ; « Supprimer » (lot w2) n'existe que pour le responsable",
+    /signalee: oui/.test(collecteTsx) && /marquerLot\(a\.map\(\(x\) => x\.id\), \{ signalee: true \}\)/.test(collecteTsx) && /marquerLot\(faites, \{ signalee: false \}\)/.test(collecteTsx) && /Annuler/.test(collecteTsx)
+      && /a\.onSupprimer \?/.test(agrandir) && /onSupprimer=\{p\.ecrire \? /.test(collecteTsx));
   const appels = [...page.matchAll(/(?:fetch|appeler)\("(\/api\/[^"]+)"/g)].map((m) => m[1]);
-  const permis = new Set(["/api/collectif/photos", "/api/collectif/photos/etat", "/api/collectif/photos/marquer", "/api/collectif/dossiers", "/api/collectif/provenances", "/api/collectif/plafond"]);
-  ok(`la page n'appelle que les routes EXISTANTES (${[...new Set(appels)].length} adresses : photos, etat, marquer, dossiers, provenances, plafond)`, appels.length > 0 && appels.every((a) => permis.has(a)));
+  /* Lot w2 : la corbeille et les personnes (les routes du lot w1-fondations) s'ajoutent à la liste. */
+  const permis = new Set(["/api/collectif/photos", "/api/collectif/photos/etat", "/api/collectif/photos/marquer", "/api/collectif/dossiers", "/api/collectif/provenances", "/api/collectif/plafond", "/api/collectif/photos/corbeille", "/api/collectif/personnes"]);
+  ok(`la page n'appelle que les routes EXISTANTES (${[...new Set(appels)].length} adresses : photos, etat, marquer, dossiers, provenances, plafond, corbeille, personnes)`, appels.length > 0 && appels.every((a) => permis.has(a)));
   ok("le lien d'équipe n'écrit rien : ni case, ni étoile qui écrive, ni barre d'actions, ni geste dans la photo agrandie, ni dépôt",
     /\{g\.ecrire \? \(\s*<button\s*type="button"\s*className="ec-ph-t-case"/.test(grilleTsx) && /\{p\.ecrire && nbCoches > 0 \? \(\s*<div className="ec-ph-barre-actions/.test(collecteTsx) && /\{a\.ecrire \? \(\s*<div className="ec-ag-gestes">/.test(agrandir)
-      && /const cocherActif = p\.ecrire && /.test(collecteTsx) && /\{p\.ecrire && p\.ouverte && envoi\.ouvrir && !cocherActif && !envoiVisible \?/.test(collecteTsx));
+      && /const cocherActif = p\.ecrire && /.test(collecteTsx) && /\{p\.ecrire && p\.ouverte && envoi\.ouvrir && !cocherActif && !envoiVisible( && !ecranPropre)? \?/.test(collecteTsx));
   const tel = css.slice(css.indexOf("@media (max-width: 860px) {\n  /* La page défile"));
   ok("téléphone : rien ne défile de côté (aucun overflow-x), 4 colonnes, la barre collée en haut, la barre d'actions fixe sous le pouce, la feuille du bas ; pas de dvh",
     tel.length > 1000 && !/overflow-x/.test(tel) && /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);\s*gap: 2px;/.test(tel) && /\.ec-ph-moutils,\s*\.ec-espace \.ec-ph-barre-cocher \{\s*position: sticky;/.test(tel)
@@ -6440,7 +6447,115 @@ titre("— la fiche de l'atelier lit les nouvelles formes du durcissement (nomPr
       && /f\.interrompue && !f\.defaite/.test(pPers) && /Interrompue<\/span>/.test(pPers) && /\.eca-root \.eca-pe-propose \{/.test(lire("src/app/admin/collectif/personnes.css")));
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(() => {
+/* ════════════ LOT w2 (20/10) : la page Photos du responsable, Supprimer, la corbeille, une personne (planches 3, 4, 5) ════════════ */
+
+async function verifPhotosW2() {
+  titre("— w2 : Supprimer, la corbeille, une personne, les cochées en une requête, les champs de la grille —");
+  const F = FiltresPhotos;
+  const V = F.FILTRES_VIDES;
+  const G = await import("@/lib/collectif/grillePhotos");
+  const R = await import("@/lib/collectif/resumePhotos");
+  const L = "lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455";
+  const q = (f: Partial<FiltresPhotos.Filtres>) => F.requeteDe({ ...V, ...f });
+
+  /* Les listes. */
+  ok("« Ne pas publier » est une VUE qui se croise avec le lien (`signalees`) ; elle et « Doublons » s'excluent (la route n'en lit qu'une)",
+    JSON.stringify(q({ lien: L, signalees: true })) === JSON.stringify({ dossier: L, vue: "signalees" }) && F.avecSignalees({ ...V, doublons: true }, true).doublons === false
+      && F.avecDoublons({ ...V, signalees: true }, true).signalees === false && F.nombreDeFiltres({ ...V, signalees: true, lien: L }) === 2 && G.VUES.includes("signalees"));
+  ok("la corbeille : un endroit à part (`?dossier=corbeille`, rien des listes ne s'y croise) ; tout autre geste des listes en sort ; un lien ou « Ma sélection » la ferment",
+    F.adresseDe(F.avecCorbeille({ ...V, lien: L, ordre: "jour" })) === "?dossier=corbeille" && F.filtresDepuis("corbeille").corbeille && JSON.stringify(F.avecCorbeille({ ...V, lien: L, ordre: "jour" })) === JSON.stringify({ ...V, ordre: "jour", corbeille: true })
+      && !F.sortirDeLaCorbeille({ ...V, corbeille: true, mode: "liens" }).corbeille && !F.avecLien({ ...V, corbeille: true }, L).corbeille && !F.avecSelection({ ...V, corbeille: true }, true).corbeille
+      && !F.estVueAlbums({ ...V, mode: "liens", corbeille: true }));
+  ok("une personne a une FICHE (`qui:`, `pers:`) ; ni le responsable, ni « Sans nom » ; après un renommage, le même endroit sous le nouveau nom",
+    F.cleDeLaPersonne("qui:léa martin") === "léa martin" && F.cleDeLaPersonne("pers:general:léa") === "léa" && F.cleDeLaPersonne(`pers:${L.slice(5)}:hugo`) === "hugo"
+      && F.cleDeLaPersonne("qui:@responsable") === null && F.cleDeLaPersonne("qui:sans nom") === null && F.cleDeLaPersonne(L) === null && F.cleDeLaPersonne(null) === null
+      && F.filtreSousLeNom("qui:léa", "Léa Martin") === "qui:léa martin" && F.filtreSousLeNom("pers:general:lea martin", "Léa Martin") === "pers:general:léa martin");
+  const pv = (ref: string, nom: string, n: number, o: Partial<FiltresPhotos.PersonneVue> = {}): FiltresPhotos.PersonneVue => ({ ref, participant: ref.startsWith("p:"), nom, prenom: null, nomDeFamille: null, cle: Dossiers.clePersonne(nom), email: null, n, liens: [], telephones: 0, derniere: null, depuis: null, ...o });
+  const listeP: FiltresPhotos.ListePersonnes = {
+    /* L'homonyme d'avant (sans adresse) a PLUS de photos : la fiche garde quand même la personne qui s'est présentée. */
+    personnes: [pv("n:léa martin", "Léa Martin", 30), pv("p:1", "Léa Martin", 24, { email: "l•••@audencia.com" }), pv("p:2", "Lea Martin", 6), pv("n:léa", "Léa", 2), pv("n:hugo", "Hugo", 9)],
+    proposees: [{ a: "n:léa martin", b: "p:1", raison: "meme_nom" }, { a: "p:1", b: "p:2", raison: "meme_nom" }, { a: "p:1", b: "n:léa", raison: "meme_prenom" }, { a: "n:hugo", b: "p:9", raison: "meme_nom" }],
+    avecAdresses: true,
+  };
+  const ficheLea = F.ficheDe(listeP, "léa martin");
+  ok("la fiche : la personne de ce nom qui s'est présentée par son adresse (MASQUÉE par le serveur), et les doublons PROPOSÉS qui la touchent (l'homonyme d'avant compris), jamais ceux des autres",
+    ficheLea?.personne.ref === "p:1" && ficheLea.personne.email === "l•••@audencia.com" && ficheLea.propositions.map((x) => x.personne.ref).join() === "n:léa martin,p:2,n:léa"
+      && F.ficheDe(listeP, "personne") === null && F.ficheDe(null, "léa martin") === null && F.ficheDe(listeP, "hugo")?.propositions.length === 0);
+  ok("les puces d'un doublon : « même nom, sans l'accent », « même prénom, même lien » ; renommer propose prénom ET nom",
+    F.raisonTexte("meme_nom", "Léa Martin", "Lea Martin") === "même nom, sans l'accent" && F.raisonTexte("meme_prenom", "Léa Martin", "Léa") === "même prénom, même lien" && F.raisonTexte("meme_nom", "Léa Martin", "Léa Martin") === "même nom"
+      && JSON.stringify(F.prenomEtNom({ prenom: null, nomDeFamille: null, nom: "Léa Martin Durand" })) === '{"prenom":"Léa","nom":"Martin Durand"}' && JSON.stringify(F.prenomEtNom({ prenom: "Léa", nomDeFamille: "Martin", nom: "x" })) === '{"prenom":"Léa","nom":"Martin"}');
+  ok("la corbeille dit l'échéance et l'instant à l'heure de Paris ; une photo restaurée dit où elle est revenue, « La voir » ouvre son lien et sa personne",
+    F.echeanceTexte(2) === "Effacée dans 2 jours" && F.echeanceTexte(1) === "Effacée dans 1 jour" && F.echeanceTexte(0) === "Effacée au prochain passage"
+      && F.instantCourt("2026-11-07T14:02:00Z") === "sam. 7 nov. à 15 h 02" && F.jourDeLInstant("2026-11-07T23:30:00Z") === "dim. 8 nov."
+      && F.phraseRetour(L, "Bateau 1", "Léa Martin") === "De retour dans Bateau 1, chez Léa Martin" && F.phraseRetour("vous", "Le responsable", "Mathilde") === "De retour dans Mes photos"
+      && F.requeteDe(F.filtreDuRetour(L, "Léa Martin")).dossier === `pers:${L.slice(5)}:léa martin` && F.requeteDe(F.filtreDuRetour("participants", "Camille")).dossier === "pers:general:camille");
+  const mille = Array.from({ length: 1001 }, (_, i) => String(i));
+  ok("les cochées partent par lots de 500 (la règle de la route, `PHOTOS_PAR_GESTE`), jamais une requête par photo",
+    F.LOT_ECRITURE === 500 && F.enLots(mille).map((l) => l.length).join() === "500,500,1" && F.enLots([]).length === 0);
+
+  /* La grille : `signalee`, la photo en grand, la vue et le compte « Ne pas publier », la corbeille. */
+  type LG = import("@/lib/collectif/grillePhotos").LigneGrille;
+  const id = (i: number) => `00000000-0000-4000-8000-0000000000${String(i).padStart(2, "0")}`;
+  const ligne = (i: number, o: Partial<LG> = {}): LG => ({
+    id: id(i), vignette_key: `collectif/v/${i}.jpg`, r2_key: `collectif/o/${i}.jpg`, nom_origine: `IMG_${i}.jpg`, provenance_type: "participant", deposant: "Léa Martin", prise_le: null,
+    confirmee_le: `2026-11-07T10:0${i}:00+00:00`, ordre: i, empreinte: null, preselection: false, signalee: false, mime: "image/jpeg", provenance_id: null, role_deposant: "participant", appareil_id: "a1", ...o,
+  });
+  const lignes = [ligne(1), ligne(2, { signalee: true }), ligne(3, { mime: "image/heic", vignette_key: null }), ligne(4, { mime: "image/heic" }), ligne(5, { vignette_key: null, signalee: true }), ligne(6, { deposant: "Hugo", signalee: true }), ligne(7, { mime: "image/png" })];
+  const ctx = (corbeille?: number | null) => ({ edition: { responsable_nom: "Mathilde Roux", plafond_participant_atelier: 60, plafond_participant_client: null, plafond_total: null }, provenances: [], partage: true, enCours: 0, signer: async (c: string) => `v:${c}`, signerOriginal: async (c: string) => `o:${c}`, ...(corbeille === undefined ? {} : { corbeille }) });
+  const dem = (dossier: string, vue: "toutes" | "signalees") => ({ dossier, vue, page: 0, seulementArbre: false });
+  const tout = await G.grilleDepuisLignes(lignes, [], dem("tout", "toutes"), ctx(4));
+  const t = (i: number) => tout.photos.find((x) => x.id === id(i));
+  ok("chaque vignette dit « Ne pas publier » (`signalee`, relu à chaque page : il survit au rechargement)",
+    t(2)?.signalee === true && t(1)?.signalee === false && tout.photos.filter((x) => x.signalee).length === 3);
+  ok("la photo EN GRAND : l'original signé pour un JPEG ou un PNG ; un HEIC garde sa vignette (ou rien) ; une photo sans vignette réutilise l'original déjà signé",
+    t(1)?.grande === "o:collectif/o/1.jpg" && t(1)?.vignette === "v:collectif/v/1.jpg" && t(7)?.grande === "o:collectif/o/7.jpg" && t(4)?.grande === "v:collectif/v/4.jpg" && t(3)?.grande === null && t(3)?.vignette === null
+      && t(5)?.vignette === "o:collectif/o/5.jpg" && t(5)?.grande === "o:collectif/o/5.jpg" && G.afficheEnGrand("image/webp") && !G.afficheEnGrand("image/heic") && !G.afficheEnGrand(null));
+  const sig = await G.grilleDepuisLignes(lignes, [], dem("tout", "signalees"), ctx(4));
+  const sigHugo = await G.grilleDepuisLignes(lignes, [], dem("qui:hugo", "signalees"), ctx(4));
+  ok("« Ne pas publier » : la vue montre les signalées du dossier, la plus récente d'abord ; la ligne de « Afficher » les compte (dans le dossier) ; la corbeille est comptée à part",
+    sig.photos.map((x) => x.id).join() === [id(6), id(5), id(2)].join() && sig.compteurs.liste === 3 && sig.suivante === null && tout.compteurs.signalees === 3
+      && sigHugo.photos.map((x) => x.id).join() === id(6) && sigHugo.compteurs.signalees === 1 && tout.stats.corbeille === 4 && (await G.grilleDepuisLignes(lignes, [], dem("tout", "toutes"), ctx())).stats.corbeille === null);
+  ok("la condition « Ne pas publier » s'écrit pour PostgREST (`signalee=eq.true`) et se lit pareil en mémoire ; elle n'entre jamais dans un plan VÉRIFIÉ (le résumé ne la porte pas)",
+    JSON.stringify(R.enFiltresPostgrest([{ op: "signalee" }])) === '[{"methode":"eq","colonne":"signalee","valeur":true}]' && R.correspond({ role_deposant: "participant", provenance_id: null, provenance_type: "participant", deposant: "x", signalee: true }, [{ op: "signalee" }])
+      && !R.correspond({ role_deposant: "participant", provenance_id: null, provenance_type: "participant", deposant: "x" }, [{ op: "signalee" }]) && !/op: "signalee"/.test(lire("src/lib/collectif/resumePhotos.ts").slice(lire("src/lib/collectif/resumePhotos.ts").indexOf("export function planDuDossier"), lire("src/lib/collectif/resumePhotos.ts").indexOf("export function correspond"))));
+
+  /* Le code : les routes, l'équipe, la migration qui manque. */
+  const route = lire("src/app/api/collectif/photos/route.ts");
+  const cs = lire("src/lib/collectif/corbeilleServeur.ts");
+  const page = lirePagePhotos();
+  const collecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  const corbeilleTsx = lire("src/app/edition/[token]/photos/Corbeille.tsx");
+  const personneTsx = lire("src/app/edition/[token]/photos/Personne.tsx");
+  const listesTsx = lire("src/app/edition/[token]/photos/Listes.tsx");
+  ok("la route photos : « Ne pas publier » compté sans ligne (GET `limit(0)`, hors corbeille) ; la corbeille comptée pour le responsable seul, `null` sans la migration, jamais en `head`",
+    /async compterFiltre\(conditions\) \{\s*const \{ count, error \} = await lireHorsCorbeille\(\(avec\) => base\(conditions, avec, true\)\.limit\(0\)\);/.test(route) && /peut\(acces\.role, "gerer_corbeille"\) \? compterCorbeille\(supabase, edition\.id\) : Promise\.resolve\(null\)/.test(route)
+      && /if \(!migrationPersonnesPresumee\(\)\) return null;/.test(cs) && /\.select\("id", COMPTE_SANS_LIGNE\)\.eq\("edition_id", editionId\)\.not\("supprimee_le", "is", null\)\.limit\(0\)/.test(cs) && /COLONNES_PAGE = "[^"]*\bsignalee\b/.test(lire("src/lib/collectif/grillePhotos.ts")));
+  ok("les cochées : UNE requête `marquer` par lot de 500 (`photoIds`), plus d'écriture photo par photo ; Supprimer et Annuler passent par la corbeille avec les MÊMES ids",
+    /body: JSON\.stringify\(\{ token: p\.token, photoIds: lot, \.\.\.corps \}\)/.test(collecte) && !/unaUne|photoId: id/.test(collecte) && /"\/api\/collectif\/photos\/corbeille", \{ method: "POST", headers: \{ "content-type": "application\/json" \}, body: JSON\.stringify\(\{ token: p\.token, action, photoIds: lot \}\) \}\)/.test(collecte)
+      && /annuler: \(\) => void annulerSuppression\(faites, retrait, v0\)/.test(collecte) && /issue = await ecrireCorbeille\("restaurer", ids\);/.test(collecte) && /issue = await ecrireCorbeille\("supprimer", ids\);/.test(collecte));
+  ok("le lien d'équipe ne voit ni Supprimer, ni la corbeille, ni un geste sur une personne : `p.ecrire` partout, la route lui répond 403",
+    /onSupprimer=\{p\.ecrire \? \(\) => void mettreALaCorbeille\(\[photoAgrandie\.id\]\) : undefined\}/.test(collecte) && /voirCorbeille=\{p\.ecrire\}/.test(collecte) && /\{l\.voirCorbeille \? \(/.test(listesTsx)
+      && /return d\.corbeille && !p\.ecrire \? FILTRES_VIDES : d;/.test(collecte) && /const nf = nf0\.corbeille && !p\.ecrire \? \{ \.\.\.nf0, corbeille: false \} : nf0;/.test(collecte) && /if \(occupe \|\| !ids\.length \|\| !p\.ecrire\) return;/.test(collecte)
+      && /\{f\.ecrire && p \? \(\s*<div className="ec-pe-gestes">/.test(personneTsx) && /const propositions = f\.ecrire && !ignorees/.test(personneTsx) && peut("equipe", "gerer_corbeille") === false && peut("equipe", "gerer_personnes") === false);
+  ok("sans la migration 20261023 (503 `migration_personnes_absente`) : l'écran dit « La mise à jour de la base n'est pas encore appliquée », jamais le message brut de la route (il nomme le fichier SQL)",
+    /export const BASE_PAS_A_JOUR = "La mise à jour de la base n'est pas encore appliquée";/.test(corbeilleTsx) && /if \(rep\.status === 503 && json\.error === ERREUR_PERSONNES_ABSENTE\) setEtat\(\{ genre: "absente" \}\);/.test(corbeilleTsx)
+      && /if \(rep\.status === 503 && json\.error === ERREUR_PERSONNES_ABSENTE\) return fin\(\{ statut: "absente" \}\);/.test(collecte) && /setErreurFenetre\(json\.error === ERREUR_PERSONNES_ABSENTE \? MIGRATION_TEXTE :/.test(collecte)
+      && /setErreur\(json\.error === ERREUR_PERSONNES_ABSENTE \? MIGRATION_TEXTE :/.test(collecte) && !/20261023_collectif_personnes_corbeille/.test(page));
+  ok("une personne : lister, renommer (prénom ET nom), fusionner avec le nom gardé (`garder`) ; les doublons proposés, JAMAIS fusionnés d'office ; défaire reste à l'atelier",
+    /action: "lister"/.test(collecte) && /action: "renommer", personne: qui\.ref, prenom, nom/.test(collecte) && /action: "fusionner", source: source\.ref, cible: cible\.ref, garder/.test(collecte)
+      && !/defaire|défaire",/.test(collecte) && (collecte.match(/fusionnerPersonnes\(/g) ?? []).length === 2 && /onFusionner=\{\(autre, garder\) => void fusionnerPersonnes\(fiche\.personne, autre, garder\)\}/.test(collecte)
+      && /Ignorer/.test(personneTsx) && /Prénom/.test(personneTsx) && /Le nom gardé/.test(personneTsx));
+  ok("un autre nom tapé avec son adresse (`nomPropose`, durcissement C4) : dit sobrement sur la fiche (tu / vous), au responsable seul, avec le geste Renommer pré-rempli ; jamais de renommage d'office",
+    F.phraseNomPropose({ nom: "Léa Marin", le: "2026-11-07T14:02:00Z" }, true) === "Quelqu'un a aussi tapé cette adresse sous le nom « Léa Marin » (le sam. 7 nov. à 15 h 02). L'adresse n'est pas vérifiée : si c'est le bon nom, renomme la personne."
+      && F.phraseNomPropose({ nom: "Léa Marin", le: "2026-11-07T14:02:00Z" }, false).endsWith("renommez la personne.")
+      && /\{f\.ecrire && p\?\.nomPropose \? \(/.test(personneTsx) && /onClick=\{\(\) => p\.nomPropose && f\.onRenommer\(p\.nomPropose\.nom\)\}/.test(personneTsx)
+      && /const depart = r\.propose \? prenomEtNom\(\{ prenom: null, nomDeFamille: null, nom: r\.propose \}\) : prenomEtNom\(r\.personne\);/.test(personneTsx)
+      && (collecte.match(/renommerPersonne\(/g) ?? []).length === 2 && /onGarder=\{\(prenom, nom\) => void renommerPersonne\(renommerP\.personne, prenom, nom\)\}/.test(collecte));
+  ok("la visionneuse : la vignette tout de suite, l'original par-dessus dès qu'il arrive ; les voisines préchargent leur photo en grand",
+    /className=\{grandes\[p\.id\] \? "ec-ag-img ec-ag-img--grande ec-ag-img--la" : "ec-ag-img ec-ag-img--grande"\}/.test(lire("src/app/edition/[token]/photos/Agrandir.tsx")) && /\.map\(\(x\) => x\?\.grande \?\? x\?\.vignette\)/.test(collecte));
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

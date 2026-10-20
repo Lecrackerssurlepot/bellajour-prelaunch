@@ -28,8 +28,10 @@ export type Photo = {
   preselection: boolean;
   doublonDe: string | null;
   heic: boolean;
-  /** « Ne pas publier » : la route ne le rend pas encore ; lu s'il arrive. */
-  signalee?: boolean;
+  /** « Ne pas publier », relu à chaque page (lot w2) : il survit au rechargement. */
+  signalee: boolean;
+  /** La photo EN GRAND de la visionneuse : l'original signé s'il s'affiche (JPEG, PNG, WebP), la vignette sinon (HEIC). */
+  grande: string | null;
 };
 
 const APPUI_LONG_MS = 450;
@@ -38,6 +40,12 @@ export const ICONES = {
   etoile: "M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z",
   coche: "M5 12l5 5 9-10",
   cache: "M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.2 9.5 6-.4.8-1.4 2.2-2.8 3.5M6.2 7.6C4.4 8.9 3.1 10.6 2.5 12c1 1.8 4.5 6 9.5 6 1.6 0 3-.4 4.3-1M9.9 10a3 3 0 0 0 4.1 4.1",
+  /* Lot w2 : la corbeille (planches 3, 4 et 5). */
+  corbeille: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
+  restaurer: "M3 12a9 9 0 1 0 2.6-6.4L3 8M3 3v5h5",
+  fusionner: "M7 4v4a5 5 0 0 0 5 5 5 5 0 0 0 5-5V4M12 13v7",
+  crayon: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
+  info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5M12 8h.01",
 };
 
 export function Trace({ d, taille = 14, plein = false, epais = 2 }: { d: string; taille?: number; plein?: boolean; epais?: number }) {

@@ -61,6 +61,7 @@ import { cleDuLien, LIBELLE_ATELIER, LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, 
 import { noterEchec } from "./echecsJournal";
 import { collectifOuvert } from "./interrupteur";
 import { journaliser, journaliserId } from "./journal";
+import { COMPTE_SANS_LIGNE, migrationPersonnesPresumee, noterPersonnesAbsentes } from "./horsCorbeille";
 import { enPaquets, lireToutesLesLignes, listeIn } from "./lignes";
 import { personnesAbsentes } from "./migration";
 
@@ -206,6 +207,29 @@ export async function lireCorbeille(supabase: SupabaseClient, editionId: string)
   );
   if (lu.error) return echec(lu.error);
   return { statut: "ok", valeur: lu.data };
+}
+
+/**
+ * COMBIEN de photos sont à la corbeille (la ligne « Corbeille » de la page Photos, lot w2 du
+ * 20/10) : un compte en GET `limit(0)`, aucune ligne, jamais `head` (horsCorbeille.ts). `null`
+ * sans la migration 20261023 (l'écran montre la ligne sans nombre) ou si la base ne répond pas :
+ * la grille ne tombe jamais pour ce compte-là. Pendant la minute où l'absence est retenue, aucune
+ * requête ne part.
+ */
+export async function compterCorbeille(supabase: SupabaseClient, editionId: string): Promise<number | null> {
+  if (!migrationPersonnesPresumee()) return null;
+  try {
+    const { count, error } = await supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", editionId).not("supprimee_le", "is", null).limit(0);
+    if (error) {
+      if (personnesAbsentes(error)) noterPersonnesAbsentes();
+      else console.error("[collectif] corbeille non comptée", error.code);
+      return null;
+    }
+    return count ?? null;
+  } catch (err) {
+    console.error("[collectif] corbeille non comptée", (err as Error)?.message);
+    return null;
+  }
 }
 
 /** Les objets du coffre d'une photo : l'original et la vignette, sous le préfixe de SON édition seulement. */
