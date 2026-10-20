@@ -160,6 +160,12 @@ async function relever(request: Request) {
      jamais, silencieuse sans la migration 20261023 ou sans rien à purger, coupée sans
      COLLECTIF_OUVERT, ne touche à aucune table des particuliers. */
   after(() => import("@/lib/collectif/corbeilleServeur").then((m) => m.purgeQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
+  /* T-159 (décision de Mathias du 20/10, question 4) — même passage, même échéance, aucun cron de
+     plus : la FIN DE CONSERVATION des éditions livrées depuis 30 jours (l'intention au journal, la
+     base, puis le coffre ; ce qui résiste se retente). ⚠️ COUPÉE PAR DÉFAUT : sans
+     COLLECTIF_RETENTION_AUTO ouvert (et COLLECTIF_OUVERT), elle rend sans même lire la base. Ne
+     lève jamais, au plus deux éditions par passage, ne touche à aucune table des particuliers. */
+  after(() => import("@/lib/collectif/retentionServeur").then((m) => m.retentionQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
 
   try {
     const supabase = makeSupabase();

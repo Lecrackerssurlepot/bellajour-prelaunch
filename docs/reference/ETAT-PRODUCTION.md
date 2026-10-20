@@ -31,6 +31,20 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   magazine terminé gardé **10 ans**, jamais réutilisé sans l'accord du client). Projets dans
   `docs/produit/collectif/projets-legaux-20-10/` ; rien en ligne avant son accord texte par texte
   et la relecture juridique.
+## 20/10/2026 (soir, 20 h) — Les effacements à 30 et 90 jours : écrits, rien lancé, rien en production
+
+Branche `feat/effacements-30-et-90-jours` (aucun commit, aucun push à l'heure de cette ligne).
+- **Éditions (T-159)** : 30 jours après « Marquer livrée » (décision de Mathias, Q4) ; passage
+  quotidien après la relève écrit et **COUPÉ** : `COLLECTIF_RETENTION_AUTO` n'est posé ni sur Vercel
+  ni dans `.env.local`. Lecture seule sur la vraie base : 11 éditions, 10 pas livrées, 1 livrée il y a
+  7 jours, **aucune à effacer**. Jamais lancé avec `--vraiment`.
+- **Particuliers (T-203)** : `scripts/retention-livres.ts` écrit, aucun automatisme. Lecture seule sur
+  la vraie base : 5 dossiers `livree` (livrés il y a 2 à 22 jours), **aucun concerné** ; le premier
+  le deviendrait vers le 27/12/2026. `numeros.photos_supprimees_le` n'existe pas : la migration
+  `20261024_atelier_retention_livres.sql` est ÉCRITE, **pas appliquée** (sans elle, `--vraiment` refuse).
+- Les comptes du dry-run des éditions ont lu `collectif_participants` et
+  `collectif_participants_appareils` sans erreur (0 ligne pour l'édition livrée) : les tables de
+  20261023 répondent en production (elle a été appliquée par Mathias le 20/10 au soir, voir plus haut).
 
 ## 20/10/2026 (fin d'après-midi) — Les planches d'Audencia : vague 1 en production, migration 20261023 à appliquer
 

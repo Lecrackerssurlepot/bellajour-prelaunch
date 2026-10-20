@@ -64,3 +64,28 @@ export function stylesOuverts(): boolean {
   }
   return lu.ouvert;
 }
+
+/* ─────────────────────── la fin de conservation automatique (T-159, 20/10) ─────────────────────── */
+
+/**
+ * `COLLECTIF_RETENTION_AUTO` : le passage QUOTIDIEN qui efface le coffre des
+ * éditions livrées depuis 30 jours (`retentionQuotidienne`, après la relève,
+ * aucun cron de plus). FERMÉ par défaut : absent, vide ou incompris = fermé,
+ * et une valeur incomprise se crie dans les journaux.
+ *
+ * Décision de Mathias, 20/10 : « les premières fois je le lance avec toi,
+ * ensuite il passe tout seul chaque jour, comme la corbeille ». Les premières
+ * fois, c'est `scripts/collectif-retention.ts` (lecture seule sans
+ * `--vraiment`) ; l'automatisme ne s'ouvre qu'en posant `COLLECTIF_RETENTION_AUTO=1`
+ * sur Vercel, geste de Mathias. Fermé, le passage ne lit même pas la base.
+ * Sans `COLLECTIF_OUVERT`, il reste coupé quoi qu'il arrive.
+ */
+export const VAR_RETENTION_AUTO = "COLLECTIF_RETENTION_AUTO";
+
+export function retentionAutoOuverte(env: Record<string, string | undefined> = process.env): boolean {
+  const lu = lireInterrupteur(env[VAR_RETENTION_AUTO]);
+  if (lu.incompris) {
+    console.error(`[collectif] ${VAR_RETENTION_AUTO}="${env[VAR_RETENTION_AUTO]}" n'est ni oui ni non : la fin de conservation automatique reste coupée.`);
+  }
+  return lu.ouvert;
+}

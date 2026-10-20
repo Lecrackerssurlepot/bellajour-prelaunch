@@ -21,6 +21,7 @@ import { compterCorbeille } from "@/lib/collectif/corbeilleServeur";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
+import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { COLONNES_RESUME, enFiltresPostgrest, resumeAbsent, VUE_RESUME, type Condition, type LigneResume } from "@/lib/collectif/resumePhotos";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
@@ -65,6 +66,10 @@ export async function POST(request: Request) {
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "voir_espace")) return refusDroit();
   const { edition } = acces;
+  /* T-159 : une édition effacée (30 jours après la livraison) ne signe plus rien : ses objets sont
+     partis. La page Photos le dit sans appeler cette route ; un appel quand même reçoit la phrase. */
+  const effacees = phrasePhotosEffacees(edition.photos_supprimees_le);
+  if (effacees) return NextResponse.json({ error: "photos_effacees", message: `${effacees}.` }, { status: 410 });
   const demande = lireDemandeGrille(corps);
 
   /* Les liens ne se montrent qu'à qui peut en créer (le responsable) : une

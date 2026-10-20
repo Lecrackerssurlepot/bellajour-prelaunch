@@ -24,6 +24,7 @@ import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
 import { stylesOuverts } from '@/lib/collectif/interrupteur'
 import { origineDepuis } from '@/lib/collectif/liens'
 import { plafondLienMax } from '@/lib/collectif/plafonds'
+import { phrasePhotosEffacees } from '@/lib/collectif/retention'
 import { cheminSection } from '@/lib/collectif/verrous'
 import { EnTeteEcran } from '../_composants/Ecran'
 import CartePhotos from './CartePhotos'
@@ -87,6 +88,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             statut={edition.cloture_le && ouverte ? `Clôture ${delai}` : ouverte ? 'Ouverte' : 'Collecte close'}
             lienPhotos={cheminSection(token, 'photos')}
             tu={tu}
+            effacees={phrasePhotosEffacees(edition.photos_supprimees_le)}
           />
 
           <LigneContenus token={token} demandes={vuesDemandes(edition.contenus_demandes, edition.registre)} envois={tableau.envois} ecrire={peut(role, 'envoyer_contenu')} tu={tu} />

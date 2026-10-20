@@ -189,7 +189,7 @@ import { contrainteRefusee, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE, M
 import { migrationDemandes, TYPE_SONDE } from "@/lib/collectif/sondeDemandes";
 import { estUuid } from "@/lib/collectif/cles";
 import * as Retention from "@/lib/collectif/retention";
-import { racineEffacable, supprimerCoffreEdition, supprimerPrefixe } from "@/lib/atelier/r2";
+import { listerCoffreEdition, racineEffacable, supprimerClesEdition, supprimerCoffreEdition, supprimerPrefixe } from "@/lib/atelier/r2";
 import { prefixeCoffre } from "@/lib/atelier/archive";
 import type { StyleMur } from "@/app/edition/[token]/donnees";
 
@@ -3851,10 +3851,27 @@ async function sondeT167() {
 
 /* ═══════════════════ T-159 : LA FIN DES PHOTOS D'UNE ÉDITION LIVRÉE ═══════════════════ */
 
-titre("— T-159 : le delai est OBLIGATOIRE, sans aucune valeur par defaut —");
+titre("— T-159 : le delai est la DECISION de Mathias (30 jours apres « Marquer livree », question 4) —");
+{
+  const S = Retention.delaiDuScript;
+  ok("la constante vaut 30 (decision du 20/10) ; sans --jours, le script la prend, en lecture comme pour effacer",
+    Retention.DELAI_RETENTION_JOURS === 30
+      && JSON.stringify(S([], false)) === JSON.stringify({ ok: true, jours: 30, source: "decision" })
+      && JSON.stringify(S(["--vraiment", "--edition", E], true)) === JSON.stringify({ ok: true, jours: 30, source: "decision" }));
+  ok("--jours tape regarde plus tot ou plus tard en lecture seule (1, 29, 45) ; avec --vraiment, jamais plus court que 30 (1 et 29 refuses, 30 et 45 acceptes)",
+    [1, 29, 45].every((n) => { const r = S(["--jours", String(n)], false); return r.ok && r.jours === n && r.source === "argument"; })
+      && !S(["--jours", "1"], true).ok && !S(["--jours=29"], true).ok && S(["--jours", "30"], true).ok && S(["--jours", "45", "--vraiment"], true).ok);
+  ok("un --jours tape MAIS illisible n'est jamais remplace par la decision (« --jours trente », « --jours= », « --jours » seul : refuses)",
+    [["--jours", "trente"], ["--jours="], ["--jours"], ["--jours", "0"], ["--jours", "-3"]].every((a) => !S(a, false).ok && !S(a, true).ok));
+  ok("aucun ecart entre ce qui est decide et ce que le passage quotidien lit : retentionServeur lit DELAI_RETENTION_JOURS, aucun chiffre ecrit",
+    /verdictRetention\(e, maintenant, DELAI_RETENTION_JOURS\)/.test(lire("src/lib/collectif/retentionServeur.ts")) && /delai: DELAI_RETENTION_JOURS/.test(lire("src/lib/collectif/retentionServeur.ts"))
+      && !/\b30\b/.test(lire("src/lib/collectif/retentionServeur.ts").replace(/\/\*[\s\S]*?\*\//g, "")));
+}
+
+titre("— T-159 : la lecture de --jours (le parseur, inchange) —");
 {
   const D = Retention.lireDelaiJours;
-  ok("absent = null (aucun defaut), meme avec les autres arguments", D([]) === null && D(["--vraiment"]) === null && D(["--edition", E]) === null);
+  ok("absent = null (la DECISION est choisie ailleurs, par delaiDuScript), meme avec les autres arguments", D([]) === null && D(["--vraiment"]) === null && D(["--edition", E]) === null);
   ok("« --jours 30 » et « --jours=30 » donnent 30", D(["--jours", "30"]) === 30 && D(["--jours=30"]) === 30 && D(["--vraiment", "--jours", "1"]) === 1);
   ok("zero, negatif, decimal, mot, vide, blanc, notation scientifique : refuses",
      [["--jours", "0"], ["--jours", "-3"], ["--jours", "1.5"], ["--jours", "trente"], ["--jours"], ["--jours="], ["--jours", " 30"], ["--jours", "1e2"], ["--jours", "0x1e"]]
@@ -3914,8 +3931,8 @@ titre("— T-159 : ce qui part, ce qui reste (la table FAMILLES, lue sur les cle
   ok("les contenus envoyes et les pieces jointes partent",
      F(cleContenu(E, P, "logo.SVG")) === "contenus" && F(clePieceJointe(E, P, "tour1.pdf")) === "pieces_jointes"
        && EFF(cleContenu(E, P, "liste.xlsx")) && EFF(clePieceJointe(E, P, "x.pdf")));
-  ok("le PDF de chaque tour RESTE (question ouverte a Mathias : reimpression, preuve du BAT)",
-     F(clePdfTour(E, TOUR)) === "pdf_tour" && !EFF(clePdfTour(E, TOUR)));
+  ok("le PDF de chaque tour RESTE (decision de Mathias du 20/10, question 5 : le PDF du magazine termine est garde, duree non fixee)",
+     F(clePdfTour(E, TOUR)) === "pdf_tour" && !EFF(clePdfTour(E, TOUR)) && /question 5/.test(Retention.FAMILLES.pdf_tour.pourquoi));
   ok("les documents de l'atelier RESTENT (devis signe, factures)", F(cleDocument(E, P, "devis signé.pdf")) === "documents" && !EFF(cleDocument(E, P, "facture.pdf")));
   ok("une cle inconnue reste ; une cle d'une autre edition, un style ou un « .. » sont hors edition et restent",
      F(`collectif/${E}/inconnu/a.jpg`) === "autre" && F(`collectif/${E}/photos/${P}/autre.jpg`) === "autre"
@@ -3966,40 +3983,72 @@ titre("— T-159 : l'effacement en masse a deux portes, chacune sa racine (r2.ra
        && /\nasync function viderPrefixe\(/.test(r2src) && !/export async function viderPrefixe/.test(r2src));
 }
 
-titre("— T-159 : le script lit par defaut, n'efface qu'apres --vraiment, par la seule porte collective —");
+titre("— T-159 : le script lit par defaut, n'efface qu'apres --vraiment, par le meme chemin que le passage quotidien —");
 {
   const brut = lire("scripts/collectif-retention.ts");
   const code = brut.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
   const main = code.slice(code.indexOf("async function main()"));
-  const iEff = code.indexOf("async function effacer(");
-  const dehors = (code.slice(0, iEff) + code.slice(code.indexOf("async function main()"))).replace(/import[^;]+;/g, "");
-  ok("le delai passe par lireDelaiJours, son absence arrete tout AVANT de lire .env.local ou la base",
-     /const delai = lireDelaiJours\(argv\);\s*if \(delai === null\) \{\s*throw new Error/.test(main) && main.indexOf("lireDelaiJours(") < main.indexOf("chargerEnv()"));
-  ok("aucune valeur par defaut pour le delai (ni `?? 30`, ni `|| 30`, ni `delai = 30`)",
-     !/lireDelaiJours\([^)]*\)\s*(\?\?|\|\|)/.test(code) && !/\bdelai\s*=\s*\d/.test(code));
-  ok("`vraiment` ne vient que du mot --vraiment, et l'unique `await effacer(` vient APRES `if (!vraiment) {`",
-     /const vraiment = argv\.includes\("--vraiment"\);/.test(main) && main.indexOf("if (!vraiment) {") > 0
-       && main.indexOf("if (!vraiment) {") < main.indexOf("await effacer(") && (code.match(/await effacer\(/g) ?? []).length === 1);
-  ok("toutes les ecritures sont dans `effacer` : aucun update, insert, upsert, delete, effacement ni journal ailleurs",
-     iEff > 0 && !/\.(update|insert|upsert|delete)\(/.test(dehors) && !/supprimerCoffreEdition\(|supprimerPrefixe\(|journaliser\(|DeleteObject/.test(dehors));
-  const eff = code.slice(iEff, code.indexOf("async function main()"));
-  ok("le coffre d'abord (supprimerCoffreEdition, jamais supprimerPrefixe), un echec arrete l'edition, puis les lignes, puis le marqueur, puis le journal",
-     !/supprimerPrefixe\(/.test(code) && /if \(coffre\.echecs > 0\) \{[\s\S]*?return false;/.test(eff)
-       && eff.indexOf("supprimerCoffreEdition(prefixeEdition(c.e.id)") < eff.indexOf('from("collectif_photos").update(PATCH_PHOTO_EFFACEE)')
-       && eff.indexOf('from("collectif_photos").update(PATCH_PHOTO_EFFACEE)') < eff.indexOf("photos_supprimees_le: maintenant")
-       && eff.indexOf("photos_supprimees_le: maintenant") < eff.indexOf("await journaliser("));
-  ok("le marqueur ne se pose qu'une fois, le journal va dans collectif_evenements, aucune table du B2C n'est nommee",
-     /\.is\("photos_supprimees_le", null\)/.test(eff) && /journaliser\(\s*supabase,\s*\{ editionId: c\.e\.id \},\s*TYPE_JOURNAL_RETENTION/.test(eff)
-       && !/from\(["'](numeros|photos|evenements|mails_envoyes)["']\)/.test(code));
-  ok("ce qui part est decide par la table FAMILLES (cleEffacee), jamais par une liste du script",
-     /supprimerCoffreEdition\(prefixeEdition\(c\.e\.id\), \(cle\) => !cleEffacee\(cle, c\.e\.id\)\)/.test(eff));
-  ok("le listage (lecture seule) passe par la meme garde que l'effaceur", /if \(racineEffacable\(prefixe\) !== "collectif"\) throw/.test(code));
-  ok("aucun cron, aucune route : seul ce script appelle supprimerCoffreEdition",
-     fichiersParSuffixe("src", /\.tsx?$/).every((f) => f === "src/lib/atelier/r2.ts" || !/supprimerCoffreEdition\(/.test(lire(f)))
-       && !/collectif-retention/.test(lire("vercel.json")));
+  const avantVraiment = main.slice(0, main.indexOf("if (!vraiment) {"));
+  ok("le delai passe par delaiDuScript (la decision, ou --jours lisible et jamais plus court pour effacer), un refus arrete tout AVANT de lire .env.local ou la base",
+     /const vraiment = argv\.includes\("--vraiment"\);\s*const delaiLu = delaiDuScript\(argv, vraiment\);\s*if \(!delaiLu\.ok\) throw new Error\(delaiLu\.erreur\);/.test(main)
+       && main.indexOf("delaiDuScript(") < main.indexOf("chargerEnv()"));
+  ok("aucun chiffre de delai ecrit dans le script (ni `30`, ni `delai = N`, ni `?? N`) : il vient de retention.ts",
+     !/\b30\b/.test(code) && !/\bdelai\s*=\s*\d/.test(code) && !/(delai|jours)[^;\n]*(\?\?|\|\|)\s*\d/i.test(code));
+  ok("`vraiment` ne vient que du mot --vraiment ; l'unique `effacerEdition(` et l'unique `reprendreRetention(` viennent APRES `if (!vraiment) {`",
+     main.indexOf("if (!vraiment) {") > 0 && !/effacerEdition\(|reprendreRetention\(/.test(avantVraiment)
+       && (code.match(/await effacerEdition\(/g) ?? []).length === 1 && (code.match(/await reprendreRetention\(/g) ?? []).length === 1);
+  ok("le script n'ecrit RIEN lui-meme : aucun update, insert, upsert, delete, aucun effaceur, aucun journal (tout passe par retentionServeur)",
+     !/\.(update|insert|upsert|delete)\(/.test(code) && !/supprimerCoffreEdition\(|supprimerClesEdition\(|supprimerPrefixe\(|journaliser(Id)?\(|DeleteObject/.test(code));
+  ok("en lecture seule, le coffre se LISTE par la porte gardee (COFFRE_REEL.lister) ; les intentions restees se LISENT sans etre rejouees",
+     /await COFFRE_REEL\.lister\(prefixeEdition\(e\.id\)\)/.test(avantVraiment) && /lireIntentionsRetention\(supabase\)/.test(avantVraiment) && /retentionsEnAttente\(intentions, maintenant\)/.test(avantVraiment));
+  ok("aucune table du B2C n'est nommee ; les personnes se comptent en GET `limit(0)`, jamais en `head`",
+     !/from\(["'](numeros|photos|evenements|mails_envoyes)["']\)/.test(code) && /\.select\(colonne, \{ count: "exact" \}\)\.eq\("edition_id", editionId\)\.limit\(0\)/.test(code));
+  ok("aucun cron neuf, aucune route : le script n'est nomme ni par vercel.json ni par une route",
+     !/collectif-retention/.test(lire("vercel.json")) && fichiersParSuffixe("src/app", /route\.ts$/).every((f) => !/collectif-retention/.test(lire(f))));
   const doc = lire("scripts/CLAUDE.md");
   const iPrudence = doc.indexOf("## À manier avec précaution");
   ok("scripts/CLAUDE.md le range parmi les scripts « À manier avec précaution »", iPrudence > 0 && doc.indexOf("`collectif-retention.ts`", iPrudence) > iPrudence);
+}
+
+titre("— T-159 : l'ORDRE d'un effacement (retentionServeur.ts) : l'intention, la base, le marqueur EN DERNIER, puis le coffre (audit S7) —");
+{
+  const src = lire("src/lib/collectif/retentionServeur.ts");
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const eff = code.slice(code.indexOf("export async function effacerEdition("), code.indexOf("export type BilanReprise"));
+  const pos = (s: string) => eff.indexOf(s);
+  const etapes = [
+    'verdictRetention(e, o.maintenant, o.delai)',
+    "coffre.lister(prefixe)",
+    "journaliserId(",
+    'supprimerPersonnes(supabase, "collectif_participants_appareils", editionId)',
+    'supprimerPersonnes(supabase, "collectif_participants", editionId)',
+    '.update(PATCH_PHOTO_EFFACEE, { count: "exact" })',
+    "photos_supprimees_le: o.maintenant.toISOString()",
+    "coffre.effacer(prefixe, i.cles)",
+    "TYPE_JOURNAL_RETENTION",
+  ];
+  ok("relire et refaire le verdict, lister, l'INTENTION, les telephones, les personnes, les photos, le MARQUEUR, PUIS le coffre, puis le resume : dans cet ordre",
+     etapes.every((s) => pos(s) > 0) && etapes.every((s, i) => i === 0 || pos(etapes[i - 1]) < pos(s)));
+  ok("le marqueur ne se pose qu'une fois (`.is(\"photos_supprimees_le\", null)`) ; chaque refus AVANT lui regle l'intention « gardee » et rend AVANT le coffre",
+     /\.is\("photos_supprimees_le", null\)/.test(eff) && (eff.slice(0, pos("coffre.effacer(prefixe, i.cles)")).match(/await reglerGardees\(supabase, editionId, intentions\);\s*return \{ statut: "refusee"/g) ?? []).length === 5);
+  ok("le vrai coffre passe par les deux portes gardees de r2.ts (listerCoffreEdition, supprimerClesEdition) ; aucune autre ecriture au coffre",
+     /lister: \(prefixe\) => listerCoffreEdition\(prefixe\)/.test(code) && /effacer: \(prefixe, cles\) => supprimerClesEdition\(prefixe, cles\)/.test(code)
+       && !/supprimerCoffreEdition\(|supprimerPrefixe\(|\bsupprimer\(|DeleteObject/.test(code));
+  ok("seul retentionServeur appelle supprimerClesEdition ; plus personne n'appelle supprimerCoffreEdition (gardee pour sa garde)",
+     fichiersParSuffixe("src", /\.tsx?$/).every((f) => f === "src/lib/atelier/r2.ts" || f === "src/lib/collectif/retentionServeur.ts" || !/supprimerClesEdition\(/.test(lire(f)))
+       && fichiersParSuffixe("src", /\.tsx?$/).every((f) => f === "src/lib/atelier/r2.ts" || !/supprimerCoffreEdition\(/.test(lire(f))));
+  ok("retentionServeur n'est charge que par la releve (import dynamique, apres la reponse) et par le script",
+     fichiersParSuffixe("src", /\.tsx?$/).filter((f) => /collectif\/retentionServeur/.test(lire(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, ""))).join() === "src/app/api/atelier/mails/relever/route.ts"
+       && /from "@\/lib\/collectif\/retentionServeur"/.test(lire("scripts/collectif-retention.ts")));
+  const releve = lire("src/app/api/atelier/mails/relever/route.ts");
+  const lance = 'after(() => import("@/lib/collectif/retentionServeur").then((m) => m.retentionQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));';
+  ok("la releve le lance APRES sa reponse (after), apres la purge de la corbeille, meme echeance ; aucun cron de plus ; module charge a ce moment-la seulement",
+     releve.includes(lance) && releve.indexOf(lance) > releve.indexOf("purgeQuotidienne") && releve.indexOf(lance) < releve.indexOf('.from("numeros")')
+       && !/^import .*retentionServeur/m.test(releve) && (JSON.parse(lire("vercel.json")) as { crons: unknown[] }).crons.length === 2);
+  const quotidien = code.slice(code.indexOf("export async function retentionQuotidienne("));
+  ok("le passage quotidien : COUPE par defaut (COLLECTIF_OUVERT ET COLLECTIF_RETENTION_AUTO), avant toute lecture ; la reprise d'abord ; borne a RETENTION_AUTO_MAX_EDITIONS, journalise `par: \"auto\"`",
+     /try \{\s*if \(!collectifOuvert\(\) \|\| !retentionAutoOuverte\(\)\) return null;\s*const reprise = await reprendreRetention\(/.test(quotidien)
+       && /\.slice\(0, RETENTION_AUTO_MAX_EDITIONS\)/.test(quotidien) && /par: "auto"/.test(quotidien) && Retention.RETENTION_AUTO_MAX_EDITIONS === 2);
 }
 
 /* T-159 : les deux effaceurs refusent AVANT tout appel au coffre (aucune variable R2 n'est chargee ici :
@@ -4022,6 +4071,36 @@ async function gardeT159() {
   ok("supprimerCoffreEdition refuse un vide, « collectif/ », les styles, un uuid en majuscules, sans barre finale, un dossier de particulier",
      (await Promise.all(mauvais.map((p) => refuse(() => supprimerCoffreEdition(p, () => false))))).every(Boolean));
   ok("supprimerPrefixe (« Supprimer définitivement », B2C) refuse le coffre d'une edition", await refuse(() => supprimerPrefixe(prefixeEdition(E))));
+
+  /* La porte des CLES NOMMEES (20/10 au soir) : elle relit FAMILLES elle-meme. Aucune variable R2 ici : si elle
+     acceptait une seule de ces cles, elle appellerait le coffre et leverait (makeR2 sans configuration). */
+  const silencieux = async <R>(f: () => Promise<R>): Promise<R | "leve"> => {
+    const avant = console.error;
+    console.error = () => {};
+    try {
+      return await f();
+    } catch {
+      return "leve";
+    } finally {
+      console.error = avant;
+    }
+  };
+  const AUTRE_ED = "22222222-3333-4444-8555-666666666666";
+  const gardees = [clePdfTour(E, TOUR), cleDocument(E, P, "devis.pdf"), `collectif/${E}/inconnu/a.jpg`, clePhoto(AUTRE_ED, P, "image/jpeg"), `collectif/${E}/photos/../../${AUTRE_ED}/photos/${P}/original.jpg`, `numeros/${E}/photos/${P}/original.jpg`, cleStyle("riviera", "couverture-1.webp")];
+  const r1 = await silencieux(() => supprimerClesEdition(prefixeEdition(E), gardees));
+  ok("supprimerClesEdition REFUSE, sans appeler le coffre, un PDF de tour, un document, une cle inconnue, une cle d'une autre edition, un « .. », un dossier de particulier, un style",
+     r1 !== "leve" && r1.partis.length === 0 && r1.rates.length === 0 && r1.refusees.length === gardees.length);
+  const r2 = await silencieux(() => supprimerClesEdition("collectif/", [clePhoto(E, P, "image/jpeg")]));
+  const r3 = await silencieux(() => supprimerClesEdition(prefixeCoffre("0f3e"), [clePhoto(E, P, "image/jpeg")]));
+  ok("…et refuse tout prefixe qui n'est pas `collectif/<uuid>/` exact (« collectif/ », un dossier de particulier), meme pour une vraie photo",
+     r2 !== "leve" && r2.refusees.length === 1 && r2.partis.length === 0 && r3 !== "leve" && r3.refusees.length === 1);
+  /* Cette épreuve-là va JUSQU'AU coffre : elle ne se joue que sans aucune variable R2 (makeR2 lève alors avant tout
+     réseau). Avec des variables chargées, elle appellerait un coffre : on ne la joue pas, et on le dit. */
+  const sansCoffre = !process.env.R2_ENDPOINT && !process.env.R2_ACCESS_KEY_ID && !process.env.R2_SECRET_ACCESS_KEY && !process.env.R2_BUCKET_NAME;
+  const r4 = sansCoffre ? await silencieux(() => supprimerClesEdition(prefixeEdition(E), [clePhoto(E, P, "image/jpeg")])) : "non_jouee";
+  ok("une vraie photo de l'edition EST acceptee par la porte (elle va jusqu'au coffre : ici, sans configuration, elle leve avant tout reseau)", r4 === "leve");
+  ok("le listage garde refuse un prefixe faux sans appeler le coffre",
+     (await silencieux(() => listerCoffreEdition("collectif/"))) === null && (await silencieux(() => listerCoffreEdition(""))) === null);
 }
 
 /* T-193 / T-201 / T-197 (20/10) : l'atelier retrouve chaque lien, ses personnes, leurs photos, et le tout.
@@ -6462,7 +6541,7 @@ async function verifAtelierCorbeillePersonnes() {
   const routeCorbeille = lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts");
   const routePersonnes = lire("src/app/api/admin/collectif/editions/[id]/personnes/route.ts");
   ok("la fiche monte les deux panneaux dans l'onglet Photos, sous la collecte ; chacun lit sa route à son affichage (la fiche ne les attend pas) et le nomme dans son entête",
-    /photos: \(\s*<>\s*<PanneauCollecte id=\{e\.id\} \{\.\.\.collecte\} \/>\s*<div className="eca-cartes eca-cartes--une eca-photos-suite">\s*<PanneauPersonnes id=\{e\.id\} liens=\{collecte\.parLien\.map\(\(l\) => \(\{ cle: l\.cle, nom: l\.nom \}\)\)\} \/>\s*<PanneauCorbeille id=\{e\.id\} migrationAbsente=\{ouvertureAbsente\} \/>/.test(fiche)
+    /photos: \(\s*<>\s*<PanneauCollecte id=\{e\.id\} \{\.\.\.collecte\} effacees=\{effacees\} \/>\s*<div className="eca-cartes eca-cartes--une eca-photos-suite">\s*<PanneauPersonnes id=\{e\.id\} liens=\{collecte\.parLien\.map\(\(l\) => \(\{ cle: l\.cle, nom: l\.nom \}\)\)\} \/>\s*<PanneauCorbeille id=\{e\.id\} migrationAbsente=\{ouvertureAbsente\} \/>/.test(fiche)
       && /useEffect\(\(\) => \{\s*if \(!migrationAbsente\) void lire\(\);\s*\}, \[lire, migrationAbsente\]\);/.test(pCorbeille) && /useEffect\(\(\) => \{\s*void lire\(\);\s*\}, \[lire\]\);/.test(pPersonnes)
       && /await fetch\(adresse, \{ cache: "no-store" \}\)/.test(pCorbeille) && /await fetch\(adresse, \{ cache: "no-store" \}\)/.test(pPersonnes));
   const sansCommentaires = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -6751,7 +6830,312 @@ async function verifDepotParticipant() {
 
 
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(() => {
+/* T-159, lot du 20/10 au soir : la fin de conservation, 30 jours apres « Marquer livree » (questions 4, 5 et 6).
+   Contre une FAUSSE base (`baseEnMemoire`) et un FAUX coffre en memoire : le vrai coffre n'est jamais touche. */
+async function verifRetention30() {
+  const Rs = await import("@/lib/collectif/retentionServeur");
+  const { phraseEvenement } = await import("@/lib/collectif/recit");
+  const { retentionAutoOuverte, VAR_RETENTION_AUTO } = await import("@/lib/collectif/interrupteur");
+  const Ec = await import("@/lib/collectif/echecs");
+  type Client = Parameters<typeof Rs.effacerEdition>[0];
+  const comme = (c: { from: (t: string) => RequeteMem }) => c as unknown as Client;
+  const silence = async <R>(f: () => Promise<R>): Promise<R> => {
+    const [e, l] = [console.error, console.log];
+    console.error = () => {};
+    console.log = () => {};
+    try {
+      return await f();
+    } finally {
+      console.error = e;
+      console.log = l;
+    }
+  };
+  const avantOuvert = process.env.COLLECTIF_OUVERT;
+  const avantAuto = process.env[VAR_RETENTION_AUTO];
+  const poser = (ouvert: string | undefined, auto: string | undefined) => {
+    if (ouvert === undefined) delete process.env.COLLECTIF_OUVERT;
+    else process.env.COLLECTIF_OUVERT = ouvert;
+    if (auto === undefined) delete process.env[VAR_RETENTION_AUTO];
+    else process.env[VAR_RETENTION_AUTO] = auto;
+  };
+
+  const MAINT = new Date("2026-11-30T12:00:00.000Z");
+  const ilYa = (j: number) => new Date(MAINT.getTime() - j * 86_400_000).toISOString();
+  const ed = (n: number) => `aaaaaaaa-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const ph = (n: number) => `bbbbbbbb-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const pe = (n: number) => `dddddddd-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const TR = "cccccccc-0000-4000-8000-000000000001";
+  const edition = (id: string, etat: string, livreeLe: string | null, extra: LigneMem = {}): LigneMem => ({
+    id, organisation: "Lycée Test", evenement: `Voyage ${id.slice(-2)}`, etat, cloture_le: ilYa(80), livraison: livreeLe ? { livree_le: livreeLe, adresse: "1 rue X" } : {},
+    archive_le: null, photos_supprimees_le: null, demo: false, created_at: ilYa(120), ...extra,
+  });
+  const photo = (e: string, n: number): LigneMem => ({
+    id: ph(n), edition_id: e, r2_key: clePhoto(e, ph(n), "image/jpeg"), vignette_key: cleVignette(e, ph(n)), cle_fichier: `s~IMG_${n}.jpg|1|2`, nom_origine: `IMG_${n}.jpg`,
+    appareil_id: "A".repeat(22), prise_le: "2026-10-01T10:00:00", appareil: "iPhone 15", gps_lat: 47.21, gps_lon: -1.55, empreinte: "f0f0", lieu_ville: "Nantes", lieu_pays: "France",
+    lieu_code_pays: "fr", deposant: "Léa Martin", accord_version: "2026-10-17", accord_le: ilYa(75), participant_id: pe(n), role_deposant: "participant", confirmee_le: ilYa(75),
+  });
+  const personne = (e: string, n: number): LigneMem => ({ id: pe(n), edition_id: e, email: `lea${n}@exemple.fr`, prenom: "Léa", nom: "Martin" });
+  const telephone = (e: string, n: number): LigneMem => ({ edition_id: e, appareil_id: `${"T".repeat(21)}${n}`, participant_id: pe(n) });
+  const coffreDe = (e: string, photos: LigneMem[]) => [
+    ...photos.flatMap((p) => [String(p.r2_key), String(p.vignette_key)]),
+    clePageTour(e, TR, 1, "webp"), cleGrisTour(e, TR), clePdfTour(e, TR), cleDocument(e, ph(900), "devis signé.pdf"),
+    clePieceJointe(e, ph(901), "programme.pdf"), cleContenu(e, ph(902), "logo.png"), `collectif/${e}/inconnu/a.bin`,
+  ];
+  /* Le FAUX coffre : la liste de ses objets, ce qu'on lui a demandé d'effacer, et un refus réglable. */
+  const coffreMem = (cles: readonly string[]) => {
+    const objets = new Set(cles);
+    const demandes: string[] = [];
+    const etat: { refuse: (k: string) => boolean } = { refuse: () => false };
+    const coffre: import("@/lib/collectif/retentionServeur").CoffreRetention = {
+      async lister(prefixe) {
+        return [...objets].filter((k) => k.startsWith(prefixe)).map((cle) => ({ cle, taille: 1000 }));
+      },
+      async effacer(prefixe, liste) {
+        const partis: string[] = [];
+        const rates: string[] = [];
+        for (const k of liste) {
+          demandes.push(k);
+          if (!k.startsWith(prefixe) || etat.refuse(k)) rates.push(k);
+          else {
+            objets.delete(k);
+            partis.push(k);
+          }
+        }
+        return { partis, rates };
+      },
+    };
+    return { coffre, objets, demandes, etat };
+  };
+  const jusqua = () => Date.now() + 60_000;
+
+  titre("— T-159 (20/10 soir) : le passage quotidien est COUPE par defaut —");
+  {
+    let touche = false;
+    const muette = comme({ from: () => { touche = true; throw new Error("aucune lecture attendue"); } });
+    const { coffre } = coffreMem([]);
+    poser("1", undefined);
+    const a = await silence(() => Rs.retentionQuotidienne(muette, jusqua(), coffre, MAINT));
+    poser("1", "peut-etre");
+    const b = await silence(() => Rs.retentionQuotidienne(muette, jusqua(), coffre, MAINT));
+    poser(undefined, "1");
+    const c = await silence(() => Rs.retentionQuotidienne(muette, jusqua(), coffre, MAINT));
+    poser("1", "0");
+    const d = await silence(() => Rs.retentionQuotidienne(muette, jusqua(), coffre, MAINT));
+    poser(avantOuvert, avantAuto);
+    ok("sans COLLECTIF_RETENTION_AUTO, avec une valeur incomprise, avec « 0 », ou sans COLLECTIF_OUVERT : `null`, et la base n'est pas meme LUE",
+      a === null && b === null && c === null && d === null && !touche);
+    const avant = console.error;
+    console.error = () => {};
+    const lu = [retentionAutoOuverte({}), retentionAutoOuverte({ [VAR_RETENTION_AUTO]: "peut-etre" }), retentionAutoOuverte({ [VAR_RETENTION_AUTO]: " OUI " }), retentionAutoOuverte({ [VAR_RETENTION_AUTO]: "1" })];
+    console.error = avant;
+    ok("l'interrupteur : absent et incompris = ferme ; « oui », « 1 » = ouvert", lu.join() === "false,false,true,true" && VAR_RETENTION_AUTO === "COLLECTIF_RETENTION_AUTO");
+  }
+
+  titre("— T-159 (20/10 soir) : ouvert, il efface UNE edition livree depuis 30 jours, et rien d'autre —");
+  {
+    const E1 = ed(1), E2 = ed(2), E3 = ed(3);
+    const p1 = [photo(E1, 1), photo(E1, 2), photo(E1, 3)];
+    const p2 = [photo(E2, 4)];
+    const base = baseEnMemoire({
+      collectif_editions: [edition(E1, "livree", ilYa(40)), edition(E2, "livree", ilYa(10)), edition(E3, "expediee", null)],
+      collectif_photos: [...p1, ...p2].map((p) => ({ ...p })),
+      collectif_participants: [personne(E1, 1), personne(E1, 2), personne(E2, 4)],
+      collectif_participants_appareils: [telephone(E1, 1), telephone(E1, 2), telephone(E2, 4)],
+    });
+    const m = coffreMem([...coffreDe(E1, p1), ...coffreDe(E2, p2), ...coffreDe(E3, [])]);
+    poser("1", "1");
+    const bilan = await silence(() => Rs.retentionQuotidienne(comme(base.client), jusqua(), m.coffre, MAINT));
+    const deuxieme = await silence(() => Rs.retentionQuotidienne(comme(base.client), jusqua(), m.coffre, MAINT));
+    poser(avantOuvert, avantAuto);
+    const eds = base.tables.collectif_editions as LigneMem[];
+    const marque = (id: string) => eds.find((e) => e.id === id)?.photos_supprimees_le ?? null;
+    ok("une seule candidate (livree il y a 40 j) ; celle d'il y a 10 j et l'expediee sont epargnees ; le marqueur porte l'heure du passage",
+      bilan !== null && bilan.candidates === 1 && bilan.effacees === 1 && marque(E1) === MAINT.toISOString() && marque(E2) === null && marque(E3) === null);
+    const restent = [...m.objets];
+    ok("au coffre de E1 partent photos, vignettes, rendus du BAT, piece jointe et contenu ; RESTENT le PDF du tour (Q5), le devis, la cle inconnue",
+      coffreDe(E1, p1).every((k) => (Retention.cleEffacee(k, E1) ? !m.objets.has(k) : m.objets.has(k)))
+        && m.objets.has(clePdfTour(E1, TR)) && m.objets.has(cleDocument(E1, ph(900), "devis signé.pdf")) && m.objets.has(`collectif/${E1}/inconnu/a.bin`));
+    ok("le coffre des deux autres editions n'est pas touche, et on n'a JAMAIS demande au coffre une cle gardee",
+      [...coffreDe(E2, p2), ...coffreDe(E3, [])].every((k) => restent.includes(k)) && m.demandes.length > 0 && m.demandes.every((k) => k.startsWith(`collectif/${E1}/`) && Retention.cleEffacee(k, E1)));
+    const lignes1 = (base.tables.collectif_photos as LigneMem[]).filter((p) => p.edition_id === E1);
+    ok("aucune ligne de photo supprimee ; l'image, le lieu, l'appareil, le nom de fichier VIDES ; le nom, la version et l'heure de l'accord, la cle effacee GARDES (Q7)",
+      lignes1.length === 3 && lignes1.every((l) => Object.keys(Retention.PATCH_PHOTO_EFFACEE).every((c) => l[c] === null))
+        && lignes1.every((l) => l.deposant === "Léa Martin" && l.accord_version === "2026-10-17" && typeof l.accord_le === "string" && typeof l.r2_key === "string"));
+    const ligne2 = (base.tables.collectif_photos as LigneMem[]).find((p) => p.edition_id === E2);
+    ok("…et la photo de l'edition encore dans le delai garde tout", ligne2?.nom_origine === "IMG_4.jpg" && ligne2?.gps_lat === 47.21 && ligne2?.vignette_key !== null);
+    ok("Q6 : les personnes de E1 (et leur adresse) et leurs telephones SUPPRIMES ; ceux de E2 restent",
+      (base.tables.collectif_participants as LigneMem[]).map((p) => p.edition_id).join() === E2 && (base.tables.collectif_participants_appareils as LigneMem[]).map((p) => p.edition_id).join() === E2);
+    const ordre = ["insert:collectif_evenements:retention_a_effacer", "delete:collectif_participants_appareils:2", "delete:collectif_participants:2", "update:collectif_photos:3", "update:collectif_editions:1", "insert:collectif_evenements:retention_effacee", "insert:collectif_evenements:coffre_efface"];
+    const i = ordre.map((t) => base.trace.indexOf(t));
+    ok("l'ORDRE (audit S7) : l'intention, les telephones, les personnes, les photos, le MARQUEUR, puis ce qui est regle, puis le resume", i.every((x) => x >= 0) && i.every((x, k) => k === 0 || i[k - 1] < x));
+    const evts = (base.tables.collectif_evenements as LigneMem[]).filter((e) => e.edition_id === E1);
+    const intention = evts.find((e) => e.type === "retention_a_effacer");
+    const regle = evts.find((e) => e.type === "retention_effacee");
+    const resume = evts.find((e) => e.type === "coffre_efface")?.payload as LigneMem | undefined;
+    const nEfface = coffreDe(E1, p1).filter((k) => Retention.cleEffacee(k, E1)).length;
+    ok("le journal : l'intention nomme les cles (et rien d'autre), le regle les memes, le resume compte (objets, personnes, telephones, `par: \"auto\"`) ; ni adresse, ni nom de fichier",
+      Array.isArray((intention?.payload as LigneMem)?.cles) && ((intention?.payload as LigneMem).cles as string[]).length === nEfface
+        && regle !== undefined && (regle.payload as LigneMem).evenement === intention?.id && ((regle.payload as LigneMem).cles as string[]).length === nEfface
+        && resume?.objets_effaces === nEfface && resume?.objets_restes === 0 && resume?.personnes_effacees === 2 && resume?.telephones_effaces === 2 && resume?.par === "auto" && resume?.delai_jours === 30
+        && !/@|IMG_/.test(JSON.stringify(evts.map((e) => e.payload))));
+    ok("jamais deux fois : le passage suivant ne trouve plus rien (deja effacee), aucune ecriture de plus",
+      deuxieme !== null && deuxieme.candidates === 0 && deuxieme.effacees === 0 && base.trace.filter((t) => t.startsWith("update:collectif_editions")).length === 1);
+    ok("le journal se lit en francais (fiche) : intention, regle, resume", ["retention_a_effacer", "retention_effacee", "coffre_efface"].every((t) => phraseEvenement(t, (evts.find((e) => e.type === t)?.payload ?? {}) as Record<string, unknown>) !== t));
+  }
+
+  titre("— T-159 (20/10 soir) : borne a deux editions par passage, la plus ancienne livraison d'abord —");
+  {
+    const ids = [ed(11), ed(12), ed(13)];
+    const base = baseEnMemoire({ collectif_editions: [edition(ids[0], "livree", ilYa(35)), edition(ids[1], "livree", ilYa(50)), edition(ids[2], "livree", ilYa(40))] });
+    const m = coffreMem([]);
+    poser("1", "1");
+    const bilan = await silence(() => Rs.retentionQuotidienne(comme(base.client), jusqua(), m.coffre, MAINT));
+    poser(avantOuvert, avantAuto);
+    const marquees = (base.tables.collectif_editions as LigneMem[]).filter((e) => e.photos_supprimees_le).map((e) => e.id);
+    ok("trois eligibles : deux effacees (livrees il y a 50 et 40 j), la troisieme attend le lendemain",
+      bilan?.candidates === 2 && bilan?.effacees === 2 && marquees.sort().join() === [ids[1], ids[2]].sort().join());
+  }
+
+  titre("— T-159 (20/10 soir) : ce qui resiste au coffre reste dans l'intention, la reprise le retente (et n'attend que 15 minutes) —");
+  {
+    const E1 = ed(21);
+    const p1 = [photo(E1, 31), photo(E1, 32)];
+    const base = baseEnMemoire({ collectif_editions: [edition(E1, "livree", ilYa(45))], collectif_photos: p1.map((p) => ({ ...p })) });
+    const m = coffreMem(coffreDe(E1, p1));
+    const vignettes = p1.map((p) => String(p.vignette_key));
+    m.etat.refuse = (k) => vignettes.includes(k);
+    const r = await silence(() => Rs.effacerEdition(comme(base.client), E1, { delai: 30, maintenant: MAINT, par: "script", coffre: m.coffre, jusqua: jusqua() }));
+    ok("le coffre refuse deux vignettes : l'edition est effacee (marquee), deux objets RESTENT, l'echec est note (`echec`, quoi « retention »)",
+      r.statut === "effacee" && r.restes === 2 && vignettes.every((k) => m.objets.has(k)) && (base.tables.collectif_editions as LigneMem[])[0].photos_supprimees_le === MAINT.toISOString()
+        && (base.tables.collectif_evenements as LigneMem[]).some((e) => e.type === "echec" && (e.payload as LigneMem).quoi === "retention"));
+    const regle = (base.tables.collectif_evenements as LigneMem[]).find((e) => e.type === "retention_effacee");
+    ok("…et le regle NE nomme PAS les deux vignettes restees", regle !== undefined && vignettes.every((k) => !((regle.payload as LigneMem).cles as string[]).includes(k)));
+    m.etat.refuse = () => false;
+    const trop = await silence(() => Rs.reprendreRetention(comme(base.client), jusqua(), new Date("2026-10-20T08:10:00.000Z"), m.coffre));
+    ok("une reprise moins de 15 minutes apres l'intention ne touche a rien (l'effacement pourrait etre en cours)", trop !== null && trop.intentions === 0 && vignettes.every((k) => m.objets.has(k)));
+    const reprise = await silence(() => Rs.reprendreRetention(comme(base.client), jusqua(), new Date("2026-10-20T09:00:00.000Z"), m.coffre));
+    const fin = await silence(() => Rs.reprendreRetention(comme(base.client), jusqua(), new Date("2026-10-20T10:00:00.000Z"), m.coffre));
+    ok("passe 15 minutes : la reprise efface les deux vignettes, les regle (`reprise: true`), et la suivante n'a plus rien a faire",
+      reprise?.effaces === 2 && reprise?.restes === 0 && vignettes.every((k) => !m.objets.has(k)) && fin?.intentions === 0
+        && (base.tables.collectif_evenements as LigneMem[]).some((e) => e.type === "retention_effacee" && (e.payload as LigneMem).reprise === true));
+  }
+
+  titre("— T-159 (20/10 soir) : une base qui refuse avant le marqueur n'a RIEN touche au coffre ; le passage suivant rejoue tout —");
+  {
+    const E1 = ed(41);
+    const p1 = [photo(E1, 51)];
+    const lignes = { collectif_editions: [edition(E1, "livree", ilYa(60))], collectif_photos: p1.map((p) => ({ ...p })), collectif_participants: [personne(E1, 51)], collectif_participants_appareils: [telephone(E1, 51)] };
+    const sansJournal = baseEnMemoire(structuredClone(lignes), (q) => (q.table === "collectif_evenements" && q.op === "insert" && (q.payload as LigneMem)?.type === "retention_a_effacer" ? { code: "XX000", message: "panne" } : null));
+    const m0 = coffreMem(coffreDe(E1, p1));
+    const r0 = await silence(() => Rs.effacerEdition(comme(sansJournal.client), E1, { delai: 30, maintenant: MAINT, par: "script", coffre: m0.coffre }));
+    ok("l'intention ne s'ecrit pas : refus « journal », aucune suppression, aucune mise a jour, rien demande au coffre",
+      r0.statut === "refusee" && r0.etape === "journal" && !sansJournal.trace.some((t) => /^(delete|update):/.test(t)) && m0.demandes.length === 0);
+    const enPanne = { oui: true };
+    const base = baseEnMemoire(structuredClone(lignes), (q) => (q.table === "collectif_photos" && q.op === "update" && enPanne.oui ? { code: "XX000", message: "panne" } : null));
+    const m = coffreMem(coffreDe(E1, p1));
+    const r1 = await silence(() => Rs.effacerEdition(comme(base.client), E1, { delai: 30, maintenant: MAINT, par: "script", coffre: m.coffre }));
+    ok("les photos refusent : refus « photos », marqueur NON pose, coffre intact (rien demande), l'intention reglee « gardee »",
+      r1.statut === "refusee" && r1.etape === "photos" && (base.tables.collectif_editions as LigneMem[])[0].photos_supprimees_le === null && m.demandes.length === 0
+        && coffreDe(E1, p1).every((k) => m.objets.has(k)) && (base.tables.collectif_evenements as LigneMem[]).some((e) => e.type === "retention_effacee" && (e.payload as LigneMem).gardees === true));
+    const reprise = await silence(() => Rs.reprendreRetention(comme(base.client), jusqua(), new Date("2026-12-31T00:00:00.000Z"), m.coffre));
+    ok("la reprise ne retente pas une intention reglee « gardee » (l'edition n'est pas marquee : ses cles ne sont pas libres)", reprise?.intentions === 0 && m.demandes.length === 0);
+    enPanne.oui = false;
+    const r2 = await silence(() => Rs.effacerEdition(comme(base.client), E1, { delai: 30, maintenant: MAINT, par: "script", coffre: m.coffre }));
+    ok("la panne passee, le passage suivant rejoue tout et efface", r2.statut === "effacee" && (base.tables.collectif_editions as LigneMem[])[0].photos_supprimees_le === MAINT.toISOString() && !m.objets.has(String(p1[0].r2_key)));
+  }
+
+  titre("— T-159 (20/10 soir) : la reprise n'efface JAMAIS une edition non marquee, ni une cle gardee glissee dans une intention —");
+  {
+    const NON = ed(61), OUI = ed(62), AUTRE = ed(63);
+    const pNon = [photo(NON, 71)], pOui = [photo(OUI, 72)];
+    const base = baseEnMemoire({
+      collectif_editions: [edition(NON, "livree", ilYa(5)), edition(OUI, "livree", ilYa(60), { photos_supprimees_le: ilYa(1) })],
+      collectif_evenements: [
+        { id: "e-non", edition_id: NON, type: "retention_a_effacer", payload: { cles: [String(pNon[0].r2_key)] }, created_at: "2026-10-01T00:00:00.000Z" },
+        { id: "e-oui", edition_id: OUI, type: "retention_a_effacer", payload: { cles: [String(pOui[0].r2_key), clePdfTour(OUI, TR), cleDocument(OUI, ph(1), "f.pdf"), clePhoto(AUTRE, ph(2), "image/jpeg"), `collectif/${OUI}/../x`] }, created_at: "2026-10-01T00:00:00.000Z" },
+      ],
+    });
+    const m = coffreMem([...coffreDe(NON, pNon), ...coffreDe(OUI, pOui), clePhoto(AUTRE, ph(2), "image/jpeg")]);
+    const r = await silence(() => Rs.reprendreRetention(comme(base.client), jusqua(), MAINT, m.coffre));
+    ok("l'edition NON marquee garde sa photo ; l'intention est reglee « gardee »",
+      m.objets.has(String(pNon[0].r2_key)) && (base.tables.collectif_evenements as LigneMem[]).some((e) => e.edition_id === NON && e.type === "retention_effacee" && (e.payload as LigneMem).gardees === true));
+    ok("l'edition marquee : seule SA photo part ; le PDF du tour, le document, la photo d'une autre edition, le « .. » ne sont meme pas demandes au coffre",
+      r !== null && !m.objets.has(String(pOui[0].r2_key)) && m.objets.has(clePdfTour(OUI, TR)) && m.objets.has(clePhoto(AUTRE, ph(2), "image/jpeg")) && m.demandes.join() === String(pOui[0].r2_key));
+    ok("lireClesRetention : seulement des cles de l'edition, d'une famille effacee, sans « .. », sans doublon",
+      Retention.lireClesRetention([String(pOui[0].r2_key), String(pOui[0].r2_key), clePdfTour(OUI, TR), `collectif/${OUI}/../x`, 12, null, "x".repeat(400)], OUI).join() === String(pOui[0].r2_key)
+        && Retention.lireClesRetention("pas une liste", OUI).length === 0 && Retention.clesLibresRetention([String(pOui[0].r2_key)], OUI, null).length === 0);
+  }
+
+  titre("— T-159 (20/10 soir) : le plan, les phrases, l'echec nomme —");
+  {
+    const E1 = ed(81);
+    const plan = Retention.planEffacement([{ cle: clePhoto(E1, ph(1), "image/jpeg"), taille: 10 }, { cle: clePhoto(E1, ph(1), "image/jpeg"), taille: 10 }, { cle: clePdfTour(E1, TR), taille: 5 }], E1);
+    ok("planEffacement : une cle en double ne compte qu'une fois ; le PDF du tour est garde, compte a part", plan.aEffacer.length === 1 && plan.gardes === 1 && plan.parFamille.photos.n === 1 && plan.parFamille.pdf_tour.octets === 5);
+    ok("« Les photos de cette édition ont été supprimées le 21 novembre 2026 » ; le 30/11 a 23 h 30 UTC est le 1er décembre a Paris ; rien sans date",
+      Retention.phrasePhotosEffacees("2026-11-21T10:00:00.000Z") === "Les photos de cette édition ont été supprimées le 21 novembre 2026"
+        && Retention.phrasePhotosEffacees("2026-11-30T23:30:00.000Z") === "Les photos de cette édition ont été supprimées le 1er décembre 2026"
+        && Retention.phrasePhotosEffacees(null) === null && Retention.phraseBatEfface(undefined) === null
+        && Retention.phraseBatEfface("2026-11-21T10:00:00.000Z") === "Les pages du bon à tirer ont été supprimées avec les photos le 21 novembre 2026"
+        && Retention.phraseFichierEfface("2026-11-21T10:00:00.000Z") === "Fichier supprimé le 21 novembre 2026");
+    ok("l'echec a son nom dans la sante (« retention »)", (Ec.QUOI_ECHEC as readonly string[]).includes("retention") && Ec.payloadEchec("retention", { etape: "coffre", n: 2 }).quoi === "retention");
+    ok("Q6 decidee : les deux tables des personnes, telephones d'abord", Retention.TABLES_PERSONNES_EFFACEES.join() === "collectif_participants_appareils,collectif_participants");
+  }
+
+  titre("— Q5 (20/10 soir) : le PDF du magazine termine, GARDE 10 ans apres la livraison ; la regle est ecrite, RIEN ne l'applique —");
+  {
+    const V = (etat: string, livree_le: string | null, quand: string, extra: Partial<Retention.EditionPourRetention> = {}) =>
+      Retention.verdictConservationPdf({ etat, cloture_le: null, livraison: livree_le ? { livree_le } : {}, ...extra }, new Date(quand));
+    ok("10 ans (decision de Mathias) ; le PDF des tours reste dans les familles GARDEES, et sa raison le dit",
+      Retention.CONSERVATION_PDF_MAGAZINE_ANS === 10 && !Retention.FAMILLES.pdf_tour.efface && /10 ans/.test(Retention.FAMILLES.pdf_tour.pourquoi) && /accord du client/.test(Retention.FAMILLES.pdf_tour.pourquoi));
+    ok("la fin : la meme date dix ans plus tard ; un 29 fevrier donne le 1er mars (un jour de plus, jamais un de moins) ; une date sans fuseau, rien",
+      Retention.finConservationPdf("2026-11-20T10:00:00.000Z") === Date.parse("2036-11-20T10:00:00.000Z")
+        && Retention.finConservationPdf("2028-02-29T10:00:00.000Z") === Date.parse("2038-03-01T10:00:00.000Z") && Retention.finConservationPdf("2026-11-20T10:00") === null);
+    const a = V("livree", "2026-11-20T10:00:00.000Z", "2036-11-20T09:59:59.999Z");
+    const b = V("livree", "2026-11-20T10:00:00.000Z", "2036-11-20T10:00:00.000Z");
+    ok("une milliseconde avant les dix ans : garde (et la fin est dite) ; a dix ans pile : effacable",
+      !a.effacable && a.motif === "dans_les_dix_ans" && a.finLe === "2036-11-20T10:00:00.000Z" && b.effacable && b.finLe === "2036-11-20T10:00:00.000Z");
+    ok("pas livree (meme quarante ans apres une date au jsonb), livree sans date, etat inconnu : garde",
+      ["preparation", "bat", "impression", "expediee"].every((s) => { const v = V(s, "1990-01-01T00:00:00.000Z", "2036-12-01T00:00:00.000Z"); return !v.effacable && v.motif === "non_livree"; })
+        && (() => { const v = V("livree", null, "2050-01-01T00:00:00.000Z"); return !v.effacable && v.motif === "livree_sans_date"; })()
+        && (() => { const v = V("perdue", "2026-11-20T10:00:00.000Z", "2050-01-01T00:00:00.000Z"); return !v.effacable && v.motif === "etat_inconnu"; })());
+    ok("le marqueur des PHOTOS ne decide rien pour le PDF : effacees il y a un an, le PDF reste dans ses dix ans",
+      (() => { const v = V("livree", "2026-11-20T10:00:00.000Z", "2027-12-01T00:00:00.000Z", { photos_supprimees_le: "2026-12-20T10:00:00.000Z" }); return !v.effacable && v.motif === "dans_les_dix_ans"; })());
+    const fichiers = [...fichiersParSuffixe("src", /\.tsx?$/), ...fichiersParSuffixe("scripts", /\.(ts|mjs)$/)].filter((f) => f !== "src/lib/collectif/retention.ts" && f !== "scripts/verif-collectif.ts");
+    ok("SANS AUCUN EFFET : ni un module, ni un script, ni une route n'appelle la regle des dix ans",
+      fichiers.every((f) => !/verdictConservationPdf|finConservationPdf|CONSERVATION_PDF_MAGAZINE_ANS/.test(lire(f))));
+  }
+
+  titre("— T-159 (20/10 soir) : les ecrans lisent `photos_supprimees_le` (une edition effacee le DIT, au lieu de vignettes vides) —");
+  {
+    const code = (f: string) => lire(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const pagePhotos = code("src/app/edition/[token]/photos/page.tsx");
+    ok("la page Photos de l'espace : la phrase (Verrou) AVANT le rattrapage, les en-tetes et la grille",
+      /const effacees = phrasePhotosEffacees\(edition\.photos_supprimees_le\)\s*if \(effacees\) return <Verrou titre="Les photos" raison=\{effacees\} \/>/.test(pagePhotos)
+        && pagePhotos.indexOf("phrasePhotosEffacees(") < pagePhotos.indexOf("after(") && pagePhotos.indexOf("phrasePhotosEffacees(") < pagePhotos.indexOf("<Collecte"));
+    const bat = code("src/app/edition/[token]/bat/page.tsx");
+    ok("le bon a tirer de l'espace : la phrase AVANT de signer la moindre page", /const batEfface = phraseBatEfface\(edition\.photos_supprimees_le\)\s*if \(batEfface\) return <Verrou titre="Bon à tirer" raison=\{batEfface\} \/>/.test(bat) && bat.indexOf("phraseBatEfface(") < bat.indexOf("chargerBat("));
+    const carte = code("src/app/edition/[token]/CartePhotos.tsx");
+    ok("le tableau de bord : la phrase a la place des dossiers et de la mosaique",
+      /effacees=\{phrasePhotosEffacees\(edition\.photos_supprimees_le\)\}/.test(code("src/app/edition/[token]/page.tsx")) && /\{p\.effacees \? \(\s*<p className="ec-texte ec-tdb-effacees">\{p\.effacees\}\.<\/p>\s*\) : \(/.test(carte) && /p\.mosaique\.length && !p\.effacees/.test(carte));
+    for (const [f, avant] of [["src/app/api/collectif/photos/route.ts", "makeSupabase()"], ["src/app/api/collectif/depot/album/route.ts", "makeSupabase()"], ["src/app/api/admin/collectif/editions/[id]/lot/route.ts", "lireHorsCorbeille("]] as const) {
+      const c = code(f);
+      ok(`${f.replace("src/app/api/", "")} : 410 \`photos_effacees\` avec la phrase, avant de lire ou signer une photo`,
+        /if \(effacees\) return NextResponse\.json\(\{ error: "photos_effacees", message: `\$\{effacees\}[^`]*` \}, \{ status: 410 \}\);/.test(c) && c.indexOf('error: "photos_effacees"') < c.indexOf(avant, c.indexOf("phrasePhotosEffacees(")));
+    }
+    const panneau = code("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
+    ok("la fiche : la phrase dans la collecte (vue d'ensemble et onglet Photos), tous les telechargements eteints",
+      /const ferme = occupe \|\| Boolean\(effacees\);/.test(panneau) && !/disabled=\{occupe/.test(panneau) && (panneau.match(/disabled=\{ferme/g) ?? []).length === 4
+        && /const effacees = phrasePhotosEffacees\(e\.photos_supprimees_le\);/.test(code("src/app/admin/collectif/[id]/page.tsx")));
+    ok("le bon a tirer de l'atelier : la phrase au lieu des pages rendues ; l'edition lue porte le marqueur",
+      /phraseBatEfface\(bat\.edition\.photos_supprimees_le\) \? \(/.test(code("src/app/admin/collectif/[id]/bat/page.tsx")) && /archive_le, photos_supprimees_le"\)/.test(code("src/app/admin/collectif/donnees.ts")));
+    ok("les contenus envoyes : plus signes une fois effaces (espace et fiche), le nom reste et « Fichier supprimé le … » se lit",
+      /const \[url, telecharger\] = efface \? \[null, null\] :/.test(code("src/app/edition/[token]/donnees.ts")) && /e\.efface \? ` · \$\{e\.efface\}` : null/.test(code("src/app/edition/[token]/LigneContenus.tsx"))
+        && /if \(c\.r2_key && !edition\.photos_supprimees_le\) \{/.test(code("src/app/admin/collectif/donnees.ts")));
+  }
+}
+
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

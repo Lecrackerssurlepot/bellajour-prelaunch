@@ -292,7 +292,10 @@ function FenetreContenu({
               </span>
               <span className="ec-envoi-recu-texte">
                 <strong>{e.nom ?? contenu.libelle}</strong>
-                <span className="ec-note">Envoyé le {e.recuLe}</span>
+                <span className="ec-note">
+                  Envoyé le {e.recuLe}
+                  {e.efface ? ` · ${e.efface}` : null}
+                </span>
               </span>
               <span className="ec-envoi-recu-gestes">
                 {e.url ? (

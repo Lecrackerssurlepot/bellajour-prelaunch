@@ -29,7 +29,7 @@
 export const EVT_ECHEC = "echec";
 
 /** Le geste qui a échoué. Une entrée de plus = une ligne ici et sa phrase dans `LIBELLE_QUOI`. */
-export const QUOI_ECHEC = ["declaration", "confirmation", "rattrapage", "vignette", "corbeille"] as const;
+export const QUOI_ECHEC = ["declaration", "confirmation", "rattrapage", "vignette", "corbeille", "retention"] as const;
 export type QuoiEchec = (typeof QUOI_ECHEC)[number];
 
 /** L'étape qui a échoué : lire la base, joindre le coffre, écrire en base. */
@@ -42,6 +42,7 @@ const LIBELLE_QUOI = new Map<string, string>([
   ["rattrapage", "rattrapage des photos en erreur"],
   ["vignette", "vignette non fabriquée"],
   ["corbeille", "effacement de photos de la corbeille impossible"],
+  ["retention", "effacement de fin de conservation incomplet (30 jours après la livraison)"],
 ]);
 
 const LIBELLE_ETAPE = new Map<string, string>([

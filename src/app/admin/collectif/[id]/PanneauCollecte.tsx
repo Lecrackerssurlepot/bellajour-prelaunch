@@ -38,7 +38,10 @@ export default function PanneauCollecte({
   terminee,
   apercus,
   doublons,
+  effacees = null,
 }: {
+  /** T-159 : « Les photos de cette édition ont été supprimées le … » ; les téléchargements s'éteignent. */
+  effacees?: string | null;
   id: string;
   total: number;
   participants: number;
@@ -143,6 +146,8 @@ export default function PanneauCollecte({
     });
 
   const n = (x: number, mot: string) => `${x.toLocaleString("fr-FR")} ${mot}${x > 1 ? "s" : ""}`;
+  /* T-159 : une édition effacée n'a plus de lot au coffre ; les téléchargements s'éteignent (la route répond 410). */
+  const ferme = occupe || Boolean(effacees);
   /* T-185 (planche 7) : trois cartes, comme la vue d'ensemble. Les grands chiffres et les
      dernières arrivées ; la sélection du client (T-182) ; qui a déposé, et le lot. */
   return (
@@ -151,7 +156,11 @@ export default function PanneauCollecte({
         <span className="eca-carte-tete">
           <h2 className="eca-carte-titre">La collecte</h2>
         </span>
-        {terminee ? (
+        {effacees ? (
+          <p className="eca-bandeau">
+            <strong>{effacees}.</strong> Restent en base le nom de chaque déposant et la preuve de son accord ; le PDF de chaque tour et les documents restent au coffre.
+          </p>
+        ) : terminee ? (
           <p className="eca-bandeau eca-bandeau--ok">
             <strong>Collecte terminée par {terminee.par}</strong> le {formaterInstantParis(terminee.le)} : toutes les photos sont là.
           </p>
@@ -169,13 +178,13 @@ export default function PanneauCollecte({
             ))}
           </div>
         ) : (
-          <p className="eca-vide">{total ? "Pas encore d'aperçu à montrer." : "Aucune photo encore."}</p>
+          <p className="eca-vide">{effacees ? "Plus d'aperçu : les photos sont effacées." : total ? "Pas encore d'aperçu à montrer." : "Aucune photo encore."}</p>
         )}
         <span className="eca-carte-pied eca-puces">
           {doublons ? <span className="eca-puce">{n(doublons, "doublon")}</span> : null}
           {signalees ? <span className="eca-puce eca-puce--ambre">{n(signalees, "signalée")} « à ne pas publier »</span> : null}
-          {sansVignette ? <span className="eca-puce">{sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
-          {!doublons && !signalees && !sansVignette ? <span>Ni doublon, ni photo signalée.</span> : null}
+          {sansVignette && !effacees ? <span className="eca-puce">{sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
+          {!doublons && !signalees && (!sansVignette || effacees) ? <span>Ni doublon, ni photo signalée.</span> : null}
         </span>
       </section>
 
@@ -195,7 +204,7 @@ export default function PanneauCollecte({
         )}
         <span className="eca-carte-pied eca-mag-pied">
           <span>{selection ? "Ce qu'il préfère, pour composer." : "Rien de choisi pour l'instant."}</span>
-          <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe || selection === 0} onClick={() => telecharger({ selection: true })}>
+          <button type="button" className="adm-btn adm-btn--ghost" disabled={ferme || selection === 0} onClick={() => telecharger({ selection: true })}>
             Télécharger la sélection
           </button>
         </span>
@@ -204,7 +213,7 @@ export default function PanneauCollecte({
       <section className="eca-carte eca-carte--large">
         <span className="eca-carte-tete eca-carte-tete--gestes">
           <h2 className="eca-carte-titre">Qui a déposé</h2>
-          <button type="button" className="adm-btn" disabled={occupe || total === 0} onClick={() => telecharger({})}>
+          <button type="button" className="adm-btn" disabled={ferme || total === 0} onClick={() => telecharger({})}>
             Télécharger tout le lot
           </button>
         </span>
@@ -234,7 +243,7 @@ export default function PanneauCollecte({
                       </span>
                     </button>
                     {l.retire ? <span className="eca-puce eca-puce--gris">Supprimé</span> : null}
-                    <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe || l.n === 0} onClick={() => telecharger({ lien: l.cle })}>
+                    <button type="button" className="adm-btn adm-btn--ghost" disabled={ferme || l.n === 0} onClick={() => telecharger({ lien: l.cle })}>
                       Télécharger ce lien
                     </button>
                   </div>
@@ -247,7 +256,7 @@ export default function PanneauCollecte({
                             {p.telephones ? <span className="eca-sous">{p.telephones} téléphones</span> : null}
                           </span>
                           <span className="eca-dep-pers-n">{n(p.n, "photo")}</span>
-                          <button type="button" className="adm-btn adm-btn--ghost" disabled={occupe} onClick={() => telecharger({ lien: l.cle, personne: p.cle })}>
+                          <button type="button" className="adm-btn adm-btn--ghost" disabled={ferme} onClick={() => telecharger({ lien: l.cle, personne: p.cle })}>
                             Télécharger
                           </button>
                         </li>

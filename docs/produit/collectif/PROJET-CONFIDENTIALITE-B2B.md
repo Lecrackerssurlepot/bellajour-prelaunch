@@ -318,6 +318,31 @@ directive ePrivacy (art. 5.3).*
 5. la corbeille de 30 jours (décision du 20/10) : quand elle existera, son effacement sera une
    seconde règle de `retention.ts`, passée par le même script et la même porte.
 
+### 4 bis. Mise à jour du 20/10 au soir (décisions de Mathias, Q4, Q5, Q6)
+
+Ce qui précède décrit le lot du 20/10 après-midi ; voici ce qui a changé (branche
+`feat/effacements-30-et-90-jours`, non fusionnée) :
+- **Q4, le délai** : 30 jours après « Marquer livrée », écrit dans le code (`DELAI_RETENTION_JOURS`) ;
+  `--jours` ne sert plus qu'à regarder (jamais plus court que 30 pour effacer). Le script reste le
+  geste manuel des premières fois ; un passage quotidien après la relève suit le même chemin, **coupé**
+  tant que `COLLECTIF_RETENTION_AUTO` n'est pas posé. La promesse « 30 jours » ne sera vraie au jour
+  près qu'une fois ce passage ouvert (à défaut, « au plus tard » le prochain passage manuel).
+- **Q5, le PDF du magazine terminé** : GARDÉ **10 ans après la livraison**, jamais réutilisé sans
+  l'accord du client. La règle des dix ans est écrite (`verdictConservationPdf`), rien ne l'applique.
+  Proposition non décidée : seul le PDF du DERNIER tour d'un magazine validé a besoin des dix ans ;
+  ceux des tours précédents pourraient partir avec les photos. Tant que ce n'est pas tranché, la phrase
+  « vos photos sont supprimées » reste fausse pour les photos retenues dans le magazine : la politique
+  doit le dire (« le fichier du magazine imprimé est conservé 10 ans »).
+- **Q6, l'adresse e-mail des participants** : supprimée avec les photos (les lignes
+  `collectif_participants` et `collectif_participants_appareils` partent ; la preuve de l'accord, Q7,
+  reste sur les photos). ⚠️ Le journal garde l'adresse MASQUÉE et les noms (C3, non tranché).
+- **L'ordre** est désormais celui de l'audit S7 (intention au journal, base, marqueur en dernier, puis
+  le coffre, reprise de ce qui résiste) ; la porte est `supprimerClesEdition`, qui relit `FAMILLES`.
+- **Le prérequis 1 est fait** : les écrans de l'espace et de la fiche lisent `photos_supprimees_le`
+  (sauf les pièces jointes des messages, qui se signent encore). Les prérequis 2, 3 et 4 restent.
+- **Lecture réelle du 20/10 au soir** (sans `--vraiment`) : 11 éditions, 10 pas livrées, 1 livrée il y
+  a 7 jours : aucune à effacer.
+
 ---
 
 ## 5. Le texte d'accord du dépôt : proposition de nouvelle version
@@ -410,6 +435,7 @@ de Santa Helena, 21A, 2.º, 1100-117 Lisbonne, Portugal (« Bellajour », sous-t
 - La localisation de Geoapify et le cadre du compte Google (Workspace ou non).
 - L'imprimeur des éditions collectives.
 - Toutes les qualifications juridiques de ce fichier, et les durées marquées « à fixer ».
-- `photos_supprimees_le` n'est encore lu par aucun écran (prérequis du premier `--vraiment`).
+- `photos_supprimees_le` est lu par les écrans depuis le 20/10 au soir (§4 bis), sauf les pièces
+  jointes des messages.
 - Les trois décisions du 20/10 (e-mail du participant, album du lien, corbeille) ne sont pas
   codées : la politique ne doit les annoncer qu'une fois en ligne.

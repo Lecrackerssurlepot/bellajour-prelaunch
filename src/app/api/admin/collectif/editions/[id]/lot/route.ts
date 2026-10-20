@@ -10,6 +10,7 @@ import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { dossierDuLot, nomsDuLotCollectif } from "@/lib/collectif/lotCollectif";
 import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
+import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 
 /**
  * POST /api/admin/collectif/editions/[id]/lot — les photos à télécharger,
@@ -82,6 +83,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
      magazine sans les autres. Une photo arrivée PENDANT la lecture s'ajoute à la fin (tri
      par `confirmee_le`) : lire plus que le compte n'est pas une perte, lire moins en est une. */
   const supabase = makeSupabase();
+  /* T-159 : une édition effacée (30 jours après la livraison) n'a plus de photos au coffre : le lot
+     ne signerait que des adresses vers rien. La phrase revient à la fiche, qui l'affiche. */
+  const marque = await supabase.from("collectif_editions").select("photos_supprimees_le").eq("id", id).maybeSingle<{ photos_supprimees_le: string | null }>();
+  if (marque.error && tableAbsente(marque.error.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
+  const effacees = phrasePhotosEffacees(marque.data?.photos_supprimees_le);
+  if (effacees) return NextResponse.json({ error: "photos_effacees", message: `${effacees} : il n'y a plus de lot à télécharger.` }, { status: 410 });
   /* Hors corbeille (migration 20261023) : une photo supprimée ne part pas dans le lot ; sans la
      colonne, le compte et les lignes se lisent sans le filtre. Le compte et la lecture suivent
      LA MÊME règle (`avec` est retenu) : sinon `lot_incomplet` se tromperait. */

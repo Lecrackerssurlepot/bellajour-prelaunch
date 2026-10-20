@@ -22,6 +22,7 @@ import { lireTailles, srcSetDe } from "@/lib/collectif/styles";
 import { arbreDesPhotos, compterPersonnes, plafondDuLien } from "@/lib/collectif/dossiers";
 import { COLONNES_RESUME, couvertureDe, enLignesPesees, resumeAbsent, resumerPhotos, somme, VUE_RESUME, type LigneResume } from "@/lib/collectif/resumePhotos";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
+import { phraseFichierEfface } from "@/lib/collectif/retention";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { compteAgenda } from "@/lib/collectif/agenda";
 import { lireMessages } from "@/lib/collectif/messagerie";
@@ -147,6 +148,8 @@ export type EnvoiClient = {
   /** L'adresse qui TÉLÉCHARGE sous le nom d'origine (la visionneuse, T-152). */
   telecharger: string | null;
   reponses: Record<string, string> | null;
+  /** T-159 : « Fichier supprimé le … » quand l'édition est effacée (le nom reste, le fichier non) ; sinon `null`. */
+  efface: string | null;
 };
 
 /**
@@ -158,8 +161,10 @@ export type EnvoiClient = {
  * d'une demande que l'atelier a retirée ne se montre plus au client (il reste
  * à l'atelier).
  */
-export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_demandes">): Promise<EnvoiClient[]> {
+export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_demandes"> & { photos_supprimees_le?: string | null }): Promise<EnvoiClient[]> {
   const editionId = edition.id;
+  /* T-159 : une édition effacée ne signe plus ses envois (les objets sont partis) ; leur nom reste. */
+  const efface = phraseFichierEfface(edition.photos_supprimees_le);
   const demandes = lireDemandes(edition.contenus_demandes);
   const supabase = makeSupabase();
   const colonnes = "id, type, r2_key, nom_origine, reponses, recu_le";
@@ -175,7 +180,7 @@ export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_de
   const courants = [...envoisCourants(lignes, (type) => modeDeLEnvoi(type, demandes)).values()].flat();
   return Promise.all(
     courants.map(async (l) => {
-      const [url, telecharger] = await Promise.all([signerOuRien(l.r2_key), signerTelechargement(l.r2_key, l.nom_origine)]);
+      const [url, telecharger] = efface ? [null, null] : await Promise.all([signerOuRien(l.r2_key), signerTelechargement(l.r2_key, l.nom_origine)]);
       return {
         id: l.id,
         type: l.type,
@@ -186,6 +191,7 @@ export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_de
         apercu: url && apercuPossible(l.nom_origine) ? url : null,
         telecharger,
         reponses: l.reponses,
+        efface: l.r2_key ? efface : null,
       };
     })
   );

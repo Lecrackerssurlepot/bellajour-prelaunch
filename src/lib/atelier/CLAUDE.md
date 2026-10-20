@@ -38,6 +38,21 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   **uniquement** pour les dossiers retenus par `meriteUnRegardDeRetention` — un pré-tri qui calcule
   sur un majorant, donc ne peut rien laisser passer. Le module qui AGIT est
   `scripts/anonymiser-dossiers.ts`, et lui seul : aucune route web, aucun cron.
+  **Seconde règle, les dossiers LIVRÉS (T-203, 20/10/2026)** : la politique de confidentialité en
+  ligne (§7) promet « Photos téléversées + fichier HD : supprimées 90 jours après la livraison »
+  (`RETENTION_LIVRE_JOURS`). Ce n'est PAS une anonymisation : la ligne, l'état, le prix, l'adresse,
+  le token, la facture et les aperçus restent ; partent les photos, le PDF d'impression et le PDF
+  souvenir (`FAMILLES_LIVRE` ; « fichier HD » = la « version digitale HD » des CGV art. 1.2 ET le
+  fichier d'impression, à confirmer par Mathias : le client perd son téléchargement au 90e jour).
+  ⚠️ **La date de livraison vit au JOURNAL** (`dateDeLivraison` : le DERNIER `etat_change` vers
+  `livree`, posé par « Marquer livrée » ou le webhook Cloudprinter) ; sans elle, on n'efface pas
+  (`livre_sans_date`). Le marqueur est `numeros.photos_supprimees_le` (migration
+  `20261024_atelier_retention_livres.sql`, ÉCRITE, pas appliquée) : lecture repliée, écriture
+  REFUSÉE sans lui. L'ordre est celui de l'audit S7 (`retentionLivres.ts`, `effacerDossierLivre` :
+  intention, base, marqueur en dernier, coffre, reprise `reprendreLivres`). Seul appelant :
+  `scripts/retention-livres.ts`. **Aucun automatisme** : ni route, ni cron, ni relève, ni
+  interrupteur ; il attend Mathias. ⚠️ Les écrans des particuliers (fiche, `/numero`, `/compte`)
+  ne lisent pas encore le marqueur : prérequis du premier `--vraiment`.
 
 - **`relance.ts`** — la relance MANUELLE (T-109, 11/09/2026), celle que l'atelier déclenche.
   Pur. Le motif se DÉDUIT de l'état (dépôt vide → RD*, photos sans accord → RP*, aperçu non payé
@@ -109,7 +124,13 @@ navigateur la garde, T-176) et n'est appelée que depuis les fichiers que le har
 `signerGet`, `signerPut` et leurs durées ne changent pas. Les effacements en masse passent par
 `racineEffacable` (pure) : `supprimerPrefixe` n'accepte que `numeros/<id>/` (le geste
 « Supprimer définitivement » du B2C, inchangé au caractère près), `supprimerCoffreEdition` que
-`collectif/<uuid>/` (T-159).
+`collectif/<uuid>/` (T-159, plus appelée depuis le 20/10 au soir). Les fins de conservation passent
+par deux portes à CLÉS NOMMÉES qui relisent elles-mêmes la table de ce qui part, clé par clé, et
+refusent le reste avant tout réseau : `supprimerClesEdition` (`cleEffacee`, éditions, seul appelant
+`collectif/retentionServeur.ts`) et `supprimerPhotosEtHdLivre` (`cleEffaceeLivre`, dossiers livrés :
+photos et fichier HD seulement, jamais un aperçu ni le reste du dossier ; seul appelant
+`atelier/retentionLivres.ts`). Leurs listages (`listerCoffreEdition`, `listerCoffreNumero`) passent
+la même garde.
 
 ## Les mails — trois garanties, dans cet ordre
 

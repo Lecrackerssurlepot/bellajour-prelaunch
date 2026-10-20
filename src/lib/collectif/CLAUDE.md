@@ -212,6 +212,9 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   la table de travail disparaît. `notFound()` est levé dans les LAYOUTS, avant toute silhouette :
   c'est un vrai 404 (vérifié au `curl -I` le 13/10). Chaque page du B2B est `force-dynamic`, sinon
   la valeur serait gelée au build.
+- **`COLLECTIF_RETENTION_AUTO`** (T-159, 20/10 au soir, même lecture, absent = fermé) : le passage
+  quotidien qui efface le coffre des éditions livrées depuis 30 jours. Fermé, rien ne s'efface tout
+  seul ; le script reste le geste manuel. Voir « La fin de conservation ».
 - **La migration `20261013_collectif.sql` est appliquée par Mathias.** Elle est atomique
   (`begin`/`commit`) : treize tables ou aucune. Il n'y a donc **aucun repli** : la vraie lecture
   échoue en `PGRST205`/`42P01` (`tableAbsente`), une route répond un vrai **503
@@ -789,10 +792,7 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **D26** : accepter une proposition n'engage pas, c'est le devis signé ; la fiche affiche « À
   faire : envoyer le devis à signer » (`devisAEnvoyer`). « Photos seulement : les vidéos ne
   partent pas » est dit avant le choix (T-200).
-- **La conservation** (T-159, `retention.ts` pur, `scripts/collectif-retention.ts`) : effacer le
-  coffre d'une édition livrée passe par `supprimerCoffreEdition` (garde `collectif/<uuid>/`
-  exacte) et la table `FAMILLES` (les PDF des tours et les documents restent). Jamais lancé pour
-  effacer : la politique (T-158) n'est pas validée.
+- **La conservation** (T-159) : voir « La fin de conservation » plus bas.
 
 ## Personnes, corbeille, album, ouverture (lot w1 du 20/10, migration 20261023)
 
@@ -882,6 +882,56 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   rien écrire (la personne du téléphone, ou une sonde GET `limit(0)`) ; la page garde la formule
   d'avant (prénom et nom figés, `nomConnu`), l'album se lit, rien ne se supprime. Un 503 à la
   présentation y ramène aussi.
+
+## La fin de conservation : 30 jours après « Marquer livrée » (T-159, décisions du 20/10)
+
+Mathias, 20/10, questions 4, 5 et 6 de la page confidentialité : les photos partent **30 jours après
+« Marquer livrée »** (`DELAI_RETENTION_JOURS`) ; le **PDF du magazine terminé (le PDF de chaque tour)
+est GARDÉ 10 ans après la livraison, jamais réutilisé sans l'accord du client**
+(`FAMILLES.pdf_tour`, `CONSERVATION_PDF_MAGAZINE_ANS`) ; l'**adresse des participants part avec les
+photos**. « Les premières fois je le lance avec toi, ensuite il passe tout seul chaque jour, comme la
+corbeille. »
+- **Les dix ans sont une RÈGLE SANS EFFET** (`verdictConservationPdf`, `finConservationPdf`) : rien ne
+  l'appelle (le harnais le vérifie), aucune porte n'efface un PDF de tour. PROPOSITION non décidée :
+  seul le PDF du DERNIER tour d'un magazine validé est le magazine terminé ; ceux des tours précédents
+  pourraient partir avec les photos. Aujourd'hui, tous restent.
+- **La règle est pure** (`retention.ts`) : `verdictRetention` (seulement `livree` en état effectif,
+  `livraison.livree_le` lisible, délai écoulé, jamais deux fois ; l'archive n'épargne rien), `FAMILLES`
+  et `planEffacement` (ce qui part : photos, rendus du BAT, contenus, pièces jointes ; ce qui reste :
+  PDF des tours, documents, toute clé inconnue), `PATCH_PHOTO_EFFACEE`, `TABLES_PERSONNES_EFFACEES`,
+  l'intention et la reprise (`lireClesRetention`, `retentionsEnAttente`, `clesLibresRetention`), les
+  phrases des écrans (`phrasePhotosEffacees`, `phraseBatEfface`, `phraseFichierEfface`).
+- **L'ordre des gestes** (`retentionServeur.ts`, `effacerEdition`, l'ordre de l'audit S7) : relire et
+  refaire le verdict ; lister le coffre ; l'INTENTION au journal (`retention_a_effacer`, 500 clés par
+  ligne) ; la BASE (téléphones puis personnes SUPPRIMÉS, métadonnées des photos vidées, cache des
+  doublons vidé, et EN DERNIER `photos_supprimees_le`) ; le COFFRE (les clés de l'intention, par
+  `supprimerClesEdition`, la porte qui relit `FAMILLES` elle-même) ; ce qui est réglé
+  (`retention_effacee`) ; le résumé (`coffre_efface`). Un refus avant le marqueur n'a rien touché au
+  coffre : l'intention est réglée « gardée », l'édition reste candidate, tout se rejoue.
+  ⚠️ **À l'inverse de la corbeille, la ligne de photo RESTE avec sa `r2_key`** : la règle « une clé
+  qu'une ligne porte encore ne s'efface jamais » (`clesLibres`) ne peut pas servir. C'est le MARQUEUR
+  de l'édition qui libère ses clés : la reprise (`reprendreRetention`) n'efface jamais une clé d'une
+  édition non marquée, ni une clé d'une famille gardée glissée dans une intention.
+- **Q6, les personnes sont SUPPRIMÉES, pas vidées** : `email`, `prenom`, `nom` sont `not null` sous
+  contrainte (une ligne « vidée » porterait une fausse adresse) ; `collectif_photos.participant_id …
+  on delete set null` a été écrit pour ce geste ; la preuve de l'accord (Q7 : `deposant`,
+  `accord_version`, `accord_le`) reste sur les photos. ⚠️ Le journal garde l'adresse MASQUÉE et les
+  noms (`participant_retrouve`, `participant_nom_different`) : C3, non tranché.
+- **Deux appelants, un seul chemin** : `scripts/collectif-retention.ts` (le geste manuel, lecture seule
+  sans `--vraiment`, reprise d'abord) et `retentionQuotidienne`, APRÈS la réponse de la relève (comme
+  `purgeQuotidienne`, aucun cron de plus), deux éditions au plus par passage, journalisée `par: "auto"`.
+  ⚠️ **COUPÉE PAR DÉFAUT** : sans `COLLECTIF_RETENTION_AUTO` ouvert (`interrupteur.ts`, valeur
+  incomprise = fermé) ET `COLLECTIF_OUVERT`, elle rend `null` sans lire la base. L'ouvrir = un geste de
+  Mathias sur Vercel, après les premiers passages manuels.
+- **Les écrans lisent `photos_supprimees_le`** (le prérequis de T-159) : la page Photos et le bon à
+  tirer de l'espace rendent un `Verrou` avec la phrase ; le tableau de bord la met à la place des
+  dossiers et de la mosaïque ; les contenus envoyés ne se signent plus (« Fichier supprimé le … ») ;
+  `/api/collectif/photos`, `/api/collectif/depot/album` et le lot de l'atelier répondent 410
+  `photos_effacees` avec la phrase ; la fiche (vue d'ensemble, onglet Photos) le dit et éteint les
+  téléchargements ; le bon à tirer de l'atelier aussi. ⚠️ **Pas encore** : les pièces jointes des
+  messages (`messagerie.ts` signe toujours `piece_jointe_key`, l'objet est parti).
+- **Ce que l'effacement ne voit pas** : les lots téléchargés par l'atelier, le versioning du bucket et
+  les sauvegardes Supabase (non vérifiés), `cle_fichier` qui porte encore le nom d'origine.
 
 ## Phase 7 : les accroches déjà posées
 
