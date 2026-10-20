@@ -55,18 +55,22 @@ begin;
 -- Le téléphone ne sert qu'à compter les participants « Sans nom »
 -- (`compterPersonnes`, qui ignore le responsable et l'atelier) : il n'est
 -- gardé que pour une photo de participant (rôle participant, ou arrivée par un
+-- ⚠️ 20/10 : la colonne calculée s'appelle `appareil_cle`, jamais `appareil` : `collectif_photos`
+-- a DÉJÀ une colonne `appareil` (le modèle du téléphone lu dans la photo), et `c.*` plus un
+-- `appareil` calculé rendaient « column reference "appareil" is ambiguous » (42702) à la
+-- première application. La transaction avait tout annulé : rien n'était appliqué.
 -- lien, `deParticipant`), sinon un responsable qui dépose depuis deux appareils
 -- doublerait ses lignes pour rien.
 create or replace view public.collectif_photos_resume
   with (security_invoker = true) as
 select
   p.edition_id,
-  md5(row(p.role_deposant, p.provenance_id, p.provenance_type, p.deposant, p.appareil)::text) as id,
+  md5(row(p.role_deposant, p.provenance_id, p.provenance_type, p.deposant, p.appareil_cle)::text) as id,
   p.role_deposant,
   p.provenance_id,
   p.provenance_type,
   p.deposant,
-  p.appareil as appareil_id,
+  p.appareil_cle as appareil_id,
   count(*)::integer as n,
   (count(*) filter (where p.preselection))::integer as n_selection,
   (count(*) filter (where not p.signalee and not p.preselection))::integer as n_choisissables,
@@ -80,11 +84,11 @@ select
   (array_agg(p.vignette_key order by p.confirmee_le desc, p.id desc) filter (where p.vignette_key is not null))[1] as vignette_key
 from (
   select c.*,
-         case when c.role_deposant = 'participant' or c.provenance_id is not null then c.appareil_id end as appareil
+         case when c.role_deposant = 'participant' or c.provenance_id is not null then c.appareil_id end as appareil_cle
     from public.collectif_photos c
    where c.confirmee_le is not null
 ) p
-group by p.edition_id, p.role_deposant, p.provenance_id, p.provenance_type, p.deposant, p.appareil;
+group by p.edition_id, p.role_deposant, p.provenance_id, p.provenance_type, p.deposant, p.appareil_cle;
 
 comment on view public.collectif_photos_resume is
   'Une ligne par façon d''avoir déposé (T-168) : l''arbre, les personnes, les comptes et les couvertures de la grille et du tableau de bord. Lue par la clé de service seulement.';
