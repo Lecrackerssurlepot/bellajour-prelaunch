@@ -1,86 +1,85 @@
 /**
- * T-159 : effacer le coffre des éditions collectives livrées depuis au moins N jours.
+ * T-159 : effacer le coffre des éditions collectives livrées depuis 30 jours.
  *
- *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts --jours <N>
- *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts --jours <N> --edition <uuid>
- *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts --jours <N> [--edition <uuid>] --vraiment
+ *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts
+ *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts --edition <uuid>
+ *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts --jours <N>      (lecture seule : voir ce qui viendrait)
+ *   npx tsx --tsconfig tsconfig.json scripts/collectif-retention.ts [--edition <uuid>] --vraiment
  *
  * ══════════════════════════════════════════════════════════════════════════
  * IL NE FAIT RIEN PAR DÉFAUT, ET CE N'EST PAS UNE POLITESSE
  *
- * Sans `--vraiment`, il LIT (la base et le listage du coffre) et il RACONTE :
- * quelles éditions, quels objets partiraient, lesquels resteraient, quelles
- * lignes seraient touchées. Il faut taper le mot pour qu'il efface.
+ * Sans `--vraiment`, il LIT (la base, le journal et le listage du coffre) et
+ * il RACONTE : quelles éditions, quels objets partiraient, lesquels
+ * resteraient, combien de personnes et de téléphones seraient supprimés, et ce
+ * qu'une reprise retenterait. Il faut taper le mot pour qu'il efface.
  *
- * ⚠️ `--jours` EST OBLIGATOIRE ET N'A AUCUNE VALEUR PAR DÉFAUT. La décision de
- * Mathias du 20/10/2026 dit « 30 jours, un truc comme ça, après la réception
- * de la livraison » ; le chiffre sera fixé par la politique de confidentialité
- * (projet : docs/produit/collectif/PROJET-CONFIDENTIALITE-B2B.md). Tant qu'il
- * ne l'est pas, c'est à celui qui lance le script de le taper.
+ * LE DÉLAI est la décision de Mathias du 20/10 (question 4) :
+ * `DELAI_RETENTION_JOURS` (30 jours après « Marquer livrée »). `--jours N` ne
+ * sert qu'à REGARDER plus tôt ou plus tard ; avec `--vraiment`, un délai plus
+ * court que la décision est refusé (`delaiDuScript`) : on n'efface jamais
+ * avant la date promise.
  *
- * ⚠️ ET IL N'A PAS DE CRON, VOLONTAIREMENT (même raison que T-076) : une tâche
- * planifiée qui efface des photos sans que personne ne regarde est exactement
- * la mécanique dont on découvre le défaut après.
+ * C'EST LE GESTE MANUEL, CELUI DES PREMIÈRES FOIS. Mathias, 20/10 : « les
+ * premières fois je le lance avec toi, ensuite il passe tout seul chaque jour,
+ * comme la corbeille ». Le passage quotidien existe (`retentionQuotidienne`,
+ * après la relève) et suit EXACTEMENT le même chemin (`effacerEdition`), mais
+ * il est COUPÉ tant que `COLLECTIF_RETENTION_AUTO` n'est pas posé sur Vercel.
  * ══════════════════════════════════════════════════════════════════════════
  *
  * ══════════════════════════════════════════════════════════════════════════
- * CE QU'IL FAIT, DANS CET ORDRE, ET POURQUOI CET ORDRE
+ * CE QU'IL FAIT AVEC --vraiment, DANS CET ORDRE (l'ordre sûr de l'audit S7)
  *
- * 1. Il n'invente AUCUNE règle. Qui est éligible (livrée, date lisible, délai
- *    écoulé, pas déjà effacée ; jamais en impression ni expédiée), ce qui part
- *    et ce qui reste (`FAMILLES`), ce que deviennent les lignes
- *    (`PATCH_PHOTO_EFFACEE`) : tout vient de `@/lib/collectif/retention`,
- *    module pur éprouvé par `scripts/verif-collectif.ts`.
- *
- * 2. Il efface le COFFRE d'abord, par la seule porte qui l'accepte
- *    (`supprimerCoffreEdition`, garde `collectif/<uuid>/`), et abandonne
- *    l'édition entière si un seul objet résiste : un DELETE sur une clé déjà
- *    partie répond OK, donc relancer est inoffensif ; une base nettoyée en
- *    face d'un coffre encore plein ferait des objets que plus rien ne
- *    rattache à personne.
- *
- * 3. Il ne supprime AUCUNE LIGNE. Les photos gardent leur ligne (les comptes de
- *    l'édition restent vrais) ; seules les colonnes qui décrivent l'image, son
- *    lieu et son appareil sont vidées. Puis il pose `photos_supprimees_le`
- *    (le marqueur de la migration 20261013 : jamais deux fois).
- *
- * 4. Il journalise dans `collectif_evenements` (`coffre_efface`), jamais dans
- *    `evenements` (clé étrangère vers `numeros`).
- *
+ * 0. Il REPREND d'abord ce qu'un passage précédent n'a pas pu retirer du
+ *    coffre (`reprendreRetention`).
+ * Puis, pour chaque édition, par `effacerEdition` (retentionServeur.ts) :
+ * 1. il relit l'édition et refait le verdict ;
+ * 2. il écrit l'INTENTION au journal (`retention_a_effacer`, les clés du
+ *    coffre) ; sans elle, rien ne part ;
+ * 3. la BASE : téléphones puis personnes supprimés (Q6 : l'adresse part avec
+ *    les photos), métadonnées des photos vidées (aucune ligne de photo
+ *    supprimée : le nom, la version et l'heure de l'accord restent, Q7), et
+ *    en DERNIER le marqueur `photos_supprimees_le` ;
+ * 4. le COFFRE, clé par clé, par la porte qui relit `FAMILLES`
+ *    (`supprimerClesEdition`) : partent photos, rendus du BAT, contenus,
+ *    pièces jointes ; restent le PDF de chaque tour (Q5) et les documents ;
+ * 5. ce qui est réglé (`retention_effacee`), puis le résumé (`coffre_efface`),
+ *    dans `collectif_evenements`, jamais dans `evenements`.
  * Aucune colonne fraîche : tout ce qu'il lit et écrit est dans la migration
- * 20261013 (appliquée le 13/10), sauf `collectif_messages.piece_jointe_key`
- * (20261014, appliquée le 14/10) qu'il ne fait que COMPTER, avec un repli.
+ * 20261013 (appliquée), sauf les deux tables des personnes (20261023) : sans
+ * elles, il n'y a personne à supprimer et il le dit.
  * ══════════════════════════════════════════════════════════════════════════
  *
- * ⚠️ AVANT LE PREMIER `--vraiment` (voir T-159) : les écrans de l'espace et de
- * la fiche ne lisent pas encore `photos_supprimees_le` ; une édition effacée y
- * montrerait des vignettes vides. Et les lots que l'atelier a TÉLÉCHARGÉS sur
+ * ⚠️ AVANT LE PREMIER `--vraiment` : les lots que l'atelier a TÉLÉCHARGÉS sur
  * ses ordinateurs (route `lot`) ne sont pas dans le coffre : ce script ne les
- * voit pas.
+ * voit pas. Le versioning du bucket et les sauvegardes Supabase ne sont pas
+ * vérifiés (un objet effacé y survivrait).
  */
 
 import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { bucket, makeR2, racineEffacable, supprimerCoffreEdition } from "@/lib/atelier/r2";
 import { estUuid, prefixeEdition } from "@/lib/collectif/cles";
-import { journaliser } from "@/lib/collectif/journal";
-import { lireToutesLesLignes } from "@/lib/collectif/lignes";
-import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
+import { colonneAbsente } from "@/lib/collectif/migration";
 import {
-  cleEffacee,
+  delaiDuScript,
   FAMILLES,
-  familleDeCle,
-  lireDelaiJours,
   ORDRE_FAMILLES,
   PATCH_PHOTO_EFFACEE,
+  planEffacement,
+  retentionsEnAttente,
   TEXTE_MOTIF,
-  TYPE_JOURNAL_RETENTION,
   verdictRetention,
-  type EditionPourRetention,
-  type FamilleCoffre,
   type MotifEpargne,
+  type PlanEffacement,
 } from "@/lib/collectif/retention";
+import {
+  COFFRE_REEL,
+  effacerEdition,
+  lireEditionsRetention,
+  lireIntentionsRetention,
+  reprendreRetention,
+  type EditionRetention,
+} from "@/lib/collectif/retentionServeur";
 
 /* ─────────────────────────────── l'environnement ─────────────────────────────── */
 
@@ -129,61 +128,10 @@ function editionDemandee(argv: readonly string[]): string | null | "invalide" {
   return estUuid(brut) ? brut.toLowerCase() : "invalide";
 }
 
-/* ─────────────────────────────── les lectures ─────────────────────────────── */
+/* ─────────────────────────────── les comptes (lecture) ─────────────────────────────── */
 
-type Edition = EditionPourRetention & {
-  id: string;
-  organisation: string;
-  evenement: string;
-  archive_le: string | null;
-  demo: boolean;
-  created_at: string;
-};
-
-/* Toutes de la migration 20261013 : rien à replier. */
-const COLONNES_EDITION =
-  "id, organisation, evenement, etat, cloture_le, livraison, archive_le, photos_supprimees_le, demo, created_at";
-
-async function lireEditions(supabase: SupabaseClient, seule: string | null): Promise<Edition[]> {
-  const lu = await lireToutesLesLignes<Edition>(
-    () => {
-      const q = supabase.from("collectif_editions").select(COLONNES_EDITION);
-      return (seule ? q.eq("id", seule) : q).returns<Edition[]>();
-    },
-    { colonne: "created_at", croissant: true },
-    "éditions (rétention)",
-  );
-  if (lu.error) {
-    if (tableAbsente(lu.error.code)) throw new Error("Tables collectif absentes (migration 20261013 non appliquée) : rien à lire.");
-    throw new Error(`Lecture des éditions échouée : ${lu.error.code ?? "?"} ${lu.error.message}`);
-  }
-  return lu.data;
-}
-
-type Objet = { cle: string; taille: number };
-
-/** Le listage du coffre d'une édition : LECTURE seule, borné par la même garde que l'effaceur. */
-async function listerCoffre(editionId: string): Promise<Objet[]> {
-  const prefixe = prefixeEdition(editionId);
-  if (racineEffacable(prefixe) !== "collectif") throw new Error(`préfixe refusé : ${prefixe}`);
-  const r2 = makeR2();
-  const objets: Objet[] = [];
-  let suite: string | undefined;
-  do {
-    const page = await r2.send(new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefixe, ContinuationToken: suite }));
-    for (const o of page.Contents ?? []) if (o.Key) objets.push({ cle: o.Key, taille: o.Size ?? 0 });
-    suite = page.IsTruncated ? page.NextContinuationToken : undefined;
-  } while (suite);
-  return objets;
-}
-
-/** Un compte en `head` : jamais les lignes (le plafond de 1 000 de l'API ne s'applique pas). */
-async function compter(
-  supabase: SupabaseClient,
-  table: string,
-  editionId: string,
-  colonneNonNulle: string | null,
-): Promise<number | "colonne_absente"> {
+/** Un compte en `head` sur des colonnes de 20261013 (aucune fraîche) : jamais les lignes. */
+async function compter(supabase: SupabaseClient, table: string, editionId: string, colonneNonNulle: string | null): Promise<number | "colonne_absente"> {
   let q = supabase.from(table).select("id", { count: "exact", head: true }).eq("edition_id", editionId);
   if (colonneNonNulle) q = q.not(colonneNonNulle, "is", null);
   const { count, error } = await q;
@@ -195,23 +143,42 @@ async function compter(
   return count;
 }
 
+/**
+ * Les personnes et les téléphones (migration 20261023, pas forcément appliquée) :
+ * un compte en GET `limit(0)`, jamais `head` (un HEAD sur une table absente
+ * rend une erreur sans code). `"table_absente"` : il n'y a personne à supprimer.
+ */
+async function compterPersonnes(supabase: SupabaseClient, table: "collectif_participants" | "collectif_participants_appareils", editionId: string): Promise<number | "table_absente"> {
+  const colonne = table === "collectif_participants" ? "id" : "appareil_id";
+  const { count, error } = await supabase.from(table).select(colonne, { count: "exact" }).eq("edition_id", editionId).limit(0);
+  if (error) {
+    if (error.code === "PGRST205" || error.code === "42P01") return "table_absente";
+    throw new Error(`Compte de ${table} échoué : ${error.code} ${error.message}`);
+  }
+  return count ?? 0;
+}
+
 type Lignes = {
   photos: number;
   contenus: number;
   documents: number;
   piecesJointes: number | "colonne_absente";
+  personnes: number | "table_absente";
+  telephones: number | "table_absente";
 };
 
 async function compterLignes(supabase: SupabaseClient, editionId: string): Promise<Lignes> {
-  const [photos, contenus, documents, piecesJointes] = await Promise.all([
+  const [photos, contenus, documents, piecesJointes, personnes, telephones] = await Promise.all([
     compter(supabase, "collectif_photos", editionId, null),
     compter(supabase, "collectif_contenus", editionId, "r2_key"),
     compter(supabase, "collectif_documents", editionId, "r2_key"),
     /* 20261014 (appliquée le 14/10) : repli si la colonne manquait. */
     compter(supabase, "collectif_messages", editionId, "piece_jointe_key"),
+    compterPersonnes(supabase, "collectif_participants", editionId),
+    compterPersonnes(supabase, "collectif_participants_appareils", editionId),
   ]);
   const nombre = (v: number | "colonne_absente") => (typeof v === "number" ? v : 0);
-  return { photos: nombre(photos), contenus: nombre(contenus), documents: nombre(documents), piecesJointes };
+  return { photos: nombre(photos), contenus: nombre(contenus), documents: nombre(documents), piecesJointes, personnes, telephones };
 }
 
 /* ─────────────────────────────── le rapport ─────────────────────────────── */
@@ -223,79 +190,11 @@ function taille(octets: number): string {
   return `${octets} o`;
 }
 
-type ParFamille = Record<FamilleCoffre, { n: number; octets: number }>;
-
-function grouper(objets: readonly Objet[], editionId: string): ParFamille {
-  const par = Object.fromEntries(ORDRE_FAMILLES.map((f) => [f, { n: 0, octets: 0 }])) as ParFamille;
-  for (const o of objets) {
-    const f = familleDeCle(o.cle, editionId);
-    par[f].n++;
-    par[f].octets += o.taille;
-  }
-  return par;
-}
-
-function nomEdition(e: Edition): string {
+function nomEdition(e: EditionRetention): string {
   return `${e.organisation} · ${e.evenement}`.slice(0, 60);
 }
 
-/* ─────────────────────────────── l'action ─────────────────────────────── */
-
-type Candidate = { e: Edition; jours: number; livreeLe: string; objets: Objet[]; par: ParFamille; lignes: Lignes };
-
-async function effacer(supabase: SupabaseClient, c: Candidate, delai: number, maintenant: Date): Promise<boolean> {
-  /* 1. Le coffre d'abord, par sa seule porte. */
-  const coffre = await supprimerCoffreEdition(prefixeEdition(c.e.id), (cle) => !cleEffacee(cle, c.e.id));
-  if (coffre.echecs > 0) {
-    console.error(`  ✗ ${nomEdition(c.e)} : ${coffre.echecs} objet(s) du coffre en échec, ${coffre.supprimes} effacé(s).`);
-    console.error("     Rien n'a été touché en base : relancer le script réessaiera.");
-    return false;
-  }
-
-  /* 2. Les lignes : aucune supprimée, les métadonnées de l'image vidées. */
-  const { error: errPhotos } = await supabase.from("collectif_photos").update(PATCH_PHOTO_EFFACEE).eq("edition_id", c.e.id);
-  if (errPhotos) {
-    console.error(`  ✗ ${nomEdition(c.e)} : coffre effacé (${coffre.supprimes} objet(s)), lignes non vidées : ${errPhotos.code} ${errPhotos.message}`);
-    console.error("     Le marqueur n'est PAS posé : relancer le script terminera.");
-    return false;
-  }
-
-  /* 3. Le marqueur : jamais deux fois. */
-  const { data: marquee, error: errMarqueur } = await supabase
-    .from("collectif_editions")
-    .update({ photos_supprimees_le: maintenant.toISOString() })
-    .eq("id", c.e.id)
-    .is("photos_supprimees_le", null)
-    .select("id");
-  if (errMarqueur || !marquee?.length) {
-    console.error(`  ✗ ${nomEdition(c.e)} : marqueur non posé (${errMarqueur?.code ?? "aucune ligne"}) : relancer le script.`);
-    return false;
-  }
-
-  /* 4. Le journal : la seule trace lisible de ce qui a disparu. */
-  const parFamille = Object.fromEntries(ORDRE_FAMILLES.filter((f) => FAMILLES[f].efface).map((f) => [f, c.par[f].n]));
-  const journal = await journaliser(
-    supabase,
-    { editionId: c.e.id },
-    TYPE_JOURNAL_RETENTION,
-    {
-      motif: "retention",
-      delai_jours: delai,
-      jours_depuis_livraison: Math.floor(c.jours),
-      livree_le: c.livreeLe,
-      objets_effaces: coffre.supprimes,
-      objets_gardes: coffre.gardes,
-      par_famille: parFamille,
-      lignes_photos: c.lignes.photos,
-      par: "script",
-    },
-    "script collectif-retention",
-  );
-  if (!journal) console.error(`  ! ${nomEdition(c.e)} : coffre effacé et marqueur posé, mais le JOURNAL n'est pas écrit.`);
-
-  console.log(`  ✓ ${nomEdition(c.e).padEnd(60)} ${coffre.supprimes} objet(s) effacé(s), ${coffre.gardes} gardé(s)`);
-  return true;
-}
+type Candidate = { e: EditionRetention; jours: number; livreeLe: string; plan: PlanEffacement; vide: boolean; lignes: Lignes };
 
 /* ─────────────────────────────── main ─────────────────────────────── */
 
@@ -304,13 +203,12 @@ async function main(): Promise<void> {
   const inconnus = argumentsInconnus(argv);
   if (inconnus.length) throw new Error(`argument(s) inconnu(s) : ${inconnus.join(" ")} (attendus : --jours N, --edition <uuid>, --vraiment)`);
 
-  const delai = lireDelaiJours(argv);
-  if (delai === null) {
-    throw new Error("--jours N est OBLIGATOIRE (un entier d'au moins 1) : aucun délai par défaut, voir T-159.");
-  }
+  const vraiment = argv.includes("--vraiment");
+  const delaiLu = delaiDuScript(argv, vraiment);
+  if (!delaiLu.ok) throw new Error(delaiLu.erreur);
+  const delai = delaiLu.jours;
   const seule = editionDemandee(argv);
   if (seule === "invalide") throw new Error("--edition attend un uuid.");
-  const vraiment = argv.includes("--vraiment");
   const maintenant = new Date();
 
   chargerEnv();
@@ -319,14 +217,31 @@ async function main(): Promise<void> {
   if (!url || !cle) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY absentes de .env.local");
   const supabase = createClient(url, cle);
 
-  console.log(`\n  Rétention des éditions collectives : ${delai} jour(s) après « Marquer livrée » (T-159).`);
+  console.log(
+    `\n  Fin de conservation des éditions collectives : ${delai} jour(s) après « Marquer livrée » (T-159, ${delaiLu.source === "decision" ? "décision de Mathias du 20/10" : "--jours tapé"}).`
+  );
   console.log(vraiment ? "  MODE : --vraiment (le coffre sera effacé)." : "  MODE : lecture seule (rien ne sera modifié).");
 
-  const editions = await lireEditions(supabase, seule);
+  /* Ce qu'une reprise retenterait (des passages précédents) : lu, jamais rejoué sans --vraiment. */
+  const intentions = await lireIntentionsRetention(supabase);
+  if (intentions === null) throw new Error("journal des intentions illisible : rien n'est décidé sans lui.");
+  const enAttente = retentionsEnAttente(intentions, maintenant);
+  console.log(
+    enAttente.length
+      ? `  Reprise : ${enAttente.length} intention(s), ${enAttente.reduce((s, a) => s + a.cles.length, 0)} clé(s) restée(s) au coffre d'un passage précédent.`
+      : "  Reprise : rien de resté au coffre d'un passage précédent."
+  );
+
+  const lu = await lireEditionsRetention(supabase, seule);
+  if (!lu.ok) {
+    if (lu.absente) throw new Error("Tables collectif absentes (migration 20261013 non appliquée) : rien à lire.");
+    throw new Error(`Lecture des éditions échouée : ${lu.code ?? "?"} ${lu.message ?? ""}`);
+  }
+  const editions = lu.editions;
   if (seule && !editions.length) throw new Error(`aucune édition ${seule}`);
   console.log(`  ${editions.length} édition(s) lue(s).`);
 
-  const epargnees = new Map<MotifEpargne, Edition[]>();
+  const epargnees = new Map<MotifEpargne, EditionRetention[]>();
   const candidates: Candidate[] = [];
   for (const e of editions) {
     const v = verdictRetention(e, maintenant, delai);
@@ -334,8 +249,9 @@ async function main(): Promise<void> {
       epargnees.set(v.motif, [...(epargnees.get(v.motif) ?? []), e]);
       continue;
     }
-    const objets = await listerCoffre(e.id);
-    candidates.push({ e, jours: v.jours, livreeLe: v.livreeLe, objets, par: grouper(objets, e.id), lignes: await compterLignes(supabase, e.id) });
+    const objets = await COFFRE_REEL.lister(prefixeEdition(e.id));
+    if (!objets) throw new Error(`listage du coffre de ${e.id} impossible : rien n'est décidé sans lui.`);
+    candidates.push({ e, jours: v.jours, livreeLe: v.livreeLe, plan: planEffacement(objets, e.id), vide: objets.length === 0, lignes: await compterLignes(supabase, e.id) });
   }
 
   if (epargnees.size) {
@@ -354,40 +270,56 @@ async function main(): Promise<void> {
   }
 
   if (!candidates.length) {
-    console.log("\n  Aucune édition à effacer aujourd'hui.\n");
-    return;
-  }
-
-  console.log(`\n  ${candidates.length} édition(s) dont le coffre partirait :`);
-  for (const c of candidates) {
-    const marques = [c.e.archive_le ? "archivée" : null, c.e.demo ? "démonstration" : null].filter(Boolean).join(", ");
-    console.log(`\n  ${nomEdition(c.e)}${marques ? `  [${marques}]` : ""}`);
-    console.log(`    /admin/collectif/${c.e.id}  livrée le ${c.livreeLe.slice(0, 10)}, il y a ${Math.floor(c.jours)} j`);
-    for (const f of ORDRE_FAMILLES) {
-      const { n, octets } = c.par[f];
-      if (!n) continue;
-      console.log(`    ${FAMILLES[f].libelle.padEnd(72)} ${String(n).padStart(6)}  ${taille(octets).padStart(9)}  ${FAMILLES[f].efface ? "EFFACÉ" : "gardé"}`);
+    console.log("\n  Aucune édition à effacer aujourd'hui.");
+  } else {
+    console.log(`\n  ${candidates.length} édition(s) dont le coffre partirait :`);
+    for (const c of candidates) {
+      const marques = [c.e.archive_le ? "archivée" : null, c.e.demo ? "démonstration" : null].filter(Boolean).join(", ");
+      console.log(`\n  ${nomEdition(c.e)}${marques ? `  [${marques}]` : ""}`);
+      console.log(`    /admin/collectif/${c.e.id}  livrée le ${c.livreeLe.slice(0, 10)}, il y a ${Math.floor(c.jours)} j`);
+      for (const f of ORDRE_FAMILLES) {
+        const { n, octets } = c.plan.parFamille[f];
+        if (!n) continue;
+        console.log(`    ${FAMILLES[f].libelle.padEnd(72)} ${String(n).padStart(6)}  ${taille(octets).padStart(9)}  ${FAMILLES[f].efface ? "EFFACÉ" : "gardé"}`);
+      }
+      if (c.vide) console.log("    (coffre vide)");
+      const pj = c.lignes.piecesJointes === "colonne_absente" ? "colonne absente" : String(c.lignes.piecesJointes);
+      const pers = (v: number | "table_absente") => (v === "table_absente" ? "table absente (migration 20261023 non appliquée)" : String(v));
+      console.log(
+        `    Lignes : ${c.lignes.photos} photo(s) gardées, métadonnées vidées (${Object.keys(PATCH_PHOTO_EFFACEE).join(", ")}) ;` +
+          ` ${c.lignes.contenus} contenu(s), ${c.lignes.documents} document(s), ${pj} pièce(s) jointe(s) : lignes inchangées.`
+      );
+      console.log(`    Personnes supprimées (adresse, Q6) : ${pers(c.lignes.personnes)} ; téléphones : ${pers(c.lignes.telephones)}.`);
     }
-    if (!c.objets.length) console.log("    (coffre vide)");
-    const pj = c.lignes.piecesJointes === "colonne_absente" ? "colonne absente" : String(c.lignes.piecesJointes);
-    console.log(
-      `    Lignes : ${c.lignes.photos} photo(s) gardées, métadonnées vidées (${Object.keys(PATCH_PHOTO_EFFACEE).join(", ")}) ;` +
-        ` ${c.lignes.contenus} contenu(s), ${c.lignes.documents} document(s), ${pj} pièce(s) jointe(s) : lignes inchangées.`,
-    );
   }
 
   if (!vraiment) {
-    console.log("\n  Rien n'a été modifié. Relancer avec --vraiment pour effacer ces coffres.");
-    console.log("  Avec --vraiment : aucune ligne supprimée, le marqueur photos_supprimees_le posé, le journal coffre_efface écrit.\n");
+    console.log("\n  Rien n'a été modifié. Relancer avec --vraiment pour effacer ces coffres (et reprendre ce qui est resté).");
+    console.log("  Avec --vraiment : l'intention au journal, la base (personnes, photos, marqueur), puis le coffre ; aucune ligne de photo supprimée.\n");
     return;
   }
 
   console.log("\n  Effacement en cours…\n");
+  const jusqua = Date.now() + 60 * 60 * 1000;
+  const reprise = await reprendreRetention(supabase, jusqua, maintenant);
+  if (reprise === null) throw new Error("reprise impossible (journal ou éditions illisibles) : rien d'autre n'est tenté.");
+  if (reprise.intentions) console.log(`  Reprise : ${reprise.effaces} objet(s) effacé(s), ${reprise.gardes} gardé(s), ${reprise.restes} encore au coffre.`);
+
   let faits = 0;
   let rates = 0;
   for (const c of candidates) {
-    if (await effacer(supabase, c, delai, maintenant)) faits++;
-    else rates++;
+    const r = await effacerEdition(supabase, c.e.id, { delai, maintenant, par: "script", jusqua });
+    if (r.statut === "effacee") {
+      faits++;
+      const pers = r.personnes === null ? "aucune table des personnes" : `${r.personnes} personne(s), ${r.telephones ?? 0} téléphone(s) supprimé(s)`;
+      console.log(`  ✓ ${nomEdition(c.e).padEnd(60)} ${r.objets} objet(s) effacé(s), ${r.gardes} gardé(s), ${r.restes} resté(s) ; ${pers}${r.journal ? "" : " ; ⚠️ journal incomplet"}`);
+      if (r.restes) console.log("     Des objets ont résisté : ils sont dans l'intention, relancer le script (ou le passage quotidien) les retentera.");
+    } else if (r.statut === "epargnee") {
+      console.log(`  · ${nomEdition(c.e).padEnd(60)} épargnée au dernier moment : ${TEXTE_MOTIF[r.motif]}`);
+    } else {
+      rates++;
+      console.error(`  ✗ ${nomEdition(c.e)} : ${r.statut} à l'étape « ${r.etape} »${r.code ? ` (${r.code})` : ""}. Rien n'a quitté le coffre : relancer le script.`);
+    }
   }
   console.log(`\n  ${faits} édition(s) effacée(s).`);
   if (rates) {

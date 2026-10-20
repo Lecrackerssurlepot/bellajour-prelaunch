@@ -62,3 +62,32 @@ devra aussi entrer dans la politique de confidentialité (T-158).
   du bucket et les sauvegardes ; décider `cle_fichier` (porte encore le nom d'origine) ; coder la
   corbeille de 30 jours (décision du 20/10) comme seconde règle du même module ; fixer une cadence de
   passage du script pour que la politique puisse promettre une date.
+- **20/10/2026 au soir, décisions de Mathias (questions 4, 5, 6)** : 30 jours après « Marquer
+  livrée » ; « les premières fois je le lance avec toi, ensuite il passe tout seul chaque jour, comme
+  la corbeille » ; le PDF du magazine terminé est GARDÉ ; l'adresse des participants part avec les
+  photos. Fait, branche `feat/effacements-30-et-90-jours` (pas de commit, pas de push) :
+  - `DELAI_RETENTION_JOURS = 30` (`retention.ts`) ; le script la prend par défaut, `--jours` ne sert
+    plus qu'à regarder (avec `--vraiment`, un délai sous 30 est refusé, `delaiDuScript`) ;
+  - l'ordre de l'audit S7 appliqué à la conservation (`retentionServeur.ts`, `effacerEdition`) :
+    intention au journal, base (téléphones puis personnes SUPPRIMÉS, métadonnées vidées, marqueur en
+    dernier), puis les clés de l'intention par la porte `supprimerClesEdition` (qui relit `FAMILLES`),
+    réglé, résumé ; la reprise (`reprendreRetention`) ne libère les clés que d'une édition MARQUÉE ;
+  - le passage quotidien après la relève (`retentionQuotidienne`), deux éditions au plus, `par: "auto"`,
+    **coupé** tant que `COLLECTIF_RETENTION_AUTO` n'est pas posé ;
+  - les écrans lisent `photos_supprimees_le` (page Photos, tableau de bord, bon à tirer de l'espace et
+    de l'atelier, fiche, contenus envoyés ; 410 `photos_effacees` sur les photos, l'album et le lot) ;
+  - harnais : délai, ordre, coupure, borne, reprise, refus de la base, fausses intentions, écrans,
+    contre une fausse base et un faux coffre (le vrai jamais touché). Une mutation (passage quotidien
+    sans l'interrupteur) fait tomber deux épreuves.
+  - lu en production, sans `--vraiment`, le 20/10 au soir : 11 éditions, 10 pas encore livrées, 1
+    livrée il y a 7 jours (« Essai livraison (Claude) ») : **aucune à effacer** à 30 jours.
+- **20/10 au soir, question 5 tranchée par Mathias** : le PDF du magazine terminé se garde **10 ans**
+  après la livraison, jamais réutilisé sans l'accord du client. `CONSERVATION_PDF_MAGAZINE_ANS = 10`
+  et la règle pure `verdictConservationPdf` (effaçable dix ans révolus après « Marquer livrée ») sont
+  écrites et éprouvées ; RIEN ne les applique (aucun script, aucun passage, la porte refuse toujours
+  un PDF de tour). **Proposé, pas décidé** : seul le PDF du DERNIER tour d'un magazine validé a besoin
+  des dix ans ; ceux des tours précédents pourraient partir avec les photos à 30 jours.
+- **Reste** : les pièces jointes des messages (`messagerie.ts` signe toujours la clé) ; la procédure
+  pour les lots téléchargés ; le versioning du bucket et les sauvegardes ; `cle_fichier` ; le premier
+  `--vraiment` avec Mathias ; puis poser `COLLECTIF_RETENTION_AUTO=1` sur Vercel ; écrire le délai
+  dans la politique (T-158, texte légal).

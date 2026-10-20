@@ -451,3 +451,309 @@ export function patchAnonymisation(): Record<string, string | null> {
     compte_id: null,
   };
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * T-203 — LES DOSSIERS LIVRÉS : PHOTOS ET FICHIER HD, 90 JOURS APRÈS LA LIVRAISON
+ *
+ * La politique de confidentialité EN LIGNE (§7, `src/app/legal/content/
+ * confidentialite.ts`) promet : « Photos téléversées + fichier HD : supprimées
+ * 90 jours après la livraison ». Aucun code ne le faisait (T-203) : la règle
+ * du haut ne referme que les dossiers ABANDONNÉS, et jamais un dossier livré.
+ * Cette seconde règle tient la promesse, pour les dossiers livrés seulement.
+ *
+ * ⚠️ CE N'EST PAS UNE ANONYMISATION. Le dossier livré est payé, facturé,
+ * expédié à une adresse : la ligne `numeros`, son journal, ses montants, son
+ * adresse et sa facture RESTENT (obligations comptables, §7 : 10 ans). Ne
+ * partent que les photos téléversées et le fichier HD, au coffre ; en base, ce
+ * qui décrit les photos (nom de fichier, date, lieu, appareil) et les clés du
+ * fichier HD. Jamais le reste du dossier.
+ *
+ * LA DATE DE LIVRAISON est celle du JOURNAL : le DERNIER `etat_change` vers
+ * `livree` (`dateDeLivraison`), écrit par « Marquer livrée » (route de
+ * transition) ou par le signal ItemDeliveryCompleted de Cloudprinter (webhook).
+ * C'est la même source que les métriques (`mesure.ts`, `reconstruireJalons`).
+ * `etat_maj_le` ne convient pas (un geste plus tardif peut le pousser) et
+ * aucune colonne ne porte la livraison. Sans cette ligne, on n'efface PAS
+ * (`livre_sans_date`) : le webhook journalise en best-effort, un dossier peut
+ * être `livree` sans sa date. Comme pour les éditions : c'est l'heure où la
+ * livraison a été CONSTATÉE, jamais avant ; un constat tardif garde plus
+ * longtemps, jamais moins.
+ *
+ * LE MODULE QUI AGIT est `scripts/retention-livres.ts` (par `retentionLivres.ts`),
+ * et lui seul : AUCUN automatisme, aucune route, aucun cron, aucun
+ * interrupteur. Il attend Mathias.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/** 90 jours après la livraison : la promesse de la politique de confidentialité en ligne (§7). */
+export const RETENTION_LIVRE_JOURS = 90;
+
+/** Ce que la règle lit d'un dossier livré. */
+export type NumeroLivrePourRetention = {
+  etat: string;
+  /** Un dossier anonymisé n'a déjà plus ses photos (règle du haut) : il n'est pas rejoué. */
+  anonymise_le?: string | null;
+  /**
+   * ⚠️ COLONNE FRAÎCHE (migration 20261024_atelier_retention_livres) : le
+   * marqueur « photos et fichier HD effacés ». `undefined` (colonne absente,
+   * repli 42703) se lit « jamais effacé », ce qui est vrai tant qu'elle
+   * n'existe pas : le script refuse d'agir sans elle.
+   */
+  photos_supprimees_le?: string | null;
+};
+
+export type MotifEpargneLivre = "deja_efface" | "anonymise" | "non_livre" | "livre_sans_date" | "dans_le_delai";
+
+export const TEXTE_MOTIF_LIVRE: Record<MotifEpargneLivre, string> = {
+  deja_efface: "photos et fichier HD déjà effacés (photos_supprimees_le posé)",
+  anonymise: "dossier anonymisé (ses photos sont déjà parties)",
+  non_livre: "pas livré (on n'efface jamais avant la livraison)",
+  livre_sans_date: "livré, mais aucune date de livraison au journal (on ne devine pas)",
+  dans_le_delai: "livré, encore dans les 90 jours",
+};
+
+export type VerdictLivre =
+  | { effacable: true; jours: number; livreLe: string }
+  | { effacable: false; motif: MotifEpargneLivre; jours: number | null };
+
+/** Un instant ISO AVEC son fuseau (Supabase écrit `…+00:00`) ; jamais une date sans fuseau, lue à l'heure de la machine. */
+const INSTANT_AVEC_FUSEAU = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,9})?)?(Z|[+-]\d{2}(:?\d{2})?)$/;
+
+function instantSur(v: unknown): number | null {
+  if (typeof v !== "string" || !INSTANT_AVEC_FUSEAU.test(v.trim())) return null;
+  const t = Date.parse(v.trim());
+  return Number.isFinite(t) ? t : null;
+}
+
+/** Une ligne de journal, telle que la date de livraison la lit. */
+export type EvenementLivraison = { type: string; payload: Record<string, unknown> | null; created_at: string };
+
+/**
+ * LA date de livraison d'un dossier : le PLUS RÉCENT `etat_change` dont
+ * `payload.vers` vaut `livree` (une réimpression livrée une seconde fois fait
+ * repartir le délai : on garde plus longtemps, jamais moins). `null` sans une
+ * telle ligne, ou si sa date est illisible.
+ */
+export function dateDeLivraison(evenements: readonly EvenementLivraison[]): string | null {
+  let plus: { iso: string; t: number } | null = null;
+  for (const e of evenements) {
+    if (e.type !== "etat_change" || e.payload?.vers !== "livree") continue;
+    const t = instantSur(e.created_at);
+    if (t === null) continue;
+    if (!plus || t > plus.t) plus = { iso: e.created_at, t };
+  }
+  return plus?.iso ?? null;
+}
+
+/**
+ * Ce dossier livré peut-il perdre ses photos et son fichier HD aujourd'hui ?
+ * L'ordre des refus : déjà fait, anonymisé, pas livré, sans date, puis l'âge.
+ * ⚠️ La borne est à 90 jours pleins, inclus (89,9 j : rien ; 90,0 : oui).
+ */
+export function verdictRetentionLivre(n: NumeroLivrePourRetention, livreLe: string | null | undefined, maintenant: Date): VerdictLivre {
+  if (n.photos_supprimees_le) return { effacable: false, motif: "deja_efface", jours: null };
+  if (n.anonymise_le) return { effacable: false, motif: "anonymise", jours: null };
+  if (n.etat !== "livree") return { effacable: false, motif: "non_livre", jours: null };
+  const t = instantSur(livreLe);
+  if (t === null || !livreLe) return { effacable: false, motif: "livre_sans_date", jours: null };
+  const jours = (maintenant.getTime() - t) / JOUR;
+  if (jours < RETENTION_LIVRE_JOURS) return { effacable: false, motif: "dans_le_delai", jours };
+  return { effacable: true, jours, livreLe };
+}
+
+/* ─────────────────────────── ce qui part, ce qui reste ─────────────────────────── */
+
+export type FamilleCoffreLivre = "photos" | "impression" | "souvenir" | "apercu" | "autre" | "hors_dossier";
+
+/**
+ * LA table de ce que l'effacement d'un dossier livré emporte. La porte du
+ * coffre (`supprimerPhotosEtHdLivre`, r2.ts) la relit clé par clé : aucun
+ * appelant ne peut l'élargir. Changer d'avis = changer `efface` sur une ligne.
+ *
+ * ⚠️ « Fichier HD » : les CGV (art. 1.2) appellent « fichier numérique haute
+ * définition (« version digitale HD ») » le PDF que le client télécharge, le
+ * SOUVENIR ; le fichier HD d'IMPRESSION (couverture et bloc envoyés à
+ * l'imprimeur) est le même magazine en haute définition. Les deux partent : la
+ * politique nomme le fichier HD sans distinguer. Conséquences, à trancher par
+ * Mathias avant le premier effacement : le client perd son téléchargement au
+ * 90e jour (ni les CGV ni le mail M7b ne le disent), et la réimpression du
+ * même fichier (T-105, pas encore ouverte) devient impossible après 90 jours.
+ */
+export const FAMILLES_LIVRE: Record<FamilleCoffreLivre, { libelle: string; efface: boolean; pourquoi: string }> = {
+  photos: {
+    libelle: "Photos téléversées (originaux et vignettes)",
+    efface: true,
+    pourquoi: "politique de confidentialité §7 : « Photos téléversées » supprimées 90 jours après la livraison",
+  },
+  impression: {
+    libelle: "Fichier HD d'impression (PDF de la couverture et du bloc)",
+    efface: true,
+    pourquoi: "politique §7 : « fichier HD » supprimé 90 jours après la livraison",
+  },
+  souvenir: {
+    libelle: "Version digitale HD (le PDF souvenir que le client télécharge)",
+    efface: true,
+    pourquoi: "CGV art. 1.2 : le « fichier numérique haute définition » ; politique §7 : supprimé à 90 jours (le client perd son téléchargement)",
+  },
+  apercu: {
+    libelle: "Aperçus de couverture (plat, c1, c4, double page)",
+    efface: false,
+    pourquoi: "ni « photos téléversées » ni « fichier HD » : le reste du dossier ne part jamais",
+  },
+  autre: {
+    libelle: "Clé non reconnue",
+    efface: false,
+    pourquoi: "on n'efface que ce qu'on sait nommer",
+  },
+  hors_dossier: {
+    libelle: "Clé d'un autre dossier",
+    efface: false,
+    pourquoi: "jamais : le listage ne devrait pas la rendre",
+  },
+};
+
+export const ORDRE_FAMILLES_LIVRE: readonly FamilleCoffreLivre[] = ["photos", "impression", "souvenir", "apercu", "autre", "hors_dossier"];
+
+const UUID_LIVRE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const NUMERO_ID = new RegExp(`^${UUID_LIVRE}$`);
+
+/** Un identifiant de dossier tel que la base l'écrit : un uuid en minuscules. */
+export function estIdNumero(v: unknown): v is string {
+  return typeof v === "string" && NUMERO_ID.test(v);
+}
+
+/**
+ * La famille d'une clé du coffre d'un dossier, lue sur les formes qu'écrivent
+ * `cleR2` / `cleVignetteR2` (photos), `impression/presign` (`impression/<slot>-<8>.pdf`),
+ * la route du souvenir (`souvenir/<8>.pdf`) et `apercu/presign`
+ * (`apercu/<slot>-<8>.<ext>`). Hors de `numeros/<id>/`, ou avec `..` :
+ * `hors_dossier`. Une forme inconnue : `autre`. Les deux restent.
+ */
+export function familleDeCleNumero(cle: string, numeroId: string): FamilleCoffreLivre {
+  if (!estIdNumero(numeroId)) return "hors_dossier";
+  const prefixe = `numeros/${numeroId}/`;
+  if (typeof cle !== "string" || !cle.startsWith(prefixe) || cle.includes("..")) return "hors_dossier";
+  const reste = cle.slice(prefixe.length);
+  if (new RegExp(`^photos/${UUID_LIVRE}/(original\\.(jpg|png|webp|heic|heif)|vignette\\.jpg)$`).test(reste)) return "photos";
+  if (/^impression\/(produit|couverture|interieur)-[0-9a-f]{8}\.pdf$/.test(reste)) return "impression";
+  if (/^souvenir\/[0-9a-f]{8}\.pdf$/.test(reste)) return "souvenir";
+  if (/^apercu\/(plat|c1|c4|double)-[0-9a-f]{8}\.(jpg|png|webp|heic|heif)$/.test(reste)) return "apercu";
+  return "autre";
+}
+
+/** La clé part-elle avec l'effacement d'un dossier livré ? Une seule lecture de `FAMILLES_LIVRE`. */
+export function cleEffaceeLivre(cle: string, numeroId: string): boolean {
+  return FAMILLES_LIVRE[familleDeCleNumero(cle, numeroId)].efface;
+}
+
+export type ParFamilleLivre = Record<FamilleCoffreLivre, { n: number; octets: number }>;
+
+/** Ce que l'effacement ferait d'un coffre listé : la table, rien d'autre. */
+export function planEffacementLivre(
+  objets: readonly { cle: string; taille: number }[],
+  numeroId: string,
+): { aEffacer: string[]; gardes: number; parFamille: ParFamilleLivre } {
+  const parFamille = Object.fromEntries(ORDRE_FAMILLES_LIVRE.map((f) => [f, { n: 0, octets: 0 }])) as ParFamilleLivre;
+  const aEffacer: string[] = [];
+  const vues = new Set<string>();
+  let gardes = 0;
+  for (const o of objets) {
+    if (vues.has(o.cle)) continue;
+    vues.add(o.cle);
+    const f = familleDeCleNumero(o.cle, numeroId);
+    parFamille[f].n++;
+    parFamille[f].octets += Number.isFinite(o.taille) && o.taille > 0 ? o.taille : 0;
+    if (FAMILLES_LIVRE[f].efface) aEffacer.push(o.cle);
+    else gardes++;
+  }
+  return { aEffacer, gardes, parFamille };
+}
+
+/* ─────────────────────────────── les lignes ─────────────────────────────── */
+
+/**
+ * Ce que deviennent les lignes `photos` d'un dossier livré : AUCUNE n'est
+ * supprimée (le nombre de photos reste vrai, `r2_key` dit ce qui a été effacé)
+ * ; on vide le nom du fichier et ce que la photo savait d'elle-même (date,
+ * lieu, appareil, empreinte). Colonnes des migrations 20260821, 20260830 et
+ * 20260921, toutes appliquées et vérifiées (rien de frais : pas de repli, une
+ * écriture refusée ARRÊTE le dossier). Restent `largeur`, `hauteur`,
+ * `luminance` (rien de personnel) et les marqueurs `metadonnees_le` / `lieu_le`
+ * (sinon l'enrichissement irait relire au coffre des objets partis).
+ */
+export const PATCH_PHOTO_LIVRE_EFFACEE = {
+  nom_origine: null,
+  vignette_key: null,
+  prise_le: null,
+  appareil: null,
+  gps_lat: null,
+  gps_lon: null,
+  empreinte: null,
+  lieu_ville: null,
+  lieu_pays: null,
+  lieu_code_pays: null,
+} as const;
+
+/**
+ * Ce que devient la ligne `numeros` : les clés du fichier HD, qui
+ * désigneraient des objets partis (une adresse signée vers rien). Le reste de
+ * la ligne ne bouge pas. Le marqueur `photos_supprimees_le` s'écrit À PART,
+ * en dernier, et seulement s'il est encore vide.
+ */
+export const PATCH_NUMERO_LIVRE_EFFACE = {
+  souvenir_pdf_key: null,
+  souvenir_pdf_octets: null,
+  impression_fichiers: null,
+} as const;
+
+/* ─────────────────────────── l'intention et la reprise ─────────────────────────── */
+
+/** L'intention, écrite AVANT la base (`evenements`) : `{ cles, n, … }`, des clés que `FAMILLES_LIVRE` efface. */
+export const EVT_LIVRE_A_EFFACER = "retention_livre_a_effacer";
+/** Ce qui est réglé d'une intention : `{ evenement, cles }`. */
+export const EVT_LIVRE_EFFACEE = "retention_livre_effacee";
+/** Le résumé, la seule trace lisible de ce qui a disparu (recit.ts le dit). */
+export const EVT_LIVRE_FAIT = "photos_hd_effaces";
+
+export const LIVRE_CLES_PAR_INTENTION = 500;
+export const DELAI_REPRISE_LIVRE_MS = 15 * 60 * 1000;
+
+/** Les clés d'une intention, relues sans confiance : celles du dossier, que la table efface, sans doublon. */
+export function lireClesLivre(v: unknown, numeroId: string): string[] {
+  if (!Array.isArray(v)) return [];
+  return [...new Set(v.filter((k): k is string => typeof k === "string" && k.length <= 300 && cleEffaceeLivre(k, numeroId)))];
+}
+
+export type EvenementLivre = { id: string; numero_id: string; type: string; payload: Record<string, unknown> | null; created_at: string };
+
+export type LivreEnAttente = { numeroId: string; evenement: string; cles: string[] };
+
+/** Les clés de chaque intention qui ne sont pas réglées, intentions vieilles de 15 minutes au moins, la plus ancienne d'abord. */
+export function livresEnAttente(evenements: readonly EvenementLivre[], maintenant: Date): LivreEnAttente[] {
+  const reglees = new Map<string, Set<string>>();
+  for (const e of evenements) {
+    if (e.type !== EVT_LIVRE_EFFACEE || typeof e.payload?.evenement !== "string") continue;
+    const cle = `${e.numero_id}|${e.payload.evenement}`;
+    const s = reglees.get(cle) ?? new Set<string>();
+    for (const k of lireClesLivre(e.payload.cles, e.numero_id)) s.add(k);
+    reglees.set(cle, s);
+  }
+  const limite = maintenant.getTime() - DELAI_REPRISE_LIVRE_MS;
+  const out: LivreEnAttente[] = [];
+  const intentions = evenements
+    .filter((e) => e.type === EVT_LIVRE_A_EFFACER)
+    .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+  for (const e of intentions) {
+    const t = Date.parse(e.created_at);
+    if (!Number.isFinite(t) || t > limite) continue;
+    const faites = reglees.get(`${e.numero_id}|${e.id}`);
+    const cles = lireClesLivre(e.payload?.cles, e.numero_id).filter((k) => !faites?.has(k));
+    if (cles.length) out.push({ numeroId: e.numero_id, evenement: e.id, cles });
+  }
+  return out;
+}
+
+/** Aucune clé libre tant que le dossier n'est pas marqué ; une fois marqué, celles que la table efface. */
+export function clesLibresLivre(cles: readonly string[], numeroId: string, marqueLe: string | null | undefined): string[] {
+  if (!marqueLe) return [];
+  return cles.filter((k) => cleEffaceeLivre(k, numeroId));
+}

@@ -40,6 +40,8 @@ type Props = {
   statut: string;
   lienPhotos: string;
   tu: boolean;
+  /** T-159 : « Les photos de cette édition ont été supprimées le … » (30 jours après la livraison) ; sinon `null`. */
+  effacees: string | null;
 };
 
 export default function CartePhotos(p: Props) {
@@ -124,6 +126,10 @@ export default function CartePhotos(p: Props) {
               {p.participants ? `, de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
             </span>
           </div>
+          {p.effacees ? (
+            /* T-159 : l'édition effacée le DIT ; ni dossiers vides, ni mosaïque sans image. */
+            <p className="ec-texte ec-tdb-effacees">{p.effacees}.</p>
+          ) : (
           <ul className="ec-tdb-dossiers ec-defile" aria-label="Les dossiers de photos">
             {p.dossiers.map((d) => {
               const plus = Math.max(1, ...p.dossiers.map((x) => x.n));
@@ -148,7 +154,8 @@ export default function CartePhotos(p: Props) {
               );
             })}
           </ul>
-          {p.mosaique.length ? (
+          )}
+          {p.mosaique.length && !p.effacees ? (
             <div className="ec-tdb-mosaique" aria-hidden="true">
               {p.mosaique.map((u, i) => (
                 <img key={i} src={u} alt="" loading="lazy" decoding="async" />

@@ -866,6 +866,28 @@ export function raconter(type: string, payload: Record<string, unknown> = {}): R
         ton: "neutre",
       };
 
+    /* T-203 — un dossier LIVRÉ dont les photos et le fichier HD sont partis, 90 jours après la
+       livraison (politique de confidentialité §7). La ligne, le prix, l'adresse et la facture
+       restent : ce n'est pas une anonymisation. */
+    case "photos_hd_effaces":
+      return {
+        texte: "Photos et fichier HD supprimés",
+        detail:
+          `${payload.jours_depuis_livraison ?? "?"} jours après la livraison, ` +
+          `${payload.objets_effaces ?? 0} objet(s) effacé(s) du coffre` +
+          (typeof payload.objets_restes === "number" && payload.objets_restes > 0 ? `, ${payload.objets_restes} encore à reprendre` : "") +
+          " ; le dossier, sa facture et ses aperçus restent",
+        ton: "neutre",
+      };
+    case "retention_livre_a_effacer":
+      return { texte: "Suppression des photos et du fichier HD préparée", detail: `${payload.n ?? 0} objet(s) du coffre`, ton: "neutre" };
+    case "retention_livre_effacee":
+      return {
+        texte: payload.gardees === true ? "Suppression interrompue avant le coffre : rien n'est parti" : "Objets du coffre effacés",
+        detail: payload.reprise === true ? "reprise d'un passage précédent" : null,
+        ton: "neutre",
+      };
+
     default:
       /* Un événement d'un lot futur ne doit pas disparaître du journal. */
       return { texte: type.replace(/_/g, " "), detail: null, ton: "neutre" };

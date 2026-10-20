@@ -5997,7 +5997,305 @@ const verifierProtection = async () => {
   }
 };
 
-void verifierT005().then(verifierProtection).then(verifierT176).then(() => {
+/* T-203 (20/10/2026) : tenir la promesse de la politique de confidentialité en ligne (§7) : « Photos
+   téléversées + fichier HD : supprimées 90 jours après la livraison ». La règle pure (atelier/retention.ts),
+   la porte du coffre (r2.ts), l'ordre des gestes contre une FAUSSE base et un FAUX coffre (retentionLivres.ts),
+   le script relu. Joué AVANT T-176, qui pose des variables R2 fictives : ici, aucune variable R2 n'existe,
+   une porte qui appellerait le coffre lèverait. */
+const verifierT203 = async () => {
+  const Rt = await import("@/lib/atelier/retention");
+  const R2 = await import("@/lib/atelier/r2");
+  const Rl = await import("@/lib/atelier/retentionLivres");
+  const { ETATS } = await import("@/lib/atelier/transitions");
+  const { baseEnMemoire } = await import("./fausseBase");
+  const fichiersSrc = (dossier: string): string[] =>
+    readdirSync(dossier, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? fichiersSrc(join(dossier, e.name)) : /\.tsx?$/.test(e.name) ? [join(dossier, e.name)] : [],
+    );
+  type LigneMem = Record<string, unknown>;
+  type Client = Parameters<typeof Rl.effacerDossierLivre>[0];
+  const comme = (c: unknown) => c as Client;
+  const lire = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const sansCommentaires = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const silence = async <R,>(f: () => Promise<R>): Promise<R | "leve"> => {
+    const [e, l] = [console.error, console.log];
+    console.error = () => {};
+    console.log = () => {};
+    try {
+      return await f();
+    } catch {
+      return "leve";
+    } finally {
+      console.error = e;
+      console.log = l;
+    }
+  };
+  const MAINT = new Date("2026-12-31T12:00:00.000Z");
+  const ilYa = (j: number) => new Date(MAINT.getTime() - j * 86_400_000).toISOString().replace("Z", "+00:00");
+  const num = (n: number) => `11111111-aaaa-4bbb-8ccc-${String(n).padStart(12, "0")}`;
+  const ph = (n: number) => `22222222-aaaa-4bbb-8ccc-${String(n).padStart(12, "0")}`;
+
+  titre("— T-203 : la regle, 90 jours apres la LIVRAISON lue au journal (politique de confidentialite §7) —");
+  {
+    const legal = lire("src/app/legal/content/confidentialite.ts");
+    ok("90 jours : la constante dit ce que la politique EN LIGNE promet (« Photos téléversées + fichier HD », « Supprimées 90 jours après la livraison »)",
+       Rt.RETENTION_LIVRE_JOURS === 90 && legal.includes("[`Photos téléversées + fichier HD`, `Supprimées 90 jours après la livraison"));
+    const e = (vers: string, created_at: string, type = "etat_change") => ({ type, payload: { vers }, created_at });
+    ok("la date de livraison : le DERNIER passage vers `livree` (une seconde livraison fait repartir le delai) ; ni un autre etat, ni un autre type",
+       Rt.dateDeLivraison([e("expediee", ilYa(130)), e("livree", ilYa(120)), e("livree", ilYa(100)), e("livree", ilYa(5), "apercu_corrige")]) === ilYa(100)
+         && Rt.dateDeLivraison([e("expediee", ilYa(130))]) === null && Rt.dateDeLivraison([]) === null);
+    ok("une date sans fuseau ou illisible ne compte pas (lue a l'heure de la machine, elle mentirait)",
+       Rt.dateDeLivraison([e("livree", "2026-09-01T10:00:00")]) === null && Rt.dateDeLivraison([e("livree", "le 4 octobre")]) === null
+         && Rt.dateDeLivraison([e("livree", "2026-09-01T10:00:00.123456+00:00")]) === "2026-09-01T10:00:00.123456+00:00");
+    const V = (n: Partial<{ etat: string; anonymise_le: string | null; photos_supprimees_le: string | null }>, livre: string | null) =>
+      Rt.verdictRetentionLivre({ etat: "livree", ...n }, livre, MAINT);
+    const motif = (v: ReturnType<typeof V>) => (v.effacable ? "effacable" : v.motif);
+    ok("JAMAIS un dossier qui n'est pas livre, quel que soit son etat, meme avec une « livraison » de 400 jours au journal",
+       ETATS.filter((s) => s !== "livree").every((s) => motif(V({ etat: s }, ilYa(400))) === "non_livre"));
+    ok("livre sans date au journal : jamais (on ne devine pas) ; anonymise ou deja efface : jamais deux fois",
+       motif(V({}, null)) === "livre_sans_date" && motif(V({ anonymise_le: ilYa(1) }, ilYa(400))) === "anonymise" && motif(V({ photos_supprimees_le: ilYa(1) }, ilYa(400))) === "deja_efface");
+    ok("89,9 jours : dans le delai (l'age est rendu) ; 90 jours pile : effacable ; 400 jours : effacable, la date rendue telle quelle",
+       motif(V({}, new Date(MAINT.getTime() - 89.9 * 86_400_000).toISOString())) === "dans_le_delai" && V({}, ilYa(90)).effacable
+         && (() => { const v = V({}, ilYa(400)); return v.effacable && v.livreLe === ilYa(400) && Math.round(v.jours) === 400; })());
+    ok("chaque motif a sa phrase", (Object.keys(Rt.TEXTE_MOTIF_LIVRE) as (keyof typeof Rt.TEXTE_MOTIF_LIVRE)[]).every((m) => Rt.TEXTE_MOTIF_LIVRE[m].length > 5));
+  }
+
+  titre("— T-203 : ce qui part (photos, fichier HD d'impression, version digitale HD), ce qui reste (le reste du dossier) —");
+  {
+    const N = num(1);
+    const F = (k: string) => Rt.familleDeCleNumero(k, N);
+    const EFF = (k: string) => Rt.cleEffaceeLivre(k, N);
+    ok("les photos telversees : l'original (chaque format) et la vignette, sur les cles que cleR2 / cleVignetteR2 ecrivent",
+       ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].every((m) => F(R2.cleR2(N, ph(1), m)) === "photos") && F(R2.cleVignetteR2(N, ph(1))) === "photos" && EFF(R2.cleR2(N, ph(1), "image/heic")));
+    ok("le fichier HD d'impression (produit, couverture, interieur) et le PDF souvenir PARTENT",
+       ["produit", "couverture", "interieur"].every((s) => F(`numeros/${N}/impression/${s}-0a1b2c3d.pdf`) === "impression") && F(`numeros/${N}/souvenir/0a1b2c3d.pdf`) === "souvenir"
+         && EFF(`numeros/${N}/impression/couverture-0a1b2c3d.pdf`) && EFF(`numeros/${N}/souvenir/0a1b2c3d.pdf`));
+    ok("les apercus de couverture RESTENT (ni photo televersee ni fichier HD : le reste du dossier ne part jamais)",
+       ["plat", "c1", "c4", "double"].every((s) => F(`numeros/${N}/apercu/${s}-0a1b2c3d.jpg`) === "apercu" && !EFF(`numeros/${N}/apercu/${s}-0a1b2c3d.jpg`)));
+    ok("une cle inconnue, une cle d'un autre dossier, un « .. », une cle d'edition, un dossier qui n'est pas un uuid : jamais",
+       F(`numeros/${N}/autre/x.bin`) === "autre" && F(`numeros/${N}/photos/${ph(1)}/autre.jpg`) === "autre" && F(R2.cleR2(num(2), ph(1), "image/jpeg")) === "hors_dossier"
+         && F(`numeros/${N}/photos/../../${num(2)}/photos/${ph(1)}/original.jpg`) === "hors_dossier" && F(`collectif/${N}/photos/${ph(1)}/original.jpg`) === "hors_dossier"
+         && Rt.familleDeCleNumero(R2.cleR2("0f3e", ph(1), "image/jpeg"), "0f3e") === "hors_dossier" && Rt.familleDeCleNumero(R2.cleR2(N.toUpperCase(), ph(1), "image/jpeg"), N.toUpperCase()) === "hors_dossier"
+         && !EFF(`numeros/${N}/autre/x.bin`) && !EFF(R2.cleR2(num(2), ph(1), "image/jpeg")));
+    ok("la table : seules photos, impression et souvenir s'effacent ; chaque famille dans l'ordre du rapport, une fois",
+       (Object.keys(Rt.FAMILLES_LIVRE) as (keyof typeof Rt.FAMILLES_LIVRE)[]).filter((f) => Rt.FAMILLES_LIVRE[f].efface).sort().join() === "impression,photos,souvenir"
+         && Rt.ORDRE_FAMILLES_LIVRE.length === Object.keys(Rt.FAMILLES_LIVRE).length && new Set(Rt.ORDRE_FAMILLES_LIVRE).size === Rt.ORDRE_FAMILLES_LIVRE.length);
+    const sqls = ["20260821_atelier_numeros.sql", "20260830_atelier_vignettes.sql", "20260921_atelier_photos_metadonnees.sql"].map((f) => lire(`supabase/migrations/${f}`)).join("\n");
+    const videes = Object.keys(Rt.PATCH_PHOTO_LIVRE_EFFACEE);
+    ok("les colonnes videes des photos existent dans des migrations APPLIQUEES (rien de frais), aucune `not null` ; r2_key, metadonnees_le, lieu_le, largeur RESTENT",
+       videes.every((c) => new RegExp(`\\b${c}\\b`).test(sqls)) && videes.every((c) => !new RegExp(`\\b${c}\\b[^\\n,]*not null`).test(sqls))
+         && Object.values(Rt.PATCH_PHOTO_LIVRE_EFFACEE).every((v) => v === null) && ["r2_key", "metadonnees_le", "lieu_le", "largeur", "numero_id", "id"].every((c) => !videes.includes(c)));
+    const surDossier = Object.keys(Rt.PATCH_NUMERO_LIVRE_EFFACE);
+    ok("sur le dossier, seulement les cles du fichier HD (souvenir, impression) ; ni l'etat, ni le prix, ni l'adresse, ni le token, ni l'adresse e-mail",
+       surDossier.sort().join() === "impression_fichiers,souvenir_pdf_key,souvenir_pdf_octets" && Object.values(Rt.PATCH_NUMERO_LIVRE_EFFACE).every((v) => v === null));
+    const mig = lire("supabase/migrations/20261024_atelier_retention_livres.sql");
+    const sql = mig.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
+    ok("la migration 20261024 n'AJOUTE qu'une colonne nullable `numeros.photos_supprimees_le` (rien d'efface, rien de reecrit)",
+       /alter table public\.numeros\s+add column if not exists photos_supprimees_le timestamptz null;/.test(sql) && !/\b(drop|delete|update|truncate)\b/i.test(sql.replace(/comment on column[\s\S]*?;/g, "")));
+  }
+
+  titre("— T-203 : la porte du coffre n'efface QUE photos et fichier HD d'un dossier, et refuse avant tout reseau —");
+  {
+    const N = num(1);
+    const refusees = [`numeros/${N}/apercu/c1-0a1b2c3d.jpg`, `numeros/${N}/autre/x.bin`, R2.cleR2(num(2), ph(1), "image/jpeg"), `collectif/${N}/photos/${ph(1)}/original.jpg`, `numeros/${N}/photos/../x`, `numeros/${N}/`];
+    const r1 = await silence(() => R2.supprimerPhotosEtHdLivre(N, refusees));
+    ok("un apercu, une cle inconnue, la photo d'un AUTRE dossier, une cle d'edition, un « .. », le dossier entier : REFUSES, aucun appel au coffre",
+       r1 !== "leve" && r1.partis.length === 0 && r1.rates.length === 0 && r1.refusees.length === refusees.length);
+    const r2 = await silence(() => R2.supprimerPhotosEtHdLivre("0f3e", [R2.cleR2("0f3e", ph(1), "image/jpeg")]));
+    const r3 = await silence(() => R2.supprimerPhotosEtHdLivre(N.toUpperCase(), [R2.cleR2(N.toUpperCase(), ph(1), "image/jpeg")]));
+    ok("un identifiant qui n'est pas un uuid en minuscules : tout refuse", r2 !== "leve" && r2.refusees.length === 1 && r3 !== "leve" && r3.refusees.length === 1);
+    const sansCoffre = !process.env.R2_ENDPOINT && !process.env.R2_ACCESS_KEY_ID && !process.env.R2_SECRET_ACCESS_KEY && !process.env.R2_BUCKET_NAME;
+    const r4 = sansCoffre ? await silence(() => R2.supprimerPhotosEtHdLivre(N, [R2.cleR2(N, ph(1), "image/jpeg")])) : "non_jouee";
+    ok("une vraie photo du dossier EST acceptee (elle va jusqu'au coffre : ici, sans configuration, elle leve avant tout reseau)", r4 === "leve");
+    ok("le listage refuse un identifiant faux sans appeler le coffre", (await silence(() => R2.listerCoffreNumero("0f3e"))) === null && (await silence(() => R2.listerCoffreNumero(""))) === null);
+    const r2src = sansCommentaires(lire("src/lib/atelier/r2.ts"));
+    ok("la porte relit la table elle-meme (`cleEffaceeLivre`) ; « Supprimer définitivement » (`supprimerPrefixe`) ne change pas",
+       /if \(typeof k === "string" && cleEffaceeLivre\(k, numeroId\)\) acceptees\.push\(k\);/.test(r2src)
+         && /export async function supprimerPrefixe\(prefixe: string\): Promise<\{[^}]*\}> \{\s*if \(racineEffacable\(prefixe\) !== "numeros"\) \{/.test(r2src));
+    const src = (f: string) => sansCommentaires(lire(f));
+    const tous = fichiersSrc(join(process.cwd(), "src")).map((f) => f.slice(process.cwd().length + 1));
+    ok("seul retentionLivres.ts appelle la porte ; AUCUN fichier de src n'importe retentionLivres (ni route, ni cron, ni releve : il attend Mathias)",
+       tous.every((f) => f === "src/lib/atelier/r2.ts" || f === "src/lib/atelier/retentionLivres.ts" || !/supprimerPhotosEtHdLivre\(/.test(src(f)))
+         && tous.every((f) => !/retentionLivres/.test(src(f))) && !/retention-livres/.test(lire("vercel.json")));
+  }
+
+  /* Le FAUX coffre d'un dossier : ses objets, ce qu'on lui a demandé, un refus réglable. */
+  const coffreMem = (cles: readonly string[]) => {
+    const objets = new Set(cles);
+    const demandes: string[] = [];
+    const etat: { refuse: (k: string) => boolean } = { refuse: () => false };
+    const coffre: import("@/lib/atelier/retentionLivres").CoffreLivre = {
+      async lister(id) {
+        return [...objets].filter((k) => k.startsWith(`numeros/${id}/`)).map((cle) => ({ cle, taille: 1000 }));
+      },
+      async effacer(id, liste) {
+        const partis: string[] = [];
+        const rates: string[] = [];
+        for (const k of liste) {
+          demandes.push(k);
+          if (!Rt.cleEffaceeLivre(k, id) || etat.refuse(k)) rates.push(k);
+          else {
+            objets.delete(k);
+            partis.push(k);
+          }
+        }
+        return { partis, rates };
+      },
+    };
+    return { coffre, objets, demandes, etat };
+  };
+  const dossier = (id: string, extra: LigneMem = {}): LigneMem => ({
+    id, token: `${"T".repeat(28)}${id.slice(-4)}`, titre: "Mariage de Julie", etat: "livree", nb_photos: 2, anonymise_le: null, photos_supprimees_le: null,
+    souvenir_pdf_key: `numeros/${id}/souvenir/0a1b2c3d.pdf`, souvenir_pdf_octets: 1000, impression_fichiers: { couverture: `numeros/${id}/impression/couverture-0a1b2c3d.pdf`, interieur: `numeros/${id}/impression/interieur-0a1b2c3d.pdf` },
+    prix_centimes: 4500, adresse_livraison: { ligne1: "1 rue X" }, email: "julie@exemple.fr", created_at: ilYa(200), ...extra,
+  });
+  const photo = (id: string, n: number): LigneMem => ({
+    id: ph(n), numero_id: id, r2_key: R2.cleR2(id, ph(n), "image/jpeg"), vignette_key: R2.cleVignetteR2(id, ph(n)), nom_origine: `mariage-julie-${n}.jpg`, prise_le: "2026-06-01T10:00:00",
+    appareil: "iPhone 15", gps_lat: 43.3, gps_lon: 5.4, empreinte: "f0f0", lieu_ville: "Marseille", lieu_pays: "France", lieu_code_pays: "fr", largeur: 4000, metadonnees_le: ilYa(150), lieu_le: ilYa(150),
+  });
+  const coffreDe = (id: string, photos: LigneMem[]) => [
+    ...photos.flatMap((p) => [String(p.r2_key), String(p.vignette_key)]),
+    `numeros/${id}/impression/couverture-0a1b2c3d.pdf`, `numeros/${id}/impression/interieur-0a1b2c3d.pdf`, `numeros/${id}/souvenir/0a1b2c3d.pdf`,
+    `numeros/${id}/apercu/c1-0a1b2c3d.jpg`, `numeros/${id}/autre/x.bin`,
+  ];
+  const livraison = (id: string, jours: number): LigneMem => ({ id: `ev-${id}-${jours}`, numero_id: id, type: "etat_change", payload: { de: "expediee", vers: "livree", par: "cloudprinter" }, created_at: ilYa(jours) });
+  const jusqua = () => Date.now() + 60_000;
+
+  titre("— T-203 : contre une fausse base et un faux coffre, un dossier livre depuis 120 jours —");
+  {
+    const N = num(10), AUTRE = num(11);
+    const ps = [photo(N, 1), photo(N, 2)];
+    const base = baseEnMemoire({
+      numeros: [dossier(N), dossier(AUTRE)],
+      photos: [...ps, photo(AUTRE, 3)].map((p) => ({ ...p })),
+      evenements: [livraison(N, 120), livraison(AUTRE, 120)],
+    });
+    const m = coffreMem([...coffreDe(N, ps), ...coffreDe(AUTRE, [photo(AUTRE, 3)])]);
+    const r = await silence(() => Rl.effacerDossierLivre(comme(base.client), N, { maintenant: MAINT, coffre: m.coffre, jusqua: jusqua() }));
+    const d = (base.tables.numeros as LigneMem[]).find((x) => x.id === N)!;
+    ok("efface : les photos (originaux, vignettes), le fichier HD d'impression et le souvenir partent ; l'apercu et la cle inconnue RESTENT",
+       r !== "leve" && r.statut === "efface" && r.objets === 7 && r.restes === 0 && coffreDe(N, ps).every((k) => (Rt.cleEffaceeLivre(k, N) ? !m.objets.has(k) : m.objets.has(k)))
+         && m.objets.has(`numeros/${N}/apercu/c1-0a1b2c3d.jpg`) && m.objets.has(`numeros/${N}/autre/x.bin`));
+    ok("l'AUTRE dossier (livre lui aussi) n'est pas touche : on n'efface que celui qu'on nomme ; jamais une cle gardee demandee au coffre",
+       coffreDe(AUTRE, [photo(AUTRE, 3)]).every((k) => m.objets.has(k)) && m.demandes.every((k) => Rt.cleEffaceeLivre(k, N)));
+    const lignes = (base.tables.photos as LigneMem[]).filter((p) => p.numero_id === N);
+    ok("aucune ligne de photo supprimee ; nom de fichier, date, lieu, appareil, empreinte, vignette VIDES ; r2_key, dimensions, marqueurs d'enrichissement gardes",
+       lignes.length === 2 && lignes.every((l) => Object.keys(Rt.PATCH_PHOTO_LIVRE_EFFACEE).every((c) => l[c] === null)) && lignes.every((l) => typeof l.r2_key === "string" && l.largeur === 4000 && typeof l.metadonnees_le === "string"));
+    ok("le dossier : les cles du fichier HD retirees, le marqueur pose ; l'etat, le prix, l'adresse, le token, l'adresse e-mail INTACTS (ce n'est pas une anonymisation)",
+       d.souvenir_pdf_key === null && d.souvenir_pdf_octets === null && d.impression_fichiers === null && d.photos_supprimees_le === MAINT.toISOString()
+         && d.etat === "livree" && d.prix_centimes === 4500 && (d.adresse_livraison as LigneMem).ligne1 === "1 rue X" && d.email === "julie@exemple.fr" && String(d.token).length === 32);
+    const ordre = ["insert:evenements:retention_livre_a_effacer", "update:photos:2", "update:numeros:1", "insert:evenements:retention_livre_effacee", "insert:evenements:photos_hd_effaces"];
+    const i = ordre.map((t) => base.trace.indexOf(t));
+    const marqueur = base.trace.lastIndexOf("update:numeros:1");
+    ok("l'ORDRE (audit S7) : l'intention, les photos, le dossier, le MARQUEUR (en dernier), puis ce qui est regle, puis le resume",
+       i.every((x) => x >= 0) && i.every((x, k) => k === 0 || i[k - 1] < x) && marqueur > i[2] && marqueur < i[3]);
+    const evts = (base.tables.evenements as LigneMem[]).filter((e) => e.numero_id === N && String(e.type).startsWith("retention_livre") || e.type === "photos_hd_effaces");
+    const resume = (base.tables.evenements as LigneMem[]).find((e) => e.type === "photos_hd_effaces")?.payload as LigneMem | undefined;
+    ok("le journal (`evenements`) : le resume compte (7 objets, 0 reste, 2 gardes, 90 jours) ; ni l'adresse e-mail, ni un nom de fichier, ni le token",
+       resume?.objets_effaces === 7 && resume?.objets_restes === 0 && resume?.objets_gardes === 2 && resume?.retention_jours === 90 && resume?.par === "script"
+         && !/julie@|mariage-julie|TTTTTTTT/.test(JSON.stringify(evts.map((e) => e.payload))));
+    const deuxieme = await silence(() => Rl.effacerDossierLivre(comme(base.client), N, { maintenant: MAINT, coffre: m.coffre }));
+    ok("jamais deux fois : le second passage est epargne (« deja efface »), sans une ecriture de plus",
+       deuxieme !== "leve" && deuxieme.statut === "epargne" && deuxieme.motif === "deja_efface" && base.trace.filter((t) => t.startsWith("update:numeros")).length === 2);
+  }
+
+  titre("— T-203 : les refus, contre la fausse base : pas livre, pas de date, dans le delai, sans la colonne —");
+  {
+    const cas = [
+      { id: num(20), etat: "expediee", jours: 400, motif: "non_livre" },
+      { id: num(21), etat: "en_production", jours: 400, motif: "non_livre" },
+      { id: num(22), etat: "livree", jours: null, motif: "livre_sans_date" },
+      { id: num(23), etat: "livree", jours: 89, motif: "dans_le_delai" },
+    ];
+    const base = baseEnMemoire({
+      numeros: cas.map((c) => dossier(c.id, { etat: c.etat })),
+      photos: cas.map((c, k) => photo(c.id, 40 + k)),
+      evenements: cas.filter((c) => c.jours !== null).map((c) => livraison(c.id, c.jours as number)),
+    });
+    const m = coffreMem(cas.flatMap((c, k) => coffreDe(c.id, [photo(c.id, 40 + k)])));
+    const issues: (Awaited<ReturnType<typeof Rl.effacerDossierLivre>> | "leve")[] = [];
+    for (const c of cas) issues.push(await silence(() => Rl.effacerDossierLivre(comme(base.client), c.id, { maintenant: MAINT, coffre: m.coffre })));
+    ok("expedie, en production (meme avec une « livraison » au journal), livre sans date, livre il y a 89 jours : tous epargnes, chacun par son motif",
+       issues.every((r, k) => r !== "leve" && r.statut === "epargne" && r.motif === cas[k].motif));
+    ok("…et rien n'a ete ecrit, rien demande au coffre", !base.trace.some((t) => /^(insert|update|delete):/.test(t)) && m.demandes.length === 0);
+    /* La fausse base ne lit pas la liste des colonnes : la PREMIÈRE lecture de `numeros` (celle qui nomme la colonne
+       fraîche) répond 42703, comme la vraie base sans la migration ; la seconde (sans elle) passe. */
+    const premiereEn42703 = () => {
+      let vue = false;
+      return (q: { table: string; op: string }) => {
+        if (q.table !== "numeros" || q.op !== "select" || vue) return null;
+        vue = true;
+        return { code: "42703", message: "column numeros.photos_supprimees_le does not exist" };
+      };
+    };
+    const sansColonne = baseEnMemoire({ numeros: [dossier(num(24))], evenements: [livraison(num(24), 200)] }, premiereEn42703());
+    const r = await silence(() => Rl.effacerDossierLivre(comme(sansColonne.client), num(24), { maintenant: MAINT, coffre: coffreMem([]).coffre }));
+    ok("sans la colonne `photos_supprimees_le` (migration 20261024) : REFUS (« colonne_absente »), rien ecrit (effacer sans pouvoir le noter, c'est recommencer sans fin)",
+       r !== "leve" && r.statut === "colonne_absente" && !sansColonne.trace.some((t) => /^(insert|update|delete):/.test(t)));
+    const lecture = baseEnMemoire({ numeros: [dossier(num(25))] }, premiereEn42703());
+    const lu = await silence(() => Rl.lireDossiersLivres(comme(lecture.client), null));
+    ok("…mais la LECTURE se replie (42703 : la meme lecture sans la colonne) et le DIT : `colonnePosee: false`",
+       lu !== "leve" && lu.ok && lu.colonnePosee === false && lu.dossiers.length === 1);
+  }
+
+  titre("— T-203 : ce qui resiste au coffre se reprend ; une base qui refuse avant le marqueur n'a rien touche au coffre —");
+  {
+    const N = num(30);
+    const ps = [photo(N, 60)];
+    const base = baseEnMemoire({ numeros: [dossier(N)], photos: ps.map((p) => ({ ...p })), evenements: [livraison(N, 100)] });
+    const m = coffreMem(coffreDe(N, ps));
+    const souvenir = `numeros/${N}/souvenir/0a1b2c3d.pdf`;
+    m.etat.refuse = (k) => k === souvenir;
+    const r = await silence(() => Rl.effacerDossierLivre(comme(base.client), N, { maintenant: MAINT, coffre: m.coffre }));
+    ok("le coffre refuse le souvenir : le dossier est marque, UN objet reste, le regle ne le nomme pas",
+       r !== "leve" && r.statut === "efface" && r.restes === 1 && m.objets.has(souvenir)
+         && !(((base.tables.evenements as LigneMem[]).find((e) => e.type === "retention_livre_effacee")?.payload as LigneMem).cles as string[]).includes(souvenir));
+    m.etat.refuse = () => false;
+    const tot = await silence(() => Rl.reprendreLivres(comme(base.client), jusqua(), new Date("2026-10-20T08:10:00.000Z"), m.coffre));
+    const ok1 = await silence(() => Rl.reprendreLivres(comme(base.client), jusqua(), new Date("2026-10-20T09:00:00.000Z"), m.coffre));
+    const fin = await silence(() => Rl.reprendreLivres(comme(base.client), jusqua(), new Date("2026-10-20T10:00:00.000Z"), m.coffre));
+    ok("la reprise attend 15 minutes, puis efface le souvenir, le regle, et la suivante n'a plus rien",
+       tot !== "leve" && tot?.intentions === 0 && ok1 !== "leve" && ok1?.effaces === 1 && !m.objets.has(souvenir) && fin !== "leve" && fin?.intentions === 0);
+
+    const NON = num(31);
+    const base2 = baseEnMemoire({
+      numeros: [dossier(NON)],
+      evenements: [{ id: "ev-non", numero_id: NON, type: "retention_livre_a_effacer", payload: { cles: [R2.cleR2(NON, ph(61), "image/jpeg"), `numeros/${NON}/apercu/c1-0a1b2c3d.jpg`] }, created_at: "2026-10-01T00:00:00.000+00:00" }],
+    });
+    const m2 = coffreMem([R2.cleR2(NON, ph(61), "image/jpeg"), `numeros/${NON}/apercu/c1-0a1b2c3d.jpg`]);
+    const r2 = await silence(() => Rl.reprendreLivres(comme(base2.client), jusqua(), MAINT, m2.coffre));
+    ok("la reprise n'efface JAMAIS la cle d'un dossier non marque (reglee « gardee »), et l'apercu glisse dans l'intention n'est meme pas lu",
+       r2 !== "leve" && r2?.gardes === 1 && m2.demandes.length === 0 && m2.objets.size === 2 && Rt.lireClesLivre([`numeros/${NON}/apercu/c1-0a1b2c3d.jpg`], NON).length === 0);
+
+    const N3 = num(32);
+    const base3 = baseEnMemoire({ numeros: [dossier(N3)], photos: [photo(N3, 62)], evenements: [livraison(N3, 100)] }, (q) => (q.table === "photos" && q.op === "update" ? { code: "XX000", message: "panne" } : null));
+    const m3 = coffreMem(coffreDe(N3, [photo(N3, 62)]));
+    const r3 = await silence(() => Rl.effacerDossierLivre(comme(base3.client), N3, { maintenant: MAINT, coffre: m3.coffre }));
+    ok("les photos refusent : refus « photos », le dossier n'est pas marque, le coffre intact (rien demande), l'intention reglee « gardee »",
+       r3 !== "leve" && r3.statut === "refuse" && r3.etape === "photos" && (base3.tables.numeros as LigneMem[])[0].photos_supprimees_le === null && m3.demandes.length === 0
+         && (base3.tables.evenements as LigneMem[]).some((e) => e.type === "retention_livre_effacee" && (e.payload as LigneMem).gardees === true));
+  }
+
+  titre("— T-203 : le script (lu sans l'executer) : lecture seule par defaut, aucune ecriture a lui, refus sans la colonne —");
+  {
+    const code = sansCommentaires(lire("scripts/retention-livres.ts"));
+    const main = code.slice(code.indexOf("async function main()"));
+    const avant = main.slice(0, main.indexOf("if (!vraiment) {"));
+    ok("`vraiment` ne vient que du mot ; l'unique `effacerDossierLivre(` et l'unique `reprendreLivres(` viennent APRES `if (!vraiment) {` et APRES le refus sans la colonne",
+       /const vraiment = argv\.includes\("--vraiment"\);/.test(main) && !/effacerDossierLivre\(|reprendreLivres\(/.test(avant)
+         && main.indexOf("if (!colonnePosee) {", main.indexOf("if (!vraiment) {")) < main.indexOf("await reprendreLivres(")
+         && (code.match(/await effacerDossierLivre\(/g) ?? []).length === 1 && (code.match(/await reprendreLivres\(/g) ?? []).length === 1);
+    ok("le script n'ecrit RIEN lui-meme (aucun update, insert, delete, aucun effaceur, aucun journal) ; --dossier exige la forme d'un token ; un argument inconnu est refuse",
+       !/\.(update|insert|upsert|delete)\(/.test(code) && !/supprimer(Prefixe|PhotosEtHdLivre|CoffreEdition)?\(|logEvenement\(|DeleteObject/.test(code)
+         && /isValidNumeroToken\(brut\)/.test(code) && /argument\(s\) inconnu\(s\)/.test(code));
+    ok("aucun token entier dans sa sortie : six caracteres (`abrege`), jamais `d.token` affiche tel quel",
+       /const abrege = \(t: string\) => `\$\{t\.slice\(0, 6\)\}…`;/.test(code) && !/console\.(log|error)\([^)]*\$\{[^}]*\.token\}/.test(code));
+    const doc = lire("scripts/CLAUDE.md");
+    ok("scripts/CLAUDE.md le range parmi les scripts « À manier avec précaution »", doc.indexOf("`retention-livres.ts`", doc.indexOf("## À manier avec précaution")) > 0);
+  }
+};
+
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

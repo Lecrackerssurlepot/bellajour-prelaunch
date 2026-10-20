@@ -16,6 +16,8 @@ import { peut } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
 import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
 import { plafondLienMax, plafondParticipant } from '@/lib/collectif/plafonds'
+import { phrasePhotosEffacees } from '@/lib/collectif/retention'
+import { Verrou } from '../../_composants/EnPreparation'
 import { chargerEspace } from '../donnees'
 import Collecte from './Collecte'
 
@@ -37,6 +39,10 @@ export default async function PagePhotos({
   const acces = await chargerEspace(token)
   if (acces.statut !== 'ok') notFound()
   const { edition, role } = acces
+  /* T-159 : une édition dont les photos sont effacées (30 jours après la livraison) le DIT, au
+     lieu d'une grille de vignettes vides ; rien n'est lu, rien n'est signé, aucun rattrapage. */
+  const effacees = phrasePhotosEffacees(edition.photos_supprimees_le)
+  if (effacees) return <Verrou titre="Les photos" raison={effacees} />
   /* T-194 : sur le lien du RESPONSABLE (reconnu ou non), les photos arrivées au coffre sans
      confirmation sont retrouvées après la réponse. Le lien de l'équipe ne déclenche rien. Le
      module (sharp, libheif, le coffre) ne se charge qu'à ce moment-là, jamais avant la page. */

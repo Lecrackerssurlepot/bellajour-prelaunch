@@ -28,6 +28,7 @@ import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prenomPourAlbum, vuePersonneConnue, type LigneParticipant } from "@/lib/collectif/personnes";
 import { comptesDeLaPersonne, participantDeLAppareil } from "@/lib/collectif/personnesServeur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
+import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 
 /**
  * POST /api/collectif/depot/album — l'ALBUM du lien (« l'album du bateau »,
@@ -102,6 +103,9 @@ export async function POST(request: Request) {
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "voir_album")) return refusDroit();
   const { edition } = acces;
+  /* T-159 : une édition effacée ne signe plus rien (ses photos sont parties). */
+  const effacees = phrasePhotosEffacees(edition.photos_supprimees_le);
+  if (effacees) return NextResponse.json({ error: "photos_effacees", message: `${effacees}.` }, { status: 410 });
   const supabase = makeSupabase();
   const maintenant = new Date();
   const vue = lireVueAlbum(corps.vue);

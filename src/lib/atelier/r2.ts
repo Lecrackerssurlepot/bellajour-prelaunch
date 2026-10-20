@@ -17,7 +17,9 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { cleEffacee } from "@/lib/collectif/retention";
 import { extensionDepuisMime } from "./formats";
+import { cleEffaceeLivre, estIdNumero } from "./retention";
 
 /* Formats, plafond et résolution du MIME vivent désormais dans formats.ts —
    fichier PUR, sans SDK, importable par le navigateur. Le client du dépôt doit
@@ -479,9 +481,10 @@ export async function supprimerPrefixe(prefixe: string): Promise<{ supprimes: nu
 
 /**
  * Le coffre d'UNE édition collective (T-159, 20/10/2026) : tout ce qui vit
- * sous `collectif/<uuid>/` et que `garder` ne retient pas. Seul appelant :
- * `scripts/collectif-retention.ts` (ce qui part et ce qui reste est la table
- * `FAMILLES` de `collectif/retention.ts`, passée ici par `garder`).
+ * sous `collectif/<uuid>/` et que `garder` ne retient pas. ⚠️ Plus appelé
+ * depuis le lot du 20/10 au soir : l'effacement suit l'ordre de l'audit S7
+ * (intention, base, puis les CLÉS de l'intention), par `supprimerClesEdition`.
+ * Gardée (et éprouvée au harnais) pour sa garde ; rien ne l'appelle.
  *
  * ⚠️ Garde-fou : `racineEffacable` doit répondre « collectif ». Ni le coffre
  * entier, ni « collectif/ », ni les styles, ni un uuid mal formé, ni un dossier
@@ -554,4 +557,124 @@ async function viderPrefixe(
     }
   }
   return { supprimes, echecs, gardes };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * LES PORTES DE FIN DE CONSERVATION (20/10/2026 au soir) : T-159 (éditions
+ * livrées depuis 30 jours) et T-203 (dossiers livrés depuis 90 jours).
+ *
+ * À la différence des deux effaceurs de préfixe ci-dessus, elles effacent des
+ * CLÉS NOMMÉES (celles qu'une intention a écrites au journal, ordre de l'audit
+ * S7) et rendent, clé par clé, ce qui est parti et ce qui a résisté : la
+ * reprise ne retente que ce qui reste. Et c'est la PORTE qui relit la table de
+ * ce qui part, pas l'appelant : `cleEffacee` (collectif/retention.ts) pour une
+ * édition, `cleEffaceeLivre` (atelier/retention.ts) pour un dossier livré. Une
+ * clé hors de sa racine, avec `..`, ou d'une famille gardée (PDF d'un tour,
+ * document, aperçu de couverture, clé inconnue) est REFUSÉE, jamais effacée,
+ * et aucun appel au coffre ne part tant qu'il ne reste rien d'acceptable.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+export type IssueCles = { partis: string[]; rates: string[]; refusees: string[] };
+
+/** LISTER sous un préfixe déjà gardé : lecture seule, page après page. `null` : le coffre n'a pas répondu. */
+async function listerSous(prefixe: string): Promise<{ cle: string; taille: number }[] | null> {
+  try {
+    const r2 = makeR2();
+    const objets: { cle: string; taille: number }[] = [];
+    let suite: string | undefined;
+    do {
+      const page = await r2.send(new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefixe, ContinuationToken: suite }));
+      for (const o of page.Contents ?? []) if (o.Key && o.Key.startsWith(prefixe)) objets.push({ cle: o.Key, taille: o.Size ?? 0 });
+      suite = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (suite);
+    return objets;
+  } catch (err) {
+    console.error("[r2] listage échoué", prefixe, (err as Error)?.message);
+    return null;
+  }
+}
+
+/** Effacer des clés DÉJÀ acceptées par une porte, par paquets de 1000, en rendant chacune. */
+async function effacerAcceptees(cles: readonly string[]): Promise<{ partis: string[]; rates: string[] }> {
+  const partis: string[] = [];
+  const rates: string[] = [];
+  if (!cles.length) return { partis, rates };
+  const r2 = makeR2();
+  for (let i = 0; i < cles.length; i += 1000) {
+    const lot = cles.slice(i, i + 1000);
+    try {
+      const r = await r2.send(new DeleteObjectsCommand({ Bucket: bucket(), Delete: { Objects: lot.map((Key) => ({ Key })), Quiet: true } }));
+      const enEchec = new Set((r.Errors ?? []).map((e) => e.Key).filter((k): k is string => typeof k === "string"));
+      for (const e of r.Errors ?? []) console.error("[r2] échec de suppression", e.Key, e.Code, e.Message);
+      for (const k of lot) (enEchec.has(k) ? rates : partis).push(k);
+    } catch (err) {
+      console.error("[r2] suppression groupée échouée", (err as Error)?.message);
+      rates.push(...lot);
+    }
+  }
+  return { partis, rates };
+}
+
+/** Le coffre d'UNE édition, listé (lecture seule) derrière la garde de ses effaceurs. `null` : préfixe refusé ou coffre muet. */
+export async function listerCoffreEdition(prefixe: string): Promise<{ cle: string; taille: number }[] | null> {
+  if (racineEffacable(prefixe) !== "collectif") {
+    console.error("[r2] préfixe d'édition refusé", prefixe);
+    return null;
+  }
+  return listerSous(prefixe);
+}
+
+/**
+ * T-159 : effacer des clés nommées du coffre d'une édition LIVRÉE. N'accepte
+ * que `collectif/<uuid>/` exact (`racineEffacable`), puis, clé par clé, ce qui
+ * est sous ce préfixe et que la table `FAMILLES` efface (`cleEffacee`). Seul
+ * appelant : `collectif/retentionServeur.ts`.
+ */
+export async function supprimerClesEdition(prefixe: string, cles: readonly string[]): Promise<IssueCles> {
+  if (racineEffacable(prefixe) !== "collectif") {
+    console.error("[r2] préfixe d'édition refusé", prefixe);
+    return { partis: [], rates: [], refusees: [...cles] };
+  }
+  const editionId = prefixe.slice("collectif/".length, -1);
+  const acceptees: string[] = [];
+  const refusees: string[] = [];
+  for (const k of new Set(cles)) {
+    if (typeof k === "string" && k.startsWith(prefixe) && !k.includes("..") && cleEffacee(k, editionId)) acceptees.push(k);
+    else refusees.push(k);
+  }
+  if (refusees.length) console.error("[r2] clés d'édition refusées (hors préfixe ou famille gardée)", refusees.length);
+  return { ...(await effacerAcceptees(acceptees)), refusees };
+}
+
+/** T-203 : le coffre d'UN dossier, listé (lecture seule). `null` : identifiant refusé ou coffre muet. */
+export async function listerCoffreNumero(numeroId: string): Promise<{ cle: string; taille: number }[] | null> {
+  const prefixe = `numeros/${numeroId}/`;
+  if (!estIdNumero(numeroId) || racineEffacable(prefixe) !== "numeros") {
+    console.error("[r2] dossier refusé", numeroId);
+    return null;
+  }
+  return listerSous(prefixe);
+}
+
+/**
+ * T-203 : effacer les PHOTOS TÉLÉVERSÉES et le FICHIER HD d'un dossier livré,
+ * et rien d'autre. Un identifiant qui n'est pas un uuid est refusé ; puis,
+ * clé par clé, seulement ce que `FAMILLES_LIVRE` efface (`cleEffaceeLivre` :
+ * photos, PDF d'impression, PDF souvenir). Les aperçus, une clé inconnue, une
+ * clé d'un autre dossier : refusés. `supprimerPrefixe` (« Supprimer
+ * définitivement ») ne change pas. Seul appelant : `atelier/retentionLivres.ts`.
+ */
+export async function supprimerPhotosEtHdLivre(numeroId: string, cles: readonly string[]): Promise<IssueCles> {
+  if (!estIdNumero(numeroId) || racineEffacable(`numeros/${numeroId}/`) !== "numeros") {
+    console.error("[r2] dossier refusé", numeroId);
+    return { partis: [], rates: [], refusees: [...cles] };
+  }
+  const acceptees: string[] = [];
+  const refusees: string[] = [];
+  for (const k of new Set(cles)) {
+    if (typeof k === "string" && cleEffaceeLivre(k, numeroId)) acceptees.push(k);
+    else refusees.push(k);
+  }
+  if (refusees.length) console.error("[r2] clés de dossier refusées (ni photo ni fichier HD)", refusees.length);
+  return { ...(await effacerAcceptees(acceptees)), refusees };
 }

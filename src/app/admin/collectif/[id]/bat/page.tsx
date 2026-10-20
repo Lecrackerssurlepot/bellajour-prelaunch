@@ -5,6 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { MIGRATION_COLLECTIF } from "@/lib/collectif/migration";
+import { phraseBatEfface } from "@/lib/collectif/retention";
 import { chargerBatAtelier } from "../../donnees";
 import AtelierBat from "./AtelierBat";
 import BarreAtelier, { liensEditions } from "../../../BarreAtelier";
@@ -81,7 +82,12 @@ export default async function PageBatAtelier({
           </nav>
         ) : null}
       </header>
-      {bat.magazine ? (
+      {phraseBatEfface(bat.edition.photos_supprimees_le) ? (
+        /* T-159 : les pages rendues sont parties avec les photos ; le PDF de chaque tour reste au coffre. */
+        <p className="eca-bandeau">
+          <strong>{phraseBatEfface(bat.edition.photos_supprimees_le)}.</strong> Le PDF de chaque tour reste au coffre (décision du 20/10).
+        </p>
+      ) : bat.magazine ? (
         <AtelierBat key={bat.magazine.id} id={id} bat={bat} />
       ) : (
         <p className="eca-vide">Cette édition n&apos;a pas de magazine.</p>

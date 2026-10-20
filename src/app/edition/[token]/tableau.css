@@ -203,6 +203,16 @@
   place-items: center;
   text-align: center;
 }
+/* T-159 : une édition dont les photos sont effacées le dit, à la place des dossiers et de la mosaïque. */
+.ec-espace .ec-tdb-effacees {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--ec-blanc-56);
+}
 .ec-espace .ec-tdb-centre .ec-carte-lien {
   padding: 18px;
   border: 1px solid var(--ec-carte-bord);

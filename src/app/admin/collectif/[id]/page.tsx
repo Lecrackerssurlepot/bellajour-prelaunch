@@ -22,6 +22,7 @@ import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import { premierNouveau } from "@/lib/collectif/nouveaux";
 import { depotOuvert, quandOuvre } from "@/lib/collectif/ouverture";
 import { etiquetteMagazine } from "@/lib/collectif/saisie";
+import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import { chargerEdition, compterConversationsEnAttente, compterNonLus } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
@@ -119,6 +120,8 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   }
   if (!lu.fiche) notFound();
   const { edition: e, etat, magazines, journal, documents, messages, collecte, contenus } = lu.fiche;
+  /* T-159 : une édition dont les photos sont effacées (30 jours après la livraison) le DIT, ici et dans l'onglet Photos. */
+  const effacees = phrasePhotosEffacees(e.photos_supprimees_le);
   /* T-194 : les photos arrivées au coffre sans confirmation, retrouvées après la réponse (sans ralentir la fiche).
      Le module (sharp, libheif, le coffre) ne se charge qu'à ce moment-là : jamais sur le chemin de la page. */
   after(() => import("@/lib/collectif/rattrapageServeur").then((m) => m.rattraperEdition(makeSupabase(), e.id, { declencheur: "fiche" })));
@@ -324,14 +327,14 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             </div>
           ) : (
             <p className="eca-vide">
-              {collecte.total ? "Pas encore d'aperçu à montrer." : "Aucune photo encore. Le lien de dépôt est dans « Réglages et liens »."}
+              {effacees ? `${effacees}.` : collecte.total ? "Pas encore d'aperçu à montrer." : "Aucune photo encore. Le lien de dépôt est dans « Réglages et liens »."}
             </p>
           )}
           <span className="eca-carte-pied eca-puces">
             <span className="eca-puce">{e.cloture_le ? `Clôture le ${formaterJourParis(e.cloture_le)}` : "Clôture à fixer"}</span>
             {ouverture?.etat === "avenir" ? <span className="eca-puce eca-puce--ambre">Dépôt ouvert le {ouverture.quand}</span> : null}
             {collecte.doublons ? <span className="eca-puce">{pluriel(collecte.doublons, "doublon")}</span> : null}
-            {collecte.sansVignette ? <span className="eca-puce">{collecte.sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
+            {collecte.sansVignette && !effacees ? <span className="eca-puce">{collecte.sansVignette.toLocaleString("fr-FR")} sans aperçu (HEIC)</span> : null}
             {collecte.signalees ? <span className="eca-puce eca-puce--ambre">{pluriel(collecte.signalees, "signalée")}</span> : null}
           </span>
         </section>
@@ -533,7 +536,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
              fusionner, défaire) puis la corbeille (restaurer, effacer maintenant). Chacune se lit à son affichage : la fiche n'attend pas leurs routes. */
           photos: (
             <>
-              <PanneauCollecte id={e.id} {...collecte} />
+              <PanneauCollecte id={e.id} {...collecte} effacees={effacees} />
               <div className="eca-cartes eca-cartes--une eca-photos-suite">
                 <PanneauPersonnes id={e.id} liens={collecte.parLien.map((l) => ({ cle: l.cle, nom: l.nom }))} />
                 <PanneauCorbeille id={e.id} migrationAbsente={ouvertureAbsente} />

@@ -211,6 +211,20 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `Effacement du coffre préparé (${String(payload.n ?? 0)} photo(s)).`;
     case "objets_effaces":
       return payload.reprise === true ? "Effacement du coffre repris : des objets restés sont partis." : "Effacement du coffre fait.";
+    /* ── T-159 : la fin de conservation, 30 jours après « Marquer livrée » ── */
+    case "retention_a_effacer":
+      return `Fin de conservation préparée : ${String(payload.n ?? 0)} objet(s) du coffre à effacer (${payload.par === "auto" ? "passage quotidien" : "script"}).`;
+    case "retention_effacee":
+      return payload.gardees === true
+        ? "Fin de conservation : objets gardés (la base n'avait pas fini, l'édition sera reprise)."
+        : payload.reprise === true
+          ? "Fin de conservation reprise : des objets restés au coffre sont partis."
+          : "Fin de conservation : objets du coffre effacés.";
+    case "coffre_efface": {
+      const restes = typeof payload.objets_restes === "number" && payload.objets_restes > 0 ? `, ${payload.objets_restes} encore au coffre (repris au passage suivant)` : "";
+      const personnes = typeof payload.personnes_effacees === "number" ? ` ; ${payload.personnes_effacees} personne(s) et leur adresse supprimées` : "";
+      return `Photos supprimées, ${String(payload.delai_jours ?? "?")} jours après la livraison : ${String(payload.objets_effaces ?? 0)} objet(s) effacé(s)${restes}${personnes} ; le PDF des tours et les documents restent (${payload.par === "auto" ? "passage quotidien" : "script"}).`;
+    }
     case "personne_renommee":
       return `Personne renommée : « ${String(payload.avant ?? "?")} » devient « ${String(payload.apres ?? "?")} » (${String(payload.n ?? 0)} photo(s)).`;
     case "personnes_fusionnees":

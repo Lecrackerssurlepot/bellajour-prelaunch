@@ -560,7 +560,8 @@ export async function chargerEdition(
         ((contenus.data ?? []) as { id: string; type: string; r2_key: string | null; nom_origine: string | null; reponses: Record<string, unknown> | null; recu_le: string; depose_par: string | null; remplace_le?: string | null }[]).map(
           async (c) => {
             let url: string | null = null;
-            if (c.r2_key) {
+            /* T-159 : une édition effacée ne signe plus ses contenus (les objets sont partis), leur nom reste. */
+            if (c.r2_key && !edition.photos_supprimees_le) {
               try {
                 url = await signerGet(c.r2_key, undefined, c.nom_origine ?? undefined);
               } catch {
@@ -730,7 +731,7 @@ export type MagazineBatAtelier = {
 };
 
 export type BatAtelier = {
-  edition: Pick<EditionLigne, "id" | "organisation" | "evenement" | "nb_propositions_couverture" | "tirage" | "token_responsable" | "archive_le">;
+  edition: Pick<EditionLigne, "id" | "organisation" | "evenement" | "nb_propositions_couverture" | "tirage" | "token_responsable" | "archive_le" | "photos_supprimees_le">;
   etat: EtatEdition;
   magazines: MagazineBatAtelier[];
   magazine: MagazineBatAtelier | null;
@@ -760,7 +761,8 @@ export async function chargerBatAtelier(
 ): Promise<{ absent: true } | { absent: false; bat: BatAtelier | null }> {
   const { data: edition, error } = await supabase
     .from("collectif_editions")
-    .select("id, organisation, evenement, etat, cloture_le, nb_propositions_couverture, tirage, token_responsable, archive_le")
+    /* `photos_supprimees_le` (20261013, T-159) : la page dit qu'une édition effacée n'a plus ses pages rendues. */
+    .select("id, organisation, evenement, etat, cloture_le, nb_propositions_couverture, tirage, token_responsable, archive_le, photos_supprimees_le")
     .eq("id", id)
     .maybeSingle<EditionLigne>();
   if (error) {

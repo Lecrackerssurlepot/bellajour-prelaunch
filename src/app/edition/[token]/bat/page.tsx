@@ -6,6 +6,7 @@
 import { notFound } from 'next/navigation'
 import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
+import { phraseBatEfface } from '@/lib/collectif/retention'
 import { verrousPour } from '@/lib/collectif/verrous'
 import { Verrou } from '../../_composants/EnPreparation'
 import { chargerBat, chargerEspace } from '../donnees'
@@ -28,6 +29,10 @@ export default async function Page({
   const etat = etatEffectif(edition.etat, edition.cloture_le, new Date())
   const raison = verrousPour(etat).bat
   if (raison) return <Verrou titre="Bon à tirer" raison={raison} />
+  /* T-159 : les pages rendues du bon à tirer sont parties avec les photos (le PDF reste à
+     l'atelier, jamais servi au client) : la page le dit au lieu de pages vides. */
+  const batEfface = phraseBatEfface(edition.photos_supprimees_le)
+  if (batEfface) return <Verrou titre="Bon à tirer" raison={batEfface} />
 
   const m = Number((await searchParams).m)
   const bat = await chargerBat(edition, Number.isInteger(m) ? m : null)
