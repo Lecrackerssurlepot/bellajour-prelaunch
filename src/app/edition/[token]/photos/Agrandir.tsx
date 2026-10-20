@@ -13,11 +13,17 @@
    panneau de verre (`backdrop-filter`) enfermerait ce qui est positionné
    dedans.
 
-   « Supprimer » (corbeille 30 jours, planche 3C) attend sa route : sa place est
-   prévue (`onSupprimer`), le bouton ne s'affiche pas sans elle. */
+   Lot w2 :
+   - la photo EN GRAND : la vignette (déjà en cache, 320 px) tout de suite, puis
+     l'original par-dessus dès qu'il est arrivé (`grande`, signé par la route :
+     JPEG, PNG, WebP ; un HEIC garde sa vignette) ;
+   - « Supprimer » (corbeille 30 jours, planche 3C) : `onSupprimer`, sans
+     fenêtre de confirmation (« Annuler » quelques secondes, puis la corbeille).
+     Le lien d'équipe ne le reçoit jamais. */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { arriveeCourte, arriveeLongue, jourCourt, jourLong } from "./filtres";
 import { ICONES, Trace, type Photo } from "./Grille";
 
@@ -43,8 +49,10 @@ type Props = {
   onFermer: () => void;
   onSelection: () => void;
   onCacher: () => void;
-  /** La seconde vague (corbeille) : absent, le bouton ne s'affiche pas. */
+  /** Mettre à la corbeille (le responsable seul) : absent, le bouton ne s'affiche pas. */
   onSupprimer?: () => void;
+  /** Un geste est en route : les boutons attendent. */
+  occupe?: boolean;
 };
 
 export default function Agrandir(a: Props) {
@@ -55,6 +63,8 @@ export default function Agrandir(a: Props) {
   const [nu, setNu] = useState(false);
   /* Le rapport largeur / hauteur de chaque photo, lu à son chargement : le cadre prend la forme de la photo. */
   const [rapports, setRapports] = useState<Record<string, number>>({});
+  /* Les originaux arrivés : ils couvrent leur vignette. */
+  const [grandes, setGrandes] = useState<Record<string, boolean>>({});
   const fns = useRef(a);
   useEffect(() => {
     fns.current = a;
@@ -93,6 +103,8 @@ export default function Agrandir(a: Props) {
   }, [a.voisines]);
 
   const p = a.photo;
+  /* L'original, seulement s'il n'est pas déjà la vignette (une photo sans vignette montre son original). */
+  const grande = p.grande && p.grande !== p.vignette ? p.grande : null;
   const datee = !p.jourCle.startsWith("~");
   const pos = a.total ? `${a.position} sur ${a.total.toLocaleString("fr-FR")}` : `${a.position}`;
   const ligneTel = [`arrivée ${arriveeCourte(p.arrivee)}`, datee ? `prise le ${jourCourt(p.jourCle)}` : ""].filter(Boolean).join(" · ");
@@ -161,19 +173,35 @@ export default function Agrandir(a: Props) {
           <div className={a.cachee ? "ec-ag-cadre ec-ag-cadre--cache" : "ec-ag-cadre"} style={{ "--ec-ag-r": String(rapports[p.id] ?? 1.5) } as React.CSSProperties}>
             {p.vignette ? (
               <img
-                key={p.id}
+                key={`v-${p.id}`}
+                className="ec-ag-img"
                 src={p.vignette}
+                alt={grande ? "" : p.nom ?? "Photo"}
+                decoding="async"
+                draggable={false}
+                onLoad={(e) => {
+                  const { naturalWidth: l, naturalHeight: h } = e.currentTarget;
+                  if (l > 0 && h > 0 && !rapports[p.id]) setRapports((x) => ({ ...x, [p.id]: l / h }));
+                }}
+              />
+            ) : grande ? null : (
+              <span className="ec-ag-sans">{p.heic ? "HEIC · aperçu indisponible dans ce navigateur" : p.nom ?? "Photo"}</span>
+            )}
+            {grande ? (
+              <img
+                key={`g-${p.id}`}
+                className={grandes[p.id] ? "ec-ag-img ec-ag-img--grande ec-ag-img--la" : "ec-ag-img ec-ag-img--grande"}
+                src={grande}
                 alt={p.nom ?? "Photo"}
                 decoding="async"
                 draggable={false}
                 onLoad={(e) => {
                   const { naturalWidth: l, naturalHeight: h } = e.currentTarget;
                   if (l > 0 && h > 0) setRapports((x) => ({ ...x, [p.id]: l / h }));
+                  setGrandes((x) => ({ ...x, [p.id]: true }));
                 }}
               />
-            ) : (
-              <span className="ec-ag-sans">{p.heic ? "HEIC · aperçu indisponible dans ce navigateur" : p.nom ?? "Photo"}</span>
-            )}
+            ) : null}
             {a.cachee ? (
               <span className="ec-ag-etat">
                 <Trace d={ICONES.cache} taille={14} epais={1.8} />
@@ -287,9 +315,11 @@ export default function Agrandir(a: Props) {
             </div>
             {a.onSupprimer ? (
               <div className="ec-ag-geste">
-                <button type="button" className="ec-bouton ec-ag-large ec-ag-large--danger" onClick={a.onSupprimer}>
+                <button type="button" className="ec-bouton ec-ag-large ec-ag-large--danger" disabled={a.occupe} onClick={a.onSupprimer}>
+                  <Trace d={ICONES.corbeille} taille={16} epais={1.8} />
                   Supprimer
                 </button>
+                <small>Elle disparaît tout de suite pour tout le monde. Corbeille : {DELAI_CORBEILLE_JOURS} jours pour la récupérer.</small>
               </div>
             ) : null}
           </div>
@@ -311,7 +341,8 @@ export default function Agrandir(a: Props) {
               Ne pas publier
             </button>
             {a.onSupprimer ? (
-              <button type="button" className="ec-ph-bas-danger" onClick={a.onSupprimer}>
+              <button type="button" className="ec-ph-bas-danger" disabled={a.occupe} onClick={a.onSupprimer}>
+                <Trace d={ICONES.corbeille} taille={20} epais={1.7} />
                 Supprimer
               </button>
             ) : null}

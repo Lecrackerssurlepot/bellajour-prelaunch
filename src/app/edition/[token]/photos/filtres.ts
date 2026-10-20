@@ -14,13 +14,23 @@
      navigateur les pages rangées par jour (la route ne filtre pas par jour) :
      son nombre ne s'affiche qu'une fois la dernière photo de ce jour lue.
    Un seul lien et une seule personne à la fois : la route ne sait pas en
-   croiser plusieurs (branchement serveur, seconde vague). */
+   croiser plusieurs (branchement serveur, seconde vague).
 
-import { clePersonne, QUI_RESPONSABLE, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+   Lot w2 (planches 3, 4 et 5 du 20/10) :
+   - « Ne pas publier » est une VUE (`signalees`), comme « Doublons » : elle se
+     croise avec le dossier, et l'une retire l'autre (la route n'en lit qu'une) ;
+   - « Corbeille » est un endroit à part (`corbeille`) : ni grille ni route
+     photos, sa propre route (`/api/collectif/photos/corbeille`) ; tout autre
+     geste des listes en sort ;
+   - une personne (`qui:…`, `pers:…`) ouvre sa FICHE au-dessus de ses photos
+     (`cleDeLaPersonne`). */
+
+import { PHOTOS_PAR_GESTE } from "@/lib/collectif/corbeille";
+import { clePersonne, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 
 export type Mode = "tout" | "liens";
 export type Ordre = "recentes" | "jour";
-export type VueRoute = "toutes" | "jour" | "doublons";
+export type VueRoute = "toutes" | "jour" | "doublons" | "signalees";
 
 export type Filtres = {
   /** « Tout » (la grille, filtrée) ou « Par lien » (un album par lien, puis le lien ouvert). */
@@ -36,28 +46,47 @@ export type Filtres = {
   doublons: boolean;
   selection: boolean;
   ordre: Ordre;
+  /** « Ne pas publier » : une vue qui se croise avec le dossier (lot w2). */
+  signalees: boolean;
+  /** La corbeille (planche 5) : un endroit à part, le responsable seul. */
+  corbeille: boolean;
 };
 
-export const FILTRES_VIDES: Filtres = { mode: "tout", lien: null, dossier: null, personne: null, jour: null, doublons: false, selection: false, ordre: "recentes" };
+export const FILTRES_VIDES: Filtres = { mode: "tout", lien: null, dossier: null, personne: null, jour: null, doublons: false, selection: false, ordre: "recentes", signalees: false, corbeille: false };
 
 /** Ce que la route reçoit : une clé de dossier et une vue. */
 export function requeteDe(f: Filtres): { dossier: string; vue: VueRoute } {
   const dossier = f.selection ? "selection" : f.personne ?? f.dossier ?? f.lien ?? (f.mode === "liens" ? "liens" : "tout");
-  const vue: VueRoute = f.doublons ? "doublons" : f.ordre === "jour" || f.jour ? "jour" : "toutes";
+  const vue: VueRoute = f.doublons ? "doublons" : f.signalees ? "signalees" : f.ordre === "jour" || f.jour ? "jour" : "toutes";
   return { dossier, vue };
 }
 
 /** « Par lien » sans lien ouvert : les albums, pas de grille. */
-export const estVueAlbums = (f: Filtres) => f.mode === "liens" && !f.lien && !f.selection;
+export const estVueAlbums = (f: Filtres) => f.mode === "liens" && !f.lien && !f.selection && !f.corbeille;
 
 /** Combien de filtres sont actifs (le rond du bouton « Filtrer » du téléphone). */
 export function nombreDeFiltres(f: Filtres): number {
-  return [f.lien, f.dossier, f.personne, f.jour].filter(Boolean).length + (f.doublons ? 1 : 0) + (f.selection ? 1 : 0);
+  return [f.lien, f.dossier, f.personne, f.jour].filter(Boolean).length + (f.doublons ? 1 : 0) + (f.selection ? 1 : 0) + (f.signalees ? 1 : 0);
 }
+
+/** « Doublons » et « Ne pas publier » sont deux vues de la route : cocher l'une décoche l'autre. */
+export function avecDoublons(f: Filtres, oui: boolean): Filtres {
+  return { ...f, doublons: oui, signalees: oui ? false : f.signalees };
+}
+export function avecSignalees(f: Filtres, oui: boolean): Filtres {
+  return { ...f, signalees: oui, doublons: oui ? false : f.doublons };
+}
+/** La corbeille : un endroit à part, rien des listes ne s'y croise (l'ordre est gardé pour le retour). */
+export function avecCorbeille(f: Filtres): Filtres {
+  return { ...FILTRES_VIDES, ordre: f.ordre, corbeille: true };
+}
+/** Tout autre geste des listes sort de la corbeille. */
+export const sortirDeLaCorbeille = (f: Filtres): Filtres => (f.corbeille ? { ...f, corbeille: false } : f);
 
 /** Lire `?dossier=` (le tableau de bord y mène) en filtres. `mode=tout` garde un lien coché dans « Tout ». */
 export function filtresDepuis(cle: string, modeTout = false): Filtres {
   const f = { ...FILTRES_VIDES };
+  if (cle === "corbeille") return { ...f, corbeille: true };
   if (cle === "selection") return { ...f, selection: true };
   if (cle === "liens") return { ...f, mode: "liens" };
   if (cle === "vous" || cle === "participants" || cle === "atelier" || cle.startsWith("lien:")) return { ...f, mode: modeTout ? "tout" : "liens", lien: cle };
@@ -72,7 +101,8 @@ export function filtresDepuis(cle: string, modeTout = false): Filtres {
 
 /** L'adresse qui rouvre le même endroit (replaceState, rien ne s'empile). */
 export function adresseDe(f: Filtres): string {
-  const { dossier } = requeteDe({ ...f, doublons: false, jour: null, ordre: "recentes" });
+  if (f.corbeille) return "?dossier=corbeille";
+  const { dossier } = requeteDe({ ...f, doublons: false, signalees: false, jour: null, ordre: "recentes" });
   if (dossier === "tout") return "";
   const tout = f.mode === "tout" && f.lien ? "&mode=tout" : "";
   return `?dossier=${encodeURIComponent(dossier)}${tout}`;
@@ -80,11 +110,11 @@ export function adresseDe(f: Filtres): string {
 
 /** Choisir un lien : la personne et le dossier d'avant tombent, « Ma sélection » aussi (elle ne se croise pas). */
 export function avecLien(f: Filtres, lien: string | null): Filtres {
-  return { ...f, lien, dossier: null, personne: f.personne?.startsWith("qui:") && lien === null ? f.personne : null, selection: false };
+  return { ...f, lien, dossier: null, personne: f.personne?.startsWith("qui:") && lien === null ? f.personne : null, selection: false, corbeille: false };
 }
 /** « Ma sélection » : un dossier à part, il retire lien, dossier et personne. */
 export function avecSelection(f: Filtres, oui: boolean): Filtres {
-  return oui ? { ...f, mode: "tout", lien: null, dossier: null, personne: null, selection: true } : { ...f, selection: false };
+  return oui ? { ...f, mode: "tout", lien: null, dossier: null, personne: null, selection: true, corbeille: false } : { ...f, selection: false };
 }
 
 /* ─────────────────────────── les listes ─────────────────────────── */
@@ -228,6 +258,168 @@ export function arriveeCourte(iso: string): string {
 export const nombre = (n: number) => n.toLocaleString("fr-FR");
 export const photosDe = (n: number) => `${nombre(n)} photo${n > 1 ? "s" : ""}`;
 export const personnesDe = (n: number) => `${nombre(n)} personne${n > 1 ? "s" : ""}`;
+
+/* ─────────────────────── lot w2 : agir en lots, la corbeille, une personne ─────────────────────── */
+
+/** Au plus, par requête : la règle de la route (`PHOTOS_PAR_GESTE`, corbeille.ts). Au-delà, plusieurs requêtes, l'une après l'autre. */
+export const LOT_ECRITURE = PHOTOS_PAR_GESTE;
+
+/** Des ids en paquets de `taille` (500 : une requête par paquet, jamais une par photo). */
+export function enLots<T>(ids: readonly T[], taille: number = LOT_ECRITURE): T[][] {
+  const lots: T[][] = [];
+  for (let i = 0; i < ids.length; i += taille) lots.push(ids.slice(i, i + taille));
+  return lots;
+}
+
+const PARIS_JOUR_COURT = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", month: "short" });
+
+/** « sam. 7 nov. à 15 h 02 », heure de Paris (quand une photo a été supprimée, planche 5A). */
+export function instantCourt(iso: string): string {
+  const p = parties(PARIS_COURT, iso);
+  if (!p) return "";
+  return `${p.weekday} ${p.day} ${p.month} à ${p.hour} h ${p.minute}`;
+}
+/** « sam. 7 nov. », heure de Paris (la même chose au téléphone, planche 5B). */
+export function jourDeLInstant(iso: string): string {
+  const p = parties(PARIS_JOUR_COURT, iso);
+  if (!p) return "";
+  return `${p.weekday} ${p.day} ${p.month}`;
+}
+
+/** L'échéance d'une photo de la corbeille (`joursRestants` du serveur, arrondi au jour supérieur). */
+export function echeanceTexte(jours: number): string {
+  if (jours <= 0) return "Effacée au prochain passage";
+  return `Effacée dans ${nombre(jours)} jour${jours > 1 ? "s" : ""}`;
+}
+
+/** Ce que la corbeille dit d'une photo restaurée : où elle est revenue (planche 5C). */
+export function phraseRetour(lien: string, lienNom: string, qui: string): string {
+  if (lien === "vous") return "De retour dans Mes photos";
+  if (lien === "atelier") return "De retour avec les photos de l'atelier";
+  if (lien === "participants") return `De retour dans le lien général, chez ${qui}`;
+  return `De retour dans ${lienNom}, chez ${qui}`;
+}
+
+/** « La voir » : le filtre qui montre la photo restaurée, son lien et sa personne. */
+export function filtreDuRetour(lien: string, qui: string): Filtres {
+  if (lien.startsWith("lien:")) return filtresDepuis(`pers:${lien.slice(5)}:${clePersonne(qui)}`);
+  if (lien === "participants") return filtresDepuis(`pers:general:${clePersonne(qui)}`);
+  return filtresDepuis(lien === "vous" || lien === "atelier" ? lien : "tout");
+}
+
+/**
+ * La personne d'un filtre, quand elle a une FICHE (planche 4) : le nom comparé
+ * de `qui:<nom>` ou de `pers:<lien>:<nom>`. Ni le responsable (`qui:@responsable`),
+ * ni « Sans nom » (des téléphones sans nom, pas une personne qu'on renomme).
+ */
+export function cleDeLaPersonne(filtre: string | null): string | null {
+  if (!filtre || filtre === QUI_RESPONSABLE) return null;
+  let cle: string | null = null;
+  if (filtre.startsWith("qui:")) cle = filtre.slice(4);
+  else if (filtre.startsWith("pers:")) {
+    const reste = filtre.slice(5);
+    const i = reste.indexOf(":");
+    cle = i > 0 ? reste.slice(i + 1) : null;
+  }
+  if (!cle || cle === clePersonne(SANS_NOM)) return null;
+  return cle;
+}
+
+/** Après un renommage ou une fusion, le même filtre sous le nom gardé (la grille est rangée par nom). */
+export function filtreSousLeNom(filtre: string, nom: string): string {
+  if (filtre.startsWith("pers:")) {
+    const reste = filtre.slice(5);
+    const i = reste.indexOf(":");
+    if (i > 0) return `pers:${reste.slice(0, i)}:${clePersonne(nom)}`;
+  }
+  return `qui:${clePersonne(nom)}`;
+}
+
+/** Une personne telle que la route `personnes` la rend (`Personne`, personnes.ts). */
+export type PersonneVue = {
+  ref: string;
+  participant: boolean;
+  nom: string;
+  prenom: string | null;
+  nomDeFamille: string | null;
+  cle: string;
+  email: string | null;
+  n: number;
+  liens: { cle: string; n: number }[];
+  telephones: number;
+  derniere: string | null;
+  depuis: string | null;
+  /** Un AUTRE prénom et nom tapé avec son adresse (non vérifiée), et quand ; jamais pour l'équipe (durcissement C4). */
+  nomPropose?: { nom: string; le: string } | null;
+};
+export type ListePersonnes = { personnes: PersonneVue[]; proposees: { a: string; b: string; raison: "meme_nom" | "meme_prenom" }[]; avecAdresses: boolean };
+export type Proposition = { personne: PersonneVue; raison: "meme_nom" | "meme_prenom" };
+
+/**
+ * La fiche d'une personne de la grille : parmi celles qui portent ce nom (la
+ * grille range par NOM : deux personnes du même nom s'y montrent ensemble),
+ * celle qui s'est présentée par son adresse d'abord (elle seule se retrouve sur
+ * un autre téléphone), puis la plus fournie ; et les doublons PROPOSÉS par le
+ * serveur qui la touchent. Jamais fusionnés ici : l'écran les propose, le
+ * responsable décide.
+ */
+export function ficheDe(liste: ListePersonnes | null, cle: string | null): { personne: PersonneVue; propositions: Proposition[] } | null {
+  if (!liste || !cle) return null;
+  const memes = liste.personnes.filter((p) => p.cle === cle).sort((a, b) => Number(b.participant) - Number(a.participant) || b.n - a.n);
+  const personne = memes[0];
+  if (!personne) return null;
+  const refs = new Set(memes.map((p) => p.ref));
+  const parRef = new Map(liste.personnes.map((p) => [p.ref, p]));
+  const vues = new Set<string>();
+  const propositions: Proposition[] = [];
+  for (const x of liste.proposees) {
+    /* L'autre de la paire : celle qui n'est pas la personne de la fiche (une homonyme peut être l'une ou l'autre). */
+    const autre = x.a === personne.ref ? x.b : x.b === personne.ref ? x.a : refs.has(x.a) ? x.b : refs.has(x.b) ? x.a : null;
+    if (!autre || autre === personne.ref || vues.has(autre)) continue;
+    const p = parRef.get(autre);
+    if (!p) continue;
+    vues.add(autre);
+    propositions.push({ personne: p, raison: x.raison });
+  }
+  return { personne, propositions };
+}
+
+const sansAccents = (s: string) => s.normalize("NFD").replace(/\p{M}+/gu, "");
+
+/** Pourquoi deux personnes sont peut-être la même (la puce de la planche 4A). */
+export function raisonTexte(raison: "meme_nom" | "meme_prenom", a: string, b: string): string {
+  if (raison === "meme_prenom") return "même prénom, même lien";
+  if (a === b) return "même nom";
+  return sansAccents(a) === sansAccents(b) ? "même nom, sans l'accent" : "même nom, écrit autrement";
+}
+
+/** Le prénom et le nom à proposer pour renommer : ceux de la personne, sinon le premier mot puis le reste. */
+export function prenomEtNom(p: Pick<PersonneVue, "prenom" | "nomDeFamille" | "nom">): { prenom: string; nom: string } {
+  if (p.prenom && p.nomDeFamille) return { prenom: p.prenom, nom: p.nomDeFamille };
+  const n = p.nom.trim();
+  const i = n.indexOf(" ");
+  return i > 0 ? { prenom: n.slice(0, i), nom: n.slice(i + 1).trim() } : { prenom: n, nom: "" };
+}
+
+/**
+ * Quelqu'un a tapé l'adresse d'une personne sous un AUTRE nom (`nomPropose`, durcissement C4) :
+ * la phrase de la fiche. L'adresse n'est pas vérifiée : l'écran le dit, et le responsable décide
+ * (jamais de renommage d'office).
+ */
+export function phraseNomPropose(np: { nom: string; le: string }, tu: boolean): string {
+  const quand = instantCourt(np.le);
+  return `Quelqu'un a aussi tapé cette adresse sous le nom « ${np.nom} »${quand ? ` (le ${quand})` : ""}. L'adresse n'est pas vérifiée : si c'est le bon nom, ${tu ? "renomme" : "renommez"} la personne.`;
+}
+
+/**
+ * Le nom d'un lien de la liste (`lien:<id>`, `participants`), tel que la colonne l'écrit ; `null`
+ * quand la page ne le connaît pas (l'équipe ne voit pas les liens : on n'en invente pas le nom).
+ */
+export function nomDuLien(arbre: Arbre | null, cle: string): string | null {
+  const n = arbre ? [...arbre.liens, ...(arbre.atelier ? [arbre.atelier] : [])].find((x) => x.cle === cle) : undefined;
+  if (n) return n.nom;
+  return cle === "participants" ? "Le lien général" : null;
+}
 
 /** L'annonce courte du téléphone : « 12 nouvelles · Léa, Hugo et 1 autre ». */
 export function annonceCourte(participants: number, noms: readonly string[], personnes: number): string {

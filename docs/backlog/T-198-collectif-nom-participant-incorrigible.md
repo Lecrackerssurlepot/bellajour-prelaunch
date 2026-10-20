@@ -66,3 +66,22 @@ Photos ; branche `w2-atelier-corbeille-personnes`, rien de commité).
 - Harnais : bloc « w2-atelier » de `scripts/verif-collectif.ts`. Vu à l'écran (Chrome headless, 1440,
   1280 et 375) sur un faux Supabase local, écritures interceptées.
 - Reste : la page du participant et celle du responsable (autres lots), l'application de la migration.
+
+20/10, lot « w2-photos » (le CÔTÉ RESPONSABLE de la planche 4, page Photos ; branche
+`w2-photos-corbeille-personnes`, rien de commité).
+- Une personne choisie (liste « Personne », « Voir ses N photos » de la photo agrandie, ligne du bas au
+  téléphone) a sa FICHE au-dessus de ses photos : son nom, son adresse masquée par le serveur, ses liens,
+  ses téléphones, sa dernière arrivée ; « Renommer » (prénom ET nom, l'effet dit avant le geste),
+  « Fusionner avec… », « Tout cocher » (téléphone : « Cocher »). Au téléphone, « ‹ Bateau 1 » ramène au lien.
+- « Peut-être la même personne » : les doublons PROPOSÉS par le serveur, jamais fusionnés d'office ;
+  « Fusionner » ouvre une fenêtre (les deux côte à côte, le nom gardé, l'effet en une phrase) ; « Ignorer »
+  les range pour cet écran. Défaire une fusion reste à l'atelier.
+- Un autre nom tapé avec son adresse (`nomPropose`, durcissement C4) est dit sous le nom, au responsable
+  seul, avec « Renommer » pré-rempli ; jamais de renommage d'office.
+- Le lien d'équipe voit la fiche sans geste, sans adresse ni proposition, et sans nom de lien.
+- Sans la migration 20261023 : la fiche montre les personnes d'avant (par nom) ; renommer et fusionner
+  répondent 503, la fenêtre dit « La mise à jour de la base n'est pas encore appliquée : rien n'a changé. »
+- Harnais : bloc « w2 » de `scripts/verif-collectif.ts`. Vu à l'écran (fausse base, jour et nuit, 1440,
+  1024 et 375), fusion et renommage joués contre la fausse base.
+- Reste : l'application de la migration ; « Ignorer » ne se retient pas d'une visite à l'autre (aucun
+  stockage côté serveur).

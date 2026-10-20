@@ -75,3 +75,32 @@ branche `w2-atelier-corbeille-personnes`, rien de commité).
 - Harnais : bloc « w2-atelier » de `scripts/verif-collectif.ts`. Vu à l'écran (Chrome headless, 1440, 1280 et
   375) sur un faux Supabase local et un faux coffre, toute écriture du navigateur interceptée.
 - Reste : la corbeille et les gestes côté responsable et participant (autres lots), la migration.
+
+20/10, lot « w2-photos » (le CÔTÉ RESPONSABLE des planches 3 et 5, page Photos ; branche
+`w2-photos-corbeille-personnes`, rien de commité).
+- « Supprimer » (corbeille 30 jours) dans la photo agrandie (ordinateur : bouton et sa phrase ; téléphone : 3e
+  geste sous le pouce), dans la barre des photos cochées (ordinateur) et en 4e colonne de la barre du
+  téléphone. Sans fenêtre de confirmation : « Photo mise à la corbeille · Récupérable pendant 30 jours ·
+  Annuler », Annuler = `restaurer` avec les mêmes ids ; la photo suivante s'affiche, les comptes suivent sans
+  relire la grille. Au-delà de 500 photos, plusieurs envois l'un après l'autre. Le lien d'équipe ne reçoit
+  aucun de ces gestes.
+- « Ma sélection » et « Ne pas publier » des cochées : UNE requête `marquer` par lot de 500 (`photoIds`),
+  plus une par photo.
+- La corbeille (planche 5) : la ligne « Corbeille » de « Afficher » (avec son nombre), une liste (qui l'a
+  envoyée, par quel lien, qui l'a supprimée et quand, « Effacée dans N jours » en alerte sous trois jours),
+  restaurer une photo ou les cochées (téléphone : « Cocher », puis la barre « Restaurer ») ; l'avis dit où
+  elle est revenue et « La voir » ouvre son lien et sa personne. Invisible pour l'équipe (et 403 côté serveur).
+- La grille rend désormais `signalee` sur chaque vignette (« Ne pas publier » survit au rechargement),
+  `compteurs.signalees` (la ligne « Ne pas publier » de « Afficher », une vue qui se croise avec le lien,
+  `vue: "signalees"`), `stats.corbeille` (compte sans ligne, `null` sans la migration ou pour l'équipe) et
+  `grande` : la visionneuse montre l'original signé (JPEG, PNG, WebP) par-dessus la vignette ; un HEIC garde
+  sa vignette.
+- Sans la migration 20261023 : Supprimer, la corbeille et restaurer répondent 503 ; l'écran dit « La mise à
+  jour de la base n'est pas encore appliquée » (rien n'a été supprimé), jamais l'erreur brute ; la grille
+  reste intacte (vu à l'écran).
+- Harnais : bloc « w2 » de `scripts/verif-collectif.ts` (les épreuves de la page Photos du lot w1 qui
+  disaient « pas de Supprimer » relisent la même intention). Vu à l'écran : fausse base (494 photos, avec ET
+  sans la migration), build servi sur 3051, Chrome headless, jour et nuit, 1440 × 900, 1024 × 768 et
+  375 × 812 ; rien ne défile de côté à 375 ; écritures seulement dans la fausse base.
+- Reste : l'application de la migration par Mathias ; le seuil de confirmation pour une suppression en
+  nombre (aucune fenêtre aujourd'hui, question 8 des planches) ; l'album du participant (autre lot).

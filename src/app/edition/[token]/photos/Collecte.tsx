@@ -26,12 +26,27 @@
    en descendant ; le chargement par pages observe SA zone de défilement
    (`root` de l'IntersectionObserver), nul sur téléphone. « 12 nouvelles · Les
    voir » garde la lecture légère de 30 s, onglet visible (T-181). L'équipe
-   voit tout, sans un geste qui écrive et sans aucun lien. */
+   voit tout, sans un geste qui écrive et sans aucun lien.
+
+   Lot w2 (planches 3, 4 et 5 du 20/10, T-198, T-199) :
+   - SUPPRIMER (corbeille 30 jours) dans la photo agrandie, dans la barre des
+     cochées et au téléphone, sans fenêtre de confirmation : « Photo mise à la
+     corbeille · Annuler » (Annuler = `restaurer`, les mêmes ids) ;
+   - la CORBEILLE (`Corbeille.tsx`), une ligne de « Afficher » ;
+   - une PERSONNE a sa fiche (`Personne.tsx`) : renommer, les doublons proposés,
+     fusionner en choisissant le nom gardé ;
+   - les gestes des cochées partent en UNE requête par lot de 500 (`photoIds`),
+     plus une par photo ;
+   - sans la migration 20261023, ces gestes répondent 503 : l'écran dit « La mise
+     à jour de la base n'est pas encore appliquée », jamais l'erreur brute.
+   Le lien d'équipe ne reçoit aucun de ces gestes, ni la corbeille. */
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { phraseArrivees, SONDAGE_PHOTOS_MS, type Nouvelles } from "@/lib/collectif/arrivees";
-import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
+import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+import { ERREUR_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
 import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
@@ -39,13 +54,19 @@ import Fenetre from "../../_composants/Fenetre";
 import FenetreLien, { FenetrePartage, FenetreQr, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
 import { useSondage } from "../../_composants/useSondage";
 import Agrandir from "./Agrandir";
+import Corbeille, { BASE_PAS_A_JOUR, type PhotoCorbeille } from "./Corbeille";
 import {
   adresseDe,
   annonceCourte,
   avecLien,
+  cleDeLaPersonne,
   cleQui,
+  enLots,
   estVueAlbums,
+  ficheDe,
+  filtreDuRetour,
   filtresDepuis,
+  filtreSousLeNom,
   FILTRES_VIDES,
   initialesDe,
   jourCourt,
@@ -54,24 +75,36 @@ import {
   lienDe as noeudDuLien,
   lienDeLaPhoto,
   liensDansLOrdre,
+  LOT_ECRITURE,
   nombre,
   nombreDeFiltres,
   personnesDe,
   photosDe,
+  phraseRetour,
   requeteDe,
   type Filtres,
+  type ListePersonnes,
+  type PersonneVue,
 } from "./filtres";
 import Grille, { ICONES, Trace, type Photo } from "./Grille";
 import { FenetreNom, FenetrePlafond, OngletLiens, type Liens } from "./Liens";
 import Listes from "./Listes";
+import { FenetreFusion, FenetreRenommer, FichePersonne } from "./Personne";
 import "./photos.css";
 
-type Compteurs = { dossier: number; liste: number; doublons: number; selection: number; choisissables: number };
-type Stats = { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null };
+type Compteurs = { dossier: number; liste: number; doublons: number; selection: number; choisissables: number; signalees: number };
+type Stats = { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null; corbeille: number | null };
 type Onglet = "photos" | "liens";
 type Reponse = { photos: Photo[]; suivante: number | null; compteurs: Compteurs; stats: Stats; arbre: Arbre; couvertures?: Record<string, string>; liens: Liens | null };
 type Coches = { tout: boolean; ids: Set<string> };
-type Avis = { texte: string; sous?: string; annuler?: () => void };
+type Avis = { texte: string; sous?: string; annuler?: () => void; voir?: () => void };
+/** Des photos retirées de la vue, et leur place : « Annuler » les remet où elles étaient. */
+type Retrait = { photo: Photo; index: number }[];
+/** Ce qu'une écriture de la corbeille a rendu. */
+type Issue = { statut: "ok"; ids: string[] } | { statut: "absente" } | { statut: "panne"; message: string };
+
+/** Sans la migration 20261023 : la phrase sobre (la route nomme le fichier SQL, l'écran ne le montre pas). */
+const MIGRATION_TEXTE = `${BASE_PAS_A_JOUR} : rien n'a changé.`;
 
 type Props = {
   token: string;
@@ -95,9 +128,14 @@ type Props = {
 };
 
 const REQUETE_TELEPHONE = "(max-width: 860px)";
-const VOIES = 4;
 const AUCUNE: Coches = { tout: false, ids: new Set() };
 const rien = () => () => {};
+const auMoins0 = (n: number) => Math.max(0, n);
+/** La requête de la page 0 que lit une vue (la grille ne se relit que si elle change). */
+const cleRequete = (f: Filtres) => {
+  const r = requeteDe(f);
+  return `${r.dossier}|${r.vue}`;
+};
 
 const TRACE = {
   lien: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
@@ -118,7 +156,11 @@ export default function Collecte(p: Props) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const client = useSyncExternalStore(rien, () => true, () => false);
   const [onglet, setOnglet] = useState<Onglet>(p.ecrire ? p.ongletInitial : "photos");
-  const [f, setF] = useState<Filtres>(() => filtresDepuis(p.dossierInitial, p.modeTout));
+  /* L'équipe n'a pas de corbeille : `?dossier=corbeille` sur son lien rouvre « Toutes les photos ». */
+  const [f, setF] = useState<Filtres>(() => {
+    const d = filtresDepuis(p.dossierInitial, p.modeTout);
+    return d.corbeille && !p.ecrire ? FILTRES_VIDES : d;
+  });
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [compteurs, setCompteurs] = useState<Compteurs | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -157,9 +199,23 @@ export default function Collecte(p: Props) {
   const [vuJusqua, setVuJusqua] = useState<string | null>(null);
   const [annonce, setAnnonce] = useState<{ texte: string; court: string; noms: string[] } | null>(null);
   const [seuilNouvelles, setSeuilNouvelles] = useState<string | null>(null);
+  /* Les personnes de l'édition (planche 4) : lues à la première fiche ouverte, relues après un renommage ou une fusion. */
+  const [personnes, setPersonnes] = useState<ListePersonnes | null>(null);
+  const [personnesLues, setPersonnesLues] = useState<"non" | "lecture" | "oui" | "erreur">("non");
+  /* Renommer : la personne, et l'autre nom tapé avec son adresse quand on part de lui (pré-rempli, jamais écrit sans le geste). */
+  const [renommerP, setRenommerP] = useState<{ personne: PersonneVue; propose: string | null } | null>(null);
+  const [fusion, setFusion] = useState<{ autre: PersonneVue | null } | null>(null);
+  const [erreurFenetre, setErreurFenetre] = useState<string | null>(null);
   const fin = useRef<HTMLDivElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const version = useRef(0);
+  /* La requête de la page 0 déjà lue : changer de liste ne relit la grille que si elle change. */
+  const chargee = useRef<string | null>(null);
+  /* Les photos de la dernière peinture, pour un geste qui reprend après une requête. */
+  const photosVues = useRef<Photo[]>([]);
+  useEffect(() => {
+    photosVues.current = photos;
+  });
   const envoi = useFenetreEnvoi();
   const moteur = useMoteur(useMoteurDepot());
   const contexte: ContexteMessage = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
@@ -182,6 +238,7 @@ export default function Collecte(p: Props) {
   const charger = useCallback(
     async (page: number, nf: Filtres): Promise<Photo[] | null> => {
       const v0 = version.current;
+      if (page === 0) chargee.current = cleRequete(nf);
       setChargement(true);
       try {
         const json = await lirePage(page, nf);
@@ -230,17 +287,35 @@ export default function Collecte(p: Props) {
     setOnglet(o);
     garderAdresse(f, o);
   }
-  /** Changer les listes : la grille se relit seulement si la route lit autre chose (un jour se filtre ici). */
-  function appliquer(nf: Filtres) {
-    const avant = requeteDe(f);
-    const apres = requeteDe(nf);
+  /** Changer les listes : la grille se relit seulement si la route lit autre chose (un jour se filtre ici).
+      La corbeille ne lit pas la grille : en revenir ne relit rien si la grille d'avant est encore la bonne. */
+  function appliquer(nf0: Filtres) {
+    const nf = nf0.corbeille && !p.ecrire ? { ...nf0, corbeille: false } : nf0;
     setF(nf);
     setCoches(AUCUNE);
     setModeCocher(false);
     setAgrandi(null);
     setOnglet("photos");
+    setErreur(null);
     garderAdresse(nf, "photos");
-    if (avant.dossier === apres.dossier && avant.vue === apres.vue && photos.length) return;
+    if (nf.corbeille) {
+      setFeuille(false);
+      return;
+    }
+    if (cleRequete(nf) === chargee.current && photos.length) return;
+    version.current++;
+    setPhotos([]);
+    setSuivante(0);
+    void charger(0, nf);
+  }
+  /** Ouvrir une personne sous son nom (après un renommage ou une fusion) : la grille se relit toujours. */
+  function ouvrirPersonne(cle: string) {
+    const nf: Filtres = { ...f, personne: cle, corbeille: false, selection: false };
+    setF(nf);
+    setCoches(AUCUNE);
+    setModeCocher(false);
+    setAgrandi(null);
+    garderAdresse(nf, "photos");
     version.current++;
     setPhotos([]);
     setSuivante(0);
@@ -265,6 +340,9 @@ export default function Collecte(p: Props) {
   const jourVu = f.jour ? jours?.find((j) => j.cle === f.jour) : undefined;
   /** Le nombre de photos de la vue, quand on le connaît (un jour choisi : une fois lu jusqu'au bout). */
   const totalVue = f.jour ? (jourVu?.complet || suivante === null ? visibles.length : null) : (compteurs?.liste ?? null);
+  /* Une personne choisie a sa fiche au-dessus de ses photos (planche 4) ; ni le responsable, ni « Sans nom ». */
+  const cleFiche = onglet === "photos" && !albums && !f.corbeille && !f.selection ? cleDeLaPersonne(f.personne) : null;
+  const fiche = ficheDe(personnes, cleFiche);
 
   useEffect(() => {
     const el = fin.current;
@@ -366,7 +444,7 @@ export default function Collecte(p: Props) {
       const rep = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, ...corps }) });
       const json = (await rep.json().catch(() => ({}))) as Record<string, unknown>;
       if (!rep.ok) {
-        setErreur(typeof json.message === "string" ? json.message : `Non enregistré (erreur ${rep.status}).`);
+        setErreur(json.error === ERREUR_PERSONNES_ABSENTE ? MIGRATION_TEXTE : typeof json.message === "string" ? json.message : `Non enregistré (erreur ${rep.status}).`);
         return null;
       }
       return json;
@@ -378,31 +456,162 @@ export default function Collecte(p: Props) {
     }
   }
 
-  /** Marquer une photo, sans toucher à l'état de la page (les gestes groupés). */
-  async function marquer(corps: Record<string, unknown>): Promise<boolean> {
-    try {
-      const rep = await fetch("/api/collectif/photos/marquer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, ...corps }) });
-      return rep.ok;
-    } catch {
-      return false;
-    }
-  }
-  /** Des photos une à une, quatre voies à la fois ; le compte s'affiche dans la barre. */
-  async function unaUne(ids: readonly string[], corps: (id: string) => Record<string, unknown>): Promise<string[]> {
+  /**
+   * Marquer des photos cochées (Ma sélection, Ne pas publier) : UNE requête par lot de 500
+   * (`photoIds`, la règle de la route), jamais une par photo. Rend les ids que la base a écrits
+   * (une photo passée à la corbeille entre-temps n'en est pas).
+   */
+  async function marquerLot(ids: readonly string[], corps: { preselection: boolean } | { signalee: boolean }): Promise<string[]> {
     const faites: string[] = [];
-    let i = 0;
-    let vues = 0;
-    const voie = async () => {
-      while (i < ids.length) {
-        const id = ids[i++];
-        if (await marquer({ photoId: id, ...corps(id) })) faites.push(id);
-        vues++;
-        if (ids.length > 6) setProgres(`${nombre(vues)} sur ${nombre(ids.length)}`);
+    const lots = enLots(ids);
+    for (const [k, lot] of lots.entries()) {
+      if (lots.length > 1) setProgres(`${nombre(k * LOT_ECRITURE)} sur ${nombre(ids.length)}`);
+      try {
+        const rep = await fetch("/api/collectif/photos/marquer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, photoIds: lot, ...corps }) });
+        if (!rep.ok) continue;
+        const json = (await rep.json().catch(() => ({}))) as { ids?: unknown };
+        if (Array.isArray(json.ids)) faites.push(...json.ids.filter((x): x is string => typeof x === "string"));
+      } catch {
+        /* le lot compte comme raté : la phrase d'après le dit */
       }
-    };
-    await Promise.all(Array.from({ length: Math.min(VOIES, ids.length) }, voie));
+    }
     setProgres(null);
     return faites;
+  }
+
+  /** La corbeille, par lots de 500 : ce que la base a écrit, ou la migration qui manque, ou la panne. */
+  async function ecrireCorbeille(action: "supprimer" | "restaurer", ids: readonly string[]): Promise<Issue> {
+    const faites: string[] = [];
+    const lots = enLots(ids);
+    const fin = (i: Issue): Issue => {
+      setProgres(null);
+      return i;
+    };
+    for (const [k, lot] of lots.entries()) {
+      if (lots.length > 1) setProgres(`${nombre(k * LOT_ECRITURE)} sur ${nombre(ids.length)}`);
+      try {
+        const rep = await fetch("/api/collectif/photos/corbeille", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, action, photoIds: lot }) });
+        const json = (await rep.json().catch(() => ({}))) as { error?: unknown; ids?: unknown };
+        if (rep.status === 503 && json.error === ERREUR_PERSONNES_ABSENTE) return fin({ statut: "absente" });
+        if (!rep.ok) return fin(faites.length ? { statut: "ok", ids: faites } : { statut: "panne", message: `${action === "supprimer" ? "La suppression" : "La restauration"} n'a pas abouti (erreur ${rep.status}). Réessayer.` });
+        if (Array.isArray(json.ids)) faites.push(...json.ids.filter((x): x is string => typeof x === "string"));
+      } catch {
+        return fin(faites.length ? { statut: "ok", ids: faites } : { statut: "panne", message: "Le réseau n'a pas répondu. Rien n'a changé." });
+      }
+    }
+    return fin({ statut: "ok", ids: faites });
+  }
+
+  /** Retirer des photos de la vue (et passer la photo agrandie à la suivante) ; rend leur place, pour « Annuler ». */
+  function retirerDeLaVue(ids: ReadonlySet<string>): Retrait {
+    const retrait: Retrait = [];
+    photosVues.current.forEach((x, index) => {
+      if (ids.has(x.id)) retrait.push({ photo: x, index });
+    });
+    if (agrandi && ids.has(agrandi)) {
+      const vues = f.jour ? photosVues.current.filter((x) => x.jourCle === f.jour) : photosVues.current;
+      const i = vues.findIndex((x) => x.id === agrandi);
+      const reste = vues.filter((x) => !ids.has(x.id));
+      setAgrandi(reste.length && i >= 0 ? reste[Math.min(i, reste.length - 1)].id : null);
+    }
+    setPhotos((l) => l.filter((x) => !ids.has(x.id)));
+    return retrait;
+  }
+  /** Les chiffres suivent un retrait (`signe` -1) ou son annulation (+1), sans relire la grille. */
+  function compterLeRetrait(retrait: Retrait, signe: 1 | -1, corbeille: boolean) {
+    const n = retrait.length;
+    const sel = retrait.filter((x) => x.photo.preselection).length;
+    const sig = retrait.filter((x) => estCachee(x.photo)).length;
+    const dbl = retrait.filter((x) => x.photo.doublonDe).length;
+    const choix = retrait.filter((x) => !x.photo.preselection && !estCachee(x.photo)).length;
+    setCompteurs((c) =>
+      c
+        ? { ...c, dossier: auMoins0(c.dossier + signe * n), liste: auMoins0(c.liste + signe * n), selection: auMoins0(c.selection + signe * sel), signalees: auMoins0(c.signalees + signe * sig), doublons: auMoins0(c.doublons + signe * dbl), choisissables: auMoins0(c.choisissables + signe * choix) }
+        : c
+    );
+    setStats((s) => (s ? { ...s, photos: auMoins0(s.photos + signe * n), doublons: auMoins0(s.doublons + signe * dbl), corbeille: corbeille && s.corbeille !== null ? auMoins0(s.corbeille - signe * n) : s.corbeille } : s));
+  }
+
+  /**
+   * Supprimer = mettre à la corbeille (30 jours), sans fenêtre de confirmation (planches 3C et 2F) :
+   * la photo disparaît de la vue, l'avis propose « Annuler » quelques secondes (= `restaurer`, les
+   * mêmes ids). Sans la migration 20261023 : la phrase sobre, rien ne bouge.
+   */
+  async function mettreALaCorbeille(ids: readonly string[]) {
+    if (occupe || !ids.length || !p.ecrire) return;
+    setOccupe(true);
+    setErreur(null);
+    const v0 = version.current;
+    let issue: Issue;
+    try {
+      issue = await ecrireCorbeille("supprimer", ids);
+    } finally {
+      setOccupe(false);
+    }
+    if (issue.statut === "absente") {
+      annoncer({ texte: BASE_PAS_A_JOUR, sous: ids.length > 1 ? "Rien n'a été supprimé : les photos sont toujours là." : "Rien n'a été supprimé : la photo est toujours là." });
+      return;
+    }
+    if (issue.statut === "panne") {
+      setErreur(issue.message);
+      return;
+    }
+    const faites = issue.ids;
+    if (faites.length < ids.length) setErreur(`${nombre(ids.length - faites.length)} photo${ids.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être supprimée${ids.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
+    if (!faites.length) return;
+    const retrait = retirerDeLaVue(new Set(faites));
+    compterLeRetrait(retrait, -1, true);
+    setCoches(AUCUNE);
+    setModeCocher(false);
+    const n = faites.length;
+    annoncer({
+      texte: n > 1 ? `${photosDe(n)} mises à la corbeille` : "Photo mise à la corbeille",
+      sous: `${n > 1 ? "Récupérables" : "Récupérable"} pendant ${DELAI_CORBEILLE_JOURS} jours`,
+      annuler: () => void annulerSuppression(faites, retrait, v0),
+    });
+  }
+  /** « Annuler » : `restaurer` les mêmes ids ; elles reviennent à leur place dans la vue (relue si la vue a changé). */
+  async function annulerSuppression(ids: string[], retrait: Retrait, v0: number) {
+    setOccupe(true);
+    let issue: Issue;
+    try {
+      issue = await ecrireCorbeille("restaurer", ids);
+    } finally {
+      setOccupe(false);
+    }
+    if (issue.statut !== "ok") {
+      setErreur(issue.statut === "absente" ? MIGRATION_TEXTE : issue.message);
+      return;
+    }
+    const revenues = new Set(issue.ids);
+    if (!revenues.size) return;
+    if (v0 !== version.current) {
+      relire();
+    } else {
+      const remis = retrait.filter((x) => revenues.has(x.photo.id)).sort((a, b) => a.index - b.index);
+      setPhotos((l) => {
+        const r = [...l];
+        for (const { photo, index } of remis) r.splice(Math.min(index, r.length), 0, photo);
+        return r;
+      });
+      compterLeRetrait(remis, 1, true);
+    }
+    annoncer({ texte: revenues.size > 1 ? `${photosDe(revenues.size)} restaurées` : "Photo restaurée", sous: revenues.size > 1 ? "De retour à leur place" : "De retour à sa place" });
+  }
+
+  /** Des photos sont revenues de la corbeille (planche 5C) : les chiffres suivent, la grille se relira en sortant. */
+  function restaureesDeLaCorbeille(revenues: PhotoCorbeille[]) {
+    const n = revenues.length;
+    if (!n) return;
+    chargee.current = null;
+    setStats((s) => (s ? { ...s, photos: s.photos + n, corbeille: s.corbeille === null ? null : auMoins0(s.corbeille - n) } : s));
+    setCompteurs((c) => (c ? { ...c, selection: c.selection + revenues.filter((x) => x.selection).length } : c));
+    const seule = n === 1 ? revenues[0] : null;
+    annoncer(
+      seule
+        ? { texte: "Photo restaurée", sous: phraseRetour(seule.lien, seule.lienNom, seule.qui), voir: () => appliquer(filtreDuRetour(seule.lien, seule.qui)) }
+        : { texte: `${photosDe(n)} restaurées`, sous: "De retour à leur place" }
+    );
   }
 
   const estCachee = (ph: Photo) => signalees[ph.id] ?? ph.signalee ?? false;
@@ -480,10 +689,16 @@ export default function Collecte(p: Props) {
     }
   }
 
+  /** « Ne pas publier » compté dans la vue (la ligne de « Afficher »). */
+  const compterSignalees = (delta: number) => setCompteurs((c) => (c ? { ...c, signalees: auMoins0(c.signalees + delta) } : c));
+
   async function cacher(photo: Photo, oui: boolean, annonceSeule = true) {
+    if (estCachee(photo) === oui) return;
     setSignalees((s) => ({ ...s, [photo.id]: oui }));
+    compterSignalees(oui ? 1 : -1);
     if (!(await appeler("/api/collectif/photos/marquer", { photoId: photo.id, signalee: oui }))) {
       setSignalees((s) => ({ ...s, [photo.id]: !oui }));
+      compterSignalees(oui ? -1 : 1);
       return;
     }
     if (annonceSeule)
@@ -494,9 +709,24 @@ export default function Collecte(p: Props) {
       );
   }
 
-  /** La barre d'actions : Ajouter à ma sélection, Retirer de ma sélection, Ne pas publier. */
-  async function agir(geste: "ajouter" | "retirer" | "cacher") {
+  /** La barre d'actions : Ajouter à ma sélection, Retirer de ma sélection, Ne pas publier, Supprimer. */
+  async function agir(geste: "ajouter" | "retirer" | "cacher" | "supprimer") {
     if (occupe || nbCoches === 0) return;
+    if (geste === "supprimer") {
+      /* Toute la vue cochée : elle se lit d'abord jusqu'au bout (les ids partent par lots de 500). */
+      setOccupe(true);
+      let ids: string[] = [];
+      try {
+        ids = (await cocheesLues()).map((x) => x.id);
+      } catch {
+        setErreur("Les photos n'ont pas pu se lire. Rien n'a changé.");
+      } finally {
+        setOccupe(false);
+        setProgres(null);
+      }
+      if (ids.length) await mettreALaCorbeille(ids);
+      return;
+    }
     setOccupe(true);
     setErreur(null);
     try {
@@ -510,8 +740,8 @@ export default function Collecte(p: Props) {
           setErreur(typeof json.message === "string" ? json.message : `Non enregistré (erreur ${rep.status}).`);
           return;
         }
-        /* Les photos laissées décochées gardent leur état d'avant. */
-        const remises = await unaUne(exceptions.map((x) => x.id), () => ({ preselection: !preselection }));
+        /* Les photos laissées décochées gardent leur état d'avant (une requête par lot de 500). */
+        const remises = exceptions.length ? await marquerLot(exceptions.map((x) => x.id), { preselection: !preselection }) : [];
         const n = (json.n ?? 0) - remises.length;
         const gardees = new Set(coches.ids);
         setPhotos((l) =>
@@ -527,8 +757,14 @@ export default function Collecte(p: Props) {
       const cochees = await cocheesLues();
       if (geste === "cacher") {
         const a = cochees.filter((x) => !estCachee(x));
-        const faites = await unaUne(a.map((x) => x.id), () => ({ signalee: true }));
+        if (!a.length) {
+          toutDecocher();
+          annoncer({ texte: cochees.length > 1 ? "Elles sont déjà marquées « Ne pas publier »" : "Elle est déjà marquée « Ne pas publier »" });
+          return;
+        }
+        const faites = await marquerLot(a.map((x) => x.id), { signalee: true });
         setSignalees((s) => ({ ...s, ...Object.fromEntries(faites.map((id) => [id, true])) }));
+        compterSignalees(faites.length);
         toutDecocher();
         if (faites.length < a.length) setErreur(`${nombre(a.length - faites.length)} photo${a.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être marquée${a.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
         if (faites.length)
@@ -537,7 +773,8 @@ export default function Collecte(p: Props) {
             sous: faites.length > 1 ? "Elles restent visibles ici" : "Elle reste visible ici",
             annuler: () => {
               setSignalees((s) => ({ ...s, ...Object.fromEntries(faites.map((id) => [id, false])) }));
-              void unaUne(faites, () => ({ signalee: false }));
+              compterSignalees(-faites.length);
+              void marquerLot(faites, { signalee: false });
             },
           });
         return;
@@ -548,7 +785,7 @@ export default function Collecte(p: Props) {
         annoncer({ texte: preselection ? `Déjà dans ${v("votre", "ta")} sélection` : `Pas dans ${v("votre", "ta")} sélection : rien à retirer` });
         return;
       }
-      const faites = await unaUne(a.map((x) => x.id), () => ({ preselection }));
+      const faites = await marquerLot(a.map((x) => x.id), { preselection });
       const ids = new Set(faites);
       poserSelection(ids, preselection, preselection ? faites.length : -faites.length);
       toutDecocher();
@@ -561,7 +798,7 @@ export default function Collecte(p: Props) {
               if (f.selection && !preselection) setPhotos((l) => [...retour.map((x) => ({ ...x, preselection: true })), ...l]);
               else setPhotos((l) => l.map((x) => (ids.has(x.id) ? { ...x, preselection: !preselection } : x)));
               setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + (preselection ? -faites.length : faites.length)) } : c));
-              void unaUne(faites, () => ({ preselection: !preselection }));
+              void marquerLot(faites, { preselection: !preselection });
             }
           : undefined,
       });
@@ -569,6 +806,62 @@ export default function Collecte(p: Props) {
       setOccupe(false);
       setProgres(null);
     }
+  }
+
+  /* ── Une personne (planche 4) : sa fiche, renommer, fusionner ── */
+  const lirePersonnes = useCallback(async () => {
+    setPersonnesLues("lecture");
+    try {
+      const rep = await fetch("/api/collectif/personnes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, action: "lister" }) });
+      const json = (await rep.json().catch(() => null)) as ListePersonnes | null;
+      if (!rep.ok || !json || !Array.isArray(json.personnes)) throw new Error(String(rep.status));
+      setPersonnes({ personnes: json.personnes, proposees: Array.isArray(json.proposees) ? json.proposees : [], avecAdresses: json.avecAdresses === true });
+      setPersonnesLues("oui");
+    } catch {
+      setPersonnesLues("erreur");
+    }
+  }, [p.token]);
+  /* La liste se lit à la première fiche ouverte (une lecture du résumé et des personnes, jamais la grille). */
+  useEffect(() => {
+    if (cleFiche && personnesLues === "non") void lirePersonnes();
+  }, [cleFiche, personnesLues, lirePersonnes]);
+
+  /** Renommer ou fusionner : la route, puis la fiche se rouvre sous le nom gardé (la grille est rangée par nom). */
+  async function ecrirePersonne(corps: Record<string, unknown>): Promise<{ nom: string; n: number } | null> {
+    setOccupe(true);
+    setErreurFenetre(null);
+    try {
+      const rep = await fetch("/api/collectif/personnes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, ...corps }) });
+      const json = (await rep.json().catch(() => ({}))) as { error?: unknown; message?: unknown; nom?: unknown; n?: unknown };
+      if (!rep.ok) {
+        /* Sans la migration : la phrase sobre, jamais le message de la route (il nomme le fichier SQL). */
+        setErreurFenetre(json.error === ERREUR_PERSONNES_ABSENTE ? MIGRATION_TEXTE : typeof json.message === "string" ? json.message : `Non enregistré (erreur ${rep.status}).`);
+        return null;
+      }
+      return { nom: typeof json.nom === "string" ? json.nom : "", n: typeof json.n === "number" ? json.n : 0 };
+    } catch {
+      setErreurFenetre("Le réseau n'a pas répondu. Rien n'a changé.");
+      return null;
+    } finally {
+      setOccupe(false);
+    }
+  }
+  async function renommerPersonne(qui: PersonneVue, prenom: string, nom: string) {
+    const r = await ecrirePersonne({ action: "renommer", personne: qui.ref, prenom, nom });
+    if (!r) return;
+    setRenommerP(null);
+    void lirePersonnes();
+    if (r.nom && f.personne) ouvrirPersonne(filtreSousLeNom(f.personne, r.nom));
+    annoncer({ texte: `Nom changé : ${r.nom}`, sous: "Ses photos suivent, sur tous les liens" });
+  }
+  /** Fusionner, jamais d'office : `cible` = la personne de la fiche, `source` = l'autre, `garder` = le nom choisi. */
+  async function fusionnerPersonnes(cible: PersonneVue, source: PersonneVue, garder: "cible" | "source") {
+    const r = await ecrirePersonne({ action: "fusionner", source: source.ref, cible: cible.ref, garder });
+    if (!r) return;
+    setFusion(null);
+    void lirePersonnes();
+    if (r.nom && f.personne) ouvrirPersonne(filtreSousLeNom(f.personne, r.nom));
+    annoncer({ texte: "Fusion faite", sous: `Toutes les photos sont rangées sous « ${r.nom} »` });
   }
 
   async function viderSelection() {
@@ -636,7 +929,8 @@ export default function Collecte(p: Props) {
   /* Le responsable, dans les listes et sur ses vignettes : « Vous » (ou « Toi ») pour lui-même. */
   const nomPersonne = (n: { cle: string; nom: string }) => (n.cle === QUI_RESPONSABLE && p.ecrire ? v("Vous", "Toi") : n.nom);
   const quiDe = (ph: Photo) => (ph.role === "responsable" && p.ecrire ? v("Vous", "Toi") : ph.qui);
-  const vide = stats?.photos === 0;
+  /* Rien reçu, et rien à la corbeille : l'accueil. Des photos à la corbeille gardent les listes (on y retourne). */
+  const vide = stats?.photos === 0 && !stats.corbeille;
   const total = stats?.photos ?? 0;
   const liensListe = arbre ? liensDansLOrdre(arbre, avecVous) : [];
   const nomOuvert = ouvertNoeud ? (ouvertNoeud.cle === "vous" ? nomVous : ouvertNoeud.nom) : "";
@@ -652,7 +946,7 @@ export default function Collecte(p: Props) {
             ? nomOuvert
             : "Toutes les photos";
   const contexteVue = f.mode === "liens" && ouvertNoeud ? nomOuvert : titre;
-  const filtree = !f.selection && (Boolean(f.lien || f.personne || f.dossier || f.jour) || f.doublons);
+  const filtree = !f.selection && (Boolean(f.lien || f.personne || f.dossier || f.jour) || f.doublons || f.signalees);
   const nbContributions = liensListe.filter((x) => x.cle.startsWith("lien:")).length;
   const note = f.selection
     ? `${photosDe(compteurs?.selection ?? 0)}${p.preselectionMax ? ` · ${p.preselectionMax} prévues, facultatif` : ""}`
@@ -735,11 +1029,43 @@ export default function Collecte(p: Props) {
       nomPersonne={nomPersonne}
       doublons={compteurs?.doublons ?? null}
       selection={compteurs?.selection ?? null}
+      signalees={compteurs?.signalees ?? null}
+      corbeille={stats?.corbeille ?? null}
+      voirCorbeille={p.ecrire}
       jours={jours}
       suite={suivante !== null}
       dossiers={glisser}
     />
   );
+
+  /* La fiche d'une personne : les autres de l'édition, à qui la fusionner (les doublons proposés d'abord ; ni « Sans nom »). */
+  const candidates = (() => {
+    if (!fiche || !personnes) return [];
+    const proposees = new Set(fiche.propositions.map((x) => x.personne.ref));
+    return personnes.personnes
+      .filter((x) => x.ref !== fiche.personne.ref && x.cle !== clePersonne(SANS_NOM))
+      .sort((a, b) => Number(proposees.has(b.ref)) - Number(proposees.has(a.ref)) || b.n - a.n);
+  })();
+  const filFiche =
+    f.mode === "liens" && ouvertNoeud ? (
+      <nav className="ec-ph-fil ec-pe-fil ec-ph-ordi" aria-label={v("Où vous êtes", "Où tu es")}>
+        <button type="button" className="ec-ph-lien" onClick={() => appliquer(avecLien(f, null))}>
+          Par lien
+        </button>
+        <Trace d={TRACE.chev} taille={14} epais={2} />
+        <button type="button" className="ec-ph-lien" onClick={() => appliquer({ ...f, personne: null, dossier: null })}>
+          {nomOuvert}
+        </button>
+        <Trace d={TRACE.chev} taille={14} epais={2} />
+      </nav>
+    ) : (
+      <nav className="ec-ph-fil ec-pe-fil ec-ph-ordi" aria-label={v("Où vous êtes", "Où tu es")}>
+        <button type="button" className="ec-ph-lien" onClick={() => appliquer({ ...f, personne: null })}>
+          Toutes les photos
+        </button>
+        <Trace d={TRACE.chev} taille={14} epais={2} />
+      </nav>
+    );
 
   /* Les albums des liens (« Par lien ») : une carte par lien sur ordinateur, une rangée au téléphone. */
   const sousAlbum = (n: Noeud) =>
@@ -759,6 +1085,36 @@ export default function Collecte(p: Props) {
 
   const fenetres = (
     <>
+      {renommerP ? (
+        <FenetreRenommer
+          personne={renommerP.personne}
+          propose={renommerP.propose}
+          tu={p.tu}
+          occupe={occupe}
+          erreur={erreurFenetre}
+          onFermer={() => {
+            setRenommerP(null);
+            setErreurFenetre(null);
+          }}
+          onGarder={(prenom, nom) => void renommerPersonne(renommerP.personne, prenom, nom)}
+        />
+      ) : null}
+      {fusion && fiche ? (
+        <FenetreFusion
+          personne={fiche.personne}
+          autre={fusion.autre}
+          candidates={candidates}
+          arbre={arbre}
+          avecAdresses={personnes?.avecAdresses ?? false}
+          occupe={occupe}
+          erreur={erreurFenetre}
+          onFermer={() => {
+            setFusion(null);
+            setErreurFenetre(null);
+          }}
+          onFusionner={(autre, garder) => void fusionnerPersonnes(fiche.personne, autre, garder)}
+        />
+      ) : null}
       {fenetreLien ? (
         <FenetreLien
           token={p.token}
@@ -853,6 +1209,7 @@ export default function Collecte(p: Props) {
         <button
           type="button"
           className="ec-ph-lien"
+          disabled={occupe}
           onClick={() => {
             avis.annuler?.();
             setAvis(null);
@@ -860,19 +1217,46 @@ export default function Collecte(p: Props) {
         >
           Annuler
         </button>
+      ) : avis.voir ? (
+        <button
+          type="button"
+          className="ec-ph-lien"
+          onClick={() => {
+            avis.voir?.();
+            setAvis(null);
+          }}
+        >
+          La voir
+        </button>
       ) : null}
     </div>
   ) : null;
   const hote = client ? document.querySelector(".ec-contenu") : null;
 
   /* ─────────────────────────────── le rendu ─────────────────────────────── */
-  const telLienOuvert = f.mode === "liens" && ouvertNoeud && !f.selection;
+  const telLienOuvert = f.mode === "liens" && ouvertNoeud && !f.selection && !f.corbeille;
+  /* Téléphone : la fiche d'une personne et la corbeille ont leur propre titre ; l'en-tête de l'écran et la barre se taisent. */
+  const ecranPropre = onglet === "photos" && (f.corbeille || (Boolean(cleFiche) && !cocherActif));
+  const retourTel: { texte: string; faire: () => void } | null =
+    onglet !== "photos"
+      ? null
+      : f.corbeille
+        ? { texte: "Les photos", faire: () => appliquer({ ...FILTRES_VIDES, ordre: f.ordre }) }
+        : cleFiche && f.mode === "liens" && ouvertNoeud
+          ? { texte: nomOuvert, faire: () => appliquer({ ...f, personne: null, dossier: null }) }
+          : cleFiche
+            ? { texte: "Les photos", faire: () => appliquer({ ...f, personne: null }) }
+            : telLienOuvert
+              ? { texte: "Par lien", faire: () => appliquer(avecLien(f, null)) }
+              : null;
   return (
-    <section className={`ec-ecran ec-collecte${telLienOuvert ? " ec-collecte--lien" : ""}${cocherActif ? " ec-collecte--cocher" : ""}`}>
-      {onglet === "photos" && telLienOuvert ? (
-        <button type="button" className="ec-ph-retour ec-ph-tel" onClick={() => appliquer(avecLien(f, null))}>
+    <section
+      className={`ec-ecran ec-collecte${telLienOuvert ? " ec-collecte--lien" : ""}${cocherActif ? " ec-collecte--cocher" : ""}${ecranPropre ? " ec-collecte--propre" : ""}${f.corbeille ? " ec-collecte--corbeille" : ""}`}
+    >
+      {retourTel ? (
+        <button type="button" className="ec-ph-retour ec-ph-tel" onClick={retourTel.faire}>
           <Trace d={TRACE.retour} taille={16} epais={2} />
-          Par lien
+          {retourTel.texte}
         </button>
       ) : null}
       <EnTeteEcran
@@ -960,8 +1344,8 @@ export default function Collecte(p: Props) {
             </div>
           ) : null}
 
-          {/* Téléphone : la ligne des chiffres, puis la seule barre. */}
-          {stats && !cocherActif ? (
+          {/* Téléphone : la ligne des chiffres, puis la seule barre (ni dans la fiche d'une personne, ni dans la corbeille). */}
+          {stats && !cocherActif && !ecranPropre ? (
             <p className="ec-ph-mligne ec-ph-tel">
               {telLienOuvert && ouvertNoeud ? (
                 <>
@@ -994,7 +1378,7 @@ export default function Collecte(p: Props) {
                   </button>
                 ) : null}
               </div>
-            ) : (
+            ) : ecranPropre ? null : (
               <div className="ec-ph-moutils ec-ph-tel">
                 <div className="ec-ph-seg" role="group" aria-label="Regarder">
                   <button type="button" aria-pressed={f.mode === "tout"} onClick={() => appliquer({ ...f, mode: "tout" })}>
@@ -1038,7 +1422,10 @@ export default function Collecte(p: Props) {
             </aside>
 
             <div className="ec-ph-zone">
-              {!vide ? (
+              {f.corbeille ? <Corbeille token={p.token} tu={p.tu} onRestaurees={restaureesDeLaCorbeille} /> : null}
+              {!f.corbeille ? (
+              <>
+              {!vide && !cleFiche ? (
                 <div className="ec-ph-zone-tete ec-ph-ordi">
                   <div className="ec-ph-zone-titres">
                     {f.mode === "liens" && ouvertNoeud && !f.selection ? (
@@ -1082,7 +1469,7 @@ export default function Collecte(p: Props) {
                         className="ec-ph-pilule"
                         aria-label={`Ordre : ${parJour ? "par jour de prise de vue" : "plus récentes d'abord"}. Changer.`}
                         onClick={() => appliquer({ ...f, ordre: parJour ? "recentes" : "jour", jour: null })}
-                        disabled={f.doublons}
+                        disabled={f.doublons || f.signalees}
                       >
                         <Trace d={TRACE.ordre} taille={15} epais={1.8} />
                         {parJour ? "Par jour de prise de vue" : "Plus récentes d'abord"}
@@ -1115,13 +1502,15 @@ export default function Collecte(p: Props) {
                 </div>
               ) : null}
 
-              {f.mode === "tout" && filtree && !vide ? (
+              {/* La fiche d'une personne dit déjà qui : ses puces ne restent que pour les autres filtres. */}
+              {f.mode === "tout" && filtree && !vide && (!cleFiche || f.lien || f.dossier || f.jour || f.doublons || f.signalees) ? (
                 <div className="ec-ph-actifs ec-ph-ordi">
                   {f.lien && ouvertNoeud ? <Puce texte={nomOuvert} retirer={() => appliquer(avecLien(f, null))} /> : null}
                   {f.dossier && dossierNoeud ? <Puce texte={dossierNoeud.nom} retirer={() => appliquer({ ...f, dossier: null })} /> : null}
-                  {f.personne && personneNoeud ? <Puce texte={nomPersonne(personneNoeud)} retirer={() => appliquer({ ...f, personne: null })} /> : null}
+                  {f.personne && personneNoeud && !cleFiche ? <Puce texte={nomPersonne(personneNoeud)} retirer={() => appliquer({ ...f, personne: null })} /> : null}
                   {f.jour ? <Puce texte={jourCourt(f.jour)} retirer={() => appliquer({ ...f, jour: null })} /> : null}
                   {f.doublons ? <Puce texte="Doublons" retirer={() => appliquer({ ...f, doublons: false })} /> : null}
+                  {f.signalees ? <Puce texte="Ne pas publier" retirer={() => appliquer({ ...f, signalees: false })} /> : null}
                   <button type="button" className="ec-ph-lien ec-ph-lien--doux" onClick={() => appliquer({ ...FILTRES_VIDES, ordre: f.ordre })}>
                     Tout effacer
                   </button>
@@ -1141,8 +1530,34 @@ export default function Collecte(p: Props) {
               ) : null}
 
               <div className="ec-collecte-grille ec-ph-defile ec-defile" ref={zone}>
-                {/* Téléphone : le lien ouvert et ses personnes, en liste (planche 2D). */}
-                {telLienOuvert && ouvertNoeud && (ouvertNoeud.enfants.length || ouvertNoeud.cle === "vous") ? (
+                {/* Une personne : sa fiche au-dessus de ses photos (planche 4A, 4D). */}
+                {cleFiche && !vide ? (
+                  <FichePersonne
+                    key={cleFiche}
+                    nomGrille={personneNoeud ? nomPersonne(personneNoeud) : titre}
+                    fiche={fiche}
+                    erreur={personnesLues === "erreur"}
+                    avecAdresses={p.ecrire && (personnes?.avecAdresses ?? false)}
+                    arbre={arbre}
+                    ecrire={p.ecrire}
+                    totalVue={totalVue}
+                    fil={filFiche}
+                    tu={p.tu}
+                    onRenommer={(propose) => {
+                      setErreurFenetre(null);
+                      if (fiche) setRenommerP({ personne: fiche.personne, propose: propose ?? null });
+                    }}
+                    onFusionner={(autre) => {
+                      setErreurFenetre(null);
+                      setFusion({ autre });
+                    }}
+                    onToutCocher={toutCocher}
+                    onCocher={() => setModeCocher(true)}
+                  />
+                ) : null}
+
+                {/* Téléphone : le lien ouvert et ses personnes, en liste (planche 2D) ; pas sous la fiche d'une personne. */}
+                {telLienOuvert && !cleFiche && ouvertNoeud && (ouvertNoeud.enfants.length || ouvertNoeud.cle === "vous") ? (
                   <div className="ec-ph-liste-verre ec-ph-tel">
                     <button type="button" className={!f.personne && !f.dossier ? "ec-ph-rangee ec-ph-rangee--on ec-ph-rangee--court" : "ec-ph-rangee ec-ph-rangee--court"} onClick={() => appliquer({ ...f, personne: null, dossier: null })}>
                       <span className="ec-ph-ini ec-ph-ini--grand" aria-hidden="true">
@@ -1261,6 +1676,8 @@ export default function Collecte(p: Props) {
                         ? v("Rien dans votre sélection : l'étoile d'une photo l'y ajoute.", "Rien dans ta sélection : l'étoile d'une photo l'y ajoute.")
                         : f.doublons
                           ? "Aucun doublon ici."
+                          : f.signalees
+                            ? "Aucune photo marquée « Ne pas publier » ici."
                           : f.jour
                             ? "Aucune photo ce jour-là ici."
                             : f.lien || f.personne || f.dossier
@@ -1305,6 +1722,8 @@ export default function Collecte(p: Props) {
                   </button>
                 ) : null}
               </div>
+              </>
+              ) : null}
               <div className="ec-ph-zone-pied ec-ph-ordi" aria-hidden="true" />
             </div>
 
@@ -1312,7 +1731,9 @@ export default function Collecte(p: Props) {
             {p.ecrire && nbCoches > 0 ? (
               <div className="ec-ph-barre-actions ec-ph-ordi" role="toolbar" aria-label="Agir sur les photos cochées">
                 <span className="ec-ph-compte">
-                  <b>{nombre(nbCoches)}</b> photo{nbCoches > 1 ? "s" : ""} cochée{nbCoches > 1 ? "s" : ""}
+                  <b>{nombre(nbCoches)}</b>
+                  <span className="ec-ph-act-long">{` photo${nbCoches > 1 ? "s" : ""}`}</span>
+                  {` cochée${nbCoches > 1 ? "s" : ""}`}
                 </span>
                 <button type="button" className="ec-ph-lien ec-ph-lien--doux ec-ph-tout-decocher" onClick={toutDecocher}>
                   Tout décocher
@@ -1321,7 +1742,8 @@ export default function Collecte(p: Props) {
                 {progres ? <span className="ec-ph-progres">{progres}</span> : null}
                 <button type="button" className="ec-ph-act ec-ph-act--prem" disabled={occupe} onClick={() => void agir("ajouter")}>
                   <Trace d={ICONES.etoile} taille={16} plein epais={1.6} />
-                  Ajouter à ma sélection
+                  <span className="ec-ph-act-long">Ajouter à ma sélection</span>
+                  <span className="ec-ph-act-court">Ma sélection</span>
                 </button>
                 <button type="button" className="ec-ph-act" disabled={occupe} onClick={() => void agir("retirer")}>
                   <Trace d={TRACE.retirer} taille={16} epais={1.7} />
@@ -1331,7 +1753,11 @@ export default function Collecte(p: Props) {
                   <Trace d={ICONES.cache} taille={16} epais={1.7} />
                   Ne pas publier
                 </button>
-                {/* « Supprimer » (corbeille 30 jours) : sa place, sans le bouton, tant que la route n'existe pas. */}
+                {/* « Supprimer » : la corbeille 30 jours, sans fenêtre de confirmation (« Annuler » quelques secondes). */}
+                <button type="button" className="ec-ph-act ec-ph-act--danger" disabled={occupe} onClick={() => void agir("supprimer")}>
+                  <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
+                  Supprimer
+                </button>
                 <button type="button" className="ec-ph-act ec-ph-act--x" aria-label="Fermer la barre et tout décocher" onClick={toutDecocher}>
                   <Trace d={TRACE.fermer} taille={16} epais={2} />
                 </button>
@@ -1340,7 +1766,7 @@ export default function Collecte(p: Props) {
           </div>
 
           {/* Téléphone : « Déposer » sous le pouce (la pastille d'envoi prend sa place pendant un envoi). */}
-          {p.ecrire && p.ouverte && envoi.ouvrir && !cocherActif && !envoiVisible ? (
+          {p.ecrire && p.ouverte && envoi.ouvrir && !cocherActif && !envoiVisible && !ecranPropre ? (
             <button
               type="button"
               className="ec-ph-fab ec-ph-tel"
@@ -1354,7 +1780,7 @@ export default function Collecte(p: Props) {
           {cocherActif ? (
             <div className="ec-ph-bas ec-ph-tel" role="toolbar" aria-label="Agir sur les photos cochées">
               {progres ? <p className="ec-ph-progres">{progres}</p> : null}
-              <div className="ec-ph-bas-actions ec-ph-bas-actions--trois">
+              <div className="ec-ph-bas-actions">
                 <button type="button" disabled={occupe || !nbCoches} onClick={() => void agir("ajouter")}>
                   <Trace d={ICONES.etoile} taille={20} plein epais={1.6} />
                   Ma sélection
@@ -1366,6 +1792,10 @@ export default function Collecte(p: Props) {
                 <button type="button" disabled={occupe || !nbCoches} onClick={() => void agir("cacher")}>
                   <Trace d={ICONES.cache} taille={20} epais={1.7} />
                   Ne pas publier
+                </button>
+                <button type="button" className="ec-ph-bas-danger" disabled={occupe || !nbCoches} onClick={() => void agir("supprimer")}>
+                  <Trace d={ICONES.corbeille} taille={20} epais={1.7} />
+                  Supprimer
                 </button>
               </div>
             </div>
@@ -1436,7 +1866,7 @@ export default function Collecte(p: Props) {
           ecrire={p.ecrire}
           tu={p.tu}
           cachee={estCachee(photoAgrandie)}
-          voisines={[visibles[iAgrandi - 1]?.vignette, visibles[iAgrandi + 1]?.vignette].filter((x): x is string => Boolean(x))}
+          voisines={[visibles[iAgrandi - 1], visibles[iAgrandi + 1]].map((x) => x?.grande ?? x?.vignette).filter((x): x is string => Boolean(x))}
           onPrecedente={iAgrandi > 0 ? () => setAgrandi(visibles[iAgrandi - 1].id) : null}
           onSuivante={
             iAgrandi < visibles.length - 1
@@ -1451,6 +1881,8 @@ export default function Collecte(p: Props) {
           onFermer={() => setAgrandi(null)}
           onSelection={() => void basculer(photoAgrandie)}
           onCacher={() => void cacher(photoAgrandie, !estCachee(photoAgrandie))}
+          onSupprimer={p.ecrire ? () => void mettreALaCorbeille([photoAgrandie.id]) : undefined}
+          occupe={occupe}
         />
       ) : null}
 

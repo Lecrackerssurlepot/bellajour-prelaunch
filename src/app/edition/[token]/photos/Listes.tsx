@@ -6,11 +6,14 @@
    aussi celle qui filtre : ouvrir « Bateau 1 » le coche et la liste des
    personnes devient « Personnes · Bateau 1 ». Dans « Mes photos », ce sont les
    dossiers du responsable (on y range un dossier en le glissant sur un autre).
-   Ce que chaque ligne veut dire pour la route : `filtres.ts`. */
+   Ce que chaque ligne veut dire pour la route : `filtres.ts`.
+   Lot w2 : « Afficher » montre aussi « Ne pas publier » (une vue qui se croise
+   avec le lien, comme Doublons) et, pour le responsable seul, la « Corbeille »
+   (un endroit à part : tout autre geste des listes en sort). */
 
 import { useState } from "react";
 import type { Arbre, Noeud } from "@/lib/collectif/dossiers";
-import { avecLien, avecSelection, initialesDe, jourCourt, liensDansLOrdre, nombre, pourChercher, type Filtres, type JourVu } from "./filtres";
+import { avecCorbeille, avecDoublons, avecLien, avecSelection, avecSignalees, initialesDe, jourCourt, liensDansLOrdre, nombre, pourChercher, sortirDeLaCorbeille, type Filtres, type JourVu } from "./filtres";
 import { ICONES, Trace } from "./Grille";
 
 const TRACES = {
@@ -42,6 +45,11 @@ type Props = {
   /** Les copies repérées dans la vue (`compteurs.doublons`) et la sélection de toute l'édition. */
   doublons: number | null;
   selection: number | null;
+  /** « Ne pas publier » dans la vue (`compteurs.signalees`) et la corbeille de l'édition (`stats.corbeille`, `null` sans la migration). */
+  signalees: number | null;
+  corbeille: number | null;
+  /** La ligne « Corbeille » : le responsable seul (l'équipe ne la voit pas, la route lui répond 403). */
+  voirCorbeille: boolean;
   /** Les jours des photos lues, quand la vue est rangée par jour ; `null` sinon. */
   jours: JourVu[] | null;
   /** Il reste des pages à lire : la liste des jours n'est pas finie. */
@@ -55,7 +63,9 @@ function Case({ on }: { on: boolean }) {
 
 export default function Listes(l: Props) {
   const v = (vous: string, toi: string) => (l.tu ? toi : vous);
-  const { f, changer, arbre } = l;
+  const { f, arbre } = l;
+  /* Tout geste des listes sort de la corbeille ; seule sa ligne y entre. */
+  const changer = (nf: Filtres) => l.changer(sortirDeLaCorbeille(nf));
   const feuille = l.variante === "feuille";
   const [cherche, setCherche] = useState("");
   const [tous, setTous] = useState<Record<string, boolean>>({});
@@ -173,10 +183,15 @@ export default function Listes(l: Props) {
     if (gens.length >= 1) {
       const trouvees = cherche.trim() ? gens.filter((x) => pourChercher(l.nomPersonne(x)).includes(pourChercher(cherche))) : gens;
       const base = dansUnLien ? (feuille ? 6 : 12) : feuille ? 3 : 4;
-      const visibles = cherche.trim() ? trouvees.slice(0, 60) : trouvees.slice(0, plafond("gens", base));
+      const premieres = cherche.trim() ? trouvees.slice(0, 60) : trouvees.slice(0, plafond("gens", base));
+      /* La personne ouverte reste dans la liste, en tête, même hors des premières (planche 4A : « 1 cochée »). */
+      const choisie = f.personne && !premieres.some((x) => x.cle === f.personne) ? gens.find((x) => x.cle === f.personne) : undefined;
+      const visibles = choisie ? [choisie, ...premieres.slice(0, Math.max(0, premieres.length - 1))] : premieres;
       sectionPersonne = (
         <section className="ec-ph-fl">
-          <div className="ec-ph-fl-t">{dansUnLien && !feuille && ouvert ? `Personnes · ${ouvert.nom}` : "Personne"}</div>
+          <div className="ec-ph-fl-t">
+            {dansUnLien && !feuille && ouvert ? `Personnes · ${ouvert.nom}` : "Personne"} {f.personne && !dansUnLien ? <small>1 cochée</small> : null}
+          </div>
           <label className="ec-ph-cherche">
             <Trace d={TRACES.chercher} taille={15} epais={1.8} />
             <input
@@ -265,11 +280,11 @@ export default function Listes(l: Props) {
     </section>
   );
 
-  /* ── Afficher ── (« Ne pas publier » et « Corbeille » attendent la route : voir le compte rendu du lot) */
+  /* ── Afficher ── Doublons, Ma sélection, Ne pas publier, Corbeille (planche 4A, 5A ; la feuille : 2E). */
   const sectionAfficher = feuille ? (
     <section className="ec-ph-fl">
       <div className="ec-ph-fl-t">Afficher</div>
-      <button type="button" className={li} role="switch" aria-checked={f.doublons} onClick={() => changer({ ...f, doublons: !f.doublons })}>
+      <button type="button" className={li} role="switch" aria-checked={f.doublons} onClick={() => changer(avecDoublons(f, !f.doublons))}>
         <span className="ec-ph-nom">
           Seulement les doublons {l.doublons !== null ? <span className="ec-ph-pale">· {nombre(l.doublons)}</span> : null}
         </span>
@@ -281,11 +296,26 @@ export default function Listes(l: Props) {
         </span>
         <span className={f.selection ? "ec-ph-bascule ec-ph-bascule--on" : "ec-ph-bascule"} aria-hidden="true" />
       </button>
+      <button type="button" className={li} role="switch" aria-checked={f.signalees} onClick={() => changer(avecSignalees(f, !f.signalees))}>
+        <span className="ec-ph-nom">
+          Ne pas publier {l.signalees !== null ? <span className="ec-ph-pale">· {nombre(l.signalees)}</span> : null}
+        </span>
+        <span className={f.signalees ? "ec-ph-bascule ec-ph-bascule--on" : "ec-ph-bascule"} aria-hidden="true" />
+      </button>
+      {l.voirCorbeille ? (
+        <button type="button" className={li} onClick={() => l.changer(avecCorbeille(f))}>
+          <span className="ec-ph-ic">
+            <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
+          </span>
+          <span className="ec-ph-nom">Corbeille</span>
+          {l.corbeille !== null ? <span className="ec-ph-n">{nombre(l.corbeille)}</span> : null}
+        </button>
+      ) : null}
     </section>
   ) : (
     <section className="ec-ph-fl">
       <div className="ec-ph-fl-t">Afficher</div>
-      <button type="button" className={f.doublons ? `${li} ec-ph-li--on` : li} aria-pressed={f.doublons} onClick={() => changer({ ...f, doublons: !f.doublons })}>
+      <button type="button" className={f.doublons ? `${li} ec-ph-li--on` : li} aria-pressed={f.doublons} onClick={() => changer(avecDoublons(f, !f.doublons))}>
         <span className="ec-ph-ic">
           <Trace d={TRACES.doublons} taille={16} epais={1.7} />
         </span>
@@ -299,6 +329,22 @@ export default function Listes(l: Props) {
         <span className="ec-ph-nom">Ma sélection</span>
         {l.selection !== null ? <span className="ec-ph-n">{nombre(l.selection)}</span> : null}
       </button>
+      <button type="button" className={f.signalees ? `${li} ec-ph-li--on` : li} aria-pressed={f.signalees} onClick={() => changer(avecSignalees(f, !f.signalees))}>
+        <span className="ec-ph-ic">
+          <Trace d={ICONES.cache} taille={16} epais={1.7} />
+        </span>
+        <span className="ec-ph-nom">Ne pas publier</span>
+        {l.signalees !== null ? <span className="ec-ph-n">{nombre(l.signalees)}</span> : null}
+      </button>
+      {l.voirCorbeille ? (
+        <button type="button" className={f.corbeille ? `${li} ec-ph-li--on` : li} aria-pressed={f.corbeille} onClick={() => l.changer(f.corbeille ? { ...f, corbeille: false } : avecCorbeille(f))}>
+          <span className="ec-ph-ic">
+            <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
+          </span>
+          <span className="ec-ph-nom">Corbeille</span>
+          {l.corbeille !== null ? <span className="ec-ph-n">{nombre(l.corbeille)}</span> : null}
+        </button>
+      ) : null}
     </section>
   );
 

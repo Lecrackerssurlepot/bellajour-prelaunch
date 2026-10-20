@@ -251,13 +251,20 @@ export function resumerPhotos(photos: readonly PhotoResumable[]): LigneResume[] 
 /* ─────────────────────────── le filtre d'un dossier ─────────────────────────── */
 
 /** Les colonnes qu'un plan lit : exactement celles d'une ligne du résumé que lit `dansLeDossier`. */
-export type LigneFiltrable = Pick<LignePhoto, "role_deposant" | "provenance_id" | "provenance_type" | "deposant"> & { preselection?: boolean };
+export type LigneFiltrable = Pick<LignePhoto, "role_deposant" | "provenance_id" | "provenance_type" | "deposant"> & { preselection?: boolean; signalee?: boolean };
 
 export type Condition =
   | { op: "egal"; colonne: "role_deposant" | "provenance_id"; valeur: string }
   | { op: "nul"; colonne: "provenance_id" }
   | { op: "horsDe"; colonne: "role_deposant"; valeurs: readonly string[] }
   | { op: "selectionnee" }
+  /**
+   * « Ne pas publier » (lot w2 du 20/10) : une condition qui ne se pose JAMAIS par
+   * `planDuDossier` (le résumé ne porte pas la colonne, le plan ne pourrait pas se
+   * vérifier) ; la grille l'AJOUTE au plan d'un dossier déjà vérifié (vue
+   * `signalees`, et le compte de la ligne « Ne pas publier »).
+   */
+  | { op: "signalee" }
   /** Une photo de participant : `deParticipant` (rôle participant, OU arrivée par un lien). */
   | { op: "participant" }
   /** La colonne vaut l'une des valeurs, ou (si `nul`) elle est vide. */
@@ -337,6 +344,9 @@ export function correspond(l: LigneFiltrable, conditions: readonly Condition[]):
       case "selectionnee":
         if (l.preselection !== true) return false;
         break;
+      case "signalee":
+        if (l.signalee !== true) return false;
+        break;
       case "participant":
         if (!(l.role_deposant === "participant" || l.provenance_id !== null)) return false;
         break;
@@ -392,6 +402,9 @@ export function enFiltresPostgrest(conditions: readonly Condition[]): AppelFiltr
         break;
       case "selectionnee":
         appels.push({ methode: "eq", colonne: "preselection", valeur: true });
+        break;
+      case "signalee":
+        appels.push({ methode: "eq", colonne: "signalee", valeur: true });
         break;
       case "participant":
         appels.push({ methode: "or", filtres: "role_deposant.eq.participant,provenance_id.not.is.null" });

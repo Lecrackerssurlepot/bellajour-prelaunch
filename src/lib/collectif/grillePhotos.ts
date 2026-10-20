@@ -38,6 +38,7 @@ import {
   TRI_TOUTES,
   trierCommeLaBase,
   type CleTri,
+  type Condition,
   type LigneResume,
   type PlanFiltre,
 } from "./resumePhotos";
@@ -45,7 +46,8 @@ import {
 /** Les dernières arrivées sous les albums d'une vue d'ensemble : une rangée. */
 export const ARRIVEES = 8;
 
-export const VUES = ["toutes", "jour", "doublons"] as const;
+/** `signalees` (lot w2 du 20/10) : les photos « Ne pas publier » du dossier, la plus récente d'abord ; elle se croise avec le dossier, comme « Doublons ». */
+export const VUES = ["toutes", "jour", "doublons", "signalees"] as const;
 export type VueGrille = (typeof VUES)[number];
 
 /** Une photo telle que la lecture COMPLÈTE la lit (le repli). */
@@ -74,10 +76,10 @@ export const COLONNES_GRILLE =
 /** Une photo d'une PAGE : ce que la tuile montre, rien de plus. */
 export type LignePage = Pick<
   LigneGrille,
-  "id" | "vignette_key" | "r2_key" | "nom_origine" | "provenance_type" | "deposant" | "prise_le" | "confirmee_le" | "preselection" | "mime" | "provenance_id" | "role_deposant"
+  "id" | "vignette_key" | "r2_key" | "nom_origine" | "provenance_type" | "deposant" | "prise_le" | "confirmee_le" | "preselection" | "signalee" | "mime" | "provenance_id" | "role_deposant"
 >;
 
-export const COLONNES_PAGE = "id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, preselection, mime, provenance_id, role_deposant";
+export const COLONNES_PAGE = "id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, preselection, signalee, mime, provenance_id, role_deposant";
 
 export type DemandeGrille = { dossier: string; vue: VueGrille; page: number; seulementArbre: boolean };
 
@@ -101,8 +103,13 @@ export type ContexteGrille = {
   enCours: number;
   /** Signer une VIGNETTE : adresse stable à l'heure et gardée en cache (`signerLectureVignette`, T-176). Peut lever : la tuile ou la couverture s'en passe. */
   signer: (cle: string) => Promise<string>;
-  /** Signer un ORIGINAL de repli (une photo sans vignette) : `signerGet`, une heure. Peut lever. */
+  /** Signer un ORIGINAL : la photo sans vignette, et la photo EN GRAND de la visionneuse (`signerGet`, une heure). Peut lever. */
   signerOriginal: (cle: string) => Promise<string>;
+  /**
+   * Combien de photos sont à la corbeille (migration 20261023, un compte sans ligne lu par la
+   * route, `compterCorbeille`) ; `null` sans la migration. Repris tel quel dans `stats`.
+   */
+  corbeille?: number | null;
 };
 
 export type TuileGrille = {
@@ -115,16 +122,27 @@ export type TuileGrille = {
   jour: string;
   jourCle: string;
   preselection: boolean;
+  /** « Ne pas publier » (lot w2 du 20/10) : l'état relu à chaque page, il survit au rechargement. */
+  signalee: boolean;
   doublonDe: string | null;
   heic: boolean;
+  /**
+   * La photo EN GRAND (la visionneuse, planche 3) : l'original signé quand un navigateur sait
+   * l'afficher (`afficheEnGrand` : JPEG, PNG, WebP), la vignette sinon (un HEIC). `null` : rien à montrer.
+   */
+  grande: string | null;
 };
+
+/** Les formats qu'un navigateur affiche à coup sûr dans une balise `<img>` (le HEIC, seulement Safari : la vignette suffit). */
+const MIMES_EN_GRAND = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+export const afficheEnGrand = (mime: string | null | undefined): boolean => typeof mime === "string" && MIMES_EN_GRAND.has(mime.toLowerCase());
 
 export type ReponseGrille = {
   photos: TuileGrille[];
   page: number;
   suivante: number | null;
-  compteurs: { dossier: number; liste: number; doublons: number; selection: number; choisissables: number };
-  stats: { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null };
+  compteurs: { dossier: number; liste: number; doublons: number; selection: number; choisissables: number; signalees: number };
+  stats: { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null; corbeille: number | null };
   arbre: ReturnType<typeof arbreDesPhotos>;
   couvertures: Record<string, string>;
   liens: {
@@ -145,6 +163,18 @@ async function tuile(p: LignePage, doublonDe: ReadonlyMap<string, string>, c: Co
   } catch {
     vignette = null;
   }
+  /* En grand : l'original quand il s'affiche (déjà signé s'il servait de vignette), la vignette sinon. */
+  let grande: string | null = null;
+  if (afficheEnGrand(p.mime)) {
+    if (!p.vignette_key) grande = vignette;
+    else {
+      try {
+        grande = await c.signerOriginal(p.r2_key);
+      } catch {
+        grande = null;
+      }
+    }
+  }
   const jour = jourDePhoto(p.prise_le, p.confirmee_le);
   const responsable = c.edition.responsable_nom;
   /* Qui l'a envoyée (T-180) : le nom du participant, sinon le responsable ou l'atelier. */
@@ -159,8 +189,10 @@ async function tuile(p: LignePage, doublonDe: ReadonlyMap<string, string>, c: Co
     jour: jour.libelle,
     jourCle: jour.cle,
     preselection: p.preselection,
+    signalee: Boolean(p.signalee),
     doublonDe: doublonDe.get(p.id) ?? null,
     heic: p.mime === "image/heic" || p.mime === "image/heif",
+    grande: grande ?? vignette,
   };
 }
 
@@ -186,7 +218,9 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
   const dansDossier = toutes.filter((p) => dansLeDossier(p, dossier, responsable));
   /* « Toutes » : la plus récente arrivée d'abord (T-181) ; ce qui vient d'arriver est en haut,
      pas à la dernière page. « Par jour » garde l'ordre des jours de prise de vue. */
-  let liste = vue === "doublons" ? dansDossier.filter((p) => dansUnGroupe.has(p.id)) : vue === "toutes" ? [...dansDossier].reverse() : dansDossier;
+  /* « Ne pas publier » (lot w2) : les signalées du dossier, dans l'ordre de « Toutes ». */
+  const signaleesRecentes = () => [...dansDossier].reverse().filter((p) => p.signalee);
+  let liste = vue === "doublons" ? dansDossier.filter((p) => dansUnGroupe.has(p.id)) : vue === "signalees" ? signaleesRecentes() : vue === "toutes" ? [...dansDossier].reverse() : dansDossier;
   if (vue === "jour") {
     liste = [...liste].sort((a, b) => {
       const ja = jourDePhoto(a.prise_le, a.confirmee_le).cle;
@@ -252,6 +286,8 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
       doublons: dansDossier.filter((p) => doublonDe.has(p.id)).length,
       selection: toutes.filter((p) => p.preselection).length,
       choisissables: dansDossier.filter((p) => !p.signalee && !p.preselection).length,
+      /* « Ne pas publier » du dossier (la ligne de « Afficher », lot w2) : le même compte que la vue `signalees`. */
+      signalees: dansDossier.filter((p) => p.signalee).length,
     },
     stats: {
       photos: toutes.length,
@@ -260,6 +296,7 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
       enCours: c.enCours,
       /* La dernière arrivée : le point de départ de « N nouvelles photos » (T-181). */
       derniere: toutes.length ? toutes[toutes.length - 1].confirmee_le : null,
+      corbeille: c.corbeille ?? null,
     },
     arbre,
     couvertures,
@@ -283,6 +320,8 @@ export type LectureGrille = {
   parIds(ids: readonly string[], conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<LignePage[] | null>;
   /** COMBIEN de ces ids (un paquet) sont dans le dossier : un compte `head`, aucune ligne. */
   compter(ids: readonly string[], conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<number | null>;
+  /** COMBIEN de photos passent ces conditions (le plan du dossier et « Ne pas publier », lot w2) : un compte sans ligne. */
+  compterFiltre(conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<number | null>;
 };
 
 /** Les paquets d'ids partent six par six (une latence par six paquets, sans inonder l'API). */
@@ -338,27 +377,37 @@ export async function grilleDepuisResume(
     return comptes ? comptes.reduce((n, x) => n + x, 0) : null;
   };
   const sansGrille = d.seulementArbre || estVueEnsemble(dossier);
-  /* La page : triée et découpée par la base, en même temps que le compte des copies. */
-  const lirePage = async (nListe: number, membresDuDossier: readonly LignePage[] | null): Promise<LignePage[] | null> => {
-    if (d.seulementArbre || !conditions) return [];
+  /* « Ne pas publier » (lot w2) : le plan du dossier, déjà vérifié, et la colonne `signalee` en plus.
+     Le résumé ne la porte pas : la vue et le compte de la ligne se lisent en base (un compte sans ligne). */
+  const avecSignalee: Condition[] | null = conditions ? [...conditions, { op: "signalee" }] : null;
+  const compterSignalees = async (): Promise<number | null> => (avecSignalee ? lecture.compterFiltre(avecSignalee) : 0);
+  /* La page : triée et découpée par la base, en même temps que les comptes. */
+  const lirePage = async (conds: Condition[] | null, tri: readonly CleTri[], nListe: number, membresDuDossier: readonly LignePage[] | null): Promise<LignePage[] | null> => {
+    if (d.seulementArbre || !conditions || !conds) return [];
     if (sansGrille) return lecture.page(conditions, TRI_TOUTES, 0, ARRIVEES - 1);
     if (membresDuDossier) return membresDuDossier.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
     if (page * TAILLE_PAGE >= nListe) return [];
-    return lecture.page(conditions, vue === "toutes" ? TRI_TOUTES : TRI_JOUR, page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);
+    return lecture.page(conds, tri, page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE - 1);
   };
   let nListe = nDossier;
   let copiesDuDossier: number | null;
+  let signaleesDuDossier: number | null;
   let tranche: LignePage[] | null;
   if (vue === "doublons") {
     const membresDuDossier = await lireMembres();
     if (!membresDuDossier) return null;
     nListe = membresDuDossier.length;
     copiesDuDossier = membresDuDossier.filter((p) => doublonDe.has(p.id)).length;
-    tranche = await lirePage(nListe, membresDuDossier);
+    [signaleesDuDossier, tranche] = await Promise.all([compterSignalees(), lirePage(conditions, TRI_ARRIVEE, nListe, membresDuDossier)]);
+  } else if (vue === "signalees") {
+    signaleesDuDossier = await compterSignalees();
+    if (signaleesDuDossier === null) return null;
+    nListe = signaleesDuDossier;
+    [copiesDuDossier, tranche] = await Promise.all([compterCopies(), lirePage(avecSignalee, TRI_TOUTES, nListe, null)]);
   } else {
-    [copiesDuDossier, tranche] = await Promise.all([compterCopies(), lirePage(nListe, null)]);
+    [copiesDuDossier, signaleesDuDossier, tranche] = await Promise.all([compterCopies(), compterSignalees(), lirePage(conditions, vue === "toutes" ? TRI_TOUTES : TRI_JOUR, nListe, null)]);
   }
-  if (copiesDuDossier === null || tranche === null) return null;
+  if (copiesDuDossier === null || signaleesDuDossier === null || tranche === null) return null;
   const photos = await Promise.all(tranche.map((p) => tuile(p, doublonDe, c)));
 
   const pesees = enLignesPesees(groupes);
@@ -408,6 +457,7 @@ export async function grilleDepuisResume(
       doublons: copiesDuDossier,
       selection: somme(groupes, () => true, "n_selection"),
       choisissables: dansDossier.choisissables,
+      signalees: signaleesDuDossier,
     },
     stats: {
       photos: total,
@@ -415,6 +465,7 @@ export async function grilleDepuisResume(
       doublons: copies,
       enCours: c.enCours,
       derniere: derniereArrivee(groupes),
+      corbeille: c.corbeille ?? null,
     },
     arbre,
     couvertures,
