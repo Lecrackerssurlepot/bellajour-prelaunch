@@ -4798,8 +4798,10 @@ async function sondeLotA4() {
       && /create table if not exists public\.collectif_doublons/.test(mig) && /alter table public\.collectif_doublons enable row level security;/.test(mig) && /revoke all on public\.collectif_doublons from anon, authenticated;/.test(mig)
       && /create index if not exists collectif_photos_arrivee_idx/.test(mig) && /notify pgrst, 'reload schema'/.test(mig) && !/insert into|update public|delete from/i.test(mig.replace(/--.*$/gm, "")));
   ok("la vue regroupe EXACTEMENT les colonnes que lisent dansLeDossier, l'arbre et le compte des personnes, et rend celles du module",
-    /group by p\.edition_id, p\.role_deposant, p\.provenance_id, p\.provenance_type, p\.deposant, p\.appareil;/.test(mig)
-      && /case when c\.role_deposant = 'participant' or c\.provenance_id is not null then c\.appareil_id end as appareil/.test(mig)
+    /group by p\.edition_id, p\.role_deposant, p\.provenance_id, p\.provenance_type, p\.deposant, p\.appareil_cle;/.test(mig)
+      && /case when c\.role_deposant = 'participant' or c\.provenance_id is not null then c\.appareil_id end as appareil_cle\n/.test(mig)
+      /* 20/10 : collectif_photos a DEJA une colonne `appareil` ; un `appareil` calcule a cote de `c.*` rendait 42702 a l'application. */
+      && !/end as appareil\s*$/m.test(mig) && !/p\.appareil\b(?!_)/.test(mig.replace(/--.*$/gm, ""))
       && /\(count\(\*\) filter \(where p\.preselection\)\)::integer as n_selection/.test(mig) && /\(count\(\*\) filter \(where not p\.signalee and not p\.preselection\)\)::integer as n_choisissables/.test(mig)
       && R.COLONNES_RESUME.split(", ").every((c) => new RegExp(`as ${c}\\b|p\\.${c},`).test(mig) || c === "id"));
 
