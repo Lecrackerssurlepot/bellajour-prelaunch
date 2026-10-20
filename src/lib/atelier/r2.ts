@@ -350,6 +350,28 @@ export async function supprimer(key: string): Promise<boolean> {
 }
 
 /**
+ * Les SEULES formes de préfixe qu'un effacement en masse accepte (T-113, puis
+ * T-159 le 20/10/2026). PURE : testée dans les deux harnais.
+ *
+ * - `numeros/<id>/` : un dossier de particulier (la règle d'origine, inchangée
+ *   au caractère près) ;
+ * - `collectif/<uuid>/` : le coffre d'UNE édition collective, l'uuid en
+ *   minuscules, exactement comme `prefixeEdition` (collectif/cles.ts) l'écrit.
+ *
+ * Tout le reste rend `null` : un préfixe vide (le coffre entier),
+ * « collectif/ » seul (toutes les éditions ET les styles), « collectif/styles/ »,
+ * un uuid tronqué ou en majuscules, un sous-dossier, un « .. ». Chaque effaceur
+ * exige SA racine : un préfixe collectif ne passe jamais par `supprimerPrefixe`
+ * (le geste B2C « Supprimer définitivement »), un préfixe de particulier ne
+ * passe jamais par `supprimerCoffreEdition`.
+ */
+export function racineEffacable(prefixe: string): "numeros" | "collectif" | null {
+  if (/^numeros\/[^/]+\/$/.test(prefixe)) return "numeros";
+  if (/^collectif\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/$/.test(prefixe)) return "collectif";
+  return null;
+}
+
+/**
  * Suppression de TOUT ce qui vit sous un préfixe (T-113, 14/09/2026).
  *
  * C'est ce que « Supprimer définitivement » fait au coffre avant de toucher
@@ -359,33 +381,77 @@ export async function supprimer(key: string): Promise<boolean> {
  * on efface par paquets de 1000 (la limite de DeleteObjects).
  *
  * ⚠️ Garde-fou : le préfixe DOIT commencer par « numeros/ » et se terminer
- * par « / ». Un préfixe vide ou tronqué (« numeros/ab ») effacerait le
- * coffre entier ou les dossiers voisins ; on refuse plutôt que de faire
- * confiance à l'appelant.
+ * par « / » (`racineEffacable`). Un préfixe vide ou tronqué (« numeros/ab »)
+ * effacerait le coffre entier ou les dossiers voisins ; on refuse plutôt que
+ * de faire confiance à l'appelant.
  *
  * Rend le compte des objets partis et des échecs. L'appelant ne retire la
  * ligne en base QUE si `echecs === 0` : un objet sans ligne serait invisible
  * et éternel (T-048, même règle que `supprimer`).
  */
 export async function supprimerPrefixe(prefixe: string): Promise<{ supprimes: number; echecs: number }> {
-  if (!/^numeros\/[^/]+\/$/.test(prefixe)) {
+  if (racineEffacable(prefixe) !== "numeros") {
     console.error("[r2] préfixe refusé", prefixe);
     return { supprimes: 0, echecs: 1 };
   }
+  const { supprimes, echecs } = await viderPrefixe(prefixe, () => true);
+  return { supprimes, echecs };
+}
+
+/**
+ * Le coffre d'UNE édition collective (T-159, 20/10/2026) : tout ce qui vit
+ * sous `collectif/<uuid>/` et que `garder` ne retient pas. Seul appelant :
+ * `scripts/collectif-retention.ts` (ce qui part et ce qui reste est la table
+ * `FAMILLES` de `collectif/retention.ts`, passée ici par `garder`).
+ *
+ * ⚠️ Garde-fou : `racineEffacable` doit répondre « collectif ». Ni le coffre
+ * entier, ni « collectif/ », ni les styles, ni un uuid mal formé, ni un dossier
+ * de particulier. Refusé AVANT tout appel réseau.
+ *
+ * Rend aussi le nombre d'objets gardés : un « 0 effacé » doit pouvoir se lire
+ * comme « tout était gardé », pas comme « rien n'était là ».
+ */
+export async function supprimerCoffreEdition(
+  prefixe: string,
+  garder: (cle: string) => boolean,
+): Promise<{ supprimes: number; echecs: number; gardes: number }> {
+  if (racineEffacable(prefixe) !== "collectif") {
+    console.error("[r2] préfixe d'édition refusé", prefixe);
+    return { supprimes: 0, echecs: 1, gardes: 0 };
+  }
+  return viderPrefixe(prefixe, (cle) => !garder(cle));
+}
+
+/**
+ * Le balayage commun aux deux effaceurs, APRÈS leur garde : lister page après
+ * page, ne retenir que les clés sous le préfixe que `effacer` accepte, effacer
+ * par paquets de 1000. Jamais exporté : on n'y entre que par une garde.
+ */
+async function viderPrefixe(
+  prefixe: string,
+  effacer: (cle: string) => boolean,
+): Promise<{ supprimes: number; echecs: number; gardes: number }> {
   const r2 = makeR2();
   const cles: string[] = [];
+  let gardes = 0;
   try {
     let suite: string | undefined;
     do {
       const page = await r2.send(
         new ListObjectsV2Command({ Bucket: bucket(), Prefix: prefixe, ContinuationToken: suite }),
       );
-      for (const o of page.Contents ?? []) if (o.Key) cles.push(o.Key);
+      for (const o of page.Contents ?? []) {
+        if (!o.Key) continue;
+        /* Une clé hors du préfixe ne peut pas venir d'un listage borné ; si
+           elle venait quand même, elle reste. */
+        if (o.Key.startsWith(prefixe) && effacer(o.Key)) cles.push(o.Key);
+        else gardes++;
+      }
       suite = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (suite);
   } catch (err) {
     console.error("[r2] listage échoué", prefixe, (err as Error)?.message);
-    return { supprimes: 0, echecs: 1 };
+    return { supprimes: 0, echecs: 1, gardes: 0 };
   }
 
   let supprimes = 0;
@@ -408,5 +474,5 @@ export async function supprimerPrefixe(prefixe: string): Promise<{ supprimes: nu
       echecs += lot.length;
     }
   }
-  return { supprimes, echecs };
+  return { supprimes, echecs, gardes };
 }

@@ -344,7 +344,7 @@ import {
   remisePourRang,
 } from "@/lib/atelier/exemplaires";
 import { htCentimesPourPages, ttcPourPays, decompteExemplaires } from "@/lib/atelier/prix";
-import { estAbsenceR2 } from "@/lib/atelier/r2";
+import { estAbsenceR2, racineEffacable } from "@/lib/atelier/r2";
 import { formaterJour } from "@/lib/atelier/dates";
 import {
   ETATS_ENGAGES,
@@ -783,6 +783,14 @@ ok("le prefixe du coffre est celui des routes presign : numeros/<id>/",
    prefixeCoffre("abc") === "numeros/abc/");
 ok("le garde-fou de r2.supprimerPrefixe accepte ce prefixe et refuse un prefixe tronque",
    /^numeros\/[^/]+\/$/.test(prefixeCoffre("0f3e")) && !/^numeros\/[^/]+\/$/.test("numeros/") && !/^numeros\/[^/]+\/$/.test("numeros/ab"));
+/* T-159 (20/10) : la garde est désormais une fonction PURE de r2.ts, partagée par
+   les deux effaceurs. On éprouve la VRAIE garde, plus une copie de sa regex. */
+ok("T-159 : racineEffacable rend « numeros » pour ce prefixe, rien pour un vide, « numeros/ » ou un tronque",
+   racineEffacable(prefixeCoffre("0f3e")) === "numeros" && racineEffacable("") === null
+   && racineEffacable("numeros/") === null && racineEffacable("numeros/ab") === null);
+ok("T-159 : supprimerPrefixe (« Supprimer définitivement ») n'accepte que « numeros » : un coffre d'edition collective n'y passe pas",
+   /if \(racineEffacable\(prefixe\) !== "numeros"\) \{/.test(readFileSync(resolve(process.cwd(), "src/lib/atelier/r2.ts"), "utf8"))
+   && racineEffacable("collectif/0b6f3c2e-1a2b-4c3d-8e9f-001122334455/") === "collectif");
 
 /* ═══════════════════════ LA BOÎTE DU JOUR (11/09/2026) ═══════════════════════ */
 

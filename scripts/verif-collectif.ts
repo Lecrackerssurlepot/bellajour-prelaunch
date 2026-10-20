@@ -171,6 +171,9 @@ import * as Demandes from "@/lib/collectif/demandes";
 import { contrainteRefusee, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE, MIGRATION_DEMANDES } from "@/lib/collectif/migration";
 import { migrationDemandes, TYPE_SONDE } from "@/lib/collectif/sondeDemandes";
 import { estUuid } from "@/lib/collectif/cles";
+import * as Retention from "@/lib/collectif/retention";
+import { racineEffacable, supprimerCoffreEdition, supprimerPrefixe } from "@/lib/atelier/r2";
+import { prefixeCoffre } from "@/lib/atelier/archive";
 import type { StyleMur } from "@/app/edition/[token]/donnees";
 
 let ko = 0;
@@ -3375,6 +3378,181 @@ async function sondeT167() {
   }
 }
 
+/* ═══════════════════ T-159 : LA FIN DES PHOTOS D'UNE ÉDITION LIVRÉE ═══════════════════ */
+
+titre("— T-159 : le delai est OBLIGATOIRE, sans aucune valeur par defaut —");
+{
+  const D = Retention.lireDelaiJours;
+  ok("absent = null (aucun defaut), meme avec les autres arguments", D([]) === null && D(["--vraiment"]) === null && D(["--edition", E]) === null);
+  ok("« --jours 30 » et « --jours=30 » donnent 30", D(["--jours", "30"]) === 30 && D(["--jours=30"]) === 30 && D(["--vraiment", "--jours", "1"]) === 1);
+  ok("zero, negatif, decimal, mot, vide, blanc, notation scientifique : refuses",
+     [["--jours", "0"], ["--jours", "-3"], ["--jours", "1.5"], ["--jours", "trente"], ["--jours"], ["--jours="], ["--jours", " 30"], ["--jours", "1e2"], ["--jours", "0x1e"]]
+       .every((a) => D(a) === null));
+  ok("cinq chiffres au plus (99999 passe, 123456 non)", D(["--jours", "99999"]) === 99999 && D(["--jours", "123456"]) === null);
+}
+
+titre("— T-159 : qui perd son coffre, et qui jamais —");
+{
+  const MAINTENANT_R = new Date("2026-11-20T12:00:00Z");
+  const il = (jours: number) => new Date(MAINTENANT_R.getTime() - jours * 86_400_000).toISOString();
+  const ed = (etat: string, livree_le?: string | null, extra: Partial<Retention.EditionPourRetention> = {}): Retention.EditionPourRetention => ({
+    etat,
+    cloture_le: null,
+    livraison: livree_le === undefined ? {} : { livree_le },
+    photos_supprimees_le: null,
+    ...extra,
+  });
+  const V = (e: Retention.EditionPourRetention, d = 30) => Retention.verdictRetention(e, MAINTENANT_R, d);
+  const motif = (v: Retention.VerdictRetention) => (v.effacable ? "effacable" : v.motif);
+  ok("avant l'impression : jamais, meme livree il y a 400 jours dans le jsonb",
+     ["preparation", "composition", "bat", "bat_valide"].every((s) => motif(V(ed(s, il(400)))) === "non_livree"));
+  ok("en impression : jamais", motif(V(ed("impression", il(400)))) === "en_impression");
+  ok("expediee mais pas marquee livree : jamais", motif(V(ed("expediee", il(400)))) === "expediee");
+  ok("une preparation dont la cloture est passee est en composition (etat effectif) : jamais",
+     motif(V(ed("preparation", il(400), { cloture_le: il(400) }))) === "non_livree");
+  ok("un etat inconnu : jamais", motif(V(ed("perdue", il(400)))) === "etat_inconnu");
+  ok("livree sans date, date nulle, sans fuseau, « le 4 octobre », livraison nulle : jamais (on ne devine pas)",
+     motif(V(ed("livree"))) === "livree_sans_date" && motif(V(ed("livree", null))) === "livree_sans_date"
+       && motif(V(ed("livree", "2026-10-01T10:00"))) === "livree_sans_date" && motif(V(ed("livree", "le 4 octobre"))) === "livree_sans_date"
+       && motif(V(ed("livree", undefined, { livraison: null }))) === "livree_sans_date");
+  ok("livree il y a 29 jours, delai 30 : dans le delai, et l'age est rendu pour le rapport",
+     (() => { const v = V(ed("livree", il(29))); return !v.effacable && v.motif === "dans_le_delai" && v.jours !== null && Math.round(v.jours) === 29; })());
+  ok("livree il y a 30 jours pile, delai 30 : effacable (au moins N jours pleins)", V(ed("livree", il(30))).effacable);
+  ok("livree il y a 400 jours : effacable, la date de livraison rendue telle que la base l'a ecrite",
+     (() => { const l = il(400); const v = V(ed("livree", l)); return v.effacable && v.livreeLe === l && Math.round(v.jours) === 400; })());
+  ok("une livraison datee dans le futur : dans le delai", motif(V(ed("livree", il(-1)))) === "dans_le_delai");
+  ok("jamais deux fois : photos_supprimees_le pose l'emporte sur tout", motif(V(ed("livree", il(400), { photos_supprimees_le: il(10) }))) === "deja_effacee");
+  ok("l'archive n'epargne RIEN (le trou de T-159) : le verdict ne lit pas archive_le",
+     V({ ...ed("livree", il(40)), archive_le: il(35) } as Retention.EditionPourRetention).effacable
+       && !/archive_le/.test(lire("src/lib/collectif/retention.ts").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "")));
+  ok("un delai illisible n'efface rien, meme une edition livree il y a dix ans",
+     [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY].every((d) => motif(V(ed("livree", il(3650)), d)) === "delai_invalide"));
+  ok("chaque motif a sa phrase", (Object.keys(Retention.TEXTE_MOTIF) as Retention.MotifEpargne[]).every((m) => Retention.TEXTE_MOTIF[m].length > 5));
+}
+
+titre("— T-159 : ce qui part, ce qui reste (la table FAMILLES, lue sur les cles de cles.ts) —");
+{
+  const F = (k: string) => Retention.familleDeCle(k, E);
+  const EFF = (k: string) => Retention.cleEffacee(k, E);
+  const AUTRE_ED = "22222222-3333-4444-8555-666666666666";
+  ok("photos : l'original (tout format) et la vignette partent",
+     F(clePhoto(E, P, "image/heic")) === "photos" && F(cleVignette(E, P)) === "photos" && EFF(clePhoto(E, P, "image/jpeg")) && EFF(cleVignette(E, P)));
+  ok("les rendus du bon a tirer partent (pages, miniatures, gris, couvertures proposees)",
+     [clePageTour(E, TOUR, 7, "webp"), cleVignettePageTour(E, TOUR, 7, "jpg"), cleGrisTour(E, TOUR), cleCouverture(E, TOUR, 2, "c3", "jpg")]
+       .every((k) => F(k) === "rendus_bat" && EFF(k)));
+  ok("les contenus envoyes et les pieces jointes partent",
+     F(cleContenu(E, P, "logo.SVG")) === "contenus" && F(clePieceJointe(E, P, "tour1.pdf")) === "pieces_jointes"
+       && EFF(cleContenu(E, P, "liste.xlsx")) && EFF(clePieceJointe(E, P, "x.pdf")));
+  ok("le PDF de chaque tour RESTE (question ouverte a Mathias : reimpression, preuve du BAT)",
+     F(clePdfTour(E, TOUR)) === "pdf_tour" && !EFF(clePdfTour(E, TOUR)));
+  ok("les documents de l'atelier RESTENT (devis signe, factures)", F(cleDocument(E, P, "devis signé.pdf")) === "documents" && !EFF(cleDocument(E, P, "facture.pdf")));
+  ok("une cle inconnue reste ; une cle d'une autre edition, un style ou un « .. » sont hors edition et restent",
+     F(`collectif/${E}/inconnu/a.jpg`) === "autre" && F(`collectif/${E}/photos/${P}/autre.jpg`) === "autre"
+       && F(clePhoto(AUTRE_ED, P, "image/jpeg")) === "hors_edition" && F(`collectif/${E}/photos/../../${AUTRE_ED}/photos/${P}/original.jpg`) === "hors_edition"
+       && F(cleStyle("riviera", "couverture-1.webp")) === "hors_edition" && F(`numeros/${E}/photos/${P}/original.jpg`) === "hors_edition"
+       && !EFF(`collectif/${E}/inconnu/a.jpg`) && !EFF(clePhoto(AUTRE_ED, P, "image/jpeg")));
+  ok("« autre » et « hors_edition » ne s'effacent jamais ; chaque famille est dans l'ordre du rapport, une seule fois",
+     !Retention.FAMILLES.autre.efface && !Retention.FAMILLES.hors_edition.efface
+       && Retention.ORDRE_FAMILLES.length === Object.keys(Retention.FAMILLES).length && new Set(Retention.ORDRE_FAMILLES).size === Retention.ORDRE_FAMILLES.length
+       && (Object.keys(Retention.FAMILLES) as Retention.FamilleCoffre[]).every((f) => Retention.ORDRE_FAMILLES.includes(f)));
+}
+
+titre("— T-159 : aucune ligne supprimee ; l'image, le lieu et l'appareil se vident —");
+{
+  const sqlBase = lire("supabase/migrations/20261013_collectif.sql");
+  const bloc = sqlBase.slice(sqlBase.indexOf("create table if not exists public.collectif_photos"), sqlBase.indexOf("create index if not exists collectif_photos_edition_idx"));
+  const videes = Object.keys(Retention.PATCH_PHOTO_EFFACEE);
+  ok("chaque colonne videe est dans la migration 20261013 (aucune colonne fraiche : rien a replier)",
+     bloc.length > 500 && videes.length > 0 && videes.every((c) => new RegExp(`^\\s+${c}\\s`, "m").test(bloc)));
+  ok("aucune n'est `not null` (l'ecriture ne peut pas echouer sur une contrainte)",
+     videes.every((c) => !new RegExp(`^\\s+${c}\\s[^\\n]*not null`, "m").test(bloc)));
+  ok("on vide vraiment le lieu, l'appareil, l'identifiant d'appareil, le nom du fichier et la vignette, et rien qu'a null",
+     ["gps_lat", "gps_lon", "lieu_ville", "lieu_pays", "appareil", "appareil_id", "nom_origine", "vignette_key", "prise_le", "empreinte"].every((c) => videes.includes(c))
+       && Object.values(Retention.PATCH_PHOTO_EFFACEE).every((v) => v === null));
+  ok("on GARDE le nom, la preuve de l'accord et la cle effacee (question posee a Mathias)",
+     Retention.COLONNES_GARDEES.every((c) => !videes.includes(c)) && (["deposant", "accord_version", "accord_le", "r2_key"] as const).every((c) => (Retention.COLONNES_GARDEES as readonly string[]).includes(c)));
+  ok("le journal s'appelle coffre_efface et ne vit que dans collectif_evenements", Retention.TYPE_JOURNAL_RETENTION === "coffre_efface");
+}
+
+titre("— T-159 : l'effacement en masse a deux portes, chacune sa racine (r2.racineEffacable) —");
+{
+  ok("le prefixe d'une edition (prefixeEdition) est accepte, et c'est « collectif »", racineEffacable(prefixeEdition(E)) === "collectif");
+  ok("un prefixe vide est refuse (le coffre entier)", racineEffacable("") === null);
+  ok("« collectif/ » seul (toutes les editions ET les styles) est refuse, comme « collectif » et « collectif// »",
+     racineEffacable("collectif/") === null && racineEffacable("collectif") === null && racineEffacable("collectif//") === null);
+  ok("les styles sont refuses", racineEffacable("collectif/styles/") === null && racineEffacable("collectif/styles/riviera/") === null);
+  ok("un uuid mal forme est refuse : tronque, trop long, majuscules, sans tirets, un mot, un « .. »",
+     [`collectif/${E.slice(0, -1)}/`, `collectif/${E}0/`, `collectif/${E.toUpperCase()}/`, `collectif/${E.replace(/-/g, "")}/`, "collectif/abc/", "collectif/../", `collectif/${E}/../`, `collectif/${E.replace("b", "g")}/`]
+       .every((p) => racineEffacable(p) === null));
+  ok("sans la barre finale, un sous-dossier, des blancs, un retour a la ligne, une barre en tete : refuses",
+     [`collectif/${E}`, `collectif/${E}/photos/`, ` collectif/${E}/`, `collectif/${E}/ `, `collectif/${E}/\n`, `/collectif/${E}/`].every((p) => racineEffacable(p) === null));
+  ok("le B2C ne bouge pas : numeros/<id>/ reste « numeros » ; « numeros/ » et « numeros/ab » restent refuses",
+     racineEffacable(prefixeCoffre("0f3e")) === "numeros" && racineEffacable("numeros/") === null && racineEffacable("numeros/ab") === null);
+  const r2src = lire("src/lib/atelier/r2.ts");
+  ok("chaque effaceur exige SA racine avant tout appel au coffre ; le balayage commun n'est pas exporte",
+     /export async function supprimerPrefixe\(prefixe: string\): Promise<\{[^}]*\}> \{\s*if \(racineEffacable\(prefixe\) !== "numeros"\) \{/.test(r2src)
+       && /export async function supprimerCoffreEdition\([\s\S]*?\): Promise<\{[^}]*\}> \{\s*if \(racineEffacable\(prefixe\) !== "collectif"\) \{/.test(r2src)
+       && /\nasync function viderPrefixe\(/.test(r2src) && !/export async function viderPrefixe/.test(r2src));
+}
+
+titre("— T-159 : le script lit par defaut, n'efface qu'apres --vraiment, par la seule porte collective —");
+{
+  const brut = lire("scripts/collectif-retention.ts");
+  const code = brut.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const main = code.slice(code.indexOf("async function main()"));
+  const iEff = code.indexOf("async function effacer(");
+  const dehors = (code.slice(0, iEff) + code.slice(code.indexOf("async function main()"))).replace(/import[^;]+;/g, "");
+  ok("le delai passe par lireDelaiJours, son absence arrete tout AVANT de lire .env.local ou la base",
+     /const delai = lireDelaiJours\(argv\);\s*if \(delai === null\) \{\s*throw new Error/.test(main) && main.indexOf("lireDelaiJours(") < main.indexOf("chargerEnv()"));
+  ok("aucune valeur par defaut pour le delai (ni `?? 30`, ni `|| 30`, ni `delai = 30`)",
+     !/lireDelaiJours\([^)]*\)\s*(\?\?|\|\|)/.test(code) && !/\bdelai\s*=\s*\d/.test(code));
+  ok("`vraiment` ne vient que du mot --vraiment, et l'unique `await effacer(` vient APRES `if (!vraiment) {`",
+     /const vraiment = argv\.includes\("--vraiment"\);/.test(main) && main.indexOf("if (!vraiment) {") > 0
+       && main.indexOf("if (!vraiment) {") < main.indexOf("await effacer(") && (code.match(/await effacer\(/g) ?? []).length === 1);
+  ok("toutes les ecritures sont dans `effacer` : aucun update, insert, upsert, delete, effacement ni journal ailleurs",
+     iEff > 0 && !/\.(update|insert|upsert|delete)\(/.test(dehors) && !/supprimerCoffreEdition\(|supprimerPrefixe\(|journaliser\(|DeleteObject/.test(dehors));
+  const eff = code.slice(iEff, code.indexOf("async function main()"));
+  ok("le coffre d'abord (supprimerCoffreEdition, jamais supprimerPrefixe), un echec arrete l'edition, puis les lignes, puis le marqueur, puis le journal",
+     !/supprimerPrefixe\(/.test(code) && /if \(coffre\.echecs > 0\) \{[\s\S]*?return false;/.test(eff)
+       && eff.indexOf("supprimerCoffreEdition(prefixeEdition(c.e.id)") < eff.indexOf('from("collectif_photos").update(PATCH_PHOTO_EFFACEE)')
+       && eff.indexOf('from("collectif_photos").update(PATCH_PHOTO_EFFACEE)') < eff.indexOf("photos_supprimees_le: maintenant")
+       && eff.indexOf("photos_supprimees_le: maintenant") < eff.indexOf("await journaliser("));
+  ok("le marqueur ne se pose qu'une fois, le journal va dans collectif_evenements, aucune table du B2C n'est nommee",
+     /\.is\("photos_supprimees_le", null\)/.test(eff) && /journaliser\(\s*supabase,\s*\{ editionId: c\.e\.id \},\s*TYPE_JOURNAL_RETENTION/.test(eff)
+       && !/from\(["'](numeros|photos|evenements|mails_envoyes)["']\)/.test(code));
+  ok("ce qui part est decide par la table FAMILLES (cleEffacee), jamais par une liste du script",
+     /supprimerCoffreEdition\(prefixeEdition\(c\.e\.id\), \(cle\) => !cleEffacee\(cle, c\.e\.id\)\)/.test(eff));
+  ok("le listage (lecture seule) passe par la meme garde que l'effaceur", /if \(racineEffacable\(prefixe\) !== "collectif"\) throw/.test(code));
+  ok("aucun cron, aucune route : seul ce script appelle supprimerCoffreEdition",
+     fichiersParSuffixe("src", /\.tsx?$/).every((f) => f === "src/lib/atelier/r2.ts" || !/supprimerCoffreEdition\(/.test(lire(f)))
+       && !/collectif-retention/.test(lire("vercel.json")));
+  const doc = lire("scripts/CLAUDE.md");
+  const iPrudence = doc.indexOf("## À manier avec précaution");
+  ok("scripts/CLAUDE.md le range parmi les scripts « À manier avec précaution »", iPrudence > 0 && doc.indexOf("`collectif-retention.ts`", iPrudence) > iPrudence);
+}
+
+/* T-159 : les deux effaceurs refusent AVANT tout appel au coffre (aucune variable R2 n'est chargee ici :
+   un appel au coffre leverait, et l'epreuve tomberait). */
+async function gardeT159() {
+  titre("— T-159 : les deux effaceurs refusent avant le moindre appel au coffre —");
+  const refuse = async (f: () => Promise<{ supprimes: number; echecs: number }>) => {
+    const avant = console.error;
+    console.error = () => {};
+    try {
+      const r = await f();
+      return r.supprimes === 0 && r.echecs === 1;
+    } catch {
+      return false;
+    } finally {
+      console.error = avant;
+    }
+  };
+  const mauvais = ["", "collectif/", "collectif/styles/", `collectif/${E.toUpperCase()}/`, `collectif/${E}`, prefixeCoffre("0f3e")];
+  ok("supprimerCoffreEdition refuse un vide, « collectif/ », les styles, un uuid en majuscules, sans barre finale, un dossier de particulier",
+     (await Promise.all(mauvais.map((p) => refuse(() => supprimerCoffreEdition(p, () => false))))).every(Boolean));
+  ok("supprimerPrefixe (« Supprimer définitivement », B2C) refuse le coffre d'une edition", await refuse(() => supprimerPrefixe(prefixeEdition(E))));
+}
+
 /* La sonde, jouee contre une fausse base (sans reseau) : 23514 = absente, 23503 = appliquee (et plus jamais resondee), le reste = inconnue. */
 async function sondeT191() {
   titre("— T-191 : la sonde de la migration, contre une fausse base —");
@@ -3398,7 +3576,7 @@ async function sondeT191() {
   ok("une fois vue appliquee, l'instance ne sonde plus", (await migrationDemandes(fausse("23514"))) === "appliquee" && appels.length === avant);
 }
 
-void sondeT191().then(sondeT167).then(() => {
+void sondeT191().then(sondeT167).then(gardeT159).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
