@@ -15,7 +15,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { messagePartage } from "@/lib/collectif/partage";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
-import { svgQr } from "@/lib/collectif/qr";
+import { imprimerPage } from "@/lib/collectif/imprimer";
+import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
 import Fenetre from "./Fenetre";
 import QrCode from "./QrCode";
 
@@ -33,10 +34,6 @@ export type ContexteMessage = { organisation: string; evenement: string; cloture
 
 function texteDuLien(lien: LienPartage, c: ContexteMessage) {
   return messagePartage({ groupe: lien.general ? null : lien.libelle, organisation: c.organisation, evenement: c.evenement, url: lien.url, plafond: lien.plafond, cloture: c.cloture, tu: c.tu });
-}
-
-function nomFichierQr(libelle: string): string {
-  return `qr-${libelle.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").toLowerCase() || "lien"}.svg`;
 }
 
 function telechargerQr(lien: LienPartage) {
@@ -290,20 +287,43 @@ export function FenetrePartage({ lien, contexte, onFermer }: { lien: LienPartage
   );
 }
 
-/** Le QR code en grand, à projeter ou à imprimer le jour de l'événement : on le scanne avec l'appareil photo du téléphone. */
+/** Ce que la page imprimée dit sous le nom du lien : le nombre de photos et la clôture. */
+function detailsDuQr(lien: LienPartage, contexte: ContexteMessage): string {
+  return `${lien.plafond}${contexte.cloture ? `, ouvert jusqu'au ${contexte.cloture}` : ""}`;
+}
+
+/** Le QR code en grand, à projeter ou à imprimer le jour de l'événement : on le scanne avec l'appareil photo du téléphone.
+    Le NOM du lien est sous le code (T-197) : le QR scotché à bord du bateau dit lequel c'est. « Imprimer » ne sort que
+    ce nom et ce code, sur une feuille A4 (`pageQrImprimable`), jamais le reste de l'écran. */
 export function FenetreQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
   return (
-    <Fenetre titre={`Le QR code « ${lien.libelle} »`} sous="À projeter ou à imprimer : on le scanne avec l'appareil photo du téléphone, sans application." onFermer={onFermer}>
+    <Fenetre titre="Le QR code du lien" sous="À projeter ou à imprimer : on le scanne avec l'appareil photo du téléphone, sans application." onFermer={onFermer}>
       <div className="ec-qr-grand">
         <QrCode texte={lien.url} taille={280} etiquette={`QR code du lien « ${lien.libelle} »`} />
+        <strong className="ec-qr-grand-nom">{lien.libelle}</strong>
       </div>
-      <p className="ec-note ec-qr-grand-note">
-        {lien.plafond}
-        {contexte.cloture ? ` · ouvert jusqu'au ${contexte.cloture}` : ""}
-      </p>
-      <button type="button" className="ec-bouton ec-bouton--plein" onClick={() => telechargerQr(lien)}>
-        Télécharger le QR
-      </button>
+      <p className="ec-note ec-qr-grand-note">{detailsDuQr(lien, contexte)}</p>
+      <div className="ec-partage ec-partage--deux">
+        <button
+          type="button"
+          className="ec-bouton ec-bouton--petit"
+          onClick={() =>
+            imprimerPage(
+              pageQrImprimable({
+                nom: lien.libelle,
+                url: lien.url,
+                consigne: "Pour déposer ses photos : scanner ce code avec l'appareil photo du téléphone.",
+                details: detailsDuQr(lien, contexte),
+              })
+            )
+          }
+        >
+          Imprimer
+        </button>
+        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => telechargerQr(lien)}>
+          Télécharger le QR
+        </button>
+      </div>
     </Fenetre>
   );
 }

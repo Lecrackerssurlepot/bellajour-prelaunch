@@ -1,7 +1,7 @@
 ---
 id: T-197
 titre: Le grand QR code « à projeter ou à imprimer » existe mais aucun écran ne l'ouvre
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: confort
 autonomie: libre
@@ -23,4 +23,9 @@ Un bouton « Afficher en grand » sur chaque carte de lien, avec le nom du lien 
 prêt à imprimer.
 
 ## Ce qui a été fait
-Rien encore.
+20/10, lot « a3 » (rien de commité).
+- `FenetreQr` (`edition/_composants/LienContribution.tsx`) est enfin appelée : un bouton « Afficher en grand » sur CHAQUE carte de lien de l'onglet « Les liens » du responsable (le lien général comme les liens de contribution), dans `photos/Collecte.tsx`. La fenêtre dit le NOM du lien sous le code (30 px, chiffres alignés), puis « Imprimer » et « Télécharger le QR ». « Imprimer » ne sort qu'une feuille A4 (le nom en grand, le code, une consigne, le nombre de photos et la clôture) depuis un cadre caché (`qr.ts` `pageQrImprimable`, `imprimer.ts`), jamais l'espace entier ; le nom y est échappé.
+- Même fenêtre côté atelier (`[id]/FenetreQrAtelier.tsx`, en `eca-`, par un portail dans `.eca-root`) depuis la carte « Liens de contribution » de la fiche (T-201).
+- Le pied de carte du responsable passe à la ligne (la règle garde 180 px au moins) : avec un troisième geste, la règle se tassait en colonne de mots sur 375 px (vu et corrigé).
+- Vu, jour et nuit, 1440 et 375 : bouton sur les 11 cartes, fenêtre dans `.ec-contenu`, Échap ferme (même après « Imprimer »), console vide, feuille d'impression d'une page PDF.
+- Reste : l'impression réelle (boîte de dialogue du navigateur) n'a pas été vue en headless ; le QR n'a pas été scanné avec un téléphone (même matrice que le fichier SVG déjà téléchargeable).

@@ -26,6 +26,9 @@
   /* Créer une édition (T-186, planche 5) : l'avertissement rouge de la clôture vide. */
   --eca-alerte: #b3412c;
   --eca-alerte-fond: #fbece8;
+  /* Le QR code est un objet imprimé : fond blanc, modules foncés (les mêmes que `svgQr`). */
+  --eca-qr-fond: #ffffff;
+  --eca-qr-encre: #050505;
 }
 
 /* ─────────────────────────────── l'en-tête ─────────────────────────────── */
@@ -2608,4 +2611,317 @@
 .eca-root .eca-afaire {
   display: block;
   margin-top: 6px;
+}
+
+/* ─────────────── qui a déposé, par lien (T-193, 20/10) ───────────────
+   Un lien par ligne (« Bateau 3 », « Lien général », « Le responsable »), ses
+   personnes dessous quand on l'ouvre. Pas de trait entre les lignes : chacune est
+   une pastille claire arrondie dans le panneau de verre. */
+
+.eca-root .eca-dep {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-dep-lien {
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-dep-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 8px 8px 8px 12px;
+}
+.eca-root .eca-dep-bascule {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--bj-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.eca-root .eca-dep-bascule:disabled {
+  cursor: default;
+}
+.eca-root .eca-dep-bascule:focus-visible {
+  outline: 2px solid var(--bj-action-ring);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.eca-root .eca-dep-chevron {
+  flex: none;
+  color: var(--bj-text-faint);
+  transition: transform 0.15s ease;
+}
+.eca-root .eca-dep-bascule[aria-expanded="true"] .eca-dep-chevron {
+  transform: rotate(90deg);
+}
+.eca-root .eca-dep-bascule:disabled .eca-dep-chevron {
+  opacity: 0.35;
+}
+.eca-root .eca-dep-titres {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.eca-root .eca-dep-nom {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-dep-pers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0 8px 10px 34px;
+  list-style: none;
+}
+.eca-root .eca-dep-pers li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 6px 6px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+.eca-root .eca-dep-pers-nom {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-dep-pers-n {
+  color: var(--bj-text-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Le titre et son geste : sur téléphone, le bouton passe sous le titre au lieu de l'écraser en deux lignes. */
+.eca-root .eca-carte-tete--gestes {
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 10px;
+}
+
+/* ─────────────── les liens de contribution, côté atelier (T-201) ─────────────── */
+
+.eca-root .eca-lc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-lc-ligne {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--eca-gris-fond);
+  min-width: 0;
+}
+.eca-root .eca-lc-ligne--retire {
+  opacity: 0.72;
+}
+.eca-root .eca-lc-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.eca-root .eca-lc-nom {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-lc-ligne--retire .eca-lc-nom {
+  text-decoration: line-through;
+  text-decoration-color: var(--bj-veil-35);
+}
+.eca-root .eca-lc-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.eca-root .eca-lc-gestes .adm-btn {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+.eca-root .eca-lc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--eca-gris-fond);
+}
+.eca-root .eca-lc-sous-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--bj-text);
+}
+.eca-root .eca-lc-plafond {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+.eca-root .eca-lc-sans-limite {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--bj-veil-16);
+  background: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+}
+
+/* ─────────────── le QR code en grand (T-197) : une fenêtre de verre ─────────────── */
+
+.eca-root .eca-qr {
+  display: block;
+  width: min(260px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--bj-veil-12);
+}
+.eca-root .eca-qr-fond {
+  fill: var(--eca-qr-fond);
+}
+.eca-root .eca-qr-modules {
+  fill: var(--eca-qr-encre);
+}
+.eca-root .eca-fen-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(16, 24, 40, 0.38);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.eca-root .eca-fen {
+  width: min(440px, 100%);
+  max-height: calc(var(--app-height, 100%) - 32px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px 22px;
+  border-radius: 28px;
+  border: 1px solid var(--adm-verre-bord);
+  background: var(--eca-fm-verre-fort, rgba(255, 255, 255, 0.92));
+  box-shadow: var(--bj-shadow-pop);
+  outline: none;
+}
+.eca-root .eca-fen-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.eca-root .eca-fen-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: normal;
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--bj-text);
+}
+.eca-root .eca-fen-fermer {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--bj-text);
+  cursor: pointer;
+}
+.eca-root .eca-fen-fermer:hover {
+  box-shadow: 0 0 0 3px var(--bj-veil-8);
+}
+.eca-root .eca-fen-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 2px;
+  text-align: center;
+}
+.eca-root .eca-fen-nom {
+  max-width: 100%;
+  font-variant-numeric: lining-nums;
+  font-family: var(--bj-font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.eca-root .eca-fen-details {
+  text-align: center;
+}
+.eca-root .eca-fen-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .eca-root .eca-dep-tete {
+    padding-right: 10px;
+  }
+  .eca-root .eca-dep-tete > .adm-btn {
+    flex: 1 1 100%;
+  }
+  .eca-root .eca-dep-pers {
+    padding-left: 10px;
+  }
+  /* Une personne tient sur deux lignes : son nom, ses photos dessous ; le bouton à droite, sur les deux. */
+  .eca-root .eca-dep-pers li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+  }
+  .eca-root .eca-dep-pers-nom {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .eca-root .eca-dep-pers-n {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 13px;
+  }
+  .eca-root .eca-dep-pers li > .adm-btn {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .eca-root .eca-fen {
+    padding: 18px;
+    border-radius: 24px;
+  }
 }

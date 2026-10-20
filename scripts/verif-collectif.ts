@@ -109,7 +109,9 @@ import {
 import { estTypeNote, ROLES, TYPES_NOTE, type Role } from "@/lib/collectif/types";
 import { cookieMode, LOGO_MODE, lireMode, MODES } from "@/lib/collectif/affichage";
 import { CONTENUS_CLIENT, contenuClient, lireFichierContenu, lireReponsesMot, QUESTIONS_MOT } from "@/lib/collectif/contenus";
-import { cheminQr, matriceQr, svgQr } from "@/lib/collectif/qr";
+import { cheminQr, matriceQr, nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
+import * as Grille from "@/lib/collectif/grille";
+import * as LotCollectif from "@/lib/collectif/lotCollectif";
 import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
 import * as Dossiers from "@/lib/collectif/dossiers";
 import * as Arrivees from "@/lib/collectif/arrivees";
@@ -3589,7 +3591,7 @@ async function sondeT167() {
     ok("le lot : le compte exact AVANT la lecture ; moins de lignes lues que de photos comptees = 500 `lot_incomplet` qui donne les deux nombres ; `total` rendu",
       iCompte > 0 && iCompte < lot.indexOf("lireToutesLesLignes<Ligne>(") && /if \(total === null \|\| data\.length < total\)/.test(lot)
         && /error: "lot_incomplet", message, lues: data\.length, total \}, \{ status: 500 \}/.test(lot) && /photos lues sur \$\{total\.toLocaleString\("fr-FR"\)\} arrivées/.test(lot)
-        && /return NextResponse\.json\(\{ photos, provenance, selection, total, lues: data\.length \}\)/.test(lot));
+        && /return NextResponse\.json\(\{ photos, dossier, lien, personne, selection, total, lues: data\.length \}\)/.test(lot));
     const panneau = lire("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
     ok("l'ecran du lot affiche le refus du serveur au lieu de « N photos écrites », et n'ouvre aucun dossier sur le disque",
       /if \(!rep\.ok\) \{/.test(panneau) && /setEtat\(typeof refus\?\.message === "string" \? refus\.message :/.test(panneau)
@@ -3790,6 +3792,190 @@ async function gardeT159() {
   ok("supprimerCoffreEdition refuse un vide, « collectif/ », les styles, un uuid en majuscules, sans barre finale, un dossier de particulier",
      (await Promise.all(mauvais.map((p) => refuse(() => supprimerCoffreEdition(p, () => false))))).every(Boolean));
   ok("supprimerPrefixe (« Supprimer définitivement », B2C) refuse le coffre d'une edition", await refuse(() => supprimerPrefixe(prefixeEdition(E))));
+}
+
+/* T-193 / T-201 / T-197 (20/10) : l'atelier retrouve chaque lien, ses personnes, leurs photos, et le tout.
+   Les regles PURES (regroupement, nommage, QR) jouees sur huit bateaux, puis les ecrans et routes relus. */
+function verifT193() {
+  const U = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const RESP = "Mathilde Dupont";
+  type L = { provenance_id: string | null; provenance_type: string; role_deposant: string; deposant: string | null; appareil_id: string | null };
+  const ph = (lien: string | null, deposant: string | null, role = "participant", appareil: string | null = null): L => ({ provenance_id: lien, provenance_type: "participant", role_deposant: role, deposant, appareil_id: appareil });
+  const fois = (n: number, f: () => L) => Array.from({ length: n }, f);
+
+  /* Huit bateaux, dont un sans photo, un supprime avec photos, un supprime sans photo, un doublon de nom. */
+  const liens = [
+    ...Array.from({ length: 8 }, (_, i) => ({ id: U(i + 1), libelle: `Bateau ${i + 1}` as string | null, retire_le: null as string | null })),
+    { id: U(9), libelle: "Ancien", retire_le: "2026-10-19T10:00:00Z" },
+    { id: U(10), libelle: "Vide", retire_le: "2026-10-19T10:00:00Z" },
+    { id: U(11), libelle: "Bateau 1", retire_le: null },
+    { id: U(12), libelle: "Lien général", retire_le: null },
+  ];
+  const photos: L[] = [
+    ...fois(3, () => ph(U(1), "Léa Martin", "participant", "a")),
+    ph(U(1), "léa  martin", "participant", "a"),
+    ...fois(2, () => ph(U(1), "Tom Roy", "participant", "b")),
+    ...fois(2, () => ph(U(2), "Léa Martin", "participant", "c")),
+    ph(U(2), null, "participant", "d"),
+    ph(U(2), "", "participant", "e"),
+    ...fois(2, () => ph(U(9), "Zoé", "participant", "f")),
+    ph(U(11), "Ana", "participant", "g"),
+    ph(null, "Camille", "participant", "h"),
+    ...fois(2, () => ph(null, "La soirée", "responsable")),
+    ph(null, null, "atelier"),
+  ];
+  const groupes = Grille.deposantsParLien(photos, liens, RESP);
+  const noms = groupes.map((g) => g.nom);
+
+  titre("— T-193 : « Qui a déposé » se range PAR LIEN, une seule règle avec la page Photos du client —");
+  const cles = ["vous", "participants", "atelier", ...liens.map((l) => `lien:${l.id}`)];
+  ok("la clé d'un lien est CELLE de dossiers.ts : pour chaque photo et chaque clé, `cleDuLien` et `dansLeDossier` disent la même chose",
+    photos.every((p) => cles.every((c) => (Grille.cleDuLien(p) === c) === Dossiers.dansLeDossier(p, c, RESP))));
+  ok("le responsable, le lien général, l'atelier et un lien de contribution ont chacun leur clé",
+    Grille.cleDuLien(ph(null, "x", "responsable")) === "vous" && Grille.cleDuLien(ph(null, "x")) === "participants" && Grille.cleDuLien(ph(null, "x", "atelier")) === "atelier"
+      && Grille.cleDuLien(ph(U(3), "x")) === `lien:${U(3)}` && Grille.cleDuLien(ph(U(3), "x", "responsable")) === `lien:${U(3)}`);
+  ok("l'ordre : les liens ouverts PAR NOM, dans l'ordre naturel (Bateau 1 a 8, meme celui qui n'a rien recu), puis les supprimes, puis le lien général, le responsable, l'atelier",
+    JSON.stringify(noms) === JSON.stringify(["Bateau 1", "Bateau 1 (2)", "Bateau 2", "Bateau 3", "Bateau 4", "Bateau 5", "Bateau 6", "Bateau 7", "Bateau 8", "Lien général (2)", "Ancien", "Lien général", "Le responsable", "L'atelier"]));
+  ok("l'ordre naturel : « Bateau 2 » avant « Bateau 10 », un lien ouvert avant un lien supprime, quel que soit l'ordre de creation",
+    ["Bateau 10", "Bateau 2", "Bateau 1"].map((nom) => ({ nom, retire: false })).concat([{ nom: "Aaa", retire: true }]).sort(Grille.comparerLiens).map((x) => x.nom).join("|") === "Bateau 1|Bateau 2|Bateau 10|Aaa");
+  ok("deux liens du même nom restent distincts (« Bateau 1 (2) »), et un lien appelé « Lien général » ne prend pas le nom du groupe fixe",
+    noms.filter((n) => n === "Bateau 1").length === 1 && noms.includes("Bateau 1 (2)") && noms.filter((n) => n === "Lien général").length === 1);
+  ok("un lien supprimé sans photo disparait, un lien supprimé avec photos reste et le dit",
+    !noms.includes("Vide") && groupes.find((g) => g.nom === "Ancien")?.retire === true && groupes.find((g) => g.nom === "Ancien")?.n === 2);
+  ok("aucune photo perdue, aucune comptee deux fois : le total des liens est le total des photos",
+    groupes.reduce((n, g) => n + g.n, 0) === photos.length);
+  const b1 = groupes.find((g) => g.nom === "Bateau 1") ?? groupes[0];
+  ok("Bateau 1 : « Léa Martin » et « léa  martin » sont UNE personne (4 photos, la graphie la plus fréquente), Tom Roy 2",
+    JSON.stringify(b1.personnes.map((p) => [p.nom, p.n])) === JSON.stringify([["Léa Martin", 4], ["Tom Roy", 2]]) && b1.n === 6 && b1.nbPersonnes === 2);
+  const b2 = groupes.find((g) => g.nom === "Bateau 2") ?? groupes[0];
+  ok("Bateau 2 : « Sans nom » compte un telephone par anonyme (3 personnes pour 2 lignes), et dit combien de telephones",
+    b2.nbPersonnes === 3 && b2.personnes.length === 2 && b2.personnes.find((p) => p.nom === "Sans nom")?.telephones === 2 && b2.personnes.find((p) => p.nom === "Sans nom")?.n === 2);
+  ok("un bateau qui n'a rien reçu : zéro photo, zéro personne, toujours listé",
+    (groupes.find((g) => g.nom === "Bateau 3")?.n ?? -1) === 0 && groupes.find((g) => g.nom === "Bateau 3")?.personnes.length === 0 && groupes.find((g) => g.nom === "Bateau 3")?.nbPersonnes === 0);
+  const resp = groupes.find((g) => g.genre === "responsable");
+  ok("le responsable : sous son NOM (pas le nom de son dossier de photos), une personne, deux photos ; l'atelier sous « L'atelier »",
+    resp?.personnes[0].nom === RESP && resp.n === 2 && resp.nbPersonnes === 1 && groupes.find((g) => g.genre === "atelier")?.personnes[0].nom === "L'atelier");
+  ok("sans nom de responsable, il s'appelle « Le responsable »", Grille.personneDeLaPhoto(ph(null, "La soirée", "responsable"), null) === "Le responsable");
+  ok("un lien sans nom s'appelle « Lien de contribution », deux fois sans nom : (2)",
+    JSON.stringify([...Grille.nomsDesLiens([{ id: "a", libelle: null }, { id: "b", libelle: "  " }, { id: "c", libelle: "Le responsable" }]).values()]) === JSON.stringify(["Lien de contribution", "Lien de contribution (2)", "Le responsable (2)"]));
+
+  titre("— T-193 : le lot d'un lien ne contient que ses photos, celui d'une personne que les siennes —");
+  ok("`dansLeLot` sur un lien rend exactement le nombre de photos que la ligne annonce, pour chaque lien",
+    groupes.every((g) => photos.filter((p) => Grille.dansLeLot(p, g.cle, null, RESP)).length === g.n));
+  ok("`dansLeLot` sur une personne rend exactement son nombre de photos, et la somme des personnes est celle du lien",
+    groupes.every((g) => g.personnes.every((x) => photos.filter((p) => Grille.dansLeLot(p, g.cle, x.cle, RESP)).length === x.n) && g.personnes.reduce((n, x) => n + x.n, 0) === g.n));
+  ok("« Léa Martin » du Bateau 2 n'entre pas dans le lot de « Léa Martin » du Bateau 1 (la personne se lit DANS son lien)",
+    photos.filter((p) => Grille.dansLeLot(p, `lien:${U(1)}`, "léa martin", RESP)).length === 4 && photos.filter((p) => Grille.dansLeLot(p, `lien:${U(2)}`, "léa martin", RESP)).length === 2);
+  ok("sans filtre, tout le lot ; la sélection d'un lien inconnu ne rend rien",
+    photos.every((p) => Grille.dansLeLot(p, null, null, RESP)) && photos.filter((p) => Grille.dansLeLot(p, `lien:${U(99)}`, null, RESP)).length === 0);
+  ok("`estCleDeLien` : les quatre formes, rien d'autre (un libellé, un chemin, `constructor`, un uuid mal formé)",
+    ["vous", "participants", "atelier", `lien:${U(5)}`].every(Grille.estCleDeLien) && ["Bateau 1", "", "constructor", "lien:../x", "lien:abc", "pers:x:y", 12, null].every((v) => !Grille.estCleDeLien(v)));
+
+  titre("— T-193 : « <rang> - <lien> - <personne> - <date> - <nom d'origine> » —");
+  const pl = (groupe: string, lien: string, personne: string, nom: string | null, priseLe: string | null = null) => ({ nom, priseLe, groupe, lien, personne });
+  const lot = [
+    pl("lien:A", "Bateau 3", "Léa Martin", "IMG_4207.jpg", "2026-10-08T14:03:00"),
+    pl("lien:A", "Bateau 3", "Léa Martin", "IMG_4207.jpg"),
+    pl("lien:B", "Équipe Lyon", "Zoë", "IMG_4207.jpg", "2026-10-08T14:03:00"),
+  ];
+  const n3 = LotCollectif.nomsDuLotCollectif(lot, true);
+  ok("le format exact : le rang, le lien, la personne, la date, le nom d'origine ; sans date, le morceau manque",
+    n3[0].nom === "01 - Bateau 3 - Lea Martin - 08 oct 2026 - IMG_4207.jpg" && n3[1].nom === "02 - Bateau 3 - Lea Martin - IMG_4207.jpg");
+  ok("les accents sont retirés du lien et de la personne (le chemin `curl -OJ` n'écrit que l'ASCII : Chrome et curl donnent les MÊMES noms)",
+    n3[2].nom === "01 - Equipe Lyon - Zoe - 08 oct 2026 - IMG_4207.jpg" && n3.every((x) => !/[^\x20-\x7e]/.test(x.nom)));
+  ok("tout le lot : un sous-dossier par lien (accents gardés : le dossier n'est pas écrit par curl), le rang repart de 01 pour chaque lien",
+    JSON.stringify(n3.map((x) => x.dossier)) === JSON.stringify(["Bateau 3", "Bateau 3", "Équipe Lyon"]));
+  const n3plat = LotCollectif.nomsDuLotCollectif(lot, false);
+  ok("sans sous-dossiers (un lien, une personne, la sélection) : un seul dossier, numéroté d'un bout à l'autre, `dossier` nul",
+    n3plat.map((x) => x.nom.slice(0, 2)).join() === "01,02,03" && n3plat.every((x) => x.dossier === null));
+  const memeNom = LotCollectif.nomsDuLotCollectif([pl("lien:A", "Bateau 1", "Léa", "a.jpg"), pl("lien:B", "Bateau 1", "Léa", "a.jpg")], true);
+  ok("deux liens de même nom (donc deux rang 01) ne s'écrasent jamais : le second nom prend « -2 », et le sous-dossier « (2) »",
+    memeNom[0].nom !== memeNom[1].nom && memeNom[1].nom.endsWith("a-2.jpg") && memeNom[0].dossier === "Bateau 1" && memeNom[1].dossier === "Bateau 1 (2)");
+  const memeAscii = LotCollectif.nomsDuLotCollectif([pl("lien:A", "田中", "x", "a.jpg"), pl("lien:B", "山田", "x", "a.jpg")], true);
+  ok("deux noms qui ne diffèrent qu'au-delà de l'ASCII sont départagés AVANT l'écriture (curl les écrirait pareils)",
+    new Set(memeAscii.map((x) => x.nom.replace(/[^\x20-\x7e]/g, "-").toLowerCase())).size === 2);
+  const dur = LotCollectif.nomsDuLotCollectif([pl("lien:A", 'Bateau 3 / Équipe: "A"?*<>|', "Léa\\Martin", 'IM/G:1?.jpg')], true)[0];
+  ok("aucun caractère interdit par macOS ou Windows dans le nom, ni dans le dossier", !/[\\/:*?"<>|]/.test(dur.nom) && !/[\\/:*?"<>|]/.test(dur.dossier ?? ""));
+  const long = LotCollectif.nomsDuLotCollectif([pl("lien:A", "B".repeat(200), "P".repeat(200), "x".repeat(300) + ".jpg", "2026-10-08T14:03:00")], true)[0];
+  ok("des noms démesurés restent un nom de fichier valide (moins de 255 caractères)", long.nom.length < 255 && long.nom.endsWith(".jpg"));
+  const cent = LotCollectif.nomsDuLotCollectif(Array.from({ length: 120 }, (_, i) => pl("lien:A", "Bateau 1", "Léa", `p${i}.jpg`)), true);
+  ok("plus de 99 photos dans un lien : le rang passe à trois chiffres (001) pour que le Finder trie juste", cent[0].nom.startsWith("001 - ") && cent[119].nom.startsWith("120 - "));
+  ok("l'ordre des photos est celui de l'appel : le rang monte avec lui, le nom i est celui de la photo i",
+    LotCollectif.nomsDuLotCollectif([pl("lien:A", "B", "P", "z.jpg"), pl("lien:A", "B", "P", "a.jpg")], true).map((x) => x.nom).join("|") === "01 - B - P - z.jpg|02 - B - P - a.jpg");
+  ok("une photo sans nom d'origine s'appelle « photo-N »", LotCollectif.nomsDuLotCollectif([pl("lien:A", "B", "P", null)], true)[0].nom === "01 - B - P - photo-1");
+  ok("un lien ou une personne vide ne laisse pas un trou dans le nom (« Lien » et « Sans nom »)",
+    LotCollectif.nomsDuLotCollectif([pl("lien:A", "..", "...", "a.jpg")], true)[0].nom === "01 - Lien - Sans nom - a.jpg");
+  ok("le dossier d'un lot : le nom du lien et de la personne, « Lot complet », « Sélection du client »",
+    LotCollectif.dossierDuLot({}) === "Lot complet" && LotCollectif.dossierDuLot({ selection: true }) === "Sélection du client" && LotCollectif.dossierDuLot({ lien: "Bateau 3" }) === "Lot - Bateau 3"
+      && LotCollectif.dossierDuLot({ lien: "Bateau 3", personne: "Léa Martin" }) === "Lot - Bateau 3 - Léa Martin" && LotCollectif.dossierDuLot({ lien: "A/B" }) === "Lot - A-B");
+  ok("le B2C ne bouge pas : `atelier/lot.ts` ne connaît pas l'édition collective et la route du lot n'appelle plus `nomsDeFichiers`",
+    !/collectif/i.test(lire("src/lib/atelier/lot.ts")) && !/nomsDeFichiers/.test(lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts")));
+
+  titre("— T-197 : le QR en grand, avec le nom du lien, prêt à imprimer —");
+  ok("le fichier du QR porte le nom du lien : « qr-equipe-lyon.svg », « qr-lien.svg » sans rien de lisible",
+    nomFichierQr("Équipe Lyon") === "qr-equipe-lyon.svg" && nomFichierQr("Bateau 3") === "qr-bateau-3.svg" && nomFichierQr("  !!! ") === "qr-lien.svg");
+  const page = pageQrImprimable({ nom: '<img src=x onerror="alert(1)">', url: "https://bellajour.fr/depot/abc?p=cle", consigne: "Scanner.", details: "30 photos par personne" });
+  ok("la page imprimée : une feuille A4, un seul QR, le nom en titre ÉCHAPPÉ (jamais du HTML venu d'un nom de lien), le lien lui-même n'est pas écrit en clair",
+    /@page\{size:A4/.test(page) && (page.match(/<svg /g) ?? []).length === 1 && /<h1>&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;<\/h1>/.test(page) && !page.includes("<img") && !page.includes("https://bellajour.fr/depot"));
+  const vueQr = lire("src/app/edition/_composants/LienContribution.tsx");
+  const vueCollecte = lire("src/app/edition/[token]/photos/Collecte.tsx");
+  ok("côté responsable : la fenêtre du grand QR n'est plus orpheline (`<FenetreQr` appelée depuis chaque carte de lien), un bouton « Afficher en grand » par carte, ouvert depuis le lien général comme depuis un lien de contribution",
+    /<FenetreQr lien=\{grandQr\}/.test(vueCollecte) && (vueCollecte.match(/onGrand=\{\(\) => setGrandQr\(/g) ?? []).length === 2 && /Afficher en grand/.test(vueCollecte));
+  ok("la fenêtre dit le NOM du lien sous le code (en grand), imprime la page A4 du nom et du code, et garde « Télécharger le QR »",
+    /<QrCode[^>]*\/>\s*<strong className="ec-qr-grand-nom">\{lien\.libelle\}<\/strong>/.test(vueQr) && /imprimerPage\(\s*pageQrImprimable\(/.test(vueQr) && /Télécharger le QR/.test(vueQr) && /export function FenetreQr/.test(vueQr));
+  const imprimerTs = lire("src/lib/collectif/imprimer.ts");
+  ok("« Imprimer » passe par un cadre caché (jamais la page entière) et rend le focus : sans cela, Échap partait dans le cadre et la fenêtre ne se fermait plus (vu à la recette du 20/10)",
+    /document\.createElement\("iframe"\)/.test(imprimerTs) && /cadre\.srcdoc = html/.test(imprimerTs) && /cadre\.blur\(\);\s*window\.focus\(\);\s*avant\?\.focus\(\);/.test(imprimerTs) && /afterprint/.test(imprimerTs) && !/window\.print\(/.test(imprimerTs));
+  const cssEspace = lire("src/app/edition/[token]/espace.css");
+  ok("le pied d'une carte de lien passe à la ligne : la règle garde 180 px au moins, sinon les trois gestes tiennent dessous (sur 375 px, elle se tassait en une colonne de mots)",
+    /\.ec-espace \.ec-li-pied \{[^}]*flex-wrap: wrap;/.test(cssEspace) && /\.ec-espace \.ec-li-regle \{\s*flex: 1 1 180px;/.test(cssEspace));
+  const fenAtelier = lire("src/app/admin/collectif/[id]/FenetreQrAtelier.tsx");
+  ok("côté atelier : sa propre fenêtre de verre (la feuille de l'espace n'y est pas chargée), en PORTAIL dans `.eca-root` (un panneau de verre enferme ce qui est positionné dedans), le nom sous le code, Imprimer, Échap",
+    /createPortal\(contenu, hote\)/.test(fenAtelier) && /querySelector\("\.eca-root"\)/.test(fenAtelier) && /<strong className="eca-fen-nom">\{nom\}<\/strong>/.test(fenAtelier) && /imprimerPage\(/.test(fenAtelier)
+      && /e\.key === "Escape"/.test(fenAtelier) && /role="dialog"/.test(fenAtelier) && !/#[0-9a-fA-F]{3,8}\b/.test(fenAtelier));
+
+  titre("— T-201 : l'atelier voit et crée les liens de contribution —");
+  const rProv = lire("src/app/api/admin/collectif/editions/[id]/provenances/route.ts");
+  const appelJournal = rProv.slice(rProv.indexOf("journaliser("), rProv.indexOf(");", rProv.indexOf("journaliser(")));
+  ok("la route de création : sous /api/admin, l'admin REVÉRIFIÉ, l'interrupteur lu, les MÊMES règles que le responsable (`lirePlafondLien`, clé aléatoire), un seul INSERT dans `collectif_provenances`",
+    /quiEstConnecteRequete\(request\)/.test(rProv) && /collectifOuvert\(\)/.test(rProv) && /lirePlafondLien\(corps, edition\)/.test(rProv) && /nouvelleCleProvenance\(\)/.test(rProv)
+      && (rProv.match(/\.insert\(/g) ?? []).length === 1 && /from\("collectif_provenances"\)\s*\.insert\(ligne\)/.test(rProv) && !/\.from\("(numeros|photos|evenements|mails_envoyes)"\)/.test(rProv));
+  ok("elle journalise QUI l'a créé (« par l'atelier »), jamais la clé du lien ; son récit le dit",
+    /"provenance_creee"/.test(appelJournal) && /par, via: "atelier"/.test(appelJournal) && !/\bcle\b/.test(appelJournal) && /qui\s*$/.test(appelJournal.trim())
+      && phraseEvenement("provenance_creee", { libelle: "Bateau 3", via: "atelier", par: "Mathias" }) === "Lien de dépôt créé par l'atelier (Mathias) : Bateau 3."
+      && phraseEvenement("provenance_creee", { libelle: "Bateau 3", sansPlafond: true }) === "Lien de dépôt créé : Bateau 3 (sans plafond).");
+  ok("deux refus que le responsable n'a pas : un nom déjà pris par un lien ouvert (409 `nom_deja_pris`) et une édition archivée (409) ; les noms des groupes fixes sont réservés",
+    /nom_deja_pris/.test(rProv) && /!l\.retire_le && clePersonne\(l\.libelle\) === cle/.test(rProv) && /archivee/.test(rProv) && /status: 409/.test(rProv) && /nom_reserve/.test(rProv) && /LIBELLE_LIEN_GENERAL/.test(rProv));
+  ok("le plafond de 5 à 100 ou « Sans limite » : borné par le plafond de l'atelier ; sans la migration de la révision, 503 (jamais un lien sans son plafond)",
+    plafondLienMax({ plafond_participant_atelier: null }) === 100 && plafondLienMax({ plafond_participant_atelier: 40 }) === 40 && CURSEUR_LIEN.min === 5
+      && /ERREUR_REVISION_ABSENTE/.test(rProv) && /if \(plafond\.plafond_par_personne !== null\) ligne\.plafond_par_personne/.test(rProv));
+  ok("la route rend le lien ÉCRIT (l'écran l'affiche aussitôt, `router.refresh()` ne suffit pas), sans le journaliser",
+    /lien: \{\s*id: ecrit\.data\.id,/.test(rProv) && /status: 201/.test(rProv));
+  const pProv = lire("src/app/admin/collectif/[id]/PanneauProvenances.tsx");
+  const pageFiche = lire("src/app/admin/collectif/[id]/page.tsx");
+  ok("la carte « Liens de contribution » : nom, règle, personnes, photos, actif ou supprimé ; copier ; afficher en grand ; créer un lien (nom, nombre de 5 à 100 ou sans limite)",
+    /Liens de contribution/.test(pProv) && /Actif/.test(pProv) && /Supprimé/.test(pProv) && /Copier le lien/.test(pProv) && /Afficher en grand/.test(pProv) && /Créer un lien/.test(pProv) && /Sans limite/.test(pProv)
+      && /<Pastille/.test(pProv) && !/type="(date|datetime-local|time|number)"/.test(pProv) && /RACCOURCIS_LIEN/.test(pProv) && /CURSEUR_LIEN\.min/.test(pProv));
+  ok("la carte est dans « Réglages et liens », sous les trois liens ; la fiche lui donne le plafond maximal de l'édition, l'adresse de dépôt, l'état de la collecte",
+    /<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>\s*\{\/\*[^*]*\*\/\}\s*<PanneauProvenances/.test(pageFiche) && /max=\{plafondLienMax\(e\)\}/.test(pageFiche) && /ouverte=\{etat === "preparation"\}/.test(pageFiche) && /archivee=\{Boolean\(e\.archive_le\)\}/.test(pageFiche));
+  ok("l'écran garde le lien écrit (dédoublonné quand la relecture le rend), vide le nom et remet le focus pour le bateau suivant",
+    /setAjoutes\(\(a\) => \[\.\.\.a, \{ \.\.\.lien, url: `\$\{depot\}\?p=\$\{cle\}` \}\]\)/.test(pProv) && /ajoutes\.filter\(\(a\) => !liens\.some\(\(l\) => l\.id === a\.id\)\)/.test(pProv) && /champ\.current\?\.focus\(\)/.test(pProv));
+  const donneesFiche2 = lire("src/app/admin/collectif/donnees.ts");
+  ok("la fiche lit les liens par `lireProvenances` (la même lecture que l'espace, avec ses replis de colonnes) et rend leurs noms UNIQUES",
+    /lireProvenances\(id\)/.test(donneesFiche2) && /nomsDesLiens\(provenances\)/.test(donneesFiche2) && /parLien: deposantsParLien\(lignesPhotos, provenances, edition\.responsable_nom\)/.test(donneesFiche2));
+
+  titre("— T-193 : les écrans et la route du lot —");
+  const lotRoute = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
+  const pCollecte = lire("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
+  ok("la route filtre par CLÉ de lien (jamais par un libellé : deux liens peuvent porter le même nom), valide la forme, refuse l'ancien envoi par libellé, garde son compte avant de partir",
+    /estCleDeLien\(b\.lien\)/.test(lotRoute) && /dansLeLot\(p, lien, personne, responsable\)/.test(lotRoute) && /page_ancienne/.test(lotRoute) && /lot_incomplet/.test(lotRoute) && !/libelleProvenance/.test(lotRoute));
+  ok("les noms et les dossiers viennent du serveur : `nomsDuLotCollectif`, les noms de lien de `deposantsParLien`, un sous-dossier seulement pour « tout le lot »",
+    /nomsDuLotCollectif\(/.test(lotRoute) && /deposantsParLien\(data, liensLus\.data \?\? \[\], responsable\)/.test(lotRoute) && /const separer = lien === null && !selection;/.test(lotRoute) && /dossierDuLot\(/.test(lotRoute));
+  ok("le panneau : « Télécharger tout le lot », « Télécharger ce lien », « Télécharger » par personne ; les trois envoient une CLÉ ; les sous-dossiers par lien quand le disque s'écrit",
+    /Télécharger tout le lot/.test(pCollecte) && /Télécharger ce lien/.test(pCollecte) && /telecharger\(\{ lien: l\.cle, personne: p\.cle \}\)/.test(pCollecte) && /telecharger\(\{ lien: l\.cle \}\)/.test(pCollecte)
+      && /telecharger\(\{\}\)/.test(pCollecte) && /cible\(p\.dossier\)/.test(pCollecte) && !/parProvenance/.test(pCollecte));
+  const nouveaux = ["src/app/admin/collectif/[id]/PanneauProvenances.tsx", "src/app/admin/collectif/[id]/FenetreQrAtelier.tsx", "src/app/admin/collectif/[id]/PanneauCollecte.tsx", "src/lib/collectif/lotCollectif.ts", "src/lib/collectif/imprimer.ts"].map((f) => lire(f));
+  ok("la copie visible : aucun tiret cadratin ni demi-cadratin, jamais « cliente » (masculin générique)", nouveaux.every((t) => !/[—–]/.test(t) && !/\bclientes?\b/i.test(t)));
 }
 
 /* La sonde, jouee contre une fausse base (sans reseau) : 23514 = absente, 23503 = appliquee (et plus jamais resondee), le reste = inconnue. */
@@ -4199,7 +4385,7 @@ async function sondeT194() {
   }
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(() => {
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

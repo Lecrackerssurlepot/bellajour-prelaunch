@@ -103,7 +103,7 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
     case "photo_designalee":
       return "Un signalement de photo retiré.";
     case "provenance_creee":
-      return `Lien de dépôt créé : ${String(payload.libelle ?? "")}${payload.sansPlafond ? " (sans plafond)" : ""}.`;
+      return `Lien de dépôt créé${payload.via === "atelier" ? ` par l'atelier${payload.par ? ` (${String(payload.par)})` : ""}` : ""} : ${String(payload.libelle ?? "")}${payload.sansPlafond ? " (sans plafond)" : ""}.`;
     case "brief_style_choisi":
       return `Magazine ${String(payload.magazine)} : style ${String(payload.style ?? "")} choisi par le client.`;
     case "brief_valide":

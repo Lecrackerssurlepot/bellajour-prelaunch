@@ -26,7 +26,9 @@ import { lireMessages } from "@/lib/collectif/messagerie";
 import { aTraiter, conversationsDe, type ATraiter, type Conversation, type MessageBoite } from "@/lib/collectif/boite";
 import { conversationsEnAttente } from "@/lib/collectif/nouveaux";
 import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
-import { resumeDeposants } from "@/lib/collectif/grille";
+import { comparerLiens, deposantsParLien, nomsDesLiens, type LienDepose } from "@/lib/collectif/grille";
+import { libellePlafondLien } from "@/lib/collectif/plafonds";
+import { lireProvenances } from "@/app/edition/[token]/donnees";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";
@@ -256,12 +258,33 @@ export type Collecte = {
   doublons: number;
   /** Les vignettes des quatre dernières photos arrivées, signées une heure (la vue d'ensemble). */
   apercus: string[];
-  parProvenance: { libelle: string; n: number }[];
+  /** Qui a déposé, RANGÉ PAR LIEN (T-193) : le nom donné par le responsable, puis les personnes avec leurs photos. */
+  parLien: LienDepose[];
   /** « Ma sélection » du client (T-182) : combien, et jusqu'à huit vignettes signées une heure. */
   selection: number;
   selectionApercus: string[];
   /** Le client a terminé la collecte lui-même (D25) : qui, et quand (lu au journal). */
   terminee: { par: string; le: string } | null;
+};
+
+/**
+ * Un lien de contribution, tel que l'onglet « Réglages et liens » le montre (T-201) : sa règle (le nombre
+ * de photos par personne), ce qu'il a reçu, et s'il est encore ouvert. La clé du lien est ici : la fiche en
+ * fait l'adresse à copier côté serveur, et le journal ne la voit jamais.
+ */
+export type LienFiche = {
+  id: string;
+  /** Le nom donné par le responsable, rendu unique (`nomsDesLiens`). */
+  nom: string;
+  cle: string;
+  plafond: number | null;
+  sansPlafond: boolean;
+  /** « 30 photos par personne », « Sans limite » (`libellePlafondLien`). */
+  plafondTexte: string;
+  personnes: number;
+  photos: number;
+  retire: boolean;
+  creeLe: string;
 };
 
 /** Une demande de l'atelier au client (T-191), telle que la fiche la montre. */
@@ -284,6 +307,8 @@ export type ContenuFiche = {
 };
 
 export type Fiche = {
+  /** Les liens de contribution de l'édition, dans l'ordre où on les a créés (T-201). */
+  liens: LienFiche[];
   demandes: DemandeFiche[];
   contenus: ContenuFiche[];
   collecte: Collecte;
@@ -334,7 +359,7 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal, docs, fil, photos, contenus, nonLus] = await Promise.all([
+  const [mags, journal, docs, fil, photos, contenus, nonLus, provenances] = await Promise.all([
     lireMagazinesFiche(supabase, id),
     /* Les 100 dernières lignes, SANS les deux qui s'écrivent une fois par lot de photos
        (`JOURNAL_DE_LOT`) : des centaines par édition, elles chassaient tout le reste
@@ -377,6 +402,9 @@ export async function chargerEdition(
       .order("created_at", { ascending: true })
       .limit(300)
       .returns<{ id: string }[]>(),
+    /* Les liens de contribution (nom, règle, supprimé ou non) : « Qui a déposé » se range par lien (T-193)
+       et « Réglages et liens » les montre (T-201). La même lecture que l'espace du client, avec ses replis. */
+    lireProvenances(id),
   ]);
   /* Le trait est un repère, pas une donnée : illisible, le fil s'affiche sans lui. */
   if (nonLus.error) console.error("[collectif] non-lus du fil illisibles", nonLus.error.code, nonLus.error.message);
@@ -426,7 +454,7 @@ export async function chargerEdition(
           .map((p) => signerOuRien(p.vignette_key))
       )
     ).filter((u): u is string => u !== null),
-    parProvenance: resumeDeposants(lignesPhotos),
+    parLien: deposantsParLien(lignesPhotos, provenances, edition.responsable_nom),
     selection: choisies.length,
     selectionApercus: (
       await Promise.all(
@@ -438,6 +466,24 @@ export async function chargerEdition(
     ).filter((u): u is string => u !== null),
     terminee: fin ? { par: String(fin.payload?.par ?? "le responsable"), le: fin.created_at } : null,
   };
+
+  /* Les liens : le nom unique, la règle, ce que chacun a reçu (le même regroupement que « Qui a déposé »). */
+  const nomsLiens = nomsDesLiens(provenances);
+  const liensFiche: LienFiche[] = provenances.map((p) => {
+    const g = collecte.parLien.find((x) => x.id === p.id);
+    return {
+      id: p.id,
+      nom: nomsLiens.get(p.id) ?? p.libelle ?? "Lien de contribution",
+      cle: p.cle,
+      plafond: p.plafond_par_personne,
+      sansPlafond: p.sans_plafond,
+      plafondTexte: libellePlafondLien(p, edition),
+      personnes: g?.nbPersonnes ?? 0,
+      photos: g?.n ?? 0,
+      retire: Boolean(p.retire_le),
+      creeLe: p.created_at,
+    };
+  }).sort(comparerLiens);
 
   /* Les styles que les briefs nomment (chaque pièce, D24), pour les lire en clair, publiés ou non. */
   type MagBrut = MagazineLigne & BriefLigne;
@@ -484,6 +530,7 @@ export async function chargerEdition(
     absent: false,
     fiche: {
       collecte,
+      liens: liensFiche,
       edition,
       etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),
       magazines: (mags.data ?? []).map((m) => {
