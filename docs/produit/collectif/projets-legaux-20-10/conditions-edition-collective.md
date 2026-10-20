@@ -291,7 +291,7 @@ son accord écrit.
 
 ## Article 12. Réimpression
 
-12.1 Bellajour conserve le fichier du magazine terminé pendant [À FIXER : nombre d'années] à
+12.1 Bellajour conserve le fichier du magazine terminé pendant 10 ans à
 compter de la livraison, pour permettre au Client de commander de nouveaux exemplaires. Une
 réimpression fait l'objet d'un nouveau devis. Ce fichier n'est jamais réutilisé à une autre fin
 sans l'accord du Client.

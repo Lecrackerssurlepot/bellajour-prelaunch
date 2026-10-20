@@ -197,7 +197,7 @@ Pour que le Client puisse en informer les personnes qu'il invite :
 | Photos (originaux et images réduites), informations qu'elles portent, pages du bon à tirer, versions intermédiaires du magazine, contenus envoyés, pièces jointes | effacés 30 jours après la livraison constatée par l'atelier |
 | Adresse e-mail des participants, et le rattachement de leurs téléphones | effacés dans le même passage |
 | Photo supprimée par le Client, par l'atelier ou par la personne qui l'a envoyée | 30 jours au plus dans une corbeille, où le Client peut la restaurer, puis effacée définitivement |
-| Fichier du magazine terminé | conservé [À FIXER : nombre d'années] pour une réimpression, sauf demande contraire du Client ; jamais réutilisé sans son accord ; puis effacé |
+| Fichier du magazine terminé | conservé 10 ans pour une réimpression, sauf demande contraire du Client ; jamais réutilisé sans son accord ; puis effacé |
 | Nom du participant, version et heure de son accord | conservés après l'effacement des photos, [À FIXER avec la relecture : durée], le temps qu'une réclamation sur le magazine reste possible |
 | Devis signé, factures, propositions | 10 ans, obligation comptable et fiscale portugaise [à confirmer à la relecture pour un client entreprise] |
 

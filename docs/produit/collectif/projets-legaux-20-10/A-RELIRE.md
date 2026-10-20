@@ -40,7 +40,7 @@ Les cinq projets :
 
 | # | Ce qui manque | Pourquoi ça bloque |
 |---|---|---|
-| B1 | **Combien d'années garder le fichier du magazine terminé** (Q5 : « des années je pense ») | écrit [À FIXER] dans la politique §13.5, les conditions art. 12.1, l'accord art. 10 ; le code ne peut pas l'effacer sans ce nombre |
+| B1 | ✅ **Donné le 20/10 : 10 ans** (« on ne l'utilise pas sans leur accord ») | écrit [À FIXER] dans la politique §13.5, les conditions art. 12.1, l'accord art. 10 ; le code ne peut pas l'effacer sans ce nombre |
 | B2 | **Version A ou B du texte d'accord** (la phrase de l'album fondue dans le texte, ou gardée encadrée à la fin) | décide si `decouperAccord` change |
 | B3 | **L'imprimeur des éditions** (nom, pays) | politique §13.7, conditions 8.1, accord art. 8 ; aucun outil du code ne le nomme |
 | B4 | **Canva** : l'atelier compose-t-il les albums des particuliers dans Canva, photos comprises ? Le code garde le lien du design de chaque dossier et le client y commente sa maquette. Si oui, Canva est un sous-traitant à déclarer, et l'effacement à 90 jours doit vider le design | politique §9 ; effacement des particuliers |
