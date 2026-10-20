@@ -1,6 +1,8 @@
-/* /edition/[token]/photos — la collecte, côté client (PRD §4.2, §5, T-152 :
-   les photos rangées en dossiers, l'onglet des liens). `?dossier=<clé>` ouvre
-   un dossier (depuis le tableau de bord), `?onglet=liens` l'onglet des liens. La page serveur ne lit que ce qui ne bouge pas (le lien
+/* /edition/[token]/photos — la collecte, côté client (PRD §4.2, §5, T-152 ;
+   planches 1, 2 et 3 du 20/10 : les listes qui trient et filtrent, cocher,
+   agrandir). `?dossier=<clé>` ouvre un dossier (depuis le tableau de bord),
+   `&mode=tout` garde un lien coché dans « Tout », `?onglet=liens` l'onglet des
+   liens. La page serveur ne lit que ce qui ne bouge pas (le lien
    général, le plafond de présélection, les mots du message de partage) ; la
    grille ET « Qui a déposé » avec ses liens se lisent par la route photos,
    depuis le navigateur, et se relisent après un envoi. */
@@ -28,7 +30,7 @@ export default async function PagePhotos({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ dossier?: string; onglet?: string }>
+  searchParams: Promise<{ dossier?: string; onglet?: string; mode?: string }>
 }) {
   const { token } = await params
   const recherche = await searchParams
@@ -59,6 +61,7 @@ export default async function PagePhotos({
       max={plafondLienMax(edition)}
       plafondGeneral={plafondParticipant(edition)}
       dossierInitial={typeof recherche.dossier === 'string' && recherche.dossier.length <= 400 ? recherche.dossier : 'tout'}
+      modeTout={recherche.mode === 'tout'}
       ongletInitial={recherche.onglet === 'liens' ? 'liens' : 'photos'}
       organisation={edition.organisation}
       evenement={edition.evenement}
