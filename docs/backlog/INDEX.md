@@ -35,8 +35,8 @@ de passe), et 16 tickets ouverts (T-162 à T-177), plus ceux de la liste « avan
 1. **Sécurité, tout de suite** : T-162 (mettre à jour Next.js, failles publiques), T-163 (en-têtes).
 2. **Avant la première vraie édition** : T-167 (au-delà de 1 000 photos), T-172 (mur des styles trop lourd), T-158 et T-159
    (confidentialité et durée de conservation : Mathias tranche), T-160 (pannes invisibles).
-3. **Avant d'ouvrir `COLLECTIF_MAILS`** : T-164 (origine des liens), T-166 (frein de
-   « Retrouver »), puis T-146 et T-154.
+3. **Avant d'ouvrir `COLLECTIF_MAILS`** : T-164 (origine des liens) et T-166 (frein de
+   « Retrouver ») **fermés le 20/10** ; restent T-146 et T-154.
 4. **Avant les grosses éditions** : T-168, T-169, T-170, T-155 (essai réel).
 5. **Confort** : T-165, T-171, T-173 à T-177.
 
@@ -336,9 +336,9 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-161 | L'atelier s'ouvrait sans mot de passe, avec un faux cookie au nom d'une propriété héritée | admin | bloquant | libre | **fermé** (fiche dans `fermes/`) — 19/10 : trouvé par l'audit, corrigé le jour même (PR #249), prouvé en production (`307 → /admin/login`) ; aucune écriture d'intrus en base ; `/admin` se garde aussi seule (PR #250) |
 | T-162 | Next.js 16.2.3 et cinq autres dépendances portent des failles connues, dont des contournements du middleware | exploitation | serieux | libre | en cours (19/10) — Next.js passé en 16.4.2 (critique et contournements fermés) ; reste pdfjs-dist avec `public/pdfjs/`, sharp, source-map-js |
 | T-163 | Le site n'envoie aucun en-tête de protection, l'atelier peut être affiché dans la page d'un autre site | exploitation | serieux | libre | nouveau (19/10) — ni CSP ni `X-Frame-Options`, vérifié au `curl` |
-| T-164 | Les liens des mails d'une édition prennent leur adresse dans un en-tête de la requête, que l'appelant peut écrire | collectif | serieux | libre | nouveau (19/10) — sans effet tant que `COLLECTIF_MAILS` est fermé ; à faire AVANT de l'ouvrir |
+| T-164 | Les liens des mails d'une édition prennent leur adresse dans un en-tête de la requête, que l'appelant peut écrire | collectif | serieux | libre | **fermé** (fiche dans `fermes/`) — 20/10 : cinq routes de mail, pas une ; les liens des mails prennent `origineDesMails` (le site), le code d'essai lit `host` seul ; harnais |
 | T-165 | Un logo SVG déposé par un client exécute son script si l'atelier l'ouvre dans un nouvel onglet | collectif | confort | libre | nouveau (19/10) — domaine R2, pas bellajour.fr ; servir en téléchargement |
-| T-166 | « Retrouver mon espace » n'a aucun frein par appelant, une fois les mails ouverts elle peut servir à arroser de vraies adresses | collectif | confort | libre | nouveau (19/10) — avec T-164, avant d'ouvrir `COLLECTIF_MAILS` |
+| T-166 | « Retrouver mon espace » n'a aucun frein par appelant, une fois les mails ouverts elle peut servir à arroser de vraies adresses | collectif | confort | libre | **fermé** (fiche dans `fermes/`) — 20/10 : trois demandes par minute et par appelant (`creerPlafond(3)`, le frein de « mot de passe oublié »), 429 avant de lire le corps ; harnais |
 | T-167 | Au-delà de 1 000 photos, une édition perdrait des photos sans rien dire (grille, plafond total, lot de l'atelier) | collectif | serieux | libre | nouveau (19/10) — sept lectures comptent sur `.limit(20000)` ; Supabase plafonne à 1 000 (confirmé par Mathias le 19/10) ; AVANT la première vraie édition |
 | T-168 | Chaque envoi de photos relit toutes les photos de l'édition, la charge croît au carré du nombre de photos | collectif | serieux | libre | nouveau (19/10) — ≈ 200 Mo lus pour une édition de 2 000 photos (calculé) |
 | T-169 | La messagerie interroge le serveur toutes les 3,5 secondes, même quand rien ne bouge | collectif | serieux | libre | nouveau (19/10) — ≈ 180 000 appels par mois et par onglet ouvert (calculé), quota Hobby à vérifier |

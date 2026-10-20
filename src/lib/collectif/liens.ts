@@ -1,11 +1,16 @@
 /**
  * Les trois liens d'une édition, tels que l'atelier les copie (PRD §2, §3).
- * Module PUR : aucun accès base, aucun réseau, aucune variable d'environnement.
+ * Module PUR : aucun accès base, aucun réseau ; l'environnement, quand il sert,
+ * est passé par l'appelant.
  *
- * L'origine vient de la requête qui affiche la fiche : en local, des liens
- * `http://localhost:3006/…` qu'on peut ouvrir tout de suite ; en production,
- * `https://bellajour.fr/…`. Le mail « Votre espace est prêt » les porte tous
- * les trois (T-187), et ne part que si l'atelier le confirme.
+ * Deux origines, et elles ne se mélangent pas (T-164) :
+ * - les liens AFFICHÉS (la fiche, l'écran des liens, l'espace) prennent celle de
+ *   la requête, `origineDepuis` : en local, `http://localhost:3006/…` s'ouvre
+ *   tout de suite ;
+ * - les liens qui PARTENT PAR MAIL prennent celle du site, `origineDesMails`.
+ *   Jamais un en-tête : `x-forwarded-host` s'écrit par l'appelant, et
+ *   « Retrouver mon espace » enverrait alors un vrai mail de Bellajour dont le
+ *   lien porte le token du responsable vers le domaine d'un tiers.
  */
 
 import type { TokensEdition } from "./droits";
@@ -35,7 +40,23 @@ export const COLONNE_LIEN: Record<QuelLien, keyof TokensEdition> = {
   depot: "token_depot",
 };
 
-/** `https://bellajour.fr` ou `http://localhost:3006`, sans barre finale ; `""` si illisible. */
+/** L'origine du site quand `NEXT_PUBLIC_SITE_URL` manque ou ne se lit pas (la même que le B2C). */
+export const ORIGINE_SITE = "https://www.bellajour.fr";
+
+/**
+ * L'origine des liens qui partent par mail : `NEXT_PUBLIC_SITE_URL` (posée sur
+ * Vercel), sinon `ORIGINE_SITE`. Une origine nue seulement : https, ou http
+ * vers le poste local ; un chemin, un autre protocole ou une valeur illisible
+ * retombent sur `ORIGINE_SITE`. Ne lit AUCUN en-tête de la requête.
+ */
+export function origineDesMails(env: Record<string, string | undefined>): string {
+  const brut = (env.NEXT_PUBLIC_SITE_URL ?? "").trim().replace(/\/+$/, "").toLowerCase();
+  if (/^https:\/\/[a-z0-9.-]+(:\d{1,5})?$/.test(brut)) return brut;
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(brut)) return brut;
+  return ORIGINE_SITE;
+}
+
+/** `https://bellajour.fr` ou `http://localhost:3006`, sans barre finale ; `""` si illisible. Pour un lien AFFICHÉ, jamais envoyé. */
 export function origineDepuis(hote: string | null, proto: string | null): string {
   const h = (hote ?? "").trim();
   if (!/^[a-z0-9.-]+(:\d{1,5})?$/i.test(h)) return "";

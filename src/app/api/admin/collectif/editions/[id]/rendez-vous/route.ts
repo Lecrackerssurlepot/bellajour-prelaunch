@@ -5,7 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { origineDepuis } from "@/lib/collectif/liens";
+import { origineDesMails } from "@/lib/collectif/liens";
 import { ERREUR_MIGRATION_ABSENTE, ERREUR_RDV_ABSENTE, MESSAGE_RDV_ABSENTE, rdvAbsent, tableAbsente } from "@/lib/collectif/migration";
 import { annuler } from "@/lib/collectif/rendezvous";
 import type { EditionLigne } from "@/lib/collectif/types";
@@ -70,7 +70,7 @@ export async function POST(request: Request, ctx: Ctx) {
       edition,
       par,
       qui,
-      origine: origineDepuis(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), request.headers.get("x-forwarded-proto")),
+      origine: origineDesMails(process.env),
       maintenant: new Date(),
       rdvId: corps.rdvId,
     });

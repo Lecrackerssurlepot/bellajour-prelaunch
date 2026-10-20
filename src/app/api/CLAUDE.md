@@ -103,5 +103,10 @@ Lire le résultat, rendre 500 sinon (T-038).
 - **Le rate-limit est une `Map` en mémoire de processus** : sur Vercel il n'est PAS partagé entre
   instances. Il freine un script naïf, il n'arrête pas une attaque. Ne pas le présenter comme
   une protection.
+- **Un lien qui part par mail prend l'origine du SITE** (`NEXT_PUBLIC_SITE_URL`), jamais un
+  en-tête de la requête : `host` et surtout `x-forwarded-host` s'écrivent par l'appelant, et une
+  route publique enverrait un vrai mail de Bellajour qui mène chez lui. Côté particuliers, c'est
+  `SITE_URL` (T-049) ; côté éditions, `origineDesMails` (T-164). Le harnais refuse
+  `origineDepuis` et `x-forwarded-host` dans toute route.
 - Supabase passe par la **service key, qui contourne RLS**, y compris sur les routes publiques.
   La sécurité repose entièrement sur le middleware et la validité du token.

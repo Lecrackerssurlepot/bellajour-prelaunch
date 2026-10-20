@@ -52,14 +52,16 @@ export type IssueDemande = { etat: "envoye" | "coupe" | "echec" | "trop" | "migr
  * Un code neuf pour cet appareil, envoyé à l'adresse du responsable.
  * ⚠️ Le code n'est jamais écrit en clair ailleurs que dans le mail ; la base
  * n'en garde que l'empreinte, liée à l'appareil.
+ * `hoteRequete` (l'en-tête `host` brut) ne sert qu'au code d'essai local ;
+ * `site`, nommé par le mail, est l'origine du site (`origineDesMails`, T-164).
  */
-export async function demanderCode(supabase: SupabaseClient, edition: EditionCode, idAppareil: string, origine: string): Promise<IssueDemande> {
+export async function demanderCode(supabase: SupabaseClient, edition: EditionCode, idAppareil: string, hoteRequete: string | null, site: string): Promise<IssueDemande> {
   const depuis = new Date(Date.now() - 60 * 60_000).toISOString();
   const recents = await supabase.from("collectif_codes").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).gt("created_at", depuis);
   if (recents.error) return { etat: tableAbsente(recents.error.code) ? "migration_absente" : "echec" };
   if ((recents.count ?? 0) >= CODES_PAR_HEURE) return { etat: "trop" };
 
-  const code = codeNeuf(origine);
+  const code = codeNeuf(hoteRequete);
   const appareilEmp = empreinte(idAppareil);
   const ecrit = await supabase
     .from("collectif_codes")
@@ -73,7 +75,7 @@ export async function demanderCode(supabase: SupabaseClient, edition: EditionCod
     editionId: edition.id,
     code: `CODE-${ecrit.data.id}`,
     a: { email: edition.responsable_email, nom: edition.responsable_nom },
-    mail: mailCodeAppareil({ tu: edition.registre === "ecole_tu", evenement: edition.evenement, code, duree: libelleDuree(DUREE_CODE_MS), site: origine }),
+    mail: mailCodeAppareil({ tu: edition.registre === "ecole_tu", evenement: edition.evenement, code, duree: libelleDuree(DUREE_CODE_MS), site }),
     verrou: false,
     qui: null,
   });
@@ -117,12 +119,14 @@ export async function verifierCode(supabase: SupabaseClient, edition: EditionCod
 
 /**
  * Six chiffres au hasard. ⚠️ `COLLECTIF_CODE_ESSAI` (six chiffres) fixe le code
- * pour une recette LOCALE, mails coupés : il ne vaut QUE pour une demande venue
- * de localhost, une adresse que Vercel n'a jamais. (Pas `process.env.VERCEL` :
- * le `.env.local` tiré de Vercel le contient, vu en recette le 15/10.)
+ * pour une recette LOCALE, mails coupés : il ne vaut QUE pour une demande dont
+ * l'en-tête `host` est localhost, un nom par lequel Vercel n'achemine jamais
+ * rien. Jamais `x-forwarded-host`, que l'appelant écrit lui-même (T-164).
+ * (Pas `process.env.VERCEL` ni `VERCEL_ENV` : le `.env.local` tiré de Vercel
+ * contient `VERCEL="1"` et `VERCEL_ENV="production"`, vu le 15/10 puis le 20/10.)
  */
-export function codeNeuf(origine: string, env: Record<string, string | undefined> = process.env): string {
+export function codeNeuf(hoteRequete: string | null, env: Record<string, string | undefined> = process.env): string {
   const essai = env.COLLECTIF_CODE_ESSAI;
-  if (essai && /^\d{6}$/.test(essai) && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origine)) return essai;
+  if (essai && /^\d{6}$/.test(essai) && /^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test((hoteRequete ?? "").trim())) return essai;
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
 }

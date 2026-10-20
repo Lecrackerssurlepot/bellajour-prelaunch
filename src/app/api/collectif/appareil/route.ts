@@ -4,7 +4,7 @@ import { COOKIE_APPAREIL, controleAppareilActif, DUREE_APPAREIL_S, idAppareilVal
 import { demanderCode, nouvelIdAppareil, verifierCode } from "@/lib/collectif/appareils";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { origineDepuis } from "@/lib/collectif/liens";
+import { origineDesMails } from "@/lib/collectif/liens";
 import { lireCorps, refusAcces } from "@/lib/collectif/reponses";
 import { makeSupabase } from "@/lib/supabase";
 
@@ -47,8 +47,9 @@ export async function POST(request: Request) {
 
   let rep: NextResponse;
   if (corps.action === "demander") {
-    const origine = origineDepuis(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), request.headers.get("x-forwarded-proto"));
-    const r = await demanderCode(supabase, acces.edition, idAppareil, origine);
+    /* Le mail nomme le site (T-164). Le code d'essai, lui, lit `host` SEUL : Vercel n'achemine
+       jamais une requête dont le `host` est localhost, alors que `x-forwarded-host` s'écrit par l'appelant. */
+    const r = await demanderCode(supabase, acces.edition, idAppareil, request.headers.get("host"), origineDesMails(process.env));
     rep = NextResponse.json(r, { status: r.etat === "echec" ? 502 : r.etat === "migration_absente" ? 503 : r.etat === "trop" ? 429 : 200 });
   } else if (corps.action === "verifier") {
     const code = lireCode(corps.code);

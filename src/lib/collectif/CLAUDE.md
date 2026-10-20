@@ -82,8 +82,9 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   un style incomplet), `nomImageStyle` (nom versionné, jamais d'écrasement).
 - **`prochaine.ts`** — la prochaine étape et son camp, lue par la liste ET la fiche.
 - **`recit.ts`** — le journal en français ; **jamais un token** (un lien régénéré se dit par son
-  rôle, pas par sa valeur). **`liens.ts`** — les trois liens sur l'origine de la requête
-  (localhost en local).
+  rôle, pas par sa valeur). **`liens.ts`** — les trois liens, et DEUX origines (T-164) :
+  `origineDepuis` (la requête, localhost en local) pour un lien AFFICHÉ ; `origineDesMails`
+  (`NEXT_PUBLIC_SITE_URL`, sinon `https://www.bellajour.fr`) pour un lien qui part PAR MAIL.
 
 Les modules à effets : `acces.ts` (la porte serveur des liens), `sante.ts` (la seule sonde),
 `journal.ts` (`collectif_evenements`, rend un booléen que la route LIT).
@@ -533,6 +534,12 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   est créée » (T-187), en deux temps ; le verrou porte l'empreinte du lien du responsable :
   régénérer le lien permet de le renvoyer.
 - ⚠️ Un lien vers l'espace du responsable porte son token : il ne part qu'à SON adresse.
+- ⚠️ **Un lien qui part par mail prend `origineDesMails(process.env)`**, jamais `origineDepuis`
+  ni un en-tête de la requête (T-164) : `x-forwarded-host` s'écrit par l'appelant, et
+  « Retrouver mon espace » enverrait sinon un vrai mail de Bellajour qui mène le token du
+  responsable chez un tiers. L'aperçu du mail suit la même règle (on relit ce qui partira). Le
+  harnais refuse `origineDepuis` et `x-forwarded-host` dans toute route d'API ; les pages
+  qui AFFICHENT des liens gardent `origineDepuis`.
 
 ## Créer une édition, et l'écran des liens (T-186, T-187, planches 5 et 6 du 19/10)
 
@@ -683,8 +690,10 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - Réglages SOUPLES, choisis le 16/10 sur délégation de Mathias (« il faut pas que ça soit très
   compliqué pour les gens ») : 24 heures par code, 10 essais, 10 codes par heure et par édition,
   appareil reconnu un an (`appareil.ts`). `COLLECTIF_CODE_ESSAI` fixe le code pour une recette LOCALE :
-  il ne vaut que pour une demande venue de localhost (le `.env.local` tiré de Vercel contient
-  `VERCEL`). Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
+  il ne vaut que pour une demande dont l'en-tête `host` BRUT est localhost (Vercel n'achemine
+  jamais ce nom ; `x-forwarded-host`, lui, s'écrit par l'appelant, T-164). Ni `VERCEL` ni
+  `VERCEL_ENV` ne départagent : le `.env.local` tiré de Vercel contient `VERCEL="1"` et
+  `VERCEL_ENV="production"`. Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
 
 ## « Retrouver mon espace » (T-154, 16/10)
 
@@ -695,8 +704,12 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   annuaire des clients.
 - C'est la SEULE route publique sans token (le harnais la nomme : `SANS_TOKEN`) : ni
   `chargerAcces` ni `peut`, elle ne lit qu'une adresse (enregistrée en minuscules par
-  `saisie.ts`) et n'écrit qu'un verrou de mail. Frein : un mail au plus par quart d'heure et par
-  édition (`RETROUVER-<quart d'heure>`). Une édition archivée ne reçoit rien.
+  `saisie.ts`) et n'écrit qu'un verrou de mail. Deux freins : un mail au plus par quart d'heure et
+  par édition (`RETROUVER-<quart d'heure>`), qui protège le responsable ; trois demandes par
+  minute et par APPELANT (`creerPlafond(3)`, celui de « mot de passe oublié », T-166), 429 avant
+  même de lire le corps. Ce second frein compte l'appelant, jamais l'adresse : il ne dit rien de
+  la base. Une `Map` par instance Vercel : il freine un script, il n'arrête pas une attaque. Une
+  édition archivée ne reçoit rien.
 - La page et la route ne regardent QUE `COLLECTIF_MAILS` (`mailsCollectifEnService`) : fermé, la
   page dit « ce service ouvre bientôt » et donne contact@bellajour.com ; en local,
   `ATELIER_MAILS_COUPES` coupe l'envoi lui-même et le serveur note à qui il serait parti.

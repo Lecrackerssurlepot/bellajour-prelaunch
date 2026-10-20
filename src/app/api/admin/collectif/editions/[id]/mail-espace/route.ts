@@ -5,7 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { controleAppareilActif } from "@/lib/collectif/appareil";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { origineDepuis } from "@/lib/collectif/liens";
+import { origineDesMails } from "@/lib/collectif/liens";
 import { envoyerMailCollectif, mailsCollectifOuverts, VAR_MAILS_COLLECTIF } from "@/lib/collectif/mails";
 import { donneesEspacePret, mailEspacePret } from "@/lib/collectif/mailsTextes";
 import { ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
@@ -38,7 +38,9 @@ async function preparer(request: Request, id: string) {
     .maybeSingle<Lue>();
   if (error) return { erreur: tableAbsente(error.code) ? NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 }) : NextResponse.json({ error: "lecture_impossible" }, { status: 500 }) } as const;
   if (!data) return { erreur: NextResponse.json({ error: "introuvable" }, { status: 404 }) } as const;
-  const origine = origineDepuis(request.headers.get("x-forwarded-host") ?? request.headers.get("host"), request.headers.get("x-forwarded-proto"));
+  /* L'origine du site, aussi pour l'aperçu (T-164) : l'atelier relit le mail tel qu'il partira,
+     jamais avec l'adresse locale ou celle d'une version d'essai. */
+  const origine = origineDesMails(process.env);
   /* Les TROIS liens (T-187) : le sien, celui de l'équipe, celui des participants
      (`liensEdition`, par `donneesEspacePret`). Aucun ne va au journal : le code du
      verrou porte une empreinte du lien du responsable, jamais le lien. */
