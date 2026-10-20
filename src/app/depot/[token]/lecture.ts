@@ -13,6 +13,10 @@ import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { makeSupabase } from '@/lib/supabase'
 import { chargerAcces } from '@/lib/collectif/acces'
 import { empreinte } from '@/lib/collectif/appareil'
+import { COMPTE_SANS_LIGNE } from '@/lib/collectif/horsCorbeille'
+import { personnesAbsentes } from '@/lib/collectif/migration'
+import type { LigneParticipant } from '@/lib/collectif/personnes'
+import { participantDeLAppareil } from '@/lib/collectif/personnesServeur'
 
 export const accesDepot = cache((token: string) => chargerAcces(token, 'depot'))
 
@@ -49,3 +53,41 @@ export const registreDuLien = cache(async (token: string): Promise<string | null
     return null
   }
 })
+
+/**
+ * Pour qui CE téléphone parle dans l'édition (planches 8 et 9C du 20/10), lu
+ * par la page serveur : la personne posée par `depot/participant`
+ * (`participantDeLAppareil`), ou personne. Sans cookie, une sonde sans ligne
+ * (GET `limit(0)`, jamais `head` : horsCorbeille.ts) dit seulement si la
+ * migration 20261023 est là.
+ * - `personnes: false` : la migration manque ; la page reste à la règle d'avant
+ *   (prénom et nom, sans adresse, rien à supprimer).
+ * - `personnes: true` : la migration est là ; `participant` peut être nul.
+ * Une base qui hésite n'est pas une migration absente : on le note, et la page
+ * propose l'adresse (la présentation répondra 503 si elle manquait vraiment,
+ * et la page retombe alors sur la règle d'avant).
+ */
+export async function quiEstCeTelephone(
+  editionId: string,
+  appareil: string | null
+): Promise<{ personnes: boolean; participant: LigneParticipant | null }> {
+  const supabase = makeSupabase()
+  if (appareil) {
+    const lu = await participantDeLAppareil(supabase, editionId, appareil)
+    if (lu.statut === 'absente') return { personnes: false, participant: null }
+    if (lu.statut === 'erreur') {
+      console.error('[collectif] dépôt : la personne du téléphone est illisible', lu.code)
+      return { personnes: true, participant: null }
+    }
+    return { personnes: true, participant: lu.valeur }
+  }
+  const { error } = await supabase
+    .from('collectif_participants_appareils')
+    .select('participant_id', COMPTE_SANS_LIGNE)
+    .eq('edition_id', editionId)
+    .limit(0)
+  if (!error) return { personnes: true, participant: null }
+  if (personnesAbsentes(error)) return { personnes: false, participant: null }
+  console.error('[collectif] dépôt : sonde des personnes illisible', error.code)
+  return { personnes: true, participant: null }
+}

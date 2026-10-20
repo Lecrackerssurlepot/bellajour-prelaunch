@@ -41,6 +41,29 @@
   --dp-aurore-1: #3a2a22;
   --dp-aurore-2: #23262f;
   --dp-aurore-force: 0.8;
+  /* Planches 6 à 9 du 20/10 : les jetons RÉELS de espace.css (Charbon), copiés comme les autres. */
+  --dp-titre: #ffffff;
+  --dp-pale: #8b9099;
+  --dp-ligne: rgba(255, 255, 255, 0.08);
+  --dp-accent-doux: rgba(227, 162, 127, 0.16);
+  --dp-accent-sur-doux: #f2c7af;
+  --dp-accent-rgb: 227, 162, 127;
+  --dp-ok: #8ee0b0;
+  --dp-ok-doux: rgba(110, 207, 151, 0.14);
+  --dp-sur-ok: #0d3a24;
+  --dp-sur-danger: #1b1410;
+  --dp-verre: rgba(30, 31, 36, 0.8);
+  --dp-carte-pleine: #1f2126;
+  --dp-voile: rgba(0, 0, 0, 0.4);
+  --dp-ombre-c: rgba(0, 0, 0, 0.45);
+  --dp-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --dp-actif: rgba(255, 255, 255, 0.09);
+  --dp-actif-ombre: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --dp-fg-rgb: 236, 237, 240;
+  /* Sur une photo, dans les deux modes : une pastille sombre, un texte blanc. */
+  --dp-sur-photo: #ffffff;
+  --dp-noir-rgb: 0, 0, 0;
+  --dp-blanc-rgb: 255, 255, 255;
   color-scheme: dark;
   /* Cormorant écrit ses chiffres « à l'ancienne » : le 1 se lit I. Des chiffres
      modernes partout (titres, « Merci Léa, 18 photos reçues ») ; DM Sans n'en
@@ -68,6 +91,24 @@
     --dp-aurore-1: #dce8fa;
     --dp-aurore-2: #eae5f6;
     --dp-aurore-force: 1;
+    --dp-titre: #101828;
+    --dp-pale: #7c8698;
+    --dp-ligne: rgba(16, 24, 40, 0.08);
+    --dp-accent-doux: rgba(74, 144, 217, 0.12);
+    --dp-accent-sur-doux: #1d4f8a;
+    --dp-accent-rgb: 74, 144, 217;
+    --dp-ok: #157347;
+    --dp-ok-doux: #e7f6ee;
+    --dp-sur-ok: #ffffff;
+    --dp-sur-danger: #ffffff;
+    --dp-verre: rgba(255, 255, 255, 0.82);
+    --dp-carte-pleine: #ffffff;
+    --dp-voile: rgba(16, 24, 40, 0.16);
+    --dp-ombre-c: rgba(16, 24, 40, 0.14);
+    --dp-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --dp-actif: #ffffff;
+    --dp-actif-ombre: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 14px rgba(16, 24, 40, 0.05);
+    --dp-fg-rgb: 16, 24, 40;
     color-scheme: light;
   }
 }
@@ -181,7 +222,7 @@ html:has(.bj-atelier.ec-depot) {
   box-sizing: border-box;
 }
 .bj-atelier .ec-dp-marque {
-  margin: 0 0 18px;
+  margin: 0 0 6px;
   font-family: var(--font-display);
   font-size: 24px;
   line-height: 1;
@@ -206,15 +247,16 @@ html:has(.bj-atelier.ec-depot) {
   font-family: var(--font-display);
   font-weight: 400;
   font-style: normal;
-  font-size: clamp(34px, 9vw, 52px);
-  line-height: 1.05;
-  color: var(--dp-texte);
+  /* Planche 6 : 40 px à 375 de large. */
+  font-size: clamp(36px, 10.7vw, 52px);
+  line-height: 1.04;
+  color: var(--dp-titre);
   font-variant-numeric: lining-nums;
 }
 .bj-atelier .ec-dp-texte {
   margin: 0;
-  font-size: 16px;
-  line-height: 1.55;
+  font-size: 15.5px;
+  line-height: 1.5;
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-ferme {
@@ -302,14 +344,20 @@ html:has(.bj-atelier.ec-depot) {
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-accord input {
-  margin-top: 3px;
-  width: 18px;
-  height: 18px;
+  margin-top: 2px;
+  width: 20px;
+  height: 20px;
   accent-color: var(--dp-accent);
   flex: none;
 }
 .bj-atelier .ec-dp-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   min-height: 52px;
+  padding: 0 22px;
   border: 0;
   border-radius: 999px;
   background: var(--dp-accent);
@@ -454,5 +502,749 @@ html:has(.bj-atelier.ec-depot) {
     width: 760px;
     height: 600px;
     filter: blur(110px);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LES PLANCHES 6 À 9 DU 20/10 (lot w2) : se présenter, l'album du lien, les
+   pages d'état. Toujours sous `.bj-atelier`, toujours préfixé `ec-dp-`, jamais
+   une couleur écrite : des jetons `--dp-*` (le bloc du haut, jour et nuit).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* La carte de présentation : un peu d'air au-dessus sur un grand écran. */
+.bj-atelier .ec-dp-carte {
+  padding-top: clamp(0px, 4vw, 48px);
+}
+.bj-atelier .ec-dp-input::placeholder {
+  color: var(--dp-pale);
+  opacity: 1;
+}
+/* L'adresse reconnue (planche 8B). */
+.bj-atelier .ec-dp-input--actif {
+  border-color: var(--dp-accent);
+  box-shadow: 0 0 0 3px var(--dp-accent-doux);
+}
+/* La phrase de l'album, encadrée sous le texte du 17/10 (planche 6). */
+.bj-atelier .ec-dp-accord-album {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1.5px dashed var(--dp-accent);
+  color: var(--dp-texte);
+}
+/* « Photos seulement » AU-DESSUS du bouton : avant le choix (T-200). */
+.bj-atelier .ec-dp-videos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--dp-surface);
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--dp-texte);
+}
+.bj-atelier .ec-dp-videos svg {
+  flex: none;
+  color: var(--dp-doux);
+}
+/* « Content de te revoir, Léa » (8B) et « Tes 42 photos sont bien arrivées » (9C). */
+.bj-atelier .ec-dp-reconnu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--dp-ok-doux);
+  color: var(--dp-texte);
+}
+.bj-atelier .ec-dp-reconnu > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bj-atelier .ec-dp-reconnu b {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.bj-atelier .ec-dp-reconnu span span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-reconnu-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--dp-ok);
+  color: var(--dp-sur-ok);
+  font-size: 13px;
+  font-weight: 700;
+}
+/* « Ce téléphone n'envoie plus au nom de Léa » (8C). */
+.bj-atelier .ec-dp-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--dp-surface);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-info svg {
+  flex: none;
+  margin-top: 1px;
+}
+.bj-atelier .ec-dp-info b {
+  color: var(--dp-texte);
+  font-weight: 600;
+}
+/* Les liens-boutons : « Ce n'est pas toi ? », « Ce n'est pas moi », « Annuler ». */
+.bj-atelier .ec-dp-lien {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dp-accent-texte);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bj-atelier .ec-dp-lien:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.bj-atelier .ec-dp-lien--doux {
+  margin-top: -6px;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-bouton--danger {
+  background: color-mix(in srgb, var(--dp-danger) 12%, transparent);
+  color: var(--dp-danger);
+  border: 1px solid color-mix(in srgb, var(--dp-danger) 30%, transparent);
+  box-shadow: none;
+}
+.bj-atelier .ec-dp-bouton--plein-danger {
+  background: var(--dp-danger);
+  color: var(--dp-sur-danger);
+  box-shadow: none;
+}
+.bj-atelier .ec-dp-bouton--clair {
+  width: 100%;
+}
+
+/* ─────────── les pages d'état (planche 9) : la carte au milieu de l'écran ─────────── */
+.bj-atelier .ec-dp-etat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(var(--app-height) - 60px);
+}
+.bj-atelier .ec-dp-etat .ec-dp-in {
+  width: 100%;
+  gap: 12px;
+}
+.bj-atelier .ec-dp-etat-ico {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 4px 0 2px;
+  border-radius: 999px;
+  background: var(--dp-surface);
+  color: var(--dp-accent);
+}
+/* (0,2,0) contre `.bj-atelier h1` / `h2` (0,1,1). */
+.bj-atelier .ec-dp-etat-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 36px;
+  line-height: 1.06;
+  letter-spacing: 0;
+  color: var(--dp-titre);
+}
+.bj-atelier .ec-dp-etat .ec-dp-texte b {
+  color: var(--dp-texte);
+  font-weight: 600;
+}
+
+/* ─────────── l'album du lien (planches 7, 8A, 9C) ─────────── */
+.bj-atelier .ec-dp-al {
+  max-width: 960px;
+  margin: 0 auto;
+  /* La réserve sous la grille suit la barre du bas (`--dp-bas-h`, mesurée par Album.tsx). */
+  padding-bottom: calc(var(--dp-bas-h, 150px) + 40px);
+}
+.bj-atelier .ec-dp-al-tete {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 4px;
+}
+.bj-atelier .ec-dp-al-marque {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-al-marque b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  color: var(--dp-texte);
+}
+.bj-atelier .ec-dp-al-marque span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bj-atelier .ec-dp-al-retour {
+  margin-top: 6px;
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1). */
+.bj-atelier .ec-dp-al-titre {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--dp-titre);
+}
+.bj-atelier .ec-dp-al-compte {
+  margin: 0;
+  font-size: 14px;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-al-qui {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 6px;
+}
+.bj-atelier .ec-dp-al-qui .ec-dp-lien {
+  align-self: center;
+}
+.bj-atelier .ec-dp-moi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--dp-ligne);
+  background: var(--dp-surface);
+  font-size: 13px;
+  color: var(--dp-doux);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bj-atelier .ec-dp-moi b {
+  color: var(--dp-texte);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bj-atelier .ec-dp-moi i {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--dp-accent-doux);
+  color: var(--dp-accent-sur-doux);
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+/* Les deux onglets : une pilule segmentée sur toute la largeur. */
+.bj-atelier .ec-dp-al-onglets {
+  display: flex;
+  gap: 4px;
+  margin: 14px 0 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--dp-creux);
+}
+.bj-atelier .ec-dp-al-onglets button {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dp-texte);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.bj-atelier .ec-dp-al-onglets button.on {
+  background: var(--dp-actif);
+  box-shadow: var(--dp-actif-ombre);
+  font-weight: 600;
+}
+.bj-atelier .ec-dp-al-mes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 4px 0;
+  font-size: 13px;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-al-mes .ec-dp-lien {
+  align-self: center;
+}
+.bj-atelier .ec-dp-al-grille {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+/* La grille : trois colonnes sur téléphone (planche 7), plus sur un grand écran. */
+.bj-atelier .ec-dp-g {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 600px) {
+  .bj-atelier .ec-dp-g {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+@media (min-width: 900px) {
+  .bj-atelier .ec-dp-g {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1200px) {
+  .bj-atelier .ec-dp-g {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+.bj-atelier .ec-dp-t {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(var(--dp-fg-rgb), 0.07);
+}
+.bj-atelier .ec-dp-t img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.bj-atelier .ec-dp-t > span,
+.bj-atelier .ec-dp-t > button {
+  z-index: 2;
+}
+.bj-atelier .ec-dp-t-qui {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--dp-noir-rgb), 0.55);
+  color: var(--dp-sur-photo);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+/* Une photo arrivée depuis la dernière visite (planche 7A). */
+.bj-atelier .ec-dp-t--neuve::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--dp-accent);
+}
+.bj-atelier .ec-dp-t-neuve {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--dp-accent);
+  color: var(--dp-sur-accent);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+/* L'envoi : l'anneau qui avance, puis la coche (planche 7B). */
+.bj-atelier .ec-dp-t-envoi {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(var(--dp-noir-rgb), 0.35);
+}
+.bj-atelier .ec-dp-anneau {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: conic-gradient(var(--dp-sur-photo) var(--p, 0%), rgba(var(--dp-blanc-rgb), 0.28) 0);
+  -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px);
+  mask: radial-gradient(circle, transparent 11px, #000 12px);
+}
+.bj-atelier .ec-dp-t-arrivee {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--dp-ok);
+  color: var(--dp-sur-ok);
+}
+.bj-atelier .ec-dp-t-arrivee--refus {
+  background: var(--dp-danger);
+  color: var(--dp-sur-danger);
+}
+.bj-atelier .ec-dp-t--refus img {
+  opacity: 0.45;
+}
+/* En préparation : la vignette n'est pas encore faite (aucune adresse d'image). */
+.bj-atelier .ec-dp-t-prep {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--dp-pale);
+}
+.bj-atelier .ec-dp-t--attente::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, rgba(var(--dp-fg-rgb), 0) 30%, rgba(var(--dp-fg-rgb), 0.07) 50%, rgba(var(--dp-fg-rgb), 0) 70%);
+  background-size: 200% 100%;
+  animation: ec-dp-attente 1.4s linear infinite;
+}
+@keyframes ec-dp-attente {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bj-atelier .ec-dp-t--attente::after {
+    animation: none;
+  }
+}
+/* Cocher ses photos (planche 7D) : toute la case répond, le rond dit l'état. */
+.bj-atelier .ec-dp-t-coche {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.bj-atelier .ec-dp-t-coche span {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid rgba(var(--dp-blanc-rgb), 0.92);
+  background: rgba(var(--dp-noir-rgb), 0.18);
+  color: transparent;
+  box-shadow: 0 1px 4px rgba(var(--dp-noir-rgb), 0.25);
+  box-sizing: border-box;
+}
+.bj-atelier .ec-dp-t-coche.on span {
+  background: var(--dp-accent);
+  border-color: var(--dp-sur-photo);
+  color: var(--dp-sur-accent);
+}
+.bj-atelier .ec-dp-t--cochee::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--dp-accent);
+  background: rgba(var(--dp-accent-rgb), 0.2);
+  pointer-events: none;
+}
+.bj-atelier .ec-dp-al-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 18px;
+  border-radius: 18px;
+  background: var(--dp-surface);
+  text-align: center;
+}
+.bj-atelier .ec-dp-al-vide p {
+  margin: 0;
+  max-width: 30rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-al-vide .ec-dp-al-vide-titre {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.15;
+  color: var(--dp-texte);
+}
+.bj-atelier .ec-dp-al-vide .ec-dp-bouton {
+  max-width: 260px;
+}
+.bj-atelier .ec-dp-al-plus {
+  align-self: center;
+  max-width: 260px;
+  margin-top: 8px;
+}
+
+/* La barre du bas : fixée sous le pouce, en verre (plein sur Android, `--plat`). */
+.bj-atelier .ec-dp-bas {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  margin: 0 auto;
+  max-width: 520px;
+  border-radius: 26px;
+  border: 1px solid var(--dp-carte-bord);
+  background: var(--dp-verre);
+  box-shadow: var(--dp-reflet), 0 18px 50px var(--dp-ombre-c);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+}
+.bj-atelier .ec-dp-bas--plat {
+  background: var(--dp-carte-pleine);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.bj-atelier .ec-dp-bas-in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+.bj-atelier .ec-dp-reste {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-bas-ajout {
+  align-self: center;
+}
+.bj-atelier .ec-dp-progres-l {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px;
+}
+.bj-atelier .ec-dp-progres-l b {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.bj-atelier .ec-dp-progres-l b small {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-progres-l > span {
+  font-size: 13px;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-jauge {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(var(--dp-fg-rgb), 0.1);
+  overflow: hidden;
+}
+.bj-atelier .ec-dp-jauge i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dp-accent);
+  transition: width 300ms ease;
+}
+.bj-atelier .ec-dp-bas .ec-dp-note {
+  padding: 0 4px;
+}
+/* Le merci (planche 7C), avec le compte confirmé par le serveur. */
+/* (0,3,0) contre l'ancien `.ec-dp-merci` (une ligne en Cormorant, gardée plus haut) : ici, un cadre. */
+.bj-atelier .ec-dp-bas .ec-dp-merci {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--dp-ok-doux);
+  font-family: var(--font-ui);
+  font-size: 13px;
+}
+.bj-atelier .ec-dp-bas .ec-dp-merci b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1.15;
+  color: var(--dp-texte);
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
+}
+.bj-atelier .ec-dp-bas .ec-dp-merci span {
+  font-size: 13px;
+  color: var(--dp-doux);
+}
+
+/* « Content de te revoir, Léa » et « 3 photos supprimées » : au-dessus de la barre. */
+.bj-atelier .ec-dp-annonce {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: calc(var(--dp-bas-h, 120px) + 26px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  margin: 0 auto;
+  max-width: 520px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--dp-filet);
+  background: var(--dp-carte-pleine);
+  box-shadow: 0 18px 50px var(--dp-ombre-c);
+  font-size: 14px;
+  color: var(--dp-texte);
+}
+.bj-atelier .ec-dp-annonce > span:last-child {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.bj-atelier .ec-dp-annonce b {
+  font-weight: 600;
+}
+.bj-atelier .ec-dp-annonce span span {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--dp-doux);
+}
+.bj-atelier .ec-dp-annonce-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--dp-accent-doux);
+  color: var(--dp-accent-sur-doux);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* La feuille du bas (planche 7D) : ce que fait « Supprimer », AVANT le geste. */
+.bj-atelier .ec-dp-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--dp-voile);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+.bj-atelier .ec-dp-feuille {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  box-sizing: border-box;
+  padding: 0 18px calc(26px + env(safe-area-inset-bottom, 0px));
+  border-radius: 28px 28px 0 0;
+  border: 1px solid var(--dp-carte-bord);
+  border-bottom: 0;
+  background: var(--dp-carte-pleine);
+  box-shadow: var(--dp-reflet), 0 -20px 60px var(--dp-ombre-c);
+}
+.bj-atelier .ec-dp-poignee {
+  width: 40px;
+  height: 5px;
+  margin: 8px auto 4px;
+  border-radius: 999px;
+  background: rgba(var(--dp-fg-rgb), 0.22);
+}
+/* (0,2,0) contre `.bj-atelier h2` (0,1,1). */
+.bj-atelier .ec-dp-feuille-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--dp-titre);
+}
+@media (min-width: 760px) {
+  .bj-atelier .ec-dp-voile {
+    align-items: center;
+  }
+  .bj-atelier .ec-dp-feuille {
+    padding-bottom: 22px;
+    border-radius: 28px;
+    border-bottom: 1px solid var(--dp-carte-bord);
   }
 }

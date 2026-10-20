@@ -1233,10 +1233,11 @@ ok("un type inconnu est refuse", !lireSaisieDocument("bulletin", "", "x").ok);
 ok("sans libelle, le type le donne",
    (() => { const d = lireSaisieDocument("devis", "", "devis-2026"); return d.ok && d.libelle === "Devis signé" && d.nom === "devis-2026"; })());
 ok("l'accord sur les donnees est un document ATELIER, jamais redige par le code", libelleTypeDocument("donnees") === "Accord sur les données");
-ok("la case d'accord des participants porte le texte CHOISI par Mathias le 17/10 (version complete), plus aucun [À FIXER] sur la page de depot",
+ok("la case d'accord des participants porte le texte CHOISI par Mathias (17/10, puis la phrase de l'album validee le 20/10), rendu par texteAccord et jamais ecrit dans la page, plus aucun [À FIXER] sur la page de depot",
    (() => {
      const d = lire("src/app/depot/[token]/Depot.tsx");
-     return /J&apos;accepte que Bellajour utilise ces photos pour composer le magazine « \{props\.evenement\} » \{deNom\(props\.organisation\)\}, et je confirme\s+avoir le droit de les partager, y compris pour les personnes qu&apos;on y voit\./.test(d)
+     return /texteAccord\(VERSION_ACCORD, \{ evenement: tete\.evenement, deOrganisation: deNom\(tete\.organisation\), lien \}\)/.test(d) && !/J(&apos;|')accepte que Bellajour/.test(d)
+       && (Accord.texteAccord("2026-10-17", { evenement: "Week-end en mer", deOrganisation: Espace.deNom("Audencia"), lien: null }) ?? "").startsWith("J'accepte que Bellajour utilise ces photos pour composer le magazine « Week-end en mer » d'Audencia, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit.")
        && !/\[À FIXER\]/.test(d.replace(/\/\*[\s\S]*?\*\//g, "")) && /disabled=\{!accord \|\| !nomPret\}/.test(d)
        && Espace.deNom("SKEMA") === "de SKEMA" && Espace.deNom("Air France") === "d'Air France" && Espace.deNom("Essai neuf") === "d'Essai neuf" && Espace.deNom("Hermès") === "de Hermès";
    })());
@@ -2708,7 +2709,7 @@ titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en d
       && /useSondage\(/.test(carte) && /SONDAGE_TABLEAU_MS/.test(carte) && !/INTERVALLE_MESSAGES_MS/.test(collecte + carte));
   const depot = lire("src/app/depot/[token]/Depot.tsx");
   ok("le participant retrouve son prenom sur son telephone (lu sans setState d'hydratation) et il part avec les photos",
-    /useSyncExternalStore\(/.test(depot) && /moteur\.definirDeposant\(nomEnvoye\);\s*if \(e\.target\.files\) moteur\.ajouter/.test(depot));
+    /useSyncExternalStore\(/.test(depot) && /moteur\.definirDeposant\(nomEnvoye\);\s*if \(fichiers\.length\) moteur\.ajouter/.test(depot));
   const photos = lire("src/lib/collectif/grillePhotos.ts");
   ok("la grille : « Toutes » commence par la derniere arrivee (en memoire, ou triee par la base) ; chaque photo dit qui et quand ; « N personnes » suit la meme regle que les pastilles",
     /vue === "toutes" \? \[\.\.\.dansDossier\]\.reverse\(\)/.test(photos) && /vue === "toutes" \? TRI_TOUTES : TRI_JOUR/.test(photos) && /qui: role === "participant"/.test(photos) && /arrivee: p\.confirmee_le/.test(photos)
@@ -2902,16 +2903,26 @@ titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le
       && Accord.ERREUR_ACCORD === "accord_requis" && ![Accord.messageAccord("entreprise_vous"), Accord.messageAccord("ecole_tu")].some((m) => /[—–]/.test(m)));
 
   const depot = lire("src/app/depot/[token]/Depot.tsx");
-  const span = /<label className="ec-dp-accord">[\s\S]*?<span>([\s\S]*?)<\/span>/.exec(depot)?.[1] ?? "";
-  const affiche = span
-    .replace(/\{props\.evenement\}/g, "{evenement}")
-    .replace(/\{deNom\(props\.organisation\)\}/g, "{deOrganisation}")
-    .replace(/&apos;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-  ok("le texte AFFICHE est mot pour mot celui de la version envoyee : changer un mot = une NOUVELLE version dans TEXTES_ACCORD",
-    affiche.length > 100 && affiche === Accord.TEXTES_ACCORD.get(v));
-  ok("la version courante est le jour du choix de Mathias (17/10, PR #245)", v === "2026-10-17" && Accord.TEXTES_ACCORD.has("2026-10-17"));
+  /* Depuis le lot w2 (20/10) : la page n'ECRIT plus le texte, elle affiche `texteAccord(VERSION_ACCORD, …)` en deux
+     morceaux (le texte du 17/10, puis la phrase de l'album encadree). Recoller les deux morceaux doit rendre le
+     modele de la version envoyee, rempli, mot pour mot. */
+  const modele = Accord.TEXTES_ACCORD.get(v) ?? "";
+  const noms = (lien: string | null) => ({ evenement: "Week-end en mer", deOrganisation: Espace.deNom("Audencia"), lien });
+  const rempli = (lien: string | null) => modele.replace("{evenement}", "Week-end en mer").replace("{deOrganisation}", "d'Audencia").replace("{album}", Accord.phraseAlbum(lien));
+  const morceaux = (lien: string | null) => {
+    const t = Accord.texteAccord(v, noms(lien)) ?? "";
+    const album = Accord.phraseAlbum(lien);
+    return t.endsWith(` ${album}`) ? { principal: t.slice(0, t.length - album.length - 1), album } : { principal: t, album: null };
+  };
+  ok("le texte AFFICHE est mot pour mot celui de la version envoyee : la page l'affiche par texteAccord(VERSION_ACCORD, …), jamais ecrit en dur, et n'encadre que la phrase de l'album ; changer un mot = une NOUVELLE version dans TEXTES_ACCORD",
+    /const texte = texteAccord\(VERSION_ACCORD, \{ evenement: tete\.evenement, deOrganisation: deNom\(tete\.organisation\), lien \}\);/.test(depot)
+      && /const accordTexte = decouperAccord\(texte \?\? "", lien\);/.test(depot)
+      && /\{accordTexte\.principal\}\s*\{accordTexte\.album \? <span className="ec-dp-accord-album">\{accordTexte\.album\}<\/span> : null\}/.test(depot)
+      && !/J(&apos;|')accepte que Bellajour/.test(depot)
+      && /export function decouperAccord\(texte: string, lien: string \| null\)[\s\S]{0,200}texte\.endsWith\(` \$\{album\}`\)/.test(lire("src/lib/collectif/depotParticipant.ts"))
+      && ["Bateau 1", null].every((l) => { const m = morceaux(l); const t = Accord.texteAccord(v, noms(l)) ?? ""; return t.length > 100 && m.album !== null && `${m.principal} ${m.album}` === t && t === rempli(l); }));
+  ok("la version courante est celle de l'album (20/10 : la page affiche la phrase, bascule approuvee par Mathias avec ses deux phrases) ; celle du 17/10 reste lisible (des photos la portent)",
+    v === "2026-10-20" && v === Accord.VERSION_ACCORD_ALBUM && Accord.VERSIONS_ALBUM.has(v) && Accord.TEXTES_ACCORD.has("2026-10-17") && Accord.lireAccord({ accord: true, accordVersion: "2026-10-17" })?.version === "2026-10-17");
   ok("cocher donne la version au moteur, decocher la retire ; le bouton reste ferme sans accord",
     /moteur\.definirAccord\(e\.target\.checked \? VERSION_ACCORD : null\)/.test(depot) && /disabled=\{!accord \|\| !nomPret\}/.test(depot));
 
@@ -2997,10 +3008,10 @@ titre("— T-192 : le moteur tient une mauvaise connexion —");
     /refusPlafond && json\.place === 0/.test(moteur) && /const LOT_PLEIN = 10;/.test(moteur) && /const ATTENTE_CONFIRMATION_MS = 15_000;/.test(moteur));
   ok("re-choisir une photo refusee ou en erreur la renvoie (plafond releve) ; en route ou arrivee, elle est seulement comptee",
     /if \(connu\.etat === "refuse" \|\| connu\.etat === "erreur"\)/.test(moteur) && /this\.dejaAjoutes\+\+/.test(moteur));
-  const depot = lire("src/app/depot/[token]/Depot.tsx");
+  const albumMerci = lire("src/app/depot/[token]/Album.tsx");
   const zone = lire("src/app/edition/_composants/depot/ZoneDepot.tsx");
   ok("« Merci » et « Toutes les photos sont arrivees » seulement sans erreur : une photo qui n'est pas partie se dit",
-    /const termine = vue\.total > 0 && vue\.enCours === 0 && vue\.erreurs === 0;/.test(depot) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} photo/.test(zone));
+    /const termine = vue\.total > 0 && vue\.enCours === 0 && vue\.erreurs === 0;/.test(albumMerci) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} photo/.test(zone));
 }
 
 titre("— T-192 : le nom du participant ne change plus —");
@@ -3021,7 +3032,7 @@ titre("— T-192 : le nom du participant ne change plus —");
   ok("le nom de l'appareil se lit chez les PARTICIPANTS de l'edition, le libelle d'un lien n'est pas un nom, et l'appareil se compte en `head`",
     /\.eq\("role_deposant", "participant"\)/.test(connu) && /nom\.toLowerCase\(\) !== libelle/.test(connu) && /select\("id", COMPTE_SANS_LIGNE\)/.test(connu) && /\.limit\(0\)/.test(connu));
   const page = lire("src/app/depot/[token]/page.tsx");
-  ok("la page lit le cookie de l'appareil (meme cookie sur tous les liens) et ne cherche rien si la collecte est close (ni si le depot n'est pas regle, T-195)",
+  ok("la page lit le cookie de l'appareil (meme cookie sur tous les liens), ne cherche le nom d'avant que si le depot est ouvert et regle (T-195) ; close, seulement ce que dit la planche 9C (ses photos arrivees)",
     /\(await cookies\(\)\)\.get\(COOKIE_APPAREIL\)/.test(page) && /ouvert && regle && estAppareil\(appareil\)/.test(page));
 }
 
@@ -3399,9 +3410,11 @@ titre("— T-200 : les videos ne partent pas, la page le dit avant, et le refus 
       && JSON.stringify(D.phrasesIgnores(2, 0, null)) === JSON.stringify(["2 fichiers ignorés : ce ne sont pas des photos."]) && D.phrasesIgnores(0, 0, null).length === 0
       && D.phrasesIgnores(1, 5, null).length === 1);
   const depotTsx = lire("src/app/depot/[token]/Depot.tsx");
-  ok("la page : « Photos seulement : les vidéos ne partent pas. » sous le bouton, toujours visible ; plus de « fichier(s) ignoré(s) »",
-    D.PHOTOS_SEULEMENT === "Photos seulement : les vidéos ne partent pas." && /<\/button>\s*<p className="ec-dp-note">\{PHOTOS_SEULEMENT\}<\/p>/.test(depotTsx)
-      && /phrasesIgnores\(vue\.ignores, vue\.videos, vue\.premiereVideo\)/.test(depotTsx) && !/fichier\(s\) ignoré\(s\)/.test(depotTsx));
+  const albumTsx = lire("src/app/depot/[token]/Album.tsx");
+  ok("la page : « Photos seulement : les vidéos ne partent pas. » AU-DESSUS du bouton (planche 6B, avant le choix), redit dans la barre de l'album ; plus de « fichier(s) ignoré(s) »",
+    D.PHOTOS_SEULEMENT === "Photos seulement : les vidéos ne partent pas." && /<p className="ec-dp-videos">\s*<IcoSansVideo \/>\s*<span>\{PHOTOS_SEULEMENT\}<\/span>\s*<\/p>\s*\{entree\}\s*<button type="button" className="ec-dp-bouton"/.test(depotTsx)
+      && /PHOTOS_SEULEMENT\.split\(" : "\)\[0\]/.test(albumTsx)
+      && /phrasesIgnores\(vue\.ignores, vue\.videos, vue\.premiereVideo\)/.test(albumTsx) && !/fichier\(s\) ignoré\(s\)/.test(depotTsx + albumTsx));
   const moteurV = lire("src/app/edition/_composants/depot/moteur.ts");
   ok("le moteur compte les videos parmi les fichiers ecartes, par la regle pure",
     /this\.ignores\+\+;\s*if \(estVideo\(f\.name, f\.type\)\) \{\s*this\.videos\+\+;\s*this\.premiereVideo \?\?= f\.name;/.test(moteurV)
@@ -5237,8 +5250,8 @@ async function verifPersonnesCorbeille() {
   ok("« a moi » : ma personne, ou, sans personne, ce telephone ; « N personnes » : une par personne, sinon par nom, « Sans nom » par telephone",
     Al.estAMoi({ participant_id: A.id, appareil_id: "tel-z" }, A.id, "tel-a") && !Al.estAMoi({ participant_id: A.id, appareil_id: "tel-a" }, B.id, "tel-a") && Al.estAMoi({ participant_id: null, appareil_id: "tel-a" }, null, "tel-a")
       && Al.personnesDeLAlbum([{ participant_id: A.id, deposant: "Léa Martin", appareil_id: "1" }, { participant_id: A.id, deposant: "Léa Martin", appareil_id: "2" }, { deposant: "hugo", appareil_id: "3" }, { deposant: "Hugo ", appareil_id: "4" }, { deposant: null, appareil_id: "5" }, { deposant: "", appareil_id: "6" }]) === 4);
-  ok("l'accord du 20/10 : le texte du 17/10 MOT POUR MOT, puis la phrase de l'album ; la version affichee reste celle du 17/10 tant que la page ne montre pas la phrase",
-    Accord.VERSION_ACCORD === "2026-10-17" && Accord.VERSION_ACCORD_ALBUM === "2026-10-20"
+  ok("l'accord du 20/10 : le texte du 17/10 MOT POUR MOT, puis la phrase de l'album ; la version affichee est celle de l'album depuis que la page montre la phrase (lot w2)",
+    Accord.VERSION_ACCORD === "2026-10-20" && Accord.VERSION_ACCORD_ALBUM === "2026-10-20"
       && (Accord.TEXTES_ACCORD.get("2026-10-20") ?? "").startsWith(Accord.TEXTES_ACCORD.get("2026-10-17") as string) && Accord.TEXTES_ACCORD.get("2026-10-20")?.endsWith(" {album}") === true
       && [...Accord.VERSIONS_ALBUM].join() === "2026-10-20" && !Accord.VERSIONS_ALBUM.has("2026-10-17"));
   ok("la phrase validee nomme le lien ; le lien general a son equivalent sans nom ; le serveur accepte les versions DEJA affichees (C5 : celle de l'album le jour ou la page la montre), aucune autre",
@@ -6088,7 +6101,7 @@ async function verifDurcissement() {
   ok("S6 : l'album ne signe QUE la vignette (l'original porte l'EXIF et le GPS) ; sans vignette, `vignette: null`",
     !/signerGet/.test(rA) && /if \(p\.vignette_key\) vignette = await signerLectureVignette\(p\.vignette_key\);/.test(rA) && !/else if \(p\.mime/.test(rA));
   const versions = [...Accord.TEXTES_ACCORD.keys()];
-  ok("C5 : une version n'est acceptee que si elle est CONNUE et pas plus recente que `VERSION_ACCORD` (le texte affiche) ; aujourd'hui « 2026-10-17 » seule",
+  ok("C5 : une version n'est acceptee que si elle est CONNUE et pas plus recente que `VERSION_ACCORD` (le texte affiche) ; « 2026-10-20 » depuis que la page affiche la phrase de l'album (lot w2), « 2026-10-17 » toujours lisible",
     versions.every((v) => Accord.versionAcceptee(v) === v <= Accord.VERSION_ACCORD) && versions.every((v) => (Accord.lireAccord({ accord: true, accordVersion: v }) !== null) === Accord.versionAcceptee(v))
       && Accord.versionAcceptee(Accord.VERSION_ACCORD) && !Accord.versionAcceptee("2099-01-01") && !Accord.versionAcceptee("2000-01-01") && !Accord.versionAcceptee(20261017)
       && (Accord.VERSION_ACCORD !== "2026-10-17" || (!Accord.versionAcceptee("2026-10-20") && Accord.lireAccord({ accord: true, accordVersion: "2026-10-20" }) === null)));
@@ -6555,7 +6568,129 @@ async function verifPhotosW2() {
     /className=\{grandes\[p\.id\] \? "ec-ag-img ec-ag-img--grande ec-ag-img--la" : "ec-ag-img ec-ag-img--grande"\}/.test(lire("src/app/edition/[token]/photos/Agrandir.tsx")) && /\.map\(\(x\) => x\?\.grande \?\? x\?\.vignette\)/.test(collecte));
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(() => {
+
+/* ════════════════════ w2 : LA PAGE DU PARTICIPANT (planches 6 à 9 du 20/10, T-198, T-199) ════════════════════ */
+
+async function verifDepotParticipant() {
+  const DP = await import("@/lib/collectif/depotParticipant");
+  const Ouv = await import("@/lib/collectif/ouverture");
+  const Ap = await import("@/app/depot/[token]/appels");
+  const depotW2 = lire("src/app/depot/[token]/Depot.tsx");
+  const albumW2 = lire("src/app/depot/[token]/Album.tsx");
+  const etatsW2 = lire("src/app/depot/[token]/Etats.tsx");
+  const pageW2 = lire("src/app/depot/[token]/page.tsx");
+  const lectureW2 = lire("src/app/depot/[token]/lecture.ts");
+  const moteurW2 = lire("src/app/edition/_composants/depot/moteur.ts");
+
+  titre("— w2 : se presenter par son adresse (planches 6 et 8) —");
+  ok("la phrase sous l'adresse dit a quoi elle sert, et a rien d'autre (tu et vous)",
+    depotW2.includes("Elle sert seulement à te reconnaître sur un autre téléphone ou un autre lien. Nous ne t'écrirons pas pour autre chose.")
+      && depotW2.includes("Elle sert seulement à vous reconnaître sur un autre téléphone ou un autre lien. Nous ne vous écrirons pas pour autre chose."));
+  ok("l'adresse complete est demandee au serveur SANS nom (rien n'est ecrit pour une adresse inconnue) ; inconnue, prenom ET nom",
+    /const r = await presenter\(token, p, emailLu\);/.test(depotW2) && /r\.json\.statut === "connu"/.test(depotW2) && /autoComplete="email"/.test(depotW2) && /type="email"/.test(depotW2));
+  const iPresenter = depotW2.indexOf("presenter(token, p, adresse, prenomSaisi, nomSaisi)");
+  const iAjouter = depotW2.indexOf("moteur.ajouter(fichiers)");
+  ok("presenter d'ABORD, envoyer ensuite : la personne nouvelle est creee avant que la premiere photo parte (le serveur rattache la photo a la personne du telephone)",
+    iPresenter > 0 && iAjouter > iPresenter && !/definirEmail|email:/.test(moteurW2.replace(/\/\*[\s\S]*?\*\//g, "")));
+  const connu = Ap.lirePersonne({ statut: "connu", participant: { prenom: "Léa", nom: "Martin", nomAffiche: "Léa Martin" }, photos: 24, ceTelephone: 3, accordAJour: true, place: 36 }, "Martin");
+  const cree = Ap.lirePersonne({ statut: "cree", participant: { prenom: "Léa", nom: "Martin" }, photos: 0, ceTelephone: 0, accordAJour: false, place: null }, "Martin");
+  ok("une personne RETROUVEE ne montre que son prenom (jamais son nom de famille) ; le nom complet seulement s'il vient d'etre tape (creation)",
+    connu?.prenom === "Léa" && connu.nom === null && connu.photos === 24 && connu.accordAJour && connu.place === 36
+      && cree?.nom === "Martin" && cree.place === null && !/\.nomAffiche|participant\.nom\b/.test(depotW2 + albumW2 + etatsW2));
+  ok("« Ce n'est pas toi ? » (action oublier) : le telephone repart de zero et le dit (8C) ; l'accord est retire du moteur",
+    /const r = await oublier\(token, p\);/.test(depotW2) && /Ce téléphone n&apos;envoie plus au nom de <b>\{oublie\}<\/b>\. Ses photos restent à son nom\./.test(depotW2)
+      && /setAccord\(false\);\s*moteur\.definirAccord\(null\);/.test(depotW2));
+  ok("l'accord est redemande sur chaque nouveau telephone : il n'est repris que si CE telephone a deja accepte la version d'aujourd'hui",
+    /accordAJour: comptes\?\.accord === VERSION_ACCORD,/.test(pageW2) && /if \(accordInitial\) m\.definirAccord\(VERSION_ACCORD\);/.test(depotW2) && /const accordInitial = Boolean\(props\.moi\?\.accordAJour\);/.test(depotW2));
+  ok("sans la migration 20261023 (sonde ou 503 a la presentation) : la formule d'avant, sans adresse, et rien a supprimer",
+    /const repli = !props\.personnes \|\| repliForce;/.test(depotW2) && (depotW2.match(/if \(r\.status === 503\) \{\s*(\/\*[^*]*\*\/\s*)?(enRepli = true;\s*)?setRepliForce\(true\);/g) ?? []).length >= 2
+      && /personnes=\{!repli\}/.test(depotW2) && /const peutSupprimer = props\.personnes && !props\.lectureSeule && Boolean\(props\.moteur\);/.test(albumW2));
+  ok("la page sait si la migration est la sans rien ecrire : la personne du telephone, ou une sonde GET `limit(0)` (jamais `head`)",
+    /participantDeLAppareil\(supabase, editionId, appareil\)/.test(lectureW2) && /\.select\('participant_id', COMPTE_SANS_LIGNE\)/.test(lectureW2) && /\.limit\(0\)/.test(lectureW2) && !/head: true/.test(lectureW2) && /personnesAbsentes\(error\)/.test(lectureW2));
+  ok("le nom garde sur le telephone (sans la migration) est PROPRE a ce lien (T-198), et la cle ne contient jamais le token",
+    /function clePrenom\(token: string, p: string \| null\)/.test(depotW2) && !/"bj-depot-prenom"/.test(depotW2)
+      && !DP.cleDeVisite("DpOuvertxxxxxxxxxxxxxxxxxxxxxxxx", null).includes("DpOuvert") && DP.cleDeVisite("a".repeat(32), "p") !== DP.cleDeVisite("a".repeat(32), null));
+
+  titre("— w2 : l'envoi, par arrivee (planche 7B) —");
+  const prog = DP.progression({ arrivees: 0, dejaLa: 0, auCoffre: 7, enCours: 18 });
+  ok("7 photos au coffre sur 18 : « 7 sur 18 envoyées · il en reste 11 » (plus « 0 photo reçue · 18 en cours » pendant 15 s)",
+    prog.envoyees === 7 && prog.restent === 11 && prog.total === 18 && prog.part === 39 && DP.progression({ arrivees: 0, dejaLa: 0, enCours: 18 }).envoyees === 0
+      && DP.progression({ arrivees: 11, dejaLa: 2, auCoffre: 3, enCours: 3 }).restent === 0);
+  ok("le moteur compte le coffre (`auCoffre`) sans attendre la confirmation groupee ; la vue vide le connait",
+    /if \(it\.etat === "envoye"\) auCoffre\+\+;/.test(moteurW2) && /auCoffre,\s*place: this\.place,/.test(moteurW2) && /auCoffre: 0 \}/.test(lire("src/app/edition/_composants/depot/useMoteur.ts"))
+      && /const prog = progression\(vue\);/.test(albumW2) && /\{prog\.envoyees\} <small>sur \{prog\.total\} envoyée/.test(albumW2));
+  const iRefus = moteurW2.indexOf('if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {\n        /* Pas encore ouvert : le lot');
+  ok("409 `depot_pas_ouvert` refuse le lot avec la phrase du serveur (comme `accord_requis`), jamais une coupure ni un « reessayer » sans fin",
+    Ouv.ERREUR_PAS_OUVERT === "depot_pas_ouvert" && /const REFUS_EXPLIQUES: readonly string\[\] = \[ERREUR_PAS_OUVERT\];/.test(moteurW2)
+      && iRefus > 0 && iRefus < moteurW2.indexOf("await attendre(1_000);") && iRefus < moteurW2.indexOf("throw new Error(`presign")
+      && (moteurW2.match(/REFUS_EXPLIQUES\.includes\(json\.error\)/g) ?? []).length === 2);
+  ok("une photo a la corbeille redeclaree est « deja la » (ni dupliquee, ni ressuscitee)",
+    /deja: true, photoId: d\.id, \.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")) && /\} else if \(r\.deja \|\| r\.double\) \{[\s\S]{0,260}this\.finir\(it, "deja", null\);/.test(moteurW2));
+  ok("aucune adresse ne part avec les photos (presign l'ignore : la personne est celle du telephone) ; le depot du responsable ne garde aucun apercu",
+    !/premier\.email|definirEmail/.test(moteurW2)
+      && !/definirEmail|apercus/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx") + lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx") + lire("src/app/edition/_composants/depot/ZoneDepot.tsx")));
+  ok("l'API du moteur reste compatible : tout ce qui est neuf est FACULTATIF (le depot du responsable cree toujours `new MoteurDepot({ token })`)",
+    /apercus\?: number;/.test(moteurW2) && /private put\(url: string, corps: Blob, type: string, avancer\?: \(part: number\) => void\)/.test(moteurW2)
+      && /new MoteurDepot\(\{ token \}\)/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")) && /place\?: number \| null;/.test(moteurW2));
+  ok("« Mes photos » pendant l'envoi : des vignettes de 320 px seulement, BORNEES (les plus anciennes liberees), rien sans `apercus`",
+    /if \(!max \|\| !vignette \|\| it\.apercu/.test(moteurW2) && /autre\.n <= dernier - max\) this\.libererApercu\(autre\)/.test(moteurW2) && /URL\.revokeObjectURL\(it\.apercu\)/.test(moteurW2)
+      && /apercus: TAILLE_PAGE_ALBUM/.test(depotW2));
+  const envoi = DP.photosDeLEnvoi([{ photoId: "a" }, { photoId: null }, { photoId: "c" }], [{ id: "a" }]);
+  ok("une photo arrivee n'est pas montree deux fois (l'envoi en cours et la liste du serveur)", envoi.length === 2 && envoi.every((e) => e.photoId !== "a"));
+
+  titre("— w2 : l'album du lien et « Mes photos » (planches 7, 8A) —");
+  const vues = [
+    { id: "1", arrivee: "2026-10-20T10:00:00.000Z", moi: false },
+    { id: "2", arrivee: "2026-10-20T12:00:00.000Z", moi: false },
+    { id: "3", arrivee: "2026-10-20T12:30:00.000Z", moi: true },
+  ];
+  ok("« nouvelle » : arrivee apres la derniere visite de CE telephone, jamais une des miennes ; sans visite connue, aucune",
+    [...DP.nouvellesDepuis(vues, "2026-10-20T11:00:00.000Z")].join() === "2" && DP.nouvellesDepuis(vues, null).size === 0 && DP.derniereArrivee(vues) === "2026-10-20T12:30:00.000Z");
+  ok("la place dite tout de suite, au registre ; « sans limite » ; plus de place, le bouton se ferme",
+    DP.phrasePlace(36, true) === "tu peux encore en envoyer 36" && DP.phrasePlace(36, false) === "vous pouvez encore en envoyer 36" && DP.phrasePlace(null, true) === "sans limite"
+      && DP.phrasePlace(0, true) === "tu as envoyé toutes les photos prévues" && DP.phrasePlace(undefined, true) === "" && /disabled=\{plein\}/.test(albumW2));
+  ok("les initiales : « LM » pour un nom tape ici, « L » pour une personne retrouvee", DP.initiales("Léa", "Martin") === "LM" && DP.initiales("léa", null) === "L" && DP.initiales(null) === "?");
+  ok("une photo sans vignette n'a pas d'adresse d'image : la case dit « En préparation » (jamais l'original)",
+    /vignette: typeof x\.vignette === "string" \? x\.vignette : null,/.test(lire("src/app/depot/[token]/appels.ts")) && /x\.vignette \? <img src=\{x\.vignette\}[^>]*\/> : <span className="ec-dp-t-prep">En préparation<\/span>/.test(albumW2));
+  ok("l'album vide se dit (les photos d'avant l'accord du 20/10 n'y entrent pas)",
+    /L&apos;album est vide pour l&apos;instant\./.test(albumW2) && /s'afficheront ici, avec le prénom de chacun/.test(albumW2));
+  ok("supprimer : seulement depuis « Mes photos », seulement ce que la route dit supprimable, la feuille dit l'effet AVANT, et la place liberee s'affiche tout de suite",
+    /const cochable = cocher && onglet === "miennes" && x\.supprimable;/.test(albumW2) && /supprimerPhotos\(props\.token, props\.p, ids\)/.test(albumW2)
+      && /L'organisateur peut encore \$\{nb > 1 \? "les" : "la"\} récupérer pendant \$\{DELAI_CORBEILLE_JOURS\} jours\./.test(albumW2)
+      && /setPlaceServeur\(\{ valeur: r\.json\.place as number \| null, le: Date\.now\(\) \}\)/.test(albumW2) && /"\/api\/collectif\/depot\/supprimer"/.test(lire("src/app/depot/[token]/appels.ts")));
+  ok("le merci prend le compte CONFIRME par le serveur (arrivees + deja la), jamais le coffre seul",
+    /const recues = vue\.arrivees \+ vue\.dejaLa;/.test(albumW2) && /Merci\{props\.qui \? ` \$\{props\.qui\.prenom\}` : ""\}, \{recues\} photo/.test(albumW2));
+  ok("la barre fixe a son repli Android (pas de verre sur un `position: fixed`, piege 3)",
+    /const android = useAndroid\(\);/.test(albumW2) && /\.bj-atelier \.ec-dp-bas--plat \{[^}]*backdrop-filter: none;/.test(lire("src/app/depot/[token]/depot.css")));
+
+  titre("— w2 : les pages d'etat (planche 9) —");
+  const iFerme = pageW2.indexOf("if (!ouvert) {");
+  const iPasOuvert = pageW2.indexOf("{!ouvertureOk ? (");
+  ok("l'ordre : collecte terminee (9C), puis pas encore ouvert (9B), puis plafond non regle (T-195), puis le depot",
+    iFerme > 0 && iPasOuvert > iFerme && pageW2.indexOf("ouvert && !regle ?") > iPasOuvert && pageW2.indexOf("<Depot") > pageW2.indexOf("ouvert && !regle ?")
+      && /const ouvertureOk = depotOuvert\(edition\.ouverture_le, maintenant\)/.test(pageW2));
+  const ph = Ouv.phrasesPasEncoreOuvert("2026-11-06T07:00:00Z", "ecole_tu");
+  ok("9B : « Il ouvrira le vendredi 6 novembre à 8 h. » (heure de Paris), le jour en gras, « Garde ce lien »",
+    ph.quand === "Il ouvrira le vendredi 6 novembre à 8 h." && Ouv.quandOuvre("2026-11-06T07:00:00Z") === "vendredi 6 novembre à 8 h" && ph.garder === "Garde ce lien : c'est le même qui servira."
+      && /const ph = phrasesPasEncoreOuvert\(ouvertureLe, registre\);/.test(etatsW2) && /<b>\{quand\}<\/b>/.test(etatsW2));
+  ok("9C : la date, le merci, ce qui est arrive de CE telephone (son prenom), et l'album en lecture seule (rien ne s'y ajoute ni ne s'y supprime)",
+    /La collecte est terminée/.test(etatsW2) && /Merci : l’atelier compose le magazine avec les photos reçues\./.test(etatsW2) && /Tes \$\{n\} photos sont bien arrivées/.test(etatsW2)
+      && /lectureSeule\s*retour=/.test(etatsW2) && /\{props\.lectureSeule \? null : \(/.test(albumW2) && /recu = \{ prenom: qui\.participant\.prenom, photos: c\?\.photos \?\? 0 \}/.test(pageW2));
+  const mortW2 = lire("src/app/depot/[token]/LienMort.tsx");
+  ok("9A : la carte du depot, un lien casse, aucune edition nommee (pas d'annuaire)",
+    /Il a été remplacé ou retiré par l’organisateur\./.test(mortW2) && /<IcoLienCasse/.test(mortW2) && !/organisation|evenement/.test(mortW2.replace(/\/\*[\s\S]*?\*\//g, "")));
+
+  titre("— w2 : la feuille de style —");
+  const cssW2 = lire("src/app/depot/[token]/depot.css");
+  const sectionW2 = cssW2.slice(cssW2.indexOf("LES PLANCHES 6 À 9 DU 20/10 (lot w2)"));
+  ok("tout est sous `.bj-atelier`, prefixe `ec-dp-`, aucune couleur ecrite hors des jetons (les masques mis a part), pas de dvh",
+    sectionW2.length > 5000 && !/dvh/.test(cssW2.replace(/\/\*[\s\S]*?\*\//g, "")) && !/#[0-9a-f]{3,8}\b/i.test(sectionW2.replace(/mask:[^;]*;/g, ""))
+      && sectionW2.split("\n").filter((l) => /^[.a-z@]/.test(l) && !/^@(media|keyframes)/.test(l) && !/^\s*(from|to)\b/.test(l)).every((l) => l.startsWith(".bj-atelier .ec-dp")));
+}
+
+
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

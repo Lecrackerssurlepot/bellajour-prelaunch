@@ -85,3 +85,27 @@ Photos ; branche `w2-atelier-corbeille-personnes`, rien de commité).
   1024 et 375), fusion et renommage joués contre la fausse base.
 - Reste : l'application de la migration ; « Ignorer » ne se retient pas d'une visite à l'autre (aucun
   stockage côté serveur).
+
+20/10, lot « w2-depot » (le CÔTÉ PARTICIPANT des planches 6 et 8, `/depot/[token]` ; branche
+`w2-depot-participant`, rien de commité).
+- `Depot.tsx` : l'adresse d'abord (planche 6), avec la phrase « Elle sert seulement à te reconnaître
+  sur un autre téléphone ou un autre lien. Nous ne t'écrirons pas pour autre chose. » (vous : « vous
+  reconnaître », « Nous ne vous écrirons pas ») ; dès qu'elle est complète, `presenter` SANS nom
+  (rien n'est écrit pour une adresse inconnue) : connue, « Content de te revoir, Léa » et « Ce n'est
+  pas moi » (8B) ; inconnue, prénom ET nom, « C'est ton prénom que verront les personnes de Bateau 1 ».
+  La personne n'est créée qu'au choix des photos, AVANT le premier envoi.
+- Une personne retrouvée (par son adresse ou par ce téléphone) ne montre que son PRÉNOM, jamais son
+  nom de famille ; le nom complet seulement juste après l'avoir tapé.
+- Le même téléphone qui revient et a déjà accepté le texte du jour s'ouvre sur l'album (8A) :
+  « Content de te revoir, Léa · 24 photos à toi · 7 nouvelles dans l'album depuis ta visite »
+  (repère gardé sur le téléphone, jamais le token) ; sinon la carte le reconnaît et redemande l'accord.
+- « Ce n'est pas toi ? » (`oublier`) : « Ce téléphone n'envoie plus au nom de Léa. Ses photos restent
+  à son nom. » et le formulaire vide (8C).
+- Sans la migration 20261023 (la page le sait sans écrire : `quiEstCeTelephone`, `lecture.ts` ; ou
+  un 503 à la présentation) : la formule d'avant, prénom et nom figés sur ce téléphone, sans
+  adresse. Le nom gardé dans le navigateur est désormais PROPRE au lien (clé par empreinte).
+- Harnais : section « w2 » de `scripts/verif-collectif.ts` (`verifDepotParticipant`). Vu à l'écran
+  (Chrome headless, 375 × 812 et 1440 × 900, jour et nuit) sur un faux Supabase local et un faux
+  coffre, écritures du navigateur limitées au serveur local.
+- Reste : l'application de la migration par Mathias, puis vérifier que la personne ARRIVE
+  (`collectif_participants`, `participant_id` sur les photos).

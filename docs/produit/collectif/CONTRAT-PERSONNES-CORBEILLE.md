@@ -155,17 +155,16 @@ en clair au journal.
   - lien de contribution : « Les personnes de « {nom du lien} » verront aussi les photos que
     j'envoie ici. » (validée par Mathias) ;
   - lien général : « Les personnes qui envoient leurs photos par ce lien verront aussi celles que
-    j'envoie ici. » (**proposée par ce lot, à relire par Mathias : texte légal**).
+    j'envoie ici. » (validée par Mathias le 20/10).
 - `texteAccord(version, { evenement, deOrganisation, lien })` rend le texte exact à afficher.
 - Le serveur n'accepte qu'une version **connue et pas plus récente que `VERSION_ACCORD`**
-  (`versionAcceptee`, C5) : aujourd'hui `2026-10-17` seule. `2026-10-20` sera acceptée le jour où
-  `VERSION_ACCORD` passera à `2026-10-20`, c'est-à-dire le jour où la page affichera la phrase.
+  (`versionAcceptee`, C5) : `2026-10-17` et, depuis la bascule du lot w2 (20/10), `2026-10-20`,
+  le jour où la page affiche la phrase.
   Sans cela, un script ou un vieil onglet entrait dans l'album des autres sans l'avoir lue.
-- ⚠️ `VERSION_ACCORD` (ce que `Depot.tsx` envoie) **reste `2026-10-17`** : il ne passe à
-  `2026-10-20` que le jour où la page AFFICHE la phrase (sinon on enregistrerait un accord que
-  personne n'a lu). La seconde vague le bascule, et met à jour les deux vérifications du harnais
-  qui comparent le texte affiché à `VERSION_ACCORD` (« le texte AFFICHÉ est mot pour mot… » et
-  « la version courante est le jour du choix de Mathias »).
+- `VERSION_ACCORD` (ce que `Depot.tsx` envoie) **vaut `2026-10-20` depuis le lot w2 (20/10)** :
+  la page AFFICHE la phrase (`texteAccord(VERSION_ACCORD, …)`, jamais écrite dans le composant),
+  bascule approuvée par Mathias avec les deux phrases. Les deux vérifications du harnais qui
+  comparent le texte affiché à `VERSION_ACCORD` ont suivi.
 
 ### Les droits (`droits.ts`)
 
@@ -473,6 +472,11 @@ de test (une ligne `objets_a_effacer` puis `objets_effaces` qui nomme les mêmes
    dans `select("*")`) et `participantDeLAppareil` directement ; ⚠️ elle n'en montre que
    `vuePersonneConnue(…)` (le prénom), jamais `nom` : le téléphone peut parler pour une adresse
    tapée par quelqu'un d'autre (S1). Un 429 `trop_de_demandes` se dit et se réessaie plus tard.
+   **Fait le 20/10 (lot w2-depot)** : `Depot.tsx` (se présenter, l'accord par `texteAccord`),
+   `Album.tsx` (l'album, « Mes photos », supprimer), `Etats.tsx` (9B, 9C), `LienMort.tsx` (9A),
+   `appels.ts`, `depotParticipant.ts` (pur), le moteur (`auCoffre`, `apercus`, 409
+   `depot_pas_ouvert`, plus aucune adresse envoyée) ; `VERSION_ACCORD` basculé à `2026-10-20`.
+   Voir T-198 et T-199.
 2. Page Photos du responsable : la corbeille (planche 5), agrandir et agir (planche 3 : `marquer`
    avec `photoIds`, `corbeille` `supprimer` puis « Annuler » = `restaurer`), une personne
    (planche 4 : `personnes`), et son `nomPropose` (« Quelqu'un a aussi tapé cette adresse sous

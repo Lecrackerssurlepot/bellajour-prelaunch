@@ -41,6 +41,27 @@
  * - Un statut que le réseau n'explique pas (lien supprimé, lot illisible) ne
  *   se réessaie pas à l'infini en disant « connexion interrompue ».
  * ══════════════════════════════════════════════════════════════════════════
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * LES PLANCHES DU 20/10 (lot w2, page du participant ; tout est FACULTATIF :
+ * le dépôt du responsable, qui ne passe aucun de ces réglages, ne change pas)
+ *
+ * - Aucune adresse ne part avec les photos : la personne d'une photo est celle
+ *   que CE téléphone représente (`depot/participant`, que la page appelle
+ *   TOUJOURS d'abord) ; `presign` ignore `email` depuis le durcissement du 20/10.
+ * - 409 `depot_pas_ouvert` refuse le lot avec la phrase du serveur (comme
+ *   `accord_requis`), jamais une coupure ; une photo
+ *   `corbeille: true` est « déjà là » (elle ne repart pas, ni ne ressuscite).
+ * - La progression PAR ARRIVÉE (planche 7B) : `auCoffre` compte les photos que
+ *   le coffre a reçues sans attendre la confirmation groupée (15 s) ; avant,
+ *   l'écran disait « 0 photo reçue · 18 en cours » avec 7 photos au coffre.
+ * - `apercus` (Configuration) : les N dernières photos gardent leur vignette
+ *   de 320 px (quelques Ko) et leur avancement, pour « Mes photos » pendant
+ *   l'envoi (l'anneau, puis la coche). Borné : au-delà de N, la plus ancienne
+ *   est libérée. 0 par défaut : rien n'est gardé.
+ * - `place` : ce que le serveur a dit de la place restante à la dernière
+ *   déclaration (« tu peux encore en envoyer 18 »).
+ * ══════════════════════════════════════════════════════════════════════════
  */
 
 import { reduire } from "@/app/(atelier)/composer/depot/pool";
@@ -50,6 +71,7 @@ import { estVideo, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION } from "@
 import { lienMort } from "@/lib/collectif/liens";
 import { cleDuFichier } from "@/lib/collectif/cleDepot";
 import { ERREUR_ACCORD } from "@/lib/collectif/accord";
+import { ERREUR_PAS_OUVERT } from "@/lib/collectif/ouverture";
 
 /** Combien de photos réduites EN MÉMOIRE, au plus (une charge réduite pèse plusieurs Mo). */
 const FENETRE = 8;
@@ -79,6 +101,10 @@ const DELAI_REQUETE_MS = 30_000;
 const DELAI_CONFIRMATION_MS = 60_000;
 /** Une photo arrivée au coffre attend au plus ce délai d'être confirmée avec d'autres. */
 const ATTENTE_CONFIRMATION_MS = 15_000;
+/** L'avancement d'un envoi ne republie la vue qu'à ce rythme (un anneau, pas un film). */
+const RYTHME_PROGRES_MS = 250;
+/** Le refus d'un lot que le serveur explique par une phrase (409) : aucun réseau n'y changera rien. */
+const REFUS_EXPLIQUES: readonly string[] = [ERREUR_PAS_OUVERT];
 
 type Etat = "neuf" | "attente" | "reduction" | "pret" | "declare" | "envoi" | "envoye" | "confirme" | "deja" | "refuse" | "erreur";
 const FINIS: readonly Etat[] = ["confirme", "deja", "refuse", "erreur"];
@@ -112,6 +138,24 @@ type Item = {
   /** La version du texte d'accord cochée AU MOMENT de l'ajout (T-184) ;
       `null` pour le responsable, qui ne coche rien. */
   accord: string | null;
+  /** L'avancement de l'envoi de l'original, de 0 à 1 (l'anneau de « Mes photos »). */
+  progres: number;
+  /** La vignette gardée pour l'écran (`apercus`), une adresse `blob:` ; `null` sinon. */
+  apercu: string | null;
+};
+
+/** Une photo de l'envoi en cours, telle que « Mes photos » la montre (planche 7B). */
+export type ApercuEnvoi = {
+  n: number;
+  /** `attente` : pas encore partie ; `envoi` : en route (l'anneau) ; `arrivee` : au coffre ou confirmée (la coche) ;
+      `deja` : le serveur l'avait déjà (elle ne repart pas : la liste du serveur la montre si elle est à moi). */
+  etat: "attente" | "envoi" | "arrivee" | "deja" | "refusee" | "erreur";
+  progres: number;
+  apercu: string | null;
+  /** L'id de la photo au serveur, dès qu'il est connu (pour ne pas la montrer deux fois). */
+  photoId: string | null;
+  /** La raison d'un refus ou d'une erreur (la phrase du serveur), `null` sinon. */
+  raison: string | null;
 };
 
 export type Vue = {
@@ -136,6 +180,12 @@ export type Vue = {
   premiereVideo: string | null;
   /** Les fichiers choisis une seconde fois pendant CET envoi : sautés, et dits (retours du 14/10, point 8). */
   dejaAjoutes: number;
+  /** Les photos que le coffre a REÇUES, pas encore confirmées (elles sont aussi dans `enCours`) : la barre avance à l'arrivée. */
+  auCoffre: number;
+  /** La place restante dite par le serveur à la dernière déclaration : un nombre, `null` sans limite, `undefined` pas encore dite. */
+  place?: number | null;
+  /** Quand `place` a été dite (Date.now), pour la comparer à une autre source. */
+  placeLe?: number;
 };
 
 export type Configuration = {
@@ -144,6 +194,8 @@ export type Configuration = {
   p?: string | null;
   /** Tutoyer (une école) : seulement pour les phrases que le moteur écrit lui-même. */
   tu?: boolean;
+  /** Combien de photos gardent leur vignette pour l'écran pendant l'envoi (`apercus()`) ; 0 ou absent : aucune. */
+  apercus?: number;
 };
 
 export type Provenance = { type: string; libelle: string };
@@ -270,6 +322,10 @@ export class MoteurDepot {
   private deposant: string | null = null;
   private provenance: Provenance | null = null;
   private accord: string | null = null;
+  private place: number | null | undefined = undefined;
+  private placeLe = 0;
+  private progresProgramme = false;
+  private cacheApercus: { version: number; liste: ApercuEnvoi[] } | null = null;
 
   constructor(private readonly cfg: Configuration) {
     this.sel = typeof window === "undefined" ? "serveur" : selDeLAppareil();
@@ -318,11 +374,22 @@ export class MoteurDepot {
     for (const fn of this.abonnes) fn();
   }
 
+  /** L'avancement d'un envoi : une republication au plus tous les `RYTHME_PROGRES_MS`. */
+  private notifierBientot(): void {
+    if (this.progresProgramme) return;
+    this.progresProgramme = true;
+    setTimeout(() => {
+      this.progresProgramme = false;
+      if (!this.detruit) this.notifier();
+    }, RYTHME_PROGRES_MS);
+  }
+
   vue = (): Vue => {
     if (this.cache?.version === this.version) return this.cache.vue;
-    let arrivees = 0, dejaLa = 0, enCours = 0, refusees = 0, erreurs = 0;
+    let arrivees = 0, dejaLa = 0, enCours = 0, refusees = 0, erreurs = 0, auCoffre = 0;
     const raisons = new Set<string>();
     for (const it of this.items) {
+      if (it.etat === "envoye") auCoffre++;
       if (it.etat === "confirme") arrivees++;
       else if (it.etat === "deja") dejaLa++;
       else if (it.etat === "refuse") {
@@ -348,9 +415,41 @@ export class MoteurDepot {
       videos: this.videos,
       premiereVideo: this.premiereVideo,
       dejaAjoutes: this.dejaAjoutes,
+      auCoffre,
+      place: this.place,
+      placeLe: this.placeLe,
     };
     this.cache = { version: this.version, vue };
     return vue;
+  };
+
+  /**
+   * Les photos de l'envoi gardées pour l'écran (`apercus` de la configuration),
+   * la plus récente d'abord. Mise en cache par version, comme `vue` : la même
+   * liste tant que rien ne bouge (useSyncExternalStore).
+   */
+  apercus = (): ApercuEnvoi[] => {
+    if (this.cacheApercus?.version === this.version) return this.cacheApercus.liste;
+    const max = this.cfg.apercus ?? 0;
+    const liste: ApercuEnvoi[] = [];
+    for (let i = this.items.length - 1; i >= 0 && liste.length < max; i--) {
+      const it = this.items[i];
+      const etat: ApercuEnvoi["etat"] =
+        it.etat === "envoye" || it.etat === "confirme"
+          ? "arrivee"
+          : it.etat === "deja"
+            ? "deja"
+            : it.etat === "refuse"
+            ? "refusee"
+            : it.etat === "erreur"
+              ? "erreur"
+              : it.etat === "envoi"
+                ? "envoi"
+                : "attente";
+      liste.push({ n: it.n, etat, progres: it.progres, apercu: it.apercu, photoId: it.photoId, raison: it.raison });
+    }
+    this.cacheApercus = { version: this.version, liste };
+    return liste;
   };
 
   /** Y a-t-il un envoi en cours (pour l'avertissement de fermeture de page) ? */
@@ -368,6 +467,26 @@ export class MoteurDepot {
     }
     void this.veille?.release().catch(() => {});
     this.veille = null;
+    for (const it of this.items) this.libererApercu(it);
+  }
+
+  private libererApercu(it: Item): void {
+    if (!it.apercu) return;
+    try {
+      URL.revokeObjectURL(it.apercu);
+    } catch {
+      /* déjà libérée */
+    }
+    it.apercu = null;
+  }
+
+  /** Garder la vignette d'une photo pour l'écran, et libérer celles qui sortent des `apercus` dernières. */
+  private garderApercu(it: Item, vignette: Blob | null): void {
+    const max = this.cfg.apercus ?? 0;
+    if (!max || !vignette || it.apercu || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return;
+    it.apercu = URL.createObjectURL(vignette);
+    const dernier = this.items.length ? this.items[this.items.length - 1].n : it.n;
+    for (const autre of this.items) if (autre.apercu && autre.n <= dernier - max) this.libererApercu(autre);
   }
 
   /* ───────────────────────────── le réseau, l'écran ───────────────────────────── */
@@ -471,6 +590,8 @@ export class MoteurDepot {
         signeLe: 0,
         envoyeLe: 0,
         raison: null,
+        progres: 0,
+        apercu: null,
         deposant: this.deposant,
         provenance: this.provenance,
         accord: this.accord,
@@ -483,6 +604,7 @@ export class MoteurDepot {
 
   private remettre(it: Item): void {
     it.etat = "attente";
+    it.progres = 0;
     it.essais = 0;
     it.essaisReseau = 0;
     it.raison = null;
@@ -527,6 +649,13 @@ export class MoteurDepot {
         token: this.cfg.token,
         connues: lot.map((i) => i.cle),
       });
+      if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {
+        /* Pas encore ouvert (planche 9B) : le lot est refusé avec la phrase du serveur, le
+           dépôt n'est pas « fermé » pour autant (il ouvrira). */
+        const raison = typeof json.message === "string" ? json.message : "Le dépôt n'est pas encore ouvert.";
+        for (const it of lot) this.finir(it, "refuse", raison);
+        return;
+      }
       if (status === 409) {
         this.fermer(typeof json.message === "string" ? json.message : this.v("Le dépôt est fermé.", "Le dépôt est fermé."));
         return;
@@ -573,6 +702,7 @@ export class MoteurDepot {
              vignette vient de libheif (T-150), l'original part tel quel. Sans elle,
              ni aperçu ni empreinte, donc aucun doublon repéré. */
           it.vignette = r.vignette ?? (estHeic(it.mime) ? await vignetteHeic(it.fichier) : null);
+          this.garderApercu(it, it.vignette);
           /* Le type suit ce qui part VRAIMENT : une charge réduite est du JPEG. */
           it.typeEnvoye = r.charge?.type || it.mime;
         })
@@ -633,6 +763,13 @@ export class MoteurDepot {
         this.fermer(typeof json.message === "string" ? json.message : "Le dépôt est fermé.");
         return;
       }
+      if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {
+        /* Pas encore ouvert : le lot ne part pas, et l'écran dit pourquoi avec la phrase du
+           serveur (jamais « Connexion interrompue »). */
+        const raison = typeof json.message === "string" ? json.message : "Refusée par le serveur.";
+        for (const it of lot) this.finir(it, "refuse", raison);
+        return;
+      }
       if (status === 409) {
         await attendre(1_000);
         return;
@@ -668,6 +805,9 @@ export class MoteurDepot {
         if (!r) {
           this.finir(it, "refuse", "Fichier refusé (format ou taille).");
         } else if (r.deja || r.double) {
+          /* `corbeille: true` (20261023) : supprimée, elle reste « déjà là » ; seuls le
+             responsable et l'atelier la restaurent. */
+          if (typeof r.photoId === "string") it.photoId = r.photoId;
           this.finir(it, "deja", null);
         } else if (typeof r.erreur === "string") {
           const raison = typeof r.message === "string" ? r.message : "Refusée.";
@@ -680,6 +820,10 @@ export class MoteurDepot {
           it.signeLe = Date.now();
           it.etat = "declare";
         }
+      }
+      if (typeof json.place === "number" || json.place === null) {
+        this.place = json.place as number | null;
+        this.placeLe = Date.now();
       }
       /* Plus aucune place : les photos suivantes du même lot ne se préparent ni ne
          se déclarent pour rien (500 photos choisies à plafond 30 faisaient 494
@@ -701,7 +845,7 @@ export class MoteurDepot {
     }
   }
 
-  private put(url: string, corps: Blob, type: string): Promise<ResultatPut> {
+  private put(url: string, corps: Blob, type: string, avancer?: (part: number) => void): Promise<ResultatPut> {
     return new Promise((resolve) => {
       const xhr = new XMLHttpRequest();
       let dernier = Date.now();
@@ -714,8 +858,9 @@ export class MoteurDepot {
         tic = maintenant;
         if (maintenant - dernier > SANS_PROGRES_MS) xhr.abort();
       }, 10_000);
-      xhr.upload.onprogress = () => {
+      xhr.upload.onprogress = (e) => {
         dernier = Date.now();
+        if (avancer && e.lengthComputable && e.total > 0) avancer(Math.min(1, e.loaded / e.total));
       };
       xhr.onload = () => {
         clearInterval(garde);
@@ -739,7 +884,18 @@ export class MoteurDepot {
     it.etat = "envoi";
     this.voies++;
     try {
-      const r = await this.put(it.url!, it.charge ?? it.fichier, it.typeEnvoye);
+      it.progres = 0;
+      const r = await this.put(
+        it.url!,
+        it.charge ?? it.fichier,
+        it.typeEnvoye,
+        this.cfg.apercus
+          ? (part) => {
+              it.progres = part;
+              this.notifierBientot();
+            }
+          : undefined
+      );
       if (!r.ok) {
         if (r.status > 0) {
           /* Le coffre a RÉPONDU non (URL périmée, signature refusée) : un vrai essai. */
@@ -777,6 +933,7 @@ export class MoteurDepot {
       }
       it.charge = null;
       it.vignette = null;
+      it.progres = 1;
       it.etat = "envoye";
       it.envoyeLe = Date.now();
     } finally {
