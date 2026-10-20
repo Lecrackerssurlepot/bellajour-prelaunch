@@ -29,7 +29,6 @@ import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { comparerLiens, deposantsParLien, nomsDesLiens, type LienDepose } from "@/lib/collectif/grille";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
-import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
 import { calculerSurLignes, doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";

@@ -18,7 +18,7 @@ import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
 import { lireTailles, srcSetDe } from "@/lib/collectif/styles";
-import { arbreDesPhotos, compterPersonnes, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
+import { arbreDesPhotos, compterPersonnes, plafondDuLien } from "@/lib/collectif/dossiers";
 import { COLONNES_RESUME, couvertureDe, enLignesPesees, resumeAbsent, resumerPhotos, somme, VUE_RESUME, type LigneResume } from "@/lib/collectif/resumePhotos";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
