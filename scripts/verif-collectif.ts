@@ -1124,10 +1124,14 @@ titre("— T-172 : une image de style a ses tailles de 600 et 1 200 px, servies 
      ecrans.every(([f, n]) => { const l = imagesDe(f).filter((x) => /srcSet=/.test(x)); return l.length === n && l.every((x) => /sizes=\{[^}]*TAILLES_AFFICHAGE\./.test(x)); }));
   ok("la vitrine (choix du style ferme en production) ne change pas : aucune taille du mur, aucune signature",
      !/TAILLES_AFFICHAGE|srcSetDe|tailles/.test(lire("src/app/edition/[token]/style/Vitrine.tsx")));
+  /* Depuis le lot a4 (T-168), la grille se compose dans grillePhotos.ts ; la route lui passe DEUX signatures. */
   const photos176 = lire("src/app/api/collectif/photos/route.ts");
+  const grille176 = lire("src/lib/collectif/grillePhotos.ts");
   ok("T-176 : la grille et les couvertures de dossiers signent leurs VIGNETTES a adresse stable ; l'original de repli reste signe comme avant",
-     /if \(p\.vignette_key\) vignette = await signerLectureVignette\(p\.vignette_key\)/.test(photos176) && /else if \(p\.mime !== "image\/heic" && p\.mime !== "image\/heif"\) vignette = await signerGet\(p\.r2_key\)/.test(photos176)
-     && !/signerLectureVignette\(p\.r2_key\)/.test(photos176));
+     /signer: \(cle\) => signerLectureVignette\(cle\), signerOriginal: \(cle\) => signerGet\(cle\)/.test(photos176)
+     && /if \(p\.vignette_key\) vignette = await c\.signer\(p\.vignette_key\)/.test(grille176)
+     && /else if \(p\.mime !== "image\/heic" && p\.mime !== "image\/heif"\) vignette = await c\.signerOriginal\(p\.r2_key\)/.test(grille176)
+     && !/c\.signer\(p\.r2_key\)/.test(grille176));
   const script = lire("scripts/collectif-styles-vignettes.ts");
   ok("le rattrapage : lecture seule sans --vraiment (rien au coffre, rien en base), ecrit seulement si la ligne n'a pas bouge, journalise",
      /if \(!vraiment\) \{[\s\S]*?return \{ quoi: "faite"/.test(script) && script.indexOf("if (!vraiment) {") < script.indexOf("await ecrireTailles(")
@@ -2118,14 +2122,18 @@ titre("— retours de Mathias du 14/10 —");
 
   /* 9 et 10 : « Qui a déposé » et les liens au même endroit (l'arbre lui-même : bloc T-152). */
   const route = lire("src/app/api/collectif/photos/route.ts");
-  ok("route photos : les liens ne sortent que pour qui peut en creer",
-    /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /const liens = partage \? provenances : \[\]/.test(route) && /liens: partage\s*\?/.test(route) && /arbreDesPhotos\(toutes, liens, edition, partage\)/.test(route));
+  /* T-168 : la route lit, `grillePhotos.ts` compose (la lecture complete d'avant ET le resume en base). */
+  const grille168 = lire("src/lib/collectif/grillePhotos.ts");
+  ok("route photos : les liens ne sortent que pour qui peut en creer (les deux lectures)",
+    /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /provenances, partage, enCours/.test(route)
+      && (grille168.match(/const liens = partage \? provenances : \[\]/g) ?? []).length === 2 && (grille168.match(/liens: partage\s*\?/g) ?? []).length === 2
+      && /arbreDesPhotos\(toutes, liens, edition, partage\)/.test(grille168) && /arbreDesPhotos\(pesees, liens, edition, partage\)/.test(grille168));
   ok("Photos : les liens vivent dans l'onglet « Les liens » (un « Partager », un menu), plus de « Copier le lien » eparpilles",
     !/Copier le lien participants/.test(collecte) && /Les liens · /.test(collecte) && /Partager/.test(collecte) && /Changer le nombre de photos/.test(collecte) && /Supprimer le lien/.test(collecte) && !/Copier le lien</.test(collecte));
   ok("Photos : collecte close, ni « Déposer », ni « Créer un lien », ni « Partager » (la selection reste)",
     /envoi\.ouvrir && p\.ouverte/.test(collecte) && /onglet === "liens" && p\.ouverte/.test(collecte) && /c\.ouverte \?/.test(collecte) && /collecteOuverte\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(lire("src/app/edition/[token]/photos/page.tsx")));
-  ok("tableau de bord : ses dossiers sont le meme arbre que la page Photos, chaque ligne y mene",
-    /arbreDesPhotos\(lignes, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /\?dossier=\$\{encodeURIComponent\(d\.cle\)\}/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
+  ok("tableau de bord : ses dossiers sont le meme arbre que la page Photos (sur le resume, T-168), chaque ligne y mene",
+    /arbreDesPhotos\(pesees, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /const pesees = enLignesPesees\(groupes\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /\?dossier=\$\{encodeURIComponent\(d\.cle\)\}/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
 
   /* 5 : le message de partage, écrit pour ce groupe et cet événement. */
   const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", url: "https://bellajour.fr/depot/x?p=y", plafond: "30 photos par personne", cloture: "28 octobre", tu: false };
@@ -2268,8 +2276,11 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
     /planDeplacement\(source, dans, arbre\)/.test(route) && /nouveauChemin\(cheminDe\(l, edition\.responsable_nom\)\.chemin, avant, apres\)/.test(route) && /for \(const paquet of enPaquets\(ids\)\)/.test(route) && /\.eq\("edition_id", edition\.id\)\s*\.in\("id", paquet\)/.test(route) && /"dossier_range"/.test(route));
   ok("le depot du responsable accepte un chemin de sous-dossier (170 caracteres)", /demande\.libelle\.trim\(\)\.slice\(0, 170\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
   const photos = lire("src/app/api/collectif/photos/route.ts");
-  ok("route photos : la grille filtre par dansLeDossier, « en cours d'arrivee » = declarees non confirmees depuis 2 h",
-    /dansLeDossier\(p, dossier, responsable\)/.test(photos) && /\.is\("confirmee_le", null\)\.gt\("created_at", depuis\)/.test(photos) && /seulementArbre === true/.test(photos));
+  const grilleFiltre = lire("src/lib/collectif/grillePhotos.ts");
+  ok("route photos : la grille filtre par dansLeDossier (le repli en memoire, le plan en base qui le redit), « en cours d'arrivee » = declarees non confirmees depuis 2 h",
+    /dansLeDossier\(p, dossier, responsable\)/.test(grilleFiltre) && /planDuDossier\(dossier, groupes, responsable\)/.test(grilleFiltre) && /dansLeDossierResume\(groupes, dossier, responsable\)/.test(grilleFiltre)
+      && /const lignes = groupes\.filter\(\(g\) => dansLeDossier\(g, cle, responsable\)\);/.test(lire("src/lib/collectif/resumePhotos.ts"))
+      && /\.is\("confirmee_le", null\)\.gt\("created_at", depuis\)/.test(photos) && /seulementArbre: corps\.seulementArbre === true/.test(grilleFiltre));
   ok("selectionner tout un dossier : la meme regle que la grille, jamais une photo signalee",
     /dansLeDossier\(l, dossier, responsable\)/.test(lire("src/app/api/collectif/photos/marquer/route.ts")) && /!preselection \|\| !l\.signalee/.test(lire("src/app/api/collectif/photos/marquer/route.ts")));
 
@@ -2350,10 +2361,11 @@ titre("— 15/10 : la page Photos sans grande colonne (rayons, albums, fil d'Ari
   ok("rayons : chaque cle trouve son onglet", D.rayonDe("tout") === "tout" && D.rayonDe("resp:organisateur:La soirée") === "vous" && D.rayonDe("pers:general:Léa") === "liens" && D.rayonDe("lien:0b1f3c2e-4a5b-4c6d-8e9f-001122334455") === "liens" && D.rayonDe("participants") === "liens" && D.rayonDe("atelier") === "atelier" && D.rayonDe("selection") === "selection");
   const r = (provenance_id: string | null, role_deposant: string): Dossiers.LignePhoto => ({ provenance_id, provenance_type: "organisateur", role_deposant, deposant: null });
   ok("vues d'ensemble : « vous » = les photos du responsable, « liens » = celles des participants", D.dansLeDossier(r(null, "responsable"), "vous", "C") && !D.dansLeDossier(r(null, "participant"), "vous", "C") && D.dansLeDossier(r(null, "participant"), "liens", "C") && D.dansLeDossier(r("x", "participant"), "liens", "C") && !D.dansLeDossier(r(null, "atelier"), "liens", "C"));
-  const route = lire("src/app/api/collectif/photos/route.ts");
-  ok("route photos : une vue d'ensemble ne signe aucune PAGE de grille (les huit dernieres arrivees seulement), une couverture par dossier ou lien",
-    /const sansGrille = corps\.seulementArbre === true \|\| estVueEnsemble\(dossier\)/.test(route) && /suivante: !sansGrille &&/.test(route) && /couvertures\[n\.cle\] = await signerLectureVignette\(p\.vignette_key\)/.test(route)
-    && /const ARRIVEES = 8;/.test(route) && /sansGrille \? dansDossier\.slice\(-ARRIVEES\)\.reverse\(\)/.test(route));
+  const route = lire("src/lib/collectif/grillePhotos.ts");
+  ok("route photos : une vue d'ensemble ne signe aucune PAGE de grille (les huit dernieres arrivees seulement, en memoire ou lues en base), une couverture par dossier ou lien",
+    (route.match(/const sansGrille = d\.seulementArbre \|\| estVueEnsemble\(dossier\)/g) ?? []).length === 2 && (route.match(/suivante: !sansGrille &&/g) ?? []).length === 2
+    && /couvertures\[n\.cle\] = await c\.signer\(p\.vignette_key\)/.test(route) && /couvertures\[n\.cle\] = await c\.signer\(cle\)/.test(route)
+    && /const ARRIVEES = 8;/.test(route) && /sansGrille \? dansDossier\.slice\(-ARRIVEES\)\.reverse\(\)/.test(route) && /lecture\.page\(conditions, TRI_TOUTES, 0, ARRIVEES - 1\)/.test(route));
   const page = lire("src/app/edition/[token]/photos/Collecte.tsx");
   ok("Photos : dossiers et liens en vignettes, sous-dossiers en petites vignettes, personnes d'un lien en pastilles, fil d'Ariane",
     /className="ec-ph-albums"/.test(page) && /ec-ph-albums--petits/.test(page) && /className="ec-ph-personnes"/.test(page) && /className="ec-ph-fil"/.test(page) && existsSync(resolve(RACINE, "archive/photos-colonne-2026-10/README.md")));
@@ -2419,7 +2431,8 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     ok("tableau de bord : l'encart Style dit « Fait » quand tout est valide, l'eventail Lisbonne / Aussie / Côte d'Azur (couvertures de Bellajour, jamais celles d'essai), une tuile par magazine et « Modifier »",
       /className="ec-tdb-fait"/.test(tdb) && /\{ nom: 'lisbonne', place: 'gauche' \},\s*\{ nom: 'aussie', place: 'droite' \},\s*\{ nom: 'cote-azur', place: 'centre' \},/.test(tdb) && /\/images\/v2\/accueil\/couverture-\$\{c\.nom\}-360\.webp/.test(tdb) && !/styleCouverture|tableau\.eventail/.test(tdb) && /className=\{reste \? 'ec-tdb-tuile ec-tdb-tuile--a-faire' : 'ec-tdb-tuile'\}/.test(tdb) && /\{ecrire \? 'Modifier' : 'Voir'\}/.test(tdb));
     ok("tableau de bord : une vignette par dossier et son nombre, plus de point ni de fleche",
-      /className="ec-tdb-dossier-couv"/.test(carte) && !/ec-tdb-chevron|ec-tdb-point/.test(carte) && /dansLeDossier\(x, d\.cle, edition\.responsable_nom\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+      /className="ec-tdb-dossier-couv"/.test(carte) && !/ec-tdb-chevron|ec-tdb-point/.test(carte) && /couvertureDe\(groupes, d\.cle, edition\.responsable_nom\)/.test(lire("src/app/edition/[token]/donnees.ts"))
+        && /dansLeDossier\(g, cle, responsable\)/.test(lire("src/lib/collectif/resumePhotos.ts")));
     const fen = lire("src/app/edition/_composants/Fenetre.tsx");
     ok("fenetres : toujours ouvertes dans la colonne de contenu (portail), jamais prisonnieres d'un panneau de verre",
       /document\.querySelector\("\.ec-contenu"\)/.test(fen) && /createPortal\(fenetre, hote\)/.test(fen) && /useSyncExternalStore\(rien, \(\) => true, \(\) => false\)/.test(fen));
@@ -2445,8 +2458,9 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
   ok("fiche en cartes : les gestes dans un menu de l'en-tete, les trois liens et leur regeneration dans « Réglages et liens »",
     /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\} \/>/.test(fiche));
   const donneesFiche = lire("src/app/admin/collectif/donnees.ts");
-  ok("fiche en cartes : les doublons se comptent par la MEME regle que la page Photos du client, quatre apercus signes au plus",
-    /doublons: groupesDoublonsRapides\(/.test(donneesFiche) && /\.slice\(0, 4\)[\s\S]{0,60}signerOuRien\(p\.vignette_key\)/.test(donneesFiche));
+  ok("fiche en cartes : les doublons sont le MEME resultat range que lit la page Photos du client (T-170), quatre apercus signes au plus",
+    /doublons: \(\(await doublonsDeLEdition\(supabase, id, lignesPhotos\)\)\?\.groupes \?\? calculerSurLignes\(lignesPhotos\)\.groupes\)/.test(donneesFiche) && !/groupesDoublonsRapides\(/.test(donneesFiche)
+      && /doublonsDeLEdition\(supabase, edition\.id\)/.test(lire("src/app/api/collectif/photos/route.ts")) && /\.slice\(0, 4\)[\s\S]{0,60}signerOuRien\(p\.vignette_key\)/.test(donneesFiche));
 }
 
 titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
@@ -2674,10 +2688,11 @@ titre("— T-180 / T-181 : chaque personne nommée, les photos qui arrivent en d
   const depot = lire("src/app/depot/[token]/Depot.tsx");
   ok("le participant retrouve son prenom sur son telephone (lu sans setState d'hydratation) et il part avec les photos",
     /useSyncExternalStore\(/.test(depot) && /moteur\.definirDeposant\(nomEnvoye\);\s*if \(e\.target\.files\) moteur\.ajouter/.test(depot));
-  const photos = lire("src/app/api/collectif/photos/route.ts");
-  ok("la grille : « Toutes » commence par la derniere arrivee ; chaque photo dit qui et quand ; « N personnes » suit la meme regle que les pastilles",
-    /vue === "toutes" \? \[\.\.\.dansDossier\]\.reverse\(\)/.test(photos) && /qui: role === "participant"/.test(photos) && /arrivee: p\.confirmee_le/.test(photos) && /personnes: compterPersonnes\(toutes\)/.test(photos)
-      && /participants: compterPersonnes\(lignes\)/.test(lire("src/app/edition/[token]/donnees.ts")));
+  const photos = lire("src/lib/collectif/grillePhotos.ts");
+  ok("la grille : « Toutes » commence par la derniere arrivee (en memoire, ou triee par la base) ; chaque photo dit qui et quand ; « N personnes » suit la meme regle que les pastilles",
+    /vue === "toutes" \? \[\.\.\.dansDossier\]\.reverse\(\)/.test(photos) && /vue === "toutes" \? TRI_TOUTES : TRI_JOUR/.test(photos) && /qui: role === "participant"/.test(photos) && /arrivee: p\.confirmee_le/.test(photos)
+      && /personnes: compterPersonnes\(toutes\)/.test(photos) && /personnes: compterPersonnes\(groupes\)/.test(photos)
+      && /participants: compterPersonnes\(groupes\)/.test(lire("src/app/edition/[token]/donnees.ts")));
 }
 
 titre("— T-182 / D25 : le responsable termine la collecte, l'atelier voit la selection —");
@@ -4531,7 +4546,497 @@ async function sondeT172() {
   ok("des octets illisibles : un refus dit, jamais une exception (l'envoi de la maitresse ne tombe pas)", !casse.ok && typeof casse.raison === "string");
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(() => {
+/* ═══════════ T-169, T-170, T-168 : la relève qui se repose, les doublons rangés, la grille comptée en base ═══════════ */
+async function sondeLotA4() {
+  const M = await import("@/lib/collectif/messages");
+  const Db = await import("@/lib/collectif/doublons");
+  const Ds = await import("@/lib/collectif/doublonsStockes");
+  const R = await import("@/lib/collectif/resumePhotos");
+  const G = await import("@/lib/collectif/grillePhotos");
+  const Dos = await import("@/lib/collectif/dossiers");
+  const { groupesDeDoublons: reference } = await import("@/lib/atelier/empreinte");
+  const { randomUUID } = await import("node:crypto");
+  const { performance } = await import("node:perf_hooks");
+
+  /* Un hasard REPRODUCTIBLE (mulberry32) : un échec se rejoue à l'identique. */
+  let graineA4 = 0x5eed1234;
+  const hasard = () => {
+    graineA4 = (graineA4 + 0x6d2b79f5) | 0;
+    let t = Math.imul(graineA4 ^ (graineA4 >>> 15), 1 | graineA4);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return (t ^ (t >>> 14)) >>> 0;
+  };
+  const parmiA4 = <T>(l: readonly T[]): T => l[hasard() % l.length];
+  const hex16 = () => Array.from({ length: 16 }, () => (hasard() % 16).toString(16)).join("");
+  const voisinA4 = (h: string, nb: number) => {
+    const b = [...h].map((c) => parseInt(c, 16).toString(2).padStart(4, "0")).join("").split("");
+    const vus = new Set<number>();
+    while (vus.size < nb) vus.add(hasard() % 64);
+    for (const i of vus) b[i] = b[i] === "0" ? "1" : "0";
+    return Array.from({ length: 16 }, (_, i) => parseInt(b.slice(i * 4, i * 4 + 4).join(""), 2).toString(16)).join("");
+  };
+  const ecouteA4 = async <T>(f: () => Promise<T> | T): Promise<T> => {
+    const [e, w] = [console.error, console.warn];
+    console.error = () => {};
+    console.warn = () => {};
+    try {
+      return await f();
+    } finally {
+      console.error = e;
+      console.warn = w;
+    }
+  };
+
+  /* ─────────────────────────── T-169 ─────────────────────────── */
+  titre("— T-169 : la messagerie ralentit quand rien ne bouge, repart vite au moindre mouvement —");
+  const I = M.intervalleMessages;
+  ok("les paliers : 3,5 s la premiere minute, 10 s jusqu'a 3 min, 30 s jusqu'a 10 min, puis 60 s",
+    I(0) === 3500 && I(59_999) === 3500 && I(60_000) === 10_000 && I(179_999) === 10_000 && I(180_000) === 30_000 && I(599_999) === 30_000 && I(600_000) === 60_000 && I(86_400_000) === 60_000);
+  ok("jamais plus lent qu'une minute, jamais plus rapide que 3,5 s ; une duree illisible ou negative = le palier rapide",
+    Array.from({ length: 2000 }, (_, k) => I(k * 1000)).every((v, k, t) => v >= 3500 && v <= 60_000 && (k === 0 || v >= t[k - 1])) && I(-5000) === 3500 && I(Number.NaN) === 3500 && I(Number.POSITIVE_INFINITY) === 3500);
+  ok("le premier palier EST l'intervalle d'avant (PRD §7, entre 3 et 4 s)", M.INTERVALLE_MESSAGES_MS === 3500 && M.PALIERS_MESSAGES[0].intervalleMs === M.INTERVALLE_MESSAGES_MS);
+  /* Le modele de la minuterie du hook : apres chaque releve, attendre `intervalleMessages(maintenant - mouvement)` ;
+     un mouvement avance la releve prevue si elle part plus tard que le palier rapide. */
+  const simuler = (dureeMs: number, mouvements: readonly number[]) => {
+    let t = 0;
+    let mouvement = 0;
+    let releves = 0;
+    const file = [...mouvements].sort((a, b) => a - b);
+    let prochaine = I(0);
+    while (true) {
+      const m = file[0];
+      if (m !== undefined && m < prochaine) {
+        file.shift();
+        mouvement = m;
+        if (prochaine - m > M.INTERVALLE_MESSAGES_MS) prochaine = m + I(0);
+        continue;
+      }
+      t = prochaine;
+      if (t > dureeMs) break;
+      releves++;
+      prochaine = t + I(t - mouvement);
+    }
+    return releves;
+  };
+  const avantParHeure = Math.floor(3_600_000 / 3500);
+  const calme = simuler(3_600_000, []);
+  console.log(`      mesure : un onglet ouvert une heure sans rien faire interroge ${calme} fois (avant : ${avantParHeure}) ; huit heures : ${simuler(8 * 3_600_000, [])} (avant : ${Math.floor((8 * 3_600_000) / 3500)})`);
+  ok("une heure ouverte sans rien faire : 93 releves au lieu de 1 028 (dix fois moins)", calme === 93 && avantParHeure === 1028);
+  const frappe = simuler(3_600_000, Array.from({ length: 20 }, (_, k) => 30 * 60_000 + k * 15_000));
+  ok("une frappe a la 30e minute ramene aussitot au palier rapide (plus de releves que l'heure calme, toujours bien moins qu'avant)", frappe > calme && frappe < avantParHeure / 4);
+  {
+    /* Le mouvement a la 30e minute : la releve suivante part au plus 3,5 s apres lui. */
+    let t = 0, mouvement = 0, prochaine = I(0);
+    const instants: number[] = [];
+    let fait = false;
+    while (prochaine <= 3_600_000) {
+      if (!fait && 30 * 60_000 < prochaine) {
+        fait = true;
+        mouvement = 30 * 60_000;
+        if (prochaine - mouvement > 3500) prochaine = mouvement + I(0);
+        continue;
+      }
+      t = prochaine;
+      instants.push(t);
+      prochaine = t + I(t - mouvement);
+    }
+    const apres = instants.find((x) => x > 30 * 60_000);
+    ok("au mouvement, la releve suivante part en 3,5 s au plus (elle etait prevue jusqu'a 60 s plus tard)", apres !== undefined && apres - 30 * 60_000 <= 3500);
+  }
+  const hook = lire("src/app/edition/_composants/useMessagerie.ts");
+  const hookCode = hook.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  ok("le hook : une minuterie `setTimeout` reglee par intervalleMessages, plus de `setInterval`",
+    /setTimeout\(\(\) => \{\s*minuteur = null;\s*void relire\(\);\s*\}, attente\)/.test(hookCode) && /const attente = intervalleMessages\(Date\.now\(\) - mouvement\.current\)/.test(hookCode) && !/setInterval/.test(hookCode));
+  ok("le hook : jamais d'interrogation onglet cache (desarme a la sortie, relit et repart vite au retour)",
+    /if \(!monte \|\| !visible\(\)\) return;/.test(hookCode) && /const auRetour = \(\) => \{\s*desarmer\(\);\s*if \(!visible\(\)\) return;\s*mouvement\.current = Date\.now\(\);\s*void relire\(\);/.test(hookCode) && /addEventListener\("visibilitychange", auRetour\)/.test(hookCode));
+  ok("le hook : la frappe (input, ou qu'elle soit dans la page), un message recu ou envoye sont des mouvements",
+    /addEventListener\("input", bouger, true\)/.test(hookCode) && /removeEventListener\("input", bouger, true\)/.test(hookCode)
+      && /const ajouter = useCallback\(\(nouveaux: Message\[\]\) => \{\s*if \(!nouveaux\.length\) return;[\s\S]*?reveiller\.current\(\);/.test(hookCode));
+  ok("le hook : un mouvement AVANCE la releve, ne la recule jamais ; une seule releve a la fois, une releve ratee n'arrete pas la suivante",
+    /if \(!minuteur \|\| prevueA - Date\.now\(\) > INTERVALLE_MESSAGES_MS\) armer\(\);/.test(hookCode) && /if \(!monte \|\| !visible\(\) \|\| enCours\) return;/.test(hookCode) && /\} catch \{\s*\} finally \{\s*enCours = false;\s*\}\s*armer\(\);/.test(hookCode));
+  ok("la veille de l'atelier reste a la minute (deja au palier le plus lent, elle ne lit qu'un nombre)",
+    /PERIODE_MS = 60_000/.test(lire("src/app/admin/collectif/compteMessages.ts")) && /cette veille-ci reste à la minute/.test(lire("src/app/admin/collectif/VeilleMessages.tsx")));
+
+  /* ─────────────────────────── T-170 ─────────────────────────── */
+  titre("— T-170 : les doublons regroupes par empreinte exacte d'abord, bornes, et RANGES —");
+  type PE = { id: string; empreinte: string | null; priseLe: string | null; ordre: number };
+  let ecarts = 0;
+  for (let lot = 0; lot < 60; lot++) {
+    const n = 20 + (hasard() % 280);
+    const graines = Array.from({ length: 1 + (hasard() % 10) }, hex16);
+    const photosA4: PE[] = [];
+    for (let i = 0; i < n; i++) {
+      const r = hasard() % 10;
+      const e = r === 0 ? null : r < 4 ? parmiA4(graines) : r < 7 ? voisinA4(parmiA4(graines), hasard() % 4) : hex16();
+      photosA4.push({ id: `a4-${lot}-${i}`, empreinte: e, priseLe: hasard() % 4 === 0 ? null : `2026-10-0${1 + (hasard() % 9)}T1${hasard() % 10}:00:00`, ordre: hasard() % 50 });
+    }
+    if (JSON.stringify(Db.groupesDoublonsRapides(photosA4)) !== JSON.stringify(reference(photosA4))) ecarts++;
+  }
+  ok("60 lots de 20 a 300 photos (copies exactes en nombre, voisines a 0-3 bits, groupes dissous) : les MEMES groupes que le B2C", ecarts === 0);
+  {
+    /* Neuf copies exactes (dissous) et deux photos qui s'y rattachent par une voisine : tout est dissous, rien n'est marque. */
+    const e = hex16();
+    const x = voisinA4(e, 2);
+    const chaine: PE[] = [...Array.from({ length: 9 }, (_, i) => ({ id: `c${i}`, empreinte: e, priseLe: null, ordre: i })), { id: "x", empreinte: x, priseLe: null, ordre: 9 }, { id: "y", empreinte: x, priseLe: null, ordre: 10 }];
+    const huit: PE[] = Array.from({ length: 8 }, (_, i) => ({ id: `h${i}`, empreinte: e, priseLe: null, ordre: i }));
+    ok("un petit groupe rattache a un groupe dissous est dissous avec lui ; huit copies exactes restent un groupe",
+      Db.groupesDoublonsRapides(chaine).length === 0 && JSON.stringify(Db.groupesDoublonsRapides(chaine)) === JSON.stringify(reference(chaine))
+        && Db.groupesDoublonsRapides(huit).length === 1 && Db.groupesDoublonsRapides(huit)[0].doublons.length === 7);
+  }
+  const lotMesure = (n: number, identiques: number): PE[] => {
+    const meme = hex16();
+    return Array.from({ length: n }, (_, i) => ({ id: `m${i}`, empreinte: i < identiques ? meme : hex16(), priseLe: null, ordre: i }));
+  };
+  const chrono = (p: readonly PE[]) => {
+    const t0 = performance.now();
+    const r = Db.calculerDoublons(p);
+    return { ms: performance.now() - t0, r };
+  };
+  const m1 = chrono(lotMesure(2000, 0));
+  const m2 = chrono(lotMesure(2000, 400));
+  const m3 = chrono(lotMesure(2000, 1000));
+  console.log(`      mesure (le vrai module) : 2 000 variees ${m1.ms.toFixed(1)} ms ; 400 identiques ${m2.ms.toFixed(1)} ms ; 1 000 identiques ${m3.ms.toFixed(1)} ms (avant, meme machine le 20/10 : 6,9 / 1 785 / 24 146 ms ; audit du 19/10 : 4,6 / 1 072 / 16 229 ms)`);
+  ok("les trois cas de l'audit passent sous 500 ms (avant : jusqu'a 24 s)", m1.ms < 500 && m2.ms < 500 && m3.ms < 500 && m1.r.complet && m2.r.complet && m3.r.complet);
+  ok("mille copies exactes ne coutent aucune comparaison (un seul noeud), et forment un groupe dissous", m3.r.comparaisons === 0 && m3.r.groupes.length === 0);
+  {
+    const tete = hex16().slice(0, 6);
+    const pire: PE[] = Array.from({ length: 6400 }, (_, i) => ({ id: `q${i}`, empreinte: tete + hex16().slice(6), priseLe: null, ordre: i }));
+    const t0 = performance.now();
+    const r = Db.calculerDoublons(pire);
+    console.log(`      mesure : 6 400 empreintes distinctes dans le meme tiroir, ${(performance.now() - t0).toFixed(0)} ms, ${r.comparaisons} comparaisons, complet=${String(r.complet)}`);
+    ok("la borne : au-dela de COMPARAISONS_MAX, AUCUN groupe et `complet: false` (pas de remarque plutot qu'une fausse)",
+      !r.complet && r.groupes.length === 0 && r.comparaisons === Db.COMPARAISONS_MAX && !Db.calculerDoublons(pire.slice(0, 50), 3).complet && Db.calculerDoublons(pire.slice(0, 50), 3).groupes.length === 0
+        && Db.calculerDoublons(pire.slice(0, 50)).complet);
+  }
+  ok("la forme rangee : relue a l'identique, refusee si elle est abimee (on recalcule)",
+    JSON.stringify(Db.lireGroupesStockes([{ originale: "a", doublons: ["b", "c"] }])) === '[{"originale":"a","doublons":["b","c"]}]'
+      && [null, {}, [{ originale: "a" }], [{ originale: "a", doublons: [] }], [{ originale: 3, doublons: ["b"] }], [{ originale: "a", doublons: ["b", 4] }]].every((v) => Db.lireGroupesStockes(v) === null)
+      && JSON.stringify(Db.lireGroupesStockes([])) === "[]");
+  ok("la signature : le nombre de photos avec empreinte ET la derniere lecture ; une photo de plus ou une relecture la change",
+    Db.signatureDoublons(12, "2026-10-20T10:00:00.123456+00:00") === "12|2026-10-20T10:00:00.123456+00:00" && Db.signatureDoublons(13, "2026-10-20T10:00:00.123456+00:00") !== Db.signatureDoublons(12, "2026-10-20T10:00:00.123456+00:00")
+      && Db.signatureDoublons(12, "2026-10-20T10:00:01+00:00") !== Db.signatureDoublons(12, "2026-10-20T10:00:00.123456+00:00") && Db.signatureDoublons(null, null) === "?|");
+  {
+    const ix = Db.indexDoublons([{ originale: "o1", doublons: ["d1", "d2"] }, { originale: "o2", doublons: ["d3"] }]);
+    ok("l'index : la copie mene a son originale, les membres comptent les originales, les copies non", ix.copies === 3 && ix.doublonDe.get("d2") === "o1" && !ix.doublonDe.has("o1") && ix.membres.size === 5);
+  }
+
+  /* La fausse base des doublons rangés : asynchrone (un vrai aller-retour), et elle compte ce qu'elle rend. */
+  type LD = { id: string; empreinte: string | null; prise_le: string | null; ordre: number | null };
+  const baseDoublons = (etat: { range: { groupes: unknown; signature: string; complet: boolean } | null | "absente"; photos: LD[]; metaMax: string | null }) => {
+    const compte = { lignes: 0, upserts: [] as Record<string, unknown>[], signatures: 0 };
+    const fabrique = (table: string) => {
+      const ch: { select?: string; de?: number; a?: number } = {};
+      const b: Record<string, unknown> = {};
+      for (const m of ["eq", "not", "order", "limit", "returns", "is", "gt", "in", "filter", "or", "maybeSingle"]) b[m] = () => b;
+      b.select = (s: string) => {
+        ch.select = s;
+        return b;
+      };
+      b.range = (de: number, a: number) => {
+        ch.de = de;
+        ch.a = a;
+        return b;
+      };
+      b.upsert = async (ligne: Record<string, unknown>) => {
+        await new Promise((r) => setTimeout(r, 2));
+        compte.upserts.push(ligne);
+        return { error: etat.range === "absente" ? { code: "PGRST205", message: "absente" } : null };
+      };
+      const repondre = async () => {
+        await new Promise((r) => setTimeout(r, 2));
+        if (table === "collectif_doublons") return etat.range === "absente" ? { data: null, error: { code: "PGRST205", message: "absente" } } : { data: etat.range, error: null };
+        if (ch.select === "metadonnees_le") {
+          compte.signatures++;
+          return { data: [{ metadonnees_le: etat.metaMax }], count: etat.photos.filter((p) => p.empreinte).length, error: null };
+        }
+        const tranche = etat.photos.slice(ch.de ?? 0, Math.min((ch.a ?? 0) + 1, (ch.de ?? 0) + 1000));
+        compte.lignes += tranche.length;
+        return { data: tranche, error: null };
+      };
+      b.then = (ok2: (v: unknown) => unknown, ko2: (e: unknown) => unknown) => repondre().then(ok2, ko2);
+      return b;
+    };
+    return { client: { from: fabrique } as unknown as Parameters<typeof Ds.doublonsDeLEdition>[0], compte };
+  };
+  {
+    const photosD: LD[] = Array.from({ length: 2500 }, (_, i) => ({ id: `p${String(i).padStart(5, "0")}`, empreinte: i % 10 === 0 ? null : i % 7 === 1 ? "00ff00ff00ff00ff" : hex16(), prise_le: null, ordre: i % 3 === 0 ? null : i }));
+    const meta = "2026-10-20T09:00:00.654321+00:00";
+    const sig = Db.signatureDoublons(photosD.filter((p) => p.empreinte).length, meta);
+    const attendu = Ds.calculerSurLignes(photosD).groupes;
+    ok("le calcul range suit la regle de la grille et de la fiche (le rang de secours `ordre ?? i` dans l'ordre d'arrivee)",
+      JSON.stringify(attendu) === JSON.stringify(Db.groupesDoublonsRapides(photosD.map((p, i) => ({ id: p.id, empreinte: p.empreinte, priseLe: p.prise_le, ordre: p.ordre ?? i })))));
+    const frais = baseDoublons({ range: { groupes: attendu, signature: sig, complet: true }, photos: photosD, metaMax: meta });
+    const r1 = await Ds.doublonsDeLEdition(frais.client, "ed");
+    ok("a jour : le resultat range est LU tel quel ; aucune photo relue, rien de reecrit",
+      r1?.source === "range" && r1.lues === 0 && frais.compte.lignes === 0 && frais.compte.upserts.length === 0 && JSON.stringify(r1.groupes) === JSON.stringify(attendu));
+    const perime = baseDoublons({ range: { groupes: [], signature: "1|ancienne", complet: true }, photos: photosD, metaMax: meta });
+    const r2 = await Ds.doublonsDeLEdition(perime.client, "ed");
+    const range2 = perime.compte.upserts[0];
+    ok("perime (la signature a change) : recalcule sur toutes les photos arrivees, par tranches, puis RANGE avec la signature d'aujourd'hui",
+      r2?.source === "calcule" && r2.lues === 2500 && perime.compte.lignes === 2500 && perime.compte.upserts.length === 1 && range2?.signature === sig && range2?.photos === 2500 && range2?.complet === true
+        && JSON.stringify(range2?.groupes) === JSON.stringify(attendu) && range2?.edition_id === "ed");
+    const fournies = baseDoublons({ range: null, photos: photosD, metaMax: meta });
+    const r3 = await Ds.doublonsDeLEdition(fournies.client, "ed", photosD);
+    ok("absent, avec les lignes deja lues par l'appelant (la fiche, le repli de la grille) : aucune relecture, et range",
+      r3?.source === "calcule" && r3.lues === 0 && fournies.compte.lignes === 0 && fournies.compte.upserts.length === 1);
+    const sans = baseDoublons({ range: "absente", photos: photosD, metaMax: meta });
+    const r4 = await ecouteA4(() => Ds.doublonsDeLEdition(sans.client, "ed"));
+    ok("sans la migration (PGRST205) : calcule a l'affichage comme avant, RIEN n'est range",
+      r4?.source === "repli" && sans.compte.upserts.length === 0 && JSON.stringify(r4.groupes) === JSON.stringify(attendu));
+    const deux = baseDoublons({ range: null, photos: photosD, metaMax: meta });
+    const [a, b] = await Promise.all([Ds.recalculerDoublons(deux.client, "ed"), Ds.recalculerDoublons(deux.client, "ed")]);
+    ok("apres un lot : un seul calcul a la fois par edition ; un lot arrive pendant le calcul en demande UN de plus, apres",
+      a?.source === "calcule" && b === null && deux.compte.signatures === 2 && deux.compte.upserts.length === 2 && deux.compte.lignes === 5000);
+  }
+  const enrich = lire("src/lib/collectif/enrichissement.ts");
+  ok("le calcul tourne APRES la lecture des empreintes d'un lot (tache de fond), avant les lieux ; le journal dit les copies reperees",
+    enrich.indexOf("bilan.traitees ? await recalculerDoublons(supabase, editionId) : null") > enrich.indexOf("empreinte: lu.empreinte") && enrich.indexOf("recalculerDoublons(supabase, editionId)") < enrich.indexOf("planGeocodage(")
+      && /"metadonnees_lues", \{ \.\.\.bilan, \.\.\.repere \}/.test(enrich) && /doublons_complet: doublons\.complet/.test(enrich));
+  const mig = lire("supabase/migrations/20261022_collectif_resume_photos.sql");
+  ok("migration 20261022 : atomique, idempotente ; la vue du resume (security_invoker, fermee a anon/authenticated), la table des doublons (RLS), un index, PostgREST relit",
+    /^begin;/m.test(mig) && /^commit;/m.test(mig) && /create or replace view public\.collectif_photos_resume\s+with \(security_invoker = true\)/.test(mig) && /revoke all on public\.collectif_photos_resume from anon, authenticated;/.test(mig)
+      && /create table if not exists public\.collectif_doublons/.test(mig) && /alter table public\.collectif_doublons enable row level security;/.test(mig) && /revoke all on public\.collectif_doublons from anon, authenticated;/.test(mig)
+      && /create index if not exists collectif_photos_arrivee_idx/.test(mig) && /notify pgrst, 'reload schema'/.test(mig) && !/insert into|update public|delete from/i.test(mig.replace(/--.*$/gm, "")));
+  ok("la vue regroupe EXACTEMENT les colonnes que lisent dansLeDossier, l'arbre et le compte des personnes, et rend celles du module",
+    /group by p\.edition_id, p\.role_deposant, p\.provenance_id, p\.provenance_type, p\.deposant, p\.appareil;/.test(mig)
+      && /case when c\.role_deposant = 'participant' or c\.provenance_id is not null then c\.appareil_id end as appareil/.test(mig)
+      && /\(count\(\*\) filter \(where p\.preselection\)\)::integer as n_selection/.test(mig) && /\(count\(\*\) filter \(where not p\.signalee and not p\.preselection\)\)::integer as n_choisissables/.test(mig)
+      && R.COLONNES_RESUME.split(", ").every((c) => new RegExp(`as ${c}\\b|p\\.${c},`).test(mig) || c === "id"));
+
+  /* ─────────────────────────── T-168 ─────────────────────────── */
+  titre("— T-168 : la grille et le tableau de bord ne lisent plus que la page et le resume (edition simulee de 5 000 photos) —");
+  type LG = import("@/lib/collectif/grillePhotos").LigneGrille;
+  const responsableA4 = "Claire Martin";
+  const editionA4 = { responsable_nom: responsableA4, plafond_participant_atelier: 40, plafond_participant_client: 30, plafond_total: 6000 };
+  const liensA4 = [
+    { id: randomUUID(), cle: "k".repeat(22) + "1", libelle: "Équipe Lyon", sans_plafond: false, plafond_par_personne: 25, retire_le: null },
+    { id: randomUUID(), cle: "k".repeat(22) + "2", libelle: "Photographe", sans_plafond: true, plafond_par_personne: null, retire_le: null },
+    { id: randomUUID(), cle: "k".repeat(22) + "3", libelle: null, sans_plafond: false, plafond_par_personne: null, retire_le: "2026-10-18T10:00:00+00:00" },
+    { id: randomUUID(), cle: "k".repeat(22) + "4", libelle: "Personne encore", sans_plafond: false, plafond_par_personne: 10, retire_le: null },
+  ];
+  /* Une vraie collecte : chaque participant garde SON nom, SON telephone et SON lien (T-192 : le nom ne change
+     plus) ; dix d'entre eux ont un second telephone ou le nom s'ecrit autrement (« Léa » / « léa » : une seule
+     personne) ; quinze n'ont pas de nom (un telephone chacun). Des noms avec virgule, point, deux-points, parentheses. */
+  const prenoms = ["Léa", "Mathias Durand", "Tom", "Inès", "Zoé (CM2)", "Paul, Jean", "A.B: C", "Chloé", "Noah", "Jade", "Louis", "Emma", "Hugo", "Lina", "Arthur", "Rose", "Jules", "Alice", "Adam", "Mila"];
+  type PersonneA4 = { dep: string | null; app: string; prov: string | null };
+  const lienAuHasard = () => (hasard() % 4 === 0 ? null : parmiA4(liensA4.slice(0, 3)).id);
+  const personnesA4: PersonneA4[] = [];
+  for (let k = 0; k < 15; k++) personnesA4.push({ dep: parmiA4([null, "", "Sans nom"]), app: `anonyme-${k}`, prov: lienAuHasard() });
+  for (let k = 0; k < 155; k++) {
+    const nom = k < prenoms.length ? prenoms[k] : `${prenoms[k % prenoms.length]} ${Math.floor(k / prenoms.length)}`;
+    const prov = lienAuHasard();
+    personnesA4.push({ dep: nom, app: `tel-${k}`, prov });
+    if (k < 10) personnesA4.push({ dep: k % 2 ? nom.toLowerCase() : `${nom} `, app: `tel-${k}-bis`, prov });
+  }
+  const dossiersResp = [responsableA4, "La soirée", "La soirée / Photobooth", "Mes photos / Coulisses", "Le dîner", "Le responsable"];
+  /* 300 petites familles de copies (exactes ou a 1-2 bits) : des groupes de doublons de 2 a 6 photos, dissous au-dela de 8. */
+  const graines = Array.from({ length: 300 }, hex16);
+  const identique = hex16();
+  const toutesA4: LG[] = [];
+  let instant = Date.UTC(2026, 9, 19, 8, 0, 0);
+  for (let i = 0; i < 5000; i++) {
+    if (i % 25 === 0) instant += 1000 + (hasard() % 60_000);
+    const micro = String(hasard() % 1_000_000).padStart(6, "0");
+    const confirmee = `${new Date(instant).toISOString().slice(0, 19)}.${micro}+00:00`;
+    const r = hasard() % 100;
+    const qui = parmiA4(personnesA4);
+    let role = "participant", prov: string | null = qui.prov, type = "participant", dep: string | null = qui.dep, app: string | null = qui.app;
+    if (r < 25) {
+      role = "responsable"; prov = null; type = hasard() % 10 === 0 ? "photographe" : "organisateur"; dep = hasard() % 15 === 0 ? null : parmiA4(dossiersResp); app = `resp-${hasard() % 2}`;
+    } else if (r < 28) {
+      role = "atelier"; prov = null; type = "autre"; dep = "L'atelier"; app = null;
+    }
+    const e = hasard() % 12 === 0 ? null : i < 400 && i % 5 === 0 ? identique : hasard() % 8 === 0 ? voisinA4(parmiA4(graines), hasard() % 3) : hex16();
+    toutesA4.push({
+      id: randomUUID(),
+      vignette_key: hasard() % 10 === 0 ? null : `collectif/v/${i}.webp`,
+      r2_key: `collectif/o/${i}.jpg`,
+      nom_origine: `IMG_${i}.jpg`,
+      provenance_type: type,
+      deposant: dep,
+      prise_le: hasard() % 3 === 0 ? null : `2026-10-${String(15 + (hasard() % 4)).padStart(2, "0")}T${String(hasard() % 24).padStart(2, "0")}:${String(hasard() % 60).padStart(2, "0")}:00`,
+      confirmee_le: confirmee,
+      ordre: hasard() % 6 === 0 ? null : hasard() % 25,
+      empreinte: e,
+      preselection: hasard() % 10 === 0,
+      signalee: hasard() % 30 === 0,
+      mime: hasard() % 20 === 0 ? "image/heic" : "image/jpeg",
+      provenance_id: prov,
+      role_deposant: role,
+      appareil_id: app,
+    });
+  }
+  /* L'ordre de la base : arrivée, puis id (`lireToutesLesLignes`). */
+  const toutesTriees = R.trierCommeLaBase(toutesA4, R.TRI_ARRIVEE);
+  const doublonsA4 = Ds.calculerSurLignes(toutesTriees).groupes;
+  /* La vue rend ses lignes dans l'ordre de leur clé (un md5) : ici, au hasard. */
+  const resumeA4 = R.resumerPhotos(toutesTriees).map((g) => ({ g, k: hasard() })).sort((a, b) => a.k - b.k).map(({ g }) => g);
+  const compteA4 = { lignes: 0, requetes: 0, comptes: 0 };
+  const versPage = (p: LG): import("@/lib/collectif/grillePhotos").LignePage => ({
+    id: p.id, vignette_key: p.vignette_key, r2_key: p.r2_key, nom_origine: p.nom_origine, provenance_type: p.provenance_type, deposant: p.deposant,
+    prise_le: p.prise_le, confirmee_le: p.confirmee_le, preselection: p.preselection, mime: p.mime, provenance_id: p.provenance_id, role_deposant: p.role_deposant,
+  });
+  const lectureA4: import("@/lib/collectif/grillePhotos").LectureGrille = {
+    async page(conditions, tri, de, a) {
+      compteA4.requetes++;
+      const r = R.trierCommeLaBase(toutesA4.filter((p) => R.correspond(p, conditions)), tri).slice(de, Math.min(a + 1, de + 1000));
+      compteA4.lignes += r.length;
+      return r.map(versPage);
+    },
+    async parIds(ids, conditions) {
+      compteA4.requetes++;
+      const voulus = new Set(ids);
+      const r = toutesA4.filter((p) => voulus.has(p.id) && R.correspond(p, conditions));
+      compteA4.lignes += r.length;
+      return r.map(versPage);
+    },
+    async compter(ids, conditions) {
+      /* Un compte `head` : la base ne rend aucune ligne. */
+      compteA4.comptes++;
+      const voulus = new Set(ids);
+      return toutesA4.filter((p) => voulus.has(p.id) && R.correspond(p, conditions)).length;
+    },
+  };
+  const contexteA4 = (partage: boolean) => ({ edition: editionA4, provenances: liensA4, partage, enCours: 7, signer: async (cle: string) => `signe:${cle}`, signerOriginal: async (cle: string) => `signe:${cle}` });
+
+  console.log(`      le resume : ${resumeA4.length} lignes pour 5 000 photos (${personnesA4.length} telephones de participants, ${dossiersResp.length} noms de dossier du responsable, l'atelier)`);
+  ok("la fausse vue = la vue : chaque photo comptee une fois (et la selection, et les choisissables), le telephone garde pour les participants seulement",
+    R.somme(resumeA4) === 5000 && R.somme(resumeA4, () => true, "n_selection") === toutesA4.filter((p) => p.preselection).length
+      && R.somme(resumeA4, () => true, "n_choisissables") === toutesA4.filter((p) => !p.preselection && !p.signalee).length
+      && resumeA4.every((g) => g.appareil_id === null || g.role_deposant === "participant" || g.provenance_id !== null) && resumeA4.length < 260);
+  ok("le resume ne depend pas de l'ordre des photos",
+    JSON.stringify([...R.resumerPhotos([...toutesTriees].reverse())].sort((a, b) => (a.id < b.id ? -1 : 1))) === JSON.stringify([...resumeA4].sort((a, b) => (a.id < b.id ? -1 : 1))));
+  ok("l'arbre et les personnes pesees sur le resume = ceux des 5 000 lignes (orthographes, sous-dossiers, liens, l'atelier)",
+    [true, false].every((partage) => JSON.stringify(Dos.arbreDesPhotos(R.enLignesPesees(resumeA4), partage ? liensA4 : [], editionA4, partage)) === JSON.stringify(Dos.arbreDesPhotos(toutesTriees, partage ? liensA4 : [], editionA4, partage)))
+      && Dos.compterPersonnes(resumeA4) === Dos.compterPersonnes(toutesTriees));
+
+  /* Toutes les clés de dossier que l'écran peut demander, et quelques-unes qu'il ne demande jamais. */
+  const arbreA4 = Dos.arbreDesPhotos(toutesTriees, liensA4, editionA4, true);
+  const cles = new Set<string>(["tout", "selection", "vous", "liens", "atelier", "participants", Dos.QUI_RESPONSABLE, "pirate", "resp:inconnu:x", "lien:pas-un-uuid", "pers:general:personne", "qui:personne", `lien:${liensA4[3].id}`]);
+  for (const n of [...arbreA4.vous, ...arbreA4.liens, ...(arbreA4.atelier ? [arbreA4.atelier] : []), ...arbreA4.personnes]) {
+    cles.add(n.cle);
+    for (const e of n.enfants) cles.add(e.cle);
+  }
+  let comparees = 0;
+  const differentes: string[] = [];
+  let k = 0;
+  for (const dossier of cles) {
+    for (const vue of G.VUES) {
+      /* Une personne : sa premiere page ; un dossier ou un lien : quatre pages, jusqu'a celle qui n'existe pas. */
+      for (const page of dossier.startsWith("qui:") || dossier.startsWith("pers:") ? [0] : [0, 1, 7, 41]) {
+        const partage = k++ % 3 !== 0;
+        const demande = { dossier, vue, page, seulementArbre: false };
+        const avant = await G.grilleDepuisLignes(toutesTriees, doublonsA4, demande, contexteA4(partage));
+        const apres = await G.grilleDepuisResume(resumeA4, doublonsA4, demande, contexteA4(partage), lectureA4);
+        comparees++;
+        if (JSON.stringify(avant) !== JSON.stringify(apres)) differentes.push(`${dossier} ${vue} p${page}`);
+      }
+    }
+  }
+  for (const dossier of ["tout", "vous", "liens"]) {
+    const demande = { dossier, vue: "toutes" as const, page: 0, seulementArbre: true };
+    const avant = await G.grilleDepuisLignes(toutesTriees, doublonsA4, demande, contexteA4(true));
+    const apres = await G.grilleDepuisResume(resumeA4, doublonsA4, demande, contexteA4(true), lectureA4);
+    comparees++;
+    if (JSON.stringify(avant) !== JSON.stringify(apres)) differentes.push(`${dossier} seulementArbre`);
+  }
+  console.log(`      ${comparees} affichages compares (${cles.size} dossiers et personnes x 3 vues, jusqu'a 4 pages, liens montres ou non, fenetre de depot ; ${doublonsA4.length} groupes de doublons)${differentes.length ? ` ; ecarts : ${differentes.slice(0, 5).join(" | ")}` : ""}`);
+  ok("la grille lue sur le resume rend EXACTEMENT la reponse de la lecture complete (photos, ordre, pages, comptes, arbre, couvertures, liens, doublons, derniere arrivee)",
+    differentes.length === 0 && comparees > 1000 && doublonsA4.length > 50);
+
+  /* Les lignes lues par affichage : avant (toutes les photos), après (le résumé, la page, les doublons rangés). */
+  const mesurer = async (dossier: string, vue: "toutes" | "jour" | "doublons", page: number, seulementArbre = false) => {
+    compteA4.lignes = 0;
+    compteA4.requetes = 0;
+    compteA4.comptes = 0;
+    await G.grilleDepuisResume(resumeA4, doublonsA4, { dossier, vue, page, seulementArbre }, contexteA4(true), lectureA4);
+    /* + le résumé, + 2 lignes : la signature des doublons et le résultat rangé. */
+    return { apres: resumeA4.length + compteA4.lignes + 2, requetes: compteA4.requetes, comptes: compteA4.comptes };
+  };
+  const qui = arbreA4.personnes.find((n) => n.cle.startsWith("qui:") && n.cle !== Dos.QUI_RESPONSABLE)?.cle ?? "qui:lea";
+  const affichages: [string, Awaited<ReturnType<typeof mesurer>>][] = [
+    ["Toutes, page 1", await mesurer("tout", "toutes", 0)],
+    ["Par jour, page 4", await mesurer("tout", "jour", 3)],
+    ["Doublons", await mesurer("tout", "doublons", 0)],
+    ["Vos dossiers (vue d'ensemble)", await mesurer("vous", "toutes", 0)],
+    ["Une personne", await mesurer(qui, "toutes", 0)],
+    ["Fenetre de depot (l'arbre seul)", await mesurer("tout", "toutes", 0, true)],
+  ];
+  const membresA4 = Db.indexDoublons(doublonsA4).membres.size;
+  for (const [nom, m] of affichages) console.log(`      mesure : ${nom.padEnd(32)} avant 5 000 lignes (5 tranches) · apres ${String(m.apres).padStart(4)} lignes (${resumeA4.length} du resume, ${m.requetes} lecture(s) de photos, ${m.comptes} compte(s) sans ligne)`);
+  ok("hors « Doublons », chaque affichage lit au moins dix fois moins de lignes qu'avant (5 000)", affichages.filter(([nom]) => nom !== "Doublons").every(([, m]) => m.apres * 10 < 5000));
+  ok("« Doublons » ne lit que les photos des groupes (jamais toute l'edition)", (affichages.find(([nom]) => nom === "Doublons")?.[1].apres ?? 5000) <= resumeA4.length + membresA4 + 2);
+
+  {
+    /* Un nom qui ne s'écrit pas sans risque dans un filtre : la lecture complète d'avant, jamais une page fausse. */
+    const guillemet = R.resumerPhotos([{ ...toutesTriees[0], deposant: 'Jean "JJ"', role_deposant: "participant", provenance_id: null, id: "g1", confirmee_le: toutesTriees[0].confirmee_le, appareil_id: "x", preselection: false, signalee: false, vignette_key: null, provenance_type: "participant" }]);
+    const p1 = R.planDuDossier("qui:jean \"jj\"", guillemet, responsableA4);
+    const repli = await G.grilleDepuisResume(guillemet, [], { dossier: "qui:jean \"jj\"", vue: "toutes", page: 0, seulementArbre: false }, contexteA4(true), lectureA4);
+    ok("un nom avec un guillemet : le plan se replie (la route relit tout), aucune page fausse", p1.genre === "repli" && repli === G.REPLI);
+    const beaucoup = Array.from({ length: R.VALEURS_PARMI_MAX + 1 }, (_, i) => ({ role_deposant: "responsable", provenance_id: null, provenance_type: "organisateur", deposant: `${"Mes photos"} / Sous ${i}` }));
+    ok("trop de noms pour une adresse : repli aussi ; un dossier vide : rien a lire", R.planDuDossier("resp:organisateur:", beaucoup, responsableA4).genre === "repli" && R.planDuDossier("lien:pas-un-uuid", resumeA4, responsableA4).genre === "vide");
+  }
+  {
+    const pl = (cle: string) => {
+      const p = R.planDuDossier(cle, resumeA4, responsableA4);
+      return p.genre === "filtre" ? JSON.stringify(R.enFiltresPostgrest(p.conditions)) : p.genre;
+    };
+    ok("le filtre ecrit pour PostgREST : « Les participants » et « L'atelier »",
+      pl("liens") === '[{"methode":"or","filtres":"role_deposant.eq.participant,provenance_id.not.is.null"}]'
+        && pl("atelier") === '[{"methode":"not","colonne":"role_deposant","operateur":"in","valeur":"(\\"responsable\\",\\"participant\\")"},{"methode":"is","colonne":"provenance_id"}]'
+        && pl("tout") === "[]" && pl("selection") === '[{"methode":"eq","colonne":"preselection","valeur":true}]');
+    const lea = R.planDuDossier("qui:léa", resumeA4, responsableA4);
+    const appels = lea.genre === "filtre" ? R.enFiltresPostgrest(lea.conditions) : [];
+    ok("une personne : chaque orthographe ENTRE GUILLEMETS (une virgule, un point, deux points restent du nom), le vide en `is.null`",
+      lea.genre === "filtre" && appels.length === 2 && appels[1].methode === "filter"
+        && (appels[1] as { valeur: string }).valeur === `(${[...new Set(toutesA4.filter((p) => Dos.deParticipant(p) && Dos.clePersonne(p.deposant) === "léa").map((p) => p.deposant as string))].sort().map((v) => `"${v}"`).join(",")})`
+        && (appels[1] as { valeur: string }).valeur.includes('"Léa "'));
+    const anonyme = R.planDuDossier("qui:sans nom", resumeA4, responsableA4);
+    const appelsAnonyme = anonyme.genre === "filtre" ? R.enFiltresPostgrest(anonyme.conditions) : [];
+    ok("« Sans nom » : le vide ET les noms vides ou « Sans nom », en un seul `or`",
+      appelsAnonyme.some((a) => a.methode === "or" && a.filtres === 'deposant.is.null,deposant.in.("","Sans nom")'));
+    const virgule = R.planDuDossier(`qui:${Dos.clePersonne("Paul, Jean")}`, resumeA4, responsableA4);
+    ok("un nom qui porte une virgule passe en filtre, entre guillemets", virgule.genre === "filtre" && JSON.stringify(R.enFiltresPostgrest(virgule.conditions)).includes('\\"Paul, Jean\\"'));
+  }
+  {
+    /* « Par jour » redit en colonnes : la même suite que le tri d'avant (clé du jour, prise de vue, arrivée). */
+    const avantJour = [...toutesTriees].sort((a, b) => {
+      const ja = a.prise_le ? a.prise_le.slice(0, 10) : `~${a.confirmee_le.slice(0, 10)}`;
+      const jb = b.prise_le ? b.prise_le.slice(0, 10) : `~${b.confirmee_le.slice(0, 10)}`;
+      return ja === jb ? (a.prise_le ?? "").localeCompare(b.prise_le ?? "") : ja.localeCompare(jb);
+    });
+    ok("« Par jour » : sans date d'abord (`~` passe avant les chiffres), puis par prise de vue, l'arrivee departage",
+      "~2026-10-13".localeCompare("2024-08-08") < 0 && JSON.stringify(R.trierCommeLaBase(toutesTriees, R.TRI_JOUR).map((p) => p.id)) === JSON.stringify(avantJour.map((p) => p.id)));
+    ok("« Toutes » : la derniere arrivee d'abord, l'id departage un lot (la lecture d'avant a l'envers)",
+      JSON.stringify(R.trierCommeLaBase(toutesA4, R.TRI_TOUTES).map((p) => p.id)) === JSON.stringify([...toutesTriees].reverse().map((p) => p.id)));
+    ok("les instants se comparent aux microsecondes (une `Date` les perd)",
+      R.compareInstants("2026-10-19T10:00:00.000002+00:00", "2026-10-19T10:00:00.000001+00:00") > 0 && R.compareInstants("2026-10-19T10:00:00+00:00", "2026-10-19T10:00:00.5+00:00") < 0 && R.compareInstants("2026-10-19T10:00:00.1+00:00", "2026-10-19T10:00:00.100+00:00") === 0);
+  }
+  {
+    /* Le tableau de bord : les memes chiffres, le meme arbre, les memes couvertures que la lecture complete d'avant (de la plus recente a la plus ancienne). */
+    const desc = [...toutesTriees].reverse();
+    const couvAvant = (cle: string) => desc.find((x) => x.vignette_key && Dos.dansLeDossier(x, cle, responsableA4))?.vignette_key ?? null;
+    const premierNiveau = [...arbreA4.vous, ...arbreA4.liens, ...(arbreA4.atelier ? [arbreA4.atelier] : [])].map((n) => n.cle);
+    ok("tableau de bord : photos, personnes, selection, photos par lien, couvertures = la lecture des 5 000 lignes",
+      R.somme(resumeA4) === desc.length && Dos.compterPersonnes(resumeA4) === Dos.compterPersonnes(desc) && R.somme(resumeA4, () => true, "n_selection") === desc.filter((l) => l.preselection).length
+        && liensA4.every((l) => R.somme(resumeA4, (g) => g.provenance_id === l.id) === desc.filter((x) => x.provenance_id === l.id).length)
+        && premierNiveau.every((cle) => R.couvertureDe(resumeA4, cle, responsableA4) === couvAvant(cle)) && premierNiveau.length > 5);
+    const tdb = lire("src/app/edition/[token]/donnees.ts");
+    ok("tableau de bord : le resume en base d'abord ; sans la migration, toutes les photos relues et resumees EN MEMOIRE par la meme regle ; la mosaique lit six lignes",
+      /from\(VUE_RESUME\)\.select\(COLONNES_RESUME\)/.test(tdb) && /if \(!resumeAbsent\(resume\.error\.code\)\) echec/.test(tdb) && /return resumerPhotos\(photos\.data \?\? \[\]\);/.test(tdb)
+        && /\.not\("vignette_key", "is", null\)\s*\.order\("confirmee_le", \{ ascending: false \}\)\s*\.order\("id", \{ ascending: false \}\)\s*\.limit\(MOSAIQUE\)/.test(tdb) && /const MOSAIQUE = 6;/.test(tdb));
+  }
+  const routeA4 = lire("src/app/api/collectif/photos/route.ts");
+  ok("la route : le resume par tranches, la page triee et decoupee PAR LA BASE ; repli sur la lecture complete si la vue manque (PGRST205/42P01) ou si le dossier ne s'ecrit pas en filtre",
+    /lireToutesLesLignes<LigneResume>\(\s*\(\) => supabase\.from\(VUE_RESUME\)\.select\(COLONNES_RESUME\)\.eq\("edition_id", edition\.id\)/.test(routeA4) && /\{ colonne: "id", croissant: true \}/.test(routeA4)
+      && /q\.range\(de, a\)/.test(routeA4) && /if \(reponse !== REPLI\) return NextResponse\.json\(reponse\);/.test(routeA4) && /\} else if \(!resumeAbsent\(resume\.error\.code\)\) \{/.test(routeA4)
+      && routeA4.indexOf("grilleDepuisResume(") < routeA4.indexOf("grilleDepuisLignes(") && /for \(const f of enFiltresPostgrest\(conditions\)\)/.test(routeA4) && !/groupesDoublonsRapides/.test(routeA4));
+  ok("la route : les doublons sont LUS (rangés), plus calcules a chaque page ; la lecture legere /photos/etat n'a pas bouge",
+    /const doublons = await doublonsDeLEdition\(supabase, edition\.id\);/.test(routeA4) && /doublonsDeLEdition\(supabase, edition\.id, toutes\)/.test(routeA4)
+      && !/\.(insert|update|upsert|delete)\(/.test(lire("src/app/api/collectif/photos/etat/route.ts")));
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

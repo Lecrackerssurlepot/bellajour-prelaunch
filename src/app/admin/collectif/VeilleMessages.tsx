@@ -14,8 +14,12 @@
    3. `router.refresh()`, jamais un rechargement du document, et seulement là où une
       liste doit suivre (la boîte de réception, la liste des éditions), et
       seulement quand le nombre a CHANGÉ.
-   Le fil d'une conversation garde sa propre relève de 3,5 s (useMessagerie,
-   T-169) : celle-ci ne la remplace pas.
+   Le fil d'une conversation garde sa propre relève (useMessagerie) : celle-ci
+   ne la remplace pas. Depuis T-169, le fil ralentit quand rien ne bouge (3,5 s
+   juste après un mouvement, puis 10 s, 30 s, 60 s : `intervalleMessages`) ;
+   cette veille-ci reste à la minute, parce qu'elle est DÉJÀ au palier le plus
+   lent et qu'elle ne lit qu'un nombre : la ralentir encore retarderait le
+   compte de l'atelier pour une économie nulle.
 
    L'onglet du navigateur dit « (3) Atelier · Messages ». Next réécrit le
    titre à chaque navigation : un MutationObserver remet le compte devant. */
