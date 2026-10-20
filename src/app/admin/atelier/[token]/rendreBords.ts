@@ -68,7 +68,9 @@ export async function controlerBordsPdf(
       page.cleanup();
     }
   } finally {
-    await doc.destroy();
+    /* pdf.js 6 a retiré `PDFDocumentProxy.destroy()` ; en 5.x il ne faisait que
+       `return this.loadingTask.destroy()` (T-162, 20/10/2026). Même geste. */
+    await doc.loadingTask.destroy();
   }
   return { nbPages: doc.numPages, remarques };
 }

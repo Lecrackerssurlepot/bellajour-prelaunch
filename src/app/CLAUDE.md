@@ -131,6 +131,12 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    (0,2,0), donc **le masquer demande la même spécificité** (une media query n'en ajoute pas),
    et sans `flex: 0 0 auto` le jeton du compte se fait écraser à 2 px par ses voisins.
 
+7bis. **Le site refuse d'être encadré, même par lui-même** (T-163, 20/10/2026) : `next.config.ts`
+   pose `X-Frame-Options: DENY` et `frame-ancestors 'none'` partout. Une `<iframe>` vers une page
+   ou une route du site reste BLANCHE sans exception déclarée là (la seule : l'aperçu du mail de
+   `FinCreation.tsx`). Le harnais nomme toute nouvelle iframe vers le site. La CSP complète est en
+   rapport seul : un nouveau tiers chargé par une page s'y ajoute, sinon la console le signale.
+
 8. **L'espace avant un texte qui porte une entité : SWC l'avale** (16/10/2026).
    `Si <strong>{email}</strong> est l&apos;adresse…` suivi d'un retour à la ligne s'affichait
    « …@exemple.frest l'adresse ». La règle exacte, vérifiée contre le SWC de Next 16.2.3 sur les

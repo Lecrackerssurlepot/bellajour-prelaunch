@@ -96,6 +96,9 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   cote d'un fond perdu court. C'est une REMARQUE, pas un refus : l'atelier juge. pdf.js et son
   worker vivent dans `public/pdfjs/` (copie de `node_modules/pdfjs-dist/build`, même version que
   `package.json`) et se chargent à l'exécution, hors bundler ; à mettre à jour ensemble.
+  Depuis le 20/10 (T-162, pdf.js 6.4.299) la version est ÉPINGLÉE et `verif-atelier.ts` compare
+  les octets de la copie à ceux du paquet ; pdf.js 6 n'a plus `PDFDocumentProxy.destroy()`, on
+  ferme par `doc.loadingTask.destroy()` (`rendreBords.ts`, `rendreTour.ts`).
   ⚠️ Pour tester la fiche en local, l'onglet doit être VISIBLE (Chrome headless ou fenêtre au
   premier plan) : un onglet caché n'hydrate jamais la fiche en flux, sans aucune erreur.
 - **`chargerListe` fait partir ses quatre lectures ensemble** (journal, activité, dossiers vus,
