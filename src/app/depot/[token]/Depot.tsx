@@ -1,96 +1,343 @@
 "use client";
 
-/* Le dépôt d'un participant (PRD §5.1, maquette Participant) : d'abord sur
-   téléphone. Prénom et nom → accord → choisir des photos → l'envoi part
-   tout seul → « Merci, N photos reçues ».
+/* Le dépôt d'un participant (PRD §5.1, planches 6, 7 et 8 du 20/10) : d'abord
+   sur téléphone.
 
-   ⚠️ Le texte de l'accord est un texte LÉGAL : celui-ci a été choisi par
-   Mathias le 17/10/2026 (« version complète »). Ne pas le réécrire sans lui.
-   Il ne promet AUCUNE durée de conservation : rien ne supprime encore les
-   photos après la livraison. Sa VERSION est `VERSION_ACCORD` (accord.ts) :
-   changer un mot, c'est une nouvelle version (le harnais compare). Cocher la
-   case donne la version au moteur, qui l'envoie avec chaque photo ; le
-   serveur refuse un participant sans elle et l'enregistre horodatée (T-184).
+   ══════════════════════════════════════════════════════════════════════════
+   LE PARCOURS (contrat `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`)
+
+   1. Se présenter (planche 6) : l'ADRESSE d'abord. Dès qu'elle est complète,
+      la page demande au serveur s'il la connaît (`depot/participant`, action
+      `presenter`, sans nom : rien n'est écrit pour une adresse inconnue).
+      Connue : « Content de te revoir, Léa » (8B), et ce téléphone parle pour
+      elle ; inconnue : prénom ET nom, et la personne n'est créée qu'au choix
+      des photos, AVANT l'envoi (le serveur rattache la photo à la personne du
+      téléphone : présenter d'abord, envoyer ensuite).
+   2. L'accord, puis « Choisir mes photos ». Puis l'album du lien (planche 7) :
+      « Mes photos » s'ouvre, chaque photo y avance, la barre du bas compte ce
+      qui ARRIVE (`Album.tsx`).
+   3. Le même téléphone qui revient (8A) s'ouvre sur l'album s'il a déjà
+      accepté le texte d'aujourd'hui (`accordAJour`) ; sinon la carte le
+      reconnaît et redemande l'accord. « Ce n'est pas toi ? » (action
+      `oublier`) : le téléphone repart de zéro et le dit (8C).
+
+   ⚠️ L'adresse n'est PAS vérifiée : une personne retrouvée ne montre que son
+   PRÉNOM (jamais son nom de famille) ; le nom complet ne s'affiche que s'il
+   vient d'être tapé ici. La phrase sous le champ dit à quoi elle sert, et à
+   rien d'autre.
+
+   ⚠️ Le texte de l'accord est un texte LÉGAL : il vient de `texteAccord`
+   (accord.ts), jamais écrit ici. Sa VERSION est `VERSION_ACCORD` : cocher la
+   donne au moteur, qui l'envoie avec chaque photo ; le serveur refuse un
+   participant sans elle et l'enregistre horodatée (T-184). L'accord est
+   redemandé sur chaque nouveau téléphone.
+
+   SANS LA MIGRATION 20261023 (`personnes` faux, ou la présentation qui répond
+   503 `migration_personnes_absente`) : la règle d'avant, sans adresse. Le nom
+   se GARDE sur le téléphone (T-180, propre à ce lien depuis T-198) et ne se
+   CHANGE plus une fois des photos choisies (participant.ts) ; le serveur fait
+   foi (`nomConnu`, lu par le cookie de l'appareil). L'album reste lisible,
+   rien ne s'y supprime.
    ⚠️ Aucune promesse que l'écran ne tient pas : l'envoi ne continue pas page
-   fermée (iOS surtout), on le dit. Le plafond par personne est tenu par
-   appareil, on ne prétend pas le contraire.
-   Le nom se GARDE sur le téléphone (T-180) et ne se CHANGE plus une fois des
-   photos choisies (participant.ts, retours du 19/10 au soir : « sinon ça va
-   faire beaucoup de liens bizarres ») : prénom ET nom exigés la première fois,
-   puis « Tu envoies en tant que … ». Le serveur fait foi (`nomConnu`, lu par
-   le cookie de l'appareil) : un téléphone dont le navigateur a oublié le nom
-   le retrouve, et la route le reprend même si on le retapait. */
+   fermée (iOS surtout), on le dit.
+   ══════════════════════════════════════════════════════════════════════════ */
 
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { VERSION_ACCORD } from "@/lib/collectif/accord";
-import { PHOTOS_SEULEMENT, phrasesIgnores } from "@/lib/collectif/depot";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { texteAccord, VERSION_ACCORD } from "@/lib/collectif/accord";
+import { TAILLE_PAGE_ALBUM } from "@/lib/collectif/album";
+import { PHOTOS_SEULEMENT } from "@/lib/collectif/depot";
+import { cleDeVisite, decouperAccord, initiales } from "@/lib/collectif/depotParticipant";
 import { deNom } from "@/lib/collectif/espace";
-import { NOM_MAX, nomComplet, premierMot } from "@/lib/collectif/participant";
+import { NOM_MAX, nettoyerMorceau, nomComplet, premierMot } from "@/lib/collectif/participant";
+import { EMAIL_MAX, lireIdentite, normaliserEmail } from "@/lib/collectif/personnes";
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
-import { useMoteur } from "../../edition/_composants/depot/useMoteur";
+import Album, { type Onglet, type Tete } from "./Album";
+import { lirePersonne, oublier, presenter } from "./appels";
+import { TeteCarte } from "./Etats";
+import { IcoAppareil, IcoSansVideo, IcoTelephone } from "./icones";
 
 type Props = {
   token: string;
   p: string | null;
-  tu: boolean;
+  tete: Tete;
+  /** Le message d'accueil de l'édition (ou la phrase par défaut, au registre). */
+  invitation: string;
   plafond: number | null;
   sansPlafond: boolean;
   cloture: string;
-  organisation: string;
-  evenement: string;
-  /** Le nom que CE téléphone a déjà donné dans l'édition (lu au serveur), ou `null`. */
+  /** La migration 20261023 est-elle là (adresse, « Ce n'est pas toi ? », supprimer) ? */
+  personnes: boolean;
+  /** La personne pour qui CE téléphone parle déjà (lue au serveur) : son prénom seulement. */
+  moi: { prenom: string; photos: number; ceTelephone: number; accordAJour: boolean } | null;
+  /** La place qui reste (serveur) : nombre, `null` sans limite, `undefined` inconnue. */
+  place: number | null | undefined;
+  /** Sans la migration : le nom que CE téléphone a déjà donné dans l'édition, ou `null`. */
   nomConnu: string | null;
-  /** Ses photos déjà arrivées dans l'édition. */
+  /** Sans la migration : ses photos déjà arrivées dans l'édition. */
   dejaArrivees: number;
 };
 
-/** Le nom gardé sur ce téléphone (localStorage peut manquer : navigation privée, refus). */
-const CLE_PRENOM = "bj-depot-prenom";
-function prenomGarde(): string {
+/** Le nom gardé sur ce téléphone (sans la migration), PROPRE à ce lien (T-198 : un téléphone prêté reprenait le nom d'une autre édition). */
+function clePrenom(token: string, p: string | null): string {
+  return `bj-depot-prenom-${cleDeVisite(token, p).slice("bj-depot-vu-".length)}`;
+}
+function prenomGarde(cle: string): string {
   try {
-    return window.localStorage.getItem(CLE_PRENOM) ?? "";
+    return window.localStorage.getItem(cle) ?? "";
   } catch {
     return "";
   }
 }
-function garderPrenom(v: string) {
+function garderPrenom(cle: string, v: string) {
   try {
-    if (v.trim()) window.localStorage.setItem(CLE_PRENOM, v.trim());
-    else window.localStorage.removeItem(CLE_PRENOM);
+    if (v.trim()) window.localStorage.setItem(cle, v.trim());
+    else window.localStorage.removeItem(cle);
   } catch {
     /* rien de gardé : on le redemandera */
   }
 }
 const sansAbonnement = () => () => {};
 
+type Qui = { prenom: string; nom: string | null };
+type EtatEmail = "attente" | "cherche" | "inconnu" | "connu" | "erreur";
+
 export default function Depot(props: Props) {
-  /* Le nom gardé sur le téléphone, lu par useSyncExternalStore (rien côté serveur),
-     jamais par un setState d'hydratation. Le serveur passe avant lui. */
-  const garde = useSyncExternalStore(sansAbonnement, prenomGarde, () => "");
+  const { token, p, tete } = props;
+  const { tu, lien } = tete;
+  const v = (vous: string, toi: string) => (tu ? toi : vous);
+
+  /* ── la règle d'avant (sans la migration) : le nom gardé sur le téléphone ── */
+  const cle = clePrenom(token, p);
+  const garde = useSyncExternalStore(sansAbonnement, () => prenomGarde(cle), () => "");
   const [fige, setFige] = useState<string | null>(null);
   const nomFixe = props.nomConnu ?? fige ?? (garde || null);
+  const [repliForce, setRepliForce] = useState(false);
+  const repli = !props.personnes || repliForce;
+
+  /* ── la personne ── */
+  const [identite, setIdentite] = useState<Qui | null>(props.moi ? { prenom: props.moi.prenom, nom: null } : null);
+  const [reconnu, setReconnu] = useState<{ par: "telephone" | "email"; photos: number } | null>(props.moi ? { par: "telephone", photos: props.moi.photos } : null);
+  const [oublie, setOublie] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const emailCourant = useRef("");
+  const dejaDemande = useRef<string | null>(null);
+  const [etatEmail, setEtatEmail] = useState<{ etat: EtatEmail; message: string | null }>({ etat: "attente", message: null });
   const [prenomSaisi, setPrenomSaisi] = useState("");
   const [nomSaisi, setNomSaisi] = useState("");
-  const nomPret = Boolean(nomFixe ?? nomComplet(prenomSaisi, nomSaisi));
-  const [accord, setAccord] = useState(false);
-  const moteur = useMemo(() => new MoteurDepot({ token: props.token, p: props.p, tu: props.tu }), [props.token, props.p, props.tu]);
-  const vue = useMoteur(moteur);
+  const [place, setPlace] = useState(props.place);
+  const [erreur, setErreur] = useState<string | null>(null);
+  const occupe = useRef(false);
+
+  const accordInitial = Boolean(props.moi?.accordAJour);
+  const [accord, setAccord] = useState(accordInitial);
+  const moteur = useMemo(() => {
+    const m = new MoteurDepot({ token, p, tu, apercus: TAILLE_PAGE_ALBUM });
+    /* Ce téléphone a déjà accepté le texte d'aujourd'hui pour cette personne (8A) : il n'est pas redemandé. */
+    if (accordInitial) m.definirAccord(VERSION_ACCORD);
+    return m;
+  }, [token, p, tu, accordInitial]);
+  const [mode, setMode] = useState<{ ecran: "carte" | "album"; onglet: Onglet; accueil: boolean }>(
+    props.moi?.accordAJour ? { ecran: "album", onglet: "album", accueil: true } : { ecran: "carte", onglet: "album", accueil: false }
+  );
   const fichier = useRef<HTMLInputElement>(null);
-  const v = (vous: string, toi: string) => (props.tu ? toi : vous);
 
-  /* « Merci » seulement quand TOUT est parti : une photo en erreur se dit, avec « Réessayer ». */
-  const termine = vue.total > 0 && vue.enCours === 0 && vue.erreurs === 0;
-  const recues = vue.arrivees + vue.dejaLa;
-  const part = vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0;
-  /* Les fichiers écartés à l'ajout : la vidéo nommée comme telle (T-200). */
-  const ignores = phrasesIgnores(vue.ignores, vue.videos, vue.premiereVideo);
+  const emailLu = normaliserEmail(email);
+  const nomPret = repli ? Boolean(nomFixe ?? nomComplet(prenomSaisi, nomSaisi)) : Boolean(identite ?? (emailLu && nomComplet(prenomSaisi, nomSaisi)));
 
-  if (vue.ferme) {
-    return <p className="ec-dp-texte">{vue.ferme}</p>;
+  /* L'adresse complète : le serveur la reconnaît-il ? (rien n'est écrit pour une adresse inconnue). */
+  useEffect(() => {
+    if (repli || reconnu || !emailLu || emailLu === dejaDemande.current) return;
+    const minuteur = setTimeout(async () => {
+      dejaDemande.current = emailLu;
+      setEtatEmail({ etat: "cherche", message: null });
+      const r = await presenter(token, p, emailLu);
+      if (normaliserEmail(emailCourant.current) !== emailLu) return;
+      if (r.status === 503) {
+        setRepliForce(true);
+        return;
+      }
+      if (r.status === 200 && r.json.statut === "connu") {
+        const lu = lirePersonne(r.json, null);
+        if (lu) {
+          setIdentite({ prenom: lu.prenom, nom: null });
+          setReconnu({ par: "email", photos: lu.photos });
+          setPlace(lu.place);
+          setEtatEmail({ etat: "connu", message: null });
+          if (lu.accordAJour) {
+            setAccord(true);
+            moteur.definirAccord(VERSION_ACCORD);
+          }
+          return;
+        }
+      }
+      if (r.status === 400) {
+        setEtatEmail({ etat: "erreur", message: typeof r.json.message === "string" ? r.json.message : null });
+        return;
+      }
+      if (r.status === 429) {
+        dejaDemande.current = null;
+        setEtatEmail({ etat: "erreur", message: tu ? "Trop d'adresses essayées : réessaie dans une minute." : "Trop d'adresses essayées : réessayez dans une minute." });
+        return;
+      }
+      /* Inconnue, ou une coupure : on demande prénom et nom ; la création redira si l'adresse était connue. */
+      setEtatEmail({ etat: "inconnu", message: null });
+    }, 700);
+    return () => clearTimeout(minuteur);
+  }, [emailLu, repli, reconnu, token, p, tu, moteur]);
+
+  const changerEmail = (valeur: string) => {
+    setEmail(valeur);
+    emailCourant.current = valeur;
+    setErreur(null);
+    if (etatEmail.etat === "erreur") setEtatEmail({ etat: "attente", message: null });
+    /* L'adresse reconnue a changé : ce n'est plus elle (le téléphone sera rattaché à la bonne au choix des photos). */
+    if (reconnu?.par === "email" && normaliserEmail(valeur) !== dejaDemande.current) {
+      setIdentite(null);
+      setReconnu(null);
+      setEtatEmail({ etat: "attente", message: null });
+      dejaDemande.current = null;
+    }
+  };
+
+  /* « Ce n'est pas toi ? » : ce téléphone ne parle plus pour personne ; ses photos restent à son nom. */
+  const pasMoi = async () => {
+    const qui = identite;
+    setErreur(null);
+    const r = await oublier(token, p);
+    if (r.status === 503) {
+      setRepliForce(true);
+      return;
+    }
+    if (r.status !== 200) {
+      setErreur(v("Connexion interrompue : réessayez.", "Connexion interrompue : réessaie."));
+      return;
+    }
+    setOublie(qui?.prenom ?? null);
+    setIdentite(null);
+    setReconnu(null);
+    setEmail("");
+    emailCourant.current = "";
+    dejaDemande.current = null;
+    setEtatEmail({ etat: "attente", message: null });
+    setPrenomSaisi("");
+    setNomSaisi("");
+    setAccord(false);
+    moteur.definirAccord(null);
+    setMode({ ecran: "carte", onglet: "album", accueil: false });
+    window.scrollTo(0, 0);
+  };
+
+  /* Les photos choisies : présenter d'abord (une adresse nouvelle devient une personne), puis envoyer. */
+  const choisir = async (fichiers: File[]) => {
+    if (!fichiers.length || occupe.current) return;
+    setErreur(null);
+    let qui = identite;
+    let enRepli = repli;
+    if (!enRepli && !qui) {
+      const adresse = normaliserEmail(email);
+      const nomTape = nomComplet(prenomSaisi, nomSaisi);
+      if (!adresse || !nomTape) return;
+      occupe.current = true;
+      const r = await presenter(token, p, adresse, prenomSaisi, nomSaisi);
+      occupe.current = false;
+      if (r.status === 503) {
+        /* La migration manque : la règle d'avant, le nom tapé part avec les photos. */
+        enRepli = true;
+        setRepliForce(true);
+      } else if ((r.status === 200 || r.status === 201) && (r.json.statut === "cree" || r.json.statut === "connu")) {
+        const lu = lirePersonne(r.json, nettoyerMorceau(nomSaisi));
+        if (!lu) {
+          setErreur(v("La présentation n'a pas abouti : réessayez.", "La présentation n'a pas abouti : réessaie."));
+          return;
+        }
+        qui = { prenom: lu.prenom, nom: lu.nom };
+        setIdentite(qui);
+        setPlace(lu.place);
+      } else {
+        setErreur(
+          typeof r.json.message === "string"
+            ? r.json.message
+            : r.status === 429
+              ? v("Trop de demandes en même temps : vos photos ne sont pas parties. Réessayez dans une minute.", "Trop de demandes en même temps : tes photos ne sont pas parties. Réessaie dans une minute.")
+              : r.status === 0
+                ? v("Connexion interrompue : vos photos ne sont pas parties. Réessayez.", "Connexion interrompue : tes photos ne sont pas parties. Réessaie.")
+                : v("La présentation n'a pas abouti : réessayez.", "La présentation n'a pas abouti : réessaie.")
+        );
+        return;
+      }
+    }
+    let nomEnvoye: string | null;
+    if (enRepli) {
+      /* Le nom part avec les photos, puis il est FIGÉ sur ce téléphone. */
+      nomEnvoye = nomFixe ?? nomComplet(prenomSaisi, nomSaisi);
+      if (!nomEnvoye) return;
+      garderPrenom(cle, nomEnvoye);
+      setFige(nomEnvoye);
+    } else {
+      if (!qui) return;
+      /* Aucune adresse ne part avec les photos : la personne est celle que CE téléphone représente
+         (la présentation vient d'avoir lieu, ou ce téléphone parlait déjà pour elle). */
+      nomEnvoye = qui.nom ? `${qui.prenom} ${qui.nom}` : qui.prenom;
+    }
+    moteur.definirDeposant(nomEnvoye);
+    if (fichiers.length) moteur.ajouter(fichiers);
+    setMode({ ecran: "album", onglet: "miennes", accueil: false });
+    /* L'album s'ouvre par son en-tête : le bouton était en bas de la carte. */
+    window.scrollTo(0, 0);
+  };
+
+  const entree = (
+    <input
+      ref={fichier}
+      type="file"
+      accept="image/*,.heic,.heif"
+      multiple
+      hidden
+      onChange={(e) => {
+        const fichiers = e.target.files ? [...e.target.files] : [];
+        e.target.value = "";
+        void choisir(fichiers);
+      }}
+    />
+  );
+
+  /* ── l'album (planches 7 et 8A) ── */
+  if (mode.ecran === "album") {
+    const quiAlbum: Qui | null = repli
+      ? nomFixe
+        ? { prenom: premierMot(nomFixe), nom: nettoyerMorceau(nomFixe).slice(premierMot(nomFixe).length).trim() || null }
+        : null
+      : identite;
+    return (
+      <>
+        {entree}
+        <Album
+          token={token}
+          p={p}
+          tete={tete}
+          qui={quiAlbum}
+          pasMoi={!repli && identite ? () => void pasMoi() : null}
+          personnes={!repli}
+          moteur={moteur}
+          ajouter={() => fichier.current?.click()}
+          place={place}
+          ongletInitial={mode.onglet}
+          accueil={mode.accueil && identite ? { prenom: identite.prenom, photos: props.moi?.photos ?? 0 } : null}
+        />
+      </>
+    );
   }
 
-  return (
-    <div className="ec-dp-form">
+  /* ── la carte : se présenter, l'accord, choisir (planches 6, 8B, 8C) ── */
+  const texte = texteAccord(VERSION_ACCORD, { evenement: tete.evenement, deOrganisation: deNom(tete.organisation), lien });
+  const accordTexte = decouperAccord(texte ?? "", lien);
+  const albumPhrase = lien
+    ? `Elles rejoignent l'album de ${lien}, que voient les personnes de ce lien, et l'atelier en fait le magazine.`
+    : "Elles rejoignent l'album de ce lien, que voient les personnes qui l'utilisent, et l'atelier en fait le magazine.";
+  const lireAdresse = lireIdentite({ email }, tu);
+  /* Sans la migration : la formule d'avant (T-192), le nom donné une fois puis figé sur ce téléphone. */
+  const formuleAvant = (
+    <>
       {nomFixe ? (
         <div className="ec-dp-qui">
           <p>
@@ -107,27 +354,11 @@ export default function Depot(props: Props) {
           <div className="ec-dp-duo">
             <label className="ec-dp-champ">
               <span>{v("Votre prénom", "Ton prénom")}</span>
-              <input
-                className="ec-dp-input"
-                value={prenomSaisi}
-                onChange={(e) => setPrenomSaisi(e.target.value)}
-                autoComplete="given-name"
-                autoCapitalize="words"
-                maxLength={NOM_MAX}
-                required
-              />
+              <input className="ec-dp-input" value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} autoComplete="given-name" autoCapitalize="words" maxLength={NOM_MAX} required />
             </label>
             <label className="ec-dp-champ">
               <span>{v("Votre nom", "Ton nom")}</span>
-              <input
-                className="ec-dp-input"
-                value={nomSaisi}
-                onChange={(e) => setNomSaisi(e.target.value)}
-                autoComplete="family-name"
-                autoCapitalize="words"
-                maxLength={NOM_MAX}
-                required
-              />
+              <input className="ec-dp-input" value={nomSaisi} onChange={(e) => setNomSaisi(e.target.value)} autoComplete="family-name" autoCapitalize="words" maxLength={NOM_MAX} required />
             </label>
           </div>
           <p className="ec-dp-note">
@@ -138,116 +369,158 @@ export default function Depot(props: Props) {
           </p>
         </div>
       )}
+    </>
+  );
 
-      <label className="ec-dp-accord">
-        <input
-          type="checkbox"
-          checked={accord}
-          onChange={(e) => {
-            setAccord(e.target.checked);
-            moteur.definirAccord(e.target.checked ? VERSION_ACCORD : null);
-          }}
-        />
-        <span>
-          J&apos;accepte que Bellajour utilise ces photos pour composer le magazine « {props.evenement} » {deNom(props.organisation)}, et je confirme
-          avoir le droit de les partager, y compris pour les personnes qu&apos;on y voit.
-        </span>
-      </label>
-
-      <input
-        ref={fichier}
-        type="file"
-        accept="image/*,.heic,.heif"
-        multiple
-        hidden
-        onChange={(e) => {
-          /* Le nom part avec les photos, puis il est FIGÉ sur ce téléphone. */
-          const nomEnvoye = nomFixe ?? nomComplet(prenomSaisi, nomSaisi);
-          if (!nomEnvoye) return;
-          garderPrenom(nomEnvoye);
-          setFige(nomEnvoye);
-          moteur.definirDeposant(nomEnvoye);
-          if (e.target.files) moteur.ajouter(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => fichier.current?.click()}>
-        {vue.total ? v("Ajouter d'autres photos", "Ajouter d'autres photos") : v("Choisir mes photos", "Choisir mes photos")}
-      </button>
-      <p className="ec-dp-note">{PHOTOS_SEULEMENT}</p>
-      {!nomPret ? (
-        <p className="ec-dp-note">{v("Indiquez votre prénom et votre nom pour choisir vos photos.", "Indique ton prénom et ton nom pour choisir tes photos.")}</p>
-      ) : !accord ? (
-        <p className="ec-dp-note">{v("Cochez l'accord pour choisir vos photos.", "Coche l'accord pour choisir tes photos.")}</p>
-      ) : null}
-      {!vue.total
-        ? ignores.map((t) => (
-            <p key={t} className="ec-dp-note ec-dp-note--refus">
-              {t}
-            </p>
-          ))
-        : null}
-
-      {vue.total ? (
-        <div className="ec-dp-progres" role="status" aria-live="polite">
-          <div className="ec-dp-compte">
+  return (
+    <div className="ec-dp-carte">
+      <div className="ec-dp-in">
+        <TeteCarte tete={tete} />
+        {oublie !== null && !repli ? (
+          <p className="ec-dp-info">
+            <IcoTelephone />
             <span>
-              <strong>{recues}</strong> photo{recues > 1 ? "s" : ""} reçue{recues > 1 ? "s" : ""}
-            </span>
-            {vue.enCours ? <span>{vue.enCours} en cours</span> : null}
-          </div>
-          <div className="ec-dp-barre" aria-hidden="true">
-            <div style={{ width: `${part}%` }} />
-          </div>
-          {termine ? (
-            <p className="ec-dp-merci">
-              Merci{premierMot(nomFixe) ? ` ${premierMot(nomFixe)}` : ""}, {recues} photo{recues > 1 ? "s" : ""} reçue{recues > 1 ? "s" : ""}.
-            </p>
-          ) : vue.enCours ? (
-            <p className="ec-dp-note">
-              {v(
-                "Gardez cette page ouverte pendant l'envoi. Les photos déjà arrivées sont gardées.",
-                "Garde cette page ouverte pendant l'envoi. Les photos déjà arrivées sont gardées."
+              {oublie ? (
+                <>
+                  Ce téléphone n&apos;envoie plus au nom de <b>{oublie}</b>. Ses photos restent à son nom.
+                </>
+              ) : (
+                "Ce téléphone n'envoie plus au nom de personne. Les photos déjà envoyées restent à leur nom."
               )}
-            </p>
-          ) : (
-            <p className="ec-dp-note ec-dp-note--refus">
-              {vue.erreurs} photo{vue.erreurs > 1 ? "s" : ""} n&apos;{vue.erreurs > 1 ? "ont" : "a"} pas pu partir.
-            </p>
-          )}
-          {vue.refusees ? (
-            <p className="ec-dp-note">
-              {vue.refusees} photo{vue.refusees > 1 ? "s" : ""} refusée{vue.refusees > 1 ? "s" : ""} :
-            </p>
-          ) : null}
-          {vue.horsLigne ? <p className="ec-dp-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
-          {vue.serveurLent ? <p className="ec-dp-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
-          {vue.raisons.map((r) => (
-            <p key={r} className="ec-dp-note ec-dp-note--refus">
-              {r}
-            </p>
-          ))}
-          {vue.erreurs ? (
-            <button type="button" className="ec-dp-bouton ec-dp-bouton--clair" onClick={() => moteur.reessayer()}>
-              Réessayer ({vue.erreurs})
-            </button>
-          ) : null}
-          {ignores.map((t) => (
-            <p key={t} className="ec-dp-note">
-              {t}
-            </p>
-          ))}
-        </div>
-      ) : null}
+            </span>
+          </p>
+        ) : (
+          <p className="ec-dp-texte">{reconnu ? props.invitation : `${props.invitation} ${albumPhrase}`}</p>
+        )}
 
-      <p className="ec-dp-pied">
-        {props.sansPlafond
-          ? "Sans plafond par personne"
-          : props.plafond
-            ? `${props.plafond} photos au plus par personne`
-            : "Le nombre de photos par personne n'est pas encore réglé"}
-        {props.cloture ? ` · dépôt ouvert jusqu'au ${props.cloture}` : ""}
-      </p>
+        <div className="ec-dp-form">
+          {repli ? (
+            formuleAvant
+          ) : (
+            <>
+              {reconnu?.par === "telephone" ? null : (
+                <label className="ec-dp-champ">
+                  <span>{v("Votre email", "Ton email")}</span>
+                  <input
+                    className={`ec-dp-input${etatEmail.etat === "connu" ? " ec-dp-input--actif" : ""}`}
+                    type="email"
+                    inputMode="email"
+                    value={email}
+                    onChange={(e) => changerEmail(e.target.value)}
+                    onBlur={() => {
+                      if (email.trim() && !lireAdresse.ok) setEtatEmail({ etat: "erreur", message: lireAdresse.message });
+                    }}
+                    placeholder="prenom.nom@exemple.fr"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    maxLength={EMAIL_MAX}
+                    aria-describedby="ec-dp-email-note"
+                    required
+                  />
+                </label>
+              )}
+              {reconnu ? null : (
+                <p className="ec-dp-note" id="ec-dp-email-note">
+                  {etatEmail.etat === "erreur" && etatEmail.message ? (
+                    <span className="ec-dp-note--refus">{etatEmail.message}</span>
+                  ) : (
+                    v(
+                      "Elle sert seulement à vous reconnaître sur un autre téléphone ou un autre lien. Nous ne vous écrirons pas pour autre chose.",
+                      "Elle sert seulement à te reconnaître sur un autre téléphone ou un autre lien. Nous ne t'écrirons pas pour autre chose."
+                    )
+                  )}
+                </p>
+              )}
+              {reconnu && identite ? (
+                <>
+                  <div className="ec-dp-reconnu" role="status">
+                    <span className="ec-dp-reconnu-ini" aria-hidden="true">
+                      {initiales(identite.prenom)}
+                    </span>
+                    <span>
+                      <b>{v(`Content de vous revoir, ${identite.prenom}`, `Content de te revoir, ${identite.prenom}`)}</b>
+                      <span>
+                        {reconnu.photos ? `${reconnu.photos} photo${reconnu.photos > 1 ? "s" : ""} déjà arrivée${reconnu.photos > 1 ? "s" : ""}. ` : ""}
+                        {v(`Vous envoyez en tant que ${identite.prenom}.`, `Tu envoies en tant que ${identite.prenom}.`)}
+                      </span>
+                    </span>
+                  </div>
+                  <button type="button" className="ec-dp-lien ec-dp-lien--doux" onClick={() => void pasMoi()}>
+                    Ce n&apos;est pas moi
+                  </button>
+                </>
+              ) : (
+                <div className="ec-dp-nom">
+                  <div className="ec-dp-duo">
+                    <label className="ec-dp-champ">
+                      <span>{v("Votre prénom", "Ton prénom")}</span>
+                      <input className="ec-dp-input" value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} autoComplete="given-name" autoCapitalize="words" maxLength={NOM_MAX} required />
+                    </label>
+                    <label className="ec-dp-champ">
+                      <span>{v("Votre nom", "Ton nom")}</span>
+                      <input className="ec-dp-input" value={nomSaisi} onChange={(e) => setNomSaisi(e.target.value)} autoComplete="family-name" autoCapitalize="words" maxLength={NOM_MAX} required />
+                    </label>
+                  </div>
+                  <p className="ec-dp-note">
+                    {lien
+                      ? v(`C'est votre prénom que verront les personnes de ${lien}.`, `C'est ton prénom que verront les personnes de ${lien}.`)
+                      : v("C'est votre prénom que verront les personnes de ce lien.", "C'est ton prénom que verront les personnes de ce lien.")}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          <label className="ec-dp-accord">
+            <input
+              type="checkbox"
+              checked={accord}
+              onChange={(e) => {
+                setAccord(e.target.checked);
+                moteur.definirAccord(e.target.checked ? VERSION_ACCORD : null);
+              }}
+            />
+            {/* Le texte LÉGAL, tel que `texteAccord` le rend ; seule la phrase de l'album est encadrée. */}
+            <span>
+              {accordTexte.principal}
+              {accordTexte.album ? <span className="ec-dp-accord-album">{accordTexte.album}</span> : null}
+            </span>
+          </label>
+
+          <p className="ec-dp-videos">
+            <IcoSansVideo />
+            <span>{PHOTOS_SEULEMENT}</span>
+          </p>
+          {entree}
+          <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => fichier.current?.click()}>
+            <IcoAppareil />
+            Choisir mes photos
+          </button>
+          {erreur ? <p className="ec-dp-note ec-dp-note--refus">{erreur}</p> : null}
+          {!nomPret ? (
+            <p className="ec-dp-note">
+              {repli
+                ? v("Indiquez votre prénom et votre nom pour choisir vos photos.", "Indique ton prénom et ton nom pour choisir tes photos.")
+                : !emailLu
+                  ? v("Indiquez votre email pour choisir vos photos.", "Indique ton email pour choisir tes photos.")
+                  : v("Indiquez votre prénom et votre nom pour choisir vos photos.", "Indique ton prénom et ton nom pour choisir tes photos.")}
+            </p>
+          ) : !accord ? (
+            <p className="ec-dp-note">{v("Cochez l'accord pour choisir vos photos.", "Coche l'accord pour choisir tes photos.")}</p>
+          ) : null}
+
+          <p className="ec-dp-pied">
+            {props.sansPlafond
+              ? "Sans plafond par personne"
+              : props.plafond
+                ? `${props.plafond} photos au plus par personne`
+                : "Le nombre de photos par personne n'est pas encore réglé"}
+            {props.cloture ? ` · dépôt ouvert jusqu'au ${props.cloture}` : ""}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

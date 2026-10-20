@@ -5,9 +5,10 @@
    page tant qu'un envoi est en cours. */
 
 import { useEffect, useSyncExternalStore } from "react";
-import type { MoteurDepot, Vue } from "./moteur";
+import type { ApercuEnvoi, MoteurDepot, Vue } from "./moteur";
 
-const VUE_VIDE: Vue = { total: 0, arrivees: 0, dejaLa: 0, enCours: 0, refusees: 0, erreurs: 0, raisons: [], ferme: null, horsLigne: false, serveurLent: false, ignores: 0, videos: 0, premiereVideo: null, dejaAjoutes: 0 };
+const VUE_VIDE: Vue = { total: 0, arrivees: 0, dejaLa: 0, enCours: 0, refusees: 0, erreurs: 0, raisons: [], ferme: null, horsLigne: false, serveurLent: false, ignores: 0, videos: 0, premiereVideo: null, dejaAjoutes: 0, auCoffre: 0 };
+const APERCUS_VIDES: ApercuEnvoi[] = [];
 
 export function useMoteur(moteur: MoteurDepot | null): Vue {
   const vue = useSyncExternalStore(
@@ -29,6 +30,15 @@ export function useMoteur(moteur: MoteurDepot | null): Vue {
   }, [moteur]);
 
   return vue;
+}
+
+/** Les photos de l'envoi gardées pour l'écran (planche 7B : l'anneau, puis la coche). Vide sans `apercus` dans la configuration. */
+export function useApercus(moteur: MoteurDepot | null): ApercuEnvoi[] {
+  return useSyncExternalStore(
+    moteur?.abonner ?? (() => () => {}),
+    moteur?.apercus ?? (() => APERCUS_VIDES),
+    () => APERCUS_VIDES
+  );
 }
 
 /** Tous les fichiers d'un glisser-déposer, dossiers compris (webkitGetAsEntry). */

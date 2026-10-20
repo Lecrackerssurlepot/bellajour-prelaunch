@@ -638,10 +638,11 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   puis écrit `accord_version` et `accord_le` (heure du SERVEUR) dans la MÊME insertion que la
   photo. Le responsable et l'atelier ne cochent rien (accord nul). La vérification d'une reprise
   (`connues`) n'écrit rien et ne le demande pas.
-- ⚠️ **Le texte est légal et VERSIONNÉ** : il vit dans `Depot.tsx`, ses versions dans
-  `TEXTES_ACCORD` (une `Map`, jamais un objet littéral : T-161). Changer un mot = ajouter une
-  version et la rendre courante ; le harnais compare le texte affiché à la version courante.
-  Une version ne se retire jamais : des photos la portent.
+- ⚠️ **Le texte est légal et VERSIONNÉ** : il vit dans `TEXTES_ACCORD` (`accord.ts`, une `Map`,
+  jamais un objet littéral : T-161) et la page l'affiche par `texteAccord(VERSION_ACCORD, …)`,
+  jamais écrit dans un composant (lot w2 du 20/10). Changer un mot = ajouter une version et la
+  rendre courante ; le harnais compare le texte affiché à la version courante. Une version ne se
+  retire jamais : des photos la portent.
 - **Migration `20261020_collectif_accord_participant.sql`** (appliquée par Mathias le 19/10,
   colonnes vérifiées en lecture) : sans elle, le refus tient déjà mais
   l'insertion se replie SANS les deux colonnes et le serveur le note à chaque lot. Ce repli
@@ -788,8 +789,8 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   joue pas et le dépôt répondrait 500. Une lecture nouvelle de `collectif_photos` suit ce patron
   (le harnais relit les sites).
 - **L'album** (`album.ts`) : une photo n'entre dans l'album des AUTRES que sous l'accord du 20/10
-  (`VERSIONS_ALBUM`). `VERSION_ACCORD` (ce que la page envoie) reste `2026-10-17` tant que la page
-  n'affiche pas la phrase de l'album.
+  (`VERSIONS_ALBUM`). `VERSION_ACCORD` (ce que la page envoie) vaut `2026-10-20` depuis que la
+  page affiche la phrase de l'album (lot w2 du 20/10, les deux phrases validées par Mathias).
 - **L'ouverture** (`ouverture.ts`) : avant `ouverture_le`, le participant est refusé (409
   `depot_pas_ouvert`).
 - La purge quotidienne tourne après la relève (`purgeQuotidienne`), comme le rattrapage.
@@ -832,6 +833,30 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   lectures (résumé et repli) rendent la même réponse pour les quatre vues (harnais a4). Les cochées
   s'écrivent par lots de 500 (`photoIds`), jamais une requête par photo. Sans la migration, la page
   dit « La mise à jour de la base n'est pas encore appliquée », jamais le message de la route.
+
+## La page du participant (lot w2 du 20/10, planches 6 à 9)
+
+- **L'adresse d'abord** (`depot/participant`, `presenter` sans nom : rien n'est écrit pour une
+  adresse inconnue) ; inconnue, prénom ET nom, et la personne n'est créée qu'au CHOIX des photos,
+  AVANT le premier envoi (presign ne lit aucune adresse : la personne d'une photo est celle du
+  téléphone). Une personne retrouvée ne montre que son PRÉNOM. Même téléphone ayant déjà accepté
+  le texte du jour (`accordAJour`) : l'album s'ouvre (8A) ; sinon l'accord est redemandé.
+- **L'accord affiché** vient de `texteAccord(VERSION_ACCORD, …)`, coupé par `decouperAccord`
+  (`depotParticipant.ts`, pur) pour n'encadrer que la phrase de l'album. Jamais écrit dans la page.
+- **L'envoi compte à l'ARRIVÉE** au coffre (`auCoffre` du moteur, `progression`), pas à la
+  confirmation groupée de 15 s. « Mes photos » montre l'envoi par `apercus` : des vignettes de
+  320 px, BORNÉES (`TAILLE_PAGE_ALBUM`), une option du moteur que le responsable ne passe pas.
+- **L'album et « Mes photos »** (`Album.tsx`) lisent `depot/album` ; supprimer passe par
+  `depot/supprimer` après la feuille de la planche 7D, la place libérée se dit tout de suite ; une
+  vignette `null` est « En préparation ». « Déjà là » ne se montre pas dans l'envoi : la liste du
+  serveur la montre si elle est à moi.
+- **L'ordre des états** (page serveur) : 9C (collecte close : la date, ce qui est arrivé de ce
+  téléphone, l'album en lecture), 9B (`phrasesPasEncoreOuvert`), le plafond non réglé (T-195),
+  puis le dépôt ; 9A est `LienMort.tsx`.
+- **Sans la migration 20261023** : `quiEstCeTelephone` (`depot/[token]/lecture.ts`) le sait sans
+  rien écrire (la personne du téléphone, ou une sonde GET `limit(0)`) ; la page garde la formule
+  d'avant (prénom et nom figés, `nomConnu`), l'album se lit, rien ne se supprime. Un 503 à la
+  présentation y ramène aussi.
 
 ## Phase 7 : les accroches déjà posées
 

@@ -104,3 +104,31 @@ branche `w2-atelier-corbeille-personnes`, rien de commité).
   375 × 812 ; rien ne défile de côté à 375 ; écritures seulement dans la fausse base.
 - Reste : l'application de la migration par Mathias ; le seuil de confirmation pour une suppression en
   nombre (aucune fenêtre aujourd'hui, question 8 des planches) ; l'album du participant (autre lot).
+
+20/10, lot « w2-depot » (le CÔTÉ PARTICIPANT des planches 7 et 9, `/depot/[token]` ; branche
+`w2-depot-participant`, rien de commité).
+- `Album.tsx` : « Bateau 1 · 9 personnes · 214 photos », la puce « Tu envoies en tant que … », les
+  onglets « Tout l'album » / « Mes photos », « Ajouter des photos » fixé en bas (verre, plein sur
+  Android) avec « Photos seulement · tu peux encore en envoyer 36 ». L'album des autres vient de
+  `depot/album` (le prénom de chacun) ; vide, il le dit. Une vignette `null` : « En préparation ».
+- L'envoi par ARRIVÉE (planche 7B) : « 11 sur 18 envoyées · il en reste 7 », la barre avance dès
+  qu'une photo est au coffre (`auCoffre` du moteur), plus « 0 photo reçue · 18 en cours » pendant
+  15 s. « Mes photos » montre chaque photo de l'envoi avec son anneau puis sa coche (`apercus`,
+  vignettes de 320 px bornées à 60). Puis « Merci Léa, 18 photos reçues. » (le compte confirmé).
+- Supprimer ses photos (7D) : « Supprimer des photos », cocher, la feuille « Supprimer 3 photos ? »
+  qui dit l'effet et les 30 jours, puis « 3 photos supprimées » et la place libérée tout de suite.
+  Seulement ce que la route dit `supprimable`, et rien sans la migration.
+- Les pages d'état (planche 9) : 9C « La collecte est terminée » (la date, « Tes 42 photos sont
+  bien arrivées », l'album en lecture par « Revoir l'album »), 9B « Le dépôt n'est pas encore
+  ouvert » (`phrasesPasEncoreOuvert`, le jour en gras), 9A « Ce lien ne fonctionne plus » redessiné
+  dans la carte du dépôt.
+- L'accord affiché par `texteAccord(VERSION_ACCORD, …)` et `VERSION_ACCORD` basculé à
+  `2026-10-20` (les deux phrases validées par Mathias le 20/10) : les photos envoyées désormais
+  entrent dans l'album de leur lien.
+- Le moteur (partagé avec le responsable, API compatible : tout ce qui est neuf est facultatif) :
+  409 `depot_pas_ouvert` refuse le lot avec la phrase du serveur ; une photo à la corbeille
+  rechoisie reste « déjà là » ; aucune adresse n'est plus envoyée avec les photos.
+- Harnais : section « w2 » de `scripts/verif-collectif.ts`. Vu à l'écran (Chrome headless, 375 et
+  1440, jour et nuit) avec un vrai envoi de 18 JPEG locaux et 2 vidéos sur réseau bridé.
+- Reste : « agrandir une photo » (la route ne rend que la vignette de 320 px), l'application de la
+  migration par Mathias.

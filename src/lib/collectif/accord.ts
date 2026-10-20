@@ -18,25 +18,19 @@
  * - Le responsable (il a signé le devis) et l'atelier ne cochent rien : leurs
  *   photos ont un accord nul.
  *
- * ⚠️ Le texte est LÉGAL (choisi par Mathias le 17/10, PR #245) : il vit dans
- * Depot.tsx, ses versions vivent ici. Changer UN mot du texte affiché, c'est
- * une NOUVELLE version, ajoutée à `TEXTES_ACCORD` (le harnais compare le texte
- * de la page à celui de `VERSION_ACCORD`). Une version ne se retire jamais :
- * des photos la portent, et c'est elle qui dit ce qui a été accepté.
+ * ⚠️ Le texte est LÉGAL (choisi par Mathias le 17/10, PR #245 ; la phrase de
+ * l'album validée par lui le 20/10) : il vit ICI, dans `TEXTES_ACCORD`, et la
+ * page l'affiche par `texteAccord(VERSION_ACCORD, …)`, jamais écrit en dur
+ * dans un composant (planches du 20/10, lot w2). Changer UN mot du texte
+ * affiché, c'est une NOUVELLE version, ajoutée à `TEXTES_ACCORD` (le harnais
+ * compare le texte de la page à celui de `VERSION_ACCORD`). Une version ne se
+ * retire jamais : des photos la portent, et c'est elle qui dit ce qui a été
+ * accepté.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
 import { parler } from "./espace";
 import type { Registre } from "./types";
-
-/**
- * La version du texte affiché AUJOURD'HUI par `Depot.tsx` : le jour où Mathias
- * l'a choisi. ⚠️ Elle ne passe à `VERSION_ACCORD_ALBUM` que le jour où la page
- * AFFICHE la phrase de l'album (seconde vague des écrans du 20/10) : envoyer
- * « 2026-10-20 » sous le texte du 17/10, ce serait enregistrer un accord que
- * personne n'a lu.
- */
-export const VERSION_ACCORD = "2026-10-17";
 
 /**
  * La version du 20/10 (décision 7 de Mathias) : le texte du 17/10 MOT POUR MOT,
@@ -45,6 +39,14 @@ export const VERSION_ACCORD = "2026-10-17";
  * celle du 17/10, jamais.
  */
 export const VERSION_ACCORD_ALBUM = "2026-10-20";
+
+/**
+ * La version du texte affiché AUJOURD'HUI par la page de dépôt (`Depot.tsx`,
+ * par `texteAccord`) : celle de l'album depuis que la page AFFICHE la phrase de
+ * l'album (lot w2 du 20/10, bascule approuvée par Mathias le même jour avec les
+ * deux phrases). La version du 17/10 reste lisible : des photos la portent.
+ */
+export const VERSION_ACCORD: string = "2026-10-20";
 
 const TEXTE_17_10 =
   "J'accepte que Bellajour utilise ces photos pour composer le magazine « {evenement} » {deOrganisation}, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit.";
@@ -68,8 +70,8 @@ export const VERSIONS_ALBUM: ReadonlySet<string> = new Set(["2026-10-20"]);
  * La phrase de l'album, encadrée sous l'accord (planche 6) :
  * - un lien de contribution : la phrase VALIDÉE par Mathias le 20/10, avec le
  *   nom du lien (« Bateau 1 ») ;
- * - le lien général : son équivalent sans nom de lien, PROPOSÉ par ce lot
- *   (à relire par Mathias : c'est un texte légal).
+ * - le lien général : la même phrase sans nom de lien, validée par Mathias
+ *   le 20/10.
  * `{lien}` est le nom du lien tel que le responsable l'a écrit.
  */
 export const PHRASES_ALBUM = {
