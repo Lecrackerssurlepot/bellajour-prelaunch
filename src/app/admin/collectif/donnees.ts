@@ -16,6 +16,7 @@ import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { JOURNAL_DE_LOT, phraseEvenement } from "@/lib/collectif/recit";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
+import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { aideAtelier, iconeDe, lireDemandes, nomDeLEnvoi, type FormeDemande } from "@/lib/collectif/demandes";
@@ -381,16 +382,20 @@ export async function chargerEdition(
     /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
        dans l'ordre d'arrivée : le rang de secours des doublons (`ordre ?? i`) ne change
        plus d'un affichage à l'autre. */
-    lireToutesLesLignes<LignePhotoFiche>(
-      () =>
-        supabase
-          .from("collectif_photos")
-          .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
-          .eq("edition_id", id)
-          .not("confirmee_le", "is", null)
-          .returns<LignePhotoFiche[]>(),
-      { colonne: "confirmee_le", croissant: true },
-      "photos de la fiche"
+    /* Hors corbeille (migration 20261023 ; sans elle, la même lecture sans le filtre). */
+    lireHorsCorbeille((avec) =>
+      lireToutesLesLignes<LignePhotoFiche>(
+        () => {
+          const q = supabase
+            .from("collectif_photos")
+            .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
+            .eq("edition_id", id)
+            .not("confirmee_le", "is", null);
+          return (avec ? q.is("supprimee_le", null) : q).returns<LignePhotoFiche[]>();
+        },
+        { colonne: "confirmee_le", croissant: true },
+        "photos de la fiche"
+      )
     ),
     lireContenusFiche(supabase, id),
     supabase

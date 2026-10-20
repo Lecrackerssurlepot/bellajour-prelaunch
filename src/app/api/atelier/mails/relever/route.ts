@@ -155,6 +155,11 @@ async function relever(request: Request) {
      éditions ne lève jamais, ne touche à aucune table des particuliers, et se
      coupe seul sans COLLECTIF_OUVERT. Son module ne se charge qu'à ce moment-là. */
   after(() => import("@/lib/collectif/rattrapageServeur").then((m) => m.rattrapageQuotidien(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
+  /* Planches du 20/10 (T-199) — même passage, même échéance, aucun cron de plus : la CORBEILLE
+     des éditions, purgée de ce qui y dort depuis 30 jours (le coffre, puis la ligne). Ne lève
+     jamais, silencieuse sans la migration 20261023 ou sans rien à purger, coupée sans
+     COLLECTIF_OUVERT, ne touche à aucune table des particuliers. */
+  after(() => import("@/lib/collectif/corbeilleServeur").then((m) => m.purgeQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
 
   try {
     const supabase = makeSupabase();

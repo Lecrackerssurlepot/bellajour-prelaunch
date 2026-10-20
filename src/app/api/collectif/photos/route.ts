@@ -18,6 +18,7 @@ import {
   type LignePage,
 } from "@/lib/collectif/grillePhotos";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { COLONNES_RESUME, enFiltresPostgrest, resumeAbsent, VUE_RESUME, type Condition, type LigneResume } from "@/lib/collectif/resumePhotos";
@@ -91,10 +92,16 @@ export async function POST(request: Request) {
   /* Le repli : la vue manque (migration 20261022 absente), ou le dossier ne s'écrit pas en
      filtre. Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
      de la plus ancienne à la plus récente : `stats.derniere` est la dernière ligne. */
-  const { data, error } = await lireToutesLesLignes<LigneGrille>(
-    () => supabase.from("collectif_photos").select(COLONNES_GRILLE).eq("edition_id", edition.id).not("confirmee_le", "is", null).returns<LigneGrille[]>(),
-    { colonne: "confirmee_le", croissant: true },
-    "photos de la grille"
+  /* Hors corbeille (migration 20261023) ; sans elle, la même lecture sans le filtre (`lireHorsCorbeille`). */
+  const { data, error } = await lireHorsCorbeille((avec) =>
+    lireToutesLesLignes<LigneGrille>(
+      () => {
+        const q = supabase.from("collectif_photos").select(COLONNES_GRILLE).eq("edition_id", edition.id).not("confirmee_le", "is", null);
+        return (avec ? q.is("supprimee_le", null) : q).returns<LigneGrille[]>();
+      },
+      { colonne: "confirmee_le", croissant: true },
+      "photos de la grille"
+    )
   );
   if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const toutes = data ?? [];
@@ -106,11 +113,16 @@ export async function POST(request: Request) {
 
 /** Les trois lectures de `grilleDepuisResume` : une page triée et découpée par la base, des ids filtrés par le dossier, et leur compte. */
 function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: string): LectureGrille {
-  /* Le plan du dossier posé sur la requête, appel par appel (`enFiltresPostgrest`, pur, au harnais). */
-  const base = (conditions: readonly Condition[], compte = false) => {
-    let q = (compte ? supabase.from("collectif_photos").select("id", { count: "exact", head: true }) : supabase.from("collectif_photos").select(COLONNES_PAGE))
+  /* Le plan du dossier posé sur la requête, appel par appel (`enFiltresPostgrest`, pur, au harnais).
+     Hors corbeille (migration 20261023, la vue l'écarte déjà) : sans la colonne, la même requête
+     sans le filtre (`lireHorsCorbeille`). */
+  const base = (conditions: readonly Condition[], avec: boolean, compte = false) => {
+    /* Un compte en GET `limit(0)` (posé par `compter`), jamais `head` : un HEAD filtré sur la corbeille
+       rend, sans la migration, une erreur sans code que le repli ne reconnaîtrait pas (horsCorbeille.ts). */
+    const debut = (compte ? supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE) : supabase.from("collectif_photos").select(COLONNES_PAGE))
       .eq("edition_id", editionId)
       .not("confirmee_le", "is", null);
+    let q = avec ? debut.is("supprimee_le", null) : debut;
     for (const f of enFiltresPostgrest(conditions)) {
       if (f.methode === "eq") q = q.eq(f.colonne, f.valeur);
       else if (f.methode === "is") q = q.is(f.colonne, null);
@@ -122,9 +134,11 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
   };
   return {
     async page(conditions, tri, de, a) {
-      let q = base(conditions);
-      for (const t of tri) q = q.order(t.colonne, { ascending: t.croissant, ...(t.nulsDAbord === undefined ? {} : { nullsFirst: t.nulsDAbord }) });
-      const { data, error } = await q.range(de, a).returns<LignePage[]>();
+      const { data, error } = await lireHorsCorbeille((avec) => {
+        let q = base(conditions, avec);
+        for (const t of tri) q = q.order(t.colonne, { ascending: t.croissant, ...(t.nulsDAbord === undefined ? {} : { nullsFirst: t.nulsDAbord }) });
+        return q.range(de, a).returns<LignePage[]>();
+      });
       if (error) {
         console.error("[collectif] page de la grille illisible", error.code, error.message);
         return null;
@@ -132,7 +146,7 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
       return data ?? [];
     },
     async parIds(ids, conditions) {
-      const { data, error } = await base(conditions).in("id", [...ids]).returns<LignePage[]>();
+      const { data, error } = await lireHorsCorbeille((avec) => base(conditions, avec).in("id", [...ids]).returns<LignePage[]>());
       if (error) {
         console.error("[collectif] photos des doublons illisibles", error.code, error.message);
         return null;
@@ -140,7 +154,7 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
       return data ?? [];
     },
     async compter(ids, conditions) {
-      const { count, error } = await base(conditions, true).in("id", [...ids]);
+      const { count, error } = await lireHorsCorbeille((avec) => base(conditions, avec, true).in("id", [...ids]).limit(0));
       if (error || count === null) {
         console.error("[collectif] doublons du dossier non comptés", error?.code, error?.message);
         return null;

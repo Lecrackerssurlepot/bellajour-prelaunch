@@ -48,14 +48,30 @@ export const DROITS = {
   saisir_livraison: ["atelier"],
   /** T-154 : recevoir et saisir le code qui reconnaît un appareil (le lien du responsable seulement). */
   ouvrir_sur_appareil: ["responsable"],
+  /*
+   * Les planches du 20/10 (Audencia, T-198, T-199), décisions de Mathias :
+   * - la CORBEILLE : mettre à la corbeille n'importe quelle photo, restaurer, et
+   *   VOIR la corbeille (le lien d'équipe ne la voit pas : décision 4) ;
+   * - les PERSONNES : renommer, fusionner (le participant ne se renomme jamais) ;
+   * - défaire une fusion, effacer une photo pour de bon : l'atelier seul ;
+   * - le participant : se présenter par son adresse, voir l'album de son lien,
+   *   supprimer SES photos envoyées depuis CE téléphone (corbeille.ts).
+   */
+  gerer_corbeille: ["atelier", "responsable"],
+  gerer_personnes: ["atelier", "responsable"],
+  defaire_fusion: ["atelier"],
+  effacer_photo: ["atelier"],
+  se_presenter: ["participant"],
+  voir_album: ["participant"],
+  supprimer_ses_photos: ["participant"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Action = keyof typeof DROITS;
 
 export const ACTIONS: readonly Action[] = Object.keys(DROITS) as Action[];
 
-/** La seule action qui n'écrit rien. Tout le reste est une écriture. */
-export const ACTIONS_LECTURE: readonly Action[] = ["voir_espace"];
+/** Les actions qui n'écrivent rien. Tout le reste est une écriture. */
+export const ACTIONS_LECTURE: readonly Action[] = ["voir_espace", "voir_album"];
 export const ACTIONS_ECRITURE: readonly Action[] = ACTIONS.filter(
   (a) => !ACTIONS_LECTURE.includes(a)
 );

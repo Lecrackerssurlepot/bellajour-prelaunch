@@ -48,5 +48,11 @@ retirer seulement le lien général. Ou faire vivre les liens de contribution su
   `b-lien-mort-edition-tu.png`, `h-regenerer-verification.png` (réponse de vérification
   SIMULÉE, aucun POST n'a atteint le serveur), `i-apercu-mail-participants.png`,
   `i2-apercu-mail-responsable.png`.
+- 20/10, lot « w1-fondations » (serveur seulement) : la page 9B « Le dépôt n'est pas encore
+  ouvert » a son réglage (`collectif_editions.ouverture_le`, migration 20261023 écrite, non
+  appliquée ; `saisie.ts` et les routes de l'édition) et son refus (`depot/presign` : 409
+  `depot_pas_ouvert` pour un participant) ; les phrases sont dans `ouverture.ts`
+  (`phrasesPasEncoreOuvert`). Le champ du formulaire de l'atelier et la page restent à faire
+  (contrat `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`).
 - Non fait (proposé par la fiche) : faire vivre les liens de contribution sur leur seule clé ;
   retirer seulement le lien général. Le texte des deux mails attend la relecture de Mathias.

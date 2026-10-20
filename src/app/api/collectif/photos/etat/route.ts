@@ -5,6 +5,7 @@ import { ARRIVEES_LUES_MAX, nouvellesDepuis } from "@/lib/collectif/arrivees";
 import { peut } from "@/lib/collectif/droits";
 import { lireInstant } from "@/lib/collectif/etats";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
@@ -41,12 +42,24 @@ export async function POST(request: Request) {
 
   const depuis = lireInstant(corps.depuis) === null ? null : String(corps.depuis).trim();
   const supabase = makeSupabase();
-  const arrivees = () => supabase.from("collectif_photos").select("deposant, role_deposant, provenance_id, appareil_id, confirmee_le").eq("edition_id", edition.id).not("confirmee_le", "is", null);
-  const [compte, recentes] = await Promise.all([
-    supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).not("confirmee_le", "is", null),
-    (depuis ? arrivees().gt("confirmee_le", depuis) : arrivees()).order("confirmee_le", { ascending: false }).limit(depuis ? ARRIVEES_LUES_MAX : 1),
-  ]);
-  if (compte.error || recentes.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  /* Hors corbeille (migration 20261023) : une photo supprimée ne s'annonce pas et ne se compte
+     plus ; sans la colonne, les mêmes lectures sans le filtre (`lireHorsCorbeille`). */
+  const lus = await lireHorsCorbeille(async (avec) => {
+    const arrivees = () => {
+      const q = supabase.from("collectif_photos").select("deposant, role_deposant, provenance_id, appareil_id, confirmee_le").eq("edition_id", edition.id).not("confirmee_le", "is", null);
+      return avec ? q.is("supprimee_le", null) : q;
+    };
+    /* Le compte en GET `limit(0)` (aucune ligne), jamais `head` : un HEAD filtré sur la corbeille rend,
+       sans la migration, une erreur sans code que le repli ne reconnaîtrait pas (horsCorbeille.ts). */
+    const tete = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", edition.id).not("confirmee_le", "is", null);
+    const [compte, recentes] = await Promise.all([
+      (avec ? tete.is("supprimee_le", null) : tete).limit(0),
+      (depuis ? arrivees().gt("confirmee_le", depuis) : arrivees()).order("confirmee_le", { ascending: false }).limit(depuis ? ARRIVEES_LUES_MAX : 1),
+    ]);
+    return { compte, recentes, error: compte.error ?? recentes.error ?? null };
+  });
+  const { compte, recentes } = lus;
+  if (lus.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
 
   const lignes = (recentes.data ?? []) as { deposant: string | null; role_deposant: string; provenance_id: string | null; appareil_id: string | null; confirmee_le: string }[];
   return NextResponse.json(

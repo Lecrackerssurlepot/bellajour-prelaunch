@@ -7,6 +7,7 @@ import { messageFinCollecte } from "@/lib/collectif/espace";
 import { etatEffectif } from "@/lib/collectif/etats";
 import { preparerGeste } from "@/lib/collectif/gestes";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { journaliser } from "@/lib/collectif/journal";
 import { ecrireMessage } from "@/lib/collectif/messagerie";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
@@ -55,12 +56,19 @@ export async function POST(request: Request) {
   if (!prep.ok) return NextResponse.json({ error: "refuse", message: "La collecte est déjà close." }, { status: 409 });
 
   const supabase = makeSupabase();
-  const compter = (selection: boolean) => {
-    const q = supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).not("confirmee_le", "is", null);
-    return selection ? q.eq("preselection", true) : q;
-  };
-  const [photos, selection] = await Promise.all([compter(false), compter(true)]);
-  if (photos.error || selection.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  /* Hors corbeille (migration 20261023) ; sans la colonne, les mêmes comptes sans le filtre. */
+  const lus = await lireHorsCorbeille(async (avec) => {
+    const compter = (selection: boolean) => {
+      /* GET `limit(0)`, jamais `head` : un HEAD filtré rend une erreur sans code (horsCorbeille.ts). */
+      const debut = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", edition.id).not("confirmee_le", "is", null);
+      const q = avec ? debut.is("supprimee_le", null) : debut;
+      return (selection ? q.eq("preselection", true) : q).limit(0);
+    };
+    const [photos, selection] = await Promise.all([compter(false), compter(true)]);
+    return { photos, selection, error: photos.error ?? selection.error ?? null };
+  });
+  const { photos, selection } = lus;
+  if (lus.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const n = { photos: photos.count ?? 0, selection: selection.count ?? 0 };
   if (corps.verifier === true) return NextResponse.json({ ok: true, verifier: true, ...n });
 

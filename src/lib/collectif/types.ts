@@ -118,6 +118,8 @@ export type EditionLigne = {
   etat: EtatEdition;
   etat_maj_le: Horodatage;
   cloture_le: Horodatage | null;
+  /** Avant cette heure, le lien des participants refuse les dépôts (ouverture.ts) ; absente sans la migration 20261023. */
+  ouverture_le?: Horodatage | null;
   plafond_participant_atelier: number | null;
   plafond_participant_client: number | null;
   plafond_total: number | null;
@@ -227,6 +229,15 @@ export type PhotoLigne = {
   signalee: boolean;
   signalement_motif: string | null;
   created_at: Horodatage;
+  /** La version d'accord acceptée (20261020) : nulle pour le responsable, l'atelier, une photo d'avant. */
+  accord_version?: string | null;
+  accord_le?: Horodatage | null;
+  /** La personne (collectif_participants, 20261023), quand elle s'est présentée par son adresse. */
+  participant_id?: string | null;
+  /** À la corbeille depuis (20261023, corbeille.ts) ; vide : visible. */
+  supprimee_le?: Horodatage | null;
+  /** Qui l'a mise à la corbeille : son auteur, le responsable, l'atelier. */
+  supprimee_par?: "auteur" | "responsable" | "atelier" | null;
 };
 
 export type ContenuLigne = {

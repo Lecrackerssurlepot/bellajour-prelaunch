@@ -5,7 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
-import { colonneAbsente, ERREUR_MIGRATION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
+import { colonneAbsente, ERREUR_MIGRATION_ABSENTE, ERREUR_PERSONNES_ABSENTE, MESSAGE_PERSONNES_ABSENTE, personnesAbsentes, tableAbsente } from "@/lib/collectif/migration";
 import type { BriefLigne } from "@/lib/collectif/brief";
 import { lireSaisieEdition, magazineVide, planMagazines, resserrerRangs, type MagazineActuel } from "@/lib/collectif/saisie";
 import type { ReglagesPlafond } from "@/lib/collectif/plafonds";
@@ -45,11 +45,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const supabase = makeSupabase();
   /* La clôture en base : une date passée n'est refusée que si on la CHANGE
      (T-186), une édition close reste réglable. */
-  const { data: actuel, error: errLecture } = await supabase
-    .from("collectif_editions")
-    .select("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le")
-    .eq("id", id)
-    .maybeSingle<ReglagesPlafond & { id: string; cloture_le: string | null }>();
+  /* L'ouverture (migration 20261023) se lit aussi : inchangée, elle n'est pas réécrite. Sans la
+     colonne, la lecture d'avant (rien à replier d'autre : la saisie ne l'écrit alors que si on la règle). */
+  type Actuel = ReglagesPlafond & { id: string; cloture_le: string | null; ouverture_le?: string | null };
+  const lireActuel = (colonnes: string) => supabase.from("collectif_editions").select(colonnes).eq("id", id).maybeSingle<Actuel>();
+  let lu = await lireActuel("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le, ouverture_le");
+  if (lu.error && personnesAbsentes(lu.error)) lu = await lireActuel("id, plafond_participant_atelier, plafond_participant_client, plafond_total, cloture_le");
+  const { data: actuel, error: errLecture } = lu;
   if (errLecture) {
     if (tableAbsente(errLecture.code)) return NextResponse.json({ error: ERREUR_MIGRATION_ABSENTE }, { status: 503 });
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
@@ -109,6 +111,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (champs.length) {
     const { error } = await supabase.from("collectif_editions").update(saisie.edition).eq("id", id);
     if (error) {
+      /* Une ouverture réglée sans la migration 20261023 : rien n'est écrit, et on le dit. */
+      if (personnesAbsentes(error)) return NextResponse.json({ error: ERREUR_PERSONNES_ABSENTE, message: MESSAGE_PERSONNES_ABSENTE }, { status: 503 });
       console.error("[collectif] réglages non écrits", error.code, error.message);
       return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
     }

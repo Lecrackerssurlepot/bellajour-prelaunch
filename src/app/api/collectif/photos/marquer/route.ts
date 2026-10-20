@@ -6,6 +6,8 @@ import { peut } from "@/lib/collectif/droits";
 import type { Role } from "@/lib/collectif/types";
 import { dansLeDossier, type LignePhoto } from "@/lib/collectif/dossiers";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { lireIdsPhotos } from "@/lib/collectif/corbeille";
+import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { journaliser } from "@/lib/collectif/journal";
 import { enPaquets, lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
@@ -17,6 +19,10 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * sélectionner », « Tout désélectionner », retours du 14/10) :
  * `{ token, toutes: true, preselection }` ; une photo signalée n'entre jamais
  * dans un « Tout sélectionner ».
+ *
+ * Les photos COCHÉES (planches du 20/10) : `{ token, photoIds: [...], preselection | signalee }`,
+ * 500 au plus, une ligne de journal (`photos_marquees`). Une photo à la corbeille
+ * (migration 20261023) ne se marque pas : ni seule, ni cochée, ni dans « Tout ».
  *
  * La présélection est FACULTATIVE (PRD §5.4) : jamais exigée, jamais bornée
  * en dur ici (le plafond `preselection_max` se dit à l'écran). Un signalement
@@ -35,7 +41,11 @@ export async function POST(request: Request) {
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (corps.toutes === true) return toutesLesPhotos(acces.edition.id, acces.edition.responsable_nom, acces.role, corps.preselection, corps.dossier);
-  if (!estUuid(corps.photoId)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  /* Les photos COCHÉES (planches du 20/10, la barre d'actions) : `photoIds`, 500 au plus. */
+  const lot = corps.photoIds === undefined ? null : lireIdsPhotos(corps.photoIds);
+  if (corps.photoIds !== undefined && !lot) return NextResponse.json({ error: "lot_invalide" }, { status: 400 });
+  if (!lot && !estUuid(corps.photoId)) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  const ids = lot ?? [corps.photoId as string];
 
   const patch: Record<string, unknown> = {};
   let type = "";
@@ -53,19 +63,25 @@ export async function POST(request: Request) {
   }
 
   const supabase = makeSupabase();
-  const { data, error } = await supabase
-    .from("collectif_photos")
-    .update(patch)
-    .eq("id", corps.photoId)
-    .eq("edition_id", acces.edition.id)
-    .select("id");
-  if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
-  if (!data?.length) return NextResponse.json({ error: "introuvable" }, { status: 404 });
+  /* Une photo à la corbeille (migration 20261023) ne se marque pas : elle n'existe plus pour personne.
+     Sans la colonne, la même écriture sans le filtre (`lireHorsCorbeille`). */
+  const marquees: string[] = [];
+  for (const paquet of enPaquets(ids)) {
+    const { data, error } = await lireHorsCorbeille((avec) => {
+      const q = supabase.from("collectif_photos").update(patch).eq("edition_id", acces.edition.id).in("id", paquet);
+      return (avec ? q.is("supprimee_le", null) : q).select("id").returns<{ id: string }[]>();
+    });
+    if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+    marquees.push(...(data ?? []).map((l) => l.id));
+  }
+  if (!marquees.length) return NextResponse.json({ error: "introuvable" }, { status: 404 });
 
   /* La présélection se journalise aussi : c'est un choix du client que
-     l'atelier doit pouvoir relire, pas un clic perdu. */
-  const journal = await journaliser(supabase, { editionId: acces.edition.id }, type, { photo: corps.photoId }, null);
-  return NextResponse.json({ ok: true, journal });
+     l'atelier doit pouvoir relire, pas un clic perdu. Un lot coché : UNE ligne. */
+  const journal = lot
+    ? await journaliser(supabase, { editionId: acces.edition.id }, "photos_marquees", { ...patch, n: marquees.length, ids: marquees }, null)
+    : await journaliser(supabase, { editionId: acces.edition.id }, type, { photo: corps.photoId }, null);
+  return NextResponse.json({ ok: true, journal, ...(lot ? { n: marquees.length, ids: marquees } : {}) });
 }
 
 async function toutesLesPhotos(editionId: string, responsable: string | null, role: Role, preselection: unknown, dossierBrut: unknown) {
@@ -77,14 +93,18 @@ async function toutesLesPhotos(editionId: string, responsable: string | null, ro
   if (dossier === "tout" || dossier === "selection") {
     /* Le nombre écrit vient du COMPTE de la base (T-167) : les lignes rendues par
        `select` pourraient s'arrêter au plafond de 1 000 de l'API. */
-    let requete = supabase
-      .from("collectif_photos")
-      .update({ preselection }, { count: "exact" })
-      .eq("edition_id", editionId)
-      .not("confirmee_le", "is", null)
-      .eq("preselection", !preselection);
-    if (preselection) requete = requete.eq("signalee", false);
-    const { data, error, count } = await requete.select("id");
+    /* Hors corbeille (migration 20261023) ; sans la colonne, la même écriture sans le filtre. */
+    const { data, error, count } = await lireHorsCorbeille((avec) => {
+      let requete = supabase
+        .from("collectif_photos")
+        .update({ preselection }, { count: "exact" })
+        .eq("edition_id", editionId)
+        .not("confirmee_le", "is", null)
+        .eq("preselection", !preselection);
+      if (avec) requete = requete.is("supprimee_le", null);
+      if (preselection) requete = requete.eq("signalee", false);
+      return requete.select("id");
+    });
     if (error) return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
     n = count ?? data?.length ?? 0;
   } else {
@@ -94,16 +114,19 @@ async function toutesLesPhotos(editionId: string, responsable: string | null, ro
        l'API), et des paquets de `PAQUET_IN` ids (100 uuid font 3,9 Ko d'URL,
        500 en faisaient 19,5). */
     type Ligne = LignePhoto & { id: string; signalee: boolean };
-    const { data, error } = await lireToutesLesLignes<Ligne>(
-      () =>
-        supabase
-          .from("collectif_photos")
-          .select("id, provenance_id, provenance_type, role_deposant, deposant, preselection, signalee")
-          .eq("edition_id", editionId)
-          .not("confirmee_le", "is", null)
-          .returns<Ligne[]>(),
-      { colonne: "confirmee_le", croissant: true },
-      "photos du dossier à sélectionner"
+    const { data, error } = await lireHorsCorbeille((avec) =>
+      lireToutesLesLignes<Ligne>(
+        () => {
+          const q = supabase
+            .from("collectif_photos")
+            .select("id, provenance_id, provenance_type, role_deposant, deposant, preselection, signalee")
+            .eq("edition_id", editionId)
+            .not("confirmee_le", "is", null);
+          return (avec ? q.is("supprimee_le", null) : q).returns<Ligne[]>();
+        },
+        { colonne: "confirmee_le", croissant: true },
+        "photos du dossier à sélectionner"
+      )
     );
     if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     const ids = data

@@ -1,7 +1,7 @@
 ---
 id: T-198
 titre: Le nom d'un participant ne se corrige nulle part, et « Léa » et « Lea » font deux personnes
-etat: nouveau
+etat: en cours
 domaine: collectif
 gravite: confort
 autonomie: libre
@@ -27,4 +27,22 @@ Le responsable et l'atelier peuvent renommer une personne (toutes ses photos sui
 comparer les noms sans les accents ; garder le nom par édition dans le navigateur.
 
 ## Ce qui a été fait
-Rien encore.
+20/10, lot « w1-fondations » (le SERVEUR des planches du 20/10, aucun écran ; rien de commité).
+Contrat pour la seconde vague : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`.
+- Migration écrite, NON appliquée : `supabase/migrations/20261023_collectif_personnes_corbeille.sql`
+  (`collectif_participants` : adresse normalisée unique par édition, prénom, nom, fusion ;
+  `collectif_participants_appareils` : quel téléphone parle pour qui ; `collectif_photos.participant_id` ;
+  la vue `collectif_photos_resume` regroupe par personne quand elle est connue).
+- Le participant se présente par son ADRESSE (non vérifiée, décision du 20/10) : `POST
+  /api/collectif/depot/participant` (`presenter`, `qui`, `oublier` = « Ce n'est pas toi ? »). Même
+  adresse = même personne sur tous ses téléphones et tous les liens ; il ne se renomme jamais (le nom
+  envoyé pour une adresse connue est ignoré) ; la route dit si CE téléphone a déjà donné l'accord.
+- `depot/presign` : `email` facultatif, la personne connue donne son nom à la photo et son plafond se
+  compte par elle (tous ses téléphones) ; sinon par téléphone, comme avant.
+- Le responsable et l'atelier RENOMMENT et FUSIONNENT (`POST /api/collectif/personnes`,
+  `…/admin/collectif/editions/[id]/personnes`) ; les doublons « Léa » / « Lea » se PROPOSENT (sans
+  accents ni casse), jamais d'office ; l'atelier DÉFAIT une fusion d'après le journal. L'atelier voit
+  l'adresse entière, le responsable masquée, l'équipe aucune.
+- Modules : `personnes.ts` (pur), `personnesServeur.ts`. Harnais : section « w1 ».
+- Reste : les écrans (planches 4, 6, 8), l'application de la migration par Mathias, puis vérifier que
+  la donnée arrive (requêtes en tête du SQL).

@@ -98,11 +98,15 @@ export function lireDeclaration(v: unknown): { fichiers: FichierDeclare[]; refus
   return { fichiers, refus };
 }
 
-/** Ce que la base sait déjà d'une clé de fichier de cette édition. */
-export type Existant = { id: string; r2_key: string; confirmee: boolean };
+/**
+ * Ce que la base sait déjà d'une clé de fichier de cette édition. `corbeille` :
+ * la photo est à la corbeille (migration 20261023) ; redéclarée, elle reste
+ * « déjà là », jamais dupliquée ni ressuscitée.
+ */
+export type Existant = { id: string; r2_key: string; confirmee: boolean; corbeille?: boolean };
 
 export type Decision =
-  | { cle: string; sorte: "deja"; id: string }
+  | { cle: string; sorte: "deja"; id: string; corbeille?: true }
   | { cle: string; sorte: "reprise"; id: string; r2_key: string }
   | { cle: string; sorte: "nouvelle" }
   /** Le même fichier une seconde fois dans le lot : ignoré, la première suffit. */
@@ -128,7 +132,11 @@ export function planDeclaration(
 
   return fichiers.map((f): Decision => {
     const e = existants.get(f.cle);
-    if (e) return e.confirmee ? { cle: f.cle, sorte: "deja", id: e.id } : { cle: f.cle, sorte: "reprise", id: e.id, r2_key: e.r2_key };
+    if (e) {
+      /* Une photo à la corbeille ne repart pas : elle est « déjà là », et la réponse le dit (`corbeille`). */
+      if (e.corbeille) return { cle: f.cle, sorte: "deja", id: e.id, corbeille: true };
+      return e.confirmee ? { cle: f.cle, sorte: "deja", id: e.id } : { cle: f.cle, sorte: "reprise", id: e.id, r2_key: e.r2_key };
+    }
     if (acceptees.has(f.cle) && !dejaDecide.has(f.cle)) {
       dejaDecide.add(f.cle);
       return { cle: f.cle, sorte: "nouvelle" };
