@@ -36,6 +36,9 @@
 --    type : elles sont reprises telles quelles, `participant_id` s'ajoute EN
 --    FIN. ⚠️ `collectif_photos` a DÉJÀ des colonnes `appareil` et `appareil_id` :
 --    la colonne calculée garde le nom `appareil_cle` (l'erreur 42702 du 20/10).
+-- 5 bis. La vue `collectif_photos_album` (NEUVE, audit du 20/10, C1) : les
+--    comptes de l'album d'un lien en quelques lignes, au lieu de relire toutes
+--    ses photos à chaque ouverture.
 -- 6. Les index : la personne, la corbeille (partiel : seules les photos
 --    supprimées y entrent).
 --
@@ -65,9 +68,10 @@
 --    where table_name = 'collectif_photos_resume' order by ordinal_position;
 --     (17 colonnes, `participant_id` en dernier)
 --   select sum(n) from public.collectif_photos_resume;
+--   select sum(n) from public.collectif_photos_album;
 --   select count(*) from public.collectif_photos
 --    where confirmee_le is not null and supprimee_le is null;
---     (les deux nombres sont ÉGAUX)
+--     (les TROIS nombres sont ÉGAUX)
 -- puis, la donnée qui ARRIVE (le repli l'effacerait en silence) : après une
 -- première présentation et un premier envoi d'un participant,
 --   select id, email, prenom, nom from public.collectif_participants order by created_at desc limit 3;
@@ -214,6 +218,41 @@ comment on view public.collectif_photos_resume is
   'Une ligne par façon d''avoir déposé (T-168), hors corbeille, par personne quand elle est connue (20261023). Lue par la clé de service seulement.';
 
 revoke all on public.collectif_photos_resume from anon, authenticated;
+
+-- ── 5 bis. Les comptes de l'album d'un lien (audit du 20/10, C1) ──
+-- La page 0 de l'album dit « 214 photos, 9 personnes ». Elle relisait toutes
+-- les photos du lien pour les compter ; elle lit ici quelques lignes : une par
+-- lien, version d'accord, personne, nom et (participant sans personne)
+-- téléphone, avec le nombre de photos arrivées HORS corbeille. Le code pose le
+-- lien et les versions de l'album (`filtreVueAlbum`, album.ts) ; aucune version
+-- n'est écrite ici. Une vue NEUVE : rien à reprendre d'une définition d'avant.
+-- (Comme pour le résumé, la colonne calculée garde le nom `appareil_cle` dans la
+-- sous-requête : `c.*` porte déjà `appareil_id`.)
+create or replace view public.collectif_photos_album
+  with (security_invoker = true) as
+select
+  p.edition_id,
+  md5(row(p.role_deposant, p.provenance_id, p.accord_version, p.participant_id, p.deposant, p.appareil_cle)::text) as id,
+  p.role_deposant,
+  p.provenance_id,
+  p.accord_version,
+  p.participant_id,
+  p.deposant,
+  p.appareil_cle as appareil_id,
+  count(*)::integer as n
+from (
+  select c.*,
+         case when c.participant_id is null then c.appareil_id end as appareil_cle
+    from public.collectif_photos c
+   where c.confirmee_le is not null
+     and c.supprimee_le is null
+) p
+group by p.edition_id, p.role_deposant, p.provenance_id, p.accord_version, p.participant_id, p.deposant, p.appareil_cle;
+
+comment on view public.collectif_photos_album is
+  'Les comptes de l''album d''un lien (C1, 20/10) : photos arrivées hors corbeille, par lien, version d''accord, personne, nom. Lue par la clé de service seulement.';
+
+revoke all on public.collectif_photos_album from anon, authenticated;
 
 -- ── 6. Les index ──
 create index if not exists collectif_photos_personne_idx

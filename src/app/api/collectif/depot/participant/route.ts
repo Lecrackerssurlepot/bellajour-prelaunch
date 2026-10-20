@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { creerPlafond } from "@/lib/compte/garde";
+import { creerFrein, ipDeConnexion, ipDuClient } from "@/lib/compte/garde";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
-import { VERSION_ACCORD_ALBUM } from "@/lib/collectif/accord";
+import { VERSION_ACCORD } from "@/lib/collectif/accord";
 import { appareilDeRequete, COOKIE_APPAREIL, lireLienDeDepot, nouvelAppareil, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { collecteOuverte } from "@/lib/collectif/etats";
+import { cleFreinDepot, FREIN_LARGE, FREINS_DEPOT } from "@/lib/collectif/freins";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { ERREUR_PERSONNES_ABSENTE, MESSAGE_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
 import { depotOuvert, ERREUR_PAS_OUVERT, messagePasOuvert } from "@/lib/collectif/ouverture";
-import { lireIdentite, nomAffiche, type LigneParticipant } from "@/lib/collectif/personnes";
+import { lireIdentite, nomAffiche, vuePersonneConnue, type LigneParticipant } from "@/lib/collectif/personnes";
 import { comptesDeLaPersonne, oublierAppareil, participantDeLAppareil, presenter } from "@/lib/collectif/personnesServeur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
@@ -30,10 +31,17 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  *   parle plus pour personne, les photos restent à leur personne.
  *
  * ⚠️ L'adresse n'est PAS vérifiée (décision du 20/10) : qui tape celle de
- * quelqu'un envoie en son nom et lit son prénom et son nombre de photos. Elle
- * n'ouvre pas la suppression (corbeille.ts : le téléphone seul). Un frein par
- * appelant (`creerPlafond`, une `Map` par instance : il freine un script, il
- * n'arrête pas une attaque) borne les adresses essayées.
+ * quelqu'un envoie en son nom et lit son PRÉNOM et son nombre de photos, rien
+ * de plus (audit du 20/10, S1 : `vuePersonneConnue`, jamais le nom de famille,
+ * sauf à la création qui redit ce qui vient d'être tapé). Elle n'ouvre pas la
+ * suppression (corbeille.ts : le téléphone seul). Une adresse connue présentée
+ * sous un autre nom se journalise (S5) et le responsable le voit.
+ *
+ * Le frein (S3, `freins.ts`) ne compte QUE `presenter` (`qui` et `oublier` ne
+ * disent rien d'une autre adresse) : par adresse du client ET par lien, assez
+ * haut pour une classe entière derrière le Wi-Fi du campus ; plus un frein
+ * large par l'adresse qui se connecte à Vercel. Une `Map` par instance : il
+ * freine un script, il n'arrête pas une attaque.
  *
  * Sans la migration : `presenter` et `oublier` répondent 503
  * `migration_personnes_absente` (rien n'est écrit) ; `qui` répond `aucun`.
@@ -42,17 +50,18 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const frein = creerPlafond(20);
-
-function vuePersonne(p: LigneParticipant) {
-  return { prenom: p.prenom, nom: p.nom, nomAffiche: nomAffiche(p) };
-}
+const freinPresenter = creerFrein(FREINS_DEPOT.presenter);
+const freinLarge = creerFrein(FREIN_LARGE);
 
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
-  if (frein(request)) return NextResponse.json({ error: "trop_de_demandes" }, { status: 429 });
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
+  const action = corps.action;
+  /* Seule une présentation compte : c'est elle qui interroge une adresse. */
+  if (action === "presenter" && (freinPresenter(cleFreinDepot(ipDuClient(request), corps.token)) || freinLarge(ipDeConnexion(request)))) {
+    return NextResponse.json({ error: "trop_de_demandes" }, { status: 429 });
+  }
 
   const acces = await chargerAcces(String(corps.token ?? ""), "depot");
   const refus = refusAcces(acces);
@@ -73,10 +82,10 @@ export async function POST(request: Request) {
   }
 
   const appareilLu = appareilDeRequete(request);
-  const action = corps.action;
 
-  /* Ce que la page montre d'une personne reconnue : son nom, ses photos, sa place, l'accord de ce téléphone. */
-  const reponseConnue = async (participant: LigneParticipant, appareil: string, extra: Record<string, unknown>) => {
+  /* Ce que la page montre d'une personne reconnue : son PRÉNOM (S1), ses photos, sa place, l'accord de ce
+     téléphone. Le nom complet ne se redit qu'à la création, qui répète ce qui vient d'être tapé. */
+  const reponseConnue = async (participant: LigneParticipant, appareil: string, extra: Record<string, unknown>, creee: boolean) => {
     const [comptes, place] = await Promise.all([
       comptesDeLaPersonne(supabase, edition.id, participant.id, appareil),
       placeDuParticipant(supabase, edition, lien, appareil, participant.id, maintenant),
@@ -84,12 +93,13 @@ export async function POST(request: Request) {
     if (!comptes || !place) return null;
     return {
       ...extra,
-      participant: vuePersonne(participant),
+      participant: creee ? { prenom: participant.prenom, nom: participant.nom, nomAffiche: nomAffiche(participant) } : vuePersonneConnue(participant),
       photos: comptes.photos,
       ceTelephone: comptes.ceTelephone,
-      /* L'accord est redemandé sur chaque nouveau téléphone : celui-ci l'a-t-il déjà donné, et quelle version ? */
+      /* L'accord est redemandé sur chaque nouveau téléphone : celui-ci a-t-il déjà donné celui que la page
+         AFFICHE (`VERSION_ACCORD`, la seule que le serveur accepte de neuf : C5), et quelle version ? */
       accordDonne: comptes.accord,
-      accordAJour: comptes.accord === VERSION_ACCORD_ALBUM,
+      accordAJour: comptes.accord === VERSION_ACCORD,
       place: place.illimitee ? null : place.place,
     };
   };
@@ -99,7 +109,7 @@ export async function POST(request: Request) {
     const lu = await participantDeLAppareil(supabase, edition.id, appareilLu);
     if (lu.statut === "erreur") return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     if (lu.statut === "absente" || !lu.valeur) return NextResponse.json({ statut: "aucun" }, { headers: { "cache-control": "private, no-store" } });
-    const r = await reponseConnue(lu.valeur, appareilLu, { statut: "connu" });
+    const r = await reponseConnue(lu.valeur, appareilLu, { statut: "connu" }, false);
     if (!r) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     return NextResponse.json(r, { headers: { "cache-control": "private, no-store" } });
   }
@@ -119,13 +129,15 @@ export async function POST(request: Request) {
   const ouverte = collecteOuverte(edition.etat, edition.cloture_le, maintenant);
   const ouvertureOk = depotOuvert(edition.ouverture_le, maintenant);
   /* Avant l'ouverture et après la clôture, une adresse se RETROUVE (« Tes 42 photos sont bien
-     arrivées », planche 9C), elle ne se crée plus. */
+     arrivées », planche 9C), elle ne se crée plus. Le nom tapé part quand même : une adresse connue
+     présentée sous un autre nom se journalise (S5). */
   const peutCreer = ouverte && ouvertureOk;
   const appareil = appareilLu ?? nouvelAppareil();
   const r = await presenter(supabase, {
     editionId: edition.id,
     email: identite.email,
-    identite: peutCreer ? identite.identite : null,
+    identite: identite.identite,
+    peutCreer,
     provenanceId: lien?.id ?? null,
     appareil,
   });
@@ -141,10 +153,12 @@ export async function POST(request: Request) {
     /* Rien d'écrit, aucun cookie : la page demande prénom et nom. */
     return NextResponse.json({ statut: "inconnu", nomRequis: true });
   }
-  const corpsReponse = await reponseConnue(r.participant, appareil, {
-    statut: r.statut,
-    ...(r.statut === "connu" ? { nomIgnore: r.nomIgnore } : { journal: r.journal }),
-  });
+  const corpsReponse = await reponseConnue(
+    r.participant,
+    appareil,
+    { statut: r.statut, journal: r.journal, ...(r.statut === "connu" ? { nomIgnore: r.nomIgnore } : {}) },
+    r.statut === "cree"
+  );
   if (!corpsReponse) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const reponse = NextResponse.json(corpsReponse, { status: r.statut === "cree" ? 201 : 200 });
   if (!appareilLu) {

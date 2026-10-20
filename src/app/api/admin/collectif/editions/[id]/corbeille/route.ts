@@ -22,8 +22,10 @@ import { lireCorps } from "@/lib/collectif/reponses";
  *   (`supprimee_par: "atelier"`).
  * - `POST { action: "effacer", photoIds, verifier? }` : « Effacer maintenant »,
  *   DÉFINITIF, l'atelier SEUL, EN DEUX TEMPS : `verifier: true` compte ce qui
- *   partirait (rien n'est effacé), le second appel efface le coffre (l'original
- *   et la vignette) PUIS la ligne. Seulement des photos déjà à la corbeille.
+ *   partirait (rien n'est effacé), le second appel efface la LIGNE (encore à la
+ *   corbeille, re-contrôlée) PUIS le coffre (l'original et la vignette) ; un
+ *   objet qui résiste se retente à la purge suivante (`ratees`, réponse 200).
+ *   Seulement des photos déjà à la corbeille.
  *
  * Sans la migration : 503 `migration_personnes_absente`.
  */
@@ -82,8 +84,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (r.statut === "absente") return absente();
     if (r.statut === "erreur") return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
     if (corps.verifier === true) return NextResponse.json({ ok: true, verifier: true, aEffacer: r.valeur.aEffacer });
-    /* Un objet qui a résisté garde sa photo à la corbeille : on le dit, le prochain passage réessaiera. */
-    return NextResponse.json({ ok: true, ...r.valeur }, { status: r.valeur.ratees ? 502 : 200 });
+    /* La LIGNE part d'abord (S7) : une photo effacée l'est pour de bon, même si un objet du coffre a
+       résisté. `ratees` le dit ; l'objet est noté au journal et la purge suivante le retente. */
+    return NextResponse.json({ ok: true, ...r.valeur });
   }
   if (corps.action !== "supprimer" && corps.action !== "restaurer") return NextResponse.json({ error: "action_inconnue" }, { status: 400 });
   const r = corps.action === "supprimer" ? await mettreALaCorbeille(supabase, id, ids, "atelier", par) : await restaurer(supabase, id, ids, par);

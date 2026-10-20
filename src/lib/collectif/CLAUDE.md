@@ -777,8 +777,9 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   ni suppression, ni photo d'un autre lien ou d'un autre téléphone. Un téléphone parle pour une
   personne (`collectif_participants_appareils`). Le nom VIT sur les photos (`deposant`) : renommer
   et fusionner réécrivent les photos ; la grille reste rangée par nom.
-- **La corbeille** (`corbeille.ts`, `corbeilleServeur.ts`) : 30 jours, puis le coffre PUIS la
-  ligne (supprimée, pas anonymisée). Un participant ne supprime que les photos de CE téléphone.
+- **La corbeille** (`corbeille.ts`, `corbeilleServeur.ts`) : 30 jours, puis la LIGNE PUIS le
+  coffre (supprimée, pas anonymisée ; ordre renversé par l'audit, voir plus bas). Un participant ne
+  supprime que les photos de CE téléphone.
 - ⚠️ **Toute lecture qui montre ou compte des photos passe par `lireHorsCorbeille`**
   (`horsCorbeille.ts`) et pose `.is("supprimee_le", null)` ; sans la colonne, elle se rejoue sans
   (une erreur qui NOMME une colonne de la migration, `personnesAbsentes`). ⚠️ **Un compte filtré
@@ -792,6 +793,37 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
 - **L'ouverture** (`ouverture.ts`) : avant `ouverture_le`, le participant est refusé (409
   `depot_pas_ouvert`).
 - La purge quotidienne tourne après la relève (`purgeQuotidienne`), comme le rattrapage.
+
+**L'audit de sécurité du lot w1 (20/10, avant la migration ; contrat section 9)** :
+- **Une adresse tapée ne rend que le PRÉNOM** (`vuePersonneConnue`) et un nombre de photos : pour
+  « connu », `qui` et `moi.participant` de l'album ; le nom complet seulement à la création.
+  `nomIgnore` vaut dès qu'un nom est tapé (le dire seulement quand il diffère serait un oracle du
+  nom de famille). Une adresse connue se journalise à chaque présentation (`participant_retrouve`)
+  et sous un autre nom (`participant_nom_different`) ; la liste le montre (`nomPropose`,
+  `nomsProposes`), jamais à l'équipe.
+- **`depot/presign` ne lit AUCUNE adresse** : la personne d'une photo est celle de CE téléphone
+  (`participantDeLAppareil`). Remettre `email` dans presign rouvre un annuaire sans frein.
+- **Une photo de la corbeille ne compte plus dans la place**, qui que soit celui qui l'a supprimée
+  (`compteDansLaPlace`) ; la même photo rechoisie reste « déjà là » par sa clé.
+- **Les freins du participant** (`freins.ts`) : par adresse du CLIENT et par LIEN (une classe
+  derrière le Wi-Fi du campus passe), plus un frein large sur l'adresse que Vercel voit ;
+  `presenter` seul compte dans `depot/participant`. Une `Map` par instance : un frein seulement.
+- **L'album ne signe jamais l'original** (EXIF, GPS) ; ses comptes viennent de la vue
+  `collectif_photos_album` (20261023), sinon `personnes: null`.
+- **Le serveur n'accepte qu'une version d'accord ≤ `VERSION_ACCORD`** (`versionAcceptee`) : la
+  version de l'album s'accepte le jour où la page l'affiche.
+- **Effacer pour de bon** : intention au journal (`objets_a_effacer`, des clés R2), la LIGNE
+  re-contrôlée qui rend ses clés, PUIS le coffre, puis `objets_effaces` ; ce qui résiste se retente
+  (`reprendreObjets`, en tête de la purge) et une clé qu'une ligne porte encore ne s'efface jamais.
+  `effaceur` injectable : le harnais ne touche jamais le vrai coffre.
+- ⚠️ **Un texte de client n'entre JAMAIS dans `.in()`** : postgrest-js n'entoure de guillemets
+  qu'une valeur à `,()` et n'échappe rien (`Zed","Léa Martin` = deux valeurs, prouvé sur la vraie
+  base). `listeIn` / `citerPostgrest` (lignes.ts), posés par `.filter(c, "in", …)`. Les uuid et
+  les constantes du code peuvent rester en `.in()`.
+- **Une fusion se journalise AVANT d'écrire** (`journaliserId`) ; sans journal, rien ne s'écrit ;
+  une panne au milieu écrit `fusion_interrompue` et « défaire » la remet d'aplomb.
+- **En attente de Mathias (C3)** : noms au journal après la purge, adresse jamais purgée ; dépend
+  de la politique de confidentialité.
 
 ## Phase 7 : les accroches déjà posées
 

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { creerFrein, ipDeConnexion, ipDuClient } from "@/lib/compte/garde";
 import { makeSupabase } from "@/lib/supabase";
+import { cleFreinDepot, FREIN_LARGE, FREINS_DEPOT } from "@/lib/collectif/freins";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { appareilDeRequete, lireLienDeDepot, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
 import { lireIdsPhotos, peutSupprimerSaPhoto } from "@/lib/collectif/corbeille";
@@ -24,7 +26,7 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  *
  * Elles vont à la CORBEILLE (`supprimee_par: "auteur"`, 30 jours, restaurables
  * par le responsable et l'atelier) et libèrent leur place dans le plafond de la
- * personne. Après la clôture, plus rien ne se supprime d'ici (409
+ * personne (comme toute photo de la corbeille depuis l'audit du 20/10, S4). Après la clôture, plus rien ne se supprime d'ici (409
  * `depot_ferme`). Sans téléphone connu : 403 `appareil_inconnu`. Sans la
  * migration 20261023 : 503 `migration_personnes_absente`.
  */
@@ -32,10 +34,17 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const freinSupprimer = creerFrein(FREINS_DEPOT.supprimer);
+const freinLarge = creerFrein(FREIN_LARGE);
+
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
+  /* Un frein par adresse du client et par lien (C1, `freins.ts`) : une `Map` par instance, un frein seulement. */
+  if (freinSupprimer(cleFreinDepot(ipDuClient(request), corps.token)) || freinLarge(ipDeConnexion(request))) {
+    return NextResponse.json({ error: "trop_de_demandes" }, { status: 429 });
+  }
 
   const acces = await chargerAcces(String(corps.token ?? ""), "depot");
   const refus = refusAcces(acces);

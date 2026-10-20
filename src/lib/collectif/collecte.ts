@@ -5,10 +5,9 @@
 
 import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FILTRE_PLACE_PERSONNE } from "./corbeille";
 import { DELAI_DECLARATION_MORTE_MS, type Existant } from "./depot";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "./horsCorbeille";
-import { enPaquets } from "./lignes";
+import { enPaquets, listeIn } from "./lignes";
 import { colonneAbsente } from "./migration";
 import { placeRestante, type Place, type ReglagesPlafond } from "./plafonds";
 import type { TypeProvenance } from "./types";
@@ -71,10 +70,11 @@ export function filtreDansPlafond(maintenant: Date): string {
  * - le plafond PAR PERSONNE se compte par sa PERSONNE (`participantId`, son
  *   adresse : tous ses téléphones) quand elle est connue, sinon par
  *   TÉLÉPHONE comme avant (`appareil`) ;
- * - une photo à la corbeille ne compte plus dans le TOTAL ; dans la place de
- *   la personne, seulement si son AUTEUR l'a supprimée (`FILTRE_PLACE_PERSONNE`,
- *   corbeille.ts). Sans la migration : aucune photo n'est à la corbeille, les
- *   deux comptes se refont sans le filtre (`lireHorsCorbeille`).
+ * - une photo à la corbeille ne compte plus, NI dans le total, NI dans la
+ *   place de la personne, quel que soit qui l'a supprimée (audit du 20/10, S4 :
+ *   `compteDansLaPlace`, corbeille.ts). Sans la migration : aucune photo n'est
+ *   à la corbeille, les deux comptes se refont sans le filtre
+ *   (`lireHorsCorbeille`).
  * `parAppareil` garde son nom : c'est ce que la personne (ou le téléphone) a
  * déjà déposé.
  */
@@ -94,7 +94,8 @@ export async function compterPourPlafond(
   const deLaPersonne = (avec: boolean) => {
     const q = participantId && avec ? compter().eq("participant_id", participantId) : appareil ? compter().eq("appareil_id", appareil) : null;
     if (!q) return null;
-    const place = avec ? q.or(FILTRE_PLACE_PERSONNE) : q;
+    /* La corbeille ne compte plus dans la place, qui que soit celui qui a supprimé (S4). */
+    const place = avec ? q.is("supprimee_le", null) : q;
     return (provenanceId ? place.eq("provenance_id", provenanceId) : place).limit(0);
   };
   const lus = await lireHorsCorbeille(async (avec) => {
@@ -160,11 +161,13 @@ export async function lireExistants(
   type Lu = { id: string; r2_key: string; cle_fichier: string; confirmee_le: string | null; supprimee_le?: string | null };
   /* La corbeille est LUE, jamais filtrée ici : une photo supprimée garde sa clé de fichier
      (unique par édition), et la redéclarer ne doit ni la dupliquer ni la ressusciter
-     (`corbeille: true`, rendu « déjà là » par planDeclaration). */
+     (`corbeille: true`, rendu « déjà là » par planDeclaration).
+     ⚠️ Une clé de fichier vient du NAVIGATEUR (le nom de la photo, tel quel) : elle entre dans le
+     filtre citée par `listeIn` (S8), jamais par `.in()`, qui la couperait à un guillemet. */
   const lus = await lireHorsCorbeille(async (avec) => {
     const colonnes: string = avec ? "id, r2_key, cle_fichier, confirmee_le, supprimee_le" : "id, r2_key, cle_fichier, confirmee_le";
     const paquets = await Promise.all(
-      enPaquets([...new Set(cles)]).map((paquet) => supabase.from("collectif_photos").select(colonnes).eq("edition_id", editionId).in("cle_fichier", paquet))
+      enPaquets([...new Set(cles)]).map((paquet) => supabase.from("collectif_photos").select(colonnes).eq("edition_id", editionId).filter("cle_fichier", "in", listeIn(paquet)))
     );
     return { paquets, error: paquets.find((p) => p.error)?.error ?? null };
   });

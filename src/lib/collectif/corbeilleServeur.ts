@@ -7,10 +7,20 @@
  * (`absente` : la migration manque, 503 `migration_personnes_absente`).
  *
  * L'ORDRE D'UN EFFACEMENT (purge des 30 jours, ou « Effacer maintenant » de
- * l'atelier) : le COFFRE d'abord (l'original et la vignette, sous
- * `collectif/<édition>/` seulement), PUIS la ligne, et seulement pour une photo
- * dont TOUS les objets sont partis. Un objet qui résiste garde sa ligne à la
- * corbeille : le prochain passage réessaie, rien n'est orphelin.
+ * l'atelier ; audit du 20/10, S7 et C2, qui renverse l'ordre du lot w1) :
+ * 1. l'INTENTION au journal (`objets_a_effacer` : les clés du coffre, rien
+ *    d'autre) ; sans elle, rien ne part ;
+ * 2. la LIGNE, supprimée sous condition (encore à la corbeille, et pour la
+ *    purge encore plus vieille que 30 jours) en RENDANT ses clés : une photo
+ *    restaurée entre-temps reste, avec tous ses objets ;
+ * 3. le COFFRE (l'original et la vignette, sous `collectif/<édition>/`
+ *    seulement), pour les lignes parties seulement ;
+ * 4. ce qui est réglé (`objets_effaces`). Un objet qui résiste reste dans
+ *    l'intention : la purge suivante le retente (`reprendreObjets`) jusqu'à
+ *    réussite, et n'efface jamais une clé qu'une ligne porte encore.
+ * L'ancien ordre (le coffre, puis la ligne) laissait « Restaurer » ressusciter
+ * une photo dont l'original venait de partir, et une ligne dont le coffre
+ * résistait revenait chaque jour en tête de la purge.
  *
  * LA LIGNE EST SUPPRIMÉE, PAS ANONYMISÉE (décision de ce lot) : la personne ou
  * l'organisateur a demandé que la photo parte, et la ligne ne porte que des
@@ -28,12 +38,30 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supprimer } from "@/lib/atelier/r2";
 import { cleVignette, estCleCollectif, prefixeEdition } from "./cles";
-import { ALERTE_JOURS, echeanceCorbeille, EVT_EFFACEES, EVT_RESTAUREES, EVT_SUPPRIMEES, joursRestants, parQui, seuilPurge, type SupprimeePar } from "./corbeille";
+import {
+  ALERTE_JOURS,
+  clesLibres,
+  echeanceCorbeille,
+  EVT_EFFACEES,
+  EVT_OBJETS_A_EFFACER,
+  EVT_OBJETS_EFFACES,
+  EVT_RESTAUREES,
+  EVT_SUPPRIMEES,
+  joursRestants,
+  lireClesObjets,
+  objetsEnAttente,
+  parQui,
+  photoDeLaCle,
+  REPRISE_MAX_CLES,
+  seuilPurge,
+  type EvenementObjets,
+  type SupprimeePar,
+} from "./corbeille";
 import { cleDuLien, LIBELLE_ATELIER, LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, personneDeLaPhoto } from "./grille";
 import { noterEchec } from "./echecsJournal";
 import { collectifOuvert } from "./interrupteur";
-import { journaliser } from "./journal";
-import { enPaquets, lireToutesLesLignes } from "./lignes";
+import { journaliser, journaliserId } from "./journal";
+import { enPaquets, lireToutesLesLignes, listeIn } from "./lignes";
 import { personnesAbsentes } from "./migration";
 
 export type Panne = { statut: "absente" } | { statut: "erreur"; code?: string };
@@ -187,59 +215,203 @@ export function objetsDeLaPhoto(p: Pick<PhotoCorbeille, "id" | "r2_key" | "vigne
   return [...new Set(cles)].filter((k) => estCleCollectif(k) && k.startsWith(prefixe));
 }
 
+/**
+ * `ratees` : les photos effacées de la base dont un objet du coffre a résisté.
+ * Elles ne reviennent JAMAIS (la ligne est partie) ; leurs objets sont dans
+ * l'intention du journal et la purge suivante les retente (`reprendreObjets`).
+ */
 export type Effacement = { n: number; ids: string[]; ratees: number; journal: boolean };
 
+type AEffacer = Pick<PhotoCorbeille, "id" | "r2_key" | "vignette_key">;
+
+/** Ce qui efface un objet du coffre : `supprimer` (r2.ts) ; le harnais passe le sien (jamais le vrai coffre). */
+export type Effaceur = (cle: string) => Promise<boolean>;
+
+/** Supprimer d'un geste les objets du coffre, 8 à la fois. Rend ceux qui sont partis. */
+async function viderObjets(cles: readonly string[], effaceur: Effaceur): Promise<Set<string>> {
+  const parties = new Set<string>();
+  for (let i = 0; i < cles.length; i += 8) {
+    const lot = cles.slice(i, i + 8);
+    const rendus = await Promise.all(lot.map((k) => effaceur(k).catch(() => false)));
+    lot.forEach((k, j) => {
+      if (rendus[j]) parties.add(k);
+    });
+  }
+  return parties;
+}
+
 /**
- * Effacer pour de bon des photos À LA CORBEILLE d'une édition : le coffre,
- * puis la ligne (conditionnée : encore à la corbeille), puis le journal
- * (`photos_effacees`). `par` : « purge » (les 30 jours) ou « atelier »
- * (« Effacer maintenant »).
+ * Supprimer les LIGNES, sous condition et en rendant leurs clés (S7) : encore à
+ * la corbeille et, pour la purge (`avant`), toujours plus vieilles que 30 jours.
+ * Une photo restaurée entre la lecture et ce geste ne part pas. Si la base
+ * refuse le paquet, on le rejoue photo par photo (C2) : une ligne coincée ne
+ * retient pas les autres ; trois refus de suite, c'est la base, on s'arrête.
+ */
+async function supprimerLignes(supabase: SupabaseClient, editionId: string, ids: readonly string[], avant: string | null): Promise<Issue<AEffacer[]>> {
+  const requete = (liste: readonly string[]) => {
+    const q = supabase.from("collectif_photos").delete().eq("edition_id", editionId).in("id", [...liste]).not("supprimee_le", "is", null);
+    return (avant ? q.lt("supprimee_le", avant) : q).select("id, r2_key, vignette_key").returns<AEffacer[]>();
+  };
+  const tout = await requete(ids);
+  if (!tout.error) return { statut: "ok", valeur: tout.data ?? [] };
+  if (personnesAbsentes(tout.error)) return { statut: "absente" };
+  console.error("[collectif] corbeille : lignes refusées en paquet, reprises une à une", ids.length, tout.error.code);
+  const parties: AEffacer[] = [];
+  let derniere: { code?: string; message?: string } = tout.error;
+  let refusDeSuite = 0;
+  for (const id of ids) {
+    const une = await requete([id]);
+    if (une.error) {
+      derniere = une.error;
+      if (++refusDeSuite >= 3 && !parties.length) break;
+      continue;
+    }
+    refusDeSuite = 0;
+    parties.push(...(une.data ?? []));
+  }
+  return parties.length ? { statut: "ok", valeur: parties } : echec(derniere);
+}
+
+/**
+ * Un paquet (100 photos au plus) : l'INTENTION (les clés du coffre, au journal),
+ * puis les LIGNES, puis le COFFRE, puis ce qui est réglé. Sans intention écrite,
+ * rien ne part : un objet dont on perdrait la trace ne se retenterait jamais.
+ */
+async function effacerPaquet(
+  supabase: SupabaseClient,
+  editionId: string,
+  paquet: readonly AEffacer[],
+  avant: string | null,
+  effaceur: Effaceur
+): Promise<Issue<{ ids: string[]; ratees: number; journal: boolean }>> {
+  const cles = lireClesObjets(paquet.flatMap((p) => objetsDeLaPhoto(p, editionId)), editionId);
+  const intention = await journaliserId(supabase, { editionId }, EVT_OBJETS_A_EFFACER, { cles, n: paquet.length }, null);
+  if (!intention) {
+    await noterEchec(supabase, editionId, "corbeille", { etape: "ecriture", n: paquet.length });
+    return { statut: "erreur", code: "journal" };
+  }
+  const lignes = await supprimerLignes(supabase, editionId, paquet.map((p) => p.id), avant);
+  if (lignes.statut !== "ok") {
+    if (lignes.statut === "erreur") await noterEchec(supabase, editionId, "corbeille", { etape: "ecriture", code: lignes.code, n: paquet.length });
+    /* Aucune ligne n'est partie : tous les objets restent. L'intention est réglée (rien à faire) ;
+       si ce journal-là manque, la reprise relira les lignes et les gardera aussi. */
+    await journaliser(supabase, { editionId }, EVT_OBJETS_EFFACES, { evenement: intention, cles }, null);
+    return lignes;
+  }
+  /* Les objets des lignes PARTIES, tels que la suppression les a rendus ; ceux des autres restent. */
+  const parPhoto = lignes.valeur.map((l) => ({ id: l.id, objets: lireClesObjets(objetsDeLaPhoto(l, editionId), editionId) }));
+  const aVider = new Set(parPhoto.flatMap((p) => p.objets));
+  const parties = await viderObjets([...aVider], effaceur);
+  const gardees = cles.filter((k) => !aVider.has(k));
+  const reglees = [...gardees, ...[...aVider].filter((k) => parties.has(k))];
+  const ratees = parPhoto.filter((p) => p.objets.some((k) => !parties.has(k))).length;
+  const journal = reglees.length ? await journaliser(supabase, { editionId }, EVT_OBJETS_EFFACES, { evenement: intention, cles: reglees }, null) : true;
+  return { statut: "ok", valeur: { ids: lignes.valeur.map((l) => l.id), ratees, journal } };
+}
+
+/**
+ * Effacer pour de bon des photos À LA CORBEILLE d'une édition (S7, C2) : par
+ * paquets de 100, l'intention au journal, la LIGNE (re-contrôlée : encore à la
+ * corbeille, et pour la purge encore plus vieille que `avant`), le COFFRE, puis
+ * le journal (`photos_effacees`). Un paquet refusé n'arrête pas les suivants.
+ * `par` : « purge » (les 30 jours) ou « atelier » (« Effacer maintenant »).
  */
 export async function effacer(
   supabase: SupabaseClient,
   editionId: string,
-  photos: readonly Pick<PhotoCorbeille, "id" | "r2_key" | "vignette_key">[],
+  photos: readonly AEffacer[],
   par: "purge" | "atelier",
   qui: string | null,
-  jusqua: number = Infinity
+  jusqua: number = Infinity,
+  avant: string | null = null,
+  effaceur: Effaceur = supprimer
 ): Promise<Issue<Effacement>> {
-  const parties: string[] = [];
-  let ratees = 0;
-  for (let i = 0; i < photos.length; i += 8) {
-    if (Date.now() >= jusqua) break;
-    await Promise.all(
-      photos.slice(i, i + 8).map(async (p) => {
-        const objets = objetsDeLaPhoto(p, editionId);
-        const rendus = await Promise.all(objets.map((k) => supprimer(k)));
-        if (objets.length && rendus.every(Boolean)) parties.push(p.id);
-        else ratees++;
-      })
-    );
-  }
   const effacees: string[] = [];
-  for (const paquet of enPaquets(parties)) {
-    const { data, error } = await supabase
-      .from("collectif_photos")
-      .delete()
-      .eq("edition_id", editionId)
-      .in("id", paquet)
-      .not("supprimee_le", "is", null)
-      .select("id")
-      .returns<{ id: string }[]>();
-    if (error) {
-      console.error("[collectif] photos effacées du coffre, lignes gardées", paquet.length, error.code);
-      await noterEchec(supabase, editionId, "corbeille", { etape: "ecriture", n: paquet.length });
-      return echec(error);
+  let ratees = 0;
+  let journal = true;
+  let panne: Panne | null = null;
+  for (const paquet of enPaquets(photos)) {
+    if (Date.now() >= jusqua) break;
+    const r = await effacerPaquet(supabase, editionId, paquet, avant, effaceur);
+    if (r.statut !== "ok") {
+      panne = panne ?? r;
+      continue;
     }
-    effacees.push(...(data ?? []).map((l) => l.id));
+    effacees.push(...r.valeur.ids);
+    ratees += r.valeur.ratees;
+    journal = journal && r.valeur.journal;
   }
   if (ratees) await noterEchec(supabase, editionId, "corbeille", { etape: "coffre", n: ratees });
-  let journal = true;
   if (effacees.length) {
     await invaliderDoublons(supabase, editionId);
-    journal = await journaliser(supabase, { editionId }, EVT_EFFACEES, { n: effacees.length, par, ids: effacees, ratees }, qui);
+    journal = (await journaliser(supabase, { editionId }, EVT_EFFACEES, { n: effacees.length, par, ids: effacees, ratees }, qui)) && journal;
   }
+  if (!effacees.length && panne) return panne;
   return { statut: "ok", valeur: { n: effacees.length, ids: effacees, ratees, journal } };
+}
+
+/**
+ * Reprendre les objets du coffre qu'un effacement n'a pas pu retirer (C2) :
+ * les intentions vieilles de 15 minutes au moins dont des clés ne sont pas
+ * réglées (`objetsEnAttente`). Une clé qu'une LIGNE porte encore (restaurée,
+ * ou que la base a gardée) se garde, jamais ne s'efface (`clesLibres`) ; les
+ * autres se retentent, et ce qui part se règle au journal. Ce qui résiste
+ * attend le passage suivant, jusqu'à réussite. Ne lève jamais.
+ */
+export async function reprendreObjets(
+  supabase: SupabaseClient,
+  jusqua: number,
+  maintenant: Date = new Date(),
+  effaceur: Effaceur = supprimer
+): Promise<{ intentions: number; effaces: number; gardes: number; restes: number } | null> {
+  try {
+    const lu = await lireToutesLesLignes<EvenementObjets>(
+      () => supabase.from("collectif_evenements").select("id, edition_id, type, payload, created_at").in("type", [EVT_OBJETS_A_EFFACER, EVT_OBJETS_EFFACES]).returns<EvenementObjets[]>(),
+      { colonne: "created_at", croissant: true },
+      "objets du coffre à effacer"
+    );
+    if (lu.error) {
+      console.error("[collectif] reprise du coffre : journal illisible", lu.error.code);
+      return null;
+    }
+    const bilan = { intentions: 0, effaces: 0, gardes: 0, restes: 0 };
+    let budget = REPRISE_MAX_CLES;
+    for (const a of objetsEnAttente(lu.data, maintenant)) {
+      if (Date.now() >= jusqua || budget <= 0) break;
+      const cles = a.cles.slice(0, budget);
+      budget -= cles.length;
+      bilan.intentions++;
+      const portees: { id: string; r2_key: string | null; vignette_key: string | null }[] = [];
+      let illisible = false;
+      for (const morceau of enPaquets(cles, 50)) {
+        const ids = [...new Set(morceau.map((k) => photoDeLaCle(k, a.editionId)).filter((x): x is string => x !== null))];
+        const ou = [`r2_key.in.${listeIn(morceau)}`, `vignette_key.in.${listeIn(morceau)}`, ...(ids.length ? [`id.in.(${ids.join(",")})`] : [])].join(",");
+        const { data, error } = await supabase.from("collectif_photos").select("id, r2_key, vignette_key").eq("edition_id", a.editionId).or(ou).returns<typeof portees>();
+        if (error) {
+          console.error("[collectif] reprise du coffre : lignes illisibles", error.code);
+          illisible = true;
+          break;
+        }
+        portees.push(...(data ?? []));
+      }
+      /* Sans savoir quelles lignes portent ces clés, on n'efface rien. */
+      if (illisible) continue;
+      const libres = clesLibres(cles, a.editionId, portees);
+      const gardees = cles.filter((k) => !libres.includes(k));
+      const parties = await viderObjets(libres, effaceur);
+      const reglees = [...gardees, ...libres.filter((k) => parties.has(k))];
+      bilan.gardes += gardees.length;
+      bilan.effaces += parties.size;
+      bilan.restes += libres.length - parties.size;
+      if (reglees.length) await journaliser(supabase, { editionId: a.editionId }, EVT_OBJETS_EFFACES, { evenement: a.evenement, cles: reglees, reprise: true }, null);
+      if (libres.length > parties.size) await noterEchec(supabase, a.editionId, "corbeille", { etape: "coffre", n: libres.length - parties.size });
+    }
+    if (bilan.intentions) console.log("[collectif] reprise du coffre", JSON.stringify(bilan));
+    return bilan;
+  } catch (err) {
+    console.error("[collectif] reprise du coffre : exception", (err as Error)?.message);
+    return null;
+  }
 }
 
 /** « Effacer maintenant » (l'atelier) : parmi ces ids, les photos À LA CORBEILLE de l'édition. `verifier` : compter sans rien effacer. */
@@ -263,6 +435,7 @@ export async function effacerMaintenant(
     lues.push(...(data ?? []));
   }
   if (verifier) return { statut: "ok", valeur: { n: 0, ids: [], ratees: 0, journal: true, aEffacer: lues.length } };
+  /* « Maintenant » n'attend pas les 30 jours : la ligne est re-contrôlée « encore à la corbeille » seulement. */
   const r = await effacer(supabase, editionId, lues, "atelier", qui);
   return r.statut === "ok" ? { statut: "ok", valeur: { ...r.valeur, aEffacer: lues.length } } : r;
 }
@@ -271,21 +444,25 @@ export async function effacerMaintenant(
 export const PURGE_MAX = 500;
 
 /**
- * La purge quotidienne : les photos à la corbeille depuis 30 jours, toutes
- * éditions, effacées pour de bon. Lancée APRÈS la réponse de la relève de
+ * La purge quotidienne : d'abord les objets du coffre qu'un effacement passé
+ * n'a pas pu retirer (`reprendreObjets`, jusqu'à réussite), puis les photos à
+ * la corbeille depuis 30 jours, toutes éditions, effacées pour de bon (la
+ * ligne, puis le coffre : `effacer`). Lancée APRÈS la réponse de la relève de
  * l'atelier (`/api/atelier/mails/relever`, aucun cron de plus), bornée par
  * l'échéance de la relève et par `PURGE_MAX`. Coupée si `COLLECTIF_OUVERT` est
  * fermé ; silencieuse sans la migration (rien n'est à la corbeille) et quand
  * rien n'est à purger. Ne lève jamais.
  */
-export async function purgeQuotidienne(supabase: SupabaseClient, jusqua: number): Promise<{ editions: number; effacees: number; ratees: number } | null> {
+export async function purgeQuotidienne(supabase: SupabaseClient, jusqua: number, effaceur: Effaceur = supprimer): Promise<{ editions: number; effacees: number; ratees: number } | null> {
   try {
     if (!collectifOuvert()) return null;
+    await reprendreObjets(supabase, jusqua, new Date(), effaceur);
+    const seuil = seuilPurge(new Date());
     const { data, error } = await supabase
       .from("collectif_photos")
       .select("id, edition_id, r2_key, vignette_key, supprimee_le")
       .not("supprimee_le", "is", null)
-      .lt("supprimee_le", seuilPurge(new Date()))
+      .lt("supprimee_le", seuil)
       .order("supprimee_le", { ascending: true })
       .limit(PURGE_MAX)
       .returns<{ id: string; edition_id: string; r2_key: string; vignette_key: string | null; supprimee_le: string }[]>();
@@ -298,7 +475,8 @@ export async function purgeQuotidienne(supabase: SupabaseClient, jusqua: number)
     const total = { editions: 0, effacees: 0, ratees: 0 };
     for (const [editionId, photos] of parEdition) {
       if (Date.now() >= jusqua) break;
-      const r = await effacer(supabase, editionId, photos, "purge", null, jusqua);
+      /* La ligne est re-contrôlée au moment de partir : encore à la corbeille, encore plus vieille que le seuil. */
+      const r = await effacer(supabase, editionId, photos, "purge", null, jusqua, seuil, effaceur);
       total.editions++;
       if (r.statut === "ok") {
         total.effacees += r.valeur.n;

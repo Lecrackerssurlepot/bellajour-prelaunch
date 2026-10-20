@@ -1,16 +1,31 @@
 import { NextResponse } from "next/server";
-import { signerGet, signerLectureVignette } from "@/lib/atelier/r2";
+import { signerLectureVignette } from "@/lib/atelier/r2";
+import { creerFrein, ipDeConnexion, ipDuClient } from "@/lib/compte/garde";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
-import { estAMoi, filtreAlbum, lirePageAlbum, lireVueAlbum, personnesDeLAlbum, TAILLE_PAGE_ALBUM, type FiltreAlbum } from "@/lib/collectif/album";
+import {
+  comptesDeLAlbum,
+  COLONNES_VUE_ALBUM,
+  estAMoi,
+  filtreAlbum,
+  filtreVueAlbum,
+  lirePageAlbum,
+  lireVueAlbum,
+  TAILLE_PAGE_ALBUM,
+  VUE_ALBUM,
+  type FiltreAlbum,
+  type LigneVueAlbum,
+} from "@/lib/collectif/album";
 import { appareilDeRequete, lireLienDeDepot, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
 import { peutSupprimerSaPhoto } from "@/lib/collectif/corbeille";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { collecteOuverte } from "@/lib/collectif/etats";
-import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
+import { cleFreinDepot, FREIN_LARGE, FREINS_DEPOT } from "@/lib/collectif/freins";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
-import { prenomPourAlbum, type LigneParticipant } from "@/lib/collectif/personnes";
+import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
+import { prenomPourAlbum, vuePersonneConnue, type LigneParticipant } from "@/lib/collectif/personnes";
 import { comptesDeLaPersonne, participantDeLAppareil } from "@/lib/collectif/personnesServeur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
@@ -28,6 +43,17 @@ import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
  * Chaque photo dit si elle est « à moi » et si CE téléphone peut la supprimer
  * (`peutSupprimerSaPhoto`). Après la clôture, l'album reste lisible
  * (`ferme: true`) : rien ne s'y ajoute, rien ne s'y supprime.
+ *
+ * Audit du 20/10 :
+ * - S6 : l'album ne signe JAMAIS l'original (il porte l'EXIF, le GPS) : une
+ *   photo sans vignette rend `vignette: null` ;
+ * - S1 : `moi.participant` ne porte que le prénom (le téléphone parle pour la
+ *   personne dont on a TAPÉ l'adresse) ;
+ * - C1 : « 214 photos, 9 personnes » se lit dans la vue `collectif_photos_album`
+ *   (quelques lignes), plus en relisant toutes les photos du lien ; sans la
+ *   vue (migration 20261023 absente), un compte en GET `limit(0)` et
+ *   `personnes: null` (jamais un nombre deviné). Un frein par adresse du client
+ *   et par lien (`freins.ts`) ; une `Map` par instance, un frein seulement.
  *
  * Sans la migration 20261023 : aucune photo n'est à la corbeille, aucune
  * personne n'est connue (le filtre se rejoue sans elle).
@@ -51,10 +77,25 @@ type LigneAlbum = {
 
 const COLONNES = "id, vignette_key, r2_key, mime, deposant, role_deposant, provenance_id, appareil_id, confirmee_le";
 
+const freinAlbum = creerFrein(FREINS_DEPOT.album);
+const freinLarge = creerFrein(FREIN_LARGE);
+
+/** Le filtre, posé appel par appel (`filtreAlbum` pour l'album, le téléphone pour « miennes »). */
+function poser<Q extends { eq(c: string, v: string): Q; is(c: string, v: null): Q; not(c: string, op: string, v: null): Q; in(c: string, v: string[]): Q }>(q: Q, f: FiltreAlbum, avec: boolean): Q {
+  if (f.methode === "eq") return q.eq(f.colonne, f.valeur);
+  if (f.methode === "is") return f.colonne === "supprimee_le" && !avec ? q : q.is(f.colonne, null);
+  if (f.methode === "not_is") return q.not(f.colonne, "is", null);
+  /* Les versions d'accord sont des constantes du code (VERSIONS_ALBUM), jamais un texte de client. */
+  return q.in(f.colonne, f.valeurs);
+}
+
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
+  if (freinAlbum(cleFreinDepot(ipDuClient(request), corps.token)) || freinLarge(ipDeConnexion(request))) {
+    return NextResponse.json({ error: "trop_de_demandes" }, { status: 429 });
+  }
 
   const acces = await chargerAcces(String(corps.token ?? ""), "depot");
   const refus = refusAcces(acces);
@@ -88,13 +129,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ vue, page: 0, suivante: null, photos: [], album: null, moi: null, lien: { nom: lien?.libelle?.trim() || null }, ferme: !collecteOuverte(edition.etat, edition.cloture_le, maintenant) }, { headers: { "cache-control": "private, no-store" } });
   }
 
-  /* Le filtre, posé appel par appel (`filtreAlbum` pour l'album, le téléphone pour « miennes »). */
-  const poser = <Q extends { eq(c: string, v: string): Q; is(c: string, v: null): Q; not(c: string, op: string, v: null): Q; in(c: string, v: string[]): Q }>(q: Q, f: FiltreAlbum, avec: boolean): Q => {
-    if (f.methode === "eq") return q.eq(f.colonne, f.valeur);
-    if (f.methode === "is") return f.colonne === "supprimee_le" && !avec ? q : q.is(f.colonne, null);
-    if (f.methode === "not_is") return q.not(f.colonne, "is", null);
-    return q.in(f.colonne, f.valeurs);
-  };
   const filtres: FiltreAlbum[] =
     vue === "album"
       ? filtreAlbum(provenanceId)
@@ -103,14 +137,34 @@ export async function POST(request: Request) {
           { methode: "not_is", colonne: "confirmee_le" },
           { methode: "is", colonne: "supprimee_le" },
         ];
-  const requete = (avec: boolean, colonnes: string) => {
-    let q = supabase.from("collectif_photos").select(colonnes).eq("edition_id", edition.id);
+  const requete = (avec: boolean, colonnes: string, compte = false) => {
+    let q = supabase.from("collectif_photos").select(colonnes, compte ? COMPTE_SANS_LIGNE : undefined).eq("edition_id", edition.id);
     for (const f of filtres) q = poser(q, f, avec);
     if (vue === "miennes" && appareil) {
       q = q.eq("appareil_id", appareil);
       if (avec) q = q.or(moi ? `participant_id.is.null,participant_id.eq.${moi.id}` : "participant_id.is.null");
     }
     return q;
+  };
+
+  /* Combien de photos et de personnes dans l'album, à la première page seulement (C1) : les lignes de la vue
+     (une par personne, à peu près), jamais les photos. Sans la vue : un compte, et personne de deviné. */
+  const comptesAlbum = async (): Promise<{ photos: number; personnes: number | null } | { erreur: string | undefined }> => {
+    const lu = await lireToutesLesLignes<LigneVueAlbum>(
+      () => {
+        let q = supabase.from(VUE_ALBUM).select(COLONNES_VUE_ALBUM).eq("edition_id", edition.id);
+        for (const f of filtreVueAlbum(provenanceId)) q = poser(q, f, true);
+        return q.returns<LigneVueAlbum[]>();
+      },
+      { colonne: "id", croissant: true },
+      "album du lien (vue)"
+    );
+    if (!lu.error) return comptesDeLAlbum(lu.data);
+    if (!tableAbsente(lu.error.code) && !colonneAbsente(lu.error.code)) return { erreur: lu.error.code };
+    /* GET `limit(0)`, jamais `head` : filtré sur la corbeille, un HEAD rend une erreur sans code (horsCorbeille.ts). */
+    const c = await lireHorsCorbeille((avec) => requete(avec, "id", true).limit(0));
+    if (c.error || c.count === null) return { erreur: c.error?.code ?? "compte" };
+    return { photos: c.count, personnes: null };
   };
 
   const [lus, tous] = await Promise.all([
@@ -121,19 +175,10 @@ export async function POST(request: Request) {
         .range(page * TAILLE_PAGE_ALBUM, page * TAILLE_PAGE_ALBUM + TAILLE_PAGE_ALBUM)
         .returns<LigneAlbum[]>()
     ),
-    /* Combien de photos et de personnes dans l'album : à la première page seulement (trois colonnes). */
-    vue === "album" && page === 0
-      ? lireHorsCorbeille((avec) =>
-          lireToutesLesLignes<{ id: string; deposant: string | null; appareil_id: string | null; participant_id?: string | null; confirmee_le: string }>(
-            () => requete(avec, avec ? "id, deposant, appareil_id, participant_id, confirmee_le" : "id, deposant, appareil_id, confirmee_le").returns<{ id: string; deposant: string | null; appareil_id: string | null; participant_id?: string | null; confirmee_le: string }[]>(),
-            { colonne: "confirmee_le", croissant: true },
-            "album du lien"
-          )
-        )
-      : Promise.resolve(null),
+    vue === "album" && page === 0 ? comptesAlbum() : Promise.resolve(null),
   ]);
-  if (lus.error || tous?.error) {
-    console.error("[collectif] album illisible", lus.error?.code ?? tous?.error?.code);
+  if (lus.error || (tous && "erreur" in tous)) {
+    console.error("[collectif] album illisible", lus.error?.code ?? (tous && "erreur" in tous ? tous.erreur : undefined));
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
   const lignes = lus.data ?? [];
@@ -151,10 +196,11 @@ export async function POST(request: Request) {
   const ouverte = collecteOuverte(edition.etat, edition.cloture_le, maintenant);
   const photos = await Promise.all(
     pageLue.map(async (p) => {
+      /* La VIGNETTE seulement (S6) : l'original porte l'EXIF et le GPS de la personne qui l'a prise ; il ne
+         sort jamais par l'album, même pour un HEIC ou une photo dont la vignette manque encore. */
       let vignette: string | null = null;
       try {
         if (p.vignette_key) vignette = await signerLectureVignette(p.vignette_key);
-        else if (p.mime !== "image/heic" && p.mime !== "image/heif") vignette = await signerGet(p.r2_key);
       } catch {
         vignette = null;
       }
@@ -174,6 +220,7 @@ export async function POST(request: Request) {
     comptesDeLaPersonne(supabase, edition.id, moi?.id ?? null, appareil),
     ouverte ? placeDuParticipant(supabase, edition, lien, appareil, moi?.id ?? null, maintenant) : Promise.resolve(null),
   ]);
+  const personne = moi ? vuePersonneConnue(moi) : null;
   return NextResponse.json(
     {
       vue,
@@ -182,9 +229,9 @@ export async function POST(request: Request) {
       photos,
       lien: { nom: lien?.libelle?.trim() || null },
       ferme: !ouverte,
-      album: tous ? { photos: tous.data?.length ?? 0, personnes: personnesDeLAlbum(tous.data ?? []) } : null,
+      album: tous && !("erreur" in tous) ? tous : null,
       moi: {
-        participant: moi ? { prenom: moi.prenom, nom: moi.nom } : null,
+        participant: personne ? { prenom: personne.prenom, nom: personne.nom } : null,
         photos: comptes?.photos ?? null,
         ceTelephone: comptes?.ceTelephone ?? null,
         place: place && !place.illimitee ? place.place : null,

@@ -12,26 +12,65 @@
 
 type Entree = { count: number; resetAt: number };
 
-/** Un plafond par route — chaque route crée le sien au chargement du module. */
-export function creerPlafond(max: number): (request: Request) => boolean {
-  const parIp = new Map<string, Entree>();
+/**
+ * Un plafond par CLÉ, que l'appelant compose (une adresse IP, une IP et un
+ * lien…) : `max` demandes par minute et par clé, `true` = refuser. Même fenêtre
+ * et même règle que `creerPlafond`, qui n'est que ce frein-ci tenu par l'en-tête
+ * `x-forwarded-for` brut. Une `Map` par instance : un frein, pas une garantie.
+ */
+export function creerFrein(max: number): (cle: string) => boolean {
+  const parCle = new Map<string, Entree>();
   const fenetre = process.env.NODE_ENV === "production" ? 60_000 : 10_000;
   const plafond = process.env.NODE_ENV === "production" ? max : max * 6;
-  return (request: Request): boolean => {
+  return (cle: string): boolean => {
     const now = Date.now();
-    for (const [cle, val] of parIp) {
-      if (val.resetAt < now) parIp.delete(cle);
+    for (const [c, val] of parCle) {
+      if (val.resetAt < now) parCle.delete(c);
     }
-    const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-    const entree = parIp.get(ip);
+    const entree = parCle.get(cle);
     if (entree && entree.resetAt > now) {
       if (entree.count >= plafond) return true;
       entree.count += 1;
       return false;
     }
-    parIp.set(ip, { count: 1, resetAt: now + fenetre });
+    parCle.set(cle, { count: 1, resetAt: now + fenetre });
     return false;
   };
+}
+
+/** Un plafond par route — chaque route crée le sien au chargement du module. */
+export function creerPlafond(max: number): (request: Request) => boolean {
+  const frein = creerFrein(max);
+  return (request: Request): boolean => frein(request.headers.get("x-forwarded-for") ?? "unknown");
+}
+
+const FORME_IP = /^[0-9A-Fa-f.:]{2,45}$/;
+
+/**
+ * L'adresse IP qui se CONNECTE à Vercel : la première de `x-forwarded-for`,
+ * que Vercel réécrit lui-même (un appelant ne la choisit pas), sinon
+ * `x-real-ip`. Derrière Cloudflare en proxy, c'est l'adresse de Cloudflare,
+ * partagée par beaucoup de monde : un frein large seulement.
+ */
+export function ipDeConnexion(request: Request): string {
+  const xff = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  if (xff && FORME_IP.test(xff)) return xff;
+  const reel = request.headers.get("x-real-ip")?.trim();
+  return reel && FORME_IP.test(reel) ? reel : "inconnu";
+}
+
+/**
+ * L'adresse IP du CLIENT : `cf-connecting-ip` quand Cloudflare la pose (le
+ * site passe par lui en proxy), sinon celle qui se connecte à Vercel
+ * (`ipDeConnexion`). ⚠️ `cf-connecting-ip` s'écrit aussi par un appelant qui
+ * vise directement Vercel (l'adresse *.vercel.app) : un script peut en changer
+ * à chaque demande. Ne s'emploie donc qu'avec un second frein, large, tenu par
+ * `ipDeConnexion`, qui, lui, ne se forge pas.
+ */
+export function ipDuClient(request: Request): string {
+  const cf = request.headers.get("cf-connecting-ip")?.trim();
+  if (cf && FORME_IP.test(cf)) return cf;
+  return ipDeConnexion(request);
 }
 
 /**

@@ -7,7 +7,10 @@ T-196 (pages d'état), T-200 (vidéos, déjà fait).
 
 - Migration : `supabase/migrations/20261023_collectif_personnes_corbeille.sql` (ÉCRITE, **pas
   appliquée** : Mathias l'applique). Tout le code se replie sans elle (section 6).
-- Harnais : section « w1 » de `scripts/verif-collectif.ts` (62 vérifications).
+- Harnais : section « w1 » de `scripts/verif-collectif.ts` (62 vérifications), puis la section
+  « durcissement » (audit de sécurité du 20/10, contre une fausse base qui lit les filtres comme
+  PostgREST). **Ce qui a changé depuis le lot w1 est résumé en section 9** ; les sections 1 à 8
+  sont à jour.
 - Modules purs : `personnes.ts`, `corbeille.ts`, `album.ts`, `ouverture.ts` (+ `accord.ts`,
   `saisie.ts`, `droits.ts`, `migration.ts`). À effets : `personnesServeur.ts`,
   `corbeilleServeur.ts`, `horsCorbeille.ts` (le repli), `collecte.ts` (comptes).
@@ -28,9 +31,11 @@ en clair au journal.
   (`collectif_participants`). Même adresse = même personne sur tous ses téléphones et tous les
   liens de l'édition.
 - ⚠️ **L'adresse n'est PAS vérifiée.** Qui tape celle de quelqu'un envoie en son nom et lit son
-  prénom et son nombre de photos (accepté le 20/10). Elle **n'ouvre aucun droit de supprimer** et
-  ne montre **aucune photo** d'un autre lien ni d'un autre téléphone (la question Q7 de
-  `PROJET-CONFIDENTIALITE-B2B.md` : tenue).
+  **prénom** et son nombre de photos (accepté le 20/10), **jamais son nom de famille** (S1 :
+  `vuePersonneConnue`). Elle **n'ouvre aucun droit de supprimer** et ne montre **aucune photo**
+  d'un autre lien ni d'un autre téléphone (la question Q7 de `PROJET-CONFIDENTIALITE-B2B.md` :
+  tenue). Chaque présentation d'une adresse connue se journalise (`participant_retrouve`) ; sous un
+  autre nom, aussi (`participant_nom_different`), et le responsable le voit (`nomPropose`).
 - Un téléphone (le cookie httpOnly `bj_depot_appareil`, déjà écrit sur chaque photo) **parle pour
   une personne** dans une édition (`collectif_participants_appareils`, un téléphone = une personne).
   « Ce n'est pas toi ? » retire ce lien ; les photos restent à leur personne.
@@ -52,8 +57,11 @@ en clair au journal.
 - Le plafond **par personne** se compte par sa **personne** (toutes ses photos, tous ses téléphones)
   quand elle est connue, sinon **par téléphone** comme avant. Sur un lien à plafond propre, sur ce
   lien seulement (inchangé).
-- Une photo supprimée **par son auteur** libère sa place. Une photo retirée par le responsable ou
-  l'atelier la **garde** (décision de ce lot : sinon un dépôt indésirable se renverrait sans fin).
+- Une photo à la corbeille **libère sa place, qui que soit celui qui l'a supprimée** (S4 de l'audit,
+  qui remplace la règle du lot w1 « le responsable la garde ») : l'adresse n'étant pas vérifiée, un
+  farceur qui envoie sous l'adresse de quelqu'un épuisait sa place, et le nettoyage du responsable
+  ne la lui rendait pas. La même photo rechoisie reste « déjà là » par sa clé : elle ne se renvoie
+  pas en boucle.
 - Le **total** de l'édition ne compte plus aucune photo de la corbeille.
 
 ### L'album du lien (décision 3)
@@ -79,8 +87,13 @@ en clair au journal.
 - Restaurable par le responsable et l'atelier pendant 30 jours : elle revient à sa place (son lien,
   sa personne, « Ma sélection » si elle y était ; rien d'autre n'avait bougé).
 - Passé 30 jours : la **purge quotidienne** (après la réponse de `/api/atelier/mails/relever`,
-  aucun cron de plus) efface le **coffre d'abord** (original + vignette, sous `collectif/<édition>/`
-  seulement), **puis la ligne**, et seulement pour une photo dont tous les objets sont partis.
+  aucun cron de plus) efface **la LIGNE d'abord, puis le coffre** (S7, qui renverse l'ordre du lot
+  w1) : l'intention au journal (`objets_a_effacer`, des clés R2 seulement), la ligne supprimée sous
+  condition (toujours à la corbeille, toujours plus vieille que 30 jours) en rendant ses clés, puis
+  l'original et la vignette (sous `collectif/<édition>/` seulement), puis ce qui est réglé
+  (`objets_effaces`). Un objet qui résiste se retente aux passages suivants, jusqu'à réussite
+  (`reprendreObjets`) ; une clé qu'une ligne porte encore ne s'efface jamais. « Restaurer » ne peut
+  donc plus ressusciter une photo vide, et une ligne coincée ne retient plus les autres.
 - **La ligne est SUPPRIMÉE, pas anonymisée** (décision de ce lot) : elle ne porte que des données
   sur la photo et la personne (nom d'origine, GPS, appareil, empreinte, déposant), la personne ou
   l'organisateur a demandé qu'elle parte, et une ligne gardée bloquerait pour toujours sa clé de
@@ -144,7 +157,10 @@ en clair au journal.
   - lien général : « Les personnes qui envoient leurs photos par ce lien verront aussi celles que
     j'envoie ici. » (**proposée par ce lot, à relire par Mathias : texte légal**).
 - `texteAccord(version, { evenement, deOrganisation, lien })` rend le texte exact à afficher.
-- Le serveur accepte `2026-10-17` ET `2026-10-20` ; aucune autre. L'ancienne reste lisible.
+- Le serveur n'accepte qu'une version **connue et pas plus récente que `VERSION_ACCORD`**
+  (`versionAcceptee`, C5) : aujourd'hui `2026-10-17` seule. `2026-10-20` sera acceptée le jour où
+  `VERSION_ACCORD` passera à `2026-10-20`, c'est-à-dire le jour où la page affichera la phrase.
+  Sans cela, un script ou un vieil onglet entrait dans l'album des autres sans l'avoir lue.
 - ⚠️ `VERSION_ACCORD` (ce que `Depot.tsx` envoie) **reste `2026-10-17`** : il ne passe à
   `2026-10-20` que le jour où la page AFFICHE la phrase (sinon on enregistrerait un accord que
   personne n'a lu). La seconde vague le bascule, et met à jour les deux vérifications du harnais
@@ -175,21 +191,34 @@ supprimé : 404 `provenance_inconnue`.
 
 ### `POST /api/collectif/depot/participant`
 
-Droit `se_presenter`. Frein : 20 demandes par minute et par appelant (429 `trop_de_demandes`).
+Droit `se_presenter`. Frein (S3, `freins.ts`) : **seule l'action `presenter` compte** (ni `qui`,
+ni `oublier`), **300 par minute par adresse IP du client ET par lien de dépôt** (80 personnes
+derrière le Wi-Fi du campus, deux présentations chacune, passent), plus un frein large de 1 200 par
+minute par adresse qui se connecte à Vercel ; 429 `trop_de_demandes`. ⚠️ Une `Map` par instance :
+un frein, pas une protection (voir section 9).
 
 **`{ token, p?, action: "presenter", email, prenom?, nom? }`**
 
 | Cas | Réponse |
 |---|---|
 | adresse inconnue, sans prénom ni nom | 200 `{ statut: "inconnu", nomRequis: true }` ; **rien n'est écrit, aucun cookie** |
-| adresse inconnue, prénom ET nom | 201 `{ statut: "cree", journal, …personne }` |
-| adresse connue (nom envoyé ignoré) | 200 `{ statut: "connu", nomIgnore, …personne }` |
+| adresse inconnue, prénom ET nom | 201 `{ statut: "cree", journal, …personne }` (le nom complet tapé) |
+| adresse connue (nom envoyé ignoré) | 200 `{ statut: "connu", journal, nomIgnore, …personne }` (le **prénom** seul) |
 
 `…personne` = `{ participant: { prenom, nom, nomAffiche }, photos, ceTelephone, accordDonne, accordAJour, place }` :
+- `participant` : à la création, ce qui vient d'être tapé ; pour une personne **retrouvée**
+  (« connu », et l'action `qui`), **`{ prenom, nom: null, nomAffiche: prenom }`** (S1 : jamais le
+  nom de famille de quelqu'un dont on a tapé l'adresse) ;
+- `nomIgnore` : `true` dès qu'un prénom et un nom ont été tapés avec une adresse connue, qu'ils
+  soient les siens ou non (S1 : le dire seulement quand ils diffèrent ouvrait un oracle du nom de
+  famille) ; le nom de la personne ne change jamais d'ici ;
+- `journal` : la présentation s'est journalisée (`participant_presente` à la création ;
+  `participant_retrouve`, et `participant_nom_different` sous un autre nom, pour une adresse connue) ;
 - `photos` : ses photos arrivées dans l'édition, hors corbeille, tous téléphones ;
 - `ceTelephone` : celles envoyées depuis ce téléphone (à elle, ou sans personne) ;
 - `accordDonne` : la dernière version d'accord donnée depuis ce téléphone pour elle (`null` :
-  jamais) ; `accordAJour` : `accordDonne === "2026-10-20"` ;
+  jamais) ; `accordAJour` : `accordDonne === VERSION_ACCORD` (la version que la page affiche, la
+  seule que le serveur accepte de neuf : C5 ; aujourd'hui `2026-10-17`) ;
 - `place` : combien elle peut encore envoyer par ce lien (`null` = sans limite).
 
 Le cookie `bj_depot_appareil` est posé s'il manquait (httpOnly, un an, `path=/`), et ce
@@ -209,18 +238,24 @@ journal `telephone_oublie`. 503 sans la migration.
 
 ### `POST /api/collectif/depot/presign` (changé)
 
-Nouveau champ facultatif **`email`** dans la déclaration : la personne déjà présentée. Sans lui,
-la personne de CE téléphone. Connue : son nom va sur la photo (`deposant`), `participant_id` aussi,
-et le plafond par personne se compte par elle.
+La personne d'une photo est **celle pour qui CE téléphone parle** (`collectif_participants_appareils`,
+posé par `presenter`). Connue : son nom va sur la photo (`deposant`), `participant_id` aussi, et le
+plafond par personne se compte par elle. **Un champ `email` dans le corps est IGNORÉ** (S2 de
+l'audit : lu, il faisait de presign un annuaire des adresses sans frein, et laissait un script
+déposer sous le nom de n'importe qui sans même se présenter). Le moteur peut continuer à l'envoyer,
+il ne sert à rien ; mieux vaut ne plus l'envoyer.
 
 Nouvelles réponses :
 - 409 `depot_pas_ouvert` `{ message, ouverture_le }` : avant l'ouverture, pour un participant ;
-- 400 `email_invalide` ; 409 `participant_inconnu` `{ message }` : l'adresse n'a pas été présentée ;
 - dans `resultats`, une photo à la corbeille : `{ cle, deja: true, photoId, corbeille: true }`.
+- (`400 email_invalide` et `409 participant_inconnu` du lot w1 **n'existent plus**.)
+- L'accord n'est accepté qu'en `VERSION_ACCORD` ou plus ancienne (C5) : `2026-10-20` envoyé avant
+  la bascule de `VERSION_ACCORD` répond 400 `accord_requis`.
 
-⚠️ Le moteur (`moteur.ts`) doit traiter 409 `depot_pas_ouvert` et `participant_inconnu` comme un
-refus du lot avec la phrase du serveur (comme `accord_requis`), jamais comme une coupure.
-Sans la migration, `email` est ignoré (le serveur le note) et la règle d'avant s'applique.
+⚠️ Le moteur (`moteur.ts`) doit traiter 409 `depot_pas_ouvert` comme un refus du lot avec la
+phrase du serveur (comme `accord_requis`), jamais comme une coupure. Pour déposer sous sa personne,
+le téléphone se présente d'abord (`depot/participant`, action `presenter`) : c'est ce lien-là que
+presign lit. Sans la migration, la règle d'avant s'applique (le nom et le plafond du téléphone).
 
 ### `POST /api/collectif/depot/album`
 
@@ -234,15 +269,21 @@ Droit `voir_album`. N'écrit rien. `{ token, p?, vue?: "album" | "miennes", page
   photos: [{ id, vignette: string | null, prenom, moi: boolean, supprimable: boolean, arrivee }],
   lien: { nom: string | null },          // null = le lien général
   ferme: boolean,                          // collecte close : lecture seule
-  album: { photos, personnes } | null,     // page 0 de « album » seulement
-  moi: { participant: { prenom, nom } | null, photos, ceTelephone, place, sansLimite }
+  album: { photos, personnes: number | null } | null,  // page 0 de « album » seulement
+  moi: { participant: { prenom, nom: null } | null, photos, ceTelephone, place, sansLimite }
 }
 ```
-- `vignette` : adresse signée stable à l'heure (cache navigateur) ; sans vignette, l'original s'il
-  s'affiche ; `null` pour un HEIC sans vignette.
-- `moi` (badge) : de ma personne, ou sans personne de ce téléphone. `supprimable` : ce téléphone
-  peut la supprimer, collecte ouverte.
+- `vignette` : adresse signée stable à l'heure (cache navigateur) ; **sans vignette, `null`**
+  (S6 : l'album ne signe JAMAIS l'original, qui porte l'EXIF et le GPS de qui l'a pris). L'écran
+  montre une tuile vide ou « en préparation » ; la vignette arrive avec le rattrapage du serveur.
+- `album` (C1) : lu dans la vue `collectif_photos_album` (quelques lignes), plus en relisant toutes
+  les photos du lien. **Sans la vue** (migration 20261023 absente) : `photos` vient d'un compte et
+  **`personnes: null`** (ne rien afficher plutôt qu'un nombre faux).
+- `moi` (badge) : de ma personne, ou sans personne de ce téléphone ; `moi.participant` porte le
+  prénom seul, **`nom: null`** (S1). `supprimable` : ce téléphone peut la supprimer, collecte ouverte.
 - `miennes` sans cookie : liste vide.
+- Frein (C1) : 600 par minute par adresse du client et par lien, plus le frein large ; 429
+  `trop_de_demandes` (l'écran réessaie plus tard, sans boucle serrée).
 
 ### `POST /api/collectif/depot/supprimer`
 
@@ -251,7 +292,8 @@ Droit `supprimer_ses_photos`. `{ token, p?, photoIds }` (500 au plus).
 `refusees` (pas de ce téléphone, pas à cette personne, déjà à la corbeille, inconnues) sans
 erreur ; `place` : la place libérée, tout de suite.
 Erreurs : 400 `lot_invalide` ; 403 `appareil_inconnu` (pas de cookie) ; 409 `depot_ferme` ;
-503 `migration_personnes_absente`.
+429 `trop_de_demandes` (C1 : 200 par minute par adresse du client et par lien, plus le frein
+large) ; 503 `migration_personnes_absente`.
 
 ---
 
@@ -292,11 +334,15 @@ changent pas. Une photo à la corbeille ne se marque pas (404 `introuvable` si r
   vont qu'au responsable.
   ```
   Personne = { ref, participant, nom, prenom, nomDeFamille, cle, email, n, liens: [{ cle, n }],
-               telephones, derniere, depuis }
+               telephones, derniere, depuis, nomPropose: { nom, le } | null }
   ```
   `cle` : la clé du filtre de la grille (`qui:<cle>`) ; `email` : masqué (responsable) ou `null`
   (équipe, personne d'avant) ; `liens[].cle` : `lien:<id>` ou `participants` ; `avecAdresses:
   false` : la migration manque, seules les personnes d'avant (par nom) sont listées.
+  `nomPropose` (S5, C4) : le DERNIER autre prénom et nom tapé avec son adresse
+  (`participant_nom_different`), et quand, tant qu'aucun renommage plus récent ne l'a réglé et qu'il
+  diffère encore de son nom ; de quoi proposer « Renommer en … ». `null` pour l'équipe (le journal
+  n'est même pas lu), pour une personne d'avant, ou sans rien à proposer.
 - `{ token, action: "renommer", personne, prenom, nom }` → 200 `{ ok, n, nom, journal }`.
 - `{ token, action: "fusionner", source, cible, garder? }` → 200 `{ ok, n, nom, journal, evenement }`.
 
@@ -312,14 +358,18 @@ Droit `gerer_personnes` pour renommer et fusionner. Erreurs : 404 `personne_intr
 - `GET` → la même vue que `lister`.
 - `POST { action: "supprimer" | "restaurer", photoIds }` → comme le responsable (`par: "atelier"`).
 - `POST { action: "effacer", photoIds, verifier: true }` → 200 `{ ok, verifier: true, aEffacer }`
-  (rien n'est effacé) ; puis `POST { action: "effacer", photoIds }` → 200
-  `{ ok, n, ids, ratees, journal, aEffacer }`, **502** si un objet du coffre a résisté (sa photo
-  reste à la corbeille, la purge réessaiera).
+  (rien n'est effacé) ; puis `POST { action: "effacer", photoIds }` → **200**
+  `{ ok, n, ids, ratees, journal, aEffacer }`. La LIGNE part d'abord (S7) : `n` photos sont
+  effacées pour de bon, même si un objet du coffre a résisté ; `ratees` dit combien de ces photos
+  ont un objet resté au coffre, noté au journal et retenté par la purge suivante. (Le **502** du
+  lot w1 n'existe plus : sa photo ne « reste » plus à la corbeille.) 500 `ecriture_impossible` si
+  l'intention ne s'écrit pas : alors rien n'a bougé.
 
 ### `GET | POST /api/admin/collectif/editions/[id]/personnes`
 
-- `GET` → `{ personnes (adresse ENTIÈRE), proposees, avecAdresses, fusions: [{ evenement, le, qui,
-  reste, part, nomAvant, nomPart, nomApres, n, defaite }] }`.
+- `GET` → `{ personnes (adresse ENTIÈRE, `nomPropose`), proposees, avecAdresses, fusions: [{ evenement, le, qui,
+  reste, part, nomAvant, nomPart, nomApres, n, defaite, interrompue }] }`. `interrompue` (S9) : une
+  écriture a échoué après le journal de la fusion ; « défaire » remet chaque photo d'aplomb.
 - `POST { action: "renommer" | "fusionner", … }` → comme le responsable.
 - `POST { action: "defaire", evenement, verifier: true }` → `{ ok, verifier, defaite, n, reste,
   part, nomAvant, nomPart }` ; sans `verifier` → `{ ok, n, nom, journal }` ; 409 `refuse` si déjà
@@ -336,8 +386,14 @@ converti par `instantDeParis`, jamais un `<input type="datetime-local">`, que le
 
 `purgeQuotidienne` en `after()` de `/api/atelier/mails/relever`, même échéance que le rattrapage,
 500 photos au plus par passage, coupée sans `COLLECTIF_OUVERT`, silencieuse sans la migration.
-Journal `photos_effacees` (`par: "purge"`) ; un objet qui résiste : ligne `echec`
-(`quoi: "corbeille"`) au journal de l'édition.
+D'abord **la reprise** (`reprendreObjets`) : les intentions `objets_a_effacer` vieilles de 15 minutes
+dont des clés ne sont pas réglées ; une clé qu'une ligne porte encore se règle « à garder », les
+autres se retentent (500 clés au plus par passage). Puis la purge, paquet par paquet de 100 : journal
+`objets_a_effacer` (`{ cles, n }`), lignes supprimées sous condition (encore à la corbeille, encore
+plus vieilles que 30 jours, au moment même de la suppression), objets du coffre des lignes parties,
+journal `objets_effaces` (`{ evenement, cles }`), puis `photos_effacees` (`par: "purge"`). Un paquet
+que la base refuse se rejoue photo par photo (une ligne coincée ne retient pas les autres) ; un
+objet qui résiste : ligne `echec` (`quoi: "corbeille"`) au journal de l'édition, et retenté demain.
 
 ---
 
@@ -365,12 +421,14 @@ photo restaurée revient dans le bon dossier).
 | filtre `supprimee_le` sur une lecture | la même lecture sans lui (`lireHorsCorbeille`, absence retenue une minute) : aucune photo n'est à la corbeille |
 | la personne (`participant_id`, tables des personnes) | aucune personne connue : nom et plafond par téléphone, comme avant |
 | la vue avec `participant_id` | la vue d'avant (16 colonnes), puis la relecture complète |
+| la vue `collectif_photos_album` (C1) | un compte en GET `limit(0)` pour `album.photos`, et `album.personnes: null` |
 | `ouverture_le` | absente de l'édition : le lien est ouvert |
+| les journaux `participant_nom_different` | aucune personne connue, donc rien à proposer : `nomPropose: null` |
 
 | Ce qui s'écrit | Sans la migration |
 |---|---|
 | se présenter, « Ce n'est pas toi ? », supprimer (participant, responsable, atelier), restaurer, effacer, renommer, fusionner, défaire, régler l'ouverture | **503 `migration_personnes_absente`** qui nomme le fichier ; rien n'est écrit |
-| `email` dans `presign` | ignoré, noté au serveur ; le dépôt continue (règle d'avant) |
+| `email` dans `presign` | ignoré, AVEC ou sans la migration (S2) ; le dépôt continue (la personne de ce téléphone, ou la règle d'avant) |
 
 ⚠️ **Le piège du HEAD, mesuré le 20/10 sur la vraie base** : un compte `head: true` filtré sur une
 colonne absente rend 400 avec une erreur **sans code ni message** (un HEAD n'a pas de corps) ; le
@@ -389,28 +447,84 @@ place, somme des comptes = 1 203 = photos confirmées non supprimées.
 
 ## 7. Après avoir appliqué la migration (Mathias)
 
-Les requêtes de vérification sont en tête du fichier SQL. Puis, **que la donnée ARRIVE** (le repli
+Les requêtes de vérification sont en tête du fichier SQL (dont `sum(n)` de la vue
+`collectif_photos_album`, égale aux deux autres). Puis, **que la donnée ARRIVE** (le repli
 l'effacerait en silence) : une présentation et un envoi d'un participant (ligne dans
-`collectif_participants`, `participant_id` posé sur ses photos), une suppression
-(`supprimee_le`, `supprimee_par`), une restauration, un réglage d'ouverture.
+`collectif_participants`, `participant_id` posé sur ses photos), la même adresse présentée de
+nouveau sous un autre nom (lignes `participant_retrouve` et `participant_nom_different` dans
+`collectif_evenements`, adresse masquée, et `nomPropose` dans la liste du responsable), une
+suppression (`supprimee_le`, `supprimee_par`), une restauration, un réglage d'ouverture, l'album
+d'un lien (`album.personnes` est un NOMBRE, plus `null`), et un « Effacer maintenant » sur une photo
+de test (une ligne `objets_a_effacer` puis `objets_effaces` qui nomme les mêmes clés).
 
 ---
 
 ## 8. Ce que la seconde vague doit faire (écrans)
 
 1. `/depot/[token]` : l'adresse d'abord, puis prénom et nom (`presenter`), « Content de te
-   revoir », « Ce n'est pas toi ? », l'accord affiché par `texteAccord(VERSION_ACCORD_ALBUM, …)`
-   puis `VERSION_ACCORD` basculé (et les deux vérifications du harnais), le moteur qui envoie
-   `email` dans chaque déclaration et lit `depot_pas_ouvert` / `participant_inconnu` /
-   `corbeille`, l'album et « Mes photos », supprimer ses photos (feuille de confirmation), les
-   pages 9B (pas encore ouvert : `phrasesPasEncoreOuvert`) et 9C (collecte terminée, album en
-   lecture). La page serveur peut lire `edition.ouverture_le` (déjà dans `select("*")`) et
-   `participantDeLAppareil` directement.
+   revoir, {prenom} » (le PRÉNOM seul : c'est tout ce que la route rend d'une personne retrouvée),
+   « Ce n'est pas toi ? », l'accord affiché par `texteAccord(VERSION_ACCORD_ALBUM, …)` puis
+   `VERSION_ACCORD` basculé (et les deux vérifications du harnais ; le serveur acceptera
+   `2026-10-20` dès la bascule, C5), le moteur qui lit `depot_pas_ouvert` / `corbeille` (il n'a
+   plus à envoyer `email` : presign l'ignore, S2 ; `participant_inconnu` n'existe plus), l'album et
+   « Mes photos » (une vignette `null` = une tuile sans image, jamais l'original), supprimer ses
+   photos (feuille de confirmation), les pages 9B (pas encore ouvert : `phrasesPasEncoreOuvert`) et
+   9C (collecte terminée, album en lecture). La page serveur peut lire `edition.ouverture_le` (déjà
+   dans `select("*")`) et `participantDeLAppareil` directement ; ⚠️ elle n'en montre que
+   `vuePersonneConnue(…)` (le prénom), jamais `nom` : le téléphone peut parler pour une adresse
+   tapée par quelqu'un d'autre (S1). Un 429 `trop_de_demandes` se dit et se réessaie plus tard.
 2. Page Photos du responsable : la corbeille (planche 5), agrandir et agir (planche 3 : `marquer`
    avec `photoIds`, `corbeille` `supprimer` puis « Annuler » = `restaurer`), une personne
-   (planche 4 : `personnes`).
-3. Fiche de l'atelier : la corbeille (« Effacer maintenant » en deux temps), les personnes et les
-   fusions à défaire, le champ « Ouverture du dépôt ».
+   (planche 4 : `personnes`), et son `nomPropose` (« Quelqu'un a aussi tapé cette adresse sous
+   le nom … », avec « Renommer » : texte à faire valider par Mathias).
+3. Fiche de l'atelier : la corbeille (« Effacer maintenant » en deux temps ; `ratees` > 0 se dit
+   « effacée ; un fichier sera retiré du coffre à la prochaine purge », plus de 502), les personnes
+   (`nomPropose`) et les fusions à défaire (`interrompue` d'abord), le champ « Ouverture du dépôt ».
 4. `PROJET-CONFIDENTIALITE-B2B.md` (Q6) : l'adresse d'un participant n'est **pas** effacée par la
    purge de la corbeille ni par `collectif-retention.ts` aujourd'hui ; à brancher quand la
-   politique est validée (T-158, T-159).
+   politique est validée (T-158, T-159). Voir C3, section 9.
+
+---
+
+## 9. Changements du durcissement
+
+Audit de sécurité du lot w1, corrigé le 20/10 AVANT que Mathias applique 20261023 (branche
+`fix/collectif-personnes-durcissement`). Chaque correction a son épreuve dans la section
+« durcissement » du harnais, contre une fausse base qui lit les filtres comme PostgREST ; ces
+épreuves échouaient contre le code du lot w1.
+
+| Constat | Ce qui change | Forme des réponses |
+|---|---|---|
+| **S1** l'adresse d'un autre rendait son nom de famille | `vuePersonneConnue` (personnes.ts) : une personne RETROUVÉE ne rend que son prénom ; `nomIgnore` vaut dès qu'un nom est tapé (plus d'oracle du nom de famille, lettre à lettre) | `depot/participant` « connu » et `qui` : `participant: { prenom, nom: null, nomAffiche: prenom }` ; « cree » inchangé. `depot/album` : `moi.participant.nom: null`. `nomIgnore` : `true` dès qu'un nom est tapé |
+| **S2** presign lisait `email` | presign IGNORE `email` : la personne est celle de CE téléphone (`participantDeLAppareil`) | `400 email_invalide` et `409 participant_inconnu` de presign **supprimés** |
+| **S3** frein de 20 par IP, comptant tout | `freins.ts` + `creerFrein`, `ipDuClient`, `ipDeConnexion` (compte/garde.ts, `creerPlafond` inchangé pour ses autres appelants) : seule `presenter` compte ; 300 / minute par IP du client (`cf-connecting-ip` si Cloudflare la pose, sinon la première de `x-forwarded-for`, sinon `x-real-ip`) ET par lien ; plus 1 200 / minute par IP qui se connecte à Vercel | 429 `trop_de_demandes` inchangé, plus rare |
+| **S4** la place gardée par une photo retirée par le responsable | `compteDansLaPlace` : une photo de la corbeille ne compte plus, qui que soit celui qui l'a supprimée ; `FILTRE_PLACE_PERSONNE` retiré (le filtre est `supprimee_le is null`, comme le total) | aucune |
+| **S5** squat du nom invisible | `participant_retrouve` à chaque présentation d'une adresse connue (adresse masquée, ni token ni téléphone) ; `participant_nom_different` sous un autre nom (les deux noms) | `presenter` « connu » porte aussi `journal` |
+| **C4** le responsable ne le voyait pas | `nomsProposes` (personnes.ts), lu par `chargerPersonnes` (500 lignes de journal au plus) | `Personne.nomPropose: { nom, le } \| null` (responsable, atelier ; `null` pour l'équipe) |
+| **S6** l'album signait l'original | la vignette seulement | `photos[].vignette: null` sans vignette (avant : l'original) |
+| **C5** `2026-10-20` accepté avant d'être affiché | `versionAcceptee` (accord.ts) : connue ET ≤ `VERSION_ACCORD` | presign : `2026-10-20` → 400 `accord_requis` tant que `VERSION_ACCORD` vaut `2026-10-17`. `accordAJour` compare à `VERSION_ACCORD` |
+| **S7** le coffre avant la ligne | intention au journal → ligne (re-contrôlée : corbeille, et pour la purge plus vieille que 30 jours) qui rend ses clés → coffre → réglé ; `reprendreObjets` retente jusqu'à réussite | « Effacer maintenant » : **200** avec `ratees` (plus de 502) |
+| **C2** une ligne coincée bloquait la purge | un paquet refusé se rejoue photo par photo ; un paquet en panne n'arrête plus les suivants ; plus de ligne gardée pour un objet qui résiste | aucune |
+| **S8** `.in()` sur du texte de client | `citerPostgrest` / `listeIn` (lignes.ts), posés par `.filter(c, "in", …)` : `deposant` (personnesServeur.ts), `cle_fichier` (collecte.ts), et la grille (`resumePhotos.ts`, seconde ceinture). Grammaire vérifiée contre la vraie base, en lecture seule | aucune |
+| **S9** fusion journalisée après coup | journal AVANT toute écriture (`journaliserId`), rien d'écrit sans lui ; une panne au milieu écrit `fusion_interrompue` ; défaire la remet d'aplomb | `fusions[].interrompue` (GET de l'atelier) |
+| **C1** l'album relisait toutes les photos du lien | vue NEUVE `collectif_photos_album` dans 20261023 (le fichier, toujours non appliqué) ; frein sur `album` et `depot/supprimer` | `album.personnes: number \| null` (`null` sans la vue) ; 429 possible sur `album` et `supprimer` |
+
+Nouveaux types de journal (recit.ts les dit en français) : `participant_retrouve`,
+`participant_nom_different`, `fusion_interrompue`, `objets_a_effacer`, `objets_effaces`.
+⚠️ `participant_retrouve` s'écrit à CHAQUE présentation d'une adresse connue : il n'est pas dans
+`JOURNAL_DE_LOT`, il peut peupler les 100 dernières lignes de la fiche le jour de l'événement.
+À trancher avec la seconde vague de la fiche.
+
+**Ce que le frein n'est pas** : une `Map` par instance Vercel (deux instances comptent chacune de
+leur côté, un redémarrage remet à zéro). `cf-connecting-ip` s'écrit par un appelant qui vise
+l'adresse *.vercel.app directement : d'où le second frein, large, sur l'adresse que Vercel voit
+(qui ne se forge pas). Il freine un script naïf qui essaie des adresses ; il n'arrête pas une
+attaque. La vraie borne de l'oracle : une adresse tapée ne rend que le prénom et un nombre de
+photos (S1), et presign n'en lit plus aucune (S2).
+
+**C3, en attente (non traité, volontairement)** : les noms et prénoms restent dans le journal
+(`participant_presente`, `participant_retrouve`, `participant_nom_different`, `personne_renommee`,
+`personnes_fusionnees`) après la purge des photos, et l'adresse d'un participant
+(`collectif_participants.email`) n'est jamais purgée. Cela dépend de la politique de
+confidentialité que Mathias n'a pas encore tranchée (`PROJET-CONFIDENTIALITE-B2B.md`, T-158,
+T-159) : rien n'est effacé ni anonymisé d'ici avant sa décision.

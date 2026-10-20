@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { colonneAbsente, MIGRATION_ACCORD, MIGRATION_PERSONNES } from "@/lib/collectif/migration";
+import { colonneAbsente, MIGRATION_ACCORD } from "@/lib/collectif/migration";
 import { randomUUID } from "node:crypto";
 import { MAX_VIGNETTE_BYTES, MIME_VIGNETTE, signerPut } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
@@ -12,8 +12,8 @@ import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { noterEchec } from "@/lib/collectif/echecsJournal";
 import { collecteOuverte } from "@/lib/collectif/etats";
 import { depotOuvert, ERREUR_PAS_OUVERT, messagePasOuvert } from "@/lib/collectif/ouverture";
-import { nomAffiche, normaliserEmail, type LigneParticipant } from "@/lib/collectif/personnes";
-import { participantDeLAppareil, trouverParEmail } from "@/lib/collectif/personnesServeur";
+import { nomAffiche, type LigneParticipant } from "@/lib/collectif/personnes";
+import { participantDeLAppareil } from "@/lib/collectif/personnesServeur";
 import { NOM_MAX } from "@/lib/collectif/participant";
 import { nomDeLAppareil } from "@/lib/collectif/participantConnu";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
@@ -52,11 +52,13 @@ import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
  * Planches du 20/10 (migration 20261023, contrat
  * `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`) :
  * - avant `ouverture_le`, un participant reçoit 409 `depot_pas_ouvert` ;
- * - `email` (facultatif) : la personne déjà présentée par `depot/participant`
- *   (inconnue : 409 `participant_inconnu`, illisible : 400 `email_invalide`) ;
- *   sans lui, la personne de CE téléphone ; connue, son nom va sur la photo,
- *   `participant_id` aussi, et le plafond par personne se compte par elle ;
- * - une photo à la corbeille redéclarée reste « déjà là » (`corbeille: true`).
+ * - la personne est celle de CE téléphone (présentée par `depot/participant`) ;
+ *   connue, son nom va sur la photo, `participant_id` aussi, et le plafond par
+ *   personne se compte par elle. Un champ `email` du corps est IGNORÉ (audit du
+ *   20/10, S2 : presign n'est plus un annuaire des adresses) ;
+ * - une photo à la corbeille redéclarée reste « déjà là » (`corbeille: true`) ;
+ *   elle ne compte plus dans la place de personne (S4).
+ * - l'accord : seulement une version que la page affiche (`versionAcceptee`, C5).
  */
 
 export const runtime = "nodejs";
@@ -145,30 +147,21 @@ export async function POST(request: Request) {
     libelleLien = prov.libelle;
   }
   const appareilLu = appareilDeRequete(request);
-  /* La PERSONNE (planches du 20/10, migration 20261023) : celle de l'adresse envoyée (`email`,
-     la page l'a présentée d'abord par `depot/participant`), sinon celle pour qui CE téléphone
-     parle. Connue, elle donne son nom à la photo et son plafond se compte par elle (tous ses
-     téléphones). Sans la migration, on reste à la règle d'avant (le nom et le plafond du
-     téléphone), et le serveur le dit. */
+  /* La PERSONNE (planches du 20/10, migration 20261023) : celle pour qui CE téléphone parle
+     (`collectif_participants_appareils`, posé par `depot/participant`). Connue, elle donne son nom à
+     la photo et son plafond se compte par elle (tous ses téléphones). ⚠️ Audit du 20/10 (S2) : le
+     champ `email` du corps est IGNORÉ. Lu ici, il faisait de presign un annuaire des adresses sans
+     frein (« connue » ou 409 `participant_inconnu`, adresse après adresse) et laissait un script
+     déposer sous le nom de n'importe qui sans même se présenter. Sans la migration, on reste à la
+     règle d'avant (le nom et le plafond du téléphone). */
   let participant: LigneParticipant | null = null;
-  if (role === "participant") {
-    const email = corps.email === undefined || corps.email === null || corps.email === "" ? null : normaliserEmail(corps.email);
-    if (corps.email && !email) return NextResponse.json({ error: "email_invalide" }, { status: 400 });
-    const lu = email
-      ? await trouverParEmail(supabase, edition.id, email)
-      : appareilLu
-        ? await participantDeLAppareil(supabase, edition.id, appareilLu)
-        : ({ statut: "ok", valeur: null } as const);
+  if (role === "participant" && appareilLu) {
+    const lu = await participantDeLAppareil(supabase, edition.id, appareilLu);
     if (lu.statut === "erreur") {
       await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", code: lu.code, n: declaration.fichiers.length });
       return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     }
-    if (lu.statut === "absente" && email) console.error(`[collectif] adresse du participant ignorée : ${MIGRATION_PERSONNES} absente`);
     if (lu.statut === "ok") participant = lu.valeur;
-    if (email && lu.statut === "ok" && !participant) {
-      const message = edition.registre === "ecole_tu" ? "Cette adresse n'est pas encore connue : indique d'abord ton prénom et ton nom." : "Cette adresse n'est pas encore connue : indiquez d'abord votre prénom et votre nom.";
-      return NextResponse.json({ error: "participant_inconnu", message }, { status: 409 });
-    }
   }
   /* Le nom ne change plus une fois donné (participant.ts, retours du 19/10 au soir) :
      celui que CET appareil a déjà donné dans l'édition passe avant celui que le
