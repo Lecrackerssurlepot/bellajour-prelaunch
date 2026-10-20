@@ -10,6 +10,36 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 20/10/2026 (fin d'après-midi) — Les planches d'Audencia : vague 1 en production, migration 20261023 à appliquer
+
+Mathias a validé les planches du 20/10 (« Je valide », avec les seize recommandations) puis, sur
+le texte légal, « Je valide les deux phrases » (les deux phrases de l'album de `accord.ts`,
+version 2026-10-20 ; PAS l'ajout « supprimées 30 jours après la livraison », question 1 de la
+page confidentialité, non répondue).
+- **En production** (déploiements READY, sondés en LECTURE sur Audencia) :
+  - #288 : la page de dépôt suit le clair / sombre du téléphone, « Ton nom » tient à 375 px,
+    chiffres modernes (dépôt et admin des éditions) ;
+  - #289 : le serveur des personnes, de la corbeille, de l'album et de l'ouverture (aucun écran) ;
+  - #290 : la page Photos du responsable selon les planches 1 à 3 ;
+  - #291 : le durcissement du #289 après l'audit de sécurité (S1 à S9, C1, C2, C4, C5) ;
+  - #292 : l'atelier (corbeille, personnes, fusions à défaire, champ « Ouverture du dépôt »).
+- **Sondé le 20/10 en lecture** (après #290) : dépôt Audencia 200 « Le dépôt n'est pas encore
+  ouvert » (le lien général attend « Photos par personne ») ; page Photos par le lien d'équipe
+  200, nouvelle feuille servie ; album 200 vide ; corbeille par l'équipe 403 ; faux lien 404.
+- **La migration `20261023_collectif_personnes_corbeille.sql` n'est PAS appliquée.** Tout se
+  replie sans elle (lectures rejouées, écritures 503 `migration_personnes_absente`). Ses deux
+  vues ont été jouées en LECTURE sur la vraie base, colonnes neuves simulées : résumé 12 lignes,
+  1 203 photos, 0 différence avec la vue en place ; album 12 lignes, 1 203, identifiants uniques.
+- **Reste à fusionner (vague 2)** : la page des participants (planches 6 à 9 : adresse, album,
+  « Mes photos », supprimer ses photos, pages d'état ; bascule de `VERSION_ACCORD`) et, sur la
+  page Photos du responsable, Supprimer / Corbeille / la page d'une personne.
+- **En attente de Mathias** : appliquer 20261023 ; les onze questions de confidentialité
+  (https://claude.ai/artifact/EsUkbqGDqtTtX1rBDePYLA) ; la relecture des huit mails
+  (https://claude.ai/artifact/1zmLpY3pL4gP8XYpi2KoiE) ; une NOUVELLE édition de test (pas
+  Audencia), avec « Photos par personne » rempli.
+- **Non tranché, consigné (C3)** : les noms restent au journal après la purge, et l'adresse d'un
+  participant n'est jamais purgée : dépend de la politique de confidentialité.
+
 ## 20/10/2026 (soir) — Migration 20261022 appliquée et vérifiée (T-168, T-170)
 
 - **Premier essai de Mathias : échec 42702** (« column reference "appareil" is ambiguous »),
