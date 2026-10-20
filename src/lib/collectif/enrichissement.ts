@@ -16,6 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { lireDepuisCoffre } from "@/lib/atelier/enrichissement";
 import { geocoderInverse } from "@/lib/atelier/geocodage";
 import { planGeocodage } from "@/lib/atelier/lieux";
+import { recalculerDoublons } from "./doublonsStockes";
 import { journaliser } from "./journal";
 import { enPaquets, lireToutesLesLignes } from "./lignes";
 
@@ -87,6 +88,11 @@ export async function enrichirCollectif(
       })
     );
 
+    /* Les doublons (T-170) : les empreintes de ce lot sont écrites, le repérage se refait
+       ICI, en tâche de fond, et se range ; la grille et la fiche ne font plus que le lire.
+       Avant les lieux (Geoapify peut être lent) : la grille l'a plus tôt. */
+    const doublons = bilan.traitees ? await recalculerDoublons(supabase, editionId) : null;
+
     /* Les lieux : un appel Geoapify par LIEU, jamais par photo (planGeocodage).
        T-167 : toutes les photos à situer, par tranches de 1 000 (le plafond de l'API ;
        l'ancien `.limit(2000)` n'en rendait de toute façon que 1 000). Une lecture
@@ -129,7 +135,9 @@ export async function enrichirCollectif(
     }
 
     if (bilan.traitees || bilan.lieux) {
-      await journaliser(supabase, { editionId }, "metadonnees_lues", { ...bilan }, null);
+      /* `doublons` : les copies repérées par le calcul rangé de ce passage (absent s'il n'a pas tourné ici). */
+      const repere = doublons ? { doublons: doublons.groupes.reduce((n, g) => n + g.doublons.length, 0), doublons_complet: doublons.complet } : {};
+      await journaliser(supabase, { editionId }, "metadonnees_lues", { ...bilan, ...repere }, null);
     }
   } catch (err) {
     console.error("[collectif] enrichissement : exception", (err as Error)?.message);

@@ -34,7 +34,13 @@ export type LignePhoto = {
   deposant: string | null;
   appareil_id?: string | null;
   preselection?: boolean;
+  /** Combien de photos cette ligne représente (T-168) : une ligne du résumé en base
+   *  (`collectif_photos_resume`) en porte plusieurs. Absent : une photo. */
+  poids?: number;
 };
+
+/** Le nombre de photos d'une ligne : une photo, ou une ligne du résumé qui en compte plusieurs. */
+export const poidsDe = (l: { poids?: number }) => (typeof l.poids === "number" && Number.isFinite(l.poids) && l.poids >= 0 ? l.poids : 1);
 
 export type LienEdition = {
   id: string;
@@ -80,14 +86,15 @@ export function nomDePersonne(deposant: string | null | undefined): string {
 export const clePersonne = (deposant: string | null | undefined) => nomDePersonne(deposant).toLocaleLowerCase("fr");
 
 /** Les personnes d'un ensemble de photos : une par nom comparé, sous son orthographe la plus fréquente, la plus fournie d'abord. */
-export function personnesDe(lignes: readonly { deposant: string | null }[]): { cle: string; nom: string; n: number }[] {
+export function personnesDe(lignes: readonly { deposant: string | null; poids?: number }[]): { cle: string; nom: string; n: number }[] {
   const parCle = new Map<string, { n: number; graphies: Map<string, number> }>();
   for (const l of lignes) {
     const nom = nomDePersonne(l.deposant);
     const cle = nom.toLocaleLowerCase("fr");
     const p = parCle.get(cle) ?? { n: 0, graphies: new Map<string, number>() };
-    p.n++;
-    p.graphies.set(nom, (p.graphies.get(nom) ?? 0) + 1);
+    const poids = poidsDe(l);
+    p.n += poids;
+    p.graphies.set(nom, (p.graphies.get(nom) ?? 0) + poids);
     parCle.set(cle, p);
   }
   return [...parCle]
@@ -157,19 +164,20 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
     return n;
   };
   /* ── « Arrivées par les liens » ── */
-  const parLien = new Map<string, { deposant: string | null }[]>();
-  const participants: { deposant: string | null }[] = [];
+  const parLien = new Map<string, { deposant: string | null; poids?: number }[]>();
+  const participants: { deposant: string | null; poids?: number }[] = [];
   let duResponsable = 0;
   let atelier = 0;
   for (const l of lignes) {
+    const poids = poidsDe(l);
     if (l.role_deposant === "responsable" && !l.provenance_id) {
-      duResponsable++;
+      duResponsable += poids;
       const c = cheminDe(l, resp);
       const p = c.type === "organisateur" ? parent(c.chemin) : null;
       if (p) {
         const brutParent = p === DOSSIER_RESPONSABLE ? "" : p;
         const h = haut("organisateur", brutParent, p);
-        h.n++;
+        h.n += poids;
         const cleSous = cleResp("organisateur", c.brut);
         let s = sous.get(cleSous);
         if (!s) {
@@ -177,9 +185,9 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
           sous.set(cleSous, s);
           h.enfants.push(s);
         }
-        s.n++;
+        s.n += poids;
       } else {
-        haut(c.type, c.brut, c.chemin).n++;
+        haut(c.type, c.brut, c.chemin).n += poids;
       }
     } else if (deParticipant(l)) {
       const id = l.provenance_id ?? "general";
@@ -188,7 +196,7 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
       parLien.set(id, m);
       participants.push(l);
     } else {
-      atelier++;
+      atelier += poids;
     }
   }
   const vous = [...hauts.values()]
@@ -201,7 +209,7 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
     /* Une seule personne qui porte le nom du lien : rien à détailler. */
     return l.length === 1 && clePersonne(l[0].nom) === clePersonne(nomLien) ? [] : l;
   };
-  const total = (id: string) => parLien.get(id)?.length ?? 0;
+  const total = (id: string) => (parLien.get(id) ?? []).reduce((n, l) => n + poidsDe(l), 0);
   const noeudsLiens: Noeud[] = [];
   const general = total("general");
   if (general || avecLiensVides) {

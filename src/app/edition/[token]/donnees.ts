@@ -19,6 +19,7 @@ import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
 import { lireTailles, srcSetDe } from "@/lib/collectif/styles";
 import { arbreDesPhotos, compterPersonnes, dansLeDossier, plafondDuLien } from "@/lib/collectif/dossiers";
+import { COLONNES_RESUME, couvertureDe, enLignesPesees, resumeAbsent, resumerPhotos, somme, VUE_RESUME, type LigneResume } from "@/lib/collectif/resumePhotos";
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
 import { compteAgenda } from "@/lib/collectif/agenda";
@@ -190,6 +191,8 @@ export async function lireEnvois(edition: Pick<EditionLigne, "id" | "contenus_de
 }
 
 type LignePhotoTableau = {
+  id: string;
+  signalee: boolean;
   role_deposant: string;
   appareil_id: string | null;
   provenance_id: string | null;
@@ -200,23 +203,56 @@ type LignePhotoTableau = {
   preselection: boolean;
 };
 
+/** Les vignettes de la mosaïque du tableau de bord : les plus récentes arrivées. */
+const MOSAIQUE = 6;
+
+/**
+ * Les photos du tableau de bord, RÉSUMÉES (T-168) : une ligne par façon
+ * d'avoir déposé, qui pèse ses photos. Lues en base (`collectif_photos_resume`,
+ * quelques dizaines de lignes) ; sans la migration 20261022, toutes les photos
+ * arrivées sont relues (par tranches de 1 000, T-167, de la plus récente à la
+ * plus ancienne) et résumées EN MÉMOIRE, exactement comme la vue les résume
+ * (`resumerPhotos`, comparé à la lecture d'avant par le harnais).
+ */
+async function lireResumeTableau(supabase: ReturnType<typeof makeSupabase>, editionId: string): Promise<LigneResume[]> {
+  const resume = await lireToutesLesLignes<LigneResume>(
+    () => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", editionId).returns<LigneResume[]>(),
+    { colonne: "id", croissant: true },
+    "résumé des photos du tableau de bord"
+  );
+  if (!resume.error) return resume.data;
+  if (!resumeAbsent(resume.error.code)) echec("résumé des photos du tableau de bord", resume.error);
+  const photos = await lireToutesLesLignes<LignePhotoTableau>(
+    () =>
+      supabase
+        .from("collectif_photos")
+        .select("id, signalee, role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection")
+        .eq("edition_id", editionId)
+        .not("confirmee_le", "is", null)
+        .returns<LignePhotoTableau[]>(),
+    { colonne: "confirmee_le", croissant: false },
+    "photos du tableau de bord"
+  );
+  if (photos.error) echec("photos du tableau de bord", photos.error);
+  return resumerPhotos(photos.data ?? []);
+}
+
 export async function chargerTableau(edition: EditionLigne, origine = ""): Promise<Tableau> {
   const supabase = makeSupabase();
-  const [mags, photos, contenus, message, provenances] = await Promise.all([
+  const [mags, groupes, mosaiqueLue, contenus, message, provenances] = await Promise.all([
     lireMagazinesBrief(edition.id),
-    /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
-       de la plus récente à la plus ancienne. */
-    lireToutesLesLignes<LignePhotoTableau>(
-      () =>
-        supabase
-          .from("collectif_photos")
-          .select("role_deposant, appareil_id, provenance_id, provenance_type, deposant, vignette_key, confirmee_le, preselection")
-          .eq("edition_id", edition.id)
-          .not("confirmee_le", "is", null)
-          .returns<LignePhotoTableau[]>(),
-      { colonne: "confirmee_le", croissant: false },
-      "photos du tableau de bord"
-    ),
+    lireResumeTableau(supabase, edition.id),
+    /* La mosaïque : les six dernières arrivées qui ont une vignette, et rien d'autre. */
+    supabase
+      .from("collectif_photos")
+      .select("vignette_key")
+      .eq("edition_id", edition.id)
+      .not("confirmee_le", "is", null)
+      .not("vignette_key", "is", null)
+      .order("confirmee_le", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(MOSAIQUE)
+      .returns<{ vignette_key: string }[]>(),
     lireEnvois(edition),
     supabase
       .from("collectif_messages")
@@ -227,7 +263,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
       .limit(1),
     lireProvenances(edition.id),
   ]);
-  if (photos.error) echec("photos du tableau de bord", photos.error);
+  if (mosaiqueLue.error) echec("mosaïque du tableau de bord", mosaiqueLue.error);
   if (message.error) echec("dernier message du tableau de bord", message.error);
 
   /* Chaque magazine dit sa COMPOSITION (D24) : le style s'il n'y en a qu'un,
@@ -252,7 +288,8 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     };
   });
 
-  const lignes = photos.data ?? [];
+  /* Les lignes du résumé pèsent leurs photos : la même règle que la page Photos (dossiers.ts). */
+  const pesees = enLignesPesees(groupes);
 
   /* Les dossiers : les sources qui ont reçu quelque chose (sources.ts, la même
      lecture que la colonne « Qui a déposé » de la page Photos), la plus
@@ -262,11 +299,11 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     libelle: p.libelle ?? "Lien de contribution",
     url: `${origine}/depot/${edition.token_depot}?p=${p.cle}`,
     plafond: libellePlafondLien(p, edition),
-    recues: lignes.filter((l) => l.provenance_id === p.id).length,
+    recues: somme(groupes, (g) => g.provenance_id === p.id),
   }));
   /* Les dossiers de la carte : le même arbre que la page Photos (dossiers.ts),
      le premier niveau seulement ; chaque ligne y mène (`?dossier=`). */
-  const arbre = arbreDesPhotos(lignes, provenances, edition, false);
+  const arbre = arbreDesPhotos(pesees, provenances, edition, false);
   const parId = new Map(provenances.map((p) => [p.id, p]));
   const personnes = (n: { enfants: unknown[] }) => (n.enfants.length > 1 ? ` · ${n.enfants.length} personnes` : "");
   const dossiers: DossierPhotos[] = [
@@ -285,28 +322,24 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     }),
     ...(arbre.atelier ? [{ cle: "atelier", libelle: arbre.atelier.nom, detail: "déposées par l'atelier", n: arbre.atelier.n, lien: false, couverture: null }] : []),
   ].sort((a, b) => b.n - a.n);
-  /* Les lignes arrivent de la plus récente à la plus ancienne : la première
-     qui a une vignette dans le dossier est sa couverture (même règle que la
-     page Photos, `dansLeDossier`). */
+  /* La couverture d'un dossier : la vignette de sa dernière photo arrivée qui en a une (même
+     règle que la page Photos, `dansLeDossier`, lue sur le résumé par `couvertureDe`). */
   await Promise.all(
     dossiers.map(async (d) => {
-      const l = lignes.find((x) => x.vignette_key && dansLeDossier(x, d.cle, edition.responsable_nom));
-      d.couverture = l ? await signerOuRien(l.vignette_key) : null;
+      d.couverture = await signerOuRien(couvertureDe(groupes, d.cle, edition.responsable_nom));
     })
   );
 
-  const mosaique = (
-    await Promise.all(lignes.filter((l) => l.vignette_key).slice(0, 6).map((l) => signerOuRien(l.vignette_key)))
-  ).filter((u): u is string => Boolean(u));
+  const mosaique = (await Promise.all((mosaiqueLue.data ?? []).map((l) => signerOuRien(l.vignette_key)))).filter((u): u is string => Boolean(u));
 
   const dernier = ((message.data ?? []) as { texte: string; created_at: string }[])[0] ?? null;
 
   return {
     magazines,
-    photos: lignes.length,
+    photos: somme(groupes),
     /* Les personnes comptées comme partout (T-180) : un nom, ou un téléphone pour les anonymes. */
-    participants: compterPersonnes(lignes),
-    selection: lignes.filter((l) => l.preselection).length,
+    participants: compterPersonnes(groupes),
+    selection: somme(groupes, () => true, "n_selection"),
     dossiers,
     mosaique,
     liens,

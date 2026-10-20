@@ -2,15 +2,52 @@
  * La messagerie client ↔ atelier (PRD §7).
  * Module PUR : aucun accès base, aucun réseau, aucune variable d'environnement.
  *
- * Phase 2 : l'écran INTERROGE toutes les 3,5 s quand l'onglet est visible,
- * rien quand il est caché, rattrapage au retour (patron Rafraichissement.tsx).
- * Aucun client Supabase dans le navigateur (règle du dépôt) ; Supabase
- * Realtime est une phase 7 qui demande l'avis de Mathias. Aucun mail non plus
- * (E8 / A1, phase 7) : l'atelier voit le compteur de non-lus dans sa liste.
+ * Phase 2 : l'écran INTERROGE quand l'onglet est visible, rien quand il est
+ * caché, rattrapage au retour (patron Rafraichissement.tsx). Depuis T-169
+ * (20/10, décision de Mathias : « on l'optimise pour que ce soit pas le cas,
+ * sans poser aucun problème »), la relève RALENTIT quand rien ne bouge
+ * (`PALIERS_MESSAGES`, `intervalleMessages`) et repart vite au moindre
+ * mouvement. Aucun client Supabase dans le navigateur (règle du dépôt) ;
+ * Supabase Realtime est une phase 7 qui demande l'avis de Mathias. Aucun mail
+ * non plus (E8 / A1, phase 7) : l'atelier voit le compteur de non-lus dans sa
+ * liste.
  */
 
-/** Entre 3 et 4 s (PRD §7) : quasi instantané, sans marteler la base. */
+/** Entre 3 et 4 s (PRD §7) : quasi instantané, sans marteler la base. Le palier d'une conversation VIVANTE. */
 export const INTERVALLE_MESSAGES_MS = 3500;
+
+/**
+ * Les paliers de la relève (T-169). Un MOUVEMENT, c'est l'ouverture du fil, un
+ * message reçu ou envoyé, une frappe dans la page, le retour sur l'onglet : il
+ * ramène aussitôt au premier palier. Sans mouvement :
+ * - la première minute, 3,5 s : on vient d'écrire ou de lire, la réponse est
+ *   probable (PRD §7, « entre 3 et 4 s ») ;
+ * - de 1 à 3 minutes, 10 s : l'autre camp tape encore peut-être, une réponse
+ *   arrive en 5 s en moyenne ;
+ * - de 3 à 10 minutes, 30 s : la conversation retombe ;
+ * - au-delà, 60 s : le rythme de la table de travail (Rafraichissement.tsx) et
+ *   du compte de l'atelier (`VeilleMessages`), pour un onglet laissé ouvert.
+ * Compté par le harnais : un onglet ouvert une heure sans rien faire
+ * interroge 93 fois au lieu de 1 028 (8 heures : 513 au lieu de 8 228).
+ */
+export const PALIERS_MESSAGES: readonly { calmeDepuisMs: number; intervalleMs: number }[] = [
+  { calmeDepuisMs: 0, intervalleMs: INTERVALLE_MESSAGES_MS },
+  { calmeDepuisMs: 60_000, intervalleMs: 10_000 },
+  { calmeDepuisMs: 3 * 60_000, intervalleMs: 30_000 },
+  { calmeDepuisMs: 10 * 60_000, intervalleMs: 60_000 },
+];
+
+/**
+ * L'attente avant la prochaine relève, selon le temps passé sans mouvement.
+ * Une durée illisible ou négative (horloge reculée) vaut « il vient de se
+ * passer quelque chose » : le palier rapide, jamais un silence.
+ */
+export function intervalleMessages(calmeDepuisMs: number): number {
+  const calme = Number.isFinite(calmeDepuisMs) && calmeDepuisMs > 0 ? calmeDepuisMs : 0;
+  let intervalle = PALIERS_MESSAGES[0].intervalleMs;
+  for (const p of PALIERS_MESSAGES) if (calme >= p.calmeDepuisMs) intervalle = p.intervalleMs;
+  return intervalle;
+}
 
 /** Garde technique contre un collage géant ; pas une promesse au client. */
 export const MESSAGE_MAX = 4000;

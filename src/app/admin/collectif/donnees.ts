@@ -30,6 +30,7 @@ import { comparerLiens, deposantsParLien, nomsDesLiens, type LienDepose } from "
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
 import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
+import { calculerSurLignes, doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";
 import { estUuid } from "@/lib/collectif/cles";
@@ -441,10 +442,8 @@ export async function chargerEdition(
     participants: compterPersonnes(lignesPhotos),
     signalees: lignesPhotos.filter((p) => p.signalee).length,
     sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
-    doublons: groupesDoublonsRapides(lignesPhotos.map((p, i) => ({ id: p.id, empreinte: p.empreinte, priseLe: p.prise_le, ordre: p.ordre ?? i }))).reduce(
-      (n, g) => n + g.doublons.length,
-      0
-    ),
+    /* T-170 : le résultat RANGÉ, celui que lit la page Photos du client ; périmé, recalculé sur les lignes déjà lues (dans l'ordre d'arrivée). */
+    doublons: ((await doublonsDeLEdition(supabase, id, lignesPhotos))?.groupes ?? calculerSurLignes(lignesPhotos).groupes).reduce((n, g) => n + g.doublons.length, 0),
     apercus: (
       await Promise.all(
         lignesPhotos

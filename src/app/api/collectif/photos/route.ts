@@ -3,18 +3,25 @@ import { signerGet, signerLectureVignette } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
-import { groupesDoublonsRapides } from "@/lib/collectif/doublons";
+import { doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
 import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
-import { arbreDesPhotos, compterPersonnes, dansLeDossier, deParticipant, estVueEnsemble, noeudDe, nomDePersonne, personnesDe, plafondDuLien } from "@/lib/collectif/dossiers";
-import { jourDePhoto, TAILLE_PAGE } from "@/lib/collectif/grille";
-import { GROUPE_GENERAL } from "@/lib/collectif/partage";
+import {
+  COLONNES_GRILLE,
+  COLONNES_PAGE,
+  grilleDepuisLignes,
+  grilleDepuisResume,
+  lireDemandeGrille,
+  REPLI,
+  type ContexteGrille,
+  type LectureGrille,
+  type LigneGrille,
+  type LignePage,
+} from "@/lib/collectif/grillePhotos";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
+import { COLONNES_RESUME, enFiltresPostgrest, resumeAbsent, VUE_RESUME, type Condition, type LigneResume } from "@/lib/collectif/resumePhotos";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
-
-/** Les dernières arrivées sous les albums d'une vue d'ensemble : une rangée. */
-const ARRIVEES = 8;
 
 /**
  * POST /api/collectif/photos — une PAGE de la grille des photos (T-152 :
@@ -24,36 +31,22 @@ const ARRIVEES = 8;
  *   défaut, « selection » pour « Ma sélection » ;
  * - `vue` : `toutes`, `jour` (rangées par jour) ou `doublons`.
  *
- * Toutes les photos ARRIVÉES de l'édition sont lues en colonnes légères (pour
- * l'arbre, les comptes, les doublons) ; seule la page demandée est signée
- * (vignette, une heure). 2 000 photos ne coûtent donc que 120 signatures par
- * affichage. La réponse porte aussi les grands chiffres (photos, personnes,
- * doublons, en cours d'arrivée) et, pour qui peut en créer, les liens.
+ * T-168 (20/10) : l'arbre, les personnes et les comptes se lisent sur le
+ * RÉSUMÉ en base (`collectif_photos_resume`, quelques dizaines de lignes), et
+ * la base ne rend que la page affichée (120 photos), triée et découpée par
+ * elle. Mesuré au harnais sur une édition simulée de 5 000 photos : de 5 000
+ * lignes lues par affichage à quelques centaines. Les doublons sont LUS
+ * (`doublonsDeLEdition`, T-170), plus calculés ici. Sans la migration
+ * 20261022, ou pour un dossier que le filtre ne sait pas écrire, la lecture
+ * d'avant (`grilleDepuisLignes`) : toutes les photos arrivées en colonnes
+ * légères. Seule la page demandée est signée (vignette, une heure). La réponse
+ * porte aussi les grands chiffres (photos, personnes, doublons, en cours
+ * d'arrivée) et, pour qui peut en créer, les liens. Elle a la même forme dans
+ * les deux cas (le harnais compare les deux).
  */
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-type Ligne = {
-  id: string;
-  vignette_key: string | null;
-  r2_key: string;
-  nom_origine: string | null;
-  provenance_type: string;
-  deposant: string | null;
-  prise_le: string | null;
-  confirmee_le: string;
-  ordre: number | null;
-  empreinte: string | null;
-  preselection: boolean;
-  signalee: boolean;
-  mime: string | null;
-  provenance_id: string | null;
-  role_deposant: string;
-  appareil_id: string | null;
-};
-
-const VUES = ["toutes", "jour", "doublons"] as const;
 
 export async function POST(request: Request) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
@@ -65,169 +58,94 @@ export async function POST(request: Request) {
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "voir_espace")) return refusDroit();
   const { edition } = acces;
-
-  const dossier = typeof corps.dossier === "string" && corps.dossier.length <= 400 ? corps.dossier : "tout";
-  const vue = (VUES as readonly string[]).includes(corps.vue as string) ? (corps.vue as (typeof VUES)[number]) : "toutes";
-  const page = Math.max(0, Math.min(1000, Number(corps.page) || 0));
+  const demande = lireDemandeGrille(corps);
 
   /* Les liens ne se montrent qu'à qui peut en créer (le responsable) : une
      clé de provenance lève un plafond, l'équipe n'a pas à la connaître. */
   const partage = peut(acces.role, "regler_plafond_participant");
   const supabase = makeSupabase();
   const depuis = new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString();
-  /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
-     de la plus ancienne à la plus récente : `stats.derniere` est la dernière ligne. */
-  const [{ data, error }, provenances, enRoute] = await Promise.all([
-    lireToutesLesLignes<Ligne>(
-      () =>
-        supabase
-          .from("collectif_photos")
-          .select("id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, ordre, empreinte, preselection, signalee, mime, provenance_id, role_deposant, appareil_id")
-          .eq("edition_id", edition.id)
-          .not("confirmee_le", "is", null)
-          .returns<Ligne[]>(),
-      { colonne: "confirmee_le", croissant: true },
-      "photos de la grille"
+  /* Le résumé (par tranches de 1 000, comme toute lecture qui peut dépasser le plafond de l'API,
+     T-167), les liens et les déclarations en route, ensemble. */
+  const [resume, provenances, enRoute] = await Promise.all([
+    lireToutesLesLignes<LigneResume>(
+      () => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", edition.id).returns<LigneResume[]>(),
+      { colonne: "id", croissant: true },
+      "résumé des photos"
     ),
     lireProvenances(edition.id),
     supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", depuis),
   ]);
+  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute.count ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle) };
+
+  if (!resume.error) {
+    const doublons = await doublonsDeLEdition(supabase, edition.id);
+    if (!doublons) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    const reponse = await grilleDepuisResume(resume.data, doublons.groupes, demande, contexte, lecturePage(supabase, edition.id));
+    if (reponse === null) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    if (reponse !== REPLI) return NextResponse.json(reponse);
+  } else if (!resumeAbsent(resume.error.code)) {
+    return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  }
+
+  /* Le repli : la vue manque (migration 20261022 absente), ou le dossier ne s'écrit pas en
+     filtre. Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
+     de la plus ancienne à la plus récente : `stats.derniere` est la dernière ligne. */
+  const { data, error } = await lireToutesLesLignes<LigneGrille>(
+    () => supabase.from("collectif_photos").select(COLONNES_GRILLE).eq("edition_id", edition.id).not("confirmee_le", "is", null).returns<LigneGrille[]>(),
+    { colonne: "confirmee_le", croissant: true },
+    "photos de la grille"
+  );
   if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   const toutes = data ?? [];
-
-  const groupes = groupesDoublonsRapides(toutes.map((p, i) => ({ id: p.id, empreinte: p.empreinte, priseLe: p.prise_le, ordre: p.ordre ?? i })));
-  const doublonDe = new Map<string, string>();
-  const dansUnGroupe = new Set<string>();
-  for (const g of groupes) {
-    dansUnGroupe.add(g.originale);
-    for (const d of g.doublons) {
-      doublonDe.set(d, g.originale);
-      dansUnGroupe.add(d);
-    }
-  }
-
-  const responsable = edition.responsable_nom;
-  const dansDossier = toutes.filter((p) => dansLeDossier(p, dossier, responsable));
-  /* « Toutes » : la plus récente arrivée d'abord (T-181) ; ce qui vient d'arriver est en haut,
-     pas à la dernière page. « Par jour » garde l'ordre des jours de prise de vue. */
-  let liste = vue === "doublons" ? dansDossier.filter((p) => dansUnGroupe.has(p.id)) : vue === "toutes" ? [...dansDossier].reverse() : dansDossier;
-  if (vue === "jour") {
-    liste = [...liste].sort((a, b) => {
-      const ja = jourDePhoto(a.prise_le, a.confirmee_le).cle;
-      const jb = jourDePhoto(b.prise_le, b.confirmee_le).cle;
-      return ja === jb ? (a.prise_le ?? "").localeCompare(b.prise_le ?? "") : ja.localeCompare(jb);
-    });
-  }
-
-  /* `seulementArbre` : la fenêtre de dépôt ne veut que les dossiers, aucune vignette à signer.
-     Une vue d'ensemble (« Vos dossiers », « Les participants ») montre des vignettes de
-     dossiers et, dessous, les DERNIÈRES ARRIVÉES (maquettes du 15/10) : les huit plus
-     récentes de la vue, jamais une page de grille ni de page suivante. */
-  const sansGrille = corps.seulementArbre === true || estVueEnsemble(dossier);
-  const tranche = corps.seulementArbre === true ? [] : sansGrille ? dansDossier.slice(-ARRIVEES).reverse() : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
-  const photos = await Promise.all(
-    tranche.map(async (p) => {
-      let vignette: string | null = null;
-      try {
-        /* La vignette garde la même adresse une heure durant (T-176) : le navigateur
-           la sert depuis son cache. Sans vignette (un HEIC lu par Chrome) : l'original,
-           signé comme avant, si le navigateur sait l'afficher ; un HEIC ne s'affiche
-           pas, la tuile le dira. */
-        if (p.vignette_key) vignette = await signerLectureVignette(p.vignette_key);
-        else if (p.mime !== "image/heic" && p.mime !== "image/heif") vignette = await signerGet(p.r2_key);
-      } catch {
-        vignette = null;
-      }
-      const jour = jourDePhoto(p.prise_le, p.confirmee_le);
-      /* Qui l'a envoyée (T-180) : le nom du participant, sinon le responsable ou l'atelier. */
-      const role = deParticipant(p) ? "participant" : p.role_deposant === "responsable" ? "responsable" : "atelier";
-      return {
-        id: p.id,
-        vignette,
-        nom: p.nom_origine,
-        qui: role === "participant" ? nomDePersonne(p.deposant) : role === "responsable" ? responsable?.trim() || "Le responsable" : "L'atelier",
-        role,
-        arrivee: p.confirmee_le,
-        jour: jour.libelle,
-        jourCle: jour.cle,
-        preselection: p.preselection,
-        doublonDe: doublonDe.get(p.id) ?? null,
-        heic: p.mime === "image/heic" || p.mime === "image/heif",
-      };
-    })
-  );
-
-  const liens = partage ? provenances : [];
-  const arbre = arbreDesPhotos(toutes, liens, edition, partage);
-  /* La couverture de chaque dossier et de chaque lien (15/10) : la dernière photo arrivée qui
-     a une vignette. Seulement dans les vues d'ensemble et dans un dossier qui en contient
-     d'autres (ses sous-dossiers s'y montrent en vignettes). */
-  const couvertures: Record<string, string> = {};
-  if (corps.seulementArbre !== true) {
-    const courant = noeudDe(arbre, dossier);
-    const aCouvrir = dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
-    await Promise.all(
-      aCouvrir.map(async (n) => {
-        const p = [...toutes].reverse().find((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
-        if (!p?.vignette_key) return;
-        try {
-          couvertures[n.cle] = await signerLectureVignette(p.vignette_key);
-        } catch {
-          /* une couverture manquée laisse l'icône du dossier */
-        }
-      })
-    );
-  }
-  /* Le détail des liens (l'onglet « Les liens ») : chacun, ses personnes, son plafond. */
-  const detailLiens = partage
-    ? provenances
-        .filter((l) => !l.retire_le)
-        .map((l) => ({
-          id: l.id,
-          cle: l.cle,
-          nom: l.libelle?.trim() || "Lien de contribution",
-          plafond: plafondDuLien(l, edition),
-          plafondNombre: l.sans_plafond ? null : l.plafond_par_personne,
-          sansPlafond: l.sans_plafond,
-          n: toutes.filter((p) => p.provenance_id === l.id).length,
-          personnes: personnesDu(toutes.filter((p) => p.provenance_id === l.id)),
-        }))
-    : [];
-  const general = toutes.filter((p) => !p.provenance_id && p.role_deposant === "participant");
-
-  return NextResponse.json({
-    photos,
-    page,
-    suivante: !sansGrille && (page + 1) * TAILLE_PAGE < liste.length ? page + 1 : null,
-    compteurs: {
-      dossier: dansDossier.length,
-      liste: liste.length,
-      /* Le même compte que les chiffres d'en tête : les COPIES (la vue les montre à côté de leur original). */
-      doublons: dansDossier.filter((p) => doublonDe.has(p.id)).length,
-      selection: toutes.filter((p) => p.preselection).length,
-      choisissables: dansDossier.filter((p) => !p.signalee && !p.preselection).length,
-    },
-    stats: {
-      photos: toutes.length,
-      personnes: compterPersonnes(toutes),
-      doublons: doublonDe.size,
-      enCours: enRoute.count ?? 0,
-      /* La dernière arrivée : le point de départ de « N nouvelles photos » (T-181). */
-      derniere: toutes.length ? toutes[toutes.length - 1].confirmee_le : null,
-    },
-    arbre,
-    couvertures,
-    liens: partage
-      ? {
-          general: { nom: GROUPE_GENERAL, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: general.length, personnes: personnesDu(general) },
-          liens: detailLiens,
-          reste: edition.plafond_total === null ? null : Math.max(0, edition.plafond_total - toutes.length),
-        }
-      : null,
-  });
+  /* Les lignes sont déjà là, dans l'ordre d'arrivée : les doublons rangés s'ils sont à jour, sinon calculés dessus. */
+  const doublons = await doublonsDeLEdition(supabase, edition.id, toutes);
+  if (!doublons) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  return NextResponse.json(await grilleDepuisLignes(toutes, doublons.groupes, demande, contexte));
 }
 
-/** Les personnes d'un lien : la règle de `dossiers.ts` (un nom comparé sans la casse, « Sans nom » sinon), la plus fournie d'abord. */
-function personnesDu(lignes: readonly Ligne[]): { nom: string; n: number }[] {
-  return personnesDe(lignes).map(({ nom, n }) => ({ nom, n }));
+/** Les trois lectures de `grilleDepuisResume` : une page triée et découpée par la base, des ids filtrés par le dossier, et leur compte. */
+function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: string): LectureGrille {
+  /* Le plan du dossier posé sur la requête, appel par appel (`enFiltresPostgrest`, pur, au harnais). */
+  const base = (conditions: readonly Condition[], compte = false) => {
+    let q = (compte ? supabase.from("collectif_photos").select("id", { count: "exact", head: true }) : supabase.from("collectif_photos").select(COLONNES_PAGE))
+      .eq("edition_id", editionId)
+      .not("confirmee_le", "is", null);
+    for (const f of enFiltresPostgrest(conditions)) {
+      if (f.methode === "eq") q = q.eq(f.colonne, f.valeur);
+      else if (f.methode === "is") q = q.is(f.colonne, null);
+      else if (f.methode === "not") q = q.filter(f.colonne, `not.${f.operateur}`, f.valeur ?? "null");
+      else if (f.methode === "or") q = q.or(f.filtres);
+      else q = q.filter(f.colonne, f.operateur, f.valeur);
+    }
+    return q;
+  };
+  return {
+    async page(conditions, tri, de, a) {
+      let q = base(conditions);
+      for (const t of tri) q = q.order(t.colonne, { ascending: t.croissant, ...(t.nulsDAbord === undefined ? {} : { nullsFirst: t.nulsDAbord }) });
+      const { data, error } = await q.range(de, a).returns<LignePage[]>();
+      if (error) {
+        console.error("[collectif] page de la grille illisible", error.code, error.message);
+        return null;
+      }
+      return data ?? [];
+    },
+    async parIds(ids, conditions) {
+      const { data, error } = await base(conditions).in("id", [...ids]).returns<LignePage[]>();
+      if (error) {
+        console.error("[collectif] photos des doublons illisibles", error.code, error.message);
+        return null;
+      }
+      return data ?? [];
+    },
+    async compter(ids, conditions) {
+      const { count, error } = await base(conditions, true).in("id", [...ids]);
+      if (error || count === null) {
+        console.error("[collectif] doublons du dossier non comptés", error?.code, error?.message);
+        return null;
+      }
+      return count;
+    },
+  };
 }
