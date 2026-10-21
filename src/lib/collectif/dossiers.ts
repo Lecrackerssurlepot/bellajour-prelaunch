@@ -13,13 +13,16 @@
  *
  * Trois groupes :
  * - « Déposées par vous » : les dossiers du responsable, et leurs sous-dossiers ;
- * - « Arrivées par les liens » : un dossier par lien de contribution (le lien
- *   général compris), une ligne par personne dedans (le filtre par personne) ;
+ * - « Arrivées par les liens » : un dossier par lien de contribution, une ligne
+ *   par personne dedans (le filtre par personne) ; et « Sans groupe » (la clé
+ *   `participants`) : les photos arrivées par l'adresse de base, SEULEMENT s'il
+ *   y en a (planche 5, 21/10 : le lien général n'est plus jamais montré, ses
+ *   photos ne se perdent pas de vue) ;
  * - l'atelier, s'il a déposé.
  * Et deux vues en tête : « Toutes les photos », « Ma sélection ».
  */
 
-import { GROUPE_GENERAL } from "./partage";
+import { GROUPE_SANS_GROUPE } from "./partage";
 import { libellePlafondLien, type ReglagesPlafond } from "./plafonds";
 import { TYPES_PROVENANCE } from "./types";
 
@@ -105,7 +108,7 @@ export function personnesDe(lignes: readonly { deposant: string | null; poids?: 
 /** La clé de la personne « le responsable » dans le filtre de « Toutes les photos » (`qui:<clé>` pour un participant). */
 export const QUI_RESPONSABLE = "qui:@responsable";
 
-/** Une photo de participant (lien général ou lien de contribution). */
+/** Une photo de participant (adresse de base, « Sans groupe », ou lien de contribution). */
 export const deParticipant = (l: Pick<LignePhoto, "role_deposant" | "provenance_id">) => l.role_deposant === "participant" || Boolean(l.provenance_id);
 
 /**
@@ -148,7 +151,7 @@ const feuille = (chemin: string) => (chemin.includes(SEPARATEUR) ? chemin.slice(
 /** La clé d'un dossier du responsable, à partir de son type et de son déposant tel qu'en base (vide : son propre nom). */
 export const cleResp = (type: string, brut: string) => `resp:${type}:${brut}`;
 
-/** L'arbre des dossiers. `avecLiensVides` : montrer aussi les liens qui n'ont rien reçu (le responsable, qui partage). */
+/** L'arbre des dossiers. `avecLiensVides` : montrer aussi les liens de groupe qui n'ont rien reçu (le responsable, qui partage) ; « Sans groupe », jamais vide. */
 export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly LienEdition[], edition: Edition, avecLiensVides: boolean): Arbre {
   const resp = edition.responsable_nom;
   /* ── « Déposées par vous » : un nœud par chemin de premier niveau, ses sous-dossiers dedans. ── */
@@ -211,9 +214,12 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
   };
   const total = (id: string) => (parLien.get(id) ?? []).reduce((n, l) => n + poidsDe(l), 0);
   const noeudsLiens: Noeud[] = [];
+  /* L'adresse de base (l'ancien lien général, planche 5 du 21/10) : jamais un lien à partager,
+     plus jamais montrée VIDE, même au responsable. Elle reçoit encore (un lien déjà envoyé ne
+     perd pas une photo) : ses photos apparaissent sous « Sans groupe », en lecture seule. */
   const general = total("general");
-  if (general || avecLiensVides) {
-    noeudsLiens.push({ cle: "participants", nom: GROUPE_GENERAL, n: general, enfants: personnes("general", GROUPE_GENERAL), renommable: false, deplacable: false, accueille: false });
+  if (general) {
+    noeudsLiens.push({ cle: "participants", nom: GROUPE_SANS_GROUPE, n: general, enfants: personnes("general", GROUPE_SANS_GROUPE), renommable: false, deplacable: false, accueille: false });
   }
   for (const l of liens) {
     const n = total(l.id);

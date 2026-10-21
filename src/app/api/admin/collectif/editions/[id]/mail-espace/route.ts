@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
-import { controleAppareilActif } from "@/lib/collectif/appareil";
 import { estUuid } from "@/lib/collectif/cles";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { origineDesMails } from "@/lib/collectif/liens";
@@ -13,8 +12,8 @@ import type { EditionLigne } from "@/lib/collectif/types";
 
 /**
  * /api/admin/collectif/editions/[id]/mail-espace — « Votre espace est prêt » (T-146,
- * T-187) : SON lien, et depuis le 20/10 (retouche de Mathias) où trouver dans
- * l'espace ceux de l'équipe et des participants, sans les écrire. Appelée par
+ * T-187) : SON lien seul, en un bouton, et une ligne « tout se partage depuis
+ * l'espace » (planche 6 du 21/10, le mail allégé). Appelée par
  * l'onglet « Réglages et liens » ET par l'écran « L'édition est créée »
  * (`/admin/collectif/creee/[id]`).
  *
@@ -44,10 +43,10 @@ async function preparer(request: Request, id: string) {
      jamais avec l'adresse locale ou celle d'une version d'essai. */
   const origine = origineDesMails(process.env);
   /* Les mêmes données que l'écran « L'édition est créée » (`donneesEspacePret`, qui lit
-     les trois tokens par `liensEdition` : l'écran montre et copie les trois liens). Le
-     MAIL n'écrit que celui du responsable. Aucun ne va au journal : le code du verrou
-     porte une empreinte du lien du responsable, jamais le lien. */
-  const mail = mailEspacePret(donneesEspacePret(data, origine, controleAppareilActif(process.env)));
+     les tokens par `liensEdition` : l'écran montre et copie le lien du responsable et celui
+     de l'équipe). Le MAIL n'écrit que celui du responsable. Aucun ne va au journal : le code
+     du verrou porte une empreinte du lien du responsable, jamais le lien. */
+  const mail = mailEspacePret(donneesEspacePret(data, origine));
   return { supabase, edition: data, mail } as const;
 }
 

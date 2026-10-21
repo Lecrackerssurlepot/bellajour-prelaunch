@@ -15,17 +15,30 @@
    21/10 (« vérifier bien les chevauchements ») : le menu « … » d'une carte est un vrai menu
    (`MenuLien`) : ancré sous son bouton (feuille du bas sur téléphone), fond opaque, il se ferme au
    clic dehors, à Échap, au défilement, et rend le focus à son bouton. Avant, un bloc de verre
-   posé en travers de la carte, qui laissait lire son titre et son QR à travers. */
+   posé en travers de la carte, qui laissait lire son titre et son QR à travers.
 
+   21/10, planche 5 (validée) : plus de carte « Lien général ». L'adresse de base reste une base
+   technique (elle reçoit encore, tous les liens de groupe en dépendent) mais ne se montre ni ne
+   s'envoie plus. Ses photos, s'il y en a, apparaissent sous « Sans groupe » (`liens.general`,
+   nommé par la source, `grillePhotos.ts`), en LECTURE SEULE : ni QR, ni « Afficher en grand »,
+   ni « Partager », ni menu. Sans aucun lien de groupe, l'état vide « Créez un lien par groupe »
+   (5B) : un grand « Créer un lien » et trois noms pour commencer qui préremplissent la fenêtre.
+   Les cartes des groupes gardent leur dessin (les tuiles de la planche 3 attendent Mathias). */
+
+import { useParams } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
+import { NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import Fenetre from "../../_composants/Fenetre";
-import type { LienPartage } from "../../_composants/LienContribution";
+import { FenetreCreerLien, type LienCree, type LienPartage } from "../../_composants/LienContribution";
 import QrCode from "../../_composants/QrCode";
+import "./liens.css";
 
 export type Personne = { nom: string; n: number };
 export type LienDetail = { id: string; cle: string; nom: string; plafond: string; plafondNombre: number | null; sansPlafond: boolean; n: number; personnes: Personne[] };
+/** `general` : les photos de l'adresse de base, montrées sous « Sans groupe » quand `n` > 0, jamais partagées. */
 export type Liens = { general: { nom: string; plafond: string; n: number; personnes: Personne[] }; liens: LienDetail[]; reste: number | null };
 
 const nombre = (n: number) => n.toLocaleString("fr-FR");
@@ -52,7 +65,7 @@ export function OngletLiens(o: {
   setPartage: (l: LienPartage) => void;
   setGrandQr: (l: LienPartage) => void;
   ouvrir: (cle: string) => void;
-  /** `id` nul : le lien général (son nombre seulement). */
+  /** `id` nul : l'ancien lien général (son nombre seulement), que cet onglet ne propose plus depuis le 21/10. */
   setModifier: (r: { id: string | null; nom: string; valeur: number; sansLimite: boolean }) => void;
   setSupprimer: (r: { id: string; nom: string; n: number }) => void;
 }) {
@@ -79,35 +92,72 @@ export function OngletLiens(o: {
   };
   const fermerMenu = () => setMenu(null);
   const { liens, lienDe, setPartage, setGrandQr, ouvrir, setModifier, setSupprimer, maxPlafond } = o;
+
+  /* L'état vide (5B) crée par SA fenêtre, un nom déjà écrit ou non (`creer`). Le lien écrit s'affiche aussitôt
+     (la route le rend) tant que la liste n'a pas été relue : à la première relecture, la liste du serveur fait foi
+     (un lien supprimé entre-temps ne revient pas). Puis « Partager » s'ouvre sur lui. */
+  const { token } = useParams<{ token: string }>();
+  const [creer, setCreer] = useState<string | null>(null);
+  const [crees, setCrees] = useState<{ vu: Liens | null; liens: LienDetail[] }>({ vu: null, liens: [] });
+  const locaux = liens && crees.vu === liens ? crees.liens.filter((c) => !liens.liens.some((l) => l.id === c.id)) : [];
+  const groupes = liens ? [...liens.liens, ...locaux] : [];
+  const sansGroupe = liens && liens.general.n > 0 ? liens.general : null;
+  const quandCree = (l: LienCree) => {
+    setCreer(null);
+    if (!l.id || !l.cle) {
+      setPartage({ libelle: l.libelle, url: l.url, plafond: l.plafond, recues: 0 });
+      return;
+    }
+    const detail: LienDetail = { id: l.id, cle: l.cle, nom: l.libelle, plafond: l.plafond, plafondNombre: l.sansPlafond ? null : l.plafondNombre, sansPlafond: l.sansPlafond, n: 0, personnes: [] };
+    setCrees((c) => ({ vu: liens, liens: [...(c.vu === liens ? c.liens : []), detail] }));
+    setPartage(lienDe(detail.nom, detail.cle, detail.plafond, 0));
+  };
+
   return (
     <div className="ec-ecran-corps ec-li ec-defile">
       <div className="ec-li-intro">
         <span>{v("Un lien par personne ou par groupe : chacun dépose depuis son téléphone, sans compte, et vous suivez qui a envoyé quoi.", "Un lien par personne ou par groupe : chacun dépose depuis son téléphone, sans compte, et tu suis qui a envoyé quoi.")}</span>
         {liens?.reste !== null && liens?.reste !== undefined ? <span className="ec-note">Il reste {nombre(liens.reste)} photos avant le plafond de l&apos;édition</span> : null}
       </div>
+      {liens && groupes.length === 0 ? (
+        <div className="ec-ph-accueil ec-cl-vide">
+          <span className="ec-cl-vide-icone" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3" />
+            </svg>
+          </span>
+          <strong className="ec-ph-accueil-titre">{v("Créez un lien par groupe", "Crée un lien par groupe")}</strong>
+          <p className="ec-texte">
+            {v(
+              "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et vous voyez d'où vient chaque photo.",
+              "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et tu vois d'où vient chaque photo."
+            )}
+          </p>
+          <div className="ec-ph-accueil-gestes">
+            {p.ouverte ? (
+              <button type="button" className="ec-bouton ec-bouton--plein ec-ph-large" onClick={() => setCreer("")}>
+                Créer un lien
+              </button>
+            ) : (
+              <button type="button" className="ec-bouton ec-bouton--plein ec-ph-large" disabled title={RAISON_COLLECTE_TERMINEE}>
+                Créer un lien
+              </button>
+            )}
+          </div>
+          {p.ouverte ? (
+            <div className="ec-cl-exemples" role="group" aria-label="Des noms pour commencer">
+              <span className="ec-note">Pour commencer :</span>
+              {NOMS_POUR_COMMENCER.map((nom) => (
+                <button key={nom} type="button" className="ec-ph-pilule" onClick={() => setCreer(nom)}>
+                  {nom}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="ec-li-cartes">
-        {liens ? (
-          <CarteLien
-            genre="Lien général"
-            nom={liens.general.nom}
-            n={liens.general.n}
-            plafondTexte={liens.general.plafond}
-            cap={p.plafondGeneral}
-            personnes={liens.general.personnes}
-            url={p.lienParticipants}
-            cloture={p.cloture}
-            ouverte={p.ouverte}
-            menu={menu?.cle === "general" ? menu : null}
-            onMenu={(bouton, nb) => basculer("general", bouton, nb)}
-            onFermerMenu={fermerMenu}
-            declencheur={declencheur}
-            onPartager={() => setPartage(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
-            onGrand={() => setGrandQr(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
-            onVoir={() => ouvrir("participants")}
-            actions={[{ libelle: "Modifier", note: "le nombre de photos pour chaque personne", faire: () => setModifier({ id: null, nom: liens.general.nom, valeur: p.plafondGeneral ?? Math.min(30, p.max), sansLimite: false }) }]}
-          />
-        ) : null}
-        {liens?.liens.map((l) => (
+        {groupes.map((l) => (
           <CarteLien
             key={l.id}
             genre="Lien de contribution"
@@ -129,14 +179,37 @@ export function OngletLiens(o: {
             actions={[
               {
                 libelle: "Modifier",
-                note: liens.reste !== null ? `le nom et le nombre de photos (jusqu'à ${maxPlafond} par personne, selon ce qu'il reste)` : "le nom et le nombre de photos par personne",
+                note: liens?.reste !== null && liens?.reste !== undefined ? `le nom et le nombre de photos (jusqu'à ${maxPlafond} par personne, selon ce qu'il reste)` : "le nom et le nombre de photos par personne",
                 faire: () => setModifier({ id: l.id, nom: l.nom, valeur: l.plafondNombre ?? Math.min(30, p.max), sansLimite: l.sansPlafond }),
               },
               { libelle: "Supprimer le lien", note: `il ne reçoit plus rien ; ses ${nombre(l.n)} photos restent`, danger: true, faire: () => setSupprimer({ id: l.id, nom: l.nom, n: l.n }) },
             ]}
           />
         ))}
+        {/* « Sans groupe » : les photos de l'adresse de base, là où les groupes apparaissent, SEULEMENT s'il y en a. Lecture seule. */}
+        {sansGroupe ? (
+          <CarteLien
+            genre="Lecture seule"
+            nom={sansGroupe.nom}
+            n={sansGroupe.n}
+            plafondTexte="Arrivées sans lien de groupe"
+            cap={p.plafondGeneral}
+            personnes={sansGroupe.personnes}
+            url={null}
+            cloture=""
+            ouverte={false}
+            menu={null}
+            onMenu={() => {}}
+            onFermerMenu={fermerMenu}
+            declencheur={declencheur}
+            onPartager={() => {}}
+            onGrand={() => {}}
+            onVoir={() => ouvrir("participants")}
+            actions={[]}
+          />
+        ) : null}
       </div>
+      {creer !== null && token ? <FenetreCreerLien token={token} max={p.max} tu={p.tu} nomInitial={creer} onCree={quandCree} onFermer={() => setCreer(null)} /> : null}
     </div>
   );
 }
@@ -150,7 +223,8 @@ function CarteLien(c: {
   plafondTexte: string;
   cap: number | null;
   personnes: Personne[];
-  url: string;
+  /** L'adresse du lien, pour son QR ; `null` : une carte en lecture seule (« Sans groupe »), sans QR ni geste. */
+  url: string | null;
   cloture: string;
   ouverte: boolean;
   menu: OuvertMenu | null;
@@ -174,7 +248,7 @@ function CarteLien(c: {
             {c.n ? `${nombre(c.n)} photo${c.n > 1 ? "s" : ""} · ${c.personnes.length} personne${c.personnes.length > 1 ? "s" : ""}` : "Rien reçu pour l'instant"}
           </span>
         </span>
-        <QrCode texte={c.url} taille={64} etiquette={`QR code du lien « ${c.nom} »`} />
+        {c.url ? <QrCode texte={c.url} taille={64} etiquette={`QR code du lien « ${c.nom} »`} /> : null}
       </div>
       {visibles.length ? (
         <ul className="ec-li-personnes">
@@ -202,7 +276,7 @@ function CarteLien(c: {
           {c.plafondTexte}
           {c.cloture ? ` · jusqu'au ${c.cloture}` : ""}
         </span>
-        {c.ouverte ? (
+        {c.ouverte && c.url ? (
           <>
             <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={c.onGrand}>
               Afficher en grand

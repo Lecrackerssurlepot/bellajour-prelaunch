@@ -84,13 +84,14 @@ export function lienAbrege(url: string): string {
   return url.replace(/^https?:\/\//, "").replace(/([A-Za-z0-9_-]{4})[A-Za-z0-9_-]{20,}/g, "$1…");
 }
 
-/** « Copier les trois liens » (T-187) : chacun sur sa ligne, avec son rôle, à coller dans un mail. */
-export function texteTroisLiens(l: Record<QuelLien, string>): string {
-  return [
-    `Le lien du responsable, à garder pour soi : ${l.responsable}`,
-    `Le lien de l'équipe, en lecture seule : ${l.equipe}`,
-    `Le lien des participants, pour déposer ses photos : ${l.depot}`,
-  ].join("\n");
+/**
+ * « Copier les deux liens » (T-187, planche 5C du 21/10) : le lien du responsable et celui de
+ * l'équipe, chacun sur sa ligne avec son rôle, à coller dans un mail. L'adresse de dépôt n'y est
+ * plus (elle n'est plus montrée ni envoyée : un lien par groupe, créé dans l'espace) ; l'ancien
+ * `texteTroisLiens` est dans archive/partage-liens-mail-2026-10/liens.ts.
+ */
+export function texteDeuxLiens(l: Pick<Record<QuelLien, string>, "responsable" | "equipe">): string {
+  return [`Le lien du responsable, à garder pour soi : ${l.responsable}`, `Le lien de l'équipe, en lecture seule : ${l.equipe}`].join("\n");
 }
 
 /**

@@ -1,0 +1,46 @@
+/* L'onglet « Les liens » : l'état vide « Créez un lien par groupe » (planche 5B du 21/10,
+   validée). Le même accueil en pointillé que « Les photos arriveront ici » (`.ec-ph-accueil`,
+   espace.css), avec une icône de groupe, un grand « Créer un lien » (`.ec-ph-large`, 52 px,
+   photos.css) et trois noms pour commencer (`.ec-ph-pilule`). Jetons seulement : aucune
+   couleur écrite ici, les deux modes suivent. Importée par `Liens.tsx`, tout sous `.ec-espace`. */
+
+.ec-espace .ec-cl-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ec-espace .ec-cl-vide-icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+}
+.ec-espace .ec-cl-vide .ec-ph-accueil-gestes {
+  align-self: stretch;
+}
+.ec-espace .ec-cl-exemples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-cl-exemples .ec-ph-pilule {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--ec-text);
+}
+
+/* Téléphone : l'accueil prend la largeur de la colonne, et les noms se touchent au pouce (44 px). */
+@media (max-width: 860px) {
+  .ec-espace .ec-li .ec-cl-vide {
+    margin: 0 2px;
+  }
+  .ec-espace .ec-cl-exemples .ec-ph-pilule {
+    min-height: 44px;
+  }
+}

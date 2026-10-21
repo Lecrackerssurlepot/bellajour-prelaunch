@@ -385,9 +385,16 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   (`sources.ts` est archivé dans `archive/sources-photos-2026-10/`). La page Photos ET le tableau
   de bord le lisent. Les clés des liens (`?p=`) ne sortent que pour qui peut en créer
   (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
-- **Le message de partage** (`partage.ts`, pur) salue le groupe, nomme l'organisation et
-  l'événement, dit le plafond et la clôture ; le lien général salue « à tous » et vouvoie.
-  Le client le retouche avant WhatsApp, Mail ou copie.
+- **Le message de partage** (`partage.ts`, pur, planche 4 validée le 21/10) : trois courts
+  paragraphes, le salut par le nom du groupe, la clôture et le plafond dans leur phrase, le lien
+  SEUL sur sa ligne, espaces insécables avant « : » « ! » et dans les guillemets. Le client le
+  retouche avant WhatsApp, Mail ou copie. L'adresse de base (sans `?p=`) n'a plus de message :
+  la fenêtre dit « Ces photos n'ont pas de groupe ».
+- **Le lien « Tous les participants » est une base technique** (planche 5, 21/10) : il reçoit
+  toujours (un lien déjà partagé ne perd jamais une photo), mais il n'est plus jamais montré ni
+  envoyé. Ses photos apparaissent sous « Sans groupe », en lecture seule et seulement s'il y en
+  a (`dossiers.ts`, `grillePhotos.ts`). « Tous les participants » et « Sans groupe » sont des
+  noms RÉSERVÉS : la route des provenances les refuse (409 `nom_reserve`).
 - **La fenêtre d'envoi vit dans la coquille** (`DepotContexte` : `HoteFenetreEnvoi`, la pastille
   dans `EnTeteEcran`). Un lot garde la provenance choisie À L'AJOUT (`moteur.ts`) : un second
   lot ajouté pendant l'envoi ne relabellise jamais le premier. Un fichier choisi deux fois est
@@ -669,23 +676,23 @@ nombre » d'un lien « pourraient être ensemble ».
   montrent ABRÉGÉES (`lienAbrege`, quatre caractères du token) ; le lien entier ne sort que par
   « Copier ». L'envoi passe par `useEnvoiEspace` (le même flux en deux temps que l'onglet
   Réglages) ; l'état des mails est lu par le SERVEUR (`mailsCollectifOuverts`) : fermés, le
-  bouton dit « Mails coupés : copiez les liens » et ne fait rien, « Copier les trois liens »
-  (`texteTroisLiens`) devient le geste principal. L'aperçu est l'iframe du GET `mail-espace`.
-- **Le mail « Votre espace est prêt » ne porte que SON lien** (texte de la planche 6 validé par
-  Mathias le 19/10, retouché à sa demande le 20/10 : « dis plutôt où elle peut les retrouver
-  pour les envoyer directement depuis la plateforme »). Trois blocs : le sien avec « Ouvrir mon
-  espace » ; celui de l'équipe, « en bas du menu : « Partager avec mon équipe », puis
-  « Copier » » ; celui des participants, « page Photos, onglet « Les liens » : « Partager » y
-  prépare le message et le QR code ». Plus AUCUN token d'équipe ni de dépôt dans le mail (le
-  harnais le vérifie). « Le lien des participants a changé » suit la même règle : il ne l'écrit
+  bouton dit « Mails coupés : copiez les liens » et ne fait rien, « Copier les deux liens »
+  (`texteDeuxLiens`, responsable et équipe) devient le geste principal. L'aperçu est l'iframe du
+  GET `mail-espace`. « Préparer les groupes maintenant » ouvre sur place la création de liens de
+  l'atelier (`PanneauProvenances`, la route d'atelier des provenances et son plafond).
+- **Le mail « Votre espace est prêt » ne porte que SON lien** (allégé le 21/10, planche 6 des
+  planches téléphone, de 161 à 49 mots) : un titre, « Bonjour <prénom>, », deux lignes, UN
+  bouton « Ouvrir mon espace », la ligne « Votre équipe et les participants : tout se partage
+  depuis l'espace. », la signature. Plus de blocs, plus de notes (« Lien perdu ? », code par
+  appareil). Plus AUCUN token d'équipe ni de dépôt dans le mail (le harnais le vérifie). « Le lien des participants a changé » suit la même règle : il ne l'écrit
   plus, il dit où il est et ouvre SON espace (`espace`, ajouté à `donneesLienRegenere` ; le
   mail ne part qu'à son adresse). `donneesEspacePret` reste la seule façon d'assembler les
-  données (route ET écran) et garde les TROIS liens : l'écran « L'édition est créée » les montre
-  et « Copier les trois liens » (`texteTroisLiens`) les copie, inchangé. Le journal ne voit que
+  données (route ET écran) ; l'écran « L'édition est créée » ne montre plus que deux liens
+  (responsable, équipe) et « Copier les deux liens » (`texteDeuxLiens`) les copie. Le journal ne voit que
   l'empreinte du lien du responsable et l'adresse masquée. `COLLECTIF_MAILS` reste fermé :
   l'ouvrir attend Mathias. ⚠️ Sur un appareil pas encore reconnu (code par appareil en
   service), l'onglet « Les liens » ne s'affiche qu'après le code (`p.ecrire`) : le mail le dit
-  déjà par sa note « pour modifier, il vous envoie un code ».
+  ne le dit plus : sa note est partie le 21/10.
 - **« Partager avec mon équipe »** (`PartageEquipe.tsx`, en bas du menu de la coquille) : le
   layout de l'espace ne calcule le lien d'équipe que si `voitLienEquipe` (le responsable, y
   compris sur un appareil pas encore reconnu) ; l'équipe ne le reçoit jamais dans sa page.

@@ -2507,6 +2507,16 @@
   background: var(--eca-vert-fond);
   color: var(--eca-vert);
 }
+/* « aucun pour l'instant » (planche 5C, 21/10) : une étiquette creuse, en pointillé. */
+.eca-root .eca-etiquette--creux {
+  background: transparent;
+  border: 1px dashed var(--bj-veil-16);
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-lien-carte--groupes .eca-fin-gestes {
+  align-items: center;
+  flex-wrap: wrap;
+}
 .eca-root .eca-url {
   overflow: hidden;
   padding: 8px 12px;

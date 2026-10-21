@@ -19,13 +19,26 @@
 
 import { clePersonne, lireNomDossier } from "./dossiers";
 import { LIBELLE_ATELIER, LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, NOM_LIEN_SANS_NOM } from "./grille";
-import { GROUPE_GENERAL } from "./partage";
+import { GROUPE_GENERAL, GROUPE_SANS_GROUPE } from "./partage";
 import { lirePlafondLien, type ReglagesPlafond } from "./plafonds";
 
-/** Les noms que personne d'autre ne peut porter : ceux des groupes fixes de « Qui a déposé ». */
-export const NOMS_RESERVES: ReadonlySet<string> = new Set([LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, LIBELLE_ATELIER, GROUPE_GENERAL, NOM_LIEN_SANS_NOM].map((n) => clePersonne(n)));
+/**
+ * Les noms que personne d'autre ne peut porter : ceux des groupes fixes de « Qui a déposé »,
+ * « Tous les participants » (le lien général, l'adresse de base, qui n'est plus montré depuis le
+ * 21/10) et « Sans groupe » (le nom sous lequel l'espace montre ses photos, planche 5).
+ */
+export const NOMS_RESERVES: ReadonlySet<string> = new Set([LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, LIBELLE_ATELIER, GROUPE_GENERAL, GROUPE_SANS_GROUPE, NOM_LIEN_SANS_NOM].map((n) => clePersonne(n)));
 
 export type RefusNom = { error: "nom_reserve" | "nom_deja_pris"; message: string };
+
+/**
+ * Ce nom est-il RÉSERVÉ ? Le seul refus de nom que connaît la création d'un lien par le
+ * responsable (`/api/collectif/provenances`, 21/10) : lui peut créer deux liens du même nom
+ * (le lot les rend uniques), mais jamais un groupe « Tous les participants » ou « Sans groupe ».
+ */
+export function refusNomReserve(libelle: string): RefusNom | null {
+  return NOMS_RESERVES.has(clePersonne(libelle)) ? { error: "nom_reserve", message: "Ce nom est réservé : en choisir un autre." } : null;
+}
 
 /**
  * Ce nom est-il refusé ? `sauf` : l'id du lien qu'on renomme (il ne se refuse pas lui-même).
@@ -33,7 +46,8 @@ export type RefusNom = { error: "nom_reserve" | "nom_deja_pris"; message: string
  */
 export function refusNomDeLien(libelle: string, existants: readonly { id?: string; libelle: string | null; retire_le?: string | null }[], sauf?: string): RefusNom | null {
   const cle = clePersonne(libelle);
-  if (NOMS_RESERVES.has(cle)) return { error: "nom_reserve", message: "Ce nom est réservé : en choisir un autre." };
+  const reserve = refusNomReserve(libelle);
+  if (reserve) return reserve;
   if (existants.some((l) => !l.retire_le && l.id !== sauf && clePersonne(l.libelle) === cle)) {
     return { error: "nom_deja_pris", message: "Un lien porte déjà ce nom : en choisir un autre." };
   }

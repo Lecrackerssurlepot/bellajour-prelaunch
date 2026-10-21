@@ -24,7 +24,7 @@ import { arbreDesPhotos, compterPersonnes, dansLeDossier, deParticipant, estVueE
 import { indexDoublons } from "./doublons";
 import { jourDePhoto, TAILLE_PAGE } from "./grille";
 import { enPaquets } from "./lignes";
-import { GROUPE_GENERAL } from "./partage";
+import { GROUPE_SANS_GROUPE } from "./partage";
 import type { ReglagesPlafond } from "./plafonds";
 import {
   couvertureDe,
@@ -146,6 +146,8 @@ export type ReponseGrille = {
   arbre: ReturnType<typeof arbreDesPhotos>;
   couvertures: Record<string, string>;
   liens: {
+    /** Les photos arrivées par l'adresse de BASE (l'ancien lien général), sous « Sans groupe » : l'onglet
+        « Les liens » ne la montre que si `n` > 0, en lecture seule, sans « Partager » ni QR (planche 5, 21/10). */
     general: { nom: string; plafond: string; n: number; personnes: { nom: string; n: number }[] };
     liens: { id: string; cle: string; nom: string; plafond: string; plafondNombre: number | null; sansPlafond: boolean; n: number; personnes: { nom: string; n: number }[] }[];
     reste: number | null;
@@ -302,7 +304,7 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
     couvertures,
     liens: partage
       ? {
-          general: { nom: GROUPE_GENERAL, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: general.length, personnes: personnesDu(general) },
+          general: { nom: GROUPE_SANS_GROUPE, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: general.length, personnes: personnesDu(general) },
           liens: detailLiens,
           reste: edition.plafond_total === null ? null : Math.max(0, edition.plafond_total - toutes.length),
         }
@@ -471,7 +473,7 @@ export async function grilleDepuisResume(
     couvertures,
     liens: partage
       ? {
-          general: { nom: GROUPE_GENERAL, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: somme(general), personnes: personnesDu(general) },
+          general: { nom: GROUPE_SANS_GROUPE, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: somme(general), personnes: personnesDu(general) },
           liens: detailLiens,
           reste: edition.plafond_total === null ? null : Math.max(0, edition.plafond_total - total),
         }

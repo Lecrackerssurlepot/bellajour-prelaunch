@@ -57,7 +57,9 @@ import {
   type EvenementObjets,
   type SupprimeePar,
 } from "./corbeille";
-import { cleDuLien, LIBELLE_ATELIER, LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, personneDeLaPhoto } from "./grille";
+import { cleDuLien, LIBELLE_ATELIER, LIBELLE_RESPONSABLE, personneDeLaPhoto } from "./grille";
+/* L'adresse de base se dit « Sans groupe » partout où le responsable la voit (planche 5, 21/10), corbeille comprise. */
+import { GROUPE_SANS_GROUPE } from "./partage";
 import { noterEchec } from "./echecsJournal";
 import { collectifOuvert } from "./interrupteur";
 import { journaliser, journaliserId } from "./journal";
@@ -580,7 +582,7 @@ export async function vueCorbeille(
         nom: p.nom_origine,
         qui: personneDeLaPhoto(p, responsable),
         lien,
-        lienNom: (p.provenance_id ? noms.get(p.provenance_id) : undefined) ?? (lien === "vous" ? LIBELLE_RESPONSABLE : lien === "atelier" ? LIBELLE_ATELIER : lien === "participants" ? LIBELLE_LIEN_GENERAL : "Lien de contribution"),
+        lienNom: (p.provenance_id ? noms.get(p.provenance_id) : undefined) ?? (lien === "vous" ? LIBELLE_RESPONSABLE : lien === "atelier" ? LIBELLE_ATELIER : lien === "participants" ? GROUPE_SANS_GROUPE : "Lien de contribution"),
         supprimeeLe: p.supprimee_le,
         supprimeePar: p.supprimee_par,
         parQui: parQui(p.supprimee_par, p.deposant, responsable),

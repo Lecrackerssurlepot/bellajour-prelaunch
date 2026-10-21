@@ -6,19 +6,20 @@
  * Relus par Mathias le 20/10 : tous « d'accord », avec deux retouches faites
  * ce jour-là. (1) Une seule maison : même en-tête, même bouton bleu, même
  * signature, « Bonjour <prénom> » partout où le nom est connu, l'objet coupé
- * par « · ». (2) « Votre espace est prêt » ne porte plus que SON lien (le
- * texte de la planche 6 du 19/10, retouché) : pour celui de l'équipe et celui
- * des participants, il dit OÙ les trouver dans l'espace pour les envoyer de
- * là ; « Le lien des participants a changé » de même. Rien ne part tant que
+ * par « · ». (2) « Votre espace est prêt » ne porte plus que SON lien.
+ * Planche 6 du 21/10 (validée) : ce mail est ALLÉGÉ, un titre, deux lignes,
+ * un bouton, une ligne pour la suite, la signature ; plus de blocs ni de
+ * notes (l'ancien texte : archive/partage-liens-mail-2026-10/). « Le lien des
+ * participants a changé » ne change pas pour l'instant. Rien ne part tant que
  * `COLLECTIF_MAILS` n'est pas ouvert (`mails.ts`) : ce sont de vrais mails à
  * de vrais clients, et l'ouvrir attend Mathias. Le texte vit ICI (et pas dans
  * un modèle Brevo) pour se relire, se tester au harnais et s'afficher en
  * aperçu dans l'atelier.
  *
- * ⚠️ Chaque endroit de l'espace qu'un mail nomme (« Partager avec mon
- * équipe », la page Photos, l'onglet « Les liens », « Partager ») est relu
- * dans les écrans par le harnais : renommer l'un sans le mail, c'est envoyer
- * le client chercher un bouton qui n'existe plus.
+ * ⚠️ Chaque endroit de l'espace qu'un mail nomme (« Ouvrir mon espace », la
+ * page Photos, l'onglet « Les liens », « Partager ») est relu dans les écrans
+ * par le harnais : renommer l'un sans le mail, c'est envoyer le client
+ * chercher un bouton qui n'existe plus.
  *
  * Masculin générique, vous ou tu selon le registre de l'édition, aucun tiret
  * cadratin (consigne de Mathias). Un lien vers l'espace du responsable porte
@@ -127,25 +128,26 @@ export type DonneesEspacePret = {
   evenement: string;
   responsable: string | null;
   /**
-   * Les TROIS liens de l'édition (T-187) : l'écran « L'édition est créée » les
-   * montre et les copie. Le MAIL n'écrit que le sien (son token, il ne part qu'à
-   * son adresse), depuis le 20/10 : l'équipe et les participants se trouvent
-   * dans l'espace, qui les copie et les partage.
+   * Les liens de l'édition (T-187), lus par `liensEdition`. Le MAIL n'écrit que
+   * le sien (son token, il ne part qu'à son adresse). L'écran « L'édition est
+   * créée » montre et copie le sien et celui de l'équipe ; l'adresse de dépôt
+   * (`depot`) n'est plus montrée ni envoyée (planche 5, 21/10) : l'écran ne
+   * s'en sert que pour former les liens de groupe qu'il crée.
    */
   liens: { responsable: string; equipe: string; depot: string };
-  /** « 28 octobre », ou null si la clôture n'est pas fixée. */
+  /** « 28 octobre », ou null si la clôture n'est pas fixée (la ligne de résumé de l'écran). */
   cloture: string | null;
-  /** Le code par appareil (T-154) est en service : le mail le dit. */
-  avecCode: boolean;
-  /** L'adresse courte pour retrouver son lien (« bellajour.fr/espace »), ou null pour ne pas l'écrire. */
-  retrouver?: string | null;
 };
 
-/** Ce que le mail « Votre espace est prêt » lit d'une édition : la route ET l'écran « L'édition est créée » passent par ici. */
+/**
+ * Ce que le mail « Votre espace est prêt » lit d'une édition : la route ET l'écran « L'édition est
+ * créée » passent par ici. Depuis la planche 6 du 21/10, le mail ne dit plus ni l'adresse courte
+ * « Lien perdu ? » ni le code par appareil (l'espace l'explique quand on en a besoin) : ni
+ * `retrouver` ni `avecCode` ici (« Le lien des participants a changé » garde les siens).
+ */
 export function donneesEspacePret(
   e: TokensEdition & { registre: string; organisation: string; evenement: string; responsable_nom: string | null; cloture_le: string | null },
-  origine: string,
-  avecCode: boolean
+  origine: string
 ): DonneesEspacePret {
   return {
     tu: e.registre === "ecole_tu",
@@ -154,16 +156,15 @@ export function donneesEspacePret(
     responsable: e.responsable_nom,
     liens: liensEdition(origine, e),
     cloture: e.cloture_le ? formaterJourParis(e.cloture_le) || null : null,
-    avecCode,
-    retrouver: origine ? `${origine.replace(/^https?:\/\//, "")}/espace` : null,
   };
 }
 
 /**
  * Où se trouve le lien des participants dans l'espace, et ce que l'espace en
- * fait (`Liens.tsx` : la carte du lien général, « Partager » ; la fenêtre de
- * partage de `LienContribution.tsx` : le QR code, le message de `partage.ts`,
- * WhatsApp, Mail). Le même chemin pour les deux mails qui en parlent.
+ * fait (`Liens.tsx`, « Partager » ; la fenêtre de partage de
+ * `LienContribution.tsx` : le QR code, le message de `partage.ts`, WhatsApp,
+ * Mail). Ne sert plus qu'au mail « Le lien des participants a changé », qui ne
+ * change pas pour l'instant (planche 6 du 21/10, « dans un second temps »).
  */
 function ouTrouverLienParticipants(tu: boolean, cloture: string | null, qr: "le QR code" | "le nouveau QR code"): string {
   const pour = cloture ? `Pour que chacun dépose ses photos, jusqu'au ${cloture}.` : "Pour que chacun dépose ses photos.";
@@ -173,58 +174,25 @@ function ouTrouverLienParticipants(tu: boolean, cloture: string | null, qr: "le 
 }
 
 /**
- * Le premier mail : l'espace est ouvert, voici SON lien, et où trouver les deux
- * autres pour les envoyer depuis l'espace (retouche de Mathias du 20/10 : plus
- * aucune adresse d'équipe ni de dépôt écrite). Envoyé par l'atelier depuis la
- * fiche ou l'écran « L'édition est créée ».
+ * Le premier mail : l'espace est ouvert, voici SON lien (planche 6 du 21/10, validée par
+ * Mathias, « allégé ») : un titre, « Bonjour <prénom>, », deux lignes (l'espace est ouvert ; ce
+ * lien est le sien, il y fait tout), UN bouton « Ouvrir mon espace », une ligne pour la suite
+ * (« Votre équipe et les participants : tout se partage depuis l'espace. »), la signature. Même
+ * `pageMail` que les autres : on a retiré des blocs, rien redessiné. Plus aucun bloc « Le lien de
+ * votre équipe » ni « Le lien des participants », plus de note « Lien perdu ? » ni du code par
+ * appareil. Envoyé par l'atelier depuis la fiche ou l'écran « L'édition est créée ».
  */
 export function mailEspacePret(d: DonneesEspacePret): Mail {
   const v = (vous: string, toi: string) => (d.tu ? toi : vous);
-  const lignes: Ligne[] = [
-    ligne(
-      v(
-        `L'espace de votre édition « ${d.evenement} » est ouvert. Voici votre lien. Ceux de votre équipe et des participants vous attendent dans l'espace, prêts à envoyer.`,
-        `L'espace de ton édition « ${d.evenement} » est ouvert. Voici ton lien. Ceux de ton équipe et des participants t'attendent dans l'espace, prêts à envoyer.`
-      )
-    ),
-  ];
-  const blocs: Bloc[] = [
-    {
-      titre: v("Votre lien", "Ton lien"),
-      phrase: v("Pour tout faire : photos, style, bon à tirer. Gardez-le pour vous.", "Pour tout faire : photos, style, bon à tirer. Garde-le pour toi."),
-      bouton: { href: d.liens.responsable, libelle: "Ouvrir mon espace" },
-    },
-    {
-      titre: v("Le lien de votre équipe", "Le lien de ton équipe"),
-      /* Les mots de `PartageEquipe.tsx` : la phrase de sa fenêtre, son entrée, son bouton. */
-      phrase: v(
-        "Lecture seule : votre équipe suit tout sans rien modifier. Dans votre espace, en bas du menu : « Partager avec mon équipe », puis « Copier ».",
-        "Lecture seule : ton équipe suit tout sans rien modifier. Dans ton espace, en bas du menu : « Partager avec mon équipe », puis « Copier »."
-      ),
-    },
-    {
-      titre: "Le lien des participants",
-      phrase: ouTrouverLienParticipants(d.tu, d.cloture, "le QR code"),
-    },
-  ];
-  const notes: Ligne[] = [];
-  if (d.retrouver)
-    notes.push(ligne(v(`Lien perdu ? Retrouvez-le à tout moment sur ${d.retrouver}.`, `Lien perdu ? Retrouve-le à tout moment sur ${d.retrouver}.`)));
-  if (d.avecCode)
-    notes.push(
-      ligne(
-        v(
-          "Sur un nouveau téléphone ou ordinateur, l'espace s'ouvre en lecture : pour modifier, il vous envoie un code à cette adresse.",
-          "Sur un nouveau téléphone ou ordinateur, l'espace s'ouvre en lecture : pour modifier, il t'envoie un code à cette adresse."
-        )
-      )
-    );
   const { html, texte } = pageMail({
     titre: v("Votre espace est prêt", "Ton espace est prêt"),
     bonjour: bonjour(d.responsable),
-    lignes,
-    blocs,
-    notes,
+    lignes: [
+      ligne(v(`L'espace de votre édition « ${d.evenement} » est ouvert.`, `L'espace de ton édition « ${d.evenement} » est ouvert.`)),
+      ligne(v("Photos, style, bon à tirer : tout s'y fait depuis ce lien. Gardez-le pour vous.", "Photos, style, bon à tirer : tout s'y fait depuis ce lien. Garde-le pour toi.")),
+      { href: d.liens.responsable, libelle: "Ouvrir mon espace" },
+      ligne(v("Votre équipe et les participants : tout se partage depuis l'espace.", "Ton équipe et les participants : tout se partage depuis l'espace.")),
+    ],
   });
   return { sujet: `${v("Votre", "Ton")} espace Bellajour est prêt · ${d.evenement}`, html, texte };
 }

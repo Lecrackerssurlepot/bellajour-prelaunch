@@ -10,7 +10,11 @@
    Le vocabulaire est celui de l'espace du client (« lien de contribution »,
    « photos par personne », « Sans limite »). Les règles sont celles de la
    création par le responsable (`lirePlafondLien`, de 5 à 100 ou sans limite,
-   borné par le plafond de l'atelier), relues par le serveur. */
+   borné par le plafond de l'atelier), relues par le serveur.
+
+   Ouverte aussi depuis l'écran « L'édition est créée » (planche 5C du 21/10,
+   « Préparer les groupes maintenant ») : `onCree` y fait suivre le compte de la
+   carte « Les liens des participants ». */
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,6 +22,9 @@ import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import type { LienFiche } from "../donnees";
 import Pastille from "../Pastille";
 import FenetreQrAtelier from "./FenetreQrAtelier";
+/* Le dessin de `Pastille` (le nombre de photos par personne) : la fiche le charge avec le formulaire, l'écran
+   « L'édition est créée » non (planche 5C, 21/10 : la carte s'y ouvre aussi). Next ne le charge qu'une fois. */
+import "../formulaire.css";
 
 /** Un lien, avec son adresse à copier (la clé `?p=` n'est jamais écrite dans le journal). */
 export type LienCarte = Omit<LienFiche, "cle"> & { url: string };
@@ -32,6 +39,7 @@ export default function PanneauProvenances({
   ouverte,
   archivee,
   cloture,
+  onCree,
 }: {
   id: string;
   liens: LienCarte[];
@@ -44,6 +52,8 @@ export default function PanneauProvenances({
   archivee: boolean;
   /** « 4 novembre » : la clôture, pour la feuille à imprimer ; vide si aucune. */
   cloture: string;
+  /** Un lien vient d'être écrit (l'écran qui ouvre la carte suit son compte). */
+  onCree?: (lien: LienCarte) => void;
 }) {
   const router = useRouter();
   const min = Math.min(CURSEUR_LIEN.min, max);
@@ -101,6 +111,7 @@ export default function PanneauProvenances({
       }
       const { cle, ...lien } = json.lien;
       setAjoutes((a) => [...a, { ...lien, url: `${depot}?p=${cle}` }]);
+      onCree?.({ ...lien, url: `${depot}?p=${cle}` });
       setFait(`Le lien « ${lien.nom} » est créé.${json.journal === false ? " Il n'a pas pu être noté au journal." : ""}`);
       setNom("");
       champ.current?.focus();
@@ -150,7 +161,7 @@ export default function PanneauProvenances({
           ))}
         </ul>
       ) : (
-        <p className="eca-vide">Aucun lien de contribution pour l&apos;instant. Le lien des participants (plus haut) reste ouvert à tous.</p>
+        <p className="eca-vide">Aucun lien de contribution pour l&apos;instant : un lien par groupe, chacun sous son nom.</p>
       )}
 
       {archivee ? (

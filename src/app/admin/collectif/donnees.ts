@@ -29,7 +29,7 @@ import { aTraiter, conversationsDe, type ATraiter, type Conversation, type Messa
 import { conversationsEnAttente } from "@/lib/collectif/nouveaux";
 import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { comparerLiens, deposantsParLien, nomsDesLiens, type LienDepose } from "@/lib/collectif/grille";
-import { libellePlafondLien } from "@/lib/collectif/plafonds";
+import { libellePlafondLien, type ReglagesPlafond } from "@/lib/collectif/plafonds";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
 import { calculerSurLignes, doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
 import type { Message } from "@/lib/collectif/messages";
@@ -353,6 +353,65 @@ type LignePhotoFiche = {
   preselection: boolean;
 };
 
+type ProvenanceFiche = Awaited<ReturnType<typeof lireProvenances>>[number];
+
+/**
+ * Les liens de contribution tels que l'atelier les montre (`LienFiche`) : le nom rendu unique
+ * (`nomsDesLiens`), la règle, ce que chacun a reçu (`parLien`, le regroupement de « Qui a
+ * déposé »). La fiche ET l'écran « L'édition est créée » (planche 5C, 21/10) lisent cette règle.
+ */
+function liensDeLaFiche(provenances: readonly ProvenanceFiche[], parLien: readonly LienDepose[], edition: ReglagesPlafond): LienFiche[] {
+  const nomsLiens = nomsDesLiens(provenances);
+  return provenances
+    .map((p) => {
+      const g = parLien.find((x) => x.id === p.id);
+      return {
+        id: p.id,
+        nom: nomsLiens.get(p.id) ?? p.libelle ?? "Lien de contribution",
+        cle: p.cle,
+        plafond: p.plafond_par_personne,
+        sansPlafond: p.sans_plafond,
+        plafondTexte: libellePlafondLien(p, edition),
+        personnes: g?.nbPersonnes ?? 0,
+        photos: g?.n ?? 0,
+        retire: Boolean(p.retire_le),
+        creeLe: p.created_at,
+      };
+    })
+    .sort(comparerLiens);
+}
+
+/**
+ * Les liens de groupe d'une édition, pour l'écran « L'édition est créée » (planche 5C, 21/10 :
+ * « Les liens des participants », aucun pour l'instant ou N liens, et « Préparer les groupes
+ * maintenant »). LECTURE seule : les liens (`lireProvenances`, ses replis de colonnes) et, pour
+ * ce que chacun a reçu, les photos arrivées hors corbeille, en quatre colonnes, par tranches
+ * (`lireToutesLesLignes`). L'adresse de base n'en fait pas partie (ses photos ne sont pas un groupe).
+ */
+export async function chargerLiensDeGroupe(supabase: SupabaseClient, id: string, edition: ReglagesPlafond & { responsable_nom: string | null }): Promise<LienFiche[]> {
+  type Ligne = { provenance_id: string | null; role_deposant: string; deposant: string | null; appareil_id: string | null };
+  const [provenances, photos] = await Promise.all([
+    lireProvenances(id),
+    lireHorsCorbeille((avec) =>
+      lireToutesLesLignes<Ligne & { id: string; confirmee_le: string }>(
+        () => {
+          const q = supabase
+            .from("collectif_photos")
+            .select("id, provenance_id, role_deposant, deposant, appareil_id, confirmee_le")
+            .eq("edition_id", id)
+            .not("confirmee_le", "is", null)
+            .not("provenance_id", "is", null);
+          return (avec ? q.is("supprimee_le", null) : q).returns<(Ligne & { id: string; confirmee_le: string })[]>();
+        },
+        { colonne: "confirmee_le", croissant: true },
+        "photos des liens de groupe"
+      )
+    ),
+  ]);
+  if (photos.error) echec("photos des liens de groupe", photos.error);
+  return liensDeLaFiche(provenances, deposantsParLien(photos.data ?? [], provenances, edition.responsable_nom), edition);
+}
+
 export async function chargerEdition(
   supabase: SupabaseClient,
   id: string,
@@ -489,22 +548,7 @@ export async function chargerEdition(
   };
 
   /* Les liens : le nom unique, la règle, ce que chacun a reçu (le même regroupement que « Qui a déposé »). */
-  const nomsLiens = nomsDesLiens(provenances);
-  const liensFiche: LienFiche[] = provenances.map((p) => {
-    const g = collecte.parLien.find((x) => x.id === p.id);
-    return {
-      id: p.id,
-      nom: nomsLiens.get(p.id) ?? p.libelle ?? "Lien de contribution",
-      cle: p.cle,
-      plafond: p.plafond_par_personne,
-      sansPlafond: p.sans_plafond,
-      plafondTexte: libellePlafondLien(p, edition),
-      personnes: g?.nbPersonnes ?? 0,
-      photos: g?.n ?? 0,
-      retire: Boolean(p.retire_le),
-      creeLe: p.created_at,
-    };
-  }).sort(comparerLiens);
+  const liensFiche = liensDeLaFiche(provenances, collecte.parLien, edition);
 
   /* Les styles que les briefs nomment (chaque pièce, D24), pour les lire en clair, publiés ou non. */
   type MagBrut = MagazineLigne & BriefLigne;
