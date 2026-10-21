@@ -482,6 +482,42 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   l'onglet Photos de la fiche, « Télécharger la sélection » (le lot avec `selection: true`, écrit
   dans le dossier « Sélection du client »), et « Collecte terminée par … » lu au journal.
 
+## La fin de collecte se DIT, et un lien se modifie EN UNE FOIS (retours de Mathias, 21/10)
+
+Tests de l'édition d'essai « Recette 1 » : « Terminer la collecte », il ne l'a pas vu ; « Rouvrir la collecte »,
+il ne l'a pas trouvé ; la collecte fermée n'était « pas assez dite » ; « changer le nom » et « changer le
+nombre » d'un lien « pourraient être ensemble ».
+- **`finCollecte.ts` (pur, au harnais)** est la seule source des mots : `ligneCollecteTerminee` (« Collecte
+  terminée le 21 octobre à 11 h 24 : les liens ne reçoivent plus de photos. L'atelier compose. », date
+  de Paris, « 1er », jamais une date inventée), `ligneOubli` (vous / tu), `phraseAtelierCommence`, et pour
+  l'atelier `blocCollecte` / `pastilleCollecte`. **La DATE est `cloture_le`** (« Terminer » et « Clore
+  maintenant » la posent à l'instant du geste) ; **QUI** se lit au journal : le plus récent des trois gestes
+  (`clore_collecte`, `terminer_collecte`, `rouvrir_collecte`), et il ne nomme personne si sa date n'est pas
+  celle de la clôture (écart de plus de 10 min : l'atelier l'a déplacée depuis) ou si le dernier mot est
+  « rouvrir ». La fiche le lit par une requête À PART (`gesteCollecte`, `donnees.ts`) : les 100 dernières
+  lignes de son journal ne le contiendraient plus après trois semaines.
+- **Espace** : `edition/_composants/FinCollecte.tsx` porte UNE fenêtre (`FenetreTerminerCollecte`, deux temps,
+  l'appel à `/api/collectif/collecte/terminer`), la ligne d'état (`LigneFinCollecte`, tableau de bord ET page
+  Photos, pour tous les rôles ; l'oubli seulement pour le responsable, tant que l'atelier peut rouvrir) et
+  `ActionsFinCollecte` (« Terminer la collecte » dans l'en-tête de la page Photos, une rangée sous l'en-tête
+  au téléphone). Terminée, « Déposer », « Inviter quelqu'un » et « Créer un lien » ne disparaissent plus :
+  ils sont ÉTEINTS, avec la raison (`RAISON_COLLECTE_TERMINEE`). Au clic, l'écran se ferme tout de suite (la
+  route rend `termineLe`), sans attendre la relecture de la page. « Terminer » n'est pas proposé à zéro photo
+  (comme le tableau de bord).
+- **Atelier** : un bloc sous l'en-tête de la fiche (tous les onglets), « Collecte ouverte jusqu'au … » ou
+  « Collecte terminée le … par … », avec « Rouvrir la collecte » DANS le bloc : le MÊME flux que le menu
+  « Gestes » (`PanneauGestes`, `seulement` + `bloc`), donc la même règle de `gestes.ts` et la même route.
+  La liste des éditions porte une pastille « Collecte ouverte » (vert) / « Collecte terminée » (bleu) d'après
+  l'état EFFECTIF.
+- **Modifier un lien** (`modifierLien.ts`, pur) : `planModificationLien` est LA décision, relue par
+  `/api/collectif/provenances` `{ action: "modifier", id, libelle, plafond | sansPlafond }` : le nom comme
+  `/api/collectif/dossiers` (`lireNomDossier`), le nombre comme la création (`lirePlafondLien`, plafond de
+  l'atelier), un nom déjà porté par un AUTRE lien ouvert ou réservé refusé (409, `refusNomDeLien`, partagé
+  avec la création par l'atelier). Le doublon ne se juge que si le nom CHANGE. UNE écriture, le journal garde
+  `dossier_renomme` et `provenance_plafond` (une ligne par chose changée). L'écran n'a plus qu'une fenêtre
+  « Modifier » (`FenetreModifierLien`) ; `FenetreNom` et `FenetrePlafond` sont dans
+  `archive/liens-nom-et-nombre-2026-10/`. Les deux routes d'avant restent valides, plus rien ne les appelle.
+
 ## La messagerie de l'atelier : ce qui est nouveau (T-188, 19/10)
 
 - **« Messages » compte des CONVERSATIONS** (éditions non archivées avec au moins un message du

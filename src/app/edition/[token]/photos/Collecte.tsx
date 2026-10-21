@@ -43,14 +43,17 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { phraseArrivees, SONDAGE_PHOTOS_MS, type Nouvelles } from "@/lib/collectif/arrivees";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { ERREUR_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
+import { corpsModifierLien } from "@/lib/collectif/modifierLien";
 import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
+import { ActionsFinCollecte, ID_LIGNE_FIN, LigneFinCollecte, type FinDeCollecte } from "../../_composants/FinCollecte";
 import FenetreLien, { FenetrePartage, FenetreQr, type ContexteMessage, type LienPartage } from "../../_composants/LienContribution";
 import { useSondage } from "../../_composants/useSondage";
 import Agrandir from "./Agrandir";
@@ -87,7 +90,7 @@ import {
   type PersonneVue,
 } from "./filtres";
 import Grille, { ICONES, Trace, type Photo } from "./Grille";
-import { FenetreNom, FenetrePlafond, OngletLiens, type Liens } from "./Liens";
+import { FenetreModifierLien, OngletLiens, type Liens } from "./Liens";
 import Listes from "./Listes";
 import { FenetreFusion, FenetreRenommer, FichePersonne } from "./Personne";
 import "./photos.css";
@@ -111,6 +114,8 @@ type Props = {
   ecrire: boolean;
   /** La collecte est ouverte : sinon ni dépôt ni lien, la sélection reste. */
   ouverte: boolean;
+  /** La fin de collecte (21/10) : qui peut la terminer, depuis quand elle l'est, si l'atelier peut encore rouvrir. */
+  fin: FinDeCollecte;
   tu: boolean;
   /** L'adresse complète du lien général des participants ; un lien de contribution y ajoute `?p=`. */
   lienParticipants: string;
@@ -152,7 +157,22 @@ const TRACE = {
   atelier: "M4 20V8l8-4 8 4v12M9 20v-6h6v6",
 };
 
-export default function Collecte(p: Props) {
+/**
+ * La fin de collecte se montre AU CLIC (21/10) : « Terminer la collecte » rend l'écran fermé tout de
+ * suite (les boutons de dépôt s'éteignent, la ligne d'état dit quand), sans attendre que la relecture
+ * de la page le repeigne. Le reste de l'écran lit `ouverte` comme avant.
+ */
+export default function Collecte(props: Props) {
+  const router = useRouter();
+  const [termineLe, setTermineLe] = useState<string | null>(null);
+  const termine = (le: string) => {
+    setTermineLe(le);
+    router.refresh();
+  };
+  return <CollecteEcran {...props} ouverte={props.ouverte && termineLe === null} fin={{ ...props.fin, le: termineLe ?? props.fin.le, oubli: props.fin.oubli || termineLe !== null }} onTermine={termine} />;
+}
+
+function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const client = useSyncExternalStore(rien, () => true, () => false);
   const [onglet, setOnglet] = useState<Onglet>(p.ecrire ? p.ongletInitial : "photos");
@@ -191,8 +211,8 @@ export default function Collecte(p: Props) {
   const [fenetreLien, setFenetreLien] = useState(false);
   const [partage, setPartage] = useState<LienPartage | null>(null);
   const [grandQr, setGrandQr] = useState<LienPartage | null>(null);
-  const [renommer, setRenommer] = useState<{ id: string; nom: string } | null>(null);
-  const [plafond, setPlafond] = useState<{ id: string | null; nom: string; valeur: number; sansLimite: boolean } | null>(null);
+  /* « Modifier » un lien : son nom ET son nombre de photos, en une fois (`id` nul = le lien général : le nombre seul). */
+  const [modifier, setModifier] = useState<{ id: string | null; nom: string; valeur: number; sansLimite: boolean } | null>(null);
   const [supprimer, setSupprimer] = useState<{ id: string; nom: string; n: number } | null>(null);
   /* Les arrivées en direct (T-181) : la dernière arrivée déjà montrée, l'annonce de celles
      d'après, et le seuil au-delà duquel une vignette est marquée « nouvelle ». */
@@ -1012,7 +1032,11 @@ export default function Collecte(p: Props) {
   }
   const commencerRenommer = () => {
     if (dossierNoeud?.renommable) setEdite({ cle: dossierNoeud.cle, valeur: dossierNoeud.nom });
-    else if (ouvertNoeud && f.lien?.startsWith("lien:")) setRenommer({ id: f.lien.slice(5), nom: ouvertNoeud.nom });
+    else if (ouvertNoeud && f.lien?.startsWith("lien:")) {
+      const id = f.lien.slice(5);
+      const l = liens?.liens.find((x) => x.id === id);
+      setModifier({ id, nom: ouvertNoeud.nom, valeur: l?.plafondNombre ?? Math.min(30, p.max), sansLimite: l?.sansPlafond ?? false });
+    }
   };
 
   const glisser = p.ecrire
@@ -1128,37 +1152,24 @@ export default function Collecte(p: Props) {
       ) : null}
       {partage ? <FenetrePartage lien={partage} contexte={contexte} onFermer={() => setPartage(null)} /> : null}
       {grandQr ? <FenetreQr lien={grandQr} contexte={contexte} onFermer={() => setGrandQr(null)} /> : null}
-      {renommer ? (
-        <FenetreNom
-          nom={renommer.nom}
-          occupe={occupe}
-          erreur={erreur}
-          onFermer={() => setRenommer(null)}
-          onGarder={async (nom) => {
-            if (await appeler("/api/collectif/dossiers", { cle: `lien:${renommer.id}`, nom })) {
-              setRenommer(null);
-              relire();
-            }
-          }}
-        />
-      ) : null}
-      {plafond ? (
-        <FenetrePlafond
-          nom={plafond.nom}
-          general={plafond.id === null}
+      {modifier ? (
+        <FenetreModifierLien
+          nom={modifier.nom}
+          general={modifier.id === null}
           max={maxPlafond}
-          valeurInitiale={plafond.valeur}
-          sansLimiteInitial={plafond.sansLimite}
+          valeurInitiale={modifier.valeur}
+          sansLimiteInitial={modifier.sansLimite}
           occupe={occupe}
           erreur={erreur}
-          onFermer={() => setPlafond(null)}
-          onGarder={async (valeur, sansLimite) => {
+          onFermer={() => setModifier(null)}
+          onGarder={async (nom, valeur, sansLimite) => {
+            /* Le nom ET le nombre partent ensemble (une seule requête) ; le lien général n'a pas de nom à changer. */
             const ok =
-              plafond.id === null
+              modifier.id === null
                 ? await appeler("/api/collectif/plafond", { valeur })
-                : await appeler("/api/collectif/provenances", sansLimite ? { action: "plafond", id: plafond.id, sansPlafond: true } : { action: "plafond", id: plafond.id, plafond: valeur });
+                : await appeler("/api/collectif/provenances", corpsModifierLien(modifier.id, nom, valeur, sansLimite));
             if (ok) {
-              setPlafond(null);
+              setModifier(null);
               relire();
             }
           }}
@@ -1316,9 +1327,15 @@ export default function Collecte(p: Props) {
             Créer un lien
           </button>
         ) : null}
+        <ActionsFinCollecte token={p.token} tu={p.tu} fin={p.fin} ecrire={p.ecrire} ouverte={p.ouverte} onglet={onglet} photos={stats ? stats.photos : null} selection={compteurs?.selection ?? 0} onTermine={p.onTermine} />
       </EnTeteEcran>
 
-      {erreur && !supprimer && !renommer && !plafond ? (
+      {/* La collecte est terminée : la page le DIT, sous le titre, pour tous les rôles (21/10). */}
+      {!p.ouverte ? <LigneFinCollecte id={ID_LIGNE_FIN} le={p.fin.le} tu={p.tu} oubli={p.fin.terminer && p.fin.oubli} /> : null}
+      {/* Téléphone : « Terminer la collecte » sous l'en-tête (la rangée de l'en-tête déborde à 375 px). */}
+      {!cocherActif && !ecranPropre ? <ActionsFinCollecte token={p.token} tu={p.tu} fin={p.fin} ecrire={p.ecrire} ouverte={p.ouverte} onglet={onglet} photos={stats ? stats.photos : null} selection={compteurs?.selection ?? 0} onTermine={p.onTermine} variante="ligne" /> : null}
+
+      {erreur && !supprimer && !modifier ? (
         <p className="ec-note ec-note--erreur ec-ph-erreur" role="alert">
           {erreur}
         </p>
@@ -1339,7 +1356,7 @@ export default function Collecte(p: Props) {
               </span>
               <span className="ec-ph-chiffres-fin">
                 {stats.enCours ? <span>{nombre(stats.enCours)} en cours d&apos;arrivée</span> : null}
-                {p.cloture ? <span className="ec-note">{p.ouverte ? `Clôture le ${p.cloture}` : `Collecte close le ${p.cloture}`}</span> : null}
+                {p.cloture && p.ouverte ? <span className="ec-note">Clôture le {p.cloture}</span> : null}
               </span>
             </div>
           ) : null}
@@ -1449,12 +1466,12 @@ export default function Collecte(p: Props) {
                     ) : (
                       <h2
                         className="ec-ph-zone-titre"
-                        title={renommable ? "Double-cliquer pour changer le nom" : undefined}
+                        title={renommable ? (dossierNoeud?.renommable ? "Double-cliquer pour changer le nom" : "Double-cliquer pour modifier le lien") : undefined}
                         onDoubleClick={() => renommable && commencerRenommer()}
                       >
                         {titre}
                         {renommable ? (
-                          <button type="button" className="ec-ph-renommer" aria-label={`Changer le nom de « ${titre} »`} title="Changer le nom" onClick={commencerRenommer}>
+                          <button type="button" className="ec-ph-renommer" aria-label={dossierNoeud?.renommable ? `Changer le nom de « ${titre} »` : `Modifier le lien « ${titre} »`} title={dossierNoeud?.renommable ? "Changer le nom" : "Modifier le lien"} onClick={commencerRenommer}>
                             <Trace d={TRACE.crayon} taille={16} epais={1.7} />
                           </button>
                         ) : null}
@@ -1776,6 +1793,7 @@ export default function Collecte(p: Props) {
               Déposer
             </button>
           ) : null}
+          {!envoiVisible && !cocherActif && !ecranPropre ? <ActionsFinCollecte token={p.token} tu={p.tu} fin={p.fin} ecrire={p.ecrire} ouverte={p.ouverte} onglet={onglet} photos={null} selection={0} onTermine={p.onTermine} variante="tel" /> : null}
           {/* Téléphone : la barre d'actions fixe, sous le pouce. */}
           {cocherActif ? (
             <div className="ec-ph-bas ec-ph-tel" role="toolbar" aria-label="Agir sur les photos cochées">
@@ -1815,8 +1833,7 @@ export default function Collecte(p: Props) {
           setPartage={setPartage}
           setGrandQr={setGrandQr}
           ouvrir={ouvrir}
-          setRenommer={setRenommer}
-          setPlafond={setPlafond}
+          setModifier={setModifier}
           setSupprimer={setSupprimer}
         />
       )}

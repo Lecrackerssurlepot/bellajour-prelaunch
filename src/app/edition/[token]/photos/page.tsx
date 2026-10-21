@@ -13,7 +13,7 @@ import { after } from 'next/server'
 import { formaterJour } from '@/lib/atelier/dates'
 import { makeSupabase } from '@/lib/supabase'
 import { peut } from '@/lib/collectif/droits'
-import { collecteOuverte } from '@/lib/collectif/etats'
+import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
 import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
 import { plafondLienMax, plafondParticipant } from '@/lib/collectif/plafonds'
 import { phrasePhotosEffacees } from '@/lib/collectif/retention'
@@ -55,12 +55,19 @@ export default async function PagePhotos({
   const ecrire = peut(role, 'deposer_photos')
   /* Collecte close : plus de dépôt ni de lien à partager, la présélection reste. */
   const ouverte = collecteOuverte(edition.etat, edition.cloture_le, new Date())
+  /* La fin de collecte (21/10) : qui peut la terminer, depuis quand elle l'est, et si l'atelier peut encore rouvrir. */
+  const fin = {
+    terminer: peut(role, 'terminer_collecte'),
+    le: ouverte ? null : edition.cloture_le,
+    oubli: etatEffectif(edition.etat, edition.cloture_le, new Date()) === 'composition',
+  }
 
   return (
     <Collecte
       token={token}
       ecrire={ecrire}
       ouverte={ouverte}
+      fin={fin}
       tu={edition.registre === 'ecole_tu'}
       lienParticipants={ecrire ? liensEdition(origine, edition).depot : ''}
       preselectionMax={edition.preselection_max}

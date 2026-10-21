@@ -2,11 +2,15 @@
 
 /* L'onglet « Les liens » de la page Photos (T-152, T-197) : une carte par lien,
    chaque personne avec sa barre, un seul « Partager », « Afficher en grand »
-   (le QR), et un menu (le nom, le nombre de photos, supprimer). Déplacé tel
-   quel de l'ancien `Collecte.tsx` le 20/10 (archive/photos-rayons-2026-10) :
-   la page Photos a changé, cet onglet non. Les fenêtres (partage, QR, nom,
-   plafond, suppression) restent tenues par `Collecte.tsx`, qui les ouvre aussi
-   depuis l'onglet des photos (« Partager ce lien », le nom d'un lien). */
+   (le QR), et un menu (« Modifier », supprimer). Déplacé tel quel de l'ancien
+   `Collecte.tsx` le 20/10 (archive/photos-rayons-2026-10). Les fenêtres (partage,
+   QR, modifier, suppression) restent tenues par `Collecte.tsx`, qui les ouvre aussi
+   depuis l'onglet des photos (« Partager ce lien », le titre d'un lien).
+
+   21/10 (retour de Mathias : « changer le nom et changer le nombre pourraient être
+   ensemble ») : UN seul geste « Modifier », UNE fenêtre avec le nom ET le nombre de
+   photos par personne, enregistrés en une requête. Les deux fenêtres d'avant (`FenetreNom`,
+   `FenetrePlafond`) sont dans archive/liens-nom-et-nombre-2026-10/. */
 
 import { useState } from "react";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
@@ -33,21 +37,20 @@ export function OngletLiens(o: {
   setPartage: (l: LienPartage) => void;
   setGrandQr: (l: LienPartage) => void;
   ouvrir: (cle: string) => void;
-  setRenommer: (r: { id: string; nom: string }) => void;
-  setPlafond: (r: { id: string | null; nom: string; valeur: number; sansLimite: boolean }) => void;
+  /** `id` nul : le lien général (son nombre seulement). */
+  setModifier: (r: { id: string | null; nom: string; valeur: number; sansLimite: boolean }) => void;
   setSupprimer: (r: { id: string; nom: string; n: number }) => void;
 }) {
   const v = (vous: string, toi: string) => (o.tu ? toi : vous);
   const [menu, setMenu] = useState<string | null>(null);
   const p = o;
-  const { liens, lienDe, setPartage, setGrandQr, ouvrir, setRenommer, setPlafond, setSupprimer, maxPlafond } = o;
+  const { liens, lienDe, setPartage, setGrandQr, ouvrir, setModifier, setSupprimer, maxPlafond } = o;
   return (
     <div className="ec-ecran-corps ec-li ec-defile">
       <div className="ec-li-intro">
         <span>{v("Un lien par personne ou par groupe : chacun dépose depuis son téléphone, sans compte, et vous suivez qui a envoyé quoi.", "Un lien par personne ou par groupe : chacun dépose depuis son téléphone, sans compte, et tu suis qui a envoyé quoi.")}</span>
         {liens?.reste !== null && liens?.reste !== undefined ? <span className="ec-note">Il reste {nombre(liens.reste)} photos avant le plafond de l&apos;édition</span> : null}
       </div>
-      {!p.ouverte ? <p className="ec-note">La collecte est close : les liens ne reçoivent plus de photos.</p> : null}
       <div className="ec-li-cartes">
         {liens ? (
           <CarteLien
@@ -65,7 +68,7 @@ export function OngletLiens(o: {
             onPartager={() => setPartage(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
             onGrand={() => setGrandQr(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
             onVoir={() => ouvrir("participants")}
-            actions={[{ libelle: "Changer le nombre de photos", note: "pour chaque personne", faire: () => setPlafond({ id: null, nom: liens.general.nom, valeur: p.plafondGeneral ?? Math.min(30, p.max), sansLimite: false }) }]}
+            actions={[{ libelle: "Modifier", note: "le nombre de photos pour chaque personne", faire: () => setModifier({ id: null, nom: liens.general.nom, valeur: p.plafondGeneral ?? Math.min(30, p.max), sansLimite: false }) }]}
           />
         ) : null}
         {liens?.liens.map((l) => (
@@ -86,11 +89,10 @@ export function OngletLiens(o: {
             onGrand={() => setGrandQr(lienDe(l.nom, l.cle, l.plafond, l.n))}
             onVoir={() => ouvrir(`lien:${l.id}`)}
             actions={[
-              { libelle: "Changer le nom", faire: () => setRenommer({ id: l.id, nom: l.nom }) },
               {
-                libelle: "Changer le nombre de photos",
-                note: liens.reste !== null ? `jusqu'à ${maxPlafond} par personne, selon ce qu'il reste` : undefined,
-                faire: () => setPlafond({ id: l.id, nom: l.nom, valeur: l.plafondNombre ?? Math.min(30, p.max), sansLimite: l.sansPlafond }),
+                libelle: "Modifier",
+                note: liens.reste !== null ? `le nom et le nombre de photos (jusqu'à ${maxPlafond} par personne, selon ce qu'il reste)` : "le nom et le nombre de photos par personne",
+                faire: () => setModifier({ id: l.id, nom: l.nom, valeur: l.plafondNombre ?? Math.min(30, p.max), sansLimite: l.sansPlafond }),
               },
               { libelle: "Supprimer le lien", note: `il ne reçoit plus rien ; ses ${nombre(l.n)} photos restent`, danger: true, faire: () => setSupprimer({ id: l.id, nom: l.nom, n: l.n }) },
             ]}
@@ -201,27 +203,13 @@ function CarteLien(c: {
   );
 }
 
-export function FenetreNom({ nom, occupe, erreur, onFermer, onGarder }: { nom: string; occupe: boolean; erreur: string | null; onFermer: () => void; onGarder: (nom: string) => void }) {
-  const [valeur, setValeur] = useState(nom);
-  return (
-    <Fenetre titre="Changer le nom du lien" sous="Ses photos se rangent sous ce nom." onFermer={onFermer}>
-      <label className="ec-curseur">
-        Le nom
-        <input className="ec-champ" value={valeur} maxLength={80} autoFocus onChange={(e) => setValeur(e.target.value)} onKeyDown={(e) => e.key === "Enter" && onGarder(valeur)} />
-      </label>
-      {erreur ? (
-        <p className="ec-note ec-note--erreur" role="alert">
-          {erreur}
-        </p>
-      ) : null}
-      <button type="button" className="ec-bouton ec-bouton--plein" disabled={occupe || !valeur.trim()} onClick={() => onGarder(valeur)}>
-        Enregistrer
-      </button>
-    </Fenetre>
-  );
-}
-
-export function FenetrePlafond(f: {
+/**
+ * « Modifier » un lien : le nom ET le nombre de photos par personne dans la même fenêtre, enregistrés
+ * ensemble. Le lien général (`general`) n'a pas de nom à changer ni de « Sans limite » (son nombre
+ * est celui de l'édition). La règle est celle du serveur (`planModificationLien`) : l'écran ne fait que
+ * la montrer, et affiche son refus (nom déjà pris, nombre hors règle).
+ */
+export function FenetreModifierLien(f: {
   nom: string;
   general: boolean;
   max: number;
@@ -230,16 +218,32 @@ export function FenetrePlafond(f: {
   occupe: boolean;
   erreur: string | null;
   onFermer: () => void;
-  onGarder: (valeur: number, sansLimite: boolean) => void;
+  onGarder: (nom: string, valeur: number, sansLimite: boolean) => void;
 }) {
   const min = Math.min(CURSEUR_LIEN.min, f.max);
+  const [nom, setNom] = useState(f.nom);
   const [valeur, setValeur] = useState(Math.min(Math.max(f.valeurInitiale, min), f.max));
   const [sansLimite, setSansLimite] = useState(f.sansLimiteInitial && !f.general);
+  const pret = f.general || nom.trim().length > 0;
+  const garder = () => {
+    if (pret && !f.occupe) f.onGarder(nom, valeur, sansLimite);
+  };
   return (
-    <Fenetre titre={`Combien de photos pour « ${f.nom} » ?`} sous="Par personne : chacun dépose depuis son téléphone." onFermer={f.onFermer}>
+    <Fenetre
+      titre={f.general ? "Modifier le lien général" : `Modifier « ${f.nom} »`}
+      sous={f.general ? "Le nombre de photos par personne : chacun dépose depuis son téléphone." : "Le nom et le nombre de photos par personne, en une fois."}
+      onFermer={f.onFermer}
+    >
+      {f.general ? null : (
+        <label className="ec-curseur">
+          Le nom
+          <input className="ec-champ" value={nom} maxLength={80} autoFocus onChange={(e) => setNom(e.target.value)} onKeyDown={(e) => e.key === "Enter" && garder()} />
+          <span className="ec-note">Ses photos se rangent sous ce nom.</span>
+        </label>
+      )}
       <div className="ec-lien-plafond">
         <div className="ec-lien-plafond-tete">
-          <span className="ec-texte">Par personne</span>
+          <span className="ec-texte">Photos par personne</span>
           <strong className="ec-lien-valeur">{sansLimite ? "Sans limite" : `${valeur} photo${valeur > 1 ? "s" : ""}`}</strong>
         </div>
         <input
@@ -282,7 +286,7 @@ export function FenetrePlafond(f: {
           {f.erreur}
         </p>
       ) : null}
-      <button type="button" className="ec-bouton ec-bouton--plein" disabled={f.occupe} onClick={() => f.onGarder(valeur, sansLimite)}>
+      <button type="button" className="ec-bouton ec-bouton--plein" disabled={f.occupe || !pret} onClick={garder}>
         Enregistrer
       </button>
     </Fenetre>

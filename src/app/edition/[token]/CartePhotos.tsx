@@ -17,7 +17,8 @@ import { useSondage } from "../_composants/useSondage";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
 import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
-import Fenetre from "../_composants/Fenetre";
+import { FenetreTerminerCollecte, ID_LIGNE_FIN, LigneFinCollecte } from "../_composants/FinCollecte";
+import { RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
 import type { DossierPhotos, LienContribution } from "./donnees";
 
 type Props = {
@@ -30,6 +31,10 @@ type Props = {
   selection: number;
   /** Le responsable peut terminer la collecte (D25) ; jamais l'équipe. */
   terminer: boolean;
+  /** La clôture (ISO), pour dire « Collecte terminée le 21 octobre à 11 h 24 » ; `null` sans date. */
+  termineLe: string | null;
+  /** « Un oubli ? Écrivez à l'atelier » : le responsable seulement, tant que l'atelier peut rouvrir. */
+  oubli: boolean;
   dossiers: DossierPhotos[];
   mosaique: string[];
   liens: LienContribution[];
@@ -72,36 +77,23 @@ export default function CartePhotos(p: Props) {
   const nouvelles = enDirect === null ? 0 : Math.max(0, enDirect - p.photos);
 
   /* « Toutes les photos sont là ? » (D25, planche 4) : le responsable termine la collecte
-     lui-même, en deux temps. La réponse s'affiche aussitôt (la relecture de la page ne
-     repeint pas toujours). */
-  const [fin, setFin] = useState<"repos" | "confirmer" | "envoi" | "fait">("repos");
-  const [erreurFin, setErreurFin] = useState<string | null>(null);
-  async function terminer() {
-    setFin("envoi");
-    setErreurFin(null);
-    try {
-      const rep = await fetch("/api/collectif/collecte/terminer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token }) });
-      const json = (await rep.json().catch(() => ({}))) as { message?: string };
-      if (!rep.ok) {
-        setErreurFin(json.message ?? `La collecte n'a pas pu se terminer (erreur ${rep.status}).`);
-        setFin("confirmer");
-        return;
-      }
-      setFin("fait");
-      router.refresh();
-    } catch {
-      setErreurFin("Le réseau n'a pas répondu. Rien n'a changé.");
-      setFin("confirmer");
-    }
-  }
-  const total = (enDirect ?? p.photos).toLocaleString("fr-FR");
+     lui-même, en deux temps (la fenêtre et l'appel sont ceux de la page Photos :
+     `FinCollecte.tsx`). La réponse s'affiche aussitôt (la relecture de la page ne repeint pas
+     toujours) : `fait` ferme l'encart sans attendre, et la ligne d'état dit quand. */
+  const [fin, setFin] = useState<"repos" | "confirmer" | "fait">("repos");
+  const [termineLocal, setTermineLocal] = useState<string | null>(null);
+  const ouverte = p.ouverte && fin !== "fait";
+  const termineLe = termineLocal ?? p.termineLe;
 
   return (
     <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-carte-photos">
       <div className="ec-tdb-carte-tete">
         <span className="ec-tdb-etiquette">2 · Les photos</span>
-        <span className="ec-note">{p.statut}</span>
+        <span className="ec-note">{fin === "fait" ? "Collecte terminée" : p.statut}</span>
       </div>
+
+      {/* La collecte est terminée : l'encart le DIT, quel que soit son état (21/10, retour de Mathias). */}
+      {!ouverte ? <LigneFinCollecte id={ID_LIGNE_FIN} le={termineLe} tu={p.tu} oubli={(p.oubli || fin === "fait") && p.terminer} /> : null}
 
       {etat === "photos" ? (
         <>
@@ -162,33 +154,24 @@ export default function CartePhotos(p: Props) {
               ))}
             </div>
           ) : null}
-          {p.terminer && (p.ouverte || fin === "fait") ? (
-            <div className={fin === "fait" ? "ec-tdb-fin ec-tdb-fin--fait" : "ec-tdb-fin"}>
-              {fin === "fait" ? (
-                <span className="ec-tdb-fin-texte">
-                  <strong className="ec-tdb-fin-titre">Collecte terminée</strong>
-                  <span className="ec-note">{v("Les liens des participants sont fermés. L'atelier commence avec vos photos.", "Les liens des participants sont fermés. L'atelier commence avec tes photos.")}</span>
+          {p.terminer && ouverte ? (
+            <div className="ec-tdb-fin">
+              <span className="ec-tdb-fin-texte">
+                <strong className="ec-tdb-fin-titre">Toutes les photos sont là ?</strong>
+                <span className="ec-note">
+                  {p.cloture ? `L'atelier peut commencer dès aujourd'hui au lieu d'attendre le ${p.cloture}.` : "L'atelier peut commencer dès aujourd'hui."}
                 </span>
-              ) : (
-                <>
-                  <span className="ec-tdb-fin-texte">
-                    <strong className="ec-tdb-fin-titre">Toutes les photos sont là ?</strong>
-                    <span className="ec-note">
-                      {p.cloture ? `L'atelier peut commencer dès aujourd'hui au lieu d'attendre le ${p.cloture}.` : "L'atelier peut commencer dès aujourd'hui."}
-                    </span>
-                  </span>
-                  <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setFin("confirmer")}>
-                    Terminer la collecte
-                  </button>
-                </>
-              )}
+              </span>
+              <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setFin("confirmer")}>
+                Terminer la collecte
+              </button>
             </div>
           ) : null}
           <div className="ec-tdb-gestes">
             <Link href={p.lienPhotos} prefetch={false} className="ec-bouton">
               Voir les photos
             </Link>
-            {p.ecrire && p.ouverte ? (
+            {p.ecrire && ouverte ? (
               <>
                 {envoi.ouvrir ? (
                   <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => envoi.ouvrir?.()}>
@@ -199,12 +182,24 @@ export default function CartePhotos(p: Props) {
                   Inviter quelqu&apos;un
                 </Link>
               </>
+            ) : p.ecrire ? (
+              /* Collecte terminée : les deux gestes restent à leur place, éteints, avec la raison (21/10). */
+              <>
+                {envoi.ouvrir ? (
+                  <button type="button" className="ec-bouton ec-bouton--clair" disabled title={RAISON_COLLECTE_TERMINEE} aria-describedby={ID_LIGNE_FIN}>
+                    Déposer
+                  </button>
+                ) : null}
+                <button type="button" className="ec-bouton ec-bouton--clair" disabled title={RAISON_COLLECTE_TERMINEE} aria-describedby={ID_LIGNE_FIN}>
+                  Inviter quelqu&apos;un
+                </button>
+              </>
             ) : null}
           </div>
         </>
-      ) : !p.ecrire || !p.ouverte ? (
+      ) : !p.ecrire || !ouverte ? (
         <div className="ec-tdb-vide">
-          <p className="ec-texte">{p.ouverte ? "Aucune photo pour l'instant." : "La collecte est close, sans photo reçue."}</p>
+          <p className="ec-texte">{ouverte ? "Aucune photo pour l'instant." : "Aucune photo n'a été reçue."}</p>
         </div>
       ) : etat === "lien" && dernier ? (
         <>
@@ -243,30 +238,19 @@ export default function CartePhotos(p: Props) {
       )}
 
       {fenetre ? <FenetreLien token={p.token} max={p.max} contexte={contexte} onFermer={() => setFenetre(false)} /> : null}
-      {fin === "confirmer" || fin === "envoi" ? (
-        <Fenetre titre="Terminer la collecte maintenant ?" onFermer={() => setFin("repos")}>
-          <ul className="ec-tdb-fin-liste">
-            <li>Les liens des participants se ferment : ils verront que le dépôt des photos est fermé.</li>
-            <li>
-              {`L'atelier commence avec les ${total} photo${(enDirect ?? p.photos) > 1 ? "s" : ""}`}
-              {p.selection ? v(` et vos ${p.selection.toLocaleString("fr-FR")} choisies.`, ` et tes ${p.selection.toLocaleString("fr-FR")} choisies.`) : "."}
-            </li>
-            <li>{v("Si vous avez oublié quelqu'un, écrivez à l'atelier : il peut rouvrir.", "Si tu as oublié quelqu'un, écris à l'atelier : il peut rouvrir.")}</li>
-          </ul>
-          {erreurFin ? (
-            <p className="ec-note ec-note--erreur" role="alert">
-              {erreurFin}
-            </p>
-          ) : null}
-          <div className="ec-envoi-gestes">
-            <button type="button" className="ec-bouton ec-bouton--clair" disabled={fin === "envoi"} onClick={() => setFin("repos")}>
-              Pas encore
-            </button>
-            <button type="button" className="ec-bouton ec-bouton--plein" disabled={fin === "envoi"} onClick={() => void terminer()}>
-              {fin === "envoi" ? "Un instant…" : "Oui, terminer"}
-            </button>
-          </div>
-        </Fenetre>
+      {fin === "confirmer" ? (
+        <FenetreTerminerCollecte
+          token={p.token}
+          tu={p.tu}
+          photos={enDirect ?? p.photos}
+          selection={p.selection}
+          onFermer={() => setFin("repos")}
+          onFait={(le) => {
+            setTermineLocal(le);
+            setFin("fait");
+            router.refresh();
+          }}
+        />
       ) : null}
     </section>
   );

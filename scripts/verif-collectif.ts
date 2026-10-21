@@ -189,6 +189,8 @@ import { contrainteRefusee, ERREUR_DEMANDES_ABSENTE, MESSAGE_DEMANDES_ABSENTE, M
 import { migrationDemandes, TYPE_SONDE } from "@/lib/collectif/sondeDemandes";
 import { estUuid } from "@/lib/collectif/cles";
 import * as Retention from "@/lib/collectif/retention";
+import * as Fin from "@/lib/collectif/finCollecte";
+import * as Mod from "@/lib/collectif/modifierLien";
 import { listerCoffreEdition, racineEffacable, supprimerClesEdition, supprimerCoffreEdition, supprimerPrefixe } from "@/lib/atelier/r2";
 import { prefixeCoffre } from "@/lib/atelier/archive";
 import type { StyleMur } from "@/app/edition/[token]/donnees";
@@ -2168,9 +2170,10 @@ titre("— retours de Mathias du 14/10 —");
     /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /provenances, partage, enCours/.test(route)
       && (grille168.match(/const liens = partage \? provenances : \[\]/g) ?? []).length === 2 && (grille168.match(/liens: partage\s*\?/g) ?? []).length === 2
       && /arbreDesPhotos\(toutes, liens, edition, partage\)/.test(grille168) && /arbreDesPhotos\(pesees, liens, edition, partage\)/.test(grille168));
-  ok("Photos : les liens vivent dans l'onglet « Les liens » (un « Partager », un menu), plus de « Copier le lien » eparpilles",
-    !/Copier le lien participants/.test(collecte) && /Les liens · /.test(collecte) && /Partager/.test(collecte) && /Changer le nombre de photos/.test(collecte) && /Supprimer le lien/.test(collecte) && !/Copier le lien</.test(collecte));
-  ok("Photos : collecte close, ni « Déposer », ni « Créer un lien », ni « Partager » (la selection reste)",
+  ok("Photos : les liens vivent dans l'onglet « Les liens » (un « Partager », un menu « Modifier » / « Supprimer le lien »), plus de « Copier le lien » eparpilles, plus de « Changer le nom » et « Changer le nombre » separes (21/10)",
+    !/Copier le lien participants/.test(collecte) && /Les liens · /.test(collecte) && /Partager/.test(collecte) && /libelle: "Modifier"/.test(collecte) && /Supprimer le lien/.test(collecte) && !/Copier le lien</.test(collecte)
+      && !/Changer le nombre de photos/.test(collecte) && !/libelle: "Changer le nom"/.test(collecte) && !/FenetreNom|FenetrePlafond|setRenommer\b|setPlafond\b/.test(collecte.replace(/\/\*[\s\S]*?\*\//g, "")));
+  ok("Photos : collecte close, « Déposer » et « Créer un lien » ne s'ouvrent plus (ils restent ÉTEINTS, avec la raison : FinCollecte.tsx), ni « Partager » (la selection reste)",
     /envoi\.ouvrir && p\.ouverte/.test(collecte) && /onglet === "liens" && p\.ouverte/.test(collecte) && /c\.ouverte \?/.test(collecte) && /collecteOuverte\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(lire("src/app/edition/[token]/photos/page.tsx")));
   ok("tableau de bord : ses dossiers sont le meme arbre que la page Photos (sur le resume, T-168), chaque ligne y mene",
     /arbreDesPhotos\(pesees, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /const pesees = enLignesPesees\(groupes\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /\?dossier=\$\{encodeURIComponent\(d\.cle\)\}/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
@@ -2784,14 +2787,16 @@ titre("— T-182 / D25 : le responsable termine la collecte, l'atelier voit la s
     /peut\(acces\.role, "terminer_collecte"\)/.test(route) && /preparerGeste\("terminer_collecte"/.test(route) && /\.eq\("etat", edition\.etat\)/.test(route) && /status: 409/.test(route)
       && /ecrireMessage\(supabase, edition\.id, "client"/.test(route) && /journaliser\(supabase, \{ editionId: edition\.id \}, "geste", \{ cle: "terminer_collecte"/.test(route) && !/envoyerMail|brevo/i.test(route));
   const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
-  ok("le tableau de bord : « Toutes les photos sont là ? » pour le responsable seulement, en DEUX temps (« Oui, terminer »)",
-    /p\.terminer && \(p\.ouverte \|\| fin === "fait"\)/.test(carte) && /Toutes les photos sont là \?/.test(carte) && /Oui, terminer/.test(carte) && /\/api\/collectif\/collecte\/terminer/.test(carte)
+  const finTsx = lire("src/app/edition/_composants/FinCollecte.tsx");
+  ok("le tableau de bord : « Toutes les photos sont là ? » pour le responsable seulement, en DEUX temps (« Oui, terminer », dans la fenetre PARTAGEE avec la page Photos : FinCollecte.tsx porte l'appel)",
+    /p\.terminer && ouverte/.test(carte) && /Toutes les photos sont là \?/.test(carte) && /<FenetreTerminerCollecte/.test(carte) && !/\/api\/collectif\/collecte\/terminer/.test(carte) && !/<Fenetre /.test(carte)
+      && /Oui, terminer/.test(finTsx) && /\/api\/collectif\/collecte\/terminer/.test(finTsx) && /Terminer la collecte maintenant \?/.test(finTsx)
       && /terminer=\{peut\(role, 'terminer_collecte'\)\}/.test(lire("src/app/edition/[token]/page.tsx")));
   const lot = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
   const panneau = lire("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
   ok("l'atelier voit la selection du client (nombre, vignettes) et la telecharge a part ; « collecte terminee par » vient du journal",
     /\(!selection \|\| p\.preselection\)/.test(lot) && /Télécharger la sélection/.test(panneau) && /selectionApercus/.test(panneau) && /"Sélection du client"/.test(panneau)
-      && /j\.payload\?\.cle === "terminer_collecte"/.test(lire("src/app/admin/collectif/donnees.ts")));
+      && /gesteCollecte\?\.geste === "terminer_collecte"/.test(lire("src/app/admin/collectif/donnees.ts")) && /\.in\("payload->>cle", \[\.\.\.GESTES_COLLECTE\]\)/.test(lire("src/app/admin/collectif/donnees.ts")));
 }
 
 titre("— T-188 : la messagerie de l'atelier, non lus et nouveaux (planche 8 du 19/10) —");
@@ -4245,6 +4250,7 @@ function verifT193() {
 
   titre("— T-201 : l'atelier voit et crée les liens de contribution —");
   const rProv = lire("src/app/api/admin/collectif/editions/[id]/provenances/route.ts");
+  const modifierLienTs = lire("src/lib/collectif/modifierLien.ts");
   const appelJournal = rProv.slice(rProv.indexOf("journaliser("), rProv.indexOf(");", rProv.indexOf("journaliser(")));
   ok("la route de création : sous /api/admin, l'admin REVÉRIFIÉ, l'interrupteur lu, les MÊMES règles que le responsable (`lirePlafondLien`, clé aléatoire), un seul INSERT dans `collectif_provenances`",
     /quiEstConnecteRequete\(request\)/.test(rProv) && /collectifOuvert\(\)/.test(rProv) && /lirePlafondLien\(corps, edition\)/.test(rProv) && /nouvelleCleProvenance\(\)/.test(rProv)
@@ -4254,7 +4260,7 @@ function verifT193() {
       && phraseEvenement("provenance_creee", { libelle: "Bateau 3", via: "atelier", par: "Mathias" }) === "Lien de dépôt créé par l'atelier (Mathias) : Bateau 3."
       && phraseEvenement("provenance_creee", { libelle: "Bateau 3", sansPlafond: true }) === "Lien de dépôt créé : Bateau 3 (sans plafond).");
   ok("deux refus que le responsable n'a pas : un nom déjà pris par un lien ouvert (409 `nom_deja_pris`) et une édition archivée (409) ; les noms des groupes fixes sont réservés",
-    /nom_deja_pris/.test(rProv) && /!l\.retire_le && clePersonne\(l\.libelle\) === cle/.test(rProv) && /archivee/.test(rProv) && /status: 409/.test(rProv) && /nom_reserve/.test(rProv) && /LIBELLE_LIEN_GENERAL/.test(rProv));
+    /refusNomDeLien\(libelle, existants\)/.test(rProv) && /nom_deja_pris/.test(modifierLienTs) && /!l\.retire_le && l\.id !== sauf && clePersonne\(l\.libelle\) === cle/.test(modifierLienTs) && /archivee/.test(rProv) && /status: 409/.test(rProv) && /nom_reserve/.test(modifierLienTs) && /LIBELLE_LIEN_GENERAL/.test(modifierLienTs));
   ok("le plafond de 5 à 100 ou « Sans limite » : borné par le plafond de l'atelier ; sans la migration de la révision, 503 (jamais un lien sans son plafond)",
     plafondLienMax({ plafond_participant_atelier: null }) === 100 && plafondLienMax({ plafond_participant_atelier: 40 }) === 40 && CURSEUR_LIEN.min === 5
       && /ERREUR_REVISION_ABSENTE/.test(rProv) && /if \(plafond\.plafond_par_personne !== null\) ligne\.plafond_par_personne/.test(rProv));
@@ -7486,7 +7492,225 @@ async function verifDejaLa() {
 }
 
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(() => {
+
+/* ════════════ 21/10 : la fin de collecte se DIT (espace, fiche de l'atelier, liste) ; un lien se modifie EN UNE FOIS ════════════ */
+
+async function verifFinCollecte() {
+  const code = (f: string) => lire(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  titre("— 21/10 : la ligne d'état d'une collecte terminée (l'espace du client), à l'heure de Paris —");
+  {
+    /* Le 21/10/2026, Paris est en heure d'été (UTC+2) : 09 h 24 UTC = 11 h 24, le geste de Mathias dans le journal. */
+    ok("la phrase de la maquette, avec la vraie date : « Collecte terminée le 21 octobre à 11 h 24 : les liens ne reçoivent plus de photos. L'atelier compose. »",
+      Fin.ligneCollecteTerminee("2026-10-21T09:24:00.000Z") === "Collecte terminée le 21 octobre à 11 h 24 : les liens ne reçoivent plus de photos. L'atelier compose.");
+    ok("l'heure d'hiver (UTC+1) et la fin de journée : 22 h 59 UTC le 4 novembre = 23 h 59 ; minuit passé : 22 h 30 UTC le 20 octobre = 00 h 30 le 21",
+      Fin.quandParis("2026-11-04T22:59:00.000Z") === "le 4 novembre à 23 h 59" && Fin.quandParis("2026-10-20T22:30:00.000Z") === "le 21 octobre à 00 h 30");
+    ok("le premier du mois s'écrit « 1er » (Intl écrit « 1 »)", Fin.quandParis("2026-11-01T10:00:00.000Z") === "le 1er novembre à 11 h 00");
+    ok("une date illisible, sans fuseau ou absente : la phrase se TAIT sur la date, elle n'en invente jamais une",
+      [null, undefined, "", "bientôt", "2026-10-21T11:24", "le 4 octobre"].every((x) => Fin.ligneCollecteTerminee(x) === "Collecte terminée : les liens ne reçoivent plus de photos. L'atelier compose."));
+    const { tete, suite } = Fin.partiesCollecteTerminee("2026-10-21T09:24:00.000Z");
+    ok("la tête (en gras à l'écran) et la suite recomposent la phrase", `${tete} : ${suite}` === Fin.ligneCollecteTerminee("2026-10-21T09:24:00.000Z") && tete === "Collecte terminée le 21 octobre à 11 h 24");
+    ok("l'oubli suit le registre de l'édition (vous / tu), pour le responsable",
+      Fin.ligneOubli(false) === "Un oubli ? Écrivez à l'atelier : il peut rouvrir." && Fin.ligneOubli(true) === "Un oubli ? Écris à l'atelier : il peut rouvrir.");
+    const n = (x: number) => x.toLocaleString("fr-FR");
+    ok("la fenêtre « Terminer la collecte maintenant ? » : les vrais nombres, la sélection seulement si elle existe, « vos » ou « tes »",
+      Fin.phraseAtelierCommence(1248, 86, false) === `L'atelier commence avec les ${n(1248)} photos et vos 86 choisies.` && Fin.phraseAtelierCommence(1248, 86, true) === `L'atelier commence avec les ${n(1248)} photos et tes 86 choisies.`
+        && Fin.phraseAtelierCommence(12, 0, false) === "L'atelier commence avec les 12 photos."
+        && Fin.phraseAtelierCommence(1, 1, false) === "L'atelier commence avec la photo reçue." && Fin.phraseAtelierCommence(null, 0, false) === "L'atelier commence avec les photos reçues.");
+    ok("aucun tiret cadratin dans ce que l'écran dit (phrases et libellés des trois fichiers)",
+      !/[—–]/.test(code("src/lib/collectif/finCollecte.ts")) && !/[—–]/.test(code("src/app/edition/_composants/FinCollecte.tsx")) && !/[—–]/.test(Fin.RAISON_COLLECTE_TERMINEE));
+  }
+
+  titre("— 21/10 : le bloc d'état de la fiche de l'atelier, et la pastille de la liste —");
+  {
+    const g = (geste: "clore_collecte" | "terminer_collecte" | "rouvrir_collecte", par: string, le: string) => ({ geste, par, le });
+    const bloc = (etat: EtatEdition, clotureLe: string | null, geste: ReturnType<typeof g> | null, archivee = false) => Fin.blocCollecte({ etat, clotureLe, archivee, geste });
+
+    const ouverte = bloc("preparation", "2026-11-04T22:59:00.000Z", null);
+    ok("ouverte : « Collecte ouverte jusqu'au 4 novembre à 23 h 59 », rien à rouvrir",
+      !ouverte.termine && ouverte.titre === "Collecte ouverte jusqu'au 4 novembre à 23 h 59" && !ouverte.rouvrable && ouverte.detail === "");
+    ok("ouverte sans date de clôture : on le dit",
+      bloc("preparation", null, null).titre === "Collecte ouverte, sans date de clôture" && bloc("preparation", "pas une date", null).titre === "Collecte ouverte");
+    ok("rouverte par un geste : « Rouverte par Louis le 21 octobre à 12 h 02. »",
+      bloc("preparation", "2026-11-04T22:59:00.000Z", g("rouvrir_collecte", "Louis", "2026-10-21T10:02:00.000Z")).detail === "Rouverte par Louis le 21 octobre à 12 h 02.");
+
+    const terminee = bloc("composition", "2026-10-21T09:24:00.000Z", g("terminer_collecte", "Mathias Durand", "2026-10-21T09:24:00.420Z"));
+    ok("terminée par le RESPONSABLE : « Collecte terminée le 21 octobre à 11 h 24 par Mathias Durand », on peut rouvrir",
+      terminee.termine && terminee.titre === "Collecte terminée le 21 octobre à 11 h 24 par Mathias Durand" && terminee.rouvrable
+        && terminee.detail === "Les liens ne reçoivent plus de photos. Elle peut être rouverte tant qu'aucun bon à tirer n'est publié.");
+    ok("clôturée par l'ATELIER (« Clore maintenant ») : « par l'atelier (Louis) »",
+      bloc("composition", "2026-10-21T09:24:00.000Z", g("clore_collecte", "Louis", "2026-10-21T09:24:01.000Z")).titre === "Collecte terminée le 21 octobre à 11 h 24 par l'atelier (Louis)"
+        && bloc("composition", "2026-10-21T09:24:00.000Z", g("clore_collecte", "", "2026-10-21T09:24:01.000Z")).titre.endsWith("par l'atelier"));
+    const naturelle = bloc("composition", "2026-11-04T22:59:00.000Z", null);
+    ok("arrivée à son terme sans geste : la date est la clôture, personne n'est nommé, la phrase dit pourquoi",
+      naturelle.termine && naturelle.titre === "Collecte terminée le 4 novembre à 23 h 59" && naturelle.detail.startsWith("La date de clôture est passée. Les liens ne reçoivent plus de photos.") && naturelle.rouvrable);
+    ok("un ancien geste ne parle pas d'une AUTRE clôture : la date a été déplacée depuis (plus de 10 minutes d'écart), personne n'est nommé",
+      !/ par /.test(bloc("composition", "2026-11-04T22:59:00.000Z", g("terminer_collecte", "Mathias Durand", "2026-10-21T09:24:00.000Z")).titre)
+        && /par Mathias/.test(bloc("composition", "2026-11-04T22:59:00.000Z", g("terminer_collecte", "Mathias", "2026-11-04T22:55:00.000Z")).titre));
+    ok("rouverte PUIS arrivée à son terme : le dernier mot est « rouvrir », personne n'est nommé comme auteur de cette clôture",
+      !/ par /.test(bloc("composition", "2026-11-04T22:59:00.000Z", g("rouvrir_collecte", "Louis", "2026-10-22T10:00:00.000Z")).titre));
+    ok("un bon à tirer publié : la collecte ne rouvre plus, et la fiche le dit (le bouton ne se propose pas)",
+      (["bat", "bat_valide", "impression", "expediee", "livree"] as EtatEdition[]).every((e) => {
+        const b = bloc(e, "2026-10-21T09:24:00.000Z", g("terminer_collecte", "Mathias", "2026-10-21T09:24:00.000Z"));
+        return b.termine && !b.rouvrable && /Elle ne peut plus être rouverte : un bon à tirer est publié\.$/.test(b.detail);
+      }));
+    const archivee = bloc("composition", "2026-10-21T09:24:00.000Z", null, true);
+    ok("une édition archivée ne rouvre pas : il faut la récupérer d'abord", !archivee.rouvrable && /la récupérer pour pouvoir rouvrir/.test(archivee.detail));
+    ok("terminée ⇔ l'état effectif a dépassé la préparation, pour chaque état (jamais la colonne brute)",
+      ETATS_EDITION.every((e) => bloc(e, "2026-10-21T09:24:00.000Z", null).termine === (e !== "preparation")));
+
+    const lignes = [
+      { type: "geste", payload: { cle: "terminer_collecte", par: "Mathias Durand" }, created_at: "2026-10-21T09:24:00.000Z" },
+      { type: "geste", payload: { cle: "rouvrir_collecte", par: "Louis" }, created_at: "2026-10-22T08:00:00.000Z" },
+      { type: "geste", payload: { cle: "lancer_impression", par: "Louis" }, created_at: "2026-10-30T08:00:00.000Z" },
+      { type: "message", payload: { cle: "terminer_collecte" }, created_at: "2026-10-31T08:00:00.000Z" },
+      { type: "geste", payload: { cle: "clore_collecte", par: "Louis" }, created_at: "pas une date" },
+    ];
+    const dernier = Fin.dernierGesteDeCollecte(lignes);
+    ok("le journal : le plus récent des TROIS gestes de collecte gagne (ni un autre geste, ni un autre type de ligne, ni une date illisible), dans n'importe quel ordre",
+      dernier?.geste === "rouvrir_collecte" && dernier.par === "Louis" && Fin.dernierGesteDeCollecte([...lignes].reverse())?.geste === "rouvrir_collecte"
+        && Fin.dernierGesteDeCollecte([]) === null && Fin.lireGesteDeCollecte(null) === null && Fin.lireGesteDeCollecte({ type: "geste", payload: null, created_at: "2026-10-21T09:24:00.000Z" }) === null);
+    ok("la lecture SQL ne dépend pas des 100 dernières lignes du journal : une requête à part, triée du plus récent, une seule ligne",
+      /\.eq\("type", "geste"\)\s*\.in\("payload->>cle", \[\.\.\.GESTES_COLLECTE\]\)\s*\.order\("created_at", \{ ascending: false \}\)\s*\.limit\(1\)/.test(code("src/app/admin/collectif/donnees.ts")));
+
+    ok("la pastille de la liste : « Collecte ouverte » (vert) ou « Collecte terminée » (bleu), d'après l'état EFFECTIF",
+      Fin.pastilleCollecte("preparation").texte === "Collecte ouverte" && Fin.pastilleCollecte("preparation").ton === "vert"
+        && ETATS_EDITION.filter((e) => e !== "preparation").every((e) => Fin.pastilleCollecte(e).texte === "Collecte terminée" && Fin.pastilleCollecte(e).ton === "bleu"));
+    const MAINT = new Date("2026-11-10T12:00:00.000Z");
+    ok("une édition « préparation » en base dont la clôture est passée est TERMINÉE dans la liste ; ouverte tant que la clôture est à venir ; jamais l'inverse de `collecteOuverte`",
+      (["2026-11-01T22:59:00.000Z", "2026-11-30T22:59:00.000Z", null] as (string | null)[]).every(
+        (c) => (Fin.pastilleCollecte(etatEffectif("preparation", c, MAINT)).texte === "Collecte ouverte") === collecteOuverte("preparation", c, MAINT)
+      ) && Fin.pastilleCollecte(etatEffectif("preparation", "2026-11-01T22:59:00.000Z", MAINT)).texte === "Collecte terminée");
+    const liste = code("src/app/admin/collectif/page.tsx");
+    const donneesAtelier = code("src/app/admin/collectif/donnees.ts");
+    ok("la liste : la pastille et la date dans la colonne « Collecte », lues de `collecte: pastilleCollecte(etat)` (l'état effectif de `listerEditions`)",
+      /collecte: pastilleCollecte\(etat\)/.test(donneesAtelier) && /eca-puce eca-puce--\$\{l\.collecte\.ton\}/.test(liste) && /\{l\.collecte\.texte\}/.test(liste) && /<th scope="col">Collecte<\/th>/.test(liste));
+
+    const fiche = code("src/app/admin/collectif/[id]/page.tsx");
+    const gestes = code("src/app/admin/collectif/[id]/PanneauGestes.tsx");
+    ok("la fiche : le bloc est sous l'en-tête et AVANT les onglets (visible partout), « Rouvrir la collecte » est dans le bloc, par le MÊME flux que le menu (vérifier puis confirmer)",
+      fiche.indexOf("</header>") < fiche.indexOf('aria-label="État de la collecte"') && fiche.indexOf('aria-label="État de la collecte"') < fiche.indexOf("<OngletsFiche")
+        && /collecteBloc\.rouvrable \? <PanneauGestes id=\{e\.id\} etat=\{etat\} archivee=\{false\} seulement="rouvrir_collecte" bloc \/> : null/.test(fiche)
+        && /blocCollecte\(\{ etat, clotureLe: e\.cloture_le, archivee: Boolean\(e\.archive_le\), geste: lu\.fiche\.gesteCollecte \}\)/.test(fiche)
+        && (gestes.match(/fetch\(`\/api\/admin\/collectif\/editions\/\$\{id\}\/geste`/g) ?? []).length === 1 && /if \(seulement && c !== seulement\) return false;/.test(gestes) && /appeler\(true\)/.test(gestes) && /appeler\(false\)/.test(gestes));
+    ok("la règle de rouvrir n'a pas bougé : `gestes.ts` (aucun tour publié, nouvelle date dans le futur) et la route de l'atelier, toujours listés dans la fiche",
+      GESTES_DE_LA_FICHE.includes("rouvrir_collecte") && GESTES.rouvrir_collecte.libelle === "Rouvrir la collecte" && GESTES.rouvrir_collecte.de.join() === "composition"
+        && refuse(preparerGeste("rouvrir_collecte", ctx({ etat: "composition", magazines: [mag({ toursPublies: 1 })], saisie: { cloture_le: DEMAIN } })), "tours"));
+  }
+
+  titre("— 21/10 : « Terminer la collecte » aussi depuis la page Photos, les boutons de dépôt éteints avec la raison —");
+  {
+    const fin = code("src/app/edition/_composants/FinCollecte.tsx");
+    const collecte = code("src/app/edition/[token]/photos/Collecte.tsx");
+    const carte = code("src/app/edition/[token]/CartePhotos.tsx");
+    const pagePhotos = code("src/app/edition/[token]/photos/page.tsx");
+    const tableau = code("src/app/edition/[token]/page.tsx");
+    ok("UNE fenêtre, UN appel : le tableau de bord et la page Photos montent `FenetreTerminerCollecte` (la fenêtre n'est plus recopiée), l'appel à la route n'existe qu'à un endroit",
+      /<FenetreTerminerCollecte/.test(carte) && /<FenetreTerminerCollecte/.test(fin) && /ActionsFinCollecte/.test(collecte)
+        && [carte, collecte, fin].filter((c) => /\/api\/collectif\/collecte\/terminer/.test(c)).length === 1 && (fin.match(/Terminer la collecte maintenant \?/g) ?? []).length === 1 && !/Terminer la collecte maintenant/.test(carte + collecte));
+    ok("la page Photos : « Terminer la collecte » dans l'en-tête, À CÔTÉ de « Déposer des photos » et « Créer un lien », réservé au droit `terminer_collecte` (jamais l'équipe)",
+      collecte.indexOf("Déposer des photos") < collecte.indexOf("<ActionsFinCollecte") && /if \(variante === "tel" \|\| !fin\.terminer \|\| photos === 0\) return null;/.test(fin)
+        && /terminer: peut\(role, 'terminer_collecte'\)/.test(pagePhotos) && peut("responsable", "terminer_collecte") && !peut("equipe", "terminer_collecte") && !peut("atelier", "terminer_collecte") && !peut("participant", "terminer_collecte"));
+    ok("terminée : les boutons de dépôt et de création de lien sont ÉTEINTS (disabled), avec la raison (title et aria-describedby sur la ligne d'état), au bureau comme au téléphone",
+      (fin.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 2 && /"Déposer des photos" : "Créer un lien"/.test(fin) && /ec-ph-fab--eteint/.test(fin)
+        && (carte.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 2 && /Inviter quelqu&apos;un/.test(carte));
+    ok("la ligne d'état s'affiche quand la collecte est terminée, sur le tableau de bord ET sur la page Photos, avec la date de la clôture ; l'oubli seulement pour le responsable, tant que l'atelier peut rouvrir",
+      /\{!ouverte \? <LigneFinCollecte id=\{ID_LIGNE_FIN\} le=\{termineLe\} tu=\{p\.tu\} oubli=\{\(p\.oubli \|\| fin === "fait"\) && p\.terminer\} \/> : null\}/.test(carte)
+        && /\{!p\.ouverte \? <LigneFinCollecte id=\{ID_LIGNE_FIN\} le=\{p\.fin\.le\} tu=\{p\.tu\} oubli=\{p\.fin\.terminer && p\.fin\.oubli\} \/> : null\}/.test(collecte)
+        && /termineLe=\{ouverte \? null : edition\.cloture_le\}/.test(tableau) && /oubli=\{etat === 'composition'\}/.test(tableau) && /le: ouverte \? null : edition\.cloture_le/.test(pagePhotos));
+    ok("au clic, l'écran se ferme tout de suite, sans attendre la relecture de la page (qui ne repeint pas toujours) : la route rend l'instant de la clôture, l'écran le garde et rafraîchit aussi",
+      /termineLe: String\(prep\.patch\.cloture_le \?\? maintenant\.toISOString\(\)\)/.test(code("src/app/api/collectif/collecte/terminer/route.ts")) && /onFait\(typeof json\.termineLe === "string" \? json\.termineLe : new Date\(\)\.toISOString\(\)\)/.test(fin)
+        && /ouverte=\{props\.ouverte && termineLe === null\}/.test(collecte) && /router\.refresh\(\)/.test(collecte) && /const ouverte = p\.ouverte && fin !== "fait";/.test(carte));
+    const espaceCss = lire("src/app/edition/[token]/espace.css");
+    const bloc = espaceCss.slice(espaceCss.indexOf("La fin de la collecte, dite là où l'on regarde"));
+    ok("la feuille : jetons de l'espace seulement (aucune couleur écrite, aucun dvh), la ligne se pose sous l'en-tête de la page Photos",
+      bloc.length > 200 && !/#[0-9a-fA-F]{3,8}\b/.test(bloc) && !/rgba?\(\s*\d/.test(bloc) && !/\bd?vh\b/.test(bloc) && /\.ec-espace \.ec-collecte > \.ec-fin-ligne/.test(bloc) && /var\(--ec-ok-soft\)/.test(bloc));
+  }
+
+  titre("— 21/10 : modifier un lien de contribution EN UNE FOIS (le nom ET le nombre de photos) —");
+  {
+    const EDITION = { plafond_participant_atelier: null as number | null };
+    const A = "11111111-1111-4111-8111-111111111111";
+    const B = "22222222-2222-4222-8222-222222222222";
+    const C = "33333333-3333-4333-8333-333333333333";
+    const liens: Mod.LienActuel[] = [
+      { id: A, libelle: "Bateau 1", sans_plafond: false, plafond_par_personne: 30 },
+      { id: B, libelle: "Bateau 2", sans_plafond: true, plafond_par_personne: null },
+      { id: C, libelle: "Bateau 3", sans_plafond: false, plafond_par_personne: 10, retire_le: "2026-10-20T10:00:00.000Z" },
+    ];
+    const plan = (corps: Record<string, unknown>, ed = EDITION) => Mod.planModificationLien(corps, liens, ed);
+    const refus = (corps: Record<string, unknown>, status: number, error: string, ed = EDITION) => {
+      const p = plan(corps, ed);
+      return !p.ok && p.status === status && p.error === error;
+    };
+
+    const les2 = plan({ id: A, libelle: "Équipe Lyon", plafond: 50 });
+    ok("le nom ET le nombre dans UNE écriture : le patch porte les trois colonnes, le journal garde l'ancien nom",
+      les2.ok && les2.nom === "Équipe Lyon" && les2.avant === "Bateau 1" && les2.nomChange && les2.plafondChange && les2.patch.libelle === "Équipe Lyon" && les2.patch.sans_plafond === false && les2.patch.plafond_par_personne === 50);
+    const seulNombre = plan({ id: A, libelle: "Bateau 1", plafond: 10 });
+    ok("le nombre seul : le nom n'est pas réécrit", seulNombre.ok && !seulNombre.nomChange && seulNombre.plafondChange && !("libelle" in seulNombre.patch) && seulNombre.patch.plafond_par_personne === 10);
+    const seulNom = plan({ id: A, libelle: "Équipe Lyon", plafond: 30 });
+    ok("le nom seul : le nombre n'est pas réécrit", seulNom.ok && seulNom.nomChange && !seulNom.plafondChange && seulNom.patch.libelle === "Équipe Lyon" && !("plafond_par_personne" in seulNom.patch));
+    const rien = plan({ id: A, libelle: "Bateau 1", plafond: 30 });
+    ok("rien ne change : rien à écrire (la route répond « inchangé », ni écriture ni ligne de journal)", rien.ok && Object.keys(rien.patch).length === 0 && !rien.nomChange && !rien.plafondChange);
+    const sans = plan({ id: A, libelle: "Bateau 1", sansPlafond: true });
+    ok("« Sans limite » : sans_plafond vrai, le nombre revient à null ; et l'inverse repose le nombre",
+      sans.ok && sans.patch.sans_plafond === true && sans.patch.plafond_par_personne === null
+        && (() => { const p = plan({ id: B, libelle: "Bateau 2", plafond: 40 }); return p.ok && p.patch.sans_plafond === false && p.patch.plafond_par_personne === 40; })());
+
+    ok("un nom vide ou d'espaces : 422 « Écrire un nom. » (champ libelle) ; plus de 80 caractères : 422",
+      refus({ id: A, libelle: "", plafond: 30 }, 422, "saisie") && refus({ id: A, libelle: "   ", plafond: 30 }, 422, "saisie") && refus({ id: A, plafond: 30 }, 422, "saisie") && refus({ id: A, libelle: "x".repeat(81), plafond: 30 }, 422, "saisie")
+        && (() => { const p = plan({ id: A, libelle: "", plafond: 30 }); return !p.ok && p.champ === "libelle" && p.message === "Écrire un nom."; })());
+    ok("un « / » tapé dans le nom devient « - » (comme pour les dossiers) ; les espaces se resserrent",
+      (() => { const p = plan({ id: A, libelle: "  Équipe   Lyon / Nord ", plafond: 30 }); return p.ok && p.nom === "Équipe Lyon - Nord"; })());
+    ok("le nombre suit la règle de la création : 1 au plafond de l'atelier, jamais 0, jamais un décimal, jamais un texte ; « 100 photos au plus » ou le plafond de l'atelier",
+      refus({ id: A, libelle: "Bateau 1", plafond: 0 }, 422, "saisie") && refus({ id: A, libelle: "Bateau 1", plafond: 12.5 }, 422, "saisie") && refus({ id: A, libelle: "Bateau 1", plafond: "beaucoup" }, 422, "saisie") && refus({ id: A, libelle: "Bateau 1" }, 422, "saisie")
+        && refus({ id: A, libelle: "Bateau 1", plafond: 101 }, 422, "saisie") && (() => { const p = plan({ id: A, libelle: "Bateau 1", plafond: 101 }); return !p.ok && p.champ === "plafond" && p.message === "100 photos au plus par personne pour cette édition."; })()
+        && (() => { const p = plan({ id: A, libelle: "Bateau 1", plafond: 41 }, { plafond_participant_atelier: 40 }); return !p.ok && p.message === "40 photos au plus par personne pour cette édition."; })()
+        && plan({ id: A, libelle: "Bateau 1", plafond: 40 }, { plafond_participant_atelier: 40 }).ok);
+    ok("un nom déjà porté par un AUTRE lien ouvert : 409 `nom_deja_pris`, sans tenir compte de la casse ni des espaces ; un lien supprimé libère le sien ; le lien ne se refuse pas lui-même",
+      refus({ id: A, libelle: "Bateau 2", plafond: 30 }, 409, "nom_deja_pris") && refus({ id: A, libelle: "  bateau   2 ", plafond: 30 }, 409, "nom_deja_pris")
+        && plan({ id: A, libelle: "Bateau 3", plafond: 30 }).ok && plan({ id: A, libelle: "BATEAU 1", plafond: 30 }).ok);
+    ok("les noms des groupes fixes sont réservés : 409 `nom_reserve` (Lien général, Le responsable, L'atelier, Tous les participants, Lien de contribution)",
+      ["Lien général", "le responsable", "L'atelier", "Tous les participants", "Lien de contribution"].every((n) => refus({ id: A, libelle: n, plafond: 30 }, 409, "nom_reserve")));
+    ok("changer le NOMBRE d'un lien qui porte déjà le nom d'un autre (écrit avant la règle) n'est pas refusé pour un nom qu'on n'a pas touché",
+      (() => {
+        const deux: Mod.LienActuel[] = [{ id: A, libelle: "Bateau 1", sans_plafond: false, plafond_par_personne: 30 }, { id: B, libelle: "Bateau 1", sans_plafond: false, plafond_par_personne: 30 }];
+        const p = Mod.planModificationLien({ id: B, libelle: "Bateau 1", plafond: 50 }, deux, EDITION);
+        const q = Mod.planModificationLien({ id: B, libelle: "Bateau 1 (2)", plafond: 50 }, deux, EDITION);
+        return p.ok && !p.nomChange && q.ok && q.nomChange;
+      })());
+    ok("un lien inconnu, d'une autre édition, supprimé, ou un identifiant qui n'est pas un uuid : 404, jamais une écriture",
+      refus({ id: "44444444-4444-4444-8444-444444444444", libelle: "x", plafond: 30 }, 404, "introuvable") && refus({ id: C, libelle: "Bateau 3", plafond: 30 }, 404, "introuvable")
+        && refus({ id: "pas-un-uuid", libelle: "x", plafond: 30 }, 404, "introuvable") && refus({ libelle: "x", plafond: 30 }, 404, "introuvable") && refus({ id: ["x"], libelle: "x", plafond: 30 }, 404, "introuvable"));
+    ok("le corps que l'écran envoie (`corpsModifierLien`) est celui que la règle comprend, avec un nombre ou « Sans limite »",
+      JSON.stringify(Mod.corpsModifierLien(A, "Équipe Lyon", 50, false)) === JSON.stringify({ action: "modifier", id: A, libelle: "Équipe Lyon", plafond: 50 })
+        && JSON.stringify(Mod.corpsModifierLien(A, "Équipe Lyon", 50, true)) === JSON.stringify({ action: "modifier", id: A, libelle: "Équipe Lyon", sansPlafond: true })
+        && (() => { const p = plan(Mod.corpsModifierLien(A, "Équipe Lyon", 50, false)); return p.ok && p.patch.plafond_par_personne === 50; })()
+        && (() => { const p = plan(Mod.corpsModifierLien(A, "Équipe Lyon", 50, true)); return p.ok && p.patch.sans_plafond === true; })());
+
+    const route = code("src/app/api/collectif/provenances/route.ts");
+    ok("la route : le droit `regler_plafond_participant` est demandé AVANT toute action, `modifier` passe par `planModificationLien` sur les liens de l'édition, UNE écriture bornée à l'édition, le journal garde ses deux phrases",
+      route.indexOf('peut(acces.role, "regler_plafond_participant")') < route.indexOf('corps.action === "modifier"') && /planModificationLien\(corps, liens, edition\)/.test(route) && /lireProvenances\(edition\.id\)/.test(route)
+        && /\.update\(plan\.patch\)\.eq\("id", String\(corps\.id\)\)\.eq\("edition_id", edition\.id\)/.test(route) && /"dossier_renomme", \{ avant: plan\.avant, apres: plan\.nom \}/.test(route) && /"provenance_plafond", \{ libelle: plan\.nom, sansPlafond: plan\.sans_plafond, plafond: plan\.plafond_par_personne \}/.test(route)
+        && /if \(!Object\.keys\(plan\.patch\)\.length\) return NextResponse\.json/.test(route) && /ERREUR_REVISION_ABSENTE/.test(route) && !/\.delete\(/.test(route));
+    ok("l'écran : UNE fenêtre « Modifier » (nom et nombre ensemble), envoyée par `corpsModifierLien`, pour un lien comme pour le lien général (nombre seul) ; les deux anciennes fenêtres sont archivées",
+      /export function FenetreModifierLien/.test(lire("src/app/edition/[token]/photos/Liens.tsx")) && !/export function FenetreNom|export function FenetrePlafond/.test(lire("src/app/edition/[token]/photos/Liens.tsx"))
+        && /corpsModifierLien\(modifier\.id, nom, valeur, sansLimite\)/.test(collecteDeLEcran()) && /\/api\/collectif\/plafond", \{ valeur \}/.test(collecteDeLEcran())
+        && existsSync(resolve(RACINE, "archive/liens-nom-et-nombre-2026-10/Liens.tsx")) && existsSync(resolve(RACINE, "archive/liens-nom-et-nombre-2026-10/README.md"))
+        && /export function FenetreNom/.test(lire("archive/liens-nom-et-nombre-2026-10/Liens.tsx")) && /export function FenetrePlafond/.test(lire("archive/liens-nom-et-nombre-2026-10/Liens.tsx")));
+    ok("le menu d'un lien n'a plus que « Modifier » et « Supprimer le lien » ; le crayon du titre d'un lien ouvre la même fenêtre",
+      (lire("src/app/edition/[token]/photos/Liens.tsx").match(/libelle: "Modifier"/g) ?? []).length === 2 && /libelle: "Supprimer le lien"/.test(lire("src/app/edition/[token]/photos/Liens.tsx"))
+        && /else if \(ouvertNoeud && f\.lien\?\.startsWith\("lien:"\)\) \{[\s\S]{0,260}setModifier\(\{ id,/.test(collecteDeLEcran()));
+  }
+}
+
+/** La page Photos (Collecte.tsx) sans ses commentaires : l'épreuve lit du code, pas des phrases. */
+function collecteDeLEcran(): string {
+  return lire("src/app/edition/[token]/photos/Collecte.tsx").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

@@ -10,6 +10,7 @@ import { A_FAIRE_DEVIS, demandesDuFil, devisAEnvoyer, formaterJour } from "@/lib
 import { depotRegle } from "@/lib/collectif/plafonds";
 import { extraitDe } from "@/lib/collectif/messages";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
+import { blocCollecte } from "@/lib/collectif/finCollecte";
 import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { compteAgenda } from "@/lib/collectif/agenda";
 import { libelleCreneau } from "@/lib/collectif/creneaux";
@@ -130,6 +131,8 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   const origine = origineDepuis(h.get("x-forwarded-host") ?? h.get("host"), h.get("x-forwarded-proto"));
   const liens = liensEdition(origine, e);
   const prochaine = prochaineEtape(etat, e.cloture_le);
+  /* L'état de la collecte, en tête de la fiche (21/10, retour de Mathias) : ouverte jusqu'au …, ou terminée le … par …, avec « Rouvrir » dans le bloc. */
+  const collecteBloc = blocCollecte({ etat, clotureLe: e.cloture_le, archivee: Boolean(e.archive_le), geste: lu.fiche.gesteCollecte });
 
   /* Les rendez-vous (D23) : sans la migration 20261015, le panneau le dit. */
   const supabaseRdv = makeSupabase();
@@ -424,6 +427,27 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           </Link>
         </span>
       </header>
+
+      <section className={`eca-collecte-bloc eca-collecte-bloc--${collecteBloc.termine ? "terminee" : "ouverte"}`} aria-label="État de la collecte">
+        <span className="eca-collecte-signe" aria-hidden="true">
+          {collecteBloc.termine ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 7.5-2" />
+            </svg>
+          )}
+        </span>
+        <span className="eca-collecte-texte">
+          <strong>{collecteBloc.titre}</strong>
+          {collecteBloc.detail ? <span className="eca-sous">{collecteBloc.detail}</span> : null}
+        </span>
+        {collecteBloc.rouvrable ? <PanneauGestes id={e.id} etat={etat} archivee={false} seulement="rouvrir_collecte" bloc /> : null}
+      </section>
 
       <OngletsFiche
         initial={onglet}
