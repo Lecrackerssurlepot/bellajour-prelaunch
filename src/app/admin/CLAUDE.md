@@ -25,6 +25,12 @@ T-046 — honnête : `Map` par instance, pas une protection forte). Le nom du co
   clic paraît mort. Les silhouettes ont la FORME de l'écran qui arrive.
 - **`Rafraichissement.tsx`** rafraîchit chaque minute, RIEN quand l'onglet est caché, rattrapage
   au retour. Jamais `location.reload()` : il perdrait la recherche et le formulaire en cours.
+- **`collectif/RelireLaPage.tsx`** (21/10) : la fiche d'une édition et la LISTE des éditions se relisent
+  chaque minute onglet visible et au retour (`useSondage`, `router.refresh()`), comme la table de travail.
+  Avant, la liste ne se relisait que si le NOMBRE de messages changeait et la fiche jamais. Les panneaux
+  Personnes et Corbeille lisent leur route à l'affichage : ils se relisent quand le nombre de photos de la
+  fiche change (prop `version`). Le bon à tirer de l'atelier n'en a pas : il re-signe toutes ses pages et
+  garde des brouillons de réponse en état local.
 - **La fiche AVERTIT sans bloquer** sur un dépôt non terminé : un coup de téléphone peut justifier
   d'avancer, et une machine qui refuse sans pouvoir écouter finit contournée en SQL.
 - **La loupe** (`components/Loupe.tsx`) sert la page cliente ET l'admin : elle pose ses propres

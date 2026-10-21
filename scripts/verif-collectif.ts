@@ -2340,7 +2340,7 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
 
   const page = lirePagePhotos();
   ok("Photos : plus de « Signaler » (le geste s'appelle « Ne pas publier »), plus de barre de presélection, les grands chiffres en tete",
-    !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photos reçues/.test(page));
+    !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photo\{stats\.photos > 1 \? "s" : ""\} reçue/.test(page));
   ok("Photos : ranger un dossier du responsable en le glissant (draggable, onDrop, dans la liste de « Mes photos »), « + Nouveau dossier » ouvre le depot sur un nom neuf",
     /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
   const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
@@ -6547,8 +6547,8 @@ async function verifAtelierCorbeillePersonnes() {
   const routeCorbeille = lire("src/app/api/admin/collectif/editions/[id]/corbeille/route.ts");
   const routePersonnes = lire("src/app/api/admin/collectif/editions/[id]/personnes/route.ts");
   ok("la fiche monte les deux panneaux dans l'onglet Photos, sous la collecte ; chacun lit sa route à son affichage (la fiche ne les attend pas) et le nomme dans son entête",
-    /photos: \(\s*<>\s*<PanneauCollecte id=\{e\.id\} \{\.\.\.collecte\} effacees=\{effacees\} \/>\s*<div className="eca-cartes eca-cartes--une eca-photos-suite">\s*<PanneauPersonnes id=\{e\.id\} liens=\{collecte\.parLien\.map\(\(l\) => \(\{ cle: l\.cle, nom: l\.nom \}\)\)\} \/>\s*<PanneauCorbeille id=\{e\.id\} migrationAbsente=\{ouvertureAbsente\} \/>/.test(fiche)
-      && /useEffect\(\(\) => \{\s*if \(!migrationAbsente\) void lire\(\);\s*\}, \[lire, migrationAbsente\]\);/.test(pCorbeille) && /useEffect\(\(\) => \{\s*void lire\(\);\s*\}, \[lire\]\);/.test(pPersonnes)
+    /photos: \(\s*<>\s*<PanneauCollecte id=\{e\.id\} \{\.\.\.collecte\} effacees=\{effacees\} \/>\s*<div className="eca-cartes eca-cartes--une eca-photos-suite">\s*<PanneauPersonnes id=\{e\.id\} liens=\{collecte\.parLien\.map\(\(l\) => \(\{ cle: l\.cle, nom: l\.nom \}\)\)\} version=\{collecte\.total\} \/>\s*<PanneauCorbeille id=\{e\.id\} migrationAbsente=\{ouvertureAbsente\} version=\{collecte\.total\} \/>/.test(fiche)
+      && /useEffect\(\(\) => \{\s*if \(!migrationAbsente\) void lire\(\);\s*\}, \[lire, migrationAbsente, version\]\);/.test(pCorbeille) && /useEffect\(\(\) => \{\s*void lire\(\);\s*\}, \[lire, version\]\);/.test(pPersonnes)
       && /await fetch\(adresse, \{ cache: "no-store" \}\)/.test(pCorbeille) && /await fetch\(adresse, \{ cache: "no-store" \}\)/.test(pPersonnes));
   const sansCommentaires = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "");
   const adressesCorbeille = [...sansCommentaires(pCorbeille).matchAll(/`(\/api\/[^`]+)`/g)].map((m) => m[1]);
@@ -7710,7 +7710,145 @@ function collecteDeLEcran(): string {
   return lire("src/app/edition/[token]/photos/Collecte.tsx").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(() => {
+
+/* ════════════ 21/10 : le temps réel sans repère et sans clic, le tiroir qui se ferme, les écrans qui se relisent ════════════ */
+async function verifTempsReel() {
+  const A = Arrivees;
+  const F = FiltresPhotos;
+  const sansComm = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  titre("— 21/10 : la page Photos sonde SANS repère (une édition qui part de zéro) —");
+  const sansRepere = A.corpsSondagePhotos("T".repeat(32), null, 0);
+  ok("le corps du sondage sans repère n'a PAS de `depuis` (la route rend déjà `derniere`), demande les chiffres et dit combien l'écran en montre",
+    !("depuis" in sansRepere) && sansRepere.chiffres === true && sansRepere.connues === 0 && sansRepere.token === "T".repeat(32));
+  const avecRepere = A.corpsSondagePhotos("T".repeat(32), "2026-10-21T09:00:00.123456+00:00", 12);
+  ok("avec un repère, `depuis` voyage TEL QUEL (microsecondes comprises) ; `connues` est un entier positif, jamais NaN ni négatif",
+    avecRepere.depuis === "2026-10-21T09:00:00.123456+00:00" && avecRepere.connues === 12
+    && !("connues" in A.corpsSondagePhotos("t", null, Number.NaN)) && !("connues" in A.corpsSondagePhotos("t", null, -3)) && !("connues" in A.corpsSondagePhotos("t", null, null)) && A.corpsSondagePhotos("t", null, 4.9).connues === 4);
+  ok("une chaîne de repère vide vaut « pas de repère »", !("depuis" in A.corpsSondagePhotos("t", "", 0)));
+
+  titre("— 21/10 : lire la réponse de la route avec méfiance —");
+  const lue = A.lireEtatSondage({ photos: 3, derniere: "2026-10-21T09:00:00+00:00", nouvelles: { n: 3, participants: 2, noms: [{ nom: "Léa", n: 2 }, { nom: 4, n: 1 }], personnes: 1, tronque: false }, personnes: 2, enCours: 1 });
+  ok("une réponse complète se lit (les noms mal formés sont écartés, jamais devinés)",
+    lue !== null && lue.photos === 3 && lue.derniere === "2026-10-21T09:00:00+00:00" && lue.nouvelles?.n === 3 && lue.nouvelles.noms.length === 1 && lue.personnes === 2 && lue.enCours === 1);
+  const sansNouvelles = A.lireEtatSondage({ photos: 0, derniere: null, nouvelles: null });
+  ok("sans repère : `nouvelles: null`, `derniere: null` ; `personnes` et `enCours` absents restent absents",
+    sansNouvelles !== null && sansNouvelles.photos === 0 && sansNouvelles.derniere === null && sansNouvelles.nouvelles === null && !("personnes" in sansNouvelles) && !("enCours" in sansNouvelles));
+  ok("une réponse étrange est refusée (pas de nombre, nombre négatif, `nouvelles` mal formée, pas un objet)",
+    A.lireEtatSondage(null) === null && A.lireEtatSondage("x") === null && A.lireEtatSondage({}) === null && A.lireEtatSondage({ photos: -1, derniere: null, nouvelles: null }) === null
+    && A.lireEtatSondage({ photos: 2, derniere: null, nouvelles: { n: "3" } }) === null && A.lireEtatSondage({ photos: Number.NaN, derniere: null, nouvelles: null }) === null);
+
+  titre("— 21/10 : ce qui a bougé, et la route qui ne relit les personnes que quand il le faut —");
+  const nv = (n: number): Arrivees.Nouvelles => ({ n, participants: n, noms: [], personnes: 1, tronque: false });
+  ok("des photos arrivées depuis le repère : la grille se relit",
+    A.ceQuiABouge({ photos: 12, nouvelles: nv(2) }, 12, null) && !A.ceQuiABouge({ photos: 12, nouvelles: nv(0) }, 12, null) && !A.ceQuiABouge({ photos: 12, nouvelles: null }, 12, null));
+  ok("le nombre du serveur n'est plus celui de l'écran (une photo supprimée par un participant) : elle se relit, UNE fois par nombre, jamais en boucle",
+    A.ceQuiABouge({ photos: 9, nouvelles: nv(0) }, 12, null) && !A.ceQuiABouge({ photos: 9, nouvelles: nv(0) }, 12, 9) && A.ceQuiABouge({ photos: 8, nouvelles: nv(0) }, 12, 9));
+  ok("la PREMIÈRE photo d'une édition vide est vue : 0 sur l'écran, 1 au serveur, sans repère",
+    A.ceQuiABouge({ photos: 1, nouvelles: null }, 0, null) && !A.ceQuiABouge({ photos: 0, nouvelles: null }, 0, null));
+  ok("la route relit les personnes seulement si l'écran les demande ET que quelque chose a bougé (écran qui ne sait rien, nombre différent, arrivées)",
+    !A.personnesAFournir({ chiffres: false, connues: null, photos: 5, arrivees: 3 })
+    && A.personnesAFournir({ chiffres: true, connues: null, photos: 5, arrivees: 0 })
+    && A.personnesAFournir({ chiffres: true, connues: 4, photos: 5, arrivees: 0 })
+    && A.personnesAFournir({ chiffres: true, connues: 5, photos: 5, arrivees: 2 })
+    && !A.personnesAFournir({ chiffres: true, connues: 5, photos: 5, arrivees: 0 }));
+
+  titre("— 21/10 : insérer d'office, ou annoncer — seulement quand c'est sans risque —");
+  const calme: Arrivees.SituationPhotos = { vide: false, grilleVisible: true, dernieresEnTete: true, coches: false, agrandie: false, occupe: false, enHaut: true };
+  ok("l'écran VIDE s'ouvre tout seul : rien à cliquer (« Les voir » devant un écran vide était le défaut), même défilé ou hors vue d'ordre",
+    A.accueilDesArrivees({ ...calme, vide: true }) === "inserer" && A.accueilDesArrivees({ ...calme, vide: true, enHaut: false, dernieresEnTete: false }) === "inserer");
+  ok("sans risque (vue « Tout » ou un filtre qui range les dernières en tête, rien de coché, aucune photo agrandie, grille en haut) : insérer",
+    A.accueilDesArrivees(calme) === "inserer");
+  ok("une photo cochée, une photo agrandie, une écriture ou une page en route : la pastille (même sur un écran vide)",
+    A.accueilDesArrivees({ ...calme, coches: true }) === "annoncer" && A.accueilDesArrivees({ ...calme, agrandie: true }) === "annoncer"
+    && A.accueilDesArrivees({ ...calme, occupe: true }) === "annoncer" && A.accueilDesArrivees({ ...calme, vide: true, occupe: true }) === "annoncer");
+  ok("la grille défile (pas en haut) ou la vue ne range pas les arrivées en tête (Ma sélection, Doublons, Ne pas publier, Par jour) : la pastille",
+    A.accueilDesArrivees({ ...calme, enHaut: false }) === "annoncer" && A.accueilDesArrivees({ ...calme, dernieresEnTete: false }) === "annoncer");
+  ok("l'onglet « Les liens » et la corbeille ne montrent pas la grille : on relit (le nombre par lien), même en bas de page",
+    A.accueilDesArrivees({ ...calme, grilleVisible: false, enHaut: false, dernieresEnTete: false }) === "inserer" && A.accueilDesArrivees({ ...calme, grilleVisible: false, coches: true }) === "annoncer");
+  const f0 = F.FILTRES_VIDES;
+  ok("les vues qui rangent les dernières arrivées en tête : Tout, un lien, une personne, un dossier, les albums ; pas la sélection, les doublons, « Ne pas publier », « Par jour », un jour, la corbeille",
+    F.montreLesDernieres(f0) && F.montreLesDernieres({ ...f0, mode: "liens" }) && F.montreLesDernieres({ ...f0, mode: "liens", lien: "participants" }) && F.montreLesDernieres({ ...f0, personne: "qui:léa" }) && F.montreLesDernieres({ ...f0, dossier: "resp:organisateur:Soirée" })
+    && !F.montreLesDernieres({ ...f0, selection: true }) && !F.montreLesDernieres({ ...f0, doublons: true }) && !F.montreLesDernieres({ ...f0, signalees: true }) && !F.montreLesDernieres({ ...f0, ordre: "jour" })
+    && !F.montreLesDernieres({ ...f0, jour: "2026-10-18" }) && !F.montreLesDernieres({ ...f0, corbeille: true }));
+  ok("la règle de la page est celle de la grille : une vue « toutes » de la route est exactement la vue qui montre les dernières en tête",
+    [f0, { ...f0, lien: "participants" }, { ...f0, ordre: "jour" as const }, { ...f0, doublons: true }, { ...f0, signalees: true }, { ...f0, jour: "2026-10-18" }].every((f) => F.montreLesDernieres(f) === (F.requeteDe(f).vue === "toutes")));
+  ok("la scène de Mathias : édition vide, un participant envoie depuis son iPhone, la première photo arrive → vue, puis insérée d'office, sans « Les voir »",
+    (() => {
+      const corps = A.corpsSondagePhotos("T".repeat(32), null, 0);
+      const etat = A.lireEtatSondage({ photos: 1, derniere: "2026-10-21T10:00:01.5+00:00", nouvelles: null });
+      return !("depuis" in corps) && etat !== null && A.ceQuiABouge(etat, 0, null) && A.accueilDesArrivees({ ...calme, vide: true }) === "inserer";
+    })());
+  ok("« nouvelle » : le seuil est ce que l'écran voyait avant (rien : la chaîne vide, tout est nouveau) ; chaque insertion le REMPLACE",
+    A.seuilDeLInsertion(null) === "" && A.seuilDeLInsertion("2026-10-21T10:00:00.123456+00:00") === "2026-10-21T10:00:00.123456+00:00" && "2026-10-21T10:00:00.5+00:00" > A.seuilDeLInsertion(null));
+
+  titre("— 21/10 : le sondage, la route et les écrans (relus dans le code) —");
+  const etatRoute = sansComm(lire("src/app/api/collectif/photos/etat/route.ts"));
+  ok("la route : `chiffres` et `connues` lus du corps ; les personnes sur le RÉSUMÉ (jamais la grille), seulement si `personnesAFournir` ; `enCours` en `head` ; aucune écriture",
+    /corps\.chiffres === true/.test(etatRoute) && /personnesAFournir\(\{ chiffres, connues, photos, arrivees: depuis \? lignes\.length : 0 \}\)/.test(etatRoute)
+    && /lirePersonnes\s*\? lireToutesLesLignes<LigneResume>\(\(\) => supabase\.from\(VUE_RESUME\)/.test(etatRoute) && /personnes = compterPersonnes\(resume\.data\)/.test(etatRoute)
+    && /select\("id", \{ count: "exact", head: true \}\)\.eq\("edition_id", edition\.id\)\.is\("confirmee_le", null\)/.test(etatRoute) && !/\.(insert|update|upsert|delete)\(/.test(etatRoute)
+    && !/doublons/i.test(etatRoute) && !/signerLecture|signerGet/.test(etatRoute));
+  ok("la route rend `derniere` sans `depuis` (limit 1) et ne met `personnes` / `enCours` dans la réponse que s'ils sont lus",
+    /limit\(depuis \? ARRIVEES_LUES_MAX : 1\)/.test(etatRoute) && /derniere: lignes\[0\]\?\.confirmee_le \?\? \(depuis \|\| null\)/.test(etatRoute) && /\.\.\.\(personnes !== undefined \? \{ personnes \} : \{\}\)/.test(etatRoute) && /\.\.\.\(enCours !== undefined \? \{ enCours \} : \{\}\)/.test(etatRoute));
+
+  const collecte = sansComm(lire("src/app/edition/[token]/photos/Collecte.tsx"));
+  ok("la page Photos ne s'arrête plus faute de repère : plus de `if (!vuJusqua) return` ; le corps part de `corpsSondagePhotos`, la réponse se relit par `lireEtatSondage`",
+    !/if \(!vuJusqua\) return/.test(collecte) && /JSON\.stringify\(corpsSondagePhotos\(p\.token, vuJusqua, stats\.photos\)\)/.test(collecte) && /lireEtatSondage\(await rep\.json\(\)\.catch\(\(\) => null\)\)/.test(collecte)
+    && /useSondage\(/.test(collecte) && /SONDAGE_PHOTOS_MS,\s*p\.ouverte/.test(collecte));
+  ok("les grands chiffres suivent CHAQUE sondage (photos, personnes, en cours), avant toute décision",
+    /setStats\(\(s\) => \(s \? \{ \.\.\.s, photos: e\.photos, personnes: e\.personnes \?\? s\.personnes, enCours: e\.enCours \?\? s\.enCours \} : s\)\);\s*if \(!ceQuiABouge\(/.test(collecte));
+  ok("la grille se relit d'elle-même par `relireSansBruit` quand `accueilDesArrivees` le permet, SANS « Chargement… » ni erreur ; rien n'est posé si l'écran a bougé pendant la lecture",
+    /accueilDesArrivees\(s\) === "inserer" && \(await relireSansBruit\(i\.f, repere, e\)\)/.test(collecte) && /const v1 = \+\+version\.current;\s*setChargement\(false\);/.test(collecte) && !/const v0 = \+\+version\.current;/.test(collecte.slice(collecte.indexOf("async function relireSansBruit"), collecte.indexOf("async function apresSondage")))
+    && /v0 !== version\.current \|\| !i \|\| !s \|\| cleRequete\(i\.f\) !== cleRequete\(nf\) \|\| accueilDesArrivees\(s\) !== "inserer"\) return false/.test(collecte)
+    && !/setChargement\(true\)[\s\S]{0,200}relireSansBruit/.test(collecte) && !/relireSansBruit[\s\S]*?setErreur\("Les photos n'ont pas pu se charger/.test(collecte.slice(collecte.indexOf("async function relireSansBruit"), collecte.indexOf("async function apresSondage"))));
+  ok("l'écran juge sur ce qu'il montre À CET INSTANT : cochées (ou le mode cocher), photo agrandie, écriture ou page en route, grille en haut (défilement de la zone sur ordinateur, haut de la zone à l'écran au téléphone)",
+    /coches: modeCocher \|\| coches\.tout \|\| coches\.ids\.size > 0/.test(collecte) && /agrandie: agrandi !== null/.test(collecte) && /occupe: occupe \|\| chargement \|\| progres !== null/.test(collecte)
+    && /z\.getBoundingClientRect\(\)\.top > -32/.test(collecte) && /z\.scrollTop < 32/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)/.test(collecte));
+  ok("la pastille reste (« N nouvelles · Les voir ») quand l'écran ne peut pas insérer ; « Les voir » remonte en haut et marque depuis le repère de l'annonce",
+    /if \(e\.nouvelles\) annoncerArrivees\(e\.nouvelles, repere\);/.test(collecte) && /setSeuilNouvelles\(seuilDeLInsertion\(annonce\.depuis\)\)/.test(collecte) && /zone\.current\?\.scrollTo\(\{ top: 0 \}\);\s*window\.scrollTo\(\{ top: 0 \}\);/.test(collecte));
+  ok("« nouvelle » : le responsable ne voit pas SES photos comme nouvelles ; la grille demande à la page (`estNeuve`), plus un seuil brut",
+    /const estNeuve = \(ph: Photo\) => seuilNouvelles !== null && ph\.arrivee > seuilNouvelles && !\(p\.ecrire && ph\.role === "responsable"\);/.test(collecte) && /estNeuve=\{estNeuve\}/.test(collecte)
+    && /g\.estNeuve\(ph\)/.test(lire("src/app/edition/[token]/photos/Grille.tsx")) && !/seuilNouvelles/.test(lire("src/app/edition/[token]/photos/Grille.tsx")));
+  ok("la liste « Les liens » (le nombre par lien), les personnes déjà lues et la corbeille suivent la relecture : `liens` posé, `lirePersonnes()` si lues, `version` donnée à la corbeille",
+    /setLiens\(json\.liens\);\s*setErreur\(null\);/.test(collecte) && /if \(i\.personnes\) void lirePersonnes\(\);/.test(collecte) && /<Corbeille token=\{p\.token\} tu=\{p\.tu\} version=\{stats\?\.photos \?\? 0\}/.test(collecte)
+    && /\}, \[token, version\]\);/.test(lire("src/app/edition/[token]/photos/Corbeille.tsx")));
+
+  const sondage = sansComm(lire("src/app/edition/_composants/useSondage.ts"));
+  ok("useSondage : une minuterie armée pour l'échéance (plus de `setInterval` de 10 s qui laissait attendre 40 s), rien d'armé onglet caché, relecture au retour après 20 s",
+    !/setInterval/.test(sondage) && /window\.setTimeout\(\(\) => void lireMaintenant\(\), attente\)/.test(sondage) && /document\.visibilityState !== "visible"/.test(sondage)
+    && /addEventListener\("visibilitychange", auChangement\)/.test(sondage) && /aRelire\(Date\.now\(\), derniere, true, periode, true\)/.test(sondage) && /periode - \(Date\.now\(\) - derniere\)/.test(sondage));
+
+  const carte = sansComm(lire("src/app/edition/[token]/CartePhotos.tsx"));
+  ok("tableau de bord : le NOMBRE et les participants viennent du sondage (la page du serveur ne repeint pas toujours) ; l'encart passe de « Lien envoyé » aux photos sans attendre la relecture",
+    /const enRetard = enDirect !== null && enDirect\.photos !== p\.photos;/.test(carte) && /const etat = photos > 0 \? "photos" :/.test(carte) && /corpsSondagePhotos\(p\.token, null, photos\)/.test(carte)
+    && /<strong>\{photos\.toLocaleString\("fr-FR"\)\}<\/strong>/.test(carte) && !/enDirect \?\? p\.photos/.test(carte) && /router\.refresh\(\)/.test(carte));
+
+  titre("— 21/10 : le tiroir du menu se ferme à chaque navigation —");
+  const coq = sansComm(lire("src/app/edition/[token]/Coquille.tsx"));
+  ok("chaque entrée du menu referme le tiroir AU TOUCHER (sans attendre la page d'arrivée)",
+    /<Link\s+href=\{cheminSection\(props\.token, e\.cle\)\}[\s\S]*?prefetch=\{false\}\s+onClick=\{\(\) => setOuvert\(false\)\}\s*>/.test(coq));
+  ok("l'ouverture n'est plus gardée en mémoire après le changement de chemin : le nettoyage de l'effet la vide (tiroir ET bulle), aucun setState dans le corps d'un effet ni pendant le rendu",
+    /useEffect\(\(\) => \{\s*if \(!ouvert\) return;\s*return \(\) => setTiroirPour\(null\);\s*\}, \[ouvert\]\);/.test(coq) && /useEffect\(\(\) => \{\s*if \(!bulle\) return;\s*return \(\) => setBulleLue\(null\);\s*\}, \[bulle\]\);/.test(coq)
+    && !/useEffect\(\(\) => \{\s*set[A-Z]\w*\(/.test(coq.replace(/useEffect\(\(\) => \{\s*const eteindre/, "")) && /const ouvert = tiroirPour === chemin;/.test(coq));
+  ok("les écrans rendus au serveur se relisent au RETOUR sur l'onglet : tableau de bord, documents, livraison, « Parler à l'atelier » ; pas la page Photos (sa lecture légère), ni le bon à tirer ni le style",
+    A.relireAuRetour("tableau") && A.relireAuRetour("dossier") && A.relireAuRetour("livraison") && A.relireAuRetour("atelier")
+    && !A.relireAuRetour("photos") && !A.relireAuRetour("bat") && !A.relireAuRetour("style") && !A.relireAuRetour(null)
+    && A.ECRANS_RELUS_AU_RETOUR.every((c) => MENU.some((e) => e.cle === c)) && /<RelireAuRetour actif=\{relireAuRetour\(active\)\} \/>/.test(coq));
+  const retour = sansComm(lire("src/app/edition/_composants/RelireAuRetour.tsx"));
+  ok("RelireAuRetour : seulement au retour (visibilitychange → visible), pas avant 20 s, `router.refresh()` et jamais un rechargement du document",
+    /addEventListener\("visibilitychange", auRetour\)/.test(retour) && /Date\.now\(\) - derniere < REPOS_MIN_MS/.test(retour) && /router\.refresh\(\)/.test(retour) && !/location\.reload|setInterval|setTimeout/.test(retour));
+
+  titre("— 21/10 : l'atelier — la fiche et la liste des éditions se relisent seules —");
+  const relire = sansComm(lire("src/app/admin/collectif/RelireLaPage.tsx"));
+  ok("RelireLaPage : une relecture par minute onglet visible et au retour (useSondage, PERIODE_MS), `router.refresh()` ; jamais un rechargement du document",
+    /useSondage\(\(\) => router\.refresh\(\), PERIODE_MS\)/.test(relire) && !/location\.reload/.test(relire) && A.SONDAGE_PHOTOS_MS > 0 && /PERIODE_MS = 60_000/.test(lire("src/app/admin/collectif/compteMessages.ts")));
+  ok("la fiche et la liste des éditions la montent ; les panneaux personnes et corbeille se relisent quand le nombre de photos de la fiche change",
+    /<RelireLaPage \/>/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /<RelireLaPage \/>/.test(lire("src/app/admin/collectif/page.tsx"))
+    && /version=\{collecte\.total\}/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /\[lire, version\]/.test(lire("src/app/admin/collectif/[id]/PanneauPersonnes.tsx")) && /\[lire, migrationAbsente, version\]/.test(lire("src/app/admin/collectif/[id]/PanneauCorbeille.tsx")));
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

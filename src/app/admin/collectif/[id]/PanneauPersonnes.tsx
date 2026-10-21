@@ -60,7 +60,8 @@ function phraseRefus(r: Reponse, quoi: string): string {
   return `${quoi} n'a pas abouti (erreur ${r.statut}).`;
 }
 
-export default function PanneauPersonnes({ id, liens }: { id: string; liens: { cle: string; nom: string }[] }) {
+/** `version` : le nombre de photos de la fiche. Quand il change (une arrivée, une suppression), la liste se relit d'elle-même. */
+export default function PanneauPersonnes({ id, liens, version }: { id: string; liens: { cle: string; nom: string }[]; version: number }) {
   const router = useRouter();
   const adresse = `/api/admin/collectif/editions/${id}/personnes`;
   const noms = useMemo(() => new Map(liens.map((l) => [l.cle, l.nom])), [liens]);
@@ -110,7 +111,7 @@ export default function PanneauPersonnes({ id, liens }: { id: string; liens: { c
 
   useEffect(() => {
     void lire();
-  }, [lire]);
+  }, [lire, version]);
 
   const personnes = useMemo(() => lecture?.personnes ?? [], [lecture]);
   const parRef = useMemo(() => new Map(personnes.map((p) => [p.ref, p])), [personnes]);

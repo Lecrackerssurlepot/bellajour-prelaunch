@@ -66,7 +66,8 @@ type Props = {
   cocher: boolean;
   estCochee: (id: string) => boolean;
   estCachee: (p: Photo) => boolean;
-  seuilNouvelles: string | null;
+  /** Une vignette « nouvelle » : arrivée depuis la dernière vue (T-181, 21/10 : les siennes ne comptent pas pour le responsable). */
+  estNeuve: (p: Photo) => boolean;
   /** Le nom affiché (« Toi » pour le responsable lui-même). */
   quiDe: (p: Photo) => string;
   /** Des cases d'attente à la forme des photos, pendant que la page suivante arrive. */
@@ -91,7 +92,7 @@ export default function Grille(g: Props) {
     <div className={`ec-ph-g${g.cocher ? " ec-ph-g--cocher" : ""}`}>
       {g.photos.map((ph, i) => {
         const jour = g.parJour && (i === 0 || g.photos[i - 1].jourCle !== ph.jourCle) ? g.jours.find((j) => j.cle === ph.jourCle) : null;
-        const neuve = g.seuilNouvelles !== null && ph.arrivee > g.seuilNouvelles;
+        const neuve = g.estNeuve(ph);
         const cochee = g.estCochee(ph.id);
         const cachee = g.estCachee(ph);
         const qui = g.quiDe(ph);
