@@ -577,7 +577,7 @@
   .ec-espace .ec-parler-ecrire {
     position: sticky;
     bottom: 0;
-    z-index: 20;
+    z-index: var(--ec-z-collant);
     padding: 8px 8px 10px;
   }
   .ec-espace .ec-parler-menu {

@@ -7848,7 +7848,119 @@ async function verifTempsReel() {
     && /version=\{collecte\.total\}/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && /\[lire, version\]/.test(lire("src/app/admin/collectif/[id]/PanneauPersonnes.tsx")) && /\[lire, migrationAbsente, version\]/.test(lire("src/app/admin/collectif/[id]/PanneauCorbeille.tsx")));
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(() => {
+
+/* ════════════════════════════ 21/10 : « VÉRIFIER BIEN LES CHEVAUCHEMENTS » ════════════════════════════ */
+
+/* Un relevé en lecture seule (Chrome sans tête, 375 et 390 px, 1280 px) a mesuré ce qui se recouvrait dans l'espace
+   d'une Édition collective. Ces épreuves relisent le CSS : elles ne voient pas un pixel, mais elles tiennent les
+   trois règles qui ont causé les défauts, et qui cassent EN SILENCE quand on les oublie :
+   1. la coquille du téléphone n'est pas une grille à rangées implicites (l'espace libre s'y répartit ENTRE les rangées) ;
+   2. une couche ne s'écrit jamais en nombre : l'échelle `--ec-z-*` est la seule (une barre fixe à 40 valait le tiroir) ;
+   3. une règle « téléphone » placée AVANT la règle de base de même spécificité perd, sans erreur ni avertissement. */
+function verifChevauchements() {
+  const sansCommentaires = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const espaceBrut = lire("src/app/edition/[token]/espace.css");
+  const espace = sansCommentaires(espaceBrut);
+  const photos = sansCommentaires(lire("src/app/edition/[token]/photos/photos.css"));
+  const tableau = sansCommentaires(lire("src/app/edition/[token]/tableau.css"));
+  const bat = sansCommentaires(lire("src/app/edition/[token]/bat/bat.css"));
+  const liens = lire("src/app/edition/[token]/photos/Liens.tsx");
+  /* La première règle dont le sélecteur est exactement `sel` (source de regex, sans les accolades) : son corps. */
+  const regle = (css: string, sel: string) => new RegExp(`(?:^|\\n)\\s*${sel} \\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  const toutes = (css: string, sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n)\\s*${sel} \\{([^}]*)\\}`, "g"))].map((m) => m[1]);
+  const jeton = (nom: string) => Number(new RegExp(`--ec-z-${nom}:\\s*(\\d+);`).exec(espace)?.[1] ?? "NaN");
+  /* Le repère est un commentaire : on le cherche AVANT de les retirer. */
+  const debutTel = espaceBrut.indexOf("@media (max-width: 860px) {\n  /* Sur téléphone, un écran ne peut pas tout tenir");
+  const tel = debutTel >= 0 ? sansCommentaires(espaceBrut.slice(debutTel)) : "";
+  /* Une des règles de ce sélecteur porte la déclaration (un sélecteur peut revenir dans un autre bloc `@media`). */
+  const dans = (css: string, sel: string, re: RegExp) => toutes(css, sel).some((r) => re.test(r));
+
+  titre("— 21/10 : l'en-tête du téléphone ne s'étire pas (366 px au lieu de 62 sur « Bon à tirer » verrouillé) —");
+  {
+    const coquilleTel = regle(tel, "\\.ec-espace \\.ec-coquille");
+    ok("le bloc « téléphone » de espace.css existe (le repère est le premier commentaire du bloc)", tel.length > 2000);
+    ok("la coquille du téléphone est une COLONNE (flex), pas une grille à rangées implicites ; si un jour elle redevient une grille, elle porte `grid-template-rows`",
+      /display: flex;\s*flex-direction: column;/.test(coquilleTel) && (!/display: grid/.test(coquilleTel) || /grid-template-rows:/.test(coquilleTel)) && /min-height: var\(--app-height\)/.test(coquilleTel) && !/dvh/.test(espace));
+    ok("l'en-tête garde sa hauteur (`flex: none`, collant) et le contenu prend tout le reste (`flex: 1 0 auto`)",
+      /position: sticky;[\s\S]*flex: none;/.test(regle(tel, "\\.ec-espace \\.ec-barre-mobile")) && /flex: 1 0 auto;/.test(regle(tel, "\\.ec-espace \\.ec-contenu")));
+    const coquilleOrdi = regle(espace, "\\.ec-espace \\.ec-coquille");
+    ok("l'ordinateur ne change pas : la coquille y est toujours la grille menu | contenu, exactement la hauteur de la fenêtre",
+      /display: grid;\s*grid-template-columns: var\(--ec-menu-l\) minmax\(0, 1fr\);/.test(coquilleOrdi) && /height: var\(--app-height\);/.test(coquilleOrdi) && /overflow: hidden;/.test(coquilleOrdi));
+  }
+
+  titre("— 21/10 : UNE échelle de couches (le tiroir passait SOUS la barre d'actions des photos cochées et le bouton « Déposer ») —");
+  {
+    const ordre = ["collant", "entete", "barre", "voile", "tiroir", "fenetre", "feuille", "photo", "avis"].map(jeton);
+    ok(`l'échelle est définie une fois, dans l'ordre : collant < en-tête < barres fixes < voile < tiroir < fenêtres < feuille < photo < avis (${ordre.join(" < ")})`,
+      ordre.every((n) => Number.isFinite(n)) && ordre.every((n, i) => i === 0 || n > ordre[i - 1]));
+    const feuilles = fichiersParSuffixe("src/app/edition", /\.css$/).map((f) => ({ f, css: sansCommentaires(lire(f)) }));
+    const hautes = feuilles.flatMap(({ f, css }) => [...css.matchAll(/z-index:\s*(-?\d+)\s*;/g)].filter((m) => Number(m[1]) >= 10).map((m) => `${f.split("/").pop()}: ${m[1]}`));
+    ok(`aucun z-index numérique de 10 ou plus dans les feuilles de l'espace : une couche se lit dans l'échelle${hautes.length ? " ; en faute : " + hautes.join(", ") : ""}`, hautes.length === 0);
+    ok("les barres FIXES d'une page restent sous le voile du tiroir : « Déposer », les actions des photos cochées (téléphone), la barre d'actions (ordinateur), les notes du BAT (feuille et pastille)",
+      dans(photos, "\\.ec-espace \\.ec-ph-fab", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-bas", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-barre-actions", /z-index: var\(--ec-z-barre\)/)
+        && toutes(bat, "\\.ec-espace \\.ec-bat-panneau").some((r) => /z-index: var\(--ec-z-barre\)/.test(r)) && toutes(bat, "\\.ec-espace \\.ec-bat-onglet-notes").some((r) => /z-index: calc\(var\(--ec-z-barre\) \+ 1\)/.test(r)));
+    ok("le voile, le tiroir et l'en-tête lisent leurs couches ; les fenêtres (ordinateur ET téléphone) passent au-dessus du tiroir",
+      /z-index: var\(--ec-z-voile\)/.test(regle(tel, "\\.ec-espace \\.ec-voile")) && /z-index: var\(--ec-z-tiroir\)/.test(regle(tel, "\\.ec-espace \\.ec-menu")) && /z-index: var\(--ec-z-entete\)/.test(regle(tel, "\\.ec-espace \\.ec-barre-mobile"))
+        && toutes(espace, "\\.ec-espace \\.ec-fenetre-voile,\\s*\\.ec-espace \\.ec-panneau-voile").filter((r) => /z-index: var\(--ec-z-fenetre\)/.test(r)).length === 2);
+    ok("la photo agrandie, la feuille « Filtrer » et l'avis « Annuler » lisent aussi l'échelle (ordinateur et téléphone) : la photo reste au-dessus des fenêtres, l'avis au-dessus de la photo",
+      toutes(photos, "\\.ec-espace \\.ec-ag").filter((r) => /z-index: var\(--ec-z-photo\)/.test(r)).length === 2 && /z-index: var\(--ec-z-feuille\)/.test(regle(photos, "\\.ec-espace \\.ec-ph-feuille-voile"))
+        && toutes(photos, "\\.ec-espace \\.ec-ph-avis").filter((r) => /z-index: var\(--ec-z-avis\)/.test(r)).length === 2 && jeton("photo") > jeton("fenetre") && jeton("avis") > jeton("photo"));
+  }
+
+  titre("— 21/10 : le menu « … » d'un lien est un vrai menu —");
+  {
+    const menu = regle(espace, "\\.ec-espace \\.ec-li-menu");
+    ok("ordinateur : posé en `fixed` depuis la position du bouton (variables `--m-*`), fond OPAQUE du thème, aucun verre qui laisse lire le texte dessous",
+      /position: fixed;/.test(menu) && /right: var\(--m-droite/.test(menu) && /top: var\(--m-haut/.test(menu) && /bottom: var\(--m-bas/.test(menu) && /background: var\(--ec-carte-pleine\);/.test(menu) && !/backdrop-filter|--ec-glass|position: absolute/.test(menu));
+    ok("téléphone : une feuille du bas avec voile sombre et le nom du lien en tête ; le voile de l'ordinateur est transparent (il ne sert qu'au clic dehors)",
+      /background: transparent;/.test(regle(espace, "\\.ec-espace \\.ec-li-voile")) && /background: var\(--ec-voile\);/.test(regle(tel, "\\.ec-espace \\.ec-li-voile")) && /bottom: calc\(8px \+ env\(safe-area-inset-bottom\)\);/.test(regle(tel, "\\.ec-espace \\.ec-li-menu")) && /display: block;/.test(regle(tel, "\\.ec-espace \\.ec-li-menu-titre")));
+    ok("`MenuLien` : un portail dans `.ec-contenu`, `role=\"menu\"`, ferme au clic sur le voile, à Échap (le focus revient au bouton), à Tab, au défilement (ordinateur) ; le bouton annonce `aria-haspopup=\"menu\"`",
+      /function MenuLien/.test(liens) && /createPortal\(/.test(liens) && /document\.querySelector\("\.ec-contenu"\)/.test(liens) && /role="menu"/.test(liens) && /className="ec-li-voile" role="presentation" onClick=\{onFermer\}/.test(liens)
+        && /e\.key === "Escape"/.test(liens) && /declencheur\.current\?\.focus\(\)/.test(liens) && /e\.key === "Tab"/.test(liens) && /addEventListener\("scroll"/.test(liens) && /aria-haspopup="menu"/.test(liens));
+    ok("choisir une action ferme le menu AVANT d'ouvrir la fenêtre (sans rendre le focus : la fenêtre prend le sien)",
+      /onClick=\{\(\) => \{\s*onFermer\(\);\s*a\.faire\(\);\s*\}\}/.test(liens));
+  }
+
+  titre("— 21/10 : la fenêtre « Partager » d'un lien sur téléphone —");
+  {
+    const base = espace.indexOf(".ec-espace .ec-partage--quatre {\n  display: grid;");
+    const surcharge = espace.indexOf("@media (max-width: 860px) {\n  .ec-espace .ec-partage--quatre {");
+    ok("la règle « téléphone » vient APRÈS la règle de base de même spécificité (avant, les quatre colonnes restaient : la dernière écrite gagne)", base > 0 && surcharge > base);
+    const apres = espace.slice(surcharge);
+    ok("deux colonnes, une ligne par libellé, 44 px de haut au moins ; une colonne sous 340 px ; le message est moins haut sur un écran court",
+      /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/.test(regle(apres, "  \\.ec-espace \\.ec-partage--quatre")) && /min-height: 44px;[\s\S]*white-space: nowrap;/.test(regle(apres, "  \\.ec-espace \\.ec-partage--quatre \\.ec-bouton,\\s*\\.ec-espace \\.ec-partage--deux \\.ec-bouton"))
+        && /@media \(max-width: 340px\) \{\s*\.ec-espace \.ec-partage--quatre \{\s*grid-template-columns: minmax\(0, 1fr\);/.test(apres) && /@media \(max-width: 860px\) and \(max-height: 700px\)/.test(apres));
+  }
+
+  titre("— 21/10 : la barre d'actions des photos cochées (ordinateur) ne couvre plus les filtres —");
+  {
+    const collecte = collecteDeLEcran();
+    ok("la barre se place dans la COLONNE DE LA GRILLE (`grid-column: 2` : son bloc conteneur est la zone, pas tout le panneau)",
+      dans(photos, "\\.ec-espace \\.ec-ph-barre-actions", /position: absolute;\s*grid-column: 2;\s*grid-row: 1;/));
+    ok("… ce qui suppose que la barre soit un enfant DIRECT du panneau (après la zone) : si elle entrait dans la zone, `grid-column` ne ferait plus rien",
+      /ec-ph-zone-pied ec-ph-ordi" aria-hidden="true" \/>\s*<\/div>\s*\{\/\* La barre d'actions \(ordinateur\)/.test(lire("src/app/edition/[token]/photos/Collecte.tsx")) || /ec-ph-zone-pied[\s\S]{0,80}<\/div>\s*\{p\.ecrire && nbCoches > 0 \? \(\s*<div className="ec-ph-barre-actions/.test(collecte));
+    ok("les mots courts de la barre se décident à la LARGEUR DU PANNEAU (requête de conteneur) : sous 1290 px, « Ma sélection / Retirer / 2 cochées » ; sous 980 px la zone est trop étroite, la barre reprend tout le panneau et les filtres gardent 96 px pour défiler",
+      /@media \(min-width: 861px\) \{\s*\.ec-espace \.ec-ph-panneau \{\s*container-type: inline-size;\s*container-name: ph-panneau;/.test(photos) && /@container ph-panneau \(max-width: 1290px\) \{[\s\S]*?\.ec-ph-act-court \{\s*display: inline;/.test(photos)
+        && /@container ph-panneau \(max-width: 979px\) \{[\s\S]*?\.ec-ph-panneau \.ec-ph-barre-actions \{\s*grid-column: 1 \/ -1;[\s\S]*?\.ec-ph-panneau--barre \.ec-ph-filtres \{\s*padding-bottom: 96px;/.test(photos)
+        && !/\.ec-ph-panneau--barre \.ec-ph-filtres \{\s*padding-bottom: 96px;/.test(photos.slice(0, photos.indexOf("@container ph-panneau (max-width: 979px)"))));
+  }
+
+  titre("— 21/10 : vignettes, tableau de bord, corbeille, cibles au pouce —");
+  {
+    ok("une vignette (ordinateur) : le badge « Doublon » ou l'œil barré se pose AU-DESSUS du nom, le nom garde toute la largeur (plus de `calc(100% - 84px)`) ; le téléphone garde les deux côte à côte",
+      /@media \(min-width: 861px\) \{\s*\.ec-espace \.ec-ph-t \.ec-ph-badge \{\s*right: 6px;\s*bottom: 30px;/.test(photos) && !/calc\(100% - 84px\)/.test(photos) && /calc\(100% - 30px\)/.test(tel + photos));
+    const ligne = regle(tableau, "\\.ec-espace \\.ec-tdb-message-ligne");
+    ok("la ligne du message de l'atelier va sur deux lignes au plus (`-webkit-line-clamp: 2`), plus d'ellipse sur une seule ; sous 520 px, le bouton passe SOUS le texte plutôt que de lui voler sa largeur",
+      /-webkit-line-clamp: 2;/.test(ligne) && !/white-space: nowrap/.test(ligne) && /@media \(max-width: 520px\) \{[\s\S]*?\.ec-tdb-message \{\s*flex-wrap: wrap;[\s\S]*?\.ec-tdb-message-texte \{\s*flex: 1 1 200px;/.test(tableau));
+    ok("la corbeille : le nom sur deux lignes, la précision (fichier, qui, QUAND) sur trois, plus d'ellipse d'une ligne",
+      /-webkit-line-clamp: 2;/.test(regle(photos, "\\.ec-espace \\.ec-cb-txt b")) && /-webkit-line-clamp: 3;/.test(regle(photos, "\\.ec-espace \\.ec-cb-txt span")) && !/white-space: nowrap/.test(regle(photos, "\\.ec-espace \\.ec-cb-txt b") + regle(photos, "\\.ec-espace \\.ec-cb-txt span")));
+    ok("cibles au pouce : « Tout » / « Par lien » et « Plus récentes » / « Par jour » à 44 px, 6 px d'écart ; la barre d'outils reste à 54 px (2 + 2 + 44 + 2 + 2 + 2 de filet) ; soleil et lune à 40 × 40 ; les gestes du menu « … » à 44 px au moins",
+      dans(photos, "\\.ec-espace \\.ec-ph-moutils \\.ec-ph-seg > button", /height: 44px;/) && dans(photos, "\\.ec-espace \\.ec-ph-moutils", /^\s*padding: 2px;\s*$/) && dans(photos, "\\.ec-espace \\.ec-ph-moutils \\.ec-ph-seg", /gap: 6px;\s*padding: 2px;/)
+        && dans(photos, "\\.ec-espace \\.ec-ph-seg > button", /^\s*height: 44px;\s*$/) && dans(tel, "\\.ec-espace \\.ec-mode", /width: 40px;\s*height: 40px;/) && dans(espace, "\\.ec-espace \\.ec-li-menu > button", /min-height: 44px;/));
+  }
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

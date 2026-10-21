@@ -551,10 +551,14 @@
   display: flex;
   flex-direction: column;
 }
+/* (21/10) Deux lignes au plus, plus une ellipse sur une : « Aucun message pour l'insta… » coupait la phrase
+   à l'endroit où elle commençait à dire quelque chose. Si elle tient sur une ligne, elle reste sur une ligne. */
 .ec-espace .ec-tdb-message-ligne {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 14px;
 }
 .ec-espace .ec-tdb-message-action {
@@ -688,6 +692,18 @@
   }
   .ec-espace .ec-tdb-couv--centre {
     height: 160px;
+  }
+  /* Le message de l'atelier garde au moins 200 px de large (21/10) : sur 390 px, avatar et bouton lui en
+     laissaient 193 et « Écris-nous. » tombait dans l'ellipse des deux lignes. Quand il ne les a plus, le
+     bouton passe SOUS le texte, à droite ; au-dessus de ce seuil, rien ne change. */
+  .ec-espace .ec-tdb-message {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-tdb-message-texte {
+    flex: 1 1 200px;
+  }
+  .ec-espace .ec-tdb-message-action {
+    margin-left: auto;
   }
 }
 

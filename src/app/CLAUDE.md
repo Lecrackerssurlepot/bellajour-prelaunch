@@ -163,6 +163,23 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
    feuille n'était importée que par `page.tsx`. Tout style qui doit couvrir la 404 d'une section
    s'importe depuis son `layout.tsx` (Next déduplique l'import).
 
+10. **L'espace client des éditions (`edition/[token]`) : une échelle de couches, et trois chevauchements
+   qui ne se voyaient qu'à l'écran** (21/10/2026, relevé en Chrome sans tête à 375, 390 et 1280 px).
+   - **Un `z-index` ne s'écrit jamais en nombre** : `--ec-z-collant` < `-entete` < `-barre` < `-voile` <
+     `-tiroir` < `-fenetre` < `-feuille` < `-photo` < `-avis`, définis dans `espace.css` et commentés là.
+     Une barre FIXE de page (« Déposer », les actions des photos cochées, les notes du BAT) lit
+     `--ec-z-barre` et reste donc SOUS le voile du tiroir ; avant, leurs 35 et 40 valaient ceux du voile et
+     du tiroir, et l'ordre du DOM tranchait. Le harnais refuse tout nombre de 10 ou plus.
+   - **La coquille du téléphone est une colonne, pas une grille** : en grille à rangées implicites avec un
+     `min-height`, l'espace libre se répartit ENTRE les rangées et l'en-tête de 62 px s'étirait à 366 px sur
+     une page courte. Elle est aussi le bloc conteneur de l'en-tête collant.
+   - **Dans un bloc `@media`, une règle placée AVANT la règle de base de même spécificité perd, sans
+     avertissement** : les quatre boutons de « Partager » restaient en quatre colonnes (la surcharge
+     « téléphone » était écrite 80 lignes avant la règle de base). Écrire la surcharge APRÈS, ou monter la
+     spécificité, et la mesurer à l'écran.
+   - Un menu qui s'ouvre depuis une carte de verre (`backdrop-filter`) s'ouvre par un portail dans
+     `.ec-contenu`, jamais en `absolute` dedans (`MenuLien`, `Fenetre`).
+
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 
 `(atelier)/composer/` — six écrans. **Aucune de ces formulations n'est décorative** : chacune

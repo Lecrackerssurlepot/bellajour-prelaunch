@@ -10,9 +10,15 @@
    21/10 (retour de Mathias : « changer le nom et changer le nombre pourraient être
    ensemble ») : UN seul geste « Modifier », UNE fenêtre avec le nom ET le nombre de
    photos par personne, enregistrés en une requête. Les deux fenêtres d'avant (`FenetreNom`,
-   `FenetrePlafond`) sont dans archive/liens-nom-et-nombre-2026-10/. */
+   `FenetrePlafond`) sont dans archive/liens-nom-et-nombre-2026-10/.
 
-import { useState } from "react";
+   21/10 (« vérifier bien les chevauchements ») : le menu « … » d'une carte est un vrai menu
+   (`MenuLien`) : ancré sous son bouton (feuille du bas sur téléphone), fond opaque, il se ferme au
+   clic dehors, à Échap, au défilement, et rend le focus à son bouton. Avant, un bloc de verre
+   posé en travers de la carte, qui laissait lire son titre et son QR à travers. */
+
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import Fenetre from "../../_composants/Fenetre";
 import type { LienPartage } from "../../_composants/LienContribution";
@@ -23,6 +29,15 @@ export type LienDetail = { id: string; cle: string; nom: string; plafond: string
 export type Liens = { general: { nom: string; plafond: string; n: number; personnes: Personne[] }; liens: LienDetail[]; reste: number | null };
 
 const nombre = (n: number) => n.toLocaleString("fr-FR");
+const rien = () => () => {};
+
+/** Où est le bouton « … » quand on l'ouvre, de quel côté le menu s'accroche (bord droit sur bord droit, ou bord gauche sur bord gauche quand il
+    sortirait de la colonne de contenu et couvrirait le menu de gauche) et dans quel sens il se déroule (en bas, ou au-dessus s'il n'y a pas la place). */
+type OuvertMenu = { cle: string; cote: "droite" | "gauche"; x: number; ligne: number; sens: "bas" | "haut" };
+/** Largeur du menu (espace.css : `min(300px, 100vw - 24px)`). */
+const LARGEUR_MENU = 300;
+/** Hauteur d'une ligne du menu (note comprise) plus ses marges : de quoi décider du sens sans mesurer le menu. */
+const HAUTEUR_LIGNE_MENU = 84;
 
 export function OngletLiens(o: {
   liens: Liens | null;
@@ -42,8 +57,27 @@ export function OngletLiens(o: {
   setSupprimer: (r: { id: string; nom: string; n: number }) => void;
 }) {
   const v = (vous: string, toi: string) => (o.tu ? toi : vous);
-  const [menu, setMenu] = useState<string | null>(null);
+  const [menu, setMenu] = useState<OuvertMenu | null>(null);
+  /* Le bouton qui a ouvert le menu : Échap lui rend le focus. */
+  const declencheur = useRef<HTMLElement | null>(null);
   const p = o;
+  const basculer = (cle: string, bouton: HTMLElement, nbActions: number) => {
+    if (menu?.cle === cle) {
+      setMenu(null);
+      return;
+    }
+    const r = bouton.getBoundingClientRect();
+    const sens = window.innerHeight - r.bottom >= nbActions * HAUTEUR_LIGNE_MENU + 24 ? "bas" : "haut";
+    /* Bord droit sur bord droit, sauf si le menu sortait à gauche de la colonne de contenu (le bouton est alors tout à gauche d'une carte
+       dont le pied a passé à la ligne) : bord gauche sur bord gauche, sans dépasser l'écran à droite. */
+    const colonne = document.querySelector(".ec-contenu")?.getBoundingClientRect().left ?? 0;
+    const largeur = Math.min(LARGEUR_MENU, window.innerWidth - 24);
+    const cote = r.right - largeur >= colonne + 8 ? "droite" : "gauche";
+    const x = cote === "droite" ? window.innerWidth - r.right : Math.min(r.left, window.innerWidth - largeur - 8);
+    declencheur.current = bouton;
+    setMenu({ cle, cote, x: Math.round(x), ligne: Math.round(sens === "bas" ? r.bottom + 6 : window.innerHeight - r.top + 6), sens });
+  };
+  const fermerMenu = () => setMenu(null);
   const { liens, lienDe, setPartage, setGrandQr, ouvrir, setModifier, setSupprimer, maxPlafond } = o;
   return (
     <div className="ec-ecran-corps ec-li ec-defile">
@@ -63,8 +97,10 @@ export function OngletLiens(o: {
             url={p.lienParticipants}
             cloture={p.cloture}
             ouverte={p.ouverte}
-            menuOuvert={menu === "general"}
-            onMenu={() => setMenu((m) => (m === "general" ? null : "general"))}
+            menu={menu?.cle === "general" ? menu : null}
+            onMenu={(bouton, nb) => basculer("general", bouton, nb)}
+            onFermerMenu={fermerMenu}
+            declencheur={declencheur}
             onPartager={() => setPartage(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
             onGrand={() => setGrandQr(lienDe(liens.general.nom, null, liens.general.plafond, liens.general.n))}
             onVoir={() => ouvrir("participants")}
@@ -83,8 +119,10 @@ export function OngletLiens(o: {
             url={`${p.lienParticipants}?p=${l.cle}`}
             cloture={p.cloture}
             ouverte={p.ouverte}
-            menuOuvert={menu === l.id}
-            onMenu={() => setMenu((m) => (m === l.id ? null : l.id))}
+            menu={menu?.cle === l.id ? menu : null}
+            onMenu={(bouton, nb) => basculer(l.id, bouton, nb)}
+            onFermerMenu={fermerMenu}
+            declencheur={declencheur}
             onPartager={() => setPartage(lienDe(l.nom, l.cle, l.plafond, l.n))}
             onGrand={() => setGrandQr(lienDe(l.nom, l.cle, l.plafond, l.n))}
             onVoir={() => ouvrir(`lien:${l.id}`)}
@@ -115,8 +153,10 @@ function CarteLien(c: {
   url: string;
   cloture: string;
   ouverte: boolean;
-  menuOuvert: boolean;
-  onMenu: () => void;
+  menu: OuvertMenu | null;
+  onMenu: (bouton: HTMLElement, nbActions: number) => void;
+  onFermerMenu: () => void;
+  declencheur: React.RefObject<HTMLElement | null>;
   onPartager: () => void;
   onGrand: () => void;
   onVoir: () => void;
@@ -170,7 +210,14 @@ function CarteLien(c: {
             <button type="button" className="ec-bouton ec-bouton--petit" onClick={c.onPartager}>
               Partager
             </button>
-            <button type="button" className="ec-li-plus" aria-label={`Plus d'actions sur le lien « ${c.nom} »`} aria-expanded={c.menuOuvert} onClick={c.onMenu}>
+            <button
+              type="button"
+              className="ec-li-plus"
+              aria-label={`Plus d'actions sur le lien « ${c.nom} »`}
+              aria-haspopup="menu"
+              aria-expanded={c.menu !== null}
+              onClick={(e) => c.onMenu(e.currentTarget, c.actions.length)}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <circle cx="5" cy="12" r="1.8" />
                 <circle cx="12" cy="12" r="1.8" />
@@ -180,26 +227,97 @@ function CarteLien(c: {
           </>
         ) : null}
       </div>
-      {c.menuOuvert ? (
-        <div className="ec-li-menu" role="menu" aria-label={`Actions sur le lien « ${c.nom} »`}>
-          {c.actions.map((a) => (
-            <button
-              key={a.libelle}
-              type="button"
-              role="menuitem"
-              className={a.danger ? "ec-li-menu-danger" : undefined}
-              onClick={() => {
-                c.onMenu();
-                a.faire();
-              }}
-            >
-              <span>{a.libelle}</span>
-              {a.note ? <span className="ec-note">{a.note}</span> : null}
-            </button>
-          ))}
-        </div>
+      {c.menu ? (
+        <MenuLien nom={c.nom} ouvert={c.menu} actions={c.actions} declencheur={c.declencheur} onFermer={c.onFermerMenu} />
       ) : null}
     </article>
+  );
+}
+
+/* ─────────────────────────── le menu « … » d'une carte ─────────────────────────── */
+
+/**
+ * Le menu d'actions d'un lien : un vrai menu, plus un bloc posé en travers de la carte.
+ * - Il s'ouvre dans `.ec-contenu` par un portail (comme `Fenetre`) : la carte est un panneau de verre
+ *   (`backdrop-filter`), qui enfermerait un élément positionné dedans.
+ * - Ordinateur : sous le bouton « … » (ou au-dessus s'il n'y a pas la place), bord droit sur bord droit,
+ *   fond opaque. Téléphone : une feuille du bas avec voile (tout cela est dans espace.css, la position
+ *   du bouton n'arrive qu'en variables CSS : `--m-droite` ou `--m-gauche`, `--m-haut` ou `--m-bas`).
+ * - Se ferme au clic dehors (le voile), à Échap ou à Tab (le focus revient au bouton), à la rotation ou au
+ *   redimensionnement, et, sur ordinateur seulement, au défilement (le bouton a bougé). Choisir une action
+ *   le ferme AVANT d'ouvrir sa fenêtre, sans rendre le focus (la fenêtre prend le sien).
+ * - Flèches haut / bas d'une ligne à l'autre ; la première ligne a le focus à l'ouverture.
+ */
+function MenuLien(m: {
+  nom: string;
+  ouvert: OuvertMenu;
+  actions: { libelle: string; note?: string; danger?: boolean; faire: () => void }[];
+  declencheur: React.RefObject<HTMLElement | null>;
+  onFermer: () => void;
+}) {
+  const client = useSyncExternalStore(rien, () => true, () => false);
+  const racine = useRef<HTMLDivElement>(null);
+  const { onFermer, declencheur } = m;
+  useEffect(() => {
+    racine.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    const telephone = window.matchMedia("(max-width: 860px)");
+    const touche = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onFermer();
+        declencheur.current?.focus();
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        onFermer();
+        declencheur.current?.focus();
+      } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        const lignes = [...(racine.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+        if (!lignes.length) return;
+        e.preventDefault();
+        const i = lignes.indexOf(document.activeElement as HTMLElement);
+        lignes[(i + (e.key === "ArrowDown" ? 1 : -1) + lignes.length) % lignes.length].focus();
+      }
+    };
+    const defilement = () => {
+      if (!telephone.matches) onFermer();
+    };
+    document.addEventListener("keydown", touche, true);
+    window.addEventListener("resize", onFermer);
+    document.addEventListener("scroll", defilement, true);
+    return () => {
+      document.removeEventListener("keydown", touche, true);
+      window.removeEventListener("resize", onFermer);
+      document.removeEventListener("scroll", defilement, true);
+    };
+  }, [onFermer, declencheur]);
+  const hote = client ? document.querySelector(".ec-contenu") : null;
+  if (!hote) return null;
+  const position = { [m.ouvert.cote === "droite" ? "--m-droite" : "--m-gauche"]: `${m.ouvert.x}px`, [m.ouvert.sens === "bas" ? "--m-haut" : "--m-bas"]: `${m.ouvert.ligne}px` } as React.CSSProperties;
+  return createPortal(
+    <>
+      <div className="ec-li-voile" role="presentation" onClick={onFermer} />
+      <div ref={racine} className={`ec-li-menu ec-li-menu--${m.ouvert.sens}`} role="menu" aria-label={`Actions sur le lien « ${m.nom} »`} style={position}>
+        <p className="ec-li-menu-titre" aria-hidden="true">
+          {m.nom}
+        </p>
+        {m.actions.map((a) => (
+          <button
+            key={a.libelle}
+            type="button"
+            role="menuitem"
+            className={a.danger ? "ec-li-menu-danger" : undefined}
+            onClick={() => {
+              onFermer();
+              a.faire();
+            }}
+          >
+            <span>{a.libelle}</span>
+            {a.note ? <span className="ec-note">{a.note}</span> : null}
+          </button>
+        ))}
+      </div>
+    </>,
+    hote
   );
 }
 

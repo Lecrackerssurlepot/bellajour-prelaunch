@@ -818,7 +818,7 @@
     position: fixed;
     right: 12px;
     bottom: 12px;
-    z-index: 56;
+    z-index: calc(var(--ec-z-barre) + 1);
     width: auto;
     flex-direction: row;
     padding: 10px 14px;
@@ -838,7 +838,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 55;
+    z-index: var(--ec-z-barre);
     width: auto;
     height: calc(72 * var(--uh));
     border-radius: var(--ec-r-panneau) var(--ec-r-panneau) 0 0;
