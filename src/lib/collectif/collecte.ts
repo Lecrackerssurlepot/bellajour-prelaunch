@@ -147,6 +147,34 @@ export async function lireLienDeDepot(
 }
 
 /**
+ * Les liens de contribution de l'édition par leur id (le libellé d'un lien d'où une photo « déjà
+ * là » était arrivée, le plafond du lien d'une photo qui revient de la corbeille), avec les replis
+ * des migrations 20261014 et 20261018 (le patron de `lireLienDeDepot`). Un lien supprimé est rendu
+ * avec son `retire_le`. Des ids de la base, jamais un texte de client : `.in()` convient. `null` :
+ * base illisible.
+ */
+export async function lireLiensParId(supabase: SupabaseClient, editionId: string, ids: readonly string[]): Promise<Map<string, LienDeDepot> | null> {
+  const m = new Map<string, LienDeDepot>();
+  const uniques = [...new Set(ids.filter(Boolean))];
+  if (!uniques.length) return m;
+  const lire = async (colonnes: string) => {
+    const paquets = await Promise.all(
+      enPaquets(uniques).map((paquet) => supabase.from("collectif_provenances").select(colonnes).eq("edition_id", editionId).in("id", paquet).returns<LienDeDepot[]>())
+    );
+    return { paquets, error: paquets.find((p) => p.error)?.error ?? null };
+  };
+  let lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne, retire_le");
+  if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond, plafond_par_personne");
+  if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("id, type, libelle, sans_plafond");
+  if (lu.error) {
+    console.error("[collectif] liens de l'édition illisibles", lu.error.code);
+    return null;
+  }
+  for (const { data } of lu.paquets) for (const l of data ?? []) m.set(l.id, l);
+  return m;
+}
+
+/**
  * Ce que la base sait déjà de ces clés de fichier, pour cette édition. Les
  * clés partent dans l'URL du filtre `in` : par paquets de `PAQUET_IN`
  * (100 clés font 8 Ko au plus, 500 jusqu'à 40 Ko, mesuré le 19/10).
@@ -158,14 +186,29 @@ export async function lireExistants(
 ): Promise<Map<string, Existant> | null> {
   const m = new Map<string, Existant>();
   if (!cles.length) return m;
-  type Lu = { id: string; r2_key: string; cle_fichier: string; confirmee_le: string | null; supprimee_le?: string | null };
+  type Lu = {
+    id: string;
+    r2_key: string;
+    cle_fichier: string;
+    confirmee_le: string | null;
+    provenance_id: string | null;
+    role_deposant: string;
+    appareil_id: string | null;
+    supprimee_le?: string | null;
+    supprimee_par?: string | null;
+    participant_id?: string | null;
+  };
   /* La corbeille est LUE, jamais filtrée ici : une photo supprimée garde sa clé de fichier
-     (unique par édition), et la redéclarer ne doit ni la dupliquer ni la ressusciter
-     (`corbeille: true`, rendu « déjà là » par planDeclaration).
+     (unique par édition), et la redéclarer ne doit jamais la dupliquer (`corbeille: true`). Qui
+     l'a supprimée (`supprimee_par`) et d'où elle vient (son lien, son appareil, sa personne)
+     disent si elle revient (supprimée par son auteur, 21/10) et où elle était (`origineDeja`).
+     Sans la migration 20261023 : ni corbeille, ni personne (le repli de `lireHorsCorbeille`).
      ⚠️ Une clé de fichier vient du NAVIGATEUR (le nom de la photo, tel quel) : elle entre dans le
      filtre citée par `listeIn` (S8), jamais par `.in()`, qui la couperait à un guillemet. */
   const lus = await lireHorsCorbeille(async (avec) => {
-    const colonnes: string = avec ? "id, r2_key, cle_fichier, confirmee_le, supprimee_le" : "id, r2_key, cle_fichier, confirmee_le";
+    const colonnes: string = avec
+      ? "id, r2_key, cle_fichier, confirmee_le, provenance_id, role_deposant, appareil_id, supprimee_le, supprimee_par, participant_id"
+      : "id, r2_key, cle_fichier, confirmee_le, provenance_id, role_deposant, appareil_id";
     const paquets = await Promise.all(
       enPaquets([...new Set(cles)]).map((paquet) => supabase.from("collectif_photos").select(colonnes).eq("edition_id", editionId).filter("cle_fichier", "in", listeIn(paquet)))
     );
@@ -177,7 +220,16 @@ export async function lireExistants(
   }
   for (const { data } of lus.paquets) {
     for (const l of (data ?? []) as unknown as Lu[]) {
-      m.set(l.cle_fichier, { id: l.id, r2_key: l.r2_key, confirmee: Boolean(l.confirmee_le), ...(l.supprimee_le ? { corbeille: true } : {}) });
+      m.set(l.cle_fichier, {
+        id: l.id,
+        r2_key: l.r2_key,
+        confirmee: Boolean(l.confirmee_le),
+        ...(l.supprimee_le ? { corbeille: true, par: l.supprimee_par ?? null } : {}),
+        provenanceId: l.provenance_id ?? null,
+        role: l.role_deposant,
+        appareilId: l.appareil_id ?? null,
+        participantId: l.participant_id ?? null,
+      });
     }
   }
   return m;

@@ -62,12 +62,32 @@
  * - `place` : ce que le serveur a dit de la place restante à la dernière
  *   déclaration (« tu peux encore en envoyer 18 »).
  * ══════════════════════════════════════════════════════════════════════════
+ *
+ * ══════════════════════════════════════════════════════════════════════════
+ * LE DERNIER ENVOI, ET CE QUI ÉTAIT DÉJÀ LÀ (retours de Mathias du 21/10)
+ *
+ * - Un LOT commence quand on choisit des photos et que rien ne part ; « Ajouter
+ *   d'autres photos » pendant l'envoi s'y ajoute. La vue dit ce qu'a fait le
+ *   lot en cours (`vue.lot`, `compterLot`) : l'écran remercie pour CE lot, et
+ *   pour ce qui est ARRIVÉ seulement (plus « 8 photos reçues » sur un lien à 5,
+ *   le cumul de la page, déjà-là comprises).
+ * - Chaque « déjà là » garde ce que le serveur en dit (`deja` : cet album, un
+ *   autre lien, la corbeille, revenue de la corbeille), dès la vérification
+ *   d'une reprise quand il le sait. Une photo que son auteur avait supprimée
+ *   ne se réduit pas : elle part tout de suite en déclaration (`aRevoir`), où
+ *   le serveur la restaure. Re-choisie après avoir été supprimée d'ici
+ *   (`oublier`), elle redemande au serveur.
+ * - Un lien mort (404 de la vérification, de la déclaration ou de la
+ *   confirmation) ferme l'envoi ET le dit à la page (`vue.lienMort`), qui
+ *   bascule tout entière sur « Ce lien ne fonctionne plus ».
+ * ══════════════════════════════════════════════════════════════════════════
  */
 
 import { reduire } from "@/app/(atelier)/composer/depot/pool";
 import { estHeic, resoudreMime } from "@/lib/atelier/formats";
 import { vignetteHeic } from "./heic";
-import { estVideo, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION } from "@/lib/collectif/depot";
+import { DEJA_CONNUE, estVideo, lireDejaLa, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION, type DejaLa } from "@/lib/collectif/depot";
+import { compterLot, type CompteLot } from "@/lib/collectif/depotParticipant";
 import { lienMort } from "@/lib/collectif/liens";
 import { cleDuFichier } from "@/lib/collectif/cleDepot";
 import { ERREUR_ACCORD } from "@/lib/collectif/accord";
@@ -142,6 +162,10 @@ type Item = {
   progres: number;
   /** La vignette gardée pour l'écran (`apercus`), une adresse `blob:` ; `null` sinon. */
   apercu: string | null;
+  /** Le lot (l'envoi) auquel elle appartient : celui de son ajout, ou de sa reprise. */
+  lot: number;
+  /** « Déjà là » : où elle était, tel que le serveur l'a dit ; `null` sinon. */
+  deja: DejaLa | null;
 };
 
 /** Une photo de l'envoi en cours, telle que « Mes photos » la montre (planche 7B). */
@@ -186,6 +210,10 @@ export type Vue = {
   place?: number | null;
   /** Quand `place` a été dite (Date.now), pour la comparer à une autre source. */
   placeLe?: number;
+  /** Le DERNIER envoi (ou celui en cours) : ce qu'il a fait, lui seul. */
+  lot: CompteLot;
+  /** Le lien ne mène plus nulle part (404) : la page dit « Ce lien ne fonctionne plus ». */
+  lienMort: boolean;
 };
 
 export type Configuration = {
@@ -324,6 +352,10 @@ export class MoteurDepot {
   private accord: string | null = null;
   private place: number | null | undefined = undefined;
   private placeLe = 0;
+  /** Le numéro du lot en cours (0 : rien encore) et ses fichiers choisis deux fois. */
+  private lot = 0;
+  private deuxFoisLot = 0;
+  private mort = false;
   private progresProgramme = false;
   private cacheApercus: { version: number; liste: ApercuEnvoi[] } | null = null;
 
@@ -415,6 +447,8 @@ export class MoteurDepot {
       videos: this.videos,
       premiereVideo: this.premiereVideo,
       dejaAjoutes: this.dejaAjoutes,
+      lienMort: this.mort,
+      lot: compterLot(this.items, this.lot, this.deuxFoisLot),
       auCoffre,
       place: this.place,
       placeLe: this.placeLe,
@@ -549,6 +583,8 @@ export class MoteurDepot {
   ajouter(fichiers: Iterable<File>): void {
     if (this.ferme) return;
     const maintenant = Date.now();
+    /* Rien ne part : un nouvel envoi commence (son merci, ses « déjà là ») ; sinon, ces photos s'ajoutent à celui en cours. */
+    this.nouveauLotSiLibre();
     for (const f of fichiers) {
       const mime = resoudreMime(f.name, f.type);
       if (!mime) {
@@ -561,6 +597,9 @@ export class MoteurDepot {
       }
       const cle = cleDuFichier(this.sel, f, maintenant);
       const connu = this.parCle.get(cle);
+      /* Arrivée ou déjà là par un envoi PRÉCÉDENT de cette page : elle ne repart pas, et le
+         nouvel envoi le dit (une case « déjà là » de plus, où elle était). */
+      let deja: DejaLa | null = null;
       if (connu) {
         /* Re-choisie : refusée (plafond relevé depuis ?) ou en erreur, elle repart ;
            en route ou arrivée, elle est comptée et ne repart pas. */
@@ -569,22 +608,36 @@ export class MoteurDepot {
           connu.deposant = this.deposant;
           connu.provenance = this.provenance;
           connu.accord = this.accord;
+          connu.lot = this.lot;
           this.remettre(connu);
-        } else this.dejaAjoutes++;
-        continue;
+          continue;
+        }
+        if ((connu.etat === "confirme" || connu.etat === "deja") && connu.lot !== this.lot) {
+          const avant = connu.etat === "deja" ? connu.deja : null;
+          /* Revenue de la corbeille par un envoi précédent : elle est maintenant dans son album. */
+          deja = !avant
+            ? { ou: "album", lien: null, ici: true }
+            : avant.ou === "restauree"
+              ? { ou: avant.ici ? "album" : "lien", lien: avant.lien, ici: avant.ici }
+              : avant;
+        } else {
+          this.dejaAjoutes++;
+          this.deuxFoisLot++;
+          continue;
+        }
       }
       this.items.push({
         n: this.compteur++,
         fichier: f,
         cle,
         mime,
-        etat: "neuf",
+        etat: deja ? "deja" : "neuf",
         essais: 0,
         essaisReseau: 0,
         charge: null,
         vignette: null,
         typeEnvoye: mime,
-        photoId: null,
+        photoId: deja ? (connu?.photoId ?? null) : null,
         url: null,
         urlVignette: null,
         signeLe: 0,
@@ -592,14 +645,36 @@ export class MoteurDepot {
         raison: null,
         progres: 0,
         apercu: null,
+        lot: this.lot,
+        deja,
         deposant: this.deposant,
         provenance: this.provenance,
         accord: this.accord,
       });
-      this.parCle.set(cle, this.items[this.items.length - 1]);
+      /* Une case « déjà là » n'est pas une photo à suivre : la clé reste à la première. */
+      if (!deja) this.parCle.set(cle, this.items[this.items.length - 1]);
     }
     this.notifier();
     this.pompe();
+  }
+
+  /** Un nouveau lot, si rien ne part (un envoi fini, en erreur ou refusé, est fini). */
+  private nouveauLotSiLibre(): void {
+    if (this.occupe()) return;
+    this.lot++;
+    this.deuxFoisLot = 0;
+  }
+
+  /**
+   * Des photos de cette page supprimées d'ici (« Mes photos ») : leur clé est
+   * oubliée, pour que les choisir de nouveau redemande au serveur, qui les
+   * restaure (au lieu de « déjà là » d'après la mémoire de la page).
+   */
+  oublier(photoIds: Iterable<string>): void {
+    const ids = new Set(photoIds);
+    for (const it of this.items) {
+      if (it.photoId && ids.has(it.photoId) && this.parCle.get(it.cle) === it) this.parCle.delete(it.cle);
+    }
   }
 
   private remettre(it: Item): void {
@@ -613,10 +688,14 @@ export class MoteurDepot {
     it.urlVignette = null;
   }
 
-  /** Reprendre les photos en erreur (un bouton « Réessayer »). */
+  /** Reprendre les photos en erreur (un bouton « Réessayer ») : elles rejoignent l'envoi en cours, ou en font un nouveau. */
   reessayer(): void {
+    this.nouveauLotSiLibre();
     for (const it of this.items) {
-      if (it.etat === "erreur") this.remettre(it);
+      if (it.etat === "erreur") {
+        it.lot = this.lot;
+        this.remettre(it);
+      }
     }
     this.horsLigne = false;
     this.echecsReseau = 0;
@@ -647,8 +726,15 @@ export class MoteurDepot {
     try {
       const { status, json } = await poster("/api/collectif/depot/presign", {
         token: this.cfg.token,
+        /* Le lien de la page : le serveur dit si une photo déjà là l'est dans CET album ou par un autre lien. */
+        p: this.cfg.p ?? null,
         connues: lot.map((i) => i.cle),
       });
+      if (status === 404) {
+        /* Un lien régénéré ou supprimé pendant que la page était ouverte. */
+        this.mourir();
+        return;
+      }
       if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {
         /* Pas encore ouvert (planche 9B) : le lot est refusé avec la phrase du serveur, le
            dépôt n'est pas « fermé » pour autant (il ouvrira). */
@@ -663,7 +749,20 @@ export class MoteurDepot {
       /* Une réponse autre que 200 ne dit rien de ce qui est arrivé : la déclaration
          reconnaîtra les déjà-là, lot par lot. */
       const deja = new Set(status === 200 && Array.isArray(json.confirmees) ? (json.confirmees as string[]) : []);
-      for (const it of lot) it.etat = deja.has(it.cle) ? "deja" : "attente";
+      /* Où chacune était (cet album, un autre lien, la corbeille) ; et celles que leur auteur avait
+         supprimées : elles partent tout de suite en déclaration, SANS réduction (rien ne sera envoyé
+         pour elles, le serveur décide de les restaurer). */
+      const details = new Map<string, DejaLa>();
+      if (status === 200 && Array.isArray(json.details)) {
+        for (const d of json.details as Record<string, unknown>[]) if (d && typeof d.cle === "string") details.set(d.cle, lireDejaLa(d));
+      }
+      const aRevoir = new Set(status === 200 && Array.isArray(json.aRevoir) ? (json.aRevoir as string[]) : []);
+      for (const it of lot) {
+        if (deja.has(it.cle)) {
+          it.etat = "deja";
+          it.deja = details.get(it.cle) ?? DEJA_CONNUE;
+        } else it.etat = aRevoir.has(it.cle) ? "pret" : "attente";
+      }
       if (status === 200) this.horsLigne = false;
     } catch {
       /* Hors ligne : on n'arrête rien, la déclaration reconnaîtra les déjà-là. */
@@ -783,7 +882,7 @@ export class MoteurDepot {
       }
       if (status === 404) {
         /* Un lien supprimé, une édition archivée : aucun réseau n'y changera rien. */
-        this.fermer(lienMort(Boolean(this.cfg.tu)).phrase);
+        this.mourir();
         return;
       }
       if (status >= 400 && status < 500) {
@@ -805,9 +904,10 @@ export class MoteurDepot {
         if (!r) {
           this.finir(it, "refuse", "Fichier refusé (format ou taille).");
         } else if (r.deja || r.double) {
-          /* `corbeille: true` (20261023) : supprimée, elle reste « déjà là » ; seuls le
-             responsable et l'atelier la restaurent. */
+          /* Où elle était (`ou`, `lien`) ; `restauree` : supprimée par son auteur, elle revient
+             (21/10) ; retirée par l'organisateur, elle reste à la corbeille. */
           if (typeof r.photoId === "string") it.photoId = r.photoId;
+          it.deja = r.double ? DEJA_CONNUE : lireDejaLa(r);
           this.finir(it, "deja", null);
         } else if (typeof r.erreur === "string") {
           const raison = typeof r.message === "string" ? r.message : "Refusée.";
@@ -971,7 +1071,7 @@ export class MoteurDepot {
     try {
       const { status, json } = await poster("/api/collectif/depot/complete", { token: this.cfg.token, photoIds: lot.map((i) => i.photoId) }, DELAI_CONFIRMATION_MS);
       if (status === 404) {
-        this.fermer(lienMort(Boolean(this.cfg.tu)).phrase);
+        this.mourir();
         return;
       }
       if (status !== 200) {
@@ -1020,6 +1120,18 @@ export class MoteurDepot {
     it.raison = raison;
     it.charge = null;
     it.vignette = null;
+  }
+
+  /**
+   * Le lien ne mène plus nulle part (404 : régénéré par l'atelier, supprimé par
+   * le responsable, édition archivée) : l'envoi se ferme avec la phrase de la
+   * page « Ce lien ne fonctionne plus », et la vue le dit (`lienMort`) pour
+   * que la page entière bascule.
+   */
+  private mourir(): void {
+    this.mort = true;
+    this.fermer(lienMort(Boolean(this.cfg.tu)).phrase);
+    this.notifier();
   }
 
   /**

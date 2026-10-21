@@ -132,7 +132,7 @@ export function CollecteTerminee({
                   ? "Ta photo est bien arrivée"
                   : "Votre photo est bien arrivée"}
             </b>
-            <span>{[recu.prenom, tete.lien].filter(Boolean).join(" · ") || "Depuis ce téléphone"}</span>
+            <span>{[recu.prenom, tete.lien].filter(Boolean).join(" · ") || "Depuis cet appareil"}</span>
           </span>
         </div>
       ) : null}

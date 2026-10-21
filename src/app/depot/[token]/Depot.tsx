@@ -40,13 +40,21 @@
    rien ne s'y supprime.
    ⚠️ Aucune promesse que l'écran ne tient pas : l'envoi ne continue pas page
    fermée (iOS surtout), on le dit.
+
+   Retours de Mathias du 21/10 : la carte « Content de vous revoir » dit ce qui
+   est sur CE lien et ce qui reste (`phraseRetour` : « 2 photos déjà sur
+   « Bateau 1 ». Vous pouvez encore en envoyer 3. »), plus le total de
+   l'édition ; « cet appareil » partout (un ordinateur n'est pas un
+   téléphone) ; un 404 de la présentation (le lien régénéré ou supprimé
+   pendant que la page est ouverte) fait basculer toute la page sur « Ce lien
+   ne fonctionne plus » (`CarteLienMort`).
    ══════════════════════════════════════════════════════════════════════════ */
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { texteAccord, VERSION_ACCORD } from "@/lib/collectif/accord";
 import { TAILLE_PAGE_ALBUM } from "@/lib/collectif/album";
 import { PHOTOS_SEULEMENT } from "@/lib/collectif/depot";
-import { cleDeVisite, decouperAccord, initiales } from "@/lib/collectif/depotParticipant";
+import { cleDeVisite, decouperAccord, initiales, phraseRetour } from "@/lib/collectif/depotParticipant";
 import { deNom } from "@/lib/collectif/espace";
 import { NOM_MAX, nettoyerMorceau, nomComplet, premierMot } from "@/lib/collectif/participant";
 import { EMAIL_MAX, lireIdentite, normaliserEmail } from "@/lib/collectif/personnes";
@@ -55,6 +63,7 @@ import Album, { type Onglet, type Tete } from "./Album";
 import { lirePersonne, oublier, presenter } from "./appels";
 import { TeteCarte } from "./Etats";
 import { IcoAppareil, IcoSansVideo, IcoTelephone } from "./icones";
+import { CarteLienMort } from "./LienMort";
 
 type Props = {
   token: string;
@@ -67,8 +76,8 @@ type Props = {
   cloture: string;
   /** La migration 20261023 est-elle là (adresse, « Ce n'est pas toi ? », supprimer) ? */
   personnes: boolean;
-  /** La personne pour qui CE téléphone parle déjà (lue au serveur) : son prénom seulement. */
-  moi: { prenom: string; photos: number; ceTelephone: number; accordAJour: boolean } | null;
+  /** La personne pour qui CE téléphone parle déjà (lue au serveur) : son prénom seulement ; `surCeLien` : ses photos sur CE lien. */
+  moi: { prenom: string; photos: number; ceTelephone: number; surCeLien: number; accordAJour: boolean } | null;
   /** La place qui reste (serveur) : nombre, `null` sans limite, `undefined` inconnue. */
   place: number | null | undefined;
   /** Sans la migration : le nom que CE téléphone a déjà donné dans l'édition, ou `null`. */
@@ -116,7 +125,8 @@ export default function Depot(props: Props) {
 
   /* ── la personne ── */
   const [identite, setIdentite] = useState<Qui | null>(props.moi ? { prenom: props.moi.prenom, nom: null } : null);
-  const [reconnu, setReconnu] = useState<{ par: "telephone" | "email"; photos: number } | null>(props.moi ? { par: "telephone", photos: props.moi.photos } : null);
+  /* `surCeLien` : ses photos sur CE lien (21/10 : la carte disait le total de l'édition, « 11 photos » sur un lien à 5). */
+  const [reconnu, setReconnu] = useState<{ par: "telephone" | "email"; surCeLien: number } | null>(props.moi ? { par: "telephone", surCeLien: props.moi.surCeLien } : null);
   const [oublie, setOublie] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const emailCourant = useRef("");
@@ -126,6 +136,8 @@ export default function Depot(props: Props) {
   const [nomSaisi, setNomSaisi] = useState("");
   const [place, setPlace] = useState(props.place);
   const [erreur, setErreur] = useState<string | null>(null);
+  /* Le lien est mort (un 404 de la présentation) : toute la page le dit. */
+  const [mort, setMort] = useState(false);
   const occupe = useRef(false);
 
   const accordInitial = Boolean(props.moi?.accordAJour);
@@ -156,11 +168,15 @@ export default function Depot(props: Props) {
         setRepliForce(true);
         return;
       }
+      if (r.status === 404) {
+        setMort(true);
+        return;
+      }
       if (r.status === 200 && r.json.statut === "connu") {
         const lu = lirePersonne(r.json, null);
         if (lu) {
           setIdentite({ prenom: lu.prenom, nom: null });
-          setReconnu({ par: "email", photos: lu.photos });
+          setReconnu({ par: "email", surCeLien: lu.surCeLien });
           setPlace(lu.place);
           setEtatEmail({ etat: "connu", message: null });
           if (lu.accordAJour) {
@@ -208,6 +224,10 @@ export default function Depot(props: Props) {
       setRepliForce(true);
       return;
     }
+    if (r.status === 404) {
+      setMort(true);
+      return;
+    }
     if (r.status !== 200) {
       setErreur(v("Connexion interrompue : réessayez.", "Connexion interrompue : réessaie."));
       return;
@@ -244,6 +264,10 @@ export default function Depot(props: Props) {
         /* La migration manque : la règle d'avant, le nom tapé part avec les photos. */
         enRepli = true;
         setRepliForce(true);
+      } else if (r.status === 404) {
+        /* Le lien a été régénéré ou supprimé pendant que la page était ouverte. */
+        setMort(true);
+        return;
       } else if ((r.status === 200 || r.status === 201) && (r.json.statut === "cree" || r.json.statut === "connu")) {
         const lu = lirePersonne(r.json, nettoyerMorceau(nomSaisi));
         if (!lu) {
@@ -301,6 +325,9 @@ export default function Depot(props: Props) {
     />
   );
 
+  /* Un 404 : le lien a été régénéré ou supprimé pendant que la page était ouverte. */
+  if (mort) return <CarteLienMort />;
+
   /* ── l'album (planches 7 et 8A) ── */
   if (mode.ecran === "album") {
     const quiAlbum: Qui | null = repli
@@ -322,7 +349,7 @@ export default function Depot(props: Props) {
           ajouter={() => fichier.current?.click()}
           place={place}
           ongletInitial={mode.onglet}
-          accueil={mode.accueil && identite ? { prenom: identite.prenom, photos: props.moi?.photos ?? 0 } : null}
+          accueil={mode.accueil && identite ? { prenom: identite.prenom, surCeLien: props.moi?.surCeLien ?? 0 } : null}
         />
       </>
     );
@@ -345,7 +372,7 @@ export default function Depot(props: Props) {
           </p>
           {props.dejaArrivees ? (
             <p className="ec-dp-note">
-              {props.dejaArrivees} photo{props.dejaArrivees > 1 ? "s" : ""} déjà reçue{props.dejaArrivees > 1 ? "s" : ""} depuis ce téléphone.
+              {props.dejaArrivees} photo{props.dejaArrivees > 1 ? "s" : ""} déjà reçue{props.dejaArrivees > 1 ? "s" : ""} depuis cet appareil.
             </p>
           ) : null}
         </div>
@@ -382,10 +409,10 @@ export default function Depot(props: Props) {
             <span>
               {oublie ? (
                 <>
-                  Ce téléphone n&apos;envoie plus au nom de <b>{oublie}</b>. Ses photos restent à son nom.
+                  Cet appareil n&apos;envoie plus au nom de <b>{oublie}</b>. Ses photos restent à son nom.
                 </>
               ) : (
-                "Ce téléphone n'envoie plus au nom de personne. Les photos déjà envoyées restent à leur nom."
+                "Cet appareil n'envoie plus au nom de personne. Les photos déjà envoyées restent à leur nom."
               )}
             </span>
           </p>
@@ -427,8 +454,8 @@ export default function Depot(props: Props) {
                     <span className="ec-dp-note--refus">{etatEmail.message}</span>
                   ) : (
                     v(
-                      "Elle sert seulement à vous reconnaître sur un autre téléphone ou un autre lien. Nous ne vous écrirons pas pour autre chose.",
-                      "Elle sert seulement à te reconnaître sur un autre téléphone ou un autre lien. Nous ne t'écrirons pas pour autre chose."
+                      "Elle sert seulement à vous reconnaître sur un autre appareil ou un autre lien. Nous ne vous écrirons pas pour autre chose.",
+                      "Elle sert seulement à te reconnaître sur un autre appareil ou un autre lien. Nous ne t'écrirons pas pour autre chose."
                     )
                   )}
                 </p>
@@ -441,9 +468,9 @@ export default function Depot(props: Props) {
                     </span>
                     <span>
                       <b>{v(`Content de vous revoir, ${identite.prenom}`, `Content de te revoir, ${identite.prenom}`)}</b>
+                      {/* Ce qui est sur CE lien et ce qui reste (21/10), plus le total de l'édition. */}
                       <span>
-                        {reconnu.photos ? `${reconnu.photos} photo${reconnu.photos > 1 ? "s" : ""} déjà arrivée${reconnu.photos > 1 ? "s" : ""}. ` : ""}
-                        {v(`Vous envoyez en tant que ${identite.prenom}.`, `Tu envoies en tant que ${identite.prenom}.`)}
+                        {[phraseRetour(reconnu.surCeLien, place, lien, tu), v(`Vous envoyez en tant que ${identite.prenom}.`, `Tu envoies en tant que ${identite.prenom}.`)].filter(Boolean).join(" ")}
                       </span>
                     </span>
                   </div>

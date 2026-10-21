@@ -830,7 +830,8 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
 - **`depot/presign` ne lit AUCUNE adresse** : la personne d'une photo est celle de CE téléphone
   (`participantDeLAppareil`). Remettre `email` dans presign rouvre un annuaire sans frein.
 - **Une photo de la corbeille ne compte plus dans la place**, qui que soit celui qui l'a supprimée
-  (`compteDansLaPlace`) ; la même photo rechoisie reste « déjà là » par sa clé.
+  (`compteDansLaPlace`) ; la même photo rechoisie ne repart jamais (sa clé) : « déjà là », ou
+  revenue si son auteur l'avait supprimée (21/10, voir plus bas).
 - **Les freins du participant** (`freins.ts`) : par adresse du CLIENT et par LIEN (une classe
   derrière le Wi-Fi du campus passe), plus un frein large sur l'adresse que Vercel voit ;
   `presenter` seul compte dans `depot/participant`. Une `Map` par instance : un frein seulement.
@@ -873,8 +874,8 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   320 px, BORNÉES (`TAILLE_PAGE_ALBUM`), une option du moteur que le responsable ne passe pas.
 - **L'album et « Mes photos »** (`Album.tsx`) lisent `depot/album` ; supprimer passe par
   `depot/supprimer` après la feuille de la planche 7D, la place libérée se dit tout de suite ; une
-  vignette `null` est « En préparation ». « Déjà là » ne se montre pas dans l'envoi : la liste du
-  serveur la montre si elle est à moi.
+  vignette `null` est « En préparation ». « Déjà là » ne se montre pas dans la grille de l'envoi :
+  la liste du serveur la montre si elle est à moi ; la barre du bas dit où elle était (21/10).
 - **L'ordre des états** (page serveur) : 9C (collecte close : la date, ce qui est arrivé de ce
   téléphone, l'album en lecture), 9B (`phrasesPasEncoreOuvert`), le plafond non réglé (T-195),
   puis le dépôt ; 9A est `LienMort.tsx`.
@@ -882,6 +883,29 @@ Le contrat des écrans : `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md`
   rien écrire (la personne du téléphone, ou une sonde GET `limit(0)`) ; la page garde la formule
   d'avant (prénom et nom figés, `nomConnu`), l'album se lit, rien ne se supprime. Un 503 à la
   présentation y ramène aussi.
+
+## Le dépôt du 21/10 : le dernier envoi, les « déjà là », le lien mort (contrat section 10)
+
+- **Le merci compte le DERNIER envoi** (`vue.lot` du moteur : un lot commence au choix des photos
+  quand rien ne part ; « Ajouter d'autres photos » pendant l'envoi s'y ajoute) et seulement ce qui
+  est ARRIVÉ (`compterLot`, `bilanDuLot`, `depotParticipant.ts`). ⚠️ Ne jamais remettre
+  `arrivees + dejaLa` dans un merci ou une barre : le 21/10, « 8 photos reçues » sur un lien à 5.
+- **Un « déjà là » dit OÙ** (`origineDeja`, `depot.ts`) : cet album, un autre lien (son libellé),
+  l'édition, la corbeille. Sans risque : la clé porte le sel de CET appareil. Les phrases :
+  `phrasesDuLot` (au registre ; `pour: "responsable"`, seule la corbeille).
+- **Re-choisir une photo qu'on a supprimée la RESTAURE** (`restaurableParChoix`) : `supprimee_par =
+  'auteur'`, même appareil ou même personne, participant seulement ; elle revient dans son album
+  d'origine et consomme la place de SON lien (sur ce lien : tranchée avec les nouvelles dans
+  `planDeclaration` ; sur un autre : `placeDuParticipant` relue par la route). Écrite APRÈS
+  l'insertion (`restaurer(…, { par: "auteur" })`, conditionnée), journal `photos_restaurees`
+  `par: "auteur"`. Retirée par le responsable ou l'atelier : elle ne revient jamais par ce chemin.
+- **La carte « Content de vous revoir »** dit CE lien et ce qui reste (`phraseRetour`, `surCeLien`
+  de `comptesDeLaPersonne`), plus le total de l'édition. « Mes photos » : « cet appareil », et
+  `moi.autresAppareils` (un nombre) pour celles de la personne envoyées d'ailleurs.
+- **Un lien mort pendant que la page est ouverte** : tout 404 du dépôt bascule la page sur
+  `CarteLienMort` (`vue.lienMort` du moteur, `mourir()`) ; « Tout l'album » se relit toutes les
+  45 s onglet visible (`SONDAGE_ALBUM_MS`, `useSondage`) sans faire sauter la grille pendant un
+  envoi ou pendant qu'on coche.
 
 ## La fin de conservation : 30 jours après « Marquer livrée » (T-159, décisions du 20/10)
 

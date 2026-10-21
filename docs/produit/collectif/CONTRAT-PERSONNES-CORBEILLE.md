@@ -60,8 +60,9 @@ en clair au journal.
 - Une photo à la corbeille **libère sa place, qui que soit celui qui l'a supprimée** (S4 de l'audit,
   qui remplace la règle du lot w1 « le responsable la garde ») : l'adresse n'étant pas vérifiée, un
   farceur qui envoie sous l'adresse de quelqu'un épuisait sa place, et le nettoyage du responsable
-  ne la lui rendait pas. La même photo rechoisie reste « déjà là » par sa clé : elle ne se renvoie
-  pas en boucle.
+  ne la lui rendait pas. La même photo rechoisie ne se renvoie jamais (sa clé) : retirée par le
+  responsable ou l'atelier, elle reste « déjà là » ; supprimée par son AUTEUR, elle revient et
+  reprend sa place (21/10, section 10).
 - Le **total** de l'édition ne compte plus aucune photo de la corbeille.
 
 ### L'album du lien (décision 3)
@@ -109,9 +110,11 @@ en clair au journal.
   (`peutSupprimerSaPhoto`). ⚠️ **Décision de sécurité de Mathias** : l'adresse n'étant pas
   vérifiée, qui tape celle de quelqu'un ne doit pas pouvoir effacer ses photos ; le téléphone, lui,
   ne se tape pas.
-- Une photo à la corbeille **redéclarée** (le même fichier rechoisi) reste « déjà là »
-  (`corbeille: true` dans la réponse de `presign`) : ni dupliquée, ni ressuscitée. Seuls le
-  responsable et l'atelier la restaurent.
+- Une photo à la corbeille **redéclarée** (le même fichier rechoisi) n'est jamais dupliquée
+  (`corbeille: true` dans la réponse de `presign`). Mise là par le responsable ou l'atelier, elle
+  reste « déjà là » (`ou: "retiree"`) : seuls eux la restaurent. **Mise là par son auteur, choisie
+  de nouveau depuis le même appareil ou par la même personne, elle REVIENT** (décision de Mathias du
+  21/10, section 10).
 - Chaque mise à la corbeille, restauration ou effacement **vide le cache des doublons** de
   l'édition (`collectif_doublons`) : il se recalcule au prochain affichage.
 
@@ -228,6 +231,9 @@ Erreurs : 400 `corps_illisible`, `email_invalide`, `nom_incomplet` (un seul des 
 `message` au registre), `action_inconnue` ; 409 `depot_pas_ouvert` (`ouverture_le`) ou
 `depot_ferme` pour une CRÉATION hors ouverture (une adresse connue se retrouve toujours) ;
 503 `migration_personnes_absente` ; 500 `ecriture_impossible` / `lecture_impossible`.
+
+`surCeLien` (21/10) : ses photos arrivées par CE lien (le `p` de la présentation), hors corbeille, de
+sa personne (sinon de ce téléphone) ; la carte « Content de vous revoir » dit celui-là, plus `photos`.
 
 **`{ token, action: "qui" }`** : pour qui ce téléphone parle. 200 `{ statut: "aucun" }` (pas de
 cookie, pas de personne, ou migration absente) ou `{ statut: "connu", …personne }`. N'écrit rien.
@@ -535,3 +541,28 @@ photos (S1), et presign n'en lit plus aucune (S2).
 (`collectif_participants.email`) n'est jamais purgée. Cela dépend de la politique de
 confidentialité que Mathias n'a pas encore tranchée (`PROJET-CONFIDENTIALITE-B2B.md`, T-158,
 T-159) : rien n'est effacé ni anonymisé d'ici avant sa décision.
+
+---
+
+## 10. Le dépôt du 21/10 : le dernier envoi, les « déjà là » par cas, le lien mort
+
+Retours de Mathias sur l'édition d'essai « Recette 1 » (lien « Bateau 1 » à 5 photos, « Bateau 2 » à
+30, le même iPhone sur les deux, des suppressions, puis les mêmes photos choisies de nouveau). Pas de
+migration : tout se lit dans les colonnes de 20261013 et 20261023. Harnais : section « 21/10 » de
+`scripts/verif-collectif.ts` (purs, le vrai moteur contre un faux serveur, la fausse base, le code).
+
+| Constat | Ce qui change | Forme des réponses |
+|---|---|---|
+| « Merci Mathias, 8 photos reçues » sur un lien à 5, rien de parti | Le merci compte le DERNIER envoi (`vue.lot` du moteur, `compterLot`, `bilanDuLot`) et seulement ce qui est ARRIVÉ ; la barre ne compte plus les « déjà là » (`progression(vue.lot)`) | aucune |
+| les « déjà là » invisibles | Chaque « déjà là » dit OÙ (`origineDeja`, `depot.ts`) ; la page le dit par cas (`phrasesDuLot`) | `presign` : `ou` (`album`, `lien` + `lien` : le libellé, `null` pour le lien général, `edition`, `retiree`, `supprimee`, `restauree` + `ici`) ; `connues` : `{ confirmees, aRevoir, details: [{ cle, ou, lien }] }`, et le corps porte `p` |
+| re-choisir une photo supprimée | Supprimée par son AUTEUR (`supprimee_par = 'auteur'`), choisie de nouveau par un participant depuis le même appareil ou par la même personne (`restaurableParChoix`) : elle REVIENT dans son album d'origine, compte de nouveau dans le plafond de SON lien ; sans place, elle reste à la corbeille et la phrase du plafond le dit. Écrite APRÈS l'insertion du lot, conditionnée à `supprimee_par = 'auteur'`, journal `photos_restaurees` avec `par: "auteur"` | `presign` : `{ cle, deja: true, photoId, restauree: true, ou: "restauree", ici, lien }` ; sans place `{ cle, erreur: "plafond_…", message, corbeille: true }` |
+| « Content de vous revoir, 11 photos déjà arrivées » (toute l'édition) | La carte et l'annonce de retour disent CE lien et ce qui reste (`phraseRetour`) | `depot/participant` : `surCeLien` |
+| « Mes photos · 1 », « Envoyées depuis ce téléphone » sur un ordinateur | « cet appareil » partout ; les photos à son nom sur ce lien envoyées d'un autre appareil se COMPTENT (`phraseAutresAppareils`), sans se montrer ni se supprimer | `depot/album` : `moi.autresAppareils` (page 0) et `total` (« miennes », page 0) ; `moi.photos` et `moi.ceTelephone` restent ceux de toute l'édition |
+| le lien régénéré « fonctionne encore » dans l'onglet ouvert | « Tout l'album » relit sa page 0 toutes les 45 s onglet visible et au retour sur l'onglet (au plus toutes les 20 s) ; un 404 d'`album`, `presign` (déclaration ou vérification), `complete`, `supprimer` ou `participant` fait basculer TOUTE la page sur `CarteLienMort` (le texte de `lienMort()`) | aucune (le 404 existait) |
+
+Le dépôt du responsable (`FenetreEnvoi`, `ZoneDepot`, la pastille) lit le même lot : « arrivées »
+ne compte plus les « déjà là », qui ont leur case ; une photo à la corbeille a sa phrase (« La
+corbeille de la page Photos la restaure »). Rien ne s'y restaure tout seul.
+
+⚠️ Ce que la règle ne fait pas : une photo choisie d'un AUTRE appareil a une autre clé (le sel est
+celui de l'appareil) ; elle part comme une nouvelle, et le repérage des doublons le dira.

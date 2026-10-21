@@ -10,9 +10,14 @@
      était DÉJÀ LÀ (et pourquoi c'est sauté), ce qui est à reprendre.
    « Réduire et continuer » ferme sans rien arrêter ; la pastille de l'en-tête
    rouvre. « Ajouter d'autres photos » repasse au choix pendant que l'envoi
-   continue : le nouveau lot garde SON dossier (moteur.ts). */
+   continue : le nouveau lot garde SON dossier (moteur.ts).
+
+   21/10 (la même règle que la page du participant) : la fenêtre dit le DERNIER
+   envoi (`vue.lot`), et « arrivées » ne compte plus les déjà-là ; elles ont
+   leur case, et une photo à la corbeille sa phrase (`phrasesDuLot`). */
 
 import { useEffect, useRef, useState } from "react";
+import { bilanDuLot, phrasesDuLot, progression } from "@/lib/collectif/depotParticipant";
 import { DOSSIER_RESPONSABLE, lireNomDossier, SEPARATEUR, type Arbre } from "@/lib/collectif/dossiers";
 import Fenetre from "../Fenetre";
 import type { OuvertureEnvoi } from "./DepotContexte";
@@ -188,14 +193,18 @@ export default function FenetreEnvoi({
     );
   }
 
-  const part = vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0;
+  /* Le dernier envoi seulement ; ce qui part VRAIMENT (les déjà-là n'y entrent pas). */
+  const lot = vue.lot;
+  const prog = progression(lot);
+  const bilan = bilanDuLot(lot);
   const fini = vue.enCours === 0;
+  const part = prog.total ? prog.part : fini ? 100 : 0;
   return (
     <Fenetre titre={`Vers « ${chemin} »`} sous={fini ? "Envoi terminé" : "Pendant l'envoi"} onFermer={fermer} large>
       <div className="ec-envoi" role="status" aria-live="polite">
         <div className="ec-envoi-compte">
-          <strong className="ec-envoi-n">{(vue.arrivees + vue.dejaLa).toLocaleString("fr-FR")}</strong>
-          <span className="ec-envoi-sur">sur {vue.total.toLocaleString("fr-FR")} arrivées</span>
+          <strong className="ec-envoi-n">{prog.envoyees.toLocaleString("fr-FR")}</strong>
+          <span className="ec-envoi-sur">{prog.total ? `sur ${prog.total.toLocaleString("fr-FR")} arrivées` : "aucune photo nouvelle"}</span>
         </div>
         <div className="ec-envoi-barre" aria-hidden="true">
           <div style={{ width: `${part}%` }} />
@@ -211,26 +220,32 @@ export default function FenetreEnvoi({
 
       <div className="ec-envoi-cases">
         <span className="ec-envoi-case">
-          <strong>{vue.arrivees.toLocaleString("fr-FR")}</strong>
+          <strong>{lot.arrivees.toLocaleString("fr-FR")}</strong>
           <span>arrivées</span>
         </span>
         <span className="ec-envoi-case">
-          <strong>{(vue.dejaLa + vue.dejaAjoutes).toLocaleString("fr-FR")}</strong>
+          {/* Un fichier choisi deux fois est compté ici, jamais sauté en silence. */}
+          <strong>{(bilan.dejaLa + lot.deuxFois).toLocaleString("fr-FR")}</strong>
           <span>déjà là, sautées</span>
         </span>
         <span className="ec-envoi-case">
           <strong>{vue.erreurs.toLocaleString("fr-FR")}</strong>
           <span>à reprendre</span>
         </span>
-        {vue.refusees ? (
+        {lot.refusees ? (
           <span className="ec-envoi-case">
-            <strong>{vue.refusees.toLocaleString("fr-FR")}</strong>
+            <strong>{lot.refusees.toLocaleString("fr-FR")}</strong>
             <span>refusées</span>
           </span>
         ) : null}
       </div>
 
-      {vue.dejaLa || vue.dejaAjoutes ? (
+      {phrasesDuLot(bilan, { tu, pour: "responsable" }).map((t) => (
+        <p key={t} className="ec-note">
+          {t}
+        </p>
+      ))}
+      {bilan.dejaLa || lot.deuxFois ? (
         <p className="ec-note">
           {v(
             "Une photo déjà envoyée n'est jamais envoyée deux fois : c'est ce qui permet de reprendre un envoi interrompu en choisissant de nouveau le même dossier. Pour ajouter de nouvelles photos, choisissez simplement les nouvelles.",

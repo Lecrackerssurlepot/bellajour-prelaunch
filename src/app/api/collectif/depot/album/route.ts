@@ -58,6 +58,13 @@ import { phrasePhotosEffacees } from "@/lib/collectif/retention";
  *
  * Sans la migration 20261023 : aucune photo n'est à la corbeille, aucune
  * personne n'est connue (le filtre se rejoue sans elle).
+ *
+ * Retours du 21/10 : `moi.photos` et `moi.ceTelephone` comptent TOUTE
+ * l'édition (tous liens) ; ce qui sert à « Mes photos » se compte PAR LIEN :
+ * `total` (page 0 de « miennes ») et `moi.autresAppareils` (page 0 : mes photos
+ * de ce lien dans « Tout l'album », envoyées d'un autre appareil, un nombre).
+ * « Tout l'album » se relit toutes les 45 s (page 0) : un lien mort y répond
+ * 404, et la page bascule sur « Ce lien ne fonctionne plus ».
  */
 
 export const runtime = "nodejs";
@@ -171,7 +178,37 @@ export async function POST(request: Request) {
     return { photos: c.count, personnes: null };
   };
 
-  const [lus, tous] = await Promise.all([
+  /* « Mes photos » au-delà d'une page : combien en tout sur ce lien depuis cet appareil (page 0 seulement, un
+     GET `limit(0)`) ; le compte de la personne (`moi.ceTelephone`) est celui de toute l'édition. */
+  const totalMiennes = async (): Promise<number | null> => {
+    const c = await lireHorsCorbeille((avec) => requete(avec, "id", true).limit(0));
+    if (c.error) console.error("[collectif] « Mes photos » non comptées", c.error.code);
+    return c.error ? null : (c.count ?? null);
+  };
+
+  /* Les photos de MA personne dans « Tout l'album » de ce lien, envoyées d'un AUTRE appareil (21/10) : la
+     même règle que l'album (`filtreAlbum`), ma personne, un autre appareil. Un NOMBRE seulement : « Mes
+     photos » ne montre et ne supprime que celles de cet appareil (l'adresse n'est pas vérifiée). Sans
+     personne connue (ou sans la migration 20261023) : 0. */
+  const autresAppareils = async (): Promise<number | null> => {
+    if (!moi || !appareil) return 0;
+    const personneId = moi.id;
+    const c = await lireHorsCorbeille((avec) => {
+      let q = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", edition.id);
+      for (const f of filtreAlbum(provenanceId)) q = poser(q, f, avec);
+      /* Sans la colonne de la personne, le compte n'a pas de sens : il est lu, puis jeté (0). */
+      if (avec) q = q.eq("participant_id", personneId);
+      /* Le cookie a la forme d'un appareil (22 caractères sûrs, `estAppareil`) : il entre tel quel dans le `or`. */
+      return q.or(`appareil_id.is.null,appareil_id.neq.${appareil}`).limit(0);
+    });
+    if (c.error) {
+      console.error("[collectif] photos d'un autre appareil non comptées", c.error.code);
+      return null;
+    }
+    return c.avec ? (c.count ?? 0) : 0;
+  };
+
+  const [lus, tous, total, autres] = await Promise.all([
     lireHorsCorbeille((avec) =>
       requete(avec, avec ? `${COLONNES}, participant_id` : COLONNES)
         .order("confirmee_le", { ascending: false })
@@ -180,6 +217,8 @@ export async function POST(request: Request) {
         .returns<LigneAlbum[]>()
     ),
     vue === "album" && page === 0 ? comptesAlbum() : Promise.resolve(null),
+    vue === "miennes" && page === 0 ? totalMiennes() : Promise.resolve(null),
+    page === 0 ? autresAppareils() : Promise.resolve(null),
   ]);
   if (lus.error || (tous && "erreur" in tous)) {
     console.error("[collectif] album illisible", lus.error?.code ?? (tous && "erreur" in tous ? tous.erreur : undefined));
@@ -234,12 +273,16 @@ export async function POST(request: Request) {
       lien: { nom: lien?.libelle?.trim() || null },
       ferme: !ouverte,
       album: tous && !("erreur" in tous) ? tous : null,
+      /* « Mes photos », page 0 : combien en tout (au-delà de la première page). */
+      total,
       moi: {
         participant: personne ? { prenom: personne.prenom, nom: personne.nom } : null,
         photos: comptes?.photos ?? null,
         ceTelephone: comptes?.ceTelephone ?? null,
         place: place && !place.illimitee ? place.place : null,
         sansLimite: Boolean(place?.illimitee),
+        /* Page 0 : mes photos de ce lien envoyées d'un autre appareil (un nombre, jamais les photos). */
+        autresAppareils: autres,
       },
     },
     { headers: { "cache-control": "private, no-store" } }

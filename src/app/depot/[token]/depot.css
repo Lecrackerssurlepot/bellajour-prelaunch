@@ -822,6 +822,10 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-al-mes .ec-dp-lien {
   align-self: center;
 }
+/* « 2 autres photos à votre nom, envoyées d'un autre appareil, sont dans Tout l'album » (21/10) : discret, sous la ligne de « Mes photos ». */
+.bj-atelier .ec-dp-al-autres {
+  padding: 8px 4px 0;
+}
 .bj-atelier .ec-dp-al-grille {
   display: flex;
   flex-direction: column;

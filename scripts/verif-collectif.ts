@@ -2195,7 +2195,7 @@ titre("— retours de Mathias du 14/10 —");
   ok("envoi : chaque lot garde SA provenance (un second lot ne relabellise jamais le premier)",
     /provenance: this\.provenance,\n(\s*accord: this\.accord,\n)?\s*\}\);/.test(moteur) && /provenance: premier\.provenance/.test(moteur) && !/provenance: this\.provenance,\n\s*fichiers/.test(moteur));
   ok("envoi : un fichier choisi deux fois est compte et dit, plus jamais saute en silence",
-    /this\.dejaAjoutes\+\+/.test(moteur) && /vue\.dejaLa \+ vue\.dejaAjoutes/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
+    /this\.dejaAjoutes\+\+;\s*this\.deuxFoisLot\+\+;/.test(moteur) && /bilan\.dejaLa \+ lot\.deuxFois/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
   const fenetre = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
   ok("envoi : « déjà là » est explique, « Ajouter d'autres photos » et « Réduire et continuer », le compte en grand",
     /déjà là, sautées/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre) && /ec-envoi-n/.test(fenetre));
@@ -3049,7 +3049,7 @@ titre("— T-192 : le moteur tient une mauvaise connexion —");
     /void this\.confirmerRestes\(\);/.test(moteur) && /private async confirmerRestes\(\)/.test(moteur)
       && !/it\.etat === "envoi"\) this\.finir\(it, "refuse", message\)/.test(moteur));
   ok("un lien supprime (404) ferme l'envoi avec une phrase vraie, jamais « connexion interrompue » a l'infini ; un autre 4xx refuse le lot",
-    /if \(status === 404\) \{\s*\/\*[^*]*\*\/\s*this\.fermer\(/.test(moteur) && /status >= 400 && status < 500/.test(moteur));
+    /if \(status === 404\) \{\s*\/\*[^*]*\*\/\s*this\.mourir\(\);/.test(moteur) && /private mourir\(\): void \{\s*this\.mort = true;\s*this\.fermer\(/.test(moteur) && /status >= 400 && status < 500/.test(moteur));
   ok("chaque requete au serveur a un garde-temps ; une reponse coupee en route se relit comme une coupure",
     /garde\.abort\(\)/.test(moteur) && /signal: garde\.signal/.test(moteur) && /throw new Error\("réponse coupée"\)/.test(moteur));
   ok("l'ecran reste allume pendant l'envoi (Screen Wake Lock), et une page qui a dormi n'avorte pas ses envois",
@@ -3060,8 +3060,8 @@ titre("— T-192 : le moteur tient une mauvaise connexion —");
     /if \(connu\.etat === "refuse" \|\| connu\.etat === "erreur"\)/.test(moteur) && /this\.dejaAjoutes\+\+/.test(moteur));
   const albumMerci = lire("src/app/depot/[token]/Album.tsx");
   const zone = lire("src/app/edition/_composants/depot/ZoneDepot.tsx");
-  ok("« Merci » et « Toutes les photos sont arrivees » seulement sans erreur : une photo qui n'est pas partie se dit",
-    /const termine = vue\.total > 0 && vue\.enCours === 0 && vue\.erreurs === 0;/.test(albumMerci) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} photo/.test(zone));
+  ok("« Merci » et « Toutes les photos sont arrivees » seulement sans erreur : une photo qui n'est pas partie se dit (le merci lit le DERNIER envoi depuis le 21/10)",
+    /const termine = lot\.total > 0 && lot\.enCours === 0 && lot\.erreurs === 0;/.test(albumMerci) && /const lot = vue\.lot;/.test(albumMerci) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} photo/.test(zone));
 }
 
 titre("— T-192 : le nom du participant ne change plus —");
@@ -3452,8 +3452,8 @@ titre("— T-196 : regenerer dit ce qu'il coupe, previent le responsable, et le 
     /export const accesDepot = cache\(\(token: string\) => chargerAcces\(token, 'depot'\)\)/.test(lecture) && /const acces = await accesDepot\(token\)/.test(pageDepot0())
       && /\.eq\('payload->>ancien', empreinte\(token\)\)/.test(lecture) && /\} catch \{\s*return null\s*\}/.test(lecture) && !/chargerAcces\(/.test(pageDepot0()));
   const moteurL = lire("src/app/edition/_composants/depot/moteur.ts");
-  ok("le moteur dit la meme chose si le lien meurt pendant l'envoi (404)",
-    (moteurL.match(/this\.fermer\(lienMort\(Boolean\(this\.cfg\.tu\)\)\.phrase\)/g) ?? []).length === 2 && !/n'est plus actif/.test(moteurL));
+  ok("le moteur dit la meme chose si le lien meurt pendant l'envoi (404 de la verification, de la declaration, de la confirmation : `mourir`, une seule phrase)",
+    (moteurL.match(/this\.fermer\(lienMort\(Boolean\(this\.cfg\.tu\)\)\.phrase\)/g) ?? []).length === 1 && (moteurL.match(/this\.mourir\(\);/g) ?? []).length === 3 && !/n'est plus actif/.test(moteurL));
 }
 function pageDepot0(): string {
   return lire("src/app/depot/[token]/page.tsx");
@@ -5571,7 +5571,7 @@ async function verifPersonnesCorbeille() {
       && !/corps\.email|trouverParEmail|participant_inconnu|normaliserEmail/.test(presign.replace(/\/\*[\s\S]*?\*\//g, "")) && /\.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(presign));
   ok("apres « Ce n'est pas toi ? », le telephone ne reprend pas le nom de la personne d'avant : seules les photos SANS personne disent le nom du telephone",
     /return \(avec \? q\.is\("participant_id", null\) : q\)\.order\("created_at", \{ ascending: false \}\)\.limit\(5\)/.test(lire("src/lib/collectif/participantConnu.ts")));
-  ok("une photo a la corbeille redeclaree : « deja la », ni dupliquee ni ressuscitee",
+  ok("une photo a la corbeille redeclaree SANS le contexte de la page (la regle d'avant) : « deja la », ni dupliquee ni ressuscitee",
     (() => {
       const f = { cle: "a.jpg|1|2", nom: "a.jpg", taille: 1, type: "image/jpeg", tailleVignette: null, ordre: null };
       const d = Dep.planDeclaration([f], new Map([[f.cle, { id: "x", r2_key: "k", confirmee: true, corbeille: true }]]), { illimitee: true });
@@ -6724,8 +6724,8 @@ async function verifDepotParticipant() {
 
   titre("— w2 : se presenter par son adresse (planches 6 et 8) —");
   ok("la phrase sous l'adresse dit a quoi elle sert, et a rien d'autre (tu et vous)",
-    depotW2.includes("Elle sert seulement à te reconnaître sur un autre téléphone ou un autre lien. Nous ne t'écrirons pas pour autre chose.")
-      && depotW2.includes("Elle sert seulement à vous reconnaître sur un autre téléphone ou un autre lien. Nous ne vous écrirons pas pour autre chose."));
+    depotW2.includes("Elle sert seulement à te reconnaître sur un autre appareil ou un autre lien. Nous ne t'écrirons pas pour autre chose.")
+      && depotW2.includes("Elle sert seulement à vous reconnaître sur un autre appareil ou un autre lien. Nous ne vous écrirons pas pour autre chose."));
   ok("l'adresse complete est demandee au serveur SANS nom (rien n'est ecrit pour une adresse inconnue) ; inconnue, prenom ET nom",
     /const r = await presenter\(token, p, emailLu\);/.test(depotW2) && /r\.json\.statut === "connu"/.test(depotW2) && /autoComplete="email"/.test(depotW2) && /type="email"/.test(depotW2));
   const iPresenter = depotW2.indexOf("presenter(token, p, adresse, prenomSaisi, nomSaisi)");
@@ -6738,7 +6738,7 @@ async function verifDepotParticipant() {
     connu?.prenom === "Léa" && connu.nom === null && connu.photos === 24 && connu.accordAJour && connu.place === 36
       && cree?.nom === "Martin" && cree.place === null && !/\.nomAffiche|participant\.nom\b/.test(depotW2 + albumW2 + etatsW2));
   ok("« Ce n'est pas toi ? » (action oublier) : le telephone repart de zero et le dit (8C) ; l'accord est retire du moteur",
-    /const r = await oublier\(token, p\);/.test(depotW2) && /Ce téléphone n&apos;envoie plus au nom de <b>\{oublie\}<\/b>\. Ses photos restent à son nom\./.test(depotW2)
+    /const r = await oublier\(token, p\);/.test(depotW2) && /Cet appareil n&apos;envoie plus au nom de <b>\{oublie\}<\/b>\. Ses photos restent à son nom\./.test(depotW2)
       && /setAccord\(false\);\s*moteur\.definirAccord\(null\);/.test(depotW2));
   ok("l'accord est redemande sur chaque nouveau telephone : il n'est repris que si CE telephone a deja accepte la version d'aujourd'hui",
     /accordAJour: comptes\?\.accord === VERSION_ACCORD,/.test(pageW2) && /if \(accordInitial\) m\.definirAccord\(VERSION_ACCORD\);/.test(depotW2) && /const accordInitial = Boolean\(props\.moi\?\.accordAJour\);/.test(depotW2));
@@ -6752,20 +6752,21 @@ async function verifDepotParticipant() {
       && !DP.cleDeVisite("DpOuvertxxxxxxxxxxxxxxxxxxxxxxxx", null).includes("DpOuvert") && DP.cleDeVisite("a".repeat(32), "p") !== DP.cleDeVisite("a".repeat(32), null));
 
   titre("— w2 : l'envoi, par arrivee (planche 7B) —");
-  const prog = DP.progression({ arrivees: 0, dejaLa: 0, auCoffre: 7, enCours: 18 });
+  const prog = DP.progression({ arrivees: 0, auCoffre: 7, enCours: 18 });
   ok("7 photos au coffre sur 18 : « 7 sur 18 envoyées · il en reste 11 » (plus « 0 photo reçue · 18 en cours » pendant 15 s)",
-    prog.envoyees === 7 && prog.restent === 11 && prog.total === 18 && prog.part === 39 && DP.progression({ arrivees: 0, dejaLa: 0, enCours: 18 }).envoyees === 0
-      && DP.progression({ arrivees: 11, dejaLa: 2, auCoffre: 3, enCours: 3 }).restent === 0);
+    prog.envoyees === 7 && prog.restent === 11 && prog.total === 18 && prog.part === 39 && DP.progression({ arrivees: 0, enCours: 18 }).envoyees === 0
+      && DP.progression({ arrivees: 11, auCoffre: 3, enCours: 3 }).restent === 0);
   ok("le moteur compte le coffre (`auCoffre`) sans attendre la confirmation groupee ; la vue vide le connait",
     /if \(it\.etat === "envoye"\) auCoffre\+\+;/.test(moteurW2) && /auCoffre,\s*place: this\.place,/.test(moteurW2) && /auCoffre: 0 \}/.test(lire("src/app/edition/_composants/depot/useMoteur.ts"))
-      && /const prog = progression\(vue\);/.test(albumW2) && /\{prog\.envoyees\} <small>sur \{prog\.total\} envoyée/.test(albumW2));
+      && /const prog = progression\(lot\);/.test(albumW2) && /\{prog\.envoyees\} <small>sur \{prog\.total\} envoyée/.test(albumW2));
   const iRefus = moteurW2.indexOf('if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {\n        /* Pas encore ouvert : le lot');
   ok("409 `depot_pas_ouvert` refuse le lot avec la phrase du serveur (comme `accord_requis`), jamais une coupure ni un « reessayer » sans fin",
     Ouv.ERREUR_PAS_OUVERT === "depot_pas_ouvert" && /const REFUS_EXPLIQUES: readonly string\[\] = \[ERREUR_PAS_OUVERT\];/.test(moteurW2)
       && iRefus > 0 && iRefus < moteurW2.indexOf("await attendre(1_000);") && iRefus < moteurW2.indexOf("throw new Error(`presign")
       && (moteurW2.match(/REFUS_EXPLIQUES\.includes\(json\.error\)/g) ?? []).length === 2);
-  ok("une photo a la corbeille redeclaree est « deja la » (ni dupliquee, ni ressuscitee)",
-    /deja: true, photoId: d\.id, \.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")) && /\} else if \(r\.deja \|\| r\.double\) \{[\s\S]{0,260}this\.finir\(it, "deja", null\);/.test(moteurW2));
+  ok("une photo a la corbeille redeclaree n'est jamais dupliquee : « deja la » (et, depuis le 21/10, ou elle etait, ou revenue si son auteur l'avait supprimee)",
+    /deja: true, photoId: d\.id, \.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(lire("src/app/api/collectif/depot/presign/route.ts"))
+      && /\} else if \(r\.deja \|\| r\.double\) \{[\s\S]{0,400}it\.deja = r\.double \? DEJA_CONNUE : lireDejaLa\(r\);\s*this\.finir\(it, "deja", null\);/.test(moteurW2));
   ok("aucune adresse ne part avec les photos (presign l'ignore : la personne est celle du telephone) ; le depot du responsable ne garde aucun apercu",
     !/premier\.email|definirEmail/.test(moteurW2)
       && !/definirEmail|apercus/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx") + lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx") + lire("src/app/edition/_composants/depot/ZoneDepot.tsx")));
@@ -6798,8 +6799,9 @@ async function verifDepotParticipant() {
     /const cochable = cocher && onglet === "miennes" && x\.supprimable;/.test(albumW2) && /supprimerPhotos\(props\.token, props\.p, ids\)/.test(albumW2)
       && /L'organisateur peut encore \$\{nb > 1 \? "les" : "la"\} récupérer pendant \$\{DELAI_CORBEILLE_JOURS\} jours\./.test(albumW2)
       && /setPlaceServeur\(\{ valeur: r\.json\.place as number \| null, le: Date\.now\(\) \}\)/.test(albumW2) && /"\/api\/collectif\/depot\/supprimer"/.test(lire("src/app/depot/[token]/appels.ts")));
-  ok("le merci prend le compte CONFIRME par le serveur (arrivees + deja la), jamais le coffre seul",
-    /const recues = vue\.arrivees \+ vue\.dejaLa;/.test(albumW2) && /Merci\{props\.qui \? ` \$\{props\.qui\.prenom\}` : ""\}, \{recues\} photo/.test(albumW2));
+  ok("le merci prend le compte CONFIRME par le serveur pour le DERNIER envoi, jamais le coffre seul, jamais une « deja la » (21/10 : « 8 photos reçues » sur un lien a 5)",
+    /const recues = bilan\.recues;/.test(albumW2) && /const bilan = bilanDuLot\(lot\);/.test(albumW2) && /Merci\{props\.qui \? ` \$\{props\.qui\.prenom\}` : ""\}, \{recues\} photo/.test(albumW2)
+      && !/vue\.arrivees \+ vue\.dejaLa/.test(albumW2 + lire("src/app/edition/_composants/depot/ZoneDepot.tsx") + lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
   ok("la barre fixe a son repli Android (pas de verre sur un `position: fixed`, piege 3)",
     /const android = useAndroid\(\);/.test(albumW2) && /\.bj-atelier \.ec-dp-bas--plat \{[^}]*backdrop-filter: none;/.test(lire("src/app/depot/[token]/depot.css")));
 
@@ -7134,8 +7136,357 @@ async function verifRetention30() {
   }
 }
 
+/* ════════════════════ 21/10 : LE DERNIER ENVOI, LES « DÉJÀ LÀ », LE LIEN MORT (édition « Recette 1 ») ════════════════════
+   Les notes de Mathias : « Merci Mathias, 8 photos reçues » sur un lien à 5, rien de parti, rien dans l'album ;
+   « Content de vous revoir, 11 photos déjà arrivées » (toute l'édition) ; « Envoyées depuis ce téléphone » sur un
+   ordinateur ; un lien régénéré qui « fonctionne encore » dans l'onglet resté ouvert. */
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(() => {
+async function verifDejaLa() {
+  const Dep = await import("@/lib/collectif/depot");
+  const DP = await import("@/lib/collectif/depotParticipant");
+  const Al = await import("@/lib/collectif/album");
+  const Arr = await import("@/lib/collectif/arrivees");
+  const Cs = await import("@/lib/collectif/corbeilleServeur");
+  const Ps = await import("@/lib/collectif/personnesServeur");
+  const Col = await import("@/lib/collectif/collecte");
+  const Hc = await import("@/lib/collectif/horsCorbeille");
+  const { phraseEvenement } = await import("@/lib/collectif/recit");
+  type Client = Parameters<typeof Cs.restaurer>[0];
+  const comme = (c: { from: (t: string) => RequeteMem }) => c as unknown as Client;
+  const silence = async <R>(f: () => Promise<R>): Promise<R> => {
+    const [e, l] = [console.error, console.log];
+    console.error = () => {};
+    console.log = () => {};
+    try {
+      return await f();
+    } finally {
+      console.error = e;
+      console.log = l;
+    }
+  };
+  const B1 = "11111111-0000-4000-8000-000000000001";
+  const B2 = "11111111-0000-4000-8000-000000000002";
+  const TEL = "telephone-de-mathias-1";
+  const PC = "ordinateur-de-mathias1";
+  const MOI = "22222222-0000-4000-8000-000000000001";
+  const ctxB1 = { role: "participant" as const, provenanceId: B1, appareil: TEL, participantId: MOI };
+  const fic = (nom: string) => ({ cle: Dep.cleFichier(`sel~${nom}`, 1, 0), nom, taille: 1, type: "image/jpeg", tailleVignette: null, ordre: null });
+  const ex = (o: Partial<import("@/lib/collectif/depot").Existant>): import("@/lib/collectif/depot").Existant => ({ id: "x", r2_key: "k", confirmee: true, role: "participant", provenanceId: B1, appareilId: TEL, participantId: MOI, ...o });
+
+  titre("— 21/10 : « deja la » dit OU (depot.ts, la regle du serveur) —");
+  const grille = [B1, B2, null].flatMap((prov) => ["participant", "responsable"].flatMap((role) => [B1, null].map((page) => ({ prov, role, page }))));
+  ok("duMemeLien (depot.ts) dit exactement ce que duLien (album.ts) dit, sur tous les cas (lien, lien general, responsable)",
+    grille.every((c) => Dep.duMemeLien({ provenanceId: c.prov, role: c.role }, c.page) === Al.duLien({ provenance_id: c.prov, role_deposant: c.role }, c.page)));
+  ok("origineDeja : cet album ; un autre lien (son id, pour en dire le libelle) ; le lien general vu d'un bateau ; le depot de l'organisateur ; la corbeille du responsable ou de l'atelier ; l'auteur d'ailleurs ; une forme d'avant",
+    Dep.origineDeja(ex({}), ctxB1).ou === "album"
+      && JSON.stringify(Dep.origineDeja(ex({ provenanceId: B2 }), ctxB1)) === JSON.stringify({ ou: "lien", lienId: B2 })
+      && JSON.stringify(Dep.origineDeja(ex({ provenanceId: null }), ctxB1)) === JSON.stringify({ ou: "lien", lienId: null })
+      && Dep.origineDeja(ex({ provenanceId: null, role: "responsable" }), ctxB1).ou === "edition"
+      && Dep.origineDeja(ex({ corbeille: true, par: "responsable" }), ctxB1).ou === "retiree" && Dep.origineDeja(ex({ corbeille: true, par: "atelier" }), ctxB1).ou === "retiree"
+      && Dep.origineDeja(ex({ corbeille: true, par: "auteur" }), ctxB1).ou === "supprimee"
+      && Dep.origineDeja({ id: "x", r2_key: "k", confirmee: true }, ctxB1).ou === "connue");
+  ok("restaurableParChoix : supprimee par son AUTEUR, et choisie de nouveau depuis le meme appareil OU par la meme personne ; jamais celle du responsable ni de l'atelier ; jamais pour le responsable",
+    Dep.restaurableParChoix(ex({ corbeille: true, par: "auteur" }), ctxB1)
+      && Dep.restaurableParChoix(ex({ corbeille: true, par: "auteur", appareilId: PC }), ctxB1)
+      && Dep.restaurableParChoix(ex({ corbeille: true, par: "auteur", participantId: null }), ctxB1)
+      && !Dep.restaurableParChoix(ex({ corbeille: true, par: "auteur", appareilId: PC, participantId: "autre" }), ctxB1)
+      && !Dep.restaurableParChoix(ex({ corbeille: true, par: "responsable" }), ctxB1) && !Dep.restaurableParChoix(ex({ corbeille: true, par: "atelier" }), ctxB1)
+      && !Dep.restaurableParChoix(ex({ par: "auteur" }), ctxB1)
+      && !Dep.restaurableParChoix(ex({ corbeille: true, par: "auteur" }), { ...ctxB1, role: "responsable" })
+      && !Dep.restaurableParChoix(ex({ corbeille: true, par: "auteur", appareilId: PC }), { ...ctxB1, participantId: null }));
+
+  titre("— 21/10 : le partage d'un lot avec le contexte de la page (planDeclaration) —");
+  const huit = Array.from({ length: 8 }, (_, i) => fic(`IMG_${i}.HEIC`));
+  const venuesDeB2 = new Map(huit.map((f, i) => [f.cle, ex({ id: `b2-${i}`, provenanceId: B2 })]));
+  const planHuit = Dep.planDeclaration(huit, venuesDeB2, { illimitee: false, place: 2, borne: "plafond_participant" }, ctxB1);
+  ok("la note de Mathias : 8 photos deja arrivees par « Bateau 2 », re-choisies sur « Bateau 1 » (5 au plus) : 8 « deja la » par un autre lien, AUCUNE nouvelle, aucune place prise",
+    planHuit.every((d) => d.sorte === "deja" && d.ou === "lien" && d.lienId === B2));
+  const nouvelle = fic("nouvelle.jpg");
+  const autreNouvelle = fic("autre.jpg");
+  const ici = fic("supprimee-ici.jpg");
+  const exIci = new Map([[ici.cle, ex({ id: "R-ici", corbeille: true, par: "auteur" })]]);
+  const p2 = Dep.planDeclaration([ici, nouvelle, autreNouvelle], exIci, { illimitee: false, place: 2, borne: "plafond_participant" }, ctxB1);
+  ok("une photo supprimee par son auteur, choisie de nouveau sur SON lien, revient et prend une place, dans l'ordre du lot, comme une nouvelle",
+    p2[0].sorte === "restaurer" && p2[0].ici && p2[0].id === "R-ici" && p2[1].sorte === "nouvelle" && p2[2].sorte === "refusee");
+  const pPlein = Dep.planDeclaration([ici], exIci, { illimitee: false, place: 0, borne: "plafond_participant" }, ctxB1);
+  ok("plus de place : elle reste a la corbeille, refusee par le plafond (la phrase du plafond le dira)",
+    pPlein[0].sorte === "refusee" && pPlein[0].raison === "plafond_participant" && pPlein[0].corbeille === true);
+  const ailleurs = fic("supprimee-sur-b2.jpg");
+  const pAilleurs = Dep.planDeclaration([ailleurs, nouvelle], new Map([[ailleurs.cle, ex({ id: "R-b2", corbeille: true, par: "auteur", provenanceId: B2 })]]), { illimitee: false, place: 1, borne: "plafond_participant" }, ctxB1);
+  ok("supprimee sur un AUTRE lien : elle revient dans SON album (la route tranche avec la place de son lien), sans prendre la place de celui-ci",
+    pAilleurs[0].sorte === "restaurer" && !pAilleurs[0].ici && pAilleurs[0].lienId === B2 && pAilleurs[1].sorte === "nouvelle");
+  const pRetiree = Dep.planDeclaration([ici], new Map([[ici.cle, ex({ id: "R", corbeille: true, par: "responsable" })]]), { illimitee: true }, ctxB1);
+  ok("retiree par l'organisateur : « deja la », a la corbeille, elle ne revient pas",
+    pRetiree[0].sorte === "deja" && pRetiree[0].ou === "retiree" && pRetiree[0].corbeille === true);
+  const pDouble = Dep.planDeclaration([ici, ici], exIci, { illimitee: true }, ctxB1);
+  ok("la meme photo deux fois dans le lot ne revient qu'une fois", pDouble[0].sorte === "restaurer" && pDouble[1].sorte === "double");
+  const pResp = Dep.planDeclaration([ici], exIci, { illimitee: true }, { role: "responsable", provenanceId: null, appareil: TEL, participantId: null });
+  ok("le responsable qui choisit de nouveau une photo de la corbeille : « deja la », rien ne revient tout seul (la corbeille de la page Photos la restaure)",
+    pResp[0].sorte === "deja" && pResp[0].corbeille === true);
+  const vu = Dep.partagerConnues(new Map([
+    [fic("a").cle, ex({ id: "a" })],
+    [fic("b").cle, ex({ id: "b", provenanceId: B2 })],
+    [fic("c").cle, ex({ id: "c", corbeille: true, par: "auteur" })],
+    [fic("d").cle, ex({ id: "d", corbeille: true, par: "responsable" })],
+    [fic("e").cle, ex({ id: "e", confirmee: false })],
+  ]), { ...ctxB1, participantId: null });
+  ok("la verification d'une reprise : deja la avec ou (cet album, un autre lien, retiree) ; supprimee par son auteur = a revoir en declaration ; declaree jamais arrivee = ni l'un ni l'autre",
+    vu.confirmees.length === 3 && vu.aRevoir.length === 1 && vu.aRevoir[0] === fic("c").cle
+      && vu.details.map((d) => d.ou).join() === "album,lien,retiree" && vu.details[1].lienId === B2 && !vu.confirmees.includes(fic("e").cle));
+  ok("lireDejaLa : un `ou` inconnu = « connue » ; la corbeille d'une reponse d'avant = « supprimee » ; le libelle nettoye",
+    Dep.lireDejaLa({ ou: "ailleurs" }).ou === "connue" && Dep.lireDejaLa({ corbeille: true }).ou === "supprimee"
+      && JSON.stringify(Dep.lireDejaLa({ ou: "lien", lien: "  Bateau 2 " })) === JSON.stringify({ ou: "lien", lien: "Bateau 2", ici: false }) && Dep.lireDejaLa({ ou: "restauree", ici: true }).ici);
+
+  titre("— 21/10 : le merci compte le DERNIER envoi, et seulement ce qui est arrive (depotParticipant.ts) —");
+  type It = { lot: number; etat: string; deja: import("@/lib/collectif/depot").DejaLa | null; raison: string | null };
+  const it = (lot: number, etat: string, deja: It["deja"] = null): It => ({ lot, etat, deja, raison: null });
+  const lien = (l: string | null): It["deja"] => ({ ou: "lien", lien: l, ici: false });
+  /* Bateau 1 : un premier envoi de 3 photos arrivees, puis 8 photos re-choisies, deja arrivees par « Bateau 2 ». */
+  const page = [...Array.from({ length: 3 }, () => it(1, "confirme")), ...Array.from({ length: 8 }, () => it(2, "deja", lien("Bateau 2")))];
+  const lot2 = DP.compterLot(page, 2, 0);
+  const b2 = DP.bilanDuLot(lot2);
+  ok("« 8 photos reçues » ne se dit plus : le lot 2 a 0 photo recue, 8 deja arrivees par « Bateau 2 », et le premier envoi n'y est pas",
+    lot2.total === 8 && b2.recues === 0 && b2.dejaLa === 8 && b2.fini && JSON.stringify(b2.dejaLiens) === JSON.stringify([{ lien: "Bateau 2", n: 8 }])
+      && JSON.stringify(DP.phrasesDuLot(b2, { tu: false })) === JSON.stringify(["8 photos étaient déjà arrivées par « Bateau 2 » : elles ne repartent pas."]));
+  const vingt = [...Array.from({ length: 16 }, () => it(5, "confirme")), ...Array.from({ length: 4 }, () => it(5, "deja", lien("Bateau 1")))];
+  const b20 = DP.bilanDuLot(DP.compterLot(vingt, 5, 0));
+  ok("« 20 photos sur Bateau 2 » : 16 recues (le merci), 4 deja arrivees par « Bateau 1 » (dites, jamais comptees)",
+    b20.recues === 16 && b20.dejaLa === 4 && DP.phrasesDuLot(b20, { tu: false })[0] === "4 photos étaient déjà arrivées par « Bateau 1 » : elles ne repartent pas.");
+  const melange = [
+    it(3, "confirme"), it(3, "confirme"),
+    ...Array.from({ length: 3 }, () => it(3, "deja", { ou: "album", lien: null, ici: true })),
+    it(3, "deja", { ou: "restauree", lien: null, ici: true }),
+    it(3, "deja", { ou: "restauree", lien: "Bateau 2", ici: false }),
+    it(3, "deja", { ou: "retiree", lien: null, ici: false }),
+    it(3, "deja", lien(null)),
+    it(3, "refuse"),
+  ];
+  const bm = DP.bilanDuLot(DP.compterLot(melange, 3, 1));
+  const phrasesVous = DP.phrasesDuLot(bm, { tu: false });
+  const phrasesTu = DP.phrasesDuLot(bm, { tu: true });
+  ok("chaque cas a sa phrase, courte, au vous : revenue, deja dans l'album, par un autre lien (nomme ou non), retiree par l'organisateur, choisie deux fois",
+    bm.recues === 2 && bm.refusees === 1 && JSON.stringify(phrasesVous) === JSON.stringify([
+      "1 photo que vous aviez supprimée est revenue dans l'album.",
+      "1 photo que vous aviez supprimée est revenue dans l'album de « Bateau 2 ».",
+      "3 photos étaient déjà dans l'album : elles ne repartent pas.",
+      "1 photo était déjà arrivée par un autre lien : elle ne repart pas.",
+      "1 photo avait été retirée par l'organisateur : elle ne repart pas.",
+      "1 photo choisie deux fois ne part qu'une fois.",
+    ]));
+  ok("…et au tu ; aucun tiret cadratin, aucune phrase au feminin du participant",
+    phrasesTu[0] === "1 photo que tu avais supprimée est revenue dans l'album." && ![...phrasesVous, ...phrasesTu].some((t) => /[—–]/.test(t)) && ![...phrasesVous, ...phrasesTu].some((t) => /participante|cliente/.test(t)));
+  ok("le pluriel : « 2 photos que vous aviez supprimées sont revenues dans l'album », « 2 photos avaient été retirées par l'organisateur : elles ne repartent pas. »",
+    DP.phrasesDuLot(DP.bilanDuLot(DP.compterLot([it(1, "deja", { ou: "restauree", lien: null, ici: true }), it(1, "deja", { ou: "restauree", lien: null, ici: true }), it(1, "deja", { ou: "retiree", lien: null, ici: false }), it(1, "deja", { ou: "retiree", lien: null, ici: false })], 1, 0)), { tu: false }).join(" | ")
+      === "2 photos que vous aviez supprimées sont revenues dans l'album. | 2 photos avaient été retirées par l'organisateur : elles ne repartent pas.");
+  ok("le responsable : seule la corbeille a sa phrase (sa fenetre a deja « deja la, sautees »), jamais « par l'organisateur »",
+    JSON.stringify(DP.phrasesDuLot(bm, { tu: false, pour: "responsable" })) === JSON.stringify(["1 photo est à la corbeille : elle ne repart pas. La corbeille de la page Photos la restaure."]));
+  const enCoursLot = DP.compterLot([it(4, "confirme"), it(4, "envoye"), it(4, "attente"), it(4, "deja", lien("Bateau 2"))], 4, 0);
+  ok("la barre du lot ne compte pas les deja-la : « 2 sur 3 envoyées », il en reste 1 ; le bilan n'est pas fini",
+    JSON.stringify(DP.progression(enCoursLot)) === JSON.stringify({ envoyees: 2, restent: 1, total: 3, part: 67 }) && !DP.bilanDuLot(enCoursLot).fini && DP.bilanDuLot(enCoursLot).enCours === 2);
+  ok("un lot vide : rien a dire", DP.phrasesDuLot(DP.bilanDuLot(DP.LOT_VIDE), { tu: false }).length === 0 && !DP.bilanDuLot(DP.LOT_VIDE).fini);
+
+  titre("— 21/10 : « Content de vous revoir » dit ce lien et ce qui reste ; « Mes photos » compte l'autre appareil —");
+  ok("« 2 photos déjà sur « Bateau 1 ». Vous pouvez encore en envoyer 3. » ; sans lien nomme : « dans l'album » ; au tu ; sans limite ; plein ; rien encore",
+    DP.phraseRetour(2, 3, "Bateau 1", false) === "2 photos déjà sur « Bateau 1 ». Vous pouvez encore en envoyer 3."
+      && DP.phraseRetour(1, 4, null, false) === "1 photo déjà dans l'album. Vous pouvez encore en envoyer 4."
+      && DP.phraseRetour(2, 3, "Bateau 1", true) === "2 photos déjà sur « Bateau 1 ». Tu peux encore en envoyer 3."
+      && DP.phraseRetour(2, null, "Bateau 1", false) === "2 photos déjà sur « Bateau 1 ». Vous pouvez en envoyer sans limite."
+      && DP.phraseRetour(5, 0, "Bateau 1", false) === "5 photos déjà sur « Bateau 1 ». Vous avez envoyé toutes les photos prévues."
+      && DP.phraseRetour(0, 5, "Bateau 1", false) === "Vous pouvez en envoyer 5." && DP.phraseRetour(0, undefined, null, false) === "");
+  ok("« 2 autres photos à votre nom, envoyées d'un autre appareil, sont dans Tout l'album. » (un nombre, jamais les photos) ; une ; aucune",
+    DP.phraseAutresAppareils(2, false) === "2 autres photos à votre nom, envoyées d'un autre appareil, sont dans Tout l'album."
+      && DP.phraseAutresAppareils(1, true) === "1 autre photo à ton nom, envoyée d'un autre appareil, est dans Tout l'album."
+      && DP.phraseAutresAppareils(0, false) === "" && DP.phraseAutresAppareils(null, false) === "");
+  ok("« Tout l'album » sans recharger : les nouvelles en tete, sans doublon ; toutes les 45 s, et au retour sur l'onglet au plus toutes les 20 s",
+    DP.enTete([{ id: "n2" }, { id: "a" }, { id: "n2" }, { id: "n1" }], [{ id: "a" }, { id: "b" }]).map((x) => x.id).join() === "n2,n1,a,b"
+      && DP.SONDAGE_ALBUM_MS === 45_000 && Arr.REPOS_MIN_MS === 20_000 && Arr.aRelire(20_000, 0, true, DP.SONDAGE_ALBUM_MS, true) && !Arr.aRelire(19_999, 0, true, DP.SONDAGE_ALBUM_MS, true) && !Arr.aRelire(99_000, 0, false, DP.SONDAGE_ALBUM_MS, false));
+
+  titre("— 21/10 : le vrai moteur, contre un faux serveur (lots, deja-la, restauration, lien mort) —");
+  {
+    const { MoteurDepot } = await import("@/app/edition/_composants/depot/moteur");
+    const avantFetch = globalThis.fetch;
+    type Appel = { url: string; corps: Record<string, unknown> };
+    const attendreMoteur = async (m: { occupe(): boolean }) => {
+      for (let i = 0; i < 200 && m.occupe(); i++) await new Promise((r) => setTimeout(r, 0));
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+    };
+    const serveur = (repondre: (a: Appel) => { status: number; corps: unknown }) => {
+      const appels: Appel[] = [];
+      globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+        const a = { url: String(url), corps: JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown> };
+        appels.push(a);
+        const r = repondre(a);
+        return new Response(JSON.stringify(r.corps), { status: r.status });
+      }) as typeof fetch;
+      return appels;
+    };
+    const photos = (n: number, prefixe: string) => Array.from({ length: n }, (_, i) => new File([new Uint8Array(3)], `${prefixe}-${i}.jpg`, { type: "image/jpeg", lastModified: 1_700_000_000_000 + i }));
+    try {
+      /* Bateau 1 : 8 photos déjà arrivées par « Bateau 2 », dites par la vérification d'une reprise. */
+      const appels = serveur((a) => {
+        const connues = Array.isArray(a.corps.connues) ? (a.corps.connues as string[]) : [];
+        return { status: 200, corps: { confirmees: connues, aRevoir: [], details: connues.map((cle) => ({ cle, ou: "lien", lien: "Bateau 2" })) } };
+      });
+      const m = new MoteurDepot({ token: "t".repeat(32), p: "clé-du-bateau-1-xxxxxx", tu: false });
+      m.definirAccord("2026-10-20");
+      const huitFichiers = photos(8, "IMG");
+      m.ajouter(huitFichiers);
+      await attendreMoteur(m);
+      const v1 = m.vue();
+      const b1 = DP.bilanDuLot(v1.lot);
+      ok("8 photos deja arrivees par « Bateau 2 » : le lot dit 0 recue et la phrase, rien n'est declare ni envoye ; la verification porte le lien de la page",
+        v1.lot.numero === 1 && b1.recues === 0 && b1.dejaLa === 8 && DP.phrasesDuLot(b1, { tu: false })[0] === "8 photos étaient déjà arrivées par « Bateau 2 » : elles ne repartent pas."
+          && appels.length === 1 && appels[0].corps.p === "clé-du-bateau-1-xxxxxx" && Array.isArray(appels[0].corps.connues) && !appels.some((x) => Array.isArray(x.corps.fichiers)));
+      m.ajouter(huitFichiers.slice(0, 3));
+      await attendreMoteur(m);
+      const v2 = m.vue();
+      ok("re-choisies sur la meme page (un nouvel envoi) : un lot 2 de 3 « deja la », dits par la memoire de la page, sans un appel de plus",
+        v2.lot.numero === 2 && v2.lot.total === 3 && DP.bilanDuLot(v2.lot).dejaLiens[0]?.n === 3 && appels.length === 1);
+      m.detruire();
+
+      /* Une photo supprimée d'ici, choisie de nouveau : la vérification la dit « à revoir », la déclaration la restaure. */
+      const appelsR = serveur((a) => {
+        if (Array.isArray(a.corps.connues)) return { status: 200, corps: { confirmees: [], aRevoir: a.corps.connues, details: [] } };
+        const f = (a.corps.fichiers as { cle: string }[]) ?? [];
+        return { status: 200, corps: { resultats: f.map((x) => ({ cle: x.cle, deja: true, photoId: "photo-revenue", restauree: true, ou: "restauree", ici: true, lien: null })), place: 2 } };
+      });
+      const r = new MoteurDepot({ token: "t".repeat(32), p: null, tu: true });
+      r.definirAccord("2026-10-20");
+      r.ajouter(photos(1, "SUPPR"));
+      await attendreMoteur(r);
+      const vr = r.vue();
+      ok("supprimee puis choisie de nouveau : declaree SANS reduction, revenue (la phrase au tu), la place du serveur reprise",
+        DP.phrasesDuLot(DP.bilanDuLot(vr.lot), { tu: true })[0] === "1 photo que tu avais supprimée est revenue dans l'album." && vr.place === 2 && DP.bilanDuLot(vr.lot).recues === 0
+          && appelsR.length === 2 && Array.isArray(appelsR[1].corps.fichiers) && appelsR[1].corps.accord === true);
+      r.detruire();
+
+      /* Le lien régénéré pendant que la page est ouverte : 404. */
+      serveur(() => ({ status: 404, corps: {} }));
+      const mort = new MoteurDepot({ token: "t".repeat(32), p: null, tu: true });
+      mort.definirAccord("2026-10-20");
+      mort.ajouter(photos(2, "MORT"));
+      await attendreMoteur(mort);
+      const vm = mort.vue();
+      ok("un 404 de la verification : le moteur se ferme avec la phrase de la page « Ce lien ne fonctionne plus » et le DIT (`lienMort`), la page bascule",
+        vm.lienMort && vm.ferme === "Ce lien ne fonctionne plus. Demande le nouveau lien à l'organisateur." && vm.enCours === 0);
+      mort.detruire();
+    } finally {
+      globalThis.fetch = avantFetch;
+    }
+  }
+
+  titre("— 21/10 : cote serveur (contre la fausse base) —");
+  {
+    const ED = "33333333-0000-4000-8000-000000000001";
+    const base = baseEnMemoire({
+      collectif_photos: [
+        { id: "A", edition_id: ED, supprimee_le: "2026-10-21T08:00:00Z", supprimee_par: "auteur", confirmee_le: "2026-10-20T10:00:00Z" },
+        { id: "R", edition_id: ED, supprimee_le: "2026-10-21T08:00:00Z", supprimee_par: "responsable", confirmee_le: "2026-10-20T10:00:00Z" },
+      ],
+      collectif_doublons: [{ id: "d", edition_id: ED }],
+    });
+    const rest = await silence(() => Cs.restaurer(comme(base.client), ED, ["A", "R"], null, { par: "auteur" }));
+    const journal = (base.tables.collectif_evenements ?? []).find((e) => e.type === "photos_restaurees");
+    ok("restaurer par son auteur : seulement ce que l'AUTEUR avait supprime (le geste du responsable fait foi), journalise `par: \"auteur\"`, le cache des doublons vide",
+      rest.statut === "ok" && rest.valeur.ids.join() === "A" && rest.valeur.refusees.join() === "R"
+        && base.tables.collectif_photos.find((l) => l.id === "A")?.supprimee_le === null && base.tables.collectif_photos.find((l) => l.id === "R")?.supprimee_le !== null
+        && (journal?.payload as { par?: string } | undefined)?.par === "auteur" && (base.tables.collectif_doublons ?? []).length === 0
+        && phraseEvenement("photos_restaurees", { n: 1, par: "auteur" }) === "1 photo(s) restaurée(s) de la corbeille par leur auteur (choisie(s) de nouveau)."
+        && phraseEvenement("photos_restaurees", { n: 2 }) === "2 photo(s) restaurée(s) de la corbeille.");
+    const sansPar = baseEnMemoire({ collectif_photos: [{ id: "R", edition_id: ED, supprimee_le: "2026-10-21T08:00:00Z", supprimee_par: "responsable" }] });
+    const resp = await silence(() => Cs.restaurer(comme(sansPar.client), ED, ["R"], null));
+    ok("…et la restauration du responsable et de l'atelier ne change pas (toute photo de la corbeille)", resp.statut === "ok" && resp.valeur.ids.join() === "R");
+
+    Hc.oublierAbsence();
+    const cle = (n: string) => `sel~${n}|1|0`;
+    const reprise = baseEnMemoire({
+      collectif_photos: [
+        { id: "p1", edition_id: ED, r2_key: "k1", cle_fichier: cle("a"), confirmee_le: "2026-10-20T10:00:00Z", provenance_id: B2, role_deposant: "participant", appareil_id: TEL, participant_id: MOI, supprimee_le: null, supprimee_par: null },
+        { id: "p2", edition_id: ED, r2_key: "k2", cle_fichier: cle("b"), confirmee_le: "2026-10-20T10:00:00Z", provenance_id: B1, role_deposant: "participant", appareil_id: TEL, participant_id: MOI, supprimee_le: "2026-10-21T08:00:00Z", supprimee_par: "auteur" },
+      ],
+    });
+    const lus = await silence(() => Col.lireExistants(comme(reprise.client), ED, [cle("a"), cle("b")]));
+    ok("lireExistants rend d'ou vient la photo (son lien, son role, son appareil, sa personne) et qui l'a mise a la corbeille",
+      lus?.get(cle("a"))?.provenanceId === B2 && lus.get(cle("a"))?.role === "participant" && lus.get(cle("a"))?.corbeille === undefined
+        && lus.get(cle("b"))?.corbeille === true && lus.get(cle("b"))?.par === "auteur" && lus.get(cle("b"))?.appareilId === TEL && lus.get(cle("b"))?.participantId === MOI);
+    const liens = baseEnMemoire({ collectif_provenances: [{ id: B2, edition_id: ED, type: "participant", libelle: "Bateau 2", sans_plafond: false, plafond_par_personne: 30, retire_le: null }, { id: B1, edition_id: "autre", libelle: "Pas d'ici" }] });
+    const lus2 = await silence(() => Col.lireLiensParId(comme(liens.client), ED, [B2, B1, B2]));
+    ok("lireLiensParId : le libelle d'un lien de L'EDITION par son id (celui d'une autre edition ne sort pas)", lus2?.get(B2)?.libelle === "Bateau 2" && !lus2.has(B1));
+
+    Hc.oublierAbsence();
+    const ph = (id: string, o: Record<string, unknown>) => ({ id, edition_id: ED, confirmee_le: "2026-10-20T10:00:00Z", role_deposant: "participant", appareil_id: TEL, participant_id: MOI, provenance_id: B1, supprimee_le: null, accord_version: "2026-10-20", ...o });
+    const comptesBase = baseEnMemoire({
+      collectif_photos: [
+        ph("1", {}), ph("2", { appareil_id: PC }),
+        ph("3", { provenance_id: B2 }), ph("4", { provenance_id: B2 }), ph("5", { provenance_id: B2 }), ph("6", { provenance_id: B2 }),
+        ph("7", { supprimee_le: "2026-10-21T08:00:00Z" }), ph("8", { participant_id: "quelqu-un-d-autre", appareil_id: "autre-telephone-xxxxxx" }),
+        ph("9", { provenance_id: null }),
+      ],
+    });
+    const c = await silence(() => Ps.comptesDeLaPersonne(comme(comptesBase.client), ED, MOI, TEL, { provenanceId: B1 }));
+    const cg = await silence(() => Ps.comptesDeLaPersonne(comme(comptesBase.client), ED, MOI, TEL, { provenanceId: null }));
+    const sansLien = await silence(() => Ps.comptesDeLaPersonne(comme(comptesBase.client), ED, MOI, TEL));
+    ok("« 2 photos déjà sur « Bateau 1 » » : SES photos de CE lien (ses deux appareils), hors corbeille, sans celles d'un autre lien ni d'une autre personne ; le lien general a les siennes ; `photos` reste le total de l'edition",
+      c?.surCeLien === 2 && c.photos === 7 && cg?.surCeLien === 1 && sansLien?.surCeLien === 0);
+  }
+
+  titre("— 21/10 : les ecrans et les routes (relus dans le code) —");
+  {
+    const code = (f: string) => lire(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
+    const album = code("src/app/depot/[token]/Album.tsx");
+    const depot = code("src/app/depot/[token]/Depot.tsx");
+    const etats = code("src/app/depot/[token]/Etats.tsx");
+    const appelsF = code("src/app/depot/[token]/appels.ts");
+    const mortF = lire("src/app/depot/[token]/LienMort.tsx");
+    const presign = code("src/app/api/collectif/depot/presign/route.ts");
+    const rAlbum = code("src/app/api/collectif/depot/album/route.ts");
+    const rParticipant = code("src/app/api/collectif/depot/participant/route.ts");
+    const rSupprimer = code("src/app/api/collectif/depot/supprimer/route.ts");
+    const pageF = code("src/app/depot/[token]/page.tsx");
+    const moteur = code("src/app/edition/_composants/depot/moteur.ts");
+    ok("« cet appareil » partout sur la page de depot (un ordinateur n'est pas un telephone) : plus aucune phrase « ce téléphone » / « depuis ce téléphone » a l'ecran",
+      /<span>Envoyées depuis cet appareil<\/span>/.test(album) && ![album, depot, etats, rSupprimer].some((t) => /(depuis|Ce|ce) téléphone/.test(t.replace(/\/\/.*$/gm, ""))));
+    ok("« Mes photos » : la ligne des photos d'un autre appareil, sous l'onglet seulement ; le compte vient du serveur (par lien), jamais `photos - ceTelephone` (toute l'edition)",
+      /\{onglet === "miennes" && autresAppareils \? <p className="ec-dp-note ec-dp-al-autres">\{autresAppareils\}<\/p> : null\}/.test(album) && /phraseAutresAppareils\(moiServeur\?\.autresAppareils, tu\)/.test(album)
+        && !/moiServeur\?\.(photos|ceTelephone)/.test(album) && /autresAppareils: typeof m\.autresAppareils === "number"/.test(appelsF)
+        && /for \(const f of filtreAlbum\(provenanceId\)\) q = poser\(q, f, avec\);\s*if \(avec\) q = q\.eq\("participant_id", personneId\);/.test(rAlbum) && /appareil_id\.is\.null,appareil_id\.neq\.\$\{appareil\}/.test(rAlbum)
+        && /COMPTE_SANS_LIGNE/.test(rAlbum) && !/head: true/.test(rAlbum) && !/\.(insert|update|upsert|delete)\(/.test(rAlbum));
+    ok("la carte et l'annonce de retour disent CE lien et ce qui reste (`phraseRetour`), plus le total de l'edition ; le serveur compte par lien",
+      /phraseRetour\(reconnu\.surCeLien, place, lien, tu\)/.test(depot) && /phraseRetour\(accueilSurCeLien, placeLue, lienNom, tu\)/.test(album) && !/déjà arrivée\$\{|photos déjà arrivées/.test(depot)
+        && /comptesDeLaPersonne\(supabase, edition\.id, participant\.id, appareil, \{ provenanceId: lien\?\.id \?\? null \}\)/.test(rParticipant) && /surCeLien: comptes\.surCeLien,/.test(rParticipant)
+        && /comptesDeLaPersonne\(sb, edition\.id, qui\.participant\.id, telephone, \{ provenanceId: provenance\?\.id \?\? null \}\)/.test(pageF) && /surCeLien: nombre\(json\.surCeLien\)/.test(appelsF));
+    ok("le bilan de l'envoi : les « deja la » dits par cas dans la barre du bas (pendant l'envoi aussi) ; une suppression efface le bilan precedent ; le moteur oublie les photos supprimees d'ici",
+      /const phrasesLot = bilanVisible \? phrasesDuLot\(bilan, \{ tu \}\) : \[\];/.test(album) && /\{phrasesLot\.map\(\(t\) => \(/.test(album) && /if \(parties\.size\) setBilanEfface\(lot\.numero\);/.test(album)
+        && /props\.moteur\?\.oublier\(parties\);/.test(album) && /oublier\(photoIds: Iterable<string>\): void/.test(moteur) && /const termine = lot\.total > 0 && lot\.enCours === 0 && lot\.erreurs === 0;/.test(album)
+        && /Elle est dans l'album/.test(album));
+    ok("un lot commence quand rien ne part (« Ajouter d'autres photos » pendant l'envoi s'y ajoute) ; une photo arrivee par un envoi precedent est dite « deja la » ; le moteur du responsable aussi",
+      /private nouveauLotSiLibre\(\): void \{\s*if \(this\.occupe\(\)\) return;\s*this\.lot\+\+;/.test(moteur) && /ajouter\(fichiers: Iterable<File>\): void \{\s*if \(this\.ferme\) return;\s*const maintenant = Date\.now\(\);\s*this\.nouveauLotSiLibre\(\);/.test(moteur)
+        && /lot: compterLot\(this\.items, this\.lot, this\.deuxFoisLot\),/.test(moteur) && /etat: deja \? "deja" : "neuf",/.test(moteur)
+        && /progression\(vue\.lot\)/.test(lire("src/app/edition/_composants/depot/ZoneDepot.tsx")) && /progression\(vue\.lot\)/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx"))
+        && /phrasesDuLot\(bilan, \{ tu, pour: "responsable" \}\)/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
+    ok("le lien mort pendant que la page est ouverte : 404 d'album, d'envoi, de suppression ou de presentation = toute la page sur « Ce lien ne fonctionne plus », le meme texte que la 404 du serveur",
+      /if \(r\.status === 404\) return \{ statut: "mort" \};/.test(appelsF) && /if \(mort \|\| vue\.lienMort\) return <CarteLienMort \/>;/.test(album) && /if \(mort\) return <CarteLienMort \/>;/.test(depot)
+        && (depot.match(/if \(r\.status === 404\) \{\s*setMort\(true\);/g) ?? []).length === 3 && /\} else if \(r\.status === 404\) \{\s*setMort\(true\);/.test(depot)
+        && /if \(r\.status === 404\) \{\s*setMort\(true\);/.test(album) && /export function CarteLienMort\(\)/.test(mortF) && /<main className="ec-dp">\s*<CarteLienMort \/>\s*<\/main>/.test(mortF)
+        && /lienMort: this\.mort,/.test(moteur));
+    ok("« Tout l'album » se relit (45 s, retour sur l'onglet) sans faire sauter la grille pendant un envoi ou pendant qu'on coche ; la relecture ne touche jamais « Mes photos »",
+      /useSondage\(sonder, SONDAGE_ALBUM_MS, !mort\);/.test(album) && /const grilleFigee = enCours \|\| cocher;/.test(album) && /const photosAlbum = grilleFigee \? album\.photos : enTete\(neuvesAutres, album\.photos\);/.test(album)
+        && /lireAlbum\(token, p, "album", 0\)/.test(album.slice(album.indexOf("const sonder"), album.indexOf("useSondage(sonder")))
+        && !/setMiennes/.test(album.slice(album.indexOf("const sonder"), album.indexOf("useSondage(sonder"))));
+    const iInsert = presign.indexOf('from("collectif_photos").insert(lignes)');
+    const iRestaure = presign.indexOf("await restaurerDes(aRestaurer.filter((d) => d.ici)");
+    ok("depot/presign : le lien lu AVANT la verification d'une reprise (qui dit ou), la restauration APRES l'insertion (un lot refuse ne restaure rien), `par: \"auteur\"`, la place relue apres un retour sur un autre lien ; aucun 500 de plus",
+      presign.indexOf("estCleProvenance(corps.p)") < presign.indexOf("Array.isArray(corps.connues)") && /partagerConnues\(existants, \{ role, provenanceId, appareil: appareilDeRequete\(request\), participantId: null \}\)/.test(presign)
+        && iInsert > 0 && iRestaure > iInsert && /restaurer\(supabase, edition\.id, photoIds, null, \{ par: "auteur" \}\)/.test(presign)
+        && /planDeclaration\(declaration\.fichiers, existants, place, \{ role, provenanceId, appareil: appareilLu, participantId: participant\?\.id \?\? null \}\)/.test(presign)
+        && /placeDuParticipant\(supabase, edition, origine \?\? null, appareil, participant\?\.id \?\? null, maintenant\)/.test(presign)
+        && /deja: true, photoId: d\.id, restauree: true, ou: "restauree", ici: d\.ici/.test(presign) && /erreur: raison, message: messagePlafond\(raison, edition\.registre\), corbeille: true/.test(presign)
+        && (presign.match(/\{ status: 500 \}/g) ?? []).length === 5 && /noterEchec\(supabase, edition\.id, "corbeille", \{ etape: "ecriture"/.test(presign));
+  }
+}
+
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

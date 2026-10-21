@@ -23,23 +23,32 @@ export function FournisseurRegistre({ registre, children }: { registre: string |
   return <RegistreDuLien.Provider value={registre}>{children}</RegistreDuLien.Provider>
 }
 
-export default function LienMort() {
+/* La carte seule : la page ouverte dont le lien meurt (21/10 : un 404 de l'album, de l'envoi, de
+   la suppression ou de la présentation) la montre à la place de TOUTE la page, déjà dans son
+   `<main>` ; le même texte que la 404 du serveur. */
+export function CarteLienMort() {
   const { titre, suite } = lienMort(useContext(RegistreDuLien) === 'ecole_tu')
   return (
-    <main className="ec-dp">
-      <div className="ec-dp-etat">
-        <div className="ec-dp-in">
-          <p className="ec-dp-marque">
-            Bellajour <span>Édition collective</span>
-          </p>
-          <span className="ec-dp-etat-ico" aria-hidden="true">
-            <IcoLienCasse taille={22} />
-          </span>
-          <h1 className="ec-dp-etat-titre">{titre}</h1>
-          <p className="ec-dp-texte">Il a été remplacé ou retiré par l’organisateur.</p>
-          <p className="ec-dp-note">{suite}</p>
-        </div>
+    <div className="ec-dp-etat">
+      <div className="ec-dp-in">
+        <p className="ec-dp-marque">
+          Bellajour <span>Édition collective</span>
+        </p>
+        <span className="ec-dp-etat-ico" aria-hidden="true">
+          <IcoLienCasse taille={22} />
+        </span>
+        <h1 className="ec-dp-etat-titre">{titre}</h1>
+        <p className="ec-dp-texte">Il a été remplacé ou retiré par l’organisateur.</p>
+        <p className="ec-dp-note">{suite}</p>
       </div>
+    </div>
+  )
+}
+
+export default function LienMort() {
+  return (
+    <main className="ec-dp">
+      <CarteLienMort />
     </main>
   )
 }

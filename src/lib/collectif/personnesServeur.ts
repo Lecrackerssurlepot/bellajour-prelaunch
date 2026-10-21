@@ -239,10 +239,26 @@ export type ComptesPersonne = {
   ceTelephone: number;
   /** La dernière version d'accord donnée depuis ce téléphone pour cette personne (« redemandé sur chaque nouveau téléphone »). */
   accord: string | null;
+  /**
+   * Ses photos arrivées par LE lien demandé (`lien`), hors corbeille : de sa personne (tous ses
+   * appareils), sinon de cet appareil. « 2 photos déjà sur « Bateau 1 » » (21/10 : la carte
+   * disait le total de l'édition, tous liens confondus). 0 si le lien n'est pas demandé.
+   */
+  surCeLien: number;
 };
 
-/** Trois lectures légères (deux comptes `head`, une ligne). `null` : base illisible. */
-export async function comptesDeLaPersonne(supabase: SupabaseClient, editionId: string, participantId: string | null, appareil: string | null): Promise<ComptesPersonne | null> {
+/**
+ * Trois lectures légères (deux comptes en GET `limit(0)`, une ligne), et un compte de plus pour
+ * le lien de la page quand on le demande (`lien.provenanceId` : `null` pour le lien général).
+ * `null` : base illisible.
+ */
+export async function comptesDeLaPersonne(
+  supabase: SupabaseClient,
+  editionId: string,
+  participantId: string | null,
+  appareil: string | null,
+  lien?: { provenanceId: string | null }
+): Promise<ComptesPersonne | null> {
   type Compte = { count: number | null; error: ErreurBase };
   const rien: Compte = { count: 0, error: null };
   const lus = await lireHorsCorbeille(async (avec) => {
@@ -264,18 +280,30 @@ export async function comptesDeLaPersonne(supabase: SupabaseClient, editionId: s
       const { data, error } = await q.order("created_at", { ascending: false }).limit(1).returns<{ accord_version: string | null }[]>();
       return { version: data?.[0]?.accord_version ?? null, error };
     };
-    const [siennes, ici, accord] = await Promise.all([
+    /* Sur le lien de la page : la même règle que l'album (`duLien`) : sa provenance, ou, pour le lien
+       général, une photo de participant sans provenance. */
+    const surLien = async (): Promise<Compte> => {
+      if (!lien || (!(participantId && avec) && !appareil)) return rien;
+      let q = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", editionId).not("confirmee_le", "is", null);
+      if (avec) q = q.is("supprimee_le", null);
+      q = lien.provenanceId ? q.eq("provenance_id", lien.provenanceId) : q.is("provenance_id", null).eq("role_deposant", "participant");
+      q = participantId && avec ? q.eq("participant_id", participantId) : q.eq("appareil_id", appareil as string);
+      const { count, error } = await q.limit(0);
+      return { count, error };
+    };
+    const [siennes, ici, accord, lienCompte] = await Promise.all([
       participantId && avec ? compter({ participant: participantId }) : appareil ? compter({ appareil }) : Promise.resolve(rien),
       appareil ? compter({ appareil, ...(participantId && avec ? { participantOuRien: participantId } : {}) }) : Promise.resolve(rien),
       derniereVersion(),
+      surLien(),
     ]);
-    return { siennes, ici, accord, error: siennes.error ?? ici.error ?? accord.error ?? null };
+    return { siennes, ici, accord, lienCompte, error: siennes.error ?? ici.error ?? accord.error ?? lienCompte.error ?? null };
   });
   if (lus.error) {
     console.error("[collectif] photos de la personne illisibles", lus.error.code, lus.error.message);
     return null;
   }
-  return { photos: lus.siennes.count ?? 0, ceTelephone: lus.ici.count ?? 0, accord: lus.accord.version };
+  return { photos: lus.siennes.count ?? 0, ceTelephone: lus.ici.count ?? 0, accord: lus.accord.version, surCeLien: lus.lienCompte.count ?? 0 };
 }
 
 /* ─────────────────────────── la liste ─────────────────────────── */
