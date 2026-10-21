@@ -2,16 +2,16 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
-import { controleAppareilActif } from "@/lib/collectif/appareil";
 import { estUuid } from "@/lib/collectif/cles";
 import { collecteOuverte } from "@/lib/collectif/etats";
 import { origineDepuis } from "@/lib/collectif/liens";
 import { mailsCollectifOuverts } from "@/lib/collectif/mails";
 import { donneesEspacePret, mailEspacePret } from "@/lib/collectif/mailsTextes";
 import { MIGRATION_COLLECTIF, tableAbsente } from "@/lib/collectif/migration";
+import { plafondLienMax } from "@/lib/collectif/plafonds";
 import type { EditionLigne } from "@/lib/collectif/types";
 import BarreAtelier, { liensEditions } from "../../../BarreAtelier";
-import { compterNonLus } from "../../donnees";
+import { chargerLiensDeGroupe, compterNonLus, type LienFiche } from "../../donnees";
 import FinCreation from "./FinCreation";
 import "../../../admin.css";
 import "../../../atelier/atelier.css";
@@ -20,12 +20,18 @@ import "../../collectif.css";
 /**
  * /admin/collectif/creee/[id] — « L'édition est créée » (T-187, planche 6 du 19/10).
  *
- * L'écran qui suit « Créer l'édition » : la ligne de résumé, les TROIS liens en
- * cartes (chacun avec son rôle), « Envoyer à <adresse> » en deux temps sur la
- * carte du responsable, « Copier les trois liens », « Aller à la fiche », et
- * l'aperçu du VRAI mail (la route GET `mail-espace`, la même qui l'enverrait).
- * Depuis le 20/10, le mail ne porte que le lien du responsable : il lui dit où
- * trouver les deux autres dans son espace. L'écran, lui, les montre toujours.
+ * L'écran qui suit « Créer l'édition » : la ligne de résumé, DEUX liens en cartes
+ * (le responsable, l'équipe), « Envoyer à <adresse> » en deux temps sur la carte
+ * du responsable, « Copier les deux liens », « Aller à la fiche », et l'aperçu du
+ * VRAI mail (la route GET `mail-espace`, la même qui l'enverrait).
+ *
+ * Planche 5C du 21/10 (validée) : plus de « lien des participants » (l'adresse de
+ * base n'est plus montrée ni envoyée). La troisième carte devient « Les liens des
+ * participants » : un lien par groupe, créé dans l'espace du responsable, et
+ * « Préparer les groupes maintenant », qui ouvre ici la carte de création de
+ * l'atelier (`PanneauProvenances`, la route `…/provenances`, ses contrôles et son
+ * plafond). Ses liens se LISENT ici (`chargerLiensDeGroupe`) : « aucun pour
+ * l'instant », ou « N liens ».
  *
  * ⚠️ Rien ne part sans le second clic, et rien ne part du tout tant que
  * `COLLECTIF_MAILS` est fermé (décision de Mathias du 19/10 : « sauf le mail :
@@ -55,6 +61,9 @@ type Lue = Pick<
   | "token_equipe"
   | "token_depot"
   | "archive_le"
+  | "plafond_participant_atelier"
+  | "plafond_participant_client"
+  | "plafond_total"
 >;
 
 export default async function PageCreee({ params }: { params: Promise<{ id: string }> }) {
@@ -67,7 +76,9 @@ export default async function PageCreee({ params }: { params: Promise<{ id: stri
   const [lue, mags, nonLus] = await Promise.all([
     supabase
       .from("collectif_editions")
-      .select("id, organisation, evenement, registre, etat, responsable_email, responsable_nom, cloture_le, token_responsable, token_equipe, token_depot, archive_le")
+      .select(
+        "id, organisation, evenement, registre, etat, responsable_email, responsable_nom, cloture_le, token_responsable, token_equipe, token_depot, archive_le, plafond_participant_atelier, plafond_participant_client, plafond_total"
+      )
       .eq("id", id)
       .maybeSingle<Lue>(),
     supabase.from("collectif_magazines").select("id", { count: "exact", head: true }).eq("edition_id", id),
@@ -92,8 +103,16 @@ export default async function PageCreee({ params }: { params: Promise<{ id: stri
   const h = await headers();
   const origine = origineDepuis(h.get("x-forwarded-host") ?? h.get("host"), h.get("x-forwarded-proto"));
   /* Les mêmes données que la route qui enverrait le mail : l'objet affiché est le vrai. */
-  const donnees = donneesEspacePret(e, origine, controleAppareilActif(process.env));
+  const donnees = donneesEspacePret(e, origine);
   const mail = mailEspacePret(donnees);
+  /* Les liens de groupe déjà là (une édition qu'on rouvre ici, des groupes préparés) : une lecture.
+     Illisibles, l'écran ne dit pas « aucun » au hasard : la carte se tait sur le nombre. */
+  let groupes: LienFiche[] | null = null;
+  try {
+    groupes = await chargerLiensDeGroupe(supabase, e.id, e);
+  } catch (err) {
+    console.error("[collectif] liens de groupe illisibles sur l'écran de fin de création", err);
+  }
   const nbMagazines = mags.count ?? 0;
   const ouverte = collecteOuverte(e.etat, e.cloture_le, new Date());
   const resume = [
@@ -112,7 +131,10 @@ export default async function PageCreee({ params }: { params: Promise<{ id: stri
       </header>
       <FinCreation
         id={e.id}
-        liens={donnees.liens}
+        liens={{ responsable: donnees.liens.responsable, equipe: donnees.liens.equipe }}
+        depot={donnees.liens.depot}
+        groupes={groupes ? groupes.map(({ cle, ...l }) => ({ ...l, url: `${donnees.liens.depot}?p=${cle}` })) : null}
+        max={plafondLienMax(e)}
         prenom={(e.responsable_nom ?? "").trim().split(/\s+/)[0] || null}
         email={e.responsable_email}
         cloture={donnees.cloture}

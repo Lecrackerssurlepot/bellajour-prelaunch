@@ -9,11 +9,18 @@
    (`partage.ts`, retours du 14/10) ; `FenetrePartage` le montre et le laisse
    retoucher avant l'envoi.
    Le lien est `/depot/<token_depot>?p=<clé aléatoire>` : jamais un mot
-   lisible (droits.ts), même si la maquette en montrait un. */
+   lisible (droits.ts), même si la maquette en montrait un.
+
+   Planche 5 (21/10) : l'adresse de BASE `/depot/<token_depot>` (l'ancien « lien
+   général ») n'est plus jamais montrée ni envoyée. `FenetrePartage` et `FenetreQr`
+   refusent un lien `general` : elles disent pourquoi au lieu de préparer le
+   message ou le QR. Le formulaire de création (`FenetreCreerLien`) s'ouvre aussi
+   depuis l'état vide de « Les liens », avec un nom déjà écrit (les pastilles
+   « Bateau 1 », « Équipe Lyon », « Le photographe »). */
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { messagePartage } from "@/lib/collectif/partage";
+import { messagePartage, NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { imprimerPage } from "@/lib/collectif/imprimer";
 import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
@@ -25,9 +32,15 @@ export type LienPartage = {
   url: string;
   plafond: string;
   recues?: number;
-  /** Le lien général des participants : salue « à tous ». */
+  /** L'adresse de base (l'ancien lien général) : elle ne se partage plus (planche 5, 21/10). */
   general?: boolean;
 };
+
+/** Un lien que la route vient d'écrire : de quoi l'afficher aussitôt (son id et sa clé, si la route les rend). */
+export type LienCree = LienPartage & { id: string | null; cle: string | null; plafondNombre: number | null; sansPlafond: boolean };
+
+/** L'exemple du champ « nom » : les trois noms pour commencer (« Tous les participants » n'y est plus, planche 5B). */
+export const EXEMPLE_NOM_LIEN = `${NOMS_POUR_COMMENCER.join(", ")}…`;
 
 /** Ce que le message dit de l'événement : l'organisation, l'événement, la clôture, le registre. */
 export type ContexteMessage = { organisation: string; evenement: string; cloture: string; tu: boolean };
@@ -104,50 +117,24 @@ export default function FenetreLien({
   token,
   max,
   contexte,
+  nomInitial,
   onFermer,
 }: {
   token: string;
   /** Le plafond le plus haut pour un lien (`plafondLienMax`). */
   max: number;
   contexte: ContexteMessage;
+  /** Un nom déjà écrit dans le champ (une pastille de l'état vide). */
+  nomInitial?: string;
   onFermer: () => void;
 }) {
-  const { cloture, tu } = contexte;
+  const { cloture } = contexte;
   const router = useRouter();
-  const v = (vous: string, toi: string) => (tu ? toi : vous);
-  const min = Math.min(CURSEUR_LIEN.min, max);
-  const [nom, setNom] = useState("");
-  const [valeur, setValeur] = useState(Math.min(30, max));
-  const [sansLimite, setSansLimite] = useState(false);
-  const [occupe, setOccupe] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
   const [cree, setCree] = useState<LienPartage | null>(null);
 
   function fermer() {
     if (cree) router.refresh();
     onFermer();
-  }
-
-  async function creer() {
-    setOccupe(true);
-    setErreur(null);
-    try {
-      const rep = await fetch("/api/collectif/provenances", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(sansLimite ? { token, libelle: nom, sansPlafond: true } : { token, libelle: nom, plafond: valeur }),
-      });
-      const json = (await rep.json().catch(() => ({}))) as { chemin?: string; libelle?: string; plafond?: string; message?: string };
-      if (!rep.ok || !json.chemin) {
-        setErreur(json.message ?? `Lien non créé (erreur ${rep.status}).`);
-        return;
-      }
-      setCree({ libelle: json.libelle ?? nom, url: `${window.location.origin}${json.chemin}`, plafond: json.plafond ?? "" });
-    } catch {
-      setErreur("Le réseau n'a pas répondu. Aucun lien créé.");
-    } finally {
-      setOccupe(false);
-    }
   }
 
   if (cree) {
@@ -170,6 +157,77 @@ export default function FenetreLien({
     );
   }
 
+  return <FenetreCreerLien token={token} max={max} tu={contexte.tu} nomInitial={nomInitial} onCree={setCree} onFermer={fermer} />;
+}
+
+/**
+ * Le premier temps seul : le nom et le nombre de photos, puis « Créer le lien ». `onCree` reçoit
+ * le lien écrit (son id et sa clé quand la route les rend), à l'appelant de le montrer : la
+ * fenêtre en deux temps passe au QR, l'état vide de « Les liens » l'ajoute à la liste et ouvre
+ * « Partager ». La règle est celle du serveur (`/api/collectif/provenances`), qui refuse un nom
+ * réservé et dit pourquoi.
+ */
+export function FenetreCreerLien({
+  token,
+  max,
+  tu,
+  nomInitial,
+  onCree,
+  onFermer,
+}: {
+  token: string;
+  max: number;
+  tu: boolean;
+  nomInitial?: string;
+  onCree: (lien: LienCree) => void;
+  onFermer: () => void;
+}) {
+  const v = (vous: string, toi: string) => (tu ? toi : vous);
+  const min = Math.min(CURSEUR_LIEN.min, max);
+  const [nom, setNom] = useState(nomInitial ?? "");
+  const [valeur, setValeur] = useState(Math.min(30, max));
+  const [sansLimite, setSansLimite] = useState(false);
+  const [occupe, setOccupe] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  async function creer() {
+    setOccupe(true);
+    setErreur(null);
+    try {
+      const rep = await fetch("/api/collectif/provenances", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(sansLimite ? { token, libelle: nom, sansPlafond: true } : { token, libelle: nom, plafond: valeur }),
+      });
+      const json = (await rep.json().catch(() => ({}))) as {
+        chemin?: string;
+        libelle?: string;
+        plafond?: string;
+        message?: string;
+        lien?: { id?: unknown; cle?: unknown; plafondNombre?: unknown; sansPlafond?: unknown };
+      };
+      if (!rep.ok || !json.chemin) {
+        setErreur(json.message ?? `Lien non créé (erreur ${rep.status}).`);
+        return;
+      }
+      const ecrit = json.lien;
+      onCree({
+        libelle: json.libelle ?? nom,
+        url: `${window.location.origin}${json.chemin}`,
+        plafond: json.plafond ?? "",
+        recues: 0,
+        id: typeof ecrit?.id === "string" ? ecrit.id : null,
+        cle: typeof ecrit?.cle === "string" ? ecrit.cle : null,
+        plafondNombre: typeof ecrit?.plafondNombre === "number" ? ecrit.plafondNombre : null,
+        sansPlafond: ecrit?.sansPlafond === true,
+      });
+    } catch {
+      setErreur("Le réseau n'a pas répondu. Aucun lien créé.");
+    } finally {
+      setOccupe(false);
+    }
+  }
+
   return (
     <Fenetre
       titre="Créer un lien de contribution"
@@ -177,17 +235,11 @@ export default function FenetreLien({
         "La personne dépose depuis son téléphone, sans compte. Ses photos arrivent dans un dossier à son nom.",
         "La personne dépose depuis son téléphone, sans compte. Ses photos arrivent dans un dossier à son nom."
       )}
-      onFermer={fermer}
+      onFermer={onFermer}
     >
       <label className="ec-curseur">
         Le nom de la personne ou du groupe
-        <input
-          className="ec-champ"
-          value={nom}
-          maxLength={80}
-          placeholder="Tous les participants, Le photographe, Équipe Lyon…"
-          onChange={(e) => setNom(e.target.value)}
-        />
+        <input className="ec-champ" value={nom} maxLength={80} placeholder={EXEMPLE_NOM_LIEN} onChange={(e) => setNom(e.target.value)} />
       </label>
       <div className="ec-lien-plafond">
         <div className="ec-lien-plafond-tete">
@@ -239,8 +291,31 @@ export default function FenetreLien({
   );
 }
 
+/**
+ * L'adresse de base ne se partage plus (planche 5, 21/10) : si un écran demande quand même
+ * à la partager ou à en montrer le QR, la fenêtre dit pourquoi et ne prépare rien (ni
+ * message, ni QR, ni adresse). Les photos déjà arrivées par elle restent sous « Sans groupe ».
+ */
+function FenetreSansPartage({ tu, onFermer }: { tu: boolean; onFermer: () => void }) {
+  return (
+    <Fenetre
+      titre="Ces photos n'ont pas de groupe"
+      sous={tu ? "Elles restent dans « Sans groupe », en lecture seule. Pour inviter, crée un lien par groupe." : "Elles restent dans « Sans groupe », en lecture seule. Pour inviter, créez un lien par groupe."}
+      onFermer={onFermer}
+    >
+      <button type="button" className="ec-bouton ec-bouton--plein" onClick={onFermer}>
+        Compris
+      </button>
+    </Fenetre>
+  );
+}
+
 /** Partager un lien déjà créé (maquette Partage) : le QR, le message écrit pour ce groupe et cet événement, à retoucher, puis WhatsApp, Mail, Copier le message, Télécharger le QR. */
 export function FenetrePartage({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
+  return lien.general ? <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} /> : <FenetrePartageDuLien lien={lien} contexte={contexte} onFermer={onFermer} />;
+}
+
+function FenetrePartageDuLien({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
   const v = (vous: string, toi: string) => (contexte.tu ? toi : vous);
   const propose = texteDuLien(lien, contexte);
   const [texte, setTexte] = useState(propose.texte);
@@ -265,7 +340,8 @@ export function FenetrePartage({ lien, contexte, onFermer }: { lien: LienPartage
         <QrCode texte={lien.url} taille={136} etiquette={`QR code du lien « ${lien.libelle} »`} />
         <label className="ec-partage-message">
           Le message
-          <textarea className="ec-champ" rows={8} value={texte} onChange={(e) => setTexte(e.target.value)} />
+          {/* Assez de rangées pour lire le message entier, lien et formule de fin compris (trois paragraphes et des lignes vides, planche 4). */}
+          <textarea className="ec-champ" rows={Math.min(16, Math.max(8, propose.texte.split("\n").length + 4))} value={texte} onChange={(e) => setTexte(e.target.value)} />
         </label>
       </div>
       <div className="ec-partage ec-partage--quatre">
@@ -296,6 +372,7 @@ function detailsDuQr(lien: LienPartage, contexte: ContexteMessage): string {
     Le NOM du lien est sous le code (T-197) : le QR scotché à bord du bateau dit lequel c'est. « Imprimer » ne sort que
     ce nom et ce code, sur une feuille A4 (`pageQrImprimable`), jamais le reste de l'écran. */
 export function FenetreQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
+  if (lien.general) return <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} />;
   return (
     <Fenetre titre="Le QR code du lien" sous="À projeter ou à imprimer : on le scanne avec l'appareil photo du téléphone, sans application." onFermer={onFermer}>
       <div className="ec-qr-grand">

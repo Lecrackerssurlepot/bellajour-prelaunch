@@ -7,7 +7,7 @@ import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_LIENS_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
-import { planModificationLien } from "@/lib/collectif/modifierLien";
+import { planModificationLien, refusNomReserve } from "@/lib/collectif/modifierLien";
 import { libellePlafondLien, lirePlafondLien } from "@/lib/collectif/plafonds";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { TYPES_PROVENANCE, type EditionLigne, type TypeProvenance } from "@/lib/collectif/types";
@@ -18,7 +18,12 @@ import { TYPES_PROVENANCE, type EditionLigne, type TypeProvenance } from "@/lib/
  * `{ token, libelle, plafond | sansPlafond, type? }`.
  *
  * Le lien rendu est `/depot/<token_depot>?p=<clé>`. La clé est ALÉATOIRE
- * (22 caractères), un mot lisible se devinerait. Chaque lien porte SON
+ * (22 caractères), un mot lisible se devinerait. La route rend aussi le lien
+ * ÉCRIT (`lien` : id, clé, nombre) : l'onglet « Les liens » l'affiche aussitôt
+ * (planche 5B, 21/10), sans attendre une relecture. Un nom RÉSERVÉ (« Tous les
+ * participants », « Sans groupe », les groupes fixes) est refusé : 409
+ * `nom_reserve` (`refusNomReserve`). Deux liens du même nom restent permis
+ * ici (le lot les rend uniques). Chaque lien porte SON
  * plafond par personne (`plafond_par_personne`, borné par le plafond de
  * l'atelier) ou « Sans limite ». Créer ce lien est une décision de plafond :
  * le responsable et l'atelier seulement.
@@ -60,6 +65,8 @@ export async function POST(request: Request) {
   const type = TYPES_PROVENANCE.some((t) => t.cle === corps.type) ? (corps.type as TypeProvenance) : "participant";
   const libelle = typeof corps.libelle === "string" ? corps.libelle.trim().slice(0, 80) : "";
   if (!libelle) return NextResponse.json({ error: "saisie", message: "Donner le nom de la personne ou du groupe." }, { status: 422 });
+  const reserve = refusNomReserve(libelle);
+  if (reserve) return NextResponse.json({ error: reserve.error, champ: "libelle", message: reserve.message }, { status: 409 });
   const plafond = lirePlafondLien(corps, acces.edition);
   if (!plafond.ok) return NextResponse.json({ error: "saisie", message: plafond.message }, { status: 422 });
 
@@ -76,10 +83,10 @@ export async function POST(request: Request) {
   /* La colonne n'est nommée que si le lien a un plafond : « Sans limite »
      reste possible avant la migration. */
   if (plafond.plafond_par_personne !== null) ligne.plafond_par_personne = plafond.plafond_par_personne;
-  const { error } = await supabase.from("collectif_provenances").insert(ligne);
-  if (error) {
-    if (colonneAbsente(error.code)) return NextResponse.json({ error: ERREUR_REVISION_ABSENTE, message: MESSAGE_REVISION_ABSENTE }, { status: 503 });
-    console.error("[collectif] provenance non créée", error.code, error.message);
+  const { data: ecrit, error } = await supabase.from("collectif_provenances").insert(ligne).select("id").single<{ id: string }>();
+  if (error || !ecrit) {
+    if (colonneAbsente(error?.code)) return NextResponse.json({ error: ERREUR_REVISION_ABSENTE, message: MESSAGE_REVISION_ABSENTE }, { status: 503 });
+    console.error("[collectif] provenance non créée", error?.code, error?.message);
     return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
   }
   /* Le journal nomme le lien, jamais sa clé (comme un token). */
@@ -96,6 +103,8 @@ export async function POST(request: Request) {
       chemin: `/depot/${acces.edition.token_depot}?p=${cle}`,
       libelle,
       plafond: libellePlafondLien(plafond, acces.edition),
+      /* Le lien écrit, pour l'afficher aussitôt (`router.refresh()` ne repeint pas toujours, 14/10). */
+      lien: { id: ecrit.id, cle, plafondNombre: plafond.plafond_par_personne, sansPlafond: plafond.sans_plafond },
       journal,
     },
     { status: 201 }

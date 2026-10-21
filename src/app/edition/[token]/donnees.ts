@@ -331,8 +331,10 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     })),
     ...arbre.liens.map((l) => {
       const prov = l.cle.startsWith("lien:") ? parId.get(l.cle.slice(5)) : undefined;
-      const regle = prov ? plafondDuLien(prov, edition) : plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition);
-      return { cle: l.cle, libelle: l.nom, detail: `${prov ? "lien" : "lien général"} · ${regle.toLowerCase()}${personnes(l)}`, n: l.n, lien: true, couverture: null };
+      /* « Sans groupe » (l'adresse de base, planche 5 du 21/10) : ni « lien général », ni sa règle ; il n'existe que s'il a reçu. */
+      const detail =
+        l.cle === "participants" ? `arrivées sans lien de groupe${personnes(l)}` : prov ? `lien · ${plafondDuLien(prov, edition).toLowerCase()}${personnes(l)}` : `lien${personnes(l)}`;
+      return { cle: l.cle, libelle: l.nom, detail, n: l.n, lien: true, couverture: null };
     }),
     ...(arbre.atelier ? [{ cle: "atelier", libelle: arbre.atelier.nom, detail: "déposées par l'atelier", n: arbre.atelier.n, lien: false, couverture: null }] : []),
   ].sort((a, b) => b.n - a.n);

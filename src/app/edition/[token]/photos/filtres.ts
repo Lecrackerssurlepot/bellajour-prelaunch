@@ -27,6 +27,7 @@
 
 import { PHOTOS_PAR_GESTE } from "@/lib/collectif/corbeille";
 import { clePersonne, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+import { GROUPE_SANS_GROUPE } from "@/lib/collectif/partage";
 
 export type Mode = "tout" | "liens";
 export type Ordre = "recentes" | "jour";
@@ -303,7 +304,8 @@ export function echeanceTexte(jours: number): string {
 export function phraseRetour(lien: string, lienNom: string, qui: string): string {
   if (lien === "vous") return "De retour dans Mes photos";
   if (lien === "atelier") return "De retour avec les photos de l'atelier";
-  if (lien === "participants") return `De retour dans le lien général, chez ${qui}`;
+  /* L'adresse de base (planche 5, 21/10) : ses photos sont « Sans groupe », plus « le lien général ». */
+  if (lien === "participants") return `De retour dans ${GROUPE_SANS_GROUPE}, chez ${qui}`;
   return `De retour dans ${lienNom}, chez ${qui}`;
 }
 
@@ -425,7 +427,7 @@ export function phraseNomPropose(np: { nom: string; le: string }, tu: boolean): 
 export function nomDuLien(arbre: Arbre | null, cle: string): string | null {
   const n = arbre ? [...arbre.liens, ...(arbre.atelier ? [arbre.atelier] : [])].find((x) => x.cle === cle) : undefined;
   if (n) return n.nom;
-  return cle === "participants" ? "Le lien général" : null;
+  return cle === "participants" ? GROUPE_SANS_GROUPE : null;
 }
 
 /** L'annonce courte du téléphone : « 12 nouvelles · Léa, Hugo et 1 autre ». */
