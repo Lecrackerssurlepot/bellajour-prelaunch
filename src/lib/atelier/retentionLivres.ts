@@ -250,7 +250,9 @@ export async function effacerDossierLivre(
       await reglerGardees(supabase, numeroId, intentions);
       return { statut: "refuse", etape: "photos", code: photos.error.code };
     }
-    const numero = await supabase.from("numeros").update(PATCH_NUMERO_LIVRE_EFFACE).eq("id", numeroId);
+    const numero = Object.keys(PATCH_NUMERO_LIVRE_EFFACE).length
+      ? await supabase.from("numeros").update(PATCH_NUMERO_LIVRE_EFFACE).eq("id", numeroId)
+      : { error: null };
     if (numero.error) {
       await reglerGardees(supabase, numeroId, intentions);
       return { statut: "refuse", etape: "numero", code: numero.error.code };

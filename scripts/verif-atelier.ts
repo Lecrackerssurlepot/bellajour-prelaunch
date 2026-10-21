@@ -6067,9 +6067,9 @@ const verifierT203 = async () => {
     const EFF = (k: string) => Rt.cleEffaceeLivre(k, N);
     ok("les photos telversees : l'original (chaque format) et la vignette, sur les cles que cleR2 / cleVignetteR2 ecrivent",
        ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"].every((m) => F(R2.cleR2(N, ph(1), m)) === "photos") && F(R2.cleVignetteR2(N, ph(1))) === "photos" && EFF(R2.cleR2(N, ph(1), "image/heic")));
-    ok("le fichier HD d'impression (produit, couverture, interieur) et le PDF souvenir PARTENT",
-       ["produit", "couverture", "interieur"].every((s) => F(`numeros/${N}/impression/${s}-0a1b2c3d.pdf`) === "impression") && F(`numeros/${N}/souvenir/0a1b2c3d.pdf`) === "souvenir"
-         && EFF(`numeros/${N}/impression/couverture-0a1b2c3d.pdf`) && EFF(`numeros/${N}/souvenir/0a1b2c3d.pdf`));
+    ok("le fichier HD d'impression (produit, couverture, interieur) et le PDF souvenir RESTENT, 10 ans (decision de Mathias du 21/10 : reimpression et telechargement)",
+       ["produit", "couverture", "interieur"].every((s) => F(`numeros/${N}/impression/${s}-0a1b2c3d.pdf`) === "impression" && !EFF(`numeros/${N}/impression/${s}-0a1b2c3d.pdf`)) && F(`numeros/${N}/souvenir/0a1b2c3d.pdf`) === "souvenir"
+         && !EFF(`numeros/${N}/souvenir/0a1b2c3d.pdf`) && Rt.CONSERVATION_HD_LIVRE_ANS === 10);
     ok("les apercus de couverture RESTENT (ni photo televersee ni fichier HD : le reste du dossier ne part jamais)",
        ["plat", "c1", "c4", "double"].every((s) => F(`numeros/${N}/apercu/${s}-0a1b2c3d.jpg`) === "apercu" && !EFF(`numeros/${N}/apercu/${s}-0a1b2c3d.jpg`)));
     ok("une cle inconnue, une cle d'un autre dossier, un « .. », une cle d'edition, un dossier qui n'est pas un uuid : jamais",
@@ -6077,8 +6077,8 @@ const verifierT203 = async () => {
          && F(`numeros/${N}/photos/../../${num(2)}/photos/${ph(1)}/original.jpg`) === "hors_dossier" && F(`collectif/${N}/photos/${ph(1)}/original.jpg`) === "hors_dossier"
          && Rt.familleDeCleNumero(R2.cleR2("0f3e", ph(1), "image/jpeg"), "0f3e") === "hors_dossier" && Rt.familleDeCleNumero(R2.cleR2(N.toUpperCase(), ph(1), "image/jpeg"), N.toUpperCase()) === "hors_dossier"
          && !EFF(`numeros/${N}/autre/x.bin`) && !EFF(R2.cleR2(num(2), ph(1), "image/jpeg")));
-    ok("la table : seules photos, impression et souvenir s'effacent ; chaque famille dans l'ordre du rapport, une fois",
-       (Object.keys(Rt.FAMILLES_LIVRE) as (keyof typeof Rt.FAMILLES_LIVRE)[]).filter((f) => Rt.FAMILLES_LIVRE[f].efface).sort().join() === "impression,photos,souvenir"
+    ok("la table : seules les photos s'effacent (le fichier HD reste, 21/10) ; chaque famille dans l'ordre du rapport, une fois",
+       (Object.keys(Rt.FAMILLES_LIVRE) as (keyof typeof Rt.FAMILLES_LIVRE)[]).filter((f) => Rt.FAMILLES_LIVRE[f].efface).sort().join() === "photos"
          && Rt.ORDRE_FAMILLES_LIVRE.length === Object.keys(Rt.FAMILLES_LIVRE).length && new Set(Rt.ORDRE_FAMILLES_LIVRE).size === Rt.ORDRE_FAMILLES_LIVRE.length);
     const sqls = ["20260821_atelier_numeros.sql", "20260830_atelier_vignettes.sql", "20260921_atelier_photos_metadonnees.sql"].map((f) => lire(`supabase/migrations/${f}`)).join("\n");
     const videes = Object.keys(Rt.PATCH_PHOTO_LIVRE_EFFACEE);
@@ -6086,8 +6086,8 @@ const verifierT203 = async () => {
        videes.every((c) => new RegExp(`\\b${c}\\b`).test(sqls)) && videes.every((c) => !new RegExp(`\\b${c}\\b[^\\n,]*not null`).test(sqls))
          && Object.values(Rt.PATCH_PHOTO_LIVRE_EFFACEE).every((v) => v === null) && ["r2_key", "metadonnees_le", "lieu_le", "largeur", "numero_id", "id"].every((c) => !videes.includes(c)));
     const surDossier = Object.keys(Rt.PATCH_NUMERO_LIVRE_EFFACE);
-    ok("sur le dossier, seulement les cles du fichier HD (souvenir, impression) ; ni l'etat, ni le prix, ni l'adresse, ni le token, ni l'adresse e-mail",
-       surDossier.sort().join() === "impression_fichiers,souvenir_pdf_key,souvenir_pdf_octets" && Object.values(Rt.PATCH_NUMERO_LIVRE_EFFACE).every((v) => v === null));
+    ok("sur le dossier, RIEN n'est vide (le fichier HD reste et ses cles avec) ; ni l'etat, ni le prix, ni l'adresse, ni le token, ni l'adresse e-mail",
+       surDossier.length === 0);
     const mig = lire("supabase/migrations/20261024_atelier_retention_livres.sql");
     const sql = mig.split("\n").filter((l) => !l.trim().startsWith("--")).join("\n");
     ok("la migration 20261024 n'AJOUTE qu'une colonne nullable `numeros.photos_supprimees_le` (rien d'efface, rien de reecrit)",
@@ -6173,30 +6173,31 @@ const verifierT203 = async () => {
     const m = coffreMem([...coffreDe(N, ps), ...coffreDe(AUTRE, [photo(AUTRE, 3)])]);
     const r = await silence(() => Rl.effacerDossierLivre(comme(base.client), N, { maintenant: MAINT, coffre: m.coffre, jusqua: jusqua() }));
     const d = (base.tables.numeros as LigneMem[]).find((x) => x.id === N)!;
-    ok("efface : les photos (originaux, vignettes), le fichier HD d'impression et le souvenir partent ; l'apercu et la cle inconnue RESTENT",
-       r !== "leve" && r.statut === "efface" && r.objets === 7 && r.restes === 0 && coffreDe(N, ps).every((k) => (Rt.cleEffaceeLivre(k, N) ? !m.objets.has(k) : m.objets.has(k)))
+    ok("efface : les photos (originaux, vignettes) partent ; le fichier HD d'impression, le souvenir (10 ans, 21/10), l'apercu et la cle inconnue RESTENT",
+       r !== "leve" && r.statut === "efface" && r.objets === 4 && r.restes === 0
+         && [`numeros/${N}/impression/couverture-0a1b2c3d.pdf`, `numeros/${N}/impression/interieur-0a1b2c3d.pdf`, `numeros/${N}/souvenir/0a1b2c3d.pdf`].every((k) => m.objets.has(k)) && coffreDe(N, ps).every((k) => (Rt.cleEffaceeLivre(k, N) ? !m.objets.has(k) : m.objets.has(k)))
          && m.objets.has(`numeros/${N}/apercu/c1-0a1b2c3d.jpg`) && m.objets.has(`numeros/${N}/autre/x.bin`));
     ok("l'AUTRE dossier (livre lui aussi) n'est pas touche : on n'efface que celui qu'on nomme ; jamais une cle gardee demandee au coffre",
        coffreDe(AUTRE, [photo(AUTRE, 3)]).every((k) => m.objets.has(k)) && m.demandes.every((k) => Rt.cleEffaceeLivre(k, N)));
     const lignes = (base.tables.photos as LigneMem[]).filter((p) => p.numero_id === N);
     ok("aucune ligne de photo supprimee ; nom de fichier, date, lieu, appareil, empreinte, vignette VIDES ; r2_key, dimensions, marqueurs d'enrichissement gardes",
        lignes.length === 2 && lignes.every((l) => Object.keys(Rt.PATCH_PHOTO_LIVRE_EFFACEE).every((c) => l[c] === null)) && lignes.every((l) => typeof l.r2_key === "string" && l.largeur === 4000 && typeof l.metadonnees_le === "string"));
-    ok("le dossier : les cles du fichier HD retirees, le marqueur pose ; l'etat, le prix, l'adresse, le token, l'adresse e-mail INTACTS (ce n'est pas une anonymisation)",
-       d.souvenir_pdf_key === null && d.souvenir_pdf_octets === null && d.impression_fichiers === null && d.photos_supprimees_le === MAINT.toISOString()
+    ok("le dossier : les cles du fichier HD GARDEES (le fichier reste 10 ans), le marqueur pose ; l'etat, le prix, l'adresse, le token, l'adresse e-mail INTACTS (ce n'est pas une anonymisation)",
+       d.souvenir_pdf_key === `numeros/${N}/souvenir/0a1b2c3d.pdf` && d.souvenir_pdf_octets === 1000 && d.impression_fichiers !== null && d.photos_supprimees_le === MAINT.toISOString()
          && d.etat === "livree" && d.prix_centimes === 4500 && (d.adresse_livraison as LigneMem).ligne1 === "1 rue X" && d.email === "julie@exemple.fr" && String(d.token).length === 32);
     const ordre = ["insert:evenements:retention_livre_a_effacer", "update:photos:2", "update:numeros:1", "insert:evenements:retention_livre_effacee", "insert:evenements:photos_hd_effaces"];
     const i = ordre.map((t) => base.trace.indexOf(t));
     const marqueur = base.trace.lastIndexOf("update:numeros:1");
-    ok("l'ORDRE (audit S7) : l'intention, les photos, le dossier, le MARQUEUR (en dernier), puis ce qui est regle, puis le resume",
-       i.every((x) => x >= 0) && i.every((x, k) => k === 0 || i[k - 1] < x) && marqueur > i[2] && marqueur < i[3]);
+    ok("l'ORDRE (audit S7) : l'intention, les photos, le MARQUEUR sur le dossier (en dernier, seule ecriture du dossier), puis ce qui est regle, puis le resume",
+       i.every((x) => x >= 0) && i.every((x, k) => k === 0 || i[k - 1] < x) && marqueur === i[2] && marqueur < i[3] && base.trace.filter((t) => t.startsWith("update:numeros")).length === 1);
     const evts = (base.tables.evenements as LigneMem[]).filter((e) => e.numero_id === N && String(e.type).startsWith("retention_livre") || e.type === "photos_hd_effaces");
     const resume = (base.tables.evenements as LigneMem[]).find((e) => e.type === "photos_hd_effaces")?.payload as LigneMem | undefined;
-    ok("le journal (`evenements`) : le resume compte (7 objets, 0 reste, 2 gardes, 90 jours) ; ni l'adresse e-mail, ni un nom de fichier, ni le token",
-       resume?.objets_effaces === 7 && resume?.objets_restes === 0 && resume?.objets_gardes === 2 && resume?.retention_jours === 90 && resume?.par === "script"
+    ok("le journal (`evenements`) : le resume compte (4 objets, 0 reste, 5 gardes dont le fichier HD, 90 jours) ; ni l'adresse e-mail, ni un nom de fichier, ni le token",
+       resume?.objets_effaces === 4 && resume?.objets_restes === 0 && resume?.objets_gardes === 5 && resume?.retention_jours === 90 && resume?.par === "script"
          && !/julie@|mariage-julie|TTTTTTTT/.test(JSON.stringify(evts.map((e) => e.payload))));
     const deuxieme = await silence(() => Rl.effacerDossierLivre(comme(base.client), N, { maintenant: MAINT, coffre: m.coffre }));
     ok("jamais deux fois : le second passage est epargne (« deja efface »), sans une ecriture de plus",
-       deuxieme !== "leve" && deuxieme.statut === "epargne" && deuxieme.motif === "deja_efface" && base.trace.filter((t) => t.startsWith("update:numeros")).length === 2);
+       deuxieme !== "leve" && deuxieme.statut === "epargne" && deuxieme.motif === "deja_efface" && base.trace.filter((t) => t.startsWith("update:numeros")).length === 1);
   }
 
   titre("— T-203 : les refus, contre la fausse base : pas livre, pas de date, dans le delai, sans la colonne —");
@@ -6244,18 +6245,19 @@ const verifierT203 = async () => {
     const ps = [photo(N, 60)];
     const base = baseEnMemoire({ numeros: [dossier(N)], photos: ps.map((p) => ({ ...p })), evenements: [livraison(N, 100)] });
     const m = coffreMem(coffreDe(N, ps));
-    const souvenir = `numeros/${N}/souvenir/0a1b2c3d.pdf`;
-    m.etat.refuse = (k) => k === souvenir;
+    /* La photo résiste (depuis le 21/10 le souvenir reste 10 ans : il n'est plus effacé) */
+    const resiste = String(ps[0].vignette_key);
+    m.etat.refuse = (k) => k === resiste;
     const r = await silence(() => Rl.effacerDossierLivre(comme(base.client), N, { maintenant: MAINT, coffre: m.coffre }));
-    ok("le coffre refuse le souvenir : le dossier est marque, UN objet reste, le regle ne le nomme pas",
-       r !== "leve" && r.statut === "efface" && r.restes === 1 && m.objets.has(souvenir)
-         && !(((base.tables.evenements as LigneMem[]).find((e) => e.type === "retention_livre_effacee")?.payload as LigneMem).cles as string[]).includes(souvenir));
+    ok("le coffre refuse une vignette : le dossier est marque, UN objet reste, le regle ne le nomme pas ; le souvenir n'est jamais demande",
+       r !== "leve" && r.statut === "efface" && r.restes === 1 && m.objets.has(resiste) && m.objets.has(`numeros/${N}/souvenir/0a1b2c3d.pdf`)
+         && !(((base.tables.evenements as LigneMem[]).find((e) => e.type === "retention_livre_effacee")?.payload as LigneMem).cles as string[]).includes(resiste));
     m.etat.refuse = () => false;
     const tot = await silence(() => Rl.reprendreLivres(comme(base.client), jusqua(), new Date("2026-10-20T08:10:00.000Z"), m.coffre));
     const ok1 = await silence(() => Rl.reprendreLivres(comme(base.client), jusqua(), new Date("2026-10-20T09:00:00.000Z"), m.coffre));
     const fin = await silence(() => Rl.reprendreLivres(comme(base.client), jusqua(), new Date("2026-10-20T10:00:00.000Z"), m.coffre));
-    ok("la reprise attend 15 minutes, puis efface le souvenir, le regle, et la suivante n'a plus rien",
-       tot !== "leve" && tot?.intentions === 0 && ok1 !== "leve" && ok1?.effaces === 1 && !m.objets.has(souvenir) && fin !== "leve" && fin?.intentions === 0);
+    ok("la reprise attend 15 minutes, puis efface la vignette restee, la regle, et la suivante n'a plus rien ; le souvenir reste",
+       tot !== "leve" && tot?.intentions === 0 && ok1 !== "leve" && ok1?.effaces === 1 && !m.objets.has(resiste) && m.objets.has(`numeros/${N}/souvenir/0a1b2c3d.pdf`) && fin !== "leve" && fin?.intentions === 0);
 
     const NON = num(31);
     const base2 = baseEnMemoire({
