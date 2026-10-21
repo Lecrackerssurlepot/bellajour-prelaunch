@@ -1,0 +1,3468 @@
+/* L'espace client de l'Édition collective : jour et nuit (révision §14.1).
+
+   Tout est écrit sous `.bj-atelier.ec-espace` (posé par edition/layout.tsx) :
+   une feuille chargée ne se décharge jamais en navigation client, une classe
+   courte non scopée repeindrait le B2C.
+
+   ══════════════════════════════════════════════════════════════════════════
+   LES COULEURS SONT DES RÔLES, PAS DES TEINTES
+   Le mode vit dans `data-ec-mode` (nuit par défaut, jour sur demande, gardé
+   dans un cookie de l'appareil). Chaque couleur de l'interface est un jeton
+   ci-dessous ; un composant n'écrit JAMAIS une couleur, il écrit un rôle
+   (`--ec-text`, `--ec-line`, `--ec-accent`…), et pour une transparence
+   `rgba(var(--ec-fg-rgb), x)` ou `rgba(var(--ec-ac-rgb), x)`.
+   Exception voulue : les PAGES DE MAGAZINE (BAT, styles) gardent leurs vraies
+   couleurs dans les deux modes (`--ec-page`, `--ec-encre`, et les palettes,
+   qui viennent des données).
+   Les anciens noms (`--ec-blanc`, `--ec-orange`…) sont des alias des rôles,
+   le temps que chaque feuille passe aux nouveaux.
+   ══════════════════════════════════════════════════════════════════════════
+
+   Polices : Cormorant Garamond 400, DM Sans. Pas de `dvh` : la hauteur pleine
+   est `var(--app-height)`. */
+
+.bj-atelier.ec-espace {
+  /* ── la nuit (défaut) : CHARBON (15/10, Mathias) ──
+     Plus de noir pur : un charbon, un blanc cassé, des gris qu'on lit. Mesuré :
+     texte 15,2 : 1, texte doux 7,9 : 1, légendes 5,5 : 1 (le noir d'avant
+     donnait 20,4 : 1 au texte, qui « bavait », et 3,0 : 1 aux légendes). */
+  --ec-fg-rgb: 236, 237, 240;
+  --ec-ac-rgb: 227, 162, 127;
+  --ec-bg: #17181c;
+  --ec-panel: rgba(255, 255, 255, 0.04);
+  --ec-surface: rgba(255, 255, 255, 0.05);
+  --ec-text: #ecedf0;
+  --ec-titre: #ffffff;
+  --ec-muted: #a9adb5;
+  --ec-faint: #8b9099;
+  --ec-line: rgba(255, 255, 255, 0.08);
+  --ec-line-fort: rgba(255, 255, 255, 0.14);
+  --ec-accent: #e3a27f;
+  --ec-accent-fort: #ecb394;
+  --ec-accent-texte: #f2c7af;
+  --ec-on-accent: #1b1410;
+  --ec-accent-soft: rgba(227, 162, 127, 0.16);
+  --ec-glass: rgba(30, 31, 36, 0.8);
+  --ec-voile: rgba(0, 0, 0, 0.4);
+  --ec-ombre: rgba(0, 0, 0, 0.45);
+  --ec-danger: #ff9b7a;
+  --ec-danger-rgb: 255, 155, 122;
+  --ec-ok: #8ee0b0;
+  --ec-ok-soft: rgba(110, 207, 151, 0.14);
+  /* le verre et la profondeur (15/10) */
+  --ec-carte: rgba(255, 255, 255, 0.045);
+  --ec-carte-bord: rgba(255, 255, 255, 0.08);
+  --ec-carte-pleine: #1f2126;
+  --ec-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --ec-ombre-carte: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3);
+  --ec-ombre-douce: 0 10px 30px rgba(0, 0, 0, 0.28);
+  --ec-ombre-bouton: 0 10px 26px rgba(227, 162, 127, 0.22);
+  --ec-actif: rgba(255, 255, 255, 0.09);
+  --ec-actif-ombre: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --ec-creux: rgba(0, 0, 0, 0.22);
+  --ec-ombre-couv: 0 24px 50px rgba(0, 0, 0, 0.5);
+  --ec-ombre-couv-forte: 0 30px 64px rgba(0, 0, 0, 0.6);
+  --ec-aurore-1: #3a2a22;
+  --ec-aurore-2: #23262f;
+  --ec-aurore-force: 0.75;
+  color-scheme: dark;
+
+  /* ── la forme, commune aux deux modes : arrondis emboîtés, verre ── */
+  --ec-r-panneau: 28px;
+  --ec-r-carte: 24px;
+  --ec-r-bloc: 16px;
+  --ec-r-champ: 14px;
+  --ec-flou: blur(24px) saturate(1.4);
+
+  /* ── les pages de magazine : les mêmes de jour comme de nuit ── */
+  --ec-page: #ffffff;
+  --ec-page-gris: #f1ebe6;
+  --ec-encre: #050505;
+  /* ombres et reflets PHYSIQUES d'un objet posé (couverture en 3D, double
+     page) : la lumière ne change pas avec le mode */
+  --ec-noir-rgb: 0, 0, 0;
+  --ec-reflet-rgb: 255, 255, 255;
+
+  /* ── alias des anciens noms ── */
+  --ec-fond: var(--ec-bg);
+  --ec-blanc: var(--ec-text);
+  --ec-blanc-72: rgba(var(--ec-fg-rgb), 0.78);
+  --ec-blanc-56: var(--ec-muted);
+  --ec-blanc-32: var(--ec-faint);
+  --ec-filet: var(--ec-line);
+  --ec-filet-fort: var(--ec-line-fort);
+  --ec-orange: var(--ec-accent);
+  --ec-orange-voile: var(--ec-accent-soft);
+
+  /* ── le monde sombre partagé (theme.css), repeint DANS ce scope seulement :
+     sans cela l'anneau de focus et les survols resteraient orange en jour ── */
+  --c-accent: var(--ec-accent);
+  --c-accent-strong: var(--ec-accent-fort);
+  --c-text-onaccent: var(--ec-on-accent);
+  --c-text: var(--ec-text);
+
+  --ec-menu-l: 248px;
+  --ec-tete-h: 68px;
+
+  /* ── L'ÉCHELLE DES COUCHES (21/10, « vérifier bien les chevauchements ») ──
+     UNE seule, lue par TOUTES les feuilles de l'espace : un `z-index` écrit en
+     dur dans une feuille, c'est ce qui laissait la barre d'actions des photos
+     cochées et le bouton « Déposer » passer par-dessus le tiroir du menu (leurs
+     40 et 35 valaient ceux du tiroir et de son voile, et le DOM tranchait).
+     De bas en haut, tout se joue dans `.ec-coquille` (`isolation: isolate`) :
+       contenu (0)
+       < collants d'une page            la barre d'outils Photos, le pied du mur, la zone d'écriture
+       < en-tête du téléphone           collé en haut
+       < barres FIXES d'une page        « Déposer », les actions des photos cochées, les notes du BAT,
+                                        la barre d'actions de l'ordinateur
+       < voile du tiroir                assombrit TOUT ce qui est dessous, barres fixes comprises
+       < tiroir du menu
+       < fenêtres                       (et le menu « … » d'un lien, juste au-dessus de leur voile)
+       < feuille « Filtrer »
+       < photo agrandie
+       < avis qui passe                 « Annuler », la seule chose au-dessus d'une photo agrandie.
+     Une barre fixe n'écrit donc JAMAIS un nombre supérieur à `--ec-z-barre`. */
+  --ec-z-collant: 20;
+  --ec-z-entete: 30;
+  --ec-z-barre: 34;
+  --ec-z-voile: 50;
+  --ec-z-tiroir: 55;
+  --ec-z-fenetre: 60;
+  --ec-z-feuille: 65;
+  --ec-z-photo: 70;
+  --ec-z-avis: 75;
+  background: var(--ec-bg);
+  color: var(--ec-text);
+  line-height: 1.5;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+/* ── le jour : PORCELAINE (15/10, Mathias : « le beige fait vieillot ») ──
+   Un blanc froid, du verre blanc sur deux taches de couleur très floues, le
+   bleu de Bellajour en accent. */
+.bj-atelier.ec-espace[data-ec-mode="jour"] {
+  --ec-fg-rgb: 16, 24, 40;
+  --ec-ac-rgb: 74, 144, 217;
+  --ec-bg: #f3f4f7;
+  --ec-panel: rgba(255, 255, 255, 0.62);
+  --ec-surface: rgba(255, 255, 255, 0.72);
+  --ec-text: #101828;
+  --ec-titre: #101828;
+  --ec-muted: #5b6577;
+  --ec-faint: #7c8698;
+  --ec-line: rgba(16, 24, 40, 0.08);
+  --ec-line-fort: rgba(16, 24, 40, 0.14);
+  /* Le bleu de Bellajour (--bj-action du site, Mathias le 14/10). */
+  --ec-accent: #4a90d9;
+  --ec-accent-fort: #3a7cc4;
+  --ec-accent-texte: #1d4f8a;
+  --ec-on-accent: #ffffff;
+  --ec-accent-soft: rgba(74, 144, 217, 0.12);
+  --ec-glass: rgba(255, 255, 255, 0.82);
+  --ec-voile: rgba(16, 24, 40, 0.16);
+  --ec-ombre: rgba(16, 24, 40, 0.14);
+  --ec-danger: #b3412c;
+  --ec-danger-rgb: 179, 65, 44;
+  --ec-ok: #157347;
+  --ec-ok-soft: #e7f6ee;
+  --ec-carte: rgba(255, 255, 255, 0.7);
+  --ec-carte-bord: rgba(255, 255, 255, 0.95);
+  --ec-carte-pleine: #ffffff;
+  --ec-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --ec-ombre-carte: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
+  --ec-ombre-douce: 0 6px 18px rgba(16, 24, 40, 0.06);
+  --ec-ombre-bouton: 0 8px 20px rgba(74, 144, 217, 0.3);
+  --ec-actif: #ffffff;
+  --ec-actif-ombre: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 14px rgba(16, 24, 40, 0.05);
+  --ec-creux: rgba(16, 24, 40, 0.05);
+  --ec-ombre-couv: 0 18px 40px rgba(16, 24, 40, 0.18);
+  --ec-ombre-couv-forte: 0 24px 56px rgba(16, 24, 40, 0.24);
+  --ec-aurore-1: #dce8fa;
+  --ec-aurore-2: #eae5f6;
+  --ec-aurore-force: 1;
+  color-scheme: light;
+}
+
+/* ─────────────────────────────── la coquille ─────────────────────────────── */
+
+/* Sur un écran d'ordinateur, la coquille est EXACTEMENT la hauteur de la
+   fenêtre : rien ne fait défiler la page. La colonne de contenu ne défile
+   qu'en dernier recours (un écran qui n'aurait pas encore ses zones). */
+.ec-espace .ec-coquille {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: var(--ec-menu-l) minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+  height: var(--app-height);
+  overflow: hidden;
+}
+/* Le fond vivant (15/10) : deux grandes taches de couleur très floues, que le
+   verre des panneaux laisse deviner. Rien ne bouge, rien ne se charge. */
+/* Les deux lueurs, aux places des maquettes (15/10, retour de Mathias : « la
+   lumière n'est même pas du même côté ») : la NUIT, le cuivre en haut à DROITE
+   et un gris bleuté en bas ; le JOUR, le bleu en haut à gauche et le lilas en
+   bas à droite. */
+.ec-espace .ec-coquille::before,
+.ec-espace .ec-coquille::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(120px);
+}
+.ec-espace .ec-coquille::before {
+  right: -200px;
+  top: -260px;
+  width: 760px;
+  height: 620px;
+  filter: blur(130px);
+  opacity: var(--ec-aurore-force);
+  background: var(--ec-aurore-1);
+}
+.ec-espace .ec-coquille::after {
+  left: 240px;
+  bottom: -300px;
+  width: 760px;
+  height: 560px;
+  background: var(--ec-aurore-2);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-coquille::before {
+  right: auto;
+  left: -160px;
+  top: -200px;
+  width: 720px;
+  height: 620px;
+  filter: blur(110px);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-coquille::after {
+  left: auto;
+  right: -180px;
+  bottom: -220px;
+  width: 760px;
+  height: 600px;
+}
+
+.ec-espace .ec-barre-mobile {
+  display: none;
+}
+
+.ec-espace .ec-menu {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 14px 14px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-panel);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.ec-espace .ec-logo {
+  display: block;
+  width: 116px;
+  height: auto;
+  margin: 0 12px 4px;
+}
+.ec-espace .ec-logo--mobile {
+  width: 96px;
+  margin: 0;
+}
+
+/* Le nom de l'édition sous le logo : du texte simple, plus de boîte (elle
+   ressemblait à un sélecteur d'éditions ; un lien n'en ouvre qu'une, T-152). */
+.ec-espace .ec-edition {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 12px 4px;
+  margin-top: -6px;
+}
+.ec-espace .ec-edition-nom {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ec-text);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-edition-orga {
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+
+.ec-espace .ec-menu-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--ec-r-bloc);
+  font-size: 14px;
+  color: var(--ec-muted);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ec-espace a.ec-menu-item:hover {
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  color: var(--ec-text);
+}
+.ec-espace .ec-menu-item[aria-current="page"] {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-menu-item[aria-current="page"] svg {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-menu-item--verrou {
+  color: var(--ec-faint);
+  cursor: not-allowed;
+}
+.ec-espace .ec-menu-libelle {
+  flex: 1;
+  min-width: 0;
+}
+.ec-espace .ec-menu-cadenas {
+  display: inline-flex;
+}
+.ec-espace .ec-menu-pastille {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+.ec-espace .ec-menu-bulle {
+  display: block;
+  margin: 4px 12px 8px 42px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  border: 1px solid var(--ec-line);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-menu-filet {
+  border: 0;
+  margin: 6px 12px;
+}
+
+.ec-espace .ec-moi {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 20px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ec-espace .ec-moi-texte {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ec-espace .ec-moi-nom {
+  font-size: 13px;
+  color: var(--ec-text);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-moi-role {
+  font-size: 11px;
+  color: var(--ec-muted);
+}
+/* « Partager avec mon équipe » (T-187) : une entrée discrète au-dessus du nom,
+   pour le responsable seulement. Elle prend la marge automatique du bloc « moi ». */
+.ec-espace .ec-equipe-entree {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--ec-r-bloc);
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.ec-espace .ec-equipe-entree:hover {
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  color: var(--ec-text);
+}
+.ec-espace .ec-equipe-entree svg {
+  flex: none;
+}
+.ec-espace .ec-equipe-entree + .ec-moi {
+  margin-top: -10px;
+}
+/* Le bouton jour / nuit : une petite icône, jamais un gros bouton. */
+/* Jour | nuit : deux boutons dans un creux, le mode en cours éclairé (maquettes du 15/10). */
+.ec-espace .ec-mode-choix {
+  flex: none;
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-mode {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-faint);
+  cursor: pointer;
+}
+.ec-espace .ec-mode:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-mode[aria-pressed="true"] {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  cursor: default;
+}
+
+.ec-espace .ec-contenu {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.ec-espace .ec-voile {
+  display: none;
+}
+
+/* L'envoi des photos qui continue pendant qu'on navigue : une pastille dans
+   l'en-tête de chaque écran, à gauche des actions (maquette EnvoiPhotos). Un
+   clic rouvre la fenêtre d'envoi. */
+.ec-espace .ec-pastille-envoi {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* T-154 : la fenêtre « Modifier depuis cet appareil » (le code par mail). */
+.ec-espace .ec-code {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ec-espace .ec-code p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ec-text);
+}
+.ec-espace .ec-code > .ec-bouton {
+  align-self: flex-start;
+}
+.ec-espace .ec-code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-code-label {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-code-champ {
+  width: 100%;
+  box-sizing: border-box;
+  height: 56px;
+  padding: 0 16px;
+  border: 1px solid var(--ec-line-fort);
+  border-radius: var(--ec-r-champ);
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 26px;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec-espace .ec-code-champ:focus {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-code-renvoyer {
+  align-self: flex-start;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ec-espace .ec-code-message {
+  font-size: 14px;
+  color: var(--ec-accent-texte);
+}
+.ec-espace .ec-code p.ec-code-note {
+  font-size: 13px;
+  color: var(--ec-faint);
+}
+/* T-154 : le responsable sur un appareil pas encore reconnu lit l'espace ; la
+   pastille propose le code pour modifier, en tête de chaque écran. */
+.ec-espace .ec-pastille-appareil {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-douce);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-pastille-appareil:hover {
+  border-color: rgba(var(--ec-ac-rgb), 0.55);
+}
+.ec-espace .ec-pastille-appareil > svg {
+  flex: none;
+  color: var(--ec-accent);
+}
+@media (max-width: 860px) {
+  .ec-espace .ec-pastille-appareil-long {
+    display: none;
+  }
+}
+.ec-espace .ec-pastille-envoi-barre {
+  display: block;
+  width: 64px;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.18);
+}
+.ec-espace .ec-pastille-envoi-barre > span {
+  display: block;
+  height: 100%;
+  background: var(--ec-accent);
+}
+
+/* La fenêtre d'envoi : le compte en grand, la barre, les lignes. */
+.ec-espace .ec-envoi-compte {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-envoi-n {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1;
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+.ec-espace .ec-envoi-n > span {
+  font-size: 20px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-envoi-lignes {
+  margin: 0;
+}
+.ec-espace .ec-envoi-info {
+  margin: 0;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--ec-surface);
+  font-size: 13px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-envoi-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ec-espace .ec-envoi-gestes > .ec-bouton {
+  flex: 1;
+}
+
+/* ─────────────────────────────── l'écran ─────────────────────────────── */
+
+/* Le gabarit commun (Ecran.tsx) : l'en-tête fixe, puis le corps qui prend le
+   reste de la hauteur. Les zones longues portent `.ec-defile`. */
+.ec-espace .ec-ecran {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-ecran-tete {
+  flex: none;
+  box-sizing: border-box;
+  min-height: var(--ec-tete-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 8px 12px;
+}
+.ec-espace .ec-ecran-titres {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  min-width: 0;
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
+.ec-espace .ec-ecran-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: 0;
+  color: var(--ec-titre);
+}
+.ec-espace .ec-ecran-sous {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ecran-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+/* Le corps d'un écran ne trace plus rien : ses blocs sont des panneaux de
+   verre qui flottent sur le fond (15/10), chacun dans sa feuille. */
+.ec-espace .ec-ecran-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 0 2px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-ecran-corps--centre {
+  justify-content: center;
+}
+.ec-espace .ec-defile {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ec-espace .ec-verrou {
+  max-width: 640px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3.4vw, 46px);
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-silhouette {
+  min-height: 220px;
+  animation: ec-respire 1.6s ease-in-out infinite;
+}
+@keyframes ec-respire {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ─────────────────────────────── les fenêtres ─────────────────────────────── */
+
+/* Verre dépoli : fond translucide et flou, jamais un aplat. La fenêtre couvre
+   la colonne de contenu (`.ec-contenu` est en position relative), pas le
+   menu. `.ec-panneau*` est l'ancien nom, gardé pour les écrans pas encore
+   repris. */
+.ec-espace .ec-fenetre-voile,
+.ec-espace .ec-panneau-voile {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ec-z-fenetre);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-voile);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.ec-espace .ec-fenetre,
+.ec-espace .ec-panneau {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  border-radius: var(--ec-r-panneau);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  backdrop-filter: blur(32px) saturate(1.4);
+  box-shadow: var(--ec-reflet), 0 30px 80px var(--ec-ombre);
+  box-sizing: border-box;
+  color: var(--ec-text);
+}
+.ec-espace .ec-fenetre--large,
+.ec-espace .ec-panneau {
+  width: min(560px, 100%);
+}
+/* Le panneau latéral (révision §14.6) : collé à droite, toute la hauteur de
+   la colonne ; l'en-tête et le pied restent, le corps défile. */
+.ec-espace .ec-fenetre-voile--cote {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+}
+.ec-espace .ec-fenetre--cote {
+  width: min(560px, 100%);
+  max-height: none;
+  height: 100%;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+  border-radius: 24px 0 0 24px;
+  border-right: 0;
+}
+.ec-espace .ec-fenetre--cote > .ec-fenetre-tete {
+  flex: none;
+  padding: 24px 28px 18px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-fenetre-corps {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ec-espace .ec-fenetre-pied {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 28px 20px;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-fenetre-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+.ec-espace .ec-fenetre-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-fenetre-fermer {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line);
+  background: transparent;
+  color: var(--ec-muted);
+  cursor: pointer;
+}
+.ec-espace .ec-fenetre-fermer:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-fenetre-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace a.ec-fenetre-fermer {
+  text-decoration: none;
+}
+
+/* La visionneuse d'un document (T-152) : toute la colonne, l'en-tête reste,
+   le document prend le reste. Le PDF garde son papier dans les deux modes. */
+.ec-espace .ec-fenetre--pleine {
+  width: min(1120px, 100%);
+  height: 100%;
+  max-height: none;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+}
+.ec-espace .ec-fenetre--pleine > .ec-fenetre-tete {
+  flex: none;
+  align-items: center;
+  padding: 16px 18px 14px 26px;
+  border-bottom: 1px solid var(--ec-line);
+}
+.ec-espace .ec-fenetre--pleine .ec-fenetre-titre {
+  font-size: 24px;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-visionneuse {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: rgba(var(--ec-fg-rgb), 0.03);
+  border-radius: 0 0 23px 23px;
+}
+.ec-espace .ec-visionneuse iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--ec-page);
+  border-radius: 0 0 23px 23px;
+}
+.ec-espace .ec-visionneuse img {
+  display: block;
+  max-width: calc(100% - 48px);
+  max-height: calc(100% - 48px);
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px var(--ec-ombre);
+}
+.ec-espace .ec-visionneuse-autre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px;
+  text-align: center;
+}
+.ec-espace .ec-visionneuse-autre .ec-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─────────────────────────────── les pages ─────────────────────────────── */
+
+/* Une page pas encore reprise par la révision : elle garde sa marge et
+   défile dans la colonne de contenu, jamais la page entière. */
+.ec-espace .ec-page {
+  max-width: 1080px;
+  padding: 28px 32px 40px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-surtitre {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+/* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
+.ec-espace .ec-h1 {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(36px, 5.5vw, 64px);
+  line-height: 1.04;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-h2 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.1;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-texte {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-echeance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  margin: 0 0 22px;
+  font-size: 15px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-echeance strong {
+  color: var(--ec-blanc);
+  font-weight: 500;
+}
+.ec-espace .ec-echeance-delai {
+  color: var(--ec-orange);
+}
+
+.ec-espace .ec-etapes {
+  list-style: none;
+  margin: 0 0 34px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet);
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-etape--faite {
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-etape--courante {
+  border-color: rgba(var(--ec-ac-rgb), 0.5);
+  background: var(--ec-orange-voile);
+  color: var(--ec-blanc);
+}
+
+.ec-espace .ec-cartes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+.ec-espace .ec-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-carte);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  min-width: 0;
+}
+.ec-espace .ec-carte-tete {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-statut {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ec-orange-voile);
+  color: var(--ec-orange);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ec-espace p.ec-statut {
+  display: inline-block;
+  margin: 4px 0;
+}
+.ec-espace .ec-statut--ok {
+  background: var(--ec-ok-soft);
+  color: var(--ec-ok);
+  font-weight: 600;
+}
+.ec-espace .ec-lignes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-lignes li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-lignes li strong {
+  color: var(--ec-blanc);
+  font-weight: 500;
+}
+.ec-espace .ec-compteurs {
+  display: flex;
+  gap: 28px;
+}
+.ec-espace .ec-compteur {
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-compteur-n {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-compteur-l {
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+
+.ec-espace .ec-bouton {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--ec-accent);
+  box-shadow: var(--ec-ombre-bouton);
+  color: var(--ec-on-accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.ec-espace .ec-bouton:active {
+  transform: scale(0.98);
+}
+.ec-espace .ec-bouton:hover {
+  background: var(--ec-accent-fort);
+}
+.ec-espace .ec-bouton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ec-espace .ec-bouton--clair {
+  background: var(--ec-surface);
+  box-shadow: none;
+  color: var(--ec-text);
+  border: 1px solid var(--ec-line-fort);
+  font-weight: 500;
+}
+.ec-espace .ec-bouton--clair:hover {
+  background: var(--ec-actif);
+}
+
+.ec-espace .ec-lien-ligne {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ec-espace .ec-champ {
+  flex: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: var(--ec-r-champ);
+  border: 1px solid var(--ec-line-fort);
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+}
+.ec-espace .ec-champ:focus-visible,
+.ec-espace .ec-zone:focus-visible {
+  outline: 2px solid var(--ec-orange);
+  outline-offset: 1px;
+}
+.ec-espace .ec-curseur {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-curseur input[type="range"] {
+  accent-color: var(--ec-orange);
+  width: 100%;
+}
+.ec-espace .ec-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-note--erreur {
+  color: var(--ec-danger);
+}
+
+.ec-espace .ec-puces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  font-size: 13px;
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-puce--recue {
+  color: var(--ec-blanc-32);
+  border-color: var(--ec-filet);
+}
+.ec-espace .ec-ensuite {
+  margin: 28px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-section {
+  margin-bottom: 34px;
+}
+
+/* ─────────────────────────────── le dossier ─────────────────────────────── */
+
+.ec-espace .ec-dossier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: start;
+}
+.ec-espace .ec-documents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ec-espace .ec-documents li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ec-filet);
+  font-size: 14px;
+}
+.ec-espace .ec-documents a {
+  color: var(--ec-orange);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ec-espace .ec-documents a:hover {
+  color: var(--ec-blanc);
+}
+
+.ec-espace .ec-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(60 * var(--uh));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ec-espace .ec-bulle {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ec-blanc);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-bulle--moi {
+  align-self: flex-end;
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-bulle-qui {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-zone {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 92px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--ec-filet-fort);
+  background: rgba(var(--ec-fg-rgb), 0.04);
+  color: var(--ec-blanc);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+
+/* ─────────────────────────────── la collecte ─────────────────────────────── */
+
+/* Révision §14.3 : la page ne défile plus ; la grille et la colonne de
+   droite défilent chacune chez elle (Collecte.tsx). */
+.ec-espace .ec-collecte-zone {
+  gap: 12px;
+}
+/* La colonne principale : les filtres, la barre de présélection, puis la
+   grille qui prend le reste et défile chez elle. */
+.ec-espace .ec-collecte-principal {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-collecte-principal > .ec-collecte-grille {
+  flex: 1;
+}
+.ec-espace .ec-presel {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.45);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-presel-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-presel-texte strong {
+  font-weight: 600;
+}
+.ec-espace .ec-presel .ec-bouton {
+  white-space: nowrap;
+}
+/* « Qui a déposé » : chaque source, son nombre, et son lien. */
+.ec-espace .ec-cote-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-sources {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ec-espace .ec-source {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ec-line);
+}
+.ec-espace .ec-source-tete {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ec-espace .ec-source-tete strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+/* Un nom de dossier qui se change d'un double clic (NomDossier). */
+.ec-espace .ec-nom-dossier {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-tdb-dossier .ec-nom-dossier {
+  font-weight: 400;
+}
+.ec-espace .ec-nom-dossier--renommable {
+  cursor: text;
+  border-radius: 4px;
+}
+.ec-espace .ec-nom-dossier--renommable:hover {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.ec-espace .ec-nom-dossier--renommable:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-nom-dossier-edition {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-nom-dossier-champ {
+  min-height: 34px;
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-source-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ec-espace .ec-source-creer {
+  margin-top: auto;
+  flex: none;
+}
+/* Partager un lien : le QR à gauche, le message à retoucher à droite ; la
+   fenêtre s'élargit à 640 px pour que les quatre gestes tiennent sur une ligne. */
+.ec-espace .ec-fenetre:has(.ec-partage-corps) {
+  width: min(640px, 100%);
+}
+.ec-espace .ec-partage-corps {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.ec-espace .ec-partage-message {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-partage-message textarea {
+  padding: 12px 14px;
+  resize: none;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ec-text);
+}
+.ec-espace .ec-qr-grand {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+}
+/* T-197 : le nom du lien sous le code, lisible de loin (le QR scotché à bord, projeté en salle). */
+.ec-espace .ec-qr-grand-nom {
+  max-width: 100%;
+  font-variant-numeric: lining-nums;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-qr-grand-note {
+  margin: 0;
+  text-align: center;
+}
+.ec-espace .ec-collecte-zone .ec-onglets {
+  flex: none;
+  margin-bottom: 0;
+}
+.ec-espace .ec-collecte-tete {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-onglet {
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-onglet:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-onglet[aria-pressed="true"] {
+  background: var(--ec-actif);
+  border-color: transparent;
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-collecte-corps {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 22px;
+  align-items: stretch;
+}
+.ec-espace .ec-collecte-grille {
+  padding-right: 4px;
+}
+.ec-espace .ec-collecte-cote {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 22px;
+  border-left: 1px solid var(--ec-line);
+}
+.ec-espace .ec-lien-ligne-nom {
+  flex: 1;
+  min-width: 0;
+}
+.ec-espace .ec-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+.ec-espace .ec-grille-titre {
+  grid-column: 1 / -1;
+  margin: 14px 0 2px;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ec-blanc-72);
+}
+/* ─────────── Photos rangées en dossiers (T-152) ─────────── */
+
+.ec-espace .ec-ph-onglets {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-ph-onglets > button {
+  height: 36px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-onglets > button[aria-pressed="true"] {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-erreur {
+  margin: 0 8px 10px;
+}
+/* Les grands chiffres, en tête (l'ancienne maquette que Mathias trouvait plus claire). */
+/* 15/10 : en pastilles de verre, chiffres en DM Sans (modernes, sans le « I »). */
+.ec-espace .ec-ph-chiffres {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 14px;
+}
+.ec-espace .ec-ph-chiffre {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-douce);
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-chiffre strong {
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ec-text);
+  /* Cormorant sort des chiffres elzéviriens : « 1 » se lit comme un « I »
+     (vu le 14/10 : « I personne »). Même correctif que la PDP. */
+  font-variant-numeric: lining-nums tabular-nums;
+  font-feature-settings: "lnum" 1, "tnum" 1;
+}
+.ec-espace .ec-ph-chiffres-fin {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 13px;
+}
+/* Le contenu de la page : un grand panneau de verre (15/10). */
+.ec-espace .ec-ph-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  overflow: hidden;
+}
+
+/* Les rayons (15/10) : une pilule segmentée EN HAUT DU PANNEAU (maquettes
+   Photos), à la place de la grande colonne de dossiers. */
+.ec-espace .ec-ph-rayons {
+  flex: none;
+  align-self: flex-start;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  gap: 4px;
+  margin: 0 0 6px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ec-espace .ec-ph-rayon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-rayon:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-rayon[aria-pressed="true"] {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-rayon > svg {
+  flex: none;
+}
+.ec-espace .ec-ph-rayon[aria-pressed="true"] > svg {
+  color: var(--ec-accent);
+}
+/* Le nombre d'un rayon : discret ; celui du rayon ouvert dans une pastille de l'accent. */
+.ec-espace .ec-ph-rayon-n {
+  padding: 1px 7px;
+  border-radius: 999px;
+  color: var(--ec-faint);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec-espace .ec-ph-rayon[aria-pressed="true"] .ec-ph-rayon-n {
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+}
+
+/* Le fil d'Ariane au-dessus du titre ; « Vos dossiers » reçoit un sous-dossier qu'on en sort. */
+.ec-espace .ec-ph-fil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-fil-etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-ph-fil .ec-ph-lien {
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+.ec-espace .ec-ph-fil--cible {
+  background: var(--ec-accent-soft);
+  outline: 2px dashed var(--ec-accent);
+}
+.ec-espace .ec-ph-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ec-espace .ec-ph-nom-champ {
+  min-height: 40px;
+  max-width: 420px;
+  border-color: var(--ec-accent);
+}
+
+/* Les dossiers et les liens en vignettes, comme des albums. */
+.ec-espace .ec-ph-albums {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 22px 18px;
+  padding: 4px 0 6px;
+}
+.ec-espace .ec-ph-albums--petits {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.ec-espace .ec-ph-album {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.ec-espace .ec-ph-album-couv {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--ec-line);
+  border-radius: 22px;
+  background: var(--ec-surface);
+  box-shadow: var(--ec-ombre-douce);
+  color: var(--ec-muted);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ec-espace .ec-ph-album:hover .ec-ph-album-couv {
+  transform: translateY(-2px);
+}
+.ec-espace .ec-ph-album-couv > svg {
+  width: 34px;
+  height: 34px;
+}
+.ec-espace .ec-ph-album-couv img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-ph-album-couv[draggable="true"] {
+  cursor: grab;
+}
+/* Le nombre de photos POSÉ sur la couverture, en verre (maquettes Photos, 15/10). */
+.ec-espace .ec-ph-album-n {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: var(--ec-text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: lining-nums tabular-nums;
+  pointer-events: none;
+}
+.ec-espace .ec-ph-album--petit .ec-ph-album-n {
+  left: 8px;
+  bottom: 8px;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+/* Les personnes d'un lien : une pastille avec ses initiales (maquette Photos Charbon). */
+.ec-espace .ec-ph-personne {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ec-surface);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-personne:hover {
+  background: var(--ec-actif);
+}
+.ec-espace .ec-ph-personne[aria-pressed="true"] {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-weight: 600;
+}
+/* Son nombre de photos, plus discret que son nom (planche 3 du 19/10). */
+.ec-espace .ec-ph-personne-n {
+  font-weight: 400;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+.ec-espace .ec-ph-initiales {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 11px;
+  font-weight: 600;
+}
+.ec-espace .ec-ph-personne[aria-pressed="true"] .ec-ph-initiales {
+  background: rgba(var(--ec-reflet-rgb), 0.25);
+  color: var(--ec-on-accent);
+}
+/* Les dernières arrivées, sous les albums d'une vue d'ensemble. */
+.ec-espace .ec-ph-arrivees-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  margin-top: 16px;
+  padding: 0 4px;
+}
+.ec-espace .ec-ph-arrivees-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--ec-titre);
+}
+.ec-espace .ec-grille--arrivees {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.ec-espace .ec-ph-album:hover .ec-ph-album-couv {
+  border-color: rgba(var(--ec-ac-rgb), 0.6);
+}
+.ec-espace .ec-ph-album--cible .ec-ph-album-couv {
+  border-color: var(--ec-accent);
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+  background: var(--ec-accent-soft);
+  transform: scale(1.02);
+}
+.ec-espace .ec-ph-album-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.ec-espace .ec-ph-album-nom {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-album--petit .ec-ph-album-nom {
+  font-size: 14px;
+}
+.ec-espace .ec-ph-album-renommer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(var(--ec-fg-rgb), 0.14);
+  border-radius: 999px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--ec-text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.ec-espace .ec-ph-album:hover .ec-ph-album-renommer,
+.ec-espace .ec-ph-album-renommer:focus-visible {
+  opacity: 1;
+}
+.ec-espace .ec-ph-titre-renommer {
+  position: static;
+  width: 30px;
+  height: 30px;
+  opacity: 0.7;
+}
+.ec-espace .ec-ph-titre:hover .ec-ph-titre-renommer {
+  opacity: 1;
+}
+@media (hover: none) {
+  .ec-espace .ec-ph-album-renommer {
+    opacity: 1;
+  }
+}
+.ec-espace .ec-ph-album--nouveau {
+  cursor: pointer;
+}
+.ec-espace .ec-ph-album--nouveau .ec-ph-album-couv {
+  border: 1px dashed var(--ec-filet-fort);
+  background: transparent;
+  font-size: 34px;
+  font-weight: 300;
+}
+.ec-espace .ec-ph-album--nouveau:hover .ec-ph-album-couv {
+  border-color: var(--ec-accent);
+  color: var(--ec-accent);
+}
+.ec-espace .ec-ph-personnes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.ec-espace .ec-ph-albums ~ .ec-ph-aide {
+  margin-top: 16px;
+  padding: 0;
+}
+.ec-espace .ec-ph-album--vide .ec-ph-album-couv {
+  border-style: dashed;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.7;
+}
+/* Une édition sans photo : un accueil et les deux gestes, pas des compteurs à zéro. */
+.ec-espace .ec-ph-principal--vide > .ec-ph-tete {
+  display: none;
+}
+.ec-espace .ec-ph-accueil {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 620px;
+  padding: 36px 32px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: var(--ec-r-carte);
+}
+.ec-espace .ec-ph-accueil-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+}
+.ec-espace .ec-ph-accueil .ec-texte {
+  margin: 0;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-accueil-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.ec-espace .ec-ph-dossiers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 14px;
+  border-right: 1px solid var(--ec-line);
+  background: var(--ec-panel);
+}
+.ec-espace .ec-ph-groupe {
+  padding: 14px 12px 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+  border-radius: 14px;
+}
+.ec-espace .ec-ph-groupe--cible {
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-branche {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-ph-noeud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-noeud > svg {
+  flex: none;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-noeud:hover {
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-ph-noeud--actif {
+  background: var(--ec-accent-soft);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-noeud--actif > svg,
+.ec-espace .ec-ph-noeud--selection > svg {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-ph-noeud--cible {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-ph-noeud[draggable="true"] {
+  cursor: grab;
+}
+.ec-espace .ec-ph-noeud-nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ec-espace .ec-ph-noeud-n {
+  flex: none;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ec-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ec-espace .ec-ph-noeud--edition {
+  cursor: default;
+}
+.ec-espace .ec-ph-noeud-champ {
+  min-height: 32px;
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-ph-vide {
+  padding: 0 12px;
+}
+.ec-espace .ec-ph-nouveau {
+  margin-top: 10px;
+  min-height: 40px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-nouveau:hover {
+  border-color: var(--ec-accent);
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-aide {
+  margin-top: auto;
+  padding: 14px 12px 0;
+}
+.ec-espace .ec-ph-principal {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 24px 0;
+}
+.ec-espace .ec-ph-principal > .ec-collecte-grille {
+  flex: 1;
+}
+.ec-espace .ec-ph-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.ec-espace .ec-ph-titres {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ec-espace .ec-ph-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-ph-vues {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ec-espace .ec-ph-aide-selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-accent);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-aide-selection .ec-ph-lien {
+  margin-left: auto;
+}
+.ec-espace .ec-ph-lien:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* Une photo choisie : un bord et une pastille cochée (Mathias, 14/10 au soir :
+   « que la sélection soit marquée comme cela, en gros »). Le bord est tracé
+   EN DEDANS : la tuile garde sa peinture contenue. */
+.ec-espace .ec-ph-tuile {
+  content-visibility: auto;
+  contain-intrinsic-size: 132px 132px;
+}
+.ec-espace .ec-ph-tuile--choisie {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+}
+.ec-espace .ec-ph-tuile--doublon img {
+  opacity: 0.55;
+}
+.ec-espace .ec-ph-coche {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-ph-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--ec-noir-rgb), 0.6);
+  color: var(--ec-page);
+  font-size: 11px;
+}
+
+/* Qui l'a envoyée (T-180) : son nom en bas à gauche de chaque vignette, une
+   ligne, coupé s'il est long. Le doublon passe en bas à droite. */
+.ec-espace .ec-ph-qui {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--ec-noir-rgb), 0.55);
+  color: var(--ec-page);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.ec-espace .ec-ph-tuile--doublon .ec-ph-qui {
+  max-width: calc(100% - 84px);
+}
+/* Arrivée depuis la dernière vue (T-181) : un liseré et « nouvelle » en haut à gauche. */
+.ec-espace .ec-ph-tuile--neuve {
+  box-shadow: inset 0 0 0 2px var(--ec-accent);
+}
+.ec-espace .ec-ph-neuve {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+/* L'annonce des arrivées, au-dessus de la grille, sans recharger la page. */
+.ec-espace .ec-ph-annonce {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 8px 8px 8px 14px;
+  border-radius: var(--ec-r-bloc);
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 14px;
+}
+.ec-espace .ec-ph-annonce strong {
+  font-weight: 600;
+}
+.ec-espace .ec-ph-annonce .ec-bouton {
+  margin-left: auto;
+}
+.ec-espace .ec-ph-annonce-point {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  box-shadow: 0 0 0 4px var(--ec-accent-soft);
+  animation: ec-ph-pouls 1.8s ease-in-out infinite;
+}
+@keyframes ec-ph-pouls {
+  50% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-ph-annonce-point {
+    animation: none;
+  }
+}
+
+/* ─────────── L'onglet « Les liens » (T-152) ─────────── */
+
+.ec-espace .ec-li {
+  gap: 16px;
+}
+.ec-espace .ec-li-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-li-intro .ec-note {
+  margin-left: auto;
+}
+.ec-espace .ec-li-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.ec-espace .ec-li-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: var(--ec-r-carte);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-li-tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.ec-espace .ec-li-titres {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-li-genre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-li-nom {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-li-personnes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ec-espace .ec-li-personnes li {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.ec-espace .ec-li-personne-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ec-espace .ec-li-barre {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.1);
+}
+.ec-espace .ec-li-barre > span {
+  display: block;
+  height: 100%;
+  background: rgba(var(--ec-fg-rgb), 0.55);
+}
+.ec-espace .ec-li-barre > .ec-li-barre-plein {
+  background: var(--ec-accent);
+}
+.ec-espace .ec-li-compte {
+  text-align: right;
+  color: var(--ec-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ec-espace .ec-li-voir {
+  align-self: flex-start;
+}
+.ec-espace .ec-li-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ec-line);
+}
+/* T-197 : avec « Afficher en grand » le pied a trois gestes. La règle garde 180 px au moins, sinon elle passe
+   seule sur sa ligne et les gestes tiennent dessous (sur téléphone, elle se tassait en une colonne de mots). */
+.ec-espace .ec-li-regle {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.ec-espace .ec-li-plus {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  background: transparent;
+  color: var(--ec-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+/* Le menu « … » d'un lien (21/10) : un VRAI menu, plus un bloc qui se pose en travers de la carte.
+   - Il vit dans `.ec-contenu` par un portail (`MenuLien`, Liens.tsx) : la carte est un panneau de
+     verre (`backdrop-filter`) et enfermerait un menu positionné dedans.
+   - Ordinateur : ancré SOUS le bouton « … », bord droit sur bord droit (ou bord gauche sur bord gauche
+     quand il sortirait de la colonne de contenu et couvrirait le menu de gauche ; ou AU-DESSUS si la
+     place manque en bas) ; la position vient du bouton (`--m-droite` ou `--m-gauche`, `--m-haut` ou `--m-bas`).
+     Fond OPAQUE du thème (`--ec-carte-pleine`) : un fond de verre laissait lire le titre et le QR
+     à travers. Ombre, filet, rien d'autre. Le voile est TRANSPARENT : il ne sert qu'à attraper le
+     clic dehors (et Échap ferme, côté composant).
+   - Téléphone (≤ 860 px) : une petite feuille du bas, voile sombre, le nom du lien en tête. */
+.ec-espace .ec-li-voile {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ec-z-fenetre);
+  background: transparent;
+}
+.ec-espace .ec-li-menu {
+  position: fixed;
+  z-index: calc(var(--ec-z-fenetre) + 1);
+  right: var(--m-droite, auto);
+  left: var(--m-gauche, auto);
+  top: var(--m-haut, auto);
+  bottom: var(--m-bas, auto);
+  width: min(300px, calc(100vw - 24px));
+  box-sizing: border-box;
+  padding: 6px;
+  border-radius: var(--ec-r-bloc);
+  border: 1px solid var(--ec-line-fort);
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-reflet), 0 18px 40px var(--ec-ombre);
+  display: flex;
+  flex-direction: column;
+  color: var(--ec-text);
+}
+.ec-espace .ec-li-menu-titre {
+  display: none;
+}
+.ec-espace .ec-li-menu > button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-li-menu > button:hover,
+.ec-espace .ec-li-menu > button:focus-visible {
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  outline: none;
+}
+.ec-espace .ec-li-menu > button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ec-accent);
+}
+.ec-espace .ec-li-menu > .ec-li-menu-danger > span:first-child {
+  color: var(--ec-danger);
+}
+.ec-espace .ec-bouton--danger {
+  background: var(--ec-danger);
+  color: var(--ec-page);
+}
+
+/* ─────────── La fenêtre de dépôt : choisir où, puis les chiffres en grand ─────────── */
+
+.ec-espace .ec-envoi-question {
+  padding: 0 0 10px;
+  font-weight: 500;
+  color: var(--ec-text);
+}
+.ec-espace .ec-envoi-puce-n {
+  color: var(--ec-muted);
+}
+.ec-espace .ec-depose--centre {
+  align-items: center;
+  text-align: center;
+  padding: 26px 20px;
+}
+.ec-espace .ec-depose-icone {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-depose-titre {
+  font-size: 16px;
+  font-weight: 500;
+}
+.ec-espace .ec-depose--centre .ec-bouton {
+  align-self: center;
+}
+.ec-espace .ec-envoi-sur {
+  font-size: 20px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-envoi .ec-envoi-n {
+  font-size: 80px;
+  line-height: 0.9;
+}
+.ec-espace .ec-envoi-compte {
+  justify-content: flex-start;
+}
+.ec-espace .ec-envoi-barre {
+  height: 10px;
+  margin: 10px 0 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.12);
+}
+.ec-espace .ec-envoi-barre > div {
+  height: 100%;
+  background: var(--ec-accent);
+}
+.ec-espace .ec-envoi-cases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ec-espace .ec-envoi-case {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--ec-surface);
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-envoi-case strong {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--ec-text);
+}
+
+/* Une tuile hors écran ne coûte rien à peindre : 2 000 vignettes restent fluides. */
+.ec-espace .ec-tuile {
+  margin: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: 132px 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-tuile-image {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ec-r-bloc);
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  cursor: pointer;
+}
+.ec-espace .ec-tuile-image:disabled {
+  cursor: default;
+}
+.ec-espace .ec-tuile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Une photo choisie : un BORD autour, rien d'autre (ni case ni coche, il y a
+   trop de photos : Mathias, 14/10). Le contour est tracé EN DEDANS : la tuile
+   a une containment de peinture (content-visibility), un contour posé à
+   l'extérieur y serait rogné sur trois côtés (vu le 14/10). */
+.ec-espace .ec-tuile--choisie .ec-tuile-image {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+}
+.ec-espace .ec-tuile--doublon .ec-tuile-image {
+  opacity: 0.5;
+}
+.ec-espace .ec-tuile-sans {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 6px;
+  font-size: 11px;
+  color: var(--ec-blanc-56);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-tuile-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-height: 18px;
+}
+.ec-espace .ec-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.08);
+  font-size: 10px;
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-badge--signal {
+  background: rgba(var(--ec-danger-rgb), 0.16);
+  color: var(--ec-danger);
+}
+.ec-espace .ec-tuile-signal {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-blanc-56);
+  font: inherit;
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ec-espace .ec-panneau-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.ec-espace .ec-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-puce--active {
+  border-color: rgba(var(--ec-ac-rgb), 0.6);
+  background: var(--ec-orange-voile);
+  cursor: pointer;
+}
+.ec-espace label.ec-puce {
+  cursor: pointer;
+}
+.ec-espace .ec-depose {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 16px;
+}
+.ec-espace .ec-depose--survol {
+  border-color: var(--ec-orange);
+  background: var(--ec-orange-voile);
+}
+.ec-espace .ec-dp-barre-espace {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.1);
+  overflow: hidden;
+  margin: 8px 0;
+}
+.ec-espace .ec-dp-barre-espace > div {
+  height: 100%;
+  background: var(--ec-orange);
+  transition: width 300ms ease;
+}
+
+
+/* ─────────────────────────────── le style ─────────────────────────────── */
+
+.ec-espace .ec-regle {
+  margin: 0 0 20px;
+  max-width: 720px;
+}
+.ec-espace .ec-mur-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 22px;
+  align-items: start;
+}
+.ec-espace .ec-brief {
+  position: sticky;
+  top: 16px;
+}
+.ec-espace .ec-planches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+.ec-espace .ec-planches--larges {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+.ec-espace .ec-planche {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 16px;
+  background: var(--ec-surface);
+  color: var(--ec-blanc);
+  text-decoration: none;
+  min-width: 0;
+}
+.ec-espace a.ec-planche:hover {
+  border-color: rgba(var(--ec-ac-rgb), 0.45);
+}
+.ec-espace .ec-planche-image {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-planche-image--large {
+  aspect-ratio: 3 / 2;
+}
+.ec-espace .ec-planche-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-planche-nom {
+  font-size: 15px;
+  font-weight: 500;
+}
+.ec-espace .ec-planche-ouvrir {
+  font-size: 13px;
+  color: var(--ec-orange);
+}
+.ec-espace .ec-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ec-glass);
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
+  color: var(--ec-blanc);
+  font-size: 12px;
+  backdrop-filter: blur(6px);
+}
+.ec-espace .ec-tag--en-ligne {
+  position: static;
+  margin-left: 8px;
+}
+.ec-espace .ec-bandes {
+  display: flex;
+  height: 34px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ec-espace .ec-bandes > span {
+  flex: 1;
+}
+.ec-espace .ec-lien-texte {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-orange);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.ec-espace .ec-lignes a {
+  color: var(--ec-orange);
+  text-decoration: none;
+}
+.ec-espace .ec-ariane {
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: var(--ec-blanc-56);
+}
+.ec-espace .ec-ariane a {
+  color: var(--ec-blanc-72);
+}
+.ec-espace .ec-style-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 34px;
+}
+.ec-espace .ec-style-couverture {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-style-couverture img {
+  width: 100%;
+  border-radius: 16px;
+  display: block;
+  box-shadow: 0 30px 60px var(--ec-ombre);
+}
+.ec-espace .ec-style-deux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.ec-espace .ec-decale {
+  margin-top: 48px;
+}
+.ec-espace .ec-numero {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ec-ac-rgb), 0.6);
+  color: var(--ec-orange);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  vertical-align: middle;
+}
+.ec-espace .ec-palettes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-palette-choix {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--ec-filet);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--ec-blanc-72);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-palette-choix[aria-pressed="true"] {
+  border-color: var(--ec-orange);
+  color: var(--ec-blanc);
+}
+.ec-espace .ec-echantillon {
+  width: 100%;
+  border-radius: 14px;
+  margin: 10px 0;
+  display: block;
+}
+.ec-espace .ec-doubles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ec-espace .ec-double {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 2px solid var(--ec-filet);
+  border-radius: 14px;
+  background: var(--ec-surface);
+  color: var(--ec-blanc);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-double[aria-pressed="true"] {
+  border-color: var(--ec-orange);
+}
+.ec-espace .ec-double-image {
+  display: block;
+  aspect-ratio: 3 / 2;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-double-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-barre-fixe {
+  position: sticky;
+  bottom: 12px;
+  z-index: var(--ec-z-collant);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 14px 18px;
+  border: 1px solid var(--ec-filet-fort);
+  border-radius: 18px;
+  background: var(--ec-glass);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+/* ─────────────────────────────── à venir, verrou ─────────────────────────────── */
+
+.ec-espace .ec-a-venir {
+  max-width: 560px;
+  padding: 28px;
+  border: 1px dashed var(--ec-filet-fort);
+  border-radius: 20px;
+}
+
+/* ─────────────────────────────── téléphone ─────────────────────────────── */
+
+@media (max-width: 860px) {
+  /* Sur téléphone, un écran ne peut pas tout tenir : la page défile de
+     nouveau, et les zones internes reprennent leur hauteur naturelle. */
+  /* ⚠️ Une COLONNE, plus une grille (21/10, « la barre est trop grosse »). La
+     coquille était une grille à une colonne et à rangées implicites (`auto`),
+     avec un `min-height` : sur une page courte (Bon à tirer verrouillé, Livraison,
+     Photos d'une édition vide), l'espace libre se répartissait ENTRE LES RANGÉES, et
+     l'en-tête de 62 px s'étirait à 366 px (192 sur Photos vide, 163 sur « Parler à
+     l'atelier », 472 sur une tablette). Une colonne n'étire rien : l'en-tête garde sa
+     hauteur (`flex: none`), le contenu prend tout le reste (`flex: 1 0 auto`).
+     Et c'est la bonne structure pour le collant : l'en-tête est `position: sticky`,
+     et le bloc conteneur d'un élément collant est ici toute la coquille ; dans une
+     rangée de grille, certains navigateurs le bornent à la rangée (62 px) et
+     l'en-tête ne colle plus. */
+  .ec-espace .ec-coquille {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    height: auto;
+    min-height: var(--app-height);
+    overflow: visible;
+  }
+  .ec-espace .ec-coquille::before,
+  .ec-espace .ec-coquille::after {
+    position: fixed;
+  }
+  .ec-espace .ec-contenu {
+    flex: 1 0 auto;
+    overflow: visible;
+  }
+  .ec-espace .ec-ecran {
+    flex: none;
+  }
+  .ec-espace .ec-ecran-tete {
+    padding: 14px 16px 10px;
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-ecran-titre {
+    font-size: 26px;
+  }
+  .ec-espace .ec-ecran-corps {
+    padding: 0 12px 32px;
+  }
+  .ec-espace .ec-defile {
+    overflow: visible;
+  }
+  .ec-espace .ec-page {
+    padding: 20px 16px 40px;
+  }
+  .ec-espace .ec-fenetre-voile,
+  .ec-espace .ec-panneau-voile {
+    position: fixed;
+    z-index: var(--ec-z-fenetre);
+    padding: 12px;
+    border-radius: 0;
+  }
+  .ec-espace .ec-fenetre,
+  .ec-espace .ec-panneau {
+    max-height: calc(var(--app-height) - 24px);
+    padding: 22px;
+  }
+  .ec-espace .ec-fenetre-voile--cote {
+    padding: 0;
+  }
+  .ec-espace .ec-fenetre--pleine {
+    height: calc(var(--app-height) - 24px);
+    max-height: none;
+    padding: 0;
+  }
+  .ec-espace .ec-fenetre--cote {
+    max-height: none;
+    height: var(--app-height);
+    padding: 0;
+    border-radius: 0;
+  }
+  .ec-espace .ec-pastille-envoi {
+    position: fixed;
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+  }
+  .ec-espace .ec-barre-mobile {
+    position: sticky;
+    top: 0;
+    z-index: var(--ec-z-entete);
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 8px 0;
+    padding: 8px 10px 8px 16px;
+    border-radius: 22px;
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-glass);
+    box-shadow: var(--ec-ombre-douce);
+    -webkit-backdrop-filter: var(--ec-flou);
+    backdrop-filter: var(--ec-flou);
+  }
+  .ec-espace .ec-bouton-tiroir {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    border: 0;
+    background: none;
+    color: var(--ec-blanc);
+    cursor: pointer;
+  }
+  .ec-espace .ec-menu {
+    position: fixed;
+    z-index: var(--ec-z-tiroir);
+    top: 8px;
+    left: 8px;
+    width: min(86vw, 300px);
+    height: calc(var(--app-height) - 16px);
+    background: var(--ec-glass);
+    transform: translateX(-108%);
+    transition: transform var(--dur) var(--ease);
+  }
+  .ec-espace .ec-coquille[data-tiroir="ouvert"] .ec-menu {
+    transform: none;
+  }
+  .ec-espace .ec-voile {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: var(--ec-z-voile);
+    border: 0;
+    background: var(--ec-voile);
+  }
+  .ec-espace .ec-cartes,
+  .ec-espace .ec-dossier,
+  .ec-espace .ec-collecte-corps,
+  .ec-espace .ec-mur-corps,
+  .ec-espace .ec-style-hero,
+  .ec-espace .ec-style-deux {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .ec-espace .ec-collecte-cote {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .ec-espace .ec-ph-corps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-ph-dossiers {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 10px 16px;
+    border-right: 0;
+    border-bottom: 1px solid var(--ec-line);
+  }
+  .ec-espace .ec-ph-dossiers .ec-ph-groupe,
+  .ec-espace .ec-ph-dossiers .ec-ph-aide,
+  .ec-espace .ec-ph-dossiers .ec-ph-vide {
+    display: none;
+  }
+  .ec-espace .ec-ph-branche {
+    flex-direction: row;
+  }
+  .ec-espace .ec-ph-noeud {
+    flex: none;
+    padding: 0 12px !important;
+    border-color: var(--ec-line);
+  }
+  .ec-espace .ec-ph-nouveau {
+    flex: none;
+    margin-top: 0;
+    padding: 0 12px;
+  }
+  .ec-espace .ec-ph-principal {
+    padding: 14px 16px 0;
+  }
+  .ec-espace .ec-ph-rayons {
+    margin: 0 0 8px;
+  }
+  .ec-espace .ec-ph-rayon {
+    min-height: 40px;
+    padding: 0 12px;
+  }
+  .ec-espace .ec-ph-albums {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 12px;
+  }
+  .ec-espace .ec-ph-albums--petits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-ph-chiffres {
+    padding: 0 12px 12px;
+    gap: 8px;
+  }
+  /* Sur téléphone, les personnes défilent de côté sur une ligne (planche 3 du 19/10) :
+     vingt pastilles empilées repousseraient les photos loin sous le pouce. */
+  .ec-espace .ec-ph-personnes {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-right: -12px;
+    padding-right: 12px;
+  }
+  .ec-espace .ec-ph-personne {
+    flex: none;
+  }
+  .ec-espace .ec-ph-chiffre {
+    padding: 8px 14px;
+  }
+  .ec-espace .ec-ph-chiffre strong {
+    font-size: 22px;
+  }
+  .ec-espace .ec-ph-corps {
+    margin: 0 8px;
+    border-radius: var(--ec-r-carte);
+  }
+  .ec-espace .ec-li-cartes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ec-espace .ec-presel {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-presel-texte {
+    flex-basis: 100%;
+  }
+  .ec-espace .ec-partage-corps {
+    flex-direction: column;
+    align-items: center;
+  }
+  .ec-espace .ec-partage-message {
+    align-self: stretch;
+  }
+  .ec-espace .ec-brief {
+    position: static;
+  }
+  .ec-espace .ec-decale {
+    margin-top: 0;
+  }
+  .ec-espace .ec-planches {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-carte {
+    padding: 20px;
+  }
+
+  /* ── Cibles au pouce (21/10) : 44 px, jamais 28 ni 34 ──
+     Le soleil et la lune du tiroir étaient deux ronds de 28 px collés l'un à l'autre. Ils font
+     40 × 40 (le creux autour : 3 px), ce qui ne grossit que le bloc du bas du tiroir. */
+  .ec-espace .ec-mode-choix {
+    gap: 2px;
+  }
+  .ec-espace .ec-mode {
+    width: 40px;
+    height: 40px;
+  }
+  /* Le menu « … » d'un lien : la feuille du bas (voile sombre, nom du lien en tête). */
+  .ec-espace .ec-li-voile {
+    background: var(--ec-voile);
+  }
+  .ec-espace .ec-li-menu {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: auto;
+    padding: 8px;
+    border-radius: var(--ec-r-panneau);
+  }
+  .ec-espace .ec-li-menu-titre {
+    display: block;
+    margin: 4px 12px 6px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--ec-muted);
+    overflow-wrap: anywhere;
+  }
+  .ec-espace .ec-li-menu > button {
+    min-height: 52px;
+    border-radius: var(--ec-r-bloc);
+  }
+  .ec-espace .ec-li-plus {
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-menu {
+    transition: none;
+  }
+}
+
+/* ─────────────────────────── les pièces partagées (révision) ─────────────────────────── */
+
+.ec-espace .ec-pilule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ec-espace .ec-pilule-point {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+}
+.ec-espace .ec-bouton--petit {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+.ec-espace .ec-bouton--plein {
+  align-self: stretch;
+  min-height: 48px;
+  flex: none;
+}
+.ec-espace .ec-actions--centre {
+  justify-content: center;
+}
+.ec-espace .ec-lien-discret {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ec-espace .ec-lien-discret:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-zone-texte {
+  min-height: 0;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* Le QR : un objet imprimé, clair sur toutes les couleurs de fond. */
+.ec-espace .ec-qr {
+  flex: none;
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ec-line);
+}
+.ec-espace .ec-qr-fond {
+  fill: var(--ec-page);
+}
+.ec-espace .ec-qr-modules {
+  fill: var(--ec-encre);
+}
+
+/* Partager un lien : Copier, WhatsApp, Mail (et le QR en fichier). */
+.ec-espace .ec-partage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-partage--quatre {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ec-espace .ec-partage--deux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ec-espace .ec-partage .ec-bouton {
+  align-self: auto;
+}
+/* « Partager » un lien sur téléphone (21/10) : quatre boutons ne tiennent pas en quatre colonnes
+   (« Copier le message » passait sur trois lignes dans un rond de 70 px, « Télécharger le QR »
+   touchait le contour). Deux sur deux, une ligne chacune, 44 px de haut. Sous 340 px, une colonne.
+   ⚠️ Ces règles sont APRÈS les règles de base ci-dessus : à spécificité égale, la dernière gagne,
+   et dans le bloc « téléphone » plus haut elles perdaient (les quatre colonnes restaient). */
+@media (max-width: 860px) {
+  .ec-espace .ec-partage--quatre {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-partage--quatre .ec-bouton,
+  .ec-espace .ec-partage--deux .ec-bouton {
+    min-height: 44px;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 340px) {
+  .ec-espace .ec-partage--quatre {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Un écran court (iPhone SE, 667 px) : les deux rangées de boutons doivent se voir sans défiler dans la
+   fenêtre, donc le message à retoucher y est moins haut (8 lignes avant, 150 px maintenant). */
+@media (max-width: 860px) and (max-height: 700px) {
+  /* `.ec-champ` pose `flex: 1` : sans `flex: none`, la base à 0 l'emporte sur `height`. */
+  .ec-espace .ec-partage-message textarea {
+    flex: none;
+    height: 150px;
+  }
+}
+.ec-espace .ec-carte-lien,
+.ec-espace .ec-lien-pret {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+.ec-espace .ec-carte-lien-texte,
+.ec-espace .ec-lien-pret-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ec-espace .ec-carte-lien-texte strong,
+.ec-espace .ec-lien-pret-texte strong {
+  font-size: 16px;
+  color: var(--ec-text);
+}
+.ec-espace .ec-lien-pret-texte {
+  flex: 1;
+}
+.ec-espace .ec-lien-url {
+  flex: none;
+  width: 100%;
+  min-height: 40px;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-lien-plafond {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-lien-plafond-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.ec-espace .ec-lien-valeur {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ec-text);
+  white-space: nowrap;
+}
+.ec-espace .ec-lien-plafond input[type="range"] {
+  width: 100%;
+  accent-color: var(--ec-accent);
+}
+
+/* La zone de dépôt, déjà ouverte : glisser, ou choisir. */
+.ec-espace .ec-zone-depot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  border: 1.5px dashed rgba(var(--ec-ac-rgb), 0.6);
+  border-radius: 18px;
+  background: radial-gradient(circle at 50% 40%, var(--ec-accent-soft), transparent 70%);
+  text-align: center;
+  box-sizing: border-box;
+}
+.ec-espace .ec-zone-depot--survol {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-zone-depot--compacte {
+  flex: none;
+  min-height: 180px;
+}
+.ec-espace .ec-zone-depot .ec-texte {
+  max-width: 380px;
+  font-size: 14px;
+}
+.ec-espace .ec-zone-depot-icone {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent);
+}
+.ec-espace .ec-zone-depot-titre {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--ec-text);
+}
+.ec-espace .ec-zone-depot-dossier {
+  display: flex;
+  gap: 8px;
+  width: min(320px, 100%);
+}
+.ec-espace .ec-zone-depot-envoi {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-zone-depot-envoi .ec-dp-barre-espace {
+  align-self: stretch;
+}
+.ec-espace .ec-questionnaire {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─────────── La fin de la collecte, dite là où l'on regarde (21/10) ───────────
+   Retour de Mathias : « pas forcément assez dit que la collecte est fermée ». Une ligne d'état
+   (tableau de bord, page Photos), le bouton « Terminer la collecte » discret, et les boutons de dépôt
+   ÉTEINTS une fois la collecte terminée (`FinCollecte.tsx`). Des rôles seulement, aucune couleur écrite. */
+.ec-espace .ec-fin-ligne {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--ec-r-bloc);
+  background: var(--ec-ok-soft);
+  color: var(--ec-text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.ec-espace .ec-fin-coche {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: 1.5px solid var(--ec-ok);
+  border-radius: 999px;
+  color: var(--ec-ok);
+}
+.ec-espace .ec-fin-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-fin-texte strong {
+  font-weight: 600;
+  color: var(--ec-ok);
+}
+.ec-espace .ec-collecte > .ec-fin-ligne {
+  margin: 0 8px 12px;
+}
+.ec-espace .ec-bouton--discret {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--ec-line-fort);
+  color: var(--ec-muted);
+  font-weight: 500;
+}
+.ec-espace .ec-bouton--discret:hover {
+  background: var(--ec-actif);
+  color: var(--ec-text);
+}
+.ec-espace .ec-collecte > .ec-fin-tel {
+  align-self: flex-start;
+  margin: 0 8px 12px;
+}

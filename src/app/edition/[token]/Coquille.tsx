@@ -19,11 +19,16 @@
    - Sur téléphone, le menu devient un tiroir. Il se referme à chaque
      navigation : au toucher d'une entrée (tout de suite, sans attendre que la
      page d'arrivée soit prête), et au changement de chemin (retour arrière,
-     carte du tableau de bord), sans qu'aucune ouverture ne reste en mémoire. */
+     carte du tableau de bord), sans qu'aucune ouverture ne reste en mémoire.
+   - Planche 1 du 21/10/2026 : la barre du haut fait 52 px (`--ec-barre-h`) et
+     porte le logo ; quand le grand titre de l'écran défile dessous, il prend la
+     place du logo (`TitreEcran` : un `IntersectionObserver`, un portail, rien au
+     défilement). Le tiroir a son propre en-tête de 52 px : le logo, et la croix
+     à la hauteur du bouton menu, sous le doigt. */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { relireAuRetour } from "@/lib/collectif/arrivees";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
@@ -31,6 +36,7 @@ import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
 import RelireAuRetour from "../_composants/RelireAuRetour";
+import { BarreTitreContexte } from "../_composants/TitreEcran";
 import PartageEquipe from "./PartageEquipe";
 
 /** Le signal qu'envoie la conversation quand elle a marqué les messages lus : la pastille s'éteint sans recharger. */
@@ -122,6 +128,13 @@ export default function Coquille(props: Props) {
     return () => setBulleLue(null);
   }, [bulle]);
 
+  /* La barre du téléphone et la place de son titre : posées par les refs, lues par `TitreEcran` (le grand titre de
+     l'écran, qui dit « je suis passé sous la barre » : `data-defile`). Aucun effet, aucun calcul au défilement. */
+  const [barre, setBarre] = useState<HTMLElement | null>(null);
+  const [cibleTitre, setCibleTitre] = useState<HTMLElement | null>(null);
+  const [defile, setDefile] = useState(false);
+  const titreBarre = useMemo(() => ({ barre, cible: cibleTitre, signaler: setDefile }), [barre, cibleTitre]);
+
   const entrees = (groupe: 1 | 2) =>
     MENU.filter((e) => e.groupe === groupe).map((e) => {
       const raison = props.verrous[e.cle];
@@ -181,8 +194,12 @@ export default function Coquille(props: Props) {
   return (
     <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"}>
       <RelireAuRetour actif={relireAuRetour(active)} />
-      <header className="ec-barre-mobile">
-        <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="Bellajour" width={96} height={36} />
+      <header className="ec-barre-mobile" ref={setBarre} data-defile={defile ? "oui" : undefined}>
+        <span className="ec-barre-gauche">
+          <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="Bellajour" width={96} height={36} />
+          <span className="ec-barre-titre" aria-hidden="true" ref={setCibleTitre} />
+        </span>
+        {/* Le bouton garde SON dessin (le menu) tiroir ouvert : la croix est dans le tiroir, sous le doigt. */}
         <button
           type="button"
           className="ec-bouton-tiroir"
@@ -191,12 +208,19 @@ export default function Coquille(props: Props) {
           aria-label={ouvert ? "Fermer le menu" : "Ouvrir le menu"}
           onClick={() => setOuvert((o) => !o)}
         >
-          <Icone cle={ouvert ? "fermer" : "menu"} />
+          <Icone cle="menu" />
         </button>
       </header>
 
       <aside className="ec-menu" id="ec-menu" aria-label="Menu de l'édition">
-        <img className="ec-logo" src={LOGO_MODE[mode]} alt="Bellajour" width={116} height={43} />
+        {/* L'en-tête du tiroir : le logo, et (téléphone seulement) la croix. Sur ordinateur, `display: contents` : le logo
+            reste un enfant du menu, rien ne bouge. */}
+        <div className="ec-menu-tete">
+          <img className="ec-logo" src={LOGO_MODE[mode]} alt="Bellajour" width={116} height={43} />
+          <button type="button" className="ec-bouton-tiroir ec-menu-fermer" aria-label="Fermer le menu" onClick={() => setOuvert(false)}>
+            <Icone cle="fermer" />
+          </button>
+        </div>
         {/* Un lien ne mène qu'à UNE édition : le sélecteur n'est qu'un repère. */}
         <div className="ec-edition">
           <span className="ec-edition-nom">{props.evenement}</span>
@@ -234,9 +258,11 @@ export default function Coquille(props: Props) {
         {/* La lecture seule (lien d'équipe) se dit dans le menu, sous le nom :
             plus de bandeau qui s'empile au-dessus de chaque écran. */}
         <div className="ec-contenu" data-lecture={props.lectureSeule ? "oui" : undefined}>
-          <AppareilFournisseur token={props.token} appareil={props.appareil} tu={props.tu}>
-            {props.children}
-          </AppareilFournisseur>
+          <BarreTitreContexte.Provider value={titreBarre}>
+            <AppareilFournisseur token={props.token} appareil={props.appareil} tu={props.tu}>
+              {props.children}
+            </AppareilFournisseur>
+          </BarreTitreContexte.Provider>
           <HoteFenetreEnvoi />
         </div>
       </DepotFournisseur>

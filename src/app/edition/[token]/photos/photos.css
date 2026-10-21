@@ -1684,22 +1684,25 @@
 /* ─────────────────────────────── téléphone ─────────────────────────────── */
 
 @media (max-width: 860px) {
-  /* La page défile ; la place sous le pouce reste libre (Déposer, la barre d'actions). */
+  /* La page défile ; la place sous le pouce reste libre pour ce qui est fixe en bas (la barre d'actions de la corbeille, la
+     photo agrandie). Quand la barre FLOTTANTE de Photos est là (`--barre`), la réserve est celle de la grille, plus bas :
+     barre + zone sûre + un souffle, jamais un nombre. */
   .ec-espace .ec-collecte {
     padding-bottom: 120px;
   }
-  /* Le titre et sa pilule sur une ligne ; « Les liens » (deux gestes) passe à la ligne plutôt que de couper le titre. */
+  .ec-espace .ec-collecte--barre {
+    padding-bottom: 0;
+  }
+  /* Le titre et ses boutons sur une ligne ; « Les liens » et « + » ne passent à la ligne que s'il le faut, plutôt que de couper le titre.
+     La taille du titre est celle de TOUS les écrans (34 px, espace.css) : plus de 30 px propre à Photos. */
   .ec-espace .ec-collecte .ec-ecran-tete {
     flex-wrap: wrap;
     align-items: center;
     gap: 8px 12px;
-    padding: 14px 16px 2px;
+    padding: 8px 16px 6px;
   }
   .ec-espace .ec-collecte .ec-ecran-titres {
     min-width: 0;
-  }
-  .ec-espace .ec-collecte .ec-ecran-titre {
-    font-size: 30px;
   }
   .ec-espace .ec-collecte > .ec-li {
     padding-top: 14px;
@@ -1710,6 +1713,11 @@
   .ec-espace .ec-collecte .ec-ecran-actions {
     flex-wrap: nowrap;
     flex: none;
+  }
+  /* Cibles au pouce (planche 2) : les pastilles de l'en-tête (« Les liens », « Partager », « Terminé ») et le « ← » du retour font 44 px. */
+  .ec-espace .ec-ecran-actions .ec-ph-pilule,
+  .ec-espace .ec-ph-retour {
+    min-height: 44px;
   }
   .ec-espace .ec-ph-retour {
     display: inline-flex;
@@ -1737,78 +1745,30 @@
     color: var(--ec-text);
     font-weight: 600;
   }
-  /* La seule barre : collée sous le logo en descendant. */
-  .ec-espace .ec-ph-moutils,
-  .ec-espace .ec-ph-barre-cocher {
-    position: sticky;
-    top: 78px;
-    z-index: var(--ec-z-collant);
+  /* Sous le titre : les chiffres à gauche, « Cocher » à droite (un TEXTE, dans une cible de 44 px qui déborde de la ligne
+     par le haut et le bas : la ligne ne grossit pas). Les doublons sont passés dans la feuille « Filtrer ». */
+  .ec-espace .ec-ph-mligne--cocher {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 10px 8px 0;
-    padding: 6px;
-    border-radius: 20px;
-    border: 1px solid var(--ec-carte-bord);
-    background: var(--ec-glass);
-    box-shadow: var(--ec-ombre-douce);
-    -webkit-backdrop-filter: var(--ec-flou);
-    backdrop-filter: var(--ec-flou);
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 8px 0 16px;
   }
-  /* Des cibles de 44 px (21/10 : « Tout » et « Par lien » faisaient 34 px, à 4 px l'un de l'autre),
-     SANS grossir la barre : 2 px de verre autour du creux (6 avant) et 2 px de creux autour des
-     boutons (3 avant) font toujours 54 px de haut. Les boutons sont à 6 px l'un de l'autre. */
-  .ec-espace .ec-ph-moutils {
-    padding: 2px;
-  }
-  .ec-espace .ec-ph-moutils .ec-ph-seg {
+  .ec-espace .ec-ph-cocher-lien {
     flex: none;
-    gap: 6px;
-    padding: 2px;
-  }
-  .ec-espace .ec-ph-moutils .ec-ph-seg > button {
     height: 44px;
-    padding: 0 12px;
-  }
-  .ec-espace .ec-ph-moutils .ec-ph-pilule {
-    min-height: 44px;
-    padding: 0 12px;
-  }
-  /* Les segmentés de la feuille « Filtrer » (« Plus récentes » | « Par jour ») : 36 px avant, 44 maintenant. */
-  .ec-espace .ec-ph-seg {
-    gap: 6px;
-  }
-  .ec-espace .ec-ph-seg > button {
-    height: 44px;
-  }
-  .ec-espace .ec-ph-pilule--filtre {
-    color: var(--ec-text);
-  }
-  .ec-espace .ec-ph-rond {
-    display: grid;
-    place-items: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    border-radius: 999px;
-    background: var(--ec-accent);
-    color: var(--ec-on-accent);
-    font-size: 11px;
-    font-weight: 700;
-    box-sizing: border-box;
+    margin: -10px 0;
+    padding: 0 8px;
+    border: 0;
+    background: none;
+    color: var(--ec-accent-texte);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
   }
   .ec-espace .ec-ph-droite {
     margin-left: auto;
-  }
-  .ec-espace .ec-ph-barre-cocher {
-    padding: 6px 12px 6px 6px;
-  }
-  .ec-espace .ec-ph-barre-cocher b {
-    font-size: 15px;
-    font-weight: 600;
-  }
-  .ec-espace .ec-ph-barre-cocher .ec-ph-lien {
-    font-size: 14px;
   }
   .ec-espace .ec-ph-x {
     display: grid;
@@ -1862,6 +1822,21 @@
   }
   .ec-espace .ec-ph-defile {
     padding: 8px 2px 0;
+  }
+  /* Rien ne passe sous la barre flottante : tout ce qui défile (la grille, les albums, la liste des personnes) garde en bas la
+     place de la barre, de la zone sûre de l'iPhone et d'un souffle (`--ec-fl-reserve`) ; la barre d'actions des cochées est
+     plus haute (64 px, `--ec-fl-actions-h`). Jamais un nombre. */
+  .ec-espace .ec-collecte--barre .ec-ph-defile {
+    padding-bottom: var(--ec-fl-reserve);
+  }
+  .ec-espace .ec-collecte--cocher .ec-ph-defile {
+    padding-bottom: calc(var(--ec-fl-actions-h) + var(--ec-fl-bas) + 16px);
+  }
+  /* « Personnes » : la liste prend la place de la grille (qui reste là, rendue, pour ne rien relire quand on repasse à « Tout »). */
+  .ec-espace .ec-collecte--personnes .ec-ph-g,
+  .ec-espace .ec-collecte--personnes .ec-ph-suite,
+  .ec-espace .ec-collecte--personnes .ec-a-venir {
+    display: none;
   }
   .ec-espace .ec-ph-g {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2017,35 +1992,188 @@
     flex-wrap: wrap;
   }
 
-  /* « Déposer » sous le pouce, et la barre d'actions fixe du mode « cocher ». */
-  .ec-espace .ec-ph-fab {
-    position: fixed;
-    right: 16px;
-    bottom: calc(24px + env(safe-area-inset-bottom));
-    z-index: var(--ec-z-barre);
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 52px;
-    padding: 0 20px;
+  /* « Déposer » : un « + » rond de 44 px dans l'en-tête (planche 2 du 21/10). Il quittait le coin du bas, que la barre flottante
+     occupe maintenant. Collecte terminée : le même bouton, ÉTEINT, avec la raison au toucher long et dans la ligne d'état. */
+  .ec-espace .ec-ph-plus {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
     border: 0;
-    border-radius: 999px;
+    border-radius: 50%;
     background: var(--ec-accent);
     color: var(--ec-on-accent);
-    font: inherit;
-    font-size: 15px;
-    font-weight: 600;
     box-shadow: var(--ec-ombre-bouton);
     cursor: pointer;
   }
-  /* Collecte terminée : le même bouton, éteint (21/10), avec la raison au toucher long et dans la ligne d'état. */
-  .ec-espace .ec-ph-fab--eteint {
+  .ec-espace .ec-ph-plus--eteint {
     background: var(--ec-carte-pleine);
     border: 1px solid var(--ec-line-fort);
     color: var(--ec-faint);
     box-shadow: none;
     cursor: not-allowed;
   }
+  /* La pastille « Envoi en cours » se pose AU-DESSUS de la barre, à droite (elle prenait le coin du bas, que la barre occupe). */
+  .ec-espace .ec-collecte--barre .ec-pastille-envoi {
+    bottom: calc(var(--ec-fl-bas) + var(--ec-fl-h) + 10px);
+  }
+  .ec-espace .ec-collecte--cocher .ec-pastille-envoi {
+    bottom: calc(var(--ec-fl-bas) + var(--ec-fl-actions-h) + 10px);
+  }
+
+  /* LA BARRE FLOTTANTE DU BAS (planche 2 du 21/10) : un verre de 52 px, 12 px de marge de chaque côté, posé au-dessus de la zone
+     sûre de l'iPhone. À gauche le choix « Tout · Par lien · Personnes » (segments de 44 px), à droite le bouton filtre rond de
+     52 px avec la pastille du nombre de réglages. Le verre est celui de la barre du haut. En mode « cocher », la MÊME barre
+     devient la barre d'actions. Sous le voile du tiroir (`--ec-z-barre`) : le menu passe par-dessus ; au-dessus du voile de la
+     feuille « Filtrer » tant qu'elle est ouverte (son bouton devient la croix). */
+  .ec-espace .ec-fl {
+    position: fixed;
+    z-index: var(--ec-z-barre);
+    left: 12px;
+    right: 12px;
+    bottom: var(--ec-fl-bas);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .ec-espace .ec-fl--haut {
+    z-index: calc(var(--ec-z-feuille) + 1);
+  }
+  .ec-espace .ec-fl-seg,
+  .ec-espace .ec-fl-rond,
+  .ec-espace .ec-fl-actions {
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-glass);
+    box-shadow: var(--ec-reflet), 0 12px 34px var(--ec-ombre);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+    backdrop-filter: blur(28px) saturate(1.5);
+  }
+  .ec-espace .ec-fl-seg {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    gap: 2px;
+    height: var(--ec-fl-h);
+    padding: 3px;
+    box-sizing: border-box;
+    border-radius: 999px;
+  }
+  .ec-espace .ec-fl-seg > button {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--ec-muted);
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .ec-espace .ec-fl-seg > button[aria-pressed="true"] {
+    background: var(--ec-creux);
+    color: var(--ec-text);
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--ec-line);
+  }
+  .ec-espace .ec-fl-rond {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: var(--ec-fl-h);
+    height: var(--ec-fl-h);
+    padding: 0;
+    border-radius: 50%;
+    color: var(--ec-text);
+    cursor: pointer;
+  }
+  .ec-espace .ec-fl-rond[aria-expanded="true"] {
+    background: var(--ec-accent);
+    border-color: transparent;
+    color: var(--ec-on-accent);
+  }
+  .ec-espace .ec-fl-nb {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    display: grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--ec-accent);
+    color: var(--ec-on-accent);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .ec-espace .ec-fl-rond[aria-expanded="true"] .ec-fl-nb {
+    background: var(--ec-page);
+    color: var(--ec-encre);
+  }
+  /* Le suivi d'un geste long (« 120 sur 600 ») : une ligne de verre au-dessus de la barre d'actions. */
+  .ec-espace .ec-fl-progres {
+    flex: 0 0 100%;
+    order: -1;
+    margin: 0;
+    padding: 6px 14px;
+    box-sizing: border-box;
+    border: 1px solid var(--ec-carte-bord);
+    border-radius: 999px;
+    background: var(--ec-glass);
+    text-align: center;
+  }
+
+  /* La barre d'actions des photos cochées : Ma sélection, Retirer, Ne pas publier, Supprimer (en rouge). 64 px, toute la
+     largeur (le bouton filtre n'a rien à faire pendant qu'on coche). */
+  .ec-espace .ec-fl-actions {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: var(--ec-fl-actions-h);
+    padding: 4px;
+    box-sizing: border-box;
+    border-radius: 32px;
+  }
+  .ec-espace .ec-fl-actions > button {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 56px;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 24px;
+    background: none;
+    color: var(--ec-text);
+    font: inherit;
+    font-size: 11.5px;
+    line-height: 1.15;
+    text-align: center;
+    cursor: pointer;
+  }
+  .ec-espace .ec-fl-actions > button:disabled {
+    opacity: 0.45;
+  }
+  .ec-espace .ec-fl-actions > .ec-fl-danger {
+    color: var(--ec-danger);
+  }
+  .ec-espace .ec-fl-actions > button > svg {
+    flex: none;
+  }
+
   .ec-espace .ec-ph-bas {
     position: fixed;
     left: 8px;
@@ -2115,31 +2243,31 @@
     bottom: calc(200px + env(safe-area-inset-bottom));
   }
 
-  /* La feuille « Filtrer », du bas. */
+  /* La feuille « Filtrer » (planche 2B du 21/10) : COMPACTE, posée juste au-dessus de la barre du bas, jamais en plein écran (elle
+     montait jusqu'à 52 px du haut : 792 px sur 844). Fond plein (`--ec-carte-pleine`, lisible sur n'importe quelle photo), arrondie
+     de 28 px, 12 px de marge. Le voile NE FLOUTE PLUS : on voit la grille se filtrer derrière, et le compte du titre se met à jour.
+     Elle est sous la barre (`--ec-z-feuille` + 1) : le bouton filtre devient la croix qui la ferme. Le corps défile si l'écran
+     est court (375 × 667) : la hauteur est celle de son contenu, jamais plus que l'écran moins 140 px. */
   .ec-espace .ec-ph-feuille-voile {
     position: fixed;
     inset: 0;
     z-index: var(--ec-z-feuille);
     background: var(--ec-voile);
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
   }
   .ec-espace .ec-ph-feuille {
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    top: 52px;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--ec-fl-bas) + var(--ec-fl-h) + 8px);
     display: flex;
     flex-direction: column;
-    border-radius: 28px 28px 0 0;
+    max-height: calc(var(--app-height) - env(safe-area-inset-top, 0px) - 140px);
+    border-radius: 28px;
     border: 1px solid var(--ec-carte-bord);
-    border-bottom: 0;
-    background: var(--ec-glass);
-    box-shadow: var(--ec-reflet), 0 -20px 60px var(--ec-ombre);
-    -webkit-backdrop-filter: blur(32px) saturate(1.4);
-    backdrop-filter: blur(32px) saturate(1.4);
+    background: var(--ec-carte-pleine);
+    box-shadow: var(--ec-reflet), 0 24px 60px var(--ec-ombre);
     color: var(--ec-text);
+    overflow: hidden;
   }
   .ec-espace .ec-ph-poignee {
     flex: none;
@@ -2152,19 +2280,24 @@
   .ec-espace .ec-ph-feuille-tete {
     flex: none;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 18px 8px;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 18px 8px;
   }
   .ec-espace .ec-ph-feuille-tete h2 {
+    flex: 1;
     margin: 0;
     font-family: var(--font-display);
     font-weight: 400;
     font-style: normal;
-    font-size: 28px;
+    font-size: 26px;
     line-height: 1;
     letter-spacing: 0;
     color: var(--ec-titre);
+  }
+  .ec-espace .ec-ph-feuille-compte {
+    font-size: 13px;
+    color: var(--ec-muted);
   }
   .ec-espace .ec-ph-feuille-corps {
     flex: 1;
@@ -2173,12 +2306,52 @@
     overscroll-behavior: contain;
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    padding: 0 12px 12px;
+    gap: 10px;
+    padding: 0 12px 14px;
   }
-  .ec-espace .ec-ph-feuille-pied {
+  /* L'ordre des jours se change dans le titre de la section (« Plus récentes d'abord »), en petit. */
+  .ec-espace .ec-ph-fl-lien {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+    font-size: 12.5px;
+  }
+  /* Un seul rang de jours, qu'on fait glisser : jamais une pile de pastilles. */
+  .ec-espace .ec-ph-jours--ligne {
+    flex-wrap: nowrap;
+    padding: 2px 6px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ec-espace .ec-ph-jours--ligne .ec-ph-pilule {
     flex: none;
-    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+  /* « Afficher » : un groupe arrondi de lignes de 48 px séparées par un filet intérieur (comme Réglages sur iPhone). */
+  .ec-espace .ec-ph-groupe-lignes {
+    display: flex;
+    flex-direction: column;
+    margin: 0 4px;
+    border-radius: var(--ec-r-bloc);
+    background: var(--ec-creux);
+  }
+  .ec-espace .ec-ph-groupe-lignes .ec-ph-li {
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 0;
+    font-size: 15px;
+  }
+  .ec-espace .ec-ph-groupe-lignes .ec-ph-li + .ec-ph-li {
+    border-top: 1px solid var(--ec-line);
+  }
+  .ec-espace .ec-ph-groupe-lignes .ec-ph-li .ec-ph-ic {
+    color: var(--ec-muted);
+  }
+  .ec-espace .ec-ph-groupe-lignes .ec-ph-li > svg {
+    flex: none;
+    color: var(--ec-faint);
   }
 
   /* La photo agrandie : plein écran, les gestes sous le pouce. */

@@ -5771,10 +5771,11 @@ titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, coche
   ok(`la page n'appelle que les routes EXISTANTES (${[...new Set(appels)].length} adresses : photos, etat, marquer, dossiers, provenances, plafond, corbeille, personnes)`, appels.length > 0 && appels.every((a) => permis.has(a)));
   ok("le lien d'équipe n'écrit rien : ni case, ni étoile qui écrive, ni barre d'actions, ni geste dans la photo agrandie, ni dépôt",
     /\{g\.ecrire \? \(\s*<button\s*type="button"\s*className="ec-ph-t-case"/.test(grilleTsx) && /\{p\.ecrire && nbCoches > 0 \? \(\s*<div className="ec-ph-barre-actions/.test(collecteTsx) && /\{a\.ecrire \? \(\s*<div className="ec-ag-gestes">/.test(agrandir)
-      && /const cocherActif = p\.ecrire && /.test(collecteTsx) && /\{p\.ecrire && p\.ouverte && envoi\.ouvrir && !cocherActif && !envoiVisible( && !ecranPropre)? \?/.test(collecteTsx));
+      && /const cocherActif = p\.ecrire && /.test(collecteTsx) && /\{p\.ecrire && p\.ouverte && envoi\.ouvrir && onglet === "photos" && !cocherActif && !ecranPropre \? \(/.test(collecteTsx));
   const tel = css.slice(css.indexOf("@media (max-width: 860px) {\n  /* La page défile"));
-  ok("téléphone : rien ne défile de côté (aucun overflow-x), 4 colonnes, la barre collée en haut, la barre d'actions fixe sous le pouce, la feuille du bas ; pas de dvh",
-    tel.length > 1000 && !/overflow-x/.test(tel) && /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);\s*gap: 2px;/.test(tel) && /\.ec-ph-moutils,\s*\.ec-espace \.ec-ph-barre-cocher \{\s*position: sticky;/.test(tel)
+  /* 21/10 (planche 2) : la barre collée EN HAUT (`.ec-ph-moutils`, `top: 78px`) a quitté l'écran ; la barre FLOTTANTE du bas (`.ec-fl`) la remplace, la feuille est COMPACTE (`bottom`, plus `top: 52px`). */
+  ok("téléphone : rien ne défile de côté (le seul `overflow-x` est le rang des jours de la feuille, qu'on fait glisser), 4 colonnes, la barre FLOTTANTE fixe en bas (plus de barre collée en haut), la barre d'actions de la corbeille fixe, la feuille du bas ; pas de dvh",
+    tel.length > 1000 && (tel.match(/overflow-x/g) ?? []).length === 1 && /\.ec-ph-jours--ligne \{[^}]*overflow-x: auto;/.test(tel) && /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);\s*gap: 2px;/.test(tel) && /\.ec-fl \{\s*position: fixed;/.test(tel) && !/\.ec-ph-moutils|\.ec-ph-barre-cocher|top: 78px/.test(css)
       && /\.ec-ph-bas \{\s*position: fixed;/.test(tel) && /\.ec-ph-feuille \{\s*position: absolute;/.test(tel) && !/dvh/.test(css));
   ok("les chiffres en Cormorant passent en chiffres modernes (« Bateau 1 », jamais « Bateau I »)",
     /\.ec-espace \.ec-collecte,\s*\.ec-espace \.ec-ag,[^{]*\{\s*font-variant-numeric: lining-nums;\s*font-feature-settings: "lnum" 1;/.test(css));
@@ -7617,7 +7618,7 @@ async function verifFinCollecte() {
       collecte.indexOf("Déposer des photos") < collecte.indexOf("<ActionsFinCollecte") && /if \(variante === "tel" \|\| !fin\.terminer \|\| photos === 0\) return null;/.test(fin)
         && /terminer: peut\(role, 'terminer_collecte'\)/.test(pagePhotos) && peut("responsable", "terminer_collecte") && !peut("equipe", "terminer_collecte") && !peut("atelier", "terminer_collecte") && !peut("participant", "terminer_collecte"));
     ok("terminée : les boutons de dépôt et de création de lien sont ÉTEINTS (disabled), avec la raison (title et aria-describedby sur la ligne d'état), au bureau comme au téléphone",
-      (fin.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 2 && /"Déposer des photos" : "Créer un lien"/.test(fin) && /ec-ph-fab--eteint/.test(fin)
+      (fin.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 2 && /"Déposer des photos" : "Créer un lien"/.test(fin) && /ec-ph-plus--eteint/.test(fin) && !/ec-ph-fab/.test(fin)
         && (carte.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 2 && /Inviter quelqu&apos;un/.test(carte));
     ok("la ligne d'état s'affiche quand la collecte est terminée, sur le tableau de bord ET sur la page Photos, avec la date de la clôture ; l'oubli seulement pour le responsable, tant que l'atelier peut rouvrir",
       /\{!ouverte \? <LigneFinCollecte id=\{ID_LIGNE_FIN\} le=\{termineLe\} tu=\{p\.tu\} oubli=\{\(p\.oubli \|\| fin === "fait"\) && p\.terminer\} \/> : null\}/.test(carte)
@@ -7902,7 +7903,7 @@ function verifChevauchements() {
     const hautes = feuilles.flatMap(({ f, css }) => [...css.matchAll(/z-index:\s*(-?\d+)\s*;/g)].filter((m) => Number(m[1]) >= 10).map((m) => `${f.split("/").pop()}: ${m[1]}`));
     ok(`aucun z-index numérique de 10 ou plus dans les feuilles de l'espace : une couche se lit dans l'échelle${hautes.length ? " ; en faute : " + hautes.join(", ") : ""}`, hautes.length === 0);
     ok("les barres FIXES d'une page restent sous le voile du tiroir : « Déposer », les actions des photos cochées (téléphone), la barre d'actions (ordinateur), les notes du BAT (feuille et pastille)",
-      dans(photos, "\\.ec-espace \\.ec-ph-fab", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-bas", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-barre-actions", /z-index: var\(--ec-z-barre\)/)
+      dans(photos, "\\.ec-espace \\.ec-fl", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-bas", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-barre-actions", /z-index: var\(--ec-z-barre\)/)
         && toutes(bat, "\\.ec-espace \\.ec-bat-panneau").some((r) => /z-index: var\(--ec-z-barre\)/.test(r)) && toutes(bat, "\\.ec-espace \\.ec-bat-onglet-notes").some((r) => /z-index: calc\(var\(--ec-z-barre\) \+ 1\)/.test(r)));
     ok("le voile, le tiroir et l'en-tête lisent leurs couches ; les fenêtres (ordinateur ET téléphone) passent au-dessus du tiroir",
       /z-index: var\(--ec-z-voile\)/.test(regle(tel, "\\.ec-espace \\.ec-voile")) && /z-index: var\(--ec-z-tiroir\)/.test(regle(tel, "\\.ec-espace \\.ec-menu")) && /z-index: var\(--ec-z-entete\)/.test(regle(tel, "\\.ec-espace \\.ec-barre-mobile"))
@@ -7959,9 +7960,11 @@ function verifChevauchements() {
       /-webkit-line-clamp: 2;/.test(ligne) && !/white-space: nowrap/.test(ligne) && /@media \(max-width: 520px\) \{[\s\S]*?\.ec-tdb-message \{\s*flex-wrap: wrap;[\s\S]*?\.ec-tdb-message-texte \{\s*flex: 1 1 200px;/.test(tableau));
     ok("la corbeille : le nom sur deux lignes, la précision (fichier, qui, QUAND) sur trois, plus d'ellipse d'une ligne",
       /-webkit-line-clamp: 2;/.test(regle(photos, "\\.ec-espace \\.ec-cb-txt b")) && /-webkit-line-clamp: 3;/.test(regle(photos, "\\.ec-espace \\.ec-cb-txt span")) && !/white-space: nowrap/.test(regle(photos, "\\.ec-espace \\.ec-cb-txt b") + regle(photos, "\\.ec-espace \\.ec-cb-txt span")));
-    ok("cibles au pouce : « Tout » / « Par lien » et « Plus récentes » / « Par jour » à 44 px, 6 px d'écart ; la barre d'outils reste à 54 px (2 + 2 + 44 + 2 + 2 + 2 de filet) ; soleil et lune à 40 × 40 ; les gestes du menu « … » à 44 px au moins",
-      dans(photos, "\\.ec-espace \\.ec-ph-moutils \\.ec-ph-seg > button", /height: 44px;/) && dans(photos, "\\.ec-espace \\.ec-ph-moutils", /^\s*padding: 2px;\s*$/) && dans(photos, "\\.ec-espace \\.ec-ph-moutils \\.ec-ph-seg", /gap: 6px;\s*padding: 2px;/)
-        && dans(photos, "\\.ec-espace \\.ec-ph-seg > button", /^\s*height: 44px;\s*$/) && dans(tel, "\\.ec-espace \\.ec-mode", /width: 40px;\s*height: 40px;/) && dans(espace, "\\.ec-espace \\.ec-li-menu > button", /min-height: 44px;/));
+    /* 21/10, planche 2 : « Tout · Par lien · Personnes » vit dans la barre flottante du bas (52 px = 3 + 44 + 3 + 2 de filet), le choix de l'ordre dans la feuille est devenu un lien du titre « Jour ». */
+    ok("cibles au pouce : « Tout » / « Par lien » / « Personnes » à 44 px dans une barre de 52 px (3 px de verre autour) ; les pastilles de l'en-tête, le retour et les jours à 44 px ; soleil et lune à 40 × 40 ; les gestes du menu « … » à 44 px au moins",
+      dans(photos, "\\.ec-espace \\.ec-fl-seg > button", /height: 44px;/) && dans(photos, "\\.ec-espace \\.ec-fl-seg", /gap: 2px;\s*height: var\(--ec-fl-h\);\s*padding: 3px;/)
+        && dans(photos, "\\.ec-espace \\.ec-ecran-actions \\.ec-ph-pilule,\\s*\\.ec-espace \\.ec-ph-retour", /min-height: 44px;/) && dans(photos, "\\.ec-espace \\.ec-ph-jours--ligne \\.ec-ph-pilule", /min-height: 44px;/)
+        && dans(tel, "\\.ec-espace \\.ec-mode", /width: 40px;\s*height: 40px;/) && dans(espace, "\\.ec-espace \\.ec-li-menu > button", /min-height: 44px;/));
   }
 }
 
@@ -8345,7 +8348,178 @@ function verifPartageLiensMail() {
   }
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(() => {
+
+/* ════════════ 21/10 : la barre du haut (52 px), le titre unique, la barre flottante du bas, la feuille compacte (planches 1 et 2 du téléphone) ════════════ */
+function verifBarreFiltres() {
+  const sansCommentaires = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const espaceBrut = lire("src/app/edition/[token]/espace.css");
+  const espace = sansCommentaires(espaceBrut);
+  const photos = sansCommentaires(lire("src/app/edition/[token]/photos/photos.css"));
+  const tableau = sansCommentaires(lire("src/app/edition/[token]/tableau.css"));
+  const bat = sansCommentaires(lire("src/app/edition/[token]/bat/bat.css"));
+  const toutesFeuilles = fichiersParSuffixe("src/app/edition", /\.css$/).map((f) => ({ f: f.split("/").pop() ?? f, css: sansCommentaires(lire(f)) }));
+  const regle = (css: string, sel: string) => new RegExp(`(?:^|\\n)\\s*${sel} \\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  const toutes = (css: string, sel: string) => [...css.matchAll(new RegExp(`(?:^|\\n)\\s*${sel} \\{([^}]*)\\}`, "g"))].map((m) => m[1]);
+  const dans = (css: string, sel: string, re: RegExp) => toutes(css, sel).some((r) => re.test(r));
+  const debutTel = espaceBrut.indexOf("@media (max-width: 860px) {\n  /* Sur téléphone, un écran ne peut pas tout tenir");
+  const tel = debutTel >= 0 ? sansCommentaires(espaceBrut.slice(debutTel)) : "";
+  const jeton = (nom: string) => Number(new RegExp(`--ec-z-${nom}:\\s*(\\d+);`).exec(espace)?.[1] ?? "NaN");
+  const coquille = lire("src/app/edition/[token]/Coquille.tsx");
+  const titreEcran = lire("src/app/edition/_composants/TitreEcran.tsx");
+  const ecran = lire("src/app/edition/_composants/Ecran.tsx");
+  const collecte = collecteDeLEcran();
+  const feuilleTsx = lire("src/app/edition/[token]/photos/Feuille.tsx");
+  const listesTsx = lire("src/app/edition/[token]/photos/Listes.tsx");
+  const F = FiltresPhotos;
+  const V = F.FILTRES_VIDES;
+
+  titre("— 21/10, planche 1 : la barre du haut du téléphone fait 52 px, en JETON, et ne grossit jamais —");
+  {
+    ok("les jetons existent, une fois, dans espace.css : barre 52 px, écart 6 px, barre flottante 52 px (64 en barre d'actions), écart du bas avec la zone sûre, réserve = barre + écart + 16 px",
+      /--ec-barre-h:\s*52px;/.test(espace) && /--ec-barre-marge:\s*6px;/.test(espace) && /--ec-fl-h:\s*52px;/.test(espace) && /--ec-fl-actions-h:\s*64px;/.test(espace)
+        && /--ec-fl-bas:\s*calc\(10px \+ env\(safe-area-inset-bottom, 0px\)\);/.test(espace) && /--ec-fl-reserve:\s*calc\(var\(--ec-fl-h\) \+ var\(--ec-fl-bas\) \+ 16px\);/.test(espace));
+    const barre = regle(tel, "\\.ec-espace \\.ec-barre-mobile");
+    ok("la barre : hauteur ÉCRITE (`height: var(--ec-barre-h)`, `box-sizing: border-box` : elle ne dépend plus de ce que ses voisins laissent), collée en haut à l'écart du jeton + la zone sûre, sous le voile du tiroir",
+      /height: var\(--ec-barre-h\);/.test(barre) && /box-sizing: border-box;/.test(barre) && /position: sticky;/.test(barre) && /top: calc\(var\(--ec-barre-marge\) \+ env\(safe-area-inset-top, 0px\)\);/.test(barre)
+        && /margin: calc\(var\(--ec-barre-marge\) \+ env\(safe-area-inset-top, 0px\)\) 8px 0;/.test(barre) && /padding: 0 4px 0 16px;/.test(barre) && /z-index: var\(--ec-z-entete\)/.test(barre) && !/min-height|padding: 8px/.test(barre));
+    ok("le logo de la barre fait 78 px (96 avant) et le bouton menu garde sa cible de 44 px",
+      /width: 78px;/.test(regle(tel, "\\.ec-espace \\.ec-logo--mobile")) && /width: 44px;\s*height: 44px;/.test(regle(tel, "\\.ec-espace \\.ec-bouton-tiroir")));
+    const enDur = toutesFeuilles.flatMap(({ f, css }) => [...css.matchAll(/(?:^|[;{\s])top:\s*(78|62|65|70)px/g)].map((m) => `${f}: top ${m[1]}px`));
+    ok(`aucun \`top: 78px\` (ni 62, 65, 70) en dur dans les feuilles de l'espace : tout ce qui compte la barre lit un jeton${enDur.length ? " ; en faute : " + enDur.join(", ") : ""}`, enDur.length === 0);
+    ok("le bon à tirer, qui remplit l'écran sous la barre, soustrait les jetons (`--ec-barre-h` + `--ec-barre-marge`), plus un `65px` qui comptait l'ancienne barre",
+      /min-height: calc\(var\(--app-height\) - var\(--ec-barre-h\) - var\(--ec-barre-marge\)\);/.test(bat) && !/calc\(var\(--app-height\) - 65px\)/.test(bat));
+    ok("la barre de la grille n'est plus collée en haut : plus de `.ec-ph-moutils` ni de `.ec-ph-barre-cocher` (feuille ni page), plus de bouton `.ec-ph-fab` flottant",
+      !/ec-ph-moutils|ec-ph-barre-cocher|ec-ph-fab/.test(photos) && !/ec-ph-moutils|ec-ph-barre-cocher|ec-ph-fab/.test(collecte) && !/ec-ph-fab/.test(lire("src/app/edition/_composants/FinCollecte.tsx")));
+  }
+
+  titre("— 21/10, planche 1 : UN seul grand titre de 34 px sur tous les écrans, chiffres modernes —");
+  {
+    const tousTitres = toutesFeuilles.flatMap(({ f, css }) => [...css.matchAll(/([^{}]*\.ec-ecran-titre\b[^{}]*)\{([^}]*font-size:\s*([^;]+);[^}]*)\}/g)].map((m) => ({ f, sel: m[1].trim().split("\n").pop() ?? "", taille: m[3].trim() })));
+    ok("espace.css : le titre du téléphone est `34px`, `lining-nums` (« Recette 1 » ne se lit plus « Recette I »), interligne serré",
+      /font-size: 34px;/.test(regle(tel, "\\.ec-espace \\.ec-ecran-titre")) && /font-variant-numeric: lining-nums;/.test(regle(tel, "\\.ec-espace \\.ec-ecran-titre")) && /line-height: 1\.04;/.test(regle(tel, "\\.ec-espace \\.ec-ecran-titre")));
+    ok("la ligne de titre ne fait plus 68 px au téléphone (`min-height: 0`), padding 8 / 16 / 6 : la ligne prend la hauteur de son bouton",
+      /min-height: 0;/.test(regle(tel, "\\.ec-espace \\.ec-ecran-tete")) && /padding: 8px 16px 6px;/.test(regle(tel, "\\.ec-espace \\.ec-ecran-tete")) && /padding: 8px 16px 6px;/.test(regle(photos, "  \\.ec-espace \\.ec-collecte \\.ec-ecran-tete")) || /padding: 8px 16px 6px;/.test(photos));
+    ok("les 40 px du tableau de bord ne valent que pour l'ordinateur (`@media (min-width: 861px)`) : ce (0,3,0), chargé après espace.css, aurait remplacé les 34 px",
+      /@media \(min-width: 861px\) \{\s*\.ec-espace \.ec-tdb \.ec-ecran-titre \{\s*font-size: 40px;/.test(tableau) && !/(?:^|\n)\.ec-espace \.ec-tdb \.ec-ecran-titre \{/.test(tableau));
+    ok("plus aucune taille propre à un écran pour son grand titre : 36 px (ordinateur, base), 34 px (téléphone), 40 px (tableau de bord, ordinateur) ; Photos n'a plus ses 30 px",
+      tousTitres.every((t) => ["36px", "34px", "40px"].includes(t.taille)) && tousTitres.length === 3);
+  }
+
+  titre("— 21/10, planche 1 : en défilant, le grand titre passe dans la barre (un observateur, aucun calcul au défilement) —");
+  {
+    ok("`TitreEcran` : un `IntersectionObserver` sur le grand titre, la zone sûre de la barre en `rootMargin`, `disconnect` à la sortie ; AUCUN écouteur de défilement, aucune minuterie",
+      /new IntersectionObserver\(/.test(titreEcran) && /rootMargin: `-\$\{bas\}px 0px 0px 0px`/.test(titreEcran) && /obs\.disconnect\(\)/.test(titreEcran) && !/addEventListener\("scroll"|requestAnimationFrame|setInterval|setTimeout/.test(titreEcran + coquille));
+    ok("la copie du titre est un portail dans la barre (`createPortal(children, cible)`) : le même rendu que le grand titre, « 3 cochées » suit sans second état ; le titre sans hauteur (fiche, corbeille) ne passe jamais sous la barre",
+      /createPortal\(children, cible\)/.test(titreEcran) && /e\.boundingClientRect\.height > 0/.test(titreEcran) && /signaler\(!e\.isIntersecting && dessus\)/.test(titreEcran));
+    ok("`EnTeteEcran` rend `<TitreEcran>` (tous les écrans) ; la coquille pose `data-defile=\"oui\"` sur la barre et la place du titre (`ref`), sans effet ni calcul",
+      /<TitreEcran>\{titre\}<\/TitreEcran>/.test(ecran) && /data-defile=\{defile \? "oui" : undefined\}/.test(coquille) && /ref=\{setCibleTitre\}/.test(coquille) && /ref=\{setBarre\}/.test(coquille) && /<BarreTitreContexte\.Provider value=\{titreBarre\}>/.test(coquille));
+    ok("le logo laisse la place au titre (fondu de 180 ms, 8 px de glissement) quand `data-defile=\"oui\"` ; il revient sinon ; coupé si l'appareil demande moins de mouvement",
+      dans(tel, "\\.ec-espace \\.ec-barre-mobile\\[data-defile=\"oui\"\\] \\.ec-logo--mobile", /opacity: 0;/) && dans(tel, "\\.ec-espace \\.ec-barre-mobile\\[data-defile=\"oui\"\\] \\.ec-barre-titre", /opacity: 1;/)
+        && /transition: opacity 180ms var\(--ease\), transform 180ms var\(--ease\);/.test(regle(tel, "\\.ec-espace \\.ec-logo--mobile")) && /transition: opacity 180ms var\(--ease\), transform 180ms var\(--ease\);/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre"))
+        && /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.ec-logo--mobile,\s*\.ec-espace \.ec-barre-titre \{\s*transition: none;/.test(espace));
+    ok("le titre de la barre ne coupe pas le logo ni le menu : une ligne, une ellipse, pas de clic (`pointer-events: none`), nombres modernes",
+      /white-space: nowrap;[\s\S]*text-overflow: ellipsis;/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre")) && /pointer-events: none;/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre")) && /lining-nums/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre")));
+  }
+
+  titre("— 21/10, planche 1 : le tiroir a son en-tête de 52 px, la croix tombe au pixel du bouton menu —");
+  {
+    ok("ordinateur : `.ec-menu-tete` est `display: contents` (le logo reste un enfant du menu, rien ne bouge) et la croix du tiroir est cachée ; téléphone : l'en-tête fait la hauteur de la barre moins le filet du tiroir",
+      /display: contents;/.test(regle(espace, "\\.ec-espace \\.ec-menu-tete")) && /display: none;/.test(regle(espace, "\\.ec-espace \\.ec-menu-fermer"))
+        && /display: flex;/.test(regle(tel, "\\.ec-espace \\.ec-menu-tete")) && /height: calc\(var\(--ec-barre-h\) - 2px\);/.test(regle(tel, "\\.ec-espace \\.ec-menu-tete")) && /margin: -22px -10px 0 12px;/.test(regle(tel, "\\.ec-espace \\.ec-menu-tete")));
+    ok("le tiroir part du MÊME écart du haut que la barre (jeton + zone sûre) : la croix et le bouton menu sont à la même hauteur ; sa croix ferme (`aria-label`), le bouton de la barre garde le dessin du menu",
+      /top: calc\(var\(--ec-barre-marge\) \+ env\(safe-area-inset-top, 0px\)\);/.test(regle(tel, "\\.ec-espace \\.ec-menu")) && /className="ec-bouton-tiroir ec-menu-fermer" aria-label="Fermer le menu" onClick=\{\(\) => setOuvert\(false\)\}/.test(coquille) && /<Icone cle="menu" \/>/.test(coquille));
+  }
+
+  titre("— 21/10, planche 2 : les filtres quittent le haut, une barre FLOTTANTE de verre en bas —");
+  {
+    const fl = regle(photos, "  \\.ec-espace \\.ec-fl");
+    ok("la barre flottante : fixe, 12 px de marge de chaque côté, posée à `--ec-fl-bas` (zone sûre de l'iPhone comprise), sous le voile du tiroir (`--ec-z-barre`), au-dessus du voile de la feuille tant qu'elle est ouverte",
+      /position: fixed;/.test(fl) && /left: 12px;/.test(fl) && /right: 12px;/.test(fl) && /bottom: var\(--ec-fl-bas\);/.test(fl) && /z-index: var\(--ec-z-barre\);/.test(fl)
+        && /z-index: calc\(var\(--ec-z-feuille\) \+ 1\);/.test(regle(photos, "  \\.ec-espace \\.ec-fl--haut")) && jeton("barre") < jeton("voile") && jeton("feuille") + 1 < jeton("photo"));
+    ok("le choix « Tout · Par lien · Personnes » : un verre de 52 px, segments de 44 px, le segment actif sur le creux ; le bouton filtre rond de 52 px avec la pastille du nombre de réglages, croix pendant que la feuille est ouverte",
+      /height: var\(--ec-fl-h\);/.test(regle(photos, "  \\.ec-espace \\.ec-fl-seg")) && /height: 44px;/.test(regle(photos, "  \\.ec-espace \\.ec-fl-seg > button")) && dans(photos, "  \\.ec-espace \\.ec-fl-seg > button\\[aria-pressed=\"true\"\\]", /background: var\(--ec-creux\);/)
+        && /width: var\(--ec-fl-h\);\s*height: var\(--ec-fl-h\);[\s\S]*border-radius: 50%;/.test(regle(photos, "  \\.ec-espace \\.ec-fl-rond")) && /aria-expanded=\{feuille\}/.test(collecte) && /feuille \? TRACE\.fermer : TRACE\.filtre/.test(collecte) && /nbFeuille \? <span className="ec-fl-nb">/.test(collecte));
+    ok("trois choix, dans cet ordre : Tout, Par lien, Personnes (`aria-pressed` suit `f.mode`)",
+      /aria-pressed=\{f\.mode === "tout"\}[\s\S]{0,260}Tout[\s\S]{0,420}aria-pressed=\{f\.mode === "liens"\}[\s\S]{0,260}Par lien[\s\S]{0,420}aria-pressed=\{f\.mode === "personnes"\}[\s\S]{0,320}Personnes/.test(collecte));
+    ok("en mode « cocher », la MÊME barre devient la barre d'actions de 64 px : Ma sélection, Retirer, Ne pas publier, Supprimer (en rouge), par LE MÊME `agir()` qu'avant (mêmes routes, aucune requête de plus)",
+      dans(photos, "  \\.ec-espace \\.ec-fl-actions", /height: var\(--ec-fl-actions-h\);/) && /color: var\(--ec-danger\);/.test(regle(photos, "  \\.ec-espace \\.ec-fl-actions > \\.ec-fl-danger"))
+        && ["ajouter", "retirer", "cacher", "supprimer"].every((g) => new RegExp(`className="ec-fl-actions"[\\s\\S]*void agir\\("${g}"\\)`).test(collecte)) && /<div className="ec-fl-actions">/.test(collecte) && /\{cocherActif \? \(\s*<div className="ec-fl ec-ph-tel" role="toolbar" aria-label="Agir sur les photos cochées">/.test(collecte));
+    ok("« Cocher » est un texte sous le titre (cible de 44 px qui déborde de la ligne : elle ne grossit pas), à côté des chiffres ; l'appui long sur une photo coche toujours (`onAppuiLong`) ; le compte est dans le titre (« 3 cochées »), « Terminé » dans l'en-tête",
+      /height: 44px;\s*margin: -10px 0;/.test(regle(photos, "  \\.ec-espace \\.ec-ph-cocher-lien")) && /className="ec-ph-cocher-lien" onClick=\{\(\) => setModeCocher\(true\)\}/.test(collecte) && /onAppuiLong=\{\(id\) => \{\s*setModeCocher\(true\);/.test(collecte)
+        && /`\$\{nombre\(nbCoches\)\} cochée\$\{nbCoches > 1 \? "s" : ""\}`/.test(collecte) && /onClick=\{toutDecocher\}>\s*Terminé/.test(collecte));
+    ok("« Déposer » est un « + » rond de 44 px dans l'en-tête (plus de bouton flottant) ; collecte terminée : le même « + », ÉTEINT, avec la raison ; la pastille d'envoi se pose au-dessus de la barre, à droite",
+      /width: 44px;\s*height: 44px;[\s\S]*border-radius: 50%;/.test(regle(photos, "  \\.ec-espace \\.ec-ph-plus")) && /aria-label="Déposer des photos"/.test(collecte) && /ec-ph-plus ec-ph-plus--eteint ec-ph-tel/.test(lire("src/app/edition/_composants/FinCollecte.tsx"))
+        && /bottom: calc\(var\(--ec-fl-bas\) \+ var\(--ec-fl-h\) \+ 10px\);/.test(regle(photos, "  \\.ec-espace \\.ec-collecte--barre \\.ec-pastille-envoi")) && /bottom: calc\(var\(--ec-fl-bas\) \+ var\(--ec-fl-actions-h\) \+ 10px\);/.test(regle(photos, "  \\.ec-espace \\.ec-collecte--cocher \\.ec-pastille-envoi")));
+    ok("rien ne passe sous la barre : la zone qui défile garde en bas `--ec-fl-reserve` (barre + zone sûre + 16 px), la barre d'actions plus haute sa propre réserve ; la page n'ajoute plus ses 120 px quand la barre est là",
+      dans(photos, "  \\.ec-espace \\.ec-collecte--barre \\.ec-ph-defile", /padding-bottom: var\(--ec-fl-reserve\);/) && dans(photos, "  \\.ec-espace \\.ec-collecte--cocher \\.ec-ph-defile", /padding-bottom: calc\(var\(--ec-fl-actions-h\) \+ var\(--ec-fl-bas\) \+ 16px\);/)
+        && dans(photos, "  \\.ec-espace \\.ec-collecte--barre", /padding-bottom: 0;/) && /\$\{barreBas \? " ec-collecte--barre" : ""\}/.test(collecte));
+    ok("la barre n'est montrée que sur l'onglet des photos d'une édition qui en a, jamais sur la fiche d'une personne ni la corbeille (qui portent leur titre)",
+      /const barreBas = onglet === "photos" && !vide && !ecranPropre;/.test(collecte));
+  }
+
+  titre("— 21/10, planche 2 : le filtre s'ouvre en feuille COMPACTE au-dessus de la barre —");
+  {
+    const f = regle(photos, "  \\.ec-espace \\.ec-ph-feuille");
+    ok("la feuille : posée AU-DESSUS de la barre (`bottom` = écart + barre + 8 px), 12 px de marge, JAMAIS en plein écran (plus de `top: 52px`, une `max-height` de l'écran moins 140 px), fond plein `--ec-carte-pleine`, arrondie de 28 px",
+      /bottom: calc\(var\(--ec-fl-bas\) \+ var\(--ec-fl-h\) \+ 8px\);/.test(f) && /left: 12px;/.test(f) && /right: 12px;/.test(f) && !/(?:^|\s)top:/.test(f) && /max-height: calc\(var\(--app-height\) - env\(safe-area-inset-top, 0px\) - 140px\);/.test(f)
+        && /background: var\(--ec-carte-pleine\);/.test(f) && /border-radius: 28px;/.test(f));
+    ok("le voile ne floute PAS la grille (aucun `backdrop-filter`), sous la feuille : la grille se filtre sous les yeux ; la feuille et son voile lisent la couche `--ec-z-feuille`",
+      !/backdrop-filter/.test(regle(photos, "  \\.ec-espace \\.ec-ph-feuille-voile")) && /z-index: var\(--ec-z-feuille\)/.test(regle(photos, "  \\.ec-espace \\.ec-ph-feuille-voile")));
+    ok("la feuille ne porte que le JOUR et « Afficher » (Ma sélection, Ne pas publier, Doublons, Corbeille) : plus de listes Lien, Personne ni d'Ordre, plus de bouton « Voir N photos » ; l'ordre se change dans le titre « Jour »",
+      /Ma sélection[\s\S]*Ne pas publier[\s\S]*Doublons/.test(feuilleTsx) && !/Chercher une personne|ec-ph-cherche/.test(feuilleTsx) && /Plus récentes d&apos;abord/.test(feuilleTsx) && !/ec-ph-feuille-pied|Voir \$\{photosDe/.test(collecte) && !/variante|feuille/.test(listesTsx.replace(/\/\*[\s\S]*?\*\//g, "")));
+    ok("les mêmes décisions que la colonne de l'ordinateur : `avecSelection`, `avecDoublons`, `avecSignalees`, `avecCorbeille`, `sortirDeLaCorbeille` ; « Tout effacer » n'efface que ses réglages (le lien ouvert, la personne et le choix du bas restent)",
+      /avecSelection\(f, !f\.selection\)/.test(feuilleTsx) && /avecDoublons\(f, !f\.doublons\)/.test(feuilleTsx) && /avecSignalees\(f, !f\.signalees\)/.test(feuilleTsx) && /avecCorbeille\(f\)/.test(feuilleTsx) && /sortirDeLaCorbeille/.test(feuilleTsx)
+        && /onClick=\{\(\) => appliquer\(sansReglagesDeLaFeuille\(f\)\)\}/.test(collecte));
+    const lien: FiltresPhotos.Filtres = { ...V, mode: "liens", lien: "lien:abc", personne: "pers:abc:lea", jour: "2026-10-04", doublons: true };
+    const sans = F.sansReglagesDeLaFeuille({ ...lien, selection: true, signalees: true });
+    ok("`sansReglagesDeLaFeuille` : jour, doublons, « Ne pas publier », sélection retombent ; mode, lien et personne restent ; `nombreDansLaFeuille` ne compte que ces quatre-là (pas le lien ni la personne)",
+      sans.jour === null && !sans.doublons && !sans.signalees && !sans.selection && sans.mode === "liens" && sans.lien === "lien:abc" && sans.personne === "pers:abc:lea"
+        && F.nombreDansLaFeuille(lien) === 2 && F.nombreDansLaFeuille({ ...V, lien: "lien:abc", personne: "qui:lea" }) === 0 && F.nombreDansLaFeuille({ ...V, jour: "x", doublons: true, selection: true }) === 3);
+  }
+
+  titre("— 21/10, planche 2 : « Personnes », le troisième choix (tout le monde, tous liens confondus) —");
+  {
+    const p: FiltresPhotos.Filtres = { ...V, mode: "personnes" };
+    ok("« Personnes » lit la MÊME chose que « Tout » (la clé `tout`, la même vue) : passer de l'un à l'autre ne relit rien ; une personne ouverte lit ses photos (`qui:…`)",
+      JSON.stringify(F.requeteDe(p)) === JSON.stringify(F.requeteDe(V)) && F.requeteDe({ ...p, personne: "qui:lea" }).dossier === "qui:lea");
+    ok("`estVuePersonnes` : la liste seulement tant qu'aucune personne n'est ouverte et qu'aucun réglage (sélection, doublons, « Ne pas publier », corbeille) ne demande des photos ; les albums de « Par lien » ne sont pas la liste",
+      F.estVuePersonnes(p) && !F.estVuePersonnes({ ...p, personne: "qui:lea" }) && !F.estVuePersonnes({ ...p, doublons: true }) && !F.estVuePersonnes({ ...p, signalees: true }) && !F.estVuePersonnes({ ...p, selection: true }) && !F.estVuePersonnes({ ...p, corbeille: true })
+        && !F.estVuePersonnes(V) && !F.estVuePersonnes({ ...V, mode: "liens" }) && !F.estVueAlbums(p));
+    ok("la liste survit au rechargement : `?dossier=personnes` (adresse) rouvre « Personnes » ; une personne ouverte garde son adresse `qui:` (comme avant)",
+      F.adresseDe(p) === "?dossier=personnes" && F.filtresDepuis("personnes").mode === "personnes" && F.adresseDe({ ...p, personne: "qui:lea" }) === `?dossier=${encodeURIComponent("qui:lea")}` && F.filtresDepuis("liens").mode === "liens" && F.adresseDe(V) === "");
+    ok("l'écran : une liste sobre (initiales, nom, nombre de photos, chevron) tirée de `arbre.personnes`, toucher une personne ouvre ses photos ; la grille reste rendue mais cachée au téléphone (rien ne se relit au retour sur « Tout »), et aucune page de plus ne se lit derrière la liste",
+      /arbre\.personnes\.map\(\(x\) => \(/.test(collecte) && /onClick=\{\(\) => appliquer\(\{ \.\.\.f, personne: x\.cle \}\)\}/.test(collecte) && /ec-collecte--personnes \.ec-ph-g,/.test(photos) && /if \(personnesVue && window\.matchMedia\(REQUETE_TELEPHONE\)\.matches\) return;/.test(collecte));
+    ok("« ← Personnes » ramène à la liste depuis une personne ouverte (le responsable : le titre dit « Mes photos ») ; la liste n'a ni « Cocher » ni rien à cocher",
+      /depuisLaListe\s*\?\s*\{ texte: "Personnes", faire: \(\) => appliquer\(\{ \.\.\.f, personne: null \}\) \}/.test(collecte) && /"Mes photos"/.test(collecte) && /p\.ecrire && !vide && !albums && !personnesVue \?/.test(collecte));
+    ok("le segment « Personnes » ne garde aucun réglage de grille (lien, dossier, personne, jour, doublons, « Ne pas publier », sélection) ; les réglages de la feuille ramènent à « Tout » depuis un aperçu (albums, liste), jamais une grille sous un choix qui n'en montre pas",
+      /mode: "personnes", lien: null, dossier: null, personne: null, selection: false, doublons: false, signalees: false, jour: null/.test(collecte) && /surUnApercu && \(nf\.jour \|\| nf\.doublons \|\| nf\.signalees \|\| nf\.ordre === "jour"\) \? \{ \.\.\.nf, mode: "tout" \}/.test(feuilleTsx));
+  }
+
+  titre("— 21/10, planche 5 : le lien général ne se montre plus (la pastille, les sous-titres, le partage) —");
+  {
+    ok("la pastille « Les liens · N » compte les liens de contribution, plus « Sans groupe » seulement s'il a reçu des photos",
+      /const nbLiens = \(liens\?\.liens\.length \?\? 0\) \+ \(liens && liens\.general\.n > 0 \? 1 : 0\);/.test(collecte));
+    ok("plus de « le lien général » à l'écran de la page Photos (sous-titres d'albums, ligne du téléphone, note) ; « Partager ce lien » n'existe que pour un lien de contribution (jamais pour l'adresse de base)",
+      !/["`][^"`\n]*le lien général[^"`\n]*["`]/.test(collecte) && /const partageable = p\.ecrire && p\.ouverte && liens && f\.mode === "liens" && f\.lien\?\.startsWith\("lien:"\);/.test(collecte) && !/f\.lien === "participants"\) return lienDe/.test(collecte));
+  }
+
+  titre("— 21/10 : ce que le nouvel écran ne change PAS —");
+  {
+    ok("l'ordinateur : la barre du haut reste cachée, la colonne « Trier et filtrer », ses listes (Lien, Personne, Jour, Afficher), « Déposer des photos » et le bandeau d'état restent à leur place ; la barre flottante, le « + », « Terminé » et la liste des personnes sont des éléments du téléphone (`ec-ph-tel`)",
+      /display: none;/.test(regle(espace, "\\.ec-espace \\.ec-barre-mobile")) && /ec-ph-filtres ec-ph-ordi/.test(collecte) && /\{arbre && !vide \? listes\(\) : null\}/.test(collecte) && /className="ec-bouton ec-bouton--petit ec-ph-ordi"/.test(collecte)
+        && /className="ec-fl ec-ph-tel"/.test(collecte) && /className="ec-ph-plus ec-ph-tel"/.test(collecte) && /ec-ph-pilule ec-ph-pilule--on ec-ph-tel/.test(collecte) && /ec-ph-liste-verre ec-ph-tel/.test(collecte)
+        && /@media \(min-width: 861px\) \{\s*\.ec-espace \.ec-collecte \.ec-ph-tel,/.test(photos));
+    ok("les routes et les gestes ne bougent pas : mêmes appels (`photos`, `etat`, `marquer`, `corbeille`…), toucher agrandit, l'étoile, la case, « Annuler » après une suppression, la mise à jour en direct (pastille « N nouvelles · Les voir »), l'accès (l'équipe : ni « Cocher », ni « + », ni geste)",
+      /onOuvrir=\{setAgrandi\}/.test(collecte) && /onEtoile=\{\(ph\) => void basculer\(ph\)\}/.test(collecte) && /annuler: \(\) => void annulerSuppression\(faites, retrait, v0\)/.test(collecte) && /ec-ph-annonce ec-ph-annonce--tel ec-ph-tel/.test(collecte) && /onClick=\{voirArrivees\}/.test(collecte)
+        && /\{p\.ecrire && !vide && !albums && !personnesVue \? \(\s*<button type="button" className="ec-ph-cocher-lien"/.test(collecte) && /const cocherActif = p\.ecrire && /.test(collecte) && /\{p\.ecrire && p\.ouverte && envoi\.ouvrir && onglet === "photos" && !cocherActif && !ecranPropre \? \(/.test(collecte));
+    ok("les couleurs : aucune couleur en dur dans les nouvelles règles (des jetons `--ec-*`), jour comme nuit ; aucun `dvh`",
+      !/#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/.test(photos.slice(photos.indexOf(".ec-espace .ec-ph-plus {"), photos.indexOf("/* La photo agrandie : plein écran, les gestes sous le pouce. */") > 0 ? photos.indexOf(".ec-espace .ec-ag {\n    position: fixed;") : undefined)) && !/dvh/.test(photos + espace));
+    ok("la page ne compte plus 62 px de barre : le sticky de la grille (la zone) est libre, aucun autre collant ne dépend de `top: 78px`",
+      !/position: sticky;\s*top: 78px/.test(photos));
+  }
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
