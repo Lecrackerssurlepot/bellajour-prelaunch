@@ -2937,3 +2937,91 @@
     border-radius: 24px;
   }
 }
+
+/* ─────────── L'état de la collecte, en tête de la fiche et dans la liste (21/10) ───────────
+   Retour de Mathias : « pas assez dit sur le dashboard atelier que la collecte est fermée », et « Rouvrir
+   la collecte », il ne l'a pas trouvé (il vivait dans le menu « Gestes »). Un bloc sous l'en-tête, visible
+   sur tous les onglets, qui dit ouverte ou terminée, quand, par qui, et porte « Rouvrir la collecte » ;
+   dans la liste, une pastille par édition. */
+.eca-root .eca-collecte-bloc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 0 0 16px;
+  padding: 12px 20px;
+  border-radius: 22px;
+  border: 1px solid var(--adm-verre-bord);
+  background: var(--adm-verre);
+  box-shadow: 0 6px 18px var(--bj-veil-6);
+  -webkit-backdrop-filter: var(--adm-flou);
+  backdrop-filter: var(--adm-flou);
+}
+.eca-root .eca-collecte-signe {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+.eca-root .eca-collecte-bloc--ouverte .eca-collecte-signe {
+  background: var(--eca-vert-fond);
+  color: var(--eca-vert);
+}
+.eca-root .eca-collecte-bloc--terminee .eca-collecte-signe {
+  background: var(--bj-action-soft);
+  color: var(--eca-bleu-encre);
+}
+.eca-root .eca-collecte-texte {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.eca-root .eca-collecte-texte strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bj-text);
+}
+.eca-root .eca-collecte-texte .eca-sous {
+  font-size: 13px;
+}
+/* « Rouvrir la collecte » : le bouton prend la fin de la ligne, sa confirmation passe dessous, sur toute la largeur. */
+.eca-root .eca-collecte-gestes {
+  display: contents;
+}
+.eca-root .eca-collecte-gestes .eca-gestes {
+  margin-left: auto;
+}
+.eca-root .eca-collecte-gestes .eca-confirm,
+.eca-root .eca-collecte-gestes .eca-message {
+  flex: 1 1 100%;
+  margin-top: 0;
+}
+/* La confirmation dans le bloc : le bleu doux des pastilles, pas l'aplat du menu « Gestes ». */
+.eca-root .eca-collecte-gestes .eca-confirm {
+  border-color: transparent;
+  border-radius: 16px;
+  background: var(--bj-action-soft);
+}
+.eca-root .eca-collecte-cellule {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+@media (max-width: 720px) {
+  .eca-root .eca-collecte-bloc {
+    padding: 12px 16px;
+    border-radius: 20px;
+  }
+  .eca-root .eca-collecte-gestes .eca-gestes {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+  .eca-root .eca-collecte-gestes .eca-gestes .adm-btn {
+    flex: 1;
+  }
+}

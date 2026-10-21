@@ -7,7 +7,12 @@
 
    `menu` (15/10, la fiche en cartes) : les gestes se rangent derrière un
    bouton « Gestes » de l'en-tête, dans une fenêtre de verre qui se referme
-   au clic dehors ou une fois le geste écrit. */
+   au clic dehors ou une fois le geste écrit.
+
+   `seulement` + `bloc` (21/10, retour de Mathias : « Rouvrir la collecte », je ne le trouve
+   pas) : le MÊME flux (vérifier, puis confirmer, avec le champ de la nouvelle clôture), pour UN
+   seul geste, posé dans le bloc d'état de la collecte en tête de la fiche. Rien n'est réécrit :
+   la règle est celle de `gestes.ts`, relue par la route. */
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,11 +27,17 @@ export default function PanneauGestes({
   etat,
   archivee,
   menu,
+  seulement,
+  bloc,
 }: {
   id: string;
   etat: EtatEdition;
   archivee: boolean;
   menu?: boolean;
+  /** Ne proposer que ce geste (le bloc de la collecte : « Rouvrir la collecte »). */
+  seulement?: GesteCle;
+  /** Rendu dans le bloc d'état : ni menu, ni carte, ni titre ; le bouton et sa confirmation prennent la place que le bloc leur laisse. */
+  bloc?: boolean;
 }) {
   const router = useRouter();
   const tiroir = useRef<HTMLDetailsElement>(null);
@@ -41,6 +52,7 @@ export default function PanneauGestes({
   /* Ce qui se propose ici : la fiche n'affiche pas un bouton condamné à être
      refusé. La route rejuge de toute façon. */
   const proposes = GESTES_DE_LA_FICHE.filter((c) => {
+    if (seulement && c !== seulement) return false;
     if (c === "desarchiver") return archivee;
     if (archivee) return false;
     if (c === "archiver") return true;
@@ -192,6 +204,11 @@ export default function PanneauGestes({
       ) : null}
     </>
   );
+
+  if (bloc) {
+    if (proposes.length === 0) return null;
+    return <div className="eca-collecte-gestes">{corps}</div>;
+  }
 
   if (menu) {
     return (

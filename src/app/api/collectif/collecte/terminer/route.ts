@@ -86,5 +86,7 @@ export async function POST(request: Request) {
      reste fait (le journal le dit) : on ne défait pas une clôture pour un message. */
   const message = await ecrireMessage(supabase, edition.id, "client", qui, messageFinCollecte(n.photos, n.selection));
   if (!message.ok) console.error("[collectif] fin de collecte : message non écrit", message.code);
-  return NextResponse.json({ ok: true, ...n, journal, message: message.ok });
+  /* `termineLe` : l'instant écrit comme clôture (celui du geste), pour que l'écran dise « Collecte
+     terminée le … à … » sans attendre la relecture de la page (21/10). */
+  return NextResponse.json({ ok: true, ...n, journal, message: message.ok, termineLe: String(prep.patch.cloture_le ?? maintenant.toISOString()) });
 }

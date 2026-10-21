@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { lireProvenances } from "@/app/edition/[token]/donnees";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { nouvelleCleProvenance } from "@/lib/collectif/collecte";
@@ -6,6 +7,7 @@ import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_LIENS_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
+import { planModificationLien } from "@/lib/collectif/modifierLien";
 import { libellePlafondLien, lirePlafondLien } from "@/lib/collectif/plafonds";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { TYPES_PROVENANCE, type EditionLigne, type TypeProvenance } from "@/lib/collectif/types";
@@ -27,8 +29,13 @@ import { TYPES_PROVENANCE, type EditionLigne, type TypeProvenance } from "@/lib/
  * besoin.
  *
  * Sur un lien qui existe (T-152, l'onglet « Les liens ») :
+ * - `{ token, action: "modifier", id, libelle, plafond | sansPlafond }` (21/10) :
+ *   son nom ET son nombre de photos par personne, en UNE écriture. La décision
+ *   est `planModificationLien` (modifierLien.ts, pur) : le nom comme à
+ *   `/api/collectif/dossiers`, le nombre comme à la création, un nom déjà pris
+ *   ou réservé refusé (409). C'est ce que l'écran envoie ;
  * - `{ token, action: "plafond", id, plafond | sansPlafond }` : changer son
- *   nombre de photos par personne (même règle qu'à la création) ;
+ *   nombre de photos par personne seul (même règle qu'à la création) ;
  * - `{ token, action: "supprimer", id }` : il ne reçoit plus rien, ses photos
  *   RESTENT (`retire_le`, migration 20261018 : 503 sans elle). Jamais un
  *   DELETE. Changer son nom passe par `/api/collectif/dossiers`.
@@ -47,6 +54,7 @@ export async function POST(request: Request) {
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "regler_plafond_participant")) return refusDroit();
 
+  if (corps.action === "modifier") return modifierToutLeLien(acces.edition, corps);
   if (corps.action === "plafond" || corps.action === "supprimer") return modifierLien(acces.edition, corps);
 
   const type = TYPES_PROVENANCE.some((t) => t.cle === corps.type) ? (corps.type as TypeProvenance) : "participant";
@@ -95,6 +103,43 @@ export async function POST(request: Request) {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Le nom ET le nombre d'un lien, en une écriture (21/10). On lit les liens de l'édition une
+ * fois (`lireProvenances`, avec ses replis de colonnes) : de quoi savoir si le lien existe et
+ * n'est pas supprimé, ce qui change vraiment, et si le nouveau nom est pris. Rien n'est écrit
+ * quand rien ne change. Le journal garde ses deux phrases d'avant (`dossier_renomme`,
+ * `provenance_plafond`), une par chose changée.
+ */
+async function modifierToutLeLien(edition: EditionLigne, corps: Record<string, unknown>) {
+  let liens;
+  try {
+    liens = await lireProvenances(edition.id);
+  } catch (e) {
+    console.error("[collectif] liens illisibles avant modification", e);
+    return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+  }
+  const plan = planModificationLien(corps, liens, edition);
+  if (!plan.ok) return NextResponse.json({ error: plan.error, champ: plan.champ, message: plan.message }, { status: plan.status });
+
+  const reponse = { ok: true, nom: plan.nom, plafond: libellePlafondLien({ sans_plafond: plan.sans_plafond, plafond_par_personne: plan.plafond_par_personne }, edition), sansPlafond: plan.sans_plafond, plafondNombre: plan.plafond_par_personne };
+  if (!Object.keys(plan.patch).length) return NextResponse.json({ ...reponse, inchange: true, journal: true });
+
+  const supabase = makeSupabase();
+  const { error } = await supabase.from("collectif_provenances").update(plan.patch).eq("id", String(corps.id)).eq("edition_id", edition.id);
+  if (error) {
+    if (colonneAbsente(error.code)) return NextResponse.json({ error: ERREUR_REVISION_ABSENTE, message: MESSAGE_REVISION_ABSENTE }, { status: 503 });
+    console.error("[collectif] lien non modifié", error.code, error.message);
+    return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+  }
+  const sujet = { editionId: edition.id };
+  let journal = true;
+  if (plan.nomChange) journal = (await journaliser(supabase, sujet, "dossier_renomme", { avant: plan.avant, apres: plan.nom }, null)) && journal;
+  if (plan.plafondChange) {
+    journal = (await journaliser(supabase, sujet, "provenance_plafond", { libelle: plan.nom, sansPlafond: plan.sans_plafond, plafond: plan.plafond_par_personne }, null)) && journal;
+  }
+  return NextResponse.json({ ...reponse, journal });
+}
 
 async function modifierLien(edition: EditionLigne, corps: Record<string, unknown>) {
   if (typeof corps.id !== "string" || !UUID.test(corps.id)) return NextResponse.json({ error: "introuvable" }, { status: 404 });

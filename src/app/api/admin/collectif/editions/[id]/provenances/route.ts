@@ -5,12 +5,10 @@ import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { nouvelleCleProvenance } from "@/lib/collectif/collecte";
 import { estUuid } from "@/lib/collectif/cles";
-import { clePersonne } from "@/lib/collectif/dossiers";
-import { LIBELLE_ATELIER, LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, NOM_LIEN_SANS_NOM } from "@/lib/collectif/grille";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
 import { colonneAbsente, ERREUR_MIGRATION_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_REVISION_ABSENTE, tableAbsente } from "@/lib/collectif/migration";
-import { GROUPE_GENERAL } from "@/lib/collectif/partage";
+import { refusNomDeLien } from "@/lib/collectif/modifierLien";
 import { libellePlafondLien, lirePlafondLien } from "@/lib/collectif/plafonds";
 import { lireCorps } from "@/lib/collectif/reponses";
 import type { EditionLigne } from "@/lib/collectif/types";
@@ -46,9 +44,6 @@ function lireNom(brut: unknown): string {
   return typeof brut === "string" ? brut.replace(/[\u0000-\u001f\u007f]/g, " ").normalize("NFC").replace(/\s+/g, " ").trim().slice(0, 80).trim() : "";
 }
 
-/** Les noms que personne d'autre ne peut porter : ceux des groupes fixes de « Qui a déposé ». */
-const NOMS_RESERVES = new Set([LIBELLE_LIEN_GENERAL, LIBELLE_RESPONSABLE, LIBELLE_ATELIER, GROUPE_GENERAL, NOM_LIEN_SANS_NOM].map((n) => clePersonne(n)));
-
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!collectifOuvert()) return new NextResponse(null, { status: 404 });
   const qui = await quiEstConnecteRequete(request);
@@ -79,11 +74,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const plafond = lirePlafondLien(corps, edition);
   if (!plafond.ok) return NextResponse.json({ error: "saisie", champ: "plafond", message: plafond.message }, { status: 422 });
 
-  /* Un nom déjà porté par un lien OUVERT (un lien supprimé libère le sien), ou réservé. */
-  const cle = clePersonne(libelle);
-  if (NOMS_RESERVES.has(cle)) {
-    return NextResponse.json({ error: "nom_reserve", champ: "libelle", message: "Ce nom est réservé : en choisir un autre." }, { status: 409 });
-  }
+  /* Un nom déjà porté par un lien OUVERT (un lien supprimé libère le sien), ou réservé : la règle
+     de `refusNomDeLien` (modifierLien.ts), la même que pour renommer un lien depuis l'espace du client. */
   let existants;
   try {
     existants = await lireProvenances(id);
@@ -91,9 +83,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     console.error("[collectif] liens illisibles avant création par l'atelier", e);
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
-  if (existants.some((l) => !l.retire_le && clePersonne(l.libelle) === cle)) {
-    return NextResponse.json({ error: "nom_deja_pris", champ: "libelle", message: "Un lien porte déjà ce nom : en choisir un autre." }, { status: 409 });
-  }
+  const refusNom = refusNomDeLien(libelle, existants);
+  if (refusNom) return NextResponse.json({ error: refusNom.error, champ: "libelle", message: refusNom.message }, { status: 409 });
 
   const par = prenomDe(qui);
   const ligne: Record<string, unknown> = {

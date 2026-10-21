@@ -138,7 +138,7 @@ export default async function PageCollectif({
                 <th scope="col">Organisation et événement</th>
                 <th scope="col">Magazines</th>
                 <th scope="col">Prochaine étape</th>
-                <th scope="col">Clôture de la collecte</th>
+                <th scope="col">Collecte</th>
                 <th scope="col">Tirage</th>
                 <th scope="col">Messages</th>
               </tr>
@@ -160,7 +160,15 @@ export default async function PageCollectif({
                       <span className="eca-sous">{l.libelleEtat}</span>
                     </div>
                   </td>
-                  <td>{l.clotureLe ? formaterJour(l.clotureLe) : <span className="eca-afixer">[À FIXER]</span>}</td>
+                  <td>
+                    {/* La pastille dit l'état d'un coup d'œil ; la date dessous est la clôture (celle d'un geste, pour une collecte terminée à la main). */}
+                    <div className="eca-collecte-cellule">
+                      <span className={`eca-puce eca-puce--${l.collecte.ton}`}>{l.collecte.texte}</span>
+                      <span className="eca-sous">
+                        {l.clotureLe ? `${l.collecte.texte === "Collecte ouverte" ? "jusqu'au" : "le"} ${formaterJour(l.clotureLe)}` : <span className="eca-afixer">[À FIXER]</span>}
+                      </span>
+                    </div>
+                  </td>
                   <td>{l.tirage ?? <span className="eca-afixer">[À FIXER]</span>}</td>
                   <td>
                     {l.nonLus > 0 ? (

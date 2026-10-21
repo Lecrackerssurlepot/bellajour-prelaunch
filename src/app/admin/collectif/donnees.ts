@@ -12,6 +12,7 @@ import { compterPersonnes } from "@/lib/collectif/dossiers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatEffectif, LIBELLE_ETAT_EDITION, type EtatEdition } from "@/lib/collectif/etats";
+import { GESTES_COLLECTE, lireGesteDeCollecte, pastilleCollecte, type GesteDeCollecte } from "@/lib/collectif/finCollecte";
 import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { JOURNAL_DE_LOT, phraseEvenement } from "@/lib/collectif/recit";
@@ -56,6 +57,8 @@ export type LigneEdition = {
   tirage: number | null;
   nonLus: number;
   archivee: boolean;
+  /** La collecte reçoit-elle encore des photos ? (état effectif) : « Collecte ouverte » / « Collecte terminée » dans la liste. */
+  collecte: ReturnType<typeof pastilleCollecte>;
 };
 
 export async function listerEditions(
@@ -117,6 +120,7 @@ export async function listerEditions(
         tirage: e.tirage,
         nonLus: parMessage.get(e.id) ?? 0,
         archivee: Boolean(e.archive_le),
+        collecte: pastilleCollecte(etat),
       };
     }),
   };
@@ -264,7 +268,7 @@ export type Collecte = {
   /** « Ma sélection » du client (T-182) : combien, et jusqu'à huit vignettes signées une heure. */
   selection: number;
   selectionApercus: string[];
-  /** Le client a terminé la collecte lui-même (D25) : qui, et quand (lu au journal). */
+  /** Le client a terminé la collecte lui-même (D25) : qui, et quand (lu au journal) ; `null` si l'atelier a clos ou rouvert depuis. */
   terminee: { par: string; le: string } | null;
 };
 
@@ -308,6 +312,11 @@ export type ContenuFiche = {
 };
 
 export type Fiche = {
+  /**
+   * Le DERNIER geste de collecte du journal (clore, terminer ou rouvrir), lu à part : le journal de la
+   * fiche ne garde que ses 100 dernières lignes, une collecte terminée il y a trois semaines n'y serait plus.
+   */
+  gesteCollecte: GesteDeCollecte | null;
   /** Les liens de contribution de l'édition, dans l'ordre où on les a créés (T-201). */
   liens: LienFiche[];
   demandes: DemandeFiche[];
@@ -360,7 +369,7 @@ export async function chargerEdition(
   }
   if (!edition) return { absent: false, fiche: null };
 
-  const [mags, journal, docs, fil, photos, contenus, nonLus, provenances] = await Promise.all([
+  const [mags, journal, docs, fil, photos, contenus, nonLus, provenances, gestes] = await Promise.all([
     lireMagazinesFiche(supabase, id),
     /* Les 100 dernières lignes, SANS les deux qui s'écrivent une fois par lot de photos
        (`JOURNAL_DE_LOT`) : des centaines par édition, elles chassaient tout le reste
@@ -410,7 +419,19 @@ export async function chargerEdition(
     /* Les liens de contribution (nom, règle, supprimé ou non) : « Qui a déposé » se range par lien (T-193)
        et « Réglages et liens » les montre (T-201). La même lecture que l'espace du client, avec ses replis. */
     lireProvenances(id),
+    /* Le dernier geste qui a changé l'état de la collecte : « terminée le … par … » en tête de la fiche (21/10). */
+    supabase
+      .from("collectif_evenements")
+      .select("type, payload, created_at")
+      .eq("edition_id", id)
+      .eq("type", "geste")
+      .in("payload->>cle", [...GESTES_COLLECTE])
+      .order("created_at", { ascending: false })
+      .limit(1),
   ]);
+  /* Un repère, pas une donnée : illisible, la fiche dit la date de clôture sans dire qui l'a posée. */
+  if (gestes.error) console.error("[collectif] geste de collecte illisible", gestes.error.code, gestes.error.message);
+  const gesteCollecte = gestes.error ? null : lireGesteDeCollecte(gestes.data?.[0]);
   /* Le trait est un repère, pas une donnée : illisible, le fil s'affiche sans lui. */
   if (nonLus.error) console.error("[collectif] non-lus du fil illisibles", nonLus.error.code, nonLus.error.message);
   if (photos.error) echec("photos de l'édition", photos.error);
@@ -437,9 +458,6 @@ export async function chargerEdition(
 
   const lignesPhotos = photos.data ?? [];
   const choisies = lignesPhotos.filter((p) => p.preselection);
-  const fin = ((journal.data ?? []) as { type: string; payload: Record<string, unknown> | null; created_at: string }[]).find(
-    (j) => j.type === "geste" && j.payload?.cle === "terminer_collecte"
-  );
   const collecte: Collecte = {
     total: lignesPhotos.length,
     /* Les personnes, comptées comme côté client (T-180) : un nom, ou un téléphone pour les anonymes. */
@@ -467,7 +485,7 @@ export async function chargerEdition(
           .map((p) => signerOuRien(p.vignette_key))
       )
     ).filter((u): u is string => u !== null),
-    terminee: fin ? { par: String(fin.payload?.par ?? "le responsable"), le: fin.created_at } : null,
+    terminee: gesteCollecte?.geste === "terminer_collecte" ? { par: gesteCollecte.par || "le responsable", le: gesteCollecte.le } : null,
   };
 
   /* Les liens : le nom unique, la règle, ce que chacun a reçu (le même regroupement que « Qui a déposé »). */
@@ -533,6 +551,7 @@ export async function chargerEdition(
     absent: false,
     fiche: {
       collecte,
+      gesteCollecte,
       liens: liensFiche,
       edition,
       etat: etatEffectif(edition.etat, edition.cloture_le, maintenant),

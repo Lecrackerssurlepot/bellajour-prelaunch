@@ -63,7 +63,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             Tout avant le {cloture} · {delai}
           </span>
         ) : (
-          <span className="ec-pilule">{ouverte ? 'Collecte ouverte' : 'Collecte close : l’atelier compose'}</span>
+          <span className="ec-pilule">{ouverte ? 'Collecte ouverte' : 'Collecte terminée : l’atelier compose'}</span>
         )}
       </EnTeteEcran>
 
@@ -78,6 +78,8 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             participants={tableau.participants}
             selection={tableau.selection}
             terminer={peut(role, 'terminer_collecte')}
+            termineLe={ouverte ? null : edition.cloture_le}
+            oubli={etat === 'composition'}
             dossiers={tableau.dossiers}
             mosaique={tableau.mosaique}
             liens={tableau.liens}
@@ -85,7 +87,7 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             organisation={edition.organisation}
             evenement={edition.evenement}
             cloture={cloture}
-            statut={edition.cloture_le && ouverte ? `Clôture ${delai}` : ouverte ? 'Ouverte' : 'Collecte close'}
+            statut={edition.cloture_le && ouverte ? `Clôture ${delai}` : ouverte ? 'Ouverte' : 'Collecte terminée'}
             lienPhotos={cheminSection(token, 'photos')}
             tu={tu}
             effacees={phrasePhotosEffacees(edition.photos_supprimees_le)}

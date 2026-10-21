@@ -3271,3 +3271,60 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* ─────────── La fin de la collecte, dite là où l'on regarde (21/10) ───────────
+   Retour de Mathias : « pas forcément assez dit que la collecte est fermée ». Une ligne d'état
+   (tableau de bord, page Photos), le bouton « Terminer la collecte » discret, et les boutons de dépôt
+   ÉTEINTS une fois la collecte terminée (`FinCollecte.tsx`). Des rôles seulement, aucune couleur écrite. */
+.ec-espace .ec-fin-ligne {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--ec-r-bloc);
+  background: var(--ec-ok-soft);
+  color: var(--ec-text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.ec-espace .ec-fin-coche {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border: 1.5px solid var(--ec-ok);
+  border-radius: 999px;
+  color: var(--ec-ok);
+}
+.ec-espace .ec-fin-texte {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-fin-texte strong {
+  font-weight: 600;
+  color: var(--ec-ok);
+}
+.ec-espace .ec-collecte > .ec-fin-ligne {
+  margin: 0 8px 12px;
+}
+.ec-espace .ec-bouton--discret {
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid var(--ec-line-fort);
+  color: var(--ec-muted);
+  font-weight: 500;
+}
+.ec-espace .ec-bouton--discret:hover {
+  background: var(--ec-actif);
+  color: var(--ec-text);
+}
+.ec-espace .ec-collecte > .ec-fin-tel {
+  align-self: flex-start;
+  margin: 0 8px 12px;
+}
