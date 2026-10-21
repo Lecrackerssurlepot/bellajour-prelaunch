@@ -1,7 +1,10 @@
 /* Les appels de la page du participant aux routes du dépôt (contrat
    `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md` §2). Navigateur
    seulement. Toutes en POST, le token dans le CORPS, jamais dans l'URL.
-   Une coupure rend `status: 0` : la page le dit, elle ne devine rien. */
+   Une coupure rend `status: 0` : la page le dit, elle ne devine rien.
+   Un 404 (21/10) : le lien est MORT (régénéré par l'atelier, supprimé par le
+   responsable) pendant que la page était ouverte ; la page entière bascule
+   sur « Ce lien ne fonctionne plus » (`CarteLienMort`). */
 
 export type Reponse = { status: number; json: Record<string, unknown> };
 
@@ -39,6 +42,8 @@ export type PersonneLue = {
   nom: string | null;
   photos: number;
   ceTelephone: number;
+  /** Ses photos sur CE lien (21/10) : ce que la carte « Content de vous revoir » dit. */
+  surCeLien: number;
   accordAJour: boolean;
   /** `null` : sans limite ; `undefined` : non dite. */
   place: number | null | undefined;
@@ -56,6 +61,7 @@ export function lirePersonne(json: Record<string, unknown>, nomTape: string | nu
     nom: json.statut === "cree" ? nomTape : null,
     photos: nombre(json.photos),
     ceTelephone: nombre(json.ceTelephone),
+    surCeLien: nombre(json.surCeLien),
     accordAJour: json.accordAJour === true,
     place: typeof json.place === "number" ? json.place : json.place === null ? null : undefined,
   };
@@ -76,12 +82,27 @@ export type PageAlbum = {
   ferme: boolean;
   /** `personnes` : `null` sans la vue de l'album (20261023) ; jamais un nombre deviné. */
   album: { photos: number; personnes: number | null } | null;
-  moi: { prenom: string | null; photos: number | null; ceTelephone: number | null; place: number | null; sansLimite: boolean } | null;
+  /** « Mes photos », page 0 : combien en tout sur ce lien depuis cet appareil ; `null` sinon. */
+  total: number | null;
+  moi: {
+    prenom: string | null;
+    photos: number | null;
+    ceTelephone: number | null;
+    place: number | null;
+    sansLimite: boolean;
+    /** Page 0 : mes photos de ce lien dans « Tout l'album », envoyées d'un autre appareil (un nombre). */
+    autresAppareils: number | null;
+  } | null;
 };
 
-export async function lireAlbum(token: string, p: string | null, vue: "album" | "miennes", page: number): Promise<PageAlbum | null> {
+/** Ce que rend une lecture de l'album : la page, un lien MORT (404 : régénéré, supprimé), ou une panne. */
+export type LectureAlbum = { statut: "ok"; page: PageAlbum } | { statut: "mort" } | { statut: "erreur" };
+
+export async function lireAlbum(token: string, p: string | null, vue: "album" | "miennes", page: number): Promise<LectureAlbum> {
   const r = await poster("/api/collectif/depot/album", { token, p, vue, page });
-  if (r.status !== 200 || !Array.isArray(r.json.photos)) return null;
+  /* Un 404 (le token régénéré, le lien du bateau supprimé, l'édition archivée) : la page entière le dit. */
+  if (r.status === 404) return { statut: "mort" };
+  if (r.status !== 200 || !Array.isArray(r.json.photos)) return { statut: "erreur" };
   const j = r.json;
   const photos = (j.photos as Record<string, unknown>[])
     .filter((x) => typeof x.id === "string")
@@ -97,20 +118,25 @@ export async function lireAlbum(token: string, p: string | null, vue: "album" | 
   const m = j.moi as Record<string, unknown> | null | undefined;
   const part = m?.participant as Record<string, unknown> | null | undefined;
   return {
-    photos,
-    suivante: typeof j.suivante === "number" ? j.suivante : null,
-    ferme: j.ferme === true,
-    album: a ? { photos: nombre(a.photos), personnes: typeof a.personnes === "number" ? a.personnes : null } : null,
-    moi: m
-      ? {
-          /* Le prénom seulement (contrat : le nom de famille d'une personne retrouvée ne sort pas). */
-          prenom: typeof part?.prenom === "string" ? part.prenom : null,
-          photos: typeof m.photos === "number" ? m.photos : null,
-          ceTelephone: typeof m.ceTelephone === "number" ? m.ceTelephone : null,
-          place: typeof m.place === "number" ? m.place : null,
-          sansLimite: m.sansLimite === true,
-        }
-      : null,
+    statut: "ok",
+    page: {
+      photos,
+      suivante: typeof j.suivante === "number" ? j.suivante : null,
+      ferme: j.ferme === true,
+      album: a ? { photos: nombre(a.photos), personnes: typeof a.personnes === "number" ? a.personnes : null } : null,
+      total: typeof j.total === "number" ? j.total : null,
+      moi: m
+        ? {
+            /* Le prénom seulement (contrat : le nom de famille d'une personne retrouvée ne sort pas). */
+            prenom: typeof part?.prenom === "string" ? part.prenom : null,
+            photos: typeof m.photos === "number" ? m.photos : null,
+            ceTelephone: typeof m.ceTelephone === "number" ? m.ceTelephone : null,
+            place: typeof m.place === "number" ? m.place : null,
+            sansLimite: m.sansLimite === true,
+            autresAppareils: typeof m.autresAppareils === "number" ? m.autresAppareils : null,
+          }
+        : null,
+    },
   };
 }
 

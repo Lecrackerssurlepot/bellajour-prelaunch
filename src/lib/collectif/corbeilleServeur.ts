@@ -174,18 +174,31 @@ export async function mettreALaCorbeille(
   return { statut: "ok", valeur: { n: ecrites.length, ids: ecrites, refusees, journal } };
 }
 
-/** Restaurer : la photo revient à sa place (son lien, sa personne, sa sélection : rien d'autre n'avait bougé). */
-export async function restaurer(supabase: SupabaseClient, editionId: string, ids: readonly string[], qui: string | null): Promise<Issue<Geste>> {
+/**
+ * Restaurer : la photo revient à sa place (son lien, sa personne, sa sélection : rien d'autre n'avait bougé).
+ *
+ * `par: "auteur"` (21/10) : le participant qui choisit de nouveau une photo qu'il avait supprimée
+ * (`depot/presign`, `restaurableParChoix`). L'écriture est alors CONDITIONNÉE à `supprimee_par =
+ * 'auteur'` : une photo que le responsable a retirée entre-temps ne revient pas par ce chemin. Le
+ * journal le dit (`photos_restaurees`, `par: "auteur"`).
+ */
+export async function restaurer(
+  supabase: SupabaseClient,
+  editionId: string,
+  ids: readonly string[],
+  qui: string | null,
+  o: { par?: "auteur" } = {}
+): Promise<Issue<Geste>> {
   const ecrites: string[] = [];
   for (const paquet of enPaquets(ids)) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("collectif_photos")
       .update({ supprimee_le: null, supprimee_par: null })
       .eq("edition_id", editionId)
       .in("id", paquet)
-      .not("supprimee_le", "is", null)
-      .select("id")
-      .returns<{ id: string }[]>();
+      .not("supprimee_le", "is", null);
+    if (o.par === "auteur") q = q.eq("supprimee_par", "auteur");
+    const { data, error } = await q.select("id").returns<{ id: string }[]>();
     if (error) return echec(error);
     ecrites.push(...(data ?? []).map((l) => l.id));
   }
@@ -193,7 +206,7 @@ export async function restaurer(supabase: SupabaseClient, editionId: string, ids
   let journal = true;
   if (ecrites.length) {
     await invaliderDoublons(supabase, editionId);
-    journal = await journaliser(supabase, { editionId }, EVT_RESTAUREES, { n: ecrites.length, ids: ecrites }, qui);
+    journal = await journaliser(supabase, { editionId }, EVT_RESTAUREES, { n: ecrites.length, ids: ecrites, ...(o.par ? { par: o.par } : {}) }, qui);
   }
   return { statut: "ok", valeur: { n: ecrites.length, ids: ecrites, refusees, journal } };
 }

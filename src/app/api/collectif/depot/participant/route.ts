@@ -84,10 +84,12 @@ export async function POST(request: Request) {
   const appareilLu = appareilDeRequete(request);
 
   /* Ce que la page montre d'une personne reconnue : son PRÉNOM (S1), ses photos, sa place, l'accord de ce
-     téléphone. Le nom complet ne se redit qu'à la création, qui répète ce qui vient d'être tapé. */
+     téléphone. Le nom complet ne se redit qu'à la création, qui répète ce qui vient d'être tapé.
+     `surCeLien` (21/10) : ses photos sur CE lien, que la carte dit (« 2 photos déjà sur « Bateau 1 » ») ;
+     `photos` reste le total de l'édition, que la carte ne dit plus. */
   const reponseConnue = async (participant: LigneParticipant, appareil: string, extra: Record<string, unknown>, creee: boolean) => {
     const [comptes, place] = await Promise.all([
-      comptesDeLaPersonne(supabase, edition.id, participant.id, appareil),
+      comptesDeLaPersonne(supabase, edition.id, participant.id, appareil, { provenanceId: lien?.id ?? null }),
       placeDuParticipant(supabase, edition, lien, appareil, participant.id, maintenant),
     ]);
     if (!comptes || !place) return null;
@@ -96,6 +98,7 @@ export async function POST(request: Request) {
       participant: creee ? { prenom: participant.prenom, nom: participant.nom, nomAffiche: nomAffiche(participant) } : vuePersonneConnue(participant),
       photos: comptes.photos,
       ceTelephone: comptes.ceTelephone,
+      surCeLien: comptes.surCeLien,
       /* L'accord est redemandé sur chaque nouveau téléphone : celui-ci a-t-il déjà donné celui que la page
          AFFICHE (`VERSION_ACCORD`, la seule que le serveur accepte de neuf : C5), et quelle version ? */
       accordDonne: comptes.accord,

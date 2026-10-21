@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   if (!ids) return NextResponse.json({ error: "lot_invalide" }, { status: 400 });
   const appareil = appareilDeRequete(request);
   if (!appareil) {
-    return NextResponse.json({ error: "appareil_inconnu", message: "Seules les photos envoyées depuis ce téléphone se suppriment ici." }, { status: 403 });
+    return NextResponse.json({ error: "appareil_inconnu", message: "Seules les photos envoyées depuis cet appareil se suppriment ici." }, { status: 403 });
   }
   const supabase = makeSupabase();
 

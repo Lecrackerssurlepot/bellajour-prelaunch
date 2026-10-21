@@ -236,7 +236,10 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
       return `${String(payload.n ?? 0)} photo(s) mise(s) à la corbeille ${qui}.`;
     }
     case "photos_restaurees":
-      return `${String(payload.n ?? 0)} photo(s) restaurée(s) de la corbeille.`;
+      /* `par: "auteur"` (21/10) : le participant a choisi de nouveau une photo qu'il avait supprimée. */
+      return payload.par === "auteur"
+        ? `${String(payload.n ?? 0)} photo(s) restaurée(s) de la corbeille par leur auteur (choisie(s) de nouveau).`
+        : `${String(payload.n ?? 0)} photo(s) restaurée(s) de la corbeille.`;
     case "photos_effacees":
       return payload.par === "purge"
         ? `${String(payload.n ?? 0)} photo(s) effacée(s) pour de bon (30 jours à la corbeille).`

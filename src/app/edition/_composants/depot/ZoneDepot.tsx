@@ -4,10 +4,13 @@
    photos ou un dossier entier, ou on les choisit. Elle conduit le moteur
    d'envoi de la coquille (DepotContexte) : l'envoi continue pendant qu'on
    navigue. Le « dossier de destination » est le nom sous lequel l'atelier
-   voit ces photos ; « Mes photos » par défaut. */
+   voit ces photos ; « Mes photos » par défaut.
+   21/10 : le compte est celui du DERNIER envoi, et ce qui était déjà là ne se
+   compte plus comme arrivé (`progression`, la règle de la page du participant). */
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { bilanDuLot, progression } from "@/lib/collectif/depotParticipant";
 import { useMoteurDepot } from "./DepotContexte";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
 
@@ -40,7 +43,9 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
     moteur.definirProvenance({ type: "organisateur", libelle: nom === "Mes photos" ? "" : nom });
     moteur.ajouter(liste);
   };
-  const recues = vue.arrivees + vue.dejaLa;
+  /* Le dernier envoi : ce qui part vraiment, et à part ce qui était déjà là. */
+  const prog = progression(vue.lot);
+  const dejaLa = bilanDuLot(vue.lot).dejaLa + vue.lot.deuxFois;
 
   return (
     <div
@@ -59,20 +64,23 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
       {vue.total ? (
         <div className="ec-zone-depot-envoi" role="status" aria-live="polite">
           <strong className="ec-zone-depot-titre">
-            {recues} sur {vue.total}
+            {prog.total ? `${prog.envoyees} sur ${prog.total}` : `${dejaLa} déjà là`}
           </strong>
           <span className="ec-texte">
             {vue.enCours
               ? `${vue.enCours} en cours d'envoi`
               : vue.erreurs
                 ? `${vue.erreurs} photo${vue.erreurs > 1 ? "s" : ""} n'${vue.erreurs > 1 ? "ont" : "a"} pas pu partir.`
-                : vue.refusees
-                  ? `Terminé : ${vue.refusees} photo${vue.refusees > 1 ? "s" : ""} refusée${vue.refusees > 1 ? "s" : ""}.`
-                  : "Toutes les photos sont arrivées."}
+                : vue.lot.refusees
+                  ? `Terminé : ${vue.lot.refusees} photo${vue.lot.refusees > 1 ? "s" : ""} refusée${vue.lot.refusees > 1 ? "s" : ""}.`
+                  : prog.total
+                    ? "Toutes les photos sont arrivées."
+                    : "Rien de nouveau : ces photos étaient déjà là."}
           </span>
           <div className="ec-dp-barre-espace" aria-hidden="true">
-            <div style={{ width: `${vue.total ? Math.round(((vue.total - vue.enCours) / vue.total) * 100) : 0}%` }} />
+            <div style={{ width: `${prog.total ? prog.part : 100}%` }} />
           </div>
+          {dejaLa && prog.total ? <p className="ec-note">{dejaLa} déjà là, sautée{dejaLa > 1 ? "s" : ""} : une photo déjà envoyée ne repart jamais.</p> : null}
           {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
           {vue.serveurLent ? <p className="ec-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
           {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}

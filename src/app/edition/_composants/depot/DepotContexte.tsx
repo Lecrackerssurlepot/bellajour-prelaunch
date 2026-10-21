@@ -10,6 +10,7 @@
    « Envoi en cours » de l'en-tête la rouvre. */
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { progression } from "@/lib/collectif/depotParticipant";
 import FenetreEnvoi from "./FenetreEnvoi";
 import { MoteurDepot } from "./moteur";
 import { useMoteur } from "./useMoteur";
@@ -65,15 +66,17 @@ export function PastilleEnvoi() {
   const c = useContext(Contexte);
   const vue = useMoteur(c.moteur);
   if (!c.moteur || (vue.enCours === 0 && vue.erreurs === 0)) return null;
-  const faites = vue.total - vue.enCours;
-  const part = vue.total ? Math.round((faites / vue.total) * 100) : 0;
+  /* Le dernier envoi, sans ce qui était déjà là (21/10 : une déjà-là n'est pas une photo envoyée). */
+  const prog = progression(vue.lot);
+  const faites = prog.envoyees;
+  const part = prog.part;
   return (
     <button type="button" className="ec-pastille-envoi" onClick={() => c.ouvrir()}>
       <span className="ec-pastille-envoi-barre" aria-hidden="true">
         <span style={{ width: `${part}%` }} />
       </span>
       {vue.enCours
-        ? `Envoi en cours · ${faites.toLocaleString("fr-FR")} sur ${vue.total.toLocaleString("fr-FR")} · Ouvrir`
+        ? `Envoi en cours · ${faites.toLocaleString("fr-FR")} sur ${prog.total.toLocaleString("fr-FR")} · Ouvrir`
         : `Envoi : ${vue.erreurs} à reprendre · Ouvrir`}
     </button>
   );

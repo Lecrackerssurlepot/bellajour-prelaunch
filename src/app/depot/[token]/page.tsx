@@ -152,12 +152,13 @@ export default async function PageDepot({
 
   /* Ce que la personne de ce téléphone a déjà fait (8A) et la place qui lui reste, lus ici pour que
      la page arrive juste (pas d'éclair entre le formulaire et l'album). */
-  let moi: { prenom: string; photos: number; ceTelephone: number; accordAJour: boolean } | null = null
+  let moi: { prenom: string; photos: number; ceTelephone: number; surCeLien: number; accordAJour: boolean } | null = null
   let place: number | null | undefined = undefined
   if (ouvert && regle && ouvertureOk) {
     const sb = makeSupabase()
     const [comptes, reste] = await Promise.all([
-      qui.participant && telephone ? comptesDeLaPersonne(sb, edition.id, qui.participant.id, telephone) : Promise.resolve(null),
+      /* Ses photos sur CE lien (21/10) : la carte dit « 2 photos déjà sur « Bateau 1 » », plus le total de l'édition. */
+      qui.participant && telephone ? comptesDeLaPersonne(sb, edition.id, qui.participant.id, telephone, { provenanceId: provenance?.id ?? null }) : Promise.resolve(null),
       placeDuParticipant(sb, edition, lienDeDepot, telephone, qui.participant?.id ?? null, maintenant),
     ])
     if (qui.participant) {
@@ -165,6 +166,7 @@ export default async function PageDepot({
         prenom: qui.participant.prenom,
         photos: comptes?.photos ?? 0,
         ceTelephone: comptes?.ceTelephone ?? 0,
+        surCeLien: comptes?.surCeLien ?? 0,
         /* L'accord est redemandé sur chaque nouveau téléphone : celui-ci a-t-il déjà accepté le texte d'aujourd'hui ? */
         accordAJour: comptes?.accord === VERSION_ACCORD,
       }
