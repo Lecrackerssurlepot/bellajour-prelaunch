@@ -1,4 +1,4 @@
-# État du système — au 20/10/2026
+# État du système — au 21/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,38 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 21/10/2026 (après-midi) — La recette solo de Mathias traitée : quatre PR, planches téléphone à valider
+
+Mathias a passé seul la plupart des 41 étapes de « 1. Tests seul » (Notion, B2B › Testing dev) sur
+les éditions d'essai « Recette 1 » et « Recette 2 ». Chaque ❌ a été vérifié dans le journal de
+« Recette 1 » (lecture seule) ; la colonne « Réponse de Claude » dit la cause et le geste à refaire.
+- **#303 EN PRODUCTION (dépôt du participant)** : le dédoublonnage est À L'ÉCHELLE DE L'ÉDITION,
+  corbeille comprise (clé = sel de l'appareil + nom + taille + date). Re-choisir des photos déjà
+  envoyées par un autre lien ou mises à la corbeille ne partait pas, et le merci additionnait tout
+  depuis l'ouverture de la page (« 8 photos reçues » sur un lien à 5). Maintenant : le merci du
+  dernier envoi, les déjà-là dits par cas, une photo supprimée PAR SON AUTEUR restaurée quand il
+  la choisit de nouveau (journal `photos_restaurees`, `par: "auteur"`), « Ce lien ne fonctionne
+  plus » sur une page restée ouverte (relecture au retour sur l'onglet et toutes les 45 s). Sondé :
+  la page servie porte les nouvelles phrases. La restauration n'est prouvée que sur fausse base.
+- **#304 EN PRODUCTION (fin de collecte)** : « Terminer la collecte » aussi sur Photos ; la ligne
+  d'état avec la vraie date ; bloc d'état et « Rouvrir la collecte » sur la fiche de l'atelier ;
+  pastille dans la liste ; un seul « Modifier » (nom + plafond) pour un lien.
+- **#305 EN PRODUCTION (temps réel)** : le sondage de la page Photos ne tournait pas tant qu'aucune
+  photo n'était arrivée (`vuJusqua` nul). Sondé : `photos/etat` rend photos et personnes sans
+  repère. Relecture au retour sur l'onglet (tableau de bord, documents, livraison, atelier) ; le
+  tiroir du menu se referme.
+- **#306 (chevauchements)** : relevé de 10 points en Chrome sans tête ; l'en-tête du téléphone
+  s'étirait jusqu'à 366 px sur une page courte (la « barre trop grosse »).
+- **« Retrouver mon espace » (étape 35)** : aucun mail parti ni tenté le 21/10 (ni verrou
+  `collectif_mails`, ni Brevo) ; à refaire avec l'heure, les journaux Vercel ne gardent qu'une heure.
+- **Brevo** : les mails partent du site en moins de 2 s et arrivent chez Gmail 10 à 26 minutes plus
+  tard (11 h 13 → 11 h 39, 11 h 22 → 11 h 41, 11 h 34 → 11 h 44) ; l'abonnement payant est prévu.
+- **Planches téléphone** publiées (https://claude.ai/artifact/4iqasM9k58MUdEy1ySZFse) : barre de
+  52 px, filtres en barre du bas, liens en grandes cartes, partage aéré, plus de lien « pour tous »,
+  mail allégé, création à quatre champs. 23 questions. Rien codé avant la réponse de Mathias.
+- Le `node_modules` de la racine est en `pdfjs-dist` 5.7.284 (package.json : 6.4.299) : en local
+  `verif-atelier` échoue sur trois épreuves pdfjs ; la CI (`npm ci`) passe.
 
 ## 20/10/2026 (soir) — Les mails des éditions OUVERTS ; les planches en production
 
