@@ -8181,7 +8181,7 @@ function verifCreationEdition() {
   ok("le mail « Votre espace est prêt » d'une edition sans cloture ni nom de responsable (une edition d'avant) : « Bonjour, », aucun « null » ni « undefined »",
     (() => {
       const tok = { token_responsable: "a".repeat(32), token_equipe: "b".repeat(32), token_depot: "c".repeat(32) };
-      const m = MailsTextes.mailEspacePret(MailsTextes.donneesEspacePret({ ...tok, registre: "entreprise_vous", organisation: "Audencia", evenement: "Week-end en mer", responsable_nom: null, cloture_le: null }, "https://www.bellajour.fr", false));
+      const m = MailsTextes.mailEspacePret(MailsTextes.donneesEspacePret({ ...tok, registre: "entreprise_vous", organisation: "Audencia", evenement: "Week-end en mer", responsable_nom: null, cloture_le: null }, "https://www.bellajour.fr"));
       const texte = JSON.stringify(m);
       return /Bonjour,/.test(texte) && !/null|undefined|NaN/.test(texte.replace(/"[a-z]+":null/g, ""));
     })());
