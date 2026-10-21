@@ -87,6 +87,7 @@ import { prochaineEtape } from "@/lib/collectif/prochaine";
 import { phraseEvenement } from "@/lib/collectif/recit";
 import { ETAPE_DU_CHAMP, ETAPES_EDITION, LIBELLE_CHAMP, lireSaisieEdition, planMagazines, rangEtapeDuChamp, type MagazineActuel } from "@/lib/collectif/saisie";
 import * as Saisie from "@/lib/collectif/saisie";
+import * as ACompleter from "@/lib/collectif/aCompleter";
 import * as Calendrier from "@/lib/collectif/calendrier";
 import {
   cleTailleImage,
@@ -682,7 +683,7 @@ ok("formaterInstantParis ecrit l'heure de Paris", formaterInstantParis("2026-10-
 titre("— ouvrir une edition : ce qui est exige, ce qui reste vide —");
 const creation = {
   organisation: "  Maison Test  ", evenement: "Seminaire", registre: "entreprise_vous",
-  responsable_email: "Resp@Exemple.fr", magazines: [{ nom: "Le seminaire" }, { nom: "La soiree" }],
+  responsable_nom: "Mathilde Garnier", responsable_email: "Resp@Exemple.fr", magazines: [{ nom: "Le seminaire" }, { nom: "La soiree" }],
 };
 const cr1 = lireSaisieEdition(creation, "creation");
 ok("une creation minimale passe, textes nettoyes, e-mail en minuscules",
@@ -697,10 +698,14 @@ ok("une cloture sans fuseau est refusee (l'ecran envoie de l'ISO)",
 ok("une cloture ISO avec fuseau passe",
    (() => { const x = lireSaisieEdition({ ...creation, cloture_le: "2026-10-20T21:59:00.000Z" }, "creation", undefined, new Date("2026-10-01T10:00:00.000Z")); return x.ok && x.edition.cloture_le === "2026-10-20T21:59:00.000Z"; })());
 const sansRien = lireSaisieEdition({}, "creation");
-ok("sans organisation, evenement, e-mail ni magazine : quatre refus nommes",
-   !sansRien.ok && ["organisation", "evenement", "responsable_email", "magazines"].every((c) => sansRien.erreurs.some((e) => e.champ === c)));
-ok("un magazine sans nom est refuse",
-   !lireSaisieEdition({ ...creation, magazines: [{ nom: "" }] }, "creation").ok);
+/* 21/10 (planche 7) : l'ancienne épreuve exigeait aussi « au moins un magazine » et le nom du responsable restait libre.
+   Le nom devient obligatoire, le magazine se crée d'office : voir « Créer une édition avec ce qu'on sait déjà » plus bas. */
+ok("sans organisation, evenement, nom du responsable, e-mail ni ton : les cinq refus nommes, et plus AUCUN sur les magazines (un magazine est cree d'office)",
+   !sansRien.ok && ["organisation", "evenement", "responsable_nom", "responsable_email", "registre"].every((c) => sansRien.erreurs.some((e) => e.champ === c))
+   && !sansRien.erreurs.some((e) => e.champ === "magazines"));
+ok("un magazine sans nom n'est plus refuse a la creation (« Magazine 1 » d'office) ; en reglage, il l'est toujours",
+   (() => { const x = lireSaisieEdition({ ...creation, magazines: [{ nom: "" }] }, "creation"); return x.ok && x.magazines?.[0].nom === "Magazine 1"; })()
+   && !lireSaisieEdition({ magazines: [{ id: "m1", nom: "" }] }, "modification").ok);
 ok("un chiffre illisible est refuse, zero l'est pour un plafond, accepte pour la preselection",
    !lireSaisieEdition({ ...creation, tirage: "beaucoup" }, "creation").ok
    && !lireSaisieEdition({ ...creation, plafond_total: "0" }, "creation").ok
@@ -788,8 +793,8 @@ titre("— T-186 : la cloture passee est refusee (a la creation, et en reglage s
       return ["plafond_participant_atelier", "plafond_total", "preselection_max", "pagination_prevue", "tirage", "tours_inclus", "nb_propositions_couverture", "couvertures_aimees_max"].every((c) => new RegExp(`${c}: "",`).test(page));
     })());
   ok("« Le devis → » ne cree PAS l'edition : le bouton suivant et « Créer l'édition » ont chacun leur cle (sinon React recycle le bouton en submit pendant le clic)",
-    /key="suivante" type="button"/.test(formulaire) && /key="envoyer" type="submit"/.test(formulaire)
-      && /if \(creation && etape < DERNIERE\) aller\(etape \+ 1\);/.test(formulaire));
+    /key="suivante"\s+type="button"/.test(formulaire) && /key="creer"\s+type="button"/.test(formulaire) && /key="envoyer" type="submit"/.test(formulaire)
+      && /if \(creation\) \{\s*if \(etape < DERNIERE\) aller\(etape \+ 1\);\s*\} else void envoyer\(\);/.test(formulaire));
   ok("reglages : le formulaire n'est plus dans une carte (jamais une carte dans une carte)",
     !/<section className="ate-carte">\s*<h2 className="ate-carte-titre">Réglages de l&apos;édition<\/h2>/.test(lire("src/app/admin/collectif/[id]/page.tsx")) && !/eca-fieldset/.test(formulaire));
 
@@ -3373,9 +3378,9 @@ titre("— T-195 / D27 : un total vide = pas de limite ; le plafond par personne
       && (() => { const x = lireSaisieEdition({ ...creation, plafond_total: "" }, "creation"); return x.ok && x.edition.plafond_total === null; })()
       && (() => { const x = lireSaisieEdition({ plafond_total: "" }, "modification"); return x.ok && x.edition.plafond_total === null; })());
   const ficheA2 = lire("src/app/admin/collectif/[id]/page.tsx");
-  ok("la fiche : plus d'alerte pour un total vide ; une alerte quand le plafond par personne manque (meme regle que la page)",
-    !/plafond_total === null/.test(ficheA2) && /const parPersonneManque = etat === "preparation" && !depotRegle\(e, \{ sansPlafond: false \}\);/.test(ficheA2)
-      && /Photos par personne : à régler\./.test(ficheA2));
+  ok("la fiche : plus d'alerte pour un total vide ; l'alerte « Photos par personne : à régler » (qui parlait du lien général) est REMPLACÉE par l'encart « À compléter » (21/10, planche 7B) ; la règle de la page de dépôt, elle, ne bouge pas",
+    !/plafond_total === null/.test(ficheA2) && !/parPersonneManque/.test(ficheA2) && !/Photos par personne : à régler\./.test(ficheA2) && !/depotRegle/.test(ficheA2)
+      && /<ACompleter lignes=\{lignesACompleter\} \/>/.test(ficheA2) && /depotRegle\(edition,/.test(lire("src/app/depot/[token]/page.tsx")));
 }
 
 titre("— T-196 : regenerer dit ce qu'il coupe, previent le responsable, et le lien mort a sa page —");
@@ -5415,7 +5420,7 @@ async function verifPersonnesCorbeille() {
     Ou.quandOuvre(ouv) === "vendredi 6 novembre à 8 h" && Ou.quandOuvre("2026-11-06T07:30:00.000Z") === "vendredi 6 novembre à 8 h 30" && Ou.quandOuvre(null) === ""
       && Ou.phrasesPasEncoreOuvert(ouv, "ecole_tu").quand === "Il ouvrira le vendredi 6 novembre à 8 h." && /^Garde ce lien/.test(Ou.phrasesPasEncoreOuvert(ouv, "ecole_tu").garder)
       && Ou.messagePasOuvert(ouv) === "Le dépôt n'est pas encore ouvert : il ouvrira le vendredi 6 novembre à 8 h." && Ou.ERREUR_PAS_OUVERT === "depot_pas_ouvert");
-  const base = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
+  const base = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_nom: "Mathilde Garnier", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
   const LE_20 = new Date("2026-10-20T12:00:00Z");
   const s1 = Saisie.lireSaisieEdition(base, "creation", undefined, LE_20);
   const s2 = Saisie.lireSaisieEdition({ ...base, ouverture_le: ouv }, "creation", undefined, LE_20);
@@ -6512,7 +6517,7 @@ async function verifAtelierCorbeillePersonnes() {
   const iso8ete = Da.instantDeParis("2026-07-06T08:00");
   ok("converti par `instantDeParis` (jamais par la machine) : 8 h à Paris = 7 h UTC l'hiver, 6 h l'été ; une heure qui n'existe pas (passage à l'heure d'été) n'est pas décalée en silence ; lu par la phrase de la page 9B, c'est la même heure",
     iso8 === "2026-11-06T07:00:00.000Z" && iso8ete === "2026-07-06T06:00:00.000Z" && Da.instantDeParis("2026-03-29T02:30") === null && Ou.quandOuvre(iso8) === "vendredi 6 novembre à 8 h" && Da.versChampParis(iso8) === "2026-11-06T08:00");
-  const baseEd = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
+  const baseEd = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_nom: "Mathilde Garnier", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
   const LE = new Date("2026-10-20T12:00:00Z");
   const avant = Sa.lireSaisieEdition({ ...baseEd, ouverture_le: iso8 }, "creation", undefined, LE);
   const apres = Sa.lireSaisieEdition({ ...baseEd, ouverture_le: Da.instantDeParis("2026-11-16T08:00") }, "creation", undefined, LE);
@@ -7960,7 +7965,234 @@ function verifChevauchements() {
   }
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(() => {
+/* ═══════════════ 21/10 (planche 7) : créer une édition avec ce qu'on sait déjà, et l'encart « À compléter » ═══════════════
+   Mathias : « il faut du coup qu'on ait les infos avant, sinon on ne pourra pas le remplir ». Quatre champs obligatoires
+   (l'organisation, l'événement, le NOM du responsable, son e-mail), « Créer l'édition » dès l'étape 1, un « Magazine 1 »
+   d'office, aucun chiffre proposé ; la fiche garde la liste de ce qui manque (`aCompleter`, pure). */
+function verifCreationEdition() {
+  const MAINTENANT = new Date("2026-10-21T12:00:00Z");
+  const formulaire = lire("src/app/admin/collectif/FormulaireEdition.tsx");
+  const fiche = lire("src/app/admin/collectif/[id]/page.tsx");
+  const quatre = { organisation: "Audencia", evenement: "Week-end en mer", registre: "entreprise_vous", responsable_nom: "Mathilde Garnier", responsable_email: "mathilde.garnier@audencia-exemple.fr" };
+
+  titre("— planche 7 : quatre champs obligatoires, et rien d'autre —");
+  ok("les obligatoires sont QUATRE, dans l'ordre de l'ecran : l'organisation, l'evenement, le nom ET l'e-mail du responsable",
+    Saisie.CHAMPS_OBLIGATOIRES.join() === "organisation,evenement,responsable_nom,responsable_email");
+  const mini = lireSaisieEdition(quatre, "creation", undefined, MAINTENANT);
+  ok("la route de creation accepte une edition avec SEULEMENT les quatre champs (et le ton) : ni magazine, ni cloture, ni chiffre, ni date, ni lien",
+    mini.ok && mini.edition.organisation === "Audencia" && mini.edition.responsable_nom === "Mathilde Garnier" && mini.edition.registre === "entreprise_vous");
+  ok("… et tout le reste vaut null / rien : aucun chiffre invente (plafonds, devis, couvertures, selection), pas de cloture, pas de dates, pas de lien de rendez-vous, pas de message, ni livraison ni ouverture ecrites",
+    mini.ok && ["plafond_participant_atelier", "plafond_total", "preselection_max", "pagination_prevue", "tirage", "tours_inclus", "nb_propositions_couverture", "couvertures_aimees_max", "cloture_le", "dates_texte", "rdv_url", "invitation_texte"].every((k) => mini.edition[k] === null)
+      && !("livraison" in mini.edition) && !("ouverture_le" in mini.edition) && mini.edition.styles_segment === "tous");
+  ok("… un « Magazine 1 » est cree d'office, a renommer ; la route en fait le plan (rang 1, nom « Magazine 1 »)",
+    mini.ok && JSON.stringify(mini.magazines) === '[{"id":null,"nom":"Magazine 1"}]'
+      && (() => { const plan = planMagazines([], mini.magazines ?? []); return plan.ok && JSON.stringify(plan.ajouter) === '[{"rang":1,"nom":"Magazine 1"}]'; })());
+  ok("… et les demandes au client sont celles d'office (les cases cochees d'avant), comme l'ecran, quand le corps n'en dit rien ; un [] explicite reste []",
+    mini.ok && JSON.stringify(mini.edition.contenus_demandes) === JSON.stringify(Demandes.DEMANDES_PAR_DEFAUT)
+      && (() => { const x = lireSaisieEdition({ ...quatre, contenus_demandes: [] }, "creation", undefined, MAINTENANT); return x.ok && JSON.stringify(x.edition.contenus_demandes) === "[]"; })());
+  const sans = (champ: string, valeur: unknown = "") => lireSaisieEdition({ ...quatre, [champ]: valeur }, "creation", undefined, MAINTENANT);
+  ok("sans le NOM du responsable (vide, blancs, absent) : refuse, sur son champ, a l'etape « Le client » (il donne « Bonjour Mathilde, » dans les mails)",
+    ["", "   ", undefined].every((v) => { const x = sans("responsable_nom", v); return !x.ok && x.erreurs.length === 1 && x.erreurs[0].champ === "responsable_nom" && /à remplir/.test(x.erreurs[0].message); })
+      && Saisie.ETAPE_DU_CHAMP.responsable_nom === "client");
+  ok("l'organisation, l'evenement et l'e-mail restent exiges un a un ; le ton aussi cote serveur (l'ecran le coche d'office)",
+    ["organisation", "evenement", "responsable_email", "registre"].every((c) => { const x = sans(c, ""); return !x.ok && x.erreurs.some((e) => e.champ === c); }));
+  ok("en REGLAGE le nom reste libre (une edition d'avant n'en a peut-etre pas : l'enregistrer ne doit pas echouer) ; vide, il vaut null",
+    (() => { const x = lireSaisieEdition({ responsable_nom: "", tirage: "120" }, "modification"); return x.ok && x.edition.responsable_nom === null && x.edition.tirage === 120; })());
+
+  titre("— planche 7 : « Magazine 1 » d'office, les noms d'office suivent le rang —");
+  const mag = (m: unknown) => lireSaisieEdition({ ...quatre, magazines: m }, "creation", undefined, MAINTENANT);
+  ok("une liste vide ou absente : « Magazine 1 » ; deux noms vides : « Magazine 1 », « Magazine 2 » ; un nom choisi est GARDE (nettoye)",
+    (() => { const a = mag([]); const b = mag([{ nom: "" }, { nom: "   " }]); const c = mag([{ nom: "  Le séminaire " }, { nom: "" }]); return a.ok && a.magazines?.[0].nom === "Magazine 1" && b.ok && b.magazines?.map((m) => m.nom).join() === "Magazine 1,Magazine 2" && c.ok && c.magazines?.map((m) => m.nom).join() === "Le séminaire,Magazine 2"; })());
+  ok("le plafond de douze magazines tient toujours ; un nom trop long est coupe a 80, jamais refuse",
+    !mag(Array.from({ length: Saisie.MAX_MAGAZINES + 1 }, () => ({ nom: "x" }))).ok && (() => { const x = mag([{ nom: "m".repeat(200) }]); return x.ok && x.magazines?.[0].nom.length === 80; })());
+  ok("en REGLAGE un magazine garde son nom : l'effacer reste refuse (« Chaque magazine a un nom »), une liste vide aussi",
+    (() => { const x = lireSaisieEdition({ magazines: [{ id: "m1", nom: "" }] }, "modification"); const y = lireSaisieEdition({ magazines: [] }, "modification"); return !x.ok && x.erreurs.some((e) => /a un nom/.test(e.message)) && !y.ok; })());
+  ok("la poubelle resserre les noms d'office (un nom choisi ne bouge pas) : « Le séminaire », « Magazine 3 » devient « Magazine 2 » ; « Magazine 1 » reste en tete",
+    JSON.stringify(Saisie.renumeroterNomsParDefaut([{ nom: "Le séminaire" }, { nom: "Magazine 3" }])) === '[{"nom":"Le séminaire"},{"nom":"Magazine 2"}]'
+      && Saisie.renumeroterNomsParDefaut([{ nom: "Magazine 1" }, { nom: "Magazine 2" }]).map((m) => m.nom).join() === "Magazine 1,Magazine 2"
+      && Saisie.renumeroterNomsParDefaut([{ nom: "" }]).map((m) => m.nom).join() === "" && Saisie.nomMagazineParDefaut(4) === "Magazine 4");
+
+  titre("— planche 7 : ce qui manque se dit, « Créer l'édition » s'active quand les quatre sont remplis —");
+  ok("`obligatoiresManquants` : les quatre vides au depart, un blanc compte pour vide, rien ne manque quand tout est la ; ni l'e-mail valide ni autre chose n'est exige pour activer le bouton",
+    Saisie.obligatoiresManquants({}).join() === Saisie.CHAMPS_OBLIGATOIRES.join() && Saisie.obligatoiresManquants({ ...quatre, organisation: "  " }).join() === "organisation"
+      && Saisie.obligatoiresManquants(quatre).length === 0 && Saisie.obligatoiresManquants({ ...quatre, responsable_email: "pas une adresse" }).length === 0);
+  ok("la phrase du bouton eteint nomme ce qui manque, au masculin generique, sans tiret : « Pour créer l'édition, il manque : … »",
+    Saisie.phraseManque(Saisie.obligatoiresManquants({})) === "Pour créer l'édition, il manque : l'organisation, le nom de l'événement, le nom du responsable et l'e-mail du responsable."
+      && Saisie.phraseManque(["responsable_nom"]) === "Pour créer l'édition, il manque : le nom du responsable." && Saisie.phraseManque([]) === "");
+  ok("le rail de la creation : « 4 champs obligatoires », « facultatif », « « Magazine 1 » d'office » (une etape de plus ou de moins sans sous-titre ferait mentir le rail)",
+    ETAPES_EDITION.every((e) => typeof Saisie.SOUS_TITRE_ETAPE_CREATION[e.cle] === "string") && Saisie.SOUS_TITRE_ETAPE_CREATION.client === "4 champs obligatoires"
+      && Saisie.SOUS_TITRE_ETAPE_CREATION.magazines === "« Magazine 1 » d'office" && ["calendrier", "photos", "envoyer", "devis"].every((c) => Saisie.SOUS_TITRE_ETAPE_CREATION[c] === "facultatif"));
+  ok("`rangEtape` : l'etape par sa cle (« Compléter » ouvre le bon reglage), null pour une cle qui n'en est pas une",
+    Saisie.rangEtape("client") === 0 && Saisie.rangEtape("devis") === 5 && Saisie.rangEtape("calendrier") === 1 && Saisie.rangEtape("photos") === 3 && Saisie.rangEtape("nimporte") === null && Saisie.rangEtape(undefined) === null);
+
+  titre("— planche 7 : l'ecran de creation —");
+  ok("« Créer l'édition » est la a CHAQUE etape (plus seulement a la derniere) : un bouton `button`, a sa cle, eteint tant qu'un obligatoire manque ; « étape suivante » passe en bouton simple",
+    /\{creation \? \(\s*<span className="eca-form-actions">/.test(formulaire) && /key="creer"\s+type="button"\s+className="eca-bouton eca-bouton--plein"\s+disabled=\{envoi \|\| manquants\.length > 0\}/.test(formulaire)
+      && /onClick=\{\(\) => void envoyer\(\)\}/.test(formulaire) && /key="suivante" type="button" className="eca-bouton" /.test(formulaire) && !/creation && etape === DERNIERE/.test(formulaire));
+  ok("la touche Entree ne cree JAMAIS par erreur en creation : elle avance d'une etape (et rien a la derniere) ; en reglages elle enregistre comme avant",
+    /if \(creation\) \{\s*if \(etape < DERNIERE\) aller\(etape \+ 1\);\s*\} else void envoyer\(\);/.test(formulaire) && !/type="submit"[^>]*>\s*\{envoi \? "Enregistrement…" : "Créer l'édition"/.test(formulaire));
+  ok("la ligne de tete : « * Obligatoire. Tout le reste peut attendre : la fiche de l'édition vous dira ce qui manque. » ; les quatre champs portent « * », le lien de rendez-vous la pastille « facultatif »",
+    /<b>\*<\/b>\{" "\}Obligatoire\. Tout le reste peut attendre : la fiche de l&apos;édition vous dira ce qui manque\./.test(formulaire) && /texte\("organisation", "Organisation", \{ requis: true/.test(formulaire)
+      && /texte\("evenement", "Nom de l'événement", \{ requis: true/.test(formulaire) && /texte\("responsable_nom", "Nom du responsable", \{ requis: creation \}\)/.test(formulaire)
+      && /requis: true,\s*type: "email"/.test(formulaire) && /facultatif: true,\s*type: "url"/.test(formulaire) && /<span className="eca-facultatif">facultatif<\/span>/.test(formulaire));
+  ok("le ton est coche d'office (« Vous · entreprise ») et le dit ; le rail dit sous chaque etape ce qu'elle demande ; une etape faite recoit sa coche (le premier rang ne l'a qu'avec les quatre champs)",
+    /registre: "entreprise_vous",/.test(lire("src/app/admin/collectif/nouvelle/page.tsx")) && /Choisi d'office : « Vous »\. Tout l'espace et les mails parlent ainsi\./.test(formulaire)
+      && /<small>\{SOUS_TITRE_ETAPE_CREATION\[et\.cle\]\}<\/small>/.test(formulaire) && /if \(i === 0\) return obligatoiresManquants\(v\)\.length === 0;/.test(formulaire) && /statut === "fait" \? "✓"/.test(formulaire));
+  ok("le magazine d'office est la des l'ouverture de la page (« Magazine 1 »), et la liste resserre ses noms d'office a l'ajout et au retrait (creation seulement)",
+    /magazines: \[\{ id: null, nom: nomMagazineParDefaut\(1\), vide: true \}\],/.test(lire("src/app/admin/collectif/nouvelle/page.tsx")) && /nomsAuto=\{creation\}/.test(formulaire)
+      && /renumeroterNomsParDefaut\(reste\)/.test(lire("src/app/admin/collectif/ListeMagazines.tsx")) && /nomMagazineParDefaut\(magazines\.length \+ 1\)/.test(lire("src/app/admin/collectif/ListeMagazines.tsx")));
+  ok("aucun chiffre propose d'avance : la page part de champs vides (tous les chiffres), le devis dit « à compléter plus tard » dans ses quatre pastilles, jamais « à fixer »",
+    ["plafond_participant_atelier", "plafond_total", "preselection_max", "pagination_prevue", "tirage", "tours_inclus", "nb_propositions_couverture", "couvertures_aimees_max"].every((c) => new RegExp(`${c}: "",`).test(lire("src/app/admin/collectif/nouvelle/page.tsx")))
+      && (formulaire.slice(formulaire.indexOf("/* 6 · Le devis */")).match(/A_COMPLETER_PLUS_TARD/g) ?? []).length === 5 && !/« à fixer »/.test(formulaire.slice(formulaire.indexOf("/* 6 · Le devis */")))
+      && /const A_COMPLETER_PLUS_TARD = "à compléter plus tard";/.test(formulaire));
+  ok("l'etape « Le devis » ouvre sur l'encart rassurant : « Rien n'est obligatoire dans cette étape… la fiche de l'édition liste ce qui manque, et le devis se complète quand le client a répondu »",
+    /Rien n'est obligatoire dans cette étape\. Remplissez ce que vous savez : /.test(formulaire) && /<b>la fiche de l&apos;édition liste ce qui manque<\/b>/.test(formulaire) && /, et le devis se complète quand le client a répondu\./.test(formulaire)
+      && /\.eca-root \.eca-encart\.eca-encart--doux \{/.test(lire("src/app/admin/collectif/formulaire.css")));
+  ok("« Photos par personne » est facultatif : vide dit « facultatif », l'aide parle d'un plafond de securite et son chiffre (100) vient de `plafondLienMax`, jamais d'un litteral ; la saisie le garde a null",
+    /"photos par personne",\s*`Facultatif, un plafond de sécurité : sans lui, un lien porte jusqu'à \$\{plafondLienMax\(\{ plafond_participant_atelier: null \}\)\} photos par personne\./.test(formulaire) && /1,\s*"facultatif"\s*\)\}/.test(formulaire)
+      && mini.ok && mini.edition.plafond_participant_atelier === null && mini.edition.plafond_participant_client === null && plafondLienMax({ plafond_participant_atelier: null }) === CURSEUR_LIEN.max);
+  ok("les feuilles : la pastille, la ligne de tete (`eca-oblig-ligne` : `eca-legende` est pris par les <legend> de l'editeur de styles), le rail annote, les deux boutons du pied, et l'encart « À compléter » existent, tous sous `.eca-root`",
+    ["\\.eca-facultatif", "\\.eca-oblig-ligne", "\\.eca-pas-txt", "\\.eca-form-actions"].every((c) => new RegExp(`\\.eca-root ${c} \\{`).test(lire("src/app/admin/collectif/formulaire.css")))
+      && ["\\.eca-acompleter", "\\.eca-ac-nb", "\\.eca-ac-liste", "\\.eca-ac-ligne", "\\.eca-ac-texte", "\\.eca-point--gris"].every((c) => new RegExp(`\\.eca-root ${c} \\{`).test(lire("src/app/admin/collectif/collectif.css"))));
+  ok("aucun nom de classe nouveau n'est deja pris : chaque regle de base est ecrite UNE fois dans les feuilles de l'atelier (hors la surcharge « telephone » de `eca-ac-ligne`, qui a le droit d'en avoir une seconde ; le 21/10, `eca-legende` etait pris par les <legend> de l'editeur de styles et la ligne de tete s'affichait en italique de titre)",
+    (() => {
+      const css = fichiersParSuffixe("src/app/admin", /\.css$/).map((f) => lire(f).replace(/\/\*[\s\S]*?\*\//g, "")).join("\n");
+      return ["eca-facultatif", "eca-oblig-ligne", "eca-pas-txt", "eca-form-actions", "eca-acompleter", "eca-ac-nb", "eca-ac-intro", "eca-ac-liste", "eca-ac-texte", "eca-point--gris"]
+        .every((c) => (css.match(new RegExp(`\\.eca-root \\.${c} \\{`, "g")) ?? []).length === 1)
+        && (css.match(/\.eca-root \.eca-legende \{/g) ?? []).length === 1;
+    })());
+  ok("la route de creation lit LA MEME regle (aucune validation reecrite) puis fait le plan des magazines depuis ce qu'elle a lu : « Magazine 1 » arrive donc jusqu'a la base",
+    /lireSaisieEdition\(corps, "creation", undefined, new Date\(\)\)/.test(lire("src/app/api/admin/collectif/editions/route.ts")) && /planMagazines\(\[\], saisie\.magazines \?\? \[\]\)/.test(lire("src/app/api/admin/collectif/editions/route.ts"))
+      && /\.insert\(plan\.ajouter\.map\(\(m\) => \(\{ edition_id: id, rang: m\.rang, nom: m\.nom \}\)\)\)/.test(lire("src/app/api/admin/collectif/editions/route.ts")));
+
+  titre("— planche 7B : l'encart « À compléter » (fonction pure `aCompleter`) —");
+  const neuve: ACompleter.EditionACompleter = {
+    plafond_participant_atelier: null, cloture_le: null, pagination_prevue: null, tirage: null, tours_inclus: null, nb_propositions_couverture: null,
+    dates_texte: null, rdv_url: null, responsable_nom: "Mathilde Garnier", livraison: {},
+  };
+  const ouverte = { etat: "preparation" as const, archivee: false };
+  const toutes = ACompleter.aCompleter(neuve, [], ouverte);
+  ok("une edition ouverte avec les quatre champs : SIX lignes, dans l'ordre ou ca compte (les liens, la cloture, le devis, le plafond par personne, les dates et la livraison, le rendez-vous)",
+    toutes.map((l) => l.cle).join() === "liens,cloture,devis,par_personne,dates,rdv");
+  ok("trois niveaux : « bloque les dépôts » (aucun lien de groupe), « conseillé » (la cloture), « facultatif » (le reste, le devis disant « 4 champs ») ; seul le premier bloque",
+    toutes.map((l) => l.niveau).join() === "bloque,conseille,facultatif,facultatif,facultatif,facultatif" && toutes.map((l) => l.puce).join("|") === "bloque les dépôts|conseillé|4 champs|facultatif|facultatif|facultatif");
+  ok("les titres et les « pourquoi » sont ceux de la planche 7B, mot pour mot (le prenom du responsable, pas le mot « responsable »)",
+    toutes[0].titre === "Les liens des participants"
+      && toutes[0].pourquoi === "Aucun lien de groupe pour l'instant : il n'y a encore rien à envoyer aux participants. Mathilde les crée dans son espace, vous pouvez les préparer ici."
+      && toutes[1].titre === "Clôture de la collecte" && toutes[1].pourquoi === "Sans date, la collecte reste ouverte jusqu'à ce que quelqu'un la ferme."
+      && toutes[2].titre === "Le devis : pagination, tirage, tours de corrections, propositions de couverture"
+      && toutes[2].pourquoi === "Quatre champs à fixer quand le devis est arrêté. Le client lit le tirage dans ses documents."
+      && toutes[3].titre === "Photos par personne" && toutes[3].pourquoi === "Sans ce nombre, un lien peut porter jusqu'à 100 photos par personne ; il ne bloque plus aucun dépôt."
+      && toutes[4].titre === "Dates de l'événement et livraison souhaitée" && toutes[4].pourquoi === "Elles apparaissent dans la frise et dans l'onglet « Livraison »."
+      && toutes[5].titre === "Lien de rendez-vous" && toutes[5].pourquoi === "Sans lui, le client ne peut pas prendre rendez-vous depuis son espace.");
+  ok("chaque ligne porte son bouton : « Préparer » pour les liens, « Compléter » pour le reste ; chacun ouvre le bon reglage (l'etape du formulaire, ou l'onglet Livraison)",
+    toutes.map((l) => l.bouton).join() === "Préparer,Compléter,Compléter,Compléter,Compléter,Compléter"
+      && toutes.map((l) => ACompleter.hrefACompleter(l.ouvre)).join(" ") === "?onglet=reglages ?onglet=reglages&etape=calendrier ?onglet=reglages&etape=devis ?onglet=reglages&etape=photos ?onglet=reglages&etape=calendrier ?onglet=reglages&etape=client"
+      && toutes.every((l) => !l.ouvre.etape || Saisie.rangEtape(l.ouvre.etape) !== null));
+  ok("la phrase de tete dit « sauf le premier point » SEULEMENT quand le premier point bloque",
+    ACompleter.introACompleter(toutes) === "Rien n'empêche d'avancer, sauf le premier point. Chaque ligne disparaît dès que le champ est rempli ; l'encart disparaît quand tout est fait."
+      && !/sauf le premier/.test(ACompleter.introACompleter(toutes.slice(1))));
+  ok("sans nom de responsable (une edition d'avant), la ligne des liens dit « Le responsable les crée » ; le prenom est le premier mot",
+    /Le responsable les crée dans son espace/.test(ACompleter.aCompleter({ ...neuve, responsable_nom: null }, [], ouverte)[0].pourquoi) && ACompleter.prenomDuResponsable("  Mathilde   Garnier ") === "Mathilde" && ACompleter.prenomDuResponsable("") === null);
+
+  titre("— planche 7B : une ligne disparait des que son champ est rempli, l'encart quand tout l'est —");
+  const sans1 = (cle: ACompleter.CleACompleter, edition: ACompleter.EditionACompleter, liens: { retire: boolean }[] = []) => ACompleter.aCompleter(edition, liens, ouverte).some((l) => l.cle === cle);
+  const complet: ACompleter.EditionACompleter = {
+    plafond_participant_atelier: 50, cloture_le: "2026-11-04T22:59:00+00:00", pagination_prevue: 44, tirage: 300, tours_inclus: 2, nb_propositions_couverture: 3,
+    dates_texte: "du 10 au 18 octobre 2026", rdv_url: "https://calendar.app.google/x", responsable_nom: "Mathilde Garnier", livraison: { prevue_le: "2026-11-08" },
+  };
+  ok("tout est rempli (et un lien actif) : l'encart disparait (liste vide, rien a afficher)", ACompleter.aCompleter(complet, [{ retire: false }], ouverte).length === 0);
+  ok("un lien de groupe actif fait partir la ligne des liens ; un lien RETIRE ne compte pas",
+    sans1("liens", complet, []) && !sans1("liens", complet, [{ retire: false }]) && sans1("liens", complet, [{ retire: true }, { retire: true }]) && !sans1("liens", complet, [{ retire: true }, { retire: false }]));
+  ok("la cloture, le plafond par personne et le rendez-vous partent chacun avec LEUR champ, sans toucher aux autres lignes",
+    (() => {
+      const un = { ...complet, cloture_le: null, plafond_participant_atelier: null, rdv_url: null };
+      const l = (e: ACompleter.EditionACompleter) => ACompleter.aCompleter(e, [{ retire: false }], ouverte).map((x) => x.cle).join();
+      return l(un) === "cloture,par_personne,rdv" && l({ ...un, cloture_le: complet.cloture_le }) === "par_personne,rdv" && l({ ...un, plafond_participant_atelier: 1 }) === "cloture,rdv" && l({ ...un, rdv_url: "https://x.fr/a" }) === "cloture,par_personne"
+        && l({ ...complet, rdv_url: "   " }) === "rdv";
+    })());
+  ok("le devis : un champ rempli sort de la liste et du compte (« 3 champs »), le tirage seul manquant garde « Le client lit le tirage », un devis complet part",
+    (() => {
+      const dev = (e: Partial<ACompleter.EditionACompleter>) => ACompleter.aCompleter({ ...complet, ...e }, [{ retire: false }], ouverte).find((l) => l.cle === "devis");
+      const trois = dev({ tirage: 300, pagination_prevue: null, tours_inclus: null, nb_propositions_couverture: null });
+      const un = dev({ tirage: null });
+      return trois?.puce === "3 champs" && trois.titre === "Le devis : pagination, tours de corrections, propositions de couverture" && trois.pourquoi === "Trois champs à fixer quand le devis est arrêté."
+        && un?.puce === "1 champ" && un.titre === "Le devis : tirage" && un.pourquoi === "Un champ à fixer quand le devis est arrêté. Le client lit le tirage dans ses documents."
+        && dev({}) === undefined;
+    })());
+  ok("les dates et la livraison : les deux manquent (titre de la planche), les dates seules, la livraison seule ; la livraison se regle dans l'onglet Livraison, les dates dans le formulaire",
+    (() => {
+      const d = (e: Partial<ACompleter.EditionACompleter>) => ACompleter.aCompleter({ ...complet, ...e }, [{ retire: false }], ouverte).find((l) => l.cle === "dates");
+      const deux = d({ dates_texte: null, livraison: {} });
+      const dates = d({ dates_texte: " " });
+      const livraison = d({ livraison: { prevue_le: null } });
+      return deux?.titre === "Dates de l'événement et livraison souhaitée" && dates?.titre === "Dates de l'événement" && dates.ouvre.etape === "calendrier" && /en tête de la fiche/.test(dates.pourquoi)
+        && livraison?.titre === "Livraison souhaitée" && livraison.ouvre.onglet === "livraison" && livraison.ouvre.etape === undefined && d({}) === undefined;
+    })());
+  ok("le client peut deja prendre rendez-vous par l'agenda de l'atelier : la ligne du lien de rendez-vous n'a plus lieu d'etre (elle mentirait)",
+    sans1("rdv", { ...complet, rdv_url: null }) && !ACompleter.aCompleter({ ...complet, rdv_url: null }, [{ retire: false }], { ...ouverte, rdvParAgenda: true }).some((l) => l.cle === "rdv"));
+  ok("la collecte close : plus de ligne pour les liens, la cloture ni le plafond par personne (elles ne servent plus) ; le devis, les dates et le rendez-vous restent",
+    ACompleter.aCompleter(neuve, [], { etat: "composition", archivee: false }).map((l) => l.cle).join() === "devis,dates,rdv"
+      && ACompleter.aCompleter(neuve, [], { etat: "impression", archivee: false }).map((l) => l.cle).join() === "devis,dates,rdv");
+  ok("une edition archivee ou livree : rien a completer (l'encart ne parle plus)",
+    ACompleter.aCompleter(neuve, [], { etat: "preparation", archivee: true }).length === 0 && ACompleter.aCompleter(neuve, [], { etat: "livree", archivee: false }).length === 0);
+  /* Les deux éditions de recette de Mathias, telles que la base les tenait au 21/10 : de quoi dire ce que l'encart y montre. */
+  const recette2 = { ...neuve, plafond_participant_atelier: 50, cloture_le: "2026-11-04T22:59:00+00:00", dates_texte: "du 10 au 18 octobre 2026", livraison: { prevue_le: "2026-11-08" } };
+  const recette1 = { ...neuve, plafond_participant_atelier: 30, cloture_le: "2026-10-21T09:24:01.836+00:00", dates_texte: "du 31 octobre au 15 novembre 2026", livraison: { prevue_le: "2026-11-16" } };
+  ok("« Recette 2 » (ouverte, un lien, cloture, dates, livraison, plafond) : le devis (4 champs) et le lien de rendez-vous ; « Recette 1 » (collecte close, deux liens) : les deux memes",
+    ACompleter.aCompleter(recette2, [{ retire: false }], ouverte).map((l) => `${l.cle}:${l.puce}`).join() === "devis:4 champs,rdv:facultatif"
+      && ACompleter.aCompleter(recette1, [{ retire: false }, { retire: false }], { etat: "composition", archivee: false }).map((l) => `${l.cle}:${l.puce}`).join() === "devis:4 champs,rdv:facultatif");
+  const sourceACompleter = lire("src/lib/collectif/aCompleter.ts");
+  ok("le module est PUR (ni base, ni reseau, ni environnement, ni horloge) ; aucun tiret cadratin ni demi-cadratin dans ses phrases ; aucune valeur d'office (le seul nombre vient de `plafondLienMax`)",
+    !/process\.env|fetch\(|supabase|new Date\(|Date\.now|from "node:/.test(sourceACompleter) && !/[—–]/.test(sourceACompleter.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, ""))
+      && /plafondLienMax\(\{ plafond_participant_atelier: null \}\)/.test(sourceACompleter) && !/100/.test(sourceACompleter.replace(/\/\*[\s\S]*?\*\//g, "")));
+  ok("aucune ligne ne propose une valeur : ni « fixez à », ni « par défaut », ni un nombre hors du compte des champs et du plafond de securite",
+    toutes.every((l) => !/par défaut|fixez à|mettez/i.test(`${l.titre} ${l.pourquoi}`)) && toutes.flatMap((l) => `${l.titre} ${l.pourquoi}`.match(/\d+/g) ?? []).join() === "100");
+
+  titre("— planche 7B : la fiche (vue d'ensemble) —");
+  ok("l'encart est rendu en tete de la vue d'ensemble, APRES la bande des etapes et l'alerte « devis à envoyer », AVANT les trois cartes ; l'alerte « Photos par personne : à régler » est partie",
+    fiche.indexOf("<ACompleter lignes={lignesACompleter} />") > fiche.indexOf('<ol className="eca-etapes">') && fiche.indexOf("<ACompleter lignes={lignesACompleter} />") > fiche.indexOf("devisEnAttente.map")
+      && fiche.indexOf("<ACompleter lignes={lignesACompleter} />") < fiche.indexOf('<div className="eca-cartes">') && !/Photos par personne : à régler\./.test(fiche));
+  ok("la fiche passe a la fonction pure l'etat EFFECTIF, l'archive, et l'agenda relie ; jamais une regle reecrite dans la page",
+    /aCompleter\(e, lu\.fiche\.liens, \{ etat, archivee: Boolean\(e\.archive_le\), rdvParAgenda \}\)/.test(fiche)
+      && /const rdvParAgenda = !rdvAbsent && compteAgenda\(\) !== null && listeInters\.some\(\(i\) => i\.cle === e\.interlocuteur_cle && Boolean\(i\.agenda_id\)\);/.test(fiche));
+  const encart = lire("src/app/admin/collectif/[id]/ACompleter.tsx");
+  ok("le composant ne calcule rien : il lit la liste (vide : rien), le nombre, la phrase de tete, une puce par niveau (ambre, bleu, gris) et un bouton qui est un lien `data-onglet` + `data-etape`",
+    /if \(lignes\.length === 0\) return null;/.test(encart) && /introACompleter\(lignes\)/.test(encart) && /\{lignes\.length\}/.test(encart) && /bloque: "eca-puce--ambre", conseille: "eca-puce--bleu", facultatif: "eca-puce--gris"/.test(encart)
+      && /data-onglet=\{l\.ouvre\.onglet\}\s*data-etape=\{l\.ouvre\.etape\}/.test(encart) && /href=\{hrefACompleter\(l\.ouvre\)\}/.test(encart) && !/supabase|fetch\(|useState|"use client"/.test(encart));
+  ok("« Compléter » ouvre le bon reglage : l'onglet change sans recharger ET le formulaire recoit l'etape (par la demande, ou par l'adresse `?etape=` lue au serveur) ; l'onglet pas encore monte la lit a son montage",
+    /if \(lien\.dataset\.etape\) demanderEtape\(lien\.dataset\.etape\);/.test(lire("src/app/admin/collectif/[id]/OngletsFiche.tsx")) && /rangEtape\(etapeDemandee\)/.test(fiche) && /etapeInitiale=\{etapeInitiale\}/.test(fiche)
+      && /rangEtape\(!creation && props\.etapeInitiale \? props\.etapeInitiale : etapeDemandee\(\)\)/.test(formulaire) && /return ecouterEtape\(\(cle\) => demanderIci\.current\(cle\)\);/.test(formulaire)
+      && /export function ecouterEtape/.test(lire("src/app/admin/collectif/etapeDemandee.ts")));
+
+  titre("— planche 7 : ce qui devient facultatif ne casse rien ailleurs (null partout) —");
+  const sansPlafondAtelier = { plafond_participant_atelier: null, plafond_participant_client: null, plafond_total: null };
+  ok("un lien de groupe porte son nombre sans plafond d'atelier ; un lien « sans limite » aussi ; seul le lien general (sans nombre propre) reste ferme tant que « Par personne » est vide",
+    PlafondsLot.depotRegle(sansPlafondAtelier, { sansPlafond: false, plafondLien: 30 }) && PlafondsLot.depotRegle(sansPlafondAtelier, { sansPlafond: true }) && !PlafondsLot.depotRegle(sansPlafondAtelier, { sansPlafond: false }));
+  ok("creer un lien sans plafond d'atelier : jusqu'a 100 par personne, pas un de plus (le chiffre de l'encart est celui que la route applique)",
+    (() => { const a = lirePlafondLien({ plafond: 100 }, sansPlafondAtelier); const b = lirePlafondLien({ plafond: 101 }, sansPlafondAtelier); return a.ok && a.plafond_par_personne === 100 && !b.ok; })()
+      && libellePlafondLien({ sans_plafond: false, plafond_par_personne: 12 }, sansPlafondAtelier as never) === "12 photos par personne");
+  ok("la prochaine etape et la collecte lisent une cloture nulle sans casser (« à fixer ») ; un total vide ne ferme rien",
+    prochaineEtape("preparation", null).texte.includes("à fixer") && Fin.blocCollecte({ etat: "preparation", clotureLe: null, archivee: false, geste: null }).termine === false
+      && PlafondsLot.placeRestante(sansPlafondAtelier as never, { role: "participant", sansPlafond: false, plafondLien: 5, dejaParAppareil: 0 }, 9999).illimitee === false);
+  ok("le BAT lit un devis vide sans casser : la validation parle du « tirage prévu au devis », la publication nomme le nombre de propositions manquant",
+    texteValidationBat(null) === "La validation est définitive. Elle confirme le tirage prévu au devis et lance l'impression."
+      && manquesPourPublierTour({ pdf_key: "k", nb_pages: 2, pages: [1], echeance_retours: "2026-12-01T10:00:00Z" }, true, [], null, MAINTENANT).some((m) => /nombre de propositions de couverture/.test(m)));
+  ok("le mail « Votre espace est prêt » d'une edition sans cloture ni nom de responsable (une edition d'avant) : « Bonjour, », aucun « null » ni « undefined »",
+    (() => {
+      const tok = { token_responsable: "a".repeat(32), token_equipe: "b".repeat(32), token_depot: "c".repeat(32) };
+      const m = MailsTextes.mailEspacePret(MailsTextes.donneesEspacePret({ ...tok, registre: "entreprise_vous", organisation: "Audencia", evenement: "Week-end en mer", responsable_nom: null, cloture_le: null }, "https://www.bellajour.fr", false));
+      const texte = JSON.stringify(m);
+      return /Bonjour,/.test(texte) && !/null|undefined|NaN/.test(texte.replace(/"[a-z]+":null/g, ""));
+    })());
+  ok("le nom du responsable vide (une edition d'avant) : les initiales sont « ? », la repartition des liens ne casse pas",
+    Espace.initiales(null) === "?" && Espace.initiales("") === "?" && Grille.deposantsParLien([], [], null).length >= 0);
+  ok("la liste des editions et l'espace du client ecrivent « [À FIXER] » / « à confirmer » pour un devis vide, jamais un trou (le tirage, la pagination, les tours, les propositions)",
+    /l\.tirage \?\? <span className="eca-afixer">\[À FIXER\]<\/span>/.test(lire("src/app/admin/collectif/page.tsx")) && /e\.tirage \? `\$\{e\.tirage\} exemplaires` : A_CONFIRMER/.test(lire("src/app/edition/[token]/dossier/page.tsx"))
+      && /e\.nb_propositions_couverture \? String\(e\.nb_propositions_couverture\) : A_CONFIRMER/.test(lire("src/app/edition/[token]/dossier/page.tsx")));
+}
+
+void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

@@ -19,7 +19,7 @@ import { compositionDu, stylesDeLaComposition, type BriefLigne } from "./brief";
 import { lireInstant } from "./etats";
 import { estJour } from "./livraison";
 import { lireEntierPositif, reglerPlafondAtelier, type ReglagesPlafond } from "./plafonds";
-import { lireDemandesSaisies } from "./demandes";
+import { DEMANDES_PAR_DEFAUT, lireDemandesSaisies } from "./demandes";
 import { REGISTRES, SEGMENTS, type Registre, type Segment } from "./types";
 
 export type Erreur = { champ: string; message: string };
@@ -44,6 +44,58 @@ export const VALEURS_RAPIDES: Readonly<Record<string, readonly number[]>> = {
 export function accueilParDefaut(registre: string): string {
   return registre === "ecole_tu" ? "Dépose ici tes photos de l’événement." : "Déposez ici vos photos de l’événement.";
 }
+
+/** Les quatre champs sans lesquels une édition ne s'ouvre pas, dans l'ordre de l'écran (planche 7). */
+export const CHAMPS_OBLIGATOIRES = ["organisation", "evenement", "responsable_nom", "responsable_email"] as const;
+export type ChampObligatoire = (typeof CHAMPS_OBLIGATOIRES)[number];
+
+/** Ce que l'écran dit d'un champ manquant : « il manque l'organisation… ». */
+const NOM_OBLIGATOIRE: Record<ChampObligatoire, string> = {
+  organisation: "l'organisation",
+  evenement: "le nom de l'événement",
+  responsable_nom: "le nom du responsable",
+  responsable_email: "l'e-mail du responsable",
+};
+
+/** Les champs obligatoires encore vides (un blanc compte pour vide), dans l'ordre de l'écran. */
+export function obligatoiresManquants(v: Partial<Record<ChampObligatoire, string>>): ChampObligatoire[] {
+  return CHAMPS_OBLIGATOIRES.filter((c) => !(v[c] ?? "").trim());
+}
+
+/** « Pour créer l'édition, il manque : l'organisation et le nom du responsable. » ; vide si rien ne manque. */
+export function phraseManque(manquants: readonly ChampObligatoire[]): string {
+  if (manquants.length === 0) return "";
+  const noms = manquants.map((c) => NOM_OBLIGATOIRE[c]);
+  const liste = noms.length > 1 ? `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}` : noms[0];
+  return `Pour créer l'édition, il manque : ${liste}.`;
+}
+
+/** Le nom d'un magazine créé d'office : « Magazine 1 », « Magazine 2 »… (le rang, jamais un compteur caché). */
+export function nomMagazineParDefaut(rang: number): string {
+  return `Magazine ${rang}`;
+}
+
+/** Un nom que l'atelier n'a pas choisi : « Magazine » et un numéro. */
+const NOM_PAR_DEFAUT = /^Magazine \d+$/;
+
+/**
+ * Les noms d'office suivent le rang après un retrait (la poubelle d'un magazine, à la création : « les
+ * numéros se resserrent ») ; un nom choisi par l'atelier ne bouge jamais. Un nom vide, lui, n'est pas
+ * touché ici : il se remplit à l'enregistrement (`lireSaisieEdition`), jamais pendant la frappe.
+ */
+export function renumeroterNomsParDefaut<T extends { nom: string }>(liste: readonly T[]): T[] {
+  return liste.map((m, i) => (NOM_PAR_DEFAUT.test(m.nom) && m.nom !== nomMagazineParDefaut(i + 1) ? { ...m, nom: nomMagazineParDefaut(i + 1) } : m));
+}
+
+/** Ce que le rail de la CRÉATION dit sous chaque étape (planche 7) : ce qu'elle demande, jamais « à faire ». */
+export const SOUS_TITRE_ETAPE_CREATION: Readonly<Record<string, string>> = {
+  client: "4 champs obligatoires",
+  calendrier: "facultatif",
+  magazines: "« Magazine 1 » d'office",
+  photos: "facultatif",
+  envoyer: "facultatif",
+  devis: "facultatif",
+};
 
 const LONGUEURS = {
   organisation: 120,
@@ -131,6 +183,12 @@ export const ETAPE_DU_CHAMP: Record<string, CleEtape> = {
   nb_propositions_couverture: "devis",
 };
 
+/** Le rang (0 à 5) d'une étape par sa clé (`client`, `devis`…) ; `null` si la clé n'en est pas une. */
+export function rangEtape(cle: string | null | undefined): number | null {
+  const i = ETAPES_EDITION.findIndex((e) => e.cle === cle);
+  return i === -1 ? null : i;
+}
+
 /** Le rang (0 à 5) de l'étape d'un champ ; un champ inconnu ramène à la première. */
 export function rangEtapeDuChamp(champ: string): number {
   const cle = ETAPE_DU_CHAMP[champ];
@@ -189,9 +247,10 @@ export type SaisieEdition =
   | { ok: false; erreurs: Erreur[] };
 
 /**
- * Création : organisation, événement, registre, e-mail du responsable et au
- * moins un magazine sont exigés. Modification : seuls les champs présents
- * sont lus. Les plafonds passent par `reglerPlafondAtelier`, qui ramène le
+ * Création : organisation, événement, registre (coché d'office à l'écran), nom
+ * ET e-mail du responsable sont exigés, rien d'autre ; un magazine est créé
+ * d'office (« Magazine 1 ») si le corps n'en porte aucun. Modification : seuls
+ * les champs présents sont lus. Les plafonds passent par `reglerPlafondAtelier`, qui ramène le
  * curseur du client s'il dépasse (sinon la contrainte de la base refuserait).
  *
  * La clôture (T-186) : une date PASSÉE est refusée à la création, et en
@@ -302,13 +361,20 @@ export function lireSaisieEdition(
 
   /* Les demandes au client (T-191) : nom, forme, clé ; les clés d'origine restent des clés texte. */
   if (present("contenus_demandes")) {
-    const lues = lireDemandesSaisies(s.contenus_demandes);
+    /* Une création qui n'en dit rien part des demandes d'office, comme l'écran (les cases cochées d'avant). */
+    const lues = lireDemandesSaisies(mode === "creation" && s.contenus_demandes === undefined ? DEMANDES_PAR_DEFAUT : s.contenus_demandes);
     for (const m of lues.erreurs) erreurs.push({ champ: "contenus_demandes", message: m });
     e.contenus_demandes = lues.demandes;
   }
 
   if (present("invitation_texte")) e.invitation_texte = texte(s.invitation_texte, LONGUEURS.invitation_texte) || null;
-  if (present("responsable_nom")) e.responsable_nom = texte(s.responsable_nom, LONGUEURS.responsable_nom) || null;
+  /* Le NOM du responsable est exigé à la création (planche 7, 21/10) : il donne « Bonjour Mathilde, » dans tous les
+     mails. En réglage il reste libre : une édition d'avant n'en a peut-être pas, et l'enregistrer ne doit pas échouer. */
+  if (present("responsable_nom")) {
+    const nom = texte(s.responsable_nom, LONGUEURS.responsable_nom);
+    if (mode === "creation" && !nom) erreurs.push({ champ: "responsable_nom", message: `${LIBELLE_CHAMP.responsable_nom} : à remplir.` });
+    e.responsable_nom = nom || null;
+  }
 
   if (present("responsable_email")) {
     const email = texte(s.responsable_email, 254).toLowerCase();
@@ -334,6 +400,13 @@ export function lireSaisieEdition(
       const o = (m && typeof m === "object" ? m : { nom: m }) as Record<string, unknown>;
       return { id: typeof o.id === "string" && o.id ? o.id : null, nom: texte(o.nom, LONGUEURS.magazine) };
     });
+    /* À la CRÉATION, rien n'existe encore à protéger : une liste vide est « Magazine 1 », un nom vide est
+       « Magazine <rang> », à renommer plus tard (planche 7, 21/10). En réglage, un magazine garde son nom :
+       l'effacer reste refusé. */
+    if (mode === "creation") {
+      if (magazines.length === 0) magazines = [{ id: null, nom: nomMagazineParDefaut(1) }];
+      magazines = magazines.map((m, i) => (m.nom ? m : { ...m, nom: nomMagazineParDefaut(i + 1) }));
+    }
     if (magazines.length === 0) erreurs.push({ champ: "magazines", message: "Au moins un magazine." });
     if (magazines.length > MAX_MAGAZINES) {
       erreurs.push({ champ: "magazines", message: `Au plus ${MAX_MAGAZINES} magazines par édition.` });

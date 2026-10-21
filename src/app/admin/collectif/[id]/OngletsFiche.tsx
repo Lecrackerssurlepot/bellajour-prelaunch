@@ -9,10 +9,13 @@
    réglage commencé ne se perd pas en allant lire les messages, et les
    messages ne sont marqués lus que si l'on ouvre leur onglet. Un lien
    `data-onglet` dans la page (les cartes de la vue d'ensemble) change
-   d'onglet sans recharger. */
+   d'onglet sans recharger ; avec un `data-etape` (l'encart « À compléter »),
+   il demande aussi au formulaire de « Réglages et liens » l'étape où vit le
+   champ (`etapeDemandee.ts`). */
 
 import Link from "next/link";
 import { useState } from "react";
+import { demanderEtape } from "../etapeDemandee";
 
 export type OngletFiche = { cle: string; libelle: string; badge?: number | null; href?: string };
 
@@ -36,6 +39,7 @@ export default function OngletsFiche({ onglets, initial, panneaux }: { onglets: 
         if (!lien) return;
         e.preventDefault();
         aller(lien.dataset.onglet as string);
+        if (lien.dataset.etape) demanderEtape(lien.dataset.etape);
       }}
     >
       <nav className="eca-onglets" aria-label="Sections de la fiche">

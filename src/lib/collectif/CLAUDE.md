@@ -72,8 +72,9 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   → instant ISO, `null` pour l'heure qui n'existe pas au passage à l'heure d'été),
   `versChampParis`, `formaterInstantParis`. Jamais `new Date(champ)` : il lit l'heure de la
   machine, et ni celle de Vercel (UTC) ni celle de l'atelier ne sont forcément Paris.
-- **`saisie.ts`** — la règle de création ET de réglage d'une édition (exigés : organisation,
-  événement, registre, e-mail du responsable, un magazine ; une clôture passée refusée, voir
+- **`saisie.ts`** — la règle de création ET de réglage d'une édition (exigés à la création :
+  `CHAMPS_OBLIGATOIRES`, quatre champs, plus le ton coché d'office ; un « Magazine 1 » se crée d'office,
+  voir « Créer avec ce qu'on sait déjà » plus bas ; une clôture passée refusée, voir
   T-186 plus bas ; tout chiffre vide reste `null` ;
   `rdv_url` en https seulement ; `suggestionEmail` suggère, ne bloque pas ; la case
   « démonstration » ne s'écrit jamais d'ici). `planMagazines` : renommer toujours, ajouter à la
@@ -645,10 +646,11 @@ nombre » d'un lien « pourraient être ensemble ».
   Un champ ajouté à la saisie s'ajoute à `ETAPE_DU_CHAMP` (le harnais le vérifie). En réglages,
   le formulaire n'est JAMAIS dans une carte (rail et corps côte à côte, ou le rail en deux rangs
   au-dessus quand la colonne des liens est à droite).
-- ⚠️ **Le bouton « étape suivante » et « Créer l'édition » portent chacun leur `key`.** Sans elles,
-  React garde le même `<button>` et le passe en `submit` PENDANT le clic sur « Le devis → » : le
+- ⚠️ **Le bouton « étape suivante » et « Créer l'édition » portent chacun leur `key` et un type FIXE.** Sans
+  elles, React garde le même `<button>` et le passe en `submit` PENDANT le clic sur « Le devis → » : le
   navigateur envoie le formulaire et l'édition se crée sans passer par la dernière étape (vu à la
-  recette du 19/10).
+  recette du 19/10). Depuis le 21/10 les deux sont des `button` : « Créer l'édition » n'envoie que par
+  son clic (voir plus bas), la touche Entrée ne crée jamais.
 - **La clôture** (`calendrier.ts`, pur) : raccourcis « Dans 2 semaines / 3 semaines / 1 mois »
   (un mois après le 31 janvier = le dernier jour de février), ou le calendrier ; 23 h 59 heure de
   Paris par défaut ; le jour choisi se range parmi les raccourcis. Le jour d'AUJOURD'HUI vient du
@@ -687,6 +689,54 @@ nombre » d'un lien « pourraient être ensemble ».
 - **« Partager avec mon équipe »** (`PartageEquipe.tsx`, en bas du menu de la coquille) : le
   layout de l'espace ne calcule le lien d'équipe que si `voitLienEquipe` (le responsable, y
   compris sur un appareil pas encore reconnu) ; l'équipe ne le reçoit jamais dans sa page.
+
+## Créer avec ce qu'on sait déjà, et l'encart « À compléter » (planche 7 du 21/10, validée par Mathias)
+
+Sa note : « il y a des cases à remplir pour l'atelier, mais il faut du coup qu'on ait les infos avant, sinon on
+ne pourra pas le remplir ». Avant : cinq choses exigées par la base mais trois « * » à l'écran, et « Créer
+l'édition » seulement à la sixième étape (le devis, qu'on n'a pas encore).
+- **Quatre champs obligatoires, pas un de plus** (`CHAMPS_OBLIGATOIRES`, saisie.ts) : l'organisation,
+  l'événement, le NOM du responsable (il donne « Bonjour Mathilde, » : il était facultatif) et son e-mail. Le
+  ton reste coché d'office (« Vous », jamais vide : le serveur l'exige toujours). **Le nom n'est exigé qu'à la
+  CRÉATION** : en réglage il reste libre, une édition d'avant n'en a peut-être pas et l'enregistrer ne doit pas
+  échouer.
+- **« Créer l'édition » est là à CHAQUE étape**, éteint tant qu'un obligatoire manque
+  (`obligatoiresManquants`, et la phrase sous le bouton nomme ce qui manque, `phraseManque`). Les six étapes
+  restent ; en création le rail dit sous chacune ce qu'elle demande (`SOUS_TITRE_ETAPE_CREATION` : « 4 champs
+  obligatoires », « facultatif », « « Magazine 1 » d'office »). La touche Entrée ne crée jamais (mesuré en Chrome :
+  elle ne fait rien) : le bouton est un `button`, et l'ancien `submit` de la dernière étape est parti.
+- **« Magazine 1 » d'office** : `lireSaisieEdition` remplit, À LA CRÉATION SEULEMENT, une liste vide par
+  « Magazine 1 » et un nom vide par « Magazine <rang> » ; en réglage « Chaque magazine a un nom » reste refusé.
+  À l'écran (`ListeMagazines`, `nomsAuto`) le premier part pré-rempli et les noms d'office suivent le rang à
+  l'ajout et au retrait (`renumeroterNomsParDefaut` : un nom choisi ne bouge pas, un nom vidé à la main n'est
+  jamais refait pendant la frappe). Une création sans `contenus_demandes` part des demandes d'office, comme
+  l'écran.
+- **Aucun chiffre proposé** : « Photos par personne » devient facultatif (un plafond de sécurité ; sans lui un
+  lien porte jusqu'à `plafondLienMax` = 100), le devis dit « à compléter plus tard » dans ses quatre pastilles.
+  `plafonds.ts` n'a pas bougé : seul le lien général (sans nombre propre) reste fermé tant que « Par personne »
+  est vide (`depotRegle`, la page de dépôt) ; un lien de groupe porte son nombre sans plafond d'atelier.
+- ⚠️ **L'encart « À compléter »** (vue d'ensemble de la fiche, `[id]/ACompleter.tsx`) lit `aCompleter(edition,
+  liens, { etat, archivee, rdvParAgenda })` (`aCompleter.ts`, PUR, au harnais) : une ligne par chose qui manque,
+  dans l'ordre où ça compte (`bloque` : aucun lien de groupe actif ; `conseille` : la clôture ; `facultatif` : le
+  devis « N champs », le plafond par personne, les dates et la livraison, le lien de rendez-vous), chacune avec
+  son pourquoi et un bouton qui ouvre le bon réglage. Il remplace l'alerte « Photos par personne : à régler ».
+  Il disparaît quand tout est rempli, sur une édition archivée ou livrée ; collecte close, plus de ligne pour les
+  liens, la clôture ni le plafond. Un lien RETIRÉ ne compte pas ; un client qui peut déjà réserver par l'agenda
+  de l'atelier (`rdvParAgenda`) n'a pas besoin de la ligne du rendez-vous. Aucune valeur n'y est proposée.
+- **« Compléter » ouvre l'étape où vit le champ** : le lien porte `data-onglet` ET `data-etape` ;
+  `OngletsFiche` change d'onglet puis appelle `demanderEtape` (`admin/collectif/etapeDemandee.ts`, le seul point
+  de rencontre des deux composants) ; le formulaire de « Réglages et liens » (monté à la première visite) lit la
+  demande à son montage ou l'entend s'il est déjà monté. Par l'adresse : `?onglet=reglages&etape=devis`
+  (`etapeInitiale`, lue par la page serveur). La livraison souhaitée ne se règle pas dans le formulaire (création
+  seulement) : sa ligne mène à l'onglet Livraison quand seules les dates sont remplies.
+- ⚠️ **`eca-legende` est pris** (les `<legend>` de l'éditeur de styles, le titre des propositions du BAT) : la
+  ligne « * Obligatoire. … » s'appelle `eca-oblig-ligne`. Le harnais vérifie qu'une règle de base nouvelle n'est
+  écrite qu'une fois.
+- Vérifié le 21/10 que rien ne casse sur un champ vide : le nom du responsable (`?? "Le responsable"`, « Bonjour, »,
+  `initiales`, `deposantsParLien`), le devis (`A_CONFIRMER`, `[À FIXER]`, `texteValidationBat`,
+  `manquesPourPublierTour`), la clôture (`prochaineEtape`, `blocCollecte`), le plafond (`placeRestante`,
+  `lirePlafondLien`), le mail « Votre espace est prêt ». Rien de ceci n'était nouveau en base (tout était déjà
+  `null` à la création) ; c'est l'écran qui ne force plus à y passer.
 
 ## Le calendrier, les magazines, les chiffres (T-189, T-190, planches 9 à 11 du 19/10 au soir)
 

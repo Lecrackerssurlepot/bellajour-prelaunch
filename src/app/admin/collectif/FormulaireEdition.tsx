@@ -9,9 +9,14 @@
      magazines, les photos, ce que le client doit envoyer, le devis
      (`ETAPES_EDITION`). Un rail à gauche (horizontal sur téléphone), une étape
      à la fois, « ← étape précédente » et « étape suivante → » qui la nomment.
-   - En création, « Créer l'édition » est au bout. La saisie est relue AVANT
-     l'envoi par la même règle (`lireSaisieEdition`, module pur) : un champ fautif
-     ramène à son étape et la nomme ; une erreur du serveur fait de même
+   - En création, « Créer l'édition » est là DÈS L'ÉTAPE 1 (planche 7 du 21/10,
+     validée par Mathias) : activé quand les quatre champs obligatoires sont remplis
+     (`CHAMPS_OBLIGATOIRES`, saisie.ts : l'organisation, l'événement, le NOM et l'e-mail
+     du responsable), jamais par la touche Entrée (le bouton n'est pas un `submit` : au mieux Entrée avance d'une étape).
+     Les cinq autres étapes sont facultatives et le disent (le rail, `eca-facultatif`) ;
+     la fiche de l'édition garde la liste de ce qui manque (`aCompleter.ts`). La saisie
+     est relue AVANT l'envoi par la même règle (`lireSaisieEdition`, module pur) : un
+     champ fautif ramène à son étape et la nomme ; une erreur du serveur fait de même
      (`rangEtapeDuChamp`). Puis l'écran « L'édition est créée » (T-187).
    - En réglages, « Enregistrer » à chaque étape, et JAMAIS une carte dans une
      carte : le rail et le corps sont deux verres posés côte à côte, sans cadre
@@ -35,7 +40,7 @@
    (`ListeMagazines`) ; l'aperçu de la page des participants sous le message
    d'accueil (`ApercuDepot`). L'ancienne version : archive/formulaire-champs-navigateur-2026-10/. */
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { suggestionEmail } from "@/lib/atelier/questionnaire";
 import {
@@ -58,13 +63,26 @@ import {
   textePlage,
 } from "@/lib/collectif/calendrier";
 import { phraseMigrationAbsente } from "@/lib/collectif/atelierPhotos";
+import { plafondLienMax } from "@/lib/collectif/plafonds";
 import DemandesClient from "./DemandesClient";
 import { instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { formaterJour } from "@/lib/collectif/livraison";
-import { accueilParDefaut, ETAPES_EDITION, lireSaisieEdition, rangEtapeDuChamp, VALEURS_RAPIDES } from "@/lib/collectif/saisie";
+import {
+  accueilParDefaut,
+  ETAPES_EDITION,
+  lireSaisieEdition,
+  obligatoiresManquants,
+  phraseManque,
+  rangEtape,
+  rangEtapeDuChamp,
+  SOUS_TITRE_ETAPE_CREATION,
+  VALEURS_RAPIDES,
+  type CleEtape,
+} from "@/lib/collectif/saisie";
 import type { DemandeEnBase } from "@/lib/collectif/demandes";
 import ApercuDepot from "./ApercuDepot";
 import Calendrier from "./Calendrier";
+import { ecouterEtape, etapeDemandee, oublierEtape } from "./etapeDemandee";
 import ListeMagazines, { type MagazineFormulaire } from "./ListeMagazines";
 import Pastille from "./Pastille";
 import "./formulaire.css";
@@ -113,6 +131,8 @@ type Props =
       plafondClient: number | null;
       /** La base n'a pas la colonne `ouverture_le` (migration 20261023) : le champ le dit et ne propose rien. */
       ouvertureIndisponible?: boolean;
+      /** L'étape à ouvrir d'emblée (« Compléter », dans l'encart de la vue d'ensemble) : `?etape=devis`. */
+      etapeInitiale?: CleEtape;
     };
 
 type Erreurs = Record<string, string>;
@@ -130,10 +150,13 @@ const SEGMENTS_MUR = [
 
 const DERNIERE = ETAPES_EDITION.length - 1;
 
-/** Une étape est « faite » si on l'a vue et que ses champs exigés sont remplis. */
+/** Ce que lit un chiffre vide du devis : jamais « à fixer », qui se lisait comme un reproche (planche 7). */
+const A_COMPLETER_PLUS_TARD = "à compléter plus tard";
+
+/** Une étape est « faite » si on l'a vue et que ses champs exigés sont remplis (seule la première en exige). */
 function etapeComplete(i: number, v: ValeursEdition): boolean {
-  if (i === 0) return Boolean(v.organisation.trim() && v.evenement.trim() && v.responsable_email.trim());
-  if (i === 2) return v.magazines.length > 0 && v.magazines.every((m) => m.nom.trim());
+  if (i === 0) return obligatoiresManquants(v).length === 0;
+  if (i === 2) return v.magazines.length > 0;
   return true;
 }
 
@@ -153,8 +176,13 @@ export default function FormulaireEdition(props: Props) {
   const [erreurs, setErreurs] = useState<Erreurs>({});
   const [message, setMessage] = useState<{ ok: boolean; texte: string } | null>(null);
   const [envoi, setEnvoi] = useState(false);
-  const [etape, setEtape] = useState(0);
-  const [vues, setVues] = useState<number[]>([0]);
+  /* « Compléter » (l'encart de la vue d'ensemble) ouvre d'emblée l'étape où vit le champ : par l'adresse (`?etape=`, lue
+     par la page serveur) ou, si l'onglet n'était pas encore monté, par la demande qui l'attendait (`etapeDemandee`). */
+  const [etape, setEtape] = useState(() => {
+    const demandee = rangEtape(!creation && props.etapeInitiale ? props.etapeInitiale : etapeDemandee());
+    return demandee ?? 0;
+  });
+  const [vues, setVues] = useState<number[]>(() => [0, etape].filter((x, i, l) => l.indexOf(x) === i));
   /* Le calendrier ouvert, et s'il prend le focus (ouvert au clavier ou par son bouton). */
   const [ouvert, setOuvert] = useState<Ouvert | null>(null);
   const [focusCalendrier, setFocusCalendrier] = useState(false);
@@ -169,11 +197,26 @@ export default function FormulaireEdition(props: Props) {
   /* L'heure d'ouverture en cours de frappe : effacée un instant pour en taper une autre, elle ne change pas la valeur (null = on suit le champ). */
   const [heureSaisie, setHeureSaisie] = useState<string | null>(null);
 
+  /* Les demandes d'étape suivantes (le formulaire est monté, l'onglet est masqué) : l'encart les envoie. */
+  const demanderIci = useRef<(cle: string) => void>(() => undefined);
+  useEffect(() => {
+    demanderIci.current = (cle) => {
+      const rang = rangEtape(cle);
+      if (rang !== null) aller(rang);
+    };
+  });
+  useEffect(() => {
+    oublierEtape();
+    return ecouterEtape((cle) => demanderIci.current(cle));
+  }, []);
+
   const maintenantMs = Date.parse(props.maintenant);
   const aujourdhui = versChampParis(props.maintenant).slice(0, 10);
   const cloture = lireChampCloture(v.cloture_local);
   const puces = pucesCloture(aujourdhui, v.cloture_local);
   const suggestion = v.responsable_email.includes("@") ? suggestionEmail(v.responsable_email.trim().toLowerCase()) : null;
+  /* Création : les quatre champs obligatoires encore vides. « Créer l'édition » s'active quand il n'en reste aucun. */
+  const manquants = creation ? obligatoiresManquants(v) : [];
   const enErreur = [...new Set(Object.keys(erreurs).map(rangEtapeDuChamp))];
 
   const maj = <K extends keyof ValeursEdition>(champ: K, valeur: ValeursEdition[K]) => {
@@ -377,12 +420,13 @@ export default function FormulaireEdition(props: Props) {
   const texte = (
     champ: keyof ValeursEdition,
     label: string,
-    opts: { requis?: boolean; aide?: string; type?: string; placeholder?: string; large?: boolean } = {}
+    opts: { requis?: boolean; facultatif?: boolean; aide?: string; type?: string; placeholder?: string; large?: boolean } = {}
   ) => (
     <label className={`eca-champ${opts.large ? " eca-champ--large" : ""}`}>
       <span className="eca-champ-label">
         {label}
         {opts.requis ? " *" : ""}
+        {opts.facultatif ? <span className="eca-facultatif">facultatif</span> : null}
       </span>
       <input
         className="eca-input"
@@ -398,7 +442,8 @@ export default function FormulaireEdition(props: Props) {
   );
 
   /* Un chiffre en pastille « − 30 photos par personne + » (planche 11) : l'unité dedans,
-     le clavier toujours possible, vide = à fixer (ou facultatif), jamais pré-rempli. */
+     le clavier toujours possible, vide = « à fixer », « facultatif » ou « à compléter plus tard »
+     (le devis, planche 7), jamais pré-rempli. */
   const chiffre = (champ: keyof ValeursEdition, label: string, unite: string, aide: string, min: number, vide = "à fixer") => (
     <div className="eca-champ">
       <label className="eca-champ-label" htmlFor={`${uid}-${champ}`}>
@@ -703,13 +748,24 @@ export default function FormulaireEdition(props: Props) {
   const etapes: React.ReactNode[] = [
     /* 1 · Le client */
     <>
+      {/* Création : ce qui est obligatoire se dit en tête, et le reste peut attendre (planche 7). */}
+      {creation ? (
+        <p className="eca-oblig-ligne">
+          <b>*</b>{" "}Obligatoire. Tout le reste peut attendre : la fiche de l&apos;édition vous dira ce qui manque.
+        </p>
+      ) : null}
       <div className="eca-deux-champs">
         {texte("organisation", "Organisation", { requis: true, placeholder: "Lycée Montaigne, Maison Aubier…" })}
         {texte("evenement", "Nom de l'événement", { requis: true, placeholder: "Promo 2026, Séminaire d'automne…" })}
       </div>
-      {choix("registre", "Le ton de l'espace", TONS, "Tout l'espace et les mails parlent ainsi.")}
+      {choix(
+        "registre",
+        "Le ton de l'espace",
+        TONS,
+        creation ? "Choisi d'office : « Vous ». Tout l'espace et les mails parlent ainsi." : "Tout l'espace et les mails parlent ainsi."
+      )}
       <div className="eca-deux-champs">
-        {texte("responsable_nom", "Nom du responsable")}
+        {texte("responsable_nom", "Nom du responsable", { requis: creation })}
         {texte("responsable_email", "E-mail du responsable", {
           requis: true,
           type: "email",
@@ -725,9 +781,12 @@ export default function FormulaireEdition(props: Props) {
         </p>
       ) : null}
       {texte("rdv_url", "Lien de rendez-vous (Google)", {
+        facultatif: true,
         type: "url",
         placeholder: "https://calendar.app.google/…",
-        aide: "Le client l'ouvre depuis son espace pour prendre rendez-vous, tant que les créneaux de l'atelier n'y sont pas reliés. https:// seulement.",
+        aide: creation
+          ? "Le client l'ouvre depuis son espace pour prendre rendez-vous. https:// seulement."
+          : "Le client l'ouvre depuis son espace pour prendre rendez-vous, tant que les créneaux de l'atelier n'y sont pas reliés. https:// seulement.",
       })}
       {creation ? (
         <p className="eca-champ-aide">
@@ -904,10 +963,10 @@ export default function FormulaireEdition(props: Props) {
     <>
       {/* Une poubelle par ligne (planche 10) : la règle est `retraitMagazine`, relue par le PATCH. */}
       <div className="eca-champ eca-fm-champ-mags">
-        <ListeMagazines magazines={v.magazines} onChange={(m) => maj("magazines", m)} invalide={Boolean(erreurs.magazines)} />
+        <ListeMagazines magazines={v.magazines} onChange={(m) => maj("magazines", m)} invalide={Boolean(erreurs.magazines)} nomsAuto={creation} />
         <span className="eca-champ-aide">
           {creation
-            ? "Chaque magazine a son brief : le client le compose pièce par pièce sur le mur (palette, typographies, doubles pages, couvertures), d'un seul style ou de plusieurs."
+            ? "Chaque magazine a son brief : le client le compose pièce par pièce sur le mur (palette, typographies, doubles pages, couvertures), d'un seul style ou de plusieurs. Il s'appelle « Magazine 1 » d'office : le renommer se fait ici ou plus tard, dans les réglages."
             : "Chaque magazine a son brief : le client le compose pièce par pièce sur le mur. Un magazine encore vide se retire ; à l'enregistrement, les suivants prennent son numéro."}
         </span>
         {erreur("magazines")}
@@ -932,14 +991,21 @@ export default function FormulaireEdition(props: Props) {
     /* 4 · Les photos */
     <>
       <div className="eca-deux-champs">
-        {chiffre("plafond_participant_atelier", "Par personne", "photos par personne", "Le responsable peut baisser ce nombre, jamais le dépasser.", 1)}
+        {chiffre(
+          "plafond_participant_atelier",
+          "Par personne",
+          "photos par personne",
+          `Facultatif, un plafond de sécurité : sans lui, un lien porte jusqu'à ${plafondLienMax({ plafond_participant_atelier: null })} photos par personne. Le responsable peut baisser ce nombre, jamais le dépasser.`,
+          1,
+          "facultatif"
+        )}
         {/* D27 (T-195, Mathias le 20/10) : vide = pas de limite pour toute l'édition, jamais un chiffre deviné. */}
         {chiffre("plafond_total", "Pour toute l'édition", "photos au total", "Compte tout le monde, sauf l'atelier. Laisser vide : pas de limite pour toute l'édition.", 1, "sans limite")}
       </div>
       {props.mode === "modification" ? (
         <p className="eca-champ-aide">
           Réglé par le responsable au curseur :{" "}
-          {props.plafondClient === null ? "pas encore (le plafond de l'atelier s'applique)" : `${props.plafondClient} photos par personne`}.
+          {props.plafondClient === null ? `pas encore${v.plafond_participant_atelier.trim() ? " (le plafond de l'atelier s'applique)" : ""}` : `${props.plafondClient} photos par personne`}.
         </p>
       ) : null}
       {chiffre(
@@ -977,19 +1043,26 @@ export default function FormulaireEdition(props: Props) {
 
     /* 6 · Le devis */
     <>
+      {/* Rien n'est obligatoire ici : la fiche de l'édition garde la liste de ce qui manque (planche 7). */}
+      <p className="eca-encart eca-encart--doux">
+        {"Rien n'est obligatoire dans cette étape. Remplissez ce que vous savez : "}
+        <b>la fiche de l&apos;édition liste ce qui manque</b>
+        {", et le devis se complète quand le client a répondu."}
+      </p>
       <div className="eca-deux-champs">
-        {chiffre("pagination_prevue", "Pagination prévue au devis", "pages", "Indicative : la pagination réelle se lit dans chaque PDF déposé.", 1)}
-        {chiffre("tirage", "Tirage prévu au devis", "exemplaires", "Le client le lit dans ses documents.", 1)}
-        {chiffre("tours_inclus", "Tours de corrections inclus", "tours", "Les tours de bon à tirer compris dans le devis.", 1)}
+        {chiffre("pagination_prevue", "Pagination prévue au devis", "pages", "Indicative : la pagination réelle se lit dans chaque PDF déposé.", 1, A_COMPLETER_PLUS_TARD)}
+        {chiffre("tirage", "Tirage prévu au devis", "exemplaires", "Le client le lit dans ses documents.", 1, A_COMPLETER_PLUS_TARD)}
+        {chiffre("tours_inclus", "Tours de corrections inclus", "tours", "Les tours de bon à tirer compris dans le devis.", 1, A_COMPLETER_PLUS_TARD)}
         {chiffre(
           "nb_propositions_couverture",
           "Propositions de couverture au premier tour",
           "propositions",
           "Montrées avec le premier bon à tirer. Vide : le premier tour ne se publie pas.",
-          1
+          1,
+          A_COMPLETER_PLUS_TARD
         )}
       </div>
-      <p className="eca-champ-aide">{"Aucun chiffre n'est proposé d'avance : un champ vide reste « à fixer »."}</p>
+      <p className="eca-champ-aide">{`Aucun chiffre n'est proposé d'avance : un champ vide reste « ${A_COMPLETER_PLUS_TARD} ».`}</p>
     </>,
   ];
 
@@ -1003,9 +1076,11 @@ export default function FormulaireEdition(props: Props) {
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
-        /* Entrée dans un champ : en création, l'étape suivante ; au bout, ou en réglages, l'envoi. */
-        if (creation && etape < DERNIERE) aller(etape + 1);
-        else void envoyer();
+        /* Entrée dans un champ : en création, l'étape suivante, JAMAIS la création (« Créer l'édition » est un geste voulu,
+           planche 7) ; en réglages, l'enregistrement. */
+        if (creation) {
+          if (etape < DERNIERE) aller(etape + 1);
+        } else void envoyer();
       }}
     >
       <ol ref={rail} className="eca-form-rail" aria-label="Les étapes">
@@ -1022,7 +1097,14 @@ export default function FormulaireEdition(props: Props) {
                 <span className="eca-form-signe" aria-hidden="true">
                   {statut === "fait" ? "✓" : statut === "erreur" ? "!" : i + 1}
                 </span>
-                <span>{et.nom}</span>
+                {creation ? (
+                  <span className="eca-pas-txt">
+                    {et.nom}
+                    <small>{SOUS_TITRE_ETAPE_CREATION[et.cle]}</small>
+                  </span>
+                ) : (
+                  <span>{et.nom}</span>
+                )}
               </button>
             </li>
           );
@@ -1045,22 +1127,42 @@ export default function FormulaireEdition(props: Props) {
               </button>
             ) : null}
           </span>
-          {/* ⚠️ Deux CLÉS distinctes : sans elles, React garde le même <button> et le passe en
-              `submit` pendant le clic sur « Le devis → », et le navigateur envoie le formulaire
-              (vu à la recette du 19/10 : l'édition se créait sans passer par la dernière étape). */}
-          {creation && suivante ? (
-            <button key="suivante" type="button" className="eca-bouton eca-bouton--plein" aria-label={`Étape suivante : ${suivante.nom}`} onClick={() => aller(etape + 1)}>
-              {suivante.nom} →
-            </button>
+          {/* ⚠️ Chaque bouton a sa CLÉ et son type FIXE : sans elles, React garde le même <button> et le passe
+              en `submit` pendant le clic sur « Le devis → », et le navigateur envoie le formulaire (vu à la recette
+              du 19/10 : l'édition se créait sans passer par la dernière étape). Depuis la planche 7 (21/10),
+              « Créer l'édition » est là à CHAQUE étape, et c'est un `button` qui n'envoie que par son clic :
+              la touche Entrée ne crée jamais par erreur. */}
+          {creation ? (
+            <span className="eca-form-actions">
+              {suivante ? (
+                <button key="suivante" type="button" className="eca-bouton" aria-label={`Étape suivante : ${suivante.nom}`} onClick={() => aller(etape + 1)}>
+                  {suivante.nom} →
+                </button>
+              ) : null}
+              <button
+                key="creer"
+                type="button"
+                className="eca-bouton eca-bouton--plein"
+                disabled={envoi || manquants.length > 0}
+                aria-describedby={`${uid}-creer-aide`}
+                onClick={() => void envoyer()}
+              >
+                {envoi ? "Enregistrement…" : "Créer l'édition"}
+              </button>
+            </span>
           ) : (
             <button key="envoyer" type="submit" className="eca-bouton eca-bouton--plein" disabled={envoi}>
-              {envoi ? "Enregistrement…" : creation ? "Créer l'édition" : "Enregistrer les modifications"}
+              {envoi ? "Enregistrement…" : "Enregistrer les modifications"}
             </button>
           )}
         </div>
-        {creation && etape === DERNIERE ? (
-          <p className="eca-champ-aide eca-form-rien">
-            {"Rien ne part chez le client à cette étape : l'écran suivant vous propose d'envoyer les liens."}
+        {creation ? (
+          <p id={`${uid}-creer-aide`} className="eca-champ-aide eca-form-rien">
+            {manquants.length > 0
+              ? phraseManque(manquants)
+              : etape === 0
+                ? "Les cinq étapes suivantes sont facultatives : vous pouvez créer l'édition dès maintenant. Rien ne part chez le client."
+                : "Rien ne part chez le client à cette étape : l'écran suivant vous propose d'envoyer les liens."}
           </p>
         ) : null}
         {message ? (

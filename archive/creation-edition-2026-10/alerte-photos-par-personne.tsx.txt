@@ -1,0 +1,20 @@
+// Extrait de src/app/admin/collectif/[id]/page.tsx (vue d'ensemble de la fiche), tel qu'il était avant le 21/10/2026.
+// Texte seul : ce n'est pas un module (aucun import, hors du build).
+
+  /* T-195 : un plafond PAR PERSONNE qui manque ferme le lien des participants (la règle de
+     `placeRestante`, par `depotRegle`) ; tant que la collecte est ouverte, la fiche le dit. Un total
+     vide, lui, ne bloque rien (D27 : pas de limite pour toute l'édition), donc pas d'alerte. */
+  const parPersonneManque = etat === "preparation" && !depotRegle(e, { sansPlafond: false });
+
+      {parPersonneManque || devisEnAttente.length ? (
+        <div className="eca-alertes" role="status">
+          {parPersonneManque ? (
+            <a href="?onglet=reglages" data-onglet="reglages" className="eca-bandeau eca-bandeau--chaud">
+              <span className="eca-point" aria-hidden="true" />
+              <span>
+                <strong>Photos par personne : à régler.</strong>
+                {" "}Le lien des participants reste fermé ; seuls les liens de contribution qui ont leur propre nombre reçoivent des photos. Réglages et liens →
+              </span>
+            </a>
+          ) : null}
+          {/* … puis les alertes « devis à envoyer » (inchangées) */}

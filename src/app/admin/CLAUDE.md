@@ -141,6 +141,14 @@ dossier du client), `styles` et `styles/[id]` (l'éditeur). Toutes ses écriture
 sont sous `/api/admin/collectif/*`, revérifient l'admin et journalisent dans
 `collectif_evenements`. Sa feuille `collectif.css` est scopée `.eca-root`.
 
+**Créer une édition avec ce qu'on sait déjà (21/10/2026, planche 7)** : quatre champs obligatoires
+(organisation, événement, NOM et e-mail du responsable), « Créer l'édition » dès la première étape, un
+« Magazine 1 » d'office, aucun chiffre proposé ; la vue d'ensemble de la fiche porte un encart « À compléter »
+(`[id]/ACompleter.tsx`, liste PURE `lib/collectif/aCompleter.ts`) qui remplace l'alerte « Photos par personne :
+à régler » et dont chaque bouton « Compléter » ouvre l'étape du formulaire où vit le champ. Le détail et les
+pièges (nom de classe `eca-legende` pris, Entrée qui ne crée jamais, nom exigé à la création seulement) sont dans
+`src/lib/collectif/CLAUDE.md`, section « Créer avec ce qu'on sait déjà ».
+
 **Les personnes, la corbeille, l'ouverture du dépôt (20/10/2026, T-198, T-199, migration 20261023)** :
 l'onglet Photos de la fiche porte `PanneauPersonnes` (adresse ENTIÈRE, renommer, fusionner dans une
 fenêtre en portail, « Fusions passées » à défaire) et `PanneauCorbeille` (restaurer, « Effacer

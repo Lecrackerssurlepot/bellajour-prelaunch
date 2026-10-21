@@ -381,3 +381,60 @@
     margin: -8px 0 8px 12px;
   }
 }
+
+/* ───────── Créer une édition avec ce qu'on sait déjà (planche 7 du 21/10, validée par Mathias) ─────────
+   Quatre champs obligatoires marqués d'un « * », le reste « facultatif » ; « Créer l'édition » dès la première
+   étape. ⚠️ Cette feuille arrive AVANT `collectif.css` : ce qui reprend une règle de celle-ci (`.eca-encart`)
+   prend un sélecteur PLUS précis, jamais l'ordre. */
+
+/* La pastille « facultatif » à côté d'un libellé (le lien de rendez-vous). */
+.eca-root .eca-facultatif {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--bj-veil-6);
+  color: var(--bj-text-soft);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+/* La ligne de tête de la création : « * Obligatoire. Tout le reste peut attendre… ». (⚠️ pas `eca-legende` : ce nom est pris, par les <legend> de l'éditeur de styles.) */
+.eca-root .eca-oblig-ligne {
+  margin: 0 0 4px;
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+  font-size: 13px;
+  color: var(--bj-text-soft);
+}
+.eca-root .eca-oblig-ligne b {
+  color: var(--bj-action);
+}
+/* Le rail de la création dit sous chaque étape ce qu'elle demande. */
+.eca-root .eca-pas-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.eca-root .eca-pas-txt small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--bj-text-faint);
+}
+/* L'encart rassurant de l'étape « Le devis » : rien n'est obligatoire ici. */
+.eca-root .eca-encart.eca-encart--doux {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bj-action-soft);
+  color: var(--bj-text);
+  font-size: 13.5px;
+}
+/* « Étape suivante » et « Créer l'édition » côte à côte, au pied de chaque étape. */
+.eca-root .eca-form-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}

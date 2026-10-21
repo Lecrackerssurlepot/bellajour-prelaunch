@@ -10,10 +10,14 @@
      est grisée : au survol (ou au toucher, sur téléphone) elle dit pourquoi et propose
      de le renommer. La règle est `retraitMagazine` (saisie.ts), relue par le PATCH
      (`planMagazines`), qui répond 409 si le magazine a été commencé entre-temps.
-   - Il reste toujours au moins un magazine. */
+   - Il reste toujours au moins un magazine.
+   - À la CRÉATION (`nomsAuto`, planche 7 du 21/10) : le premier s'appelle « Magazine 1 » d'office, chaque
+     magazine ajouté prend « Magazine <rang> », et un retrait resserre ces noms-là (un nom choisi ne bouge
+     pas). Un nom vidé à la main se remplit à l'enregistrement (`lireSaisieEdition`), jamais pendant la
+     frappe. En réglages, rien de tel : un magazine garde son nom. */
 
 import { Fragment, useId, useRef, useState } from "react";
-import { MAX_MAGAZINES, retirerMagazine, retraitMagazine, type EtiquetteMagazine } from "@/lib/collectif/saisie";
+import { MAX_MAGAZINES, nomMagazineParDefaut, renumeroterNomsParDefaut, retirerMagazine, retraitMagazine, type EtiquetteMagazine } from "@/lib/collectif/saisie";
 
 export type MagazineFormulaire = {
   id: string | null;
@@ -29,6 +33,8 @@ type Props = {
   magazines: MagazineFormulaire[];
   onChange: (magazines: MagazineFormulaire[]) => void;
   invalide: boolean;
+  /** Création : les noms d'office (« Magazine 1 »…) suivent le rang à l'ajout et au retrait. */
+  nomsAuto?: boolean;
 };
 
 function Poubelle() {
@@ -39,7 +45,7 @@ function Poubelle() {
   );
 }
 
-export default function ListeMagazines({ magazines, onChange, invalide }: Props) {
+export default function ListeMagazines({ magazines, onChange, invalide, nomsAuto = false }: Props) {
   const uid = useId();
   const compteur = useRef(0);
   /* La bulle d'une poubelle grisée ouverte au toucher (le survol suffit à la souris, en CSS). */
@@ -82,7 +88,8 @@ export default function ListeMagazines({ magazines, onChange, invalide }: Props)
                     title={`Retirer « ${nom} »`}
                     onClick={() => {
                       setBulle(null);
-                      onChange(retirerMagazine(magazines, i));
+                      const reste = retirerMagazine(magazines, i);
+                      onChange(nomsAuto ? renumeroterNomsParDefaut(reste) : reste);
                     }}
                   >
                     <Poubelle />
@@ -117,7 +124,7 @@ export default function ListeMagazines({ magazines, onChange, invalide }: Props)
           disabled={magazines.length >= MAX_MAGAZINES}
           onClick={() => {
             compteur.current += 1;
-            onChange([...magazines, { id: null, nom: "", vide: true, cle: `a${compteur.current}` }]);
+            onChange([...magazines, { id: null, nom: nomsAuto ? nomMagazineParDefaut(magazines.length + 1) : "", vide: true, cle: `a${compteur.current}` }]);
           }}
         >
           + Ajouter un magazine
