@@ -10,6 +10,28 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 21/10/2026 (soir) — Les planches téléphone et « Photos plus simple » en production (#308 à #312)
+
+- **#308** : créer une édition avec quatre champs (organisation, événement, nom et e-mail du
+  responsable), « Créer l'édition » à chaque étape, encart « À compléter » sur la fiche.
+- **#309** : message de partage en trois paragraphes ; le lien « Tous les participants » reste
+  une base technique qui reçoit, jamais montrée ni envoyée (« Sans groupe ») ; « Préparer les
+  groupes maintenant » ; mail « Votre espace est prêt » de 161 à 49 mots.
+- **#310** : barre du téléphone à 52 px (mesurée en production sur 8 écrans), titre unique, barre
+  flottante du bas.
+- **#311** : les liens en mosaïque de tuiles (règle `mosaiqueDesLiens`, calculée à l'ouverture),
+  les personnes d'un lien en pastilles, plus de texte souligné.
+- **#312** : « Photos plus simple » (planches 8 à 13, artifact J4b9Va39zggferjNuFe7u2) : le « + »
+  et un « … », Toutes par jour de prise de vue, vignettes propres, deux gestes (cœur = marque
+  `preselection`, Supprimer), fin de collecte en deux choix, partage natif de l'iPhone. Ne pas
+  publier, Doublons, Renommer, Fusionner retirés de l'espace client ; l'atelier les garde ; les
+  marques `signalee` restent en base.
+- **Vercel** : aucun déploiement automatique entre la fusion de #309 (15 h 54) et celle de #312 ;
+  production déployée à la main (`create_deployment`) pour df66e02 et c7509b1. Revenu seul avec
+  #312 (aperçu et production). Cause recherchée dans une session à part.
+- Non prouvé sur un vrai iPhone : feuille de partage native, appui long, intertitres collants
+  sur Safari, restauration d'une photo par son auteur, page Photos qui se remplit depuis zéro.
+
 ## 21/10/2026 (après-midi) — La recette solo de Mathias traitée : quatre PR, planches téléphone à valider
 
 Mathias a passé seul la plupart des 41 étapes de « 1. Tests seul » (Notion, B2B › Testing dev) sur
