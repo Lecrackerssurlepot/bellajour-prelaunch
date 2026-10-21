@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { DEMANDES_PAR_DEFAUT } from "@/lib/collectif/demandes";
 import { personnesAbsentes } from "@/lib/collectif/migration";
+import { nomMagazineParDefaut } from "@/lib/collectif/saisie";
 import { makeSupabase } from "@/lib/supabase";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
@@ -12,8 +13,10 @@ import "../collectif.css";
 /**
  * /admin/collectif/nouvelle — ouvrir une édition (PRD §8 ; T-186, planche 5 du 19/10).
  *
- * Six étapes, une à la fois (`FormulaireEdition`). Résultat : l'écran « L'édition
- * est créée » (`creee/[id]`, T-187), qui montre les trois liens et PROPOSE le mail.
+ * Six étapes, une à la fois (`FormulaireEdition`), et « Créer l'édition » dès la première :
+ * quatre champs obligatoires (planche 7 du 21/10), le reste peut attendre et la fiche
+ * de l'édition dit ce qui manque. Résultat : l'écran « L'édition est créée »
+ * (`creee/[id]`, T-187), qui montre les trois liens et PROPOSE le mail.
  * Rien ne part d'ici. Les chiffres partent VIDES : rien n'est pré-rempli.
  */
 
@@ -24,7 +27,7 @@ export const metadata = { title: "Atelier — nouvelle édition", robots: { inde
 
 /* Les seuls choix pré-cochés sont des CHOIX, pas des chiffres : le registre et
    le mur suivent la première option de la maquette, les contenus demandés ses
-   cases cochées. */
+   cases cochées, et un « Magazine 1 » est créé d'office (à renommer). */
 const VIERGE: ValeursEdition = {
   organisation: "",
   evenement: "",
@@ -47,7 +50,7 @@ const VIERGE: ValeursEdition = {
   responsable_email: "",
   responsable_nom: "",
   rdv_url: "",
-  magazines: [{ id: null, nom: "", vide: true }],
+  magazines: [{ id: null, nom: nomMagazineParDefaut(1), vide: true }],
 };
 
 export default async function PageNouvelle() {

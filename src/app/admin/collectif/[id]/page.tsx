@@ -7,7 +7,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { formaterHeureParis, formaterInstantParis, formaterJourParis, versChampParis } from "@/lib/collectif/dates";
 import { A_FAIRE_DEVIS, demandesDuFil, devisAEnvoyer, formaterJour } from "@/lib/collectif/livraison";
-import { depotRegle } from "@/lib/collectif/plafonds";
+import { aCompleter } from "@/lib/collectif/aCompleter";
 import { extraitDe } from "@/lib/collectif/messages";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { blocCollecte } from "@/lib/collectif/finCollecte";
@@ -22,11 +22,12 @@ import { quandRdv } from "@/lib/collectif/boite";
 import { PARTS_TEXTE } from "@/lib/collectif/brief";
 import { premierNouveau } from "@/lib/collectif/nouveaux";
 import { depotOuvert, quandOuvre } from "@/lib/collectif/ouverture";
-import { etiquetteMagazine } from "@/lib/collectif/saisie";
+import { etiquetteMagazine, ETAPES_EDITION, rangEtape, type CleEtape } from "@/lib/collectif/saisie";
 import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import { chargerEdition, compterConversationsEnAttente, compterNonLus } from "../donnees";
 import FormulaireEdition, { type ValeursEdition } from "../FormulaireEdition";
+import ACompleter from "./ACompleter";
 import PanneauCollecte from "./PanneauCollecte";
 import PanneauContenus from "./PanneauContenus";
 import PanneauCorbeille from "./PanneauCorbeille";
@@ -96,14 +97,17 @@ const COCHE = (
 
 const ONGLETS = ["apercu", "magazines", "photos", "messages", "documents", "rendezvous", "livraison", "reglages", "journal"] as const;
 
-export default async function PageFiche({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ onglet?: string }> }) {
+export default async function PageFiche({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ onglet?: string; etape?: string }> }) {
   const qui = await quiEstConnecte();
   if (!qui) redirect("/admin/login");
 
   const { id } = await params;
   if (!estUuid(id)) notFound();
-  const { onglet: ongletDemande } = await searchParams;
+  const { onglet: ongletDemande, etape: etapeDemandee } = await searchParams;
   const onglet = (ONGLETS as readonly string[]).includes(ongletDemande ?? "") ? (ongletDemande as string) : "apercu";
+  /* `?onglet=reglages&etape=devis` : « Compléter », dans l'encart de la vue d'ensemble, ouvre l'étape où vit le champ. */
+  const rangDemande = rangEtape(etapeDemandee);
+  const etapeInitiale: CleEtape | undefined = rangDemande === null ? undefined : ETAPES_EDITION[rangDemande].cle;
 
   /* `rendu` : l'instant de la lecture, pris AVANT elle (la barre garde la valeur la plus récente ; « Aujourd'hui » du fil, T-188). */
   const rendu = new Date();
@@ -218,12 +222,14 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             : { texte: "Brief à faire", ton: "gris" };
 
   /* Ce qui bloque ou attend l'atelier, en tête de la vue d'ensemble.
-     T-195 : un plafond PAR PERSONNE qui manque ferme le lien des participants (la règle de
-     `placeRestante`, par `depotRegle`) ; tant que la collecte est ouverte, la fiche le dit. Un total
-     vide, lui, ne bloque rien (D27 : pas de limite pour toute l'édition), donc pas d'alerte.
-     D26 (T-152) : une proposition acceptée n'engage pas ; le devis à signer reste à envoyer. */
-  const parPersonneManque = etat === "preparation" && !depotRegle(e, { sansPlafond: false });
+     D26 (T-152) : une proposition acceptée n'engage pas ; le devis à signer reste à envoyer.
+     Planche 7B (21/10) : « Photos par personne : à régler », qui parlait du lien général, est REMPLACÉE par l'encart
+     « À compléter » (`aCompleter`, lib/collectif/aCompleter.ts) : ce qui manque à l'édition, pourquoi, et où le régler.
+     Le plafond par personne n'y est plus qu'un plafond de sécurité facultatif (100 sans plafond d'atelier). */
   const devisEnAttente = devisAEnvoyer(documents);
+  /* Le client peut déjà prendre rendez-vous par l'agenda de l'atelier : le lien de rendez-vous n'est plus le seul chemin. */
+  const rdvParAgenda = !rdvAbsent && compteAgenda() !== null && listeInters.some((i) => i.cle === e.interlocuteur_cle && Boolean(i.agenda_id));
+  const lignesACompleter = aCompleter(e, lu.fiche.liens, { etat, archivee: Boolean(e.archive_le), rdvParAgenda });
 
   const pluriel = (n: number, mot: string) => `${n.toLocaleString("fr-FR")} ${mot}${n > 1 ? "s" : ""}`;
   const couverturesAimees = (n: number) => (n === 0 ? "aucune couverture aimée" : `${n} couverture${n > 1 ? "s" : ""} aimée${n > 1 ? "s" : ""}`);
@@ -244,17 +250,8 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
         ))}
       </ol>
 
-      {parPersonneManque || devisEnAttente.length ? (
+      {devisEnAttente.length ? (
         <div className="eca-alertes" role="status">
-          {parPersonneManque ? (
-            <a href="?onglet=reglages" data-onglet="reglages" className="eca-bandeau eca-bandeau--chaud">
-              <span className="eca-point" aria-hidden="true" />
-              <span>
-                <strong>Photos par personne : à régler.</strong>
-                {" "}Le lien des participants reste fermé ; seuls les liens de contribution qui ont leur propre nombre reçoivent des photos. Réglages et liens →
-              </span>
-            </a>
-          ) : null}
           {devisEnAttente.map((d) => (
             <a key={d.id} href="?onglet=documents" data-onglet="documents" className="eca-bandeau eca-bandeau--chaud">
               <span className="eca-point" aria-hidden="true" />
@@ -266,6 +263,8 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
           ))}
         </div>
       ) : null}
+
+      <ACompleter lignes={lignesACompleter} />
 
       <div className="eca-cartes">
         <section className="eca-carte">
@@ -613,6 +612,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
                 ouverteLe={versChampParis(e.created_at).slice(0, 10)}
                 plafondClient={e.plafond_participant_client}
                 ouvertureIndisponible={ouvertureAbsente}
+                etapeInitiale={etapeInitiale}
               />
               <div className="eca-pile">
                 <PanneauLiens id={e.id} liens={liens} ouverture={ouverture} />

@@ -3025,3 +3025,77 @@
     flex: 1;
   }
 }
+
+/* ───────── L'encart « À compléter » de la vue d'ensemble (planche 7B du 21/10, validée par Mathias) ─────────
+   Ce qui manque à l'édition, dans l'ordre où ça compte, pourquoi, et un bouton qui ouvre le bon réglage.
+   Trois niveaux : « bloque les dépôts » (ambre), « conseillé » (bleu), « facultatif » (gris). Il remplace
+   l'alerte « Photos par personne : à régler » et vit sous la bande des étapes (`ACompleter.tsx`). */
+.eca-root .eca-acompleter {
+  margin-bottom: 14px;
+  gap: 8px;
+}
+.eca-root .eca-ac-nb {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--bj-action-soft);
+  color: var(--bj-action);
+  font-family: var(--bj-font-ui);
+  font-size: 13px;
+  font-weight: 600;
+  vertical-align: 3px;
+}
+.eca-root .eca-ac-intro {
+  margin: 0 0 4px;
+}
+.eca-root .eca-ac-liste {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.eca-root .eca-ac-ligne {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+}
+.eca-root .eca-ac-ligne + .eca-ac-ligne {
+  border-top: 1px solid var(--bj-veil-8);
+}
+.eca-root .eca-ac-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.eca-root .eca-ac-texte strong {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.eca-root .eca-point--gris {
+  background: var(--bj-text-faint);
+}
+/* Sur téléphone : le texte garde la ligne, la puce et le bouton passent dessous. */
+@media (max-width: 720px) {
+  .eca-root .eca-ac-ligne {
+    grid-template-columns: 12px minmax(0, 1fr) auto;
+    row-gap: 8px;
+  }
+  .eca-root .eca-ac-ligne .eca-ac-texte {
+    grid-column: 2 / -1;
+  }
+  .eca-root .eca-ac-ligne .eca-puce {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .eca-root .eca-ac-ligne .eca-bouton {
+    grid-column: 3;
+  }
+}
