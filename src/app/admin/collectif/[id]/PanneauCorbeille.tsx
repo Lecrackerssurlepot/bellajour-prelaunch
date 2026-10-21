@@ -42,7 +42,7 @@ type Reponse = { statut: number; json: Record<string, unknown> | null };
  * migration, manque à l'édition) : le panneau le dit tout de suite, sans interroger une route qui répondrait 503.
  * Sans cette certitude, c'est la route qui le dit (503 `migration_personnes_absente`), et l'écran dit la même chose.
  */
-export default function PanneauCorbeille({ id, migrationAbsente = false }: { id: string; migrationAbsente?: boolean }) {
+export default function PanneauCorbeille({ id, migrationAbsente = false, version }: { id: string; migrationAbsente?: boolean; version: number }) {
   const router = useRouter();
   const titre = useId();
   const [etat, setEtat] = useState<Etat>(migrationAbsente ? { genre: "absente" } : { genre: "chargement" });
@@ -79,9 +79,10 @@ export default function PanneauCorbeille({ id, migrationAbsente = false }: { id:
     }
   }, [adresse]);
 
+  /* `version` : le nombre de photos de la fiche. Une photo supprimée par un participant le change, la liste se relit. */
   useEffect(() => {
     if (!migrationAbsente) void lire();
-  }, [lire, migrationAbsente]);
+  }, [lire, migrationAbsente, version]);
 
   async function appeler(corps: Record<string, unknown>): Promise<Reponse> {
     const rep = await fetch(adresse, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corps) });

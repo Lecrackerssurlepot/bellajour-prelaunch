@@ -24,9 +24,12 @@
 
    La grille se lit PAR PAGES (120 vignettes signées à la fois) et se complète
    en descendant ; le chargement par pages observe SA zone de défilement
-   (`root` de l'IntersectionObserver), nul sur téléphone. « 12 nouvelles · Les
-   voir » garde la lecture légère de 30 s, onglet visible (T-181). L'équipe
-   voit tout, sans un geste qui écrive et sans aucun lien.
+   (`root` de l'IntersectionObserver), nul sur téléphone. Les photos qui arrivent
+   (T-181, refait le 21/10) : une lecture légère toutes les 30 s, onglet visible,
+   qui marche SANS repère (une édition qui part de zéro) ; les grands chiffres la
+   suivent, la grille s'ouvre d'elle-même quand c'est sans risque (rien de coché,
+   aucune photo agrandie, en haut), sinon « 12 nouvelles · Les voir ».
+   L'équipe voit tout, sans un geste qui écrive et sans aucun lien.
 
    Lot w2 (planches 3, 4 et 5 du 20/10, T-198, T-199) :
    - SUPPRIMER (corbeille 30 jours) dans la photo agrandie, dans la barre des
@@ -44,7 +47,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { phraseArrivees, SONDAGE_PHOTOS_MS, type Nouvelles } from "@/lib/collectif/arrivees";
+import { accueilDesArrivees, ceQuiABouge, corpsSondagePhotos, lireEtatSondage, phraseArrivees, seuilDeLInsertion, SONDAGE_PHOTOS_MS, type EtatSondage, type Nouvelles, type SituationPhotos } from "@/lib/collectif/arrivees";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { ERREUR_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
@@ -79,6 +82,7 @@ import {
   lienDeLaPhoto,
   liensDansLOrdre,
   LOT_ECRITURE,
+  montreLesDernieres,
   nombre,
   nombreDeFiltres,
   personnesDe,
@@ -217,7 +221,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* Les arrivées en direct (T-181) : la dernière arrivée déjà montrée, l'annonce de celles
      d'après, et le seuil au-delà duquel une vignette est marquée « nouvelle ». */
   const [vuJusqua, setVuJusqua] = useState<string | null>(null);
-  const [annonce, setAnnonce] = useState<{ texte: string; court: string; noms: string[] } | null>(null);
+  const [annonce, setAnnonce] = useState<{ texte: string; court: string; noms: string[]; depuis: string | null } | null>(null);
   const [seuilNouvelles, setSeuilNouvelles] = useState<string | null>(null);
   /* Les personnes de l'édition (planche 4) : lues à la première fiche ouverte, relues après un renommage ou une fusion. */
   const [personnes, setPersonnes] = useState<ListePersonnes | null>(null);
@@ -229,6 +233,10 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const fin = useRef<HTMLDivElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const version = useRef(0);
+  /* Le nombre de photos de la dernière lecture de la page 0 : le sondage relit la grille quand le serveur n'en compte plus autant. */
+  const photosDeLaGrille = useRef<number | null>(null);
+  /* Le dernier nombre pour lequel le sondage a relu la grille (jamais deux fois pour le même : pas de boucle). */
+  const dejaRelu = useRef<number | null>(null);
   /* La requête de la page 0 déjà lue : changer de liste ne relit la grille que si elle change. */
   const chargee = useRef<string | null>(null);
   /* Les photos de la dernière peinture, pour un geste qui reprend après une requête. */
@@ -273,6 +281,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           /* Tout ce qui est arrivé jusqu'ici est désormais compté : l'annonce s'efface. */
           setVuJusqua(json.stats.derniere);
           setAnnonce(null);
+          photosDeLaGrille.current = json.stats.photos;
         }
         setLiens(json.liens);
         setErreur(null);
@@ -414,32 +423,10 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     }
   }, [envoi.fermetures, moteur.enCours, moteur.arrivees, f, charger]);
 
-  /* Les photos arrivent-elles ? Une lecture LÉGÈRE toutes les 30 s, onglet visible (T-181) ;
-     la grille ne se relit qu'au clic sur « Les voir ». Les envois du responsable lui-même ne
-     s'annoncent pas : la grille se relit déjà à la fin de son envoi. */
-  useSondage(
-    async () => {
-      if (!vuJusqua) return;
-      const rep = await fetch("/api/collectif/photos/etat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token: p.token, depuis: vuJusqua }),
-      });
-      if (!rep.ok) return;
-      const j = (await rep.json()) as { photos: number; nouvelles: Nouvelles | null };
-      if (!j.nouvelles?.n) return;
-      setStats((s) => (s ? { ...s, photos: j.photos } : s));
-      const texte = phraseArrivees(j.nouvelles);
-      if (texte) setAnnonce({ texte, court: annonceCourte(j.nouvelles.participants, j.nouvelles.noms.map((x) => x.nom), j.nouvelles.personnes), noms: j.nouvelles.noms.map((x) => x.nom) });
-    },
-    SONDAGE_PHOTOS_MS,
-    p.ouverte
-  );
-
   /** « Les voir » : les photos d'UNE personne s'il n'y en a qu'une, sinon toutes ; les plus récentes en haut, marquées. */
   function voirArrivees() {
     if (!annonce) return;
-    setSeuilNouvelles(vuJusqua);
+    setSeuilNouvelles(seuilDeLInsertion(annonce.depuis));
     const seule = annonce.noms.length === 1 ? `qui:${clePersonne(annonce.noms[0])}` : null;
     version.current++;
     const nf: Filtres = { ...FILTRES_VIDES, personne: seule };
@@ -448,6 +435,9 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     setPhotos([]);
     setSuivante(0);
     garderAdresse(nf, "photos");
+    /* Les plus récentes sont en haut : on y revient (la zone de la grille sur ordinateur, la page au téléphone). */
+    zone.current?.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
     void charger(0, nf);
   }
 
@@ -635,6 +625,8 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   }
 
   const estCachee = (ph: Photo) => signalees[ph.id] ?? ph.signalee ?? false;
+  /* « nouvelle » : arrivée depuis la dernière vue ; le responsable ne voit pas SES photos comme nouvelles (l'équipe, si). */
+  const estNeuve = (ph: Photo) => seuilNouvelles !== null && ph.arrivee > seuilNouvelles && !(p.ecrire && ph.role === "responsable");
   const estCochee = (id: string) => (coches.tout ? !coches.ids.has(id) : coches.ids.has(id));
   const nbCoches = coches.tout ? Math.max(0, (totalVue ?? visibles.length) - coches.ids.size) : coches.ids.size;
   const cocherActif = p.ecrire && (modeCocher || nbCoches > 0);
@@ -845,6 +837,122 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   useEffect(() => {
     if (cleFiche && personnesLues === "non") void lirePersonnes();
   }, [cleFiche, personnesLues, lirePersonnes]);
+
+  /* ── Les photos arrivent : un sondage LÉGER, des chiffres qui suivent, une grille qui s'ouvre d'elle-même ──
+     (T-181, refait le 21/10/2026 après le test de Mathias : « il faut toujours refresh »).
+     Toutes les 30 s, onglet visible (`useSondage`), une lecture légère : le nombre de photos, les personnes, les
+     déclarations en route, et qui a envoyé quoi depuis le repère. Elle marche SANS repère (une édition qui part de zéro).
+     - Les grands chiffres suivent chaque sondage.
+     - La grille se relit d'elle-même (page 0, sans « Chargement… » ni erreur à l'écran) QUAND c'est sans risque :
+       `accueilDesArrivees` (rien de coché, aucune photo agrandie, la grille en haut, une vue qui range les dernières
+       arrivées en tête). Sinon, la pastille « N nouvelles · Les voir ».
+     Ce qui est arrivé du responsable lui-même ne s'annonce pas : la grille se relit déjà à la fin de son envoi. */
+  const instant = useRef<{ f: Filtres; onglet: Onglet; photos: number | null; vide: boolean; coches: boolean; agrandie: boolean; occupe: boolean; personnes: boolean } | null>(null);
+  useEffect(() => {
+    instant.current = {
+      f,
+      onglet,
+      photos: stats?.photos ?? null,
+      vide: stats?.photos === 0 && !stats.corbeille,
+      coches: modeCocher || coches.tout || coches.ids.size > 0,
+      agrandie: agrandi !== null,
+      occupe: occupe || chargement || progres !== null,
+      personnes: personnesLues === "oui",
+    };
+  });
+  /** La zone de défilement de la grille est tout en haut : une insertion ne pousse rien sous le doigt. */
+  function grilleEnHaut(): boolean {
+    const z = zone.current;
+    if (!z) return true;
+    if (window.matchMedia(REQUETE_TELEPHONE).matches) return z.getBoundingClientRect().top > -32;
+    return z.scrollTop < 32;
+  }
+  /** Ce que l'écran montre À CET INSTANT, relu après chaque `await` (la fermeture du rendu d'avant a vieilli). */
+  function situation(): SituationPhotos | null {
+    const i = instant.current;
+    if (!i) return null;
+    return { vide: i.vide, grilleVisible: i.onglet === "photos" && !i.f.corbeille, dernieresEnTete: montreLesDernieres(i.f), coches: i.coches, agrandie: i.agrandie, occupe: i.occupe, enHaut: grilleEnHaut() };
+  }
+  function annoncerArrivees(n: Nouvelles, depuis: string | null) {
+    const texte = phraseArrivees(n);
+    if (texte) setAnnonce({ texte, court: annonceCourte(n.participants, n.noms.map((x) => x.nom), n.personnes), noms: n.noms.map((x) => x.nom), depuis });
+  }
+  /**
+   * Relire la page 0 de la vue SANS bruit : ni « Chargement… », ni erreur (une panne attend le prochain sondage).
+   * Rien n'est posé si l'écran a bougé pendant la lecture (une photo cochée, ouverte, une autre vue).
+   * Rend `true` quand la grille a été remplacée.
+   */
+  async function relireSansBruit(nf: Filtres, repere: string | null, e: EtatSondage): Promise<boolean> {
+    const v0 = version.current;
+    try {
+      const json = await lirePage(0, nf);
+      const i = instant.current;
+      const s = situation();
+      if (v0 !== version.current || !i || !s || cleRequete(i.f) !== cleRequete(nf) || accueilDesArrivees(s) !== "inserer") return false;
+      /* La version n'avance QU'ICI, quand la grille est vraiment remplacée : une page en route d'avant est écartée, et
+         `chargement` retombe de lui-même (sa lecture ne le ferait plus, sa version n'est plus la bonne). */
+      const v1 = ++version.current;
+      setChargement(false);
+      chargee.current = cleRequete(nf);
+      photosDeLaGrille.current = json.stats.photos;
+      setPhotos(json.photos);
+      setSuivante(json.suivante);
+      setCompteurs(json.compteurs);
+      setStats(json.stats);
+      setArbre(json.arbre);
+      setCouvertures(json.couvertures ?? {});
+      setLiens(json.liens);
+      setErreur(null);
+      /* « nouvelle » : ce qui vient d'entrer (le responsable ne voit pas les siennes comme nouvelles). */
+      setSeuilNouvelles(seuilDeLInsertion(repere));
+      setVuJusqua(json.stats.derniere);
+      /* Une vue filtrée peut ne pas contenir tout ce qui est arrivé : la pastille reste pour le reste. */
+      const dedans = json.photos.filter((x) => x.arrivee > (repere ?? "")).length;
+      if (e.nouvelles && dedans < e.nouvelles.n && dedans < json.photos.length) annoncerArrivees(e.nouvelles, repere);
+      else setAnnonce(null);
+      if (estVueAlbums(nf) && json.arbre.vous.length) {
+        lirePage(0, nf, "vous")
+          .then((r) => {
+            if (v1 !== version.current) return;
+            const c = r.couvertures ?? {};
+            setCouvVous(c[cleResp("organisateur", "")] ?? Object.values(c)[0] ?? null);
+          })
+          .catch(() => {});
+      }
+      /* Les personnes déjà lues vieillissent aussi (leurs photos, les doublons proposés). */
+      if (i.personnes) void lirePersonnes();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  async function apresSondage(e: EtatSondage, repere: string | null) {
+    /* Les grands chiffres suivent chaque sondage, que la grille se relise ou non. */
+    setStats((s) => (s ? { ...s, photos: e.photos, personnes: e.personnes ?? s.personnes, enCours: e.enCours ?? s.enCours } : s));
+    if (!ceQuiABouge(e, photosDeLaGrille.current ?? e.photos, dejaRelu.current)) return;
+    const s = situation();
+    const i = instant.current;
+    if (s && i && accueilDesArrivees(s) === "inserer" && (await relireSansBruit(i.f, repere, e))) {
+      dejaRelu.current = e.photos;
+      return;
+    }
+    if (e.nouvelles) annoncerArrivees(e.nouvelles, repere);
+  }
+  useSondage(
+    async () => {
+      if (!stats) return;
+      const rep = await fetch("/api/collectif/photos/etat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(corpsSondagePhotos(p.token, vuJusqua, stats.photos)),
+      });
+      if (!rep.ok) return;
+      const etat = lireEtatSondage(await rep.json().catch(() => null));
+      if (etat) await apresSondage(etat, vuJusqua);
+    },
+    SONDAGE_PHOTOS_MS,
+    p.ouverte
+  );
 
   /** Renommer ou fusionner : la route, puis la fiche se rouvre sous le nom gardé (la grille est rangée par nom). */
   async function ecrirePersonne(corps: Record<string, unknown>): Promise<{ nom: string; n: number } | null> {
@@ -1346,7 +1454,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           {stats ? (
             <div className="ec-ph-chiffres ec-ph-ordi">
               <span className="ec-ph-chiffre">
-                <strong>{nombre(stats.photos)}</strong> photos reçues
+                <strong>{nombre(stats.photos)}</strong> photo{stats.photos > 1 ? "s" : ""} reçue{stats.photos > 1 ? "s" : ""}
               </span>
               <span className="ec-ph-chiffre">
                 <strong>{nombre(stats.personnes)}</strong> personne{stats.personnes > 1 ? "s" : ""}
@@ -1375,7 +1483,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                 </>
               ) : (
                 <>
-                  <b>{nombre(stats.photos)}</b> photos · <b>{nombre(stats.personnes)}</b> personne{stats.personnes > 1 ? "s" : ""} · <b>{nombre(stats.doublons)}</b> doublon{stats.doublons > 1 ? "s" : ""}
+                  <b>{nombre(stats.photos)}</b> photo{stats.photos > 1 ? "s" : ""} · <b>{nombre(stats.personnes)}</b> personne{stats.personnes > 1 ? "s" : ""} · <b>{nombre(stats.doublons)}</b> doublon{stats.doublons > 1 ? "s" : ""}
                 </>
               )}
             </p>
@@ -1439,7 +1547,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
             </aside>
 
             <div className="ec-ph-zone">
-              {f.corbeille ? <Corbeille token={p.token} tu={p.tu} onRestaurees={restaureesDeLaCorbeille} /> : null}
+              {f.corbeille ? <Corbeille token={p.token} tu={p.tu} version={stats?.photos ?? 0} onRestaurees={restaureesDeLaCorbeille} /> : null}
               {!f.corbeille ? (
               <>
               {!vide && !cleFiche ? (
@@ -1713,7 +1821,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     cocher={cocherActif}
                     estCochee={estCochee}
                     estCachee={estCachee}
-                    seuilNouvelles={seuilNouvelles}
+                    estNeuve={estNeuve}
                     quiDe={quiDe}
                     attente={chargement && photos.length > 0 && !albums ? 8 : 0}
                     onOuvrir={setAgrandi}

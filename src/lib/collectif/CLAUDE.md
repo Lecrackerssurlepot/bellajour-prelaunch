@@ -114,8 +114,21 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
 - ⚠️ **« Marquer lu » se fait par un EFFET** (`useMessagerie`), jamais au rendu : un
   préchargement de `<Link>` exécute la page. Le lien d'équipe ne marque rien.
 - La coquille (`edition/[token]/layout.tsx`) lit l'édition par `cache` (une requête pour layout
-  ET page) ; l'état du tiroir et de la bulle d'un verrou est rattaché au chemin, il se referme
-  seul à la navigation (aucun `setState` dans un effet).
+  ET page). ⚠️ **Le tiroir du menu (téléphone) se ferme à CHAQUE navigation** (21/10, test de Mathias :
+  « cela m'y emmène en laissant le menu ouvert ») : l'ouverture était « rattachée au chemin »
+  (`tiroirPour === chemin`) mais restait en mémoire après la navigation ; revenir plus tard sur ce
+  MÊME chemin (une carte du tableau de bord) rouvrait le tiroir tout seul. Deux gestes dans
+  `Coquille.tsx` : chaque entrée du menu le referme AU TOUCHER, et le nettoyage d'un effet
+  (`return () => setTiroirPour(null)`, même chose pour la bulle d'un verrou) vide la mémoire dès que
+  `ouvert` retombe. Aucun `setState` pendant le rendu ni dans le corps d'un effet (compilateur React).
+  Prouvé en Chrome sans tête à 375 px, avant (tiroir ouvert à l'arrivée) et après.
+- ⚠️ **Un layout ne se re-rend pas en navigation (Next 16)** : le menu (cadenas, pastille des non-lus) et
+  les écrans rendus au serveur vieillissent. `RelireAuRetour` (dans la coquille) fait
+  `router.refresh()` au RETOUR sur l'onglet (visible, 20 s au moins après la dernière lecture), seulement
+  pour `ECRANS_RELUS_AU_RETOUR` (arrivees.ts) : tableau de bord, documents, livraison, « Parler à
+  l'atelier ». Pas la page Photos (sa lecture légère), ni le bon à tirer ni le style : ils recopient leurs
+  données dans un état local (notes en cours, choix), un rafraîchissement serveur y serait ignoré, et le
+  bon à tirer re-signe toutes ses pages (les images se rechargeraient).
 
 **Phase 3 (13/10/2026), la collecte :**
 - **`depot.ts`** (pur) — `cleFichier` (nom|taille|date de modification de l'ORIGINAL),
@@ -443,10 +456,28 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
 - **Voir arriver sans recharger** : `/api/collectif/photos/etat` est une lecture LÉGÈRE (un
   compte en `head`, et les lignes arrivées depuis la dernière vue, `ARRIVEES_LUES_MAX`). La page
   Photos l'interroge toutes les 30 s, le tableau de bord chaque minute, jamais onglet caché
-  (`useSondage`, `arrivees.ts`). ⚠️ Ne jamais sonder `/api/collectif/photos` (une page, ses
-  doublons, 120 signatures) : il ne se relit qu'au clic sur « Les voir ». ⚠️ `depuis`
-  voyage TEL QUE la base l'a rendu : relu par `Date`, il perd ses microsecondes et la dernière
-  photo vue se recompterait. Les envois du responsable ne s'annoncent pas.
+  (`useSondage` : un `setTimeout` armé pour l'échéance, plus un `setInterval` de 10 s qui laissait
+  attendre 40 s). ⚠️ `depuis` voyage TEL QUE la base l'a rendu : relu par `Date`, il perd ses
+  microsecondes et la dernière photo vue se recompterait. Les envois du responsable ne s'annoncent pas.
+  **Refait le 21/10** (test de Mathias : « il faut toujours refresh ») :
+  - ⚠️ **Le sondage marche SANS repère** : il commençait par `if (!vuJusqua) return`, et le repère
+    (`stats.derniere`) vaut `null` tant qu'aucune photo n'est arrivée : une édition qui part de zéro ne
+    sondait JAMAIS. `corpsSondagePhotos` n'écrit `depuis` que s'il existe ; la route rend `photos` et
+    `derniere` sans lui.
+  - **Les grands chiffres suivent chaque sondage** : photos et personnes (la route demande `chiffres: true`,
+    relit les personnes sur le RÉSUMÉ seulement si quelque chose a bougé, `personnesAFournir`), et « en cours
+    d'arrivée ». Les DOUBLONS ne viennent pas du sondage (les repérer demande la grande lecture) : ils se
+    mettent à jour avec la relecture de la grille.
+  - **La grille s'ouvre d'elle-même** quand c'est sans risque (`accueilDesArrivees`, pur) : un écran vide, ou
+    rien de coché, aucune photo agrandie, aucune écriture en route, la zone de défilement en haut, dans une vue
+    qui range les dernières arrivées en tête (`montreLesDernieres` : Tout, un lien, une personne, un dossier,
+    les albums). Sinon la pastille « N nouvelles · Les voir ». `relireSansBruit` relit la page 0 sans
+    « Chargement… » ni erreur, ne pose rien si l'écran a bougé pendant la lecture, et la relit UNE fois par nombre
+    de photos (`ceQuiABouge`) : jamais en boucle. Le responsable ne voit pas ses propres photos « nouvelles ».
+  - ⚠️ Ne jamais sonder `/api/collectif/photos` à intervalle (une page, ses doublons, 120 signatures) : la
+    relecture de la page 0 ne part que sur un CHANGEMENT.
+  - Le tableau de bord lit le nombre et les participants dans la réponse du sondage et les montre aussitôt
+    (`router.refresh()` apporte dossiers et mosaïque, mais « ne repeint pas toujours » : 14/10).
 - « Toutes » montre la DERNIÈRE arrivée d'abord (ce qui arrive est en haut) ; « Par jour » garde
   l'ordre des jours de prise de vue.
 

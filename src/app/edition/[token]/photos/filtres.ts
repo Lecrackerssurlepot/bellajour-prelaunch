@@ -64,6 +64,13 @@ export function requeteDe(f: Filtres): { dossier: string; vue: VueRoute } {
 /** « Par lien » sans lien ouvert : les albums, pas de grille. */
 export const estVueAlbums = (f: Filtres) => f.mode === "liens" && !f.lien && !f.selection && !f.corbeille;
 
+/**
+ * La vue range les DERNIÈRES ARRIVÉES en tête (« Tout », un lien, une personne, un dossier, les albums « Par
+ * lien ») : une photo qui arrive y entre en haut. Pas Ma sélection, Doublons, Ne pas publier, l'ordre « Par jour »,
+ * un jour choisi, ni la corbeille : y insérer d'office déplacerait ce que l'on regarde (`accueilDesArrivees`).
+ */
+export const montreLesDernieres = (f: Filtres) => !f.selection && !f.corbeille && !f.doublons && !f.signalees && f.ordre === "recentes" && !f.jour;
+
 /** Combien de filtres sont actifs (le rond du bouton « Filtrer » du téléphone). */
 export function nombreDeFiltres(f: Filtres): number {
   return [f.lien, f.dossier, f.personne, f.jour].filter(Boolean).length + (f.doublons ? 1 : 0) + (f.selection ? 1 : 0) + (f.signalees ? 1 : 0);

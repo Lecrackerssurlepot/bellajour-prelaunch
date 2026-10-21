@@ -8,6 +8,7 @@ import { MIGRATION_COLLECTIF, TABLES_COLLECTIF } from "@/lib/collectif/migration
 import { LIBELLE_CAMP } from "@/lib/collectif/prochaine";
 import { etatMigration } from "@/lib/collectif/sante";
 import BarreAtelier, { liensEditions } from "../BarreAtelier";
+import RelireLaPage from "./RelireLaPage";
 import { phraseEnAttente } from "@/lib/collectif/nouveaux";
 import { compterConversationsEnAttente, listerEditions } from "./donnees";
 import "../admin.css";
@@ -75,6 +76,8 @@ export default async function PageCollectif({
   return (
     <div className="adm-root ate-root eca-root">
       <BarreAtelier monde="editions" collectif nonLus={nonLus} nonLusLe={lu.toISOString()} rafraichir liens={liensEditions("liste", nonLus)} />
+      {/* La liste se relit chaque minute onglet visible et au retour (une édition créée, une étape franchie). */}
+      <RelireLaPage />
 
       {/* La même tête que les particuliers : une phrase, le geste principal à droite. */}
       <header className="ate-header">

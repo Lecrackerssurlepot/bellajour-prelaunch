@@ -44,7 +44,11 @@ export const BASE_PAS_A_JOUR = "La mise à jour de la base n'est pas encore appl
 
 const FERMER = "M6 6l12 12M18 6 6 18";
 
-export default function Corbeille({ token, tu, onRestaurees }: { token: string; tu: boolean; onRestaurees: (photos: PhotoCorbeille[]) => void }) {
+/**
+ * `version` : le nombre de photos que la page compte. Quand il change (un participant a supprimé une photo de son
+ * téléphone, le sondage de la page l'a vu), la liste se relit d'elle-même, sans repasser par « Chargement ».
+ */
+export default function Corbeille({ token, tu, version, onRestaurees }: { token: string; tu: boolean; version: number; onRestaurees: (photos: PhotoCorbeille[]) => void }) {
   const v = (vous: string, toi: string) => (tu ? toi : vous);
   const [etat, setEtat] = useState<Etat>({ genre: "lecture" });
   const [coches, setCoches] = useState<ReadonlySet<string>>(new Set());
@@ -61,7 +65,13 @@ export default function Corbeille({ token, tu, onRestaurees }: { token: string; 
         if (fini) return;
         if (rep.status === 503 && json.error === ERREUR_PERSONNES_ABSENTE) setEtat({ genre: "absente" });
         else if (!rep.ok || !Array.isArray(json.photos)) setEtat({ genre: "erreur" });
-        else setEtat({ genre: "ok", photos: json.photos });
+        else {
+          const lues = json.photos;
+          setEtat({ genre: "ok", photos: lues });
+          /* Une photo cochée qui n'est plus à la corbeille (restaurée ailleurs, effacée) se décoche. */
+          const presentes = new Set(lues.map((x) => x.id));
+          setCoches((c) => (c.size && [...c].some((id) => !presentes.has(id)) ? new Set([...c].filter((id) => presentes.has(id))) : c));
+        }
       } catch {
         if (!fini) setEtat({ genre: "erreur" });
       }
@@ -69,7 +79,7 @@ export default function Corbeille({ token, tu, onRestaurees }: { token: string; 
     return () => {
       fini = true;
     };
-  }, [token]);
+  }, [token, version]);
 
   const photos = etat.genre === "ok" ? etat.photos : [];
   const n = etat.genre === "ok" ? photos.length : null;

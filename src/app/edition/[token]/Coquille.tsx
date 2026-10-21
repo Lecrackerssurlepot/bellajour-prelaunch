@@ -17,16 +17,20 @@
      pourquoi au survol (title) ET au tap (la bulle s'ouvre sous l'entrée).
      La règle vient de `verrousPour`, lue aussi par la page elle-même.
    - Sur téléphone, le menu devient un tiroir. Il se referme à chaque
-     navigation. */
+     navigation : au toucher d'une entrée (tout de suite, sans attendre que la
+     page d'arrivée soit prête), et au changement de chemin (retour arrière,
+     carte du tableau de bord), sans qu'aucune ouverture ne reste en mémoire. */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LOGO_MODE } from "@/lib/collectif/affichage";
+import { relireAuRetour } from "@/lib/collectif/arrivees";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
+import RelireAuRetour from "../_composants/RelireAuRetour";
 import PartageEquipe from "./PartageEquipe";
 
 /** Le signal qu'envoie la conversation quand elle a marqué les messages lus : la pastille s'éteint sans recharger. */
@@ -104,6 +108,19 @@ export default function Coquille(props: Props) {
   const setOuvert = (v: boolean | ((o: boolean) => boolean)) =>
     setTiroirPour((typeof v === "function" ? v(ouvert) : v) ? chemin : null);
   const setBulle = (cle: CleSection | null) => setBulleLue(cle ? { chemin, cle } : null);
+  /* L'ouverture est OUBLIÉE dès que le chemin change (21/10, test de Mathias : « quand je clique les photos, cela m'y
+     emmène en laissant le menu ouvert »). Rattachée au seul chemin, elle restait en mémoire après la navigation :
+     revenir plus tard sur ce MÊME chemin (une carte du tableau de bord) rouvrait le tiroir tout seul. Le nettoyage de
+     l'effet part quand `ouvert` retombe, que ce soit un geste ou un changement de chemin : il vide la mémoire APRÈS le
+     rendu (aucun setState pendant le rendu, aucun dans le corps de l'effet). Même chose pour la bulle d'un verrou. */
+  useEffect(() => {
+    if (!ouvert) return;
+    return () => setTiroirPour(null);
+  }, [ouvert]);
+  useEffect(() => {
+    if (!bulle) return;
+    return () => setBulleLue(null);
+  }, [bulle]);
 
   const entrees = (groupe: 1 | 2) =>
     MENU.filter((e) => e.groupe === groupe).map((e) => {
@@ -147,6 +164,7 @@ export default function Coquille(props: Props) {
             className="ec-menu-item"
             aria-current={active === e.cle ? "page" : undefined}
             prefetch={false}
+            onClick={() => setOuvert(false)}
           >
             <Icone cle={e.cle} />
             <span className="ec-menu-libelle">{e.libelle}</span>
@@ -162,6 +180,7 @@ export default function Coquille(props: Props) {
 
   return (
     <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"}>
+      <RelireAuRetour actif={relireAuRetour(active)} />
       <header className="ec-barre-mobile">
         <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="Bellajour" width={96} height={36} />
         <button

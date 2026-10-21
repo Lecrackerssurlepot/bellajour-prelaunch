@@ -12,7 +12,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { SONDAGE_TABLEAU_MS } from "@/lib/collectif/arrivees";
+import { corpsSondagePhotos, lireEtatSondage, SONDAGE_TABLEAU_MS } from "@/lib/collectif/arrivees";
 import { useSondage } from "../_composants/useSondage";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
 import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
@@ -56,25 +56,32 @@ export default function CartePhotos(p: Props) {
   const envoi = useFenetreEnvoi();
   const contexte = { organisation: p.organisation, evenement: p.evenement, cloture: p.cloture, tu: p.tu };
   const dernier = p.liens[p.liens.length - 1] ?? null;
-  const etat = p.photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
   /* Les photos qui arrivent pendant que le tableau est ouvert (T-181) : une lecture LÉGÈRE
-     chaque minute, onglet visible ; si le nombre a bougé, la page se relit, et la ligne
-     « N nouvelles photos » le dit déjà (la relecture ne repeint pas toujours). */
+     chaque minute, onglet visible ; si le nombre a bougé, la page se relit. Le NOMBRE et les
+     participants se lisent dans la réponse du sondage elle-même et s'affichent aussitôt : la
+     relecture de la page (`router.refresh()`) apporte les dossiers et la mosaïque, mais elle ne
+     repeint pas toujours (14/10) ; sans elle, l'encart d'une édition qui part de zéro ne
+     passait JAMAIS de « Lien envoyé, en attente » aux photos (21/10, test de Mathias). */
   const router = useRouter();
-  const [enDirect, setEnDirect] = useState<number | null>(null);
+  const [enDirect, setEnDirect] = useState<{ photos: number; personnes: number | null } | null>(null);
+  /* La page rendue par le serveur est en retard sur ce que le sondage a vu. */
+  const enRetard = enDirect !== null && enDirect.photos !== p.photos;
+  const photos = enRetard ? enDirect.photos : p.photos;
+  const participants = enRetard ? (enDirect.personnes ?? p.participants) : p.participants;
+  const etat = photos > 0 ? "photos" : deposer || !dernier ? "vide" : "lien";
   useSondage(
     async () => {
-      const rep = await fetch("/api/collectif/photos/etat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token }) });
+      const rep = await fetch("/api/collectif/photos/etat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corpsSondagePhotos(p.token, null, photos)) });
       if (!rep.ok) return;
-      const j = (await rep.json()) as { photos: number };
-      if (j.photos === (enDirect ?? p.photos)) return;
-      setEnDirect(j.photos);
+      const j = lireEtatSondage(await rep.json().catch(() => null));
+      if (!j || j.photos === photos) return;
+      setEnDirect({ photos: j.photos, personnes: j.personnes ?? enDirect?.personnes ?? null });
       router.refresh();
     },
     SONDAGE_TABLEAU_MS,
     p.ouverte
   );
-  const nouvelles = enDirect === null ? 0 : Math.max(0, enDirect - p.photos);
+  const nouvelles = enRetard ? Math.max(0, enDirect.photos - p.photos) : 0;
 
   /* « Toutes les photos sont là ? » (D25, planche 4) : le responsable termine la collecte
      lui-même, en deux temps (la fenêtre et l'appel sont ceux de la page Photos :
@@ -112,10 +119,10 @@ export default function CartePhotos(p: Props) {
             </div>
           ) : null}
           <div className="ec-tdb-total">
-            <strong>{p.photos.toLocaleString("fr-FR")}</strong>
+            <strong>{photos.toLocaleString("fr-FR")}</strong>
             <span className="ec-texte">
-              photo{p.photos > 1 ? "s" : ""}
-              {p.participants ? `, de ${p.participants} participant${p.participants > 1 ? "s" : ""}` : ""}
+              photo{photos > 1 ? "s" : ""}
+              {participants ? `, de ${participants} participant${participants > 1 ? "s" : ""}` : ""}
             </span>
           </div>
           {p.effacees ? (
@@ -242,7 +249,7 @@ export default function CartePhotos(p: Props) {
         <FenetreTerminerCollecte
           token={p.token}
           tu={p.tu}
-          photos={enDirect ?? p.photos}
+          photos={photos}
           selection={p.selection}
           onFermer={() => setFin("repos")}
           onFait={(le) => {

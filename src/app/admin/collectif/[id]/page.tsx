@@ -41,6 +41,7 @@ import LienResponsable from "./LienResponsable";
 import EnvoiLienResponsable from "./EnvoiLienResponsable";
 import PanneauLivraison from "./PanneauLivraison";
 import OngletsFiche from "./OngletsFiche";
+import RelireLaPage from "../RelireLaPage";
 import "../../admin.css";
 import "../../atelier/atelier.css";
 import "../collectif.css";
@@ -391,6 +392,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
   return (
     <div className="adm-root ate-root eca-root">
       <BarreAtelier monde="editions" collectif nonLus={nonLus} nonLusLe={rendu.toISOString()} liens={liensEditions(null, nonLus)} />
+      <RelireLaPage />
       <Link href="/admin/collectif" className="eca-retour">
         <span aria-hidden="true">←</span> Les éditions
       </Link>
@@ -562,8 +564,8 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
             <>
               <PanneauCollecte id={e.id} {...collecte} effacees={effacees} />
               <div className="eca-cartes eca-cartes--une eca-photos-suite">
-                <PanneauPersonnes id={e.id} liens={collecte.parLien.map((l) => ({ cle: l.cle, nom: l.nom }))} />
-                <PanneauCorbeille id={e.id} migrationAbsente={ouvertureAbsente} />
+                <PanneauPersonnes id={e.id} liens={collecte.parLien.map((l) => ({ cle: l.cle, nom: l.nom }))} version={collecte.total} />
+                <PanneauCorbeille id={e.id} migrationAbsente={ouvertureAbsente} version={collecte.total} />
               </div>
             </>
           ),

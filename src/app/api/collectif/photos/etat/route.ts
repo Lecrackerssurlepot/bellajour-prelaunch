@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
-import { ARRIVEES_LUES_MAX, nouvellesDepuis } from "@/lib/collectif/arrivees";
+import { ARRIVEES_LUES_MAX, nouvellesDepuis, personnesAFournir } from "@/lib/collectif/arrivees";
+import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
+import { compterPersonnes } from "@/lib/collectif/dossiers";
 import { peut } from "@/lib/collectif/droits";
 import { lireInstant } from "@/lib/collectif/etats";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
+import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
+import { COLONNES_RESUME, VUE_RESUME, type LigneResume } from "@/lib/collectif/resumePhotos";
 
 /**
  * POST /api/collectif/photos/etat — les photos arrivent-elles ? (T-181)
@@ -41,6 +45,8 @@ export async function POST(request: Request) {
   const { edition } = acces;
 
   const depuis = lireInstant(corps.depuis) === null ? null : String(corps.depuis).trim();
+  const chiffres = corps.chiffres === true;
+  const connues = typeof corps.connues === "number" && Number.isFinite(corps.connues) && corps.connues >= 0 ? Math.floor(corps.connues) : null;
   const supabase = makeSupabase();
   /* Hors corbeille (migration 20261023) : une photo supprimée ne s'annonce pas et ne se compte
      plus ; sans la colonne, les mêmes lectures sans le filtre (`lireHorsCorbeille`). */
@@ -62,11 +68,31 @@ export async function POST(request: Request) {
   if (lus.error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
 
   const lignes = (recentes.data ?? []) as { deposant: string | null; role_deposant: string; provenance_id: string | null; appareil_id: string | null; confirmee_le: string }[];
+  const photos = compte.count ?? 0;
+
+  /* Les grands chiffres de la page Photos : les déclarations encore en route, et les personnes quand quelque chose a bougé. */
+  let enCours: number | undefined;
+  let personnes: number | undefined;
+  if (chiffres) {
+    const lirePersonnes = personnesAFournir({ chiffres, connues, photos, arrivees: depuis ? lignes.length : 0 });
+    const [enRoute, resume] = await Promise.all([
+      supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString()),
+      lirePersonnes
+        ? lireToutesLesLignes<LigneResume>(() => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", edition.id).returns<LigneResume[]>(), { colonne: "id", croissant: true }, "résumé des photos (état)")
+        : Promise.resolve(null),
+    ]);
+    if (!enRoute.error) enCours = enRoute.count ?? 0;
+    /* Une vue absente (migration 20261022) ou une lecture ratée : pas de chiffre, l'écran garde celui qu'il a. */
+    if (resume && !resume.error) personnes = compterPersonnes(resume.data);
+  }
+
   return NextResponse.json(
     {
-      photos: compte.count ?? 0,
+      photos,
       derniere: lignes[0]?.confirmee_le ?? (depuis || null),
       nouvelles: depuis ? nouvellesDepuis(lignes) : null,
+      ...(personnes !== undefined ? { personnes } : {}),
+      ...(enCours !== undefined ? { enCours } : {}),
     },
     { headers: { "cache-control": "private, no-store" } }
   );
