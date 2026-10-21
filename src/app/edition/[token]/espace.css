@@ -131,6 +131,23 @@
   --ec-z-feuille: 65;
   --ec-z-photo: 70;
   --ec-z-avis: 75;
+
+  /* ── LE TÉLÉPHONE : la barre du haut et la barre flottante du bas (planches 1 et 2 du 21/10) ──
+     Des jetons, jamais un nombre : `top: 78px` collait la barre d'outils de Photos sous une barre qui faisait 62 px ;
+     quand la barre a maigri, tout ce qui comptait ses 62 px est resté faux sans que rien ne le dise.
+       `--ec-barre-h`     la barre du haut (logo / titre, menu) : 52 px, elle ne grossit JAMAIS (hauteur écrite, plus
+                          un reste réparti par la grille) ;
+       `--ec-barre-marge` son écart avec le haut de l'écran (plus la zone sûre) ;
+       `--ec-fl-h`        la barre flottante du bas de Photos (Tout · Par lien · Personnes, filtre) ; 64 px quand
+                          c'est la barre d'actions des photos cochées ;
+       `--ec-fl-bas`      son écart avec le bas de l'écran, zone sûre de l'iPhone comprise ;
+       `--ec-fl-reserve`  ce qu'un contenu qui défile derrière elle garde libre en bas, pour que rien ne passe dessous. */
+  --ec-barre-h: 52px;
+  --ec-barre-marge: 6px;
+  --ec-fl-h: 52px;
+  --ec-fl-actions-h: 64px;
+  --ec-fl-bas: calc(10px + env(safe-area-inset-bottom, 0px));
+  --ec-fl-reserve: calc(var(--ec-fl-h) + var(--ec-fl-bas) + 16px);
   background: var(--ec-bg);
   color: var(--ec-text);
   line-height: 1.5;
@@ -247,6 +264,13 @@
 }
 
 .ec-espace .ec-barre-mobile {
+  display: none;
+}
+/* L'en-tête du tiroir : sur ordinateur il disparaît (le logo reste un enfant du menu), la croix est cachée. */
+.ec-espace .ec-menu-tete {
+  display: contents;
+}
+.ec-espace .ec-menu-fermer {
   display: none;
 }
 
@@ -2915,12 +2939,22 @@
   .ec-espace .ec-ecran {
     flex: none;
   }
+  /* UN SEUL grand titre pour tous les écrans de l'espace (planche 1 du 21/10) : 34 px. Il y en avait trois (40 sur
+     le tableau de bord, 30 sur Photos, 26 partout ailleurs), et un « 1 » de Cormorant s'y lisait « I » (« Recette 1 »
+     devenait « Recette I ») : `lining-nums` rend les chiffres modernes. Les feuilles de Photos et du tableau de bord
+     n'ont plus leur propre taille pour le téléphone (leur 40 px est réservé à l'ordinateur, `tableau.css`).
+     La ligne de titre ne fait plus 68 px (`--ec-tete-h` vaut pour l'ordinateur) : la hauteur de son bouton. */
   .ec-espace .ec-ecran-tete {
-    padding: 14px 16px 10px;
+    min-height: 0;
+    padding: 8px 16px 6px;
+    gap: 8px 12px;
     flex-wrap: wrap;
   }
   .ec-espace .ec-ecran-titre {
-    font-size: 26px;
+    font-size: 34px;
+    line-height: 1.04;
+    font-variant-numeric: lining-nums;
+    font-feature-settings: "lnum" 1;
   }
   .ec-espace .ec-ecran-corps {
     padding: 0 12px 32px;
@@ -2963,29 +2997,81 @@
     bottom: 16px;
     right: 16px;
   }
+  /* LA BARRE DU HAUT (planche 1 du 21/10) : 52 px au lieu de 62, flottante et arrondie comme avant, et elle ne grossit
+     jamais : sa hauteur est ÉCRITE (`--ec-barre-h`), elle ne dépend plus de ce que ses voisins laissent. Elle reste
+     collée en haut quand la page défile (un collant dans la coquille, qui est une colonne). L'écart du haut ajoute la
+     zone sûre (0 dans Safari, l'encoche une fois l'espace ajouté à l'écran d'accueil). */
   .ec-espace .ec-barre-mobile {
     position: sticky;
-    top: 0;
+    top: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px));
     z-index: var(--ec-z-entete);
     flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 8px 8px 0;
-    padding: 8px 10px 8px 16px;
-    border-radius: 22px;
+    box-sizing: border-box;
+    height: var(--ec-barre-h);
+    margin: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px)) 8px 0;
+    padding: 0 4px 0 16px;
+    border-radius: 20px;
     border: 1px solid var(--ec-carte-bord);
     background: var(--ec-glass);
     box-shadow: var(--ec-ombre-douce);
     -webkit-backdrop-filter: var(--ec-flou);
     backdrop-filter: var(--ec-flou);
   }
+  /* À gauche, deux choses AU MÊME ENDROIT : le logo (en haut de page) et le titre de l'écran (quand le grand titre
+     est passé dessous, `data-defile` posé par `TitreEcran`). Un fondu court de l'un à l'autre ; coupé si l'appareil
+     demande moins de mouvement (plus bas). */
+  .ec-espace .ec-barre-gauche {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
+  .ec-espace .ec-logo--mobile {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 78px;
+    height: auto;
+    margin: 0;
+    transform: translateY(-50%);
+    transition: opacity 180ms var(--ease), transform 180ms var(--ease);
+  }
+  .ec-espace .ec-barre-titre {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(calc(-50% + 8px));
+    opacity: 0;
+    font-family: var(--font-display);
+    font-size: 25px;
+    line-height: 1.1;
+    font-variant-numeric: lining-nums;
+    font-feature-settings: "lnum" 1;
+    color: var(--ec-titre);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    transition: opacity 180ms var(--ease), transform 180ms var(--ease);
+  }
+  .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-logo--mobile {
+    opacity: 0;
+    transform: translateY(calc(-50% - 8px));
+  }
+  .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-barre-titre {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
   .ec-espace .ec-bouton-tiroir {
     display: grid;
     place-items: center;
     width: 44px;
     height: 44px;
-    margin-right: -10px;
+    margin-right: 0;
     border: 0;
     background: none;
     color: var(--ec-blanc);
@@ -2994,16 +3080,36 @@
   .ec-espace .ec-menu {
     position: fixed;
     z-index: var(--ec-z-tiroir);
-    top: 8px;
+    top: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px));
     left: 8px;
     width: min(86vw, 300px);
-    height: calc(var(--app-height) - 16px);
+    height: calc(var(--app-height) - 2 * var(--ec-barre-marge) - env(safe-area-inset-top, 0px));
+    padding-top: 22px;
+    gap: 14px;
     background: var(--ec-glass);
     transform: translateX(-108%);
     transition: transform var(--dur) var(--ease);
   }
   .ec-espace .ec-coquille[data-tiroir="ouvert"] .ec-menu {
     transform: none;
+  }
+  /* L'en-tête du tiroir fait la hauteur de la barre (52 px) : la croix tombe sous le doigt, à la hauteur où se
+     trouvait le bouton menu, et le logo reprend le sien. Le tiroir part du MÊME écart du haut que la barre, et son en-tête
+     fait 2 px de moins (le filet du tiroir) : la croix et le bouton menu sont au même pixel. (Le menu a 22 px de marge en
+     haut : l'en-tête les rattrape.) */
+  .ec-espace .ec-menu-tete {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(var(--ec-barre-h) - 2px);
+    margin: -22px -10px 0 12px;
+  }
+  .ec-espace .ec-menu-tete .ec-logo {
+    width: 78px;
+    margin: 0;
+  }
+  .ec-espace .ec-menu-fermer {
+    margin: 0;
   }
   .ec-espace .ec-voile {
     display: block;
@@ -3173,6 +3279,11 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ec-espace .ec-menu {
+    transition: none;
+  }
+  /* Le logo et le titre de la barre se remplacent sans fondu (planche 1 du 21/10). */
+  .ec-espace .ec-logo--mobile,
+  .ec-espace .ec-barre-titre {
     transition: none;
   }
 }

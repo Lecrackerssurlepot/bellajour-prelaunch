@@ -557,6 +557,26 @@ nombre » d'un lien « pourraient être ensemble ».
   « Modifier » (`FenetreModifierLien`) ; `FenetreNom` et `FenetrePlafond` sont dans
   `archive/liens-nom-et-nombre-2026-10/`. Les deux routes d'avant restent valides, plus rien ne les appelle.
 
+## La page Photos au téléphone : la barre du bas, « Personnes » (planches 1 et 2 du 21/10, validées par Mathias)
+
+Maquettes : les planches « téléphone » 1 et 2 du 21/10 (hors dépôt). Le haut de page d'avant est dans `archive/photos-barre-haut-2026-10/`.
+- **Les filtres ont quitté le haut** : une barre flottante de verre en bas (`.ec-fl`, 52 px, jetons `--ec-fl-*` d'`espace.css`) porte
+  « Tout · Par lien · Personnes » et le bouton filtre (la pastille compte les réglages de la FEUILLE, `nombreDansLaFeuille`, pas le lien
+  ni la personne). En mode « cocher », la même barre devient la barre d'actions (64 px, les quatre gestes d'avant, le MÊME `agir()`).
+  « Cocher » est un texte sous le titre, « Déposer » un « + » rond dans l'en-tête (éteint, `ec-ph-plus--eteint`, quand la collecte est
+  terminée), le compte des cochées est dans le titre. Aucune route, aucun geste, aucun droit ne change.
+- **« Personnes » est un mode** (`Mode = "personnes"`, `estVuePersonnes`) : il lit la MÊME chose que « Tout » (la clé `tout`), donc passer de
+  l'un à l'autre ne relit rien ; seul l'affichage change (une liste au téléphone, la grille cachée mais rendue ; sur ordinateur la
+  grille reste celle de « Tout », le choix n'existe pas). `?dossier=personnes` le rouvre au rechargement. ⚠️ **La version actuelle est
+  SOBRE** (initiales, nom, nombre de photos, comme la liste d'un lien ouvert) : la mosaïque de tuiles de la planche 2D attend la
+  validation de Mathias avec la planche 3.
+- **La feuille « Filtrer » est compacte** (`Feuille.tsx` : Jour et Afficher seulement, 44 % de l'écran, voile sans flou). Les réglages qui
+  demandent une grille (jour, doublons, « Ne pas publier », ordre par jour) ramènent à « Tout » depuis un aperçu (albums de « Par lien »,
+  liste de « Personnes »). « Tout effacer » n'efface que les réglages de la feuille (`sansReglagesDeLaFeuille`).
+- **Le lien général ne se montre plus** (planche 5) : la pastille « Les liens · N » ne le compte que s'il a reçu des photos, « Partager ce
+  lien » n'existe que pour un lien de contribution (`lien:`), les sous-titres « le lien général » sont partis (le nœud porte son nom,
+  « Sans groupe »).
+
 ## La messagerie de l'atelier : ce qui est nouveau (T-188, 19/10)
 
 - **« Messages » compte des CONVERSATIONS** (éditions non archivées avec au moins un message du

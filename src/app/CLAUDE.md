@@ -179,6 +179,16 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
      spécificité, et la mesurer à l'écran.
    - Un menu qui s'ouvre depuis une carte de verre (`backdrop-filter`) s'ouvre par un portail dans
      `.ec-contenu`, jamais en `absolute` dedans (`MenuLien`, `Fenetre`).
+   - **Au téléphone, la barre du haut fait 52 px EN JETON** (`--ec-barre-h`, son écart `--ec-barre-marge`, planche 1 du
+     21/10) et tout ce qui compte sa hauteur lit le jeton : `top: 78px` en dur collait une barre d'outils sous une barre de
+     62 px, et le bon à tirer comptait `65px`. Le harnais refuse `top: 78|62|65|70px`. La barre FLOTTANTE de Photos a les siens
+     (`--ec-fl-h`, `--ec-fl-actions-h`, `--ec-fl-bas` avec la zone sûre, `--ec-fl-reserve`).
+   - **UN seul grand titre de 34 px** (`.ec-ecran-titre`, `lining-nums`) sur tous les écrans, téléphone seulement. ⚠️ Une règle de
+     titre propre à un écran, chargée APRÈS `espace.css`, le remplace en silence (le `.ec-tdb .ec-ecran-titre` de 40 px est
+     enfermé dans `@media (min-width: 861px)`). En défilant, le titre passe dans la barre : `TitreEcran` (un
+     `IntersectionObserver`, un portail dans `.ec-barre-titre`, `data-defile` sur la barre) ; aucun écouteur de défilement.
+   - **Une feuille qui s'ouvre au-dessus d'une barre FIXE** (« Filtrer » au-dessus de la barre du bas) : la barre repasse à
+     `--ec-z-feuille` + 1 tant qu'elle est ouverte (son bouton devient la croix), jamais un nombre ; le voile ne floute pas.
 
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 

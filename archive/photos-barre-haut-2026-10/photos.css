@@ -1,0 +1,2516 @@
+/* La page Photos du responsable (planches 1, 2 et 3 du 20/10/2026).
+
+   Tout est écrit sous `.ec-espace` (posé par edition/layout.tsx), classes
+   préfixées `ec-ph-` (la page) et `ec-ag-` (la photo agrandie) : une feuille
+   chargée ne se décharge jamais en navigation client.
+   Aucune couleur en dur : des RÔLES (`--ec-text`, `--ec-accent`…), et pour une
+   transparence `rgba(var(--ec-fg-rgb), x)` ; le blanc posé sur une photo est
+   `--ec-page` / `--ec-reflet-rgb`, le noir `--ec-noir-rgb` (la lumière ne
+   change pas avec le mode). Le harnais relit cette feuille.
+
+   Les chiffres en Cormorant passent en chiffres MODERNES (`lining-nums`) :
+   « Bateau 1 » se lisait « Bateau I ». */
+
+.ec-espace .ec-collecte,
+.ec-espace .ec-ag,
+.ec-espace .ec-ph-feuille-voile,
+.ec-espace .ec-fenetre-titre,
+.ec-espace .ec-ph-avis {
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
+}
+
+/* ─────────────────────────── ordinateur ou téléphone ─────────────────────────── */
+
+@media (min-width: 861px) {
+  .ec-espace .ec-collecte .ec-ph-tel,
+  .ec-espace .ec-ph-titre-tel {
+    display: none;
+  }
+}
+@media (max-width: 860px) {
+  .ec-espace .ec-collecte .ec-ph-ordi,
+  .ec-espace .ec-ph-titre-ordi {
+    display: none;
+  }
+}
+
+/* ─────────────────────────── le panneau : la colonne, la grille ─────────────────────────── */
+
+.ec-espace .ec-ph-panneau {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  overflow: hidden;
+}
+
+/* La colonne « Trier et filtrer » : des listes, chacune son titre. */
+.ec-espace .ec-ph-filtres {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 12px 44px 18px;
+  -webkit-mask-image: linear-gradient(to bottom, var(--ec-bg) calc(100% - 44px), transparent);
+  mask-image: linear-gradient(to bottom, var(--ec-bg) calc(100% - 44px), transparent);
+}
+/* (21/10) La barre d'actions ne couvre plus la colonne des filtres : plus de place à lui réserver. */
+.ec-espace .ec-ph-fl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-ph-fl-t {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px 4px;
+  font-size: 11.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ec-faint);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-fl-t small {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--ec-accent);
+}
+.ec-espace .ec-ph-fl-t--bouton {
+  width: 100%;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.ec-espace .ec-ph-fl-t--bouton:disabled {
+  cursor: default;
+}
+.ec-espace .ec-ph-chev {
+  display: inline-flex;
+  color: var(--ec-faint);
+  transition: transform var(--dur) var(--ease);
+}
+.ec-espace .ec-ph-chev--ouvert {
+  transform: rotate(180deg);
+}
+.ec-espace .ec-ph-fl-aide {
+  padding: 2px 8px 6px;
+  font-size: 12px;
+}
+
+/* Une ligne d'une liste : sa case ou ses initiales, son nom, son nombre. */
+.ec-espace .ec-ph-li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-li:hover {
+  background: rgba(var(--ec-fg-rgb), 0.04);
+}
+.ec-espace .ec-ph-li--on,
+.ec-espace .ec-ph-li--on:hover {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-li--on .ec-ph-n {
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-li--on .ec-ph-ic {
+  color: var(--ec-accent);
+}
+.ec-espace .ec-ph-li--sous {
+  padding-left: 22px;
+}
+.ec-espace .ec-ph-li--plus {
+  color: var(--ec-accent);
+  font-size: 13px;
+}
+.ec-espace .ec-ph-li--grand {
+  min-height: 44px;
+  font-size: 15px;
+  border-radius: 14px;
+  padding: 0 10px;
+}
+.ec-espace .ec-ph-li--cible {
+  outline: 2px dashed var(--ec-accent);
+  outline-offset: -2px;
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-ph-li[draggable="true"] {
+  cursor: grab;
+}
+.ec-espace .ec-ph-branche {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-ph-nom {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec-espace .ec-ph-n {
+  flex: none;
+  font-size: 12.5px;
+  color: var(--ec-faint);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ec-espace .ec-ph-pale {
+  color: var(--ec-faint);
+}
+.ec-espace .ec-ph-ic {
+  flex: none;
+  display: inline-flex;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 10px;
+  font-weight: 600;
+}
+.ec-espace .ec-ph-ini--grand {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+}
+.ec-espace .ec-ph-case {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid var(--ec-line-fort);
+  background: var(--ec-surface);
+  color: var(--ec-on-accent);
+  box-sizing: border-box;
+}
+.ec-espace .ec-ph-case--on {
+  background: var(--ec-accent);
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-ph-cherche {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin: 2px 0 4px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ec-line-fort);
+  background: var(--ec-surface);
+  color: var(--ec-faint);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-ph-cherche:focus-within {
+  border-color: var(--ec-accent);
+  box-shadow: 0 0 0 3px var(--ec-accent-soft);
+}
+.ec-espace .ec-ph-cherche input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.ec-espace .ec-ph-cherche input::placeholder {
+  color: var(--ec-faint);
+}
+.ec-espace .ec-ph-jours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+.ec-espace .ec-ph-jours-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* La pilule segmentée (Tout | Par lien, l'ordre) et les pilules. */
+.ec-espace .ec-ph-seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-ph-seg--plein {
+  display: flex;
+}
+.ec-espace .ec-ph-seg > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-seg--plein > button {
+  flex: 1;
+}
+.ec-espace .ec-ph-seg > button[aria-pressed="true"] {
+  background: var(--ec-actif);
+  box-shadow: var(--ec-actif-ombre);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-pilule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line-fort);
+  background: transparent;
+  color: var(--ec-muted);
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-pilule:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-pilule:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.ec-espace .ec-ph-pilule--on {
+  background: var(--ec-actif);
+  border-color: transparent;
+  box-shadow: var(--ec-actif-ombre);
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-lien--doux {
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-bascule {
+  flex: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.16);
+  transition: background var(--dur) var(--ease);
+}
+.ec-espace .ec-ph-bascule::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--ec-page);
+  box-shadow: 0 1px 3px rgba(var(--ec-noir-rgb), 0.25);
+  transition: left var(--dur) var(--ease);
+}
+.ec-espace .ec-ph-bascule--on {
+  background: var(--ec-accent);
+}
+.ec-espace .ec-ph-bascule--on::after {
+  left: 19px;
+}
+
+/* ─────────────────────────── la zone : titre, outils, grille ─────────────────────────── */
+
+.ec-espace .ec-ph-zone {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 24px 0 6px;
+  overflow: hidden;
+}
+/* Le titre garde sa place : sur un écran moyen (1024 px), les outils passent dessous plutôt que de l'écraser. */
+.ec-espace .ec-ph-zone-tete {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+.ec-espace .ec-ph-zone-titres {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Le libellé court d'un geste de la barre (écrans moyens, plus bas). */
+.ec-espace .ec-ph-act-court {
+  display: none;
+}
+@media (min-width: 861px) and (max-width: 1180px) {
+  .ec-espace .ec-ph-panneau {
+    grid-template-columns: 228px minmax(0, 1fr);
+  }
+  .ec-espace .ec-ph-filtres {
+    padding-left: 14px;
+    padding-right: 8px;
+  }
+  .ec-espace .ec-ph-zone {
+    padding-right: 16px;
+  }
+  .ec-espace .ec-ph-g {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  }
+  .ec-espace .ec-ph-barre-actions {
+    left: 10px;
+    right: 10px;
+    padding-left: 14px;
+  }
+}
+/* La barre d'actions ne court plus que sur la zone de la grille (point 6, 21/10) : elle y a ~680 px à 1280, ~840
+   à 1440, et ses gestes en demandent 984 avec tous leurs mots. Ce n'est donc plus la FENÊTRE qui décide quand la
+   barre passe aux mots courts (les mêmes que sur téléphone : « Ma sélection », « Retirer », « 2 cochées », et le × suffit
+   pour tout décocher), c'est la LARGEUR DU PANNEAU, mesurée par une requête de conteneur (Safari 16+, Chrome 105+).
+   984 px de gestes + 32 de marges + les 272 px de filtres : sous 1290 px de panneau, les mots courts.
+   Sous 980 px de panneau (fenêtre sous ~1275 px : un iPad en paysage, un petit portable), même avec les mots courts la
+   zone est trop étroite pour les cinq gestes (640 px) : la barre reprend alors TOUTE la largeur du panneau, comme avant,
+   et la colonne des filtres garde de quoi défiler au-dessus d'elle. C'est le seul cas où elle couvre encore les filtres. */
+@media (min-width: 861px) {
+  .ec-espace .ec-ph-panneau {
+    container-type: inline-size;
+    container-name: ph-panneau;
+  }
+}
+@container ph-panneau (max-width: 1290px) {
+  .ec-espace .ec-ph-act-long,
+  .ec-espace .ec-ph-tout-decocher {
+    display: none;
+  }
+  .ec-espace .ec-ph-act-court {
+    display: inline;
+  }
+  .ec-espace .ec-ph-barre-actions .ec-ph-act {
+    padding: 0 12px;
+  }
+}
+@container ph-panneau (max-width: 979px) {
+  /* (0,3,0) : la règle de base de la barre est plus bas dans la feuille, à (0,2,0). */
+  .ec-espace .ec-ph-panneau .ec-ph-barre-actions {
+    grid-column: 1 / -1;
+  }
+  .ec-espace .ec-ph-panneau--barre .ec-ph-filtres {
+    padding-bottom: 96px;
+  }
+}
+.ec-espace .ec-ph-zone .ec-ph-fil {
+  gap: 6px;
+  margin-bottom: 2px;
+}
+/* (0,2,0) contre `.bj-atelier h2`, qui pose la taille des titres du site. */
+.ec-espace .ec-ph-zone-titre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--ec-titre);
+  overflow-wrap: normal !important;
+}
+.ec-espace .ec-ph-renommer {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-faint);
+  cursor: pointer;
+}
+.ec-espace .ec-ph-renommer:hover,
+.ec-espace .ec-ph-renommer:focus-visible {
+  color: var(--ec-text);
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+.ec-espace .ec-ph-outils {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-ph-outils .ec-bouton {
+  align-self: center;
+}
+.ec-espace .ec-ph-actifs {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ec-espace .ec-ph-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 6px 0 12px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.ec-espace .ec-ph-puce button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--ec-ac-rgb), 0.18);
+  color: inherit;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-zone > .ec-ph-annonce {
+  margin: 0;
+}
+.ec-espace .ec-ph-defile {
+  flex: 1;
+  min-height: 0;
+  padding: 0 4px 24px 0;
+}
+.ec-espace .ec-ph-panneau--barre .ec-ph-defile {
+  padding-bottom: 96px;
+}
+.ec-espace .ec-ph-zone-pied {
+  position: absolute;
+  left: 6px;
+  right: 24px;
+  bottom: 0;
+  height: 48px;
+  background: linear-gradient(transparent, var(--ec-bg));
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ec-espace .ec-ph-chargement {
+  padding: 12px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+}
+.ec-espace .ec-ph-suite {
+  margin: 14px auto 0;
+  align-self: center;
+  display: flex;
+}
+.ec-espace .ec-ph-arrivees {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 22px 0 10px;
+}
+.ec-espace .ec-ph-arrivees-titre {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Les albums des liens (« Par lien ») : une carte par lien, trois de front. */
+.ec-espace .ec-ph-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.ec-espace .ec-ph-carte {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--ec-surface);
+  border: 1px solid var(--ec-line);
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.ec-espace .ec-ph-carte:hover {
+  border-color: var(--ec-line-fort);
+}
+.ec-espace .ec-ph-carte--vide {
+  border-style: dashed;
+}
+.ec-espace .ec-ph-mosa {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  color: var(--ec-faint);
+}
+.ec-espace .ec-ph-mosa img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-ph-carte-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ec-espace .ec-ph-carte-txt b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 25px;
+  line-height: 1.05;
+  color: var(--ec-titre);
+  overflow-wrap: normal;
+}
+.ec-espace .ec-ph-carte-txt span {
+  font-size: 12.5px;
+  color: var(--ec-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─────────────────────────── la grille et ses vignettes ─────────────────────────── */
+
+.ec-espace .ec-ph-g {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+}
+.ec-espace .ec-ph-tete-jour {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 2px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-tete-jour:first-child {
+  padding-top: 0;
+}
+.ec-espace .ec-ph-t {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--ec-r-bloc);
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
+}
+.ec-espace .ec-ph-t-ouvrir {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ec-espace .ec-ph-g--cocher .ec-ph-t-ouvrir {
+  cursor: pointer;
+}
+.ec-espace .ec-ph-t-ouvrir img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-ph-t-ouvrir:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: -2px;
+}
+.ec-espace .ec-ph-t > span,
+.ec-espace .ec-ph-t > .ec-ph-t-case,
+.ec-espace .ec-ph-t > .ec-ph-t-etoile {
+  z-index: 2;
+}
+/* Cochée : un bord EN DEDANS et un voile (la tuile rogne sa peinture). */
+.ec-espace .ec-ph-t--cochee::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--ec-accent);
+  background: rgba(var(--ec-ac-rgb), 0.2);
+  pointer-events: none;
+}
+/* Arrivée depuis la dernière vue (T-181) : un liseré et « nouvelle ». */
+.ec-espace .ec-ph-t--neuve::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 2px var(--ec-accent);
+  pointer-events: none;
+}
+.ec-espace .ec-ph-t--doublon img {
+  opacity: 0.55;
+}
+/* (21/10) Le badge « Doublon » ou l'œil barré ne partage plus la ligne du nom : il se pose AU-DESSUS,
+   à droite, et le nom garde toute la largeur de la vignette. À côté, sur 129 px, le nom était écrasé
+   à 45 px (« Mat… ») par « Doublon », et l'œil barré le recouvrait. Le téléphone, lui, garde les
+   deux côte à côte (initiales et « D » : la place y suffit, plus bas). */
+@media (min-width: 861px) {
+  .ec-espace .ec-ph-t .ec-ph-badge {
+    right: 6px;
+    bottom: 30px;
+  }
+}
+.ec-espace .ec-ph-t--cache img {
+  filter: grayscale(0.7) brightness(0.92);
+  opacity: 0.6;
+}
+.ec-espace .ec-ph-t--attente {
+  background:
+    linear-gradient(100deg, transparent 30%, rgba(var(--ec-fg-rgb), 0.07) 50%, transparent 70%),
+    rgba(var(--ec-fg-rgb), 0.07);
+}
+/* La case (cocher) en haut à gauche, l'étoile (Ma sélection) en haut à droite. */
+.ec-espace .ec-ph-t-case,
+.ec-espace .ec-ph-t-etoile {
+  position: absolute;
+  top: 8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-t-case {
+  left: 8px;
+  border: 2px solid rgba(var(--ec-reflet-rgb), 0.92);
+  background: rgba(var(--ec-noir-rgb), 0.18);
+  color: transparent;
+  box-shadow: 0 1px 4px rgba(var(--ec-noir-rgb), 0.25);
+  box-sizing: border-box;
+}
+.ec-espace .ec-ph-t-case[aria-pressed="true"] {
+  background: var(--ec-accent);
+  border-color: var(--ec-page);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-ph-t-etoile {
+  right: 8px;
+  border: 0;
+  background: rgba(var(--ec-noir-rgb), 0.35);
+  color: var(--ec-page);
+}
+.ec-espace .ec-ph-t-etoile--on {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  opacity: 1;
+}
+.ec-espace .ec-ph-g--cocher .ec-ph-t-case {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ec-espace .ec-ph-t-case:focus-visible,
+.ec-espace .ec-ph-t-etoile:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .ec-espace .ec-ph-t:hover .ec-ph-t-case,
+  .ec-espace .ec-ph-t:hover .ec-ph-t-etoile {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .ec-espace .ec-ph-t-etoile--on {
+    pointer-events: auto;
+  }
+  .ec-espace .ec-ph-t:hover:not(.ec-ph-t--cochee) .ec-ph-t-ouvrir::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(var(--ec-noir-rgb), 0.28), transparent 40%);
+  }
+  .ec-espace .ec-ph-t:hover .ec-ph-neuve {
+    opacity: 0;
+  }
+}
+.ec-espace .ec-ph-g--cocher .ec-ph-neuve {
+  display: none;
+}
+.ec-espace .ec-ph-badge--rond {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+}
+.ec-espace .ec-ph-badge-court,
+.ec-espace .ec-ph-qui-ini {
+  display: none;
+}
+
+/* ─────────────────────────── la barre d'actions (ordinateur) ─────────────────────────── */
+
+/* ⚠️ La barre est un enfant DIRECT du panneau (une grille : filtres | zone), posée en `absolute`.
+   `grid-column: 2` fait de la COLONNE DE LA GRILLE son bloc conteneur : ses `left`, `right` et
+   `bottom` se comptent depuis la zone, plus depuis le panneau. Avant, elle courait sur toute la
+   largeur et recouvrait le bas de la colonne des filtres (« Ne pas publier », « Corbeille »). */
+.ec-espace .ec-ph-barre-actions {
+  position: absolute;
+  grid-column: 2;
+  grid-row: 1;
+  left: 16px;
+  right: 16px;
+  bottom: 18px;
+  z-index: var(--ec-z-barre);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 8px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-glass);
+  box-shadow: var(--ec-reflet), 0 22px 60px var(--ec-ombre);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(28px) saturate(1.4);
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ec-espace .ec-ph-compte {
+  margin-right: 6px;
+  font-size: 14px;
+  color: var(--ec-text);
+}
+.ec-espace .ec-ph-compte b {
+  font-weight: 600;
+}
+.ec-espace .ec-ph-sep {
+  flex: none;
+  width: 1px;
+  height: 24px;
+  margin: 0 6px;
+  background: var(--ec-line-fort);
+}
+.ec-espace .ec-ph-progres {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-act {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.ec-espace .ec-ph-act:hover {
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+.ec-espace .ec-ph-act:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.ec-espace .ec-ph-act--prem,
+.ec-espace .ec-ph-act--prem:hover {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-weight: 600;
+}
+.ec-espace .ec-ph-act--x {
+  width: 38px;
+  padding: 0;
+  margin-left: auto;
+  justify-content: center;
+  color: var(--ec-muted);
+}
+
+/* Un message qui passe, après un geste (« Annuler » quelques secondes). */
+.ec-espace .ec-ph-avis {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: var(--ec-z-avis);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 10px 12px 10px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--ec-line-fort);
+  background: var(--ec-carte-pleine);
+  color: var(--ec-text);
+  box-shadow: 0 18px 50px var(--ec-ombre);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.ec-espace .ec-ph-avis small {
+  display: block;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ph-avis .ec-ph-lien {
+  font-size: 14px;
+  font-weight: 600;
+}
+.ec-espace .ec-ph-avis--barre {
+  bottom: 96px;
+}
+
+/* ─────────────────────────── la photo agrandie (ordinateur) ─────────────────────────── */
+
+.ec-espace .ec-ag {
+  position: absolute;
+  inset: 0;
+  z-index: var(--ec-z-photo);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  padding: 16px 0 0;
+  background: color-mix(in srgb, var(--ec-bg) 86%, transparent);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  outline: none;
+}
+.ec-espace .ec-ag-scene {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--ec-r-panneau);
+  background: rgba(var(--ec-noir-rgb), 0.3);
+  border: 1px solid var(--ec-carte-bord);
+  overflow: hidden;
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-ag-scene {
+  background: rgba(var(--ec-fg-rgb), 0.05);
+}
+.ec-espace .ec-ag-haut {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.ec-espace .ec-ag-pos {
+  min-width: 0;
+  font-size: 14px;
+  color: var(--ec-text);
+}
+.ec-espace .ec-ag-pos-long {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+/* (0,3,0) : `.ec-ag-rond` et `.ec-ph-bas` posent leur `display` plus bas, à (0,2,0). */
+.ec-espace .ec-ag .ec-ag-pos-court,
+.ec-espace .ec-ag .ec-ag-etoile,
+.ec-espace .ec-ag .ec-ag-balai,
+.ec-espace .ec-ag .ec-ag-info,
+.ec-espace .ec-ag .ec-ag-bas {
+  display: none;
+}
+.ec-espace .ec-ag-rond {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-line);
+  background: transparent;
+  color: var(--ec-muted);
+  cursor: pointer;
+}
+.ec-espace .ec-ag-rond:hover {
+  color: var(--ec-text);
+}
+.ec-espace .ec-ag-rond--on {
+  background: var(--ec-accent);
+  border-color: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-ag-photo {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 84px 18px;
+  container-type: size;
+}
+/* Le cadre prend la forme de la photo et la plus grande taille qui tient. */
+.ec-espace .ec-ag-cadre {
+  position: relative;
+  width: min(100cqw, 100cqh * var(--ec-ag-r, 1.5), 1120px);
+  aspect-ratio: var(--ec-ag-r, 1.5);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.05);
+  box-shadow: 0 20px 60px rgba(var(--ec-noir-rgb), 0.35);
+}
+/* La vignette d'abord (déjà en cache), l'original par-dessus dès qu'il est arrivé (lot w2). */
+.ec-espace .ec-ag-cadre img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ec-espace .ec-ag-img--grande {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.ec-espace .ec-ag-img--la {
+  opacity: 1;
+}
+.ec-espace .ec-ag-cadre--cache img {
+  filter: grayscale(0.7);
+  opacity: 0.55;
+}
+.ec-espace .ec-ag-sans {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ag-etat {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ec-carte-pleine);
+  color: var(--ec-accent-texte);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.ec-espace .ec-ag-fleche {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-glass);
+  color: var(--ec-text);
+  box-shadow: var(--ec-ombre-douce);
+  cursor: pointer;
+}
+.ec-espace .ec-ag-fleche--g {
+  left: 18px;
+}
+.ec-espace .ec-ag-fleche--d {
+  right: 18px;
+}
+.ec-espace .ec-ag-clavier {
+  flex: none;
+  margin: 0;
+  padding: 0 0 14px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ag-cote {
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border-radius: var(--ec-r-panneau);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  box-sizing: border-box;
+}
+.ec-espace .ec-ag-bloc-q {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-ag-bloc-q-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.35;
+}
+.ec-espace .ec-ag-bloc-q-txt b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ec-espace .ec-ag-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ec-espace .ec-ag-dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 14px;
+  margin: 0;
+  font-size: 13.5px;
+}
+.ec-espace .ec-ag-dl dt {
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ag-dl dd {
+  margin: 0;
+  color: var(--ec-text);
+}
+.ec-espace .ec-ag-fichier {
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-ag-gestes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-ag-geste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ec-espace .ec-ag-geste small {
+  padding-left: 4px;
+  font-size: 12px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-ag-large,
+.ec-espace .ec-ph-large {
+  align-self: stretch;
+  width: 100%;
+  min-height: 52px;
+  font-size: 16px;
+}
+.ec-espace .ec-ag-large--on,
+.ec-espace .ec-ag-large--on:hover {
+  background: var(--ec-accent-soft);
+  border-color: rgba(var(--ec-ac-rgb), 0.6);
+  color: var(--ec-accent-texte);
+}
+/* « Supprimer » (planche 3A) : un voile de la couleur d'alerte, jamais un aplat qui crie. */
+.ec-espace .ec-ag-large--danger,
+.ec-espace .ec-ag-large--danger:hover {
+  background: rgba(var(--ec-danger-rgb), 0.12);
+  border: 1px solid rgba(var(--ec-danger-rgb), 0.38);
+  color: var(--ec-danger);
+  box-shadow: none;
+}
+.ec-espace .ec-ag-large--danger:hover {
+  background: rgba(var(--ec-danger-rgb), 0.18);
+}
+.ec-espace .ec-ph-act--danger,
+.ec-espace .ec-ph-act--danger:hover {
+  color: var(--ec-danger);
+}
+
+/* ─────────────────────────── la corbeille (planche 5) ─────────────────────────── */
+
+.ec-espace .ec-cb {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-cb-tete {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+.ec-espace .ec-cb-titre-ic {
+  display: inline-flex;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-cb-tete .ec-note b {
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-cb-defile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ec-espace .ec-cb-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--ec-r-bloc);
+  background: var(--ec-surface);
+  border: 1px solid var(--ec-line);
+  color: var(--ec-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.ec-espace .ec-cb-info > svg {
+  flex: none;
+  margin-top: 2px;
+}
+.ec-espace .ec-cb-info b {
+  color: var(--ec-text);
+  font-weight: 600;
+}
+.ec-espace .ec-cb-tout {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.ec-espace .ec-cb-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ec-espace .ec-cb-ligne {
+  display: grid;
+  grid-template-columns: auto 64px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(var(--ec-fg-rgb), 0.035);
+}
+.ec-espace .ec-cb-ligne--cochee {
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-cb-case {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+.ec-espace .ec-cb-vign {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+.ec-espace .ec-cb-vign img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-cb-txt {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+/* (21/10) Des lignes au lieu d'une ellipse : « IMG_3195.jpeg · supprimée par son auteu… » et « mer. 21 o… »
+   perdaient justement ce qu'on venait lire (qui, quand). Le nom : deux lignes ; la précision dessous (fichier,
+   qui a supprimé, QUAND) : trois, parce que la date arrive en dernier et que la colonne ne fait que ~250 px à
+   côté de l'échéance et de « Restaurer ». Au-delà, l'ellipse. Les variantes `.ec-ph-ordi` / `.ec-ph-tel` restent
+   masquées par leur propre règle (plus spécifique). */
+.ec-espace .ec-cb-txt b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ec-text);
+  overflow: hidden;
+}
+.ec-espace .ec-cb-txt span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-size: 12.5px;
+  color: var(--ec-muted);
+  overflow: hidden;
+}
+.ec-espace .ec-cb-echeance {
+  justify-self: end;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  color: var(--ec-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.ec-espace .ec-cb-echeance--alerte {
+  background: rgba(var(--ec-danger-rgb), 0.14);
+  color: var(--ec-danger);
+  font-weight: 600;
+}
+.ec-espace .ec-cb-restaurer {
+  align-self: center;
+  margin: 0;
+  white-space: nowrap;
+}
+.ec-espace .ec-cb-absente {
+  max-width: 620px;
+}
+
+/* ─────────────────────────── une personne (planche 4) ─────────────────────────── */
+
+.ec-espace .ec-pe {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ec-espace .ec-pe-fil {
+  margin: 0;
+}
+/* L'initiale reste en haut à côté du nom (une phrase « autre nom » peut allonger la carte), les gestes au milieu. */
+.ec-espace .ec-pe-carte {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+}
+.ec-espace .ec-pe-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-size: 18px;
+  font-weight: 600;
+}
+.ec-espace .ec-pe-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+/* (0,2,0) contre `.bj-atelier h2` ; la Garamond droite, jamais coupée au milieu (globals.css:183). */
+.ec-espace .ec-pe-nom {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: normal;
+  font-size: 32px;
+  line-height: 1.05;
+  letter-spacing: 0;
+  color: var(--ec-titre);
+  overflow-wrap: normal !important;
+}
+.ec-espace .ec-pe-meta,
+.ec-espace .ec-pe-email {
+  font-size: 13px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-pe-meta b {
+  color: var(--ec-text);
+  font-weight: 600;
+}
+/* Un autre nom tapé avec son adresse (non vérifiée) : dit sobrement, le geste à côté. */
+.ec-espace .ec-pe-propose {
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ec-espace .ec-pe-propose .ec-ph-lien {
+  font-size: 13px;
+  font-weight: 600;
+}
+.ec-espace .ec-pe-gestes {
+  flex: none;
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ec-espace .ec-pe-geste {
+  color: var(--ec-text);
+  background: var(--ec-surface);
+}
+.ec-espace .ec-pe-doublons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1.5px dashed rgba(var(--ec-ac-rgb), 0.45);
+  background: rgba(var(--ec-ac-rgb), 0.04);
+}
+.ec-espace .ec-pe-doublons-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14.5px;
+}
+.ec-espace .ec-pe-doublons-tete b {
+  font-weight: 600;
+}
+.ec-espace .ec-pe-doublon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: var(--ec-surface);
+}
+.ec-espace .ec-pe-doublon-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+.ec-espace .ec-pe-doublon-l1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.ec-espace .ec-pe-doublon-l1 b {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.ec-espace .ec-pe-raison {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  color: var(--ec-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.ec-espace .ec-pe-doublon-l2 {
+  font-size: 12.5px;
+  color: var(--ec-muted);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-pe-fusionner {
+  flex: none;
+}
+
+/* Les fenêtres : renommer (4E), fusionner (4B). */
+.ec-espace .ec-pe-feuille {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.ec-espace .ec-pe-libelle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ec-text);
+}
+.ec-espace .ec-pe-champs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: -6px;
+}
+.ec-espace .ec-pe-champs .ec-champ {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+.ec-espace .ec-pe-valider {
+  width: 100%;
+  min-height: 52px;
+}
+.ec-espace .ec-pe-paire {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+.ec-espace .ec-pe-paire-ic {
+  display: inline-flex;
+  color: var(--ec-faint);
+}
+.ec-espace .ec-pe-carte-mini {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--ec-line);
+  background: var(--ec-surface);
+  line-height: 1.4;
+}
+.ec-espace .ec-pe-carte-mini b {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ec-espace .ec-pe-carte-mini span {
+  font-size: 12.5px;
+  color: var(--ec-muted);
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-pe-changer {
+  align-self: flex-start;
+  font-size: 13px;
+}
+.ec-espace .ec-pe-garde {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ec-espace .ec-pe-garde legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ec-text);
+}
+.ec-espace .ec-pe-choix {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--ec-line-fort);
+  background: var(--ec-surface);
+  font-size: 14.5px;
+  cursor: pointer;
+}
+.ec-espace .ec-pe-choix--on {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-pe-radio {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1.5px solid var(--ec-line-fort);
+  background: var(--ec-surface);
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.ec-espace .ec-pe-radio:checked {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent);
+  box-shadow: inset 0 0 0 3px var(--ec-surface);
+}
+.ec-espace .ec-pe-radio:focus-visible {
+  outline: 2px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-pe-effet {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+/* Fusionner : « Annuler » et « Fusionner » à droite, à leur taille (planche 4B ; au téléphone, pleine largeur). */
+.ec-espace .ec-pe-feuille .ec-envoi-gestes {
+  justify-content: flex-end;
+}
+.ec-espace .ec-pe-feuille .ec-envoi-gestes > .ec-bouton {
+  flex: none;
+  min-width: 112px;
+}
+.ec-espace .ec-pe-choisir {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ec-espace .ec-pe-candidates {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ─────────────────────────────── téléphone ─────────────────────────────── */
+
+@media (max-width: 860px) {
+  /* La page défile ; la place sous le pouce reste libre (Déposer, la barre d'actions). */
+  .ec-espace .ec-collecte {
+    padding-bottom: 120px;
+  }
+  /* Le titre et sa pilule sur une ligne ; « Les liens » (deux gestes) passe à la ligne plutôt que de couper le titre. */
+  .ec-espace .ec-collecte .ec-ecran-tete {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 14px 16px 2px;
+  }
+  .ec-espace .ec-collecte .ec-ecran-titres {
+    min-width: 0;
+  }
+  .ec-espace .ec-collecte .ec-ecran-titre {
+    font-size: 30px;
+  }
+  .ec-espace .ec-collecte > .ec-li {
+    padding-top: 14px;
+  }
+  .ec-espace .ec-collecte .ec-ecran-sous {
+    display: none;
+  }
+  .ec-espace .ec-collecte .ec-ecran-actions {
+    flex-wrap: nowrap;
+    flex: none;
+  }
+  .ec-espace .ec-ph-retour {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    padding: 12px 16px 0 12px;
+    border: 0;
+    background: none;
+    color: var(--ec-accent);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .ec-espace .ec-collecte--lien .ec-ecran-tete {
+    padding-top: 4px;
+  }
+  .ec-espace .ec-ph-mligne {
+    margin: 0;
+    padding: 0 16px;
+    font-size: 13px;
+    color: var(--ec-muted);
+  }
+  .ec-espace .ec-ph-mligne b {
+    color: var(--ec-text);
+    font-weight: 600;
+  }
+  /* La seule barre : collée sous le logo en descendant. */
+  .ec-espace .ec-ph-moutils,
+  .ec-espace .ec-ph-barre-cocher {
+    position: sticky;
+    top: 78px;
+    z-index: var(--ec-z-collant);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 8px 0;
+    padding: 6px;
+    border-radius: 20px;
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-glass);
+    box-shadow: var(--ec-ombre-douce);
+    -webkit-backdrop-filter: var(--ec-flou);
+    backdrop-filter: var(--ec-flou);
+  }
+  /* Des cibles de 44 px (21/10 : « Tout » et « Par lien » faisaient 34 px, à 4 px l'un de l'autre),
+     SANS grossir la barre : 2 px de verre autour du creux (6 avant) et 2 px de creux autour des
+     boutons (3 avant) font toujours 54 px de haut. Les boutons sont à 6 px l'un de l'autre. */
+  .ec-espace .ec-ph-moutils {
+    padding: 2px;
+  }
+  .ec-espace .ec-ph-moutils .ec-ph-seg {
+    flex: none;
+    gap: 6px;
+    padding: 2px;
+  }
+  .ec-espace .ec-ph-moutils .ec-ph-seg > button {
+    height: 44px;
+    padding: 0 12px;
+  }
+  .ec-espace .ec-ph-moutils .ec-ph-pilule {
+    min-height: 44px;
+    padding: 0 12px;
+  }
+  /* Les segmentés de la feuille « Filtrer » (« Plus récentes » | « Par jour ») : 36 px avant, 44 maintenant. */
+  .ec-espace .ec-ph-seg {
+    gap: 6px;
+  }
+  .ec-espace .ec-ph-seg > button {
+    height: 44px;
+  }
+  .ec-espace .ec-ph-pilule--filtre {
+    color: var(--ec-text);
+  }
+  .ec-espace .ec-ph-rond {
+    display: grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--ec-accent);
+    color: var(--ec-on-accent);
+    font-size: 11px;
+    font-weight: 700;
+    box-sizing: border-box;
+  }
+  .ec-espace .ec-ph-droite {
+    margin-left: auto;
+  }
+  .ec-espace .ec-ph-barre-cocher {
+    padding: 6px 12px 6px 6px;
+  }
+  .ec-espace .ec-ph-barre-cocher b {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .ec-espace .ec-ph-barre-cocher .ec-ph-lien {
+    font-size: 14px;
+  }
+  .ec-espace .ec-ph-x {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--ec-muted);
+    cursor: pointer;
+  }
+  .ec-espace .ec-collecte--cocher .ec-ph-mligne {
+    padding-top: 10px;
+  }
+  .ec-espace .ec-ph-annonce--tel {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin: 8px 8px 0;
+    padding: 6px 6px 6px 12px;
+    border-radius: 999px;
+    font-size: 13.5px;
+  }
+  .ec-espace .ec-ph-annonce--tel strong {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ec-espace .ec-ph-annonce--tel .ec-bouton {
+    flex: none;
+    min-height: 32px;
+  }
+
+  /* Plus de panneau de verre : la grille va d'un bord à l'autre. */
+  .ec-espace .ec-ph-panneau {
+    display: block;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    overflow: visible;
+  }
+  .ec-espace .ec-ph-zone {
+    display: block;
+    padding: 0;
+    overflow: visible;
+  }
+  .ec-espace .ec-ph-defile {
+    padding: 8px 2px 0;
+  }
+  .ec-espace .ec-ph-g {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
+  }
+  .ec-espace .ec-ph-t {
+    border-radius: 2px;
+    contain-intrinsic-size: auto 92px;
+  }
+  .ec-espace .ec-ph-t-case,
+  .ec-espace .ec-ph-t-etoile {
+    top: 5px;
+    width: 22px;
+    height: 22px;
+  }
+  .ec-espace .ec-ph-t-case {
+    left: 5px;
+  }
+  .ec-espace .ec-ph-t-etoile {
+    right: 5px;
+  }
+  .ec-espace .ec-ph-qui {
+    left: 4px;
+    bottom: 4px;
+    padding: 0 5px;
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .ec-espace .ec-ph-qui-nom,
+  .ec-espace .ec-ph-badge-long {
+    display: none;
+  }
+  .ec-espace .ec-ph-qui-ini,
+  .ec-espace .ec-ph-badge-court {
+    display: inline;
+  }
+  .ec-espace .ec-ph-badge {
+    right: 4px;
+    bottom: 4px;
+    padding: 0 5px;
+    font-size: 9.5px;
+  }
+  .ec-espace .ec-ph-badge--rond {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+  }
+  .ec-espace .ec-ph-t--doublon .ec-ph-qui {
+    max-width: calc(100% - 30px);
+  }
+  .ec-espace .ec-ph-neuve {
+    top: 4px;
+    left: 4px;
+    padding: 0 5px;
+    font-size: 9.5px;
+  }
+  .ec-espace .ec-ph-tete-jour {
+    padding: 8px 6px 4px;
+  }
+  .ec-espace .ec-ph-tete-jour:first-child {
+    padding-top: 2px;
+  }
+  .ec-espace .ec-ph-chargement {
+    padding: 10px 16px 0;
+  }
+  .ec-espace .ec-ph-accueil,
+  .ec-espace .ec-collecte .ec-a-venir {
+    margin: 12px 10px 0;
+    padding: 24px 20px;
+  }
+
+  /* « Par lien » : une rangée par lien, pleine largeur ; le lien ouvert : ses personnes. */
+  .ec-espace .ec-ph-cartes,
+  .ec-espace .ec-ph-liste-verre {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 4px 6px 8px;
+    padding: 6px;
+    border-radius: 24px;
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-carte);
+    box-shadow: var(--ec-ombre-carte);
+  }
+  .ec-espace .ec-ph-carte,
+  .ec-espace .ec-ph-rangee {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+    color: var(--ec-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+  .ec-espace .ec-ph-rangee--court {
+    min-height: 48px;
+    padding: 6px 10px;
+  }
+  .ec-espace .ec-ph-rangee--on {
+    background: var(--ec-actif);
+    box-shadow: var(--ec-actif-ombre);
+  }
+  .ec-espace .ec-ph-rangee-txt {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.3;
+  }
+  .ec-espace .ec-ph-rangee-txt b {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ec-espace .ec-ph-rangee > svg,
+  .ec-espace .ec-ph-chev-carte {
+    flex: none;
+    display: inline-flex;
+    color: var(--ec-faint);
+  }
+  .ec-espace .ec-ph-rangee .ec-ph-n,
+  .ec-espace .ec-ph-carte .ec-ph-n {
+    font-size: 14px;
+    color: var(--ec-muted);
+  }
+  .ec-espace .ec-ph-carte--vide {
+    border: 0;
+    opacity: 0.75;
+  }
+  .ec-espace .ec-ph-mosa {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+  }
+  .ec-espace .ec-ph-carte-txt b {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ec-text);
+  }
+  .ec-espace .ec-ph-arrivees {
+    margin: 14px 10px 8px;
+    flex-wrap: wrap;
+  }
+
+  /* « Déposer » sous le pouce, et la barre d'actions fixe du mode « cocher ». */
+  .ec-espace .ec-ph-fab {
+    position: fixed;
+    right: 16px;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    z-index: var(--ec-z-barre);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 52px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--ec-accent);
+    color: var(--ec-on-accent);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: var(--ec-ombre-bouton);
+    cursor: pointer;
+  }
+  /* Collecte terminée : le même bouton, éteint (21/10), avec la raison au toucher long et dans la ligne d'état. */
+  .ec-espace .ec-ph-fab--eteint {
+    background: var(--ec-carte-pleine);
+    border: 1px solid var(--ec-line-fort);
+    color: var(--ec-faint);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  .ec-espace .ec-ph-bas {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    z-index: var(--ec-z-barre);
+    border-radius: 26px;
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-glass);
+    box-shadow: var(--ec-reflet), 0 18px 50px var(--ec-ombre);
+    -webkit-backdrop-filter: blur(28px) saturate(1.4);
+    backdrop-filter: blur(28px) saturate(1.4);
+  }
+  .ec-espace .ec-ph-bas .ec-ph-progres {
+    padding: 8px 16px 0;
+    text-align: center;
+  }
+  .ec-espace .ec-ph-bas-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 8px 4px;
+  }
+  .ec-espace .ec-ph-bas-actions--trois {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ec-espace .ec-ph-bas-actions--deux {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-ph-bas-actions > button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-height: 52px;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: 18px;
+    background: none;
+    color: var(--ec-text);
+    font: inherit;
+    font-size: 11.5px;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+  }
+  .ec-espace .ec-ph-bas-actions > button:disabled {
+    opacity: 0.45;
+  }
+  .ec-espace .ec-ph-bas-actions > .ec-ph-bas-on {
+    color: var(--ec-accent);
+    font-weight: 600;
+  }
+  .ec-espace .ec-ph-bas-actions > .ec-ph-bas-danger {
+    color: var(--ec-danger);
+  }
+  .ec-espace .ec-ph-avis {
+    position: fixed;
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    z-index: var(--ec-z-avis);
+    white-space: normal;
+    width: max-content;
+  }
+  .ec-espace .ec-ph-avis--barre {
+    bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+  .ec-espace .ec-ph-avis--haut {
+    bottom: calc(200px + env(safe-area-inset-bottom));
+  }
+
+  /* La feuille « Filtrer », du bas. */
+  .ec-espace .ec-ph-feuille-voile {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ec-z-feuille);
+    background: var(--ec-voile);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+  }
+  .ec-espace .ec-ph-feuille {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: 52px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 28px 28px 0 0;
+    border: 1px solid var(--ec-carte-bord);
+    border-bottom: 0;
+    background: var(--ec-glass);
+    box-shadow: var(--ec-reflet), 0 -20px 60px var(--ec-ombre);
+    -webkit-backdrop-filter: blur(32px) saturate(1.4);
+    backdrop-filter: blur(32px) saturate(1.4);
+    color: var(--ec-text);
+  }
+  .ec-espace .ec-ph-poignee {
+    flex: none;
+    width: 40px;
+    height: 5px;
+    margin: 8px auto 4px;
+    border-radius: 999px;
+    background: rgba(var(--ec-fg-rgb), 0.22);
+  }
+  .ec-espace .ec-ph-feuille-tete {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 18px 8px;
+  }
+  .ec-espace .ec-ph-feuille-tete h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-style: normal;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: 0;
+    color: var(--ec-titre);
+  }
+  .ec-espace .ec-ph-feuille-corps {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 0 12px 12px;
+  }
+  .ec-espace .ec-ph-feuille-pied {
+    flex: none;
+    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* La photo agrandie : plein écran, les gestes sous le pouce. */
+  .ec-espace .ec-ag {
+    position: fixed;
+    inset: 0;
+    z-index: var(--ec-z-photo);
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: env(safe-area-inset-top) 0 0;
+    background: var(--ec-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .ec-espace .ec-ag-scene {
+    flex: 1;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .bj-atelier.ec-espace[data-ec-mode="jour"] .ec-ag-scene {
+    background: none;
+  }
+  .ec-espace .ec-ag-haut {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    padding: 6px 10px;
+  }
+  .ec-espace .ec-ag-fermer {
+    order: -1;
+  }
+  .ec-espace .ec-ag-pos {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .ec-espace .ec-ag-pos-long,
+  .ec-espace .ec-ag-fleche,
+  .ec-espace .ec-ag-clavier,
+  .ec-espace .ec-ag-cote {
+    display: none;
+  }
+  .ec-espace .ec-ag .ec-ag-pos-court {
+    display: inline;
+  }
+  .ec-espace .ec-ag-rond {
+    width: 44px;
+    height: 44px;
+    background: var(--ec-surface);
+    color: var(--ec-text);
+  }
+  .ec-espace .ec-ag-rond--on {
+    background: var(--ec-accent);
+    color: var(--ec-on-accent);
+  }
+  .ec-espace .ec-ag .ec-ag-etoile {
+    display: grid;
+  }
+  .ec-espace .ec-ag-photo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0;
+    touch-action: pinch-zoom;
+  }
+  .ec-espace .ec-ag-cadre {
+    width: min(100cqw, (100cqh - 34px) * var(--ec-ag-r, 1.5));
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .ec-espace .ec-ag .ec-ag-balai {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 12.5px;
+    color: var(--ec-muted);
+  }
+  .ec-espace .ec-ag .ec-ag-info {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 10px 12px calc(110px + env(safe-area-inset-bottom));
+    padding: 12px 14px;
+    border-radius: 18px;
+    border: 1px solid var(--ec-line);
+    background: var(--ec-surface);
+    color: var(--ec-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .ec-espace .ec-ag-info:disabled {
+    cursor: default;
+  }
+  .ec-espace .ec-ag-info-txt {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+  }
+  .ec-espace .ec-ag-info-txt b {
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ec-espace .ec-ag-info-txt span {
+    font-size: 12.5px;
+    color: var(--ec-muted);
+  }
+  .ec-espace .ec-ag-chev {
+    flex: none;
+    color: var(--ec-faint);
+  }
+  .ec-espace .ec-ag .ec-ag-bas {
+    display: block;
+    z-index: calc(var(--ec-z-photo) + 2);
+  }
+  /* Toucher la photo masque les barres, pour la voir seule. */
+  .ec-espace .ec-ag--nu .ec-ag-haut,
+  .ec-espace .ec-ag--nu .ec-ag-info,
+  .ec-espace .ec-ag--nu .ec-ag-bas,
+  .ec-espace .ec-ag--nu .ec-ag-balai {
+    visibility: hidden;
+  }
+}
+
+/* ─────────────── écrans moyens (1024) : la barre et la fiche tiennent (lot w2) ─────────────── */
+
+@media (min-width: 861px) and (max-width: 1180px) {
+  .ec-espace .ec-ph-sep {
+    margin: 0 2px;
+  }
+  .ec-espace .ec-ph-act {
+    padding: 0 11px;
+  }
+  /* La fiche d'une personne : ses gestes passent dessous plutôt que d'écraser le nom. */
+  .ec-espace .ec-pe-carte {
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-pe-id {
+    flex: 1 1 260px;
+  }
+  .ec-espace .ec-pe-gestes {
+    flex: 1 1 auto;
+  }
+}
+
+/* ─────────────── téléphone : la corbeille, une personne, leurs fenêtres (lot w2) ─────────────── */
+
+@media (max-width: 860px) {
+  /* La fiche et la corbeille portent leur propre titre : celui de l'écran se tait (les pastilles d'envoi restent). */
+  .ec-espace .ec-collecte--propre .ec-ecran-titres,
+  .ec-espace .ec-collecte--propre .ec-ecran-actions > .ec-ph-pilule {
+    display: none;
+  }
+  .ec-espace .ec-collecte--propre .ec-ecran-tete {
+    min-height: 0;
+    padding: 0 16px;
+  }
+  .ec-espace .ec-ph-bas-actions > button > svg {
+    flex: none;
+  }
+
+  /* La corbeille (5B) : une carte par photo, l'échéance et « Restaurer » dessous. */
+  .ec-espace .ec-cb {
+    display: block;
+  }
+  .ec-espace .ec-cb-tete {
+    align-items: center;
+    flex-wrap: nowrap;
+    padding: 6px 16px 0;
+  }
+  .ec-espace .ec-cb-titre {
+    font-size: 34px;
+  }
+  .ec-espace .ec-cb-defile {
+    padding: 12px 8px 0;
+  }
+  .ec-espace .ec-cb-info {
+    font-size: 13.5px;
+  }
+  .ec-espace .ec-cb-liste {
+    gap: 4px;
+    padding: 6px;
+    border-radius: 24px;
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-carte);
+    box-shadow: var(--ec-ombre-carte);
+  }
+  .ec-espace .ec-cb-ligne {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "vign txt txt"
+      ". eche rest";
+    gap: 10px 12px;
+    padding: 10px;
+  }
+  .ec-espace .ec-cb--cocher .ec-cb-ligne {
+    grid-template-columns: auto 56px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "case vign txt txt"
+      ". . eche rest";
+  }
+  .ec-espace .ec-cb-case {
+    grid-area: case;
+    display: none;
+  }
+  .ec-espace .ec-cb--cocher .ec-cb-case {
+    display: grid;
+  }
+  .ec-espace .ec-cb-vign {
+    grid-area: vign;
+    width: 56px;
+    height: 56px;
+  }
+  .ec-espace .ec-cb-txt {
+    grid-area: txt;
+  }
+  .ec-espace .ec-cb-echeance {
+    grid-area: eche;
+    justify-self: start;
+  }
+  .ec-espace .ec-cb-restaurer {
+    grid-area: rest;
+  }
+  .ec-espace .ec-cb-bas {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 8px 6px;
+  }
+  .ec-espace .ec-cb-bas b {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* Une personne (4D) : le nom à côté de l'initiale, puis la ligne, puis trois gestes de front. */
+  .ec-espace .ec-pe {
+    margin: 4px 8px 10px;
+  }
+  .ec-espace .ec-pe-carte {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 2px;
+    padding: 16px;
+    border-radius: 24px;
+    border-color: var(--ec-carte-bord);
+    background: var(--ec-carte);
+    box-shadow: var(--ec-ombre-carte);
+  }
+  .ec-espace .ec-pe-avatar {
+    grid-row: 1 / span 2;
+    width: 52px;
+    height: 52px;
+    font-size: 16px;
+  }
+  .ec-espace .ec-pe-id {
+    display: contents;
+  }
+  .ec-espace .ec-pe-nom {
+    grid-column: 2;
+    align-self: end;
+    font-size: 30px;
+  }
+  .ec-espace .ec-pe-email {
+    grid-column: 2;
+    align-self: start;
+    overflow-wrap: anywhere;
+  }
+  .ec-espace .ec-pe-meta,
+  .ec-espace .ec-pe-propose,
+  .ec-espace .ec-pe-id > .ec-note {
+    grid-column: 1 / -1;
+    margin-top: 10px;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+  .ec-espace .ec-pe-gestes {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 12px;
+  }
+  .ec-espace .ec-pe-geste {
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 8px;
+  }
+  .ec-espace .ec-pe-doublon {
+    padding: 10px;
+  }
+
+  /* Renommer et fusionner : une feuille du bas, comme « Filtrer ». */
+  .ec-espace .ec-fenetre-voile:has(.ec-pe-feuille) {
+    align-items: end;
+    justify-items: stretch;
+    padding: 0;
+  }
+  .ec-espace .ec-fenetre:has(.ec-pe-feuille) {
+    width: 100%;
+    border-radius: 28px 28px 0 0;
+    border-bottom: 0;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+  .ec-espace .ec-pe-paire {
+    gap: 6px;
+  }
+  .ec-espace .ec-pe-feuille .ec-envoi-gestes > .ec-bouton {
+    flex: 1;
+  }
+  .ec-espace .ec-pe-carte-mini {
+    padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-ph-chev,
+  .ec-espace .ec-ph-bascule,
+  .ec-espace .ec-ph-bascule::after,
+  .ec-espace .ec-ph-t-case,
+  .ec-espace .ec-ph-t-etoile,
+  .ec-espace .ec-ag-img--grande {
+    transition: none;
+  }
+}

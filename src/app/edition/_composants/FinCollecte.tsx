@@ -125,7 +125,7 @@ export function LigneFinCollecte({ le, tu, oubli, id }: { le: string | null; tu:
  * - collecte terminée : « Déposer des photos » (onglet Photos) ou « Créer un lien » (onglet
  *   Liens) ÉTEINT, avec la raison au survol et pour le lecteur d'écran ; la ligne d'état, juste
  *   dessous, la dit en toutes lettres.
- * `variante="tel"` : le « Déposer » flottant du téléphone, éteint lui aussi.
+ * `variante="tel"` : le « + » rond de l'en-tête du téléphone (planche 2 du 21/10 : « Déposer » n'est plus un bouton flottant), éteint lui aussi.
  * `variante="ligne"` : « Terminer la collecte » du téléphone, sous l'en-tête (la rangée de l'en-tête n'a pas
  * la place d'un bouton de plus à 375 px).
  */
@@ -160,8 +160,10 @@ export function ActionsFinCollecte({
     if (variante === "tel") {
       if (onglet !== "photos") return null;
       return (
-        <button type="button" className="ec-ph-fab ec-ph-tel ec-ph-fab--eteint" disabled title={RAISON_COLLECTE_TERMINEE} aria-describedby={ID_LIGNE_FIN}>
-          Déposer
+        <button type="button" className="ec-ph-plus ec-ph-plus--eteint ec-ph-tel" disabled title={RAISON_COLLECTE_TERMINEE} aria-describedby={ID_LIGNE_FIN} aria-label="Déposer des photos">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
         </button>
       );
     }

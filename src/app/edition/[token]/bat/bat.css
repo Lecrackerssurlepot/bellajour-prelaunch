@@ -780,12 +780,12 @@
 
 /* ─────────────────────────────── téléphone ─────────────────────────────── */
 
-/* Le bon à tirer reste un écran entier sous la barre du tiroir (65 px) ; les
+/* Le bon à tirer reste un écran entier sous la barre du haut (`--ec-barre-h` et son écart : 58 px) ; les
    notes deviennent une feuille du bas, ouverte par la pastille « Notes · n »
    posée en bas à droite (fermée par défaut, Liseuse.tsx). */
 @media (max-width: 860px) {
   .ec-espace .ec-bat2 {
-    min-height: calc(var(--app-height) - 65px);
+    min-height: calc(var(--app-height) - var(--ec-barre-h) - var(--ec-barre-marge));
   }
   .ec-espace .ec-bat2 .ec-ecran-tete {
     gap: 10px;

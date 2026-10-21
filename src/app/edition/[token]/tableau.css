@@ -18,9 +18,18 @@
   align-items: flex-start;
   gap: 2px;
 }
-.ec-espace .ec-tdb .ec-ecran-titre {
-  font-size: 40px;
-  line-height: 1;
+/* 40 px sur ordinateur seulement : sur téléphone, TOUS les écrans ont le même grand titre de 34 px (espace.css,
+   planche 1 du 21/10) ; ce (0,3,0) chargé APRÈS espace.css l'aurait remplacé. */
+@media (min-width: 861px) {
+  .ec-espace .ec-tdb .ec-ecran-titre {
+    font-size: 40px;
+    line-height: 1;
+  }
+}
+@media (max-width: 860px) {
+  .ec-espace .ec-tdb .ec-ecran-titres {
+    gap: 0;
+  }
 }
 .ec-espace .ec-tdb .ec-ecran-sous {
   font-size: 14px;

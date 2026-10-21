@@ -23,18 +23,24 @@
      photos, sa propre route (`/api/collectif/photos/corbeille`) ; tout autre
      geste des listes en sort ;
    - une personne (`qui:…`, `pers:…`) ouvre sa FICHE au-dessus de ses photos
-     (`cleDeLaPersonne`). */
+     (`cleDeLaPersonne`).
+
+   Planche 2 du 21/10 (téléphone) : un TROISIÈME choix, « Personnes » (`mode: "personnes"`), à côté de « Tout » et
+   « Par lien » : tout le monde, tous liens confondus. Il lit la même chose que « Tout » (la clé `tout`, donc
+   passer de l'un à l'autre ne relit rien) : seul l'AFFICHAGE change, une liste de personnes au téléphone au lieu de
+   la grille ; sur ordinateur, ce choix n'existe pas (la colonne « Personne » fait le même travail) et la grille reste
+   celle de « Tout ». Toucher une personne ouvre ses photos (`personne: qui:<nom>`). */
 
 import { PHOTOS_PAR_GESTE } from "@/lib/collectif/corbeille";
 import { clePersonne, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { GROUPE_SANS_GROUPE } from "@/lib/collectif/partage";
 
-export type Mode = "tout" | "liens";
+export type Mode = "tout" | "liens" | "personnes";
 export type Ordre = "recentes" | "jour";
 export type VueRoute = "toutes" | "jour" | "doublons" | "signalees";
 
 export type Filtres = {
-  /** « Tout » (la grille, filtrée) ou « Par lien » (un album par lien, puis le lien ouvert). */
+  /** « Tout » (la grille, filtrée), « Par lien » (un album par lien, puis le lien ouvert) ou « Personnes » (la liste de tout le monde, téléphone). */
   mode: Mode;
   /** Le lien coché : `lien:<id>`, `participants` (le lien général), `vous` (Mes photos), `atelier`. */
   lien: string | null;
@@ -65,6 +71,9 @@ export function requeteDe(f: Filtres): { dossier: string; vue: VueRoute } {
 /** « Par lien » sans lien ouvert : les albums, pas de grille. */
 export const estVueAlbums = (f: Filtres) => f.mode === "liens" && !f.lien && !f.selection && !f.corbeille;
 
+/** « Personnes » sans personne ouverte : la liste de tout le monde (téléphone). Une personne ouverte, ou un autre geste des listes, rend la grille. */
+export const estVuePersonnes = (f: Filtres) => f.mode === "personnes" && !f.personne && !f.selection && !f.corbeille && !f.doublons && !f.signalees;
+
 /**
  * La vue range les DERNIÈRES ARRIVÉES en tête (« Tout », un lien, une personne, un dossier, les albums « Par
  * lien ») : une photo qui arrive y entre en haut. Pas Ma sélection, Doublons, Ne pas publier, l'ordre « Par jour »,
@@ -75,6 +84,19 @@ export const montreLesDernieres = (f: Filtres) => !f.selection && !f.corbeille &
 /** Combien de filtres sont actifs (le rond du bouton « Filtrer » du téléphone). */
 export function nombreDeFiltres(f: Filtres): number {
   return [f.lien, f.dossier, f.personne, f.jour].filter(Boolean).length + (f.doublons ? 1 : 0) + (f.selection ? 1 : 0) + (f.signalees ? 1 : 0);
+}
+
+/**
+ * Combien de réglages la FEUILLE « Filtrer » du téléphone montre d'actifs (le rond du bouton) : un jour, Ma sélection, Ne pas
+ * publier, Doublons. Pas le lien ni la personne : ils s'ouvrent par « Par lien » et « Personnes » (la barre du bas), et un
+ * rond qui compte ce que la feuille ne montre pas se lirait comme un réglage caché.
+ */
+export function nombreDansLaFeuille(f: Filtres): number {
+  return (f.jour ? 1 : 0) + (f.doublons ? 1 : 0) + (f.selection ? 1 : 0) + (f.signalees ? 1 : 0);
+}
+/** « Tout effacer » de la feuille : ses réglages seulement. Le lien ouvert, la personne et le choix du bas (Tout, Par lien, Personnes) restent. */
+export function sansReglagesDeLaFeuille(f: Filtres): Filtres {
+  return { ...f, jour: null, doublons: false, signalees: false, selection: false };
 }
 
 /** « Doublons » et « Ne pas publier » sont deux vues de la route : cocher l'une décoche l'autre. */
@@ -97,6 +119,7 @@ export function filtresDepuis(cle: string, modeTout = false): Filtres {
   if (cle === "corbeille") return { ...f, corbeille: true };
   if (cle === "selection") return { ...f, selection: true };
   if (cle === "liens") return { ...f, mode: "liens" };
+  if (cle === "personnes") return { ...f, mode: "personnes" };
   if (cle === "vous" || cle === "participants" || cle === "atelier" || cle.startsWith("lien:")) return { ...f, mode: modeTout ? "tout" : "liens", lien: cle };
   if (cle.startsWith("resp:")) return { ...f, mode: modeTout ? "tout" : "liens", lien: "vous", dossier: cle };
   if (cle.startsWith("pers:")) {
@@ -110,6 +133,7 @@ export function filtresDepuis(cle: string, modeTout = false): Filtres {
 /** L'adresse qui rouvre le même endroit (replaceState, rien ne s'empile). */
 export function adresseDe(f: Filtres): string {
   if (f.corbeille) return "?dossier=corbeille";
+  if (estVuePersonnes(f)) return "?dossier=personnes";
   const { dossier } = requeteDe({ ...f, doublons: false, signalees: false, jour: null, ordre: "recentes" });
   if (dossier === "tout") return "";
   const tout = f.mode === "tout" && f.lien ? "&mode=tout" : "";
@@ -205,6 +229,19 @@ export function jourCourt(cle: string): string {
   if (!p) return cle;
   const j = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
   return p.sansDate ? `sans date · ${p.d} ${MOIS_COURTS[p.m - 1]}` : `${JOURS_COURTS[j]} ${p.d} ${MOIS_COURTS[p.m - 1]}`;
+}
+
+/** « octobre » quand tous les jours (datés) sont du même mois, sinon `null` : le titre de la liste des jours de la feuille. */
+export function moisCommun(jours: readonly { cle: string }[]): string | null {
+  const mois = new Set<number>();
+  for (const j of jours) {
+    const p = partiesDuJour(j.cle);
+    if (!p || p.sansDate) continue;
+    mois.add(p.y * 12 + p.m - 1);
+  }
+  if (mois.size !== 1) return null;
+  const [m] = [...mois];
+  return MOIS[m % 12];
 }
 
 export type JourVu = { cle: string; n: number; complet: boolean };
