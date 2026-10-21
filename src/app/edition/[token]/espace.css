@@ -103,6 +103,34 @@
 
   --ec-menu-l: 248px;
   --ec-tete-h: 68px;
+
+  /* ── L'ÉCHELLE DES COUCHES (21/10, « vérifier bien les chevauchements ») ──
+     UNE seule, lue par TOUTES les feuilles de l'espace : un `z-index` écrit en
+     dur dans une feuille, c'est ce qui laissait la barre d'actions des photos
+     cochées et le bouton « Déposer » passer par-dessus le tiroir du menu (leurs
+     40 et 35 valaient ceux du tiroir et de son voile, et le DOM tranchait).
+     De bas en haut, tout se joue dans `.ec-coquille` (`isolation: isolate`) :
+       contenu (0)
+       < collants d'une page            la barre d'outils Photos, le pied du mur, la zone d'écriture
+       < en-tête du téléphone           collé en haut
+       < barres FIXES d'une page        « Déposer », les actions des photos cochées, les notes du BAT,
+                                        la barre d'actions de l'ordinateur
+       < voile du tiroir                assombrit TOUT ce qui est dessous, barres fixes comprises
+       < tiroir du menu
+       < fenêtres                       (et le menu « … » d'un lien, juste au-dessus de leur voile)
+       < feuille « Filtrer »
+       < photo agrandie
+       < avis qui passe                 « Annuler », la seule chose au-dessus d'une photo agrandie.
+     Une barre fixe n'écrit donc JAMAIS un nombre supérieur à `--ec-z-barre`. */
+  --ec-z-collant: 20;
+  --ec-z-entete: 30;
+  --ec-z-barre: 34;
+  --ec-z-voile: 50;
+  --ec-z-tiroir: 55;
+  --ec-z-fenetre: 60;
+  --ec-z-feuille: 65;
+  --ec-z-photo: 70;
+  --ec-z-avis: 75;
   background: var(--ec-bg);
   color: var(--ec-text);
   line-height: 1.5;
@@ -711,7 +739,7 @@
 .ec-espace .ec-panneau-voile {
   position: absolute;
   inset: 0;
-  z-index: 40;
+  z-index: var(--ec-z-fenetre);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -2349,38 +2377,65 @@
   place-items: center;
   cursor: pointer;
 }
+/* Le menu « … » d'un lien (21/10) : un VRAI menu, plus un bloc qui se pose en travers de la carte.
+   - Il vit dans `.ec-contenu` par un portail (`MenuLien`, Liens.tsx) : la carte est un panneau de
+     verre (`backdrop-filter`) et enfermerait un menu positionné dedans.
+   - Ordinateur : ancré SOUS le bouton « … », bord droit sur bord droit (ou bord gauche sur bord gauche
+     quand il sortirait de la colonne de contenu et couvrirait le menu de gauche ; ou AU-DESSUS si la
+     place manque en bas) ; la position vient du bouton (`--m-droite` ou `--m-gauche`, `--m-haut` ou `--m-bas`).
+     Fond OPAQUE du thème (`--ec-carte-pleine`) : un fond de verre laissait lire le titre et le QR
+     à travers. Ombre, filet, rien d'autre. Le voile est TRANSPARENT : il ne sert qu'à attraper le
+     clic dehors (et Échap ferme, côté composant).
+   - Téléphone (≤ 860 px) : une petite feuille du bas, voile sombre, le nom du lien en tête. */
+.ec-espace .ec-li-voile {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ec-z-fenetre);
+  background: transparent;
+}
 .ec-espace .ec-li-menu {
-  position: absolute;
-  right: 20px;
-  bottom: 68px;
-  z-index: 5;
-  width: 280px;
+  position: fixed;
+  z-index: calc(var(--ec-z-fenetre) + 1);
+  right: var(--m-droite, auto);
+  left: var(--m-gauche, auto);
+  top: var(--m-haut, auto);
+  bottom: var(--m-bas, auto);
+  width: min(300px, calc(100vw - 24px));
+  box-sizing: border-box;
   padding: 6px;
-  border-radius: 14px;
-  border: 1px solid var(--ec-line);
-  background: var(--ec-glass);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 18px 40px var(--ec-ombre);
+  border-radius: var(--ec-r-bloc);
+  border: 1px solid var(--ec-line-fort);
+  background: var(--ec-carte-pleine);
+  box-shadow: var(--ec-reflet), 0 18px 40px var(--ec-ombre);
   display: flex;
   flex-direction: column;
+  color: var(--ec-text);
+}
+.ec-espace .ec-li-menu-titre {
+  display: none;
 }
 .ec-espace .ec-li-menu > button {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+  min-height: 44px;
   padding: 10px 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 10px;
   background: transparent;
   color: var(--ec-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.ec-espace .ec-li-menu > button:hover {
-  background: rgba(var(--ec-fg-rgb), 0.06);
+.ec-espace .ec-li-menu > button:hover,
+.ec-espace .ec-li-menu > button:focus-visible {
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  outline: none;
+}
+.ec-espace .ec-li-menu > button:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ec-accent);
 }
 .ec-espace .ec-li-menu > .ec-li-menu-danger > span:first-child {
   color: var(--ec-danger);
@@ -2800,7 +2855,7 @@
 .ec-espace .ec-barre-fixe {
   position: sticky;
   bottom: 12px;
-  z-index: 15;
+  z-index: var(--ec-z-collant);
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -2829,8 +2884,20 @@
 @media (max-width: 860px) {
   /* Sur téléphone, un écran ne peut pas tout tenir : la page défile de
      nouveau, et les zones internes reprennent leur hauteur naturelle. */
+  /* ⚠️ Une COLONNE, plus une grille (21/10, « la barre est trop grosse »). La
+     coquille était une grille à une colonne et à rangées implicites (`auto`),
+     avec un `min-height` : sur une page courte (Bon à tirer verrouillé, Livraison,
+     Photos d'une édition vide), l'espace libre se répartissait ENTRE LES RANGÉES, et
+     l'en-tête de 62 px s'étirait à 366 px (192 sur Photos vide, 163 sur « Parler à
+     l'atelier », 472 sur une tablette). Une colonne n'étire rien : l'en-tête garde sa
+     hauteur (`flex: none`), le contenu prend tout le reste (`flex: 1 0 auto`).
+     Et c'est la bonne structure pour le collant : l'en-tête est `position: sticky`,
+     et le bloc conteneur d'un élément collant est ici toute la coquille ; dans une
+     rangée de grille, certains navigateurs le bornent à la rangée (62 px) et
+     l'en-tête ne colle plus. */
   .ec-espace .ec-coquille {
-    grid-template-columns: minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 0;
     padding: 0;
     height: auto;
@@ -2842,6 +2909,7 @@
     position: fixed;
   }
   .ec-espace .ec-contenu {
+    flex: 1 0 auto;
     overflow: visible;
   }
   .ec-espace .ec-ecran {
@@ -2866,7 +2934,7 @@
   .ec-espace .ec-fenetre-voile,
   .ec-espace .ec-panneau-voile {
     position: fixed;
-    z-index: 60;
+    z-index: var(--ec-z-fenetre);
     padding: 12px;
     border-radius: 0;
   }
@@ -2898,7 +2966,8 @@
   .ec-espace .ec-barre-mobile {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: var(--ec-z-entete);
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -2924,7 +2993,7 @@
   }
   .ec-espace .ec-menu {
     position: fixed;
-    z-index: 40;
+    z-index: var(--ec-z-tiroir);
     top: 8px;
     left: 8px;
     width: min(86vw, 300px);
@@ -2940,7 +3009,7 @@
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 35;
+    z-index: var(--ec-z-voile);
     border: 0;
     background: var(--ec-voile);
   }
@@ -3061,8 +3130,47 @@
   .ec-espace .ec-carte {
     padding: 20px;
   }
-}
 
+  /* ── Cibles au pouce (21/10) : 44 px, jamais 28 ni 34 ──
+     Le soleil et la lune du tiroir étaient deux ronds de 28 px collés l'un à l'autre. Ils font
+     40 × 40 (le creux autour : 3 px), ce qui ne grossit que le bloc du bas du tiroir. */
+  .ec-espace .ec-mode-choix {
+    gap: 2px;
+  }
+  .ec-espace .ec-mode {
+    width: 40px;
+    height: 40px;
+  }
+  /* Le menu « … » d'un lien : la feuille du bas (voile sombre, nom du lien en tête). */
+  .ec-espace .ec-li-voile {
+    background: var(--ec-voile);
+  }
+  .ec-espace .ec-li-menu {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: auto;
+    padding: 8px;
+    border-radius: var(--ec-r-panneau);
+  }
+  .ec-espace .ec-li-menu-titre {
+    display: block;
+    margin: 4px 12px 6px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--ec-muted);
+    overflow-wrap: anywhere;
+  }
+  .ec-espace .ec-li-menu > button {
+    min-height: 52px;
+    border-radius: var(--ec-r-bloc);
+  }
+  .ec-espace .ec-li-plus {
+    width: 44px;
+    height: 44px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .ec-espace .ec-menu {
     transition: none;
@@ -3153,6 +3261,36 @@
 }
 .ec-espace .ec-partage .ec-bouton {
   align-self: auto;
+}
+/* « Partager » un lien sur téléphone (21/10) : quatre boutons ne tiennent pas en quatre colonnes
+   (« Copier le message » passait sur trois lignes dans un rond de 70 px, « Télécharger le QR »
+   touchait le contour). Deux sur deux, une ligne chacune, 44 px de haut. Sous 340 px, une colonne.
+   ⚠️ Ces règles sont APRÈS les règles de base ci-dessus : à spécificité égale, la dernière gagne,
+   et dans le bloc « téléphone » plus haut elles perdaient (les quatre colonnes restaient). */
+@media (max-width: 860px) {
+  .ec-espace .ec-partage--quatre {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ec-espace .ec-partage--quatre .ec-bouton,
+  .ec-espace .ec-partage--deux .ec-bouton {
+    min-height: 44px;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 340px) {
+  .ec-espace .ec-partage--quatre {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Un écran court (iPhone SE, 667 px) : les deux rangées de boutons doivent se voir sans défiler dans la
+   fenêtre, donc le message à retoucher y est moins haut (8 lignes avant, 150 px maintenant). */
+@media (max-width: 860px) and (max-height: 700px) {
+  /* `.ec-champ` pose `flex: 1` : sans `flex: none`, la base à 0 l'emporte sur `height`. */
+  .ec-espace .ec-partage-message textarea {
+    flex: none;
+    height: 150px;
+  }
 }
 .ec-espace .ec-carte-lien,
 .ec-espace .ec-lien-pret {

@@ -65,9 +65,7 @@
   -webkit-mask-image: linear-gradient(to bottom, var(--ec-bg) calc(100% - 44px), transparent);
   mask-image: linear-gradient(to bottom, var(--ec-bg) calc(100% - 44px), transparent);
 }
-.ec-espace .ec-ph-panneau--barre .ec-ph-filtres {
-  padding-bottom: 96px;
-}
+/* (21/10) La barre d'actions ne couvre plus la colonne des filtres : plus de place à lui réserver. */
 .ec-espace .ec-ph-fl {
   display: flex;
   flex-direction: column;
@@ -421,13 +419,40 @@
     right: 10px;
     padding-left: 14px;
   }
-  /* La barre tient dans le panneau : les mots du téléphone (« Ma sélection », « Retirer », « 2 cochées »), et le × suffit pour tout décocher. */
+}
+/* La barre d'actions ne court plus que sur la zone de la grille (point 6, 21/10) : elle y a ~680 px à 1280, ~840
+   à 1440, et ses gestes en demandent 984 avec tous leurs mots. Ce n'est donc plus la FENÊTRE qui décide quand la
+   barre passe aux mots courts (les mêmes que sur téléphone : « Ma sélection », « Retirer », « 2 cochées », et le × suffit
+   pour tout décocher), c'est la LARGEUR DU PANNEAU, mesurée par une requête de conteneur (Safari 16+, Chrome 105+).
+   984 px de gestes + 32 de marges + les 272 px de filtres : sous 1290 px de panneau, les mots courts.
+   Sous 980 px de panneau (fenêtre sous ~1275 px : un iPad en paysage, un petit portable), même avec les mots courts la
+   zone est trop étroite pour les cinq gestes (640 px) : la barre reprend alors TOUTE la largeur du panneau, comme avant,
+   et la colonne des filtres garde de quoi défiler au-dessus d'elle. C'est le seul cas où elle couvre encore les filtres. */
+@media (min-width: 861px) {
+  .ec-espace .ec-ph-panneau {
+    container-type: inline-size;
+    container-name: ph-panneau;
+  }
+}
+@container ph-panneau (max-width: 1290px) {
   .ec-espace .ec-ph-act-long,
   .ec-espace .ec-ph-tout-decocher {
     display: none;
   }
   .ec-espace .ec-ph-act-court {
     display: inline;
+  }
+  .ec-espace .ec-ph-barre-actions .ec-ph-act {
+    padding: 0 12px;
+  }
+}
+@container ph-panneau (max-width: 979px) {
+  /* (0,3,0) : la règle de base de la barre est plus bas dans la feuille, à (0,2,0). */
+  .ec-espace .ec-ph-panneau .ec-ph-barre-actions {
+    grid-column: 1 / -1;
+  }
+  .ec-espace .ec-ph-panneau--barre .ec-ph-filtres {
+    padding-bottom: 96px;
   }
 }
 .ec-espace .ec-ph-zone .ec-ph-fil {
@@ -707,8 +732,15 @@
 .ec-espace .ec-ph-t--doublon img {
   opacity: 0.55;
 }
-.ec-espace .ec-ph-t--doublon .ec-ph-qui {
-  max-width: calc(100% - 84px);
+/* (21/10) Le badge « Doublon » ou l'œil barré ne partage plus la ligne du nom : il se pose AU-DESSUS,
+   à droite, et le nom garde toute la largeur de la vignette. À côté, sur 129 px, le nom était écrasé
+   à 45 px (« Mat… ») par « Doublon », et l'œil barré le recouvrait. Le téléphone, lui, garde les
+   deux côte à côte (initiales et « D » : la place y suffit, plus bas). */
+@media (min-width: 861px) {
+  .ec-espace .ec-ph-t .ec-ph-badge {
+    right: 6px;
+    bottom: 30px;
+  }
 }
 .ec-espace .ec-ph-t--cache img {
   filter: grayscale(0.7) brightness(0.92);
@@ -806,12 +838,18 @@
 
 /* ─────────────────────────── la barre d'actions (ordinateur) ─────────────────────────── */
 
+/* ⚠️ La barre est un enfant DIRECT du panneau (une grille : filtres | zone), posée en `absolute`.
+   `grid-column: 2` fait de la COLONNE DE LA GRILLE son bloc conteneur : ses `left`, `right` et
+   `bottom` se comptent depuis la zone, plus depuis le panneau. Avant, elle courait sur toute la
+   largeur et recouvrait le bas de la colonne des filtres (« Ne pas publier », « Corbeille »). */
 .ec-espace .ec-ph-barre-actions {
   position: absolute;
+  grid-column: 2;
+  grid-row: 1;
   left: 16px;
   right: 16px;
   bottom: 18px;
-  z-index: 30;
+  z-index: var(--ec-z-barre);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -887,7 +925,7 @@
   position: absolute;
   left: 50%;
   bottom: 28px;
-  z-index: 55;
+  z-index: var(--ec-z-avis);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -920,7 +958,7 @@
 .ec-espace .ec-ag {
   position: absolute;
   inset: 0;
-  z-index: 45;
+  z-index: var(--ec-z-photo);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 16px;
@@ -1307,20 +1345,29 @@
   gap: 2px;
   line-height: 1.35;
 }
+/* (21/10) Des lignes au lieu d'une ellipse : « IMG_3195.jpeg · supprimée par son auteu… » et « mer. 21 o… »
+   perdaient justement ce qu'on venait lire (qui, quand). Le nom : deux lignes ; la précision dessous (fichier,
+   qui a supprimé, QUAND) : trois, parce que la date arrive en dernier et que la colonne ne fait que ~250 px à
+   côté de l'échéance et de « Restaurer ». Au-delà, l'ellipse. Les variantes `.ec-ph-ordi` / `.ec-ph-tel` restent
+   masquées par leur propre règle (plus spécifique). */
 .ec-espace .ec-cb-txt b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   font-size: 14.5px;
   font-weight: 600;
   color: var(--ec-text);
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .ec-espace .ec-cb-txt span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   font-size: 12.5px;
   color: var(--ec-muted);
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 .ec-espace .ec-cb-echeance {
   justify-self: end;
@@ -1695,7 +1742,7 @@
   .ec-espace .ec-ph-barre-cocher {
     position: sticky;
     top: 78px;
-    z-index: 20;
+    z-index: var(--ec-z-collant);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1708,17 +1755,31 @@
     -webkit-backdrop-filter: var(--ec-flou);
     backdrop-filter: var(--ec-flou);
   }
+  /* Des cibles de 44 px (21/10 : « Tout » et « Par lien » faisaient 34 px, à 4 px l'un de l'autre),
+     SANS grossir la barre : 2 px de verre autour du creux (6 avant) et 2 px de creux autour des
+     boutons (3 avant) font toujours 54 px de haut. Les boutons sont à 6 px l'un de l'autre. */
+  .ec-espace .ec-ph-moutils {
+    padding: 2px;
+  }
   .ec-espace .ec-ph-moutils .ec-ph-seg {
     flex: none;
-    padding: 3px;
+    gap: 6px;
+    padding: 2px;
   }
   .ec-espace .ec-ph-moutils .ec-ph-seg > button {
-    height: 34px;
+    height: 44px;
     padding: 0 12px;
   }
   .ec-espace .ec-ph-moutils .ec-ph-pilule {
-    min-height: 38px;
+    min-height: 44px;
     padding: 0 12px;
+  }
+  /* Les segmentés de la feuille « Filtrer » (« Plus récentes » | « Par jour ») : 36 px avant, 44 maintenant. */
+  .ec-espace .ec-ph-seg {
+    gap: 6px;
+  }
+  .ec-espace .ec-ph-seg > button {
+    height: 44px;
   }
   .ec-espace .ec-ph-pilule--filtre {
     color: var(--ec-text);
@@ -1961,7 +2022,7 @@
     position: fixed;
     right: 16px;
     bottom: calc(24px + env(safe-area-inset-bottom));
-    z-index: 35;
+    z-index: var(--ec-z-barre);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -1990,7 +2051,7 @@
     left: 8px;
     right: 8px;
     bottom: calc(18px + env(safe-area-inset-bottom));
-    z-index: 40;
+    z-index: var(--ec-z-barre);
     border-radius: 26px;
     border: 1px solid var(--ec-carte-bord);
     background: var(--ec-glass);
@@ -2043,7 +2104,7 @@
   .ec-espace .ec-ph-avis {
     position: fixed;
     bottom: calc(96px + env(safe-area-inset-bottom));
-    z-index: 75;
+    z-index: var(--ec-z-avis);
     white-space: normal;
     width: max-content;
   }
@@ -2058,7 +2119,7 @@
   .ec-espace .ec-ph-feuille-voile {
     position: fixed;
     inset: 0;
-    z-index: 65;
+    z-index: var(--ec-z-feuille);
     background: var(--ec-voile);
     -webkit-backdrop-filter: blur(3px);
     backdrop-filter: blur(3px);
@@ -2124,7 +2185,7 @@
   .ec-espace .ec-ag {
     position: fixed;
     inset: 0;
-    z-index: 70;
+    z-index: var(--ec-z-photo);
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -2241,7 +2302,7 @@
   }
   .ec-espace .ec-ag .ec-ag-bas {
     display: block;
-    z-index: 72;
+    z-index: calc(var(--ec-z-photo) + 2);
   }
   /* Toucher la photo masque les barres, pour la voir seule. */
   .ec-espace .ec-ag--nu .ec-ag-haut,

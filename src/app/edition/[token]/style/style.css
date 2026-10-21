@@ -1493,7 +1493,7 @@
   .ec-espace .ec-mur-bas {
     position: sticky;
     bottom: 8px;
-    z-index: 20;
+    z-index: var(--ec-z-collant);
   }
   .ec-espace .ec-mur-barre {
     display: grid;
@@ -1573,7 +1573,7 @@
   .ec-espace .ec-st-pied {
     position: sticky;
     bottom: 8px;
-    z-index: 20;
+    z-index: var(--ec-z-collant);
     flex-wrap: wrap;
     margin: 12px 8px 8px;
     padding: 12px 14px;
