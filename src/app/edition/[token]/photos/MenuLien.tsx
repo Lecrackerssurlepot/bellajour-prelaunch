@@ -15,8 +15,8 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { Trace } from "./Grille";
 
-/** Une action du menu : son nom, son icône (un tracé de `Trace`), et ce qu'elle fait. `danger` : en rouge, après un filet. */
-export type ActionMenu = { cle: string; libelle: string; icone: string; danger?: boolean; faire: () => void };
+/** Une action du menu : son nom, son icône (un tracé de `Trace`), et ce qu'elle fait. `danger` : en rouge, après un filet. `filetAvant` : un filet avant elle, sans la mettre en rouge (« Terminer la collecte », le geste final, à part). */
+export type ActionMenu = { cle: string; libelle: string; icone: string; danger?: boolean; filetAvant?: boolean; faire: () => void };
 
 /** Où est le bouton « … » quand on l'ouvre, de quel côté le menu s'accroche (bord droit sur bord droit, ou bord gauche sur bord gauche
     quand il sortirait de la colonne de contenu et couvrirait le menu de gauche) et dans quel sens il se déroule (en bas, ou au-dessus s'il n'y a pas la place). */
@@ -91,6 +91,9 @@ export function MenuLien(m: {
   actions: ActionMenu[];
   declencheur: React.RefObject<HTMLElement | null>;
   onFermer: () => void;
+  /** Le menu « … » du haut de la page (22/10) : son nom pour la voix (sinon « Actions sur le lien « … » ») et ses icônes à DROITE du mot, comme sur iPhone. */
+  etiquette?: string;
+  iconeADroite?: boolean;
 }) {
   const client = useSyncExternalStore(rien, () => true, () => false);
   const racine = useRef<HTMLDivElement>(null);
@@ -133,13 +136,13 @@ export function MenuLien(m: {
   return createPortal(
     <>
       <div className="ec-li-voile" role="presentation" onClick={onFermer} />
-      <div ref={racine} className={`ec-li-menu ec-li-menu--${m.ouvert.sens}`} role="menu" aria-label={`Actions sur le lien « ${m.nom} »`} style={position}>
+      <div ref={racine} className={`ec-li-menu ec-li-menu--${m.ouvert.sens}${m.iconeADroite ? " ec-li-menu--droite" : ""}`} role="menu" aria-label={m.etiquette ?? `Actions sur le lien « ${m.nom} »`} style={position}>
         {m.actions.map((a) => (
           <button
             key={a.cle}
             type="button"
             role="menuitem"
-            className={a.danger ? "ec-li-menu-danger" : undefined}
+            className={a.danger ? "ec-li-menu-danger" : a.filetAvant ? "ec-li-menu-filet" : undefined}
             onClick={() => {
               onFermer();
               a.faire();

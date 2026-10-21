@@ -1,30 +1,22 @@
 "use client";
 
-/* Agrandir une photo (planche 3 du 20/10, T-199) : la photo en grand ; qui l'a
-   envoyée, par quel lien, quand ; Ma sélection, Ne pas publier ; précédente et
-   suivante au clavier, par balayage au téléphone.
+/* Agrandir une photo (planche 7 du 22/10, « Photos, en plus simple »).
 
-   - Ordinateur : la visionneuse couvre la colonne de contenu (le menu reste),
-     la photo au centre, les flèches de chaque côté, un panneau de verre à
-     droite.
-   - Téléphone : plein écran ; toucher la photo masque les barres ; les gestes
-     en bas, sous le pouce.
-   Comme les fenêtres, elle s'ouvre DANS `.ec-contenu`, par un portail : un
-   panneau de verre (`backdrop-filter`) enfermerait ce qui est positionné
-   dedans.
-
-   Lot w2 :
-   - la photo EN GRAND : la vignette (déjà en cache, 320 px) tout de suite, puis
-     l'original par-dessus dès qu'il est arrivé (`grande`, signé par la route :
-     JPEG, PNG, WebP ; un HEIC garde sa vignette) ;
-   - « Supprimer » (corbeille 30 jours, planche 3C) : `onSupprimer`, sans
-     fenêtre de confirmation (« Annuler » quelques secondes, puis la corbeille).
-     Le lien d'équipe ne le reçoit jamais. */
+   - TÉLÉPHONE : plein écran. En haut, le retour (un rond, en haut à gauche, comme partout) et UNE ligne d'information,
+     « Léa Martin · Bateau 1 · sam. 4 oct. », qui se touche pour voir toutes les photos de cette personne ; en bas, deux gestes,
+     le CŒUR (favori ; toucher de nouveau le retire) et SUPPRIMER (la corbeille de 30 jours). On passe à la photo suivante en balayant,
+     et toucher la photo masque les barres : les gestes qui existaient déjà. Plus de « Ma sélection », de « Ne pas publier », d'étoile
+     en haut, de position « 3 sur 45 » ni de « Balayez pour passer » : les trois premiers étaient la même chose dite de trois façons.
+   - ORDINATEUR : la visionneuse couvre la colonne de contenu, la photo au centre, les flèches de chaque côté, un panneau de verre à droite
+     (qui, quel lien, quand, le fichier) et les deux mêmes gestes : le cœur et Supprimer.
+   Comme les fenêtres, elle s'ouvre DANS `.ec-contenu`, par un portail : un panneau de verre (`backdrop-filter`) enfermerait ce qui est
+   positionné dedans. La photo EN GRAND : la vignette (déjà en cache) tout de suite, puis l'original par-dessus dès qu'il est arrivé.
+   L'ancienne visionneuse (étoile, « Ne pas publier », doublon) est dans `archive/photos-simple-2026-10/Agrandir.tsx`. */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
-import { arriveeCourte, arriveeLongue, jourCourt, jourLong } from "./filtres";
+import { arriveeLongue, jourCourt, jourLong } from "./filtres";
 import { ICONES, Trace, type Photo } from "./Grille";
 
 const rien = () => () => {};
@@ -39,18 +31,15 @@ type Props = {
   qui: string;
   initiales: string;
   lien: string | null;
+  /** « Voir ses photos » : toutes les photos de cette personne dans la grille ; `null` quand ce n'est pas une personne (l'atelier). */
   voirSes: { libelle: string; faire: () => void } | null;
-  /** Un lien ouvert au téléphone (3C) : ses personnes sont des pastilles sous la tuile ; la ligne de la photo n'envoie pas à la page d'une personne (l'ordinateur garde « Voir ses photos »). */
-  sansPageDePersonneTel?: boolean;
   ecrire: boolean;
-  tu: boolean;
-  cachee: boolean;
   voisines: string[];
   onPrecedente: (() => void) | null;
   onSuivante: (() => void) | null;
   onFermer: () => void;
-  onSelection: () => void;
-  onCacher: () => void;
+  /** Le cœur : pose, ou retire s'il est déjà posé. */
+  onCoeur: () => void;
   /** Mettre à la corbeille (le responsable seul) : absent, le bouton ne s'affiche pas. */
   onSupprimer?: () => void;
   /** Un geste est en route : les boutons attendent. */
@@ -58,7 +47,6 @@ type Props = {
 };
 
 export default function Agrandir(a: Props) {
-  const v = (vous: string, toi: string) => (a.tu ? toi : vous);
   const client = useSyncExternalStore(rien, () => true, () => false);
   const boite = useRef<HTMLDivElement>(null);
   const toucher = useRef<{ x: number; y: number } | null>(null);
@@ -109,17 +97,11 @@ export default function Agrandir(a: Props) {
   const grande = p.grande && p.grande !== p.vignette ? p.grande : null;
   const datee = !p.jourCle.startsWith("~");
   const pos = a.total ? `${a.position} sur ${a.total.toLocaleString("fr-FR")}` : `${a.position}`;
-  const ligneTel = [`arrivée ${arriveeCourte(p.arrivee)}`, datee ? `prise le ${jourCourt(p.jourCle)}` : ""].filter(Boolean).join(" · ");
+  /* UNE ligne : qui, quel lien, quand (la photo sans date de prise de vue dit son jour d'arrivée). */
+  const restant = [a.lien, jourCourt(p.jourCle)].filter(Boolean).join(" · ");
 
   const vue = (
-    <div
-      className={`ec-ag${nu ? " ec-ag--nu" : ""}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Photo ${pos}, de ${a.qui}`}
-      tabIndex={-1}
-      ref={boite}
-    >
+    <div className={`ec-ag${nu ? " ec-ag--nu" : ""}`} role="dialog" aria-modal="true" aria-label={`Photo ${pos}, de ${a.qui}`} tabIndex={-1} ref={boite}>
       <div className="ec-ag-scene">
         <div className="ec-ag-haut">
           <span className="ec-ag-pos">
@@ -131,24 +113,25 @@ export default function Agrandir(a: Props) {
               </svg>
               {a.contexte} · photo {pos}
             </span>
-            <span className="ec-ag-pos-court">{pos}</span>
           </span>
           <button type="button" className="ec-ag-rond ec-ag-fermer" aria-label="Fermer" onClick={a.onFermer}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <svg className="ec-ag-croix" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <path d="M6 6l12 12M18 6 6 18" />
             </svg>
+            <svg className="ec-ag-retour" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m15 6-6 6 6 6" />
+            </svg>
           </button>
-          {a.ecrire ? (
-            <button
-              type="button"
-              className={p.preselection ? "ec-ag-rond ec-ag-etoile ec-ag-rond--on" : "ec-ag-rond ec-ag-etoile"}
-              aria-pressed={p.preselection}
-              aria-label={p.preselection ? "Retirer de Ma sélection" : "Ajouter à Ma sélection"}
-              onClick={a.onSelection}
-            >
-              <Trace d={ICONES.etoile} taille={18} plein={p.preselection} epais={1.8} />
-            </button>
-          ) : null}
+          {/* Téléphone : UNE ligne d'information, qui mène aux photos de cette personne. */}
+          <button type="button" className="ec-ag-info" onClick={a.voirSes?.faire} disabled={!a.voirSes} aria-label={a.voirSes ? a.voirSes.libelle : undefined}>
+            <b>{a.qui}</b>
+            <span>{restant ? ` · ${restant}` : ""}</span>
+            {a.voirSes ? (
+              <svg className="ec-ag-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            ) : null}
+          </button>
         </div>
 
         <div
@@ -172,13 +155,13 @@ export default function Agrandir(a: Props) {
             }
           }}
         >
-          <div className={a.cachee ? "ec-ag-cadre ec-ag-cadre--cache" : "ec-ag-cadre"} style={{ "--ec-ag-r": String(rapports[p.id] ?? 1.5) } as React.CSSProperties}>
+          <div className="ec-ag-cadre" style={{ "--ec-ag-r": String(rapports[p.id] ?? 1.5) } as React.CSSProperties}>
             {p.vignette ? (
               <img
                 key={`v-${p.id}`}
                 className="ec-ag-img"
                 src={p.vignette}
-                alt={grande ? "" : p.nom ?? "Photo"}
+                alt={grande ? "" : (p.nom ?? "Photo")}
                 decoding="async"
                 draggable={false}
                 onLoad={(e) => {
@@ -187,7 +170,7 @@ export default function Agrandir(a: Props) {
                 }}
               />
             ) : grande ? null : (
-              <span className="ec-ag-sans">{p.heic ? "HEIC · aperçu indisponible dans ce navigateur" : p.nom ?? "Photo"}</span>
+              <span className="ec-ag-sans">{p.heic ? "HEIC · aperçu indisponible dans ce navigateur" : (p.nom ?? "Photo")}</span>
             )}
             {grande ? (
               <img
@@ -204,12 +187,6 @@ export default function Agrandir(a: Props) {
                 }}
               />
             ) : null}
-            {a.cachee ? (
-              <span className="ec-ag-etat">
-                <Trace d={ICONES.cache} taille={14} epais={1.8} />
-                Ne sera pas dans le magazine
-              </span>
-            ) : null}
           </div>
           {a.onPrecedente ? (
             <button type="button" className="ec-ag-fleche ec-ag-fleche--g" aria-label="Photo précédente" onClick={a.onPrecedente}>
@@ -225,36 +202,8 @@ export default function Agrandir(a: Props) {
               </svg>
             </button>
           ) : null}
-          <span className="ec-ag-balai" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m15 6-6 6 6 6" />
-            </svg>
-            {v("Balayez pour passer", "Balaie pour passer")}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 6 6 6-6 6" />
-            </svg>
-          </span>
         </div>
         <p className="ec-ag-clavier">Flèches gauche et droite pour passer · Échap pour fermer</p>
-
-        {/* Téléphone : qui, quel lien, quand ; la ligne mène à ses photos. */}
-        <button type="button" className="ec-ag-info" onClick={a.voirSes?.faire} disabled={!a.voirSes || a.sansPageDePersonneTel}>
-          <span className="ec-ag-avatar" aria-hidden="true">
-            {a.initiales}
-          </span>
-          <span className="ec-ag-info-txt">
-            <b>
-              {a.qui}
-              {a.lien ? ` · ${a.lien}` : ""}
-            </b>
-            <span>{ligneTel}</span>
-          </span>
-          {a.voirSes && !a.sansPageDePersonneTel ? (
-            <svg className="ec-ag-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m9 6 6 6-6 6" />
-            </svg>
-          ) : null}
-        </button>
       </div>
 
       {/* Ordinateur : le panneau de verre. */}
@@ -293,27 +242,14 @@ export default function Agrandir(a: Props) {
               <dd className="ec-ag-fichier">{p.nom}</dd>
             </>
           ) : null}
-          {p.doublonDe ? (
-            <>
-              <dt>Doublon</dt>
-              <dd>oui, la copie d&apos;une photo déjà reçue</dd>
-            </>
-          ) : null}
         </dl>
         {a.ecrire ? (
           <div className="ec-ag-gestes">
             <div className="ec-ag-geste">
-              <button type="button" className={p.preselection ? "ec-bouton ec-bouton--clair ec-ag-large" : "ec-bouton ec-ag-large"} aria-pressed={p.preselection} onClick={a.onSelection}>
-                <Trace d={ICONES.etoile} taille={16} plein={p.preselection} epais={1.8} />
-                {p.preselection ? "Retirer de ma sélection" : "Ajouter à ma sélection"}
+              <button type="button" className={p.preselection ? "ec-bouton ec-bouton--clair ec-ag-large ec-ag-large--on" : "ec-bouton ec-bouton--clair ec-ag-large"} aria-pressed={p.preselection} disabled={a.occupe} onClick={a.onCoeur}>
+                <Trace d={ICONES.coeur} taille={16} plein={p.preselection} epais={1.8} />
+                Favori
               </button>
-            </div>
-            <div className="ec-ag-geste">
-              <button type="button" className={a.cachee ? "ec-bouton ec-bouton--clair ec-ag-large ec-ag-large--on" : "ec-bouton ec-bouton--clair ec-ag-large"} aria-pressed={a.cachee} onClick={a.onCacher}>
-                <Trace d={ICONES.cache} taille={16} epais={1.8} />
-                Ne pas publier
-              </button>
-              <small>{a.cachee ? "Elle ne sera pas dans le magazine. Un clic de plus l'y remet." : "Elle reste visible ici ; l'atelier ne la met pas dans le magazine."}</small>
             </div>
             {a.onSupprimer ? (
               <div className="ec-ag-geste">
@@ -321,30 +257,26 @@ export default function Agrandir(a: Props) {
                   <Trace d={ICONES.corbeille} taille={16} epais={1.8} />
                   Supprimer
                 </button>
-                <small>Elle disparaît tout de suite pour tout le monde. Corbeille : {DELAI_CORBEILLE_JOURS} jours pour la récupérer.</small>
+                <small>Corbeille : {DELAI_CORBEILLE_JOURS} jours pour la récupérer.</small>
               </div>
             ) : null}
           </div>
         ) : (
-          <p className="ec-note">Lecture seule : le responsable choisit et écarte les photos.</p>
+          <p className="ec-note">Lecture seule : le responsable choisit les photos.</p>
         )}
       </aside>
 
-      {/* Téléphone : les gestes sous le pouce. */}
+      {/* Téléphone : les deux gestes sous le pouce. */}
       {a.ecrire ? (
-        <div className="ec-ph-bas ec-ag-bas">
-          <div className={a.onSupprimer ? "ec-ph-bas-actions ec-ph-bas-actions--trois" : "ec-ph-bas-actions ec-ph-bas-actions--deux"}>
-            <button type="button" className={p.preselection ? "ec-ph-bas-on" : undefined} aria-pressed={p.preselection} onClick={a.onSelection}>
-              <Trace d={ICONES.etoile} taille={20} plein={p.preselection} epais={1.7} />
-              Ma sélection
-            </button>
-            <button type="button" className={a.cachee ? "ec-ph-bas-on" : undefined} aria-pressed={a.cachee} onClick={a.onCacher}>
-              <Trace d={ICONES.cache} taille={20} epais={1.7} />
-              Ne pas publier
+        <div className="ec-s-ag-bas">
+          <div className="ec-s-bas" role="toolbar" aria-label="Agir sur cette photo">
+            <button type="button" aria-pressed={p.preselection} className={p.preselection ? "ec-s-on" : undefined} disabled={a.occupe} onClick={a.onCoeur}>
+              <Trace d={ICONES.coeur} taille={24} plein={p.preselection} epais={1.8} />
+              Favori
             </button>
             {a.onSupprimer ? (
-              <button type="button" className="ec-ph-bas-danger" disabled={a.occupe} onClick={a.onSupprimer}>
-                <Trace d={ICONES.corbeille} taille={20} epais={1.7} />
+              <button type="button" className="ec-s-danger" disabled={a.occupe} onClick={a.onSupprimer}>
+                <Trace d={ICONES.corbeille} taille={24} epais={1.8} />
                 Supprimer
               </button>
             ) : null}

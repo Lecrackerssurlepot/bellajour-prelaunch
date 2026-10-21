@@ -12,7 +12,7 @@
      du lien en pastilles à cocher, juste dessous. */
 
 import { useSyncExternalStore, type CSSProperties } from "react";
-import { colonnesDeLaMosaique, echelleDuNom, mosaiqueDesLiens, pastilleDeLaPersonne, pastilleDuLien, prenomsCourts, type Pesee, type TailleTuile } from "@/lib/collectif/mosaique";
+import { colonnesDeLaMosaique, echelleDuNom, mosaiqueDesLiens, pastilleDeLaPersonne, pastilleDuLien, type Pesee, type TailleTuile } from "@/lib/collectif/mosaique";
 import { initialesDe, nombre } from "./filtres";
 import { Trace } from "./Grille";
 import { MenuLien, useMenuLien, type ActionMenu } from "./MenuLien";
@@ -32,6 +32,8 @@ export type TuileVue = {
   actions?: ActionMenu[];
 };
 
+/** La clé de la tuile « Nouveau lien » dans la règle de taille : un poids de -1, donc toujours la DERNIÈRE (22/10, planche 12 vue 4). */
+const CLE_NOUVEAU = "+nouveau";
 const TRACE_LIEN = "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1";
 const ORDINATEUR = "(min-width: 861px)";
 const abonner = (rappel: () => void) => {
@@ -109,17 +111,33 @@ function Tuile(p: { t: TuileVue; taille: TailleTuile; genre: "lien" | "personne"
   );
 }
 
+/** La dernière tuile : « Nouveau lien », en pointillé, un « + ». Plus de « Créer un lien » à chercher en haut de page. */
+function TuileNouvelle({ taille, onClick }: { taille: TailleTuile; onClick: () => void }) {
+  return (
+    <article className={`ec-tu ec-tu--${taille} ec-tu--nouveau`}>
+      <button type="button" className="ec-tu-nouveau" onClick={onClick}>
+        <i aria-hidden="true">
+          <Trace d="M12 5v14M5 12h14" taille={24} epais={2.2} />
+        </i>
+        Nouveau lien
+      </button>
+    </article>
+  );
+}
+
 /**
  * La mosaïque. `variante` : « albums » (la vue « Par lien » : deux colonnes, même sur ordinateur) ou « onglet » (l'onglet « Les liens » :
  * quatre colonnes sur ordinateur). `ordre` : les poids gelés à l'ouverture ; une tuile de `tuiles` qui n'y est pas n'a pas de place
  * (elle viendra à l'ouverture suivante), une tuile de `ordre` qui n'est plus lue disparaît.
  */
-export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | "onglet"; tuiles: readonly TuileVue[]; ordre: readonly Pesee[]; etiquette: string; ouvrir: (cle: string) => void }) {
+export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | "onglet"; tuiles: readonly TuileVue[]; ordre: readonly Pesee[]; etiquette: string; ouvrir: (cle: string) => void; /** Le responsable, collecte ouverte : « Nouveau lien » en dernière tuile. */ nouveau?: () => void }) {
   const ordinateur = useOrdinateur();
   const { menu, basculer, fermer, declencheur } = useMenuLien();
   const demandees = ordinateur && p.variante === "onglet" ? 4 : 2;
-  const colonnes = colonnesDeLaMosaique(p.ordre.length, demandees);
-  const rangees = mosaiqueDesLiens(p.ordre, demandees);
+  /* « Nouveau lien » entre dans la règle comme une tuile sans photo (poids -1) : la dernière, jamais seule (une petite seule devient large). */
+  const ordre: readonly Pesee[] = p.nouveau ? [...p.ordre, { cle: CLE_NOUVEAU, nom: "+", n: -1 }] : p.ordre;
+  const colonnes = colonnesDeLaMosaique(ordre.length, demandees);
+  const rangees = mosaiqueDesLiens(ordre, demandees);
   const lues = new Map(p.tuiles.map((t) => [t.cle, t]));
   const ouverte = menu ? lues.get(menu.cle) : undefined;
   return (
@@ -127,6 +145,7 @@ export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | 
       <div className="ec-mo-zone" data-colonnes={colonnes}>
         <div className="ec-mo-grille" style={{ "--mo-c": colonnes } as CSSProperties}>
           {rangees.map((r) => {
+            if (r.cle === CLE_NOUVEAU) return p.nouveau ? <TuileNouvelle key={r.cle} taille={r.taille} onClick={p.nouveau} /> : null;
             const t = lues.get(r.cle);
             return t ? <Tuile key={t.cle} t={t} taille={r.taille} genre={p.genre} menuOuvert={menu?.cle === t.cle} ouvrir={p.ouvrir} onMenu={basculer} /> : null;
           })}
@@ -161,33 +180,25 @@ export function TuileDeLAlbum({ t }: { t: TuileVue }) {
   );
 }
 
-/** Une personne d'un lien, en pastille : ses initiales, son prénom, ses photos. */
+/** Une personne d'un lien, en pastille : son nom (le nombre de photos reste dit au lecteur d'écran). */
 export type PersonneDuLien = { cle: string; nom: string; n: number };
 
 /**
  * Les personnes d'un lien ouvert, en pastilles (3C, retour de Mathias du 21/10 : « en cliquant ça s'ouvre en dessous, ou ça vient
- * les afficher comme des filtres, et je peux en sélectionner un ou plusieurs »). « Tout le monde » est choisi tant qu'aucune
- * personne ne l'est ; une personne choisie se rechoisit pour s'en défaire ; on reste sur la page, la grille dessous se filtre.
+ * les afficher comme des filtres, et je peux en sélectionner un ou plusieurs »), au dessin de la planche 12 du 22/10 : le MÊME choix que la
+ * feuille « Personnes » (`ec-s-choix`, un nom, rien d'autre : ni initiales, ni nombre). « Tout le monde » est choisi tant qu'aucune personne
+ * ne l'est ; une personne choisie se rechoisit pour s'en défaire ; on reste sur la page, la grille dessous se filtre.
  */
 export function PastillesDePersonnes(p: { personnes: readonly PersonneDuLien[]; total: number; choisies: ReadonlySet<string>; basculer: (cle: string) => void; toutes: () => void }) {
-  const prenoms = prenomsCourts(p.personnes.map((x) => x.nom));
   const tous = p.choisies.size === 0;
   return (
     <div className="ec-ch" role="group" aria-label="Filtrer par personne">
-      <button type="button" className="ec-ch-p" aria-pressed={tous} onClick={p.toutes}>
-        <span className="ec-ch-ini" aria-hidden="true">
-          <Trace d={TRACE_LIEN} taille={15} epais={1.8} />
-        </span>
-        <span className="ec-ch-nom">Tout le monde</span>
-        <span className="ec-ch-n">{nombre(p.total)}</span>
+      <button type="button" className="ec-s-choix" aria-pressed={tous} aria-label={`Tout le monde, ${nombre(p.total)} photo${p.total > 1 ? "s" : ""}`} onClick={p.toutes}>
+        Tout le monde
       </button>
-      {p.personnes.map((x, i) => (
-        <button key={x.cle} type="button" className="ec-ch-p" aria-pressed={p.choisies.has(x.cle)} aria-label={`${x.nom}, ${nombre(x.n)} photo${x.n > 1 ? "s" : ""}`} onClick={() => p.basculer(x.cle)}>
-          <span className="ec-ch-ini" aria-hidden="true">
-            {initialesDe(x.nom)}
-          </span>
-          <span className="ec-ch-nom">{prenoms[i]}</span>
-          <span className="ec-ch-n">{nombre(x.n)}</span>
+      {p.personnes.map((x) => (
+        <button key={x.cle} type="button" className="ec-s-choix" aria-pressed={p.choisies.has(x.cle)} aria-label={`${x.nom}, ${nombre(x.n)} photo${x.n > 1 ? "s" : ""}`} onClick={() => p.basculer(x.cle)}>
+          {x.nom}
         </button>
       ))}
     </div>

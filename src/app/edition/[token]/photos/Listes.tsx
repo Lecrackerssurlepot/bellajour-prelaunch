@@ -1,31 +1,29 @@
 "use client";
 
-/* La colonne « Trier et filtrer » de l'ORDINATEUR (planche 1, 20/10).
-   (Le téléphone n'a plus ces listes : « Par lien » et « Personnes » sont deux choix de la barre du bas, et la feuille
-   « Filtrer » compacte est `Feuille.tsx`, planche 2 du 21/10. L'ancienne feuille, avec ses listes Lien, Personne et Ordre,
-   est dans `archive/photos-barre-haut-2026-10/`.)
-   Lien, Personne (avec sa recherche), Jour, Afficher ; la liste qui navigue est
-   aussi celle qui filtre : ouvrir « Bateau 1 » le coche et la liste des
-   personnes devient « Personnes · Bateau 1 ». Dans « Mes photos », ce sont les
-   dossiers du responsable (on y range un dossier en le glissant sur un autre).
-   Ce que chaque ligne veut dire pour la route : `filtres.ts`.
-   Lot w2 : « Afficher » montre aussi « Ne pas publier » (une vue qui se croise
-   avec le lien, comme Doublons) et, pour le responsable seul, la « Corbeille »
-   (un endroit à part : tout autre geste des listes en sort). */
+/* La colonne de gauche de la page Photos, à l'ORDINATEUR (planche 13 du 22/10, « Photos, en plus simple » : « une touche légère »).
+   Le dessin d'aujourd'hui reste, avec les retraits de la planche 8 :
+   - « Toutes · Par lien » (le choix du haut) ;
+   - LIEN : les liens avec leur case, « Mes photos » et l'atelier, puis « + Nouveau lien » (la ligne qui remplace l'onglet « Les liens ») ;
+   - PERSONNES : la recherche, puis les personnes, PLUSIEURS possibles (une case de plus se coche, une autre se décoche) ; dans un lien ouvert, « Tout
+     le monde » et les personnes de CE lien, qui se choisissent comme les pastilles du téléphone ;
+   - « Supprimées récemment », tout en bas de la colonne.
+   Plus de sections Jour ni Afficher, plus de Doublons, de « Ne pas publier » ni de « Ma sélection » en filtre : la grille est rangée par jour.
+   Dans « Mes photos », ce sont les dossiers du responsable (on y range un dossier en le glissant sur un autre).
+   Ce que chaque ligne veut dire pour la route : `filtres.ts`. Le téléphone n'a pas cette colonne : la barre du bas et la feuille « Personnes ».
+   La colonne d'avant (Jour, Afficher, une seule personne à la fois) est dans `archive/photos-simple-2026-10/Listes.tsx`. */
 
 import { useState } from "react";
 import type { Arbre, Noeud } from "@/lib/collectif/dossiers";
-import { avecCorbeille, avecDoublons, avecLien, avecSelection, avecSignalees, initialesDe, jourCourt, liensDansLOrdre, nombre, pourChercher, sortirDeLaCorbeille, type Filtres, type JourVu } from "./filtres";
+import { avecCorbeille, avecLien, initialesDe, liensDansLOrdre, nombre, personnesDeLaFeuille, pourChercher, sortirDeLaCorbeille, type Filtres } from "./filtres";
 import { ICONES, Trace } from "./Grille";
+import type { PersonneDuLien } from "./Mosaique";
 
 const TRACES = {
   tout: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   lien: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
   chercher: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4",
-  doublons: "M8 8h11v11H8zM5 16V5h11",
   dossier: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   groupe: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3",
-  chevron: "m6 9 6 6 6-6",
 };
 
 type Glisser = {
@@ -43,18 +41,18 @@ type Props = {
   ecrire: boolean;
   tu: boolean;
   nomPersonne: (n: { cle: string; nom: string }) => string;
-  /** Les copies repérées dans la vue (`compteurs.doublons`) et la sélection de toute l'édition. */
-  doublons: number | null;
-  selection: number | null;
-  /** « Ne pas publier » dans la vue (`compteurs.signalees`) et la corbeille de l'édition (`stats.corbeille`, `null` sans la migration). */
-  signalees: number | null;
+  /** « Supprimées récemment » : le nombre à la corbeille (`null` sans la migration) ; la ligne n'est montrée qu'au responsable. */
   corbeille: number | null;
-  /** La ligne « Corbeille » : le responsable seul (l'équipe ne la voit pas, la route lui répond 403). */
   voirCorbeille: boolean;
-  /** Les jours des photos lues, quand la vue est rangée par jour ; `null` sinon. */
-  jours: JourVu[] | null;
-  /** Il reste des pages à lire : la liste des jours n'est pas finie. */
-  suite: boolean;
+  /** Choisir, ou défaire, une personne de « Toutes » (plusieurs possibles). */
+  basculerPersonne: (cle: string) => void;
+  /** Un lien de contribution ouvert : ses personnes (`null` ailleurs), celles qui sont cochées, et les gestes (les pastilles du téléphone, la même règle). */
+  personnesDuLien: readonly PersonneDuLien[] | null;
+  choisiesDuLien: ReadonlySet<string>;
+  basculerDuLien: (cle: string) => void;
+  toutLeMondeDuLien: () => void;
+  /** « + Nouveau lien » (le responsable, collecte ouverte) ; `null` : pas de ligne. */
+  nouveauLien: (() => void) | null;
   dossiers: Glisser | null;
 };
 
@@ -69,7 +67,6 @@ export default function Listes(l: Props) {
   const changer = (nf: Filtres) => l.changer(sortirDeLaCorbeille(nf));
   const [cherche, setCherche] = useState("");
   const [tous, setTous] = useState<Record<string, boolean>>({});
-  const [jourOuvert, setJourOuvert] = useState(false);
   const liens = arbre ? liensDansLOrdre(arbre, l.ecrire) : [];
   const ouvert = liens.find((x) => x.cle === f.lien);
   const li = "ec-ph-li";
@@ -78,29 +75,15 @@ export default function Listes(l: Props) {
 
   /* ── Lien ── */
   const liensVisibles = liens.slice(0, plafond("liens", 12));
+  /* La liste des liens est TOUJOURS entière (planche 13, « ordi-lien ») : le lien ouvert y est coché, on en change d'un clic, on le décoche pour revenir. */
   const sectionLien =
-    f.mode === "liens" && ouvert ? (
-      <section className="ec-ph-fl">
-        <div className="ec-ph-fl-t">
-          Lien <small>1 coché</small>
-        </div>
-        <button type="button" className={li} onClick={() => changer(avecLien(f, null))} title="Revenir à tous les liens">
-          <span className="ec-ph-nom ec-ph-pale">{nomLien(ouvert)}</span>
-        </button>
-      </section>
-    ) : liens.length ? (
+    liens.length || l.nouveauLien ? (
       <section className="ec-ph-fl">
         <div className="ec-ph-fl-t">
           Lien {f.lien ? <small>1 coché</small> : null}
         </div>
         {liensVisibles.map((n) => (
-          <button
-            key={n.cle}
-            type="button"
-            className={f.lien === n.cle ? `${li} ec-ph-li--on` : li}
-            aria-pressed={f.lien === n.cle}
-            onClick={() => changer(avecLien(f, f.lien === n.cle ? null : n.cle))}
-          >
+          <button key={n.cle} type="button" className={f.lien === n.cle ? `${li} ec-ph-li--on` : li} aria-pressed={f.lien === n.cle} onClick={() => changer(avecLien(f, f.lien === n.cle ? null : n.cle))}>
             <Case on={f.lien === n.cle} />
             <span className="ec-ph-nom">{nomLien(n)}</span>
             <span className="ec-ph-n">{nombre(n.n)}</span>
@@ -111,10 +94,15 @@ export default function Listes(l: Props) {
             Voir les {liens.length} liens
           </button>
         ) : null}
+        {l.nouveauLien ? (
+          <button type="button" className="ec-ph-li ec-ph-li--plus" onClick={l.nouveauLien}>
+            + Nouveau lien
+          </button>
+        ) : null}
       </section>
     ) : null;
 
-  /* ── Personne, ou les dossiers de « Mes photos » ── */
+  /* ── Personnes, ou les dossiers de « Mes photos » ── */
   let sectionPersonne: React.ReactNode = null;
   if (ouvert?.cle === "vous" && arbre) {
     const g = l.dossiers;
@@ -126,7 +114,7 @@ export default function Listes(l: Props) {
           type="button"
           className={`${li}${!f.dossier ? " ec-ph-li--on" : ""}${g?.survol === "vous" ? " ec-ph-li--cible" : ""}`}
           aria-pressed={!f.dossier}
-          onClick={() => changer({ ...f, dossier: null, personne: null })}
+          onClick={() => changer({ ...f, dossier: null })}
           {...recevoirHaut}
         >
           <span className="ec-ph-ic">
@@ -141,7 +129,7 @@ export default function Listes(l: Props) {
               type="button"
               className={`${li}${f.dossier === d.cle ? " ec-ph-li--on" : ""}${g?.survol === d.cle ? " ec-ph-li--cible" : ""}`}
               aria-pressed={f.dossier === d.cle}
-              onClick={() => changer({ ...f, dossier: d.cle, personne: null })}
+              onClick={() => changer({ ...f, dossier: d.cle })}
               {...(g ? g.glisser(d) : {})}
               {...(g ? g.recevoir(d.cle, d.accueille) : {})}
             >
@@ -157,7 +145,7 @@ export default function Listes(l: Props) {
                 type="button"
                 className={`${li} ec-ph-li--sous${f.dossier === e.cle ? " ec-ph-li--on" : ""}`}
                 aria-pressed={f.dossier === e.cle}
-                onClick={() => changer({ ...f, dossier: e.cle, personne: null })}
+                onClick={() => changer({ ...f, dossier: e.cle })}
                 {...(g ? g.glisser(e) : {})}
               >
                 <span className="ec-ph-nom">{e.nom}</span>
@@ -177,33 +165,29 @@ export default function Listes(l: Props) {
       </section>
     );
   } else if (arbre && ouvert?.cle !== "atelier") {
-    /* Les personnes d'un lien (dès la première : T-180), ou de toute l'édition. */
-    const dansUnLien = Boolean(ouvert);
-    const gens: Noeud[] = ouvert ? ouvert.enfants : arbre.personnes;
-    if (gens.length >= 1) {
-      const trouvees = cherche.trim() ? gens.filter((x) => pourChercher(l.nomPersonne(x)).includes(pourChercher(cherche))) : gens;
+    /* Les personnes d'un lien ouvert (« Tout le monde » et une ligne par personne, comme les pastilles du téléphone), ou de toute l'édition. */
+    const dansUnLien = Boolean(ouvert) && l.personnesDuLien !== null;
+    const gens: { cle: string; nom: string; n: number }[] = dansUnLien ? (l.personnesDuLien ?? []).map((x) => ({ cle: x.cle, nom: x.nom, n: x.n })) : personnesDeLaFeuille(arbre).map((x) => ({ cle: x.cle, nom: l.nomPersonne(x), n: x.n }));
+    if (gens.length >= 1 && !(ouvert && !dansUnLien)) {
+      const trouvees = cherche.trim() ? gens.filter((x) => pourChercher(x.nom).includes(pourChercher(cherche))) : gens;
       const base = dansUnLien ? 12 : 4;
       const premieres = cherche.trim() ? trouvees.slice(0, 60) : trouvees.slice(0, plafond("gens", base));
-      /* La personne ouverte reste dans la liste, en tête, même hors des premières (planche 4A : « 1 cochée »). */
-      const choisie = f.personne && !premieres.some((x) => x.cle === f.personne) ? gens.find((x) => x.cle === f.personne) : undefined;
-      const visibles = choisie ? [choisie, ...premieres.slice(0, Math.max(0, premieres.length - 1))] : premieres;
+      /* Une personne choisie reste dans la liste, en tête, même hors des premières. */
+      const cochee = (cle: string) => (dansUnLien ? l.choisiesDuLien.has(cle) : f.personnes.includes(cle));
+      const choisies = gens.filter((x) => cochee(x.cle) && !premieres.some((p) => p.cle === x.cle));
+      const visibles = [...choisies, ...premieres];
+      const nbCochees = dansUnLien ? l.choisiesDuLien.size : f.personnes.length;
       sectionPersonne = (
         <section className="ec-ph-fl">
           <div className="ec-ph-fl-t">
-            {dansUnLien && ouvert ? `Personnes · ${ouvert.nom}` : "Personne"} {f.personne && !dansUnLien ? <small>1 cochée</small> : null}
+            {dansUnLien && ouvert ? `Personnes · ${ouvert.nom}` : "Personnes"} {nbCochees && !dansUnLien ? <small>{nbCochees} {nbCochees > 1 ? "cochées" : "cochée"}</small> : null}
           </div>
           <label className="ec-ph-cherche">
             <Trace d={TRACES.chercher} taille={15} epais={1.8} />
-            <input
-              type="search"
-              value={cherche}
-              placeholder="Chercher une personne"
-              aria-label="Chercher une personne"
-              onChange={(e) => setCherche(e.target.value)}
-            />
+            <input type="search" value={cherche} placeholder="Chercher une personne" aria-label="Chercher une personne" onChange={(e) => setCherche(e.target.value)} />
           </label>
           {dansUnLien && ouvert ? (
-            <button type="button" className={!f.personne ? `${li} ec-ph-li--on` : li} aria-pressed={!f.personne} onClick={() => changer({ ...f, personne: null })}>
+            <button type="button" className={!nbCochees ? `${li} ec-ph-li--on` : li} aria-pressed={!nbCochees} onClick={l.toutLeMondeDuLien}>
               <span className="ec-ph-ic">
                 <Trace d={TRACES.groupe} taille={16} epais={1.7} />
               </span>
@@ -212,17 +196,11 @@ export default function Listes(l: Props) {
             </button>
           ) : null}
           {visibles.map((x) => (
-            <button
-              key={x.cle}
-              type="button"
-              className={f.personne === x.cle ? `${li} ec-ph-li--on` : li}
-              aria-pressed={f.personne === x.cle}
-              onClick={() => changer({ ...f, personne: f.personne === x.cle && !dansUnLien ? null : x.cle, selection: false })}
-            >
+            <button key={x.cle} type="button" className={cochee(x.cle) ? `${li} ec-ph-li--on` : li} aria-pressed={cochee(x.cle)} onClick={() => (dansUnLien ? l.basculerDuLien(x.cle) : l.basculerPersonne(x.cle))}>
               <span className="ec-ph-ini" aria-hidden="true">
                 {initialesDe(x.nom)}
               </span>
-              <span className="ec-ph-nom">{l.nomPersonne(x)}</span>
+              <span className="ec-ph-nom">{x.nom}</span>
               <span className="ec-ph-n">{nombre(x.n)}</span>
             </button>
           ))}
@@ -237,95 +215,33 @@ export default function Listes(l: Props) {
     }
   }
 
-  /* ── Jour : la route range par jour ; le jour choisi se filtre ici (`filtres.ts`). ── */
-  const sectionJour = (
-    <section className="ec-ph-fl">
-      <button type="button" className="ec-ph-fl-t ec-ph-fl-t--bouton" aria-expanded={jourOuvert || Boolean(f.jour)} onClick={() => setJourOuvert((o) => !o)}>
-        Jour
-        {f.jour ? (
-          <small>1 coché</small>
-        ) : (
-          <span className={jourOuvert ? "ec-ph-chev ec-ph-chev--ouvert" : "ec-ph-chev"}>
-            <Trace d={TRACES.chevron} taille={14} epais={2} />
-          </span>
-        )}
-      </button>
-      {jourOuvert || f.jour ? (
-        l.jours === null ? (
-          <button type="button" className="ec-ph-li ec-ph-li--plus" onClick={() => changer({ ...f, ordre: "jour" })}>
-            Ranger par jour de prise de vue
-          </button>
-        ) : (
-          <>
-            <div className="ec-ph-jours-liste">
-              {l.jours.map((j) => (
-                <button key={j.cle} type="button" className={f.jour === j.cle ? `${li} ec-ph-li--on` : li} aria-pressed={f.jour === j.cle} onClick={() => changer({ ...f, jour: f.jour === j.cle ? null : j.cle })}>
-                  <Case on={f.jour === j.cle} />
-                  <span className="ec-ph-nom">{jourCourt(j.cle)}</span>
-                  <span className="ec-ph-n">{j.complet ? nombre(j.n) : "…"}</span>
-                </button>
-              ))}
-            </div>
-            {l.suite && !f.jour ? <p className="ec-note ec-ph-fl-aide">Les jours suivants se lisent en descendant la grille.</p> : null}
-          </>
-        )
-      ) : null}
-    </section>
-  );
-
-  /* ── Afficher ── Doublons, Ma sélection, Ne pas publier, Corbeille (planche 4A, 5A). */
-  const sectionAfficher = (
-    <section className="ec-ph-fl">
-      <div className="ec-ph-fl-t">Afficher</div>
-      <button type="button" className={f.doublons ? `${li} ec-ph-li--on` : li} aria-pressed={f.doublons} onClick={() => changer(avecDoublons(f, !f.doublons))}>
-        <span className="ec-ph-ic">
-          <Trace d={TRACES.doublons} taille={16} epais={1.7} />
-        </span>
-        <span className="ec-ph-nom">Doublons</span>
-        {l.doublons !== null ? <span className="ec-ph-n">{nombre(l.doublons)}</span> : null}
-      </button>
-      <button type="button" className={f.selection ? `${li} ec-ph-li--on` : li} aria-pressed={f.selection} onClick={() => changer(avecSelection(f, !f.selection))}>
-        <span className="ec-ph-ic">
-          <Trace d={ICONES.etoile} taille={16} epais={1.7} />
-        </span>
-        <span className="ec-ph-nom">Ma sélection</span>
-        {l.selection !== null ? <span className="ec-ph-n">{nombre(l.selection)}</span> : null}
-      </button>
-      <button type="button" className={f.signalees ? `${li} ec-ph-li--on` : li} aria-pressed={f.signalees} onClick={() => changer(avecSignalees(f, !f.signalees))}>
-        <span className="ec-ph-ic">
-          <Trace d={ICONES.cache} taille={16} epais={1.7} />
-        </span>
-        <span className="ec-ph-nom">Ne pas publier</span>
-        {l.signalees !== null ? <span className="ec-ph-n">{nombre(l.signalees)}</span> : null}
-      </button>
-      {l.voirCorbeille ? (
-        <button type="button" className={f.corbeille ? `${li} ec-ph-li--on` : li} aria-pressed={f.corbeille} onClick={() => l.changer(f.corbeille ? { ...f, corbeille: false } : avecCorbeille(f))}>
-          <span className="ec-ph-ic">
-            <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
-          </span>
-          <span className="ec-ph-nom">Corbeille</span>
-          {l.corbeille !== null ? <span className="ec-ph-n">{nombre(l.corbeille)}</span> : null}
-        </button>
-      ) : null}
-    </section>
-  );
-
   return (
     <>
+      <div className="ec-s-col-defile">
       <div className="ec-ph-seg ec-ph-seg--plein" role="group" aria-label="Regarder">
-        <button type="button" aria-pressed={f.mode === "tout"} onClick={() => changer({ ...f, mode: "tout" })}>
+        <button type="button" aria-pressed={f.mode === "tout"} onClick={() => changer({ ...f, mode: "tout", lien: null, dossier: null })}>
           <Trace d={TRACES.tout} taille={15} epais={1.7} />
-          Tout
+          Toutes
         </button>
-        <button type="button" aria-pressed={f.mode === "liens"} onClick={() => changer({ ...f, mode: "liens", selection: false, personne: f.lien ? f.personne : null })}>
+        <button type="button" aria-pressed={f.mode === "liens"} onClick={() => changer({ ...f, mode: "liens", personnes: f.lien ? f.personnes : [] })}>
           <Trace d={TRACES.lien} taille={15} epais={1.7} />
           Par lien
         </button>
       </div>
       {sectionLien}
       {sectionPersonne}
-      {sectionJour}
-      {sectionAfficher}
+      </div>
+      {l.voirCorbeille ? (
+        <div className="ec-s-pied">
+          <button type="button" className={f.corbeille ? `${li} ec-ph-li--on` : li} aria-pressed={f.corbeille} onClick={() => l.changer(f.corbeille ? { ...f, corbeille: false } : avecCorbeille(f))}>
+            <span className="ec-ph-ic">
+              <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
+            </span>
+            <span className="ec-ph-nom">Supprimées récemment</span>
+            {l.corbeille !== null && l.corbeille > 0 ? <span className="ec-ph-n">{nombre(l.corbeille)}</span> : null}
+          </button>
+        </div>
+      ) : null}
     </>
   );
 }

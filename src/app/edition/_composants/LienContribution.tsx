@@ -19,8 +19,10 @@
    « Bateau 1 », « Équipe Lyon », « Le photographe »). */
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { messagePartage, NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
+import type { DonneesPartage } from "@/lib/collectif/photosSimples";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { imprimerPage } from "@/lib/collectif/imprimer";
 import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
@@ -47,6 +49,22 @@ export type ContexteMessage = { organisation: string; evenement: string; cloture
 
 function texteDuLien(lien: LienPartage, c: ContexteMessage) {
   return messagePartage({ groupe: lien.general ? null : lien.libelle, organisation: c.organisation, evenement: c.evenement, url: lien.url, plafond: lien.plafond, cloture: c.cloture, tu: c.tu });
+}
+
+/** Ce que la feuille de partage de l'iPhone reçoit (`navigator.share`) : l'objet, le message écrit pour ce groupe (planche 4) et l'adresse. */
+export function donneesDePartage(lien: LienPartage, c: ContexteMessage): DonneesPartage {
+  const { texte, objet } = texteDuLien(lien, c);
+  return { title: objet, text: texte };
+}
+
+/** Copier le message (le texte écrit pour ce groupe, adresse comprise) : vrai s'il est dans le presse-papiers. */
+export async function copierLeMessage(lien: LienPartage, c: ContexteMessage): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(texteDuLien(lien, c).texte);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function telechargerQr(lien: LienPartage) {
@@ -310,55 +328,38 @@ function FenetreSansPartage({ tu, onFermer }: { tu: boolean; onFermer: () => voi
   );
 }
 
-/** Partager un lien déjà créé (maquette Partage) : le QR, le message écrit pour ce groupe et cet événement, à retoucher, puis WhatsApp, Mail, Copier le message, Télécharger le QR. */
-export function FenetrePartage({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
-  return lien.general ? <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} /> : <FenetrePartageDuLien lien={lien} contexte={contexte} onFermer={onFermer} />;
+/**
+ * Partager un lien déjà créé, quand la feuille de l'iPhone n'est pas là (22/10, planche 12 vue 8 : au téléphone `navigator.share` ouvre la
+ * feuille de l'iPhone, sans fenêtre ; à l'ordinateur ou si elle échoue, cette fenêtre RÉDUITE) : DEUX gestes seulement, « Copier le message »
+ * et « QR code ». La zone de texte à retoucher, WhatsApp, Mail, « Télécharger le QR » et le texte « Le mail reprend le même texte… » ont
+ * disparu : le message de la planche 4 suffit, et l'ordinateur colle où il veut. L'ancienne fenêtre est dans `archive/photos-simple-2026-10/`.
+ */
+export function FenetrePartage({ lien, contexte, onFermer, onQr }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void; onQr: () => void }) {
+  return lien.general ? <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} /> : <FenetrePartageDuLien lien={lien} contexte={contexte} onFermer={onFermer} onQr={onQr} />;
 }
 
-function FenetrePartageDuLien({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
+function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void; onQr: () => void }) {
   const v = (vous: string, toi: string) => (contexte.tu ? toi : vous);
-  const propose = texteDuLien(lien, contexte);
-  const [texte, setTexte] = useState(propose.texte);
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
   async function copier() {
-    try {
-      await navigator.clipboard.writeText(texte);
-      setCopie("ok");
-      setTimeout(() => setCopie(""), 2000);
-    } catch {
-      setCopie("non");
-    }
+    const ok = await copierLeMessage(lien, contexte);
+    setCopie(ok ? "ok" : "non");
+    if (ok) setTimeout(() => setCopie(""), 2000);
   }
   return (
     <Fenetre
-      titre={`Partager le lien « ${lien.libelle} »`}
-      sous={v("Le message est écrit pour ce groupe et cet événement. Retouchez-le si vous voulez.", "Le message est écrit pour ce groupe et cet événement. Retouche-le si tu veux.")}
+      titre={`Partager « ${lien.libelle} »`}
+      sous={v("Le message est écrit pour ce groupe et cet événement : il n'y a qu'à le coller.", "Le message est écrit pour ce groupe et cet événement : il n'y a qu'à le coller.")}
       onFermer={onFermer}
-      large
     >
-      <div className="ec-partage-corps">
-        <QrCode texte={lien.url} taille={136} etiquette={`QR code du lien « ${lien.libelle} »`} />
-        <label className="ec-partage-message">
-          Le message
-          {/* Assez de rangées pour lire le message entier, lien et formule de fin compris (trois paragraphes et des lignes vides, planche 4). */}
-          <textarea className="ec-champ" rows={Math.min(16, Math.max(8, propose.texte.split("\n").length + 4))} value={texte} onChange={(e) => setTexte(e.target.value)} />
-        </label>
-      </div>
-      <div className="ec-partage ec-partage--quatre">
-        <a className="ec-bouton ec-bouton--petit" href={`https://wa.me/?text=${encodeURIComponent(texte)}`} target="_blank" rel="noopener noreferrer">
-          WhatsApp
-        </a>
-        <a className="ec-bouton ec-bouton--clair ec-bouton--petit" href={`mailto:?subject=${encodeURIComponent(propose.objet)}&body=${encodeURIComponent(texte)}`}>
-          Mail
-        </a>
-        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={copier}>
+      <div className="ec-partage ec-partage--deux">
+        <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copier()}>
           {copie === "ok" ? "Copié" : copie === "non" ? "Copie impossible" : "Copier le message"}
         </button>
-        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => telechargerQr(lien)}>
-          Télécharger le QR
+        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={onQr}>
+          QR code
         </button>
       </div>
-      <p className="ec-note">Le mail reprend le même texte, avec pour objet « {propose.objet} ».</p>
     </Fenetre>
   );
 }
@@ -402,5 +403,49 @@ export function FenetreQr({ lien, contexte, onFermer }: { lien: LienPartage; con
         </button>
       </div>
     </Fenetre>
+  );
+}
+
+const rien = () => () => {};
+
+/**
+ * Le grand QR code au TÉLÉPHONE (22/10, planche 12 vue 8C) : une feuille du bas, le nom du lien en titre, « OK » pour fermer, le code grand et BLANC
+ * (un objet imprimé se scanne sur fond clair, jour comme nuit). Rien d'autre : « Imprimer » et « Télécharger le QR » restent à l'ordinateur
+ * (`FenetreQr`) et à l'atelier ; sur téléphone, on montre l'écran.
+ */
+export function FeuilleQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
+  const client = useSyncExternalStore(rien, () => true, () => false);
+  useEffect(() => {
+    const html = document.documentElement;
+    const avant = html.style.overflow;
+    html.style.overflow = "hidden";
+    const touche = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onFermer();
+    };
+    window.addEventListener("keydown", touche);
+    return () => {
+      html.style.overflow = avant;
+      window.removeEventListener("keydown", touche);
+    };
+  }, [onFermer]);
+  if (lien.general) return <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} />;
+  const hote = client ? document.querySelector(".ec-contenu") : null;
+  if (!hote) return null;
+  return createPortal(
+    <div className="ec-s-voile" role="presentation" onClick={onFermer}>
+      <div className="ec-s-feuille" role="dialog" aria-modal="true" aria-label={`QR code du lien « ${lien.libelle} »`} onClick={(e) => e.stopPropagation()}>
+        <div className="ec-s-poignee" aria-hidden="true" />
+        <div className="ec-s-feuille-tete">
+          <h2 className="ec-s-feuille-titre">{lien.libelle}</h2>
+          <button type="button" className="ec-s-ok" onClick={onFermer}>
+            OK
+          </button>
+        </div>
+        <div className="ec-s-qr-grand">
+          <QrCode texte={lien.url} taille={240} etiquette={`QR code du lien « ${lien.libelle} »`} />
+        </div>
+      </div>
+    </div>,
+    hote
   );
 }

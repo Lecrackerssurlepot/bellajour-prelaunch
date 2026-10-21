@@ -359,7 +359,7 @@
   display: flex;
   gap: 8px;
   margin: 10px -2px 2px;
-  padding: 0 12px 6px;
+  padding: 0 16px 6px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -368,77 +368,22 @@
 .ec-espace .ec-ch::-webkit-scrollbar {
   display: none;
 }
-.ec-espace .ec-ch-p {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 14px 0 6px;
-  box-sizing: border-box;
-  border-radius: 999px;
-  border: 1px solid var(--ec-carte-bord);
-  background: var(--ec-carte);
-  box-shadow: var(--ec-reflet);
-  color: var(--ec-text);
-  font: inherit;
-  font-size: 14.5px;
-  font-variant-numeric: lining-nums;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.ec-espace .ec-ch-p[aria-pressed="true"] {
-  border-color: var(--ec-accent);
-  background: var(--ec-accent-soft);
-  color: var(--ec-accent-texte);
-  font-weight: 600;
-}
-.ec-espace .ec-ch-p:focus-visible {
-  outline: 3px solid var(--ec-accent);
-  outline-offset: 2px;
-}
-.ec-espace .ec-ch-ini {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(var(--ec-fg-rgb), 0.08);
-  color: var(--ec-muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.ec-espace .ec-ch-p[aria-pressed="true"] .ec-ch-ini {
-  background: var(--ec-accent);
-  color: var(--ec-on-accent);
-}
-.ec-espace .ec-ch-n {
-  color: var(--ec-muted);
-  font-size: 13px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums lining-nums;
-}
-.ec-espace .ec-ch-p[aria-pressed="true"] .ec-ch-n {
-  color: inherit;
-  opacity: 0.8;
-}
+/* Les pastilles elles-mêmes sont `.ec-s-choix` (simple.css, planche 12 du 22/10) : le même choix que la feuille « Personnes ». Les règles d'avant (initiales,
+   nombre) sont dans `archive/photos-simple-2026-10/mosaique-pastilles.css`. */
 
 /* ─────────────────────────── téléphone : l'en-tête d'un lien ouvert ─────────────────────────── */
 
 @media (max-width: 860px) {
-  /* Un lien ouvert : la tuile porte le nom et les chiffres, le grand titre se tait (comme la fiche d'une personne) ; sur la ligne
-     du haut, « Cocher » et « Partager » à droite. Ni titre à répéter, ni ligne de chiffres, ni « ‹ Par lien » (le retour est le segment
-     « Par lien » de la barre du bas). Les règles de la page (photos.css, chargée après cette feuille) valent (0,3,0) : celles-ci, (0,4,0). */
+  /* Un lien ouvert : la tuile porte le nom et les chiffres, le grand titre se tait (comme « Supprimées récemment », qui porte le sien). Sur la
+     ligne du haut : la capsule « ‹ Par lien » à gauche (la même place partout, planche 12) et, à droite, le MÊME « + » et le MÊME « … » que
+     « Toutes » (22/10). Les règles de la page (photos.css, chargée après cette feuille) valent (0,3,0) : celles-ci, (0,4,0). */
   .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-titres,
-  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ph-mligne,
-  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ph-retour {
+  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ph-mligne {
     display: none;
   }
   .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-tete {
     min-height: 0;
-    padding: 4px 12px 0 8px;
+    padding: 4px 16px 0 8px;
   }
   .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-actions {
     flex: 1 1 100%;

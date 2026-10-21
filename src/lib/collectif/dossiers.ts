@@ -56,7 +56,7 @@ export type LienEdition = {
 };
 
 export type Noeud = {
-  /** `tout`, `selection`, `resp:<type>:<chemin>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom comparé>`, `qui:<nom comparé>` (T-180), `qui:@responsable`, `atelier`. */
+  /** `tout`, `selection`, `resp:<type>:<chemin>`, `lien:<id>`, `participants`, `pers:<id|general>:<nom comparé>`, `qui:<nom comparé>` (T-180), `qui:@responsable`, `atelier`, et pour une requête de plusieurs personnes `quis:[...]` (jamais un nœud de l'arbre). */
   cle: string;
   nom: string;
   n: number;
@@ -107,6 +107,48 @@ export function personnesDe(lignes: readonly { deposant: string | null; poids?: 
 
 /** La clé de la personne « le responsable » dans le filtre de « Toutes les photos » (`qui:<clé>` pour un participant). */
 export const QUI_RESPONSABLE = "qui:@responsable";
+
+/**
+ * PLUSIEURS PERSONNES À LA FOIS (22/10, la feuille « Personnes » du téléphone : « plusieurs possibles ») : `quis:` suivi d'un
+ * tableau JSON de NOMS COMPARÉS (`clePersonne`), jamais un séparateur : un nom peut porter n'importe quel caractère. Des
+ * participants seulement (le responsable n'est pas une personne de la feuille ; sa clé reste `qui:@responsable`, seule).
+ * Même règle que `qui:` : une photo de participant dont le nom comparé est l'un d'eux.
+ */
+export const QUIS = "quis:";
+/** Au plus, par clé de dossier : un nom compte jusqu'à quelques dizaines de caractères, `quis:` en porte plusieurs. */
+export const CLE_DOSSIER_MAX = 400;
+export const CLE_QUIS_MAX = 1500;
+export const PERSONNES_MAX = 12;
+
+/** La clé de dossier de plusieurs personnes ; une seule redevient `qui:<nom>`, aucune : `null`. */
+export function cleDePersonnes(noms: readonly string[]): string | null {
+  const uniques = [...new Set(noms.map((n) => clePersonne(n)))].sort();
+  if (uniques.length === 0) return null;
+  if (uniques.length === 1) return `qui:${uniques[0]}`;
+  return `${QUIS}${JSON.stringify(uniques)}`;
+}
+
+let memoQuis: { cle: string; noms: ReadonlySet<string> | null } | null = null;
+/** Les noms comparés d'une clé `quis:` ; `null` si elle n'est pas lisible (jamais « tout le monde »). Mémorisée : la grille la relit pour chaque ligne. */
+export function lireNomsDeQuis(cle: string): ReadonlySet<string> | null {
+  if (memoQuis && memoQuis.cle === cle) return memoQuis.noms;
+  let noms: ReadonlySet<string> | null = null;
+  if (cle.startsWith(QUIS) && cle.length <= CLE_QUIS_MAX) {
+    try {
+      const v: unknown = JSON.parse(cle.slice(QUIS.length));
+      if (Array.isArray(v) && v.length > 0 && v.length <= PERSONNES_MAX && v.every((x) => typeof x === "string")) noms = new Set(v as string[]);
+    } catch {
+      noms = null;
+    }
+  }
+  memoQuis = { cle, noms };
+  return noms;
+}
+
+/** Une clé de dossier envoyée par le navigateur, assez courte (`quis:` a droit à plus de place que les autres). */
+export function cleDeDossierLisible(v: unknown): v is string {
+  return typeof v === "string" && v.length <= (v.startsWith(QUIS) ? CLE_QUIS_MAX : CLE_DOSSIER_MAX);
+}
 
 /** Une photo de participant (adresse de base, « Sans groupe », ou lien de contribution). */
 export const deParticipant = (l: Pick<LignePhoto, "role_deposant" | "provenance_id">) => l.role_deposant === "participant" || Boolean(l.provenance_id);
@@ -251,7 +293,7 @@ export const estVueEnsemble = (cle: string) => (VUES_ENSEMBLE as readonly string
 /** Le rayon d'une clé : l'onglet de la page Photos qui l'éclaire. */
 export function rayonDe(cle: string): "tout" | "selection" | "vous" | "liens" | "atelier" {
   /* Une personne choisie dans « Toutes les photos » reste dans « Toutes les photos ». */
-  if (cle.startsWith("qui:")) return "tout";
+  if (cle.startsWith("qui:") || cle.startsWith(QUIS)) return "tout";
   if (cle === "selection" || cle === "atelier" || cle === "vous" || cle === "liens") return cle;
   if (cle.startsWith("resp:")) return "vous";
   if (cle === "participants" || cle.startsWith("lien:") || cle.startsWith("pers:")) return "liens";
@@ -276,6 +318,10 @@ export function dansLeDossier(l: LignePhoto, cle: string, responsable: string | 
   }
   if (cle === QUI_RESPONSABLE) return l.role_deposant === "responsable" && !l.provenance_id;
   if (cle.startsWith("qui:")) return deParticipant(l) && clePersonne(l.deposant) === clePersonne(cle.slice(4));
+  if (cle.startsWith(QUIS)) {
+    const noms = lireNomsDeQuis(cle);
+    return noms !== null && deParticipant(l) && noms.has(clePersonne(l.deposant));
+  }
   const r = lireCleResp(cle);
   if (!r || l.role_deposant !== "responsable" || l.provenance_id) return false;
   const c = cheminDe(l, responsable);

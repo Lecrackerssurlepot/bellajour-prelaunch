@@ -311,7 +311,7 @@ export function planDuDossier(cle: string, groupes: readonly (LigneFiltrable & {
   else if (cle.startsWith("pers:")) {
     const reste = cle.slice(5);
     conditions = [...lienDeLaPersonne(reste.slice(0, reste.indexOf(":"))), parmi("deposant", membres)];
-  } else if (cle.startsWith("qui:")) conditions = [{ op: "participant" }, parmi("deposant", membres)];
+  } else if (cle.startsWith("qui:") || cle.startsWith("quis:")) conditions = [{ op: "participant" }, parmi("deposant", membres)];
   else if (cle.startsWith("resp:")) {
     conditions = [{ op: "egal", colonne: "role_deposant", valeur: "responsable" }, { op: "nul", colonne: "provenance_id" }, parmi("provenance_type", membres), parmi("deposant", membres)];
   } else return { genre: "repli", raison: "dossier inconnu" };
@@ -430,17 +430,16 @@ export const TRI_TOUTES: readonly CleTri[] = [
 ];
 
 /**
- * « Par jour » : l'ordre de la lecture d'avant, redit en colonnes. Elle triait
- * par la clé du jour (`jourDePhoto`), puis par `prise_le`, sur les photos dans
- * l'ordre d'arrivée. Une photo sans date a pour clé « ~2026-10-13 », et `~`
- * passe AVANT les chiffres dans `localeCompare` (vérifié : -1) : les photos
- * sans date viennent donc d'abord, dans l'ordre d'arrivée ; puis les datées,
- * par prise de vue, l'ordre d'arrivée départageant.
+ * « Par jour » (refait le 22/10, la page Photos « comme une application ») : les JOURS DE PRISE DE VUE les plus récents en haut,
+ * et dans un jour la dernière prise de vue d'abord ; l'ordre d'arrivée départage (un lot partage son instant), puis l'id.
+ * Les photos SANS date de prise de vue viennent d'abord, la dernière arrivée en tête (PostgreSQL : NULLS FIRST en
+ * décroissant) : ce sont celles qui viennent d'arriver, pas encore lues, et l'écran les range sous leur JOUR D'ARRIVÉE
+ * (« une photo sans date prend son jour d'arrivée », `regrouperParJour`, filtres.ts). Avant : du plus ancien au plus récent.
  */
 export const TRI_JOUR: readonly CleTri[] = [
-  { colonne: "prise_le", croissant: true, nulsDAbord: true },
-  { colonne: "confirmee_le", croissant: true },
-  { colonne: "id", croissant: true },
+  { colonne: "prise_le", croissant: false, nulsDAbord: true },
+  { colonne: "confirmee_le", croissant: false },
+  { colonne: "id", croissant: false },
 ];
 
 /** L'ordre d'arrivée (la vue « Doublons », comme la lecture d'avant). */

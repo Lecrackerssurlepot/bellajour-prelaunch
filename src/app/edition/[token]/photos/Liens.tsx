@@ -1,8 +1,10 @@
-"use client";
+/* Les liens de la page Photos : le menu « … » d'un lien (`actionsDuLien`), la fenêtre « Modifier » (`FenetreModifierLien`) et l'état vide
+   « Créez un lien par groupe » (`EtatSansLien`).
 
-/* L'onglet « Les liens » de la page Photos (ordinateur) : une mosaïque de quatre colonnes (planche 3D du 21/10), l'intro et le
-   plafond de l'édition. Au téléphone, « Par lien » et « Les liens » sont UNE seule vue (la mosaïque de « Par lien », avec
-   « Créer un lien » en tête) : la pilule « Les liens » de l'en-tête n'existe plus.
+   22/10 (« Photos, en plus simple », planches 8 et 12) : l'ONGLET « Les liens » n'existe plus. Au téléphone « Par lien » et « Les liens » étaient déjà
+   UNE vue ; à l'ordinateur, les deux onglets (« Les photos · Les liens · 3 ») sont retirés : « Par lien » (la colonne de gauche) montre la mosaïque, et
+   « Nouveau lien » en est la dernière tuile (une ligne « + Nouveau lien » dans la colonne). `OngletLiens` (l'intro, le plafond de l'édition, la
+   mosaïque à quatre colonnes) est dans `archive/photos-simple-2026-10/Liens.tsx`.
 
    21/10 (planche 3, validée) : la carte de lien d'avant (QR, barres par personne, « Afficher en grand », « Partager », menu) est
    dans archive/mosaique-liens-2026-10/ ; la tuile la remplace (`Mosaique.tsx`), et le menu « … » (`MenuLien.tsx`) porte
@@ -17,25 +19,21 @@
    tous les liens de groupe en dépendent) mais ne se montre ni ne s'envoie plus. Ses photos, s'il y en a, apparaissent sous
    « Sans groupe », en LECTURE SEULE : une tuile sans « … ». Sans aucun lien de groupe, l'état vide « Créez un lien par groupe »
    (5B) : un grand « Créer un lien » et trois noms pour commencer qui préremplissent la fenêtre de création (tenue par
-   `Collecte.tsx`, la même pour l'en-tête, la vue « Par lien » du téléphone et cet onglet). Les fenêtres de partage, de QR, de
+   `Collecte.tsx`, la même pour la tuile « Nouveau lien », la colonne de l'ordinateur et cet état vide). Les fenêtres de partage, de QR, de
    modification et de suppression sont aussi tenues par `Collecte.tsx`. */
 
 import { useState } from "react";
 import { RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
-import { type Pesee } from "@/lib/collectif/mosaique";
 import { NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import Fenetre from "../../_composants/Fenetre";
 import { ICONES_MENU, type ActionMenu } from "./MenuLien";
-import { Mosaique, type TuileVue } from "./Mosaique";
 import "./liens.css";
 
 export type Personne = { nom: string; n: number };
 export type LienDetail = { id: string; cle: string; nom: string; plafond: string; plafondNombre: number | null; sansPlafond: boolean; n: number; personnes: Personne[] };
 /** `general` : les photos de l'adresse de base, montrées sous « Sans groupe » quand `n` > 0, jamais partagées. */
 export type Liens = { general: { nom: string; plafond: string; n: number; personnes: Personne[] }; liens: LienDetail[]; reste: number | null };
-
-const nombre = (n: number) => n.toLocaleString("fr-FR");
 
 /**
  * Le menu « … » d'un lien de contribution (planche 3B) : Partager et QR code seulement tant que la collecte est ouverte (collecte
@@ -55,65 +53,52 @@ export function actionsDuLien(o: { ouverte: boolean; partager: () => void; qr: (
   ];
 }
 
-export function OngletLiens(o: {
-  /** `false` tant que les photos ne sont pas lues : ni mosaïque ni état vide. */
-  pret: boolean;
-  tuiles: readonly TuileVue[];
-  /** Les poids gelés à l'ouverture de la page (la place et la taille des tuiles). */
-  ordre: readonly Pesee[];
-  /** Combien de photos peuvent encore entrer avant le plafond de l'édition (`null` : pas de plafond). */
-  reste: number | null;
+/**
+ * L'état vide de « Par lien » quand AUCUN lien de groupe n'existe (planche 5B) : un grand « Créer un lien » et trois noms pour commencer.
+ * Collecte terminée : le bouton reste, ÉTEINT, avec la raison.
+ */
+export function EtatSansLien(o: {
   tu: boolean;
   ouverte: boolean;
   /** Ouvrir la fenêtre de création, un nom déjà écrit ou non. */
   creer: (nom: string) => void;
-  ouvrir: (cle: string) => void;
 }) {
   const v = (vous: string, toi: string) => (o.tu ? toi : vous);
   return (
-    <div className="ec-ecran-corps ec-li ec-defile">
-      <div className="ec-li-intro">
-        <span>{v("Un lien par personne ou par groupe : chacun dépose depuis son téléphone, sans compte, et vous suivez qui a envoyé quoi.", "Un lien par personne ou par groupe : chacun dépose depuis son téléphone, sans compte, et tu suis qui a envoyé quoi.")}</span>
-        {o.reste !== null ? <span className="ec-note">Il reste {nombre(o.reste)} photos avant le plafond de l&apos;édition</span> : null}
+    <div className="ec-ph-accueil ec-cl-vide">
+      <span className="ec-cl-vide-icone" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3" />
+        </svg>
+      </span>
+      <strong className="ec-ph-accueil-titre">{v("Créez un lien par groupe", "Crée un lien par groupe")}</strong>
+      <p className="ec-texte">
+        {v(
+          "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et vous voyez d'où vient chaque photo.",
+          "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et tu vois d'où vient chaque photo."
+        )}
+      </p>
+      <div className="ec-ph-accueil-gestes">
+        {o.ouverte ? (
+          <button type="button" className="ec-bouton ec-bouton--plein ec-ph-large" onClick={() => o.creer("")}>
+            Créer un lien
+          </button>
+        ) : (
+          <button type="button" className="ec-bouton ec-bouton--plein ec-ph-large" disabled title={RAISON_COLLECTE_TERMINEE}>
+            Créer un lien
+          </button>
+        )}
       </div>
-      {o.pret && o.tuiles.length === 0 ? (
-        <div className="ec-ph-accueil ec-cl-vide">
-          <span className="ec-cl-vide-icone" aria-hidden="true">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3" />
-            </svg>
-          </span>
-          <strong className="ec-ph-accueil-titre">{v("Créez un lien par groupe", "Crée un lien par groupe")}</strong>
-          <p className="ec-texte">
-            {v(
-              "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et vous voyez d'où vient chaque photo.",
-              "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et tu vois d'où vient chaque photo."
-            )}
-          </p>
-          <div className="ec-ph-accueil-gestes">
-            {o.ouverte ? (
-              <button type="button" className="ec-bouton ec-bouton--plein ec-ph-large" onClick={() => o.creer("")}>
-                Créer un lien
-              </button>
-            ) : (
-              <button type="button" className="ec-bouton ec-bouton--plein ec-ph-large" disabled title={RAISON_COLLECTE_TERMINEE}>
-                Créer un lien
-              </button>
-            )}
-          </div>
-          {o.ouverte ? (
-            <div className="ec-cl-exemples" role="group" aria-label="Des noms pour commencer">
-              <span className="ec-note">Pour commencer :</span>
-              {NOMS_POUR_COMMENCER.map((nom) => (
-                <button key={nom} type="button" className="ec-ph-pilule" onClick={() => o.creer(nom)}>
-                  {nom}
-                </button>
-              ))}
-            </div>
-          ) : null}
+      {o.ouverte ? (
+        <div className="ec-cl-exemples" role="group" aria-label="Des noms pour commencer">
+          <span className="ec-note">Pour commencer :</span>
+          {NOMS_POUR_COMMENCER.map((nom) => (
+            <button key={nom} type="button" className="ec-ph-pilule" onClick={() => o.creer(nom)}>
+              {nom}
+            </button>
+          ))}
         </div>
       ) : null}
-      {o.pret && o.tuiles.length ? <Mosaique genre="lien" variante="onglet" tuiles={o.tuiles} ordre={o.ordre} etiquette="Les liens" ouvrir={o.ouvrir} /> : null}
     </div>
   );
 }

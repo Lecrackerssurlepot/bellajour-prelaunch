@@ -1,11 +1,9 @@
-/* /edition/[token]/photos — la collecte, côté client (PRD §4.2, §5, T-152 ;
-   planches 1, 2 et 3 du 20/10 : les listes qui trient et filtrent, cocher,
-   agrandir). `?dossier=<clé>` ouvre un dossier (depuis le tableau de bord),
-   `&mode=tout` garde un lien coché dans « Tout », `?onglet=liens` l'onglet des
-   liens. La page serveur ne lit que ce qui ne bouge pas (le lien
-   général, le plafond de présélection, les mots du message de partage) ; la
-   grille ET « Qui a déposé » avec ses liens se lisent par la route photos,
-   depuis le navigateur, et se relisent après un envoi. */
+/* /edition/[token]/photos — la collecte, côté client (PRD §4.2, §5, T-152 ; refaite le 22/10,
+   « Photos, en plus simple »). `?dossier=<clé>` ouvre un dossier (depuis le tableau de bord),
+   `&mode=tout` garde un lien coché dans « Toutes », `?onglet=liens` (l'adresse d'avant, quand
+   « Les liens » était un onglet) ouvre « Par lien ». La page serveur ne lit que ce qui ne bouge
+   pas (le lien général, les mots du message de partage) ; la grille ET « Qui a déposé » avec ses
+   liens se lisent par la route photos, depuis le navigateur, et se relisent après un envoi. */
 
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -15,7 +13,7 @@ import { makeSupabase } from '@/lib/supabase'
 import { peut } from '@/lib/collectif/droits'
 import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
 import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
-import { plafondLienMax, plafondParticipant } from '@/lib/collectif/plafonds'
+import { plafondLienMax } from '@/lib/collectif/plafonds'
 import { phrasePhotosEffacees } from '@/lib/collectif/retention'
 import { Verrou } from '../../_composants/EnPreparation'
 import { chargerEspace } from '../donnees'
@@ -70,12 +68,9 @@ export default async function PagePhotos({
       fin={fin}
       tu={edition.registre === 'ecole_tu'}
       lienParticipants={ecrire ? liensEdition(origine, edition).depot : ''}
-      preselectionMax={edition.preselection_max}
       max={plafondLienMax(edition)}
-      plafondGeneral={plafondParticipant(edition)}
-      dossierInitial={typeof recherche.dossier === 'string' && recherche.dossier.length <= 400 ? recherche.dossier : 'tout'}
+      dossierInitial={recherche.onglet === 'liens' ? 'liens' : typeof recherche.dossier === 'string' && recherche.dossier.length <= 400 ? recherche.dossier : 'tout'}
       modeTout={recherche.mode === 'tout'}
-      ongletInitial={recherche.onglet === 'liens' ? 'liens' : 'photos'}
       organisation={edition.organisation}
       evenement={edition.evenement}
       cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}

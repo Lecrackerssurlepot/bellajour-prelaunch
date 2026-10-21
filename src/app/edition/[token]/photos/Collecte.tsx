@@ -1,118 +1,105 @@
 "use client";
 
-/* La page Photos du responsable (planches 1, 2 et 3 du 20/10/2026, Audencia :
-   huit bateaux ; T-193, T-199). L'ancienne page « en rayons » est dans
-   archive/photos-rayons-2026-10.
+/* La page Photos du responsable, « comme une application » (planches 8 à 13 du 22/10/2026, « Photos, en plus simple », validées par Mathias).
+   L'écran d'avant (planches 1 à 5 des 20 et 21/10 : le haut chargé de boutons, les filtres Jour et Afficher, « Cocher », l'étoile et le nom sur
+   chaque vignette, la fiche d'une personne, Renommer et Fusionner) est dans `archive/photos-simple-2026-10/` ; l'ancienne page « en rayons »
+   dans `archive/photos-rayons-2026-10`.
 
-   Deux onglets, un seul écran :
-   - LES PHOTOS : les grands chiffres, puis un panneau de verre : à gauche une
-     colonne de LISTES qui trient et filtrent (Lien, Personne avec recherche,
-     Jour, Afficher : `Listes.tsx`, traduites pour la route par `filtres.ts`),
-     à droite la grille. « Tout » montre la grille filtrée ; « Par lien », un
-     album par lien, puis le lien ouvert et ses personnes.
-     On COCHE des photos (la case au survol, l'appui long au téléphone) et une
-     barre d'actions agit sur elles : Ajouter à ma sélection, Retirer de ma
-     sélection, Ne pas publier. « Cocher » est le geste du moment, « Ma
-     sélection » (l'étoile) ce qui va au magazine. Toucher une photo
-     l'AGRANDIT (`Agrandir.tsx`) ; l'étoile au survol garde l'ajout en un clic.
-   - LES LIENS : inchangé (`Liens.tsx`).
+   LA RÈGLE de Mathias : « si un bouton n'a pas sa place, s'il peut être remplacé ou mieux placé, s'il ajoute une étape, il n'a pas sa place ».
+   Le téléphone a des PLACES FIXES : la barre du bas dit où l'on est (« Toutes · Par lien » et le rond « Personnes »), en haut à droite le « + » de
+   dépôt (l'action la plus importante) et UN « … » (Sélectionner, Supprimées récemment, puis Terminer la collecte), les choix s'ouvrent en feuille
+   du bas, l'appui long ouvre le menu d'une photo, et aucun texte ne s'ajoute quand l'écran est plein.
 
-   Téléphone (planche 2 du 21/10, refaite) : rien ne défile de côté. Sous le titre,
-   une ligne de chiffres et « Cocher » (un texte) ; « Déposer » est un « + » rond dans
-   l'en-tête ; les filtres ont QUITTÉ le haut : une barre flottante de verre en bas
-   (Tout · Par lien · Personnes, et le bouton filtre) ; le filtre s'ouvre en feuille
-   COMPACTE au-dessus d'elle (`Feuille.tsx`) ; en mode « cocher », la MÊME barre devient
-   la barre d'actions. 4 colonnes avec les initiales, et rien ne passe sous la barre.
-   « Personnes » (le troisième choix) est la liste de tout le monde, tous liens
-   confondus ; toucher une personne ouvre ses photos. L'ancien haut d'écran (la barre
-   collée sous le logo, le bouton « Déposer » flottant, la feuille plein écran) est dans
-   `archive/photos-barre-haut-2026-10/`.
-
-   La grille se lit PAR PAGES (120 vignettes signées à la fois) et se complète
-   en descendant ; le chargement par pages observe SA zone de défilement
-   (`root` de l'IntersectionObserver), nul sur téléphone. Les photos qui arrivent
-   (T-181, refait le 21/10) : une lecture légère toutes les 30 s, onglet visible,
-   qui marche SANS repère (une édition qui part de zéro) ; les grands chiffres la
-   suivent, la grille s'ouvre d'elle-même quand c'est sans risque (rien de coché,
-   aucune photo agrandie, en haut), sinon « 12 nouvelles · Les voir ».
-   L'équipe voit tout, sans un geste qui écrive et sans aucun lien.
-
-   Lot w2 (planches 3, 4 et 5 du 20/10, T-198, T-199) :
-   - SUPPRIMER (corbeille 30 jours) dans la photo agrandie, dans la barre des
-     cochées et au téléphone, sans fenêtre de confirmation : « Photo mise à la
-     corbeille · Annuler » (Annuler = `restaurer`, les mêmes ids) ;
-   - la CORBEILLE (`Corbeille.tsx`), une ligne de « Afficher » ;
-   - une PERSONNE a sa fiche (`Personne.tsx`) : renommer, les doublons proposés,
-     fusionner en choisissant le nom gardé ;
-   - les gestes des cochées partent en UNE requête par lot de 500 (`photoIds`),
-     plus une par photo ;
-   - sans la migration 20261023, ces gestes répondent 503 : l'écran dit « La mise
-     à jour de la base n'est pas encore appliquée », jamais l'erreur brute.
-   Le lien d'équipe ne reçoit aucun de ces gestes, ni la corbeille. */
+   - TOUTES : la grille rangée PAR JOUR de prise de vue, les plus récents en haut (`regrouperParJour`), un intertitre collant par jour. Des
+     vignettes propres : une photo, rien d'autre. Toucher agrandit. La mise à jour en direct (« N nouvelles · Les voir ») et le chargement par
+     pages (120 vignettes) restent.
+   - PERSONNES : le rond de la barre du bas ouvre une feuille (une recherche, des pastilles, plusieurs possibles) ; les personnes choisies se voient
+     en pastilles sous le titre, avec leur croix. Plus de page d'une personne, ni de Renommer, ni de Fusionner : l'atelier les garde sur sa fiche.
+   - DEUX GESTES sur une photo : le CŒUR (favori ; toucher de nouveau le retire) et SUPPRIMER (la corbeille de 30 jours, « Supprimées récemment »).
+     Ils vivent sur la photo agrandie, dans la barre de sélection et dans le menu de l'appui long. Le cœur s'écrit avec les marques existantes de
+     « Ma sélection » (`preselection`) : l'atelier les retrouve dans son téléchargement. « Retirer » et « Ne pas publier » ont disparu de l'espace du
+     client ; les marques déjà posées restent en base.
+   - TERMINER LA COLLECTE : une feuille à deux choix (`ChoixFinCollecte`) ; « Choisir d'abord mes préférées » est un mode calme où l'on touche les
+     photos à garder, puis « Envoyer ma sélection » écrit les cœurs PUIS termine (`envoyerMaSelection`, photosSimples.ts : si les cœurs ne passent
+     pas, la collecte n'est pas terminée).
+   - PAR LIEN : la mosaïque (« Nouveau lien » en dernière tuile), un lien ouvert (sa tuile, ses personnes en pastilles, la grille par jour).
+     Partager ouvre la feuille de partage de l'iPhone, sans fenêtre ; sinon une petite fenêtre (« Copier le message », « QR code »).
+   - ORDINATEUR : le dessin d'avant reste, avec les mêmes retraits : la colonne (Toutes, les liens, Personnes, « Supprimées récemment » en bas),
+     la grille rangée par jour, « Tout sélectionner » seulement après une première photo, une barre avec le cœur et Supprimer.
+   L'équipe (lecture seule) ne voit ni « + », ni « … », ni Sélectionner, ni corbeille, ni Terminer. */
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { accueilDesArrivees, ceQuiABouge, corpsSondagePhotos, lireEtatSondage, phraseArrivees, seuilDeLInsertion, SONDAGE_PHOTOS_MS, type EtatSondage, type Nouvelles, type SituationPhotos } from "@/lib/collectif/arrivees";
+import { accueilDesArrivees, ceQuiABouge, corpsSondagePhotos, lireEtatSondage, phraseArrivees, SONDAGE_PHOTOS_MS, type EtatSondage, type Nouvelles, type SituationPhotos } from "@/lib/collectif/arrivees";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
-import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, SANS_NOM, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
+import { pastilleCollecteTerminee } from "@/lib/collectif/finCollecte";
+import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, QUIS, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { ERREUR_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
 import { corpsModifierLien } from "@/lib/collectif/modifierLien";
-import { detailDeLaPersonne, figerLesPesees, peseesDesLiens, peseesDesPersonnes, type Pesee } from "@/lib/collectif/mosaique";
+import { figerLesPesees, peseesDesLiens, type Pesee } from "@/lib/collectif/mosaique";
+import {
+  basculerGardee,
+  entreesDuMenuHaut,
+  entreesDuMenuPhoto,
+  envoyerMaSelection,
+  estGardee,
+  fixerGardees,
+  gesteCoeur,
+  nombreGardees,
+  partagerSurLeTelephone,
+  planDesPreferees,
+  type Choix,
+  type CleMenuPhoto,
+} from "@/lib/collectif/photosSimples";
 import { useFenetreEnvoi, useMoteurDepot } from "../../_composants/depot/DepotContexte";
 import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
-import { ActionsFinCollecte, ID_LIGNE_FIN, LigneFinCollecte, type FinDeCollecte } from "../../_composants/FinCollecte";
-import { FenetreCreerLien, FenetrePartage, FenetreQr, type ContexteMessage, type LienCree, type LienPartage } from "../../_composants/LienContribution";
+import { ActionsFinCollecte, ChoixFinCollecte, ID_LIGNE_FIN, LigneFinCollecte, terminerLaCollecte, type FinDeCollecte } from "../../_composants/FinCollecte";
+import { copierLeMessage, donneesDePartage, FenetreCreerLien, FenetrePartage, FenetreQr, FeuilleQr, type ContexteMessage, type LienCree, type LienPartage } from "../../_composants/LienContribution";
 import { useSondage } from "../../_composants/useSondage";
 import Agrandir from "./Agrandir";
 import Corbeille, { BASE_PAS_A_JOUR, type PhotoCorbeille } from "./Corbeille";
 import {
   adresseDe,
   annonceCourte,
+  avecCorbeille,
   avecLien,
-  cleDeLaPersonne,
+  avecPersonne,
   cleQui,
   enLots,
   estVueAlbums,
-  ficheDe,
   filtreDuRetour,
   filtresDepuis,
-  filtreSousLeNom,
   FILTRES_VIDES,
   initialesDe,
-  jourCourt,
-  jourEncoreALire,
-  joursVus,
   lienDe as noeudDuLien,
   lienDeLaPhoto,
   liensDansLOrdre,
   LOT_ECRITURE,
   montreLesDernieres,
   nombre,
-  nombreDansLaFeuille,
   personnesDe,
-  photosDe,
+  personnesDeLaFeuille,
   phraseRetour,
+  regrouperParJour,
   requeteDe,
-  sansReglagesDeLaFeuille,
-  estVuePersonnes,
   type Filtres,
-  type ListePersonnes,
-  type PersonneVue,
+  type GroupeJour,
 } from "./filtres";
-import Feuille from "./Feuille";
+import FeuillePersonnes from "./FeuillePersonnes";
 import Grille, { ICONES, Trace, type Photo } from "./Grille";
-import { actionsDuLien, FenetreModifierLien, OngletLiens, type Liens } from "./Liens";
+import { actionsDuLien, EtatSansLien, FenetreModifierLien, type Liens } from "./Liens";
 import Listes from "./Listes";
+import { MenuLien, useMenuLien, type ActionMenu } from "./MenuLien";
+import MenuPhoto from "./MenuPhoto";
 import { Mosaique, PastillesDePersonnes, TuileDeLAlbum, type PersonneDuLien, type TuileVue } from "./Mosaique";
-import { FenetreFusion, FenetreRenommer, FichePersonne } from "./Personne";
 import "./photos.css";
+import "./simple.css";
 
 type Compteurs = { dossier: number; liste: number; doublons: number; selection: number; choisissables: number; signalees: number };
 type Stats = { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null; corbeille: number | null };
-type Onglet = "photos" | "liens";
 type Reponse = { photos: Photo[]; suivante: number | null; compteurs: Compteurs; stats: Stats; arbre: Arbre; couvertures?: Record<string, string>; liens: Liens | null };
 type Coches = { tout: boolean; ids: Set<string> };
 type Avis = { texte: string; sous?: string; annuler?: () => void; voir?: () => void };
@@ -127,24 +114,20 @@ const MIGRATION_TEXTE = `${BASE_PAS_A_JOUR} : rien n'a changé.`;
 type Props = {
   token: string;
   ecrire: boolean;
-  /** La collecte est ouverte : sinon ni dépôt ni lien, la sélection reste. */
+  /** La collecte est ouverte : sinon ni dépôt ni lien, les cœurs restent. */
   ouverte: boolean;
   /** La fin de collecte (21/10) : qui peut la terminer, depuis quand elle l'est, si l'atelier peut encore rouvrir. */
   fin: FinDeCollecte;
   tu: boolean;
   /** L'adresse complète du lien général des participants ; un lien de contribution y ajoute `?p=`. */
   lienParticipants: string;
-  preselectionMax: number | null;
-  /** Le plus haut plafond d'un lien (`plafondLienMax`) et le plafond actuel du lien général. */
   max: number;
-  plafondGeneral: number | null;
   organisation: string;
   evenement: string;
   cloture: string;
-  /** `?dossier=` (depuis le tableau de bord), `?mode=tout` et `?onglet=liens`. */
+  /** `?dossier=` (depuis le tableau de bord) et `?mode=tout`. */
   dossierInitial: string;
   modeTout: boolean;
-  ongletInitial: Onglet;
 };
 
 const REQUETE_TELEPHONE = "(max-width: 860px)";
@@ -160,21 +143,35 @@ const cleRequete = (f: Filtres) => {
   const r = requeteDe(f);
   return `${r.dossier}|${r.vue}`;
 };
+/** Le téléphone : la même règle que la feuille de style (`max-width: 860px`), lue sans état à écrire. */
+function useTelephone(): boolean {
+  return useSyncExternalStore(
+    (rappel) => {
+      const mq = window.matchMedia(REQUETE_TELEPHONE);
+      mq.addEventListener("change", rappel);
+      return () => mq.removeEventListener("change", rappel);
+    },
+    () => window.matchMedia(REQUETE_TELEPHONE).matches,
+    () => false
+  );
+}
 
 const TRACE = {
-  lien: "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1",
-  ordre: "M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4",
-  filtre: "M4 6h16M7 12h10M10 18h4",
-  crayon: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
-  partage: "M12 3v12M7 8l5-5 5 5M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5",
   plus: "M12 5v14M5 12h14",
-  retirer: "M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9zM4 4l16 16",
   fermer: "M6 6l12 12M18 6 6 18",
   retour: "m15 6-6 6 6 6",
   chev: "m9 6 6 6-6 6",
   dossier: "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
   atelier: "M4 20V8l8-4 8 4v12M9 20v-6h6v6",
 };
+
+const Points = ({ taille = 22 }: { taille?: number }) => (
+  <svg width={taille} height={taille} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <circle cx="5" cy="12" r="1.9" />
+    <circle cx="12" cy="12" r="1.9" />
+    <circle cx="19" cy="12" r="1.9" />
+  </svg>
+);
 
 /**
  * La fin de collecte se montre AU CLIC (21/10) : « Terminer la collecte » rend l'écran fermé tout de
@@ -194,7 +191,7 @@ export default function Collecte(props: Props) {
 function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const client = useSyncExternalStore(rien, () => true, () => false);
-  const [onglet, setOnglet] = useState<Onglet>(p.ecrire ? p.ongletInitial : "photos");
+  const telephone = useTelephone();
   /* L'équipe n'a pas de corbeille : `?dossier=corbeille` sur son lien rouvre « Toutes les photos ». */
   const [f, setF] = useState<Filtres>(() => {
     const d = filtresDepuis(p.dossierInitial, p.modeTout);
@@ -204,57 +201,50 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const [compteurs, setCompteurs] = useState<Compteurs | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [arbre, setArbre] = useState<Arbre | null>(null);
-  /* La couverture de chaque lien (« Par lien » la lit avec ses photos ; l'onglet de l'ordinateur, par une lecture à part) et de chaque personne
-     (« Personnes », une lecture à part) : une vignette signée par tuile, la plus récente. Gardées d'une vue à l'autre : le lien ouvert (3C) garde
-     sa photo en tête sans la relire. */
+  /* La couverture de chaque lien (« Par lien » la lit avec ses photos) : une vignette signée par tuile, la plus récente. Gardée d'une vue à l'autre :
+     le lien ouvert (3C) garde sa photo en tête sans la relire. */
   const [couvLiens, setCouvLiens] = useState<Record<string, string>>({});
-  const [couvPersonnes, setCouvPersonnes] = useState<Record<string, string>>({});
   /* Les poids de la mosaïque, GELÉS à l'ouverture de la page (`figerLesPesees`) : la mise à jour en direct change les chiffres des
      pastilles, jamais la place ni la taille d'une tuile. Seul un ensemble de tuiles différent (un lien créé, supprimé) les reprend. */
   const [peseesLiens, setPeseesLiens] = useState<readonly Pesee[] | null>(null);
-  const [peseesPersonnes, setPeseesPersonnes] = useState<readonly Pesee[] | null>(null);
   const [liens, setLiens] = useState<Liens | null>(null);
   const [suivante, setSuivante] = useState<number | null>(0);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
-  /* Cocher (le geste du moment) : `tout` = toute la vue, `ids` = les exceptions ; sinon `ids` = les cochées. */
+  /* Sélectionner : `tout` = toute la vue, `ids` = les exceptions ; sinon `ids` = les sélectionnées. */
   const [coches, setCoches] = useState<Coches>(AUCUNE);
   const [modeCocher, setModeCocher] = useState(false);
   const dernierCoche = useRef<string | null>(null);
-  /* « Ne pas publier » écrit ici (la route de la grille ne le rend pas encore). */
-  const [signalees, setSignalees] = useState<Record<string, boolean>>({});
   const [agrandi, setAgrandi] = useState<string | null>(null);
   const [avis, setAvis] = useState<Avis | null>(null);
   const minuterieAvis = useRef(0);
-  const [feuille, setFeuille] = useState(false);
   const [progres, setProgres] = useState<string | null>(null);
-  /* Les dossiers du responsable : renommer, ranger en glissant. */
+  /* Les dossiers du responsable (ordinateur) : renommer, ranger en glissant. */
   const [edite, setEdite] = useState<{ cle: string; valeur: string } | null>(null);
   const [glisse, setGlisse] = useState<string | null>(null);
   const [survol, setSurvol] = useState<string | null>(null);
-  /* Les fenêtres des liens. `creerLien` : la fenêtre de création (le nom déjà écrit, ou vide) : UNE seule, pour l'en-tête, la vue
-     « Par lien » du téléphone et l'état vide de l'onglet ; un lien créé ouvre « Partager » sur lui. */
+  /* Les fenêtres des liens. `creerLien` : la fenêtre de création (le nom déjà écrit, ou vide) : UNE seule, pour la tuile « Nouveau lien », la colonne
+     de l'ordinateur et l'état vide ; un lien créé ouvre « Partager » sur lui. */
   const [creerLien, setCreerLien] = useState<string | null>(null);
-  /* Les personnes cochées en pastilles dans le lien ouvert (téléphone, 3C) : leurs noms comparés, et le lien auquel elles tiennent. */
+  /* Les personnes cochées en pastilles dans le lien ouvert (3C) : leurs noms comparés, et le lien auquel elles tiennent. */
   const [choixPastilles, setChoixPastilles] = useState<{ lien: string | null; cles: ReadonlySet<string> }>(PASTILLES_VIDES);
   const [partage, setPartage] = useState<LienPartage | null>(null);
   const [grandQr, setGrandQr] = useState<LienPartage | null>(null);
   /* « Modifier » un lien : son nom ET son nombre de photos, en une fois (`id` nul = le lien général : le nombre seul). */
   const [modifier, setModifier] = useState<{ id: string | null; nom: string; valeur: number; sansLimite: boolean } | null>(null);
   const [supprimer, setSupprimer] = useState<{ id: string; nom: string; n: number } | null>(null);
-  /* Les arrivées en direct (T-181) : la dernière arrivée déjà montrée, l'annonce de celles
-     d'après, et le seuil au-delà duquel une vignette est marquée « nouvelle ». */
+  /* Les arrivées en direct (T-181) : la dernière arrivée déjà montrée, et l'annonce de celles d'après. */
   const [vuJusqua, setVuJusqua] = useState<string | null>(null);
   const [annonce, setAnnonce] = useState<{ texte: string; court: string; noms: string[]; depuis: string | null } | null>(null);
-  const [seuilNouvelles, setSeuilNouvelles] = useState<string | null>(null);
-  /* Les personnes de l'édition (planche 4) : lues à la première fiche ouverte, relues après un renommage ou une fusion. */
-  const [personnes, setPersonnes] = useState<ListePersonnes | null>(null);
-  const [personnesLues, setPersonnesLues] = useState<"non" | "lecture" | "oui" | "erreur">("non");
-  /* Renommer : la personne, et l'autre nom tapé avec son adresse quand on part de lui (pré-rempli, jamais écrit sans le geste). */
-  const [renommerP, setRenommerP] = useState<{ personne: PersonneVue; propose: string | null } | null>(null);
-  const [fusion, setFusion] = useState<{ autre: PersonneVue | null } | null>(null);
-  const [erreurFenetre, setErreurFenetre] = useState<string | null>(null);
+  /* Les feuilles et menus du 22/10. */
+  const [feuillePersonnes, setFeuillePersonnes] = useState(false);
+  const [choixFin, setChoixFin] = useState(false);
+  const [menuPhoto, setMenuPhoto] = useState<string | null>(null);
+  /* « Choisir d'abord mes préférées » : `null` = le mode n'est pas ouvert ; sinon ce que le client a changé à ses favoris. */
+  const [preferees, setPreferees] = useState<Choix | null>(null);
+  const menuHaut = useMenuLien();
+  const [copie, setCopie] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
   const zone = useRef<HTMLDivElement>(null);
   const version = useRef(0);
@@ -262,7 +252,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const photosDeLaGrille = useRef<number | null>(null);
   /* Le dernier nombre pour lequel le sondage a relu la grille (jamais deux fois pour le même : pas de boucle). */
   const dejaRelu = useRef<number | null>(null);
-  /* La requête de la page 0 déjà lue : changer de liste ne relit la grille que si elle change. */
+  /* La requête de la page 0 déjà lue : changer de vue ne relit la grille que si elle change. */
   const chargee = useRef<string | null>(null);
   /* Les photos de la dernière peinture, pour un geste qui reprend après une requête. */
   const photosVues = useRef<Photo[]>([]);
@@ -288,25 +278,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     [p.token]
   );
 
-  /** Les couvertures d'une mosaïque (une vignette signée par lien ou par personne) : ni page ni grille lues. `null` : la lecture a échoué, les tuiles gardent leur fond doux. */
-  const lireCouvertures = useCallback(
-    async (de: "liens" | "personnes"): Promise<Record<string, string> | null> => {
-      try {
-        const rep = await fetch("/api/collectif/photos", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ token: p.token, dossier: "tout", vue: "toutes", page: 0, seulementArbre: true, couverturesDe: de }),
-        });
-        if (!rep.ok) return null;
-        const json = (await rep.json()) as { couvertures?: Record<string, string> };
-        return json.couvertures ?? {};
-      } catch {
-        return null;
-      }
-    },
-    [p.token]
-  );
-
   const charger = useCallback(
     async (page: number, nf: Filtres): Promise<Photo[] | null> => {
       const v0 = version.current;
@@ -322,7 +293,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         setArbre(json.arbre);
         if (page === 0) {
           setPeseesLiens((avant) => figerLesPesees(avant, peseesDesLiens(json.arbre)));
-          setPeseesPersonnes((avant) => figerLesPesees(avant, peseesDesPersonnes(json.arbre)));
           if (estVueAlbums(nf)) setCouvLiens(json.couvertures ?? {});
           /* Tout ce qui est arrivé jusqu'ici est désormais compté : l'annonce s'efface. */
           setVuJusqua(json.stats.derniere);
@@ -342,18 +312,11 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     [lirePage]
   );
 
-  /* L'adresse suit les listes et l'onglet : recharger la page, ou revenir en arrière
-     depuis une autre page, rouvre le même endroit (replaceState : rien ne s'empile). */
-  function garderAdresse(nf: Filtres, o: Onglet) {
-    const q = o === "liens" ? "?onglet=liens" : adresseDe(nf);
-    window.history.replaceState(null, "", `${window.location.pathname}${q}`);
+  /* L'adresse suit la vue : recharger la page, ou revenir en arrière depuis une autre page, rouvre le même endroit (replaceState : rien ne s'empile). */
+  function garderAdresse(nf: Filtres) {
+    window.history.replaceState(null, "", `${window.location.pathname}${adresseDe(nf)}`);
   }
-  function changerOnglet(o: Onglet) {
-    setOnglet(o);
-    garderAdresse(f, o);
-  }
-  /** Changer les listes : la grille se relit seulement si la route lit autre chose (un jour se filtre ici).
-      La corbeille ne lit pas la grille : en revenir ne relit rien si la grille d'avant est encore la bonne. */
+  /** Changer de vue : la grille se relit seulement si la route lit autre chose. La corbeille ne lit pas la grille : en revenir ne relit rien si la grille d'avant est encore la bonne. */
   function appliquer(nf0: Filtres) {
     const nf = nf0.corbeille && !p.ecrire ? { ...nf0, corbeille: false } : nf0;
     /* Un autre lien (ou plus de lien) : les pastilles de personnes cochées dans celui d'avant sont oubliées. */
@@ -362,34 +325,17 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     setCoches(AUCUNE);
     setModeCocher(false);
     setAgrandi(null);
-    setOnglet("photos");
+    setPreferees(null);
     setErreur(null);
-    garderAdresse(nf, "photos");
-    if (nf.corbeille) {
-      setFeuille(false);
-      return;
-    }
+    garderAdresse(nf);
+    if (nf.corbeille) return;
     if (cleRequete(nf) === chargee.current && photos.length) return;
     version.current++;
     setPhotos([]);
     setSuivante(0);
     void charger(0, nf);
   }
-  /** Ouvrir une personne sous son nom (après un renommage ou une fusion) : la grille se relit toujours. */
-  function ouvrirPersonne(cle: string) {
-    const nf: Filtres = { ...f, personne: cle, corbeille: false, selection: false };
-    setF(nf);
-    setCoches(AUCUNE);
-    setModeCocher(false);
-    setAgrandi(null);
-    garderAdresse(nf, "photos");
-    version.current++;
-    setPhotos([]);
-    setSuivante(0);
-    void charger(0, nf);
-  }
-  /** Ouvrir un dossier par sa clé (depuis l'onglet des liens). */
-  const ouvrir = (cle: string) => appliquer(filtresDepuis(cle));
+  /** Ouvrir un dossier par sa clé. */
   const relire = () => {
     version.current++;
     void charger(0, f);
@@ -400,44 +346,17 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   }, [charger, p.dossierInitial, p.modeTout]);
 
   const r = requeteDe(f);
-  const parJour = r.vue === "jour";
   const albums = estVueAlbums(f);
-  /* « Personnes » (téléphone) : la liste de tout le monde à la place de la grille. Sur ordinateur ce choix n'existe pas et la
-     grille reste celle de « Tout » (la liste ne s'affiche qu'au téléphone, la grille s'y cache : `ec-collecte--personnes`). */
-  const personnesVue = estVuePersonnes(f);
-  /* Les couvertures des tuiles que la lecture de la page ne porte pas : « Personnes » (une par personne) quand on l'ouvre, et les liens
-     de l'onglet de l'ordinateur. La vue « Par lien » les lit déjà dans sa lecture (`couvertures`). */
-  useEffect(() => {
-    if (!personnesVue) return;
-    let vivant = true;
-    void lireCouvertures("personnes").then((c) => {
-      if (vivant && c) setCouvPersonnes(c);
-    });
-    return () => {
-      vivant = false;
-    };
-  }, [personnesVue, lireCouvertures]);
-  useEffect(() => {
-    if (onglet !== "liens" || !p.ecrire) return;
-    let vivant = true;
-    void lireCouvertures("liens").then((c) => {
-      if (vivant && c) setCouvLiens(c);
-    });
-    return () => {
-      vivant = false;
-    };
-  }, [onglet, p.ecrire, lireCouvertures]);
-  /* Ce que la vue montre : le lien ouvert, un dossier, une personne. */
+  /* Ce que la vue montre : le lien ouvert, un dossier, les personnes choisies. */
   const avecVous = p.ecrire;
   const ouvertNoeud = arbre ? noeudDuLien(arbre, f.lien, avecVous) : undefined;
   const dossierNoeud = arbre && f.dossier ? noeudDe(arbre, f.dossier) : undefined;
-  const personneNoeud = arbre && f.personne ? noeudDe(arbre, f.personne) : undefined;
-  /* LES PERSONNES D'UN LIEN OUVERT, EN PASTILLES (téléphone, 3C ; retour de Mathias du 21/10 : « ça vient les afficher comme des filtres, et
-     je peux en sélectionner un ou plusieurs »). Un lien de contribution ou « Sans groupe », ouvert tout seul (ni personne ni dossier) : ses
-     personnes, la plus fournie d'abord. Chacune est cochée par son nom COMPARÉ ; le choix tient à CE lien (`appliquer` l'oublie quand le lien
-     change) ; aucune cochée = « Tout le monde ». Les photos restent lues par pages et la grille se filtre dans le navigateur (comme un jour
-     choisi) : le compte est la somme des pastilles cochées. */
-  const lienDePastilles = ouvertNoeud && (ouvertNoeud.cle.startsWith("lien:") || ouvertNoeud.cle === "participants") && !f.personne && !f.dossier && !f.selection && !f.corbeille ? ouvertNoeud : undefined;
+  const noeudsPersonnes: Noeud[] = arbre ? f.personnes.flatMap((c) => noeudDe(arbre, c) ?? []) : [];
+  /* LES PERSONNES D'UN LIEN OUVERT, EN PASTILLES (3C ; retour de Mathias du 21/10 : « ça vient les afficher comme des filtres, et je peux en
+     sélectionner un ou plusieurs »). Un lien de contribution ou « Sans groupe », ouvert tout seul (ni dossier) : ses personnes, la plus fournie
+     d'abord. Chacune est cochée par son nom COMPARÉ ; le choix tient à CE lien (`appliquer` l'oublie quand le lien change) ; aucune cochée = « Tout le
+     monde ». Les photos restent lues par pages et la grille se filtre dans le navigateur : le compte est la somme des pastilles cochées. */
+  const lienDePastilles = ouvertNoeud && (ouvertNoeud.cle.startsWith("lien:") || ouvertNoeud.cle === "participants") && !f.dossier && !f.corbeille ? ouvertNoeud : undefined;
   const personnesDuLien: PersonneDuLien[] = (() => {
     if (!lienDePastilles) return [];
     const detail = liens?.liens.find((l) => `lien:${l.id}` === lienDePastilles.cle);
@@ -445,59 +364,30 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     return lues ? lues.map((x) => ({ cle: clePersonne(x.nom), nom: x.nom, n: x.n })) : lienDePastilles.enfants.map((e) => ({ cle: nomDeLaPersonne(e.cle), nom: e.nom, n: e.n }));
   })();
   const nomsChoisis: ReadonlySet<string> = choixPastilles.lien === f.lien && f.lien !== null && lienDePastilles ? choixPastilles.cles : PASTILLES_VIDES.cles;
-  /** Une photo est dans la vue : le jour choisi, les pastilles cochées (le navigateur filtre ce que la route rend par pages). */
-  const dansLaVue = (x: Photo) => (!f.jour || x.jourCle === f.jour) && (nomsChoisis.size === 0 || nomsChoisis.has(clePersonne(x.qui)));
-  const visibles = f.jour || nomsChoisis.size ? photos.filter(dansLaVue) : photos;
-  const jours = parJour ? joursVus(photos, suivante === null) : null;
-  const jourVu = f.jour ? jours?.find((j) => j.cle === f.jour) : undefined;
-  /** Le nombre de photos de la vue, quand on le connaît (un jour choisi : une fois lu jusqu'au bout ; des pastilles cochées : la somme de leurs photos). */
-  const totalVue = f.jour
-    ? jourVu?.complet || suivante === null
+  /** Une photo est dans la vue : les pastilles cochées (le navigateur filtre ce que la route rend par pages). */
+  const dansLaVue = (x: Photo) => nomsChoisis.size === 0 || nomsChoisis.has(clePersonne(x.qui));
+  const visibles = nomsChoisis.size ? photos.filter(dansLaVue) : photos;
+  const groupes = regrouperParJour(visibles, suivante === null);
+  /** Le nombre de photos de la vue, quand on le connaît (des pastilles cochées : la somme de leurs photos, ou le total une fois tout lu). */
+  const totalVue = nomsChoisis.size
+    ? suivante === null
       ? visibles.length
-      : null
-    : nomsChoisis.size
-      ? suivante === null
-        ? visibles.length
-        : personnesDuLien.filter((x) => nomsChoisis.has(x.cle)).reduce((n, x) => n + x.n, 0)
-      : (compteurs?.liste ?? null);
-  /* Une personne choisie a sa fiche au-dessus de ses photos (planche 4) ; ni le responsable, ni « Sans nom ». */
-  const cleFiche = onglet === "photos" && !albums && !f.corbeille && !f.selection ? cleDeLaPersonne(f.personne) : null;
-  const fiche = ficheDe(personnes, cleFiche);
+      : personnesDuLien.filter((x) => nomsChoisis.has(x.cle)).reduce((n, x) => n + x.n, 0)
+    : (compteurs?.liste ?? null);
 
   useEffect(() => {
     const el = fin.current;
     if (!el || suivante === null || suivante === 0 || chargement || albums) return;
-    /* La liste des personnes n'a pas de grille à compléter : au téléphone, rien ne se lit en descendant. */
-    if (personnesVue && window.matchMedia(REQUETE_TELEPHONE).matches) return;
     const racine = window.matchMedia(REQUETE_TELEPHONE).matches ? null : zone.current;
     const obs = new IntersectionObserver((e) => {
       if (e.some((x) => x.isIntersecting)) void charger(suivante, f);
     }, { root: racine, rootMargin: "800px" });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [suivante, chargement, f, albums, personnesVue, charger]);
+  }, [suivante, chargement, f, albums, charger]);
 
-  /* Un jour choisi : les pages rangées par jour se lisent jusqu'à son dernier cliché. */
-  useEffect(() => {
-    if (!f.jour || chargement || suivante === null || suivante === 0) return;
-    if (jourEncoreALire(photos, f.jour, suivante, parJour)) void charger(suivante, f);
-  }, [f, photos, suivante, chargement, parJour, charger]);
-
-  /* La feuille « Filtrer » : Échap la ferme, et la page derrière ne défile pas sous le doigt. */
-  useEffect(() => {
-    if (!feuille) return;
-    const html = document.documentElement;
-    const avant = html.style.overflow;
-    html.style.overflow = "hidden";
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setFeuille(false);
-    };
-    window.addEventListener("keydown", touche);
-    return () => {
-      html.style.overflow = avant;
-      window.removeEventListener("keydown", touche);
-    };
-  }, [feuille]);
+  /* Des pastilles cochées dans un lien : la grille se filtre dans le navigateur ; si la page lue n'en contient assez, les suivantes se lisent d'elles-mêmes
+     (l'observateur ci-dessus regarde la fin de la grille, qui reste dans l'écran tant que la grille est courte). */
 
   /* Des photos sont arrivées : la grille se relit quand la fenêtre d'envoi se
      ferme ou que l'envoi se termine. Rien d'arrivé, rien ne bouge. */
@@ -516,24 +406,28 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     }
   }, [envoi.fermetures, moteur.enCours, moteur.arrivees, f, charger]);
 
-  /** « Les voir » : les photos d'UNE personne s'il n'y en a qu'une, sinon toutes ; les plus récentes en haut, marquées. */
+  /** « Les voir » : les photos d'UNE personne s'il n'y en a qu'une, sinon toutes ; la grille revient en haut (les plus récentes sont en tête). */
   function voirArrivees() {
     if (!annonce) return;
-    setSeuilNouvelles(seuilDeLInsertion(annonce.depuis));
     const seule = annonce.noms.length === 1 ? `qui:${clePersonne(annonce.noms[0])}` : null;
     version.current++;
-    const nf: Filtres = { ...FILTRES_VIDES, personne: seule };
+    const nf: Filtres = { ...FILTRES_VIDES, personnes: seule ? [seule] : [] };
     setF(nf);
     setCoches(AUCUNE);
     setPhotos([]);
     setSuivante(0);
-    garderAdresse(nf, "photos");
-    /* Les plus récentes sont en haut : on y revient (la zone de la grille sur ordinateur, la page au téléphone). */
+    garderAdresse(nf);
+    /* La grille revient en haut (la zone de la grille sur ordinateur, la page au téléphone). */
     zone.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0 });
     void charger(0, nf);
   }
 
+  /** Un message qui passe ne reste pas sous une feuille qui s'ouvre : « Mise en favori » ne doit pas cacher un choix (fin de collecte, personnes, QR). */
+  function fermerAvis() {
+    window.clearTimeout(minuterieAvis.current);
+    setAvis(null);
+  }
   function annoncer(a: Avis) {
     window.clearTimeout(minuterieAvis.current);
     setAvis(a);
@@ -560,26 +454,32 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   }
 
   /**
-   * Marquer des photos cochées (Ma sélection, Ne pas publier) : UNE requête par lot de 500
-   * (`photoIds`, la règle de la route), jamais une par photo. Rend les ids que la base a écrits
-   * (une photo passée à la corbeille entre-temps n'en est pas).
+   * Poser ou retirer le CŒUR de photos : UNE requête par lot de 500 (`photoIds`, la règle de la route), jamais une par photo. Rend ce que la base a
+   * écrit, et si une requête a échoué (le réseau, une erreur) : `envoyerMaSelection` ne termine alors RIEN. Une photo passée à la corbeille entre-temps
+   * (la route répond « introuvable » quand tout le lot est parti) n'est pas un échec : il n'y a plus rien à marquer.
    */
-  async function marquerLot(ids: readonly string[], corps: { preselection: boolean } | { signalee: boolean }): Promise<string[]> {
-    const faites: string[] = [];
+  async function ecrireCoeurs(ids: readonly string[], preselection: boolean): Promise<{ faits: string[]; echec: boolean }> {
+    const faits: string[] = [];
+    let echec = false;
     const lots = enLots(ids);
     for (const [k, lot] of lots.entries()) {
       if (lots.length > 1) setProgres(`${nombre(k * LOT_ECRITURE)} sur ${nombre(ids.length)}`);
       try {
-        const rep = await fetch("/api/collectif/photos/marquer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, photoIds: lot, ...corps }) });
-        if (!rep.ok) continue;
-        const json = (await rep.json().catch(() => ({}))) as { ids?: unknown };
-        if (Array.isArray(json.ids)) faites.push(...json.ids.filter((x): x is string => typeof x === "string"));
+        const rep = await fetch("/api/collectif/photos/marquer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, photoIds: lot, preselection }) });
+        const json = (await rep.json().catch(() => ({}))) as { ids?: unknown; error?: unknown };
+        if (!rep.ok) {
+          if (rep.status === 404 && json.error === "introuvable") continue;
+          echec = true;
+          break;
+        }
+        if (Array.isArray(json.ids)) faits.push(...json.ids.filter((x): x is string => typeof x === "string"));
       } catch {
-        /* le lot compte comme raté : la phrase d'après le dit */
+        echec = true;
+        break;
       }
     }
     setProgres(null);
-    return faites;
+    return { faits, echec };
   }
 
   /** La corbeille, par lots de 500 : ce que la base a écrit, ou la migration qui manque, ou la panne. */
@@ -612,7 +512,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       if (ids.has(x.id)) retrait.push({ photo: x, index });
     });
     if (agrandi && ids.has(agrandi)) {
-      const vues = f.jour || nomsChoisis.size ? photosVues.current.filter(dansLaVue) : photosVues.current;
+      const vues = nomsChoisis.size ? photosVues.current.filter(dansLaVue) : photosVues.current;
       const i = vues.findIndex((x) => x.id === agrandi);
       const reste = vues.filter((x) => !ids.has(x.id));
       setAgrandi(reste.length && i >= 0 ? reste[Math.min(i, reste.length - 1)].id : null);
@@ -624,9 +524,9 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   function compterLeRetrait(retrait: Retrait, signe: 1 | -1, corbeille: boolean) {
     const n = retrait.length;
     const sel = retrait.filter((x) => x.photo.preselection).length;
-    const sig = retrait.filter((x) => estCachee(x.photo)).length;
+    const sig = retrait.filter((x) => x.photo.signalee).length;
     const dbl = retrait.filter((x) => x.photo.doublonDe).length;
-    const choix = retrait.filter((x) => !x.photo.preselection && !estCachee(x.photo)).length;
+    const choix = retrait.filter((x) => !x.photo.preselection && !x.photo.signalee).length;
     setCompteurs((c) =>
       c
         ? { ...c, dossier: auMoins0(c.dossier + signe * n), liste: auMoins0(c.liste + signe * n), selection: auMoins0(c.selection + signe * sel), signalees: auMoins0(c.signalees + signe * sig), doublons: auMoins0(c.doublons + signe * dbl), choisissables: auMoins0(c.choisissables + signe * choix) }
@@ -636,9 +536,8 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   }
 
   /**
-   * Supprimer = mettre à la corbeille (30 jours), sans fenêtre de confirmation (planches 3C et 2F) :
-   * la photo disparaît de la vue, l'avis propose « Annuler » quelques secondes (= `restaurer`, les
-   * mêmes ids). Sans la migration 20261023 : la phrase sobre, rien ne bouge.
+   * Supprimer = mettre à la corbeille (30 jours, « Supprimées récemment »), sans fenêtre de confirmation : la photo disparaît de la vue, l'avis
+   * propose « Annuler » quelques secondes (= `restaurer`, les mêmes ids). Sans la migration 20261023 : la phrase sobre, rien ne bouge.
    */
   async function mettreALaCorbeille(ids: readonly string[]) {
     if (occupe || !ids.length || !p.ecrire) return;
@@ -668,7 +567,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     setModeCocher(false);
     const n = faites.length;
     annoncer({
-      texte: n > 1 ? `${photosDe(n)} mises à la corbeille` : "Photo mise à la corbeille",
+      texte: n > 1 ? `${nombre(n)} photos supprimées` : "Photo supprimée",
       sous: `${n > 1 ? "Récupérables" : "Récupérable"} pendant ${DELAI_CORBEILLE_JOURS} jours`,
       annuler: () => void annulerSuppression(faites, retrait, v0),
     });
@@ -699,10 +598,10 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       });
       compterLeRetrait(remis, 1, true);
     }
-    annoncer({ texte: revenues.size > 1 ? `${photosDe(revenues.size)} restaurées` : "Photo restaurée", sous: revenues.size > 1 ? "De retour à leur place" : "De retour à sa place" });
+    annoncer({ texte: revenues.size > 1 ? `${nombre(revenues.size)} photos restaurées` : "Photo restaurée", sous: revenues.size > 1 ? "De retour à leur place" : "De retour à sa place" });
   }
 
-  /** Des photos sont revenues de la corbeille (planche 5C) : les chiffres suivent, la grille se relira en sortant. */
+  /** Des photos sont revenues de « Supprimées récemment » : les chiffres suivent, la grille se relira en sortant. */
   function restaureesDeLaCorbeille(revenues: PhotoCorbeille[]) {
     const n = revenues.length;
     if (!n) return;
@@ -712,19 +611,34 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     const seule = n === 1 ? revenues[0] : null;
     annoncer(
       seule
-        ? { texte: "Photo restaurée", sous: phraseRetour(seule.lien, seule.lienNom, seule.qui), voir: () => appliquer(filtreDuRetour(seule.lien, seule.qui)) }
-        : { texte: `${photosDe(n)} restaurées`, sous: "De retour à leur place" }
+        ? { texte: "Photo restaurée", sous: phraseRetour(seule.lien, seule.lienNom, seule.qui), voir: () => appliquer(filtreDuRetour(seule.lien)) }
+        : { texte: `${nombre(n)} photos restaurées`, sous: "De retour à leur place" }
     );
   }
 
-  const estCachee = (ph: Photo) => signalees[ph.id] ?? ph.signalee ?? false;
-  /* « nouvelle » : arrivée depuis la dernière vue ; le responsable ne voit pas SES photos comme nouvelles (l'équipe, si). */
-  const estNeuve = (ph: Photo) => seuilNouvelles !== null && ph.arrivee > seuilNouvelles && !(p.ecrire && ph.role === "responsable");
-  const estCochee = (id: string) => (coches.tout ? !coches.ids.has(id) : coches.ids.has(id));
+  /* « nouvelle » n'est plus écrit sur les vignettes (22/10 : une photo, rien d'autre) : la pastille « N nouvelles · Les voir » est la seule annonce. */
+  const parId = new Map(photos.map((x) => [x.id, x]));
+  const prefereesActif = preferees !== null;
+  const estCochee = (id: string) => {
+    if (preferees) {
+      const ph = parId.get(id);
+      return ph ? estGardee(preferees, ph) : false;
+    }
+    return coches.tout ? !coches.ids.has(id) : coches.ids.has(id);
+  };
   const nbCoches = coches.tout ? Math.max(0, (totalVue ?? visibles.length) - coches.ids.size) : coches.ids.size;
-  const cocherActif = p.ecrire && (modeCocher || nbCoches > 0);
+  /* Sélectionner : le mode est ouvert (le « … », « Terminé »), ou au moins une photo est prise. */
+  const cocherActif = p.ecrire && (modeCocher || nbCoches > 0) && !prefereesActif;
+  /* Les ronds de sélection sont visibles : Sélectionner, ou « Choisir d'abord mes préférées ». */
+  const rondsVisibles = cocherActif || prefereesActif;
+  const nbGardees = preferees ? nombreGardees(compteurs?.selection ?? 0, preferees) : 0;
 
   function cocher(id: string, etendre: boolean) {
+    if (preferees) {
+      const ph = parId.get(id);
+      if (ph) setPreferees((c) => (c ? basculerGardee(c, ph) : c));
+      return;
+    }
     const mettre = !estCochee(id);
     let cibles = [id];
     if (etendre && dernierCoche.current) {
@@ -750,23 +664,64 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     setCoches(AUCUNE);
     setModeCocher(false);
   }
-  function cocherLeJour(cle: string) {
+  /**
+   * Les pages qui manquent pour que ce jour soit lu EN ENTIER (les jours sont rangés du plus récent au plus ancien : dès qu'une photo d'un jour plus
+   * ancien arrive, le jour demandé est fini). Rend les photos du jour, celles des pastilles cochées seulement.
+   */
+  async function lireJusquALaFinDuJour(cleJour: string): Promise<Photo[]> {
+    const jourDe = (k: string) => (k.startsWith("~") ? k.slice(1) : k);
+    const v0 = version.current;
+    let toutes = photosVues.current;
+    let page = suivante;
+    while (page !== null && page !== 0 && (toutes.length === 0 || jourDe(toutes[toutes.length - 1].jourCle) >= cleJour)) {
+      setProgres(`Lecture des photos : ${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
+      const json = await lirePage(page, f);
+      if (v0 !== version.current) return [];
+      toutes = [...toutes, ...json.photos];
+      page = json.suivante;
+      setPhotos(toutes);
+      setSuivante(page);
+    }
+    setProgres(null);
+    return toutes.filter((x) => jourDe(x.jourCle) === cleJour && dansLaVue(x));
+  }
+  /** Le rond d'un jour : toute la journée d'un toucher. Un jour pas encore lu en entier se lit d'abord (les pages qui manquent), puis se prend. */
+  async function cocherLeJour(jour: GroupeJour<Photo>, tout: boolean) {
+    let duJour = jour.photos;
+    if (tout && !jour.complet && suivante !== null && suivante !== 0) {
+      if (occupe) return;
+      setOccupe(true);
+      try {
+        duJour = await lireJusquALaFinDuJour(jour.cle);
+      } catch {
+        setErreur("Les photos n'ont pas pu se lire. Rien n'a changé.");
+        return;
+      } finally {
+        setOccupe(false);
+        setProgres(null);
+      }
+    }
+    if (preferees) {
+      setPreferees((c) => (c ? fixerGardees(c, duJour, tout) : c));
+      return;
+    }
     setCoches((c) => {
       const ids = new Set(c.tout ? [] : c.ids);
-      for (const x of visibles) if (x.jourCle === cle) ids.add(x.id);
+      for (const x of duJour) {
+        if (tout) ids.add(x.id);
+        else ids.delete(x.id);
+      }
       return { tout: false, ids };
     });
   }
 
-  /** Les photos cochées, toutes lues : « Tout cocher » sur une vue qui n'est pas lue jusqu'au bout la lit d'abord. */
+  /** Les photos sélectionnées, toutes lues : « Tout sélectionner » sur une vue qui n'est pas lue jusqu'au bout la lit d'abord. */
   async function cocheesLues(): Promise<Photo[]> {
     if (!coches.tout) return photos.filter((x) => coches.ids.has(x.id));
     let toutes = photos;
     let page = suivante;
     const v0 = version.current;
     while (page !== null && page !== 0) {
-      /* Un jour choisi, pages rangées par jour : une fois ce jour passé, le reste n'en contient plus. */
-      if (f.jour && !jourEncoreALire(toutes, f.jour, page, parJour)) break;
       setProgres(`Lecture des photos : ${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
       const json = await lirePage(page, f);
       if (v0 !== version.current) return [];
@@ -779,46 +734,36 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     return toutes.filter((x) => dansLaVue(x) && !coches.ids.has(x.id));
   }
 
-  /** Ma sélection pour des photos, l'état local d'abord (la route rend l'objet écrit, la relecture n'est pas sûre : 14/10). */
-  function poserSelection(ids: ReadonlySet<string>, preselection: boolean, delta: number) {
-    setPhotos((l) => (f.selection && !preselection ? l.filter((x) => !ids.has(x.id)) : l.map((x) => (ids.has(x.id) ? { ...x, preselection } : x))));
-    setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + delta), ...(f.selection && !preselection ? { liste: Math.max(0, c.liste - ids.size), dossier: Math.max(0, c.dossier - ids.size) } : {}) } : c));
+  /** Le cœur pour des photos, l'état local d'abord (la route rend l'objet écrit, la relecture n'est pas sûre : 14/10). */
+  function poserCoeurs(ids: ReadonlySet<string>, preselection: boolean, delta: number) {
+    setPhotos((l) => l.map((x) => (ids.has(x.id) ? { ...x, preselection } : x)));
+    setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + delta) } : c));
   }
 
-  async function basculer(photo: Photo) {
-    const choisie = !photo.preselection;
-    poserSelection(new Set([photo.id]), choisie, choisie ? 1 : -1);
-    if (!(await appeler("/api/collectif/photos/marquer", { photoId: photo.id, preselection: choisie }))) {
-      setPhotos((l) => (l.some((x) => x.id === photo.id) ? l.map((x) => (x.id === photo.id ? { ...x, preselection: !choisie } : x)) : [photo, ...l]));
-      setCompteurs((c) => (c ? { ...c, selection: c.selection + (choisie ? -1 : 1) } : c));
-    }
-  }
-
-  /** « Ne pas publier » compté dans la vue (la ligne de « Afficher »). */
-  const compterSignalees = (delta: number) => setCompteurs((c) => (c ? { ...c, signalees: auMoins0(c.signalees + delta) } : c));
-
-  async function cacher(photo: Photo, oui: boolean, annonceSeule = true) {
-    if (estCachee(photo) === oui) return;
-    setSignalees((s) => ({ ...s, [photo.id]: oui }));
-    compterSignalees(oui ? 1 : -1);
-    if (!(await appeler("/api/collectif/photos/marquer", { photoId: photo.id, signalee: oui }))) {
-      setSignalees((s) => ({ ...s, [photo.id]: !oui }));
-      compterSignalees(oui ? -1 : 1);
+  /** Le cœur d'UNE photo : il bascule (toucher de nouveau le retire). L'état change tout de suite, et revient si la route refuse. */
+  async function coeurDe(photo: Photo) {
+    const pose = !photo.preselection;
+    poserCoeurs(new Set([photo.id]), pose, pose ? 1 : -1);
+    if (!(await appeler("/api/collectif/photos/marquer", { photoId: photo.id, preselection: pose }))) {
+      setPhotos((l) => (l.some((x) => x.id === photo.id) ? l.map((x) => (x.id === photo.id ? { ...x, preselection: !pose } : x)) : [photo, ...l]));
+      setCompteurs((c) => (c ? { ...c, selection: c.selection + (pose ? -1 : 1) } : c));
       return;
     }
-    if (annonceSeule)
-      annoncer(
-        oui
-          ? { texte: "Elle ne sera pas publiée", sous: "Elle reste visible ici", annuler: () => void cacher(photo, false, false) }
-          : { texte: "Elle pourra être publiée", annuler: () => void cacher(photo, true, false) }
-      );
+    annoncer({ texte: pose ? "Mise en favori" : "Plus en favori" });
   }
 
-  /** La barre d'actions : Ajouter à ma sélection, Retirer de ma sélection, Ne pas publier, Supprimer. */
-  async function agir(geste: "ajouter" | "retirer" | "cacher" | "supprimer") {
+  /** Toutes les photos sélectionnées sont-elles déjà en cœur ? (« ♥ met en favori, ou retire si toutes le sont déjà ».) */
+  function toutesEnCoeur(): boolean {
+    if (!coches.tout) return gesteCoeur(photos.filter((x) => coches.ids.has(x.id))) === "retirer";
+    /* Toute la vue sélectionnée : le dossier entier n'est lu que si l'on écrit ; ici on compare les comptes du serveur. */
+    return coches.ids.size === 0 && nomsChoisis.size === 0 && compteurs !== null && compteurs.liste > 0 && r.dossier === "tout" && compteurs.selection >= compteurs.dossier;
+  }
+
+  /** La barre des sélectionnées : le CŒUR (pose, ou retire si toutes le sont déjà) et SUPPRIMER. */
+  async function agir(geste: "poser" | "retirer" | "supprimer") {
     if (occupe || nbCoches === 0) return;
     if (geste === "supprimer") {
-      /* Toute la vue cochée : elle se lit d'abord jusqu'au bout (les ids partent par lots de 500). */
+      /* Toute la vue sélectionnée : elle se lit d'abord jusqu'au bout (les ids partent par lots de 500). */
       setOccupe(true);
       let ids: string[] = [];
       try {
@@ -835,9 +780,9 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     setOccupe(true);
     setErreur(null);
     try {
-      const preselection = geste === "ajouter";
-      /* Toute la vue cochée, sans jour, sans pastille de personne ni doublons : UNE écriture pour tout le dossier (la règle de la route). */
-      if (geste !== "cacher" && coches.tout && !f.jour && nomsChoisis.size === 0 && r.vue !== "doublons") {
+      const preselection = geste === "poser";
+      /* Toute la vue sélectionnée, sans pastille de personne ni personnes choisies : UNE écriture pour tout le dossier (la règle de la route). */
+      if (coches.tout && nomsChoisis.size === 0 && !r.dossier.startsWith(QUIS)) {
         const exceptions = photos.filter((x) => coches.ids.has(x.id) && x.preselection !== preselection);
         const rep = await fetch("/api/collectif/photos/marquer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, toutes: true, preselection, dossier: r.dossier }) });
         const json = (await rep.json().catch(() => ({}))) as { n?: number; message?: string };
@@ -846,90 +791,84 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           return;
         }
         /* Les photos laissées décochées gardent leur état d'avant (une requête par lot de 500). */
-        const remises = exceptions.length ? await marquerLot(exceptions.map((x) => x.id), { preselection: !preselection }) : [];
+        const remises = exceptions.length ? (await ecrireCoeurs(exceptions.map((x) => x.id), !preselection)).faits : [];
         const n = (json.n ?? 0) - remises.length;
         const gardees = new Set(coches.ids);
-        setPhotos((l) =>
-          f.selection && !preselection
-            ? l.filter((x) => gardees.has(x.id))
-            : l.map((x) => (gardees.has(x.id) || (preselection && estCachee(x)) ? x : { ...x, preselection }))
-        );
-        setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + (preselection ? n : -n)), ...(f.selection && !preselection ? { liste: gardees.size, dossier: gardees.size } : {}) } : c));
+        setPhotos((l) => l.map((x) => (gardees.has(x.id) || (preselection && x.signalee) ? x : { ...x, preselection })));
+        setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + (preselection ? n : -n)) } : c));
         toutDecocher();
-        annoncer({ texte: preselection ? `${photosDe(n)} ${n > 1 ? "ajoutées" : "ajoutée"} à ${v("votre", "ta")} sélection` : `${photosDe(n)} ${n > 1 ? "retirées" : "retirée"} de ${v("votre", "ta")} sélection` });
+        annoncer({ texte: preselection ? `${nombre(n)} photo${n > 1 ? "s" : ""} mise${n > 1 ? "s" : ""} en favori` : `${nombre(n)} photo${n > 1 ? "s" : ""} plus en favori` });
         return;
       }
       const cochees = await cocheesLues();
-      if (geste === "cacher") {
-        const a = cochees.filter((x) => !estCachee(x));
-        if (!a.length) {
-          toutDecocher();
-          annoncer({ texte: cochees.length > 1 ? "Elles sont déjà marquées « Ne pas publier »" : "Elle est déjà marquée « Ne pas publier »" });
-          return;
-        }
-        const faites = await marquerLot(a.map((x) => x.id), { signalee: true });
-        setSignalees((s) => ({ ...s, ...Object.fromEntries(faites.map((id) => [id, true])) }));
-        compterSignalees(faites.length);
-        toutDecocher();
-        if (faites.length < a.length) setErreur(`${nombre(a.length - faites.length)} photo${a.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être marquée${a.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
-        if (faites.length)
-          annoncer({
-            texte: faites.length > 1 ? `${photosDe(faites.length)} ne seront pas publiées` : "Elle ne sera pas publiée",
-            sous: faites.length > 1 ? "Elles restent visibles ici" : "Elle reste visible ici",
-            annuler: () => {
-              setSignalees((s) => ({ ...s, ...Object.fromEntries(faites.map((id) => [id, false])) }));
-              compterSignalees(-faites.length);
-              void marquerLot(faites, { signalee: false });
-            },
-          });
-        return;
-      }
       const a = cochees.filter((x) => x.preselection !== preselection);
       if (!a.length) {
         toutDecocher();
-        annoncer({ texte: preselection ? `Déjà dans ${v("votre", "ta")} sélection` : `Pas dans ${v("votre", "ta")} sélection : rien à retirer` });
+        annoncer({ texte: preselection ? "Déjà en favori" : "Pas en favori : rien à retirer" });
         return;
       }
-      const faites = await marquerLot(a.map((x) => x.id), { preselection });
+      const ecrit = await ecrireCoeurs(a.map((x) => x.id), preselection);
+      const faites = ecrit.faits;
       const ids = new Set(faites);
-      poserSelection(ids, preselection, preselection ? faites.length : -faites.length);
+      poserCoeurs(ids, preselection, preselection ? faites.length : -faites.length);
       toutDecocher();
-      if (faites.length < a.length) setErreur(`${nombre(a.length - faites.length)} photo${a.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être enregistrée${a.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
-      annoncer({
-        texte: preselection ? `${photosDe(faites.length)} ${faites.length > 1 ? "ajoutées" : "ajoutée"} à ${v("votre", "ta")} sélection` : `${photosDe(faites.length)} ${faites.length > 1 ? "retirées" : "retirée"} de ${v("votre", "ta")} sélection`,
-        annuler: faites.length
-          ? () => {
-              const retour = photos.filter((x) => ids.has(x.id));
-              if (f.selection && !preselection) setPhotos((l) => [...retour.map((x) => ({ ...x, preselection: true })), ...l]);
-              else setPhotos((l) => l.map((x) => (ids.has(x.id) ? { ...x, preselection: !preselection } : x)));
-              setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + (preselection ? -faites.length : faites.length)) } : c));
-              void marquerLot(faites, { preselection: !preselection });
-            }
-          : undefined,
-      });
+      if (ecrit.echec || faites.length < a.length) setErreur(`${nombre(a.length - faites.length)} photo${a.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être enregistrée${a.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
+      if (faites.length)
+        annoncer({
+          texte: preselection ? `${nombre(faites.length)} photo${faites.length > 1 ? "s" : ""} mise${faites.length > 1 ? "s" : ""} en favori` : `${nombre(faites.length)} photo${faites.length > 1 ? "s" : ""} plus en favori`,
+          annuler: () => {
+            setPhotos((l) => l.map((x) => (ids.has(x.id) ? { ...x, preselection: !preselection } : x)));
+            setCompteurs((c) => (c ? { ...c, selection: Math.max(0, c.selection + (preselection ? -faites.length : faites.length)) } : c));
+            void ecrireCoeurs(faites, !preselection);
+          },
+        });
     } finally {
       setOccupe(false);
       setProgres(null);
     }
   }
 
-  /* ── Une personne (planche 4) : sa fiche, renommer, fusionner ── */
-  const lirePersonnes = useCallback(async () => {
-    setPersonnesLues("lecture");
+  /* ── « Choisir d'abord mes préférées » : un mode calme, les cœurs puis la fin de la collecte ── */
+  function ouvrirPreferees() {
+    fermerAvis();
+    setChoixFin(false);
+    setFeuillePersonnes(false);
+    /* Le mode calme montre TOUTES les photos par jour : aucun filtre. */
+    appliquer({ ...FILTRES_VIDES });
+    setPreferees(new Map());
+    window.scrollTo({ top: 0 });
+  }
+  async function envoyerPreferees() {
+    if (!preferees || occupe) return;
+    setOccupe(true);
+    setErreur(null);
+    const plan = planDesPreferees(preferees);
+    let resultat;
     try {
-      const rep = await fetch("/api/collectif/personnes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, action: "lister" }) });
-      const json = (await rep.json().catch(() => null)) as ListePersonnes | null;
-      if (!rep.ok || !json || !Array.isArray(json.personnes)) throw new Error(String(rep.status));
-      setPersonnes({ personnes: json.personnes, proposees: Array.isArray(json.proposees) ? json.proposees : [], avecAdresses: json.avecAdresses === true });
-      setPersonnesLues("oui");
-    } catch {
-      setPersonnesLues("erreur");
+      resultat = await envoyerMaSelection({
+        plan,
+        tu: p.tu,
+        ecrire: async (ids, coeur) => {
+          const e = await ecrireCoeurs(ids, coeur);
+          /* Les cœurs écrits se voient tout de suite (la base les a posés, même si le lot suivant a échoué). */
+          if (e.faits.length) poserCoeurs(new Set(e.faits), coeur, coeur ? e.faits.length : -e.faits.length);
+          return { faits: e.faits.length, echec: e.echec };
+        },
+        terminer: () => terminerLaCollecte(p.token),
+      });
+    } finally {
+      setOccupe(false);
+      setProgres(null);
     }
-  }, [p.token]);
-  /* La liste se lit à la première fiche ouverte (une lecture du résumé et des personnes, jamais la grille). */
-  useEffect(() => {
-    if (cleFiche && personnesLues === "non") void lirePersonnes();
-  }, [cleFiche, personnesLues, lirePersonnes]);
+    if (!resultat.ok) {
+      /* Les cœurs n'ont pas passé : la collecte n'est PAS terminée, et l'écran le dit (le mode reste ouvert, on peut réessayer). */
+      setErreur(resultat.message);
+      return;
+    }
+    setPreferees(null);
+    p.onTermine(resultat.termineLe);
+    annoncer({ texte: "Collecte terminée", sous: `${nombre(nbGardees)} préférée${nbGardees > 1 ? "s" : ""} pour l'atelier` });
+  }
 
   /* ── Les photos arrivent : un sondage LÉGER, des chiffres qui suivent, une grille qui s'ouvre d'elle-même ──
      (T-181, refait le 21/10/2026 après le test de Mathias : « il faut toujours refresh »).
@@ -937,20 +876,19 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
      déclarations en route, et qui a envoyé quoi depuis le repère. Elle marche SANS repère (une édition qui part de zéro).
      - Les grands chiffres suivent chaque sondage.
      - La grille se relit d'elle-même (page 0, sans « Chargement… » ni erreur à l'écran) QUAND c'est sans risque :
-       `accueilDesArrivees` (rien de coché, aucune photo agrandie, la grille en haut, une vue qui range les dernières
-       arrivées en tête). Sinon, la pastille « N nouvelles · Les voir ».
+       `accueilDesArrivees` (rien de sélectionné, aucune photo agrandie, la grille en haut, une vue qui range les dernières
+       arrivées en tête). Sinon, la pastille « N nouvelles · Les voir ». La grille est rangée par jour (22/10) : une photo qui arrive y entre sous
+       son jour, et celles qui n'ont pas de date de prise de vue viennent en tête.
      Ce qui est arrivé du responsable lui-même ne s'annonce pas : la grille se relit déjà à la fin de son envoi. */
-  const instant = useRef<{ f: Filtres; onglet: Onglet; photos: number | null; vide: boolean; coches: boolean; agrandie: boolean; occupe: boolean; personnes: boolean } | null>(null);
+  const instant = useRef<{ f: Filtres; photos: number | null; vide: boolean; coches: boolean; agrandie: boolean; occupe: boolean } | null>(null);
   useEffect(() => {
     instant.current = {
       f,
-      onglet,
       photos: stats?.photos ?? null,
       vide: stats?.photos === 0 && !stats.corbeille,
-      coches: modeCocher || coches.tout || coches.ids.size > 0,
+      coches: modeCocher || coches.tout || coches.ids.size > 0 || preferees !== null || menuPhoto !== null,
       agrandie: agrandi !== null,
       occupe: occupe || chargement || progres !== null,
-      personnes: personnesLues === "oui",
     };
   });
   /** La zone de défilement de la grille est tout en haut : une insertion ne pousse rien sous le doigt. */
@@ -964,7 +902,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   function situation(): SituationPhotos | null {
     const i = instant.current;
     if (!i) return null;
-    return { vide: i.vide, grilleVisible: i.onglet === "photos" && !i.f.corbeille, dernieresEnTete: montreLesDernieres(i.f), coches: i.coches, agrandie: i.agrandie, occupe: i.occupe, enHaut: grilleEnHaut() };
+    return { vide: i.vide, grilleVisible: !i.f.corbeille, dernieresEnTete: montreLesDernieres(i.f), coches: i.coches, agrandie: i.agrandie, occupe: i.occupe, enHaut: grilleEnHaut() };
   }
   function annoncerArrivees(n: Nouvelles, depuis: string | null) {
     const texte = phraseArrivees(n);
@@ -972,7 +910,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   }
   /**
    * Relire la page 0 de la vue SANS bruit : ni « Chargement… », ni erreur (une panne attend le prochain sondage).
-   * Rien n'est posé si l'écran a bougé pendant la lecture (une photo cochée, ouverte, une autre vue).
+   * Rien n'est posé si l'écran a bougé pendant la lecture (une photo sélectionnée, ouverte, une autre vue).
    * Rend `true` quand la grille a été remplacée.
    */
   async function relireSansBruit(nf: Filtres, repere: string | null, e: EtatSondage): Promise<boolean> {
@@ -996,15 +934,11 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       if (estVueAlbums(nf)) setCouvLiens(json.couvertures ?? {});
       setLiens(json.liens);
       setErreur(null);
-      /* « nouvelle » : ce qui vient d'entrer (le responsable ne voit pas les siennes comme nouvelles). */
-      setSeuilNouvelles(seuilDeLInsertion(repere));
       setVuJusqua(json.stats.derniere);
       /* Une vue filtrée peut ne pas contenir tout ce qui est arrivé : la pastille reste pour le reste. */
       const dedans = json.photos.filter((x) => x.arrivee > (repere ?? "")).length;
       if (e.nouvelles && dedans < e.nouvelles.n && dedans < json.photos.length) annoncerArrivees(e.nouvelles, repere);
       else setAnnonce(null);
-      /* Les personnes déjà lues vieillissent aussi (leurs photos, les doublons proposés). */
-      if (i.personnes) void lirePersonnes();
       return true;
     } catch {
       return false;
@@ -1038,49 +972,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     p.ouverte
   );
 
-  /** Renommer ou fusionner : la route, puis la fiche se rouvre sous le nom gardé (la grille est rangée par nom). */
-  async function ecrirePersonne(corps: Record<string, unknown>): Promise<{ nom: string; n: number } | null> {
-    setOccupe(true);
-    setErreurFenetre(null);
-    try {
-      const rep = await fetch("/api/collectif/personnes", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, ...corps }) });
-      const json = (await rep.json().catch(() => ({}))) as { error?: unknown; message?: unknown; nom?: unknown; n?: unknown };
-      if (!rep.ok) {
-        /* Sans la migration : la phrase sobre, jamais le message de la route (il nomme le fichier SQL). */
-        setErreurFenetre(json.error === ERREUR_PERSONNES_ABSENTE ? MIGRATION_TEXTE : typeof json.message === "string" ? json.message : `Non enregistré (erreur ${rep.status}).`);
-        return null;
-      }
-      return { nom: typeof json.nom === "string" ? json.nom : "", n: typeof json.n === "number" ? json.n : 0 };
-    } catch {
-      setErreurFenetre("Le réseau n'a pas répondu. Rien n'a changé.");
-      return null;
-    } finally {
-      setOccupe(false);
-    }
-  }
-  async function renommerPersonne(qui: PersonneVue, prenom: string, nom: string) {
-    const r = await ecrirePersonne({ action: "renommer", personne: qui.ref, prenom, nom });
-    if (!r) return;
-    setRenommerP(null);
-    void lirePersonnes();
-    if (r.nom && f.personne) ouvrirPersonne(filtreSousLeNom(f.personne, r.nom));
-    annoncer({ texte: `Nom changé : ${r.nom}`, sous: "Ses photos suivent, sur tous les liens" });
-  }
-  /** Fusionner, jamais d'office : `cible` = la personne de la fiche, `source` = l'autre, `garder` = le nom choisi. */
-  async function fusionnerPersonnes(cible: PersonneVue, source: PersonneVue, garder: "cible" | "source") {
-    const r = await ecrirePersonne({ action: "fusionner", source: source.ref, cible: cible.ref, garder });
-    if (!r) return;
-    setFusion(null);
-    void lirePersonnes();
-    if (r.nom && f.personne) ouvrirPersonne(filtreSousLeNom(f.personne, r.nom));
-    annoncer({ texte: "Fusion faite", sous: `Toutes les photos sont rangées sous « ${r.nom} »` });
-  }
-
-  async function viderSelection() {
-    if (await appeler("/api/collectif/photos/marquer", { toutes: true, preselection: false, dossier: "selection" })) relire();
-  }
-
-  /* ── Ranger et renommer les dossiers du responsable (dans « Mes photos ») ── */
+  /* ── Ranger et renommer les dossiers du responsable (dans « Mes photos », ordinateur) ── */
   const nouvelleCle = (apres: unknown) => (typeof apres === "string" ? cleResp("organisateur", apres === DOSSIER_RESPONSABLE ? "" : apres) : null);
   async function ranger(cle: string, dans: string | null) {
     setGlisse(null);
@@ -1139,42 +1031,43 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const quiDe = (ph: Photo) => (ph.role === "responsable" && p.ecrire ? v("Vous", "Toi") : ph.qui);
   /* Rien reçu, et rien à la corbeille : l'accueil. Des photos à la corbeille gardent les listes (on y retourne). */
   const vide = stats?.photos === 0 && !stats.corbeille;
-  /* La tuile en tête d'un lien (3C) : un lien ouvert qui a des photos. Sans aucune photo dans l'édition, l'écran d'accueil prend la place (et le « ‹ Par lien » d'avant le retour : pas de barre du bas). */
+  /* La tuile en tête d'un lien (3C) : un lien ouvert qui a des photos. Sans aucune photo dans l'édition, l'écran d'accueil prend la place. */
   const tuileActive = Boolean(lienDePastilles) && !vide;
   const total = stats?.photos ?? 0;
   const liensListe = arbre ? liensDansLOrdre(arbre, avecVous) : [];
   const nomOuvert = ouvertNoeud ? (ouvertNoeud.cle === "vous" ? nomVous : ouvertNoeud.nom) : "";
-  const titre = f.selection
-    ? "Ma sélection"
+  const titre = prefereesActif
+    ? "Mes préférées"
     : albums
       ? "Par lien"
-      : personneNoeud
-        ? nomPersonne(personneNoeud)
+      : f.personnes.length
+        ? f.personnes.length === 1
+          ? noeudsPersonnes[0]
+            ? nomPersonne(noeudsPersonnes[0])
+            : "Les photos"
+          : personnesDe(f.personnes.length)
         : dossierNoeud
           ? dossierNoeud.nom
           : f.mode === "liens" && ouvertNoeud
             ? nomOuvert
             : "Toutes les photos";
-  const contexteVue = f.mode === "liens" && ouvertNoeud ? nomOuvert : titre;
-  const filtree = !f.selection && (Boolean(f.lien || f.personne || f.dossier || f.jour) || f.doublons || f.signalees);
+  const filtree = Boolean(f.lien || f.personnes.length || f.dossier);
   const nbContributions = liensListe.filter((x) => x.cle.startsWith("lien:")).length;
   /* « Sans groupe » : les photos arrivées par l'adresse de base (le lien général, qu'on ne montre plus). Il n'est dans la liste que s'il en a reçu. */
   const sansGroupe = liensListe.find((x) => x.cle === "participants");
-  const note = f.selection
-    ? `${photosDe(compteurs?.selection ?? 0)}${p.preselectionMax ? ` · ${p.preselectionMax} prévues, facultatif` : ""}`
-    : albums
-      ? `${nombre(nbContributions)} lien${nbContributions > 1 ? "s" : ""}${sansGroupe ? `, ${sansGroupe.nom}` : ""}${p.ecrire && liensListe.some((x) => x.cle === "vous" && x.n) ? ` et ${v("vos", "tes")} photos` : ""} · ${photosDe(total)}`
-      : f.mode === "liens" && ouvertNoeud && !personneNoeud && !dossierNoeud
-        ? ouvertNoeud.cle === "vous"
-          ? `${nombre(arbre?.vous.length ?? 0)} dossier${(arbre?.vous.length ?? 0) > 1 ? "s" : ""} · ${photosDe(ouvertNoeud.n)}`
-          : ouvertNoeud.enfants.length
-            ? `${personnesDe(ouvertNoeud.enfants.length)} · ${photosDe(ouvertNoeud.n)}`
-            : photosDe(ouvertNoeud.n)
-        : filtree && totalVue !== null
-          ? `${photosDe(totalVue)} sur ${nombre(total)}`
-          : totalVue !== null
-            ? photosDe(totalVue)
-            : "";
+  const note = albums
+    ? `${nombre(nbContributions)} lien${nbContributions > 1 ? "s" : ""}${sansGroupe ? `, ${sansGroupe.nom}` : ""}${p.ecrire && liensListe.some((x) => x.cle === "vous" && x.n) ? ` et ${v("vos", "tes")} photos` : ""} · ${nombre(total)} photo${total > 1 ? "s" : ""}`
+    : f.mode === "liens" && ouvertNoeud && !dossierNoeud
+      ? ouvertNoeud.cle === "vous"
+        ? `${nombre(arbre?.vous.length ?? 0)} dossier${(arbre?.vous.length ?? 0) > 1 ? "s" : ""} · ${nombre(ouvertNoeud.n)} photo${ouvertNoeud.n > 1 ? "s" : ""}`
+        : ouvertNoeud.enfants.length
+          ? `${personnesDe(ouvertNoeud.enfants.length)} · ${nombre(ouvertNoeud.n)} photo${ouvertNoeud.n > 1 ? "s" : ""}`
+          : `${nombre(ouvertNoeud.n)} photo${ouvertNoeud.n > 1 ? "s" : ""}`
+      : filtree && totalVue !== null
+        ? `${nombre(totalVue)} photo${totalVue > 1 ? "s" : ""} sur ${nombre(total)}`
+        : totalVue !== null
+          ? `${nombre(totalVue)} photo${totalVue > 1 ? "s" : ""}`
+          : "";
   /* Un LIEN DE CONTRIBUTION se partage ; « Sans groupe » (les photos arrivées par l'adresse de base) ne se partage pas : ni bouton, ni QR. */
   const partageable = p.ecrire && p.ouverte && liens && f.mode === "liens" && f.lien?.startsWith("lien:");
   const lienPartage = (): LienPartage | null => {
@@ -1182,9 +1075,29 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     const l = liens.liens.find((x) => `lien:${x.id}` === f.lien);
     return l ? lienDe(l.nom, l.cle, l.plafond, l.n) : null;
   };
-  const renommable = p.ecrire && !f.personne && (dossierNoeud?.renommable || (!f.dossier && f.mode === "liens" && f.lien?.startsWith("lien:") && ouvertNoeud?.renommable));
+  /**
+   * PARTAGER (22/10, planche 12 vue 8) : au téléphone, la feuille de partage de l'iPhone s'ouvre d'un toucher (le message de la planche 4 et
+   * l'adresse sont déjà écrits), sans fenêtre intermédiaire ; si le navigateur ne sait pas partager, ou si l'appel échoue (autrement que par un
+   * renoncement), la petite fenêtre (« Copier le message », « QR code »). À l'ordinateur : la fenêtre.
+   */
+  async function partager(l: LienPartage) {
+    const issue = await partagerSurLeTelephone(typeof navigator === "undefined" ? undefined : navigator, window.matchMedia(REQUETE_TELEPHONE).matches, donneesDePartage(l, contexte));
+    if (issue === "repli") {
+      fermerAvis();
+      setPartage(l);
+    }
+  }
+  async function copierMessageDuLien() {
+    const l = lienPartage();
+    if (!l) return;
+    const ok = await copierLeMessage(l, contexte);
+    if (ok) {
+      setCopie(true);
+      window.setTimeout(() => setCopie(false), 2000);
+    } else setPartage(l);
+  }
 
-  /* ── Les liens (l'onglet) ── */
+  /* ── Les liens ── */
   const lienDe = (nom: string, cle: string | null, plafondTexte: string, n: number): LienPartage => ({
     libelle: nom,
     url: cle ? `${p.lienParticipants}?p=${cle}` : p.lienParticipants,
@@ -1192,13 +1105,25 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     recues: n,
     general: cle === null,
   });
-  /* Les liens de contribution, plus « Sans groupe » seulement s'il a reçu des photos (la pastille ne compte plus un lien qu'on ne montre pas). */
-  const nbLiens = (liens?.liens.length ?? 0) + (liens && liens.general.n > 0 ? 1 : 0);
   const maxPlafond = liens?.reste !== null && liens?.reste !== undefined ? Math.max(1, Math.min(p.max, liens.reste)) : p.max;
 
   /* ── La photo agrandie ── */
   const iAgrandi = agrandi ? visibles.findIndex((x) => x.id === agrandi) : -1;
   const photoAgrandie = iAgrandi >= 0 ? visibles[iAgrandi] : null;
+  /** « Voir ses photos » : toutes les photos de cette personne, dans la grille ; dans un lien ouvert, sa pastille. */
+  function voirQui(ph: Photo) {
+    const cle = cleQui(ph);
+    if (!cle) return;
+    setAgrandi(null);
+    if (tuileActive && lienDePastilles && personnesDuLien.some((x) => x.cle === clePersonne(ph.qui))) {
+      setCoches(AUCUNE);
+      setModeCocher(false);
+      setChoixPastilles({ lien: f.lien, cles: new Set([clePersonne(ph.qui)]) });
+      return;
+    }
+    appliquer({ ...FILTRES_VIDES, personnes: [cle] });
+    window.scrollTo({ top: 0 });
+  }
 
   function champNom(cle: string) {
     return (
@@ -1230,6 +1155,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       setModifier({ id, nom: ouvertNoeud.nom, valeur: l?.plafondNombre ?? Math.min(30, p.max), sansLimite: l?.sansPlafond ?? false });
     }
   };
+  const renommable = p.ecrire && f.personnes.length === 0 && (dossierNoeud?.renommable || (!f.dossier && f.mode === "liens" && f.lien?.startsWith("lien:") && ouvertNoeud?.renommable));
 
   const glisser = p.ecrire
     ? { glisser: propsGlisser, recevoir: propsRecevoir, survol, glisse, nouveau: p.ouverte && envoi.ouvrir ? () => envoi.ouvrir?.({ nouveau: true }) : null }
@@ -1242,49 +1168,29 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       ecrire={p.ecrire}
       tu={p.tu}
       nomPersonne={nomPersonne}
-      doublons={compteurs?.doublons ?? null}
-      selection={compteurs?.selection ?? null}
-      signalees={compteurs?.signalees ?? null}
       corbeille={stats?.corbeille ?? null}
       voirCorbeille={p.ecrire}
-      jours={jours}
-      suite={suivante !== null}
+      basculerPersonne={(cle) => appliquer({ ...avecPersonne(f, cle), mode: "tout", lien: null, dossier: null })}
+      personnesDuLien={lienDePastilles ? personnesDuLien : null}
+      choisiesDuLien={nomsChoisis}
+      basculerDuLien={basculerPastille}
+      toutLeMondeDuLien={() => setChoixPastilles({ lien: f.lien, cles: new Set() })}
+      nouveauLien={p.ecrire && p.ouverte ? () => setCreerLien("") : null}
       dossiers={glisser}
     />
   );
+  /** Cocher, ou décocher, la pastille d'une personne d'un lien (la grille se filtre dans le navigateur). */
+  function basculerPastille(cle: string) {
+    const cles = new Set(nomsChoisis);
+    if (cles.has(cle)) cles.delete(cle);
+    else cles.add(cle);
+    setCoches(AUCUNE);
+    setModeCocher(false);
+    setChoixPastilles({ lien: f.lien, cles });
+  }
 
-  /* La fiche d'une personne : les autres de l'édition, à qui la fusionner (les doublons proposés d'abord ; ni « Sans nom »). */
-  const candidates = (() => {
-    if (!fiche || !personnes) return [];
-    const proposees = new Set(fiche.propositions.map((x) => x.personne.ref));
-    return personnes.personnes
-      .filter((x) => x.ref !== fiche.personne.ref && x.cle !== clePersonne(SANS_NOM))
-      .sort((a, b) => Number(proposees.has(b.ref)) - Number(proposees.has(a.ref)) || b.n - a.n);
-  })();
-  const filFiche =
-    f.mode === "liens" && ouvertNoeud ? (
-      <nav className="ec-ph-fil ec-pe-fil ec-ph-ordi" aria-label={v("Où vous êtes", "Où tu es")}>
-        <button type="button" className="ec-ph-lien" onClick={() => appliquer(avecLien(f, null))}>
-          Par lien
-        </button>
-        <Trace d={TRACE.chev} taille={14} epais={2} />
-        <button type="button" className="ec-ph-lien" onClick={() => appliquer({ ...f, personne: null, dossier: null })}>
-          {nomOuvert}
-        </button>
-        <Trace d={TRACE.chev} taille={14} epais={2} />
-      </nav>
-    ) : (
-      <nav className="ec-ph-fil ec-pe-fil ec-ph-ordi" aria-label={v("Où vous êtes", "Où tu es")}>
-        <button type="button" className="ec-ph-lien" onClick={() => appliquer({ ...f, personne: null })}>
-          Toutes les photos
-        </button>
-        <Trace d={TRACE.chev} taille={14} epais={2} />
-      </nav>
-    );
-
-  /* LA MOSAÏQUE (planches 2D et 3 du 21/10) : « Par lien » en tuiles de tailles différentes, « Personnes » aussi. Ce que chaque tuile montre vient de la
-     lecture du moment ; sa taille et sa place, des poids de l'ouverture (`peseesLiens`, `peseesPersonnes`, gelés). « Mes photos » et l'atelier ne sont pas
-     des liens : des lignes sous la mosaïque. */
+  /* LA MOSAÏQUE (planches 2D et 3 du 21/10) : « Par lien » en tuiles de tailles différentes. Ce que chaque tuile montre vient de la lecture du moment ;
+     sa taille et sa place, des poids de l'ouverture (`peseesLiens`, gelés). « Mes photos » et l'atelier ne sont pas des liens : des lignes sous la mosaïque. */
   const sousAlbum = (n: Noeud) => (n.cle === "vous" ? (p.ecrire ? v("déposées par vous", "déposées par toi") : "déposées par le responsable") : "déposées par l'atelier");
   /** Le menu « … » d'un lien de contribution (jamais pour « Sans groupe » : lecture seule, jamais pour l'équipe). */
   const actionsDe = (cle: string) => {
@@ -1292,8 +1198,11 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     if (!l) return undefined;
     return actionsDuLien({
       ouverte: p.ouverte,
-      partager: () => setPartage(lienDe(l.nom, l.cle, l.plafond, l.n)),
-      qr: () => setGrandQr(lienDe(l.nom, l.cle, l.plafond, l.n)),
+      partager: () => void partager(lienDe(l.nom, l.cle, l.plafond, l.n)),
+      qr: () => {
+        fermerAvis();
+        setGrandQr(lienDe(l.nom, l.cle, l.plafond, l.n));
+      },
       modifier: () => setModifier({ id: l.id, nom: l.nom, valeur: l.plafondNombre ?? Math.min(30, p.max), sansLimite: l.sansPlafond }),
       supprimer: () => setSupprimer({ id: l.id, nom: l.nom, n: l.n }),
     });
@@ -1304,10 +1213,9 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   };
   const noeudsDeLiens = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => n.cle.startsWith("lien:") || n.cle === "participants") : [];
   const tuilesLiens: TuileVue[] = noeudsDeLiens.map((n) => tuileDuLien(n, couvLiens));
-  const tuilesPersonnes: TuileVue[] = arbre ? arbre.personnes.map((x) => ({ cle: x.cle, nom: nomPersonne(x), n: x.n, detail: detailDeLaPersonne(arbre, x.cle), couverture: couvPersonnes[x.cle] ?? null })) : [];
   /** La tuile en tête d'un lien ouvert (3C) : la même, avec la couverture lue par la vue « Par lien » (sinon la dernière photo de la grille). */
   const tuileDeLAlbum: TuileVue | null = lienDePastilles ? { ...tuileDuLien(lienDePastilles, couvLiens), couverture: couvLiens[lienDePastilles.cle] ?? photos.find((x) => x.vignette)?.vignette ?? null } : null;
-  /** Un lien est créé : « Partager » s'ouvre sur lui (le message, le QR), et la page relit ses liens. */
+  /** Un lien est créé : « Partager » s'ouvre sur lui (le QR, « Copier le message »), et la page relit ses liens. */
   const quandCree = (l: LienCree) => {
     setCreerLien(null);
     setPartage(l.id && l.cle ? lienDe(l.libelle, l.cle, l.plafond, 0) : { libelle: l.libelle, url: l.url, plafond: l.plafond, recues: 0 });
@@ -1318,39 +1226,19 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
 
   const fenetres = (
     <>
-      {renommerP ? (
-        <FenetreRenommer
-          personne={renommerP.personne}
-          propose={renommerP.propose}
-          tu={p.tu}
-          occupe={occupe}
-          erreur={erreurFenetre}
-          onFermer={() => {
-            setRenommerP(null);
-            setErreurFenetre(null);
-          }}
-          onGarder={(prenom, nom) => void renommerPersonne(renommerP.personne, prenom, nom)}
-        />
-      ) : null}
-      {fusion && fiche ? (
-        <FenetreFusion
-          personne={fiche.personne}
-          autre={fusion.autre}
-          candidates={candidates}
-          arbre={arbre}
-          avecAdresses={personnes?.avecAdresses ?? false}
-          occupe={occupe}
-          erreur={erreurFenetre}
-          onFermer={() => {
-            setFusion(null);
-            setErreurFenetre(null);
-          }}
-          onFusionner={(autre, garder) => void fusionnerPersonnes(fiche.personne, autre, garder)}
-        />
-      ) : null}
       {creerLien !== null ? <FenetreCreerLien token={p.token} max={p.max} tu={p.tu} nomInitial={creerLien} onCree={quandCree} onFermer={() => setCreerLien(null)} /> : null}
-      {partage ? <FenetrePartage lien={partage} contexte={contexte} onFermer={() => setPartage(null)} /> : null}
-      {grandQr ? <FenetreQr lien={grandQr} contexte={contexte} onFermer={() => setGrandQr(null)} /> : null}
+      {partage ? (
+        <FenetrePartage
+          lien={partage}
+          contexte={contexte}
+          onFermer={() => setPartage(null)}
+          onQr={() => {
+            setGrandQr(partage);
+            setPartage(null);
+          }}
+        />
+      ) : null}
+      {grandQr ? telephone ? <FeuilleQr lien={grandQr} contexte={contexte} onFermer={() => setGrandQr(null)} /> : <FenetreQr lien={grandQr} contexte={contexte} onFermer={() => setGrandQr(null)} /> : null}
       {modifier ? (
         <FenetreModifierLien
           nom={modifier.nom}
@@ -1405,12 +1293,28 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           </div>
         </Fenetre>
       ) : null}
+      {choixFin ? (
+        <ChoixFinCollecte
+          token={p.token}
+          photos={stats ? stats.photos : null}
+          telephone={telephone}
+          onFermer={() => setChoixFin(false)}
+          onFait={(le) => {
+            setChoixFin(false);
+            p.onTermine(le);
+          }}
+          onChoisir={ouvrirPreferees}
+        />
+      ) : null}
+      {feuillePersonnes ? (
+        <FeuillePersonnes personnes={personnesDeLaFeuille(arbre)} choisies={f.personnes} nomPersonne={nomPersonne} onBasculer={(cle) => appliquer(avecPersonne(f, cle))} onFermer={() => setFeuillePersonnes(false)} />
+      ) : null}
     </>
   );
 
   /* Un message qui passe (après un geste), posé dans la colonne de contenu, au-dessus de la visionneuse. */
   const blocAvis = avis ? (
-    <div className={photoAgrandie ? "ec-ph-avis ec-ph-avis--haut" : cocherActif ? "ec-ph-avis ec-ph-avis--barre" : "ec-ph-avis"} role="status">
+    <div className={photoAgrandie ? "ec-ph-avis ec-ph-avis--haut" : rondsVisibles ? "ec-ph-avis ec-ph-avis--barre" : "ec-ph-avis"} role="status">
       <span>
         {avis.texte}
         {avis.sous ? <small>{avis.sous}</small> : null}
@@ -1443,50 +1347,121 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   ) : null;
   const hote = client ? document.querySelector(".ec-contenu") : null;
 
+  /* ─────────────────────────────── le « … » du haut ─────────────────────────────── */
+  const grilleVisible = !albums && !f.corbeille && !prefereesActif;
+  const entreesHaut = entreesDuMenuHaut({
+    ecrire: p.ecrire,
+    grille: grilleVisible,
+    vide: Boolean(vide),
+    corbeille: stats?.corbeille ?? null,
+    terminer: p.fin.terminer && p.ouverte && (stats ? stats.photos > 0 : false),
+    ordinateur: !telephone,
+    ouverte: p.ouverte,
+  });
+  const actionsHaut: ActionMenu[] = entreesHaut.map((e) =>
+    e.cle === "selectionner"
+      ? { cle: e.cle, libelle: e.libelle, icone: ICONES.coche, filetAvant: e.filetAvant, faire: () => setModeCocher(true) }
+      : e.cle === "supprimees"
+        ? { cle: e.cle, libelle: e.libelle, icone: ICONES.corbeille, filetAvant: e.filetAvant, faire: () => appliquer(avecCorbeille(f)) }
+        : { cle: e.cle, libelle: e.libelle, icone: ICONES.drapeau, filetAvant: e.filetAvant, faire: () => { fermerAvis(); setChoixFin(true); } }
+  );
+  const boutonPlus = (
+    <>
+      <button
+        type="button"
+        className="ec-s-rond"
+        aria-label="Plus d'options"
+        aria-haspopup="menu"
+        aria-expanded={menuHaut.menu !== null}
+        onClick={(e) => menuHaut.basculer("haut", e.currentTarget, actionsHaut.length)}
+      >
+        <Points />
+      </button>
+      {menuHaut.menu ? <MenuLien nom="" etiquette="Plus d'options" iconeADroite ouvert={menuHaut.menu} actions={actionsHaut} declencheur={menuHaut.declencheur} onFermer={menuHaut.fermer} /> : null}
+    </>
+  );
+
   /* ─────────────────────────────── le rendu ─────────────────────────────── */
-  const telLienOuvert = f.mode === "liens" && ouvertNoeud && !f.selection && !f.corbeille;
-  /* Téléphone : la fiche d'une personne et la corbeille ont leur propre titre ; l'en-tête de l'écran et la barre se taisent. */
-  const ecranPropre = onglet === "photos" && (f.corbeille || (Boolean(cleFiche) && !cocherActif));
-  /* La barre flottante du bas (téléphone) : sur l'onglet des photos, sauf une édition vide et les écrans qui portent leur propre titre. */
-  const barreBas = onglet === "photos" && !vide && !ecranPropre;
-  /* Une personne ouverte depuis la liste de « Personnes » : on y revient par « ← Personnes ». */
-  const depuisLaListe = f.mode === "personnes" && Boolean(f.personne) && !f.selection && !f.corbeille;
-  const nbFeuille = nombreDansLaFeuille(f);
+  const telLienOuvert = f.mode === "liens" && ouvertNoeud && !f.corbeille;
+  /* Téléphone : la corbeille et « Choisir d'abord mes préférées » ont leur propre titre ; l'en-tête ordinaire et la barre se taisent. */
+  const ecranPropre = f.corbeille || prefereesActif;
+  /* La barre flottante du bas (téléphone) : sauf une édition vide et les écrans qui portent leur propre titre. */
+  const barreBas = !vide && !f.corbeille;
   /* Un lien de contribution (ou « Sans groupe ») ouvert au téléphone : sa tuile en tête (3C), le grand titre se tait ; la barre du bas ramène à « Par lien ». */
-  const enTuile = tuileActive && f.mode === "liens" && !cocherActif && onglet === "photos";
-  /* Le titre du téléphone : le nombre de cochées, le lien ouvert, la personne ouverte depuis la liste (le responsable : « Mes photos ») ; sinon « Les photos ». */
-  const titreTel = cocherActif
-    ? `${nombre(nbCoches)} cochée${nbCoches > 1 ? "s" : ""}`
-    : onglet === "photos" && telLienOuvert
-      ? (dossierNoeud?.nom ?? nomOuvert)
-      : depuisLaListe && personneNoeud && !cleFiche
-        ? f.personne === QUI_RESPONSABLE && p.ecrire
-          ? "Mes photos"
-          : personneNoeud.nom
-        : "Les photos";
-  const retourTel: { texte: string; faire: () => void } | null =
-    onglet !== "photos"
-      ? null
-      : f.corbeille
-        ? { texte: "Les photos", faire: () => appliquer({ ...FILTRES_VIDES, ordre: f.ordre }) }
-        : depuisLaListe
-          ? { texte: "Personnes", faire: () => appliquer({ ...f, personne: null }) }
-        : cleFiche && f.mode === "liens" && ouvertNoeud
-          ? { texte: nomOuvert, faire: () => appliquer({ ...f, personne: null, dossier: null }) }
-          : cleFiche
-            ? { texte: "Les photos", faire: () => appliquer({ ...f, personne: null }) }
-            : telLienOuvert && !tuileActive
-              ? { texte: "Par lien", faire: () => appliquer(avecLien(f, null)) }
-              : null;
+  const enTuile = tuileActive && f.mode === "liens" && !cocherActif && !prefereesActif;
+  /* Le titre du téléphone : le nombre de sélectionnées, « Mes préférées », le lien ouvert ; sinon « Les photos ». */
+  const titreTel = cocherActif ? `${nombre(nbCoches)} sélectionnée${nbCoches > 1 ? "s" : ""}` : prefereesActif ? "Mes préférées" : telLienOuvert ? (dossierNoeud?.nom ?? nomOuvert) : "Les photos";
+  const retourTel: { texte: string; faire: () => void } | null = f.corbeille
+    ? { texte: "Les photos", faire: () => appliquer({ ...f, corbeille: false }) }
+    : prefereesActif
+      ? { texte: "Les photos", faire: () => setPreferees(null) }
+      : tuileActive && telLienOuvert && !cocherActif
+        ? { texte: "Par lien", faire: () => appliquer(avecLien(f, null)) }
+        : telLienOuvert && !tuileActive && !cocherActif
+          ? { texte: "Par lien", faire: () => appliquer(avecLien(f, null)) }
+          : null;
+  const plusDeposer =
+    p.ecrire && p.ouverte && envoi.ouvrir && !cocherActif && !ecranPropre ? (
+      <button
+        type="button"
+        className="ec-ph-plus ec-ph-tel"
+        aria-label="Déposer des photos"
+        onClick={() => envoi.ouvrir?.({ dossier: f.dossier && arbre && f.dossier.startsWith("resp:organisateur:") ? cheminDuNoeud(arbre, f.dossier) : null })}
+      >
+        <Trace d={TRACE.plus} taille={22} epais={2} />
+      </button>
+    ) : null;
+  /* Les photos prêtes à agir : « Terminer la collecte » n'est pas posé sur la page (il est dans le « … »). */
+  const mligne = stats && !cocherActif && !ecranPropre && !enTuile && !albums ? (
+    <p className="ec-ph-mligne ec-ph-tel">
+      <span>
+        {f.personnes.length || f.dossier ? (
+          <>
+            <b>{totalVue !== null ? nombre(totalVue) : "…"}</b> photo{totalVue !== null && totalVue > 1 ? "s" : ""}
+          </>
+        ) : (
+          <>
+            <b>{nombre(stats.photos)}</b> photo{stats.photos > 1 ? "s" : ""} · <b>{nombre(stats.personnes)}</b> personne{stats.personnes > 1 ? "s" : ""}
+          </>
+        )}
+      </span>
+    </p>
+  ) : stats && albums && !ecranPropre ? (
+    <p className="ec-ph-mligne ec-ph-tel">
+      <span>
+        <b>{nombre(stats.photos)}</b> photo{stats.photos > 1 ? "s" : ""} · <b>{nombre(stats.personnes)}</b> personne{stats.personnes > 1 ? "s" : ""}
+      </span>
+    </p>
+  ) : null;
+  const puces =
+    f.personnes.length && grilleVisible ? (
+      <div className="ec-s-puces" role="group" aria-label="Personnes choisies">
+        {f.personnes.map((cle) => {
+          const n = arbre ? noeudDe(arbre, cle) : undefined;
+          const nom = n ? nomPersonne(n) : cle === QUI_RESPONSABLE ? v("Vous", "Toi") : cle.slice(4);
+          return (
+            <span key={cle} className="ec-s-puce">
+              {nom}
+              <button type="button" aria-label={`Retirer « ${nom} » du filtre`} onClick={() => appliquer({ ...f, personnes: f.personnes.filter((c) => c !== cle) })}>
+                <Trace d={TRACE.fermer} taille={14} epais={2.4} />
+              </button>
+            </span>
+          );
+        })}
+      </div>
+    ) : null;
+
   return (
     <section
-      className={`ec-ecran ec-collecte${telLienOuvert ? " ec-collecte--lien" : ""}${enTuile ? " ec-collecte--tuile" : ""}${cocherActif ? " ec-collecte--cocher" : ""}${ecranPropre ? " ec-collecte--propre" : ""}${f.corbeille ? " ec-collecte--corbeille" : ""}${barreBas ? " ec-collecte--barre" : ""}${personnesVue ? " ec-collecte--personnes" : ""}`}
+      className={`ec-ecran ec-collecte${telLienOuvert ? " ec-collecte--lien" : ""}${enTuile ? " ec-collecte--tuile" : ""}${cocherActif ? " ec-collecte--cocher" : ""}${prefereesActif ? " ec-collecte--preferees" : ""}${f.corbeille ? " ec-collecte--propre" : ""}${f.corbeille ? " ec-collecte--corbeille" : ""}${barreBas ? " ec-collecte--barre" : ""}`}
     >
-      {retourTel ? (
-        <button type="button" className="ec-ph-retour ec-ph-tel" onClick={retourTel.faire}>
-          <Trace d={TRACE.retour} taille={16} epais={2} />
-          {retourTel.texte}
-        </button>
+      {retourTel && !enTuile ? (
+        <div className="ec-s-ligne-haut ec-ph-tel">
+          <button type="button" className="ec-s-retour" onClick={retourTel.faire}>
+            <Trace d={TRACE.retour} taille={22} epais={2.2} />
+            {retourTel.texte}
+          </button>
+        </div>
       ) : null}
       <EnTeteEcran
         titre={
@@ -1497,42 +1472,23 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         }
         sous={stats ? `${nombre(stats.photos)} reçue${stats.photos > 1 ? "s" : ""}` : undefined}
       >
-        {p.ecrire ? (
-          <nav className="ec-ph-onglets ec-ph-ordi" aria-label="Photos ou liens">
-            <button type="button" aria-pressed={onglet === "photos"} onClick={() => changerOnglet("photos")}>
-              Les photos
-            </button>
-            <button type="button" aria-pressed={onglet === "liens"} onClick={() => changerOnglet("liens")}>
-              Les liens · {nbLiens}
-            </button>
-          </nav>
-        ) : null}
-        {/* Un lien ouvert au téléphone : « Cocher » et « Partager » sur la ligne du haut. Le retour à « Par lien » est le segment « Par lien » de la barre du bas
-            (toujours là, sous le pouce) : ni flèche ni lien souligné en plus. */}
-        {enTuile && p.ecrire && !vide ? (
-          <button type="button" className="ec-ph-pilule ec-ph-tel" onClick={() => setModeCocher(true)}>
-            Cocher
+        {/* Un lien ouvert : la capsule « ‹ Par lien » est sur la MÊME ligne que le « + » et le « … » (planche 12) ; ailleurs elle a sa ligne. */}
+        {retourTel && enTuile ? (
+          <button type="button" className="ec-s-retour ec-ph-tel" onClick={retourTel.faire}>
+            <Trace d={TRACE.retour} taille={22} epais={2.2} />
+            {retourTel.texte}
           </button>
         ) : null}
-        {p.ecrire && !cocherActif && onglet === "photos" && telLienOuvert && partageable ? (
-          <button
-            type="button"
-            className="ec-ph-pilule ec-ph-tel"
-            onClick={() => {
-              const l = lienPartage();
-              if (l) setPartage(l);
-            }}
-          >
-            <Trace d={TRACE.partage} taille={15} epais={1.8} />
-            Partager
-          </button>
-        ) : p.ecrire && !cocherActif && onglet === "liens" ? (
-          /* Au téléphone « Par lien » et « Les liens » sont une seule vue : ce retour ne sert qu'à une vieille adresse `?onglet=liens`. */
-          <button type="button" className="ec-ph-pilule ec-ph-tel" onClick={() => changerOnglet("photos")}>
-            Les photos
+        {/* Téléphone, Sélectionner : « Terminé » remplace le « + » et le « … ». */}
+        {cocherActif ? (
+          <button type="button" className="ec-s-pilule ec-s-pilule--plein ec-ph-tel" onClick={toutDecocher}>
+            Terminé
           </button>
         ) : null}
-        {onglet === "photos" && envoi.ouvrir && p.ouverte ? (
+        {/* « Déposer » : le « + » rond, VISIBLE (« l'action la plus importante »), puis UN « … » : Sélectionner, Supprimées récemment, Terminer la collecte. La collecte terminée : le « + » disparaît (planche 9, vue 11D). */}
+        {!prefereesActif && !f.corbeille && !cocherActif ? plusDeposer : null}
+        {/* Ordinateur : « Déposer des photos » reste LE bouton visible. */}
+        {!prefereesActif && !f.corbeille && envoi.ouvrir && p.ouverte && p.ecrire ? (
           <button
             type="button"
             className="ec-bouton ec-bouton--petit ec-ph-ordi"
@@ -1541,36 +1497,12 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
             Déposer des photos
           </button>
         ) : null}
-        {onglet === "liens" && p.ouverte ? (
-          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setCreerLien("")}>
-            Créer un lien
-          </button>
-        ) : null}
-        {/* Téléphone, mode « cocher » : « Terminé » remplace les deux boutons du haut. */}
-        {cocherActif ? (
-          <button type="button" className="ec-ph-pilule ec-ph-pilule--on ec-ph-tel" onClick={toutDecocher}>
-            Terminé
-          </button>
-        ) : null}
-        {/* Téléphone : « Déposer » est un « + » rond dans l'en-tête (plus de bouton flottant : le coin du bas est à la barre). */}
-        {p.ecrire && p.ouverte && envoi.ouvrir && onglet === "photos" && !cocherActif && !ecranPropre && !enTuile ? (
-          <button
-            type="button"
-            className="ec-ph-plus ec-ph-tel"
-            aria-label="Déposer des photos"
-            onClick={() => envoi.ouvrir?.({ dossier: f.dossier && arbre && f.dossier.startsWith("resp:organisateur:") ? cheminDuNoeud(arbre, f.dossier) : null })}
-          >
-            <Trace d={TRACE.plus} taille={22} epais={2} />
-          </button>
-        ) : null}
-        {!cocherActif && !ecranPropre ? <ActionsFinCollecte token={p.token} tu={p.tu} fin={p.fin} ecrire={p.ecrire} ouverte={p.ouverte} onglet={onglet} photos={null} selection={0} onTermine={p.onTermine} variante="tel" /> : null}
-        <ActionsFinCollecte token={p.token} tu={p.tu} fin={p.fin} ecrire={p.ecrire} ouverte={p.ouverte} onglet={onglet} photos={stats ? stats.photos : null} selection={compteurs?.selection ?? 0} onTermine={p.onTermine} />
+        {!prefereesActif && !f.corbeille ? <ActionsFinCollecte ecrire={p.ecrire} ouverte={p.ouverte} variante="ordi" /> : null}
+        {!cocherActif && !prefereesActif && !f.corbeille && entreesHaut.length ? boutonPlus : null}
       </EnTeteEcran>
 
       {/* La collecte est terminée : la page le DIT, sous le titre, pour tous les rôles (21/10). */}
-      {!p.ouverte ? <LigneFinCollecte id={ID_LIGNE_FIN} le={p.fin.le} tu={p.tu} oubli={p.fin.terminer && p.fin.oubli} /> : null}
-      {/* Téléphone : « Terminer la collecte » sous l'en-tête (la rangée de l'en-tête déborde à 375 px). */}
-      {!cocherActif && !ecranPropre ? <ActionsFinCollecte token={p.token} tu={p.tu} fin={p.fin} ecrire={p.ecrire} ouverte={p.ouverte} onglet={onglet} photos={stats ? stats.photos : null} selection={compteurs?.selection ?? 0} onTermine={p.onTermine} variante="ligne" /> : null}
+      {!p.ouverte ? <LigneFinCollecte id={ID_LIGNE_FIN} le={p.fin.le} tu={p.tu} oubli={p.fin.terminer && p.fin.oubli} className="ec-ph-ordi" /> : null}
 
       {erreur && !supprimer && !modifier ? (
         <p className="ec-note ec-note--erreur ec-ph-erreur" role="alert">
@@ -1578,109 +1510,67 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         </p>
       ) : null}
 
-      {onglet === "photos" ? (
-        <>
-          {stats ? (
-            <div className="ec-ph-chiffres ec-ph-ordi">
-              <span className="ec-ph-chiffre">
-                <strong>{nombre(stats.photos)}</strong> photo{stats.photos > 1 ? "s" : ""} reçue{stats.photos > 1 ? "s" : ""}
-              </span>
-              <span className="ec-ph-chiffre">
-                <strong>{nombre(stats.personnes)}</strong> personne{stats.personnes > 1 ? "s" : ""}
-              </span>
-              <span className="ec-ph-chiffre">
-                <strong>{nombre(stats.doublons)}</strong> doublon{stats.doublons > 1 ? "s" : ""} repéré{stats.doublons > 1 ? "s" : ""}
-              </span>
-              <span className="ec-ph-chiffres-fin">
-                {stats.enCours ? <span>{nombre(stats.enCours)} en cours d&apos;arrivée</span> : null}
-                {p.cloture && p.ouverte ? <span className="ec-note">Clôture le {p.cloture}</span> : null}
-              </span>
-            </div>
-          ) : null}
+      {/* Téléphone : sous le titre, la ligne de chiffres (« 45 photos · 2 personnes »), « 12 gardées sur 2 692 » dans « Mes préférées ». */}
+      {mligne}
+      {/* Téléphone (planche 9, vue 11D) : une pastille calme, « Collecte terminée le 15 novembre » ; rien ne s'ajoute plus. */}
+      {!p.ouverte && !f.corbeille && !prefereesActif ? (
+        <p className="ec-s-banniere ec-ph-tel" role="status">
+          <span className="ec-ph-annonce-point" aria-hidden="true" />
+          {pastilleCollecteTerminee(p.fin.le)}
+        </p>
+      ) : null}
+      {prefereesActif ? (
+        <p className="ec-ph-mligne ec-ph-tel" role="status">
+          <span>
+            <b>{nombre(nbGardees)}</b> gardée{nbGardees > 1 ? "s" : ""} sur {nombre(total)}
+          </span>
+        </p>
+      ) : null}
+      {annonce && !f.corbeille && !prefereesActif && !cocherActif ? (
+        <button type="button" className="ec-s-nouvelles ec-ph-tel" onClick={voirArrivees}>
+          <span className="ec-ph-annonce-point" aria-hidden="true" />
+          <span className="ec-s-nouvelles-texte">{annonce.court}</span>
+          <b>Les voir</b>
+        </button>
+      ) : null}
+      {puces && !prefereesActif ? <div className="ec-ph-tel">{puces}</div> : null}
 
-          {/* Téléphone : sous le titre, les chiffres à gauche et « Cocher » à droite (un texte, dans une cible de 44 px ; l'appui
-              long sur une photo coche aussi). Les doublons sont passés dans la feuille « Filtrer ». Ni dans la fiche d'une
-              personne, ni dans la corbeille. */}
-          {stats && !cocherActif && !ecranPropre ? (
-            <p className="ec-ph-mligne ec-ph-mligne--cocher ec-ph-tel">
-              <span>
-                {telLienOuvert && ouvertNoeud ? (
-                  <>
-                    {ouvertNoeud.enfants.length ? (
-                      <>
-                        <b>{nombre(ouvertNoeud.enfants.length)}</b> personne{ouvertNoeud.enfants.length > 1 ? "s" : ""} ·{" "}
-                      </>
-                    ) : null}
-                    <b>{nombre(ouvertNoeud.n)}</b> photo{ouvertNoeud.n > 1 ? "s" : ""}
-                  </>
-                ) : depuisLaListe && personneNoeud ? (
-                  <>
-                    <b>{nombre(personneNoeud.n)}</b> photo{personneNoeud.n > 1 ? "s" : ""}
-                  </>
-                ) : (
-                  <>
-                    <b>{nombre(stats.photos)}</b> photo{stats.photos > 1 ? "s" : ""} · <b>{nombre(stats.personnes)}</b> personne{stats.personnes > 1 ? "s" : ""}
-                  </>
-                )}
-              </span>
-              {p.ecrire && !vide && !albums && !personnesVue ? (
-                <button type="button" className="ec-ph-cocher-lien" onClick={() => setModeCocher(true)}>
-                  Cocher
-                </button>
-              ) : null}
-              {/* « Par lien » et « Les liens » ne font qu'une vue au téléphone : « Créer un lien » est en tête, à la place de « Cocher » (rien à cocher dans une mosaïque). */}
-              {p.ecrire && !vide && albums && p.ouverte ? (
-                <button type="button" className="ec-ph-cocher-lien" onClick={() => setCreerLien("")}>
-                  Créer un lien
-                </button>
-              ) : null}
-            </p>
-          ) : null}
-          {/* Mode « cocher » : le compte est dans le titre (« 3 cochées »), la phrase dit où l'on est, et « Tout cocher » est dessous. */}
-          {cocherActif ? (
-            <p className="ec-ph-mligne ec-ph-tel">
-              {contexteVue} · {v("touchez d'autres photos pour les cocher.", "touche d'autres photos pour les cocher.")}
-              {totalVue ? (
-                <>
-                  {" "}
-                  <button type="button" className="ec-ph-lien" onClick={toutCocher}>
-                    Tout cocher ({nombre(totalVue)})
-                  </button>
-                </>
-              ) : null}
-            </p>
-          ) : null}
-          {annonce ? (
-            <div className="ec-ph-annonce ec-ph-annonce--tel ec-ph-tel" role="status">
-              <span className="ec-ph-annonce-point" aria-hidden="true" />
-              <strong>{annonce.court}</strong>
-              <button type="button" className="ec-bouton ec-bouton--petit" onClick={voirArrivees}>
-                Les voir
-              </button>
-            </div>
-          ) : null}
+      {stats && !f.corbeille ? (
+        <div className="ec-ph-chiffres ec-ph-ordi">
+          <span className="ec-ph-chiffre">
+            <strong>{nombre(stats.photos)}</strong> photo{stats.photos > 1 ? "s" : ""} reçue{stats.photos > 1 ? "s" : ""}
+          </span>
+          <span className="ec-ph-chiffre">
+            <strong>{nombre(stats.personnes)}</strong> personne{stats.personnes > 1 ? "s" : ""}
+          </span>
+          <span className="ec-ph-chiffres-fin">
+            {stats.enCours ? <span>{nombre(stats.enCours)} en cours d&apos;arrivée</span> : null}
+            {p.cloture && p.ouverte ? <span className="ec-note">Clôture le {p.cloture}</span> : null}
+          </span>
+        </div>
+      ) : null}
 
-          <div className={`ec-ph-panneau${cocherActif && nbCoches > 0 ? " ec-ph-panneau--barre" : ""}`}>
-            <aside className="ec-ph-filtres ec-ph-ordi" aria-label="Trier et filtrer">
-              {arbre && !vide ? listes() : null}
-            </aside>
+      <div className={`ec-ph-panneau${p.ecrire && nbCoches > 0 ? " ec-ph-panneau--barre" : ""}`}>
+        <aside className="ec-ph-filtres ec-ph-ordi" aria-label="Regarder les photos">
+          {arbre && !vide ? listes() : null}
+        </aside>
 
-            <div className="ec-ph-zone">
-              {f.corbeille ? <Corbeille token={p.token} tu={p.tu} version={stats?.photos ?? 0} onRestaurees={restaureesDeLaCorbeille} /> : null}
-              {!f.corbeille ? (
-              <>
-              {!vide && !cleFiche ? (
+        <div className="ec-ph-zone">
+          {f.corbeille ? <Corbeille token={p.token} tu={p.tu} version={stats?.photos ?? 0} telephone={telephone} onRestaurees={restaureesDeLaCorbeille} /> : null}
+          {!f.corbeille ? (
+            <>
+              {!vide ? (
                 <div className="ec-ph-zone-tete ec-ph-ordi">
                   <div className="ec-ph-zone-titres">
-                    {f.mode === "liens" && ouvertNoeud && !f.selection ? (
+                    {f.mode === "liens" && ouvertNoeud ? (
                       <nav className="ec-ph-fil" aria-label={v("Où vous êtes", "Où tu es")}>
                         <button type="button" className="ec-ph-lien" onClick={() => appliquer(avecLien(f, null))}>
                           Par lien
                         </button>
                         <Trace d={TRACE.chev} taille={14} epais={2} />
-                        {f.personne || f.dossier ? (
+                        {f.dossier ? (
                           <>
-                            <button type="button" className="ec-ph-lien" onClick={() => appliquer({ ...f, personne: null, dossier: null })}>
+                            <button type="button" className="ec-ph-lien" onClick={() => appliquer({ ...f, dossier: null })}>
                               {nomOuvert}
                             </button>
                             <Trace d={TRACE.chev} taille={14} epais={2} />
@@ -1699,65 +1589,75 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                         {titre}
                         {renommable ? (
                           <button type="button" className="ec-ph-renommer" aria-label={dossierNoeud?.renommable ? `Changer le nom de « ${titre} »` : `Modifier le lien « ${titre} »`} title={dossierNoeud?.renommable ? "Changer le nom" : "Modifier le lien"} onClick={commencerRenommer}>
-                            <Trace d={TRACE.crayon} taille={16} epais={1.7} />
+                            <Trace d={ICONES.crayon} taille={16} epais={1.7} />
                           </button>
                         ) : null}
                       </h2>
                     )}
-                    {note ? <span className="ec-note">{note}</span> : null}
+                    {prefereesActif ? (
+                      <span className="ec-note" role="status">
+                        <b>{nombre(nbGardees)}</b> gardée{nbGardees > 1 ? "s" : ""} sur {nombre(total)}
+                      </span>
+                    ) : note ? (
+                      <span className="ec-note">{note}</span>
+                    ) : null}
                   </div>
                   <div className="ec-ph-outils">
-                    {!albums ? (
-                      <button
-                        type="button"
-                        className="ec-ph-pilule"
-                        aria-label={`Ordre : ${parJour ? "par jour de prise de vue" : "plus récentes d'abord"}. Changer.`}
-                        onClick={() => appliquer({ ...f, ordre: parJour ? "recentes" : "jour", jour: null })}
-                        disabled={f.doublons || f.signalees}
-                      >
-                        <Trace d={TRACE.ordre} taille={15} epais={1.8} />
-                        {parJour ? "Par jour de prise de vue" : "Plus récentes d'abord"}
-                      </button>
+                    {/* Partager : DEUX gestes à l'ordinateur, « Copier le message » et « QR code » (plus de fenêtre à retoucher, ni WhatsApp ni Mail). */}
+                    {partageable && !prefereesActif ? (
+                      <>
+                        <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copierMessageDuLien()}>
+                          {copie ? "Copié" : "Copier le message"}
+                        </button>
+                        <button
+                          type="button"
+                          className="ec-bouton ec-bouton--clair ec-bouton--petit"
+                          onClick={() => {
+                            const l = lienPartage();
+                            if (l) setGrandQr(l);
+                          }}
+                        >
+                          QR code
+                        </button>
+                      </>
                     ) : null}
-                    {partageable ? (
-                      <button
-                        type="button"
-                        className="ec-bouton ec-bouton--clair ec-bouton--petit"
-                        onClick={() => {
-                          const l = lienPartage();
-                          if (l) setPartage(l);
-                        }}
-                      >
-                        <Trace d={TRACE.partage} taille={15} epais={1.8} />
-                        Partager ce lien
-                      </button>
-                    ) : null}
-                    {p.ecrire && f.selection && (compteurs?.selection ?? 0) > 0 ? (
-                      <button type="button" className="ec-ph-lien" disabled={occupe} onClick={viderSelection}>
-                        Vider la sélection
-                      </button>
-                    ) : null}
-                    {p.ecrire && !albums && totalVue ? (
-                      <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={coches.tout && coches.ids.size === 0 ? toutDecocher : toutCocher}>
-                        {coches.tout && coches.ids.size === 0 ? "Tout décocher" : `Tout cocher (${nombre(totalVue)})`}
-                      </button>
+                    {prefereesActif ? (
+                      <>
+                        <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={occupe} onClick={() => setPreferees(null)}>
+                          Annuler
+                        </button>
+                        <button type="button" className="ec-bouton ec-bouton--petit" disabled={occupe || nbGardees === 0} onClick={() => void envoyerPreferees()}>
+                          Envoyer ma sélection · {nombre(nbGardees)}
+                        </button>
+                      </>
                     ) : null}
                   </div>
                 </div>
               ) : null}
 
-              {/* La fiche d'une personne dit déjà qui : ses puces ne restent que pour les autres filtres. */}
-              {f.mode === "tout" && filtree && !vide && (!cleFiche || f.lien || f.dossier || f.jour || f.doublons || f.signalees) ? (
+              {/* Les personnes et le lien choisis, avec leur croix (ordinateur) : pas de « Tout effacer », chaque puce se retire d'un toucher. */}
+              {f.mode === "tout" && filtree && !vide ? (
                 <div className="ec-ph-actifs ec-ph-ordi">
-                  {f.lien && ouvertNoeud ? <Puce texte={nomOuvert} retirer={() => appliquer(avecLien(f, null))} /> : null}
-                  {f.dossier && dossierNoeud ? <Puce texte={dossierNoeud.nom} retirer={() => appliquer({ ...f, dossier: null })} /> : null}
-                  {f.personne && personneNoeud && !cleFiche ? <Puce texte={nomPersonne(personneNoeud)} retirer={() => appliquer({ ...f, personne: null })} /> : null}
-                  {f.jour ? <Puce texte={jourCourt(f.jour)} retirer={() => appliquer({ ...f, jour: null })} /> : null}
-                  {f.doublons ? <Puce texte="Doublons" retirer={() => appliquer({ ...f, doublons: false })} /> : null}
-                  {f.signalees ? <Puce texte="Ne pas publier" retirer={() => appliquer({ ...f, signalees: false })} /> : null}
-                  <button type="button" className="ec-ph-lien ec-ph-lien--doux" onClick={() => appliquer({ ...FILTRES_VIDES, ordre: f.ordre })}>
-                    Tout effacer
-                  </button>
+                  {f.dossier && dossierNoeud ? (
+                    <span className="ec-ph-puce">
+                      {dossierNoeud.nom}
+                      <button type="button" aria-label={`Retirer le filtre « ${dossierNoeud.nom} »`} onClick={() => appliquer({ ...f, dossier: null })}>
+                        <Trace d={TRACE.fermer} taille={12} epais={2.4} />
+                      </button>
+                    </span>
+                  ) : null}
+                  {f.personnes.map((cle) => {
+                    const n = arbre ? noeudDe(arbre, cle) : undefined;
+                    const nom = n ? nomPersonne(n) : cle.slice(4);
+                    return (
+                      <span key={cle} className="ec-ph-puce">
+                        {nom}
+                        <button type="button" aria-label={`Retirer le filtre « ${nom} »`} onClick={() => appliquer({ ...f, personnes: f.personnes.filter((c) => c !== cle) })}>
+                          <Trace d={TRACE.fermer} taille={12} epais={2.4} />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
               ) : null}
 
@@ -1774,69 +1674,24 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
               ) : null}
 
               <div className="ec-collecte-grille ec-ph-defile ec-defile" ref={zone}>
-                {/* Une personne : sa fiche au-dessus de ses photos (planche 4A, 4D). */}
-                {cleFiche && !vide ? (
-                  <FichePersonne
-                    key={cleFiche}
-                    nomGrille={personneNoeud ? nomPersonne(personneNoeud) : titre}
-                    fiche={fiche}
-                    erreur={personnesLues === "erreur"}
-                    avecAdresses={p.ecrire && (personnes?.avecAdresses ?? false)}
-                    arbre={arbre}
-                    ecrire={p.ecrire}
-                    totalVue={totalVue}
-                    fil={filFiche}
-                    tu={p.tu}
-                    onRenommer={(propose) => {
-                      setErreurFenetre(null);
-                      if (fiche) setRenommerP({ personne: fiche.personne, propose: propose ?? null });
-                    }}
-                    onFusionner={(autre) => {
-                      setErreurFenetre(null);
-                      setFusion({ autre });
-                    }}
-                    onToutCocher={toutCocher}
-                    onCocher={() => setModeCocher(true)}
-                  />
-                ) : null}
-
                 {/* Téléphone : un lien ouvert (3C). SA TUILE en tête, plus basse, avec son « … » ; dessous, ses personnes en PASTILLES (« Tout le monde »,
                     puis une par personne : initiales, prénom, photos) qui filtrent la grille ci-dessous sans quitter la page, une ou plusieurs ; puis ses
-                    photos, les dernières d'abord. Aucun lien souligné, aucune liste à part, aucune barre de plafond. */}
-                {tuileActive && !cleFiche && !cocherActif && tuileDeLAlbum ? (
+                    photos, rangées par jour. Aucun lien souligné, aucune liste à part, aucune barre de plafond. */}
+                {tuileActive && !cocherActif && tuileDeLAlbum ? (
                   <div className="ec-ph-tel">
                     <TuileDeLAlbum t={tuileDeLAlbum} />
                   </div>
                 ) : null}
-                {tuileActive && lienDePastilles && !cleFiche && personnesDuLien.length >= 2 ? (
+                {tuileActive && lienDePastilles && personnesDuLien.length >= 2 ? (
                   <div className="ec-ph-tel">
-                    <PastillesDePersonnes
-                      personnes={personnesDuLien}
-                      total={lienDePastilles.n}
-                      choisies={nomsChoisis}
-                      toutes={() => setChoixPastilles({ lien: f.lien, cles: new Set() })}
-                      basculer={(cle) => {
-                        const cles = new Set(nomsChoisis);
-                        if (cles.has(cle)) cles.delete(cle);
-                        else cles.add(cle);
-                        setCoches(AUCUNE);
-                        setModeCocher(false);
-                        setChoixPastilles({ lien: f.lien, cles });
-                      }}
-                    />
-                  </div>
-                ) : null}
-                {tuileActive && !cleFiche && photos.length ? (
-                  <div className="ec-ph-arrivees ec-ph-tel">
-                    <strong className="ec-ph-arrivees-titre">Dernières photos</strong>
-                    <span className="ec-note">{v("Touchez une photo pour l'agrandir", "Touche une photo pour l'agrandir")}</span>
+                    <PastillesDePersonnes personnes={personnesDuLien} total={lienDePastilles.n} choisies={nomsChoisis} toutes={() => setChoixPastilles({ lien: f.lien, cles: new Set() })} basculer={basculerPastille} />
                   </div>
                 ) : null}
 
                 {/* Téléphone : « Mes photos » ouvert : ses dossiers, en liste. */}
-                {telLienOuvert && !cleFiche && ouvertNoeud && ouvertNoeud.cle === "vous" && ouvertNoeud.enfants.length ? (
+                {telLienOuvert && ouvertNoeud && ouvertNoeud.cle === "vous" && ouvertNoeud.enfants.length ? (
                   <div className="ec-ph-liste-verre ec-ph-tel">
-                    <button type="button" className={!f.dossier ? "ec-ph-rangee ec-ph-rangee--on ec-ph-rangee--court" : "ec-ph-rangee ec-ph-rangee--court"} onClick={() => appliquer({ ...f, personne: null, dossier: null })}>
+                    <button type="button" className={!f.dossier ? "ec-ph-rangee ec-ph-rangee--on ec-ph-rangee--court" : "ec-ph-rangee ec-ph-rangee--court"} onClick={() => appliquer({ ...f, dossier: null })}>
                       <span className="ec-ph-ini ec-ph-ini--grand" aria-hidden="true">
                         <Trace d={TRACE.dossier} taille={16} epais={1.8} />
                       </span>
@@ -1847,7 +1702,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                       <Trace d={TRACE.chev} taille={16} epais={2} />
                     </button>
                     {ouvertNoeud.enfants.flatMap((d) => [d, ...d.enfants]).map((x) => (
-                      <button key={x.cle} type="button" className={f.dossier === x.cle ? "ec-ph-rangee ec-ph-rangee--on ec-ph-rangee--court" : "ec-ph-rangee ec-ph-rangee--court"} onClick={() => appliquer({ ...f, dossier: x.cle, personne: null })}>
+                      <button key={x.cle} type="button" className={f.dossier === x.cle ? "ec-ph-rangee ec-ph-rangee--on ec-ph-rangee--court" : "ec-ph-rangee ec-ph-rangee--court"} onClick={() => appliquer({ ...f, dossier: x.cle })}>
                         <span className="ec-ph-ini ec-ph-ini--grand" aria-hidden="true">
                           <Trace d={TRACE.dossier} taille={16} epais={1.8} />
                         </span>
@@ -1861,24 +1716,15 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                   </div>
                 ) : null}
 
-                {/* Téléphone, « Personnes » (planche 2D) : une tuile par personne, tous liens confondus (la dernière photo en fond, le nom une fois, « 38 photos · Bateau 1 ») ;
-                    toucher une tuile ouvre ses photos, qui ne répètent pas son nom. Pas de « … » : renommer et fusionner restent dans la fiche de la personne. */}
-                {personnesVue && arbre && !vide ? (
-                  tuilesPersonnes.length && peseesPersonnes ? (
-                    <div className="ec-ph-tel">
-                      <Mosaique genre="personne" tuiles={tuilesPersonnes} ordre={peseesPersonnes} etiquette="Les personnes" ouvrir={(cle) => appliquer({ ...f, personne: cle })} />
-                    </div>
-                  ) : (
-                    <p className="ec-note ec-ph-chargement ec-ph-tel">Personne n&apos;a envoyé de photos pour l&apos;instant.</p>
-                  )
-                ) : null}
-
-                {/* « Par lien » (planche 3A) : une mosaïque, une tuile par lien. Sa taille et sa place sont celles de l'OUVERTURE de la page ; « Mes photos » et
-                    l'atelier, qui ne sont pas des liens, sont deux lignes dessous. Plus de « Dernières arrivées » : chaque tuile montre déjà la dernière photo de son lien. */}
+                {/* « Par lien » : une mosaïque, une tuile par lien, « Nouveau lien » en dernière tuile. Sa taille et sa place sont celles de l'OUVERTURE de la page ;
+                    « Mes photos » et l'atelier, qui ne sont pas des liens, sont deux lignes dessous. Sans aucun lien de groupe : l'état vide (5B). */}
                 {albums && arbre && !vide ? (
                   <>
-                    {peseesLiens && tuilesLiens.length ? <Mosaique genre="lien" variante="albums" tuiles={tuilesLiens} ordre={peseesLiens} etiquette="Les liens" ouvrir={(cle) => appliquer(avecLien(f, cle))} /> : null}
-                    {!tuilesLiens.length && !lignesDessous.length ? <p className="ec-note ec-ph-chargement">Aucun lien à montrer pour l&apos;instant.</p> : null}
+                    {peseesLiens && tuilesLiens.length ? (
+                      <Mosaique genre="lien" variante="albums" tuiles={tuilesLiens} ordre={peseesLiens} etiquette="Les liens" ouvrir={(cle) => appliquer(avecLien(f, cle))} nouveau={p.ecrire && p.ouverte ? () => setCreerLien("") : undefined} />
+                    ) : null}
+                    {!tuilesLiens.length && p.ecrire ? <EtatSansLien tu={p.tu} ouverte={p.ouverte} creer={setCreerLien} /> : null}
+                    {!tuilesLiens.length && !lignesDessous.length && !p.ecrire ? <p className="ec-note ec-ph-chargement">Aucun lien à montrer pour l&apos;instant.</p> : null}
                     {lignesDessous.length ? (
                       <div className="ec-mo-pied">
                         {lignesDessous.map((n) => (
@@ -1924,7 +1770,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     ) : null}
                   </div>
                 ) : null}
-                {/* Aucune photo, mais des liens : ils se partagent depuis leur tuile (le « … »), sans attendre la première photo. */}
+                {/* Aucune photo, mais des liens : ils se partagent depuis leur tuile, sans attendre la première photo. */}
                 {vide && arbre && p.ecrire && p.ouverte && peseesLiens && tuilesLiens.length ? (
                   <Mosaique
                     genre="lien"
@@ -1933,9 +1779,9 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     ordre={peseesLiens}
                     etiquette="Les liens"
                     ouvrir={(cle) => {
-                      /* Un lien sans photo n'a rien à ouvrir : le toucher ouvre « Partager », ce qu'on en fait à ce moment-là. */
+                      /* Un lien sans photo n'a rien à ouvrir : le toucher le PARTAGE (la feuille de l'iPhone, ou la petite fenêtre), ce qu'on en fait à ce moment-là. */
                       const l = liens?.liens.find((x) => `lien:${x.id}` === cle);
-                      if (l) setPartage(lienDe(l.nom, l.cle, l.plafond, l.n));
+                      if (l) void partager(lienDe(l.nom, l.cle, l.plafond, l.n));
                     }}
                   />
                 ) : null}
@@ -1943,40 +1789,29 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                 {!albums && !vide && visibles.length === 0 && !chargement && stats ? (
                   <div className="ec-a-venir">
                     <p className="ec-texte">
-                      {f.selection
-                        ? v("Rien dans votre sélection : l'étoile d'une photo l'y ajoute.", "Rien dans ta sélection : l'étoile d'une photo l'y ajoute.")
-                        : f.doublons
-                          ? "Aucun doublon ici."
-                          : f.signalees
-                            ? "Aucune photo marquée « Ne pas publier » ici."
-                          : f.jour
-                            ? "Aucune photo ce jour-là ici."
-                            : f.lien || f.personne || f.dossier
-                              ? "Rien reçu ici pour l'instant."
-                              : v("Aucune photo pour l'instant. Déposez les vôtres, ou partagez un lien.", "Aucune photo pour l'instant. Dépose les tiennes, ou partage un lien.")}
+                      {f.lien || f.personnes.length || f.dossier ? "Rien reçu ici pour l'instant." : v("Aucune photo pour l'instant. Déposez les vôtres, ou partagez un lien.", "Aucune photo pour l'instant. Dépose les tiennes, ou partage un lien.")}
                     </p>
                   </div>
                 ) : null}
 
-                {!vide ? (
+                {!vide && !albums ? (
                   <Grille
-                    photos={visibles}
-                    parJour={parJour && !albums}
-                    jours={jours ?? []}
-                    ecrire={p.ecrire && !albums}
-                    cocher={cocherActif}
+                    groupes={groupes}
+                    ecrire={p.ecrire}
+                    cocher={rondsVisibles}
+                    coeurs={prefereesActif}
                     estCochee={estCochee}
-                    estCachee={estCachee}
-                    estNeuve={estNeuve}
-                    quiDe={quiDe}
-                    sansQui={nomsChoisis.size > 0 || Boolean(f.personne)}
-                    attente={chargement && photos.length > 0 && !albums ? 8 : 0}
+                    attente={chargement && photos.length > 0 ? 8 : 0}
                     onOuvrir={setAgrandi}
                     onCocher={cocher}
-                    onEtoile={(ph) => void basculer(ph)}
-                    onAppuiLong={(id) => {
-                      setModeCocher(true);
-                      if (!estCochee(id)) cocher(id, false);
+                    onAppuiLong={(ph) => {
+                      if (prefereesActif) return;
+                      /* En mode « Sélectionner », l'appui long bascule la photo ; sinon il ouvre son menu (Favori, Voir qui l'a envoyée, Supprimer). */
+                      if (cocherActif) cocher(ph.id, false);
+                      else {
+                        fermerAvis();
+                        setMenuPhoto(ph.id);
+                      }
                     }}
                     onCocherJour={p.ecrire ? cocherLeJour : null}
                   />
@@ -1988,160 +1823,107 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     Chargement des suivantes · {nombre(photos.length)} affichées{compteurs ? ` sur ${nombre(compteurs.liste)}` : ""}
                   </p>
                 ) : null}
-                {suivante && !chargement && !f.jour ? (
+                {suivante && !chargement && !albums ? (
                   <button type="button" className="ec-bouton ec-bouton--clair ec-ph-suite" onClick={() => void charger(suivante, f)}>
                     Voir la suite
                   </button>
                 ) : null}
               </div>
-              </>
-              ) : null}
-              <div className="ec-ph-zone-pied ec-ph-ordi" aria-hidden="true" />
-            </div>
+            </>
+          ) : null}
+          <div className="ec-ph-zone-pied ec-ph-ordi" aria-hidden="true" />
+        </div>
 
-            {/* La barre d'actions (ordinateur) : en bas du panneau dès qu'une photo est cochée. */}
-            {p.ecrire && nbCoches > 0 ? (
-              <div className="ec-ph-barre-actions ec-ph-ordi" role="toolbar" aria-label="Agir sur les photos cochées">
-                <span className="ec-ph-compte">
-                  <b>{nombre(nbCoches)}</b>
-                  <span className="ec-ph-act-long">{` photo${nbCoches > 1 ? "s" : ""}`}</span>
-                  {` cochée${nbCoches > 1 ? "s" : ""}`}
-                </span>
-                <button type="button" className="ec-ph-lien ec-ph-lien--doux ec-ph-tout-decocher" onClick={toutDecocher}>
-                  Tout décocher
-                </button>
-                <span className="ec-ph-sep" aria-hidden="true" />
-                {progres ? <span className="ec-ph-progres">{progres}</span> : null}
-                <button type="button" className="ec-ph-act ec-ph-act--prem" disabled={occupe} onClick={() => void agir("ajouter")}>
-                  <Trace d={ICONES.etoile} taille={16} plein epais={1.6} />
-                  <span className="ec-ph-act-long">Ajouter à ma sélection</span>
-                  <span className="ec-ph-act-court">Ma sélection</span>
-                </button>
-                <button type="button" className="ec-ph-act" disabled={occupe} onClick={() => void agir("retirer")}>
-                  <Trace d={TRACE.retirer} taille={16} epais={1.7} />
-                  Retirer<span className="ec-ph-act-long"> de ma sélection</span>
-                </button>
-                <button type="button" className="ec-ph-act" disabled={occupe} onClick={() => void agir("cacher")}>
-                  <Trace d={ICONES.cache} taille={16} epais={1.7} />
-                  Ne pas publier
-                </button>
-                {/* « Supprimer » : la corbeille 30 jours, sans fenêtre de confirmation (« Annuler » quelques secondes). */}
-                <button type="button" className="ec-ph-act ec-ph-act--danger" disabled={occupe} onClick={() => void agir("supprimer")}>
-                  <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
-                  Supprimer
-                </button>
-                <button type="button" className="ec-ph-act ec-ph-act--x" aria-label="Fermer la barre et tout décocher" onClick={toutDecocher}>
-                  <Trace d={TRACE.fermer} taille={16} epais={2} />
-                </button>
-              </div>
+        {/* La barre d'actions (ordinateur) : en bas du panneau dès qu'une photo est prise. « Tout sélectionner » n'apparaît qu'APRÈS une première photo ;
+            la barre n'a que le cœur et Supprimer. */}
+        {p.ecrire && nbCoches > 0 && !prefereesActif ? (
+          <div className="ec-ph-barre-actions ec-ph-ordi" role="toolbar" aria-label="Agir sur les photos sélectionnées">
+            <span className="ec-ph-compte">
+              <b>{nombre(nbCoches)}</b>
+              {` sélectionnée${nbCoches > 1 ? "s" : ""}`}
+            </span>
+            {totalVue && nbCoches < totalVue ? (
+              <button type="button" className="ec-ph-act" onClick={toutCocher}>
+                Tout sélectionner ({nombre(totalVue)})
+              </button>
             ) : null}
+            <span className="ec-ph-sep" aria-hidden="true" />
+            {progres ? <span className="ec-ph-progres">{progres}</span> : null}
+            <button type="button" className="ec-ph-act" disabled={occupe} onClick={() => void agir(toutesEnCoeur() ? "retirer" : "poser")}>
+              <Trace d={ICONES.coeur} taille={16} plein={toutesEnCoeur()} epais={1.7} />
+              Favori
+            </button>
+            {/* « Supprimer » : la corbeille 30 jours, sans fenêtre de confirmation (« Annuler » quelques secondes). */}
+            <button type="button" className="ec-ph-act ec-ph-act--danger" disabled={occupe} onClick={() => void agir("supprimer")}>
+              <Trace d={ICONES.corbeille} taille={16} epais={1.7} />
+              Supprimer
+            </button>
+            <button type="button" className="ec-ph-act ec-ph-act--x" aria-label="Terminer la sélection" onClick={toutDecocher}>
+              <Trace d={TRACE.fermer} taille={16} epais={2} />
+            </button>
           </div>
+        ) : null}
+      </div>
 
-          {/* Téléphone : la barre flottante du bas (planche 2 du 21/10). Elle porte UN geste à la fois : regarder (Tout, Par lien,
-              Personnes) et le filtre ; en mode « cocher », la MÊME barre devient la barre d'actions (mêmes gestes, mêmes routes). */}
-          {cocherActif ? (
-            <div className="ec-fl ec-ph-tel" role="toolbar" aria-label="Agir sur les photos cochées">
+      {/* Téléphone : la barre du bas. Elle dit OÙ l'on est (« Toutes · Par lien », deux choix avec leur icône) et porte le rond « Personnes » (la
+          recherche) ; en « Sélectionner », la MÊME place devient la barre des deux gestes (le cœur et Supprimer) ; dans « Mes préférées », le seul
+          bouton « Envoyer ma sélection ». */}
+      {barreBas ? (
+        <>
+          <div className="ec-s-scrim ec-ph-tel" aria-hidden="true" />
+          {prefereesActif ? (
+            <div className="ec-fl ec-ph-tel">
               {progres ? <p className="ec-ph-progres ec-fl-progres">{progres}</p> : null}
-              <div className="ec-fl-actions">
-                <button type="button" disabled={occupe || !nbCoches} onClick={() => void agir("ajouter")}>
-                  <Trace d={ICONES.etoile} taille={20} plein epais={1.6} />
-                  Ma sélection
-                </button>
-                <button type="button" disabled={occupe || !nbCoches} onClick={() => void agir("retirer")}>
-                  <Trace d={TRACE.retirer} taille={20} epais={1.7} />
-                  Retirer
-                </button>
-                <button type="button" disabled={occupe || !nbCoches} onClick={() => void agir("cacher")}>
-                  <Trace d={ICONES.cache} taille={20} epais={1.7} />
-                  Ne pas publier
-                </button>
-                <button type="button" className="ec-fl-danger" disabled={occupe || !nbCoches} onClick={() => void agir("supprimer")}>
-                  <Trace d={ICONES.corbeille} taille={20} epais={1.7} />
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          ) : barreBas ? (
-            <div className={feuille ? "ec-fl ec-fl--haut ec-ph-tel" : "ec-fl ec-ph-tel"} role="toolbar" aria-label="Regarder les photos">
-              <div className="ec-fl-seg" role="group" aria-label="Regarder">
-                {/* Chaque segment ramène à SA vue d'ensemble, d'où qu'on vienne (un lien ouvert, une personne ouverte) : « Tout » = toutes les photos, « Par lien » = la
-                    mosaïque des liens, « Personnes » = celle des personnes. Un seul toucher, jamais un retour à refaire plusieurs fois. */}
-                <button type="button" aria-pressed={f.mode === "tout"} onClick={() => appliquer({ ...f, mode: "tout", lien: null, dossier: null, personne: null })}>
-                  Tout
-                </button>
-                <button type="button" aria-pressed={f.mode === "liens"} onClick={() => appliquer({ ...f, mode: "liens", lien: null, dossier: null, personne: null, selection: false })}>
-                  Par lien
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={f.mode === "personnes"}
-                  onClick={() => appliquer({ ...f, mode: "personnes", lien: null, dossier: null, personne: null, selection: false, doublons: false, signalees: false, jour: null })}
-                >
-                  Personnes
-                </button>
-              </div>
-              <button type="button" className="ec-fl-rond" aria-haspopup="dialog" aria-expanded={feuille} aria-label={feuille ? "Fermer les filtres" : nbFeuille ? `Filtrer (${nbFeuille} actif${nbFeuille > 1 ? "s" : ""})` : "Filtrer"} onClick={() => setFeuille((o) => !o)}>
-                <Trace d={feuille ? TRACE.fermer : TRACE.filtre} taille={22} epais={1.8} />
-                {nbFeuille ? <span className="ec-fl-nb">{nbFeuille}</span> : null}
+              <button type="button" className="ec-s-envoyer" disabled={occupe || nbGardees === 0} aria-disabled={nbGardees === 0} onClick={() => void envoyerPreferees()}>
+                <Trace d={ICONES.envoyer} taille={22} epais={1.8} />
+                {occupe ? "Un instant…" : `Envoyer ma sélection · ${nombre(nbGardees)}`}
               </button>
             </div>
-          ) : null}
-        </>
-      ) : (
-        <OngletLiens
-          pret={liens !== null || (arbre !== null && !p.ecrire)}
-          tuiles={tuilesLiens}
-          ordre={peseesLiens ?? []}
-          reste={liens?.reste ?? null}
-          tu={p.tu}
-          ouverte={p.ouverte}
-          creer={setCreerLien}
-          ouvrir={ouvrir}
-        />
-      )}
-
-      {/* Téléphone : le filtre, en feuille COMPACTE posée au-dessus de la barre du bas (planche 2B du 21/10) : jamais en plein écran,
-          un voile qui ne floute pas (la grille se filtre sous les yeux, et le compte du titre se met à jour). La barre reste
-          au-dessus du voile : son bouton devient la croix qui ferme. */}
-      {feuille && hote
-        ? createPortal(
-            <div className="ec-ph-feuille-voile ec-ph-feuille-voile--compacte" role="presentation" onClick={() => setFeuille(false)}>
-              <div className="ec-ph-feuille ec-ph-feuille--compacte" role="dialog" aria-modal="true" aria-label="Filtrer" onClick={(e) => e.stopPropagation()}>
-                <div className="ec-ph-poignee" aria-hidden="true" />
-                <div className="ec-ph-feuille-tete">
-                  <h2>Filtrer</h2>
-                  <span className="ec-ph-feuille-compte" role="status">
-                    {totalVue !== null ? photosDe(totalVue) : chargement ? "Lecture…" : ""}
-                  </span>
-                  <button type="button" className="ec-ph-lien ec-ph-lien--doux" onClick={() => appliquer(sansReglagesDeLaFeuille(f))}>
-                    Tout effacer
-                  </button>
-                </div>
-                <div className="ec-ph-feuille-corps">
-                  <Feuille
-                    f={f}
-                    changer={appliquer}
-                    doublons={compteurs?.doublons ?? null}
-                    selection={compteurs?.selection ?? null}
-                    signalees={compteurs?.signalees ?? null}
-                    corbeille={stats?.corbeille ?? null}
-                    voirCorbeille={p.ecrire}
-                    jours={jours}
-                    suite={suivante !== null}
-                  />
-                </div>
+          ) : cocherActif ? (
+            <div className="ec-fl ec-ph-tel">
+              {progres ? <p className="ec-ph-progres ec-fl-progres">{progres}</p> : null}
+              <div className="ec-s-bas" role="toolbar" aria-label="Agir sur les photos sélectionnées">
+                <button type="button" disabled={occupe || !nbCoches} onClick={() => void agir(toutesEnCoeur() ? "retirer" : "poser")}>
+                  <Trace d={ICONES.coeur} taille={24} plein={nbCoches > 0 && toutesEnCoeur()} epais={1.8} />
+                  Favori
+                </button>
+                <button type="button" className="ec-s-danger" disabled={occupe || !nbCoches} onClick={() => void agir("supprimer")}>
+                  <Trace d={ICONES.corbeille} taille={24} epais={1.8} />
+                  Supprimer
+                </button>
               </div>
-            </div>,
-            hote
-          )
-        : null}
+            </div>
+          ) : (
+            <div className="ec-fl ec-ph-tel" role="toolbar" aria-label="Regarder les photos">
+              <div className={f.mode === "tout" ? "ec-s-onglets" : "ec-s-onglets ec-s-onglets--seul"} role="group" aria-label="Regarder">
+                {/* Chaque choix ramène à SA vue d'ensemble, d'où qu'on vienne (un lien ouvert, une personne choisie) : « Toutes » = toutes les photos, « Par lien » = la
+                    mosaïque des liens. Un seul toucher, jamais un retour à refaire plusieurs fois. */}
+                <button type="button" aria-current={f.mode === "tout" ? "true" : undefined} onClick={() => appliquer({ ...f, mode: "tout", lien: null, dossier: null })}>
+                  <Trace d={ICONES.toutes} taille={24} plein={f.mode === "tout"} epais={1.8} />
+                  Toutes
+                </button>
+                <button type="button" aria-current={f.mode === "liens" ? "true" : undefined} onClick={() => appliquer({ ...f, mode: "liens", lien: null, dossier: null, personnes: [] })}>
+                  <Trace d={ICONES.liens} taille={24} plein={f.mode === "liens"} epais={1.8} />
+                  Par lien
+                </button>
+              </div>
+              {f.mode === "tout" ? (
+                <button type="button" className="ec-s-bas-rond" aria-haspopup="dialog" aria-expanded={feuillePersonnes} aria-label={f.personnes.length ? `Personnes (${f.personnes.length} choisie${f.personnes.length > 1 ? "s" : ""})` : "Personnes"} onClick={() => { fermerAvis(); setFeuillePersonnes(true); }}>
+                  <Trace d={ICONES.personnes} taille={24} epais={1.8} />
+                  {f.personnes.length ? <i aria-hidden="true" /> : null}
+                </button>
+              ) : null}
+            </div>
+          )}
+        </>
+      ) : null}
 
       {photoAgrandie ? (
         <Agrandir
           photo={photoAgrandie}
           position={iAgrandi + 1}
           total={totalVue}
-          contexte={contexteVue}
+          contexte={f.mode === "liens" && ouvertNoeud ? nomOuvert : titre}
           qui={quiDe(photoAgrandie)}
           initiales={initialesDe(photoAgrandie.qui)}
           lien={lienDeLaPhoto(arbre, photoAgrandie, ouvertNoeud)}
@@ -2150,20 +1932,17 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
             const n = cle && arbre ? noeudDe(arbre, cle) : undefined;
             if (!cle || !n) return null;
             return {
-              libelle: photoAgrandie.role === "responsable" && p.ecrire ? v(`Voir vos ${nombre(n.n)} photos`, `Voir tes ${nombre(n.n)} photos`) : `Voir ses ${photosDe(n.n)}`,
-              faire: () => appliquer({ ...FILTRES_VIDES, ordre: f.ordre, personne: cle }),
+              libelle: photoAgrandie.role === "responsable" && p.ecrire ? v(`Voir vos ${nombre(n.n)} photos`, `Voir tes ${nombre(n.n)} photos`) : `Voir ses ${nombre(n.n)} photo${n.n > 1 ? "s" : ""}`,
+              faire: () => voirQui(photoAgrandie),
             };
           })()}
           ecrire={p.ecrire}
-          tu={p.tu}
-          sansPageDePersonneTel={tuileActive}
-          cachee={estCachee(photoAgrandie)}
           voisines={[visibles[iAgrandi - 1], visibles[iAgrandi + 1]].map((x) => x?.grande ?? x?.vignette).filter((x): x is string => Boolean(x))}
           onPrecedente={iAgrandi > 0 ? () => setAgrandi(visibles[iAgrandi - 1].id) : null}
           onSuivante={
             iAgrandi < visibles.length - 1
               ? () => setAgrandi(visibles[iAgrandi + 1].id)
-              : suivante !== null && suivante !== 0 && !chargement && !f.jour
+              : suivante !== null && suivante !== 0 && !chargement
                 ? () =>
                     void charger(suivante, f).then((nouvelles) => {
                       if (nouvelles?.length) setAgrandi(nouvelles[0].id);
@@ -2171,26 +1950,31 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                 : null
           }
           onFermer={() => setAgrandi(null)}
-          onSelection={() => void basculer(photoAgrandie)}
-          onCacher={() => void cacher(photoAgrandie, !estCachee(photoAgrandie))}
+          onCoeur={() => void coeurDe(photoAgrandie)}
           onSupprimer={p.ecrire ? () => void mettreALaCorbeille([photoAgrandie.id]) : undefined}
           occupe={occupe}
+        />
+      ) : null}
+
+      {/* L'APPUI LONG sur une photo : le reste s'efface, la photo se soulève, trois lignes. */}
+      {menuPhoto && p.ecrire && parId.get(menuPhoto) ? (
+        <MenuPhoto
+          photo={parId.get(menuPhoto) as Photo}
+          entrees={entreesDuMenuPhoto({ ecrire: p.ecrire, favori: (parId.get(menuPhoto) as Photo).preselection, voirQui: cleQui(parId.get(menuPhoto) as Photo) !== null })}
+          onFermer={() => setMenuPhoto(null)}
+          onChoisir={(cle: CleMenuPhoto) => {
+            const ph = parId.get(menuPhoto);
+            setMenuPhoto(null);
+            if (!ph) return;
+            if (cle === "favori") void coeurDe(ph);
+            else if (cle === "voirQui") voirQui(ph);
+            else void mettreALaCorbeille([ph.id]);
+          }}
         />
       ) : null}
 
       {blocAvis && hote ? createPortal(blocAvis, hote) : null}
       {fenetres}
     </section>
-  );
-}
-
-function Puce({ texte, retirer }: { texte: string; retirer: () => void }) {
-  return (
-    <span className="ec-ph-puce">
-      {texte}
-      <button type="button" aria-label={`Retirer le filtre « ${texte} »`} onClick={retirer}>
-        <Trace d="M6 6l12 12M18 6 6 18" taille={12} epais={2.4} />
-      </button>
-    </span>
   );
 }
