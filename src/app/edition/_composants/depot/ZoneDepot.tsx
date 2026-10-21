@@ -136,7 +136,7 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
               </button>
             </span>
           ) : (
-            <button type="button" className="ec-lien-discret" onClick={() => setRenommer(true)}>
+            <button type="button" className="ec-lien-discret ec-lien-discret--bouton" onClick={() => setRenommer(true)}>
               Rangées dans « {dossierNom.trim() || "Mes photos"} » · changer de dossier
             </button>
           )}

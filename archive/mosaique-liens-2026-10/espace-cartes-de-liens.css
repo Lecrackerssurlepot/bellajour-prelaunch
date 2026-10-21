@@ -1,0 +1,152 @@
+/* Les CARTES de lien de l'onglet « Les liens » et le menu « … » en feuille du bas, retirés de espace.css le 21/10/2026
+   (la mosaïque des liens, planche 3 : `photos/mosaique.css`). Voir README.md. */
+
+/* ── ordinateur ── */
+.ec-espace .ec-li-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.ec-espace .ec-li-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: var(--ec-r-carte);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-li-tete {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.ec-espace .ec-li-titres {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ec-espace .ec-li-genre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-li-nom {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-li-personnes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ec-espace .ec-li-personnes li {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+.ec-espace .ec-li-personne-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ec-espace .ec-li-barre {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.1);
+}
+.ec-espace .ec-li-barre > span {
+  display: block;
+  height: 100%;
+  background: rgba(var(--ec-fg-rgb), 0.55);
+}
+.ec-espace .ec-li-barre > .ec-li-barre-plein {
+  background: var(--ec-accent);
+}
+.ec-espace .ec-li-compte {
+  text-align: right;
+  color: var(--ec-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ec-espace .ec-li-voir {
+  align-self: flex-start;
+}
+.ec-espace .ec-li-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ec-line);
+}
+/* T-197 : avec « Afficher en grand » le pied a trois gestes. La règle garde 180 px au moins, sinon elle passe
+   seule sur sa ligne et les gestes tiennent dessous (sur téléphone, elle se tassait en une colonne de mots). */
+.ec-espace .ec-li-regle {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.ec-espace .ec-li-plus {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--ec-filet-fort);
+  background: transparent;
+  color: var(--ec-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+/* ── téléphone (@media (max-width: 860px)) ── */
+  .ec-espace .ec-li-cartes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Le menu « … » d'un lien : la feuille du bas (voile sombre, nom du lien en tête). */
+  .ec-espace .ec-li-voile {
+    background: var(--ec-voile);
+  }
+  .ec-espace .ec-li-menu {
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: calc(8px + env(safe-area-inset-bottom));
+    width: auto;
+    padding: 8px;
+    border-radius: var(--ec-r-panneau);
+  }
+  .ec-espace .ec-li-menu-titre {
+    display: block;
+    margin: 4px 12px 6px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--ec-muted);
+    overflow-wrap: anywhere;
+  }
+  .ec-espace .ec-li-menu > button {
+    min-height: 52px;
+    border-radius: var(--ec-r-bloc);
+  }
+  .ec-espace .ec-li-plus {
+    width: 44px;
+    height: 44px;
+  }

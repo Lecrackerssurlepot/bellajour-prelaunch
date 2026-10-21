@@ -1,0 +1,156 @@
+/* Les CARTES d'album de « Par lien » (ordinateur : trois de front ; téléphone : une rangée par lien avec sa vignette de 52 px), retirées de photos.css le
+   21/10/2026 : la mosaïque (`photos/mosaique.css`) les remplace. Voir README.md. */
+
+/* ── ordinateur : les cartes d'album de « Par lien » ── */
+/* Les albums des liens (« Par lien ») : une carte par lien, trois de front. */
+.ec-espace .ec-ph-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.ec-espace .ec-ph-carte {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--ec-surface);
+  border: 1px solid var(--ec-line);
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.ec-espace .ec-ph-carte:hover {
+  border-color: var(--ec-line-fort);
+}
+.ec-espace .ec-ph-carte--vide {
+  border-style: dashed;
+}
+.ec-espace .ec-ph-mosa {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  color: var(--ec-faint);
+}
+.ec-espace .ec-ph-mosa img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ec-espace .ec-ph-carte-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ec-espace .ec-ph-carte-txt b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 25px;
+  line-height: 1.05;
+  color: var(--ec-titre);
+  overflow-wrap: normal;
+}
+.ec-espace .ec-ph-carte-txt span {
+  font-size: 12.5px;
+  color: var(--ec-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+
+/* ── téléphone (@media (max-width: 860px)) : le bloc d'origine (cartes d'album ET lignes de liste, avant la mosaïque) ── */
+  /* « Par lien » : une rangée par lien, pleine largeur ; le lien ouvert : ses personnes. */
+  .ec-espace .ec-ph-cartes,
+  .ec-espace .ec-ph-liste-verre {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 4px 6px 8px;
+    padding: 6px;
+    border-radius: 24px;
+    border: 1px solid var(--ec-carte-bord);
+    background: var(--ec-carte);
+    box-shadow: var(--ec-ombre-carte);
+  }
+  .ec-espace .ec-ph-carte,
+  .ec-espace .ec-ph-rangee {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 18px;
+    background: transparent;
+    color: var(--ec-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+  .ec-espace .ec-ph-rangee--court {
+    min-height: 48px;
+    padding: 6px 10px;
+  }
+  .ec-espace .ec-ph-rangee--on {
+    background: var(--ec-actif);
+    box-shadow: var(--ec-actif-ombre);
+  }
+  .ec-espace .ec-ph-rangee-txt {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.3;
+  }
+  .ec-espace .ec-ph-rangee-txt b {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ec-espace .ec-ph-rangee > svg,
+  .ec-espace .ec-ph-chev-carte {
+    flex: none;
+    display: inline-flex;
+    color: var(--ec-faint);
+  }
+  .ec-espace .ec-ph-rangee .ec-ph-n,
+  .ec-espace .ec-ph-carte .ec-ph-n {
+    font-size: 14px;
+    color: var(--ec-muted);
+  }
+  .ec-espace .ec-ph-carte--vide {
+    border: 0;
+    opacity: 0.75;
+  }
+  .ec-espace .ec-ph-mosa {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+  }
+  .ec-espace .ec-ph-carte-txt b {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ec-text);
+  }
