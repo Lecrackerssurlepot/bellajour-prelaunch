@@ -40,16 +40,16 @@ Les cinq projets :
 
 | # | Ce qui manque | Pourquoi ça bloque |
 |---|---|---|
-| B1 | ✅ **Donné le 20/10 : 10 ans** (« on ne l'utilise pas sans leur accord ») | écrit [À FIXER] dans la politique §13.5, les conditions art. 12.1, l'accord art. 10 ; le code ne peut pas l'effacer sans ce nombre |
+| B1 | ✅ **Donné le 20/10 : 10 ans** (et le 21/10 : le fichier HD des particuliers aussi, 10 ans) (« on ne l'utilise pas sans leur accord ») | écrit [À FIXER] dans la politique §13.5, les conditions art. 12.1, l'accord art. 10 ; le code ne peut pas l'effacer sans ce nombre |
 | B2 | **Version A ou B du texte d'accord** (la phrase de l'album fondue dans le texte, ou gardée encadrée à la fin) | décide si `decouperAccord` change |
 | B3 | **L'imprimeur des éditions** (nom, pays) | politique §13.7, conditions 8.1, accord art. 8 ; aucun outil du code ne le nomme |
-| B4 | **Canva** : l'atelier compose-t-il les albums des particuliers dans Canva, photos comprises ? Le code garde le lien du design de chaque dossier et le client y commente sa maquette. Si oui, Canva est un sous-traitant à déclarer, et l'effacement à 90 jours doit vider le design | politique §9 ; effacement des particuliers |
-| B5 | **L'outil de la couverture** « générée par IA » des particuliers, maintenant qu'OpenAI et Fal.ai sortent de la politique (Q11) : s'il reçoit une photo ou une description du client, il entre au §9 | politique §4, §9 ; CGV 1.2, 3.1 |
+| B4 | ✅ **Canva : oui pour les particuliers, « pas l'édition, en tout cas pas forcément »** (21/10). Déclaré au §9. Reste à décider : à 90 jours, l'atelier retire-t-il les photos déposées dans le design Canva (geste manuel, le fichier HD gardé 10 ans suffit à réimprimer) ? | politique §9 ; effacement des particuliers |
+| B5 | ✅ **Aucune couverture faite avec IA** (21/10) : la phrase part de la politique (§4) ; à retirer aussi des CGV (art. 1.2, 3.1) dans le même lot | politique §4 ; CGV 1.2, 3.1 |
 | B6 | **La durée des coordonnées du responsable, des messages et du journal** des éditions (piste non décidée : 3 ans après le dernier contact, comme le compte client) | politique §13.5 |
 | B7 | **Les chiffres commerciaux des conditions** (avec Louis) : tours de bon à tirer compris et prix d'un tour de plus, délai de relecture et ce qui se passe sans réponse, délai de livraison, délai de signalement d'un défaut, échéances de paiement, ce qui reste dû en cas d'annulation, durée de confidentialité, délai de force majeure, échéance des contenus | conditions art. 6.2, 7.2, 7.3, 8.2, 8.4, 10.2, 13.4, 15, 16.2 |
 | B8 | **La remise d'une version numérique** du magazine au client, et ce qu'il peut en faire | conditions 11.3 |
 | B9 | **Le registre des traitements** (art. 30) : existe-t-il ? La politique dit que oui | politique §12 |
-| B10 | **Appliquer la migration `20261023`** (adresse des participants, corbeille, album, ouverture), puis vérifier en SQL qu'elle a bien créé ses tables | sans elle, ni le champ d'adresse ni sa phrase ne s'affichent ; la corbeille ne se purge pas |
+| B10 | ✅ **Fait le 20/10 au soir** : migration `20261023` appliquée et vérifiée. Avant : (adresse des participants, corbeille, album, ouverture), puis vérifier en SQL qu'elle a bien créé ses tables | sans elle, ni le champ d'adresse ni sa phrase ne s'affichent ; la corbeille ne se purge pas |
 | B11 | **Le premier effacement à 30 jours, avec lui** (Q4), puis l'accord pour qu'il passe tout seul chaque jour | la phrase « supprimées 30 jours après la livraison » n'est vraie qu'à ce prix |
 | B12 | **Envoyer le message à Mathilde**, et ranger sa réponse dans la fiche de l'édition | Q3 ; la clause demande une confirmation écrite |
 | B13 | **Les rendez-vous en ligne** : `GOOGLE_AGENDA_COMPTE` sera-t-elle posée ? | la ligne Google (Agenda) ne se publie que ce jour-là |

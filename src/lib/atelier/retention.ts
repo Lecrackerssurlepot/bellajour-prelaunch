@@ -572,11 +572,9 @@ export type FamilleCoffreLivre = "photos" | "impression" | "souvenir" | "apercu"
  * ⚠️ « Fichier HD » : les CGV (art. 1.2) appellent « fichier numérique haute
  * définition (« version digitale HD ») » le PDF que le client télécharge, le
  * SOUVENIR ; le fichier HD d'IMPRESSION (couverture et bloc envoyés à
- * l'imprimeur) est le même magazine en haute définition. Les deux partent : la
- * politique nomme le fichier HD sans distinguer. Conséquences, à trancher par
- * Mathias avant le premier effacement : le client perd son téléchargement au
- * 90e jour (ni les CGV ni le mail M7b ne le disent), et la réimpression du
- * même fichier (T-105, pas encore ouverte) devient impossible après 90 jours.
+ * l'imprimeur) est le même magazine en haute définition. TRANCHÉ par Mathias le
+ * 21/10 : les deux RESTENT, 10 ans (`CONSERVATION_HD_LIVRE_ANS`) ; à 90 jours ne
+ * partent que les photos téléversées.
  */
 export const FAMILLES_LIVRE: Record<FamilleCoffreLivre, { libelle: string; efface: boolean; pourquoi: string }> = {
   photos: {
@@ -586,13 +584,13 @@ export const FAMILLES_LIVRE: Record<FamilleCoffreLivre, { libelle: string; effac
   },
   impression: {
     libelle: "Fichier HD d'impression (PDF de la couverture et du bloc)",
-    efface: true,
-    pourquoi: "politique §7 : « fichier HD » supprimé 90 jours après la livraison",
+    efface: false,
+    pourquoi: "gardé 10 ans (décision de Mathias du 21/10, CONSERVATION_HD_LIVRE_ANS) : la réimpression, remède de la garantie des CGV",
   },
   souvenir: {
     libelle: "Version digitale HD (le PDF souvenir que le client télécharge)",
-    efface: true,
-    pourquoi: "CGV art. 1.2 : le « fichier numérique haute définition » ; politique §7 : supprimé à 90 jours (le client perd son téléchargement)",
+    efface: false,
+    pourquoi: "gardé 10 ans (décision de Mathias du 21/10) : le téléchargement inclus dans la commande (CGV art. 1.2)",
   },
   apercu: {
     libelle: "Aperçus de couverture (plat, c1, c4, double page)",
@@ -694,16 +692,19 @@ export const PATCH_PHOTO_LIVRE_EFFACEE = {
 } as const;
 
 /**
- * Ce que devient la ligne `numeros` : les clés du fichier HD, qui
- * désigneraient des objets partis (une adresse signée vers rien). Le reste de
- * la ligne ne bouge pas. Le marqueur `photos_supprimees_le` s'écrit À PART,
+ * Ce que devient la ligne `numeros` : RIEN depuis le 21/10 (le fichier HD reste, ses
+ * clés aussi). Le reste de la ligne ne bouge pas. Le marqueur `photos_supprimees_le` s'écrit À PART,
  * en dernier, et seulement s'il est encore vide.
  */
-export const PATCH_NUMERO_LIVRE_EFFACE = {
-  souvenir_pdf_key: null,
-  souvenir_pdf_octets: null,
-  impression_fichiers: null,
-} as const;
+export const PATCH_NUMERO_LIVRE_EFFACE: Readonly<Record<string, null>> = {};
+
+/**
+ * Le fichier HD d'un dossier livré (impression et version digitale) : gardé 10 ans après la
+ * livraison (décision de Mathias du 21/10, comme le magazine terminé des éditions), pour la
+ * réimpression et le téléchargement du client ; jamais réutilisé sans son accord. Aucune règle ne
+ * l'efface aujourd'hui.
+ */
+export const CONSERVATION_HD_LIVRE_ANS = 10;
 
 /* ─────────────────────────── l'intention et la reprise ─────────────────────────── */
 

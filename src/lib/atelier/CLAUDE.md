@@ -41,9 +41,9 @@ neuf états, et à chaque passage un mail part vers une vraie cliente.
   **Seconde règle, les dossiers LIVRÉS (T-203, 20/10/2026)** : la politique de confidentialité en
   ligne (§7) promet « Photos téléversées + fichier HD : supprimées 90 jours après la livraison »
   (`RETENTION_LIVRE_JOURS`). Ce n'est PAS une anonymisation : la ligne, l'état, le prix, l'adresse,
-  le token, la facture et les aperçus restent ; partent les photos, le PDF d'impression et le PDF
-  souvenir (`FAMILLES_LIVRE` ; « fichier HD » = la « version digitale HD » des CGV art. 1.2 ET le
-  fichier d'impression, à confirmer par Mathias : le client perd son téléchargement au 90e jour).
+  le token, la facture et les aperçus restent ; partent les PHOTOS seulement (`FAMILLES_LIVRE`) : le fichier HD (PDF
+  d'impression et version digitale HD des CGV art. 1.2) RESTE 10 ans, décision de Mathias du 21/10
+  (`CONSERVATION_HD_LIVRE_ANS`), pour la réimpression et le téléchargement du client.
   ⚠️ **La date de livraison vit au JOURNAL** (`dateDeLivraison` : le DERNIER `etat_change` vers
   `livree`, posé par « Marquer livrée » ou le webhook Cloudprinter) ; sans elle, on n'efface pas
   (`livre_sans_date`). Le marqueur est `numeros.photos_supprimees_le` (migration

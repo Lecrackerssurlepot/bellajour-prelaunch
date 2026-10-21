@@ -120,15 +120,16 @@ transmission à Bellajour pour production, c'est Bellajour qui traite la donnée
 ## 4. Le traitement automatisé de vos photos (transparence)
 
 Pour composer votre album, vos photos font l'objet d'une analyse automatisée : tri, scoring de
-qualité, sélection et mise en page. Une couverture illustrée est générée par IA dans un style
-propre à la marque.
+qualité, sélection et mise en page. **[RETRAIT]** ~~Une couverture illustrée est générée par IA dans un style
+propre à la marque.~~ **[AJOUT]** Aucune couverture n'est générée par une intelligence artificielle.
 
 > Note : deux faits à confirmer par Mathias avant publication, hors des onze décisions. (1) Le
 > code range et signale (doublons, photos sombres ou claires, captures d'écran : « des REMARQUES,
 > jamais des exclusions », `src/lib/atelier/CLAUDE.md`) ; la sélection et la mise en page sont
 > faites par l'atelier. « Scoring de qualité, sélection et mise en page » automatisés ne sont pas
-> dans le code. (2) Avec OpenAI et Fal.ai retirés (Q11), quel outil fait la couverture « générée
-> par IA » ? S'il reçoit une photo ou une description du client, il doit entrer au §9.
+> dans le code. (2) **Tranché par Mathias le 21/10 : « Aucune couverture n'est faite avec IA. »**
+> La phrase de la couverture par IA part ; il faudra aussi la retirer des CGV (art. 1.2, 3.1 :
+> voir `A-RELIRE.md`, partie D).
 
 **[MODIFIÉ]** ~~La base légale est l'exécution du contrat (art. 6.1.b) pour ces opérations, à
 l'exception du regroupement par visage, qui relève du consentement explicite (art. 9 — voir §5).~~
@@ -144,8 +145,8 @@ transparence, satisfaite par la présente information.~~
 Conformité AI Act (Règl. (UE) 2024/1689) : le moteur n'est pas, à ce jour, un système à haut
 risque, et il ne met en œuvre aucune catégorisation biométrique.
 
-> Note : à faire relire. Faut-il garder ce paragraphe, et la génération d'une couverture par IA
-> appelle-t-elle une autre information de transparence ?
+> Note : à faire relire. Faut-il garder ce paragraphe ? (Aucune couverture par IA : question
+> tranchée le 21/10.)
 
 Pas de réutilisation de vos photos à d'autres fins (marketing, entraînement d'IA, portfolio) sans
 votre consentement séparé, explicite et spécifique.
@@ -220,7 +221,8 @@ documentés par Bellajour (RGPD, art. 5.1.e).
 
 | Donnée | Conservation |
 |---|---|
-| Photos téléversées + fichier HD | **[MODIFIÉ] [CONDITION : effacement des particuliers construit et en service, Q10]** ~~Supprimées 90 jours après la livraison (sauf option de sauvegarde long terme future, qui ferait l'objet d'un consentement séparé)~~ Supprimées 90 jours après la livraison, date constatée par le transporteur ou, à défaut, par l'atelier (sauf option de sauvegarde long terme future, qui ferait l'objet d'un consentement séparé) |
+| Photos téléversées | **[MODIFIÉ] [CONDITION : effacement des particuliers construit et en service, Q10]** ~~Photos téléversées + fichier HD : supprimées 90 jours après la livraison (sauf option de sauvegarde long terme future, qui ferait l'objet d'un consentement séparé)~~ Supprimées 90 jours après la livraison, date constatée par le transporteur ou, à défaut, par l'atelier |
+| **[AJOUT]** Fichier HD de votre magazine (impression et version digitale) | Conservé 10 ans après la livraison, pour une réimpression et pour votre téléchargement ; jamais réutilisé sans votre accord (décision de Mathias du 21/10) |
 | **[AJOUT] [CONDITION : passage régulier de l'anonymisation, voir note]** Dossier laissé sans suite (photos jamais envoyées à l'atelier, ou aperçu jamais commandé) | Photos supprimées et données personnelles effacées 90 jours après la dernière activité du dossier ou, si les photos ont été envoyées à l'atelier sans commande, 90 jours après cet envoi ; un e-mail vous prévient 7 jours avant (CGV, art. 4 bis.2) |
 | **[RETRAIT]** ~~Gabarit biométrique~~ | ~~Supprimé dès la composition de l'album (voir §5.5)~~ |
 | Compte client | Suppression 3 ans après le dernier achat ou contact |
@@ -237,8 +239,10 @@ documentés par Bellajour (RGPD, art. 5.1.e).
 > le signal de livraison du transporteur ou le geste « Marquer livrée » de l'atelier,
 > `src/lib/atelier/transitions.ts:299-309`). ⚠️ Deux conflits à trancher avant de construire
 > (`A-RELIRE.md`) : la garantie de conformité de 3 ans des CGV (art. 9.1 et 9.4, remède par
-> réimpression) ne peut plus être tenue par une réimpression si le fichier est effacé à 90 jours ;
-> et les copies hors du coffre (maquette Canva de l'atelier) doivent partir aussi.
+> réimpression) ne pouvait plus être tenue si le fichier était effacé à 90 jours : **tranché le
+> 21/10, le fichier HD reste 10 ans** (le code ne l'efface pas) ; et les copies hors du coffre
+> (photos déposées dans la maquette Canva de l'atelier) doivent partir aussi : à décider (voir
+> `A-RELIRE.md`, B4).
 >
 > Note, ligne « Dossier laissé sans suite » : durée décidée par Mathias le 01/09 et déjà écrite aux
 > CGV (art. 4 bis.2) ; la politique n'en dit rien (`LOT-JURIDIQUE.md`, point 7). Le script
@@ -339,7 +343,7 @@ Chaque sous-traitant est lié par un contrat conforme à l'art. 28 RGPD (DPA).
 | **[AJOUT]** Geoapify | Déduire la ville et le pays à partir des coordonnées GPS des photos : seules les coordonnées sont envoyées, jamais la photo | [À VÉRIFIER : entité et localisation] | [À VÉRIFIER] |
 | **[AJOUT]** Google (connexion) | Connexion au compte client avec Google, si vous la choisissez | [À VÉRIFIER] | [À VÉRIFIER] |
 | **[AJOUT] [CONDITION : rendez-vous en ligne branchés]** Google (Agenda) | Rendez-vous de l'Édition collective : lecture des seules plages libres ou occupées de l'agenda de l'atelier, et inscription du rendez-vous (nom et adresse e-mail du responsable, sujet) | [À VÉRIFIER] | [À VÉRIFIER] |
-| **[AJOUT] [À CONFIRMER PAR MATHIAS]** Canva | Mise en page de l'album des particuliers et partage de la maquette | [À VÉRIFIER] | [À VÉRIFIER] |
+| **[AJOUT]** Canva | Mise en page de l'album des particuliers et partage de la maquette (et, le cas échéant, d'une édition collective) | [À VÉRIFIER] | [À VÉRIFIER] |
 
 > Note, Geoapify : `src/lib/atelier/geocodage.ts:26,74` (lat, lon, langue, clé ; rien
 > d'autre), clé posée en Production (`ETAT-PRODUCTION.md:556`), particuliers ET éditions.
@@ -349,7 +353,8 @@ Chaque sous-traitant est lié par un contrat conforme à l'art. 28 RGPD (DPA).
 > `GOOGLE_AGENDA_COMPTE` est absente en production (`ETAT-PRODUCTION.md:343`) : la ligne ne se
 > publie que le jour où elle est posée.
 >
-> Note, Canva : hors des onze décisions, à confirmer. Le code des particuliers garde le lien du
+> Note, Canva : **confirmé par Mathias le 21/10** (« Canva oui pour les particuliers, pas
+> l'édition, en tout cas pas forcément »). Le code des particuliers garde le lien du
 > design Canva de chaque dossier (`src/app/admin/atelier/types.ts:370-372`, `src/lib/atelier/canva.ts`)
 > et le client y commente sa maquette (`src/lib/atelier/CLAUDE.md`, M5) : les photos y sont donc
 > déposées. Canva n'est déclaré nulle part. Si c'est confirmé, la ligne entre au tableau ; sinon

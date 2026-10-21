@@ -146,7 +146,7 @@ async function main(): Promise<void> {
   if (!url || !cle) throw new Error("SUPABASE_URL / SUPABASE_SERVICE_KEY absentes de .env.local");
   const supabase = createClient(url, cle);
 
-  console.log(`\n  Dossiers livrés : photos téléversées et fichier HD supprimés ${RETENTION_LIVRE_JOURS} jours après la livraison (politique de confidentialité §7, T-203).`);
+  console.log(`\n  Dossiers livrés : photos téléversées supprimées ${RETENTION_LIVRE_JOURS} jours après la livraison (politique §7, T-203) ; le fichier HD reste 10 ans (Mathias, 21/10).`);
   console.log(vraiment ? "  MODE : --vraiment (le coffre sera effacé)." : "  MODE : lecture seule (rien ne sera modifié).");
 
   const lu = await lireDossiersLivres(supabase, seul);
@@ -212,7 +212,7 @@ async function main(): Promise<void> {
       if (!c.plan.aEffacer.length && !c.plan.gardes) console.log("    (coffre vide)");
     }
     console.log(`\n  En base : lignes photos gardées, vidées de ${Object.keys(PATCH_PHOTO_LIVRE_EFFACEE).join(", ")} ;`);
-    console.log(`  sur le dossier : ${Object.keys(PATCH_NUMERO_LIVRE_EFFACE).join(", ")} remis à vide, puis photos_supprimees_le posé.`);
+    console.log(`  sur le dossier : ${Object.keys(PATCH_NUMERO_LIVRE_EFFACE).length ? `${Object.keys(PATCH_NUMERO_LIVRE_EFFACE).join(", ")} remis à vide, puis ` : "le fichier HD reste (10 ans) ; "}photos_supprimees_le posé.`);
   }
 
   if (!vraiment) {
