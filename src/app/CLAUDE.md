@@ -189,6 +189,11 @@ layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font 
      `IntersectionObserver`, un portail dans `.ec-barre-titre`, `data-defile` sur la barre) ; aucun écouteur de défilement.
    - **Une feuille qui s'ouvre au-dessus d'une barre FIXE** (« Filtrer » au-dessus de la barre du bas) : la barre repasse à
      `--ec-z-feuille` + 1 tant qu'elle est ouverte (son bouton devient la croix), jamais un nombre ; le voile ne floute pas.
+   - **Une feuille importée par un composant ENFANT est chargée AVANT celle de la page** (21/10, la mosaïque) : `mosaique.css` (importée par `Mosaique.tsx`) précède
+     `photos.css` (importée à la fin de `Collecte.tsx`). À spécificité égale, `photos.css` gagne : l'en-tête d'un lien ouvert restait calé à gauche tant que sa règle
+     (0,3,0) n'était pas montée à (0,4,0). Une règle de la mosaïque qui touche un élément de la page (`.ec-ecran-actions`) s'écrit donc avec la classe de la page en plus.
+   - **Un geste de texte n'est JAMAIS un texte souligné** (21/10, retour de Mathias) : `.ec-ph-lien` (Photos), `.ec-dp-lien` (page du participant) sont de petites pilules douces,
+     la zone qui répond au toucher dépasse de 6 px en haut et en bas (`::after`). Le harnais refuse `underline` dans ces règles.
 
 ## Le questionnaire — chaque phrase est un correctif, pas du style
 

@@ -81,7 +81,15 @@ export type LignePage = Pick<
 
 export const COLONNES_PAGE = "id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, preselection, signalee, mime, provenance_id, role_deposant";
 
-export type DemandeGrille = { dossier: string; vue: VueGrille; page: number; seulementArbre: boolean };
+/**
+ * `couverturesDe` (21/10, la mosaïque des liens et des personnes) : la réponse porte la couverture de CHAQUE lien (`liens`, une
+ * vignette signée par lien, la plus récente, « Sans groupe » compris) ou de CHAQUE personne (`personnes`, sous sa clé
+ * `qui:<nom>`) ; avec `seulementArbre`, rien d'autre n'est lu ni signé (aucune page, aucune vignette de grille). Le navigateur
+ * ne le demande que pour peindre une mosaïque dont les couvertures n'ont pas encore été lues.
+ */
+export const COUVERTURES_DE = ["liens", "personnes"] as const;
+export type CouverturesDe = (typeof COUVERTURES_DE)[number];
+export type DemandeGrille = { dossier: string; vue: VueGrille; page: number; seulementArbre: boolean; couverturesDe?: CouverturesDe };
 
 /** Lire la demande du navigateur (le dossier borné, une vue connue, une page de 0 à 1 000). */
 export function lireDemandeGrille(corps: Record<string, unknown>): DemandeGrille {
@@ -90,6 +98,7 @@ export function lireDemandeGrille(corps: Record<string, unknown>): DemandeGrille
     vue: (VUES as readonly string[]).includes(corps.vue as string) ? (corps.vue as VueGrille) : "toutes",
     page: Math.max(0, Math.min(1000, Number(corps.page) || 0)),
     seulementArbre: corps.seulementArbre === true,
+    couverturesDe: (COUVERTURES_DE as readonly unknown[]).includes(corps.couverturesDe) ? (corps.couverturesDe as CouverturesDe) : undefined,
   };
 }
 
@@ -245,9 +254,9 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
      a une vignette. Seulement dans les vues d'ensemble et dans un dossier qui en contient
      d'autres (ses sous-dossiers s'y montrent en vignettes). */
   const couvertures: Record<string, string> = {};
-  if (!d.seulementArbre) {
+  if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
-    const aCouvrir = dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
     await Promise.all(
       aCouvrir.map(async (n) => {
         const p = [...toutes].reverse().find((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
@@ -416,9 +425,9 @@ export async function grilleDepuisResume(
   const liens = partage ? provenances : [];
   const arbre = arbreDesPhotos(pesees, liens, edition, partage);
   const couvertures: Record<string, string> = {};
-  if (!d.seulementArbre) {
+  if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
-    const aCouvrir = dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
     await Promise.all(
       aCouvrir.map(async (n) => {
         const cle = couvertureDe(groupes, n.cle, responsable);

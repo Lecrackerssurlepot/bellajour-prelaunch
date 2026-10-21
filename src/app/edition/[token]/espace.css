@@ -2141,16 +2141,29 @@
   font-size: 13px;
   color: var(--ec-muted);
 }
+/* Un geste de texte de la page Photos (« Tout cocher », « Annuler », « Tout effacer », « Voir ses photos »…) : un BOUTON, jamais un texte
+   souligné (retour de Mathias du 21/10 : « les textes soulignés dans la partie photo, ça me perturbe »). Une petite pilule douce ; sur téléphone la
+   zone qui répond au toucher dépasse la pilule de 4 px en haut et en bas (44 px au total). */
 .ec-espace .ec-ph-lien {
-  padding: 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
   border: 0;
-  background: none;
-  color: var(--ec-accent);
+  border-radius: 999px;
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
   font: inherit;
   font-size: 13px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
+}
+.ec-espace .ec-ph-lien::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
 }
 .ec-espace .ec-ph-aide-selection .ec-ph-lien {
   margin-left: auto;
@@ -2288,129 +2301,16 @@
 .ec-espace .ec-li-intro .ec-note {
   margin-left: auto;
 }
-.ec-espace .ec-li-cartes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-  gap: 16px;
-  align-items: start;
-}
-.ec-espace .ec-li-carte {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px 22px;
-  border-radius: var(--ec-r-carte);
-  border: 1px solid var(--ec-carte-bord);
-  background: var(--ec-carte);
-  box-shadow: var(--ec-ombre-carte);
-  -webkit-backdrop-filter: var(--ec-flou);
-  backdrop-filter: var(--ec-flou);
-}
-.ec-espace .ec-li-tete {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-.ec-espace .ec-li-titres {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.ec-espace .ec-li-genre {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ec-muted);
-}
-.ec-espace .ec-li-nom {
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 28px;
-  line-height: 1.1;
-  overflow-wrap: anywhere;
-}
-.ec-espace .ec-li-personnes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ec-espace .ec-li-personnes li {
-  display: grid;
-  grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 70px;
-  align-items: center;
-  gap: 12px;
-  font-size: 13px;
-}
-.ec-espace .ec-li-personne-nom {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ec-espace .ec-li-barre {
-  display: block;
-  height: 6px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(var(--ec-fg-rgb), 0.1);
-}
-.ec-espace .ec-li-barre > span {
-  display: block;
-  height: 100%;
-  background: rgba(var(--ec-fg-rgb), 0.55);
-}
-.ec-espace .ec-li-barre > .ec-li-barre-plein {
-  background: var(--ec-accent);
-}
-.ec-espace .ec-li-compte {
-  text-align: right;
-  color: var(--ec-muted);
-  font-variant-numeric: tabular-nums;
-}
-.ec-espace .ec-li-voir {
-  align-self: flex-start;
-}
-.ec-espace .ec-li-pied {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--ec-line);
-}
-/* T-197 : avec « Afficher en grand » le pied a trois gestes. La règle garde 180 px au moins, sinon elle passe
-   seule sur sa ligne et les gestes tiennent dessous (sur téléphone, elle se tassait en une colonne de mots). */
-.ec-espace .ec-li-regle {
-  flex: 1 1 180px;
-  min-width: 0;
-}
-.ec-espace .ec-li-plus {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: 1px solid var(--ec-filet-fort);
-  background: transparent;
-  color: var(--ec-text);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-/* Le menu « … » d'un lien (21/10) : un VRAI menu, plus un bloc qui se pose en travers de la carte.
-   - Il vit dans `.ec-contenu` par un portail (`MenuLien`, Liens.tsx) : la carte est un panneau de
-     verre (`backdrop-filter`) et enfermerait un menu positionné dedans.
-   - Ordinateur : ancré SOUS le bouton « … », bord droit sur bord droit (ou bord gauche sur bord gauche
-     quand il sortirait de la colonne de contenu et couvrirait le menu de gauche ; ou AU-DESSUS si la
-     place manque en bas) ; la position vient du bouton (`--m-droite` ou `--m-gauche`, `--m-haut` ou `--m-bas`).
-     Fond OPAQUE du thème (`--ec-carte-pleine`) : un fond de verre laissait lire le titre et le QR
-     à travers. Ombre, filet, rien d'autre. Le voile est TRANSPARENT : il ne sert qu'à attraper le
-     clic dehors (et Échap ferme, côté composant).
-   - Téléphone (≤ 860 px) : une petite feuille du bas, voile sombre, le nom du lien en tête. */
+/* Le menu « … » d'un lien (21/10) : un VRAI menu (`MenuLien.tsx`), plus un bloc qui se pose en travers de la carte.
+   - Il vit dans `.ec-contenu` par un portail : la tuile est découpée (`overflow: hidden`) et un panneau de verre
+     (`backdrop-filter`) enfermerait un menu positionné dedans.
+   - Ancré SOUS le bouton « … » (planche 3B, téléphone comme ordinateur) : sur téléphone, son bord sur le bord de la tuile, du
+     côté de l'écran où elle est ; sur ordinateur, bord droit sur bord droit (ou bord gauche sur bord gauche quand il sortirait
+     de la colonne de contenu) ; AU-DESSUS si la place manque en bas. La position vient du bouton (`--m-droite` ou `--m-gauche`,
+     `--m-haut` ou `--m-bas`). Fond OPAQUE du thème (`--ec-carte-pleine`), lignes de 48 px, une icône à gauche, « Supprimer le lien »
+     en rouge après un filet.
+   - Le voile est TRANSPARENT : il ne sert qu'à attraper le clic dehors (Échap ferme, côté composant). Les autres tuiles
+     s'éteignent d'elles-mêmes (`mosaique.css`). */
 .ec-espace .ec-li-voile {
   position: fixed;
   inset: 0;
@@ -2424,34 +2324,39 @@
   left: var(--m-gauche, auto);
   top: var(--m-haut, auto);
   bottom: var(--m-bas, auto);
-  width: min(300px, calc(100vw - 24px));
+  width: min(292px, calc(100vw - 24px));
   box-sizing: border-box;
   padding: 6px;
-  border-radius: var(--ec-r-bloc);
-  border: 1px solid var(--ec-line-fort);
+  border-radius: 22px;
+  border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte-pleine);
-  box-shadow: var(--ec-reflet), 0 18px 40px var(--ec-ombre);
+  box-shadow: var(--ec-reflet), 0 24px 60px var(--ec-ombre);
   display: flex;
   flex-direction: column;
   color: var(--ec-text);
-}
-.ec-espace .ec-li-menu-titre {
-  display: none;
 }
 .ec-espace .ec-li-menu > button {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-height: 44px;
-  padding: 10px 12px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 16px;
   background: transparent;
   color: var(--ec-text);
   font: inherit;
+  font-size: 15px;
   text-align: left;
   cursor: pointer;
+}
+.ec-espace .ec-li-menu > button > svg {
+  flex: none;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-li-menu > button + button {
+  margin-top: 1px;
 }
 .ec-espace .ec-li-menu > button:hover,
 .ec-espace .ec-li-menu > button:focus-visible {
@@ -2461,7 +2366,13 @@
 .ec-espace .ec-li-menu > button:focus-visible {
   box-shadow: inset 0 0 0 2px var(--ec-accent);
 }
-.ec-espace .ec-li-menu > .ec-li-menu-danger > span:first-child {
+.ec-espace .ec-li-menu > .ec-li-menu-danger {
+  margin-top: 5px;
+  border-top: 1px solid var(--ec-line);
+  border-radius: 0 0 16px 16px;
+  color: var(--ec-danger);
+}
+.ec-espace .ec-li-menu > .ec-li-menu-danger > svg {
   color: var(--ec-danger);
 }
 .ec-espace .ec-bouton--danger {
@@ -3208,9 +3119,6 @@
     margin: 0 8px;
     border-radius: var(--ec-r-carte);
   }
-  .ec-espace .ec-li-cartes {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .ec-espace .ec-presel {
     flex-wrap: wrap;
   }
@@ -3246,35 +3154,6 @@
   .ec-espace .ec-mode {
     width: 40px;
     height: 40px;
-  }
-  /* Le menu « … » d'un lien : la feuille du bas (voile sombre, nom du lien en tête). */
-  .ec-espace .ec-li-voile {
-    background: var(--ec-voile);
-  }
-  .ec-espace .ec-li-menu {
-    left: 8px;
-    right: 8px;
-    top: auto;
-    bottom: calc(8px + env(safe-area-inset-bottom));
-    width: auto;
-    padding: 8px;
-    border-radius: var(--ec-r-panneau);
-  }
-  .ec-espace .ec-li-menu-titre {
-    display: block;
-    margin: 4px 12px 6px;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    color: var(--ec-muted);
-    overflow-wrap: anywhere;
-  }
-  .ec-espace .ec-li-menu > button {
-    min-height: 52px;
-    border-radius: var(--ec-r-bloc);
-  }
-  .ec-espace .ec-li-plus {
-    width: 44px;
-    height: 44px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3334,6 +3213,16 @@
 }
 .ec-espace .ec-lien-discret:hover {
   color: var(--ec-text);
+}
+/* Dans la fenêtre de dépôt de Photos (« Rangées dans « Mes photos » · changer de dossier ») : une petite pilule, pas un texte souligné (21/10). */
+.ec-espace .ec-lien-discret.ec-lien-discret--bouton {
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
 }
 .ec-espace .ec-zone-texte {
   min-height: 0;

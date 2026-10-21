@@ -566,16 +566,51 @@ Maquettes : les planches « téléphone » 1 et 2 du 21/10 (hors dépôt). Le ha
   « Cocher » est un texte sous le titre, « Déposer » un « + » rond dans l'en-tête (éteint, `ec-ph-plus--eteint`, quand la collecte est
   terminée), le compte des cochées est dans le titre. Aucune route, aucun geste, aucun droit ne change.
 - **« Personnes » est un mode** (`Mode = "personnes"`, `estVuePersonnes`) : il lit la MÊME chose que « Tout » (la clé `tout`), donc passer de
-  l'un à l'autre ne relit rien ; seul l'affichage change (une liste au téléphone, la grille cachée mais rendue ; sur ordinateur la
-  grille reste celle de « Tout », le choix n'existe pas). `?dossier=personnes` le rouvre au rechargement. ⚠️ **La version actuelle est
-  SOBRE** (initiales, nom, nombre de photos, comme la liste d'un lien ouvert) : la mosaïque de tuiles de la planche 2D attend la
-  validation de Mathias avec la planche 3.
+  l'un à l'autre ne relit rien ; seul l'affichage change (la mosaïque des personnes au téléphone, la grille cachée mais rendue ; sur ordinateur la
+  grille reste celle de « Tout », le choix n'existe pas). `?dossier=personnes` le rouvre au rechargement. Depuis le 21/10 c'est une
+  MOSAÏQUE (planche 2D, voir la section suivante), plus une liste sobre.
 - **La feuille « Filtrer » est compacte** (`Feuille.tsx` : Jour et Afficher seulement, 44 % de l'écran, voile sans flou). Les réglages qui
   demandent une grille (jour, doublons, « Ne pas publier », ordre par jour) ramènent à « Tout » depuis un aperçu (albums de « Par lien »,
   liste de « Personnes »). « Tout effacer » n'efface que les réglages de la feuille (`sansReglagesDeLaFeuille`).
 - **Le lien général ne se montre plus** (planche 5) : la pastille « Les liens · N » ne le compte que s'il a reçu des photos, « Partager ce
   lien » n'existe que pour un lien de contribution (`lien:`), les sous-titres « le lien général » sont partis (le nœud porte son nom,
   « Sans groupe »).
+
+## La mosaïque des liens et des personnes, l'album d'un lien en pastilles (planches 2D et 3, retours de Mathias du 21/10)
+
+Maquettes : planches « téléphone » 2 et 3 du 21/10 (hors dépôt). Ce que Mathias a tranché : « des carrés aux bords arrondis de tailles différentes avec la
+dernière photo affichée et les infos », « ça ne doit pas être compliqué ni toujours recalculer », « nous avons trop de boutons et de liens ».
+- **La règle des tailles est UNE fonction pure** (`mosaique.ts`, `mosaiqueDesLiens(tuiles, colonnes)`, au harnais) : on classe par nombre de photos hors
+  corbeille (à égalité par nom, « Bateau 2 » avant « Bateau 10 », puis par clé), la première est GRANDE (2 × 2), les trois suivantes au plus LARGES (2 × 1), le reste
+  PETIT par deux, une petite seule devient large (la dernière) ; un seul lien : grand. Sur QUATRE colonnes (ordinateur) on ajuste de 0 à 3 le nombre de larges pour
+  qu'une rangée soit toujours pleine, et deux tuiles ou moins gardent DEUX colonnes (`colonnesDeLaMosaique`). Le harnais pose 1 à 40 tuiles sur la grille
+  (`casesVides`) : aucun trou. L'ordre d'affichage est celui de la maquette (la grande, une large, deux petites, une large…). ⚠️ Tous à zéro (le début d'une
+  collecte) : la règle ne fait pas d'exception, la première par nom est grande (la planche disait « toutes petites » : à trancher si cela gêne).
+- ⚠️ **« À l'ouverture de la page seulement » est un GEL, pas un calcul malin** : `figerLesPesees` garde les poids de la première lecture (`Collecte.tsx`,
+  `peseesLiens`, `peseesPersonnes`, posés dans `charger` page 0 seulement, JAMAIS dans `relireSansBruit`) tant que ce sont les mêmes tuiles ; `Mosaique.tsx` calcule
+  place et taille sur ces poids gelés et n'y lit les chiffres du direct que PAR CLÉ. Un lien créé ou supprimé (un autre ensemble) reprend les poids du moment.
+- **Tuile** (`Mosaique.tsx`, `mosaique.css`, tout sous `.ec-espace`, classes `ec-mo-` `ec-tu-` `ec-ch-`) : la dernière photo en fond (la couverture : la route signe UNE
+  vignette par lien, la plus récente, `couvertureDe`), le nom en Cormorant à la taille de la tuile à moitié fondu (`mask-image`, `lining-nums`), une pastille de verre
+  (« 214 photos · 9 personnes », « 214 · 9 » sur une petite ; une personne : « 38 photos · Bateau 1 »), le « … » rond dans une cible de 44 px. Un lien sans photo garde sa
+  tuile sur le fond doux du thème, une personne sans photo ses initiales en filigrane. « Sans groupe » : lecture seule, sans « … ». « Mes photos » et l'atelier : deux
+  lignes sous la mosaïque (jamais à zéro photo). Plus de « Dernières arrivées » sous « Par lien ».
+- **Les couvertures que la lecture de la page ne porte pas** : `couverturesDe: "liens" | "personnes"` dans la demande de `/api/collectif/photos` (avec
+  `seulementArbre` : aucune page, aucune vignette de grille) ; les deux lectures (résumé et repli) le rendent pareil, prouvé au harnais.
+- **Moins de boutons** : au téléphone « Par lien » et l'onglet « Les liens » sont UNE vue (la mosaïque, « Créer un lien » en tête à la place de « Cocher ») ; la pilule
+  « Les liens · N » de l'en-tête n'existe plus au téléphone ; UNE seule fenêtre de création (`creerLien`) pour l'en-tête, la vue « Par lien » et l'état vide ; chaque
+  segment de la barre du bas ramène à SA vue d'ensemble (un seul toucher, jamais un retour à refaire). Sans aucune photo mais avec des liens, les tuiles se montrent
+  sous l'accueil (le toucher ouvre « Partager »). Ce qui est devenu mort est dans `archive/mosaique-liens-2026-10/` (README).
+- **Le menu « … »** (`MenuLien.tsx`, déplacé de `Liens.tsx`) : Partager, QR code (collecte ouverte seulement), Modifier le nom et le nombre, Supprimer le lien ; un petit menu
+  de 292 px ancré sous le « … » au téléphone aussi (son bord sur le bord de la tuile), les autres tuiles s'éteignent d'elles-mêmes, le voile ne sert qu'au clic dehors.
+- **L'album d'un lien (3C, retour de Mathias : « aller dans Bateau 1 puis dans Mathias Durand, il faut refaire retour pour aller dans tout le bordel »)** : la même tuile en plus
+  basse en tête (sans bouton d'ouverture), puis ses personnes en PASTILLES (« Tout le monde », une par personne : initiales, prénom, photos) qui filtrent la grille dessous SANS
+  quitter la page, une ou plusieurs à la fois ; plus de liste à part, plus de barre de plafond, plus de « Voir ses photos ». La grille reste lue par pages et se filtre
+  dans le navigateur (`dansLaVue`, comme un jour choisi) : le compte est la somme des pastilles, une écriture « toute la vue » ne part jamais d'un coup quand des pastilles
+  filtrent. Le retour à « Par lien » est le segment de la barre du bas (ni flèche ni lien souligné). Aucune pastille cochée, les vignettes gardent leurs initiales ;
+  avec des pastilles cochées OU une personne ouverte, la vignette ne répète pas le nom (`sansQui`). La fiche d'une personne (renommer, fusionner) reste atteignable
+  depuis « Personnes » et depuis l'ordinateur, pas depuis 3C.
+- **Plus de texte souligné dans Photos** (« les textes soulignés dans la partie photo, ça me perturbe ») : `.ec-ph-lien`, `.ec-dp-lien` (la page du participant) et le lien de
+  la fenêtre de dépôt sont de petites pilules douces ; une cible de toucher n'est jamais un texte souligné.
 
 ## La messagerie de l'atelier : ce qui est nouveau (T-188, 19/10)
 

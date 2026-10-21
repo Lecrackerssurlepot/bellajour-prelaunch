@@ -40,6 +40,8 @@ type Props = {
   initiales: string;
   lien: string | null;
   voirSes: { libelle: string; faire: () => void } | null;
+  /** Un lien ouvert au téléphone (3C) : ses personnes sont des pastilles sous la tuile ; la ligne de la photo n'envoie pas à la page d'une personne (l'ordinateur garde « Voir ses photos »). */
+  sansPageDePersonneTel?: boolean;
   ecrire: boolean;
   tu: boolean;
   cachee: boolean;
@@ -236,7 +238,7 @@ export default function Agrandir(a: Props) {
         <p className="ec-ag-clavier">Flèches gauche et droite pour passer · Échap pour fermer</p>
 
         {/* Téléphone : qui, quel lien, quand ; la ligne mène à ses photos. */}
-        <button type="button" className="ec-ag-info" onClick={a.voirSes?.faire} disabled={!a.voirSes}>
+        <button type="button" className="ec-ag-info" onClick={a.voirSes?.faire} disabled={!a.voirSes || a.sansPageDePersonneTel}>
           <span className="ec-ag-avatar" aria-hidden="true">
             {a.initiales}
           </span>
@@ -247,7 +249,7 @@ export default function Agrandir(a: Props) {
             </b>
             <span>{ligneTel}</span>
           </span>
-          {a.voirSes ? (
+          {a.voirSes && !a.sansPageDePersonneTel ? (
             <svg className="ec-ag-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="m9 6 6 6-6 6" />
             </svg>

@@ -1,0 +1,497 @@
+/* La mosaïque de la page Photos (planches 2D et 3 du 21/10/2026, validées par Mathias) : « Par lien » et « Personnes » en
+   carrés aux bords arrondis de tailles différentes, grande (2 × 2), large (2 × 1), petite (1 × 1), 6 px d'écart sur
+   téléphone et 8 px sur ordinateur. Chaque tuile : la dernière photo en fond, son NOM en Cormorant à la taille de la tuile
+   (à moitié fondu dans la photo), une pastille de verre (« 214 photos · 9 personnes », « 214 · 9 » sur une petite), et pour un
+   lien le « … » rond dans une cible de 44 px.
+
+   Tout est écrit sous `.ec-espace`, classes préfixées `ec-mo-` (la mosaïque), `ec-tu-` (la tuile), `ec-ch-` (les pastilles de
+   personnes d'un lien ouvert). Aucune couleur en dur : des jetons `--ec-*`. Le blanc des lettres, de la pastille et du « … » est
+   celui d'un objet posé sur une photo (`--ec-reflet-rgb`, `--ec-noir-rgb`) : il ne change pas avec le mode, comme les pages de
+   magazine. Les chiffres du nom sont modernes (`lining-nums`) : sans eux, « Bateau 1 » se lit « Bateau ı ». */
+
+/* ─────────────────────────── la mosaïque ─────────────────────────── */
+
+.ec-espace .ec-mo {
+  flex: none;
+  padding: 4px 10px 0;
+}
+/* La zone est le conteneur : `100cqw` = sa largeur, d'où UNE rangée = UN carré (aucun chiffre en pixels). */
+.ec-espace .ec-mo-zone {
+  position: relative;
+  container-type: inline-size;
+  max-width: 640px;
+  margin-inline: auto;
+}
+.ec-espace .ec-mo-grille {
+  --mo-c: 2; /* colonnes : 2 sur téléphone, 4 sur ordinateur (posées par `Mosaique.tsx`) */
+  --mo-g: 6px;
+  display: grid;
+  grid-template-columns: repeat(var(--mo-c), minmax(0, 1fr));
+  grid-auto-rows: calc((100cqw - (var(--mo-c) - 1) * var(--mo-g)) / var(--mo-c));
+  grid-auto-flow: dense;
+  gap: var(--mo-g);
+}
+
+/* Sous l'accueil « Les photos arriveront ici » (aucune photo, mais des liens) : la mosaïque ne colle pas au cadre pointillé. */
+.ec-espace .ec-ph-accueil + .ec-mo {
+  padding-top: 14px;
+}
+
+/* ─────────────────────────── une tuile ─────────────────────────── */
+
+.ec-espace .ec-tu {
+  --tu-nom: 36px;
+  --tu-bord: 12px;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--ec-r-carte);
+  background: var(--ec-creux);
+  box-shadow: var(--ec-ombre-carte);
+}
+.ec-espace .ec-tu--grand {
+  --tu-nom: 76px;
+  --tu-bord: 18px;
+  grid-column: span 2;
+  grid-row: span 2;
+  border-radius: var(--ec-r-panneau);
+}
+.ec-espace .ec-tu--large {
+  --tu-nom: 54px;
+  --tu-bord: 16px;
+  grid-column: span 2;
+  border-radius: var(--ec-r-panneau);
+}
+/* L'album d'un lien (3C) : la même tuile, plus basse, en tête de la page. */
+.ec-espace .ec-tu--ouvert {
+  --tu-nom: 68px;
+  --tu-bord: 18px;
+  height: 210px;
+  border-radius: var(--ec-r-panneau);
+}
+.ec-espace .ec-tu-photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Un voile qui garde le nom lisible sur une photo claire, sans assombrir le haut. */
+.ec-espace .ec-tu::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(var(--ec-noir-rgb), 0.18) 0%, rgba(var(--ec-noir-rgb), 0) 32%, rgba(var(--ec-noir-rgb), 0) 42%, rgba(var(--ec-noir-rgb), 0.56) 100%);
+}
+/* Toute la tuile ouvre l'album : un seul bouton étiré, le nom dedans. */
+.ec-espace .ec-tu-ouvrir {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 var(--tu-bord) calc(var(--tu-bord) - 4px);
+  border: 0;
+  background: none;
+  color: rgba(var(--ec-reflet-rgb), 0.96);
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-tu-ouvrir--titre {
+  cursor: default;
+}
+.ec-espace .ec-tu-ouvrir:focus-visible {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+  border-radius: inherit;
+}
+/* Le nom : Cormorant, à la taille de la tuile (grande 76, large 54, petite 36 px), à moitié fondu dans la photo (le haut des
+   lettres à 42 %). Trois lignes au plus : un nom très long ne remonte pas jusqu'à la pastille. */
+.ec-espace .ec-tu-nom {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--tu-nom);
+  line-height: 0.94;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums;
+  font-feature-settings: "lnum" 1;
+  padding-bottom: 0.1em;
+  -webkit-mask-image: linear-gradient(180deg, rgba(var(--ec-noir-rgb), 0.42) 0%, rgb(var(--ec-noir-rgb)) 66%);
+  mask-image: linear-gradient(180deg, rgba(var(--ec-noir-rgb), 0.42) 0%, rgb(var(--ec-noir-rgb)) 66%);
+  overflow-wrap: normal;
+  text-wrap: balance;
+}
+.ec-espace .ec-tu-nom[data-long="1"] {
+  font-size: calc(var(--tu-nom) * 0.72);
+}
+.ec-espace .ec-tu-nom[data-long="2"] {
+  font-size: calc(var(--tu-nom) * 0.56);
+}
+/* La pastille de verre : « 214 photos · 9 personnes », ou « 214 · 9 » sur une petite tuile. */
+.ec-espace .ec-tu-pastille {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 60px);
+  height: 30px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--ec-reflet-rgb), 0.24);
+  background: rgba(var(--ec-noir-rgb), 0.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+  color: rgba(var(--ec-reflet-rgb), 0.97);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ec-espace .ec-tu-long,
+.ec-espace .ec-tu-court {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ec-espace .ec-tu--petit .ec-tu-pastille {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+.ec-espace .ec-tu--petit .ec-tu-long,
+.ec-espace .ec-tu:not(.ec-tu--petit) .ec-tu-court {
+  display: none;
+}
+/* Ce que lit la voix : le texte entier, sans le point médian. */
+.ec-espace .ec-tu-voix {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Le « … » : un rond de 36 px dans une cible de 44. */
+.ec-espace .ec-tu-plus {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(var(--ec-reflet-rgb), 0.97);
+  cursor: pointer;
+}
+.ec-espace .ec-tu-plus::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--ec-reflet-rgb), 0.24);
+  background: rgba(var(--ec-noir-rgb), 0.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+}
+.ec-espace .ec-tu-plus:focus-visible {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+  border-radius: 50%;
+}
+.ec-espace .ec-tu-plus svg {
+  position: relative;
+}
+
+/* Un lien sans photo : un fond doux du thème (les deux taches de la coquille), le nom quand même, un motif en filigrane. */
+.ec-espace .ec-tu--vide {
+  background: linear-gradient(150deg, var(--ec-aurore-1) 0%, var(--ec-aurore-2) 100%);
+  border: 1px solid var(--ec-carte-bord);
+}
+.ec-espace .ec-tu--vide::after {
+  display: none;
+}
+.ec-espace .ec-tu--vide .ec-tu-ouvrir {
+  color: var(--ec-titre);
+}
+.ec-espace .ec-tu--vide .ec-tu-nom {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.ec-espace .ec-tu--vide .ec-tu-pastille,
+.ec-espace .ec-tu--vide .ec-tu-plus {
+  color: var(--ec-text);
+}
+.ec-espace .ec-tu--vide .ec-tu-pastille,
+.ec-espace .ec-tu--vide .ec-tu-plus::before {
+  border-color: var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-reflet);
+}
+.ec-espace .ec-tu-motif {
+  position: absolute;
+  right: -8px;
+  top: 38%;
+  z-index: -1;
+  color: var(--ec-text);
+  opacity: 0.08;
+}
+.ec-espace .ec-tu--grand .ec-tu-motif,
+.ec-espace .ec-tu--large .ec-tu-motif,
+.ec-espace .ec-tu--ouvert .ec-tu-motif {
+  right: -14px;
+}
+/* Une personne sans photo : ses initiales en grand, en filigrane, dans le même fond doux. */
+.ec-espace .ec-tu-ini {
+  position: absolute;
+  left: var(--tu-bord);
+  top: 34%;
+  z-index: -1;
+  font-family: var(--font-display);
+  font-size: calc(var(--tu-nom) * 2.1);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ec-text);
+  opacity: 0.1;
+}
+
+/* Le menu « … » ouvert : les AUTRES tuiles s'éteignent sous le voile du thème (sans flou), la tuile du menu reste claire. Le voile
+   du menu (`.ec-li-voile`, espace.css) est transparent : il n'attrape que le clic dehors. */
+.ec-espace .ec-tu--menu {
+  z-index: 2;
+}
+.ec-espace .ec-mo--menu .ec-tu:not(.ec-tu--menu)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: var(--ec-voile);
+}
+
+/* « Mes photos » et l'atelier ne sont pas des liens : deux lignes sous la mosaïque, hors du classement (planche 3A). */
+.ec-espace .ec-mo-pied {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  width: calc(100% - 20px);
+  max-width: 640px;
+  margin: 10px auto 0;
+  padding: 4px;
+  border-radius: var(--ec-r-carte);
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-ombre-carte);
+}
+.ec-espace .ec-mo-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-mo-ligne:focus-visible {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+}
+.ec-espace .ec-mo-ligne-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.ec-espace .ec-mo-ligne-txt b {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ec-espace .ec-mo-ligne-txt span {
+  font-size: 14px;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-mo-ligne > svg {
+  flex: none;
+  color: var(--ec-faint);
+}
+.ec-espace .ec-mo-ligne .ec-ph-n {
+  font-size: 14px;
+  color: var(--ec-muted);
+}
+
+/* ─────────────────────────── l'album d'un lien (3C) ─────────────────────────── */
+
+/* La tuile de l'album tient dans la page, pleine largeur (aucune colonne à compter). */
+.ec-espace .ec-mo--album .ec-tu--ouvert {
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+/* Les personnes du lien, en pastilles à cocher (planche 3C, retour du 21/10) : une rangée qui défile de côté, des cibles de 44 px.
+   Jamais un texte souligné : on touche une pastille. */
+.ec-espace .ec-ch {
+  display: flex;
+  gap: 8px;
+  margin: 10px -2px 2px;
+  padding: 0 12px 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.ec-espace .ec-ch::-webkit-scrollbar {
+  display: none;
+}
+.ec-espace .ec-ch-p {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-reflet);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14.5px;
+  font-variant-numeric: lining-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ch-p[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-weight: 600;
+}
+.ec-espace .ec-ch-p:focus-visible {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-ch-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(var(--ec-fg-rgb), 0.08);
+  color: var(--ec-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.ec-espace .ec-ch-p[aria-pressed="true"] .ec-ch-ini {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-ch-n {
+  color: var(--ec-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.ec-espace .ec-ch-p[aria-pressed="true"] .ec-ch-n {
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* ─────────────────────────── téléphone : l'en-tête d'un lien ouvert ─────────────────────────── */
+
+@media (max-width: 860px) {
+  /* Un lien ouvert : la tuile porte le nom et les chiffres, le grand titre se tait (comme la fiche d'une personne) ; sur la ligne
+     du haut, « Cocher » et « Partager » à droite. Ni titre à répéter, ni ligne de chiffres, ni « ‹ Par lien » (le retour est le segment
+     « Par lien » de la barre du bas). Les règles de la page (photos.css, chargée après cette feuille) valent (0,3,0) : celles-ci, (0,4,0). */
+  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-titres,
+  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ph-mligne,
+  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ph-retour {
+    display: none;
+  }
+  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-tete {
+    min-height: 0;
+    padding: 4px 12px 0 8px;
+  }
+  .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-actions {
+    flex: 1 1 100%;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+}
+
+/* ─────────────────────────── ordinateur : quatre colonnes, les noms un cran plus grands ─────────────────────────── */
+
+@media (min-width: 861px) {
+  .ec-espace .ec-mo {
+    padding: 4px 4px 24px;
+  }
+  /* Quatre colonnes : toute la largeur de la page ; deux colonnes (la vue « Par lien », ou deux liens ou moins) gardent 640 px, centrées. */
+  .ec-espace .ec-mo-zone[data-colonnes="4"] {
+    max-width: none;
+  }
+  .ec-espace .ec-mo-grille {
+    --mo-g: 8px;
+  }
+  .ec-espace .ec-tu {
+    --tu-nom: 46px;
+    --tu-bord: 16px;
+  }
+  .ec-espace .ec-tu--grand {
+    --tu-nom: 104px;
+    --tu-bord: 24px;
+  }
+  .ec-espace .ec-tu--large {
+    --tu-nom: 68px;
+    --tu-bord: 20px;
+  }
+  .ec-espace .ec-tu-pastille {
+    height: 32px;
+  }
+  .ec-espace .ec-tu--petit .ec-tu-pastille {
+    height: 30px;
+    font-size: 13px;
+  }
+  .ec-espace .ec-tu:hover .ec-tu-photo {
+    transform: scale(1.04);
+  }
+  .ec-espace .ec-tu-photo {
+    transition: transform 600ms var(--ease-out);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-tu-photo {
+    transition: none;
+  }
+  .ec-espace .ec-tu:hover .ec-tu-photo {
+    transform: none;
+  }
+}

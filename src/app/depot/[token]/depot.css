@@ -609,19 +609,31 @@ html:has(.bj-atelier.ec-depot) {
   color: var(--dp-texte);
   font-weight: 600;
 }
-/* Les liens-boutons : « Ce n'est pas toi ? », « Ce n'est pas moi », « Annuler ». */
+/* Les gestes de texte : « Ce n'est pas toi ? », « Ce n'est pas moi », « Annuler ». Un BOUTON (une petite pilule douce), jamais un texte
+   souligné (retour de Mathias du 21/10 : « les textes soulignés dans la partie photo, ça me perturbe ») ; la zone qui répond au
+   toucher dépasse la pilule de 6 px en haut et en bas. */
 .bj-atelier .ec-dp-lien {
+  position: relative;
   align-self: flex-start;
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
   border: 0;
-  background: none;
-  color: var(--dp-accent-texte);
+  border-radius: 999px;
+  background: var(--dp-accent-doux);
+  color: var(--dp-accent-sur-doux);
   font: inherit;
   font-size: 13px;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-weight: 600;
+  text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
+}
+.bj-atelier .ec-dp-lien::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
 }
 .bj-atelier .ec-dp-lien:disabled {
   opacity: 0.45;
@@ -629,6 +641,7 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-lien--doux {
   margin-top: -6px;
+  background: rgba(var(--dp-fg-rgb), 0.07);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-bouton--danger {

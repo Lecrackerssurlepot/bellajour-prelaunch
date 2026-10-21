@@ -70,6 +70,8 @@ type Props = {
   estNeuve: (p: Photo) => boolean;
   /** Le nom affiché (« Toi » pour le responsable lui-même). */
   quiDe: (p: Photo) => string;
+  /** La vue est déjà celle d'une ou de plusieurs personnes (pastilles cochées, une personne ouverte) : son nom ne se répète pas sur chaque vignette (21/10). */
+  sansQui?: boolean;
   /** Des cases d'attente à la forme des photos, pendant que la page suivante arrive. */
   attente: number;
   onOuvrir: (id: string) => void;
@@ -202,12 +204,14 @@ export default function Grille(g: Props) {
                   </span>
                 </span>
               ) : null}
-              <span className="ec-ph-qui">
-                <span className="ec-ph-qui-nom">{qui}</span>
-                <span className="ec-ph-qui-ini" aria-hidden="true">
-                  {initialesDe(ph.qui)}
+              {g.sansQui ? null : (
+                <span className="ec-ph-qui">
+                  <span className="ec-ph-qui-nom">{qui}</span>
+                  <span className="ec-ph-qui-ini" aria-hidden="true">
+                    {initialesDe(ph.qui)}
+                  </span>
                 </span>
-              </span>
+              )}
             </div>
           </div>
         );
