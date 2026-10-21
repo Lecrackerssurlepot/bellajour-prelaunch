@@ -73,6 +73,15 @@ export function partiesCollecteTerminee(clotureLe: string | null | undefined): {
 }
 
 /**
+ * La pastille calme du TÉLÉPHONE (planche 9, vue 11D du 22/10) : « Collecte terminée le 15 novembre », sans l'heure ni les phrases : « rien ne s'ajoute
+ * plus ». La ligne complète (les liens ne reçoivent plus de photos, l'atelier compose, l'oubli) reste au tableau de bord et à l'ordinateur.
+ */
+export function pastilleCollecteTerminee(clotureLe: string | null | undefined): string {
+  const { jour } = jourEtHeure(clotureLe);
+  return jour ? `Collecte terminée le ${jour}` : "Collecte terminée";
+}
+
+/**
  * La phrase de la fenêtre « Terminer la collecte maintenant ? » sur ce que l'atelier recevra. `photos`
  * est le total reçu (`null` : pas encore connu de l'écran) ; `selection`, « Ma sélection » du client.
  */

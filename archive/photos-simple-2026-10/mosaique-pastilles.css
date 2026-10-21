@@ -1,0 +1,60 @@
+/* Les pastilles de personnes d'un lien ouvert, d'AVANT le 22/10 (planche 3C du 21/10) : initiales dans un rond, prénom, nombre de photos.
+   Remplacées par `.ec-s-choix` (le choix simple de la planche 12, le même que la feuille « Personnes »). Extrait de `mosaique.css`. */
+
+.ec-espace .ec-ch-p {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  border: 1px solid var(--ec-carte-bord);
+  background: var(--ec-carte);
+  box-shadow: var(--ec-reflet);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14.5px;
+  font-variant-numeric: lining-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ec-espace .ec-ch-p[aria-pressed="true"] {
+  border-color: var(--ec-accent);
+  background: var(--ec-accent-soft);
+  color: var(--ec-accent-texte);
+  font-weight: 600;
+}
+.ec-espace .ec-ch-p:focus-visible {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: 2px;
+}
+.ec-espace .ec-ch-ini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(var(--ec-fg-rgb), 0.08);
+  color: var(--ec-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.ec-espace .ec-ch-p[aria-pressed="true"] .ec-ch-ini {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-ch-n {
+  color: var(--ec-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.ec-espace .ec-ch-p[aria-pressed="true"] .ec-ch-n {
+  color: inherit;
+  opacity: 0.8;
+}
+

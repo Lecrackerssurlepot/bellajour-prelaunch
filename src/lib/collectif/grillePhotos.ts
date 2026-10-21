@@ -20,7 +20,7 @@
  */
 
 import type { GroupeDoublons } from "@/lib/atelier/empreinte";
-import { arbreDesPhotos, compterPersonnes, dansLeDossier, deParticipant, estVueEnsemble, noeudDe, nomDePersonne, personnesDe, plafondDuLien, type LienEdition } from "./dossiers";
+import { arbreDesPhotos, cleDeDossierLisible, compterPersonnes, dansLeDossier, deParticipant, estVueEnsemble, noeudDe, nomDePersonne, personnesDe, plafondDuLien, type LienEdition } from "./dossiers";
 import { indexDoublons } from "./doublons";
 import { jourDePhoto, TAILLE_PAGE } from "./grille";
 import { enPaquets } from "./lignes";
@@ -94,7 +94,7 @@ export type DemandeGrille = { dossier: string; vue: VueGrille; page: number; seu
 /** Lire la demande du navigateur (le dossier borné, une vue connue, une page de 0 à 1 000). */
 export function lireDemandeGrille(corps: Record<string, unknown>): DemandeGrille {
   return {
-    dossier: typeof corps.dossier === "string" && corps.dossier.length <= 400 ? corps.dossier : "tout",
+    dossier: cleDeDossierLisible(corps.dossier) ? corps.dossier : "tout",
     vue: (VUES as readonly string[]).includes(corps.vue as string) ? (corps.vue as VueGrille) : "toutes",
     page: Math.max(0, Math.min(1000, Number(corps.page) || 0)),
     seulementArbre: corps.seulementArbre === true,
@@ -232,13 +232,9 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
   /* « Ne pas publier » (lot w2) : les signalées du dossier, dans l'ordre de « Toutes ». */
   const signaleesRecentes = () => [...dansDossier].reverse().filter((p) => p.signalee);
   let liste = vue === "doublons" ? dansDossier.filter((p) => dansUnGroupe.has(p.id)) : vue === "signalees" ? signaleesRecentes() : vue === "toutes" ? [...dansDossier].reverse() : dansDossier;
-  if (vue === "jour") {
-    liste = [...liste].sort((a, b) => {
-      const ja = jourDePhoto(a.prise_le, a.confirmee_le).cle;
-      const jb = jourDePhoto(b.prise_le, b.confirmee_le).cle;
-      return ja === jb ? (a.prise_le ?? "").localeCompare(b.prise_le ?? "") : ja.localeCompare(jb);
-    });
-  }
+  /* « Par jour » : l'ordre de la base (`TRI_JOUR`, resumePhotos.ts), redit en mémoire : les jours de prise de vue les plus
+     récents d'abord, les photos sans date en tête. Les deux lectures rendent le même ordre (le harnais les compare). */
+  if (vue === "jour") liste = trierCommeLaBase(liste, TRI_JOUR);
 
   /* `seulementArbre` : la fenêtre de dépôt ne veut que les dossiers, aucune vignette à signer.
      Une vue d'ensemble (« Vos dossiers », « Les participants ») montre des vignettes de

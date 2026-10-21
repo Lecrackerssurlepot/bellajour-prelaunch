@@ -1,11 +1,14 @@
 "use client";
 
-/* La corbeille du responsable (planche 5 du 20/10, T-199 ; contrat
+/* « SUPPRIMÉES RÉCEMMENT » (22/10, « Photos, en plus simple » : elle s'appelait « Corbeille », comme chez Apple) : la corbeille du responsable,
+   atteinte par le « … » du haut au téléphone et par la ligne tout en bas de la colonne à l'ordinateur, jamais posée sur la page. Même écran, même
+   route : restaurer, et le délai de 30 jours ; « Cocher » est devenu « Sélectionner ». (Planche 5 du 20/10, T-199 ; contrat
    `docs/produit/collectif/CONTRAT-PERSONNES-CORBEILLE.md` §3).
 
-   - Une LISTE plutôt qu'une grille : il faut lire qui l'a envoyée, qui l'a
-     supprimée et quand, et dans combien de jours elle part pour de bon
-     (`joursRestants` du serveur ; sous 3 jours, l'échéance passe en alerte).
+   - TÉLÉPHONE (planche 11, vue 3C) : une grille de vignettes, rien d'autre (« nommée comme chez Apple ») ; « Sélectionner » en haut à droite, on prend
+     des photos, un « Restaurer · N » apparaît en bas ; la règle (« effacées au bout de 30 jours ») est dite UNE fois, sous le titre. Toucher une
+     vignette la prend. ORDINATEUR : une LISTE, parce qu'il y a la place de lire qui l'a envoyée, qui l'a supprimée et quand, et dans combien de jours
+     elle part pour de bon (`joursRestants` du serveur ; sous 3 jours, l'échéance passe en alerte).
    - Restaurer une photo, ou les cochées : elle revient à sa place (son lien, sa
      personne, Ma sélection si elle y était) ; la page le dit (« La voir »).
    - Une route : `POST /api/collectif/photos/corbeille` (`lister`, `restaurer`).
@@ -42,13 +45,11 @@ type Etat = { genre: "lecture" } | { genre: "absente" } | { genre: "erreur" } | 
 /** La phrase sobre quand la base n'a pas encore la migration (jamais le nom du fichier SQL). */
 export const BASE_PAS_A_JOUR = "La mise à jour de la base n'est pas encore appliquée";
 
-const FERMER = "M6 6l12 12M18 6 6 18";
-
 /**
  * `version` : le nombre de photos que la page compte. Quand il change (un participant a supprimé une photo de son
  * téléphone, le sondage de la page l'a vu), la liste se relit d'elle-même, sans repasser par « Chargement ».
  */
-export default function Corbeille({ token, tu, version, onRestaurees }: { token: string; tu: boolean; version: number; onRestaurees: (photos: PhotoCorbeille[]) => void }) {
+export default function Corbeille({ token, tu, version, telephone, onRestaurees }: { token: string; tu: boolean; version: number; telephone: boolean; onRestaurees: (photos: PhotoCorbeille[]) => void }) {
   const v = (vous: string, toi: string) => (tu ? toi : vous);
   const [etat, setEtat] = useState<Etat>({ genre: "lecture" });
   const [coches, setCoches] = useState<ReadonlySet<string>>(new Set());
@@ -123,7 +124,7 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
     onRestaurees(retour);
   }
 
-  const restaurerLibelle = coches.size > 1 ? `Restaurer les ${nombre(coches.size)} cochées` : "Restaurer la cochée";
+  const restaurerLibelle = coches.size > 1 ? `Restaurer les ${nombre(coches.size)} sélectionnées` : "Restaurer la sélectionnée";
 
   return (
     <div className={`ec-cb${modeCocher ? " ec-cb--cocher" : ""}`}>
@@ -133,7 +134,7 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
             <span className="ec-cb-titre-ic ec-ph-ordi" aria-hidden="true">
               <Trace d={ICONES.corbeille} taille={22} epais={1.6} />
             </span>
-            Corbeille
+            Supprimées récemment
           </h2>
           <span className="ec-note">
             {n !== null ? (
@@ -141,7 +142,7 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
                 <b>{nombre(n)}</b> photo{n > 1 ? "s" : ""} ·{" "}
               </>
             ) : null}
-            {`${DELAI_CORBEILLE_JOURS} jours pour changer d'avis`}
+            {`effacées au bout de ${DELAI_CORBEILLE_JOURS} jours`}
           </span>
         </div>
         <div className="ec-ph-outils">
@@ -161,20 +162,18 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
                 setCoches(new Set());
               }}
             >
-              Cocher
+              {modeCocher ? "Terminé" : "Sélectionner"}
             </button>
           ) : null}
         </div>
       </div>
 
       <div className="ec-collecte-grille ec-ph-defile ec-defile ec-cb-defile">
-        <p className="ec-cb-info">
+        {/* L'ordinateur garde sa phrase d'explication ; le téléphone n'en a pas (22/10, « pas de texte quand l'écran est plein ») : l'avertissement se dit à la suppression, par le « Annuler » qui suit. */}
+        <p className="ec-cb-info ec-ph-ordi">
           <Trace d={ICONES.info} taille={16} epais={1.8} />
-          <span className="ec-ph-ordi">
-            Une photo supprimée <b>disparaît tout de suite pour tout le monde</b> et ne part pas à l&apos;atelier. Elle reste ici <b>{DELAI_CORBEILLE_JOURS} jours</b>, puis elle est effacée pour de bon. Restaurée, elle revient à sa place : son lien, sa personne, {v("votre", "ta")} sélection.
-          </span>
-          <span className="ec-ph-tel">
-            Supprimée, une photo <b>disparaît pour tout le monde</b> et ne part pas à l&apos;atelier. Elle s&apos;efface pour de bon {DELAI_CORBEILLE_JOURS} jours après.
+          <span>
+            Une photo supprimée <b>disparaît tout de suite pour tout le monde</b> et ne part pas à l&apos;atelier. Elle reste ici <b>{DELAI_CORBEILLE_JOURS} jours</b>, puis elle est effacée pour de bon. Restaurée, elle revient à sa place : son lien, sa personne, {v("vos favoris", "tes favoris")}.
           </span>
         </p>
 
@@ -204,7 +203,34 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
           </div>
         ) : null}
 
-        {photos.length ? (
+        {photos.length && telephone ? (
+          <div className="ec-s-grille ec-cb-grille">
+            <div className={modeCocher ? "ec-ph-g ec-ph-g--cocher" : "ec-ph-g"}>
+              {photos.map((x) => {
+                const on = coches.has(x.id);
+                return (
+                  <div key={x.id} className={on ? "ec-ph-t ec-ph-t--cochee" : "ec-ph-t"}>
+                    <button
+                      type="button"
+                      className="ec-ph-t-ouvrir"
+                      aria-label={`${x.qui}, ${x.lienNom}. ${echeanceTexte(x.joursRestants)}${modeCocher ? (on ? ", sélectionnée" : ", pas sélectionnée") : ""}`}
+                      onClick={() => {
+                        setModeCocher(true);
+                        basculer(x.id);
+                      }}
+                    >
+                      {x.vignette ? <img src={x.vignette} alt="" loading="lazy" decoding="async" draggable={false} /> : <span className="ec-tuile-sans">{x.nom ?? "Photo"}</span>}
+                    </button>
+                    <button type="button" className="ec-ph-t-case" aria-pressed={on} aria-label={on ? "Ne plus sélectionner cette photo" : "Sélectionner cette photo"} tabIndex={modeCocher ? 0 : -1} onClick={() => basculer(x.id)}>
+                      <Trace d={ICONES.coche} taille={13} epais={2.8} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+        {photos.length && !telephone ? (
           <>
             <button
               type="button"
@@ -213,14 +239,14 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
               onClick={() => setCoches(tout ? new Set() : new Set(photos.map((x) => x.id)))}
             >
               <span className={tout ? "ec-ph-case ec-ph-case--on" : "ec-ph-case"}>{tout ? <Trace d={ICONES.coche} taille={12} epais={3} /> : null}</span>
-              {tout ? "Tout décocher" : `Tout cocher (${nombre(photos.length)})`}
+              {tout ? "Ne plus rien sélectionner" : `Tout sélectionner (${nombre(photos.length)})`}
             </button>
             <ul className="ec-cb-liste">
               {photos.map((x) => {
                 const on = coches.has(x.id);
                 return (
                   <li key={x.id} className={on ? "ec-cb-ligne ec-cb-ligne--cochee" : "ec-cb-ligne"}>
-                    <button type="button" className="ec-cb-case" aria-pressed={on} aria-label={on ? "Décocher cette photo" : "Cocher cette photo"} onClick={() => basculer(x.id)}>
+                    <button type="button" className="ec-cb-case" aria-pressed={on} aria-label={on ? "Ne plus sélectionner cette photo" : "Sélectionner cette photo"} onClick={() => basculer(x.id)}>
                       <span className={on ? "ec-ph-case ec-ph-case--on" : "ec-ph-case"}>{on ? <Trace d={ICONES.coche} taille={12} epais={3} /> : null}</span>
                     </button>
                     <span className="ec-cb-vign" aria-hidden="true">
@@ -246,28 +272,17 @@ export default function Corbeille({ token, tu, version, onRestaurees }: { token:
         ) : null}
       </div>
 
-      {/* Téléphone : cocher plusieurs photos, « Restaurer » sous le pouce. */}
-      {modeCocher ? (
-        <div className="ec-ph-bas ec-ph-tel ec-cb-bas" role="toolbar" aria-label="Agir sur les photos cochées">
-          <button
-            type="button"
-            className="ec-ph-x"
-            aria-label="Quitter le mode cocher"
-            onClick={() => {
-              setModeCocher(false);
-              setCoches(new Set());
-            }}
-          >
-            <Trace d={FERMER} taille={18} epais={2} />
-          </button>
-          <b>
-            {nombre(coches.size)} cochée{coches.size > 1 ? "s" : ""}
-          </b>
-          <button type="button" className="ec-bouton ec-bouton--petit ec-ph-droite" disabled={occupe || !coches.size} onClick={() => void restaurer([...coches])}>
-            <Trace d={ICONES.restaurer} taille={15} epais={1.8} />
-            Restaurer
-          </button>
-        </div>
+      {/* Téléphone : « Sélectionner » ouvert, UN bouton sous le pouce, « Restaurer · 3 » (comme « Envoyer ma sélection »). */}
+      {telephone && modeCocher ? (
+        <>
+          <div className="ec-s-scrim ec-ph-tel" aria-hidden="true" />
+          <div className="ec-fl ec-ph-tel">
+            <button type="button" className="ec-s-envoyer" disabled={occupe || !coches.size} aria-disabled={!coches.size} onClick={() => void restaurer([...coches])}>
+              <Trace d={ICONES.restaurer} taille={22} epais={1.8} />
+              {occupe ? "Un instant…" : coches.size ? `Restaurer · ${nombre(coches.size)}` : "Restaurer"}
+            </button>
+          </div>
+        </>
       ) : null}
     </div>
   );

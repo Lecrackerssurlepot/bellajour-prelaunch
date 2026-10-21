@@ -138,13 +138,14 @@
        `--ec-barre-h`     la barre du haut (logo / titre, menu) : 52 px, elle ne grossit JAMAIS (hauteur écrite, plus
                           un reste réparti par la grille) ;
        `--ec-barre-marge` son écart avec le haut de l'écran (plus la zone sûre) ;
-       `--ec-fl-h`        la barre flottante du bas de Photos (Tout · Par lien · Personnes, filtre) ; 64 px quand
-                          c'est la barre d'actions des photos cochées ;
+       `--ec-fl-h`        la barre flottante du bas de Photos (« Toutes · Par lien » et le rond « Personnes ») : 64 px depuis le 22/10
+                          (planche 10, composition A : « plus haute, une icône par choix ») ; la barre des deux gestes de la
+                          sélection (le cœur, Supprimer) fait la même hauteur ;
        `--ec-fl-bas`      son écart avec le bas de l'écran, zone sûre de l'iPhone comprise ;
        `--ec-fl-reserve`  ce qu'un contenu qui défile derrière elle garde libre en bas, pour que rien ne passe dessous. */
   --ec-barre-h: 52px;
   --ec-barre-marge: 6px;
-  --ec-fl-h: 52px;
+  --ec-fl-h: 64px;
   --ec-fl-actions-h: 64px;
   --ec-fl-bas: calc(10px + env(safe-area-inset-bottom, 0px));
   --ec-fl-reserve: calc(var(--ec-fl-h) + var(--ec-fl-bas) + 16px);

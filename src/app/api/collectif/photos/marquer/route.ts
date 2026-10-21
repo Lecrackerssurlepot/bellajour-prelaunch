@@ -4,7 +4,7 @@ import { chargerAcces } from "@/lib/collectif/acces";
 import { estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import type { Role } from "@/lib/collectif/types";
-import { dansLeDossier, type LignePhoto } from "@/lib/collectif/dossiers";
+import { cleDeDossierLisible, dansLeDossier, type LignePhoto } from "@/lib/collectif/dossiers";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { lireIdsPhotos } from "@/lib/collectif/corbeille";
 import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
@@ -87,8 +87,11 @@ export async function POST(request: Request) {
 async function toutesLesPhotos(editionId: string, responsable: string | null, role: Role, preselection: unknown, dossierBrut: unknown) {
   if (typeof preselection !== "boolean") return NextResponse.json({ error: "rien_a_marquer" }, { status: 400 });
   if (!peut(role, "preselectionner")) return refusDroit();
+  /* Une clé de dossier trop longue n'est JAMAIS lue comme « tout » : marquer toute l'édition à la place d'un dossier serait
+     pire qu'un refus (22/10, `quis:` : plusieurs personnes tiennent dans une clé plus longue que les autres). */
+  if (typeof dossierBrut === "string" && !cleDeDossierLisible(dossierBrut)) return NextResponse.json({ error: "dossier_invalide" }, { status: 400 });
   const supabase = makeSupabase();
-  const dossier = typeof dossierBrut === "string" && dossierBrut.length <= 400 ? dossierBrut : "tout";
+  const dossier = typeof dossierBrut === "string" ? dossierBrut : "tout";
   let n = 0;
   if (dossier === "tout" || dossier === "selection") {
     /* Le nombre écrit vient du COMPTE de la base (T-167) : les lignes rendues par

@@ -559,6 +559,8 @@ nombre » d'un lien « pourraient être ensemble ».
 
 ## La page Photos au téléphone : la barre du bas, « Personnes » (planches 1 et 2 du 21/10, validées par Mathias)
 
+⚠️ **Largement remplacée le 22/10** par « La page Photos comme une application » (plus bas) : la barre du bas n'a plus que « Toutes · Par lien » et le rond « Personnes », la feuille « Filtrer » et le mode « Personnes » n'existent plus, « Cocher » est devenu « Sélectionner ». Ce qui suit dit l'écran du 21/10.
+
 Maquettes : les planches « téléphone » 1 et 2 du 21/10 (hors dépôt). Le haut de page d'avant est dans `archive/photos-barre-haut-2026-10/`.
 - **Les filtres ont quitté le haut** : une barre flottante de verre en bas (`.ec-fl`, 52 px, jetons `--ec-fl-*` d'`espace.css`) porte
   « Tout · Par lien · Personnes » et le bouton filtre (la pastille compte les réglages de la FEUILLE, `nombreDansLaFeuille`, pas le lien
@@ -577,6 +579,8 @@ Maquettes : les planches « téléphone » 1 et 2 du 21/10 (hors dépôt). Le ha
   « Sans groupe »).
 
 ## La mosaïque des liens et des personnes, l'album d'un lien en pastilles (planches 2D et 3, retours de Mathias du 21/10)
+
+⚠️ **Le 22/10** : « Par lien » reste une mosaïque (« Nouveau lien » en dernière tuile) et l'album d'un lien garde sa tuile et ses pastilles ; la mosaïque des PERSONNES, le nom sur la vignette (`sansQui`), « Créer un lien » en tête et la flèche absente n'existent plus (voir « La page Photos comme une application »).
 
 Maquettes : planches « téléphone » 2 et 3 du 21/10 (hors dépôt). Ce que Mathias a tranché : « des carrés aux bords arrondis de tailles différentes avec la
 dernière photo affichée et les infos », « ça ne doit pas être compliqué ni toujours recalculer », « nous avons trop de boutons et de liens ».
@@ -611,6 +615,40 @@ dernière photo affichée et les infos », « ça ne doit pas être compliqué n
   depuis « Personnes » et depuis l'ordinateur, pas depuis 3C.
 - **Plus de texte souligné dans Photos** (« les textes soulignés dans la partie photo, ça me perturbe ») : `.ec-ph-lien`, `.ec-dp-lien` (la page du participant) et le lien de
   la fenêtre de dépôt sont de petites pilules douces ; une cible de toucher n'est jamais un texte souligné.
+
+## La page Photos « comme une application » (planches 8 à 13 du 22/10, « Photos, en plus simple », validées par Mathias)
+
+La règle de Mathias : « si un bouton n'a pas sa place, s'il peut être remplacé ou mieux placé, s'il ajoute une étape, il n'a pas sa place ». L'écran d'avant (20 et 21/10) est dans
+`archive/photos-simple-2026-10/` ; son README dit où chaque pièce est passée. Aucune route, aucun droit, aucune table n'a changé.
+- **Des places fixes au téléphone** : en haut à droite le « + » de dépôt (rond, visible) et UN « … » (Sélectionner, « Supprimées récemment · N », puis après un filet « Terminer la
+  collecte ») ; en bas « Toutes · Par lien » (capsule, 64 px = `--ec-fl-h`) et le rond « Personnes » (une feuille du bas : recherche, pastilles, plusieurs possibles). Le contenu des menus est dans
+  `photosSimples.ts` (`entreesDuMenuHaut`, `entreesDuMenuPhoto` : purs, au harnais) ; l'écran ne fait que les brancher. L'équipe (lecture seule) n'a ni « + », ni « … », ni sélection, ni appui long.
+- **La grille est rangée PAR JOUR de prise de vue, les plus récents en haut** (`TRI_JOUR` : prise de vue décroissante, SANS DATE EN TÊTE, puis l'arrivée, puis l'id) ; `regrouperParJour`
+  (`photos/filtres.ts`) en fait des intertitres collants (« Samedi 4 octobre · 214 », le nombre seulement d'un jour fini). ⚠️ Une photo sans date prend son JOUR D'ARRIVÉE pour l'intertitre mais reste placée
+  EN TÊTE de la liste, pas dans son jour : trier sur « prise de vue, sinon arrivée » demanderait une colonne calculée (une migration). Plus de filtre Jour ni d'ordre :
+  `Filtres = { mode: "tout" | "liens", lien, dossier, personnes, corbeille }`.
+- **Une vignette est UNE PHOTO** : ni nom, ni initiales, ni étoile, ni badge (doublon, œil barré, « nouvelle »). Le rond de sélection n'existe qu'en « Sélectionner » (et au survol à la souris) ; en
+  « Sélectionner » un rond par jour prend la journée. Toucher agrandit ; l'appui long ouvre le menu de la photo (Favori, Voir qui l'a envoyée, Supprimer) et, en « Sélectionner », bascule la photo.
+- **Deux gestes seulement** : le CŒUR (favori) écrit les marques `preselection` de « Ma sélection » par la MÊME route `marquer`, donc l'atelier retrouve la sélection dans son téléchargement ; SUPPRIMER
+  = la corbeille de 30 jours (« Supprimées récemment »). « Ne pas publier » (`signalee`), « Doublons », Renommer et Fusionner ont quitté l'espace du client : les marques `signalee` déjà posées restent en
+  base et l'atelier les lit (`A-NE-PAS-PUBLIER`), Renommer et Fusionner restent sur la fiche de l'atelier (`src/app/admin/collectif/**`, intact).
+- **Plusieurs personnes à la fois = la clé de dossier `quis:`** (`dossiers.ts`) : `quis:` suivi d'un tableau JSON de noms comparés (jamais un séparateur), au plus `PERSONNES_MAX` (12), 1 500 caractères
+  (`CLE_QUIS_MAX`) contre 400 aux autres clés : `cleDeDossierLisible`. Le résumé (`planDuDossier`) et le repli (`dansLeDossier`) disent la même chose (prouvé au harnais).
+  ⚠️ Une clé trop longue ou illisible n'est JAMAIS lue comme « tout » : `marquer` répond 400 `dossier_invalide`, la grille n'a aucune photo.
+- **Terminer la collecte = deux choix** (`ChoixFinCollecte`, `FinCollecte.tsx`) : « Envoyer toutes les photos à l'atelier » (le geste d'avant, `terminerLaCollecte`) ou « Choisir d'abord mes préférées »
+  (un mode calme, puis « Envoyer ma sélection »). ⚠️ `envoyerMaSelection` écrit les cœurs D'ABORD et ne termine QUE si toutes les écritures ont abouti : si elles échouent, `terminer` n'est pas appelée,
+  l'écran le dit et reste ouvert (les liens des participants ne se ferment pas pour une sélection que l'atelier ne recevrait pas).
+- **Partager** : au téléphone `navigator.share` (`partagerSurLeTelephone` : l'objet, le message de `messagePartage`, l'adresse), sans fenêtre ; `AbortError` = la personne a renoncé (rien ne s'ouvre) ; toute
+  autre panne, ou un navigateur sans partage, ouvre la petite fenêtre (« Copier le message », « QR code »). À l'ordinateur, toujours cette fenêtre. Le tableau de bord garde WhatsApp et Mail dans la carte du
+  dernier lien créé (`CarteLien`, hors de la page Photos).
+- **Collecte terminée (planche 9, vue 11D)** : au téléphone « rien ne s'ajoute plus » : le « + » disparaît (il n'est plus éteint), le « … » ne garde que « Supprimées récemment » (`entreesDuMenuHaut({ ouverte: false })`), une pastille calme dit
+  « Collecte terminée le 15 novembre » (`pastilleCollecteTerminee`, `finCollecte.ts`, sans l'heure) ; la ligne complète (les liens ne reçoivent plus de photos, l'atelier compose, l'oubli) reste au tableau de bord et à l'ordinateur, où « Déposer des photos » reste éteint avec sa raison.
+- **« Supprimées récemment » au téléphone (vue 3C) est une grille de vignettes** (« Sélectionner » puis « Restaurer · N » en bas, toucher une vignette la prend) ; l'ordinateur garde sa liste (auteur, échéance, « Restaurer » par ligne). Les personnes d'un lien ouvert sont les MÊMES choix que la feuille « Personnes » (`ec-s-choix`, un nom).
+- **Des feuilles du bas, jamais une fenêtre au milieu, au téléphone** (`ec-s-voile` / `ec-s-feuille` : Personnes, fin de collecte, grand QR), sans flou sur la grille ; le menu de l'appui long est un voile qui
+  floute (`ec-s-flou`). Tout lit `--ec-z-feuille`. `simple.css` (classes `ec-s-*`) est chargée APRÈS `photos.css` par `Collecte.tsx` ; `mosaique.css` règle toujours l'en-tête d'un lien ouvert (la capsule
+  « ‹ Par lien », le « + » et le « … » sur UNE ligne).
+- **Resté, sans usage** : `Mosaique.tsx` garde le genre « personne » et la variante « onglet » ; `mosaique.ts` garde `peseesDesPersonnes`, `detailDeLaPersonne`, `pastilleDeLaPersonne` (des tests les
+  couvrent) : rien n'est supprimé, à archiver quand on voudra.
 
 ## La messagerie de l'atelier : ce qui est nouveau (T-188, 19/10)
 

@@ -11,7 +11,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { corpsSondagePhotos, lireEtatSondage, SONDAGE_TABLEAU_MS } from "@/lib/collectif/arrivees";
 import { useSondage } from "../_composants/useSondage";
 import FenetreLien, { CarteLien } from "../_composants/LienContribution";
@@ -49,22 +49,7 @@ type Props = {
   effacees: string | null;
 };
 
-/** Ordinateur ou téléphone (le rendu serveur dit « ordinateur »). Au téléphone « Par lien » et « Les liens » sont UNE vue : « Inviter quelqu'un » mène à « Par lien ». */
-const ORDINATEUR = "(min-width: 861px)";
-function useOrdinateur() {
-  return useSyncExternalStore(
-    (rappel) => {
-      const mq = window.matchMedia(ORDINATEUR);
-      mq.addEventListener("change", rappel);
-      return () => mq.removeEventListener("change", rappel);
-    },
-    () => window.matchMedia(ORDINATEUR).matches,
-    () => true
-  );
-}
-
 export default function CartePhotos(p: Props) {
-  const ordinateur = useOrdinateur();
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const [fenetre, setFenetre] = useState(false);
   const [deposer, setDeposer] = useState(false);
@@ -200,7 +185,7 @@ export default function CartePhotos(p: Props) {
                     Déposer
                   </button>
                 ) : null}
-                <Link href={`${p.lienPhotos}${ordinateur ? "?onglet=liens" : "?dossier=liens"}`} prefetch={false} className="ec-bouton ec-bouton--clair">
+                <Link href={`${p.lienPhotos}?dossier=liens`} prefetch={false} className="ec-bouton ec-bouton--clair">
                   Inviter quelqu&apos;un
                 </Link>
               </>
