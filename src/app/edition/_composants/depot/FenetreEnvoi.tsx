@@ -23,6 +23,7 @@ import Fenetre from "../Fenetre";
 import type { OuvertureEnvoi } from "./DepotContexte";
 import type { MoteurDepot } from "./moteur";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
+import { phraseSilence, useSelecteur } from "./useSelecteur";
 
 /** Les dossiers du responsable, à plat : « La soirée », « La soirée / Photobooth »… avec leurs photos. */
 function cheminsDe(arbre: Arbre | null): { chemin: string; n: number }[] {
@@ -55,7 +56,6 @@ export default function FenetreEnvoi({
   const [nouveau, setNouveau] = useState("");
   const [refus, setRefus] = useState<string | null>(null);
   const [survol, setSurvol] = useState(false);
-  const fichiers = useRef<HTMLInputElement>(null);
   const champNouveau = useRef<HTMLInputElement>(null);
 
   /* Les dossiers qui existent déjà : la route de la grille rend l'arbre seul. */
@@ -100,6 +100,9 @@ export default function FenetreEnvoi({
     setNouveau("");
     setChoisir(false);
   }
+  const selecteur = useSelecteur(ajouter);
+  /* La page relancée pendant le choix rouvre la fenêtre (DepotContexte) : elle le dit, jusqu'au prochain choix. */
+  const silence = selecteur.silence ?? (ouverture.interrompu ? "recharge" : null);
 
   if (choisir) {
     return (
@@ -162,22 +165,17 @@ export default function FenetreEnvoi({
           <span className="ec-note">
             Vers « {cible} » · {v("un dossier de votre ordinateur se glisse aussi", "un dossier de ton ordinateur se glisse aussi")}
           </span>
-          <button type="button" className="ec-bouton" onClick={() => fichiers.current?.click()}>
+          <button type="button" className="ec-bouton" onClick={selecteur.ouvrir}>
             Choisir des photos
           </button>
           <span className="ec-note">JPEG, HEIC, PNG · une photo déjà envoyée ne part jamais deux fois</span>
-          <input
-            ref={fichiers}
-            type="file"
-            multiple
-            accept="image/*,.heic,.heif"
-            hidden
-            onChange={(e) => {
-              if (e.target.files) ajouter(e.target.files);
-              e.target.value = "";
-            }}
-          />
+          <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
         </div>
+        {silence ? (
+          <p className="ec-note ec-note--erreur" role="alert">
+            {phraseSilence(silence, tu)}
+          </p>
+        ) : null}
         {refus ? (
           <p className="ec-note ec-note--erreur" role="alert">
             {refus}

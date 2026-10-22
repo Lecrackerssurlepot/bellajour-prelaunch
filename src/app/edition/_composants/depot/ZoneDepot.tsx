@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { bilanDuLot, progression } from "@/lib/collectif/depotParticipant";
 import { useMoteurDepot } from "./DepotContexte";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
+import { phraseSilence, useSelecteur } from "./useSelecteur";
 
 export default function ZoneDepot({ tu }: { tu: boolean }) {
   const router = useRouter();
@@ -22,7 +23,6 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
   const [dossierNom, setDossierNom] = useState("Mes photos");
   const [renommer, setRenommer] = useState(false);
   const [survol, setSurvol] = useState(false);
-  const fichiers = useRef<HTMLInputElement>(null);
   const dossier = useRef<HTMLInputElement>(null);
   const enCours = useRef(0);
 
@@ -37,12 +37,15 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
     enCours.current = vue.enCours;
   }, [vue.enCours, router]);
 
-  if (!moteur) return null;
   const ajouter = (liste: Iterable<File>) => {
+    if (!moteur) return;
     const nom = dossierNom.trim();
     moteur.definirProvenance({ type: "organisateur", libelle: nom === "Mes photos" ? "" : nom });
     moteur.ajouter(liste);
   };
+  const selecteur = useSelecteur(ajouter);
+
+  if (!moteur) return null;
   /* Le dernier envoi : ce qui part vraiment, et à part ce qui était déjà là. */
   const prog = progression(vue.lot);
   const dejaLa = bilanDuLot(vue.lot).dejaLa + vue.lot.deuxFois;
@@ -95,7 +98,7 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
             </button>
           ) : null}
           {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
-          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => fichiers.current?.click()}>
+          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={selecteur.ouvrir}>
             Ajouter d&apos;autres photos
           </button>
         </div>
@@ -115,7 +118,7 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
             )}
           </span>
           <div className="ec-actions ec-actions--centre">
-            <button type="button" className="ec-bouton" onClick={() => fichiers.current?.click()}>
+            <button type="button" className="ec-bouton" onClick={selecteur.ouvrir}>
               Choisir des photos
             </button>
             <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => dossier.current?.click()}>
@@ -142,7 +145,12 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
           )}
         </>
       )}
-      <input ref={fichiers} type="file" multiple accept="image/*,.heic,.heif" hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
+      {selecteur.silence ? (
+        <p className="ec-note ec-note--erreur" role="alert">
+          {phraseSilence(selecteur.silence, tu)}
+        </p>
+      ) : null}
+      <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
       <input ref={dossier} type="file" multiple hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
     </div>
   );

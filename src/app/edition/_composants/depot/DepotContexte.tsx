@@ -14,9 +14,10 @@ import { progression } from "@/lib/collectif/depotParticipant";
 import FenetreEnvoi from "./FenetreEnvoi";
 import { MoteurDepot } from "./moteur";
 import { useMoteur } from "./useMoteur";
+import { useSelecteurInterrompu } from "./useSelecteur";
 
 /** Ce que la fenêtre sait en s'ouvrant : le dossier où l'on est (il est proposé d'emblée), ou « un nouveau dossier ». */
-export type OuvertureEnvoi = { dossier?: string | null; nouveau?: boolean };
+export type OuvertureEnvoi = { dossier?: string | null; nouveau?: boolean; interrompu?: boolean };
 
 type Envoi = {
   moteur: MoteurDepot | null;
@@ -43,10 +44,18 @@ export function useFenetreEnvoi(): { ouvrir: ((o?: OuvertureEnvoi) => void) | nu
 
 export function DepotFournisseur({ token, actif, tu, children }: { token: string; actif: boolean; tu: boolean; children: React.ReactNode }) {
   const moteur = useMemo(() => (actif ? new MoteurDepot({ token }) : null), [token, actif]);
-  const [ouvert, setOuvert] = useState<OuvertureEnvoi | null>(null);
+  const [choix, setOuvert] = useState<OuvertureEnvoi | null>(null);
+  /* La page s'est relancée pendant un choix de photos (iPhone, grande sélection) : la fenêtre s'ouvre et le dit, une fois. */
+  const interrompu = useSelecteurInterrompu();
+  const [interruptionVue, setInterruptionVue] = useState(false);
+  const ouvert = useMemo(() => choix ?? (moteur && interrompu && !interruptionVue ? { interrompu: true } : null), [choix, moteur, interrompu, interruptionVue]);
   const [fermetures, setFermetures] = useState(0);
-  const ouvrir = useCallback((o?: OuvertureEnvoi) => setOuvert(o ?? {}), []);
+  const ouvrir = useCallback((o?: OuvertureEnvoi) => {
+    setInterruptionVue(true);
+    setOuvert(o ?? {});
+  }, []);
   const fermer = useCallback(() => {
+    setInterruptionVue(true);
     setOuvert(null);
     setFermetures((n) => n + 1);
   }, []);
