@@ -59,6 +59,7 @@ import { deNom } from "@/lib/collectif/espace";
 import { NOM_MAX, nettoyerMorceau, nomComplet, premierMot } from "@/lib/collectif/participant";
 import { EMAIL_MAX, lireIdentite, normaliserEmail } from "@/lib/collectif/personnes";
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
+import { phraseSilence, useSelecteur } from "../../edition/_composants/depot/useSelecteur";
 import Album, { type Onglet, type Tete } from "./Album";
 import { lirePersonne, oublier, presenter } from "./appels";
 import { TeteCarte } from "./Etats";
@@ -151,7 +152,6 @@ export default function Depot(props: Props) {
   const [mode, setMode] = useState<{ ecran: "carte" | "album"; onglet: Onglet; accueil: boolean }>(
     props.moi?.accordAJour ? { ecran: "album", onglet: "album", accueil: true } : { ecran: "carte", onglet: "album", accueil: false }
   );
-  const fichier = useRef<HTMLInputElement>(null);
 
   const emailLu = normaliserEmail(email);
   const nomPret = repli ? Boolean(nomFixe ?? nomComplet(prenomSaisi, nomSaisi)) : Boolean(identite ?? (emailLu && nomComplet(prenomSaisi, nomSaisi)));
@@ -310,19 +310,13 @@ export default function Depot(props: Props) {
     window.scrollTo(0, 0);
   };
 
+  /* Le choix des photos ne finit plus en silence (iPhone, grande sélection : useSelecteur). */
+  const selecteur = useSelecteur((f) => void choisir(f), { rechargement: true });
   const entree = (
-    <input
-      ref={fichier}
-      type="file"
-      accept="image/*,.heic,.heif"
-      multiple
-      hidden
-      onChange={(e) => {
-        const fichiers = e.target.files ? [...e.target.files] : [];
-        e.target.value = "";
-        void choisir(fichiers);
-      }}
-    />
+    <>
+      <input type="file" accept="image/*,.heic,.heif" multiple hidden {...selecteur.champ} />
+      {selecteur.silence ? <p className="ec-dp-note ec-dp-note--refus" role="alert">{phraseSilence(selecteur.silence, tu)}</p> : null}
+    </>
   );
 
   /* Un 404 : le lien a été régénéré ou supprimé pendant que la page était ouverte. */
@@ -346,7 +340,7 @@ export default function Depot(props: Props) {
           pasMoi={!repli && identite ? () => void pasMoi() : null}
           personnes={!repli}
           moteur={moteur}
-          ajouter={() => fichier.current?.click()}
+          ajouter={() => selecteur.ouvrir()}
           place={place}
           ongletInitial={mode.onglet}
           accueil={mode.accueil && identite ? { prenom: identite.prenom, surCeLien: props.moi?.surCeLien ?? 0 } : null}
@@ -521,7 +515,7 @@ export default function Depot(props: Props) {
             <span>{PHOTOS_SEULEMENT}</span>
           </p>
           {entree}
-          <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => fichier.current?.click()}>
+          <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => selecteur.ouvrir()}>
             <IcoAppareil />
             Choisir mes photos
           </button>
