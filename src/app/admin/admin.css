@@ -534,6 +534,7 @@ body:has(.adm-root) {
 }
 .adm-btn--refresh {
   margin-left: auto;
+  min-height: 40px;
 }
 .adm-btn--ghost {
   color: var(--bj-text);
