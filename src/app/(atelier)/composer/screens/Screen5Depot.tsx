@@ -32,7 +32,8 @@
  *   affiche l'erreur à ce moment-là, rien avant (décision Mathias).
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { phraseSilence, useSelecteur } from '@/app/edition/_composants/depot/useSelecteur'
 import { useDepot } from '../depot/useDepot'
 import {
   MAX_PHOTOS, MIN_PHOTOS, blocageEnvoi, manquantes, palierPour, peutEnvoyer, restantes,
@@ -89,13 +90,15 @@ export default function Screen5Depot({
   const [survol, setSurvol] = useState(false)
   const [toutesVisibles, setToutesVisibles] = useState(false)
   const [envoi, setEnvoi] = useState(false)
-  const champ = useRef<HTMLInputElement>(null)
 
-  const recevoir = useCallback((liste: FileList | null) => {
+  const recevoir = useCallback((liste: ArrayLike<File> | null) => {
     if (!liste?.length) return
     setRefus(ajouter(Array.from(liste)))
     setErreur(null)
   }, [ajouter])
+  /* 22/10 — le choix dans la photothèque ne finit plus en silence (iPhone,
+     grande sélection : useSelecteur, le même que l'Édition collective). */
+  const selecteur = useSelecteur(recevoir, { rechargement: true })
 
   /* T-156 — le dossier de ce token, tel que le SERVEUR le nomme. */
   const ligne = ligneDepot(vue.dossier)
@@ -239,17 +242,13 @@ export default function Screen5Depot({
       {/* Le champ natif, hors de la zone : la tuile « Compléter » et le
           bouton de la zone vide déclenchent le même sélecteur. */}
       <input
-        ref={champ}
         type="file"
         multiple
         accept={ACCEPTE}
         className="at-d-input"
-        onChange={(e) => {
-          recevoir(e.target.files)
-          /* Remis à zéro : sans ça, re-choisir exactement la même photo
-             n'émet aucun événement et l'écran a l'air de ne rien faire. */
-          e.target.value = ''
-        }}
+        /* Le champ est remis à zéro à chaque choix (useSelecteur) : sans ça,
+           re-choisir exactement la même photo n'émet aucun événement. */
+        {...selecteur.champ}
         aria-label="Choisir des photos"
       />
 
@@ -330,7 +329,7 @@ export default function Screen5Depot({
               descendue en note de pied de barre.
               Reste le seul objet qui compte : le geste. */}
           <div className={`at-d-appel${survol ? ' is-survol' : ''}`}>
-            <button type="button" className="at-d-parcourir" onClick={() => champ.current?.click()}>
+            <button type="button" className="at-d-parcourir" onClick={selecteur.ouvrir}>
               Choisir des photos
             </button>
           </div>
@@ -441,6 +440,7 @@ export default function Screen5Depot({
           apparaissent sont lus — 8 photos écartées sur 60 ne passent plus
           en silence. */}
       <div aria-live="polite">
+        {selecteur.silence && <p className="at-d-refus">{phraseSilence(selecteur.silence, false)}</p>}
         {refus.length > 0 && (
           <ul className="at-d-refus">
             {refus.slice(0, 5).map((r, i) => (
@@ -532,7 +532,7 @@ export default function Screen5Depot({
               peut qu'être refusé ne se propose pas. */}
           {ilReste > 0 && (
             <li className="at-d-tuile at-d-tuile--ajout">
-              <button type="button" onClick={() => champ.current?.click()}>
+              <button type="button" onClick={selecteur.ouvrir}>
                 <b aria-hidden="true">+</b>
                 <small>Compléter avec d’autres photos</small>
               </button>
