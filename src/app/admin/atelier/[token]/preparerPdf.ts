@@ -22,7 +22,7 @@
  * sur les fichiers réels de Merisa le 18/09.
  * ══════════════════════════════════════════════════════════════════════════
  */
-import { PDFDocument, type PDFPage } from "pdf-lib";
+import type { PDFDocument, PDFPage } from "pdf-lib";
 import {
   planCouverture,
   planInterieur,
@@ -85,6 +85,8 @@ export async function preparerPdfImpression(
      ne le décrit, on ne touche pas à ce qu'on ne sait pas juger. */
   if (type === "product") return { inchange: true, resume: "Déposé tel quel." };
 
+  /* Chargé au clic seulement : 174 Ko gzip que la fiche n'a pas à payer à l'ouverture. */
+  const { PDFDocument } = await import("pdf-lib");
   let src: PDFDocument;
   try {
     src = await PDFDocument.load(source, { updateMetadata: false });

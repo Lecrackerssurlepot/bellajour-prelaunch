@@ -3467,3 +3467,53 @@
   align-self: flex-start;
   margin: 0 8px 12px;
 }
+
+/* Téléphone, clavier ouvert (26/10) : `--app-height` est gelé à la largeur, donc le clavier ne le réduit pas et la
+   fenêtre centrée sortait par le haut. Le plafond suit la hauteur VISIBLE (`--ec-vis-h`, posé en JS : une fenêtre n'est
+   pas un plein écran), le panneau défile, et l'en-tête (titre + Fermer) reste collé en haut. Les champs à 16 px
+   évitent le zoom de Safari au focus. */
+@media (max-width: 860px) {
+  .ec-espace .ec-fenetre-voile,
+  .ec-espace .ec-panneau-voile {
+    overscroll-behavior: contain;
+  }
+  .ec-espace .ec-fenetre-voile:not(.ec-fenetre-voile--cote) {
+    align-items: safe center;
+    overflow-y: auto;
+  }
+  .ec-espace .ec-fenetre,
+  .ec-espace .ec-panneau {
+    max-height: calc(min(var(--app-height), var(--ec-vis-h, var(--app-height))) - 24px);
+    overscroll-behavior: contain;
+  }
+  .ec-espace .ec-fenetre:not(.ec-fenetre--cote):not(.ec-fenetre--pleine) > .ec-fenetre-tete {
+    position: sticky;
+    top: -22px;
+    z-index: 2;
+    margin: -22px -22px 0;
+    padding: 22px 22px 10px;
+    background: var(--ec-glass);
+    -webkit-backdrop-filter: blur(32px);
+    backdrop-filter: blur(32px);
+  }
+  .ec-espace .ec-fenetre--pleine {
+    height: calc(min(var(--app-height), var(--ec-vis-h, var(--app-height))) - 24px);
+  }
+  .ec-espace .ec-champ,
+  .ec-espace .ec-partage-message textarea {
+    font-size: 16px;
+  }
+}
+
+/* Sur téléphone on ne glisse rien : le texte pour la souris cède la place à celui du doigt (retour du 26/10). */
+.ec-espace .ec-pour-doigt {
+  display: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  .ec-espace .ec-pour-souris {
+    display: none;
+  }
+  .ec-espace .ec-pour-doigt {
+    display: inline;
+  }
+}

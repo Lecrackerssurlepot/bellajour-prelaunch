@@ -73,10 +73,7 @@ export function EtatSansLien(o: {
       </span>
       <strong className="ec-ph-accueil-titre">{v("Créez un lien par groupe", "Crée un lien par groupe")}</strong>
       <p className="ec-texte">
-        {v(
-          "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et vous voyez d'où vient chaque photo.",
-          "Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et tu vois d'où vient chaque photo."
-        )}
+        Un lien par bateau, par équipe ou par personne.
       </p>
       <div className="ec-ph-accueil-gestes">
         {o.ouverte ? (
@@ -131,14 +128,12 @@ export function FenetreModifierLien(f: {
   return (
     <Fenetre
       titre={f.general ? "Modifier le lien général" : `Modifier « ${f.nom} »`}
-      sous={f.general ? "Le nombre de photos par personne : chacun dépose depuis son téléphone." : "Le nom et le nombre de photos par personne, en une fois."}
-      onFermer={f.onFermer}
+            onFermer={f.onFermer}
     >
       {f.general ? null : (
         <label className="ec-curseur">
           Le nom
           <input className="ec-champ" value={nom} maxLength={80} autoFocus onChange={(e) => setNom(e.target.value)} onKeyDown={(e) => e.key === "Enter" && garder()} />
-          <span className="ec-note">Ses photos se rangent sous ce nom.</span>
         </label>
       )}
       <div className="ec-lien-plafond">

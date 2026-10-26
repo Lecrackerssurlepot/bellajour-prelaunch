@@ -62,6 +62,11 @@ export function cleVignette(editionId: string, photoId: string): string {
   return `${prefixeEdition(editionId)}photos/${exigerUuid(photoId, "photoId")}/vignette.jpg`;
 }
 
+/** La version moyenne d'« Agrandir » (5A, 26/10) : TOUJOURS du JPEG, à côté de la vignette. */
+export function cleMoyenne(editionId: string, photoId: string): string {
+  return `${prefixeEdition(editionId)}photos/${exigerUuid(photoId, "photoId")}/moyenne.jpg`;
+}
+
 /** Le PDF source d'un tour : au coffre, JAMAIS servi au client (PRD §6.1). */
 export function clePdfTour(editionId: string, tourId: string): string {
   return `${prefixeEdition(editionId)}tours/${exigerUuid(tourId, "tourId")}/source.pdf`;

@@ -69,7 +69,7 @@ export function ligneCollecteTerminee(clotureLe: string | null | undefined): str
 /** La même ligne en deux morceaux (la tête se met en gras à l'écran, la suite reste normale). */
 export function partiesCollecteTerminee(clotureLe: string | null | undefined): { tete: string; suite: string } {
   const quand = quandParis(clotureLe);
-  return { tete: `Collecte terminée${quand ? ` ${quand}` : ""}`, suite: "les liens ne reçoivent plus de photos. L'atelier compose." };
+  return { tete: `Collecte terminée${quand ? ` ${quand}` : ""}`, suite: "liens fermés. L'atelier compose." };
 }
 
 /**
@@ -94,11 +94,11 @@ export function phraseAtelierCommence(photos: number | null, selection: number, 
 
 /** Sous la ligne, pour le responsable seul : un oubli se rattrape, par l'atelier (le registre de l'édition). */
 export function ligneOubli(tu: boolean): string {
-  return tu ? "Un oubli ? Écris à l'atelier : il peut rouvrir." : "Un oubli ? Écrivez à l'atelier : il peut rouvrir.";
+  return tu ? "Un oubli ? Écris à l'atelier." : "Un oubli ? Écrivez à l'atelier.";
 }
 
 /** Ce que dit un bouton de dépôt ou de création de lien éteint (survol, lecteur d'écran). */
-export const RAISON_COLLECTE_TERMINEE = "La collecte est terminée : les liens ne reçoivent plus de photos.";
+export const RAISON_COLLECTE_TERMINEE = "Collecte terminée : liens fermés.";
 
 /* ───────────────────────────── la fiche de l'atelier ───────────────────────────── */
 

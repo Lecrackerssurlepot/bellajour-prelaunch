@@ -35,6 +35,7 @@ import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } f
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
+import { useVerrouDefilement } from "../_composants/useVerrouDefilement";
 import RelireAuRetour from "../_composants/RelireAuRetour";
 import { BarreTitreContexte } from "../_composants/TitreEcran";
 import PartageEquipe from "./PartageEquipe";
@@ -54,6 +55,8 @@ type Props = {
   nonLus: number;
   /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
   peutDeposer: boolean;
+  /** 2A : les photos d'un envoi coupé du responsable sur cet appareil (lues au layout). */
+  coupees: number;
   /** Le registre « tu » (école) : la fenêtre d'envoi tutoie. */
   tu: boolean;
   /** T-154 : le responsable sur un appareil pas encore reconnu (il lit ; un code par mail pour modifier). */
@@ -122,6 +125,15 @@ export default function Coquille(props: Props) {
   useEffect(() => {
     if (!ouvert) return;
     return () => setTiroirPour(null);
+  }, [ouvert]);
+  useVerrouDefilement(ouvert);
+  useEffect(() => {
+    if (!ouvert) return;
+    function touche(e: KeyboardEvent) {
+      if (e.key === "Escape") setTiroirPour(null);
+    }
+    window.addEventListener("keydown", touche);
+    return () => window.removeEventListener("keydown", touche);
   }, [ouvert]);
   useEffect(() => {
     if (!bulle) return;
@@ -254,7 +266,7 @@ export default function Coquille(props: Props) {
 
       {ouvert ? <button type="button" className="ec-voile" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
 
-      <DepotFournisseur token={props.token} actif={props.peutDeposer} tu={props.tu}>
+      <DepotFournisseur token={props.token} actif={props.peutDeposer} tu={props.tu} coupees={props.coupees}>
         {/* La lecture seule (lien d'équipe) se dit dans le menu, sous le nom :
             plus de bandeau qui s'empile au-dessus de chaque écran. */}
         <div className="ec-contenu" data-lecture={props.lectureSeule ? "oui" : undefined}>

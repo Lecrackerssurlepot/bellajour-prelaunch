@@ -38,7 +38,6 @@ export function CarteLienMort() {
           <IcoLienCasse taille={22} />
         </span>
         <h1 className="ec-dp-etat-titre">{titre}</h1>
-        <p className="ec-dp-texte">Il a été remplacé ou retiré par l’organisateur.</p>
         <p className="ec-dp-note">{suite}</p>
       </div>
     </div>

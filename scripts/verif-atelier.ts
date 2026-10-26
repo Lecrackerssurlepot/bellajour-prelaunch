@@ -4300,6 +4300,12 @@ ok("une URL absolue, un protocole ou un vide retombent sur /compte",
    && suiteSure("") === "/compte"
    && suiteSure(null) === "/compte"
    && suiteSure(undefined) === "/compte");
+ok("« /\\x », tabulation et retour chariot cachés, « / » seul : tous retombent sur /compte",
+   suiteSure("/\\evil.example") === "/compte"
+   && suiteSure("/\t/evil.example") === "/compte"
+   && suiteSure("/\n/evil.example") === "/compte"
+   && suiteSure("/") === "/compte"
+   && suiteSure("/a\\b") === "/a\\b");
 
 titre("— le carnet complet : ce que l'ecran montre est ce que l'export sort —");
 {
@@ -6297,7 +6303,56 @@ const verifierT203 = async () => {
   }
 };
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(() => {
+/* Campagne « rude épreuve », lot 1 (26/10) : la fiche ne compte que le reçu, « dépôt terminé »
+   exige le seuil côté serveur, un fichier sans signature d'image ne passe pas pour une photo. */
+const verifierLot1RudeEpreuve = async (): Promise<void> => {
+  titre("— rude epreuve lot 1 : photos confirmees, seuil du depot termine, signature d'image —");
+  const lireF = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const donnees = lireF("src/app/admin/atelier/donnees.ts");
+  const lp = donnees.slice(donnees.indexOf("async function lirePhotos("), donnees.indexOf("async function lireNumeros("));
+  ok("client-1 : la fiche admin ne lit que les photos CONFIRMEES (`taille` non nulle), dans ses trois paliers de repli",
+    (lp.match(/\.from\("photos"\)/g) ?? []).length === 3 && (lp.match(/\.not\("taille", "is", null\)/g) ?? []).length === 3);
+  const P = await import("@/app/(atelier)/composer/depot/paliers");
+  const route = lireF("src/app/api/atelier/numero/route.ts");
+  ok("client-4 : une seule regle du depot termine (`depotTerminable`, MIN_PHOTOS), lue par l'ecran et par le PATCH, comptee sur les photos confirmees, 409 sinon",
+    P.depotTerminable(P.MIN_PHOTOS) && !P.depotTerminable(P.MIN_PHOTOS - 1) && !P.depotTerminable(0)
+      && /return depotTerminable\(e\.confirmees\) && e\.consent && !e\.envoiEnCours;/.test(lireF("src/app/(atelier)/composer/depot/paliers.ts"))
+      && /maj\.consent_photos === true && numero\.consent_photos !== true/.test(route) && /if \(!depotTerminable\(count \?\? 0\)\)/.test(route)
+      && /error: "photos_insuffisantes" \}, \{ status: 409 \}/.test(route)
+      && route.indexOf("if (!depotTerminable(") < route.indexOf("supabase.from(\"numeros\").update(maj)"));
+  const F = await import("@/lib/atelier/formats");
+  const oct = (...o: number[]) => new Uint8Array(o);
+  const texte = new TextEncoder().encode("ceci est un texte");
+  ok("upload-2 : JPEG, PNG, WebP, HEIC (ftyp) reconnus ; un texte, des octets au hasard, un fichier vide ou trop court ne le sont pas",
+    F.signaturePhotoReconnue(oct(0xff, 0xd8, 0xff, 0xe0)) && F.signaturePhotoReconnue(oct(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))
+      && F.signaturePhotoReconnue(oct(0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50)) && F.signaturePhotoReconnue(oct(0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63))
+      && !F.signaturePhotoReconnue(texte) && !F.signaturePhotoReconnue(oct(0x12, 0x9a, 0x44, 0x01, 0x77, 0x00, 0x13, 0x5c)) && !F.signaturePhotoReconnue(oct()) && !F.signaturePhotoReconnue(oct(0xff, 0xd8)));
+};
+
+/* 8A (décision de Mathias, 26/10) : un HEIC déposé dans /composer par un navigateur qui ne le lit pas
+   (Chrome, Firefox, Android) reçoit sa vignette par libheif, le décodeur déjà livré pour les éditions.
+   Rien d'autre ne bouge dans le tunnel : la charge, l'ordre réduire → déclarer → envoyer, la tuile sobre
+   quand libheif échoue aussi. */
+const verifierHeicComposer = async () => {
+  titre("— 8A : /composer fait la vignette d'un HEIC avec libheif, seulement quand le navigateur ne l'a pas faite —");
+  const moteur = readFileSync(resolve(process.cwd(), "src/app/(atelier)/composer/depot/moteur.ts"), "utf8");
+  const heic = readFileSync(resolve(process.cwd(), "src/app/edition/_composants/depot/heic.ts"), "utf8");
+  const worker = readFileSync(resolve(process.cwd(), "public/heic/vignette-heic.worker.js"), "utf8");
+  ok("8A : libheif seulement sans vignette du navigateur ET pour un HEIC (Safari et les JPEG ne changent pas)",
+    /const vignette = r\.vignette \?\? \(estHeic\(item\.mime\) \? await vignetteHeic\(original\) : null\)/.test(moteur) && (moteur.match(/vignetteHeic\(/g) ?? []).length === 1);
+  ok("8A : la CHARGE ne change pas (r.charge ou l'original), le HEIC part brut (piège nº16), la vignette sert l'aperçu, le coffre local et R2",
+    /vivant\.charge = r\.charge \?\? original/.test(moteur) && /reduire: !estHeic\(item\.mime\)/.test(moteur) && /vivant\.vignette = vignette\n/.test(moteur)
+      && /if \(vignette\) vivant\.apercu = URL\.createObjectURL\(vignette\)/.test(moteur) && /void this\.persister\(vivant, vignette\)/.test(moteur));
+  ok("8A : l'item est relu APRÈS l'attente de libheif (arrêt, retrait ou changement d'état pendant le décodage : rien n'est écrit)",
+    moteur.indexOf("await vignetteHeic(original)") < moteur.indexOf("if (this.arrete) return", moteur.indexOf("await vignetteHeic(original)"))
+      && moteur.indexOf("if (!vivant || vivant.etat !== 'reduction') return", moteur.indexOf("await vignetteHeic(original)")) > 0);
+  ok("8A : le décodeur ne bloque jamais un dépôt : `null` sans worker, délai borné, jamais d'exception ; chargé à la première photo HEIC seulement",
+    /if \(!creerVoies\(\)\) return Promise\.resolve\(null\);/.test(heic) && /const DELAI_MAX_MS = 45_000;/.test(heic) && /importScripts\('\/heic\/libheif-bundle\.js'\)/.test(worker) && /function charger\(\) \{\n  if \(!lib\) \{/.test(worker));
+  ok("8A : le worker du B2C reste sans libheif, et /composer ne demande jamais la version moyenne des éditions",
+    !/libheif/.test(readFileSync(resolve(process.cwd(), "src/app/(atelier)/composer/depot/reduire.worker.js"), "utf8")) && !/moyenne/.test(moteur.replace(/\/\*[\s\S]*?\*\//g, "")));
+};
+
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

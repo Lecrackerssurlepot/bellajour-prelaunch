@@ -324,7 +324,7 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
     ...arbre.vous.map((h) => ({
       cle: h.cle,
       libelle: h.nom,
-      detail: `déposées par vous${h.enfants.length ? ` · ${h.enfants.length} sous-dossier${h.enfants.length > 1 ? "s" : ""}` : ""}`,
+      detail: `déposées par ${edition.registre === "ecole_tu" ? "toi" : "vous"}${h.enfants.length ? ` · ${h.enfants.length} sous-dossier${h.enfants.length > 1 ? "s" : ""}` : ""}`,
       n: h.n,
       lien: false,
       couverture: null,

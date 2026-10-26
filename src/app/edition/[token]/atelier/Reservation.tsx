@@ -51,12 +51,12 @@ export default function Reservation(p: {
         const json = (await rep.json().catch(() => ({}))) as Semaine & { message?: string };
         if (!rep.ok) {
           setDonnees(null);
-          setErreur(json.message ?? `Les créneaux n'ont pas pu se lire (erreur ${rep.status}).`);
+          setErreur(json.message ?? "Créneaux illisibles.");
           return;
         }
         setDonnees(json);
       } catch {
-        setErreur("Le réseau n'a pas répondu.");
+        setErreur("Pas de réseau.");
       } finally {
         setCharge(false);
       }
@@ -91,7 +91,7 @@ export default function Reservation(p: {
       }
       p.onFait({ rdv: json.rdv, mail: json.mail ?? "", avertissement: json.avertissement ?? null });
     } catch {
-      setErreur("Le réseau n'a pas répondu. Rien n'est réservé.");
+      setErreur("Pas de réseau. Rien n'est réservé.");
     } finally {
       setOccupe(false);
     }

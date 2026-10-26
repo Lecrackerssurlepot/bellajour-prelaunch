@@ -297,7 +297,17 @@
 }
 
 .bj-atelier .at-q-quitter-reste { margin-top: 30px; width: 100%; justify-content: center; }
-.bj-atelier .at-q-quitter .at-q-quitter-part { margin-top: 16px; align-self: center; }
+.bj-atelier .at-q-quitter .at-q-quitter-part {
+  margin-top: 6px;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 8px;
+}
+/* Clavier ouvert / paysage : la fenêtre ne dépasse jamais l'écran visible, elle défile. */
+.at-q-voile { overscroll-behavior: contain; overflow-y: auto; align-items: safe center; }
+.at-q-quitter { max-height: calc(100dvh - 48px); overflow-y: auto; }
 
 /* ---- champs ---- */
 .bj-atelier .at-field,

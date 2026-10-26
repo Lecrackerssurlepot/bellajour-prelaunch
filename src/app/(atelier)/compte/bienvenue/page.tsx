@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { compteOuvert } from '@/lib/compte/session'
 import FormulaireBienvenue from './FormulaireBienvenue'
 import '../compte.css'
@@ -28,6 +28,9 @@ export default async function BienvenuePage({
   const params = await searchParams
   const candidat = (params.e ?? '').trim().toLowerCase()
   const emailInitial = EMAIL_PLAUSIBLE.test(candidat) ? candidat : ''
+  /* Le lien du mail C0 porte toujours l'adresse. Sans elle, la page promettrait
+     un compte à un visiteur qui n'en a pas : on l'envoie à la connexion. */
+  if (!emailInitial) redirect('/compte/connexion')
 
   return (
     <div className="bj-atelier cpt cpt--porte">

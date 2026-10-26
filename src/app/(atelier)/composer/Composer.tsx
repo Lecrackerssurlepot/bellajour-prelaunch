@@ -451,7 +451,14 @@ export default function Composer() {
       if (e.key === 'Escape') setQuitter(null)
     }
     window.addEventListener('keydown', auClavier)
-    return () => window.removeEventListener('keydown', auClavier)
+    /* Le fond reste immobile sous la fenêtre (mobile-2). */
+    const html = document.documentElement
+    const avant = html.style.overflow
+    html.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', auClavier)
+      html.style.overflow = avant
+    }
   }, [quitter])
 
   const aller = useCallback((n: number) => {

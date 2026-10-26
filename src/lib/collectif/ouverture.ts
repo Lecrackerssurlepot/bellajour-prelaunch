@@ -42,9 +42,9 @@ export function quandOuvre(ouvertureLe: string | null | undefined): string {
 export function phrasesPasEncoreOuvert(ouvertureLe: string | null | undefined, registre: string): { titre: string; quand: string; garder: string } {
   const q = quandOuvre(ouvertureLe);
   return {
-    titre: "Le dépôt n'est pas encore ouvert",
+    titre: "Pas encore ouvert",
     quand: q ? `Il ouvrira le ${q}.` : "Il ouvrira bientôt.",
-    garder: registre === "ecole_tu" ? "Garde ce lien : c'est le même qui servira." : "Gardez ce lien : c'est le même qui servira.",
+    garder: registre === "ecole_tu" ? "Garde ce lien." : "Gardez ce lien.",
   };
 }
 

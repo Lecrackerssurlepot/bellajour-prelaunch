@@ -12,13 +12,13 @@ type Etat = "repos" | "envoye" | "envoi" | "verification";
 
 function phrases(v: (vous: string, toi: string) => string): Record<string, string> {
   return {
-    coupe: v("L'envoi des codes est coupé pour l'instant. Écrivez à l'atelier pour modifier votre espace.", "L'envoi des codes est coupé pour l'instant. Écris à l'atelier pour modifier ton espace."),
-    trop: v("Plusieurs codes viennent d'être envoyés. Attendez une heure avant d'en demander un autre.", "Plusieurs codes viennent d'être envoyés. Attends une heure avant d'en demander un autre."),
-    echec: v("Le code n'a pas pu partir. Réessayez dans un instant.", "Le code n'a pas pu partir. Réessaie dans un instant."),
-    migration_absente: v("L'espace n'est pas encore prêt à envoyer des codes. Réessayez plus tard.", "L'espace n'est pas encore prêt à envoyer des codes. Réessaie plus tard."),
-    expire: v("Ce code a expiré ou a déjà servi\u00a0: demandez-en un nouveau.", "Ce code a expiré ou a déjà servi\u00a0: demandes-en un nouveau."),
-    bloque: v("Trop d'essais avec ce code\u00a0: demandez-en un nouveau.", "Trop d'essais avec ce code\u00a0: demandes-en un nouveau."),
-    inactif: v("Plus besoin de code\u00a0: rechargez la page.", "Plus besoin de code\u00a0: recharge la page."),
+    coupe: v("Envoi des codes coupé. Écrivez à l'atelier.", "Envoi des codes coupé. Écris à l'atelier."),
+    trop: v("Trop de codes. Attendez une heure.", "Trop de codes. Attends une heure."),
+    echec: v("Code non envoyé. Réessayez.", "Code non envoyé. Réessaie."),
+    migration_absente: v("Codes indisponibles. Réessayez plus tard.", "Codes indisponibles. Réessaie plus tard."),
+    expire: v("Code expiré\u00a0: demandez-en un nouveau.", "Code expiré\u00a0: demandes-en un nouveau."),
+    bloque: v("Trop d'essais\u00a0: demandez un nouveau code.", "Trop d'essais\u00a0: demande un nouveau code."),
+    inactif: v("Rechargez la page.", "Recharge la page."),
   };
 }
 
@@ -77,8 +77,8 @@ export default function CodeAppareil({ token, adresse, tu }: { token: string; ad
     <div className="ec-code">
       <p>
         {v(
-          "Sur cet appareil, votre espace s'ouvre en lecture. Pour modifier (choisir le style, valider, déposer des photos…), nous envoyons un code à ",
-          "Sur cet appareil, ton espace s'ouvre en lecture. Pour modifier (choisir le style, valider, déposer des photos…), nous envoyons un code à "
+          "Pour modifier, un code part à ",
+          "Pour modifier, un code part à "
         )}
         <strong>{adresse}</strong>.
       </p>
@@ -116,7 +116,7 @@ export default function CodeAppareil({ token, adresse, tu }: { token: string; ad
         </p>
       ) : null}
       <p className="ec-code-note">
-        {v("Cet appareil sera ensuite reconnu pendant un an.", "Cet appareil sera ensuite reconnu pendant un an.")}
+        {"Reconnu ensuite pendant un an."}
       </p>
     </div>
   );

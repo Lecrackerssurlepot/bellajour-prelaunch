@@ -2,7 +2,7 @@ import { after, NextResponse } from "next/server";
 import { supprimer } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAccesDepot } from "@/lib/collectif/acces";
-import { cleVignette } from "@/lib/collectif/cles";
+import { cleMoyenne, cleVignette } from "@/lib/collectif/cles";
 import { LOT_CONFIRMATION } from "@/lib/collectif/depot";
 import { peut } from "@/lib/collectif/droits";
 import { noterEchec } from "@/lib/collectif/echecsJournal";
@@ -117,7 +117,7 @@ export async function POST(request: Request) {
           return;
         }
         if (issue === "trop_lourde") {
-          await Promise.all([supprimer(l.r2_key), supprimer(cleVignette(edition.id, l.id))]);
+          await Promise.all([supprimer(l.r2_key), supprimer(cleVignette(edition.id, l.id)), supprimer(cleMoyenne(edition.id, l.id))]);
           await supabase.from("collectif_photos").delete().eq("id", l.id);
           rejetees.push({ id: l.id, raison: "trop_volumineuse" });
           return;

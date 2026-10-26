@@ -56,11 +56,14 @@ import {
   nouvellesDepuis,
   photosDeLEnvoi,
   phraseAutresAppareils,
+  BOUTON_REPRENDRE,
+  phraseCoupees,
   phrasePlace,
   phraseRetour,
   phrasesDuLot,
   progression,
   SONDAGE_ALBUM_MS,
+  SONDAGES_AVANT_RELECTURE,
 } from "@/lib/collectif/depotParticipant";
 import type { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { useApercus, useMoteur } from "../../edition/_composants/depot/useMoteur";
@@ -90,6 +93,8 @@ type Props = {
   ongletInitial: Onglet;
   /** Le retour sur le même appareil (8A) : « Content de te revoir, Léa », une fois ; `surCeLien` : ses photos sur CE lien. */
   accueil: { prenom: string; surCeLien: number } | null;
+  /** 2A : les photos d'un envoi coupé, à reprendre (0 : rien à dire ; déjà tues dès qu'un envoi part). */
+  coupees?: number;
   lectureSeule?: boolean;
   /** La collecte close (9C) : le chemin du retour vers la carte. */
   retour?: (() => void) | null;
@@ -194,7 +199,7 @@ export default function Album(props: Props) {
             titre: tu ? `Content de te revoir, ${accueilPrenom}` : `Content de vous revoir, ${accueilPrenom}`,
             texte: [
               phraseRetour(accueilSurCeLien, placeLue, lienNom, tu),
-              neuves.size ? `${neuves.size} nouvelle${neuves.size > 1 ? "s" : ""} dans l'album depuis ${tu ? "ta" : "votre"} visite.` : "",
+              neuves.size ? `${neuves.size} nouvelle${neuves.size > 1 ? "s" : ""} depuis ${tu ? "ta" : "votre"} visite.` : "",
             ]
               .filter(Boolean)
               .join(" "),
@@ -218,9 +223,14 @@ export default function Album(props: Props) {
      sur l'onglet (au plus toutes les 20 s, `useSondage`). Le compte suit tout de suite ; les photos
      des autres arrivées depuis attendent en tête (`arriveesAutres`), montrées seulement quand rien ne
      part ni ne se coche. Un 404 : le lien est mort. */
+  const repereSondage = useRef<{ depuis: string | null; tours: number }>({ depuis: null, tours: 0 });
   const sonder = useCallback(async (): Promise<void> => {
     const confirmeesAvant = moteur?.vue().arrivees ?? 0;
-    const lecture = await lireAlbum(token, p, "album", 0);
+    /* Le serveur ne relit la page que si quelque chose est arrivé depuis (perf-1) ; un tour sur
+       SONDAGES_AVANT_RELECTURE relit tout, pour le compte (une photo partie à la corbeille). */
+    const r = repereSondage.current;
+    r.tours = (r.tours + 1) % SONDAGES_AVANT_RELECTURE;
+    const lecture = await lireAlbum(token, p, "album", 0, r.tours === 0 ? null : r.depuis);
     if (lecture.statut === "mort") {
       setMort(true);
       return;
@@ -237,6 +247,7 @@ export default function Album(props: Props) {
     /* Bornée à deux pages : la prochaine relecture complète (fin d'un envoi) les reprend toutes. */
     if (autres.length) setArriveesAutres((avant) => enTete(autres, avant).slice(0, 2 * TAILLE_PAGE_ALBUM));
     const derniere = derniereArrivee(lu.photos);
+    r.depuis = derniere;
     if (derniere) garderRepere(cleDeVisite(token, p), derniere);
   }, [token, p, moteur]);
   useSondage(sonder, SONDAGE_ALBUM_MS, !mort);
@@ -307,6 +318,7 @@ export default function Album(props: Props) {
   /* La place la plus récente : celle du moteur (dernière déclaration) ou celle du serveur (album, suppression). */
   const place = (vue.placeLe ?? 0) > placeServeur.le ? vue.place : placeServeur.valeur;
   const plein = typeof place === "number" && place <= 0;
+  const coupees = props.lectureSeule ? 0 : (props.coupees ?? 0);
 
   const peutSupprimer = props.personnes && !props.lectureSeule && Boolean(props.moteur);
   const supprimables = miennes.photos.filter((x) => x.supprimable);
@@ -347,10 +359,10 @@ export default function Album(props: Props) {
         typeof r.json.message === "string" && r.status !== 503
           ? r.json.message
           : r.status === 429
-            ? v("Trop de demandes en même temps : rien n'a été supprimé. Réessayez dans une minute.", "Trop de demandes en même temps : rien n'a été supprimé. Réessaie dans une minute.")
+            ? v("Trop de demandes. Réessayez.", "Trop de demandes. Réessaie.")
             : r.status === 0
-            ? v("Connexion interrompue : rien n'a été supprimé. Réessayez.", "Connexion interrompue : rien n'a été supprimé. Réessaie.")
-            : v("La suppression n'a pas pu se faire. Rien n'a été supprimé.", "La suppression n'a pas pu se faire. Rien n'a été supprimé.");
+            ? v("Connexion perdue. Réessayez.", "Connexion perdue. Réessaie.")
+            : "Suppression impossible.";
       setSuppression({ enCours: false, erreur: message });
       return;
     }
@@ -372,8 +384,8 @@ export default function Album(props: Props) {
     setAnnonce({
       titre: `${parties.size} photo${parties.size > 1 ? "s" : ""} supprimée${parties.size > 1 ? "s" : ""}`,
       texte: refusees
-        ? `${refusees} ${refusees > 1 ? "n'ont" : "n'a"} pas pu l'être.`
-        : v(`L'organisateur peut encore les récupérer pendant ${DELAI_CORBEILLE_JOURS} jours.`, `L'organisateur peut encore les récupérer pendant ${DELAI_CORBEILLE_JOURS} jours.`),
+        ? `${refusees} non supprimée${refusees > 1 ? "s" : ""}.`
+        : `Récupérables ${DELAI_CORBEILLE_JOURS} jours.`,
     });
   };
 
@@ -496,7 +508,7 @@ export default function Album(props: Props) {
           </ul>
         ) : listeCourante.erreur && !listeCourante.photos.length ? (
           <div className="ec-dp-al-vide">
-            <p>{v("L'album ne se charge pas pour l'instant.", "L'album ne se charge pas pour l'instant.")}</p>
+            <p>Chargement impossible.</p>
             <button type="button" className="ec-dp-bouton ec-dp-bouton--clair" onClick={() => void charger(onglet, 0)}>
               Réessayer
             </button>
@@ -532,16 +544,9 @@ export default function Album(props: Props) {
         ) : !(onglet === "miennes" && envoi.length) ? (
           <div className="ec-dp-al-vide">
             {onglet === "album" ? (
-              <>
-                <p className="ec-dp-al-vide-titre">L&apos;album est vide pour l&apos;instant.</p>
-                <p>
-                  {lien
-                    ? `Les photos envoyées par « ${lien} » s'afficheront ici, avec le prénom de chacun.`
-                    : "Les photos envoyées par ce lien s'afficheront ici, avec le prénom de chacun."}
-                </p>
-              </>
+              <p className="ec-dp-al-vide-titre">Album vide.</p>
             ) : (
-              <p>{v("Aucune photo envoyée depuis cet appareil pour l'instant.", "Aucune photo envoyée depuis cet appareil pour l'instant.")}</p>
+              <p>Aucune photo envoyée.</p>
             )}
           </div>
         ) : null}
@@ -588,10 +593,7 @@ export default function Album(props: Props) {
                     <i style={{ width: `${prog.part}%` }} />
                   </div>
                   <p className="ec-dp-note">
-                    {v(
-                      "Gardez cette page ouverte pendant l'envoi. Les photos déjà arrivées sont gardées.",
-                      "Garde cette page ouverte pendant l'envoi. Les photos déjà arrivées sont gardées."
-                    )}
+                    {v("Gardez la page ouverte.", "Garde la page ouverte.")}
                   </p>
                 </>
               ) : termine && recues > 0 && bilanVisible ? (
@@ -600,13 +602,7 @@ export default function Album(props: Props) {
                     Merci{props.qui ? ` ${props.qui.prenom}` : ""}, {recues} photo{recues > 1 ? "s" : ""} reçue{recues > 1 ? "s" : ""}.
                   </b>
                   <span>
-                    {recues > 1
-                      ? lien
-                        ? `Elles sont dans l'album de ${lien}.`
-                        : "Elles sont dans l'album."
-                      : lien
-                        ? `Elle est dans l'album de ${lien}.`
-                        : "Elle est dans l'album."}
+                    {lien ? `Dans l'album de ${lien}.` : "Dans l'album."}
                   </span>
                 </div>
               ) : null}
@@ -631,8 +627,16 @@ export default function Album(props: Props) {
                   {r}
                 </p>
               ))}
-              {vue.horsLigne ? <p className="ec-dp-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
-              {vue.serveurLent ? <p className="ec-dp-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
+              {vue.horsLigne ? <p className="ec-dp-note">Connexion perdue. Reprise automatique.</p> : null}
+              {vue.serveurLent ? <p className="ec-dp-note">Serveur lent. Reprise automatique.</p> : null}
+              {vue.reseauBloque ? (
+                <>
+                  <p className="ec-dp-note ec-dp-note--refus">{vue.reseauBloque}</p>
+                  <button type="button" className="ec-dp-bouton ec-dp-bouton--clair" onClick={() => props.moteur?.reessayer()}>
+                    Réessayer
+                  </button>
+                </>
+              ) : null}
               {/* Les vidéos écartées se disent pendant l'envoi (planche 7B) ; le merci (7C) ne les redit pas. */}
               {(enCours || !termine ? ignores : []).map((t) => (
                 <p key={t} className="ec-dp-note ec-dp-note--refus">
@@ -654,10 +658,13 @@ export default function Album(props: Props) {
                       Réessayer ({vue.erreurs})
                     </button>
                   ) : null}
+                  {/* 2A : l'envoi coupé, dit en quatre mots ; « Reprendre » rouvre le choix (les mêmes photos repartent
+                      sur leur ligne, la place qu'elles réservent ne bloque donc pas le bouton). */}
+                  {coupees ? <p className="ec-dp-note ec-dp-note--refus">{phraseCoupees(coupees)}</p> : null}
                   {props.ajouter ? (
-                    <button type="button" className="ec-dp-bouton" onClick={ajouter} disabled={plein}>
+                    <button type="button" className="ec-dp-bouton" onClick={ajouter} disabled={plein && !coupees}>
                       <IcoPlus />
-                      Ajouter des photos
+                      {coupees ? BOUTON_REPRENDRE : "Ajouter des photos"}
                     </button>
                   ) : null}
                   <p className="ec-dp-reste">
@@ -678,7 +685,7 @@ export default function Album(props: Props) {
               {nb > 1 ? `Supprimer ${nb} photos ?` : "Supprimer cette photo ?"}
             </h2>
             <p className="ec-dp-texte">
-              {`${nb > 1 ? "Elles disparaissent" : "Elle disparaît"} de l'album${lien ? ` de ${lien}` : ""} et ${nb > 1 ? "ne vont pas" : "ne va pas"} dans le magazine. L'organisateur peut encore ${nb > 1 ? "les" : "la"} récupérer pendant ${DELAI_CORBEILLE_JOURS} jours.`}
+              {`Hors album et magazine. Récupérables ${DELAI_CORBEILLE_JOURS} jours.`}
             </p>
             {suppression.erreur ? <p className="ec-dp-note ec-dp-note--refus">{suppression.erreur}</p> : null}
             <button type="button" className="ec-dp-bouton ec-dp-bouton--plein-danger" disabled={suppression.enCours} onClick={() => void supprimer()}>

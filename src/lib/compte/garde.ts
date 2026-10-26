@@ -104,10 +104,18 @@ export const COOKIE_SUITE = "bj_compte_suite";
 
 /**
  * Une destination `?suite=` ne peut être qu'un chemin INTERNE : un chemin
- * absolu commençant par un seul « / ». Tout le reste (« // », « http: »,
- * vide) retombe sur /compte — jamais de redirection ouverte.
+ * absolu commençant par un seul « / » suivi ni de « / » ni de « \ » (les
+ * navigateurs lisent « \ » comme « / »). Tout le reste (« // », « /\ », « http: »,
+ * vide, caractères de contrôle) retombe sur /compte — jamais de redirection ouverte.
  */
+const ORIGINE_TEST = "https://origine.invalide";
+
 export function suiteSure(suite: string | null | undefined): string {
-  if (!suite || !suite.startsWith("/") || suite.startsWith("//")) return "/compte";
+  if (!suite || !/^\/[^/\\]/.test(suite) || /[\u0000-\u001f\u007f]/.test(suite)) return "/compte";
+  try {
+    if (new URL(suite, ORIGINE_TEST).origin !== ORIGINE_TEST) return "/compte";
+  } catch {
+    return "/compte";
+  }
   return suite;
 }

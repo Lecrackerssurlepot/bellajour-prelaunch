@@ -8,7 +8,8 @@
    à la PREMIÈRE photo seulement : 1,4 Mo qu'on ne paie que si un HEIC arrive.
 
    Il rend une vignette JPEG de 320 px (même taille et même qualité que
-   reduire.worker.js) et les dimensions. L'ORIGINAL n'est jamais touché : il
+   reduire.worker.js), les dimensions et, si on la demande (Édition
+   collective, 5A), la version moyenne d'« Agrandir ». L'ORIGINAL n'est jamais touché : il
    part tel quel au coffre, pour l'impression. Un échec rend null : la photo
    part quand même, sans aperçu, comme avant. */
 
@@ -40,7 +41,7 @@ function afficher(image, largeur, hauteur) {
 async function traiter(d) {
   charger()
   const images = decodeur.decode(new Uint8Array(d.octets))
-  if (!images || !images.length) return { id: d.id, vignette: null, largeur: 0, hauteur: 0 }
+  if (!images || !images.length) return { id: d.id, vignette: null, moyenne: null, largeur: 0, hauteur: 0 }
   /* La plus grande image du fichier (`is_primary` n'existe pas dans ce
      libheif-js, vérifié le 15/10) : un iPhone n'en met qu'une. */
   let image = images[0]
@@ -48,6 +49,7 @@ async function traiter(d) {
   const largeur = image.get_width()
   const hauteur = image.get_height()
   let vignette = null
+  let moyenne = null
   try {
     const pixels = await afficher(image, largeur, hauteur)
     const plein = new OffscreenCanvas(largeur, hauteur)
@@ -61,12 +63,28 @@ async function traiter(d) {
     c2d.imageSmoothingQuality = 'high'
     c2d.drawImage(plein, 0, 0, l, h)
     vignette = await petit.convertToBlob({ type: 'image/jpeg', quality: QUALITE_VIGNETTE })
+    /* La version moyenne d'« Agrandir » (5A, 26/10), seulement si le moteur
+       la demande (`d.moyenne` = { cote, qualite }) et si la photo dépasse ce
+       côté. Tirée de la même image décodée : aucun décodage de plus. */
+    if (d.moyenne && d.moyenne.cote > 0 && Math.max(largeur, hauteur) > d.moyenne.cote) {
+      try {
+        const fm = d.moyenne.cote / Math.max(largeur, hauteur)
+        const moyen = new OffscreenCanvas(Math.max(1, Math.round(largeur * fm)), Math.max(1, Math.round(hauteur * fm)))
+        const cm = moyen.getContext('2d')
+        cm.imageSmoothingEnabled = true
+        cm.imageSmoothingQuality = 'high'
+        cm.drawImage(plein, 0, 0, moyen.width, moyen.height)
+        moyenne = await moyen.convertToBlob({ type: 'image/jpeg', quality: d.moyenne.qualite })
+      } catch {
+        moyenne = null
+      }
+    }
   } finally {
     for (const i of images) {
       try { i.free() } catch { /* déjà libérée */ }
     }
   }
-  return { id: d.id, vignette: vignette, largeur: largeur, hauteur: hauteur }
+  return { id: d.id, vignette: vignette, moyenne: moyenne, largeur: largeur, hauteur: hauteur }
 }
 
 self.onmessage = function (e) {
@@ -74,5 +92,5 @@ self.onmessage = function (e) {
   if (d && d.ping) { self.postMessage({ id: d.id, pong: true }); return }
   traiter(d)
     .then(function (r) { self.postMessage(r) })
-    .catch(function () { self.postMessage({ id: d.id, vignette: null, largeur: 0, hauteur: 0 }) })
+    .catch(function () { self.postMessage({ id: d.id, vignette: null, moyenne: null, largeur: 0, hauteur: 0 }) })
 }

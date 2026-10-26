@@ -108,8 +108,13 @@ export type EtatEnvoi = {
   envoiEnCours: boolean;
 };
 
+/** Le dépôt peut-il se dire terminé ? LA règle, lue par l'écran 5 et par le PATCH de `consent_photos` (garantie 2). */
+export function depotTerminable(confirmees: number): boolean {
+  return confirmees >= MIN_PHOTOS;
+}
+
 export function peutEnvoyer(e: EtatEnvoi): boolean {
-  return e.confirmees >= MIN_PHOTOS && e.consent && !e.envoiEnCours;
+  return depotTerminable(e.confirmees) && e.consent && !e.envoiEnCours;
 }
 
 /**

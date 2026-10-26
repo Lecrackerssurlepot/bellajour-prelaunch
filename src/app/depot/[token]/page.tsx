@@ -25,7 +25,8 @@ import { notFound } from 'next/navigation'
 import { formaterJour } from '@/lib/atelier/dates'
 import { makeSupabase } from '@/lib/supabase'
 import { COOKIE_APPAREIL, estAppareil, placeDuParticipant, type LienDeDepot } from '@/lib/collectif/collecte'
-import { arriveesDeLAppareil, nomDeLAppareil } from '@/lib/collectif/participantConnu'
+import { arriveesDeLAppareil, nomDeLAppareil, photosCoupeesDeLAppareil } from '@/lib/collectif/participantConnu'
+import { teteObjet } from '@/lib/collectif/rattrapageCoffre'
 import { estCleProvenance } from '@/lib/collectif/droits'
 import { collecteOuverte } from '@/lib/collectif/etats'
 import { colonneAbsente, MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
@@ -154,13 +155,17 @@ export default async function PageDepot({
      la page arrive juste (pas d'éclair entre le formulaire et l'album). */
   let moi: { prenom: string; photos: number; ceTelephone: number; surCeLien: number; accordAJour: boolean } | null = null
   let place: number | null | undefined = undefined
+  /* 2A (26/10) : les photos que CE téléphone a déclarées sans qu'elles arrivent (un envoi coupé). */
+  let coupees = 0
   if (ouvert && regle && ouvertureOk) {
     const sb = makeSupabase()
-    const [comptes, reste] = await Promise.all([
+    const [comptes, reste, n] = await Promise.all([
       /* Ses photos sur CE lien (21/10) : la carte dit « 2 photos déjà sur « Bateau 1 » », plus le total de l'édition. */
       qui.participant && telephone ? comptesDeLaPersonne(sb, edition.id, qui.participant.id, telephone, { provenanceId: provenance?.id ?? null }) : Promise.resolve(null),
       placeDuParticipant(sb, edition, lienDeDepot, telephone, qui.participant?.id ?? null, maintenant),
+      telephone ? photosCoupeesDeLAppareil(sb, edition.id, telephone, 'participant', teteObjet) : Promise.resolve(0),
     ])
+    coupees = n
     if (qui.participant) {
       moi = {
         prenom: qui.participant.prenom,
@@ -202,6 +207,7 @@ export default async function PageDepot({
           place={place}
           nomConnu={nomConnu}
           dejaArrivees={dejaArrivees}
+          coupees={coupees}
         />
       )}
     </main>

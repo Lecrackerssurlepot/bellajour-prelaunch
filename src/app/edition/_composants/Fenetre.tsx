@@ -13,6 +13,8 @@
 
 import { useEffect, useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useRetourFerme } from "./useRetourFerme";
+import { useVerrouDefilement } from "./useVerrouDefilement";
 
 const rien = () => () => {};
 
@@ -44,6 +46,8 @@ export default function Fenetre({
 }) {
   const id = useId();
   const client = useSyncExternalStore(rien, () => true, () => false);
+  useVerrouDefilement();
+  useRetourFerme(onFermer);
   useEffect(() => {
     function touche(e: KeyboardEvent) {
       if (e.key === "Escape") onFermer();

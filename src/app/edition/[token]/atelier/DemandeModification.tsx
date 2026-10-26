@@ -29,7 +29,7 @@ export default function DemandeModification({ token, tu, onEnvoyee }: { token: s
       }
       onEnvoyee(json.message && typeof json.message === "object" ? json.message : null);
     } catch {
-      setEtat({ occupe: false, erreur: "Le réseau n'a pas répondu. Rien n'est parti." });
+      setEtat({ occupe: false, erreur: "Pas de réseau. Rien n'est parti." });
     }
   }
 

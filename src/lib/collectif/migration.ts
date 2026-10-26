@@ -206,3 +206,23 @@ export function personnesAbsentes(e: { code?: string | null; message?: string | 
   if (tableAbsente(e.code)) return TABLES_PERSONNES.some((t) => m.includes(t));
   return false;
 }
+
+/* ─────────────────────── la version moyenne d'« Agrandir » (5A, 26/10) ─────────────────────── */
+
+/**
+ * `collectif_photos.moyenne_key` : la clé de la version moyenne (≈ 1 600 px)
+ * que la visionneuse montre à la place de l'original. ÉCRITE le 26/10, PAS
+ * appliquée. Sans elle, RIEN ne casse : la confirmation écrit la photo sans la
+ * clé (`confirmerArrivee`), la grille la lit sans elle (`lireAvecMoyenne`) et
+ * « Agrandir » montre l'original, comme avant. ⚠️ Le repli efface la donnée en
+ * silence : les moyennes déposées pendant la fenêtre sont au coffre, sans clé
+ * en base. Le script `scripts/collectif-moyennes-rattrapage.ts` les retrouve
+ * (une tête au coffre avant de fabriquer quoi que ce soit).
+ */
+export const MIGRATION_MOYENNE = "supabase/migrations/20261026_collectif_photos_moyenne.sql";
+export const COLONNE_MOYENNE = "moyenne_key";
+
+/** Cette erreur dit-elle que la colonne `moyenne_key` manque ? (42703 en lecture, PGRST204 en écriture, la colonne NOMMÉE.) */
+export function moyenneAbsente(e: { code?: string | null; message?: string | null } | null | undefined): boolean {
+  return Boolean(e && colonneAbsente(e.code) && (e.message ?? "").includes(COLONNE_MOYENNE));
+}

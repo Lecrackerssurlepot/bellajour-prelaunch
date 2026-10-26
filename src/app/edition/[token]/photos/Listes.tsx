@@ -160,7 +160,7 @@ export default function Listes(l: Props) {
           </button>
         ) : null}
         {l.ecrire && arbre.vous.length > 1 ? (
-          <p className="ec-note ec-ph-fl-aide">{v("Glissez un dossier sur un autre pour l'y ranger, sur « Tous vos dossiers » pour l'en sortir.", "Glisse un dossier sur un autre pour l'y ranger, sur « Tous tes dossiers » pour l'en sortir.")}</p>
+          <p className="ec-note ec-ph-fl-aide">{v("Glissez un dossier pour le ranger.", "Glisse un dossier pour le ranger.")}</p>
         ) : null}
       </section>
     );

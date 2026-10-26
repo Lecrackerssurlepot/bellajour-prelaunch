@@ -26,6 +26,10 @@ import {
   MAX_FILE_BYTES, estHeic, resoudreMime, type MimeAccepte,
 } from '@/lib/atelier/formats'
 import { fermerPool, poolIndisponible, reduire, tailleDuPool } from './pool'
+/* 8A (décision de Mathias, 26/10) : le décodeur libheif des éditions, importé
+   tel quel. Il ne sert QUE si le navigateur n'a pas su faire la vignette d'un
+   HEIC (Chrome, Firefox, Android) ; Safari la fait seul, rien ne change. */
+import { vignetteHeic } from '@/app/edition/_composants/depot/heic'
 import * as stockage from './stockage'
 import { decalageVersLeCoffre, rangSuivant } from '@/lib/atelier/rang'
 import { lireDossierServeur, type DossierServeur } from '../dossier'
@@ -67,7 +71,7 @@ const URL_PERIMEE_MS = 45 * 60 * 1000
    sont deux moments du même incident, ils ne peuvent pas en dire deux
    choses différentes. */
 const MESSAGE_DOSSIER_INTROUVABLE =
-  'Ce dossier n’existe plus chez nous. Vos réponses sont gardées : reprenez à l’écran précédent, nous le recréons. Les photos de ce dépôt, elles, sont perdues.'
+  'Dossier introuvable. Revenez à l’écran précédent.'
 
 /** Un 403 se retente deux fois (URL périmée, signature) avant d'abandonner. */
 const ESSAIS_ENVOI_MAX = 3
@@ -427,14 +431,14 @@ class Moteur {
           body: JSON.stringify({ token: this.token, photoId: item.photoId }),
         })
         if (!r.ok) {
-          item.message = 'Suppression impossible pour l’instant.'
+          item.message = 'Suppression impossible.'
           this.changement()
           return
         }
         const data = (await r.json()) as { nbPhotos?: number }
         if (typeof data.nbPhotos === 'number') this.nbServeur = data.nbPhotos
       } catch {
-        item.message = 'Connexion perdue. La photo est toujours là.'
+        item.message = 'Connexion perdue.'
         this.changement()
         return
       }
@@ -494,7 +498,12 @@ class Moteur {
            réelle (piège nº16). Seule sa vignette est tentée. */
         reduire: !estHeic(item.mime),
         estJpeg: item.mime === 'image/jpeg',
-      }).then((r) => {
+      }).then(async (r) => {
+        /* Un HEIC que ce navigateur ne lit pas : sa vignette vient de libheif
+           (même worker que les éditions, `public/heic/`). L'original part
+           toujours tel quel ; un échec rend `null` et la tuile reste sobre,
+           comme avant. Jamais d'exception, jamais de blocage (45 s au plus). */
+        const vignette = r.vignette ?? (estHeic(item.mime) ? await vignetteHeic(original) : null)
         if (this.arrete) return
         const vivant = this.items.get(item.id)
         if (!vivant || vivant.etat !== 'reduction') return
@@ -504,17 +513,17 @@ class Moteur {
 
         /* L'aperçu vient de la VIGNETTE, jamais du fichier d'origine : un
            objectURL posé sur l'original le maintiendrait en vie jusqu'à la
-           fermeture de l'onglet. Pas de vignette (HEIC hors Safari, worker
-           indisponible) → tuile sobre au nom du fichier, tout de suite et
+           fermeture de l'onglet. Pas de vignette (HEIC que ni le navigateur ni
+           libheif n'ont lu, worker indisponible) → tuile sobre au nom du fichier, tout de suite et
            définitivement. Jamais de case cassée, jamais de bascule d'aspect
            après la confirmation. */
-        if (r.vignette) vivant.apercu = URL.createObjectURL(r.vignette)
+        if (vignette) vivant.apercu = URL.createObjectURL(vignette)
         /* D7 — on la GARDE, en plus de l'objectURL. L'aperçu et le dépôt sur
            R2 sont deux usages du même blob : un objectURL ne se relit pas. */
-        vivant.vignette = r.vignette
+        vivant.vignette = vignette
 
         vivant.etat = 'prete'
-        void this.persister(vivant, r.vignette)
+        void this.persister(vivant, vignette)
         this.changement()
         this.pompe()
       })
@@ -598,7 +607,7 @@ class Moteur {
         if (r.status === 404) this.dossierIntrouvable = true
         this.bandeau = r.status === 404
           ? MESSAGE_DOSSIER_INTROUVABLE
-          : 'Ce dépôt est clos : l’atelier travaille déjà sur vos photos.'
+          : 'Dépôt clos.'
         for (const i of lot) {
           i.etat = 'erreur'
           i.message = r.status === 404 ? 'Dossier introuvable' : 'Dépôt clos'
@@ -615,7 +624,7 @@ class Moteur {
       /* Réseau perdu : les photos restent en 'prete', on réessaiera. Rien
          n'est perdu, rien n'est marqué en échec — c'est le réseau, pas elle. */
       this.prochaineDeclarationA = Date.now() + 4_000
-      this.bandeau = 'Connexion instable. L’envoi reprend tout seul.'
+      this.bandeau = 'Connexion perdue. Reprise automatique.'
       this.changement()
       return
     }
@@ -631,7 +640,7 @@ class Moteur {
 
       if (res.erreur) {
         item.etat = 'erreur'
-        item.message = MESSAGES_REFUS[res.erreur] ?? 'Refusée par l’atelier'
+        item.message = MESSAGES_REFUS[res.erreur] ?? 'Refusée'
         return
       }
       if (res.photoId) item.photoId = res.photoId
@@ -645,7 +654,7 @@ class Moteur {
         void this.persister(item, null)
         return
       }
-      if (!res.url) { item.etat = 'erreur'; item.message = 'Aucune adresse d’envoi'; return }
+      if (!res.url) { item.etat = 'erreur'; item.message = 'Envoi impossible'; return }
 
       item.url = res.url
       item.urlVignette = res.urlVignette ?? null
@@ -785,7 +794,7 @@ class Moteur {
     if (item.essaisEnvoi >= ESSAIS_ENVOI_MAX) {
       item.etat = 'erreur'
       item.message = statut === 403
-        ? 'Envoi refusé, reprenez cette photo'
+        ? 'Envoi refusé'
         : 'Envoi interrompu'
       return
     }
@@ -847,7 +856,7 @@ class Moteur {
       const attente = BACKOFF_MS[Math.min(this.essaisConfirmation, BACKOFF_MS.length - 1)]
       this.essaisConfirmation++
       this.prochaineConfirmationA = Date.now() + Math.max(attente, 2_000)
-      this.bandeau = 'Vos photos sont arrivées. L’atelier finit de les vérifier.'
+      this.bandeau = 'Photos arrivées.'
       this.changement()
       return
     }
@@ -875,7 +884,7 @@ class Moteur {
       if (!item) continue
       item.etat = 'erreur'
       item.photoId = null
-      item.message = raison === 'trop_volumineuse' ? 'Photo trop lourde' : 'Refusée à l’arrivée'
+      item.message = raison === 'trop_volumineuse' ? 'Photo trop lourde' : 'Refusée'
     }
 
     /* « Absente » n'est pas une erreur : l'objet n'est pas sur R2, donc le PUT
@@ -988,9 +997,9 @@ class Moteur {
           photos_attendues: attendues,
         }),
       })
-      if (!r.ok) return { ok: false, message: 'L’atelier n’a pas pu enregistrer votre accord. Réessayez.' }
+      if (!r.ok) return { ok: false, message: 'Accord non enregistré. Réessayez.' }
     } catch {
-      return { ok: false, message: 'Connexion perdue. Vérifiez votre réseau, puis réessayez.' }
+      return { ok: false, message: 'Connexion perdue. Réessayez.' }
     }
 
     this.finalise = true
@@ -1139,8 +1148,8 @@ class Moteur {
 const MESSAGES_REFUS: Record<string, string> = {
   taille: 'Photo trop lourde',
   format: 'Format non accepté',
-  plafond: 'Le numéro est complet',
-  internal: 'L’atelier n’a pas pu l’enregistrer',
+  plafond: 'Numéro complet',
+  internal: 'Non enregistrée',
 }
 
 function identifiant(): string {

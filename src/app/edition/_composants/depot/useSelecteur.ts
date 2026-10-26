@@ -60,10 +60,10 @@ export function useSelecteurInterrompu(): boolean {
 export function phraseSilence(s: Silence, tu: boolean): string {
   const v = (vous: string, toi: string) => (tu ? toi : vous);
   const conseil = v(
-    "Sur iPhone, une grande sélection peut échouer sans un mot, surtout quand des photos sont dans iCloud : choisissez-les par petits paquets.",
-    "Sur iPhone, une grande sélection peut échouer sans un mot, surtout quand des photos sont dans iCloud : choisis-les par petits paquets."
+    "Choisissez moins de photos à la fois.",
+    "Choisis moins de photos à la fois."
   );
-  const constat = s === "recharge" ? "La page s'est relancée pendant le choix des photos, rien n'est parti." : "Aucune photo n'est arrivée de la photothèque.";
+  const constat = s === "recharge" ? "Page relancée, rien n'est parti." : "Aucune photo reçue.";
   return `${constat} ${conseil} (repère : ${s})`;
 }
 

@@ -9,7 +9,7 @@
    compte des messages non lus. `loading.tsx` ne couvre pas les lectures de
    ce layout (Next 16) : il ne doit pas en ajouter de lentes. */
 
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { peut } from '@/lib/collectif/droits'
 import { etatEffectif } from '@/lib/collectif/etats'
@@ -18,6 +18,10 @@ import { liensEdition, origineDepuis } from '@/lib/collectif/liens'
 import { MIGRATION_COLLECTIF } from '@/lib/collectif/migration'
 import { verrousPour } from '@/lib/collectif/verrous'
 import { adresseMasquee } from '@/lib/collectif/appareil'
+import { COOKIE_APPAREIL, estAppareil } from '@/lib/collectif/collecte'
+import { photosCoupeesDeLAppareil } from '@/lib/collectif/participantConnu'
+import { teteObjet } from '@/lib/collectif/rattrapageCoffre'
+import { makeSupabase } from '@/lib/supabase'
 import Porte from '../_composants/Porte'
 import { chargerEspace, compterNonLus } from './donnees'
 import Coquille from './Coquille'
@@ -50,7 +54,14 @@ export default async function EspaceLayout({
   const responsableIci = role === 'responsable' || appareilInconnu
   const etat = etatEffectif(edition.etat, edition.cloture_le, new Date())
   const nom = responsableIci ? edition.responsable_nom ?? 'Responsable' : 'Équipe'
-  const nonLus = responsableIci ? await compterNonLus(edition.id) : 0
+  /* 2A (26/10) : un envoi du responsable coupé sur CET appareil (onglet fermé pendant l'envoi) se dit
+     dans la pastille d'envoi. Une lecture courte (des têtes au coffre seulement s'il y a des lignes
+     en attente), en même temps que les non-lus. */
+  const appareil = role === 'responsable' && peut(role, 'deposer_photos') ? (await cookies()).get(COOKIE_APPAREIL)?.value : undefined
+  const [nonLus, coupees] = await Promise.all([
+    responsableIci ? compterNonLus(edition.id) : Promise.resolve(0),
+    estAppareil(appareil) ? photosCoupeesDeLAppareil(makeSupabase(), edition.id, appareil, 'responsable', teteObjet) : Promise.resolve(0),
+  ])
   /* T-187 : « Partager avec mon équipe », au responsable seulement (voitLienEquipe).
      Le lien d'équipe n'entre jamais dans la page de l'équipe elle-même. */
   let lienEquipe: string | null = null
@@ -73,6 +84,7 @@ export default async function EspaceLayout({
       verrous={verrousPour(etat)}
       nonLus={nonLus}
       peutDeposer={peut(role, 'deposer_photos')}
+      coupees={coupees}
       tu={edition.registre === 'ecole_tu'}
     >
       {children}

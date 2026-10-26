@@ -33,6 +33,17 @@ export const DUREE_APPAREIL_S = 365 * 24 * 60 * 60;
 export const DUREE_CODE_MS = 24 * 60 * 60_000;
 /** Essais par code : au-delà, il faut en redemander un. */
 export const ESSAIS_MAX = 10;
+
+/**
+ * Le verdict d'un essai, sur le numéro d'essai RÉSERVÉ en base (`essais` après
+ * l'incrément atomique, jamais une valeur relue avant) : trente essais en
+ * parallèle qui lisaient tous « 0 » passaient tous (charge-1, 26/10).
+ */
+export function verdictEssai(essaiReserve: number, bon: boolean): { etat: "ok" | "faux" | "bloque"; restants?: number } {
+  if (essaiReserve > ESSAIS_MAX) return { etat: "bloque" };
+  if (bon) return { etat: "ok" };
+  return essaiReserve >= ESSAIS_MAX ? { etat: "bloque" } : { etat: "faux", restants: ESSAIS_MAX - essaiReserve };
+}
 /** Codes envoyés par heure pour une même édition : un frein contre l'envoi en rafale. */
 export const CODES_PAR_HEURE = 10;
 

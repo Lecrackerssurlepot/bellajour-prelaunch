@@ -10,11 +10,15 @@
    - ORDINATEUR : la visionneuse couvre la colonne de contenu, la photo au centre, les flèches de chaque côté, un panneau de verre à droite
      (qui, quel lien, quand, le fichier) et les deux mêmes gestes : le cœur et Supprimer.
    Comme les fenêtres, elle s'ouvre DANS `.ec-contenu`, par un portail : un panneau de verre (`backdrop-filter`) enfermerait ce qui est
-   positionné dedans. La photo EN GRAND : la vignette (déjà en cache) tout de suite, puis l'original par-dessus dès qu'il est arrivé.
+   positionné dedans. La photo EN GRAND : la vignette (déjà en cache) tout de suite, puis la grande image par-dessus dès qu'elle est
+   arrivée : la VERSION MOYENNE (≈ 1 600 px, quelques centaines de Ko, adresse stable gardée en cache, 5A du 26/10) quand la photo en a
+   une, l'original sinon (photo d'avant, plus petite, ou migration 20261026 pas passée). L'original ne sert plus qu'au téléchargement
+   et à l'impression. Le choix est fait par le serveur (`tuile`, grillePhotos.ts) : `grande` est déjà la bonne adresse.
    L'ancienne visionneuse (étoile, « Ne pas publier », doublon) est dans `archive/photos-simple-2026-10/Agrandir.tsx`. */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useRetourFerme } from "../../_composants/useRetourFerme";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { arriveeLongue, jourCourt, jourLong } from "./filtres";
 import { ICONES, Trace, type Photo } from "./Grille";
@@ -53,9 +57,10 @@ export default function Agrandir(a: Props) {
   const [nu, setNu] = useState(false);
   /* Le rapport largeur / hauteur de chaque photo, lu à son chargement : le cadre prend la forme de la photo. */
   const [rapports, setRapports] = useState<Record<string, number>>({});
-  /* Les originaux arrivés : ils couvrent leur vignette. */
+  /* Les grandes images arrivées (moyenne ou original) : elles couvrent leur vignette. */
   const [grandes, setGrandes] = useState<Record<string, boolean>>({});
   const fns = useRef(a);
+  useRetourFerme(a.onFermer);
   useEffect(() => {
     fns.current = a;
   });
@@ -93,7 +98,7 @@ export default function Agrandir(a: Props) {
   }, [a.voisines]);
 
   const p = a.photo;
-  /* L'original, seulement s'il n'est pas déjà la vignette (une photo sans vignette montre son original). */
+  /* La grande image (moyenne, sinon original), seulement si elle n'est pas déjà la vignette (une photo sans vignette montre son original). */
   const grande = p.grande && p.grande !== p.vignette ? p.grande : null;
   const datee = !p.jourCle.startsWith("~");
   const pos = a.total ? `${a.position} sur ${a.total.toLocaleString("fr-FR")}` : `${a.position}`;

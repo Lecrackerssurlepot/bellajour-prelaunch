@@ -54,7 +54,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { texteAccord, VERSION_ACCORD } from "@/lib/collectif/accord";
 import { TAILLE_PAGE_ALBUM } from "@/lib/collectif/album";
 import { PHOTOS_SEULEMENT } from "@/lib/collectif/depot";
-import { cleDeVisite, decouperAccord, initiales, phraseRetour } from "@/lib/collectif/depotParticipant";
+import { BOUTON_REPRENDRE, cleDeVisite, coupeesADire, decouperAccord, initiales, phraseCoupees, phraseRetour } from "@/lib/collectif/depotParticipant";
+import { useMoteur } from "../../edition/_composants/depot/useMoteur";
 import { deNom } from "@/lib/collectif/espace";
 import { NOM_MAX, nettoyerMorceau, nomComplet, premierMot } from "@/lib/collectif/participant";
 import { EMAIL_MAX, lireIdentite, normaliserEmail } from "@/lib/collectif/personnes";
@@ -85,6 +86,8 @@ type Props = {
   nomConnu: string | null;
   /** Sans la migration : ses photos déjà arrivées dans l'édition. */
   dejaArrivees: number;
+  /** 2A : les photos que CET appareil a déclarées sans qu'elles arrivent (un envoi coupé), lues au serveur. */
+  coupees: number;
 };
 
 /** Le nom gardé sur ce téléphone (sans la migration), PROPRE à ce lien (T-198 : un téléphone prêté reprenait le nom d'une autre édition). */
@@ -149,6 +152,9 @@ export default function Depot(props: Props) {
     if (accordInitial) m.definirAccord(VERSION_ACCORD);
     return m;
   }, [token, p, tu, accordInitial]);
+  /* 2A : un envoi coupé se dit tant que rien n'a été choisi sur cette page (ensuite, le moteur parle). */
+  const vueMoteur = useMoteur(moteur);
+  const coupees = coupeesADire(props.coupees, vueMoteur.total);
   const [mode, setMode] = useState<{ ecran: "carte" | "album"; onglet: Onglet; accueil: boolean }>(
     props.moi?.accordAJour ? { ecran: "album", onglet: "album", accueil: true } : { ecran: "carte", onglet: "album", accueil: false }
   );
@@ -192,7 +198,7 @@ export default function Depot(props: Props) {
       }
       if (r.status === 429) {
         dejaDemande.current = null;
-        setEtatEmail({ etat: "erreur", message: tu ? "Trop d'adresses essayées : réessaie dans une minute." : "Trop d'adresses essayées : réessayez dans une minute." });
+        setEtatEmail({ etat: "erreur", message: tu ? "Trop d'essais. Réessaie dans une minute." : "Trop d'essais. Réessayez dans une minute." });
         return;
       }
       /* Inconnue, ou une coupure : on demande prénom et nom ; la création redira si l'adresse était connue. */
@@ -271,7 +277,7 @@ export default function Depot(props: Props) {
       } else if ((r.status === 200 || r.status === 201) && (r.json.statut === "cree" || r.json.statut === "connu")) {
         const lu = lirePersonne(r.json, nettoyerMorceau(nomSaisi));
         if (!lu) {
-          setErreur(v("La présentation n'a pas abouti : réessayez.", "La présentation n'a pas abouti : réessaie."));
+          setErreur(v("Échec. Réessayez.", "Échec. Réessaie."));
           return;
         }
         qui = { prenom: lu.prenom, nom: lu.nom };
@@ -282,10 +288,10 @@ export default function Depot(props: Props) {
           typeof r.json.message === "string"
             ? r.json.message
             : r.status === 429
-              ? v("Trop de demandes en même temps : vos photos ne sont pas parties. Réessayez dans une minute.", "Trop de demandes en même temps : tes photos ne sont pas parties. Réessaie dans une minute.")
+              ? v("Trop de demandes. Réessayez dans une minute.", "Trop de demandes. Réessaie dans une minute.")
               : r.status === 0
-                ? v("Connexion interrompue : vos photos ne sont pas parties. Réessayez.", "Connexion interrompue : tes photos ne sont pas parties. Réessaie.")
-                : v("La présentation n'a pas abouti : réessayez.", "La présentation n'a pas abouti : réessaie.")
+                ? v("Connexion perdue. Réessayez.", "Connexion perdue. Réessaie.")
+                : v("Échec. Réessayez.", "Échec. Réessaie.")
         );
         return;
       }
@@ -344,6 +350,7 @@ export default function Depot(props: Props) {
           place={place}
           ongletInitial={mode.onglet}
           accueil={mode.accueil && identite ? { prenom: identite.prenom, surCeLien: props.moi?.surCeLien ?? 0 } : null}
+          coupees={coupees}
         />
       </>
     );
@@ -352,9 +359,6 @@ export default function Depot(props: Props) {
   /* ── la carte : se présenter, l'accord, choisir (planches 6, 8B, 8C) ── */
   const texte = texteAccord(VERSION_ACCORD, { evenement: tete.evenement, deOrganisation: deNom(tete.organisation), lien });
   const accordTexte = decouperAccord(texte ?? "", lien);
-  const albumPhrase = lien
-    ? `Elles rejoignent l'album de ${lien}, que voient les personnes de ce lien, et l'atelier en fait le magazine.`
-    : "Elles rejoignent l'album de ce lien, que voient les personnes qui l'utilisent, et l'atelier en fait le magazine.";
   const lireAdresse = lireIdentite({ email }, tu);
   /* Sans la migration : la formule d'avant (T-192), le nom donné une fois puis figé sur ce téléphone. */
   const formuleAvant = (
@@ -384,8 +388,8 @@ export default function Depot(props: Props) {
           </div>
           <p className="ec-dp-note">
             {v(
-              "Pour que l'organisateur sache de qui viennent les photos. Écrivez-le bien : il ne se change plus ensuite.",
-              "Pour que l'organisateur sache de qui viennent les photos. Écris-le bien : il ne se change plus ensuite."
+              "Définitif : écrivez-le bien.",
+              "Définitif : écris-le bien."
             )}
           </p>
         </div>
@@ -403,15 +407,15 @@ export default function Depot(props: Props) {
             <span>
               {oublie ? (
                 <>
-                  Cet appareil n&apos;envoie plus au nom de <b>{oublie}</b>. Ses photos restent à son nom.
+                  Cet appareil n&apos;envoie plus au nom de <b>{oublie}</b>.
                 </>
               ) : (
-                "Cet appareil n'envoie plus au nom de personne. Les photos déjà envoyées restent à leur nom."
+                "Cet appareil n'envoie plus au nom de personne."
               )}
             </span>
           </p>
         ) : (
-          <p className="ec-dp-texte">{reconnu ? props.invitation : `${props.invitation} ${albumPhrase}`}</p>
+          <p className="ec-dp-texte">{props.invitation}</p>
         )}
 
         <div className="ec-dp-form">
@@ -448,8 +452,8 @@ export default function Depot(props: Props) {
                     <span className="ec-dp-note--refus">{etatEmail.message}</span>
                   ) : (
                     v(
-                      "Elle sert seulement à vous reconnaître sur un autre appareil ou un autre lien. Nous ne vous écrirons pas pour autre chose.",
-                      "Elle sert seulement à te reconnaître sur un autre appareil ou un autre lien. Nous ne t'écrirons pas pour autre chose."
+                      "Seulement pour vous reconnaître. Aucun autre mail.",
+                      "Seulement pour te reconnaître. Aucun autre mail."
                     )
                   )}
                 </p>
@@ -484,11 +488,7 @@ export default function Depot(props: Props) {
                       <input className="ec-dp-input" value={nomSaisi} onChange={(e) => setNomSaisi(e.target.value)} autoComplete="family-name" autoCapitalize="words" maxLength={NOM_MAX} required />
                     </label>
                   </div>
-                  <p className="ec-dp-note">
-                    {lien
-                      ? v(`C'est votre prénom que verront les personnes de ${lien}.`, `C'est ton prénom que verront les personnes de ${lien}.`)
-                      : v("C'est votre prénom que verront les personnes de ce lien.", "C'est ton prénom que verront les personnes de ce lien.")}
-                  </p>
+                  <p className="ec-dp-note">{v("Seul votre prénom est visible.", "Seul ton prénom est visible.")}</p>
                 </div>
               )}
             </>
@@ -510,6 +510,11 @@ export default function Depot(props: Props) {
             </span>
           </label>
 
+          {coupees ? (
+            <p className="ec-dp-note ec-dp-note--refus" role="status">
+              {phraseCoupees(coupees)}
+            </p>
+          ) : null}
           <p className="ec-dp-videos">
             <IcoSansVideo />
             <span>{PHOTOS_SEULEMENT}</span>
@@ -517,28 +522,28 @@ export default function Depot(props: Props) {
           {entree}
           <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => selecteur.ouvrir()}>
             <IcoAppareil />
-            Choisir mes photos
+            {coupees ? BOUTON_REPRENDRE : "Choisir mes photos"}
           </button>
           {erreur ? <p className="ec-dp-note ec-dp-note--refus">{erreur}</p> : null}
           {!nomPret ? (
             <p className="ec-dp-note">
               {repli
-                ? v("Indiquez votre prénom et votre nom pour choisir vos photos.", "Indique ton prénom et ton nom pour choisir tes photos.")
+                ? "Prénom et nom requis."
                 : !emailLu
-                  ? v("Indiquez votre email pour choisir vos photos.", "Indique ton email pour choisir tes photos.")
-                  : v("Indiquez votre prénom et votre nom pour choisir vos photos.", "Indique ton prénom et ton nom pour choisir tes photos.")}
+                  ? "Email requis."
+                  : "Prénom et nom requis."}
             </p>
           ) : !accord ? (
-            <p className="ec-dp-note">{v("Cochez l'accord pour choisir vos photos.", "Coche l'accord pour choisir tes photos.")}</p>
+            <p className="ec-dp-note">{v("Cochez l'accord.", "Coche l'accord.")}</p>
           ) : null}
 
           <p className="ec-dp-pied">
-            {props.sansPlafond
-              ? "Sans plafond par personne"
-              : props.plafond
-                ? `${props.plafond} photos au plus par personne`
-                : "Le nombre de photos par personne n'est pas encore réglé"}
-            {props.cloture ? ` · dépôt ouvert jusqu'au ${props.cloture}` : ""}
+            {[
+              props.sansPlafond ? "Sans limite" : props.plafond ? `${props.plafond} photos max` : null,
+              props.cloture ? `jusqu'au ${props.cloture}` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         </div>
       </div>

@@ -13,7 +13,7 @@
 import { useState } from "react";
 import Fenetre from "../_composants/Fenetre";
 
-export default function PartageEquipe({ lien, tu, avantOuvrir }: { lien: string; tu: boolean; avantOuvrir: () => void }) {
+export default function PartageEquipe({ lien, avantOuvrir }: { lien: string; tu?: boolean; avantOuvrir: () => void }) {
   const [ouvert, setOuvert] = useState(false);
   const [copie, setCopie] = useState<"" | "copie" | "refus">("");
 
@@ -48,7 +48,7 @@ export default function PartageEquipe({ lien, tu, avantOuvrir }: { lien: string;
       {ouvert ? (
         <Fenetre
           titre="Partager avec mon équipe"
-          sous={tu ? "Lecture seule : ton équipe suit tout sans rien modifier." : "Lecture seule : votre équipe suit tout sans rien modifier."}
+          sous="Lecture seule."
           onFermer={() => setOuvert(false)}
         >
           <input
@@ -59,7 +59,7 @@ export default function PartageEquipe({ lien, tu, avantOuvrir }: { lien: string;
             onFocus={(e) => e.currentTarget.select()}
           />
           <button type="button" className="ec-bouton" onClick={copier}>
-            {copie === "copie" ? "Copié" : copie === "refus" ? "Copie impossible : sélectionnez le lien" : "Copier"}
+            {copie === "copie" ? "Copié" : copie === "refus" ? "Copie impossible" : "Copier"}
           </button>
         </Fenetre>
       ) : null}

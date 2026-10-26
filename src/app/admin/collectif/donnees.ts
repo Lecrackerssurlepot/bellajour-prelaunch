@@ -8,7 +8,6 @@
  * édition ».
  */
 
-import { compterPersonnes } from "@/lib/collectif/dossiers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { signerGet } from "@/lib/atelier/r2";
 import { etatEffectif, LIBELLE_ETAT_EDITION, type EtatEdition } from "@/lib/collectif/etats";
@@ -17,7 +16,9 @@ import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prochaineEtape, type Prochaine } from "@/lib/collectif/prochaine";
 import { JOURNAL_DE_LOT, phraseEvenement } from "@/lib/collectif/recit";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
-import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
+import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
+import { APERCUS_MAX, chiffresDepuisLignes, chiffresDepuisResume, SELECTION_APERCUS_MAX, type ChiffresFiche, type EntreesResume, type PhotoDeLaFiche } from "@/lib/collectif/chiffresFiche";
+import { COLONNES_RESUME, resumeAbsent, VUE_RESUME, type LigneResume } from "@/lib/collectif/resumePhotos";
 import { manquesPourPublier } from "@/lib/collectif/styles";
 import { libelleTypeDocument } from "@/lib/collectif/documents";
 import { aideAtelier, iconeDe, lireDemandes, nomDeLEnvoi, type FormeDemande } from "@/lib/collectif/demandes";
@@ -31,7 +32,7 @@ import { lireInterlocuteurs } from "@/lib/collectif/rendezvous";
 import { comparerLiens, deposantsParLien, nomsDesLiens, type LienDepose } from "@/lib/collectif/grille";
 import { libellePlafondLien, type ReglagesPlafond } from "@/lib/collectif/plafonds";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
-import { calculerSurLignes, doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
+import { doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
 import type { Message } from "@/lib/collectif/messages";
 import { resumeNote, resumeTour } from "@/lib/collectif/bat";
 import { estUuid } from "@/lib/collectif/cles";
@@ -337,22 +338,6 @@ export type Fiche = {
   nonLusAtelier: string[];
 };
 
-type LignePhotoFiche = {
-  id: string;
-  empreinte: string | null;
-  prise_le: string | null;
-  ordre: number | null;
-  confirmee_le: string;
-  provenance_type: string;
-  provenance_id: string | null;
-  deposant: string | null;
-  role_deposant: string;
-  appareil_id: string | null;
-  signalee: boolean;
-  vignette_key: string | null;
-  preselection: boolean;
-};
-
 type ProvenanceFiche = Awaited<ReturnType<typeof lireProvenances>>[number];
 
 /**
@@ -412,6 +397,85 @@ export async function chargerLiensDeGroupe(supabase: SupabaseClient, id: string,
   return liensDeLaFiche(provenances, deposantsParLien(photos.data ?? [], provenances, edition.responsable_nom), edition);
 }
 
+/**
+ * Les photos de la fiche (perf-2) : le résumé en base + deux comptes + les vignettes des aperçus.
+ * Environ une ligne par personne et par dossier au lieu d'une par photo. Sans la vue
+ * (migration 20261022), les lignes d'avant, par tranches de 1 000, dans l'ordre d'arrivée.
+ * Hors corbeille dans tous les cas (20261023 ; sans elle, les mêmes lectures sans le filtre).
+ */
+async function lirePhotosFiche(
+  supabase: SupabaseClient,
+  id: string
+): Promise<{ mode: "resume"; entrees: EntreesResume } | { mode: "lignes"; lignes: PhotoDeLaFiche[] }> {
+  const resume = await lireToutesLesLignes<LigneResume>(
+    () => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", id).returns<LigneResume[]>(),
+    { colonne: "id", croissant: true },
+    "résumé des photos de la fiche"
+  );
+  if (resume.error) {
+    if (!resumeAbsent(resume.error.code)) echec("résumé des photos de la fiche", resume.error);
+    const lignes = await lireHorsCorbeille((avec) =>
+      lireToutesLesLignes<PhotoDeLaFiche>(
+        () => {
+          const q = supabase
+            .from("collectif_photos")
+            .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, confirmee_le, preselection")
+            .eq("edition_id", id)
+            .not("confirmee_le", "is", null);
+          return (avec ? q.is("supprimee_le", null) : q).returns<PhotoDeLaFiche[]>();
+        },
+        { colonne: "confirmee_le", croissant: true },
+        "photos de la fiche"
+      )
+    );
+    if (lignes.error) echec("photos de l'édition", lignes.error);
+    return { mode: "lignes", lignes: lignes.data };
+  }
+  const [signalees, sansVignette, apercus, selection] = await Promise.all([
+    lireHorsCorbeille((avec) => {
+      const q = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", id).not("confirmee_le", "is", null).eq("signalee", true);
+      return (avec ? q.is("supprimee_le", null) : q).limit(0);
+    }),
+    lireHorsCorbeille((avec) => {
+      const q = supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE).eq("edition_id", id).not("confirmee_le", "is", null).is("vignette_key", null);
+      return (avec ? q.is("supprimee_le", null) : q).limit(0);
+    }),
+    /* Les plus récentes d'abord ; à égalité d'arrivée, l'ordre de l'`id` (comme le tri stable d'avant). */
+    lireHorsCorbeille((avec) => {
+      const q = supabase.from("collectif_photos").select("vignette_key").eq("edition_id", id).not("confirmee_le", "is", null).not("vignette_key", "is", null);
+      return (avec ? q.is("supprimee_le", null) : q)
+        .order("confirmee_le", { ascending: false })
+        .order("id", { ascending: true })
+        .limit(APERCUS_MAX)
+        .returns<{ vignette_key: string }[]>();
+    }),
+    /* Les premières choisies, dans l'ordre d'arrivée. */
+    lireHorsCorbeille((avec) => {
+      const q = supabase.from("collectif_photos").select("vignette_key").eq("edition_id", id).not("confirmee_le", "is", null).eq("preselection", true).not("vignette_key", "is", null);
+      return (avec ? q.is("supprimee_le", null) : q)
+        .order("confirmee_le", { ascending: true })
+        .order("id", { ascending: true })
+        .limit(SELECTION_APERCUS_MAX)
+        .returns<{ vignette_key: string }[]>();
+    }),
+  ]);
+  if (signalees.error) echec("photos signalées de la fiche", signalees.error);
+  if (sansVignette.error) echec("photos sans vignette de la fiche", sansVignette.error);
+  if (apercus.error) echec("aperçus de la fiche", apercus.error);
+  if (selection.error) echec("aperçus de la sélection", selection.error);
+  return {
+    mode: "resume",
+    entrees: {
+      resume: resume.data,
+      signalees: signalees.count ?? 0,
+      sansVignette: sansVignette.count ?? 0,
+      apercusCles: (apercus.data ?? []).map((r) => r.vignette_key),
+      selectionCles: (selection.data ?? []).map((r) => r.vignette_key),
+    },
+  };
+}
+
+
 export async function chargerEdition(
   supabase: SupabaseClient,
   id: string,
@@ -447,24 +511,9 @@ export async function chargerEdition(
       .eq("edition_id", id)
       .order("created_at", { ascending: false }),
     lireMessages(supabase, id, null),
-    /* Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
-       dans l'ordre d'arrivée : le rang de secours des doublons (`ordre ?? i`) ne change
-       plus d'un affichage à l'autre. */
-    /* Hors corbeille (migration 20261023 ; sans elle, la même lecture sans le filtre). */
-    lireHorsCorbeille((avec) =>
-      lireToutesLesLignes<LignePhotoFiche>(
-        () => {
-          const q = supabase
-            .from("collectif_photos")
-            .select("id, provenance_type, provenance_id, deposant, role_deposant, appareil_id, signalee, vignette_key, empreinte, prise_le, ordre, confirmee_le, preselection")
-            .eq("edition_id", id)
-            .not("confirmee_le", "is", null);
-          return (avec ? q.is("supprimee_le", null) : q).returns<LignePhotoFiche[]>();
-        },
-        { colonne: "confirmee_le", croissant: true },
-        "photos de la fiche"
-      )
-    ),
+    /* Le RÉSUMÉ des photos en base (une ligne par façon d'avoir déposé) et trois petites
+       requêtes, jamais toutes les lignes (perf-2) ; sans la vue, la lecture d'avant. */
+    lirePhotosFiche(supabase, id),
     lireContenusFiche(supabase, id),
     supabase
       .from("collectif_messages")
@@ -493,7 +542,6 @@ export async function chargerEdition(
   const gesteCollecte = gestes.error ? null : lireGesteDeCollecte(gestes.data?.[0]);
   /* Le trait est un repère, pas une donnée : illisible, le fil s'affiche sans lui. */
   if (nonLus.error) console.error("[collectif] non-lus du fil illisibles", nonLus.error.code, nonLus.error.message);
-  if (photos.error) echec("photos de l'édition", photos.error);
   if (contenus.error) echec("contenus de l'édition", contenus.error);
   if (mags.error) echec("magazines de l'édition", mags.error);
   if (journal.error) echec("journal de l'édition", journal.error);
@@ -515,35 +563,22 @@ export async function chargerEdition(
     toursParMag.set(t.magazine_id, c);
   }
 
-  const lignesPhotos = photos.data ?? [];
-  const choisies = lignesPhotos.filter((p) => p.preselection);
+  const chiffres: ChiffresFiche = photos.mode === "resume"
+    ? chiffresDepuisResume(photos.entrees, provenances, edition.responsable_nom)
+    : chiffresDepuisLignes(photos.lignes, provenances, edition.responsable_nom);
+  const signer = async (cles: readonly string[]) => (await Promise.all(cles.map((k) => signerOuRien(k)))).filter((u): u is string => u !== null);
   const collecte: Collecte = {
-    total: lignesPhotos.length,
+    total: chiffres.total,
     /* Les personnes, comptées comme côté client (T-180) : un nom, ou un téléphone pour les anonymes. */
-    participants: compterPersonnes(lignesPhotos),
-    signalees: lignesPhotos.filter((p) => p.signalee).length,
-    sansVignette: lignesPhotos.filter((p) => !p.vignette_key).length,
-    /* T-170 : le résultat RANGÉ, celui que lit la page Photos du client ; périmé, recalculé sur les lignes déjà lues (dans l'ordre d'arrivée). */
-    doublons: ((await doublonsDeLEdition(supabase, id, lignesPhotos))?.groupes ?? calculerSurLignes(lignesPhotos).groupes).reduce((n, g) => n + g.doublons.length, 0),
-    apercus: (
-      await Promise.all(
-        lignesPhotos
-          .filter((p) => p.vignette_key)
-          .sort((a, b) => b.confirmee_le.localeCompare(a.confirmee_le))
-          .slice(0, 4)
-          .map((p) => signerOuRien(p.vignette_key))
-      )
-    ).filter((u): u is string => u !== null),
-    parLien: deposantsParLien(lignesPhotos, provenances, edition.responsable_nom),
-    selection: choisies.length,
-    selectionApercus: (
-      await Promise.all(
-        choisies
-          .filter((p) => p.vignette_key)
-          .slice(0, 8)
-          .map((p) => signerOuRien(p.vignette_key))
-      )
-    ).filter((u): u is string => u !== null),
+    participants: chiffres.participants,
+    signalees: chiffres.signalees,
+    sansVignette: chiffres.sansVignette,
+    /* T-170 : le résultat RANGÉ, celui que lit la page Photos du client (une signature et une ligne) ; périmé, il se recalcule et se range (4 colonnes, une fois). */
+    doublons: ((await doublonsDeLEdition(supabase, id))?.groupes ?? []).reduce((n, g) => n + g.doublons.length, 0),
+    apercus: await signer(chiffres.apercusCles),
+    parLien: chiffres.parLien,
+    selection: chiffres.selection,
+    selectionApercus: await signer(chiffres.selectionCles),
     terminee: gesteCollecte?.geste === "terminer_collecte" ? { par: gesteCollecte.par || "le responsable", le: gesteCollecte.le } : null,
   };
 

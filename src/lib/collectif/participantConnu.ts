@@ -68,3 +68,51 @@ export async function arriveesDeLAppareil(supabase: SupabaseClient, editionId: s
   }
   return count ?? 0;
 }
+
+/** Au-delà, les photos coupées ne passent plus chacune au coffre : elles se comptent comme absentes. */
+export const TETES_COUPEES_MAX = 40;
+
+/**
+ * 2A (décision de Mathias, 26/10) : combien de photos CET appareil a déclarées sans qu'elles
+ * arrivent (onglet fermé, téléphone verrouillé pendant l'envoi). Elles réservent leur place deux
+ * heures (`compteDansPlafond`) : la page doit le dire, et « Reprendre » les renvoie sur la même
+ * ligne (`planDeclaration` rend « reprise », rien ne compte deux fois).
+ *
+ * Une ligne non confirmée peut pourtant être AU COFFRE : la page s'est fermée entre l'envoi et la
+ * confirmation groupée (15 s). Une tête par ligne (au plus `TETES_COUPEES_MAX`, huit à la fois) :
+ * seules les ABSENTES se comptent ; celles qui y sont, le rattrapage (T-194) les confirmera. Une
+ * panne du coffre ne se compte pas (on ne crie pas pour rien). `role` : le participant (sa page
+ * de dépôt) ou le responsable (sa coquille). Hors corbeille. Rend 0 sur toute erreur : un
+ * message de confort ne fait jamais tomber une page. Lecture seule, rien n'est écrit.
+ */
+export async function photosCoupeesDeLAppareil(
+  supabase: SupabaseClient,
+  editionId: string,
+  appareil: string,
+  role: "participant" | "responsable",
+  tete: (cle: string) => Promise<{ statut: "presente" | "absente" | "panne" }>
+): Promise<number> {
+  const { data, error } = await lireHorsCorbeille((avec) => {
+    const q = supabase
+      .from("collectif_photos")
+      .select("id, r2_key")
+      .eq("edition_id", editionId)
+      .eq("appareil_id", appareil)
+      .eq("role_deposant", role)
+      .is("confirmee_le", null);
+    return (avec ? q.is("supprimee_le", null) : q).order("created_at", { ascending: false }).limit(500).returns<{ id: string; r2_key: string }[]>();
+  });
+  if (error) {
+    console.error("[collectif] photos coupées de l'appareil illisibles", error.code, error.message);
+    return 0;
+  }
+  const lignes = data ?? [];
+  if (!lignes.length) return 0;
+  const examinees = lignes.slice(0, TETES_COUPEES_MAX);
+  let absentes = lignes.length - examinees.length;
+  for (let i = 0; i < examinees.length; i += 8) {
+    const tetes = await Promise.all(examinees.slice(i, i + 8).map((l) => tete(l.r2_key).catch(() => ({ statut: "panne" as const }))));
+    absentes += tetes.filter((t) => t.statut === "absente").length;
+  }
+  return absentes;
+}

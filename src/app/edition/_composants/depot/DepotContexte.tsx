@@ -10,11 +10,11 @@
    « Envoi en cours » de l'en-tête la rouvre. */
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { progression } from "@/lib/collectif/depotParticipant";
+import { BOUTON_REPRENDRE, coupeesADire, phraseCoupees, progression } from "@/lib/collectif/depotParticipant";
 import FenetreEnvoi from "./FenetreEnvoi";
 import { MoteurDepot } from "./moteur";
 import { useMoteur } from "./useMoteur";
-import { useSelecteurInterrompu } from "./useSelecteur";
+import { useSelecteur, useSelecteurInterrompu } from "./useSelecteur";
 
 /** Ce que la fenêtre sait en s'ouvrant : le dossier où l'on est (il est proposé d'emblée), ou « un nouveau dossier ». */
 export type OuvertureEnvoi = { dossier?: string | null; nouveau?: boolean; interrompu?: boolean };
@@ -28,9 +28,11 @@ type Envoi = {
   fermer: () => void;
   /** Combien de fois la fenêtre s'est fermée : une page qui montre les photos se relit à chaque fermeture. */
   fermetures: number;
+  /** 2A : les photos d'un envoi coupé sur cet appareil, lues au chargement de l'espace. */
+  coupees: number;
 };
 
-const Contexte = createContext<Envoi>({ moteur: null, token: "", tu: false, ouvert: null, ouvrir: () => {}, fermer: () => {}, fermetures: 0 });
+const Contexte = createContext<Envoi>({ moteur: null, token: "", tu: false, ouvert: null, ouvrir: () => {}, fermer: () => {}, fermetures: 0, coupees: 0 });
 
 export function useMoteurDepot(): MoteurDepot | null {
   return useContext(Contexte).moteur;
@@ -42,7 +44,7 @@ export function useFenetreEnvoi(): { ouvrir: ((o?: OuvertureEnvoi) => void) | nu
   return { ouvrir: c.moteur ? c.ouvrir : null, fermetures: c.fermetures };
 }
 
-export function DepotFournisseur({ token, actif, tu, children }: { token: string; actif: boolean; tu: boolean; children: React.ReactNode }) {
+export function DepotFournisseur({ token, actif, tu, coupees = 0, children }: { token: string; actif: boolean; tu: boolean; coupees?: number; children: React.ReactNode }) {
   const moteur = useMemo(() => (actif ? new MoteurDepot({ token }) : null), [token, actif]);
   const [choix, setOuvert] = useState<OuvertureEnvoi | null>(null);
   /* La page s'est relancée pendant un choix de photos (iPhone, grande sélection) : la fenêtre s'ouvre et le dit, une fois. */
@@ -59,7 +61,7 @@ export function DepotFournisseur({ token, actif, tu, children }: { token: string
     setOuvert(null);
     setFermetures((n) => n + 1);
   }, []);
-  const valeur = useMemo(() => ({ moteur, token, tu, ouvert, ouvrir, fermer, fermetures }), [moteur, token, tu, ouvert, ouvrir, fermer, fermetures]);
+  const valeur = useMemo(() => ({ moteur, token, tu, ouvert, ouvrir, fermer, fermetures, coupees }), [moteur, token, tu, ouvert, ouvrir, fermer, fermetures, coupees]);
   return <Contexte.Provider value={valeur}>{children}</Contexte.Provider>;
 }
 
@@ -74,6 +76,27 @@ export function HoteFenetreEnvoi() {
 export function PastilleEnvoi() {
   const c = useContext(Contexte);
   const vue = useMoteur(c.moteur);
+  /* 2A : l'envoi coupé (« 8 photos non arrivées · Reprendre ») tant que rien n'est choisi sur cette page.
+     « Reprendre » ouvre DIRECTEMENT le choix des photos (aucune étape de plus) ; les mêmes photos repartent
+     sur leur ligne et gardent leur dossier ; la fenêtre s'ouvre ensuite sur l'envoi. */
+  const coupees = coupeesADire(c.coupees, vue.total);
+  const { moteur, ouvrir } = c;
+  const selecteur = useSelecteur((fichiers) => {
+    if (!moteur) return;
+    if (!moteur.provenanceChoisie()) moteur.definirProvenance({ type: "organisateur", libelle: "" });
+    moteur.ajouter(fichiers);
+    ouvrir();
+  });
+  if (c.moteur && coupees) {
+    return (
+      <>
+        <button type="button" className="ec-pastille-envoi" onClick={selecteur.ouvrir}>
+          {phraseCoupees(coupees)} · {BOUTON_REPRENDRE}
+        </button>
+        <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
+      </>
+    );
+  }
   if (!c.moteur || (vue.enCours === 0 && vue.erreurs === 0)) return null;
   /* Le dernier envoi, sans ce qui était déjà là (21/10 : une déjà-là n'est pas une photo envoyée). */
   const prog = progression(vue.lot);

@@ -157,7 +157,7 @@ function FenetreContenu({
       if (json.envoi) onEnvoye(json.envoi, json.remplace ?? remplaceAvant);
       return true;
     } catch {
-      setErreur("Le réseau n'a pas répondu. Rien n'est parti.");
+      setErreur("Pas de réseau. Rien n'est parti.");
       return false;
     }
   }

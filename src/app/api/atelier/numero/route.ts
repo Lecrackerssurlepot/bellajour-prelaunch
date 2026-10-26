@@ -26,6 +26,7 @@ import { lireChoixCouverture } from "@/lib/atelier/apercu";
 /* La liste blanche des styles vit avec les modèles eux-mêmes : ajouter un
    modèle à l'écran 3 suffit pour que la route l'accepte. */
 import { MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
+import { depotTerminable } from "@/app/(atelier)/composer/depot/paliers";
 import { normaliserFinition } from "@/lib/atelier/impression";
 import { normaliserPays } from "@/lib/atelier/pays";
 import { normaliserQuantite } from "@/lib/atelier/exemplaires";
@@ -574,13 +575,13 @@ export async function PATCH(request: Request) {
        titre et le nombre de photos ne servirait qu'à doubler la latence du
        geste le plus fragile du parcours. */
     const { data: numero, error: lecture } = await lireNumerosMail<
-      (NumeroPourMail & { etat: string }) | null
+      (NumeroPourMail & { etat: string; consent_photos?: boolean | null }) | null
     >((champs) =>
       supabase
         .from("numeros")
         .select(champs)
         .eq("token", token)
-        .maybeSingle<NumeroPourMail & { etat: string }>(),
+        .maybeSingle<NumeroPourMail & { etat: string; consent_photos?: boolean | null }>(),
     );
 
     /* T-043 — une panne de base n'est PAS un token inconnu. Répondre 404 ici
@@ -676,6 +677,24 @@ export async function PATCH(request: Request) {
         ...(ajustementMot ? { mot: ajustementMot } : {}),
         ...(ajustementMotifs.length ? { motifs: ajustementMotifs } : {}),
       });
+    }
+
+    /* Garantie 2 appliquée à la 7 : « dépôt terminé » exige le même seuil que l'écran 5, compté ICI
+       sur les photos confirmées (`taille` non nulle), jamais sur `nb_photos` ni sur le navigateur.
+       Seulement à la PREMIÈRE pose : un rejeu sur un dossier déjà terminé reste inoffensif. */
+    if (maj.consent_photos === true && numero.consent_photos !== true) {
+      const { count, error: compte } = await supabase
+        .from("photos")
+        .select("id", { count: "exact", head: true })
+        .eq("numero_id", numero.id)
+        .not("taille", "is", null);
+      if (compte) {
+        console.error("[atelier/numero] compte des photos échoué", compte.code, compte.message);
+        return NextResponse.json({ error: "internal" }, { status: 500 });
+      }
+      if (!depotTerminable(count ?? 0)) {
+        return NextResponse.json({ error: "photos_insuffisantes" }, { status: 409 });
+      }
     }
 
     if (Object.keys(maj).length) {

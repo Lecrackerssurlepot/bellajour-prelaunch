@@ -5,10 +5,10 @@ import { MAX_VIGNETTE_BYTES, MIME_VIGNETTE, signerPut } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAccesDepot } from "@/lib/collectif/acces";
 import { accordExige, colonnesAccord, ERREUR_ACCORD, lireAccord, messageAccord } from "@/lib/collectif/accord";
-import { clePhoto, cleVignette } from "@/lib/collectif/cles";
+import { cleMoyenne, clePhoto, cleVignette } from "@/lib/collectif/cles";
 import { appareilDeRequete, compterPourPlafond, COOKIE_APPAREIL, lireExistants, lireLiensParId, nouvelAppareil, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
 import { restaurer } from "@/lib/collectif/corbeilleServeur";
-import { estCleFichier, LOT_VERIFICATION, lireDeclaration, partagerConnues, planDeclaration, type Decision } from "@/lib/collectif/depot";
+import { estCleFichier, LOT_VERIFICATION, lireDeclaration, MIME_MOYENNE, moyenneSignable, partagerConnues, planDeclaration, type Decision } from "@/lib/collectif/depot";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { noterEchec } from "@/lib/collectif/echecsJournal";
 import { collecteOuverte } from "@/lib/collectif/etats";
@@ -340,13 +340,15 @@ export async function POST(request: Request) {
       const photoId = d.sorte === "reprise" ? d.id : (ids.get(f.cle) as string);
       const key = d.sorte === "reprise" ? d.r2_key : clePhoto(edition.id, photoId, f.type);
       const vignetteKey = cleVignette(edition.id, photoId);
-      const [url, urlVignette] = await Promise.all([
+      /* 5A (26/10) : la version moyenne d'« Agrandir », à côté de la vignette, sous le même genre de plafond. */
+      const [url, urlVignette, urlMoyenne] = await Promise.all([
         signerPut(key, f.type, f.taille),
         f.tailleVignette && f.tailleVignette <= MAX_VIGNETTE_BYTES
           ? signerPut(vignetteKey, MIME_VIGNETTE, f.tailleVignette)
           : Promise.resolve(null),
+        moyenneSignable(f.tailleMoyenne) ? signerPut(cleMoyenne(edition.id, photoId), MIME_MOYENNE, f.tailleMoyenne) : Promise.resolve(null),
       ]);
-      return { cle: f.cle, photoId, url, urlVignette };
+      return { cle: f.cle, photoId, url, urlVignette, urlMoyenne };
     })
   );
 

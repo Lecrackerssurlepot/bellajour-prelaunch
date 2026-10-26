@@ -155,8 +155,10 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   `public/heic/vignette-heic.worker.js`, qui charge libheif en WebAssembly (`libheif-js` 1.19.8,
   LGPL, copie NON MODIFIÉE à côté de sa licence, chargée à la première photo seulement) et rend
   une vignette de 320 px. L'ORIGINAL part toujours tel quel. L'empreinte (doublons) et la
-  luminance se calculent ensuite sur la vignette, comme pour un JPEG. Le moteur du B2C n'est pas
-  touché. ⚠️ `is_primary()` n'existe pas dans ce libheif-js : on prend la plus grande image. Les
+  luminance se calculent ensuite sur la vignette, comme pour un JPEG. **Depuis le 26/10 (8A), le
+  moteur de /composer s'en sert aussi**, pour la vignette seulement (`vignetteHeic`), quand le
+  navigateur n'en a pas fait : la règle du harnais « aucun import de heic dans composer/ » est levée,
+  remplacée par les contrôles 8A (les deux harnais). ⚠️ `is_primary()` n'existe pas dans ce libheif-js : on prend la plus grande image. Les
   HEIC envoyés avant : `scripts/collectif-heic-rattrapage.ts`.
 - ⚠️ **Le CORS du coffre** n'accepte que bellajour.fr, www, *.vercel.app et `localhost:3000`
   (vérifié le 13/10 par une requête OPTIONS) : le local de recette des photos tourne donc sur
@@ -1187,3 +1189,23 @@ aujourd'hui ignoré.
 
 `npx tsx --tsconfig tsconfig.json scripts/verif-collectif.ts` — sans base ni réseau. Toute règle
 ajoutée ici s'y ajoute aussi. `scripts/verif-atelier.ts` doit rester vert à chaque livraison.
+
+## Les décisions du 26/10 (campagne « rude épreuve »)
+
+- **5A, la version moyenne d'« Agrandir »** : le worker de réduction (et libheif pour un HEIC) rend,
+  SUR DEMANDE du moteur des éditions seulement (`DEMANDE_MOYENNE`, depot.ts), un JPEG de 1 600 px
+  de grand côté (qualité 0,8, plafond 2 Mo), rangé à `cleMoyenne` à côté de la vignette, envoyé comme
+  elle (quatre essais, jamais un échec de la photo). `presign` signe `urlMoyenne` ; `confirmerArrivee`
+  note `moyenne_key` si l'objet est au coffre ; la grille la signe comme une vignette (adresse stable,
+  en cache) et la donne en `grande`, HEIC compris ; sans elle, l'original comme avant. L'effacement
+  d'une photo emporte la moyenne (`objetsDeLaPhoto`, rangée sous l'id). Migration
+  `20261026_collectif_photos_moyenne.sql` ÉCRITE, PAS appliquée : repli en écriture (la photo se
+  confirme sans la clé) et en lecture (`lireAvecMoyenne`, absence retenue une minute). ⚠️ Pendant la
+  fenêtre, les moyennes vont au coffre SANS clé : `scripts/collectif-moyennes-rattrapage.ts` les
+  retrouve (une tête d'abord) et fabrique les autres ; lecture seule sans `--vraiment`.
+- **2A, l'envoi coupé** : `photosCoupeesDeLAppareil` (participantConnu.ts) compte les lignes non
+  confirmées de CET appareil et de ce rôle, hors corbeille, ABSENTES du coffre (une tête chacune, 40
+  au plus). La page du participant et le layout du responsable la lisent ; l'écran dit « 8 photos non
+  arrivées » et le bouton existant devient « Reprendre » (la pastille d'envoi pour le responsable,
+  qui ouvre directement le choix). Le chiffre de place ne change pas ; la reprise passe par la
+  même ligne (`planDeclaration`, « reprise »), donc le bouton ne se ferme pas faute de place.

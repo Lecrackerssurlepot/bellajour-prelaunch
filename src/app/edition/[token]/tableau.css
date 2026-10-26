@@ -230,6 +230,25 @@
   box-shadow: var(--ec-ombre-douce);
   text-align: left;
 }
+.ec-espace .ec-tdb-liens-n {
+  position: relative;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--ec-carte-bord);
+  color: var(--ec-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.ec-espace .ec-tdb-liens-n::after {
+  content: "";
+  position: absolute;
+  inset: -6px -2px;
+}
 .ec-espace .ec-tdb-total {
   display: flex;
   align-items: baseline;
@@ -754,5 +773,21 @@
   .ec-espace .ec-lien-pret {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* Téléphone : le QR de la carte du lien se réduit, pour que « 20 photos par personne » tienne sur une ligne. */
+@media (max-width: 520px) {
+  .ec-espace .ec-tdb-centre .ec-carte-lien {
+    gap: 12px;
+    padding: 14px;
+  }
+  .ec-espace .ec-tdb-centre .ec-carte-lien .ec-qr {
+    width: 92px;
+    height: 92px;
+    flex: none;
+  }
+  .ec-espace .ec-tdb-centre .ec-carte-lien-texte .ec-note {
+    white-space: nowrap;
   }
 }

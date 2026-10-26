@@ -18,7 +18,9 @@
  *   chaque image.
  * Ce qui est commun avec le B2C, importé tel quel : la réduction et la
  * vignette 320 px (`pool.ts` + `reduire.worker.js`), et le protocole
- * (déclaration, PUT signé, confirmation par lots).
+ * (déclaration, PUT signé, confirmation par lots). Depuis le 26/10 (5A), le
+ * même worker rend aussi, sur demande d'ici seulement, la version moyenne
+ * d'« Agrandir » (≈ 1 600 px), envoyée comme la vignette.
  * ══════════════════════════════════════════════════════════════════════════
  *
  * ⚠️ Limite dite honnêtement à l'écran : un envoi ne continue pas page
@@ -84,9 +86,9 @@
  */
 
 import { reduire } from "@/app/(atelier)/composer/depot/pool";
-import { estHeic, resoudreMime } from "@/lib/atelier/formats";
-import { vignetteHeic } from "./heic";
-import { DEJA_CONNUE, estVideo, lireDejaLa, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION, type DejaLa } from "@/lib/collectif/depot";
+import { estHeic, OCTETS_SIGNATURE, resoudreMime, signaturePhotoReconnue } from "@/lib/atelier/formats";
+import { apercusHeic } from "./heic";
+import { DEJA_CONNUE, DEMANDE_MOYENNE, estVideo, MIME_MOYENNE, lireDejaLa, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION, type DejaLa } from "@/lib/collectif/depot";
 import { compterLot, type CompteLot } from "@/lib/collectif/depotParticipant";
 import { lienMort } from "@/lib/collectif/liens";
 import { cleDuFichier } from "@/lib/collectif/cleDepot";
@@ -110,6 +112,8 @@ const ESSAIS_MAX = 3;
 /** Échecs sans réponse alors que le navigateur se dit EN LIGNE (CORS, réseau captif) : au-delà,
     l'erreur est dite. Hors ligne, rien ne se compte. */
 const ESSAIS_RESEAU_MAX = 12;
+/** Échecs sans réponse d'une même photo à partir desquels l'écran le dit (l'envoi continue d'essayer). */
+const ESSAIS_RESEAU_DITS = 2;
 /** Un envoi sans le moindre octet de progrès pendant ce délai est abandonné puis repris. */
 const SANS_PROGRES_MS = 180_000;
 /** Une URL signée vit une heure ; au-delà de 45 min, on la redemande. */
@@ -140,10 +144,13 @@ type Item = {
   essaisReseau: number;
   charge: Blob | null;
   vignette: Blob | null;
+  /** La version moyenne d'« Agrandir » (5A, ≈ 1 600 px, quelques centaines de Ko) ; `null` : aucune. */
+  moyenne: Blob | null;
   typeEnvoye: string;
   photoId: string | null;
   url: string | null;
   urlVignette: string | null;
+  urlMoyenne: string | null;
   signeLe: number;
   /** Quand le coffre l'a reçue (avant confirmation). */
   envoyeLe: number;
@@ -197,6 +204,8 @@ export type Vue = {
   horsLigne: boolean;
   /** Le serveur répond mal (5xx) : on réessaie tout seul, sans accuser le réseau. */
   serveurLent: boolean;
+  /** En ligne, mais le coffre ne répond pas (wifi filtré, bloqueur) : la phrase à dire, avec « Réessayer » ; `null` sinon. */
+  reseauBloque: string | null;
   /** Les fichiers ignorés à l'ajout (pas des images). */
   ignores: number;
   /** Parmi eux, les vidéos (T-200 : refusées, décision de Mathias), et le nom de la première pour la nommer. */
@@ -231,6 +240,20 @@ export type Provenance = { type: string; libelle: string };
 function attendre(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
+
+/** Un fichier sans vignette porte-t-il au moins la signature d'une image ? Illisible lui-même : on le laisse partir. */
+async function signatureLisible(f: Blob): Promise<boolean> {
+  try {
+    return signaturePhotoReconnue(new Uint8Array(await f.slice(0, OCTETS_SIGNATURE).arrayBuffer()));
+  } catch {
+    return true;
+  }
+}
+
+/** La raison d'un fichier écarté parce qu'il n'est pas une image. */
+const PAS_UNE_PHOTO = "Fichier illisible, non envoyé.";
+/** En ligne, mais le coffre ne répond pas (wifi filtré) : deux mots, et l'écran pose « Réessayer » à côté (règle des textes courts, 26/10). */
+export const RESEAU_BLOQUE = "Envoi bloqué.";
 
 function enLigne(): boolean {
   return typeof navigator === "undefined" || navigator.onLine !== false;
@@ -333,6 +356,9 @@ export class MoteurDepot {
   private ferme: string | null = null;
   private horsLigne = false;
   private serveurLent = false;
+  private bloque = false;
+  /** Les photos qui attendent avant de retenter : « Réessayer » les réveille. */
+  private readonly reveils = new Set<() => void>();
   private verification = false;
   private declaration = false;
   private confirmation = false;
@@ -443,6 +469,10 @@ export class MoteurDepot {
       ferme: this.ferme,
       horsLigne: this.horsLigne,
       serveurLent: this.serveurLent && !this.horsLigne,
+      reseauBloque:
+        this.bloque && enCours > 0 && !this.horsLigne && !this.ferme
+          ? RESEAU_BLOQUE
+          : null,
       ignores: this.ignores,
       videos: this.videos,
       premiereVideo: this.premiereVideo,
@@ -528,6 +558,7 @@ export class MoteurDepot {
   /** Le réseau revient : on repart TOUT DE SUITE, et ce qu'un wifi filtré avait arrêté repart aussi. */
   private auRetourDuReseau = (): void => {
     this.horsLigne = false;
+    this.bloque = false;
     this.echecsReseau = 0;
     for (const it of this.items) {
       if (it.etat === "erreur" && it.essaisReseau >= ESSAIS_RESEAU_MAX) this.remettre(it);
@@ -636,10 +667,12 @@ export class MoteurDepot {
         essaisReseau: 0,
         charge: null,
         vignette: null,
+        moyenne: null,
         typeEnvoye: mime,
         photoId: deja ? (connu?.photoId ?? null) : null,
         url: null,
         urlVignette: null,
+        urlMoyenne: null,
         signeLe: 0,
         envoyeLe: 0,
         raison: null,
@@ -686,6 +719,7 @@ export class MoteurDepot {
     it.photoId = null;
     it.url = null;
     it.urlVignette = null;
+    it.urlMoyenne = null;
   }
 
   /** Reprendre les photos en erreur (un bouton « Réessayer ») : elles rejoignent l'envoi en cours, ou en font un nouveau. */
@@ -698,9 +732,23 @@ export class MoteurDepot {
       }
     }
     this.horsLigne = false;
+    this.bloque = false;
     this.echecsReseau = 0;
+    for (const reveil of [...this.reveils]) reveil();
     this.notifier();
     this.pompe();
+  }
+
+  /** Attendre avant de retenter : `ms`, le retour du réseau, ou « Réessayer ». */
+  private attendreOuReveil(ms: number): Promise<void> {
+    return new Promise((r) => {
+      const fini = () => {
+        this.reveils.delete(fini);
+        r();
+      };
+      this.reveils.add(fini);
+      void attendreReseau(ms).then(fini);
+    });
   }
 
   /* ───────────────────────────── la pompe ───────────────────────────── */
@@ -738,12 +786,12 @@ export class MoteurDepot {
       if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {
         /* Pas encore ouvert (planche 9B) : le lot est refusé avec la phrase du serveur, le
            dépôt n'est pas « fermé » pour autant (il ouvrira). */
-        const raison = typeof json.message === "string" ? json.message : "Le dépôt n'est pas encore ouvert.";
+        const raison = typeof json.message === "string" ? json.message : "Dépôt pas encore ouvert.";
         for (const it of lot) this.finir(it, "refuse", raison);
         return;
       }
       if (status === 409) {
-        this.fermer(typeof json.message === "string" ? json.message : this.v("Le dépôt est fermé.", "Le dépôt est fermé."));
+        this.fermer(typeof json.message === "string" ? json.message : "Dépôt fermé.");
         return;
       }
       /* Une réponse autre que 200 ne dit rien de ce qui est arrivé : la déclaration
@@ -794,13 +842,18 @@ export class MoteurDepot {
       it.etat = "reduction";
       enMemoire++;
       prepares++;
-      void reduire({ id: String(it.n), fichier: it.fichier, reduire: !estHeic(it.mime), estJpeg: it.mime === "image/jpeg" })
+      /* La version moyenne d'« Agrandir » (5A) se fait dans le même passage que la vignette. Elle reste
+         en mémoire jusqu'à son envoi (quelques centaines de Ko : 40 photos préparées d'avance en tiennent
+         une dizaine de Mo au plus, loin des charges réduites, bornées par FENETRE). */
+      void reduire({ id: String(it.n), fichier: it.fichier, reduire: !estHeic(it.mime), estJpeg: it.mime === "image/jpeg", moyenne: DEMANDE_MOYENNE })
         .then(async (r) => {
           it.charge = r.charge;
           /* Un HEIC que ce navigateur ne lit pas (Chrome, Firefox, Android) : sa
-             vignette vient de libheif (T-150), l'original part tel quel. Sans elle,
-             ni aperçu ni empreinte, donc aucun doublon repéré. */
-          it.vignette = r.vignette ?? (estHeic(it.mime) ? await vignetteHeic(it.fichier) : null);
+             vignette et sa moyenne viennent de libheif (T-150), l'original part tel quel.
+             Sans vignette, ni aperçu ni empreinte, donc aucun doublon repéré. */
+          const heic = !r.vignette && estHeic(it.mime) ? await apercusHeic(it.fichier, DEMANDE_MOYENNE) : null;
+          it.vignette = r.vignette ?? heic?.vignette ?? null;
+          it.moyenne = r.vignette ? r.moyenne : (heic?.moyenne ?? null);
           this.garderApercu(it, it.vignette);
           /* Le type suit ce qui part VRAIMENT : une charge réduite est du JPEG. */
           it.typeEnvoye = r.charge?.type || it.mime;
@@ -809,7 +862,16 @@ export class MoteurDepot {
           /* Rien de produit : l'original part tel quel, sans vignette. */
           it.charge = null;
           it.vignette = null;
+          it.moyenne = null;
           it.typeEnvoye = it.mime;
+        })
+        .then(async () => {
+          /* Ni vignette ni signature d'image : un texte renommé, un fichier abîmé. Il ne part pas. */
+          if (it.etat === "reduction" && !it.vignette && !(await signatureLisible(it.fichier))) {
+            if (it.etat === "reduction") this.finir(it, "refuse", PAS_UNE_PHOTO);
+            this.notifier();
+            this.pompe();
+          }
         })
         .finally(() => {
           if (it.etat !== "reduction") return;
@@ -855,17 +917,18 @@ export class MoteurDepot {
           taille: (i.charge ?? i.fichier).size,
           type: i.typeEnvoye,
           tailleVignette: i.vignette?.size ?? null,
+          tailleMoyenne: i.moyenne?.size ?? null,
           ordre: i.n,
         })),
       });
       if (status === 409 && json.error === "depot_ferme") {
-        this.fermer(typeof json.message === "string" ? json.message : "Le dépôt est fermé.");
+        this.fermer(typeof json.message === "string" ? json.message : "Dépôt fermé.");
         return;
       }
       if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {
         /* Pas encore ouvert : le lot ne part pas, et l'écran dit pourquoi avec la phrase du
            serveur (jamais « Connexion interrompue »). */
-        const raison = typeof json.message === "string" ? json.message : "Refusée par le serveur.";
+        const raison = typeof json.message === "string" ? json.message : "Refusée.";
         for (const it of lot) this.finir(it, "refuse", raison);
         return;
       }
@@ -876,7 +939,7 @@ export class MoteurDepot {
       if (status === 400 && json.error === ERREUR_ACCORD) {
         /* Refusé faute d'accord : le lot ne part pas, et l'écran dit pourquoi
            (jamais « Connexion interrompue », qui réessaierait sans fin). */
-        const raison = typeof json.message === "string" ? json.message : this.v("Cochez l'accord pour envoyer vos photos.", "Coche l'accord pour envoyer tes photos.");
+        const raison = typeof json.message === "string" ? json.message : this.v("Cochez l'accord.", "Coche l'accord.");
         for (const it of lot) this.finir(it, "refuse", raison);
         return;
       }
@@ -886,7 +949,7 @@ export class MoteurDepot {
         return;
       }
       if (status >= 400 && status < 500) {
-        for (const it of lot) this.finir(it, "refuse", typeof json.message === "string" ? json.message : "Refusée par le serveur.");
+        for (const it of lot) this.finir(it, "refuse", typeof json.message === "string" ? json.message : "Refusée.");
         return;
       }
       if (status !== 200 || !Array.isArray(json.resultats)) {
@@ -902,7 +965,7 @@ export class MoteurDepot {
       for (const it of lot) {
         const r = parCle.get(it.cle);
         if (!r) {
-          this.finir(it, "refuse", "Fichier refusé (format ou taille).");
+          this.finir(it, "refuse", "Format ou taille refusés.");
         } else if (r.deja || r.double) {
           /* Où elle était (`ou`, `lien`) ; `restauree` : supprimée par son auteur, elle revient
              (21/10) ; retirée par l'organisateur, elle reste à la corbeille. */
@@ -917,6 +980,7 @@ export class MoteurDepot {
           it.photoId = r.photoId as string;
           it.url = r.url as string;
           it.urlVignette = (r.urlVignette as string | null) ?? null;
+          it.urlMoyenne = (r.urlMoyenne as string | null) ?? null;
           it.signeLe = Date.now();
           it.etat = "declare";
         }
@@ -1000,7 +1064,7 @@ export class MoteurDepot {
         if (r.status > 0) {
           /* Le coffre a RÉPONDU non (URL périmée, signature refusée) : un vrai essai. */
           it.essais++;
-          if (it.essais >= ESSAIS_MAX) this.finir(it, "erreur", "Envoi impossible après trois essais.");
+          if (it.essais >= ESSAIS_MAX) this.finir(it, "erreur", "Envoi impossible.");
           else await attendreReseau(ATTENTES_MS[Math.min(it.essais, ATTENTES_MS.length - 1)]);
         } else if (!enLigne()) {
           /* Hors ligne : rien ne se compte, on attend le réseau. */
@@ -1010,9 +1074,13 @@ export class MoteurDepot {
         } else {
           /* En ligne mais sans réponse : réseau qui flanche, ou un wifi qui filtre le coffre. */
           it.essaisReseau++;
+          if (it.essaisReseau >= ESSAIS_RESEAU_DITS && !this.bloque) {
+            this.bloque = true;
+            this.notifier();
+          }
           if (it.essaisReseau >= ESSAIS_RESEAU_MAX) {
-            this.finir(it, "erreur", this.v("Le réseau bloque l'envoi des photos (un wifi filtré ?) : passez en 4G, puis « Réessayer ».", "Le réseau bloque l'envoi des photos (un wifi filtré ?) : passe en 4G, puis « Réessayer »."));
-          } else await attendreReseau(ATTENTES_MS[Math.min(it.essaisReseau - 1, ATTENTES_MS.length - 1)]);
+            this.finir(it, "erreur", RESEAU_BLOQUE);
+          } else await this.attendreOuReveil(ATTENTES_MS[Math.min(it.essaisReseau - 1, ATTENTES_MS.length - 1)]);
         }
         if (it.etat === "envoi") {
           if (this.ferme) this.finir(it, "refuse", this.ferme);
@@ -1021,6 +1089,7 @@ export class MoteurDepot {
         return;
       }
       this.horsLigne = false;
+      this.bloque = false;
       /* La vignette repart comme la photo (T-171 : une vignette perdue pendant une
          coupure laissait l'original s'afficher dans la grille). Elle ne fait
          jamais échouer la photo : au bout de quatre essais, on renonce. */
@@ -1031,8 +1100,18 @@ export class MoteurDepot {
           else await attendreReseau(ATTENTES_MS[k]);
         }
       }
+      /* La version moyenne (5A), sur la même règle : quatre essais, jamais un échec de la photo.
+         Perdue, « Agrandir » montre l'original, comme avant. */
+      if (it.urlMoyenne && it.moyenne) {
+        for (let k = 0; k < 4; k++) {
+          if ((await this.put(it.urlMoyenne, it.moyenne, MIME_MOYENNE)).ok) break;
+          if (!enLigne()) await attendreEnLigne();
+          else await attendreReseau(ATTENTES_MS[k]);
+        }
+      }
       it.charge = null;
       it.vignette = null;
+      it.moyenne = null;
       it.progres = 1;
       it.etat = "envoye";
       it.envoyeLe = Date.now();
@@ -1102,14 +1181,14 @@ export class MoteurDepot {
     for (const it of lot) {
       if (confirmees.has(it.photoId!)) this.finir(it, "confirme", null);
       else if (rejetees.has(it.photoId!)) {
-        this.finir(it, "refuse", rejetees.get(it.photoId!) === "trop_volumineuse" ? "Photo trop lourde (50 Mo au plus)." : "Refusée.");
+        this.finir(it, "refuse", rejetees.get(it.photoId!) === "trop_volumineuse" ? "Trop lourde (50 Mo max)." : "Refusée.");
       } else if (absentes.has(it.photoId!)) {
         if (fin) this.finir(it, "refuse", this.ferme);
         else {
           /* Le coffre ne l'a pas : on la renvoie (même clé, reprise). */
           it.essais++;
           it.etat = it.essais >= ESSAIS_MAX ? "erreur" : "attente";
-          if (it.etat === "erreur") it.raison = "Le coffre n'a pas reçu la photo.";
+          if (it.etat === "erreur") it.raison = "Photo non reçue.";
         }
       }
     }
@@ -1120,6 +1199,7 @@ export class MoteurDepot {
     it.raison = raison;
     it.charge = null;
     it.vignette = null;
+    it.moyenne = null;
   }
 
   /**

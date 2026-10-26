@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     console.error("[collectif] fin de collecte non écrite", error.code, error.message);
     return NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
   }
-  if (!ecrit?.length) return NextResponse.json({ error: "etat_change", message: "La collecte vient d'être close par l'atelier." }, { status: 409 });
+  if (!ecrit?.length) return NextResponse.json({ error: "etat_change", message: "La collecte est déjà terminée." }, { status: 409 });
 
   const qui = edition.responsable_nom ?? "Le responsable";
   const de = etatEffectif(edition.etat, edition.cloture_le, maintenant);

@@ -152,7 +152,7 @@ export default function Mur(p: Props) {
     } catch {
       setBriefs((x) => ({ ...x, [magId]: avant }));
       annoncer(null);
-      setErreur("Le réseau n'a pas répondu. Rien n'a changé.");
+      setErreur("Pas de réseau. Rien n'a changé.");
     } finally {
       setOccupe(false);
     }

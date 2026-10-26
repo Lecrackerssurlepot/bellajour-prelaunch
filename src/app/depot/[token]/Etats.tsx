@@ -115,7 +115,7 @@ export function CollecteTerminee({
       </span>
       <h2 className="ec-dp-etat-titre">La collecte est terminée</h2>
       <p className="ec-dp-texte">
-        {fermeLe ? `Le dépôt a fermé le ${fermeLe}.` : "Le dépôt est fermé."} Merci : l’atelier compose le magazine avec les photos reçues.
+        {fermeLe ? `Fermé le ${fermeLe}.` : "Dépôt fermé."} Merci !
       </p>
       {recu && n > 0 ? (
         <div className="ec-dp-reconnu">

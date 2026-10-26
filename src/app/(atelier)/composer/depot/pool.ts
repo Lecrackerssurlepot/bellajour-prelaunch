@@ -28,19 +28,24 @@ export type DemandeReduction = {
   reduire: boolean
   /* Seul un JPEG porte un APP1 à retransplanter. */
   estJpeg: boolean
+  /* La version moyenne d'« Agrandir » (Édition collective seulement, 5A) :
+     absente, le worker n'en fait pas. Le B2C ne la demande jamais. */
+  moyenne?: { cote: number; qualite: number }
 }
 
 export type Reduction = {
   /* null = « envoie l'original » : rien de mieux n'a pu être produit. */
   charge: Blob | null
   vignette: Blob | null
+  /* null quand elle n'est pas demandée, inutile (photo plus petite) ou ratée. */
+  moyenne: Blob | null
   largeur: number
   hauteur: number
 }
 
 type ReponseWorker = Partial<Reduction> & { id: string; pong?: true }
 
-const RIEN: Reduction = { charge: null, vignette: null, largeur: 0, hauteur: 0 }
+const RIEN: Reduction = { charge: null, vignette: null, moyenne: null, largeur: 0, hauteur: 0 }
 
 /* Un worker coincé ne doit pas retenir une voie à vie. Même principe que le
    chien de garde de l'envoi, à une autre échelle. */
@@ -131,6 +136,7 @@ function creerVoie(): void {
     tache.resoudre({
       charge: data.charge ?? null,
       vignette: data.vignette ?? null,
+      moyenne: data.moyenne ?? null,
       largeur: data.largeur ?? 0,
       hauteur: data.hauteur ?? 0,
     })

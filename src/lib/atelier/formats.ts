@@ -73,3 +73,20 @@ export function extensionDepuisMime(mime: string): string {
 export function estHeic(mime: string): boolean {
   return mime === "image/heic" || mime === "image/heif";
 }
+
+/* Un fichier que le navigateur n'a pas su décoder part sans vignette. S'il ne porte même pas la
+   signature d'une image (un texte renommé en .jpg, des octets au hasard), ce n'est pas une photo :
+   il n'a rien à faire dans un album (upload-2, 26/10). Une vraie photo trop lourde pour être
+   décodée garde sa signature et part comme avant. */
+export const OCTETS_SIGNATURE = 12;
+
+/** Les premiers octets sont-ils ceux d'un JPEG, d'un PNG, d'un WebP ou d'un HEIC/HEIF (`ftyp`) ? */
+export function signaturePhotoReconnue(o: Uint8Array): boolean {
+  const a = (debut: number, ...octets: number[]) => o.length >= debut + octets.length && octets.every((x, k) => o[debut + k] === x);
+  return (
+    a(0, 0xff, 0xd8, 0xff) ||
+    a(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a) ||
+    (a(0, 0x52, 0x49, 0x46, 0x46) && a(8, 0x57, 0x45, 0x42, 0x50)) ||
+    a(4, 0x66, 0x74, 0x79, 0x70)
+  );
+}

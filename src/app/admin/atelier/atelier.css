@@ -560,12 +560,20 @@
 }
 .ate-seg {
   display: inline-flex;
+  max-width: 100%;
   gap: 2px;
   padding: 2px;
   border-radius: var(--bj-r-pill);
   background: var(--bj-veil-6);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ate-seg::-webkit-scrollbar {
+  display: none;
 }
 .ate-seg-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -628,6 +636,8 @@
 .ate-barre-droite {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  max-width: 100%;
   gap: var(--bj-sp-3);
 }
 .ate-vues {
@@ -1659,7 +1669,7 @@
 }
 .ate-m-colonnes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
   gap: var(--bj-sp-4);
   margin: var(--bj-sp-4) 0;
 }
@@ -3400,10 +3410,11 @@
   }
 }
 
-@media (max-width: 680px) {
-  .ate-root {
-    padding-left: var(--bj-sp-4);
-    padding-right: var(--bj-sp-4);
+/* Sous 1000 px, la ligne de la table de travail prend sa forme de poche : les six colonnes fixes
+   (47 rem) dépassent l'écran d'une tablette ou d'un téléphone couché. */
+@media (max-width: 1000px) {
+  .ate-root--groupe-etape .ate-ligne {
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
   }
   /* Sur téléphone, la ligne perd la date de création et le libellé de la
      promesse : ce qui reste (qui, où on en est, combien de temps) suffit à
@@ -3445,6 +3456,13 @@
   }
   .ate-act-boite {
     width: min(20rem, calc(100vw - var(--bj-sp-6)));
+  }
+}
+
+@media (max-width: 680px) {
+  .ate-root {
+    padding-left: var(--bj-sp-4);
+    padding-right: var(--bj-sp-4);
   }
   .ate-barre {
     gap: var(--bj-sp-2);
