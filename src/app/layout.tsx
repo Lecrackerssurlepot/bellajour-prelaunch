@@ -3,6 +3,7 @@ import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import WebViewBanner from './components/WebViewBanner'
 import Mesure from './components/Mesure'
+import CharteTuner from './components/dev/CharteTuner'
 import { EUROS_MIN } from '@/lib/atelier/grille'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
@@ -155,6 +156,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             tant que Web Analytics n'est pas activé dans le tableau de bord.
             Le token de /numero/<token> est masqué avant tout envoi (T-020). */}
         <Mesure />
+        {/* Panneau de réglage de la charte : jamais rendu sur bellajour.fr. Une
+            liste BLANCHE, pas « tout sauf la production » : le `.env.local` du
+            Mac, tiré de Vercel, porte VERCEL_ENV="production", et un `next
+            build` local doit rester muet comme la prod. Seuls `next dev` et
+            les prévisualisations Vercel le montent, et il ne s'ouvre qu'avec
+            `?charte=1` (components/dev/CharteTuner.tsx). */}
+        {(process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview') && <CharteTuner />}
       </body>
     </html>
   )
