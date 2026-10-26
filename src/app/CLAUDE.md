@@ -2,7 +2,30 @@
 
 Chargé dès qu'on touche une page ou une feuille de style. Complète le socle, ne le remplace pas.
 
-## Deux palettes, deux mondes. Ne jamais les mélanger.
+## La charte maison V1 (26/10/2026) habille TOUT le site public
+
+**`src/app/charte.css`** est la source unique des 7 couleurs (`--ch-*`) et des 8 rôles
+typographiques (`--hero-*`, `--section-*`, `--subtitle-*`, `--accent-*`, `--body-*`, `--small-*`,
+`--label-*`, `--number-*`), le tout sous `.bj-charte`, que pose `charteClassName`
+(`charte-fonts.ts`) sur la racine de chaque page publique : `/`, `/magazine`, `/composer`,
+`/compte`, `/numero`, `/merci`, `/inviter`, `/ambassadeurs`, les pages légales. Elle TRADUIT les
+anciens jetons des deux mondes ci-dessous (`--c-*` sous `.bj-charte.bj-atelier`, `--bj-*` sous
+`.bj-charte`) : `theme.css` et `tokens.css` sont intacts parce que l'admin (Porcelaine) et
+l'Édition collective (`/edition`, `/depot`, thème sombre) en dépendent encore.
+- Un texte qui relève d'un rôle ne fixe plus ni police ni taille : il lit `--X-font`, `--X-fs`
+  (qui bascule seul sous 767 px), `--X-line`, `--X-track`, `--X-weight`, `--X-case`, et pose
+  `--role: X` (non hérité, `@property`) : c'est ce que lit « Repérer » dans le panneau.
+- Le panneau `components/dev/CharteTuner.tsx` (`?charte=1`, jamais en production) réécrit ces
+  variables en direct ; « Copier les réglages » rend le bloc à recoller dans charte.css.
+- Polices : Aileron (CC0), Instrument Serif et Interlope (OFL) en `next/font/local`, fichiers et
+  licences dans `public/fonts/bellajour-fonts/`. **Pistara n'y est pas** (licence sans droit de
+  redistribution) : le hero est en Instrument Serif.
+- Logo sur fond clair : `signature-bellajour-bleu-240.webp` (la blanche reste pour les photos et
+  les mondes sombres). Jamais de masque ni de filtre pour recolorer un logo.
+- Spécificité des primitives : `body .bj-charte h1` (0,1,2) et `body .bj-charte .at-cta` (0,2,1),
+  entre la règle du thème et toute règle de page en deux classes.
+
+## Deux palettes, deux mondes (hors charte : admin et Édition collective). Ne jamais les mélanger.
 
 **`src/app/tokens.css`** (~70 tokens `--bj-*`, importé par `globals.css`) — le monde CRÈME :
 `/merci`, `/ambassadeurs`, les pages légales. ⚠️ **L'admin (atelier, éditions, prévente) est en

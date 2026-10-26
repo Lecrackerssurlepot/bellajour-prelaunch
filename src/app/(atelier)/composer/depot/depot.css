@@ -1,5 +1,7 @@
 /* Écran 5 — le dépôt. Dans le scope .bj-atelier, comme tout /atelier.
-   Zéro hexadécimal ici : toute couleur vient de theme.css (invariant nº1).
+   CHARTE V1 (26/10/2026) : couleurs = jetons --c-* traduits par charte.css ou
+   --ch-* ; textes = rôles de charte.css, aucune taille en media query. Seul
+   hexadécimal admis : le rouge d'erreur (var(--ch-erreur)).
    Zéro animation de width, height ou box-shadow : transform et opacity
    seulement (PRD §15). */
 
@@ -43,7 +45,7 @@
   justify-content: center;
   margin-top: 14px;
   padding: 10px 0;
-  border-radius: 20px;
+  border-radius: var(--ch-r-carte);
   transition: background var(--dur) var(--ease);
 }
 
@@ -64,14 +66,14 @@
      une légende et son image. Il y en a de reste depuis que la planche est
      passée dessous. */
   margin: 28px 0 10px;
-  /* 12 px, le plancher des micro-libellés en capitales posé sur la page
-     produit le 08/09. Il était à 11 : un pixel de moins que la règle qu'on
-     venait d'écrire, dans un fichier voisin. */
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-gris);
 }
 
 .at-d-planche {
@@ -86,9 +88,9 @@
 
 .at-d-planche li {
   aspect-ratio: 1;
-  border-radius: 10px;
-  border: 1px dashed var(--c-line);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008));
+  border-radius: var(--ch-r-carte);
+  border: 1px dashed var(--ch-filet);
+  background: var(--ch-bleu-clair);
 }
 
 /* Sur grand écran la planche s'élargit comme la vraie grille de photos :
@@ -102,10 +104,14 @@
    sur cinquante et elle occupait le centre de l'écran. */
 .at-d-formats {
   margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  color: var(--c-text-faint);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
 }
 
 /* Le champ natif reste dans le flux pour l'accessibilité au clavier, mais
@@ -121,22 +127,27 @@
 }
 
 .bj-atelier .at-d-parcourir {
+  /* Bouton secondaire de la charte : contour bleu 1 px, texte bleu, coins 4 px. */
   padding: 13px 26px;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
   background: transparent;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 400;
-  color: var(--c-text);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-bleu);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease),
               transform var(--dur) var(--ease);
 }
 
 .bj-atelier .at-d-parcourir:hover {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+  border-color: var(--ch-bleu);
+  background: var(--ch-bleu-clair);
   transform: translateY(-2px);
 }
 
@@ -155,8 +166,8 @@
 .bj-atelier .at-d-actions .at-cta[disabled] {
   opacity: 1;
   background: transparent;
-  border: 1px solid rgba(214, 138, 99, 0.34);
-  color: rgba(214, 138, 99, 0.66);
+  border: 1px solid rgba(19, 78, 163, 0.34);
+  color: rgba(19, 78, 163, 0.66);
 }
 
 /* ── compteur, jauge, palier ───────────────────────────────────────────── */
@@ -173,17 +184,29 @@
 .at-d-compteur[hidden] { display: none; }
 
 .at-d-compteur b {
-  font-family: var(--font-display);
-  font-size: clamp(44px, 11vw, 72px);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.02em;
+font-family: var(--number-font);
+  font-size: var(--number-fs);
+  line-height: var(--number-line);
+  letter-spacing: var(--number-track);
+  font-weight: var(--number-weight);
+  text-transform: var(--number-case);
+  --role: number;
+  color: var(--ch-bleu-fonce);
   /* Les chiffres ne doivent pas changer de largeur à chaque incrément :
      sinon le libellé qui suit danse à 60 images par seconde. */
   font-variant-numeric: tabular-nums;
 }
 
-.at-d-compteur span { font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
+.at-d-compteur span {
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
+}
 
 /* PRD §15 : la jauge est posée à 100 % et comprimée en scaleX. Animer sa
    largeur, c'est un reflow par frame ; la comprimer, c'est une composition. */
@@ -211,21 +234,26 @@
   top: 0;
   width: 1px;
   height: 100%;
-  background: var(--c-text-faint);
+  background: var(--ch-gris);
 }
 
 .bj-atelier .at-d-palier {
   margin-top: 14px;
-  font-size: 15px;
-  font-weight: 300;
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
 }
 
-.at-d-palier b { font-weight: 400; color: var(--c-text); }
+.at-d-palier b { font-weight: 600; color: var(--ch-encre); }
 
 /* « prix confirmé avec votre couverture » — la mention qui empêche le palier
    d'être lu comme un prix ferme. Discrète, jamais absente. */
-.at-d-palier em { font-style: normal; color: var(--c-text-faint); }
+.at-d-palier em { font-style: normal; color: var(--ch-gris); }
 
 .at-d-transfert { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
 
@@ -242,12 +270,21 @@
   height: 100%;
   width: 100%;
   transform-origin: left;
-  background: var(--c-text-faint);
+  background: var(--ch-gris);
   transition: transform 200ms linear;
 }
 
 .at-d-transfert span,
-.at-d-reste { font-size: 13px; font-weight: 300; color: var(--c-text-faint); }
+.at-d-reste {
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
+}
 
 .bj-atelier .at-d-reste { margin-top: 10px; }
 
@@ -257,11 +294,14 @@
    ligne existe vide avant la réponse du serveur (une espace insécable) :
    le titre de l'écran ne saute pas quand le nom arrive. */
 .bj-atelier .at-d-dossier {
-  text-transform: none;
-  letter-spacing: 0.01em;
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--c-text-soft);
+font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
 }
 
 /* « Ce n'est pas votre dossier ? » : sous le nom, discret mais lisible ; le
@@ -269,21 +309,26 @@
    « Choisir des photos ». */
 .bj-atelier .at-d-autre {
   margin-top: 4px;
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
 }
 .bj-atelier .at-d-autre button {
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
-  color: var(--c-text-soft);
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 }
-.bj-atelier .at-d-autre button:hover { color: var(--c-text); }
+.bj-atelier .at-d-autre button:hover { color: var(--ch-bleu-fonce); }
 
 /* ── avis et refus ─────────────────────────────────────────────────────── */
 
@@ -291,27 +336,32 @@
   margin-top: 22px;
   max-width: 56ch;
   padding: 12px 16px;
-  border-left: 2px solid var(--c-accent);
-  background: var(--c-accent-soft);
-  border-radius: 0 8px 8px 0;
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-soft);
+  border-left: 2px solid var(--ch-bleu);
+  background: var(--ch-bleu-clair);
+  border-radius: 0 var(--ch-r-carte) var(--ch-r-carte) 0;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
 }
 
 /* T2-4 — la reprise n'est pas un avertissement : c'est une bonne nouvelle
    (vos photos sont la), elle parle avec la voix du texte, pas de l'alerte. */
-.bj-atelier .at-d-avis--reprise b { font-weight: 400; color: var(--c-text); }
+.bj-atelier .at-d-avis--reprise b { font-weight: 600; color: var(--ch-encre); }
 
 /* T-156 (17/10) — l'atelier connecté dépose dans le dossier d'un client.
    Pas une bonne nouvelle comme la reprise, pas une panne : un avertissement
    franc, que l'on ne survole pas. Trait plein et texte à pleine encre. */
 .bj-atelier .at-d-avis--atelier {
   border-left-width: 3px;
-  border-left-color: var(--c-accent-strong);
-  color: var(--c-text);
+  border-left-color: var(--ch-bleu-fonce);
+  color: var(--ch-encre);
 }
-.bj-atelier .at-d-avis--atelier b { font-weight: 500; }
+.bj-atelier .at-d-avis--atelier b { font-weight: 600; }
 
 /* 11/09 — l'avis qui porte un geste : le dossier n'existe plus, et le bouton
    est la sortie. Colonne, parce qu'un bouton posé au bout d'une phrase de
@@ -327,9 +377,14 @@
   margin-top: 18px;
   max-width: 56ch;
   list-style: none;
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
 }
 
 .at-d-refus li { padding: 2px 0; }
@@ -364,9 +419,9 @@
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid var(--c-line);
-  border-radius: 10px;
-  background: var(--c-surface-2);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
   /* Tant que le serveur n'a pas confirmé, la tuile est en retrait : l'écran
      ne dit jamais « c'est arrivé » avant de le savoir. */
   opacity: 0.55;
@@ -395,33 +450,52 @@
   border: none;
   background: none;
   cursor: pointer;
-  font-family: var(--font-ui);
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  color: var(--ch-encre);
   transition: color var(--dur) var(--ease);
 }
 
-.at-d-tuile--plus button:hover { color: var(--c-text); }
-.at-d-tuile--plus b { font-size: 20px; font-weight: 400; }
+.at-d-tuile--plus button:hover { color: var(--ch-bleu-fonce); }
+.at-d-tuile--plus b {
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-fs);
+  line-height: var(--subtitle-line);
+  letter-spacing: var(--subtitle-track);
+  font-weight: var(--subtitle-weight);
+  text-transform: var(--subtitle-case);
+  --role: subtitle;
+  color: var(--ch-bleu-fonce);
+}
 .at-d-tuile--plus small {
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-gris);
 }
 
 .at-d-replier {
   margin-top: 14px;
   padding: 8px 18px;
-  border-radius: 999px;
-  border: 1px solid var(--c-line-md);
+  border-radius: var(--ch-r-btn);
+  border: 1px solid var(--ch-bleu);
   background: transparent;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--c-text-soft);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-bleu);
   cursor: pointer;
 }
-.at-d-replier:hover { color: var(--c-text); border-color: var(--c-line-strong); }
-.at-d-tuile[data-etat='erreur'] { opacity: 1; border-color: var(--c-accent); }
+.at-d-replier:hover { background: var(--ch-bleu-clair); }
+/* Le rouge d'erreur de la charte : l'échec ne doit pas se lire comme un état normal. */
+.at-d-tuile[data-etat='erreur'] { opacity: 1; border-color: var(--ch-erreur); }
 
 /* T-054 — l'échec dit son nom sur la tuile. La bordure accent ne se lit ni
    sans la couleur ni au lecteur d'écran ; ce mot, si. Posé en haut à gauche :
@@ -431,13 +505,16 @@
   top: 5px;
   left: 5px;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--ch-r-btn);
   background: var(--glass-bg-strong);
-  font-size: 9px;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-accent-strong);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-erreur);
 }
 
 .at-d-img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -457,10 +534,14 @@
 }
 
 .at-d-sobre b {
-  font-size: 10px;
-  font-weight: 400;
-  line-height: 1.35;
-  color: var(--c-text-soft);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
   overflow: hidden;
   /* Un nom de 60 caractères ne doit pas déborder de la tuile. */
   display: -webkit-box;
@@ -470,7 +551,16 @@
   word-break: break-all;
 }
 
-.at-d-sobre small { font-size: 9px; color: var(--c-text-faint); }
+.at-d-sobre small {
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
+}
 
 /* Le bouton « Reprendre » occupe déjà le bas de la tuile : la mention
    passerait dessous, illisible. On la retire plutôt que de l'empiler. */
@@ -504,7 +594,7 @@
   place-items: center;
   border-radius: 999px;
   background: var(--glass-bg-strong);
-  color: var(--c-accent);
+  color: var(--ch-bleu);
   font-size: 11px;
 }
 
@@ -545,17 +635,31 @@
   bottom: 5px;
   padding: 5px 0;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--ch-r-btn);
   background: var(--glass-bg-strong);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  color: var(--c-accent-strong);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-bleu);
   cursor: pointer;
 }
 
 /* ── consentement et blocage ───────────────────────────────────────────── */
 
-.at-d-bloc { font-size: 14px; font-weight: 300; color: var(--c-text-faint); }
+.at-d-bloc {
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
+}
 
 /* ── LA BARRE FIXE DU DÉPÔT (03/09) ──
    L'ancienne barre en flux (`.at-d-envoi`) est partie : consentement et
@@ -586,15 +690,20 @@
   gap: 8px;
   margin-left: 14px;
   padding: 6px 14px;
-  border: 1px solid var(--c-accent);
-  border-radius: 999px;
-  background: var(--c-accent-soft);
-  font-size: 12.5px;
-  font-weight: 400;
-  color: var(--c-accent-strong);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  background: var(--ch-bleu-clair);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-bleu-fonce);
 }
 
-.at-d-pret i { font-style: normal; color: var(--c-accent); }
+.at-d-pret i { font-style: normal; color: var(--ch-bleu); }
 
 /* ── la tuile d'ajout (03/09) ──
    « Compléter avec d'autres photos » : une vignette de plus dans la grille,
@@ -618,28 +727,45 @@
   border: none;
   background: none;
   cursor: pointer;
-  font-family: var(--font-ui);
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  color: var(--ch-encre);
   transition: color var(--dur) var(--ease);
 }
 
-.at-d-tuile--ajout button:hover { color: var(--c-text); }
-.at-d-tuile--ajout b { font-size: 20px; font-weight: 400; color: var(--c-accent); }
+.at-d-tuile--ajout button:hover { color: var(--ch-bleu-fonce); }
+.at-d-tuile--ajout b {
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-fs);
+  line-height: var(--subtitle-line);
+  letter-spacing: var(--subtitle-track);
+  font-weight: var(--subtitle-weight);
+  text-transform: var(--subtitle-case);
+  --role: subtitle;
+  color: var(--ch-bleu);
+}
 .at-d-tuile--ajout small {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
   text-align: center;
-  line-height: 1.5;
-  color: var(--c-text-faint);
+  color: var(--ch-gris);
 }
 
 /* Le rappel du glisser-déposer plein écran — un geste de bureau. */
 .bj-atelier .at-d-glisser {
   margin-top: 16px;
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
 }
 
 /* Tout l'écran accepte le dépôt : le survol d'un fichier se voit. */
@@ -654,11 +780,16 @@
 .at-d-pasparti {
   max-width: 56ch;
   margin-bottom: 4px;
-  font-size: 14px;
-  font-weight: 300;
-  color: var(--c-text-soft);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
 }
-.at-d-pasparti b { font-weight: 400; color: var(--c-accent); }
+.at-d-pasparti b { font-weight: 600; color: var(--ch-bleu); }
 
 /* 01/09 — la ligne « X photos finissent d'arriver », sous « Il reste un
    geste ». Elle apparaît et disparaît au fil des confirmations : un filet à
@@ -680,7 +811,6 @@
      rangée, larges, valent mieux que quatre timbres-poste. Le resserrement
      ne vaut que pour la planche contact dépliée. */
   .bj-atelier .at-d-grille--toutes { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
-  .at-d-pasparti { font-size: 13px; }
 }
 
 @media (max-width: 760px) {
@@ -700,5 +830,5 @@
      le doigt, la seule case à cocher de la page en demandait un de pianiste.
      `min-height: 44px` et `align-items: center` : la ligne devient une cible,
      sans changer un mot. */
-  .at-q-barre--depot .at-d-consent { max-width: none; font-size: 14px; }
+  .at-q-barre--depot .at-d-consent { max-width: none; }
 }

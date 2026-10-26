@@ -2,7 +2,9 @@
    L'OUVERTURE — la couverture qui se pose, puis s'ouvre
    Portée du prototype design-explorations/landing/v2-descente, validé le
    27/08/2026. Tous les tokens viennent de theme.css : aucune valeur
-   hexadécimale ici (invariant nº1).
+   hexadécimale ici (invariant nº1). Charte maison V1 (26/10/2026) : fond
+   blanc, texte posé sur la photo en blanc sous un voile de bleu foncé, les
+   rôles typographiques viennent de charte.css (--hero-*, --body-*…).
 
    POURQUOI TOUT EST SOUS .at-accueil
    Le prototype nomme ses classes court (.hero, .in, .ligne, .ph). Sous
@@ -16,9 +18,7 @@
    ce n'était pas tenable.
    ════════════════════════════════════════════════════════════ */
 
-/* L'accueil est en noir plein. Le dégradé ambiant de .bj-atelier
-   éclaircit le haut de page, ce que la couverture ne supporte pas. On le
-   neutralise pour cette page seule, sans toucher au thème partagé. */
+/* L'accueil est en blanc plein (charte V1). */
 .bj-atelier:has(> .at-accueil) { background: var(--c-void); }
 .at-accueil { position: relative; }
 
@@ -38,61 +38,68 @@
   position:fixed;inset:0;z-index:900;pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:160px 160px;
-  mix-blend-mode:soft-light;opacity:.5;
+  mix-blend-mode:soft-light;opacity:.12;
   transform:translateZ(0);will-change:transform;
 }
 
-/* ---- lexique typographique ---- */
+/* ---- lexique typographique : les rôles de la charte ---- */
 .at-accueil .chapeau{
-  font-family:var(--font-ui);font-size:clamp(10px,.78vw,12px);font-weight:400;
-  letter-spacing:.44em;text-transform:uppercase;color:var(--c-text-faint);
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);
+  letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);
+  color:var(--ch-gris);--role:label;
 }
-.at-accueil .chapeau .p{color:var(--c-accent)}
+.at-accueil .chapeau .p{color:var(--ch-bleu)}
 .at-accueil .corps{
-  font-size:clamp(15px,1.06vw,19px);font-weight:300;line-height:1.78;color:var(--c-text-soft);
-  max-width:34em;
+  font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);
+  letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);
+  color:var(--ch-encre);max-width:34em;--role:body;
 }
-.at-accueil .mention{font-size:clamp(12px,.76vw,13.5px);font-weight:300;color:var(--c-text-faint);text-wrap:pretty}
-.at-accueil .mention b{color:var(--c-text-soft);font-weight:400}
+.at-accueil .mention{
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);
+  letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);
+  color:var(--ch-gris);text-wrap:pretty;--role:small;
+}
+.at-accueil .mention b{color:var(--ch-encre);font-weight:var(--small-weight)}
 .at-accueil .legende{
-  font-family:var(--font-display);font-style:italic;
-  font-size:clamp(15px,1.1vw,20px);line-height:1.45;color:var(--c-text-soft);
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);
+  letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);
+  color:var(--ch-gris);--role:small;
 }
 .at-accueil .legende b{
-  display:block;margin-bottom:.9vh;font-family:var(--font-ui);font-style:normal;font-weight:400;
-  font-size:clamp(9px,.62vw,10.5px);letter-spacing:.36em;text-transform:uppercase;color:var(--c-text-faint);
+  display:block;margin-bottom:.9vh;font-family:var(--label-font);font-size:var(--label-fs);
+  line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);
+  text-transform:var(--label-case);color:var(--ch-gris);
 }
 
-/* ---- le seul bouton plein ---- */
+/* ---- le seul bouton plein : fond bleu, texte blanc en étiquette, coins de 4 px ---- */
 .at-accueil .cta{
   display:inline-flex;align-items:center;gap:1vw;
   height:clamp(48px,3.9vw,62px);padding:0 clamp(20px,1.9vw,36px);
-  border-radius:999px;background:var(--c-accent);color:var(--c-text-onaccent);
-  font-size:clamp(11px,.8vw,13.5px);font-weight:500;letter-spacing:.11em;text-transform:uppercase;
-  box-shadow:0 2vh 4vh -2.4vh rgba(214,138,99,.75);
+  border-radius:var(--ch-r-btn);background:var(--ch-bleu);color:var(--ch-fond);
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);
+  letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;
   transition:background var(--t-reveal) var(--ease), transform var(--t-reveal) var(--ease-spring);
 }
-.at-accueil .cta:hover{background:var(--c-accent-strong);transform:translateY(-2px)}
+.at-accueil .cta:hover{background:var(--ch-bleu-fonce);transform:translateY(-2px)}
 .at-accueil .cta .fl{transition:transform var(--t-reveal) var(--ease-spring)}
 .at-accueil .cta:hover .fl{transform:translateX(.4vw)}
 
 /* ---- photographies : matiere, lumiere dirigee, grain ---- */
 .at-accueil .ph{position:relative;overflow:hidden;background:var(--c-surface-1)}
 .at-accueil .ph>img{width:100%;height:100%;object-fit:cover;
-  filter:saturate(.56) contrast(1.09) brightness(.79) sepia(.19)}
+  filter:saturate(.9) contrast(1.04) brightness(.92)}
 .at-accueil .ph::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
   background:
-    radial-gradient(78% 62% at 74% 8%, rgba(227,154,115,.16), rgba(227,154,115,0) 62%),
-    radial-gradient(128% 116% at 30% 20%, rgba(7,7,8,0) 30%, rgba(7,7,8,.66) 100%),
-    linear-gradient(180deg, rgba(7,7,8,.06), rgba(7,7,8,.44));}
+    radial-gradient(128% 116% at 30% 20%, rgba(13,58,125,0) 30%, rgba(13,58,125,.5) 100%),
+    linear-gradient(180deg, rgba(13,58,125,.04), rgba(13,58,125,.32));}
 .at-accueil .ph::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");background-size:140px 140px;
-  mix-blend-mode:overlay;opacity:.2}
-.at-accueil .ph--douce>img{filter:saturate(.62) contrast(1.05) brightness(.86) sepia(.14)}
-.at-accueil .ph--sombre>img{filter:saturate(.4) contrast(1.12) brightness(.52) sepia(.24)}
+  mix-blend-mode:overlay;opacity:.12}
+.at-accueil .ph--douce>img{filter:saturate(.95) contrast(1.03) brightness(.96)}
+.at-accueil .ph--sombre>img{filter:saturate(.7) contrast(1.08) brightness(.7)}
 
 /* ---- filets ---- */
-.at-accueil .filet{height:1px;background:var(--c-line-md);transform-origin:left center}
+.at-accueil .filet{height:1px;background:var(--ch-filet);transform-origin:left center}
 
 /* ════════════════════════════════════════════════════════════
    VERSION 2 · LA DESCENTE
@@ -127,9 +134,13 @@
    l'accueil seul. Le repli garde la chaine complete : si le 600 n'arrive pas,
    le 400 du layout prend la suite plutot qu'une graisse fabriquee. */
 .at-accueil .h-titre{
-  font-family:var(--font-titre-fort),var(--font-atelier-display),Georgia,serif;
-  font-weight:600;
-  font-size:clamp(36px,6.4vw,122px);line-height:1}
+  font-family:var(--hero-font);font-size:var(--hero-fs);line-height:var(--hero-line);
+  letter-spacing:var(--hero-track);font-weight:var(--hero-weight);text-transform:var(--hero-case);
+  font-style:normal;--role:hero;
+  /* Bleu foncé tant que la couverture est repliée (le titre est sur le blanc),
+     blanc dès qu'elle s'ouvre en plein écran (il est sur la photo). */
+  color:var(--ch-bleu-fonce);
+}
 .at-accueil .h-titre .ligne{display:block;overflow:hidden;padding-bottom:.1em;margin-bottom:-.07em}
 .at-accueil .h-titre .in{display:block;transform:translateY(112%);opacity:0}
 .at-accueil.pret .h-titre .in{transform:none;opacity:1;
@@ -143,7 +154,9 @@
    couverture d'etre symetrique. */
 .at-accueil .h-titre .l2,
 .at-accueil .h-titre .l3{text-align:right}
-.at-accueil .h-titre em{color:var(--c-accent-strong)}
+.at-accueil .h-titre em{font-family:var(--ch-serif);font-style:italic;color:var(--ch-bleu)}
+.at-accueil.plein .h-titre,
+.at-accueil.plein .h-titre em{color:var(--ch-fond)}
 
 /* Quand l'image prend l'ecran, le titre change de regime : il grandit de
    8 %, ses deux lignes se rapprochent, et elles rentrent vers le centre
@@ -153,7 +166,8 @@
    les marges de fond de page ne bougent pas d'un pixel.
    `translate` et non `transform` : la boucle de defilement occupe deja
    `transform` sur ces memes lignes, les deux proprietes cohabitent. */
-.at-accueil .h-titre{transition:transform 1600ms var(--ease-spring), translate 1600ms var(--ease-spring)}
+.at-accueil .h-titre{transition:transform 1600ms var(--ease-spring), translate 1600ms var(--ease-spring), color 900ms var(--ease)}
+.at-accueil .h-titre em{transition:color 900ms var(--ease)}
 .at-accueil .h-titre .ligne{transition:translate 1600ms var(--ease-spring)}
 .at-accueil.plein .h-titre{transform:scale(1.08);translate:0 -1.2vh}
 .at-accueil.plein .h-titre .l1{translate:3.5vw 5.5vh}
@@ -191,7 +205,7 @@
      est faible — le degrade `.h-grad` et le voile `.h-voile` font l'essentiel
      du contraste sous le titre — mais il va dans le bon sens : les couvertures
      se lisent, le titre reste parfaitement detache. */
-  filter:saturate(.80) contrast(1.04) brightness(.95) sepia(.06);
+  filter:saturate(.9) contrast(1.04) brightness(.95);
   transform:scale(1.16);
 }
 .at-accueil.pret .h-plein img{transform:none;transition:transform 2600ms var(--ease) 120ms}
@@ -199,9 +213,8 @@
 /* le modele de lumiere du bandeau, conserve tel quel */
 .at-accueil .h-grad{position:absolute;inset:0;
   background:
-    radial-gradient(78% 62% at 74% 8%, rgba(227,154,115,.16), rgba(227,154,115,0) 62%),
-    radial-gradient(128% 116% at 30% 20%, rgba(7,7,8,0) 30%, rgba(7,7,8,.66) 100%),
-    linear-gradient(180deg, rgba(7,7,8,.06), rgba(7,7,8,.44));}
+    radial-gradient(128% 116% at 30% 20%, rgba(13,58,125,0) 30%, rgba(13,58,125,.5) 100%),
+    linear-gradient(180deg, rgba(13,58,125,.04), rgba(13,58,125,.32));}
 
 /* Le voile n'arrive qu'au plein ecran : avant, le texte est a cote de
    l'image, pas dessus, et n'a besoin de rien. */
@@ -220,7 +233,7 @@
 .at-accueil .h-voile{
   position:absolute;inset:0;opacity:0;
   background:linear-gradient(180deg,
-    rgba(2,2,2,.62) 0%, rgba(2,2,2,.38) 30%, rgba(2,2,2,.44) 60%, rgba(2,2,2,.82) 100%);
+    rgba(13,58,125,.62) 0%, rgba(13,58,125,.38) 30%, rgba(13,58,125,.44) 60%, rgba(13,58,125,.82) 100%);
   transition:opacity 1500ms var(--ease-out);
 }
 .at-accueil.plein .h-voile{opacity:1}
@@ -232,7 +245,7 @@
 .at-accueil .h-rake{position:absolute;inset:0;overflow:hidden;opacity:0}
 .at-accueil .h-rake::after{
   content:"";position:absolute;top:-20%;bottom:-20%;left:-40%;width:34%;
-  background:linear-gradient(100deg,rgba(255,241,226,0),rgba(255,241,226,.16),rgba(255,241,226,0));
+  background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.16),rgba(255,255,255,0));
   transform:translateX(-60%) skewX(-14deg);
 }
 .at-accueil.pret .h-rake{opacity:1;transition:opacity 1ms 700ms}
@@ -257,33 +270,45 @@
    premier souffle passe en display italique, le reste reste du corps.
    C'est le chapo de revue, la ou il y avait un paragraphe d'interface. */
 /* ─────────── LES DEUX VOIX DU BAS DE PAGE ───────────
-   Cormorant porte ce qui se DIT (le chapo, le prix, l'action), DM Sans
-   porte ce qui s'EXPLIQUE (le corps, la reassurance). Le corps etait trop
-   petit et trop gris pour tenir tete a l'italique : il monte d'un cran en
-   taille et en clarte. Et le montant passe en Cormorant italique au milieu
-   de la ligne en DM Sans : c'est la, sur trois caracteres, que les deux
-   polices se repondent vraiment. */
+   Charte V1 : l'accroche parle en rôle accent (Interlope), le corps et la
+   mention s'expliquent en Aileron (rôles body et small), le prix prend la
+   police des nombres. */
 .at-accueil .h-amorce{
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(23px,2.3vw,44px);line-height:1.14;letter-spacing:-.01em;
-  color:var(--c-text);opacity:0;transform:translateY(1.6vh);
+  font-family:var(--accent-font);font-size:var(--accent-fs);line-height:var(--accent-line);
+  letter-spacing:var(--accent-track);font-weight:var(--accent-weight);text-transform:var(--accent-case);
+  font-style:normal;--role:accent;
+  color:var(--ch-bleu);opacity:0;transform:translateY(1.6vh);
+  transition:color 900ms var(--ease);
 }
 /* Les écarts du bas de page suivent le rythme commun (theme.css, --esp-*) :
    chapeau sous l'amorce, mention sous le chapeau. */
 .at-accueil .h-lede{
   margin-top:var(--esp-sous);opacity:0;transform:translateY(1.6vh);
-  font-size:clamp(16px,1.3vw,22px);line-height:1.64;color:var(--c-text-soft);
+  font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);
+  letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);
+  color:var(--ch-encre);--role:body;
 }
-.at-accueil .h-note{font-size:clamp(13px,1vw,17px);font-weight:400;color:var(--c-text-soft)}
+.at-accueil .h-note{
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);
+  letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);
+  color:var(--ch-gris);--role:small;
+}
+/* Le prix : chiffre, donc police des nombres (la taille reste celle de la
+   ligne, le rôle `number` en ferait un titre de 44 px au milieu d'une mention). */
 .at-accueil .h-note b{
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:1.42em;letter-spacing:0;color:var(--c-accent-strong);
+  font-family:var(--number-font);font-weight:var(--number-weight);font-size:1.25em;
+  letter-spacing:var(--number-track);color:var(--ch-bleu-fonce);
 }
+/* Sur la photo : tout le bas de page passe en blanc. */
+.at-accueil.plein .h-amorce,
+.at-accueil.plein .h-lede,
+.at-accueil.plein .h-note,
+.at-accueil.plein .h-note b{color:var(--ch-fond)}
 .at-accueil .h-droite{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2.4vh}
 .at-accueil .h-note{margin-top:var(--esp-corps);opacity:0;transform:translateY(1.6vh)}
-.at-accueil.pret .h-amorce{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 760ms,transform var(--t-lux) var(--ease-out) 760ms}
-.at-accueil.pret .h-lede{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 880ms,transform var(--t-lux) var(--ease-out) 880ms}
-.at-accueil.pret .h-note{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 1180ms,transform var(--t-lux) var(--ease-out) 1180ms}
+.at-accueil.pret .h-amorce{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 760ms,transform var(--t-lux) var(--ease-out) 760ms,color 900ms var(--ease)}
+.at-accueil.pret .h-lede{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 880ms,transform var(--t-lux) var(--ease-out) 880ms,color 900ms var(--ease)}
+.at-accueil.pret .h-note{opacity:1;transform:none;transition:opacity var(--t-lux) var(--ease-out) 1180ms,transform var(--t-lux) var(--ease-out) 1180ms,color 900ms var(--ease)}
 .at-accueil .cta:active{transform:translateY(1px) scale(.99)}
 
 /* ─────────── L'ACTION DE L'OUVERTURE ───────────
@@ -318,7 +343,9 @@
   opacity:0;
 }
 .at-accueil .acte .mot{
-  font-family:var(--font-display);font-style:italic;font-weight:400;line-height:1.1;
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);
+  letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);
+  --role:label;
   transition:color var(--t-reveal) var(--ease);
 }
 .at-accueil .acte .rond{
@@ -327,10 +354,18 @@
              transform var(--t-reveal) var(--ease-spring);
 }
 
-.at-accueil .acte--seul .mot{font-size:clamp(23px,2.4vw,42px);color:var(--c-text)}
+/* Le bouton de l'accueil (ouverture ET appel final) : fond bleu, libellé blanc
+   en étiquette, coins de 4 px (charte V1). Il garde sa flèche, rentrée dans le
+   bouton ; le disque d'avant n'est plus qu'un cadre transparent. */
+.at-accueil .acte--seul{
+  gap:12px;min-height:50px;padding:7px 14px 7px 22px;
+  background:var(--ch-bleu);color:var(--ch-fond);border:0;border-radius:var(--ch-r-btn);
+  transition:background var(--t-reveal) var(--ease);
+}
+.at-accueil .acte--seul .mot{color:var(--ch-fond)}
 .at-accueil .acte--seul .rond{
-  width:clamp(50px,4.2vw,74px);height:clamp(50px,4.2vw,74px);
-  background:var(--c-accent);color:var(--c-text-onaccent);
+  width:30px;height:30px;
+  background:transparent;color:var(--ch-fond);
 }
 /* La flèche doit tenir sa proportion dans le disque. Sans taille, un <svg>
    qui ne porte QUE son viewBox s'étire à 100 % du cercle : sur desktop la
@@ -342,10 +377,11 @@
 /* PRD §15 : la lueur est POSEE sur un pseudo, on n'anime que son opacite. */
 .at-accueil .acte--seul .rond::after{
   content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  box-shadow:var(--glow-accent);opacity:0;
+  box-shadow:0 0 0 1px rgba(255,255,255,.5);opacity:0;
   transition:opacity var(--t-reveal) var(--ease);
 }
-.at-accueil .acte--seul:hover .rond{background:var(--c-accent-strong);transform:translateY(4px)}
+.at-accueil .acte--seul:hover{background:var(--ch-bleu-fonce)}
+.at-accueil .acte--seul:hover .rond{transform:translateY(4px)}
 .at-accueil .acte--seul:hover .rond::after{opacity:1}
 .at-accueil .acte--seul:active .rond{transform:translateY(4px) scale(.96)}
 
@@ -355,15 +391,15 @@
 .at-accueil .descente .fil{
   position:absolute;right:calc(clamp(50px,4.2vw,74px) / 2);top:calc(100% + 1.4vh);
   display:block;width:1px;height:0;
-  background:linear-gradient(180deg,var(--c-line-strong),rgba(255,255,255,0));
+  background:linear-gradient(180deg,var(--ch-filet),rgba(255,255,255,0));
   transition:background var(--t-reveal) var(--ease);
 }
 .at-accueil.pret .descente .fil{height:7vh;transition:height var(--t-tres-lent) var(--ease-out) 1300ms}
 .at-accueil .descente .fil i{
   position:absolute;left:-2px;top:0;width:5px;height:5px;border-radius:50%;
-  background:var(--c-accent);opacity:0;
+  background:var(--ch-bleu);opacity:0;
 }
-.at-accueil .descente:hover .fil{background:linear-gradient(180deg,var(--c-accent),rgba(214,138,99,0))}
+.at-accueil .descente:hover .fil{background:linear-gradient(180deg,var(--ch-bleu),rgba(19,78,163,0))}
 .at-accueil .descente:hover .fil i{opacity:1;animation:goutte 1400ms var(--ease) infinite}
 @keyframes goutte{
   0%{opacity:0;transform:translateY(0)}
@@ -384,14 +420,8 @@
    de l'écran, elle doit se lire comme telle, sans redevenir le gros disque
    d'avant. */
 @media (min-width:1001px){
-  .at-accueil .descente{
-    gap:14px;min-height:56px;padding:8px 10px 8px 26px;
-    border:1px solid var(--c-line-strong);border-radius:999px;
-    transition:border-color var(--t-reveal) var(--ease);
-  }
-  .at-accueil .descente:hover{border-color:var(--c-accent)}
-  .at-accueil .descente .mot{font-size:23px}
-  .at-accueil .descente .rond{width:44px;height:44px}
+  .at-accueil .descente{min-height:56px;padding:8px 16px 8px 26px;gap:14px}
+  .at-accueil .descente .rond{width:32px;height:32px}
   .at-accueil .descente .rond svg{width:22px;height:22px}
   .at-accueil .descente .fil{display:none}
 }
@@ -402,13 +432,14 @@
 .at-accueil .curseur{position:fixed;left:0;top:0;z-index:950;pointer-events:none;opacity:0;
   transform:translate3d(-50%,-50%,0);display:none}
 .at-accueil .curseur.on{opacity:1;transition:opacity 240ms var(--ease)}
-.at-accueil .curseur i{display:block;width:7px;height:7px;border-radius:50%;background:var(--c-accent);
+.at-accueil .curseur i{display:block;width:7px;height:7px;border-radius:50%;background:var(--ch-bleu);
   transition:transform 240ms var(--ease-spring),opacity 180ms var(--ease)}
 .at-accueil .curseur b{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);
-  white-space:nowrap;padding:.9vh 1.1vw;border-radius:999px;
-  background:var(--c-accent);color:var(--c-text-onaccent);
-  font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
+  white-space:nowrap;padding:.9vh 1.1vw;border-radius:var(--ch-r-btn);
+  background:var(--ch-bleu);color:var(--ch-fond);
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);
+  letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;
   opacity:0;transition:opacity 240ms var(--ease),transform 240ms var(--ease-spring);
 }
 .at-accueil .curseur.legende i{transform:scale(0);opacity:0}
@@ -469,7 +500,6 @@
      Le plafond suit le corps dans la meme proportion (62 px pour 11vw) :
      sans quoi il mordrait en plein dans les grands telephones. Il ne joue donc qu'a partir de la tablette, et le
      grand ecran reprend la main a 1000 px. */
-  .at-accueil .h-titre{font-size:clamp(30px,11vw,62px)}
   .at-accueil .h-titre .l2,
   .at-accueil .h-titre .l3{text-align:left}
   /* les deux lignes sont ferrees a gauche ici : les rentrer horizontalement
@@ -538,8 +568,6 @@
   .at-accueil .h-bandeau{height:var(--bandeau-h);min-height:0;margin:calc(1.6 * var(--uh)) 0 calc(1.8 * var(--uh))}
   .at-accueil .h-bas{flex-direction:column;align-items:stretch;gap:calc(2.8 * var(--uh));margin-top:calc(3 * var(--uh))}
   .at-accueil .h-gauche{max-width:none}
-  .at-accueil .h-amorce{font-size:clamp(20px,5.9vw,28px)}
-  .at-accueil .h-lede{font-size:clamp(14px,3.9vw,17px);line-height:1.62}
   /* ─── LA MENTION DE PRIX SORT DU HERO, SUR TELEPHONE SEUL ───
      « Premier apercu gratuit · Votre magazine sur-mesure des 30 € » disait
      vrai, mais dans une ouverture ou tout se dispute quatre cents pixels de
@@ -573,13 +601,7 @@
      feraient croire a la meme destination. */
   /* 14/09/2026 : un cran plus grand ici aussi (50 px, corps jusqu'à 21,
      disque de 38) — la pastille reste une pastille, mais on la voit. */
-  .at-accueil .acte--seul{
-    gap:12px;min-height:50px;padding:7px 9px 7px 22px;
-    border:1px solid var(--c-line-strong);border-radius:999px;
-    transition:border-color var(--t-reveal) var(--ease)}
-  .at-accueil .acte--seul:hover{border-color:var(--c-accent)}
-  .at-accueil .acte--seul .mot{font-size:clamp(16px,4.6vw,21px)}
-  .at-accueil .acte--seul .rond{width:38px;height:38px}
+  .at-accueil .acte--seul .rond{width:30px;height:30px}
   .at-accueil .acte--seul .rond svg{width:20px;height:20px}
   /* Le fil qui tombait du disque n'a plus de point de chute : le bouton est
      centre, le disque n'est plus a son bord. Il disparait sur telephone —
@@ -592,6 +614,8 @@
      tout le monde voie la meme composition. */
   .at-accueil .h-plein{clip-path:inset(0) !important;transition:none !important}
   .at-accueil .h-voile{opacity:1 !important}
+  .at-accueil .h-titre,.at-accueil .h-titre em,.at-accueil .h-amorce,.at-accueil .h-lede,
+  .at-accueil .h-note,.at-accueil .h-note b{color:var(--ch-fond)}
 
   .at-accueil .h-titre .in,
 .at-accueil .pg h2 .in{transform:none !important;opacity:1 !important}
@@ -630,6 +654,12 @@ html:not([data-anim]) .at-accueil .h-plein{
 /* Le voile suit la couverture : sans lui, le texte se poserait sur la
    photo en pleine lumiere et deviendrait illisible. */
 html:not([data-anim]) .at-accueil .h-voile{opacity:1 !important}
+html:not([data-anim]) .at-accueil .h-titre,
+html:not([data-anim]) .at-accueil .h-titre em,
+html:not([data-anim]) .at-accueil .h-amorce,
+html:not([data-anim]) .at-accueil .h-lede,
+html:not([data-anim]) .at-accueil .h-note,
+html:not([data-anim]) .at-accueil .h-note b{color:var(--ch-fond)}
 
 /* ═══════════════════════════════════════════════════════════════════════
    LA COUVERTURE DEJA VUE (05/09/2026)
@@ -655,6 +685,12 @@ html:not([data-anim]) .at-accueil .h-voile{opacity:1 !important}
 html[data-ouverture-vue] .at-accueil .h-plein{clip-path:inset(0);transition:none}
 html[data-ouverture-vue] .at-accueil .h-plein img{transform:none;transition:none}
 html[data-ouverture-vue] .at-accueil .h-voile{opacity:1;transition:none}
+html[data-ouverture-vue] .at-accueil .h-titre,
+html[data-ouverture-vue] .at-accueil .h-titre em,
+html[data-ouverture-vue] .at-accueil .h-amorce,
+html[data-ouverture-vue] .at-accueil .h-lede,
+html[data-ouverture-vue] .at-accueil .h-note,
+html[data-ouverture-vue] .at-accueil .h-note b{color:var(--ch-fond)}
 /* La lumiere rasante passe UNE fois, au lever de rideau. Au retour, il n'y
    a pas de rideau : elle n'a rien a traverser. */
 html[data-ouverture-vue] .at-accueil .h-rake{display:none}

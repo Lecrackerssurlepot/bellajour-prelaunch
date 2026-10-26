@@ -4,10 +4,8 @@
 
 .footer {
   width: 100%;
-  /* #EAE3D8 etait le beige de la charte waitlist, ecrit en dur, alors que le
-     <body> de ces 8 pages est un degrade creme (--bj-cream -> --bj-cream-2) :
-     il y avait une couture de couleur visible entre la page et son pied. */
-  background: var(--bj-cream-2);
+  /* Charte maison V1 : pied bleu clair (--ch-bleu-clair), sans bordure. */
+  background: var(--ch-bleu-clair);
   padding: clamp(28px, 5vh, 44px) clamp(32px, 6vw, 96px) 0;
   overflow: hidden;
 }
@@ -31,22 +29,26 @@
 
 .footer-tagline {
   margin: 0;
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 300;
-  font-size: clamp(15px, 1.35vw, 21px);
-  color: var(--bj-terracotta);
-  letter-spacing: 0.01em;
-  line-height: 1.2;
+  color: var(--ch-bleu);
+  font-family: var(--accent-font);
+  font-size: var(--accent-fs);
+  line-height: var(--accent-line);
+  letter-spacing: var(--accent-track);
+  font-weight: var(--accent-weight);
+  text-transform: var(--accent-case);
+  --role: accent;
 }
 
 .footer-contact-label {
   margin: 0;
-  font-family: var(--bj-font-ui);
-  font-size: clamp(13px, 0.85vw, 13px);
-  letter-spacing: 0.02em;
-  color: var(--bj-text-soft);
-  line-height: 1.4;
+  color: var(--ch-encre);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 .footer-links {
@@ -57,22 +59,26 @@
 }
 
 .footer-link {
-  font-family: var(--bj-font-ui);
-  font-size: clamp(13px, 0.85vw, 13px);
-  letter-spacing: 0.02em;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   text-decoration: none;
   transition: color 0.22s;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
-.footer-link:hover { color: var(--bj-text); }
+.footer-link:hover { color: var(--ch-bleu); text-decoration: underline; }
 
 .footer-link--mail {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .footer-sep {
-  color: rgba(28, 28, 28, 0.20);
+  color: var(--ch-filet);
   font-size: 0.9em;
 }
 
@@ -86,22 +92,26 @@
 
 .footer-copy {
   margin: 0;
-  font-family: var(--bj-font-ui);
-  font-size: clamp(13px, 0.85vw, 13px);
-  letter-spacing: 0.02em;
-  color: rgba(28, 28, 28, 0.35);
+  color: var(--ch-gris);
   text-align: right;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 /* ── Mot géant coupé en bas ── */
 .footer-word {
   display: block;
   width: 100%;
-  font-family: 'Cormorant', serif;
-  font-weight: 700;
+  font-family: var(--ch-serif);
+  font-weight: 400;
   font-size: clamp(108px, 16vw, 196px);
   white-space: nowrap;
-  color: var(--bj-text);
+  color: var(--ch-bleu-fonce);
   opacity: 1;
   line-height: 1;
   margin: clamp(32px, 5vh, 56px) 0 0;

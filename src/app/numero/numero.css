@@ -6,8 +6,9 @@
    sans en coder un. Il sera rouvert dix fois en trois semaines — d'où une
    mise en page qui tient debout avec une phrase comme avec trois visuels.
 
-   Invariant nº1 : aucune couleur en dur. Tout vient de .bj-atelier
-   (src/app/(atelier)/theme.css), importé par le layout de /numero.
+   Invariant nº1 : aucune couleur en dur hors charte. Tout vient des jetons
+   --ch-* de src/app/charte.css (charte maison V1) ; les rôles typographiques
+   (hero, section, subtitle, accent, body, small, label, number) aussi.
    ════════════════════════════════════════════════════════════ */
 
 .nu {
@@ -32,13 +33,9 @@
   margin: 0;
   padding: 9px var(--pad);
   background: var(--glass-bg-plein);
-  border-bottom: 1px solid var(--c-accent-soft);
-  box-shadow: var(--shadow-soft);
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  line-height: 1.35;
-  letter-spacing: 0.01em;
-  color: var(--c-accent);
+  border-bottom: 1px solid var(--ch-filet);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-bleu);
   text-align: center;
 }
 
@@ -48,7 +45,7 @@
 .nu--previs { padding-top: 44px; }
 
 @media (max-width: 560px) {
-  .bj-atelier .nu-previs { font-size: 11.5px; padding: 8px 14px; }
+  .bj-atelier .nu-previs { padding: 8px 14px; }
   .nu--previs { padding-top: 56px; }
 }
 
@@ -94,17 +91,18 @@
   gap: 8px;
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid rgba(245, 240, 231, 0.28);
-  border-radius: 999px;
-  background: var(--c-veil-hover);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--c-text);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  background: transparent;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   text-decoration: none;
   white-space: nowrap;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.bj-atelier .nu-retour:hover { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+.bj-atelier .nu-retour:hover {
+  border-color: var(--ch-bleu-fonce); background: var(--ch-bleu-voile); color: var(--ch-bleu-fonce);
+}
 .nu-retour-mot { display: inline; }
 
 /* Sur un téléphone, la flèche seule : le logo garde sa place centrale et
@@ -117,20 +115,20 @@
 .nu-compte {
   text-align: center;
   padding: 8px var(--pad);
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--c-text-faint);
-  border-bottom: 1px solid var(--c-line);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
+  border-bottom: 1px solid var(--ch-filet);
 }
 
 .bj-atelier .nu-compte a {
-  color: var(--c-accent-strong);
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.bj-atelier .nu-compte a:hover { color: var(--c-text); }
+.bj-atelier .nu-compte a:hover {
+  color: var(--ch-bleu-fonce);
+}
 
 .nu-main {
   flex: 1 0 auto;
@@ -144,13 +142,12 @@
    qui vaut clamp(56px,15vw,150px) : la taille du hero écraserait une page
    qui n'est pas une page d'accueil. */
 .bj-atelier .nu-titre {
-  font-size: clamp(44px, 6vw, 64px);
-  line-height: 1.02;
-  letter-spacing: -0.01em;
+  font-family: var(--hero-font); font-size: var(--hero-fs); line-height: var(--hero-line); letter-spacing: var(--hero-track); font-weight: var(--hero-weight); text-transform: var(--hero-case); --role: hero;
+  color: var(--ch-bleu-fonce);
   margin-top: 14px;
 }
 /* ── L'étiquette « à qui est la balle » (18/09) ──
-   Onze pixels, capitales, un point de 6 px : cuivre quand c'est au client
+   Onze pixels, capitales, un point de 6 px : bleu quand c'est au client
    d'agir (`is-vous`), gris sinon. Elle ouvre la colonne, d'où `margin-top: 0`
    en (0,2,0) pour battre le `p { margin: 0 }` du thème sans le contredire. */
 .bj-atelier .nu-camp {
@@ -158,21 +155,18 @@
   align-items: center;
   gap: 8px;
   margin-top: 0;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 500;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 .nu-camp-dot {
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
-  background: var(--c-text-faint);
+  border-radius: 50%;
+  background: var(--ch-gris);
 }
-.nu-camp.is-vous .nu-camp-dot { background: var(--c-accent); }
+.nu-camp.is-vous .nu-camp-dot { background: var(--ch-bleu); }
+.bj-atelier .nu-camp.is-vous { color: var(--ch-bleu); }
 
 /* ---- le sommaire des jalons (04/09, maquettes validées) ----
    Cinq jalons, jamais huit : la cliente ne connaît pas notre machine à
@@ -192,24 +186,22 @@
 }
 
 .nu-etape {
-  font-family: var(--font-ui);
-  font-size: 10.5px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 500;
-  color: var(--c-text-faint);
-  opacity: 0.55;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
+  opacity: 0.7;
   padding-bottom: 5px;
 }
 
 .nu-etape.is-fait { opacity: 1; }
 .nu-etape.is-la {
   opacity: 1;
-  color: var(--c-accent-strong);
-  border-bottom: 1px solid var(--c-accent);
+  color: var(--ch-bleu-fonce);
+  border-bottom: 1px solid var(--ch-bleu);
 }
 
-.nu-etape-v { font-style: normal; color: var(--c-accent); }
+.nu-etape-v {
+  font-style: normal; color: var(--ch-bleu);
+}
 
 .nu-etapes-mini { display: none; align-items: center; gap: 10px; }
 
@@ -220,17 +212,17 @@
   height: 2px;
   flex: 1;
   border-radius: 2px;
-  background: var(--c-line-md);
+  background: var(--ch-filet);
 }
 
-.nu-segments i.is-fait { background: var(--c-accent); }
+.nu-segments i.is-fait {
+  background: var(--ch-bleu);
+}
 
 .nu-etapes-ou {
   flex: 0 0 auto;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 @media (max-width: 760px) {
@@ -240,10 +232,8 @@
 
 /* ---- le mot d'état : la phrase que la cliente vient lire ---- */
 .nu-mot {
-  font-family: var(--font-display);
-  font-size: clamp(26px, 4vw, 30px);
-  line-height: 1.15;
-  letter-spacing: -0.015em;
+  font-family: var(--section-font); font-size: var(--section-fs); line-height: var(--section-line); letter-spacing: var(--section-track); font-weight: var(--section-weight); text-transform: var(--section-case); --role: section;
+  color: var(--ch-bleu-fonce);
   max-width: 24ch;
 }
 
@@ -260,12 +250,12 @@
 .nu-sub {
   margin-top: 14px;
   max-width: 50ch;
-  font-weight: 300;
-  line-height: 1.6;
-  color: var(--c-text-soft);
-  font-size: 16px;
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
 }
-.nu-sub b { color: var(--c-text); font-weight: 400; }
+.nu-sub b {
+  color: var(--ch-encre); font-weight: var(--label-weight);
+}
 
 /* ── La rangée d'action (18/09) : UN geste plein, le secondaire en lien à
    côté. Sur téléphone, le bouton prend la largeur et le lien passe dessous. */
@@ -282,12 +272,12 @@
 .bj-atelier .nu-note {
   margin-top: 16px;
   max-width: 52ch;
-  font-size: 13px;
-  line-height: 1.55;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
-.nu-note b { font-weight: 400; color: var(--c-text-soft); }
+.nu-note b {
+  font-weight: var(--label-weight); color: var(--ch-encre);
+}
 
 /* ── L'AXE CENTRÉ, desktop seulement (18/09, planche validée). La tête de
    page — étiquette, titre, mot, corps, action, note — vit sur l'axe, comme
@@ -326,24 +316,20 @@
 .nu-relance {
   margin-top: clamp(48px, 9vw, 84px);
   padding-top: clamp(24px, 4.5vw, 32px);
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--ch-filet);
   max-width: 56ch;
 }
 .nu-relance-mot {
-  font-family: var(--font-display);
-  font-size: clamp(20px, 3.6vw, 26px);
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  color: var(--c-text-soft);
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  color: var(--ch-bleu-fonce);
 }
 .nu-relance-sub {
   margin-top: 10px;
-  font-size: clamp(14px, 3.4vw, 15px);
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
-/* Le second geste : cuivre et cerné, jamais plein. La couleur le distingue
+/* Le second geste : bleu et cerné, jamais plein. La couleur le distingue
    du bouton du magazine, et le contour dit « c'est une proposition », pas
    « c'est l'action de cette page ». Scopé `.bj-atelier` comme `.nu-lien` :
    les tokens `--c-*` n'existent que sous ce conteneur. */
@@ -353,19 +339,18 @@
   gap: 10px;
   margin-top: clamp(18px, 3.5vw, 24px);
   padding: 13px 24px;
-  border: 1px solid var(--c-accent);
-  border-radius: 999px;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
   background: transparent;
-  color: var(--c-accent);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 500;
+  color: var(--ch-bleu);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
   text-decoration: none;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .bj-atelier .nu-cta-second:hover {
-  background: var(--c-accent-soft);
-  color: var(--c-accent-strong);
+  background: var(--ch-bleu-voile);
+  color: var(--ch-bleu-fonce);
+  border-color: var(--ch-bleu-fonce);
 }
 
 /* ---- encart secondaire (suivi, adresse, rappel) ---- */
@@ -375,9 +360,9 @@
   margin: 40px auto 0;
   max-width: 760px;
   padding: 24px 32px;
-  border: 1px solid var(--c-line-md);
-  border-radius: 16px;
-  background: var(--c-surface-1);
+  border: 0;
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -388,18 +373,14 @@
 .nu-carte-champ { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 
 .nu-carte dt {
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 500;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 .nu-carte dd {
   margin: 0;
-  font-size: 15px;
-  color: var(--c-text);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
 }
 
 .nu-carte .nu-ghost { flex: 0 0 auto; }
@@ -417,7 +398,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 14px;
   letter-spacing: 0.08em;
-  color: var(--c-text-soft);
+  color: var(--ch-encre);
   user-select: all;
 }
 
@@ -440,13 +421,11 @@
 
 .nu-pl-section { display: flex; flex-direction: column; gap: 18px; }
 
-.nu-pl-titre {
+.bj-atelier .nu-pl-titre {
   margin: 0;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(18px, 3vw, 23px);
-  color: var(--c-text);
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  font-style: normal;
+  color: var(--ch-bleu-fonce);
 }
 
 /* ── Les cartes de couverture ──────────────────────────────────────────
@@ -466,7 +445,7 @@
   gap: 12px;
   padding: clamp(12px, 3vw, 18px);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--ch-r-carte);
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
@@ -475,8 +454,8 @@
    la ligne de flottaison de l'image et personne ne la reliait à la bonne
    couverture. La bordure accentuée dit QUELLE carte, avant même de lire. */
 .nu-pl-carte--retenue {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+  border-color: var(--ch-bleu);
+  background: var(--ch-bleu-clair);
 }
 
 /* Le sous-titre de la question, sous le chapeau. Il DIT ce qu'on attend
@@ -485,10 +464,8 @@
 .nu-pl-sous {
   margin: -8px 0 0;
   max-width: 54ch;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--c-text-soft);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 /* Les tuiles d'une même carte : côte à côte sur ordinateur (la première de
@@ -581,9 +558,8 @@
   box-shadow: var(--shadow-soft);
 }
 .nu-pl-legende-plat {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
   text-align: center;
 }
 
@@ -611,15 +587,13 @@
   right: 10px;
   bottom: 10px;
   padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border);
+  border-radius: var(--ch-r-btn);
+  border: 1px solid var(--ch-filet);
   background: var(--glass-bg-strong);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-text);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-encre);
   opacity: 0;
   transition: opacity var(--dur) var(--ease);
   pointer-events: none;
@@ -631,10 +605,9 @@
 /* Le nom de la carte, sous les tuiles — même dessin que l'ancien nom de vue. */
 .nu-pl-nom {
   margin: 0;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: clamp(16px, 2.4vw, 19px);
-  color: var(--c-text);
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  font-style: normal;
+  color: var(--ch-encre);
   text-align: center;
 }
 
@@ -666,40 +639,39 @@
   max-width: 320px;
   min-height: 46px;
   padding: 11px 22px;
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  letter-spacing: 0.01em;
+  border-radius: var(--ch-r-btn);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
   text-align: center;
 }
 
 /* Les mêmes couleurs que le bouton d'envoi de la feuille d'ajustement
-   (`.nu-feuille-send`, plus bas) : c'est le geste plein de cette page, il ne
-   s'invente pas une seconde fois. L'encre sombre est en dur là-bas comme
-   ici — `--c-void` est le noir du fond, trop profond sur cette terre. */
+   (`.nu-feuille-send`, plus bas) : fond bleu, texte blanc, c'est le geste
+   plein de cette page, il ne s'invente pas une seconde fois. */
 .bj-atelier .nu-pl-btn {
   appearance: none;
-  border: 1px solid var(--c-accent-strong);
-  background: var(--c-accent);
-  color: #1a1210;
-  font-weight: 600;
+  border: 1px solid var(--ch-bleu);
+  background: var(--ch-bleu);
+  color: var(--ch-fond);
   cursor: pointer;
   transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
-.bj-atelier .nu-pl-btn:hover:not(:disabled) { background: var(--c-accent-strong); }
-.bj-atelier .nu-pl-btn:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+.bj-atelier .nu-pl-btn:hover:not(:disabled) {
+  background: var(--ch-bleu-fonce);
+  border-color: var(--ch-bleu-fonce);
+}
+.bj-atelier .nu-pl-btn:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 3px; }
 /* ÉTEINT EN PRÉVISUALISATION : l'atelier voit l'écran du client, il ne
    choisit pas à sa place. Le bouton reste LISIBLE — un bouton qu'on ne voit
    plus est un bouton qu'on ne relit jamais. */
 .bj-atelier .nu-pl-btn:disabled { opacity: 0.45; cursor: default; }
-.bj-atelier .nu-pl-btn:disabled:hover { background: var(--c-accent); }
+.bj-atelier .nu-pl-btn:disabled:hover { background: var(--ch-bleu); }
 
 /* La carte retenue ne perd PAS son bouton : il devient un état, à la même
    place et à la même taille. Rien ne saute sous le doigt au moment du clic. */
 .nu-pl-retenue {
-  border: 1px solid var(--c-accent);
+  border: 1px solid var(--ch-bleu);
   background: transparent;
-  color: var(--c-accent-strong);
+  color: var(--ch-bleu);
 }
 
 /* La confirmation, sous la section. Elle répète le NUMÉRO choisi : lue
@@ -707,11 +679,9 @@
 .nu-pl-confirme {
   margin: 0;
   max-width: 48ch;
-  font-family: var(--font-ui);
-  font-size: 13.5px;
-  line-height: 1.5;
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
   text-align: center;
-  color: var(--c-accent-strong);
+  color: var(--ch-bleu-fonce);
 }
 
 /* ── Les doubles pages ─────────────────────────────────────────────────
@@ -756,14 +726,12 @@
   transform: translateX(-50%);
   pointer-events: none;
   background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.14) 42%, rgba(0, 0, 0, 0.32) 50%,
-    rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
+  rgba(29, 35, 48, 0) 0%, rgba(29, 35, 48, 0.14) 42%, rgba(29, 35, 48, 0.32) 50%,
+  rgba(29, 35, 48, 0.14) 58%, rgba(29, 35, 48, 0) 100%);
 }
 .nu-pl-nom-tuile {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: clamp(15px, 2.2vw, 18px);
-  color: var(--c-text);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
   text-align: center;
 }
 
@@ -806,18 +774,17 @@
   align-items: center;
   min-height: 44px;
   padding: 9px 20px;
-  background: none;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--c-text);
+  background: transparent;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .bj-atelier .nu-viz-choix-btn:hover {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+  border-color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-voile);
 }
 
 /* La seconde réponse est SECONDAIRE, pas égale : le trait s'efface, le mot
@@ -825,12 +792,12 @@
    être la première chose que l'œil attrape. */
 .bj-atelier .nu-viz-choix-btn--doux {
   border-color: transparent;
-  color: var(--c-text-faint);
+  color: var(--ch-gris);
 }
 .bj-atelier .nu-viz-choix-btn--doux:hover {
-  border-color: var(--c-line-strong);
+  border-color: var(--ch-filet);
   background: none;
-  color: var(--c-text);
+  color: var(--ch-encre);
 }
 
 /* ÉTEINT EN PRÉVISUALISATION (11/09/2026) : l'atelier voit l'écran du
@@ -841,25 +808,24 @@
   cursor: default;
 }
 .bj-atelier .nu-viz-choix-btn:disabled:hover {
-  border-color: var(--c-line-strong);
+  border-color: var(--ch-bleu);
   background: none;
 }
 .bj-atelier .nu-viz-choix-btn--doux:disabled:hover {
   border-color: transparent;
-  color: var(--c-text-faint);
+  color: var(--ch-gris);
 }
 
 .nu-viz-choix-refus {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 .nu-viz-note {
   max-width: 42ch;
   text-align: center;
-  font-size: 13px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
   align-self: center;
 }
 
@@ -870,16 +836,16 @@
 .nu-garde {
   margin-top: 72px;
   padding-top: 24px;
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--ch-filet);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-size: 13px;
-  line-height: 1.55;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
-.nu-garde b { font-weight: 400; color: var(--c-text-soft); }
+.nu-garde b {
+  font-weight: var(--label-weight); color: var(--ch-encre);
+}
 /* 18/09 : le texte à gauche, les deux boutons à droite, sur UNE ligne. Les
    boutons ne sont plus DANS le paragraphe (le texte coulait autour d'eux). */
 .nu-garde-l {
@@ -891,10 +857,13 @@
 .nu-garde-l p { max-width: 46ch; }
 .nu-garde .bj-lienpartage { margin-top: 0; flex: 0 0 auto; }
 .bj-atelier .nu-garde-compte a {
-  color: var(--c-accent-strong);
-  text-decoration: none;
+  color: var(--ch-bleu);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.bj-atelier .nu-garde-compte a:hover { color: var(--c-text); text-decoration: underline; }
+.bj-atelier .nu-garde-compte a:hover {
+  color: var(--ch-bleu-fonce);
+}
 @media (max-width: 760px) {
   .nu-garde { margin-top: 64px; padding-top: 22px; gap: 14px; }
   .nu-garde-l { flex-direction: column; align-items: flex-start; gap: 14px; }
@@ -903,10 +872,9 @@
 .nu-garde-url {
   display: block;
   margin-top: 10px;
-  font-size: 12px;
-  color: var(--c-text-soft);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
   word-break: break-all;
-  /* Un lien qu'on veut copier se sélectionne d'un geste, pas de trois. */
   user-select: all;
 }
 
@@ -922,33 +890,37 @@
   gap: 18px;
   flex-wrap: wrap;
   padding: clamp(16px, 3vw, 22px) clamp(18px, 3.4vw, 26px);
-  border-radius: 14px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
+  border: 0;
 }
 
 .nu-tarif-p { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
 .nu-tarif-label {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 .nu-tarif-value {
-  font-family: var(--font-display);
-  font-size: clamp(24px, 4.6vw, 32px);
-  line-height: 1.1;
-  color: var(--c-text);
+  font-family: var(--number-font); font-size: var(--number-fs); line-height: var(--number-line); letter-spacing: var(--number-track); font-weight: var(--number-weight); text-transform: var(--number-case); --role: number;
+  color: var(--ch-bleu-fonce);
 }
-.nu-tarif-value b { font-weight: 500; }
-.nu-tarif-sep { color: var(--c-text-faint); font-weight: 300; }
-.nu-tarif-prix { color: var(--c-accent); white-space: nowrap; }
+.nu-tarif-value b {
+  font-weight: inherit;
+}
+.nu-tarif-sep {
+  color: var(--ch-gris);
+}
+.nu-tarif-prix {
+  color: var(--ch-bleu); white-space: nowrap;
+}
 
-.nu-prix-sub { margin-top: clamp(16px, 3vw, 22px); font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
+.nu-prix-sub {
+  margin-top: clamp(16px, 3vw, 22px);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
+}
 
 /* ── LA CARTE DE LA COMMANDE (18/09/2026) ──
    Même enveloppe que `.nu-doc` (l'état maquette) : 760 px, centrée, surface
@@ -959,24 +931,19 @@
   margin: 40px auto 0;
   max-width: 760px;
   padding: 26px 32px 30px;
-  border: 1px solid var(--c-line-md);
-  border-radius: 16px;
-  background: var(--c-surface-1);
+  border: 0;
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
   text-align: left;
 }
 .bj-atelier .nu-commande-lbl {
   margin: 0;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 500;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 .nu-commande .nu-bon { margin-top: 12px; border-top: none; border-bottom: none; padding: 0; }
 .nu-commande .nu-bon-t { padding: 18px 0 0; }
-.nu-commande .nu-bon-t b { font-size: clamp(28px, 4vw, 32px); }
-.nu-commande .nu-promesse { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--c-line); }
+.nu-commande .nu-promesse { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--ch-filet); }
 .nu-commande .nu-order--plein { width: auto; margin-top: 22px; }
 .nu-commande .nu-accords-mot { text-align: left; }
 @media (max-width: 760px) {
@@ -999,8 +966,8 @@
 
 .nu-bon {
   margin-top: clamp(20px, 4vw, 30px);
-  border-top: 1px solid var(--c-line);
-  border-bottom: 1px solid var(--c-line);
+  border-top: 1px solid var(--ch-filet);
+  border-bottom: 1px solid var(--ch-filet);
   padding: 2px 0;
 }
 
@@ -1010,17 +977,15 @@
   align-items: baseline;
   gap: 20px;
   padding: 13px 0;
-  font-size: 15px;
-  font-weight: 300;
-  line-height: 1.4;
-  color: var(--c-text-soft);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
 }
 
-.nu-bon-l + .nu-bon-l { border-top: 1px solid var(--c-line); }
+.nu-bon-l + .nu-bon-l { border-top: 1px solid var(--ch-filet); }
 
 /* Le détail reste en graisse normale : ce sont des montants intermédiaires,
    ils informent, ils ne concluent pas. */
-.nu-bon-l b { font-weight: 400; color: var(--c-text); white-space: nowrap; }
+.nu-bon-l b { font-weight: var(--label-weight); color: var(--ch-encre); white-space: nowrap; }
 
 /* Le total. Trait plus marqué au-dessus, libellé en petites capitales, et le
    montant en display : c'est la seule ligne du bloc qui doit s'attraper d'un
@@ -1031,23 +996,17 @@
   align-items: baseline;
   gap: 20px;
   padding: 16px 0 14px;
-  border-top: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-top: 1px solid var(--ch-filet);
 }
 
 .nu-bon-t span {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 .nu-bon-t b {
-  font-family: var(--font-display);
-  font-size: clamp(32px, 6.5vw, 42px);
-  font-weight: 400;
-  line-height: 1;
-  color: var(--c-text);
+  font-family: var(--number-font); font-size: var(--number-fs); line-height: var(--number-line); letter-spacing: var(--number-track); font-weight: var(--number-weight); text-transform: var(--number-case); --role: number;
+  color: var(--ch-bleu-fonce);
   white-space: nowrap;
 }
 
@@ -1062,7 +1021,7 @@
 
    Le select est dessiné comme celui de l'écran 4 du questionnaire
    (`.at-inp--select`, composer.css) : même retrait du chrome système, même
-   chevron SVG en ligne, même `color-scheme: dark` pour la popup native. Les
+   chevron SVG en ligne, même `color-scheme` pour la popup native. Les
    deux feuilles ne sont PAS partagées (`/composer` et `/numero` ont chacune
    la leur), d'où le dessin redit ici plutôt qu'une classe empruntée à une
    feuille qui n'est pas chargée sur cette page.
@@ -1084,8 +1043,8 @@
 
 .nu-finition {
   display: inline-flex;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
   overflow: hidden;
 }
 
@@ -1093,42 +1052,33 @@
   appearance: none;
   border: 0;
   background: transparent;
-  /* 44 px de haut au doigt : la cible minimale, et la même que `.nu-select`
-     juste en dessous — les deux réglages du bon de commande doivent avoir la
-     même assise. */
   padding: 11px 16px;
   min-height: 44px;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 300;
-  color: var(--c-text-soft);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   cursor: pointer;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .nu-finition-b + .nu-finition-b {
-  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-left: 1px solid var(--ch-bleu);
 }
-.nu-finition-b:hover:not([disabled]):not(.est-choisi) { background: var(--c-surface-2); }
+.nu-finition-b:hover:not([disabled]):not(.est-choisi) { background: var(--ch-bleu-voile); }
 .nu-finition-b.est-choisi {
-  background: var(--c-surface-3);
-  color: var(--c-text);
-  font-weight: 400;
+  background: var(--ch-bleu);
+  color: var(--ch-fond);
 }
 .nu-finition-b[disabled] { opacity: 0.45; cursor: not-allowed; }
 /* L'outline à l'INTÉRIEUR : le groupe a `overflow: hidden`, un outline
    décalé vers l'extérieur serait rogné et le focus deviendrait invisible. */
-.nu-finition-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+.nu-finition-b:focus-visible { outline: 2px solid var(--ch-bleu-fonce); outline-offset: -3px; }
 
 .nu-bon-choix { padding: 13px 0 15px; }
-.nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--c-line); }
+.nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--ch-filet); }
 
 .nu-bon-choix-lbl {
   display: block;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 .nu-bon-choix-l {
@@ -1144,55 +1094,49 @@
   min-width: 0;
   appearance: none;
   -webkit-appearance: none;
-  color-scheme: dark;
-  background: transparent;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  color-scheme: light;
+  background-color: var(--ch-fond);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
   padding: 11px 30px 11px 12px;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 300;
-  color: var(--c-text);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
   cursor: pointer;
   /* Le chevron, en SVG de données : une image de plus serait une requête de
-     plus pour douze pixels. La couleur est écrite en dur (%23928d84 =
-     --c-text-faint), parce qu'une URL de données ne lit pas une variable CSS. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23928d84' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  plus pour douze pixels. La couleur est écrite en dur (%235d6678 = gris de
+  la charte), parce qu'une URL de données ne lit pas une variable CSS. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%235d6678' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 12px 8px;
 }
-/* Firefox et Chrome sous Windows dessinent les options eux-mêmes : sans ces
-   deux lignes, du texte crème s'affiche sur du blanc, donc invisible. */
-.nu-select option { background: var(--c-surface-2); color: var(--c-text); }
-.nu-select:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+/* Firefox et Chrome sous Windows dessinent les options eux-mêmes : on leur
+   donne les couleurs de la charte. */
+.nu-select option { background: var(--ch-fond); color: var(--ch-encre); }
+.nu-select:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 2px; }
 .nu-select[disabled] { opacity: 0.45; cursor: not-allowed; }
 
 .nu-bon-calc {
   flex: 0 0 auto;
   appearance: none;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
-  background: var(--c-surface-2);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  background: transparent;
   padding: 11px 16px;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 400;
-  color: var(--c-text);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   cursor: pointer;
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-.nu-bon-calc:hover:not([disabled]) { background: var(--c-surface-3); }
+.nu-bon-calc:hover:not([disabled]) { background: var(--ch-bleu-voile); }
 .nu-bon-calc:active:not([disabled]) { transform: scale(0.98); }
 .nu-bon-calc[disabled] { opacity: 0.45; cursor: not-allowed; transform: none; }
-.nu-bon-calc:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-bon-calc:focus-visible { outline: 2px solid var(--ch-bleu-fonce); outline-offset: 2px; }
 
 .nu-bon-choix-mot {
   margin: 10px 0 0;
-  font-size: 13px;
-  font-weight: 300;
-  line-height: 1.45;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 /* « Changer de pays » : un lien, pas un bouton. Il ne doit pas rivaliser avec
@@ -1205,18 +1149,16 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: var(--c-line-strong);
+  text-decoration-color: var(--ch-bleu-anneau);
   transition: color var(--dur) var(--ease);
 }
-.nu-bon-changer:hover:not([disabled]) { color: var(--c-text-soft); }
+.nu-bon-changer:hover:not([disabled]) { color: var(--ch-bleu-fonce); }
 .nu-bon-changer[disabled] { opacity: 0.4; cursor: not-allowed; }
-.nu-bon-changer:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 4px; }
+.nu-bon-changer:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 2px; border-radius: 4px; }
 .nu-bon-changer--annule { display: inline-block; margin: 10px 0 0; }
 
 /* Les droits de douane des trois destinations hors Union. Dit AVANT le
@@ -1224,10 +1166,8 @@
    porte est la seule mauvaise surprise que cette page peut encore réserver. */
 .nu-bon-note {
   margin: 12px 0 0;
-  font-size: 13px;
-  font-weight: 300;
-  line-height: 1.45;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 /* Une destination qui n'est plus desservie (D21). Même note, mais LUE : le
@@ -1236,8 +1176,7 @@
    texte, et au-dessus du menu plutôt qu'à la suite du bon. */
 .nu-bon-note--suspendu {
   margin: 0 0 10px;
-  color: var(--c-text);
-  font-weight: 400;
+  color: var(--ch-encre);
 }
 
 /* ── LA PROMESSE, AU-DESSUS DU BOUTON ──
@@ -1255,10 +1194,8 @@
   align-items: flex-start;
   gap: 12px;
   padding: 6px 0;
-  font-size: 14.5px;
-  font-weight: 300;
-  line-height: 1.5;
-  color: var(--c-text-soft);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
 }
 
 .nu-promesse li i {
@@ -1267,10 +1204,12 @@
   height: 7px;
   margin-top: 8px;
   border-radius: 50%;
-  background: var(--c-accent);
+  background: var(--ch-bleu);
 }
 
-.nu-promesse li b { font-weight: 500; color: var(--c-text); }
+.nu-promesse li b {
+  font-weight: var(--label-weight); color: var(--ch-encre);
+}
 
 /* Le bouton n'est plus dans un encart : il prend la laisse et se pose seul.
    ⚠️ La règle `.nu-order` d'origine reste la référence — on n'ajoute ici que
@@ -1283,9 +1222,8 @@
 
 .nu-accords-mot {
   margin: 12px 0 0;
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
   text-align: center;
 }
 
@@ -1297,22 +1235,22 @@
   gap: 12px;
   align-items: flex-start;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 300;
-  line-height: 1.5;
-  color: var(--c-text-soft);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
   max-width: 60ch;
 }
 
 .nu-check input {
   margin-top: 3px;
   flex: 0 0 auto;
-  accent-color: var(--c-accent);
+  accent-color: var(--ch-bleu);
   width: 17px;
   height: 17px;
 }
 
-.nu-check:hover { color: var(--c-text); }
+.nu-check:hover {
+  color: var(--ch-encre);
+}
 
 /* ---- le bouton de paiement ----
    --c-order est RÉSERVÉ à ce bouton et à lui seul (PRD §4). */
@@ -1322,12 +1260,10 @@
   align-items: center;
   gap: 12px;
   background: var(--c-order);
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 500;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
   padding: 18px 34px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--ch-r-btn);
   cursor: pointer;
   transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
   will-change: transform;
@@ -1348,21 +1284,30 @@
   border: none;
   padding: 8px 0;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: var(--c-line-strong);
+  text-decoration-color: var(--ch-bleu-anneau);
   transition: color var(--dur) var(--ease);
 }
-.nu-ajuster:hover:not([disabled]) { color: var(--c-text-soft); }
+.nu-ajuster:hover:not([disabled]) { color: var(--ch-bleu-fonce); }
 /* Éteint en prévisualisation (l'atelier regarde, il ne dépose pas de demande
    au nom du client) : le lien doit alors CESSER de se proposer. */
 .nu-ajuster[disabled] { opacity: 0.4; cursor: not-allowed; }
-.nu-ajuster:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 4px; }
+.nu-ajuster:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 2px; border-radius: 4px; }
 
-.nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }
+.nu-erreur {
+  margin-top: 16px;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-erreur);
+}
 
 /* ── La feuille d'ajustement (T-091) — bas de l'écran sur mobile, centrée au
    large. Chips + un mot, « Envoyer à l'atelier » : la porte de sortie douce. */
@@ -1373,33 +1318,40 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(2, 2, 2, 0.62);
+  background: var(--ch-encre-scrim);
   animation: nu-feuille-fond var(--dur) var(--ease);
 }
 .nu-feuille-carte {
   width: min(560px, 100%);
   max-height: 92vh;
   overflow-y: auto;
-  background: var(--glass-bg-plein);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--c-line-strong);
-  border-radius: 18px 18px 0 0;
+  background: var(--ch-fond);
+  border: 0;
+  border-radius: var(--ch-r-carte) var(--ch-r-carte) 0 0;
   padding: clamp(22px, 5vw, 34px) clamp(20px, 5vw, 32px) clamp(24px, 6vw, 34px);
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 -20px 60px var(--ch-encre-voile);
   animation: nu-feuille-monte 420ms var(--ease-spring);
 }
 @media (min-width: 620px) {
   .nu-feuille { align-items: center; }
-  .nu-feuille-carte { border-radius: 18px; }
+  .nu-feuille-carte { border-radius: var(--ch-r-carte); }
 }
-.nu-feuille-titre {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: clamp(22px, 4vw, 28px);
+.bj-atelier .nu-feuille-titre {
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  color: var(--ch-bleu-fonce);
   margin-bottom: 6px;
 }
-.nu-feuille-sub { color: var(--c-text-soft); font-size: 14px; line-height: 1.5; max-width: 44ch; }
+.nu-feuille-sub {
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
+  max-width: 44ch;
+}
 .nu-feuille-chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 20px 0 18px; }
 
 /* 04/09 — le groupe « La longueur du numéro » sous les motifs : un intitulé
@@ -1408,10 +1360,8 @@
 .nu-feuille-chips--motifs { margin-bottom: 0; }
 .bj-atelier .nu-feuille-groupe {
   margin: 18px 0 0;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 .nu-feuille-chips--longueur { margin: 10px 0 18px; }
 
@@ -1420,81 +1370,71 @@
    (0-2-0) : `.bj-atelier p { margin: 0 }` battrait une classe seule. */
 .bj-atelier .nu-feuille-note {
   margin: -8px 0 18px;
-  font-size: 13px;
-  font-weight: 300;
-  line-height: 1.5;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
   max-width: 44ch;
 }
 .nu-feuille-chip {
   appearance: none;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 13.5px;
-  color: var(--c-text-soft);
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
+  background: var(--ch-fond);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
   padding: 9px 16px;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
-    background var(--dur) var(--ease);
+  background var(--dur) var(--ease);
 }
 .nu-feuille-chip[aria-pressed='true'] {
-  color: var(--c-text);
-  background: var(--c-accent-soft);
-  border-color: rgba(214, 138, 99, 0.5);
+  color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-voile);
+  border-color: var(--ch-bleu);
 }
-.nu-feuille-chip:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-feuille-chip:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 2px; }
 .nu-feuille-mot {
   width: 100%;
   min-height: 64px;
   resize: vertical;
   margin-bottom: 20px;
   padding: 12px 14px;
-  background: var(--c-void);
-  color: var(--c-text);
-  border: 1px solid var(--c-line-strong);
-  border-radius: 8px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
+  background: var(--ch-fond);
+  color: var(--ch-encre);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
 }
-.nu-feuille-mot::placeholder { color: var(--c-text-faint); }
-.nu-feuille-mot:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+.nu-feuille-mot::placeholder { color: var(--ch-gris); }
+.nu-feuille-mot:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 1px; }
 .nu-feuille-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .nu-feuille-cancel {
   appearance: none;
   cursor: pointer;
   background: none;
   border: none;
-  color: var(--c-text-faint);
-  font-family: var(--font-ui);
-  font-size: 14px;
+  color: var(--ch-gris);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
   padding: 8px;
   transition: color var(--dur) var(--ease);
 }
-.nu-feuille-cancel:hover { color: var(--c-text-soft); }
+.nu-feuille-cancel:hover { color: var(--ch-bleu); }
 .nu-feuille-send {
   appearance: none;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-weight: 600;
-  font-size: 15px;
-  color: #1a1210;
-  background: var(--c-accent);
-  border: 1px solid var(--c-accent-strong);
-  border-radius: 999px;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-fond);
+  background: var(--ch-bleu);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
   padding: 14px 28px;
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease-spring);
 }
-.nu-feuille-send:hover:not([disabled]) { background: var(--c-accent-strong); transform: translateY(-1px); }
-.nu-feuille-send:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+.nu-feuille-send:hover:not([disabled]) { background: var(--ch-bleu-fonce); border-color: var(--ch-bleu-fonce); transform: translateY(-1px); }
+.nu-feuille-send:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 3px; }
 .nu-feuille-send[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
 .nu-feuille-done {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: clamp(20px, 4vw, 24px);
-  color: var(--c-text);
+  font-family: var(--accent-font); font-size: var(--accent-fs); line-height: var(--accent-line); letter-spacing: var(--accent-track); font-weight: var(--accent-weight); text-transform: var(--accent-case); --role: accent;
+  color: var(--ch-bleu-fonce);
   text-align: center;
   margin-bottom: 8px;
 }
@@ -1527,12 +1467,21 @@
 .nu-confirmer.is-open .nu-confirmer-inner { padding-top: clamp(22px, 5vw, 34px); }
 .nu-confirmer-titre {
   margin: 0 0 14px;
-  font-family: var(--font-display);
-  font-size: clamp(19px, 3.4vw, 24px);
-  color: var(--c-text);
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  color: var(--ch-bleu-fonce);
 }
 .nu-confirmer .nu-cases { margin-top: 0; }
-.nu-confirmer-aide { margin-top: 12px; font-size: 13px; color: var(--c-text-faint); }
+.nu-confirmer-aide {
+  margin-top: 12px;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
+}
 
 /* La planche n'a plus de scène à hauteur fixe (11/09/2026) : chaque tuile
    suit son propre `aspect-ratio`, la règle qui resserrait `--viz-h` sous
@@ -1544,23 +1493,20 @@
 .nu-facultatif {
   margin-top: clamp(48px, 9vw, 84px);
   padding-top: clamp(20px, 4vw, 28px);
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--ch-filet);
   max-width: 52ch;
 }
 .nu-facultatif + .nu-garde { margin-top: clamp(24px, 5vw, 40px); }
 
 .nu-facultatif-titre {
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 .nu-facultatif-note {
   margin-top: 12px;
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 .nu-facultatif .nu-check { margin-top: 16px; }
@@ -1572,9 +1518,9 @@
 .nu-doc {
   margin: 40px auto 0;
   max-width: 760px;
-  border: 1px solid var(--c-line-md);
-  border-radius: 16px;
-  background: var(--c-surface-1);
+  border: 0;
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
   overflow: hidden;
 }
 .nu-doc .nu-pdf {
@@ -1583,7 +1529,7 @@
   width: 100%;
   aspect-ratio: 3 / 2;
   border: 0;
-  background: var(--c-surface-2);
+  background: var(--ch-fond);
 }
 .nu-doc-liens {
   display: flex;
@@ -1591,7 +1537,7 @@
   justify-content: center;
   gap: 12px;
   padding: 18px 24px;
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--ch-filet);
 }
 /* Le bouton « en verre » des utilitaires (18/09) : les mêmes cotes que
    `.bj-lienpartage-btn` (lienpartage.css), pour que « Ouvrir le Canva »,
@@ -1602,19 +1548,19 @@
   justify-content: center;
   gap: 8px;
   padding: 9px 18px;
-  border: 1px solid rgba(245, 240, 231, 0.28);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--c-text);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 400;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  background: transparent;
+  color: var(--ch-bleu);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
   text-decoration: none;
   white-space: nowrap;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .bj-atelier .nu-ghost:hover,
-.bj-atelier .nu-ghost:focus-visible { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+.bj-atelier .nu-ghost:focus-visible {
+  border-color: var(--ch-bleu-fonce); background: var(--ch-bleu-voile); color: var(--ch-bleu-fonce);
+}
 @media (max-width: 760px) {
   .nu-doc-liens { flex-direction: column; align-items: stretch; padding: 16px; gap: 10px; }
   .nu-doc-liens .nu-ghost { white-space: normal; }
@@ -1629,15 +1575,17 @@
 
 /* Lien secondaire — texte souligné, jamais un second bouton (invariant nº5). */
 .bj-atelier .nu-lien {
-  font-size: 14px;
-  color: var(--c-text-soft);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: var(--c-line-strong);
+  text-decoration-color: var(--ch-bleu-anneau);
   transition: color var(--dur) var(--ease);
 }
 
-.bj-atelier .nu-lien:hover { color: var(--c-text); }
+.bj-atelier .nu-lien:hover {
+  color: var(--ch-bleu-fonce);
+}
 
 /* T2-13 — le troisieme geste de l'etat 4 est un <button>, pas un <a> :
    on lui retire l'habit de bouton pour qu'il se lise comme les liens voisins. */
@@ -1647,7 +1595,6 @@
   padding: 0;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
 }
 .bj-atelier .nu-retouches:disabled { opacity: 0.5; cursor: default; }
 
@@ -1678,17 +1625,15 @@
 .nu-bon-legende {
   display: block;
   margin-top: 3px;
-  font-size: 12.5px;
-  font-weight: 300;
-  line-height: 1.35;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 .nu-nombre {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
   overflow: hidden;
 }
 
@@ -1698,29 +1643,26 @@
   background: transparent;
   width: 44px;
   min-height: 44px;
-  font-family: var(--font-ui);
+  font-family: var(--body-font);
   font-size: 20px;
-  font-weight: 300;
   line-height: 1;
-  color: var(--c-text-soft);
+  color: var(--ch-bleu);
   cursor: pointer;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.nu-nombre-b:hover:not([disabled]) { background: var(--c-surface-2); color: var(--c-text); }
+.nu-nombre-b:hover:not([disabled]) { background: var(--ch-bleu-voile); color: var(--ch-bleu-fonce); }
 .nu-nombre-b[disabled] { opacity: 0.35; cursor: not-allowed; }
-.nu-nombre-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+.nu-nombre-b:focus-visible { outline: 2px solid var(--ch-bleu-fonce); outline-offset: -3px; }
 
 .nu-nombre-v {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 44px;
-  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-right: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  font-family: var(--font-ui);
-  font-size: 16px;
-  font-weight: 400;
-  color: var(--c-text);
+  border-left: 1px solid var(--ch-bleu);
+  border-right: 1px solid var(--ch-bleu);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1730,9 +1672,20 @@
 .nu-bon-econ,
 .nu-bon-franco {
   margin: -4px 0 10px;
-  font-size: 13.5px;
-  font-weight: 300;
-  line-height: 1.4;
-  color: var(--c-text-soft);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
 }
-.nu-bon-franco { color: var(--c-accent); }
+.nu-bon-franco {
+  color: var(--ch-bleu);
+}
+
+/* globals.css coupe les mots AU MILIEU sous 767 px (overflow-wrap: anywhere
+   !important sur h1..h4 et p). Les titres du numéro (nom du magazine, mot
+   d'état) gardent des mots entiers : (0,2,0) passe devant l'élément nu. */
+@media (max-width: 767px) {
+  .bj-atelier .nu-titre,
+  .bj-atelier .nu-mot {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+}

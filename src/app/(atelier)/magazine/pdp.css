@@ -7,8 +7,11 @@
    .bj-atelier est partagé avec /composer et /numero : sans ce conteneur,
    cette feuille repeindrait le questionnaire et les pages clientes.
 
-   INVARIANT Nº1 — aucune couleur en dur ici. Tout vient de theme.css.
-   Une valeur hexadécimale dans ce fichier est un bug.
+   INVARIANT Nº1 — aucune couleur en dur ici. Tout vient des jetons --c-*
+   (theme.css) traduits vers la charte par charte.css, ou des --ch-*.
+   CHARTE V1 (26/10/2026) : chaque texte lit un rôle typographique de
+   charte.css (--hero-*, --section-*, --body-*…) ; plus aucune taille en
+   media query, --X-fs bascule seul sous 767 px.
 
    ⚠️ globals.css impose, sous 767px :
        h1,h2,h3,h4,p { overflow-wrap: anywhere !important }
@@ -89,8 +92,15 @@
    déborde pas — il se coupe en deux au milieu d'une syllabe. */
 .at-pdp .mot {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
+  /* CHARTE V1 : rôle hero (Instrument Serif 64 px / 40 px mobile). Les calculs
+     de largeur ci-dessous datent de Cormorant et ne gouvernent plus la taille. */
+  font-family: var(--hero-font);
+  font-size: var(--hero-fs);
+  line-height: var(--hero-line);
+  letter-spacing: var(--hero-track);
+  font-weight: var(--hero-weight);
+  text-transform: var(--hero-case);
+  --role: hero;
   /* ⚠️ REMESURE LE 15/09/2026, le mot etant passe de « MAGAZINE » a
      « LE MAGAZINE » (demande de Mathias, structure inchangee : UNE ligne).
      Les trois lettres en plus coutent 24 % de largeur — MESURE dans le
@@ -106,21 +116,21 @@
      globals.css impose `overflow-wrap: anywhere !important` : un mot trop
      grand ne deborde pas, il se coupe au milieu. Et ici il y a UNE ESPACE —
      donc il passerait a la ligne, ce qui casse la structure demandee. */
-  font-size: min(7.4vw, 94px);
-  line-height: 0.94;
-  letter-spacing: 0.012em;
-  color: var(--c-text);
+  color: var(--ch-bleu-fonce);
   /* Le mot ne se coupe jamais en syllabes : il est dimensionné pour tenir. */
   overflow-wrap: normal;
 }
 
 .at-pdp .kicker {
   margin: 0 0 clamp(6px, 1vw, 12px);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-bleu);
 }
 
 /* ---- le collage ----
@@ -131,7 +141,9 @@
 .at-pdp .collage {
   position: relative;
   z-index: 2;
-  margin-top: -2.2vw;
+  /* CHARTE V1 : le mot (hero 64 px) est plus petit que l'ancien masthead,
+     le collage ne le mord plus, il se pose dessous. */
+  margin-top: 16px;
   /* Hauteur en ratio : le collage est une composition, elle doit garder ses
      proportions à toutes les largeurs. */
   aspect-ratio: 749 / 574;
@@ -162,12 +174,11 @@
   margin: 0;
   overflow: hidden;
   border-radius: 0;
+  /* CHARTE V1 : sur fond blanc, la tranche se dessine en encre transparente. */
   box-shadow:
-    inset 0 1px 0 rgba(255, 252, 245, 0.10),
-    0 2px 0 rgba(236, 230, 218, 0.13),
-    0 4px 0 rgba(146, 139, 127, 0.09),
-    0 6px 0 rgba(74, 70, 64, 0.06),
-    0 16px 26px -10px rgba(255, 248, 236, 0.04);
+    0 2px 0 var(--ch-encre-voile),
+    0 4px 0 var(--ch-encre-voile),
+    0 14px 24px -12px var(--ch-encre-scrim);
 }
 
 .at-pdp .collage img {
@@ -267,13 +278,13 @@
   inset: 0;
   pointer-events: none;
   background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0) 30%,
-    rgba(0, 0, 0, 0.14) 42%,
-    rgba(0, 0, 0, 0.40) 48.6%,
-    rgba(0, 0, 0, 0.60) 50%,
-    rgba(0, 0, 0, 0.34) 52%,
-    rgba(0, 0, 0, 0.12) 58%,
-    rgba(0, 0, 0, 0) 70%);
+    rgba(29, 35, 48, 0) 30%,
+    rgba(29, 35, 48, 0.14) 42%,
+    rgba(29, 35, 48, 0.40) 48.6%,
+    rgba(29, 35, 48, 0.60) 50%,
+    rgba(29, 35, 48, 0.34) 52%,
+    rgba(29, 35, 48, 0.12) 58%,
+    rgba(29, 35, 48, 0) 70%);
 }
 
 /* `object-position` retire le 14/09 : il recentrait un portrait dans un
@@ -331,10 +342,14 @@
    globals.css impose sous 767 px : sans lui, « Dès 25 € » pourrait se
    couper au milieu (piège nº1). */
 .at-pdp .prix-ligne .des {
-  font-family: var(--font-display);
-  font-size: clamp(28px, 2.4vw, 38px);
-  line-height: 1;
-  color: var(--c-text);
+font-family: var(--number-font);
+  font-size: var(--number-fs);
+  line-height: var(--number-line);
+  letter-spacing: var(--number-track);
+  font-weight: var(--number-weight);
+  text-transform: var(--number-case);
+  --role: number;
+  color: var(--ch-bleu-fonce);
   white-space: nowrap;
 }
 
@@ -343,20 +358,27 @@
 .at-pdp .prix-ligne .hors {
   display: block;
   margin-top: 6px;
-  font-family: var(--font-ui);
-  font-size: clamp(11px, 0.85vw, 12px);
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-  color: var(--c-text-faint);
+font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
   white-space: nowrap;
 }
 
 .at-pdp .prix-ligne .quoi {
   text-align: right;
-  font-size: clamp(13px, 0.95vw, 14px);
-  line-height: 1.45;
-  color: var(--c-text-soft);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
 }
 
 .at-pdp .prix-ligne .quoi span { display: block; }
@@ -364,7 +386,7 @@
 /* « Livraison offerte dès 50 € » (15/09/2026) : la troisième ligne de la
    colonne de droite, en accent, parce que c'est l'argument de conversion que
    le tableur demande d'afficher à côté du prix. Même corps que ses voisines. */
-.at-pdp .prix-ligne .quoi .franco { color: var(--c-accent); font-weight: 400; }
+.at-pdp .prix-ligne .quoi .franco { color: var(--ch-bleu); font-weight: 400; text-wrap: balance; }
 
 /* .prix-phrase — retirée le 10/09/2026 à la demande de Mathias : le <p>
    qui portait PRIX_PHRASE est parti de Kiosque.tsx. Plus aucun élément du
@@ -396,12 +418,19 @@
 /* ---- colonne droite ---- */
 .at-pdp .titre {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(34px, 3.9vw, 56px);
-  line-height: 1.04;
-  letter-spacing: -0.015em;
+  font-family: var(--section-font);
+  font-size: var(--section-fs);
+  line-height: var(--section-line);
+  letter-spacing: var(--section-track);
+  font-weight: var(--section-weight);
+  text-transform: var(--section-case);
+  --role: section;
+  color: var(--ch-bleu-fonce);
 }
+
+/* Le mot clé d'un titre en classe : italique Instrument Serif bleu (charte.css
+   ne le fait que pour h1-h3, sous `body .bj-charte`). */
+.at-pdp .titre em { font-family: var(--ch-serif); font-style: italic; color: var(--ch-bleu); }
 
 /* Le gras du corps de texte : 500, la graisse la plus lourde chargée pour
    DM Sans, et la couleur pleine plutôt que le gris du paragraphe. À 300 sur
@@ -409,15 +438,19 @@
    travail. (Écart assumé avec la règle « 300 pour l'éditorial » : ici le gras
    porte la phrase qui dit ce qu'on vend.) */
 .at-pdp .lede b,
-.at-pdp .gages b { font-weight: 500; color: var(--c-text); }
+.at-pdp .gages b { font-weight: 600; color: var(--ch-encre); }
 
 .at-pdp .lede {
   margin: clamp(10px, calc(1.7 * var(--uh)), 20px) 0 0;
   max-width: 46ch;
-  font-size: clamp(15px, 1.25vw, 18px);
-  font-weight: 300;
-  line-height: 1.7;
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
 }
 
 /* ---- les trois étapes ----
@@ -437,19 +470,26 @@
    famille display que les .titre de section, un cran en dessous. */
 .at-pdp .pas-titre {
   margin: 0 0 6px;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(26px, 2.6vw, 38px);
-  line-height: 1.08;
-  letter-spacing: -0.01em;
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-fs);
+  line-height: var(--subtitle-line);
+  letter-spacing: var(--subtitle-track);
+  font-weight: var(--subtitle-weight);
+  text-transform: var(--subtitle-case);
+  --role: subtitle;
+  color: var(--ch-bleu-fonce);
 }
 
 .at-pdp .pas-sous {
   margin: 0 0 clamp(14px, calc(2 * var(--uh)), 24px);
-  font-weight: 300;
-  font-size: clamp(14px, 1.15vw, 15px);
-  line-height: 1.6;
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
 }
 
 .at-pdp .pas {
@@ -470,23 +510,31 @@
 }
 
 .at-pdp .pas .n {
-  font-family: var(--font-display);
-  font-size: 30px;
-  line-height: 1;
-  color: var(--c-accent);
+font-family: var(--number-font);
+  font-size: var(--number-fs);
+  line-height: var(--number-line);
+  letter-spacing: var(--number-track);
+  font-weight: var(--number-weight);
+  text-transform: var(--number-case);
+  --role: number;
+  color: var(--ch-bleu-fonce);
 }
 
-.at-pdp .pas b { display: block; font-weight: 500; font-size: 16px; line-height: 1.4; }
-.at-pdp .pas p { margin: 3px 0 0; font-weight: 300; font-size: 15px; line-height: 1.6; color: var(--c-text-soft); }
+.at-pdp .pas b { display: block; color: var(--ch-bleu-fonce); font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle; }
+.at-pdp .pas p { margin: 3px 0 0; font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body; color: var(--ch-encre); }
 
 .at-pdp .pas .quand {
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  color: var(--c-text-faint);
-  white-space: nowrap;
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-gris);
 }
 
-.at-pdp .pas li:last-child .quand { color: var(--c-accent); }
+.at-pdp .pas li:last-child .quand { color: var(--ch-bleu); }
 
 /* ══════════════════════════════════════════════════════════════
    LE PARCOURS EN BANDE, SOUS LES DEUX COLONNES (ecrans larges)
@@ -550,13 +598,11 @@
   .at-pdp .pas .n {
     display: block;
     margin-bottom: clamp(10px, 1.1vw, 16px);
-    font-size: clamp(30px, 2.6vw, 40px);
   }
 
   .at-pdp .pas .quand {
     display: block;
     margin-top: clamp(10px, 1.1vw, 14px);
-    text-transform: uppercase;
   }
 
   /* ── LA COLONNE DE DROITE OCCUPE TOUTE LA HAUTEUR ──
@@ -587,7 +633,7 @@
      residu de un a trois pixels aux largeurs ou les deux polices ne varient
      pas au meme rythme — invisible sur un corps de 94 px, et le corriger
      demanderait de connaitre l'interligne du titre, qui a sa propre clamp. */
-  .at-pdp .colonne-recit { padding-top: calc(0.0213 * min(7.4vw, 94px)); }
+  .at-pdp .colonne-recit { padding-top: calc(0.0213 * var(--hero-fs)); }
 
   /* ── LES DEUX COLONNES REMPLISSENT L'ECRAN, LE PARCOURS TOMBE DESSOUS ──
      Sans ce plancher, le parcours commencait a 841 px sur un ecran de 900 :
@@ -720,10 +766,14 @@
 .at-pdp .mention {
   margin: clamp(14px, 2vw, 20px) 0 0;
   max-width: 52ch;
-  font-size: 13px;
-  font-weight: 300;
-  line-height: 1.6;
-  color: var(--c-text-faint);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
 }
 
 /* ---- l'acte ----
@@ -747,17 +797,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
-  font-weight: 300;
-  line-height: 1.4;
-  color: var(--c-text-soft);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-encre);
 }
 
 .at-pdp .gages svg {
   flex: 0 0 auto;
   width: 17px;
   height: 17px;
-  color: var(--c-accent);
+  color: var(--ch-bleu);
 }
 
 /* ─────────────────────────── 02 · L'OBJET ─────────────────────────── */
@@ -810,11 +864,9 @@
      plus qu'à l'accompagner. Trois bandes au lieu de quatre, moitié moins
      opaques, resserrées de 12 px à 8. */
   box-shadow:
-    inset 0 1px 0 rgba(255, 252, 245, 0.10),
-    0 2px 0 rgba(236, 230, 218, 0.13),
-    0 5px 0 rgba(150, 143, 131, 0.09),
-    0 8px 0 rgba(70, 66, 60, 0.06),
-    0 26px 38px -14px rgba(255, 248, 236, 0.05);
+    0 2px 0 var(--ch-encre-voile),
+    0 5px 0 var(--ch-encre-voile),
+    0 22px 34px -16px var(--ch-encre-scrim);
   overflow: hidden;
   aspect-ratio: 4000 / 2828;
 }
@@ -846,13 +898,13 @@
      le creux part de plus loin (30 % au lieu de 38 %) et descend plus bas au
      centre (0,60 au lieu de 0,40). Le magazine se lit plus épais. */
   background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0) 30%,
-    rgba(0, 0, 0, 0.14) 42%,
-    rgba(0, 0, 0, 0.40) 48.6%,
-    rgba(0, 0, 0, 0.60) 50%,
-    rgba(0, 0, 0, 0.34) 52%,
-    rgba(0, 0, 0, 0.12) 58%,
-    rgba(0, 0, 0, 0) 70%);
+    rgba(29, 35, 48, 0) 30%,
+    rgba(29, 35, 48, 0.14) 42%,
+    rgba(29, 35, 48, 0.40) 48.6%,
+    rgba(29, 35, 48, 0.60) 50%,
+    rgba(29, 35, 48, 0.34) 52%,
+    rgba(29, 35, 48, 0.12) 58%,
+    rgba(29, 35, 48, 0) 70%);
 }
 
 /* ---- ce qui est compris ---- */
@@ -865,13 +917,17 @@
   align-items: start;
   padding: 15px 0;
   border-bottom: 1px solid var(--c-line);
-  font-size: clamp(14px, 1.15vw, 15px);
-  font-weight: 300;
-  line-height: 1.6;
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
 }
 
-.at-pdp .compris svg { margin-top: 3px; color: var(--c-accent); }
+.at-pdp .compris svg { margin-top: 3px; color: var(--ch-bleu); }
 
 /* ── 03 · LA COLLECTION — RETIRÉE le 30/08/2026 ──
    Les règles de l'étagère (.collection, .etagere, .dos, .couv) sont parties
@@ -902,7 +958,14 @@
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  font-size: clamp(15px, 1.2vw, 17px);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
   transition: color var(--dur) var(--ease);
 }
 
@@ -911,7 +974,7 @@
 
 .at-pdp .faq .plus {
   flex: 0 0 auto;
-  color: var(--c-text-faint);
+  color: var(--ch-bleu);
   transition: transform var(--dur) var(--ease);
 }
 
@@ -921,10 +984,14 @@
   margin: 0;
   padding: 0 0 22px;
   max-width: 60ch;
-  font-weight: 300;
-  font-size: clamp(15px, 1.15vw, 16px);
-  line-height: 1.7;
-  color: var(--c-text-soft);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
+  color: var(--ch-encre);
 }
 
 /* ─────────────────────────── 05 · L'ACTE FINAL ─────────────────────────── */
@@ -933,16 +1000,29 @@
 
 .at-pdp .final h2 {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(46px, 6vw, 82px);
-  line-height: 1.02;
-  letter-spacing: -0.015em;
-  /* Cormorant sort des chiffres elzéviriens : « 1 » se lit comme un « i ».
-     Même correctif que .at-final h2 (archive/accueil-v1/s4-final.css). */
+  font-family: var(--section-font);
+  font-size: var(--section-fs);
+  line-height: var(--section-line);
+  letter-spacing: var(--section-track);
+  font-weight: var(--section-weight);
+  text-transform: var(--section-case);
+  --role: section;
+  color: var(--ch-bleu-fonce);
   font-variant-numeric: lining-nums;
   font-feature-settings: 'lnum' 1;
 }
+
+.at-pdp .final .acte p {
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
+  color: var(--ch-gris);
+}
+.at-pdp .final .acte p b { font-weight: 600; color: var(--ch-encre); }
 
 .at-pdp .final .acte { margin-top: clamp(26px, 3.4vw, 38px); align-items: center; }
 .at-pdp .final .acte p { text-align: center; }
@@ -964,7 +1044,6 @@
 
   /* Le collage passe SOUS le mot en pleine largeur, et le mot grandit :
      c'est le premier écran d'un téléphone, il doit porter. */
-  .at-pdp .mot { font-size: 14.2vw; }
 
   /* Le collage se couche. En colonne unique il gardait ses proportions de
      desktop (330 × 253) et mangeait à lui seul un tiers de l'écran, ce qui
@@ -988,7 +1067,7 @@
      La boite epouse alors le plus haut des trois, le portrait c1 :
         hauteur = 26 % de la largeur / 0,7028 = 0,37 x largeur
      d'ou 100/37. Une boite plus haute ne ferait que du noir au-dessus. */
-  .at-pdp .collage { margin-top: -3.4vw; aspect-ratio: 100 / 37; }
+  .at-pdp .collage { margin-top: 16px; aspect-ratio: 100 / 37; }
 
   /* Memes formats qu'en desktop, recalcules pour une boite 11/5 :
         c1  28,3 % -> 0,708  -> 88 %
@@ -1020,9 +1099,7 @@
      contre-ordre, le jour où le mot dépasse d'un pixel il ne déborde pas —
      il se coupe en « MAGAZI / NE ». */
   .at-pdp .mot {
-    /* 13,1vw et non 16,3 : meme remesure que le plafond desktop, meme
-       facteur (6,57 / 5,29 = 1,242). 16,3 / 1,242 = 13,1. */
-    font-size: 13.1vw;
+    /* CHARTE V1 : la taille vient du rôle hero (40 px sous 767 px). */
     text-align: center;
     overflow-wrap: normal !important;
   }
@@ -1122,19 +1199,10 @@
      contre le `overflow-wrap: anywhere !important` que globals.css impose
      sous 767 px : sans lui, « Dès 30 € » pourrait se couper. */
   .at-pdp .prix-ligne .des {
-    font-family: var(--font-display);
-    font-size: 38px;
-    line-height: 1;
-    color: var(--c-text);
     white-space: nowrap;
   }
 
-  .at-pdp .prix-ligne .quoi {
-    text-align: right;
-    font-size: 14px;
-    line-height: 1.45;
-    color: var(--c-text-soft);
-  }
+  .at-pdp .prix-ligne .quoi { text-align: right; }
 
   .at-pdp .prix-ligne .quoi span { display: block; }
 
@@ -1245,7 +1313,6 @@
 
   /* Le corps de lecture. `.lede` sert le kiosque ET L'objet : les deux
      paragraphes qu'on lit vraiment sur cette page montent ensemble. */
-  .at-pdp .lede { font-size: 16px; line-height: 1.65; }
 
   /* ── LES DEUX GAGES SUR UNE SEULE LIGNE (demande de Mathias, 08/09) ──
      Ils tenaient deux lignes et 50 px sous le bouton. Ils en font 20.
@@ -1269,13 +1336,13 @@
     width: 100%;
   }
 
-  .at-pdp .gages li { gap: 8px; font-size: 14px; line-height: 1.45; }
+  .at-pdp .gages li { gap: 8px; }
   .at-pdp .gages svg { width: 16px; height: 16px; }
   .at-pdp .gages li:last-child svg { display: none; }
 
   .at-pdp .gages li:last-child::before {
     content: '·';
-    color: var(--c-text-faint);
+    color: var(--ch-gris);
   }
 
   /* Le segment que la ligne fusionnée laisse tomber. La phrase s'arrête à
@@ -1284,13 +1351,7 @@
 
   /* Les sur-titres de section (« L'objet », « Questions »), le délai des
      étapes, la mention, ce qui est compris, et les réponses de la FAQ. */
-  .at-pdp .kicker { font-size: 12px; }
-  .at-pdp .pas .quand { font-size: 14px; }
-  .at-pdp .mention { font-size: 14px; line-height: 1.65; }
-  .at-pdp .compris li { font-size: 15px; }
-  .at-pdp .pas-sous { font-size: 15px; }
-  .at-pdp .faq summary { font-size: 16px; }
-  .at-pdp .faq details p { font-size: 16px; line-height: 1.7; }
+  /* CHARTE V1 : plus aucune taille ici, chaque rôle bascule seul sous 767 px. */
 
 }
 
@@ -1305,7 +1366,6 @@
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 8px); gap: 10px; }
   /* Rapport retire le 15/09 : voir 100/37 plus haut. Il servait a raccourcir
      le collage sur un ecran court ; 100/37 est deja plus court que 5/2. */
-  .at-pdp .lede { font-size: 14px; }
   .at-pdp .acte { margin-top: 10px; }
 }
 
@@ -1326,9 +1386,7 @@
   .at-pdp .kiosque { padding-top: calc(var(--nav-h) + 14px); }
   /* Rapport retire le 15/09 : voir 100/37 plus haut. Il servait a raccourcir
      le collage sur un ecran court ; 100/37 est deja plus court que 5/2. */
-  .at-pdp .lede { font-size: 15px; line-height: 1.6; }
   .at-pdp .prix-ligne { padding: 11px 0; }
-  .at-pdp .prix-ligne .des { font-size: 32px; }
 }
 
 /* ── La double page ne survit pas à un écran étroit ──

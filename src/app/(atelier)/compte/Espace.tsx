@@ -197,7 +197,7 @@ export default function Espace({
         <Link className="cpt-top-marque" href="/" aria-label="Bellajour, retour à l’accueil">
           <img
             className="cpt-top-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
+            src="/images/v2/ui/signature-bellajour-bleu-240.webp"
             alt=""
             width={240}
             height={92}

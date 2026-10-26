@@ -8,10 +8,10 @@
   position: fixed;
   /* Empilée SOUS la barre d'annonce (--bj-bar-h) : barre + navbar = ensemble
      cohérent, sans superposition. En état A, translateY(-100%) la masque. */
-  top: var(--bj-bar-h);
+  top: var(--bj-bar-h, 36px);
   left: 0;
   right: 0;
-  height: var(--bj-topbar-h);
+  height: var(--bj-topbar-h, 76px);
   display: flex;
   align-items: center;
   /* Logo à gauche / CTA à droite — la navbar n'est visible qu'en état B. */
@@ -24,12 +24,12 @@
   pointer-events: none;
   transform: translateY(-100%);
   transition:
-    opacity 300ms var(--bj-ease),
-    transform 300ms var(--bj-ease),
-    background-color 300ms var(--bj-ease),
-    border-color 300ms var(--bj-ease),
-    backdrop-filter 300ms var(--bj-ease),
-    -webkit-backdrop-filter 300ms var(--bj-ease);
+    opacity 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    transform 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    border-color 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    backdrop-filter 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    -webkit-backdrop-filter 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 /* ── Variante /preventes/prix : pas de barre d'annonce sur cette page →
@@ -49,14 +49,14 @@
   pointer-events: auto;
   transform: translateY(0);
   background-color: var(--bj-glass-light-bg);
-  border-bottom: 0.5px solid var(--bj-glass-light-border);
+  border-bottom: 1px solid var(--ch-filet);
   backdrop-filter: blur(var(--bj-glass-blur));
   -webkit-backdrop-filter: blur(var(--bj-glass-blur));
 }
 
 /* ── Android only (classe ajoutée par NavbarPrix) ──
    Le backdrop-filter d'un position:fixed est re-rastérisé à chaque frame de scroll
-   sur Chrome/Android = jank. On le remplace par un fond crème quasi-opaque : rendu
+   sur Chrome/Android = jank. On le remplace par un fond blanc quasi-opaque : rendu
    propre + scroll fluide. Desktop + Safari iOS gardent le verre dépoli (.pv-nav--solid
    intact). La navbar du landing principal n'a jamais .pv-nav--flat → non affectée. */
 .pv-nav--flat.pv-nav--solid {
@@ -76,7 +76,7 @@
 .pv-nav-logo {
   display: block;
   height: clamp(64px, 16vw, 72px);
-  transition: height 300ms var(--bj-ease);
+  transition: height 300ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
 }
 @media (min-width: 768px) {
   .pv-nav-logo { height: clamp(80px, 6vw, 88px); }
@@ -95,14 +95,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  font-weight: 500;
-  line-height: 1;
-  color: var(--bj-on-action);
-  background: var(--bj-action);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
+  color: var(--ch-fond);
+  background: var(--ch-bleu);
   border: none;
-  border-radius: var(--bj-r-pill);
+  border-radius: var(--ch-r-btn);
   padding: 11px 20px;
   cursor: pointer;
   white-space: nowrap;
@@ -111,18 +114,18 @@
   pointer-events: none;
   transform: translateY(-50%) translateX(8px);
   transition:
-    opacity 240ms var(--bj-ease),
-    transform 240ms var(--bj-ease),
-    background-color var(--bj-dur-fast) var(--bj-ease);
+    opacity 240ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    transform 240ms var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+    background-color var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
 }
 .pv-nav--solid .pv-nav-cta {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(-50%) translateX(0);
 }
-.pv-nav-cta:hover { background: var(--bj-action); opacity: 0.88; }
+.pv-nav-cta:hover { background: var(--ch-bleu-fonce); }
 
 /* Mobile : CTA compact en état B. */
 @media (max-width: 767px) {
-  .pv-nav-cta { padding: 9px 16px; font-size: var(--bj-fs-xs); }
+  .pv-nav-cta { padding: 9px 16px; }
 }

@@ -5,6 +5,7 @@
    Fonts via next/font dans layout.tsx (--font-display / --font-ui).
    ════════════════════════════════════════════════════════════ */
 @import './tokens.css';
+@import './charte.css';
 
 :root {
   /* Hauteur viewport FIGÉE en px (posée par le script inline dans <head>).

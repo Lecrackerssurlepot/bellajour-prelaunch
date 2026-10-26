@@ -110,24 +110,24 @@
   padding:2px 0;
 }
 .at-accueil .pas .n{
-  font-size:13px;letter-spacing:.18em;color:var(--c-text-faint);
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;color:var(--ch-gris);
   font-variant-numeric:tabular-nums;min-width:2.6ch;
   transition:color 240ms var(--ease), font-size 240ms var(--ease);
 }
 .at-accueil .pas .t{
   position:absolute;left:calc(100% + .9vw);top:50%;translate:0 -50%;
-  white-space:nowrap;font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--c-text-faint);opacity:0;transform:translateX(-.5vw);
+  white-space:nowrap;font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;
+  color:var(--ch-gris);opacity:0;transform:translateX(-.5vw);
   transition:opacity 240ms var(--ease), transform 240ms var(--ease), color 240ms var(--ease);
 }
-.at-accueil .pas li:hover .n{color:var(--c-text-soft)}
+.at-accueil .pas li:hover .n{color:var(--ch-encre)}
 .at-accueil .pas li:hover .t{opacity:.75;transform:none}
 .at-accueil .pas li.actif .n{
-  color:var(--c-accent);font-family:var(--font-display);font-style:italic;
-  font-size:22px;letter-spacing:.03em;
+  color:var(--ch-bleu);font-family:var(--ch-serif);font-style:italic;font-weight:400;
+  font-size:22px;letter-spacing:.03em;text-transform:none;
 }
-.at-accueil .pas li.actif .t{opacity:1;transform:none;color:var(--c-text-soft)}
-.at-accueil .pas-jauge{margin-top:calc(1.4 * var(--uh));width:1px;height:calc(12 * var(--uh));background:var(--c-line);position:relative}
+.at-accueil .pas li.actif .t{opacity:1;transform:none;color:var(--ch-bleu)}
+.at-accueil .pas-jauge{margin-top:calc(1.4 * var(--uh));width:1px;height:calc(12 * var(--uh));background:var(--ch-filet);position:relative}
 /* Pleine hauteur, ecrasee a zero, et c'est l'ECHELLE qui monte. Piloter
    `height` obligeait le navigateur a recalculer la mise en page a chaque
    frame de defilement — juste avant les neuf lectures de geometrie qui
@@ -135,7 +135,7 @@
    compositeur. */
 .at-accueil .pas-jauge i{
   position:absolute;top:0;left:0;width:1px;height:100%;display:block;
-  background:var(--c-accent);transform:scaleY(0);transform-origin:top center;
+  background:var(--ch-bleu);transform:scaleY(0);transform-origin:top center;
 }
 
 /* ─────────── TOURNER LA PAGE ───────────
@@ -147,20 +147,19 @@
   cursor:pointer;color:inherit;font:inherit;
 }
 .at-accueil .suite .mot{
-  font-family:var(--font-display);font-style:italic;font-size:clamp(19px,1.6vw,29px);
-  line-height:1.1;color:var(--c-text-soft);transition:color 200ms var(--ease);
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;color:var(--ch-bleu);transition:color 200ms var(--ease);
 }
 .at-accueil .suite .rond{
   display:grid;place-items:center;flex:none;
   width:clamp(46px,3.4vw,60px);height:clamp(46px,3.4vw,60px);
-  border:1px solid var(--c-line-strong);border-radius:50%;color:var(--c-text-soft);
+  border:1px solid var(--ch-bleu);border-radius:50%;color:var(--ch-bleu);
   transition:border-color 200ms var(--ease), background 200ms var(--ease),
              color 200ms var(--ease), transform 200ms var(--ease-recit);
 }
 .at-accueil .suite .rond svg{width:40%;height:40%}
-.at-accueil .suite:hover .mot{color:var(--c-text)}
-.at-accueil .suite:hover .rond{border-color:var(--c-accent);background:var(--c-accent);
-  color:var(--c-text-onaccent);transform:translateY(3px)}
+.at-accueil .suite:hover .mot{color:var(--ch-bleu-fonce)}
+.at-accueil .suite:hover .rond{border-color:var(--ch-bleu);background:var(--ch-bleu);
+  color:var(--ch-fond);transform:translateY(3px)}
 .at-accueil .suite:active .rond{transform:translateY(3px) scale(.97)}
 
 /* Le battement : une fois le bouton pose, la fleche descend d'un cheveu
@@ -178,33 +177,31 @@
 .at-accueil .sl1-camera{transform:scale(1.055) translateY(calc(2.4 * var(--uh)));transform-origin:22% 50%}
 .at-accueil .sl1.joue .sl1-camera{transform:none;transition:transform 2600ms var(--ease-recit)}
 .at-accueil .geant{
-  font-family:var(--font-display);font-weight:400;font-style:normal;
-  font-size:clamp(44px,8.2vw,176px);line-height:1.02;letter-spacing:-.028em;margin:0;
+  font-family:var(--hero-font);font-size:var(--hero-fs);line-height:var(--hero-line);letter-spacing:var(--hero-track);font-weight:var(--hero-weight);text-transform:var(--hero-case);--role:hero;font-style:normal;margin:0;
+  color:var(--ch-bleu-fonce);
 }
-.at-accueil .geant em{font-style:italic;color:var(--c-accent)}
+.at-accueil .geant em{font-family:var(--ch-serif);font-style:italic;color:var(--ch-bleu)}
 .at-accueil .sl1-note{
   margin:calc(4 * var(--uh)) 0 0;max-width:26ch;margin-left:auto;text-align:right;
-  font-size:clamp(19px,1.4vw,25px);line-height:1.6;font-weight:300;color:var(--c-text-soft);
+  font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);--role:body;color:var(--ch-encre);
 }
-.at-accueil .sl1-note em{font-family:var(--font-display);font-style:italic;font-size:1.24em;color:var(--c-text)}
+.at-accueil .sl1-note em{font-family:var(--ch-serif);font-style:italic;font-size:1.24em;color:var(--ch-bleu-fonce)}
 /* « d'un manque » quitte la ligne et arrive seul, en dernier : c'est la
    chute de la phrase, elle a besoin de son propre silence. */
 .at-accueil .sl1-manque{
   margin:calc(1.6 * var(--uh)) 0 0;text-align:right;
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(26px,2.4vw,46px);line-height:1.1;letter-spacing:-.01em;color:var(--c-text);
+  font-family:var(--accent-font);font-size:var(--accent-fs);line-height:var(--accent-line);letter-spacing:var(--accent-track);font-weight:var(--accent-weight);text-transform:var(--accent-case);--role:accent;font-style:normal;color:var(--ch-bleu);
 }
-.at-accueil .sl1-manque em{font-style:italic}
+.at-accueil .sl1-manque em{font-style:normal}
 
 /* ─────────── 02 · LE CONSTAT ───────────
    Le texte tient la colonne de gauche ; a chaque mot qui s'allume,
    un objet vient trouver sa place a droite, depuis la profondeur. */
 
 .at-accueil .sl2-texte{
-  position:relative;z-index:3;max-width:24ch;margin:0;
-  font-family:var(--font-display);font-weight:400;
-  font-size:clamp(23px,2.35vw,48px);line-height:1.26;letter-spacing:-.012em;
-  color:var(--c-text-soft);
+  position:relative;z-index:3;max-width:34ch;margin:0;
+  font-family:var(--subtitle-font);font-size:var(--subtitle-fs);line-height:var(--subtitle-line);letter-spacing:var(--subtitle-track);font-weight:var(--subtitle-weight);text-transform:var(--subtitle-case);--role:subtitle;
+  color:var(--ch-encre);
 }
 /* les mots cles ne bougent pas : deplacer un mot en ligne casserait le
    paragraphe. Ils s'ALLUMENT, au moment ou leur objet se pose. */
@@ -215,16 +212,16 @@
 .at-accueil .sl2-texte em[data-t],
 .at-accueil .sl2-texte b[data-t]{
   opacity:1;transform:none;filter:none;font-style:normal;font-weight:400;
-  color:var(--c-text-faint);transition:color 900ms var(--ease-recit);
+  color:var(--ch-gris);transition:color 900ms var(--ease-recit);
 }
-.at-accueil .sl2-texte em[data-t].vu{color:var(--c-accent-strong)}
+.at-accueil .sl2-texte em[data-t].vu{color:var(--ch-bleu)}
 
 /* « restent numériques » n'existe pas avant son tour. Il apparait par une
    panne d'affichage : trois copies decalees, des bandes qui sautent, puis
    tout se remet en place. Le mot dit « numerique », l'apparition aussi. */
 .at-accueil .sl2-texte b.glitch{
   position:relative;display:inline-block;opacity:0;transform:none;filter:none;
-  font-weight:400;font-style:italic;color:var(--c-text);
+  font-weight:400;font-style:italic;color:var(--ch-bleu-fonce);
 }
 .at-accueil .sl2-texte b.glitch.vu{opacity:1;animation:glitch-mot 900ms steps(1,end) var(--retard,0ms) both}
 .at-accueil .sl2-texte b.glitch.vu::before,
@@ -232,8 +229,8 @@
   content:attr(data-texte);position:absolute;left:0;top:0;width:100%;
   pointer-events:none;overflow:hidden;
 }
-.at-accueil .sl2-texte b.glitch.vu::before{color:var(--c-accent);animation:glitch-a 900ms steps(1,end) var(--retard,0ms) both}
-.at-accueil .sl2-texte b.glitch.vu::after{color:#6fa8c8;animation:glitch-b 900ms steps(1,end) var(--retard,0ms) both}
+.at-accueil .sl2-texte b.glitch.vu::before{color:var(--ch-bleu);animation:glitch-a 900ms steps(1,end) var(--retard,0ms) both}
+.at-accueil .sl2-texte b.glitch.vu::after{color:var(--ch-bleu-fonce);animation:glitch-b 900ms steps(1,end) var(--retard,0ms) both}
 @keyframes glitch-mot{
   0%{opacity:0;clip-path:inset(46% 0 50% 0)}
   8%{opacity:1;clip-path:inset(46% 0 50% 0)}
@@ -267,9 +264,9 @@
   transition:opacity 1200ms var(--ease-recit), transform 1200ms var(--ease-recit),
              filter 1000ms var(--ease-recit);
 }
-.at-accueil .sl2-scene .ph{display:block;overflow:hidden;border-radius:4px;box-shadow:var(--shadow-float)}
+.at-accueil .sl2-scene .ph{display:block;overflow:hidden;border-radius:var(--ch-r-carte)}
 .at-accueil .sl2-scene .ph img{width:100%;height:100%;object-fit:cover;display:block;
-  filter:saturate(.5) contrast(1.08) brightness(.72) sepia(.2)}
+  filter:saturate(.9) contrast(1.04) brightness(.95)}
 
 .at-accueil .v1{right:7vw;top:calc(8 * var(--uh));width:15vw;min-width:150px;rotate:-3deg}
 .at-accueil .v1 .ph{aspect-ratio:3/4}
@@ -277,25 +274,25 @@
 .at-accueil .v2 .ph{aspect-ratio:16/9}
 .at-accueil .v2 .v-video{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;
   display:flex;align-items:center;gap:10px;
-  background:linear-gradient(180deg,rgba(2,2,2,0),rgba(2,2,2,.82))}
-.at-accueil .v2 .v-video i{flex:1;height:2px;background:rgba(255,255,255,.28);position:relative;border-radius:2px}
+  background:linear-gradient(180deg,rgba(13,58,125,0),rgba(13,58,125,.82))}
+.at-accueil .v2 .v-video i{flex:1;height:2px;background:rgba(255,255,255,.35);position:relative;border-radius:2px}
 .at-accueil .v2 .v-video i::after{content:'';position:absolute;left:0;top:0;bottom:0;width:38%;
-  background:var(--c-accent);border-radius:2px}
-.at-accueil .v2 .v-video b{font-size:12px;font-weight:400;letter-spacing:.08em;color:var(--c-text)}
+  background:var(--ch-fond);border-radius:2px}
+.at-accueil .v2 .v-video b{font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);--role:small;color:var(--ch-fond)}
 .at-accueil .v3{right:5vw;top:calc(42 * var(--uh));width:17vw;min-width:180px;rotate:-1.5deg}
-.at-accueil .v3 .v-mot{display:block;padding:16px 18px;border-radius:12px;
-  background:var(--c-surface-2);border:1px solid var(--c-line-md);box-shadow:var(--shadow-soft)}
-.at-accueil .v3 .v-mot s{display:block;height:7px;border-radius:4px;background:var(--c-surface-4);
+.at-accueil .v3 .v-mot{display:block;padding:16px 18px;border-radius:var(--ch-r-carte);
+  background:var(--ch-bleu-clair);border:0;border-radius:var(--ch-r-carte)}
+.at-accueil .v3 .v-mot s{display:block;height:7px;border-radius:4px;background:var(--ch-filet);
   text-decoration:none;margin-bottom:8px}
 .at-accueil .v3 .v-mot s:nth-child(2){width:62%}
-.at-accueil .v3 .v-mot em{font-size:13px;font-style:normal;color:var(--c-accent);letter-spacing:.06em}
+.at-accueil .v3 .v-mot em{font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);--role:small;font-style:normal;color:var(--ch-bleu)}
 .at-accueil .v4{right:29vw;top:calc(50 * var(--uh));width:12vw;min-width:120px;rotate:3.5deg}
 .at-accueil .v4 .ph{aspect-ratio:1/1}
 .at-accueil .v5{right:13vw;top:calc(54 * var(--uh));width:9vw;min-width:104px;rotate:-2deg}
 .at-accueil .v5 .ph{aspect-ratio:9/16}
 .at-accueil .v5 .v-story{position:absolute;left:8px;right:8px;top:8px;z-index:2;display:flex;gap:4px}
 .at-accueil .v5 .v-story i{flex:1;height:2px;border-radius:2px;background:rgba(255,255,255,.3)}
-.at-accueil .v5 .v-story i:first-child{background:var(--c-text)}
+.at-accueil .v5 .v-story i:first-child{background:var(--ch-fond)}
 
 .at-accueil .sl2-compte{position:relative;z-index:3;margin-top:calc(5 * var(--uh));max-width:30vw}
 /* Le compteur mecanique (PRD, mouvement nº5) : chaque colonne de chiffres
@@ -303,8 +300,10 @@
    accumule, et ca se voit. */
 .at-accueil .sl2-compte .g{
   --cell:1.3em;   /* la fenetre d'un chiffre : plus haute que son glyphe */
-  margin:0;font-family:var(--font-display);font-size:clamp(46px,5.6vw,110px);
-  line-height:1;color:var(--c-text);display:flex;align-items:flex-start;
+  /* Chiffre de mise en scène : police et graisse des nombres, taille propre. */
+  margin:0;font-family:var(--number-font);font-weight:var(--number-weight);letter-spacing:var(--number-track);
+  font-size:clamp(46px,5.6vw,110px);
+  line-height:1;color:var(--ch-bleu-fonce);display:flex;align-items:flex-start;
 }
 .at-accueil .sl2-compte .d{display:block;height:var(--cell);overflow:hidden}
 .at-accueil .sl2-compte .col{display:block;transform:translateY(0);
@@ -314,23 +313,21 @@
   font-style:normal;text-align:center;font-variant-numeric:tabular-nums;
 }
 .at-accueil .sl2-compte .esp{display:block;width:.3em}
-.at-accueil .sl2-compte .l{margin:calc(1.2 * var(--uh)) 0 0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
-  text-transform:uppercase;color:var(--c-text-faint)}
+.at-accueil .sl2-compte .l{margin:calc(1.2 * var(--uh)) 0 0;font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;color:var(--ch-gris)}
 
 /* ─────────── 03 · LES TROIS MOTS ───────────
    Chaque mot joue son propre sens. C'est le seul endroit du site ou
    quelque chose se degrade sous les yeux. */
 .at-accueil .sl3-avant,
 .at-accueil .sl3-apres{
-  max-width:38ch;font-size:clamp(19px,1.5vw,27px);line-height:1.62;font-weight:300;
-  color:var(--c-text-soft);margin:0;
+  max-width:38ch;font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);--role:body;
+  color:var(--ch-encre);margin:0;
 }
 .at-accueil .sl3-apres{margin-top:calc(3.5 * var(--uh));margin-left:auto;text-align:right}
 .at-accueil .sl3-mots{margin:calc(3 * var(--uh)) 0 0;display:flex;flex-direction:column;gap:calc(.2 * var(--uh))}
 .at-accueil .sl3-mots .m{
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(38px,7vw,138px);line-height:1.06;letter-spacing:-.02em;
-  color:var(--c-accent);position:relative;display:block;width:max-content;max-width:100%;
+  font-family:var(--hero-font);font-size:var(--hero-fs);line-height:var(--hero-line);letter-spacing:var(--hero-track);font-weight:var(--hero-weight);text-transform:var(--hero-case);--role:hero;font-style:italic;
+  color:var(--ch-bleu);position:relative;display:block;width:max-content;max-width:100%;
 }
 .at-accueil .sl3-mots .m2{margin-left:8vw}
 .at-accueil .sl3-mots .m3{margin-left:16vw}
@@ -374,11 +371,10 @@
 
 /* ─────────── 04 · L'ADMIRATION ─────────── */
 .at-accueil .sl4-texte{
-  max-width:34ch;margin:0;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(23px,2.3vw,46px);line-height:1.3;letter-spacing:-.012em;
-  color:var(--c-text-soft);
+  max-width:34ch;margin:0;font-family:var(--subtitle-font);font-size:var(--subtitle-fs);line-height:var(--subtitle-line);letter-spacing:var(--subtitle-track);font-weight:var(--subtitle-weight);text-transform:var(--subtitle-case);--role:subtitle;
+  color:var(--ch-encre);
 }
-.at-accueil .sl4-texte em{font-style:italic;color:var(--c-text)}
+.at-accueil .sl4-texte em{font-style:italic;color:var(--ch-bleu)}
 /* La bande ne se pose pas, elle PASSE. Elle sort du cadre des deux cotes
    parce qu'un defilement qui commence et finit dans la marge n'est plus un
    defilement, c'est une liste. */
@@ -462,7 +458,7 @@
    une epaisseur de papier sous l'objet ; celui-ci est l'arete de la carte,
    sur ses quatre cotes, et il n'existe que pour les images qui se noient. */
 .at-accueil .sl4-rail .ph{display:block;aspect-ratio:4066/5750;overflow:hidden;border-radius:0;
-  box-shadow:0 0 0 1px rgba(246,241,232,.13)}
+  box-shadow:0 0 0 1px var(--ch-filet)}
 .at-accueil .sl4-rail .ph img{width:100%;height:100%;object-fit:cover;display:block;
   /* ⚠️ ALLEGE le 15/09/2026, a la demande de Mathias. L'ancien reglage,
      saturate(.72) contrast(1.05) brightness(.86), avait ete pose en aout pour
@@ -486,13 +482,12 @@
    l'idee se dit. L'enumeration devient un nuage : chaque moment a
    l'echelle qu'il merite, aucun n'est une ligne de liste. */
 .at-accueil .sl5{text-align:center}
-.at-accueil .sl5-amorce{margin:0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
-  text-transform:uppercase;color:var(--c-text-faint)}
+.at-accueil .sl5-amorce{margin:0;font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;color:var(--ch-bleu)}
 .at-accueil .sl5-titre{
-  margin:calc(2.6 * var(--uh)) 0 0;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(32px,4.4vw,88px);line-height:1.04;letter-spacing:-.024em;
+  margin:calc(2.6 * var(--uh)) 0 0;font-family:var(--section-font);font-size:var(--section-fs);line-height:var(--section-line);letter-spacing:var(--section-track);font-weight:var(--section-weight);text-transform:var(--section-case);--role:section;font-style:normal;
+  color:var(--ch-bleu-fonce);
 }
-.at-accueil .sl5-titre em{font-style:italic;color:var(--c-accent)}
+.at-accueil .sl5-titre em{font-family:var(--ch-serif);font-style:italic;color:var(--ch-bleu)}
 
 /* LE NUAGE — il devait se demarquer du texte structure, pas seulement
    varier de taille (Mathias, 28/08/2026). Trois gestes, aucune rotation :
@@ -521,7 +516,7 @@
   content:'';position:absolute;left:50%;top:50%;translate:-50% -50%;
   width:124%;height:165%;pointer-events:none;z-index:0;
   background:radial-gradient(56% 50% at 50% 50%,
-    rgba(214,138,99,.11), rgba(214,138,99,.04) 46%, rgba(214,138,99,0) 74%);
+    rgba(19,78,163,.08), rgba(19,78,163,.03) 46%, rgba(19,78,163,0) 74%);
 }
 .at-accueil .sl5-nuage span{position:relative;z-index:1;display:inline-block;line-height:1.16}
 
@@ -545,47 +540,43 @@
 .at-accueil .sl5-nuage .n3{translate:0 -.12em}
 .at-accueil .sl5-nuage .n4{translate:0 .12em}
 .at-accueil .sl5-nuage .n1{
-  font-family:var(--font-display);font-style:italic;font-size:clamp(30px,3.4vw,68px);
-  color:var(--c-text);flex-basis:100%;
+  font-family:var(--section-font);font-size:var(--section-fs);line-height:var(--section-line);letter-spacing:var(--section-track);font-weight:var(--section-weight);text-transform:var(--section-case);--role:section;font-style:italic;
+  color:var(--ch-bleu-fonce);flex-basis:100%;
 }
 .at-accueil .sl5-nuage .n2,
 .at-accueil .sl5-nuage .n3{
-  font-family:var(--font-display);font-size:clamp(24px,2.5vw,50px);color:var(--c-text-soft);
+  font-family:var(--subtitle-font);font-size:var(--subtitle-fs);line-height:var(--subtitle-line);letter-spacing:var(--subtitle-track);font-weight:var(--subtitle-weight);text-transform:var(--subtitle-case);--role:subtitle;color:var(--ch-encre);
 }
 .at-accueil .sl5-nuage .n4{
-  font-family:var(--font-display);font-style:italic;font-size:clamp(28px,3.1vw,62px);
-  color:var(--c-accent);
+  font-family:var(--subtitle-font);font-size:var(--subtitle-fs);line-height:var(--subtitle-line);letter-spacing:var(--subtitle-track);font-weight:var(--subtitle-weight);text-transform:var(--subtitle-case);--role:subtitle;font-style:italic;
+  color:var(--ch-bleu);
 }
 .at-accueil .sl5-nuage .n5{
-  font-size:clamp(17px,1.35vw,24px);font-weight:300;color:var(--c-text-faint);
-  flex-basis:100%;letter-spacing:.01em;
+  font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);--role:body;color:var(--ch-gris);
+  flex-basis:100%;
 }
 .at-accueil .sl5-nuage .n6{
-  font-family:var(--font-display);font-style:italic;font-size:clamp(22px,2.2vw,44px);
-  color:var(--c-text-soft);flex-basis:100%;
+  font-family:var(--subtitle-font);font-size:var(--subtitle-fs);line-height:var(--subtitle-line);letter-spacing:var(--subtitle-track);font-weight:var(--subtitle-weight);text-transform:var(--subtitle-case);--role:subtitle;font-style:italic;
+  color:var(--ch-encre);flex-basis:100%;
 }
 
-.at-accueil .sl5-cadre{margin:calc(5 * var(--uh)) auto 0;max-width:56ch;font-size:clamp(17px,1.3vw,23px);
-  line-height:1.55;font-weight:300;color:var(--c-text-soft)}
+.at-accueil .sl5-cadre{margin:calc(5 * var(--uh)) auto 0;max-width:56ch;font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);--role:body;color:var(--ch-encre)}
 .at-accueil .sl5-film{margin:calc(3 * var(--uh)) 0 0}
 .at-accueil .sl5-film em{
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(26px,3vw,58px);line-height:1.1;letter-spacing:-.016em;color:var(--c-accent);
+  font-family:var(--accent-font);font-size:var(--accent-fs);line-height:var(--accent-line);letter-spacing:var(--accent-track);font-weight:var(--accent-weight);text-transform:var(--accent-case);--role:accent;font-style:normal;color:var(--ch-bleu);
 }
 /* la page est dans l'axe, mais le bouton reste a sa place : c'est un
    repere, il ne suit pas la composition. */
 .at-accueil .sl5 .suite{text-align:left}
 
 /* ─────────── 06 · LA CITATION ─────────── */
-.at-accueil .sl6-amorce{margin:0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
-  text-transform:uppercase;color:var(--c-text-faint)}
+.at-accueil .sl6-amorce{margin:0;font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;color:var(--ch-bleu)}
 /* La citation EST une citation : on l'entend, on ne la vend pas. Elle
    recule d'un cran en taille et d'un ton en couleur. */
 .at-accueil .sl6-cit{
-  position:relative;margin:calc(3.4 * var(--uh)) 0 0;max-width:22ch;
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(21px,2.5vw,44px);line-height:1.16;letter-spacing:-.014em;
-  color:var(--c-text-soft);
+  position:relative;margin:calc(3.4 * var(--uh)) 0 0;max-width:36ch;
+  font-family:var(--accent-font);font-size:var(--accent-fs);line-height:var(--accent-line);letter-spacing:var(--accent-track);font-weight:var(--accent-weight);text-transform:var(--accent-case);--role:accent;font-style:normal;
+  color:var(--ch-bleu-fonce);
 }
 
 /* LES DEUX GUILLEMETS SONT A LA MEME DISTANCE DU TEXTE, et c'est garanti
@@ -598,30 +589,28 @@
 .at-accueil .sl6-cit{--guill-ecart:.16em}
 .at-accueil .sl6-cit .guill{
   position:absolute;right:calc(100% + var(--guill-ecart));top:0;
-  font-size:1em;line-height:inherit;color:var(--c-accent);
+  font-size:1em;line-height:inherit;color:var(--ch-bleu);
 }
-.at-accueil .sl6-cit .guill-f{margin-left:var(--guill-ecart);color:var(--c-accent)}
+.at-accueil .sl6-cit .guill-f{margin-left:var(--guill-ecart);color:var(--ch-bleu)}
 
 /* La bascule : la phrase courte qui annonce la reponse. */
 .at-accueil .sl6-bascule{
-  margin:calc(5 * var(--uh)) 0 0;font-size:clamp(13px,1vw,17px);letter-spacing:.3em;
-  text-transform:uppercase;color:var(--c-text-faint);
+  margin:calc(5 * var(--uh)) 0 0;font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;color:var(--ch-gris);
 }
 
 /* LA REPONSE — le premier role de la page. C'est elle qui porte la
    pleine encre, la taille, et la lueur qui ne passe qu'une fois. */
 .at-accueil .sl6-reponse{
-  position:relative;margin:calc(2 * var(--uh)) 0 0;max-width:17ch;
-  font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:clamp(30px,4.4vw,80px);line-height:1.1;letter-spacing:-.02em;
-  color:var(--c-text);
+  position:relative;margin:calc(2 * var(--uh)) 0 0;max-width:30ch;
+  font-family:var(--accent-font);font-size:var(--accent-fs);line-height:var(--accent-line);letter-spacing:var(--accent-track);font-weight:var(--accent-weight);text-transform:var(--accent-case);--role:accent;font-style:normal;
+  color:var(--ch-bleu-fonce);
 }
-.at-accueil .sl6-reponse em{font-style:italic;color:var(--c-accent)}
+.at-accueil .sl6-reponse em{font-style:normal;color:var(--ch-bleu)}
 
 /* une seule lueur traverse LA REPONSE, puis plus jamais */
 .at-accueil .sl6-reponse .lueur{position:absolute;inset:-8% -4%;pointer-events:none;overflow:hidden;opacity:0}
 .at-accueil .sl6-reponse .lueur::after{content:'';position:absolute;top:0;bottom:0;left:-45%;width:38%;
-  background:linear-gradient(100deg,rgba(255,241,226,0),rgba(255,241,226,.14),rgba(255,241,226,0));
+  background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.7),rgba(255,255,255,0));
   transform:translateX(-60%) skewX(-12deg)}
 .at-accueil .sl6.joue .sl6-reponse .lueur{opacity:1;transition:opacity 1ms 4200ms}
 .at-accueil .sl6.joue .sl6-reponse .lueur::after{animation:passe-lumiere 2200ms var(--ease) 4300ms 1 both}
@@ -630,24 +619,22 @@
   to{transform:translateX(420%) skewX(-12deg)}
 }
 
-.at-accueil .sl6-chute{margin:calc(3.4 * var(--uh)) 0 0;max-width:36ch;font-size:clamp(15px,1.15vw,20px);line-height:1.6;
-  font-weight:300;color:var(--c-text-faint)}
+.at-accueil .sl6-chute{margin:calc(3.4 * var(--uh)) 0 0;max-width:36ch;font-family:var(--body-font);font-size:var(--body-fs);line-height:var(--body-line);letter-spacing:var(--body-track);font-weight:var(--body-weight);text-transform:var(--body-case);--role:body;color:var(--ch-gris)}
 
 /* ─────────── 07 · VOTRE NUMÉRO 1 ─────────── */
 .at-accueil .sl7{display:grid;grid-template-columns:26vw 1fr;gap:6vw;align-items:center;
   justify-content:center;padding-top:calc(13 * var(--uh));padding-bottom:calc(11 * var(--uh))}
 .at-accueil .sl7-obj{grid-column:1}
 .at-accueil .sl7-txt{grid-column:2;max-width:30ch}
-.at-accueil .sl7-titre{margin:0;font-family:var(--font-display);font-weight:400;
-  font-size:clamp(38px,5.6vw,112px);line-height:1.04;letter-spacing:-.024em}
-.at-accueil .sl7-titre em{font-style:italic;color:var(--c-accent)}
+.at-accueil .sl7-titre{margin:0;font-family:var(--section-font);font-size:var(--section-fs);line-height:var(--section-line);letter-spacing:var(--section-track);font-weight:var(--section-weight);text-transform:var(--section-case);--role:section;font-style:normal;color:var(--ch-bleu-fonce)}
+.at-accueil .sl7-titre em{font-family:var(--ch-serif);font-style:italic;color:var(--ch-bleu)}
 /* `nowrap` (14/09/2026) : le libellé se coupait en « Découvrir les / magazines »
    à cause des 30ch de la colonne ; inline-flex, il peut la déborder sans rien
    pousser. */
 .at-accueil .sl7-cta{margin-top:calc(6 * var(--uh));display:inline-flex;white-space:nowrap}
-.at-accueil .sl7-note{margin-top:calc(2.6 * var(--uh));font-size:clamp(13px,1vw,17px);font-weight:400;color:var(--c-text-soft)}
-.at-accueil .sl7-note b{font-family:var(--font-display);font-style:italic;font-weight:400;
-  font-size:1.42em;color:var(--c-accent-strong)}
+.at-accueil .sl7-note{margin-top:calc(2.6 * var(--uh));color:var(--ch-gris)}
+.at-accueil .sl7-note b{font-family:var(--number-font);font-style:normal;font-weight:var(--number-weight);
+  font-size:1.25em;letter-spacing:var(--number-track);color:var(--ch-bleu-fonce)}
 
 /* ── LE NUMÉRO ──
    Un magazine posé, et rien de plus. Mathias, le 14/09/2026 : « enlève
@@ -693,23 +680,23 @@
 .at-accueil .n-plat>img{width:100%;height:100%;object-fit:cover}
 .at-accueil .n-tete{position:absolute;left:8%;right:8%;top:5.4%;z-index:5;
   display:flex;align-items:baseline;justify-content:space-between;
-  padding-bottom:3%;border-bottom:1px solid rgba(246,241,232,.36)}
-.at-accueil .n-masthead{font-family:var(--font-display);font-size:clamp(15px,1.5vw,30px);
-  letter-spacing:.3em;text-transform:uppercase;color:#f8f3eb}
-.at-accueil .n-no{font-size:clamp(8px,.62vw,12px);letter-spacing:.26em;text-transform:uppercase;
-  color:rgba(246,241,232,.7)}
+  padding-bottom:3%;border-bottom:1px solid rgba(255,255,255,.4)}
+.at-accueil .n-masthead{font-family:var(--ch-serif);font-size:clamp(15px,1.5vw,30px);
+  letter-spacing:.3em;text-transform:uppercase;color:var(--ch-fond)}
+.at-accueil .n-no{font-family:var(--ch-sans);font-size:clamp(8px,.62vw,12px);letter-spacing:.26em;text-transform:uppercase;
+  color:rgba(255,255,255,.75)}
 /* ⚠️ LE SEUL VOILE QUI RESTE, et il n'est pas décoratif : le titre est du
    texte clair posé sur une photographie dont le bas est un sable en plein
    soleil. Sans ce dégradé, il devient illisible — ce n'est plus un effet,
    c'est le contraste. Il est borné au tiers bas et s'ouvre à zéro. */
 .at-accueil .n-pied{position:absolute;left:0;right:0;bottom:0;z-index:5;
   padding:0 8% 6.5%;
-  background:linear-gradient(180deg,rgba(2,2,2,0) 0%,rgba(2,2,2,.52) 62%,rgba(2,2,2,.72) 100%)}
-.at-accueil .n-filet{display:block;width:34%;height:1px;background:var(--c-accent);margin-bottom:4%}
-.at-accueil .n-titre{display:block;font-family:var(--font-display);font-style:italic;
-  font-size:clamp(17px,1.8vw,36px);line-height:1.12;color:#f8f3eb}
-.at-accueil .n-sous{display:block;margin-top:4%;font-size:clamp(8px,.6vw,12px);letter-spacing:.24em;
-  text-transform:uppercase;color:rgba(246,241,232,.62)}
+  background:linear-gradient(180deg,rgba(13,58,125,0) 0%,rgba(13,58,125,.52) 62%,rgba(13,58,125,.72) 100%)}
+.at-accueil .n-filet{display:block;width:34%;height:1px;background:var(--ch-fond);margin-bottom:4%}
+.at-accueil .n-titre{display:block;font-family:var(--ch-serif);font-style:italic;
+  font-size:clamp(17px,1.8vw,36px);line-height:1.12;color:var(--ch-fond)}
+.at-accueil .n-sous{display:block;margin-top:4%;font-family:var(--ch-sans);font-size:clamp(8px,.6vw,12px);letter-spacing:.24em;
+  text-transform:uppercase;color:rgba(255,255,255,.8)}
 
 /* ─────────── ECRANS ETROITS ───────────
    Le chemin de fer se retire, les marges se resserrent, les tailles
@@ -745,10 +732,9 @@
     transition:opacity 720ms var(--ease-recit), transform 720ms var(--ease-recit),
                filter 560ms var(--ease-recit);
   }
-  .at-accueil .geant{font-size:clamp(40px,12.4vw,78px)}
-  .at-accueil .sl1-note{margin-left:0;text-align:left;max-width:none;font-size:clamp(17px,4.6vw,22px)}
+  .at-accueil .sl1-note{margin-left:0;text-align:left;max-width:none}
   .at-accueil .sl2{padding-right:var(--md-u)}
-  .at-accueil .sl2-texte{max-width:none;font-size:clamp(21px,5.6vw,30px)}
+  .at-accueil .sl2-texte{max-width:none}
   .at-accueil .sl2-scene{position:relative;inset:auto;margin-top:calc(4 * var(--uh));height:calc(26 * var(--uh))}
   .at-accueil .sl2-scene .v{position:absolute}
   .at-accueil .v1{right:2vw;top:0;width:30vw}
@@ -757,19 +743,16 @@
   .at-accueil .v4{display:none}
   .at-accueil .v5{right:42vw;top:calc(14 * var(--uh));width:20vw}
   .at-accueil .sl2-compte{margin-top:calc(4 * var(--uh))}
-  .at-accueil .sl2-compte .g{font-size:clamp(40px,13vw,68px)}
   .at-accueil .sl3-avant,
-.at-accueil .sl3-apres{max-width:none;font-size:clamp(17px,4.6vw,22px)}
+.at-accueil .sl3-apres{max-width:none}
   .at-accueil .sl3-apres{text-align:left;margin-left:0}
-  .at-accueil .sl3-mots .m{font-size:clamp(34px,11.6vw,66px)}
   .at-accueil .sl3-mots .m2{margin-left:5vw}
   .at-accueil .sl3-mots .m3{margin-left:10vw}
-  .at-accueil .sl4-texte{max-width:none;font-size:clamp(21px,5.4vw,28px)}
+  .at-accueil .sl4-texte{max-width:none}
   .at-accueil .sl4-bande{margin-top:calc(4 * var(--uh))}
   .at-accueil .sl4-rail{gap:3.4vw;padding-left:var(--mg-u)}
   .at-accueil .sl4-rail figure{width:min(38vw, calc(24.75 * var(--uh)));min-width:0}
   @keyframes defile{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 1.7vw))}}
-  .at-accueil .sl5-titre{font-size:clamp(29px,8.4vw,50px)}
   .at-accueil .sl5-nuage{max-width:none;gap:.2em 3vw;margin-top:calc(3.4 * var(--uh))}
   /* Les mots occupent deja presque toute la largeur : le decalage se dit
      du bout des levres, sinon il deborde. On garde le principe, pas
@@ -781,26 +764,18 @@
   .at-accueil .sl5-nuage .n2{translate:0 .22em}
   .at-accueil .sl5-nuage .n3{translate:0 -.08em}
   .at-accueil .sl5-nuage .n4{translate:0 .1em}
-  .at-accueil .sl5-nuage .n1{font-size:clamp(24px,7.2vw,38px)}
-  .at-accueil .sl5-nuage .n2,
-.at-accueil .sl5-nuage .n3{font-size:clamp(20px,5.6vw,30px)}
-  .at-accueil .sl5-nuage .n4{font-size:clamp(23px,6.6vw,34px)}
-  .at-accueil .sl5-nuage .n5{font-size:clamp(15px,4vw,18px)}
-  .at-accueil .sl5-nuage .n6{font-size:clamp(19px,5.2vw,28px)}
-  .at-accueil .sl5-cadre{font-size:clamp(16px,4.1vw,20px);margin-top:calc(3.4 * var(--uh));max-width:none}
+  .at-accueil .sl5-cadre{margin-top:calc(3.4 * var(--uh));max-width:none}
   .at-accueil .sl5-film{margin-top:calc(2.4 * var(--uh))}
-  .at-accueil .sl5-film em{font-size:clamp(22px,6.4vw,32px)}
   .at-accueil .sl6{text-align:center}
-  .at-accueil .sl6-cit{max-width:none;font-size:clamp(19px,5vw,26px);text-align:center}
+  .at-accueil .sl6-cit{max-width:none;text-align:center}
   .at-accueil .sl6-cit .guill{position:static;font-size:1em;margin-right:.04em}
   .at-accueil .sl6-reponse,
   .at-accueil .sl6-chute{margin-left:auto;margin-right:auto;text-align:center}
-  .at-accueil .sl6-reponse{font-size:clamp(27px,7.6vw,44px);max-width:none}
+  .at-accueil .sl6-reponse{max-width:none}
   .at-accueil .sl6-chute{max-width:none}
   .at-accueil .sl7{grid-template-columns:1fr;gap:calc(5 * var(--uh));padding-top:calc(13 * var(--uh))}
   .at-accueil .sl7-obj{grid-column:1;width:52vw;margin:0 auto}
   .at-accueil .sl7-txt{grid-column:1;max-width:none}
-  .at-accueil .sl7-titre{font-size:clamp(34px,10vw,58px)}
   .at-accueil .numero{transform:none}
 }
 

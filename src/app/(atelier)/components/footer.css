@@ -1,14 +1,13 @@
 /* ════════════════════════════════════════════════════════════
-   FOOTER — structure de la landing, charte sombre.
-   Aucune valeur hexadécimale ici : tout vient de theme.css (invariant nº1).
+   FOOTER — structure de la landing, charte maison V1 (fond blanc).
+   Aucune valeur hexadécimale ici : tout vient de charte.css (invariant nº1).
    ════════════════════════════════════════════════════════════ */
 
 .at-footer {
   position: relative;
-  border-top: 1px solid var(--c-line);
-  /* Le fond de page est un dégradé qui finit sur --c-void : poser --c-void
-     ici scelle le bas de page sans qu'aucune couture ne se voie. */
-  background: var(--c-void);
+  border-top: 1px solid var(--ch-filet);
+  /* Blanc, comme la page : aucune couture. */
+  background: var(--ch-fond);
   padding-top: clamp(28px, 5vh, 44px);
   /* Le mot géant déborde par le bas — c'est tout l'effet. Sans ce
      `overflow: hidden`, il pousse une barre de défilement horizontale sur
@@ -33,26 +32,19 @@
   gap: clamp(10px, 1.8vh, 16px);
 }
 
-/* La seule ligne de caractère du footer : Cormorant italique, terracotta.
-   `--c-accent` est réservé aux moments forts (PRD §4) — la signature de la
-   maison en est un. */
+/* La seule ligne de caractère du footer : la signature de la maison, en rôle
+   accent (Interlope), bleu. */
 .at-footer-tagline {
   margin: 0;
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: clamp(17px, 1.5vw, 22px);
-  line-height: 1.2;
-  letter-spacing: 0.01em;
-  color: var(--c-accent);
+  font-family:var(--accent-font);font-size:var(--accent-fs);line-height:var(--accent-line);letter-spacing:var(--accent-track);font-weight:var(--accent-weight);text-transform:var(--accent-case);--role:accent;
+  font-style: normal;
+  color: var(--ch-bleu);
 }
 
 .at-footer-label {
   margin: 0;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
-  color: var(--c-text-faint);
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);--role:small;
+  color: var(--ch-gris);
 }
 
 .at-footer-links {
@@ -60,21 +52,19 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 5px 10px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);--role:small;
 }
 
 .at-footer-links a {
-  color: var(--c-text-faint);
+  color: var(--ch-gris);
   text-decoration: none;
   transition: color var(--dur) var(--ease);
 }
-.at-footer-links a:hover { color: var(--c-text); }
+.at-footer-links a:hover { color: var(--ch-bleu); }
 
 /* L'adresse mail est le lien qu'on veut voir en premier : c'est la seule
    action possible ici, et le reste n'est que mentions obligatoires. */
-.at-footer-mail { font-weight: 500; }
+.bj-atelier .at-footer-links .at-footer-mail { color: var(--ch-bleu); }
 
 .at-footer-item {
   display: inline-flex;
@@ -83,7 +73,7 @@
 }
 
 .at-footer-sep {
-  color: var(--c-line-strong);
+  color: var(--ch-filet);
   font-size: 0.9em;
 }
 
@@ -109,10 +99,8 @@
   align-items: center;
   gap: 7px;
   text-decoration: none;
-  color: var(--c-text-faint);
-  font-family: var(--font-ui);
-  font-size: 13px;
-  letter-spacing: 0.04em;
+  color: var(--ch-gris);
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);--role:small;
   transition: color var(--dur) var(--ease);
 }
 /* Les deux lignes ne font que 22 px de haut, sous le minimum de 24 px
@@ -124,7 +112,7 @@
    Au-dela de 3 px leurs zones de touche se CHEVAUCHERAIENT, et le doigt qui
    vise Instagram ouvrirait TikTok (le dernier du flux passe devant). Pour
    viser 44 px il faudrait ecarter les deux lignes, ce qui se verrait. */
-.at-footer-lien-social:hover { color: var(--c-text); }
+.at-footer-lien-social:hover { color: var(--ch-bleu); }
 
 .at-footer-lien-social {
   padding: 3px 0;
@@ -139,12 +127,9 @@
 
 .at-footer-copy {
   margin: 0;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  letter-spacing: 0.02em;
+  font-family:var(--small-font);font-size:var(--small-fs);line-height:var(--small-line);letter-spacing:var(--small-track);font-weight:var(--small-weight);text-transform:var(--small-case);--role:small;
   text-align: right;
-  color: var(--c-text-faint);
-  opacity: 0.7;
+  color: var(--ch-gris);
 }
 
 /* ── Le mot géant, coupé par le bas ─────────────────────────────────── */
@@ -153,18 +138,16 @@
   width: 100%;
   margin: clamp(24px, 4vh, 48px) 0 0;
   padding: 0 var(--pad);
-  font-family: var(--font-display);
-  /* 400 et pas 700 : le layout ne charge que cette graisse. Demander un gras
-     déclencherait un faux gras synthétisé, épais et irrégulier. */
+  font-family: var(--ch-serif);
+  /* 400 : Instrument Serif n'a qu'une graisse. */
   font-weight: 400;
   font-size: clamp(108px, 16vw, 196px);
   line-height: 1;
   white-space: nowrap;
   /* Le geste : le mot descend sous le bord, l'`overflow: hidden` du footer
-     le coupe. Sur fond clair il était à pleine encre ; sur fond noir, la
-     même intensité éblouirait — --c-surface-4 le laisse deviner, comme un
-     gaufrage dans le papier. */
-  color: var(--c-surface-4);
+     le coupe. Sur le blanc, le bleu clair de la charte le laisse deviner,
+     comme un gaufrage dans le papier. */
+  color: var(--ch-bleu-clair);
   transform: translateY(0.2em);
   pointer-events: none;
   user-select: none;

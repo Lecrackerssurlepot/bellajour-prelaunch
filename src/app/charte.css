@@ -1,0 +1,419 @@
+/* ════════════════════════════════════════════════════════════
+   CHARTE MAISON V1 (validée le 23/10/2026)
+   SOURCE DE VÉRITÉ UNIQUE des couleurs et des rôles typographiques du site
+   public et des pages des clients. Importée par globals.css, mais elle ne
+   peint RIEN toute seule : tout vit sous `.bj-charte`, la classe que pose
+   `charteClassName` (charte-fonts.ts) sur la racine de chaque page publique.
+
+   Hors charte, volontairement (décision du 26/10) : l'admin (Porcelaine,
+   admin.css), l'Édition collective (/edition, /depot, qui gardent le thème
+   sombre de theme.css), les mails et les PDF du magazine.
+
+   TROIS COUCHES, dans cet ordre :
+   1. les 7 couleurs de la charte (`--ch-*`), les seules valeurs en dur ;
+   2. les 8 rôles typographiques (`--hero-*` … `--number-*`) ;
+   3. la traduction des anciens jetons des deux mondes (`--bj-*` crème,
+      `--c-*` de l'atelier) vers la charte : les feuilles existantes repeignent
+      sans qu'on réécrive chacune de leurs lignes.
+   ════════════════════════════════════════════════════════════ */
+
+/* `--role` ne s'hérite PAS : c'est ce qui permet au panneau de réglage
+   (components/dev/CharteTuner.tsx) de retrouver, pour « Repérer », les seuls
+   éléments qui portent un rôle, et pas leurs enfants. */
+@property --role {
+  syntax: '*';
+  inherits: false;
+}
+
+/* Le fond de page appartient à <html> (voir le long commentaire en tête de
+   theme.css) : sans ceci, le noir de l'atelier ou le dégradé crème de
+   globals.css se montrent sous la barre d'outils de Safari et au bout du
+   document. (0,2,1) : passe devant `html:has(.bj-atelier)` (0,1,1). */
+html:has(.bj-charte.bj-charte),
+body:has(.bj-charte.bj-charte) { background: #ffffff; }
+
+.bj-charte {
+  /* ─────────────── 1. COULEURS ─────────────── */
+  --ch-bleu: #134ea3;        /* boutons, liens, étiquettes, mot mis en valeur, filets d'accent */
+  --ch-bleu-fonce: #0d3a7d;  /* titres, chiffres, fonds foncés */
+  --ch-bleu-clair: #eaf0fa;  /* encadrés, cartes */
+  --ch-encre: #1d2330;       /* texte courant */
+  --ch-gris: #5d6678;        /* petit texte, légendes */
+  --ch-filet: #dde2ea;       /* bordures, séparateurs */
+  --ch-fond: #ffffff;        /* fond de toutes les pages */
+  /* Dérivés (jamais une teinte nouvelle : la même couleur, plus transparente). */
+  --ch-bleu-voile: rgba(19, 78, 163, 0.08);
+  --ch-bleu-anneau: rgba(19, 78, 163, 0.35);
+  --ch-encre-voile: rgba(29, 35, 48, 0.08);
+  --ch-encre-scrim: rgba(29, 35, 48, 0.45);
+
+  /* L'état d'erreur : HORS des sept couleurs, faute d'une couleur d'état dans la
+     charte V1. Un rouge lisible, gardé parce qu'un champ refusé doit se voir ;
+     à trancher par Mathias si la charte en nomme un. */
+  --ch-erreur: #b3261e;
+  --ch-erreur-voile: rgba(179, 38, 30, 0.08);
+
+  /* Boutons, cartes, filets (règle D de la charte) */
+  --ch-r-btn: 4px;
+  --ch-r-carte: 6px;
+
+  /* ─────────────── 2. RÔLES TYPOGRAPHIQUES ───────────────
+     Chaque rôle a sept réglages. Les feuilles des pages ne fixent plus ni
+     police ni taille pour un texte qui relève d'un rôle : elles lisent
+     `--x-font`, `--x-fs` (la taille du moment, desktop ou mobile), `--x-line`,
+     `--x-track`, `--x-weight`, `--x-case`, et posent `--role: x`.
+     `--x-size` et `--x-size-mobile` sont les deux valeurs que règle le
+     panneau ; `--x-fs` choisit entre elles plus bas, au point de rupture.
+     Pistara : en attente d'un accord de licence (public/fonts/bellajour-fonts/
+     LISEZMOI.md). Le hero est en Instrument Serif d'ici là. */
+  --ch-serif: var(--font-instrument, Georgia), Georgia, serif;
+  --ch-script: var(--font-interlope, Georgia), Georgia, serif;
+  --ch-sans: var(--font-aileron, Arial), Arial, Helvetica, sans-serif;
+
+  --hero-font: var(--ch-serif);
+  --hero-size: 64px;
+  --hero-size-mobile: 40px;
+  --hero-line: 1.05;
+  --hero-track: -0.01em;
+  --hero-weight: 400;
+  --hero-case: none;
+
+  --section-font: var(--ch-serif);
+  --section-size: 40px;
+  --section-size-mobile: 30px;
+  --section-line: 1.1;
+  --section-track: -0.005em;
+  --section-weight: 400;
+  --section-case: none;
+
+  --subtitle-font: var(--ch-serif);
+  --subtitle-size: 26px;
+  --subtitle-size-mobile: 22px;
+  --subtitle-line: 1.2;
+  --subtitle-track: 0em;
+  --subtitle-weight: 400;
+  --subtitle-case: none;
+
+  --accent-font: var(--ch-script);
+  --accent-size: 24px;
+  --accent-size-mobile: 22px;
+  --accent-line: 1.3;
+  --accent-track: 0em;
+  --accent-weight: 400;
+  --accent-case: none;
+
+  --body-font: var(--ch-sans);
+  --body-size: 17px;
+  --body-size-mobile: 16px;
+  --body-line: 1.55;
+  --body-track: 0em;
+  --body-weight: 400;
+  --body-case: none;
+
+  --small-font: var(--ch-sans);
+  --small-size: 14px;
+  --small-size-mobile: 14px;
+  --small-line: 1.5;
+  --small-track: 0em;
+  --small-weight: 400;
+  --small-case: none;
+
+  --label-font: var(--ch-sans);
+  --label-size: 12px;
+  --label-size-mobile: 11px;
+  --label-line: 1.3;
+  --label-track: 0.14em;
+  --label-weight: 600;
+  --label-case: uppercase;
+
+  --number-font: var(--ch-sans);
+  --number-size: 44px;
+  --number-size-mobile: 36px;
+  --number-line: 1.1;
+  --number-track: 0em;
+  --number-weight: 300;
+  --number-case: none;
+
+  --hero-fs: var(--hero-size);
+  --section-fs: var(--section-size);
+  --subtitle-fs: var(--subtitle-size);
+  --accent-fs: var(--accent-size);
+  --body-fs: var(--body-size);
+  --small-fs: var(--small-size);
+  --label-fs: var(--label-size);
+  --number-fs: var(--number-size);
+
+  /* ─────────────── 3a. LE MONDE CRÈME TRADUIT ───────────────
+     /merci, /inviter, /ambassadeurs, les pages légales. Leurs feuilles lisent
+     les jetons `--bj-*` de tokens.css : on les redéfinit ici, plus près. */
+  --bj-cream: var(--ch-fond);
+  --bj-cream-2: var(--ch-bleu-clair);
+  --bj-cream-tint-1: var(--ch-fond);
+  --bj-cream-tint-2: var(--ch-filet);
+  --bj-cream-tint-3: var(--ch-filet);
+  --bj-charcoal: var(--ch-encre);
+  --bj-terracotta: var(--ch-bleu);
+  --bj-terracotta-2: var(--ch-bleu);
+  --bj-action: var(--ch-bleu);
+  --bj-action-soft: var(--ch-bleu-clair);
+  --bj-action-border: var(--ch-bleu-anneau);
+  --bj-action-ring: var(--ch-bleu-anneau);
+  --bj-action-faint: var(--ch-bleu-anneau);
+  --bj-text: var(--ch-encre);
+  --bj-text-soft: var(--ch-gris);
+  --bj-text-faint: var(--ch-gris);
+  --bj-on-action: var(--ch-fond);
+  --bj-glass-light-bg: rgba(255, 255, 255, 0.72);
+  --bj-glass-light-bg-active: rgba(255, 255, 255, 0.9);
+  --bj-glass-light-border: var(--ch-filet);
+  --bj-nav-android-bg: rgba(255, 255, 255, 0.96);
+  --bj-glass-modal-scrim: var(--ch-encre-scrim);
+  --bj-glass-dark-bg: rgba(13, 58, 125, 0.9);
+  --bj-glass-card-bg: var(--ch-bleu-clair);
+  --bj-glass-card-bg-active: var(--ch-bleu-clair);
+  --bj-glass-card-border: 0 solid transparent;
+  --bj-glass-card-shadow: none;
+  --bj-glass-card-shadow-active: none;
+  --bj-veil-6: var(--ch-encre-voile);
+  --bj-veil-8: var(--ch-encre-voile);
+  --bj-r-btn: var(--ch-r-btn);
+  --bj-bar-bg: var(--ch-bleu-clair);
+  --bj-font-display: var(--ch-serif);
+  --bj-font-ui: var(--ch-sans);
+  --bj-font-sans: var(--ch-sans);
+  /* ⚠️ Ces jetons-ci ne vivent PAS sur :root dans tokens.css : ils sont
+     déclarés dans le bloc `.bj-creme-fonts`, la classe que ces pages portaient
+     avant la charte. Sans leur copie ici, la barre perdait sa hauteur
+     (`calc(var(--bj-topbar-h) + …)` invalide) et toutes les transitions
+     tombaient. Mêmes valeurs que tokens.css, à tenir ensemble. */
+  --bj-topbar-h: 76px;
+  --bj-bar-h: 36px;
+  --bj-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --bj-dur: 240ms;
+  --bj-dur-fast: 180ms;
+
+  background: var(--ch-fond);
+  color: var(--ch-encre);
+  font-family: var(--ch-sans);
+  /* Pas de faux gras ni de faux italique : Instrument Serif et Interlope n'ont
+     qu'une graisse, Interlope n'a pas d'italique. */
+  font-synthesis: none;
+  font-variant-numeric: lining-nums;
+}
+
+@media (max-width: 767px) {
+  .bj-charte {
+    --hero-fs: var(--hero-size-mobile);
+    --section-fs: var(--section-size-mobile);
+    --subtitle-fs: var(--subtitle-size-mobile);
+    --accent-fs: var(--accent-size-mobile);
+    --body-fs: var(--body-size-mobile);
+    --small-fs: var(--small-size-mobile);
+    --label-fs: var(--label-size-mobile);
+    --number-fs: var(--number-size-mobile);
+  }
+}
+
+/* ─────────────── 3b. L'ATELIER TRADUIT ───────────────
+   /, /magazine, /composer, /compte, /numero. theme.css reste INTACT : /depot
+   en dépend toujours (thème sombre, Édition collective). (0,2,0) passe devant
+   `.bj-atelier` (0,1,0) quel que soit l'ordre de chargement. */
+.bj-charte.bj-atelier {
+  --c-atelier-void: var(--ch-fond);
+  --c-void: var(--ch-fond);
+  --c-bg: var(--ch-fond);
+  --c-surface-1: var(--ch-bleu-clair);
+  --c-surface-2: var(--ch-bleu-clair);
+  --c-surface-3: var(--ch-filet);
+  --c-surface-4: var(--ch-filet);
+
+  --c-text: var(--ch-encre);
+  --c-text-soft: var(--ch-encre);
+  --c-text-faint: var(--ch-gris);
+  --c-text-onaccent: var(--ch-fond);
+  --c-text-pure: var(--ch-fond);
+
+  --c-accent: var(--ch-bleu);
+  --c-accent-strong: var(--ch-bleu-fonce);
+  --c-accent-soft: var(--ch-bleu-voile);
+  --c-order: var(--ch-bleu);
+  --c-order-strong: var(--ch-bleu-fonce);
+
+  --c-line: var(--ch-filet);
+  --c-line-md: var(--ch-filet);
+  --c-line-strong: var(--ch-filet);
+  --c-veil-hover: var(--ch-bleu-voile);
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-bg-strong: rgba(255, 255, 255, 0.92);
+  --glass-bg-plein: rgba(255, 255, 255, 0.96);
+  --glass-border: var(--ch-filet);
+  --c-nav-android-bg: rgba(255, 255, 255, 0.98);
+
+  --shadow-soft: 0 8px 30px var(--ch-encre-voile);
+  --shadow-pop: 0 20px 60px var(--ch-encre-voile);
+  --shadow-float: 0 24px 70px var(--ch-encre-voile);
+  --glow-accent: 0 0 0 1px var(--ch-bleu-anneau);
+
+  --grad-ambient: var(--ch-fond);
+  --grad-slot: linear-gradient(135deg, var(--ch-bleu-clair), var(--ch-filet));
+  --grad-thumb: linear-gradient(135deg, var(--ch-bleu-clair), var(--ch-filet));
+  --grad-cover: linear-gradient(160deg, var(--ch-bleu), var(--ch-bleu-fonce));
+
+  --spine-1-bg: linear-gradient(180deg, var(--ch-bleu-fonce), var(--ch-encre));
+  --spine-2-bg: linear-gradient(180deg, var(--ch-fond), var(--ch-bleu-clair));
+  --spine-3-bg: linear-gradient(180deg, var(--ch-bleu), var(--ch-bleu-fonce));
+  --spine-4-bg: linear-gradient(180deg, var(--ch-filet), var(--ch-bleu-clair));
+
+  --paper: var(--ch-fond);
+  --paper-2: var(--ch-bleu-clair);
+  --paper-3: var(--ch-filet);
+  --paper-text: var(--ch-encre);
+  --paper-text-soft: var(--ch-gris);
+
+  --font-display: var(--ch-serif);
+  --font-ui: var(--ch-sans);
+
+  background: var(--ch-fond);
+  color: var(--ch-encre);
+  line-height: var(--body-line);
+}
+
+/* ─────────────── LES PRIMITIVES ───────────────
+   Titres par défaut et boutons. Les pages affinent par leurs classes.
+   ⚠️ LE PRÉFIXE `body` EST UN RÉGLAGE DE SPÉCIFICITÉ, pas une décoration :
+   `body .bj-charte h1` vaut (0,1,2), juste au-dessus de `.bj-atelier h1`
+   (0,1,1, theme.css) et juste au-dessous de toute règle de page en deux
+   classes (0,2,0). Même chose pour `body .bj-charte .at-cta` (0,2,1) contre
+   `.bj-atelier .at-cta` (0,2,0). Les liens n'ont pas de règle ici : le
+   `a { color: var(--bj-action) }` de globals.css vaut déjà le bleu. */
+body .bj-charte h1 {
+  font-family: var(--hero-font);
+  font-size: var(--hero-fs);
+  line-height: var(--hero-line);
+  letter-spacing: var(--hero-track);
+  font-weight: var(--hero-weight);
+  text-transform: var(--hero-case);
+  font-style: normal;
+  color: var(--ch-bleu-fonce);
+  --role: hero;
+}
+
+body .bj-charte h2 {
+  font-family: var(--section-font);
+  font-size: var(--section-fs);
+  line-height: var(--section-line);
+  letter-spacing: var(--section-track);
+  font-weight: var(--section-weight);
+  text-transform: var(--section-case);
+  font-style: normal;
+  color: var(--ch-bleu-fonce);
+  --role: section;
+}
+
+body .bj-charte h3 {
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-fs);
+  line-height: var(--subtitle-line);
+  letter-spacing: var(--subtitle-track);
+  font-weight: var(--subtitle-weight);
+  text-transform: var(--subtitle-case);
+  font-style: normal;
+  color: var(--ch-bleu-fonce);
+  --role: subtitle;
+}
+
+/* Le mot clé d'un titre : italique Instrument Serif, en bleu. Jamais dans une
+   police qui n'a pas d'italique (font-synthesis: none l'empêcherait de toute
+   façon de s'inventer). */
+body .bj-charte :is(h1, h2, h3) em,
+body .bj-charte :is(h1, h2, h3) i {
+  font-family: var(--ch-serif);
+  font-style: italic;
+  color: var(--ch-bleu);
+}
+
+.bj-charte :focus-visible {
+  outline: 2px solid var(--ch-bleu);
+  outline-offset: 3px;
+}
+
+/* Champs : 16 px minimum, sinon Safari iOS zoome sur la page au toucher. */
+.bj-charte :is(input, select, textarea) { font-size: max(16px, 1em); }
+
+/* Le bouton principal de l'atelier (theme.css `.at-cta`) : fond bleu, texte
+   blanc en étiquette, coins de 4 px. */
+body .bj-charte .at-cta {
+  background: var(--ch-bleu);
+  color: var(--ch-fond);
+  border-radius: var(--ch-r-btn);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  text-transform: var(--label-case);
+  line-height: var(--label-line);
+  --role: label;
+}
+body .bj-charte .at-cta:hover:not([disabled]) { background: var(--ch-bleu-fonce); }
+
+body .bj-charte .at-kicker {
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  text-transform: var(--label-case);
+  line-height: var(--label-line);
+  color: var(--ch-bleu);
+  --role: label;
+}
+
+body .bj-charte .at-lede {
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  font-weight: var(--body-weight);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  color: var(--ch-encre);
+  --role: body;
+}
+
+body .bj-charte .at-cta-note {
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  color: var(--ch-gris);
+  --role: small;
+}
+
+/* ─────────────── LES DEUX COMPOSANTS PARTAGÉS ───────────────
+   La loupe et le lien de partage servent aussi l'admin et les éditions, hors
+   charte : ils gardent leurs couleurs dans leurs feuilles (loupe.css,
+   lienpartage.css), et la charte ne les repeint qu'ICI, sous `.bj-charte`. */
+.bj-charte .bj-loupe {
+  /* Le fond foncé de la charte est le bleu foncé, pas le noir. */
+  --loupe-fond: rgba(13, 58, 125, 0.94);
+  --loupe-texte: var(--ch-fond);
+  --loupe-faint: rgba(255, 255, 255, 0.7);
+  --loupe-verre: rgba(255, 255, 255, 0.1);
+  --loupe-filet: rgba(255, 255, 255, 0.24);
+}
+
+/* Le lien de partage est un bouton secondaire : contour bleu, texte bleu. */
+.bj-charte .bj-lienpartage {
+  --lp-texte: var(--ch-bleu);
+  --lp-filet: var(--ch-bleu);
+  --lp-verre: var(--ch-fond);
+}
+body .bj-charte .bj-lienpartage-btn {
+  border-radius: var(--ch-r-btn);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  text-transform: var(--label-case);
+  line-height: var(--label-line);
+  --role: label;
+}
+body .bj-charte .bj-lienpartage-btn:hover,
+body .bj-charte .bj-lienpartage-btn:focus-visible { background: var(--ch-bleu-voile); }

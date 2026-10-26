@@ -126,7 +126,7 @@ export default function Nav({
         <Link className="at-nav-logo-btn" href={retour} aria-label="Bellajour, retour à l’accueil">
           <img
             className="at-nav-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
+            src="/images/v2/ui/signature-bellajour-bleu-240.webp"
             alt=""
             width={240}
             height={92}
@@ -142,7 +142,7 @@ export default function Nav({
         >
           <img
             className="at-nav-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
+            src="/images/v2/ui/signature-bellajour-bleu-240.webp"
             alt=""
             width={240}
             height={92}

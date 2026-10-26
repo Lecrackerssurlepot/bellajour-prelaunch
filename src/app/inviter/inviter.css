@@ -1,14 +1,14 @@
 /* ════════════════════
    Page /inviter — lien de parrainage standalone (depuis emails Brevo)
-   Charte PRÉVENTE : crème, glass, --bj-action #4a90d9, fonts --bj-font-*,
-   radius --bj-r-*. Tokens charte uniquement (cf. tokens.css). Logique
+   Charte maison V1 (charte.css) : fond blanc, bleu, rôles typographiques,
+   cartes bleu clair sans bordure ni ombre. Logique
    (?ref, ?action=share, /api/referrer, useReferralShare) inchangée.
    ════════════════════ */
 
 .inviter {
   min-height: var(--app-height);
-  background: var(--bj-cream);
-  color: var(--bj-text);
+  background: var(--ch-fond);
+  color: var(--ch-encre);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,23 +28,27 @@
 
 .inviter-title {
   margin: 0 0 clamp(10px, 1.5vh, 16px);
-  font-family: var(--bj-font-display);
-  font-weight: 600;
-  font-size: clamp(28px, 4vw, 44px);
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: var(--bj-text);
+  color: var(--ch-bleu-fonce);
+  font-family: var(--hero-font);
+  font-size: var(--hero-fs);
+  line-height: var(--hero-line);
+  letter-spacing: var(--hero-track);
+  font-weight: var(--hero-weight);
+  text-transform: var(--hero-case);
+  --role: hero;
 }
 
 .inviter-sub {
   margin: 0 0 clamp(28px, 4vh, 44px);
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 400;
-  font-size: clamp(16px, 1.6vw, 21px);
-  line-height: 1.5;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   max-width: 480px;
+  font-family: var(--accent-font);
+  font-size: var(--accent-fs);
+  line-height: var(--accent-line);
+  letter-spacing: var(--accent-track);
+  font-weight: var(--accent-weight);
+  text-transform: var(--accent-case);
+  --role: accent;
 }
 
 /* ─── État d'erreur (?ref invalide) ─── */
@@ -59,23 +63,26 @@
   justify-content: center;
   height: 48px;
   padding: 0 32px;
-  background: var(--bj-action-soft);
-  color: var(--bj-action);
-  border: 1px solid var(--bj-action-border);
-  border-radius: var(--bj-r-btn);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  background: transparent;
+  color: var(--ch-bleu);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
   text-decoration: none;
-  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+  transition: opacity var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
   margin-top: clamp(16px, 2vh, 24px);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
 
 .inviter-back-btn:hover { opacity: 0.82; }
 
 .inviter-back-btn:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--ch-bleu);
   outline-offset: 2px;
 }
 
@@ -91,34 +98,35 @@
   max-width: 540px;
   margin: 0 auto;
   padding: clamp(24px, 4vw, 40px);
-  background: var(--bj-glass-light-bg);
-  border: 1px solid var(--bj-action-border);
-  border-radius: var(--bj-r-lg);
-  box-shadow: var(--bj-shadow-soft);
-  backdrop-filter: blur(var(--bj-glass-blur));
-  -webkit-backdrop-filter: blur(var(--bj-glass-blur));
+  background: var(--ch-bleu-clair);
+  border: 0;
+  border-radius: var(--ch-r-carte);
+  box-shadow: none;
 }
 
 .inviter-ref-code {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  font-size: clamp(30px, 5.2vw, 48px);
-  line-height: 1.1;
-  color: var(--bj-action);
+  color: var(--ch-bleu-fonce);
   margin-bottom: clamp(14px, 2.2vh, 22px);
   word-break: break-word;
+  font-family: var(--number-font);
+  font-size: var(--number-fs);
+  line-height: var(--number-line);
+  letter-spacing: var(--number-track);
+  font-weight: var(--number-weight);
+  text-transform: var(--number-case);
+  --role: number;
 }
 
 .inviter-ref-link-label {
   margin: 0 0 8px;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xxs);
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--bj-text-faint);
+  color: var(--ch-gris);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
 
 /* ── Ligne lien + bouton copier ── */
@@ -136,53 +144,65 @@
   display: flex;
   align-items: center;
   padding: 0 16px;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
-  background: rgba(255, 255, 255, 0.4);
-  border: 1px solid var(--bj-action-border);
-  border-radius: var(--bj-r-btn);
+  color: var(--ch-encre);
+  background: var(--ch-fond);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 .inviter-ref-copy-btn {
   flex-shrink: 0;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: var(--bj-action);
-  background: var(--bj-action-soft);
-  border: 1px solid var(--bj-action-border);
-  border-radius: var(--bj-r-btn);
-  padding: 12px 18px;
+  color: var(--ch-bleu);
+  background: transparent;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  padding: 12px 16px;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+  transition: opacity var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
 .inviter-ref-copy-btn:hover { opacity: 0.82; }
 
 /* ── Bouton partager (CTA principal) ── */
 .inviter-ref-share-btn {
   width: 100%;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-lg);
-  font-weight: 500;
-  color: var(--bj-on-action);
-  background: var(--bj-action);
+  color: var(--ch-fond);
+  background: var(--ch-bleu);
   border: none;
-  border-radius: var(--bj-r-btn);
+  border-radius: var(--ch-r-btn);
   padding: 15px;
   cursor: pointer;
-  transition: opacity var(--bj-dur-fast) var(--bj-ease);
+  transition: opacity var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
-.inviter-ref-share-btn:hover { opacity: 0.88; }
+.inviter-ref-share-btn:hover { opacity: 1; background: var(--ch-bleu-fonce); }
 
 .inviter-ref-copy-btn:focus-visible,
 .inviter-ref-share-btn:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--ch-bleu);
   outline-offset: 2px;
 }
 
@@ -190,22 +210,30 @@
 .inviter-ref-reassurance {
   margin: clamp(16px, 2.4vh, 22px) auto 0;
   max-width: 40ch;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  line-height: 1.6;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   text-wrap: balance;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 /* ── Footer mécanique (5 pages) ── */
 .inviter-ref-footer {
   margin: clamp(12px, 1.8vh, 18px) auto 0;
   max-width: 40ch;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  line-height: 1.7;
-  color: var(--bj-text-faint);
+  color: var(--ch-gris);
   text-wrap: balance;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 .inviter-ref-insta {
@@ -218,18 +246,22 @@
   top: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(-12px);
-  background: var(--bj-charcoal);
-  color: #fff;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  letter-spacing: 0.02em;
+  background: var(--ch-bleu-fonce);
+  color: var(--ch-fond);
   padding: 12px 22px;
-  border-radius: var(--bj-r-sm);
-  box-shadow: var(--bj-shadow-pop);
+  border-radius: var(--ch-r-btn);
+  box-shadow: none;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--bj-dur) var(--bj-ease), transform var(--bj-dur) var(--bj-ease);
+  transition: opacity var(--bj-dur, 240ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)), transform var(--bj-dur, 240ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
   z-index: 9999;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 .inviter-ref-toast--visible {
   opacity: 1;

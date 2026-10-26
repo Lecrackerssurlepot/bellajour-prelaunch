@@ -947,7 +947,7 @@ function Coquille({
         )}
         <img
           className="nu-top-logo-img"
-          src="/images/v2/ui/signature-bellajour-240.webp"
+          src="/images/v2/ui/signature-bellajour-bleu-240.webp"
           alt="Bellajour"
           width={240}
           height={92}

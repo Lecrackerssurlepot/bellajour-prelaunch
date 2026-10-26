@@ -1,4 +1,5 @@
-/* Une ZONE de verre sombre, jamais un filet : c'est le flou qui la
+/* Charte V1 : le verre est BLANC (--glass-bg-*, traduits par charte.css), le
+   logo est la signature en bleu. Une ZONE de verre, jamais un filet : c'est le flou qui la
    détache du contenu, pas un trait. Décision de Mathias, 27/08/2026.
    Elle ne se cache jamais — « Composer avec l'atelier » reste atteignable
    pendant tout le récit, et c'est la seule porte vers le questionnaire
@@ -127,12 +128,10 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
 .at-nav-logo {
   height: clamp(20px, 1.6vw, 28px);
   width: auto;
-  opacity: 0.94;
+  opacity: 1;
   transition: opacity var(--dur) var(--ease);
 }
 
-.at-nav-logo-btn:hover .at-nav-logo,
-.at-nav-logo-btn:focus-visible .at-nav-logo { opacity: 1; }
 
 /* Invariant nº5 : le libellé est le même partout, sans exception.
    Écrit en (0,2,0) pour passer devant `.bj-atelier a { color: inherit }`. */
@@ -144,23 +143,22 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--c-text);
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;
+  color: var(--ch-fond);
+  background: var(--ch-bleu);
+  border: 0;
+  border-radius: var(--ch-r-btn);
   padding: 9px 18px;
   white-space: nowrap;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
-.at-nav-cta:hover {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+.bj-atelier .at-nav-cta:hover {
+  background: var(--ch-bleu-fonce);
 }
 
 @media (max-width: 560px) {
-  .at-nav-cta { font-size: 12px; padding: 8px 14px; }
+  .bj-atelier .at-nav-cta { padding: 8px 12px; letter-spacing: 0.03em; }
 }
 
 /* ── Le coin compte (04/09) ─────────────────────────────────────────────
@@ -214,13 +212,13 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
   height: 44px;
   margin: -6px 0;
   border-radius: 999px;
-  color: var(--c-text-soft);
+  color: var(--ch-encre);
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
 .bj-atelier .at-nav-compte:hover {
-  color: var(--c-text);
-  background: var(--c-veil-hover);
+  color: var(--ch-bleu);
+  background: var(--ch-bleu-voile);
 }
 
 /* … sauf connectée : là, un cercle net, cerné de cuivre. C'est le seul
@@ -229,7 +227,7 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
   width: 34px;
   height: 34px;
   margin: 0;
-  border: 1px solid rgba(214, 138, 99, 0.55);
+  border: 1px solid var(--ch-bleu-anneau);
   overflow: hidden;
 }
 
@@ -241,11 +239,10 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
 }
 
 .at-nav-initiale {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;
   line-height: 1;
-  color: var(--c-accent-strong);
+  text-transform: none;
+  color: var(--ch-bleu-fonce);
 }
 
 /* Le raccourci de suivi : du texte cuivre et un point vivant, pas un bouton —
@@ -260,14 +257,13 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
   gap: 8px;
   min-height: 44px;
   flex: 0 0 auto;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--c-accent-strong);
+  font-family:var(--label-font);font-size:var(--label-fs);line-height:var(--label-line);letter-spacing:var(--label-track);font-weight:var(--label-weight);text-transform:var(--label-case);--role:label;
+  color: var(--ch-bleu);
   white-space: nowrap;
   transition: color var(--dur) var(--ease);
 }
 
-.bj-atelier .at-nav-suivi:hover { color: var(--c-text); }
+.bj-atelier .at-nav-suivi:hover { color: var(--ch-bleu-fonce); }
 
 .at-nav-droite .at-nav-cta { flex: 0 0 auto; }
 
@@ -275,7 +271,7 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
   width: 6px;
   height: 6px;
   border-radius: 999px;
-  background: var(--c-accent);
+  background: var(--ch-bleu);
   flex: 0 0 auto;
 }
 

@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════
-   /compte — l'espace de la cliente. Monde SOMBRE (tokens --c-* de
-   theme.css), tout est scopé sous .cpt : retirer ce conteneur repeint
+   /compte — l'espace du client. Charte maison V1 (jetons --ch-* et rôles
+   typographiques de charte.css), tout est scopé sous .cpt : retirer ce conteneur repeint
    d'autres pages, ne pas le faire.
 
    Pièges honorés :
-   - .bj-atelier h1 fait 150px (hero) : .cpt .cpt-titre le recadre.
+   - .bj-atelier h1 fait 150px (hero) : .cpt .cpt-titre lui rend le rôle hero.
    - globals.css coupe les mots sous 767px (overflow-wrap anywhere) :
      les titres de cartes posent leur propre overflow-wrap.
    - jamais de dvh ; les hauteurs pleines n'existent pas ici, la page
@@ -13,7 +13,7 @@
 
 .cpt {
   min-height: 100vh;
-  background: var(--grad-ambient);
+  background: var(--ch-fond);
   --pad: clamp(20px, 5vw, 48px);
 }
 
@@ -28,7 +28,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 14px var(--pad);
-  border-bottom: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--ch-filet);
 }
 
 .cpt-top-marque { display: inline-flex; align-items: center; }
@@ -54,13 +54,11 @@
   width: 32px;
   height: 32px;
   flex: 0 0 auto;
-  border-radius: 999px;
-  border: 1px solid rgba(214, 138, 99, 0.55);
+  border-radius: 50%;
+  border: 1px solid var(--ch-bleu);
   overflow: hidden;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--c-accent-strong);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu-fonce);
 }
 
 .cpt-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -80,54 +78,53 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
   cursor: pointer;
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
-.cpt .cpt-onglet:hover { color: var(--c-text-soft); }
+.cpt .cpt-onglet:hover {
+  color: var(--ch-bleu);
+}
 
 .cpt .cpt-onglet.est-actif {
-  color: var(--c-text);
-  border-bottom-color: var(--c-accent);
+  color: var(--ch-bleu-fonce);
+  border-bottom-color: var(--ch-bleu);
 }
 
 .cpt-onglet-nb {
   font-style: normal;
-  font-size: 11px;
-  line-height: 1;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
   padding: 3px 6px;
-  border-radius: 999px;
-  background: var(--c-surface-3);
-  color: var(--c-text-faint);
+  border-radius: var(--ch-r-btn);
+  background: var(--ch-bleu-clair);
+  color: var(--ch-gris);
 }
 
 .cpt-onglet.est-actif .cpt-onglet-nb {
-  background: var(--c-accent-soft);
-  color: var(--c-accent-strong);
+  background: var(--ch-bleu);
+  color: var(--ch-fond);
 }
 
 .cpt .cpt-deconnexion {
   appearance: none;
   background: none;
-  border: 1px solid var(--c-line-md);
-  border-radius: 999px;
-  color: var(--c-text-faint);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  color: var(--ch-bleu);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
   padding: 9px 16px;
   cursor: pointer;
-  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
 .cpt .cpt-deconnexion:hover {
-  color: var(--c-text-soft);
-  border-color: var(--c-line-strong);
+  color: var(--ch-bleu-fonce);
+  border-color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-voile);
 }
 
 /* Le retour, sur la page d'un magazine — un vrai chemin de retour, pas un
@@ -138,18 +135,18 @@
   gap: 8px;
   min-height: 40px;
   padding: 0 14px 0 10px;
-  border: 1px solid var(--c-line-md);
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--c-text-soft);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   white-space: nowrap;
-  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
 .bj-atelier .cpt-retour:hover {
-  color: var(--c-text);
-  border-color: var(--c-accent);
+  color: var(--ch-bleu-fonce);
+  border-color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-voile);
 }
 
 .cpt-top-vide { width: 1px; }
@@ -163,7 +160,7 @@
   /* Les onglets passent sous la marque, sur toute la largeur. */
   .cpt-onglets { order: 3; width: 100%; }
   .cpt-top-logo { height: 24px; }
-  .cpt .cpt-deconnexion { padding: 8px 12px; font-size: 12px; }
+  .cpt .cpt-deconnexion { padding: 8px 12px; }
   .cpt-top-vide { display: none; }
 }
 
@@ -178,19 +175,14 @@
 .cpt-main--etroit { max-width: 460px; }
 
 .cpt .cpt-titre {
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-weight: 400;
-  font-size: clamp(34px, 6vw, 52px);
-  line-height: 1.1;
-  color: var(--c-text);
+  font-family: var(--hero-font); font-size: var(--hero-fs); line-height: var(--hero-line); letter-spacing: var(--hero-track); font-weight: var(--hero-weight); text-transform: var(--hero-case); --role: hero;
+  color: var(--ch-bleu-fonce);
 }
 
 .cpt .cpt-sous-titre {
   margin-top: 10px;
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--c-text-faint);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-gris);
 }
 
 /* ── LA TÊTE D'ONGLET : le titre, et le geste qui manquait ──────────
@@ -217,18 +209,13 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  /* 44 px de haut : la cible tactile minimale, sur un écran où tout le reste
-     est fait pour le doigt. */
   min-height: 44px;
   padding: 11px 20px;
-  border: 1px solid var(--c-line);
-  border-radius: 999px;
-  background: var(--c-surface-1);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--c-text);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  background: transparent;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   text-decoration: none;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
@@ -236,11 +223,15 @@
 .cpt .cpt-nouveau span {
   font-size: 17px;
   line-height: 1;
-  color: var(--c-accent);
+  color: var(--ch-bleu);
 }
 
-.cpt .cpt-nouveau:hover { border-color: var(--c-accent); background: var(--c-surface-2); }
-.cpt .cpt-nouveau:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+.cpt .cpt-nouveau:hover {
+  border-color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-voile);
+  color: var(--ch-bleu-fonce);
+}
+.cpt .cpt-nouveau:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 3px; }
 
 /* Sur téléphone le bouton passe sous le titre et prend toute la laisse :
    à côté d'un titre de 34 px il ne restait pas 120 px, et « Composer un
@@ -259,14 +250,10 @@
 .cpt-section { margin-top: clamp(40px, 7vw, 64px); }
 
 .cpt .cpt-section-titre {
-  font-family: var(--font-ui);
-  font-weight: 500;
-  font-size: 13px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--ch-filet);
 }
 
 .cpt-grille {
@@ -279,15 +266,17 @@
 /* ── Les cartes ───────────────────────────────────────────────────── */
 
 .cpt-carte {
-  background: var(--c-surface-1);
-  border: 1px solid var(--c-line);
-  border-radius: 16px;
+  background: var(--ch-bleu-clair);
+  border: 0;
+  border-radius: var(--ch-r-carte);
   padding: clamp(20px, 4vw, 28px);
   display: flex;
   flex-direction: column;
 }
 
-.cpt-carte--attente { border-color: rgba(214, 138, 99, 0.35); }
+.cpt-carte--attente {
+  border: 1px solid var(--ch-bleu-anneau);
+}
 
 /* ⚠️ L'ÉTIQUETTE EST AU-DESSUS DU TITRE, PAS À CÔTÉ. Côte à côte dans un
    flex, le badge (« UN GESTE VOUS ATTEND », nowrap) gardait sa largeur et
@@ -302,44 +291,33 @@
 }
 
 .cpt .cpt-carte-titre {
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-weight: 400;
-  font-size: clamp(21px, 3vw, 26px);
-  line-height: 1.15;
-  color: var(--c-text);
-  /* `break-word` et pas `anywhere` : on coupe un mot SEULEMENT s'il ne
-     tient pas seul sur une ligne (globals.css impose `anywhere` sous
-     767 px, qui couperait « Madrid » au milieu). */
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  color: var(--ch-bleu-fonce);
   overflow-wrap: break-word;
   max-width: 100%;
   min-width: 0;
 }
 
 .cpt-carte-camp {
-  order: -1; /* l'étiquette se lit avant le titre */
+  order: -1;
   flex: 0 0 auto;
-  font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
-  border: 1px solid var(--c-line-md);
-  border-radius: 999px;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
   padding: 4px 10px;
   white-space: nowrap;
 }
 
 .cpt-carte-camp--vous {
-  color: var(--c-accent);
-  border-color: rgba(214, 138, 99, 0.4);
+  color: var(--ch-bleu);
+  border-color: var(--ch-bleu-anneau);
 }
 
 .cpt-carte-etat {
   margin-top: 10px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--c-text-soft);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
 }
 
 /* (Les titres ci-dessus sont en (0,2,0) : .bj-atelier h2/h3 pose des
@@ -356,16 +334,17 @@
   flex: 1;
   height: 3px;
   border-radius: 2px;
-  background: var(--c-surface-3);
+  background: var(--ch-filet);
 }
 
-.cpt-jauge i.is-fait { background: var(--c-accent); }
+.cpt-jauge i.is-fait {
+  background: var(--ch-bleu);
+}
 
 .cpt-carte-jalons {
   margin-top: 8px;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 .cpt-carte-gestes {
@@ -378,7 +357,6 @@
 }
 
 .cpt .cpt-cta {
-  font-size: 14px;
   padding: 14px 24px;
 }
 
@@ -392,16 +370,17 @@
   background: none;
   border: none;
   padding: 0;
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
   transition: color var(--dur) var(--ease);
 }
 
-.cpt .cpt-lien:hover { color: var(--c-text-soft); }
+.cpt .cpt-lien:hover {
+  color: var(--ch-bleu-fonce);
+}
 
 /* globals.css pose `overflow-wrap: anywhere !important` sur h1..h4 et p sous
    767 px — une règle de sécurité de la landing waitlist, qui coupe AU MILIEU
@@ -435,16 +414,15 @@
 .bj-atelier .cpt-livre {
   display: flex;
   flex-direction: column;
-  background: var(--c-surface-1);
-  border: 1px solid var(--c-line);
-  border-radius: 16px;
+  background: var(--ch-bleu-clair);
+  border: 0;
+  border-radius: var(--ch-r-carte);
   padding: 14px;
   color: inherit;
-  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+  transition: transform var(--dur) var(--ease);
 }
 
 .bj-atelier .cpt-livre:hover {
-  border-color: var(--c-line-strong);
   transform: translateY(-2px);
 }
 
@@ -457,10 +435,8 @@
 }
 
 .cpt-livre-titre {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--c-text);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -469,9 +445,8 @@
 
 .cpt-livre-annee {
   flex: 0 0 auto;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 /* Le cadre garde le format d'un magazine (A4) quelle que soit l'image :
@@ -481,7 +456,7 @@
   display: block;
   position: relative;
   aspect-ratio: 210 / 297;
-  border-radius: 8px;
+  border-radius: 4px;
   overflow: hidden;
   background: var(--grad-cover);
 }
@@ -503,10 +478,8 @@
   display: flex;
   align-items: flex-end;
   padding: 12px;
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-size: 14px;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-fond);
 }
 
 .cpt-livre-pied {
@@ -518,9 +491,8 @@
 }
 
 .cpt-livre-meta {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -529,10 +501,8 @@
 
 .cpt-livre-geste {
   flex: 0 0 auto;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--c-accent-strong);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
 }
 
 /* ── La page d'un magazine : le voir, le lire, l'emporter ─────────────
@@ -545,7 +515,10 @@
   padding: clamp(18px, 3vw, 28px) var(--pad) clamp(64px, 10vw, 110px);
 }
 
-.cpt .cpt-mag-titre { font-size: clamp(26px, 4vw, 38px); }
+.cpt .cpt-mag-titre {
+  font-family: var(--section-font); font-size: var(--section-fs); line-height: var(--section-line); letter-spacing: var(--section-track); font-weight: var(--section-weight); text-transform: var(--section-case); --role: section;
+  color: var(--ch-bleu-fonce);
+}
 
 /* ⚠️ LA PLANCHE N'A PAS DE STYLE ICI (11/09/2026). Elle est le composant
    `Apercu`, et son habillage vit dans numero.css (`.nu-pl-*`, `.nu-viz-mag*`),
@@ -560,12 +533,11 @@
 .cpt-mag-sans-visuel {
   margin-top: 28px;
   padding: 24px;
-  border: 1px dashed var(--c-line-md);
-  border-radius: 16px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--c-text-faint);
+  border: 0;
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 .cpt-mag-infos { margin-top: clamp(40px, 7vw, 64px); }
@@ -575,18 +547,22 @@
   display: grid;
   grid-template-columns: minmax(110px, 160px) 1fr;
   gap: 12px 24px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
 }
 
-.cpt-fiche dt { color: var(--c-text-faint); }
-.cpt-fiche dd { margin: 0; color: var(--c-text-soft); }
+.cpt-fiche dt {
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
+}
+.cpt-fiche dd {
+  margin: 0;
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
+}
 
 .cpt-mag-pdf {
   margin-top: clamp(40px, 7vw, 64px);
   padding-top: clamp(28px, 5vw, 40px);
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--ch-filet);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -594,17 +570,13 @@
 }
 
 .cpt-mag-pdf-mot {
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-size: clamp(21px, 3.4vw, 27px);
-  line-height: 1.25;
-  color: var(--c-text);
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  color: var(--ch-bleu-fonce);
 }
 
 .cpt-mag-pdf-sub {
-  font-family: var(--font-ui);
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: var(--c-text-faint);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-gris);
 }
 
 @media (max-width: 560px) {
@@ -617,16 +589,15 @@
 .cpt-vide {
   margin-top: clamp(40px, 8vw, 72px);
   text-align: center;
-  border: 1px dashed var(--c-line-md);
-  border-radius: 20px;
+  border: 0;
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-clair);
   padding: clamp(36px, 8vw, 72px) var(--pad);
 }
 
 .cpt .cpt-vide-mot {
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-size: clamp(20px, 3.4vw, 26px);
-  line-height: 1.4;
-  color: var(--c-text-soft);
+  font-family: var(--accent-font); font-size: var(--accent-fs); line-height: var(--accent-line); letter-spacing: var(--accent-track); font-weight: var(--accent-weight); text-transform: var(--accent-case); --role: accent;
+  color: var(--ch-bleu-fonce);
   max-width: 460px;
   margin: 0 auto 24px;
 }
@@ -643,31 +614,26 @@
   width: 100%;
   box-sizing: border-box;
   padding: 15px 24px;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
-  background: var(--c-surface-2);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--c-text);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
+  background: var(--ch-fond);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-encre);
   transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .cpt .cpt-google:hover {
-  background: var(--c-surface-3);
-  border-color: var(--c-line-strong);
+  background: var(--ch-bleu-clair);
+  border-color: var(--ch-bleu);
 }
 
-.cpt-ou {
+.cpt .cpt-ou {
   display: flex;
   align-items: center;
   gap: 14px;
   margin: 22px 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-gris);
 }
 
 .cpt-ou::before,
@@ -675,7 +641,7 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--c-line);
+  background: var(--ch-filet);
 }
 
 .cpt-form {
@@ -691,9 +657,8 @@
 }
 
 .cpt-champ span {
-  font-family: var(--font-ui);
-  font-size: 13px;
-  color: var(--c-text-soft);
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-encre);
 }
 
 .cpt-champ input {
@@ -701,12 +666,11 @@
   box-sizing: border-box;
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid var(--c-line-md);
-  border-radius: 12px;
-  background: var(--c-surface-1);
-  font-family: var(--font-ui);
-  font-size: 16px; /* < 16px : iOS zoome au focus, la page saute */
-  color: var(--c-text);
+  border: 1px solid var(--ch-filet);
+  border-radius: var(--ch-r-btn);
+  background: var(--ch-fond);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-encre);
   transition: border-color var(--dur) var(--ease);
 }
 
@@ -715,7 +679,7 @@
    CONNEXION, où l'on tape un mot de passe. On ne le retire que pour un
    focus à la souris, où il ferait du bruit sans rien dire. */
 .cpt-champ input:focus {
-  border-color: var(--c-accent);
+  border-color: var(--ch-bleu);
 }
 
 .cpt-champ input:focus:not(:focus-visible) {
@@ -752,28 +716,28 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  color: var(--c-text-faint);
+  color: var(--ch-gris);
   cursor: pointer;
   transition: color var(--dur) var(--ease);
 }
 
-.cpt-mdp-oeil:hover { color: var(--c-text); }
+.cpt-mdp-oeil:hover {
+  color: var(--ch-bleu-fonce);
+}
 
 .cpt-mdp-oeil:focus-visible {
-  outline: 2px solid var(--c-accent);
+  outline: 2px solid var(--ch-bleu);
   outline-offset: 2px;
-  color: var(--c-text);
-  border-radius: 8px;
+  color: var(--ch-bleu-fonce);
+  border-radius: var(--ch-r-btn);
 }
 
 .cpt-alerte {
   margin-top: 14px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--c-accent-strong);
-  background: var(--c-accent-soft);
-  border-radius: 10px;
+  font-family: var(--small-font); font-size: var(--small-fs); line-height: var(--small-line); letter-spacing: var(--small-track); font-weight: var(--small-weight); text-transform: var(--small-case); --role: small;
+  color: var(--ch-erreur);
+  background: var(--ch-erreur-voile);
+  border-radius: var(--ch-r-btn);
   padding: 12px 14px;
 }
 
@@ -793,29 +757,27 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 14px;
-  border: 1px solid var(--c-line-md);
-  border-radius: 16px;
+  border: 0;
+  border-radius: var(--ch-r-carte);
   padding: clamp(22px, 4vw, 30px);
-  background: var(--c-surface-1);
+  background: var(--ch-bleu-clair);
 }
 
 .cpt .cpt-envoye-mot {
-  font-family: var(--font-atelier-display), Georgia, serif;
-  font-size: clamp(19px, 3vw, 23px);
-  line-height: 1.35;
-  color: var(--c-text);
+  font-family: var(--subtitle-font); font-size: var(--subtitle-fs); line-height: var(--subtitle-line); letter-spacing: var(--subtitle-track); font-weight: var(--subtitle-weight); text-transform: var(--subtitle-case); --role: subtitle;
+  color: var(--ch-bleu-fonce);
   overflow-wrap: break-word;
   min-width: 0;
   max-width: 100%;
 }
 
-.cpt-envoye-mot b { font-weight: 400; color: var(--c-accent-strong); }
+.cpt-envoye-mot b {
+  font-weight: inherit; color: var(--ch-bleu);
+}
 
 .cpt-envoye-sub {
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--c-text-faint);
+  font-family: var(--body-font); font-size: var(--body-fs); line-height: var(--body-line); letter-spacing: var(--body-track); font-weight: var(--body-weight); text-transform: var(--body-case); --role: body;
+  color: var(--ch-gris);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -840,17 +802,17 @@
 
 .cpt-sq {
   display: block;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--ch-r-carte);
+  background: var(--ch-bleu-voile);
   animation: cpt-sq-pulse 1400ms var(--ease, ease) infinite;
 }
 
 .cpt-sq--titre { width: 44%; height: clamp(30px, 4vw, 42px); border-radius: 6px; }
 .cpt-sq--sous { width: 62%; height: 15px; margin-top: 14px; border-radius: 5px; }
 .cpt-sq--onglet { width: 116px; height: 20px; border-radius: 5px; }
-.cpt-sq--carte { height: 210px; border-radius: 18px; }
-.cpt-sq--livre { height: 300px; border-radius: 18px; }
-.cpt-sq--scene { height: clamp(280px, 52vw, 460px); border-radius: 12px; margin-top: clamp(24px, 4vw, 40px); }
+.cpt-sq--carte { height: 210px; border-radius: var(--ch-r-carte); }
+.cpt-sq--livre { height: 300px; border-radius: var(--ch-r-carte); }
+.cpt-sq--scene { height: clamp(280px, 52vw, 460px); border-radius: var(--ch-r-carte); margin-top: clamp(24px, 4vw, 40px); }
 .cpt-sq--bloc { height: 160px; margin-top: clamp(32px, 5vw, 52px); }
 
 /* Les cartes ne battent pas ensemble : un décalage court fait respirer la
@@ -889,14 +851,11 @@
   gap: 10px;
   min-height: 48px;
   padding: 12px 22px;
-  border: 1px solid var(--c-line);
-  border-radius: 999px;
-  background: var(--c-surface-1);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--c-text);
+  border: 1px solid var(--ch-bleu);
+  border-radius: var(--ch-r-btn);
+  background: transparent;
+  font-family: var(--label-font); font-size: var(--label-fs); line-height: var(--label-line); letter-spacing: var(--label-track); font-weight: var(--label-weight); text-transform: var(--label-case); --role: label;
+  color: var(--ch-bleu);
   text-decoration: none;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
@@ -904,11 +863,15 @@
 .cpt .cpt-recommander span {
   font-size: 17px;
   line-height: 1;
-  color: var(--c-accent);
+  color: var(--ch-bleu);
 }
 
-.cpt .cpt-recommander:hover { border-color: var(--c-accent); background: var(--c-surface-2); }
-.cpt .cpt-recommander:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 3px; }
+.cpt .cpt-recommander:hover {
+  border-color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-voile);
+  color: var(--ch-bleu-fonce);
+}
+.cpt .cpt-recommander:focus-visible { outline: 2px solid var(--ch-bleu); outline-offset: 3px; }
 
 /* Sur téléphone les deux gestes s'empilent et prennent toute la laisse —
    LES DEUX. Un bouton secondaire pleine largeur sous un bouton principal qui

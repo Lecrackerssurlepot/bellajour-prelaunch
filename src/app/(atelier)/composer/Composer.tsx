@@ -86,7 +86,7 @@ const NOMS_ETAPES = ['Le moment', 'L’histoire', 'Le titre', 'Vous', 'Vos photo
 const TOTAL_ETAPES = NOMS_ETAPES.length
 
 /* Le logo officiel — le même fichier que la barre du site (Nav.tsx). */
-const LOGO = '/images/v2/ui/signature-bellajour-240.webp'
+const LOGO = '/images/v2/ui/signature-bellajour-bleu-240.webp'
 
 /* ── LE TOKEN DU BROUILLON EXISTE-T-IL ENCORE EN BASE ? (11/09/2026) ───────
    La route dit déjà tout ce qu'il faut : 404 quand le dossier n'existe pas,

@@ -1,45 +1,16 @@
-/* Pages légales — charte SOMBRE de l'Atelier (« la charte avec le noir »).
-   Bascule du monde crème vers la palette sombre le 01/09/2026 : fond quasi-noir,
-   texte crème, accent terracotta. Titres Cormorant italic, corps DM Sans. Zéro
-   box-shadow, positions en %/vw. Lecture longue : colonne unique centrée,
-   interligne aéré.
-
-   POURQUOI ON NE PASSE PAS PAR .bj-atelier
-   Le thème sombre (theme.css) n'est chargé que par le layout du groupe
-   (atelier) ; les pages légales vivent sous le layout RACINE. Envelopper .lg
-   dans .bj-atelier tirerait aussi ses règles de base — h1/h2 en
-   clamp(56px..150px), reset des liens — qui se battraient avec la mise en page
-   de lecture. On REMAPPE donc ici, sur le seul scope .lg, les tokens --bj-* que
-   ce fichier consomme vers les valeurs EXACTES de la charte (theme.css).
-   Aucune couleur en dur dans les règles : tout passe par ces tokens.
-
-   LE LISERÉ CRÈME — même piège que l'atelier, signalé par Mathias le 31/08
-   html/body portent le dégradé crème de globals.css. Sous un site noir il
-   déborde aux jonctions (barre iOS rétractée, safe-area, fin de document).
-   `html:has(.lg)` repeint le fond de page en noir sur les seules routes
-   légales — même technique que `html:has(.bj-atelier)` dans theme.css. */
-
-:root { --lg-void: #020202; }
-html:has(.lg),
-body:has(.lg) { background: var(--lg-void); }
+/* Pages légales — charte maison V1 (charte.css) : fond blanc, texte encre,
+   bleu pour les liens et la langue active, filets 1 px. Lecture longue :
+   colonne unique centrée, interligne aéré. Zéro ombre, positions en %/vw.
+   La classe `.bj-charte` posée sur <main> (charteClassName) apporte les
+   couleurs et les rôles typographiques ; ce fichier ne redéfinit aucun jeton.
+   Le thème sombre propre à ces pages (ancien remap de `--bj-*`, fond noir sur
+   html/body) est retiré : charte.css repeint html et body en blanc. */
 
 .lg {
-  /* ── Remap vers la charte sombre (valeurs de theme.css) ── */
-  --bj-text:          #f5f0e7;
-  --bj-text-soft:     #c7c2b8;
-  --bj-text-faint:    #928d84;
-  --bj-action:        #d68a63;                    /* terracotta : liens + langue active.
-                                                     Le bleu est RÉSERVÉ au bouton de paiement (PRD §4). */
-  --bj-action-border: rgba(214, 138, 99, 0.40);
-  --bj-veil-8:        rgba(255, 255, 255, 0.11);
-  --bj-veil-6:        rgba(255, 255, 255, 0.06);
-  --lg-grad:          radial-gradient(120% 120% at 50% -10%, #0e0e12 0%, #020202 60%);
-
   width: 100%;
   min-height: var(--app-height);
-  background: var(--lg-grad);
-  color: var(--bj-text);
-  font-family: var(--bj-font-ui);
+  background: var(--ch-fond);
+  color: var(--ch-encre);
   padding: clamp(88px, 12vh, 140px) 6vw clamp(56px, 9vh, 100px);
   -webkit-font-smoothing: antialiased;
 }
@@ -73,15 +44,19 @@ body:has(.lg) { background: var(--lg-void); }
   border: none;
   padding: 0 10px;
   margin: -11px -10px;
-  font-family: inherit;
   cursor: pointer;
-  font-size: var(--bj-fs-sm);
-  letter-spacing: 0.04em;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   text-decoration: none;
-  transition: color var(--bj-dur-fast) var(--bj-ease);
+  transition: color var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
-.lg-back:hover { color: var(--bj-text); }
+.lg-back:hover { color: var(--ch-bleu); }
 
 .lg-langs {
   display: inline-flex;
@@ -97,44 +72,55 @@ body:has(.lg) { background: var(--lg-void); }
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font-size: var(--bj-fs-xs);
-  font-weight: 500;
-  letter-spacing: 0.08em;
   padding: 4px 10px;
   margin: -7px 0;
-  border-radius: var(--bj-r-pill);
+  border-radius: var(--ch-r-btn);
   text-decoration: none;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   border: 1px solid transparent;
-  transition: color var(--bj-dur-fast) var(--bj-ease),
-              border-color var(--bj-dur-fast) var(--bj-ease);
+  transition: color var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1)),
+              border-color var(--bj-dur-fast, 180ms) var(--bj-ease, cubic-bezier(0.4, 0, 0.2, 1));
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
-.lg-lang:hover { color: var(--bj-action); }
+.lg-lang:hover { color: var(--ch-bleu); }
 .lg-lang--current {
-  color: var(--bj-action);
-  border-color: var(--bj-action-border);
+  color: var(--ch-bleu);
+  border-color: var(--ch-bleu);
 }
 .lg-lang--off {
-  color: var(--bj-text-faint);
+  color: var(--ch-gris);
   opacity: 0.5;
   cursor: default;
 }
 
 /* ── Titre ── */
 .lg-title {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(2rem, 5vw, 2.8rem);
-  line-height: 1.15;
   margin-bottom: var(--bj-sp-3);
+  font-family: var(--hero-font);
+  font-size: var(--hero-fs);
+  line-height: var(--hero-line);
+  letter-spacing: var(--hero-track);
+  font-weight: var(--hero-weight);
+  text-transform: var(--hero-case);
+  --role: hero;
 }
 
 .lg-version {
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
-  line-height: 1.6;
+  color: var(--ch-gris);
   margin-bottom: clamp(32px, 4vh, 48px);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 /* ── Intro (entité, préambule) ── */
@@ -142,12 +128,17 @@ body:has(.lg) { background: var(--lg-void); }
   display: flex;
   flex-direction: column;
   gap: var(--bj-sp-4);
-  font-size: var(--bj-fs-body);
-  line-height: 1.75;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   padding-bottom: clamp(24px, 3vh, 36px);
   margin-bottom: clamp(24px, 3vh, 36px);
-  border-bottom: 1px solid var(--bj-veil-8);
+  border-bottom: 1px solid var(--ch-filet);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
 }
 
 /* ── Sections ── */
@@ -157,28 +148,39 @@ body:has(.lg) { background: var(--lg-void); }
 }
 
 .lg-h2 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(1.4rem, 3vw, 1.7rem);
-  line-height: 1.25;
-  color: var(--bj-text);
+  color: var(--ch-encre);
   margin-bottom: var(--bj-sp-4);
+  font-family: var(--section-font);
+  font-size: var(--section-fs);
+  line-height: var(--section-line);
+  letter-spacing: var(--section-track);
+  font-weight: var(--section-weight);
+  text-transform: var(--section-case);
+  --role: section;
 }
 
 .lg-h3 {
-  font-family: var(--bj-font-ui);
-  font-weight: 600;
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text);
+  color: var(--ch-encre);
   margin: var(--bj-sp-5) 0 var(--bj-sp-2);
+  font-family: var(--subtitle-font);
+  font-size: var(--subtitle-fs);
+  line-height: var(--subtitle-line);
+  letter-spacing: var(--subtitle-track);
+  font-weight: var(--subtitle-weight);
+  text-transform: var(--subtitle-case);
+  --role: subtitle;
 }
 
 .lg-p {
-  font-size: var(--bj-fs-body);
-  line-height: 1.8;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
   margin-bottom: var(--bj-sp-4);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
 }
 
 .lg-list {
@@ -188,16 +190,21 @@ body:has(.lg) { background: var(--lg-void); }
   display: flex;
   flex-direction: column;
   gap: var(--bj-sp-2);
-  font-size: var(--bj-fs-body);
-  line-height: 1.7;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
 }
 
 .lg-anchor-link,
 .lg-p a,
 .lg-intro a,
 .lg-list a {
-  color: var(--bj-action);
+  color: var(--ch-bleu);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -207,46 +214,59 @@ body:has(.lg) { background: var(--lg-void); }
   width: 100%;
   overflow-x: auto; /* pas de débordement horizontal sur mobile */
   margin-bottom: var(--bj-sp-5);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--ch-r-carte);
+  border: 1px solid var(--ch-filet);
 }
 
 .lg-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--bj-fs-sm);
-  line-height: 1.55;
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 .lg-table th,
 .lg-table td {
   text-align: left;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--bj-veil-8);
+  border-bottom: 1px solid var(--ch-filet);
   vertical-align: top;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
 }
 
 .lg-table thead th {
-  font-family: var(--bj-font-ui);
-  font-weight: 600;
-  font-size: var(--bj-fs-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--bj-text);
-  background: var(--bj-veil-6);
+  color: var(--ch-bleu-fonce);
+  background: var(--ch-bleu-clair);
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
 
 .lg-table tbody tr:last-child td { border-bottom: none; }
-.lg-table td:first-child { color: var(--bj-text); font-weight: 500; }
+.lg-table td:first-child { color: var(--ch-encre); font-weight: 600; }
 
 /* ── Pied ── */
 .lg-copy {
   margin-top: clamp(40px, 5vh, 64px);
   padding-top: var(--bj-sp-5);
-  border-top: 1px solid var(--bj-veil-8);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  border-top: 1px solid var(--ch-filet);
+  color: var(--ch-gris);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
 
 @media (max-width: 600px) {

@@ -1,10 +1,10 @@
-/* Page charte du Cercle Ambassadeur — rendu lisible « charte prévente ».
-   Fond crème, largeur de lecture ~720px, interligne aéré. Barre fine en flux
+/* Page charte du Cercle Ambassadeur — rendu lisible, charte maison V1.
+   Fond blanc, largeur de lecture ~720px, interligne aéré. Barre fine en flux
    (pas de position:fixed + backdrop-filter → règle anti-jank). Zéro ombre. */
 
 .amb-charte {
-  background: var(--bj-cream);
-  color: var(--bj-text);
+  background: var(--ch-fond);
+  color: var(--ch-encre);
   min-height: 100vh;
 }
 
@@ -15,8 +15,8 @@
   justify-content: space-between;
   gap: 16px;
   padding: clamp(16px, 2.6vh, 24px) clamp(20px, 5vw, 48px);
-  background: var(--bj-cream);
-  border-bottom: 1px solid var(--bj-glass-light-border);
+  background: var(--ch-fond);
+  border-bottom: 1px solid var(--ch-filet);
 }
 .amb-charte-logo-link {
   display: inline-flex;
@@ -28,12 +28,16 @@
   display: block;
 }
 .amb-charte-back {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-ui);
-  font-weight: 500;
-  color: var(--bj-action);
+  color: var(--ch-bleu);
   text-decoration: none;
   white-space: nowrap;
+  font-family: var(--label-font);
+  font-size: var(--label-fs);
+  line-height: var(--label-line);
+  letter-spacing: var(--label-track);
+  font-weight: var(--label-weight);
+  text-transform: var(--label-case);
+  --role: label;
 }
 .amb-charte-back:hover {
   text-decoration: underline;
@@ -45,37 +49,50 @@
   max-width: 720px;
   margin: 0 auto;
   padding: clamp(36px, 7vh, 72px) clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-body);
-  line-height: 1.7;
-  color: var(--bj-text-soft);
+  color: var(--ch-encre);
+  font-family: var(--body-font);
+  font-size: var(--body-fs);
+  line-height: var(--body-line);
+  letter-spacing: var(--body-track);
+  font-weight: var(--body-weight);
+  text-transform: var(--body-case);
+  --role: body;
 }
 
 .amb-charte-body h1 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 500;
-  font-size: var(--bj-fs-h1-screen);
-  line-height: 1.15;
-  color: var(--bj-text);
+  color: var(--ch-bleu-fonce);
   margin: 0 0 12px;
+  font-family: var(--hero-font);
+  font-size: var(--hero-fs);
+  line-height: var(--hero-line);
+  letter-spacing: var(--hero-track);
+  font-weight: var(--hero-weight);
+  text-transform: var(--hero-case);
+  --role: hero;
 }
 
 .amb-charte-tagline {
-  font-family: var(--bj-font-display);
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text-faint);
+  color: var(--ch-bleu);
   margin: 0 0 clamp(28px, 5vh, 44px);
+  font-family: var(--accent-font);
+  font-size: var(--accent-fs);
+  line-height: var(--accent-line);
+  letter-spacing: var(--accent-track);
+  font-weight: var(--accent-weight);
+  text-transform: var(--accent-case);
+  --role: accent;
 }
 
 .amb-charte-body h2 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 500;
-  font-size: var(--bj-fs-h2);
-  line-height: 1.2;
-  color: var(--bj-text);
+  color: var(--ch-bleu-fonce);
   margin: clamp(32px, 5.5vh, 48px) 0 12px;
+  font-family: var(--section-font);
+  font-size: var(--section-fs);
+  line-height: var(--section-line);
+  letter-spacing: var(--section-track);
+  font-weight: var(--section-weight);
+  text-transform: var(--section-case);
+  --role: section;
 }
 
 .amb-charte-body p {
@@ -93,11 +110,17 @@
 
 .amb-charte-rule {
   border: none;
-  border-top: 1px solid var(--bj-glass-light-border);
+  border-top: 1px solid var(--ch-filet);
   margin: clamp(32px, 5.5vh, 48px) 0 24px;
 }
 
 .amb-charte-version {
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
+  color: var(--ch-gris);
+  font-family: var(--small-font);
+  font-size: var(--small-fs);
+  line-height: var(--small-line);
+  letter-spacing: var(--small-track);
+  font-weight: var(--small-weight);
+  text-transform: var(--small-case);
+  --role: small;
 }
