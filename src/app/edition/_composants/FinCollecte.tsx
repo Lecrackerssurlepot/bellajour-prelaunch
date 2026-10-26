@@ -20,7 +20,7 @@
 
 import { createPortal } from "react-dom";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { ligneOubli, partiesCollecteTerminee, phraseAtelierCommence, RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
+import { ligneOubli, partiesCollecteTerminee, RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
 import type { FinReponse } from "@/lib/collectif/photosSimples";
 import Fenetre from "./Fenetre";
 import { useRetourFerme } from "./useRetourFerme";
@@ -44,10 +44,10 @@ export async function terminerLaCollecte(token: string): Promise<FinReponse> {
     const json = (await rep.json().catch(() => ({}))) as { error?: string; message?: string; termineLe?: unknown };
     /* Deux appareils du même responsable : le second lit « déjà terminée », sans nommer l'atelier qui n'y est pour rien. */
     if (rep.status === 409 && json.error === "etat_change") return { ok: false, message: "La collecte est déjà terminée." };
-    if (!rep.ok) return { ok: false, message: json.message ?? `La collecte n'a pas pu se terminer (erreur ${rep.status}).` };
+    if (!rep.ok) return { ok: false, message: json.message ?? "Collecte non terminée." };
     return { ok: true, termineLe: typeof json.termineLe === "string" ? json.termineLe : new Date().toISOString() };
   } catch {
-    return { ok: false, message: "Le réseau n'a pas répondu. Rien n'a changé." };
+    return { ok: false, message: "Pas de réseau. Rien n'a changé." };
   }
 }
 
@@ -55,22 +55,18 @@ export async function terminerLaCollecte(token: string): Promise<FinReponse> {
 
 export function FenetreTerminerCollecte({
   token,
-  tu,
-  photos,
-  selection,
   onFermer,
   onFait,
 }: {
   token: string;
-  tu: boolean;
+  tu?: boolean;
   /** Le total reçu, tel que l'écran le connaît ; `null` s'il ne le connaît pas encore. */
-  photos: number | null;
-  selection: number;
+  photos?: number | null;
+  selection?: number;
   onFermer: () => void;
   /** La collecte est terminée : l'instant écrit comme clôture (celui que la route a posé). */
   onFait: (termineLe: string) => void;
 }) {
-  const v = (vous: string, toi: string) => (tu ? toi : vous);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -87,12 +83,8 @@ export function FenetreTerminerCollecte({
   }
 
   return (
-    <Fenetre titre="Terminer la collecte maintenant ?" onFermer={onFermer}>
-      <ul className="ec-tdb-fin-liste">
-        <li>Les liens des participants se ferment : ils verront que le dépôt des photos est fermé.</li>
-        <li>{phraseAtelierCommence(photos, selection, tu)}</li>
-        <li>{v("Si vous avez oublié quelqu'un, écrivez à l'atelier : il peut rouvrir.", "Si tu as oublié quelqu'un, écris à l'atelier : il peut rouvrir.")}</li>
-      </ul>
+    <Fenetre titre="Terminer la collecte ?" onFermer={onFermer}>
+      <p className="ec-s-pied-feuille">Les liens se ferment.</p>
       {erreur ? (
         <p className="ec-note ec-note--erreur" role="alert">
           {erreur}
@@ -100,10 +92,10 @@ export function FenetreTerminerCollecte({
       ) : null}
       <div className="ec-envoi-gestes">
         <button type="button" className="ec-bouton ec-bouton--clair" disabled={envoi} onClick={onFermer}>
-          Pas encore
+          Annuler
         </button>
         <button type="button" className="ec-bouton ec-bouton--plein" disabled={envoi} onClick={() => void terminer()}>
-          {envoi ? "Un instant…" : "Oui, terminer"}
+          {envoi ? "Un instant…" : "Terminer"}
         </button>
       </div>
     </Fenetre>
@@ -158,6 +150,8 @@ export function ChoixFinCollecte({
   onFermer,
   onFait,
   onChoisir,
+  confirmerSeul,
+  onConfirme,
 }: {
   token: string;
   /** Le total reçu, tel que l'écran le connaît ; `null` s'il ne le connaît pas encore. */
@@ -167,10 +161,16 @@ export function ChoixFinCollecte({
   /** La collecte est terminée : l'instant écrit comme clôture (celui que la route a posé). */
   onFait: (termineLe: string) => void;
   onChoisir: () => void;
+  /** « Envoyer ma sélection » : la feuille s'ouvre directement sur la confirmation (Annuler la ferme). */
+  confirmerSeul?: boolean;
+  /** Le geste à faire une fois « Terminer » touché (l'envoi de la sélection) ; sans lui, c'est « tout envoyer ». */
+  onConfirme?: () => void;
 }) {
   const client = useSyncExternalStore(rien, () => true, () => false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  /* Fin de collecte = irréversible côté responsable : une dernière confirmation, courte (campagne du 26/10, choix 1B). */
+  const [confirme, setConfirme] = useState(Boolean(confirmerSeul));
   useRetourFerme(onFermer, telephone);
 
   useEffect(() => {
@@ -202,12 +202,12 @@ export function ChoixFinCollecte({
 
   const corps = (
     <>
-      <button type="button" className="ec-s-choix-fin ec-s-choix-fin--plein" disabled={envoi} onClick={() => void toutEnvoyer()}>
+      <button type="button" className="ec-s-choix-fin ec-s-choix-fin--plein" disabled={envoi} onClick={() => setConfirme(true)}>
         <i>
           <Trait d={TRACE_ENVOYER} t={26} />
         </i>
         <span>
-          <b>{envoi ? "Un instant…" : "Envoyer toutes les photos à l'atelier"}</b>
+          <b>Tout envoyer</b>
           {photos !== null ? <small>{photos.toLocaleString("fr-FR")} photo{photos > 1 ? "s" : ""}</small> : null}
         </span>
       </button>
@@ -216,8 +216,8 @@ export function ChoixFinCollecte({
           <Trait d={TRACE_COEUR} t={26} />
         </i>
         <span>
-          <b>Choisir d&apos;abord mes préférées</b>
-          <small>Puis envoyer ma sélection</small>
+          <b>Choisir mes préférées</b>
+          <small>Puis envoyer</small>
         </span>
         <Trait d={TRACE_CHEVRON} t={18} epais={2.2} />
       </button>
@@ -226,14 +226,32 @@ export function ChoixFinCollecte({
           {erreur}
         </p>
       ) : null}
-      <p className="ec-s-pied-feuille">Les liens des participants se ferment.</p>
     </>
   );
+  const confirmation = (
+    <>
+      <p className="ec-s-pied-feuille">Les liens se ferment.</p>
+      {erreur ? (
+        <p className="ec-note ec-note--erreur" role="alert">
+          {erreur}
+        </p>
+      ) : null}
+      <div className="ec-envoi-gestes">
+        <button type="button" className="ec-bouton ec-bouton--clair" disabled={envoi} onClick={confirmerSeul ? onFermer : () => setConfirme(false)}>
+          Annuler
+        </button>
+        <button type="button" className="ec-bouton ec-bouton--plein" disabled={envoi} onClick={onConfirme ?? (() => void toutEnvoyer())}>
+          {envoi ? "Un instant…" : "Terminer"}
+        </button>
+      </div>
+    </>
+  );
+  const titre = confirme ? "Terminer la collecte ?" : "Terminer la collecte";
 
   if (!telephone) {
     return (
-      <Fenetre titre="Terminer la collecte" onFermer={onFermer}>
-        <div className="ec-s-fin-choix">{corps}</div>
+      <Fenetre titre={titre} onFermer={onFermer}>
+        <div className="ec-s-fin-choix">{confirme ? confirmation : corps}</div>
       </Fenetre>
     );
   }
@@ -241,15 +259,15 @@ export function ChoixFinCollecte({
   if (!hote) return null;
   return createPortal(
     <div className="ec-s-voile" role="presentation" onClick={onFermer}>
-      <div className="ec-s-feuille" role="dialog" aria-modal="true" aria-label="Terminer la collecte" onClick={(e) => e.stopPropagation()}>
+      <div className="ec-s-feuille" role="dialog" aria-modal="true" aria-label={titre} onClick={(e) => e.stopPropagation()}>
         <div className="ec-s-poignee" aria-hidden="true" />
         <div className="ec-s-feuille-tete">
-          <h2 className="ec-s-feuille-titre">Terminer la collecte</h2>
+          <h2 className="ec-s-feuille-titre">{titre}</h2>
           <button type="button" className="ec-s-rond" aria-label="Fermer" onClick={onFermer}>
             <Trait d={TRACE_FERMER} t={18} epais={2.2} />
           </button>
         </div>
-        {corps}
+        {confirme ? confirmation : corps}
       </div>
     </div>,
     hote

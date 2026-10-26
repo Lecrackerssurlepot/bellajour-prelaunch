@@ -140,8 +140,8 @@ export default function FenetreEnvoi({
           </label>
           <span className="ec-note">
             {existants.length
-              ? v("Un nom nouveau crée le dossier. Vous rangerez ensuite en glissant un dossier dans un autre.", "Un nom nouveau crée le dossier. Tu rangeras ensuite en glissant un dossier dans un autre.")
-              : v("La première fois, tout va dans « Mes photos », ou sous le nom que vous tapez.", "La première fois, tout va dans « Mes photos », ou sous le nom que tu tapes.")}
+              ? v("Un nom nouveau crée le dossier.", "Un nom nouveau crée le dossier.")
+              : v("Sans nom, tout va dans « Mes photos ».", "Sans nom, tout va dans « Mes photos ».")}
           </span>
         </fieldset>
 
@@ -166,12 +166,12 @@ export default function FenetreEnvoi({
             <span className="ec-pour-doigt">{v("Choisissez vos photos", "Choisis tes photos")}</span>
           </strong>
           <span className="ec-note">
-            Vers « {cible} »<span className="ec-pour-souris"> · {v("un dossier de votre ordinateur se glisse aussi", "un dossier de ton ordinateur se glisse aussi")}</span>
+            Vers « {cible} »
           </span>
           <button type="button" className="ec-bouton" onClick={selecteur.ouvrir}>
             Choisir des photos
           </button>
-          <span className="ec-note">JPEG, HEIC, PNG · une photo déjà envoyée ne part jamais deux fois</span>
+          <span className="ec-note">JPEG, HEIC, PNG</span>
           <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
         </div>
         {silence ? (
@@ -213,10 +213,10 @@ export default function FenetreEnvoi({
         <span className="ec-note">
           {!fini
             ? prog.restent
-              ? `${prog.restent} photo${prog.restent > 1 ? "s" : ""} en route en ce moment`
-              : "Dernières vérifications en cours"
+              ? `${prog.restent} en route`
+              : "Vérification…"
             : vue.erreurs
-              ? `${vue.erreurs} photo${vue.erreurs > 1 ? "s" : ""} n'${vue.erreurs > 1 ? "ont" : "a"} pas pu partir : « Réessayer » les renvoie.`
+              ? `${vue.erreurs} à reprendre`
               : "Terminé"}
         </span>
       </div>
@@ -248,30 +248,19 @@ export default function FenetreEnvoi({
           {t}
         </p>
       ))}
-      {bilan.dejaLa || lot.deuxFois ? (
-        <p className="ec-note">
-          {v(
-            "Une photo déjà envoyée n'est jamais envoyée deux fois : c'est ce qui permet de reprendre un envoi interrompu en choisissant de nouveau le même dossier. Pour ajouter de nouvelles photos, choisissez simplement les nouvelles.",
-            "Une photo déjà envoyée n'est jamais envoyée deux fois : c'est ce qui permet de reprendre un envoi interrompu en choisissant de nouveau le même dossier. Pour ajouter de nouvelles photos, choisis simplement les nouvelles."
-          )}
-        </p>
-      ) : null}
       {vue.raisons.map((r) => (
         <p key={r} className="ec-note ec-note--erreur">
           {r}
         </p>
       ))}
-      {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
-      {vue.serveurLent ? <p className="ec-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
+      {vue.horsLigne ? <p className="ec-note">Connexion perdue. Reprise automatique.</p> : null}
+      {vue.serveurLent ? <p className="ec-note">Serveur lent. Reprise automatique.</p> : null}
       {vue.reseauBloque ? <p className="ec-note ec-note--erreur">{vue.reseauBloque}</p> : null}
-      {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
+      {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s).</p> : null}
       {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
       {!fini ? (
         <p className="ec-envoi-info">
-          {v(
-            "Naviguez librement : la pastille « Envoi en cours », en haut de chaque écran, rouvre cette fenêtre. Gardez l'onglet ouvert.",
-            "Navigue librement : la pastille « Envoi en cours », en haut de chaque écran, rouvre cette fenêtre. Garde l'onglet ouvert."
-          )}
+          {v("Gardez l'onglet ouvert.", "Garde l'onglet ouvert.")}
         </p>
       ) : null}
 
@@ -283,7 +272,7 @@ export default function FenetreEnvoi({
         ) : null}
         {!vue.ferme ? (
           <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setChoisir(true)}>
-            Ajouter d&apos;autres photos
+            Ajouter
           </button>
         ) : null}
         <button type="button" className="ec-bouton" onClick={fermer}>

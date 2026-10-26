@@ -10,7 +10,7 @@
 
 import { jourDe, jourEnClair } from "@/lib/atelier/metadonnees";
 import { formaterJour } from "@/lib/atelier/dates";
-import { clePersonne, compterPersonnes, deParticipant, nomDePersonne, personnesDe, type LignePhoto } from "./dossiers";
+import { clePersonne, compterPersonnes, deParticipant, nomDePersonne, personnesDe, poidsDe, type LignePhoto } from "./dossiers";
 import { TYPES_PROVENANCE } from "./types";
 
 export const TAILLE_PAGE = 120;
@@ -72,7 +72,11 @@ export const NOM_LIEN_SANS_NOM = "Lien de contribution";
 export type GenreDeLien = "lien" | "general" | "responsable" | "atelier";
 
 /** Ce que ce regroupement lit d'une photo. */
-export type PhotoDeLien = Pick<LignePhoto, "provenance_id" | "role_deposant" | "deposant"> & { appareil_id?: string | null };
+export type PhotoDeLien = Pick<LignePhoto, "provenance_id" | "role_deposant" | "deposant"> & {
+  appareil_id?: string | null;
+  /** Une ligne du résumé en base pèse `n` photos (fiche de l'atelier) ; absent = une photo. */
+  poids?: number;
+};
 /** Ce qu'il lit d'un lien de contribution. */
 export type LienNomme = { id: string; libelle: string | null; retire_le?: string | null };
 
@@ -147,7 +151,7 @@ export type LienDepose = {
 const SANS_NOM_CLE = clePersonne(null);
 
 function personnesDuGroupe(photos: readonly PhotoDeLien[], responsable: string | null): PersonneDeLien[] {
-  const noms = photos.map((p) => ({ deposant: personneDeLaPhoto(p, responsable) }));
+  const noms = photos.map((p) => ({ deposant: personneDeLaPhoto(p, responsable), poids: p.poids }));
   return personnesDe(noms).map((x) => {
     if (x.cle !== SANS_NOM_CLE) return x;
     const appareils = new Set(photos.filter((p) => clePersonne(p.deposant) === SANS_NOM_CLE).map((p) => p.appareil_id ?? ""));
@@ -188,7 +192,7 @@ export function deposantsParLien(photos: readonly PhotoDeLien[], liens: readonly
       id,
       nom,
       genre,
-      n: lignes.length,
+      n: lignes.reduce((t, l) => t + poidsDe(l), 0),
       nbPersonnes: genre === "responsable" ? (lignes.length ? 1 : 0) : genre === "atelier" ? personnes.length : compterPersonnes(lignes),
       personnes,
       retire,

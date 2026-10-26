@@ -124,7 +124,7 @@ export default function Parler(p: Props) {
         if (rep.ok && json.message && typeof json.message === "object") return json.message;
         return typeof json.message === "string" ? json.message : `Message non envoyé (erreur ${rep.status}).`;
       } catch {
-        return "Le réseau n'a pas répondu. Message non envoyé.";
+        return "Pas de réseau. Message non envoyé.";
       }
     },
     marquerLus: p.ecrire
@@ -170,7 +170,7 @@ export default function Parler(p: Props) {
       setEtatRdv({ texte: `Rendez-vous du ${libelleCreneau(r.debut)} annulé.`, erreur: false });
       setAnnulerId(null);
     } catch {
-      setEtatRdv({ texte: "Le réseau n'a pas répondu. Rien n'a changé.", erreur: true });
+      setEtatRdv({ texte: "Pas de réseau. Rien n'a changé.", erreur: true });
     }
   }
   const demandes = useMemo(() => demandesDuFil(messages), [messages]);

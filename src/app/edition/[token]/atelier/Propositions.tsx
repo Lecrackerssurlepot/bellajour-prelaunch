@@ -64,7 +64,7 @@ export default function CarteProposition({
         setMessage({ texte: v("Message envoyé : l'atelier vous recontacte.", "Message envoyé : l'atelier te recontacte."), erreur: false });
       }
     } catch {
-      setMessage({ texte: "Le réseau n'a pas répondu. Rien n'est parti.", erreur: true });
+      setMessage({ texte: "Pas de réseau. Rien n'est parti.", erreur: true });
     } finally {
       setOccupe(false);
     }

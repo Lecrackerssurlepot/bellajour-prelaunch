@@ -43,14 +43,13 @@ export type PhotoCorbeille = {
 type Etat = { genre: "lecture" } | { genre: "absente" } | { genre: "erreur" } | { genre: "ok"; photos: PhotoCorbeille[] };
 
 /** La phrase sobre quand la base n'a pas encore la migration (jamais le nom du fichier SQL). */
-export const BASE_PAS_A_JOUR = "La mise à jour de la base n'est pas encore appliquée";
+export const BASE_PAS_A_JOUR = "Mise à jour en attente";
 
 /**
  * `version` : le nombre de photos que la page compte. Quand il change (un participant a supprimé une photo de son
  * téléphone, le sondage de la page l'a vu), la liste se relit d'elle-même, sans repasser par « Chargement ».
  */
-export default function Corbeille({ token, tu, version, telephone, onRestaurees }: { token: string; tu: boolean; version: number; telephone: boolean; onRestaurees: (photos: PhotoCorbeille[]) => void }) {
-  const v = (vous: string, toi: string) => (tu ? toi : vous);
+export default function Corbeille({ token, version, telephone, onRestaurees }: { token: string; tu?: boolean; version: number; telephone: boolean; onRestaurees: (photos: PhotoCorbeille[]) => void }) {
   const [etat, setEtat] = useState<Etat>({ genre: "lecture" });
   const [coches, setCoches] = useState<ReadonlySet<string>>(new Set());
   const [modeCocher, setModeCocher] = useState(false);
@@ -106,13 +105,13 @@ export default function Corbeille({ token, tu, version, telephone, onRestaurees 
         const rep = await fetch("/api/collectif/photos/corbeille", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, action: "restaurer", photoIds: lot }) });
         const json = (await rep.json().catch(() => ({}))) as { error?: string; ids?: unknown };
         if (!rep.ok) {
-          setErreur(rep.status === 503 && json.error === ERREUR_PERSONNES_ABSENTE ? `${BASE_PAS_A_JOUR} : rien n'a changé.` : `La restauration n'a pas abouti (erreur ${rep.status}). Réessayer.`);
+          setErreur(rep.status === 503 && json.error === ERREUR_PERSONNES_ABSENTE ? `${BASE_PAS_A_JOUR} : rien n'a changé.` : "Restauration impossible.");
           break;
         }
         if (Array.isArray(json.ids)) revenues.push(...json.ids.filter((x): x is string => typeof x === "string"));
       }
     } catch {
-      setErreur("Le réseau n'a pas répondu. Rien n'a changé.");
+      setErreur("Pas de réseau. Rien n'a changé.");
     } finally {
       setOccupe(false);
     }
@@ -173,7 +172,7 @@ export default function Corbeille({ token, tu, version, telephone, onRestaurees 
         <p className="ec-cb-info ec-ph-ordi">
           <Trace d={ICONES.info} taille={16} epais={1.8} />
           <span>
-            Une photo supprimée <b>disparaît tout de suite pour tout le monde</b> et ne part pas à l&apos;atelier. Elle reste ici <b>{DELAI_CORBEILLE_JOURS} jours</b>, puis elle est effacée pour de bon. Restaurée, elle revient à sa place : son lien, sa personne, {v("vos favoris", "tes favoris")}.
+            Retirées pour tous. Effacées au bout de <b>{DELAI_CORBEILLE_JOURS} jours</b>.
           </span>
         </p>
 
@@ -188,7 +187,7 @@ export default function Corbeille({ token, tu, version, telephone, onRestaurees 
           <div className="ec-a-venir ec-cb-absente" role="status">
             <p className="ec-texte">
               <b>{BASE_PAS_A_JOUR}.</b>
-              {" La corbeille s'ouvrira dès qu'elle le sera ; aucune photo n'y est pour l'instant."}
+              {" Corbeille vide."}
             </p>
           </div>
         ) : null}

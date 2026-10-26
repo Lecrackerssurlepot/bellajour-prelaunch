@@ -24,6 +24,7 @@ import { arbreDesPhotos, cleDeDossierLisible, compterPersonnes, dansLeDossier, d
 import { indexDoublons } from "./doublons";
 import { jourDePhoto, TAILLE_PAGE } from "./grille";
 import { enPaquets } from "./lignes";
+import { moyenneAbsente } from "./migration";
 import { GROUPE_SANS_GROUPE } from "./partage";
 import type { ReglagesPlafond } from "./plafonds";
 import {
@@ -68,6 +69,8 @@ export type LigneGrille = {
   provenance_id: string | null;
   role_deposant: string;
   appareil_id: string | null;
+  /** La version moyenne d'« Agrandir » (5A, migration 20261026) : absente sans la migration ou pour une photo d'avant. */
+  moyenne_key?: string | null;
 };
 
 export const COLONNES_GRILLE =
@@ -76,10 +79,46 @@ export const COLONNES_GRILLE =
 /** Une photo d'une PAGE : ce que la tuile montre, rien de plus. */
 export type LignePage = Pick<
   LigneGrille,
-  "id" | "vignette_key" | "r2_key" | "nom_origine" | "provenance_type" | "deposant" | "prise_le" | "confirmee_le" | "preselection" | "signalee" | "mime" | "provenance_id" | "role_deposant"
+  "id" | "vignette_key" | "r2_key" | "nom_origine" | "provenance_type" | "deposant" | "prise_le" | "confirmee_le" | "preselection" | "signalee" | "mime" | "provenance_id" | "role_deposant" | "moyenne_key"
 >;
 
 export const COLONNES_PAGE = "id, vignette_key, r2_key, nom_origine, provenance_type, deposant, prise_le, confirmee_le, preselection, signalee, mime, provenance_id, role_deposant";
+
+/* ─────────── la version moyenne d'« Agrandir » (5A, migration 20261026, écrite, pas appliquée) ───────────
+   Les lectures de la grille demandent `moyenne_key` EN PLUS (`colonnesAvecMoyenne`) ; si la base
+   répond que la colonne manque (`moyenneAbsente`, la colonne NOMMÉE), la même lecture repart sans
+   elle, et l'absence est retenue une minute (par instance) pour ne pas payer deux requêtes à chaque
+   page. La photo n'a alors pas de moyenne : « Agrandir » montre l'original, comme avant. */
+
+/** Combien de temps l'absence de `moyenne_key` est retenue avant de la redemander. */
+export const MEMOIRE_MOYENNE_ABSENTE_MS = 60_000;
+let moyenneAbsenteJusqua = 0;
+
+/** Les colonnes d'une lecture, `moyenne_key` en plus quand on la demande. */
+export function colonnesAvecMoyenne(colonnes: string, avec: boolean): string {
+  return avec ? `${colonnes}, moyenne_key` : colonnes;
+}
+
+/** Pour le harnais : oublier l'absence retenue. */
+export function oublierMoyenneAbsente(): void {
+  moyenneAbsenteJusqua = 0;
+}
+
+/**
+ * Jouer une lecture AVEC `moyenne_key`, puis, si la base dit que la colonne manque, la même sans.
+ * `lire` FABRIQUE une requête neuve à chaque appel ; toute autre erreur est rendue telle quelle.
+ */
+export async function lireAvecMoyenne<R extends { error: { code?: string | null; message?: string | null } | null }>(
+  lire: (avecMoyenne: boolean) => PromiseLike<R>,
+  maintenant: number = Date.now()
+): Promise<R> {
+  if (maintenant >= moyenneAbsenteJusqua) {
+    const r = await lire(true);
+    if (!moyenneAbsente(r.error)) return r;
+    moyenneAbsenteJusqua = maintenant + MEMOIRE_MOYENNE_ABSENTE_MS;
+  }
+  return lire(false);
+}
 
 /**
  * `couverturesDe` (21/10, la mosaïque des liens et des personnes) : la réponse porte la couverture de CHAQUE lien (`liens`, une
@@ -112,7 +151,7 @@ export type ContexteGrille = {
   enCours: number;
   /** Signer une VIGNETTE : adresse stable à l'heure et gardée en cache (`signerLectureVignette`, T-176). Peut lever : la tuile ou la couverture s'en passe. */
   signer: (cle: string) => Promise<string>;
-  /** Signer un ORIGINAL : la photo sans vignette, et la photo EN GRAND de la visionneuse (`signerGet`, une heure). Peut lever. */
+  /** Signer un ORIGINAL : la photo sans vignette, et la photo EN GRAND quand elle n'a pas de version moyenne (`signerGet`, une heure). Peut lever. */
   signerOriginal: (cle: string) => Promise<string>;
   /**
    * Combien de photos sont à la corbeille (migration 20261023, un compte sans ligne lu par la
@@ -136,8 +175,9 @@ export type TuileGrille = {
   doublonDe: string | null;
   heic: boolean;
   /**
-   * La photo EN GRAND (la visionneuse, planche 3) : l'original signé quand un navigateur sait
-   * l'afficher (`afficheEnGrand` : JPEG, PNG, WebP), la vignette sinon (un HEIC). `null` : rien à montrer.
+   * La photo EN GRAND (la visionneuse, planche 3) : la version moyenne quand elle existe (5A), sinon
+   * l'original signé quand un navigateur sait l'afficher (`afficheEnGrand` : JPEG, PNG, WebP), la
+   * vignette sinon (un HEIC). `null` : rien à montrer.
    */
   grande: string | null;
 };
@@ -174,9 +214,19 @@ async function tuile(p: LignePage, doublonDe: ReadonlyMap<string, string>, c: Co
   } catch {
     vignette = null;
   }
-  /* En grand : l'original quand il s'affiche (déjà signé s'il servait de vignette), la vignette sinon. */
+  /* En grand : la VERSION MOYENNE quand elle existe (5A : ≈ 1 600 px, JPEG, quel que soit l'original,
+     HEIC compris ; signée comme une vignette, donc adresse stable et gardée en cache) ; sinon
+     l'original quand il s'affiche (déjà signé s'il servait de vignette), la vignette sinon. */
   let grande: string | null = null;
-  if (afficheEnGrand(p.mime)) {
+  if (p.moyenne_key) {
+    try {
+      grande = await c.signer(p.moyenne_key);
+    } catch {
+      grande = null;
+    }
+  }
+  /* L'original ne sert plus en grand qu'à une photo SANS moyenne (d'avant, plus petite, ou sans la migration). */
+  if (!grande && afficheEnGrand(p.mime)) {
     if (!p.vignette_key) grande = vignette;
     else {
       try {

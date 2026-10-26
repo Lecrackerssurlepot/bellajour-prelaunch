@@ -55,6 +55,8 @@ type Props = {
   nonLus: number;
   /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
   peutDeposer: boolean;
+  /** 2A : les photos d'un envoi coupé du responsable sur cet appareil (lues au layout). */
+  coupees: number;
   /** Le registre « tu » (école) : la fenêtre d'envoi tutoie. */
   tu: boolean;
   /** T-154 : le responsable sur un appareil pas encore reconnu (il lit ; un code par mail pour modifier). */
@@ -264,7 +266,7 @@ export default function Coquille(props: Props) {
 
       {ouvert ? <button type="button" className="ec-voile" aria-label="Fermer le menu" onClick={() => setOuvert(false)} /> : null}
 
-      <DepotFournisseur token={props.token} actif={props.peutDeposer} tu={props.tu}>
+      <DepotFournisseur token={props.token} actif={props.peutDeposer} tu={props.tu} coupees={props.coupees}>
         {/* La lecture seule (lien d'équipe) se dit dans le menu, sous le nom :
             plus de bandeau qui s'empile au-dessus de chaque écran. */}
         <div className="ec-contenu" data-lecture={props.lectureSeule ? "oui" : undefined}>

@@ -204,7 +204,7 @@ async function recoudre(produit, original) {
 }
 
 async function traiter(d) {
-  const vide = { id: d.id, charge: null, vignette: null, largeur: 0, hauteur: 0 }
+  const vide = { id: d.id, charge: null, vignette: null, moyenne: null, largeur: 0, hauteur: 0 }
 
   if (typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') {
     return vide
@@ -233,12 +233,28 @@ async function traiter(d) {
     vignette = null
   }
 
+  /* La VERSION MOYENNE (Édition collective, 5A du 26/10) : seulement si le
+     moteur la demande (`d.moyenne` = { cote, qualite }, jamais le B2C) et si la
+     photo dépasse ce côté. Elle sert à « Agrandir » ; l'original reste celui
+     de l'impression. Les pixels sont déjà droits : aucun EXIF à recoudre.
+     Plus lourde que l'original, elle n'a aucun intérêt : rien. */
+  let moyenne = null
+  if (d.moyenne && d.moyenne.cote > 0 && Math.max(largeur, hauteur) > d.moyenne.cote) {
+    try {
+      moyenne = await dessiner(bitmap, d.moyenne.cote)
+        .convertToBlob({ type: 'image/jpeg', quality: d.moyenne.qualite })
+      if (moyenne.size >= d.fichier.size) moyenne = null
+    } catch (_) {
+      moyenne = null
+    }
+  }
+
   /* On ne réduit QUE ce qui dépasse. Recomprimer une photo déjà sous le
      plafond, c'est une perte sèche : l'original part tel quel, EXIF intact
      par construction, et personne n'a payé de CPU pour l'abîmer. */
   if (!d.reduire || Math.max(largeur, hauteur) <= COTE_MAX) {
     bitmap.close()
-    return { id: d.id, charge: null, vignette, largeur, hauteur }
+    return { id: d.id, charge: null, vignette, moyenne, largeur, hauteur }
   }
 
   let charge = null
@@ -256,7 +272,7 @@ async function traiter(d) {
   }
 
   bitmap.close()
-  return { id: d.id, charge, vignette, largeur, hauteur }
+  return { id: d.id, charge, vignette, moyenne, largeur, hauteur }
 }
 
 self.onmessage = function (e) {
@@ -271,6 +287,6 @@ self.onmessage = function (e) {
   traiter(d)
     .then(function (r) { self.postMessage(r) })
     .catch(function () {
-      self.postMessage({ id: d.id, charge: null, vignette: null, largeur: 0, hauteur: 0 })
+      self.postMessage({ id: d.id, charge: null, vignette: null, moyenne: null, largeur: 0, hauteur: 0 })
     })
 }

@@ -15,7 +15,9 @@
 import { HeadObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { bucket, estAbsenceR2, makeR2, MAX_VIGNETTE_BYTES } from "@/lib/atelier/r2";
-import { cleVignette, prefixeEdition } from "./cles";
+import { cleMoyenne, cleVignette, prefixeEdition } from "./cles";
+import { MAX_MOYENNE_BYTES } from "./depot";
+import { MIGRATION_MOYENNE, moyenneAbsente } from "./migration";
 import { PAGES_LISTE_MAX, patchConfirmation, type Tete } from "./rattrapage";
 
 /**
@@ -70,7 +72,8 @@ export type IssueConfirmation =
 /**
  * Confirmer une photo ARRIVÉE (la tête a déjà dit sa taille, et l'appelant a
  * déjà vérifié qu'elle respecte le maximum : `issueTete`). La vignette est
- * relue au coffre et notée seulement si elle y est, sous 512 Ko.
+ * relue au coffre et notée seulement si elle y est, sous 512 Ko ; la version
+ * moyenne (5A) pareil, sous `MAX_MOYENNE_BYTES`.
  */
 export async function confirmerArrivee(
   supabase: SupabaseClient,
@@ -80,14 +83,21 @@ export async function confirmerArrivee(
   maintenantIso: string
 ): Promise<IssueConfirmation> {
   const vKey = cleVignette(editionId, ligne.id);
-  const tv = await teteObjet(vKey);
+  const mKey = cleMoyenne(editionId, ligne.id);
+  /* La vignette et la version moyenne (5A) : deux têtes en même temps. */
+  const [tv, tm] = await Promise.all([teteObjet(vKey), teteObjet(mKey)]);
   const patch = patchConfirmation(taille, maintenantIso, vKey, tv.statut === "presente" ? tv.taille : null, MAX_VIGNETTE_BYTES);
-  const { data: ecrites, error } = await supabase
-    .from("collectif_photos")
-    .update(patch)
-    .eq("id", ligne.id)
-    .is("confirmee_le", null)
-    .select("id");
+  /* La moyenne n'est notée que si elle est au coffre, sous son plafond. Sans la migration
+     20261026, la colonne manque : la photo se confirme sans elle (le script de rattrapage la
+     retrouvera au coffre), et on le dit au journal du serveur. */
+  const moyenne = tm.statut === "presente" && tm.taille > 0 && tm.taille <= MAX_MOYENNE_BYTES ? { moyenne_key: mKey } : {};
+  const ecrire = (champs: Record<string, unknown>) =>
+    supabase.from("collectif_photos").update(champs).eq("id", ligne.id).is("confirmee_le", null).select("id");
+  let { data: ecrites, error } = await ecrire({ ...patch, ...moyenne });
+  if (error && "moyenne_key" in moyenne && moyenneAbsente(error)) {
+    console.error(`[collectif] version moyenne NON notée : ${MIGRATION_MOYENNE} absente`);
+    ({ data: ecrites, error } = await ecrire(patch));
+  }
   if (error) return { statut: "erreur", code: error.code ?? null };
   return ecrites?.length ? { statut: "nouvelle", vignette: patch.vignette_key !== null } : { statut: "deja" };
 }

@@ -6329,7 +6329,30 @@ const verifierLot1RudeEpreuve = async (): Promise<void> => {
       && !F.signaturePhotoReconnue(texte) && !F.signaturePhotoReconnue(oct(0x12, 0x9a, 0x44, 0x01, 0x77, 0x00, 0x13, 0x5c)) && !F.signaturePhotoReconnue(oct()) && !F.signaturePhotoReconnue(oct(0xff, 0xd8)));
 };
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(() => {
+/* 8A (décision de Mathias, 26/10) : un HEIC déposé dans /composer par un navigateur qui ne le lit pas
+   (Chrome, Firefox, Android) reçoit sa vignette par libheif, le décodeur déjà livré pour les éditions.
+   Rien d'autre ne bouge dans le tunnel : la charge, l'ordre réduire → déclarer → envoyer, la tuile sobre
+   quand libheif échoue aussi. */
+const verifierHeicComposer = async () => {
+  titre("— 8A : /composer fait la vignette d'un HEIC avec libheif, seulement quand le navigateur ne l'a pas faite —");
+  const moteur = readFileSync(resolve(process.cwd(), "src/app/(atelier)/composer/depot/moteur.ts"), "utf8");
+  const heic = readFileSync(resolve(process.cwd(), "src/app/edition/_composants/depot/heic.ts"), "utf8");
+  const worker = readFileSync(resolve(process.cwd(), "public/heic/vignette-heic.worker.js"), "utf8");
+  ok("8A : libheif seulement sans vignette du navigateur ET pour un HEIC (Safari et les JPEG ne changent pas)",
+    /const vignette = r\.vignette \?\? \(estHeic\(item\.mime\) \? await vignetteHeic\(original\) : null\)/.test(moteur) && (moteur.match(/vignetteHeic\(/g) ?? []).length === 1);
+  ok("8A : la CHARGE ne change pas (r.charge ou l'original), le HEIC part brut (piège nº16), la vignette sert l'aperçu, le coffre local et R2",
+    /vivant\.charge = r\.charge \?\? original/.test(moteur) && /reduire: !estHeic\(item\.mime\)/.test(moteur) && /vivant\.vignette = vignette\n/.test(moteur)
+      && /if \(vignette\) vivant\.apercu = URL\.createObjectURL\(vignette\)/.test(moteur) && /void this\.persister\(vivant, vignette\)/.test(moteur));
+  ok("8A : l'item est relu APRÈS l'attente de libheif (arrêt, retrait ou changement d'état pendant le décodage : rien n'est écrit)",
+    moteur.indexOf("await vignetteHeic(original)") < moteur.indexOf("if (this.arrete) return", moteur.indexOf("await vignetteHeic(original)"))
+      && moteur.indexOf("if (!vivant || vivant.etat !== 'reduction') return", moteur.indexOf("await vignetteHeic(original)")) > 0);
+  ok("8A : le décodeur ne bloque jamais un dépôt : `null` sans worker, délai borné, jamais d'exception ; chargé à la première photo HEIC seulement",
+    /if \(!creerVoies\(\)\) return Promise\.resolve\(null\);/.test(heic) && /const DELAI_MAX_MS = 45_000;/.test(heic) && /importScripts\('\/heic\/libheif-bundle\.js'\)/.test(worker) && /function charger\(\) \{\n  if \(!lib\) \{/.test(worker));
+  ok("8A : le worker du B2C reste sans libheif, et /composer ne demande jamais la version moyenne des éditions",
+    !/libheif/.test(readFileSync(resolve(process.cwd(), "src/app/(atelier)/composer/depot/reduire.worker.js"), "utf8")) && !/moyenne/.test(moteur.replace(/\/\*[\s\S]*?\*\//g, "")));
+};
+
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

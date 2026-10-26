@@ -54,14 +54,14 @@ export default function NomDossier({
       });
       const json = (await rep.json().catch(() => ({}))) as { message?: string };
       if (!rep.ok) {
-        setErreur(json.message ?? `Nom non changé (erreur ${rep.status}).`);
+        setErreur(json.message ?? "Nom non changé.");
         return;
       }
       setEdition(false);
       setGarde({ pour: nom, nom: propre });
       onRenomme();
     } catch {
-      setErreur("Le réseau n'a pas répondu. Nom non changé.");
+      setErreur("Pas de réseau. Nom non changé.");
     } finally {
       enCours.current = false;
       setOccupe(false);
@@ -93,7 +93,7 @@ export default function NomDossier({
           }}
           onBlur={() => void garder()}
         />
-        <span className={erreur ? "ec-note ec-note--erreur" : "ec-note"}>{erreur ?? "Entrée pour garder · Échap pour annuler"}</span>
+        <span className={erreur ? "ec-note ec-note--erreur" : "ec-note"}>{erreur ?? "Entrée pour valider"}</span>
       </span>
     );
   }

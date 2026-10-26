@@ -2220,7 +2220,7 @@ titre("— retours de Mathias du 14/10 —");
     /this\.dejaAjoutes\+\+;\s*this\.deuxFoisLot\+\+;/.test(moteur) && /bilan\.dejaLa \+ lot\.deuxFois/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
   const fenetre = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
   ok("envoi : « déjà là » est explique, « Ajouter d'autres photos » et « Réduire et continuer », le compte en grand",
-    /déjà là, sautées/.test(fenetre) && /n'est jamais envoyée deux fois/.test(fenetre) && /Ajouter d&apos;autres photos/.test(fenetre) && /Réduire et continuer/.test(fenetre) && /ec-envoi-n/.test(fenetre));
+    /déjà là, sautées/.test(fenetre) && !/jamais envoyée deux fois|ne part jamais deux fois/.test(fenetre) && /Ajouter\n/.test(fenetre) && /Réduire et continuer/.test(fenetre) && /ec-envoi-n/.test(fenetre));
   ok("envoi : la fenetre vit dans la coquille, la pastille de chaque en-tete la rouvre",
     /<HoteFenetreEnvoi \/>/.test(lire("src/app/edition/[token]/Coquille.tsx")) && /<PastilleEnvoi \/>/.test(lire("src/app/edition/_composants/Ecran.tsx")) && /onClick=\{\(\) => c\.ouvrir\(\)\}/.test(lire("src/app/edition/_composants/depot/DepotContexte.tsx")));
 }
@@ -2522,8 +2522,8 @@ titre("— T-152 : l'atelier, un seul logiciel (barre commune, boite de receptio
     /<PanneauGestes [^>]*menu \/>/.test(fiche) && /libelle: "Réglages et liens"/.test(fiche) && /reglages: \([\s\S]*?<PanneauLiens id=\{e\.id\} liens=\{liens\}(?: ouverture=\{ouverture\})? \/>/.test(fiche));
   const donneesFiche = lire("src/app/admin/collectif/donnees.ts");
   ok("fiche en cartes : les doublons sont le MEME resultat range que lit la page Photos du client (T-170), quatre apercus signes au plus",
-    /doublons: \(\(await doublonsDeLEdition\(supabase, id, lignesPhotos\)\)\?\.groupes \?\? calculerSurLignes\(lignesPhotos\)\.groupes\)/.test(donneesFiche) && !/groupesDoublonsRapides\(/.test(donneesFiche)
-      && /doublonsDeLEdition\(supabase, edition\.id\)/.test(lire("src/app/api/collectif/photos/route.ts")) && /\.slice\(0, 4\)[\s\S]{0,60}signerOuRien\(p\.vignette_key\)/.test(donneesFiche));
+    /doublons: \(\(await doublonsDeLEdition\(supabase, id\)\)\?\.groupes \?\? \[\]\)/.test(donneesFiche) && !/groupesDoublonsRapides\(/.test(donneesFiche)
+      && /doublonsDeLEdition\(supabase, edition\.id\)/.test(lire("src/app/api/collectif/photos/route.ts")) && /limit\(APERCUS_MAX\)/.test(donneesFiche));
 }
 
 titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
@@ -2532,12 +2532,26 @@ titre("— T-150 : les HEIC ont leur aperçu et leur empreinte —");
   const heic = lire("src/app/edition/_composants/depot/heic.ts");
   const worker = lire("public/heic/vignette-heic.worker.js");
   const paquet = JSON.parse(lire("package.json")) as { devDependencies?: Record<string, string> };
-  ok("HEIC : le moteur des editions demande la vignette a libheif SEULEMENT quand le navigateur n'en a pas fait (Safari la fait)",
-    /it\.vignette = r\.vignette \?\? \(estHeic\(it\.mime\) \? await vignetteHeic\(it\.fichier\) : null\);/.test(moteur));
-  ok("HEIC : le moteur des PARTICULIERS n'est pas touche (aucun import de heic dans composer/)",
-    !/heic"|vignetteHeic/.test(lire("src/app/(atelier)/composer/depot/moteur.ts")) && !/libheif/.test(lire("src/app/(atelier)/composer/depot/reduire.worker.js")));
+  ok("HEIC : le moteur des editions demande la vignette (et la moyenne, 5A) a libheif SEULEMENT quand le navigateur n'en a pas fait (Safari la fait)",
+    /const heic = !r\.vignette && estHeic\(it\.mime\) \? await apercusHeic\(it\.fichier, DEMANDE_MOYENNE\) : null;/.test(moteur)
+      && /it\.vignette = r\.vignette \?\? heic\?\.vignette \?\? null;/.test(moteur));
+  /* 8A (décision de Mathias, 26/10) : l'ancienne règle « aucun import de heic dans composer/ » est levée.
+     Elle est remplacée par la garantie du nouveau comportement : libheif SEULEMENT sans vignette du
+     navigateur, pour la vignette SEULEMENT, l'original jamais touché, le worker B2C sans libheif. */
+  const composer = lire("src/app/(atelier)/composer/depot/moteur.ts");
+  ok("HEIC (8A) : /composer demande la vignette a libheif SEULEMENT quand le navigateur n'en a pas fait, et seulement pour un HEIC",
+    /import \{ vignetteHeic \} from '@\/app\/edition\/_composants\/depot\/heic'/.test(composer)
+      && /const vignette = r\.vignette \?\? \(estHeic\(item\.mime\) \? await vignetteHeic\(original\) : null\)/.test(composer)
+      && (composer.match(/vignetteHeic\(/g) ?? []).length === 1);
+  ok("HEIC (8A) : dans /composer, libheif ne touche QUE la vignette : la charge reste celle du worker (ou l'original), la vignette et l'apercu viennent de la meme variable",
+    /vivant\.charge = r\.charge \?\? original/.test(composer) && !/charge = .*vignetteHeic/.test(composer) && /vivant\.vignette = vignette\n/.test(composer)
+      && /if \(vignette\) vivant\.apercu = URL\.createObjectURL\(vignette\)/.test(composer) && /void this\.persister\(vivant, vignette\)/.test(composer));
+  ok("HEIC (8A) : un HEIC ne passe toujours JAMAIS par le canvas de reduction (piege n16), le worker B2C reste sans libheif et /composer ne demande aucune moyenne",
+    /reduire: !estHeic\(item\.mime\)/.test(composer) && !/libheif/.test(lire("src/app/(atelier)/composer/depot/reduire.worker.js")) && !/moyenne/.test(composer.replace(/\/\*[\s\S]*?\*\//g, "")));
+  ok("HEIC (8A) : `vignetteHeic` reste la porte de la vignette seule (jamais d'exception, `null` sans worker)",
+    /export function vignetteHeic\(fichier: Blob\): Promise<Blob \| null> \{\n  if \(!creerVoies\(\)\) return Promise\.resolve\(null\);\n  return apercusHeic\(fichier\)\.then\(\(a\) => a\.vignette\);/.test(heic));
   ok("HEIC : l'original part tel quel (la charge n'est jamais remplacee), deux workers au plus, un delai, jamais d'exception",
-    !/it\.charge = .*vignetteHeic/.test(moteur) && /const WORKERS_MAX = 2;/.test(heic) && /DELAI_MAX_MS/.test(heic) && /Promise\.resolve\(null\)/.test(heic));
+    !/it\.charge = .*(vignetteHeic|apercusHeic)/.test(moteur) && /const WORKERS_MAX = 2;/.test(heic) && /DELAI_MAX_MS/.test(heic) && /Promise\.resolve\(null\)/.test(heic));
   ok("HEIC : le worker charge libheif a la premiere photo, un decodeur par worker, chaque image liberee",
     /importScripts\('\/heic\/libheif-bundle\.js'\)/.test(worker) && /decodeur = new lib\.HeifDecoder\(\)/.test(worker) && /i\.free\(\)/.test(worker) && !/\.is_primary\(/.test(worker));
   const copie = resolve(RACINE, "public/heic/libheif-bundle.js");
@@ -2593,7 +2607,7 @@ titre("— T-146 : les mails des éditions, un seul circuit, coupé par défaut 
     const menu = lire("src/lib/collectif/verrous.ts");
     ok("20/10 : « Partager avec mon équipe » existe EN BAS du menu (apres la nav, avant le nom), sa fenetre dit la meme phrase et porte « Copier »",
       /<span>Partager avec mon équipe<\/span>/.test(partageEquipe) && /titre="Partager avec mon équipe"/.test(partageEquipe)
-        && partageEquipe.includes('"Lecture seule : ton équipe suit tout sans rien modifier." : "Lecture seule : votre équipe suit tout sans rien modifier."')
+        && partageEquipe.includes('sous="Lecture seule."')
         && /: "Copier"\}/.test(partageEquipe)
         && coquille.indexOf("</nav>") < coquille.indexOf("<PartageEquipe") && coquille.indexOf("<PartageEquipe") < coquille.indexOf('className="ec-moi"'));
     const vivantPartage = fenetrePartage.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
@@ -2810,7 +2824,7 @@ titre("— T-182 / D25 : le responsable termine la collecte, l'atelier voit la s
   const finTsx = lire("src/app/edition/_composants/FinCollecte.tsx");
   ok("le tableau de bord : « Toutes les photos sont là ? » pour le responsable seulement, en DEUX temps (« Oui, terminer », dans la fenetre PARTAGEE avec la page Photos : FinCollecte.tsx porte l'appel)",
     /p\.terminer && ouverte/.test(carte) && /Toutes les photos sont là \?/.test(carte) && /<FenetreTerminerCollecte/.test(carte) && !/\/api\/collectif\/collecte\/terminer/.test(carte) && !/<Fenetre /.test(carte)
-      && /Oui, terminer/.test(finTsx) && /\/api\/collectif\/collecte\/terminer/.test(finTsx) && /Terminer la collecte maintenant \?/.test(finTsx)
+      && /Terminer\n/.test(finTsx) && /\/api\/collectif\/collecte\/terminer/.test(finTsx) && /Terminer la collecte \?/.test(finTsx)
       && /terminer=\{peut\(role, 'terminer_collecte'\)\}/.test(lire("src/app/edition/[token]/page.tsx")));
   const lot = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
   const panneau = lire("src/app/admin/collectif/[id]/PanneauCollecte.tsx");
@@ -2931,8 +2945,8 @@ titre("— T-187 : l'ecran « L'edition est creee », et le lien d'equipe chez l
   ok("l'espace : le layout ne calcule le lien d'equipe QUE si voitLienEquipe, la coquille n'affiche l'entree que s'il existe",
     /if \(voitLienEquipe\(role, appareilInconnu\)\) \{/.test(layoutEspace) && /let lienEquipe: string \| null = null/.test(layoutEspace) && /lienEquipe=\{lienEquipe\}/.test(layoutEspace)
       && /\{props\.lienEquipe \? <PartageEquipe lien=\{props\.lienEquipe\}/.test(coquille));
-  ok("« Partager avec mon équipe » : le lien, « Copier », « Lecture seule : votre équipe suit tout sans rien modifier. » (et tu)",
-    /Partager avec mon équipe/.test(partage) && /Lecture seule : votre équipe suit tout sans rien modifier\./.test(partage) && /Lecture seule : ton équipe suit tout sans rien modifier\./.test(partage)
+  ok("« Partager avec mon équipe » : le lien, « Copier », « Lecture seule. »",
+    /Partager avec mon équipe/.test(partage) && /Lecture seule\./.test(partage)
       && /navigator\.clipboard\.writeText\(lien\)/.test(partage) && /<Fenetre/.test(partage) && !/#[0-9a-f]{3,8}\b/i.test(partage));
   ok("l'ecran montre les adresses ABREGEES (le token entier ne sort que par « Copier »), copier les DEUX liens les nomme (planche 5C du 21/10 : plus le lien des participants)",
     lienAbrege(`https://bellajour.fr/edition/${"k".repeat(32)}`) === "bellajour.fr/edition/kkkk…" && lienAbrege("http://localhost:3109/depot/ABCD1234efgh5678ijkl9012mnop3456") === "localhost:3109/depot/ABCD…"
@@ -3066,8 +3080,9 @@ titre("— T-192 : le moteur tient une mauvaise connexion —");
   const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
   ok("le retour du reseau relance TOUT DE SUITE (evenement online), et une coupure ne brule aucun essai",
     /window\.addEventListener\("online", this\.auRetourDuReseau\)/.test(moteur) && /else if \(!enLigne\(\)\) \{[\s\S]{0,200}await attendreEnLigne\(\);/.test(moteur));
-  ok("seul un refus du COFFRE (une reponse HTTP) compte comme essai ; sans reponse en ligne (wifi filtre), un compteur a part, et une phrase qui dit quoi faire",
-    /if \(r\.status > 0\) \{[\s\S]{0,120}it\.essais\+\+;/.test(moteur) && /it\.essaisReseau\+\+;/.test(moteur) && /passe en 4G, puis « Réessayer »/.test(moteur));
+  ok("seul un refus du COFFRE (une reponse HTTP) compte comme essai ; sans reponse en ligne (wifi filtre), un compteur a part, et deux mots (« Envoi bloqué. ») a cote de « Réessayer » (textes courts, 26/10)",
+    /if \(r\.status > 0\) \{[\s\S]{0,120}it\.essais\+\+;/.test(moteur) && /it\.essaisReseau\+\+;/.test(moteur) && /export const RESEAU_BLOQUE = "Envoi bloqué\.";/.test(moteur)
+      && /this\.finir\(it, "erreur", RESEAU_BLOQUE\);/.test(moteur) && /\? RESEAU_BLOQUE\n/.test(moteur) && !/wifi filtré \?\)/.test(moteur.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")));
   ok("la vignette repart comme la photo (T-171), quatre essais au plus, sans jamais faire echouer la photo",
     /for \(let k = 0; k < 4; k\+\+\) \{\s*if \(\(await this\.put\(it\.urlVignette, it\.vignette, "image\/jpeg"\)\)\.ok\) break;/.test(moteur));
   ok("a la cloture, les photos deja au coffre sont CONFIRMEES avant d'etre dites refusees ; celles en route finissent leur course",
@@ -3086,7 +3101,7 @@ titre("— T-192 : le moteur tient une mauvaise connexion —");
   const albumMerci = lire("src/app/depot/[token]/Album.tsx");
   const zone = lire("src/app/edition/_composants/depot/ZoneDepot.tsx");
   ok("« Merci » et « Toutes les photos sont arrivees » seulement sans erreur : une photo qui n'est pas partie se dit (le merci lit le DERNIER envoi depuis le 21/10)",
-    /const termine = lot\.total > 0 && lot\.enCours === 0 && lot\.erreurs === 0;/.test(albumMerci) && /const lot = vue\.lot;/.test(albumMerci) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} photo/.test(zone));
+    /const termine = lot\.total > 0 && lot\.enCours === 0 && lot\.erreurs === 0;/.test(albumMerci) && /const lot = vue\.lot;/.test(albumMerci) && /vue\.erreurs\s*\?\s*`\$\{vue\.erreurs\} à reprendre`/.test(zone));
 }
 
 titre("— T-192 : le nom du participant ne change plus —");
@@ -3097,7 +3112,7 @@ titre("— T-192 : le nom du participant ne change plus —");
   const depot = lire("src/app/depot/[token]/Depot.tsx");
   ok("l'ecran : deux champs la premiere fois, puis « en tant que … » sans champ ; le nom du serveur passe avant celui du telephone",
     /autoComplete="given-name"/.test(depot) && /autoComplete="family-name"/.test(depot) && /const nomFixe = props\.nomConnu \?\? fige \?\? \(garde \|\| null\);/.test(depot)
-      && /\{nomFixe \? \(/.test(depot) && /il ne se change plus ensuite/.test(depot));
+      && /\{nomFixe \? \(/.test(depot) && /Définitif : écris-le bien/.test(depot));
   const route = lire("src/app/api/collectif/depot/presign/route.ts");
   ok("la route reprend le nom deja donne par l'appareil AVANT de compter et d'ecrire, et ne le cherche que pour un participant",
     /if \(role === "participant" && appareilLu && !participant\) \{\s*const connu = await nomDeLAppareil\(/.test(route) && /if \(connu\) deposant = connu;/.test(route)
@@ -3497,8 +3512,8 @@ titre("— T-200 : les videos ne partent pas, la page le dit avant, et le refus 
       && D.phrasesIgnores(1, 5, null).length === 1);
   const depotTsx = lire("src/app/depot/[token]/Depot.tsx");
   const albumTsx = lire("src/app/depot/[token]/Album.tsx");
-  ok("la page : « Photos seulement : les vidéos ne partent pas. » AU-DESSUS du bouton (planche 6B, avant le choix), redit dans la barre de l'album ; plus de « fichier(s) ignoré(s) »",
-    D.PHOTOS_SEULEMENT === "Photos seulement : les vidéos ne partent pas." && /<p className="ec-dp-videos">\s*<IcoSansVideo \/>\s*<span>\{PHOTOS_SEULEMENT\}<\/span>\s*<\/p>\s*\{entree\}\s*<button type="button" className="ec-dp-bouton"/.test(depotTsx)
+  ok("la page : « Photos seulement. » AU-DESSUS du bouton (planche 6B, avant le choix), redit dans la barre de l'album ; plus de « fichier(s) ignoré(s) »",
+    D.PHOTOS_SEULEMENT === "Photos seulement." && /<p className="ec-dp-videos">\s*<IcoSansVideo \/>\s*<span>\{PHOTOS_SEULEMENT\}<\/span>\s*<\/p>\s*\{entree\}\s*<button type="button" className="ec-dp-bouton"/.test(depotTsx)
       && /PHOTOS_SEULEMENT\.split\(" : "\)\[0\]/.test(albumTsx)
       && /phrasesIgnores\(vue\.ignores, vue\.videos, vue\.premiereVideo\)/.test(albumTsx) && !/fichier\(s\) ignoré\(s\)/.test(depotTsx + albumTsx));
   const moteurV = lire("src/app/edition/_composants/depot/moteur.ts");
@@ -4297,7 +4312,7 @@ function verifT193() {
     /setAjoutes\(\(a\) => \[\.\.\.a, \{ \.\.\.lien, url: `\$\{depot\}\?p=\$\{cle\}` \}\]\)/.test(pProv) && /ajoutes\.filter\(\(a\) => !liens\.some\(\(l\) => l\.id === a\.id\)\)/.test(pProv) && /champ\.current\?\.focus\(\)/.test(pProv));
   const donneesFiche2 = lire("src/app/admin/collectif/donnees.ts");
   ok("la fiche lit les liens par `lireProvenances` (la même lecture que l'espace, avec ses replis de colonnes) et rend leurs noms UNIQUES",
-    /lireProvenances\(id\)/.test(donneesFiche2) && /nomsDesLiens\(provenances\)/.test(donneesFiche2) && /parLien: deposantsParLien\(lignesPhotos, provenances, edition\.responsable_nom\)/.test(donneesFiche2));
+    /lireProvenances\(id\)/.test(donneesFiche2) && /nomsDesLiens\(provenances\)/.test(donneesFiche2) && /chiffresDepuisResume\(photos\.entrees, provenances, edition\.responsable_nom\)/.test(donneesFiche2));
 
   titre("— T-193 : les écrans et la route du lot —");
   const lotRoute = lire("src/app/api/admin/collectif/editions/[id]/lot/route.ts");
@@ -5437,7 +5452,7 @@ async function verifPersonnesCorbeille() {
   const phId = randomUUID();
   ok("l'effacement ne touche que les objets de la photo, sous le prefixe de SON edition (une cle etrangere est ignoree)",
     JSON.stringify(Cs.objetsDeLaPhoto({ id: phId, r2_key: `collectif/${edId}/photos/${phId}/original.jpg`, vignette_key: `collectif/${randomUUID()}/x.jpg` }, edId))
-      === JSON.stringify([`collectif/${edId}/photos/${phId}/original.jpg`, `collectif/${edId}/photos/${phId}/vignette.jpg`]));
+      === JSON.stringify([`collectif/${edId}/photos/${phId}/original.jpg`, `collectif/${edId}/photos/${phId}/vignette.jpg`, `collectif/${edId}/photos/${phId}/moyenne.jpg`]));
 
   titre("— w1 : l'album du lien (album.ts) et l'accord du 20/10 (accord.ts) —");
   const pa = (o: Partial<import("@/lib/collectif/album").PhotoAlbum>) => ({ role_deposant: "participant", provenance_id: lien1, confirmee_le: t0, supprimee_le: null, accord_version: "2026-10-20", ...o });
@@ -5473,7 +5488,7 @@ async function verifPersonnesCorbeille() {
   ok("« Il ouvrira le vendredi 6 novembre à 8 h » (heure de Paris), « 8 h 30 » quand les minutes comptent",
     Ou.quandOuvre(ouv) === "vendredi 6 novembre à 8 h" && Ou.quandOuvre("2026-11-06T07:30:00.000Z") === "vendredi 6 novembre à 8 h 30" && Ou.quandOuvre(null) === ""
       && Ou.phrasesPasEncoreOuvert(ouv, "ecole_tu").quand === "Il ouvrira le vendredi 6 novembre à 8 h." && /^Garde ce lien/.test(Ou.phrasesPasEncoreOuvert(ouv, "ecole_tu").garder)
-      && Ou.messagePasOuvert(ouv) === "Le dépôt n'est pas encore ouvert : il ouvrira le vendredi 6 novembre à 8 h." && Ou.ERREUR_PAS_OUVERT === "depot_pas_ouvert");
+      && Ou.messagePasOuvert(ouv) === "Pas encore ouvert : il ouvrira le vendredi 6 novembre à 8 h." && Ou.ERREUR_PAS_OUVERT === "depot_pas_ouvert");
   const base = { organisation: "Audencia", evenement: "Week-end en mer", registre: "ecole_tu", responsable_nom: "Mathilde Garnier", responsable_email: "m@a.fr", magazines: [{ nom: "Bateau" }], cloture_le: "2026-11-15T22:59:00.000Z" };
   const LE_20 = new Date("2026-10-20T12:00:00Z");
   const s1 = Saisie.lireSaisieEdition(base, "creation", undefined, LE_20);
@@ -6776,8 +6791,8 @@ async function verifPhotosW2() {
     /onSupprimer=\{p\.ecrire \? \(\) => void mettreALaCorbeille\(\[photoAgrandie\.id\]\) : undefined\}/.test(collecte) && /voirCorbeille=\{p\.ecrire\}/.test(collecte) && /\{l\.voirCorbeille \? \(/.test(listesTsx)
       && /return d\.corbeille && !p\.ecrire \? FILTRES_VIDES : d;/.test(collecte) && /const nf = nf0\.corbeille && !p\.ecrire \? \{ \.\.\.nf0, corbeille: false \} : nf0;/.test(collecte) && /if \(occupe \|\| !ids\.length \|\| !p\.ecrire\) return;/.test(collecte)
       && /\{f\.ecrire && p \? \(\s*<div className="ec-pe-gestes">/.test(personneTsx) && /const propositions = f\.ecrire && !ignorees/.test(personneTsx) && peut("equipe", "gerer_corbeille") === false && peut("equipe", "gerer_personnes") === false);
-  ok("sans la migration 20261023 (503 `migration_personnes_absente`) : l'écran dit « La mise à jour de la base n'est pas encore appliquée », jamais le message brut de la route (il nomme le fichier SQL)",
-    /export const BASE_PAS_A_JOUR = "La mise à jour de la base n'est pas encore appliquée";/.test(corbeilleTsx) && /if \(rep\.status === 503 && json\.error === ERREUR_PERSONNES_ABSENTE\) setEtat\(\{ genre: "absente" \}\);/.test(corbeilleTsx)
+  ok("sans la migration 20261023 (503 `migration_personnes_absente`) : l'écran dit « Mise à jour en attente », jamais le message brut de la route (il nomme le fichier SQL)",
+    /export const BASE_PAS_A_JOUR = "Mise à jour en attente";/.test(corbeilleTsx) && /if \(rep\.status === 503 && json\.error === ERREUR_PERSONNES_ABSENTE\) setEtat\(\{ genre: "absente" \}\);/.test(corbeilleTsx)
       && /if \(rep\.status === 503 && json\.error === ERREUR_PERSONNES_ABSENTE\) return fin\(\{ statut: "absente" \}\);/.test(collecte) && /setErreur\(json\.error === ERREUR_PERSONNES_ABSENTE \? MIGRATION_TEXTE :/.test(collecte)
       && /annoncer\(\{ texte: BASE_PAS_A_JOUR,/.test(collecte) && !/20261023_collectif_personnes_corbeille/.test(page));
   const panneauAtelier = lire("src/app/admin/collectif/[id]/PanneauPersonnes.tsx");
@@ -6809,8 +6824,8 @@ async function verifDepotParticipant() {
 
   titre("— w2 : se presenter par son adresse (planches 6 et 8) —");
   ok("la phrase sous l'adresse dit a quoi elle sert, et a rien d'autre (tu et vous)",
-    depotW2.includes("Elle sert seulement à te reconnaître sur un autre appareil ou un autre lien. Nous ne t'écrirons pas pour autre chose.")
-      && depotW2.includes("Elle sert seulement à vous reconnaître sur un autre appareil ou un autre lien. Nous ne vous écrirons pas pour autre chose."));
+    depotW2.includes("Seulement pour te reconnaître. Aucun autre mail.")
+      && depotW2.includes("Seulement pour vous reconnaître. Aucun autre mail."));
   ok("l'adresse complete est demandee au serveur SANS nom (rien n'est ecrit pour une adresse inconnue) ; inconnue, prenom ET nom",
     /const r = await presenter\(token, p, emailLu\);/.test(depotW2) && /r\.json\.statut === "connu"/.test(depotW2) && /autoComplete="email"/.test(depotW2) && /type="email"/.test(depotW2));
   const iPresenter = depotW2.indexOf("presenter(token, p, adresse, prenomSaisi, nomSaisi)");
@@ -6823,7 +6838,7 @@ async function verifDepotParticipant() {
     connu?.prenom === "Léa" && connu.nom === null && connu.photos === 24 && connu.accordAJour && connu.place === 36
       && cree?.nom === "Martin" && cree.place === null && !/\.nomAffiche|participant\.nom\b/.test(depotW2 + albumW2 + etatsW2));
   ok("« Ce n'est pas toi ? » (action oublier) : le telephone repart de zero et le dit (8C) ; l'accord est retire du moteur",
-    /const r = await oublier\(token, p\);/.test(depotW2) && /Cet appareil n&apos;envoie plus au nom de <b>\{oublie\}<\/b>\. Ses photos restent à son nom\./.test(depotW2)
+    /const r = await oublier\(token, p\);/.test(depotW2) && /Cet appareil n&apos;envoie plus au nom de <b>\{oublie\}<\/b>\./.test(depotW2)
       && /setAccord\(false\);\s*moteur\.definirAccord\(null\);/.test(depotW2));
   ok("l'accord est redemande sur chaque nouveau telephone : il n'est repris que si CE telephone a deja accepte la version d'aujourd'hui",
     /accordAJour: comptes\?\.accord === VERSION_ACCORD,/.test(pageW2) && /if \(accordInitial\) m\.definirAccord\(VERSION_ACCORD\);/.test(depotW2) && /const accordInitial = Boolean\(props\.moi\?\.accordAJour\);/.test(depotW2));
@@ -6872,17 +6887,17 @@ async function verifDepotParticipant() {
   ];
   ok("« nouvelle » : arrivee apres la derniere visite de CE telephone, jamais une des miennes ; sans visite connue, aucune",
     [...DP.nouvellesDepuis(vues, "2026-10-20T11:00:00.000Z")].join() === "2" && DP.nouvellesDepuis(vues, null).size === 0 && DP.derniereArrivee(vues) === "2026-10-20T12:30:00.000Z");
-  ok("la place dite tout de suite, au registre ; « sans limite » ; plus de place, le bouton se ferme",
+  ok("la place dite tout de suite, au registre ; « sans limite » ; plus de place, le bouton se ferme, SAUF pour reprendre un envoi coupé (2A : les mêmes photos ne consomment rien)",
     DP.phrasePlace(36, true) === "tu peux encore en envoyer 36" && DP.phrasePlace(36, false) === "vous pouvez encore en envoyer 36" && DP.phrasePlace(null, true) === "sans limite"
-      && DP.phrasePlace(0, true) === "tu as envoyé toutes les photos prévues" && DP.phrasePlace(undefined, true) === "" && /disabled=\{plein\}/.test(albumW2));
+      && DP.phrasePlace(0, true) === "tu as envoyé toutes les photos prévues" && DP.phrasePlace(undefined, true) === "" && /disabled=\{plein && !coupees\}/.test(albumW2));
   ok("les initiales : « LM » pour un nom tape ici, « L » pour une personne retrouvee", DP.initiales("Léa", "Martin") === "LM" && DP.initiales("léa", null) === "L" && DP.initiales(null) === "?");
   ok("une photo sans vignette n'a pas d'adresse d'image : la case dit « En préparation » (jamais l'original)",
     /vignette: typeof x\.vignette === "string" \? x\.vignette : null,/.test(lire("src/app/depot/[token]/appels.ts")) && /x\.vignette \? <img src=\{x\.vignette\}[^>]*\/> : <span className="ec-dp-t-prep">En préparation<\/span>/.test(albumW2));
-  ok("l'album vide se dit (les photos d'avant l'accord du 20/10 n'y entrent pas)",
-    /L&apos;album est vide pour l&apos;instant\./.test(albumW2) && /s'afficheront ici, avec le prénom de chacun/.test(albumW2));
+  ok("l'album vide se dit, en deux mots (les photos d'avant l'accord du 20/10 n'y entrent pas)",
+    /<p className="ec-dp-al-vide-titre">Album vide\.<\/p>/.test(albumW2) && !/s'afficheront ici/.test(albumW2));
   ok("supprimer : seulement depuis « Mes photos », seulement ce que la route dit supprimable, la feuille dit l'effet AVANT, et la place liberee s'affiche tout de suite",
     /const cochable = cocher && onglet === "miennes" && x\.supprimable;/.test(albumW2) && /supprimerPhotos\(props\.token, props\.p, ids\)/.test(albumW2)
-      && /L'organisateur peut encore \$\{nb > 1 \? "les" : "la"\} récupérer pendant \$\{DELAI_CORBEILLE_JOURS\} jours\./.test(albumW2)
+      && /\{`Hors album et magazine\. Récupérables \$\{DELAI_CORBEILLE_JOURS\} jours\.`\}/.test(albumW2)
       && /setPlaceServeur\(\{ valeur: r\.json\.place as number \| null, le: Date\.now\(\) \}\)/.test(albumW2) && /"\/api\/collectif\/depot\/supprimer"/.test(lire("src/app/depot/[token]/appels.ts")));
   ok("le merci prend le compte CONFIRME par le serveur pour le DERNIER envoi, jamais le coffre seul, jamais une « deja la » (21/10 : « 8 photos reçues » sur un lien a 5)",
     /const recues = bilan\.recues;/.test(albumW2) && /const bilan = bilanDuLot\(lot\);/.test(albumW2) && /Merci\{props\.qui \? ` \$\{props\.qui\.prenom\}` : ""\}, \{recues\} photo/.test(albumW2)
@@ -6898,14 +6913,14 @@ async function verifDepotParticipant() {
       && /const ouvertureOk = depotOuvert\(edition\.ouverture_le, maintenant\)/.test(pageW2));
   const ph = Ouv.phrasesPasEncoreOuvert("2026-11-06T07:00:00Z", "ecole_tu");
   ok("9B : « Il ouvrira le vendredi 6 novembre à 8 h. » (heure de Paris), le jour en gras, « Garde ce lien »",
-    ph.quand === "Il ouvrira le vendredi 6 novembre à 8 h." && Ouv.quandOuvre("2026-11-06T07:00:00Z") === "vendredi 6 novembre à 8 h" && ph.garder === "Garde ce lien : c'est le même qui servira."
+    ph.quand === "Il ouvrira le vendredi 6 novembre à 8 h." && Ouv.quandOuvre("2026-11-06T07:00:00Z") === "vendredi 6 novembre à 8 h" && ph.garder === "Garde ce lien."
       && /const ph = phrasesPasEncoreOuvert\(ouvertureLe, registre\);/.test(etatsW2) && /<b>\{quand\}<\/b>/.test(etatsW2));
   ok("9C : la date, le merci, ce qui est arrive de CE telephone (son prenom), et l'album en lecture seule (rien ne s'y ajoute ni ne s'y supprime)",
-    /La collecte est terminée/.test(etatsW2) && /Merci : l’atelier compose le magazine avec les photos reçues\./.test(etatsW2) && /Tes \$\{n\} photos sont bien arrivées/.test(etatsW2)
+    /La collecte est terminée/.test(etatsW2) && /Merci !/.test(etatsW2) && /Tes \$\{n\} photos sont bien arrivées/.test(etatsW2)
       && /lectureSeule\s*retour=/.test(etatsW2) && /\{props\.lectureSeule \? null : \(/.test(albumW2) && /recu = \{ prenom: qui\.participant\.prenom, photos: c\?\.photos \?\? 0 \}/.test(pageW2));
   const mortW2 = lire("src/app/depot/[token]/LienMort.tsx");
   ok("9A : la carte du depot, un lien casse, aucune edition nommee (pas d'annuaire)",
-    /Il a été remplacé ou retiré par l’organisateur\./.test(mortW2) && /<IcoLienCasse/.test(mortW2) && !/organisation|evenement/.test(mortW2.replace(/\/\*[\s\S]*?\*\//g, "")));
+    !/Il a été remplacé ou retiré/.test(mortW2) && /<IcoLienCasse/.test(mortW2) && !/organisation|evenement/.test(mortW2.replace(/\/\*[\s\S]*?\*\//g, "")));
 
   titre("— w2 : la feuille de style —");
   const cssW2 = lire("src/app/depot/[token]/depot.css");
@@ -7364,7 +7379,7 @@ async function verifDejaLa() {
     DP.phrasesDuLot(DP.bilanDuLot(DP.compterLot([it(1, "deja", { ou: "restauree", lien: null, ici: true }), it(1, "deja", { ou: "restauree", lien: null, ici: true }), it(1, "deja", { ou: "retiree", lien: null, ici: false }), it(1, "deja", { ou: "retiree", lien: null, ici: false })], 1, 0)), { tu: false }).join(" | ")
       === "2 photos que vous aviez supprimées sont revenues dans l'album. | 2 photos avaient été retirées par l'organisateur : elles ne repartent pas.");
   ok("le responsable : seule la corbeille a sa phrase (sa fenetre a deja « deja la, sautees »), jamais « par l'organisateur »",
-    JSON.stringify(DP.phrasesDuLot(bm, { tu: false, pour: "responsable" })) === JSON.stringify(["1 photo est à la corbeille : elle ne repart pas. La corbeille de la page Photos la restaure."]));
+    JSON.stringify(DP.phrasesDuLot(bm, { tu: false, pour: "responsable" })) === JSON.stringify(["1 photo à la corbeille."]));
   const enCoursLot = DP.compterLot([it(4, "confirme"), it(4, "envoye"), it(4, "attente"), it(4, "deja", lien("Bateau 2"))], 4, 0);
   ok("la barre du lot ne compte pas les deja-la : « 2 sur 3 envoyées », il en reste 1 ; le bilan n'est pas fini",
     JSON.stringify(DP.progression(enCoursLot)) === JSON.stringify({ envoyees: 2, restent: 1, total: 3, part: 67 }) && !DP.bilanDuLot(enCoursLot).fini && DP.bilanDuLot(enCoursLot).enCours === 2);
@@ -7543,7 +7558,7 @@ async function verifDejaLa() {
     ok("le bilan de l'envoi : les « deja la » dits par cas dans la barre du bas (pendant l'envoi aussi) ; une suppression efface le bilan precedent ; le moteur oublie les photos supprimees d'ici",
       /const phrasesLot = bilanVisible \? phrasesDuLot\(bilan, \{ tu \}\) : \[\];/.test(album) && /\{phrasesLot\.map\(\(t\) => \(/.test(album) && /if \(parties\.size\) setBilanEfface\(lot\.numero\);/.test(album)
         && /props\.moteur\?\.oublier\(parties\);/.test(album) && /oublier\(photoIds: Iterable<string>\): void/.test(moteur) && /const termine = lot\.total > 0 && lot\.enCours === 0 && lot\.erreurs === 0;/.test(album)
-        && /Elle est dans l'album/.test(album));
+        && /\{lien \? `Dans l'album de \$\{lien\}\.` : "Dans l'album\."\}/.test(album));
     ok("un lot commence quand rien ne part (« Ajouter d'autres photos » pendant l'envoi s'y ajoute) ; une photo arrivee par un envoi precedent est dite « deja la » ; le moteur du responsable aussi",
       /private nouveauLotSiLibre\(\): void \{\s*if \(this\.occupe\(\)\) return;\s*this\.lot\+\+;/.test(moteur) && /ajouter\(fichiers: Iterable<File>\): void \{\s*if \(this\.ferme\) return;\s*const maintenant = Date\.now\(\);\s*this\.nouveauLotSiLibre\(\);/.test(moteur)
         && /lot: compterLot\(this\.items, this\.lot, this\.deuxFoisLot\),/.test(moteur) && /etat: deja \? "deja" : "neuf",/.test(moteur)
@@ -7580,17 +7595,17 @@ async function verifFinCollecte() {
   titre("— 21/10 : la ligne d'état d'une collecte terminée (l'espace du client), à l'heure de Paris —");
   {
     /* Le 21/10/2026, Paris est en heure d'été (UTC+2) : 09 h 24 UTC = 11 h 24, le geste de Mathias dans le journal. */
-    ok("la phrase de la maquette, avec la vraie date : « Collecte terminée le 21 octobre à 11 h 24 : les liens ne reçoivent plus de photos. L'atelier compose. »",
-      Fin.ligneCollecteTerminee("2026-10-21T09:24:00.000Z") === "Collecte terminée le 21 octobre à 11 h 24 : les liens ne reçoivent plus de photos. L'atelier compose.");
+    ok("la phrase de la maquette, avec la vraie date : « Collecte terminée le 21 octobre à 11 h 24 : liens fermés. L'atelier compose. »",
+      Fin.ligneCollecteTerminee("2026-10-21T09:24:00.000Z") === "Collecte terminée le 21 octobre à 11 h 24 : liens fermés. L'atelier compose.");
     ok("l'heure d'hiver (UTC+1) et la fin de journée : 22 h 59 UTC le 4 novembre = 23 h 59 ; minuit passé : 22 h 30 UTC le 20 octobre = 00 h 30 le 21",
       Fin.quandParis("2026-11-04T22:59:00.000Z") === "le 4 novembre à 23 h 59" && Fin.quandParis("2026-10-20T22:30:00.000Z") === "le 21 octobre à 00 h 30");
     ok("le premier du mois s'écrit « 1er » (Intl écrit « 1 »)", Fin.quandParis("2026-11-01T10:00:00.000Z") === "le 1er novembre à 11 h 00");
     ok("une date illisible, sans fuseau ou absente : la phrase se TAIT sur la date, elle n'en invente jamais une",
-      [null, undefined, "", "bientôt", "2026-10-21T11:24", "le 4 octobre"].every((x) => Fin.ligneCollecteTerminee(x) === "Collecte terminée : les liens ne reçoivent plus de photos. L'atelier compose."));
+      [null, undefined, "", "bientôt", "2026-10-21T11:24", "le 4 octobre"].every((x) => Fin.ligneCollecteTerminee(x) === "Collecte terminée : liens fermés. L'atelier compose."));
     const { tete, suite } = Fin.partiesCollecteTerminee("2026-10-21T09:24:00.000Z");
     ok("la tête (en gras à l'écran) et la suite recomposent la phrase", `${tete} : ${suite}` === Fin.ligneCollecteTerminee("2026-10-21T09:24:00.000Z") && tete === "Collecte terminée le 21 octobre à 11 h 24");
     ok("l'oubli suit le registre de l'édition (vous / tu), pour le responsable",
-      Fin.ligneOubli(false) === "Un oubli ? Écrivez à l'atelier : il peut rouvrir." && Fin.ligneOubli(true) === "Un oubli ? Écris à l'atelier : il peut rouvrir.");
+      Fin.ligneOubli(false) === "Un oubli ? Écrivez à l'atelier." && Fin.ligneOubli(true) === "Un oubli ? Écris à l'atelier.");
     const n = (x: number) => x.toLocaleString("fr-FR");
     ok("la fenêtre « Terminer la collecte maintenant ? » : les vrais nombres, la sélection seulement si elle existe, « vos » ou « tes »",
       Fin.phraseAtelierCommence(1248, 86, false) === `L'atelier commence avec les ${n(1248)} photos et vos 86 choisies.` && Fin.phraseAtelierCommence(1248, 86, true) === `L'atelier commence avec les ${n(1248)} photos et tes 86 choisies.`
@@ -7687,7 +7702,7 @@ async function verifFinCollecte() {
     ok("UN seul appel à la route : le tableau de bord monte `FenetreTerminerCollecte` (la fenêtre d'avant), la page Photos monte la feuille à deux choix (`ChoixFinCollecte`) ; l'appel n'existe qu'à un endroit (`terminerLaCollecte`) et les trois chemins (la fenêtre, « Envoyer toutes les photos », « Envoyer ma sélection ») y passent",
       /<FenetreTerminerCollecte/.test(carte) && /export function FenetreTerminerCollecte/.test(fin) && /<ChoixFinCollecte/.test(collecte) && /ActionsFinCollecte/.test(collecte)
         && [carte, collecte, fin].filter((c) => /\/api\/collectif\/collecte\/terminer/.test(c)).length === 1 && (fin.match(/export async function terminerLaCollecte/g) ?? []).length === 1 && (fin.match(/await terminerLaCollecte\(token\)/g) ?? []).length === 2
-        && /terminer: \(\) => terminerLaCollecte\(p\.token\)/.test(collecte) && (fin.match(/Terminer la collecte maintenant \?/g) ?? []).length === 1 && !/Terminer la collecte maintenant/.test(carte + collecte));
+        && /terminer: \(\) => terminerLaCollecte\(p\.token\)/.test(collecte) && !/Terminer la collecte maintenant|Oui, terminer/.test(fin + carte + collecte));
     ok("la page Photos : « Terminer la collecte » est dans le « … » (la dernière ligne, après un filet), réservé au droit `terminer_collecte` (jamais l'équipe) ; plus de bouton posé dans l'en-tête",
       /terminer: p\.fin\.terminer && p\.ouverte && \(stats \? stats\.photos > 0 : false\)/.test(collecte) && /: \{ cle: e\.cle, libelle: e\.libelle, icone: ICONES\.drapeau, filetAvant: e\.filetAvant, faire: \(\) => \{ fermerAvis\(\); setChoixFin\(true\); \} \}/.test(collecte) && !/Terminer la collecte/.test(collecte) && /if \(ouverte \|\| !ecrire \|\| variante === \"tel\"\) return null;/.test(fin)
         && /terminer: peut\(role, 'terminer_collecte'\)/.test(pagePhotos) && peut("responsable", "terminer_collecte") && !peut("equipe", "terminer_collecte") && !peut("atelier", "terminer_collecte") && !peut("participant", "terminer_collecte"));
@@ -8391,7 +8406,7 @@ function verifPartageLiensMail() {
     const collecteCode = code("src/app/edition/[token]/photos/Collecte.tsx");
     ok("l'état vide (5B) : « Créez un lien par groupe », la phrase de la maquette, un grand « Créer un lien » (52 px), et les trois noms pour commencer, seulement sans aucun lien de groupe (`EtatSansLien`, sous « Par lien »)",
       /\{!tuilesLiens\.length && p\.ecrire \? <EtatSansLien tu=\{p\.tu\} ouverte=\{p\.ouverte\} creer=\{setCreerLien\} \/> : null\}/.test(collecteCode) && /v\("Créez un lien par groupe", "Crée un lien par groupe"\)/.test(ongletLiens)
-        && ongletLiens.includes("Un lien par bateau, par équipe ou par personne : chacun dépose depuis son téléphone, sans compte, et vous voyez d'où vient chaque photo.")
+        && ongletLiens.includes("Un lien par bateau, par équipe ou par personne.")
         && /className="ec-bouton ec-bouton--plein ec-ph-large" onClick=\{\(\) => o\.creer\(""\)\}/.test(ongletLiens) && /Pour commencer :/.test(ongletLiens) && /NOMS_POUR_COMMENCER\.map\(\(nom\) =>/.test(ongletLiens) && /onClick=\{\(\) => o\.creer\(nom\)\}/.test(ongletLiens)
         && JSON.stringify(PartageLiens.NOMS_POUR_COMMENCER) === JSON.stringify(["Bateau 1", "Équipe Lyon", "Le photographe"]));
     ok("une pastille PRÉREMPLIT le nom de la fenêtre « Créer un lien » (`nomInitial`, UNE seule fenêtre pour l'en-tête, la vue « Par lien » et l'état vide) ; le lien créé s'affiche aussitôt (la page se relit), puis « Partager » s'ouvre sur lui ; collecte close : « Créer un lien » éteint, avec la raison",
@@ -8912,9 +8927,15 @@ async function verifPhotosSimples() {
   const iEchec = collecte.indexOf("if (!resultat.ok) {");
   ok("à l'écran, « Envoyer ma sélection » passe par `envoyerMaSelection` (la même fin que les autres chemins : `terminerLaCollecte`) ; un échec laisse le mode ouvert, écrit le message et ne termine RIEN (`onTermine` vient APRÈS le retour de l'échec)",
     /terminer: \(\) => terminerLaCollecte\(p\.token\)/.test(collecte) && iEchec > 0 && /setErreur\(resultat\.message\);\s*return;/.test(collecte.slice(iEchec, iEchec + 400)) && collecte.indexOf("p.onTermine(resultat.termineLe)") > iEchec && !/ecrire[^;]{0,60}terminerLaCollecte/.test(collecte.slice(0, collecte.indexOf("async function envoyerPreferees"))));
-  ok("la feuille de fin : DEUX choix et une phrase (« Envoyer toutes les photos à l'atelier », « Choisir d'abord mes préférées », « Les liens des participants se ferment. »), le premier est le geste d'avant (la même route par `terminerLaCollecte`), le second ouvre le mode calme sans rien écrire ; plus de « Oui, terminer »",
-    /Envoyer toutes les photos à l&apos;atelier|Envoyer toutes les photos à l'atelier/.test(fin) && /Choisir d&apos;abord mes préférées/.test(fin) && (fin.match(/Les liens des participants se ferment\./g) ?? []).length === 1 && /onClick=\{\(\) => void toutEnvoyer\(\)\}/.test(fin) && /onClick=\{onChoisir\}/.test(fin)
+  ok("la feuille de fin : DEUX choix et une phrase (« Tout envoyer », « Choisir mes préférées », « Les liens se ferment. » dans la confirmation « Terminer la collecte ? » : Annuler / Terminer, 1B du 26/10), le premier est le geste d'avant (la même route par `terminerLaCollecte`), le second ouvre le mode calme sans rien écrire ; plus de « Oui, terminer »",
+    /<b>Tout envoyer<\/b>/.test(fin) && /Choisir mes préférées/.test(fin) && (fin.match(/Les liens se ferment\./g) ?? []).length === 2 && /Terminer la collecte \?/.test(fin) && /onClick=\{onConfirme \?\? \(\(\) => void toutEnvoyer\(\)\)\}/.test(fin) && /onClick=\{onChoisir\}/.test(fin)
       && !/ecrire|marquer/.test(fin.slice(fin.indexOf("export function ChoixFinCollecte"), fin.indexOf("export function ActionsFinCollecte"))) && !/function ouvrirPreferees\(\) \{[^}]*ecrireCoeurs/.test(collecte));
+  ok("fin de collecte (1B, 26/10) : « Envoyer toutes les photos » ET « Envoyer ma sélection » passent par une confirmation courte « Terminer la collecte ? » (Annuler / Terminer, la même feuille du bas) ; plus aucun envoi direct au premier toucher",
+    /Terminer la collecte \?/.test(fin) && /Annuler/.test(fin) && /confirmerSeul/.test(fin) && /setConfirmerSelection\(true\)/.test(collecte) && !/onClick=\{\(\) => void envoyerPreferees\(\)\}/.test(collecte)
+      && /onConfirme=\{\(\) => \{\s*setConfirmerSelection\(false\);\s*void envoyerPreferees\(\);/.test(collecte));
+  const cartePhotosW = lire("src/app/edition/[token]/CartePhotos.tsx");
+  ok("tableau de bord (7A, 26/10) : plusieurs liens, la carte dit « N liens » (renvoi vers Photos, Par lien), et la ligne du lien ne se coupe plus sur trois lignes",
+    /p\.liens\.length > 1/.test(cartePhotosW) && /\{p\.liens\.length\} liens/.test(cartePhotosW) && /dossier=liens/.test(cartePhotosW) && !/ouvert jusqu'au/.test(lire("src/app/edition/_composants/LienContribution.tsx").slice(lire("src/app/edition/_composants/LienContribution.tsx").indexOf("export function CarteLien"), lire("src/app/edition/_composants/LienContribution.tsx").indexOf("export default function FenetreLien"))));
   ok("le droit ne bouge pas : `terminer_collecte` est celui du responsable, jamais l'équipe, l'atelier ni un participant ; la route relit le droit (la page ne fait que cacher)",
     peut("responsable", "terminer_collecte") && !peut("equipe", "terminer_collecte") && !peut("atelier", "terminer_collecte") && !peut("participant", "terminer_collecte") && /peut\(acces\.role, "terminer_collecte"\)/.test(lire("src/app/api/collectif/collecte/terminer/route.ts")));
 
@@ -9021,7 +9042,175 @@ async function verifLot1RudeEpreuve(): Promise<void> {
     /error: "etat_change", message: "La collecte est déjà terminée\." \}/.test(lire("src/app/api/collectif/collecte/terminer/route.ts")));
 }
 
-void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(() => {
+/* perf-2 (26/10) : la fiche admin lit le résumé en base, plus toutes les lignes. L'ancien calcul et le nouveau doivent dire les mêmes chiffres. */
+async function verifFicheResume() {
+  titre("— perf-2 : la fiche admin lit le résumé, mêmes chiffres qu'avant —");
+  const CF = await import("@/lib/collectif/chiffresFiche");
+  const RP = await import("@/lib/collectif/resumePhotos");
+  const L1 = "11111111-1111-4111-8111-111111111111";
+  const L2 = "22222222-2222-4222-8222-222222222222";
+  type P = import("@/lib/collectif/chiffresFiche").PhotoDeLaFiche;
+  let n = 0;
+  const ph = (o: Partial<P>): P => {
+    n++;
+    const t = new Date(Date.UTC(2026, 9, 1, 10, 0, Math.floor(n / 3))).toISOString().replace("Z", "+00:00");
+    return { id: `p${String(n).padStart(3, "0")}`, provenance_type: "participant", provenance_id: L1, deposant: "Léa", role_deposant: "participant", appareil_id: "tel-a", signalee: false, vignette_key: `v/${n}`, confirmee_le: t, preselection: false, ...o };
+  };
+  const lignes: P[] = [
+    ...Array.from({ length: 6 }, () => ph({})),
+    ...Array.from({ length: 3 }, () => ph({ deposant: " léa ", appareil_id: "tel-b" })),
+    ph({ deposant: null, appareil_id: "tel-c", vignette_key: null }),
+    ph({ deposant: null, appareil_id: "tel-d", vignette_key: null, signalee: true }),
+    ph({ deposant: null, appareil_id: "tel-d" }),
+    ...Array.from({ length: 4 }, () => ph({ provenance_id: L2, deposant: "Max", appareil_id: "tel-e", preselection: true })),
+    ph({ provenance_id: L2, deposant: "Max", appareil_id: "tel-e", preselection: true, vignette_key: null }),
+    ph({ provenance_id: null, deposant: "Sam", appareil_id: "tel-f" }),
+    ...Array.from({ length: 5 }, () => ph({ role_deposant: "responsable", provenance_id: null, provenance_type: "organisateur", deposant: null, appareil_id: null, preselection: true })),
+    ph({ role_deposant: "atelier", provenance_id: null, provenance_type: "atelier", deposant: "Louis", appareil_id: null, signalee: true }),
+    ...Array.from({ length: 6 }, () => ph({ role_deposant: "participant", provenance_id: L1, deposant: "Zoé", appareil_id: "tel-g", signalee: true, preselection: true })),
+  ];
+  const liens = [{ id: L1, libelle: "Bateau 1", retire_le: null }, { id: L2, libelle: "Bateau 2", retire_le: null }];
+  const ancien = CF.chiffresDepuisLignes([...lignes], liens, "Marie");
+  /* Ce que rendent les requêtes de la base, redites en TypeScript : deux comptes, quatre plus récentes (arrivée décroissante, puis id), huit premières choisies. */
+  const avecVignette = lignes.filter((p) => p.vignette_key);
+  const entrees = {
+    resume: RP.resumerPhotos(lignes.map((p) => ({ ...p, provenance_type: p.provenance_type }))).sort(() => 0.5 - Math.random()),
+    signalees: lignes.filter((p) => p.signalee).length,
+    sansVignette: lignes.filter((p) => !p.vignette_key).length,
+    apercusCles: [...avecVignette].sort((a, b) => (a.confirmee_le < b.confirmee_le ? 1 : a.confirmee_le > b.confirmee_le ? -1 : a.id < b.id ? -1 : 1)).slice(0, 4).map((p) => p.vignette_key as string),
+    selectionCles: avecVignette.filter((p) => p.preselection).sort((a, b) => (a.confirmee_le < b.confirmee_le ? -1 : a.confirmee_le > b.confirmee_le ? 1 : a.id < b.id ? -1 : 1)).slice(0, 8).map((p) => p.vignette_key as string),
+  };
+  const nouveau = CF.chiffresDepuisResume(entrees, liens, "Marie");
+  const egal = (cle: keyof typeof ancien) => JSON.stringify(ancien[cle]) === JSON.stringify(nouveau[cle]);
+  ok(`le jeu pèse ${lignes.length} photos, ${entrees.resume.length} lignes de résumé (moins que de photos)`, ancien.total === lignes.length && entrees.resume.length < lignes.length);
+  ok("total, personnes, signalées, sans vignette, sélection : identiques", (["total", "participants", "signalees", "sansVignette", "selection"] as const).every(egal));
+  ok("aperçus (quatre dernières) et aperçus de la sélection (huit premières) : mêmes clés, même ordre", egal("apercusCles") && egal("selectionCles") && ancien.apercusCles.length === 4 && ancien.selectionCles.length > 0);
+  ok("répartition par lien (noms, photos, personnes, pastilles) : identique, lien par lien", egal("parLien") && ancien.parLien.length >= 4);
+  ok("les chiffres ne sont pas triviaux (signalées, sans aperçu, personnes sans nom comptées par téléphone)", ancien.signalees === 8 && ancien.sansVignette === 3 && ancien.participants === 6 && ancien.selection === 16);
+  const code = lire("src/app/admin/collectif/donnees.ts");
+  ok("la fiche ne relit plus les lignes : le résumé, deux comptes en limit(0) hors corbeille, deux petites listes bornées",
+    /VUE_RESUME\)\.select\(COLONNES_RESUME\)/.test(code) && (code.match(/COMPTE_SANS_LIGNE\)/g) ?? []).length === 2 && /limit\(APERCUS_MAX\)/.test(code) && /limit\(SELECTION_APERCUS_MAX\)/.test(code)
+      && !/empreinte, prise_le, ordre, confirmee_le, preselection/.test(code) && /resumeAbsent\(resume\.error\.code\)/.test(code));
+  ok("sans la vue, la lecture d'avant (repli) est gardée ; les doublons viennent du résultat rangé", /mode: "lignes"/.test(code) && /doublonsDeLEdition\(supabase, id\)/.test(code));
+}
+
+/* ═══════════ Les décisions du 26/10 (campagne « rude épreuve ») : 2A, 5A ═══════════ */
+async function verifDecisions26() {
+  titre("— 5A : la version moyenne d'« Agrandir » (≈ 1 600 px), l'original seulement pour télécharger et imprimer —");
+  const D = await import("@/lib/collectif/depot");
+  const C = await import("@/lib/collectif/cles");
+  const M = await import("@/lib/collectif/migration");
+  const G = await import("@/lib/collectif/grillePhotos");
+  const E = "11111111-2222-4333-8444-555555555555";
+  const P = "66666666-7777-4888-9999-aaaaaaaaaaaa";
+  ok("la clé : à côté de la vignette, toujours du JPEG, sous le préfixe de l'édition ; un id mal formé est refusé",
+    C.cleMoyenne(E, P) === `collectif/${E}/photos/${P}/moyenne.jpg` && (() => { try { C.cleMoyenne(E, "../x"); return false; } catch { return true; } })());
+  ok("les réglages : 1 600 px de grand côté, JPEG (Safari n'encode pas le WebP), qualité 0,8, plafond 2 Mo ; une taille hors plafond n'est jamais signée",
+    D.COTE_MOYENNE === 1600 && D.MIME_MOYENNE === "image/jpeg" && D.QUALITE_MOYENNE === 0.8 && D.MAX_MOYENNE_BYTES === 2 * 1024 * 1024
+      && D.DEMANDE_MOYENNE.cote === 1600 && D.moyenneSignable(300_000) && !D.moyenneSignable(D.MAX_MOYENNE_BYTES + 1) && !D.moyenneSignable(0) && !D.moyenneSignable(null) && !D.moyenneSignable(Number.NaN));
+  ok("utile seulement si la photo dépasse 1 600 px ET si la moyenne est plus légère que l'original",
+    D.moyenneUtile({ largeur: 4032, hauteur: 3024, taille: 350_000, tailleOriginal: 3_000_000 }) && !D.moyenneUtile({ largeur: 1600, hauteur: 1200, taille: 200_000, tailleOriginal: 900_000 })
+      && !D.moyenneUtile({ largeur: 4000, hauteur: 3000, taille: 900_000, tailleOriginal: 800_000 }) && D.moyenneUtile({ largeur: 4000, hauteur: 3000, taille: 400_000, tailleOriginal: null }));
+  const lu = D.lireDeclaration([{ cle: cleFichier("a.jpg", 10, 1), nom: "a.jpg", taille: 900, type: "image/jpeg", tailleVignette: 30, tailleMoyenne: 300_000.4, ordre: 0 }, { cle: cleFichier("b.jpg", 10, 1), nom: "b.jpg", taille: 900, type: "image/jpeg", tailleMoyenne: -3, ordre: 1 }]);
+  ok("la déclaration lit la taille de la moyenne (entière) ; absente ou invalide : aucune",
+    lu?.fichiers[0].tailleMoyenne === 300_000 && lu?.fichiers[1].tailleMoyenne === null);
+  const presign = lire("src/app/api/collectif/depot/presign/route.ts");
+  ok("presign signe la moyenne à SA clé, au type JPEG et à la taille déclarée, seulement sous le plafond ; la réponse porte `urlMoyenne`",
+    /moyenneSignable\(f\.tailleMoyenne\) \? signerPut\(cleMoyenne\(edition\.id, photoId\), MIME_MOYENNE, f\.tailleMoyenne\) : Promise\.resolve\(null\)/.test(presign) && /return \{ cle: f\.cle, photoId, url, urlVignette, urlMoyenne \};/.test(presign));
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("le moteur des éditions la demande au worker, la déclare, l'envoie après la vignette (quatre essais, jamais un échec de la photo) puis la libère",
+    /moyenne: DEMANDE_MOYENNE \}\)/.test(moteur) && /tailleMoyenne: i\.moyenne\?\.size \?\? null,/.test(moteur) && /it\.urlMoyenne = \(r\.urlMoyenne as string \| null\) \?\? null;/.test(moteur)
+      && /if \(it\.urlMoyenne && it\.moyenne\) \{\n        for \(let k = 0; k < 4; k\+\+\) \{\n          if \(\(await this\.put\(it\.urlMoyenne, it\.moyenne, MIME_MOYENNE\)\)\.ok\) break;/.test(moteur)
+      && (moteur.match(/it\.moyenne = null;/g) ?? []).length >= 3 && moteur.indexOf("this.put(it.urlVignette") < moteur.indexOf("this.put(it.urlMoyenne"));
+  const worker = lire("src/app/(atelier)/composer/depot/reduire.worker.js");
+  const heicW = lire("public/heic/vignette-heic.worker.js");
+  const b2c = lire("src/app/(atelier)/composer/depot/moteur.ts").replace(/\/\*[\s\S]*?\*\//g, "");
+  ok("les deux workers ne la font QUE sur demande (`d.moyenne`) et pour une photo plus grande que le côté ; le B2C ne la demande jamais",
+    /if \(d\.moyenne && d\.moyenne\.cote > 0 && Math\.max\(largeur, hauteur\) > d\.moyenne\.cote\)/.test(worker) && /if \(d\.moyenne && d\.moyenne\.cote > 0 && Math\.max\(largeur, hauteur\) > d\.moyenne\.cote\)/.test(heicW)
+      && /if \(moyenne\.size >= d\.fichier\.size\) moyenne = null/.test(worker) && !/moyenne/.test(b2c));
+  const coffre = lire("src/lib/collectif/rattrapageCoffre.ts");
+  ok("la confirmation note `moyenne_key` seulement si l'objet est au coffre sous son plafond ; sans la colonne (PGRST204/42703 qui la nomme), elle confirme SANS elle et le dit",
+    /tm\.statut === "presente" && tm\.taille > 0 && tm\.taille <= MAX_MOYENNE_BYTES \? \{ moyenne_key: mKey \} : \{\}/.test(coffre)
+      && /if \(error && "moyenne_key" in moyenne && moyenneAbsente\(error\)\) \{/.test(coffre) && /\(\{ data: ecrites, error \} = await ecrire\(patch\)\);/.test(coffre)
+      && M.moyenneAbsente({ code: "PGRST204", message: "Could not find the 'moyenne_key' column of 'collectif_photos' in the schema cache" })
+      && M.moyenneAbsente({ code: "42703", message: "column collectif_photos.moyenne_key does not exist" })
+      && !M.moyenneAbsente({ code: "42703", message: "column collectif_photos.supprimee_le does not exist" }) && !M.moyenneAbsente({ code: "23505", message: "moyenne_key" }) && !M.moyenneAbsente(null));
+  /* Le repli de lecture, joué contre une fausse base. */
+  G.oublierMoyenneAbsente();
+  const appels: boolean[] = [];
+  const absente = async (m: boolean) => { appels.push(m); return m ? { error: { code: "42703", message: "column collectif_photos.moyenne_key does not exist" }, data: null } : { error: null, data: [1] }; };
+  const r1 = await G.lireAvecMoyenne(absente, 1_000);
+  const r2 = await G.lireAvecMoyenne(absente, 2_000);
+  const r3 = await G.lireAvecMoyenne(absente, 1_000 + G.MEMOIRE_MOYENNE_ABSENTE_MS + 1);
+  const autre = await G.lireAvecMoyenne(async () => ({ error: { code: "42703", message: "column x.y does not exist" }, data: null }), 10_000_000);
+  G.oublierMoyenneAbsente();
+  ok("la grille lit `moyenne_key` en plus ; colonne absente : la même lecture sans elle, retenue une minute ; une AUTRE colonne absente n'est pas cachée",
+    r1.data?.[0] === 1 && r2.data?.[0] === 1 && r3.data?.[0] === 1 && appels.join() === "true,false,false,true,false" && autre.error?.message === "column x.y does not exist"
+      && G.colonnesAvecMoyenne("id", true) === "id, moyenne_key" && G.colonnesAvecMoyenne("id", false) === "id");
+  const route = lire("src/app/api/collectif/photos/route.ts");
+  ok("les trois lectures de la grille passent par le repli (la page, les doublons par ids, la lecture complète)",
+    (route.match(/lireAvecMoyenne\(\(moyenne\) =>/g) ?? []).length === 3 && /base\(conditions, avec, false, moyenne\)/.test(route));
+  type LG = import("@/lib/collectif/grillePhotos").LigneGrille;
+  const ligne = (i: number, o: Partial<LG> = {}): LG => ({
+    id: `00000000-0000-4000-8000-0000000000${String(i).padStart(2, "0")}`, vignette_key: `collectif/v/${i}.jpg`, r2_key: `collectif/o/${i}.jpg`, nom_origine: `IMG_${i}.jpg`, provenance_type: "participant", deposant: "Léa", prise_le: null,
+    confirmee_le: `2026-11-07T10:0${i}:00+00:00`, ordre: i, empreinte: null, preselection: false, signalee: false, mime: "image/jpeg", provenance_id: null, role_deposant: "participant", appareil_id: "a1", ...o,
+  });
+  const ctx = { edition: { responsable_nom: "Mathilde", plafond_participant_atelier: 60, plafond_participant_client: null, plafond_total: null }, provenances: [], partage: true, enCours: 0, signer: async (c: string) => `v:${c}`, signerOriginal: async (c: string) => `o:${c}` };
+  const g = await G.grilleDepuisLignes([ligne(1, { moyenne_key: "collectif/m/1.jpg" }), ligne(2), ligne(3, { mime: "image/heic", moyenne_key: "collectif/m/3.jpg" }), ligne(4, { moyenne_key: null })], [], { dossier: "tout", vue: "toutes", page: 0, seulementArbre: false }, ctx);
+  const t = (i: number) => g.photos.find((x) => x.id.endsWith(String(i).padStart(2, "0")));
+  ok("« Agrandir » : la moyenne (signée comme une vignette : adresse stable, en cache) quand elle existe, HEIC compris ; sans elle, l'original comme avant",
+    t(1)?.grande === "v:collectif/m/1.jpg" && t(3)?.grande === "v:collectif/m/3.jpg" && t(2)?.grande === "o:collectif/o/2.jpg" && t(4)?.grande === "o:collectif/o/4.jpg" && t(1)?.vignette === "v:collectif/v/1.jpg");
+  const complete = lire("src/app/api/collectif/depot/complete/route.ts");
+  ok("une photo trop lourde part avec sa vignette ET sa moyenne ; l'effacement d'une photo emporte sa moyenne (rangée sous son id, sans la colonne)",
+    /supprimer\(cleMoyenne\(edition\.id, l\.id\)\)/.test(complete) && /cleVignette\(editionId, p\.id\), cleMoyenne\(editionId, p\.id\)\]/.test(lire("src/lib/collectif/corbeilleServeur.ts")));
+  const mig = lire("supabase/migrations/20261026_collectif_photos_moyenne.sql");
+  ok("la migration : une colonne nullable, additive, écrite PAS appliquée, la requête de vérification ET celle qui prouve que la donnée arrive",
+    M.MIGRATION_MOYENNE === "supabase/migrations/20261026_collectif_photos_moyenne.sql" && /add column if not exists moyenne_key text;/.test(mig) && /PAS appliquée/.test(mig) && /avec_moyenne > 0/.test(mig) && !/default/i.test(mig.replace(/--.*$/gm, "")));
+  const script = lire("scripts/collectif-moyennes-rattrapage.ts");
+  ok("le rattrapage : lecture seule par défaut (--vraiment), REFUSE d'écrire sans la colonne, une tête au coffre avant de fabriquer, dépôt AVANT la clé, journalisé",
+    /const vraiment = process\.argv\.includes\("--vraiment"\)/.test(script) && /if \(vraiment\) throw new Error\(`La colonne moyenne_key manque/.test(script)
+      && script.indexOf("await teteObjet(key)") < script.indexOf("new GetObjectCommand") && script.indexOf("PutObjectCommand({") < script.lastIndexOf("await noter()")
+      && /if \(!vraiment\) return \{ issue: "faite"/.test(script) && /"moyennes_rattrapees"/.test(script) && /\.rotate\(\)/.test(script) && /moyenneUtile\(/.test(script));
+
+  titre("— 2A : l'envoi coupé se dit au retour, « Reprendre » rouvre le choix —");
+  const DP = await import("@/lib/collectif/depotParticipant");
+  ok("le texte : « 8 photos non arrivées », « 1 photo non arrivée », rien à zéro ; le bouton « Reprendre » (règle des textes courts : aucune explication)",
+    DP.phraseCoupees(8) === "8 photos non arrivées" && DP.phraseCoupees(1) === "1 photo non arrivée" && DP.phraseCoupees(0) === null && DP.phraseCoupees(-2) === null
+      && DP.BOUTON_REPRENDRE === "Reprendre" && (DP.phraseCoupees(8) ?? "").split(" ").length <= 6);
+  ok("le compte du chargement se tait dès qu'un envoi part sur la page (le moteur parle alors)", DP.coupeesADire(8, 0) === 8 && DP.coupeesADire(8, 3) === 0 && DP.coupeesADire(0, 0) === 0);
+  const PC = await import("@/lib/collectif/participantConnu");
+  const fausseBase = (lignes: { id: string; r2_key: string }[], erreur: { code: string; message: string } | null = null) => {
+    const filtres: string[] = [];
+    const chaine: Record<string, unknown> = {};
+    for (const m of ["select", "eq", "is", "order", "limit", "returns"]) chaine[m] = (...a: unknown[]) => { filtres.push(`${m}:${a.map(String).join("=")}`); return chaine; };
+    chaine.then = (ok: (v: unknown) => void) => ok({ data: erreur ? null : lignes, error: erreur });
+    return { base: { from: () => chaine } as unknown as import("@supabase/supabase-js").SupabaseClient, filtres };
+  };
+  const lignes = Array.from({ length: 45 }, (_, i) => ({ id: String(i), r2_key: `k${i}` }));
+  const fb = fausseBase(lignes);
+  const vues: string[] = [];
+  const n = await PC.photosCoupeesDeLAppareil(fb.base, E, "app1", "participant", async (k) => { vues.push(k); return { statut: Number(k.slice(1)) % 3 === 0 ? "presente" : Number(k.slice(1)) % 10 === 1 ? "panne" : "absente" }; });
+  const attendu = lignes.slice(0, PC.TETES_COUPEES_MAX).filter((l) => { const x = Number(l.r2_key.slice(1)); return x % 3 !== 0 && x % 10 !== 1; }).length + (45 - PC.TETES_COUPEES_MAX);
+  ok("la lecture : les lignes NON confirmées de CET appareil et de ce rôle, hors corbeille ; seules les absentes du coffre comptent (arrivées mais pas confirmées, panne : non) ; au-delà de 40 têtes, absentes",
+    n === attendu && vues.length === PC.TETES_COUPEES_MAX && fb.filtres.includes("eq:appareil_id=app1") && fb.filtres.includes("eq:role_deposant=participant") && fb.filtres.includes("is:confirmee_le=null") && fb.filtres.includes("is:supprimee_le=null"));
+  const vide = await PC.photosCoupeesDeLAppareil(fausseBase([], null).base, E, "a", "responsable", async () => ({ statut: "absente" }));
+  const panne = await PC.photosCoupeesDeLAppareil(fausseBase([], { code: "XX000", message: "panne" }).base, E, "a", "responsable", async () => ({ statut: "absente" }));
+  ok("rien en attente ou une base qui ne répond pas : 0 (un message de confort ne fait jamais tomber la page)", vide === 0 && panne === 0);
+  const page = lire("src/app/depot/[token]/page.tsx");
+  const depotTsx = lire("src/app/depot/[token]/Depot.tsx");
+  const albumTsx = lire("src/app/depot/[token]/Album.tsx");
+  const layout = lire("src/app/edition/[token]/layout.tsx");
+  const contexte = lire("src/app/edition/_composants/depot/DepotContexte.tsx");
+  ok("le participant : lu au serveur par le cookie de l'appareil ; la carte et l'album disent le compte, et LE bouton devient « Reprendre » (aucun bouton de plus), jamais fermé par la place",
+    /telephone \? photosCoupeesDeLAppareil\(sb, edition\.id, telephone, 'participant', teteObjet\) : Promise\.resolve\(0\)/.test(page) && /coupees=\{coupees\}/.test(page)
+      && /\{coupees \? BOUTON_REPRENDRE : "Choisir mes photos"\}/.test(depotTsx) && /\{coupees \? BOUTON_REPRENDRE : "Ajouter des photos"\}/.test(albumTsx) && /disabled=\{plein && !coupees\}/.test(albumTsx)
+      && /coupeesADire\(props\.coupees, vueMoteur\.total\)/.test(depotTsx));
+  ok("le responsable : lu au layout (son rôle, son appareil), dit dans la pastille d'envoi « N photos non arrivées · Reprendre », qui ouvre DIRECTEMENT le choix des photos",
+    /photosCoupeesDeLAppareil\(makeSupabase\(\), edition\.id, appareil, 'responsable', teteObjet\)/.test(layout) && /coupees=\{coupees\}/.test(layout)
+      && /\{phraseCoupees\(coupees\)\} · \{BOUTON_REPRENDRE\}/.test(contexte) && /onClick=\{selecteur\.ouvrir\}/.test(contexte) && /coupeesADire\(c\.coupees, vue\.total\)/.test(contexte));
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

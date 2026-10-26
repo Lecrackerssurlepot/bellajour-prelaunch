@@ -44,6 +44,41 @@ export const LOT_VERIFICATION = 100;
  */
 export const DELAI_DECLARATION_MORTE_MS = 2 * 60 * 60 * 1000;
 
+/* ─────────── la version MOYENNE d'« Agrandir » (5A, décision de Mathias du 26/10) ───────────
+   Le navigateur fabrique, à côté de la vignette, une version d'environ 1 600 px
+   (JPEG : Safari ne sait pas encoder le WebP sur un canvas, il rendrait un PNG
+   lourd). Elle va au coffre à côté de la vignette (`cleMoyenne`) et la
+   visionneuse la montre ; l'original ne sert plus qu'au téléchargement et à
+   l'impression. Sans elle (photo plus petite que ce côté, navigateur qui
+   échoue, photo d'avant, migration pas passée) : l'original, comme avant. */
+
+/** Le grand côté de la version moyenne, en pixels. */
+export const COTE_MOYENNE = 1600;
+/** Sa qualité JPEG (0 à 1) : celle d'un affichage plein écran, pas d'une impression. */
+export const QUALITE_MOYENNE = 0.8;
+/** Plafond d'une version moyenne : au-delà, l'URL signée servirait à pousser autre chose (même garde que la vignette). */
+export const MAX_MOYENNE_BYTES = 2 * 1024 * 1024;
+/** Le seul type qu'elle porte, côté signature comme côté HEAD. */
+export const MIME_MOYENNE = "image/jpeg";
+/** Ce que le moteur demande au worker (`reduire`, `apercusHeic`). */
+export const DEMANDE_MOYENNE = { cote: COTE_MOYENNE, qualite: QUALITE_MOYENNE } as const;
+
+/** La moyenne déclarée mérite-t-elle une URL signée ? Une taille positive, sous le plafond. */
+export function moyenneSignable(taille: number | null | undefined): taille is number {
+  return typeof taille === "number" && Number.isFinite(taille) && taille > 0 && taille <= MAX_MOYENNE_BYTES;
+}
+
+/**
+ * Une version moyenne vaut-elle d'être gardée ? La photo dépasse le côté (sinon l'original est
+ * déjà de cette taille), et ce qu'on a produit est sous le plafond et plus léger que l'original.
+ * La règle des deux workers (navigateur) et du rattrapage (`scripts/collectif-moyennes-rattrapage.ts`).
+ */
+export function moyenneUtile(p: { largeur: number; hauteur: number; taille: number; tailleOriginal: number | null }): boolean {
+  if (!(Math.max(p.largeur, p.hauteur) > COTE_MOYENNE)) return false;
+  if (!moyenneSignable(p.taille)) return false;
+  return p.tailleOriginal === null || p.taille < p.tailleOriginal;
+}
+
 /** La clé d'un fichier, calculée sur l'ORIGINAL : nom|taille|date de modification. */
 export function cleFichier(nom: string, taille: number, modifieLe: number): string {
   return `${nom.slice(0, 200)}|${Math.max(0, Math.floor(taille))}|${Math.max(0, Math.floor(modifieLe))}`;
@@ -64,6 +99,8 @@ export type FichierDeclare = {
   type: string;
   /** Taille de la vignette JPEG, si le navigateur en a produit une. */
   tailleVignette: number | null;
+  /** Taille de la version moyenne (5A), si le navigateur en a produit une (absente : aucune). */
+  tailleMoyenne?: number | null;
   ordre: number | null;
 };
 
@@ -87,12 +124,14 @@ export function lireDeclaration(v: unknown): { fichiers: FichierDeclare[]; refus
     else if (!mime) refus.push({ nom, erreur: "format" });
     else {
       const tv = Number(f.tailleVignette);
+      const tm = Number(f.tailleMoyenne);
       fichiers.push({
         cle: f.cle,
         nom,
         taille: Math.floor(taille),
         type: mime,
         tailleVignette: Number.isFinite(tv) && tv > 0 ? Math.floor(tv) : null,
+        tailleMoyenne: Number.isFinite(tm) && tm > 0 ? Math.floor(tm) : null,
         ordre: Number.isInteger(f.ordre) ? (f.ordre as number) : null,
       });
     }
@@ -323,7 +362,7 @@ export function estVideo(nom: string, type: string): boolean {
 }
 
 /** La ligne discrète de la page de dépôt, AVANT le choix des photos (T-200). */
-export const PHOTOS_SEULEMENT = "Photos seulement : les vidéos ne partent pas.";
+export const PHOTOS_SEULEMENT = "Photos seulement.";
 
 /**
  * Les fichiers écartés à l'ajout, dits par ce qu'ils sont : la vidéo NOMMÉE

@@ -50,7 +50,6 @@ type Props = {
 };
 
 export default function CartePhotos(p: Props) {
-  const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const [fenetre, setFenetre] = useState(false);
   const [deposer, setDeposer] = useState(false);
   const envoi = useFenetreEnvoi();
@@ -166,7 +165,7 @@ export default function CartePhotos(p: Props) {
               <span className="ec-tdb-fin-texte">
                 <strong className="ec-tdb-fin-titre">Toutes les photos sont là ?</strong>
                 <span className="ec-note">
-                  {p.cloture ? `L'atelier peut commencer dès aujourd'hui au lieu d'attendre le ${p.cloture}.` : "L'atelier peut commencer dès aujourd'hui."}
+                  L&apos;atelier peut commencer.
                 </span>
               </span>
               <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => setFin("confirmer")}>
@@ -210,10 +209,15 @@ export default function CartePhotos(p: Props) {
         </div>
       ) : etat === "lien" && dernier ? (
         <>
-          <h2 className="ec-tdb-titre">Lien envoyé, en attente des premières photos</h2>
+          <h2 className="ec-tdb-titre">En attente des photos</h2>
           <div className="ec-tdb-centre">
             <CarteLien lien={dernier} contexte={contexte} />
           </div>
+          {p.liens.length > 1 ? (
+            <Link href={`${p.lienPhotos}?dossier=liens`} prefetch={false} className="ec-tdb-liens-n">
+              {p.liens.length} liens
+            </Link>
+          ) : null}
           <div className="ec-tdb-gestes ec-tdb-gestes--deux">
             <button type="button" className="ec-bouton" onClick={() => setFenetre(true)}>
               Envoyer un autre lien
@@ -234,8 +238,8 @@ export default function CartePhotos(p: Props) {
               </svg>
             </span>
             <span className="ec-tdb-inviter-texte">
-              <strong>{v("Inviter des proches à ajouter leurs photos", "Inviter des proches à ajouter leurs photos")}</strong>
-              <span className="ec-note">Un lien de contribution pour chaque personne</span>
+              <strong>Inviter des proches</strong>
+              <span className="ec-note">Un lien par personne</span>
             </span>
             <span className="ec-tdb-fleche" aria-hidden="true">
               →

@@ -85,7 +85,7 @@ async function appeler(corps: Record<string, unknown>): Promise<{ ok: boolean; j
     const json = (await rep.json().catch(() => ({}))) as Record<string, unknown>;
     return { ok: rep.ok, json: rep.ok ? json : { ...json, message: json.message ?? `Non enregistré (erreur ${rep.status}).` } };
   } catch {
-    return { ok: false, json: { message: "Le réseau n'a pas répondu. Rien n'a changé." } };
+    return { ok: false, json: { message: "Pas de réseau. Rien n'a changé." } };
   }
 }
 

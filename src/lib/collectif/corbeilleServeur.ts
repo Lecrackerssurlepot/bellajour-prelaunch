@@ -37,7 +37,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supprimer } from "@/lib/atelier/r2";
-import { cleVignette, estCleCollectif, prefixeEdition } from "./cles";
+import { cleMoyenne, cleVignette, estCleCollectif, prefixeEdition } from "./cles";
 import {
   ALERTE_JOURS,
   clesLibres,
@@ -247,10 +247,11 @@ export async function compterCorbeille(supabase: SupabaseClient, editionId: stri
   }
 }
 
-/** Les objets du coffre d'une photo : l'original et la vignette, sous le préfixe de SON édition seulement. */
+/** Les objets du coffre d'une photo : l'original, la vignette et la version moyenne (5A, rangée sous son id : la
+    colonne peut manquer), sous le préfixe de SON édition seulement. */
 export function objetsDeLaPhoto(p: Pick<PhotoCorbeille, "id" | "r2_key" | "vignette_key">, editionId: string): string[] {
   const prefixe = prefixeEdition(editionId);
-  const cles = [p.r2_key, p.vignette_key, cleVignette(editionId, p.id)].filter((k): k is string => typeof k === "string" && k.length > 0);
+  const cles = [p.r2_key, p.vignette_key, cleVignette(editionId, p.id), cleMoyenne(editionId, p.id)].filter((k): k is string => typeof k === "string" && k.length > 0);
   return [...new Set(cles)].filter((k) => estCleCollectif(k) && k.startsWith(prefixe));
 }
 

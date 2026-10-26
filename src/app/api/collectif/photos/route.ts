@@ -8,8 +8,10 @@ import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
 import {
   COLONNES_GRILLE,
   COLONNES_PAGE,
+  colonnesAvecMoyenne,
   grilleDepuisLignes,
   grilleDepuisResume,
+  lireAvecMoyenne,
   lireDemandeGrille,
   REPLI,
   type ContexteGrille,
@@ -34,8 +36,8 @@ import { lireProvenances } from "@/app/edition/[token]/donnees";
  *   défaut, « selection » pour « Ma sélection » ;
  * - `vue` : `toutes`, `jour` (rangées par jour), `doublons` ou `signalees`
  *   (« Ne pas publier », lot w2 du 20/10 : la plus récente d'abord).
- * Chaque vignette porte `signalee` et `grande` (l'original signé s'il
- * s'affiche, sinon la vignette) ; `compteurs.signalees` compte les « Ne pas
+ * Chaque vignette porte `signalee` et `grande` (la version moyenne quand
+ * elle existe, 5A ; sinon l'original signé s'il s'affiche, sinon la vignette) ; `compteurs.signalees` compte les « Ne pas
  * publier » du dossier, `stats.corbeille` la corbeille (null sans la
  * migration 20261023, ou pour l'équipe).
  *
@@ -106,14 +108,17 @@ export async function POST(request: Request) {
      filtre. Toutes les photos arrivées, par tranches de 1 000 (le plafond de l'API, T-167),
      de la plus ancienne à la plus récente : `stats.derniere` est la dernière ligne. */
   /* Hors corbeille (migration 20261023) ; sans elle, la même lecture sans le filtre (`lireHorsCorbeille`). */
-  const { data, error } = await lireHorsCorbeille((avec) =>
-    lireToutesLesLignes<LigneGrille>(
-      () => {
-        const q = supabase.from("collectif_photos").select(COLONNES_GRILLE).eq("edition_id", edition.id).not("confirmee_le", "is", null);
-        return (avec ? q.is("supprimee_le", null) : q).returns<LigneGrille[]>();
-      },
-      { colonne: "confirmee_le", croissant: true },
-      "photos de la grille"
+  /* La version moyenne (5A, migration 20261026) en plus ; sans la colonne, la même lecture sans elle (`lireAvecMoyenne`). */
+  const { data, error } = await lireAvecMoyenne((moyenne) =>
+    lireHorsCorbeille((avec) =>
+      lireToutesLesLignes<LigneGrille>(
+        () => {
+          const q = supabase.from("collectif_photos").select(colonnesAvecMoyenne(COLONNES_GRILLE, moyenne) as typeof COLONNES_GRILLE).eq("edition_id", edition.id).not("confirmee_le", "is", null);
+          return (avec ? q.is("supprimee_le", null) : q).returns<LigneGrille[]>();
+        },
+        { colonne: "confirmee_le", croissant: true },
+        "photos de la grille"
+      )
     )
   );
   if (error) return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
@@ -129,10 +134,11 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
   /* Le plan du dossier posé sur la requête, appel par appel (`enFiltresPostgrest`, pur, au harnais).
      Hors corbeille (migration 20261023, la vue l'écarte déjà) : sans la colonne, la même requête
      sans le filtre (`lireHorsCorbeille`). */
-  const base = (conditions: readonly Condition[], avec: boolean, compte = false) => {
+  const base = (conditions: readonly Condition[], avec: boolean, compte = false, moyenne = false) => {
     /* Un compte en GET `limit(0)` (posé par `compter`), jamais `head` : un HEAD filtré sur la corbeille
-       rend, sans la migration, une erreur sans code que le repli ne reconnaîtrait pas (horsCorbeille.ts). */
-    const debut = (compte ? supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE) : supabase.from("collectif_photos").select(COLONNES_PAGE))
+       rend, sans la migration, une erreur sans code que le repli ne reconnaîtrait pas (horsCorbeille.ts).
+       Une page demande aussi `moyenne_key` (5A) quand `moyenne` est vrai (`lireAvecMoyenne`). */
+    const debut = (compte ? supabase.from("collectif_photos").select("id", COMPTE_SANS_LIGNE) : supabase.from("collectif_photos").select(colonnesAvecMoyenne(COLONNES_PAGE, moyenne) as typeof COLONNES_PAGE))
       .eq("edition_id", editionId)
       .not("confirmee_le", "is", null);
     let q = avec ? debut.is("supprimee_le", null) : debut;
@@ -147,11 +153,13 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
   };
   return {
     async page(conditions, tri, de, a) {
-      const { data, error } = await lireHorsCorbeille((avec) => {
-        let q = base(conditions, avec);
-        for (const t of tri) q = q.order(t.colonne, { ascending: t.croissant, ...(t.nulsDAbord === undefined ? {} : { nullsFirst: t.nulsDAbord }) });
-        return q.range(de, a).returns<LignePage[]>();
-      });
+      const { data, error } = await lireAvecMoyenne((moyenne) =>
+        lireHorsCorbeille((avec) => {
+          let q = base(conditions, avec, false, moyenne);
+          for (const t of tri) q = q.order(t.colonne, { ascending: t.croissant, ...(t.nulsDAbord === undefined ? {} : { nullsFirst: t.nulsDAbord }) });
+          return q.range(de, a).returns<LignePage[]>();
+        })
+      );
       if (error) {
         console.error("[collectif] page de la grille illisible", error.code, error.message);
         return null;
@@ -159,7 +167,7 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
       return data ?? [];
     },
     async parIds(ids, conditions) {
-      const { data, error } = await lireHorsCorbeille((avec) => base(conditions, avec).in("id", [...ids]).returns<LignePage[]>());
+      const { data, error } = await lireAvecMoyenne((moyenne) => lireHorsCorbeille((avec) => base(conditions, avec, false, moyenne).in("id", [...ids]).returns<LignePage[]>()));
       if (error) {
         console.error("[collectif] photos des doublons illisibles", error.code, error.message);
         return null;

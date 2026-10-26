@@ -115,16 +115,13 @@ export function BoutonsPartage({ lien, contexte, avecQr }: { lien: LienPartage; 
 
 /** La carte d'un lien déjà créé : son QR, son nom, son plafond, ce qu'il a reçu. */
 export function CarteLien({ lien, contexte }: { lien: LienPartage; contexte: ContexteMessage }) {
-  const { cloture } = contexte;
   return (
     <div className="ec-carte-lien">
       <QrCode texte={lien.url} taille={120} etiquette={`QR code du lien « ${lien.libelle} »`} />
       <div className="ec-carte-lien-texte">
         <strong>{lien.libelle}</strong>
-        <span className="ec-note">
-          {lien.plafond.charAt(0).toLowerCase() + lien.plafond.slice(1)} · {lien.recues ?? 0} photo{(lien.recues ?? 0) > 1 ? "s" : ""} reçue{(lien.recues ?? 0) > 1 ? "s" : ""}
-          {cloture ? ` · ouvert jusqu'au ${cloture}` : ""}
-        </span>
+        <span className="ec-note">{lien.plafond}</span>
+        {lien.recues ? <span className="ec-note">{lien.recues} photo{lien.recues > 1 ? "s" : ""}</span> : null}
         <BoutonsPartage lien={lien} contexte={contexte} />
       </div>
     </div>
@@ -189,19 +186,17 @@ export default function FenetreLien({
 export function FenetreCreerLien({
   token,
   max,
-  tu,
   nomInitial,
   onCree,
   onFermer,
 }: {
   token: string;
   max: number;
-  tu: boolean;
+  tu?: boolean;
   nomInitial?: string;
   onCree: (lien: LienCree) => void;
   onFermer: () => void;
 }) {
-  const v = (vous: string, toi: string) => (tu ? toi : vous);
   const min = Math.min(CURSEUR_LIEN.min, max);
   const [nom, setNom] = useState(nomInitial ?? "");
   const [valeur, setValeur] = useState(Math.min(30, max));
@@ -241,7 +236,7 @@ export function FenetreCreerLien({
         sansPlafond: ecrit?.sansPlafond === true,
       });
     } catch {
-      setErreur("Le réseau n'a pas répondu. Aucun lien créé.");
+      setErreur("Pas de réseau. Aucun lien créé.");
     } finally {
       setOccupe(false);
     }
@@ -250,10 +245,7 @@ export function FenetreCreerLien({
   return (
     <Fenetre
       titre="Créer un lien de contribution"
-      sous={v(
-        "La personne dépose depuis son téléphone, sans compte. Ses photos arrivent dans un dossier à son nom.",
-        "La personne dépose depuis son téléphone, sans compte. Ses photos arrivent dans un dossier à son nom."
-      )}
+      sous="Un dossier à son nom."
       onFermer={onFermer}
     >
       <label className="ec-curseur">
@@ -319,7 +311,7 @@ function FenetreSansPartage({ tu, onFermer }: { tu: boolean; onFermer: () => voi
   return (
     <Fenetre
       titre="Ces photos n'ont pas de groupe"
-      sous={tu ? "Elles restent dans « Sans groupe », en lecture seule. Pour inviter, crée un lien par groupe." : "Elles restent dans « Sans groupe », en lecture seule. Pour inviter, créez un lien par groupe."}
+      sous={tu ? "Pour inviter, crée un lien par groupe." : "Pour inviter, créez un lien par groupe."}
       onFermer={onFermer}
     >
       <button type="button" className="ec-bouton ec-bouton--plein" onClick={onFermer}>
@@ -340,7 +332,6 @@ export function FenetrePartage({ lien, contexte, onFermer, onQr }: { lien: LienP
 }
 
 function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void; onQr: () => void }) {
-  const v = (vous: string, toi: string) => (contexte.tu ? toi : vous);
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
   async function copier() {
     const ok = await copierLeMessage(lien, contexte);
@@ -350,7 +341,6 @@ function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPa
   return (
     <Fenetre
       titre={`Partager « ${lien.libelle} »`}
-      sous={v("Le message est écrit pour ce groupe et cet événement : il n'y a qu'à le coller.", "Le message est écrit pour ce groupe et cet événement : il n'y a qu'à le coller.")}
       onFermer={onFermer}
     >
       <div className="ec-partage ec-partage--deux">
@@ -376,7 +366,7 @@ function detailsDuQr(lien: LienPartage, contexte: ContexteMessage): string {
 export function FenetreQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
   if (lien.general) return <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} />;
   return (
-    <Fenetre titre="Le QR code du lien" sous="À projeter ou à imprimer : on le scanne avec l'appareil photo du téléphone, sans application." onFermer={onFermer}>
+    <Fenetre titre="Le QR code du lien" sous="À scanner avec l'appareil photo." onFermer={onFermer}>
       <div className="ec-qr-grand">
         <QrCode texte={lien.url} taille={280} etiquette={`QR code du lien « ${lien.libelle} »`} />
         <strong className="ec-qr-grand-nom">{lien.libelle}</strong>
@@ -391,7 +381,7 @@ export function FenetreQr({ lien, contexte, onFermer }: { lien: LienPartage; con
               pageQrImprimable({
                 nom: lien.libelle,
                 url: lien.url,
-                consigne: "Pour déposer ses photos : scanner ce code avec l'appareil photo du téléphone.",
+                consigne: "Scanner pour déposer ses photos.",
                 details: detailsDuQr(lien, contexte),
               })
             )

@@ -109,7 +109,7 @@ type Retrait = { photo: Photo; index: number }[];
 type Issue = { statut: "ok"; ids: string[] } | { statut: "absente" } | { statut: "panne"; message: string };
 
 /** Sans la migration 20261023 : la phrase sobre (la route nomme le fichier SQL, l'écran ne le montre pas). */
-const MIGRATION_TEXTE = `${BASE_PAS_A_JOUR} : rien n'a changé.`;
+const MIGRATION_TEXTE = `${BASE_PAS_A_JOUR}. Rien n'a changé.`;
 
 type Props = {
   token: string;
@@ -240,6 +240,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* Les feuilles et menus du 22/10. */
   const [feuillePersonnes, setFeuillePersonnes] = useState(false);
   const [choixFin, setChoixFin] = useState(false);
+  const [confirmerSelection, setConfirmerSelection] = useState(false);
   const [menuPhoto, setMenuPhoto] = useState<string | null>(null);
   /* « Choisir d'abord mes préférées » : `null` = le mode n'est pas ouvert ; sinon ce que le client a changé à ses favoris. */
   const [preferees, setPreferees] = useState<Choix | null>(null);
@@ -303,7 +304,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         setErreur(null);
         return json.photos;
       } catch {
-        if (v0 === version.current) setErreur("Les photos n'ont pas pu se charger. Réessayer en rechargeant la page.");
+        if (v0 === version.current) setErreur("Chargement impossible. Rechargez la page.");
         return null;
       } finally {
         if (v0 === version.current) setChargement(false);
@@ -446,7 +447,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       }
       return json;
     } catch {
-      setErreur("Le réseau n'a pas répondu. Rien n'a changé.");
+      setErreur("Pas de réseau. Rien n'a changé.");
       return null;
     } finally {
       setOccupe(false);
@@ -496,10 +497,10 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         const rep = await fetch("/api/collectif/photos/corbeille", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token: p.token, action, photoIds: lot }) });
         const json = (await rep.json().catch(() => ({}))) as { error?: unknown; ids?: unknown };
         if (rep.status === 503 && json.error === ERREUR_PERSONNES_ABSENTE) return fin({ statut: "absente" });
-        if (!rep.ok) return fin(faites.length ? { statut: "ok", ids: faites } : { statut: "panne", message: `${action === "supprimer" ? "La suppression" : "La restauration"} n'a pas abouti (erreur ${rep.status}). Réessayer.` });
+        if (!rep.ok) return fin(faites.length ? { statut: "ok", ids: faites } : { statut: "panne", message: `${action === "supprimer" ? "Suppression" : "Restauration"} impossible.` });
         if (Array.isArray(json.ids)) faites.push(...json.ids.filter((x): x is string => typeof x === "string"));
       } catch {
-        return fin(faites.length ? { statut: "ok", ids: faites } : { statut: "panne", message: "Le réseau n'a pas répondu. Rien n'a changé." });
+        return fin(faites.length ? { statut: "ok", ids: faites } : { statut: "panne", message: "Pas de réseau. Rien n'a changé." });
       }
     }
     return fin({ statut: "ok", ids: faites });
@@ -551,7 +552,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       setOccupe(false);
     }
     if (issue.statut === "absente") {
-      annoncer({ texte: BASE_PAS_A_JOUR, sous: ids.length > 1 ? "Rien n'a été supprimé : les photos sont toujours là." : "Rien n'a été supprimé : la photo est toujours là." });
+      annoncer({ texte: BASE_PAS_A_JOUR, sous: ids.length > 1 ? "Rien supprimé." : "Rien supprimé." });
       return;
     }
     if (issue.statut === "panne") {
@@ -559,7 +560,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       return;
     }
     const faites = issue.ids;
-    if (faites.length < ids.length) setErreur(`${nombre(ids.length - faites.length)} photo${ids.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être supprimée${ids.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
+    if (faites.length < ids.length) setErreur(`${nombre(ids.length - faites.length)} non supprimée${ids.length - faites.length > 1 ? "s" : ""}.`);
     if (!faites.length) return;
     const retrait = retirerDeLaVue(new Set(faites));
     compterLeRetrait(retrait, -1, true);
@@ -568,7 +569,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     const n = faites.length;
     annoncer({
       texte: n > 1 ? `${nombre(n)} photos supprimées` : "Photo supprimée",
-      sous: `${n > 1 ? "Récupérables" : "Récupérable"} pendant ${DELAI_CORBEILLE_JOURS} jours`,
+      sous: `Corbeille, ${DELAI_CORBEILLE_JOURS} jours`,
       annuler: () => void annulerSuppression(faites, retrait, v0),
     });
   }
@@ -674,7 +675,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     let toutes = photosVues.current;
     let page = suivante;
     while (page !== null && page !== 0 && (toutes.length === 0 || jourDe(toutes[toutes.length - 1].jourCle) >= cleJour)) {
-      setProgres(`Lecture des photos : ${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
+      setProgres(`${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
       const json = await lirePage(page, f);
       if (v0 !== version.current) return [];
       toutes = [...toutes, ...json.photos];
@@ -694,7 +695,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       try {
         duJour = await lireJusquALaFinDuJour(jour.cle);
       } catch {
-        setErreur("Les photos n'ont pas pu se lire. Rien n'a changé.");
+        setErreur("Lecture impossible.");
         return;
       } finally {
         setOccupe(false);
@@ -722,7 +723,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     let page = suivante;
     const v0 = version.current;
     while (page !== null && page !== 0) {
-      setProgres(`Lecture des photos : ${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
+      setProgres(`${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
       const json = await lirePage(page, f);
       if (v0 !== version.current) return [];
       toutes = [...toutes, ...json.photos];
@@ -769,7 +770,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       try {
         ids = (await cocheesLues()).map((x) => x.id);
       } catch {
-        setErreur("Les photos n'ont pas pu se lire. Rien n'a changé.");
+        setErreur("Lecture impossible.");
       } finally {
         setOccupe(false);
         setProgres(null);
@@ -812,7 +813,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       const ids = new Set(faites);
       poserCoeurs(ids, preselection, preselection ? faites.length : -faites.length);
       toutDecocher();
-      if (ecrit.echec || faites.length < a.length) setErreur(`${nombre(a.length - faites.length)} photo${a.length - faites.length > 1 ? "s n'ont" : " n'a"} pas pu être enregistrée${a.length - faites.length > 1 ? "s" : ""}. Réessayer.`);
+      if (ecrit.echec || faites.length < a.length) setErreur(`${nombre(a.length - faites.length)} non enregistrée${a.length - faites.length > 1 ? "s" : ""}.`);
       if (faites.length)
         annoncer({
           texte: preselection ? `${nombre(faites.length)} photo${faites.length > 1 ? "s" : ""} mise${faites.length > 1 ? "s" : ""} en favori` : `${nombre(faites.length)} photo${faites.length > 1 ? "s" : ""} plus en favori`,
@@ -1293,6 +1294,21 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           </div>
         </Fenetre>
       ) : null}
+      {confirmerSelection ? (
+        <ChoixFinCollecte
+          token={p.token}
+          photos={null}
+          telephone={telephone}
+          confirmerSeul
+          onFermer={() => setConfirmerSelection(false)}
+          onFait={() => setConfirmerSelection(false)}
+          onChoisir={() => setConfirmerSelection(false)}
+          onConfirme={() => {
+            setConfirmerSelection(false);
+            void envoyerPreferees();
+          }}
+        />
+      ) : null}
       {choixFin ? (
         <ChoixFinCollecte
           token={p.token}
@@ -1626,7 +1642,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                         <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" disabled={occupe} onClick={() => setPreferees(null)}>
                           Annuler
                         </button>
-                        <button type="button" className="ec-bouton ec-bouton--petit" disabled={occupe || nbGardees === 0} onClick={() => void envoyerPreferees()}>
+                        <button type="button" className="ec-bouton ec-bouton--petit" disabled={occupe || nbGardees === 0} onClick={() => setConfirmerSelection(true)}>
                           Envoyer ma sélection · {nombre(nbGardees)}
                         </button>
                       </>
@@ -1750,11 +1766,8 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     <strong className="ec-ph-accueil-titre">Les photos arriveront ici</strong>
                     <p className="ec-texte">
                       {p.ecrire
-                        ? v(
-                            "Déposez les vôtres, et invitez les participants : chacun dépose depuis son téléphone, sans compte. Vous les rangerez ensuite en dossiers.",
-                            "Dépose les tiennes, et invite les participants : chacun dépose depuis son téléphone, sans compte. Tu les rangeras ensuite en dossiers."
-                          )
-                        : "Le responsable et les participants déposent leurs photos ; elles s'afficheront ici."}
+                        ? "Déposez des photos ou invitez des participants."
+                        : "Rien pour l'instant."}
                     </p>
                     {p.ecrire && p.ouverte ? (
                       <div className="ec-ph-accueil-gestes">
@@ -1789,7 +1802,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                 {!albums && !vide && visibles.length === 0 && !chargement && stats ? (
                   <div className="ec-a-venir">
                     <p className="ec-texte">
-                      {f.lien || f.personnes.length || f.dossier ? "Rien reçu ici pour l'instant." : v("Aucune photo pour l'instant. Déposez les vôtres, ou partagez un lien.", "Aucune photo pour l'instant. Dépose les tiennes, ou partage un lien.")}
+                      {f.lien || f.personnes.length || f.dossier ? "Rien reçu ici pour l'instant." : "Aucune photo pour l'instant."}
                     </p>
                   </div>
                 ) : null}
@@ -1874,7 +1887,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           {prefereesActif ? (
             <div className="ec-fl ec-ph-tel">
               {progres ? <p className="ec-ph-progres ec-fl-progres">{progres}</p> : null}
-              <button type="button" className="ec-s-envoyer" disabled={occupe || nbGardees === 0} aria-disabled={nbGardees === 0} onClick={() => void envoyerPreferees()}>
+              <button type="button" className="ec-s-envoyer" disabled={occupe || nbGardees === 0} aria-disabled={nbGardees === 0} onClick={() => setConfirmerSelection(true)}>
                 <Trace d={ICONES.envoyer} taille={22} epais={1.8} />
                 {occupe ? "Un instant…" : `Envoyer ma sélection · ${nombre(nbGardees)}`}
               </button>

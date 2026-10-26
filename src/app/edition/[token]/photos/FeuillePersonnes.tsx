@@ -68,7 +68,7 @@ export default function FeuillePersonnes(p: {
               {p.nomPersonne(x)}
             </button>
           ))}
-          {trouvees.length === 0 ? <p className="ec-note ec-s-nuage-vide">{recherche.trim() ? "Personne de ce nom." : "Personne n'a envoyé de photos pour l'instant."}</p> : null}
+          {trouvees.length === 0 ? <p className="ec-note ec-s-nuage-vide">{recherche.trim() ? "Personne de ce nom." : "Personne pour l'instant."}</p> : null}
         </div>
       </div>
     </div>,

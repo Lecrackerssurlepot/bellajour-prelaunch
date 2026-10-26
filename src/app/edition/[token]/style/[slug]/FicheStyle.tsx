@@ -78,7 +78,7 @@ export default function FicheStyle(p: Props) {
       }
       return true;
     } catch {
-      setErreur("Le réseau n'a pas répondu. Rien n'a changé.");
+      setErreur("Pas de réseau. Rien n'a changé.");
       return false;
     } finally {
       setOccupe(false);

@@ -22,13 +22,13 @@ export default function FormulaireRetrouver({ ouvert }: { ouvert: boolean }) {
       });
       const json = (await rep.json().catch(() => ({}))) as { message?: string };
       if (!rep.ok) {
-        setErreur(json.message ?? "La demande n'a pas pu partir. Réessayez dans un instant.");
+        setErreur(json.message ?? "Demande non envoyée. Réessayez.");
         setEtat("saisie");
         return;
       }
       setEtat("fait");
     } catch {
-      setErreur("Le réseau n'a pas répondu. Réessayez dans un instant.");
+      setErreur("Pas de réseau. Réessayez.");
       setEtat("saisie");
     }
   }

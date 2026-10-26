@@ -268,7 +268,7 @@ export function phrasesDuLot(b: BilanLot, o: { tu: boolean; pour?: "participant"
   const out: string[] = [];
   if (o.pour === "responsable") {
     const n = b.retirees + b.supprimees;
-    if (n) out.push(n > 1 ? `${n} photos sont à la corbeille : elles ne repartent pas. La corbeille de la page Photos les restaure.` : "1 photo est à la corbeille : elle ne repart pas. La corbeille de la page Photos la restaure.");
+    if (n) out.push(n > 1 ? `${n} photos à la corbeille.` : "1 photo à la corbeille.");
     return out;
   }
   for (const r of b.restaurees) {
@@ -337,4 +337,28 @@ export function enTete<T extends { id: string }>(neuves: readonly T[], liste: re
   const vues = new Set<string>();
   const tete = neuves.filter((p) => !deja.has(p.id) && !vues.has(p.id) && Boolean(vues.add(p.id)));
   return tete.length ? [...tete, ...liste] : [...liste];
+}
+
+/* ─────────── l'envoi coupé (2A, décision de Mathias du 26/10) ───────────
+   Au retour sur son lien après un envoi coupé (onglet fermé, téléphone verrouillé), la page le
+   dit en quatre mots et propose de reprendre : choisir de nouveau les photos les renvoie sur la
+   même ligne (rien ne compte deux fois). Aucune phrase d'explication (règle des textes courts). */
+
+/** Le bouton qui rouvre le choix des photos. */
+export const BOUTON_REPRENDRE = "Reprendre";
+
+/** « 8 photos non arrivées », « 1 photo non arrivée » ; `null` quand il n'y a rien à dire. */
+export function phraseCoupees(n: number): string | null {
+  const k = Math.max(0, Math.floor(n));
+  if (!k) return null;
+  return k > 1 ? `${k} photos non arrivées` : "1 photo non arrivée";
+}
+
+/**
+ * Combien de photos coupées la page dit encore : le compte du serveur tant que rien n'a été choisi
+ * sur cette page (`totalMoteur` = 0) ; dès qu'un envoi part, c'est lui qui parle (ses arrivées,
+ * ses erreurs), et le compte du chargement, devenu faux, se tait.
+ */
+export function coupeesADire(coupees: number, totalMoteur: number): number {
+  return totalMoteur > 0 ? 0 : Math.max(0, Math.floor(coupees));
 }
