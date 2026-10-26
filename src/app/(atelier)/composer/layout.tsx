@@ -2,21 +2,14 @@
    et des polices du layout parent (src/app/(atelier)/layout.tsx). */
 
 import type { Metadata } from 'next'
-import { DM_Sans } from 'next/font/google'
+import { aileronItalique } from '../../charte-fonts'
 
-/* L'italique de DM Sans ne se charge QU'ICI. Sa seule consommatrice du site
-   est `.at-hint`, le texte d'exemple de l'écran 2 (composer.css:~133) :
-   déclarée dans (atelier)/layout.tsx, elle était préchargée (39,8 Ko) sur
-   l'accueil, /magazine et /numero, qui ne la peignent jamais. La variable
-   est portée par un wrapper en `display: contents` (.at-portee-italique),
-   qui n'ajoute AUCUNE boîte au flux : la mise en page du questionnaire ne
-   voit pas la différence. */
-const composerItalique = DM_Sans({
-  subsets: ['latin'],
-  style: ['italic'],
-  variable: '--font-composer-italique',
-  display: 'swap',
-})
+/* L'italique d'Aileron ne se charge QU'ICI (charte V1, 26/10/2026 ; c'était
+   celle de DM Sans). Sa seule consommatrice du site est `.at-hint`, le texte
+   d'exemple de l'écran 2 (composer.css) : déclarée avec les autres faces, elle
+   serait préchargée sur l'accueil, /magazine et /numero, qui ne la peignent
+   jamais. La variable est portée par un wrapper en `display: contents`
+   (.at-portee-italique), qui n'ajoute AUCUNE boîte au flux. */
 
 /* ⚠️ TROIS POLICES DE LETTRAGE ONT VÉCU ICI (Interlope, Bodoni Moda, Archivo
    Black) et n'y sont plus depuis le 15/09/2026. Elles servaient à écrire le
@@ -34,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function ComposerLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`at-portee-italique ${composerItalique.variable}`}>
+    <div className={`at-portee-italique ${aileronItalique.variable}`}>
       {children}
     </div>
   )

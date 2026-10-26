@@ -13,33 +13,15 @@
    deux à toutes les pages, y compris celles que les 14 fondateurs
    consultent encore. */
 
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import HautDePage from './components/HautDePage'
+import { charteClassName } from '../charte-fonts'
 import './theme.css'
 
-/* Display : 400 seul, normal + italique (le « numéro » du titre hero).
-   Cormorant Garamond n'est pas variable chez Google → 2 fichiers statiques.
-   PRD §4 : Playfair Display est absent de tout ce qui est neuf ici. */
-const atelierDisplay = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400'],
-  style: ['normal', 'italic'],
-  variable: '--font-atelier-display',
-  display: 'swap',
-})
-
-/* UI : DM Sans est variable (axe opsz 9..40) — on ne fige aucune graisse,
-   ce qui donne 300/400/500 en UN fichier au lieu de 6 statiques.
-   ⚠️ PAS d'italique ici : la seule consommatrice du fichier italique
-   (39,8 Ko précargés sur TOUTES les pages du groupe) est `.at-hint`,
-   l'exemple de l'écran 2 de /composer. L'instance italique vit donc dans
-   composer/layout.tsx, et nulle part ailleurs. `preload: false` a été
-   essayé et prouvé inopérant — ne pas y revenir. */
-const atelierUi = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-atelier-ui',
-  display: 'swap',
-})
+/* Polices : la charte maison V1 (charte-fonts.ts), depuis le 26/10/2026.
+   Cormorant Garamond et DM Sans ne vivent plus dans ce groupe ; elles restent
+   à l'admin et à l'Édition collective. theme.css est toujours importé : ses
+   primitives (.at-wrap, .at-cta, .at-rv…) servent ici, et ses couleurs
+   sombres sont retraduites par `.bj-charte.bj-atelier` (charte.css). */
 
 /* Le `noindex` posé ici pendant tout le chantier a été RETIRÉ le 24/08/2026 :
    ce groupe de routes n'est plus une annexe, c'est la racine du site. Le
@@ -48,7 +30,7 @@ const atelierUi = DM_Sans({
 
 export default function AtelierLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`bj-atelier ${atelierDisplay.variable} ${atelierUi.variable}`}>
+    <div className={`bj-atelier ${charteClassName}`}>
       {/* Un changement de page repart du haut (11/09/2026) : sans lui, aller
           de l'accueil à /magazine gardait la position de défilement. */}
       <HautDePage />

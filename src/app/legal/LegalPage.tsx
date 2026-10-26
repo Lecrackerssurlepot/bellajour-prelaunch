@@ -3,7 +3,7 @@ import { type Block, type Para, type Locale, type LocalizedDoc } from './types'
 import { resolveDoc, backHref } from './resolve'
 import RetourLien from './RetourLien'
 import SelecteurLangue from './SelecteurLangue'
-import { cormorantCremeClassName } from '../creme-fonts'
+import { charteClassName } from '../charte-fonts'
 import './legal.css'
 
 /* Composant partagé des pages légales (Server Component).
@@ -40,7 +40,7 @@ export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
        document déclaré français — lu par une voix de synthèse française au
        lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
        demandée : une locale absente retombe sur fr, l'attribut doit suivre). */
-    <main className={`lg ${cormorantCremeClassName}`} lang={lang} data-theme="dark" data-section="legal">
+    <main className={`lg ${charteClassName}`} lang={lang} data-theme="dark" data-section="legal">
       <div className="lg-inner">
 
         <header className="lg-head">

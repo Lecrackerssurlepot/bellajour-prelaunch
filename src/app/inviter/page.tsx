@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import InviterReferral from './InviterReferral'
 import { isValidRefCode } from '@/lib/validation'
-import { cormorantCremeClassName } from '../creme-fonts'
+import { charteClassName } from '../charte-fonts'
 import './inviter.css'
 
 /* T-064 — Cormorant du monde CRÈME (creme-fonts.ts), déplacée hors du layout
@@ -39,7 +39,7 @@ function InviterClient() {
 
   if (!refCode) {
     return (
-      <main className={`inviter inviter--error ${cormorantCremeClassName}`} data-theme="light">
+      <main className={`inviter inviter--error ${charteClassName}`} data-theme="light">
         <img src="/images/v2/ui/logo-bellajour-240.webp" srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w" sizes="clamp(80px, 12vw, 120px)" alt="Bellajour" width={240} height={170} className="inviter-logo" />
         <h1 className="inviter-title">Lien de parrainage invalide.</h1>
         <p className="inviter-sub">Le lien que vous avez suivi est incomplet ou ne correspond à aucun code Bellajour.</p>
@@ -53,7 +53,7 @@ function InviterClient() {
     : 'Partagez votre code avec vos proches.'
 
   return (
-    <main className={`inviter ${cormorantCremeClassName}`} data-theme="light">
+    <main className={`inviter ${charteClassName}`} data-theme="light">
       <img src="/images/v2/ui/logo-bellajour-240.webp" srcSet="/images/v2/ui/logo-bellajour-240.webp 240w, /images/v2/ui/logo-bellajour-640.webp 640w" sizes="clamp(80px, 12vw, 120px)" alt="Bellajour" width={240} height={170} className="inviter-logo" />
       <h1 className="inviter-title">Votre lien de parrainage</h1>
       <p className="inviter-sub">{subtitle}</p>

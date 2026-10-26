@@ -22,7 +22,6 @@
    page y sont entièrement scopées. Le retirer dépeindrait tout. */
 
 import type { Metadata } from 'next'
-import { Cormorant_Garamond } from 'next/font/google'
 import Nav from './components/Nav'
 import Ouverture from './components/Ouverture'
 import Univers from './components/Univers'
@@ -30,23 +29,9 @@ import Footer from './components/Footer'
 import { compteOuvert } from '@/lib/compte/session'
 import { EUROS_MIN } from '@/lib/atelier/grille'
 
-/* LE GRAS DU TITRE DE COUVERTURE, ET LUI SEUL.
-   Cormorant Garamond n'est pas variable chez Google : chaque graisse est un
-   fichier. Le layout du groupe ne charge que le 400 (normal + italique) pour
-   les trois routes ; demander le 600 la-haut le servirait aussi a /magazine
-   et /composer, qui n'en ont pas l'usage. Il est donc demande ICI, sur la
-   seule page qui l'affiche — meme raison et meme geste que l'italique du
-   questionnaire, isole dans composer/layout.tsx.
-   L'italique du 600 est indispensable : « magazine » est en <em>, et sans
-   elle le navigateur fabriquerait une italique penchee a la main sur un
-   serif a fort contraste — ce qui se voit immediatement. */
-const titreFort = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['600'],
-  style: ['normal', 'italic'],
-  variable: '--font-titre-fort',
-  display: 'swap',
-})
+/* Le titre de couverture n'a plus de gras à lui (26/10/2026) : la charte V1
+   interdit tout titre gras, et Instrument Serif n'a qu'une graisse. Le
+   Cormorant 600 qu'on chargeait ici pour cette seule page est parti. */
 
 /* Le drapeau « la couverture s'est deja ouverte dans cet onglet ». Ecrit par
    Ouverture.tsx (cle `bj:ouverture-vue`), relu ici avant tout affichage.
@@ -185,7 +170,7 @@ export default function AtelierHome() {
           seconde plus tard (cf. NavCompte). Optimiste : `false` ne ferme rien,
           le fetch de la barre ouvrira quand même. */}
       <Nav compteOuvert={compteOuvert()} />
-      <div className={`at-accueil ${titreFort.variable}`}>
+      <div className="at-accueil">
         {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,
             insensible au pointeur. C'est une turbulence SVG en ligne, pas
             une image — voir ouverture.css. */}

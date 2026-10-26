@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cormorantCremeClassName } from '../creme-fonts'
+import { charteClassName } from '../charte-fonts'
 
 /* T-064 — Cormorant du monde CRÈME posée ICI, pas au layout racine : elle
    couvre /ambassadeurs/charte et /ambassadeurs/espace en un seul geste.
@@ -10,5 +10,5 @@ import { cormorantCremeClassName } from '../creme-fonts'
    Route Handler n'entre jamais dans l'arbre de layout — ce layout ne
    l'enveloppe donc plus, et son HTML inline ne porte pas cette police. */
 export default function AmbassadeursLayout({ children }: { children: ReactNode }) {
-  return <div className={cormorantCremeClassName}>{children}</div>
+  return <div className={charteClassName}>{children}</div>
 }

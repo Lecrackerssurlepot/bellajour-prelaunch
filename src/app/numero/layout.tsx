@@ -12,30 +12,9 @@
    télécharge pas deux fois les fichiers. */
 
 import type { Metadata } from 'next'
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import HautDePage from '../(atelier)/components/HautDePage'
+import { charteClassName } from '../charte-fonts'
 import '../(atelier)/theme.css'
-
-const atelierDisplay = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400'],
-  style: ['normal', 'italic'],
-  variable: '--font-atelier-display',
-  display: 'swap',
-})
-
-/* ⚠️ PAS d'italique — et ce n'est pas qu'une affaire de /numero. Cette
-   declaration DOIT rester la jumelle exacte de celle de (atelier)/layout.tsx :
-   Turbopack fusionne les modules de police dans un chunk CSS partage, et une
-   face italique declaree ICI se retrouvait prechargee (39,8 Ko) sur `/` et
-   /magazine, qui ne la peignent jamais (T-059). /numero non plus, d'ailleurs :
-   zero `font-style` et zero <em> dans tout le dossier (verifie le 30/08/2026).
-   La seule consommatrice du site est `.at-hint`, servie par composer/layout. */
-const atelierUi = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-atelier-ui',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   /* PRD §7.5 : accès direct par token, indexation interdite. Un moteur qui
@@ -46,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function NumeroLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`bj-atelier ${atelierDisplay.variable} ${atelierUi.variable}`}>
+    <div className={`bj-atelier ${charteClassName}`}>
       {/* Même règle que le groupe (atelier) : revenir au magazine depuis sa
           page ne doit pas retomber au milieu (11/09/2026). */}
       <HautDePage />
