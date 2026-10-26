@@ -1,8 +1,8 @@
 -- ════════════════════════════════════════════════════════════════════════
 -- 5A — LA VERSION MOYENNE D'« AGRANDIR » (Édition collective)
 --
--- ⚠️ À APPLIQUER PAR MATHIAS. Personne d'autre ne roule les migrations.
--- Écrite le 26/10/2026, PAS appliquée.
+-- APPLIQUÉE en production le 26/10/2026 (MCP, accord de Mathias), vérifiée en SQL.
+-- Écrite le 26/10/2026.
 --
 -- Décision de Mathias du 26/10 (campagne « rude épreuve », bug perf-5) : à
 -- l'envoi, le navigateur fabrique en plus une version d'environ 1 600 px
