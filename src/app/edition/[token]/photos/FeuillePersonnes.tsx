@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { Noeud } from "@/lib/collectif/dossiers";
+import { useRetourFerme } from "../../_composants/useRetourFerme";
 import { ICONES, Trace } from "./Grille";
 import { pourChercher } from "./filtres";
 
@@ -27,6 +28,7 @@ export default function FeuillePersonnes(p: {
   const [recherche, setRecherche] = useState("");
   const feuille = useRef<HTMLDivElement>(null);
   const { onFermer } = p;
+  useRetourFerme(onFermer);
 
   /* Échap la ferme, et la page derrière ne défile pas sous le doigt. */
   useEffect(() => {

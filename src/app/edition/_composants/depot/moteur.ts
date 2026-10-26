@@ -84,7 +84,7 @@
  */
 
 import { reduire } from "@/app/(atelier)/composer/depot/pool";
-import { estHeic, resoudreMime } from "@/lib/atelier/formats";
+import { estHeic, OCTETS_SIGNATURE, resoudreMime, signaturePhotoReconnue } from "@/lib/atelier/formats";
 import { vignetteHeic } from "./heic";
 import { DEJA_CONNUE, estVideo, lireDejaLa, LOT_CONFIRMATION, LOT_DECLARATION, LOT_VERIFICATION, type DejaLa } from "@/lib/collectif/depot";
 import { compterLot, type CompteLot } from "@/lib/collectif/depotParticipant";
@@ -110,6 +110,8 @@ const ESSAIS_MAX = 3;
 /** Échecs sans réponse alors que le navigateur se dit EN LIGNE (CORS, réseau captif) : au-delà,
     l'erreur est dite. Hors ligne, rien ne se compte. */
 const ESSAIS_RESEAU_MAX = 12;
+/** Échecs sans réponse d'une même photo à partir desquels l'écran le dit (l'envoi continue d'essayer). */
+const ESSAIS_RESEAU_DITS = 2;
 /** Un envoi sans le moindre octet de progrès pendant ce délai est abandonné puis repris. */
 const SANS_PROGRES_MS = 180_000;
 /** Une URL signée vit une heure ; au-delà de 45 min, on la redemande. */
@@ -197,6 +199,8 @@ export type Vue = {
   horsLigne: boolean;
   /** Le serveur répond mal (5xx) : on réessaie tout seul, sans accuser le réseau. */
   serveurLent: boolean;
+  /** En ligne, mais le coffre ne répond pas (wifi filtré, bloqueur) : la phrase à dire, avec « Réessayer » ; `null` sinon. */
+  reseauBloque: string | null;
   /** Les fichiers ignorés à l'ajout (pas des images). */
   ignores: number;
   /** Parmi eux, les vidéos (T-200 : refusées, décision de Mathias), et le nom de la première pour la nommer. */
@@ -231,6 +235,18 @@ export type Provenance = { type: string; libelle: string };
 function attendre(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
+
+/** Un fichier sans vignette porte-t-il au moins la signature d'une image ? Illisible lui-même : on le laisse partir. */
+async function signatureLisible(f: Blob): Promise<boolean> {
+  try {
+    return signaturePhotoReconnue(new Uint8Array(await f.slice(0, OCTETS_SIGNATURE).arrayBuffer()));
+  } catch {
+    return true;
+  }
+}
+
+/** La raison d'un fichier écarté parce qu'il n'est pas une image. */
+const PAS_UNE_PHOTO = "Un fichier n'est pas une photo lisible : il n'est pas parti.";
 
 function enLigne(): boolean {
   return typeof navigator === "undefined" || navigator.onLine !== false;
@@ -333,6 +349,9 @@ export class MoteurDepot {
   private ferme: string | null = null;
   private horsLigne = false;
   private serveurLent = false;
+  private bloque = false;
+  /** Les photos qui attendent avant de retenter : « Réessayer » les réveille. */
+  private readonly reveils = new Set<() => void>();
   private verification = false;
   private declaration = false;
   private confirmation = false;
@@ -443,6 +462,13 @@ export class MoteurDepot {
       ferme: this.ferme,
       horsLigne: this.horsLigne,
       serveurLent: this.serveurLent && !this.horsLigne,
+      reseauBloque:
+        this.bloque && enCours > 0 && !this.horsLigne && !this.ferme
+          ? this.v(
+              "L'envoi n'aboutit pas pour l'instant (un wifi filtré ?). Il réessaie tout seul ; vous pouvez aussi passer en 4G, puis « Réessayer ».",
+              "L'envoi n'aboutit pas pour l'instant (un wifi filtré ?). Il réessaie tout seul ; tu peux aussi passer en 4G, puis « Réessayer »."
+            )
+          : null,
       ignores: this.ignores,
       videos: this.videos,
       premiereVideo: this.premiereVideo,
@@ -528,6 +554,7 @@ export class MoteurDepot {
   /** Le réseau revient : on repart TOUT DE SUITE, et ce qu'un wifi filtré avait arrêté repart aussi. */
   private auRetourDuReseau = (): void => {
     this.horsLigne = false;
+    this.bloque = false;
     this.echecsReseau = 0;
     for (const it of this.items) {
       if (it.etat === "erreur" && it.essaisReseau >= ESSAIS_RESEAU_MAX) this.remettre(it);
@@ -698,9 +725,23 @@ export class MoteurDepot {
       }
     }
     this.horsLigne = false;
+    this.bloque = false;
     this.echecsReseau = 0;
+    for (const reveil of [...this.reveils]) reveil();
     this.notifier();
     this.pompe();
+  }
+
+  /** Attendre avant de retenter : `ms`, le retour du réseau, ou « Réessayer ». */
+  private attendreOuReveil(ms: number): Promise<void> {
+    return new Promise((r) => {
+      const fini = () => {
+        this.reveils.delete(fini);
+        r();
+      };
+      this.reveils.add(fini);
+      void attendreReseau(ms).then(fini);
+    });
   }
 
   /* ───────────────────────────── la pompe ───────────────────────────── */
@@ -810,6 +851,14 @@ export class MoteurDepot {
           it.charge = null;
           it.vignette = null;
           it.typeEnvoye = it.mime;
+        })
+        .then(async () => {
+          /* Ni vignette ni signature d'image : un texte renommé, un fichier abîmé. Il ne part pas. */
+          if (it.etat === "reduction" && !it.vignette && !(await signatureLisible(it.fichier))) {
+            if (it.etat === "reduction") this.finir(it, "refuse", PAS_UNE_PHOTO);
+            this.notifier();
+            this.pompe();
+          }
         })
         .finally(() => {
           if (it.etat !== "reduction") return;
@@ -1010,9 +1059,13 @@ export class MoteurDepot {
         } else {
           /* En ligne mais sans réponse : réseau qui flanche, ou un wifi qui filtre le coffre. */
           it.essaisReseau++;
+          if (it.essaisReseau >= ESSAIS_RESEAU_DITS && !this.bloque) {
+            this.bloque = true;
+            this.notifier();
+          }
           if (it.essaisReseau >= ESSAIS_RESEAU_MAX) {
             this.finir(it, "erreur", this.v("Le réseau bloque l'envoi des photos (un wifi filtré ?) : passez en 4G, puis « Réessayer ».", "Le réseau bloque l'envoi des photos (un wifi filtré ?) : passe en 4G, puis « Réessayer »."));
-          } else await attendreReseau(ATTENTES_MS[Math.min(it.essaisReseau - 1, ATTENTES_MS.length - 1)]);
+          } else await this.attendreOuReveil(ATTENTES_MS[Math.min(it.essaisReseau - 1, ATTENTES_MS.length - 1)]);
         }
         if (it.etat === "envoi") {
           if (this.ferme) this.finir(it, "refuse", this.ferme);
@@ -1021,6 +1074,7 @@ export class MoteurDepot {
         return;
       }
       this.horsLigne = false;
+      this.bloque = false;
       /* La vignette repart comme la photo (T-171 : une vignette perdue pendant une
          coupure laissait l'original s'afficher dans la grille). Elle ne fait
          jamais échouer la photo : au bout de quatre essais, on renonce. */

@@ -89,10 +89,13 @@ body:has(.adm-root) {
 .adm-header {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-4);
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2) var(--bj-sp-4);
   margin-bottom: var(--bj-sp-5);
 }
 .adm-header h1 {
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: var(--bj-font-display);
   font-style: italic;
   font-weight: 600;

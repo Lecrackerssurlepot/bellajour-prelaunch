@@ -18,7 +18,6 @@
  * zones, format des gris. Ici, seulement du canvas.
  */
 
-import { PDFDocument } from "pdf-lib";
 import type * as PdfJs from "pdfjs-dist";
 import { TAILLE_DCT, empreinteDepuisGris } from "@/lib/atelier/empreinte";
 import { GRIS_H, GRIS_L, LARGEUR_RENDU_PX, apparierPages, motsDePage, motsUtiles, rectRognage, zonesModifiees, type Zone } from "@/lib/collectif/bat";
@@ -83,6 +82,7 @@ type Boite = { x: number; y: number; width: number; height: number };
  */
 async function lireTrims(octets: Uint8Array): Promise<(Boite | null)[] | null> {
   try {
+    const { PDFDocument } = await import("pdf-lib");
     const doc = await PDFDocument.load(octets, { ignoreEncryption: true, updateMetadata: false });
     return doc.getPages().map((p) => (p.getRotation().angle % 360 === 0 ? p.getTrimBox() : null));
   } catch {

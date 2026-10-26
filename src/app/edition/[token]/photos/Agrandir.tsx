@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useRetourFerme } from "../../_composants/useRetourFerme";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { arriveeLongue, jourCourt, jourLong } from "./filtres";
 import { ICONES, Trace, type Photo } from "./Grille";
@@ -56,6 +57,7 @@ export default function Agrandir(a: Props) {
   /* Les originaux arrivés : ils couvrent leur vignette. */
   const [grandes, setGrandes] = useState<Record<string, boolean>>({});
   const fns = useRef(a);
+  useRetourFerme(a.onFermer);
   useEffect(() => {
     fns.current = a;
   });

@@ -27,6 +27,7 @@ import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { colonneAbsente, tableAbsente } from "@/lib/collectif/migration";
 import { prenomPourAlbum, vuePersonneConnue, type LigneParticipant } from "@/lib/collectif/personnes";
 import { comptesDeLaPersonne, participantDeLAppareil } from "@/lib/collectif/personnesServeur";
+import { lireDepuis } from "@/lib/collectif/depotParticipant";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 
@@ -127,6 +128,20 @@ export async function POST(request: Request) {
     lien = lu.lien;
   }
   const provenanceId = lien?.id ?? null;
+
+  /* Le sondage de « Tout l'album » (perf-1) : rien d'arrivé depuis sa dernière arrivée connue, une requête et
+     « rien de neuf », sans relire la page ni signer ses vignettes. Une erreur relit tout, comme avant. */
+  const depuis = vue === "album" && page === 0 ? lireDepuis(corps.depuis) : null;
+  if (depuis) {
+    const neuf = await lireHorsCorbeille((avec) => {
+      let q = supabase.from("collectif_photos").select("id").eq("edition_id", edition.id);
+      for (const f of filtreAlbum(provenanceId)) q = poser(q, f, avec);
+      return q.gt("confirmee_le", depuis).limit(1);
+    });
+    if (!neuf.error && !neuf.data?.length) {
+      return NextResponse.json({ vue, page, rienDeNeuf: true }, { headers: { "cache-control": "private, no-store" } });
+    }
+  }
 
   /* Qui regarde : la personne de ce téléphone (sans la migration : personne, le téléphone seul). */
   const appareil = appareilDeRequete(request);

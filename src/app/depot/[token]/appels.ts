@@ -96,12 +96,14 @@ export type PageAlbum = {
 };
 
 /** Ce que rend une lecture de l'album : la page, un lien MORT (404 : régénéré, supprimé), ou une panne. */
-export type LectureAlbum = { statut: "ok"; page: PageAlbum } | { statut: "mort" } | { statut: "erreur" };
+export type LectureAlbum = { statut: "ok"; page: PageAlbum } | { statut: "inchange" } | { statut: "mort" } | { statut: "erreur" };
 
-export async function lireAlbum(token: string, p: string | null, vue: "album" | "miennes", page: number): Promise<LectureAlbum> {
-  const r = await poster("/api/collectif/depot/album", { token, p, vue, page });
+/** `depuis` (le sondage seulement) : la dernière arrivée connue ; rien de plus récent, le serveur dit « inchangé ». */
+export async function lireAlbum(token: string, p: string | null, vue: "album" | "miennes", page: number, depuis: string | null = null): Promise<LectureAlbum> {
+  const r = await poster("/api/collectif/depot/album", depuis ? { token, p, vue, page, depuis } : { token, p, vue, page });
   /* Un 404 (le token régénéré, le lien du bateau supprimé, l'édition archivée) : la page entière le dit. */
   if (r.status === 404) return { statut: "mort" };
+  if (r.status === 200 && r.json.rienDeNeuf === true) return { statut: "inchange" };
   if (r.status !== 200 || !Array.isArray(r.json.photos)) return { statut: "erreur" };
   const j = r.json;
   const photos = (j.photos as Record<string, unknown>[])

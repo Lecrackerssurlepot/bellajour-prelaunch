@@ -10,7 +10,7 @@
 
 import { randomBytes, randomInt } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { CODES_PAR_HEURE, DUREE_CODE_MS, empreinte, empreinteCode, ESSAIS_MAX, libelleDuree, memeEmpreinte } from "./appareil";
+import { CODES_PAR_HEURE, DUREE_CODE_MS, empreinte, empreinteCode, ESSAIS_MAX, libelleDuree, memeEmpreinte, verdictEssai } from "./appareil";
 import { envoyerMailCollectif, type EtatEnvoi } from "./mails";
 import { mailCodeAppareil } from "./mailsTextes";
 import { tableAbsente } from "./migration";
@@ -87,34 +87,52 @@ export type IssueVerif = { etat: "ok" | "faux" | "expire" | "bloque" | "migratio
 /** Le code tapé sur CET appareil : bon, il est reconnu ; faux, un essai de moins. */
 export async function verifierCode(supabase: SupabaseClient, edition: EditionCode, idAppareil: string, code: string): Promise<IssueVerif> {
   const appareilEmp = empreinte(idAppareil);
-  const { data, error } = await supabase
-    .from("collectif_codes")
-    .select("id, code_empreinte, essais, expire_le, utilise_le")
-    .eq("edition_id", edition.id)
-    .eq("appareil_empreinte", appareilEmp)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<{ id: string; code_empreinte: string; essais: number; expire_le: string; utilise_le: string | null }>();
-  if (error) return { etat: tableAbsente(error.code) ? "migration_absente" : "echec" };
-  if (!data || data.utilise_le || Date.parse(data.expire_le) < Date.now()) return { etat: "expire" };
-  if (data.essais >= ESSAIS_MAX) return { etat: "bloque" };
+  /* L'essai se RÉSERVE avant la comparaison, par un échange conditionnel (`essais` inchangé depuis
+     la lecture) : lire puis écrire `essais + 1` laissait trente essais parallèles lire tous la même
+     valeur (charge-1). Un échange perdu relit ; chaque perte suit un essai réservé par un autre,
+     donc au plus ESSAIS_MAX tours avant de lire « bloqué ». */
+  for (let tour = 0; tour <= ESSAIS_MAX + 1; tour++) {
+    const { data, error } = await supabase
+      .from("collectif_codes")
+      .select("id, code_empreinte, essais, expire_le, utilise_le")
+      .eq("edition_id", edition.id)
+      .eq("appareil_empreinte", appareilEmp)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string; code_empreinte: string; essais: number; expire_le: string; utilise_le: string | null }>();
+    if (error) return { etat: tableAbsente(error.code) ? "migration_absente" : "echec" };
+    if (!data || data.utilise_le || Date.parse(data.expire_le) < Date.now()) return { etat: "expire" };
+    if (data.essais >= ESSAIS_MAX) return { etat: "bloque" };
 
-  if (!memeEmpreinte(empreinteCode(appareilEmp, code), data.code_empreinte)) {
-    const essais = data.essais + 1;
-    await supabase.from("collectif_codes").update({ essais }).eq("id", data.id);
-    return essais >= ESSAIS_MAX ? { etat: "bloque" } : { etat: "faux", restants: ESSAIS_MAX - essais };
+    const reserve = await supabase
+      .from("collectif_codes")
+      .update({ essais: data.essais + 1 })
+      .eq("id", data.id)
+      .eq("essais", data.essais)
+      .is("utilise_le", null)
+      .select("essais");
+    if (reserve.error) return { etat: "echec" };
+    if (!reserve.data?.length) continue;
+    const essai = (reserve.data[0] as { essais: number }).essais;
+
+    const verdict = verdictEssai(essai, memeEmpreinte(empreinteCode(appareilEmp, code), data.code_empreinte));
+    if (verdict.etat !== "ok") return verdict;
+
+    /* Le bon code ne sert qu'UNE fois, même tapé deux fois en même temps. */
+    const maintenant = new Date().toISOString();
+    const pris = await supabase.from("collectif_codes").update({ utilise_le: maintenant }).eq("id", data.id).is("utilise_le", null).select("id");
+    if (pris.error) return { etat: "echec" };
+    if (!pris.data?.length) return { etat: "expire" };
+    const { error: e } = await supabase
+      .from("collectif_appareils")
+      .upsert(
+        { edition_id: edition.id, appareil_empreinte: appareilEmp, lien_empreinte: empreinte(edition.token_responsable), reconnu_le: maintenant, vu_le: maintenant, oublie_le: null },
+        { onConflict: "edition_id,appareil_empreinte,lien_empreinte" }
+      );
+    if (e) return { etat: tableAbsente(e.code) ? "migration_absente" : "echec" };
+    return { etat: "ok" };
   }
-
-  const maintenant = new Date().toISOString();
-  await supabase.from("collectif_codes").update({ utilise_le: maintenant }).eq("id", data.id);
-  const { error: e } = await supabase
-    .from("collectif_appareils")
-    .upsert(
-      { edition_id: edition.id, appareil_empreinte: appareilEmp, lien_empreinte: empreinte(edition.token_responsable), reconnu_le: maintenant, vu_le: maintenant, oublie_le: null },
-      { onConflict: "edition_id,appareil_empreinte,lien_empreinte" }
-    );
-  if (e) return { etat: tableAbsente(e.code) ? "migration_absente" : "echec" };
-  return { etat: "ok" };
+  return { etat: "echec" };
 }
 
 /**

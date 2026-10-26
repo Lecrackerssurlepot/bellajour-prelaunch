@@ -35,6 +35,7 @@ import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } f
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
+import { useVerrouDefilement } from "../_composants/useVerrouDefilement";
 import RelireAuRetour from "../_composants/RelireAuRetour";
 import { BarreTitreContexte } from "../_composants/TitreEcran";
 import PartageEquipe from "./PartageEquipe";
@@ -122,6 +123,15 @@ export default function Coquille(props: Props) {
   useEffect(() => {
     if (!ouvert) return;
     return () => setTiroirPour(null);
+  }, [ouvert]);
+  useVerrouDefilement(ouvert);
+  useEffect(() => {
+    if (!ouvert) return;
+    function touche(e: KeyboardEvent) {
+      if (e.key === "Escape") setTiroirPour(null);
+    }
+    window.addEventListener("keydown", touche);
+    return () => window.removeEventListener("keydown", touche);
   }, [ouvert]);
   useEffect(() => {
     if (!bulle) return;

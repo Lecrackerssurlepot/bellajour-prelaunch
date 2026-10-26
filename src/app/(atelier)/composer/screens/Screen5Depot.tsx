@@ -149,8 +149,9 @@ export default function Screen5Depot({
    * choisit seulement de poser la question. Elle n'est posée que s'il y a
    * quelque chose à perdre, et l'écran 6 démonte l'effet en se démontant.
    */
+  const resteAPerdre = vue.photos.some((p) => p.etat !== 'confirmee')
   useEffect(() => {
-    if (vue.photos.length === 0) return
+    if (!resteAPerdre) return
     const avantFermeture = (e: BeforeUnloadEvent) => {
       e.preventDefault()
       /* Toujours exigé par Chrome, malgré sa dépréciation dans la spec. */
@@ -158,7 +159,7 @@ export default function Screen5Depot({
     }
     window.addEventListener('beforeunload', avantFermeture)
     return () => window.removeEventListener('beforeunload', avantFermeture)
-  }, [vue.photos.length])
+  }, [resteAPerdre])
 
   const envoyer = useCallback(async () => {
     if (!pretHorsConsent) return
@@ -272,8 +273,8 @@ export default function Screen5Depot({
           locale ne connaît que cet appareil. */}
       {reprise && (vue.serveur ?? 0) > 0 && (
         <p className="at-d-avis at-d-avis--reprise" role="status">
-          <b>Vos {vue.serveur} photos sont déjà chez nous.</b> Celles que vous
-          déposez maintenant s’ajoutent, rien n’est à refaire.
+          <b>{vue.serveur === 1 ? 'Votre photo est déjà chez nous.' : `Vos ${vue.serveur} photos sont déjà chez nous.`}</b>{' '}
+          Celles que vous déposez maintenant s’ajoutent, rien n’est à refaire.
         </p>
       )}
 

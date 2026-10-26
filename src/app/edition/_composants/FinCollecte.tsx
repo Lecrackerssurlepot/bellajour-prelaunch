@@ -23,6 +23,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { ligneOubli, partiesCollecteTerminee, phraseAtelierCommence, RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
 import type { FinReponse } from "@/lib/collectif/photosSimples";
 import Fenetre from "./Fenetre";
+import { useRetourFerme } from "./useRetourFerme";
 
 /** Ce que l'écran sait de la fin de collecte : qui peut la terminer, depuis quand elle l'est, si l'atelier peut encore rouvrir. */
 export type FinDeCollecte = {
@@ -40,7 +41,9 @@ export const ID_LIGNE_FIN = "ec-fin-ligne";
 export async function terminerLaCollecte(token: string): Promise<FinReponse> {
   try {
     const rep = await fetch("/api/collectif/collecte/terminer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token }) });
-    const json = (await rep.json().catch(() => ({}))) as { message?: string; termineLe?: unknown };
+    const json = (await rep.json().catch(() => ({}))) as { error?: string; message?: string; termineLe?: unknown };
+    /* Deux appareils du même responsable : le second lit « déjà terminée », sans nommer l'atelier qui n'y est pour rien. */
+    if (rep.status === 409 && json.error === "etat_change") return { ok: false, message: "La collecte est déjà terminée." };
     if (!rep.ok) return { ok: false, message: json.message ?? `La collecte n'a pas pu se terminer (erreur ${rep.status}).` };
     return { ok: true, termineLe: typeof json.termineLe === "string" ? json.termineLe : new Date().toISOString() };
   } catch {
@@ -168,6 +171,7 @@ export function ChoixFinCollecte({
   const client = useSyncExternalStore(rien, () => true, () => false);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  useRetourFerme(onFermer, telephone);
 
   useEffect(() => {
     if (!telephone) return;

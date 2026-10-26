@@ -940,9 +940,11 @@ export default function Fiche({
             {l.urgence.libelle}
           </span>
           {l.urgence.promesse ? <span className="ate-faint">{l.urgence.promesse}</span> : null}
-          <a className="ate-lien-page" href={`/numero/${l.token}`} target="_blank" rel="noreferrer">
-            Voir sa page ↗
-          </a>
+          {demo ? null : (
+            <a className="ate-lien-page" href={`/numero/${l.token}`} target="_blank" rel="noreferrer">
+              Voir sa page ↗
+            </a>
+          )}
         </p>
       </header>
 

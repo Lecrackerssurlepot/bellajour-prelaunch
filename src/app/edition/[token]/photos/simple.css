@@ -363,7 +363,7 @@
   }
   .ec-espace .ec-cb-tete .ec-ph-outils {
     position: absolute;
-    top: -50px;
+    top: -44px;
     right: 16px;
   }
   /* La grille de vignettes (rien d'autre, comme la grille par jour) : d'un bord à l'autre, la place de « Restaurer · N » gardée en bas. */

@@ -7556,7 +7556,7 @@ async function verifDejaLa() {
         && /lienMort: this\.mort,/.test(moteur));
     ok("« Tout l'album » se relit (45 s, retour sur l'onglet) sans faire sauter la grille pendant un envoi ou pendant qu'on coche ; la relecture ne touche jamais « Mes photos »",
       /useSondage\(sonder, SONDAGE_ALBUM_MS, !mort\);/.test(album) && /const grilleFigee = enCours \|\| cocher;/.test(album) && /const photosAlbum = grilleFigee \? album\.photos : enTete\(neuvesAutres, album\.photos\);/.test(album)
-        && /lireAlbum\(token, p, "album", 0\)/.test(album.slice(album.indexOf("const sonder"), album.indexOf("useSondage(sonder")))
+        && /lireAlbum\(token, p, "album", 0[,)]/.test(album.slice(album.indexOf("const sonder"), album.indexOf("useSondage(sonder")))
         && !/setMiennes/.test(album.slice(album.indexOf("const sonder"), album.indexOf("useSondage(sonder"))));
     const iInsert = presign.indexOf('from("collectif_photos").insert(lignes)');
     const iRestaure = presign.indexOf("await restaurerDes(aRestaurer.filter((d) => d.ici)");
@@ -8991,7 +8991,37 @@ async function verifPhotosSimples() {
       && /if \(typeof dossierBrut === "string" && !cleDeDossierLisible\(dossierBrut\)\) return NextResponse\.json\(\{ error: "dossier_invalide" \}, \{ status: 400 \}\);/.test(lire("src/app/api/collectif/photos/marquer/route.ts")));
 }
 
-void sondeT191().then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(() => {
+/* Campagne « rude épreuve », lot 1 (26/10). */
+async function verifLot1RudeEpreuve(): Promise<void> {
+  titre("— rude epreuve lot 1 : code atomique, envoi bloque dit, sondage leger, fichier illisible —");
+  const A = Appareil;
+  ok("charge-1 : le verdict se lit sur l'essai RESERVE ; le 10e faux bloque, le bon code au 10e passe, au-dela tout est bloque",
+    A.verdictEssai(1, false).etat === "faux" && A.verdictEssai(1, false).restants === 9 && A.verdictEssai(10, false).etat === "bloque"
+      && A.verdictEssai(10, true).etat === "ok" && A.verdictEssai(11, true).etat === "bloque" && A.verdictEssai(3, true).etat === "ok");
+  const app = lire("src/lib/collectif/appareils.ts");
+  const vc = app.slice(app.indexOf("export async function verifierCode("), app.indexOf("export function codeNeuf("));
+  ok("charge-1 : `verifierCode` reserve l'essai par echange conditionnel (`.eq(\"essais\", data.essais)`) AVANT de comparer, et le bon code ne sert qu'une fois (`.is(\"utilise_le\", null)` sur la pose)",
+    /\.update\(\{ essais: data\.essais \+ 1 \}\)\s*\.eq\("id", data\.id\)\s*\.eq\("essais", data\.essais\)/.test(vc)
+      && vc.indexOf(".eq(\"essais\", data.essais)") < vc.indexOf("memeEmpreinte(") && /verdictEssai\(essai,/.test(vc)
+      && /update\(\{ utilise_le: maintenant \}\)\.eq\("id", data\.id\)\.is\("utilise_le", null\)\.select\("id"\)/.test(vc) && !/update\(\{ essais \}\)/.test(vc));
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("upload-1 / resp-4 : en ligne sans reponse du coffre, l'ecran le dit des le 2e echec (`reseauBloque`), « Reessayer » reveille les photos en attente ; les trois ecrans l'affichent",
+    /const ESSAIS_RESEAU_DITS = 2;/.test(moteur) && /it\.essaisReseau >= ESSAIS_RESEAU_DITS/.test(moteur) && /for \(const reveil of \[\.\.\.this\.reveils\]\) reveil\(\);/.test(moteur)
+      && /await this\.attendreOuReveil\(/.test(moteur) && /this\.bloque && enCours > 0/.test(moteur)
+      && ["src/app/depot/[token]/Album.tsx", "src/app/edition/_composants/depot/ZoneDepot.tsx", "src/app/edition/_composants/depot/FenetreEnvoi.tsx"].every((f) => /vue\.reseauBloque/.test(lire(f))));
+  ok("upload-2 : sans vignette ni signature d'image, le fichier est refuse avant toute declaration",
+    /!it\.vignette && !\(await signatureLisible\(it\.fichier\)\)/.test(moteur) && /this\.finir\(it, "refuse", PAS_UNE_PHOTO\)/.test(moteur));
+  const DP = await import("@/lib/collectif/depotParticipant");
+  const album = lire("src/app/api/collectif/depot/album/route.ts");
+  ok("perf-1 : le sondage de l'album envoie sa derniere arrivee ; rien de plus recent = « rien de neuf » AVANT toute lecture de page ; une relecture complete tous les 5 tours",
+    DP.SONDAGES_AVANT_RELECTURE === 5 && DP.lireDepuis("2026-10-26T10:00:00.000Z") === "2026-10-26T10:00:00.000Z" && DP.lireDepuis("pas une date") === null && DP.lireDepuis(12) === null && DP.lireDepuis("x".repeat(41)) === null
+      && /q\.gt\("confirmee_le", depuis\)\.limit\(1\)/.test(album) && album.indexOf("rienDeNeuf: true") < album.indexOf("participantDeLAppareil(")
+      && /r\.tours === 0 \? null : r\.depuis/.test(lire("src/app/depot/[token]/Album.tsx")));
+  ok("charge-3 : le 409 de « Terminer la collecte » ne nomme plus l'atelier",
+    /error: "etat_change", message: "La collecte est déjà terminée\." \}/.test(lire("src/app/api/collectif/collecte/terminer/route.ts")));
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

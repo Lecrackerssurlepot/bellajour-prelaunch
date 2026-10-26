@@ -448,8 +448,8 @@ export default function Depot(props: Props) {
                     <span className="ec-dp-note--refus">{etatEmail.message}</span>
                   ) : (
                     v(
-                      "Elle sert seulement à vous reconnaître sur un autre appareil ou un autre lien. Nous ne vous écrirons pas pour autre chose.",
-                      "Elle sert seulement à te reconnaître sur un autre appareil ou un autre lien. Nous ne t'écrirons pas pour autre chose."
+                      "L'adresse est nécessaire pour choisir vos photos. Elle sert seulement à vous reconnaître sur un autre appareil ou un autre lien. Nous ne vous écrirons pas pour autre chose.",
+                      "L'adresse est nécessaire pour choisir tes photos. Elle sert seulement à te reconnaître sur un autre appareil ou un autre lien. Nous ne t'écrirons pas pour autre chose."
                     )
                   )}
                 </p>

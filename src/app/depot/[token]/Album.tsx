@@ -61,6 +61,7 @@ import {
   phrasesDuLot,
   progression,
   SONDAGE_ALBUM_MS,
+  SONDAGES_AVANT_RELECTURE,
 } from "@/lib/collectif/depotParticipant";
 import type { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { useApercus, useMoteur } from "../../edition/_composants/depot/useMoteur";
@@ -218,9 +219,14 @@ export default function Album(props: Props) {
      sur l'onglet (au plus toutes les 20 s, `useSondage`). Le compte suit tout de suite ; les photos
      des autres arrivées depuis attendent en tête (`arriveesAutres`), montrées seulement quand rien ne
      part ni ne se coche. Un 404 : le lien est mort. */
+  const repereSondage = useRef<{ depuis: string | null; tours: number }>({ depuis: null, tours: 0 });
   const sonder = useCallback(async (): Promise<void> => {
     const confirmeesAvant = moteur?.vue().arrivees ?? 0;
-    const lecture = await lireAlbum(token, p, "album", 0);
+    /* Le serveur ne relit la page que si quelque chose est arrivé depuis (perf-1) ; un tour sur
+       SONDAGES_AVANT_RELECTURE relit tout, pour le compte (une photo partie à la corbeille). */
+    const r = repereSondage.current;
+    r.tours = (r.tours + 1) % SONDAGES_AVANT_RELECTURE;
+    const lecture = await lireAlbum(token, p, "album", 0, r.tours === 0 ? null : r.depuis);
     if (lecture.statut === "mort") {
       setMort(true);
       return;
@@ -237,6 +243,7 @@ export default function Album(props: Props) {
     /* Bornée à deux pages : la prochaine relecture complète (fin d'un envoi) les reprend toutes. */
     if (autres.length) setArriveesAutres((avant) => enTete(autres, avant).slice(0, 2 * TAILLE_PAGE_ALBUM));
     const derniere = derniereArrivee(lu.photos);
+    r.depuis = derniere;
     if (derniere) garderRepere(cleDeVisite(token, p), derniere);
   }, [token, p, moteur]);
   useSondage(sonder, SONDAGE_ALBUM_MS, !mort);
@@ -633,6 +640,14 @@ export default function Album(props: Props) {
               ))}
               {vue.horsLigne ? <p className="ec-dp-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
               {vue.serveurLent ? <p className="ec-dp-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
+              {vue.reseauBloque ? (
+                <>
+                  <p className="ec-dp-note ec-dp-note--refus">{vue.reseauBloque}</p>
+                  <button type="button" className="ec-dp-bouton ec-dp-bouton--clair" onClick={() => props.moteur?.reessayer()}>
+                    Réessayer
+                  </button>
+                </>
+              ) : null}
               {/* Les vidéos écartées se disent pendant l'envoi (planche 7B) ; le merci (7C) ne les redit pas. */}
               {(enCours || !termine ? ignores : []).map((t) => (
                 <p key={t} className="ec-dp-note ec-dp-note--refus">

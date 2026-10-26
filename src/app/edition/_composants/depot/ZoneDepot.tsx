@@ -86,15 +86,16 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
           {dejaLa && prog.total ? <p className="ec-note">{dejaLa} déjà là, sautée{dejaLa > 1 ? "s" : ""} : une photo déjà envoyée ne repart jamais.</p> : null}
           {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
           {vue.serveurLent ? <p className="ec-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
+          {vue.reseauBloque ? <p className="ec-note ec-note--erreur">{vue.reseauBloque}</p> : null}
           {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
           {vue.raisons.map((r) => (
             <p key={r} className="ec-note ec-note--erreur">
               {r}
             </p>
           ))}
-          {vue.erreurs ? (
+          {vue.erreurs || vue.reseauBloque ? (
             <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => moteur.reessayer()}>
-              Réessayer ({vue.erreurs})
+              {vue.erreurs ? `Réessayer (${vue.erreurs})` : "Réessayer"}
             </button>
           ) : null}
           {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}

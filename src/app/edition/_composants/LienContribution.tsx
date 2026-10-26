@@ -28,6 +28,7 @@ import { imprimerPage } from "@/lib/collectif/imprimer";
 import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
 import Fenetre from "./Fenetre";
 import QrCode from "./QrCode";
+import { useRetourFerme } from "./useRetourFerme";
 
 export type LienPartage = {
   libelle: string;
@@ -415,6 +416,7 @@ const rien = () => () => {};
  */
 export function FeuilleQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
   const client = useSyncExternalStore(rien, () => true, () => false);
+  useRetourFerme(onFermer, !lien.general);
   useEffect(() => {
     const html = document.documentElement;
     const avant = html.style.overflow;

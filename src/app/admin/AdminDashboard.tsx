@@ -16,6 +16,7 @@ function fmtDate(iso: string | null): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("fr-FR", {
+    timeZone: "Europe/Paris",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -164,9 +165,7 @@ function InscritsChart({ data }: { data: { date: string; count: number }[] }) {
             const [, mm, dd] = d.date.split("-");
             return (
               <g key={d.date}>
-                <title>
-                  {fmtDay(d.date)} — {d.count} inscrit{d.count > 1 ? "s" : ""}
-                </title>
+                <title>{`${fmtDay(d.date)} — ${d.count} inscrit${d.count > 1 ? "s" : ""}`}</title>
                 {d.count > 0 ? (
                   <>
                     <text x={x + BAR_W / 2} y={top - 7} className="adm-chart-val">

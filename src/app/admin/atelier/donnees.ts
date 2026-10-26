@@ -381,6 +381,9 @@ async function lirePhotos(
     .from("photos")
     .select(`id, r2_key, nom_origine, taille, ordre, created_at, vignette_key, ${COLONNES_METADONNEES}`)
     .eq("numero_id", numeroId)
+    /* Une ligne déclarée sans confirmation (`taille` NULL) n'est pas une photo reçue : la fiche
+       comptait les envois interrompus (77 pour 47), avec des vignettes en 404. */
+    .not("taille", "is", null)
     .order("ordre", { ascending: true })
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
@@ -396,6 +399,7 @@ async function lirePhotos(
     .from("photos")
     .select("id, r2_key, nom_origine, taille, ordre, created_at, vignette_key")
     .eq("numero_id", numeroId)
+    .not("taille", "is", null)
     /* T-114 : le rang d'abord, puis l'arrivée, puis l'id — deux rangs égaux
        (deux appareils en même temps) se rangent toujours pareil. */
     .order("ordre", { ascending: true })
@@ -414,6 +418,7 @@ async function lirePhotos(
     .from("photos")
     .select("id, r2_key, nom_origine, taille, ordre, created_at")
     .eq("numero_id", numeroId)
+    .not("taille", "is", null)
     /* T-114 : le rang d'abord, puis l'arrivée, puis l'id — deux rangs égaux
        (deux appareils en même temps) se rangent toujours pareil. */
     .order("ordre", { ascending: true })

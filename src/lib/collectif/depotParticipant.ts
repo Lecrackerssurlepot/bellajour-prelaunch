@@ -115,6 +115,21 @@ export function phrasePlace(place: number | null | undefined, tu: boolean): stri
 export const SONDAGE_ALBUM_MS = 45_000;
 
 /**
+ * Le sondage dit au serveur la dernière arrivée qu'il connaît (`depuis`) : rien de plus
+ * récent, le serveur répond « rien de neuf » en une requête au lieu de relire et signer
+ * toute la page 0 (perf-1, 26/10). Une relecture COMPLÈTE tous les `SONDAGES_AVANT_RELECTURE`
+ * tours garde le compte juste quand une photo part à la corbeille.
+ */
+export const SONDAGES_AVANT_RELECTURE = 5;
+
+/** Le repère `depuis` reçu du navigateur : une date lisible, réécrite par le serveur ; `null` sinon. */
+export function lireDepuis(v: unknown): string | null {
+  if (typeof v !== "string" || v.length > 40) return null;
+  const t = Date.parse(v);
+  return Number.isFinite(t) ? new Date(t).toISOString() : null;
+}
+
+/**
  * Ce qu'a fait le DERNIER envoi (un « lot ») : ses photos seulement, pas le
  * cumul de la page. Le moteur le recompte à chaque vue (`compterLot`).
  */

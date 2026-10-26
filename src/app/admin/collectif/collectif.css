@@ -842,7 +842,7 @@
 }
 .eca-root .eca-liste-agendas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 18px;
 }
 .eca-root .eca-agenda {
@@ -1172,6 +1172,10 @@
   font-weight: 500;
 }
 @media (max-width: 1180px) {
+  .eca-root .eca-gestes-pop {
+    left: 0;
+    right: auto;
+  }
   .eca-root .eca-boite {
     grid-template-columns: 300px minmax(0, 1fr);
   }
@@ -2036,10 +2040,6 @@
   }
   .eca-root .eca-fiche-actions > a {
     flex: 1;
-  }
-  .eca-root .eca-gestes-pop {
-    left: 0;
-    right: auto;
   }
   .eca-root .eca-carte {
     padding: 18px;

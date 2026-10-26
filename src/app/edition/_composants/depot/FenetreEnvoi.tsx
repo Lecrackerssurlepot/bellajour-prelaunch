@@ -161,9 +161,12 @@ export default function FenetreEnvoi({
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="ec-depose-icone">
             <path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
           </svg>
-          <strong className="ec-depose-titre">{v("Glissez vos photos ici", "Glisse tes photos ici")}</strong>
+          <strong className="ec-depose-titre">
+            <span className="ec-pour-souris">{v("Glissez vos photos ici", "Glisse tes photos ici")}</span>
+            <span className="ec-pour-doigt">{v("Choisissez vos photos", "Choisis tes photos")}</span>
+          </strong>
           <span className="ec-note">
-            Vers « {cible} » · {v("un dossier de votre ordinateur se glisse aussi", "un dossier de ton ordinateur se glisse aussi")}
+            Vers « {cible} »<span className="ec-pour-souris"> · {v("un dossier de votre ordinateur se glisse aussi", "un dossier de ton ordinateur se glisse aussi")}</span>
           </span>
           <button type="button" className="ec-bouton" onClick={selecteur.ouvrir}>
             Choisir des photos
@@ -209,7 +212,9 @@ export default function FenetreEnvoi({
         </div>
         <span className="ec-note">
           {!fini
-            ? `${vue.enCours} photo${vue.enCours > 1 ? "s" : ""} en route en ce moment`
+            ? prog.restent
+              ? `${prog.restent} photo${prog.restent > 1 ? "s" : ""} en route en ce moment`
+              : "Dernières vérifications en cours"
             : vue.erreurs
               ? `${vue.erreurs} photo${vue.erreurs > 1 ? "s" : ""} n'${vue.erreurs > 1 ? "ont" : "a"} pas pu partir : « Réessayer » les renvoie.`
               : "Terminé"}
@@ -218,7 +223,7 @@ export default function FenetreEnvoi({
 
       <div className="ec-envoi-cases">
         <span className="ec-envoi-case">
-          <strong>{lot.arrivees.toLocaleString("fr-FR")}</strong>
+          <strong>{prog.envoyees.toLocaleString("fr-FR")}</strong>
           <span>arrivées</span>
         </span>
         <span className="ec-envoi-case">
@@ -258,6 +263,7 @@ export default function FenetreEnvoi({
       ))}
       {vue.horsLigne ? <p className="ec-note">Connexion interrompue : l&apos;envoi reprend tout seul.</p> : null}
       {vue.serveurLent ? <p className="ec-note">Le serveur répond lentement : l&apos;envoi reprend tout seul.</p> : null}
+      {vue.reseauBloque ? <p className="ec-note ec-note--erreur">{vue.reseauBloque}</p> : null}
       {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s) : ce ne sont pas des photos.</p> : null}
       {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
       {!fini ? (
@@ -270,9 +276,9 @@ export default function FenetreEnvoi({
       ) : null}
 
       <div className="ec-envoi-gestes">
-        {vue.erreurs ? (
+        {vue.erreurs || vue.reseauBloque ? (
           <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => moteur.reessayer()}>
-            Réessayer ({vue.erreurs})
+            {vue.erreurs ? `Réessayer (${vue.erreurs})` : "Réessayer"}
           </button>
         ) : null}
         {!vue.ferme ? (
