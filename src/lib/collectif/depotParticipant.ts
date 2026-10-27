@@ -10,8 +10,8 @@
  *   la confirmation groupée (15 s) : « 11 sur 18 envoyées · il en reste 7 ».
  * - `nouvellesDepuis`, `cleDeVisite` : « 7 nouvelles depuis ta visite » (8A),
  *   un repère gardé sur CE téléphone (jamais le token en clair).
- * - `photosDeLEnvoi` : « Mes photos » pendant l'envoi, sans montrer deux fois
- *   une photo que le serveur rend déjà.
+ * - `photosDeLEnvoi`, `grilleDesMiennes` : « Mes photos » pendant l'envoi, sans
+ *   montrer deux fois une photo ; une photo arrivée reste à sa place, en haut.
  *
  * Retours de Mathias du 21/10 (édition d'essai « Recette 1 ») :
  * - `compterLot`, `bilanDuLot`, `phrasesDuLot` : le merci compte le DERNIER
@@ -93,6 +93,23 @@ export function derniereArrivee(photos: readonly { arrivee: string }[]): string 
     }
   }
   return max;
+}
+
+/**
+ * « Mes photos » pendant et après l'envoi (test iPhone de Mathias, 27/10) : une photo arrivée
+ * GARDE sa place dans l'envoi, en haut, dans l'ordre où elle part. Avant, elle quittait l'envoi
+ * pour la liste du serveur, rangée EN DESSOUS : sur 66 photos, le haut de l'écran ne montrait que
+ * celles qui attendaient, et « ça charge par le bas ». La liste du serveur ne redit donc pas une
+ * photo de l'envoi. En mode « cocher », l'ancien partage revient : seule la liste du serveur se coche.
+ */
+export function grilleDesMiennes<T extends { photoId: string | null }, P extends { id: string }>(
+  envoi: readonly T[],
+  serveur: readonly P[],
+  cocher: boolean
+): { envoi: T[]; serveur: P[] } {
+  if (cocher) return { envoi: photosDeLEnvoi(envoi, serveur), serveur: [...serveur] };
+  const ids = new Set(envoi.map((e) => e.photoId).filter((id): id is string => Boolean(id)));
+  return { envoi: [...envoi], serveur: serveur.filter((p) => !ids.has(p.id)) };
 }
 
 /** Les photos de l'envoi en cours qui ne sont pas DÉJÀ dans la liste du serveur (même id). */

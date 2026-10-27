@@ -54,6 +54,7 @@ import {
   enTete,
   initiales,
   nouvellesDepuis,
+  grilleDesMiennes,
   photosDeLEnvoi,
   phraseAutresAppareils,
   BOUTON_REPRENDRE,
@@ -291,10 +292,14 @@ export default function Album(props: Props) {
   const nouvellesArrivees = Math.max(0, vue.arrivees + vue.auCoffre - base);
   /* « Déjà là » ne se montre pas ici : la liste du serveur la montre si elle est à moi (une photo
      d'une autre personne choisie sur cet appareil n'est pas « à moi »). La barre du bas dit où elle était. */
-  const envoi = photosDeLEnvoi(apercus.filter((e) => e.etat !== "deja" && !(e.photoId && retirees.has(e.photoId))), miennes.photos);
+  const envoiTout = apercus.filter((e) => e.etat !== "deja" && !(e.photoId && retirees.has(e.photoId)));
+  const grille = grilleDesMiennes(envoiTout, miennes.photos, cocher);
+  const envoi = grille.envoi;
+  /* Une photo arrivée dont l'aperçu a été libéré (les plus anciennes) prend la vignette du serveur. */
+  const vignetteServeur = new Map(miennes.photos.map((x) => [x.id, x.vignette]));
   const nbMiennes =
     (miennes.suivante === null ? miennes.photos.length : Math.max(miennes.photos.length, miennes.total ?? 0)) +
-    envoi.filter((e) => e.etat === "arrivee").length;
+    photosDeLEnvoi(envoiTout, miennes.photos).filter((e) => e.etat === "arrivee").length;
   const nbAlbum = (compte?.photos ?? album.photos.length) + nouvellesArrivees;
   /* Le DERNIER envoi (21/10) : sa barre, son merci, ses « déjà là ». Jamais le cumul de la page. */
   const lot = vue.lot;
@@ -392,7 +397,7 @@ export default function Album(props: Props) {
   const lien = props.tete.lien;
   const titre = lien ?? props.tete.evenement;
   const marque = lien ? `${props.tete.organisation} · ${props.tete.evenement}` : props.tete.organisation;
-  const listeCourante = onglet === "album" ? { ...album, photos: photosAlbum } : miennes;
+  const listeCourante = onglet === "album" ? { ...album, photos: photosAlbum } : { ...miennes, photos: grille.serveur };
   const nb = cochees.size;
 
   /* Un 404 (album, envoi, suppression) : le lien a été régénéré ou supprimé pendant que la page était
@@ -478,9 +483,11 @@ export default function Album(props: Props) {
       <div className="ec-dp-al-grille">
         {onglet === "miennes" && envoi.length ? (
           <ul className="ec-dp-g">
-            {envoi.map((e) => (
-              <li key={`envoi-${e.n}`} className={`ec-dp-t${e.etat === "refusee" || e.etat === "erreur" ? " ec-dp-t--refus" : ""}${e.apercu ? "" : " ec-dp-t--attente"}`}>
-                {e.apercu ? <img src={e.apercu} alt="" decoding="async" /> : null}
+            {envoi.map((e) => {
+              const image = e.apercu ?? (e.photoId ? vignetteServeur.get(e.photoId) : null) ?? null;
+              return (
+              <li key={`envoi-${e.n}`} className={`ec-dp-t${e.etat === "refusee" || e.etat === "erreur" ? " ec-dp-t--refus" : ""}${image ? "" : " ec-dp-t--attente"}`}>
+                {image ? <img src={image} alt="" decoding="async" /> : null}
                 {e.etat === "envoi" || e.etat === "attente" ? (
                   <span className="ec-dp-t-envoi" aria-hidden="true">
                     <span className="ec-dp-anneau" style={{ ["--p" as string]: `${Math.round(e.progres * 100)}%` }} />
@@ -496,7 +503,8 @@ export default function Album(props: Props) {
                 )}
                 {props.qui ? <span className="ec-dp-t-qui">{props.qui.prenom}</span> : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         ) : null}
 
@@ -551,7 +559,7 @@ export default function Album(props: Props) {
           </div>
         ) : null}
 
-        {listeCourante.suivante !== null && listeCourante.photos.length ? (
+        {listeCourante.suivante !== null && (listeCourante.photos.length || (onglet === "miennes" && envoi.length)) ? (
           <button type="button" className="ec-dp-bouton ec-dp-bouton--clair ec-dp-al-plus" onClick={() => void charger(onglet, listeCourante.suivante as number)}>
             Voir plus
           </button>
