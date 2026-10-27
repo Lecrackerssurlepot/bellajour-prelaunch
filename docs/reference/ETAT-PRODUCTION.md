@@ -1,4 +1,4 @@
-# État du système — au 21/10/2026
+# État du système — au 27/10/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -7,6 +7,28 @@ règles, sans moyen de savoir ce qui avait expiré.
 
 Règle d'entretien : quiconque change l'état du système met ce fichier à jour dans le même geste.
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
+
+---
+
+## 26-27/10/2026 — Campagne « rude épreuve » : #316 et #317 en production
+
+Onze agents ont éprouvé l'Édition collective et le tunnel B2C (5 éditions TEST-RE vivantes en même
+temps, 360 photos en charge simultanée, 658 captures sur 7 tailles d'écran, 92 fenêtres ouvertes).
+- **#316 EN PRODUCTION** : 32 bugs corrigés et contre-testés (envoi muet quand le coffre refuse,
+  verrou des 10 essais du code tenu en parallèle, redirection ouverte du compte, fenêtres et clavier
+  au téléphone, débordements de l'admin, hydratation #418 de /admin).
+- **#317 EN PRODUCTION (fe4d1eb, 26/10)** : les choix de Mathias 1B, 2A, 3A, 5A, 6A, 7A, 8A et une passe
+  « textes courts ». Migration `20261026_collectif_photos_moyenne.sql` APPLIQUÉE le 26/10 (MCP, accord
+  de Mathias), colonne vérifiée en SQL. **Pas encore prouvé** : qu'une vraie photo envoyée depuis un
+  navigateur remplit `moyenne_key` (requête dans l'en-tête de la migration).
+- **9A** : charge rejouée sur une version d'essai Vercel : album p95 0,7 s, 0 erreur sur 1 411 requêtes,
+  0 perte. La lenteur vue en local venait du banc.
+- **`COLLECTIF_RETENTION_AUTO`** posée par Mathias le 27/10 (Production et Preview). Lecture à blanc du
+  26/10 : aucune édition à effacer (Audencia pas livrée). Active à la première mise en ligne qui suit.
+- Toutes les données TEST-RE purgées (base et coffre), données réelles comptées identiques avant/après.
+- Tickets ouverts : T-204 à T-207. Non fait : le vrai Safari d'iPhone (pas de Xcode), la passe
+  « textes courts » des écrans Parler à l'atelier, BAT et Style ; « N photos non arrivées » et « vous
+  pouvez encore en envoyer N » se lisent mal ensemble.
 
 ---
 
