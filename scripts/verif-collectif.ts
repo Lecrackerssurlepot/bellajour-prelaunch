@@ -6878,6 +6878,15 @@ async function verifDepotParticipant() {
       && /apercus: TAILLE_PAGE_ALBUM/.test(depotW2));
   const envoi = DP.photosDeLEnvoi([{ photoId: "a" }, { photoId: null }, { photoId: "c" }], [{ id: "a" }]);
   ok("une photo arrivee n'est pas montree deux fois (l'envoi en cours et la liste du serveur)", envoi.length === 2 && envoi.every((e) => e.photoId !== "a"));
+  const g = DP.grilleDesMiennes([{ photoId: "a" }, { photoId: null }, { photoId: "c" }], [{ id: "a" }, { id: "z" }], false);
+  const gc = DP.grilleDesMiennes([{ photoId: "a" }, { photoId: null }], [{ id: "a" }, { id: "z" }], true);
+  ok("test iPhone 27/10 : une photo arrivee GARDE sa place dans l'envoi (en haut), la liste du serveur ne la redit pas ; en mode cocher, l'ancien partage",
+    g.envoi.length === 3 && g.envoi[0].photoId === "a" && g.serveur.map((p) => p.id).join() === "z"
+      && gc.envoi.length === 1 && gc.serveur.length === 2);
+  ok("test iPhone 27/10 : les apercus de l'envoi sont rendus dans l'ORDRE D'ENVOI (le haut de l'ecran part en premier), toujours les plus recents",
+    /i >= 0 && liste\.length < max; i--\)/.test(moteurW2) && /liste\.reverse\(\);\n\s*this\.cacheApercus = /.test(moteurW2));
+  ok("la grille d'envoi prend la vignette du serveur quand l'apercu d'une ancienne photo est libere",
+    /e\.apercu \?\? \(e\.photoId \? vignetteServeur\.get\(e\.photoId\) : null\)/.test(lire("src/app/depot/[token]/Album.tsx")));
 
   titre("— w2 : l'album du lien et « Mes photos » (planches 7, 8A) —");
   const vues = [
@@ -9164,8 +9173,8 @@ async function verifDecisions26() {
   ok("une photo trop lourde part avec sa vignette ET sa moyenne ; l'effacement d'une photo emporte sa moyenne (rangée sous son id, sans la colonne)",
     /supprimer\(cleMoyenne\(edition\.id, l\.id\)\)/.test(complete) && /cleVignette\(editionId, p\.id\), cleMoyenne\(editionId, p\.id\)\]/.test(lire("src/lib/collectif/corbeilleServeur.ts")));
   const mig = lire("supabase/migrations/20261026_collectif_photos_moyenne.sql");
-  ok("la migration : une colonne nullable, additive, écrite PAS appliquée, la requête de vérification ET celle qui prouve que la donnée arrive",
-    M.MIGRATION_MOYENNE === "supabase/migrations/20261026_collectif_photos_moyenne.sql" && /add column if not exists moyenne_key text;/.test(mig) && /PAS appliquée/.test(mig) && /avec_moyenne > 0/.test(mig) && !/default/i.test(mig.replace(/--.*$/gm, "")));
+  ok("la migration : une colonne nullable, additive, APPLIQUÉE le 26/10 (accord de Mathias), la requête de vérification ET celle qui prouve que la donnée arrive",
+    M.MIGRATION_MOYENNE === "supabase/migrations/20261026_collectif_photos_moyenne.sql" && /add column if not exists moyenne_key text;/.test(mig) && /APPLIQUÉE en production le 26\/10\/2026/.test(mig) && /avec_moyenne > 0/.test(mig) && !/default/i.test(mig.replace(/--.*$/gm, "")));
   const script = lire("scripts/collectif-moyennes-rattrapage.ts");
   ok("le rattrapage : lecture seule par défaut (--vraiment), REFUSE d'écrire sans la colonne, une tête au coffre avant de fabriquer, dépôt AVANT la clé, journalisé",
     /const vraiment = process\.argv\.includes\("--vraiment"\)/.test(script) && /if \(vraiment\) throw new Error\(`La colonne moyenne_key manque/.test(script)

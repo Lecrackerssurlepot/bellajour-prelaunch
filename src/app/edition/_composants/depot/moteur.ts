@@ -488,8 +488,10 @@ export class MoteurDepot {
   };
 
   /**
-   * Les photos de l'envoi gardées pour l'écran (`apercus` de la configuration),
-   * la plus récente d'abord. Mise en cache par version, comme `vue` : la même
+   * Les photos de l'envoi gardées pour l'écran (`apercus` de la configuration) :
+   * les plus récentes, rangées dans l'ORDRE D'ENVOI. Test iPhone de Mathias (27/10) :
+   * la plus récente d'abord, le haut de l'écran partait en dernier et 66 photos
+   * « chargeaient par le bas ». Mise en cache par version, comme `vue` : la même
    * liste tant que rien ne bouge (useSyncExternalStore).
    */
   apercus = (): ApercuEnvoi[] => {
@@ -512,6 +514,7 @@ export class MoteurDepot {
                 : "attente";
       liste.push({ n: it.n, etat, progres: it.progres, apercu: it.apercu, photoId: it.photoId, raison: it.raison });
     }
+    liste.reverse();
     this.cacheApercus = { version: this.version, liste };
     return liste;
   };
