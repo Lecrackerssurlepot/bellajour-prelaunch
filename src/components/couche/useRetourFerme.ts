@@ -10,7 +10,11 @@
    - le « retour » que NOUS déclenchons en retirant notre entrée n'est pas un geste de la cliente : aucune autre
      couche ne le prend pour elle (sinon la couche d'en dessous se fermerait toute seule) ;
    - une couche qui s'ouvre pendant ce retour attend qu'il soit fini avant de poser son entrée (sinon le retour
-     tardif viendrait défaire la sienne). */
+     tardif viendrait défaire la sienne).
+
+   Et un troisième (27/10) : une couche qui se ferme PARCE QU'on a touché un lien (« Photos » dans le menu) ne retire
+   pas son entrée. L'adresse ne change qu'une fois la page suivante arrivée : `history.back()` partait avant et
+   annulait la navigation, le menu se fermait et l'on restait sur place. */
 
 import { useEffect, useRef } from "react";
 
@@ -50,6 +54,16 @@ export function useRetourFerme(onFermer: () => void, actif: boolean = true) {
     let pose = false;
     let annule = false;
     const depart = window.location.href;
+    let navigue = false;
+    /* En capture : on voit le lien avant que son propre clic ne ferme la couche. */
+    function surClic(e: MouseEvent) {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
+      if (!(a instanceof HTMLAnchorElement) || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
+      const vers = new URL(a.href, window.location.href);
+      if (vers.origin === window.location.origin && vers.href.split("#")[0] !== depart.split("#")[0]) navigue = true;
+    }
+    document.addEventListener("click", surClic, true);
     const minuteur = window.setTimeout(() => {
       quandCalme(() => {
         if (annule) return;
@@ -69,10 +83,11 @@ export function useRetourFerme(onFermer: () => void, actif: boolean = true) {
       annule = true;
       window.clearTimeout(minuteur);
       window.removeEventListener("popstate", retour);
+      document.removeEventListener("click", surClic, true);
       if (!pose) return;
       const i = pile.indexOf(moi);
       if (i >= 0) pile.splice(i, 1);
-      if (window.location.href === depart && window.history.state?.bjOuverture) {
+      if (!navigue && window.location.href === depart && window.history.state?.bjOuverture) {
         enRetour = true;
         /* Filet : si le navigateur ne rend pas de popstate, on ne bloque pas les couches suivantes. */
         window.setTimeout(() => enRetour && finDuRetour(), 600);
