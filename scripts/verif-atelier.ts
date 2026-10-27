@@ -450,6 +450,7 @@ import {
 import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
+import { nommeurDePersonnes, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -4126,8 +4127,9 @@ titre("— T-176 : la fenêtre de signature d'une vignette (pure) —");
     );
   const appelants = fichiers(racine).filter((f) => /signerLectureVignette\(/.test(readFileSync(f, "utf8"))).map((f) => f.slice(racine.length + 1)).sort();
   ok(`signerLectureVignette n'est appele que par r2.ts et les ecrans du collectif (${appelants.join(", ")})`,
-     /* Planches du 20/10 (lot w1) : l'album du participant et la corbeille (responsable, atelier) signent leurs vignettes de la même façon. */
-     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
+     /* Planches du 20/10 (lot w1) : l'album du participant et la corbeille (responsable, atelier) signent leurs vignettes de la même façon.
+        27/10 (mise en page 0 bis) : la lecture des photos d'une édition pour l'outil de mise en page aussi. */
+     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/admin/collectif/editions/[id]/mise-en-page/photos/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
   const r2src = readFileSync(resolve(racine, "lib/atelier/r2.ts"), "utf8");
   const corps = (nom: string) => {
     const debut = r2src.indexOf(`export async function ${nom}(`);
@@ -6731,6 +6733,87 @@ const verifierMepPhotos = () => {
     nonGardees.length === 0 && fichiersRoutes(racineAdmin).some((f) => f.endsWith("mise-en-page/photos/route.ts")));
 };
 verifierMepPhotos();
+
+/* ═══════════════ MISE EN PAGE 0 bis : les photos d'une ÉDITION, en lecture seule ═══════════════ */
+const verifierMepPhotosEdition = () => {
+  titre("— mise en page : les photos d'une édition, en lecture seule (0 bis) —");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const route = sansComm(readFileSync(resolve(process.cwd(), "src/app/api/admin/collectif/editions/[id]/mise-en-page/photos/route.ts"), "utf8"));
+  const pur = sansComm(readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/photosEdition.ts"), "utf8"));
+  const iOuvert = route.indexOf("collectifOuvert()");
+  const iQui = route.indexOf("quiEstConnecteRequete(");
+  const iUuid = route.indexOf("estUuid(id)");
+  const iBase = route.indexOf("makeSupabase()");
+  ok("route édition : GET seul ; collectifOuvert() (404) PUIS quiEstConnecteRequete (401) PUIS estUuid (404), tous avant la base",
+    /export async function GET\(/.test(route) && !/export async function (POST|PUT|PATCH|DELETE)\(/.test(route)
+      && iOuvert > 0 && iOuvert < iQui && iQui < iUuid && iUuid < iBase
+      && /if \(!collectifOuvert\(\)\) return new NextResponse\(null, \{ status: 404 \}\);/.test(route) && /status: 401/.test(route));
+  ok("route édition : état EFFECTIF (etatEffectif), collecteOuverte = preparation, 410 sur photos_supprimees_le, 503 tableAbsente",
+    /etatEffectif\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(route) && /collecteOuverte: etat === "preparation"/.test(route)
+      && /phrasePhotosEffacees\(edition\.photos_supprimees_le\)/.test(route) && /status: 410/.test(route)
+      && /tableAbsente\(/.test(route) && /status: 503/.test(route));
+  ok("route édition : photos_supprimees_le (20261024) tentée puis repli colonneAbsente sans elle",
+    /photos_supprimees_le`\)/.test(route) && /colonneAbsente\(ed\.error\.code\)\) ed = await lireEdition\(COLONNES_EDITION\)/.test(route)
+      && !/photos_supprimees_le/.test(route.match(/const COLONNES_EDITION = "[^"]*"/)?.[0] ?? "photos_supprimees_le"));
+  ok("route édition : compte exact (GET limit(0), jamais head) puis lireToutesLesLignes, hors corbeille, arrivées seulement, tri confirmee_le",
+    /lireHorsCorbeille\(/.test(route) && /COMPTE_SANS_LIGNE/.test(route) && /\.limit\(0\)/.test(route) && !/head: true/.test(route)
+      && /lireToutesLesLignes<RangeePhotoEdition>\(/.test(route) && (route.match(/\.not\("confirmee_le", "is", null\)/g) ?? []).length === 2
+      && (route.match(/\.is\("supprimee_le", null\)/g) ?? []).length === 2 && /compte\.avec \? q\.is\("supprimee_le", null\)/.test(route)
+      && /\{ colonne: "confirmee_le", croissant: true \}/.test(route));
+  ok("route édition : refus si moins de lignes lues que comptées (compte illisible compris)",
+    /total === null \|\| data\.length < total/.test(route) && /lecture_incomplete/.test(route));
+  ok("route édition : moyenne_key par lireAvecMoyenne + colonnesAvecMoyenne (repli 42703 non simplifié), absente des colonnes de base",
+    /lireAvecMoyenne\(\(moyenne\) =>/.test(route) && /colonnesAvecMoyenne\(COLONNES_PHOTOS_EDITION_MEP, moyenne\)/.test(route)
+      && !/moyenne_key/.test(COLONNES_PHOTOS_EDITION_MEP) && /deposant/.test(COLONNES_PHOTOS_EDITION_MEP) && /role_deposant/.test(COLONNES_PHOTOS_EDITION_MEP));
+  ok("route édition : vignette par signerLectureVignette, moyenne et original par signerGet au TTL d'aperçu, échec = null",
+    /signerLectureVignette\(p\.vignette_key\)\.catch\(\(\) => null\)/.test(route)
+      && /signerGet\(p\.moyenne_key, APERCU_TTL_SECONDS\)\.catch\(\(\) => null\)/.test(route)
+      && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)\.catch\(\(\) => null\)/.test(route));
+  ok("route édition : magazines id, rang, nom triés par rang",
+    /from\("collectif_magazines"\)\.select\("id, rang, nom"\)\.eq\("edition_id", id\)\.order\("rang", \{ ascending: true \}\)/.test(route));
+  const ECRIT = /\.(insert|update|upsert|delete)\(|\.rpc\(|PutObject|DeleteObject|CopyObject|ecrireObjet|journaliser|sendBrevoEmail|supprimerPrefixe/;
+  ok("route édition et module pur : aucune écriture (base, coffre, journal, mail)", !ECRIT.test(route) && !ECRIT.test(pur));
+  ok("route édition : maxDuration LITTÉRAL 60, force-dynamic, no-store",
+    /export const maxDuration = 60;/.test(route) && /export const dynamic = "force-dynamic"/.test(route) && /"Cache-Control": "no-store"/.test(route));
+  ok("module pur : ni base, ni réseau, ni horloge, ni signature",
+    !/makeSupabase|fetch\(|Date\.now|new Date|signerGet|signerLectureVignette|process\.env/.test(pur));
+
+  const base: RangeePhotoEdition = {
+    id: "p1", r2_key: "collectif/e/p1.jpg", vignette_key: "collectif/e/p1-v.webp", moyenne_key: "collectif/e/p1-m.webp",
+    nom_origine: "IMG_1.jpg", largeur: 4000, hauteur: 3000, prise_le: "2026-10-04T14:02:00", lieu_ville: "Nantes", lieu_pays: "France",
+    provenance_id: null, role_deposant: "participant", deposant: "mathias", appareil_id: "a1", preselection: true, signalee: false,
+  };
+  const lien = "11111111-2222-4333-8444-555555555555";
+  const rangs: RangeePhotoEdition[] = [
+    { ...base, id: "a", provenance_id: lien, deposant: "Mathias" },
+    { ...base, id: "b", provenance_id: lien, deposant: "Mathias" },
+    { ...base, id: "c", provenance_id: lien, deposant: "mathias " },
+    { ...base, id: "d", provenance_id: lien, deposant: null },
+    { ...base, id: "e", role_deposant: "responsable", provenance_id: null, deposant: null },
+    { ...base, id: "f", role_deposant: "atelier", provenance_id: null, deposant: null },
+  ];
+  const nommer = nommeurDePersonnes(rangs, "Claire Dupont");
+  ok("déposant : la graphie la plus fréquente du lien (« mathias » → « Mathias »), « Sans nom », responsable sous son nom, l'atelier",
+    nommer(rangs[2]) === "Mathias" && nommer(rangs[0]) === "Mathias" && nommer(rangs[3]) === "Sans nom"
+      && nommer(rangs[4]) === "Claire Dupont" && nommer(rangs[5]) === "L'atelier"
+      && nommeurDePersonnes(rangs.slice(4, 5), null)(rangs[4]) === "Le responsable");
+  const adresses = { vignette: "https://v", moyenne: "https://m", original: "https://o" };
+  const l1 = photoEditionMep(base, "Mathias", adresses);
+  ok("ligne : champs recopiés, lieu « Ville, Pays », trois adresses",
+    l1.id === "p1" && l1.nom === "IMG_1.jpg" && l1.largeur === 4000 && l1.hauteur === 3000 && l1.priseLe === "2026-10-04T14:02:00"
+      && l1.lieu === "Nantes, France" && l1.personne === "Mathias" && l1.preselection === true && l1.signalee === false
+      && l1.vignette === "https://v" && l1.moyenne === "https://m" && l1.original === "https://o");
+  const l2 = photoEditionMep({ ...base, signalee: true }, "X", adresses);
+  const l3 = photoEditionMep({ ...base, signalee: null }, "X", adresses);
+  ok("ligne : signalée rendue vraie, signalée nulle rendue fausse", l2.signalee === true && l3.signalee === false);
+  const l4 = photoEditionMep({ ...base, vignette_key: null, moyenne_key: undefined }, "X", adresses);
+  ok("ligne : sans vignette → null même si une adresse traîne ; sans moyenne (photo d'avant ou migration absente) → null ; original gardé",
+    l4.vignette === null && l4.moyenne === null && l4.original === "https://o");
+  ok("lieu : pays seul, ville seule, rien → null, blancs ignorés",
+    lieuDeLaPhoto(null, "Portugal") === "Portugal" && lieuDeLaPhoto("Lisbonne", null) === "Lisbonne"
+      && lieuDeLaPhoto(null, null) === null && lieuDeLaPhoto("  ", "") === null);
+};
+verifierMepPhotosEdition();
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
