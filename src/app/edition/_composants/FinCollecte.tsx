@@ -19,11 +19,13 @@
    Les phrases viennent de `@/lib/collectif/finCollecte` (pur, au harnais). */
 
 import { createPortal } from "react-dom";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ligneOubli, partiesCollecteTerminee, RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
 import type { FinReponse } from "@/lib/collectif/photosSimples";
 import Fenetre from "./Fenetre";
-import { useRetourFerme } from "./useRetourFerme";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 
 /** Ce que l'écran sait de la fin de collecte : qui peut la terminer, depuis quand elle l'est, si l'atelier peut encore rouvrir. */
 export type FinDeCollecte = {
@@ -173,20 +175,8 @@ export function ChoixFinCollecte({
   const [confirme, setConfirme] = useState(Boolean(confirmerSeul));
   useRetourFerme(onFermer, telephone);
 
-  useEffect(() => {
-    if (!telephone) return;
-    const html = document.documentElement;
-    const avant = html.style.overflow;
-    html.style.overflow = "hidden";
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFermer();
-    };
-    window.addEventListener("keydown", touche);
-    return () => {
-      html.style.overflow = avant;
-      window.removeEventListener("keydown", touche);
-    };
-  }, [telephone, onFermer]);
+  useVerrouDefilement(telephone);
+  useEchap(onFermer, telephone);
 
   async function toutEnvoyer() {
     setEnvoi(true);

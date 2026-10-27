@@ -15,6 +15,9 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEchap } from '@/components/couche/useEchap'
+import { useRetourFerme } from '@/components/couche/useRetourFerme'
+import { useVerrouDefilement } from '@/components/couche/useVerrouDefilement'
 
 const MOTIFS = [
   'L’ambiance, les couleurs',
@@ -48,15 +51,12 @@ export default function FeuilleAjustement({
 
   /* Escape ferme la feuille ; le focus part sur la carte à l'ouverture pour
      que le lecteur d'écran et le clavier entrent dans le dialogue. */
+  useEchap(onFermer, ouvert)
+  useRetourFerme(onFermer, ouvert)
+  useVerrouDefilement(ouvert)
   useEffect(() => {
-    if (!ouvert) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onFermer()
-    }
-    document.addEventListener('keydown', onKey)
-    cardRef.current?.focus()
-    return () => document.removeEventListener('keydown', onKey)
-  }, [ouvert, onFermer])
+    if (ouvert) cardRef.current?.focus()
+  }, [ouvert])
 
   const basculer = useCallback((motif: string) => {
     setErreur(null)
@@ -100,7 +100,7 @@ export default function FeuilleAjustement({
     <div
       className="nu-feuille"
       data-open="true"
-      onMouseDown={(e) => {
+      onClick={(e) => {
         /* Clic sur le fond (jamais sur la carte) → on ferme. */
         if (e.target === e.currentTarget) onFermer()
       }}

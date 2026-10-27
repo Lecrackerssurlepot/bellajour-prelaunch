@@ -6,6 +6,9 @@
    DEUX GRANDS ENCARTS (le style, les photos), en bas, sous chacun, sa ligne :
    ce qui reste à envoyer à l'atelier sous le style, le dernier message sous
    les photos.
+   Sur téléphone (une colonne), l'ordre suit ce qui attend le responsable
+   (tableau.css, `order`) : le message de l'atelier s'il est non lu, ce qui reste
+   à envoyer, les photos, puis le style quand il n'y a rien à y faire.
    Les étapes numérotées et la phrase « Ensuite » ont disparu avec la
    révision ; le curseur unique « photos par participant » aussi : chaque lien
    de contribution porte désormais son plafond.
@@ -154,9 +157,9 @@ function Eventail() {
 
 function CarteStyleBientot({ token, p }: { token: string; p: <T>(vous: T, toi: T) => T }) {
   return (
-    <section className="ec-carte ec-tdb-carte ec-tdb-style" aria-labelledby="ec-tdb-style">
+    <section className="ec-carte ec-tdb-carte ec-tdb-style ec-tdb-style--bientot" aria-labelledby="ec-tdb-style">
       <div className="ec-tdb-carte-tete">
-        <span className="ec-tdb-etiquette">1 · Le style</span>
+        <span className="ec-tdb-etiquette"><span className="ec-tdb-rang">1 · </span>Le style</span>
         <span className="ec-tdb-etat">Bientôt</span>
       </div>
       <h2 className="ec-tdb-titre" id="ec-tdb-style">
@@ -207,9 +210,9 @@ function CarteStyle({ token, tableau, p, ecrire, ouverts }: { token: string; tab
           : p('Vos styles sont choisis', 'Tes styles sont choisis')
 
   return (
-    <section className="ec-carte ec-tdb-carte ec-tdb-style" aria-labelledby="ec-tdb-style">
+    <section className={fait ? 'ec-carte ec-tdb-carte ec-tdb-style ec-tdb-style--fait' : 'ec-carte ec-tdb-carte ec-tdb-style'} aria-labelledby="ec-tdb-style">
       <div className="ec-tdb-carte-tete">
-        <span className="ec-tdb-etiquette">1 · Le style</span>
+        <span className="ec-tdb-etiquette"><span className="ec-tdb-rang">1 · </span>Le style</span>
         {fait ? (
           <span className="ec-tdb-fait">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

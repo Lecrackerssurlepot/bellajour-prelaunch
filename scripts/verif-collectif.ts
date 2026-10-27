@@ -1254,7 +1254,7 @@ ok("la case d'accord des participants porte le texte CHOISI par Mathias (17/10, 
      const d = lire("src/app/depot/[token]/Depot.tsx");
      return /texteAccord\(VERSION_ACCORD, \{ evenement: tete\.evenement, deOrganisation: deNom\(tete\.organisation\), lien \}\)/.test(d) && !/J(&apos;|')accepte que Bellajour/.test(d)
        && (Accord.texteAccord("2026-10-17", { evenement: "Week-end en mer", deOrganisation: Espace.deNom("Audencia"), lien: null }) ?? "").startsWith("J'accepte que Bellajour utilise ces photos pour composer le magazine « Week-end en mer » d'Audencia, et je confirme avoir le droit de les partager, y compris pour les personnes qu'on y voit.")
-       && !/\[À FIXER\]/.test(d.replace(/\/\*[\s\S]*?\*\//g, "")) && /disabled=\{!accord \|\| !nomPret\}/.test(d)
+       && !/\[À FIXER\]/.test(d.replace(/\/\*[\s\S]*?\*\//g, "")) && /onClick=\{continuer\}/.test(d) && /else if \(!accord\) champ = "accord"/.test(d)
        && Espace.deNom("SKEMA") === "de SKEMA" && Espace.deNom("Air France") === "d'Air France" && Espace.deNom("Essai neuf") === "d'Essai neuf" && Espace.deNom("Hermès") === "de Hermès";
    })());
 ok("le nom de telechargement est en ASCII sur", nomTelechargement("Facture n°3 / été", "pdf") === "Facture n 3 ete.pdf" && nomTelechargement("", "pdf") === "document.pdf");
@@ -2359,7 +2359,7 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
 
   const page = lirePagePhotos();
   ok("Photos : plus de « Signaler » (le geste s'appelle « Ne pas publier »), plus de barre de presélection, les grands chiffres en tete",
-    !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /photo\{stats\.photos > 1 \? "s" : ""\} reçue/.test(page));
+    !/Signaler/.test(page) && !/ec-presel/.test(page) && /ec-ph-chiffres/.test(page) && /<strong>\{nombre\(stats\.photos\)\}<\/strong> photo\{stats\.photos > 1 \? "s" : ""\} · <strong>\{nombre\(stats\.personnes\)\}<\/strong> personne/.test(page) && !/reçue/.test(page));
   ok("Photos : ranger un dossier du responsable en le glissant (draggable, onDrop, dans la liste de « Mes photos »), « + Nouveau dossier » ouvre le depot sur un nom neuf",
     /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
   const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
@@ -2701,7 +2701,7 @@ titre("— T-154 : « Retrouver mon espace » —");
     /\.eq\("responsable_email", email\)/.test(r) && /\.is\("archive_le", null\)/.test(r) && /a: \{ email: e\.responsable_email/.test(r) && /code: `RETROUVER-\$\{quart\}`/.test(r) && /verrou: true/.test(r) && /collectifOuvert\(\)/.test(r));
   const page = lire("src/app/edition/retrouver/page.tsx") + lire("src/app/edition/retrouver/FormulaireRetrouver.tsx");
   ok("la page : rien ne pretend etre parti quand les mails sont coupes ; la reponse ne dit jamais si l'adresse est connue",
-    /mailsCollectifEnService\(\)/.test(page) && /Ce service ouvre bientôt/.test(page) && /Si <strong>\{email\}<\/strong>\{" "\}est l&apos;adresse d&apos;un responsable/.test(page));
+    /mailsCollectifEnService\(\)/.test(page) && /Ce service ouvre bientôt/.test(page) && /Si <strong>\{email\}<\/strong>\{" "\}est connue, le lien arrive/.test(page));
   ok("l'adresse courte /espace mene a la page, la page « lien introuvable » y renvoie ; « Votre espace est prêt » ne la cite plus (planche 6 du 21/10, « Lien perdu ? » se retrouve dans l'espace), « Le lien des participants a changé » la cite toujours",
     /source: "\/espace", destination: "\/edition\/retrouver"/.test(lire("next.config.ts")) && /<Link className="ec-porte-lien" href="\/edition\/retrouver">/.test(lire("src/app/edition/not-found.tsx"))
       && !MailsTextes.mailEspacePret({ tu: false, organisation: "O", evenement: "E", responsable: null, liens: { responsable: "https://x/edition/A", equipe: "https://x/edition/B", depot: "https://x/depot/C" }, cloture: null }).texte.includes("/espace")
@@ -3013,7 +3013,7 @@ titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le
   ok("la version courante est celle de l'album (20/10 : la page affiche la phrase, bascule approuvee par Mathias avec ses deux phrases) ; celle du 17/10 reste lisible (des photos la portent)",
     v === "2026-10-20" && v === Accord.VERSION_ACCORD_ALBUM && Accord.VERSIONS_ALBUM.has(v) && Accord.TEXTES_ACCORD.has("2026-10-17") && Accord.lireAccord({ accord: true, accordVersion: "2026-10-17" })?.version === "2026-10-17");
   ok("cocher donne la version au moteur, decocher la retire ; le bouton reste ferme sans accord",
-    /moteur\.definirAccord\(e\.target\.checked \? VERSION_ACCORD : null\)/.test(depot) && /disabled=\{!accord \|\| !nomPret\}/.test(depot));
+    /moteur\.definirAccord\(e\.target\.checked \? VERSION_ACCORD : null\)/.test(depot) && /onClick=\{continuer\}/.test(depot) && /else if \(!accord\) champ = "accord"/.test(depot));
 
   const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
   ok("le moteur garde l'accord de CHAQUE photo a l'ajout (comme la provenance), n'en mele jamais deux dans un lot, et envoie `accord: true` avec la version",
@@ -3112,7 +3112,7 @@ titre("— T-192 : le nom du participant ne change plus —");
   const depot = lire("src/app/depot/[token]/Depot.tsx");
   ok("l'ecran : deux champs la premiere fois, puis « en tant que … » sans champ ; le nom du serveur passe avant celui du telephone",
     /autoComplete="given-name"/.test(depot) && /autoComplete="family-name"/.test(depot) && /const nomFixe = props\.nomConnu \?\? fige \?\? \(garde \|\| null\);/.test(depot)
-      && /\{nomFixe \? \(/.test(depot) && /Définitif : écris-le bien/.test(depot));
+      && /formuleAvant = nomFixe \? \(/.test(depot) && /Définitif : écris-le bien/.test(depot));
   const route = lire("src/app/api/collectif/depot/presign/route.ts");
   ok("la route reprend le nom deja donne par l'appareil AVANT de compter et d'ecrire, et ne le cherche que pour un participant",
     /if \(role === "participant" && appareilLu && !participant\) \{\s*const connu = await nomDeLAppareil\(/.test(route) && /if \(connu\) deposant = connu;/.test(route)
@@ -3512,8 +3512,8 @@ titre("— T-200 : les videos ne partent pas, la page le dit avant, et le refus 
       && D.phrasesIgnores(1, 5, null).length === 1);
   const depotTsx = lire("src/app/depot/[token]/Depot.tsx");
   const albumTsx = lire("src/app/depot/[token]/Album.tsx");
-  ok("la page : « Photos seulement. » AU-DESSUS du bouton (planche 6B, avant le choix), redit dans la barre de l'album ; plus de « fichier(s) ignoré(s) »",
-    D.PHOTOS_SEULEMENT === "Photos seulement." && /<p className="ec-dp-videos">\s*<IcoSansVideo \/>\s*<span>\{PHOTOS_SEULEMENT\}<\/span>\s*<\/p>\s*\{entree\}\s*<button type="button" className="ec-dp-bouton"/.test(depotTsx)
+  ok("la page : « Photos seulement » dans le pied SOUS le bouton (souche, 27/10 : plus de bloc à part), redit dans la barre de l'album ; plus de « fichier(s) ignoré(s) »",
+    D.PHOTOS_SEULEMENT === "Photos seulement." && /<button type="button" className="ec-dp-bouton" onClick=\{continuer\}>[\s\S]*?piedDeCarte\(PHOTOS_SEULEMENT/.test(depotTsx)
       && /PHOTOS_SEULEMENT\.split\(" : "\)\[0\]/.test(albumTsx)
       && /phrasesIgnores\(vue\.ignores, vue\.videos, vue\.premiereVideo\)/.test(albumTsx) && !/fichier\(s\) ignoré\(s\)/.test(depotTsx + albumTsx));
   const moteurV = lire("src/app/edition/_composants/depot/moteur.ts");
@@ -5846,7 +5846,7 @@ titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, coche
       && /APPUI_LONG_MS = 450/.test(grilleTsx) && /g\.onAppuiLong\(ph\)/.test(grilleTsx) && /-webkit-touch-callout: none/.test(css)
       && /if \(cocherActif\) cocher\(ph\.id, false\);\s*else \{\s*fermerAvis\(\);\s*setMenuPhoto\(ph\.id\);\s*\}/.test(collecteTsx) && /if \(!g\.ecrire \|\| e\.pointerType === "mouse"\) return;/.test(grilleTsx) && !/onEtoile|ec-ph-t-etoile/.test(vivantPage));
   ok("la photo agrandie : précédente / suivante au clavier, balayage au téléphone, Échap ferme ; ouverte DANS la colonne de contenu (portail) ; qui, quel lien, quand",
-    /e\.key === "ArrowLeft"/.test(agrandir) && /e\.key === "ArrowRight"/.test(agrandir) && /e\.key === "Escape"/.test(agrandir) && /onTouchEnd=/.test(agrandir) && /Math\.abs\(dx\) > 50/.test(agrandir)
+    /e\.key === "ArrowLeft"/.test(agrandir) && /e\.key === "ArrowRight"/.test(agrandir) && /useEchap\(a\.onFermer\)/.test(agrandir) && /onTouchEnd=/.test(agrandir) && /Math\.abs\(dx\) > 50/.test(agrandir)
       && /document\.querySelector\("\.ec-contenu"\)/.test(agrandir) && /createPortal\(vue, hote\)/.test(agrandir) && /<dt>Lien<\/dt>/.test(agrandir) && /<dt>Arrivée<\/dt>/.test(agrandir) && /<dt>Prise<\/dt>/.test(agrandir));
   /* Lot w2 : la même intention (Ne pas publier réversible) ; « Supprimer » a désormais son bouton, branché sur la corbeille, jamais pour l'équipe. */
   ok("le CŒUR passe par la route existante (`marquer`, `preselection`) et revient si elle refuse ; « Supprimer » = la corbeille de 30 jours, « Annuler » rend les MÊMES ids, et n'existe que pour le responsable ; plus de « Ne pas publier » chez le client (les marques `signalee` restent en base)",
@@ -6824,8 +6824,8 @@ async function verifDepotParticipant() {
 
   titre("— w2 : se presenter par son adresse (planches 6 et 8) —");
   ok("la phrase sous l'adresse dit a quoi elle sert, et a rien d'autre (tu et vous)",
-    depotW2.includes("Seulement pour te reconnaître. Aucun autre mail.")
-      && depotW2.includes("Seulement pour vous reconnaître. Aucun autre mail."));
+    depotW2.includes("Pour te reconnaître. Seul le prénom se voit.")
+      && depotW2.includes("Pour vous reconnaître. Seul le prénom se voit."));
   ok("l'adresse complete est demandee au serveur SANS nom (rien n'est ecrit pour une adresse inconnue) ; inconnue, prenom ET nom",
     /const r = await presenter\(token, p, emailLu\);/.test(depotW2) && /r\.json\.statut === "connu"/.test(depotW2) && /autoComplete="email"/.test(depotW2) && /type="email"/.test(depotW2));
   const iPresenter = depotW2.indexOf("presenter(token, p, adresse, prenomSaisi, nomSaisi)");
@@ -6898,7 +6898,13 @@ async function verifDepotParticipant() {
     [...DP.nouvellesDepuis(vues, "2026-10-20T11:00:00.000Z")].join() === "2" && DP.nouvellesDepuis(vues, null).size === 0 && DP.derniereArrivee(vues) === "2026-10-20T12:30:00.000Z");
   ok("la place dite tout de suite, au registre ; « sans limite » ; plus de place, le bouton se ferme, SAUF pour reprendre un envoi coupé (2A : les mêmes photos ne consomment rien)",
     DP.phrasePlace(36, true) === "tu peux encore en envoyer 36" && DP.phrasePlace(36, false) === "vous pouvez encore en envoyer 36" && DP.phrasePlace(null, true) === "sans limite"
-      && DP.phrasePlace(0, true) === "tu as envoyé toutes les photos prévues" && DP.phrasePlace(undefined, true) === "" && /disabled=\{plein && !coupees\}/.test(albumW2));
+      && DP.phrasePlace(0, true) === "tu as envoyé toutes les photos prévues" && DP.phrasePlace(undefined, true) === "" && /if \(plein && !coupees\) setAnnonce/.test(albumW2));
+  const PD = await import("@/lib/collectif/phrasesDepot");
+  ok("souche 27/10 : UN seul chiffre dit au participant (des photos à reprendre : jamais aussi la place) ; un seul libellé « ce n'est pas moi »",
+    PD.ligneReste(3, 51, true) === "3 photos non arrivées" && PD.ligneReste(0, 51, true) === "tu peux encore en envoyer 51" && PD.ligneReste(0, undefined, false) === ""
+      && !/\d.*\d/.test(PD.ligneReste(3, 51, false)) && PD.libellePasMoi(true) === "Ce n'est pas toi ?" && PD.libellePasMoi(false) === "Ce n'est pas vous ?"
+      && PD.limiteDeCarte({ coupees: 3, reconnu: true, place: 51, plafond: 60, sansPlafond: false, tu: false }) === ""
+      && PD.piedDeCarte("Photos seulement", PD.limiteDeCarte({ coupees: 0, reconnu: false, place: undefined, plafond: 60, sansPlafond: false, tu: false }), "15 novembre") === "Photos seulement · 60 max · jusqu'au 15 novembre");
   ok("les initiales : « LM » pour un nom tape ici, « L » pour une personne retrouvee", DP.initiales("Léa", "Martin") === "LM" && DP.initiales("léa", null) === "L" && DP.initiales(null) === "?");
   ok("une photo sans vignette n'a pas d'adresse d'image : la case dit « En préparation » (jamais l'original)",
     /vignette: typeof x\.vignette === "string" \? x\.vignette : null,/.test(lire("src/app/depot/[token]/appels.ts")) && /x\.vignette \? <img src=\{x\.vignette\}[^>]*\/> : <span className="ec-dp-t-prep">En préparation<\/span>/.test(albumW2));
@@ -7561,7 +7567,7 @@ async function verifDejaLa() {
         && /for \(const f of filtreAlbum\(provenanceId\)\) q = poser\(q, f, avec\);\s*if \(avec\) q = q\.eq\("participant_id", personneId\);/.test(rAlbum) && /appareil_id\.is\.null,appareil_id\.neq\.\$\{appareil\}/.test(rAlbum)
         && /COMPTE_SANS_LIGNE/.test(rAlbum) && !/head: true/.test(rAlbum) && !/\.(insert|update|upsert|delete)\(/.test(rAlbum));
     ok("la carte et l'annonce de retour disent CE lien et ce qui reste (`phraseRetour`), plus le total de l'edition ; le serveur compte par lien",
-      /phraseRetour\(reconnu\.surCeLien, place, lien, tu\)/.test(depot) && /phraseRetour\(accueilSurCeLien, placeLue, lienNom, tu\)/.test(album) && !/déjà arrivée\$\{|photos déjà arrivées/.test(depot)
+      /phraseDejaSurLien\(reconnu\.surCeLien, lien\)/.test(depot) && /phraseDejaSurLien\(accueilSurCeLien, lienNom\)/.test(album) && !/déjà arrivée\$\{|photos déjà arrivées/.test(depot)
         && /comptesDeLaPersonne\(supabase, edition\.id, participant\.id, appareil, \{ provenanceId: lien\?\.id \?\? null \}\)/.test(rParticipant) && /surCeLien: comptes\.surCeLien,/.test(rParticipant)
         && /comptesDeLaPersonne\(sb, edition\.id, qui\.participant\.id, telephone, \{ provenanceId: provenance\?\.id \?\? null \}\)/.test(pageF) && /surCeLien: nombre\(json\.surCeLien\)/.test(appelsF));
     ok("le bilan de l'envoi : les « deja la » dits par cas dans la barre du bas (pendant l'envoi aussi) ; une suppression efface le bilan precedent ; le moteur oublie les photos supprimees d'ici",
@@ -8378,7 +8384,7 @@ function verifPartageLiensMail() {
       !/Lien général/.test(ongletLiens + mosaiqueCode) && (collecteCode.match(/(?:partager|setGrandQr|setPartage)\(lienDe\(l\.nom, l\.cle, l\.plafond, l\.n\)\)/g) ?? []).length === 3 && /url: cle \? `\$\{p\.lienParticipants\}\?p=\$\{cle\}` : p\.lienParticipants/.test(collecteCode)
         && !/lienDe\(liens\.general|(?:partager|setPartage)\(lienDe\([^)]*null/.test(collecteCode));
     ok("« Sans groupe » n'apparaît QUE s'il a des photos (l'arbre), là où sont les groupes, en lecture seule : une tuile SANS « … », ni QR, ni « Partager », ni menu (`actionsDe` ne connaît que `lien:<id>`)",
-      /filter\(\(n\) => n\.cle\.startsWith\("lien:"\) \|\| n\.cle === "participants"\)/.test(collecteCode) && /const l = p\.ecrire \? liens\?\.liens\.find\(\(x\) => `lien:\$\{x\.id\}` === cle\) : undefined;\s*if \(!l\) return undefined;/.test(collecteCode)
+      /filter\(\(n\) => n\.cle\.startsWith\("lien:"\) \|\| n\.cle === "participants" \|\| \(n\.cle === "vous" && n\.n > 0\)\)/.test(collecteCode) && /const l = p\.ecrire \? liens\?\.liens\.find\(\(x\) => `lien:\$\{x\.id\}` === cle\) : undefined;\s*if \(!l\) return undefined;/.test(collecteCode)
         && /if \(!t\.actions\?\.length\) return null;/.test(mosaiqueCode) && /\{menu && ouverte\?\.actions \?/.test(mosaiqueCode));
     const partage = code("src/app/edition/_composants/LienContribution.tsx");
     ok("filet : si un écran demandait encore à partager l'adresse de base (`general`), « Partager » et le grand QR disent pourquoi et ne préparent ni message, ni QR, ni adresse",
@@ -8604,8 +8610,8 @@ function verifBarreFiltres() {
 
   titre("— 21/10, planche 5 : le lien général ne se montre plus (la pastille, les sous-titres, le partage) —");
   {
-    ok("« Par lien » dit ses chiffres sous le titre (ordinateur) : « N liens » (les liens de contribution), plus « Sans groupe » seulement s'il a reçu des photos ; plus de pastille « Les liens · N »",
-      /const nbContributions = liensListe\.filter\(\(x\) => x\.cle\.startsWith\("lien:"\)\)\.length;/.test(collecte) && /const sansGroupe = liensListe\.find\(\(x\) => x\.cle === "participants"\);/.test(collecte) && /\$\{sansGroupe \? `, \$\{sansGroupe\.nom\}` : ""\}/.test(collecte) && !/Les liens · /.test(collecte));
+    ok("« Par lien » ne redit PAS les chiffres (27/10) : une seule ligne « N photos · N personnes » sous le titre de la page, pas de titre de vue ni de sous-ligne sous l'onglet du même nom ; plus de pastille « Les liens · N »",
+      /const note = albums\s*\? ""/.test(collecte) && /\{!vide && !albums \? \(\s*<div className="ec-ph-zone-tete ec-ph-ordi">/.test(collecte) && !/Les liens · /.test(collecte));
     ok("plus de « le lien général » à l'écran de la page Photos (sous-titres d'albums, ligne du téléphone, note) ; « Partager ce lien » n'existe que pour un lien de contribution (jamais pour l'adresse de base)",
       !/["`][^"`\n]*le lien général[^"`\n]*["`]/.test(collecte) && /const partageable = p\.ecrire && p\.ouverte && liens && f\.mode === "liens" && f\.lien\?\.startsWith\("lien:"\);/.test(collecte) && !/f\.lien === "participants"\) return lienDe/.test(collecte));
   }
@@ -8645,7 +8651,16 @@ function verifMosaique() {
     ok("un seul lien : GRAND ; aucun lien : rien", MO.mosaiqueDesLiens(bateaux([3]), 2).map((t) => t.taille).join() === "grand" && MO.mosaiqueDesLiens([], 2).length === 0 && MO.mosaiqueDesLiens(bateaux([3]), 4)[0].taille === "grand");
     ok("deux liens : une grande et une LARGE (la petite seule devient large) ; trois : une grande et deux larges ; quatre : trois larges au plus derrière la grande",
       tailles(MO.mosaiqueDesLiens(bateaux([9, 5]), 2)) === "gl" && tailles(MO.mosaiqueDesLiens(bateaux([9, 5, 4]), 2)) === "gll" && tailles(MO.mosaiqueDesLiens(bateaux([9, 5, 4, 3]), 2)) === "glll");
-    const t2 = MO.mosaiqueDesLiens(huit, 2);
+    ok("« Mes photos » en tête (27/10) : quelle que soit sa place au classement, elle vient PREMIÈRE, aucune tuile perdue, aucun trou, 2 à 40 tuiles sur 2 et 4 colonnes",
+      (() => {
+        for (const c of [2, 4] as const) for (let n = 2; n <= 40; n++) for (let r = 0; r < n; r++) {
+          const l = Array.from({ length: n }, (_, i) => ({ cle: `k${i}`, nom: `N${String(i).padStart(2, "0")}`, n: 100 - i }));
+          const m = MO.mosaiqueDesLiens(l, c, `k${r}`);
+          if (m[0].cle !== `k${r}` || m.length !== n || new Set(m.map((x) => x.cle)).size !== n || MO.casesVides(m, MO.colonnesDeLaMosaique(n, c)) !== 0) return false;
+        }
+        return true;
+      })());
+        const t2 = MO.mosaiqueDesLiens(huit, 2);
     ok("les huit bateaux de la maquette, téléphone : la grande (Bateau 5), puis une large, deux petites, une large, deux petites, une large : 5, 2, 4, 8, 3, 1, 6, 7",
       noms(t2) === "5,2,4,8,3,1,6,7" && tailles(t2) === "glppl" + "ppl");
     const t4 = MO.mosaiqueDesLiens(huit, 4);
@@ -8696,15 +8711,15 @@ function verifMosaique() {
     const charger = collecte.slice(collecte.indexOf("const charger = useCallback("), collecte.indexOf("/* L'adresse suit les listes et l'onglet"));
     const sansBruit = collecte.slice(collecte.indexOf("async function relireSansBruit"), collecte.indexOf("async function apresSondage"));
     ok("à l'écran : les poids sont gelés à la PREMIÈRE lecture (et une lecture que l'utilisateur a voulue : changer de vue, relire après un geste), jamais par la mise à jour en direct (`relireSansBruit`) ; la mosaïque lit l'ordre gelé, jamais les chiffres du moment",
-      /setPeseesLiens\(\(avant\) => figerLesPesees\(avant, peseesDesLiens\(json\.arbre\)\)\)/.test(charger) && !/Pesees/.test(sansBruit)
-        && /const ordre: readonly Pesee\[\] = p\.nouveau \? \[\.\.\.p\.ordre, \{ cle: CLE_NOUVEAU, nom: "\+", n: -1 \}\] : p\.ordre;/.test(mosaiqueTsx) && /mosaiqueDesLiens\(ordre, demandees\)/.test(mosaiqueTsx) && !/mosaiqueDesLiens\(p\.tuiles/.test(mosaiqueTsx) && (collecte.match(/setPesees(?:Liens|Personnes)\(/g) ?? []).length === 1 && !/peseesDesPersonnes/.test(collecte));
+      /setPeseesLiens\(\(avant\) => figerLesPesees\(avant, peseesDesLiens\(json\.arbre, p\.ecrire \? "Mes photos" : "Les dossiers du responsable"\)\)\)/.test(charger) && !/Pesees/.test(sansBruit)
+        && /const ordre: readonly Pesee\[\] = nouveau \? \[\.\.\.p\.ordre, \{ cle: CLE_NOUVEAU, nom: "\+", n: -1 \}\] : p\.ordre;/.test(mosaiqueTsx) && /mosaiqueDesLiens\(ordre, demandees, CLE_VOUS\)/.test(mosaiqueTsx) && !/mosaiqueDesLiens\(p\.tuiles/.test(mosaiqueTsx) && (collecte.match(/setPesees(?:Liens|Personnes)\(/g) ?? []).length === 1 && !/peseesDesPersonnes/.test(collecte));
     ok("la direction de la place : les tuiles de la lecture du moment n'entrent que par leur CLÉ (`lues.get(r.cle)`) : un chiffre qui bouge ne déplace rien", /const lues = new Map\(p\.tuiles\.map\(\(t\) => \[t\.cle, t\]\)\);/.test(mosaiqueTsx) && /const t = lues\.get\(r\.cle\);/.test(mosaiqueTsx));
   }
 
   titre("— 21/10, ce que dit une tuile —");
   {
-    ok("la pastille d'un lien : « 214 photos · 9 personnes », « 214 · 9 » sur une petite, « 1 photo · 1 personne », jamais « 0 personne » ; sans photo : « Rien reçu pour l'instant » / « Rien reçu »",
-      MO.pastilleDuLien(214, 9).long === "214 photos · 9 personnes" && MO.pastilleDuLien(214, 9).court === "214 · 9" && MO.pastilleDuLien(1, 1).long === "1 photo · 1 personne" && MO.pastilleDuLien(5, 0).long === "5 photos · 1 personne"
+    ok("la pastille d'un lien : « 214 photos · 9 personnes », « 214 photos » sur une petite, « 1 photo · 1 personne », jamais « 0 personne » ; sans photo : « Rien reçu pour l'instant » / « Rien reçu »",
+      MO.pastilleDuLien(214, 9).long === "214 photos · 9 personnes" && MO.pastilleDuLien(214, 9).court === "214 photos" && MO.pastilleDuLien(1, 1).court === "1 photo" && MO.pastilleDuLien(1, 1).long === "1 photo · 1 personne" && MO.pastilleDuLien(5, 0).long === "5 photos · 1 personne"
         && MO.pastilleDuLien(0, 0).long === "Rien reçu pour l'instant" && MO.pastilleDuLien(0, 0).court === "Rien reçu" && MO.pastilleDuLien(2692, 80).long === "2 692 photos · 80 personnes" && MO.pastilleDuLien(214, 9).voix === "214 photos, 9 personnes");
     ok("la pastille d'une personne : « 38 photos · Bateau 1 », « 38 » sur une petite ; sans lien (le responsable) : « 86 photos » ; sans photo : « Aucune photo » / « 0 »",
       MO.pastilleDeLaPersonne(38, "Bateau 1").long === "38 photos · Bateau 1" && MO.pastilleDeLaPersonne(38, "Bateau 1").court === "38" && MO.pastilleDeLaPersonne(86, null).long === "86 photos" && MO.pastilleDeLaPersonne(1, "Bateau 1").long === "1 photo · Bateau 1"
@@ -8742,8 +8757,8 @@ function verifMosaique() {
       !/FenetreLien\b|setFenetreLien|fenetreLien/.test(collecte) && (collecte.match(/setCreerLien\(""\)/g) ?? []).length >= 3 && /creer=\{setCreerLien\}/.test(collecte) && /<FenetreCreerLien token=\{p\.token\}/.test(collecte));
     ok("chaque choix de la barre du bas ramène à SA vue d'ensemble, d'où qu'on vienne (un lien ouvert, une personne choisie) : « Toutes » = toutes les photos, « Par lien » = la mosaïque des liens ; un seul toucher",
       /onClick=\{\(\) => appliquer\(\{ \.\.\.f, mode: "tout", lien: null, dossier: null \}\)\}/.test(collecte) && /onClick=\{\(\) => appliquer\(\{ \.\.\.f, mode: "liens", lien: null, dossier: null, personnes: \[\] \}\)\}/.test(collecte));
-    ok("« Par lien » : la mosaïque, puis « Mes photos » et l'atelier en lignes dessous (jamais une ligne à zéro photo) ; plus de « Dernières arrivées » ni de cartes d'album ; un message si rien à montrer",
-      /<Mosaique genre="lien" variante="albums" tuiles=\{tuilesLiens\} ordre=\{peseesLiens\}/.test(collecte) && /className="ec-mo-ligne"/.test(collecte) && /\(n\.cle === "vous" \|\| n\.cle === "atelier"\) && n\.n > 0/.test(collecte) && !/Dernières arrivées|ec-ph-carte\b|ec-ph-cartes/.test(collecte) && /Aucun lien à montrer pour l&apos;instant/.test(collecte));
+    ok("« Par lien » : la mosaïque (« Mes photos » en tuile, en tête), puis l'atelier en ligne dessous (jamais une ligne à zéro photo) ; plus de « Dernières arrivées » ni de cartes d'album ; un message si rien à montrer",
+      /<Mosaique genre="lien" variante="albums" tuiles=\{tuilesLiens\} ordre=\{peseesLiens\}/.test(collecte) && /className="ec-mo-ligne"/.test(collecte) && /n\.cle === "atelier" && n\.n > 0/.test(collecte) && !/Dernières arrivées|ec-ph-carte\b|ec-ph-cartes/.test(collecte) && /Aucun lien à montrer pour l&apos;instant/.test(collecte));
     ok("« Par lien » lit les couvertures de ses tuiles par le dossier `liens` de la route (une couverture par lien, aucune page de grille) ; la page ne demande plus `couverturesDe` ni `seulementArbre` (la route les garde pour la fenêtre de dépôt)",
       /const dossier = personnes \?\? f\.dossier \?\? f\.lien \?\? \(f\.mode === "liens" \? "liens" : "tout"\);/.test(code("src/app/edition/[token]/photos/filtres.ts")) && /if \(estVueAlbums\(nf\)\) setCouvLiens\(json\.couvertures \?\? \{\}\);/.test(collecte) && !/couverturesDe|seulementArbre|lireCouvertures/.test(collecte)
         && /dossier === "liens" \? arbre\.liens/.test(lire("src/lib/collectif/grillePhotos.ts")) && /couverturesDe: \(COUVERTURES_DE as readonly unknown\[\]\)\.includes\(corps\.couverturesDe\)/.test(lire("src/lib/collectif/grillePhotos.ts")));
@@ -8751,18 +8766,18 @@ function verifMosaique() {
       /vide && arbre && p\.ecrire && p\.ouverte && peseesLiens && tuilesLiens\.length/.test(collecte) && /if \(l\) void partager\(lienDe\(l\.nom, l\.cle, l\.plafond, l\.n\)\);/.test(collecte) && /const tuileActive = Boolean\(lienDePastilles\) && !vide;/.test(collecte));
     ok("le menu « … » : Partager et QR code seulement tant que la collecte est ouverte, puis Modifier le nom et le nombre, Supprimer le lien en rouge ; « Sans groupe » et l'équipe n'ont pas de « … » (`BoutonPlus` ne rend rien sans actions)",
       /\.\.\.\(o\.ouverte\s*\?\s*\[/.test(liens) && /cle: "supprimer", libelle: "Supprimer le lien", icone: ICONES_MENU\.corbeille, danger: true/.test(liens) && /if \(!t\.actions\?\.length\) return null;/.test(mosaiqueTsx) && /const l = p\.ecrire \? liens\?\.liens\.find/.test(collecte));
-    ok("LA TUILE : un seul bouton étiré pour toucher (le nom dedans), la pastille ne reçoit pas le toucher (`pointer-events: none`), le « … » est une cible de 44 px (le rond fait 36), le nom est à moitié fondu (`mask-image`) en chiffres modernes (`lining-nums`)",
+    ok("LA TUILE : un seul bouton étiré pour toucher (le nom dedans), la pastille ne reçoit pas le toucher (`pointer-events: none`), le « … » est une cible de 44 px (le rond fait 36), le nom est un blanc de verre UNIFORME (27/10 : plus de dégradé dans les lettres, plus de `mask-image`) en chiffres modernes (`lining-nums`)",
       /position: absolute;\s*inset: 0;/.test(regle(css, "\\.ec-espace \\.ec-tu-ouvrir")) && /pointer-events: none;/.test(regle(css, "\\.ec-espace \\.ec-tu-pastille")) && /width: 44px;\s*height: 44px;/.test(regle(css, "\\.ec-espace \\.ec-tu-plus")) && /inset: 4px;/.test(regle(css, "\\.ec-espace \\.ec-tu-plus::before"))
-        && /mask-image: linear-gradient\(180deg, rgba\(var\(--ec-noir-rgb\), 0\.42\) 0%, rgb\(var\(--ec-noir-rgb\)\) 66%\);/.test(regle(css, "\\.ec-espace \\.ec-tu-nom")) && /font-variant-numeric: lining-nums;/.test(regle(css, "\\.ec-espace \\.ec-tu-nom")));
-    ok("les mesures de la planche 3 : grande 2 × 2 (76 px de nom), large 2 × 1 (54), petite 1 × 1 (36), arrondis de 28 px (grande, large) et 24 px (petite), 6 px d'écart au téléphone et 8 à l'ordinateur (nom 104 / 68 / 46), la hauteur d'une rangée = la largeur d'une colonne (`100cqw`), sans trou (`dense`)",
-      /--tu-nom: 76px;[\s\S]*grid-column: span 2;\s*grid-row: span 2;\s*border-radius: var\(--ec-r-panneau\);/.test(regle(css, "\\.ec-espace \\.ec-tu--grand")) && /--tu-nom: 54px;[\s\S]*grid-column: span 2;\s*border-radius: var\(--ec-r-panneau\);/.test(regle(css, "\\.ec-espace \\.ec-tu--large"))
-        && /--tu-nom: 36px;/.test(regle(css, "\\.ec-espace \\.ec-tu")) && /border-radius: var\(--ec-r-carte\);/.test(regle(css, "\\.ec-espace \\.ec-tu")) && /--mo-g: 6px;/.test(regle(css, "\\.ec-espace \\.ec-mo-grille")) && /grid-auto-flow: dense;/.test(regle(css, "\\.ec-espace \\.ec-mo-grille"))
-        && /grid-auto-rows: calc\(\(100cqw - \(var\(--mo-c\) - 1\) \* var\(--mo-g\)\) \/ var\(--mo-c\)\);/.test(regle(css, "\\.ec-espace \\.ec-mo-grille")) && /container-type: inline-size;/.test(regle(css, "\\.ec-espace \\.ec-mo-zone"))
-        && /@media \(min-width: 861px\) \{[\s\S]*--mo-g: 8px;[\s\S]*--tu-nom: 46px;[\s\S]*--tu-nom: 104px;[\s\S]*--tu-nom: 68px;/.test(css) && /\.ec-mo-zone\[data-colonnes="4"\] \{\s*max-width: none;/.test(css));
+        && !/mask-image/.test(regle(css, "\\.ec-espace \\.ec-tu-nom")) && /color: rgba\(var\(--ec-reflet-rgb\), 0\.9\);/.test(regle(css, "\\.ec-espace \\.ec-tu-nom")) && /font-variant-numeric: lining-nums;/.test(regle(css, "\\.ec-espace \\.ec-tu-nom")));
+    ok("les mesures (planche 3, reprises le 27/10 : tuiles BASSES) : grande 2 colonnes (nom 44 px au téléphone, 52 à l'ordinateur où elle prend 2 rangées), large 2 × 1 (34 / 38), petite 1 × 1 (27 / 30), arrondis de 28 px (grande, large) et 24 px (petite), 6 px d'écart au téléphone et 8 à l'ordinateur, une rangée de hauteur BORNÉE (156 px au téléphone, 128 à 180 px à l'ordinateur) et non plus un carré de 640 px, sans trou (`dense`)",
+      /--tu-nom: 44px;[\s\S]*grid-column: span 2;\s*grid-row: span 1;[\s\S]*/.test(regle(css, "\\.ec-espace \\.ec-tu--grand")) && /--tu-nom: 34px;[\s\S]*grid-column: span 2;\s*border-radius: var\(--ec-r-panneau\);/.test(regle(css, "\\.ec-espace \\.ec-tu--large"))
+        && /--tu-nom: 27px;/.test(regle(css, "\\.ec-espace \\.ec-tu")) && /border-radius: var\(--ec-r-carte\);/.test(regle(css, "\\.ec-espace \\.ec-tu")) && /--mo-g: 6px;/.test(regle(css, "\\.ec-espace \\.ec-mo-grille")) && /grid-auto-flow: dense;/.test(regle(css, "\\.ec-espace \\.ec-mo-grille"))
+        && /--mo-h: 156px;/.test(regle(css, "\\.ec-espace \\.ec-mo-grille")) && /grid-auto-rows: var\(--mo-h\);/.test(regle(css, "\\.ec-espace \\.ec-mo-grille")) && !/100cqw/.test(regle(css, "\\.ec-espace \\.ec-mo-grille")) && /container-type: inline-size;/.test(regle(css, "\\.ec-espace \\.ec-mo-zone"))
+        && /@media \(min-width: 861px\) \{[\s\S]*--mo-g: 8px;[\s\S]*--mo-h: clamp\(128px, 13cqw, 180px\);[\s\S]*--tu-nom: 30px;[\s\S]*--tu-nom: 52px;[\s\S]*grid-row: span 2;[\s\S]*--tu-nom: 38px;/.test(css) && /\.ec-mo-zone\[data-colonnes="4"\] \{\s*max-width: none;/.test(css));
     ok("la feuille de la mosaïque : tout sous `.ec-espace`, aucune couleur en dur (des jetons), aucun `dvh`, aucun z-index numérique ; le voile de la tuile éteinte est celui du thème",
       css.split("{").slice(0, -1).every((b) => /\.ec-espace /.test(b.split("}").pop() ?? "") || /@media/.test(b.split("}").pop() ?? "")) && !/#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/.test(css) && !/dvh/.test(css) && !/z-index:\s*\d{2,}/.test(css) && /background: var\(--ec-voile\);/.test(css));
-    ok("l'album d'un lien (3C) : sa TUILE plus basse en tête (210 px, nom à 68 px), puis ses personnes en PASTILLES, puis la grille rangée par jour : aucune liste à part, aucune barre de plafond, aucun « Voir ses photos » ; le retour est la capsule « ‹ Par lien » (planche 12), jamais un lien de texte",
-      /<TuileDeLAlbum t=\{tuileDeLAlbum\} \/>/.test(collecte) && /<PastillesDePersonnes/.test(collecte) && !/Dernières photos/.test(collecte) && /height: 210px;/.test(regle(css, "\\.ec-espace \\.ec-tu--ouvert")) && /--tu-nom: 68px;/.test(regle(css, "\\.ec-espace \\.ec-tu--ouvert"))
+    ok("l'album d'un lien (3C) : sa TUILE plus basse en tête (210 px, nom à 56 px), puis ses personnes en PASTILLES, puis la grille rangée par jour : aucune liste à part, aucune barre de plafond, aucun « Voir ses photos » ; le retour est la capsule « ‹ Par lien » (planche 12), jamais un lien de texte",
+      /<TuileDeLAlbum t=\{tuileDeLAlbum\} \/>/.test(collecte) && /<PastillesDePersonnes/.test(collecte) && !/Dernières photos/.test(collecte) && /height: 210px;/.test(regle(css, "\\.ec-espace \\.ec-tu--ouvert")) && /--tu-nom: 56px;/.test(regle(css, "\\.ec-espace \\.ec-tu--ouvert"))
         && !/ec-li-barre|Voir les \$\{autres\}|Voir ses photos|Tout le monde<\/b>/.test(collecte + mosaiqueTsx) && /tuileActive && telLienOuvert && !cocherActif\s*\? \{ texte: "Par lien", faire: \(\) => appliquer\(avecLien\(f, null\)\) \}/.test(collecte) && /className="ec-s-retour/.test(collecte) && !/FlecheRetour|ec-ph-fleche/.test(collecte + mosaiqueTsx + css));
     ok("l'en-tête d'un lien ouvert au téléphone : le grand titre et la ligne de chiffres se taisent (la tuile porte le nom et les chiffres) ; UNE ligne : la capsule « ‹ Par lien » à gauche, le « + » et le « … » à droite ; ces règles valent (0,4,0) : photos.css, chargée après, ne les écrase pas",
       /\.ec-espace \.ec-collecte\.ec-collecte--tuile \.ec-ecran-titres,\s*\.ec-espace \.ec-collecte\.ec-collecte--tuile \.ec-ph-mligne \{\s*display: none;/.test(tel) && /justify-content: flex-end;/.test(tel)
@@ -8894,8 +8909,8 @@ async function verifPhotosSimples() {
   ok("la collecte terminée : le « … » ne garde que « Supprimées récemment » (plus de « Sélectionner », plus de « Terminer » : « rien ne s'ajoute plus », planche 9, 11D) ; la pastille calme du téléphone dit la date, sans l'heure ni phrase ; sans date lisible elle ne l'invente pas",
     libs(haut({ ouverte: false, terminer: false })) === "Supprimées récemment · 3" && libs(haut({ ouverte: true })).startsWith("Sélectionner") && Fin.pastilleCollecteTerminee("2026-11-15T10:00:00.000Z") === "Collecte terminée le 15 novembre" && Fin.pastilleCollecteTerminee("2026-11-01T10:00:00.000Z") === "Collecte terminée le 1er novembre"
       && Fin.pastilleCollecteTerminee(null) === "Collecte terminée" && Fin.pastilleCollecteTerminee("pas une date") === "Collecte terminée");
-  ok("à l'ordinateur le « … » n'a que le geste final (« Supprimées récemment » est en bas de la colonne, la sélection se fait à la souris) ; sans le droit de terminer il n'y a rien",
-    libs(haut({ ordinateur: true })) === "Terminer la collecte" && haut({ ordinateur: true, terminer: false }).length === 0 && haut({ ordinateur: true, ecrire: false }).length === 0);
+  ok("à l'ordinateur le « … » est le MÊME qu'au téléphone (27/10 : un menu à un seul choix n'avait pas de sens) ; l'équipe n'a rien",
+    libs(haut({ ordinateur: true })) === libs(haut()) && haut({ ordinateur: true, ecrire: false }).length === 0);
   const photoMenu = (o: Partial<Parameters<typeof S.entreesDuMenuPhoto>[0]> = {}) => S.entreesDuMenuPhoto({ ecrire: true, favori: false, voirQui: true, ...o });
   ok("l'appui long : Favori, « Voir qui l'a envoyée », puis après un filet Supprimer en rouge ; une photo de l'atelier n'a pas de « Voir qui l'a envoyée » ; un favori se montre posé ; l'équipe n'a pas de menu",
     libs(photoMenu()) === "Favori | Voir qui l'a envoyée | Supprimer" && photoMenu().map((x) => `${x.danger ? "r" : "-"}${x.filetAvant ? "f" : "-"}`).join() === "--,--,rf" && libs(photoMenu({ voirQui: false })) === "Favori | Supprimer" && photoMenu({ favori: true })[0].pose === true && photoMenu({ ecrire: false }).length === 0);
@@ -9212,7 +9227,7 @@ async function verifDecisions26() {
   const contexte = lire("src/app/edition/_composants/depot/DepotContexte.tsx");
   ok("le participant : lu au serveur par le cookie de l'appareil ; la carte et l'album disent le compte, et LE bouton devient « Reprendre » (aucun bouton de plus), jamais fermé par la place",
     /telephone \? photosCoupeesDeLAppareil\(sb, edition\.id, telephone, 'participant', teteObjet\) : Promise\.resolve\(0\)/.test(page) && /coupees=\{coupees\}/.test(page)
-      && /\{coupees \? BOUTON_REPRENDRE : "Choisir mes photos"\}/.test(depotTsx) && /\{coupees \? BOUTON_REPRENDRE : "Ajouter des photos"\}/.test(albumTsx) && /disabled=\{plein && !coupees\}/.test(albumTsx)
+      && /\{coupees \? BOUTON_REPRENDRE : "Choisir mes photos"\}/.test(depotTsx) && /\{coupees \? BOUTON_REPRENDRE : "Ajouter des photos"\}/.test(albumTsx) && /if \(plein && !coupees\) setAnnonce/.test(albumTsx)
       && /coupeesADire\(props\.coupees, vueMoteur\.total\)/.test(depotTsx));
   ok("le responsable : lu au layout (son rôle, son appareil), dit dans la pastille d'envoi « N photos non arrivées · Reprendre », qui ouvre DIRECTEMENT le choix des photos",
     /photosCoupeesDeLAppareil\(makeSupabase\(\), edition\.id, appareil, 'responsable', teteObjet\)/.test(layout) && /coupees=\{coupees\}/.test(layout)

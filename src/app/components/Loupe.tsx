@@ -29,6 +29,9 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
+import { useEchap } from '@/components/couche/useEchap'
+import { useRetourFerme } from '@/components/couche/useRetourFerme'
+import { useVerrouDefilement } from '@/components/couche/useVerrouDefilement'
 import './loupe.css'
 
 export type VueLoupe = { src: string; legende: string }
@@ -82,6 +85,10 @@ export default function Loupe({
     rappels.current = { onFermer, bouger }
   })
 
+  useEchap(onFermer, ouverte)
+  useRetourFerme(onFermer, ouverte)
+  useVerrouDefilement(ouverte)
+
   useEffect(() => {
     if (!ouverte) return
 
@@ -113,19 +120,16 @@ export default function Loupe({
     /* Le fond ne doit pas défiler pendant qu'on regarde : sur mobile, un
        glissement vertical déplacerait la page sous la loupe et on la
        retrouverait ailleurs en refermant. */
-    const avant = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    /* (verrou commun : `useVerrouDefilement`, empilable.) */
 
     function auClavier(e: KeyboardEvent) {
-      if (e.key === 'Escape') rappels.current.onFermer()
-      else if (e.key === 'ArrowRight') rappels.current.bouger(1)
+      if (e.key === 'ArrowRight') rappels.current.bouger(1)
       else if (e.key === 'ArrowLeft') rappels.current.bouger(-1)
     }
     window.addEventListener('keydown', auClavier)
 
     return () => {
       window.removeEventListener('keydown', auClavier)
-      document.body.style.overflow = avant
       /* Dégeler AVANT de rendre le focus : un élément encore inerte
          refuserait de le reprendre. */
       for (const el of geles) el.inert = false

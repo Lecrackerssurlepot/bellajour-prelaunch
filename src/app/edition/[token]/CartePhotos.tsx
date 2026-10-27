@@ -94,7 +94,7 @@ export default function CartePhotos(p: Props) {
   return (
     <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-carte-photos">
       <div className="ec-tdb-carte-tete">
-        <span className="ec-tdb-etiquette">2 · Les photos</span>
+        <span className="ec-tdb-etiquette"><span className="ec-tdb-rang">2 · </span>Les photos</span>
         <span className="ec-note">{fin === "fait" ? "Collecte terminée" : p.statut}</span>
       </div>
 

@@ -54,7 +54,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { texteAccord, VERSION_ACCORD } from "@/lib/collectif/accord";
 import { TAILLE_PAGE_ALBUM } from "@/lib/collectif/album";
 import { PHOTOS_SEULEMENT } from "@/lib/collectif/depot";
-import { BOUTON_REPRENDRE, cleDeVisite, coupeesADire, decouperAccord, initiales, phraseCoupees, phraseRetour } from "@/lib/collectif/depotParticipant";
+import { BOUTON_REPRENDRE, cleDeVisite, coupeesADire, decouperAccord, initiales } from "@/lib/collectif/depotParticipant";
+import { type ChampManquant, libellePasMoi, ligneReste, limiteDeCarte, messageManquant, phraseDejaSurLien, piedDeCarte } from "@/lib/collectif/phrasesDepot";
 import { useMoteur } from "../../edition/_composants/depot/useMoteur";
 import { deNom } from "@/lib/collectif/espace";
 import { NOM_MAX, nettoyerMorceau, nomComplet, premierMot } from "@/lib/collectif/participant";
@@ -64,7 +65,7 @@ import { phraseSilence, useSelecteur } from "../../edition/_composants/depot/use
 import Album, { type Onglet, type Tete } from "./Album";
 import { lirePersonne, oublier, presenter } from "./appels";
 import { TeteCarte } from "./Etats";
-import { IcoAppareil, IcoSansVideo, IcoTelephone } from "./icones";
+import { IcoAppareil, IcoTelephone } from "./icones";
 import { CarteLienMort } from "./LienMort";
 
 type Props = {
@@ -73,6 +74,8 @@ type Props = {
   tete: Tete;
   /** Le message d'accueil de l'édition (ou la phrase par défaut, au registre). */
   invitation: string;
+  /** L'organisateur l'a-t-il écrite ? La phrase par défaut répète le titre : elle ne s'affiche pas. */
+  invitationEcrite: boolean;
   plafond: number | null;
   sansPlafond: boolean;
   cloture: string;
@@ -140,6 +143,8 @@ export default function Depot(props: Props) {
   const [nomSaisi, setNomSaisi] = useState("");
   const [place, setPlace] = useState(props.place);
   const [erreur, setErreur] = useState<string | null>(null);
+  /* Le champ manquant signalé au clic sur le bouton (jamais un bouton grisé avec la raison ailleurs). */
+  const [manque, setManque] = useState<ChampManquant | null>(null);
   /* Le lien est mort (un 404 de la présentation) : toute la page le dit. */
   const [mort, setMort] = useState(false);
   const occupe = useRef(false);
@@ -211,6 +216,7 @@ export default function Depot(props: Props) {
     setEmail(valeur);
     emailCourant.current = valeur;
     setErreur(null);
+    setManque(null);
     if (etatEmail.etat === "erreur") setEtatEmail({ etat: "attente", message: null });
     /* L'adresse reconnue a changé : ce n'est plus elle (le téléphone sera rattaché à la bonne au choix des photos). */
     if (reconnu?.par === "email" && normaliserEmail(valeur) !== dejaDemande.current) {
@@ -360,41 +366,94 @@ export default function Depot(props: Props) {
   const texte = texteAccord(VERSION_ACCORD, { evenement: tete.evenement, deOrganisation: deNom(tete.organisation), lien });
   const accordTexte = decouperAccord(texte ?? "", lien);
   const lireAdresse = lireIdentite({ email }, tu);
+
+  /* Le bouton reste actif : au clic, le premier champ manquant prend le focus et dit son message à côté de lui. */
+  const continuer = () => {
+    let champ: ChampManquant | null = null;
+    if (!repli && !identite && !emailLu) champ = "email";
+    else if (!nomPret) champ = prenomSaisi.trim() ? "nom" : "prenom";
+    else if (!accord) champ = "accord";
+    if (champ) {
+      setManque(champ);
+      document.getElementById(`ec-dp-f-${champ}`)?.focus();
+      return;
+    }
+    selecteur.ouvrir();
+  };
+  /* Entrée : le champ suivant, puis (au dernier) le même geste que le bouton. */
+  const entrer = (suite: string | null) => (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (suite) document.getElementById(suite)?.focus();
+    else continuer();
+  };
+  const messageEmail = manque === "email" ? (email.trim() && !lireAdresse.ok ? lireAdresse.message : messageManquant("email", tu)) : null;
+  const messageNom = manque === "prenom" || manque === "nom" ? messageManquant(manque, tu) : null;
+  const champsNom = (note: string) => (
+    <div className="ec-dp-nom">
+      <div className="ec-dp-duo">
+        <label className="ec-dp-champ">
+          <span>{v("Votre prénom", "Ton prénom")}</span>
+          <input
+            id="ec-dp-f-prenom"
+            className="ec-dp-input"
+            value={prenomSaisi}
+            onChange={(e) => {
+              setPrenomSaisi(e.target.value);
+              setManque(null);
+            }}
+            onKeyDown={entrer("ec-dp-f-nom")}
+            autoComplete="given-name"
+            autoCapitalize="words"
+            enterKeyHint="next"
+            maxLength={NOM_MAX}
+            required
+          />
+        </label>
+        <label className="ec-dp-champ">
+          <span>{v("Votre nom", "Ton nom")}</span>
+          <input
+            id="ec-dp-f-nom"
+            className="ec-dp-input"
+            value={nomSaisi}
+            onChange={(e) => {
+              setNomSaisi(e.target.value);
+              setManque(null);
+            }}
+            onKeyDown={entrer(null)}
+            autoComplete="family-name"
+            autoCapitalize="words"
+            enterKeyHint="go"
+            maxLength={NOM_MAX}
+            required
+          />
+        </label>
+      </div>
+      {messageNom ? (
+        <p className="ec-dp-note ec-dp-note--refus" role="alert">
+          {messageNom}
+        </p>
+      ) : note ? (
+        <p className="ec-dp-note">{note}</p>
+      ) : null}
+    </div>
+  );
+  const limite = limiteDeCarte({ coupees, reconnu: Boolean(reconnu), place, plafond: props.plafond, sansPlafond: props.sansPlafond, tu });
+  const dejaSurLien = reconnu ? phraseDejaSurLien(reconnu.surCeLien, lien) : "";
   /* Sans la migration : la formule d'avant (T-192), le nom donné une fois puis figé sur ce téléphone. */
-  const formuleAvant = (
-    <>
-      {nomFixe ? (
-        <div className="ec-dp-qui">
-          <p>
-            {v("Vous envoyez en tant que", "Tu envoies en tant que")} <strong>{nomFixe}</strong>
-          </p>
-          {props.dejaArrivees ? (
-            <p className="ec-dp-note">
-              {props.dejaArrivees} photo{props.dejaArrivees > 1 ? "s" : ""} déjà reçue{props.dejaArrivees > 1 ? "s" : ""} depuis cet appareil.
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        <div className="ec-dp-nom">
-          <div className="ec-dp-duo">
-            <label className="ec-dp-champ">
-              <span>{v("Votre prénom", "Ton prénom")}</span>
-              <input className="ec-dp-input" value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} autoComplete="given-name" autoCapitalize="words" maxLength={NOM_MAX} required />
-            </label>
-            <label className="ec-dp-champ">
-              <span>{v("Votre nom", "Ton nom")}</span>
-              <input className="ec-dp-input" value={nomSaisi} onChange={(e) => setNomSaisi(e.target.value)} autoComplete="family-name" autoCapitalize="words" maxLength={NOM_MAX} required />
-            </label>
-          </div>
-          <p className="ec-dp-note">
-            {v(
-              "Définitif : écrivez-le bien.",
-              "Définitif : écris-le bien."
-            )}
-          </p>
-        </div>
-      )}
-    </>
+  const formuleAvant = nomFixe ? (
+    <div className="ec-dp-qui">
+      <p>
+        {v("Vous envoyez en tant que", "Tu envoies en tant que")} <strong>{nomFixe}</strong>
+      </p>
+      {props.dejaArrivees ? (
+        <p className="ec-dp-note">
+          {props.dejaArrivees} photo{props.dejaArrivees > 1 ? "s" : ""} déjà reçue{props.dejaArrivees > 1 ? "s" : ""} depuis cet appareil.
+        </p>
+      ) : null}
+    </div>
+  ) : (
+    champsNom(v("Définitif : écrivez-le bien.", "Définitif : écris-le bien."))
   );
 
   return (
@@ -414,9 +473,9 @@ export default function Depot(props: Props) {
               )}
             </span>
           </p>
-        ) : (
+        ) : props.invitationEcrite ? (
           <p className="ec-dp-texte">{props.invitation}</p>
-        )}
+        ) : null}
 
         <div className="ec-dp-form">
           {repli ? (
@@ -427,6 +486,7 @@ export default function Depot(props: Props) {
                 <label className="ec-dp-champ">
                   <span>{v("Votre email", "Ton email")}</span>
                   <input
+                    id="ec-dp-f-email"
                     className={`ec-dp-input${etatEmail.etat === "connu" ? " ec-dp-input--actif" : ""}`}
                     type="email"
                     inputMode="email"
@@ -435,11 +495,13 @@ export default function Depot(props: Props) {
                     onBlur={() => {
                       if (email.trim() && !lireAdresse.ok) setEtatEmail({ etat: "erreur", message: lireAdresse.message });
                     }}
+                    onKeyDown={entrer(reconnu ? "ec-dp-f-accord" : "ec-dp-f-prenom")}
                     placeholder="prenom.nom@exemple.fr"
                     autoComplete="email"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
+                    enterKeyHint="next"
                     maxLength={EMAIL_MAX}
                     aria-describedby="ec-dp-email-note"
                     required
@@ -448,13 +510,14 @@ export default function Depot(props: Props) {
               )}
               {reconnu ? null : (
                 <p className="ec-dp-note" id="ec-dp-email-note">
-                  {etatEmail.etat === "erreur" && etatEmail.message ? (
+                  {messageEmail ? (
+                    <span className="ec-dp-note--refus" role="alert">
+                      {messageEmail}
+                    </span>
+                  ) : etatEmail.etat === "erreur" && etatEmail.message ? (
                     <span className="ec-dp-note--refus">{etatEmail.message}</span>
                   ) : (
-                    v(
-                      "Seulement pour vous reconnaître. Aucun autre mail.",
-                      "Seulement pour te reconnaître. Aucun autre mail."
-                    )
+                    v("Pour vous reconnaître. Seul le prénom se voit.", "Pour te reconnaître. Seul le prénom se voit.")
                   )}
                 </p>
               )}
@@ -466,40 +529,27 @@ export default function Depot(props: Props) {
                     </span>
                     <span>
                       <b>{v(`Content de vous revoir, ${identite.prenom}`, `Content de te revoir, ${identite.prenom}`)}</b>
-                      {/* Ce qui est sur CE lien et ce qui reste (21/10), plus le total de l'édition. */}
-                      <span>
-                        {[phraseRetour(reconnu.surCeLien, place, lien, tu), v(`Vous envoyez en tant que ${identite.prenom}.`, `Tu envoies en tant que ${identite.prenom}.`)].filter(Boolean).join(" ")}
-                      </span>
+                      {dejaSurLien ? <span>{dejaSurLien}</span> : null}
                     </span>
                   </div>
                   <button type="button" className="ec-dp-lien ec-dp-lien--doux" onClick={() => void pasMoi()}>
-                    Ce n&apos;est pas moi
+                    {libellePasMoi(tu)}
                   </button>
                 </>
               ) : (
-                <div className="ec-dp-nom">
-                  <div className="ec-dp-duo">
-                    <label className="ec-dp-champ">
-                      <span>{v("Votre prénom", "Ton prénom")}</span>
-                      <input className="ec-dp-input" value={prenomSaisi} onChange={(e) => setPrenomSaisi(e.target.value)} autoComplete="given-name" autoCapitalize="words" maxLength={NOM_MAX} required />
-                    </label>
-                    <label className="ec-dp-champ">
-                      <span>{v("Votre nom", "Ton nom")}</span>
-                      <input className="ec-dp-input" value={nomSaisi} onChange={(e) => setNomSaisi(e.target.value)} autoComplete="family-name" autoCapitalize="words" maxLength={NOM_MAX} required />
-                    </label>
-                  </div>
-                  <p className="ec-dp-note">{v("Seul votre prénom est visible.", "Seul ton prénom est visible.")}</p>
-                </div>
+                champsNom("")
               )}
             </>
           )}
 
           <label className="ec-dp-accord">
             <input
+              id="ec-dp-f-accord"
               type="checkbox"
               checked={accord}
               onChange={(e) => {
                 setAccord(e.target.checked);
+                setManque(null);
                 moteur.definirAccord(e.target.checked ? VERSION_ACCORD : null);
               }}
             />
@@ -509,42 +559,25 @@ export default function Depot(props: Props) {
               {accordTexte.album ? <span className="ec-dp-accord-album">{accordTexte.album}</span> : null}
             </span>
           </label>
+          {manque === "accord" ? (
+            <p className="ec-dp-note ec-dp-note--refus" role="alert">
+              {messageManquant("accord", tu)}
+            </p>
+          ) : null}
 
           {coupees ? (
             <p className="ec-dp-note ec-dp-note--refus" role="status">
-              {phraseCoupees(coupees)}
+              {ligneReste(coupees, place, tu)}
             </p>
           ) : null}
-          <p className="ec-dp-videos">
-            <IcoSansVideo />
-            <span>{PHOTOS_SEULEMENT}</span>
-          </p>
           {entree}
-          <button type="button" className="ec-dp-bouton" disabled={!accord || !nomPret} onClick={() => selecteur.ouvrir()}>
+          <button type="button" className="ec-dp-bouton" onClick={continuer}>
             <IcoAppareil />
             {coupees ? BOUTON_REPRENDRE : "Choisir mes photos"}
           </button>
           {erreur ? <p className="ec-dp-note ec-dp-note--refus">{erreur}</p> : null}
-          {!nomPret ? (
-            <p className="ec-dp-note">
-              {repli
-                ? "Prénom et nom requis."
-                : !emailLu
-                  ? "Email requis."
-                  : "Prénom et nom requis."}
-            </p>
-          ) : !accord ? (
-            <p className="ec-dp-note">{v("Cochez l'accord.", "Coche l'accord.")}</p>
-          ) : null}
 
-          <p className="ec-dp-pied">
-            {[
-              props.sansPlafond ? "Sans limite" : props.plafond ? `${props.plafond} photos max` : null,
-              props.cloture ? `jusqu'au ${props.cloture}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
+          <p className="ec-dp-pied">{piedDeCarte(PHOTOS_SEULEMENT.replace(/\.$/, ""), limite, props.cloture)}</p>
         </div>
       </div>
     </div>

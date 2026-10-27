@@ -62,6 +62,8 @@ export default async function EspaceLayout({
     responsableIci ? compterNonLus(edition.id) : Promise.resolve(0),
     estAppareil(appareil) ? photosCoupeesDeLAppareil(makeSupabase(), edition.id, appareil, 'responsable', teteObjet) : Promise.resolve(0),
   ])
+  /* Le curseur du suivi des messages (Coquille) : posé APRÈS le compte, pour ne pas compter deux fois un message arrivé entre les deux. */
+  const depuis = new Date().toISOString()
   /* T-187 : « Partager avec mon équipe », au responsable seulement (voitLienEquipe).
      Le lien d'équipe n'entre jamais dans la page de l'équipe elle-même. */
   let lienEquipe: string | null = null
@@ -83,6 +85,8 @@ export default async function EspaceLayout({
       lienEquipe={lienEquipe}
       verrous={verrousPour(etat)}
       nonLus={nonLus}
+      suivreMessages={responsableIci}
+      depuis={depuis}
       peutDeposer={peut(role, 'deposer_photos')}
       coupees={coupees}
       tu={edition.registre === 'ecole_tu'}

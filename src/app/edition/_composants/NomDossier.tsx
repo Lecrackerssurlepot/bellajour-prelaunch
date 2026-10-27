@@ -5,7 +5,8 @@
    Échap annule, quitter le champ garde aussi. Au clavier : Entrée ou F2 sur le
    nom. Sans droit (l'équipe) ou pour le lien général, c'est un simple texte. */
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { focusSiClavierPhysique } from "@/lib/pointeur";
 
 export default function NomDossier({
   token,
@@ -25,6 +26,11 @@ export default function NomDossier({
   const [valeur, setValeur] = useState(nom);
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const champ = useRef<HTMLInputElement>(null);
+  /* Au doigt, pas de focus d'office : le clavier ne doit pas s'ouvrir seul. */
+  useEffect(() => {
+    if (edition) focusSiClavierPhysique(champ.current);
+  }, [edition]);
   /* Le nouveau nom se montre TOUT DE SUITE, tant que la page n'a pas relu le
      sien (la relecture ne se fait pas toujours aussitôt, vu le 14/10). */
   const [garde, setGarde] = useState<{ pour: string; nom: string } | null>(null);
@@ -75,7 +81,7 @@ export default function NomDossier({
           className="ec-champ ec-nom-dossier-champ"
           value={valeur}
           maxLength={80}
-          autoFocus
+          ref={champ}
           disabled={occupe}
           aria-label="Nouveau nom du dossier"
           onFocus={(e) => e.currentTarget.select()}
@@ -93,7 +99,7 @@ export default function NomDossier({
           }}
           onBlur={() => void garder()}
         />
-        <span className={erreur ? "ec-note ec-note--erreur" : "ec-note"}>{erreur ?? "Entrée pour valider"}</span>
+        <span className={erreur ? "ec-note ec-note--erreur" : "ec-note"}>{erreur ?? <span className="pour-souris">Entrée pour valider</span>}</span>
       </span>
     );
   }
@@ -103,8 +109,8 @@ export default function NomDossier({
       className="ec-nom-dossier ec-nom-dossier--renommable"
       tabIndex={0}
       role="button"
-      title="Double-cliquez pour changer le nom"
-      aria-label={`${affiche}, double-cliquez ou appuyez sur Entrée pour changer le nom`}
+      title="Changer le nom"
+      aria-label={`${affiche}, appuyez sur Entrée pour changer le nom`}
       onDoubleClick={() => {
         setValeur(affiche);
         setEdition(true);

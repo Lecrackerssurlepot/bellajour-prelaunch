@@ -49,16 +49,16 @@ export default function FormulaireRetrouver({ ouvert }: { ouvert: boolean }) {
       <div className="ec-retrouver">
         <p>
           {/* L'espace explicite : SWC avale celui qui suit la balise quand le texte porte une entité et va à la ligne (src/app/CLAUDE.md). */}
-          C&apos;est noté. Si <strong>{email}</strong>{" "}est l&apos;adresse d&apos;un responsable, son lien vient de partir.
+          Si <strong>{email}</strong>{" "}est connue, le lien arrive.
         </p>
-        <p className="ec-retrouver-note">Pensez à regarder dans les indésirables. Rien reçu ? Écrivez à contact@bellajour.com.</p>
+        <p className="ec-retrouver-note">Rien reçu ? Regardez les indésirables.</p>
       </div>
     );
   }
 
   return (
     <form className="ec-retrouver" onSubmit={envoyer}>
-      <p>L&apos;adresse e-mail du responsable de l&apos;édition : si un espace lui correspond, nous y envoyons son lien.</p>
+      <p>E-mail du responsable de l&apos;édition.</p>
       <label className="ec-retrouver-label" htmlFor="ec-retrouver-email">
         Adresse e-mail
       </label>
@@ -68,6 +68,10 @@ export default function FormulaireRetrouver({ ouvert }: { ouvert: boolean }) {
         type="email"
         autoComplete="email"
         inputMode="email"
+        enterKeyHint="send"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}

@@ -245,6 +245,27 @@
 .ec-espace .ec-ph-cherche input::placeholder {
   color: var(--ec-faint);
 }
+/* Au doigt (iPad, écran tactile), un champ de moins de 16 px fait zoomer iOS : la recherche passe à 16 px. */
+@media (hover: none) and (pointer: coarse) {
+  .ec-espace .ec-ph-cherche input {
+    font-size: 16px;
+  }
+  .ec-espace .ec-ph-cherche {
+    height: 44px;
+  }
+}
+/* « Nouveau lien » (ordinateur, à côté des chiffres) : une pilule secondaire de 40 px, avec son « + » ; « N en cours » reste une note discrète. */
+.ec-espace .ec-ph-nouveau {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px 0 14px;
+}
+.ec-espace .ec-ph-chiffre--cours {
+  padding: 10px 16px;
+  font-size: 13px;
+}
 /* La pilule segmentée (Tout | Par lien, l'ordre) et les pilules. */
 .ec-espace .ec-ph-seg {
   display: inline-flex;

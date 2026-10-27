@@ -23,6 +23,10 @@
  *
  * L'ordre d'affichage (celui de la maquette) : la grande, puis une large, deux petites, une large, deux
  * petites… ; une large qui était une petite seule ferme la marche.
+ *
+ * `enTete` (27/10, « Mes photos ») : la clé d'une tuile qui doit venir EN PREMIER (en haut à gauche, « chez soi »). Elle garde
+ * la taille que son poids lui donne (petite, large ou grande) ; si, ainsi remontée, elle laissait un trou, elle prend la place
+ * de la première (la grande) et celle-ci prend sa place d'avant : les tailles des places ne changent pas, donc aucun trou.
  */
 
 import { clePersonne, QUI_RESPONSABLE, type Arbre } from "./dossiers";
@@ -36,6 +40,8 @@ export type Classee<T> = T & { taille: TailleTuile };
 export const LARGES_MAX = 3;
 /** Au-dessous de ce nombre de tuiles, la mosaïque de l'ordinateur garde deux colonnes (une grande et une large ne remplissent pas quatre colonnes). */
 export const TUILES_MIN_QUATRE_COLONNES = 3;
+/** La clé de la tuile « Mes photos » (les photos déposées par le responsable) : toujours la première de la mosaïque. */
+export const CLE_VOUS = "vous";
 
 const compareNoms = (a: string, b: string) => a.localeCompare(b, "fr", { numeric: true, sensitivity: "base" });
 
@@ -59,7 +65,19 @@ function nombreDeLarges(reste: number, colonnes: 2 | 4): number {
  * La taille de chaque tuile, dans l'ordre où elles s'affichent. `colonnes` : 2 (téléphone) ou 4 (ordinateur).
  * Aucune tuile n'est perdue ni ajoutée, et la mosaïque n'a aucun trou : voir le harnais.
  */
-export function mosaiqueDesLiens<T extends Pesee>(tuiles: readonly T[], colonnes: 2 | 4 = 2): Classee<T>[] {
+export function mosaiqueDesLiens<T extends Pesee>(tuiles: readonly T[], colonnes: 2 | 4 = 2, enTete?: string): Classee<T>[] {
+  const rendu = ordreDeLaMosaique(tuiles, colonnes);
+  const i = enTete === undefined ? -1 : rendu.findIndex((t) => t.cle === enTete);
+  if (i <= 0) return rendu;
+  const remontee = [rendu[i], ...rendu.slice(0, i), ...rendu.slice(i + 1)];
+  if (casesVides(remontee, colonnesDeLaMosaique(rendu.length, colonnes)) === 0) return remontee;
+  const echange = [...rendu];
+  echange[0] = { ...rendu[i], taille: rendu[0].taille };
+  echange[i] = { ...rendu[0], taille: rendu[i].taille };
+  return echange;
+}
+
+function ordreDeLaMosaique<T extends Pesee>(tuiles: readonly T[], colonnes: 2 | 4): Classee<T>[] {
   const triees = classerParPoids(tuiles);
   if (triees.length === 0) return [];
   if (triees.length === 1) return [{ ...triees[0], taille: "grand" }];
@@ -135,19 +153,19 @@ export function echelleDuNom(nom: string): 0 | 1 | 2 {
 export type Pastille = {
   /** Sur une grande ou une large tuile. */
   long: string;
-  /** Sur une petite tuile (« 214 · 9 »). */
+  /** Sur une petite tuile (« 214 photos » : deux nombres côte à côte ne se lisent pas). */
   court: string;
   /** Ce que lit la voix : le texte complet, sans le point médian. */
   voix: string;
 };
 
-/** « 214 photos · 9 personnes », « 214 · 9 » ; un lien sans photo : « Rien reçu pour l'instant » / « Rien reçu ». */
+/** « 214 photos · 9 personnes », « 214 photos » ; un lien sans photo : « Rien reçu pour l'instant » / « Rien reçu ». */
 export function pastilleDuLien(n: number, personnes: number): Pastille {
   if (!n) return { long: "Rien reçu pour l'instant", court: "Rien reçu", voix: "Rien reçu pour l'instant" };
   const p = Math.max(1, personnes);
   const photos = `${nombre(n)} photo${n > 1 ? "s" : ""}`;
   const gens = `${nombre(p)} personne${p > 1 ? "s" : ""}`;
-  return { long: `${photos} · ${gens}`, court: `${nombre(n)} · ${nombre(p)}`, voix: `${photos}, ${gens}` };
+  return { long: `${photos} · ${gens}`, court: photos, voix: `${photos}, ${gens}` };
 }
 
 /** « 38 photos · Bateau 1 », « 38 » ; sans photo : « Aucune photo » / « 0 ». */
@@ -178,9 +196,12 @@ export function detailDeLaPersonne(arbre: Arbre, cle: string): string | null {
 
 /* ─────────────────────────── à l'ouverture de la page seulement ─────────────────────────── */
 
-/** Les poids de la mosaïque « Par lien » : les liens de contribution et « Sans groupe » ; « Mes photos » et l'atelier ne sont pas des liens (des lignes sous la mosaïque). */
-export function peseesDesLiens(arbre: Arbre): Pesee[] {
-  return arbre.liens.filter((l) => l.cle.startsWith("lien:") || l.cle === "participants").map((l) => ({ cle: l.cle, nom: l.nom, n: l.n }));
+/** Les poids de la mosaïque « Par lien » : les liens de contribution, « Sans groupe » et, si on lui donne un nom, « Mes photos » (en tête) ; l'atelier n'est pas un lien (une ligne sous la mosaïque). */
+export function peseesDesLiens(arbre: Arbre, nomVous?: string): Pesee[] {
+  const liens = arbre.liens.filter((l) => l.cle.startsWith("lien:") || l.cle === "participants").map((l) => ({ cle: l.cle, nom: l.nom, n: l.n }));
+  /* « Mes photos » (27/10) : une tuile de la mosaïque, en tête (`CLE_VOUS`), seulement si le responsable a déposé quelque chose. */
+  const n = arbre.vous.reduce((s, d) => s + d.n, 0);
+  return nomVous !== undefined && n > 0 ? [...liens, { cle: CLE_VOUS, nom: nomVous, n }] : liens;
 }
 
 /** Les poids de la mosaïque « Personnes » : chaque personne de l'édition, le responsable compris. */

@@ -199,6 +199,7 @@ export default async function PageDepot({
           p={p ?? null}
           tete={tete}
           invitation={edition.invitation_texte ?? (tu ? 'Dépose ici tes photos de l’événement.' : 'Déposez ici vos photos de l’événement.')}
+          invitationEcrite={Boolean(edition.invitation_texte)}
           plafond={provenance?.plafond_par_personne ?? plafondParticipant(edition)}
           sansPlafond={Boolean(provenance?.sans_plafond)}
           cloture={edition.cloture_le ? formaterJour(edition.cloture_le) : ''}

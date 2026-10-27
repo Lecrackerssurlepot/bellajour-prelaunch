@@ -122,8 +122,11 @@ export default function Nav({
           corrigee le 27/08 sur le bouton de descente. Le <a> partage la meme
           classe : la remise a zero ne lui nuit pas, et la cible tactile de
           44 px vaut pour les deux. */}
+      {/* prefetch={false} sur le retour : il mène à l'accueil, dont le <head>
+          précharge l'image d'ouverture (293 Ko) ; le <Link> la tirait pour
+          rien depuis /magazine (perf, 27/10). Le clic charge la page. */}
       {retour ? (
-        <Link className="at-nav-logo-btn" href={retour} aria-label="Bellajour, retour à l’accueil">
+        <Link className="at-nav-logo-btn" href={retour} prefetch={false} aria-label="Bellajour, retour à l’accueil">
           <img
             className="at-nav-logo"
             src="/images/v2/ui/signature-bellajour-240.webp"

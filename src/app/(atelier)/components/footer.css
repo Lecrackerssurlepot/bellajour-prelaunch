@@ -192,7 +192,7 @@
        18 px, ce qui LIBÈRE la place du rembourrage ci-dessous sans que
        les zones se chevauchent (22 + 18 = 40 px d'axe en axe pour une
        cible de 38). Empilées et aérées, elles se lisent aussi mieux. */
-    gap: 18px;
+    gap: 22px;
   }
 
   /* La cible grandit, la mise en page ne bouge pas : même remède que la
@@ -200,10 +200,20 @@
      rembourrage annulé par une marge négative de même valeur. 22 → 38 px,
      au-dessus du minimum de 24 px (WCAG 2.5.8) sans atteindre 44, qui
      demanderait d'écarter encore les lignes. */
+  /* 27/10 : 38 → 44 px (le pouce rate une cible de 38). L'écart passe à 22
+     pour que deux zones voisines se touchent sans se chevaucher. */
   .at-footer-links a {
-    padding: 8px 0;
-    margin: -8px 0;
+    display: inline-flex;
+    align-items: center;
+    min-width: 44px;
+    padding: 11px 0;
+    margin: -11px 0;
   }
+
+  /* Les deux réseaux, côte à côte au téléphone : empilés à 7 px d'écart leurs
+     zones de 44 px se chevauchaient (le doigt visant Instagram ouvrait TikTok). */
+  .at-footer-social { flex-direction: row; flex-wrap: wrap; gap: 0 22px; }
+  .at-footer-lien-social { padding: 11px 0; margin: -11px 0; }
   .at-footer-sep { display: none; }
 
   .at-footer-word {

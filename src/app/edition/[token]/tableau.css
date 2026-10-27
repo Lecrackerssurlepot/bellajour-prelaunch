@@ -791,3 +791,70 @@
     white-space: nowrap;
   }
 }
+
+/* ─────────── téléphone : l'essentiel tient en un écran (campagne souche, 27/10) ───────────
+   Une colonne : l'ordre suit ce qui attend le responsable. `order` ne touche que la grille (une colonne, ≤ 1100 px) ;
+   à deux colonnes, la grille garde sa place par défaut. Le message de l'atelier NON LU passe en tête : la coquille pose
+   `data-nonlus` (la relève de 30 s la met à jour sans rechargement), donc l'ordre suit en direct. Le style, tant qu'il n'y a
+   rien à y faire (bientôt, ou fait), descend sous les photos et se réduit à une carte compacte. */
+@media (max-width: 1100px) {
+  .ec-espace .ec-tdb-grille > .ec-tdb-ligne {
+    order: -1;
+  }
+  .ec-espace .ec-tdb-grille > .ec-tdb-style--bientot,
+  .ec-espace .ec-tdb-grille > .ec-tdb-style--fait {
+    order: 3;
+  }
+  .ec-espace .ec-tdb-grille > .ec-tdb-message {
+    order: 4;
+  }
+  /* Les cartes ne sont plus dans l'ordre des étapes : leur rang (« 1 · ») mentirait (3, 2, 1 à l'écran). */
+  .ec-espace .ec-tdb-rang {
+    display: none;
+  }
+  /* Après la règle de base (même spécificité, plus loin) : le message non lu passe en tête. */
+  .ec-espace .ec-coquille[data-nonlus] .ec-tdb-grille > .ec-tdb-message {
+    order: -2;
+    border-color: rgba(var(--ec-ac-rgb), 0.55);
+  }
+  .ec-espace .ec-tdb-carte {
+    min-height: 0;
+  }
+  .ec-espace .ec-tdb-style--bientot {
+    gap: 10px;
+    padding: 18px 20px;
+  }
+  .ec-espace .ec-tdb-style--bientot .ec-tdb-eventail {
+    display: none;
+  }
+  .ec-espace .ec-tdb-style--bientot .ec-tdb-titre {
+    font-size: 22px;
+  }
+  .ec-espace .ec-tdb-style--bientot .ec-bouton--plein {
+    min-height: 44px;
+  }
+}
+@media (max-width: 860px) {
+  .ec-espace .ec-tdb-carte {
+    padding: 20px;
+  }
+  /* Les trois gestes des photos : « Voir les photos » en pleine largeur, puis « Déposer » et « Inviter » côte à côte. */
+  .ec-espace .ec-tdb-gestes {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .ec-espace .ec-tdb-gestes > * {
+    flex: 1 1 calc(50% - 5px);
+    min-width: 0;
+  }
+  .ec-espace .ec-tdb-gestes:not(.ec-tdb-gestes--deux) > :first-child {
+    flex-basis: 100%;
+  }
+}
+/* Au doigt : 44 px au moins (Terminer la collecte, les puces « À envoyer »). */
+@media (hover: none) and (pointer: coarse) {
+  .ec-espace .ec-tdb .ec-bouton--petit,
+  .ec-espace .ec-tdb-puce {
+    min-height: 44px;
+  }
+}

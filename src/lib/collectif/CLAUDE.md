@@ -597,7 +597,7 @@ dernière photo affichée et les infos », « ça ne doit pas être compliqué n
   place et taille sur ces poids gelés et n'y lit les chiffres du direct que PAR CLÉ. Un lien créé ou supprimé (un autre ensemble) reprend les poids du moment.
 - **Tuile** (`Mosaique.tsx`, `mosaique.css`, tout sous `.ec-espace`, classes `ec-mo-` `ec-tu-` `ec-ch-`) : la dernière photo en fond (la couverture : la route signe UNE
   vignette par lien, la plus récente, `couvertureDe`), le nom en Cormorant à la taille de la tuile à moitié fondu (`mask-image`, `lining-nums`), une pastille de verre
-  (« 214 photos · 9 personnes », « 214 · 9 » sur une petite ; une personne : « 38 photos · Bateau 1 »), le « … » rond dans une cible de 44 px. Un lien sans photo garde sa
+  (« 214 photos · 9 personnes », « 214 photos » sur une petite ; une personne : « 38 photos · Bateau 1 »), le « … » rond dans une cible de 44 px. Un lien sans photo garde sa
   tuile sur le fond doux du thème, une personne sans photo ses initiales en filigrane. « Sans groupe » : lecture seule, sans « … ». « Mes photos » et l'atelier : deux
   lignes sous la mosaïque (jamais à zéro photo). Plus de « Dernières arrivées » sous « Par lien ».
 - **Les couvertures que la lecture de la page ne porte pas** : `couverturesDe: "liens" | "personnes"` dans la demande de `/api/collectif/photos` (avec

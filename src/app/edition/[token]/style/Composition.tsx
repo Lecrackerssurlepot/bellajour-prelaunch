@@ -19,8 +19,11 @@
    (un panneau de verre enferme ce qui est positionné dedans). Lecture seule
    (lien d'équipe) et après la clôture : tout se lit, aucun geste. */
 
-import { useEffect, useId, useSyncExternalStore } from "react";
+import { useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 import { DOUBLES_MAX, PARTS_TEXTE, type BriefLigne, type Composition } from "@/lib/collectif/brief";
 import type { StyleMur } from "../donnees";
 import { listeEnFrancais, phraseDesStyles, TAILLES_AFFICHAGE, visuelsDe, type Partie } from "./pieces";
@@ -136,13 +139,9 @@ export function BarreComposition({
 /** La coquille de la feuille : voile, portail dans `.ec-contenu`, Échap. */
 function Feuille({ titreId, onFermer, children }: { titreId: string; onFermer: () => void; children: React.ReactNode }) {
   const client = useSyncExternalStore(rien, () => true, () => false);
-  useEffect(() => {
-    function touche(e: KeyboardEvent) {
-      if (e.key === "Escape") onFermer();
-    }
-    window.addEventListener("keydown", touche);
-    return () => window.removeEventListener("keydown", touche);
-  }, [onFermer]);
+  useEchap(onFermer);
+  useRetourFerme(onFermer);
+  useVerrouDefilement();
   const feuille = (
     <div className="ec-fenetre-voile ec-compo-voile" role="presentation" onClick={onFermer}>
       <div className="ec-compo" role="dialog" aria-modal="true" aria-labelledby={titreId} onClick={(e) => e.stopPropagation()}>

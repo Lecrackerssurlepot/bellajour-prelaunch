@@ -35,7 +35,6 @@ export default function Screen4Contact({
 
   return (
     <>
-      <p className="at-kicker">Vous</p>
       <h2>Où vous envoyons-nous<br />votre couverture ?</h2>
       {/* ── CE QUI RESTE À FAIRE, DIT ICI ────────────────────────────────
           « Vous la recevez sous 48 h, gratuitement, sans engagement » se
@@ -49,8 +48,7 @@ export default function Screen4Contact({
       <p className="at-lede at-q-lede">
         Vous la recevez sous 48 h. Gratuitement, sans engagement.
         <br />
-        <b>Il reste une étape après celle-ci : vos photos.</b> C’est avec elles
-        que l’atelier compose.
+        <b>Il reste une étape après celle-ci : vos photos.</b>
       </p>
 
       {/* ── T-053 : DES LIBELLÉS VISIBLES, PAS DES PLACEHOLDERS ─────────
@@ -109,9 +107,7 @@ export default function Screen4Contact({
       />
 
       <p className="at-hint at-hint--calme">
-        Le téléphone sert au transporteur, le jour où votre numéro arrive chez
-        vous. Il ne part nulle part ailleurs, et personne ne vous appellera
-        pour vous vendre quoi que ce soit.
+        Pour le transporteur, à la livraison. Jamais pour vous appeler.
       </p>
 
       {/* ── LE PAYS DE LIVRAISON ─────────────────────────────────────────

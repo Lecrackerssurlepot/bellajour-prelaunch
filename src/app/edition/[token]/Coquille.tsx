@@ -28,13 +28,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { relireAuRetour } from "@/lib/collectif/arrivees";
+import { curseur, type Message } from "@/lib/collectif/messages";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
+import { useRetourFerme } from "../_composants/useRetourFerme";
+import { useSondage } from "../_composants/useSondage";
 import { useVerrouDefilement } from "../_composants/useVerrouDefilement";
 import RelireAuRetour from "../_composants/RelireAuRetour";
 import { BarreTitreContexte } from "../_composants/TitreEcran";
@@ -53,6 +56,10 @@ type Props = {
   lectureSeule: boolean;
   verrous: Verrous;
   nonLus: number;
+  /** Relire les messages de l'atelier sans recharger (le responsable, y compris sur un appareil pas encore reconnu). */
+  suivreMessages: boolean;
+  /** Le curseur (ISO, heure du serveur) : seuls les messages arrivés après lui s'ajoutent à `nonLus`. */
+  depuis: string;
   /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
   peutDeposer: boolean;
   /** 2A : les photos d'un envoi coupé du responsable sur cet appareil (lues au layout). */
@@ -108,6 +115,34 @@ export default function Coquille(props: Props) {
     window.addEventListener(EVENEMENT_MESSAGES_LUS, eteindre);
     return () => window.removeEventListener(EVENEMENT_MESSAGES_LUS, eteindre);
   }, []);
+  /* Un message de l'atelier arrivé pendant qu'on est ailleurs (Photos, le tableau de bord) allume la pastille sans
+     recharger. Même route que la conversation (lecture seule, rien n'est marqué lu), toutes les 30 s, onglet visible
+     seulement, et tout de suite au retour sur l'onglet (`useSondage`). Sur « Parler à l'atelier », la conversation
+     lit elle-même et éteint la pastille : ici on ne fait qu'avancer le curseur. */
+  const depuis = useRef(props.depuis);
+  const surAtelier = active === "atelier";
+  const surAtelierRef = useRef(surAtelier);
+  useEffect(() => {
+    surAtelierRef.current = surAtelier;
+  });
+  useSondage(
+    async () => {
+      const rep = await fetch("/api/collectif/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: props.token, depuis: depuis.current }),
+      });
+      if (!rep.ok) return;
+      const j: { messages?: Message[] } | null = await rep.json().catch(() => null);
+      const nouveaux = j?.messages ?? [];
+      if (!nouveaux.length) return;
+      depuis.current = curseur(nouveaux) ?? depuis.current;
+      const deLAtelier = nouveaux.filter((m) => m.auteur === "atelier").length;
+      if (deLAtelier && !surAtelierRef.current) setNonLus((n) => n + deLAtelier);
+    },
+    30_000,
+    props.suivreMessages
+  );
   /* Le tiroir et la bulle d'un verrou sont ouverts POUR un chemin : une
      navigation les referme d'elle-même, sans effet ni état à remettre à zéro. */
   const [tiroirPour, setTiroirPour] = useState<string | null>(null);
@@ -127,6 +162,8 @@ export default function Coquille(props: Props) {
     return () => setTiroirPour(null);
   }, [ouvert]);
   useVerrouDefilement(ouvert);
+  /* Le geste « retour » du téléphone ferme le tiroir avant de quitter la page. */
+  useRetourFerme(() => setTiroirPour(null), ouvert);
   useEffect(() => {
     if (!ouvert) return;
     function touche(e: KeyboardEvent) {
@@ -204,7 +241,7 @@ export default function Coquille(props: Props) {
     });
 
   return (
-    <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"}>
+    <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"} data-nonlus={nonLus > 0 ? "oui" : undefined}>
       <RelireAuRetour actif={relireAuRetour(active)} />
       <header className="ec-barre-mobile" ref={setBarre} data-defile={defile ? "oui" : undefined}>
         <span className="ec-barre-gauche">
@@ -217,10 +254,16 @@ export default function Coquille(props: Props) {
           className="ec-bouton-tiroir"
           aria-expanded={ouvert}
           aria-controls="ec-menu"
-          aria-label={ouvert ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={ouvert ? "Fermer le menu" : nonLus > 0 ? `Ouvrir le menu, ${nonLus} message${nonLus > 1 ? "s" : ""} non lu${nonLus > 1 ? "s" : ""}` : "Ouvrir le menu"}
           onClick={() => setOuvert((o) => !o)}
         >
           <Icone cle="menu" />
+          {/* La pastille sur le bouton, comme sur l'icône d'une messagerie : visible tiroir fermé. */}
+          {nonLus > 0 && !ouvert ? (
+            <span className="ec-bouton-pastille" aria-hidden="true">
+              {nonLus > 9 ? "9+" : nonLus}
+            </span>
+          ) : null}
         </button>
       </header>
 

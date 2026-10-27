@@ -169,7 +169,10 @@
   overflow-wrap: anywhere;
 }
 .ec-espace .ec-docs-question {
-  padding-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 4px;
   font-size: 13px;
   color: var(--ec-accent);
   text-decoration: none;

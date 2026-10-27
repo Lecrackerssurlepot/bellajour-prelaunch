@@ -3,7 +3,10 @@
 
    ⚠️ Le VERROU reprend mot pour mot la raison de `verrousPour` : une URL
    tapée à la main sur une étape fermée dit la même chose que le menu, jamais
-   une erreur (PRD §3.2). */
+   une erreur (PRD §3.2).
+   Un écran sobre : le titre est celui de l'en-tête, la raison tient sur UNE ligne
+   courante, en haut (plus de gros titre serif qui double la bulle du menu, plus
+   de 700 px de vide). */
 
 import { EnTeteEcran } from './Ecran'
 
@@ -11,8 +14,8 @@ export function Verrou({ titre, raison }: { titre: string; raison: string }) {
   return (
     <section className="ec-ecran">
       <EnTeteEcran titre={titre} />
-      <div className="ec-ecran-corps ec-ecran-corps--centre">
-        <p className="ec-verrou">{raison}.</p>
+      <div className="ec-ecran-corps">
+        <p className="ec-verrou ec-verrou--ligne">{raison}.</p>
       </div>
     </section>
   )

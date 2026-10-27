@@ -12,7 +12,7 @@
      du lien en pastilles à cocher, juste dessous. */
 
 import { useSyncExternalStore, type CSSProperties } from "react";
-import { colonnesDeLaMosaique, echelleDuNom, mosaiqueDesLiens, pastilleDeLaPersonne, pastilleDuLien, type Pesee, type TailleTuile } from "@/lib/collectif/mosaique";
+import { CLE_VOUS, colonnesDeLaMosaique, echelleDuNom, mosaiqueDesLiens, pastilleDeLaPersonne, pastilleDuLien, type Pesee, type TailleTuile } from "@/lib/collectif/mosaique";
 import { initialesDe, nombre } from "./filtres";
 import { Trace } from "./Grille";
 import { MenuLien, useMenuLien, type ActionMenu } from "./MenuLien";
@@ -28,6 +28,8 @@ export type TuileVue = {
   /** Une personne : où elle a déposé (« Bateau 1 »). */
   detail?: string | null;
   couverture: string | null;
+  /** « Mes photos » : une tuile de lien, mais sa pastille ne compte que les photos (pas de « personnes »). */
+  genre?: "lien" | "personne";
   /** Le menu « … » ; absent : une tuile en LECTURE SEULE (« Sans groupe »), sans « … ». */
   actions?: ActionMenu[];
 };
@@ -71,7 +73,7 @@ function Fond({ t, genre, taille }: { t: TuileVue; genre: "lien" | "personne"; t
 }
 
 function PastilleTuile({ t, genre }: { t: TuileVue; genre: "lien" | "personne" }) {
-  const p = genre === "lien" ? pastilleDuLien(t.n, t.personnes ?? 0) : pastilleDeLaPersonne(t.n, t.detail ?? null);
+  const p = genre === "lien" && t.genre !== "personne" ? pastilleDuLien(t.n, t.personnes ?? 0) : pastilleDeLaPersonne(t.n, t.detail ?? null);
   return (
     <span className="ec-tu-pastille">
       <span className="ec-tu-long" aria-hidden="true">
@@ -98,7 +100,7 @@ function Tuile(p: { t: TuileVue; taille: TailleTuile; genre: "lien" | "personne"
   const { t, taille, genre } = p;
   const echelle = echelleDuNom(t.nom);
   return (
-    <article className={`ec-tu ec-tu--${taille}${t.n ? "" : " ec-tu--vide"}${p.menuOuvert ? " ec-tu--menu" : ""}`}>
+    <article className={`ec-tu ec-tu--${taille}${t.n && t.couverture ? "" : " ec-tu--vide"}${p.menuOuvert ? " ec-tu--menu" : ""}`}>
       <Fond t={t} genre={genre} taille={taille} />
       <button type="button" className="ec-tu-ouvrir" aria-label={`${genre === "lien" ? "Ouvrir le lien" : "Ouvrir les photos de"} « ${t.nom} »`} onClick={() => p.ouvrir(t.cle)}>
         <span className="ec-tu-nom" data-long={echelle || undefined}>
@@ -133,11 +135,15 @@ function TuileNouvelle({ taille, onClick }: { taille: TailleTuile; onClick: () =
 export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | "onglet"; tuiles: readonly TuileVue[]; ordre: readonly Pesee[]; etiquette: string; ouvrir: (cle: string) => void; /** Le responsable, collecte ouverte : « Nouveau lien » en dernière tuile. */ nouveau?: () => void }) {
   const ordinateur = useOrdinateur();
   const { menu, basculer, fermer, declencheur } = useMenuLien();
-  const demandees = ordinateur && p.variante === "onglet" ? 4 : 2;
-  /* « Nouveau lien » entre dans la règle comme une tuile sans photo (poids -1) : la dernière, jamais seule (une petite seule devient large). */
-  const ordre: readonly Pesee[] = p.nouveau ? [...p.ordre, { cle: CLE_NOUVEAU, nom: "+", n: -1 }] : p.ordre;
+  /* Ordinateur : quatre colonnes, des tuiles basses (tous les liens d'un coup d'œil). Téléphone : deux colonnes. */
+  const demandees = ordinateur ? 4 : 2;
+  /* « Nouveau lien » entre dans la règle comme une tuile sans photo (poids -1) : la dernière, jamais seule (une petite seule devient large).
+     À l'ordinateur, le bouton de l'en-tête suffit : pas de tuile en double (un seul accès par appareil). */
+  const nouveau = ordinateur ? undefined : p.nouveau;
+  const ordre: readonly Pesee[] = nouveau ? [...p.ordre, { cle: CLE_NOUVEAU, nom: "+", n: -1 }] : p.ordre;
   const colonnes = colonnesDeLaMosaique(ordre.length, demandees);
-  const rangees = mosaiqueDesLiens(ordre, demandees);
+  /* « Mes photos », quand elle est là, vient en premier (en haut à gauche). */
+  const rangees = mosaiqueDesLiens(ordre, demandees, CLE_VOUS);
   const lues = new Map(p.tuiles.map((t) => [t.cle, t]));
   const ouverte = menu ? lues.get(menu.cle) : undefined;
   return (
@@ -145,7 +151,7 @@ export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | 
       <div className="ec-mo-zone" data-colonnes={colonnes}>
         <div className="ec-mo-grille" style={{ "--mo-c": colonnes } as CSSProperties}>
           {rangees.map((r) => {
-            if (r.cle === CLE_NOUVEAU) return p.nouveau ? <TuileNouvelle key={r.cle} taille={r.taille} onClick={p.nouveau} /> : null;
+            if (r.cle === CLE_NOUVEAU) return nouveau ? <TuileNouvelle key={r.cle} taille={r.taille} onClick={nouveau} /> : null;
             const t = lues.get(r.cle);
             return t ? <Tuile key={t.cle} t={t} taille={r.taille} genre={p.genre} menuOuvert={menu?.cle === t.cle} ouvrir={p.ouvrir} onMenu={basculer} /> : null;
           })}

@@ -515,6 +515,15 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-carte {
   padding-top: clamp(0px, 4vw, 48px);
 }
+/* Au téléphone, cet air et la marge du bas font défiler la carte de quelques pixels (13 à 390 px) : on les rend. */
+@media (max-width: 560px) {
+  .bj-atelier .ec-dp-carte {
+    padding-top: 0;
+  }
+  .bj-atelier .ec-dp:has(.ec-dp-carte) {
+    padding-bottom: 20px;
+  }
+}
 .bj-atelier .ec-dp-input::placeholder {
   color: var(--dp-pale);
   opacity: 1;

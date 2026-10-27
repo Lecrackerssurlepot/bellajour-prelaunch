@@ -15,7 +15,6 @@ export default function Screen2Histoire({
 
   return (
     <>
-      <p className="at-kicker">L’histoire</p>
       <h2>Racontez-nous ce moment.</h2>
       <p className="at-lede at-q-lede">
         Trois phrases suffisent. Le lieu, ceux qui étaient là, et ce qu’on doit

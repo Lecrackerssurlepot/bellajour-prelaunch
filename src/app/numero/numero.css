@@ -1150,7 +1150,7 @@
   border-radius: 8px;
   padding: 11px 30px 11px 12px;
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 300;
   color: var(--c-text);
   cursor: pointer;
@@ -1378,7 +1378,7 @@
 }
 .nu-feuille-carte {
   width: min(560px, 100%);
-  max-height: 92vh;
+  max-height: calc(var(--app-height) * 0.92);
   overflow-y: auto;
   background: var(--glass-bg-plein);
   backdrop-filter: blur(var(--glass-blur));
@@ -1456,7 +1456,7 @@
   border: 1px solid var(--c-line-strong);
   border-radius: 8px;
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
 }
 .nu-feuille-mot::placeholder { color: var(--c-text-faint); }
