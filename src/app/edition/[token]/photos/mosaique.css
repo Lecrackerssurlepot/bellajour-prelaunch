@@ -1,7 +1,7 @@
 /* La mosaïque de la page Photos (planches 2D et 3 du 21/10/2026, validées par Mathias) : « Par lien » et « Personnes » en
    carrés aux bords arrondis de tailles différentes, grande (2 × 2), large (2 × 1), petite (1 × 1), 6 px d'écart sur
    téléphone et 8 px sur ordinateur. Chaque tuile : la dernière photo en fond, son NOM en Cormorant à la taille de la tuile
-   (à moitié fondu dans la photo), une pastille de verre (« 214 photos · 9 personnes », « 214 · 9 » sur une petite), et pour un
+   (à moitié fondu dans la photo), une pastille de verre (« 214 photos · 9 personnes », « 214 photos » sur une petite), et pour un
    lien le « … » rond dans une cible de 44 px.
 
    Tout est écrit sous `.ec-espace`, classes préfixées `ec-mo-` (la mosaïque), `ec-tu-` (la tuile), `ec-ch-` (les pastilles de
@@ -15,7 +15,8 @@
   flex: none;
   padding: 4px 10px 0;
 }
-/* La zone est le conteneur : `100cqw` = sa largeur, d'où UNE rangée = UN carré (aucun chiffre en pixels). */
+/* La zone est le conteneur (`cqw` = sa largeur). 27/10 : une rangée n'est plus un carré de 640 px (une tuile géante, les autres liens
+   hors écran) mais une hauteur BORNÉE (`--mo-h`) : au téléphone 4 à 6 liens dans le premier écran, à l'ordinateur tous d'un coup. */
 .ec-espace .ec-mo-zone {
   position: relative;
   container-type: inline-size;
@@ -25,9 +26,10 @@
 .ec-espace .ec-mo-grille {
   --mo-c: 2; /* colonnes : 2 sur téléphone, 4 sur ordinateur (posées par `Mosaique.tsx`) */
   --mo-g: 6px;
+  --mo-h: 156px; /* hauteur d'une rangée : une petite ≈ 160 px, une large ou la grande 2 colonnes × 156 */
   display: grid;
   grid-template-columns: repeat(var(--mo-c), minmax(0, 1fr));
-  grid-auto-rows: calc((100cqw - (var(--mo-c) - 1) * var(--mo-g)) / var(--mo-c));
+  grid-auto-rows: var(--mo-h);
   grid-auto-flow: dense;
   gap: var(--mo-g);
 }
@@ -40,7 +42,7 @@
 /* ─────────────────────────── une tuile ─────────────────────────── */
 
 .ec-espace .ec-tu {
-  --tu-nom: 36px;
+  --tu-nom: 27px;
   --tu-bord: 12px;
   position: relative;
   min-width: 0;
@@ -51,21 +53,21 @@
   box-shadow: var(--ec-ombre-carte);
 }
 .ec-espace .ec-tu--grand {
-  --tu-nom: 76px;
-  --tu-bord: 18px;
+  --tu-nom: 44px;
+  --tu-bord: 16px;
   grid-column: span 2;
-  grid-row: span 2;
+  grid-row: span 1; /* téléphone : une seule rangée de large ; l'ordinateur la reprend sur 2 rangées (plus bas) */
   border-radius: var(--ec-r-panneau);
 }
 .ec-espace .ec-tu--large {
-  --tu-nom: 54px;
-  --tu-bord: 16px;
+  --tu-nom: 34px;
+  --tu-bord: 14px;
   grid-column: span 2;
   border-radius: var(--ec-r-panneau);
 }
 /* L'album d'un lien (3C) : la même tuile, plus basse, en tête de la page. */
 .ec-espace .ec-tu--ouvert {
-  --tu-nom: 68px;
+  --tu-nom: 56px;
   --tu-bord: 18px;
   height: 210px;
   border-radius: var(--ec-r-panneau);
@@ -108,8 +110,8 @@
   outline-offset: -3px;
   border-radius: inherit;
 }
-/* Le nom : Cormorant, à la taille de la tuile (grande 76, large 54, petite 36 px), à moitié fondu dans la photo (le haut des
-   lettres à 42 %). Trois lignes au plus : un nom très long ne remonte pas jusqu'à la pastille. */
+/* Le nom : Cormorant, à la taille de la tuile, en BLANC DE VERRE : uniforme et translucide (27/10, « glace, transparent, pas
+   métallisé » : plus de dégradé dans les lettres), une ombre douce en deux couches pour rester lisible sur une photo claire, même sur une petite tuile. Trois lignes au plus. */
 .ec-espace .ec-tu-nom {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -124,8 +126,8 @@
   font-variant-numeric: lining-nums;
   font-feature-settings: "lnum" 1;
   padding-bottom: 0.1em;
-  -webkit-mask-image: linear-gradient(180deg, rgba(var(--ec-noir-rgb), 0.42) 0%, rgb(var(--ec-noir-rgb)) 66%);
-  mask-image: linear-gradient(180deg, rgba(var(--ec-noir-rgb), 0.42) 0%, rgb(var(--ec-noir-rgb)) 66%);
+  color: rgba(var(--ec-reflet-rgb), 0.9);
+  text-shadow: 0 1px 2px rgba(var(--ec-noir-rgb), 0.32), 0 2px 18px rgba(var(--ec-noir-rgb), 0.42);
   overflow-wrap: normal;
   text-wrap: balance;
 }
@@ -135,7 +137,7 @@
 .ec-espace .ec-tu-nom[data-long="2"] {
   font-size: calc(var(--tu-nom) * 0.56);
 }
-/* La pastille de verre : « 214 photos · 9 personnes », ou « 214 · 9 » sur une petite tuile. */
+/* La pastille de verre : « 214 photos · 9 personnes », ou « 214 photos » sur une petite tuile. */
 .ec-espace .ec-tu-pastille {
   position: absolute;
   top: 8px;
@@ -230,8 +232,8 @@
   color: var(--ec-titre);
 }
 .ec-espace .ec-tu--vide .ec-tu-nom {
-  -webkit-mask-image: none;
-  mask-image: none;
+  color: inherit; /* le noir des tuiles sans photo, tel quel */
+  text-shadow: none;
 }
 .ec-espace .ec-tu--vide .ec-tu-pastille,
 .ec-espace .ec-tu--vide .ec-tu-plus {
@@ -283,7 +285,7 @@
   background: var(--ec-voile);
 }
 
-/* « Mes photos » et l'atelier ne sont pas des liens : deux lignes sous la mosaïque, hors du classement (planche 3A). */
+/* L'atelier n'est pas un lien : une ligne sous la mosaïque, hors du classement (planche 3A). « Mes photos » est une tuile, en tête (27/10). */
 .ec-espace .ec-mo-pied {
   display: flex;
   flex-direction: column;
@@ -393,30 +395,33 @@
   }
 }
 
-/* ─────────────────────────── ordinateur : quatre colonnes, les noms un cran plus grands ─────────────────────────── */
+/* ─────────────────────────── ordinateur : quatre colonnes, des tuiles basses ─────────────────────────── */
 
 @media (min-width: 861px) {
   .ec-espace .ec-mo {
     padding: 4px 4px 24px;
   }
-  /* Quatre colonnes : toute la largeur de la page ; deux colonnes (la vue « Par lien », ou deux liens ou moins) gardent 640 px, centrées. */
+  /* Quatre colonnes : toute la largeur de la page ; deux colonnes (trois liens ou moins) gardent 640 px, centrées. */
   .ec-espace .ec-mo-zone[data-colonnes="4"] {
     max-width: none;
   }
   .ec-espace .ec-mo-grille {
     --mo-g: 8px;
+    /* Une rangée ≈ 130 à 180 px selon la largeur : cinq à dix liens, c'est quatre rangées, visibles d'un coup. */
+    --mo-h: clamp(128px, 13cqw, 180px);
   }
   .ec-espace .ec-tu {
-    --tu-nom: 46px;
+    --tu-nom: 30px;
     --tu-bord: 16px;
   }
   .ec-espace .ec-tu--grand {
-    --tu-nom: 104px;
-    --tu-bord: 24px;
+    --tu-nom: 52px;
+    --tu-bord: 20px;
+    grid-row: span 2;
   }
   .ec-espace .ec-tu--large {
-    --tu-nom: 68px;
-    --tu-bord: 20px;
+    --tu-nom: 38px;
+    --tu-bord: 18px;
   }
   .ec-espace .ec-tu-pastille {
     height: 32px;

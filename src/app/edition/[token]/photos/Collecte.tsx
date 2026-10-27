@@ -207,6 +207,8 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* Les poids de la mosaïque, GELÉS à l'ouverture de la page (`figerLesPesees`) : la mise à jour en direct change les chiffres des
      pastilles, jamais la place ni la taille d'une tuile. Seul un ensemble de tuiles différent (un lien créé, supprimé) les reprend. */
   const [peseesLiens, setPeseesLiens] = useState<readonly Pesee[] | null>(null);
+  /* La couverture de « Mes photos » (la tuile en tête de « Par lien ») : la route ne signe que celles des liens, une lecture à part l'apporte, une fois. */
+  const [couvVous, setCouvVous] = useState<string | null>(null);
   const [liens, setLiens] = useState<Liens | null>(null);
   const [suivante, setSuivante] = useState<number | null>(0);
   const [chargement, setChargement] = useState(false);
@@ -293,7 +295,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         setStats(json.stats);
         setArbre(json.arbre);
         if (page === 0) {
-          setPeseesLiens((avant) => figerLesPesees(avant, peseesDesLiens(json.arbre)));
+          setPeseesLiens((avant) => figerLesPesees(avant, peseesDesLiens(json.arbre, p.ecrire ? "Mes photos" : "Les dossiers du responsable")));
           if (estVueAlbums(nf)) setCouvLiens(json.couvertures ?? {});
           /* Tout ce qui est arrivé jusqu'ici est désormais compté : l'annonce s'efface. */
           setVuJusqua(json.stats.derniere);
@@ -310,7 +312,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         if (v0 === version.current) setChargement(false);
       }
     },
-    [lirePage]
+    [lirePage, p.ecrire]
   );
 
   /* L'adresse suit la vue : recharger la page, ou revenir en arrière depuis une autre page, rouvre le même endroit (replaceState : rien ne s'empile). */
@@ -1035,7 +1037,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* La tuile en tête d'un lien (3C) : un lien ouvert qui a des photos. Sans aucune photo dans l'édition, l'écran d'accueil prend la place. */
   const tuileActive = Boolean(lienDePastilles) && !vide;
   const total = stats?.photos ?? 0;
-  const liensListe = arbre ? liensDansLOrdre(arbre, avecVous) : [];
   const nomOuvert = ouvertNoeud ? (ouvertNoeud.cle === "vous" ? nomVous : ouvertNoeud.nom) : "";
   const titre = prefereesActif
     ? "Mes préférées"
@@ -1053,11 +1054,8 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
             ? nomOuvert
             : "Toutes les photos";
   const filtree = Boolean(f.lien || f.personnes.length || f.dossier);
-  const nbContributions = liensListe.filter((x) => x.cle.startsWith("lien:")).length;
-  /* « Sans groupe » : les photos arrivées par l'adresse de base (le lien général, qu'on ne montre plus). Il n'est dans la liste que s'il en a reçu. */
-  const sansGroupe = liensListe.find((x) => x.cle === "participants");
   const note = albums
-    ? `${nombre(nbContributions)} lien${nbContributions > 1 ? "s" : ""}${sansGroupe ? `, ${sansGroupe.nom}` : ""}${p.ecrire && liensListe.some((x) => x.cle === "vous" && x.n) ? ` et ${v("vos", "tes")} photos` : ""} · ${nombre(total)} photo${total > 1 ? "s" : ""}`
+    ? ""
     : f.mode === "liens" && ouvertNoeud && !dossierNoeud
       ? ouvertNoeud.cle === "vous"
         ? `${nombre(arbre?.vous.length ?? 0)} dossier${(arbre?.vous.length ?? 0) > 1 ? "s" : ""} · ${nombre(ouvertNoeud.n)} photo${ouvertNoeud.n > 1 ? "s" : ""}`
@@ -1066,9 +1064,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           : `${nombre(ouvertNoeud.n)} photo${ouvertNoeud.n > 1 ? "s" : ""}`
       : filtree && totalVue !== null
         ? `${nombre(totalVue)} photo${totalVue > 1 ? "s" : ""} sur ${nombre(total)}`
-        : totalVue !== null
-          ? `${nombre(totalVue)} photo${totalVue > 1 ? "s" : ""}`
-          : "";
+        : "";
   /* Un LIEN DE CONTRIBUTION se partage ; « Sans groupe » (les photos arrivées par l'adresse de base) ne se partage pas : ni bouton, ni QR. */
   const partageable = p.ecrire && p.ouverte && liens && f.mode === "liens" && f.lien?.startsWith("lien:");
   const lienPartage = (): LienPartage | null => {
@@ -1176,7 +1172,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       choisiesDuLien={nomsChoisis}
       basculerDuLien={basculerPastille}
       toutLeMondeDuLien={() => setChoixPastilles({ lien: f.lien, cles: new Set() })}
-      nouveauLien={p.ecrire && p.ouverte ? () => setCreerLien("") : null}
       dossiers={glisser}
     />
   );
@@ -1209,10 +1204,12 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     });
   };
   const tuileDuLien = (n: Noeud, couv: Record<string, string>): TuileVue => {
+    /* « Mes photos » : une tuile comme les liens, sans « … », qui compte ses photos (pas des personnes). */
+    if (n.cle === "vous") return { cle: n.cle, nom: nomVous, n: n.n, couverture: couvVous, genre: "personne" };
     const detail = liens?.liens.find((x) => `lien:${x.id}` === n.cle);
     return { cle: n.cle, nom: n.nom, n: n.n, personnes: detail ? detail.personnes.length : n.enfants.length, couverture: couv[n.cle] ?? null, actions: actionsDe(n.cle) };
   };
-  const noeudsDeLiens = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => n.cle.startsWith("lien:") || n.cle === "participants") : [];
+  const noeudsDeLiens = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => n.cle.startsWith("lien:") || n.cle === "participants" || (n.cle === "vous" && n.n > 0)) : [];
   const tuilesLiens: TuileVue[] = noeudsDeLiens.map((n) => tuileDuLien(n, couvLiens));
   /** La tuile en tête d'un lien ouvert (3C) : la même, avec la couverture lue par la vue « Par lien » (sinon la dernière photo de la grille). */
   const tuileDeLAlbum: TuileVue | null = lienDePastilles ? { ...tuileDuLien(lienDePastilles, couvLiens), couverture: couvLiens[lienDePastilles.cle] ?? photos.find((x) => x.vignette)?.vignette ?? null } : null;
@@ -1222,8 +1219,22 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     setPartage(l.id && l.cle ? lienDe(l.libelle, l.cle, l.plafond, 0) : { libelle: l.libelle, url: l.url, plafond: l.plafond, recues: 0 });
     relire();
   };
-  /** Les lignes sous la mosaïque : « Mes photos » (dossiers du responsable) et l'atelier, qui ne sont pas des liens ; une ligne sans photo n'a rien à ouvrir, elle ne se montre pas. */
-  const lignesDessous = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => (n.cle === "vous" || n.cle === "atelier") && n.n > 0) : [];
+  /** La ligne sous la mosaïque : l'atelier, qui n'est pas un lien (« Mes photos » est une tuile, en tête) ; sans photo, rien à ouvrir, elle ne se montre pas. */
+  const lignesDessous = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => n.cle === "atelier" && n.n > 0) : [];
+  const nbVous = arbre ? arbre.vous.reduce((somme, d) => somme + d.n, 0) : 0;
+  useEffect(() => {
+    if (!albums || nbVous === 0 || couvVous !== null) return;
+    let vivant = true;
+    void lirePage(0, f, "vous")
+      .then((json) => {
+        const u = json.photos.find((x) => x.vignette)?.vignette ?? Object.values(json.couvertures ?? {})[0] ?? null;
+        if (vivant && u) setCouvVous(u);
+      })
+      .catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, [albums, nbVous, couvVous, f, lirePage]);
 
   const fenetres = (
     <>
@@ -1266,7 +1277,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       {supprimer ? (
         <Fenetre titre={`Supprimer le lien « ${supprimer.nom} » ?`} onFermer={() => setSupprimer(null)}>
           <p className="ec-texte">
-            Il ne recevra plus aucune photo : qui l&apos;ouvre verra une page introuvable. Ses {nombre(supprimer.n)} photos restent, dans le dossier « {supprimer.nom} ».
+            Il ne recevra plus de photos. Ses {nombre(supprimer.n)} photos restent.
           </p>
           {erreur ? (
             <p className="ec-note ec-note--erreur" role="alert">
@@ -1486,7 +1497,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
             <span className="ec-ph-titre-tel">{titreTel}</span>
           </>
         }
-        sous={stats ? `${nombre(stats.photos)} reçue${stats.photos > 1 ? "s" : ""}` : undefined}
       >
         {/* Un lien ouvert : la capsule « ‹ Par lien » est sur la MÊME ligne que le « + » et le « … » (planche 12) ; ailleurs elle a sa ligne. */}
         {retourTel && enTuile ? (
@@ -1554,13 +1564,17 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       {stats && !f.corbeille ? (
         <div className="ec-ph-chiffres ec-ph-ordi">
           <span className="ec-ph-chiffre">
-            <strong>{nombre(stats.photos)}</strong> photo{stats.photos > 1 ? "s" : ""} reçue{stats.photos > 1 ? "s" : ""}
+            <strong>{nombre(stats.photos)}</strong> photo{stats.photos > 1 ? "s" : ""} · <strong>{nombre(stats.personnes)}</strong> personne{stats.personnes > 1 ? "s" : ""}
           </span>
-          <span className="ec-ph-chiffre">
-            <strong>{nombre(stats.personnes)}</strong> personne{stats.personnes > 1 ? "s" : ""}
-          </span>
+          {stats.enCours ? <span className="ec-ph-chiffre ec-ph-chiffre--cours">{nombre(stats.enCours)} en cours</span> : null}
+          {/* Ordinateur : « Nouveau lien », LE bouton, à côté des chiffres (la tuile et la ligne de la colonne n'existent plus ici). */}
+          {p.ecrire && p.ouverte ? (
+            <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit ec-ph-nouveau" onClick={() => setCreerLien("")}>
+              <Trace d={TRACE.plus} taille={16} epais={2.2} />
+              Nouveau lien
+            </button>
+          ) : null}
           <span className="ec-ph-chiffres-fin">
-            {stats.enCours ? <span>{nombre(stats.enCours)} en cours d&apos;arrivée</span> : null}
             {p.cloture && p.ouverte ? <span className="ec-note">Clôture le {p.cloture}</span> : null}
           </span>
         </div>
@@ -1575,7 +1589,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           {f.corbeille ? <Corbeille token={p.token} tu={p.tu} version={stats?.photos ?? 0} telephone={telephone} onRestaurees={restaureesDeLaCorbeille} /> : null}
           {!f.corbeille ? (
             <>
-              {!vide ? (
+              {!vide && !albums ? (
                 <div className="ec-ph-zone-tete ec-ph-ordi">
                   <div className="ec-ph-zone-titres">
                     {f.mode === "liens" && ouvertNoeud ? (

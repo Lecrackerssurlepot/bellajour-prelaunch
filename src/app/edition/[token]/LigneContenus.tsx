@@ -47,7 +47,7 @@ export default function LigneContenus(p: Props) {
   return (
     <section className={longue ? "ec-tdb-ligne ec-tdb-ligne--longue" : "ec-tdb-ligne"} aria-labelledby="ec-tdb-contenus">
       <span className="ec-tdb-etiquette ec-tdb-etiquette--sourde" id="ec-tdb-contenus">
-        3 · À envoyer
+        <span className="ec-tdb-rang">3 · </span>À envoyer
       </span>
       <div className="ec-tdb-puces">
         {contenus.map((c) => {
@@ -348,7 +348,7 @@ function FenetreContenu({
             void envoyerFichiers(e.dataTransfer.files);
           }}
         >
-          <strong className="ec-zone-depot-titre">{v("Glissez le fichier ici", "Glisse le fichier ici")}</strong>
+          <strong className="ec-zone-depot-titre pour-souris">{v("Glissez le fichier ici", "Glisse le fichier ici")}</strong>
           <span className="ec-note">{contenu.formats} · 4 Mo au plus · plusieurs fichiers possibles</span>
           <button type="button" className="ec-bouton" disabled={Boolean(occupe)} onClick={() => choisir(null)}>
             {occupe ? "Envoi…" : "Choisir un fichier"}

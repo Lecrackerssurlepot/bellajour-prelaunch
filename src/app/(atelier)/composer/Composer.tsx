@@ -18,6 +18,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
+import { useVerrouDefilement } from '@/components/couche/useVerrouDefilement'
 import Screen1Occasion from './screens/Screen1Occasion'
 import Screen2Histoire from './screens/Screen2Histoire'
 import Screen3Titre from './screens/Screen3Titre'
@@ -451,15 +452,10 @@ export default function Composer() {
       if (e.key === 'Escape') setQuitter(null)
     }
     window.addEventListener('keydown', auClavier)
-    /* Le fond reste immobile sous la fenêtre (mobile-2). */
-    const html = document.documentElement
-    const avant = html.style.overflow
-    html.style.overflow = 'hidden'
-    return () => {
-      window.removeEventListener('keydown', auClavier)
-      html.style.overflow = avant
-    }
+    return () => window.removeEventListener('keydown', auClavier)
   }, [quitter])
+  /* Le fond reste immobile sous la fenêtre (mobile-2) : verrou commun, empilable. */
+  useVerrouDefilement(Boolean(quitter))
 
   const aller = useCallback((n: number) => {
     if (n < 1 || n > TOTAL) return
@@ -948,12 +944,9 @@ export default function Composer() {
             ref={modale}
           >
             <h2 id="at-q-quitter-titre">Quitter la composition ?</h2>
-            <p>
-              Vos réponses restent enregistrées sur cet appareil.
-              Vous reprendrez exactement où vous en étiez.
-            </p>
+            <p>Vos réponses sont gardées.</p>
             <button type="button" className="at-cta at-q-quitter-reste" onClick={() => setQuitter(null)}>
-              Continuer ma composition
+              Continuer
             </button>
             {/* La sortie honore DEUX choses : le geste qui a ouvert la
                 modale, et d'où l'on vient.

@@ -11,6 +11,8 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { type CleMenuPhoto, type EntreeMenuPhoto } from "@/lib/collectif/photosSimples";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 import { ICONES, Trace, type Photo } from "./Grille";
 
 const rien = () => () => {};
@@ -20,6 +22,8 @@ export default function MenuPhoto(m: { photo: Photo; entrees: EntreeMenuPhoto[];
   const client = useSyncExternalStore(rien, () => true, () => false);
   const racine = useRef<HTMLDivElement>(null);
   const { onFermer } = m;
+  useRetourFerme(onFermer);
+  useVerrouDefilement();
   /* La vignette d'abord (déjà en cache), l'original par-dessus dès qu'il est arrivé : la photo soulevée est plus grande que sa vignette de 320 px. */
   const [grandeLa, setGrandeLa] = useState(false);
   const [rapport, setRapport] = useState(1);

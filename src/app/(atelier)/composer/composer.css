@@ -3,7 +3,11 @@
 .at-q {
   display: flex;
   flex-direction: column;
-  min-height: var(--app-height);
+  /* Coquille à hauteur FIXE (27/10) : avec min-height la colonne grandissait,
+     .at-q-scroll ne défilait jamais et c'était la page qui montait, l'en-tête
+     avec. --app-height, jamais dvh/vh. */
+  height: var(--app-height);
+  overflow: hidden;
 }
 
 /* ---- barre du haut ----
@@ -168,12 +172,15 @@
 /* `min-height: 0` est obligatoire : un enfant flex qui défile a une taille
    minimale automatique égale à son contenu, ce qui l'empêche de se comprimer
    et fait déborder la colonne au lieu de la faire défiler. */
-.at-q-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; }
+.at-q-scroll { flex: 1; min-height: 0; overflow-y: auto; display: flex; overscroll-behavior: contain; }
 
 .at-q-screen {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  /* Grandit avec son contenu (le volet défile) et remplit le volet sinon (centrage). */
+  align-self: flex-start;
+  min-height: 100%;
   /* Le bas dégage la BARRE FIXE (03/09) : sans cette réserve, la fin du
      contenu passerait sous le verre. env() : la zone sûre de l'iPhone. */
   /* ⚠️ LA RÉSERVE SUIT LA BARRE (18/09/2026). `--at-barre-h` est la hauteur
@@ -307,7 +314,7 @@
 }
 /* Clavier ouvert / paysage : la fenêtre ne dépasse jamais l'écran visible, elle défile. */
 .at-q-voile { overscroll-behavior: contain; overflow-y: auto; align-items: safe center; }
-.at-q-quitter { max-height: calc(100dvh - 48px); overflow-y: auto; }
+.at-q-quitter { max-height: calc(var(--app-height) - 48px); overflow-y: auto; }
 
 /* ---- champs ---- */
 .bj-atelier .at-field,

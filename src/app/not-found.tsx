@@ -45,10 +45,7 @@ export default function Introuvable() {
       <div className="nf-in">
         <p className="nf-kicker">Bellajour</p>
         <h1 className="nf-mot">Cette page n’existe pas.</h1>
-        <p className="nf-sub">
-          Le lien est peut-être incomplet, ou la page a changé d’adresse. Rien
-          n’est perdu : tout le magazine tient en deux pages.
-        </p>
+        <p className="nf-sub">Le lien est incomplet ou périmé.</p>
         <div className="nf-actions">
           <Link className="nf-cta" href={CTA_HREF}>
             {CTA_MAGAZINE_LABEL}
@@ -58,8 +55,7 @@ export default function Introuvable() {
           </Link>
         </div>
         <p className="nf-aide">
-          Vous cherchiez votre numéro ? Son lien vous a été envoyé par mail. En
-          cas de doute, écrivez-nous à <b>{CONTACT_EMAIL}</b>.
+          Votre numéro ? Son lien est dans votre mail. Sinon : <b>{CONTACT_EMAIL}</b>.
         </p>
       </div>
     </div>

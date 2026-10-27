@@ -342,11 +342,11 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
      règle que la page Photos, `dansLeDossier`, lue sur le résumé par `couvertureDe`). */
   await Promise.all(
     dossiers.map(async (d) => {
-      d.couverture = await signerOuRien(couvertureDe(groupes, d.cle, edition.responsable_nom));
+      d.couverture = await signerVignetteOuRien(couvertureDe(groupes, d.cle, edition.responsable_nom));
     })
   );
 
-  const mosaique = (await Promise.all((mosaiqueLue.data ?? []).map((l) => signerOuRien(l.vignette_key)))).filter((u): u is string => Boolean(u));
+  const mosaique = (await Promise.all((mosaiqueLue.data ?? []).map((l) => signerVignetteOuRien(l.vignette_key)))).filter((u): u is string => Boolean(u));
 
   const dernier = ((message.data ?? []) as { texte: string; created_at: string }[])[0] ?? null;
 
@@ -506,6 +506,21 @@ export type MagazineMur = BriefLigne & {
   rang: number;
   nom: string;
 };
+
+/**
+ * Une VIGNETTE (mosaïque, couverture de dossier, vignette de page de BAT) :
+ * adresse stable à l'heure (`signerLectureVignette`), donc le navigateur la
+ * garde et un retour au tableau ne retélécharge rien. Jamais pour un original
+ * ni un document : ceux-là restent sur `signerOuRien`.
+ */
+async function signerVignetteOuRien(key: string | null | undefined): Promise<string | null> {
+  if (!key) return null;
+  try {
+    return await signerLectureVignette(key);
+  } catch {
+    return null;
+  }
+}
 
 async function signerOuRien(key: string | null | undefined): Promise<string | null> {
   if (!key) return null;
@@ -732,7 +747,7 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
         (t.pages ?? []).map(async (p) => ({
           index: p.index,
           url: await signerOuRien(p.image_key),
-          vignette: await signerOuRien(p.vignette_key ?? null),
+          vignette: await signerVignetteOuRien(p.vignette_key ?? null),
           apparie_a: p.apparie_a,
           zones: p.zones ?? [],
         }))

@@ -687,8 +687,6 @@
   /* Le badge passe sous le compteur plutôt que de casser la ligne. */
   .at-d-compteur { flex-wrap: wrap; row-gap: 10px; }
   .at-d-pret { margin-left: 0; }
-  /* Glisser-déposer : un geste de bureau, pas de doigt. */
-  .bj-atelier .at-d-glisser { display: none; }
   /* L'écran du dépôt réserve plus de bas de page : sa barre porte deux
      rangées (consentement + bouton pleine largeur). */
   /* ⚠️ 12,5 px SUR LA PHRASE QUI ENGAGE (relevé le 09/09 en production).
@@ -701,4 +699,10 @@
      `min-height: 44px` et `align-items: center` : la ligne devient une cible,
      sans changer un mot. */
   .at-q-barre--depot .at-d-consent { max-width: none; font-size: 14px; }
+}
+
+/* Glisser-déposer : un geste de souris, pas de doigt. Décidé au POINTEUR,
+   pas à la largeur (une fenêtre étroite sur ordinateur glisse très bien). */
+@media (hover: none) and (pointer: coarse) {
+  .bj-atelier .at-d-glisser { display: none; }
 }

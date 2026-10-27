@@ -44,24 +44,12 @@ export default function Vitrine({ token, registre }: { token: string; registre: 
   const p = parler(registre)
   return (
     <section className="ec-ecran ec-vt">
-      <EnTeteEcran titre="Style" sous={p('Le choix du style ouvre bientôt', 'Le choix du style ouvre bientôt')} />
+      <EnTeteEcran titre="Style" />
       <div className="ec-ecran-corps">
         <div className="ec-defile ec-vt-defile">
           <div className="ec-carte ec-vt-intro">
-            <span className="ec-vt-etiquette">Bientôt</span>
             <h2 className="ec-vt-titre">{p('Le style de votre magazine', 'Le style de ton magazine')}</h2>
-            <p className="ec-texte">
-              {p(
-                'L’atelier prépare les styles de votre édition : la couverture, les typographies, les couleurs et la mise en page. Vous les choisirez ici très bientôt.',
-                'L’atelier prépare les styles de ton édition : la couverture, les typographies, les couleurs et la mise en page. Tu les choisiras ici très bientôt.'
-              )}
-            </p>
-            <p className="ec-texte">
-              {p(
-                'En attendant, voici quelques magazines composés par Bellajour. Le plus utile aujourd’hui : rassembler les photos.',
-                'En attendant, voici quelques magazines composés par Bellajour. Le plus utile aujourd’hui : rassembler les photos.'
-              )}
-            </p>
+            <p className="ec-texte">{p('Vous le choisirez ici, bientôt.', 'Tu le choisiras ici, bientôt.')}</p>
             <div className="ec-vt-gestes">
               <Link href={cheminSection(token, 'photos')} prefetch={false} className="ec-bouton">
                 Aller aux photos

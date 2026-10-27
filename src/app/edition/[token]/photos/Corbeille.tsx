@@ -18,7 +18,6 @@
    Effacer pour de bon reste à l'atelier (sa fiche) : rien ici ne l'appelle. */
 
 import { useEffect, useState } from "react";
-import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { ERREUR_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
 import { echeanceTexte, enLots, instantCourt, jourDeLInstant, nombre } from "./filtres";
 import { ICONES, Trace } from "./Grille";
@@ -138,10 +137,9 @@ export default function Corbeille({ token, version, telephone, onRestaurees }: {
           <span className="ec-note">
             {n !== null ? (
               <>
-                <b>{nombre(n)}</b> photo{n > 1 ? "s" : ""} ·{" "}
+                <b>{nombre(n)}</b> photo{n > 1 ? "s" : ""}
               </>
             ) : null}
-            {`effacées au bout de ${DELAI_CORBEILLE_JOURS} jours`}
           </span>
         </div>
         <div className="ec-ph-outils">
@@ -172,7 +170,7 @@ export default function Corbeille({ token, version, telephone, onRestaurees }: {
         <p className="ec-cb-info ec-ph-ordi">
           <Trace d={ICONES.info} taille={16} epais={1.8} />
           <span>
-            Retirées pour tous. Effacées au bout de <b>{DELAI_CORBEILLE_JOURS} jours</b>.
+            Retirées pour tous.
           </span>
         </p>
 
@@ -198,7 +196,7 @@ export default function Corbeille({ token, version, telephone, onRestaurees }: {
         ) : null}
         {etat.genre === "ok" && !photos.length ? (
           <div className="ec-a-venir">
-            <p className="ec-texte">La corbeille est vide. Une photo supprimée y reste {DELAI_CORBEILLE_JOURS} jours, puis elle est effacée pour de bon.</p>
+            <p className="ec-texte">Rien ici.</p>
           </div>
         ) : null}
 

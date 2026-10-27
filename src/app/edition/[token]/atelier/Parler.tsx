@@ -25,6 +25,7 @@ import { libelleCreneau, RDV_A_VENIR_MAX, REGLES_RDV } from "@/lib/collectif/cre
 import { formaterHeureParis, formaterJourParis } from "@/lib/collectif/dates";
 import { demandesDuFil, lireMessageDemande } from "@/lib/collectif/livraison";
 import { extraitDe, filDeConversation, lirePieceJointe, type Message } from "@/lib/collectif/messages";
+import { pointeurFin } from "@/lib/pointeur";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
 import { useVisionneuse, type FichierVu } from "../../_composants/Visionneuse";
@@ -183,7 +184,7 @@ export default function Parler(p: Props) {
 
   return (
     <section className="ec-ecran ec-parler">
-      <EnTeteEcran titre="Parler à l'atelier" sous="Messages, rendez-vous et demandes au même endroit">
+      <EnTeteEcran titre="Parler à l'atelier">
         {peutReserver ? (
           <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => setChoisir({ deplace: null })}>
             Prendre rendez-vous
@@ -242,6 +243,8 @@ export default function Parler(p: Props) {
         </div>
 
         <aside className="ec-parler-cote ec-defile" aria-label="Rendez-vous et demandes">
+          {/* Sans rendez-vous, sans agenda ni lien : rien d'utile, le volet n'existe pas. */}
+          {aVenir.length > 0 || agenda || p.rdvUrl ? (
           <section className="ec-parler-bloc">
             <span className="ec-parler-etiquette">{aVenir.length ? (aVenir.length > 1 ? "Prochains rendez-vous" : "Prochain rendez-vous") : "Rendez-vous"}</span>
             {aVenir.map((r) => (
@@ -288,10 +291,8 @@ export default function Parler(p: Props) {
                   <span className="ec-note">
                     {REGLES_RDV.dureeMinutes} minutes{p.reservation.meet ? " en visio" : ""}, du lundi au vendredi, de 10 h à 18 h.
                   </span>
-                ) : p.rdvUrl ? (
-                  <span className="ec-note">{v("Pour relire ensemble ou parler d'une demande. Vous choisissez le créneau sur la page de l'atelier.", "Pour relire ensemble ou parler d'une demande. Tu choisis le créneau sur la page de l'atelier.")}</span>
                 ) : (
-                  <span className="ec-note">L&apos;atelier ajoutera bientôt la prise de rendez-vous.</span>
+                  <span className="ec-note">{v("Pour relire ensemble ou parler d'une demande. Vous choisissez le créneau sur la page de l'atelier.", "Pour relire ensemble ou parler d'une demande. Tu choisis le créneau sur la page de l'atelier.")}</span>
                 )}
               </>
             ) : null}
@@ -310,11 +311,10 @@ export default function Parler(p: Props) {
               </p>
             ) : null}
           </section>
+          ) : null}
+          {demandes.length > 0 || p.propositions.length > 0 ? (
           <section className="ec-parler-bloc ec-parler-bloc--filet">
             <span className="ec-parler-etiquette">{v("Vos demandes", "Tes demandes")}</span>
-            {demandes.length === 0 && p.propositions.length === 0 ? (
-              <span className="ec-note">Aucune demande pour l&apos;instant.</span>
-            ) : (
               <ul className="ec-parler-demandes">
                 {demandes.map((d) => (
                   <li key={d.quand}>
@@ -329,8 +329,8 @@ export default function Parler(p: Props) {
                   </li>
                 ))}
               </ul>
-            )}
           </section>
+          ) : null}
           <p className="ec-note ec-parler-pied">{v("L'atelier vous répond ici.", "L'atelier te répond ici.")}</p>
         </aside>
       </div>
@@ -649,9 +649,11 @@ function Ecrire(e: {
           placeholder="Écrire à l'atelier…"
           aria-label={v("Votre message", "Ton message")}
           onKeyDown={(ev) => {
-            /* Entrée envoie, Maj + Entrée va à la ligne (Mathias, 14/10). Pas
-               pendant une saisie en cours de composition (accents, IME). */
-            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+            /* Entrée envoie, Maj + Entrée va à la ligne (Mathias, 14/10), mais
+               seulement avec une souris : au doigt il n'y a pas de Maj, Entrée
+               va à la ligne et le bouton envoie. Pas pendant une saisie en
+               cours de composition (accents, IME). */
+            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing && pointeurFin()) {
               ev.preventDefault();
               void soumettre(ev);
             }
@@ -678,7 +680,7 @@ function Ecrire(e: {
           {refus ?? e.erreur}
         </p>
       ) : null}
-      <span className="ec-note ec-parler-aide">Entrée envoie · Maj + Entrée pour aller à la ligne</span>
+      <span className="ec-note ec-parler-aide pour-souris">Entrée pour envoyer</span>
     </form>
   );
 }

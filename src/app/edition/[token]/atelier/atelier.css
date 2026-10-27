@@ -104,6 +104,17 @@
     opacity: 1;
   }
 }
+/* Au doigt : le visuel reste petit, la zone de touche monte à 44 px. */
+@media (pointer: coarse) {
+  .ec-espace .ec-parler-repondre {
+    position: relative;
+  }
+  .ec-espace .ec-parler-repondre::after {
+    content: "";
+    position: absolute;
+    inset: -12px -8px;
+  }
+}
 .ec-espace .ec-parler-citation,
 .ec-espace .ec-parler-reponse {
   display: flex;

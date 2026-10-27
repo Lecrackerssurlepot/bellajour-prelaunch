@@ -20,15 +20,17 @@
 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { messagePartage, NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
 import type { DonneesPartage } from "@/lib/collectif/photosSimples";
-import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
+import { RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { imprimerPage } from "@/lib/collectif/imprimer";
 import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
 import Fenetre from "./Fenetre";
 import QrCode from "./QrCode";
-import { useRetourFerme } from "./useRetourFerme";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 
 export type LienPartage = {
   libelle: string;
@@ -197,7 +199,6 @@ export function FenetreCreerLien({
   onCree: (lien: LienCree) => void;
   onFermer: () => void;
 }) {
-  const min = Math.min(CURSEUR_LIEN.min, max);
   const [nom, setNom] = useState(nomInitial ?? "");
   const [valeur, setValeur] = useState(Math.min(30, max));
   const [sansLimite, setSansLimite] = useState(false);
@@ -244,32 +245,18 @@ export function FenetreCreerLien({
 
   return (
     <Fenetre
-      titre="Créer un lien de contribution"
-      sous="Un dossier à son nom."
+      titre="Nouveau lien"
       onFermer={onFermer}
     >
       <label className="ec-curseur">
-        Le nom de la personne ou du groupe
+        Le nom du lien
         <input className="ec-champ" value={nom} maxLength={80} placeholder={EXEMPLE_NOM_LIEN} onChange={(e) => setNom(e.target.value)} />
       </label>
       <div className="ec-lien-plafond">
         <div className="ec-lien-plafond-tete">
-          <span className="ec-texte">Combien de photos pour cette personne ?</span>
+          <span className="ec-texte">Photos par personne</span>
           <strong className="ec-lien-valeur">{sansLimite ? "Sans limite" : `${valeur} photo${valeur > 1 ? "s" : ""}`}</strong>
         </div>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={1}
-          value={valeur}
-          disabled={sansLimite}
-          aria-label="Nombre de photos par personne"
-          onChange={(e) => {
-            setValeur(Number(e.target.value));
-            setSansLimite(false);
-          }}
-        />
         <div className="ec-puces">
           {RACCOURCIS_LIEN.filter((n) => n <= max).map((n) => (
             <button
@@ -407,19 +394,8 @@ const rien = () => () => {};
 export function FeuilleQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
   const client = useSyncExternalStore(rien, () => true, () => false);
   useRetourFerme(onFermer, !lien.general);
-  useEffect(() => {
-    const html = document.documentElement;
-    const avant = html.style.overflow;
-    html.style.overflow = "hidden";
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFermer();
-    };
-    window.addEventListener("keydown", touche);
-    return () => {
-      html.style.overflow = avant;
-      window.removeEventListener("keydown", touche);
-    };
-  }, [onFermer]);
+  useVerrouDefilement();
+  useEchap(onFermer);
   if (lien.general) return <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} />;
   const hote = client ? document.querySelector(".ec-contenu") : null;
   if (!hote) return null;

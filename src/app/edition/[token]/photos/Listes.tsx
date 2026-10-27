@@ -3,7 +3,7 @@
 /* La colonne de gauche de la page Photos, à l'ORDINATEUR (planche 13 du 22/10, « Photos, en plus simple » : « une touche légère »).
    Le dessin d'aujourd'hui reste, avec les retraits de la planche 8 :
    - « Toutes · Par lien » (le choix du haut) ;
-   - LIEN : les liens avec leur case, « Mes photos » et l'atelier, puis « + Nouveau lien » (la ligne qui remplace l'onglet « Les liens ») ;
+   - LIEN (« Toutes » seulement) : les liens avec leur case, « Mes photos » et l'atelier ; « Nouveau lien » est un bouton de l'en-tête de la page ;
    - PERSONNES : la recherche, puis les personnes, PLUSIEURS possibles (une case de plus se coche, une autre se décoche) ; dans un lien ouvert, « Tout
      le monde » et les personnes de CE lien, qui se choisissent comme les pastilles du téléphone ;
    - « Supprimées récemment », tout en bas de la colonne.
@@ -51,8 +51,6 @@ type Props = {
   choisiesDuLien: ReadonlySet<string>;
   basculerDuLien: (cle: string) => void;
   toutLeMondeDuLien: () => void;
-  /** « + Nouveau lien » (le responsable, collecte ouverte) ; `null` : pas de ligne. */
-  nouveauLien: (() => void) | null;
   dossiers: Glisser | null;
 };
 
@@ -76,8 +74,9 @@ export default function Listes(l: Props) {
   /* ── Lien ── */
   const liensVisibles = liens.slice(0, plafond("liens", 12));
   /* La liste des liens est TOUJOURS entière (planche 13, « ordi-lien ») : le lien ouvert y est coché, on en change d'un clic, on le décoche pour revenir. */
+  /* Seulement en « Toutes », où elle sert de FILTRE : en « Par lien » la mosaïque montre déjà les mêmes liens (27/10). « Nouveau lien » est un bouton de l'en-tête. */
   const sectionLien =
-    liens.length || l.nouveauLien ? (
+    liens.length && f.mode !== "liens" ? (
       <section className="ec-ph-fl">
         <div className="ec-ph-fl-t">
           Lien {f.lien ? <small>1 coché</small> : null}
@@ -92,11 +91,6 @@ export default function Listes(l: Props) {
         {liens.length > liensVisibles.length ? (
           <button type="button" className="ec-ph-li ec-ph-li--plus" onClick={() => setTous((t) => ({ ...t, liens: true }))}>
             Voir les {liens.length} liens
-          </button>
-        ) : null}
-        {l.nouveauLien ? (
-          <button type="button" className="ec-ph-li ec-ph-li--plus" onClick={l.nouveauLien}>
-            + Nouveau lien
           </button>
         ) : null}
       </section>
@@ -160,7 +154,7 @@ export default function Listes(l: Props) {
           </button>
         ) : null}
         {l.ecrire && arbre.vous.length > 1 ? (
-          <p className="ec-note ec-ph-fl-aide">{v("Glissez un dossier pour le ranger.", "Glisse un dossier pour le ranger.")}</p>
+          <p className="ec-note ec-ph-fl-aide pour-souris">{v("Glissez un dossier pour le ranger.", "Glisse un dossier pour le ranger.")}</p>
         ) : null}
       </section>
     );

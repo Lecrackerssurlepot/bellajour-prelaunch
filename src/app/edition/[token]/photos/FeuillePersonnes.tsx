@@ -8,10 +8,12 @@
    Le voile ne floute pas : la grille se filtre sous les yeux, et le titre garde son compte. La feuille d'avant (onze cibles, `Feuille.tsx`)
    est dans `archive/photos-simple-2026-10/`. Elle s'ouvre DANS `.ec-contenu`, par un portail (comme les fenêtres). */
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { Noeud } from "@/lib/collectif/dossiers";
-import { useRetourFerme } from "../../_composants/useRetourFerme";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 import { ICONES, Trace } from "./Grille";
 import { pourChercher } from "./filtres";
 
@@ -29,21 +31,9 @@ export default function FeuillePersonnes(p: {
   const feuille = useRef<HTMLDivElement>(null);
   const { onFermer } = p;
   useRetourFerme(onFermer);
-
   /* Échap la ferme, et la page derrière ne défile pas sous le doigt. */
-  useEffect(() => {
-    const html = document.documentElement;
-    const avant = html.style.overflow;
-    html.style.overflow = "hidden";
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFermer();
-    };
-    window.addEventListener("keydown", touche);
-    return () => {
-      html.style.overflow = avant;
-      window.removeEventListener("keydown", touche);
-    };
-  }, [onFermer]);
+  useEchap(onFermer);
+  useVerrouDefilement();
 
   const trouvees = recherche.trim() ? p.personnes.filter((x) => pourChercher(p.nomPersonne(x)).includes(pourChercher(recherche))) : p.personnes;
   const hote = client ? document.querySelector(".ec-contenu") : null;

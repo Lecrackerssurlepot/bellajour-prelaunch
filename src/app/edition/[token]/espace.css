@@ -610,9 +610,10 @@
   flex: none;
   color: var(--ec-accent);
 }
-@media (max-width: 860px) {
-  .ec-espace .ec-pastille-appareil-long {
-    display: none;
+@keyframes ec-pastille-entre {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
   }
 }
 .ec-espace .ec-pastille-envoi-barre {
@@ -743,6 +744,14 @@
   font-size: clamp(30px, 3.4vw, 46px);
   line-height: 1.1;
   color: var(--ec-text);
+}
+.ec-espace .ec-verrou.ec-verrou--ligne {
+  max-width: 560px;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ec-muted);
 }
 .ec-espace .ec-silhouette {
   min-height: 220px;
@@ -2979,6 +2988,7 @@
     transform: translateY(-50%);
   }
   .ec-espace .ec-bouton-tiroir {
+    position: relative;
     display: grid;
     place-items: center;
     width: 44px;
@@ -2988,6 +2998,45 @@
     background: none;
     color: var(--ec-blanc);
     cursor: pointer;
+  }
+  /* La pastille des non-lus sur le bouton menu (comme sur l'icône d'une messagerie) : visible tiroir fermé. */
+  .ec-espace .ec-bouton-pastille {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--ec-accent);
+    color: var(--ec-on-accent);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--ec-bg);
+    animation: ec-pastille-entre 260ms var(--ease);
+  }
+  /* La porte : « Recevoir un code pour modifier » + l'état de la collecte tiennent sur UNE ligne de 44 px (avant : deux
+     lignes empilées, ~170 px au-dessus de chaque écran). Le bouton dit « Modifier » (le titre de la fenêtre qui s'ouvre
+     dit le reste, l'aria-label le dit en entier). */
+  .ec-espace .ec-ecran-actions:has(> .ec-pastille-appareil) {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .ec-espace .ec-pastille-appareil {
+    order: 2;
+    flex: none;
+    height: 44px;
+    margin-left: auto;
+    gap: 6px;
+  }
+  .ec-espace .ec-ecran-actions:has(> .ec-pastille-appareil) .ec-pilule {
+    min-width: 0;
+    white-space: normal;
   }
   .ec-espace .ec-menu {
     position: fixed;
@@ -3192,6 +3241,12 @@
   min-height: 34px;
   padding: 0 14px;
   font-size: 13px;
+}
+/* Au doigt, « petit » ne vaut que pour le dessin : la cible reste de 44 px. */
+@media (pointer: coarse) {
+  .ec-espace .ec-bouton--petit {
+    min-height: 44px;
+  }
 }
 .ec-espace .ec-bouton--plein {
   align-self: stretch;
@@ -3508,6 +3563,11 @@
 /* Sur téléphone on ne glisse rien : le texte pour la souris cède la place à celui du doigt (retour du 26/10). */
 .ec-espace .ec-pour-doigt {
   display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-bouton-pastille {
+    animation: none;
+  }
 }
 @media (hover: none) and (pointer: coarse) {
   .ec-espace .ec-pour-souris {
