@@ -450,6 +450,7 @@ import {
 import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
+import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
 import { nommeurDePersonnes, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -6814,6 +6815,137 @@ const verifierMepPhotosEdition = () => {
       && lieuDeLaPhoto(null, null) === null && lieuDeLaPhoto("  ", "") === null);
 };
 verifierMepPhotosEdition();
+
+/* ═══════════════ MISE EN PAGE ÉTAPE 1 : la sauvegarde partagée (mises_en_page) ═══════════════ */
+const verifierMepSauvegarde = () => {
+  titre("— mise en page : la sauvegarde partagée, forme du contenu, verrou optimiste, une seule table écrite (étape 1) —");
+  const ph = (id: string, l: number, h: number, date: string): PhotoRef => ({ id, nom: `${id}.jpg`, l, h, date });
+  const photos = [ph("a", 4000, 3000, "2026-07-01T10:00:00"), ph("b", 3000, 4000, "2026-07-01T11:00:00"), ph("c", 4000, 3000, "2026-07-02T09:00:00"),
+    ph("d", 3000, 4000, "2026-07-02T10:00:00"), ph("e", 4000, 3000, "2026-07-03T10:00:00")];
+  let m = nouveauMagazine("mag-1", "Été", "2026-10-27T10:00:00.000Z");
+  m = poserMep(m, "pl-1", "droite", photos.slice(0, 2)).magazine;
+  m = ajouterDouble(m);
+  m = poserMep(m, "pl-2", "double", photos).magazine;
+  m = ajouterDouble(m);
+  m = poserMep(m, "pl-3", "gauche", photos.slice(2, 3)).magazine;
+  /* Trois portraits en double : le gabarit DP-01 de l'annexe, qui porte des cadres texte ; un texte saisi par ecrireTexte. */
+  m = ajouterDouble(m);
+  m = poserMep(m, "pl-4", "double", [ph("p1", 3000, 4000, "2026-07-04T10:00:00"), ph("p2", 3000, 4000, "2026-07-04T11:00:00"), ph("p3", 3000, 4000, "2026-07-04T12:00:00")]).magazine;
+  m = ecrireTexte(m, { plancheId: "pl-4", cible: "double", index: 0 }, { contenu: "Lisbonne, juillet", gras: true });
+  const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
+  const vrai = clone(m);
+  ok("un magazine fabriqué par nouveauMagazine + poser (page droite, double, page gauche) passe, même relu depuis JSON",
+    contenuValide(m) && contenuValide(vrai) && contenuValide(nouveauMagazine("x", "", "2026-10-27T10:00:00.000Z"))
+      && m.planches[1].mode === "double" && m.planches[2].mode === "pages"
+      && m.planches[3].double?.templateId === "DP-01" && m.planches[3].double.textes[0].contenu === "Lisbonne, juillet");
+
+  type Brut = Record<string, unknown> & { planches: Array<Record<string, unknown>> };
+  const casse = (f: (b: Brut) => void): boolean => { const b = clone(vrai) as unknown as Brut; f(b); return contenuValide(b); };
+  const disp = (b: Brut, i: number, cle: string) => b.planches[i][cle] as { templateId: string; photos: Array<Record<string, unknown>>; textes: Array<Record<string, unknown>> };
+  ok("refusé : null, tableau, chaîne, planches absentes, planches vides, version ≠ 1, clé en trop, date illisible",
+    !contenuValide(null) && !contenuValide([]) && !contenuValide("magazine")
+      && !casse((b) => { delete (b as Record<string, unknown>).planches; }) && !casse((b) => { b.planches = []; })
+      && !casse((b) => { b.version = 2; }) && !casse((b) => { b.pirate = 1; }) && !casse((b) => { b.creeLe = "hier"; }));
+  ok("refusé : zoom hors bornes (0,5 et 9), zoom NaN (null en JSON), décalage non fini, recadrage incomplet",
+    !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 0.5, dx: 0, dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 9, dx: 0, dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: null, dx: 0, dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 1, dx: "3", dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 1, dx: 0 }; })
+      && casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 8, dx: -12.5, dy: 40 }; }));
+  ok("refusé : type inattendu (mode inconnu, photoId nombre, textes non tableau), template inconnu ou de mauvaise portée, mauvais nombre d'affectations",
+    !casse((b) => { b.planches[1].mode = "triple"; }) && !casse((b) => { disp(b, 0, "droite").photos[0].photoId = 42; })
+      && !casse((b) => { (disp(b, 0, "droite") as unknown as Record<string, unknown>).textes = "x"; })
+      && !casse((b) => { disp(b, 0, "droite").templateId = "inconnu-999"; })
+      && !casse((b) => { disp(b, 0, "droite").templateId = disp(b, 1, "double").templateId; })
+      && !casse((b) => { disp(b, 0, "droite").photos.push({ photoId: null, recadrage: { zoom: 1, dx: 0, dy: 0 } }); })
+      && casse((b) => { disp(b, 0, "droite").photos[0].photoId = null; }));
+  ok("refusé : texte non chaîne, taille nulle, gras non booléen, texte manquant (sur DP-01, qui porte des cadres texte)",
+    (() => {
+      const avecTexte = vrai.planches.flatMap((p, i) => (["double", "gauche", "droite"] as const).flatMap((c) => (p[c] && p[c]!.textes.length ? [{ i, c }] : [])))[0];
+      if (!avecTexte) return false;
+      const t = (b: Brut) => disp(b, avecTexte.i, avecTexte.c).textes[0];
+      return !casse((b) => { t(b).contenu = 12; }) && !casse((b) => { t(b).taille = 0; }) && !casse((b) => { t(b).gras = "oui"; })
+        && !casse((b) => { disp(b, avecTexte.i, avecTexte.c).textes.pop(); })
+        && casse((b) => { t(b).contenu = "Un vrai titre"; });
+    })());
+  ok("refusé : planche 0 en double ou avec une page gauche, ids de planche en double, double qui garde une page",
+    !casse((b) => { b.planches[0].mode = "double"; b.planches[0].double = null; b.planches[0].droite = null; })
+      && !casse((b) => { b.planches[0].gauche = b.planches[0].droite; })
+      && !casse((b) => { b.planches[2].id = b.planches[1].id; })
+      && !casse((b) => { b.planches[1].gauche = null; b.planches[1].droite = b.planches[0].droite; }));
+  ok("taille : octets UTF-8 du JSON ; borne 2 Mo, corps = contenu + 64 Ko ; non sérialisable = Infinity",
+    TAILLE_MAX_CONTENU === 2 * 1024 * 1024 && TAILLE_MAX_CORPS === TAILLE_MAX_CONTENU + 64 * 1024
+      && tailleContenu({ t: "é" }) === 10 && tailleContenu(m) < TAILLE_MAX_CONTENU && tailleContenu(undefined) === Infinity
+      && tailleContenu({ t: "x".repeat(TAILLE_MAX_CONTENU) }) > TAILLE_MAX_CONTENU);
+  ok("verrou : même version = ok ; version en base différente, illisible, 0 ou décimale = conflit",
+    issueSauvegarde(3, 3) === "ok" && issueSauvegarde(3, 4) === "conflit" && issueSauvegarde(4, 3) === "conflit"
+      && issueSauvegarde("3", 3) === "conflit" && issueSauvegarde(0, 0) === "conflit" && issueSauvegarde(1.5, 1.5) === "conflit"
+      && issueSauvegarde(null, null) === "conflit" && estVersion(1) && !estVersion(0));
+
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const lire = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const mig = lire("supabase/migrations/20261027_mises_en_page.sql");
+  const migSql = mig.replace(/^\s*--.*$/gm, "");
+  ok("migration : en-tête ÉCRITE NON APPLIQUÉE, begin/commit, table if not exists, trois FK en cascade",
+    /NON APPLIQUÉE/.test(mig) && /^begin;/m.test(migSql) && /^commit;/m.test(migSql)
+      && /create table if not exists public\.mises_en_page/.test(migSql)
+      && /numero_id\s+uuid null references public\.numeros\(id\) on delete cascade/.test(migSql)
+      && /edition_id\s+uuid null references public\.collectif_editions\(id\) on delete cascade/.test(migSql)
+      && /magazine_id\s+uuid null references public\.collectif_magazines\(id\) on delete cascade/.test(migSql));
+  ok("migration : index uniques PARTIELS sur numero_id et magazine_id, index (etat, modifie_le desc)",
+    /create unique index if not exists \w+\s+on public\.mises_en_page \(numero_id\) where numero_id is not null;/.test(migSql)
+      && /create unique index if not exists \w+\s+on public\.mises_en_page \(magazine_id\) where magazine_id is not null;/.test(migSql)
+      && /on public\.mises_en_page \(etat, modifie_le desc\)/.test(migSql));
+  ok("migration : contrainte de cohérence (particulier / edition / libre), checks source et etat, version default 1",
+    /constraint mises_en_page_coherence check/.test(migSql)
+      && /source = 'particulier' and numero_id is not null and edition_id is null\s+and magazine_id is null/.test(migSql)
+      && /source = 'edition'\s+and numero_id is null\s+and edition_id is not null and magazine_id is not null/.test(migSql)
+      && /source = 'libre'\s+and numero_id is null\s+and edition_id is null\s+and magazine_id is null/.test(migSql)
+      && /check \(source in \('particulier', 'edition', 'libre'\)\)/.test(migSql) && /check \(etat in \('en_cours', 'archive'\)\)/.test(migSql)
+      && /version\s+integer not null default 1/.test(migSql));
+  ok("migration : RLS activée sans policy, revoke all anon/authenticated, notify pgrst, aucun trigger, aucune autre table touchée",
+    /alter table public\.mises_en_page enable row level security;/.test(migSql)
+      && /revoke all on public\.mises_en_page from anon, authenticated;/.test(migSql)
+      && /notify pgrst, 'reload schema';/.test(migSql) && !/create policy|create trigger|create or replace function/i.test(migSql)
+      && !/alter table public\.(?!mises_en_page)/.test(migSql));
+
+  const rListe = sansComm(lire("src/app/api/admin/atelier/mise-en-page/magazines/route.ts"));
+  const rUn = sansComm(lire("src/app/api/admin/atelier/mise-en-page/magazines/[id]/route.ts"));
+  const rCommun = sansComm(lire("src/app/api/admin/atelier/mise-en-page/magazines/commun.ts"));
+  const pur = sansComm(lire("src/lib/mise-en-page/sauvegarde.ts"));
+  const routes = [rListe, rUn, rCommun];
+  ok("routes : quiEstConnecteRequete(request) → 401 dans CHAQUE handler, force-dynamic, no-store",
+    (rListe.match(/quiEstConnecteRequete\(request\)/g) ?? []).length === 2 && (rUn.match(/quiEstConnecteRequete\(request\)/g) ?? []).length === 2
+      && /refus\(401, "non_authentifie"\)/.test(rListe) && /refus\(401, "non_authentifie"\)/.test(rUn)
+      && /export const dynamic = "force-dynamic"/.test(rListe) && /export const dynamic = "force-dynamic"/.test(rUn)
+      && /"Cache-Control": "no-store"/.test(rCommun));
+  const ecritures = routes.flatMap((r) => r.match(/[^;]*?\.(insert|update|upsert)\(/g) ?? []);
+  ok("routes : aucun .delete(, aucune RPC, aucun mail ; .insert/.update/.upsert seulement sur from(\"mises_en_page\")",
+    routes.every((r) => !/\.delete\(|\.rpc\(|sendBrevoEmail|journaliser|PutObject|DeleteObject/.test(r))
+      && ecritures.length === 2 && ecritures.every((e) => /from\("mises_en_page"\)\.(insert|update)\($/.test(e))
+      && !/export async function DELETE/.test(rUn + rListe));
+  ok("PUT : verrou optimiste .eq(\"id\", id).eq(\"version\", envoyee), version + 1, 409 conflit après relecture, 404, contenu par contenuValide",
+    /\.update\(patch\)\.eq\("id", id\)\.eq\("version", envoyee\)/.test(rUn) && /patch\.version = envoyee \+ 1/.test(rUn)
+      && /refus\(409, "conflit"/.test(rUn) && /refus\(404, "introuvable"\)/.test(rUn) && /issueSauvegarde\(envoyee, enBase\.version\)/.test(rUn)
+      && /contenuValide\(corps\.contenu\)/.test(rUn) && /modifie_par = prenomDe\(qui\)/.test(rUn));
+  ok("POST : collectifOuvert() pour la source édition, estUuid sur les deux ids, magazine filtré par son édition, token par isValidNumeroToken",
+    /source === "edition" && !collectifOuvert\(\)/.test(rListe) && /estUuid\(editionId\)/.test(rListe) && /estUuid\(magazineId\)/.test(rListe)
+      && /\.eq\("id", magazineId\)\s*\.eq\("edition_id", editionId\)/.test(rListe) && /isValidNumeroToken\(token\)/.test(rListe)
+      && /contenuValide\(corps\.contenu\)/.test(rListe) && /cree_par: prenom/.test(rListe));
+  ok("POST : 23505 → 409 existe_deja avec l'id existant ; table absente → 503 (tableAbsente) partout",
+    /error\.code === "23505"/.test(rListe) && /refus\(409, "existe_deja"/.test(rListe) && /id: existant\.id/.test(rListe)
+      && /tableAbsente\(code\)/.test(rCommun) && /refus\(503, ERREUR_MISES_EN_PAGE_ABSENTE/.test(rCommun)
+      && (rListe.match(/reponseTableAbsente\(\)/g) ?? []).length >= 2 && (rUn.match(/reponseTableAbsente\(\)/g) ?? []).length >= 2);
+  ok("corps borné : lireCorpsBorne(request, TAILLE_MAX_CORPS) dans POST et PUT, en-tête ET compte réel, 413",
+    /lireCorpsBorne\(request, TAILLE_MAX_CORPS\)/.test(rListe) && /lireCorpsBorne\(request, TAILLE_MAX_CORPS\)/.test(rUn)
+      && /content-length/.test(rCommun) && /total > max/.test(rCommun) && /refus\(413, "trop_lourd"\)/.test(rCommun)
+      && !/request\.json\(\)/.test(rListe + rUn));
+  ok("GET liste : SANS le contenu ; module pur : ni base, ni réseau, ni horloge, ni React",
+    !/contenu/.test(rCommun.match(/COLONNES_SANS_CONTENU =\s*"[^"]*"/)?.[0] ?? "contenu") && /select\(COLONNES_SANS_CONTENU\)/.test(rListe)
+      && !/makeSupabase|fetch\(|Date\.now|new Date|process\.env|from "react"|@\/lib\/atelier/.test(pur));
+};
+verifierMepSauvegarde();
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

@@ -10,6 +10,9 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - `idml.ts` : l'export IDML, portage fidèle de `idml-test-generator.py` (validé dans Affinity) : ne changer
   un élément ou un attribut qu'après un nouvel essai Affinity (`scripts/idml-essai.ts`). `paquet.ts` : les zips
   (fflate) ; `mimetype` PREMIER et stocké.
+- `sauvegarde.ts` : la sauvegarde partagée (table `mises_en_page`, migration 20261027, ÉCRITE non appliquée) : `contenuValide`
+  relit la forme EXACTE de `Magazine` (clé en trop = refus) ; un champ ajouté à `Magazine` s'ajoute là, sinon 400.
+  `TAILLE_MAX_CONTENU` (2 Mo, borne technique) ; `issueSauvegarde` = le verrou optimiste. Routes : `/api/admin/atelier/mise-en-page/magazines`.
 
 ## Le contrat
 - **Un seul recadrage** : `cadrer` sert l'écran ET l'export. Ce qu'on voit est ce qu'Affinity reçoit.
