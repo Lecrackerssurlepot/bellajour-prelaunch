@@ -177,9 +177,11 @@ En V1 (étape 0), un magazine est gardé **dans le navigateur**. C'est suffisant
 
 **Pourquoi la sauvegarde partagée passe avant la bibliothèque complète :** sans elle, l'accueil « En cours » ne montre que les magazines faits sur cet ordinateur. Le brief la mettait en étape 2. Je la remonte, parce que c'est elle qui fait de l'outil un vrai poste de travail à trois.
 
-## 8. À trancher par Mathias
+## 8. Tranché par Mathias (27/10)
 
-1. **La barre** : un monde « Mise en page » en troisième segment (ma recommandation), ou un lien dans chaque monde.
-2. **L'ordre** : la sauvegarde partagée en étape 1, avant la bibliothèque complète.
-3. **Les photos « à ne pas publier »** dans l'éditeur : masquées par défaut et posables après confirmation (ma recommandation), ou jamais posables.
-4. **Avant la clôture d'une édition** : avertir sans bloquer (ma recommandation, c'est la règle de l'admin), ou fermer l'entrée.
+Les quatre recommandations sont validées :
+
+1. **La barre** : « Mise en page » devient le troisième monde du commutateur, à côté de Particuliers et Éditions.
+2. **L'ordre** : la sauvegarde partagée (table `mises_en_page`) arrive en étape 1, avant la bibliothèque complète. La migration sera appliquée par Mathias.
+3. **Les photos « à ne pas publier »** sont masquées par défaut dans l'éditeur. On peut quand même les poser, après une confirmation.
+4. **Avant la clôture d'une édition** : l'outil avertit, sans bloquer l'entrée.
