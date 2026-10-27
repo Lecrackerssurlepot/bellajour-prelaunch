@@ -329,7 +329,7 @@ export const COLONNES: ColonneVue[] = ETATS.map((etat) => ({
  * s'effondrer.
  * ══════════════════════════════════════════════════════════════════════════
  */
-type RangeePhoto = {
+export type RangeePhoto = {
   id: string;
   r2_key: string;
   nom_origine: string | null;
@@ -369,7 +369,7 @@ const COLONNES_METADONNEES =
  * migration est acquise partout, ce repli peut disparaître ; il ne coûte
  * rien en attendant.
  */
-async function lirePhotos(
+export async function lirePhotos(
   supabase: SupabaseClient,
   numeroId: string,
 ): Promise<{ data: RangeePhoto[] | null }> {

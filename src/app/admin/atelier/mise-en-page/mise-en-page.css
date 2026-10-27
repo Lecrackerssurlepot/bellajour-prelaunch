@@ -1,5 +1,6 @@
 /* L'outil interne de mise en page (ordinateur, ≥ 1280 px).
-   Tout est scopé sous `.mep-gabarits` : la Porcelaine de `admin.css` fournit
+   Deux racines : `.mep-gabarits` (le catalogue) et `.mep-outil` (la liste
+   des dossiers et la coquille de l'éditeur). La Porcelaine de `admin.css` fournit
    les jetons (`--bj-*` redéfinis sous `.adm-root`, `--adm-verre*`). Aucune
    couleur en dur, aucune animation. */
 
@@ -152,3 +153,141 @@
 .mep-gabarits .mep-sq--titre { width: 22%; height: 1.6rem; margin-bottom: var(--bj-sp-4); }
 .mep-gabarits .mep-sq--double { aspect-ratio: 426 / 303; }
 .mep-gabarits .mep-sq--page { aspect-ratio: 213 / 303; }
+
+/* ═══════════ .mep-outil : la liste des dossiers, la coquille ═══════════ */
+
+.mep-outil .mep-tete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--bj-sp-4);
+  margin-bottom: var(--bj-sp-5);
+}
+.mep-outil .mep-tete-gestes {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-4);
+}
+.mep-outil .mep-lien-discret {
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text-soft);
+  text-decoration: none;
+}
+.mep-outil a.mep-lien-discret:hover { color: var(--bj-action); }
+
+/* ── filtres : le segment de la table de travail (.ate-seg) ── */
+.mep-outil .mep-filtres {
+  flex-wrap: wrap;
+  margin-bottom: var(--bj-sp-4);
+}
+.mep-outil .mep-n {
+  font-size: var(--bj-fs-xxs);
+  font-variant-numeric: tabular-nums;
+  color: var(--bj-text-faint);
+}
+
+/* ── les lignes ── */
+.mep-outil .mep-dossiers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-1);
+  margin: 0;
+  padding: var(--bj-sp-2);
+  list-style: none;
+  border-radius: var(--bj-r-md);
+  background: var(--adm-verre);
+  border: 1px solid var(--adm-verre-bord);
+  box-shadow: var(--adm-verre-ombre);
+}
+.mep-outil .mep-dossier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11rem 7rem 7.5rem 5rem;
+  align-items: center;
+  gap: var(--bj-sp-4);
+  padding: var(--bj-sp-3) var(--bj-sp-4);
+  border-radius: var(--bj-r-sm);
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+  text-decoration: none;
+}
+.mep-outil .mep-dossier:hover { background: var(--bj-veil-6); }
+.mep-outil .mep-dossier-nom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.mep-outil .mep-dossier-etat {
+  justify-self: start;
+  padding: 2px var(--bj-sp-3);
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-veil-6);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+  white-space: nowrap;
+}
+.mep-outil .mep-dossier-photos,
+.mep-outil .mep-dossier-date {
+  color: var(--bj-text-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.mep-outil .mep-dossier-archive {
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.mep-outil .mep-vide {
+  color: var(--bj-text-soft);
+}
+
+/* ── la coquille d'un dossier ── */
+.mep-outil .mep-sous-titre {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-3);
+}
+.mep-outil .mep-vignettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--bj-sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mep-outil .mep-vignette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-6);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.mep-outil .mep-vignette img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.mep-outil .mep-erreur {
+  display: flex;
+  align-items: center;
+  gap: var(--bj-sp-4);
+  color: var(--bj-text);
+}
+.mep-outil .mep-erreur p { margin: 0; }
+
+/* ── attente ── */
+.mep-outil .mep-sq {
+  display: block;
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-8);
+}
+.mep-outil .mep-sq--texte { display: inline-block; width: 10rem; height: var(--bj-fs-sm); }
+.mep-outil .mep-sq--nom { display: inline-block; width: 16rem; height: 0.8em; }
+.mep-outil .mep-sq--filtres { width: 34rem; height: 38px; margin-bottom: var(--bj-sp-4); border-radius: var(--bj-r-pill); }
+.mep-outil .mep-sq--ligne { height: 44px; background: var(--bj-veil-6); }
+.mep-outil .mep-sq--vignette { aspect-ratio: 1; }

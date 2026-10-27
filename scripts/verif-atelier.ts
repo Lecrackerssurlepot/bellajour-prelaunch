@@ -6686,6 +6686,52 @@ const verifierIdml = () => {
 };
 verifierIdml();
 
+/* ═══════════════ MISE EN PAGE T3 : lire un dossier, ne rien écrire ═══════════════ */
+const verifierMepPhotos = () => {
+  titre("— mise en page : les photos d'un dossier, en lecture seule (T3) —");
+  const lireF = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const ECRIT = /\.(insert|update|delete|upsert)\(|PutObject|DeleteObject|CopyObject|logEvenement|sendBrevoEmail|supprimerPrefixe/;
+  const route = sansComm(lireF("src/app/api/admin/atelier/mise-en-page/photos/route.ts"));
+  const donneesMep = sansComm(lireF("src/app/admin/atelier/mise-en-page/donnees.ts"));
+  const types = sansComm(lireF("src/app/admin/atelier/mise-en-page/typesPhotos.ts"));
+  const donnees = lireF("src/app/admin/atelier/donnees.ts");
+  ok("route photos : GET seul, gardée par quiEstConnecteRequete(request) AVANT toute lecture, 401 sinon",
+    /export async function GET\(/.test(route) && !/export async function (POST|PUT|PATCH|DELETE)\(/.test(route)
+      && /quiEstConnecteRequete\(request\)/.test(route) && /status: 401/.test(route)
+      && route.indexOf("quiEstConnecteRequete(request)") < route.indexOf("makeSupabase()"));
+  ok("route photos : token filtré par isValidNumeroToken (400), introuvable 404, no-store, force-dynamic",
+    /isValidNumeroToken\(token\)/.test(route) && /status: 400/.test(route) && /status: 404/.test(route)
+      && /"Cache-Control": "no-store"/.test(route) && /export const dynamic = "force-dynamic"/.test(route)
+      && route.indexOf("isValidNumeroToken(token)") < route.indexOf("makeSupabase()"));
+  ok("route photos : lit par lirePhotos (ses replis 42703), signe original ET vignette au TTL d'aperçu",
+    /lirePhotos\(supabase, numero\.id\)/.test(route) && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)/.test(route)
+      && /signerGet\(p\.vignette_key, APERCU_TTL_SECONDS\)/.test(route) && /ttl: APERCU_TTL_SECONDS/.test(route));
+  ok("route photos et chargerDossiersMep : aucune écriture (base, coffre, journal, mail), aucun log de token ni d'URL",
+    !ECRIT.test(route) && !ECRIT.test(donneesMep) && !/console\.\w+\([^)]*(token|url)/i.test(route));
+  ok("lirePhotos exportée sans être simplifiée : trois paliers, chacun ne retombe que sur 42703",
+    /export async function lirePhotos\(/.test(donnees) && /export type RangeePhoto = \{/.test(donnees)
+      && (donnees.slice(donnees.indexOf("export async function lirePhotos("), donnees.indexOf("async function lireNumeros(")).match(/code !== "42703"/g) ?? []).length === 2);
+  ok("chargerDossiersMep : nb_photos > 0, tri created_at desc, archive_le tentée puis repli 42703 sans elle",
+    /\.gt\("nb_photos", 0\)/.test(donneesMep) && /\.order\("created_at", \{ ascending: false \}\)/.test(donneesMep)
+      && /lire\(`\$\{CHAMPS\}, archive_le`\)/.test(donneesMep) && /code !== "42703"/.test(donneesMep) && /lire\(CHAMPS\)/.test(donneesMep)
+      && !/archive_le/.test(donneesMep.match(/const CHAMPS = "[^"]*"/)?.[0] ?? "archive_le"));
+  ok("typesPhotos.ts : partagé client/serveur, aucun import",
+    !/^\s*import\s/m.test(types) && /export type PhotoDossierMep/.test(types) && /export type ReponsePhotosMep/.test(types));
+  const fichiersRoutes = (dossier: string): string[] =>
+    readdirSync(dossier, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? fichiersRoutes(join(dossier, e.name)) : e.name === "route.ts" ? [join(dossier, e.name)] : [],
+    );
+  const racineAdmin = resolve(process.cwd(), "src/app/api/admin");
+  const nonGardees = fichiersRoutes(racineAdmin)
+    .map((f) => f.slice(racineAdmin.length + 1))
+    .filter((f) => f !== "login/route.ts" && f !== "logout/route.ts")
+    .filter((f) => !/quiEstConnecteRequete\(/.test(readFileSync(join(racineAdmin, f), "utf8")));
+  ok(`toute route /api/admin (hors login, logout) re-vérifie quiEstConnecteRequete, mise-en-page comprise${nonGardees.length ? " : " + nonGardees.join(", ") : ""}`,
+    nonGardees.length === 0 && fichiersRoutes(racineAdmin).some((f) => f.endsWith("mise-en-page/photos/route.ts")));
+};
+verifierMepPhotos();
+
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
