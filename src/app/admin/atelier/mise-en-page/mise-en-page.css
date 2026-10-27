@@ -1,0 +1,154 @@
+/* L'outil interne de mise en page (ordinateur, ≥ 1280 px).
+   Tout est scopé sous `.mep-gabarits` : la Porcelaine de `admin.css` fournit
+   les jetons (`--bj-*` redéfinis sous `.adm-root`, `--adm-verre*`). Aucune
+   couleur en dur, aucune animation. */
+
+.mep-gabarits .mep-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-2) var(--bj-sp-5);
+  margin: var(--bj-sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+}
+.mep-gabarits .mep-legende li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-sp-2);
+}
+.mep-gabarits .mep-pastille {
+  display: inline-block;
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+}
+.mep-gabarits .mep-pastille--perdu { border: 1px dashed var(--bj-text-faint); }
+.mep-gabarits .mep-pastille--coupe { border: 1px solid var(--bj-text); background: var(--bj-cream-tint-1); }
+.mep-gabarits .mep-pastille--grille { border: 1px solid var(--bj-veil-16); background: var(--bj-cream-tint-1); }
+.mep-gabarits .mep-pastille--photo { background: var(--bj-veil-35); }
+.mep-gabarits .mep-pastille--texte { border: 1px solid var(--bj-action); background: var(--bj-action-soft); }
+
+/* ── sections ── */
+.mep-gabarits .mep-section {
+  margin-top: var(--bj-sp-7);
+}
+.mep-gabarits .mep-titre {
+  margin: 0 0 var(--bj-sp-4);
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.6rem;
+  color: var(--bj-text);
+}
+.mep-gabarits .mep-sous {
+  margin: var(--bj-sp-5) 0 var(--bj-sp-3);
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+  font-size: var(--bj-fs-sm);
+  font-weight: 600;
+  color: var(--bj-text-soft);
+}
+.mep-gabarits .mep-titre span,
+.mep-gabarits .mep-sous span {
+  margin-left: var(--bj-sp-2);
+  font-family: var(--bj-font-ui);
+  font-style: normal;
+  font-weight: 400;
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+
+/* ── grille de cartes ── */
+.mep-gabarits .mep-grille {
+  display: grid;
+  gap: var(--bj-sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mep-gabarits .mep-grille--double { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mep-gabarits .mep-grille--page { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.mep-gabarits .mep-carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-4);
+  border-radius: var(--bj-r-md);
+  background: var(--adm-verre);
+  border: 1px solid var(--adm-verre-bord);
+  box-shadow: var(--adm-verre-ombre);
+}
+.mep-gabarits .mep-carte-tete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bj-sp-2);
+  min-width: 0;
+}
+.mep-gabarits .mep-id {
+  flex: 0 0 auto;
+  font-size: var(--bj-fs-xs);
+  font-weight: 600;
+  color: var(--bj-action);
+  font-variant-numeric: tabular-nums;
+}
+.mep-gabarits .mep-nom {
+  min-width: 0;
+  font-size: var(--bj-fs-sm);
+  color: var(--bj-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mep-gabarits .mep-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bj-sp-1) var(--bj-sp-4);
+  margin: 0;
+  font-size: var(--bj-fs-xs);
+}
+.mep-gabarits .mep-meta div { display: flex; gap: var(--bj-sp-1); }
+.mep-gabarits .mep-meta dt { color: var(--bj-text-faint); }
+.mep-gabarits .mep-meta dd { margin: 0; color: var(--bj-text); font-variant-numeric: tabular-nums; }
+
+/* ── le dessin (unités du viewBox = mm ; traits en px écran) ── */
+.mep-gabarits .mep-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.mep-gabarits .mep-svg * { vector-effect: non-scaling-stroke; }
+.mep-gabarits .mep-perdu {
+  fill: none;
+  stroke: var(--bj-text-faint);
+  stroke-width: 0.75;
+  stroke-dasharray: 3 2;
+}
+.mep-gabarits .mep-papier { fill: var(--bj-cream-tint-1); }
+.mep-gabarits .mep-coupe { fill: none; stroke: var(--bj-text); stroke-width: 1; }
+.mep-gabarits .mep-pli { stroke: var(--bj-text-soft); stroke-width: 1; stroke-dasharray: 4 3; }
+.mep-gabarits .mep-case { fill: var(--bj-veil-6); fill-opacity: 0.6; stroke: none; }
+.mep-gabarits .mep-marge { fill: none; stroke: var(--bj-veil-16); stroke-width: 0.75; }
+.mep-gabarits .mep-photo { fill: var(--bj-veil-35); stroke: var(--bj-text-soft); stroke-width: 0.75; }
+.mep-gabarits .mep-croix { stroke: var(--bj-cream-tint-1); stroke-width: 0.75; opacity: 0.7; }
+.mep-gabarits .mep-orient {
+  fill: var(--bj-cream-tint-1);
+  font-family: var(--bj-font-ui);
+  font-weight: 600;
+}
+.mep-gabarits .mep-texte { fill: var(--bj-action-soft); fill-opacity: 0.85; stroke: var(--bj-action); stroke-width: 1; }
+.mep-gabarits .mep-texte-lib { fill: var(--bj-action); font-family: var(--bj-font-ui); }
+
+/* ── attente ── */
+.mep-gabarits .mep-sq {
+  display: block;
+  border-radius: var(--bj-r-sm);
+  background: var(--bj-veil-8);
+}
+.mep-gabarits .mep-sq--texte { width: 30%; height: var(--bj-fs-sm); }
+.mep-gabarits .mep-sq--titre { width: 22%; height: 1.6rem; margin-bottom: var(--bj-sp-4); }
+.mep-gabarits .mep-sq--double { aspect-ratio: 426 / 303; }
+.mep-gabarits .mep-sq--page { aspect-ratio: 213 / 303; }

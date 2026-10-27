@@ -423,6 +423,30 @@ import {
   type Reglages,
 } from "@/lib/cockpit/modele";
 
+/* Mise en page interne (T1, 27/10) : géométrie, grilles, recadrage unique, état du magazine.
+   Modules purs, aucun import de l'ancien moteur de l'atelier. */
+import { PAGE_L, PAGE_H, PLANCHE_L, FOND_PERDU, PT_PAR_MM, MARGES as MARGES_MEP, GRILLE as GRILLE_MEP, zoneUtile, caseGrille } from "@/lib/mise-en-page/geometrie";
+import { orientationDe, pourCote, type Template as TemplateMep } from "@/lib/mise-en-page/types";
+import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
+import { grillesPage, grillesDouble } from "@/lib/mise-en-page/grilles";
+import { cadrer, deplacer, zoomer, RECADRAGE_NEUTRE } from "@/lib/mise-en-page/recadrage";
+import {
+  candidats as candidatsMep,
+  disposer as disposerMep,
+  nouveauMagazine,
+  ajouterDouble,
+  supprimerPlanche,
+  poser as poserMep,
+  basculer as basculerMep,
+  autreDisposition,
+  intervertir as intervertirMep,
+  ecrireTexte,
+  utilisations as utilisationsMep,
+  templateParId,
+  cadresDe,
+  type PhotoRef,
+} from "@/lib/mise-en-page/magazine";
+
 let ko = 0;
 const ok = (n: string, c: boolean) => {
   console.log(`${c ? "  ok " : "  KO "} ${n}`);
@@ -6351,6 +6375,185 @@ const verifierHeicComposer = async () => {
   ok("8A : le worker du B2C reste sans libheif, et /composer ne demande jamais la version moyenne des éditions",
     !/libheif/.test(readFileSync(resolve(process.cwd(), "src/app/(atelier)/composer/depot/reduire.worker.js"), "utf8")) && !/moyenne/.test(moteur.replace(/\/\*[\s\S]*?\*\//g, "")));
 };
+
+/* Mise en page interne (T1, 27/10) : la géométrie du brief §6, le catalogue qui ne laisse jamais une
+   sélection sans disposition, LE calcul de recadrage (écran = export IDML) et les transitions du magazine. */
+const verifierMiseEnPage = () => {
+  titre("— Mise en page : géométrie, templates, recadrage unique, transitions du magazine —");
+  const EPS = 1e-9;
+  ok("MEP géométrie : 6 × 25 + 5 × 5 = 175 = 210 − 20 − 15 ; 6 × 39,5 + 5 × 5 = 262 = 297 − 15 − 20",
+    GRILLE_MEP.colonnes * GRILLE_MEP.moduleL + (GRILLE_MEP.colonnes - 1) * GRILLE_MEP.gouttiere === 175 && PAGE_L - MARGES_MEP.interieure - MARGES_MEP.exterieure === 175
+      && GRILLE_MEP.lignes * GRILLE_MEP.moduleH + (GRILLE_MEP.lignes - 1) * GRILLE_MEP.gouttiere === 262 && PAGE_H - MARGES_MEP.haut - MARGES_MEP.bas === 262);
+  ok("MEP géométrie : A4 210 × 297, planche 420, fond perdu 3, 1 mm = 72/25,4 pt",
+    PAGE_L === 210 && PAGE_H === 297 && PLANCHE_L === 420 && FOND_PERDU === 3 && Math.abs(PT_PAR_MM * 25.4 - 72) < EPS);
+  const zg = zoneUtile("gauche"), zd = zoneUtile("droite");
+  ok("MEP zone utile : gauche x = 15 (tranche), droite x = 20 (pli), y = 15, 175 × 262",
+    zg.x === 15 && zd.x === 20 && zg.y === 15 && zd.l === 175 && zd.h === 262);
+  const cg = caseGrille("droite", 5, 5, 1, 1), tout = caseGrille("droite", 0, 0, 6, 6);
+  ok("MEP caseGrille : la dernière case finit au bord de la zone, la case 6 × 6 EST la zone",
+    Math.abs(cg.x + cg.l - 195) < EPS && Math.abs(cg.y + cg.h - 277) < EPS && tout.x === zd.x && tout.y === zd.y && tout.l === 175 && tout.h === 262);
+  ok("MEP orientationDe : C entre 0,95 et 1,05, sinon P ou L",
+    orientationDe(100, 100) === "C" && orientationDe(104, 100) === "C" && orientationDe(95, 100) === "C" && orientationDe(94, 100) === "P" && orientationDe(106, 100) === "L");
+
+  ok("MEP annexe : 4 doubles DP-01 à DP-04, valeurs du brief (sondes : DP-02 photo 215/5/200/235, DP-03 légende −90°, DP-04 y = −3)",
+    TEMPLATES_ANNEXE.length === 4 && TEMPLATES_ANNEXE.map((t) => t.id).join() === "DP-01,DP-02,DP-03,DP-04"
+      && JSON.stringify(TEMPLATES_ANNEXE[1].cadres[1]) === JSON.stringify({ role: "photo", x: 215, y: 5, l: 200, h: 235, orientation: "P" })
+      && TEMPLATES_ANNEXE[2].cadres[5].rotation === -90 && TEMPLATES_ANNEXE[3].cadres[0].y === -3
+      && TEMPLATES_ANNEXE.every((t) => t.cadres.filter((c) => c.role === "photo").length === t.nbPhotos && t.origine === "annexe"));
+
+  /* Les orientations d'une sélection de test : tout P, tout L, alternance, carrés, mélange des trois. */
+  const ph = (i: number, l: number, h: number, date: string | null = `2026-01-${String(10 + i).padStart(2, "0")}`): PhotoRef => ({ id: `p${i}`, nom: `IMG_${String(i).padStart(3, "0")}.jpg`, l, h, date });
+  const motifs: Record<string, (i: number) => PhotoRef> = {
+    "tout P": (i) => ph(i, 3000, 4000),
+    "tout L": (i) => ph(i, 4000, 3000),
+    "alterné": (i) => (i % 2 ? ph(i, 4000, 3000) : ph(i, 3000, 4000)),
+    "carrés": (i) => ph(i, 3000, 3000),
+    "P L C": (i) => [ph(i, 3000, 4000), ph(i, 4000, 3000), ph(i, 3000, 3000)][i % 3],
+  };
+  const serie = (motif: string, n: number) => Array.from({ length: n }, (_, i) => motifs[motif](i));
+  const vides: string[] = [];
+  for (const motif of Object.keys(motifs)) {
+    for (let n = 1; n <= 6; n++) if (candidatsMep("page", serie(motif, n)).length === 0) vides.push(`page ${motif} ${n}`);
+    for (let n = 1; n <= 12; n++) if (candidatsMep("double", serie(motif, n)).length === 0) vides.push(`double ${motif} ${n}`);
+  }
+  ok(`MEP candidats : jamais vide, page 1 à 6 et double 1 à 12, cinq motifs d'orientation${vides.length ? ` (vides : ${vides.join(", ")})` : ""}`, vides.length === 0);
+  ok("MEP candidats : l'annexe compatible passe d'abord (3 L → DP-04, 3 P → DP-01, 2 P → DP-02), puis les grilles",
+    candidatsMep("double", serie("tout L", 3))[0].id === "DP-04" && candidatsMep("double", serie("tout P", 3))[0].id === "DP-01"
+      && candidatsMep("double", serie("tout P", 2))[0].id === "DP-02" && candidatsMep("double", serie("tout L", 3)).at(-1)?.origine === "grille");
+  const ids2L1C = candidatsMep("double", [ph(0, 4000, 3000), ph(1, 4000, 3000), ph(2, 3000, 3000)]).map((t) => t.id);
+  ok("MEP candidats : un carré est compatible avec P comme avec L (2 L + 1 C → DP-03 et DP-04 compatibles en tête, DP-01 après ; 3 C → les trois annexes)",
+    ids2L1C.slice(0, 3).join() === "DP-03,DP-04,DP-01" && candidatsMep("double", serie("carrés", 3)).slice(0, 3).map((t) => t.id).join() === "DP-01,DP-03,DP-04");
+
+  const grilles: TemplateMep[] = [];
+  for (let n = 1; n <= 6; n++) grilles.push(...grillesPage(n));
+  for (let n = 1; n <= 12; n++) grilles.push(...grillesDouble(n));
+  const parPortee: string[] = [];
+  for (let n = 1; n <= 6; n++) parPortee.push(`P${n}:${grillesPage(n).length}`);
+  for (let n = 1; n <= 12; n++) parPortee.push(`D${n}:${grillesDouble(n).length}`);
+  console.log(`      grilles par (portée, n) : ${parPortee.join(" ")}`);
+  ok("MEP grilles : au moins 2 répartitions par nombre (page 1 à 6), au plus 8 par double, ids uniques",
+    [1, 2, 3, 4, 5, 6].every((n) => grillesPage(n).length >= 2) && Array.from({ length: 12 }, (_, i) => grillesDouble(i + 1)).every((l) => l.length >= 1 && l.length <= 8)
+      && new Set(grilles.map((t) => t.id)).size === grilles.length && grillesPage(7).length === 0 && grillesDouble(13).length === 0);
+  ok("MEP grilles : nbPhotos = cadres photo, signature calculée, aucun texte, origine grille, ids G-P / G-D",
+    grilles.every((t) => t.nbPhotos === t.cadres.length && t.cadres.every((c) => c.role === "photo") && t.origine === "grille" && t.attribut === "classique"
+      && t.signature === t.cadres.map((c) => orientationDe(c.l, c.h)).join(",") && /^G-[PD]\d+-[a-h]$/.test(t.id)));
+  ok("MEP grilles : la pleine page (0, −3, 213, 303) et la pleine double (−3, −3, 426, 303) existent",
+    grillesPage(1).some((t) => t.cadres[0].x === 0 && t.cadres[0].y === -3 && t.cadres[0].l === 213 && t.cadres[0].h === 303)
+      && grillesDouble(1)[0].cadres[0].x === -3 && grillesDouble(1)[0].cadres[0].l === 426 && grillesDouble(1)[0].cadres[0].h === 303);
+  ok("MEP grilles : des photos traversent le pli dans les doubles (bord gauche < 210 < bord droit)",
+    [1, 3, 5, 7, 11].every((n) => grillesDouble(n).some((t) => t.cadres.some((c) => c.x < 210 && c.x + c.l > 210))));
+
+  /* Toute photo tient dans la planche élargie du fond perdu, quel que soit le côté où la page est posée. */
+  const horsChamp: string[] = [];
+  const dans = (x: number, y: number, l: number, h: number, maxX: number) => x >= -3 - EPS && x + l <= maxX + EPS && y >= -3 - EPS && y + h <= 300 + EPS;
+  for (const t of [...TEMPLATES_ANNEXE, ...grilles]) {
+    for (const cote of t.portee === "page" ? (["gauche", "droite"] as const) : (["gauche"] as const)) {
+      for (const c of pourCote(t, cote)) if (c.role === "photo" && !dans(c.x, c.y, c.l, c.h, t.portee === "page" ? 213 : 423)) horsChamp.push(`${t.id}/${cote}`);
+    }
+  }
+  ok(`MEP fond perdu : chaque cadre photo dans la planche élargie (−3 … 423 × −3 … 300)${horsChamp.length ? ` (hors : ${horsChamp.join(", ")})` : ""}`, horsChamp.length === 0);
+
+  const chevauchent: string[] = [];
+  for (const t of grilles) {
+    const c = t.cadres;
+    for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) {
+      const a = c[i], b = c[j];
+      if (a.x < b.x + b.l - EPS && b.x < a.x + a.l - EPS && a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS) chevauchent.push(`${t.id}:${i}/${j}`);
+    }
+  }
+  ok(`MEP grilles : aucun cadre photo ne chevauche un autre${chevauchent.length ? ` (${chevauchent.join(", ")})` : ""}`, chevauchent.length === 0);
+  const pg = grillesPage(2)[0];
+  ok("MEP pourCote : la gauche est le miroir (x' = 210 − x − l), rotation inversée",
+    pourCote(pg, "gauche")[0].x === 210 - pg.cadres[0].x - pg.cadres[0].l
+      && pourCote({ ...pg, cadres: [{ ...pg.cadres[0], rotation: 90 }] }, "gauche")[0].rotation === -90);
+
+  /* Le calcul de recadrage : l'image couvre TOUJOURS le cadre. */
+  const couvre = (photo: { l: number; h: number }, cadre: { l: number; h: number }, r: { zoom: number; dx: number; dy: number }) => {
+    const c = cadrer(photo, cadre, r);
+    return c.x <= EPS && c.y <= EPS && c.x + c.l >= cadre.l - EPS && c.y + c.h >= cadre.h - EPS;
+  };
+  const cas: [{ l: number; h: number }, { l: number; h: number }][] = [
+    [{ l: 3000, h: 4000 }, { l: 175, h: 84 }],
+    [{ l: 4000, h: 3000 }, { l: 55, h: 262 }],
+    [{ l: 3000, h: 3000 }, { l: 85, h: 128.5 }],
+    [{ l: 6000, h: 1000 }, { l: 426, h: 303 }],
+  ];
+  const reglages = [0, 1, 2.5, 8, 50].flatMap((zoom) => [[0, 0], [1e6, 1e6], [-1e6, -1e6], [1e6, -1e6]].map(([dx, dy]) => ({ zoom, dx, dy })));
+  ok("MEP cadrer : couverture totale (portrait dans paysage et inverse, zoom 0 à 50, décalages extrêmes)",
+    cas.every(([p, c]) => reglages.every((r) => couvre(p, c, r))));
+  const c0 = cadrer({ l: 3000, h: 4000 }, { l: 175, h: 84 }, RECADRAGE_NEUTRE);
+  ok("MEP cadrer : neutre = remplissage centré (portrait 3000 × 4000 dans 175 × 84 : l = 175, h = 233,33, y = −74,67)",
+    Math.abs(c0.l - 175) < EPS && Math.abs(c0.h - 700 / 3) < EPS && c0.x === 0 && Math.abs(c0.y - (84 - 700 / 3) / 2) < EPS && Math.abs(c0.echelle - 175 / 3000) < EPS);
+  const cz = cadrer({ l: 3000, h: 4000 }, { l: 175, h: 84 }, { zoom: 2.5, dx: 1e6, dy: -1e6 });
+  ok("MEP cadrer : zoom borné à [1, 8], décalage borné à ±(l − cl)/2 (bord de l'image sur le bord du cadre)",
+    cadrer({ l: 10, h: 10 }, { l: 5, h: 5 }, { zoom: 0.2, dx: 0, dy: 0 }).zoom === 1 && cadrer({ l: 10, h: 10 }, { l: 5, h: 5 }, { zoom: 99, dx: 0, dy: 0 }).zoom === 8
+      && Math.abs(cz.dx - (cz.l - 175) / 2) < EPS && Math.abs(cz.x) < EPS && Math.abs(cz.dy + (cz.h - 84) / 2) < EPS && Math.abs(cz.y + cz.h - 84) < EPS);
+  const rz = zoomer(deplacer({ zoom: 3, dx: 0, dy: 0 }, 1000, 1000, { l: 3000, h: 4000 }, { l: 175, h: 84 }), 1, { l: 3000, h: 4000 }, { l: 175, h: 84 });
+  ok("MEP deplacer / zoomer : bornés, et dézoomer reborne le décalage (zoom 1 sur un portrait dans un paysage : dx = 0)",
+    rz.zoom === 1 && rz.dx === 0 && Math.abs(rz.dy - (700 / 3 - 84) / 2) < EPS);
+
+  /* disposer : orientation d'abord, puis la date. */
+  const tDP03 = templateParId("DP-03");
+  const d3 = tDP03 ? disposerMep(tDP03, [ph(1, 3000, 4000, "2026-01-01"), ph(2, 4000, 3000, "2026-01-03"), ph(3, 4000, 3000, "2026-01-02")]) : null;
+  ok("MEP disposer : DP-03 (L, L, P) reçoit le paysage le plus ancien, puis l'autre, puis le portrait",
+    d3 !== null && d3.photos.map((a) => a.photoId).join() === "p3,p2,p1" && d3.textes.length === 9 && d3.textes[0].contenu === "Titre" && d3.textes[0].taille === 26);
+  const g3 = grillesPage(3)[0];
+  const dsd = disposerMep(g3, [ph(1, 4000, 3000, null), ph(2, 4000, 3000, "2026-02-01"), ph(3, 3000, 4000, "2025-01-01")]);
+  ok("MEP disposer : à orientation égale, la date ; une date inconnue passe après ; recadrage neutre",
+    dsd.photos.map((a) => a.photoId).join() === "p2,p1,p3" && dsd.photos.every((a) => a.recadrage.zoom === 1 && a.recadrage.dx === 0));
+
+  /* Le magazine. */
+  const cat = Array.from({ length: 14 }, (_, i) => motifs["P L C"](i));
+  let m = nouveauMagazine("m1", "Essai", "2026-10-27T00:00:00.000Z");
+  ok("MEP magazine : une seule planche, page droite seule et vide", m.planches.length === 1 && m.planches[0].mode === "pages" && m.planches[0].droite === null);
+  m = ajouterDouble(ajouterDouble(m));
+  const [p0, p1, p2] = m.planches.map((p) => p.id);
+  const r7 = poserMep(m, p1, "droite", cat.slice(0, 8));
+  ok("MEP poser : 8 photos sur une page → 6 posées, les 2 plus récentes rendues, la planche repasse en pages",
+    r7.nonPosees.join() === "p6,p7" && r7.magazine.planches[1].mode === "pages" && r7.magazine.planches[1].droite?.photos.length === 6 && r7.magazine.planches[1].gauche === null);
+  m = poserMep(r7.magazine, p1, "gauche", cat.slice(8, 11)).magazine;
+  const avant = [...(m.planches[1].gauche?.photos ?? []), ...(m.planches[1].droite?.photos ?? [])].map((a) => a.photoId).sort().join();
+  const mDouble = basculerMep(m, p1, cat);
+  const mRetour = basculerMep(mDouble, p1, cat);
+  const enDouble = (mDouble.planches[1].double?.photos ?? []).map((a) => a.photoId).sort().join();
+  const auRetour = [...(mRetour.planches[1].gauche?.photos ?? []), ...(mRetour.planches[1].droite?.photos ?? [])].map((a) => a.photoId).sort().join();
+  ok("MEP basculer : pages → double → pages conserve l'ensemble des photos (9), partage ceil/floor",
+    mDouble.planches[1].mode === "double" && enDouble === avant && auRetour === avant && avant.split(",").length === 9
+      && mRetour.planches[1].gauche?.photos.length === 5 && mRetour.planches[1].droite?.photos.length === 4);
+  const m0 = poserMep(m, p0, "double", cat.slice(0, 3)).magazine;
+  ok("MEP planche 0 : poser en double la garde en page droite, basculer ne fait rien, supprimer la vide",
+    m0.planches[0].mode === "pages" && m0.planches[0].droite !== null && m0.planches[0].gauche === null
+      && basculerMep(m0, p0, cat) === m0 && supprimerPlanche(m0, p0).planches.length === 3 && supprimerPlanche(m0, p0).planches[0].droite === null
+      && supprimerPlanche(m0, p2).planches.length === 2);
+  const vierge = ajouterDouble(nouveauMagazine("m2", "Essai", "x"));
+  const m2 = poserMep(poserMep(vierge, "pl-2", "double", [cat[0], cat[1]]).magazine, "pl-1", "droite", [cat[0]]).magazine;
+  const u = utilisationsMep(m2);
+  ok("MEP utilisations : une photo posée deux fois compte ×2", u.get("p0") === 2 && u.get("p1") === 1);
+  const ad = autreDisposition(ecrireTexte(mDouble, { plancheId: p1, cible: "double", index: 0 }, { contenu: "Lisbonne" }), p1, "double", cat);
+  ok("MEP autreDisposition : template suivant, mêmes photos (multiset), photos du template toujours dans le catalogue",
+    ad.planches[1].double?.templateId !== mDouble.planches[1].double?.templateId
+      && (ad.planches[1].double?.photos ?? []).map((a) => a.photoId).sort().join() === enDouble);
+  ok("MEP autreDisposition : un texte saisi survit s'il reste un cadre texte à son index (grilles : aucun cadre texte, rien à garder)",
+    (() => {
+      const t3 = serie("tout L", 3);
+      let mm = poserMep(ajouterDouble(nouveauMagazine("m", "t", "x")), "pl-2", "double", t3).magazine;
+      mm = ecrireTexte(mm, { plancheId: "pl-2", cible: "double", index: 0 }, { contenu: "Ouessant" });
+      const suiv = autreDisposition(mm, "pl-2", "double", t3);
+      const tour = Array.from({ length: candidatsMep("double", t3).length }, () => 0).reduce((acc) => autreDisposition(acc, "pl-2", "double", t3), mm);
+      return mm.planches[1].double?.templateId === "DP-04" && suiv.planches[1].double?.templateId !== "DP-04"
+        && tour.planches[1].double?.templateId === "DP-04" && mm.planches[1].double?.textes[0].contenu === "Ouessant";
+    })());
+  const sw = intervertirMep(mDouble, { plancheId: p1, cible: "double", index: 0 }, { plancheId: p1, cible: "double", index: 1 });
+  const ids = (mDouble.planches[1].double?.photos ?? []).map((a) => a.photoId);
+  const idsSw = (sw.planches[1].double?.photos ?? []).map((a) => a.photoId);
+  ok("MEP intervertir : les deux photos s'échangent, le reste ne bouge pas, l'original n'est pas muté",
+    idsSw[0] === ids[1] && idsSw[1] === ids[0] && idsSw.slice(2).join() === ids.slice(2).join() && (mDouble.planches[1].double?.photos[0].photoId ?? null) === ids[0]);
+  const dd = m.planches[1].droite;
+  ok("MEP cadresDe : page droite décalée de +210, page gauche en miroir, en repère planche",
+    dd !== null && cadresDe(dd, "droite").every((c) => c.x >= 210 - EPS) && (m.planches[1].gauche ? cadresDe(m.planches[1].gauche, "gauche").every((c) => c.x + c.l <= 210 + EPS) : false));
+};
+verifierMiseEnPage();
+
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
