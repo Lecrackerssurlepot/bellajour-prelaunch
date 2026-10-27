@@ -788,7 +788,8 @@ export async function chargerStyle(
 
 /* ─────────────────────────────────── le bon à tirer ─────────────────────────────────── */
 
-export type PageAtelier = { index: number; vignette: string | null; apparie_a: number | null; zones: number };
+/** `image` : la page en grand (celle que lit le client), pour y reposer ses épingles. */
+export type PageAtelier = { index: number; vignette: string | null; image: string | null; apparie_a: number | null; zones: number };
 
 export type TourAtelier = {
   id: string;
@@ -810,7 +811,11 @@ export type NoteAtelier = {
   id: string;
   numero: number;
   tour: number;
+  tourId: string;
   page: number | null;
+  /** L'endroit touché par le client, en % de la page (null : note de page ou générale). */
+  x: number | null;
+  y: number | null;
   type: string;
   resume: string;
   photo: string | null;
@@ -923,6 +928,7 @@ export async function chargerBatAtelier(
           (t.pages ?? []).map(async (p) => ({
             index: p.index,
             vignette: await signer(p.vignette_key ?? p.image_key),
+            image: await signer(p.image_key),
             apparie_a: p.apparie_a,
             zones: p.zones?.length ?? 0,
           }))
@@ -938,13 +944,13 @@ export async function chargerBatAtelier(
   const { data: notes, error: errNotes } = ids.length
     ? await supabase
         .from("collectif_notes")
-        .select("id, tour_id, page_index, type, contenu, envoyee_le, resolue_le, reponse_atelier, retiree_le, created_at")
+        .select("id, tour_id, page_index, x_pct, y_pct, type, contenu, envoyee_le, resolue_le, reponse_atelier, retiree_le, created_at")
         .in("tour_id", ids)
         .is("retiree_le", null)
         .order("created_at", { ascending: true })
     : { data: [], error: null };
   if (errNotes) echec("notes (BAT)", errNotes);
-  const toutes = (notes ?? []) as Pick<NoteLigne, "id" | "tour_id" | "page_index" | "type" | "contenu" | "envoyee_le" | "resolue_le" | "reponse_atelier" | "created_at">[];
+  const toutes = (notes ?? []) as Pick<NoteLigne, "id" | "tour_id" | "page_index" | "x_pct" | "y_pct" | "type" | "contenu" | "envoyee_le" | "resolue_le" | "reponse_atelier" | "created_at">[];
   const numeroTour = new Map(lus.valeur.map((t) => [t.id, t.numero]));
   const photosVoulues = toutes
     .filter((n) => n.envoyee_le && n.type === "photo" && typeof n.contenu?.photo === "string" && estUuid(n.contenu.photo))
@@ -967,7 +973,10 @@ export async function chargerBatAtelier(
       id: n.id,
       numero,
       tour: numeroTour.get(n.tour_id) ?? 0,
+      tourId: n.tour_id,
       page: n.page_index,
+      x: n.x_pct === null ? null : Number(n.x_pct),
+      y: n.y_pct === null ? null : Number(n.y_pct),
       type: n.type,
       resume: resumeNote(n.type, n.contenu ?? {}),
       photo: typeof n.contenu?.photo === "string" ? vignettesPhotos.get(n.contenu.photo) ?? null : null,
