@@ -446,6 +446,10 @@ import {
   cadresDe,
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
+/* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
+import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
+import { unzipSync, strFromU8 } from "fflate";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -6554,6 +6558,133 @@ const verifierMiseEnPage = () => {
 };
 verifierMiseEnPage();
 
+/* Export IDML (T2, 27/10) : le paquet que lit Affinity. Fidèle au générateur Python validé :
+   mimetype en premier et stocké, designmap qui référence tout, transformée d'image tirée de `cadrer`. */
+const verifierIdml = () => {
+  titre("— Mise en page : export IDML et paquet —");
+  const n = nomsDeLiens([
+    { id: "a", nom: "IMG_1.jpg" }, { id: "b", nom: "img_1.JPG" }, { id: "c", nom: "IMG_1.jpg" },
+    { id: "d", nom: "a/b:c*?.jpeg" }, { id: "e", nom: "IMG_1 (2).jpg" }, { id: "f", nom: "sans extension" }, { id: "g", nom: "" },
+  ]);
+  ok("IDML nomsDeLiens : nom gardé, doublon insensible à la casse → « (2) » avant l'extension, un nom déjà pris saute au suivant",
+    n.get("a") === "IMG_1.jpg" && n.get("b") === "img_1 (2).JPG" && n.get("c") === "IMG_1 (3).jpg" && n.get("e") === "IMG_1 (2) (2).jpg");
+  ok("IDML nomsDeLiens : caractères interdits remplacés (/ \\ : * ?), nom vide → « photo », unicité garantie",
+    n.get("d") === "a_b_c__.jpeg" && n.get("f") === "sans extension" && n.get("g") === "photo"
+      && new Set([...n.values()].map((v) => v.toLowerCase())).size === n.size);
+  ok("IDML échappement : & < > \" ' dans contenus et attributs", echapperXml(`a&b<c>"d'`) === "a&amp;b&lt;c&gt;&quot;d&apos;");
+  ok("IDML liens : relatif, file: relatif, absolu encodé comme urllib.parse.quote (/ gardés, espace %20, é %C3%A9)",
+    uriDeLien("Été 1.jpg", { mode: "relatif" }) === "Links/%C3%89t%C3%A9%201.jpg"
+      && uriDeLien("a (2).jpg", { mode: "relatif-file" }) === "file:Links/a%20%282%29.jpg"
+      && uriDeLien("x.jpg", { mode: "absolu", dossier: "/Users/m/Desktop/essai abs/" }) === "file:/Users/m/Desktop/essai%20abs/Links/x.jpg");
+
+  /* Un magazine de 3 planches : 0 = page droite (G-P1-a, une photo), 1 = DP-04 (photo 3 zoomée ×2, dx 10),
+     2 = mode pages avec une page gauche VIDE et une droite en grille. */
+  const ph: Map<string, PhotoExport> = new Map([
+    ["p1", { id: "p1", nomLien: "un.jpg", l: 4000, h: 3000 }],
+    ["p2", { id: "p2", nomLien: "deux & co.jpg", l: 3000, h: 4000 }],
+  ]);
+  const neutre = { zoom: 1, dx: 0, dy: 0 };
+  const mag = {
+    version: 1 as const, id: "m", titre: "t", creeLe: "x", modifieLe: "x",
+    planches: [
+      { id: "pl-1", mode: "pages" as const, double: null, gauche: null, droite: { templateId: "G-P1-a", photos: [{ photoId: "p2", recadrage: neutre }], textes: [] } },
+      { id: "pl-2", mode: "double" as const, gauche: null, droite: null, double: {
+        templateId: "DP-04",
+        photos: [{ photoId: "p1", recadrage: neutre }, { photoId: null, recadrage: neutre }, { photoId: "p1", recadrage: { zoom: 2, dx: 10, dy: 0 } }],
+        textes: [{ contenu: `L'été <à> "Lisbonne" & co`, taille: 30, gras: true }, { contenu: "ligne 1\nligne 2", taille: 8, gras: false }],
+      } },
+      { id: "pl-3", mode: "pages" as const, double: null, gauche: null, droite: { templateId: "G-P2-a", photos: [{ photoId: "p1", recadrage: neutre }, { photoId: "p2", recadrage: neutre }], textes: [] } },
+    ],
+  };
+  const fichiers = construireIdml(mag, ph, { liens: { mode: "relatif" } });
+  const parChemin = new Map(fichiers.map((x) => [x.chemin, x.contenu]));
+  const dm = parChemin.get("designmap.xml") ?? "";
+  const spreads = fichiers.filter((x) => x.chemin.startsWith("Spreads/"));
+  const stories = fichiers.filter((x) => x.chemin.startsWith("Stories/"));
+  ok("IDML paquet : ordre du Python (mimetype, container, Graphic, Fonts, Styles, Preferences, Spreads, Stories, designmap)",
+    fichiers[0].chemin === "mimetype" && fichiers[0].contenu === MIMETYPE_IDML && fichiers[1].chemin === "META-INF/container.xml"
+      && fichiers.slice(2, 6).map((x) => x.chemin).join() === "Resources/Graphic.xml,Resources/Fonts.xml,Resources/Styles.xml,Resources/Preferences.xml"
+      && fichiers[fichiers.length - 1].chemin === "designmap.xml" && spreads.length === 3 && stories.length === 2);
+  ok("IDML designmap : référence chaque Spread et chaque Story, StoryList = les Stories",
+    spreads.every((s) => dm.includes(`<idPkg:Spread src="${s.chemin}"/>`)) && stories.every((s) => dm.includes(`<idPkg:Story src="${s.chemin}"/>`))
+      && (/StoryList="([^"]*)"/.exec(dm)?.[1] ?? "").split(" ").length === stories.length
+      && stories.every((s) => dm.includes(s.chemin.replace("Stories/Story_", "").replace(".xml", ""))));
+  ok("IDML pages : PagesPerDocument = Section Length = 1 + 2 × (planches − 1) = 5",
+    (parChemin.get("Resources/Preferences.xml") ?? "").includes('PagesPerDocument="5"') && dm.includes('Length="5"'));
+  const sp1 = parChemin.get("Spreads/Spread_sp1.xml") ?? "";
+  const sp3 = parChemin.get("Spreads/Spread_sp3.xml") ?? "";
+  ok("IDML planches : planche 0 = une page droite (PageCount 1, BindingLocation 0) ; mode pages avec page vide = 2 pages",
+    sp1.includes('PageCount="1" BindingLocation="0"') && (sp1.match(/<Page /g) ?? []).length === 1 && sp1.includes('ItemTransform="1 0 0 1 0.0000 -420.9449"')
+      && sp3.includes('PageCount="2" BindingLocation="1"') && (sp3.match(/<Page /g) ?? []).length === 2 && sp3.includes("ItemTransform=\"1 0 0 1 -595.2756 -420.9449\""));
+  /* À la main : 4000 × 3000 dans 175 × 128,5 → max(175/4000, 128,5/3000) = 0,04375 mm/px ; ×2 = 0,0875 ;
+     image 350 × 262,5 ; x = (175 − 350)/2 + 10 = −77,5 ; y = (128,5 − 262,5)/2 = −67.
+     Points : s = 0,0875·K ; tx = (230 − 210 − 77,5)·K ; ty = (104 − 67)·K − 297·K/2. */
+  const Kt = 72 / 25.4;
+  const attendu = `${(0.0875 * Kt).toFixed(6)} 0 0 ${(0.0875 * Kt).toFixed(6)} ${(-57.5 * Kt).toFixed(4)} ${(37 * Kt - 148.5 * Kt).toFixed(4)}`;
+  const sp2 = parChemin.get("Spreads/Spread_sp2.xml") ?? "";
+  ok(`IDML recadrage : zoom 2 + dx 10 → ItemTransform « ${attendu} » (calculé à la main), GraphicBounds 4000 × 3000`,
+    sp2.includes(`<Image Self="u`) && sp2.includes(`ItemTransform="${attendu}"`) && sp2.includes('<GraphicBounds Left="0" Top="0" Right="4000" Bottom="3000"/>'));
+  ok("IDML cadre vide : un Rectangle GraphicType sans Image ; trois cadres photo, deux Images, noms lisibles",
+    (sp2.match(/<Rectangle /g) ?? []).length === 3 && (sp2.match(/<Image /g) ?? []).length === 2
+      && /<Rectangle [^>]*Name="Photo 2"[^>]*>(?:(?!<\/Rectangle>).)*<FrameFittingOption [^>]*\/><\/Rectangle>/.test(sp2)
+      && sp2.includes('Name="Légende 1"') && sp2.includes('Name="Légende 2"'));
+  const st = stories.map((s) => s.contenu).join("");
+  ok("IDML textes : contenu échappé, taille et gras du TexteCadre, Arial, saut de ligne → <Br/>",
+    st.includes("<Content>L&apos;été &lt;à&gt; &quot;Lisbonne&quot; &amp; co</Content>") && st.includes('PointSize="30" FontStyle="Bold"')
+      && st.includes('PointSize="8" FontStyle="Regular"') && st.includes("<Content>ligne 1</Content><Br/><Content>ligne 2</Content>")
+      && st.includes('<AppliedFont type="string">Arial</AppliedFont>'));
+  ok("IDML liens : nom encodé dans l'URI, & échappé dans l'attribut",
+    (parChemin.get("Spreads/Spread_sp1.xml") ?? "").includes('LinkResourceURI="Links/deux%20%26%20co.jpg"'));
+  /* Rotation : DP-03 porte une légende à −90° ; la transformée tourne autour du centre du cadre. */
+  const rot = construireIdml({ ...mag, planches: [mag.planches[0], { id: "pl-2", mode: "double", gauche: null, droite: null,
+    double: { templateId: "DP-03", photos: [], textes: [] } }] }, ph, { liens: { mode: "relatif" } });
+  const sr = rot.find((x) => x.chemin === "Spreads/Spread_sp2.xml")?.contenu ?? "";
+  /* Légende (15, 148,5, 40 × 4) à −90° : centre (35, 150,5) mm ; a = 0, b = −1, c = 1, d = 0 ;
+     tx = cx − cy, ty = cy + cx, en points du repère IDML. */
+  const cx = (35 - 210) * Kt, cy = 150.5 * Kt - 148.5 * Kt;
+  ok("IDML rotation : légende de DP-03 à −90° → ItemTransform « 0 −1 1 0 » autour du centre, les autres textes en identité",
+    sr.includes(`ItemTransform="0.000000 -1.000000 1.000000 0.000000 ${(cx - cy).toFixed(4)} ${(cy + cx).toFixed(4)}"`)
+      && sr.includes(`TextFrame Self="u`) && (sr.match(/<TextFrame [^>]*ItemTransform="1 0 0 1 0 0"/g) ?? []).length === 7);
+
+  /* Bien formé : un tokeniseur sans dépendance (balises équilibrées, attributs entre guillemets, aucun & ou < nu). */
+  const bienForme = (xml: string): boolean => {
+    const pile: string[] = [];
+    const re = /<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<\/([\w:.-]+)\s*>|<([\w:.-]+)((?:\s+[\w:.-]+="[^"<]*")*)\s*(\/?)>|([^<]+)|(<)/g;
+    let m: RegExpExecArray | null;
+    let racines = 0;
+    while ((m = re.exec(xml))) {
+      if (m[6]) return false;
+      if (m[5] !== undefined) { if (/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(m[5]) || (pile.length === 0 && m[5].trim())) return false; continue; }
+      if (m[1]) { if (pile.pop() !== m[1]) return false; continue; }
+      if (m[2]) {
+        if (/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(m[3] ?? "")) return false;
+        if (pile.length === 0) racines++;
+        if (!m[4]) pile.push(m[2]);
+      }
+    }
+    return pile.length === 0 && racines === 1;
+  };
+  const xmls = [...fichiers, ...rot].filter((x) => x.chemin !== "mimetype");
+  const malFormes = xmls.filter((x) => !bienForme(x.contenu)).map((x) => x.chemin);
+  ok(`IDML XML : chaque fichier bien formé (une racine, balises équilibrées, entités valides)${malFormes.length ? ` (${malFormes.join(", ")})` : ""}`,
+    malFormes.length === 0 && !bienForme("<a><b></a></b>") && !bienForme("<a>x & y</a>") && !bienForme('<a b="1"></a><c/>'));
+
+  /* Le zip : mimetype PREMIER, méthode 0 (octets 8-9 de l'en-tête local), contenu lisible à l'offset 38. */
+  const idml = zipperIdml(fichiers);
+  const nomPremier = strFromU8(idml.subarray(30, 30 + (idml[26] | (idml[27] << 8))));
+  ok("IDML zip : premier fichier « mimetype », méthode 0 (stocké), contenu en clair à l'offset 38",
+    idml[0] === 0x50 && idml[1] === 0x4b && idml[2] === 3 && idml[3] === 4 && (idml[8] | (idml[9] << 8)) === 0 && nomPremier === "mimetype"
+      && (idml[28] | (idml[29] << 8)) === 0 && strFromU8(idml.subarray(38, 38 + MIMETYPE_IDML.length)) === MIMETYPE_IDML);
+  const relu = unzipSync(idml);
+  ok("IDML zip : relu par fflate, mêmes fichiers et mêmes contenus",
+    Object.keys(relu).join() === fichiers.map((x) => x.chemin).join() && fichiers.every((x) => strFromU8(relu[x.chemin]) === x.contenu));
+  const exp = unzipSync(zipperExport({ idml, liens: [{ nomLien: "un.jpg", octets: new Uint8Array([0xff, 0xd8, 1, 2]) }], utilisees: ["un.jpg", "deux & co.jpg"], nonUtilisees: [] }));
+  ok("IDML export : magazine.idml + Links/ + photos-utilisees.txt + photos-non-utilisees.txt (une ligne par nom)",
+    Object.keys(exp).join() === "magazine.idml,Links/un.jpg,photos-utilisees.txt,photos-non-utilisees.txt"
+      && exp["magazine.idml"].length === idml.length && exp["Links/un.jpg"][1] === 0xd8
+      && strFromU8(exp["photos-utilisees.txt"]) === "un.jpg\ndeux & co.jpg\n" && strFromU8(exp["photos-non-utilisees.txt"]) === "");
+};
+verifierIdml();
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

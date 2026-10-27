@@ -7,6 +7,9 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - `types.ts` : templates = données (cadres en mm), `orientationDe`, `pourCote`.
 - `templates.ts` : les 4 doubles de l'annexe, recopiées à l'identique. `grilles.ts` : les grilles de secours.
 - `recadrage.ts` : LE calcul photo dans cadre. `magazine.ts` : l'état et ses transitions.
+- `idml.ts` : l'export IDML, portage fidèle de `idml-test-generator.py` (validé dans Affinity) : ne changer
+  un élément ou un attribut qu'après un nouvel essai Affinity (`scripts/idml-essai.ts`). `paquet.ts` : les zips
+  (fflate) ; `mimetype` PREMIER et stocké.
 
 ## Le contrat
 - **Un seul recadrage** : `cadrer` sert l'écran ET l'export. Ce qu'on voit est ce qu'Affinity reçoit.
