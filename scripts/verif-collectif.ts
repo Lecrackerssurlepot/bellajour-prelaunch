@@ -2377,8 +2377,8 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
   ok("Photos : ranger un dossier du responsable en le glissant (draggable, onDrop, dans la liste de « Mes photos »), « + Nouveau dossier » ouvre le depot sur un nom neuf",
     /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
   const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
-  ok("deposer (28/10) : une ligne par destination (`destinationsDuDepot`), un toucher ouvre la photothèque, « Nouveau dossier » en dernier ; depuis un lien ou un dossier, la destination affichée et « Changer » ; l'ancienne vue archivée",
-    /destinationsDuDepot\(arbre\)/.test(fen) && /onClick=\{\(\) => vers\(deDestination\(d\)\)\}/.test(fen) && /function vers\(c: Cible\) \{\s*enAttente\.current = c;\s*setRefus\(null\);\s*selecteur\.ouvrir\(\);/.test(fen)
+  ok("deposer (28/10) : une ligne par destination (`destinationsDuDepot`), un toucher la SURLIGNE (contour à l'accent) puis ouvre la photothèque, « Nouveau dossier » en dernier ; depuis un lien ou un dossier, la destination affichée et « Changer » ; l'ancienne vue archivée",
+    /destinationsDuDepot\(arbre\)/.test(fen) && /onClick=\{\(\) => vers\(deDestination\(d\)\)\}/.test(fen) && /function vers\(c: Cible\) \{\s*enAttente\.current = c;\s*setChoix\(\{ lien: c\.lien, dossier: c\.lien \? null : c\.chemin \}\);\s*setRefus\(null\);\s*selecteur\.ouvrir\(\);/.test(fen) && /aria-pressed=\{d\.cle === proposee\.cle\}/.test(fen) && /\.ec-dest\[aria-pressed="true"\] \{[^}]*box-shadow: inset 0 0 0 1\.5px var\(--ec-accent\);/.test(lire("src/app/edition/[token]/espace.css"))
       && /Nouveau dossier/.test(fen) && /Choisir des photos/.test(fen) && />\s*Changer\s*</.test(fen) && !/Dans quel dossier/.test(fen) && !/webkitdirectory/.test(fen)
       && existsSync(resolve(RACINE, "archive/depot-destination-2026-10/FenetreEnvoi.tsx")) && existsSync(resolve(RACINE, "archive/depot-destination-2026-10/README.md")));
   const css = lire("src/app/edition/[token]/espace.css");

@@ -125,9 +125,12 @@ export default function FenetreEnvoi({
   /* La page relancée pendant le choix rouvre la fenêtre (DepotContexte) : elle le dit, jusqu'au prochain choix. */
   const silence = selecteur.silence ?? (ouverture.interrompu ? "recharge" : null);
 
-  /** Un toucher sur une destination : la photothèque s'ouvre tout de suite (le clic reste celui de la personne). */
+  /** Un toucher sur une destination : elle devient LA destination surlignée (retour de Mathias du 28/10 : au téléphone,
+      on doit voir sur quel lien on envoie), puis la photothèque s'ouvre tout de suite (le clic reste celui de la
+      personne). Annuler la photothèque laisse la ligne choisie surlignée, et « Ou glisse tes photos ici » la suit. */
   function vers(c: Cible) {
     enAttente.current = c;
+    setChoix({ lien: c.lien, dossier: c.lien ? null : c.chemin });
     setRefus(null);
     selecteur.ouvrir();
   }
