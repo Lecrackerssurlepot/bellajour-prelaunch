@@ -8476,8 +8476,10 @@ function verifPartageLiensMail() {
     const m = MailsTextes.mailEspacePret({ tu: false, organisation: "Audencia", evenement: "Week-end en mer", responsable: "Mathilde Garnier", liens, cloture: "15 novembre" });
     ok("le texte brut de la vue 6B, ligne pour ligne : « Bonjour Mathilde, », deux lignes, le bouton, la ligne pour la suite, la signature",
       m.texte === ["Bonjour Mathilde,", "", "L'espace de votre édition « Week-end en mer » est ouvert.", "Photos, style, bon à tirer : tout s'y fait depuis ce lien. Gardez-le pour vous.", "", `Ouvrir mon espace : ${liens.responsable}`, "", "Votre équipe et les participants : tout se partage depuis l'espace.", "", "À très vite,", "L'atelier Bellajour"].join("\n"));
-    ok("le HTML de la vue 6B : même `pageMail` (fond Porcelaine #f3f4f7, Georgia pour le titre, Arial pour le texte, bouton bleu #4a90d9), UN titre, UN bouton, aucun bloc, aucune note",
-      /background:#f3f4f7/.test(m.html) && /font-family:Georgia,serif;font-size:28px;line-height:1\.2;color:#1c1c1c">Votre espace est prêt</.test(m.html) && (m.html.match(/<a /g) ?? []).length === 1
+    ok("le HTML de la vue 6B : même `pageMail` (fond Porcelaine #f3f4f7, le logo PNG en tête sans lien, le titre en Georgia GRAS dans l'encadré bleu clair sous « Édition collective » (retour de Mathias du 28/10), Arial pour le texte, bouton bleu #4a90d9), UN titre, UN bouton, aucun bloc, aucune note",
+      /background:#f3f4f7/.test(m.html) && /<img src="https:\/\/www\.bellajour\.fr\/logo-mail-bleu\.png" width="150"[^>]*alt="Bellajour"/.test(m.html)
+        && /background:#eaf2fb;border-radius:14px[\s\S]*?Édition collective<\/div>\s*<div style="padding-top:6px;font-family:Georgia,serif;font-size:26px;font-weight:bold;line-height:1\.2;color:#1c1c1c">Votre espace est prêt</.test(m.html)
+        && (m.html.match(/<a /g) ?? []).length === 1
         && /background:#4a90d9;color:#ffffff;[^"]*">Ouvrir mon espace<\/a>/.test(m.html) && !/border-radius:12px/.test(m.html) && !/font-size:13px;line-height:1\.6/.test(m.html)
         && /padding-top:22px;font-family:Arial,sans-serif;font-size:15px;line-height:1\.6;color:#1c1c1c">Votre équipe et les participants : tout se partage depuis l&#39;espace\.|padding-top:22px;font-family:Arial,sans-serif;font-size:15px;line-height:1\.6;color:#1c1c1c">Votre équipe et les participants : tout se partage depuis l'espace\./.test(m.html)
         && m.sujet === "Votre espace Bellajour est prêt · Week-end en mer");
