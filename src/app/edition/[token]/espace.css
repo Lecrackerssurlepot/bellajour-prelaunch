@@ -3068,12 +3068,22 @@
     position: absolute;
     left: 0;
     top: 50%;
-    display: block;
-    min-height: 44px;
+    display: flex;
+    align-items: center;
+    height: 44px;
     transform: translateY(-50%);
     transition: opacity 180ms var(--ease), transform 180ms var(--ease);
   }
+  /* Le titre est un bouton (28/10) : il ne répond au toucher que quand il est affiché (`data-defile`), et remonte la page. */
   .ec-espace .ec-barre-titre {
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     position: absolute;
     left: 0;
     right: 0;
@@ -3098,6 +3108,7 @@
     transform: translateY(calc(-50% - 8px));
   }
   .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-barre-titre {
+    pointer-events: auto;
     opacity: 1;
     transform: translateY(-50%);
   }
