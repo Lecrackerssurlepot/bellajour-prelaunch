@@ -653,6 +653,17 @@ html:has(.bj-atelier.ec-depot) {
   opacity: 0.45;
   cursor: not-allowed;
 }
+/* « ‹ Retour » tout en haut de la carte (28/10) : la place de la marque, cible de 44 px. */
+.bj-atelier .ec-dp-lien--retour {
+  min-height: 44px;
+  margin: -8px 0 2px -8px;
+  padding: 0 16px 0 12px;
+  gap: 6px;
+  font-size: 15px;
+}
+.bj-atelier .ec-dp-lien--retour::after {
+  inset: 0;
+}
 .bj-atelier .ec-dp-lien--doux {
   margin-top: -6px;
   background: rgba(var(--dp-fg-rgb), 0.07);

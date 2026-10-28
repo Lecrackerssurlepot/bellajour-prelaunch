@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useState, useSyncExternalStore } from "react";
 import { messagePartage, NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
-import type { DonneesPartage } from "@/lib/collectif/photosSimples";
+import { partagerSurLeTelephone, type DonneesPartage } from "@/lib/collectif/photosSimples";
 import { RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { imprimerPage } from "@/lib/collectif/imprimer";
 import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
@@ -81,9 +81,25 @@ function telechargerQr(lien: LienPartage) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-/** Copier, WhatsApp, Mail (et le QR code en fichier) : les gestes de partage d'un lien. */
+const REQUETE_TELEPHONE = "(max-width: 860px)";
+const rienDeNeuf = () => () => {};
+
+/** Vrai au téléphone qui sait partager (`navigator.share`) : faux au rendu serveur, puis vrai après le montage, sans casser l'hydratation. */
+function useTelephonePartageur(): boolean {
+  return useSyncExternalStore(
+    rienDeNeuf,
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function" && window.matchMedia(REQUETE_TELEPHONE).matches,
+    () => false
+  );
+}
+
+/** Copier, WhatsApp, Mail (et le QR code en fichier) : les gestes de partage d'un lien à l'ordinateur.
+    Au téléphone qui sait partager (retour de Mathias du 28/10) : UN bouton « Partager » (la feuille de l'iPhone, le message de
+    deux lignes et l'adresse), le QR code en lien discret. `AbortError` = rien ; une autre panne = « Copier le message ». */
 export function BoutonsPartage({ lien, contexte, avecQr }: { lien: LienPartage; contexte: ContexteMessage; avecQr?: boolean }) {
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
+  const telephone = useTelephonePartageur();
+  const [qr, setQr] = useState(false);
   const { texte, objet } = texteDuLien(lien, contexte);
   async function copier() {
     try {
@@ -93,6 +109,29 @@ export function BoutonsPartage({ lien, contexte, avecQr }: { lien: LienPartage; 
     } catch {
       setCopie("non");
     }
+  }
+  async function partager() {
+    const issue = await partagerSurLeTelephone(navigator, true, donneesDePartage(lien, contexte));
+    if (issue === "repli") {
+      const ok = await copierLeMessage(lien, contexte);
+      setCopie(ok ? "ok" : "non");
+      if (ok) setTimeout(() => setCopie(""), 2000);
+    }
+  }
+  if (telephone) {
+    return (
+      <div className="ec-partage ec-partage--un">
+        <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void partager()}>
+          {copie === "ok" ? "Message copié" : copie === "non" ? "Copie impossible" : "Partager"}
+        </button>
+        {avecQr ? (
+          <button type="button" className="ec-partage-qr" onClick={() => setQr(true)}>
+            QR code
+          </button>
+        ) : null}
+        {qr ? <FeuilleQr lien={lien} contexte={contexte} onFermer={() => setQr(false)} /> : null}
+      </div>
+    );
   }
   return (
     <div className={avecQr ? "ec-partage ec-partage--quatre" : "ec-partage"}>

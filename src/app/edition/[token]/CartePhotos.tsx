@@ -19,6 +19,8 @@ import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
 import { FenetreTerminerCollecte, ID_LIGNE_FIN, LigneFinCollecte } from "../_composants/FinCollecte";
 import type { DossierPhotos, LienContribution } from "./donnees";
+/* Le grand QR du téléphone (`FeuilleQr`, ouvert par la pilule « QR code » de `BoutonsPartage`) est une feuille `ec-s-*` : sa feuille de style n'était chargée que par Photos. */
+import "./photos/simple.css";
 
 type Props = {
   token: string;

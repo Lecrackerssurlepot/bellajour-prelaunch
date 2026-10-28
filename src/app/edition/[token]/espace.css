@@ -301,6 +301,10 @@
   width: 96px;
   margin: 0;
 }
+.ec-espace .ec-logo-lien {
+  display: block;
+  line-height: 0;
+}
 
 /* Le nom de l'édition sous le logo : du texte simple, plus de boîte (elle
    ressemblait à un sélecteur d'éditions ; un lien n'en ouvre qu'une, T-152). */
@@ -3055,12 +3059,17 @@
     height: 100%;
   }
   .ec-espace .ec-logo--mobile {
-    position: absolute;
-    left: 0;
-    top: 50%;
     width: 78px;
     height: auto;
     margin: 0;
+  }
+  /* Le logo est un lien vers le tableau de bord (28/10) : c'est lui qui se place et qui s'efface, pas l'image. */
+  .ec-espace .ec-logo-lien--mobile {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    display: block;
+    min-height: 44px;
     transform: translateY(-50%);
     transition: opacity 180ms var(--ease), transform 180ms var(--ease);
   }
@@ -3083,8 +3092,9 @@
     pointer-events: none;
     transition: opacity 180ms var(--ease), transform 180ms var(--ease);
   }
-  .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-logo--mobile {
+  .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-logo-lien--mobile {
     opacity: 0;
+    pointer-events: none;
     transform: translateY(calc(-50% - 8px));
   }
   .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-barre-titre {
@@ -3315,7 +3325,7 @@
     transition: none;
   }
   /* Le logo et le titre de la barre se remplacent sans fondu (planche 1 du 21/10). */
-  .ec-espace .ec-logo--mobile,
+  .ec-espace .ec-logo-lien--mobile,
   .ec-espace .ec-barre-titre {
     transition: none;
   }
@@ -3414,6 +3424,55 @@
 .ec-espace .ec-partage--quatre {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ec-espace .ec-partage--un {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.ec-espace .ec-partage--un .ec-bouton {
+  min-height: 44px;
+  width: 100%;
+}
+/* Le QR code au téléphone : un lien-pilule discret sous « Partager » (28/10), cible de 44 px. */
+.ec-espace .ec-partage-qr {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ec-text-doux, var(--ec-text));
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ec-espace .ec-partage--un {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.ec-espace .ec-partage--un .ec-bouton {
+  min-height: 44px;
+  width: 100%;
+}
+/* Le QR code au téléphone : un lien-pilule discret sous « Partager » (28/10), cible de 44 px. */
+.ec-espace .ec-partage-qr {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
 }
 .ec-espace .ec-partage--deux {
   display: grid;

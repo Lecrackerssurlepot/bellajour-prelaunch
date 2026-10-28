@@ -261,7 +261,9 @@ export default function Coquille(props: Props) {
       <RelireAuRetour actif={relireAuRetour(active)} />
       <header className="ec-barre-mobile" ref={setBarre} data-defile={defile ? "oui" : undefined}>
         <span className="ec-barre-gauche">
-          <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="Bellajour" width={96} height={36} />
+          <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien ec-logo-lien--mobile" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
+            <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="" width={96} height={36} />
+          </Link>
           <span className="ec-barre-titre" aria-hidden="true" ref={setCibleTitre} />
         </span>
         {/* Le bouton garde SON dessin (le menu) tiroir ouvert : la croix est dans le tiroir, sous le doigt. */}
@@ -287,7 +289,9 @@ export default function Coquille(props: Props) {
         {/* L'en-tête du tiroir : le logo, et (téléphone seulement) la croix. Sur ordinateur, `display: contents` : le logo
             reste un enfant du menu, rien ne bouge. */}
         <div className="ec-menu-tete">
-          <img className="ec-logo" src={LOGO_MODE[mode]} alt="Bellajour" width={116} height={43} />
+          <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
+            <img className="ec-logo" src={LOGO_MODE[mode]} alt="" width={116} height={43} />
+          </Link>
           <button type="button" className="ec-bouton-tiroir ec-menu-fermer" aria-label="Fermer le menu" onClick={() => setOuvert(false)}>
             <Icone cle="fermer" />
           </button>

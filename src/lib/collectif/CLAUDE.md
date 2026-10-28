@@ -708,7 +708,10 @@ La règle de Mathias : « si un bouton n'a pas sa place, s'il peut être remplac
   l'écran le dit et reste ouvert (les liens des participants ne se ferment pas pour une sélection que l'atelier ne recevrait pas).
 - **Partager** : au téléphone `navigator.share` (`partagerSurLeTelephone` : l'objet, le message de `messagePartage`, l'adresse), sans fenêtre ; `AbortError` = la personne a renoncé (rien ne s'ouvre) ; toute
   autre panne, ou un navigateur sans partage, ouvre la petite fenêtre (« Copier le message », « QR code »). À l'ordinateur, toujours cette fenêtre. Le tableau de bord garde WhatsApp et Mail dans la carte du
-  dernier lien créé (`CarteLien`, hors de la page Photos).
+  dernier lien créé (`CarteLien`, hors de la page Photos). ⚠️ **Depuis le 28/10** (recette iPhone), `BoutonsPartage` (carte du dernier lien, feuille « Ton lien est prêt ») n'a plus, au téléphone qui sait
+  partager (`useTelephonePartageur` : `navigator.share` ET 860 px, faux au rendu serveur), qu'UN bouton « Partager » (feuille native ; `AbortError` = rien ; autre panne = « Message copié ») et le QR en pilule
+  discrète ; la rangée Copier le lien / WhatsApp / Mail reste dans le code pour l'ordinateur (le harnais relit ces libellés). Les deux logos de `Coquille.tsx` sont des `<Link>` vers `/edition/<token>` (le tableau de bord du lien courant) ;
+  sur la page du participant, « ‹ Retour » prend la place de la marque, tout en haut de la carte (`TeteCarte haut=`).
 - **Collecte terminée (planche 9, vue 11D)** : au téléphone « rien ne s'ajoute plus » : le « + » disparaît (il n'est plus éteint), le « … » ne garde que « Supprimées récemment » (`entreesDuMenuHaut({ ouverte: false })`), une pastille calme dit
   « Collecte terminée le 15 novembre » (`pastilleCollecteTerminee`, `finCollecte.ts`, sans l'heure) ; la ligne complète (les liens ne reçoivent plus de photos, l'atelier compose, l'oubli) reste au tableau de bord et à l'ordinateur, où « Déposer des photos » reste éteint avec sa raison.
 - **« Supprimées récemment » au téléphone (vue 3C) est une grille de vignettes** (« Sélectionner » puis « Restaurer · N » en bas, toucher une vignette la prend) ; l'ordinateur garde sa liste (auteur, échéance, « Restaurer » par ligne). Les personnes d'un lien ouvert sont les MÊMES choix que la feuille « Personnes » (`ec-s-choix`, un nom).
