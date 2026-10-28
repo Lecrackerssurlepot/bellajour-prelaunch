@@ -1780,7 +1780,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     <strong className="ec-ph-accueil-titre">Les photos arriveront ici</strong>
                     <p className="ec-texte">
                       {p.ecrire
-                        ? "Déposez des photos ou invitez des participants."
+                        ? v("Déposez des photos ou invitez des participants.", "Dépose des photos ou invite des participants.")
                         : "Rien pour l'instant."}
                     </p>
                     {p.ecrire && p.ouverte ? (

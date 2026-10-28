@@ -30,7 +30,7 @@ const atelierUi = DM_Sans({
 })
 
 export const metadata: Metadata = {
-  title: 'Déposer vos photos · Bellajour',
+  title: 'Bellajour',
   robots: { index: false, follow: false, nocache: true },
   referrer: 'no-referrer',
 }

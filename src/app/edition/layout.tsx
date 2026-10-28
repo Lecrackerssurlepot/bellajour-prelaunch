@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   title: 'Édition collective · Bellajour',
   /* Trois jetons au porteur dans des URL : rien ne s'indexe, et rien ne part
      dans l'en-tête Referer d'un lien sortant (le rendez-vous Google, le site
-     du transporteur). */
+     du transporteur). Sous `[token]`, `generateMetadata` met le nom de l'événement. */
   robots: { index: false, follow: false, nocache: true },
   referrer: 'no-referrer',
 }
