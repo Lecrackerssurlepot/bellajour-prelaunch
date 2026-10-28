@@ -185,3 +185,45 @@ Les quatre recommandations sont validées :
 2. **L'ordre** : la sauvegarde partagée (table `mises_en_page`) arrive en étape 1, avant la bibliothèque complète. La migration sera appliquée par Mathias.
 3. **Les photos « à ne pas publier »** sont masquées par défaut dans l'éditeur. On peut quand même les poser, après une confirmation.
 4. **Avant la clôture d'une édition** : l'outil avertit, sans bloquer l'entrée.
+
+## 9. Recette d'étape (28/10) : ce que Mathias teste maintenant
+
+Prévisualisation : https://bellajour-prelaunch-d2591jf6h-lecrackerssurlepots-projects.vercel.app (connexion admin habituelle).
+
+| # | Où | Geste | Ce qu'on doit voir |
+|---|---|---|---|
+| 1 | Affinity, `~/Desktop/Bellajour/test-idml/essai-relatif/magazine.idml` | Ouvrir | Photos trouvées, pas de lien manquant |
+| 2 | idem `essai-relatif-file/` puis `essai-absolu/` | Ouvrir si 1 échoue | Noter lequel trouve les photos |
+| 3 | Planche 1 de l'essai | Regarder « 6 EXIF tournee » | Photo droite, pas couchée |
+| 4 | Une planche recadrée | Comparer à l'original | Recadrage zoomé, pas de blanc |
+| 5 | Un texte | Cliquer et taper | Texte modifiable |
+| 6 | `/admin/atelier/mise-en-page/gabarits` | Faire défiler | 4 doubles pages + grilles 1 à 6 / 1 à 12, à l'échelle |
+| 7 | Barre admin → « Mise en page » | Filtrer par état | Vrais dossiers avec photos |
+| 8 | Un dossier de la liste | Ouvrir | Ses photos s'affichent (vignettes) |
+| 9 | Fiche d'un particulier | Regarder la rangée de boutons | « Mettre en page » en fin de rangée, rien ne passe à la ligne |
+
+Pas testable à l'œil : la lecture des photos d'une édition (0 bis) et la sauvegarde partagée (étape 1). Elles n'ont pas d'écran ; la migration `20261027_mises_en_page.sql` n'est pas à appliquer avant l'éditeur.
+
+## 10. La suite : l'éditeur, d'après les consignes du 28/10
+
+**Ce que Mathias veut, et rien d'autre pour l'instant :**
+- **La double page au centre, en grand.** Les barres sont fines (une ligne en haut, un panneau photos repliable, un chemin de fer d'une ligne). L'espace va à la planche.
+- **Changer le gabarit** d'une page ou d'une double page : « Autre disposition » fait défiler, et un petit sélecteur montre les gabarits compatibles en vignettes.
+- **Les filtres** : Toutes · Utilisées · Non utilisées, orientation, date. Les gestes et le style de l'espace Photos des Éditions : propre, sobre, Porcelaine.
+- Le détail se fait ensuite dans Affinity : l'outil doit être juste et rapide, pas complet.
+
+**Ce qui manque pour un outil efficace, et ce que je propose :**
+
+| Sujet | Le manque | La réponse |
+|---|---|---|
+| Rapidité | 2 000 photos dans une grille | Vignettes seules dans la grille (adresse stable, mise en cache), image moyenne sur la planche, originaux seulement à l'export ; grille virtualisée (seules les lignes visibles existent) |
+| Rapidité | Sauvegarder sans attendre | Copie locale immédiate, serveur toutes les quelques secondes, jamais bloquant |
+| Choix du gabarit | Aujourd'hui : même signature d'orientations, puis même nombre, puis grille de secours. Quand plusieurs conviennent, le premier gagne | Une note par gabarit : la perte de recadrage (un portrait dans un cadre paysage perd beaucoup), la répétition (pas deux fois la même disposition de suite), le ♥ du responsable dans le plus grand cadre. On garde le meilleur, « Autre disposition » donne les suivants dans l'ordre. Testé au harnais |
+| Qualité d'impression | Une petite photo étirée sur une pleine page | Un repère sur la photo posée quand elle passe sous 200 dpi à la taille de son cadre (le seuil déjà retenu pour Canva) |
+| Pagination | Le nombre de pages payé est gelé (D20) | Le compteur « 24 / 28 pages » dans la barre, pour viser le bon total ; avertir sans bloquer |
+| Export | Gros volumes côté Éditions | Écriture directe dans un dossier choisi (Chrome), zip en repli ; orientation relue dans les octets ; seulement les photos utilisées |
+| Export | Mode de lien Affinity | Tranché par la recette 1 à 3 ci-dessus |
+| Rétention | Les originaux d'un dossier livré s'effacent après le délai | L'outil le dit au lieu de planter ; exporter avant |
+| Gabarits | Peu de gabarits au départ | Voulu. Le catalogue s'enrichit à l'étape 3 sans toucher à l'éditeur |
+
+**Hors de cette étape :** la couverture (faite à part), l'IA, le catalogue de 40 à 50 gabarits, le fond perdu et le profil couleur dans Affinity.
