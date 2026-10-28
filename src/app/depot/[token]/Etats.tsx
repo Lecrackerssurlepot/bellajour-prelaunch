@@ -18,13 +18,16 @@ import { initiales } from "@/lib/collectif/depotParticipant";
 import Album, { type Tete } from "./Album";
 import { IcoCadenas, IcoHorloge } from "./icones";
 
-/** Le haut de la carte : la marque, « Audencia t'invite · Bateau 1 », le nom de l'événement. */
-export function TeteCarte({ tete }: { tete: Tete }) {
+/** Le haut de la carte : la marque, « Audencia t'invite · Bateau 1 », le nom de l'événement.
+    `haut` (28/10) : un geste de retour, tout en haut, À LA PLACE de la marque (un retour d'application). */
+export function TeteCarte({ tete, haut }: { tete: Tete; haut?: React.ReactNode }) {
   return (
     <>
-      <p className="ec-dp-marque">
-        Bellajour <span>Édition collective</span>
-      </p>
+      {haut ?? (
+        <p className="ec-dp-marque">
+          Bellajour <span>Édition collective</span>
+        </p>
+      )}
       <p className="ec-dp-surtitre">
         {tete.organisation} {tete.tu ? "t’invite" : "vous invite"}
         {tete.lien ? ` · ${tete.lien}` : ""}

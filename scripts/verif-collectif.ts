@@ -8404,6 +8404,29 @@ function verifPartageLiensMail() {
     ok("le MÊME message part partout : `texteDuLien` (venu de `messagePartage`) alimente la feuille de l'iPhone (`donneesDePartage` : objet et message, l'adresse DANS le message, jamais en `url` qui la doublerait) et « Copier le message » (`copierLeMessage`) ; plus de zone à retoucher dans la fenêtre de partage de Photos",
       /function texteDuLien\(/.test(fenetre) && /messagePartage\(\{/.test(fenetre) && /return \{ title: objet, text: texte \};/.test(fenetre) && /navigator\.clipboard\.writeText\(texteDuLien\(lien, c\)\.texte\)/.test(fenetre) && !/useState\(propose\.texte\)/.test(fenetre)
         && /partagerSurLeTelephone\(/.test(code("src/app/edition/[token]/photos/Collecte.tsx")) && /donneesDePartage\(l, contexte\)/.test(code("src/app/edition/[token]/photos/Collecte.tsx")));
+    {
+      /* 28/10 (recette iPhone) : un seul « Partager » au téléphone ; « Retour » en haut de la carte du participant ; le logo ramène au tableau de bord. */
+      const bp = fenetre.slice(fenetre.indexOf("export function BoutonsPartage"), fenetre.indexOf("export function CarteLien"));
+      const debutRangee = bp.indexOf("return (\n    <div className={avecQr");
+      const rangee = bp.slice(debutRangee);
+      const blocTel = bp.slice(bp.indexOf("if (telephone)"), debutRangee);
+      ok("28/10 : au téléphone qui sait partager (`navigator.share` + 860 px, useSyncExternalStore, faux au rendu serveur) UN bouton « Partager » (AbortError = rien, autre panne = copier le message) et le QR en lien discret ; la rangée Copier / WhatsApp / Mail reste pour l'ordinateur",
+        /function useTelephonePartageur\(\)/.test(fenetre) && /typeof navigator\.share === "function"/.test(fenetre)
+          && /partagerSurLeTelephone\(navigator, true, donneesDePartage\(lien, contexte\)\)/.test(bp) && /issue === "repli"[\s\S]{0,120}copierLeMessage\(lien, contexte\)/.test(bp)
+          && /"Partager"/.test(blocTel) && !/WhatsApp|wa\.me|mailto:|Mail\b|Copier le lien/.test(blocTel) && /ec-partage-qr/.test(blocTel)
+          && /WhatsApp/.test(rangee) && /wa\.me/.test(rangee) && /mailto:/.test(rangee) && /Copier le lien/.test(rangee));
+      const etatsB = lire("src/app/depot/[token]/Etats.tsx");
+      const depotB = lire("src/app/depot/[token]/Depot.tsx");
+      const cssB = lire("src/app/depot/[token]/depot.css");
+      ok("28/10 : « ‹ Retour » est TOUT EN HAUT de la carte du participant (à la place de la marque, `TeteCarte haut=`), une seule fois, même `retour`, cible 44 px",
+        /haut\?: React\.ReactNode/.test(etatsB) && /\{haut \?\? \(\s*<p className="ec-dp-marque">/.test(etatsB)
+          && /haut=\{\s*avant && !repli && !reconnu \? \(\s*<button type="button" className="ec-dp-lien ec-dp-lien--retour" onClick=\{retour\}/.test(depotB)
+          && (depotB.match(/ec-dp-lien--retour/g) ?? []).length === 1 && /min-height: 44px/.test(cssB.slice(cssB.indexOf(".ec-dp-lien--retour {"))));
+      const coq = lire("src/app/edition/[token]/Coquille.tsx");
+      ok("28/10 : les deux logos de l'espace (barre du téléphone, menu de l'ordinateur) sont un <Link> vers /edition/<token> du lien COURANT, aria-label « Tableau de bord », qui referme le tiroir",
+        (coq.match(/<Link href=\{`\/edition\/\$\{props\.token\}`\} prefetch=\{false\} className="ec-logo-lien[^"]*" aria-label="Tableau de bord" onClick=\{\(\) => setOuvert\(false\)\}>/g) ?? []).length === 2
+          && !/<img className="ec-logo[^>]*alt="Bellajour"/.test(coq));
+    }
   }
 
   titre("— 21/10, planche 5 : plus de lien « pour tous » —");
@@ -8578,9 +8601,9 @@ function verifBarreFiltres() {
     ok("`EnTeteEcran` rend `<TitreEcran>` (tous les écrans) ; la coquille pose `data-defile=\"oui\"` sur la barre et la place du titre (`ref`), sans effet ni calcul",
       /<TitreEcran>\{titre\}<\/TitreEcran>/.test(ecran) && /data-defile=\{defile \? "oui" : undefined\}/.test(coquille) && /ref=\{setCibleTitre\}/.test(coquille) && /ref=\{setBarre\}/.test(coquille) && /<BarreTitreContexte\.Provider value=\{titreBarre\}>/.test(coquille));
     ok("le logo laisse la place au titre (fondu de 180 ms, 8 px de glissement) quand `data-defile=\"oui\"` ; il revient sinon ; coupé si l'appareil demande moins de mouvement",
-      dans(tel, "\\.ec-espace \\.ec-barre-mobile\\[data-defile=\"oui\"\\] \\.ec-logo--mobile", /opacity: 0;/) && dans(tel, "\\.ec-espace \\.ec-barre-mobile\\[data-defile=\"oui\"\\] \\.ec-barre-titre", /opacity: 1;/)
-        && /transition: opacity 180ms var\(--ease\), transform 180ms var\(--ease\);/.test(regle(tel, "\\.ec-espace \\.ec-logo--mobile")) && /transition: opacity 180ms var\(--ease\), transform 180ms var\(--ease\);/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre"))
-        && /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.ec-logo--mobile,\s*\.ec-espace \.ec-barre-titre \{\s*transition: none;/.test(espace));
+      dans(tel, "\\.ec-espace \\.ec-barre-mobile\\[data-defile=\"oui\"\\] \\.ec-logo-lien--mobile", /opacity: 0;/) && dans(tel, "\\.ec-espace \\.ec-barre-mobile\\[data-defile=\"oui\"\\] \\.ec-barre-titre", /opacity: 1;/)
+        && /transition: opacity 180ms var\(--ease\), transform 180ms var\(--ease\);/.test(regle(tel, "\\.ec-espace \\.ec-logo-lien--mobile")) && /transition: opacity 180ms var\(--ease\), transform 180ms var\(--ease\);/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre"))
+        && /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.ec-logo-lien--mobile,\s*\.ec-espace \.ec-barre-titre \{\s*transition: none;/.test(espace));
     ok("le titre de la barre ne coupe pas le logo ni le menu : une ligne, une ellipse, pas de clic (`pointer-events: none`), nombres modernes",
       /white-space: nowrap;[\s\S]*text-overflow: ellipsis;/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre")) && /pointer-events: none;/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre")) && /lining-nums/.test(regle(tel, "\\.ec-espace \\.ec-barre-titre")));
   }

@@ -503,17 +503,21 @@ export default function Depot(props: Props) {
   return (
     <div className="ec-dp-carte">
       <div className="ec-dp-in">
-        <TeteCarte tete={tete} />
+        <TeteCarte
+          tete={tete}
+          haut={
+            avant && !repli && !reconnu ? (
+              <button type="button" className="ec-dp-lien ec-dp-lien--retour" onClick={retour} disabled={etatEmail.etat === "cherche"}>
+                <span aria-hidden="true">‹</span> Retour
+              </button>
+            ) : undefined
+          }
+        />
         {props.invitationEcrite ? (
           <p className="ec-dp-texte">{props.invitation}</p>
         ) : null}
 
         <div className="ec-dp-form">
-          {avant && !repli && !reconnu ? (
-            <button type="button" className="ec-dp-lien ec-dp-lien--retour" onClick={retour} disabled={etatEmail.etat === "cherche"}>
-              Retour
-            </button>
-          ) : null}
           {repli ? (
             formuleAvant
           ) : (
