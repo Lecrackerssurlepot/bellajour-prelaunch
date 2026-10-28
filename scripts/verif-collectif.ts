@@ -2345,10 +2345,10 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
   ok("le depot du responsable accepte un chemin de sous-dossier (170 caracteres)", /demande\.libelle\.trim\(\)\.slice\(0, 170\)/.test(lire("src/app/api/collectif/depot/presign/route.ts")));
   const photos = lire("src/app/api/collectif/photos/route.ts");
   const grilleFiltre = lire("src/lib/collectif/grillePhotos.ts");
-  ok("route photos : la grille filtre par dansLeDossier (le repli en memoire, le plan en base qui le redit), « en cours d'arrivee » = declarees non confirmees depuis 2 h",
+  ok("route photos : la grille filtre par dansLeDossier (le repli en memoire, le plan en base qui le redit), « en cours d'arrivee » = `compterEnCours` (vivantes, non remplacees, zero collecte close : 28/10)",
     /dansLeDossier\(p, dossier, responsable\)/.test(grilleFiltre) && /planDuDossier\(dossier, groupes, responsable\)/.test(grilleFiltre) && /dansLeDossierResume\(groupes, dossier, responsable\)/.test(grilleFiltre)
       && /const lignes = groupes\.filter\(\(g\) => dansLeDossier\(g, cle, responsable\)\);/.test(lire("src/lib/collectif/resumePhotos.ts"))
-      && /\.is\("confirmee_le", null\)\.gt\("created_at", depuis\)/.test(photos) && /seulementArbre: corps\.seulementArbre === true/.test(grilleFiltre));
+      && /compterEnCours\(supabase, edition, new Date\(\)\)/.test(photos) && /enCours: enRoute \?\? 0,/.test(photos) && /seulementArbre: corps\.seulementArbre === true/.test(grilleFiltre));
   ok("selectionner tout un dossier : la meme regle que la grille, jamais une photo signalee",
     /dansLeDossier\(l, dossier, responsable\)/.test(lire("src/app/api/collectif/photos/marquer/route.ts")) && /!preselection \|\| !l\.signalee/.test(lire("src/app/api/collectif/photos/marquer/route.ts")));
 
@@ -3034,7 +3034,7 @@ titre("— T-184 : l'accord du participant, envoye avec ses photos, exige par le
   const iVerif = route.indexOf("Array.isArray(corps.connues)");
   const iAccord = route.indexOf("if (accordExige(role) && !accord)");
   const iDecl = route.indexOf("lireDeclaration(corps.fichiers)");
-  const iCompte = route.indexOf("compterPourPlafond(");
+  const iCompte = route.indexOf("compterPourPlafondNet(");
   const iInsert = route.indexOf('from("collectif_photos").insert(lignes)');
   ok("la route : un participant sans accord repart en 400 `accord_requis` AVANT toute lecture du lot et toute ecriture ; la verification d'une reprise (qui n'ecrit rien) ne le demande pas",
     iVerif > 0 && iAccord > iVerif && iDecl > iAccord && iCompte > iAccord && iInsert > iAccord
@@ -3123,7 +3123,7 @@ titre("— T-192 : le nom du participant ne change plus —");
   ok("la route reprend le nom deja donne par l'appareil AVANT de compter et d'ecrire, et ne le cherche que pour un participant",
     /if \(role === "participant" && appareilLu && !participant\) \{\s*const connu = await nomDeLAppareil\(/.test(route) && /if \(connu\) deposant = connu;/.test(route)
       && /if \(participant\) deposant = nomAffiche\(participant\);/.test(route)
-      && route.indexOf("nomDeLAppareil(") < route.indexOf("compterPourPlafond(") && route.indexOf("nomDeLAppareil(") < route.indexOf('from("collectif_photos").insert(lignes)'));
+      && route.indexOf("nomDeLAppareil(") < route.indexOf("compterPourPlafondNet(") && route.indexOf("nomDeLAppareil(") < route.indexOf('from("collectif_photos").insert(lignes)'));
   const connu = lire("src/lib/collectif/participantConnu.ts");
   ok("le nom de l'appareil se lit chez les PARTICIPANTS de l'edition, le libelle d'un lien n'est pas un nom, et l'appareil se compte en `head`",
     /\.eq\("role_deposant", "participant"\)/.test(connu) && /nom\.toLowerCase\(\) !== libelle/.test(connu) && /select\("id", COMPTE_SANS_LIGNE\)/.test(connu) && /\.limit\(0\)/.test(connu));
@@ -4625,9 +4625,10 @@ async function sondeT194() {
       const id = randomUUID();
       return { id, edition_id: ED, r2_key: `collectif/${ED}/photos/${id}/original.jpg`, created_at: new Date(Date.now() - minutes * MIN).toISOString(), confirmee_le: null, mime: "image/jpeg", taille: null, vignette_key: null, ...extra };
     };
-    const coffre = (presentes: Map<string, number | "panne">, opts: { liste?: Set<string> | null; ecritureRefusee?: boolean } = {}) => {
-      const appels = { tetes: [] as string[], confirmees: [] as string[], listes: 0, enrichies: [] as string[], vignettes: [] as string[] };
+    const coffre = (presentes: Map<string, number | "panne">, opts: { liste?: Set<string> | null; ecritureRefusee?: boolean; remplacees?: Set<string> | null } = {}) => {
+      const appels = { tetes: [] as string[], confirmees: [] as string[], listes: 0, enrichies: [] as string[], vignettes: [] as string[], remplacees: 0 };
       const outils: Parameters<typeof S.rattraperEdition>[3] = {
+        remplacees: async () => (appels.remplacees++, opts.remplacees === undefined ? new Set<string>() : opts.remplacees),
         tete: async (k) => (appels.tetes.push(k), presentes.has(k) ? (presentes.get(k) === "panne" ? { statut: "panne" } : { statut: "presente", taille: presentes.get(k) as number }) : { statut: "absente" }),
         liste: async () => (appels.listes++, opts.liste === undefined ? new Set(presentes.keys()) : opts.liste),
         confirmer: async (_s, _e, l) => (opts.ecritureRefusee ? { statut: "erreur", code: "23514" } : (appels.confirmees.push(l.id), { statut: "nouvelle", vignette: false })),
@@ -4735,7 +4736,27 @@ async function sondeT194() {
       const r = await silence(() => S.rattraperEdition(m.client, ED, { declencheur: "releve", jusqua: Date.now() - 1 }, c.outils));
       ok("l'echeance passee : aucune tete, la ligne est reportee au passage suivant, le verrou est rendu", r.bilan.reportees === 1 && c.appels.tetes.length === 0 && m.inserts.at(-1)?.payload.reportees === 1);
     }
+    /* 10. Recette Audencia du 28/10 : une ligne « remplacée » (la même personne a la photo, arrivée par un autre appareil) n'est jamais confirmée. */
+    {
+      const coupee = photo(40), vraie = photo(35);
+      const m = monde([coupee, vraie]);
+      const c = coffre(new Map([[coupee.r2_key, 100], [vraie.r2_key, 200]]), { remplacees: new Set([coupee.id]) });
+      const r = await silence(() => S.rattraperEdition(m.client, ED, { declencheur: "fiche" }, c.outils));
+      ok("28/10 : une ligne remplacee n'est plus candidate, meme au coffre (le doublon ne revient pas par le rattrapage) ; l'autre se confirme ; rien n'est efface",
+        r.statut === "fait" && c.appels.confirmees.join() === vraie.id && !c.appels.tetes.includes(coupee.r2_key) && r.bilan.candidates === 1 && c.appels.remplacees === 1 && !m.inserts.some((e) => /supprim|efface/.test(e.type)));
+      const m2b = monde([photo(40)]);
+      const p2 = m2b.client;
+      const c2b = coffre(new Map(), { remplacees: null });
+      const r2b = await silence(() => S.rattraperEdition(p2, randomUUID(), { declencheur: "fiche" }, c2b.outils));
+      ok("28/10 : les remplacees illisibles = aucune confirmation ce passage (jamais un doublon), une panne de lecture comptee", c2b.appels.tetes.length === 0 && c2b.appels.confirmees.length === 0 && r2b.bilan.pannes.lecture === 1);
+      const m0 = monde([photo(5)]);
+      const c0 = coffre(new Map());
+      await S.rattraperEdition(m0.client, ED, { declencheur: "fiche" }, c0.outils);
+      ok("28/10 : sans candidate, les remplacees ne se lisent meme pas (la fiche se rouvre souvent)", c0.appels.remplacees === 0);
+    }
     const serveur = lire("src/lib/collectif/rattrapageServeur.ts");
+    ok("28/10 : le vrai rattrapage lit les remplacees par `lireEnSuspens` borne au seuil des candidates",
+      /const lu = await lireEnSuspens\(supabase, editionId, new Date\(0\), new Date\(seuil\)\);/.test(serveur) && /remplacees: remplaceesAvant/.test(serveur) && /candidates = candidates\.filter\(\(l\) => !remplacees\.has\(l\.id\)\)/.test(serveur));
     ok("le rattrapage confirme par LA fonction de depot/complete (`confirmerArrivee`), jamais une copie",
       /confirmer: confirmerArrivee/.test(serveur) && /import \{ clesDuCoffre, confirmerArrivee, teteObjet \} from "\.\/rattrapageCoffre";/.test(serveur) && !/\.update\(/.test(serveur));
   }
@@ -5652,7 +5673,7 @@ async function verifPersonnesCorbeille() {
   ok("depot/presign : l'ouverture refuse le PARTICIPANT avant l'heure (409), avant la lecture du lot ; la personne de CE telephone avant les comptes, jamais une adresse du corps (S2) ; `participant_id` seulement connue",
     presign.indexOf("if (role === \"participant\" && !depotOuvert(edition.ouverture_le, maintenant))") > 0 && presign.indexOf("!depotOuvert(") < presign.indexOf("Array.isArray(corps.connues)")
       && /error: ERREUR_PAS_OUVERT, message: messagePasOuvert\(edition\.ouverture_le\)/.test(presign)
-      && presign.indexOf("participantDeLAppareil(supabase, edition.id, appareilLu)") > 0 && presign.indexOf("participantDeLAppareil(") < presign.indexOf("compterPourPlafond(")
+      && presign.indexOf("participantDeLAppareil(supabase, edition.id, appareilLu)") > 0 && presign.indexOf("participantDeLAppareil(") < presign.indexOf("compterPourPlafondNet(")
       && /participant\?\.id \?\? null\)/.test(presign) && /\.\.\.\(participant \? \{ participant_id: participant\.id \} : \{\}\)/.test(presign)
       && !/corps\.email|trouverParEmail|participant_inconnu|normaliserEmail/.test(presign.replace(/\/\*[\s\S]*?\*\//g, "")) && /\.\.\.\(d\.corbeille \? \{ corbeille: true \} : \{\}\)/.test(presign));
   ok("apres « Ce n'est pas toi ? », le telephone ne reprend pas le nom de la personne d'avant : seules les photos SANS personne disent le nom du telephone",
@@ -7607,7 +7628,8 @@ async function verifDejaLa() {
     ok("depot/presign : le lien lu AVANT la verification d'une reprise (qui dit ou), la restauration APRES l'insertion (un lot refuse ne restaure rien), `par: \"auteur\"`, la place relue apres un retour sur un autre lien ; aucun 500 de plus",
       presign.indexOf("estCleProvenance(corps.p)") < presign.indexOf("Array.isArray(corps.connues)") && /partagerConnues\(existants, \{ role, provenanceId, appareil: appareilDeRequete\(request\), participantId: null \}\)/.test(presign)
         && iInsert > 0 && iRestaure > iInsert && /restaurer\(supabase, edition\.id, photoIds, null, \{ par: "auteur" \}\)/.test(presign)
-        && /planDeclaration\(declaration\.fichiers, existants, place, \{ role, provenanceId, appareil: appareilLu, participantId: participant\?\.id \?\? null \}\)/.test(presign)
+        && /const ctx: ContexteDeclaration = \{ role, provenanceId, appareil: appareilLu, participantId: participant\?\.id \?\? null \};/.test(presign)
+        && /planDeclaration\(declaration\.fichiers, existants, place, ctx, photosDeLaPersonne\)/.test(presign)
         && /placeDuParticipant\(supabase, edition, origine \?\? null, appareil, participant\?\.id \?\? null, maintenant\)/.test(presign)
         && /deja: true, photoId: d\.id, restauree: true, ou: "restauree", ici: d\.ici/.test(presign) && /erreur: raison, message: messagePlafond\(raison, edition\.registre\), corbeille: true/.test(presign)
         && (presign.match(/\{ status: 500 \}/g) ?? []).length === 5 && /noterEchec\(supabase, edition\.id, "corbeille", \{ etape: "ecriture"/.test(presign));
@@ -7912,10 +7934,10 @@ async function verifTempsReel() {
 
   titre("— 21/10 : le sondage, la route et les écrans (relus dans le code) —");
   const etatRoute = sansComm(lire("src/app/api/collectif/photos/etat/route.ts"));
-  ok("la route : `chiffres` et `connues` lus du corps ; les personnes sur le RÉSUMÉ (jamais la grille), seulement si `personnesAFournir` ; `enCours` en `head` ; aucune écriture",
+  ok("la route : `chiffres` et `connues` lus du corps ; les personnes sur le RÉSUMÉ (jamais la grille), seulement si `personnesAFournir` ; `enCours` par `compterEnCours` (28/10) ; aucune écriture",
     /corps\.chiffres === true/.test(etatRoute) && /personnesAFournir\(\{ chiffres, connues, photos, arrivees: depuis \? lignes\.length : 0 \}\)/.test(etatRoute)
     && /lirePersonnes\s*\? lireToutesLesLignes<LigneResume>\(\(\) => supabase\.from\(VUE_RESUME\)/.test(etatRoute) && /personnes = compterPersonnes\(resume\.data\)/.test(etatRoute)
-    && /select\("id", \{ count: "exact", head: true \}\)\.eq\("edition_id", edition\.id\)\.is\("confirmee_le", null\)/.test(etatRoute) && !/\.(insert|update|upsert|delete)\(/.test(etatRoute)
+    && /compterEnCours\(supabase, edition, new Date\(\)\)/.test(etatRoute) && /if \(enRoute !== null\) enCours = enRoute;/.test(etatRoute) && !/\.(insert|update|upsert|delete)\(/.test(etatRoute)
     && !/doublons/i.test(etatRoute) && !/signerLecture|signerGet/.test(etatRoute));
   ok("la route rend `derniere` sans `depuis` (limit 1) et ne met `personnes` / `enCours` dans la réponse que s'ils sont lus",
     /limit\(depuis \? ARRIVEES_LUES_MAX : 1\)/.test(etatRoute) && /derniere: lignes\[0\]\?\.confirmee_le \?\? \(depuis \|\| null\)/.test(etatRoute) && /\.\.\.\(personnes !== undefined \? \{ personnes \} : \{\}\)/.test(etatRoute) && /\.\.\.\(enCours !== undefined \? \{ enCours \} : \{\}\)/.test(etatRoute));
@@ -9267,7 +9289,145 @@ async function verifDecisions26() {
       && /\{phraseCoupees\(coupees\)\} · \{BOUTON_REPRENDRE\}/.test(contexte) && /onClick=\{selecteur\.ouvrir\}/.test(contexte) && /coupeesADire\(c\.coupees, vue\.total\)/.test(contexte));
 }
 
-void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(() => {
+/* ─────────── 28/10, simulation Audencia : la même photo d'un autre appareil, les « en cours » orphelins ─────────── */
+async function verifMemePersonne28() {
+  titre("— 28/10 : la même photo renvoyée d'un AUTRE appareil par la même personne, les déclarations orphelines —");
+  const Dp = await import("@/lib/collectif/depot");
+  const Col = await import("@/lib/collectif/collecte");
+  const JULIE = "11111111-1111-4111-8111-111111111111";
+  const PAUL = "22222222-2222-4222-8222-222222222222";
+  const declare = (cle: string, nom = "IMG_4301.JPG"): import("@/lib/collectif/depot").FichierDeclare => ({ cle, nom, taille: 2028553, type: "image/jpeg", tailleVignette: null, ordre: null });
+  const arrivee = (id: string, cle: string, o: Partial<import("@/lib/collectif/depot").PhotoDeLaPersonne> = {}): import("@/lib/collectif/depot").PhotoDeLaPersonne => ({
+    id, r2_key: `r2/${id}`, cle, confirmee: true, provenanceId: null, role: "participant", appareilId: "tel-a", participantId: JULIE, ...o,
+  });
+  const place5 = { illimitee: false as const, place: 5, borne: "plafond_participant" as const };
+  const ctxJulieB = { role: "participant" as const, provenanceId: null, appareil: "tel-b", participantId: JULIE };
+
+  /* Le cas prouvé en base : 2l6m414c60~… (un appareil) arrivée, 1r0o524z25~… (l'autre) déclarée. */
+  const surA = "2l6m414c60~IMG_4301.JPG|2028553|1793022990404";
+  const surB = "1r0o524z25~IMG_4301.JPG|2028553|1793022990404";
+  ok("la clé lue sans son sel : nom, poids, date ; une clé d'avant le sel se lit entière ; une clé illisible : null",
+    JSON.stringify(Dp.partiesDeCle(surB)) === JSON.stringify({ nom: "IMG_4301.JPG", taille: 2028553, date: 1793022990404 })
+      && Dp.partiesDeCle("IMG_1.JPG|10|0")?.nom === "IMG_1.JPG" && Dp.partiesDeCle("pas une cle") === null && Dp.memeFichier(surA, surB));
+  const dJulie = Dp.planDeclaration([declare(surB)], new Map(), place5, ctxJulieB, [arrivee("photo-a", surA)]);
+  ok("même personne, autre appareil : « déjà là » (la photo de l'autre appareil, où elle est), rien de nouveau, la place n'est pas prise",
+    dJulie.length === 1 && dJulie[0].sorte === "deja" && (dJulie[0] as { id: string }).id === "photo-a" && (dJulie[0] as { ou?: string }).ou === "album");
+  const lotMixte = Dp.planDeclaration([declare(surB), declare("1r0o524z25~IMG_9.JPG|5|1793022990404", "IMG_9.JPG")], new Map(), { illimitee: false, place: 1, borne: "plafond_participant" }, ctxJulieB, [arrivee("photo-a", surA)]);
+  ok("…et une place de 1 reste à la photo VRAIMENT nouvelle du même lot (la jumelle ne la consomme pas)",
+    lotMixte.map((d) => d.sorte).join() === "deja,nouvelle");
+  const ailleurs = Dp.planDeclaration([declare(surB)], new Map(), place5, { ...ctxJulieB, provenanceId: "lien-2" }, [arrivee("photo-a", surA, { provenanceId: "lien-1" })]);
+  ok("arrivée par un AUTRE lien : « déjà là », et la réponse nomme ce lien (comme un « déjà là » du même appareil)",
+    ailleurs[0].sorte === "deja" && (ailleurs[0] as { ou?: string }).ou === "lien" && (ailleurs[0] as { lienId?: string | null }).lienId === "lien-1");
+
+  const ctxPaul = { role: "participant" as const, provenanceId: null, appareil: "tel-p", participantId: PAUL };
+  const dPaul = Dp.planDeclaration([declare(surB)], new Map(), place5, ctxPaul, [arrivee("photo-a", surA)]);
+  ok("deux personnes, même nom et même poids : DEUX photos (la photo de Julie ne rend jamais celle de Paul « déjà là »), même si la liste passée était mêlée",
+    dPaul[0].sorte === "nouvelle" && !Dp.memePersonne({ role: "participant", participantId: JULIE }, { role: "participant", participantId: PAUL }));
+  const inconnu = Dp.planDeclaration([declare(surB)], new Map(), place5, { ...ctxJulieB, participantId: null }, [arrivee("photo-a", surA, { participantId: null })]);
+  ok("un participant INCONNU (sans `participant_id`) n'est reconnu sur aucun autre appareil : nouvelle, comme avant",
+    inconnu[0].sorte === "nouvelle" && !Dp.memePersonne({ role: "participant", participantId: null }, { role: "participant", participantId: null }));
+  const resp = Dp.planDeclaration([declare(surB)], new Map(), { illimitee: true }, { role: "responsable", provenanceId: null, appareil: "tel-r2", participantId: null }, [arrivee("photo-r", surA, { role: "responsable", participantId: null })]);
+  ok("le responsable, d'un autre appareil : « déjà là » (« déjà dans l'édition ») ; jamais confondu avec un participant",
+    resp[0].sorte === "deja" && (resp[0] as { ou?: string }).ou === "edition" && !Dp.memePersonne({ role: "responsable", participantId: null }, { role: "participant", participantId: JULIE }));
+
+  const iphone = "9z9z9z9z9z~IMG_4301.JPG|2028553|0";
+  const autreDate = "1r0o524z25~IMG_4301.JPG|2028553|1700000000000";
+  const dateZero = Dp.planDeclaration([declare(iphone)], new Map(), place5, ctxJulieB, [arrivee("photo-a", surA)]);
+  ok("date 0 (photothèque d'iPhone, `dateDeCle`) : nom et poids suffisent, dans les deux sens ; deux vraies dates différentes ne se confondent pas ; un autre poids ni un autre nom non plus",
+    dateZero[0].sorte === "deja" && Dp.memeFichier(surA, iphone) && Dp.memeFichier(iphone, surA) && !Dp.memeFichier(surA, autreDate)
+      && !Dp.memeFichier(surA, "1r0o524z25~IMG_4301.JPG|2028554|1793022990404") && !Dp.memeFichier(surA, "1r0o524z25~IMG_4302.JPG|2028553|1793022990404"));
+  const corbeille = Dp.planDeclaration([declare(surB)], new Map(), place5, ctxJulieB, [arrivee("photo-a", surA, { corbeille: true, par: "auteur" })]);
+  const pasArrivee = Dp.planDeclaration([declare(surB)], new Map(), place5, ctxJulieB, [arrivee("photo-a", surA, { confirmee: false })]);
+  ok("une photo à la corbeille ou jamais arrivée ne fait pas de jumelle : seule une photo ARRIVÉE, hors corbeille", corbeille[0].sorte === "nouvelle" && pasArrivee[0].sorte === "nouvelle");
+  const memeCle = Dp.planDeclaration([declare(surA)], new Map([[surA, { id: "photo-a", r2_key: "r2/a", confirmee: false }]]), place5, ctxJulieB, [arrivee("photo-a", surA)]);
+  ok("le même appareil garde sa reprise sur la MÊME clé R2 (la jumelle ne passe jamais avant `existants`)", memeCle[0].sorte === "reprise" && (memeCle[0] as { r2_key: string }).r2_key === "r2/a");
+
+  /* Les déclarations orphelines : remplacées, mortes, et « en cours ». */
+  const MIDI = new Date("2026-10-28T12:00:00.000Z");
+  const ilYa = (ms: number) => new Date(MIDI.getTime() - ms).toISOString();
+  const s = (id: string, cle: string, o: Partial<import("@/lib/collectif/depot").DeclarationEnSuspens> = {}): import("@/lib/collectif/depot").DeclarationEnSuspens => ({
+    id, cle, created_at: ilYa(60_000), role: "participant", participantId: JULIE, appareilId: "tel-a", provenanceId: null, empreinte: null, ...o,
+  });
+  const suspens = [
+    s("o-julie", surA),
+    s("o-paul", surA, { participantId: PAUL, appareilId: "tel-p" }),
+    s("o-iphone", "9z9z9z9z9z~IMG_7.JPG|300|0"),
+    s("o-empreinte", "aaaaaa1111~X.JPG|1|1", { empreinte: "abcd" }),
+    s("o-vivante", "aaaaaa1111~NEUVE.JPG|1|1"),
+  ];
+  const arrivees = [
+    { id: "a-julie", cle: surB, role: "participant", participantId: JULIE, empreinte: null },
+    { id: "a-iphone", cle: "1r0o524z25~IMG_7.JPG|300|1793000000000", role: "participant", participantId: JULIE, empreinte: null },
+    { id: "a-empreinte", cle: "1r0o524z25~Y.JPG|2|2", role: "participant", participantId: JULIE, empreinte: "abcd" },
+  ];
+  const remplacees = Dp.remplaceesParmi(suspens, arrivees);
+  ok("une déclaration orpheline dont la MÊME personne a depuis la photo arrivée (sel mis à part, date 0, ou même empreinte) est remplacée ; celle de Paul, jamais ; une neuve, non",
+    [...remplacees].sort().join() === "o-empreinte,o-iphone,o-julie");
+  ok("remplacée = hors plafond, même récente ; morte (2 h) = hors plafond ; arrivée = toujours comptée",
+    !Dp.compteDansPlafond({ confirmee_le: null, created_at: ilYa(60_000) }, MIDI, true) && Dp.compteDansPlafond({ confirmee_le: null, created_at: ilYa(60_000) }, MIDI)
+      && !Dp.compteDansPlafond({ confirmee_le: null, created_at: ilYa(Dp.DELAI_DECLARATION_MORTE_MS + 1) }, MIDI) && Dp.compteDansPlafond({ confirmee_le: ilYa(1), created_at: ilYa(1) }, MIDI, true));
+  const net = Dp.retirerRemplacees({ total: 40, parAppareil: 19 }, suspens, remplacees, { appareil: "tel-b", participantId: JULIE, provenanceId: null });
+  const netLien = Dp.retirerRemplacees({ total: 40, parAppareil: 19 }, suspens, remplacees, { appareil: "tel-b", participantId: JULIE, provenanceId: "lien-1" });
+  const netPaul = Dp.retirerRemplacees({ total: 40, parAppareil: 4 }, suspens, remplacees, { appareil: "tel-p", participantId: PAUL, provenanceId: null });
+  ok("les comptes du plafond perdent les remplacées : du total, et de la place de Julie seulement si ce sont les siennes (et sur son lien quand le plafond est celui d'un lien) ; Paul ne perd rien",
+    net.total === 37 && net.parAppareil === 16 && netLien.parAppareil === 19 && netPaul.parAppareil === 4 && netPaul.total === 37);
+  ok("« en cours » : vivante = moins de 15 min ; une remplacée ne compte pas ; collecte CLOSE = 0, même avec des lignes vivantes",
+    Dp.DELAI_EN_COURS_MS === 15 * 60_000 && Dp.declarationVivante({ created_at: ilYa(Dp.DELAI_EN_COURS_MS - 1) }, MIDI) && !Dp.declarationVivante({ created_at: ilYa(Dp.DELAI_EN_COURS_MS) }, MIDI)
+      && Dp.enCoursAffiche(suspens, remplacees, true, MIDI) === 2 && Dp.enCoursAffiche(suspens, new Set(), true, MIDI) === 5
+      && Dp.enCoursAffiche([...suspens, s("o-vieille", "aaaaaa1111~V.JPG|1|1", { created_at: ilYa(20 * 60_000) })], remplacees, true, MIDI) === 2
+      && Dp.enCoursAffiche(suspens, remplacees, false, MIDI) === 0);
+  let lu = 0;
+  const muette = { from: () => { lu++; throw new Error("aucune lecture attendue"); } } as unknown as import("@supabase/supabase-js").SupabaseClient;
+  const close = await Col.compterEnCours(muette, { id: "ed", etat: "preparation", cloture_le: "2026-10-28T09:55:32.004445+00:00" }, MIDI);
+  const composee = await Col.compterEnCours(muette, { id: "ed", etat: "composition", cloture_le: null }, MIDI);
+  ok("le serveur : collecte close (date passée, ou état d'après) = 0 « en cours » SANS lire la base (l'édition de la simulation, close à 09:55)", close === 0 && composee === 0 && lu === 0);
+
+  /* « N photos non arrivées » (2A) : une ligne remplacée ne se compte plus et ne coûte aucune tête au coffre. */
+  {
+    const PC = await import("@/lib/collectif/participantConnu");
+    const Hc28 = await import("@/lib/collectif/horsCorbeille");
+    Hc28.oublierAbsence();
+    const lignesTel = [
+      { id: "l-remplacee", r2_key: "k-remplacee", cle_fichier: surA, nom_origine: "IMG_4301.JPG", created_at: ilYa(3_600_000), role_deposant: "participant", appareil_id: "tel-a", provenance_id: null, empreinte: null, participant_id: JULIE },
+      { id: "l-perdue", r2_key: "k-perdue", cle_fichier: "2l6m414c60~IMG_5.JPG|9|1793000000000", nom_origine: "IMG_5.JPG", created_at: ilYa(3_600_000), role_deposant: "participant", appareil_id: "tel-a", provenance_id: null, empreinte: null, participant_id: JULIE },
+    ];
+    const arriveesJulie = [{ id: "a-b", cle_fichier: surB, role_deposant: "participant", empreinte: null, participant_id: JULIE }];
+    const requetes: string[][] = [];
+    const base = {
+      from: () => {
+        const f: string[] = [];
+        requetes.push(f);
+        const q: Record<string, unknown> = {};
+        for (const m of ["select", "eq", "is", "not", "filter", "or", "order", "limit", "range", "returns", "gt", "lte"]) q[m] = (...a: unknown[]) => (f.push(`${m}:${a.map(String).join("=")}`), q);
+        q.then = (oui: (v: unknown) => void) => oui({ data: f.includes("is:confirmee_le=null") ? lignesTel : arriveesJulie, error: null });
+        return q;
+      },
+    } as unknown as import("@supabase/supabase-js").SupabaseClient;
+    const tetes: string[] = [];
+    const n28 = await PC.photosCoupeesDeLAppareil(base, "ed", "tel-a", "participant", async (k) => (tetes.push(k), { statut: "absente" }));
+    const lectureArrivees = requetes.find((r) => !r.includes("is:confirmee_le=null"));
+    ok("28/10 : « N photos non arrivées » ne compte plus une ligne que la même personne a reçue d'un autre appareil (aucune tête pour elle) ; la vraie perdue reste comptée ; les arrivées lues par leurs noms et la personne, hors corbeille",
+      n28 === 1 && tetes.join() === "k-perdue" && Boolean(lectureArrivees?.some((x) => x.startsWith("filter:nom_origine=in=")) && lectureArrivees?.some((x) => x.includes(`participant_id.in.(${JULIE})`)) && lectureArrivees?.includes("is:supprimee_le=null")));
+    Hc28.oublierAbsence();
+  }
+
+  const presign = lire("src/app/api/collectif/depot/presign/route.ts");
+  const photos = lire("src/app/api/collectif/photos/route.ts");
+  const etat = lire("src/app/api/collectif/photos/etat/route.ts");
+  const collecte = lire("src/lib/collectif/collecte.ts");
+  ok("depot/presign : les photos de la personne lues UNE fois par lot, avec les comptes et la reprise (Promise.all), AVANT l'insertion ; les comptes et la place relue ôtent les remplacées",
+    /const \[comptes, existants, photosDeLaPersonne\] = await Promise\.all\(\[/.test(presign) && /lirePhotosDeLaPersonne\(supabase, edition\.id, personneDuContexte\(ctx\), declaration\.fichiers\.map\(\(f\) => f\.nom\)\)/.test(presign)
+      && presign.indexOf("lirePhotosDeLaPersonne(") < presign.indexOf('from("collectif_photos").insert(lignes)') && !/compterPourPlafond\(/.test(presign)
+      && (presign.match(/compterPourPlafondNet\(/g) ?? []).length === 2);
+  ok("la place d'un participant (`placeDuParticipant`) suit la même règle ; « en cours » des deux routes vient de `compterEnCours`, plus aucun compte brut des non confirmées",
+    /const comptes = await compterPourPlafondNet\(supabase, edition\.id/.test(collecte) && /compterEnCours\(supabase, edition, new Date\(\)\)/.test(photos) && /compterEnCours\(supabase, edition, new Date\(\)\)/.test(etat)
+      && !/\.is\("confirmee_le", null\)/.test(photos) && !/\.is\("confirmee_le", null\)/.test(etat));
+  ok("les noms du lot et des suspens entrent par `listeIn` (jamais `.in()` sur un texte de client) ; les personnes par leurs uuid ; aucune écriture dans ces lectures",
+    (collecte.match(/\.filter\("nom_origine", "in", listeIn\(paquet\)\)/g) ?? []).length === 2 && !/\.in\("nom_origine"/.test(collecte)
+      && !/\.(insert|update|upsert|delete)\(/.test(collecte.slice(collecte.indexOf("export async function lirePhotosDeLaPersonne"))));
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

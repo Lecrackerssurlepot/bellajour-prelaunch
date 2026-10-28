@@ -10,6 +10,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { colonnesSuspens, remplaceesDesLignes, type LigneSuspensLue } from "./collecte";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "./horsCorbeille";
 
 /**
@@ -84,6 +85,11 @@ export const TETES_COUPEES_MAX = 40;
  * panne du coffre ne se compte pas (on ne crie pas pour rien). `role` : le participant (sa page
  * de dépôt) ou le responsable (sa coquille). Hors corbeille. Rend 0 sur toute erreur : un
  * message de confort ne fait jamais tomber une page. Lecture seule, rien n'est écrit.
+ *
+ * Recette Audencia du 28/10 : une ligne que la même personne a depuis envoyée par un AUTRE
+ * appareil (`remplaceesDesLignes`) n'est plus « non arrivée » : la photo est là, « Reprendre » la
+ * renverrait pour rien. Elle ne se compte pas (et ne coûte pas de tête au coffre). Ces lignes
+ * illisibles : le compte d'avant, tel quel.
  */
 export async function photosCoupeesDeLAppareil(
   supabase: SupabaseClient,
@@ -95,18 +101,21 @@ export async function photosCoupeesDeLAppareil(
   const { data, error } = await lireHorsCorbeille((avec) => {
     const q = supabase
       .from("collectif_photos")
-      .select("id, r2_key")
+      .select(`r2_key, ${colonnesSuspens(avec)}`)
       .eq("edition_id", editionId)
       .eq("appareil_id", appareil)
       .eq("role_deposant", role)
       .is("confirmee_le", null);
-    return (avec ? q.is("supprimee_le", null) : q).order("created_at", { ascending: false }).limit(500).returns<{ id: string; r2_key: string }[]>();
+    return (avec ? q.is("supprimee_le", null) : q).order("created_at", { ascending: false }).limit(500).returns<(LigneSuspensLue & { r2_key: string })[]>();
   });
   if (error) {
     console.error("[collectif] photos coupées de l'appareil illisibles", error.code, error.message);
     return 0;
   }
-  const lignes = data ?? [];
+  const lues = data ?? [];
+  if (!lues.length) return 0;
+  const remplacees = await remplaceesDesLignes(supabase, editionId, lues);
+  const lignes = remplacees ? lues.filter((l) => !remplacees.has(l.id)) : lues;
   if (!lignes.length) return 0;
   const examinees = lignes.slice(0, TETES_COUPEES_MAX);
   let absentes = lignes.length - examinees.length;

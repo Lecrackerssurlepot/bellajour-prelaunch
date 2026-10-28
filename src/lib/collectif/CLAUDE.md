@@ -141,6 +141,18 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   `archive/doublons-troncons-2026-10/`). Les groupes se RANGENT dans `collectif_doublons` quand
   les empreintes sont lues (`doublonsStockes.ts`) ; l'affichage les LIT, il ne les recalcule que
   périmés (signature changée) ou sans la migration 20261022.
+- **Recette Audencia du 28/10 : la même photo d'un autre appareil, les « en cours » orphelins.**
+  Le sel reste entre deux personnes (deux « IMG_1234.JPG » de même poids = deux photos). Mais pour une
+  PERSONNE CONNUE (`participant_id`) ou le responsable, une clé dont la partie après le sel
+  (`nom|taille|date`, nom et poids si une date vaut 0) désigne une de SES photos arrivées, hors
+  corbeille, est « déjà là » (`jumelleDeLaPersonne`, `lirePhotosDeLaPersonne` : une lecture par lot) :
+  rien ne s'écrit, la place n'est pas prise (avant : 55 paires stockées deux fois dans la simulation).
+  « En cours » (page Photos) = déclarations VIVANTES de moins de 15 min (`DELAI_EN_COURS_MS`), ZÉRO
+  collecte close (`compterEnCours`, état effectif). Une déclaration jamais arrivée que la même personne a
+  depuis reçue autrement est « remplacée » (`remplaceesParmi`, `remplaceesDesLignes`) : hors plafond
+  (`compterPourPlafondNet`), hors « en cours », hors rattrapage (elle ne se confirme plus, même au
+  coffre) et hors « photos coupées ». Aucune ligne n'est supprimée. La page Santé de l'atelier
+  (`enAttente`) les compte encore.
   **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
 - **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (reconnaît l'appareil ;
   le plafond, lui, compte la personne), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
