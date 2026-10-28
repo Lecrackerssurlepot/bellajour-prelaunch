@@ -677,11 +677,13 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
    * ancien arrive, le jour demandé est fini). Rend les photos du jour, celles des pastilles cochées seulement.
    */
   async function lireJusquALaFinDuJour(cleJour: string): Promise<Photo[]> {
-    const jourDe = (k: string) => (k.startsWith("~") ? k.slice(1) : k);
+    const jourDe = (k: string) => (k === "~" || !k.startsWith("~") ? k : k.slice(1));
+    /* Les jours datés se suivent du plus récent au plus ancien, « Sans date » vient en fin : il ne clôt un jour que s'il le suit. */
+    const encore = (k: string) => (cleJour === "~" ? true : k !== "~" && jourDe(k) >= cleJour);
     const v0 = version.current;
     let toutes = photosVues.current;
     let page = suivante;
-    while (page !== null && page !== 0 && (toutes.length === 0 || jourDe(toutes[toutes.length - 1].jourCle) >= cleJour)) {
+    while (page !== null && page !== 0 && (toutes.length === 0 || encore(toutes[toutes.length - 1].jourCle))) {
       setProgres(`${nombre(toutes.length)} sur ${nombre(compteurs?.liste ?? toutes.length)}`);
       const json = await lirePage(page, f);
       if (v0 !== version.current) return [];
@@ -1285,7 +1287,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       {supprimer ? (
         <Fenetre titre={`Supprimer le lien « ${supprimer.nom} » ?`} onFermer={() => setSupprimer(null)}>
           <p className="ec-texte">
-            Il ne recevra plus de photos. Ses {nombre(supprimer.n)} photos restent.
+            Il ne recevra plus de photos.{supprimer.n > 0 ? (supprimer.n > 1 ? ` Ses ${nombre(supprimer.n)} photos restent.` : " Sa photo reste.") : ""}
           </p>
           {erreur ? (
             <p className="ec-note ec-note--erreur" role="alert">

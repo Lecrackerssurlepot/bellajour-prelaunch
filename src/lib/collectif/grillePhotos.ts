@@ -238,7 +238,7 @@ async function tuile(p: LignePage, doublonDe: ReadonlyMap<string, string>, c: Co
       }
     }
   }
-  const jour = jourDePhoto(p.prise_le, p.confirmee_le);
+  const jour = jourDePhoto(p.prise_le);
   const responsable = c.edition.responsable_nom;
   /* Qui l'a envoyée (T-180) : le nom du participant, sinon le responsable ou l'atelier. */
   const role = deParticipant(p) ? "participant" : p.role_deposant === "responsable" ? "responsable" : "atelier";

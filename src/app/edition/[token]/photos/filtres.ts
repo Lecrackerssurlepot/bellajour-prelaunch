@@ -162,6 +162,9 @@ const JOURS_COURTS = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const MOIS_COURTS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
+/** La clé du groupe « Sans date » (`CLE_SANS_DATE`, grille.ts). Une clé `~2026-10-21` d'avant se lit encore comme son jour. */
+const SANS_DATE = "~";
+
 function partiesDuJour(cle: string): { y: number; m: number; d: number; sansDate: boolean } | null {
   const sansDate = cle.startsWith("~");
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(sansDate ? cle.slice(1) : cle);
@@ -171,6 +174,7 @@ function partiesDuJour(cle: string): { y: number; m: number; d: number; sansDate
 
 /** « samedi 7 novembre » (la tête d'un jour dans la grille), « Sans date, arrivées le 18 octobre ». Lu SANS fuseau. */
 export function jourLong(cle: string): string {
+  if (cle === SANS_DATE) return "Sans date";
   const p = partiesDuJour(cle);
   if (!p) return cle;
   const j = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
@@ -180,6 +184,7 @@ export function jourLong(cle: string): string {
 
 /** « sam. 7 nov. » (la ligne de la photo agrandie). Une photo sans date de prise de vue prend son JOUR D'ARRIVÉE (22/10) : elle se dit pareil. */
 export function jourCourt(cle: string): string {
+  if (cle === SANS_DATE) return "";
   const p = partiesDuJour(cle);
   if (!p) return cle;
   const j = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
@@ -188,6 +193,7 @@ export function jourCourt(cle: string): string {
 
 /** « Samedi 4 octobre » (l'intertitre d'un jour, planche 10), « Mardi 1er octobre » ; un jour d'arrivée (`~…`) se dit pareil. Lu SANS fuseau. */
 export function jourTitre(cle: string): string {
+  if (cle === SANS_DATE) return "Sans date";
   const p = partiesDuJour(cle);
   if (!p) return cle;
   const j = new Date(Date.UTC(p.y, p.m - 1, p.d)).getUTCDay();
@@ -205,14 +211,17 @@ export type GroupeJour<P> = { cle: string; titre: string; n: number; complet: bo
  * suivant a commencé, ou que la vue est lue jusqu'au bout (`toutLu`) ; l'écran ne montre pas un nombre qui ne l'est pas.
  */
 export function regrouperParJour<P extends { jourCle: string }>(photos: readonly P[], toutLu: boolean): GroupeJour<P>[] {
-  const jourDe = (k: string) => (k.startsWith("~") ? k.slice(1) : k);
-  const groupes: GroupeJour<P>[] = [];
+  const jourDe = (k: string) => (k === SANS_DATE || !k.startsWith("~") ? k : k.slice(1));
+  /* UN jour = UN groupe, d'où qu'arrivent ses photos ; les jours du plus récent au plus ancien, « Sans date » toujours en fin. */
+  const parCle = new Map<string, GroupeJour<P>>();
   for (const p of photos) {
     const cle = jourDe(p.jourCle);
-    const dernier = groupes[groupes.length - 1];
-    if (dernier && dernier.cle === cle) dernier.photos.push(p);
-    else groupes.push({ cle, titre: jourTitre(cle), n: 0, complet: false, photos: [p] });
+    const g = parCle.get(cle);
+    if (g) g.photos.push(p);
+    else parCle.set(cle, { cle, titre: jourTitre(cle), n: 0, complet: false, photos: [p] });
   }
+  const rang = (a: string, b: string) => (a === SANS_DATE ? 1 : 0) - (b === SANS_DATE ? 1 : 0) || (a === SANS_DATE ? 0 : a < b ? 1 : a > b ? -1 : 0);
+  const groupes = [...parCle.values()].sort((a, b) => rang(a.cle, b.cle));
   return groupes.map((g, i) => ({ ...g, n: g.photos.length, complet: toutLu || i < groupes.length - 1 }));
 }
 

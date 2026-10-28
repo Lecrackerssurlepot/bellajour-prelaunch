@@ -692,7 +692,7 @@ export default function Album(props: Props) {
                     </button>
                   ) : null}
                   <p className="ec-dp-reste">
-                    {[PHOTOS_SEULEMENT.split(" : ")[0], coupees ? "" : ligneReste(0, place, tu)].filter(Boolean).join(" · ")}
+                    {[PHOTOS_SEULEMENT.split(" : ")[0].replace(/\.$/, ""), coupees ? "" : ligneReste(0, place, tu)].filter(Boolean).join(" · ")}
                   </p>
                 </>
               )}
