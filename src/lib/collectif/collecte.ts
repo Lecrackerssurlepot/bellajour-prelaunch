@@ -159,6 +159,27 @@ export async function lireLienDeDepot(
 }
 
 /**
+ * Le lien de contribution d'une clé SEULE (l'adresse courte `/l/<clé>`, 28/10), sans connaître
+ * l'édition : la clé est UNIQUE en base (`collectif_provenances.cle text not null unique`,
+ * migration 20261013 ; 14 lignes, 14 clés distinctes lues en production le 28/10). Une clé déjà
+ * validée par `estCleProvenance`. Repli 42703 sur `retire_le` (migration 20261018) : sans elle,
+ * aucun lien n'est supprimé. `inconnu` : aucune ligne ; un lien supprimé est rendu avec
+ * `retire: true` (la page dit « Ce lien ne fonctionne plus » au registre de SON édition).
+ */
+export async function lireLienParCle(
+  supabase: SupabaseClient,
+  cle: string
+): Promise<{ statut: "ok"; editionId: string; retire: boolean } | { statut: "inconnu" } | { statut: "erreur"; code: string | undefined }> {
+  type Lu = { edition_id: string; retire_le?: string | null };
+  const lire = (colonnes: string) => supabase.from("collectif_provenances").select(colonnes).eq("cle", cle).maybeSingle<Lu>();
+  let lu = await lire("edition_id, retire_le");
+  if (lu.error && colonneAbsente(lu.error.code)) lu = await lire("edition_id");
+  if (lu.error) return { statut: "erreur", code: lu.error.code };
+  if (!lu.data) return { statut: "inconnu" };
+  return { statut: "ok", editionId: lu.data.edition_id, retire: Boolean(lu.data.retire_le) };
+}
+
+/**
  * Les liens de contribution de l'édition par leur id (le libellé d'un lien d'où une photo « déjà
  * là » était arrivée, le plafond du lien d'une photo qui revient de la corbeille), avec les replis
  * des migrations 20261014 et 20261018 (le patron de `lireLienDeDepot`). Un lien supprimé est rendu

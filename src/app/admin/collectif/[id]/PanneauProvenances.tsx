@@ -18,6 +18,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { lienDeGroupe } from "@/lib/collectif/liens";
 import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import type { LienFiche } from "../donnees";
 import Pastille from "../Pastille";
@@ -110,8 +111,8 @@ export default function PanneauProvenances({
         return;
       }
       const { cle, ...lien } = json.lien;
-      setAjoutes((a) => [...a, { ...lien, url: `${depot}?p=${cle}` }]);
-      onCree?.({ ...lien, url: `${depot}?p=${cle}` });
+      setAjoutes((a) => [...a, { ...lien, url: lienDeGroupe(depot, cle) }]);
+      onCree?.({ ...lien, url: lienDeGroupe(depot, cle) });
       setFait(`Le lien « ${lien.nom} » est créé.${json.journal === false ? " Il n'a pas pu être noté au journal." : ""}`);
       setNom("");
       champ.current?.focus();

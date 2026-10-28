@@ -9,7 +9,9 @@
    (`partage.ts`, retours du 14/10) ; `FenetrePartage` le montre et le laisse
    retoucher avant l'envoi.
    Le lien est `/depot/<token_depot>?p=<clé aléatoire>` : jamais un mot
-   lisible (droits.ts), même si la maquette en montrait un.
+   lisible (droits.ts), même si la maquette en montrait un. Depuis le 28/10,
+   ce qui se partage (message, Copier, WhatsApp, Mail, QR) est l'adresse
+   COURTE `/l/<clé>` (`liens.ts`, `lienCourt`), qui renvoie vers la longue.
 
    Planche 5 (21/10) : l'adresse de BASE `/depot/<token_depot>` (l'ancien « lien
    général ») n'est plus jamais montrée ni envoyée. `FenetrePartage` et `FenetreQr`

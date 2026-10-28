@@ -11,7 +11,7 @@ import { aCompleter } from "@/lib/collectif/aCompleter";
 import { extraitDe } from "@/lib/collectif/messages";
 import { LIBELLE_ETAT_EDITION } from "@/lib/collectif/etats";
 import { blocCollecte } from "@/lib/collectif/finCollecte";
-import { liensEdition, origineDepuis } from "@/lib/collectif/liens";
+import { lienDeGroupe, liensEdition, origineDepuis } from "@/lib/collectif/liens";
 import { compteAgenda } from "@/lib/collectif/agenda";
 import { libelleCreneau } from "@/lib/collectif/creneaux";
 import { MIGRATION_COLLECTIF, MIGRATION_RDV } from "@/lib/collectif/migration";
@@ -619,7 +619,7 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
                 {/* T-201 : les liens de contribution (un par bateau, par équipe), leur création, leur QR en grand (T-197). */}
                 <PanneauProvenances
                   id={e.id}
-                  liens={lu.fiche.liens.map(({ cle, ...l }) => ({ ...l, url: `${liens.depot}?p=${cle}` }))}
+                  liens={lu.fiche.liens.map(({ cle, ...l }) => ({ ...l, url: lienDeGroupe(liens.depot, cle) }))}
                   depot={liens.depot}
                   max={plafondLienMax(e)}
                   ouverte={etat === "preparation"}

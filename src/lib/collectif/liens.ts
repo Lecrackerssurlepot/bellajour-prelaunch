@@ -75,6 +75,41 @@ export function liensEdition(origine: string, e: TokensEdition): Record<QuelLien
 }
 
 /**
+ * L'adresse COURTE d'un lien de groupe (28/10, avant la vraie responsable d'Audencia :
+ * « le lien copié par message peut être beaucoup plus simple ») : `/l/<clé>`, la clé de
+ * provenance seule (22 caractères aléatoires, UNIQUE en base, migration 20261013). Aucun
+ * token dedans. La route `src/app/l/[cle]/page.tsx` retrouve le lien et renvoie (307) vers
+ * l'adresse longue `/depot/<token_depot>?p=<clé>`, qui reste valable pour toujours.
+ */
+export const PREFIXE_LIEN_COURT = "/l/";
+
+/** `/l/<clé>` : le chemin court, sans origine. */
+export function cheminCourt(cle: string): string {
+  return `${PREFIXE_LIEN_COURT}${cle}`;
+}
+
+/** `https://www.bellajour.fr/l/<clé>` : l'adresse courte, à partir d'une origine nue. */
+export function lienCourt(origine: string, cle: string): string {
+  return `${origine.replace(/\/+$/, "")}${cheminCourt(cle)}`;
+}
+
+/**
+ * L'adresse courte d'un groupe à partir de l'adresse de BASE des participants
+ * (`…/depot/<token_depot>`, ce que les écrans ont déjà sous la main) : on garde son
+ * origine, on jette le token. Une base vide (l'équipe, qui ne voit aucun lien) rend
+ * le chemin seul.
+ */
+export function lienDeGroupe(lienParticipants: string, cle: string): string {
+  const origine = lienParticipants.replace(/\/depot\/.*$/, "");
+  return lienCourt(origine, cle);
+}
+
+/** L'adresse longue vers laquelle `/l/<clé>` renvoie : `/depot/<token_depot>?p=<clé>`. */
+export function cheminLongDuGroupe(tokenDepot: string, cle: string): string {
+  return `/depot/${tokenDepot}?p=${cle}`;
+}
+
+/**
  * L'adresse telle que l'écran la MONTRE (« bellajour.fr/edition/kq3f… », planche 6) :
  * sans le protocole, le token réduit à ses quatre premiers caractères. Le lien
  * entier ne sort que par « Copier » : une capture d'écran ou un regard par-dessus

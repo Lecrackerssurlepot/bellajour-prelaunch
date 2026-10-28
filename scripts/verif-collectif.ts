@@ -2204,17 +2204,24 @@ titre("— retours de Mathias du 14/10 —");
     /arbreDesPhotos\(pesees, provenances, edition, false\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /const pesees = enLignesPesees\(groupes\)/.test(lire("src/app/edition/[token]/donnees.ts")) && /\?dossier=\$\{encodeURIComponent\(d\.cle\)\}/.test(lire("src/app/edition/[token]/CartePhotos.tsx")));
 
   /* 5 : le message de partage, écrit pour ce groupe et cet événement. */
-  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", url: "https://bellajour.fr/depot/x?p=y", plafond: "30 photos par personne", cloture: "28 octobre", tu: false };
+  /* 28/10 (demande de Mathias avant la vraie responsable d'Audencia) : deux lignes avant le lien, plus de salut. */
+  const base = { organisation: "Maison Aubier", evenement: "Séminaire d'automne", url: "https://www.bellajour.fr/l/AbCdEfGhIjKlMnOpQrStUv", plafond: "30 photos par personne", cloture: "28 octobre", tu: false };
   const m1 = messagePartage({ ...base, groupe: "Équipe Lyon" });
-  ok("partage : le groupe salue, l'organisation et l'evenement sont nommes, le plafond et la cloture precises (planche 4 du 21/10 : dans leur propre phrase, plus entre parentheses)",
-    m1.texte.startsWith("Bonjour Équipe Lyon,") && m1.texte.includes("Maison Aubier prépare le magazine «\u00a0Séminaire d'automne\u00a0»") && m1.texte.includes("jusqu'au 28 octobre. 30 photos par personne.") && !m1.texte.includes("(30 par personne") && m1.texte.includes(base.url) && m1.objet === "Vos photos : Séminaire d'automne");
-  ok("partage : un article se met en minuscule apres « Bonjour », un nom propre ne bouge pas",
-    messagePartage({ ...base, groupe: "Le photographe" }).texte.startsWith("Bonjour le photographe,") && messagePartage({ ...base, groupe: "Laura" }).texte.startsWith("Bonjour Laura,"));
+  ok("partage (28/10) : MOT POUR MOT, vous : « <événement> · <groupe> », « Déposez vos photos ici, jusqu'au <jour>. », une ligne vide, le lien seul ; l'objet inchangé",
+    m1.texte === `Séminaire d'automne · Équipe Lyon\nDéposez vos photos ici, jusqu'au 28 octobre.\n\n${base.url}` && m1.objet === "Vos photos : Séminaire d'automne");
+  const mTu = messagePartage({ ...base, evenement: "Les Mousses", groupe: "Bateau 1", tu: true, cloture: "16 novembre" });
+  ok("partage (28/10) : MOT POUR MOT, tu : « Les Mousses · Bateau 1 », « Dépose tes photos ici, jusqu'au 16 novembre. »",
+    mTu.texte === `Les Mousses · Bateau 1\nDépose tes photos ici, jusqu'au 16 novembre.\n\n${base.url}` && mTu.objet === "Tes photos : Les Mousses");
+  ok("partage (28/10) : deux lignes AU PLUS avant le lien, le lien SEUL sur la derniere ligne, plus aucun « Bonjour », ni l'organisation, ni le plafond, ni « Merci »",
+    [m1, mTu].every((m) => { const l = m.texte.split("\n"); return l.indexOf(base.url) === l.length - 1 && l.slice(0, l.length - 1).filter(Boolean).length <= 2 && l[l.length - 2] === ""; })
+      && ![m1, mTu].some((m) => /Bonjour|Maison Aubier|par personne|Merci|sans compte/.test(m.texte)));
   const m2 = messagePartage({ ...base, groupe: null, tu: true, plafond: "Sans limite", cloture: "" });
-  ok("partage : le lien general salue « a tous » et vouvoie (un groupe), meme en registre tu ; sans limite ni cloture, aucune parenthese",
-    m2.texte.startsWith("Bonjour à tous,") && /vos photos/.test(m2.texte) && !/\(/.test(m2.texte) && m2.objet.startsWith("Vos photos"));
+  ok("partage : le lien general ne dit que l'evenement et vouvoie (un groupe), meme en registre tu ; sans cloture, « Déposez vos photos ici. »",
+    m2.texte === `Séminaire d'automne\nDéposez vos photos ici.\n\n${base.url}` && m2.objet.startsWith("Vos photos"));
+  ok("partage : « Tous les participants » et « Sans groupe » ne se nomment pas dans le message",
+    [PartageLiens.GROUPE_GENERAL, PartageLiens.GROUPE_SANS_GROUPE].every((g) => messagePartage({ ...base, groupe: g }).texte.startsWith("Séminaire d'automne\nDéposez")));
   ok("partage : un lien nomme tutoie en registre tu", /tes photos/.test(messagePartage({ ...base, groupe: "La classe de CM2", tu: true }).texte));
-  ok("partage : aucun tiret cadratin", ![m1, m2].some((m) => /—/.test(m.texte + m.objet)));
+  ok("partage : aucun tiret cadratin, l'espace avant « · » est insecable", ![m1, m2, mTu].some((m) => /—/.test(m.texte + m.objet)) && !/ ·/.test(m1.texte + mTu.texte));
   ok("partage : la fenetre montre le message a retoucher, WhatsApp, Mail, Copier le message, Telecharger le QR",
     ["export function FenetrePartage", "Copier le message", "Télécharger le QR", "WhatsApp", "export function FenetreQr"].every((t) => lire("src/app/edition/_composants/LienContribution.tsx").includes(t)));
 
@@ -4316,7 +4323,7 @@ function verifT193() {
   ok("la carte est dans « Réglages et liens », sous les trois liens ; la fiche lui donne le plafond maximal de l'édition, l'adresse de dépôt, l'état de la collecte",
     /<PanneauLiens id=\{e\.id\} liens=\{liens\}(?: ouverture=\{ouverture\})? \/>\s*\{\/\*[^*]*\*\/\}\s*<PanneauProvenances/.test(pageFiche) && /max=\{plafondLienMax\(e\)\}/.test(pageFiche) && /ouverte=\{etat === "preparation"\}/.test(pageFiche) && /archivee=\{Boolean\(e\.archive_le\)\}/.test(pageFiche));
   ok("l'écran garde le lien écrit (dédoublonné quand la relecture le rend), vide le nom et remet le focus pour le bateau suivant",
-    /setAjoutes\(\(a\) => \[\.\.\.a, \{ \.\.\.lien, url: `\$\{depot\}\?p=\$\{cle\}` \}\]\)/.test(pProv) && /ajoutes\.filter\(\(a\) => !liens\.some\(\(l\) => l\.id === a\.id\)\)/.test(pProv) && /champ\.current\?\.focus\(\)/.test(pProv));
+    /setAjoutes\(\(a\) => \[\.\.\.a, \{ \.\.\.lien, url: lienDeGroupe\(depot, cle\) \}\]\)/.test(pProv) && /ajoutes\.filter\(\(a\) => !liens\.some\(\(l\) => l\.id === a\.id\)\)/.test(pProv) && /champ\.current\?\.focus\(\)/.test(pProv));
   const donneesFiche2 = lire("src/app/admin/collectif/donnees.ts");
   ok("la fiche lit les liens par `lireProvenances` (la même lecture que l'espace, avec ses replis de colonnes) et rend leurs noms UNIQUES",
     /lireProvenances\(id\)/.test(donneesFiche2) && /nomsDesLiens\(provenances\)/.test(donneesFiche2) && /chiffresDepuisResume\(photos\.entrees, provenances, edition\.responsable_nom\)/.test(donneesFiche2));
@@ -8358,41 +8365,28 @@ function verifPartageLiensMail() {
   const code = (f: string) => lire(f).replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
   const NB = " ";
 
-  titre("— 21/10, planche 4 : le message de partage, trois paragraphes et le lien seul —");
+  titre("— 28/10 (remplace la planche 4 du 21/10) : le message de partage, deux lignes et le lien seul —");
   {
-    const url = "https://www.bellajour.fr/depot/Zq7mK2vN8xR4tLw9PbH3cYdE5sUa6JfG?p=aB3dE7gH9kM2nP5qT8vXz4Wc";
+    const url = "https://www.bellajour.fr/l/aB3dE7gH9kM2nP5qT8vXz4";
     const base = { organisation: "Audencia", evenement: "Week-end en mer", url, plafond: "30 photos par personne", cloture: "15 novembre", tu: false };
     const m = messagePartage({ ...base, groupe: "Bateau 1" });
-    /* La bulle de la vue 4B, caractère pour caractère (espaces insécables comprises). */
-    const attendu = [
-      "Bonjour Bateau 1,",
-      "",
-      `Audencia prépare le magazine «${NB}Week-end en mer${NB}»${NB}: vos photos y ont leur place.`,
-      "",
-      "Déposez-les depuis votre téléphone, sans compte, jusqu'au 15 novembre. 30 photos par personne.",
-      "",
-      url,
-      "",
-      `Merci, et à très vite dans les pages${NB}!`,
-    ].join("\n");
-    ok("le texte de la vue 4B, mot pour mot : le salut par le nom du lien, l'invitation, la date limite PUIS le nombre de photos dans leur propre phrase, le lien, la formule de fin", m.texte === attendu);
-    const blocs = m.texte.split("\n\n");
-    ok("trois courts paragraphes entre le salut et la formule de fin, séparés par UNE ligne vide ; plus aucune parenthèse",
-      blocs.length === 5 && blocs.every((b) => b.trim().length > 0 && !b.includes("\n")) && !/[()]/.test(m.texte.replace(url, "")));
+    /* Caractère pour caractère (l'espace insécable avant « · » comprise). L'ancien texte : archive/partage-message-court-2026-10/. */
+    const attendu = [`Week-end en mer${NB}· Bateau 1`, "Déposez vos photos ici, jusqu'au 15 novembre.", "", url].join("\n");
+    ok("le texte du 28/10, mot pour mot : « <événement> · <groupe> », le geste et la date limite, une ligne vide, le lien", m.texte === attendu);
+    ok("plus de salut au nom du groupe, plus d'organisation, ni nombre de photos, ni formule de fin ; aucune parenthèse",
+      !/Bonjour|Audencia|par personne|Merci|[()]/.test(m.texte.replace(url, "")));
     const lignes = m.texte.split("\n");
     const i = lignes.indexOf(url);
-    ok("le lien est SEUL sur sa ligne, une ligne vide avant et après (il se touche et se copie sans le texte)", i > 0 && lignes[i - 1] === "" && lignes[i + 1] === "" && lignes.filter((l) => l.includes("/depot/")).length === 1);
-    ok("guillemets et « ! » avec une espace INSÉCABLE : plus de « seul en fin de ligne ni de « ! » seul à la ligne ; aucun tiret cadratin",
-      !/« | »| !| :/.test(m.texte.replace(url, "")) && m.texte.includes(`«${NB}`) && m.texte.includes(`${NB}»`) && m.texte.endsWith(`${NB}!`) && !/[—–]/.test(m.texte + m.objet));
+    ok("le lien est SEUL sur la dernière ligne, une ligne vide avant (il se touche et se copie sans le texte) ; c'est l'adresse COURTE, sans token",
+      i === lignes.length - 1 && lignes[i - 1] === "" && lignes.filter((l) => l.includes("/l/")).length === 1 && !m.texte.includes("/depot/"));
+    ok("l'espace avant « · » est INSÉCABLE ; aucun tiret cadratin", !/ ·/.test(m.texte) && m.texte.includes(`${NB}·`) && !/[—–]/.test(m.texte + m.objet));
     ok("l'objet du mail ne change pas : « Vos photos : Week-end en mer »", m.objet === "Vos photos : Week-end en mer");
     const sansCloture = messagePartage({ ...base, groupe: "Bateau 1", cloture: "" });
-    const sansLimite = messagePartage({ ...base, groupe: "Bateau 1", plafond: "Sans limite" });
     const toi = messagePartage({ ...base, groupe: "La classe de CM2", tu: true });
-    ok("sans clôture : « Déposez-les depuis votre téléphone, sans compte. 30 photos par personne. » ; « sans limite » : la phrase du nombre disparaît ; une photo au singulier",
-      sansCloture.texte.includes("\nDéposez-les depuis votre téléphone, sans compte. 30 photos par personne.\n") && sansLimite.texte.includes("\nDéposez-les depuis votre téléphone, sans compte, jusqu'au 15 novembre.\n")
-        && messagePartage({ ...base, groupe: "Bateau 1", plafond: "1 photo par personne" }).texte.includes("jusqu'au 15 novembre. 1 photo par personne.\n"));
-    ok("le registre « tu » (école) : « Dépose-les depuis ton téléphone… », « tes photos », « Tes photos : » ; le salut met l'article en minuscule",
-      toi.texte.startsWith("Bonjour la classe de CM2,") && toi.texte.includes(": tes photos y ont leur place.") && toi.texte.includes("\nDépose-les depuis ton téléphone, sans compte, jusqu'au 15 novembre. 30 photos par personne.\n") && toi.objet === "Tes photos : Week-end en mer");
+    ok("sans clôture : « Déposez vos photos ici. » ; le plafond ne change plus rien au message",
+      sansCloture.texte.includes("\nDéposez vos photos ici.\n") && messagePartage({ ...base, groupe: "Bateau 1", plafond: "Sans limite" }).texte === m.texte);
+    ok("le registre « tu » (école) : « Dépose tes photos ici… », « Tes photos : » ; le nom du groupe tel quel après « · »",
+      toi.texte.startsWith(`Week-end en mer${NB}· La classe de CM2\n`) && toi.texte.includes("\nDépose tes photos ici, jusqu'au 15 novembre.\n") && toi.objet === "Tes photos : Week-end en mer");
     const fenetre = code("src/app/edition/_composants/LienContribution.tsx");
     ok("le MÊME message part partout : `texteDuLien` (venu de `messagePartage`) alimente la feuille de l'iPhone (`donneesDePartage` : objet et message, l'adresse DANS le message, jamais en `url` qui la doublerait) et « Copier le message » (`copierLeMessage`) ; plus de zone à retoucher dans la fenêtre de partage de Photos",
       /function texteDuLien\(/.test(fenetre) && /messagePartage\(\{/.test(fenetre) && /return \{ title: objet, text: texte \};/.test(fenetre) && /navigator\.clipboard\.writeText\(texteDuLien\(lien, c\)\.texte\)/.test(fenetre) && !/useState\(propose\.texte\)/.test(fenetre)
@@ -8422,7 +8416,7 @@ function verifPartageLiensMail() {
     const collecteCode = code("src/app/edition/[token]/photos/Collecte.tsx");
     const mosaiqueCode = code("src/app/edition/[token]/photos/Mosaique.tsx");
     ok("« Par lien » : plus de carte « Lien général » ; chaque adresse montrée y est celle d'un GROUPE (`?p=`), jamais l'adresse de base seule (le menu partage `lienDe(nom, cle, …)` d'un lien de contribution)",
-      !/Lien général/.test(ongletLiens + mosaiqueCode) && (collecteCode.match(/(?:partager|setGrandQr|setPartage)\(lienDe\(l\.nom, l\.cle, l\.plafond, l\.n\)\)/g) ?? []).length === 3 && /url: cle \? `\$\{p\.lienParticipants\}\?p=\$\{cle\}` : p\.lienParticipants/.test(collecteCode)
+      !/Lien général/.test(ongletLiens + mosaiqueCode) && (collecteCode.match(/(?:partager|setGrandQr|setPartage)\(lienDe\(l\.nom, l\.cle, l\.plafond, l\.n\)\)/g) ?? []).length === 3 && /url: cle \? lienDeGroupe\(p\.lienParticipants, cle\) : p\.lienParticipants/.test(collecteCode)
         && !/lienDe\(liens\.general|(?:partager|setPartage)\(lienDe\([^)]*null/.test(collecteCode));
     ok("« Sans groupe » n'apparaît QUE s'il a des photos (l'arbre), là où sont les groupes, en lecture seule : une tuile SANS « … », ni QR, ni « Partager », ni menu (`actionsDe` ne connaît que `lien:<id>`)",
       /filter\(\(n\) => n\.cle\.startsWith\("lien:"\) \|\| n\.cle === "participants" \|\| \(n\.cle === "vous" && n\.n > 0\)\)/.test(collecteCode) && /const l = p\.ecrire \? liens\?\.liens\.find\(\(x\) => `lien:\$\{x\.id\}` === cle\) : undefined;\s*if \(!l\) return undefined;/.test(collecteCode)
@@ -9583,7 +9577,58 @@ titre("— page du participant : « Ce n'est pas toi ? » a un retour (28/10) �
   ok("le bouton Retour est une pilule (ec-dp-lien), visible tant qu'aucune autre personne n'est reconnue", /avant && !repli && !reconnu[\s\S]{0,200}ec-dp-lien ec-dp-lien--retour/.test(dep));
 }
 
-void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(() => {
+async function verifLienCourt28() {
+  titre("— 28/10 : l'adresse courte d'un lien de groupe, /l/<clé> —");
+  const L = LiensLot;
+  const CLE = "f_g4iieUuuRgJzmMym219w";
+  const TOKEN = "NilYwn9dBMWi1Qq1tfY0ly6HQmhq-Pvb";
+  ok("l'adresse courte : `/l/<clé>`, l'origine nue devant (barre finale retirée), AUCUN token",
+    L.cheminCourt(CLE) === `/l/${CLE}` && L.lienCourt("https://www.bellajour.fr/", CLE) === `https://www.bellajour.fr/l/${CLE}` && L.lienCourt("https://www.bellajour.fr", CLE).length <= 50);
+  ok("lienDeGroupe : depuis l'adresse de base des participants, garde l'origine et jette le token ; base vide = chemin seul",
+    L.lienDeGroupe(`https://www.bellajour.fr/depot/${TOKEN}`, CLE) === `https://www.bellajour.fr/l/${CLE}` && L.lienDeGroupe(`http://localhost:3032/depot/${TOKEN}`, CLE) === `http://localhost:3032/l/${CLE}`
+      && L.lienDeGroupe("", CLE) === `/l/${CLE}` && !L.lienDeGroupe(`https://www.bellajour.fr/depot/${TOKEN}`, CLE).includes(TOKEN));
+  ok("la route courte renvoie vers l'adresse longue, qui reste la page de dépôt", L.cheminLongDuGroupe(TOKEN, CLE) === `/depot/${TOKEN}?p=${CLE}`);
+  ok("lienAbrege laisse l'adresse courte entière (une clé de 22 caractères n'était déjà pas abrégée dans l'adresse longue ; seul un token de 24 et plus l'est)", lienAbrege(`https://www.bellajour.fr/l/${CLE}`) === `www.bellajour.fr/l/${CLE}`);
+  ok("analytique : /l/<clé> devient /l/[token], la clé ne part jamais", cheminPublic(`https://www.bellajour.fr/l/${CLE}`) === `https://www.bellajour.fr/l/${MASQUE}` && cheminPublic(`https://www.bellajour.fr/l/${"k".repeat(22)}`) === `https://www.bellajour.fr/l/${MASQUE}`);
+  ok("la clé est UNIQUE en base (migration 20261013 : `cle text not null unique`) : une clé seule retrouve UN lien",
+    /cle\s+text not null unique check \(cle ~ '\^\[A-Za-z0-9_-\]\{22,64\}\$'\)/.test(readFileSync(resolve(RACINE, "supabase/migrations/20261013_collectif.sql"), "utf8")));
+
+  const lecture = codeSeul("src/app/l/[cle]/lecture.ts");
+  const page = codeSeul("src/app/l/[cle]/page.tsx");
+  const layout = codeSeul("src/app/l/layout.tsx");
+  const layoutCle = codeSeul("src/app/l/[cle]/layout.tsx");
+  const nf = codeSeul("src/app/l/[cle]/not-found.tsx");
+  const collecte = codeSeul("src/lib/collectif/collecte.ts");
+  ok("la lecture : interrupteur, FORME de la clé avant toute requête, lien par sa clé (repli 42703 sur retire_le), puis la porte du dépôt (`accesDepot`, la même que l'adresse longue)",
+    lecture.indexOf("collectifOuvert()") < lecture.indexOf("estCleProvenance(cle)") && lecture.indexOf("estCleProvenance(cle)") < lecture.indexOf("lireLienParCle(")
+      && /accesDepot\(lue\.data\.token_depot\)/.test(lecture) && /if \(lien\.retire\) return \{ statut: 'introuvable'/.test(lecture) && /cache\(/.test(lecture)
+      && /lire\("edition_id, retire_le"\);\s*if \(lu\.error && colonneAbsente\(lu\.error\.code\)\) lu = await lire\("edition_id"\);/.test(collecte));
+  ok("la page : 307 par `redirect()` vers l'adresse longue, `notFound()` pour tout le reste (lien supprimé, édition archivée, clé inconnue), force-dynamic",
+    /if \(lu\.statut !== 'ok'\) notFound\(\)\s*redirect\(lu\.chemin\)/.test(page) && /export const dynamic = 'force-dynamic'/.test(page)
+      /* Les balises dans le LAYOUT : après `notFound()`, Next ne garde que celles des layouts (sinon l'accueil et son prix). */
+      && !/generateMetadata/.test(page) && /export async function generateMetadata/.test(layoutCle) && /if \(lu\.statut !== 'ok'\) return metaNeutre\(\)/.test(layoutCle));
+  ok("la page « Ce lien ne fonctionne plus » est la MÊME que l'adresse longue (LienMort), au registre de l'édition retrouvée",
+    /import LienMort from '\.\.\/\.\.\/depot\/\[token\]\/LienMort'/.test(nf) && /<FournisseurRegistre registre=\{await registre\(cle\)\}>/.test(layoutCle));
+  ok("le layout de /l enveloppe celui de /depot (interrupteur, monde sombre, polices), noindex, no-referrer, feuille du dépôt pour la 404",
+    /<DepotLayout>\{children\}<\/DepotLayout>/.test(layout) && /index: false/.test(layout) && /referrer: 'no-referrer'/.test(layout) && /depot\/\[token\]\/depot\.css/.test(layout));
+
+  /* Tout ce qui partage un lien de groupe donne l'adresse courte. */
+  ok("partout où un lien de groupe se partage, l'adresse courte : tableau de bord, page Photos, création de lien, fiche et création de l'atelier",
+    /url: lienCourt\(origine, p\.cle\)/.test(codeSeul("src/app/edition/[token]/donnees.ts"))
+      && /url: cle \? lienDeGroupe\(p\.lienParticipants, cle\) : p\.lienParticipants/.test(codeSeul("src/app/edition/[token]/photos/Collecte.tsx"))
+      && /chemin: cheminCourt\(cle\)/.test(codeSeul("src/app/api/collectif/provenances/route.ts"))
+      && /url: lienDeGroupe\(liens\.depot, cle\)/.test(codeSeul("src/app/admin/collectif/[id]/page.tsx"))
+      && /url: lienDeGroupe\(donnees\.liens\.depot, cle\)/.test(codeSeul("src/app/admin/collectif/creee/[id]/page.tsx"))
+      && (codeSeul("src/app/admin/collectif/[id]/PanneauProvenances.tsx").match(/lienDeGroupe\(depot, cle\)/g) ?? []).length === 2);
+  ok("la fenêtre « Partager » au téléphone est une feuille du BAS : la règle de fenetre.css (chargée avant espace.css) l'emporte sur « align-items: safe center » par sa spécificité (0,4,0)",
+    /\.ec-espace \.ec-fenetre-voile\.ec-fenetre-voile--feuille:not\(\.ec-fenetre-voile--cote\) \{\s*place-items: end stretch;\s*align-items: end;/.test(lire("src/app/edition/_composants/fenetre.css"))
+      && /\.ec-espace \.ec-fenetre-voile:not\(\.ec-fenetre-voile--cote\) \{\s*align-items: safe center;/.test(lire("src/app/edition/[token]/espace.css")));
+  ok("plus aucune adresse de groupe longue fabriquée pour être partagée (`?p=${…}` hors de la route courte)",
+    ["src/app/edition/[token]/donnees.ts", "src/app/edition/[token]/photos/Collecte.tsx", "src/app/api/collectif/provenances/route.ts", "src/app/admin/collectif/[id]/page.tsx", "src/app/admin/collectif/creee/[id]/page.tsx", "src/app/admin/collectif/[id]/PanneauProvenances.tsx", "src/app/edition/_composants/LienContribution.tsx"]
+      .every((f) => !/\?p=\$\{/.test(codeSeul(f))));
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(verifLienCourt28).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
