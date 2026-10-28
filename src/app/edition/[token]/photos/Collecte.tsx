@@ -100,7 +100,7 @@ import "./simple.css";
 
 type Compteurs = { dossier: number; liste: number; doublons: number; selection: number; choisissables: number; signalees: number };
 type Stats = { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null; corbeille: number | null };
-type Reponse = { photos: Photo[]; suivante: number | null; compteurs: Compteurs; stats: Stats; arbre: Arbre; couvertures?: Record<string, string>; liens: Liens | null };
+type Reponse = { photos: Photo[]; suivante: number | null; compteurs: Compteurs; stats: Stats; arbre: Arbre; couvertures?: Record<string, string>; couverturesPlus?: Record<string, { m: string | null; paysage: { v: string; m: string | null } | null }>; liens: Liens | null };
 type Coches = { tout: boolean; ids: Set<string> };
 type Avis = { texte: string; sous?: string; annuler?: () => void; voir?: () => void };
 /** Des photos retirées de la vue, et leur place : « Annuler » les remet où elles étaient. */
@@ -204,6 +204,8 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* La couverture de chaque lien (« Par lien » la lit avec ses photos) : une vignette signée par tuile, la plus récente. Gardée d'une vue à l'autre :
      le lien ouvert (3C) garde sa photo en tête sans la relire. */
   const [couvLiens, setCouvLiens] = useState<Record<string, string>>({});
+  /* Leur version moyenne (1 600 px) et une variante paysage pour les tuiles en bandeau (28/10) : la vignette de 320 px agrandie était floue. */
+  const [couvPlus, setCouvPlus] = useState<NonNullable<Reponse["couverturesPlus"]>>({});
   /* Les poids de la mosaïque, GELÉS à l'ouverture de la page (`figerLesPesees`) : la mise à jour en direct change les chiffres des
      pastilles, jamais la place ni la taille d'une tuile. Seul un ensemble de tuiles différent (un lien créé, supprimé) les reprend. */
   const [peseesLiens, setPeseesLiens] = useState<readonly Pesee[] | null>(null);
@@ -296,7 +298,10 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         setArbre(json.arbre);
         if (page === 0) {
           setPeseesLiens((avant) => figerLesPesees(avant, peseesDesLiens(json.arbre, p.ecrire ? "Mes photos" : "Les dossiers du responsable")));
-          if (estVueAlbums(nf)) setCouvLiens(json.couvertures ?? {});
+          if (estVueAlbums(nf)) {
+            setCouvLiens(json.couvertures ?? {});
+            setCouvPlus(json.couverturesPlus ?? {});
+          }
           /* Tout ce qui est arrivé jusqu'ici est désormais compté : l'annonce s'efface. */
           setVuJusqua(json.stats.derniere);
           setAnnonce(null);
@@ -934,7 +939,10 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
       setCompteurs(json.compteurs);
       setStats(json.stats);
       setArbre(json.arbre);
-      if (estVueAlbums(nf)) setCouvLiens(json.couvertures ?? {});
+      if (estVueAlbums(nf)) {
+            setCouvLiens(json.couvertures ?? {});
+            setCouvPlus(json.couverturesPlus ?? {});
+          }
       setLiens(json.liens);
       setErreur(null);
       setVuJusqua(json.stats.derniere);
@@ -1207,7 +1215,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
     /* « Mes photos » : une tuile comme les liens, sans « … », qui compte ses photos (pas des personnes). */
     if (n.cle === "vous") return { cle: n.cle, nom: nomVous, n: n.n, couverture: couvVous, genre: "personne" };
     const detail = liens?.liens.find((x) => `lien:${x.id}` === n.cle);
-    return { cle: n.cle, nom: n.nom, n: n.n, personnes: detail ? detail.personnes.length : n.enfants.length, couverture: couv[n.cle] ?? null, actions: actionsDe(n.cle) };
+    return { cle: n.cle, nom: n.nom, n: n.n, personnes: detail ? detail.personnes.length : n.enfants.length, couverture: couv[n.cle] ?? null, couvertureMoyenne: couvPlus[n.cle]?.m ?? null, couvertureLarge: couvPlus[n.cle]?.paysage ?? null, actions: actionsDe(n.cle) };
   };
   const noeudsDeLiens = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => n.cle.startsWith("lien:") || n.cle === "participants" || (n.cle === "vous" && n.n > 0)) : [];
   const tuilesLiens: TuileVue[] = noeudsDeLiens.map((n) => tuileDuLien(n, couvLiens));

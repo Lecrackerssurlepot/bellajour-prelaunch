@@ -590,7 +590,12 @@ dernière photo affichée et les infos », « ça ne doit pas être compliqué n
   corbeille (à égalité par nom, « Bateau 2 » avant « Bateau 10 », puis par clé), la première est GRANDE (2 × 2), les trois suivantes au plus LARGES (2 × 1), le reste
   PETIT par deux, une petite seule devient large (la dernière) ; un seul lien : grand. Sur QUATRE colonnes (ordinateur) on ajuste de 0 à 3 le nombre de larges pour
   qu'une rangée soit toujours pleine, et deux tuiles ou moins gardent DEUX colonnes (`colonnesDeLaMosaique`). Le harnais pose 1 à 40 tuiles sur la grille
-  (`casesVides`) : aucun trou. L'ordre d'affichage est celui de la maquette (la grande, une large, deux petites, une large…). ⚠️ Tous à zéro (le début d'une
+  (`casesVides`) : aucun trou. ⚠️ **Depuis le 28/10 (recette Audencia), l'ORDRE est celui des noms en tri naturel** (« Bateau 1 » à « Bateau 8 ») : les poids ne
+  décident que des TAILLES, jamais de la place (8 bateaux s'affichaient 3, 1, 5, 7, 2… : incohérent pour le responsable). Pour paver sans trou on ajuste les
+  tailles (une petite devant une tuile de deux colonnes devient large, une large qui ne tient pas redevient petite), jamais l'ordre. **Netteté** : la tuile sert
+  `srcset` vignette 240w + moyenne 1 600w (`couverturesPlus`, `couvertureEnPlus` dans `grillePhotos.ts`, variante PAYSAGE pour une tuile large ou grande) ; la
+  vignette seule agrandissait ×3 (flou mesuré le 28/10). ⚠️ Pour mesurer, ne pas lire `naturalWidth` d'une image en `srcset` : il est divisé par la densité choisie
+  (une moyenne de 1 600 px y apparaît « 390 px ») ; lire `currentSrc`. ⚠️ Tous à zéro (le début d'une
   collecte) : la règle ne fait pas d'exception, la première par nom est grande (la planche disait « toutes petites » : à trancher si cela gêne).
 - ⚠️ **« À l'ouverture de la page seulement » est un GEL, pas un calcul malin** : `figerLesPesees` garde les poids de la première lecture (`Collecte.tsx`,
   `peseesLiens`, `peseesPersonnes`, posés dans `charger` page 0 seulement, JAMAIS dans `relireSansBruit`) tant que ce sont les mêmes tuiles ; `Mosaique.tsx` calcule

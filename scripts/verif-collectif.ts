@@ -8666,19 +8666,28 @@ function verifMosaique() {
         return true;
       })());
         const t2 = MO.mosaiqueDesLiens(huit, 2);
-    ok("les huit bateaux de la maquette, téléphone : la grande (Bateau 5), puis une large, deux petites, une large, deux petites, une large : 5, 2, 4, 8, 3, 1, 6, 7",
-      noms(t2) === "5,2,4,8,3,1,6,7" && tailles(t2) === "glppl" + "ppl");
+    ok("les huit bateaux de la maquette, téléphone (28/10) : l'ORDRE est celui des noms, 1 à 8, jamais celui du poids ; la taille seule suit le poids (Bateau 5 grand, 2, 3 et 7 larges), et les petites s'adaptent (une petite suivie d'une large devient large)",
+      noms(t2) === "1,2,3,4,5,6,7,8" && t2.find((t) => t.nom === "Bateau 5")?.taille === "grand" && MO.casesVides(t2, 2) === 0);
     const t4 = MO.mosaiqueDesLiens(huit, 4);
-    ok("… ordinateur : 1 grande, 1 large et 6 petites (une rangée est faite de deux moitiés : un nombre pair de moitiés, sinon un trou) : 5, 2, 3, 7, 4, 8, 1, 6",
-      noms(t4) === "5,2,3,7,4,8,1,6" && tailles(t4) === "glpppppp");
+    ok("… ordinateur : le même ordre 1 à 8, Bateau 5 grand, aucun trou sur quatre colonnes",
+      noms(t4) === "1,2,3,4,5,6,7,8" && t4.find((t) => t.nom === "Bateau 5")?.taille === "grand" && MO.casesVides(t4, 4) === 0);
+    ok("l'ordre ne change JAMAIS quand les poids changent (huit liens créés dans l'ordre s'affichent dans l'ordre, 28/10) ; « Sans groupe » puis « Nouveau lien » ferment la marche, « Mes photos » ouvre",
+      (() => {
+        for (const c of [2, 4] as const) for (let essai = 0; essai < 20; essai++) {
+          const l = bateaux(Array.from({ length: 8 }, (_, i) => ((i * 5 + essai * 3) % 13) + 1));
+          if (noms(MO.mosaiqueDesLiens(l, c)) !== "1,2,3,4,5,6,7,8") return false;
+        }
+        const m = MO.mosaiqueDesLiens([{ cle: "participants", nom: "Sans groupe", n: 9 }, { cle: "+nouveau", nom: "+", n: -1 }, { cle: "vous", nom: "Mes photos", n: 1 }, { cle: "a", nom: "Zèbre", n: 5 }, { cle: "b", nom: "Alpha", n: 3 }], 2, "vous");
+        return m.map((t) => t.cle).join() === "vous,b,a,participants,+nouveau" && MO.casesVides(m, 2) === 0;
+      })());
     const t13 = MO.mosaiqueDesLiens(bateaux(Array.from({ length: 13 }, (_, i) => 130 - i)), 2);
-    ok("treize liens : la grande, trois larges, huit petites par deux, et la petite SEULE (la treizième, la plus légère) devient large, à sa place, la dernière",
-      tailles(t13) === "glpplpplppppl" && t13[12].taille === "large" && t13[12].nom === "Bateau 13" && t13.filter((t) => t.taille === "large").length === 4);
+    ok("treize liens, du plus fourni au moins fourni dans l'ordre des noms : la grande, trois larges derrière, les petites par deux, la dernière tuile jamais seule dans sa rangée, aucun trou",
+      t13[0].taille === "grand" && t13.filter((t) => t.taille === "grand").length === 1 && noms(t13) === "1,2,3,4,5,6,7,8,9,10,11,12,13" && MO.casesVides(t13, 2) === 0);
     ok("les égalités se départagent par le NOM, « Bateau 2 » avant « Bateau 10 » (la même mosaïque pour le responsable et l'équipe), puis par la clé : jamais deux ordres possibles",
       noms(MO.classerParPoids(bateaux([5, 5, 5, 5, 5, 5, 5, 5, 5, 5]).reverse())) === "1,2,3,4,5,6,7,8,9,10" && MO.classerParPoids([{ cle: "b", nom: "A", n: 1 }, { cle: "a", nom: "A", n: 1 }]).map((t) => t.cle).join() === "a,b");
     const sans = MO.mosaiqueDesLiens([{ cle: "a", nom: "Zéro", n: 0 }, { cle: "b", nom: "Gros", n: 9 }, { cle: "c", nom: "Moyen", n: 4 }, { cle: "d", nom: "Aucune", n: 0 }, { cle: "e", nom: "Petit", n: 1 }], 2);
     ok("un lien SANS photo garde sa tuile, et passe derrière ceux qui en ont (poids 0, par nom) ; si tous sont à zéro, le premier par nom est grand, comme la règle le dit",
-      sans.map((t) => t.cle).join() === "b,c,e,d,a" && MO.mosaiqueDesLiens([{ cle: "z", nom: "B", n: 0 }, { cle: "y", nom: "A", n: 0 }], 2).map((t) => `${t.nom}:${t.taille}`).join() === "A:grand,B:large");
+      sans.map((t) => t.cle).join() === "d,b,c,e,a" && sans.find((t) => t.cle === "b")?.taille === "grand" && MO.mosaiqueDesLiens([{ cle: "z", nom: "B", n: 0 }, { cle: "y", nom: "A", n: 0 }], 2).map((t) => `${t.nom}:${t.taille}`).join() === "A:grand,B:large");
     let trous = "";
     let perdues = "";
     for (const colonnes of [2, 4] as const) {
@@ -8687,11 +8696,11 @@ function verifMosaique() {
         const m = MO.mosaiqueDesLiens(liste, colonnes);
         const vides = MO.casesVides(m, MO.colonnesDeLaMosaique(n, colonnes));
         if (vides !== 0) trous += ` ${colonnes}c/${n}:${vides}`;
-        if (m.length !== n || new Set(m.map((t) => t.cle)).size !== n || m.filter((t) => t.taille === "grand").length !== 1 || m.filter((t) => t.taille === "large").length > (colonnes === 2 ? 4 : 3)) perdues += ` ${colonnes}c/${n}`;
+        if (m.length !== n || new Set(m.map((t) => t.cle)).size !== n || m.filter((t) => t.taille === "grand").length !== 1 || m.filter((t) => t.taille === "large").length > (colonnes === 2 ? 4 : 6)) perdues += ` ${colonnes}c/${n}`;
       }
     }
     ok(`AUCUN trou, aucune tuile seule dans une rangée : de 1 à 40 liens, sur 2 colonnes et sur 4 (les cases vides de la grille posée comme la feuille de style, \`dense\`)${trous ? ` ; en faute :${trous}` : ""}`, trous === "");
-    ok(`aucune tuile perdue ni doublée, une seule grande, au plus quatre larges au téléphone (trois, plus la petite seule) et trois sur quatre colonnes${perdues ? ` ; en faute :${perdues}` : ""}`, perdues === "");
+    ok(`aucune tuile perdue ni doublée, une seule grande, au plus quatre larges au téléphone et six sur quatre colonnes (la fin de la mosaïque s'ajuste en larges)${perdues ? ` ; en faute :${perdues}` : ""}`, perdues === "");
     ok("deux liens ou moins : la mosaïque de l'ordinateur reste à DEUX colonnes (une grande et une large ne remplissent pas quatre colonnes) ; trois liens et plus : quatre",
       MO.colonnesDeLaMosaique(1, 4) === 2 && MO.colonnesDeLaMosaique(2, 4) === 2 && MO.colonnesDeLaMosaique(3, 4) === 2 && MO.colonnesDeLaMosaique(4, 4) === 4 && MO.colonnesDeLaMosaique(40, 2) === 2);
     const entree = bateaux([5, 9, 7, 1]);
@@ -8707,7 +8716,7 @@ function verifMosaique() {
     const direct = bateaux([1, 90, 80, 70]);
     const apres = MO.figerLesPesees(ouverture, direct);
     ok("le direct change les chiffres, JAMAIS l'arrangement : mêmes tuiles, `figerLesPesees` rend les poids de l'ouverture (la même référence), la mosaïque est donc la même, place et taille",
-      apres === ouverture && JSON.stringify(MO.mosaiqueDesLiens(apres, 2)) === JSON.stringify(MO.mosaiqueDesLiens(ouverture, 2)) && JSON.stringify(MO.mosaiqueDesLiens(direct, 2).map((t) => t.cle)) !== JSON.stringify(MO.mosaiqueDesLiens(ouverture, 2).map((t) => t.cle)));
+      apres === ouverture && JSON.stringify(MO.mosaiqueDesLiens(apres, 2)) === JSON.stringify(MO.mosaiqueDesLiens(ouverture, 2)) && JSON.stringify(MO.mosaiqueDesLiens(direct, 2).map((t) => t.taille)) !== JSON.stringify(MO.mosaiqueDesLiens(ouverture, 2).map((t) => t.taille)));
     const nouveau = [...direct, { cle: "neuf", nom: "Neuf", n: 0 }];
     ok("un lien créé ou supprimé (un AUTRE ensemble de tuiles) reprend les poids du moment : la tuile nouvelle a sa place, la tuile disparue ne laisse pas de trou ; une lecture de même taille mais d'autres clés aussi",
       MO.figerLesPesees(ouverture, nouveau) === nouveau && MO.figerLesPesees(ouverture, direct.slice(1)) !== ouverture && MO.figerLesPesees(ouverture, [...direct.slice(0, 3), { cle: "autre", nom: "Autre", n: 4 }]).some((t) => t.cle === "autre"));
@@ -8765,7 +8774,7 @@ function verifMosaique() {
     ok("« Par lien » : la mosaïque (« Mes photos » en tuile, en tête), puis l'atelier en ligne dessous (jamais une ligne à zéro photo) ; plus de « Dernières arrivées » ni de cartes d'album ; un message si rien à montrer",
       /<Mosaique genre="lien" variante="albums" tuiles=\{tuilesLiens\} ordre=\{peseesLiens\}/.test(collecte) && /className="ec-mo-ligne"/.test(collecte) && /n\.cle === "atelier" && n\.n > 0/.test(collecte) && !/Dernières arrivées|ec-ph-carte\b|ec-ph-cartes/.test(collecte) && /Aucun lien à montrer pour l&apos;instant/.test(collecte));
     ok("« Par lien » lit les couvertures de ses tuiles par le dossier `liens` de la route (une couverture par lien, aucune page de grille) ; la page ne demande plus `couverturesDe` ni `seulementArbre` (la route les garde pour la fenêtre de dépôt)",
-      /const dossier = personnes \?\? f\.dossier \?\? f\.lien \?\? \(f\.mode === "liens" \? "liens" : "tout"\);/.test(code("src/app/edition/[token]/photos/filtres.ts")) && /if \(estVueAlbums\(nf\)\) setCouvLiens\(json\.couvertures \?\? \{\}\);/.test(collecte) && !/couverturesDe|seulementArbre|lireCouvertures/.test(collecte)
+      /const dossier = personnes \?\? f\.dossier \?\? f\.lien \?\? \(f\.mode === "liens" \? "liens" : "tout"\);/.test(code("src/app/edition/[token]/photos/filtres.ts")) && /if \(estVueAlbums\(nf\)\) \{\s*setCouvLiens\(json\.couvertures \?\? \{\}\);\s*setCouvPlus\(json\.couverturesPlus \?\? \{\}\);/.test(collecte) && !/couverturesDe|seulementArbre|lireCouvertures/.test(collecte)
         && /dossier === "liens" \? arbre\.liens/.test(lire("src/lib/collectif/grillePhotos.ts")) && /couverturesDe: \(COUVERTURES_DE as readonly unknown\[\]\)\.includes\(corps\.couverturesDe\)/.test(lire("src/lib/collectif/grillePhotos.ts")));
     ok("l'aucune-photo-avec-des-liens : les liens se voient et se partagent par leur tuile (un lien sans photo n'a rien à ouvrir : le toucher le PARTAGE), la tuile de tête d'un lien ouvert ne vaut que s'il y a des photos (`tuileActive`)",
       /vide && arbre && p\.ecrire && p\.ouverte && peseesLiens && tuilesLiens\.length/.test(collecte) && /if \(l\) void partager\(lienDe\(l\.nom, l\.cle, l\.plafond, l\.n\)\);/.test(collecte) && /const tuileActive = Boolean\(lienDePastilles\) && !vide;/.test(collecte));
@@ -9177,8 +9186,18 @@ async function verifDecisions26() {
     r1.data?.[0] === 1 && r2.data?.[0] === 1 && r3.data?.[0] === 1 && appels.join() === "true,false,false,true,false" && autre.error?.message === "column x.y does not exist"
       && G.colonnesAvecMoyenne("id", true) === "id, moyenne_key" && G.colonnesAvecMoyenne("id", false) === "id");
   const route = lire("src/app/api/collectif/photos/route.ts");
-  ok("les trois lectures de la grille passent par le repli (la page, les doublons par ids, la lecture complète)",
-    (route.match(/lireAvecMoyenne\(\(moyenne\) =>/g) ?? []).length === 3 && /base\(conditions, avec, false, moyenne\)/.test(route));
+  ok("les quatre lectures de la grille passent par le repli (la page, les doublons par ids, les candidates à la couverture, la lecture complète)",
+    (route.match(/lireAvecMoyenne\(\(moyenne\) =>/g) ?? []).length === 4 && /base\(conditions, avec, false, moyenne\)/.test(route));
+  {
+    const cand = (k: string, l: number | null, h: number | null, m: string | null = `m/${k}`) => ({ vignette_key: k, moyenne_key: m, largeur: l, hauteur: h });
+    const portrait = cand("a", 3000, 4000);
+    const paysage = cand("b", 4000, 3000);
+    const c1 = G.couvertureEnPlus("a", [portrait, paysage]);
+    const c2 = G.couvertureEnPlus("b", [paysage, portrait]);
+    const c3 = G.couvertureEnPlus("a", [cand("a", null, null), cand("b", null, null)]);
+    ok("couverture d'un lien (28/10) : la moyenne de la photo récente, et pour une tuile large la plus récente photo PAYSAGE ; déjà paysage ou dimensions inconnues : aucune variante, le choix d'avant tient",
+      c1.defaut?.moyenne_key === "m/a" && c1.paysage?.vignette_key === "b" && c2.paysage === null && c3.paysage === null && c3.defaut?.moyenne_key === "m/a" && G.couvertureEnPlus("zz", [portrait]).defaut === null);
+  }
   type LG = import("@/lib/collectif/grillePhotos").LigneGrille;
   const ligne = (i: number, o: Partial<LG> = {}): LG => ({
     id: `00000000-0000-4000-8000-0000000000${String(i).padStart(2, "0")}`, vignette_key: `collectif/v/${i}.jpg`, r2_key: `collectif/o/${i}.jpg`, nom_origine: `IMG_${i}.jpg`, provenance_type: "participant", deposant: "Léa", prise_le: null,

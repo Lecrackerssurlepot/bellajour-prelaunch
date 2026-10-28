@@ -28,6 +28,10 @@ export type TuileVue = {
   /** Une personne : où elle a déposé (« Bateau 1 »). */
   detail?: string | null;
   couverture: string | null;
+  /** La même photo en 1 600 px (28/10) : servie par `srcset` quand la tuile est plus grande que la vignette. Absente (anciennes photos) : la vignette seule. */
+  couvertureMoyenne?: string | null;
+  /** Une photo en PAYSAGE (vignette et moyenne) pour les tuiles en bandeau (large, album ouvert) ; absente : la couverture ci-dessus. */
+  couvertureLarge?: { v: string; m: string | null } | null;
   /** « Mes photos » : une tuile de lien, mais sa pastille ne compte que les photos (pas de « personnes »). */
   genre?: "lien" | "personne";
   /** Le menu « … » ; absent : une tuile en LECTURE SEULE (« Sans groupe »), sans « … ». */
@@ -56,9 +60,24 @@ const points = (
   </svg>
 );
 
+/** La largeur à l'écran de chaque forme, pour `sizes` (téléphone : deux colonnes ; ordinateur : quatre, l'espace fait au plus 1 100 px). */
+const TAILLES_DE: Record<TailleTuile | "ouvert", string> = {
+  grand: "(min-width: 861px) 40vw, 100vw",
+  large: "(min-width: 861px) 40vw, 100vw",
+  petit: "(min-width: 861px) 20vw, 50vw",
+  ouvert: "(min-width: 861px) 60vw, 100vw",
+};
+
 /** Le fond d'une tuile : la dernière photo ; sans photo, un motif (un lien) ou les initiales (une personne), en filigrane sur le fond doux. */
 function Fond({ t, genre, taille }: { t: TuileVue; genre: "lien" | "personne"; taille: TailleTuile | "ouvert" }) {
-  if (t.n && t.couverture) return <img className="ec-tu-photo" src={t.couverture} alt="" loading="lazy" decoding="async" />;
+  if (t.n && t.couverture) {
+    /* Une tuile plus large que haute (grande, large, ouverte : 370 × 156 au téléphone) prend la photo paysage quand on en a une : un portrait y serait coupé aux deux tiers. */
+    const bandeau = taille !== "petit" && t.couvertureLarge ? t.couvertureLarge : null;
+    const v = bandeau ? bandeau.v : t.couverture;
+    const m = bandeau ? bandeau.m : (t.couvertureMoyenne ?? null);
+    /* La vignette fait 320 px au plus, la moyenne 1 600 : le navigateur choisit selon la largeur de la tuile ET la densité de l'écran, jamais un agrandissement. */
+    return <img className="ec-tu-photo" src={v} srcSet={m ? `${v} 240w, ${m} 1600w` : undefined} sizes={m ? TAILLES_DE[taille] : undefined} alt="" loading="lazy" decoding="async" />;
+  }
   if (genre === "lien")
     return (
       <span className="ec-tu-motif" aria-hidden="true">

@@ -194,6 +194,8 @@ export type ReponseGrille = {
   stats: { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null; corbeille: number | null };
   arbre: ReturnType<typeof arbreDesPhotos>;
   couvertures: Record<string, string>;
+  /** Pour chaque couverture : sa moyenne et sa variante paysage (28/10). Absent quand la lecture n'en sait rien. */
+  couverturesPlus?: Record<string, CouvertureEnPlus>;
   liens: {
     /** Les photos arrivées par l'adresse de BASE (l'ancien lien général), sous « Sans groupe » : l'onglet
         « Les liens » ne la montre que si `n` > 0, en lecture seule, sans « Partager » ni QR (planche 5, 21/10). */
@@ -300,6 +302,7 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
      a une vignette. Seulement dans les vues d'ensemble et dans un dossier qui en contient
      d'autres (ses sous-dossiers s'y montrent en vignettes). */
   const couvertures: Record<string, string> = {};
+  const couverturesPlus: Record<string, CouvertureEnPlus> = {};
   if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
     const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
@@ -309,6 +312,8 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
         if (!p?.vignette_key) return;
         try {
           couvertures[n.cle] = await c.signer(p.vignette_key);
+          /* La moyenne de la même photo (1 600 px) : la tuile large la sert au lieu d'agrandir la vignette. Pas de dimensions ici : pas de variante paysage. */
+          if (p.moyenne_key) couverturesPlus[n.cle] = { m: await c.signer(p.moyenne_key).catch(() => null), paysage: null };
         } catch {
           /* une couverture manquée laisse l'icône du dossier */
         }
@@ -357,6 +362,7 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
     },
     arbre,
     couvertures,
+    couverturesPlus,
     liens: partage
       ? {
           general: { nom: GROUPE_SANS_GROUPE, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: general.length, personnes: personnesDu(general) },
@@ -379,7 +385,35 @@ export type LectureGrille = {
   compter(ids: readonly string[], conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<number | null>;
   /** COMBIEN de photos passent ces conditions (le plan du dossier et « Ne pas publier », lot w2) : un compte sans ligne. */
   compterFiltre(conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<number | null>;
+  /**
+   * Les `CANDIDATES_COUVERTURE` dernières photos arrivées du dossier qui ont une vignette, la plus récente d'abord, avec de quoi servir
+   * la moyenne et choisir l'orientation (28/10). Absente (un harnais) ou `null` : la couverture reste la vignette, comme avant.
+   */
+  couvertures?(conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<CandidateCouverture[] | null>;
 };
+
+/** Une photo qui peut servir de couverture : sa vignette, sa moyenne (1 600 px, migration 20261026) quand elle existe, ses dimensions quand elles sont connues. */
+export type CandidateCouverture = { vignette_key: string; moyenne_key: string | null; largeur: number | null; hauteur: number | null };
+/** Combien de dernières photos on regarde pour trouver une couverture à la bonne forme (les récentes d'abord : la couverture reste « la dernière »). */
+export const CANDIDATES_COUVERTURE = 12;
+/** Un paysage franc (3:2 fait 1,5) ; en dessous, la photo passe pour carrée ou portrait. */
+export const RAPPORT_PAYSAGE = 1.15;
+
+/** Ce que la réponse ajoute à la vignette d'une couverture : sa moyenne, et une variante PAYSAGE pour une tuile large. */
+export type CouvertureEnPlus = { m: string | null; paysage: { v: string; m: string | null } | null };
+
+export const estPaysage = (c: { largeur: number | null; hauteur: number | null }): boolean => !!c.largeur && !!c.hauteur && c.largeur / c.hauteur >= RAPPORT_PAYSAGE;
+
+/**
+ * Le choix, pur : `par defaut` est la couverture d'avant (la vignette de la photo la plus récente) ; on lui joint sa moyenne si elle fait
+ * partie des candidates, et, si elle n'est pas déjà un paysage, la plus récente photo PAYSAGE des candidates (une tuile large est un bandeau :
+ * un portrait y est coupé aux deux tiers). Dimensions inconnues : aucune variante, le choix d'avant tient.
+ */
+export function couvertureEnPlus(vignetteParDefaut: string, candidates: readonly CandidateCouverture[]): { defaut: CandidateCouverture | null; paysage: CandidateCouverture | null } {
+  const defaut = candidates.find((x) => x.vignette_key === vignetteParDefaut) ?? null;
+  if (defaut && estPaysage(defaut)) return { defaut, paysage: null };
+  return { defaut, paysage: candidates.find((x) => estPaysage(x)) ?? null };
+}
 
 /** Les paquets d'ids partent six par six (une latence par six paquets, sans inonder l'API). */
 const PAQUETS_ENSEMBLE = 6;
@@ -471,6 +505,7 @@ export async function grilleDepuisResume(
   const liens = partage ? provenances : [];
   const arbre = arbreDesPhotos(pesees, liens, edition, partage);
   const couvertures: Record<string, string> = {};
+  const couverturesPlus: Record<string, CouvertureEnPlus> = {};
   if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
     const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
@@ -480,6 +515,14 @@ export async function grilleDepuisResume(
         if (!cle) return;
         try {
           couvertures[n.cle] = await c.signer(cle);
+          const plan = lecture.couvertures ? planDuDossier(n.cle, groupes, responsable) : null;
+          const candidates = plan && plan.genre === "filtre" ? await lecture.couvertures?.(plan.conditions) : null;
+          if (candidates?.length) {
+            const choix = couvertureEnPlus(cle, candidates);
+            const signe = (k: string | null | undefined) => (k ? c.signer(k).catch(() => null) : Promise.resolve(null));
+            const [m, pv, pm] = await Promise.all([signe(choix.defaut?.moyenne_key), signe(choix.paysage?.vignette_key), signe(choix.paysage?.moyenne_key)]);
+            if (m || pv) couverturesPlus[n.cle] = { m, paysage: pv ? { v: pv, m: pm } : null };
+          }
         } catch {
           /* une couverture manquée laisse l'icône du dossier */
         }
@@ -526,6 +569,7 @@ export async function grilleDepuisResume(
     },
     arbre,
     couvertures,
+    couverturesPlus,
     liens: partage
       ? {
           general: { nom: GROUPE_SANS_GROUPE, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: somme(general), personnes: personnesDu(general) },
