@@ -23,7 +23,7 @@ import { formaterJour } from '@/lib/atelier/dates'
 import { vuesDemandes } from '@/lib/collectif/demandes'
 import { peut } from '@/lib/collectif/droits'
 import { joursAvant, parler, phraseJours } from '@/lib/collectif/espace'
-import { collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
+import { LIBELLE_ETAT_EDITION, collecteOuverte, etatEffectif } from '@/lib/collectif/etats'
 import { stylesOuverts } from '@/lib/collectif/interrupteur'
 import { origineDepuis } from '@/lib/collectif/liens'
 import { plafondLienMax } from '@/lib/collectif/plafonds'
@@ -66,7 +66,15 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
             Tout avant le {cloture} · {delai}
           </span>
         ) : (
-          <span className="ec-pilule">{ouverte ? 'Collecte ouverte' : 'Collecte terminée : l’atelier compose'}</span>
+          <span className="ec-pilule">
+            {ouverte
+              ? 'Collecte ouverte'
+              : etat === 'preparation' || etat === 'composition'
+                ? 'Collecte terminée : l’atelier compose'
+                : etat === 'bat'
+                  ? 'Bon à tirer à relire'
+                  : LIBELLE_ETAT_EDITION[etat]}
+          </span>
         )}
       </EnTeteEcran>
 
