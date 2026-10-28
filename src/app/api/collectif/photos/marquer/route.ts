@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import type { Role } from "@/lib/collectif/types";
@@ -37,7 +37,10 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
+  /* Chaque marque est une écriture : le premier appareil prend la place ici (28/10), pour le droit
+     que la route vérifiera (« preselectionner » pour un cœur ou toute la vue, sinon « signaler_photo »). */
+  const droit = typeof corps.preselection === "boolean" || corps.toutes === true ? "preselectionner" : "signaler_photo";
+  const acces = await accesPourEcrire(await chargerAcces(String(corps.token ?? ""), "espace"), droit);
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (corps.toutes === true) return toutesLesPhotos(acces.edition.id, acces.edition.responsable_nom, acces.role, corps.preselection, corps.dossier);

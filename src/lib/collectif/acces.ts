@@ -16,15 +16,21 @@
  *    le lien d'équipe (`role: "equipe"`, `appareilInconnu: true`) ; pour
  *    modifier, un code par mail reconnaît l'appareil. L'atelier connecté passe.
  *    `sansAppareil` : la seule route qui demande et vérifie le code.
+ * 6. le PREMIER appareil (décision de Mathias du 28/10) : tant qu'aucun appareil
+ *    n'est reconnu pour le lien actuel, la page s'ouvre en responsable COMPLET
+ *    (`placeLibre: true`), sans rien écrire. La place se prend à la première
+ *    ÉCRITURE, par `accesPourEcrire`, que seuls les route handlers appellent
+ *    (un Server Component ne peut pas poser de cookie). Jamais à l'affichage :
+ *    les robots des messageries ouvrent les liens des mails (`appareil.ts`).
  */
 
 import { cookies } from "next/headers";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/tokenForme";
 import { makeSupabase } from "@/lib/supabase";
-import { COOKIE_APPAREIL, controleAppareilActif, idAppareilValide } from "./appareil";
-import { appareilReconnu } from "./appareils";
-import { roleAdmisSur, roleDuToken, type Surface } from "./droits";
+import { COOKIE_APPAREIL, controleAppareilActif, DUREE_APPAREIL_S, idAppareilValide, prendLaPlace, verdictAppareil, type VerdictAppareil } from "./appareil";
+import { lireAppareil, nouvelIdAppareil, prendrePremierePlace } from "./appareils";
+import { roleAdmisSur, roleDuToken, type Action, type Surface } from "./droits";
 import { collectifOuvert } from "./interrupteur";
 import { tableAbsente } from "./migration";
 import type { EditionLigne, Role } from "./types";
@@ -33,7 +39,9 @@ export type Acces =
   | { statut: "ferme" }
   | { statut: "introuvable" }
   | { statut: "migration_absente" }
-  | { statut: "ok"; edition: EditionLigne; role: Exclude<Role, "atelier">; appareilInconnu?: boolean };
+  | { statut: "ok"; edition: EditionLigne; role: Exclude<Role, "atelier">; appareilInconnu?: boolean; placeLibre?: boolean };
+
+export type AccesOk = Extract<Acces, { statut: "ok" }>;
 
 export async function chargerAcces(token: string, surface: Surface, options: { sansAppareil?: boolean } = {}): Promise<Acces> {
   if (!collectifOuvert()) return { statut: "ferme" };
@@ -63,20 +71,59 @@ export async function chargerAcces(token: string, surface: Surface, options: { s
   const role = roleDuToken(data, token);
   if (!role || !roleAdmisSur(surface, role)) return { statut: "introuvable" };
 
-  /* Le responsable sur un appareil inconnu : il LIT, il ne modifie pas (le droit de l'équipe). */
-  if (role === "responsable" && !options.sansAppareil && controleAppareilActif(process.env) && !(await appareilPasse(supabase, data))) {
-    return { statut: "ok", edition: data, role: "equipe", appareilInconnu: true };
+  /* Le responsable sur un appareil inconnu : il LIT, il ne modifie pas (le droit de l'équipe) ;
+     sauf si la place du premier appareil est libre (28/10). */
+  if (role === "responsable" && !options.sansAppareil && controleAppareilActif(process.env)) {
+    const verdict = await verdictPorte(supabase, data);
+    if (verdict === "lecture") return { statut: "ok", edition: data, role: "equipe", appareilInconnu: true };
+    if (verdict === "place_libre") return { statut: "ok", edition: data, role, placeLibre: true };
   }
 
   return { statut: "ok", edition: data, role };
 }
 
-/** L'atelier connecté, ou un appareil reconnu pour le lien actuel. Sans la migration : on laisse passer. */
-async function appareilPasse(supabase: ReturnType<typeof makeSupabase>, edition: EditionLigne): Promise<boolean> {
-  if (await quiEstConnecte()) return true;
+/** L'atelier connecté, ou un appareil reconnu pour le lien actuel, passe. Sans la migration : on laisse passer. */
+async function verdictPorte(supabase: ReturnType<typeof makeSupabase>, edition: EditionLigne): Promise<VerdictAppareil> {
+  if (await quiEstConnecte()) return verdictAppareil({ controleActif: true, atelier: true, lu: null });
+  const lu = await lireAppareil(supabase, edition, await idDuCookie());
+  return verdictAppareil({ controleActif: true, atelier: false, lu });
+}
+
+async function idDuCookie(): Promise<string | null> {
   const id = (await cookies()).get(COOKIE_APPAREIL)?.value ?? null;
-  const reconnu = await appareilReconnu(supabase, edition, idAppareilValide(id) ? id : null);
-  return reconnu ?? true;
+  return idAppareilValide(id) ? id : null;
+}
+
+/**
+ * LE chemin d'écriture du responsable (28/10). Chaque route publique qui MODIFIE
+ * l'appelle avec l'action qu'elle va vérifier par `peut`, AVANT ce contrôle ;
+ * jamais une route de lecture (le harnais relit les deux listes). Sur une place
+ * libre, pour une écriture que le responsable a le droit de faire : l'appareil
+ * prend la place (ligne reconnue, journal, cookie httpOnly posé avec la réponse)
+ * et l'accès reste celui du responsable. Prise entre-temps : il redevient
+ * « appareil inconnu », et `peut` répond 403 `lecture_seule` comme avant.
+ * ⚠️ Route handlers SEULEMENT : `cookies().set` lève dans un Server Component.
+ */
+export async function accesPourEcrire(acces: AccesOk, action: Action): Promise<AccesOk>;
+export async function accesPourEcrire(acces: Acces, action: Action): Promise<Acces>;
+export async function accesPourEcrire(acces: Acces, action: Action): Promise<Acces> {
+  if (acces.statut !== "ok" || !acces.placeLibre) return acces;
+  const reste: AccesOk = { statut: "ok", edition: acces.edition, role: acces.role };
+  if (!prendLaPlace("place_libre", action)) return reste;
+
+  const existant = await idDuCookie();
+  const idAppareil = existant ?? nouvelIdAppareil();
+  const issue = await prendrePremierePlace(makeSupabase(), acces.edition, idAppareil);
+  if (issue === "pris") {
+    if (!existant) {
+      (await cookies()).set(COOKIE_APPAREIL, idAppareil, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: DUREE_APPAREIL_S });
+    }
+    return reste;
+  }
+  /* Sans la table, le contrôle ne s'applique pas (même règle que la porte). */
+  if (issue === "migration_absente") return reste;
+  if (issue === "echec") console.error("[collectif] premier appareil : place non prise (panne), écriture refusée");
+  return { statut: "ok", edition: acces.edition, role: "equipe", appareilInconnu: true };
 }
 
 /**

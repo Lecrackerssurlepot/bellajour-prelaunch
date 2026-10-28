@@ -18,6 +18,7 @@
  */
 
 import { createHash, timingSafeEqual } from "node:crypto";
+import { ACTIONS_ECRITURE, peut, type Action } from "./droits";
 import { lireInterrupteur } from "./interrupteur";
 
 export const VAR_CODE_APPAREIL = "COLLECTIF_CODE_APPAREIL";
@@ -58,6 +59,51 @@ export function libelleDuree(ms: number): string {
 /** Le contrôle est-il en service ? (Lu à chaque appel ; une valeur incomprise FERME.) */
 export function controleAppareilActif(env: Record<string, string | undefined>): boolean {
   return lireInterrupteur(env[VAR_CODE_APPAREIL]).ouvert && lireInterrupteur(env.COLLECTIF_MAILS).ouvert;
+}
+
+/* ── Le premier appareil (décision de Mathias du 28/10) ──
+   « Le premier appareil qui utilise le lien du responsable devient l'appareil
+   reconnu, sans code. Le code ne sert qu'aux appareils suivants. » Le lien
+   « Ton espace est prêt » n'est envoyé qu'au responsable : lui demander un code
+   la toute première fois ne protégeait rien.
+   ⚠️ La place se prend à la PREMIÈRE ÉCRITURE, jamais à l'affichage ni sur une
+   lecture : les robots des messageries (Outlook Safe Links, Microsoft Defender,
+   certains antivirus) ouvrent les liens des mails dans un vrai navigateur qui
+   exécute le JavaScript, et prendraient la place du responsable. Une place libre
+   est celle du lien ACTUEL : régénérer le lien du responsable la libère. */
+
+/** Ce que la porte sait de l'appareil : reconnu pour le lien actuel, et si la place est encore libre. */
+export type LectureAppareil = { reconnu: boolean; libre: boolean };
+
+/**
+ * Le verdict de la porte pour le lien du responsable. `responsable` : il modifie ;
+ * `place_libre` : il modifie aussi (page complète), et sa première écriture prendra
+ * la place ; `lecture` : un appareil suivant, le code par mail.
+ * `lu` null : la table manque, le contrôle ne s'applique pas.
+ */
+export type VerdictAppareil = "responsable" | "place_libre" | "lecture";
+
+export function verdictAppareil(e: { controleActif: boolean; atelier: boolean; lu: LectureAppareil | null }): VerdictAppareil {
+  if (!e.controleActif || e.atelier || !e.lu || e.lu.reconnu) return "responsable";
+  return e.lu.libre ? "place_libre" : "lecture";
+}
+
+/** Une place libre ne se prend que pour une ÉCRITURE que le responsable a le droit de faire. */
+export function prendLaPlace(verdict: VerdictAppareil, action: Action): boolean {
+  return verdict === "place_libre" && ACTIONS_ECRITURE.includes(action) && peut("responsable", action);
+}
+
+/** Le motif d'une reconnaissance, tel que le journal l'écrit. */
+export type MotifReconnaissance = "code" | "premier_appareil";
+
+/**
+ * Deux premiers appareils en même temps (aucune contrainte d'unicité par édition :
+ * l'index unique porte aussi l'appareil). Chacun relit les lignes vivantes du lien
+ * après la sienne : la plus ancienne garde la place (`reconnu_le`, puis `id` pour
+ * départager une égalité), le même ordre pour les deux, donc un seul gagnant.
+ */
+export function gagnantDeLaPlace<L extends { id: string; reconnu_le: string }>(lignes: readonly L[]): L | null {
+  return [...lignes].sort((a, b) => (a.reconnu_le < b.reconnu_le ? -1 : a.reconnu_le > b.reconnu_le ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0] ?? null;
 }
 
 /** L'empreinte d'un identifiant, d'un lien ou d'un code : jamais la valeur en base. */

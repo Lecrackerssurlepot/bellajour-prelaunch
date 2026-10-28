@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { creerPlafond } from "@/lib/compte/garde";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { messageFinCollecte } from "@/lib/collectif/espace";
 import { etatEffectif } from "@/lib/collectif/etats";
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
+  const acces = await accesPourEcrire(await chargerAcces(String(corps.token ?? ""), "espace"), "terminer_collecte");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "terminer_collecte")) return refusDroit();

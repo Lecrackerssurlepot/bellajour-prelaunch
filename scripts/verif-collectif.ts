@@ -2665,8 +2665,9 @@ titre("— T-154 : le lien du responsable ne s'ouvre que sur un appareil reconnu
     A.idAppareilValide("A".repeat(43)) && !A.idAppareilValide("court") && !A.idAppareilValide("A".repeat(43) + "!") && A.adresseMasquee("camille@exemple.fr") === "c***@exemple.fr");
   const acces = lire("src/lib/collectif/acces.ts");
   ok("la porte : sur un appareil inconnu, le responsable LIT (droits de l'equipe) au lieu d'etre bloque ; l'atelier connecte passe ; sans la migration on laisse passer ; une seule route sans le controle",
-    /role === "responsable" && !options\.sansAppareil && controleAppareilActif\(process\.env\)/.test(acces) && /return \{ statut: "ok", edition: data, role: "equipe", appareilInconnu: true \};/.test(acces)
-      && /if \(await quiEstConnecte\(\)\) return true;/.test(acces) && /return reconnu \?\? true;/.test(acces) && !/appareil_inconnu/.test(acces)
+    /role === "responsable" && !options\.sansAppareil && controleAppareilActif\(process\.env\)/.test(acces) && /if \(verdict === "lecture"\) return \{ statut: "ok", edition: data, role: "equipe", appareilInconnu: true \};/.test(acces)
+      /* 28/10 : la décision est `verdictAppareil` (pur) ; l'atelier et la table absente y passent (prouvé plus bas). */
+      && /if \(await quiEstConnecte\(\)\) return verdictAppareil\(\{ controleActif: true, atelier: true, lu: null \}\);/.test(acces) && /const lu = await lireAppareil\(supabase, edition, await idDuCookie\(\)\);/.test(acces) && !/appareil_inconnu/.test(acces)
       && fichiers("src/app/api", "route.ts").filter((f) => /sansAppareil: true/.test(lire(f))).length === 1);
   const appareils = lire("src/lib/collectif/appareils.ts");
   ok("les codes : empreinte seulement, essais comptes, expiration, frein par heure ; le code d'essai est IGNORE sur Vercel",
@@ -5703,10 +5704,14 @@ async function verifPersonnesCorbeille() {
   ok("l'album : `filtreAlbum` (lien, arrivee, corbeille, accord du 20/10), le PRENOM seul, le badge et la suppression d'apres ce telephone ; rien n'est ecrit",
     /filtreAlbum\(provenanceId\)/.test(rAlbum) && /prenomPourAlbum\(/.test(rAlbum) && /peutSupprimerSaPhoto\(/.test(rAlbum) && !/\.(insert|update|upsert|delete)\(/.test(rAlbum) && !/deposant: p\.deposant,\s*$/m.test(rAlbum) && !/email/.test(rAlbum));
   ok("la corbeille du responsable : `gerer_corbeille` AVANT tout, lister compris (le lien d'equipe ne la voit pas) ; supprimer « par le responsable »",
-    rCorbeille.indexOf('peut(acces.role, "gerer_corbeille")') > 0 && rCorbeille.indexOf('peut(acces.role, "gerer_corbeille")') < rCorbeille.indexOf('corps.action === "lister"')
+    /* 28/10 : la porte lue s'appelle `lu` ; supprimer et restaurer relisent le droit après `accesPourEcrire`. */
+    rCorbeille.indexOf('peut(lu.role, "gerer_corbeille")') > 0 && rCorbeille.indexOf('peut(lu.role, "gerer_corbeille")') < rCorbeille.indexOf('corps.action === "lister"')
+      && rCorbeille.indexOf('peut(acces.role, "gerer_corbeille")') > rCorbeille.indexOf('accesPourEcrire(lu, "gerer_corbeille")') && rCorbeille.indexOf('peut(acces.role, "gerer_corbeille")') < rCorbeille.indexOf("mettreALaCorbeille(")
       && /mettreALaCorbeille\(supabase, edition\.id, ids, "responsable", null\)/.test(rCorbeille) && !/effacer/.test(rCorbeille.replace(/\/\*[\s\S]*?\*\//g, "")));
   ok("les personnes : lister pour qui voit l'espace (adresse masquee au responsable, aucune a l'equipe) ; renommer et fusionner apres `gerer_personnes`",
-    /chargerPersonnes\(supabase, edition\.id, acces\.role === "responsable" \? "masque" : "aucun"\)/.test(rPersonnes) && rPersonnes.indexOf('peut(acces.role, "gerer_personnes")') < rPersonnes.indexOf('corps.action === "renommer"')
+    /chargerPersonnes\(supabase, edition\.id, lu\.role === "responsable" \? "masque" : "aucun"\)/.test(rPersonnes)
+      && rPersonnes.indexOf('accesPourEcrire(lu, "gerer_personnes")') > 0 && rPersonnes.indexOf('accesPourEcrire(lu, "gerer_personnes")') < rPersonnes.indexOf('peut(acces.role, "gerer_personnes")')
+      && rPersonnes.indexOf('peut(acces.role, "gerer_personnes")') < rPersonnes.indexOf('corps.action === "renommer"')
       && !/defaireFusion/.test(rPersonnes));
   ok("l'atelier : l'adresse entiere, defaire une fusion, effacer pour de bon EN DEUX TEMPS (`verifier`), le journal dit qui",
     /chargerPersonnes\(supabase, id, "entier"\)/.test(rAdmPersonnes) && /defaireFusion\(supabase, id, corps\.evenement, par\)/.test(rAdmPersonnes)
@@ -9429,7 +9434,144 @@ async function verifMemePersonne28() {
       && !/\.(insert|update|upsert|delete)\(/.test(collecte.slice(collecte.indexOf("export async function lirePhotosDeLaPersonne"))));
 }
 
-void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(() => {
+/* ── T-154, 28/10 : le premier appareil du lien du responsable, sans code (décision de Mathias) ──
+   La place se prend à la PREMIÈRE ÉCRITURE d'un route handler (`accesPourEcrire`), jamais à
+   l'affichage ni sur une lecture (les robots des messageries ouvrent les liens des mails). */
+async function verifPremierAppareil28() {
+  titre("— T-154, 28/10 : le premier appareil prend la place à sa première écriture, jamais à l'affichage —");
+  const A = Appareil;
+  const B = Appareils;
+  const D = await import("@/lib/collectif/droits");
+  const R = "src/app/api/collectif/";
+
+  /* Chaque route publique est CLASSÉE : une route nouvelle fait échouer ce contrôle tant qu'on n'a pas dit ce qu'elle est. */
+  const ECRIT = ["bat", "brief", "collecte/terminer", "contenus", "depot/complete", "depot/presign", "dossiers", "messages/envoyer", "modification", "personnes", "photos/corbeille", "photos/marquer", "plafond", "proposition", "provenances", "rendez-vous"].map((r) => `${R}${r}/route.ts`);
+  const LIT = ["photos", "photos/etat", "messages", "messages/lus", "rendez-vous/creneaux", "depot/album"].map((r) => `${R}${r}/route.ts`);
+  const PARTICIPANT = ["depot/participant", "depot/supprimer"].map((r) => `${R}${r}/route.ts`);
+  const HORS = ["appareil", "retrouver"].map((r) => `${R}${r}/route.ts`);
+  const toutes = fichiers("src/app/api/collectif", "route.ts").map((f) => f.replace(/\\/g, "/").replace(`${RACINE}/`, ""));
+  const classees = [...ECRIT, ...LIT, ...PARTICIPANT, ...HORS];
+  const nonClassees = toutes.filter((f) => !classees.some((c) => f.endsWith(c)));
+  ok(`chaque route publique est classée écriture / lecture / participant / hors porte${nonClassees.length ? " : " + nonClassees.join(", ") : ""}`,
+    nonClassees.length === 0 && classees.length === toutes.length && classees.every((c) => existsSync(resolve(RACINE, c))));
+
+  const ACTIONS_E = D.ACTIONS_ECRITURE as readonly string[];
+  const peutSur = (src: string, qui: string) => [...src.matchAll(new RegExp(`peut\\(${qui}\\.role, "([a-z_]+)"\\)`, "g"))].map((m) => m[1]);
+  const fautifsEcrit = ECRIT.filter((f) => {
+    const s = lire(f);
+    const i = s.indexOf("await accesPourEcrire(");
+    if (i < 0 || !/const acces = await accesPourEcrire\(/.test(s) || /const acces = await chargerAcces(Depot)?\(/.test(s)) return true;
+    /* Un droit d'écriture lu sur la porte BRUTE (`lu`, `porte`) n'est permis que pour garder une lecture, et le même droit est relu après `accesPourEcrire`. */
+    const bruts = [...peutSur(s, "lu"), ...peutSur(s, "porte")].filter((a) => ACTIONS_E.includes(a));
+    if (bruts.some((a) => s.indexOf(`peut(acces.role, "${a}")`) < i)) return true;
+    /* Le droit vérifié par la route est bien relu sur l'accès rendu par le chemin d'écriture. */
+    return !/peut\(acces\.role, /.test(s) || s.indexOf("peut(acces.role, ") < i;
+  });
+  ok(`chaque route qui écrit pour le responsable passe par accesPourEcrire AVANT peut (jamais la porte brute)${fautifsEcrit.length ? " : " + fautifsEcrit.join(", ") : ""}`, fautifsEcrit.length === 0);
+  const lecturesPreneuses = [...LIT, ...PARTICIPANT, ...HORS].filter((f) => /accesPourEcrire|prendrePremierePlace/.test(lire(f)));
+  ok(`aucune route de lecture (photos, photos/etat, messages, messages/lus, créneaux, album), du participant ni hors porte ne prend la place${lecturesPreneuses.length ? " : " + lecturesPreneuses.join(", ") : ""}`, lecturesPreneuses.length === 0);
+  const sansCommentaire = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  const ailleurs = [...fichiersParSuffixe("src", /\.tsx?$/)].map((f) => f.replace(/\\/g, "/")).filter((f) => !f.includes("/api/collectif/") && !f.endsWith("src/lib/collectif/acces.ts") && !f.endsWith("src/lib/collectif/appareils.ts"))
+    .filter((f) => /\baccesPourEcrire\(|\bprendrePremierePlace\(/.test(sansCommentaire(readFileSync(resolve(RACINE, f), "utf8"))));
+  ok(`la prise de place ne vit QUE dans les route handlers (aucune page, aucun layout, aucun composant : un Server Component ne pose pas de cookie)${ailleurs.length ? " : " + ailleurs.join(", ") : ""}`, ailleurs.length === 0);
+  const deuxTemps = ["photos/corbeille", "personnes"].map((r) => lire(`${R}${r}/route.ts`));
+  ok("corbeille et personnes : « lister » répond AVANT accesPourEcrire (une lecture ne prend jamais la place)",
+    deuxTemps.every((s) => s.indexOf('corps.action === "lister"') > 0 && s.indexOf('corps.action === "lister"') < s.indexOf("accesPourEcrire(")));
+
+  const acces = lire("src/lib/collectif/acces.ts");
+  const corpsCharger = acces.slice(acces.indexOf("export async function chargerAcces("), acces.indexOf("async function verdictPorte("));
+  const corpsLire = (() => { const s = lire("src/lib/collectif/appareils.ts"); return s.slice(s.indexOf("export async function lireAppareil("), s.indexOf("export type IssuePlace")); })();
+  ok("place libre = page COMPLÈTE sans écriture : la porte rend le responsable avec `placeLibre`, ne lit qu'une requête et n'écrit rien (ni ligne, ni cookie)",
+    /if \(verdict === "place_libre"\) return \{ statut: "ok", edition: data, role, placeLibre: true \};/.test(corpsCharger)
+      && !/prendrePremierePlace|cookies\(\)\)\.set|\.insert\(|\.update\(|\.upsert\(/.test(corpsCharger + acces.slice(acces.indexOf("async function verdictPorte("), acces.indexOf("export async function accesPourEcrire(")))
+      && !/\.insert\(|\.update\(|\.upsert\(|\.delete\(/.test(corpsLire)
+      && A.verdictAppareil({ controleActif: true, atelier: false, lu: { reconnu: false, libre: true } }) === "place_libre");
+  ok("place libre : `voitLienEquipe`, le nom, « Bonjour » suivent le rôle responsable (aucun « en lecture ici », aucune pastille : `appareilInconnu` absent)",
+    !/placeLibre: true, appareilInconnu/.test(acces) && Espace.voitLienEquipe("responsable", false));
+  ok("contrôle coupé (COLLECTIF_CODE_APPAREIL absent) : comportement d'avant, jamais de place libre, jamais de prise",
+    !A.controleAppareilActif({ COLLECTIF_MAILS: "1" })
+      && A.verdictAppareil({ controleActif: false, atelier: false, lu: { reconnu: false, libre: true } }) === "responsable"
+      && A.verdictAppareil({ controleActif: false, atelier: false, lu: { reconnu: false, libre: false } }) === "responsable"
+      && corpsCharger.indexOf("controleAppareilActif(process.env)") < corpsCharger.indexOf("placeLibre: true")
+      && /if \(acces\.statut !== "ok" \|\| !acces\.placeLibre\) return acces;/.test(acces));
+  ok("l'atelier connecté passe et ne prend JAMAIS la place (verdict « responsable », jamais « place_libre »)",
+    A.verdictAppareil({ controleActif: true, atelier: true, lu: { reconnu: false, libre: true } }) === "responsable"
+      && A.verdictAppareil({ controleActif: true, atelier: true, lu: { reconnu: false, libre: false } }) === "responsable"
+      && acces.indexOf("if (await quiEstConnecte())") < acces.indexOf("lireAppareil("));
+  ok("deuxième appareil = lecture ; table absente = on laisse passer (règle d'avant) ; appareil reconnu = responsable",
+    A.verdictAppareil({ controleActif: true, atelier: false, lu: { reconnu: false, libre: false } }) === "lecture"
+      && A.verdictAppareil({ controleActif: true, atelier: false, lu: null }) === "responsable"
+      && A.verdictAppareil({ controleActif: true, atelier: false, lu: { reconnu: true, libre: false } }) === "responsable");
+  ok("la place ne se prend QUE pour une écriture que le responsable a le droit de faire (jamais voir_espace, voir_album, un droit du participant ou de l'atelier)",
+    A.prendLaPlace("place_libre", "regler_plafond_participant") && A.prendLaPlace("place_libre", "ecrire_message") && A.prendLaPlace("place_libre", "deposer_photos") && A.prendLaPlace("place_libre", "valider_bat")
+      && !A.prendLaPlace("place_libre", "voir_espace") && !A.prendLaPlace("place_libre", "voir_album") && !A.prendLaPlace("place_libre", "se_presenter") && !A.prendLaPlace("place_libre", "regler_edition")
+      && !A.prendLaPlace("responsable", "ecrire_message") && !A.prendLaPlace("lecture", "ecrire_message")
+      && D.ACTIONS_ECRITURE.filter((a) => D.peut("responsable", a)).every((a) => A.prendLaPlace("place_libre", a)));
+  ok("première écriture : le cookie httpOnly + secure + sameSite lax, un an, posé SEULEMENT si la place est prise et qu'il n'y en avait pas ; prise ratée = « appareil inconnu » (403 lecture_seule par peut)",
+    /if \(issue === "pris"\) \{\s*if \(!existant\) \{\s*\(await cookies\(\)\)\.set\(COOKIE_APPAREIL, idAppareil, \{ httpOnly: true, secure: true, sameSite: "lax", path: "\/", maxAge: DUREE_APPAREIL_S \}\);/.test(acces)
+      && /if \(issue === "echec"\)[^\n]*\n\s*return \{ statut: "ok", edition: acces\.edition, role: "equipe", appareilInconnu: true \};/.test(acces)
+      && (acces.match(/cookies\(\)\)\.set\(/g) ?? []).length === 1);
+  ok("deux premiers en même temps : la plus ancienne (reconnu_le, puis id) garde la place, le même ordre pour tous",
+    A.gagnantDeLaPlace([{ id: "b", reconnu_le: "2026-10-28T10:00:01Z" }, { id: "a", reconnu_le: "2026-10-28T10:00:02Z" }])?.id === "b"
+      && A.gagnantDeLaPlace([{ id: "z", reconnu_le: "2026-10-28T10:00:00Z" }, { id: "c", reconnu_le: "2026-10-28T10:00:00Z" }])?.id === "c"
+      && A.gagnantDeLaPlace([]) === null);
+  ok("le journal raconte la reconnaissance, avec son motif, sans token",
+    phraseEvenement("appareil_reconnu", { motif: "premier_appareil" }).includes("premier appareil") && phraseEvenement("appareil_reconnu", { motif: "code" }).includes("code")
+      && /"appareil_reconnu", \{ motif: "premier_appareil" satisfies MotifReconnaissance \}/.test(lire("src/lib/collectif/appareils.ts")) && /"appareil_reconnu", \{ motif: "code" satisfies MotifReconnaissance \}/.test(lire("src/lib/collectif/appareils.ts")));
+
+  /* La fausse base : la vraie mécanique de `lireAppareil` et `prendrePremierePlace`. */
+  type Client = import("@supabase/supabase-js").SupabaseClient;
+  const ED = { id: "ed-28", token_responsable: "R".repeat(32), responsable_email: "c@exemple.fr", responsable_nom: "Camille", evenement: "E", registre: "entreprise_vous" as const };
+  const idA = "A".repeat(43);
+  const idB = "B".repeat(43);
+  const m = baseEnMemoire({ collectif_appareils: [] });
+  const c = m.client as unknown as Client;
+  const libre = await B.lireAppareil(c, ED, null);
+  ok("fausse base, place libre : lue libre, aucune écriture (rien qu'une lecture)", libre?.libre === true && libre.reconnu === false && m.trace.every((t) => t.startsWith("select:")));
+  const prise = await B.prendrePremierePlace(c, ED, idA, 0);
+  const vivantes = () => (m.tables.collectif_appareils ?? []).filter((l) => l.oublie_le === null || l.oublie_le === undefined);
+  ok("fausse base, première écriture : l'appareil est reconnu pour le lien ACTUEL (empreintes, jamais en clair), une ligne de journal « premier_appareil »",
+    prise === "pris" && vivantes().length === 1 && vivantes()[0].appareil_empreinte === A.empreinte(idA) && vivantes()[0].lien_empreinte === A.empreinte(ED.token_responsable)
+      && !JSON.stringify(m.tables).includes(idA) && !JSON.stringify(m.tables).includes(ED.token_responsable)
+      && (m.tables.collectif_evenements ?? []).some((e) => e.type === "appareil_reconnu" && (e.payload as { motif?: string }).motif === "premier_appareil"));
+  const relu = await B.lireAppareil(c, ED, idA);
+  const autre = await B.lireAppareil(c, ED, idB);
+  const second = await B.prendrePremierePlace(c, ED, idB, 0);
+  ok("fausse base, deuxième appareil : lecture seule (verdict « lecture »), et sa tentative d'écriture ne prend rien ni n'écrit de ligne",
+    relu?.reconnu === true && autre?.reconnu === false && autre.libre === false
+      && A.verdictAppareil({ controleActif: true, atelier: false, lu: autre }) === "lecture" && second === "deja_pris" && (m.tables.collectif_appareils ?? []).length === 1);
+  const regenere = { ...ED, token_responsable: "S".repeat(32) };
+  const apresRegen = await B.lireAppareil(c, regenere, idA);
+  const priseRegen = await B.prendrePremierePlace(c, regenere, idB, 0);
+  ok("fausse base, lien régénéré : la place est libre de nouveau (même l'ancien appareil redevient inconnu), le premier qui écrit la prend",
+    apresRegen?.libre === true && apresRegen.reconnu === false && priseRegen === "pris" && (await B.lireAppareil(c, regenere, idB))?.reconnu === true && (await B.lireAppareil(c, regenere, idA))?.reconnu === false);
+
+  /* La course : A écrit sa ligne PENDANT que B passe de « libre » à son insertion. */
+  let glisse = false;
+  const course = baseEnMemoire({ collectif_appareils: [] }, (q) => {
+    if (!glisse && q.table === "collectif_appareils" && q.op === "upsert") {
+      glisse = true;
+      course.tables.collectif_appareils.push({ id: "00000000-0000-4000-8000-aaaaaaaaaaaa", edition_id: ED.id, appareil_empreinte: A.empreinte(idA), lien_empreinte: A.empreinte(ED.token_responsable), reconnu_le: "2026-10-28T00:00:00.000Z", vu_le: "2026-10-28T00:00:00.000Z", oublie_le: null });
+    }
+    return null;
+  });
+  const issueCourse = await B.prendrePremierePlace(course.client as unknown as Client, ED, idB, 0);
+  const lignesCourse = course.tables.collectif_appareils;
+  ok("fausse base, deux premiers en même temps : le plus ancien garde la place, la ligne de l'autre est OUBLIÉE (`oublie_le`) et son écriture refusée",
+    glisse && issueCourse === "deja_pris" && lignesCourse.length === 2
+      && lignesCourse.filter((l) => !l.oublie_le).map((l) => l.appareil_empreinte).join() === A.empreinte(idA)
+      && Boolean(lignesCourse.find((l) => l.appareil_empreinte === A.empreinte(idB))?.oublie_le)
+      && !(course.tables.collectif_evenements ?? []).some((e) => e.type === "appareil_reconnu"));
+  const sansTable = baseEnMemoire({}, (q) => (q.table === "collectif_appareils" ? { code: "42P01", message: "relation absente" } : null));
+  ok("fausse base, migration absente : la porte laisse passer (null), la prise le dit (migration_absente) et l'écriture passe comme avant",
+    (await B.lireAppareil(sansTable.client as unknown as Client, ED, idA)) === null && (await B.prendrePremierePlace(sansTable.client as unknown as Client, ED, idA, 0)) === "migration_absente"
+      && /if \(issue === "migration_absente"\) return reste;/.test(acces));
+  const panne = baseEnMemoire({}, (q) => (q.table === "collectif_appareils" ? { code: "57014", message: "délai" } : null));
+  const luPanne = await B.lireAppareil(panne.client as unknown as Client, ED, idA);
+  ok("fausse base, panne de lecture : jamais « place libre » (lue prise et inconnue : lecture seule)", luPanne?.libre === false && luPanne.reconnu === false);
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
