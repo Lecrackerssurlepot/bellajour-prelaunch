@@ -305,10 +305,12 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
   const couverturesPlus: Record<string, CouvertureEnPlus> = {};
   if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
-    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? avecVous(arbre) : dossier === "vous" ? arbre.vous : dossier === "liens" ? avecVous(arbre) : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
     await Promise.all(
       aCouvrir.map(async (n) => {
-        const p = [...toutes].reverse().find((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
+        const recentes = [...toutes].reverse().filter((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
+        /* La plus récente QUI A une moyenne parmi les candidates (28/10) : sinon la tuile agrandirait une vignette. */
+        const p = recentes.slice(0, CANDIDATES_COUVERTURE).find((l) => l.moyenne_key) ?? recentes[0];
         if (!p?.vignette_key) return;
         try {
           couvertures[n.cle] = await c.signer(p.vignette_key);
@@ -405,15 +407,26 @@ export type CouvertureEnPlus = { m: string | null; paysage: { v: string; m: stri
 export const estPaysage = (c: { largeur: number | null; hauteur: number | null }): boolean => !!c.largeur && !!c.hauteur && c.largeur / c.hauteur >= RAPPORT_PAYSAGE;
 
 /**
- * Le choix, pur : `par defaut` est la couverture d'avant (la vignette de la photo la plus récente) ; on lui joint sa moyenne si elle fait
- * partie des candidates, et, si elle n'est pas déjà un paysage, la plus récente photo PAYSAGE des candidates (une tuile large est un bandeau :
- * un portrait y est coupé aux deux tiers). Dimensions inconnues : aucune variante, le choix d'avant tient.
+ * Le choix, pur : `vignetteParDefaut` est la couverture d'avant (la vignette de la photo la plus récente). Une tuile large la montre à plus de 700 px :
+ * seule une photo qui a sa MOYENNE (1 600 px) y est nette (28/10, recette Audencia : une couverture sans moyenne s'agrandissait ×3). Donc :
+ * - la couverture est la photo la plus récente DU LIEN qui a une moyenne (la photo par défaut si elle en a une, sinon la première des candidates qui en a) ;
+ *   aucune n'en a : la photo par défaut, vignette seule (rien de mieux à montrer) ;
+ * - une tuile large est un bandeau (un portrait y est coupé aux deux tiers) : on joint la plus récente photo PAYSAGE qui a une moyenne ; si aucune candidate
+ *   n'a de moyenne, la plus récente paysage telle quelle (comme avant). Dimensions inconnues : aucune variante.
  */
 export function couvertureEnPlus(vignetteParDefaut: string, candidates: readonly CandidateCouverture[]): { defaut: CandidateCouverture | null; paysage: CandidateCouverture | null } {
-  const defaut = candidates.find((x) => x.vignette_key === vignetteParDefaut) ?? null;
+  const nette = (c: CandidateCouverture) => Boolean(c.moyenne_key);
+  const parDefaut = candidates.find((x) => x.vignette_key === vignetteParDefaut) ?? null;
+  const defaut = parDefaut && nette(parDefaut) ? parDefaut : (candidates.find(nette) ?? parDefaut);
+  if (defaut && estPaysage(defaut) && nette(defaut)) return { defaut, paysage: null };
+  const paysageNet = candidates.find((x) => estPaysage(x) && nette(x));
+  if (paysageNet) return { defaut, paysage: paysageNet };
   if (defaut && estPaysage(defaut)) return { defaut, paysage: null };
-  return { defaut, paysage: candidates.find((x) => estPaysage(x)) ?? null };
+  return { defaut, paysage: candidates.some(nette) ? null : (candidates.find((x) => estPaysage(x)) ?? null) };
 }
+
+/** Les liens, et « Mes photos » (la tuile en tête de « Par lien ») quand le responsable a déposé : sa couverture se lit comme celle d'un lien, moyenne et bandeau compris (28/10). */
+const avecVous = (arbre: ReturnType<typeof arbreDesPhotos>): { cle: string }[] => [...arbre.liens, ...(arbre.vous.length ? [{ cle: "vous" }] : [])];
 
 /** Les paquets d'ids partent six par six (une latence par six paquets, sans inonder l'API). */
 const PAQUETS_ENSEMBLE = 6;
@@ -508,7 +521,7 @@ export async function grilleDepuisResume(
   const couverturesPlus: Record<string, CouvertureEnPlus> = {};
   if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
-    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? avecVous(arbre) : dossier === "vous" ? arbre.vous : dossier === "liens" ? avecVous(arbre) : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
     await Promise.all(
       aCouvrir.map(async (n) => {
         const cle = couvertureDe(groupes, n.cle, responsable);
@@ -519,6 +532,8 @@ export async function grilleDepuisResume(
           const candidates = plan && plan.genre === "filtre" ? await lecture.couvertures?.(plan.conditions) : null;
           if (candidates?.length) {
             const choix = couvertureEnPlus(cle, candidates);
+            /* La couverture peut changer de photo (la plus récente qui a une moyenne) : la vignette suit. */
+            if (choix.defaut && choix.defaut.vignette_key !== cle) couvertures[n.cle] = await c.signer(choix.defaut.vignette_key);
             const signe = (k: string | null | undefined) => (k ? c.signer(k).catch(() => null) : Promise.resolve(null));
             const [m, pv, pm] = await Promise.all([signe(choix.defaut?.moyenne_key), signe(choix.paysage?.vignette_key), signe(choix.paysage?.moyenne_key)]);
             if (m || pv) couverturesPlus[n.cle] = { m, paysage: pv ? { v: pv, m: pm } : null };

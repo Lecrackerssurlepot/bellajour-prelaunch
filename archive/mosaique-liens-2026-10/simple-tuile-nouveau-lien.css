@@ -1,0 +1,40 @@
+/* Archivé le 28/10/2026 : l'ancienne tuile « Nouveau lien » (dernière de la mosaïque). Remplacée par la pastille `.ec-mo-nouveau`. */
+
+/* ═════════ « Nouveau lien » : la dernière tuile de la mosaïque, en pointillé ═════════ */
+.ec-espace .ec-tu--nouveau {
+  background: transparent;
+  border: 1.5px dashed var(--ec-line-fort);
+  box-shadow: none;
+}
+.ec-espace .ec-tu--nouveau::after {
+  display: none;
+}
+.ec-espace .ec-tu-nouveau {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: var(--ec-accent-texte);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ec-espace .ec-tu-nouveau i {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ec-accent-soft);
+}
+.ec-espace .ec-tu-nouveau:focus-visible {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+}
+

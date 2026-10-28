@@ -30,9 +30,11 @@ export type Filtres = {
   personnes: string[];
   /** « Supprimées récemment » (la corbeille de 30 jours) : un endroit à part, le responsable seul. */
   corbeille: boolean;
+  /** « Favoris » (28/10) : seulement les photos aimées, la clé de dossier `selection` (les marques `preselection` de « Ma sélection », que l'atelier lit aussi). Un choix de « Toutes » : un lien ou une personne le remplace. */
+  favoris: boolean;
 };
 
-export const FILTRES_VIDES: Filtres = { mode: "tout", lien: null, dossier: null, personnes: [], corbeille: false };
+export const FILTRES_VIDES: Filtres = { mode: "tout", lien: null, dossier: null, personnes: [], corbeille: false, favoris: false };
 
 /** Ce que la route reçoit : une clé de dossier et une vue (toujours `jour` : la grille est rangée par jour de prise de vue). */
 export function requeteDe(f: Filtres): { dossier: string; vue: VueRoute } {
@@ -40,7 +42,7 @@ export function requeteDe(f: Filtres): { dossier: string; vue: VueRoute } {
   const responsable = f.personnes.includes(QUI_RESPONSABLE);
   /* Le responsable seul, ou des participants : la clé la plus précise gagne (`cleDePersonnes`, dossiers.ts). */
   const personnes = responsable && noms.length === 0 ? QUI_RESPONSABLE : cleDePersonnes(noms);
-  const dossier = personnes ?? f.dossier ?? f.lien ?? (f.mode === "liens" ? "liens" : "tout");
+  const dossier = personnes ?? f.dossier ?? f.lien ?? (f.favoris ? "selection" : f.mode === "liens" ? "liens" : "tout");
   return { dossier, vue: "jour" };
 }
 
@@ -65,6 +67,7 @@ export const sortirDeLaCorbeille = (f: Filtres): Filtres => (f.corbeille ? { ...
 export function filtresDepuis(cle: string, modeTout = false): Filtres {
   const f = { ...FILTRES_VIDES };
   if (cle === "corbeille") return { ...f, corbeille: true };
+  if (cle === "selection") return { ...f, favoris: true };
   if (cle === "liens") return { ...f, mode: "liens" };
   if (cle === "vous" || cle === "participants" || cle === "atelier" || cle.startsWith("lien:")) return { ...f, mode: modeTout ? "tout" : "liens", lien: cle };
   if (cle.startsWith("resp:")) return { ...f, mode: modeTout ? "tout" : "liens", lien: "vous", dossier: cle };
@@ -88,7 +91,7 @@ export function adresseDe(f: Filtres): string {
 
 /** Choisir un lien : le dossier et les personnes d'avant tombent (sauf en revenant à « Par lien », où une personne choisie reste). */
 export function avecLien(f: Filtres, lien: string | null): Filtres {
-  return { ...f, lien, dossier: null, personnes: lien === null ? f.personnes : [], corbeille: false };
+  return { ...f, lien, dossier: null, personnes: lien === null ? f.personnes : [], corbeille: false, favoris: false };
 }
 
 /** Les personnes de la feuille : toutes celles de l'édition, sauf le responsable (« Mes photos » est un lien, pas une personne). */
@@ -99,9 +102,10 @@ export function personnesDeLaFeuille(arbre: Arbre | null): Noeud[] {
 /** Choisir (ou défaire) une personne dans la feuille : plusieurs possibles, le responsable seul n'y reste pas, au plus `PERSONNES_MAX`. */
 export function avecPersonne(f: Filtres, cle: string): Filtres {
   const sansResp = f.personnes.filter((c) => c !== QUI_RESPONSABLE);
+  /* Une personne choisie quitte « Favoris » (la clé d'une personne gagne, l'écran ne doit pas mentir). */
   if (sansResp.includes(cle)) return { ...f, personnes: sansResp.filter((c) => c !== cle) };
   if (sansResp.length >= PERSONNES_MAX) return { ...f, personnes: sansResp };
-  return { ...f, personnes: [...sansResp, cle] };
+  return { ...f, personnes: [...sansResp, cle], favoris: false };
 }
 
 /* ─────────────────────────── les listes ─────────────────────────── */

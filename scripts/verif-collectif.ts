@@ -2174,8 +2174,8 @@ titre("— retours de Mathias du 14/10 —");
   const collecte = lirePagePhotos();
   const cssPhotos = lire("src/app/edition/[token]/photos/photos.css");
   const vivantGrille = lirePagePhotosCode();
-  ok("Sélectionner : un rond tracé sur la vignette (jamais une case du navigateur, jamais un ✓ en texte), la photo prise a un bord tracé EN DEDANS (la tuile rogne sa peinture) ; le petit cœur n'est posé que sur une photo gardée de « Choisir d'abord mes préférées » ; plus d'étoile",
-    /\.ec-espace \.ec-ph-t--cochee::after \{[^}]*box-shadow: inset 0 0 0 3px var\(--ec-accent\)/.test(cssPhotos) && /ec-ph-t-case/.test(collecte) && /g\.coeurs && cochee/.test(collecte) && !/type="checkbox"/.test(vivantGrille) && !/[✓✔]/.test(vivantGrille)
+  ok("Sélectionner : un rond tracé sur la vignette (jamais une case du navigateur, jamais un ✓ en texte), la photo prise a un bord tracé EN DEDANS (la tuile rogne sa peinture) ; le petit cœur n'est posé que sur une photo gardée de « Choisir d'abord mes préférées » ou en favori (28/10) ; plus d'étoile",
+    /\.ec-espace \.ec-ph-t--cochee::after \{[^}]*box-shadow: inset 0 0 0 3px var\(--ec-accent\)/.test(cssPhotos) && /ec-ph-t-case/.test(collecte) && /\(g\.coeurs \? cochee : ph\.preselection\) \? \(/.test(lire("src/app/edition/[token]/photos/Grille.tsx")) && !/type="checkbox"/.test(vivantGrille) && !/[✓✔]/.test(vivantGrille)
       && !/ec-ph-t-etoile/.test(vivantGrille + cssPhotos));
   ok("Sélectionner : « Tout sélectionner (N) » (ordinateur, seulement APRÈS une première photo) prend la vue ; la barre n'a que le cœur et Supprimer ; toute la vue sélectionnée = UNE écriture (`toutes: true, preselection, dossier`)",
     /Tout sélectionner \(\{nombre\(totalVue\)\}\)/.test(collecte) && /\{totalVue && nbCoches < totalVue \? \(/.test(collecte) && /void agir\(toutesEnCoeur\(\) \? "retirer" : "poser"\)/.test(collecte) && /void agir\("supprimer"\)/.test(collecte)
@@ -5221,7 +5221,8 @@ async function sondeLotA4() {
         const apres = (await G.grilleDepuisResume(resumeA4, doublonsA4, demande, contexteA4(partage), lectureA4)) as Awaited<ReturnType<typeof G.grilleDepuisLignes>>;
         if (JSON.stringify(avant) !== JSON.stringify(apres)) pareilles = false;
         if (apres.photos.length !== 0 || apres.suivante !== null) sansPage = false;
-        const noeuds = de === "liens" ? apres.arbre.liens : apres.arbre.personnes;
+        /* 28/10 : « Mes photos » (la tuile en tête de « Par lien ») se lit comme un lien : sa couverture vient aussi de la route. */
+        const noeuds = de === "liens" ? [...apres.arbre.liens, ...(apres.arbre.vous.length ? [{ cle: "vous" }] : [])] : apres.arbre.personnes;
         const attendu = Object.fromEntries(
           noeuds.flatMap((n) => {
             const derniere = [...toutesTriees].reverse().find((x) => x.vignette_key && Dos.dansLeDossier(x, n.cle, responsableA4));
@@ -5834,9 +5835,9 @@ titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, coche
     FiltresAvant.requeteDe({ ...VA, lien: L, selection: true }).dossier === "selection" && FiltresAvant.requeteDe({ ...VA, lien: L, doublons: true }).vue === "doublons" && FiltresAvant.requeteDe({ ...VA, jour: "2026-11-07" }).vue === "jour"
       && !("selection" in F.FILTRES_VIDES) && !("doublons" in F.FILTRES_VIDES) && !("jour" in F.FILTRES_VIDES) && !("ordre" in F.FILTRES_VIDES) && !("signalees" in F.FILTRES_VIDES));
   const cles = ["liens", "vous", "participants", "atelier", L, "resp:organisateur:La soirée", "qui:léa martin", "qui:@responsable"];
-  ok("`?dossier=` du tableau de bord : chaque clé se relit en filtres et redonne la MÊME clé à la route ; une clé d'avant (Ma sélection, la page d'une personne d'un lien) retombe sur « Toutes » ou sur le LIEN, jamais sur une page qui n'existe plus",
+  ok("`?dossier=` du tableau de bord : chaque clé se relit en filtres et redonne la MÊME clé à la route ; `selection` rouvre « Favoris » (28/10) ; une clé d'avant (la page d'une personne d'un lien) retombe sur « Toutes » ou sur le LIEN, jamais sur une page qui n'existe plus",
     cles.every((c) => F.requeteDe(F.filtresDepuis(c)).dossier === c) && F.requeteDe(F.filtresDepuis("tout")).dossier === "tout" && F.requeteDe(F.filtresDepuis("n'importe quoi")).dossier === "tout"
-      && F.requeteDe(F.filtresDepuis("selection")).dossier === "tout" && F.requeteDe(F.filtresDepuis("personnes")).dossier === "tout"
+      && F.requeteDe(F.filtresDepuis("selection")).dossier === "selection" && F.requeteDe(F.filtresDepuis("personnes")).dossier === "tout"
       && F.requeteDe(F.filtresDepuis("pers:0b1f3c2e-4a5b-4c6d-8e9f-001122334455:léa martin")).dossier === L && F.requeteDe(F.filtresDepuis("pers:general:camille roux")).dossier === "participants");
   ok("l'adresse garde l'endroit : un lien coché dans « Toutes » se rouvre dans « Toutes » (`mode=tout`) ; « Par lien » se rouvre en albums ; une personne s'écrit, plusieurs ne s'écrivent pas (une adresse trop longue)",
     F.adresseDe({ ...V, lien: L }) === `?dossier=${encodeURIComponent(L)}&mode=tout` && F.filtresDepuis(L, true).mode === "tout" && F.filtresDepuis(L).mode === "liens"
@@ -8589,8 +8590,8 @@ function verifBarreFiltres() {
     ok("le choix « Toutes · Par lien » : un verre de 64 px, deux choix qui remplissent la hauteur, le choix actif sur une capsule pleine (`aria-current`) ; le rond « Personnes » de 64 px, avec un point quand des personnes sont choisies, et seulement dans « Toutes »",
       dans(simple, "  \\.ec-espace \\.ec-s-onglets,\\s*\\.ec-espace \\.ec-s-bas", /height: var\(--ec-fl-h\);\s*box-sizing: border-box;\s*border-radius: 999px;/) && dans(simple, "  \\.ec-espace \\.ec-s-onglets button\\[aria-current=\"true\"\\]", /background: var\(--ec-accent-soft\);/)
         && /width: var\(--ec-fl-h\);\s*height: var\(--ec-fl-h\);[\s\S]*border-radius: 50%;/.test(regle(simple, "  \\.ec-espace \\.ec-s-bas-rond")) && /aria-expanded=\{feuillePersonnes\}/.test(collecte) && /\{f\.personnes\.length \? <i aria-hidden="true" \/> : null\}/.test(collecte) && /\{f\.mode === "tout" \? \(\s*<button type="button" className="ec-s-bas-rond"/.test(collecte));
-    ok("deux choix, dans cet ordre : Toutes, Par lien (`aria-current` suit `f.mode`), puis le rond « Personnes » ; « Personnes » n'est plus un choix de la barre (ni segment, ni mosaïque, ni mode)",
-      /aria-current=\{f\.mode === "tout" \? "true" : undefined\}[\s\S]{0,320}Toutes[\s\S]{0,420}aria-current=\{f\.mode === "liens" \? "true" : undefined\}[\s\S]{0,320}Par lien[\s\S]{0,700}className="ec-s-bas-rond"/.test(collecte) && !/mode === "personnes"|genre="personne"/.test(collecte) && V.mode === "tout");
+    ok("trois choix, dans cet ordre : Toutes, Favoris (28/10), Par lien (`aria-current` suit `f.mode`), puis le rond « Personnes » ; « Personnes » n'est plus un choix de la barre (ni segment, ni mosaïque, ni mode)",
+      /aria-current=\{f\.mode === "tout" && !f\.favoris \? "true" : undefined\}[\s\S]{0,320}Toutes[\s\S]{0,900}Favoris[\s\S]{0,420}aria-current=\{f\.mode === "liens" \? "true" : undefined\}[\s\S]{0,320}Par lien[\s\S]{0,700}className="ec-s-bas-rond"/.test(collecte) && !/mode === "personnes"|genre="personne"/.test(collecte) && V.mode === "tout");
     ok("en « Sélectionner », la MÊME place devient la barre des deux gestes (le cœur, Supprimer en rouge), par LE MÊME `agir()` (mêmes routes) ; le titre dit « N sélectionnées », « Terminé » est en haut",
       dans(simple, "  \\.ec-espace \\.ec-s-bas button", /flex: 1;/) && /color: var\(--ec-danger\);/.test(regle(simple, "  \\.ec-espace \\.ec-s-bas \\.ec-s-danger")) && /\) : cocherActif \? \(\s*<div className="ec-fl ec-ph-tel">/.test(collecte) && /<div className="ec-s-bas" role="toolbar" aria-label="Agir sur les photos sélectionnées">/.test(collecte)
         && /void agir\(toutesEnCoeur\(\) \? "retirer" : "poser"\)/.test(collecte) && /void agir\("supprimer"\)/.test(collecte) && !/void agir\("(?:ajouter|cacher)"\)/.test(collecte)
@@ -8641,8 +8642,8 @@ function verifBarreFiltres() {
       /setFeuillePersonnes\(true\)/.test(collecte) && /<FeuillePersonnes personnes=\{personnesDeLaFeuille\(arbre\)\} choisies=\{f\.personnes\}/.test(collecte) && !/<Mosaique genre="personne"|tuilesPersonnes|peseesPersonnes|personnesVue/.test(collecte) && !/ec-collecte--personnes/.test(photos));
     ok("une personne choisie se défait par sa croix sous le titre (plus de « ← Personnes ») ; le titre dit son nom ou « N personnes » ; le responsable se lit « Vous » (« Toi »)",
       /className="ec-s-puce"/.test(collecte) && /aria-label=\{`Retirer « \$\{nom\} » du filtre`\}/.test(collecte) && /appliquer\(\{ \.\.\.f, personnes: f\.personnes\.filter\(\(c\) => c !== cle\) \}\)/.test(collecte) && /personnesDe\(f\.personnes\.length\)/.test(collecte) && /v\("Vous", "Toi"\)/.test(collecte) && !/texte: "Personnes"/.test(collecte));
-    ok("les réglages de la grille se réduisent à cinq (mode, lien, dossier, personnes, corbeille) : plus de jour, de rangement, de Ma sélection, de Doublons ni de « Ne pas publier » ; « Par lien » vide les personnes choisies",
-      Object.keys(V).sort().join() === "corbeille,dossier,lien,mode,personnes" && /appliquer\(\{ \.\.\.f, mode: "liens", lien: null, dossier: null, personnes: \[\] \}\)/.test(collecte));
+    ok("les réglages de la grille se réduisent à six (mode, lien, dossier, personnes, corbeille, favoris) : plus de jour, de rangement, de Ma sélection, de Doublons ni de « Ne pas publier » ; « Par lien » vide les personnes choisies",
+      Object.keys(V).sort().join() === "corbeille,dossier,favoris,lien,mode,personnes" && /appliquer\(\{ \.\.\.f, mode: "liens", lien: null, dossier: null, personnes: \[\], favoris: false \}\)/.test(collecte));
   }
 
   titre("— 21/10, planche 5 : le lien général ne se montre plus (la pastille, les sous-titres, le partage) —");
@@ -8758,7 +8759,7 @@ function verifMosaique() {
     const sansBruit = collecte.slice(collecte.indexOf("async function relireSansBruit"), collecte.indexOf("async function apresSondage"));
     ok("à l'écran : les poids sont gelés à la PREMIÈRE lecture (et une lecture que l'utilisateur a voulue : changer de vue, relire après un geste), jamais par la mise à jour en direct (`relireSansBruit`) ; la mosaïque lit l'ordre gelé, jamais les chiffres du moment",
       /setPeseesLiens\(\(avant\) => figerLesPesees\(avant, peseesDesLiens\(json\.arbre, p\.ecrire \? "Mes photos" : "Les dossiers du responsable"\)\)\)/.test(charger) && !/Pesees/.test(sansBruit)
-        && /const ordre: readonly Pesee\[\] = nouveau \? \[\.\.\.p\.ordre, \{ cle: CLE_NOUVEAU, nom: "\+", n: -1 \}\] : p\.ordre;/.test(mosaiqueTsx) && /mosaiqueDesLiens\(ordre, demandees, CLE_VOUS\)/.test(mosaiqueTsx) && !/mosaiqueDesLiens\(p\.tuiles/.test(mosaiqueTsx) && (collecte.match(/setPesees(?:Liens|Personnes)\(/g) ?? []).length === 1 && !/peseesDesPersonnes/.test(collecte));
+        && /const ordre: readonly Pesee\[\] = p\.ordre;/.test(mosaiqueTsx) && !/CLE_NOUVEAU/.test(mosaiqueTsx) && /mosaiqueDesLiens\(ordre, demandees, CLE_VOUS\)/.test(mosaiqueTsx) && !/mosaiqueDesLiens\(p\.tuiles/.test(mosaiqueTsx) && (collecte.match(/setPesees(?:Liens|Personnes)\(/g) ?? []).length === 1 && !/peseesDesPersonnes/.test(collecte));
     ok("la direction de la place : les tuiles de la lecture du moment n'entrent que par leur CLÉ (`lues.get(r.cle)`) : un chiffre qui bouge ne déplace rien", /const lues = new Map\(p\.tuiles\.map\(\(t\) => \[t\.cle, t\]\)\);/.test(mosaiqueTsx) && /const t = lues\.get\(r\.cle\);/.test(mosaiqueTsx));
   }
 
@@ -8796,18 +8797,18 @@ function verifMosaique() {
     const simple = sansCommentaires(lire("src/app/edition/[token]/photos/simple.css"));
     const espace = sansCommentaires(lire("src/app/edition/[token]/espace.css"));
     const tel = css.slice(css.indexOf("@media (max-width: 860px)"), css.indexOf("@media (min-width: 861px)"));
-    ok("FUSION : « Par lien » EST la mosaïque, au téléphone comme à l'ordinateur ; « Nouveau lien » en est la DERNIÈRE tuile (plus de « Créer un lien » en tête, plus de pilule « Les liens · N », plus d'onglets ni de bouton « Les photos »)",
+    ok("FUSION : « Par lien » EST la mosaïque, au téléphone comme à l'ordinateur ; « Nouveau lien » est une pastille EN TÊTE de la mosaïque, visible sans défiler (28/10 ; plus de « Créer un lien » en tête, plus de pilule « Les liens · N », plus d'onglets ni de bouton « Les photos »)",
       /nouveau=\{p\.ecrire && p\.ouverte \? \(\) => setCreerLien\(""\) : undefined\}/.test(collecte) && !/Créer un lien<|Les liens · |ec-ph-onglets|changerOnglet|Les photos<\/button>/.test(collecte)
-        && /nouveau\?: \(\) => void/.test(mosaiqueTsx) && /<TuileNouvelle key=\{r\.cle\}/.test(mosaiqueTsx) && /Nouveau lien/.test(mosaiqueTsx) && /\{ cle: CLE_NOUVEAU, nom: "\+", n: -1 \}/.test(mosaiqueTsx));
+        && /nouveau\?: \(\) => void/.test(mosaiqueTsx) && /\{nouveau \? <BoutonNouveauLien onClick=\{nouveau\} \/> : null\}\s*<div className="ec-mo-zone"/.test(mosaiqueTsx) && !/TuileNouvelle/.test(mosaiqueTsx) && /Nouveau lien/.test(mosaiqueTsx));
     ok("UNE seule fenêtre de création : l'en-tête, la vue « Par lien » du téléphone et l'état vide ouvrent `setCreerLien` ; plus de seconde fenêtre en deux temps (`FenetreLien`, `fenetreLien`) dans la page ; un lien créé ouvre « Partager » sur lui et la page se relit",
       !/FenetreLien\b|setFenetreLien|fenetreLien/.test(collecte) && (collecte.match(/setCreerLien\(""\)/g) ?? []).length >= 3 && /creer=\{setCreerLien\}/.test(collecte) && /<FenetreCreerLien token=\{p\.token\}/.test(collecte));
     ok("chaque choix de la barre du bas ramène à SA vue d'ensemble, d'où qu'on vienne (un lien ouvert, une personne choisie) : « Toutes » = toutes les photos, « Par lien » = la mosaïque des liens ; un seul toucher",
-      /onClick=\{\(\) => appliquer\(\{ \.\.\.f, mode: "tout", lien: null, dossier: null \}\)\}/.test(collecte) && /onClick=\{\(\) => appliquer\(\{ \.\.\.f, mode: "liens", lien: null, dossier: null, personnes: \[\] \}\)\}/.test(collecte));
+      /onClick=\{\(\) => appliquer\(\{ \.\.\.f, mode: "tout", lien: null, dossier: null, favoris: false \}\)\}/.test(collecte) && /onClick=\{\(\) => appliquer\(\{ \.\.\.f, mode: "liens", lien: null, dossier: null, personnes: \[\], favoris: false \}\)\}/.test(collecte));
     ok("« Par lien » : la mosaïque (« Mes photos » en tuile, en tête), puis l'atelier en ligne dessous (jamais une ligne à zéro photo) ; plus de « Dernières arrivées » ni de cartes d'album ; un message si rien à montrer",
       /<Mosaique genre="lien" variante="albums" tuiles=\{tuilesLiens\} ordre=\{peseesLiens\}/.test(collecte) && /className="ec-mo-ligne"/.test(collecte) && /n\.cle === "atelier" && n\.n > 0/.test(collecte) && !/Dernières arrivées|ec-ph-carte\b|ec-ph-cartes/.test(collecte) && /Aucun lien à montrer pour l&apos;instant/.test(collecte));
     ok("« Par lien » lit les couvertures de ses tuiles par le dossier `liens` de la route (une couverture par lien, aucune page de grille) ; la page ne demande plus `couverturesDe` ni `seulementArbre` (la route les garde pour la fenêtre de dépôt)",
-      /const dossier = personnes \?\? f\.dossier \?\? f\.lien \?\? \(f\.mode === "liens" \? "liens" : "tout"\);/.test(code("src/app/edition/[token]/photos/filtres.ts")) && /if \(estVueAlbums\(nf\)\) \{\s*setCouvLiens\(json\.couvertures \?\? \{\}\);\s*setCouvPlus\(json\.couverturesPlus \?\? \{\}\);/.test(collecte) && !/couverturesDe|seulementArbre|lireCouvertures/.test(collecte)
-        && /dossier === "liens" \? arbre\.liens/.test(lire("src/lib/collectif/grillePhotos.ts")) && /couverturesDe: \(COUVERTURES_DE as readonly unknown\[\]\)\.includes\(corps\.couverturesDe\)/.test(lire("src/lib/collectif/grillePhotos.ts")));
+      /const dossier = personnes \?\? f\.dossier \?\? f\.lien \?\? \(f\.favoris \? "selection" : f\.mode === "liens" \? "liens" : "tout"\);/.test(code("src/app/edition/[token]/photos/filtres.ts")) && /if \(estVueAlbums\(nf\)\) \{\s*setCouvLiens\(json\.couvertures \?\? \{\}\);\s*setCouvPlus\(json\.couverturesPlus \?\? \{\}\);/.test(collecte) && !/couverturesDe|seulementArbre|lireCouvertures/.test(collecte)
+        && /dossier === "liens" \? avecVous\(arbre\)/.test(lire("src/lib/collectif/grillePhotos.ts")) && /couverturesDe: \(COUVERTURES_DE as readonly unknown\[\]\)\.includes\(corps\.couverturesDe\)/.test(lire("src/lib/collectif/grillePhotos.ts")));
     ok("l'aucune-photo-avec-des-liens : les liens se voient et se partagent par leur tuile (un lien sans photo n'a rien à ouvrir : le toucher le PARTAGE), la tuile de tête d'un lien ouvert ne vaut que s'il y a des photos (`tuileActive`)",
       /vide && arbre && p\.ecrire && p\.ouverte && peseesLiens && tuilesLiens\.length/.test(collecte) && /if \(l\) void partager\(lienDe\(l\.nom, l\.cle, l\.plafond, l\.n\)\);/.test(collecte) && /const tuileActive = Boolean\(lienDePastilles\) && !vide;/.test(collecte));
     ok("le menu « … » : Partager et QR code seulement tant que la collecte est ouverte, puis Modifier le nom et le nombre, Supprimer le lien en rouge ; « Sans groupe » et l'équipe n'ont pas de « … » (`BoutonPlus` ne rend rien sans actions)",
@@ -8848,7 +8849,7 @@ function verifMosaique() {
         && /<button type="button" className="ec-ag-info" onClick=\{a\.voirSes\?\.faire\} disabled=\{!a\.voirSes\}/.test(code("src/app/edition/[token]/photos/Agrandir.tsx")) && /<button type="button" className="ec-ph-lien" onClick=\{a\.voirSes\.faire\}>/.test(code("src/app/edition/[token]/photos/Agrandir.tsx"))
         && /\?dossier=liens/.test(code("src/app/edition/[token]/CartePhotos.tsx")) && !/onglet=liens/.test(code("src/app/edition/[token]/CartePhotos.tsx")));
     ok("la route lit `couverturesDe` (« liens » ou « personnes », rien d'autre) et le dit à l'arbre : aucune page ni vignette de grille avec `seulementArbre`",
-      /couverturesDe: \(COUVERTURES_DE as readonly unknown\[\]\)\.includes\(corps\.couverturesDe\)/.test(lire("src/lib/collectif/grillePhotos.ts")) && (lire("src/lib/collectif/grillePhotos.ts").match(/d\.couverturesDe === "personnes" \? arbre\.personnes : d\.couverturesDe === "liens" \? arbre\.liens/g) ?? []).length === 2
+      /couverturesDe: \(COUVERTURES_DE as readonly unknown\[\]\)\.includes\(corps\.couverturesDe\)/.test(lire("src/lib/collectif/grillePhotos.ts")) && (lire("src/lib/collectif/grillePhotos.ts").match(/d\.couverturesDe === "personnes" \? arbre\.personnes : d\.couverturesDe === "liens" \? avecVous\(arbre\)/g) ?? []).length === 2
         && (lire("src/lib/collectif/grillePhotos.ts").match(/if \(!d\.seulementArbre \|\| d\.couverturesDe !== undefined\) \{/g) ?? []).length === 2);
     ok("les anciennes cartes d'album, la liste des personnes d'un lien et le reste sont ARCHIVÉS avec un README (aucune règle `.ec-ph-carte`, `.ec-ph-cartes`, `.ec-ph-mosa` ne reste dans photos.css)",
       existsSync(resolve(RACINE, "archive/mosaique-liens-2026-10/README.md")) && /ec-ph-carte\b/.test(lire("archive/mosaique-liens-2026-10/photos-cartes-d-album.css")) && !/\.ec-ph-carte\b|\.ec-ph-cartes\b|\.ec-ph-mosa\b/.test(photos) && /export function CarteLien|function CarteLien/.test(lire("archive/mosaique-liens-2026-10/Liens.tsx")));
@@ -8904,8 +8905,9 @@ async function verifPhotosSimples() {
     renderToStaticMarkup(createElement(Grille, { groupes: F.regrouperParJour(photos, true), ecrire: true, cocher: false, coeurs: false, estCochee: () => false, attente: 0, onOuvrir: () => {}, onCocher: () => {}, onAppuiLong: () => {}, onCocherJour: null, ...o }));
   const hors = rendre(marquees);
   const sansIntertitres = hors.replace(/<h2[\s\S]*?<\/h2>/g, "");
-  ok("hors sélection, une vignette est UNE PHOTO : aucun texte (ni nom, ni initiales, ni « nouvelle »), aucune étoile, aucun badge, aucun cœur ; un doublon, un « ne pas publier » ou un favori se voient EXACTEMENT comme une photo ordinaire",
-    (hors.match(/class="ec-ph-t"/g) ?? []).length === 4 && sansIntertitres.replace(/<[^>]+>/g, "") === "" && !/ec-ph-qui|ec-ph-badge|ec-s-coeur|ec-ph-t-etoile|ec-ph-neuve|ec-ph-t-ini/.test(hors) && hors === rendre(neutres));
+  ok("hors sélection, une vignette est UNE PHOTO : aucun texte (ni nom, ni initiales, ni « nouvelle »), aucune étoile, aucun badge ; un doublon ou un « ne pas publier » se voient EXACTEMENT comme une photo ordinaire ; SEUL un favori porte un petit cœur plein (28/10), une fois, sans texte",
+    (hors.match(/class="ec-ph-t"/g) ?? []).length === 4 && sansIntertitres.replace(/<[^>]+>/g, "") === "" && !/ec-ph-qui|ec-ph-badge|ec-ph-t-etoile|ec-ph-neuve|ec-ph-t-ini/.test(hors)
+      && (hors.match(/class="ec-s-coeur"/g) ?? []).length === 1 && !/ec-s-coeur/.test(rendre(neutres)) && hors.replace(/<span class="ec-s-coeur"[\s\S]*?<\/span>/, "") === rendre(marquees.map((p, i) => (i === 0 ? { ...p, preselection: false } : p))));
   const sansApercu = rendre([photo("z", "2026-10-21", { heic: true, vignette: null, nom: null })]).replace(/<h2[\s\S]*?<\/h2>/g, "").replace(/<[^>]+>/g, "");
   ok("seule une photo SANS aperçu (un HEIC que le navigateur ne lit pas) dit un mot, jamais un nom ni un nom de fichier : « HEIC · aperçu indisponible »", sansApercu === "HEIC · aperçu indisponible" && !/IMG_/.test(sansApercu));
   ok("hors sélection, le rond de sélection existe pour la souris mais n'est ni vu ni touché (`opacity: 0`, `pointer-events: none`, hors de l'ordre de tabulation) : il n'apparaît qu'au survol (souris), ou dans « Sélectionner » (`ec-ph-g--cocher`)",
@@ -8916,8 +8918,8 @@ async function verifPhotosSimples() {
     /class="ec-ph-g ec-ph-g--cocher"/.test(selection) && (selection.match(/class="ec-ph-t-case"[^>]*tabindex="0"/g) ?? []).length === 4 && (selection.match(/aria-pressed="true"/g) ?? []).length === 1 && !/ec-s-jour-case/.test(selection)
       && (rendre(marquees, { cocher: true, onCocherJour: () => {} }).match(/class="ec-s-jour-case"/g) ?? []).length === 3 && !/ec-s-jour-case/.test(hors));
   const coeurs = rendre(marquees, { cocher: true, coeurs: true, estCochee: (id) => id === "a" || id === "d" });
-  ok("« Choisir d'abord mes préférées » : un petit cœur sur les photos GARDÉES seulement (deux ici), jamais sur les autres",
-    (coeurs.match(/class="ec-s-coeur"/g) ?? []).length === 2 && !/ec-s-coeur/.test(selection));
+  ok("« Choisir d'abord mes préférées » : un petit cœur sur les photos GARDÉES seulement (deux ici), jamais sur les autres (hors de ce mode, seul un favori en porte un)",
+    (coeurs.match(/class="ec-s-coeur"/g) ?? []).length === 2 && (selection.match(/class="ec-s-coeur"/g) ?? []).length === 1);
   const equipe = rendre(marquees, { ecrire: false, cocher: false, onCocherJour: () => {} });
   const grilleCode = codeSeul(`${D}/Grille.tsx`);
   ok("le lien d'équipe regarde : ni rond de sélection, ni rond de jour, ni appui long (le geste ne démarre pas sans le droit d'écrire)",
@@ -9037,9 +9039,9 @@ async function verifPhotosSimples() {
   const reste = disparus.filter((l) => new RegExp(`(?:>\\s*|["'\`])${echapper(l)}(?:\\s*<|["'\`])`).test(vivant.replace(/&apos;/g, "'")));
   ok(`ne pas publier, doublons, jour, renommer, fusionner, ma sélection, l'étoile : plus AUCUN libellé dans l'espace du client${reste.length ? " ; en faute : " + reste.join(", ") : ""}`, reste.length === 0);
   const exportsF = Object.keys(F);
-  ok("les règles de ces choix ne sont plus exportées par `filtres.ts` (elles sont dans l'archive) ; une adresse d'avant (`?dossier=selection`, `signalees`, `pers:…`) retombe sur « Toutes » ou sur le lien, jamais sur une page qui n'existe plus",
+  ok("les règles de ces choix ne sont plus exportées par `filtres.ts` (elles sont dans l'archive) ; `?dossier=selection` ouvre « Favoris » (28/10) ; une adresse d'avant (`signalees`, `pers:…`) retombe sur « Toutes » ou sur le lien, jamais sur une page qui n'existe plus",
     !exportsF.some((k) => /^(?:avecSelection|avecDoublons|avecSignalees|avecJour|avecOrdre|joursVus|jourEncoreALire|ficheDe|raisonTexte|cleDeLaPersonne|filtreSousLeNom|nombreDeFiltres|sansReglagesDeLaFeuille)$/.test(k))
-      && JSON.stringify(F.filtresDepuis("selection")) === JSON.stringify(F.FILTRES_VIDES) && JSON.stringify(F.filtresDepuis("signalees")) === JSON.stringify(F.FILTRES_VIDES) && F.filtresDepuis("pers:general:léa").lien === "participants" && F.filtresDepuis("pers:general:léa").personnes.length === 0);
+      && JSON.stringify(F.filtresDepuis("selection")) === JSON.stringify({ ...F.FILTRES_VIDES, favoris: true }) && JSON.stringify(F.filtresDepuis("signalees")) === JSON.stringify(F.FILTRES_VIDES) && F.filtresDepuis("pers:general:léa").lien === "participants" && F.filtresDepuis("pers:general:léa").personnes.length === 0);
   const archive = "archive/photos-simple-2026-10";
   const lisezMoi = existsSync(resolve(RACINE, `${archive}/README.md`)) ? lire(`${archive}/README.md`) : "";
   ok("rien n'est supprimé : l'écran d'avant est dans `archive/photos-simple-2026-10/` avec un README qui dit où chaque pièce est passée ; `Feuille.tsx` et `Personne.tsx` n'existent plus dans l'écran",
@@ -9228,7 +9230,41 @@ async function verifDecisions26() {
     const c2 = G.couvertureEnPlus("b", [paysage, portrait]);
     const c3 = G.couvertureEnPlus("a", [cand("a", null, null), cand("b", null, null)]);
     ok("couverture d'un lien (28/10) : la moyenne de la photo récente, et pour une tuile large la plus récente photo PAYSAGE ; déjà paysage ou dimensions inconnues : aucune variante, le choix d'avant tient",
-      c1.defaut?.moyenne_key === "m/a" && c1.paysage?.vignette_key === "b" && c2.paysage === null && c3.paysage === null && c3.defaut?.moyenne_key === "m/a" && G.couvertureEnPlus("zz", [portrait]).defaut === null);
+      c1.defaut?.moyenne_key === "m/a" && c1.paysage?.vignette_key === "b" && c2.paysage === null && c3.paysage === null && c3.defaut?.moyenne_key === "m/a" && G.couvertureEnPlus("zz", [portrait]).defaut?.vignette_key === "a");
+    /* Recette Audencia du 28/10 : une couverture SANS moyenne s'agrandissait ×3 sur une tuile large. La règle prend la plus récente photo du lien qui en a une. */
+    const sansMoy = cand("n", 3000, 4000, null);
+    const sansMoyPaysage = cand("p", 4000, 3000, null);
+    const d1 = G.couvertureEnPlus("n", [sansMoy, portrait, paysage]);
+    const d2 = G.couvertureEnPlus("n", [sansMoy, sansMoyPaysage]);
+    const d3 = G.couvertureEnPlus("n", [sansMoy, sansMoyPaysage, portrait]);
+    const d4 = G.couvertureEnPlus("p", [sansMoyPaysage, paysage]);
+    ok("couverture nette (28/10) : la photo par défaut sans moyenne cède à la plus récente qui en a une ; une paysage sans moyenne ne sert pas de bandeau tant qu'une photo a sa moyenne ; aucune moyenne dans le lien : le choix d'avant (vignette seule)",
+      d1.defaut?.vignette_key === "a" && d1.paysage?.vignette_key === "b" && d2.defaut?.vignette_key === "n" && d2.paysage?.vignette_key === "p"
+        && d3.defaut?.vignette_key === "a" && d3.paysage === null && d4.defaut?.vignette_key === "b" && d4.paysage === null);
+    const grillePhotosTs = lire("src/lib/collectif/grillePhotos.ts");
+    ok("« Mes photos » (la tuile en tête de « Par lien ») se lit comme un lien : sa couverture, sa moyenne et son bandeau viennent de la route, plus d'une vignette seule lue à part (28/10)",
+      (grillePhotosTs.match(/avecVous\(arbre\)/g) ?? []).length === 4 && /const avecVous = /.test(grillePhotosTs) && /couvertureMoyenne: couvPlus\["vous"\]\?\.m/.test(lire("src/app/edition/[token]/photos/Collecte.tsx")) && !/couvVous/.test(lire("src/app/edition/[token]/photos/Collecte.tsx")));
+  }
+  {
+    /* Le filtre « Favoris » (28/10) : la clé `selection`, celle que l'atelier lit ; un lien ou une personne le remplace. */
+    const F = await import("@/app/edition/[token]/photos/filtres");
+    const D = await import("@/lib/collectif/dossiers");
+    const fav = { ...F.FILTRES_VIDES, favoris: true };
+    const lignes = [{ role_deposant: "participant", provenance_id: null, provenance_type: "lien", deposant: "Léa", preselection: true }, { role_deposant: "participant", provenance_id: null, provenance_type: "lien", deposant: "Léa", preselection: false }, { role_deposant: "responsable", provenance_id: null, provenance_type: "organisateur", deposant: "M", preselection: true }];
+    const tout = F.requeteDe(F.FILTRES_VIDES).dossier;
+    const parLien = F.requeteDe({ ...F.FILTRES_VIDES, mode: "liens" as const }).dossier;
+    const avecLeLien = F.requeteDe(F.avecLien(fav, "lien:42")).dossier;
+    const avecQui = F.requeteDe(F.avecPersonne(fav, "qui:lea")).dossier;
+    ok("Favoris : la requête lit la clé `selection` (la règle de l'atelier, `preselection`) ; « Toutes » et « Par lien » gardent la leur ; un lien ou une personne choisis sortent de Favoris ; l'adresse rouvre le filtre",
+      F.requeteDe(fav).dossier === "selection" && tout === "tout" && parLien === "liens" && avecLeLien === "lien:42" && avecQui.startsWith("qui") && F.filtresDepuis("selection").favoris === true
+        && F.adresseDe(fav) === "?dossier=selection" && F.avecLien(fav, "lien:42").favoris === false && F.avecPersonne(fav, "qui:lea").favoris === false && F.avecCorbeille(fav).favoris === false);
+    ok("Favoris : le dossier `selection` compte les photos aimées et pas les autres (les deux lectures, la page et le repli, disent la même chose)",
+      lignes.filter((l) => D.dansLeDossier(l as never, "selection", "M")).length === 2 && lignes.filter((l) => D.dansLeDossier(l as never, "tout", "M")).length === 3);
+    const col = lire("src/app/edition/[token]/photos/Collecte.tsx");
+    const lis = lire("src/app/edition/[token]/photos/Listes.tsx");
+    ok("Favoris : un segment de la barre du bas (téléphone) et de la colonne (ordinateur), à côté de Toutes et Par lien, aucun bouton de plus ; le cœur d'un favori se pose sur la vignette sans recevoir le toucher",
+      /appliquer\(\{ \.\.\.FILTRES_VIDES, favoris: true \}\)/.test(col) && /changer\(\{ \.\.\.FILTRES_VIDES, favoris: true \}\)/.test(lis)
+        && /\{\(g\.coeurs \? cochee : ph\.preselection\) \? \(/.test(lire("src/app/edition/[token]/photos/Grille.tsx")) && /\.ec-s-coeur \{[^}]*pointer-events: none;/.test(lire("src/app/edition/[token]/photos/simple.css")));
   }
   type LG = import("@/lib/collectif/grillePhotos").LigneGrille;
   const ligne = (i: number, o: Partial<LG> = {}): LG => ({

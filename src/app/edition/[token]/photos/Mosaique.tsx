@@ -38,8 +38,6 @@ export type TuileVue = {
   actions?: ActionMenu[];
 };
 
-/** La clé de la tuile « Nouveau lien » dans la règle de taille : un poids de -1, donc toujours la DERNIÈRE (22/10, planche 12 vue 4). */
-const CLE_NOUVEAU = "+nouveau";
 const TRACE_LIEN = "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1";
 const ORDINATEUR = "(min-width: 861px)";
 const abonner = (rappel: () => void) => {
@@ -132,17 +130,20 @@ function Tuile(p: { t: TuileVue; taille: TailleTuile; genre: "lien" | "personne"
   );
 }
 
-/** La dernière tuile : « Nouveau lien », en pointillé, un « + ». Plus de « Créer un lien » à chercher en haut de page. */
-function TuileNouvelle({ taille, onClick }: { taille: TailleTuile; onClick: () => void }) {
+/**
+ * « Nouveau lien » (28/10, recette de Mathias : avec 8 liens il fallait défiler jusqu'à la dernière tuile) : une pastille EN TÊTE de la mosaïque, à gauche, toujours dans le
+ * premier écran quel que soit le nombre de liens. Ni le « + » de dépôt du haut (il appartient au dépôt), ni un bouton de plus dans la barre du bas : une seule place, au-dessus des tuiles.
+ */
+function BoutonNouveauLien({ onClick }: { onClick: () => void }) {
   return (
-    <article className={`ec-tu ec-tu--${taille} ec-tu--nouveau`}>
-      <button type="button" className="ec-tu-nouveau" onClick={onClick}>
+    <div className="ec-mo-tete">
+      <button type="button" className="ec-mo-nouveau" onClick={onClick}>
         <i aria-hidden="true">
-          <Trace d="M12 5v14M5 12h14" taille={24} epais={2.2} />
+          <Trace d="M12 5v14M5 12h14" taille={16} epais={2.4} />
         </i>
         Nouveau lien
       </button>
-    </article>
+    </div>
   );
 }
 
@@ -151,15 +152,15 @@ function TuileNouvelle({ taille, onClick }: { taille: TailleTuile; onClick: () =
  * quatre colonnes sur ordinateur). `ordre` : les poids gelés à l'ouverture ; une tuile de `tuiles` qui n'y est pas n'a pas de place
  * (elle viendra à l'ouverture suivante), une tuile de `ordre` qui n'est plus lue disparaît.
  */
-export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | "onglet"; tuiles: readonly TuileVue[]; ordre: readonly Pesee[]; etiquette: string; ouvrir: (cle: string) => void; /** Le responsable, collecte ouverte : « Nouveau lien » en dernière tuile. */ nouveau?: () => void }) {
+export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | "onglet"; tuiles: readonly TuileVue[]; ordre: readonly Pesee[]; etiquette: string; ouvrir: (cle: string) => void; /** Le responsable, collecte ouverte, au téléphone : la pastille « Nouveau lien » en tête de la mosaïque. */ nouveau?: () => void }) {
   const ordinateur = useOrdinateur();
   const { menu, basculer, fermer, declencheur } = useMenuLien();
   /* Ordinateur : quatre colonnes, des tuiles basses (tous les liens d'un coup d'œil). Téléphone : deux colonnes. */
   const demandees = ordinateur ? 4 : 2;
-  /* « Nouveau lien » entre dans la règle comme une tuile sans photo (poids -1) : la dernière, jamais seule (une petite seule devient large).
-     À l'ordinateur, le bouton de l'en-tête suffit : pas de tuile en double (un seul accès par appareil). */
+  /* « Nouveau lien » : une pastille en tête (téléphone seulement). À l'ordinateur, le bouton de l'en-tête suffit : pas de doublon (un seul accès par appareil).
+     Il n'entre plus dans la règle de taille : les tuiles ne sont que les liens. */
   const nouveau = ordinateur ? undefined : p.nouveau;
-  const ordre: readonly Pesee[] = nouveau ? [...p.ordre, { cle: CLE_NOUVEAU, nom: "+", n: -1 }] : p.ordre;
+  const ordre: readonly Pesee[] = p.ordre;
   const colonnes = colonnesDeLaMosaique(ordre.length, demandees);
   /* « Mes photos », quand elle est là, vient en premier (en haut à gauche). */
   const rangees = mosaiqueDesLiens(ordre, demandees, CLE_VOUS);
@@ -167,10 +168,10 @@ export function Mosaique(p: { genre: "lien" | "personne"; variante?: "albums" | 
   const ouverte = menu ? lues.get(menu.cle) : undefined;
   return (
     <div className={menu ? "ec-mo ec-mo--menu" : "ec-mo"} role="group" aria-label={p.etiquette}>
+      {nouveau ? <BoutonNouveauLien onClick={nouveau} /> : null}
       <div className="ec-mo-zone" data-colonnes={colonnes}>
         <div className="ec-mo-grille" style={{ "--mo-c": colonnes } as CSSProperties}>
           {rangees.map((r) => {
-            if (r.cle === CLE_NOUVEAU) return nouveau ? <TuileNouvelle key={r.cle} taille={r.taille} onClick={nouveau} /> : null;
             const t = lues.get(r.cle);
             return t ? <Tuile key={t.cle} t={t} taille={r.taille} genre={p.genre} menuOuvert={menu?.cle === t.cle} ouvrir={p.ouvrir} onMenu={basculer} /> : null;
           })}

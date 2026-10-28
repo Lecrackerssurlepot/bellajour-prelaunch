@@ -26,3 +26,10 @@ Pas de route retirée : la route des photos garde ses couvertures de dossier et 
 (`liens` ou `personnes`) pour peindre une mosaïque sans lire de page.
 
 Hors du périmètre du build (aucun import, `archive` est exclu de tsconfig et du lint).
+
+## Ajout du 28/10/2026 : « Nouveau lien » n'est plus la dernière tuile
+
+Avec 8 liens ou plus, il fallait défiler tout en bas de « Par lien » pour créer un lien. La tuile pointillée est remplacée par une pastille
+« + Nouveau lien » EN TÊTE de la mosaïque (téléphone ; l'ordinateur garde le bouton de l'en-tête). Archivés ici :
+- `Mosaique-tuile-nouveau-lien.tsx` : l'ancien composant `TuileNouvelle` ;
+- `simple-tuile-nouveau-lien.css` : ses règles (`.ec-tu--nouveau`, `.ec-tu-nouveau`).

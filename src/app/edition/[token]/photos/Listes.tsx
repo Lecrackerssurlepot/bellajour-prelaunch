@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import type { Arbre, Noeud } from "@/lib/collectif/dossiers";
-import { avecCorbeille, avecLien, initialesDe, liensDansLOrdre, nombre, personnesDeLaFeuille, pourChercher, sortirDeLaCorbeille, type Filtres } from "./filtres";
+import { avecCorbeille, avecLien, FILTRES_VIDES, initialesDe, liensDansLOrdre, nombre, personnesDeLaFeuille, pourChercher, sortirDeLaCorbeille, type Filtres } from "./filtres";
 import { ICONES, Trace } from "./Grille";
 import type { PersonneDuLien } from "./Mosaique";
 
@@ -213,11 +213,16 @@ export default function Listes(l: Props) {
     <>
       <div className="ec-s-col-defile">
       <div className="ec-ph-seg ec-ph-seg--plein" role="group" aria-label="Regarder">
-        <button type="button" aria-pressed={f.mode === "tout"} onClick={() => changer({ ...f, mode: "tout", lien: null, dossier: null })}>
+        <button type="button" aria-pressed={f.mode === "tout" && !f.favoris} onClick={() => changer({ ...f, mode: "tout", lien: null, dossier: null, favoris: false })}>
           <Trace d={TRACES.tout} taille={15} epais={1.7} />
           Toutes
         </button>
-        <button type="button" aria-pressed={f.mode === "liens"} onClick={() => changer({ ...f, mode: "liens", personnes: f.lien ? f.personnes : [] })}>
+        {/* Favoris (28/10) : le même choix qu'au téléphone, la même place que « Toutes » et « Par lien ». */}
+        <button type="button" aria-pressed={f.mode === "tout" && f.favoris && !f.personnes.length} onClick={() => changer({ ...FILTRES_VIDES, favoris: true })}>
+          <Trace d={ICONES.coeur} taille={15} epais={1.7} />
+          Favoris
+        </button>
+        <button type="button" aria-pressed={f.mode === "liens"} onClick={() => changer({ ...f, mode: "liens", personnes: f.lien ? f.personnes : [], favoris: false })}>
           <Trace d={TRACES.lien} taille={15} epais={1.7} />
           Par lien
         </button>
