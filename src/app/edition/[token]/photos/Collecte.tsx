@@ -210,8 +210,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* Les poids de la mosaïque, GELÉS à l'ouverture de la page (`figerLesPesees`) : la mise à jour en direct change les chiffres des
      pastilles, jamais la place ni la taille d'une tuile. Seul un ensemble de tuiles différent (un lien créé, supprimé) les reprend. */
   const [peseesLiens, setPeseesLiens] = useState<readonly Pesee[] | null>(null);
-  /* La couverture de « Mes photos » (la tuile en tête de « Par lien ») : la route ne signe que celles des liens, une lecture à part l'apporte, une fois. */
-  const [couvVous, setCouvVous] = useState<string | null>(null);
   const [liens, setLiens] = useState<Liens | null>(null);
   const [suivante, setSuivante] = useState<number | null>(0);
   const [chargement, setChargement] = useState(false);
@@ -1051,7 +1049,9 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const nomOuvert = ouvertNoeud ? (ouvertNoeud.cle === "vous" ? nomVous : ouvertNoeud.nom) : "";
   const titre = prefereesActif
     ? "Mes préférées"
-    : albums
+    : f.favoris && !f.personnes.length
+      ? "Favoris"
+      : albums
       ? "Par lien"
       : f.personnes.length
         ? f.personnes.length === 1
@@ -1064,7 +1064,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           : f.mode === "liens" && ouvertNoeud
             ? nomOuvert
             : "Toutes les photos";
-  const filtree = Boolean(f.lien || f.personnes.length || f.dossier);
+  const filtree = Boolean(f.lien || f.personnes.length || f.dossier || f.favoris);
   const note = albums
     ? ""
     : f.mode === "liens" && ouvertNoeud && !dossierNoeud
@@ -1216,7 +1216,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   };
   const tuileDuLien = (n: Noeud, couv: Record<string, string>): TuileVue => {
     /* « Mes photos » : une tuile comme les liens, sans « … », qui compte ses photos (pas des personnes). */
-    if (n.cle === "vous") return { cle: n.cle, nom: nomVous, n: n.n, couverture: couvVous, genre: "personne" };
+    if (n.cle === "vous") return { cle: n.cle, nom: nomVous, n: n.n, couverture: couv["vous"] ?? null, couvertureMoyenne: couvPlus["vous"]?.m ?? null, couvertureLarge: couvPlus["vous"]?.paysage ?? null, genre: "personne" };
     const detail = liens?.liens.find((x) => `lien:${x.id}` === n.cle);
     return { cle: n.cle, nom: n.nom, n: n.n, personnes: detail ? detail.personnes.length : n.enfants.length, couverture: couv[n.cle] ?? null, couvertureMoyenne: couvPlus[n.cle]?.m ?? null, couvertureLarge: couvPlus[n.cle]?.paysage ?? null, actions: actionsDe(n.cle) };
   };
@@ -1232,21 +1232,6 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   };
   /** La ligne sous la mosaïque : l'atelier, qui n'est pas un lien (« Mes photos » est une tuile, en tête) ; sans photo, rien à ouvrir, elle ne se montre pas. */
   const lignesDessous = arbre ? liensDansLOrdre(arbre, avecVous).filter((n) => n.cle === "atelier" && n.n > 0) : [];
-  const nbVous = arbre ? arbre.vous.reduce((somme, d) => somme + d.n, 0) : 0;
-  useEffect(() => {
-    if (!albums || nbVous === 0 || couvVous !== null) return;
-    let vivant = true;
-    void lirePage(0, f, "vous")
-      .then((json) => {
-        const u = json.photos.find((x) => x.vignette)?.vignette ?? Object.values(json.couvertures ?? {})[0] ?? null;
-        if (vivant && u) setCouvVous(u);
-      })
-      .catch(() => {});
-    return () => {
-      vivant = false;
-    };
-  }, [albums, nbVous, couvVous, f, lirePage]);
-
   const fenetres = (
     <>
       {creerLien !== null ? <FenetreCreerLien token={p.token} max={p.max} tu={p.tu} nomInitial={creerLien} onCree={quandCree} onFermer={() => setCreerLien(null)} /> : null}
@@ -1679,6 +1664,14 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
               {/* Les personnes et le lien choisis, avec leur croix (ordinateur) : pas de « Tout effacer », chaque puce se retire d'un toucher. */}
               {f.mode === "tout" && filtree && !vide ? (
                 <div className="ec-ph-actifs ec-ph-ordi">
+                  {f.favoris && !f.personnes.length ? (
+                    <span className="ec-ph-puce">
+                      Favoris
+                      <button type="button" aria-label="Retirer le filtre « Favoris »" onClick={() => appliquer({ ...f, favoris: false })}>
+                        <Trace d={TRACE.fermer} taille={12} epais={2.4} />
+                      </button>
+                    </span>
+                  ) : null}
                   {f.dossier && dossierNoeud ? (
                     <span className="ec-ph-puce">
                       {dossierNoeud.nom}
@@ -1827,7 +1820,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                 {!albums && !vide && visibles.length === 0 && !chargement && stats ? (
                   <div className="ec-a-venir">
                     <p className="ec-texte">
-                      {f.lien || f.personnes.length || f.dossier ? "Rien reçu ici pour l'instant." : "Aucune photo pour l'instant."}
+                      {f.favoris ? "Aucun favori pour l'instant." : f.lien || f.personnes.length || f.dossier ? "Rien reçu ici pour l'instant." : "Aucune photo pour l'instant."}
                     </p>
                   </div>
                 ) : null}
@@ -1936,11 +1929,16 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
               <div className={f.mode === "tout" ? "ec-s-onglets" : "ec-s-onglets ec-s-onglets--seul"} role="group" aria-label="Regarder">
                 {/* Chaque choix ramène à SA vue d'ensemble, d'où qu'on vienne (un lien ouvert, une personne choisie) : « Toutes » = toutes les photos, « Par lien » = la
                     mosaïque des liens. Un seul toucher, jamais un retour à refaire plusieurs fois. */}
-                <button type="button" aria-current={f.mode === "tout" ? "true" : undefined} onClick={() => appliquer({ ...f, mode: "tout", lien: null, dossier: null })}>
-                  <Trace d={ICONES.toutes} taille={24} plein={f.mode === "tout"} epais={1.8} />
+                <button type="button" aria-current={f.mode === "tout" && !f.favoris ? "true" : undefined} onClick={() => appliquer({ ...f, mode: "tout", lien: null, dossier: null, favoris: false })}>
+                  <Trace d={ICONES.toutes} taille={24} plein={f.mode === "tout" && !f.favoris} epais={1.8} />
                   Toutes
                 </button>
-                <button type="button" aria-current={f.mode === "liens" ? "true" : undefined} onClick={() => appliquer({ ...f, mode: "liens", lien: null, dossier: null, personnes: [] })}>
+                {/* « Favoris » (28/10) : la même place que « Toutes » et « Par lien », sans bouton de plus ailleurs ; l'état se lit tout de suite (le segment est plein). */}
+                <button type="button" aria-current={f.mode === "tout" && f.favoris && !f.personnes.length ? "true" : undefined} onClick={() => appliquer({ ...FILTRES_VIDES, favoris: true })}>
+                  <Trace d={ICONES.coeur} taille={24} plein={f.mode === "tout" && f.favoris && !f.personnes.length} epais={1.8} />
+                  Favoris
+                </button>
+                <button type="button" aria-current={f.mode === "liens" ? "true" : undefined} onClick={() => appliquer({ ...f, mode: "liens", lien: null, dossier: null, personnes: [], favoris: false })}>
                   <Trace d={ICONES.liens} taille={24} plein={f.mode === "liens"} epais={1.8} />
                   Par lien
                 </button>

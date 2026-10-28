@@ -185,7 +185,9 @@ export default function Grille(g: Props) {
                         <Trace d={ICONES.coche} taille={13} epais={2.8} />
                       </button>
                     ) : null}
-                    {g.coeurs && cochee ? (
+                    {/* Le cœur se VOIT (28/10, recette de Mathias) : une photo en favori (`preselection`, « Ma sélection ») porte un petit cœur plein dans le coin, en grille comme dans l'album d'un lien ;
+                        dans « Choisir d'abord mes préférées », c'est la photo gardée qui le porte. Il ne reçoit aucun toucher. */}
+                    {(g.coeurs ? cochee : ph.preselection) ? (
                       <span className="ec-s-coeur" aria-hidden="true">
                         <Trace d={ICONES.coeur} taille={16} plein epais={1.6} />
                       </span>

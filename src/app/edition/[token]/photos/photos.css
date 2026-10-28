@@ -293,8 +293,17 @@
   white-space: nowrap;
   cursor: pointer;
 }
+/* Trois choix dans la colonne de 242 px (Toutes, Favoris, Par lien : 28/10) : le texte et l'icône tiennent sans couper le dernier. */
+.ec-espace .ec-ph-seg--plein {
+  gap: 2px;
+  padding: 3px;
+}
 .ec-espace .ec-ph-seg--plein > button {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 5px;
+  padding: 0 7px;
+  font-size: 12.5px;
 }
 .ec-espace .ec-ph-seg > button[aria-pressed="true"] {
   background: var(--ec-actif);

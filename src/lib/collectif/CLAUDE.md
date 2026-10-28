@@ -620,7 +620,7 @@ Maquettes : les planches « téléphone » 1 et 2 du 21/10 (hors dépôt). Le ha
 
 ## La mosaïque des liens et des personnes, l'album d'un lien en pastilles (planches 2D et 3, retours de Mathias du 21/10)
 
-⚠️ **Le 22/10** : « Par lien » reste une mosaïque (« Nouveau lien » en dernière tuile) et l'album d'un lien garde sa tuile et ses pastilles ; la mosaïque des PERSONNES, le nom sur la vignette (`sansQui`), « Créer un lien » en tête et la flèche absente n'existent plus (voir « La page Photos comme une application »).
+⚠️ **Le 22/10** : « Par lien » reste une mosaïque (« Nouveau lien » : dernière tuile jusqu'au 28/10, depuis une pastille EN TÊTE, voir plus bas) et l'album d'un lien garde sa tuile et ses pastilles ; la mosaïque des PERSONNES, le nom sur la vignette (`sansQui`), « Créer un lien » en tête et la flèche absente n'existent plus (voir « La page Photos comme une application »).
 
 Maquettes : planches « téléphone » 2 et 3 du 21/10 (hors dépôt). Ce que Mathias a tranché : « des carrés aux bords arrondis de tailles différentes avec la
 dernière photo affichée et les infos », « ça ne doit pas être compliqué ni toujours recalculer », « nous avons trop de boutons et de liens ».
@@ -635,6 +635,13 @@ dernière photo affichée et les infos », « ça ne doit pas être compliqué n
   vignette seule agrandissait ×3 (flou mesuré le 28/10). ⚠️ Pour mesurer, ne pas lire `naturalWidth` d'une image en `srcset` : il est divisé par la densité choisie
   (une moyenne de 1 600 px y apparaît « 390 px ») ; lire `currentSrc`. ⚠️ Tous à zéro (le début d'une
   collecte) : la règle ne fait pas d'exception, la première par nom est grande (la planche disait « toutes petites » : à trancher si cela gêne).
+  ⚠️ **Netteté, suite (28/10, deuxième recette Audencia)** : trois causes de flou restaient. (1) « Mes photos » (la tuile en tête) n'avait que la vignette, lue à part
+  (`couvVous`) : la route la signe maintenant comme un lien (`avecVous` dans `grillePhotos.ts`, couverture + moyenne + bandeau paysage, clé `vous` de `couvertures` et
+  `couverturesPlus`), l'effet de lecture à part est supprimé. (2) Une couverture dont la photo n'a PAS de moyenne (envoyée avant le 26/10, ou plus petite que 1 600 px)
+  s'agrandissait ×3 : `couvertureEnPlus` (pure, au harnais) prend la photo la plus récente du lien QUI A une moyenne parmi les 12 dernières, et la vignette suit
+  (`couvertures[cle]` change de photo) ; paysage sans moyenne n'est un bandeau que si AUCUNE photo du lien n'a de moyenne ; le repli (`grilleDepuisLignes`) fait pareil.
+  (3) Un lien dont AUCUNE photo récente n'a de moyenne garde sa vignette (rien de mieux à montrer ; les 22 photos « sans moyenne » de TEST Audencia sont toutes
+  ≤ 1 600 px, par construction du worker : rien à rattraper). `sizes` est juste sur les quatre formes (mesuré à 390 × DPR 2 et à 1440 : la moyenne est choisie partout).
 - ⚠️ **« À l'ouverture de la page seulement » est un GEL, pas un calcul malin** : `figerLesPesees` garde les poids de la première lecture (`Collecte.tsx`,
   `peseesLiens`, `peseesPersonnes`, posés dans `charger` page 0 seulement, JAMAIS dans `relireSansBruit`) tant que ce sont les mêmes tuiles ; `Mosaique.tsx` calcule
   place et taille sur ces poids gelés et n'y lit les chiffres du direct que PAR CLÉ. Un lien créé ou supprimé (un autre ensemble) reprend les poids du moment.
@@ -645,6 +652,9 @@ dernière photo affichée et les infos », « ça ne doit pas être compliqué n
   lignes sous la mosaïque (jamais à zéro photo). Plus de « Dernières arrivées » sous « Par lien ».
 - **Les couvertures que la lecture de la page ne porte pas** : `couverturesDe: "liens" | "personnes"` dans la demande de `/api/collectif/photos` (avec
   `seulementArbre` : aucune page, aucune vignette de grille) ; les deux lectures (résumé et repli) le rendent pareil, prouvé au harnais.
+- ⚠️ **« Nouveau lien » = une pastille EN TÊTE de la mosaïque (28/10, `BoutonNouveauLien`, `.ec-mo-nouveau`)**, téléphone seulement : avec 8 liens ou plus, la dernière tuile
+  était hors écran. Elle n'entre plus dans la règle de taille (les tuiles sont les liens). Ni le « + » du haut (il est au dépôt), ni un bouton de plus dans la barre du bas ;
+  l'ordinateur garde le bouton de l'en-tête. L'ancienne tuile est dans `archive/mosaique-liens-2026-10/`.
 - **Moins de boutons** : au téléphone « Par lien » et l'onglet « Les liens » sont UNE vue (la mosaïque, « Créer un lien » en tête à la place de « Cocher ») ; la pilule
   « Les liens · N » de l'en-tête n'existe plus au téléphone ; UNE seule fenêtre de création (`creerLien`) pour l'en-tête, la vue « Par lien » et l'état vide ; chaque
   segment de la barre du bas ramène à SA vue d'ensemble (un seul toucher, jamais un retour à refaire). Sans aucune photo mais avec des liens, les tuiles se montrent
@@ -673,7 +683,12 @@ La règle de Mathias : « si un bouton n'a pas sa place, s'il peut être remplac
   28/10 : une photo sans date (copie WhatsApp, capture) prenait son jour d'ARRIVÉE et donnait deux intertitres « Mercredi 28 octobre ». Elle va maintenant dans
   « Sans date » (`jourDePhoto`, clé `~`), en dernier. Plus de filtre Jour ni d'ordre :
   `Filtres = { mode: "tout" | "liens", lien, dossier, personnes, corbeille }`.
-- **Une vignette est UNE PHOTO** : ni nom, ni initiales, ni étoile, ni badge (doublon, œil barré, « nouvelle »). Le rond de sélection n'existe qu'en « Sélectionner » (et au survol à la souris) ; en
+- **Une vignette est UNE PHOTO** : ni nom, ni initiales, ni étoile, ni badge (doublon, œil barré, « nouvelle »). ⚠️ **Seule exception, le 28/10 : le petit CŒUR d'un favori**
+  (`preselection`, recette de Mathias : « le cœur ne se voit pas ») : un cœur plein blanc de 20 px en bas à gauche (`.ec-s-coeur`, ombre double, `pointer-events: none`), en grille comme dans
+  l'album d'un lien et dans « Choisir d'abord mes préférées » (où c'est la photo gardée qui le porte). **Favoris** (28/10) est un filtre de « Toutes » : `Filtres.favoris`, la clé de dossier
+  `selection` (la MÊME règle que l'atelier : `dansLeDossier`, `planDuDossier`, `n_selection` du résumé ; les comptes et la pagination sont ceux de la route), un segment de la barre du bas
+  (Toutes · Favoris · Par lien) et de la colonne de l'ordinateur (une puce « Favoris » avec sa croix), l'adresse `?dossier=selection`. Choisir un lien ou une personne sort de Favoris ; défaire un
+  cœur dans la vue laisse la photo là (sans cœur) jusqu'à la relecture. Le rond de sélection n'existe qu'en « Sélectionner » (et au survol à la souris) ; en
   « Sélectionner » un rond par jour prend la journée. Toucher agrandit ; l'appui long ouvre le menu de la photo (Favori, Voir qui l'a envoyée, Supprimer) et, en « Sélectionner », bascule la photo.
 - **Deux gestes seulement** : le CŒUR (favori) écrit les marques `preselection` de « Ma sélection » par la MÊME route `marquer`, donc l'atelier retrouve la sélection dans son téléchargement ; SUPPRIMER
   = la corbeille de 30 jours (« Supprimées récemment »). « Ne pas publier » (`signalee`), « Doublons », Renommer et Fusionner ont quitté l'espace du client : les marques `signalee` déjà posées restent en

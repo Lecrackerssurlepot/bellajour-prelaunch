@@ -208,7 +208,9 @@
   outline: 3px solid var(--ec-accent);
   outline-offset: 3px;
 }
-/* Les photos gardées de « Choisir d'abord mes préférées » : un petit cœur blanc en bas à gauche (le blanc posé sur une photo ne change pas avec le mode). */
+/* Le CŒUR d'un favori (28/10, recette de Mathias : « le cœur ne se voit pas ») : un petit cœur plein en bas à gauche de la vignette, en grille et dans l'album d'un lien ;
+   dans « Choisir d'abord mes préférées », la photo gardée. Le blanc du reflet (le même qu'au rond de sélection) ne change pas avec le mode ; l'ombre double (un halo serré,
+   un halo large) le garde lisible sur une photo claire comme sombre. Il ne reçoit AUCUN toucher : ni la photo ni le rond de sélection ne sont gênés. */
 .ec-espace .ec-s-coeur {
   position: absolute;
   left: 5px;
@@ -216,10 +218,10 @@
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  color: var(--ec-page);
-  filter: drop-shadow(0 1px 3px rgba(var(--ec-noir-rgb), 0.55));
+  width: 20px;
+  height: 20px;
+  color: rgb(var(--ec-reflet-rgb));
+  filter: drop-shadow(0 0 1px rgba(var(--ec-noir-rgb), 0.7)) drop-shadow(0 1px 4px rgba(var(--ec-noir-rgb), 0.55));
   pointer-events: none;
 }
 
@@ -420,7 +422,7 @@
   }
   .ec-espace .ec-s-onglets--seul {
     flex: none;
-    width: 252px;
+    width: 300px;
   }
   .ec-espace .ec-s-onglets button {
     flex: 1;
@@ -833,42 +835,38 @@
   text-align: center;
 }
 
-/* ═════════ « Nouveau lien » : la dernière tuile de la mosaïque, en pointillé ═════════ */
-.ec-espace .ec-tu--nouveau {
-  background: transparent;
-  border: 1.5px dashed var(--ec-line-fort);
-  box-shadow: none;
-}
-.ec-espace .ec-tu--nouveau::after {
-  display: none;
-}
-.ec-espace .ec-tu-nouveau {
-  position: absolute;
-  inset: 0;
+/* ═════════ « Nouveau lien » : une pastille en tête de la mosaïque (28/10), toujours dans le premier écran ═════════ */
+.ec-espace .ec-mo-tete {
   display: flex;
-  flex-direction: column;
+  max-width: 640px;
+  margin: 0 auto 8px;
+}
+.ec-espace .ec-mo-nouveau {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  border: 0;
-  background: none;
+  min-height: 44px;
+  padding: 0 16px 0 8px;
+  border: 1.5px dashed var(--ec-line-fort);
+  border-radius: 999px;
+  background: transparent;
   color: var(--ec-accent-texte);
   font: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
 }
-.ec-espace .ec-tu-nouveau i {
+.ec-espace .ec-mo-nouveau i {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--ec-accent-soft);
 }
-.ec-espace .ec-tu-nouveau:focus-visible {
+.ec-espace .ec-mo-nouveau:focus-visible {
   outline: 3px solid var(--ec-accent);
-  outline-offset: -3px;
+  outline-offset: 2px;
 }
 
 /* ═════════ la photo agrandie : les deux gestes du téléphone ═════════ */
