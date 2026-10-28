@@ -39,10 +39,12 @@ const BLOC = "#f3f4f7";
 const ACTION = "#4a90d9";
 /* L'encadré du titre (retour de Mathias du 28/10 : « le titre en gras, dans un encadré », le logo en haut) : un bleu très
    clair, de la famille du bouton. Le logo est un PNG (un SVG ou un WebP ne s'affichent pas dans Outlook ni dans tous les Gmail),
-   servi par le site à adresse fixe : `public/logo-mail-bleu.png`, 300 px affichés à 150 (net sur un écran Retina). ⚠️ Le logo
-   n'est PAS un lien : chaque mail ne porte qu'UN `<a` (son bouton), le harnais le compte. */
+   servi par le site à adresse fixe, 300 px affichés à 150 (net sur un écran Retina). ⚠️ Le logo n'est PAS un lien : chaque mail
+   ne porte qu'UN `<a` (son bouton), le harnais le compte. ⚠️ FOND TRANSPARENT (`logo-mail-bleu-v2.png`, 28/10) : la v1 était
+   aplatie sur du blanc et faisait un rectangle blanc dans Gmail iPhone en mode sombre. Un logo qui change prend un NOUVEAU nom :
+   Gmail garde les images en cache par adresse (la v1 reste pour les mails déjà partis). */
 const TITRE_FOND = "#eaf2fb";
-const LOGO = "https://www.bellajour.fr/logo-mail-bleu.png";
+const LOGO = "https://www.bellajour.fr/logo-mail-bleu-v2.png";
 
 function echapper(t: string): string {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
