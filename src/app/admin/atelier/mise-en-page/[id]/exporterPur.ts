@@ -18,17 +18,15 @@
  * Choix : le lien pointe l'ORIGINAL, octet pour octet (aucune recompression,
  * aucune perte, le profil couleur reste). Les dimensions de l'IDML sont les
  * dimensions DROITES, recalculées depuis les octets : taille stockée lue dans
- * le marqueur SOF du JPEG, permutée si le tag vaut 5 à 8. Affinity applique
- * l'orientation EXIF à l'ouverture d'un lien : la photo arrive droite, à la
- * taille que l'IDML annonce, sans étirement. Si les dimensions du catalogue
+ * le marqueur SOF du JPEG, permutée si le tag vaut 5 à 8. Si les dimensions du catalogue
  * (la base) diffèrent de celles des octets, ce sont les octets qui servent à
  * l'export, et l'écart est rapporté (le cadrage vu à l'écran, lui, a été fait
  * sur le rapport du catalogue).
  *
- * Hypothèse à confirmer par la recette 3 de MISE-EN-PAGE.md §9 (« EXIF
- * tournée » : droite, pas couchée) : Affinity honore le tag. Si elle le
- * négligeait, la seule parade sans perte serait de pivoter les pixels, ce que
- * le navigateur ne sait pas faire sans recompresser.
+ * TRANCHÉ le 28/10 (export Australie, 13 portraits de téléphone couchés et
+ * étirés) : Affinity IGNORE le tag. L'IDML décrit donc l'image STOCKÉE et la
+ * matrice de l'image fait la rotation (`placementOriente`, idml.ts), le tag
+ * passant par `PhotoExport.tag`. Le fichier reste intact, sans recompression.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
@@ -107,7 +105,7 @@ export type DecisionOrientation = {
   h: number;
   /** Le tag lu dans les octets (1 sans tag). */
   tag: number;
-  /** Le fichier est stocké couché (tag 5 à 8) : il porte une rotation que le lien laisse à Affinity. */
+  /** Le fichier est stocké couché (tag 5 à 8) : l'IDML fait la rotation (Affinity ignore le tag). */
   tournee: boolean;
   /** D'où viennent l et h : les octets, ou (octets illisibles) le catalogue. */
   source: "octets" | "catalogue";
@@ -197,7 +195,7 @@ export function photosPourIdml(args: {
   const m = new Map<string, PhotoExport>();
   for (const [id, d] of args.decisions) {
     const nomLien = args.nomsLiens.get(id);
-    if (nomLien) m.set(id, { id, nomLien, l: d.l, h: d.h });
+    if (nomLien) m.set(id, { id, nomLien, l: d.l, h: d.h, tag: d.source === "octets" ? d.tag : 1 });
   }
   return m;
 }

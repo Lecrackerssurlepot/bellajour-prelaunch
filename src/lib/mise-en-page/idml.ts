@@ -19,7 +19,32 @@ import { cadresDe, dispositionDe, type Disposition, type Magazine, type Planche 
 import type { Cadre, RoleCadre } from "./types";
 
 /** Une photo prête à l'export : l / h en px APRÈS orientation EXIF, `nomLien` unique dans Links/. */
-export type PhotoExport = { id: string; nomLien: string; l: number; h: number };
+/** `l` × `h` : dimensions DROITES. `tag` : orientation EXIF du fichier (1 ou absent = stocké droit). */
+export type PhotoExport = { id: string; nomLien: string; l: number; h: number; tag?: number };
+
+/**
+ * Le placement d'une image dont le fichier est stocké tourné (tag EXIF 2 à 8). Affinity IGNORE ce tag (essai
+ * Australie du 28/10 : portraits couchés et étirés) : on décrit donc l'image telle qu'elle est STOCKÉE
+ * (GraphicBounds = pixels du fichier) et la matrice fait la rotation ou le miroir vers l'image droite, posée à
+ * l'échelle `s` en (tx, ty). Image droite l × h ; stockée ls × hs (permutées pour 5 à 8).
+ * x' = a·x + c·y + tx, y' = b·x + d·y + ty (Y vers le bas).
+ */
+export function placementOriente(tag: number | undefined, l: number, h: number, s: number, tx: number, ty: number): { m: [number, number, number, number, number, number]; ls: number; hs: number } {
+  const t = typeof tag === "number" && Number.isInteger(tag) && tag >= 1 && tag <= 8 ? tag : 1;
+  const ls = t >= 5 ? h : l;
+  const hs = t >= 5 ? l : h;
+  const m: Record<number, [number, number, number, number, number, number]> = {
+    1: [s, 0, 0, s, tx, ty],
+    2: [-s, 0, 0, s, tx + s * ls, ty],
+    3: [-s, 0, 0, -s, tx + s * ls, ty + s * hs],
+    4: [s, 0, 0, -s, tx, ty + s * hs],
+    5: [0, s, s, 0, tx, ty],
+    6: [0, s, -s, 0, tx + s * hs, ty],
+    7: [0, -s, -s, 0, tx + s * hs, ty + s * ls],
+    8: [0, -s, s, 0, tx, ty + s * ls],
+  };
+  return { m: m[t], ls, hs };
+}
 
 export type OptionsLiens =
   | { mode: "relatif" }
@@ -184,7 +209,11 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
     const s = cg.echelle * K;
     const tx = x + cg.x * K;
     const ty = y + cg.y * K;
-    return `${ouvre}<Image Self="${nid()}" ItemTransform="${f(s, 6)} 0 0 ${f(s, 6)} ${f(tx, 4)} ${f(ty, 4)}" ActualPpi="72 72"><Properties><Profile type="string">$ID/Embedded</Profile><GraphicBounds Left="0" Top="0" Right="${ph.l}" Bottom="${ph.h}"/></Properties>`
+    const po = placementOriente(ph.tag, ph.l, ph.h, s, tx, ty);
+    const it = po.m[1] === 0 && po.m[2] === 0 && po.m[0] === po.m[3]
+      ? `${f(s, 6)} 0 0 ${f(s, 6)} ${f(tx, 4)} ${f(ty, 4)}`
+      : `${po.m.slice(0, 4).map((v) => (v === 0 ? "0" : f(v, 6))).join(" ")} ${f(po.m[4], 4)} ${f(po.m[5], 4)}`;
+    return `${ouvre}<Image Self="${nid()}" ItemTransform="${it}" ActualPpi="72 72"><Properties><Profile type="string">$ID/Embedded</Profile><GraphicBounds Left="0" Top="0" Right="${po.ls}" Bottom="${po.hs}"/></Properties>`
       + `<Link Self="${nid()}" LinkResourceURI="${echapperXml(uriDeLien(ph.nomLien, options.liens))}" LinkResourceFormat="$ID/JPEG" StoredState="Normal"/></Image></Rectangle>`;
   };
 

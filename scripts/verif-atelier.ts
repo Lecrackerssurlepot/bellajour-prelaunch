@@ -447,7 +447,7 @@ import {
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
 /* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
-import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
@@ -7095,6 +7095,24 @@ const verifierMepClient = () => {
   });
   ok("listes : posées sous leur nom de Links/ (l'illisible annotée INDISPONIBLE), non posées sous leur nom d'origine",
     lst.utilisees.join("|") === "IMG_1.jpg|img_1 (2).JPG  [INDISPONIBLE : absente du coffre (404)]" && lst.nonUtilisees.join("|") === "libre.jpg");
+  {
+    /* Affinity ignore le tag EXIF (28/10) : la matrice de l'image fait la rotation. Chaque coin STOCKÉ doit tomber sur
+       le coin droit attendu (EXIF : où va le pixel (0,0) du fichier à l'affichage), et l'image droite remplir sa place. */
+    const L = 30, H = 40, S = 2, TX = 5, TY = 7;
+    const coinAttendu: Record<number, [number, number]> = { 1: [0, 0], 2: [L, 0], 3: [L, H], 4: [0, H], 5: [0, 0], 6: [L, 0], 7: [L, H], 8: [0, H] };
+    let bon = true;
+    for (let t = 1; t <= 8; t++) {
+      const { m, ls, hs } = placementOriente(t, L, H, S, TX, TY);
+      const ap = (x: number, y: number): [number, number] => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+      const coins = [ap(0, 0), ap(ls, 0), ap(0, hs), ap(ls, hs)];
+      const xs = coins.map((c) => c[0]), ys = coins.map((c) => c[1]);
+      const o = ap(0, 0);
+      bon &&= (t >= 5 ? ls === H && hs === L : ls === L && hs === H)
+        && Math.min(...xs) === TX && Math.max(...xs) === TX + S * L && Math.min(...ys) === TY && Math.max(...ys) === TY + S * H
+        && o[0] === TX + S * coinAttendu[t][0] && o[1] === TY + S * coinAttendu[t][1];
+    }
+    ok("IDML : image tournée (tags 1 à 8), coins stockés posés sur l'image droite, origine au bon coin", bon);
+  }
   const pi = photosPourIdml({ decisions: new Map([["1", droite(6)]]), nomsLiens: liens3 });
   ok("IDML : seules les photos lues entrent (l'illisible laisse un cadre vide), avec les dimensions DROITES des octets",
     pi.size === 1 && pi.get("1")?.l === 3024 && pi.get("1")?.h === 4032 && pi.get("1")?.nomLien === "IMG_1.jpg");
