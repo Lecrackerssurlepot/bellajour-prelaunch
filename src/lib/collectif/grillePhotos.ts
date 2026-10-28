@@ -296,7 +296,10 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
   const tranche = d.seulementArbre ? [] : sansGrille ? dansDossier.slice(-ARRIVEES).reverse() : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
   const photos = await Promise.all(tranche.map((p) => tuile(p, doublonDe, c)));
 
-  const liens = partage ? provenances : [];
+  /* Sans le droit de partager (l'équipe, le responsable sur un appareil pas encore reconnu) : les liens restent dans
+     l'arbre (noms, comptes, tuiles) mais SANS leur clé de partage (28/10 : « Par lien » disait « Aucun lien à montrer »
+     alors que le lien avait des photos). L'arbre ne lit que l'id et le nom ; la clé ne sort que pour qui partage. */
+  const liens = partage ? provenances : provenances.map((l) => ({ ...l, cle: "" }));
   const arbre = arbreDesPhotos(toutes, liens, edition, partage);
   /* La couverture de chaque dossier et de chaque lien (15/10) : la dernière photo arrivée qui
      a une vignette. Seulement dans les vues d'ensemble et dans un dossier qui en contient
@@ -515,7 +518,10 @@ export async function grilleDepuisResume(
   const photos = await Promise.all(tranche.map((p) => tuile(p, doublonDe, c)));
 
   const pesees = enLignesPesees(groupes);
-  const liens = partage ? provenances : [];
+  /* Sans le droit de partager (l'équipe, le responsable sur un appareil pas encore reconnu) : les liens restent dans
+     l'arbre (noms, comptes, tuiles) mais SANS leur clé de partage (28/10 : « Par lien » disait « Aucun lien à montrer »
+     alors que le lien avait des photos). L'arbre ne lit que l'id et le nom ; la clé ne sort que pour qui partage. */
+  const liens = partage ? provenances : provenances.map((l) => ({ ...l, cle: "" }));
   const arbre = arbreDesPhotos(pesees, liens, edition, partage);
   const couvertures: Record<string, string> = {};
   const couverturesPlus: Record<string, CouvertureEnPlus> = {};
