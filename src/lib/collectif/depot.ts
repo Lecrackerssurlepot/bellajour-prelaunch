@@ -207,6 +207,35 @@ export type ContexteDeclaration = {
   participantId: string | null;
 };
 
+/* ─────────── Le responsable dépose DANS un lien (décision de Mathias du 28/10) ───────────
+   La responsable d'Audencia peut être sur un bateau : elle dépose dans « Bateau 5 » comme dans
+   « Mes photos ». La photo porte alors l'id du lien (`provenance_id`) : elle est dans l'album du
+   lien, sa tuile et ses comptes, sous le nom du responsable (`role_deposant` responsable). Le
+   responsable n'a pas de plafond par personne ; le total de l'édition la compte. Le navigateur
+   envoie l'ID du lien (`provenance.lien`), la route le relit DANS l'édition et refuse un lien
+   supprimé. Un participant ne vise jamais rien : son lien est celui de sa page (`p`). */
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Le refus d'un lien visé illisible ou introuvable : un 400, JAMAIS un 404 (le moteur lirait « lien mort » et fermerait la page). */
+export const ERREUR_LIEN_VISE = "lien_inconnu";
+
+/**
+ * Le lien que la déclaration vise. `id: null` : aucun (« Mes photos », un dossier, ou un
+ * participant, dont le corps ne choisit rien). `ok: false` : un responsable a envoyé autre chose
+ * qu'un id (la route refuse, avant toute lecture : un texte de client n'entre jamais dans `.in()`).
+ */
+export function lienVise(role: "participant" | "responsable", provenance: unknown): { ok: true; id: string | null } | { ok: false } {
+  if (role !== "responsable" || !provenance || typeof provenance !== "object") return { ok: true, id: null };
+  const lien = (provenance as Record<string, unknown>).lien;
+  if (lien === undefined || lien === null || lien === "") return { ok: true, id: null };
+  return typeof lien === "string" && UUID.test(lien) ? { ok: true, id: lien.toLowerCase() } : { ok: false };
+}
+
+/** Le lien relu en base (déjà filtré par l'édition) reçoit-il le dépôt du responsable ? Il existe et n'est pas supprimé. */
+export function lienRecoit(l: { retire_le?: string | null } | null | undefined): l is { retire_le?: string | null } {
+  return Boolean(l) && !l?.retire_le;
+}
+
 /**
  * La photo est-elle du lien de cette page ? Un lien de contribution : sa
  * provenance ; le lien général : une photo de participant sans provenance.

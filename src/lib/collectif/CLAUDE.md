@@ -1286,3 +1286,26 @@ ajoutée ici s'y ajoute aussi. `scripts/verif-atelier.ts` doit rester vert à ch
   arrivées » et le bouton existant devient « Reprendre » (la pastille d'envoi pour le responsable,
   qui ouvre directement le choix). Le chiffre de place ne change pas ; la reprise passe par la
   même ligne (`planDeclaration`, « reprise »), donc le bouton ne se ferme pas faute de place.
+
+## Le dépôt du responsable, recette du 28/10 (un envoi fini s'efface, choisir où, l'iPhone lent)
+
+- **Un envoi FINI ne revient plus** (`envoiAMontrer`, depotParticipant.ts) : tout arrivé ou refusé, le prochain
+  « Déposer » s'ouvre sur le choix ; un envoi qui vit (en route, à reprendre) reste, « Ajouter » s'y ajoute. La fenêtre
+  dit les raisons et les fichiers ignorés du DERNIER lot (`lot.raisons`, `vue.lotIgnores`).
+- **Choisir où** (`destinationsDuDepot`, `destinationOuverte`, dossiers.ts) : « Mes photos », ses dossiers, ses liens
+  (jamais « Sans groupe » ni un lien supprimé), puis « Nouveau dossier » ; un toucher ouvre la photothèque. Depuis la page
+  d'un lien ou d'un dossier, CETTE destination est proposée avec « Changer ». Tous les « Déposer » ouvrent la même feuille
+  (l'encart vide du tableau de bord compris ; son ancienne ligne « « Mes photos » · Changer » est dans
+  `archive/depot-destination-2026-10/`).
+- **Le responsable dépose DANS un lien** : la provenance du moteur porte `lien` (l'id) ; `depot/presign` le relit par
+  `lienVise` (seul le responsable vise, un id, jamais un texte) puis `lireLiensParId` DANS l'édition et `lienRecoit` (pas
+  supprimé) ; refus en 400 `lien_inconnu`, JAMAIS 404 (le moteur fermerait la page). La photo prend `provenance_id` et le
+  type du lien, `role_deposant` responsable, son nom (`responsable_nom`) ; aucun plafond par personne, le total la compte.
+  Elle est dans la tuile, les comptes et l'ALBUM du lien vu par ses participants : exception à « l'accord fait foi »
+  (`dansLAlbum`, `accord_ou_responsable` → un `or` PostgREST, vérifié sur la vue `collectif_photos_album`).
+- **Le moteur, plus vite** (banc du 28/10, CPU ×4, 4G simulée 1 Mo/s, 10 JPEG de 12 Mpx) : la réduction des premières
+  photos commence PENDANT la vérification « déjà là ? » (`verifiee`), mais aucune déclaration ne part avant la première
+  réponse du serveur (`serveurAtteint`) : deux écritures simultanées du premier appareil, sans cookie, prenaient la place
+  deux fois et la seconde perdait (403, premier envoi refusé, vu en recette). L'original rend sa voie dès qu'il est au
+  coffre (« annexes » : vignette et moyenne en même temps, la photo confirmée seulement après) ; la barre avance avec les
+  octets (`enRoute`). Toujours au plus 8 photos réduites en mémoire (`FENETRE`).

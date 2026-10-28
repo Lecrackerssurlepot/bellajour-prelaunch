@@ -402,6 +402,42 @@ export function cheminDuNoeud(arbre: Arbre, cle: string): string | null {
   return null;
 }
 
+/* ─────────── Où vont les photos du responsable (décision de Mathias du 28/10) ───────────
+   « Déposer des photos » ouvre d'abord ce choix : « Mes photos » en premier (toujours, même vide),
+   ses autres dossiers, puis ses liens (Bateau 1, Bateau 5…) ; « Nouveau dossier » est posé par
+   l'écran, en dernier. Un lien supprimé n'est plus une destination (il ne reçoit rien), « Sans
+   groupe » non plus (l'adresse de base, jamais montrée comme un lien). */
+
+/** Une destination : un dossier du responsable (`chemin`) ou un lien (`lien`, son id). */
+export type Destination = { cle: string; nom: string; n: number; chemin: string | null; lien: string | null };
+
+export function destinationsDuDepot(arbre: Arbre | null): Destination[] {
+  const vous = arbre?.vous.filter((h) => h.cle.startsWith("resp:organisateur:")) ?? [];
+  const propre = vous.find((h) => h.nom === DOSSIER_RESPONSABLE);
+  const dossiers: Destination[] = [
+    { cle: cleResp("organisateur", ""), nom: DOSSIER_RESPONSABLE, n: propre?.n ?? 0, chemin: DOSSIER_RESPONSABLE, lien: null },
+    ...(propre?.enfants ?? []).map((e) => ({ cle: e.cle, nom: `${DOSSIER_RESPONSABLE}${SEPARATEUR}${e.nom}`, n: e.n, chemin: `${DOSSIER_RESPONSABLE}${SEPARATEUR}${e.nom}`, lien: null })),
+    ...vous
+      .filter((h) => h !== propre)
+      .flatMap((h) => [
+        { cle: h.cle, nom: h.nom, n: h.n, chemin: h.nom, lien: null },
+        ...h.enfants.map((e) => ({ cle: e.cle, nom: `${h.nom}${SEPARATEUR}${e.nom}`, n: e.n, chemin: `${h.nom}${SEPARATEUR}${e.nom}`, lien: null })),
+      ]),
+  ];
+  const liens: Destination[] = (arbre?.liens ?? [])
+    .filter((l) => l.cle.startsWith("lien:") && l.renommable)
+    .map((l) => ({ cle: l.cle, nom: l.nom, n: l.n, chemin: null, lien: l.cle.slice(5) }));
+  return [...dossiers, ...liens];
+}
+
+/** La destination d'une ouverture : le lien ou le dossier où l'on est, sinon « Mes photos ». Un lien encore inconnu de la liste garde son id (le nom suit à la lecture). */
+export function destinationOuverte(liste: readonly Destination[], o: { lien?: string | null; dossier?: string | null }): Destination {
+  const mes = liste[0] ?? { cle: cleResp("organisateur", ""), nom: DOSSIER_RESPONSABLE, n: 0, chemin: DOSSIER_RESPONSABLE, lien: null };
+  if (o.lien) return liste.find((d) => d.lien === o.lien) ?? { cle: `lien:${o.lien}`, nom: "Ce lien", n: 0, chemin: null, lien: o.lien };
+  if (o.dossier) return liste.find((d) => d.chemin === o.dossier) ?? { cle: `resp:organisateur:${o.dossier}`, nom: o.dossier, n: 0, chemin: o.dossier, lien: null };
+  return mes;
+}
+
 /** Trouver un nœud de l'arbre par sa clé, à tous les niveaux. */
 export function noeudDe(arbre: Arbre, cle: string): Noeud | undefined {
   for (const n of [...arbre.vous, ...arbre.liens, ...(arbre.atelier ? [arbre.atelier] : []), ...arbre.personnes]) {

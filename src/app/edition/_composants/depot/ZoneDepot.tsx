@@ -3,25 +3,27 @@
 /* La zone de dépôt du responsable, déjà ouverte (PRD §14.2) : on glisse des
    photos ou un dossier entier, ou on les choisit. Elle conduit le moteur
    d'envoi de la coquille (DepotContexte) : l'envoi continue pendant qu'on
-   navigue. Le « dossier de destination » est le nom sous lequel l'atelier
-   voit ces photos ; « Mes photos » par défaut.
+   navigue.
    21/10 : le compte est celui du DERNIER envoi, et ce qui était déjà là ne se
-   compte plus comme arrivé (`progression`, la règle de la page du participant). */
+   compte plus comme arrivé (`progression`, la règle de la page du participant).
+   28/10 (décision de Mathias) : « Choisir des photos » ouvre la MÊME feuille de
+   choix que tous les « Déposer » (Mes photos, ses dossiers, ses liens, Nouveau
+   dossier) ; la ligne « « Mes photos » · Changer » et son champ sont partis
+   (`archive/depot-destination-2026-10/`). Ce qu'on glisse, ou « Un dossier »
+   de l'ordinateur, va dans « Mes photos ». */
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { bilanDuLot, progression } from "@/lib/collectif/depotParticipant";
-import { useMoteurDepot } from "./DepotContexte";
+import { useFenetreEnvoi, useMoteurDepot } from "./DepotContexte";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
-import { phraseSilence, useSelecteur } from "./useSelecteur";
 
 export default function ZoneDepot({ tu }: { tu: boolean }) {
   const router = useRouter();
   const moteur = useMoteurDepot();
+  const { ouvrir } = useFenetreEnvoi();
   const vue = useMoteur(moteur);
   const v = (vous: string, toi: string) => (tu ? toi : vous);
-  const [dossierNom, setDossierNom] = useState("Mes photos");
-  const [renommer, setRenommer] = useState(false);
   const [survol, setSurvol] = useState(false);
   const dossier = useRef<HTMLInputElement>(null);
   const enCours = useRef(0);
@@ -37,15 +39,14 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
     enCours.current = vue.enCours;
   }, [vue.enCours, router]);
 
+  /* Glissées, ou un dossier de l'ordinateur : « Mes photos ». */
   const ajouter = (liste: Iterable<File>) => {
     if (!moteur) return;
-    const nom = dossierNom.trim();
-    moteur.definirProvenance({ type: "organisateur", libelle: nom === "Mes photos" ? "" : nom });
+    moteur.definirProvenance({ type: "organisateur", libelle: "" });
     moteur.ajouter(liste);
   };
-  const selecteur = useSelecteur(ajouter);
 
-  if (!moteur) return null;
+  if (!moteur || !ouvrir) return null;
   /* Le dernier envoi : ce qui part vraiment, et à part ce qui était déjà là. */
   const prog = progression(vue.lot);
   const dejaLa = bilanDuLot(vue.lot).dejaLa + vue.lot.deuxFois;
@@ -87,8 +88,8 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
           {vue.horsLigne ? <p className="ec-note">Connexion perdue. Reprise automatique.</p> : null}
           {vue.serveurLent ? <p className="ec-note">Serveur lent. Reprise automatique.</p> : null}
           {vue.reseauBloque ? <p className="ec-note ec-note--erreur">{vue.reseauBloque}</p> : null}
-          {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s).</p> : null}
-          {vue.raisons.map((r) => (
+          {vue.lotIgnores ? <p className="ec-note">{vue.lotIgnores} fichier(s) ignoré(s).</p> : null}
+          {vue.lot.raisons.map((r) => (
             <p key={r} className="ec-note ec-note--erreur">
               {r}
             </p>
@@ -99,7 +100,7 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
             </button>
           ) : null}
           {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
-          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={selecteur.ouvrir}>
+          <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => ouvrir()}>
             Ajouter d&apos;autres photos
           </button>
         </div>
@@ -116,39 +117,15 @@ export default function ZoneDepot({ tu }: { tu: boolean }) {
             Photos ou dossier entier.
           </span>
           <div className="ec-actions ec-actions--centre">
-            <button type="button" className="ec-bouton" onClick={selecteur.ouvrir}>
+            <button type="button" className="ec-bouton" onClick={() => ouvrir()}>
               Choisir des photos
             </button>
-            <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => dossier.current?.click()}>
+            <button type="button" className="ec-bouton ec-bouton--clair ec-pour-souris" onClick={() => dossier.current?.click()}>
               Un dossier
             </button>
           </div>
-          {renommer ? (
-            <span className="ec-zone-depot-dossier">
-              <input
-                className="ec-champ"
-                value={dossierNom}
-                maxLength={80}
-                aria-label="Le dossier où ranger ces photos"
-                onChange={(e) => setDossierNom(e.target.value)}
-              />
-              <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => setRenommer(false)}>
-                OK
-              </button>
-            </span>
-          ) : (
-            <button type="button" className="ec-lien-discret ec-lien-discret--bouton" onClick={() => setRenommer(true)}>
-              « {dossierNom.trim() || "Mes photos"} » · Changer
-            </button>
-          )}
         </>
       )}
-      {selecteur.silence ? (
-        <p className="ec-note ec-note--erreur" role="alert">
-          {phraseSilence(selecteur.silence, tu)}
-        </p>
-      ) : null}
-      <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
       <input ref={dossier} type="file" multiple hidden onChange={(e) => { if (e.target.files) ajouter(e.target.files); e.target.value = ""; }} />
     </div>
   );

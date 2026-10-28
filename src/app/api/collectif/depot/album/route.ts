@@ -8,6 +8,7 @@ import {
   COLONNES_VUE_ALBUM,
   estAMoi,
   filtreAlbum,
+  orAccordOuResponsable,
   filtreVueAlbum,
   lirePageAlbum,
   lireVueAlbum,
@@ -90,10 +91,13 @@ const freinAlbum = creerFrein(FREINS_DEPOT.album);
 const freinLarge = creerFrein(FREIN_LARGE);
 
 /** Le filtre, posé appel par appel (`filtreAlbum` pour l'album, le téléphone pour « miennes »). */
-function poser<Q extends { eq(c: string, v: string): Q; is(c: string, v: null): Q; not(c: string, op: string, v: null): Q; in(c: string, v: string[]): Q }>(q: Q, f: FiltreAlbum, avec: boolean): Q {
+function poser<Q extends { eq(c: string, v: string): Q; is(c: string, v: null): Q; not(c: string, op: string, v: null): Q; in(c: string, v: string[]): Q; or(f: string): Q }>(q: Q, f: FiltreAlbum, avec: boolean): Q {
   if (f.methode === "eq") return q.eq(f.colonne, f.valeur);
   if (f.methode === "is") return f.colonne === "supprimee_le" && !avec ? q : q.is(f.colonne, null);
   if (f.methode === "not_is") return q.not(f.colonne, "is", null);
+  /* 28/10 : la photo du responsable déposée dans CE lien entre dans son album (album.ts). Deux `or` sur une même
+     requête (« Mes photos » d'un autre appareil) se cumulent en ET : vérifié contre la base le 28/10. */
+  if (f.methode === "accord_ou_responsable") return q.or(orAccordOuResponsable(f.valeurs));
   /* Les versions d'accord sont des constantes du code (VERSIONS_ALBUM), jamais un texte de client. */
   return q.in(f.colonne, f.valeurs);
 }
