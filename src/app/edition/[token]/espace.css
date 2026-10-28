@@ -301,6 +301,10 @@
   width: 96px;
   margin: 0;
 }
+.ec-espace .ec-logo-lien {
+  display: block;
+  line-height: 0;
+}
 
 /* Le nom de l'édition sous le logo : du texte simple, plus de boîte (elle
    ressemblait à un sélecteur d'éditions ; un lien n'en ouvre qu'une, T-152). */
@@ -610,9 +614,10 @@
   flex: none;
   color: var(--ec-accent);
 }
-@media (max-width: 860px) {
-  .ec-espace .ec-pastille-appareil-long {
-    display: none;
+@keyframes ec-pastille-entre {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
   }
 }
 .ec-espace .ec-pastille-envoi-barre {
@@ -743,6 +748,14 @@
   font-size: clamp(30px, 3.4vw, 46px);
   line-height: 1.1;
   color: var(--ec-text);
+}
+.ec-espace .ec-verrou.ec-verrou--ligne {
+  max-width: 560px;
+  padding: 0 8px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ec-muted);
 }
 .ec-espace .ec-silhouette {
   min-height: 220px;
@@ -2391,6 +2404,110 @@
 .ec-espace .ec-envoi-puce-n {
   color: var(--ec-muted);
 }
+/* Où vont les photos (28/10) : une ligne par destination, un toucher ouvre la photothèque. */
+.ec-espace .ec-dest-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -6px;
+}
+.ec-espace .ec-dest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--ec-r-champ);
+  background: none;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace button.ec-dest:hover,
+.ec-espace button.ec-dest:focus-visible {
+  background: var(--ec-actif);
+  outline: none;
+}
+/* La destination choisie se voit franchement (retour de Mathias du 28/10 : « l'encart orange », on doit comprendre sur
+   quel lien on envoie) : le fond doux, un contour à l'accent, le nom en gras. */
+.ec-espace .ec-dest[aria-pressed="true"] {
+  background: var(--ec-accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--ec-accent);
+}
+.ec-espace .ec-dest[aria-pressed="true"] .ec-dest-nom {
+  font-weight: 600;
+}
+.ec-espace .ec-dest-icone {
+  flex: none;
+  color: var(--ec-accent);
+}
+.ec-espace .ec-dest-nom {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ec-espace .ec-dest-n {
+  flex: none;
+  color: var(--ec-muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.ec-espace .ec-dest--nouveau {
+  cursor: default;
+}
+.ec-espace .ec-dest-champ {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+}
+.ec-espace .ec-dest-ici {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* La destination proposée depuis un lien se lit comme la ligne choisie de la liste : le même encadré à l'accent (28/10). */
+.ec-espace .ec-dest--ici {
+  background: var(--ec-accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--ec-accent);
+  cursor: default;
+}
+.ec-espace .ec-dest--ici .ec-dest-nom {
+  font-weight: 600;
+}
+.ec-espace .ec-dest--ici .ec-dest-vers {
+  font-weight: 400;
+}
+.ec-espace .ec-dest-vers {
+  color: var(--ec-muted);
+}
+.ec-espace .ec-dest-changer {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ec-creux);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.ec-espace .ec-dest-choisir {
+  width: 100%;
+}
+.ec-espace .ec-dest-glisser {
+  padding: 16px 20px;
+  gap: 4px;
+}
 .ec-espace .ec-depose--centre {
   align-items: center;
   text-align: center;
@@ -2942,16 +3059,31 @@
     height: 100%;
   }
   .ec-espace .ec-logo--mobile {
-    position: absolute;
-    left: 0;
-    top: 50%;
     width: 78px;
     height: auto;
     margin: 0;
+  }
+  /* Le logo est un lien vers le tableau de bord (28/10) : c'est lui qui se place et qui s'efface, pas l'image. */
+  .ec-espace .ec-logo-lien--mobile {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    height: 44px;
     transform: translateY(-50%);
     transition: opacity 180ms var(--ease), transform 180ms var(--ease);
   }
+  /* Le titre est un bouton (28/10) : il ne répond au toucher que quand il est affiché (`data-defile`), et remonte la page. */
   .ec-espace .ec-barre-titre {
+    height: 44px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
     position: absolute;
     left: 0;
     right: 0;
@@ -2970,15 +3102,18 @@
     pointer-events: none;
     transition: opacity 180ms var(--ease), transform 180ms var(--ease);
   }
-  .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-logo--mobile {
+  .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-logo-lien--mobile {
     opacity: 0;
+    pointer-events: none;
     transform: translateY(calc(-50% - 8px));
   }
   .ec-espace .ec-barre-mobile[data-defile="oui"] .ec-barre-titre {
+    pointer-events: auto;
     opacity: 1;
     transform: translateY(-50%);
   }
   .ec-espace .ec-bouton-tiroir {
+    position: relative;
     display: grid;
     place-items: center;
     width: 44px;
@@ -2988,6 +3123,45 @@
     background: none;
     color: var(--ec-blanc);
     cursor: pointer;
+  }
+  /* La pastille des non-lus sur le bouton menu (comme sur l'icône d'une messagerie) : visible tiroir fermé. */
+  .ec-espace .ec-bouton-pastille {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--ec-accent);
+    color: var(--ec-on-accent);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--ec-bg);
+    animation: ec-pastille-entre 260ms var(--ease);
+  }
+  /* La porte : « Recevoir un code pour modifier » + l'état de la collecte tiennent sur UNE ligne de 44 px (avant : deux
+     lignes empilées, ~170 px au-dessus de chaque écran). Le bouton dit « Modifier » (le titre de la fenêtre qui s'ouvre
+     dit le reste, l'aria-label le dit en entier). */
+  .ec-espace .ec-ecran-actions:has(> .ec-pastille-appareil) {
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .ec-espace .ec-pastille-appareil {
+    order: 2;
+    flex: none;
+    height: 44px;
+    margin-left: auto;
+    gap: 6px;
+  }
+  .ec-espace .ec-ecran-actions:has(> .ec-pastille-appareil) .ec-pilule {
+    min-width: 0;
+    white-space: normal;
   }
   .ec-espace .ec-menu {
     position: fixed;
@@ -3162,7 +3336,7 @@
     transition: none;
   }
   /* Le logo et le titre de la barre se remplacent sans fondu (planche 1 du 21/10). */
-  .ec-espace .ec-logo--mobile,
+  .ec-espace .ec-logo-lien--mobile,
   .ec-espace .ec-barre-titre {
     transition: none;
   }
@@ -3192,6 +3366,12 @@
   min-height: 34px;
   padding: 0 14px;
   font-size: 13px;
+}
+/* Au doigt, « petit » ne vaut que pour le dessin : la cible reste de 44 px. */
+@media (pointer: coarse) {
+  .ec-espace .ec-bouton--petit {
+    min-height: 44px;
+  }
 }
 .ec-espace .ec-bouton--plein {
   align-self: stretch;
@@ -3255,6 +3435,55 @@
 .ec-espace .ec-partage--quatre {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ec-espace .ec-partage--un {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.ec-espace .ec-partage--un .ec-bouton {
+  min-height: 44px;
+  width: 100%;
+}
+/* Le QR code au téléphone : un lien-pilule discret sous « Partager » (28/10), cible de 44 px. */
+.ec-espace .ec-partage-qr {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ec-text-doux, var(--ec-text));
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.ec-espace .ec-partage--un {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.ec-espace .ec-partage--un .ec-bouton {
+  min-height: 44px;
+  width: 100%;
+}
+/* Le QR code au téléphone : un lien-pilule discret sous « Partager » (28/10), cible de 44 px. */
+.ec-espace .ec-partage-qr {
+  align-self: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(var(--ec-fg-rgb), 0.07);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
 }
 .ec-espace .ec-partage--deux {
   display: grid;
@@ -3508,6 +3737,11 @@
 /* Sur téléphone on ne glisse rien : le texte pour la souris cède la place à celui du doigt (retour du 26/10). */
 .ec-espace .ec-pour-doigt {
   display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ec-espace .ec-bouton-pastille {
+    animation: none;
+  }
 }
 @media (hover: none) and (pointer: coarse) {
   .ec-espace .ec-pour-souris {

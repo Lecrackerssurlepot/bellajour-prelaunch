@@ -368,6 +368,11 @@ html:has(.bj-atelier.ec-depot) {
   box-shadow: var(--dp-ombre-bouton);
   cursor: pointer;
 }
+/* Page pas encore hydratée (réseau lent) : le bouton ne fait rien, il le montre. */
+.bj-atelier .ec-dp-bouton[data-attente] {
+  opacity: 0.55;
+  cursor: progress;
+}
 .bj-atelier .ec-dp-bouton:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -515,6 +520,15 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-carte {
   padding-top: clamp(0px, 4vw, 48px);
 }
+/* Au téléphone, cet air et la marge du bas font défiler la carte de quelques pixels (13 à 390 px) : on les rend. */
+@media (max-width: 560px) {
+  .bj-atelier .ec-dp-carte {
+    padding-top: 0;
+  }
+  .bj-atelier .ec-dp:has(.ec-dp-carte) {
+    padding-bottom: 20px;
+  }
+}
 .bj-atelier .ec-dp-input::placeholder {
   color: var(--dp-pale);
   opacity: 1;
@@ -638,6 +652,17 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-lien:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+/* « ‹ Retour » tout en haut de la carte (28/10) : la place de la marque, cible de 44 px. */
+.bj-atelier .ec-dp-lien--retour {
+  min-height: 44px;
+  margin: -8px 0 2px -8px;
+  padding: 0 16px 0 12px;
+  gap: 6px;
+  font-size: 15px;
+}
+.bj-atelier .ec-dp-lien--retour::after {
+  inset: 0;
 }
 .bj-atelier .ec-dp-lien--doux {
   margin-top: -6px;

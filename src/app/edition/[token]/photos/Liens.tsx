@@ -25,7 +25,8 @@
 import { useState } from "react";
 import { RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
 import { NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
-import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
+import { RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
+import { focusSiClavierPhysique } from "@/lib/pointeur";
 import Fenetre from "../../_composants/Fenetre";
 import { ICONES_MENU, type ActionMenu } from "./MenuLien";
 import "./liens.css";
@@ -117,9 +118,8 @@ export function FenetreModifierLien(f: {
   onFermer: () => void;
   onGarder: (nom: string, valeur: number, sansLimite: boolean) => void;
 }) {
-  const min = Math.min(CURSEUR_LIEN.min, f.max);
   const [nom, setNom] = useState(f.nom);
-  const [valeur, setValeur] = useState(Math.min(Math.max(f.valeurInitiale, min), f.max));
+  const [valeur, setValeur] = useState(Math.min(Math.max(f.valeurInitiale, 1), f.max));
   const [sansLimite, setSansLimite] = useState(f.sansLimiteInitial && !f.general);
   const pret = f.general || nom.trim().length > 0;
   const garder = () => {
@@ -133,7 +133,7 @@ export function FenetreModifierLien(f: {
       {f.general ? null : (
         <label className="ec-curseur">
           Le nom
-          <input className="ec-champ" value={nom} maxLength={80} autoFocus onChange={(e) => setNom(e.target.value)} onKeyDown={(e) => e.key === "Enter" && garder()} />
+          <input className="ec-champ" ref={focusSiClavierPhysique} value={nom} maxLength={80} onChange={(e) => setNom(e.target.value)} onKeyDown={(e) => e.key === "Enter" && garder()} />
         </label>
       )}
       <div className="ec-lien-plafond">
@@ -141,21 +141,8 @@ export function FenetreModifierLien(f: {
           <span className="ec-texte">Photos par personne</span>
           <strong className="ec-lien-valeur">{sansLimite ? "Sans limite" : `${valeur} photo${valeur > 1 ? "s" : ""}`}</strong>
         </div>
-        <input
-          type="range"
-          min={min}
-          max={f.max}
-          step={1}
-          value={valeur}
-          disabled={sansLimite}
-          aria-label="Nombre de photos par personne"
-          onChange={(e) => {
-            setValeur(Number(e.target.value));
-            setSansLimite(false);
-          }}
-        />
         <div className="ec-puces">
-          {RACCOURCIS_LIEN.filter((n) => n <= f.max).map((n) => (
+          {[...new Set([...RACCOURCIS_LIEN.filter((n) => n <= f.max), ...(sansLimite ? [] : [valeur])])].sort((a, b) => a - b).map((n) => (
             <button
               key={n}
               type="button"

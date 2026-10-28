@@ -265,8 +265,10 @@ export type Condition =
    * `signalees`, et le compte de la ligne « Ne pas publier »).
    */
   | { op: "signalee" }
-  /** Une photo de participant : `deParticipant` (rôle participant, OU arrivée par un lien). */
+  /** Une photo rangée dans un lien : `deParticipant` (rôle participant, OU arrivée par un lien), le responsable compris. */
   | { op: "participant" }
+  /** Un vrai participant : `estParticipant` (comme `participant`, SANS les photos du responsable). */
+  | { op: "personne" }
   /** La colonne vaut l'une des valeurs, ou (si `nul`) elle est vide. */
   | { op: "parmi"; colonne: "provenance_type" | "deposant"; valeurs: readonly string[]; nul: boolean };
 
@@ -303,7 +305,8 @@ export function planDuDossier(cle: string, groupes: readonly (LigneFiltrable & {
   if (!membres.length) return { genre: "vide" };
   let conditions: Condition[];
   if (cle === "tout") conditions = [];
-  else if (cle === "vous" || cle === QUI_RESPONSABLE) conditions = [{ op: "egal", colonne: "role_deposant", valeur: "responsable" }, { op: "nul", colonne: "provenance_id" }];
+  else if (cle === QUI_RESPONSABLE) conditions = [{ op: "egal", colonne: "role_deposant", valeur: "responsable" }];
+  else if (cle === "vous") conditions = [{ op: "egal", colonne: "role_deposant", valeur: "responsable" }, { op: "nul", colonne: "provenance_id" }];
   else if (cle === "liens") conditions = [{ op: "participant" }];
   else if (cle === "atelier") conditions = [{ op: "horsDe", colonne: "role_deposant", valeurs: ["responsable", "participant"] }, { op: "nul", colonne: "provenance_id" }];
   else if (cle === "participants") conditions = lienDeLaPersonne("general");
@@ -311,7 +314,7 @@ export function planDuDossier(cle: string, groupes: readonly (LigneFiltrable & {
   else if (cle.startsWith("pers:")) {
     const reste = cle.slice(5);
     conditions = [...lienDeLaPersonne(reste.slice(0, reste.indexOf(":"))), parmi("deposant", membres)];
-  } else if (cle.startsWith("qui:") || cle.startsWith("quis:")) conditions = [{ op: "participant" }, parmi("deposant", membres)];
+  } else if (cle.startsWith("qui:") || cle.startsWith("quis:")) conditions = [{ op: "personne" }, parmi("deposant", membres)];
   else if (cle.startsWith("resp:")) {
     conditions = [{ op: "egal", colonne: "role_deposant", valeur: "responsable" }, { op: "nul", colonne: "provenance_id" }, parmi("provenance_type", membres), parmi("deposant", membres)];
   } else return { genre: "repli", raison: "dossier inconnu" };
@@ -349,6 +352,9 @@ export function correspond(l: LigneFiltrable, conditions: readonly Condition[]):
         break;
       case "participant":
         if (!(l.role_deposant === "participant" || l.provenance_id !== null)) return false;
+        break;
+      case "personne":
+        if (l.role_deposant === "responsable" || !(l.role_deposant === "participant" || l.provenance_id !== null)) return false;
         break;
       case "parmi": {
         const v = l[c.colonne];
@@ -409,6 +415,10 @@ export function enFiltresPostgrest(conditions: readonly Condition[]): AppelFiltr
       case "participant":
         appels.push({ methode: "or", filtres: "role_deposant.eq.participant,provenance_id.not.is.null" });
         break;
+      case "personne":
+        appels.push({ methode: "not", colonne: "role_deposant", operateur: "in", valeur: liste(["responsable"]) });
+        appels.push({ methode: "or", filtres: "role_deposant.eq.participant,provenance_id.not.is.null" });
+        break;
       case "parmi":
         if (c.valeurs.length && c.nul) appels.push({ methode: "or", filtres: `${c.colonne}.is.null,${c.colonne}.in.${liste(c.valeurs)}` });
         else if (c.valeurs.length) appels.push({ methode: "filter", colonne: c.colonne, operateur: "in", valeur: liste(c.valeurs) });
@@ -432,12 +442,12 @@ export const TRI_TOUTES: readonly CleTri[] = [
 /**
  * « Par jour » (refait le 22/10, la page Photos « comme une application ») : les JOURS DE PRISE DE VUE les plus récents en haut,
  * et dans un jour la dernière prise de vue d'abord ; l'ordre d'arrivée départage (un lot partage son instant), puis l'id.
- * Les photos SANS date de prise de vue viennent d'abord, la dernière arrivée en tête (PostgreSQL : NULLS FIRST en
- * décroissant) : ce sont celles qui viennent d'arriver, pas encore lues, et l'écran les range sous leur JOUR D'ARRIVÉE
- * (« une photo sans date prend son jour d'arrivée », `regrouperParJour`, filtres.ts). Avant : du plus ancien au plus récent.
+ * Les photos SANS date de prise de vue viennent EN FIN (NULLS LAST, 28/10), la dernière arrivée en tête de leur groupe : l'écran
+ * en fait UN groupe « Sans date » (`regrouperParJour`, filtres.ts), au lieu de les ranger sous leur jour d'envoi, qui
+ * doublonnait un jour daté (« Mercredi 28 octobre » deux fois, avec un autre jour entre les deux).
  */
 export const TRI_JOUR: readonly CleTri[] = [
-  { colonne: "prise_le", croissant: false, nulsDAbord: true },
+  { colonne: "prise_le", croissant: false, nulsDAbord: false },
   { colonne: "confirmee_le", croissant: false },
   { colonne: "id", croissant: false },
 ];

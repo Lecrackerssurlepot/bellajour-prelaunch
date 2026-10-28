@@ -772,6 +772,79 @@
   flex-direction: column;
   gap: 6px;
 }
+/* La page annotée : l'image du tour en grand, les épingles du client à
+   l'endroit touché (mêmes numéros que chez lui). */
+.eca-root .eca-bat-feuille {
+  position: relative;
+  width: min(100%, 440px);
+  margin: 10px auto 0;
+  background: rgba(28, 28, 28, 0.06);
+  box-shadow: 0 10px 30px rgba(28, 28, 28, 0.14);
+}
+.eca-root .eca-bat-feuille img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.eca-root .eca-bat-epingle,
+.eca-root .eca-bat-note-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--bj-charcoal);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+.eca-root .eca-bat-epingle {
+  position: absolute;
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  padding: 0;
+  border: 2px solid #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(28, 28, 28, 0.35);
+}
+.eca-root .eca-bat-epingle--resolue {
+  background: #8f98a8;
+}
+.eca-root .eca-bat-epingle--choisie {
+  background: var(--bj-terracotta);
+  transform: scale(1.15);
+}
+.eca-root .eca-bat-note-num {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+.eca-root .eca-bat-note-situer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: -8px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.eca-root .eca-bat-note--choisie {
+  border-radius: 12px;
+  outline: 2px solid var(--bj-terracotta);
+  outline-offset: 6px;
+}
+.eca-root .eca-bat-note--choisie .eca-bat-note-num {
+  background: var(--bj-terracotta);
+}
 .eca-root .eca-bat-note-corps {
   display: flex;
   gap: 10px;

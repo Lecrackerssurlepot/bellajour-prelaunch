@@ -11,10 +11,12 @@
    restait prisonnière de son encart, inutilisable. Au premier rendu (serveur,
    hydratation) elle reste en place, puis passe dans la colonne. */
 
-import { useEffect, useId, useSyncExternalStore } from "react";
+import { useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { useRetourFerme } from "./useRetourFerme";
-import { useVerrouDefilement } from "./useVerrouDefilement";
+import "./fenetre.css";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 
 const rien = () => () => {};
 
@@ -48,15 +50,9 @@ export default function Fenetre({
   const client = useSyncExternalStore(rien, () => true, () => false);
   useVerrouDefilement();
   useRetourFerme(onFermer);
-  useEffect(() => {
-    function touche(e: KeyboardEvent) {
-      if (e.key === "Escape") onFermer();
-    }
-    window.addEventListener("keydown", touche);
-    return () => window.removeEventListener("keydown", touche);
-  }, [onFermer]);
+  useEchap(onFermer);
   const fenetre = (
-    <div className={cote ? "ec-fenetre-voile ec-fenetre-voile--cote" : "ec-fenetre-voile"} role="presentation" onClick={onFermer}>
+    <div className={cote ? "ec-fenetre-voile ec-fenetre-voile--cote" : pleine ? "ec-fenetre-voile" : "ec-fenetre-voile ec-fenetre-voile--feuille"} role="presentation" onClick={onFermer}>
       <div
         className={cote ? "ec-fenetre ec-fenetre--cote" : pleine ? "ec-fenetre ec-fenetre--pleine" : large ? "ec-fenetre ec-fenetre--large" : "ec-fenetre"}
         role="dialog"

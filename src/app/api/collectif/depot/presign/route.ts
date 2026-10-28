@@ -3,12 +3,12 @@ import { colonneAbsente, MIGRATION_ACCORD } from "@/lib/collectif/migration";
 import { randomUUID } from "node:crypto";
 import { MAX_VIGNETTE_BYTES, MIME_VIGNETTE, signerPut } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAccesDepot } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAccesDepot } from "@/lib/collectif/acces";
 import { accordExige, colonnesAccord, ERREUR_ACCORD, lireAccord, messageAccord } from "@/lib/collectif/accord";
 import { cleMoyenne, clePhoto, cleVignette } from "@/lib/collectif/cles";
-import { appareilDeRequete, compterPourPlafond, COOKIE_APPAREIL, lireExistants, lireLiensParId, nouvelAppareil, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
+import { appareilDeRequete, compterPourPlafondNet, COOKIE_APPAREIL, lireExistants, lireLiensParId, lirePhotosDeLaPersonne, nouvelAppareil, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
 import { restaurer } from "@/lib/collectif/corbeilleServeur";
-import { estCleFichier, LOT_VERIFICATION, lireDeclaration, MIME_MOYENNE, moyenneSignable, partagerConnues, planDeclaration, type Decision } from "@/lib/collectif/depot";
+import { ERREUR_LIEN_VISE, estCleFichier, lienRecoit, lienVise, LOT_VERIFICATION, lireDeclaration, MIME_MOYENNE, moyenneSignable, partagerConnues, personneDuContexte, planDeclaration, type ContexteDeclaration, type Decision } from "@/lib/collectif/depot";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { noterEchec } from "@/lib/collectif/echecsJournal";
 import { collecteOuverte } from "@/lib/collectif/etats";
@@ -72,6 +72,17 @@ import { TYPES_PROVENANCE, type TypeProvenance } from "@/lib/collectif/types";
  *   plafond de son lien ; sans place, elle reste à la corbeille et le refus du
  *   plafond le dit. Retirée par le responsable ou l'atelier : « déjà là »
  *   (`ou: "retiree"`), elle ne revient pas.
+ *
+ * Simulation Audencia du 28/10 (Julie : 19 reçues au lieu de 17, son quota
+ * compté deux fois) :
+ * - la même photo renvoyée par la MÊME personne (participant connu, ou le
+ *   responsable) depuis un AUTRE appareil est « déjà là » : la clé diffère par
+ *   le sel, le reste (`nom|taille|date`, ou nom et poids si une date vaut 0)
+ *   désigne une photo déjà arrivée chez elle (`jumelleDeLaPersonne`). Rien ne
+ *   s'écrit, la place n'est pas prise, la réponse dit où elle est. Deux
+ *   personnes ne se confondent jamais ;
+ * - une déclaration jamais arrivée que la même personne a depuis reçue
+ *   autrement ne réserve plus sa place (`compterPourPlafondNet`).
  */
 
 export const runtime = "nodejs";
@@ -82,7 +93,7 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAccesDepot(String(corps.token ?? ""));
+  const acces = await accesPourEcrire(await chargerAccesDepot(String(corps.token ?? "")), "deposer_photos");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "deposer_photos") || acces.role === "equipe") return refusDroit();
@@ -141,6 +152,25 @@ export async function POST(request: Request) {
     sansPlafond = prov.sans_plafond;
     plafondLien = prov.plafond_par_personne ?? null;
     libelleLien = prov.libelle;
+  }
+  /* Le responsable dépose DANS un lien (décision de Mathias du 28/10, `lienVise`) : l'id est relu
+     DANS SON édition (`lireLiensParId` filtre par `edition_id`), jamais un lien supprimé. La photo
+     prend l'id et le type du lien ; elle reste la sienne (`role_deposant` responsable, son nom) et
+     n'a pas de plafond par personne (`plafondLien` reste nul), le total la compte. Un refus est un
+     400 : un 404 ferait croire au moteur que la PAGE est morte. Un participant ne vise rien par le
+     corps (`lienVise` rend `null`) : son lien est celui de sa page. */
+  const vise = lienVise(role, corps.provenance);
+  if (!vise.ok) return NextResponse.json({ error: ERREUR_LIEN_VISE, message: "Lien introuvable." }, { status: 400 });
+  if (vise.id) {
+    const liens = await lireLiensParId(supabase, edition.id, [vise.id]);
+    if (!liens) {
+      await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", n: nLot });
+      return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    }
+    const lien = liens.get(vise.id);
+    if (!lienRecoit(lien)) return NextResponse.json({ error: ERREUR_LIEN_VISE, message: "Ce lien n'existe plus." }, { status: 400 });
+    provenanceId = lien.id;
+    provenanceType = lien.type;
   }
 
   /* Le libellé d'un lien d'origine (« déjà arrivée par « Bateau 2 » ») : lu seulement s'il en faut
@@ -208,7 +238,10 @@ export async function POST(request: Request) {
   }
   if (participant) deposant = nomAffiche(participant);
   if (role === "participant") deposant = deposant ?? libelleLien;
-  if (role === "responsable") {
+  if (role === "responsable" && provenanceId) {
+    /* Dans un lien : sous son NOM, comme une personne du lien (le libellé du navigateur n'est que l'affichage). */
+    deposant = edition.responsable_nom?.trim() || "Le responsable";
+  } else if (role === "responsable") {
     const demande = (corps.provenance ?? {}) as Record<string, unknown>;
     if (TYPES_PROVENANCE.some((t) => t.cle === demande.type)) provenanceType = demande.type as TypeProvenance;
     /* Le nom du dossier, sous-dossier compris (« La soirée / Photobooth », dossiers.ts). */
@@ -218,19 +251,24 @@ export async function POST(request: Request) {
 
   const appareil = appareilLu ?? nouvelAppareil();
 
-  /* Les deux lectures sont indépendantes : en parallèle (T-168). */
-  const [comptes, existants] = await Promise.all([
-    compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null, participant?.id ?? null),
+  /* Le contexte de la page (21/10) : chaque « déjà là » dit où il était, et une photo que son auteur
+     avait supprimée revient (`restaurer`), comptée dans la place comme une nouvelle. */
+  const ctx: ContexteDeclaration = { role, provenanceId, appareil: appareilLu, participantId: participant?.id ?? null };
+  /* Les trois lectures sont indépendantes : en parallèle (T-168). La troisième (28/10) : les photos
+     déjà ARRIVÉES de cette personne sous les noms du lot, UNE lecture, pour reconnaître la même photo
+     renvoyée d'un autre appareil (la clé porte un autre sel). Les comptes ôtent les déclarations
+     qu'elle a depuis reçues autrement (`compterPourPlafondNet`). */
+  const [comptes, existants, photosDeLaPersonne] = await Promise.all([
+    compterPourPlafondNet(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null, participant?.id ?? null),
     lireExistants(supabase, edition.id, declaration.fichiers.map((f) => f.cle)),
+    lirePhotosDeLaPersonne(supabase, edition.id, personneDuContexte(ctx), declaration.fichiers.map((f) => f.nom)),
   ]);
-  if (!comptes || !existants) {
+  if (!comptes || !existants || !photosDeLaPersonne) {
     await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", n: declaration.fichiers.length });
     return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
   }
   const place = placeRestante(edition, { role, sansPlafond, plafondLien, dejaParAppareil: comptes.parAppareil }, comptes.total);
-  /* Le contexte de la page (21/10) : chaque « déjà là » dit où il était, et une photo que son auteur
-     avait supprimée revient (`restaurer`), comptée dans la place comme une nouvelle. */
-  const decisions = planDeclaration(declaration.fichiers, existants, place, { role, provenanceId, appareil: appareilLu, participantId: participant?.id ?? null });
+  const decisions = planDeclaration(declaration.fichiers, existants, place, ctx, photosDeLaPersonne);
 
   /* Les nouvelles s'écrivent en UNE insertion : 25 allers-retours de moins. */
   const ids = new Map<string, string>();
@@ -358,7 +396,7 @@ export async function POST(request: Request) {
   const revenuesIci = aRestaurer.filter((d) => d.ici && restaurees.has(d.id)).length;
   let placeApres: number | null = place.illimitee ? null : Math.max(0, place.place - lignes.length - revenuesIci);
   if (aRestaurer.some((d) => !d.ici && restaurees.has(d.id))) {
-    const relus = await compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null, participant?.id ?? null);
+    const relus = await compterPourPlafondNet(supabase, edition.id, appareil, maintenant, plafondLien !== null ? provenanceId : null, participant?.id ?? null);
     if (relus) {
       const relue = placeRestante(edition, { role, sansPlafond, plafondLien, dejaParAppareil: relus.parAppareil }, relus.total);
       placeApres = relue.illimitee ? null : relue.place;

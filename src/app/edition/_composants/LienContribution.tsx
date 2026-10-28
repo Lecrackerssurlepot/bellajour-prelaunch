@@ -9,7 +9,9 @@
    (`partage.ts`, retours du 14/10) ; `FenetrePartage` le montre et le laisse
    retoucher avant l'envoi.
    Le lien est `/depot/<token_depot>?p=<clé aléatoire>` : jamais un mot
-   lisible (droits.ts), même si la maquette en montrait un.
+   lisible (droits.ts), même si la maquette en montrait un. Depuis le 28/10,
+   ce qui se partage (message, Copier, WhatsApp, Mail, QR) est l'adresse
+   COURTE `/l/<clé>` (`liens.ts`, `lienCourt`), qui renvoie vers la longue.
 
    Planche 5 (21/10) : l'adresse de BASE `/depot/<token_depot>` (l'ancien « lien
    général ») n'est plus jamais montrée ni envoyée. `FenetrePartage` et `FenetreQr`
@@ -20,15 +22,17 @@
 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { messagePartage, NOMS_POUR_COMMENCER } from "@/lib/collectif/partage";
-import type { DonneesPartage } from "@/lib/collectif/photosSimples";
-import { CURSEUR_LIEN, RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
+import { partagerSurLeTelephone, type DonneesPartage } from "@/lib/collectif/photosSimples";
+import { RACCOURCIS_LIEN } from "@/lib/collectif/plafonds";
 import { imprimerPage } from "@/lib/collectif/imprimer";
 import { nomFichierQr, pageQrImprimable, svgQr } from "@/lib/collectif/qr";
 import Fenetre from "./Fenetre";
 import QrCode from "./QrCode";
-import { useRetourFerme } from "./useRetourFerme";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 
 export type LienPartage = {
   libelle: string;
@@ -77,9 +81,25 @@ function telechargerQr(lien: LienPartage) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-/** Copier, WhatsApp, Mail (et le QR code en fichier) : les gestes de partage d'un lien. */
+const REQUETE_TELEPHONE = "(max-width: 860px)";
+const rienDeNeuf = () => () => {};
+
+/** Vrai au téléphone qui sait partager (`navigator.share`) : faux au rendu serveur, puis vrai après le montage, sans casser l'hydratation. */
+export function useTelephonePartageur(): boolean {
+  return useSyncExternalStore(
+    rienDeNeuf,
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function" && window.matchMedia(REQUETE_TELEPHONE).matches,
+    () => false
+  );
+}
+
+/** Copier, WhatsApp, Mail (et le QR code en fichier) : les gestes de partage d'un lien à l'ordinateur.
+    Au téléphone qui sait partager (retour de Mathias du 28/10) : UN bouton « Partager » (la feuille de l'iPhone, le message de
+    deux lignes et l'adresse), le QR code en lien discret. `AbortError` = rien ; une autre panne = « Copier le message ». */
 export function BoutonsPartage({ lien, contexte, avecQr }: { lien: LienPartage; contexte: ContexteMessage; avecQr?: boolean }) {
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
+  const telephone = useTelephonePartageur();
+  const [qr, setQr] = useState(false);
   const { texte, objet } = texteDuLien(lien, contexte);
   async function copier() {
     try {
@@ -89,6 +109,29 @@ export function BoutonsPartage({ lien, contexte, avecQr }: { lien: LienPartage; 
     } catch {
       setCopie("non");
     }
+  }
+  async function partager() {
+    const issue = await partagerSurLeTelephone(navigator, true, donneesDePartage(lien, contexte));
+    if (issue === "repli") {
+      const ok = await copierLeMessage(lien, contexte);
+      setCopie(ok ? "ok" : "non");
+      if (ok) setTimeout(() => setCopie(""), 2000);
+    }
+  }
+  if (telephone) {
+    return (
+      <div className="ec-partage ec-partage--un">
+        <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void partager()}>
+          {copie === "ok" ? "Message copié" : copie === "non" ? "Copie impossible" : "Partager"}
+        </button>
+        {avecQr ? (
+          <button type="button" className="ec-partage-qr" onClick={() => setQr(true)}>
+            QR code
+          </button>
+        ) : null}
+        {qr ? <FeuilleQr lien={lien} contexte={contexte} onFermer={() => setQr(false)} /> : null}
+      </div>
+    );
   }
   return (
     <div className={avecQr ? "ec-partage ec-partage--quatre" : "ec-partage"}>
@@ -155,7 +198,7 @@ export default function FenetreLien({
 
   if (cree) {
     return (
-      <Fenetre titre="Votre lien est prêt" onFermer={fermer} large>
+      <Fenetre titre={contexte.tu ? "Ton lien est prêt" : "Votre lien est prêt"} onFermer={fermer} large>
         <div className="ec-lien-pret">
           <QrCode texte={cree.url} taille={136} etiquette={`QR code du lien « ${cree.libelle} »`} />
           <div className="ec-lien-pret-texte">
@@ -197,7 +240,6 @@ export function FenetreCreerLien({
   onCree: (lien: LienCree) => void;
   onFermer: () => void;
 }) {
-  const min = Math.min(CURSEUR_LIEN.min, max);
   const [nom, setNom] = useState(nomInitial ?? "");
   const [valeur, setValeur] = useState(Math.min(30, max));
   const [sansLimite, setSansLimite] = useState(false);
@@ -244,32 +286,18 @@ export function FenetreCreerLien({
 
   return (
     <Fenetre
-      titre="Créer un lien de contribution"
-      sous="Un dossier à son nom."
+      titre="Nouveau lien"
       onFermer={onFermer}
     >
       <label className="ec-curseur">
-        Le nom de la personne ou du groupe
+        Le nom du lien
         <input className="ec-champ" value={nom} maxLength={80} placeholder={EXEMPLE_NOM_LIEN} onChange={(e) => setNom(e.target.value)} />
       </label>
       <div className="ec-lien-plafond">
         <div className="ec-lien-plafond-tete">
-          <span className="ec-texte">Combien de photos pour cette personne ?</span>
+          <span className="ec-texte">Photos par personne</span>
           <strong className="ec-lien-valeur">{sansLimite ? "Sans limite" : `${valeur} photo${valeur > 1 ? "s" : ""}`}</strong>
         </div>
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={1}
-          value={valeur}
-          disabled={sansLimite}
-          aria-label="Nombre de photos par personne"
-          onChange={(e) => {
-            setValeur(Number(e.target.value));
-            setSansLimite(false);
-          }}
-        />
         <div className="ec-puces">
           {RACCOURCIS_LIEN.filter((n) => n <= max).map((n) => (
             <button
@@ -333,10 +361,18 @@ export function FenetrePartage({ lien, contexte, onFermer, onQr }: { lien: LienP
 
 function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void; onQr: () => void }) {
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
+  const telephone = useTelephonePartageur();
   async function copier() {
     const ok = await copierLeMessage(lien, contexte);
     setCopie(ok ? "ok" : "non");
     if (ok) setTimeout(() => setCopie(""), 2000);
+  }
+  /* Au téléphone qui sait partager : « Partager » (la feuille de l'iPhone). L'appel part TOUJOURS d'un toucher sur ce bouton, jamais tout
+     seul après la réponse du serveur : Safari refuse `navigator.share` hors d'un geste (NotAllowedError). Si la feuille échoue quand même,
+     le message est copié (« Message copié »). */
+  async function partager() {
+    const issue = await partagerSurLeTelephone(navigator, true, donneesDePartage(lien, contexte));
+    if (issue === "repli") await copier();
   }
   return (
     <Fenetre
@@ -344,9 +380,15 @@ function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPa
       onFermer={onFermer}
     >
       <div className="ec-partage ec-partage--deux">
-        <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copier()}>
-          {copie === "ok" ? "Copié" : copie === "non" ? "Copie impossible" : "Copier le message"}
-        </button>
+        {telephone ? (
+          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void partager()}>
+            {copie === "ok" ? "Message copié" : copie === "non" ? "Copie impossible" : "Partager"}
+          </button>
+        ) : (
+          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copier()}>
+            {copie === "ok" ? "Copié" : copie === "non" ? "Copie impossible" : "Copier le message"}
+          </button>
+        )}
         <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={onQr}>
           QR code
         </button>
@@ -407,19 +449,8 @@ const rien = () => () => {};
 export function FeuilleQr({ lien, contexte, onFermer }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void }) {
   const client = useSyncExternalStore(rien, () => true, () => false);
   useRetourFerme(onFermer, !lien.general);
-  useEffect(() => {
-    const html = document.documentElement;
-    const avant = html.style.overflow;
-    html.style.overflow = "hidden";
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onFermer();
-    };
-    window.addEventListener("keydown", touche);
-    return () => {
-      html.style.overflow = avant;
-      window.removeEventListener("keydown", touche);
-    };
-  }, [onFermer]);
+  useVerrouDefilement();
+  useEchap(onFermer);
   if (lien.general) return <FenetreSansPartage tu={contexte.tu} onFermer={onFermer} />;
   const hote = client ? document.querySelector(".ec-contenu") : null;
   if (!hote) return null;

@@ -16,6 +16,7 @@ import { colonneAbsente } from "@/lib/collectif/migration";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
+import { lienCourt } from "@/lib/collectif/liens";
 import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
 import { lireTailles, srcSetDe } from "@/lib/collectif/styles";
@@ -311,7 +312,8 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
   const liens: LienContribution[] = provenances.map((p) => ({
     id: p.id,
     libelle: p.libelle ?? "Lien de contribution",
-    url: `${origine}/depot/${edition.token_depot}?p=${p.cle}`,
+    /* L'adresse courte `/l/<clé>` (28/10) : aucun token dans ce qui se partage. */
+    url: lienCourt(origine, p.cle),
     plafond: libellePlafondLien(p, edition),
     recues: somme(groupes, (g) => g.provenance_id === p.id),
   }));
@@ -342,11 +344,11 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
      règle que la page Photos, `dansLeDossier`, lue sur le résumé par `couvertureDe`). */
   await Promise.all(
     dossiers.map(async (d) => {
-      d.couverture = await signerOuRien(couvertureDe(groupes, d.cle, edition.responsable_nom));
+      d.couverture = await signerVignetteOuRien(couvertureDe(groupes, d.cle, edition.responsable_nom));
     })
   );
 
-  const mosaique = (await Promise.all((mosaiqueLue.data ?? []).map((l) => signerOuRien(l.vignette_key)))).filter((u): u is string => Boolean(u));
+  const mosaique = (await Promise.all((mosaiqueLue.data ?? []).map((l) => signerVignetteOuRien(l.vignette_key)))).filter((u): u is string => Boolean(u));
 
   const dernier = ((message.data ?? []) as { texte: string; created_at: string }[])[0] ?? null;
 
@@ -507,6 +509,21 @@ export type MagazineMur = BriefLigne & {
   nom: string;
 };
 
+/**
+ * Une VIGNETTE (mosaïque, couverture de dossier, vignette de page de BAT) :
+ * adresse stable à l'heure (`signerLectureVignette`), donc le navigateur la
+ * garde et un retour au tableau ne retélécharge rien. Jamais pour un original
+ * ni un document : ceux-là restent sur `signerOuRien`.
+ */
+async function signerVignetteOuRien(key: string | null | undefined): Promise<string | null> {
+  if (!key) return null;
+  try {
+    return await signerLectureVignette(key);
+  } catch {
+    return null;
+  }
+}
+
 async function signerOuRien(key: string | null | undefined): Promise<string | null> {
   if (!key) return null;
   try {
@@ -652,7 +669,15 @@ export type MagazineBat = {
   valideTexte: string;
 };
 
-export type Bat = { magazines: MagazineBat[]; magazine: MagazineBat | null; tours: TourBat[]; notes: NoteBat[]; couvertures: CouvertureBat[] };
+export type Bat = {
+  magazines: MagazineBat[];
+  magazine: MagazineBat | null;
+  tours: TourBat[];
+  notes: NoteBat[];
+  couvertures: CouvertureBat[];
+  /** La vignette de chaque photo choisie dans une note (id de la photo → URL signée). */
+  photosNotes: Record<string, string>;
+};
 
 /** Une note telle que le navigateur la reçoit (les nombres de PostgREST relus, le contenu en chaînes). */
 export function noteVersBat(n: NoteLigne): NoteBat {
@@ -700,7 +725,7 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
     }))
     .sort((a, b) => a.rang - b.rang);
   const magazine = magazines.find((m) => m.rang === rang) ?? magazines[0] ?? null;
-  if (!magazine) return { magazines, magazine: null, tours: [], notes: [], couvertures: [] };
+  if (!magazine) return { magazines, magazine: null, tours: [], notes: [], couvertures: [], photosNotes: {} };
 
   const lus = await toursDuMagazine(supabase, magazine.id);
   if (!lus.ok) throw new Error(`[collectif] tours du BAT : ${lus.code}`);
@@ -732,7 +757,7 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
         (t.pages ?? []).map(async (p) => ({
           index: p.index,
           url: await signerOuRien(p.image_key),
-          vignette: await signerOuRien(p.vignette_key ?? null),
+          vignette: await signerVignetteOuRien(p.vignette_key ?? null),
           apparie_a: p.apparie_a,
           zones: p.zones ?? [],
         }))
@@ -749,7 +774,19 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
       c3: await signerOuRien(c.interieur3_key),
     }))
   );
-  return { magazines, magazine, tours, notes: ((notes.data ?? []) as NoteLigne[]).map(noteVersBat), couvertures };
+  /* La photo choisie dans une note « remplacer la photo » : sa vignette, pour la montrer dans la liste (maquette BAT). Seules
+     les photos de CETTE édition sont lues : un id venu d'ailleurs ne signe rien. */
+  const lues = ((notes.data ?? []) as NoteLigne[]).map(noteVersBat);
+  const idsPhotos = [...new Set(lues.map((n) => n.contenu.photo).filter((x): x is string => typeof x === "string" && /^[0-9a-f-]{36}$/.test(x)))];
+  const photosNotes: Record<string, string> = {};
+  if (idsPhotos.length) {
+    const { data } = await supabase.from("collectif_photos").select("id, vignette_key").eq("edition_id", edition.id).in("id", idsPhotos);
+    for (const ph of (data ?? []) as { id: string; vignette_key: string | null }[]) {
+      const url = await signerVignetteOuRien(ph.vignette_key);
+      if (url) photosNotes[ph.id] = url;
+    }
+  }
+  return { magazines, magazine, tours, notes: lues, couvertures, photosNotes };
 }
 
 /* ───────────────────────────── parler à l'atelier, la livraison ───────────────────────────── */

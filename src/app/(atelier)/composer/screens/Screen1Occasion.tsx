@@ -45,7 +45,6 @@ export default function Screen1Occasion({
 
   return (
     <>
-      <p className="at-kicker">Le moment</p>
       <h2>Quel était ce moment ?</h2>
       <p className="at-lede at-q-lede">
         Sélectionnez les moments qui correspondent. Un seul, ou plusieurs.

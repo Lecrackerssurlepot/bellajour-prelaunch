@@ -16,8 +16,8 @@ import { MoteurDepot } from "./moteur";
 import { useMoteur } from "./useMoteur";
 import { useSelecteur, useSelecteurInterrompu } from "./useSelecteur";
 
-/** Ce que la fenêtre sait en s'ouvrant : le dossier où l'on est (il est proposé d'emblée), ou « un nouveau dossier ». */
-export type OuvertureEnvoi = { dossier?: string | null; nouveau?: boolean; interrompu?: boolean };
+/** Ce que la fenêtre sait en s'ouvrant : le dossier ou le LIEN (son id, 28/10) où l'on est (proposé d'emblée, avec « Changer »), ou « un nouveau dossier ». */
+export type OuvertureEnvoi = { dossier?: string | null; lien?: string | null; nouveau?: boolean; interrompu?: boolean };
 
 type Envoi = {
   moteur: MoteurDepot | null;

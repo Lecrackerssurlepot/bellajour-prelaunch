@@ -4,8 +4,9 @@ import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
-import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
+import { compterEnCours } from "@/lib/collectif/collecte";
 import {
+  CANDIDATES_COUVERTURE,
   COLONNES_GRILLE,
   COLONNES_PAGE,
   colonnesAvecMoyenne,
@@ -78,9 +79,11 @@ export async function POST(request: Request) {
      clé de provenance lève un plafond, l'équipe n'a pas à la connaître. */
   const partage = peut(acces.role, "regler_plafond_participant");
   const supabase = makeSupabase();
-  const depuis = new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString();
   /* Le résumé (par tranches de 1 000, comme toute lecture qui peut dépasser le plafond de l'API,
-     T-167), les liens et les déclarations en route, ensemble. */
+     T-167), les liens et les déclarations en route, ensemble. « En cours » (28/10, simulation
+     Audencia : « 21 en cours » sur une collecte close où personne n'envoyait) : les déclarations des
+     15 dernières minutes que la même personne n'a pas reçues autrement, zéro collecte close
+     (`compterEnCours`). */
   const [resume, provenances, enRoute, corbeille] = await Promise.all([
     lireToutesLesLignes<LigneResume>(
       () => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", edition.id).returns<LigneResume[]>(),
@@ -88,11 +91,11 @@ export async function POST(request: Request) {
       "résumé des photos"
     ),
     lireProvenances(edition.id),
-    supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", depuis),
+    compterEnCours(supabase, edition, new Date()),
     /* La ligne « Corbeille » (lot w2) : un compte sans ligne, `null` sans la migration 20261023. L'équipe ne la voit pas. */
     peut(acces.role, "gerer_corbeille") ? compterCorbeille(supabase, edition.id) : Promise.resolve(null),
   ]);
-  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute.count ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle), corbeille };
+  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle), corbeille };
 
   if (!resume.error) {
     const doublons = await doublonsDeLEdition(supabase, edition.id);
@@ -181,6 +184,31 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
         return null;
       }
       return count;
+    },
+    /* Les candidates à la couverture d'un dossier (28/10) : les plus récentes avec vignette, leur moyenne et leurs dimensions. Hors corbeille ;
+       sans la colonne `moyenne_key` (`lireAvecMoyenne`) ou sans la corbeille (`lireHorsCorbeille`), la même lecture sans elles. */
+    async couvertures(conditions) {
+      const { data, error } = await lireAvecMoyenne((moyenne) =>
+        lireHorsCorbeille((avec) => {
+          const debut = supabase
+            .from("collectif_photos")
+            .select(`vignette_key, largeur, hauteur${moyenne ? ", moyenne_key" : ""}` as "vignette_key, largeur, hauteur")
+            .eq("edition_id", editionId)
+            .not("confirmee_le", "is", null)
+            .not("vignette_key", "is", null);
+          let q = avec ? debut.is("supprimee_le", null) : debut;
+          for (const f of enFiltresPostgrest(conditions)) {
+            if (f.methode === "eq") q = q.eq(f.colonne, f.valeur);
+            else if (f.methode === "is") q = q.is(f.colonne, null);
+            else if (f.methode === "not") q = q.filter(f.colonne, `not.${f.operateur}`, f.valeur ?? "null");
+            else if (f.methode === "or") q = q.or(f.filtres);
+            else q = q.filter(f.colonne, f.operateur, f.valeur);
+          }
+          return q.order("confirmee_le", { ascending: false }).order("id", { ascending: false }).limit(CANDIDATES_COUVERTURE).returns<{ vignette_key: string; moyenne_key?: string | null; largeur: number | null; hauteur: number | null }[]>();
+        })
+      );
+      if (error) return null;
+      return (data ?? []).map((x) => ({ vignette_key: x.vignette_key, moyenne_key: x.moyenne_key ?? null, largeur: x.largeur, hauteur: x.hauteur }));
     },
     /* « Ne pas publier » du dossier (lot w2) : le même plan, la colonne `signalee` en plus, un compte sans ligne. */
     async compterFiltre(conditions) {

@@ -18,7 +18,9 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { useRetourFerme } from "../../_composants/useRetourFerme";
+import { useEchap } from "@/components/couche/useEchap";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { arriveeLongue, jourCourt, jourLong } from "./filtres";
 import { ICONES, Trace, type Photo } from "./Grille";
@@ -61,6 +63,9 @@ export default function Agrandir(a: Props) {
   const [grandes, setGrandes] = useState<Record<string, boolean>>({});
   const fns = useRef(a);
   useRetourFerme(a.onFermer);
+  useEchap(a.onFermer);
+  /* Au téléphone, la page derrière ne défile pas sous le doigt pendant qu'on regarde une photo. */
+  useVerrouDefilement();
   useEffect(() => {
     fns.current = a;
   });
@@ -68,15 +73,10 @@ export default function Agrandir(a: Props) {
   /* Le clavier : flèches et Échap ; le focus entre dans la visionneuse et revient où il était. */
   useEffect(() => {
     const avant = document.activeElement as HTMLElement | null;
-    /* Au téléphone, la page derrière ne défile pas sous le doigt pendant qu'on regarde une photo. */
-    const html = document.documentElement;
-    const debord = html.style.overflow;
-    html.style.overflow = "hidden";
     boite.current?.focus({ preventScroll: true });
     function touche(e: KeyboardEvent) {
       if (e.defaultPrevented) return;
-      if (e.key === "Escape") fns.current.onFermer();
-      else if (e.key === "ArrowLeft") fns.current.onPrecedente?.();
+      if (e.key === "ArrowLeft") fns.current.onPrecedente?.();
       else if (e.key === "ArrowRight") fns.current.onSuivante?.();
       else return;
       e.preventDefault();
@@ -84,7 +84,6 @@ export default function Agrandir(a: Props) {
     window.addEventListener("keydown", touche);
     return () => {
       window.removeEventListener("keydown", touche);
-      html.style.overflow = debord;
       avant?.focus?.({ preventScroll: true });
     };
   }, []);
@@ -155,8 +154,13 @@ export default function Agrandir(a: Props) {
             if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) {
               if (dx < 0) a.onSuivante?.();
               else a.onPrecedente?.();
+            } else if (dy > 80 && Math.abs(dy) > Math.abs(dx) * 1.4) {
+              /* Glisser vers le bas : on referme, comme une feuille. */
+              a.onFermer();
             } else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
-              setNu((x) => !x);
+              /* Le fond noir, hors photo, referme ; la photo elle-même masque ou montre les commandes. */
+              if (e.target instanceof Element && e.target.closest(".ec-ag-cadre, .ec-ag-fleche")) setNu((x) => !x);
+              else a.onFermer();
             }
           }}
         >
@@ -208,7 +212,9 @@ export default function Agrandir(a: Props) {
             </button>
           ) : null}
         </div>
-        <p className="ec-ag-clavier">Flèches gauche et droite pour passer · Échap pour fermer</p>
+        <p className="ec-ag-clavier">
+          <span className="ec-pour-souris">Flèches gauche et droite pour passer · Échap pour fermer</span>
+        </p>
       </div>
 
       {/* Ordinateur : le panneau de verre. */}

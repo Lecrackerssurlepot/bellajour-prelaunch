@@ -25,6 +25,7 @@ import { libelleCreneau, RDV_A_VENIR_MAX, REGLES_RDV } from "@/lib/collectif/cre
 import { formaterHeureParis, formaterJourParis } from "@/lib/collectif/dates";
 import { demandesDuFil, lireMessageDemande } from "@/lib/collectif/livraison";
 import { extraitDe, filDeConversation, lirePieceJointe, type Message } from "@/lib/collectif/messages";
+import { pointeurFin } from "@/lib/pointeur";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
 import { useVisionneuse, type FichierVu } from "../../_composants/Visionneuse";
@@ -183,7 +184,7 @@ export default function Parler(p: Props) {
 
   return (
     <section className="ec-ecran ec-parler">
-      <EnTeteEcran titre="Parler à l'atelier" sous="Messages, rendez-vous et demandes au même endroit">
+      <EnTeteEcran titre="Parler à l'atelier">
         {peutReserver ? (
           <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={() => setChoisir({ deplace: null })}>
             Prendre rendez-vous
@@ -219,7 +220,7 @@ export default function Parler(p: Props) {
                 ) : el.genre === "rendezvous" ? (
                   <CarteRendezVous key={el.cle} r={el.rendezVous} />
                 ) : (
-                  <Bulle key={el.cle} m={el.message} ouvrir={vision.ouvrir} repondre={p.ecrire ? () => setReponse(el.message) : undefined} />
+                  <Bulle key={el.cle} tu={p.tu} m={el.message} ouvrir={vision.ouvrir} repondre={p.ecrire ? () => setReponse(el.message) : undefined} />
                 )
               )
             )}
@@ -242,6 +243,8 @@ export default function Parler(p: Props) {
         </div>
 
         <aside className="ec-parler-cote ec-defile" aria-label="Rendez-vous et demandes">
+          {/* Sans rendez-vous, sans agenda ni lien : rien d'utile, le volet n'existe pas. */}
+          {aVenir.length > 0 || agenda || p.rdvUrl ? (
           <section className="ec-parler-bloc">
             <span className="ec-parler-etiquette">{aVenir.length ? (aVenir.length > 1 ? "Prochains rendez-vous" : "Prochain rendez-vous") : "Rendez-vous"}</span>
             {aVenir.map((r) => (
@@ -288,10 +291,8 @@ export default function Parler(p: Props) {
                   <span className="ec-note">
                     {REGLES_RDV.dureeMinutes} minutes{p.reservation.meet ? " en visio" : ""}, du lundi au vendredi, de 10 h à 18 h.
                   </span>
-                ) : p.rdvUrl ? (
-                  <span className="ec-note">{v("Pour relire ensemble ou parler d'une demande. Vous choisissez le créneau sur la page de l'atelier.", "Pour relire ensemble ou parler d'une demande. Tu choisis le créneau sur la page de l'atelier.")}</span>
                 ) : (
-                  <span className="ec-note">L&apos;atelier ajoutera bientôt la prise de rendez-vous.</span>
+                  <span className="ec-note">{v("Pour relire ensemble ou parler d'une demande. Vous choisissez le créneau sur la page de l'atelier.", "Pour relire ensemble ou parler d'une demande. Tu choisis le créneau sur la page de l'atelier.")}</span>
                 )}
               </>
             ) : null}
@@ -310,11 +311,10 @@ export default function Parler(p: Props) {
               </p>
             ) : null}
           </section>
+          ) : null}
+          {demandes.length > 0 || p.propositions.length > 0 ? (
           <section className="ec-parler-bloc ec-parler-bloc--filet">
             <span className="ec-parler-etiquette">{v("Vos demandes", "Tes demandes")}</span>
-            {demandes.length === 0 && p.propositions.length === 0 ? (
-              <span className="ec-note">Aucune demande pour l&apos;instant.</span>
-            ) : (
               <ul className="ec-parler-demandes">
                 {demandes.map((d) => (
                   <li key={d.quand}>
@@ -329,8 +329,8 @@ export default function Parler(p: Props) {
                   </li>
                 ))}
               </ul>
-            )}
           </section>
+          ) : null}
           <p className="ec-note ec-parler-pied">{v("L'atelier vous répond ici.", "L'atelier te répond ici.")}</p>
         </aside>
       </div>
@@ -387,8 +387,8 @@ function CarteRendezVous({ r }: { r: VueRendezVous }) {
 /* Un message : une bulle ; une demande du client : une carte. Le document
    cité s'affiche en étiquette AU-DESSUS du texte, la pièce jointe dessous. */
 /** « L'atelier · Mathias » ou « Vous » : qui a écrit un message. */
-function auteurDe(m: { auteur: "client" | "atelier"; qui: string | null }): string {
-  return m.auteur === "atelier" ? `L'atelier${m.qui ? ` · ${m.qui}` : ""}` : m.qui ?? "Vous";
+function auteurDe(m: { auteur: "client" | "atelier"; qui: string | null }, tu: boolean): string {
+  return m.auteur === "atelier" ? `L'atelier${m.qui ? ` · ${m.qui}` : ""}` : m.qui ?? (tu ? "Toi" : "Vous");
 }
 
 /** Revenir au message cité : il défile jusqu'au centre et s'éclaire un instant. */
@@ -401,9 +401,9 @@ function allerAuMessage(id: string) {
   cible.classList.add("ec-parler-bulle--eclair");
 }
 
-function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => void; repondre?: () => void }) {
+function Bulle({ m, tu, ouvrir, repondre }: { m: Message; tu: boolean; ouvrir: (f: FichierVu) => void; repondre?: () => void }) {
   const moi = m.auteur === "client";
-  const qui = auteurDe(m);
+  const qui = auteurDe(m, tu);
   const heure = formaterHeureParis(m.created_at);
   const demande = moi ? lireMessageDemande(m.texte) : null;
   if (demande) {
@@ -425,7 +425,7 @@ function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => 
     <div id={`ec-msg-${m.id}`} className={moi ? "ec-parler-bulle ec-parler-bulle--moi" : "ec-parler-bulle"}>
       {m.reponseA ? (
         <button type="button" className="ec-parler-citation" onClick={() => m.reponseA && allerAuMessage(m.reponseA.id)}>
-          <span className="ec-parler-citation-qui">{auteurDe(m.reponseA)}</span>
+          <span className="ec-parler-citation-qui">{auteurDe(m.reponseA, tu)}</span>
           <span className="ec-parler-citation-texte">{m.reponseA.extrait}</span>
         </button>
       ) : null}
@@ -444,14 +444,14 @@ function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => 
       ) : null}
       {m.contenu ? (
         m.contenu.voir ? (
-          <button type="button" className="ec-parler-cite" onClick={() => m.contenu?.voir && ouvrir({ titre: m.contenu.libelle, sous: "Votre envoi", voir: m.contenu.voir, telecharger: m.contenu.url })}>
+          <button type="button" className="ec-parler-cite" onClick={() => m.contenu?.voir && ouvrir({ titre: m.contenu.libelle, sous: tu ? "Ton envoi" : "Votre envoi", voir: m.contenu.voir, telecharger: m.contenu.url })}>
             <IconeDocument />
-            Votre envoi · {m.contenu.libelle}
+            {tu ? "Ton envoi" : "Votre envoi"} · {m.contenu.libelle}
           </button>
         ) : (
           <span className="ec-parler-cite">
             <IconeDocument />
-            Votre envoi · {m.contenu.libelle}
+            {tu ? "Ton envoi" : "Votre envoi"} · {m.contenu.libelle}
           </span>
         )
       ) : null}
@@ -504,6 +504,12 @@ function Ecrire(e: {
   const [menu, setMenu] = useState(false);
   const [cite, setCite] = useState<DocumentCite | null>(() => e.documents.find((d) => d.id === e.citeInitial) ?? null);
   const zone = useRef<HTMLTextAreaElement>(null);
+  /* Réseau lent : le message tapé avant l'hydratation est repris au montage, sinon React le vide. */
+  useEffect(() => {
+    const saisi = zone.current?.value ?? "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saisi) setTexte(saisi);
+  }, []);
   /* Choisir « Répondre » ou arriver avec un document à citer : on écrit tout de suite. */
   const reponseId = e.reponse?.id ?? null;
   useEffect(() => {
@@ -542,7 +548,7 @@ function Ecrire(e: {
     <form className="ec-parler-ecrire" onSubmit={soumettre} onKeyDown={(ev) => ev.key === "Escape" && setMenu(false)}>
       {e.reponse ? (
         <div className="ec-parler-reponse">
-          <span className="ec-parler-citation-qui">Réponse à {auteurDe(e.reponse)}</span>
+          <span className="ec-parler-citation-qui">Réponse à {auteurDe(e.reponse, e.tu)}</span>
           <span className="ec-parler-citation-texte">{extraitDe(e.reponse.texte)}</span>
           <button type="button" aria-label="Ne plus répondre à ce message" onClick={e.sansReponse}>
             ✕
@@ -554,7 +560,7 @@ function Ecrire(e: {
           {envoiCite ? (
             <span className="ec-parler-joint">
               <IconeDocument />
-              Votre envoi · {envoiCite.nom ? `${envoiCite.libelle} · ${envoiCite.nom}` : envoiCite.libelle}
+              {e.tu ? "Ton envoi" : "Votre envoi"} · {envoiCite.nom ? `${envoiCite.libelle} · ${envoiCite.nom}` : envoiCite.libelle}
               <button type="button" aria-label="Ne plus citer cet envoi" onClick={() => setEnvoiCite(null)}>
                 ✕
               </button>
@@ -649,9 +655,11 @@ function Ecrire(e: {
           placeholder="Écrire à l'atelier…"
           aria-label={v("Votre message", "Ton message")}
           onKeyDown={(ev) => {
-            /* Entrée envoie, Maj + Entrée va à la ligne (Mathias, 14/10). Pas
-               pendant une saisie en cours de composition (accents, IME). */
-            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+            /* Entrée envoie, Maj + Entrée va à la ligne (Mathias, 14/10), mais
+               seulement avec une souris : au doigt il n'y a pas de Maj, Entrée
+               va à la ligne et le bouton envoie. Pas pendant une saisie en
+               cours de composition (accents, IME). */
+            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing && pointeurFin()) {
               ev.preventDefault();
               void soumettre(ev);
             }
@@ -678,7 +686,7 @@ function Ecrire(e: {
           {refus ?? e.erreur}
         </p>
       ) : null}
-      <span className="ec-note ec-parler-aide">Entrée envoie · Maj + Entrée pour aller à la ligne</span>
+      <span className="ec-note ec-parler-aide pour-souris">Entrée pour envoyer</span>
     </form>
   );
 }

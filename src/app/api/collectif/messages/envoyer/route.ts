@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { creerPlafond } from "@/lib/compte/garde";
 import { ecrireObjet } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { clePieceJointe, estUuid } from "@/lib/collectif/cles";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     return non(400, "corps_illisible");
   }
 
-  const acces = await chargerAcces(token, "espace");
+  const acces = await accesPourEcrire(await chargerAcces(token, "espace"), "ecrire_message");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "ecrire_message")) return refusDroit();

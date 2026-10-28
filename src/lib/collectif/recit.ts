@@ -252,6 +252,11 @@ export function phraseEvenement(type: string, payload: Record<string, unknown>):
           : payload.signalee === true
             ? `${String(payload.n ?? 0)} photo(s) cochée(s) signalée(s) « à ne pas publier ».`
             : `${String(payload.n ?? 0)} signalement(s) de photo retiré(s).`;
+    case "appareil_reconnu":
+      /* T-154 : le premier appareil du lien du responsable (28/10), ou un suivant par le code. */
+      return payload.motif === "premier_appareil"
+        ? "Espace du responsable : premier appareil reconnu, à sa première modification (sans code)."
+        : "Espace du responsable : un appareil reconnu par le code reçu par mail.";
     case "mail_envoye":
       return `Mail ${libelleMail(payload.code)} envoyé à ${String(payload.a ?? "?")}.`;
     case "mail_echec":

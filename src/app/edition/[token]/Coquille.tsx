@@ -24,17 +24,25 @@
      porte le logo ; quand le grand titre de l'écran défile dessous, il prend la
      place du logo (`TitreEcran` : un `IntersectionObserver`, un portail, rien au
      défilement). Le tiroir a son propre en-tête de 52 px : le logo, et la croix
-     à la hauteur du bouton menu, sous le doigt. */
+     à la hauteur du bouton menu, sous le doigt.
+   - Le bon à tirer est IMMERSIF (28/10, retour de Mathias : « on arrive dans une étape où le plus important est de
+     contempler le magazine ») : ni menu à gauche ni barre du haut, le magazine prend tout l'écran. Le menu reste à un
+     geste, en tiroir, ouvert par le bouton de l'en-tête du BAT (`ouvrirMenuEspace`, un événement du navigateur : la
+     coquille garde seule l'état du tiroir). Le CSS le lit par `:has(.ec-bat3)` : le bon à tirer VERROUILLÉ garde
+     la coquille ordinaire. */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { relireAuRetour } from "@/lib/collectif/arrivees";
+import { curseur, type Message } from "@/lib/collectif/messages";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import { useModeEspace } from "../_composants/RacineEspace";
+import { useRetourFerme } from "../_composants/useRetourFerme";
+import { useSondage } from "../_composants/useSondage";
 import { useVerrouDefilement } from "../_composants/useVerrouDefilement";
 import RelireAuRetour from "../_composants/RelireAuRetour";
 import { BarreTitreContexte } from "../_composants/TitreEcran";
@@ -53,6 +61,10 @@ type Props = {
   lectureSeule: boolean;
   verrous: Verrous;
   nonLus: number;
+  /** Relire les messages de l'atelier sans recharger (le responsable, y compris sur un appareil pas encore reconnu). */
+  suivreMessages: boolean;
+  /** Le curseur (ISO, heure du serveur) : seuls les messages arrivés après lui s'ajoutent à `nonLus`. */
+  depuis: string;
   /** Le responsable dépose : son moteur d'envoi vit ici, pas dans la page. */
   peutDeposer: boolean;
   /** 2A : les photos d'un envoi coupé du responsable sur cet appareil (lues au layout). */
@@ -96,6 +108,12 @@ function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" | "sol
   }
 }
 
+/** Le nom de l'événement qui ouvre le tiroir depuis un écran immersif (le bon à tirer). */
+const EVENEMENT_MENU = "ec-ouvrir-menu";
+export function ouvrirMenuEspace() {
+  window.dispatchEvent(new Event(EVENEMENT_MENU));
+}
+
 export default function Coquille(props: Props) {
   const chemin = usePathname();
   const active = sectionDuChemin(chemin);
@@ -108,6 +126,34 @@ export default function Coquille(props: Props) {
     window.addEventListener(EVENEMENT_MESSAGES_LUS, eteindre);
     return () => window.removeEventListener(EVENEMENT_MESSAGES_LUS, eteindre);
   }, []);
+  /* Un message de l'atelier arrivé pendant qu'on est ailleurs (Photos, le tableau de bord) allume la pastille sans
+     recharger. Même route que la conversation (lecture seule, rien n'est marqué lu), toutes les 30 s, onglet visible
+     seulement, et tout de suite au retour sur l'onglet (`useSondage`). Sur « Parler à l'atelier », la conversation
+     lit elle-même et éteint la pastille : ici on ne fait qu'avancer le curseur. */
+  const depuis = useRef(props.depuis);
+  const surAtelier = active === "atelier";
+  const surAtelierRef = useRef(surAtelier);
+  useEffect(() => {
+    surAtelierRef.current = surAtelier;
+  });
+  useSondage(
+    async () => {
+      const rep = await fetch("/api/collectif/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token: props.token, depuis: depuis.current }),
+      });
+      if (!rep.ok) return;
+      const j: { messages?: Message[] } | null = await rep.json().catch(() => null);
+      const nouveaux = j?.messages ?? [];
+      if (!nouveaux.length) return;
+      depuis.current = curseur(nouveaux) ?? depuis.current;
+      const deLAtelier = nouveaux.filter((m) => m.auteur === "atelier").length;
+      if (deLAtelier && !surAtelierRef.current) setNonLus((n) => n + deLAtelier);
+    },
+    30_000,
+    props.suivreMessages
+  );
   /* Le tiroir et la bulle d'un verrou sont ouverts POUR un chemin : une
      navigation les referme d'elle-même, sans effet ni état à remettre à zéro. */
   const [tiroirPour, setTiroirPour] = useState<string | null>(null);
@@ -128,6 +174,13 @@ export default function Coquille(props: Props) {
   }, [ouvert]);
   useVerrouDefilement(ouvert);
   useEffect(() => {
+    const ouvrir = () => setTiroirPour(chemin);
+    window.addEventListener(EVENEMENT_MENU, ouvrir);
+    return () => window.removeEventListener(EVENEMENT_MENU, ouvrir);
+  }, [chemin]);
+  /* Le geste « retour » du téléphone ferme le tiroir avant de quitter la page. */
+  useRetourFerme(() => setTiroirPour(null), ouvert);
+  useEffect(() => {
     if (!ouvert) return;
     function touche(e: KeyboardEvent) {
       if (e.key === "Escape") setTiroirPour(null);
@@ -145,6 +198,14 @@ export default function Coquille(props: Props) {
   const [barre, setBarre] = useState<HTMLElement | null>(null);
   const [cibleTitre, setCibleTitre] = useState<HTMLElement | null>(null);
   const [defile, setDefile] = useState(false);
+  /* Toucher le titre de la barre remonte en haut, comme la barre d'état de l'iPhone (doux, sauf si l'appareil demande moins de mouvement). */
+  function revenirEnHaut() {
+    const comportement: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.scrollTo({ top: 0, behavior: comportement });
+    document.querySelectorAll<HTMLElement>(".ec-contenu, .ec-defile").forEach((z) => {
+      if (z.scrollTop > 0) z.scrollTo({ top: 0, behavior: comportement });
+    });
+  }
   const titreBarre = useMemo(() => ({ barre, cible: cibleTitre, signaler: setDefile }), [barre, cibleTitre]);
 
   const entrees = (groupe: 1 | 2) =>
@@ -204,12 +265,14 @@ export default function Coquille(props: Props) {
     });
 
   return (
-    <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"}>
+    <div className="ec-coquille" data-tiroir={ouvert ? "ouvert" : "ferme"} data-nonlus={nonLus > 0 ? "oui" : undefined}>
       <RelireAuRetour actif={relireAuRetour(active)} />
       <header className="ec-barre-mobile" ref={setBarre} data-defile={defile ? "oui" : undefined}>
         <span className="ec-barre-gauche">
-          <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="Bellajour" width={96} height={36} />
-          <span className="ec-barre-titre" aria-hidden="true" ref={setCibleTitre} />
+          <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien ec-logo-lien--mobile" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
+            <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="" width={96} height={36} />
+          </Link>
+          <button type="button" className="ec-barre-titre" aria-label="Revenir en haut" disabled={!defile} onClick={revenirEnHaut} ref={setCibleTitre} />
         </span>
         {/* Le bouton garde SON dessin (le menu) tiroir ouvert : la croix est dans le tiroir, sous le doigt. */}
         <button
@@ -217,10 +280,16 @@ export default function Coquille(props: Props) {
           className="ec-bouton-tiroir"
           aria-expanded={ouvert}
           aria-controls="ec-menu"
-          aria-label={ouvert ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={ouvert ? "Fermer le menu" : nonLus > 0 ? `Ouvrir le menu, ${nonLus} message${nonLus > 1 ? "s" : ""} non lu${nonLus > 1 ? "s" : ""}` : "Ouvrir le menu"}
           onClick={() => setOuvert((o) => !o)}
         >
           <Icone cle="menu" />
+          {/* La pastille sur le bouton, comme sur l'icône d'une messagerie : visible tiroir fermé. */}
+          {nonLus > 0 && !ouvert ? (
+            <span className="ec-bouton-pastille" aria-hidden="true">
+              {nonLus > 9 ? "9+" : nonLus}
+            </span>
+          ) : null}
         </button>
       </header>
 
@@ -228,7 +297,9 @@ export default function Coquille(props: Props) {
         {/* L'en-tête du tiroir : le logo, et (téléphone seulement) la croix. Sur ordinateur, `display: contents` : le logo
             reste un enfant du menu, rien ne bouge. */}
         <div className="ec-menu-tete">
-          <img className="ec-logo" src={LOGO_MODE[mode]} alt="Bellajour" width={116} height={43} />
+          <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
+            <img className="ec-logo" src={LOGO_MODE[mode]} alt="" width={116} height={43} />
+          </Link>
           <button type="button" className="ec-bouton-tiroir ec-menu-fermer" aria-label="Fermer le menu" onClick={() => setOuvert(false)}>
             <Icone cle="fermer" />
           </button>

@@ -260,7 +260,7 @@ export default function Mur(p: Props) {
       <>
         {groupes.choisies.length || groupes.avec.length ? (
           <section className="ec-mur-groupe">
-            <h3 className="ec-mur-groupe-titre">{dansPanneau ? v("Votre choix, et ce qui va avec", "Ton choix, et ce qui va avec") : "Avec vos choix"}</h3>
+            <h3 className="ec-mur-groupe-titre">{dansPanneau ? v("Votre choix, et ce qui va avec", "Ton choix, et ce qui va avec") : v("Avec vos choix", "Avec tes choix")}</h3>
             <div className={grille}>
               {groupes.choisies.map((x) => carte(x, v("Votre choix", "Ton choix")))}
               {groupes.avec.map((x) => carte(x.piece, x.raison))}

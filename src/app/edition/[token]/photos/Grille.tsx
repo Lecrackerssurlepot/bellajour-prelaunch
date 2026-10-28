@@ -17,6 +17,7 @@
 import { useRef } from "react";
 import type { GroupeJour } from "./filtres";
 import { nombre } from "./filtres";
+import { pointeurFin } from "@/lib/pointeur";
 
 export type Photo = {
   id: string;
@@ -112,9 +113,10 @@ export default function Grille(g: Props) {
           <section key={`${jour.cle}-${jour.photos[0]?.id}`} className="ec-s-groupe" aria-label={jour.titre}>
             <h2 className="ec-s-jour">
               <span>{jour.titre}</span>
-              {jour.complet || (g.cocher && g.onCocherJour) ? (
+              {(jour.complet && g.groupes.length > 1) || (g.cocher && g.onCocherJour) ? (
                 <small>
-                  {jour.complet ? nombre(jour.n) : null}
+                  {/* Un seul jour : son nombre redirait le total de la page. */}
+                  {jour.complet && g.groupes.length > 1 ? nombre(jour.n) : null}
                   {g.cocher && g.onCocherJour ? (
                     <button type="button" className="ec-s-jour-case" aria-pressed={toutCoche} aria-label={toutCoche ? `Ne plus prendre tout le jour (${jour.titre})` : `Prendre tout le jour (${jour.titre})`} onClick={() => g.onCocherJour?.(jour, !toutCoche)}>
                       <Trace d={ICONES.coche} taille={14} epais={3} />
@@ -161,7 +163,15 @@ export default function Grille(g: Props) {
                       onPointerUp={finAppui}
                       onPointerCancel={finAppui}
                       onContextMenu={(e) => {
-                        if (appui.current || appuiLongFait.current) e.preventDefault();
+                        if (appui.current || appuiLongFait.current) {
+                          e.preventDefault();
+                          return;
+                        }
+                        /* À la souris, le clic droit ouvre le MÊME menu que l'appui long (Favori, Voir qui l'a envoyée, Supprimer). */
+                        if (g.ecrire && pointeurFin()) {
+                          e.preventDefault();
+                          g.onAppuiLong(ph);
+                        }
                       }}
                     >
                       {ph.vignette ? (
@@ -175,7 +185,9 @@ export default function Grille(g: Props) {
                         <Trace d={ICONES.coche} taille={13} epais={2.8} />
                       </button>
                     ) : null}
-                    {g.coeurs && cochee ? (
+                    {/* Le cœur se VOIT (28/10, recette de Mathias) : une photo en favori (`preselection`, « Ma sélection ») porte un petit cœur plein dans le coin, en grille comme dans l'album d'un lien ;
+                        dans « Choisir d'abord mes préférées », c'est la photo gardée qui le porte. Il ne reçoit aucun toucher. */}
+                    {(g.coeurs ? cochee : ph.preselection) ? (
                       <span className="ec-s-coeur" aria-hidden="true">
                         <Trace d={ICONES.coeur} taille={16} plein epais={1.6} />
                       </span>

@@ -194,6 +194,8 @@ export type ReponseGrille = {
   stats: { photos: number; personnes: number; doublons: number; enCours: number; derniere: string | null; corbeille: number | null };
   arbre: ReturnType<typeof arbreDesPhotos>;
   couvertures: Record<string, string>;
+  /** Pour chaque couverture : sa moyenne et sa variante paysage (28/10). Absent quand la lecture n'en sait rien. */
+  couverturesPlus?: Record<string, CouvertureEnPlus>;
   liens: {
     /** Les photos arrivées par l'adresse de BASE (l'ancien lien général), sous « Sans groupe » : l'onglet
         « Les liens » ne la montre que si `n` > 0, en lecture seule, sans « Partager » ni QR (planche 5, 21/10). */
@@ -236,10 +238,10 @@ async function tuile(p: LignePage, doublonDe: ReadonlyMap<string, string>, c: Co
       }
     }
   }
-  const jour = jourDePhoto(p.prise_le, p.confirmee_le);
+  const jour = jourDePhoto(p.prise_le);
   const responsable = c.edition.responsable_nom;
   /* Qui l'a envoyée (T-180) : le nom du participant, sinon le responsable ou l'atelier. */
-  const role = deParticipant(p) ? "participant" : p.role_deposant === "responsable" ? "responsable" : "atelier";
+  const role = p.role_deposant === "responsable" ? "responsable" : deParticipant(p) ? "participant" : "atelier";
   return {
     id: p.id,
     vignette,
@@ -294,21 +296,29 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
   const tranche = d.seulementArbre ? [] : sansGrille ? dansDossier.slice(-ARRIVEES).reverse() : liste.slice(page * TAILLE_PAGE, (page + 1) * TAILLE_PAGE);
   const photos = await Promise.all(tranche.map((p) => tuile(p, doublonDe, c)));
 
-  const liens = partage ? provenances : [];
+  /* Sans le droit de partager (l'équipe, le responsable sur un appareil pas encore reconnu) : les liens restent dans
+     l'arbre (noms, comptes, tuiles) mais SANS leur clé de partage (28/10 : « Par lien » disait « Aucun lien à montrer »
+     alors que le lien avait des photos). L'arbre ne lit que l'id et le nom ; la clé ne sort que pour qui partage. */
+  const liens = partage ? provenances : provenances.map((l) => ({ ...l, cle: "" }));
   const arbre = arbreDesPhotos(toutes, liens, edition, partage);
   /* La couverture de chaque dossier et de chaque lien (15/10) : la dernière photo arrivée qui
      a une vignette. Seulement dans les vues d'ensemble et dans un dossier qui en contient
      d'autres (ses sous-dossiers s'y montrent en vignettes). */
   const couvertures: Record<string, string> = {};
+  const couverturesPlus: Record<string, CouvertureEnPlus> = {};
   if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
-    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? avecVous(arbre) : dossier === "vous" ? arbre.vous : dossier === "liens" ? avecVous(arbre) : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
     await Promise.all(
       aCouvrir.map(async (n) => {
-        const p = [...toutes].reverse().find((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
+        const recentes = [...toutes].reverse().filter((l) => l.vignette_key && dansLeDossier(l, n.cle, responsable));
+        /* La plus récente QUI A une moyenne parmi les candidates (28/10) : sinon la tuile agrandirait une vignette. */
+        const p = recentes.slice(0, CANDIDATES_COUVERTURE).find((l) => l.moyenne_key) ?? recentes[0];
         if (!p?.vignette_key) return;
         try {
           couvertures[n.cle] = await c.signer(p.vignette_key);
+          /* La moyenne de la même photo (1 600 px) : la tuile large la sert au lieu d'agrandir la vignette. Pas de dimensions ici : pas de variante paysage. */
+          if (p.moyenne_key) couverturesPlus[n.cle] = { m: await c.signer(p.moyenne_key).catch(() => null), paysage: null };
         } catch {
           /* une couverture manquée laisse l'icône du dossier */
         }
@@ -357,6 +367,7 @@ export async function grilleDepuisLignes(toutes: readonly LigneGrille[], groupes
     },
     arbre,
     couvertures,
+    couverturesPlus,
     liens: partage
       ? {
           general: { nom: GROUPE_SANS_GROUPE, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: general.length, personnes: personnesDu(general) },
@@ -379,7 +390,46 @@ export type LectureGrille = {
   compter(ids: readonly string[], conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<number | null>;
   /** COMBIEN de photos passent ces conditions (le plan du dossier et « Ne pas publier », lot w2) : un compte sans ligne. */
   compterFiltre(conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<number | null>;
+  /**
+   * Les `CANDIDATES_COUVERTURE` dernières photos arrivées du dossier qui ont une vignette, la plus récente d'abord, avec de quoi servir
+   * la moyenne et choisir l'orientation (28/10). Absente (un harnais) ou `null` : la couverture reste la vignette, comme avant.
+   */
+  couvertures?(conditions: Extract<PlanFiltre, { genre: "filtre" }>["conditions"]): Promise<CandidateCouverture[] | null>;
 };
+
+/** Une photo qui peut servir de couverture : sa vignette, sa moyenne (1 600 px, migration 20261026) quand elle existe, ses dimensions quand elles sont connues. */
+export type CandidateCouverture = { vignette_key: string; moyenne_key: string | null; largeur: number | null; hauteur: number | null };
+/** Combien de dernières photos on regarde pour trouver une couverture à la bonne forme (les récentes d'abord : la couverture reste « la dernière »). */
+export const CANDIDATES_COUVERTURE = 12;
+/** Un paysage franc (3:2 fait 1,5) ; en dessous, la photo passe pour carrée ou portrait. */
+export const RAPPORT_PAYSAGE = 1.15;
+
+/** Ce que la réponse ajoute à la vignette d'une couverture : sa moyenne, et une variante PAYSAGE pour une tuile large. */
+export type CouvertureEnPlus = { m: string | null; paysage: { v: string; m: string | null } | null };
+
+export const estPaysage = (c: { largeur: number | null; hauteur: number | null }): boolean => !!c.largeur && !!c.hauteur && c.largeur / c.hauteur >= RAPPORT_PAYSAGE;
+
+/**
+ * Le choix, pur : `vignetteParDefaut` est la couverture d'avant (la vignette de la photo la plus récente). Une tuile large la montre à plus de 700 px :
+ * seule une photo qui a sa MOYENNE (1 600 px) y est nette (28/10, recette Audencia : une couverture sans moyenne s'agrandissait ×3). Donc :
+ * - la couverture est la photo la plus récente DU LIEN qui a une moyenne (la photo par défaut si elle en a une, sinon la première des candidates qui en a) ;
+ *   aucune n'en a : la photo par défaut, vignette seule (rien de mieux à montrer) ;
+ * - une tuile large est un bandeau (un portrait y est coupé aux deux tiers) : on joint la plus récente photo PAYSAGE qui a une moyenne ; si aucune candidate
+ *   n'a de moyenne, la plus récente paysage telle quelle (comme avant). Dimensions inconnues : aucune variante.
+ */
+export function couvertureEnPlus(vignetteParDefaut: string, candidates: readonly CandidateCouverture[]): { defaut: CandidateCouverture | null; paysage: CandidateCouverture | null } {
+  const nette = (c: CandidateCouverture) => Boolean(c.moyenne_key);
+  const parDefaut = candidates.find((x) => x.vignette_key === vignetteParDefaut) ?? null;
+  const defaut = parDefaut && nette(parDefaut) ? parDefaut : (candidates.find(nette) ?? parDefaut);
+  if (defaut && estPaysage(defaut) && nette(defaut)) return { defaut, paysage: null };
+  const paysageNet = candidates.find((x) => estPaysage(x) && nette(x));
+  if (paysageNet) return { defaut, paysage: paysageNet };
+  if (defaut && estPaysage(defaut)) return { defaut, paysage: null };
+  return { defaut, paysage: candidates.some(nette) ? null : (candidates.find((x) => estPaysage(x)) ?? null) };
+}
+
+/** Les liens, et « Mes photos » (la tuile en tête de « Par lien ») quand le responsable a déposé : sa couverture se lit comme celle d'un lien, moyenne et bandeau compris (28/10). */
+const avecVous = (arbre: ReturnType<typeof arbreDesPhotos>): { cle: string }[] => [...arbre.liens, ...(arbre.vous.length ? [{ cle: "vous" }] : [])];
 
 /** Les paquets d'ids partent six par six (une latence par six paquets, sans inonder l'API). */
 const PAQUETS_ENSEMBLE = 6;
@@ -468,18 +518,32 @@ export async function grilleDepuisResume(
   const photos = await Promise.all(tranche.map((p) => tuile(p, doublonDe, c)));
 
   const pesees = enLignesPesees(groupes);
-  const liens = partage ? provenances : [];
+  /* Sans le droit de partager (l'équipe, le responsable sur un appareil pas encore reconnu) : les liens restent dans
+     l'arbre (noms, comptes, tuiles) mais SANS leur clé de partage (28/10 : « Par lien » disait « Aucun lien à montrer »
+     alors que le lien avait des photos). L'arbre ne lit que l'id et le nom ; la clé ne sort que pour qui partage. */
+  const liens = partage ? provenances : provenances.map((l) => ({ ...l, cle: "" }));
   const arbre = arbreDesPhotos(pesees, liens, edition, partage);
   const couvertures: Record<string, string> = {};
+  const couverturesPlus: Record<string, CouvertureEnPlus> = {};
   if (!d.seulementArbre || d.couverturesDe !== undefined) {
     const courant = noeudDe(arbre, dossier);
-    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? arbre.liens : dossier === "vous" ? arbre.vous : dossier === "liens" ? arbre.liens : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
+    const aCouvrir = d.couverturesDe === "personnes" ? arbre.personnes : d.couverturesDe === "liens" ? avecVous(arbre) : dossier === "vous" ? arbre.vous : dossier === "liens" ? avecVous(arbre) : (courant?.enfants ?? []).filter((e) => e.cle.startsWith("resp:"));
     await Promise.all(
       aCouvrir.map(async (n) => {
         const cle = couvertureDe(groupes, n.cle, responsable);
         if (!cle) return;
         try {
           couvertures[n.cle] = await c.signer(cle);
+          const plan = lecture.couvertures ? planDuDossier(n.cle, groupes, responsable) : null;
+          const candidates = plan && plan.genre === "filtre" ? await lecture.couvertures?.(plan.conditions) : null;
+          if (candidates?.length) {
+            const choix = couvertureEnPlus(cle, candidates);
+            /* La couverture peut changer de photo (la plus récente qui a une moyenne) : la vignette suit. */
+            if (choix.defaut && choix.defaut.vignette_key !== cle) couvertures[n.cle] = await c.signer(choix.defaut.vignette_key);
+            const signe = (k: string | null | undefined) => (k ? c.signer(k).catch(() => null) : Promise.resolve(null));
+            const [m, pv, pm] = await Promise.all([signe(choix.defaut?.moyenne_key), signe(choix.paysage?.vignette_key), signe(choix.paysage?.moyenne_key)]);
+            if (m || pv) couverturesPlus[n.cle] = { m, paysage: pv ? { v: pv, m: pm } : null };
+          }
         } catch {
           /* une couverture manquée laisse l'icône du dossier */
         }
@@ -526,6 +590,7 @@ export async function grilleDepuisResume(
     },
     arbre,
     couvertures,
+    couverturesPlus,
     liens: partage
       ? {
           general: { nom: GROUPE_SANS_GROUPE, plafond: plafondDuLien({ sans_plafond: false, plafond_par_personne: null }, edition), n: somme(general), personnes: personnesDu(general) },

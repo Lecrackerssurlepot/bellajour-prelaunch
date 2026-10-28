@@ -9,6 +9,7 @@
    compte des messages non lus. `loading.tsx` ne couvre pas les lectures de
    ce layout (Next 16) : il ne doit pas en ajouter de lentes. */
 
+import type { Metadata } from 'next'
 import { cookies, headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { peut } from '@/lib/collectif/droits'
@@ -22,10 +23,24 @@ import { COOKIE_APPAREIL, estAppareil } from '@/lib/collectif/collecte'
 import { photosCoupeesDeLAppareil } from '@/lib/collectif/participantConnu'
 import { teteObjet } from '@/lib/collectif/rattrapageCoffre'
 import { makeSupabase } from '@/lib/supabase'
+import { metaDeLEdition, metaNeutre } from '@/lib/collectif/partageMeta'
 import Porte from '../_composants/Porte'
 import { chargerEspace, compterNonLus } from './donnees'
 import Coquille from './Coquille'
 import './espace.css'
+
+/* Le titre et l'aperçu d'un lien collé : le nom de l'événement, sans prix ni produit.
+   Lien inconnu, fermé ou en panne : « Bellajour » seul, rien de l'édition. */
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  try {
+    const { token } = await params
+    const acces = await chargerEspace(token)
+    if (acces.statut !== 'ok') return metaNeutre()
+    return metaDeLEdition({ evenement: acces.edition.evenement, registre: acces.edition.registre }, false)
+  } catch {
+    return metaNeutre()
+  }
+}
 
 export default async function EspaceLayout({
   children,
@@ -62,6 +77,8 @@ export default async function EspaceLayout({
     responsableIci ? compterNonLus(edition.id) : Promise.resolve(0),
     estAppareil(appareil) ? photosCoupeesDeLAppareil(makeSupabase(), edition.id, appareil, 'responsable', teteObjet) : Promise.resolve(0),
   ])
+  /* Le curseur du suivi des messages (Coquille) : posé APRÈS le compte, pour ne pas compter deux fois un message arrivé entre les deux. */
+  const depuis = new Date().toISOString()
   /* T-187 : « Partager avec mon équipe », au responsable seulement (voitLienEquipe).
      Le lien d'équipe n'entre jamais dans la page de l'équipe elle-même. */
   let lienEquipe: string | null = null
@@ -83,6 +100,8 @@ export default async function EspaceLayout({
       lienEquipe={lienEquipe}
       verrous={verrousPour(etat)}
       nonLus={nonLus}
+      suivreMessages={responsableIci}
+      depuis={depuis}
       peutDeposer={peut(role, 'deposer_photos')}
       coupees={coupees}
       tu={edition.registre === 'ecole_tu'}

@@ -4,7 +4,7 @@ import { quiEstConnecte } from "@/lib/admin-session";
 import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { collecteOuverte } from "@/lib/collectif/etats";
-import { origineDepuis } from "@/lib/collectif/liens";
+import { lienDeGroupe, origineDepuis } from "@/lib/collectif/liens";
 import { mailsCollectifOuverts } from "@/lib/collectif/mails";
 import { donneesEspacePret, mailEspacePret } from "@/lib/collectif/mailsTextes";
 import { MIGRATION_COLLECTIF, tableAbsente } from "@/lib/collectif/migration";
@@ -133,7 +133,7 @@ export default async function PageCreee({ params }: { params: Promise<{ id: stri
         id={e.id}
         liens={{ responsable: donnees.liens.responsable, equipe: donnees.liens.equipe }}
         depot={donnees.liens.depot}
-        groupes={groupes ? groupes.map(({ cle, ...l }) => ({ ...l, url: `${donnees.liens.depot}?p=${cle}` })) : null}
+        groupes={groupes ? groupes.map(({ cle, ...l }) => ({ ...l, url: lienDeGroupe(donnees.liens.depot, cle) })) : null}
         max={plafondLienMax(e)}
         prenom={(e.responsable_nom ?? "").trim().split(/\s+/)[0] || null}
         email={e.responsable_email}

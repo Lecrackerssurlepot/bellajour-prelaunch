@@ -8,7 +8,7 @@ import { useEffect, useSyncExternalStore } from "react";
 import { LOT_VIDE } from "@/lib/collectif/depotParticipant";
 import type { ApercuEnvoi, MoteurDepot, Vue } from "./moteur";
 
-const VUE_VIDE: Vue = { total: 0, arrivees: 0, dejaLa: 0, enCours: 0, refusees: 0, erreurs: 0, raisons: [], ferme: null, horsLigne: false, serveurLent: false, reseauBloque: null, ignores: 0, videos: 0, premiereVideo: null, dejaAjoutes: 0, lienMort: false, lot: LOT_VIDE, auCoffre: 0 };
+const VUE_VIDE: Vue = { total: 0, arrivees: 0, dejaLa: 0, enCours: 0, refusees: 0, erreurs: 0, raisons: [], ferme: null, horsLigne: false, serveurLent: false, reseauBloque: null, ignores: 0, lotIgnores: 0, videos: 0, premiereVideo: null, dejaAjoutes: 0, lienMort: false, lot: LOT_VIDE, auCoffre: 0 };
 const APERCUS_VIDES: ApercuEnvoi[] = [];
 
 export function useMoteur(moteur: MoteurDepot | null): Vue {

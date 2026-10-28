@@ -27,16 +27,12 @@ export type EntreeMenuHaut = { cle: CleMenuHaut; libelle: string; filetAvant: bo
  * - « Supprimées récemment · N » (le nombre quand il y en a) : la corbeille de 30 jours, atteinte d'ici, jamais posée sur la page ;
  * - « Terminer la collecte » après un filet, pour qui en a le droit, la collecte ouverte et au moins une photo reçue.
  * La collecte terminée (11D) : « Sélectionner » et le « + » disparaissent, le « … » ne garde que « Supprimées récemment ».
- * À l'ORDINATEUR (planche 13) : « Terminer la collecte » seulement ; « Supprimées récemment » est tout en bas de la colonne de gauche, et la
- * sélection se fait à la souris (une case au survol de chaque vignette) : le « … » n'a que le geste final.
+ * À l'ORDINATEUR (27/10) : le MÊME contenu qu'au téléphone. Un menu à un seul choix n'avait pas de sens ; la case au survol et la ligne « Supprimées
+ * récemment » de la colonne de gauche restent, ce « … » est le chemin commun.
  */
-export function entreesDuMenuHaut(o: { ecrire: boolean; grille: boolean; vide: boolean; corbeille: number | null; terminer: boolean; ordinateur?: boolean; /** La collecte est terminée : « rien ne s'ajoute plus », plus de « Sélectionner » (planche 9, vue 11D). Absent : ouverte. */ ouverte?: boolean }): EntreeMenuHaut[] {
+export function entreesDuMenuHaut(o: { ecrire: boolean; grille: boolean; vide: boolean; corbeille: number | null; terminer: boolean; /** Sans effet depuis le 27/10 : le « … » est le même partout. */ ordinateur?: boolean; /** La collecte est terminée : « rien ne s'ajoute plus », plus de « Sélectionner » (planche 9, vue 11D). Absent : ouverte. */ ouverte?: boolean }): EntreeMenuHaut[] {
   if (!o.ecrire) return [];
   const lignes: EntreeMenuHaut[] = [];
-  if (o.ordinateur) {
-    if (o.terminer) lignes.push({ cle: "terminer", libelle: "Terminer la collecte", filetAvant: false });
-    return lignes;
-  }
   if (o.grille && !o.vide && o.ouverte !== false) lignes.push({ cle: "selectionner", libelle: "Sélectionner", filetAvant: false });
   lignes.push({ cle: "supprimees", libelle: o.corbeille && o.corbeille > 0 ? `Supprimées récemment · ${o.corbeille.toLocaleString("fr-FR")}` : "Supprimées récemment", filetAvant: false });
   if (o.terminer) lignes.push({ cle: "terminer", libelle: "Terminer la collecte", filetAvant: true });

@@ -47,7 +47,7 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { deParticipant } from "./dossiers";
+import { estParticipant } from "./dossiers";
 
 export const DELAI_CORBEILLE_JOURS = 30;
 const JOUR_MS = 24 * 60 * 60 * 1000;
@@ -123,7 +123,7 @@ export type PhotoDuParticipant = {
  * (cookie absent ou illisible), rien.
  */
 export function peutSupprimerSaPhoto(photo: PhotoDuParticipant, appareil: string | null, participantId: string | null): boolean {
-  if (!appareil || !deParticipant(photo) || !photo.confirmee_le || photo.supprimee_le) return false;
+  if (!appareil || !estParticipant(photo) || !photo.confirmee_le || photo.supprimee_le) return false;
   if (photo.appareil_id !== appareil) return false;
   return !photo.participant_id || photo.participant_id === participantId;
 }

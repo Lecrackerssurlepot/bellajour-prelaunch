@@ -357,6 +357,14 @@ export function rappelValidation(
   return { resume: `Tour ${tour}${c}.`, tirage: texteValidationBat(tirage) };
 }
 
+/**
+ * « Valider ce magazine » n'apparaît qu'au DERNIER tour inclus (retour de Mathias du 28/10 : « au tour 1, alors qu'il
+ * y en a plusieurs, personne ne va valider maintenant »). Tours inclus pas encore fixés : jamais au premier tour.
+ */
+export function validationOuverte(tour: number, toursInclus: number | null): boolean {
+  return toursInclus === null ? tour >= 2 : tour >= toursInclus;
+}
+
 /** Le libellé court d'une double page dans la bande : « 1 », « 2–3 ». */
 export function libelleBande(indices: readonly number[]): string {
   return indices.length === 1 ? String(indices[0] + 1) : `${indices[0] + 1}–${indices[indices.length - 1] + 1}`;

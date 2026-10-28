@@ -42,7 +42,7 @@ export type RaisonPlafond = "plafond_participant" | "plafond_total" | "plafond_n
 /** Ce que l'écran dit quand un dépôt est refusé ou tronqué (au vouvoiement ; `messagePlafond` suit le registre). */
 export const MESSAGE_PLAFOND: Record<RaisonPlafond, string> = {
   plafond_participant:
-    "Vous avez atteint le nombre de photos prévu par personne sur cet appareil.",
+    "Vous avez atteint le nombre de photos prévu par personne.",
   plafond_total:
     "L'édition a reçu toutes les photos prévues. L'atelier peut relever ce plafond.",
   plafond_non_regle:
@@ -52,7 +52,7 @@ export const MESSAGE_PLAFOND: Record<RaisonPlafond, string> = {
 /** Les mêmes phrases au tutoiement (une édition `ecole_tu`, T-195). Seule la première parle à quelqu'un. */
 export const MESSAGE_PLAFOND_TU: Record<RaisonPlafond, string> = {
   plafond_participant:
-    "Tu as atteint le nombre de photos prévu par personne sur cet appareil.",
+    "Tu as atteint le nombre de photos prévu par personne.",
   plafond_total: MESSAGE_PLAFOND.plafond_total,
   plafond_non_regle: MESSAGE_PLAFOND.plafond_non_regle,
 };

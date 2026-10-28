@@ -14,6 +14,7 @@ import { decoderGris, encoderGris, LARGEUR_RENDU_PX } from "@/lib/collectif/bat"
 import { TYPES_NOTE } from "@/lib/collectif/types";
 import type { BatAtelier, TourAtelier } from "../../donnees";
 import { reduireImage } from "../../styles/reduireImage";
+import PageEpinglee from "./PageEpinglee";
 import { comparer, rendrePdf } from "./rendreTour";
 
 type Props = { id: string; bat: BatAtelier };
@@ -97,6 +98,7 @@ export default function AtelierBat({ id, bat }: Props) {
   const [message, setMessage] = useState<{ texte: string; erreur: boolean } | null>(null);
   const [reponses, setReponses] = useState<Record<string, string>>(Object.fromEntries(bat.notes.map((n) => [n.id, n.reponse ?? ""])));
   const [occupe, setOccupe] = useState(false);
+  const [choisie, setChoisie] = useState<string | null>(null);
   const occupeTravail = Boolean(travail && !travail.fini && !travail.erreur);
 
   const dire = (texte: string, erreur = false) => setMessage({ texte, erreur });
@@ -231,6 +233,7 @@ export default function AtelierBat({ id, bat }: Props) {
   return (
     <div className="eca-fiche">
       <div className="eca-colonne">
+        <PageEpinglee tours={bat.tours} notes={bat.notes} choisie={choisie} onChoisir={setChoisie} />
         <section className="ate-carte">
           <h2 className="ate-carte-titre">
             Magazine {magazine.rang} · {magazine.nom}
@@ -485,11 +488,17 @@ export default function AtelierBat({ id, bat }: Props) {
           ) : (
             <ul className="eca-mag-liste">
               {bat.notes.map((n) => (
-                <li key={n.id} className="eca-bat-note">
+                <li key={n.id} id={`eca-note-${n.id}`} className={`eca-bat-note${n.id === choisie ? " eca-bat-note--choisie" : ""}`}>
                   <span className="eca-mag-ligne">
-                    <span>
-                      <strong>{n.numero}.</strong> {TYPES_NOTE.find((t) => t.cle === n.type)?.libelle ?? n.type}
-                    </span>
+                    {n.page !== null && n.x !== null ? (
+                      <button type="button" className="eca-bat-note-situer" onClick={() => setChoisie(n.id)} aria-label={`Situer la note ${n.numero} sur la page`}>
+                        <span className="eca-bat-note-num">{n.numero}</span> {TYPES_NOTE.find((t) => t.cle === n.type)?.libelle ?? n.type}
+                      </button>
+                    ) : (
+                      <span>
+                        <strong>{n.numero}.</strong> {TYPES_NOTE.find((t) => t.cle === n.type)?.libelle ?? n.type}
+                      </span>
+                    )}
                     <span className="eca-sous">
                       Tour {n.tour} · {n.page === null ? "note générale" : `page ${n.page + 1}`} · {n.resolue ? "résolue" : "à traiter"}
                     </span>

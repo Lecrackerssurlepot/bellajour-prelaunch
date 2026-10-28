@@ -1,0 +1,35 @@
+/* Une Fenetre au TÉLÉPHONE devient une feuille du bas (retour du 27/10) : comme « Personnes » et « Terminer », jamais une
+   fenêtre au milieu. Ordinateur : rien ne change. Le panneau latéral (`cote`) et la visionneuse (`pleine`) restent plein écran
+   et ne portent pas la classe `--feuille`. Mêmes mesures que `.ec-s-feuille` (photos/simple.css). */
+@media (max-width: 860px) {
+  /* ⚠️ (0,4,0), pas (0,3,0) : cette feuille est importée par un composant ENFANT, donc chargée AVANT `espace.css`, dont
+     `.ec-espace .ec-fenetre-voile:not(.ec-fenetre-voile--cote)` (0,3,0, « align-items: safe center », clavier du 26/10)
+     gagnait à égalité : la feuille flottait au milieu de l'écran (vu le 28/10 sur « Partager », 390 × 844). */
+  .ec-espace .ec-fenetre-voile.ec-fenetre-voile--feuille:not(.ec-fenetre-voile--cote) {
+    place-items: end stretch;
+    align-items: end;
+    padding: 0;
+  }
+  .ec-espace .ec-fenetre-voile--feuille > .ec-fenetre {
+    width: 100%;
+    gap: 12px;
+    max-height: calc(var(--ec-vis-h, var(--app-height)) - env(safe-area-inset-top, 0px) - 56px);
+    padding: 8px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-radius: 28px 28px 0 0;
+    border-bottom: 0;
+    background: var(--ec-carte-pleine);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: var(--ec-reflet), 0 -20px 60px var(--ec-ombre);
+  }
+  .ec-espace .ec-fenetre-voile--feuille > .ec-fenetre::before {
+    content: "";
+    flex: none;
+    align-self: center;
+    width: 40px;
+    height: 5px;
+    margin: 2px 0;
+    border-radius: 999px;
+    background: rgba(var(--ec-fg-rgb), 0.22);
+  }
+}

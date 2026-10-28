@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { signerGet, signerLectureVignette } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { DELAI_CORBEILLE_JOURS, lireIdsPhotos } from "@/lib/collectif/corbeille";
 import { lireCorbeille, mettreALaCorbeille, restaurer, vueCorbeille } from "@/lib/collectif/corbeilleServeur";
 import { peut } from "@/lib/collectif/droits";
@@ -36,11 +36,11 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
-  const refus = refusAcces(acces);
-  if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
-  if (!peut(acces.role, "gerer_corbeille")) return refusDroit();
-  const { edition } = acces;
+  const lu = await chargerAcces(String(corps.token ?? ""), "espace");
+  const refus = refusAcces(lu);
+  if (refus || lu.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
+  if (!peut(lu.role, "gerer_corbeille")) return refusDroit();
+  const { edition } = lu;
   const supabase = makeSupabase();
   const absente = () => NextResponse.json({ error: ERREUR_PERSONNES_ABSENTE, message: MESSAGE_PERSONNES_ABSENTE }, { status: 503 });
 
@@ -53,6 +53,10 @@ export async function POST(request: Request) {
   }
 
   if (corps.action !== "supprimer" && corps.action !== "restaurer") return NextResponse.json({ error: "action_inconnue" }, { status: 400 });
+  /* « lister » est une lecture (au-dessus, jamais preneuse) ; supprimer et restaurer écrivent :
+     le premier appareil prend la place ici (28/10). */
+  const acces = await accesPourEcrire(lu, "gerer_corbeille");
+  if (!peut(acces.role, "gerer_corbeille")) return refusDroit();
   const ids = lireIdsPhotos(corps.photoIds);
   if (!ids) return NextResponse.json({ error: "lot_invalide" }, { status: 400 });
   const r = corps.action === "supprimer" ? await mettreALaCorbeille(supabase, edition.id, ids, "responsable", null) : await restaurer(supabase, edition.id, ids, null);

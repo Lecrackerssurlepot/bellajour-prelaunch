@@ -43,6 +43,9 @@
    s'y ajoute ni ne s'y supprime. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
+import { useEchap } from "@/components/couche/useEchap";
 import { useAndroid } from "@/hooks/useClient";
 import { TAILLE_PAGE_ALBUM } from "@/lib/collectif/album";
 import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
@@ -58,14 +61,12 @@ import {
   photosDeLEnvoi,
   phraseAutresAppareils,
   BOUTON_REPRENDRE,
-  phraseCoupees,
-  phrasePlace,
-  phraseRetour,
   phrasesDuLot,
   progression,
   SONDAGE_ALBUM_MS,
   SONDAGES_AVANT_RELECTURE,
 } from "@/lib/collectif/depotParticipant";
+import { libellePasMoi, ligneReste, phraseDejaSurLien } from "@/lib/collectif/phrasesDepot";
 import type { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { useApercus, useMoteur } from "../../edition/_composants/depot/useMoteur";
 import { useSondage } from "../../edition/_composants/useSondage";
@@ -196,15 +197,14 @@ export default function Album(props: Props) {
         if (derniere) garderRepere(cle, derniere);
         if (premierChargement.current && accueilPrenom) {
           /* Ce qui est sur CE lien et ce qui reste (21/10), plus le total de l'édition. */
-          setAnnonce({
-            titre: tu ? `Content de te revoir, ${accueilPrenom}` : `Content de vous revoir, ${accueilPrenom}`,
-            texte: [
-              phraseRetour(accueilSurCeLien, placeLue, lienNom, tu),
-              neuves.size ? `${neuves.size} nouvelle${neuves.size > 1 ? "s" : ""} depuis ${tu ? "ta" : "votre"} visite.` : "",
-            ]
-              .filter(Boolean)
-              .join(" "),
-          });
+          /* La place ne se redit pas ici : elle est au pied du bouton (une seule fois). Rien à ajouter : pas de carte de plus. */
+          const texte = [
+            phraseDejaSurLien(accueilSurCeLien, lienNom),
+            neuves.size ? `${neuves.size} nouvelle${neuves.size > 1 ? "s" : ""} depuis ${tu ? "ta" : "votre"} visite.` : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          if (texte) setAnnonce({ titre: tu ? `Content de te revoir, ${accueilPrenom}` : `Content de vous revoir, ${accueilPrenom}`, texte });
         }
         premierChargement.current = false;
       }
@@ -325,6 +325,12 @@ export default function Album(props: Props) {
   const plein = typeof place === "number" && place <= 0;
   const coupees = props.lectureSeule ? 0 : (props.coupees ?? 0);
 
+  /* La feuille de suppression : Échap, le geste « retour » et le fond verrouillé (appelés avant tout retour anticipé). */
+  const fermerFeuille = () => (suppression.enCours ? null : setFeuille(false));
+  useEchap(fermerFeuille, feuille);
+  useRetourFerme(fermerFeuille, feuille);
+  useVerrouDefilement(feuille);
+
   const peutSupprimer = props.personnes && !props.lectureSeule && Boolean(props.moteur);
   const supprimables = miennes.photos.filter((x) => x.supprimable);
 
@@ -432,7 +438,7 @@ export default function Album(props: Props) {
             </span>
             {props.pasMoi && !enCours && !props.lectureSeule ? (
               <button type="button" className="ec-dp-lien" onClick={props.pasMoi}>
-                {v("Ce n'est pas vous ?", "Ce n'est pas toi ?")}
+                {libellePasMoi(tu)}
               </button>
             ) : null}
           </div>
@@ -587,6 +593,16 @@ export default function Album(props: Props) {
             </div>
           ) : (
             <div className="ec-dp-bas-in" role="status" aria-live="polite">
+              {vue.reseauBloque ? (
+                /* Rien ne part : l'état et « Réessayer », sans consigne qui le contredit ni autre geste. */
+                <>
+                  <p className="ec-dp-note ec-dp-note--refus">{vue.reseauBloque}</p>
+                  <button type="button" className="ec-dp-bouton ec-dp-bouton--clair" onClick={() => props.moteur?.reessayer()}>
+                    Réessayer
+                  </button>
+                </>
+              ) : (
+              <>
               {enCours ? (
                 <>
                   <div className="ec-dp-progres-l">
@@ -637,14 +653,6 @@ export default function Album(props: Props) {
               ))}
               {vue.horsLigne ? <p className="ec-dp-note">Connexion perdue. Reprise automatique.</p> : null}
               {vue.serveurLent ? <p className="ec-dp-note">Serveur lent. Reprise automatique.</p> : null}
-              {vue.reseauBloque ? (
-                <>
-                  <p className="ec-dp-note ec-dp-note--refus">{vue.reseauBloque}</p>
-                  <button type="button" className="ec-dp-bouton ec-dp-bouton--clair" onClick={() => props.moteur?.reessayer()}>
-                    Réessayer
-                  </button>
-                </>
-              ) : null}
               {/* Les vidéos écartées se disent pendant l'envoi (planche 7B) ; le merci (7C) ne les redit pas. */}
               {(enCours || !termine ? ignores : []).map((t) => (
                 <p key={t} className="ec-dp-note ec-dp-note--refus">
@@ -668,17 +676,27 @@ export default function Album(props: Props) {
                   ) : null}
                   {/* 2A : l'envoi coupé, dit en quatre mots ; « Reprendre » rouvre le choix (les mêmes photos repartent
                       sur leur ligne, la place qu'elles réservent ne bloque donc pas le bouton). */}
-                  {coupees ? <p className="ec-dp-note ec-dp-note--refus">{phraseCoupees(coupees)}</p> : null}
+                  {coupees ? <p className="ec-dp-note ec-dp-note--refus">{ligneReste(coupees, place, tu)}</p> : null}
                   {props.ajouter ? (
-                    <button type="button" className="ec-dp-bouton" onClick={ajouter} disabled={plein && !coupees}>
+                    <button
+                      type="button"
+                      className="ec-dp-bouton"
+                      onClick={() => {
+                        /* Actif même quand tout est parti : il dit pourquoi, au lieu de se taire grisé. */
+                        if (plein && !coupees) setAnnonce({ titre: ligneReste(0, place, tu).replace(/^./, (c) => c.toUpperCase()), texte: "" });
+                        else ajouter();
+                      }}
+                    >
                       <IcoPlus />
                       {coupees ? BOUTON_REPRENDRE : "Ajouter des photos"}
                     </button>
                   ) : null}
                   <p className="ec-dp-reste">
-                    {[PHOTOS_SEULEMENT.split(" : ")[0], phrasePlace(place, tu)].filter(Boolean).join(" · ")}
+                    {[PHOTOS_SEULEMENT.split(" : ")[0].replace(/\.$/, ""), coupees ? "" : ligneReste(0, place, tu)].filter(Boolean).join(" · ")}
                   </p>
                 </>
+              )}
+              </>
               )}
             </div>
           )}
@@ -686,7 +704,7 @@ export default function Album(props: Props) {
       )}
 
       {feuille ? (
-        <div className="ec-dp-voile" onClick={() => (suppression.enCours ? null : setFeuille(false))}>
+        <div className="ec-dp-voile" onClick={fermerFeuille}>
           <div className="ec-dp-feuille" role="dialog" aria-modal="true" aria-labelledby="ec-dp-feuille-titre" onClick={(e) => e.stopPropagation()}>
             <span className="ec-dp-poignee" aria-hidden="true" />
             <h2 id="ec-dp-feuille-titre" className="ec-dp-feuille-titre">

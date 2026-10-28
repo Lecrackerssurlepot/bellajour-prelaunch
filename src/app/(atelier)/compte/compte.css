@@ -403,6 +403,15 @@
 
 .cpt .cpt-lien:hover { color: var(--c-text-soft); }
 
+/* 27/10 : la zone tactile, pas le dessin. 22 px de haut au pouce se ratent ;
+   le pseudo-élément porte la cible à 44 sans bouger la mise en page. */
+.cpt .cpt-lien { position: relative; }
+.cpt .cpt-lien::after {
+  content: '';
+  position: absolute;
+  inset: -11px -6px;
+}
+
 /* globals.css pose `overflow-wrap: anywhere !important` sur h1..h4 et p sous
    767 px — une règle de sécurité de la landing waitlist, qui coupe AU MILIEU
    D'UN MOT, sans césure. Sur un titre de numéro (« Madrid », « Nuit Sonore »)

@@ -130,7 +130,10 @@ const RYTHME_PROGRES_MS = 250;
 /** Le refus d'un lot que le serveur explique par une phrase (409) : aucun réseau n'y changera rien. */
 const REFUS_EXPLIQUES: readonly string[] = [ERREUR_PAS_OUVERT];
 
-type Etat = "neuf" | "attente" | "reduction" | "pret" | "declare" | "envoi" | "envoye" | "confirme" | "deja" | "refuse" | "erreur";
+/* « annexes » (28/10) : l'ORIGINAL est au coffre, sa voie est rendue à la photo suivante ; la vignette et
+   la moyenne finissent à côté. Elle compte déjà comme arrivée au coffre (la barre), elle n'est confirmée
+   qu'ensuite (« envoye ») : confirmer sans la vignette ferait fabriquer celle-ci au serveur (T-171). */
+type Etat = "neuf" | "attente" | "reduction" | "pret" | "declare" | "envoi" | "annexes" | "envoye" | "confirme" | "deja" | "refuse" | "erreur";
 const FINIS: readonly Etat[] = ["confirme", "deja", "refuse", "erreur"];
 
 type Item = {
@@ -139,6 +142,8 @@ type Item = {
   cle: string;
   mime: string;
   etat: Etat;
+  /** Partie dans une vérification « déjà là ? » (28/10 : sa réduction peut commencer pendant que la vérification est en route). */
+  verifiee: boolean;
   essais: number;
   /** Les envois partis sans réponse alors que le navigateur se disait en ligne. */
   essaisReseau: number;
@@ -208,6 +213,8 @@ export type Vue = {
   reseauBloque: string | null;
   /** Les fichiers ignorés à l'ajout (pas des images). */
   ignores: number;
+  /** Les mêmes, pour le DERNIER envoi seulement (28/10 : la fenêtre d'un nouvel envoi ne redit pas l'ancien). */
+  lotIgnores: number;
   /** Parmi eux, les vidéos (T-200 : refusées, décision de Mathias), et le nom de la première pour la nommer. */
   videos: number;
   premiereVideo: string | null;
@@ -235,7 +242,8 @@ export type Configuration = {
   apercus?: number;
 };
 
-export type Provenance = { type: string; libelle: string };
+/** `lien` (28/10) : l'id d'un lien de l'édition où le RESPONSABLE dépose ; `libelle` en garde alors le nom pour l'écran. */
+export type Provenance = { type: string; libelle: string; lien?: string | null };
 
 function attendre(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -350,6 +358,7 @@ export class MoteurDepot {
   private abonnes = new Set<() => void>();
   private compteur = 0;
   private ignores = 0;
+  private ignoresLot = 0;
   private videos = 0;
   private premiereVideo: string | null = null;
   private dejaAjoutes = 0;
@@ -360,6 +369,8 @@ export class MoteurDepot {
   /** Les photos qui attendent avant de retenter : « Réessayer » les réveille. */
   private readonly reveils = new Set<() => void>();
   private verification = false;
+  /** Une réponse 200 du serveur a déjà été lue (ses cookies sont posés) : voir `declarer`. */
+  private serveurAtteint = false;
   private declaration = false;
   private confirmation = false;
   private voies = 0;
@@ -447,7 +458,7 @@ export class MoteurDepot {
     let arrivees = 0, dejaLa = 0, enCours = 0, refusees = 0, erreurs = 0, auCoffre = 0;
     const raisons = new Set<string>();
     for (const it of this.items) {
-      if (it.etat === "envoye") auCoffre++;
+      if (it.etat === "envoye" || it.etat === "annexes") auCoffre++;
       if (it.etat === "confirme") arrivees++;
       else if (it.etat === "deja") dejaLa++;
       else if (it.etat === "refuse") {
@@ -474,6 +485,7 @@ export class MoteurDepot {
           ? RESEAU_BLOQUE
           : null,
       ignores: this.ignores,
+      lotIgnores: this.ignoresLot,
       videos: this.videos,
       premiereVideo: this.premiereVideo,
       dejaAjoutes: this.dejaAjoutes,
@@ -501,7 +513,7 @@ export class MoteurDepot {
     for (let i = this.items.length - 1; i >= 0 && liste.length < max; i--) {
       const it = this.items[i];
       const etat: ApercuEnvoi["etat"] =
-        it.etat === "envoye" || it.etat === "confirme"
+        it.etat === "envoye" || it.etat === "annexes" || it.etat === "confirme"
           ? "arrivee"
           : it.etat === "deja"
             ? "deja"
@@ -627,6 +639,7 @@ export class MoteurDepot {
           this.videos++;
           this.premiereVideo ??= f.name;
         }
+        this.ignoresLot++;
         continue;
       }
       const cle = cleDuFichier(this.sel, f, maintenant);
@@ -666,6 +679,7 @@ export class MoteurDepot {
         cle,
         mime,
         etat: deja ? "deja" : "neuf",
+        verifiee: false,
         essais: 0,
         essaisReseau: 0,
         charge: null,
@@ -699,6 +713,7 @@ export class MoteurDepot {
     if (this.occupe()) return;
     this.lot++;
     this.deuxFoisLot = 0;
+    this.ignoresLot = 0;
   }
 
   /**
@@ -768,11 +783,22 @@ export class MoteurDepot {
     void this.confirmer(false);
   }
 
-  /** Une reprise : demander d'abord ce qui est DÉJÀ arrivé, pour ne rien réduire pour rien. */
+  /**
+   * Une reprise : demander d'abord ce qui est DÉJÀ arrivé, pour ne rien réduire pour rien.
+   * 28/10 (iPhone lent après « Ajouter ») : la réduction des premières photos du lot COMMENCE pendant
+   * que la question est en route (`reduireAvance` prend une « neuf » déjà partie en vérification) ;
+   * un aller-retour de moins avant le premier envoi. Au pire, une reprise de photos toutes déjà là
+   * réduit pour rien les `FENETRE` premières. La réponse ne touche qu'aux photos qui n'ont pas encore
+   * été déclarées : une « déjà là » en cours de réduction est finie (sa charge libérée), une déclarée
+   * est laissée à la déclaration, qui reconnaît les déjà-là d'elle-même.
+   */
   private async verifier(): Promise<void> {
     if (this.verification) return;
-    const lot = this.items.filter((i) => i.etat === "neuf").slice(0, LOT_VERIFICATION);
+    const lot = this.items.filter((i) => i.etat === "neuf" && !i.verifiee).slice(0, LOT_VERIFICATION);
     if (!lot.length) return;
+    for (const it of lot) it.verifiee = true;
+    /* Pas encore déclarée : la réponse peut encore décider pour elle. */
+    const ouverte = (it: Item) => it.etat === "neuf" || it.etat === "reduction" || it.etat === "pret";
     this.verification = true;
     try {
       const { status, json } = await poster("/api/collectif/depot/presign", {
@@ -790,7 +816,7 @@ export class MoteurDepot {
         /* Pas encore ouvert (planche 9B) : le lot est refusé avec la phrase du serveur, le
            dépôt n'est pas « fermé » pour autant (il ouvrira). */
         const raison = typeof json.message === "string" ? json.message : "Dépôt pas encore ouvert.";
-        for (const it of lot) this.finir(it, "refuse", raison);
+        for (const it of lot) if (ouverte(it)) this.finir(it, "refuse", raison);
         return;
       }
       if (status === 409) {
@@ -809,15 +835,23 @@ export class MoteurDepot {
       }
       const aRevoir = new Set(status === 200 && Array.isArray(json.aRevoir) ? (json.aRevoir as string[]) : []);
       for (const it of lot) {
+        if (!ouverte(it)) continue;
         if (deja.has(it.cle)) {
-          it.etat = "deja";
           it.deja = details.get(it.cle) ?? DEJA_CONNUE;
-        } else it.etat = aRevoir.has(it.cle) ? "pret" : "attente";
+          this.finir(it, "deja", null);
+        } else if (aRevoir.has(it.cle)) {
+          /* Supprimée par son auteur : déclarée SANS réduction (rien ne part, le serveur la restaure) ;
+             une réduction déjà commencée est abandonnée (son résultat n'est pas gardé). */
+          if (it.etat === "neuf" || it.etat === "reduction") it.etat = "pret";
+        } else if (it.etat === "neuf") it.etat = "attente";
       }
-      if (status === 200) this.horsLigne = false;
+      if (status === 200) {
+        this.horsLigne = false;
+        this.serveurAtteint = true;
+      }
     } catch {
       /* Hors ligne : on n'arrête rien, la déclaration reconnaîtra les déjà-là. */
-      for (const it of lot) it.etat = "attente";
+      for (const it of lot) if (it.etat === "neuf") it.etat = "attente";
     } finally {
       this.verification = false;
       this.notifier();
@@ -834,13 +868,14 @@ export class MoteurDepot {
       if (i.etat === "reduction") {
         enMemoire++;
         prepares++;
-      } else if (i.etat === "pret" || i.etat === "declare" || i.etat === "envoi") {
+      } else if (i.etat === "pret" || i.etat === "declare" || i.etat === "envoi" || i.etat === "annexes") {
         prepares++;
         if (i.charge) enMemoire++;
       }
     }
     while (enMemoire < FENETRE && prepares < AVANCE) {
-      const it = this.items.find((i) => i.etat === "attente");
+      /* Vérifiée d'abord ; sinon une photo dont la vérification est EN ROUTE (28/10, voir `verifier`). */
+      const it = this.items.find((i) => i.etat === "attente") ?? this.items.find((i) => i.etat === "neuf" && i.verifiee);
       if (!it) return;
       it.etat = "reduction";
       enMemoire++;
@@ -850,6 +885,8 @@ export class MoteurDepot {
          une dizaine de Mo au plus, loin des charges réduites, bornées par FENETRE). */
       void reduire({ id: String(it.n), fichier: it.fichier, reduire: !estHeic(it.mime), estJpeg: it.mime === "image/jpeg", moyenne: DEMANDE_MOYENNE })
         .then(async (r) => {
+          /* Finie pendant la réduction (déjà là, dépôt fermé) : rien n'est gardé en mémoire. */
+          if (it.etat !== "reduction") return;
           it.charge = r.charge;
           /* Un HEIC que ce navigateur ne lit pas (Chrome, Firefox, Android) : sa
              vignette et sa moyenne viennent de libheif (T-150), l'original part tel quel.
@@ -877,7 +914,15 @@ export class MoteurDepot {
           }
         })
         .finally(() => {
-          if (it.etat !== "reduction") return;
+          if (it.etat !== "reduction") {
+            /* Finie entre-temps (un HEIC lu par libheif pendant la réponse « déjà là ») : sa charge ne reste pas. */
+            if (FINIS.includes(it.etat)) {
+              it.charge = null;
+              it.vignette = null;
+              it.moyenne = null;
+            }
+            return;
+          }
           it.etat = "pret";
           this.notifier();
           this.pompe();
@@ -886,7 +931,11 @@ export class MoteurDepot {
   }
 
   private async declarer(): Promise<void> {
-    if (this.declaration) return;
+    /* Jamais pendant la PREMIÈRE vérification (28/10) : la réduction avance pendant qu'elle est en route, mais
+       deux écritures SIMULTANÉES du premier appareil, chacune sans cookie, prenaient la place deux fois et la
+       seconde perdait (403 `lecture_seule`, le premier envoi refusé ; vu en recette sur la simulation). Une
+       fois le serveur atteint (ses cookies posés), elles se croisent sans danger. */
+    if (this.declaration || (this.verification && !this.serveurAtteint)) return;
     /* Assez de photos signées attendent déjà leur voie : on déclarera plus tard, par un lot plus plein. */
     let signees = 0, enPreparation = 0;
     for (const i of this.items) {
@@ -898,7 +947,11 @@ export class MoteurDepot {
     const premier = this.items.find((i) => i.etat === "pret");
     if (!premier) return;
     const memeLot = (i: Item) =>
-      i.provenance?.type === premier.provenance?.type && i.provenance?.libelle === premier.provenance?.libelle && i.accord === premier.accord && i.deposant === premier.deposant;
+      i.provenance?.type === premier.provenance?.type &&
+      i.provenance?.libelle === premier.provenance?.libelle &&
+      (i.provenance?.lien ?? null) === (premier.provenance?.lien ?? null) &&
+      i.accord === premier.accord &&
+      i.deposant === premier.deposant;
     const lot = this.items.filter((i) => i.etat === "pret" && memeLot(i)).slice(0, LOT_DECLARATION);
     /* Les voies sont pleines et d'autres photos se préparent : attendre un lot plus plein
        (la pompe repasse à chaque photo prête et à chaque envoi fini). */
@@ -962,6 +1015,7 @@ export class MoteurDepot {
       this.echecsReseau = 0;
       this.horsLigne = false;
       this.serveurLent = false;
+      this.serveurAtteint = true;
       const parCle = new Map<string, Record<string, unknown>>();
       for (const r of json.resultats as Record<string, unknown>[]) if (typeof r.cle === "string") parCle.set(r.cle, r);
       let refusPlafond: string | null = null;
@@ -1050,19 +1104,15 @@ export class MoteurDepot {
     }
     it.etat = "envoi";
     this.voies++;
+    let annexes = false;
     try {
       it.progres = 0;
-      const r = await this.put(
-        it.url!,
-        it.charge ?? it.fichier,
-        it.typeEnvoye,
-        this.cfg.apercus
-          ? (part) => {
-              it.progres = part;
-              this.notifierBientot();
-            }
-          : undefined
-      );
+      /* L'avancement de l'original, toujours (28/10) : la barre de la fenêtre avance avec les octets
+         (`compterLot`, `enRoute`), pas seulement à l'arrivée de chaque photo entière. */
+      const r = await this.put(it.url!, it.charge ?? it.fichier, it.typeEnvoye, (part) => {
+        it.progres = part;
+        this.notifierBientot();
+      });
       if (!r.ok) {
         if (r.status > 0) {
           /* Le coffre a RÉPONDU non (URL périmée, signature refusée) : un vrai essai. */
@@ -1093,33 +1143,46 @@ export class MoteurDepot {
       }
       this.horsLigne = false;
       this.bloque = false;
-      /* La vignette repart comme la photo (T-171 : une vignette perdue pendant une
-         coupure laissait l'original s'afficher dans la grille). Elle ne fait
-         jamais échouer la photo : au bout de quatre essais, on renonce. */
-      if (it.urlVignette && it.vignette) {
-        for (let k = 0; k < 4; k++) {
-          if ((await this.put(it.urlVignette, it.vignette, "image/jpeg")).ok) break;
-          if (!enLigne()) await attendreEnLigne();
-          else await attendreReseau(ATTENTES_MS[k]);
-        }
-      }
-      /* La version moyenne (5A), sur la même règle : quatre essais, jamais un échec de la photo.
-         Perdue, « Agrandir » montre l'original, comme avant. */
-      if (it.urlMoyenne && it.moyenne) {
-        for (let k = 0; k < 4; k++) {
-          if ((await this.put(it.urlMoyenne, it.moyenne, MIME_MOYENNE)).ok) break;
-          if (!enLigne()) await attendreEnLigne();
-          else await attendreReseau(ATTENTES_MS[k]);
-        }
-      }
+      /* L'original est au coffre : sa charge réduite est libérée et sa VOIE rendue à la photo
+         suivante (28/10) ; la vignette et la moyenne finissent à côté (« annexes »). */
       it.charge = null;
-      it.vignette = null;
-      it.moyenne = null;
       it.progres = 1;
-      it.etat = "envoye";
-      it.envoyeLe = Date.now();
+      it.etat = "annexes";
+      annexes = true;
     } finally {
       this.voies--;
+      this.notifier();
+      if (this.ferme) void this.confirmerRestes();
+      else this.pompe();
+    }
+    if (annexes) await this.envoyerAnnexes(it);
+  }
+
+  /**
+   * La vignette et la moyenne d'une photo dont l'original est arrivé, EN MÊME TEMPS (28/10 : un
+   * aller-retour de moins par photo). La vignette repart comme la photo (T-171 : une vignette perdue
+   * pendant une coupure laissait l'original s'afficher dans la grille) ; la moyenne (5A) sur la même
+   * règle. Ni l'une ni l'autre ne fait jamais échouer la photo : au bout de quatre essais, on renonce
+   * (perdue, « Agrandir » montre l'original). La photo n'est confirmée qu'ensuite (« envoye »).
+   */
+  private async envoyerAnnexes(it: Item): Promise<void> {
+    const pousser = async (url: string | null, corps: Blob | null, type: string) => {
+      if (!url || !corps) return;
+      for (let k = 0; k < 4; k++) {
+        if ((await this.put(url, corps, type)).ok) return;
+        if (!enLigne()) await attendreEnLigne();
+        else await attendreReseau(ATTENTES_MS[k]);
+      }
+    };
+    try {
+      await Promise.all([pousser(it.urlVignette, it.vignette, "image/jpeg"), pousser(it.urlMoyenne, it.moyenne, MIME_MOYENNE)]);
+    } finally {
+      it.vignette = null;
+      it.moyenne = null;
+      if (it.etat === "annexes") {
+        it.etat = "envoye";
+        it.envoyeLe = Date.now();
+      }
       this.notifier();
       if (this.ferme) void this.confirmerRestes();
       else this.pompe();
@@ -1131,7 +1194,7 @@ export class MoteurDepot {
     if (this.confirmation) return;
     const envoyes = this.items.filter((i) => i.etat === "envoye");
     if (!envoyes.length) return;
-    const restant = this.items.some((i) => ["attente", "reduction", "pret", "declare", "envoi", "neuf"].includes(i.etat));
+    const restant = this.items.some((i) => ["attente", "reduction", "pret", "declare", "envoi", "annexes", "neuf"].includes(i.etat));
     const attendue = Date.now() - Math.min(...envoyes.map((i) => i.envoyeLe));
     if (!force && envoyes.length < 10 && restant && attendue < ATTENTE_CONFIRMATION_MS) {
       /* Un lot incomplet part quand la plus ancienne photo envoyée a attendu

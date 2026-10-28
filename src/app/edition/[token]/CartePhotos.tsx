@@ -18,8 +18,9 @@ import FenetreLien, { CarteLien } from "../_composants/LienContribution";
 import { useFenetreEnvoi } from "../_composants/depot/DepotContexte";
 import ZoneDepot from "../_composants/depot/ZoneDepot";
 import { FenetreTerminerCollecte, ID_LIGNE_FIN, LigneFinCollecte } from "../_composants/FinCollecte";
-import { RAISON_COLLECTE_TERMINEE } from "@/lib/collectif/finCollecte";
 import type { DossierPhotos, LienContribution } from "./donnees";
+/* Le grand QR du téléphone (`FeuilleQr`, ouvert par la pilule « QR code » de `BoutonsPartage`) est une feuille `ec-s-*` : sa feuille de style n'était chargée que par Photos. */
+import "./photos/simple.css";
 
 type Props = {
   token: string;
@@ -94,7 +95,7 @@ export default function CartePhotos(p: Props) {
   return (
     <section className="ec-carte ec-tdb-carte" aria-labelledby="ec-carte-photos">
       <div className="ec-tdb-carte-tete">
-        <span className="ec-tdb-etiquette">2 · Les photos</span>
+        <span className="ec-tdb-etiquette"><span className="ec-tdb-rang">2 · </span>Les photos</span>
         <span className="ec-note">{fin === "fait" ? "Collecte terminée" : p.statut}</span>
       </div>
 
@@ -188,18 +189,6 @@ export default function CartePhotos(p: Props) {
                   Inviter quelqu&apos;un
                 </Link>
               </>
-            ) : p.ecrire ? (
-              /* Collecte terminée : les deux gestes restent à leur place, éteints, avec la raison (21/10). */
-              <>
-                {envoi.ouvrir ? (
-                  <button type="button" className="ec-bouton ec-bouton--clair" disabled title={RAISON_COLLECTE_TERMINEE} aria-describedby={ID_LIGNE_FIN}>
-                    Déposer
-                  </button>
-                ) : null}
-                <button type="button" className="ec-bouton ec-bouton--clair" disabled title={RAISON_COLLECTE_TERMINEE} aria-describedby={ID_LIGNE_FIN}>
-                  Inviter quelqu&apos;un
-                </button>
-              </>
             ) : null}
           </div>
         </>
@@ -238,8 +227,8 @@ export default function CartePhotos(p: Props) {
               </svg>
             </span>
             <span className="ec-tdb-inviter-texte">
-              <strong>Inviter des proches</strong>
-              <span className="ec-note">Un lien par personne</span>
+              <strong>Inviter les participants</strong>
+              <span className="ec-note">Un lien par groupe</span>
             </span>
             <span className="ec-tdb-fleche" aria-hidden="true">
               →

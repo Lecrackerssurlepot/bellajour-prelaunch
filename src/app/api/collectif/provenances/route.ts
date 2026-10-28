@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { lireProvenances } from "@/app/edition/[token]/donnees";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { nouvelleCleProvenance } from "@/lib/collectif/collecte";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
+import { cheminCourt } from "@/lib/collectif/liens";
 import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_LIENS_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
 import { planModificationLien, refusNomReserve } from "@/lib/collectif/modifierLien";
 import { libellePlafondLien, lirePlafondLien } from "@/lib/collectif/plafonds";
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
+  const acces = await accesPourEcrire(await chargerAcces(String(corps.token ?? ""), "espace"), "regler_plafond_participant");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "regler_plafond_participant")) return refusDroit();
@@ -100,7 +101,8 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       ok: true,
-      chemin: `/depot/${acces.edition.token_depot}?p=${cle}`,
+      /* L'adresse courte (28/10) : `/l/<clé>`, aucun token ; elle renvoie vers `/depot/<token_depot>?p=<clé>`. */
+      chemin: cheminCourt(cle),
       libelle,
       plafond: libellePlafondLien(plafond, acces.edition),
       /* Le lien écrit, pour l'afficher aussitôt (`router.refresh()` ne repeint pas toujours, 14/10). */

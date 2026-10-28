@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { supprimer } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAccesDepot } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAccesDepot } from "@/lib/collectif/acces";
 import { cleMoyenne, cleVignette } from "@/lib/collectif/cles";
 import { LOT_CONFIRMATION } from "@/lib/collectif/depot";
 import { peut } from "@/lib/collectif/droits";
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAccesDepot(String(corps.token ?? ""));
+  const acces = await accesPourEcrire(await chargerAccesDepot(String(corps.token ?? "")), "deposer_photos");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "deposer_photos")) return refusDroit();

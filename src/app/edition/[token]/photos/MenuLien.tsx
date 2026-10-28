@@ -13,6 +13,8 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useRetourFerme } from "@/components/couche/useRetourFerme";
+import { useVerrouDefilement } from "@/components/couche/useVerrouDefilement";
 import { Trace } from "./Grille";
 
 /** Une action du menu : son nom, son icône (un tracé de `Trace`), et ce qu'elle fait. `danger` : en rouge, après un filet. `filetAvant` : un filet avant elle, sans la mettre en rouge (« Terminer la collecte », le geste final, à part). */
@@ -98,8 +100,23 @@ export function MenuLien(m: {
   const client = useSyncExternalStore(rien, () => true, () => false);
   const racine = useRef<HTMLDivElement>(null);
   const { onFermer, declencheur } = m;
+  /* Le retour du téléphone le ferme ; et au téléphone le fond ne défile pas (le menu, posé depuis son bouton, ne se détache plus). */
+  useRetourFerme(onFermer);
+  const petit = useSyncExternalStore(
+    (cb) => {
+      const q = window.matchMedia("(max-width: 860px)");
+      q.addEventListener("change", cb);
+      return () => q.removeEventListener("change", cb);
+    },
+    () => window.matchMedia("(max-width: 860px)").matches,
+    () => false
+  );
+  useVerrouDefilement(petit);
   useEffect(() => {
-    racine.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    /* Au clavier, la 1re ligne prend le focus ; au doigt ou à la souris, le focus entre dans le menu sans cercler une ligne (comme MenuPhoto). */
+    const auClavier = declencheur.current?.matches(":focus-visible") ?? false;
+    if (auClavier) racine.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus({ preventScroll: true });
+    else racine.current?.focus({ preventScroll: true });
     const telephone = window.matchMedia("(max-width: 860px)");
     const touche = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -136,7 +153,7 @@ export function MenuLien(m: {
   return createPortal(
     <>
       <div className="ec-li-voile" role="presentation" onClick={onFermer} />
-      <div ref={racine} className={`ec-li-menu ec-li-menu--${m.ouvert.sens}${m.iconeADroite ? " ec-li-menu--droite" : ""}`} role="menu" aria-label={m.etiquette ?? `Actions sur le lien « ${m.nom} »`} style={position}>
+      <div ref={racine} className={`ec-li-menu ec-li-menu--${m.ouvert.sens}${m.iconeADroite ? " ec-li-menu--droite" : ""}`} role="menu" tabIndex={-1} aria-label={m.etiquette ?? `Actions sur le lien « ${m.nom} »`} style={{ ...position, outline: "none" }}>
         {m.actions.map((a) => (
           <button
             key={a.cle}

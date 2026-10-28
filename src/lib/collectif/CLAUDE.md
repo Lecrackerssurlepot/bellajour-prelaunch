@@ -53,7 +53,7 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   même message, jamais une erreur.
 - **`plafonds.ts`** — trois chiffres, aucun deviné. L'atelier échappe à tout ; le responsable et
   les provenances `sans_plafond` n'ont pas de plafond PAR PERSONNE mais le total les compte ; le
-  participant a les deux, tenu PAR APPAREIL (un frein, pas une garantie). **Un plafond PAR
+  participant a les deux ; le plafond par personne compte TOUTES ses photos, tous appareils confondus (prouvé le 28/10 : 29 d'un appareil + 1 = 30 ; le nom `parAppareil` est trompeur, les phrases ne disent plus « sur cet appareil »). **Un plafond PAR
   PERSONNE `null` FERME le dépôt du participant** (`plafond_non_regle`) : on ne devine pas, et
   `/depot` le dit AVANT le choix des photos (`depotRegle`). **Exception D27 (20/10) : un TOTAL
   vide = pas de limite pour toute l'édition** (« on ne sait pas forcément combien il y aura »).
@@ -141,9 +141,28 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   `archive/doublons-troncons-2026-10/`). Les groupes se RANGENT dans `collectif_doublons` quand
   les empreintes sont lues (`doublonsStockes.ts`) ; l'affichage les LIT, il ne les recalcule que
   périmés (signature changée) ou sans la migration 20261022.
+- **Recette Audencia du 28/10 : la même photo d'un autre appareil, les « en cours » orphelins.**
+  Le sel reste entre deux personnes (deux « IMG_1234.JPG » de même poids = deux photos). Mais pour une
+  PERSONNE CONNUE (`participant_id`) ou le responsable, une clé dont la partie après le sel
+  (`nom|taille|date`, nom et poids si une date vaut 0) désigne une de SES photos arrivées, hors
+  corbeille, est « déjà là » (`jumelleDeLaPersonne`, `lirePhotosDeLaPersonne` : une lecture par lot) :
+  rien ne s'écrit, la place n'est pas prise (avant : 55 paires stockées deux fois dans la simulation).
+  « En cours » (page Photos) = déclarations VIVANTES de moins de 15 min (`DELAI_EN_COURS_MS`), ZÉRO
+  collecte close (`compterEnCours`, état effectif). Une déclaration jamais arrivée que la même personne a
+  depuis reçue autrement est « remplacée » (`remplaceesParmi`, `remplaceesDesLignes`) : hors plafond
+  (`compterPourPlafondNet`), hors « en cours », hors rattrapage (elle ne se confirme plus, même au
+  coffre) et hors « photos coupées ». Aucune ligne n'est supprimée. La page Santé de l'atelier
+  (`enAttente`) les compte encore.
+- **Le responsable est UNE personne, même quand il dépose dans un lien (28/10, suite de #336).**
+  `deParticipant` veut dire « rangée dans un lien » ; `estParticipant` (dossiers.ts) l'exclut pour le
+  responsable. `qui:@responsable` lit TOUTES ses photos (« Mes photos », dossiers ET liens) : plus de
+  second « Mathilde Cassaigne » dans « Personnes ». « N participants » (tableau de bord, Photos, « nouvelles
+  photos de… ») ne le compte jamais ; « N personnes » d'un lien (`compterPersonnesDuLien`) le compte UNE
+  fois s'il y a déposé, sous son nom d'édition. Le résumé (`resumePhotos.ts`, condition `personne`) et le
+  repli disent la même chose (harnais `verifPersonneResponsable28`).
   **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
-- **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (le plafond PAR APPAREIL,
-  un frein honnête), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
+- **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (reconnaît l'appareil ;
+  le plafond, lui, compte la personne), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
   `enrichirPhotos` : importe `lireDepuisCoffre`, `planGeocodage`, `geocoderInverse`, écrit dans
   `collectif_photos`. Le harnais interdit d'importer `enrichirPhotos`, `geocoderNumero`,
   `logEvenement`, `envoyerMailAtelier`.
@@ -249,7 +268,8 @@ Trois tokens au porteur par édition (`token_responsable`, `token_equipe`, `toke
 forme que `numeros.token` (32 caractères). `acces.ts` filtre la forme AVANT toute requête, et
 répond `introuvable` à l'identique pour un lien inconnu, archivé, ou tapé sur la mauvaise porte
 (pas d'annuaire). Les layouts posent `noindex` et `referrer: no-referrer` ; l'analytique masque
-`/edition/<token>` et `/depot/<token>` (`src/lib/analytics/chemin.ts`).
+`/edition/<token>` et `/depot/<token>` (`src/lib/analytics/chemin.ts`), et `/l/<clé>`, l'adresse
+courte d'un lien de groupe (28/10, voir « Le message de partage »).
 
 ## Les écrans
 
@@ -387,11 +407,36 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   (`sources.ts` est archivé dans `archive/sources-photos-2026-10/`). La page Photos ET le tableau
   de bord le lisent. Les clés des liens (`?p=`) ne sortent que pour qui peut en créer
   (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
-- **Le message de partage** (`partage.ts`, pur, planche 4 validée le 21/10) : trois courts
-  paragraphes, le salut par le nom du groupe, la clôture et le plafond dans leur phrase, le lien
-  SEUL sur sa ligne, espaces insécables avant « : » « ! » et dans les guillemets. Le client le
-  retouche avant WhatsApp, Mail ou copie. L'adresse de base (sans `?p=`) n'a plus de message :
+- **Le message de partage** (`partage.ts`, pur ; **28/10**, demande de Mathias avant la vraie
+  responsable d'Audencia : « le lien copié par message peut être beaucoup plus simple ») : DEUX
+  lignes avant le lien, plus de salut au nom du groupe (« Bonjour Bateau 8, » sonnait faux),
+  plus d'organisation, ni plafond, ni « sans compte », ni formule de fin (la page de dépôt dit le
+  reste avant le choix des photos). Mot pour mot (tu) : « Les Mousses · Bateau 1 » /
+  « Dépose tes photos ici, jusqu'au 16 novembre. » / ligne vide / le lien seul ; (vous) « Déposez
+  vos photos ici… » ; sans clôture, « Dépose tes photos ici. » ; un lien sans nom ne dit que
+  l'événement. Espace INSÉCABLE avant « · ». L'objet du mail ne bouge pas (« Tes photos : Les
+  Mousses »). La planche 4 du 21/10 (trois paragraphes) est dans
+  `archive/partage-message-court-2026-10/`. L'adresse de base (sans `?p=`) n'a plus de message :
   la fenêtre dit « Ces photos n'ont pas de groupe ».
+- **L'adresse courte d'un lien de groupe** (28/10) : `https://www.bellajour.fr/l/<clé>` (≈ 49
+  caractères au lieu de ≈ 95), la clé de provenance SEULE, aucun token. Elle suffit : `cle` est
+  `unique` en base (migration 20261013 ; 14 lignes, 14 clés distinctes lues en production le 28/10).
+  Aucune migration. `liens.ts` : `cheminCourt`, `lienCourt(origine, cle)`, `lienDeGroupe(base des
+  participants, cle)`, `cheminLongDuGroupe`. TOUT ce qui partage un lien de groupe la donne
+  (`donnees.ts` du tableau de bord, `lienDe` de `Collecte.tsx`, la réponse `chemin` de
+  `/api/collectif/provenances`, la fiche, « L'édition est créée » et `PanneauProvenances` de
+  l'atelier) : donc le message, « Copier », WhatsApp, Mail, la feuille de l'iPhone et le QR. La
+  route `src/app/l/[cle]/` (`lecture.ts` en `cache`) : interrupteur, forme de la clé, lien par sa
+  clé (`lireLienParCle`, collecte.ts, repli 42703 sur `retire_le`), puis la MÊME porte que
+  l'adresse longue (`accesDepot`) ; ok → **307** vers `/depot/<token_depot>?p=<clé>` (qui reste
+  l'unique page de dépôt ; les adresses longues déjà partagées marchent toujours) ; lien supprimé,
+  édition archivée, clé inconnue → `notFound()`, la même page « Ce lien ne fonctionne plus »
+  (`LienMort`, au registre de l'édition retrouvée), 404. Une collecte close redirige, et l'adresse
+  longue montre « Collecte terminée », comme avant. Les robots d'aperçu (WhatsApp, iMessage) suivent
+  la redirection et lisent `partageMeta` de `/depot/[token]` (prouvé au curl avec leurs agents le
+  28/10, pas sur un vrai téléphone). ⚠️ `generateMetadata` est dans le LAYOUT de `/l/[cle]`, pas la
+  page : après `notFound()`, Next ne garde que les métadonnées des layouts, et une clé inconnue
+  montrait celles de l'accueil (« À partir de 24 € »). L'analytique masque `/l/<clé>`.
 - **Le lien « Tous les participants » est une base technique** (planche 5, 21/10) : il reçoit
   toujours (un lien déjà partagé ne perd jamais une photo), mais il n'est plus jamais montré ni
   envoyé. Ses photos apparaissent sous « Sans groupe », en lecture seule et seulement s'il y en
@@ -582,7 +627,7 @@ Maquettes : les planches « téléphone » 1 et 2 du 21/10 (hors dépôt). Le ha
 
 ## La mosaïque des liens et des personnes, l'album d'un lien en pastilles (planches 2D et 3, retours de Mathias du 21/10)
 
-⚠️ **Le 22/10** : « Par lien » reste une mosaïque (« Nouveau lien » en dernière tuile) et l'album d'un lien garde sa tuile et ses pastilles ; la mosaïque des PERSONNES, le nom sur la vignette (`sansQui`), « Créer un lien » en tête et la flèche absente n'existent plus (voir « La page Photos comme une application »).
+⚠️ **Le 22/10** : « Par lien » reste une mosaïque (« Nouveau lien » : dernière tuile jusqu'au 28/10, depuis une pastille EN TÊTE, voir plus bas) et l'album d'un lien garde sa tuile et ses pastilles ; la mosaïque des PERSONNES, le nom sur la vignette (`sansQui`), « Créer un lien » en tête et la flèche absente n'existent plus (voir « La page Photos comme une application »).
 
 Maquettes : planches « téléphone » 2 et 3 du 21/10 (hors dépôt). Ce que Mathias a tranché : « des carrés aux bords arrondis de tailles différentes avec la
 dernière photo affichée et les infos », « ça ne doit pas être compliqué ni toujours recalculer », « nous avons trop de boutons et de liens ».
@@ -590,18 +635,33 @@ dernière photo affichée et les infos », « ça ne doit pas être compliqué n
   corbeille (à égalité par nom, « Bateau 2 » avant « Bateau 10 », puis par clé), la première est GRANDE (2 × 2), les trois suivantes au plus LARGES (2 × 1), le reste
   PETIT par deux, une petite seule devient large (la dernière) ; un seul lien : grand. Sur QUATRE colonnes (ordinateur) on ajuste de 0 à 3 le nombre de larges pour
   qu'une rangée soit toujours pleine, et deux tuiles ou moins gardent DEUX colonnes (`colonnesDeLaMosaique`). Le harnais pose 1 à 40 tuiles sur la grille
-  (`casesVides`) : aucun trou. L'ordre d'affichage est celui de la maquette (la grande, une large, deux petites, une large…). ⚠️ Tous à zéro (le début d'une
+  (`casesVides`) : aucun trou. ⚠️ **Depuis le 28/10 (recette Audencia), l'ORDRE est celui des noms en tri naturel** (« Bateau 1 » à « Bateau 8 ») : les poids ne
+  décident que des TAILLES, jamais de la place (8 bateaux s'affichaient 3, 1, 5, 7, 2… : incohérent pour le responsable). Pour paver sans trou on ajuste les
+  tailles (une petite devant une tuile de deux colonnes devient large, une large qui ne tient pas redevient petite), jamais l'ordre. **Netteté** : la tuile sert
+  `srcset` vignette 240w + moyenne 1 600w (`couverturesPlus`, `couvertureEnPlus` dans `grillePhotos.ts`, variante PAYSAGE pour une tuile large ou grande) ; la
+  vignette seule agrandissait ×3 (flou mesuré le 28/10). ⚠️ Pour mesurer, ne pas lire `naturalWidth` d'une image en `srcset` : il est divisé par la densité choisie
+  (une moyenne de 1 600 px y apparaît « 390 px ») ; lire `currentSrc`. ⚠️ Tous à zéro (le début d'une
   collecte) : la règle ne fait pas d'exception, la première par nom est grande (la planche disait « toutes petites » : à trancher si cela gêne).
+  ⚠️ **Netteté, suite (28/10, deuxième recette Audencia)** : trois causes de flou restaient. (1) « Mes photos » (la tuile en tête) n'avait que la vignette, lue à part
+  (`couvVous`) : la route la signe maintenant comme un lien (`avecVous` dans `grillePhotos.ts`, couverture + moyenne + bandeau paysage, clé `vous` de `couvertures` et
+  `couverturesPlus`), l'effet de lecture à part est supprimé. (2) Une couverture dont la photo n'a PAS de moyenne (envoyée avant le 26/10, ou plus petite que 1 600 px)
+  s'agrandissait ×3 : `couvertureEnPlus` (pure, au harnais) prend la photo la plus récente du lien QUI A une moyenne parmi les 12 dernières, et la vignette suit
+  (`couvertures[cle]` change de photo) ; paysage sans moyenne n'est un bandeau que si AUCUNE photo du lien n'a de moyenne ; le repli (`grilleDepuisLignes`) fait pareil.
+  (3) Un lien dont AUCUNE photo récente n'a de moyenne garde sa vignette (rien de mieux à montrer ; les 22 photos « sans moyenne » de TEST Audencia sont toutes
+  ≤ 1 600 px, par construction du worker : rien à rattraper). `sizes` est juste sur les quatre formes (mesuré à 390 × DPR 2 et à 1440 : la moyenne est choisie partout).
 - ⚠️ **« À l'ouverture de la page seulement » est un GEL, pas un calcul malin** : `figerLesPesees` garde les poids de la première lecture (`Collecte.tsx`,
   `peseesLiens`, `peseesPersonnes`, posés dans `charger` page 0 seulement, JAMAIS dans `relireSansBruit`) tant que ce sont les mêmes tuiles ; `Mosaique.tsx` calcule
   place et taille sur ces poids gelés et n'y lit les chiffres du direct que PAR CLÉ. Un lien créé ou supprimé (un autre ensemble) reprend les poids du moment.
 - **Tuile** (`Mosaique.tsx`, `mosaique.css`, tout sous `.ec-espace`, classes `ec-mo-` `ec-tu-` `ec-ch-`) : la dernière photo en fond (la couverture : la route signe UNE
   vignette par lien, la plus récente, `couvertureDe`), le nom en Cormorant à la taille de la tuile à moitié fondu (`mask-image`, `lining-nums`), une pastille de verre
-  (« 214 photos · 9 personnes », « 214 · 9 » sur une petite ; une personne : « 38 photos · Bateau 1 »), le « … » rond dans une cible de 44 px. Un lien sans photo garde sa
+  (« 214 photos · 9 personnes », « 214 photos » sur une petite ; une personne : « 38 photos · Bateau 1 »), le « … » rond dans une cible de 44 px. Un lien sans photo garde sa
   tuile sur le fond doux du thème, une personne sans photo ses initiales en filigrane. « Sans groupe » : lecture seule, sans « … ». « Mes photos » et l'atelier : deux
   lignes sous la mosaïque (jamais à zéro photo). Plus de « Dernières arrivées » sous « Par lien ».
 - **Les couvertures que la lecture de la page ne porte pas** : `couverturesDe: "liens" | "personnes"` dans la demande de `/api/collectif/photos` (avec
   `seulementArbre` : aucune page, aucune vignette de grille) ; les deux lectures (résumé et repli) le rendent pareil, prouvé au harnais.
+- ⚠️ **« Nouveau lien » = une pastille EN TÊTE de la mosaïque (28/10, `BoutonNouveauLien`, `.ec-mo-nouveau`)**, téléphone seulement : avec 8 liens ou plus, la dernière tuile
+  était hors écran. Elle n'entre plus dans la règle de taille (les tuiles sont les liens). Ni le « + » du haut (il est au dépôt), ni un bouton de plus dans la barre du bas ;
+  l'ordinateur garde le bouton de l'en-tête. L'ancienne tuile est dans `archive/mosaique-liens-2026-10/`.
 - **Moins de boutons** : au téléphone « Par lien » et l'onglet « Les liens » sont UNE vue (la mosaïque, « Créer un lien » en tête à la place de « Cocher ») ; la pilule
   « Les liens · N » de l'en-tête n'existe plus au téléphone ; UNE seule fenêtre de création (`creerLien`) pour l'en-tête, la vue « Par lien » et l'état vide ; chaque
   segment de la barre du bas ramène à SA vue d'ensemble (un seul toucher, jamais un retour à refaire). Sans aucune photo mais avec des liens, les tuiles se montrent
@@ -625,11 +685,17 @@ La règle de Mathias : « si un bouton n'a pas sa place, s'il peut être remplac
 - **Des places fixes au téléphone** : en haut à droite le « + » de dépôt (rond, visible) et UN « … » (Sélectionner, « Supprimées récemment · N », puis après un filet « Terminer la
   collecte ») ; en bas « Toutes · Par lien » (capsule, 64 px = `--ec-fl-h`) et le rond « Personnes » (une feuille du bas : recherche, pastilles, plusieurs possibles). Le contenu des menus est dans
   `photosSimples.ts` (`entreesDuMenuHaut`, `entreesDuMenuPhoto` : purs, au harnais) ; l'écran ne fait que les brancher. L'équipe (lecture seule) n'a ni « + », ni « … », ni sélection, ni appui long.
-- **La grille est rangée PAR JOUR de prise de vue, les plus récents en haut** (`TRI_JOUR` : prise de vue décroissante, SANS DATE EN TÊTE, puis l'arrivée, puis l'id) ; `regrouperParJour`
-  (`photos/filtres.ts`) en fait des intertitres collants (« Samedi 4 octobre · 214 », le nombre seulement d'un jour fini). ⚠️ Une photo sans date prend son JOUR D'ARRIVÉE pour l'intertitre mais reste placée
-  EN TÊTE de la liste, pas dans son jour : trier sur « prise de vue, sinon arrivée » demanderait une colonne calculée (une migration). Plus de filtre Jour ni d'ordre :
+- **La grille est rangée PAR JOUR de prise de vue, les plus récents en haut** (`TRI_JOUR` : prise de vue décroissante, SANS DATE EN FIN depuis le 28/10, puis l'arrivée, puis l'id) ; `regrouperParJour`
+  (`photos/filtres.ts`) en fait des intertitres collants (« Samedi 4 octobre · 214 », le nombre seulement d'un jour fini), UN groupe par jour. ⚠️ Recette Audencia du
+  28/10 : une photo sans date (copie WhatsApp, capture) prenait son jour d'ARRIVÉE et donnait deux intertitres « Mercredi 28 octobre ». Elle va maintenant dans
+  « Sans date » (`jourDePhoto`, clé `~`), en dernier. Plus de filtre Jour ni d'ordre :
   `Filtres = { mode: "tout" | "liens", lien, dossier, personnes, corbeille }`.
-- **Une vignette est UNE PHOTO** : ni nom, ni initiales, ni étoile, ni badge (doublon, œil barré, « nouvelle »). Le rond de sélection n'existe qu'en « Sélectionner » (et au survol à la souris) ; en
+- **Une vignette est UNE PHOTO** : ni nom, ni initiales, ni étoile, ni badge (doublon, œil barré, « nouvelle »). ⚠️ **Seule exception, le 28/10 : le petit CŒUR d'un favori**
+  (`preselection`, recette de Mathias : « le cœur ne se voit pas ») : un cœur plein blanc de 20 px en bas à gauche (`.ec-s-coeur`, ombre double, `pointer-events: none`), en grille comme dans
+  l'album d'un lien et dans « Choisir d'abord mes préférées » (où c'est la photo gardée qui le porte). **Favoris** (28/10) est un filtre de « Toutes » : `Filtres.favoris`, la clé de dossier
+  `selection` (la MÊME règle que l'atelier : `dansLeDossier`, `planDuDossier`, `n_selection` du résumé ; les comptes et la pagination sont ceux de la route), un segment de la barre du bas
+  (Toutes · Favoris · Par lien) et de la colonne de l'ordinateur (une puce « Favoris » avec sa croix), l'adresse `?dossier=selection`. Choisir un lien ou une personne sort de Favoris ; défaire un
+  cœur dans la vue laisse la photo là (sans cœur) jusqu'à la relecture. Le rond de sélection n'existe qu'en « Sélectionner » (et au survol à la souris) ; en
   « Sélectionner » un rond par jour prend la journée. Toucher agrandit ; l'appui long ouvre le menu de la photo (Favori, Voir qui l'a envoyée, Supprimer) et, en « Sélectionner », bascule la photo.
 - **Deux gestes seulement** : le CŒUR (favori) écrit les marques `preselection` de « Ma sélection » par la MÊME route `marquer`, donc l'atelier retrouve la sélection dans son téléchargement ; SUPPRIMER
   = la corbeille de 30 jours (« Supprimées récemment »). « Ne pas publier » (`signalee`), « Doublons », Renommer et Fusionner ont quitté l'espace du client : les marques `signalee` déjà posées restent en
@@ -642,7 +708,10 @@ La règle de Mathias : « si un bouton n'a pas sa place, s'il peut être remplac
   l'écran le dit et reste ouvert (les liens des participants ne se ferment pas pour une sélection que l'atelier ne recevrait pas).
 - **Partager** : au téléphone `navigator.share` (`partagerSurLeTelephone` : l'objet, le message de `messagePartage`, l'adresse), sans fenêtre ; `AbortError` = la personne a renoncé (rien ne s'ouvre) ; toute
   autre panne, ou un navigateur sans partage, ouvre la petite fenêtre (« Copier le message », « QR code »). À l'ordinateur, toujours cette fenêtre. Le tableau de bord garde WhatsApp et Mail dans la carte du
-  dernier lien créé (`CarteLien`, hors de la page Photos).
+  dernier lien créé (`CarteLien`, hors de la page Photos). ⚠️ **Depuis le 28/10** (recette iPhone), `BoutonsPartage` (carte du dernier lien, feuille « Ton lien est prêt ») n'a plus, au téléphone qui sait
+  partager (`useTelephonePartageur` : `navigator.share` ET 860 px, faux au rendu serveur), qu'UN bouton « Partager » (feuille native ; `AbortError` = rien ; autre panne = « Message copié ») et le QR en pilule
+  discrète ; la rangée Copier le lien / WhatsApp / Mail reste dans le code pour l'ordinateur (le harnais relit ces libellés). Les deux logos de `Coquille.tsx` sont des `<Link>` vers `/edition/<token>` (le tableau de bord du lien courant) ;
+  sur la page du participant, « ‹ Retour » prend la place de la marque, tout en haut de la carte (`TeteCarte haut=`).
 - **Collecte terminée (planche 9, vue 11D)** : au téléphone « rien ne s'ajoute plus » : le « + » disparaît (il n'est plus éteint), le « … » ne garde que « Supprimées récemment » (`entreesDuMenuHaut({ ouverte: false })`), une pastille calme dit
   « Collecte terminée le 15 novembre » (`pastilleCollecteTerminee`, `finCollecte.ts`, sans l'heure) ; la ligne complète (les liens ne reçoivent plus de photos, l'atelier compose, l'oubli) reste au tableau de bord et à l'ordinateur, où « Déposer des photos » reste éteint avec sa raison.
 - **« Supprimées récemment » au téléphone (vue 3C) est une grille de vignettes** (« Sélectionner » puis « Restaurer · N » en bas, toucher une vignette la prend) ; l'ordinateur garde sa liste (auteur, échéance, « Restaurer » par ligne). Les personnes d'un lien ouvert sont les MÊMES choix que la feuille « Personnes » (`ec-s-choix`, un nom).
@@ -952,6 +1021,24 @@ l'édition » seulement à la sixième étape (le devis, qu'on n'a pas encore).
   jamais ce nom ; `x-forwarded-host`, lui, s'écrit par l'appelant, T-164). Ni `VERCEL` ni
   `VERCEL_ENV` ne départagent : le `.env.local` tiré de Vercel contient `VERCEL="1"` et
   `VERCEL_ENV="production"`. Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
+- **Le premier appareil, sans code (décision de Mathias du 28/10)** : le lien « Votre espace est prêt »
+  n'est envoyé qu'au responsable, lui demander un code la première fois ne protégeait rien. Tant
+  qu'AUCUNE ligne vivante (`oublie_le` nul) n'existe pour l'édition ET le lien ACTUEL, la porte rend
+  le responsable complet avec `placeLibre` (pas de « en lecture ici », pas de pastille) et n'écrit
+  rien ; la décision est `verdictAppareil` (pur, `appareil.ts`). La place se prend à la PREMIÈRE
+  ÉCRITURE, par `accesPourEcrire(acces, action)` : chaque route qui modifie l'appelle avant son
+  `peut`, pour une action que le responsable a le droit de faire (`prendLaPlace`). Elle écrit la
+  ligne reconnue, le journal `appareil_reconnu` (`motif: "premier_appareil"`, la vérification du
+  code écrit le même avec `motif: "code"`) et pose `bj_ec_appareil` par `cookies().set` (route
+  handlers SEULEMENT, un Server Component ne pose pas de cookie). Prise entre-temps : appareil
+  inconnu, 403 `lecture_seule`. Deux premiers simultanés (aucune contrainte d'unicité par édition) :
+  chacun relit après sa ligne, la plus ancienne garde la place (`gagnantDeLaPlace`), l'autre est
+  oubliée. ⚠️ **Jamais à l'affichage ni sur une lecture** : les robots des messageries (Outlook Safe
+  Links, Microsoft Defender, antivirus) ouvrent les liens des mails dans un vrai navigateur qui
+  exécute le JavaScript, ils prendraient la place. Les lectures (`photos`, `photos/etat`, `messages`,
+  `messages/lus` qui marque lu par un effet, `rendez-vous/creneaux`, « lister » de la corbeille et
+  des personnes) répondent comme au responsable sans rien prendre ; le harnais classe chaque route.
+  **Régénérer le lien du responsable libère la place** (voulu). L'atelier connecté ne la prend jamais.
 
 ## « Retrouver mon espace » (T-154, 16/10)
 
@@ -1209,3 +1296,26 @@ ajoutée ici s'y ajoute aussi. `scripts/verif-atelier.ts` doit rester vert à ch
   arrivées » et le bouton existant devient « Reprendre » (la pastille d'envoi pour le responsable,
   qui ouvre directement le choix). Le chiffre de place ne change pas ; la reprise passe par la
   même ligne (`planDeclaration`, « reprise »), donc le bouton ne se ferme pas faute de place.
+
+## Le dépôt du responsable, recette du 28/10 (un envoi fini s'efface, choisir où, l'iPhone lent)
+
+- **Un envoi FINI ne revient plus** (`envoiAMontrer`, depotParticipant.ts) : tout arrivé ou refusé, le prochain
+  « Déposer » s'ouvre sur le choix ; un envoi qui vit (en route, à reprendre) reste, « Ajouter » s'y ajoute. La fenêtre
+  dit les raisons et les fichiers ignorés du DERNIER lot (`lot.raisons`, `vue.lotIgnores`).
+- **Choisir où** (`destinationsDuDepot`, `destinationOuverte`, dossiers.ts) : « Mes photos », ses dossiers, ses liens
+  (jamais « Sans groupe » ni un lien supprimé), puis « Nouveau dossier » ; un toucher ouvre la photothèque. Depuis la page
+  d'un lien ou d'un dossier, CETTE destination est proposée avec « Changer ». Tous les « Déposer » ouvrent la même feuille
+  (l'encart vide du tableau de bord compris ; son ancienne ligne « « Mes photos » · Changer » est dans
+  `archive/depot-destination-2026-10/`).
+- **Le responsable dépose DANS un lien** : la provenance du moteur porte `lien` (l'id) ; `depot/presign` le relit par
+  `lienVise` (seul le responsable vise, un id, jamais un texte) puis `lireLiensParId` DANS l'édition et `lienRecoit` (pas
+  supprimé) ; refus en 400 `lien_inconnu`, JAMAIS 404 (le moteur fermerait la page). La photo prend `provenance_id` et le
+  type du lien, `role_deposant` responsable, son nom (`responsable_nom`) ; aucun plafond par personne, le total la compte.
+  Elle est dans la tuile, les comptes et l'ALBUM du lien vu par ses participants : exception à « l'accord fait foi »
+  (`dansLAlbum`, `accord_ou_responsable` → un `or` PostgREST, vérifié sur la vue `collectif_photos_album`).
+- **Le moteur, plus vite** (banc du 28/10, CPU ×4, 4G simulée 1 Mo/s, 10 JPEG de 12 Mpx) : la réduction des premières
+  photos commence PENDANT la vérification « déjà là ? » (`verifiee`), mais aucune déclaration ne part avant la première
+  réponse du serveur (`serveurAtteint`) : deux écritures simultanées du premier appareil, sans cookie, prenaient la place
+  deux fois et la seconde perdait (403, premier envoi refusé, vu en recette). L'original rend sa voie dès qu'il est au
+  coffre (« annexes » : vignette et moyenne en même temps, la photo confirmée seulement après) ; la barre avance avec les
+  octets (`enRoute`). Toujours au plus 8 photos réduites en mémoire (`FENETRE`).

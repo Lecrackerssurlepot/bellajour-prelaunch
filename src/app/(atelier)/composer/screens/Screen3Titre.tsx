@@ -68,7 +68,6 @@ export default function Screen3Titre({
        et les modèles deviennent un rail qu'on fait défiler au pouce. */
     <div className="at-t-deux">
      <div className="at-t-col">
-      <p className="at-kicker">Le titre</p>
       <h2>Donnez un titre<br />à votre numéro.</h2>
       <p className="at-lede at-q-lede">
         Il sera imprimé sur la couverture. Vous pourrez encore le changer plus tard.
@@ -134,11 +133,7 @@ export default function Screen3Titre({
           boutons sans effet. Ici le clic fait quelque chose, et l'état
           sélectionné se voit. */}
       <p className="at-covers-chapeau">
-        Un style vous parle déjà&nbsp;?{' '}
-        <span>
-          Facultatif&nbsp;: voici des exemples de templates. L’atelier composera le vôtre
-          avec vos photos.
-        </span>
+        Un style vous parle déjà&nbsp;?
       </p>
       <div className="at-covers" role="group" aria-label="Style de couverture">
         {COVER_MODELS.map((m) => {

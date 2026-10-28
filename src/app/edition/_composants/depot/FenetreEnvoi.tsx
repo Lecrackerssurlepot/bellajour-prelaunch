@@ -1,36 +1,53 @@
 "use client";
 
-/* La fenêtre d'envoi des photos du responsable (T-152, maquette « Déposer =
-   choisir où », après la fenêtre du 14/10). Deux vues dans la même fenêtre :
-   - CHOISIR : DANS QUEL DOSSIER (ceux qui existent, en pastilles, ou un nom
-     nouveau qui crée le dossier ; « Mes photos » la première fois), puis la
-     zone où glisser les photos, un seul bouton « Choisir des photos » (un
-     dossier de l'ordinateur se glisse toujours) ;
+/* La fenêtre d'envoi des photos du responsable (T-152, puis les retours de
+   Mathias du 28/10). Deux vues dans la même fenêtre, une feuille du bas au
+   téléphone (`Fenetre`) :
+   - CHOISIR OÙ : « Mes photos » d'abord, ses autres dossiers, ses LIENS
+     (Bateau 1, Bateau 5…), puis « Nouveau dossier » (`destinationsDuDepot`).
+     Un toucher sur une destination ouvre la photothèque : aucune étape de
+     plus. Ouverte depuis un lien ou un dossier, la fenêtre propose CETTE
+     destination, affichée, avec « Changer ». À l'ordinateur, on glisse aussi.
    - L'ENVOI : le compte en très grand, la barre, ce qui est arrivé, ce qui
-     était DÉJÀ LÀ (et pourquoi c'est sauté), ce qui est à reprendre.
-   « Réduire et continuer » ferme sans rien arrêter ; la pastille de l'en-tête
-   rouvre. « Ajouter d'autres photos » repasse au choix pendant que l'envoi
-   continue : le nouveau lot garde SON dossier (moteur.ts).
-
-   21/10 (la même règle que la page du participant) : la fenêtre dit le DERNIER
-   envoi (`vue.lot`), et « arrivées » ne compte plus les déjà-là ; elles ont
-   leur case, et une photo à la corbeille sa phrase (`phrasesDuLot`). */
+     était DÉJÀ LÀ, ce qui est à reprendre.
+   Un envoi FINI (tout arrivé ou refusé) ne revient plus : le prochain
+   « Déposer » repart sur le choix (`envoiAMontrer`). Un envoi qui vit encore
+   (en route, à reprendre) reste, et « Ajouter » s'y ajoute : le nouveau lot
+   garde SA destination (moteur.ts). L'ancienne vue est dans
+   `archive/depot-destination-2026-10/`. */
 
 import { useEffect, useRef, useState } from "react";
-import { bilanDuLot, phrasesDuLot, progression } from "@/lib/collectif/depotParticipant";
-import { DOSSIER_RESPONSABLE, lireNomDossier, SEPARATEUR, type Arbre } from "@/lib/collectif/dossiers";
+import { bilanDuLot, envoiAMontrer, phrasesDuLot, progression } from "@/lib/collectif/depotParticipant";
+import { destinationOuverte, destinationsDuDepot, DOSSIER_RESPONSABLE, lireNomDossier, type Arbre, type Destination } from "@/lib/collectif/dossiers";
 import Fenetre from "../Fenetre";
 import type { OuvertureEnvoi } from "./DepotContexte";
-import type { MoteurDepot } from "./moteur";
+import type { MoteurDepot, Provenance } from "./moteur";
 import { fichiersDuDepot, useMoteur } from "./useMoteur";
 import { phraseSilence, useSelecteur } from "./useSelecteur";
 
-/** Les dossiers du responsable, à plat : « La soirée », « La soirée / Photobooth »… avec leurs photos. */
-function cheminsDe(arbre: Arbre | null): { chemin: string; n: number }[] {
-  if (!arbre) return [];
-  return arbre.vous
-    .filter((h) => h.cle.startsWith("resp:organisateur:"))
-    .flatMap((h) => [{ chemin: h.nom, n: h.n }, ...h.enfants.map((e) => ({ chemin: `${h.nom}${SEPARATEUR}${e.nom}`, n: e.n }))]);
+/** Où partent les photos : un lien (son id) ou un dossier (son chemin), et le nom à afficher. */
+type Cible = { lien: string | null; chemin: string | null; nom: string };
+
+const deDestination = (d: Destination): Cible => ({ lien: d.lien, chemin: d.chemin, nom: d.nom });
+/** La provenance que le moteur garde pour ces photos (le serveur relit le lien dans l'édition). */
+const provenanceDe = (c: Cible): Provenance =>
+  c.lien ? { type: "organisateur", libelle: c.nom, lien: c.lien } : { type: "organisateur", libelle: c.chemin === DOSSIER_RESPONSABLE ? "" : (c.chemin ?? "") };
+/** La destination que le moteur garde d'un envoi précédent (la fenêtre la retrouve en se rouvrant). */
+const deProvenance = (p: Provenance | null): { lien: string | null; dossier: string | null } =>
+  p?.lien ? { lien: p.lien, dossier: null } : { lien: null, dossier: p?.libelle || null };
+
+function Icone({ sorte }: { sorte: "dossier" | "lien" | "plus" }) {
+  const d =
+    sorte === "lien"
+      ? "M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"
+      : sorte === "plus"
+        ? "M12 5v14M5 12h14"
+        : "M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z";
+  return (
+    <svg className="ec-dest-icone" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
 }
 
 export default function FenetreEnvoi({
@@ -48,17 +65,29 @@ export default function FenetreEnvoi({
 }) {
   const vue = useMoteur(moteur);
   const v = (vous: string, toi: string) => (tu ? toi : vous);
-  /* Lu une fois, pour retrouver le dossier en se rouvrant ; ensuite l'état local fait foi. */
-  const [deja] = useState(() => moteur.provenanceChoisie());
-  const [choisir, setChoisir] = useState(vue.total === 0 || Boolean(ouverture.nouveau) || Boolean(ouverture.dossier));
+  /* Lus une fois à l'ouverture ; ensuite l'état local fait foi. */
+  const [vivantALOuverture] = useState(() => envoiAMontrer(moteur.vue()));
+  const [precedente] = useState(() => moteur.provenanceChoisie());
+  const visee = Boolean(ouverture.lien || ouverture.dossier);
+  const [choisir, setChoisir] = useState(!vivantALOuverture || Boolean(ouverture.nouveau) || visee);
+  /* La destination proposée : celle de l'ouverture (le lien ou le dossier où l'on est), celle de l'envoi
+     qui vit encore, sinon « Mes photos ». */
+  const [choix, setChoix] = useState<{ lien: string | null; dossier: string | null }>(() =>
+    visee ? { lien: ouverture.lien ?? null, dossier: ouverture.lien ? null : (ouverture.dossier ?? null) } : vivantALOuverture ? deProvenance(precedente) : { lien: null, dossier: null }
+  );
+  /* La liste entière, ou seulement la destination proposée et « Changer » (ouverte depuis un lien ou un dossier). */
+  const [liste, setListe] = useState(!visee);
+  const [nouveauOuvert, setNouveauOuvert] = useState(Boolean(ouverture.nouveau));
   const [arbre, setArbre] = useState<Arbre | null>(null);
-  const [chemin, setChemin] = useState<string>(ouverture.dossier ?? (deja?.libelle ? deja.libelle : DOSSIER_RESPONSABLE));
   const [nouveau, setNouveau] = useState("");
   const [refus, setRefus] = useState<string | null>(null);
   const [survol, setSurvol] = useState(false);
+  const [titre, setTitre] = useState<string>(() => precedente?.libelle || DOSSIER_RESPONSABLE);
   const champNouveau = useRef<HTMLInputElement>(null);
+  /* La destination du choix EN COURS, posée au toucher (avant d'ouvrir la photothèque), lue à son retour. */
+  const enAttente = useRef<Cible | null>(null);
 
-  /* Les dossiers qui existent déjà : la route de la grille rend l'arbre seul. */
+  /* Les dossiers et les liens qui existent : la route de la grille rend l'arbre seul. */
   useEffect(() => {
     let vivant = true;
     void fetch("/api/collectif/photos", {
@@ -76,104 +105,116 @@ export default function FenetreEnvoi({
     };
   }, [token]);
   useEffect(() => {
-    if (ouverture.nouveau) champNouveau.current?.focus();
-  }, [ouverture.nouveau]);
+    if (nouveauOuvert) champNouveau.current?.focus();
+  }, [nouveauOuvert]);
 
-  const existants = cheminsDe(arbre);
-  const nomNouveau = nouveau.trim();
-  const cible = nomNouveau ? nomNouveau : chemin;
+  const destinations = destinationsDuDepot(arbre);
+  const proposee = destinationOuverte(destinations, choix);
 
-  function ajouter(liste: Iterable<File>) {
-    let dossier = chemin;
-    if (nomNouveau) {
-      const lu = lireNomDossier(nomNouveau);
-      if (!lu.ok) {
-        setRefus(lu.message);
-        return;
-      }
-      dossier = lu.nom;
-    }
+  function partir(fichiers: Iterable<File>, c: Cible) {
     setRefus(null);
-    moteur.definirProvenance({ type: "organisateur", libelle: dossier === DOSSIER_RESPONSABLE ? "" : dossier });
-    moteur.ajouter(liste);
-    setChemin(dossier);
+    moteur.definirProvenance(provenanceDe(c));
+    moteur.ajouter(fichiers);
+    setTitre(c.nom);
+    setChoix({ lien: c.lien, dossier: c.lien ? null : c.chemin });
     setNouveau("");
+    setNouveauOuvert(false);
     setChoisir(false);
   }
-  const selecteur = useSelecteur(ajouter);
+  const selecteur = useSelecteur((fichiers) => partir(fichiers, enAttente.current ?? deDestination(proposee)));
   /* La page relancée pendant le choix rouvre la fenêtre (DepotContexte) : elle le dit, jusqu'au prochain choix. */
   const silence = selecteur.silence ?? (ouverture.interrompu ? "recharge" : null);
 
+  /** Un toucher sur une destination : elle devient LA destination surlignée (retour de Mathias du 28/10 : au téléphone,
+      on doit voir sur quel lien on envoie), puis la photothèque s'ouvre tout de suite (le clic reste celui de la
+      personne). Annuler la photothèque laisse la ligne choisie surlignée, et « Ou glisse tes photos ici » la suit. */
+  function vers(c: Cible) {
+    enAttente.current = c;
+    setChoix({ lien: c.lien, dossier: c.lien ? null : c.chemin });
+    setRefus(null);
+    selecteur.ouvrir();
+  }
+  function versNouveau() {
+    const lu = lireNomDossier(nouveau);
+    if (!lu.ok) {
+      setRefus(lu.message);
+      return;
+    }
+    vers({ lien: null, chemin: lu.nom, nom: lu.nom });
+  }
+
   if (choisir) {
+    const glisser = {
+      onDragOver: (e: React.DragEvent) => {
+        e.preventDefault();
+        setSurvol(true);
+      },
+      onDragLeave: () => setSurvol(false),
+      onDrop: async (e: React.DragEvent) => {
+        e.preventDefault();
+        setSurvol(false);
+        partir(await fichiersDuDepot(e.dataTransfer), deDestination(proposee));
+      },
+    };
     return (
       <Fenetre titre="Déposer des photos" onFermer={fermer} large>
-        <fieldset className="ec-fieldset">
-          <legend className="ec-envoi-question">Dans quel dossier ?</legend>
-          {existants.length ? (
-            <div className="ec-puces">
-              {existants.map((d) => (
-                <button
-                  key={d.chemin}
-                  type="button"
-                  className="ec-onglet"
-                  aria-pressed={!nomNouveau && chemin === d.chemin}
-                  onClick={() => {
-                    setChemin(d.chemin);
-                    setNouveau("");
+        {liste ? (
+          <div className="ec-dest-liste" role="group" aria-label="Où vont les photos">
+            {destinations.map((d) => (
+              <button key={d.cle} type="button" className="ec-dest" aria-pressed={d.cle === proposee.cle} onClick={() => vers(deDestination(d))}>
+                <Icone sorte={d.lien ? "lien" : "dossier"} />
+                <span className="ec-dest-nom">{d.nom}</span>
+                {d.n ? <span className="ec-dest-n">{d.n.toLocaleString("fr-FR")}</span> : null}
+              </button>
+            ))}
+            {nouveauOuvert ? (
+              <div className="ec-dest ec-dest--nouveau">
+                <Icone sorte="plus" />
+                <input
+                  ref={champNouveau}
+                  className="ec-champ ec-dest-champ"
+                  value={nouveau}
+                  maxLength={80}
+                  placeholder="Le nom du dossier"
+                  aria-label="Le nom du nouveau dossier"
+                  onChange={(e) => setNouveau(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") versNouveau();
                   }}
-                >
-                  {d.chemin} <span className="ec-envoi-puce-n">· {d.n.toLocaleString("fr-FR")}</span>
+                />
+                <button type="button" className="ec-bouton ec-bouton--petit" disabled={!nouveau.trim()} onClick={versNouveau}>
+                  Choisir
                 </button>
-              ))}
-            </div>
-          ) : null}
-          <label className="ec-curseur">
-            {existants.length ? "Ou un nouveau dossier" : "Le nom du dossier"}
-            <input
-              ref={champNouveau}
-              className="ec-champ"
-              value={nouveau}
-              maxLength={80}
-              placeholder={existants.length ? "Le dîner, Le photographe, Jour 2…" : DOSSIER_RESPONSABLE}
-              onChange={(e) => setNouveau(e.target.value)}
-            />
-          </label>
-          <span className="ec-note">
-            {existants.length
-              ? v("Un nom nouveau crée le dossier.", "Un nom nouveau crée le dossier.")
-              : v("Sans nom, tout va dans « Mes photos ».", "Sans nom, tout va dans « Mes photos ».")}
-          </span>
-        </fieldset>
+              </div>
+            ) : (
+              <button type="button" className="ec-dest" onClick={() => setNouveauOuvert(true)}>
+                <Icone sorte="plus" />
+                <span className="ec-dest-nom">Nouveau dossier</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="ec-dest-ici">
+            <span className="ec-dest ec-dest--ici">
+              <Icone sorte={proposee.lien ? "lien" : "dossier"} />
+              <span className="ec-dest-nom">
+                <span className="ec-dest-vers">Vers</span> {proposee.nom}
+              </span>
+              <button type="button" className="ec-dest-changer" onClick={() => setListe(true)}>
+                Changer
+              </button>
+            </span>
+            <button type="button" className="ec-bouton ec-dest-choisir" onClick={() => vers(deDestination(proposee))}>
+              Choisir des photos
+            </button>
+          </div>
+        )}
 
-        <div
-          className={`ec-depose ec-depose--centre${survol ? " ec-depose--survol" : ""}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setSurvol(true);
-          }}
-          onDragLeave={() => setSurvol(false)}
-          onDrop={async (e) => {
-            e.preventDefault();
-            setSurvol(false);
-            ajouter(await fichiersDuDepot(e.dataTransfer));
-          }}
-        >
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="ec-depose-icone">
-            <path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" />
-          </svg>
-          <strong className="ec-depose-titre">
-            <span className="ec-pour-souris">{v("Glissez vos photos ici", "Glisse tes photos ici")}</span>
-            <span className="ec-pour-doigt">{v("Choisissez vos photos", "Choisis tes photos")}</span>
-          </strong>
-          <span className="ec-note">
-            Vers « {cible} »
-          </span>
-          <button type="button" className="ec-bouton" onClick={selecteur.ouvrir}>
-            Choisir des photos
-          </button>
-          <span className="ec-note">JPEG, HEIC, PNG</span>
-          <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
+        <div className={`ec-depose ec-depose--centre ec-dest-glisser ec-pour-souris${survol ? " ec-depose--survol" : ""}`} {...glisser}>
+          <strong className="ec-depose-titre">{v("Ou glissez vos photos ici", "Ou glisse tes photos ici")}</strong>
+          <span className="ec-note">Vers « {proposee.nom} »</span>
         </div>
+        <input type="file" multiple accept="image/*,.heic,.heif" hidden {...selecteur.champ} />
         {silence ? (
           <p className="ec-note ec-note--erreur" role="alert">
             {phraseSilence(silence, tu)}
@@ -185,7 +226,7 @@ export default function FenetreEnvoi({
           </p>
         ) : null}
 
-        {vue.total ? (
+        {envoiAMontrer(vue) ? (
           <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setChoisir(false)}>
             Revenir à l&apos;envoi en cours
           </button>
@@ -201,7 +242,7 @@ export default function FenetreEnvoi({
   const fini = vue.enCours === 0;
   const part = prog.total ? prog.part : fini ? 100 : 0;
   return (
-    <Fenetre titre={`Vers « ${chemin} »`} sous={fini ? "Envoi terminé" : "Pendant l'envoi"} onFermer={fermer} large>
+    <Fenetre titre={`Vers « ${titre} »`} sous={fini ? "Envoi terminé" : "Pendant l'envoi"} onFermer={fermer} large>
       <div className="ec-envoi" role="status" aria-live="polite">
         <div className="ec-envoi-compte">
           <strong className="ec-envoi-n">{prog.envoyees.toLocaleString("fr-FR")}</strong>
@@ -248,7 +289,8 @@ export default function FenetreEnvoi({
           {t}
         </p>
       ))}
-      {vue.raisons.map((r) => (
+      {/* Les raisons de CE lot (28/10 : la fenêtre d'un nouvel envoi ne redit pas les refus de l'ancien). */}
+      {lot.raisons.map((r) => (
         <p key={r} className="ec-note ec-note--erreur">
           {r}
         </p>
@@ -256,7 +298,7 @@ export default function FenetreEnvoi({
       {vue.horsLigne ? <p className="ec-note">Connexion perdue. Reprise automatique.</p> : null}
       {vue.serveurLent ? <p className="ec-note">Serveur lent. Reprise automatique.</p> : null}
       {vue.reseauBloque ? <p className="ec-note ec-note--erreur">{vue.reseauBloque}</p> : null}
-      {vue.ignores ? <p className="ec-note">{vue.ignores} fichier(s) ignoré(s).</p> : null}
+      {vue.lotIgnores ? <p className="ec-note">{vue.lotIgnores} fichier(s) ignoré(s).</p> : null}
       {vue.ferme ? <p className="ec-note ec-note--erreur">{vue.ferme}</p> : null}
       {!fini ? (
         <p className="ec-envoi-info">
@@ -271,7 +313,15 @@ export default function FenetreEnvoi({
           </button>
         ) : null}
         {!vue.ferme ? (
-          <button type="button" className="ec-bouton ec-bouton--clair" onClick={() => setChoisir(true)}>
+          <button
+            type="button"
+            className="ec-bouton ec-bouton--clair"
+            onClick={() => {
+              /* La destination de l'envoi en cours, affichée, et « Changer » à côté. */
+              setListe(false);
+              setChoisir(true);
+            }}
+          >
             Ajouter
           </button>
         ) : null}
