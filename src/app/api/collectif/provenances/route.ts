@@ -6,6 +6,7 @@ import { nouvelleCleProvenance } from "@/lib/collectif/collecte";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { journaliser } from "@/lib/collectif/journal";
+import { cheminCourt } from "@/lib/collectif/liens";
 import { colonneAbsente, ERREUR_LIENS_ABSENTE, ERREUR_REVISION_ABSENTE, MESSAGE_LIENS_ABSENTE, MESSAGE_REVISION_ABSENTE } from "@/lib/collectif/migration";
 import { planModificationLien, refusNomReserve } from "@/lib/collectif/modifierLien";
 import { libellePlafondLien, lirePlafondLien } from "@/lib/collectif/plafonds";
@@ -100,7 +101,8 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       ok: true,
-      chemin: `/depot/${acces.edition.token_depot}?p=${cle}`,
+      /* L'adresse courte (28/10) : `/l/<clé>`, aucun token ; elle renvoie vers `/depot/<token_depot>?p=<clé>`. */
+      chemin: cheminCourt(cle),
       libelle,
       plafond: libellePlafondLien(plafond, acces.edition),
       /* Le lien écrit, pour l'afficher aussitôt (`router.refresh()` ne repeint pas toujours, 14/10). */

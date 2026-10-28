@@ -261,7 +261,8 @@ Trois tokens au porteur par édition (`token_responsable`, `token_equipe`, `toke
 forme que `numeros.token` (32 caractères). `acces.ts` filtre la forme AVANT toute requête, et
 répond `introuvable` à l'identique pour un lien inconnu, archivé, ou tapé sur la mauvaise porte
 (pas d'annuaire). Les layouts posent `noindex` et `referrer: no-referrer` ; l'analytique masque
-`/edition/<token>` et `/depot/<token>` (`src/lib/analytics/chemin.ts`).
+`/edition/<token>` et `/depot/<token>` (`src/lib/analytics/chemin.ts`), et `/l/<clé>`, l'adresse
+courte d'un lien de groupe (28/10, voir « Le message de partage »).
 
 ## Les écrans
 
@@ -399,11 +400,36 @@ Le §14 du PRD prime sur les §4 à §7. Ce qui doit tenir :
   (`sources.ts` est archivé dans `archive/sources-photos-2026-10/`). La page Photos ET le tableau
   de bord le lisent. Les clés des liens (`?p=`) ne sortent que pour qui peut en créer
   (`regler_plafond_participant`) : l'équipe voit les comptes, jamais un lien.
-- **Le message de partage** (`partage.ts`, pur, planche 4 validée le 21/10) : trois courts
-  paragraphes, le salut par le nom du groupe, la clôture et le plafond dans leur phrase, le lien
-  SEUL sur sa ligne, espaces insécables avant « : » « ! » et dans les guillemets. Le client le
-  retouche avant WhatsApp, Mail ou copie. L'adresse de base (sans `?p=`) n'a plus de message :
+- **Le message de partage** (`partage.ts`, pur ; **28/10**, demande de Mathias avant la vraie
+  responsable d'Audencia : « le lien copié par message peut être beaucoup plus simple ») : DEUX
+  lignes avant le lien, plus de salut au nom du groupe (« Bonjour Bateau 8, » sonnait faux),
+  plus d'organisation, ni plafond, ni « sans compte », ni formule de fin (la page de dépôt dit le
+  reste avant le choix des photos). Mot pour mot (tu) : « Les Mousses · Bateau 1 » /
+  « Dépose tes photos ici, jusqu'au 16 novembre. » / ligne vide / le lien seul ; (vous) « Déposez
+  vos photos ici… » ; sans clôture, « Dépose tes photos ici. » ; un lien sans nom ne dit que
+  l'événement. Espace INSÉCABLE avant « · ». L'objet du mail ne bouge pas (« Tes photos : Les
+  Mousses »). La planche 4 du 21/10 (trois paragraphes) est dans
+  `archive/partage-message-court-2026-10/`. L'adresse de base (sans `?p=`) n'a plus de message :
   la fenêtre dit « Ces photos n'ont pas de groupe ».
+- **L'adresse courte d'un lien de groupe** (28/10) : `https://www.bellajour.fr/l/<clé>` (≈ 49
+  caractères au lieu de ≈ 95), la clé de provenance SEULE, aucun token. Elle suffit : `cle` est
+  `unique` en base (migration 20261013 ; 14 lignes, 14 clés distinctes lues en production le 28/10).
+  Aucune migration. `liens.ts` : `cheminCourt`, `lienCourt(origine, cle)`, `lienDeGroupe(base des
+  participants, cle)`, `cheminLongDuGroupe`. TOUT ce qui partage un lien de groupe la donne
+  (`donnees.ts` du tableau de bord, `lienDe` de `Collecte.tsx`, la réponse `chemin` de
+  `/api/collectif/provenances`, la fiche, « L'édition est créée » et `PanneauProvenances` de
+  l'atelier) : donc le message, « Copier », WhatsApp, Mail, la feuille de l'iPhone et le QR. La
+  route `src/app/l/[cle]/` (`lecture.ts` en `cache`) : interrupteur, forme de la clé, lien par sa
+  clé (`lireLienParCle`, collecte.ts, repli 42703 sur `retire_le`), puis la MÊME porte que
+  l'adresse longue (`accesDepot`) ; ok → **307** vers `/depot/<token_depot>?p=<clé>` (qui reste
+  l'unique page de dépôt ; les adresses longues déjà partagées marchent toujours) ; lien supprimé,
+  édition archivée, clé inconnue → `notFound()`, la même page « Ce lien ne fonctionne plus »
+  (`LienMort`, au registre de l'édition retrouvée), 404. Une collecte close redirige, et l'adresse
+  longue montre « Collecte terminée », comme avant. Les robots d'aperçu (WhatsApp, iMessage) suivent
+  la redirection et lisent `partageMeta` de `/depot/[token]` (prouvé au curl avec leurs agents le
+  28/10, pas sur un vrai téléphone). ⚠️ `generateMetadata` est dans le LAYOUT de `/l/[cle]`, pas la
+  page : après `notFound()`, Next ne garde que les métadonnées des layouts, et une clé inconnue
+  montrait celles de l'accueil (« À partir de 24 € »). L'analytique masque `/l/<clé>`.
 - **Le lien « Tous les participants » est une base technique** (planche 5, 21/10) : il reçoit
   toujours (un lien déjà partagé ne perd jamais une photo), mais il n'est plus jamais montré ni
   envoyé. Ses photos apparaissent sous « Sans groupe », en lecture seule et seulement s'il y en

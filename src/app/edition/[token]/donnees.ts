@@ -16,6 +16,7 @@ import { colonneAbsente } from "@/lib/collectif/migration";
 import { lireToutesLesLignes } from "@/lib/collectif/lignes";
 import { lireHorsCorbeille } from "@/lib/collectif/horsCorbeille";
 import { libellePlafondLien } from "@/lib/collectif/plafonds";
+import { lienCourt } from "@/lib/collectif/liens";
 import { apercuPossible, envoisCourants, type LigneEnvoi } from "@/lib/collectif/contenus";
 import { lireDemandes, modeDeLEnvoi, nomDeLEnvoi } from "@/lib/collectif/demandes";
 import { lireTailles, srcSetDe } from "@/lib/collectif/styles";
@@ -311,7 +312,8 @@ export async function chargerTableau(edition: EditionLigne, origine = ""): Promi
   const liens: LienContribution[] = provenances.map((p) => ({
     id: p.id,
     libelle: p.libelle ?? "Lien de contribution",
-    url: `${origine}/depot/${edition.token_depot}?p=${p.cle}`,
+    /* L'adresse courte `/l/<clé>` (28/10) : aucun token dans ce qui se partage. */
+    url: lienCourt(origine, p.cle),
     plafond: libellePlafondLien(p, edition),
     recues: somme(groupes, (g) => g.provenance_id === p.id),
   }));

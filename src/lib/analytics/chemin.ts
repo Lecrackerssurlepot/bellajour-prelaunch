@@ -64,6 +64,9 @@ const ROUTES_DYNAMIQUES: readonly RouteDynamique[] = [
      lien de dépôt partagé aux participants. Trois jetons au porteur. */
   { prefixe: '/edition', statiques: [] },
   { prefixe: '/depot', statiques: [] },
+  /* L'adresse courte d'un lien de groupe (28/10) : `/l/<clé de provenance>`.
+     La clé lève le plafond par personne : elle ne part jamais chez Vercel. */
+  { prefixe: '/l', statiques: [] },
 ]
 
 /**

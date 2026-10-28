@@ -36,6 +36,7 @@ import { DELAI_CORBEILLE_JOURS } from "@/lib/collectif/corbeille";
 import { pastilleCollecteTerminee } from "@/lib/collectif/finCollecte";
 import { cheminDuNoeud, clePersonne, cleResp, DOSSIER_RESPONSABLE, noeudDe, QUI_RESPONSABLE, QUIS, type Arbre, type Noeud } from "@/lib/collectif/dossiers";
 import { ERREUR_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
+import { lienDeGroupe } from "@/lib/collectif/liens";
 import { corpsModifierLien } from "@/lib/collectif/modifierLien";
 import { figerLesPesees, peseesDesLiens, type Pesee } from "@/lib/collectif/mosaique";
 import {
@@ -1107,7 +1108,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   /* ── Les liens ── */
   const lienDe = (nom: string, cle: string | null, plafondTexte: string, n: number): LienPartage => ({
     libelle: nom,
-    url: cle ? `${p.lienParticipants}?p=${cle}` : p.lienParticipants,
+    url: cle ? lienDeGroupe(p.lienParticipants, cle) : p.lienParticipants,
     plafond: plafondTexte,
     recues: n,
     general: cle === null,
