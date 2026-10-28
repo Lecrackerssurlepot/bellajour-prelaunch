@@ -18,8 +18,9 @@
       qui ARRIVE (`Album.tsx`).
    3. Le même téléphone qui revient (8A) s'ouvre sur l'album s'il a déjà
       accepté le texte d'aujourd'hui (`accordAJour`) ; sinon la carte le
-      reconnaît et redemande l'accord. « Ce n'est pas toi ? » (action
-      `oublier`) : le téléphone repart de zéro et le dit (8C).
+      reconnaît et redemande l'accord. « Ce n'est pas toi ? » ouvre la saisie
+      d'une autre adresse SANS rien oublier côté serveur (28/10) : « Retour » remet la personne
+      d'avant, l'appareil ne change qu'à la présentation d'une autre adresse.
 
    ⚠️ L'adresse n'est PAS vérifiée : une personne retrouvée ne montre que son
    PRÉNOM (jamais son nom de famille) ; le nom complet ne s'affiche que s'il
@@ -63,9 +64,9 @@ import { EMAIL_MAX, lireIdentite, normaliserEmail } from "@/lib/collectif/person
 import { MoteurDepot } from "../../edition/_composants/depot/moteur";
 import { phraseSilence, useSelecteur } from "../../edition/_composants/depot/useSelecteur";
 import Album, { type Onglet, type Tete } from "./Album";
-import { lirePersonne, oublier, presenter } from "./appels";
+import { lirePersonne, presenter } from "./appels";
 import { TeteCarte } from "./Etats";
-import { IcoAppareil, IcoTelephone } from "./icones";
+import { IcoAppareil } from "./icones";
 import { CarteLienMort } from "./LienMort";
 
 type Props = {
@@ -134,7 +135,17 @@ export default function Depot(props: Props) {
   const [identite, setIdentite] = useState<Qui | null>(props.moi ? { prenom: props.moi.prenom, nom: null } : null);
   /* `surCeLien` : ses photos sur CE lien (21/10 : la carte disait le total de l'édition, « 11 photos » sur un lien à 5). */
   const [reconnu, setReconnu] = useState<{ par: "telephone" | "email"; surCeLien: number } | null>(props.moi ? { par: "telephone", surCeLien: props.moi.surCeLien } : null);
-  const [oublie, setOublie] = useState<string | null>(null);
+  /* « Ce n'est pas toi ? » ne touche PLUS au serveur : on garde ici ce qu'il y avait avant, et « Retour » le remet. Le serveur ne change
+     d'avis qu'à la confirmation : présenter une autre adresse rattache l'appareil à cette personne (upsert par appareil). */
+  const [avant, setAvant] = useState<{
+    identite: Qui | null;
+    reconnu: { par: "telephone" | "email"; surCeLien: number } | null;
+    accord: boolean;
+    email: string;
+    demande: string | null;
+    place: number | null | undefined;
+    mode: { ecran: "carte" | "album"; onglet: Onglet; accueil: boolean };
+  } | null>(null);
   const [email, setEmail] = useState("");
   const emailCourant = useRef("");
   const dejaDemande = useRef<string | null>(null);
@@ -252,24 +263,10 @@ export default function Depot(props: Props) {
     }
   };
 
-  /* « Ce n'est pas toi ? » : ce téléphone ne parle plus pour personne ; ses photos restent à son nom. */
-  const pasMoi = async () => {
-    const qui = identite;
+  /* « Ce n'est pas toi ? » : on ouvre la saisie d'une autre adresse, sans rien oublier côté serveur. */
+  const pasMoi = () => {
+    setAvant({ identite, reconnu, accord, email, demande: dejaDemande.current, place, mode });
     setErreur(null);
-    const r = await oublier(token, p);
-    if (r.status === 503) {
-      setRepliForce(true);
-      return;
-    }
-    if (r.status === 404) {
-      setMort(true);
-      return;
-    }
-    if (r.status !== 200) {
-      setErreur(v("Connexion interrompue : réessayez.", "Connexion interrompue : réessaie."));
-      return;
-    }
-    setOublie(qui?.prenom ?? null);
     setIdentite(null);
     setReconnu(null);
     setEmail("");
@@ -281,6 +278,28 @@ export default function Depot(props: Props) {
     setAccord(false);
     moteur.definirAccord(null);
     setMode({ ecran: "carte", onglet: "album", accueil: false });
+    window.scrollTo(0, 0);
+  };
+
+  /* « Retour » : la personne d'avant, son accord, son écran. Aucun appel serveur : l'appareil ne l'a jamais quittée. */
+  const retour = () => {
+    if (!avant) return;
+    setIdentite(avant.identite);
+    setReconnu(avant.reconnu);
+    setPlace(avant.place);
+    setAccord(avant.accord);
+    moteur.definirAccord(avant.accord ? VERSION_ACCORD : null);
+    /* L'adresse tapée revient avec la personne (reconnue par email, son champ resterait vide). */
+    setEmail(avant.email);
+    emailCourant.current = avant.email;
+    dejaDemande.current = avant.demande;
+    setEtatEmail({ etat: avant.reconnu?.par === "email" ? "connu" : "attente", message: null });
+    setPrenomSaisi("");
+    setNomSaisi("");
+    setErreur(null);
+    setManque(null);
+    setMode(avant.mode);
+    setAvant(null);
     window.scrollTo(0, 0);
   };
 
@@ -374,7 +393,7 @@ export default function Depot(props: Props) {
           p={p}
           tete={tete}
           qui={quiAlbum}
-          pasMoi={!repli && identite ? () => void pasMoi() : null}
+          pasMoi={!repli && identite ? pasMoi : null}
           personnes={!repli}
           moteur={moteur}
           ajouter={() => selecteur.ouvrir()}
@@ -485,24 +504,16 @@ export default function Depot(props: Props) {
     <div className="ec-dp-carte">
       <div className="ec-dp-in">
         <TeteCarte tete={tete} />
-        {oublie !== null && !repli ? (
-          <p className="ec-dp-info">
-            <IcoTelephone />
-            <span>
-              {oublie ? (
-                <>
-                  Cet appareil n&apos;envoie plus au nom de <b>{oublie}</b>.
-                </>
-              ) : (
-                "Cet appareil n'envoie plus au nom de personne."
-              )}
-            </span>
-          </p>
-        ) : props.invitationEcrite ? (
+        {props.invitationEcrite ? (
           <p className="ec-dp-texte">{props.invitation}</p>
         ) : null}
 
         <div className="ec-dp-form">
+          {avant && !repli && !reconnu ? (
+            <button type="button" className="ec-dp-lien ec-dp-lien--retour" onClick={retour} disabled={etatEmail.etat === "cherche"}>
+              Retour
+            </button>
+          ) : null}
           {repli ? (
             formuleAvant
           ) : (
@@ -557,7 +568,7 @@ export default function Depot(props: Props) {
                       {dejaSurLien ? <span>{dejaSurLien}</span> : null}
                     </span>
                   </div>
-                  <button type="button" className="ec-dp-lien ec-dp-lien--doux" onClick={() => void pasMoi()}>
+                  <button type="button" className="ec-dp-lien ec-dp-lien--doux" onClick={pasMoi}>
                     {libellePasMoi(tu)}
                   </button>
                 </>
