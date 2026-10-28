@@ -31,7 +31,7 @@
  * ══════════════════════════════════════════════════════════════════════════
  */
 
-import { clePersonne, deParticipant, nomDePersonne, SANS_NOM } from "./dossiers";
+import { clePersonne, estParticipant, nomDePersonne, SANS_NOM } from "./dossiers";
 import { NOM_MAX, nettoyerMorceau } from "./participant";
 import { compareInstants } from "./resumePhotos";
 
@@ -301,7 +301,7 @@ export function listerPersonnes(
   };
   const plusTard = (a: string | null, b: string) => (a === null || b > a ? b : a);
   for (const g of resume) {
-    if (!deParticipant(g)) continue;
+    if (!estParticipant(g)) continue;
     const pid = g.participant_id ?? null;
     const connue = pid ? parId.get(pid) : undefined;
     if (connue) {

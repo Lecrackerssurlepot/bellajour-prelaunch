@@ -16,7 +16,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { adresseMasquee } from "./appareil";
-import { deParticipant, clePersonne } from "./dossiers";
+import { estParticipant, clePersonne } from "./dossiers";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "./horsCorbeille";
 import { journaliser, journaliserId } from "./journal";
 import { enPaquets, lireToutesLesLignes, listeIn } from "./lignes";
@@ -411,7 +411,7 @@ async function graphiesDuNom(supabase: SupabaseClient, editionId: string, cle: s
   );
   if (lu.error) return echec(lu.error);
   const graphies = new Set<string>();
-  for (const g of lu.data) if (deParticipant(g) && g.deposant !== null && clePersonne(g.deposant) === cle) graphies.add(g.deposant);
+  for (const g of lu.data) if (estParticipant(g) && g.deposant !== null && clePersonne(g.deposant) === cle) graphies.add(g.deposant);
   return { statut: "ok", valeur: [...graphies] };
 }
 
@@ -446,7 +446,7 @@ async function photosDe(supabase: SupabaseClient, editionId: string, ref: RefPer
       "photos d'un nom"
     );
     if (lu.error) return echec(lu.error);
-    toutes.push(...lu.data.filter((p) => deParticipant(p)));
+    toutes.push(...lu.data.filter((p) => estParticipant(p)));
   }
   return { statut: "ok", valeur: toutes };
 }

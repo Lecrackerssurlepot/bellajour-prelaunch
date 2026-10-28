@@ -153,19 +153,37 @@ export function cleDeDossierLisible(v: unknown): v is string {
 /** Une photo de participant (adresse de base, « Sans groupe », ou lien de contribution). */
 export const deParticipant = (l: Pick<LignePhoto, "role_deposant" | "provenance_id">) => l.role_deposant === "participant" || Boolean(l.provenance_id);
 
+/** Une photo du responsable, où qu'elle soit (« Mes photos », un dossier, OU déposée dans un lien de groupe, 28/10). */
+export const deResponsable = (l: Pick<LignePhoto, "role_deposant">) => l.role_deposant === "responsable";
+
+/**
+ * Un vrai PARTICIPANT : arrivé par un lien ET pas du responsable. Le responsable qui dépose dans un lien (28/10) a
+ * `provenance_id`, donc `deParticipant` (« rangée dans un lien ») le dit vrai ; mais il reste UNE seule personne,
+ * `qui:@responsable`, jamais un participant : il n'entre ni dans « Personnes » sous un second nom, ni dans « N participants ».
+ */
+export const estParticipant = (l: Pick<LignePhoto, "role_deposant" | "provenance_id">) => deParticipant(l) && !deResponsable(l);
+
 /**
  * Combien de PERSONNES ont envoyé des photos (« 23 personnes ») : chaque nom
  * distinct, et pour les photos « Sans nom », chaque téléphone (deux anonymes
- * ne sont pas une seule personne). Le responsable et l'atelier ne comptent pas.
+ * ne sont pas une seule personne). Le responsable et l'atelier ne comptent pas : c'est « N participants ».
  */
 export function compterPersonnes(lignes: readonly Pick<LignePhoto, "role_deposant" | "provenance_id" | "deposant" | "appareil_id">[]): number {
   const vus = new Set<string>();
   for (const l of lignes) {
-    if (!deParticipant(l)) continue;
+    if (!estParticipant(l)) continue;
     const cle = clePersonne(l.deposant);
     vus.add(cle === clePersonne(null) ? `anonyme:${l.appareil_id ?? ""}` : `nom:${cle}`);
   }
   return vus.size;
+}
+
+/**
+ * « N personnes » D'UN LIEN (qui a déposé ICI) : les participants, plus le responsable UNE fois s'il y a déposé
+ * (28/10). Le tableau de bord et la page Photos, eux, comptent `compterPersonnes` (participants seulement).
+ */
+export function compterPersonnesDuLien(lignes: readonly Pick<LignePhoto, "role_deposant" | "provenance_id" | "deposant" | "appareil_id">[]): number {
+  return compterPersonnes(lignes) + (lignes.some(deResponsable) ? 1 : 0);
 }
 
 type Edition = ReglagesPlafond & { responsable_nom: string | null };
@@ -237,9 +255,15 @@ export function arbreDesPhotos(lignes: readonly LignePhoto[], liens: readonly Li
     } else if (deParticipant(l)) {
       const id = l.provenance_id ?? "general";
       const m = parLien.get(id) ?? [];
-      m.push(l);
+      /* Le responsable qui a déposé dans ce lien y est une personne, sous son nom d'édition (le même que partout). */
+      if (deResponsable(l)) {
+        duResponsable += poids;
+        m.push({ deposant: resp?.trim() || l.deposant, poids: l.poids });
+      } else {
+        m.push(l);
+        participants.push(l);
+      }
       parLien.set(id, m);
-      participants.push(l);
     } else {
       atelier += poids;
     }
@@ -316,11 +340,11 @@ export function dansLeDossier(l: LignePhoto, cle: string, responsable: string | 
     const lienOk = id === "general" ? !l.provenance_id && l.role_deposant === "participant" : l.provenance_id === id;
     return lienOk && clePersonne(l.deposant) === clePersonne(nom);
   }
-  if (cle === QUI_RESPONSABLE) return l.role_deposant === "responsable" && !l.provenance_id;
-  if (cle.startsWith("qui:")) return deParticipant(l) && clePersonne(l.deposant) === clePersonne(cle.slice(4));
+  if (cle === QUI_RESPONSABLE) return deResponsable(l);
+  if (cle.startsWith("qui:")) return estParticipant(l) && clePersonne(l.deposant) === clePersonne(cle.slice(4));
   if (cle.startsWith(QUIS)) {
     const noms = lireNomsDeQuis(cle);
-    return noms !== null && deParticipant(l) && noms.has(clePersonne(l.deposant));
+    return noms !== null && estParticipant(l) && noms.has(clePersonne(l.deposant));
   }
   const r = lireCleResp(cle);
   if (!r || l.role_deposant !== "responsable" || l.provenance_id) return false;
