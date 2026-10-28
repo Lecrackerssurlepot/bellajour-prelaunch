@@ -6877,9 +6877,9 @@ async function verifDepotParticipant() {
   ok("une personne RETROUVEE ne montre que son prenom (jamais son nom de famille) ; le nom complet seulement s'il vient d'etre tape (creation)",
     connu?.prenom === "Léa" && connu.nom === null && connu.photos === 24 && connu.accordAJour && connu.place === 36
       && cree?.nom === "Martin" && cree.place === null && !/\.nomAffiche|participant\.nom\b/.test(depotW2 + albumW2 + etatsW2));
-  ok("« Ce n'est pas toi ? » (action oublier) : le telephone repart de zero et le dit (8C) ; l'accord est retire du moteur",
-    /const r = await oublier\(token, p\);/.test(depotW2) && /Cet appareil n&apos;envoie plus au nom de <b>\{oublie\}<\/b>\./.test(depotW2)
-      && /setAccord\(false\);\s*moteur\.definirAccord\(null\);/.test(depotW2));
+  ok("« Ce n'est pas toi ? » (28/10) : plus d'appel `oublier`, la saisie d'une autre adresse s'ouvre, l'accord est retire du moteur, « Retour » remet l'etat d'avant",
+    !/await oublier\(/.test(depotW2) && /setAvant\(\{ identite, reconnu, accord, email, demande: dejaDemande\.current, place, mode \}\)/.test(depotW2)
+      && /setAccord\(false\);\s*moteur\.definirAccord\(null\);/.test(depotW2) && /const retour = \(\) =>/.test(depotW2));
   ok("l'accord est redemande sur chaque nouveau telephone : il n'est repris que si CE telephone a deja accepte la version d'aujourd'hui",
     /accordAJour: comptes\?\.accord === VERSION_ACCORD,/.test(pageW2) && /if \(accordInitial\) m\.definirAccord\(VERSION_ACCORD\);/.test(depotW2) && /const accordInitial = Boolean\(props\.moi\?\.accordAJour\);/.test(depotW2));
   ok("sans la migration 20261023 (sonde ou 503 a la presentation) : la formule d'avant, sans adresse, et rien a supprimer",
@@ -7621,7 +7621,7 @@ async function verifDejaLa() {
         && /phrasesDuLot\(bilan, \{ tu, pour: "responsable" \}\)/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")));
     ok("le lien mort pendant que la page est ouverte : 404 d'album, d'envoi, de suppression ou de presentation = toute la page sur « Ce lien ne fonctionne plus », le meme texte que la 404 du serveur",
       /if \(r\.status === 404\) return \{ statut: "mort" \};/.test(appelsF) && /if \(mort \|\| vue\.lienMort\) return <CarteLienMort \/>;/.test(album) && /if \(mort\) return <CarteLienMort \/>;/.test(depot)
-        && (depot.match(/if \(r\.status === 404\) \{\s*setMort\(true\);/g) ?? []).length === 3 && /\} else if \(r\.status === 404\) \{\s*setMort\(true\);/.test(depot)
+        && (depot.match(/if \(r\.status === 404\) \{\s*setMort\(true\);/g) ?? []).length === 2 && /\} else if \(r\.status === 404\) \{\s*setMort\(true\);/.test(depot)
         && /if \(r\.status === 404\) \{\s*setMort\(true\);/.test(album) && /export function CarteLienMort\(\)/.test(mortF) && /<main className="ec-dp">\s*<CarteLienMort \/>\s*<\/main>/.test(mortF)
         && /lienMort: this\.mort,/.test(moteur));
     ok("« Tout l'album » se relit (45 s, retour sur l'onglet) sans faire sauter la grille pendant un envoi ou pendant qu'on coche ; la relecture ne touche jamais « Mes photos »",
@@ -9569,6 +9569,18 @@ async function verifPremierAppareil28() {
   const panne = baseEnMemoire({}, (q) => (q.table === "collectif_appareils" ? { code: "57014", message: "délai" } : null));
   const luPanne = await B.lireAppareil(panne.client as unknown as Client, ED, idA);
   ok("fausse base, panne de lecture : jamais « place libre » (lue prise et inconnue : lecture seule)", luPanne?.libre === false && luPanne.reconnu === false);
+}
+
+titre("— page du participant : « Ce n'est pas toi ? » a un retour (28/10) —");
+{
+  const dep = lire("src/app/depot/[token]/Depot.tsx");
+  const pas = dep.slice(dep.indexOf("const pasMoi = () =>"), dep.indexOf("const retour = () =>"));
+  ok("« Ce n'est pas toi ? » n'appelle plus le serveur (rien d'oublié avant la confirmation)", pas.length > 20 && !/oublier\(|await /.test(pas) && !/import \{[^}]*\boublier\b[^}]*\} from "\.\/appels"/.test(dep));
+  ok("il garde la personne, l'accord, la place et l'écran d'avant", /setAvant\(\{ identite, reconnu, accord, email, demande: dejaDemande\.current, place, mode \}\)/.test(pas));
+  const ret = dep.slice(dep.indexOf("const retour = () =>"), dep.indexOf("/* Les photos choisies"));
+  ok("« Retour » remet personne, accord (moteur compris), place et écran, sans appel serveur",
+     /setIdentite\(avant\.identite\)/.test(ret) && /setReconnu\(avant\.reconnu\)/.test(ret) && /definirAccord\(avant\.accord/.test(ret) && /setEmail\(avant\.email\)/.test(ret) && /setMode\(avant\.mode\)/.test(ret) && !/oublier\(|presenter\(|await /.test(ret));
+  ok("le bouton Retour est une pilule (ec-dp-lien), visible tant qu'aucune autre personne n'est reconnue", /avant && !repli && !reconnu[\s\S]{0,200}ec-dp-lien ec-dp-lien--retour/.test(dep));
 }
 
 void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(() => {
