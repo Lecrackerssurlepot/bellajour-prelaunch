@@ -368,6 +368,11 @@ html:has(.bj-atelier.ec-depot) {
   box-shadow: var(--dp-ombre-bouton);
   cursor: pointer;
 }
+/* Page pas encore hydratée (réseau lent) : le bouton ne fait rien, il le montre. */
+.bj-atelier .ec-dp-bouton[data-attente] {
+  opacity: 0.55;
+  cursor: progress;
+}
 .bj-atelier .ec-dp-bouton:disabled {
   opacity: 0.4;
   cursor: not-allowed;

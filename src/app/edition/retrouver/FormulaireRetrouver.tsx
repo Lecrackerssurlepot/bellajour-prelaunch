@@ -3,12 +3,19 @@
 /* Le formulaire de « Retrouver mon espace » : une adresse, un bouton, une
    réponse qui ne dit JAMAIS si l'adresse est connue (la route non plus). */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function FormulaireRetrouver({ ouvert }: { ouvert: boolean }) {
   const [email, setEmail] = useState("");
   const [etat, setEtat] = useState<"saisie" | "envoi" | "fait">("saisie");
   const [erreur, setErreur] = useState<string | null>(null);
+
+  /* Réseau lent : l'adresse tapée avant l'hydratation est reprise au montage, sinon React la vide. */
+  useEffect(() => {
+    const saisi = (document.getElementById("ec-retrouver-email") as HTMLInputElement | null)?.value ?? "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saisi) setEmail(saisi);
+  }, []);
 
   async function envoyer(e: React.FormEvent) {
     e.preventDefault();
