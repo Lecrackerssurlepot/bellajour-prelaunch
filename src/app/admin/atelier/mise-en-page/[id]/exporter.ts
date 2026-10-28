@@ -31,9 +31,11 @@ import {
   decisionOrientation,
   dimensionsStockees,
   dossierAbsolu,
+  dossierPropose,
   listesExport,
   nomDeZip,
   nomsDesLiensExport,
+  parentDe,
   photosPourIdml,
   type DecisionOrientation,
   type Indisponible,
@@ -41,14 +43,18 @@ import {
 
 /* ─────────────────────────── le dossier mémorisé ─────────────────────────── */
 
-const CLE_DOSSIER = "bj-mep-dossier-export";
+const CLE_PARENT = "bj-mep-dossier-parent";
 
-/** Le dossier donné la dernière fois (localStorage), ou vide. Jamais d'exception (stockage refusé). */
-export function dossierMemorise(): string {
-  try { return window.localStorage.getItem(CLE_DOSSIER) ?? ""; } catch { return ""; }
+/** Le dossier proposé pour ce projet : le parent de la dernière fois (localStorage) + le nom du projet. Jamais d'exception. */
+export function dossierMemorise(titre: string): string {
+  let parent = "";
+  try { parent = window.localStorage.getItem(CLE_PARENT) ?? ""; } catch { /* stockage refusé : dossier par défaut */ }
+  return dossierPropose(parent, titre);
 }
 export function memoriserDossier(dossier: string): void {
-  try { window.localStorage.setItem(CLE_DOSSIER, dossier); } catch { /* stockage refusé : on redemandera */ }
+  const parent = parentDe(dossier);
+  if (!parent) return;
+  try { window.localStorage.setItem(CLE_PARENT, parent); } catch { /* stockage refusé : on reproposera le défaut */ }
 }
 
 /* ─────────────────────────── la destination ─────────────────────────── */
@@ -72,7 +78,7 @@ export type Destination = { type: "dossier"; dossier: FileSystemDirectoryHandle 
 export async function choisirDestination(): Promise<Destination | null> {
   if (!peutEcrireDansUnDossier()) return { type: "zip" };
   try {
-    const dossier = await (window as unknown as AvecPicker).showDirectoryPicker({ id: "bellajour-mise-en-page", mode: "readwrite", startIn: "documents" });
+    const dossier = await (window as unknown as AvecPicker).showDirectoryPicker({ id: "bellajour-mise-en-page", mode: "readwrite", startIn: "desktop" });
     return { type: "dossier", dossier };
   } catch {
     return null;

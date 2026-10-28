@@ -203,7 +203,25 @@ export function photosPourIdml(args: {
 }
 
 /** Un nom de fichier sûr pour le zip : lettres, chiffres, tiret ; jamais vide. */
+/** Le titre sans accents ni espaces (nom de dossier ou de zip), jamais vide. */
+export const nomDeDossier = (titre: string): string =>
+  titre.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "magazine";
+
 export function nomDeZip(titre: string, dateIso: string): string {
-  const base = titre.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "magazine";
-  return `${base}-${dateIso.slice(0, 10)}`;
+  return `${nomDeDossier(titre)}-${dateIso.slice(0, 10)}`;
+}
+
+/** Le dossier d'export proposé : le dossier parent de la dernière fois (sinon test-idml du Bureau) + le nom du projet. */
+export const PARENT_EXPORT_PAR_DEFAUT = "/Users/mathiasdurand/Desktop/Bellajour/test-idml";
+export function dossierPropose(parent: string, titre: string): string {
+  const p = dossierAbsolu(parent);
+  return `${p.ok ? p.dossier : PARENT_EXPORT_PAR_DEFAUT}/${nomDeDossier(titre)}`;
+}
+
+/** Le dossier parent d'un chemin absolu valide, ou "" (racine, chemin invalide). */
+export function parentDe(dossier: string): string {
+  const d = dossierAbsolu(dossier);
+  if (!d.ok) return "";
+  const i = d.dossier.lastIndexOf("/");
+  return i > 0 ? d.dossier.slice(0, i) : "";
 }

@@ -20,7 +20,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
   catalogue: CatalogueCharge; source: SourceCatalogue; projet: Projet; suite: { href: string; mot: string }; onFermer: () => void;
 }) {
   const { etat, envoyer } = useEd();
-  const [dossier, setDossier] = useState(() => dossierMemorise());
+  const [dossier, setDossier] = useState(() => dossierMemorise(projet.nom));
   const [etape, setEtape] = useState<Etape>({ nom: "choix" });
   const [sans, setSans] = useState(false);
   const ctrl = useRef<AbortController | null>(null);
@@ -66,7 +66,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
               <span>Dossier où je décompresse</span>
               <input className="adm-input" type="text" value={dossier} placeholder="/Users/…/Bellajour/magazine" spellCheck={false} autoComplete="off"
                 onChange={(e) => setDossier(e.currentTarget.value)} aria-invalid={dossier.trim() !== "" && !dossierOk.ok} />
-              {dossier.trim() !== "" && !dossierOk.ok ? <small className="ed-ex-err">{dossierOk.message}</small> : <small>{peutDossier ? "Un sélecteur s'ouvre ensuite" : "Un zip sera téléchargé"}</small>}
+              {dossier.trim() !== "" && !dossierOk.ok ? <small className="ed-ex-err">{dossierOk.message}</small> : <small>{peutDossier ? "Crée ce dossier, puis choisis-le" : "Décompresse le zip dans ce dossier"}</small>}
             </label>
             <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
               <li><span>magazine.idml</span><span>{pluriel(av.planches, "planche")} · {pluriel(pl.pages, "page")}</span></li>

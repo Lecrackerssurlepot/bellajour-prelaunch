@@ -453,7 +453,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
 import { catalogueDeDossier, catalogueDEdition, refusDeStatut, urlDeLecture, adressesEncoreValables } from "@/app/admin/atelier/mise-en-page/[id]/chargerCatalogue";
 import { choisirOuverture as choisirOuvertureMep, issueDeReponse, delaiReprise, titreAEnvoyer, DELAI_ENVOI_MS, NOMS_ETATS, type CopieLocale } from "@/app/admin/atelier/mise-en-page/[id]/sauvegardePure";
-import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
+import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip, dossierPropose, parentDe, PARENT_EXPORT_PAR_DEFAUT } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
 import type { Magazine as MagazineMepClient } from "@/lib/mise-en-page/magazine";
 import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
 /* L'éditeur de mise en page (couche logique pure) : 79 scénarios + séquences aléatoires à graine fixe. */
@@ -7099,6 +7099,9 @@ const verifierMepClient = () => {
   ok("IDML : seules les photos lues entrent (l'illisible laisse un cadre vide), avec les dimensions DROITES des octets",
     pi.size === 1 && pi.get("1")?.l === 3024 && pi.get("1")?.h === 4032 && pi.get("1")?.nomLien === "IMG_1.jpg");
   ok("zip : nom sans accents ni espaces, daté, jamais vide", nomDeZip("Été à Séville / n°2", "2026-10-28T10:00:00Z") === "Ete-a-Seville-n-2-2026-10-28" && nomDeZip("///", "2026-10-28T10:00:00Z") === "magazine-2026-10-28");
+  ok("dossier proposé : test-idml du Bureau + nom du projet par défaut", dossierPropose("", "2026 Découverte de la Bavière") === `${PARENT_EXPORT_PAR_DEFAUT}/2026-Decouverte-de-la-Baviere` && dossierAbsolu(dossierPropose("", "x")).ok);
+  ok("dossier proposé : le parent de la dernière fois, jamais un parent invalide", dossierPropose("/Users/l/Exports/", "Été") === "/Users/l/Exports/Ete" && dossierPropose("~/x", "a") === `${PARENT_EXPORT_PAR_DEFAUT}/a`);
+  ok("parent d'un chemin : « / » final ignoré, racine et invalide rendent vide", parentDe("/Users/l/Exports/baviere/") === "/Users/l/Exports" && parentDe("/baviere") === "" && parentDe("relatif/x") === "");
   const src3 = sansComm(lireM("exporter.ts"));
   ok("export : orientation relue dans les octets (exifr.orientation sur les octets lus), originaux par fetch seulement, aucune écriture en base ni appel de route d'écriture",
     /exifr\.orientation\(lu\.octets\)/.test(src3) && /dimensionsStockees\(lu\.octets\)/.test(src3) && !/\/api\//.test(src3.replace(/chargerCatalogue/g, "")) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(src3));
