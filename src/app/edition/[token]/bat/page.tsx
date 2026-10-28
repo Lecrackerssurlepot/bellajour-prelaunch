@@ -46,7 +46,7 @@ export default async function Page({
       ecrire={peut(role, 'poser_note') && etat === 'bat'}
       lectureSeule={!peut(role, 'poser_note')}
       tirage={edition.tirage}
-      responsable={edition.responsable_nom}
+      toursInclus={edition.tours_inclus}
       tu={edition.registre === 'ecole_tu'}
     />
   )

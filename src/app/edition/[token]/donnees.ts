@@ -667,7 +667,15 @@ export type MagazineBat = {
   valideTexte: string;
 };
 
-export type Bat = { magazines: MagazineBat[]; magazine: MagazineBat | null; tours: TourBat[]; notes: NoteBat[]; couvertures: CouvertureBat[] };
+export type Bat = {
+  magazines: MagazineBat[];
+  magazine: MagazineBat | null;
+  tours: TourBat[];
+  notes: NoteBat[];
+  couvertures: CouvertureBat[];
+  /** La vignette de chaque photo choisie dans une note (id de la photo → URL signée). */
+  photosNotes: Record<string, string>;
+};
 
 /** Une note telle que le navigateur la reçoit (les nombres de PostgREST relus, le contenu en chaînes). */
 export function noteVersBat(n: NoteLigne): NoteBat {
@@ -715,7 +723,7 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
     }))
     .sort((a, b) => a.rang - b.rang);
   const magazine = magazines.find((m) => m.rang === rang) ?? magazines[0] ?? null;
-  if (!magazine) return { magazines, magazine: null, tours: [], notes: [], couvertures: [] };
+  if (!magazine) return { magazines, magazine: null, tours: [], notes: [], couvertures: [], photosNotes: {} };
 
   const lus = await toursDuMagazine(supabase, magazine.id);
   if (!lus.ok) throw new Error(`[collectif] tours du BAT : ${lus.code}`);
@@ -764,7 +772,19 @@ export async function chargerBat(edition: EditionLigne, rang: number | null): Pr
       c3: await signerOuRien(c.interieur3_key),
     }))
   );
-  return { magazines, magazine, tours, notes: ((notes.data ?? []) as NoteLigne[]).map(noteVersBat), couvertures };
+  /* La photo choisie dans une note « remplacer la photo » : sa vignette, pour la montrer dans la liste (maquette BAT). Seules
+     les photos de CETTE édition sont lues : un id venu d'ailleurs ne signe rien. */
+  const lues = ((notes.data ?? []) as NoteLigne[]).map(noteVersBat);
+  const idsPhotos = [...new Set(lues.map((n) => n.contenu.photo).filter((x): x is string => typeof x === "string" && /^[0-9a-f-]{36}$/.test(x)))];
+  const photosNotes: Record<string, string> = {};
+  if (idsPhotos.length) {
+    const { data } = await supabase.from("collectif_photos").select("id, vignette_key").eq("edition_id", edition.id).in("id", idsPhotos);
+    for (const ph of (data ?? []) as { id: string; vignette_key: string | null }[]) {
+      const url = await signerVignetteOuRien(ph.vignette_key);
+      if (url) photosNotes[ph.id] = url;
+    }
+  }
+  return { magazines, magazine, tours, notes: lues, couvertures, photosNotes };
 }
 
 /* ───────────────────────────── parler à l'atelier, la livraison ───────────────────────────── */
