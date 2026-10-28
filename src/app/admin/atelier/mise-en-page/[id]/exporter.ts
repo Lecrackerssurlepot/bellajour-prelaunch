@@ -30,6 +30,7 @@ import { adressesEncoreValables, chargerCatalogue, type CatalogueCharge, type So
 import {
   decisionOrientation,
   dimensionsStockees,
+  cibleDuChoix,
   dossierAbsolu,
   dossierPropose,
   listesExport,
@@ -45,11 +46,11 @@ import {
 
 const CLE_PARENT = "bj-mep-dossier-parent";
 
-/** Le dossier proposé pour ce projet : le parent de la dernière fois (localStorage) + le nom du projet. Jamais d'exception. */
-export function dossierMemorise(titre: string): string {
+/** Le dossier des projets donné la dernière fois (localStorage), sinon test-idml du Bureau. Jamais d'exception. */
+export function parentMemorise(): string {
   let parent = "";
   try { parent = window.localStorage.getItem(CLE_PARENT) ?? ""; } catch { /* stockage refusé : dossier par défaut */ }
-  return dossierPropose(parent, titre);
+  return parentDe(dossierPropose(parent, "x"));
 }
 export function memoriserDossier(dossier: string): void {
   const parent = parentDe(dossier);
@@ -99,7 +100,7 @@ export type ResultatExport =
   | {
       ok: true;
       livraison: "dossier" | "zip";
-      /** Zip : le nom du fichier téléchargé ; l'utilisateur le décompresse dans le dossier indiqué à l'export (jamais ailleurs). */
+      /** Zip : le nom du fichier téléchargé ; il enveloppe le dossier du projet, à décompresser dans le dossier des projets. */
       nomZip: string | null;
       /** Le dossier absolu écrit dans les liens de l'IDML. */
       dossier: string;
@@ -165,6 +166,17 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
   const dos = dossierAbsolu(args.dossier);
   if (!dos.ok) return { ok: false, raison: "dossier_invalide", message: dos.message };
   const dossier = dos.dossier;
+  /* Le dossier choisi doit être le dossier des projets (on y crée celui du projet) ou celui du projet lui-même. */
+  let enDossier: FileSystemDirectoryHandle | null = null;
+  if (args.destination.type === "dossier") {
+    const c = cibleDuChoix(args.destination.dossier.name, dossier);
+    if (c.cas === "autre") return { ok: false, raison: "dossier_invalide", message: `Choisir le dossier « ${c.attendu} »` };
+    enDossier = c.cas === "dedans" ? args.destination.dossier : null;
+    if (c.cas === "creer") {
+      try { enDossier = await args.destination.dossier.getDirectoryHandle(c.nom, { create: true }); }
+      catch { return { ok: false, raison: "erreur", message: "Impossible de créer le dossier du projet." }; }
+    }
+  }
   memoriserDossier(dossier);
 
   try {
@@ -193,7 +205,6 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
     const decisions = new Map<string, DecisionOrientation>();
     const liens: { nomLien: string; octets: Uint8Array }[] = [];
     let octetsTotal = 0;
-    const enDossier = args.destination.type === "dossier" ? args.destination.dossier : null;
     const dossierLiens = enDossier ? await enDossier.getDirectoryHandle("Links", { create: true }) : null;
 
     const lire = async (id: string): Promise<Lu> => {
@@ -261,7 +272,7 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
       await ecrireDans(enDossier, "photos-non-utilisees.txt", enTexte(listes.nonUtilisees));
       await ecrireDans(enDossier, "magazine.idml", idml);
     } else {
-      const zip = zipperExport({ idml, liens, utilisees: listes.utilisees, nonUtilisees: listes.nonUtilisees });
+      const zip = zipperExport({ idml, liens, utilisees: listes.utilisees, nonUtilisees: listes.nonUtilisees, racine: dossier.slice(dossier.lastIndexOf("/") + 1) });
       nomZip = `${nomDeZip(args.titre || magazine.titre, new Date().toISOString())}.zip`;
       telecharger(zip, nomZip);
     }

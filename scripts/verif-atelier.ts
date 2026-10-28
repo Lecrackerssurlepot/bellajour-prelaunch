@@ -453,7 +453,7 @@ import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
 import { catalogueDeDossier, catalogueDEdition, refusDeStatut, urlDeLecture, adressesEncoreValables } from "@/app/admin/atelier/mise-en-page/[id]/chargerCatalogue";
 import { choisirOuverture as choisirOuvertureMep, issueDeReponse, delaiReprise, titreAEnvoyer, DELAI_ENVOI_MS, NOMS_ETATS, type CopieLocale } from "@/app/admin/atelier/mise-en-page/[id]/sauvegardePure";
-import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip, dossierPropose, parentDe, PARENT_EXPORT_PAR_DEFAUT } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
+import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip, dossierPropose, parentDe, PARENT_EXPORT_PAR_DEFAUT, cibleDuChoix, nomDossierValide } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
 import type { Magazine as MagazineMepClient } from "@/lib/mise-en-page/magazine";
 import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
 /* L'éditeur de mise en page (couche logique pure) : 79 scénarios + séquences aléatoires à graine fixe. */
@@ -7102,6 +7102,15 @@ const verifierMepClient = () => {
   ok("dossier proposé : test-idml du Bureau + nom du projet par défaut", dossierPropose("", "2026 Découverte de la Bavière") === `${PARENT_EXPORT_PAR_DEFAUT}/2026-Decouverte-de-la-Baviere` && dossierAbsolu(dossierPropose("", "x")).ok);
   ok("dossier proposé : le parent de la dernière fois, jamais un parent invalide", dossierPropose("/Users/l/Exports/", "Été") === "/Users/l/Exports/Ete" && dossierPropose("~/x", "a") === `${PARENT_EXPORT_PAR_DEFAUT}/a`);
   ok("parent d'un chemin : « / » final ignoré, racine et invalide rendent vide", parentDe("/Users/l/Exports/baviere/") === "/Users/l/Exports" && parentDe("/baviere") === "" && parentDe("relatif/x") === "");
+  ok("dossier choisi : celui des projets → on crée le sous-dossier ; celui du projet → on écrit dedans ; un autre → refusé",
+    JSON.stringify(cibleDuChoix("test-idml", "/U/test-idml/Australie-Joelle")) === JSON.stringify({ cas: "creer", nom: "Australie-Joelle" })
+    && cibleDuChoix("Australie-Joelle", "/U/test-idml/Australie-Joelle").cas === "dedans"
+    && JSON.stringify(cibleDuChoix("Desktop", "/U/test-idml/Australie-Joelle")) === JSON.stringify({ cas: "autre", attendu: "test-idml" }));
+  ok("nom du dossier : un seul niveau, jamais vide", nomDossierValide(" Australie ").ok && !nomDossierValide("").ok && !nomDossierValide("a/b").ok && !nomDossierValide("..").ok);
+  {
+    const zr = unzipSync(zipperExport({ idml: new Uint8Array([1]), liens: [{ nomLien: "un.jpg", octets: new Uint8Array([2]) }], utilisees: [], nonUtilisees: [], racine: "Australie-Joelle" }));
+    ok("zip : tout sous le dossier du projet quand une racine est donnée", Object.keys(zr).sort().join("|") === "Australie-Joelle/Links/un.jpg|Australie-Joelle/magazine.idml|Australie-Joelle/photos-non-utilisees.txt|Australie-Joelle/photos-utilisees.txt");
+  }
   const src3 = sansComm(lireM("exporter.ts"));
   ok("export : orientation relue dans les octets (exifr.orientation sur les octets lus), originaux par fetch seulement, aucune écriture en base ni appel de route d'écriture",
     /exifr\.orientation\(lu\.octets\)/.test(src3) && /dimensionsStockees\(lu\.octets\)/.test(src3) && !/\/api\//.test(src3.replace(/chargerCatalogue/g, "")) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(src3));

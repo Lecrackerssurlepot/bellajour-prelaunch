@@ -6,8 +6,8 @@ import { avertissementsExport, idsMagazine, pagesLibelle } from "@/lib/mise-en-p
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { cls, pluriel, useEd, type Projet } from "./contexte";
 import { Ico } from "./icones";
-import { choisirDestination, dossierMemorise, exporter, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
-import { dossierAbsolu } from "./exporterPur";
+import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
+import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
 
 /* La feuille d'export : le dossier absolu (les liens de l'IDML en dépendent), ce que le paquet contiendra, ce qu'il
    faut vérifier, puis la progression avec « Annuler ». Le sélecteur de dossier s'ouvre dans le clic, avant tout await. */
@@ -20,13 +20,17 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
   catalogue: CatalogueCharge; source: SourceCatalogue; projet: Projet; suite: { href: string; mot: string }; onFermer: () => void;
 }) {
   const { etat, envoyer } = useEd();
-  const [dossier, setDossier] = useState(() => dossierMemorise(projet.nom));
+  const [parent, setParent] = useState(() => parentMemorise());
+  const [nom, setNom] = useState(() => nomDeDossier(projet.nom));
   const [etape, setEtape] = useState<Etape>({ nom: "choix" });
   const [sans, setSans] = useState(false);
   const ctrl = useRef<AbortController | null>(null);
   const av = avertissementsExport(etat);
   const ids = [...new Set(idsMagazine(etat.magazine))].filter((id) => etat.catalogue.has(id));
   const pl = pagesLibelle(etat);
+  const parentOk = dossierAbsolu(parent);
+  const nomOk = nomDossierValide(nom);
+  const dossier = parentOk.ok && nomOk.ok ? `${parentOk.dossier}/${nomOk.nom}` : "";
   const dossierOk = dossierAbsolu(dossier);
   const peutDossier = peutEcrireDansUnDossier();
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0);
@@ -63,10 +67,16 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
         {etape.nom === "choix" ? (
           <>
             <label className="ed-ex-champ">
-              <span>Dossier où je décompresse</span>
-              <input className="adm-input" type="text" value={dossier} placeholder="/Users/…/Bellajour/magazine" spellCheck={false} autoComplete="off"
-                onChange={(e) => setDossier(e.currentTarget.value)} aria-invalid={dossier.trim() !== "" && !dossierOk.ok} />
-              {dossier.trim() !== "" && !dossierOk.ok ? <small className="ed-ex-err">{dossierOk.message}</small> : <small>{peutDossier ? "Crée ce dossier, puis choisis-le" : "Décompresse le zip dans ce dossier"}</small>}
+              <span>Dossier des projets</span>
+              <input className="adm-input" type="text" value={parent} placeholder="/Users/…/Bellajour/test-idml" spellCheck={false} autoComplete="off"
+                onChange={(e) => setParent(e.currentTarget.value)} aria-invalid={!parentOk.ok} />
+              {!parentOk.ok ? <small className="ed-ex-err">{parentOk.message}</small> : <small>{peutDossier ? "À choisir à l'étape suivante" : "Décompresser le zip ici"}</small>}
+            </label>
+            <label className="ed-ex-champ">
+              <span>Nom du dossier</span>
+              <input className="adm-input" type="text" value={nom} spellCheck={false} autoComplete="off"
+                onChange={(e) => setNom(e.currentTarget.value)} aria-invalid={!nomOk.ok} />
+              {!nomOk.ok ? <small className="ed-ex-err">{nomOk.message}</small> : <small>Créé tout seul</small>}
             </label>
             <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
               <li><span>magazine.idml</span><span>{pluriel(av.planches, "planche")} · {pluriel(pl.pages, "page")}</span></li>
@@ -118,7 +128,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
           <div className="ed-ex-ok">
             <span className="ate-tag ate-tag--choix">Export terminé</span>
             <p className="ed-ex-ligne">
-              {etape.r.livraison === "dossier" ? `${pluriel(etape.r.nbPhotos, "photo")} écrite${etape.r.nbPhotos > 1 ? "s" : ""} dans le dossier choisi` : `${etape.r.nomZip ?? "Le zip"} téléchargé · à décompresser dans ${etape.r.dossier}`}
+              {etape.r.livraison === "dossier" ? `${pluriel(etape.r.nbPhotos, "photo")} écrite${etape.r.nbPhotos > 1 ? "s" : ""} dans ${etape.r.dossier.slice(etape.r.dossier.lastIndexOf("/") + 1)}` : `${etape.r.nomZip ?? "Le zip"} téléchargé · à décompresser dans ${etape.r.dossier.slice(0, etape.r.dossier.lastIndexOf("/"))}`}
               {" · "}{mo(etape.r.octets)}
             </p>
             {etape.r.indisponibles.length ? <p className="ed-ex-ligne ed-ex-rouge">{pluriel(etape.r.indisponibles.length, "photo illisible", "photos illisibles")} · cadre vide</p> : null}

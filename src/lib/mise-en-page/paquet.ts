@@ -26,10 +26,12 @@ const lignes = (noms: string[]): Uint8Array => strToU8(noms.length ? `${noms.joi
  * Le paquet téléchargé. `magazine.idml` et les images sont stockés sans
  * recompression (déjà compressés) ; les listes en deflate.
  */
-export function zipperExport(e: { idml: Uint8Array; liens: { nomLien: string; octets: Uint8Array }[]; utilisees: string[]; nonUtilisees: string[] }): Uint8Array {
-  const z: Zippable = { "magazine.idml": [e.idml, { level: 0 }] };
-  for (const l of e.liens) z[`Links/${l.nomLien}`] = [l.octets, { level: 0 }];
-  z["photos-utilisees.txt"] = [lignes(e.utilisees), { level: 6 }];
-  z["photos-non-utilisees.txt"] = [lignes(e.nonUtilisees), { level: 6 }];
+/** `racine` : un dossier qui enveloppe tout (décompressé dans le dossier des projets, il donne le dossier du projet). */
+export function zipperExport(e: { idml: Uint8Array; liens: { nomLien: string; octets: Uint8Array }[]; utilisees: string[]; nonUtilisees: string[]; racine?: string }): Uint8Array {
+  const r = e.racine ? `${e.racine}/` : "";
+  const z: Zippable = { [`${r}magazine.idml`]: [e.idml, { level: 0 }] };
+  for (const l of e.liens) z[`${r}Links/${l.nomLien}`] = [l.octets, { level: 0 }];
+  z[`${r}photos-utilisees.txt`] = [lignes(e.utilisees), { level: 6 }];
+  z[`${r}photos-non-utilisees.txt`] = [lignes(e.nonUtilisees), { level: 6 }];
   return zipSync(z);
 }

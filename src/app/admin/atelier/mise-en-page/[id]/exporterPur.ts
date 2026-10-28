@@ -218,6 +218,28 @@ export function dossierPropose(parent: string, titre: string): string {
   return `${p.ok ? p.dossier : PARENT_EXPORT_PAR_DEFAUT}/${nomDeDossier(titre)}`;
 }
 
+/** Le nom tapé pour le dossier du projet : un seul niveau, sans « / » ni « .. ». */
+export function nomDossierValide(saisie: string): { ok: true; nom: string } | { ok: false; message: string } {
+  const n = saisie.trim();
+  if (!n) return { ok: false, message: "Donner un nom au dossier." };
+  if (n.includes("/") || n === "." || n === ".." || n.includes("\u0000")) return { ok: false, message: "Un nom simple, sans « / »." };
+  return { ok: true, nom: n };
+}
+
+/**
+ * Le dossier choisi dans la fenêtre du Mac, rapporté au chemin tapé (parent/nom) : le navigateur ne donne que le NOM
+ * du dossier choisi, jamais son chemin. « creer » : c'est le dossier des projets, on y crée le sous-dossier ;
+ * « dedans » : c'est déjà le dossier du projet ; « autre » : ni l'un ni l'autre, les liens seraient faux.
+ */
+export function cibleDuChoix(nomChoisi: string, dossier: string): { cas: "creer" | "dedans"; nom: string } | { cas: "autre"; attendu: string } {
+  const segs = dossier.replace(/\/+$/, "").split("/").filter(Boolean);
+  const nom = segs.at(-1) ?? "";
+  const parent = segs.at(-2) ?? "";
+  if (nomChoisi === nom) return { cas: "dedans", nom };
+  if (nomChoisi === parent) return { cas: "creer", nom };
+  return { cas: "autre", attendu: parent };
+}
+
 /** Le dossier parent d'un chemin absolu valide, ou "" (racine, chemin invalide). */
 export function parentDe(dossier: string): string {
   const d = dossierAbsolu(dossier);
