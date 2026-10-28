@@ -1438,7 +1438,12 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const mligne = stats && !cocherActif && !ecranPropre && !enTuile && !albums ? (
     <p className="ec-ph-mligne ec-ph-tel">
       <span>
-        {f.personnes.length || f.dossier ? (
+        {f.favoris && !f.personnes.length ? (
+          /* Favoris (28/10) : le nombre de favoris, pas celui de l'édition (« 6 favoris », vu à la recette du lot 29). */
+          <>
+            <b>{totalVue !== null ? nombre(totalVue) : "…"}</b> favori{totalVue !== null && totalVue > 1 ? "s" : ""}
+          </>
+        ) : f.personnes.length || f.dossier ? (
           <>
             <b>{totalVue !== null ? nombre(totalVue) : "…"}</b> photo{totalVue !== null && totalVue > 1 ? "s" : ""}
           </>
