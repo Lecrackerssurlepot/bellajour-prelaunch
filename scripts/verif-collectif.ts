@@ -3518,7 +3518,7 @@ titre("— T-200 : les videos ne partent pas, la page le dit avant, et le refus 
   const depotTsx = lire("src/app/depot/[token]/Depot.tsx");
   const albumTsx = lire("src/app/depot/[token]/Album.tsx");
   ok("la page : « Photos seulement » dans le pied SOUS le bouton (souche, 27/10 : plus de bloc à part), redit dans la barre de l'album ; plus de « fichier(s) ignoré(s) »",
-    D.PHOTOS_SEULEMENT === "Photos seulement." && /<button type="button" className="ec-dp-bouton" onClick=\{continuer\}>[\s\S]*?piedDeCarte\(PHOTOS_SEULEMENT/.test(depotTsx)
+    D.PHOTOS_SEULEMENT === "Photos seulement." && /<button type="button" className="ec-dp-bouton" onClick=\{continuer\}[^>]*>[\s\S]*?piedDeCarte\(PHOTOS_SEULEMENT/.test(depotTsx)
       && /PHOTOS_SEULEMENT\.split\(" : "\)\[0\]/.test(albumTsx)
       && /phrasesIgnores\(vue\.ignores, vue\.videos, vue\.premiereVideo\)/.test(albumTsx) && !/fichier\(s\) ignoré\(s\)/.test(depotTsx + albumTsx));
   const moteurV = lire("src/app/edition/_composants/depot/moteur.ts");

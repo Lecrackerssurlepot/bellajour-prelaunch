@@ -164,6 +164,31 @@ export default function Depot(props: Props) {
     props.moi?.accordAJour ? { ecran: "album", onglet: "album", accueil: true } : { ecran: "carte", onglet: "album", accueil: false }
   );
 
+  /* Réseau lent : le formulaire est rendu par le serveur et se tape bien avant l'hydratation. React remet alors
+     les champs à l'état (vide) et efface la saisie. Au montage, on reprend donc ce que le DOM contient déjà.
+     Le setState dans l'effet est voulu : c'est la seule façon de lire le DOM d'avant l'hydratation. */
+  useEffect(() => {
+    const lire = (id: string) => (document.getElementById(id) as HTMLInputElement | null) ?? null;
+    const mail = lire("ec-dp-f-email")?.value ?? "";
+    const prenom = lire("ec-dp-f-prenom")?.value ?? "";
+    const nom = lire("ec-dp-f-nom")?.value ?? "";
+    const accepte = lire("ec-dp-f-accord")?.checked ?? false;
+    if (mail) {
+      setEmail(mail);
+      emailCourant.current = mail;
+    }
+    if (prenom) setPrenomSaisi(prenom);
+    if (nom) setNomSaisi(nom);
+    if (accepte) {
+      setAccord(true);
+      moteur.definirAccord(VERSION_ACCORD);
+    }
+    // Une seule fois, au montage.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  /* Faux côté serveur et pendant l'hydratation, vrai ensuite : tant que la page n'a pas pris la main, le bouton le dit. */
+  const pret = useSyncExternalStore(sansAbonnement, () => true, () => false);
+
   const emailLu = normaliserEmail(email);
   const nomPret = repli ? Boolean(nomFixe ?? nomComplet(prenomSaisi, nomSaisi)) : Boolean(identite ?? (emailLu && nomComplet(prenomSaisi, nomSaisi)));
 
@@ -571,7 +596,7 @@ export default function Depot(props: Props) {
             </p>
           ) : null}
           {entree}
-          <button type="button" className="ec-dp-bouton" onClick={continuer}>
+          <button type="button" className="ec-dp-bouton" onClick={continuer} aria-busy={!pret} data-attente={pret ? undefined : ""}>
             <IcoAppareil />
             {coupees ? BOUTON_REPRENDRE : "Choisir mes photos"}
           </button>

@@ -504,6 +504,12 @@ function Ecrire(e: {
   const [menu, setMenu] = useState(false);
   const [cite, setCite] = useState<DocumentCite | null>(() => e.documents.find((d) => d.id === e.citeInitial) ?? null);
   const zone = useRef<HTMLTextAreaElement>(null);
+  /* Réseau lent : le message tapé avant l'hydratation est repris au montage, sinon React le vide. */
+  useEffect(() => {
+    const saisi = zone.current?.value ?? "";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saisi) setTexte(saisi);
+  }, []);
   /* Choisir « Répondre » ou arriver avec un document à citer : on écrit tout de suite. */
   const reponseId = e.reponse?.id ?? null;
   useEffect(() => {
