@@ -4,30 +4,23 @@ import "../../../admin.css";
 import "../../atelier.css";
 import "../mise-en-page.css";
 
-/* L'attente de la coquille : la barre, le retour, un titre vide et une
-   grille de vignettes vides, la FORME de ce qui arrive. Aucune animation. */
+/* L'attente de l'éditeur : la barre, puis la FORME de l'écran qui arrive (barre fine, panneau photos, double
+   page, une ligne de chemin de fer). Aucune animation. */
 
 export default function Chargement() {
   return (
-    <div className="adm-root ate-root mep-outil" aria-busy="true" aria-live="polite">
-      <span className="adm-sr">Chargement du dossier…</span>
+    <div className="adm-root ate-root mep-editeur" aria-busy="true" aria-live="polite">
+      <span className="adm-sr">Chargement de l&apos;éditeur…</span>
       <BarreAtelier monde="particuliers" collectif={collectifOuvert()} liens={liensParticuliers(false)} />
-      <span className="ate-retour">← Mise en page</span>
-      <header className="mep-tete">
-        <div>
-          <h1 className="ate-h1">
-            <span className="mep-sq mep-sq--nom" />
-          </h1>
-          <p className="ate-bonjour">
-            <span className="mep-sq mep-sq--texte" />
-          </p>
+      <div className="ed-racine ed-racine--forme" aria-hidden="true">
+        <div className="ed-haut"><span className="ed-forme ed-forme--nom" /></div>
+        <div className="ed-corps">
+          <div className="ed-ph ed-ph--forme"><span className="ed-forme ed-forme--filtres" /></div>
+          <div className="ed-centre">
+            <div className="ed-scene"><span className="ed-forme ed-forme--planche" /></div>
+          </div>
         </div>
-      </header>
-      <ul className="mep-vignettes" aria-hidden="true">
-        {Array.from({ length: 24 }, (_, i) => (
-          <li key={i} className="mep-sq mep-sq--vignette" />
-        ))}
-      </ul>
+      </div>
     </div>
   );
 }

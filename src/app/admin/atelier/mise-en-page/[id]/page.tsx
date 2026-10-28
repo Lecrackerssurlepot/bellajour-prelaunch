@@ -1,23 +1,20 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/tokenForme";
-import { ETATS, LIBELLE_ETAT } from "@/lib/atelier/transitions";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { estUuid } from "@/lib/collectif/cles";
 import BarreAtelier, { liensParticuliers } from "../../../BarreAtelier";
 import { LIBRE_PATTERN } from "../libelles";
-import PhotosDossier from "./PhotosDossier";
+import Editeur, { type CibleEditeur } from "./Editeur";
 import "../../../admin.css";
 import "../../atelier.css";
 import "../mise-en-page.css";
 
 /**
- * /admin/atelier/mise-en-page/[id] — la COQUILLE de l'éditeur.
- *
- * L'écran réel sera dessiné d'après la maquette de Mathias : ici, rien que
- * la preuve que le dossier se charge. `libre-<uuid>` ouvre une création
- * libre (vierge) ; sinon `id` est le token d'un dossier, dont les photos
- * sont lues par GET /api/admin/atelier/mise-en-page/photos. Rien n'est écrit.
+ * /admin/atelier/mise-en-page/[id] — l'ÉDITEUR. `id` est le token d'un dossier (32 caractères), `edition-<id>`
+ * (une édition collective : ses photos, un ou plusieurs magazines) ou `libre-<uuid>` (création libre, sans photos
+ * pour l'instant). Tout l'écran est côté navigateur (`Editeur`) : les photos arrivent par les routes de lecture,
+ * la sauvegarde par `sauvegardeClient`. Rien n'est écrit ici.
  */
 
 export const runtime = "nodejs";
@@ -25,35 +22,29 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Atelier — mise en page", robots: { index: false, follow: false } };
 
+function lireCible(id: string): CibleEditeur | null {
+  if (id.startsWith("libre-")) return LIBRE_PATTERN.test(id) ? { type: "libre", id } : null;
+  if (id.startsWith("edition-")) {
+    const editionId = id.slice("edition-".length);
+    return estUuid(editionId) ? { type: "edition", editionId } : null;
+  }
+  return isValidNumeroToken(id) ? { type: "dossier", token: id } : null;
+}
+
 export default async function PageEditeur({ params }: { params: Promise<{ id: string }> }) {
   const qui = await quiEstConnecte();
   if (!qui) redirect("/admin/login");
 
   const { id } = await params;
-  const libre = id.startsWith("libre-");
-  if (libre ? !LIBRE_PATTERN.test(id) : !isValidNumeroToken(id)) notFound();
+  const cible = lireCible(id);
+  if (!cible) notFound();
 
   const liens = liensParticuliers(false).map((l) => (l.href === "/admin/atelier/mise-en-page" ? { ...l, courant: true } : l));
 
-  /* Les libellés d'état partent tout faits : la table reste côté serveur. */
-  const libelles: Record<string, string> = Object.fromEntries(ETATS.map((e) => [e, LIBELLE_ETAT[e]]));
-
   return (
-    <div className="adm-root ate-root mep-outil">
+    <div className="adm-root ate-root mep-editeur">
       <BarreAtelier monde="particuliers" collectif={collectifOuvert()} liens={liens} />
-      <Link href="/admin/atelier/mise-en-page" className="ate-retour">
-        ← Mise en page
-      </Link>
-      {libre ? (
-        <header className="mep-tete">
-          <div>
-            <h1 className="ate-h1">Création libre</h1>
-            <p className="ate-bonjour">Magazine vierge.</p>
-          </div>
-        </header>
-      ) : (
-        <PhotosDossier token={id} libelles={libelles} />
-      )}
+      <Editeur cible={cible} />
     </div>
   );
 }
