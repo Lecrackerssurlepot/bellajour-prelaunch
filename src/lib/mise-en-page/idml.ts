@@ -130,6 +130,16 @@ export const conv = (c: { x: number; y: number; l: number; h: number }): { x: nu
   ({ x: (c.x - PAGE_L) * K, y: c.y * K - HH, w: c.l * K, h: c.h * K });
 
 /**
+ * Un cadre photo qui part EXACTEMENT du pli (x = 0, page droite) est décollé de 0,01 pt (0,004 mm, invisible).
+ * Affinity (essai Australie du 28/10) double ce cadre et son image en largeur quand l'image recadrée dépasse
+ * aussi le bord gauche de la planche ; à 0,01 pt du pli, plus rien. L'image, elle, ne bouge pas.
+ */
+export const DECOLLEMENT_PLI_PT = 0.01;
+export function cadreAuPli(x: number, w: number): { x: number; w: number } {
+  return Math.abs(x) < 1e-6 ? { x: DECOLLEMENT_PLI_PT, w: w - DECOLLEMENT_PLI_PT } : { x, w };
+}
+
+/**
  * Rotation autour du centre du cadre (degrés, sens horaire à l'écran, Y vers
  * le bas) : x' = a·x + c·y + tx, y' = b·x + d·y + ty. Sans rotation : identité
  * écrite comme le Python.
@@ -200,7 +210,8 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
 
   const photoXml = (e: Element, nom: string): string => {
     const { x, y, w, h } = conv(e.cadre);
-    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ContentType="GraphicType" StoryTitle="$ID/" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(x, y, w, h)}`
+    const pli = cadreAuPli(x, w);
+    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ContentType="GraphicType" StoryTitle="$ID/" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(pli.x, y, pli.w, h)}`
       + `<FrameFittingOption FittingOnEmptyFrame="FillProportionally" FittingAlignment="CenterAnchor"/>`;
     const aff = e.disposition.photos[e.indexPhoto];
     const ph = aff?.photoId ? photos.get(aff.photoId) : undefined;

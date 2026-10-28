@@ -447,7 +447,7 @@ import {
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
 /* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
-import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
@@ -7113,6 +7113,9 @@ const verifierMepClient = () => {
     }
     ok("IDML : image tournée (tags 1 à 8), coins stockés posés sur l'image droite, origine au bon coin", bon);
   }
+  ok("IDML : un cadre au pli (page droite) est décollé de 0,01 pt, les autres intacts (Affinity le doublait, 28/10)",
+    JSON.stringify(cadreAuPli(0, 603.7795)) === JSON.stringify({ x: 0.01, w: 603.7695 }) && JSON.stringify(cadreAuPli(-603.7795, 603.7795)) === JSON.stringify({ x: -603.7795, w: 603.7795 })
+      && JSON.stringify(cadreAuPli(56.69, 100)) === JSON.stringify({ x: 56.69, w: 100 }));
   const pi = photosPourIdml({ decisions: new Map([["1", droite(6)]]), nomsLiens: liens3 });
   ok("IDML : seules les photos lues entrent (l'illisible laisse un cadre vide), avec les dimensions DROITES des octets",
     pi.size === 1 && pi.get("1")?.l === 3024 && pi.get("1")?.h === 4032 && pi.get("1")?.nomLien === "IMG_1.jpg");
