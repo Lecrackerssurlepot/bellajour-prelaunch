@@ -1,170 +1,195 @@
-/* Le bon à tirer en plein écran (révision §14.4) — tout sous `.ec-espace` :
-   une feuille chargée ne se décharge jamais en navigation client.
+/* Le bon à tirer IMMERSIF (retour de Mathias du 28/10, maquettes BAT) — tout
+   sous `.ec-espace` : une feuille chargée ne se décharge jamais en navigation
+   client.
 
-   Rien ne défile : l'en-tête (68 px), puis le corps en ligne. À gauche, la
-   ligne d'information (44), la scène (la double page à SA taille, par unités
-   de conteneur), la bande des pages (96), les onglets des magazines (46) ;
-   à droite, l'onglet vertical « Notes · n » (34) et le panneau (340), qui se
-   replie. Les pages de magazine gardent leurs vraies couleurs (`--ec-page`,
-   `--ec-encre`, ombres physiques `--ec-noir-rgb`) de jour comme de nuit. */
+   La coquille s'efface (`:has(.ec-bat3)`) : plus de menu à gauche ni de barre
+   du haut ; le menu revient en tiroir par le bouton ≡ de l'en-tête. Ordinateur :
+   l'en-tête de verre, puis la double page au centre (unités de conteneur : elle
+   suit la scène, jamais un plafond en pixels), la légende, la bande des pages, et
+   la colonne des notes à droite. Téléphone : une colonne qui défile, la double
+   page en haut, la note dans une feuille BASSE qui la laisse voir.
 
-.ec-espace .ec-bat2 {
+   Les pages de magazine gardent leurs vraies couleurs (`--ec-page`, `--ec-encre`,
+   ombres physiques `--ec-noir-rgb`) de jour comme de nuit. L'ancienne feuille est
+   dans archive/bat-liseuse-panneau-2026-10/. */
+
+/* ─────────────────────────── la coquille s'efface ─────────────────────────── */
+
+.ec-espace .ec-coquille:has(.ec-bat3) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ec-espace .ec-coquille:has(.ec-bat3) .ec-menu {
+  position: fixed;
+  z-index: var(--ec-z-tiroir);
+  top: 16px;
+  left: 16px;
+  width: min(86vw, 300px);
+  height: calc(var(--app-height) - 32px);
+  background: var(--ec-glass);
+  transform: translateX(calc(-100% - 24px));
+  transition: transform var(--dur) var(--ease);
+}
+.ec-espace .ec-coquille:has(.ec-bat3)[data-tiroir="ouvert"] .ec-menu {
+  transform: none;
+}
+.ec-espace .ec-coquille:has(.ec-bat3) .ec-voile {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: var(--ec-z-voile);
+  border: 0;
+  background: var(--ec-voile);
+}
+
+.ec-espace .ec-bat3 {
+  flex: 1;
   min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.ec-espace .ec-bat-accent {
-  color: var(--ec-accent);
-}
-.ec-espace .ec-bat-gris {
+.ec-espace .ec-b3-gris {
   color: var(--ec-muted);
   font-weight: 400;
 }
+.ec-espace .ec-b3-accent {
+  color: var(--ec-accent-texte);
+}
 
-/* ─────────── l'en-tête : les tours, Avant / Après, l'échéance, valider ─────────── */
+/* ─────────────────────────── l'en-tête de verre ─────────────────────────── */
 
-.ec-espace .ec-bat-segments {
+.ec-espace .ec-b3-tete {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 60px;
+  padding: 0 10px 0 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-panel);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-b3-menu,
+.ec-espace .ec-b3-icone {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ec-text);
+  cursor: pointer;
+}
+.ec-espace .ec-b3-icone {
+  width: 36px;
+  height: 36px;
+  background: var(--ec-creux);
+}
+.ec-espace .ec-b3-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ec-espace .ec-b3-tour {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ec-muted);
+}
+.ec-espace .ec-b3-espace {
+  flex: 1;
+}
+.ec-espace .ec-b3-echeance {
+  font-size: 14px;
+  color: var(--ec-muted);
+  white-space: nowrap;
+}
+.ec-espace .ec-b3-valider {
+  flex: none;
+}
+.ec-espace .ec-b3-segments {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
   background: var(--ec-creux);
 }
-.ec-espace .ec-bat-segments button {
+.ec-espace .ec-b3-segments button {
   min-height: 34px;
-  padding: 0 16px;
+  padding: 0 14px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: var(--ec-muted);
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  white-space: nowrap;
 }
-.ec-espace .ec-bat-segments button:hover {
-  color: var(--ec-text);
-}
-.ec-espace .ec-bat-segments button[aria-pressed="true"] {
-  background: var(--ec-actif);
-  box-shadow: var(--ec-actif-ombre);
+.ec-espace .ec-b3-segments button[aria-pressed="true"] {
+  background: var(--ec-carte-pleine);
   color: var(--ec-text);
   font-weight: 600;
-}
-.ec-espace .ec-bat-valider {
-  min-height: 38px;
-  padding: 0 18px;
+  box-shadow: var(--ec-ombre-douce);
 }
 
-/* ─────────────────────────────── le corps ─────────────────────────────── */
+/* ─────────────────────────── le corps : la scène | les notes ─────────────────────────── */
 
-/* 15/10 : la scène et les notes sont deux panneaux de verre qui flottent. */
-.ec-espace .ec-bat-corps {
+.ec-espace .ec-b3-corps {
   flex: 1;
   min-height: 0;
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
 }
-.ec-espace .ec-bat-gauche {
-  flex: 1;
+.ec-espace .ec-b3-colonne {
   min-width: 0;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--ec-carte-bord);
-  border-radius: var(--ec-r-panneau);
-  background: var(--ec-carte);
-  box-shadow: var(--ec-ombre-carte);
-  -webkit-backdrop-filter: var(--ec-flou);
-  backdrop-filter: var(--ec-flou);
-}
-
-/* Une seule ligne d'information. */
-.ec-espace .ec-bat-info {
-  flex: none;
-  height: 44px;
-  display: flex;
-  align-items: center;
   gap: 10px;
-  padding: 0 24px;
-  min-width: 0;
-}
-.ec-espace .ec-bat-rond {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border-radius: 999px;
-  border: 1px solid var(--ec-line-fort);
-  background: transparent;
-  color: var(--ec-text);
-  font: inherit;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-.ec-espace .ec-bat-rond:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-.ec-espace .ec-bat-info-titre {
-  flex: none;
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.ec-espace .ec-bat-info-ligne {
-  min-width: 0;
-  margin-left: 8px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  color: var(--ec-muted);
 }
 
 /* La scène : la double page à la taille de l'écran. `container-type` donne
-   ses dimensions aux pages (cqw, cqh) : une page ne dépasse jamais la
-   hauteur de la scène, ni la moitié de sa largeur. */
-.ec-espace .ec-bat-scene {
+   ses dimensions aux pages : une page ne dépasse jamais la hauteur de la scène,
+   ni la moitié de sa largeur. */
+.ec-espace .ec-b3-scene {
+  position: relative;
   flex: 1;
   min-height: 0;
   container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 24px 14px;
+  padding: 8px 64px;
   box-sizing: border-box;
 }
-.ec-espace .ec-bat-double {
+.ec-espace .ec-b3-double {
   display: flex;
   justify-content: center;
   align-items: center;
-  filter: drop-shadow(0 24px 60px rgba(var(--ec-noir-rgb), 0.35));
+  filter: drop-shadow(0 22px 50px rgba(var(--ec-noir-rgb), 0.3));
 }
-/* Une page seule garde son côté de la pliure : la page 1 est une page de
-   DROITE, la dernière (nombre pair de pages) une page de GAUCHE. */
-.ec-espace .ec-bat-double--droite,
-.ec-espace .ec-bat-double--gauche {
-  width: 100cqw;
-  box-sizing: border-box;
-}
-.ec-espace .ec-bat-double--droite {
-  justify-content: flex-start;
-  padding-left: 50cqw;
-}
-.ec-espace .ec-bat-double--gauche {
-  justify-content: flex-end;
-  padding-right: 50cqw;
-}
-.ec-espace .ec-bat-feuille {
+/* Une page seule (la première, la dernière) se pose au CENTRE : aucune moitié d'écran vide. */
+.ec-espace .ec-b3-feuille {
   position: relative;
   flex: none;
   line-height: 0;
   background: var(--ec-page);
   user-select: none;
+  -webkit-touch-callout: none;
 }
-.ec-espace .ec-bat-feuille img {
+.ec-espace .ec-b3-feuille img {
   display: block;
   width: auto;
   height: auto;
@@ -172,19 +197,19 @@
   max-width: 50cqw;
 }
 /* La pliure : une ombre dans le creux de la page de droite. */
-.ec-espace .ec-bat-feuille + .ec-bat-feuille::before {
+.ec-espace .ec-b3-feuille + .ec-b3-feuille::before {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
   z-index: 1;
   width: 22px;
-  background: linear-gradient(90deg, rgba(var(--ec-noir-rgb), 0.22), rgba(var(--ec-noir-rgb), 0));
+  background: linear-gradient(90deg, rgba(var(--ec-noir-rgb), 0.2), rgba(var(--ec-noir-rgb), 0));
   pointer-events: none;
 }
-.ec-espace .ec-bat-feuille--note {
+.ec-espace .ec-b3-feuille--note {
   cursor: crosshair;
 }
-.ec-espace .ec-bat-sans-image {
+.ec-espace .ec-b3-sans-image {
   display: grid;
   place-items: center;
   width: min(50cqw, calc(100cqh * 0.707));
@@ -197,7 +222,7 @@
   text-align: center;
   background: repeating-linear-gradient(135deg, var(--ec-page-gris) 0 10px, var(--ec-page) 10px 20px);
 }
-.ec-espace .ec-bat-zone {
+.ec-espace .ec-b3-zone {
   position: absolute;
   z-index: 2;
   outline: 2px solid var(--ec-accent);
@@ -205,677 +230,878 @@
   border-radius: 2px;
   pointer-events: none;
 }
-.ec-espace .ec-bat-zone--avant {
+.ec-espace .ec-b3-zone--avant {
   outline: 2px dashed var(--ec-encre);
 }
 
-/* Les épingles : centrées sur le point cliqué. */
-.ec-espace .ec-bat-epingle {
+/* Les épingles : centrées sur le point touché, 30 px (une cible de 44 par sa marge invisible). */
+.ec-espace .ec-b3-epingle {
   position: absolute;
   z-index: 3;
   width: 30px;
   height: 30px;
   margin: -15px 0 0 -15px;
   padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
   border-radius: 999px;
-  border: 2px solid var(--ec-accent);
-  background: var(--ec-accent);
-  color: var(--ec-on-accent);
+  border: 2px solid var(--ec-page);
+  background: var(--ec-encre);
+  color: var(--ec-page);
   font: inherit;
   font-size: 13px;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(var(--ec-noir-rgb), 0.35);
+  box-shadow: 0 4px 14px rgba(var(--ec-noir-rgb), 0.3);
 }
-.ec-espace .ec-bat-epingle--brouillon {
-  border-style: dashed;
-  border-color: var(--ec-page);
+.ec-espace .ec-b3-epingle::after {
+  content: "";
+  position: absolute;
+  inset: -9px;
 }
-.ec-espace .ec-bat-epingle--resolue {
-  background: var(--ec-encre);
-  color: var(--ec-page);
-  border-color: var(--ec-page);
+.ec-espace .ec-b3-epingle--brouillon,
+.ec-espace .ec-b3-epingle--nouvelle {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
 }
-.ec-espace .ec-bat-epingle--nouvelle {
+.ec-espace .ec-b3-epingle--resolue {
+  opacity: 0.55;
+}
+.ec-espace .ec-b3-epingle--vue,
+.ec-espace .ec-b3-epingle--nouvelle {
+  box-shadow: 0 0 0 6px rgba(var(--ec-ac-rgb), 0.3);
+}
+.ec-espace .ec-b3-epingle--nouvelle {
   pointer-events: none;
-  animation: ec-pose 200ms ease-out;
+  animation: ec-b3-pose 200ms ease-out;
 }
-@keyframes ec-pose {
+@keyframes ec-b3-pose {
   from {
     transform: scale(0.6);
     opacity: 0;
   }
 }
 
-/* ─────────────────────────── la couverture, dans la scène ─────────────────────────── */
+/* Tourner les pages : deux ronds de verre aux bords de la scène (ordinateur). */
+.ec-espace .ec-b3-fleche {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  padding: 0;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: 999px;
+  background: var(--ec-panel);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-b3-fleche--g {
+  left: 6px;
+}
+.ec-espace .ec-b3-fleche--d {
+  right: 6px;
+}
+.ec-espace .ec-b3-fleche:disabled,
+.ec-espace .ec-b3-rond:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
 
-.ec-espace .ec-bat-couv {
+/* La légende : où l'on est, et une seule précision. */
+.ec-espace .ec-b3-legende {
+  flex: none;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 24px;
+  font-size: 14px;
+  text-align: center;
+}
+.ec-espace .ec-b3-rond {
+  display: none;
+}
+
+/* ─────────────────────────── la bande des pages ─────────────────────────── */
+
+.ec-espace .ec-b3-bande {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: safe center;
+  gap: 10px;
+  padding: 6px 8px 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.ec-espace .ec-b3-vignette {
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  outline: 3px solid transparent;
+  outline-offset: 2px;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.ec-espace .ec-b3-vignette[aria-current="true"] {
+  outline-color: var(--ec-accent);
+  opacity: 1;
+}
+.ec-espace .ec-b3-vignette-couv,
+.ec-espace .ec-b3-vignette-pages {
+  position: relative;
+  display: flex;
+  height: 62px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+}
+.ec-espace .ec-b3-vignette-couv {
+  width: 44px;
+}
+.ec-espace .ec-b3-vignette-couv img,
+.ec-espace .ec-b3-vignette-pages img,
+.ec-espace .ec-b3-vignette-pages > span:not([class]) {
+  display: block;
+  width: 44px;
+  height: 62px;
+  object-fit: cover;
+}
+
+.ec-espace .ec-b3-vignette-point {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ec-accent);
+}
+.ec-espace .ec-b3-vignette-n {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+.ec-espace .ec-b3-magazines {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ec-espace .ec-b3-magazine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--ec-creux);
+  color: var(--ec-text);
+  font-size: 14px;
+  text-decoration: none;
+}
+.ec-espace .ec-b3-magazine[aria-current="page"] {
+  background: var(--ec-carte-pleine);
+  font-weight: 600;
+  box-shadow: var(--ec-ombre-douce);
+}
+
+/* ─────────────────────────── les notes ─────────────────────────── */
+
+.ec-espace .ec-b3-notes {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  box-sizing: border-box;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-panel);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+}
+.ec-espace .ec-b3-notes-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ec-espace .ec-b3-notes-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+}
+.ec-espace .ec-b3-liste {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.ec-espace .ec-b3-vide {
+  padding: 8px 2px;
+}
+.ec-espace .ec-b3-carte {
+  border-radius: 14px;
+  background: var(--ec-carte-pleine);
+  outline: 1px solid transparent;
+}
+.ec-espace .ec-b3-carte--vue {
+  outline-color: var(--ec-accent);
+}
+.ec-espace .ec-b3-carte--resolue {
+  opacity: 0.7;
+}
+.ec-espace .ec-b3-carte-main {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border: 0;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-b3-carte-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.ec-espace .ec-b3-reponse {
+  padding-left: 10px;
+  border-left: 2px solid var(--ec-accent);
+  color: var(--ec-muted);
+  font-size: 13px;
+}
+.ec-espace .ec-b3-carte-photo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.ec-espace .ec-b3-carte-page {
+  flex: none;
+  font-size: 12.5px;
+}
+.ec-espace .ec-b3-carte-gestes {
+  display: flex;
+  gap: 16px;
+  padding: 0 12px 10px 52px;
+  font-size: 13px;
+}
+.ec-espace .ec-b3-numero {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ec-text);
+  color: var(--ec-bg);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ec-espace .ec-b3-numero--brouillon {
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-b3-numero--resolue {
+  background: var(--ec-muted);
+}
+.ec-espace .ec-b3-notes-pied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.ec-espace .ec-b3-envoyer {
+  width: 100%;
+  min-height: 50px;
+}
+.ec-espace .ec-b3-echeance-tel {
+  display: none;
+}
+
+/* ─────────────────────────── la note : bulle, feuille basse ─────────────────────────── */
+
+.ec-espace .ec-b3-bulle {
+  position: absolute;
+  z-index: 5;
+  width: 320px;
+  padding: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: 18px;
+  background: var(--ec-carte-pleine);
+  box-shadow: 0 20px 50px rgba(var(--ec-noir-rgb), 0.24);
+}
+.ec-espace .ec-b3-noter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ec-espace .ec-b3-noter-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ec-espace .ec-b3-noter-titre {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.ec-espace .ec-b3-gestes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.ec-espace .ec-b3-geste {
+  height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--ec-line);
+  border-radius: 16px;
+  background: var(--ec-carte);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ec-espace .ec-b3-geste:hover {
+  border-color: var(--ec-accent);
+}
+.ec-espace .ec-b3-ajouter {
+  width: 100%;
+  min-height: 48px;
+}
+.ec-espace .ec-b3-photo-choisie {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.ec-espace .ec-b3-photo-choisie img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.ec-espace .ec-b3-photo-choisie span:first-of-type {
+  flex: 1;
+}
+.ec-espace .ec-b3-voile {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ec-z-voile);
+  border: 0;
+  background: var(--ec-voile);
+}
+.ec-espace .ec-b3-feuille-basse {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--ec-z-feuille);
+  max-height: calc(var(--app-height) * 0.6);
+  overflow-y: auto;
+  padding: 8px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+  border-radius: 24px 24px 0 0;
+  background: var(--ec-carte-pleine);
+  box-shadow: 0 -12px 40px rgba(var(--ec-noir-rgb), 0.2);
+}
+.ec-espace .ec-b3-poignee {
+  display: block;
+  width: 40px;
+  height: 5px;
+  margin: 0 auto 8px;
+  border-radius: 3px;
+  background: var(--ec-line-fort);
+}
+
+/* « Remplacer par » : fenêtre centrée à l'ordinateur, feuille presque pleine au téléphone. */
+.ec-espace .ec-b3-choix {
+  position: fixed;
+  z-index: var(--ec-z-feuille);
+  top: 50%;
+  left: 50%;
+  width: min(760px, calc(100vw - 48px));
+  height: min(720px, calc(var(--app-height) - 80px));
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 18px;
+  box-sizing: border-box;
+  border-radius: 22px;
+  background: var(--ec-carte-pleine);
+  box-shadow: 0 24px 60px rgba(var(--ec-noir-rgb), 0.3);
+}
+.ec-espace .ec-b3-choix .ec-b3-poignee {
+  display: none;
+}
+.ec-espace .ec-b3-puces {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ec-espace .ec-b3-puces button {
+  flex: none;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--ec-line);
+  border-radius: 999px;
+  background: var(--ec-carte);
+  color: var(--ec-text);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ec-espace .ec-b3-puces button[aria-pressed="true"] {
+  border-color: var(--ec-text);
+  background: var(--ec-text);
+  color: var(--ec-bg);
+  font-weight: 600;
+}
+.ec-espace .ec-b3-grille {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  gap: 3px;
+  border-radius: 12px;
+}
+.ec-espace .ec-b3-grille button {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: rgba(var(--ec-fg-rgb), 0.06);
+  cursor: pointer;
+}
+.ec-espace .ec-b3-grille img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ec-espace .ec-b3-grille button[aria-pressed="true"] {
+  outline: 3px solid var(--ec-accent);
+  outline-offset: -3px;
+}
+.ec-espace .ec-b3-coche {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid var(--ec-blanc);
+  border-radius: 999px;
+  background: var(--ec-accent);
+  color: var(--ec-on-accent);
+}
+.ec-espace .ec-b3-plus {
+  align-self: center;
+}
+.ec-espace .ec-b3-choix-pied {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ec-espace .ec-b3-choix-pied .ec-bouton {
+  flex: 0 1 260px;
+  min-height: 52px;
+}
+.ec-espace .ec-b3-flottante {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: var(--ec-fl-bas);
+  z-index: var(--ec-z-barre);
+  height: var(--ec-fl-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 8px 0 18px;
+  box-sizing: border-box;
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: 22px;
+  background: var(--ec-glass);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  font-size: 15px;
+  font-weight: 600;
+}
+.ec-espace .ec-b3-flottante .ec-bouton {
+  min-height: 48px;
+}
+.ec-espace .ec-b3-confirmer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ec-espace .ec-b3-attente {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+/* ─────────────────────────── la couverture, à contempler ─────────────────────────── */
+
+.ec-espace .ec-b3-couv {
   width: 100%;
   height: 100cqh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 22px;
 }
-.ec-espace .ec-bat-scene-vide {
+.ec-espace .ec-b3-scene-vide {
   max-width: 420px;
   text-align: center;
 }
-.ec-espace .ec-bat-propositions {
+.ec-espace .ec-b3-propositions {
+  --n: 3;
   display: flex;
   justify-content: center;
-  gap: 40px;
-  perspective: 1600px;
+  align-items: flex-end;
+  gap: 56px;
 }
-.ec-espace .ec-bat-proposition {
+.ec-espace .ec-b3-propositions:not(:has(> :nth-child(3))) {
+  --n: 2;
+}
+.ec-espace .ec-b3-propositions:not(:has(> :nth-child(2))) {
+  --n: 1;
+}
+.ec-espace .ec-b3-proposition {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--ec-text);
+  color: var(--ec-muted);
   font: inherit;
+  font-size: 15px;
   cursor: pointer;
 }
-.ec-espace .ec-bat-proposition:disabled {
+.ec-espace .ec-b3-proposition:disabled {
   cursor: default;
 }
-/* Le magazine posé : légère rotation, reflet, ombre ; la taille suit la scène. */
-.ec-espace .ec-bat-livre {
-  display: block;
-  height: 58cqh;
-  aspect-ratio: 210 / 297;
-}
-.ec-espace .ec-bat-livre-couv {
+/* Le magazine posé : la taille suit la scène, sans jamais déborder sur ses voisins. */
+.ec-espace .ec-b3-livre {
   position: relative;
   display: block;
-  height: 100%;
+  width: min(calc(68cqh * 0.707), calc((100cqw - 56px * (var(--n) - 1)) / var(--n)));
+  aspect-ratio: 210 / 297;
   overflow: hidden;
   border-radius: 2px 5px 5px 2px;
   background: rgba(var(--ec-fg-rgb), 0.06);
-  transform: rotateY(-14deg);
-  transform-origin: 30% 50%;
-  box-shadow: 18px 24px 44px rgba(var(--ec-noir-rgb), 0.45);
+  box-shadow: 0 30px 60px rgba(var(--ec-noir-rgb), 0.32), 0 6px 14px rgba(var(--ec-noir-rgb), 0.18);
   outline: 2px solid transparent;
-  outline-offset: 8px;
-  transition: transform 0.3s, outline-color 0.2s;
+  outline-offset: 10px;
+  transition: transform 0.35s var(--ease), outline-color 0.2s;
 }
-.ec-espace .ec-bat-proposition[aria-pressed="true"] .ec-bat-livre-couv {
-  outline-color: var(--ec-accent);
-}
-.ec-espace .ec-bat-proposition:not(:disabled):hover .ec-bat-livre-couv {
-  transform: rotateY(-6deg);
-}
-.ec-espace .ec-bat-livre-couv img {
+.ec-espace .ec-b3-livre img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.ec-espace .ec-bat-livre-reflet {
+.ec-espace .ec-b3-livre-reflet {
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, rgba(var(--ec-reflet-rgb), 0.24) 0%, rgba(var(--ec-reflet-rgb), 0) 36%, rgba(var(--ec-reflet-rgb), 0) 72%, rgba(var(--ec-reflet-rgb), 0.08) 100%);
+  background: linear-gradient(115deg, rgba(var(--ec-reflet-rgb), 0.22) 0%, rgba(var(--ec-reflet-rgb), 0) 36%, rgba(var(--ec-reflet-rgb), 0) 72%, rgba(var(--ec-reflet-rgb), 0.08) 100%);
   pointer-events: none;
 }
-.ec-espace .ec-bat-proposition-nom {
-  font-size: 13px;
-  color: var(--ec-muted);
+.ec-espace .ec-b3-livre .ec-b3-coche {
+  top: 10px;
+  right: 10px;
+  bottom: auto;
 }
-.ec-espace .ec-bat-proposition[aria-pressed="true"] .ec-bat-proposition-nom {
+.ec-espace .ec-b3-proposition[aria-pressed="true"] {
   color: var(--ec-text);
   font-weight: 600;
 }
-.ec-espace .ec-bat-couv-gestes {
+.ec-espace .ec-b3-proposition[aria-pressed="true"] .ec-b3-livre {
+  outline-color: var(--ec-accent);
+}
+.ec-espace .ec-b3-couv-gestes {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
-  gap: 8px;
+  gap: 8px 22px;
+  font-size: 14px;
 }
-.ec-espace .ec-bat-couv-gestes .ec-bouton[aria-pressed="true"] {
-  border-color: var(--ec-accent);
-  background: var(--ec-accent-soft);
-}
-.ec-espace .ec-bat-couv-note {
+.ec-espace .ec-b3-couv-note {
   display: flex;
   gap: 6px;
   width: min(380px, 100%);
 }
-.ec-espace .ec-bat-couv-note .ec-champ {
+.ec-espace .ec-b3-couv-note .ec-champ {
   flex: 1;
   min-width: 0;
-  min-height: 34px;
 }
-.ec-espace .ec-bat-ouvert {
+.ec-espace .ec-b3-ouvert {
   display: flex;
   justify-content: center;
-  gap: 2px;
-  height: 64cqh;
-  perspective: 1800px;
+  height: 68cqh;
+  filter: drop-shadow(0 26px 50px rgba(var(--ec-noir-rgb), 0.3));
 }
-.ec-espace .ec-bat-ouvert figure {
-  margin: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-.ec-espace .ec-bat-ouvert figcaption {
-  font-size: 13px;
-  color: var(--ec-muted);
-}
-.ec-espace .ec-bat-ouvert-g,
-.ec-espace .ec-bat-ouvert-d {
+.ec-espace .ec-b3-ouvert-g,
+.ec-espace .ec-b3-ouvert-d {
   display: block;
-  flex: 1;
-  min-height: 0;
+  height: 100%;
   aspect-ratio: 210 / 297;
   overflow: hidden;
-  background: rgba(var(--ec-fg-rgb), 0.06);
-}
-.ec-espace .ec-bat-ouvert-g {
-  transform: rotateY(12deg);
-  transform-origin: right center;
-  box-shadow: -18px 26px 44px rgba(var(--ec-noir-rgb), 0.4);
-}
-.ec-espace .ec-bat-ouvert-d {
-  transform: rotateY(-12deg);
-  transform-origin: left center;
-  box-shadow: 18px 26px 44px rgba(var(--ec-noir-rgb), 0.4);
-}
-.ec-espace .ec-bat-ouvert img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* ─────────────────────────── la bande des pages, toujours visible ─────────────────────────── */
-
-.ec-espace .ec-bat-bande {
-  flex: none;
-  height: 96px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0 12px;
-  padding: 10px 14px;
-  border-radius: 20px;
-  background: var(--ec-creux);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-}
-.ec-espace .ec-bat-vignette {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--ec-muted);
-  font: inherit;
-  font-size: 11px;
-  cursor: pointer;
-}
-.ec-espace .ec-bat-vignette[aria-current="true"] {
-  color: var(--ec-text);
-}
-.ec-espace .ec-bat-vignette-pages {
-  position: relative;
-  display: flex;
-  gap: 1px;
-  width: 70px;
-  height: 50px;
   background: var(--ec-page);
 }
-.ec-espace .ec-bat-vignette-pages--seule {
-  width: 36px;
-}
-.ec-espace .ec-bat-vignette-couv {
-  display: block;
-  width: 36px;
-  height: 50px;
-  overflow: hidden;
-  background: rgba(var(--ec-fg-rgb), 0.1);
-}
-.ec-espace .ec-bat-vignette[aria-current="true"] .ec-bat-vignette-pages,
-.ec-espace .ec-bat-vignette[aria-current="true"] .ec-bat-vignette-couv {
-  outline: 2px solid var(--ec-accent);
-  outline-offset: 2px;
-}
-.ec-espace .ec-bat-vignette-pages img,
-.ec-espace .ec-bat-vignette-pages > span:not(.ec-bat-vignette-point),
-.ec-espace .ec-bat-vignette-couv img {
-  display: block;
-  flex: 1 1 0;
-  min-width: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.ec-espace .ec-bat-vignette-point {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: var(--ec-accent);
-}
-
-/* ─────────────────────────── les magazines, en onglets SOUS la bande ─────────────────────────── */
-
-.ec-espace .ec-bat-magazines {
-  flex: none;
-  height: 54px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 12px;
-  background: transparent;
-  overflow-x: auto;
-}
-.ec-espace .ec-bat-magazine {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 16px;
-  border-radius: 999px;
-  color: var(--ec-muted);
-  font-size: 13px;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.ec-espace .ec-bat-magazine:hover {
-  color: var(--ec-text);
-}
-.ec-espace .ec-bat-magazine[aria-current="page"] {
-  background: var(--ec-actif);
-  box-shadow: var(--ec-actif-ombre);
-  color: var(--ec-text);
-  font-weight: 600;
-}
-
-/* ─────────────────────────── l'onglet vertical et le panneau des notes ─────────────────────────── */
-
-.ec-espace .ec-bat-onglet-notes {
-  flex: none;
-  width: 34px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 0;
-  width: 44px;
-  border: 1px solid var(--ec-carte-bord);
-  border-radius: 22px;
-  background: var(--ec-carte);
-  box-shadow: var(--ec-ombre-douce);
-  -webkit-backdrop-filter: var(--ec-flou);
-  backdrop-filter: var(--ec-flou);
-  color: var(--ec-text);
-  font: inherit;
-  cursor: pointer;
-}
-.ec-espace .ec-bat-onglet-notes:hover {
-  background: var(--ec-surface);
-}
-.ec-espace .ec-bat-onglet-fleche {
-  color: var(--ec-accent);
-  font-size: 16px;
-  line-height: 1;
-}
-.ec-espace .ec-bat-onglet-texte {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-  font-size: 13px;
-  font-weight: 600;
-}
-.ec-espace .ec-bat-onglet-n {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  box-sizing: border-box;
-  border-radius: 999px;
-  background: var(--ec-accent);
-  color: var(--ec-on-accent);
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 20px;
-  text-align: center;
-}
-.ec-espace .ec-bat-panneau {
-  flex: none;
-  width: 340px;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--ec-carte-bord);
-  border-radius: var(--ec-r-panneau);
-  background: var(--ec-carte);
-  box-shadow: var(--ec-ombre-carte);
-  -webkit-backdrop-filter: var(--ec-flou);
-  backdrop-filter: var(--ec-flou);
-}
-.ec-espace .ec-bat-panneau[hidden] {
-  display: none;
-}
-.ec-espace .ec-bat-panneau-tete {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px 20px 12px;
-}
-/* (0,2,0) contre `.bj-atelier h2`. */
-.ec-espace .ec-bat-panneau-titre {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: 400;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1.1;
-  letter-spacing: 0;
-  color: var(--ec-text);
-}
-.ec-espace .ec-bat-liste {
-  flex: 1;
-  list-style: none;
-  margin: 0;
-  padding: 0 20px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.ec-espace .ec-bat-carte {
-  flex: none;
-  display: flex;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
-  border-radius: 18px;
-  background: var(--ec-surface);
-  scroll-margin: 16px;
-}
-.ec-espace .ec-bat-carte--brouillon {
-  border-style: dashed;
-}
-.ec-espace .ec-bat-carte--resolue {
-  border-color: var(--ec-line);
-}
-.ec-espace .ec-bat-numero {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: var(--ec-accent);
-  color: var(--ec-on-accent);
-  font-size: 12px;
-  font-weight: 600;
-}
-.ec-espace .ec-bat-numero--resolue {
-  background: transparent;
-  border: 1px solid var(--ec-line-fort);
-  color: var(--ec-muted);
-}
-.ec-espace .ec-bat-carte-corps {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-.ec-espace .ec-bat-reponse {
-  padding-left: 10px;
-  border-left: 2px solid var(--ec-line-fort);
-  color: var(--ec-muted);
-  font-size: 13px;
-}
-.ec-espace .ec-bat-carte-gestes {
-  display: flex;
-  gap: 12px;
-}
-.ec-espace .ec-bat-indice {
-  padding-top: 4px;
-}
-.ec-espace .ec-bat-panneau-pied {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 20px 18px;
-}
-.ec-espace .ec-bat-panneau-pied .ec-bouton--plein {
-  width: 100%;
-  min-height: 44px;
-}
-
-/* La note en cours, DANS le panneau : rien ne la pousse hors de l'écran. */
-.ec-espace .ec-bat-note {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.ec-espace .ec-bat-note-tete {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 18px 20px 12px;
-  font-size: 14px;
-}
-.ec-espace .ec-bat-note-corps {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 0 20px 12px;
-}
-.ec-espace .ec-bat-note-pied,
-.ec-espace .ec-bat-confirmer {
-  flex: none;
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 8px;
-}
-.ec-espace .ec-bat-note-pied {
-  padding: 12px 20px 18px;
-}
-.ec-espace .ec-bat-note-pied .ec-bouton,
-.ec-espace .ec-bat-confirmer .ec-bouton {
-  align-self: stretch;
-  min-height: 44px;
-}
-.ec-espace .ec-bat-types {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-.ec-espace .ec-bat-types button {
-  min-height: 40px;
-  padding: 0 8px;
-  border-radius: var(--ec-r-champ);
-  border: 1px solid var(--ec-line-fort);
-  background: transparent;
-  color: var(--ec-text);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-}
-.ec-espace .ec-bat-types button[aria-pressed="true"] {
-  border-color: var(--ec-accent);
-  background: var(--ec-accent-soft);
-}
-.ec-espace .ec-bat-choisir-photo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 44px;
-  border-radius: var(--ec-r-champ);
-  border: 1px dashed var(--ec-line-fort);
-  background: transparent;
-  color: var(--ec-text);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-.ec-espace .ec-bat-choisir-photo img {
-  width: 36px;
-  height: 36px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-.ec-espace .ec-bat-photos-grille {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 8px;
-  max-height: calc(55 * var(--uh));
-  overflow-y: auto;
-}
-.ec-espace .ec-bat-photos-grille button {
-  aspect-ratio: 1;
-  padding: 0;
-  border: 2px solid transparent;
-  border-radius: 16px;
-  overflow: hidden;
-  background: rgba(var(--ec-fg-rgb), 0.06);
-  color: var(--ec-muted);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.ec-espace .ec-bat-photos-grille button[aria-pressed="true"] {
-  border-color: var(--ec-accent);
-}
-.ec-espace .ec-bat-photos-grille img {
+.ec-espace .ec-b3-ouvert img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-/* ─────────────────────────────── téléphone ─────────────────────────────── */
+@media (hover: hover) {
+  .ec-espace .ec-b3-proposition:not(:disabled):hover .ec-b3-livre {
+    transform: translateY(-6px);
+  }
+  .ec-espace .ec-b3-menu:hover,
+  .ec-espace .ec-b3-icone:hover {
+    background: var(--ec-creux);
+  }
+}
 
-/* Le bon à tirer reste un écran entier sous la barre du haut (`--ec-barre-h` et son écart : 58 px) ; les
-   notes deviennent une feuille du bas, ouverte par la pastille « Notes · n »
-   posée en bas à droite (fermée par défaut, Liseuse.tsx). */
+/* Un écran moyen : la colonne des notes rétrécit avant de passer dessous. */
+@media (max-width: 1180px) and (min-width: 861px) {
+  .ec-espace .ec-b3-corps {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+  .ec-espace .ec-b3-echeance {
+    display: none;
+  }
+}
+
+/* ─────────────────────────── téléphone ─────────────────────────── */
+
 @media (max-width: 860px) {
-  .ec-espace .ec-bat2 {
-    min-height: calc(var(--app-height) - var(--ec-barre-h) - var(--ec-barre-marge));
-  }
-  .ec-espace .ec-bat2 .ec-ecran-tete {
-    gap: 10px;
-  }
-  .ec-espace .ec-bat2 .ec-ecran-actions {
-    justify-content: flex-start;
-  }
-  .ec-espace .ec-bat-corps {
-    padding: 0 8px;
-  }
-  .ec-espace .ec-bat-gauche {
-    border-radius: var(--ec-r-carte);
-  }
-  .ec-espace .ec-bat-info {
-    padding: 0 12px;
-  }
-  .ec-espace .ec-bat-info-ligne {
+  .ec-espace .ec-coquille:has(.ec-bat3) .ec-barre-mobile {
     display: none;
   }
-  .ec-espace .ec-bat-scene {
-    min-height: 320px;
-    padding: 4px 12px 10px;
+  .ec-espace .ec-coquille:has(.ec-bat3) .ec-menu {
+    top: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px));
+    left: 8px;
+    height: calc(var(--app-height) - 2 * var(--ec-barre-marge) - env(safe-area-inset-top, 0px));
   }
-  .ec-espace .ec-bat-bande,
-  .ec-espace .ec-bat-magazines {
-    padding-left: 12px;
-    padding-right: 12px;
+  .ec-espace .ec-bat3 {
+    height: auto;
+    gap: 12px;
+    padding: 0 10px var(--ec-fl-reserve);
   }
-  .ec-espace .ec-bat-onglet-notes {
-    position: fixed;
-    right: 12px;
-    bottom: 12px;
-    z-index: calc(var(--ec-z-barre) + 1);
-    width: auto;
-    flex-direction: row;
-    padding: 10px 14px;
-    border: 1px solid var(--ec-line-fort);
+  .ec-espace .ec-b3-tete {
+    position: sticky;
+    top: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px));
+    z-index: var(--ec-z-entete);
+    height: var(--ec-barre-h);
+    margin-top: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px));
+    gap: 8px;
+    padding: 0 6px 0 2px;
+    border-radius: 18px;
+  }
+  .ec-espace .ec-b3-titre {
+    font-size: 24px;
+  }
+  .ec-espace .ec-b3-echeance {
+    display: none;
+  }
+  .ec-espace .ec-b3-segments button {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .ec-espace .ec-b3-corps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ec-espace .ec-b3-scene {
+    flex: none;
+    container-type: inline-size;
+    padding: 0;
+  }
+  .ec-espace .ec-b3-feuille img,
+  .ec-espace .ec-b3-sans-image {
+    width: 50cqw;
+    max-width: none;
+    max-height: none;
+  }
+  .ec-espace .ec-b3-fleche {
+    display: none;
+  }
+  .ec-espace .ec-b3-rond {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
     border-radius: 999px;
-    box-shadow: 0 10px 30px rgba(var(--ec-noir-rgb), 0.35);
+    background: var(--ec-creux);
+    color: var(--ec-text);
+    font: inherit;
+    font-size: 22px;
+    line-height: 1;
   }
-  .ec-espace .ec-bat-onglet-texte {
-    writing-mode: horizontal-tb;
-    transform: none;
+  .ec-espace .ec-b3-legende {
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
-  .ec-espace .ec-bat-onglet-fleche {
+  .ec-espace .ec-b3-legende strong {
+    flex: 1;
+  }
+  .ec-espace .ec-b3-legende .ec-b3-gris {
+    order: 3;
+    flex-basis: 100%;
+    font-size: 13px;
+  }
+  .ec-espace .ec-b3-bande {
+    justify-content: flex-start;
+    margin: 0 -10px;
+    padding: 6px 12px 8px;
+  }
+  .ec-espace .ec-b3-notes {
+    padding: 14px;
+    border-radius: 20px;
+  }
+  .ec-espace .ec-b3-notes-titre {
+    font-size: 24px;
+  }
+  .ec-espace .ec-b3-liste {
+    overflow: visible;
+  }
+  .ec-espace .ec-b3-envoyer {
     display: none;
   }
-  .ec-espace .ec-bat-panneau {
-    position: fixed;
+  .ec-espace .ec-b3-echeance-tel {
+    display: inline;
+    font-size: 13px;
+  }
+  .ec-espace .ec-b3-choix {
+    top: calc(64px + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: var(--ec-z-barre);
     width: auto;
-    height: calc(72 * var(--uh));
-    border-radius: var(--ec-r-panneau) var(--ec-r-panneau) 0 0;
-    box-shadow: 0 -20px 60px rgba(var(--ec-noir-rgb), 0.4);
+    height: auto;
+    transform: none;
+    padding: 8px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-radius: 24px 24px 0 0;
   }
-  /* (0,3,0) : la feuille du bas défile chez elle, même sur téléphone. */
-  .ec-espace .ec-bat-panneau .ec-defile {
-    overflow-y: auto;
+  .ec-espace .ec-b3-choix .ec-b3-poignee {
+    display: block;
   }
-  /* Feuille ouverte : la pastille monte sur son bord et sert à la fermer. */
-  .ec-espace .ec-bat2:not(.ec-bat2--replie) .ec-bat-onglet-notes {
-    bottom: calc(72 * var(--uh) + 10px);
+  .ec-espace .ec-b3-grille {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .ec-espace .ec-bat-propositions {
-    gap: 16px;
+  .ec-espace .ec-b3-couv {
+    height: auto;
+    padding: 12px 0 4px;
   }
-  .ec-espace .ec-bat-livre {
-    height: 44cqh;
+  .ec-espace .ec-b3-propositions {
+    gap: 18px;
   }
-}
-
-/* Un téléphone lit page par page (Liseuse.tsx, 760 px) : une page prend
-   toute la largeur de la scène. */
-@media (max-width: 760px) {
-  .ec-espace .ec-bat-feuille img {
-    max-width: 100cqw;
+  .ec-espace .ec-b3-livre {
+    width: min(200px, calc((100cqw - 18px * (var(--n) - 1)) / var(--n)));
   }
-  .ec-espace .ec-bat-sans-image {
-    width: min(100cqw, calc(100cqh * 0.707));
+  .ec-espace .ec-b3-ouvert {
+    height: auto;
+  }
+  .ec-espace .ec-b3-ouvert-g,
+  .ec-espace .ec-b3-ouvert-d {
+    width: 50cqw;
+    height: auto;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ec-espace .ec-bat-livre-couv {
+  .ec-espace .ec-b3-livre,
+  .ec-espace .ec-coquille:has(.ec-bat3) .ec-menu {
     transition: none;
   }
-  .ec-espace .ec-bat-epingle--nouvelle {
+  .ec-espace .ec-b3-epingle--nouvelle {
     animation: none;
   }
 }

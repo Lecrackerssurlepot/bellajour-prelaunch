@@ -24,7 +24,12 @@
      porte le logo ; quand le grand titre de l'écran défile dessous, il prend la
      place du logo (`TitreEcran` : un `IntersectionObserver`, un portail, rien au
      défilement). Le tiroir a son propre en-tête de 52 px : le logo, et la croix
-     à la hauteur du bouton menu, sous le doigt. */
+     à la hauteur du bouton menu, sous le doigt.
+   - Le bon à tirer est IMMERSIF (28/10, retour de Mathias : « on arrive dans une étape où le plus important est de
+     contempler le magazine ») : ni menu à gauche ni barre du haut, le magazine prend tout l'écran. Le menu reste à un
+     geste, en tiroir, ouvert par le bouton de l'en-tête du BAT (`ouvrirMenuEspace`, un événement du navigateur : la
+     coquille garde seule l'état du tiroir). Le CSS le lit par `:has(.ec-bat3)` : le bon à tirer VERROUILLÉ garde
+     la coquille ordinaire. */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -103,6 +108,12 @@ function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" | "sol
   }
 }
 
+/** Le nom de l'événement qui ouvre le tiroir depuis un écran immersif (le bon à tirer). */
+const EVENEMENT_MENU = "ec-ouvrir-menu";
+export function ouvrirMenuEspace() {
+  window.dispatchEvent(new Event(EVENEMENT_MENU));
+}
+
 export default function Coquille(props: Props) {
   const chemin = usePathname();
   const active = sectionDuChemin(chemin);
@@ -162,6 +173,11 @@ export default function Coquille(props: Props) {
     return () => setTiroirPour(null);
   }, [ouvert]);
   useVerrouDefilement(ouvert);
+  useEffect(() => {
+    const ouvrir = () => setTiroirPour(chemin);
+    window.addEventListener(EVENEMENT_MENU, ouvrir);
+    return () => window.removeEventListener(EVENEMENT_MENU, ouvrir);
+  }, [chemin]);
   /* Le geste « retour » du téléphone ferme le tiroir avant de quitter la page. */
   useRetourFerme(() => setTiroirPour(null), ouvert);
   useEffect(() => {

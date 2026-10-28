@@ -161,6 +161,7 @@ import {
   libelleDouble,
   lireChoixCouverture,
   rappelValidation,
+  validationOuverte,
   lireNote,
   lirePagesTour,
   manquesPourPublierTour,
@@ -1524,10 +1525,14 @@ ok("bande : « 1 » pour la page seule, « 2–3 » pour une double", libelleBan
 }
 const liseuse = lire("src/app/edition/[token]/bat/Liseuse.tsx");
 ok("BAT plein ecran : plus de bouton « Plein écran », ni d'appel « en appel »", !/Plein écran|en appel/.test(liseuse));
-ok("BAT : l'onglet vertical des notes et la note DANS le panneau", liseuse.includes("ec-bat-onglet-notes") && /<aside[^>]*ec-bat-panneau/.test(liseuse) && liseuse.includes("<NoteEnCours"));
-ok("BAT : les magazines en onglets SOUS la bande", liseuse.indexOf('className="ec-bat-bande"') < liseuse.indexOf("{onglets}", liseuse.indexOf('className="ec-bat-bande"')));
+ok("BAT immersif (28/10) : « Que changer ? » en quatre gestes, une bulle à l'ordinateur, une feuille basse au téléphone, la photo choisie dans la liste",
+  liseuse.includes("Que changer ?") && liseuse.includes("<Bulle") && liseuse.includes("<FeuilleBasse") && liseuse.includes("<ChoixPhoto") && liseuse.includes("Photo remplacée"));
+ok("BAT : les magazines en onglets SOUS la bande", liseuse.indexOf('className="ec-b3-bande"') > 0 && liseuse.indexOf('className="ec-b3-bande"') < liseuse.indexOf("{onglets}", liseuse.indexOf('className="ec-b3-bande"')));
+ok("BAT : « Valider » au dernier tour inclus seulement, jamais au premier quand les tours ne sont pas fixés",
+  !validationOuverte(1, 3) && !validationOuverte(2, 3) && validationOuverte(3, 3) && validationOuverte(1, 1) && !validationOuverte(1, null) && validationOuverte(2, null)
+    && /validationOuverte\(tour\.numero, p\.toursInclus\)/.test(liseuse) && /toursInclus=\{edition\.tours_inclus\}/.test(lire("src/app/edition/[token]/bat/page.tsx")));
 const batCss = lire("src/app/edition/[token]/bat/bat.css");
-ok("BAT : la page suit la scene (unites de conteneur), aucun plafond en px", batCss.includes("container-type: size") && /max-height: 100cqh/.test(batCss) && !/max-height: 520px/.test(batCss));
+ok("BAT : la page suit la scene (unites de conteneur), aucun plafond en px ; la coquille s'efface (`:has(.ec-bat3)`), le menu reste en tiroir", batCss.includes("container-type: size") && /max-height: 100cqh/.test(batCss) && !/max-height: 520px/.test(batCss) && batCss.includes(".ec-coquille:has(.ec-bat3) .ec-menu") && batCss.includes(".ec-coquille:has(.ec-bat3) .ec-barre-mobile"));
 
 titre("— les gris d'un tour : un format a nous, relu sans confiance —");
 {
@@ -8011,7 +8016,7 @@ function verifChevauchements() {
     ok(`aucun z-index numérique de 10 ou plus dans les feuilles de l'espace : une couche se lit dans l'échelle${hautes.length ? " ; en faute : " + hautes.join(", ") : ""}`, hautes.length === 0);
     ok("les barres FIXES d'une page restent sous le voile du tiroir : « Déposer », les actions des photos cochées (téléphone), la barre d'actions (ordinateur), les notes du BAT (feuille et pastille)",
       dans(photos, "\\.ec-espace \\.ec-fl", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-bas", /z-index: var\(--ec-z-barre\)/) && dans(photos, "\\.ec-espace \\.ec-ph-barre-actions", /z-index: var\(--ec-z-barre\)/)
-        && toutes(bat, "\\.ec-espace \\.ec-bat-panneau").some((r) => /z-index: var\(--ec-z-barre\)/.test(r)) && toutes(bat, "\\.ec-espace \\.ec-bat-onglet-notes").some((r) => /z-index: calc\(var\(--ec-z-barre\) \+ 1\)/.test(r)));
+        && toutes(bat, "\\.ec-espace \\.ec-b3-flottante").some((r) => /z-index: var\(--ec-z-barre\)/.test(r)) && toutes(bat, "\\.ec-espace \\.ec-b3-feuille-basse").some((r) => /z-index: var\(--ec-z-feuille\)/.test(r)));
     ok("le voile, le tiroir et l'en-tête lisent leurs couches ; les fenêtres (ordinateur ET téléphone) passent au-dessus du tiroir",
       /z-index: var\(--ec-z-voile\)/.test(regle(tel, "\\.ec-espace \\.ec-voile")) && /z-index: var\(--ec-z-tiroir\)/.test(regle(tel, "\\.ec-espace \\.ec-menu")) && /z-index: var\(--ec-z-entete\)/.test(regle(tel, "\\.ec-espace \\.ec-barre-mobile"))
         && toutes(espace, "\\.ec-espace \\.ec-fenetre-voile,\\s*\\.ec-espace \\.ec-panneau-voile").filter((r) => /z-index: var\(--ec-z-fenetre\)/.test(r)).length === 2);
@@ -8500,8 +8505,8 @@ function verifBarreFiltres() {
       /width: 78px;/.test(regle(tel, "\\.ec-espace \\.ec-logo--mobile")) && /width: 44px;\s*height: 44px;/.test(regle(tel, "\\.ec-espace \\.ec-bouton-tiroir")));
     const enDur = toutesFeuilles.flatMap(({ f, css }) => [...css.matchAll(/(?:^|[;{\s])top:\s*(78|62|65|70)px/g)].map((m) => `${f}: top ${m[1]}px`));
     ok(`aucun \`top: 78px\` (ni 62, 65, 70) en dur dans les feuilles de l'espace : tout ce qui compte la barre lit un jeton${enDur.length ? " ; en faute : " + enDur.join(", ") : ""}`, enDur.length === 0);
-    ok("le bon à tirer, qui remplit l'écran sous la barre, soustrait les jetons (`--ec-barre-h` + `--ec-barre-marge`), plus un `65px` qui comptait l'ancienne barre",
-      /min-height: calc\(var\(--app-height\) - var\(--ec-barre-h\) - var\(--ec-barre-marge\)\);/.test(bat) && !/calc\(var\(--app-height\) - 65px\)/.test(bat));
+    ok("le bon à tirer (immersif, sans la barre du site) porte sa propre barre aux jetons : `--ec-barre-h` de haut, collée à `--ec-barre-marge`, plus un `65px` qui comptait l'ancienne barre",
+      dans(bat, "\\.ec-espace \\.ec-b3-tete", /height: var\(--ec-barre-h\);/) && dans(bat, "\\.ec-espace \\.ec-b3-tete", /top: calc\(var\(--ec-barre-marge\)/) && !/calc\(var\(--app-height\) - 65px\)/.test(bat));
     ok("la barre de la grille n'est plus collée en haut : plus de `.ec-ph-moutils` ni de `.ec-ph-barre-cocher` (feuille ni page), plus de bouton `.ec-ph-fab` flottant",
       !/ec-ph-moutils|ec-ph-barre-cocher|ec-ph-fab/.test(photos) && !/ec-ph-moutils|ec-ph-barre-cocher|ec-ph-fab/.test(collecte) && !/ec-ph-fab/.test(lire("src/app/edition/_composants/FinCollecte.tsx")));
   }
