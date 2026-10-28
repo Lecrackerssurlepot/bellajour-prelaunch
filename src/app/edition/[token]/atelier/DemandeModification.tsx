@@ -35,7 +35,7 @@ export default function DemandeModification({ token, tu, onEnvoyee }: { token: s
 
   return (
     <div className="ec-demande">
-      <div className="ec-puces" role="group" aria-label="Ce que vous voulez changer">
+      <div className="ec-puces" role="group" aria-label={v("Ce que vous voulez changer", "Ce que tu veux changer")}>
         {MOTIFS_MODIFICATION.map((m) => (
           <button key={m.cle} type="button" className="ec-onglet" aria-pressed={motif === m.cle} onClick={() => setMotif(m.cle)}>
             {m.libelle}

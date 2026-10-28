@@ -157,7 +157,7 @@ export default function FenetreLien({
 
   if (cree) {
     return (
-      <Fenetre titre="Votre lien est prêt" onFermer={fermer} large>
+      <Fenetre titre={contexte.tu ? "Ton lien est prêt" : "Votre lien est prêt"} onFermer={fermer} large>
         <div className="ec-lien-pret">
           <QrCode texte={cree.url} taille={136} etiquette={`QR code du lien « ${cree.libelle} »`} />
           <div className="ec-lien-pret-texte">

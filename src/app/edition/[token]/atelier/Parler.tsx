@@ -220,7 +220,7 @@ export default function Parler(p: Props) {
                 ) : el.genre === "rendezvous" ? (
                   <CarteRendezVous key={el.cle} r={el.rendezVous} />
                 ) : (
-                  <Bulle key={el.cle} m={el.message} ouvrir={vision.ouvrir} repondre={p.ecrire ? () => setReponse(el.message) : undefined} />
+                  <Bulle key={el.cle} tu={p.tu} m={el.message} ouvrir={vision.ouvrir} repondre={p.ecrire ? () => setReponse(el.message) : undefined} />
                 )
               )
             )}
@@ -387,8 +387,8 @@ function CarteRendezVous({ r }: { r: VueRendezVous }) {
 /* Un message : une bulle ; une demande du client : une carte. Le document
    cité s'affiche en étiquette AU-DESSUS du texte, la pièce jointe dessous. */
 /** « L'atelier · Mathias » ou « Vous » : qui a écrit un message. */
-function auteurDe(m: { auteur: "client" | "atelier"; qui: string | null }): string {
-  return m.auteur === "atelier" ? `L'atelier${m.qui ? ` · ${m.qui}` : ""}` : m.qui ?? "Vous";
+function auteurDe(m: { auteur: "client" | "atelier"; qui: string | null }, tu: boolean): string {
+  return m.auteur === "atelier" ? `L'atelier${m.qui ? ` · ${m.qui}` : ""}` : m.qui ?? (tu ? "Toi" : "Vous");
 }
 
 /** Revenir au message cité : il défile jusqu'au centre et s'éclaire un instant. */
@@ -401,9 +401,9 @@ function allerAuMessage(id: string) {
   cible.classList.add("ec-parler-bulle--eclair");
 }
 
-function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => void; repondre?: () => void }) {
+function Bulle({ m, tu, ouvrir, repondre }: { m: Message; tu: boolean; ouvrir: (f: FichierVu) => void; repondre?: () => void }) {
   const moi = m.auteur === "client";
-  const qui = auteurDe(m);
+  const qui = auteurDe(m, tu);
   const heure = formaterHeureParis(m.created_at);
   const demande = moi ? lireMessageDemande(m.texte) : null;
   if (demande) {
@@ -425,7 +425,7 @@ function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => 
     <div id={`ec-msg-${m.id}`} className={moi ? "ec-parler-bulle ec-parler-bulle--moi" : "ec-parler-bulle"}>
       {m.reponseA ? (
         <button type="button" className="ec-parler-citation" onClick={() => m.reponseA && allerAuMessage(m.reponseA.id)}>
-          <span className="ec-parler-citation-qui">{auteurDe(m.reponseA)}</span>
+          <span className="ec-parler-citation-qui">{auteurDe(m.reponseA, tu)}</span>
           <span className="ec-parler-citation-texte">{m.reponseA.extrait}</span>
         </button>
       ) : null}
@@ -444,14 +444,14 @@ function Bulle({ m, ouvrir, repondre }: { m: Message; ouvrir: (f: FichierVu) => 
       ) : null}
       {m.contenu ? (
         m.contenu.voir ? (
-          <button type="button" className="ec-parler-cite" onClick={() => m.contenu?.voir && ouvrir({ titre: m.contenu.libelle, sous: "Votre envoi", voir: m.contenu.voir, telecharger: m.contenu.url })}>
+          <button type="button" className="ec-parler-cite" onClick={() => m.contenu?.voir && ouvrir({ titre: m.contenu.libelle, sous: tu ? "Ton envoi" : "Votre envoi", voir: m.contenu.voir, telecharger: m.contenu.url })}>
             <IconeDocument />
-            Votre envoi · {m.contenu.libelle}
+            {tu ? "Ton envoi" : "Votre envoi"} · {m.contenu.libelle}
           </button>
         ) : (
           <span className="ec-parler-cite">
             <IconeDocument />
-            Votre envoi · {m.contenu.libelle}
+            {tu ? "Ton envoi" : "Votre envoi"} · {m.contenu.libelle}
           </span>
         )
       ) : null}
@@ -542,7 +542,7 @@ function Ecrire(e: {
     <form className="ec-parler-ecrire" onSubmit={soumettre} onKeyDown={(ev) => ev.key === "Escape" && setMenu(false)}>
       {e.reponse ? (
         <div className="ec-parler-reponse">
-          <span className="ec-parler-citation-qui">Réponse à {auteurDe(e.reponse)}</span>
+          <span className="ec-parler-citation-qui">Réponse à {auteurDe(e.reponse, e.tu)}</span>
           <span className="ec-parler-citation-texte">{extraitDe(e.reponse.texte)}</span>
           <button type="button" aria-label="Ne plus répondre à ce message" onClick={e.sansReponse}>
             ✕
@@ -554,7 +554,7 @@ function Ecrire(e: {
           {envoiCite ? (
             <span className="ec-parler-joint">
               <IconeDocument />
-              Votre envoi · {envoiCite.nom ? `${envoiCite.libelle} · ${envoiCite.nom}` : envoiCite.libelle}
+              {e.tu ? "Ton envoi" : "Votre envoi"} · {envoiCite.nom ? `${envoiCite.libelle} · ${envoiCite.nom}` : envoiCite.libelle}
               <button type="button" aria-label="Ne plus citer cet envoi" onClick={() => setEnvoiCite(null)}>
                 ✕
               </button>
