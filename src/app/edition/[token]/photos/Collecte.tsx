@@ -1423,13 +1423,19 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
         : telLienOuvert && !tuileActive && !cocherActif
           ? { texte: "Par lien", faire: () => appliquer(avecLien(f, null)) }
           : null;
+  /* Déposer d'ici (28/10) : dans la page d'un LIEN, ce lien est proposé ; dans un dossier, ce dossier ; sinon le choix. */
+  const ouvrirDepot = () =>
+    envoi.ouvrir?.({
+      dossier: f.dossier && arbre && f.dossier.startsWith("resp:organisateur:") ? cheminDuNoeud(arbre, f.dossier) : null,
+      lien: f.lien?.startsWith("lien:") ? f.lien.slice(5) : null,
+    });
   const plusDeposer =
     p.ecrire && p.ouverte && envoi.ouvrir && !cocherActif && !ecranPropre ? (
       <button
         type="button"
         className="ec-ph-plus ec-ph-tel"
         aria-label="Déposer des photos"
-        onClick={() => envoi.ouvrir?.({ dossier: f.dossier && arbre && f.dossier.startsWith("resp:organisateur:") ? cheminDuNoeud(arbre, f.dossier) : null })}
+        onClick={ouvrirDepot}
       >
         <Trace d={TRACE.plus} taille={22} epais={2} />
       </button>
@@ -1519,7 +1525,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
           <button
             type="button"
             className="ec-bouton ec-bouton--petit ec-ph-ordi"
-            onClick={() => envoi.ouvrir?.({ dossier: f.dossier && arbre && f.dossier.startsWith("resp:organisateur:") ? cheminDuNoeud(arbre, f.dossier) : null })}
+            onClick={ouvrirDepot}
           >
             Déposer des photos
           </button>

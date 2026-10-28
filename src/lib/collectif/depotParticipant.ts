@@ -44,7 +44,7 @@ export function decouperAccord(texte: string, lien: string | null): { principal:
  * (21/10) : rien ne part pour elles, la barre les disait « envoyées ». On lui
  * passe le lot en cours (`vue.lot`), pas le cumul de la page.
  */
-export function progression(v: { arrivees: number; auCoffre?: number; enCours: number }): {
+export function progression(v: { arrivees: number; auCoffre?: number; enCours: number; enRoute?: number }): {
   envoyees: number;
   restent: number;
   total: number;
@@ -54,7 +54,20 @@ export function progression(v: { arrivees: number; auCoffre?: number; enCours: n
   const envoyees = v.arrivees + auCoffre;
   const restent = Math.max(0, v.enCours - auCoffre);
   const total = envoyees + restent;
-  return { envoyees, restent, total, part: total ? Math.round((envoyees / total) * 100) : 0 };
+  /* 28/10 (iPhone lent après « Ajouter ») : la BARRE avance aussi avec les octets des originaux en route
+     (`enRoute`, une somme de fractions) ; le COMPTE ne dit que des photos entières. Sans elle, quatre
+     originaux de 4 Mo partis ensemble en 4G laissaient la barre à 0 % pendant 18 s (banc du 28/10). */
+  const enRoute = Math.min(Math.max(0, v.enRoute ?? 0), restent);
+  return { envoyees, restent, total, part: total ? Math.min(100, Math.round(((envoyees + enRoute) / total) * 100)) : 0 };
+}
+
+/**
+ * La fenêtre d'envoi remontre-t-elle l'envoi précédent ? (retour de Mathias du 28/10 : « quand un envoi
+ * est fini, on passe à autre chose ».) Seulement s'il VIT : des photos en route, ou à reprendre. Tout
+ * arrivé ou refusé : le prochain « Déposer » repart à zéro, sur le choix de la destination.
+ */
+export function envoiAMontrer(v: { enCours: number; erreurs: number }): boolean {
+  return v.enCours > 0 || v.erreurs > 0;
 }
 
 /** « LM » pour Léa Martin, « L » pour Léa seule (une personne retrouvée ne montre que son prénom). */
@@ -167,13 +180,15 @@ export type CompteLot = {
   deja: { ou: OuDeja; lien: string | null; ici: boolean; n: number }[];
   /** Le même fichier choisi deux fois pendant cet envoi : il ne part qu'une fois. */
   deuxFois: number;
+  /** Les octets des originaux EN ROUTE, en photos (une somme de fractions de 0 à 1) : la barre avance avec eux (28/10). */
+  enRoute: number;
 };
 
-export const LOT_VIDE: CompteLot = { numero: 0, total: 0, arrivees: 0, auCoffre: 0, enCours: 0, refusees: 0, erreurs: 0, raisons: [], deja: [], deuxFois: 0 };
+export const LOT_VIDE: CompteLot = { numero: 0, total: 0, arrivees: 0, auCoffre: 0, enCours: 0, refusees: 0, erreurs: 0, raisons: [], deja: [], deuxFois: 0, enRoute: 0 };
 
-/** Compter les photos du lot `numero` (les états du moteur : `confirme`, `deja`, `refuse`, `erreur`, `envoye`, et ceux qui avancent). */
+/** Compter les photos du lot `numero` (les états du moteur : `confirme`, `deja`, `refuse`, `erreur`, `envoye`, `annexes`, et ceux qui avancent). */
 export function compterLot(
-  items: readonly { lot: number; etat: string; deja: DejaLa | null; raison: string | null }[],
+  items: readonly { lot: number; etat: string; deja: DejaLa | null; raison: string | null; progres?: number }[],
   numero: number,
   deuxFois: number
 ): CompteLot {
@@ -198,7 +213,9 @@ export function compterLot(
       if (it.raison) raisons.add(it.raison);
     } else {
       c.enCours++;
-      if (it.etat === "envoye") c.auCoffre++;
+      /* « annexes » (28/10) : l'original est au coffre, la vignette et la moyenne finissent ; il compte déjà. */
+      if (it.etat === "envoye" || it.etat === "annexes") c.auCoffre++;
+      else if (it.etat === "envoi") c.enRoute += Math.min(1, Math.max(0, it.progres ?? 0));
     }
   }
   c.raisons = [...raisons].slice(0, 6);

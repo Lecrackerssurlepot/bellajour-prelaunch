@@ -2072,8 +2072,9 @@ titre("— revision 14.3 / 14.7 : photos et livraison —");
     /root: racine/.test(collecte) && /matchMedia\(REQUETE_TELEPHONE\)\.matches \? null : zone\.current/.test(collecte));
   ok("Photos : « Créer un lien » ouvre la fenetre du lien de contribution (plafond PAR LIEN), plus de formulaire « photographe » en dur",
     /<FenetreCreerLien token=\{p\.token\} max=\{p\.max\} tu=\{p\.tu\} nomInitial=\{creerLien\}/.test(collecte) && !/type: "photographe"/.test(collecte));
-  ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille), sur le dossier ouvert",
-    /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /envoi\.ouvrir\?\.\(\{ dossier:/.test(collecte));
+  ok("Photos : le depot s'ouvre dans une fenetre en verre (celle de la coquille), sur le dossier ouvert, ou le LIEN ouvert (28/10)",
+    /<Fenetre titre="Déposer des photos"/.test(lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx")) && /envoi\.ouvrir\?\.\(\{\s*dossier:[\s\S]{0,200}lien: f\.lien\?\.startsWith\("lien:"\) \? f\.lien\.slice\(5\) : null,/.test(collecte)
+      && (collecte.match(/onClick=\{ouvrirDepot\}/g) ?? []).length === 2);
   const vivantListes = lirePagePhotosCode();
     ok("Photos (planches du 22/10) : au bureau, une colonne de listes (Toutes / Par lien, les liens, Personnes avec recherche, « Supprimées récemment » en bas) ; plus de Jour, d'Afficher, de Doublons ni de Ma sélection, plus de rayons ni d'arbre de dossiers",
     /aria-label="Regarder les photos"/.test(collecte) && /aria-label="Regarder"/.test(collecte) && /Chercher une personne/.test(collecte) && /Supprimées récemment/.test(collecte) && /Par lien/.test(collecte) && /Nouveau lien/.test(collecte)
@@ -2376,8 +2377,10 @@ titre("— T-152 : les photos rangees en dossiers, les liens a part —");
   ok("Photos : ranger un dossier du responsable en le glissant (draggable, onDrop, dans la liste de « Mes photos »), « + Nouveau dossier » ouvre le depot sur un nom neuf",
     /draggable: true/.test(page) && /void ranger\(glisse, cible === "vous" \? null : cible\)/.test(page) && /envoi\.ouvrir\?\.\(\{ nouveau: true \}\)/.test(page));
   const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
-  ok("deposer : « Dans quel dossier ? », les dossiers existants ou un nom neuf, un seul bouton",
-    /Dans quel dossier \?/.test(fen) && /Ou un nouveau dossier/.test(fen) && /Choisir des photos/.test(fen) && !/Choisir un dossier/.test(fen) && !/webkitdirectory/.test(fen));
+  ok("deposer (28/10) : une ligne par destination (`destinationsDuDepot`), un toucher ouvre la photothèque, « Nouveau dossier » en dernier ; depuis un lien ou un dossier, la destination affichée et « Changer » ; l'ancienne vue archivée",
+    /destinationsDuDepot\(arbre\)/.test(fen) && /onClick=\{\(\) => vers\(deDestination\(d\)\)\}/.test(fen) && /function vers\(c: Cible\) \{\s*enAttente\.current = c;\s*setRefus\(null\);\s*selecteur\.ouvrir\(\);/.test(fen)
+      && /Nouveau dossier/.test(fen) && /Choisir des photos/.test(fen) && />\s*Changer\s*</.test(fen) && !/Dans quel dossier/.test(fen) && !/webkitdirectory/.test(fen)
+      && existsSync(resolve(RACINE, "archive/depot-destination-2026-10/FenetreEnvoi.tsx")) && existsSync(resolve(RACINE, "archive/depot-destination-2026-10/README.md")));
   const css = lire("src/app/edition/[token]/espace.css");
   ok("le bleu de Bellajour en mode jour (#4a90d9), le nom de l'edition sans boite",
     /--ec-accent: #4a90d9;/.test(css) && /--ec-ac-rgb: 74, 144, 217;/.test(css) && !/\.ec-espace \.ec-edition \{[^}]*border: 1px/.test(css));
@@ -3097,8 +3100,8 @@ titre("— T-192 : le moteur tient une mauvaise connexion —");
   ok("seul un refus du COFFRE (une reponse HTTP) compte comme essai ; sans reponse en ligne (wifi filtre), un compteur a part, et deux mots (« Envoi bloqué. ») a cote de « Réessayer » (textes courts, 26/10)",
     /if \(r\.status > 0\) \{[\s\S]{0,120}it\.essais\+\+;/.test(moteur) && /it\.essaisReseau\+\+;/.test(moteur) && /export const RESEAU_BLOQUE = "Envoi bloqué\.";/.test(moteur)
       && /this\.finir\(it, "erreur", RESEAU_BLOQUE\);/.test(moteur) && /\? RESEAU_BLOQUE\n/.test(moteur) && !/wifi filtré \?\)/.test(moteur.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")));
-  ok("la vignette repart comme la photo (T-171), quatre essais au plus, sans jamais faire echouer la photo",
-    /for \(let k = 0; k < 4; k\+\+\) \{\s*if \(\(await this\.put\(it\.urlVignette, it\.vignette, "image\/jpeg"\)\)\.ok\) break;/.test(moteur));
+  ok("la vignette repart comme la photo (T-171), quatre essais au plus, sans jamais faire echouer la photo (28/10 : avec la moyenne, en meme temps, apres l'original)",
+    /for \(let k = 0; k < 4; k\+\+\) \{\s*if \(\(await this\.put\(url, corps, type\)\)\.ok\) return;/.test(moteur) && /pousser\(it\.urlVignette, it\.vignette, "image\/jpeg"\)/.test(moteur));
   ok("a la cloture, les photos deja au coffre sont CONFIRMEES avant d'etre dites refusees ; celles en route finissent leur course",
     /void this\.confirmerRestes\(\);/.test(moteur) && /private async confirmerRestes\(\)/.test(moteur)
       && !/it\.etat === "envoi"\) this\.finir\(it, "refuse", message\)/.test(moteur));
@@ -4555,7 +4558,7 @@ async function sondeT194() {
       const morceaux = code.split("{ status: 500 }");
       return morceaux.length > 1 && morceaux.slice(0, -1).every((m) => m.slice(-420).includes(`noterEchec(supabase, edition.id, "${quoi}"`));
     };
-    ok("depot/presign : chaque refus 500 (lecture, ecriture, et depuis le 20/10 la personne illisible) s'ecrit aussi au journal", chaque500(presign, "declaration") && (presign.match(/\{ status: 500 \}/g) ?? []).length === 5);
+    ok("depot/presign : chaque refus 500 (lecture, ecriture, et depuis le 20/10 la personne illisible, le 28/10 le lien vise illisible) s'ecrit aussi au journal", chaque500(presign, "declaration") && (presign.match(/\{ status: 500 \}/g) ?? []).length === 6);
     ok("depot/complete : la lecture ratee, le coffre muet et l'ecriture refusee s'ecrivent au journal ; la reponse ne change pas",
       chaque500(completeR, "confirmation") && /noterEchec\(supabase, edition\.id, "confirmation", \{ etape: "coffre", n: pannesCoffre \}\)/.test(completeR)
         && /noterEchec\(supabase, edition\.id, "confirmation", \{ etape: "ecriture", n: ecrituresRatees \}\)/.test(completeR) && /return NextResponse\.json\(\{ confirmees, rejetees, absentes \}\);/.test(completeR));
@@ -5499,8 +5502,16 @@ async function verifPersonnesCorbeille() {
     Al.dansLAlbum(pa({ provenance_id: null }), null) && !Al.dansLAlbum(pa({}), null) && !Al.dansLAlbum(pa({ provenance_id: null, role_deposant: "responsable" }), null));
   /* Le filtre ecrit pour PostgREST, rejoue sur des lignes : il retient exactement ce que `dansLAlbum` retient. */
   const appliquer = (p: Record<string, unknown>, f: import("@/lib/collectif/album").FiltreAlbum) =>
-    f.methode === "eq" ? p[f.colonne] === f.valeur : f.methode === "is" ? p[f.colonne] === null || p[f.colonne] === undefined : f.methode === "not_is" ? p[f.colonne] !== null && p[f.colonne] !== undefined : f.valeurs.includes(p[f.colonne] as string);
-  const lignesAlbum = [pa({}), pa({ provenance_id: lien2 }), pa({ provenance_id: null }), pa({ provenance_id: null, role_deposant: "responsable" }), pa({ supprimee_le: t0 }), pa({ accord_version: "2026-10-17" }), pa({ confirmee_le: null })];
+    f.methode === "eq" ? p[f.colonne] === f.valeur : f.methode === "is" ? p[f.colonne] === null || p[f.colonne] === undefined : f.methode === "not_is" ? p[f.colonne] !== null && p[f.colonne] !== undefined
+      : f.methode === "accord_ou_responsable" ? f.valeurs.includes(p[f.colonne] as string) || p.role_deposant === "responsable" : f.valeurs.includes(p[f.colonne] as string);
+  const lignesAlbum = [pa({}), pa({ provenance_id: lien2 }), pa({ provenance_id: null }), pa({ provenance_id: null, role_deposant: "responsable" }), pa({ supprimee_le: t0 }), pa({ accord_version: "2026-10-17" }), pa({ confirmee_le: null }),
+    pa({ role_deposant: "responsable", accord_version: null }), pa({ role_deposant: "responsable", accord_version: null, supprimee_le: t0 }), pa({ role_deposant: "responsable", accord_version: null, provenance_id: null })];
+  ok("28/10 : la photo du RESPONSABLE déposée dans ce lien entre dans son album sans accord ; à la corbeille, d'un autre lien ou de « Mes photos » (sans lien), jamais ; le `or` PostgREST ne porte que des constantes",
+    Al.dansLAlbum(pa({ role_deposant: "responsable", accord_version: null }), lien1) && !Al.dansLAlbum(pa({ role_deposant: "responsable", accord_version: null }), lien2)
+      && !Al.dansLAlbum(pa({ role_deposant: "responsable", accord_version: null, supprimee_le: t0 }), lien1) && !Al.dansLAlbum(pa({ role_deposant: "responsable", accord_version: null, provenance_id: null }), null)
+      && !Al.dansLAlbum(pa({ role_deposant: "atelier", accord_version: null }), lien1)
+      && Al.orAccordOuResponsable(["2026-10-20"]) === "accord_version.in.(2026-10-20),role_deposant.eq.responsable" && Al.filtreAlbum(null).some((f) => f.methode === "in") && !Al.filtreAlbum(null).some((f) => f.methode === "accord_ou_responsable")
+      && /if \(f\.methode === "accord_ou_responsable"\) return q\.or\(orAccordOuResponsable\(f\.valeurs\)\);/.test(lire("src/app/api/collectif/depot/album/route.ts")));
   ok("le filtre de l'album ecrit pour la base retient EXACTEMENT les photos de `dansLAlbum`, lien de contribution comme lien general",
     [lien1, null].every((l) => lignesAlbum.every((p) => Al.filtreAlbum(l).every((f) => appliquer(p as Record<string, unknown>, f)) === Al.dansLAlbum(p, l))));
   ok("« a moi » : ma personne, ou, sans personne, ce telephone ; « N personnes » : une par personne, sinon par nom, « Sans nom » par telephone",
@@ -6905,7 +6916,7 @@ async function verifDepotParticipant() {
     prog.envoyees === 7 && prog.restent === 11 && prog.total === 18 && prog.part === 39 && DP.progression({ arrivees: 0, enCours: 18 }).envoyees === 0
       && DP.progression({ arrivees: 11, auCoffre: 3, enCours: 3 }).restent === 0);
   ok("le moteur compte le coffre (`auCoffre`) sans attendre la confirmation groupee ; la vue vide le connait",
-    /if \(it\.etat === "envoye"\) auCoffre\+\+;/.test(moteurW2) && /auCoffre,\s*place: this\.place,/.test(moteurW2) && /auCoffre: 0 \}/.test(lire("src/app/edition/_composants/depot/useMoteur.ts"))
+    /if \(it\.etat === "envoye" \|\| it\.etat === "annexes"\) auCoffre\+\+;/.test(moteurW2) && /auCoffre,\s*place: this\.place,/.test(moteurW2) && /auCoffre: 0 \}/.test(lire("src/app/edition/_composants/depot/useMoteur.ts"))
       && /const prog = progression\(lot\);/.test(albumW2) && /\{prog\.envoyees\} <small>sur \{prog\.total\} envoyée/.test(albumW2));
   const iRefus = moteurW2.indexOf('if (status === 409 && typeof json.error === "string" && REFUS_EXPLIQUES.includes(json.error)) {\n        /* Pas encore ouvert : le lot');
   ok("409 `depot_pas_ouvert` refuse le lot avec la phrase du serveur (comme `accord_requis`), jamais une coupure ni un « reessayer » sans fin",
@@ -7645,7 +7656,7 @@ async function verifDejaLa() {
         && /planDeclaration\(declaration\.fichiers, existants, place, ctx, photosDeLaPersonne\)/.test(presign)
         && /placeDuParticipant\(supabase, edition, origine \?\? null, appareil, participant\?\.id \?\? null, maintenant\)/.test(presign)
         && /deja: true, photoId: d\.id, restauree: true, ou: "restauree", ici: d\.ici/.test(presign) && /erreur: raison, message: messagePlafond\(raison, edition\.registre\), corbeille: true/.test(presign)
-        && (presign.match(/\{ status: 500 \}/g) ?? []).length === 5 && /noterEchec\(supabase, edition\.id, "corbeille", \{ etape: "ecriture"/.test(presign));
+        && (presign.match(/\{ status: 500 \}/g) ?? []).length === 6 && /noterEchec\(supabase, edition\.id, "corbeille", \{ etape: "ecriture"/.test(presign));
   }
 }
 
@@ -8842,7 +8853,7 @@ function verifMosaique() {
       !/sansQui|ec-ph-qui/.test(collecte + code("src/app/edition/[token]/photos/Grille.tsx")) && /<img src=\{ph\.vignette\} alt="" loading="lazy" decoding="async" draggable=\{false\} \/>/.test(code("src/app/edition/[token]/photos/Grille.tsx")));
     ok("PLUS DE TEXTE SOULIGNÉ dans Photos (retour de Mathias du 21/10) : `.ec-ph-lien` est une petite pilule douce, la page du participant (« Ce n'est pas vous ? ») aussi, le lien discret de la fenêtre de dépôt aussi ; la zone qui répond au toucher dépasse de 6 px en haut et en bas",
       /text-decoration: none;/.test(regle(espace, "\\.ec-espace \\.ec-ph-lien")) && /border-radius: 999px;/.test(regle(espace, "\\.ec-espace \\.ec-ph-lien")) && /inset: -6px -2px;/.test(regle(espace, "\\.ec-espace \\.ec-ph-lien::after"))
-        && /text-decoration: none;/.test(regle(sansCommentaires(lire("src/app/depot/[token]/depot.css")), "\\.bj-atelier \\.ec-dp-lien")) && /ec-lien-discret ec-lien-discret--bouton/.test(lire("src/app/edition/_composants/depot/ZoneDepot.tsx"))
+        && /text-decoration: none;/.test(regle(sansCommentaires(lire("src/app/depot/[token]/depot.css")), "\\.bj-atelier \\.ec-dp-lien")) && !/underline/.test(lire("src/app/edition/_composants/depot/ZoneDepot.tsx"))
         && !/underline/.test(regle(espace, "\\.ec-espace \\.ec-ph-lien") + regle(sansCommentaires(lire("src/app/depot/[token]/depot.css")), "\\.bj-atelier \\.ec-dp-lien") + css + photos));
     ok("« Voir ses photos » : au téléphone, la ligne d'information de la photo agrandie et « Voir qui l'a envoyée » (l'appui long) mènent à la GRILLE de cette personne, jamais à une page : dans un lien ouvert sa pastille se coche, ailleurs elle est choisie comme filtre ; l'ordinateur garde « Voir ses photos » ; « Inviter quelqu'un » du tableau de bord mène à « Par lien » (`?dossier=liens`)",
       /if \(tuileActive && lienDePastilles && personnesDuLien\.some\(\(x\) => x\.cle === clePersonne\(ph\.qui\)\)\) \{/.test(collecte) && /setChoixPastilles\(\{ lien: f\.lien, cles: new Set\(\[clePersonne\(ph\.qui\)\]\) \}\);/.test(collecte) && /appliquer\(\{ \.\.\.FILTRES_VIDES, personnes: \[cle\] \}\);/.test(collecte) && /else if \(cle === "voirQui"\) voirQui\(ph\);/.test(collecte)
@@ -9192,8 +9203,8 @@ async function verifDecisions26() {
   const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
   ok("le moteur des éditions la demande au worker, la déclare, l'envoie après la vignette (quatre essais, jamais un échec de la photo) puis la libère",
     /moyenne: DEMANDE_MOYENNE \}\)/.test(moteur) && /tailleMoyenne: i\.moyenne\?\.size \?\? null,/.test(moteur) && /it\.urlMoyenne = \(r\.urlMoyenne as string \| null\) \?\? null;/.test(moteur)
-      && /if \(it\.urlMoyenne && it\.moyenne\) \{\n        for \(let k = 0; k < 4; k\+\+\) \{\n          if \(\(await this\.put\(it\.urlMoyenne, it\.moyenne, MIME_MOYENNE\)\)\.ok\) break;/.test(moteur)
-      && (moteur.match(/it\.moyenne = null;/g) ?? []).length >= 3 && moteur.indexOf("this.put(it.urlVignette") < moteur.indexOf("this.put(it.urlMoyenne"));
+      && /await Promise\.all\(\[pousser\(it\.urlVignette, it\.vignette, "image\/jpeg"\), pousser\(it\.urlMoyenne, it\.moyenne, MIME_MOYENNE\)\]\);/.test(moteur)
+      && (moteur.match(/it\.moyenne = null;/g) ?? []).length >= 3);
   const worker = lire("src/app/(atelier)/composer/depot/reduire.worker.js");
   const heicW = lire("public/heic/vignette-heic.worker.js");
   const b2c = lire("src/app/(atelier)/composer/depot/moteur.ts").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -9664,7 +9675,249 @@ async function verifLienCourt28() {
       .every((f) => !/\?p=\$\{/.test(codeSeul(f))));
 }
 
-void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(verifLienCourt28).then(() => {
+async function verifDepotResponsable28() {
+  titre("— 28/10 : un nouvel envoi repart à zéro ; le responsable choisit où vont ses photos (ses dossiers, ses LIENS) ; la barre bouge vite —");
+  const DP = await import("@/lib/collectif/depotParticipant");
+  const Dep = await import("@/lib/collectif/depot");
+  const Dos = await import("@/lib/collectif/dossiers");
+
+  /* ── 1. L'envoi fini ne revient plus ── */
+  ok("un envoi FINI (tout arrivé, refusé ou déjà là) ne se remontre pas ; en route ou à reprendre, il reste",
+    !DP.envoiAMontrer({ enCours: 0, erreurs: 0 }) && DP.envoiAMontrer({ enCours: 1, erreurs: 0 }) && DP.envoiAMontrer({ enCours: 0, erreurs: 2 }));
+  const fen = lire("src/app/edition/_composants/depot/FenetreEnvoi.tsx");
+  ok("la fenêtre s'ouvre sur le CHOIX quand l'envoi d'avant est fini (`envoiAMontrer` lu à l'ouverture), « Revenir à l'envoi en cours » seulement s'il vit ; les raisons et les fichiers ignorés sont ceux du DERNIER lot",
+    /const \[vivantALOuverture\] = useState\(\(\) => envoiAMontrer\(moteur\.vue\(\)\)\);/.test(fen) && /useState\(!vivantALOuverture \|\| Boolean\(ouverture\.nouveau\) \|\| visee\)/.test(fen)
+      && /\{envoiAMontrer\(vue\) \? \(\s*<button[^>]*onClick=\{\(\) => setChoisir\(false\)\}/.test(fen) && /\{lot\.raisons\.map\(/.test(fen) && !/vue\.raisons\.map\(/.test(fen) && /vue\.lotIgnores \?/.test(fen) && !/\{vue\.ignores \?/.test(fen));
+
+  /* ── 2. Où vont les photos ── */
+  const nd = (cle: string, nom: string, n: number, enfants: Dossiers.Noeud[] = [], renommable = true): Dossiers.Noeud => ({ cle, nom, n, enfants, renommable, deplacable: false, accueille: false });
+  const ID5 = "37ba352a-e44b-46ad-98a5-fc521738dbea";
+  const ID9 = "5d2a79b4-8335-4c87-b8f8-f0dd9d66614c";
+  const arbre: Dossiers.Arbre = {
+    vous: [nd("resp:organisateur:", "Mes photos", 3, [nd("resp:organisateur:Mes photos / Soirée", "Soirée", 1)]), nd("resp:organisateur:Le dîner", "Le dîner", 2), nd("resp:photographe:", "Le photographe", 4)],
+    liens: [nd("participants", "Sans groupe", 5, [], false), nd(`lien:${ID5}`, "Bateau 5", 7), nd(`lien:${ID9}`, "Bateau 9", 2, [], false)],
+    atelier: null,
+    personnes: [],
+  };
+  const dest = Dos.destinationsDuDepot(arbre);
+  ok("le choix : « Mes photos » d'abord, ses dossiers, puis ses liens ; ni « Sans groupe », ni un lien supprimé, ni un type « photographe » d'avant",
+    dest.map((d) => d.nom).join(" | ") === "Mes photos | Mes photos / Soirée | Le dîner | Bateau 5"
+      && dest[0].chemin === "Mes photos" && dest[0].lien === null && dest[0].n === 3 && dest[3].lien === ID5 && dest[3].chemin === null && dest[3].n === 7);
+  const vide = Dos.destinationsDuDepot(null);
+  ok("sans arbre (encore en lecture, ou rien déposé) : « Mes photos » seul, jamais une liste vide",
+    vide.length === 1 && vide[0].nom === "Mes photos" && vide[0].chemin === "Mes photos");
+  ok("la destination proposée : le lien ouvert (son nom), un lien pas encore lu (« Ce lien », son id), le dossier ouvert, sinon « Mes photos »",
+    Dos.destinationOuverte(dest, { lien: ID5 }).nom === "Bateau 5" && Dos.destinationOuverte(vide, { lien: ID5 }).lien === ID5 && Dos.destinationOuverte(vide, { lien: ID5 }).nom === "Ce lien"
+      && Dos.destinationOuverte(dest, { dossier: "Le dîner" }).cle === "resp:organisateur:Le dîner" && Dos.destinationOuverte(dest, {}).nom === "Mes photos" && Dos.destinationOuverte(dest, { lien: null, dossier: null }).cle === dest[0].cle);
+  ok("le lien visé : seul le RESPONSABLE vise (un participant ne choisit rien par le corps, son lien est `p`) ; un id, jamais un texte ; refus en 400, jamais 404",
+    JSON.stringify(Dep.lienVise("participant", { lien: ID5 })) === JSON.stringify({ ok: true, id: null })
+      && JSON.stringify(Dep.lienVise("responsable", { type: "organisateur", libelle: "" })) === JSON.stringify({ ok: true, id: null })
+      && JSON.stringify(Dep.lienVise("responsable", null)) === JSON.stringify({ ok: true, id: null })
+      && JSON.stringify(Dep.lienVise("responsable", { lien: ID5.toUpperCase() })) === JSON.stringify({ ok: true, id: ID5 })
+      && !Dep.lienVise("responsable", { lien: "Bateau 5" }).ok && !Dep.lienVise("responsable", { lien: 42 }).ok && !Dep.lienVise("responsable", { lien: `${ID5}","x` }).ok
+      && Dep.ERREUR_LIEN_VISE === "lien_inconnu");
+  ok("le lien relu reçoit : il existe (lu DANS l'édition) et n'est pas supprimé",
+    Dep.lienRecoit({ retire_le: null }) && Dep.lienRecoit({}) && !Dep.lienRecoit({ retire_le: "2026-10-28T09:26:31Z" }) && !Dep.lienRecoit(undefined) && !Dep.lienRecoit(null));
+  const presign = lire("src/app/api/collectif/depot/presign/route.ts");
+  const iVise = presign.indexOf("const vise = lienVise(role, corps.provenance);");
+  const blocVise = presign.slice(iVise, presign.indexOf("/* Le libellé d'un lien d'origine"));
+  ok("depot/presign : le lien visé est relu par `lireLiensParId` DANS l'édition, AVANT la vérification et toute écriture ; illisible 500 journalisé, inconnu ou supprimé 400 ; il donne son id et son type à la photo, jamais un plafond",
+    iVise > 0 && iVise < presign.indexOf("Array.isArray(corps.connues)") && /lireLiensParId\(supabase, edition\.id, \[vise\.id\]\)/.test(blocVise)
+      && /if \(!lienRecoit\(lien\)\) return NextResponse\.json\(\{ error: ERREUR_LIEN_VISE, message: "Ce lien n'existe plus\." \}, \{ status: 400 \}\);/.test(blocVise)
+      && /if \(!vise\.ok\) return NextResponse\.json\(\{ error: ERREUR_LIEN_VISE, message: "Lien introuvable\." \}, \{ status: 400 \}\);/.test(presign)
+      && /provenanceId = lien\.id;\s*provenanceType = lien\.type;/.test(blocVise) && !/plafondLien|sansPlafond|status: 404/.test(blocVise.replace(/\/\*[\s\S]*?\*\//g, ""))
+      && /noterEchec\(supabase, edition\.id, "declaration", \{ etape: "lecture", n: nLot \}\)/.test(blocVise));
+  ok("depot/presign : dans un lien, la photo du responsable porte SON nom (`responsable_nom`) et `role_deposant` responsable ; sans lien, la règle des dossiers d'avant",
+    /if \(role === "responsable" && provenanceId\) \{[\s\S]{0,200}deposant = edition\.responsable_nom\?\.trim\(\) \|\| "Le responsable";\s*\} else if \(role === "responsable"\) \{/.test(presign) && /role_deposant: role,/.test(presign) && /provenance_id: provenanceId,/.test(presign));
+  /* La place : le responsable n'a pas de plafond par personne, même dans un lien ; le total le compte. */
+  const edPlace = { plafond_total: 10, plafond_participant_atelier: 50, plafond_participant_client: 5 } as unknown as Parameters<typeof placeRestante>[0];
+  const pResp = placeRestante(edPlace, { role: "responsable", sansPlafond: false, plafondLien: null, dejaParAppareil: 9 }, 8);
+  ok("dans un lien, le responsable n'a pas de plafond par personne (le lien n'en prête aucun : `plafondLien` nul) ; le TOTAL de l'édition le compte",
+    !pResp.illimitee && pResp.place === 2);
+  ok("le moteur garde le LIEN avec chaque photo (un lot ne mêle jamais deux liens) ; la fenêtre envoie l'id du lien, et son nom pour l'affichage",
+    /\(i\.provenance\?\.lien \?\? null\) === \(premier\.provenance\?\.lien \?\? null\)/.test(lire("src/app/edition/_composants/depot/moteur.ts"))
+      && /c\.lien \? \{ type: "organisateur", libelle: c\.nom, lien: c\.lien \}/.test(fen));
+  const zone = lire("src/app/edition/_composants/depot/ZoneDepot.tsx");
+  const carte = lire("src/app/edition/[token]/CartePhotos.tsx");
+  ok("tous les « Déposer » ouvrent la MÊME feuille de choix : le « + » et les boutons de Photos, « Déposer » du tableau de bord, « Choisir des photos » de l'encart vide",
+    /onClick=\{\(\) => ouvrir\(\)\}>\s*Choisir des photos/.test(zone) && !/« \{dossierNom/.test(zone) && /onClick=\{\(\) => envoi\.ouvrir\?\.\(\)\}>\s*Déposer\s*</.test(carte));
+
+  /* ── le vrai moteur, contre un faux serveur et un faux coffre ── */
+  {
+    const { MoteurDepot } = await import("@/app/edition/_composants/depot/moteur");
+    const avantFetch = globalThis.fetch;
+    const g = globalThis as unknown as { XMLHttpRequest?: unknown };
+    const avantXhr = g.XMLHttpRequest;
+    type Appel = { url: string; corps: Record<string, unknown> };
+    const appels: Appel[] = [];
+    let puts = 0;
+    /* Un faux coffre : chaque PUT répond 200 au tour suivant, avec un avancement. */
+    class FauxXhr {
+      status = 0;
+      upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = { onprogress: null };
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      onabort: (() => void) | null = null;
+      open() {}
+      setRequestHeader() {}
+      abort() {}
+      send() {
+        puts++;
+        setTimeout(() => {
+          this.upload.onprogress?.({ lengthComputable: true, loaded: 1, total: 2 });
+          this.status = 200;
+          this.onload?.();
+        }, 0);
+      }
+    }
+    g.XMLHttpRequest = FauxXhr;
+    const attendre = async (m: { occupe(): boolean }) => {
+      for (let i = 0; i < 400 && m.occupe(); i++) await new Promise((r) => setTimeout(r, 1));
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0));
+    };
+    let repondre: (a: Appel) => { status: number; corps: unknown } = () => ({ status: 500, corps: {} });
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      const a = { url: String(url), corps: JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown> };
+      appels.push(a);
+      const r = repondre(a);
+      return new Response(JSON.stringify(r.corps), { status: r.status });
+    }) as typeof fetch;
+    /* De vrais débuts de JPEG : sans vignette (pas de worker ici), la signature les laisse partir. */
+    const jpeg = (n: number, prefixe: string) =>
+      Array.from({ length: n }, (_, i) => new File([new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, i])], `${prefixe}-${i}.jpg`, { type: "image/jpeg", lastModified: 1_700_000_000_000 + i }));
+    try {
+      /* Le responsable : 2 photos vers « Bateau 5 », puis 2 vers « Mes photos », ajoutées pendant l'envoi. */
+      repondre = (a) => {
+        if (Array.isArray(a.corps.connues)) return { status: 200, corps: { confirmees: [], aRevoir: [], details: [] } };
+        if (a.url.includes("/complete")) return { status: 200, corps: { confirmees: a.corps.photoIds, absentes: [], rejetees: [] } };
+        const f = (a.corps.fichiers as { cle: string }[]) ?? [];
+        return { status: 200, corps: { resultats: f.map((x, i) => ({ cle: x.cle, photoId: `${x.cle}-id-${i}`, url: "https://coffre.test/o", urlVignette: null, urlMoyenne: null })), place: null } };
+      };
+      const m = new MoteurDepot({ token: "t".repeat(32) });
+      m.definirProvenance({ type: "organisateur", libelle: "Bateau 5", lien: ID5 });
+      m.ajouter(jpeg(2, "BATEAU"));
+      m.definirProvenance({ type: "organisateur", libelle: "" });
+      m.ajouter(jpeg(2, "MES"));
+      await attendre(m);
+      const decl = appels.filter((a) => Array.isArray(a.corps.fichiers));
+      const versLien = decl.filter((a) => (a.corps.provenance as { lien?: string } | null)?.lien === ID5);
+      const versMes = decl.filter((a) => !(a.corps.provenance as { lien?: string } | null)?.lien);
+      const noms = (l: Appel[]) => l.flatMap((a) => (a.corps.fichiers as { nom: string }[]).map((f) => f.nom)).sort().join();
+      ok("le vrai moteur : les photos vers « Bateau 5 » partent avec l'id du lien, celles vers « Mes photos » sans, jamais dans la même déclaration ; tout arrive (4 PUT, 4 confirmées)",
+        noms(versLien) === "BATEAU-0.jpg,BATEAU-1.jpg" && noms(versMes) === "MES-0.jpg,MES-1.jpg" && versLien.length + versMes.length === decl.length
+          && puts === 4 && m.vue().arrivees === 4 && m.vue().lot.numero === 1);
+      /* Fini : un second envoi repart à zéro (son lot, ses chiffres), un fichier ignoré du premier ne se redit pas. */
+      const lotAvant = m.vue().lot.numero;
+      ok("l'envoi est fini : la fenêtre ne le remontrera pas", !DP.envoiAMontrer(m.vue()));
+      m.definirProvenance({ type: "organisateur", libelle: "" });
+      m.ajouter([...jpeg(1, "DEUX"), new File([new Uint8Array(3)], "notes.txt", { type: "text/plain" })]);
+      const pendant = m.vue();
+      await attendre(m);
+      const apres = m.vue();
+      m.ajouter(jpeg(1, "TROIS"));
+      const troisieme = m.vue();
+      await attendre(m);
+      ok("un nouvel envoi après un envoi fini : un NOUVEAU lot (ses photos seulement : 1 sur 1), le fichier ignoré compté pour LUI ; le suivant repart encore à zéro (0 ignoré)",
+        pendant.lot.numero === lotAvant + 1 && pendant.lot.total === 1 && pendant.lotIgnores === 1 && apres.lot.arrivees === 1 && apres.lot.total === 1
+          && troisieme.lot.numero === lotAvant + 2 && troisieme.lotIgnores === 0 && troisieme.ignores === 1 && troisieme.lot.total === 1);
+      m.detruire();
+
+      /* L'original au coffre compte AVANT sa vignette ; la barre suit les octets en route. */
+      const enRouteLot = DP.compterLot(
+        [
+          { lot: 1, etat: "annexes", deja: null, raison: null },
+          { lot: 1, etat: "envoi", deja: null, raison: null, progres: 0.5 },
+          { lot: 1, etat: "envoi", deja: null, raison: null, progres: 1.7 },
+          { lot: 1, etat: "attente", deja: null, raison: null },
+        ],
+        1,
+        0
+      );
+      const pr = DP.progression(enRouteLot);
+      ok("la barre : un original au coffre dont la vignette finit (« annexes ») compte arrivé ; les octets en route font avancer la barre (pas le compte) ; une fraction folle est bornée",
+        enRouteLot.auCoffre === 1 && enRouteLot.enRoute === 1.5 && pr.envoyees === 1 && pr.total === 4 && pr.part === 63
+          && DP.progression({ arrivees: 0, enCours: 2, enRoute: 9 }).part === 100 && DP.progression({ arrivees: 0, enCours: 3 }).part === 0 && DP.LOT_VIDE.enRoute === 0);
+
+      /* Le premier appareil (recette du 28/10) : aucune déclaration ne part tant que la PREMIÈRE vérification est en
+         route, même si une photo est déjà prête (deux écritures sans cookie prenaient la place deux fois). */
+      appels.length = 0;
+      let enVol = 0;
+      let croisees = 0;
+      repondre = (a) => {
+        if (Array.isArray(a.corps.fichiers) && enVol > 0) croisees++;
+        if (a.url.includes("/complete")) return { status: 200, corps: { confirmees: a.corps.photoIds, absentes: [], rejetees: [] } };
+        if (Array.isArray(a.corps.connues)) return { status: 200, corps: { confirmees: [], aRevoir: [], details: [] } };
+        const f = (a.corps.fichiers as { cle: string }[]) ?? [];
+        return { status: 200, corps: { resultats: f.map((x) => ({ cle: x.cle, photoId: `${x.cle}-v`, url: "https://coffre.test/o", urlVignette: null, urlMoyenne: null })), place: null } };
+      };
+      const fetchRapide = globalThis.fetch;
+      globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+        const lent = String(init?.body ?? "").includes('"connues"');
+        if (lent) enVol++;
+        try {
+          if (lent) await new Promise((r) => setTimeout(r, 30));
+          return await fetchRapide(url, init);
+        } finally {
+          if (lent) enVol--;
+        }
+      }) as typeof fetch;
+      const premier = new MoteurDepot({ token: "t".repeat(32) });
+      premier.definirProvenance({ type: "organisateur", libelle: "" });
+      premier.ajouter(jpeg(3, "PREMIER"));
+      await attendre(premier);
+      globalThis.fetch = fetchRapide;
+      ok("le premier envoi d'un appareil : la réduction avance pendant la vérification, mais aucune déclaration ne la croise (la place n'est prise qu'une fois) ; tout arrive",
+        croisees === 0 && premier.vue().arrivees === 3 && appels.some((a) => Array.isArray(a.corps.fichiers)) && /\(this\.verification && !this\.serveurAtteint\)/.test(lire("src/app/edition/_composants/depot/moteur.ts")));
+      premier.detruire();
+
+      /* Plus de photos que la place (participant) : celles qui ont de la place partent quand même. */
+      appels.length = 0;
+      puts = 0;
+      let acceptees = 0;
+      repondre = (a) => {
+        if (Array.isArray(a.corps.connues)) return { status: 200, corps: { confirmees: [], aRevoir: [], details: [] } };
+        if (a.url.includes("/complete")) return { status: 200, corps: { confirmees: a.corps.photoIds, absentes: [], rejetees: [] } };
+        const f = (a.corps.fichiers as { cle: string }[]) ?? [];
+        const place = Math.max(0, 3 - acceptees);
+        acceptees += Math.min(place, f.length);
+        return {
+          status: 200,
+          corps: {
+            resultats: f.map((x, i) =>
+              i < place ? { cle: x.cle, photoId: `${x.cle}-p`, url: "https://coffre.test/o", urlVignette: null, urlMoyenne: null } : { cle: x.cle, erreur: "plafond_personne", message: "Tu as envoyé toutes les photos prévues." }
+            ),
+            place: Math.max(0, 3 - acceptees),
+          },
+        };
+      };
+      const p = new MoteurDepot({ token: "t".repeat(32), p: "cle-du-bateau-5-xxxxxx", tu: true });
+      p.definirAccord("2026-10-20");
+      p.ajouter(jpeg(5, "PLEIN"));
+      await attendre(p);
+      const vp = p.vue();
+      if (vp.arrivees !== 3) console.log("    (plafond)", JSON.stringify({ a: vp.arrivees, r: vp.refusees, e: vp.enCours, puts, raisons: vp.raisons, place: vp.place }));
+      ok("un participant choisit 5 photos pour 3 places : les 3 partent et arrivent (3 PUT, 3 confirmées), les 2 autres sont refusées avec la phrase du plafond, rien ne reste bloqué",
+        vp.arrivees === 3 && vp.refusees === 2 && vp.enCours === 0 && puts === 3 && vp.raisons.includes("Tu as envoyé toutes les photos prévues.") && vp.place === 0);
+      p.detruire();
+    } finally {
+      globalThis.fetch = avantFetch;
+      g.XMLHttpRequest = avantXhr;
+    }
+  }
+
+  const moteur = lire("src/app/edition/_composants/depot/moteur.ts");
+  ok("la mémoire tient : jamais plus de 8 photos réduites (`FENETRE`), 40 préparées d'avance au plus (les « annexes » comprises) ; une photo finie pendant sa réduction ne garde rien",
+    /const FENETRE = 8;/.test(moteur) && /const AVANCE = 40;/.test(moteur) && /i\.etat === "envoi" \|\| i\.etat === "annexes"\) \{\s*prepares\+\+;/.test(moteur)
+      && /if \(it\.etat !== "reduction"\) return;\s*it\.charge = r\.charge;/.test(moteur));
+  ok("la réduction commence PENDANT la vérification (une photo partie en vérification), et la réponse ne touche jamais une photo déjà déclarée",
+    /this\.items\.find\(\(i\) => i\.etat === "attente"\) \?\? this\.items\.find\(\(i\) => i\.etat === "neuf" && i\.verifiee\)/.test(moteur)
+      && /const ouverte = \(it: Item\) => it\.etat === "neuf" \|\| it\.etat === "reduction" \|\| it\.etat === "pret";/.test(moteur) && /if \(!ouverte\(it\)\) continue;/.test(moteur));
+  ok("l'original rend sa VOIE dès qu'il est au coffre ; la vignette et la moyenne finissent à côté, la photo n'est confirmée qu'après elles",
+    /it\.etat = "annexes";\s*annexes = true;/.test(moteur) && /if \(annexes\) await this\.envoyerAnnexes\(it\);/.test(moteur) && /if \(it\.etat === "annexes"\) \{\s*it\.etat = "envoye";/.test(moteur)
+      && /\["attente", "reduction", "pret", "declare", "envoi", "annexes", "neuf"\]/.test(moteur));
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(verifLienCourt28).then(verifDepotResponsable28).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

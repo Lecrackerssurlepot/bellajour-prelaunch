@@ -8,7 +8,7 @@ import { accordExige, colonnesAccord, ERREUR_ACCORD, lireAccord, messageAccord }
 import { cleMoyenne, clePhoto, cleVignette } from "@/lib/collectif/cles";
 import { appareilDeRequete, compterPourPlafondNet, COOKIE_APPAREIL, lireExistants, lireLiensParId, lirePhotosDeLaPersonne, nouvelAppareil, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
 import { restaurer } from "@/lib/collectif/corbeilleServeur";
-import { estCleFichier, LOT_VERIFICATION, lireDeclaration, MIME_MOYENNE, moyenneSignable, partagerConnues, personneDuContexte, planDeclaration, type ContexteDeclaration, type Decision } from "@/lib/collectif/depot";
+import { ERREUR_LIEN_VISE, estCleFichier, lienRecoit, lienVise, LOT_VERIFICATION, lireDeclaration, MIME_MOYENNE, moyenneSignable, partagerConnues, personneDuContexte, planDeclaration, type ContexteDeclaration, type Decision } from "@/lib/collectif/depot";
 import { estCleProvenance, peut } from "@/lib/collectif/droits";
 import { noterEchec } from "@/lib/collectif/echecsJournal";
 import { collecteOuverte } from "@/lib/collectif/etats";
@@ -153,6 +153,25 @@ export async function POST(request: Request) {
     plafondLien = prov.plafond_par_personne ?? null;
     libelleLien = prov.libelle;
   }
+  /* Le responsable dépose DANS un lien (décision de Mathias du 28/10, `lienVise`) : l'id est relu
+     DANS SON édition (`lireLiensParId` filtre par `edition_id`), jamais un lien supprimé. La photo
+     prend l'id et le type du lien ; elle reste la sienne (`role_deposant` responsable, son nom) et
+     n'a pas de plafond par personne (`plafondLien` reste nul), le total la compte. Un refus est un
+     400 : un 404 ferait croire au moteur que la PAGE est morte. Un participant ne vise rien par le
+     corps (`lienVise` rend `null`) : son lien est celui de sa page. */
+  const vise = lienVise(role, corps.provenance);
+  if (!vise.ok) return NextResponse.json({ error: ERREUR_LIEN_VISE, message: "Lien introuvable." }, { status: 400 });
+  if (vise.id) {
+    const liens = await lireLiensParId(supabase, edition.id, [vise.id]);
+    if (!liens) {
+      await noterEchec(supabase, edition.id, "declaration", { etape: "lecture", n: nLot });
+      return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
+    }
+    const lien = liens.get(vise.id);
+    if (!lienRecoit(lien)) return NextResponse.json({ error: ERREUR_LIEN_VISE, message: "Ce lien n'existe plus." }, { status: 400 });
+    provenanceId = lien.id;
+    provenanceType = lien.type;
+  }
 
   /* Le libellé d'un lien d'origine (« déjà arrivée par « Bateau 2 » ») : lu seulement s'il en faut
      un. Illisible : pas de nom (« par un autre lien »), jamais un refus. */
@@ -219,7 +238,10 @@ export async function POST(request: Request) {
   }
   if (participant) deposant = nomAffiche(participant);
   if (role === "participant") deposant = deposant ?? libelleLien;
-  if (role === "responsable") {
+  if (role === "responsable" && provenanceId) {
+    /* Dans un lien : sous son NOM, comme une personne du lien (le libellé du navigateur n'est que l'affichage). */
+    deposant = edition.responsable_nom?.trim() || "Le responsable";
+  } else if (role === "responsable") {
     const demande = (corps.provenance ?? {}) as Record<string, unknown>;
     if (TYPES_PROVENANCE.some((t) => t.cle === demande.type)) provenanceType = demande.type as TypeProvenance;
     /* Le nom du dossier, sous-dossier compris (« La soirée / Photobooth », dossiers.ts). */

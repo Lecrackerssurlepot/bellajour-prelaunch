@@ -25,6 +25,11 @@
  * (« Bellajour utilise ces photos pour composer le magazine ») n'ont jamais été
  * promises au regard des autres participants : elles restent hors de l'album,
  * visibles seulement de leur auteur.
+ * Une exception, décidée par Mathias le 28/10 : la photo que le RESPONSABLE a
+ * déposée DANS un lien (`role_deposant` responsable, `provenance_id` du lien).
+ * Il ne coche aucun accord (il n'en a pas), mais choisir ce lien, c'est la
+ * montrer à ce bateau : elle est dans son album comme celle d'un participant.
+ * Ses photos de « Mes photos » (sans lien) n'entrent dans aucun album.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
@@ -63,7 +68,10 @@ export function duLien(p: Pick<PhotoAlbum, "role_deposant" | "provenance_id">, p
 
 /** Entre-t-elle dans l'album des AUTRES ? Du lien, arrivée, hors corbeille, et sous un accord qui le dit. */
 export function dansLAlbum(p: PhotoAlbum, provenanceId: string | null): boolean {
-  return duLien(p, provenanceId) && Boolean(p.confirmee_le) && !p.supprimee_le && typeof p.accord_version === "string" && VERSIONS_ALBUM.has(p.accord_version);
+  const accord = typeof p.accord_version === "string" && VERSIONS_ALBUM.has(p.accord_version);
+  /* 28/10 : le responsable qui dépose DANS ce lien le montre à ce lien (voir l'en-tête). */
+  const duResponsableIci = provenanceId !== null && p.role_deposant === "responsable";
+  return duLien(p, provenanceId) && Boolean(p.confirmee_le) && !p.supprimee_le && (accord || duResponsableIci);
 }
 
 /** Est-elle « à moi » (le badge de l'album) ? De ma personne, ou, sans personne, de ce téléphone. */
@@ -81,17 +89,25 @@ export type FiltreAlbum =
   | { methode: "eq"; colonne: "provenance_id" | "role_deposant"; valeur: string }
   | { methode: "is"; colonne: "provenance_id" | "supprimee_le" }
   | { methode: "not_is"; colonne: "confirmee_le" }
-  | { methode: "in"; colonne: "accord_version"; valeurs: string[] };
+  | { methode: "in"; colonne: "accord_version"; valeurs: string[] }
+  /** 28/10 : l'accord, OU une photo du responsable (dans un lien de contribution seulement) ; posé par un `or` PostgREST. */
+  | { methode: "accord_ou_responsable"; colonne: "accord_version"; valeurs: string[] };
 
 export function filtreAlbum(provenanceId: string | null): FiltreAlbum[] {
+  const versions = [...VERSIONS_ALBUM].sort();
   return [
     ...(provenanceId
       ? [{ methode: "eq", colonne: "provenance_id", valeur: provenanceId } as const]
       : [{ methode: "is", colonne: "provenance_id" } as const, { methode: "eq", colonne: "role_deposant", valeur: "participant" } as const]),
     { methode: "not_is", colonne: "confirmee_le" },
     { methode: "is", colonne: "supprimee_le" },
-    { methode: "in", colonne: "accord_version", valeurs: [...VERSIONS_ALBUM].sort() },
+    provenanceId ? { methode: "accord_ou_responsable", colonne: "accord_version", valeurs: versions } : { methode: "in", colonne: "accord_version", valeurs: versions },
   ];
+}
+
+/** Le `or` PostgREST de « l'accord, ou le responsable » : les versions sont des constantes du code (`VERSIONS_ALBUM`), jamais un texte de client. */
+export function orAccordOuResponsable(valeurs: readonly string[]): string {
+  return `accord_version.in.(${valeurs.join(",")}),role_deposant.eq.responsable`;
 }
 
 /* ─────────────────────── les comptes de l'album, sans relire ses photos (C1) ─────────────────────── */
