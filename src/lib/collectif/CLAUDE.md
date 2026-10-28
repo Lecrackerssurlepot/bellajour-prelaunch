@@ -53,7 +53,7 @@ Un client B2B (entreprise, école) ouvre une **édition** d'un ou plusieurs **ma
   même message, jamais une erreur.
 - **`plafonds.ts`** — trois chiffres, aucun deviné. L'atelier échappe à tout ; le responsable et
   les provenances `sans_plafond` n'ont pas de plafond PAR PERSONNE mais le total les compte ; le
-  participant a les deux, tenu PAR APPAREIL (un frein, pas une garantie). **Un plafond PAR
+  participant a les deux ; le plafond par personne compte TOUTES ses photos, tous appareils confondus (prouvé le 28/10 : 29 d'un appareil + 1 = 30 ; le nom `parAppareil` est trompeur, les phrases ne disent plus « sur cet appareil »). **Un plafond PAR
   PERSONNE `null` FERME le dépôt du participant** (`plafond_non_regle`) : on ne devine pas, et
   `/depot` le dit AVANT le choix des photos (`depotRegle`). **Exception D27 (20/10) : un TOTAL
   vide = pas de limite pour toute l'édition** (« on ne sait pas forcément combien il y aura »).
@@ -142,8 +142,8 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   les empreintes sont lues (`doublonsStockes.ts`) ; l'affichage les LIT, il ne les recalcule que
   périmés (signature changée) ou sans la migration 20261022.
   **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
-- **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (le plafond PAR APPAREIL,
-  un frein honnête), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
+- **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (reconnaît l'appareil ;
+  le plafond, lui, compte la personne), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de
   `enrichirPhotos` : importe `lireDepuisCoffre`, `planGeocodage`, `geocoderInverse`, écrit dans
   `collectif_photos`. Le harnais interdit d'importer `enrichirPhotos`, `geocoderNumero`,
   `logEvenement`, `envoyerMailAtelier`.
@@ -630,9 +630,10 @@ La règle de Mathias : « si un bouton n'a pas sa place, s'il peut être remplac
 - **Des places fixes au téléphone** : en haut à droite le « + » de dépôt (rond, visible) et UN « … » (Sélectionner, « Supprimées récemment · N », puis après un filet « Terminer la
   collecte ») ; en bas « Toutes · Par lien » (capsule, 64 px = `--ec-fl-h`) et le rond « Personnes » (une feuille du bas : recherche, pastilles, plusieurs possibles). Le contenu des menus est dans
   `photosSimples.ts` (`entreesDuMenuHaut`, `entreesDuMenuPhoto` : purs, au harnais) ; l'écran ne fait que les brancher. L'équipe (lecture seule) n'a ni « + », ni « … », ni sélection, ni appui long.
-- **La grille est rangée PAR JOUR de prise de vue, les plus récents en haut** (`TRI_JOUR` : prise de vue décroissante, SANS DATE EN TÊTE, puis l'arrivée, puis l'id) ; `regrouperParJour`
-  (`photos/filtres.ts`) en fait des intertitres collants (« Samedi 4 octobre · 214 », le nombre seulement d'un jour fini). ⚠️ Une photo sans date prend son JOUR D'ARRIVÉE pour l'intertitre mais reste placée
-  EN TÊTE de la liste, pas dans son jour : trier sur « prise de vue, sinon arrivée » demanderait une colonne calculée (une migration). Plus de filtre Jour ni d'ordre :
+- **La grille est rangée PAR JOUR de prise de vue, les plus récents en haut** (`TRI_JOUR` : prise de vue décroissante, SANS DATE EN FIN depuis le 28/10, puis l'arrivée, puis l'id) ; `regrouperParJour`
+  (`photos/filtres.ts`) en fait des intertitres collants (« Samedi 4 octobre · 214 », le nombre seulement d'un jour fini), UN groupe par jour. ⚠️ Recette Audencia du
+  28/10 : une photo sans date (copie WhatsApp, capture) prenait son jour d'ARRIVÉE et donnait deux intertitres « Mercredi 28 octobre ». Elle va maintenant dans
+  « Sans date » (`jourDePhoto`, clé `~`), en dernier. Plus de filtre Jour ni d'ordre :
   `Filtres = { mode: "tout" | "liens", lien, dossier, personnes, corbeille }`.
 - **Une vignette est UNE PHOTO** : ni nom, ni initiales, ni étoile, ni badge (doublon, œil barré, « nouvelle »). Le rond de sélection n'existe qu'en « Sélectionner » (et au survol à la souris) ; en
   « Sélectionner » un rond par jour prend la journée. Toucher agrandit ; l'appui long ouvre le menu de la photo (Favori, Voir qui l'a envoyée, Supprimer) et, en « Sélectionner », bascule la photo.

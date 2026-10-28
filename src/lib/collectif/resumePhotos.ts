@@ -432,12 +432,12 @@ export const TRI_TOUTES: readonly CleTri[] = [
 /**
  * « Par jour » (refait le 22/10, la page Photos « comme une application ») : les JOURS DE PRISE DE VUE les plus récents en haut,
  * et dans un jour la dernière prise de vue d'abord ; l'ordre d'arrivée départage (un lot partage son instant), puis l'id.
- * Les photos SANS date de prise de vue viennent d'abord, la dernière arrivée en tête (PostgreSQL : NULLS FIRST en
- * décroissant) : ce sont celles qui viennent d'arriver, pas encore lues, et l'écran les range sous leur JOUR D'ARRIVÉE
- * (« une photo sans date prend son jour d'arrivée », `regrouperParJour`, filtres.ts). Avant : du plus ancien au plus récent.
+ * Les photos SANS date de prise de vue viennent EN FIN (NULLS LAST, 28/10), la dernière arrivée en tête de leur groupe : l'écran
+ * en fait UN groupe « Sans date » (`regrouperParJour`, filtres.ts), au lieu de les ranger sous leur jour d'envoi, qui
+ * doublonnait un jour daté (« Mercredi 28 octobre » deux fois, avec un autre jour entre les deux).
  */
 export const TRI_JOUR: readonly CleTri[] = [
-  { colonne: "prise_le", croissant: false, nulsDAbord: true },
+  { colonne: "prise_le", croissant: false, nulsDAbord: false },
   { colonne: "confirmee_le", croissant: false },
   { colonne: "id", croissant: false },
 ];

@@ -16,6 +16,9 @@ export function ligneReste(coupees: number, place: number | null | undefined, tu
   return phraseCoupees(coupees) ?? phrasePlace(place, tu);
 }
 
+/** En dessous, le reste du total d'une édition vaut la peine d'être dit à quelqu'un qui n'a pas de plafond. */
+export const SEUIL_RESTE_UTILE = 50;
+
 /** Le seul libellé de « ce n'est pas moi », sur la carte comme dans l'album. */
 export function libellePasMoi(tu: boolean): string {
   return tu ? "Ce n'est pas toi ?" : "Ce n'est pas vous ?";
@@ -35,7 +38,8 @@ export function phraseDejaSurLien(surCeLien: number, lien: string | null): strin
  */
 export function limiteDeCarte(o: { coupees: number; reconnu: boolean; place: number | null | undefined; plafond: number | null; sansPlafond: boolean; tu: boolean }): string {
   if (o.coupees > 0) return "";
-  if (o.reconnu && o.place !== undefined) return phrasePlace(o.place, o.tu);
+  /* Un lien « sans limite » n'a pas de plafond par personne : le reste du TOTAL de l'édition (995) ne se dit que s'il devient petit. */
+  if (o.reconnu && o.place !== undefined) return o.sansPlafond && typeof o.place === "number" && o.place >= SEUIL_RESTE_UTILE ? "sans limite" : phrasePlace(o.place, o.tu);
   return o.sansPlafond ? "sans limite" : o.plafond ? `${o.plafond} max` : "";
 }
 

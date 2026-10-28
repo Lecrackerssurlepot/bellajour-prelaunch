@@ -189,6 +189,7 @@ import * as FiltresPhotos from "@/app/edition/[token]/photos/filtres";
 import * as FiltresAvant from "../archive/photos-simple-2026-10/filtres";
 import * as Demandes from "@/lib/collectif/demandes";
 import * as PlafondsLot from "@/lib/collectif/plafonds";
+import * as PhrasesDepotNeuf from "@/lib/collectif/phrasesDepot";
 import * as LiensLot from "@/lib/collectif/liens";
 import * as DepotLot from "@/lib/collectif/depot";
 import * as LivraisonLot from "@/lib/collectif/livraison";
@@ -1328,8 +1329,8 @@ ok("25 lots de 60 photos (rafales, recompressions, sans empreinte) : exactement 
 
 titre("— la grille —");
 ok("un filtre inconnu retombe sur « toutes »", lireFiltre("pirate") === "toutes" && lireFiltre("doublons") === "doublons");
-ok("le jour d'une photo : sa prise de vue, lue SANS fuseau", jourDePhoto("2024-08-08T23:30:00", "2026-10-13T10:00:00Z").libelle.startsWith("8 août"));
-ok("sans date de prise de vue : le jour d'arrivee, et c'est dit", jourDePhoto(null, "2026-10-13T10:00:00Z").libelle.includes("sans date"));
+ok("le jour d'une photo : sa prise de vue, lue SANS fuseau", jourDePhoto("2024-08-08T23:30:00").libelle.startsWith("8 août"));
+ok("sans date de prise de vue : le jour d'arrivee, et c'est dit", jourDePhoto(null).libelle === "Sans date");
 ok("qui a depose : par provenance et deposant, le plus fourni d'abord",
    JSON.stringify(resumeDeposants([
      { provenance_type: "participant", deposant: "Camille" }, { provenance_type: "photographe", deposant: "Studio X" },
@@ -5273,15 +5274,15 @@ async function sondeLotA4() {
     /* 22/10 : les jours les plus récents EN HAUT. Sans date de prise de vue d'abord (la dernière arrivée en tête : ce sont celles qui viennent d'arriver),
        puis la prise de vue la plus récente ; l'arrivée la plus récente, puis l'id, départagent. */
     const jourNeuf = [...toutesTriees].sort((a, b) => {
-      if ((a.prise_le === null) !== (b.prise_le === null)) return a.prise_le === null ? -1 : 1;
+      if ((a.prise_le === null) !== (b.prise_le === null)) return a.prise_le === null ? 1 : -1;
       if (a.prise_le !== null && b.prise_le !== null && a.prise_le !== b.prise_le) return a.prise_le < b.prise_le ? 1 : -1;
       const c = R.compareInstants(b.confirmee_le, a.confirmee_le);
       return c !== 0 ? c : a.id < b.id ? 1 : -1;
     });
     const jourLu = R.trierCommeLaBase(toutesTriees, R.TRI_JOUR);
-    ok("« Par jour » (22/10) : sans date d'abord, puis la prise de vue la PLUS RÉCENTE, l'arrivée la plus récente puis l'id départagent (avant : du plus ancien au plus récent, `~` en tête)",
-      JSON.stringify(jourLu.map((p) => p.id)) === JSON.stringify(jourNeuf.map((p) => p.id)) && jourLu.slice(0, 20).every((p, i, l) => i === 0 || p.prise_le !== null || l[i - 1].prise_le === null)
-        && jourLu.some((p) => p.prise_le === null) && JSON.stringify(R.TRI_JOUR) === JSON.stringify([{ colonne: "prise_le", croissant: false, nulsDAbord: true }, { colonne: "confirmee_le", croissant: false }, { colonne: "id", croissant: false }])
+    ok("« Par jour » (22/10, 28/10) : puis la prise de vue la PLUS RÉCENTE, l'arrivée la plus récente puis l'id départagent (avant : du plus ancien au plus récent, `~` en tête)",
+      JSON.stringify(jourLu.map((p) => p.id)) === JSON.stringify(jourNeuf.map((p) => p.id)) && jourLu.slice(-20).every((p, i, l) => i === 0 || p.prise_le === null || l[i - 1].prise_le !== null) && jourLu[jourLu.length - 1].prise_le === null
+        && jourLu.some((p) => p.prise_le === null) && JSON.stringify(R.TRI_JOUR) === JSON.stringify([{ colonne: "prise_le", croissant: false, nulsDAbord: false }, { colonne: "confirmee_le", croissant: false }, { colonne: "id", croissant: false }])
         && JSON.stringify(avantJour.slice(0, 3).map((p) => p.id)) !== JSON.stringify(jourLu.slice(0, 3).map((p) => p.id)));
     ok("« Toutes » : la derniere arrivee d'abord, l'id departage un lot (la lecture d'avant a l'envers)",
       JSON.stringify(R.trierCommeLaBase(toutesA4, R.TRI_TOUTES).map((p) => p.id)) === JSON.stringify([...toutesTriees].reverse().map((p) => p.id)));
@@ -5816,6 +5817,14 @@ titre("— 20/10 : la page Photos du responsable, des listes qui filtrent, coche
   ok("une photo SANS date de prise de vue prend son JOUR D'ARRIVÉE : sa clé `~2026-10-21` se range sous « Mercredi 21 octobre », avec les photos datées de ce jour quand elles se suivent ; le titre porte une majuscule, « 1er » le premier du mois",
     (() => { const g = F.regrouperParJour([ph("~2026-10-21"), ph("2026-10-21"), ph("2026-10-20")], true); return g.length === 2 && g[0].titre === "Mercredi 21 octobre" && g[0].n === 2 && g[1].titre === "Mardi 20 octobre"; })()
       && F.jourTitre("2026-11-01") === "Dimanche 1er novembre" && F.jourCourt("~2026-10-18") === "dim. 18 oct." && F.jourTitre("pas un jour") === "pas un jour");
+  ok("28/10 : un jour = UN groupe (« Mercredi 28 octobre » ne se répète plus avec un autre jour entre), « Sans date » en fin, quelle que soit la page d'où viennent les photos",
+    (() => { const g = F.regrouperParJour([ph("~"), ph("2026-10-29"), ph("2026-10-28"), ph("~"), ph("2026-10-28")], true); return g.map((x) => x.titre).join("|") === "Jeudi 29 octobre|Mercredi 28 octobre|Sans date" && g[1].n === 2 && g[2].n === 2; })());
+  ok("28/10 : plafond par PERSONNE sans « sur cet appareil » ; « sans limite » ne dit pas le reste du total (995) mais le dit quand il devient petit ; au singulier « Sa photo reste »",
+    !/appareil/.test(PlafondsLot.MESSAGE_PLAFOND.plafond_participant) && !/appareil/.test(PlafondsLot.MESSAGE_PLAFOND_TU.plafond_participant)
+      && PhrasesDepotNeuf.limiteDeCarte({ coupees: 0, reconnu: true, place: 995, plafond: null, sansPlafond: true, tu: true }) === "sans limite"
+      && PhrasesDepotNeuf.limiteDeCarte({ coupees: 0, reconnu: true, place: 12, plafond: null, sansPlafond: true, tu: true }) === "tu peux encore en envoyer 12"
+      && PhrasesDepotNeuf.limiteDeCarte({ coupees: 0, reconnu: true, place: 46, plafond: 60, sansPlafond: false, tu: true }) === "tu peux encore en envoyer 46"
+      && /supprimer\.n > 1 \? ` Ses/.test(lire("src/app/edition/[token]/photos/Collecte.tsx")) && /Sa photo reste\./.test(lire("src/app/edition/[token]/photos/Collecte.tsx")));
   ok("(avant, archive) les jours lus : un jour est complet quand le suivant a commencé ou que la vue est lue jusqu'au bout ; un jour choisi se lisait jusqu'à ce qu'un jour suivant commence",
     (() => { const j1 = FiltresAvant.joursVus([ph("2026-11-06"), ph("2026-11-06"), ph("2026-11-07")], false); const j2 = FiltresAvant.joursVus([ph("2026-11-06"), ph("2026-11-07")], true);
       return j1.length === 2 && j1[0].n === 2 && j1[0].complet && !j1[1].complet && j2.every((j) => j.complet); })()
@@ -7726,9 +7735,9 @@ async function verifFinCollecte() {
     ok("la page Photos : « Terminer la collecte » est dans le « … » (la dernière ligne, après un filet), réservé au droit `terminer_collecte` (jamais l'équipe) ; plus de bouton posé dans l'en-tête",
       /terminer: p\.fin\.terminer && p\.ouverte && \(stats \? stats\.photos > 0 : false\)/.test(collecte) && /: \{ cle: e\.cle, libelle: e\.libelle, icone: ICONES\.drapeau, filetAvant: e\.filetAvant, faire: \(\) => \{ fermerAvis\(\); setChoixFin\(true\); \} \}/.test(collecte) && !/Terminer la collecte/.test(collecte) && /if \(ouverte \|\| !ecrire \|\| variante === \"tel\"\) return null;/.test(fin)
         && /terminer: peut\(role, 'terminer_collecte'\)/.test(pagePhotos) && peut("responsable", "terminer_collecte") && !peut("equipe", "terminer_collecte") && !peut("atelier", "terminer_collecte") && !peut("participant", "terminer_collecte"));
-    ok("terminée : « Déposer des photos » reste ÉTEINT à l'ordinateur (disabled, avec la raison : title et aria-describedby sur la ligne d'état) ; au téléphone le « + » disparaît (planche 9, vue 11D : « rien ne s'ajoute plus ») ; le tableau de bord éteint les siens",
+    ok("terminée : « Déposer des photos » reste ÉTEINT à l'ordinateur (disabled, avec la raison : title et aria-describedby sur la ligne d'état) ; au téléphone le « + » disparaît (planche 9, vue 11D : « rien ne s'ajoute plus ») ; le tableau de bord les MASQUE (28/10 : rien d'éteint, le serveur refuse tout dépôt après la clôture)",
       (fin.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 1 && /Déposer des photos/.test(fin) && !/ec-ph-plus/.test(fin) && !/ec-ph-fab/.test(fin) && !/Créer un lien/.test(fin) && !/<ActionsFinCollecte[^>]*variante="tel"/.test(collecte)
-        && (carte.match(/disabled title=\{RAISON_COLLECTE_TERMINEE\} aria-describedby=\{ID_LIGNE_FIN\}/g) ?? []).length === 2 && /Inviter quelqu&apos;un/.test(carte));
+        && !/disabled title=\{RAISON_COLLECTE_TERMINEE\}/.test(carte) && (carte.match(/Inviter quelqu&apos;un/g) ?? []).length === 1);
     ok("la ligne d'état s'affiche quand la collecte est terminée : complète sur le tableau de bord ET à l'ordinateur, avec la date de la clôture ; au téléphone une pastille calme « Collecte terminée le 15 novembre » (planche 9, vue 11D) ; l'oubli seulement pour le responsable, tant que l'atelier peut rouvrir",
       /\{!ouverte \? <LigneFinCollecte id=\{ID_LIGNE_FIN\} le=\{termineLe\} tu=\{p\.tu\} oubli=\{\(p\.oubli \|\| fin === "fait"\) && p\.terminer\} \/> : null\}/.test(carte)
         && /\{!p\.ouverte \? <LigneFinCollecte id=\{ID_LIGNE_FIN\} le=\{p\.fin\.le\} tu=\{p\.tu\} oubli=\{p\.fin\.terminer && p\.fin\.oubli\} className="ec-ph-ordi" \/> : null\}/.test(collecte)
@@ -9041,8 +9050,8 @@ async function verifPhotosSimples() {
   const grilleQ = await G.grilleDepuisLignes(lignesQ, [], demQ(cleQ), ctxQ);
   ok("plusieurs personnes (`quis:`) : le plan du résumé (vérifié) rend les MÊMES photos que la règle du dossier, la grille de repli aussi ; une orthographe d'une autre casse, une virgule dans un nom, comptent ; le responsable, un nom vide ou une personne en trop n'y sont pas",
     plan2.genre === "filtre" && viaPlan === attendu && attendu === [1, 2, 3, 6, 8].map(idQ).sort().join() && grilleQ.photos.map((x) => x.id).sort().join() === attendu && grilleQ.compteurs.liste === 5);
-  ok("… rangées PAR JOUR (le plus récent en haut, sans date d'abord, l'arrivée puis l'id départagent) : la même suite que `TRI_JOUR` ; la photo sans date arrive en tête",
-    grilleQ.photos.map((x) => x.id).join() === [8, 1, 6, 3, 2].map(idQ).join() && JSON.stringify(R.trierCommeLaBase(lignesQ.filter((l) => attendu.includes(l.id)), R.TRI_JOUR).map((l) => l.id)) === JSON.stringify([8, 1, 6, 3, 2].map(idQ)));
+  ok("… rangées PAR JOUR (le plus récent en haut, sans date EN FIN, l'arrivée puis l'id départagent) : la même suite que `TRI_JOUR` ; la photo sans date arrive en dernier",
+    grilleQ.photos.map((x) => x.id).join() === [6, 3, 2, 8, 1].map(idQ).join() && JSON.stringify(R.trierCommeLaBase(lignesQ.filter((l) => attendu.includes(l.id)), R.TRI_JOUR).map((l) => l.id)) === JSON.stringify([6, 3, 2, 8, 1].map(idQ)));
   ok("une clé `quis:` illisible ne devient JAMAIS « tout le monde » : ni JSON, ni tableau de noms, vide, trop de personnes, trop longue → aucune photo ; `quis:` a droit à 1 500 caractères, une autre clé à 400 ; une clé trop longue est refusée (400) par la route d'écriture « toute la vue », jamais lue comme « tout »",
     ["quis:{pas json", "quis:[]", "quis:[1,2]", `quis:${JSON.stringify(Array.from({ length: Dossiers.PERSONNES_MAX + 1 }, (_, i) => `p${i}`))}`, `quis:${JSON.stringify(["a".repeat(1600)])}`].every((c) => lignesQ.every((l) => !Dossiers.dansLeDossier(l, c, null)))
       && Dossiers.cleDeDossierLisible(`quis:${"x".repeat(1400)}`) && !Dossiers.cleDeDossierLisible(`quis:${"x".repeat(1500)}`) && Dossiers.cleDeDossierLisible("x".repeat(400)) && !Dossiers.cleDeDossierLisible("x".repeat(401)) && !Dossiers.cleDeDossierLisible(12)

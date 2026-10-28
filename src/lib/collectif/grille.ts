@@ -9,7 +9,6 @@
  */
 
 import { jourDe, jourEnClair } from "@/lib/atelier/metadonnees";
-import { formaterJour } from "@/lib/atelier/dates";
 import { clePersonne, compterPersonnes, deParticipant, nomDePersonne, personnesDe, poidsDe, type LignePhoto } from "./dossiers";
 import { TYPES_PROVENANCE } from "./types";
 
@@ -22,14 +21,17 @@ export function lireFiltre(v: unknown): Filtre {
   return (FILTRES as readonly string[]).includes(v as string) ? (v as Filtre) : "toutes";
 }
 
-/** Le jour d'une photo : sa date de prise de vue, sinon son jour d'arrivée. Libellé lisible. */
-export function jourDePhoto(priseLe: string | null, arriveeLe: string): { cle: string; libelle: string } {
+/** La clé du groupe des photos sans date de prise de vue (copie WhatsApp, capture d'écran) : UN seul groupe, rangé en fin. */
+export const CLE_SANS_DATE = "~";
+export const LIBELLE_SANS_DATE = "Sans date";
+
+/** Le jour d'une photo : sa date de prise de vue ; sans date, le groupe « Sans date » (jamais son jour d'envoi, qui doublonnait un jour daté). */
+export function jourDePhoto(priseLe: string | null): { cle: string; libelle: string } {
   const j = jourDe(priseLe);
   /* `prise_le` est l'heure LOCALE de l'appareil, sans fuseau : on la lit
      telle quelle (jourEnClair), jamais par une `Date`. */
   if (j) return { cle: j, libelle: jourEnClair(j) };
-  const a = arriveeLe.slice(0, 10);
-  return { cle: `~${a}`, libelle: `Arrivées le ${formaterJour(arriveeLe)} (sans date)` };
+  return { cle: CLE_SANS_DATE, libelle: LIBELLE_SANS_DATE };
 }
 
 export function libelleProvenance(type: string, deposant: string | null): string {
