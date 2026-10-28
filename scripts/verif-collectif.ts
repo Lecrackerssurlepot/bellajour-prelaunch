@@ -2192,9 +2192,9 @@ titre("— retours de Mathias du 14/10 —");
   const route = lire("src/app/api/collectif/photos/route.ts");
   /* T-168 : la route lit, `grillePhotos.ts` compose (la lecture complete d'avant ET le resume en base). */
   const grille168 = lire("src/lib/collectif/grillePhotos.ts");
-  ok("route photos : les liens ne sortent que pour qui peut en creer (les deux lectures)",
+  ok("route photos : les CLÉS des liens ne sortent que pour qui peut en creer (les deux lectures) ; sans ce droit, les liens restent dans l'arbre SANS clé (28/10 : « Aucun lien à montrer » en lecture seule)",
     /const partage = peut\(acces\.role, "regler_plafond_participant"\)/.test(route) && /provenances, partage, enCours/.test(route)
-      && (grille168.match(/const liens = partage \? provenances : \[\]/g) ?? []).length === 2 && (grille168.match(/liens: partage\s*\?/g) ?? []).length === 2
+      && (grille168.match(/const liens = partage \? provenances : provenances\.map\(\(l\) => \(\{ \.\.\.l, cle: "" \}\)\)/g) ?? []).length === 2 && (grille168.match(/liens: partage\s*\?/g) ?? []).length === 2
       && /arbreDesPhotos\(toutes, liens, edition, partage\)/.test(grille168) && /arbreDesPhotos\(pesees, liens, edition, partage\)/.test(grille168));
   ok("Photos : les liens vivent dans l'onglet « Les liens » (un « Partager », un menu « Modifier » / « Supprimer le lien »), plus de « Copier le lien » eparpilles, plus de « Changer le nom » et « Changer le nombre » separes (21/10)",
     !/Copier le lien participants/.test(collecte) && /Les liens · /.test(collecte) && /Partager/.test(collecte) && /libelle: "Modifier le nom et le nombre"/.test(lire("src/app/edition/[token]/photos/Liens.tsx")) && /libelle: "Partager"/.test(lire("src/app/edition/[token]/photos/Liens.tsx")) && /Supprimer le lien/.test(collecte) && !/Copier le lien</.test(collecte)
