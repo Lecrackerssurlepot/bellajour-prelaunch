@@ -37,6 +37,12 @@ const DOUX = "#6b6b6b";
 /* Les blocs (planche 6) : le fond Porcelaine. Le bouton : le bleu de Bellajour, le même dans les huit mails. */
 const BLOC = "#f3f4f7";
 const ACTION = "#4a90d9";
+/* L'encadré du titre (retour de Mathias du 28/10 : « le titre en gras, dans un encadré », le logo en haut) : un bleu très
+   clair, de la famille du bouton. Le logo est un PNG (un SVG ou un WebP ne s'affichent pas dans Outlook ni dans tous les Gmail),
+   servi par le site à adresse fixe : `public/logo-mail-bleu.png`, 300 px affichés à 150 (net sur un écran Retina). ⚠️ Le logo
+   n'est PAS un lien : chaque mail ne porte qu'UN `<a` (son bouton), le harnais le compte. */
+const TITRE_FOND = "#eaf2fb";
+const LOGO = "https://www.bellajour.fr/logo-mail-bleu.png";
 
 function echapper(t: string): string {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -52,7 +58,7 @@ export type Bouton = { href: string; libelle: string };
 const estBouton = (m: Ligne | Bouton): m is Bouton => "href" in m;
 
 function boutonHtml(b: Bouton): string {
-  return `<a href="${echapper(b.href)}" style="display:inline-block;padding:12px 22px;border-radius:999px;background:${ACTION};color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px">${echapper(b.libelle)}</a>`;
+  return `<a href="${echapper(b.href)}" style="display:inline-block;padding:14px 28px;border-radius:999px;background:${ACTION};color:#ffffff;text-decoration:none;font-family:Arial,sans-serif;font-size:16px;font-weight:bold">${echapper(b.libelle)}</a>`;
 }
 
 /**
@@ -91,13 +97,16 @@ export function pageMail(p: { titre: string; bonjour: string; lignes: (Ligne | B
   const html = `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f3f4f7">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f7;padding:32px 16px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:32px">
-<tr><td style="font-family:Georgia,serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:${DOUX}">Bellajour · Édition collective</td></tr>
-<tr><td style="padding-top:12px;font-family:Georgia,serif;font-size:28px;line-height:1.2;color:${ENCRE}">${echapper(p.titre)}</td></tr>
-<tr><td style="padding-top:18px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${ENCRE}">${echapper(p.bonjour)}</td></tr>
+<tr><td><img src="${LOGO}" width="150" height="56" alt="Bellajour" style="display:block;width:150px;height:auto;border:0"></td></tr>
+<tr><td style="padding-top:20px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${TITRE_FOND};border-radius:14px"><tr><td style="padding:18px 22px">
+<div style="font-family:Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:${ACTION}">Édition collective</div>
+<div style="padding-top:6px;font-family:Georgia,serif;font-size:26px;font-weight:bold;line-height:1.2;color:${ENCRE}">${echapper(p.titre)}</div>
+</td></tr></table></td></tr>
+<tr><td style="padding-top:22px;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;line-height:1.6;color:${ENCRE}">${echapper(p.bonjour)}</td></tr>
 ${corps}
 ${(p.blocs ?? []).map(blocHtml).join("\n")}
 ${(p.notes ?? []).map((l) => `<tr><td style="padding-top:12px;font-family:Arial,sans-serif;font-size:13px;line-height:1.6;color:${DOUX}">${l.html}</td></tr>`).join("\n")}
-<tr><td style="padding-top:24px;font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:${ENCRE}">À très vite,<br>L'atelier Bellajour</td></tr>
+<tr><td style="padding-top:28px"><div style="border-top:1px solid #e4e6eb;padding-top:16px;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:${DOUX}">À très vite,<br><span style="color:${ENCRE};font-weight:bold">L'atelier Bellajour</span></div></td></tr>
 </table></td></tr></table></body></html>`;
   const texteCorps = p.lignes.flatMap((m, i) => {
     if (estBouton(m)) return ["", `${m.libelle} : ${m.href}`];
