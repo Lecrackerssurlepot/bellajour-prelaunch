@@ -6,6 +6,7 @@ import { peut } from "@/lib/collectif/droits";
 import { doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
 import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
 import {
+  CANDIDATES_COUVERTURE,
   COLONNES_GRILLE,
   COLONNES_PAGE,
   colonnesAvecMoyenne,
@@ -181,6 +182,31 @@ function lecturePage(supabase: ReturnType<typeof makeSupabase>, editionId: strin
         return null;
       }
       return count;
+    },
+    /* Les candidates à la couverture d'un dossier (28/10) : les plus récentes avec vignette, leur moyenne et leurs dimensions. Hors corbeille ;
+       sans la colonne `moyenne_key` (`lireAvecMoyenne`) ou sans la corbeille (`lireHorsCorbeille`), la même lecture sans elles. */
+    async couvertures(conditions) {
+      const { data, error } = await lireAvecMoyenne((moyenne) =>
+        lireHorsCorbeille((avec) => {
+          const debut = supabase
+            .from("collectif_photos")
+            .select(`vignette_key, largeur, hauteur${moyenne ? ", moyenne_key" : ""}` as "vignette_key, largeur, hauteur")
+            .eq("edition_id", editionId)
+            .not("confirmee_le", "is", null)
+            .not("vignette_key", "is", null);
+          let q = avec ? debut.is("supprimee_le", null) : debut;
+          for (const f of enFiltresPostgrest(conditions)) {
+            if (f.methode === "eq") q = q.eq(f.colonne, f.valeur);
+            else if (f.methode === "is") q = q.is(f.colonne, null);
+            else if (f.methode === "not") q = q.filter(f.colonne, `not.${f.operateur}`, f.valeur ?? "null");
+            else if (f.methode === "or") q = q.or(f.filtres);
+            else q = q.filter(f.colonne, f.operateur, f.valeur);
+          }
+          return q.order("confirmee_le", { ascending: false }).order("id", { ascending: false }).limit(CANDIDATES_COUVERTURE).returns<{ vignette_key: string; moyenne_key?: string | null; largeur: number | null; hauteur: number | null }[]>();
+        })
+      );
+      if (error) return null;
+      return (data ?? []).map((x) => ({ vignette_key: x.vignette_key, moyenne_key: x.moyenne_key ?? null, largeur: x.largeur, hauteur: x.hauteur }));
     },
     /* « Ne pas publier » du dossier (lot w2) : le même plan, la colonne `signalee` en plus, un compte sans ligne. */
     async compterFiltre(conditions) {

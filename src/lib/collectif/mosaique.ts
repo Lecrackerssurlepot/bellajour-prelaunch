@@ -7,26 +7,20 @@
  *
  * ══════════════════════════════════════════════════════════════════════════
  * LA RÈGLE, VOLONTAIREMENT SIMPLE (Mathias : « ça ne doit pas être compliqué ni toujours recalculer ») :
- *   1. on classe par nombre de photos (hors corbeille), le plus gros d'abord ; à égalité, par nom
- *      (« Bateau 2 » avant « Bateau 10 ») ;
- *   2. la première tuile est GRANDE ; les trois suivantes au plus sont LARGES ; le reste est PETIT, par deux ;
- *   3. s'il reste une petite SEULE dans sa rangée, elle devient LARGE ;
+ *   1. l'ORDRE d'affichage est celui des noms (tri naturel, « Bateau 2 » avant « Bateau 10 ») : jamais réordonné pour paver (28/10) ;
+ *   2. la TAILLE suit le poids : la tuile la plus fournie est GRANDE, les trois suivantes (par poids) au plus LARGES, le reste PETIT ;
+ *   3. pour qu'il n'y ait aucun trou sans déplacer personne, la taille s'adapte (voir `mosaiqueDesLiens`) : une petite suivie d'une
+ *      tuile de deux colonnes devient large, la fin de la mosaïque est ajustée pour une dernière rangée pleine ;
  *   4. un seul lien : GRAND.
- * Sur quatre colonnes, on ajuste de 0 à 3 le nombre de larges pour que chaque rangée soit pleine (une rangée
- * est faite de deux moitiés de deux colonnes : une large, ou deux petites). Avec deux liens ou moins, la
- * mosaïque reste à deux colonnes, même à l'ordinateur (`colonnesDeLaMosaique`).
+ * Avec deux liens ou moins, la mosaïque reste à deux colonnes, même à l'ordinateur (`colonnesDeLaMosaique`).
  * ══════════════════════════════════════════════════════════════════════════
  *
  * ⚠️ Cette fonction ne SAIT PAS quand elle est appelée : « à l'ouverture de la page seulement » est l'affaire
  * de l'écran (`Mosaique.tsx` fige les poids à son montage). Le direct change les chiffres des pastilles, jamais
  * la place ni la taille d'une tuile.
  *
- * L'ordre d'affichage (celui de la maquette) : la grande, puis une large, deux petites, une large, deux
- * petites… ; une large qui était une petite seule ferme la marche.
- *
- * `enTete` (27/10, « Mes photos ») : la clé d'une tuile qui doit venir EN PREMIER (en haut à gauche, « chez soi »). Elle garde
- * la taille que son poids lui donne (petite, large ou grande) ; si, ainsi remontée, elle laissait un trou, elle prend la place
- * de la première (la grande) et celle-ci prend sa place d'avant : les tailles des places ne changent pas, donc aucun trou.
+ * `enTete` (27/10, « Mes photos ») : la clé d'une tuile qui doit venir EN PREMIER (en haut à gauche, « chez soi »). Depuis le 28/10 elle ouvre
+ * simplement la séquence ; sa taille vient de son poids comme les autres.
  */
 
 import { clePersonne, QUI_RESPONSABLE, type Arbre } from "./dossiers";
@@ -55,50 +49,105 @@ export function colonnesDeLaMosaique(nombre: number, colonnes: 2 | 4): 2 | 4 {
   return colonnes === 4 && nombre > TUILES_MIN_QUATRE_COLONNES ? 4 : 2;
 }
 
-/** Combien de tuiles larges derrière la grande, pour `reste` tuiles qui la suivent. */
-function nombreDeLarges(reste: number, colonnes: 2 | 4): number {
-  if (colonnes === 4) return (4 - (reste % 4)) % 4;
-  return Math.min(LARGES_MAX, reste);
-}
-
 /**
  * La taille de chaque tuile, dans l'ordre où elles s'affichent. `colonnes` : 2 (téléphone) ou 4 (ordinateur).
  * Aucune tuile n'est perdue ni ajoutée, et la mosaïque n'a aucun trou : voir le harnais.
+ *
+ * ⚠️ 28/10 : L'ORDRE N'EST PLUS CELUI DU POIDS. Huit liens créés « Bateau 1 » à « Bateau 8 » s'affichaient 1, 2, 5, 6, 3, 7, 8, 4 : la
+ * mosaïque réordonnait pour paver, ce qui est incohérent pour un responsable. L'ordre est maintenant celui des NOMS (tri naturel,
+ * « Bateau 2 » avant « Bateau 10 »), « Mes photos » (`enTete`) d'abord, « Sans groupe » (`participants`) puis « Nouveau lien »
+ * (poids -1) à la fin. Seule la TAILLE suit le poids (la plus fournie est grande, les trois suivantes larges, le reste petit) ;
+ * pour que le pavage reste sans trou sans déplacer personne, la taille s'adapte : une petite qui serait suivie d'une tuile de deux
+ * colonnes devient large, une tuile qui ne tient pas redevient petite, et la fin de la mosaïque est ajustée jusqu'à ce que la dernière
+ * rangée soit pleine.
  */
 export function mosaiqueDesLiens<T extends Pesee>(tuiles: readonly T[], colonnes: 2 | 4 = 2, enTete?: string): Classee<T>[] {
-  const rendu = ordreDeLaMosaique(tuiles, colonnes);
-  const i = enTete === undefined ? -1 : rendu.findIndex((t) => t.cle === enTete);
-  if (i <= 0) return rendu;
-  const remontee = [rendu[i], ...rendu.slice(0, i), ...rendu.slice(i + 1)];
-  if (casesVides(remontee, colonnesDeLaMosaique(rendu.length, colonnes)) === 0) return remontee;
-  const echange = [...rendu];
-  echange[0] = { ...rendu[i], taille: rendu[0].taille };
-  echange[i] = { ...rendu[0], taille: rendu[i].taille };
-  return echange;
+  if (tuiles.length === 0) return [];
+  if (tuiles.length === 1) return [{ ...tuiles[0], taille: "grand" }];
+  const effectives = colonnesDeLaMosaique(tuiles.length, colonnes);
+  const rang = (t: T) => (t.cle === enTete ? 0 : t.n < 0 ? 3 : t.cle === "participants" ? 2 : 1);
+  const sequence = [...tuiles].sort((a, b) => rang(a) - rang(b) || compareNoms(a.nom, b.nom) || (a.cle < b.cle ? -1 : a.cle > b.cle ? 1 : 0));
+  /* Les tailles voulues : par le poids (le classement d'avant), pas par la place. */
+  const classees = classerParPoids(tuiles);
+  const nbLarges = Math.min(LARGES_MAX, classees.length - 1);
+  const voulue = new Map<string, TailleTuile>(classees.map((t, i) => [t.cle, i === 0 ? "grand" : i <= nbLarges ? "large" : "petit"]));
+  const tailles = sequence.map((t) => voulue.get(t.cle) as TailleTuile);
+  ajusterLesTailles(tailles, effectives);
+  return sequence.map((t, i) => ({ ...t, taille: tailles[i] }));
 }
 
-function ordreDeLaMosaique<T extends Pesee>(tuiles: readonly T[], colonnes: 2 | 4): Classee<T>[] {
-  const triees = classerParPoids(tuiles);
-  if (triees.length === 0) return [];
-  if (triees.length === 1) return [{ ...triees[0], taille: "grand" }];
-  const effectives = colonnesDeLaMosaique(triees.length, colonnes);
-  const reste = triees.length - 1;
-  const nbLarges = nombreDeLarges(reste, effectives);
-  const larges: Classee<T>[] = triees.slice(1, 1 + nbLarges).map((t) => ({ ...t, taille: "large" as const }));
-  const petites: Classee<T>[] = triees.slice(1 + nbLarges).map((t) => ({ ...t, taille: "petit" as const }));
-  /* Une petite seule dans sa rangée (la dernière, la plus légère) devient large : jamais une tuile seule. Elle reste à sa place, la dernière. */
-  const seule = petites.length % 2 === 1 ? (petites.pop() as Classee<T>) : null;
-  const rendu: Classee<T>[] = [{ ...triees[0], taille: "grand" }];
-  while (larges.length || petites.length) {
-    const large = larges.shift();
-    if (large) rendu.push(large);
-    const a = petites.shift();
-    const b = petites.shift();
-    if (a) rendu.push(a);
-    if (b) rendu.push(b);
+type Pose = { vides: number; echec: number | null };
+
+/** Pose les tailles DANS L'ORDRE, chacune à la première case libre (jamais plus loin : c'est ce qui garantit qu'aucune tuile ne passe devant une autre). `echec` : la première tuile qui ne tient pas là. */
+function poserEnOrdre(tailles: readonly TailleTuile[], colonnes: 2 | 4): Pose {
+  const rangees: boolean[][] = [];
+  const ligne = (r: number) => {
+    while (rangees.length <= r) rangees.push(Array<boolean>(colonnes).fill(false));
+    return rangees[r];
+  };
+  for (let i = 0; i < tailles.length; i++) {
+    let r = 0;
+    let c = 0;
+    while (ligne(r)[c]) {
+      c++;
+      if (c === colonnes) {
+        c = 0;
+        r++;
+      }
+    }
+    const l = LARGEUR_DE[tailles[i]];
+    const h = HAUTEUR_DE[tailles[i]];
+    let tient = c + l <= colonnes && (l === 1 || c % 2 === 0);
+    for (let dr = 0; tient && dr < h; dr++) for (let dc = 0; tient && dc < l; dc++) if (ligne(r + dr)[c + dc]) tient = false;
+    if (!tient) return { vides: -1, echec: i };
+    for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < l; dc++) ligne(r + dr)[c + dc] = true;
   }
-  if (seule) rendu.push({ ...seule, taille: "large" });
-  return rendu;
+  let vides = 0;
+  for (const r of rangees) for (const x of r) if (!x) vides++;
+  return { vides, echec: null };
+}
+
+/** Adapte les tailles (en place) jusqu'à ce que, posées dans l'ordre, elles ne laissent aucun trou. */
+function ajusterLesTailles(tailles: TailleTuile[], colonnes: 2 | 4): void {
+  /* 1. Une tuile large ou grande qui ne tient pas à la première case libre : la petite qui la précède s'élargit (elle prend la place), sinon la tuile se rétrécit. */
+  for (let tour = 0; tour < 4 * tailles.length + 8; tour++) {
+    const { echec } = poserEnOrdre(tailles, colonnes);
+    if (echec === null) break;
+    if (echec > 0 && tailles[echec - 1] === "petit") tailles[echec - 1] = "large";
+    else tailles[echec] = tailles[echec] === "grand" ? "large" : "petit";
+  }
+  if (poserEnOrdre(tailles, colonnes).vides === 0) return;
+  /* 2. La fin de la mosaïque : on essaie les formes possibles sur les dernières tuiles (petit ou large ; la grande peut aussi redescendre
+     d'un cran, en dernier recours), en changeant le moins possible, jusqu'à une rangée pleine. */
+  for (const k of [4, 6, 8, 10, 14, 40]) {
+    const debut = Math.max(0, tailles.length - k);
+    const options = tailles.slice(debut).map((t): TailleTuile[] => (t === "grand" ? ["grand", "large", "petit"] : ["petit", "large"]));
+    const combien = options.reduce((x, o) => x * o.length, 1);
+    if (combien > 30000) break;
+    let meilleur: TailleTuile[] | null = null;
+    let cout = Infinity;
+    for (let m = 0; m < combien; m++) {
+      const essai = [...tailles];
+      let reste = m;
+      let changes = 0;
+      options.forEach((o, j) => {
+        essai[debut + j] = o[reste % o.length];
+        reste = Math.floor(reste / o.length);
+        /* Perdre la grande coûte dix changements : on ne s'y résout que s'il n'y a pas d'autre pavage. */
+        if (essai[debut + j] !== tailles[debut + j]) changes += tailles[debut + j] === "grand" ? 10 : 1;
+      });
+      if (changes >= cout) continue;
+      const pose = poserEnOrdre(essai, colonnes);
+      if (pose.echec === null && pose.vides === 0) {
+        cout = changes;
+        meilleur = essai;
+      }
+    }
+    if (meilleur) {
+      meilleur.forEach((t, i) => (tailles[i] = t));
+      return;
+    }
+  }
 }
 
 /** Les colonnes que prend une tuile (2 × 2, 2 × 1, 1 × 1) : de quoi vérifier, au harnais, qu'une rangée est pleine. */
