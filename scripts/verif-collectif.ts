@@ -125,6 +125,7 @@ import * as Grille from "@/lib/collectif/grille";
 import * as LotCollectif from "@/lib/collectif/lotCollectif";
 import { apercuPossible, envoisCourants } from "@/lib/collectif/contenus";
 import * as Dossiers from "@/lib/collectif/dossiers";
+import type * as RsT from "@/lib/collectif/resumePhotos";
 import * as MosaiqueLiens from "@/lib/collectif/mosaique";
 import * as Arrivees from "@/lib/collectif/arrivees";
 import { genreFichier } from "@/lib/collectif/visionneuse";
@@ -5287,9 +5288,9 @@ async function sondeLotA4() {
     const lea = R.planDuDossier("qui:léa", resumeA4, responsableA4);
     const appels = lea.genre === "filtre" ? R.enFiltresPostgrest(lea.conditions) : [];
     ok("une personne : chaque orthographe ENTRE GUILLEMETS (une virgule, un point, deux points restent du nom), le vide en `is.null`",
-      lea.genre === "filtre" && appels.length === 2 && appels[1].methode === "filter"
-        && (appels[1] as { valeur: string }).valeur === `(${[...new Set(toutesA4.filter((p) => Dos.deParticipant(p) && Dos.clePersonne(p.deposant) === "léa").map((p) => p.deposant as string))].sort().map((v) => `"${v}"`).join(",")})`
-        && (appels[1] as { valeur: string }).valeur.includes('"Léa "'));
+      lea.genre === "filtre" && appels.length === 3 && appels[2].methode === "filter"
+        && (appels[2] as { valeur: string }).valeur === `(${[...new Set(toutesA4.filter((p) => Dos.estParticipant(p) && Dos.clePersonne(p.deposant) === "léa").map((p) => p.deposant as string))].sort().map((v) => `"${v}"`).join(",")})`
+        && (appels[2] as { valeur: string }).valeur.includes('"Léa "'));
     const anonyme = R.planDuDossier("qui:sans nom", resumeA4, responsableA4);
     const appelsAnonyme = anonyme.genre === "filtre" ? R.enFiltresPostgrest(anonyme.conditions) : [];
     ok("« Sans nom » : le vide ET les noms vides ou « Sans nom », en un seul `or`",
@@ -9917,7 +9918,82 @@ async function verifDepotResponsable28() {
       && /\["attente", "reduction", "pret", "declare", "envoi", "annexes", "neuf"\]/.test(moteur));
 }
 
-void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(verifLienCourt28).then(verifDepotResponsable28).then(() => {
+/* ── 28/10 : le responsable qui dépose dans un lien reste UNE seule personne, et n'est jamais un « participant » ── */
+async function verifPersonneResponsable28() {
+  titre("— 28/10 : une seule personne « responsable » (Mes photos ET liens) ; jamais comptée comme participant ; résumé = repli —");
+  const Dos = await import("@/lib/collectif/dossiers");
+  const Rs = await import("@/lib/collectif/resumePhotos");
+  const Ar = await import("@/lib/collectif/arrivees");
+  const Gr = await import("@/lib/collectif/grille");
+  const L1 = "37ba352a-e44b-46ad-98a5-fc521738dbea";
+  const L2 = "5d2a79b4-8335-4c87-b8f8-f0dd9d66614c";
+  const RESP = "Mathilde Cassaigne";
+  let n = 0;
+  const ph = (role: string, lien: string | null, deposant: string | null, appareil: string | null = null): RsT.PhotoResumable => ({
+    id: `p${++n}`, role_deposant: role, provenance_id: lien, provenance_type: lien ? "participant" : "organisateur", deposant, appareil_id: appareil,
+    preselection: false, signalee: false, confirmee_le: `2026-10-28T10:${String(n).padStart(2, "0")}:00Z`, vignette_key: null,
+  });
+  const photos: RsT.PhotoResumable[] = [
+    ph("responsable", null, RESP), ph("responsable", null, RESP),
+    ph("responsable", L1, RESP), ph("responsable", L1, RESP), ph("responsable", L2, RESP),
+    ph("participant", L1, "Léa Martin", "a1"), ph("participant", L1, "léa martin", "a1"), ph("participant", L2, "Tom", "a2"), ph("participant", L2, null, "a3"),
+    ph("atelier", null, "L'atelier"),
+  ];
+  const liens: Dossiers.LienEdition[] = [L1, L2].map((id, i) => ({ id, cle: `cle-${i}`, libelle: `Bateau ${i + 1}`, sans_plafond: false, plafond_par_personne: 30 }));
+  const edition = { responsable_nom: RESP, plafond_total: null, plafond_par_personne: null } as unknown as Parameters<typeof Dos.arbreDesPhotos>[2];
+  const brut = Dos.arbreDesPhotos(photos, liens, edition, true);
+  const resume = Rs.resumerPhotos(photos);
+  const pesees = resume.map((g) => ({ ...g, poids: g.n }));
+  const depuisResume = Dos.arbreDesPhotos(pesees, liens, edition, true);
+  const resps = (a: Dossiers.Arbre) => a.personnes.filter((x) => x.cle === Dos.QUI_RESPONSABLE || x.nom === RESP);
+  ok("« Personnes » : UNE seule ligne pour le responsable (`qui:@responsable`, son nom d'édition), avec TOUTES ses photos (2 de « Mes photos » + 3 dans les liens)",
+    resps(brut).length === 1 && resps(brut)[0].cle === Dos.QUI_RESPONSABLE && resps(brut)[0].nom === RESP && resps(brut)[0].n === 5);
+  ok("… et les participants restent à part : Léa (deux graphies), Tom, un anonyme ; ni l'atelier ni un second responsable n'y sont",
+    brut.personnes.map((x) => x.cle).sort().join("|") === ["qui:@responsable", "qui:léa martin", "qui:tom", "qui:sans nom"].sort().join("|"));
+  const forme = (a: Dossiers.Arbre) => JSON.stringify([a.personnes, a.liens.map((x) => [x.cle, x.n, x.enfants.map((e) => [e.cle, e.n])])]);
+  ok("l'arbre du résumé dit la même chose que celui des photos une à une (personnes, liens, comptes)", forme(depuisResume) === forme(brut));
+  ok("les liens gardent les photos du responsable (Bateau 1 : 4, Bateau 2 : 3) et le montrent UNE fois sous son nom",
+    brut.liens.find((x) => x.cle === `lien:${L1}`)?.n === 4 && brut.liens.find((x) => x.cle === `lien:${L2}`)?.n === 3
+      && brut.liens.find((x) => x.cle === `lien:${L1}`)?.enfants.filter((e) => e.nom === RESP).length === 1);
+  const dansResp = (cle: string) => photos.filter((p) => Dos.dansLeDossier(p, cle, RESP));
+  ok("`qui:@responsable` retient ses 5 photos (dossier ET liens) ; `qui:<son nom>` ne retient rien (ce n'est pas un participant) ; léa + tom = 3",
+    dansResp(Dos.QUI_RESPONSABLE).length === 5 && dansResp(`qui:${Dos.clePersonne(RESP)}`).length === 0 && dansResp(Dos.cleDePersonnes(["léa martin", "tom"]) as string).length === 3);
+  ok("« Déposées par vous » reste ses photos de « Mes photos » (2) ; « Les liens » garde les siennes dedans (3 + 4 des participants) ; un lien : 4",
+    dansResp("vous").length === 2 && dansResp("liens").length === 7 && dansResp(`lien:${L1}`).length === 4);
+  let plansOk = true;
+  const clesAVerifier = [Dos.QUI_RESPONSABLE, "qui:léa martin", "qui:tom", "qui:sans nom", "liens", "vous", `lien:${L1}`, `pers:${L1}:${Dos.clePersonne(RESP)}`, Dos.cleDePersonnes(["léa martin", "tom"]) as string];
+  for (const cle of clesAVerifier) {
+    const plan = Rs.planDuDossier(cle, resume, RESP);
+    if (plan.genre !== "filtre") { plansOk = false; console.log("    (plan non filtre)", cle, JSON.stringify(plan)); continue; }
+    const viaPlan = resume.filter((g) => Rs.correspond(g, plan.conditions)).reduce((t, g) => t + g.n, 0);
+    const viaRegle = photos.filter((p) => Dos.dansLeDossier(p, cle, RESP)).length;
+    if (viaPlan !== viaRegle) { plansOk = false; console.log("    (ecart)", cle, viaPlan, viaRegle); }
+  }
+  ok("résumé = repli : pour chaque personne et chaque dossier, le plan de lecture (conditions en base) compte les mêmes photos que `dansLeDossier`", plansOk);
+  const planLea = Rs.planDuDossier("qui:léa martin", resume, RESP);
+  const appels = planLea.genre === "filtre" ? Rs.enFiltresPostgrest(planLea.conditions) : [];
+  ok("le filtre PostgREST d'une personne écarte le responsable (`role_deposant not.in.(\"responsable\")`) puis demande « participant ou arrivé par un lien »",
+    appels.some((a) => a.methode === "not" && a.colonne === "role_deposant" && a.valeur === '("responsable")') && appels.some((a) => a.methode === "or" && a.filtres.includes("provenance_id.not.is.null")));
+  const planResp = Rs.planDuDossier(Dos.QUI_RESPONSABLE, resume, RESP);
+  ok("le plan du responsable ne pose plus « sans lien » : il lit son rôle seul", planResp.genre === "filtre" && planResp.conditions.length === 1 && planResp.conditions[0].op === "egal");
+  ok("« N participants » (tableau de bord, page Photos) : le responsable n'est JAMAIS compté (Léa, Tom, un anonyme = 3), qu'il dépose chez lui ou dans un lien",
+    Dos.compterPersonnes(photos) === 3 && Dos.compterPersonnes(photos.filter((p) => p.role_deposant === "responsable")) === 0 && Dos.compterPersonnes(resume) === 3);
+  ok("« N personnes » d'un LIEN (qui a déposé ici) : les participants + le responsable une seule fois s'il y a déposé (Bateau 1 : Léa + lui = 2 ; Bateau 2 : Tom + un anonyme + lui = 3)",
+    Dos.compterPersonnesDuLien(photos.filter((p) => p.provenance_id === L1)) === 2 && Dos.compterPersonnesDuLien(photos.filter((p) => p.provenance_id === L2)) === 3
+      && Dos.compterPersonnesDuLien(photos.filter((p) => p.provenance_id === L1 && p.role_deposant !== "responsable")) === 1);
+  const parLien = Gr.deposantsParLien(photos, liens.map((l) => ({ id: l.id, libelle: l.libelle })), RESP);
+  ok("l'écran de l'atelier (« qui a déposé ») dit les mêmes nombres : Bateau 1 = 2 personnes, Bateau 2 = 3",
+    parLien.find((x) => x.cle === `lien:${L1}`)?.nbPersonnes === 2 && parLien.find((x) => x.cle === `lien:${L2}`)?.nbPersonnes === 3);
+  const nouvelles = Ar.nouvellesDepuis(photos);
+  ok("« N nouvelles photos de … » : celles du responsable, même déposées dans un lien, ne s'annoncent pas (4 photos de participants, 3 personnes)",
+    nouvelles.participants === 4 && nouvelles.personnes === 3 && !nouvelles.noms.some((x) => x.nom === RESP));
+  const personnesTs = lire("src/lib/collectif/personnes.ts");
+  const personnesSrv = lire("src/lib/collectif/personnesServeur.ts");
+  ok("renommer et fusionner une personne ne touchent jamais les photos du responsable (`estParticipant` partout dans personnes.ts et personnesServeur.ts)",
+    !/\bdeParticipant\(/.test(personnesTs) && !/\bdeParticipant\(/.test(personnesSrv) && /estParticipant\(/.test(personnesSrv));
+}
+
+void sondeT191().then(verifLot1RudeEpreuve).then(sondeT167).then(gardeT159).then(sondeT194).then(verifT193).then(sondeT172).then(sondeLotA4).then(verifPersonnesCorbeille).then(verifDurcissement).then(verifAtelierCorbeillePersonnes).then(verifPhotosW2).then(verifDepotParticipant).then(verifRetention30).then(verifDejaLa).then(verifFinCollecte).then(verifTempsReel).then(verifChevauchements).then(verifCreationEdition).then(verifPartageLiensMail).then(verifBarreFiltres).then(verifMosaique).then(verifPhotosSimples).then(verifFicheResume).then(verifDecisions26).then(verifMemePersonne28).then(verifPremierAppareil28).then(verifLienCourt28).then(verifDepotResponsable28).then(verifPersonneResponsable28).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

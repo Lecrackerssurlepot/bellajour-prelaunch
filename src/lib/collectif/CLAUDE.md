@@ -153,6 +153,13 @@ ce chemin : elles iront en PUT signé, et l'origine de recette devra entrer dans
   (`compterPourPlafondNet`), hors « en cours », hors rattrapage (elle ne se confirme plus, même au
   coffre) et hors « photos coupées ». Aucune ligne n'est supprimée. La page Santé de l'atelier
   (`enAttente`) les compte encore.
+- **Le responsable est UNE personne, même quand il dépose dans un lien (28/10, suite de #336).**
+  `deParticipant` veut dire « rangée dans un lien » ; `estParticipant` (dossiers.ts) l'exclut pour le
+  responsable. `qui:@responsable` lit TOUTES ses photos (« Mes photos », dossiers ET liens) : plus de
+  second « Mathilde Cassaigne » dans « Personnes ». « N participants » (tableau de bord, Photos, « nouvelles
+  photos de… ») ne le compte jamais ; « N personnes » d'un lien (`compterPersonnesDuLien`) le compte UNE
+  fois s'il y a déposé, sous son nom d'édition. Le résumé (`resumePhotos.ts`, condition `personne`) et le
+  repli disent la même chose (harnais `verifPersonneResponsable28`).
   **`grille.ts`** — filtres, jour d'une photo lu SANS fuseau, « qui a déposé ».
 - **`collecte.ts`** (effets) — cookie httpOnly `bj_depot_appareil` (reconnaît l'appareil ;
   le plafond, lui, compte la personne), comptes, reprise. **`enrichissement.ts`** (effets) — le voisin de

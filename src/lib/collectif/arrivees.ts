@@ -11,7 +11,7 @@
  * plus de 20 s. Soit 120 appels par heure au plus pour un onglet Photos ouvert.
  */
 
-import { compterPersonnes, deParticipant, personnesDe, SANS_NOM, type LignePhoto } from "./dossiers";
+import { compterPersonnes, estParticipant, personnesDe, SANS_NOM, type LignePhoto } from "./dossiers";
 
 export const SONDAGE_PHOTOS_MS = 30_000;
 export const SONDAGE_TABLEAU_MS = 60_000;
@@ -34,7 +34,7 @@ export type Nouvelles = {
 
 /** Ce qui est arrivé depuis la dernière vue, lu sur les lignes rendues par la route. */
 export function nouvellesDepuis(lignes: readonly Pick<LignePhoto, "deposant" | "role_deposant" | "provenance_id" | "appareil_id">[], max = ARRIVEES_LUES_MAX): Nouvelles {
-  const deParticipants = lignes.filter(deParticipant);
+  const deParticipants = lignes.filter(estParticipant);
   return {
     tronque: lignes.length >= max,
     n: lignes.length,

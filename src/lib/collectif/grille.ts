@@ -9,7 +9,7 @@
  */
 
 import { jourDe, jourEnClair } from "@/lib/atelier/metadonnees";
-import { clePersonne, compterPersonnes, deParticipant, nomDePersonne, personnesDe, poidsDe, type LignePhoto } from "./dossiers";
+import { clePersonne, compterPersonnesDuLien, deParticipant, nomDePersonne, personnesDe, poidsDe, type LignePhoto } from "./dossiers";
 import { TYPES_PROVENANCE } from "./types";
 
 export const TAILLE_PAGE = 120;
@@ -195,7 +195,7 @@ export function deposantsParLien(photos: readonly PhotoDeLien[], liens: readonly
       nom,
       genre,
       n: lignes.reduce((t, l) => t + poidsDe(l), 0),
-      nbPersonnes: genre === "responsable" ? (lignes.length ? 1 : 0) : genre === "atelier" ? personnes.length : compterPersonnes(lignes),
+      nbPersonnes: genre === "responsable" ? (lignes.length ? 1 : 0) : genre === "atelier" ? personnes.length : compterPersonnesDuLien(lignes),
       personnes,
       retire,
     };
