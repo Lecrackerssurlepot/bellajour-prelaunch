@@ -4,7 +4,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { doublonsDeLEdition } from "@/lib/collectif/doublonsStockes";
-import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
+import { compterEnCours } from "@/lib/collectif/collecte";
 import {
   CANDIDATES_COUVERTURE,
   COLONNES_GRILLE,
@@ -79,9 +79,11 @@ export async function POST(request: Request) {
      clé de provenance lève un plafond, l'équipe n'a pas à la connaître. */
   const partage = peut(acces.role, "regler_plafond_participant");
   const supabase = makeSupabase();
-  const depuis = new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString();
   /* Le résumé (par tranches de 1 000, comme toute lecture qui peut dépasser le plafond de l'API,
-     T-167), les liens et les déclarations en route, ensemble. */
+     T-167), les liens et les déclarations en route, ensemble. « En cours » (28/10, simulation
+     Audencia : « 21 en cours » sur une collecte close où personne n'envoyait) : les déclarations des
+     15 dernières minutes que la même personne n'a pas reçues autrement, zéro collecte close
+     (`compterEnCours`). */
   const [resume, provenances, enRoute, corbeille] = await Promise.all([
     lireToutesLesLignes<LigneResume>(
       () => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", edition.id).returns<LigneResume[]>(),
@@ -89,11 +91,11 @@ export async function POST(request: Request) {
       "résumé des photos"
     ),
     lireProvenances(edition.id),
-    supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", depuis),
+    compterEnCours(supabase, edition, new Date()),
     /* La ligne « Corbeille » (lot w2) : un compte sans ligne, `null` sans la migration 20261023. L'équipe ne la voit pas. */
     peut(acces.role, "gerer_corbeille") ? compterCorbeille(supabase, edition.id) : Promise.resolve(null),
   ]);
-  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute.count ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle), corbeille };
+  const contexte: ContexteGrille = { edition, provenances, partage, enCours: enRoute ?? 0, signer: (cle) => signerLectureVignette(cle), signerOriginal: (cle) => signerGet(cle), corbeille };
 
   if (!resume.error) {
     const doublons = await doublonsDeLEdition(supabase, edition.id);

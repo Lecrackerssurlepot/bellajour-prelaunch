@@ -29,10 +29,19 @@
  *
  * Ne lève JAMAIS : un passage raté ne fait tomber ni la fiche, ni la page du
  * responsable, ni la relève des particuliers.
+ *
+ * Recette Audencia du 28/10 : une ligne déclarée sur un appareil puis coupée,
+ * que la même personne a depuis envoyée par un AUTRE appareil (une photo
+ * arrivée, hors corbeille, même fichier sel mis à part : `remplaceesParmi`),
+ * n'est PLUS candidate. Confirmée parce que son objet est au coffre, elle
+ * ferait revenir le doublon que `depot/presign` refuse désormais. Elle reste en
+ * base, telle quelle (rien n'est effacé). Ces lignes illisibles : aucune
+ * confirmation dans ce passage (le suivant reprendra), jamais un doublon.
  */
 
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { lireEnSuspens } from "./collecte";
 import { enrichirCollectif } from "./enrichissement";
 import { noterEchec } from "./echecsJournal";
 import { collectifOuvert } from "./interrupteur";
@@ -81,6 +90,8 @@ export type IssuePassage = {
  * réseau. Aucun appelant de production ne les remplace.
  */
 export type Outils = {
+  /** Les lignes « remplacées » parmi les déclarées avant `seuil` (`null` : base illisible). */
+  remplacees: (supabase: SupabaseClient, editionId: string, seuil: string) => Promise<Set<string> | null>;
   tete: typeof teteObjet;
   liste: typeof clesDuCoffre;
   confirmer: typeof confirmerArrivee;
@@ -88,7 +99,13 @@ export type Outils = {
   enrichir: typeof enrichirCollectif;
 };
 
-const OUTILS: Outils = { tete: teteObjet, liste: clesDuCoffre, confirmer: confirmerArrivee, vignettes: fabriquerVignettes, enrichir: enrichirCollectif };
+/** Les remplacées, par la lecture commune (`lireEnSuspens`, bornée aux lignes candidates : avant le seuil). */
+async function remplaceesAvant(supabase: SupabaseClient, editionId: string, seuil: string): Promise<Set<string> | null> {
+  const lu = await lireEnSuspens(supabase, editionId, new Date(0), new Date(seuil));
+  return lu ? lu.remplacees : null;
+}
+
+const OUTILS: Outils = { remplacees: remplaceesAvant, tete: teteObjet, liste: clesDuCoffre, confirmer: confirmerArrivee, vignettes: fabriquerVignettes, enrichir: enrichirCollectif };
 
 function lireJournal(supabase: SupabaseClient, editionId: string) {
   return supabase
@@ -170,7 +187,16 @@ export async function rattraperEdition(
     }
 
     const journal = lusJournal.data ?? [];
-    const candidates = (lusCandidates.data ?? []).filter((l) => estCandidate(l, maintenant));
+    let candidates = (lusCandidates.data ?? []).filter((l) => estCandidate(l, maintenant));
+    /* Les remplacées (28/10) ne sont pas candidates : la même personne a déjà la photo, arrivée par un autre appareil. */
+    if (candidates.length) {
+      const remplacees = await outils.remplacees(supabase, editionId, seuil);
+      if (!remplacees) {
+        console.error("[collectif] rattrapage : lignes remplacées illisibles, aucune confirmation ce passage", editionId);
+        bilan.pannes.lecture++;
+        candidates = [];
+      } else if (remplacees.size) candidates = candidates.filter((l) => !remplacees.has(l.id));
+    }
     const exclues = impossiblesRecentes(journal);
     const autres = (lusSansVignette.data ?? []).filter((p) => !exclues.has(p.id));
     bilan.candidates = candidates.length;

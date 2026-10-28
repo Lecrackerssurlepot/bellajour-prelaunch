@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { chargerAcces } from "@/lib/collectif/acces";
 import { ARRIVEES_LUES_MAX, nouvellesDepuis, personnesAFournir } from "@/lib/collectif/arrivees";
-import { DELAI_DECLARATION_MORTE_MS } from "@/lib/collectif/depot";
+import { compterEnCours } from "@/lib/collectif/collecte";
 import { compterPersonnes } from "@/lib/collectif/dossiers";
 import { peut } from "@/lib/collectif/droits";
 import { lireInstant } from "@/lib/collectif/etats";
@@ -76,12 +76,13 @@ export async function POST(request: Request) {
   if (chiffres) {
     const lirePersonnes = personnesAFournir({ chiffres, connues, photos, arrivees: depuis ? lignes.length : 0 });
     const [enRoute, resume] = await Promise.all([
-      supabase.from("collectif_photos").select("id", { count: "exact", head: true }).eq("edition_id", edition.id).is("confirmee_le", null).gt("created_at", new Date(Date.now() - DELAI_DECLARATION_MORTE_MS).toISOString()),
+      /* Les déclarations vivantes et non remplacées, zéro collecte close (28/10, `compterEnCours`). */
+      compterEnCours(supabase, edition, new Date()),
       lirePersonnes
         ? lireToutesLesLignes<LigneResume>(() => supabase.from(VUE_RESUME).select(COLONNES_RESUME).eq("edition_id", edition.id).returns<LigneResume[]>(), { colonne: "id", croissant: true }, "résumé des photos (état)")
         : Promise.resolve(null),
     ]);
-    if (!enRoute.error) enCours = enRoute.count ?? 0;
+    if (enRoute !== null) enCours = enRoute;
     /* Une vue absente (migration 20261022) ou une lecture ratée : pas de chiffre, l'écran garde celui qu'il a. */
     if (resume && !resume.error) personnes = compterPersonnes(resume.data);
   }

@@ -266,19 +266,27 @@ export type Decision =
  * page, elle CONSOMME la place comme une nouvelle, dans l'ordre du lot ; sans
  * place, elle reste à la corbeille et le refus du plafond le dit. Sans `ctx`,
  * la règle d'avant : la corbeille reste « déjà là ».
+ *
+ * `photosDeLaPersonne` (28/10) : les photos ARRIVÉES de la personne qui déclare (participant connu,
+ * ou le responsable), lues pour les noms du lot (`lirePhotosDeLaPersonne`). Une clé neuve qui
+ * désigne l'une d'elles, sel mis à part (`jumelleDeLaPersonne`), est « déjà là » : la même photo
+ * renvoyée d'un autre appareil. Elle ne consomme pas la place, rien ne s'écrit, et la réponse dit
+ * où elle est, comme pour un « déjà là » du même appareil.
  */
 export function planDeclaration(
   fichiers: readonly FichierDeclare[],
   existants: ReadonlyMap<string, Existant>,
   place: Place,
-  ctx?: ContexteDeclaration
+  ctx?: ContexteDeclaration,
+  photosDeLaPersonne: readonly PhotoDeLaPersonne[] = []
 ): Decision[] {
   const restaurable = (e: Existant | undefined): e is Existant => Boolean(e && ctx && restaurableParChoix(e, ctx));
+  const jumelle = (cle: string) => jumelleDeLaPersonne(cle, ctx, photosDeLaPersonne);
   const vus = new Set<string>();
   /* Ce qui consomme la place, dans l'ordre du lot : les nouvelles, et les photos qui reviennent sur CE lien. */
   const consommatrices = fichiers.filter((f) => {
     const e = existants.get(f.cle);
-    const consomme = !e || (restaurable(e) && duMemeLien(e, ctx?.provenanceId ?? null));
+    const consomme = (!e && !jumelle(f.cle)) || (restaurable(e) && duMemeLien(e, ctx?.provenanceId ?? null));
     return consomme && !vus.has(f.cle) && vus.add(f.cle);
   });
   const tranche = trancherLot(consommatrices.length, place);
@@ -301,6 +309,12 @@ export function planDeclaration(
       /* Une photo à la corbeille ne repart pas : elle est « déjà là », et la réponse le dit (`corbeille`). */
       if (e.corbeille) return { cle: f.cle, sorte: "deja", id: e.id, corbeille: true, ...ou };
       return e.confirmee ? { cle: f.cle, sorte: "deja", id: e.id, ...ou } : { cle: f.cle, sorte: "reprise", id: e.id, r2_key: e.r2_key };
+    }
+    /* La même photo, déjà arrivée par un AUTRE appareil de la même personne (28/10). */
+    const j = jumelle(f.cle);
+    if (j && ctx) {
+      const origine = origineDeja(j, ctx);
+      return { cle: f.cle, sorte: "deja", id: j.id, ou: origine.ou, lienId: origine.lienId };
     }
     if (acceptees.has(f.cle) && !dejaDecide.has(f.cle)) {
       dejaDecide.add(f.cle);
@@ -339,11 +353,165 @@ export function partagerConnues(
   return { confirmees, aRevoir, details };
 }
 
-/** Une ligne compte dans les plafonds si elle est arrivée, ou déclarée depuis peu. */
-export function compteDansPlafond(l: { confirmee_le: string | null; created_at: string }, maintenant: Date): boolean {
+/**
+ * Une ligne compte dans les plafonds si elle est arrivée, ou déclarée depuis peu. `remplacee` :
+ * une déclaration jamais arrivée dont la même personne a depuis la photo, arrivée par un autre
+ * appareil (`remplaceesParmi`, 28/10) ; elle ne réserve plus rien. La base ne sait pas l'écrire
+ * en filtre : `filtreDansPlafond` compte comme avant, et `retirerRemplacees` ôte ces lignes-là.
+ */
+export function compteDansPlafond(l: { confirmee_le: string | null; created_at: string }, maintenant: Date, remplacee = false): boolean {
   if (l.confirmee_le) return true;
+  if (remplacee) return false;
   const t = Date.parse(l.created_at);
   return Number.isFinite(t) && maintenant.getTime() - t < DELAI_DECLARATION_MORTE_MS;
+}
+
+/* ─────────── la même photo, renvoyée par la même personne d'un AUTRE appareil (simulation Audencia du 28/10) ───────────
+   La clé porte le sel de l'appareil (cleDepot.ts) : c'est voulu, deux participants qui envoient chacun un
+   « IMG_1234.JPG » de même poids ne doivent pas se confondre (la seconde serait perdue en « déjà là »). Mais
+   la MÊME personne qui renvoie depuis un autre navigateur passait pour une nouvelle photo : en base, Julie
+   avait `2l6m414c60~IMG_4301.JPG|2028553|1793022990404` ET `1r0o524z25~IMG_4301.JPG|2028553|1793022990404`,
+   même empreinte, même personne ; l'écran a dit 19 reçues au lieu de 17 et son quota a compté deux fois.
+   La règle : pour une PERSONNE CONNUE (`participant_id`) ou le responsable, ce qui suit le sel
+   (`nom|taille|date`) suffit à reconnaître SA photo. Jamais entre deux personnes : la requête ne lit que les
+   siennes, et `memePersonne` le vérifie encore ici. */
+
+/** Le sel d'un appareil devant le nom (`selDeLAppareil` : 6 à 12 caractères, puis `~`). */
+const SEL_DEVANT = /^[a-z0-9]{6,12}~/;
+
+/** Ce que dit une clé une fois le sel ôté : le nom d'origine, le poids, la date (0 : pas une vraie date, `dateDeCle`). */
+export type PartiesCle = { nom: string; taille: number; date: number };
+
+/** Lire une clé de fichier (`sel~nom|taille|date`, ou une clé d'avant le sel). `null` : illisible. */
+export function partiesDeCle(cle: string): PartiesCle | null {
+  const m = /^(.*)\|(\d{1,15})\|(\d{1,16})$/.exec(cle);
+  if (!m) return null;
+  const nom = m[1].replace(SEL_DEVANT, "");
+  return nom ? { nom, taille: Number(m[2]), date: Number(m[3]) } : null;
+}
+
+/**
+ * Deux clés désignent-elles le même fichier, sel mis à part ? Même nom, même poids, et même date,
+ * sauf si l'une vaut 0 (photothèque d'iPhone : la date est celle du choix, `dateDeCle`) : alors
+ * nom et poids suffisent. Ne dit RIEN de la personne : `memePersonne` à côté, toujours.
+ */
+export function memeFichier(a: string, b: string): boolean {
+  const x = partiesDeCle(a);
+  const y = partiesDeCle(b);
+  if (!x || !y) return false;
+  return x.nom === y.nom && x.taille === y.taille && (x.date === y.date || x.date === 0 || y.date === 0);
+}
+
+/** Qui a déposé, tel qu'on peut le reconnaître d'un appareil à l'autre. */
+export type Personne = { role?: string; participantId?: string | null };
+
+/**
+ * La même personne ? Deux participants connus de même `participant_id`, ou le responsable deux fois
+ * (il est seul à déposer sous ce rôle : l'équipe ne dépose pas). Un participant inconnu (sans
+ * `participant_id`) n'est reconnu sur aucun autre appareil : rien ne dit que c'est lui.
+ */
+export function memePersonne(a: Personne, b: Personne): boolean {
+  if (a.participantId && b.participantId) return a.participantId === b.participantId;
+  if (a.participantId || b.participantId) return false;
+  return a.role === "responsable" && b.role === "responsable";
+}
+
+/** Une photo de la personne qui déclare, lue avec sa clé (`lirePhotosDeLaPersonne`). */
+export type PhotoDeLaPersonne = Existant & { cle: string };
+
+/** La personne de la page qui déclare, ou `null` si elle ne peut pas être reconnue ailleurs. */
+export function personneDuContexte(ctx: ContexteDeclaration): Personne | null {
+  if (ctx.role === "responsable") return { role: "responsable", participantId: null };
+  return ctx.participantId ? { role: "participant", participantId: ctx.participantId } : null;
+}
+
+/**
+ * La photo de CETTE personne, déjà arrivée par un autre appareil, que désigne cette clé : arrivée,
+ * hors corbeille, même fichier sel mis à part. `null` : aucune (ou une personne qu'on ne reconnaît
+ * pas d'un appareil à l'autre). La même clé exacte est l'affaire de `existants` (la reprise).
+ */
+export function jumelleDeLaPersonne(cle: string, ctx: ContexteDeclaration | undefined, photos: readonly PhotoDeLaPersonne[]): PhotoDeLaPersonne | null {
+  const qui = ctx ? personneDuContexte(ctx) : null;
+  if (!qui) return null;
+  return photos.find((p) => p.confirmee && !p.corbeille && p.cle !== cle && memePersonne(p, qui) && memeFichier(p.cle, cle)) ?? null;
+}
+
+/**
+ * Une déclaration encore EN COURS d'envoi, pour la page Photos du responsable : 15 minutes au plus
+ * sans confirmation. Pourquoi 15 : le moteur ne signe que 8 photos d'avance pour 4 voies
+ * (`FILE_SIGNEE`, `VOIES`) et confirme toutes les 15 s ; une photo déclarée attend donc au plus une
+ * douzaine d'envois, soit moins de 15 min jusqu'à 3 Mo par photo à 320 kb/s. Au-delà, c'est un
+ * téléphone fermé ou une déclaration reprise ailleurs : plus « en cours ». Ce n'est QUE l'affichage :
+ * la place, elle, reste réservée 2 h (`DELAI_DECLARATION_MORTE_MS`, la reprise y retrouve sa ligne).
+ */
+export const DELAI_EN_COURS_MS = 15 * 60_000;
+
+/** Une ligne de `collectif_photos` pas encore arrivée, lue pour « en cours » et les plafonds. */
+export type DeclarationEnSuspens = Personne & {
+  id: string;
+  cle: string;
+  created_at: string;
+  appareilId: string | null;
+  provenanceId: string | null;
+  empreinte?: string | null;
+};
+
+/** Une photo arrivée, comparée à une déclaration en suspens. */
+export type PhotoArrivee = Personne & { id: string; cle: string; empreinte?: string | null };
+
+/**
+ * Les déclarations en suspens que la même personne a depuis reçues autrement : une photo arrivée,
+ * hors corbeille (l'appelant ne passe qu'elles), même fichier sel mis à part, ou même empreinte
+ * quand les deux en ont une. Jamais entre deux personnes. Rien n'est effacé en base : elles cessent
+ * seulement de compter (plafond, « en cours »).
+ */
+export function remplaceesParmi(suspens: readonly DeclarationEnSuspens[], arrivees: readonly PhotoArrivee[]): Set<string> {
+  const out = new Set<string>();
+  for (const s of suspens) {
+    if (!s.participantId && s.role !== "responsable") continue;
+    const trouvee = arrivees.some(
+      (a) => a.id !== s.id && memePersonne(a, s) && (memeFichier(a.cle, s.cle) || (Boolean(s.empreinte) && a.empreinte === s.empreinte))
+    );
+    if (trouvee) out.add(s.id);
+  }
+  return out;
+}
+
+/** Une déclaration en suspens est-elle encore vivante (`DELAI_EN_COURS_MS`) ? */
+export function declarationVivante(l: { created_at: string }, maintenant: Date): boolean {
+  const t = Date.parse(l.created_at);
+  return Number.isFinite(t) && maintenant.getTime() - t < DELAI_EN_COURS_MS;
+}
+
+/**
+ * « N en cours » de la page Photos : les déclarations vivantes et non remplacées, ZÉRO quand la
+ * collecte est close (état effectif, `collecteOuverte`) : plus personne n'envoie, même si des
+ * lignes coupées restent en base.
+ */
+export function enCoursAffiche(suspens: readonly { id: string; created_at: string }[], remplacees: ReadonlySet<string>, ouverte: boolean, maintenant: Date): number {
+  if (!ouverte) return 0;
+  return suspens.filter((s) => !remplacees.has(s.id) && declarationVivante(s, maintenant)).length;
+}
+
+/**
+ * Les comptes du plafond (`compterPourPlafond`), moins les déclarations remplacées : du total, et de
+ * la place de la personne quand elles sont à elle (le même filtre que le compte : sa personne si
+ * elle est connue, sinon son appareil ; son lien si le plafond est celui d'un lien). `suspens` ne
+ * porte que des lignes que le compte a comptées (récentes de moins de 2 h, non arrivées, hors
+ * corbeille).
+ */
+export function retirerRemplacees(
+  comptes: { total: number; parAppareil: number },
+  suspens: readonly DeclarationEnSuspens[],
+  remplacees: ReadonlySet<string>,
+  qui: { appareil: string | null; participantId: string | null; provenanceId: string | null }
+): { total: number; parAppareil: number } {
+  const parties = suspens.filter((s) => remplacees.has(s.id));
+  const aLui = parties.filter((s) => {
+    const personne = qui.participantId ? s.participantId === qui.participantId : qui.appareil !== null && s.appareilId === qui.appareil;
+    return personne && (!qui.provenanceId || s.provenanceId === qui.provenanceId);
+  });
+  return { total: Math.max(0, comptes.total - parties.length), parAppareil: Math.max(0, comptes.parAppareil - aLui.length) };
 }
 
 /* ─────────── les vidéos (T-200 : refusées, décision de Mathias du 20/10) ───────────

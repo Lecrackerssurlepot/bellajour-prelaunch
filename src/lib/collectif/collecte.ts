@@ -5,9 +5,21 @@
 
 import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { DELAI_DECLARATION_MORTE_MS, type Existant } from "./depot";
+import {
+  DELAI_DECLARATION_MORTE_MS,
+  DELAI_EN_COURS_MS,
+  enCoursAffiche,
+  remplaceesParmi,
+  retirerRemplacees,
+  type DeclarationEnSuspens,
+  type Existant,
+  type Personne,
+  type PhotoArrivee,
+  type PhotoDeLaPersonne,
+} from "./depot";
+import { collecteOuverte, type EtatEdition } from "./etats";
 import { COMPTE_SANS_LIGNE, lireHorsCorbeille } from "./horsCorbeille";
-import { enPaquets, listeIn } from "./lignes";
+import { enPaquets, listeIn, lireToutesLesLignes, type Lecture } from "./lignes";
 import { colonneAbsente } from "./migration";
 import { placeRestante, type Place, type ReglagesPlafond } from "./plafonds";
 import type { TypeProvenance } from "./types";
@@ -250,7 +262,209 @@ export async function placeDuParticipant(
   maintenant: Date
 ): Promise<Place | null> {
   const plafondLien = lien?.plafond_par_personne ?? null;
-  const comptes = await compterPourPlafond(supabase, edition.id, appareil, maintenant, plafondLien !== null && lien ? lien.id : null, participantId);
+  const comptes = await compterPourPlafondNet(supabase, edition.id, appareil, maintenant, plafondLien !== null && lien ? lien.id : null, participantId);
   if (!comptes) return null;
   return placeRestante(edition, { role: "participant", sansPlafond: Boolean(lien?.sans_plafond), plafondLien, dejaParAppareil: comptes.parAppareil }, comptes.total);
+}
+
+/* ─────────── la même photo d'un autre appareil, les déclarations orphelines (simulation Audencia du 28/10) ─────────── */
+
+/**
+ * Les photos ARRIVÉES de cette personne (participant connu, ou le responsable), hors corbeille, pour
+ * les noms d'un lot : ce que `planDeclaration` compare, sel mis à part (`jumelleDeLaPersonne`). UNE
+ * lecture par lot (25 noms au plus, un paquet), sur l'index de la personne ; jamais une requête par
+ * fichier. Les noms viennent du NAVIGATEUR : cités par `listeIn`, jamais par `.in()`. Sans la
+ * migration 20261023, aucun participant n'est connu (pas de `participant_id`) : le responsable
+ * seul, sans le filtre de la corbeille. `null` : base illisible.
+ */
+export async function lirePhotosDeLaPersonne(
+  supabase: SupabaseClient,
+  editionId: string,
+  qui: Personne | null,
+  noms: readonly string[]
+): Promise<PhotoDeLaPersonne[] | null> {
+  const uniques = [...new Set(noms.filter(Boolean))];
+  if (!qui || !uniques.length) return [];
+  if (!qui.participantId && qui.role !== "responsable") return [];
+  type Lu = { id: string; r2_key: string; cle_fichier: string; provenance_id: string | null; role_deposant: string; appareil_id: string | null; participant_id?: string | null };
+  const lus = await lireHorsCorbeille(async (avec) => {
+    if (!avec && qui.participantId) return { paquets: [] as { data: Lu[] | null }[], error: null };
+    const colonnes: string = avec ? "id, r2_key, cle_fichier, provenance_id, role_deposant, appareil_id, participant_id" : "id, r2_key, cle_fichier, provenance_id, role_deposant, appareil_id";
+    const paquets = await Promise.all(
+      enPaquets(uniques).map((paquet) => {
+        const q = supabase.from("collectif_photos").select(colonnes).eq("edition_id", editionId).not("confirmee_le", "is", null).filter("nom_origine", "in", listeIn(paquet));
+        const deQui = qui.participantId ? q.eq("participant_id", qui.participantId) : q.eq("role_deposant", "responsable");
+        return (avec ? deQui.is("supprimee_le", null) : deQui).returns<Lu[]>();
+      })
+    );
+    return { paquets, error: paquets.find((p) => p.error)?.error ?? null };
+  });
+  if (lus.error) {
+    console.error("[collectif] photos de la personne illisibles", lus.error.code, lus.error.message);
+    return null;
+  }
+  const out: PhotoDeLaPersonne[] = [];
+  for (const { data } of lus.paquets) {
+    for (const l of data ?? []) {
+      out.push({
+        id: l.id,
+        r2_key: l.r2_key,
+        cle: l.cle_fichier,
+        confirmee: true,
+        provenanceId: l.provenance_id ?? null,
+        role: l.role_deposant,
+        appareilId: l.appareil_id ?? null,
+        participantId: l.participant_id ?? null,
+      });
+    }
+  }
+  return out;
+}
+
+/** Une ligne non arrivée telle que la base la rend (`colonnesSuspens`). */
+export type LigneSuspensLue = {
+  id: string;
+  cle_fichier: string;
+  nom_origine: string | null;
+  created_at: string;
+  role_deposant: string;
+  appareil_id: string | null;
+  provenance_id: string | null;
+  empreinte: string | null;
+  participant_id?: string | null;
+};
+
+/** Les colonnes d'une ligne en suspens ; `participant_id` seulement avec la migration 20261023 (`lireHorsCorbeille`). */
+export function colonnesSuspens(avec: boolean): string {
+  return `id, cle_fichier, nom_origine, created_at, role_deposant, appareil_id, provenance_id, empreinte${avec ? ", participant_id" : ""}`;
+}
+
+/** La ligne lue, dans la forme des règles pures (`remplaceesParmi`). */
+export function versSuspens(l: LigneSuspensLue): DeclarationEnSuspens {
+  return {
+    id: l.id,
+    cle: l.cle_fichier,
+    created_at: l.created_at,
+    role: l.role_deposant,
+    participantId: l.participant_id ?? null,
+    appareilId: l.appareil_id ?? null,
+    provenanceId: l.provenance_id ?? null,
+    empreinte: l.empreinte ?? null,
+  };
+}
+
+/**
+ * Parmi ces lignes non arrivées, celles que la même personne a depuis reçues par un autre appareil
+ * (`remplaceesParmi`) : ses photos ARRIVÉES, hors corbeille, sous les mêmes noms. Aucune lecture si
+ * aucune ligne n'est d'une personne reconnaissable (participant connu, ou le responsable). Les noms
+ * viennent du navigateur : par `listeIn` ; les personnes par leurs uuid. Lecture seule. Le même
+ * calcul pour le plafond, « en cours », le rattrapage et les « photos coupées » de l'appareil.
+ * `null` : base illisible.
+ */
+export async function remplaceesDesLignes(supabase: SupabaseClient, editionId: string, lignes: readonly LigneSuspensLue[]): Promise<Set<string> | null> {
+  const reconnaissables = lignes.filter((l) => l.participant_id || l.role_deposant === "responsable");
+  const noms = [...new Set(reconnaissables.map((l) => l.nom_origine ?? "").filter(Boolean))];
+  if (!noms.length) return new Set();
+  const personnes = [...new Set(reconnaissables.map((l) => l.participant_id).filter((x): x is string => Boolean(x)))];
+  const avecResponsable = reconnaissables.some((l) => l.role_deposant === "responsable");
+  type LuArrivee = { id: string; cle_fichier: string; role_deposant: string; empreinte: string | null; participant_id?: string | null };
+  const arrivees: PhotoArrivee[] = [];
+  for (const paquet of enPaquets(noms)) {
+    const lu = await lireHorsCorbeille((avec): PromiseLike<Lecture<LuArrivee>> => {
+      /* Les personnes : des uuid de la base (jamais un texte de client), et le responsable. */
+      const qui = [...(avec && personnes.length ? [`participant_id.in.(${personnes.join(",")})`] : []), ...(avecResponsable ? ["role_deposant.eq.responsable"] : [])];
+      if (!qui.length) return Promise.resolve({ data: [], error: null });
+      return lireToutesLesLignes<LuArrivee>(
+        () => {
+          const colonnes: string = `id, cle_fichier, role_deposant, empreinte${avec ? ", participant_id" : ""}`;
+          const q = supabase.from("collectif_photos").select(colonnes).eq("edition_id", editionId).not("confirmee_le", "is", null).filter("nom_origine", "in", listeIn(paquet)).or(qui.join(","));
+          return (avec ? q.is("supprimee_le", null) : q).returns<LuArrivee[]>();
+        },
+        { colonne: "id", croissant: true },
+        "photos arrivées des déclarations en suspens"
+      );
+    });
+    if (lu.error) {
+      console.error("[collectif] photos arrivées des déclarations en suspens illisibles", lu.error.code, lu.error.message);
+      return null;
+    }
+    for (const a of lu.data ?? []) arrivees.push({ id: a.id, cle: a.cle_fichier, role: a.role_deposant, participantId: a.participant_id ?? null, empreinte: a.empreinte ?? null });
+  }
+  return remplaceesParmi(lignes.map(versSuspens), arrivees);
+}
+
+/**
+ * Les déclarations jamais arrivées depuis `depuis` (et jusqu'à `avant`, s'il est donné : le
+ * rattrapage ne regarde que les lignes de plus de dix minutes), hors corbeille, et celles d'entre
+ * elles que la même personne a depuis reçues par un autre appareil (`remplaceesDesLignes`). Lecture
+ * seule : rien n'est effacé. Sans la migration 20261023 : ni corbeille, ni personne (le responsable
+ * seul se reconnaît). `null` : base illisible.
+ */
+export async function lireEnSuspens(
+  supabase: SupabaseClient,
+  editionId: string,
+  depuis: Date,
+  avant: Date | null = null
+): Promise<{ suspens: DeclarationEnSuspens[]; remplacees: Set<string> } | null> {
+  const iso = depuis.toISOString();
+  const lus = await lireHorsCorbeille((avec) =>
+    lireToutesLesLignes<LigneSuspensLue>(
+      () => {
+        const q = supabase.from("collectif_photos").select(colonnesSuspens(avec)).eq("edition_id", editionId).is("confirmee_le", null).gt("created_at", iso);
+        const borne = avant ? q.lte("created_at", avant.toISOString()) : q;
+        return (avec ? borne.is("supprimee_le", null) : borne).returns<LigneSuspensLue[]>();
+      },
+      { colonne: "created_at", croissant: true },
+      "déclarations en suspens"
+    )
+  );
+  if (lus.error) {
+    console.error("[collectif] déclarations en suspens illisibles", lus.error.code, lus.error.message);
+    return null;
+  }
+  const lignes = lus.data ?? [];
+  const remplacees = await remplaceesDesLignes(supabase, editionId, lignes);
+  if (!remplacees) return null;
+  return { suspens: lignes.map(versSuspens), remplacees };
+}
+
+/**
+ * Les comptes du plafond (`compterPourPlafond`, inchangé), moins les déclarations que la même personne
+ * a depuis reçues par un autre appareil (`retirerRemplacees`) : elles ne réservent plus sa place. Les
+ * deux lectures partent ensemble. Les suspens illisibles : les comptes d'avant, tels quels (plus
+ * stricts, jamais plus larges) ; les comptes illisibles : `null`, comme avant.
+ */
+export async function compterPourPlafondNet(
+  supabase: SupabaseClient,
+  editionId: string,
+  appareil: string | null,
+  maintenant: Date,
+  provenanceId: string | null = null,
+  participantId: string | null = null
+): Promise<Comptes | null> {
+  const [comptes, enSuspens] = await Promise.all([
+    compterPourPlafond(supabase, editionId, appareil, maintenant, provenanceId, participantId),
+    lireEnSuspens(supabase, editionId, new Date(maintenant.getTime() - DELAI_DECLARATION_MORTE_MS)),
+  ]);
+  if (!comptes) return null;
+  if (!enSuspens || !enSuspens.remplacees.size) return comptes;
+  return retirerRemplacees(comptes, enSuspens.suspens, enSuspens.remplacees, { appareil, participantId, provenanceId });
+}
+
+/**
+ * « N en cours » de la page Photos (`enCoursAffiche`) : zéro sans rien lire quand la collecte est
+ * close (état effectif) ; sinon les déclarations des 15 dernières minutes (`DELAI_EN_COURS_MS`),
+ * hors corbeille, moins celles que la même personne a reçues autrement. `null` : base illisible
+ * (l'écran garde le chiffre qu'il a).
+ */
+export async function compterEnCours(
+  supabase: SupabaseClient,
+  edition: { id: string; etat: EtatEdition; cloture_le: string | null },
+  maintenant: Date
+): Promise<number | null> {
+  const ouverte = collecteOuverte(edition.etat, edition.cloture_le, maintenant);
+  if (!ouverte) return 0;
+  const lu = await lireEnSuspens(supabase, edition.id, new Date(maintenant.getTime() - DELAI_EN_COURS_MS));
+  if (!lu) return null;
+  return enCoursAffiche(lu.suspens, lu.remplacees, ouverte, maintenant);
 }
