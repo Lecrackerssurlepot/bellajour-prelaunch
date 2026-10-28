@@ -8426,6 +8426,32 @@ function verifPartageLiensMail() {
       ok("28/10 : les deux logos de l'espace (barre du téléphone, menu de l'ordinateur) sont un <Link> vers /edition/<token> du lien COURANT, aria-label « Tableau de bord », qui referme le tiroir",
         (coq.match(/<Link href=\{`\/edition\/\$\{props\.token\}`\} prefetch=\{false\} className="ec-logo-lien[^"]*" aria-label="Tableau de bord" onClick=\{\(\) => setOuvert\(false\)\}>/g) ?? []).length === 2
           && !/<img className="ec-logo[^>]*alt="Bellajour"/.test(coq));
+      {
+        /* 28/10 (retour 2) : le logo est CENTRÉ dans la barre (le lien est un flex centré, hauteur fixe, plus un bloc dont l'image collait en haut). */
+        const cssLogo = lire("src/app/edition/[token]/espace.css");
+        const rl = cssLogo.slice(cssLogo.indexOf(".ec-espace .ec-logo-lien--mobile {"));
+        const rl1 = rl.slice(0, rl.indexOf("}"));
+        ok("28/10 : le lien du logo de la barre est un flex centré (`align-items: center`, hauteur 44 px), au milieu de la barre (`top: 50%`, `translateY(-50%)`) ; plus de `min-height` qui laissait l'image en haut du lien",
+          /display: flex;/.test(rl1) && /align-items: center;/.test(rl1) && /height: 44px;/.test(rl1) && /top: 50%;/.test(rl1) && /translateY\(-50%\)/.test(rl1) && !/min-height/.test(rl1));
+        /* retour 3 : le titre de la barre remonte la page */
+        const rt = cssLogo.slice(cssLogo.indexOf(".ec-espace .ec-barre-titre {"));
+        const rt1 = rt.slice(0, rt.indexOf("}"));
+        ok("28/10 : le titre de la barre est un BOUTON « Revenir en haut » (désactivé tant que le logo est là), cible 44 px, qui remonte la page (`scrollTo` top 0, doux sauf `prefers-reduced-motion`) ; il ne répond au toucher que sous `data-defile`",
+          /<button type="button" className="ec-barre-titre" aria-label="Revenir en haut" disabled=\{!defile\} onClick=\{revenirEnHaut\} ref=\{setCibleTitre\} \/>/.test(coq)
+            && /window\.scrollTo\(\{ top: 0, behavior: comportement \}\)/.test(coq) && /prefers-reduced-motion: reduce/.test(coq.slice(coq.indexOf("function revenirEnHaut")))
+            && /height: 44px;/.test(rt1) && /pointer-events: none;/.test(rt1)
+            && /\[data-defile="oui"\] \.ec-barre-titre \{\s*pointer-events: auto;/.test(cssLogo));
+        /* retour 1 : la fenêtre de partage d'un lien */
+        const iFp = fenetre.indexOf("function FenetrePartageDuLien");
+        const fp = fenetre.slice(iFp, fenetre.indexOf("function detailsDuQr"));
+        ok("28/10 : la fenêtre de partage d'un lien (ouverte après « Créer le lien ») montre « Partager » au téléphone qui sait partager et « Copier le message » sinon ; l'appel à `navigator.share` part d'un TOUCHER sur le bouton (Safari le refuse hors geste), jamais d'un effet ni de la réponse du serveur ; « QR code » reste",
+          /useTelephonePartageur\(\)/.test(fp) && /telephone \? \(/.test(fp) && /"Partager"/.test(fp) && /"Copier le message"/.test(fp) && /onClick=\{\(\) => void partager\(\)\}/.test(fp)
+            && /partagerSurLeTelephone\(navigator, true, donneesDePartage\(lien, contexte\)\)/.test(fp) && !/useEffect/.test(fp) && />\s*QR code\s*</.test(fp));
+        const col = code("src/app/edition/[token]/photos/Collecte.tsx");
+        ok("28/10 : le bouton de l'en-tête d'un lien ouvert dit « Partager » (feuille de l'iPhone d'un toucher) au téléphone qui sait partager, « Copier le message » sinon ; la création d'un lien n'appelle jamais `share` d'elle-même (`quandCree` ouvre seulement la fenêtre)",
+          /if \(peutPartager\) \{\s*await partager\(l\);/.test(col) && /peutPartager \? "Partager" : copie \? "Copié" : "Copier le message"/.test(col)
+            && !/navigator\.share/.test(col.slice(col.indexOf("const quandCree"), col.indexOf("const quandCree") + 400)) && !/partager\(/.test(col.slice(col.indexOf("const quandCree"), col.indexOf("const quandCree") + 400)));
+      }
     }
   }
 

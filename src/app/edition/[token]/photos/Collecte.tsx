@@ -58,7 +58,7 @@ import { useMoteur } from "../../_composants/depot/useMoteur";
 import { EnTeteEcran } from "../../_composants/Ecran";
 import Fenetre from "../../_composants/Fenetre";
 import { ActionsFinCollecte, ChoixFinCollecte, ID_LIGNE_FIN, LigneFinCollecte, terminerLaCollecte, type FinDeCollecte } from "../../_composants/FinCollecte";
-import { copierLeMessage, donneesDePartage, FenetreCreerLien, FenetrePartage, FenetreQr, FeuilleQr, type ContexteMessage, type LienCree, type LienPartage } from "../../_composants/LienContribution";
+import { copierLeMessage, donneesDePartage, FenetreCreerLien, FenetrePartage, FenetreQr, FeuilleQr, useTelephonePartageur, type ContexteMessage, type LienCree, type LienPartage } from "../../_composants/LienContribution";
 import { useSondage } from "../../_composants/useSondage";
 import Agrandir from "./Agrandir";
 import Corbeille, { BASE_PAS_A_JOUR, type PhotoCorbeille } from "./Corbeille";
@@ -193,6 +193,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   const v = (vous: string, toi: string) => (p.tu ? toi : vous);
   const client = useSyncExternalStore(rien, () => true, () => false);
   const telephone = useTelephone();
+  const peutPartager = useTelephonePartageur();
   /* L'équipe n'a pas de corbeille : `?dossier=corbeille` sur son lien rouvre « Toutes les photos ». */
   const [f, setF] = useState<Filtres>(() => {
     const d = filtresDepuis(p.dossierInitial, p.modeTout);
@@ -1098,6 +1099,11 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
   async function copierMessageDuLien() {
     const l = lienPartage();
     if (!l) return;
+    /* Au téléphone qui sait partager : la feuille de l'iPhone, d'un toucher (jamais « Copier le message »). */
+    if (peutPartager) {
+      await partager(l);
+      return;
+    }
     const ok = await copierLeMessage(l, contexte);
     if (ok) {
       setCopie(true);
@@ -1644,7 +1650,7 @@ function CollecteEcran(p: Props & { onTermine: (termineLe: string) => void }) {
                     {partageable && !prefereesActif ? (
                       <>
                         <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copierMessageDuLien()}>
-                          {copie ? "Copié" : "Copier le message"}
+                          {peutPartager ? "Partager" : copie ? "Copié" : "Copier le message"}
                         </button>
                         <button
                           type="button"

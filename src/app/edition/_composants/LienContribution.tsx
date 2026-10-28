@@ -85,7 +85,7 @@ const REQUETE_TELEPHONE = "(max-width: 860px)";
 const rienDeNeuf = () => () => {};
 
 /** Vrai au téléphone qui sait partager (`navigator.share`) : faux au rendu serveur, puis vrai après le montage, sans casser l'hydratation. */
-function useTelephonePartageur(): boolean {
+export function useTelephonePartageur(): boolean {
   return useSyncExternalStore(
     rienDeNeuf,
     () => typeof navigator !== "undefined" && typeof navigator.share === "function" && window.matchMedia(REQUETE_TELEPHONE).matches,
@@ -361,10 +361,18 @@ export function FenetrePartage({ lien, contexte, onFermer, onQr }: { lien: LienP
 
 function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPartage; contexte: ContexteMessage; onFermer: () => void; onQr: () => void }) {
   const [copie, setCopie] = useState<"" | "ok" | "non">("");
+  const telephone = useTelephonePartageur();
   async function copier() {
     const ok = await copierLeMessage(lien, contexte);
     setCopie(ok ? "ok" : "non");
     if (ok) setTimeout(() => setCopie(""), 2000);
+  }
+  /* Au téléphone qui sait partager : « Partager » (la feuille de l'iPhone). L'appel part TOUJOURS d'un toucher sur ce bouton, jamais tout
+     seul après la réponse du serveur : Safari refuse `navigator.share` hors d'un geste (NotAllowedError). Si la feuille échoue quand même,
+     le message est copié (« Message copié »). */
+  async function partager() {
+    const issue = await partagerSurLeTelephone(navigator, true, donneesDePartage(lien, contexte));
+    if (issue === "repli") await copier();
   }
   return (
     <Fenetre
@@ -372,9 +380,15 @@ function FenetrePartageDuLien({ lien, contexte, onFermer, onQr }: { lien: LienPa
       onFermer={onFermer}
     >
       <div className="ec-partage ec-partage--deux">
-        <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copier()}>
-          {copie === "ok" ? "Copié" : copie === "non" ? "Copie impossible" : "Copier le message"}
-        </button>
+        {telephone ? (
+          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void partager()}>
+            {copie === "ok" ? "Message copié" : copie === "non" ? "Copie impossible" : "Partager"}
+          </button>
+        ) : (
+          <button type="button" className="ec-bouton ec-bouton--petit" onClick={() => void copier()}>
+            {copie === "ok" ? "Copié" : copie === "non" ? "Copie impossible" : "Copier le message"}
+          </button>
+        )}
         <button type="button" className="ec-bouton ec-bouton--clair ec-bouton--petit" onClick={onQr}>
           QR code
         </button>

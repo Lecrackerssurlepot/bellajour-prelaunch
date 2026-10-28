@@ -198,6 +198,14 @@ export default function Coquille(props: Props) {
   const [barre, setBarre] = useState<HTMLElement | null>(null);
   const [cibleTitre, setCibleTitre] = useState<HTMLElement | null>(null);
   const [defile, setDefile] = useState(false);
+  /* Toucher le titre de la barre remonte en haut, comme la barre d'état de l'iPhone (doux, sauf si l'appareil demande moins de mouvement). */
+  function revenirEnHaut() {
+    const comportement: ScrollBehavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+    window.scrollTo({ top: 0, behavior: comportement });
+    document.querySelectorAll<HTMLElement>(".ec-contenu, .ec-defile").forEach((z) => {
+      if (z.scrollTop > 0) z.scrollTo({ top: 0, behavior: comportement });
+    });
+  }
   const titreBarre = useMemo(() => ({ barre, cible: cibleTitre, signaler: setDefile }), [barre, cibleTitre]);
 
   const entrees = (groupe: 1 | 2) =>
@@ -264,7 +272,7 @@ export default function Coquille(props: Props) {
           <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien ec-logo-lien--mobile" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
             <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="" width={96} height={36} />
           </Link>
-          <span className="ec-barre-titre" aria-hidden="true" ref={setCibleTitre} />
+          <button type="button" className="ec-barre-titre" aria-label="Revenir en haut" disabled={!defile} onClick={revenirEnHaut} ref={setCibleTitre} />
         </span>
         {/* Le bouton garde SON dessin (le menu) tiroir ouvert : la croix est dans le tiroir, sous le doigt. */}
         <button
