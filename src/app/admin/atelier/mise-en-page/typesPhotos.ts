@@ -32,6 +32,8 @@ export type ReponsePhotosMep = {
   titre: string | null;
   prenom: string | null;
   etat: string;
+  /** Le nombre de pages payé (gelé, D20) ; null s'il n'est pas connu. */
+  nbPages: number | null;
   ttl: number;
   photos: PhotoDossierMep[];
 };
@@ -44,6 +46,8 @@ export type ReponsePhotosMep = {
  * `magazine_id`) : la liste des magazines vient à côté, pour choisir lequel
  * composer. Seules les photos arrivées et hors corbeille y sont.
  */
+export type DepotMep = "lien" | "responsable" | "atelier";
+
 export type PhotoEditionMep = {
   id: string;
   /** `nom_origine`, null après la rétention. */
@@ -57,6 +61,10 @@ export type PhotoEditionMep = {
   lieu: string | null;
   /** Le nom de la personne, écrit comme l'espace Photos l'écrit (même graphie). */
   personne: string;
+  /** Le NOM du lien de groupe par lequel la photo est arrivée (« Bateau 3 », « Lien général ») ; null pour le responsable et l'atelier. */
+  lien: string | null;
+  /** Par où elle est arrivée : un lien (général compris), le responsable, l'atelier. */
+  depot: DepotMep;
   /** Le cœur du responsable (« Ma sélection »). */
   preselection: boolean;
   /** « À ne pas publier » : l'éditeur la masque par défaut. */

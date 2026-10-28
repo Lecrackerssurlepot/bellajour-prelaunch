@@ -175,18 +175,34 @@
 }
 .mep-outil a.mep-lien-discret:hover { color: var(--bj-action); }
 
-/* ── filtres : le segment de la table de travail (.ate-seg) ── */
-.mep-outil .mep-filtres {
-  flex-wrap: wrap;
-  margin-bottom: var(--bj-sp-4);
-}
+/* ── onglets, recherche, source : les segments de la table de travail ── */
+.mep-outil .mep-onglets { margin-bottom: var(--bj-sp-4); }
 .mep-outil .mep-n {
   font-size: var(--bj-fs-xxs);
   font-variant-numeric: tabular-nums;
   color: var(--bj-text-faint);
 }
+.mep-outil .mep-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-3);
+  margin-bottom: var(--bj-sp-4);
+}
+.mep-outil .mep-note {
+  margin: 0 0 var(--bj-sp-3);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-soft);
+}
 
-/* ── les lignes ── */
+/* ── le tableau et le panneau ── */
+.mep-outil .mep-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--bj-sp-4);
+  align-items: start;
+}
+.mep-outil .mep-corps--peek { grid-template-columns: minmax(0, 1fr) 20rem; }
 .mep-outil .mep-dossiers {
   display: flex;
   flex-direction: column;
@@ -199,18 +215,38 @@
   border: 1px solid var(--adm-verre-bord);
   box-shadow: var(--adm-verre-ombre);
 }
+.mep-outil .mep-ligne-tete,
 .mep-outil .mep-dossier {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 11rem 7rem 7.5rem 5rem;
+  grid-template-columns: minmax(0, 1fr) 8rem minmax(0, 13rem) 7rem 8rem;
   align-items: center;
   gap: var(--bj-sp-4);
   padding: var(--bj-sp-3) var(--bj-sp-4);
+}
+.mep-outil .mep-corps--peek .mep-ligne-tete,
+.mep-outil .mep-corps--peek .mep-dossier {
+  grid-template-columns: minmax(0, 1fr) 7rem minmax(0, 10rem);
+}
+.mep-outil .mep-corps--peek .mep-ligne-tete span:nth-child(n+4),
+.mep-outil .mep-corps--peek .mep-dossier span:nth-child(n+4) { display: none; }
+.mep-outil .mep-ligne-tete {
+  padding-block: var(--bj-sp-2);
+  font-size: var(--bj-fs-xs);
+  color: var(--bj-text-faint);
+}
+.mep-outil .mep-dossier {
+  width: 100%;
+  border: 0;
   border-radius: var(--bj-r-sm);
+  background: transparent;
+  font-family: var(--bj-font-ui);
   font-size: var(--bj-fs-sm);
   color: var(--bj-text);
-  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
 }
 .mep-outil .mep-dossier:hover { background: var(--bj-veil-6); }
+.mep-outil .mep-dossier[aria-pressed="true"] { background: var(--bj-action-soft); }
 .mep-outil .mep-dossier-nom {
   min-width: 0;
   overflow: hidden;
@@ -227,19 +263,69 @@
   color: var(--bj-text-soft);
   white-space: nowrap;
 }
+.mep-outil .mep-dossier-statut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--bj-sp-2);
+  min-width: 0;
+  color: var(--bj-text-soft);
+}
 .mep-outil .mep-dossier-photos,
 .mep-outil .mep-dossier-date {
   color: var(--bj-text-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.mep-outil .mep-dossier-archive {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
-}
 .mep-outil .mep-vide {
+  margin: 0;
   color: var(--bj-text-soft);
 }
+
+/* ── le panneau d'aperçu ── */
+.mep-outil .mep-apercu {
+  position: sticky;
+  top: var(--bj-sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--bj-sp-3);
+  padding: var(--bj-sp-5);
+  border-radius: var(--bj-r-md);
+  background: var(--adm-verre);
+  border: 1px solid var(--adm-verre-bord);
+  box-shadow: var(--adm-verre-ombre);
+}
+.mep-outil .mep-apercu-tete {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bj-sp-3);
+}
+.mep-outil .mep-apercu-titre {
+  margin: 0;
+  font-family: var(--bj-font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.15;
+  color: var(--bj-text);
+}
+.mep-outil .mep-fermer { padding: 0 var(--bj-sp-3); line-height: 1.8; }
+.mep-outil .mep-alerte {
+  margin: 0;
+  padding: var(--bj-sp-2) var(--bj-sp-3);
+  border-radius: var(--bj-r-sm);
+  background: color-mix(in srgb, var(--ate-orange) 12%, transparent);
+  color: var(--ate-orange);
+  font-size: var(--bj-fs-xs);
+}
+.mep-outil .mep-alerte--gris { background: var(--bj-veil-8); color: var(--bj-text-soft); }
+.mep-outil .mep-apercu-liste { display: flex; flex-direction: column; gap: var(--bj-sp-2); margin: 0; font-size: var(--bj-fs-sm); }
+.mep-outil .mep-apercu-liste div { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: var(--bj-sp-3); }
+.mep-outil .mep-apercu-liste dt { color: var(--bj-text-faint); }
+.mep-outil .mep-apercu-liste dd { margin: 0; color: var(--bj-text); }
+.mep-outil .mep-apercu-gestes { display: flex; gap: var(--bj-sp-3); }
+.mep-outil .mep-ouvrir { text-decoration: none; font-weight: 600; }
 
 /* ── la coquille d'un dossier ── */
 .mep-outil .mep-sous-titre {
@@ -288,6 +374,8 @@
 }
 .mep-outil .mep-sq--texte { display: inline-block; width: 10rem; height: var(--bj-fs-sm); }
 .mep-outil .mep-sq--nom { display: inline-block; width: 16rem; height: 0.8em; }
-.mep-outil .mep-sq--filtres { width: 34rem; height: 38px; margin-bottom: var(--bj-sp-4); border-radius: var(--bj-r-pill); }
+.mep-outil .mep-sq--filtres { width: 26rem; height: 38px; margin-bottom: var(--bj-sp-4); border-radius: var(--bj-r-pill); }
 .mep-outil .mep-sq--ligne { height: 44px; background: var(--bj-veil-6); }
 .mep-outil .mep-sq--vignette { aspect-ratio: 1; }
+
+.mep-outil .mep-apercu .mep-dossier-etat { align-self: flex-start; }

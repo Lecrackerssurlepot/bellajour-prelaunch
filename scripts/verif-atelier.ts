@@ -451,7 +451,14 @@ import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, typ
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
-import { nommeurDePersonnes, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
+import { catalogueDeDossier, catalogueDEdition, refusDeStatut, urlDeLecture, adressesEncoreValables } from "@/app/admin/atelier/mise-en-page/[id]/chargerCatalogue";
+import { choisirOuverture as choisirOuvertureMep, issueDeReponse, delaiReprise, titreAEnvoyer, DELAI_ENVOI_MS, NOMS_ETATS, type CopieLocale } from "@/app/admin/atelier/mise-en-page/[id]/sauvegardePure";
+import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
+import type { Magazine as MagazineMepClient } from "@/lib/mise-en-page/magazine";
+import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
+/* L'éditeur de mise en page (couche logique pure) : 79 scénarios + séquences aléatoires à graine fixe. */
+import { verifierMepEditeur } from "./verif-mep-editeur";
+import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
 const ok = (n: string, c: boolean) => {
@@ -4130,7 +4137,7 @@ titre("— T-176 : la fenêtre de signature d'une vignette (pure) —");
   ok(`signerLectureVignette n'est appele que par r2.ts et les ecrans du collectif (${appelants.join(", ")})`,
      /* Planches du 20/10 (lot w1) : l'album du participant et la corbeille (responsable, atelier) signent leurs vignettes de la même façon.
         27/10 (mise en page 0 bis) : la lecture des photos d'une édition pour l'outil de mise en page aussi. */
-     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/admin/collectif/editions/[id]/mise-en-page/photos/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
+     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/atelier/mise-en-page/photos/route.ts", "app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/admin/collectif/editions/[id]/mise-en-page/photos/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
   const r2src = readFileSync(resolve(racine, "lib/atelier/r2.ts"), "utf8");
   const corps = (nom: string) => {
     const debut = r2src.indexOf(`export async function ${nom}(`);
@@ -6707,9 +6714,10 @@ const verifierMepPhotos = () => {
     /isValidNumeroToken\(token\)/.test(route) && /status: 400/.test(route) && /status: 404/.test(route)
       && /"Cache-Control": "no-store"/.test(route) && /export const dynamic = "force-dynamic"/.test(route)
       && route.indexOf("isValidNumeroToken(token)") < route.indexOf("makeSupabase()"));
-  ok("route photos : lit par lirePhotos (ses replis 42703), signe original ET vignette au TTL d'aperçu",
+  ok("route photos : lit par lirePhotos (ses replis 42703), original au TTL d'aperçu, vignette en adresse STABLE (signerLectureVignette), nb de pages payé lu",
     /lirePhotos\(supabase, numero\.id\)/.test(route) && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)/.test(route)
-      && /signerGet\(p\.vignette_key, APERCU_TTL_SECONDS\)/.test(route) && /ttl: APERCU_TTL_SECONDS/.test(route));
+      && /signerLectureVignette\(p\.vignette_key\)/.test(route) && !/signerGet\(p\.vignette_key/.test(route) && /ttl: APERCU_TTL_SECONDS/.test(route)
+      && /nb_pages/.test(route) && /nbPages: numero\.nb_pages \?\? null/.test(route));
   ok("route photos et chargerDossiersMep : aucune écriture (base, coffre, journal, mail), aucun log de token ni d'URL",
     !ECRIT.test(route) && !ECRIT.test(donneesMep) && !/console\.\w+\([^)]*(token|url)/i.test(route));
   ok("lirePhotos exportée sans être simplifiée : trois paliers, chacun ne retombe que sur 42703",
@@ -6766,9 +6774,10 @@ const verifierMepPhotosEdition = () => {
   ok("route édition : moyenne_key par lireAvecMoyenne + colonnesAvecMoyenne (repli 42703 non simplifié), absente des colonnes de base",
     /lireAvecMoyenne\(\(moyenne\) =>/.test(route) && /colonnesAvecMoyenne\(COLONNES_PHOTOS_EDITION_MEP, moyenne\)/.test(route)
       && !/moyenne_key/.test(COLONNES_PHOTOS_EDITION_MEP) && /deposant/.test(COLONNES_PHOTOS_EDITION_MEP) && /role_deposant/.test(COLONNES_PHOTOS_EDITION_MEP));
-  ok("route édition : vignette par signerLectureVignette, moyenne et original par signerGet au TTL d'aperçu, échec = null",
+  ok("route édition : vignette ET moyenne en adresse STABLE (signerLectureVignette, signerLectureMoyenne), original par signerGet au TTL d'aperçu, échec = null",
     /signerLectureVignette\(p\.vignette_key\)\.catch\(\(\) => null\)/.test(route)
-      && /signerGet\(p\.moyenne_key, APERCU_TTL_SECONDS\)\.catch\(\(\) => null\)/.test(route)
+      && /signerLectureMoyenne\(p\.moyenne_key\)\.catch\(\(\) => null\)/.test(route)
+      && !/signerGet\(p\.moyenne_key/.test(route)
       && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)\.catch\(\(\) => null\)/.test(route));
   ok("route édition : magazines id, rang, nom triés par rang",
     /from\("collectif_magazines"\)\.select\("id, rang, nom"\)\.eq\("edition_id", id\)\.order\("rang", \{ ascending: true \}\)/.test(route));
@@ -6810,6 +6819,27 @@ const verifierMepPhotosEdition = () => {
   const l4 = photoEditionMep({ ...base, vignette_key: null, moyenne_key: undefined }, "X", adresses);
   ok("ligne : sans vignette → null même si une adresse traîne ; sans moyenne (photo d'avant ou migration absente) → null ; original gardé",
     l4.vignette === null && l4.moyenne === null && l4.original === "https://o");
+  /* Le lien d'une photo (mise en page, 28/10) : le NOM du lien de contribution, « Lien général », null pour le responsable et l'atelier. */
+  const lienB = "aaaaaaaa-2222-4333-8444-555555555555";
+  const rangsLiens: RangeePhotoEdition[] = [
+    { ...base, id: "x1", provenance_id: lien },
+    { ...base, id: "x2", provenance_id: lienB },
+    { ...base, id: "x3", provenance_id: null },
+    { ...base, id: "x4", role_deposant: "responsable", provenance_id: null, deposant: null },
+    { ...base, id: "x5", role_deposant: "atelier", provenance_id: null, deposant: null },
+    { ...base, id: "x6", provenance_id: "bbbbbbbb-2222-4333-8444-555555555555" },
+  ];
+  const groupeDe = nommeurDeLiens(rangsLiens, [{ id: lien, libelle: "Bateau 1" }, { id: lienB, libelle: "Bateau 1" }], "Claire");
+  const g = rangsLiens.map(groupeDe);
+  ok("lien : nom du lien (« Bateau 1 », doublon « Bateau 1 (2) »), « Lien général » sans lien, null + depot pour responsable et atelier, lien inconnu → « Lien de contribution »",
+    g[0].lien === "Bateau 1" && g[1].lien === "Bateau 1 (2)" && g[2].lien === "Lien général" && g[2].depot === "lien"
+      && g[3].lien === null && g[3].depot === "responsable" && g[4].lien === null && g[4].depot === "atelier" && g[5].lien === "Lien de contribution"
+      && nommeurDeLiens(rangsLiens, [], null)(rangsLiens[0]).lien === "Lien de contribution");
+  ok("ligne : lien et depot recopiés ; sans groupe donné, lien null (compat)",
+    photoEditionMep(base, "X", adresses, g[1]).lien === "Bateau 1 (2)" && photoEditionMep(base, "X", adresses, g[3]).depot === "responsable"
+      && photoEditionMep(base, "X", adresses).lien === null);
+  ok("route édition : collectif_provenances (id, libelle) lue avec les photos, lien illisible = pas d'échec de la route",
+    /from\("collectif_provenances"\)\.select\("id, libelle"\)\.eq\("edition_id", id\)/.test(route) && /nommeurDeLiens\(data, liensLus\.error \? \[\] :/.test(route));
   ok("lieu : pays seul, ville seule, rien → null, blancs ignorés",
     lieuDeLaPhoto(null, "Portugal") === "Portugal" && lieuDeLaPhoto("Lisbonne", null) === "Lisbonne"
       && lieuDeLaPhoto(null, null) === null && lieuDeLaPhoto("  ", "") === null);
@@ -6946,6 +6976,143 @@ const verifierMepSauvegarde = () => {
       && !/makeSupabase|fetch\(|Date\.now|new Date|process\.env|from "react"|@\/lib\/atelier/.test(pur));
 };
 verifierMepSauvegarde();
+
+/* ═══════════════ MISE EN PAGE : le catalogue, la sauvegarde automatique et l'export (modules client, parties pures) ═══════════════ */
+const verifierMepClient = () => {
+  titre("— mise en page : catalogue, sauvegarde automatique, export (parties pures) —");
+  const dossierMep = "src/app/admin/atelier/mise-en-page/[id]";
+  const lireM = (f: string) => readFileSync(resolve(process.cwd(), dossierMep, f), "utf8");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  /* — le catalogue — */
+  const dossier: ReponsePhotosMep = {
+    ok: true, token: "t".repeat(32), titre: "Malaysia", prenom: "Justine", etat: "composition", nbPages: 28, ttl: 3600,
+    photos: [
+      { id: "d1", nom: "IMG_1.jpg", taille: 10, l: 3000, h: 4000, priseLe: "2026-01-02T10:00:00", appareil: null, lieuVille: null, lieuPays: null, empreinte: null, url: "https://o1", urlVignette: "https://v1" },
+      { id: "d2", nom: null, taille: 10, l: null, h: null, priseLe: null, appareil: null, lieuVille: null, lieuPays: null, empreinte: null, url: null, urlVignette: null },
+    ],
+  };
+  const cd = catalogueDeDossier(dossier, 1000);
+  ok("catalogue dossier : PhotoMaq complète, dimensions droites de la base, défauts sans personne ni lien, nom absent → photo-<id>, nb pages payé",
+    cd.photos[0].l === 3000 && cd.photos[0].h === 4000 && cd.photos[0].personne === "Justine" && cd.photos[0].lien === null && cd.photos[0].type === "responsable"
+      && cd.photos[0].vignette === "https://v1" && cd.photos[0].moyenne === null && cd.photos[0].autresMagazines.length === 0 && cd.photos[0].nouvelle === false
+      && cd.photos[1].nom === "photo-d2" && cd.photos[1].l === 1 && cd.photos[1].h === 1
+      && cd.projet.nom === "Malaysia" && cd.projet.nbPagesCible === 28 && cd.projet.source === "particulier"
+      && catalogueDeDossier({ ...dossier, nbPages: null }, 0).projet.nbPagesCible === null);
+  ok("catalogue : une photo sans aucune adresse est « indisponible » (jamais un plantage), les autres non ; les originaux restent à part",
+    cd.photos[0].indisponible === false && cd.photos[1].indisponible === true && cd.originaux.d1 === "https://o1" && cd.originaux.d2 === null && cd.ttlOriginauxSecondes === 3600);
+  const ed: ReponsePhotosEditionMep = {
+    edition: { id: "e", organisation: "Audencia", evenement: "Voile", etat: "composition", collecteOuverte: false, archive: false },
+    magazines: [{ id: "m1", rang: 1, nom: "Bateau 1-4" }],
+    photos: [
+      { id: "p1", nom: "a.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, personne: "Mathias", lien: "Bateau 3", depot: "lien", preselection: true, signalee: true, vignette: "https://v", moyenne: "https://m", original: "https://o" },
+      { id: "p2", nom: "b.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, personne: "Le responsable", lien: null, depot: "responsable", preselection: false, signalee: false, vignette: null, moyenne: null, original: null },
+    ],
+  };
+  const ce = catalogueDEdition(ed, "m1", 0);
+  ok("catalogue édition : personne, lien, type, cœur, signalée, vignette, moyenne recopiés ; projet = « Organisation · Événement · Magazine », pas de nb de pages",
+    ce.photos[0].personne === "Mathias" && ce.photos[0].lien === "Bateau 3" && ce.photos[0].type === "lien" && ce.photos[0].coeur === true && ce.photos[0].signalee === true
+      && ce.photos[0].moyenne === "https://m" && ce.photos[1].type === "responsable" && ce.photos[1].lien === null && ce.photos[1].indisponible === true
+      && ce.projet.nom === "Audencia · Voile · Bateau 1-4" && ce.projet.nbPagesCible === null && ce.projet.source === "edition" && ce.magazines.length === 1);
+  ok("catalogue : refus HTTP traduits (401 connexion, 404, 410 photos effacées avec la phrase du serveur, 503, lecture incomplète) ; urls de lecture",
+    refusDeStatut(401, null, null).raison === "non_authentifie" && refusDeStatut(404, "introuvable", null).raison === "introuvable"
+      && refusDeStatut(410, "photos_effacees", "Les photos ont été effacées").message === "Les photos ont été effacées" && refusDeStatut(503, null, null).raison === "migration_absente"
+      && refusDeStatut(500, "lecture_incomplete", null).raison === "lecture_incomplete" && refusDeStatut(500, "internal", null).raison === "erreur"
+      && urlDeLecture({ type: "dossier", token: "ab" }) === "/api/admin/atelier/mise-en-page/photos?token=ab"
+      && urlDeLecture({ type: "edition", id: "e1" }) === "/api/admin/collectif/editions/e1/mise-en-page/photos");
+  ok("catalogue : adresses d'originaux valables jusqu'à une minute avant l'expiration, pas après",
+    adressesEncoreValables({ obtenuLe: 0, ttlOriginauxSecondes: 3600 }, 3_539_000) && !adressesEncoreValables({ obtenuLe: 0, ttlOriginauxSecondes: 3600 }, 3_541_000));
+  const src1 = sansComm(lireM("chargerCatalogue.ts"));
+  ok("chargerCatalogue : ne lève jamais (fetch en try), 401 → /admin/login, no-store, aucune écriture",
+    /catch \{\s*return \{ ok: false, raison: "reseau"/.test(src1) && /window\.location\.assign\("\/admin\/login"\)/.test(src1) && /cache: "no-store"/.test(src1) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(src1));
+
+  /* — la sauvegarde — */
+  const mag: MagazineMepClient = nouveauMagazine("m", "T", "2026-10-28T10:00:00.000Z");
+  const magRecent = { ...mag, modifieLe: "2026-10-28T12:00:00.000Z" };
+  const ligne = { id: "L", version: 3, modifie_par: "Louis", modifie_le: "2026-10-28T11:00:00.000Z", etat: "en_cours" };
+  const loc = (o: Partial<CopieLocale>): CopieLocale => ({ cle: "k", magazine: mag, serveurId: "L", version: 3, synchronise: false, ...o });
+  const c = (o: Partial<CopieLocale> | null, s: boolean) => choisirOuvertureMep(o === null ? null : loc(o), s ? { ligne, magazine: mag } : null);
+  ok("ouverture : rien → neuf à créer ; serveur seul → serveur ; local seul → local à pousser",
+    c(null, false).source === "nouveau" && c(null, true).source === "serveur" && c({}, false).source === "local" && (c({}, false) as { pousser: boolean }).pousser === true);
+  ok("ouverture : local tout envoyé de la même ligne → serveur (un autre poste a pu avancer) ; local non envoyé à la même version → local, poussé",
+    c({ synchronise: true }, true).source === "serveur" && c({ synchronise: false, version: 3 }, true).source === "local" && (c({ synchronise: false, version: 3 }, true) as { pousser: boolean }).pousser === true);
+  const cf = c({ synchronise: false, version: 2 }, true);
+  ok("ouverture : local non envoyé mais le serveur a avancé (version 2 contre 3) → on garde le local à l'écran, CONFLIT, rien n'est poussé",
+    cf.source === "local" && (cf as { conflit: boolean }).conflit === true && (cf as { pousser: boolean }).pousser === false);
+  const inc = (m: MagazineMepClient, sync: boolean) => choisirOuvertureMep(loc({ serveurId: null, version: null, magazine: m, synchronise: sync }), { ligne, magazine: mag });
+  ok("ouverture : un local qui ne connaît pas la ligne gagne seulement s'il est plus récent (en conflit, non poussé) ; sinon le serveur",
+    inc(magRecent, false).source === "local" && (inc(magRecent, false) as { conflit: boolean }).conflit === true && inc(mag, false).source === "serveur" && inc(magRecent, true).source === "serveur");
+  ok("réponses : 200/201 ok ; 409 conflit avec version + modifie_par ; 409 existe_deja avec l'id ; 503 table absente ; 401 ; 404 ; 400 et 413 refusés ; 500 panne",
+    issueDeReponse(201, {}).type === "ok"
+      && JSON.stringify(issueDeReponse(409, { error: "conflit", version: 5, modifie_par: "Louis", modifie_le: "x" })) === JSON.stringify({ type: "conflit", enBase: { version: 5, modifie_par: "Louis", modifie_le: "x" } })
+      && (issueDeReponse(409, { error: "existe_deja", id: "I", version: 2, modifie_par: null, modifie_le: "x" }) as { id: string }).id === "I"
+      && issueDeReponse(409, { error: "existe_deja" }).type === "panne"
+      && issueDeReponse(503, { error: "migration_mises_en_page_absente" }).type === "migration_absente" && issueDeReponse(503, null).type === "panne"
+      && issueDeReponse(401, null).type === "non_authentifie" && issueDeReponse(404, null).type === "introuvable"
+      && issueDeReponse(400, { error: "contenu_invalide" }).type === "refuse" && issueDeReponse(413, null).type === "refuse" && issueDeReponse(500, null).type === "panne");
+  ok("reprise : 5 s, 15 s, 45 s, puis une minute au plus ; délai d'envoi 2 s ; titre jamais vide ni au-delà de 300",
+    [0, 1, 2, 3, 9].map(delaiReprise).join() === "5000,15000,45000,60000,60000" && DELAI_ENVOI_MS === 2000
+      && titreAEnvoyer({ ...mag, titre: "  " }, "Projet") === "Projet" && titreAEnvoyer({ ...mag, titre: "x".repeat(400) }, "P").length === 300 && titreAEnvoyer({ ...mag, titre: "" }, "") === "Magazine");
+  ok("huit états exactement", NOMS_ETATS.join() === "enregistre,en_attente,envoi,hors_ligne,erreur,migration_absente,conflit,lecture_seule");
+  const src2 = sansComm(lireM("sauvegardeClient.ts"));
+  ok("moteur : copie locale à chaque modification (sauverLocal), envoi après DELAI_ENVOI_MS, PUT avec la version lue, POST sans ligne, 503 = migration_absente sans réessai, 409 = conflit sans écraser",
+    /void sauverLocal\(tamponne, false\)/.test(src2) && /planifierEnvoi\(DELAI_ENVOI_MS\)/.test(src2) && /\{ version: v\(\), titre: titreAEnvoyer/.test(src2)
+      && /creation \? "POST" : "PUT"/.test(src2) && /migrationAbsente = true/.test(src2) && /if \(!ouvert \|\| figee \|\| migrationAbsente \|\| !enAttente\) return/.test(src2)
+      && /dire\(\{ etat: "conflit", version: v\(\), enBase: issue\.enBase \}\)/.test(src2));
+  ok("moteur : IndexedDB seule base écrite en local ; aucun envoi sans passer par les routes magazines ; relit un contenu avec contenuValide (local et serveur)",
+    /const ROUTE = "\/api\/admin\/atelier\/mise-en-page\/magazines"/.test(src2) && (src2.match(/contenuValide\(/g) ?? []).length >= 2 && !/localStorage/.test(src2));
+
+  /* — l'export — */
+  const sof = (l: number, h: number) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x0b, 0x08, h >> 8, h & 255, l >> 8, l & 255, 0x01, 0x01, 0x11, 0x00, 0xff, 0xd9]);
+  const stk = dimensionsStockeesJpeg(sof(4032, 3024));
+  ok("octets : la taille STOCKÉE d'un JPEG est lue dans son SOF (4032 × 3024), après un segment APP0 sauté ; pas un JPEG → null",
+    stk?.l === 4032 && stk?.h === 3024 && dimensionsStockeesJpeg(new Uint8Array([1, 2, 3, 4, 5])) === null && dimensionsStockeesJpeg(new Uint8Array([0xff, 0xd8, 0xff, 0xd9])) === null);
+  const png = new Uint8Array(24);
+  png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+  png.set([0, 0, 0x03, 0xe8, 0, 0, 0x02, 0x58], 16);
+  ok("octets : un PNG se lit à son IHDR (1000 × 600)", dimensionsStockees(png)?.l === 1000 && dimensionsStockees(png)?.h === 600);
+  const droite = (tag: number) => decisionOrientation({ l: 4032, h: 3024 }, tag, { l: 3024, h: 4032 });
+  ok("orientation : tags 5 à 8 permutent largeur et hauteur (couchée → portrait), 1 à 4 non ; tag absent ou absurde = 1",
+    [5, 6, 7, 8].every((t) => droite(t).l === 3024 && droite(t).h === 4032 && droite(t).tournee) && [1, 2, 3, 4].every((t) => droite(t).l === 4032 && !droite(t).tournee)
+      && decisionOrientation({ l: 10, h: 20 }, undefined, { l: 10, h: 20 }).tag === 1 && decisionOrientation({ l: 10, h: 20 }, 99, { l: 10, h: 20 }).tag === 1);
+  const fauxCatalogue = decisionOrientation({ l: 4032, h: 3024 }, 6, { l: 4032, h: 3024 });
+  ok("orientation : les OCTETS font foi sur la base (base non tournée + tag 6 → 3024 × 4032 et écart signalé) ; base juste → pas d'écart ; base inconnue (1 × 1) → pas d'écart",
+    fauxCatalogue.l === 3024 && fauxCatalogue.h === 4032 && fauxCatalogue.ecart === true && fauxCatalogue.source === "octets"
+      && droite(6).ecart === false && decisionOrientation({ l: 4032, h: 3024 }, 6, { l: 1, h: 1 }).ecart === false);
+  const hei = decisionOrientation(null, 6, { l: 3024, h: 4032 });
+  ok("orientation : octets illisibles (HEIC) → dimensions de la base, source « catalogue »", hei.l === 3024 && hei.h === 4032 && hei.source === "catalogue" && hei.ecart === false);
+  ok("liens absolus : guillemets du Terminal, file://, espace échappé et barre finale nettoyés ; ~, relatif, Windows et .. refusés",
+    JSON.stringify(dossierAbsolu(" '/Users/mathias/Mon\\ Dossier/' ")) === JSON.stringify({ ok: true, dossier: "/Users/mathias/Mon Dossier" })
+      && (dossierAbsolu("file:///Users/m/a%20b") as { dossier: string }).dossier === "/Users/m/a b"
+      && !dossierAbsolu("~/Desktop").ok && !dossierAbsolu("Desktop/x").ok && !dossierAbsolu("C:\\Users\\x").ok && !dossierAbsolu("/a/../b").ok && !dossierAbsolu("  ").ok);
+  const liens3 = nomsDesLiensExport([{ id: "1", nom: "IMG_1.jpg" }, { id: "2", nom: "img_1.JPG" }, { id: "3", nom: "IMG_1.jpg" }, { id: "4", nom: "a/b:c.jpg" }]);
+  ok("Links/ : nom d'origine gardé, doublons (casse comprise) suffixés « (2) », « (3) » avant l'extension, caractères interdits en « _ »",
+    liens3.get("1") === "IMG_1.jpg" && liens3.get("2") === "img_1 (2).JPG" && liens3.get("3") === "IMG_1 (3).jpg" && liens3.get("4") === "a_b_c.jpg");
+  const lst = listesExport({
+    utilisees: [{ id: "1", nom: "IMG_1.jpg" }, { id: "2", nom: "img_1.JPG" }],
+    catalogue: [{ id: "1", nom: "IMG_1.jpg" }, { id: "2", nom: "img_1.JPG" }, { id: "5", nom: "libre.jpg" }],
+    nomsLiens: liens3, indisponibles: [{ id: "2", nom: "img_1.JPG", raison: "absente du coffre (404)" }],
+  });
+  ok("listes : posées sous leur nom de Links/ (l'illisible annotée INDISPONIBLE), non posées sous leur nom d'origine",
+    lst.utilisees.join("|") === "IMG_1.jpg|img_1 (2).JPG  [INDISPONIBLE : absente du coffre (404)]" && lst.nonUtilisees.join("|") === "libre.jpg");
+  const pi = photosPourIdml({ decisions: new Map([["1", droite(6)]]), nomsLiens: liens3 });
+  ok("IDML : seules les photos lues entrent (l'illisible laisse un cadre vide), avec les dimensions DROITES des octets",
+    pi.size === 1 && pi.get("1")?.l === 3024 && pi.get("1")?.h === 4032 && pi.get("1")?.nomLien === "IMG_1.jpg");
+  ok("zip : nom sans accents ni espaces, daté, jamais vide", nomDeZip("Été à Séville / n°2", "2026-10-28T10:00:00Z") === "Ete-a-Seville-n-2-2026-10-28" && nomDeZip("///", "2026-10-28T10:00:00Z") === "magazine-2026-10-28");
+  const src3 = sansComm(lireM("exporter.ts"));
+  ok("export : orientation relue dans les octets (exifr.orientation sur les octets lus), originaux par fetch seulement, aucune écriture en base ni appel de route d'écriture",
+    /exifr\.orientation\(lu\.octets\)/.test(src3) && /dimensionsStockees\(lu\.octets\)/.test(src3) && !/\/api\//.test(src3.replace(/chargerCatalogue/g, "")) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(src3));
+  ok("export : liens ABSOLUS (mode absolu), sélecteur de dossier jamais après un await dans le module, 404 → indisponible sans arrêter, 403 → relecture des adresses, annulation par AbortSignal",
+    /mode: "absolu", dossier/.test(src3) && /rep\.status === 404 \|\| rep\.status === 410/.test(src3) && /rep\.status === 403/.test(src3) && /signal\?\.aborted/.test(src3)
+      && /export async function choisirDestination/.test(src3) && !/await .*choisirDestination\(/.test(src3));
+  ok("export : l'IDML s'écrit APRÈS les liens (une annulation ne laisse pas un IDML qui pointe des fichiers absents), mimetype stocké par zipperIdml",
+    src3.indexOf('"Links", { create: true }') < src3.indexOf('"magazine.idml", idml') && /zipperIdml\(construireIdml/.test(src3));
+  ok("modules purs du client : ni React, ni réseau, ni IndexedDB, ni horloge",
+    !/from "react"|fetch\(|indexedDB|Date\.now|new Date|localStorage/.test(sansComm(lireM("sauvegardePure.ts")) + sansComm(lireM("exporterPur.ts"))));
+};
+verifierMepClient();
+
+verifierMepEditeur(ok, titre);
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

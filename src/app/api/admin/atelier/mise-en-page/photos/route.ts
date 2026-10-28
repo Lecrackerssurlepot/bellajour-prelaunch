@@ -18,7 +18,7 @@ import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import { isValidNumeroToken } from "@/lib/atelier/token";
-import { signerGet, APERCU_TTL_SECONDS } from "@/lib/atelier/r2";
+import { signerGet, signerLectureVignette, APERCU_TTL_SECONDS } from "@/lib/atelier/r2";
 import { lirePhotos } from "@/app/admin/atelier/donnees";
 import type { PhotoDossierMep, ReponsePhotosMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
 
@@ -40,9 +40,9 @@ export async function GET(request: Request) {
     const supabase = makeSupabase();
     const { data: numero } = await supabase
       .from("numeros")
-      .select("id, titre, prenom, etat")
+      .select("id, titre, prenom, etat, nb_pages")
       .eq("token", token)
-      .maybeSingle<{ id: string; titre: string | null; prenom: string | null; etat: string }>();
+      .maybeSingle<{ id: string; titre: string | null; prenom: string | null; etat: string; nb_pages: number | null }>();
 
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404, headers: SANS_CACHE });
 
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
         lieuPays: p.lieu_pays ?? null,
         empreinte: p.empreinte ?? null,
         url: await signerGet(p.r2_key, APERCU_TTL_SECONDS).catch(() => null),
-        urlVignette: p.vignette_key ? await signerGet(p.vignette_key, APERCU_TTL_SECONDS).catch(() => null) : null,
+        urlVignette: p.vignette_key ? await signerLectureVignette(p.vignette_key).catch(() => null) : null,
       })),
     );
 
@@ -71,6 +71,8 @@ export async function GET(request: Request) {
       titre: numero.titre,
       prenom: numero.prenom,
       etat: numero.etat,
+      /* Le nombre de pages PAYÉ (gelé, D20) ; null s'il n'est pas connu. */
+      nbPages: numero.nb_pages ?? null,
       ttl: APERCU_TTL_SECONDS,
       photos,
     };

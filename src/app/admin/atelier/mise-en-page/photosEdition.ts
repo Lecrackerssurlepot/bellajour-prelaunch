@@ -12,8 +12,8 @@
  */
 
 import { clePersonne } from "@/lib/collectif/dossiers";
-import { cleDuLien, deposantsParLien, personneDeLaPhoto } from "@/lib/collectif/grille";
-import type { PhotoEditionMep } from "./typesPhotos";
+import { cleDuLien, deposantsParLien, personneDeLaPhoto, type LienNomme } from "@/lib/collectif/grille";
+import type { DepotMep, PhotoEditionMep } from "./typesPhotos";
 
 /** Ce que la route lit d'une photo arrivée. */
 export type RangeePhotoEdition = {
@@ -57,6 +57,25 @@ export function nommeurDePersonnes(photos: readonly PhotoNommable[], responsable
   };
 }
 
+/** Par où une photo est arrivée : son `depot` (lien, responsable, atelier) et le NOM du lien (null pour le responsable et l'atelier). */
+export type GroupeDePhoto = { lien: string | null; depot: DepotMep };
+
+/**
+ * La fonction qui dit le lien d'une photo. Les noms sont ceux de la fiche de l'édition
+ * (`deposantsParLien` : unique, « Bateau 1 (2) » au besoin, « Lien général » pour le lien sans id).
+ * `liens` = les lignes de `collectif_provenances` (id, libelle) ; vide si la lecture a échoué : un
+ * lien de contribution s'appelle alors « Lien de contribution », jamais une erreur.
+ */
+export function nommeurDeLiens(photos: readonly PhotoNommable[], liens: readonly LienNomme[], responsable: string | null): (p: PhotoNommable) => GroupeDePhoto {
+  const noms = new Map(deposantsParLien(photos, liens, responsable).map((g) => [g.cle, g.nom] as const));
+  return (p) => {
+    const cle = cleDuLien(p);
+    if (cle === "vous") return { lien: null, depot: "responsable" };
+    if (cle === "atelier") return { lien: null, depot: "atelier" };
+    return { lien: noms.get(cle) ?? null, depot: "lien" };
+  };
+}
+
 /** « Lisbonne, Portugal » ; « Portugal » sans la ville ; null sans rien (même règle que `lieuEnClair`). */
 export function lieuDeLaPhoto(ville: string | null, pays: string | null): string | null {
   const t = [ville?.trim(), pays?.trim()].filter(Boolean).join(", ");
@@ -67,7 +86,7 @@ export function lieuDeLaPhoto(ville: string | null, pays: string | null): string
 export type AdressesPhoto = { vignette: string | null; moyenne: string | null; original: string | null };
 
 /** Une ligne de réponse. `signalee` nulle compte comme non signalée ; une vignette absente reste absente. */
-export function photoEditionMep(p: RangeePhotoEdition, personne: string, adresses: AdressesPhoto): PhotoEditionMep {
+export function photoEditionMep(p: RangeePhotoEdition, personne: string, adresses: AdressesPhoto, groupe: GroupeDePhoto = { lien: null, depot: "lien" }): PhotoEditionMep {
   return {
     id: p.id,
     nom: p.nom_origine,
@@ -76,6 +95,8 @@ export function photoEditionMep(p: RangeePhotoEdition, personne: string, adresse
     priseLe: p.prise_le ?? null,
     lieu: lieuDeLaPhoto(p.lieu_ville, p.lieu_pays),
     personne,
+    lien: groupe.lien,
+    depot: groupe.depot,
     preselection: Boolean(p.preselection),
     signalee: Boolean(p.signalee),
     vignette: p.vignette_key ? adresses.vignette : null,

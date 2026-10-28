@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
-import { APERCU_TTL_SECONDS, signerGet, signerLectureVignette } from "@/lib/atelier/r2";
+import { APERCU_TTL_SECONDS, signerGet, signerLectureMoyenne, signerLectureVignette } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
 import { estUuid } from "@/lib/collectif/cles";
 import { etatEffectif, type EtatEdition } from "@/lib/collectif/etats";
@@ -12,6 +12,7 @@ import { ERREUR_MIGRATION_ABSENTE, colonneAbsente, tableAbsente } from "@/lib/co
 import { phrasePhotosEffacees } from "@/lib/collectif/retention";
 import {
   COLONNES_PHOTOS_EDITION_MEP,
+  nommeurDeLiens,
   nommeurDePersonnes,
   photoEditionMep,
   type RangeePhotoEdition,
@@ -97,7 +98,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "lecture_impossible" }, { status: 500, headers: SANS_CACHE });
     }
 
-    const [lues, mags] = await Promise.all([
+    const [lues, mags, liensLus] = await Promise.all([
       /* `moyenne_key` (20261026) en plus ; si la base dit qu'elle manque, la même lecture sans elle. */
       lireAvecMoyenne((moyenne) =>
         lireToutesLesLignes<RangeePhotoEdition>(
@@ -114,6 +115,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         )
       ),
       supabase.from("collectif_magazines").select("id, rang, nom").eq("edition_id", id).order("rang", { ascending: true }).returns<MagazineEditionMep[]>(),
+      /* Les NOMS des liens (`libelle`, colonne de la migration de base : aucun repli 42703 à prévoir). */
+      supabase.from("collectif_provenances").select("id, libelle").eq("edition_id", id).order("created_at", { ascending: true }).returns<{ id: string; libelle: string | null }[]>(),
     ]);
     const { data, error } = lues;
     if (error) {
@@ -136,14 +139,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "lecture_incomplete", message, lues: data.length, total }, { status: 500, headers: SANS_CACHE });
     }
 
+    /* Un nom de lien illisible n'empêche pas de composer : « Lien de contribution » à la place, et une ligne de log. */
+    if (liensLus.error) console.error("[collectif] mise en page : liens illisibles", liensLus.error.code);
     const nommer = nommeurDePersonnes(data, edition.responsable_nom);
+    const groupeDe = nommeurDeLiens(data, liensLus.error ? [] : (liensLus.data ?? []), edition.responsable_nom);
     const photos = await Promise.all(
       data.map(async (p) =>
         photoEditionMep(p, nommer(p), {
           vignette: p.vignette_key ? await signerLectureVignette(p.vignette_key).catch(() => null) : null,
-          moyenne: p.moyenne_key ? await signerGet(p.moyenne_key, APERCU_TTL_SECONDS).catch(() => null) : null,
+          moyenne: p.moyenne_key ? await signerLectureMoyenne(p.moyenne_key).catch(() => null) : null,
           original: await signerGet(p.r2_key, APERCU_TTL_SECONDS).catch(() => null),
-        })
+        }, groupeDe(p))
       )
     );
 
