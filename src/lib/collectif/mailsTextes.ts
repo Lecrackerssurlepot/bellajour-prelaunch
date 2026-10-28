@@ -39,12 +39,15 @@ const BLOC = "#f3f4f7";
 const ACTION = "#4a90d9";
 /* L'encadré du titre (retour de Mathias du 28/10 : « le titre en gras, dans un encadré », le logo en haut) : un bleu très
    clair, de la famille du bouton. Le logo est un PNG (un SVG ou un WebP ne s'affichent pas dans Outlook ni dans tous les Gmail),
-   servi par le site à adresse fixe, 300 px affichés à 150 (net sur un écran Retina). ⚠️ Le logo n'est PAS un lien : chaque mail
-   ne porte qu'UN `<a` (son bouton), le harnais le compte. ⚠️ FOND TRANSPARENT (`logo-mail-bleu-v2.png`, 28/10) : la v1 était
-   aplatie sur du blanc et faisait un rectangle blanc dans Gmail iPhone en mode sombre. Un logo qui change prend un NOUVEAU nom :
-   Gmail garde les images en cache par adresse (la v1 reste pour les mails déjà partis). */
+   servi par le site à adresse fixe, affiché à 150 px (net sur un écran Retina). ⚠️ Le logo n'est PAS un lien : chaque mail
+   ne porte qu'UN `<a` (son bouton), le harnais le compte. ⚠️ LE CUIVRE, À FOND TRANSPARENT (décision de Mathias du 28/10) : le
+   bleu aplati sur du blanc faisait un rectangle blanc dans Gmail iPhone en mode sombre, et le bleu détouré d'un liseré blanc
+   était « très moche ». Gmail iPhone ignore `prefers-color-scheme` : impossible d'y changer de logo selon le mode. Le cuivre se
+   lit sur le blanc comme sur le sombre. C'est le logo des mails des particuliers (`logo-mail-cuivre.png`, 600 × 229), déjà
+   éprouvé. Un logo qui change prend un NOUVEAU nom : Gmail garde les images en cache par adresse (les anciens restent pour les
+   mails déjà partis). */
 const TITRE_FOND = "#eaf2fb";
-const LOGO = "https://www.bellajour.fr/logo-mail-bleu-v2.png";
+const LOGO = "https://www.bellajour.fr/logo-mail-cuivre.png";
 
 function echapper(t: string): string {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -99,7 +102,7 @@ export function pageMail(p: { titre: string; bonjour: string; lignes: (Ligne | B
   const html = `<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f3f4f7">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f7;padding:32px 16px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;padding:32px">
-<tr><td><img src="${LOGO}" width="150" height="56" alt="Bellajour" style="display:block;width:150px;height:auto;border:0"></td></tr>
+<tr><td><img src="${LOGO}" width="150" height="57" alt="Bellajour" style="display:block;width:150px;height:auto;border:0"></td></tr>
 <tr><td style="padding-top:20px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${TITRE_FOND};border-radius:14px"><tr><td style="padding:18px 22px">
 <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:${ACTION}">Édition collective</div>
 <div style="padding-top:6px;font-family:Georgia,serif;font-size:26px;font-weight:bold;line-height:1.2;color:${ENCRE}">${echapper(p.titre)}</div>
