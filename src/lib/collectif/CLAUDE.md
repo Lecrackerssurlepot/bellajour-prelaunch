@@ -970,6 +970,24 @@ l'édition » seulement à la sixième étape (le devis, qu'on n'a pas encore).
   jamais ce nom ; `x-forwarded-host`, lui, s'écrit par l'appelant, T-164). Ni `VERCEL` ni
   `VERCEL_ENV` ne départagent : le `.env.local` tiré de Vercel contient `VERCEL="1"` et
   `VERCEL_ENV="production"`. Une seule route lit l'accès sans le contrôle : `/api/collectif/appareil`.
+- **Le premier appareil, sans code (décision de Mathias du 28/10)** : le lien « Votre espace est prêt »
+  n'est envoyé qu'au responsable, lui demander un code la première fois ne protégeait rien. Tant
+  qu'AUCUNE ligne vivante (`oublie_le` nul) n'existe pour l'édition ET le lien ACTUEL, la porte rend
+  le responsable complet avec `placeLibre` (pas de « en lecture ici », pas de pastille) et n'écrit
+  rien ; la décision est `verdictAppareil` (pur, `appareil.ts`). La place se prend à la PREMIÈRE
+  ÉCRITURE, par `accesPourEcrire(acces, action)` : chaque route qui modifie l'appelle avant son
+  `peut`, pour une action que le responsable a le droit de faire (`prendLaPlace`). Elle écrit la
+  ligne reconnue, le journal `appareil_reconnu` (`motif: "premier_appareil"`, la vérification du
+  code écrit le même avec `motif: "code"`) et pose `bj_ec_appareil` par `cookies().set` (route
+  handlers SEULEMENT, un Server Component ne pose pas de cookie). Prise entre-temps : appareil
+  inconnu, 403 `lecture_seule`. Deux premiers simultanés (aucune contrainte d'unicité par édition) :
+  chacun relit après sa ligne, la plus ancienne garde la place (`gagnantDeLaPlace`), l'autre est
+  oubliée. ⚠️ **Jamais à l'affichage ni sur une lecture** : les robots des messageries (Outlook Safe
+  Links, Microsoft Defender, antivirus) ouvrent les liens des mails dans un vrai navigateur qui
+  exécute le JavaScript, ils prendraient la place. Les lectures (`photos`, `photos/etat`, `messages`,
+  `messages/lus` qui marque lu par un effet, `rendez-vous/creneaux`, « lister » de la corbeille et
+  des personnes) répondent comme au responsable sans rien prendre ; le harnais classe chaque route.
+  **Régénérer le lien du responsable libère la place** (voulu). L'atelier connecté ne la prend jamais.
 
 ## « Retrouver mon espace » (T-154, 16/10)
 

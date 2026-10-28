@@ -3,7 +3,7 @@ import { colonneAbsente, MIGRATION_ACCORD } from "@/lib/collectif/migration";
 import { randomUUID } from "node:crypto";
 import { MAX_VIGNETTE_BYTES, MIME_VIGNETTE, signerPut } from "@/lib/atelier/r2";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAccesDepot } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAccesDepot } from "@/lib/collectif/acces";
 import { accordExige, colonnesAccord, ERREUR_ACCORD, lireAccord, messageAccord } from "@/lib/collectif/accord";
 import { cleMoyenne, clePhoto, cleVignette } from "@/lib/collectif/cles";
 import { appareilDeRequete, compterPourPlafondNet, COOKIE_APPAREIL, lireExistants, lireLiensParId, lirePhotosDeLaPersonne, nouvelAppareil, placeDuParticipant, type LienDeDepot } from "@/lib/collectif/collecte";
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAccesDepot(String(corps.token ?? ""));
+  const acces = await accesPourEcrire(await chargerAccesDepot(String(corps.token ?? "")), "deposer_photos");
   const refus = refusAcces(acces);
   if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   if (!peut(acces.role, "deposer_photos") || acces.role === "equipe") return refusDroit();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { ERREUR_PERSONNES_ABSENTE, MESSAGE_PERSONNES_ABSENTE } from "@/lib/collectif/migration";
@@ -35,22 +35,25 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
-  const refus = refusAcces(acces);
-  if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
-  const { edition } = acces;
+  const lu = await chargerAcces(String(corps.token ?? ""), "espace");
+  const refus = refusAcces(lu);
+  if (refus || lu.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
+  const { edition } = lu;
   const supabase = makeSupabase();
 
   if (corps.action === "lister") {
-    if (!peut(acces.role, "voir_espace")) return refusDroit();
-    const r = await chargerPersonnes(supabase, edition.id, acces.role === "responsable" ? "masque" : "aucun");
+    if (!peut(lu.role, "voir_espace")) return refusDroit();
+    const r = await chargerPersonnes(supabase, edition.id, lu.role === "responsable" ? "masque" : "aucun");
     if (r.statut === "erreur") return NextResponse.json({ error: "lecture_impossible" }, { status: 500 });
     if (r.statut === "absente") return NextResponse.json({ error: ERREUR_PERSONNES_ABSENTE, message: MESSAGE_PERSONNES_ABSENTE }, { status: 503 });
     /* Les propositions ne servent qu'à qui peut fusionner. */
-    const proposees = peut(acces.role, "gerer_personnes") ? r.valeur.proposees : [];
+    const proposees = peut(lu.role, "gerer_personnes") ? r.valeur.proposees : [];
     return NextResponse.json({ ...r.valeur, proposees }, { headers: { "cache-control": "private, no-store" } });
   }
 
+  /* « lister » est une lecture (au-dessus, jamais preneuse) ; renommer et fusionner écrivent :
+     le premier appareil prend la place ici (28/10). */
+  const acces = await accesPourEcrire(lu, "gerer_personnes");
   if (!peut(acces.role, "gerer_personnes")) return refusDroit();
 
   if (corps.action === "renommer") {

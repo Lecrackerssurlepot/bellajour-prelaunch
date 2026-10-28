@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import {
   basculerCouverture,
   briefModifiable,
@@ -62,11 +62,13 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return NextResponse.json({ error: "corps_illisible" }, { status: 400 });
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
-  const refus = refusAcces(acces);
-  if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
+  const porte = await chargerAcces(String(corps.token ?? ""), "espace");
+  const refus = refusAcces(porte);
+  if (refus || porte.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   const action = String(corps.action ?? "");
   const droit = action === "valider" || action === "devalider" ? "valider_brief" : "choisir_style";
+  /* Chaque action du brief écrit : le premier appareil prend la place ici (28/10). */
+  const acces = await accesPourEcrire(porte, droit);
   if (!peut(acces.role, droit)) return refusDroit();
   /* Le choix du style est fermé pour toutes les éditions (interrupteur.ts) : la page montre
      une vitrine, et aucun geste ne passe, même envoyé à la main. Rien n'est effacé. */

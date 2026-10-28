@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
-import { chargerAcces } from "@/lib/collectif/acces";
+import { accesPourEcrire, chargerAcces } from "@/lib/collectif/acces";
 import { etatNote, lireChoixCouverture, lireNote, tourCourant } from "@/lib/collectif/bat";
 import { estUuid } from "@/lib/collectif/cles";
 import { peut, type Action } from "@/lib/collectif/droits";
@@ -53,12 +53,14 @@ export async function POST(request: Request) {
   const corps = await lireCorps(request);
   if (!corps) return non(400, "corps_illisible");
 
-  const acces = await chargerAcces(String(corps.token ?? ""), "espace");
-  const refus = refusAcces(acces);
-  if (refus || acces.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
+  const lu = await chargerAcces(String(corps.token ?? ""), "espace");
+  const refus = refusAcces(lu);
+  if (refus || lu.statut !== "ok") return refus ?? new NextResponse(null, { status: 404 });
   const action = String(corps.action ?? "");
   const droit = DROIT[action];
   if (!droit) return non(400, "action_inconnue");
+  /* Toutes les actions du BAT écrivent : le premier appareil prend la place ici (28/10). */
+  const acces = await accesPourEcrire(lu, droit);
   if (!peut(acces.role, droit)) return refusDroit();
   const { edition } = acces;
   const maintenant = new Date();
