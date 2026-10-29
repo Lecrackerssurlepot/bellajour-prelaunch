@@ -6659,6 +6659,16 @@ const verifierIdml = () => {
       && st.includes('<AppliedFont type="string">Arial</AppliedFont>'));
   ok("IDML liens : nom encodé dans l'URI, & échappé dans l'attribut",
     (parChemin.get("Spreads/Spread_sp1.xml") ?? "").includes('LinkResourceURI="Links/deux%20%26%20co.jpg"'));
+  /* Demi-tour (tag 3, 29/10) : l'image doit être retournée, jamais écrite comme droite (IMG_8191 arrivait à l'envers). */
+  {
+    const ph3: Map<string, PhotoExport> = new Map([["p2", { id: "p2", nomLien: "deux & co.jpg", l: 3000, h: 4000, tag: 3 }]]);
+    const s3 = construireIdml({ ...mag, planches: [mag.planches[0]] }, ph3, { liens: { mode: "relatif" } }).find((x) => x.chemin === "Spreads/Spread_sp1.xml")?.contenu ?? "";
+    const s1 = (parChemin.get("Spreads/Spread_sp1.xml") ?? "");
+    const tr = (xml: string): number[] => (/<Image Self="[^"]*" ItemTransform="([^"]*)"/.exec(xml)?.[1] ?? "").split(" ").map(Number);
+    const [a3, , , d3] = tr(s3), [a1, , , d1] = tr(s1);
+    ok("IDML : une photo à l'envers (tag 3) est retournée (échelles négatives), une photo droite reste en échelles positives",
+      a3 < 0 && d3 < 0 && a1 > 0 && d1 > 0 && Math.abs(a3 + a1) < 1e-6);
+  }
   /* Rotation : DP-03 porte une légende à −90° ; la transformée tourne autour du centre du cadre. */
   const rot = construireIdml({ ...mag, planches: [mag.planches[0], { id: "pl-2", mode: "double", gauche: null, droite: null,
     double: { templateId: "DP-03", photos: [], textes: [] } }] }, ph, { liens: { mode: "relatif" } });
