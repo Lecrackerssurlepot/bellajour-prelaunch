@@ -20,6 +20,7 @@ qu'il contient. **Je n'ai rien à faire : c'est le dossier touché qui apporte s
 |---|---|---|
 | `src/app/**` (pages, CSS) | `src/app/CLAUDE.md` | tokens RÉELS, polices, règles CSS, pièges de mise en page |
 | `src/lib/atelier/**` | `src/lib/atelier/CLAUDE.md` | machine à états, mails M0→M9, modules purs |
+| `src/lib/mise-en-page/**` | `src/lib/mise-en-page/CLAUDE.md` | l'outil interne de mise en page : géométrie mm, templates, recadrage unique écran = IDML |
 | `src/lib/collectif/**` | `src/lib/collectif/CLAUDE.md` | l'Édition collective (B2B) : tables à part, droits par token, interrupteur |
 | `src/app/api/**` | `src/app/api/CLAUDE.md` | webhooks, secrets, effets de bord, rate-limit |
 | `src/app/admin/**` | `src/app/admin/CLAUDE.md` | back-office, auth, ce qui écrit vraiment |

@@ -640,3 +640,31 @@ Ce qui est tranché.
 **Conséquence :** `placeRestante` (plafonds.ts) ne rend plus `plafond_non_regle` pour un total
 vide ; aucune migration.
 
+
+D28 (29/10/2026) — **La mise en page interne n'utilise que ce qu'Affinity relit fidèlement.**
+Décision de Mathias du 29/10 : « on ne fera que ce qui peut être fidèle ». Les essais du jour
+(un IDML par élément, ouvert dans Affinity et contrôlé valeur par valeur) sont dans le
+catalogue https://claude.ai/artifact/JfVv2Rxb6jKp7GJLUDhUxr et les fichiers dans
+`~/Desktop/Bellajour/test-idml/essais-capacites/` (générateur dans `generateur/`).
+
+Ce qui est tranché.
+- Autorisé (verdict FIDÈLE) : fonds RVB/CMJN, teintes, opacité, mode de fusion, ombre portée ;
+  contour (épaisseur, couleur, alignement, tirets sur mesure, points ronds) ; coins par coin ;
+  ellipse ; ligne à flèches ; rotation ; photo dans un ovale, un rectangle arrondi, avec
+  contour ; cadre texte avec fond, contour, marges, alignement vertical, colonnes ; cadres
+  chaînés (même entre planches) ; texte dans une forme (`TextFrame` à géométrie d'ovale ou de
+  polygone) ; habillage boîte, contour, saut d'objet ; styles de paragraphe et de caractère
+  nommés avec héritage ; approche, capitales, petites capitales, exposant, souligné, barré,
+  couleur ; lettrine ; espaces et retraits ; puces ; césure ; alignements ; tabulations ;
+  gabarits de page (`MasterSpread`) et folio automatique ; calques ; groupes ; fond perdu ;
+  profil FOGRA39 ; dégradés AVEC leur géométrie (`GradientFill*`) ; texte sur une courbe AVEC
+  `EndBracket` en points.
+- Exclu : interlignage (toujours relu en auto 120 %), pointillés `$ID/Dotted`, tirets
+  standard, trait double, polygone réglable (arrive en courbe), filets de paragraphe colorés,
+  crénage, variables de texte hors folio, texte sur un cercle, notes de bas de page, texte dans
+  un `Oval` de type texte.
+- Toute nouvelle capacité passe d'abord par un essai Affinity ; sans verdict FIDÈLE, elle
+  n'entre pas.
+
+**Conséquence :** à corriger dans `idml.ts` : `ItemLayer` sur chaque objet, `AppliedLanguage`
+français sur le texte, `CMYKProfile` FOGRA39 sur le document.

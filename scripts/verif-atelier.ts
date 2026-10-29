@@ -423,6 +423,45 @@ import {
   type Reglages,
 } from "@/lib/cockpit/modele";
 
+/* Mise en page interne (T1, 27/10) : géométrie, grilles, recadrage unique, état du magazine.
+   Modules purs, aucun import de l'ancien moteur de l'atelier. */
+import { PAGE_L, PAGE_H, PLANCHE_L, FOND_PERDU, PT_PAR_MM, MARGES as MARGES_MEP, GRILLE as GRILLE_MEP, zoneUtile, caseGrille } from "@/lib/mise-en-page/geometrie";
+import { orientationDe, pourCote, signatureDe as signatureDeMep, decorPourCote as decorPourCoteMep, type Template as TemplateMep } from "@/lib/mise-en-page/types";
+import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
+import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
+import { grillesPage, grillesDouble, toutesLesGrilles as toutesLesGrillesMep } from "@/lib/mise-en-page/grilles";
+import { cadrer, deplacer, zoomer, RECADRAGE_NEUTRE } from "@/lib/mise-en-page/recadrage";
+import {
+  candidats as candidatsMep,
+  disposer as disposerMep,
+  nouveauMagazine,
+  ajouterDouble,
+  supprimerPlanche,
+  poser as poserMep,
+  basculer as basculerMep,
+  autreDisposition,
+  intervertir as intervertirMep,
+  ecrireTexte,
+  utilisations as utilisationsMep,
+  templateParId,
+  cadresDe,
+  TEMPLATES_DESSINES,
+  type PhotoRef,
+} from "@/lib/mise-en-page/magazine";
+/* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
+import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, CALQUE, LANGUE, PROFILS_COULEUR, COULEUR_APLAT, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
+import { unzipSync, strFromU8 } from "fflate";
+import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
+import { catalogueDeDossier, catalogueDEdition, refusDeStatut, urlDeLecture, adressesEncoreValables } from "@/app/admin/atelier/mise-en-page/[id]/chargerCatalogue";
+import { choisirOuverture as choisirOuvertureMep, issueDeReponse, delaiReprise, titreAEnvoyer, DELAI_ENVOI_MS, NOMS_ETATS, type CopieLocale } from "@/app/admin/atelier/mise-en-page/[id]/sauvegardePure";
+import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip, dossierPropose, parentDe, PARENT_EXPORT_PAR_DEFAUT, cibleDuChoix, nomDossierValide } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
+import type { Magazine as MagazineMepClient } from "@/lib/mise-en-page/magazine";
+import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
+/* L'éditeur de mise en page (couche logique pure) : 79 scénarios + séquences aléatoires à graine fixe. */
+import { verifierMepEditeur } from "./verif-mep-editeur";
+import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
+
 let ko = 0;
 const ok = (n: string, c: boolean) => {
   console.log(`${c ? "  ok " : "  KO "} ${n}`);
@@ -4098,8 +4137,9 @@ titre("— T-176 : la fenêtre de signature d'une vignette (pure) —");
     );
   const appelants = fichiers(racine).filter((f) => /signerLectureVignette\(/.test(readFileSync(f, "utf8"))).map((f) => f.slice(racine.length + 1)).sort();
   ok(`signerLectureVignette n'est appele que par r2.ts et les ecrans du collectif (${appelants.join(", ")})`,
-     /* Planches du 20/10 (lot w1) : l'album du participant et la corbeille (responsable, atelier) signent leurs vignettes de la même façon. */
-     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
+     /* Planches du 20/10 (lot w1) : l'album du participant et la corbeille (responsable, atelier) signent leurs vignettes de la même façon.
+        27/10 (mise en page 0 bis) : la lecture des photos d'une édition pour l'outil de mise en page aussi. */
+     JSON.stringify(appelants) === JSON.stringify(["app/api/admin/atelier/mise-en-page/photos/route.ts", "app/api/admin/collectif/editions/[id]/corbeille/route.ts", "app/api/admin/collectif/editions/[id]/mise-en-page/photos/route.ts", "app/api/collectif/depot/album/route.ts", "app/api/collectif/photos/corbeille/route.ts", "app/api/collectif/photos/route.ts", "app/edition/[token]/donnees.ts", "lib/atelier/r2.ts"]));
   const r2src = readFileSync(resolve(racine, "lib/atelier/r2.ts"), "utf8");
   const corps = (nom: string) => {
     const debut = r2src.indexOf(`export async function ${nom}(`);
@@ -6351,6 +6391,850 @@ const verifierHeicComposer = async () => {
   ok("8A : le worker du B2C reste sans libheif, et /composer ne demande jamais la version moyenne des éditions",
     !/libheif/.test(readFileSync(resolve(process.cwd(), "src/app/(atelier)/composer/depot/reduire.worker.js"), "utf8")) && !/moyenne/.test(moteur.replace(/\/\*[\s\S]*?\*\//g, "")));
 };
+
+/* Mise en page interne (T1, 27/10) : la géométrie du brief §6, le catalogue qui ne laisse jamais une
+   sélection sans disposition, LE calcul de recadrage (écran = export IDML) et les transitions du magazine. */
+const verifierMiseEnPage = () => {
+  titre("— Mise en page : géométrie, templates, recadrage unique, transitions du magazine —");
+  const EPS = 1e-9;
+  ok("MEP géométrie : 6 × 25 + 5 × 5 = 175 = 210 − 20 − 15 ; 6 × 39,5 + 5 × 5 = 262 = 297 − 15 − 20",
+    GRILLE_MEP.colonnes * GRILLE_MEP.moduleL + (GRILLE_MEP.colonnes - 1) * GRILLE_MEP.gouttiere === 175 && PAGE_L - MARGES_MEP.interieure - MARGES_MEP.exterieure === 175
+      && GRILLE_MEP.lignes * GRILLE_MEP.moduleH + (GRILLE_MEP.lignes - 1) * GRILLE_MEP.gouttiere === 262 && PAGE_H - MARGES_MEP.haut - MARGES_MEP.bas === 262);
+  ok("MEP géométrie : A4 210 × 297, planche 420, fond perdu 3, 1 mm = 72/25,4 pt",
+    PAGE_L === 210 && PAGE_H === 297 && PLANCHE_L === 420 && FOND_PERDU === 3 && Math.abs(PT_PAR_MM * 25.4 - 72) < EPS);
+  const zg = zoneUtile("gauche"), zd = zoneUtile("droite");
+  ok("MEP zone utile : gauche x = 15 (tranche), droite x = 20 (pli), y = 15, 175 × 262",
+    zg.x === 15 && zd.x === 20 && zg.y === 15 && zd.l === 175 && zd.h === 262);
+  const cg = caseGrille("droite", 5, 5, 1, 1), tout = caseGrille("droite", 0, 0, 6, 6);
+  ok("MEP caseGrille : la dernière case finit au bord de la zone, la case 6 × 6 EST la zone",
+    Math.abs(cg.x + cg.l - 195) < EPS && Math.abs(cg.y + cg.h - 277) < EPS && tout.x === zd.x && tout.y === zd.y && tout.l === 175 && tout.h === 262);
+  ok("MEP orientationDe : C entre 0,95 et 1,05, sinon P ou L",
+    orientationDe(100, 100) === "C" && orientationDe(104, 100) === "C" && orientationDe(95, 100) === "C" && orientationDe(94, 100) === "P" && orientationDe(106, 100) === "L");
+
+  ok("MEP annexe : 4 doubles DP-01 à DP-04, valeurs du brief (sondes : DP-02 photo 215/5/200/235, DP-03 légende −90°, DP-04 y = −3)",
+    TEMPLATES_ANNEXE.length === 4 && TEMPLATES_ANNEXE.map((t) => t.id).join() === "DP-01,DP-02,DP-03,DP-04"
+      && JSON.stringify(TEMPLATES_ANNEXE[1].cadres[1]) === JSON.stringify({ role: "photo", x: 215, y: 5, l: 200, h: 235, orientation: "P" })
+      && TEMPLATES_ANNEXE[2].cadres[5].rotation === -90 && TEMPLATES_ANNEXE[3].cadres[0].y === -3
+      && TEMPLATES_ANNEXE.every((t) => t.cadres.filter((c) => c.role === "photo").length === t.nbPhotos && t.origine === "annexe"));
+
+  /* Les orientations d'une sélection de test : tout P, tout L, alternance, carrés, mélange des trois. */
+  const ph = (i: number, l: number, h: number, date: string | null = `2026-01-${String(10 + i).padStart(2, "0")}`): PhotoRef => ({ id: `p${i}`, nom: `IMG_${String(i).padStart(3, "0")}.jpg`, l, h, date });
+  const motifs: Record<string, (i: number) => PhotoRef> = {
+    "tout P": (i) => ph(i, 3000, 4000),
+    "tout L": (i) => ph(i, 4000, 3000),
+    "alterné": (i) => (i % 2 ? ph(i, 4000, 3000) : ph(i, 3000, 4000)),
+    "carrés": (i) => ph(i, 3000, 3000),
+    "P L C": (i) => [ph(i, 3000, 4000), ph(i, 4000, 3000), ph(i, 3000, 3000)][i % 3],
+  };
+  const serie = (motif: string, n: number) => Array.from({ length: n }, (_, i) => motifs[motif](i));
+  const vides: string[] = [];
+  for (const motif of Object.keys(motifs)) {
+    for (let n = 1; n <= 6; n++) if (candidatsMep("page", serie(motif, n)).length === 0) vides.push(`page ${motif} ${n}`);
+    for (let n = 1; n <= 12; n++) if (candidatsMep("double", serie(motif, n)).length === 0) vides.push(`double ${motif} ${n}`);
+  }
+  ok(`MEP candidats : jamais vide, page 1 à 6 et double 1 à 12, cinq motifs d'orientation${vides.length ? ` (vides : ${vides.join(", ")})` : ""}`, vides.length === 0);
+  ok("MEP candidats : l'annexe compatible passe d'abord (3 L → DP-04, 3 P → DP-01, 2 P → DP-02), puis les grilles",
+    candidatsMep("double", serie("tout L", 3))[0].id === "DP-04" && candidatsMep("double", serie("tout P", 3))[0].id === "DP-01"
+      && candidatsMep("double", serie("tout P", 2))[0].id === "DP-02" && candidatsMep("double", serie("tout L", 3)).at(-1)?.origine === "grille");
+  const ids2L1C = candidatsMep("double", [ph(0, 4000, 3000), ph(1, 4000, 3000), ph(2, 3000, 3000)]).map((t) => t.id);
+  ok("MEP candidats : un carré est compatible avec P comme avec L (parmi les annexes : 2 L + 1 C → DP-03 et DP-04 compatibles avant DP-01 ; 3 C → les trois dans l'ordre)",
+    ids2L1C.filter((id) => id.startsWith("DP-")).join() === "DP-03,DP-04,DP-01"
+      && candidatsMep("double", serie("carrés", 3)).map((t) => t.id).filter((id) => id.startsWith("DP-")).join() === "DP-01,DP-03,DP-04");
+
+  const grilles: TemplateMep[] = [];
+  for (let n = 1; n <= 6; n++) grilles.push(...grillesPage(n));
+  for (let n = 1; n <= 12; n++) grilles.push(...grillesDouble(n));
+  const parPortee: string[] = [];
+  for (let n = 1; n <= 6; n++) parPortee.push(`P${n}:${grillesPage(n).length}`);
+  for (let n = 1; n <= 12; n++) parPortee.push(`D${n}:${grillesDouble(n).length}`);
+  console.log(`      grilles par (portée, n) : ${parPortee.join(" ")}`);
+  ok("MEP grilles : au moins 2 répartitions par nombre (page 1 à 6), au plus 8 par double, ids uniques",
+    [1, 2, 3, 4, 5, 6].every((n) => grillesPage(n).length >= 2) && Array.from({ length: 12 }, (_, i) => grillesDouble(i + 1)).every((l) => l.length >= 1 && l.length <= 8)
+      && new Set(grilles.map((t) => t.id)).size === grilles.length && grillesPage(7).length === 0 && grillesDouble(13).length === 0);
+  ok("MEP grilles : nbPhotos = cadres photo, signature calculée, aucun texte, origine grille, ids G-P / G-D",
+    grilles.every((t) => t.nbPhotos === t.cadres.length && t.cadres.every((c) => c.role === "photo") && t.origine === "grille" && t.attribut === "classique"
+      && t.signature === t.cadres.map((c) => orientationDe(c.l, c.h)).join(",") && /^G-[PD]\d+-[a-h]$/.test(t.id)));
+  ok("MEP grilles : la pleine page (0, −3, 213, 303) et la pleine double (−3, −3, 426, 303) existent",
+    grillesPage(1).some((t) => t.cadres[0].x === 0 && t.cadres[0].y === -3 && t.cadres[0].l === 213 && t.cadres[0].h === 303)
+      && grillesDouble(1)[0].cadres[0].x === -3 && grillesDouble(1)[0].cadres[0].l === 426 && grillesDouble(1)[0].cadres[0].h === 303);
+  ok("MEP grilles : des photos traversent le pli dans les doubles (bord gauche < 210 < bord droit)",
+    [1, 3, 5, 7, 11].every((n) => grillesDouble(n).some((t) => t.cadres.some((c) => c.x < 210 && c.x + c.l > 210))));
+
+  /* Toute photo tient dans la planche élargie du fond perdu, quel que soit le côté où la page est posée. */
+  const horsChamp: string[] = [];
+  const dans = (x: number, y: number, l: number, h: number, maxX: number) => x >= -3 - EPS && x + l <= maxX + EPS && y >= -3 - EPS && y + h <= 300 + EPS;
+  for (const t of [...TEMPLATES_ANNEXE, ...grilles]) {
+    for (const cote of t.portee === "page" ? (["gauche", "droite"] as const) : (["gauche"] as const)) {
+      for (const c of pourCote(t, cote)) if (c.role === "photo" && !dans(c.x, c.y, c.l, c.h, t.portee === "page" ? 213 : 423)) horsChamp.push(`${t.id}/${cote}`);
+    }
+  }
+  ok(`MEP fond perdu : chaque cadre photo dans la planche élargie (−3 … 423 × −3 … 300)${horsChamp.length ? ` (hors : ${horsChamp.join(", ")})` : ""}`, horsChamp.length === 0);
+
+  const chevauchent: string[] = [];
+  for (const t of grilles) {
+    const c = t.cadres;
+    for (let i = 0; i < c.length; i++) for (let j = i + 1; j < c.length; j++) {
+      const a = c[i], b = c[j];
+      if (a.x < b.x + b.l - EPS && b.x < a.x + a.l - EPS && a.y < b.y + b.h - EPS && b.y < a.y + a.h - EPS) chevauchent.push(`${t.id}:${i}/${j}`);
+    }
+  }
+  ok(`MEP grilles : aucun cadre photo ne chevauche un autre${chevauchent.length ? ` (${chevauchent.join(", ")})` : ""}`, chevauchent.length === 0);
+  const pg = grillesPage(2)[0];
+  ok("MEP pourCote : la gauche est le miroir (x' = 210 − x − l), rotation inversée",
+    pourCote(pg, "gauche")[0].x === 210 - pg.cadres[0].x - pg.cadres[0].l
+      && pourCote({ ...pg, cadres: [{ ...pg.cadres[0], rotation: 90 }] }, "gauche")[0].rotation === -90);
+
+  /* Le calcul de recadrage : l'image couvre TOUJOURS le cadre. */
+  const couvre = (photo: { l: number; h: number }, cadre: { l: number; h: number }, r: { zoom: number; dx: number; dy: number }) => {
+    const c = cadrer(photo, cadre, r);
+    return c.x <= EPS && c.y <= EPS && c.x + c.l >= cadre.l - EPS && c.y + c.h >= cadre.h - EPS;
+  };
+  const cas: [{ l: number; h: number }, { l: number; h: number }][] = [
+    [{ l: 3000, h: 4000 }, { l: 175, h: 84 }],
+    [{ l: 4000, h: 3000 }, { l: 55, h: 262 }],
+    [{ l: 3000, h: 3000 }, { l: 85, h: 128.5 }],
+    [{ l: 6000, h: 1000 }, { l: 426, h: 303 }],
+  ];
+  const reglages = [0, 1, 2.5, 8, 50].flatMap((zoom) => [[0, 0], [1e6, 1e6], [-1e6, -1e6], [1e6, -1e6]].map(([dx, dy]) => ({ zoom, dx, dy })));
+  ok("MEP cadrer : couverture totale (portrait dans paysage et inverse, zoom 0 à 50, décalages extrêmes)",
+    cas.every(([p, c]) => reglages.every((r) => couvre(p, c, r))));
+  const c0 = cadrer({ l: 3000, h: 4000 }, { l: 175, h: 84 }, RECADRAGE_NEUTRE);
+  ok("MEP cadrer : neutre = remplissage centré (portrait 3000 × 4000 dans 175 × 84 : l = 175, h = 233,33, y = −74,67)",
+    Math.abs(c0.l - 175) < EPS && Math.abs(c0.h - 700 / 3) < EPS && c0.x === 0 && Math.abs(c0.y - (84 - 700 / 3) / 2) < EPS && Math.abs(c0.echelle - 175 / 3000) < EPS);
+  const cz = cadrer({ l: 3000, h: 4000 }, { l: 175, h: 84 }, { zoom: 2.5, dx: 1e6, dy: -1e6 });
+  ok("MEP cadrer : zoom borné à [1, 8], décalage borné à ±(l − cl)/2 (bord de l'image sur le bord du cadre)",
+    cadrer({ l: 10, h: 10 }, { l: 5, h: 5 }, { zoom: 0.2, dx: 0, dy: 0 }).zoom === 1 && cadrer({ l: 10, h: 10 }, { l: 5, h: 5 }, { zoom: 99, dx: 0, dy: 0 }).zoom === 8
+      && Math.abs(cz.dx - (cz.l - 175) / 2) < EPS && Math.abs(cz.x) < EPS && Math.abs(cz.dy + (cz.h - 84) / 2) < EPS && Math.abs(cz.y + cz.h - 84) < EPS);
+  const rz = zoomer(deplacer({ zoom: 3, dx: 0, dy: 0 }, 1000, 1000, { l: 3000, h: 4000 }, { l: 175, h: 84 }), 1, { l: 3000, h: 4000 }, { l: 175, h: 84 });
+  ok("MEP deplacer / zoomer : bornés, et dézoomer reborne le décalage (zoom 1 sur un portrait dans un paysage : dx = 0)",
+    rz.zoom === 1 && rz.dx === 0 && Math.abs(rz.dy - (700 / 3 - 84) / 2) < EPS);
+
+  /* disposer : orientation d'abord, puis la date. */
+  const tDP03 = templateParId("DP-03");
+  const d3 = tDP03 ? disposerMep(tDP03, [ph(1, 3000, 4000, "2026-01-01"), ph(2, 4000, 3000, "2026-01-03"), ph(3, 4000, 3000, "2026-01-02")]) : null;
+  ok("MEP disposer : DP-03 (L, L, P) reçoit le paysage le plus ancien, puis l'autre, puis le portrait",
+    d3 !== null && d3.photos.map((a) => a.photoId).join() === "p3,p2,p1" && d3.textes.length === 9 && d3.textes[0].contenu === "Titre" && d3.textes[0].taille === 26);
+  const g3 = grillesPage(3)[0];
+  const dsd = disposerMep(g3, [ph(1, 4000, 3000, null), ph(2, 4000, 3000, "2026-02-01"), ph(3, 3000, 4000, "2025-01-01")]);
+  ok("MEP disposer : à orientation égale, la date ; une date inconnue passe après ; recadrage neutre",
+    dsd.photos.map((a) => a.photoId).join() === "p2,p1,p3" && dsd.photos.every((a) => a.recadrage.zoom === 1 && a.recadrage.dx === 0));
+
+  /* Le magazine. */
+  const cat = Array.from({ length: 14 }, (_, i) => motifs["P L C"](i));
+  let m = nouveauMagazine("m1", "Essai", "2026-10-27T00:00:00.000Z");
+  ok("MEP magazine : une seule planche, page droite seule et vide", m.planches.length === 1 && m.planches[0].mode === "pages" && m.planches[0].droite === null);
+  m = ajouterDouble(ajouterDouble(m));
+  const [p0, p1, p2] = m.planches.map((p) => p.id);
+  const r7 = poserMep(m, p1, "droite", cat.slice(0, 8));
+  ok("MEP poser : 8 photos sur une page → 6 posées, les 2 plus récentes rendues, la planche repasse en pages",
+    r7.nonPosees.join() === "p6,p7" && r7.magazine.planches[1].mode === "pages" && r7.magazine.planches[1].droite?.photos.length === 6 && r7.magazine.planches[1].gauche === null);
+  m = poserMep(r7.magazine, p1, "gauche", cat.slice(8, 11)).magazine;
+  const avant = [...(m.planches[1].gauche?.photos ?? []), ...(m.planches[1].droite?.photos ?? [])].map((a) => a.photoId).sort().join();
+  const mDouble = basculerMep(m, p1, cat);
+  const mRetour = basculerMep(mDouble, p1, cat);
+  const enDouble = (mDouble.planches[1].double?.photos ?? []).map((a) => a.photoId).sort().join();
+  const auRetour = [...(mRetour.planches[1].gauche?.photos ?? []), ...(mRetour.planches[1].droite?.photos ?? [])].map((a) => a.photoId).sort().join();
+  ok("MEP basculer : pages → double → pages conserve l'ensemble des photos (9), partage ceil/floor",
+    mDouble.planches[1].mode === "double" && enDouble === avant && auRetour === avant && avant.split(",").length === 9
+      && mRetour.planches[1].gauche?.photos.length === 5 && mRetour.planches[1].droite?.photos.length === 4);
+  const m0 = poserMep(m, p0, "double", cat.slice(0, 3)).magazine;
+  ok("MEP planche 0 : poser en double la garde en page droite, basculer ne fait rien, supprimer la vide",
+    m0.planches[0].mode === "pages" && m0.planches[0].droite !== null && m0.planches[0].gauche === null
+      && basculerMep(m0, p0, cat) === m0 && supprimerPlanche(m0, p0).planches.length === 3 && supprimerPlanche(m0, p0).planches[0].droite === null
+      && supprimerPlanche(m0, p2).planches.length === 2);
+  const vierge = ajouterDouble(nouveauMagazine("m2", "Essai", "x"));
+  const m2 = poserMep(poserMep(vierge, "pl-2", "double", [cat[0], cat[1]]).magazine, "pl-1", "droite", [cat[0]]).magazine;
+  const u = utilisationsMep(m2);
+  ok("MEP utilisations : une photo posée deux fois compte ×2", u.get("p0") === 2 && u.get("p1") === 1);
+  const ad = autreDisposition(ecrireTexte(mDouble, { plancheId: p1, cible: "double", index: 0 }, { contenu: "Lisbonne" }), p1, "double", cat);
+  ok("MEP autreDisposition : template suivant, mêmes photos (multiset), photos du template toujours dans le catalogue",
+    ad.planches[1].double?.templateId !== mDouble.planches[1].double?.templateId
+      && (ad.planches[1].double?.photos ?? []).map((a) => a.photoId).sort().join() === enDouble);
+  ok("MEP autreDisposition : un texte saisi survit s'il reste un cadre texte à son index (grilles : aucun cadre texte, rien à garder)",
+    (() => {
+      const t3 = serie("tout L", 3);
+      let mm = poserMep(ajouterDouble(nouveauMagazine("m", "t", "x")), "pl-2", "double", t3).magazine;
+      mm = ecrireTexte(mm, { plancheId: "pl-2", cible: "double", index: 0 }, { contenu: "Ouessant" });
+      const suiv = autreDisposition(mm, "pl-2", "double", t3);
+      const tour = Array.from({ length: candidatsMep("double", t3).length }, () => 0).reduce((acc) => autreDisposition(acc, "pl-2", "double", t3), mm);
+      return mm.planches[1].double?.templateId === "DP-04" && suiv.planches[1].double?.templateId !== "DP-04"
+        && tour.planches[1].double?.templateId === "DP-04" && mm.planches[1].double?.textes[0].contenu === "Ouessant";
+    })());
+  const sw = intervertirMep(mDouble, { plancheId: p1, cible: "double", index: 0 }, { plancheId: p1, cible: "double", index: 1 });
+  const ids = (mDouble.planches[1].double?.photos ?? []).map((a) => a.photoId);
+  const idsSw = (sw.planches[1].double?.photos ?? []).map((a) => a.photoId);
+  ok("MEP intervertir : les deux photos s'échangent, le reste ne bouge pas, l'original n'est pas muté",
+    idsSw[0] === ids[1] && idsSw[1] === ids[0] && idsSw.slice(2).join() === ids.slice(2).join() && (mDouble.planches[1].double?.photos[0].photoId ?? null) === ids[0]);
+  const dd = m.planches[1].droite;
+  ok("MEP cadresDe : page droite décalée de +210, page gauche en miroir, en repère planche",
+    dd !== null && cadresDe(dd, "droite").every((c) => c.x >= 210 - EPS) && (m.planches[1].gauche ? cadresDe(m.planches[1].gauche, "gauche").every((c) => c.x + c.l <= 210 + EPS) : false));
+};
+verifierMiseEnPage();
+
+/* Export IDML (T2, 27/10) : le paquet que lit Affinity. Fidèle au générateur Python validé :
+   mimetype en premier et stocké, designmap qui référence tout, transformée d'image tirée de `cadrer`. */
+const verifierIdml = () => {
+  titre("— Mise en page : export IDML et paquet —");
+  const n = nomsDeLiens([
+    { id: "a", nom: "IMG_1.jpg" }, { id: "b", nom: "img_1.JPG" }, { id: "c", nom: "IMG_1.jpg" },
+    { id: "d", nom: "a/b:c*?.jpeg" }, { id: "e", nom: "IMG_1 (2).jpg" }, { id: "f", nom: "sans extension" }, { id: "g", nom: "" },
+  ]);
+  ok("IDML nomsDeLiens : nom gardé, doublon insensible à la casse → « (2) » avant l'extension, un nom déjà pris saute au suivant",
+    n.get("a") === "IMG_1.jpg" && n.get("b") === "img_1 (2).JPG" && n.get("c") === "IMG_1 (3).jpg" && n.get("e") === "IMG_1 (2) (2).jpg");
+  ok("IDML nomsDeLiens : caractères interdits remplacés (/ \\ : * ?), nom vide → « photo », unicité garantie",
+    n.get("d") === "a_b_c__.jpeg" && n.get("f") === "sans extension" && n.get("g") === "photo"
+      && new Set([...n.values()].map((v) => v.toLowerCase())).size === n.size);
+  ok("IDML échappement : & < > \" ' dans contenus et attributs", echapperXml(`a&b<c>"d'`) === "a&amp;b&lt;c&gt;&quot;d&apos;");
+  ok("IDML liens : relatif, file: relatif, absolu encodé comme urllib.parse.quote (/ gardés, espace %20, é %C3%A9)",
+    uriDeLien("Été 1.jpg", { mode: "relatif" }) === "Links/%C3%89t%C3%A9%201.jpg"
+      && uriDeLien("a (2).jpg", { mode: "relatif-file" }) === "file:Links/a%20%282%29.jpg"
+      && uriDeLien("x.jpg", { mode: "absolu", dossier: "/Users/m/Desktop/essai abs/" }) === "file:/Users/m/Desktop/essai%20abs/Links/x.jpg");
+
+  /* Un magazine de 3 planches : 0 = page droite (G-P1-a, une photo), 1 = DP-04 (photo 3 zoomée ×2, dx 10),
+     2 = mode pages avec une page gauche VIDE et une droite en grille. */
+  const ph: Map<string, PhotoExport> = new Map([
+    ["p1", { id: "p1", nomLien: "un.jpg", l: 4000, h: 3000 }],
+    ["p2", { id: "p2", nomLien: "deux & co.jpg", l: 3000, h: 4000 }],
+  ]);
+  const neutre = { zoom: 1, dx: 0, dy: 0 };
+  const mag = {
+    version: 1 as const, id: "m", titre: "t", creeLe: "x", modifieLe: "x",
+    planches: [
+      { id: "pl-1", mode: "pages" as const, double: null, gauche: null, droite: { templateId: "G-P1-a", photos: [{ photoId: "p2", recadrage: neutre }], textes: [] } },
+      { id: "pl-2", mode: "double" as const, gauche: null, droite: null, double: {
+        templateId: "DP-04",
+        photos: [{ photoId: "p1", recadrage: neutre }, { photoId: null, recadrage: neutre }, { photoId: "p1", recadrage: { zoom: 2, dx: 10, dy: 0 } }],
+        textes: [{ contenu: `L'été <à> "Lisbonne" & co`, taille: 30, gras: true }, { contenu: "ligne 1\nligne 2", taille: 8, gras: false }],
+      } },
+      { id: "pl-3", mode: "pages" as const, double: null, gauche: null, droite: { templateId: "G-P2-a", photos: [{ photoId: "p1", recadrage: neutre }, { photoId: "p2", recadrage: neutre }], textes: [] } },
+    ],
+  };
+  const fichiers = construireIdml(mag, ph, { liens: { mode: "relatif" } });
+  const parChemin = new Map(fichiers.map((x) => [x.chemin, x.contenu]));
+  const dm = parChemin.get("designmap.xml") ?? "";
+  const spreads = fichiers.filter((x) => x.chemin.startsWith("Spreads/"));
+  const stories = fichiers.filter((x) => x.chemin.startsWith("Stories/"));
+  ok("IDML paquet : ordre du Python (mimetype, container, Graphic, Fonts, Styles, Preferences, Spreads, Stories, designmap)",
+    fichiers[0].chemin === "mimetype" && fichiers[0].contenu === MIMETYPE_IDML && fichiers[1].chemin === "META-INF/container.xml"
+      && fichiers.slice(2, 6).map((x) => x.chemin).join() === "Resources/Graphic.xml,Resources/Fonts.xml,Resources/Styles.xml,Resources/Preferences.xml"
+      && fichiers[fichiers.length - 1].chemin === "designmap.xml" && spreads.length === 3 && stories.length === 2);
+  ok("IDML designmap : référence chaque Spread et chaque Story, StoryList = les Stories",
+    spreads.every((s) => dm.includes(`<idPkg:Spread src="${s.chemin}"/>`)) && stories.every((s) => dm.includes(`<idPkg:Story src="${s.chemin}"/>`))
+      && (/StoryList="([^"]*)"/.exec(dm)?.[1] ?? "").split(" ").length === stories.length
+      && stories.every((s) => dm.includes(s.chemin.replace("Stories/Story_", "").replace(".xml", ""))));
+  ok("IDML pages : PagesPerDocument = Section Length = 1 + 2 × (planches − 1) = 5",
+    (parChemin.get("Resources/Preferences.xml") ?? "").includes('PagesPerDocument="5"') && dm.includes('Length="5"'));
+  {
+    /* D28, essais Affinity du 29/10 : calque, langue, profil. */
+    const objets = spreads.flatMap((s) => s.contenu.match(/<(Rectangle|TextFrame) [^>]*>/g) ?? []);
+    const plages = stories.flatMap((s) => s.contenu.match(/<CharacterStyleRange [^>]*>/g) ?? []);
+    ok("IDML calque : chaque Rectangle et TextFrame porte ItemLayer = le Layer du designmap (sinon hors de « Calque 1 »)",
+      objets.length > 0 && objets.every((o) => o.includes(`ItemLayer="${CALQUE}"`)) && dm.includes(`<Layer Self="${CALQUE}"`) && dm.includes(`ActiveLayer="${CALQUE}"`));
+    ok("IDML langue : chaque CharacterStyleRange porte AppliedLanguage français (la Language du designmap ne suffit pas)",
+      plages.length > 0 && plages.every((c) => c.includes(`AppliedLanguage="${LANGUE}"`)));
+    ok("IDML profil : le Document déclare FOGRA39 (sinon Affinity prend U.S. Web Coated SWOP)",
+      /<Document [^>]*CMYKProfile="Coated FOGRA39 \(ISO 12647-2:2004\)"/.test(dm) && dm.includes(PROFILS_COULEUR));
+  }
+  const sp1 = parChemin.get("Spreads/Spread_sp1.xml") ?? "";
+  const sp3 = parChemin.get("Spreads/Spread_sp3.xml") ?? "";
+  ok("IDML planches : planche 0 = une page droite (PageCount 1, BindingLocation 0) ; mode pages avec page vide = 2 pages",
+    sp1.includes('PageCount="1" BindingLocation="0"') && (sp1.match(/<Page /g) ?? []).length === 1 && sp1.includes('ItemTransform="1 0 0 1 0.0000 -420.9449"')
+      && sp3.includes('PageCount="2" BindingLocation="1"') && (sp3.match(/<Page /g) ?? []).length === 2 && sp3.includes("ItemTransform=\"1 0 0 1 -595.2756 -420.9449\""));
+  /* À la main : 4000 × 3000 dans 175 × 128,5 → max(175/4000, 128,5/3000) = 0,04375 mm/px ; ×2 = 0,0875 ;
+     image 350 × 262,5 ; x = (175 − 350)/2 + 10 = −77,5 ; y = (128,5 − 262,5)/2 = −67.
+     Points : s = 0,0875·K ; tx = (230 − 210 − 77,5)·K ; ty = (104 − 67)·K − 297·K/2. */
+  const Kt = 72 / 25.4;
+  const attendu = `${(0.0875 * Kt).toFixed(6)} 0 0 ${(0.0875 * Kt).toFixed(6)} ${(-57.5 * Kt).toFixed(4)} ${(37 * Kt - 148.5 * Kt).toFixed(4)}`;
+  const sp2 = parChemin.get("Spreads/Spread_sp2.xml") ?? "";
+  ok(`IDML recadrage : zoom 2 + dx 10 → ItemTransform « ${attendu} » (calculé à la main), GraphicBounds 4000 × 3000`,
+    sp2.includes(`<Image Self="u`) && sp2.includes(`ItemTransform="${attendu}"`) && sp2.includes('<GraphicBounds Left="0" Top="0" Right="4000" Bottom="3000"/>'));
+  ok("IDML cadre vide : un Rectangle GraphicType sans Image ; trois cadres photo, deux Images, noms lisibles",
+    (sp2.match(/<Rectangle /g) ?? []).length === 3 && (sp2.match(/<Image /g) ?? []).length === 2
+      && /<Rectangle [^>]*Name="Photo 2"[^>]*>(?:(?!<\/Rectangle>).)*<FrameFittingOption [^>]*\/><\/Rectangle>/.test(sp2)
+      && sp2.includes('Name="Légende 1"') && sp2.includes('Name="Légende 2"'));
+  const st = stories.map((s) => s.contenu).join("");
+  ok("IDML textes : contenu échappé, taille et gras du TexteCadre, Arial, saut de ligne → <Br/>",
+    st.includes("<Content>L&apos;été &lt;à&gt; &quot;Lisbonne&quot; &amp; co</Content>") && st.includes('PointSize="30" FontStyle="Bold"')
+      && st.includes('PointSize="8" FontStyle="Regular"') && st.includes("<Content>ligne 1</Content><Br/><Content>ligne 2</Content>")
+      && st.includes('<AppliedFont type="string">Arial</AppliedFont>'));
+  ok("IDML liens : nom encodé dans l'URI, & échappé dans l'attribut",
+    (parChemin.get("Spreads/Spread_sp1.xml") ?? "").includes('LinkResourceURI="Links/deux%20%26%20co.jpg"'));
+  /* Rotation : DP-03 porte une légende à −90° ; la transformée tourne autour du centre du cadre. */
+  const rot = construireIdml({ ...mag, planches: [mag.planches[0], { id: "pl-2", mode: "double", gauche: null, droite: null,
+    double: { templateId: "DP-03", photos: [], textes: [] } }] }, ph, { liens: { mode: "relatif" } });
+  const sr = rot.find((x) => x.chemin === "Spreads/Spread_sp2.xml")?.contenu ?? "";
+  /* Légende (15, 148,5, 40 × 4) à −90° : centre (35, 150,5) mm ; a = 0, b = −1, c = 1, d = 0 ;
+     tx = cx − cy, ty = cy + cx, en points du repère IDML. */
+  const cx = (35 - 210) * Kt, cy = 150.5 * Kt - 148.5 * Kt;
+  ok("IDML rotation : légende de DP-03 à −90° → ItemTransform « 0 −1 1 0 » autour du centre, les autres textes en identité",
+    sr.includes(`ItemTransform="0.000000 -1.000000 1.000000 0.000000 ${(cx - cy).toFixed(4)} ${(cy + cx).toFixed(4)}"`)
+      && sr.includes(`TextFrame Self="u`) && (sr.match(/<TextFrame [^>]*ItemTransform="1 0 0 1 0 0"/g) ?? []).length === 7);
+
+  /* Bien formé : un tokeniseur sans dépendance (balises équilibrées, attributs entre guillemets, aucun & ou < nu). */
+  const bienForme = (xml: string): boolean => {
+    const pile: string[] = [];
+    const re = /<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<\/([\w:.-]+)\s*>|<([\w:.-]+)((?:\s+[\w:.-]+="[^"<]*")*)\s*(\/?)>|([^<]+)|(<)/g;
+    let m: RegExpExecArray | null;
+    let racines = 0;
+    while ((m = re.exec(xml))) {
+      if (m[6]) return false;
+      if (m[5] !== undefined) { if (/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(m[5]) || (pile.length === 0 && m[5].trim())) return false; continue; }
+      if (m[1]) { if (pile.pop() !== m[1]) return false; continue; }
+      if (m[2]) {
+        if (/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/.test(m[3] ?? "")) return false;
+        if (pile.length === 0) racines++;
+        if (!m[4]) pile.push(m[2]);
+      }
+    }
+    return pile.length === 0 && racines === 1;
+  };
+  const xmls = [...fichiers, ...rot].filter((x) => x.chemin !== "mimetype");
+  const malFormes = xmls.filter((x) => !bienForme(x.contenu)).map((x) => x.chemin);
+  ok(`IDML XML : chaque fichier bien formé (une racine, balises équilibrées, entités valides)${malFormes.length ? ` (${malFormes.join(", ")})` : ""}`,
+    malFormes.length === 0 && !bienForme("<a><b></a></b>") && !bienForme("<a>x & y</a>") && !bienForme('<a b="1"></a><c/>'));
+
+  /* Le zip : mimetype PREMIER, méthode 0 (octets 8-9 de l'en-tête local), contenu lisible à l'offset 38. */
+  const idml = zipperIdml(fichiers);
+  const nomPremier = strFromU8(idml.subarray(30, 30 + (idml[26] | (idml[27] << 8))));
+  ok("IDML zip : premier fichier « mimetype », méthode 0 (stocké), contenu en clair à l'offset 38",
+    idml[0] === 0x50 && idml[1] === 0x4b && idml[2] === 3 && idml[3] === 4 && (idml[8] | (idml[9] << 8)) === 0 && nomPremier === "mimetype"
+      && (idml[28] | (idml[29] << 8)) === 0 && strFromU8(idml.subarray(38, 38 + MIMETYPE_IDML.length)) === MIMETYPE_IDML);
+  const relu = unzipSync(idml);
+  ok("IDML zip : relu par fflate, mêmes fichiers et mêmes contenus",
+    Object.keys(relu).join() === fichiers.map((x) => x.chemin).join() && fichiers.every((x) => strFromU8(relu[x.chemin]) === x.contenu));
+  const exp = unzipSync(zipperExport({ idml, liens: [{ nomLien: "un.jpg", octets: new Uint8Array([0xff, 0xd8, 1, 2]) }], utilisees: ["un.jpg", "deux & co.jpg"], nonUtilisees: [] }));
+  ok("IDML export : magazine.idml + Links/ + photos-utilisees.txt + photos-non-utilisees.txt (une ligne par nom)",
+    Object.keys(exp).join() === "magazine.idml,Links/un.jpg,photos-utilisees.txt,photos-non-utilisees.txt"
+      && exp["magazine.idml"].length === idml.length && exp["Links/un.jpg"][1] === 0xd8
+      && strFromU8(exp["photos-utilisees.txt"]) === "un.jpg\ndeux & co.jpg\n" && strFromU8(exp["photos-non-utilisees.txt"]) === "");
+};
+verifierIdml();
+
+/* ═══════════════ MISE EN PAGE T3 : lire un dossier, ne rien écrire ═══════════════ */
+const verifierMepPhotos = () => {
+  titre("— mise en page : les photos d'un dossier, en lecture seule (T3) —");
+  const lireF = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const ECRIT = /\.(insert|update|delete|upsert)\(|PutObject|DeleteObject|CopyObject|logEvenement|sendBrevoEmail|supprimerPrefixe/;
+  const route = sansComm(lireF("src/app/api/admin/atelier/mise-en-page/photos/route.ts"));
+  const donneesMep = sansComm(lireF("src/app/admin/atelier/mise-en-page/donnees.ts"));
+  const types = sansComm(lireF("src/app/admin/atelier/mise-en-page/typesPhotos.ts"));
+  const donnees = lireF("src/app/admin/atelier/donnees.ts");
+  ok("route photos : GET seul, gardée par quiEstConnecteRequete(request) AVANT toute lecture, 401 sinon",
+    /export async function GET\(/.test(route) && !/export async function (POST|PUT|PATCH|DELETE)\(/.test(route)
+      && /quiEstConnecteRequete\(request\)/.test(route) && /status: 401/.test(route)
+      && route.indexOf("quiEstConnecteRequete(request)") < route.indexOf("makeSupabase()"));
+  ok("route photos : token filtré par isValidNumeroToken (400), introuvable 404, no-store, force-dynamic",
+    /isValidNumeroToken\(token\)/.test(route) && /status: 400/.test(route) && /status: 404/.test(route)
+      && /"Cache-Control": "no-store"/.test(route) && /export const dynamic = "force-dynamic"/.test(route)
+      && route.indexOf("isValidNumeroToken(token)") < route.indexOf("makeSupabase()"));
+  ok("route photos : lit par lirePhotos (ses replis 42703), original au TTL d'aperçu, vignette en adresse STABLE (signerLectureVignette), nb de pages payé lu",
+    /lirePhotos\(supabase, numero\.id\)/.test(route) && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)/.test(route)
+      && /signerLectureVignette\(p\.vignette_key\)/.test(route) && !/signerGet\(p\.vignette_key/.test(route) && /ttl: APERCU_TTL_SECONDS/.test(route)
+      && /nb_pages/.test(route) && /nbPages: numero\.nb_pages \?\? null/.test(route));
+  ok("route photos et chargerDossiersMep : aucune écriture (base, coffre, journal, mail), aucun log de token ni d'URL",
+    !ECRIT.test(route) && !ECRIT.test(donneesMep) && !/console\.\w+\([^)]*(token|url)/i.test(route));
+  ok("lirePhotos exportée sans être simplifiée : trois paliers, chacun ne retombe que sur 42703",
+    /export async function lirePhotos\(/.test(donnees) && /export type RangeePhoto = \{/.test(donnees)
+      && (donnees.slice(donnees.indexOf("export async function lirePhotos("), donnees.indexOf("async function lireNumeros(")).match(/code !== "42703"/g) ?? []).length === 2);
+  ok("chargerDossiersMep : nb_photos > 0, tri created_at desc, archive_le tentée puis repli 42703 sans elle",
+    /\.gt\("nb_photos", 0\)/.test(donneesMep) && /\.order\("created_at", \{ ascending: false \}\)/.test(donneesMep)
+      && /lire\(`\$\{CHAMPS\}, archive_le`\)/.test(donneesMep) && /code !== "42703"/.test(donneesMep) && /lire\(CHAMPS\)/.test(donneesMep)
+      && !/archive_le/.test(donneesMep.match(/const CHAMPS = "[^"]*"/)?.[0] ?? "archive_le"));
+  ok("typesPhotos.ts : partagé client/serveur, aucun import",
+    !/^\s*import\s/m.test(types) && /export type PhotoDossierMep/.test(types) && /export type ReponsePhotosMep/.test(types));
+  const fichiersRoutes = (dossier: string): string[] =>
+    readdirSync(dossier, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? fichiersRoutes(join(dossier, e.name)) : e.name === "route.ts" ? [join(dossier, e.name)] : [],
+    );
+  const racineAdmin = resolve(process.cwd(), "src/app/api/admin");
+  const nonGardees = fichiersRoutes(racineAdmin)
+    .map((f) => f.slice(racineAdmin.length + 1))
+    .filter((f) => f !== "login/route.ts" && f !== "logout/route.ts")
+    .filter((f) => !/quiEstConnecteRequete\(/.test(readFileSync(join(racineAdmin, f), "utf8")));
+  ok(`toute route /api/admin (hors login, logout) re-vérifie quiEstConnecteRequete, mise-en-page comprise${nonGardees.length ? " : " + nonGardees.join(", ") : ""}`,
+    nonGardees.length === 0 && fichiersRoutes(racineAdmin).some((f) => f.endsWith("mise-en-page/photos/route.ts")));
+};
+verifierMepPhotos();
+
+/* ═══════════════ MISE EN PAGE 0 bis : les photos d'une ÉDITION, en lecture seule ═══════════════ */
+const verifierMepPhotosEdition = () => {
+  titre("— mise en page : les photos d'une édition, en lecture seule (0 bis) —");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const route = sansComm(readFileSync(resolve(process.cwd(), "src/app/api/admin/collectif/editions/[id]/mise-en-page/photos/route.ts"), "utf8"));
+  const pur = sansComm(readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/photosEdition.ts"), "utf8"));
+  const iOuvert = route.indexOf("collectifOuvert()");
+  const iQui = route.indexOf("quiEstConnecteRequete(");
+  const iUuid = route.indexOf("estUuid(id)");
+  const iBase = route.indexOf("makeSupabase()");
+  ok("route édition : GET seul ; collectifOuvert() (404) PUIS quiEstConnecteRequete (401) PUIS estUuid (404), tous avant la base",
+    /export async function GET\(/.test(route) && !/export async function (POST|PUT|PATCH|DELETE)\(/.test(route)
+      && iOuvert > 0 && iOuvert < iQui && iQui < iUuid && iUuid < iBase
+      && /if \(!collectifOuvert\(\)\) return new NextResponse\(null, \{ status: 404 \}\);/.test(route) && /status: 401/.test(route));
+  ok("route édition : état EFFECTIF (etatEffectif), collecteOuverte = preparation, 410 sur photos_supprimees_le, 503 tableAbsente",
+    /etatEffectif\(edition\.etat, edition\.cloture_le, new Date\(\)\)/.test(route) && /collecteOuverte: etat === "preparation"/.test(route)
+      && /phrasePhotosEffacees\(edition\.photos_supprimees_le\)/.test(route) && /status: 410/.test(route)
+      && /tableAbsente\(/.test(route) && /status: 503/.test(route));
+  ok("route édition : photos_supprimees_le (20261024) tentée puis repli colonneAbsente sans elle",
+    /photos_supprimees_le`\)/.test(route) && /colonneAbsente\(ed\.error\.code\)\) ed = await lireEdition\(COLONNES_EDITION\)/.test(route)
+      && !/photos_supprimees_le/.test(route.match(/const COLONNES_EDITION = "[^"]*"/)?.[0] ?? "photos_supprimees_le"));
+  ok("route édition : compte exact (GET limit(0), jamais head) puis lireToutesLesLignes, hors corbeille, arrivées seulement, tri confirmee_le",
+    /lireHorsCorbeille\(/.test(route) && /COMPTE_SANS_LIGNE/.test(route) && /\.limit\(0\)/.test(route) && !/head: true/.test(route)
+      && /lireToutesLesLignes<RangeePhotoEdition>\(/.test(route) && (route.match(/\.not\("confirmee_le", "is", null\)/g) ?? []).length === 2
+      && (route.match(/\.is\("supprimee_le", null\)/g) ?? []).length === 2 && /compte\.avec \? q\.is\("supprimee_le", null\)/.test(route)
+      && /\{ colonne: "confirmee_le", croissant: true \}/.test(route));
+  ok("route édition : refus si moins de lignes lues que comptées (compte illisible compris)",
+    /total === null \|\| data\.length < total/.test(route) && /lecture_incomplete/.test(route));
+  ok("route édition : moyenne_key par lireAvecMoyenne + colonnesAvecMoyenne (repli 42703 non simplifié), absente des colonnes de base",
+    /lireAvecMoyenne\(\(moyenne\) =>/.test(route) && /colonnesAvecMoyenne\(COLONNES_PHOTOS_EDITION_MEP, moyenne\)/.test(route)
+      && !/moyenne_key/.test(COLONNES_PHOTOS_EDITION_MEP) && /deposant/.test(COLONNES_PHOTOS_EDITION_MEP) && /role_deposant/.test(COLONNES_PHOTOS_EDITION_MEP));
+  ok("route édition : vignette ET moyenne en adresse STABLE (signerLectureVignette, signerLectureMoyenne), original par signerGet au TTL d'aperçu, échec = null",
+    /signerLectureVignette\(p\.vignette_key\)\.catch\(\(\) => null\)/.test(route)
+      && /signerLectureMoyenne\(p\.moyenne_key\)\.catch\(\(\) => null\)/.test(route)
+      && !/signerGet\(p\.moyenne_key/.test(route)
+      && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)\.catch\(\(\) => null\)/.test(route));
+  ok("route édition : magazines id, rang, nom triés par rang",
+    /from\("collectif_magazines"\)\.select\("id, rang, nom"\)\.eq\("edition_id", id\)\.order\("rang", \{ ascending: true \}\)/.test(route));
+  const ECRIT = /\.(insert|update|upsert|delete)\(|\.rpc\(|PutObject|DeleteObject|CopyObject|ecrireObjet|journaliser|sendBrevoEmail|supprimerPrefixe/;
+  ok("route édition et module pur : aucune écriture (base, coffre, journal, mail)", !ECRIT.test(route) && !ECRIT.test(pur));
+  ok("route édition : maxDuration LITTÉRAL 60, force-dynamic, no-store",
+    /export const maxDuration = 60;/.test(route) && /export const dynamic = "force-dynamic"/.test(route) && /"Cache-Control": "no-store"/.test(route));
+  ok("module pur : ni base, ni réseau, ni horloge, ni signature",
+    !/makeSupabase|fetch\(|Date\.now|new Date|signerGet|signerLectureVignette|process\.env/.test(pur));
+
+  const base: RangeePhotoEdition = {
+    id: "p1", r2_key: "collectif/e/p1.jpg", vignette_key: "collectif/e/p1-v.webp", moyenne_key: "collectif/e/p1-m.webp",
+    nom_origine: "IMG_1.jpg", largeur: 4000, hauteur: 3000, prise_le: "2026-10-04T14:02:00", lieu_ville: "Nantes", lieu_pays: "France",
+    provenance_id: null, role_deposant: "participant", deposant: "mathias", appareil_id: "a1", preselection: true, signalee: false,
+  };
+  const lien = "11111111-2222-4333-8444-555555555555";
+  const rangs: RangeePhotoEdition[] = [
+    { ...base, id: "a", provenance_id: lien, deposant: "Mathias" },
+    { ...base, id: "b", provenance_id: lien, deposant: "Mathias" },
+    { ...base, id: "c", provenance_id: lien, deposant: "mathias " },
+    { ...base, id: "d", provenance_id: lien, deposant: null },
+    { ...base, id: "e", role_deposant: "responsable", provenance_id: null, deposant: null },
+    { ...base, id: "f", role_deposant: "atelier", provenance_id: null, deposant: null },
+  ];
+  const nommer = nommeurDePersonnes(rangs, "Claire Dupont");
+  ok("déposant : la graphie la plus fréquente du lien (« mathias » → « Mathias »), « Sans nom », responsable sous son nom, l'atelier",
+    nommer(rangs[2]) === "Mathias" && nommer(rangs[0]) === "Mathias" && nommer(rangs[3]) === "Sans nom"
+      && nommer(rangs[4]) === "Claire Dupont" && nommer(rangs[5]) === "L'atelier"
+      && nommeurDePersonnes(rangs.slice(4, 5), null)(rangs[4]) === "Le responsable");
+  const adresses = { vignette: "https://v", moyenne: "https://m", original: "https://o" };
+  const l1 = photoEditionMep(base, "Mathias", adresses);
+  ok("ligne : champs recopiés, lieu « Ville, Pays », trois adresses",
+    l1.id === "p1" && l1.nom === "IMG_1.jpg" && l1.largeur === 4000 && l1.hauteur === 3000 && l1.priseLe === "2026-10-04T14:02:00"
+      && l1.lieu === "Nantes, France" && l1.personne === "Mathias" && l1.preselection === true && l1.signalee === false
+      && l1.vignette === "https://v" && l1.moyenne === "https://m" && l1.original === "https://o");
+  const l2 = photoEditionMep({ ...base, signalee: true }, "X", adresses);
+  const l3 = photoEditionMep({ ...base, signalee: null }, "X", adresses);
+  ok("ligne : signalée rendue vraie, signalée nulle rendue fausse", l2.signalee === true && l3.signalee === false);
+  const l4 = photoEditionMep({ ...base, vignette_key: null, moyenne_key: undefined }, "X", adresses);
+  ok("ligne : sans vignette → null même si une adresse traîne ; sans moyenne (photo d'avant ou migration absente) → null ; original gardé",
+    l4.vignette === null && l4.moyenne === null && l4.original === "https://o");
+  /* Le lien d'une photo (mise en page, 28/10) : le NOM du lien de contribution, « Lien général », null pour le responsable et l'atelier. */
+  const lienB = "aaaaaaaa-2222-4333-8444-555555555555";
+  const rangsLiens: RangeePhotoEdition[] = [
+    { ...base, id: "x1", provenance_id: lien },
+    { ...base, id: "x2", provenance_id: lienB },
+    { ...base, id: "x3", provenance_id: null },
+    { ...base, id: "x4", role_deposant: "responsable", provenance_id: null, deposant: null },
+    { ...base, id: "x5", role_deposant: "atelier", provenance_id: null, deposant: null },
+    { ...base, id: "x6", provenance_id: "bbbbbbbb-2222-4333-8444-555555555555" },
+  ];
+  const groupeDe = nommeurDeLiens(rangsLiens, [{ id: lien, libelle: "Bateau 1" }, { id: lienB, libelle: "Bateau 1" }], "Claire");
+  const g = rangsLiens.map(groupeDe);
+  ok("lien : nom du lien (« Bateau 1 », doublon « Bateau 1 (2) »), « Lien général » sans lien, null + depot pour responsable et atelier, lien inconnu → « Lien de contribution »",
+    g[0].lien === "Bateau 1" && g[1].lien === "Bateau 1 (2)" && g[2].lien === "Lien général" && g[2].depot === "lien"
+      && g[3].lien === null && g[3].depot === "responsable" && g[4].lien === null && g[4].depot === "atelier" && g[5].lien === "Lien de contribution"
+      && nommeurDeLiens(rangsLiens, [], null)(rangsLiens[0]).lien === "Lien de contribution");
+  ok("ligne : lien et depot recopiés ; sans groupe donné, lien null (compat)",
+    photoEditionMep(base, "X", adresses, g[1]).lien === "Bateau 1 (2)" && photoEditionMep(base, "X", adresses, g[3]).depot === "responsable"
+      && photoEditionMep(base, "X", adresses).lien === null);
+  ok("route édition : collectif_provenances (id, libelle) lue avec les photos, lien illisible = pas d'échec de la route",
+    /from\("collectif_provenances"\)\.select\("id, libelle"\)\.eq\("edition_id", id\)/.test(route) && /nommeurDeLiens\(data, liensLus\.error \? \[\] :/.test(route));
+  ok("lieu : pays seul, ville seule, rien → null, blancs ignorés",
+    lieuDeLaPhoto(null, "Portugal") === "Portugal" && lieuDeLaPhoto("Lisbonne", null) === "Lisbonne"
+      && lieuDeLaPhoto(null, null) === null && lieuDeLaPhoto("  ", "") === null);
+};
+verifierMepPhotosEdition();
+
+/* ═══════════════ MISE EN PAGE ÉTAPE 1 : la sauvegarde partagée (mises_en_page) ═══════════════ */
+const verifierMepSauvegarde = () => {
+  titre("— mise en page : la sauvegarde partagée, forme du contenu, verrou optimiste, une seule table écrite (étape 1) —");
+  const ph = (id: string, l: number, h: number, date: string): PhotoRef => ({ id, nom: `${id}.jpg`, l, h, date });
+  const photos = [ph("a", 4000, 3000, "2026-07-01T10:00:00"), ph("b", 3000, 4000, "2026-07-01T11:00:00"), ph("c", 4000, 3000, "2026-07-02T09:00:00"),
+    ph("d", 3000, 4000, "2026-07-02T10:00:00"), ph("e", 4000, 3000, "2026-07-03T10:00:00")];
+  let m = nouveauMagazine("mag-1", "Été", "2026-10-27T10:00:00.000Z");
+  m = poserMep(m, "pl-1", "droite", photos.slice(0, 2)).magazine;
+  m = ajouterDouble(m);
+  m = poserMep(m, "pl-2", "double", photos).magazine;
+  m = ajouterDouble(m);
+  m = poserMep(m, "pl-3", "gauche", photos.slice(2, 3)).magazine;
+  /* Trois portraits en double : le gabarit DP-01 de l'annexe, qui porte des cadres texte ; un texte saisi par ecrireTexte. */
+  m = ajouterDouble(m);
+  m = poserMep(m, "pl-4", "double", [ph("p1", 3000, 4000, "2026-07-04T10:00:00"), ph("p2", 3000, 4000, "2026-07-04T11:00:00"), ph("p3", 3000, 4000, "2026-07-04T12:00:00")]).magazine;
+  m = ecrireTexte(m, { plancheId: "pl-4", cible: "double", index: 0 }, { contenu: "Lisbonne, juillet", gras: true });
+  const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
+  const vrai = clone(m);
+  ok("un magazine fabriqué par nouveauMagazine + poser (page droite, double, page gauche) passe, même relu depuis JSON",
+    contenuValide(m) && contenuValide(vrai) && contenuValide(nouveauMagazine("x", "", "2026-10-27T10:00:00.000Z"))
+      && m.planches[1].mode === "double" && m.planches[2].mode === "pages"
+      && m.planches[3].double?.templateId === "DP-01" && m.planches[3].double.textes[0].contenu === "Lisbonne, juillet");
+
+  type Brut = Record<string, unknown> & { planches: Array<Record<string, unknown>> };
+  const casse = (f: (b: Brut) => void): boolean => { const b = clone(vrai) as unknown as Brut; f(b); return contenuValide(b); };
+  const disp = (b: Brut, i: number, cle: string) => b.planches[i][cle] as { templateId: string; photos: Array<Record<string, unknown>>; textes: Array<Record<string, unknown>> };
+  ok("refusé : null, tableau, chaîne, planches absentes, planches vides, version ≠ 1, clé en trop, date illisible",
+    !contenuValide(null) && !contenuValide([]) && !contenuValide("magazine")
+      && !casse((b) => { delete (b as Record<string, unknown>).planches; }) && !casse((b) => { b.planches = []; })
+      && !casse((b) => { b.version = 2; }) && !casse((b) => { b.pirate = 1; }) && !casse((b) => { b.creeLe = "hier"; }));
+  ok("refusé : zoom hors bornes (0,5 et 9), zoom NaN (null en JSON), décalage non fini, recadrage incomplet",
+    !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 0.5, dx: 0, dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 9, dx: 0, dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: null, dx: 0, dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 1, dx: "3", dy: 0 }; })
+      && !casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 1, dx: 0 }; })
+      && casse((b) => { disp(b, 0, "droite").photos[0].recadrage = { zoom: 8, dx: -12.5, dy: 40 }; }));
+  ok("refusé : type inattendu (mode inconnu, photoId nombre, textes non tableau), template inconnu ou de mauvaise portée, mauvais nombre d'affectations",
+    !casse((b) => { b.planches[1].mode = "triple"; }) && !casse((b) => { disp(b, 0, "droite").photos[0].photoId = 42; })
+      && !casse((b) => { (disp(b, 0, "droite") as unknown as Record<string, unknown>).textes = "x"; })
+      && !casse((b) => { disp(b, 0, "droite").templateId = "inconnu-999"; })
+      && !casse((b) => { disp(b, 0, "droite").templateId = disp(b, 1, "double").templateId; })
+      && !casse((b) => { disp(b, 0, "droite").photos.push({ photoId: null, recadrage: { zoom: 1, dx: 0, dy: 0 } }); })
+      && casse((b) => { disp(b, 0, "droite").photos[0].photoId = null; }));
+  ok("refusé : texte non chaîne, taille nulle, gras non booléen, texte manquant (sur DP-01, qui porte des cadres texte)",
+    (() => {
+      const avecTexte = vrai.planches.flatMap((p, i) => (["double", "gauche", "droite"] as const).flatMap((c) => (p[c] && p[c]!.textes.length ? [{ i, c }] : [])))[0];
+      if (!avecTexte) return false;
+      const t = (b: Brut) => disp(b, avecTexte.i, avecTexte.c).textes[0];
+      return !casse((b) => { t(b).contenu = 12; }) && !casse((b) => { t(b).taille = 0; }) && !casse((b) => { t(b).gras = "oui"; })
+        && !casse((b) => { disp(b, avecTexte.i, avecTexte.c).textes.pop(); })
+        && casse((b) => { t(b).contenu = "Un vrai titre"; });
+    })());
+  ok("refusé : planche 0 en double ou avec une page gauche, ids de planche en double, double qui garde une page",
+    !casse((b) => { b.planches[0].mode = "double"; b.planches[0].double = null; b.planches[0].droite = null; })
+      && !casse((b) => { b.planches[0].gauche = b.planches[0].droite; })
+      && !casse((b) => { b.planches[2].id = b.planches[1].id; })
+      && !casse((b) => { b.planches[1].gauche = null; b.planches[1].droite = b.planches[0].droite; }));
+  ok("taille : octets UTF-8 du JSON ; borne 2 Mo, corps = contenu + 64 Ko ; non sérialisable = Infinity",
+    TAILLE_MAX_CONTENU === 2 * 1024 * 1024 && TAILLE_MAX_CORPS === TAILLE_MAX_CONTENU + 64 * 1024
+      && tailleContenu({ t: "é" }) === 10 && tailleContenu(m) < TAILLE_MAX_CONTENU && tailleContenu(undefined) === Infinity
+      && tailleContenu({ t: "x".repeat(TAILLE_MAX_CONTENU) }) > TAILLE_MAX_CONTENU);
+  ok("verrou : même version = ok ; version en base différente, illisible, 0 ou décimale = conflit",
+    issueSauvegarde(3, 3) === "ok" && issueSauvegarde(3, 4) === "conflit" && issueSauvegarde(4, 3) === "conflit"
+      && issueSauvegarde("3", 3) === "conflit" && issueSauvegarde(0, 0) === "conflit" && issueSauvegarde(1.5, 1.5) === "conflit"
+      && issueSauvegarde(null, null) === "conflit" && estVersion(1) && !estVersion(0));
+
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const lire = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const mig = lire("supabase/migrations/20261027_mises_en_page.sql");
+  const migSql = mig.replace(/^\s*--.*$/gm, "");
+  ok("migration : en-tête ÉCRITE NON APPLIQUÉE, begin/commit, table if not exists, trois FK en cascade",
+    /NON APPLIQUÉE/.test(mig) && /^begin;/m.test(migSql) && /^commit;/m.test(migSql)
+      && /create table if not exists public\.mises_en_page/.test(migSql)
+      && /numero_id\s+uuid null references public\.numeros\(id\) on delete cascade/.test(migSql)
+      && /edition_id\s+uuid null references public\.collectif_editions\(id\) on delete cascade/.test(migSql)
+      && /magazine_id\s+uuid null references public\.collectif_magazines\(id\) on delete cascade/.test(migSql));
+  ok("migration : index uniques PARTIELS sur numero_id et magazine_id, index (etat, modifie_le desc)",
+    /create unique index if not exists \w+\s+on public\.mises_en_page \(numero_id\) where numero_id is not null;/.test(migSql)
+      && /create unique index if not exists \w+\s+on public\.mises_en_page \(magazine_id\) where magazine_id is not null;/.test(migSql)
+      && /on public\.mises_en_page \(etat, modifie_le desc\)/.test(migSql));
+  ok("migration : contrainte de cohérence (particulier / edition / libre), checks source et etat, version default 1",
+    /constraint mises_en_page_coherence check/.test(migSql)
+      && /source = 'particulier' and numero_id is not null and edition_id is null\s+and magazine_id is null/.test(migSql)
+      && /source = 'edition'\s+and numero_id is null\s+and edition_id is not null and magazine_id is not null/.test(migSql)
+      && /source = 'libre'\s+and numero_id is null\s+and edition_id is null\s+and magazine_id is null/.test(migSql)
+      && /check \(source in \('particulier', 'edition', 'libre'\)\)/.test(migSql) && /check \(etat in \('en_cours', 'archive'\)\)/.test(migSql)
+      && /version\s+integer not null default 1/.test(migSql));
+  ok("migration : RLS activée sans policy, revoke all anon/authenticated, notify pgrst, aucun trigger, aucune autre table touchée",
+    /alter table public\.mises_en_page enable row level security;/.test(migSql)
+      && /revoke all on public\.mises_en_page from anon, authenticated;/.test(migSql)
+      && /notify pgrst, 'reload schema';/.test(migSql) && !/create policy|create trigger|create or replace function/i.test(migSql)
+      && !/alter table public\.(?!mises_en_page)/.test(migSql));
+
+  const rListe = sansComm(lire("src/app/api/admin/atelier/mise-en-page/magazines/route.ts"));
+  const rUn = sansComm(lire("src/app/api/admin/atelier/mise-en-page/magazines/[id]/route.ts"));
+  const rCommun = sansComm(lire("src/app/api/admin/atelier/mise-en-page/magazines/commun.ts"));
+  const pur = sansComm(lire("src/lib/mise-en-page/sauvegarde.ts"));
+  const routes = [rListe, rUn, rCommun];
+  ok("routes : quiEstConnecteRequete(request) → 401 dans CHAQUE handler, force-dynamic, no-store",
+    (rListe.match(/quiEstConnecteRequete\(request\)/g) ?? []).length === 2 && (rUn.match(/quiEstConnecteRequete\(request\)/g) ?? []).length === 2
+      && /refus\(401, "non_authentifie"\)/.test(rListe) && /refus\(401, "non_authentifie"\)/.test(rUn)
+      && /export const dynamic = "force-dynamic"/.test(rListe) && /export const dynamic = "force-dynamic"/.test(rUn)
+      && /"Cache-Control": "no-store"/.test(rCommun));
+  const ecritures = routes.flatMap((r) => r.match(/[^;]*?\.(insert|update|upsert)\(/g) ?? []);
+  ok("routes : aucun .delete(, aucune RPC, aucun mail ; .insert/.update/.upsert seulement sur from(\"mises_en_page\")",
+    routes.every((r) => !/\.delete\(|\.rpc\(|sendBrevoEmail|journaliser|PutObject|DeleteObject/.test(r))
+      && ecritures.length === 2 && ecritures.every((e) => /from\("mises_en_page"\)\.(insert|update)\($/.test(e))
+      && !/export async function DELETE/.test(rUn + rListe));
+  ok("PUT : verrou optimiste .eq(\"id\", id).eq(\"version\", envoyee), version + 1, 409 conflit après relecture, 404, contenu par contenuValide",
+    /\.update\(patch\)\.eq\("id", id\)\.eq\("version", envoyee\)/.test(rUn) && /patch\.version = envoyee \+ 1/.test(rUn)
+      && /refus\(409, "conflit"/.test(rUn) && /refus\(404, "introuvable"\)/.test(rUn) && /issueSauvegarde\(envoyee, enBase\.version\)/.test(rUn)
+      && /contenuValide\(corps\.contenu\)/.test(rUn) && /modifie_par = prenomDe\(qui\)/.test(rUn));
+  ok("POST : collectifOuvert() pour la source édition, estUuid sur les deux ids, magazine filtré par son édition, token par isValidNumeroToken",
+    /source === "edition" && !collectifOuvert\(\)/.test(rListe) && /estUuid\(editionId\)/.test(rListe) && /estUuid\(magazineId\)/.test(rListe)
+      && /\.eq\("id", magazineId\)\s*\.eq\("edition_id", editionId\)/.test(rListe) && /isValidNumeroToken\(token\)/.test(rListe)
+      && /contenuValide\(corps\.contenu\)/.test(rListe) && /cree_par: prenom/.test(rListe));
+  ok("POST : 23505 → 409 existe_deja avec l'id existant ; table absente → 503 (tableAbsente) partout",
+    /error\.code === "23505"/.test(rListe) && /refus\(409, "existe_deja"/.test(rListe) && /id: existant\.id/.test(rListe)
+      && /tableAbsente\(code\)/.test(rCommun) && /refus\(503, ERREUR_MISES_EN_PAGE_ABSENTE/.test(rCommun)
+      && (rListe.match(/reponseTableAbsente\(\)/g) ?? []).length >= 2 && (rUn.match(/reponseTableAbsente\(\)/g) ?? []).length >= 2);
+  ok("corps borné : lireCorpsBorne(request, TAILLE_MAX_CORPS) dans POST et PUT, en-tête ET compte réel, 413",
+    /lireCorpsBorne\(request, TAILLE_MAX_CORPS\)/.test(rListe) && /lireCorpsBorne\(request, TAILLE_MAX_CORPS\)/.test(rUn)
+      && /content-length/.test(rCommun) && /total > max/.test(rCommun) && /refus\(413, "trop_lourd"\)/.test(rCommun)
+      && !/request\.json\(\)/.test(rListe + rUn));
+  ok("GET liste : SANS le contenu ; module pur : ni base, ni réseau, ni horloge, ni React",
+    !/contenu/.test(rCommun.match(/COLONNES_SANS_CONTENU =\s*"[^"]*"/)?.[0] ?? "contenu") && /select\(COLONNES_SANS_CONTENU\)/.test(rListe)
+      && !/makeSupabase|fetch\(|Date\.now|new Date|process\.env|from "react"|@\/lib\/atelier/.test(pur));
+};
+verifierMepSauvegarde();
+
+/* ═══════════════ MISE EN PAGE : le catalogue, la sauvegarde automatique et l'export (modules client, parties pures) ═══════════════ */
+const verifierMepClient = () => {
+  titre("— mise en page : catalogue, sauvegarde automatique, export (parties pures) —");
+  const dossierMep = "src/app/admin/atelier/mise-en-page/[id]";
+  const lireM = (f: string) => readFileSync(resolve(process.cwd(), dossierMep, f), "utf8");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  /* — le catalogue — */
+  const dossier: ReponsePhotosMep = {
+    ok: true, token: "t".repeat(32), titre: "Malaysia", prenom: "Justine", etat: "composition", nbPages: 28, ttl: 3600,
+    photos: [
+      { id: "d1", nom: "IMG_1.jpg", taille: 10, l: 3000, h: 4000, priseLe: "2026-01-02T10:00:00", appareil: null, lieuVille: null, lieuPays: null, empreinte: null, url: "https://o1", urlVignette: "https://v1" },
+      { id: "d2", nom: null, taille: 10, l: null, h: null, priseLe: null, appareil: null, lieuVille: null, lieuPays: null, empreinte: null, url: null, urlVignette: null },
+    ],
+  };
+  const cd = catalogueDeDossier(dossier, 1000);
+  ok("catalogue dossier : PhotoMaq complète, dimensions droites de la base, défauts sans personne ni lien, nom absent → photo-<id>, nb pages payé",
+    cd.photos[0].l === 3000 && cd.photos[0].h === 4000 && cd.photos[0].personne === "Justine" && cd.photos[0].lien === null && cd.photos[0].type === "responsable"
+      && cd.photos[0].vignette === "https://v1" && cd.photos[0].moyenne === null && cd.photos[0].autresMagazines.length === 0 && cd.photos[0].nouvelle === false
+      && cd.photos[1].nom === "photo-d2" && cd.photos[1].l === 1 && cd.photos[1].h === 1
+      && cd.projet.nom === "Malaysia" && cd.projet.nbPagesCible === 28 && cd.projet.source === "particulier"
+      && catalogueDeDossier({ ...dossier, nbPages: null }, 0).projet.nbPagesCible === null);
+  ok("catalogue : une photo sans aucune adresse est « indisponible » (jamais un plantage), les autres non ; les originaux restent à part",
+    cd.photos[0].indisponible === false && cd.photos[1].indisponible === true && cd.originaux.d1 === "https://o1" && cd.originaux.d2 === null && cd.ttlOriginauxSecondes === 3600);
+  const ed: ReponsePhotosEditionMep = {
+    edition: { id: "e", organisation: "Audencia", evenement: "Voile", etat: "composition", collecteOuverte: false, archive: false },
+    magazines: [{ id: "m1", rang: 1, nom: "Bateau 1-4" }],
+    photos: [
+      { id: "p1", nom: "a.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, personne: "Mathias", lien: "Bateau 3", depot: "lien", preselection: true, signalee: true, vignette: "https://v", moyenne: "https://m", original: "https://o" },
+      { id: "p2", nom: "b.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, personne: "Le responsable", lien: null, depot: "responsable", preselection: false, signalee: false, vignette: null, moyenne: null, original: null },
+    ],
+  };
+  const ce = catalogueDEdition(ed, "m1", 0);
+  ok("catalogue édition : personne, lien, type, cœur, signalée, vignette, moyenne recopiés ; projet = « Organisation · Événement · Magazine », pas de nb de pages",
+    ce.photos[0].personne === "Mathias" && ce.photos[0].lien === "Bateau 3" && ce.photos[0].type === "lien" && ce.photos[0].coeur === true && ce.photos[0].signalee === true
+      && ce.photos[0].moyenne === "https://m" && ce.photos[1].type === "responsable" && ce.photos[1].lien === null && ce.photos[1].indisponible === true
+      && ce.projet.nom === "Audencia · Voile · Bateau 1-4" && ce.projet.nbPagesCible === null && ce.projet.source === "edition" && ce.magazines.length === 1);
+  ok("catalogue : refus HTTP traduits (401 connexion, 404, 410 photos effacées avec la phrase du serveur, 503, lecture incomplète) ; urls de lecture",
+    refusDeStatut(401, null, null).raison === "non_authentifie" && refusDeStatut(404, "introuvable", null).raison === "introuvable"
+      && refusDeStatut(410, "photos_effacees", "Les photos ont été effacées").message === "Les photos ont été effacées" && refusDeStatut(503, null, null).raison === "migration_absente"
+      && refusDeStatut(500, "lecture_incomplete", null).raison === "lecture_incomplete" && refusDeStatut(500, "internal", null).raison === "erreur"
+      && urlDeLecture({ type: "dossier", token: "ab" }) === "/api/admin/atelier/mise-en-page/photos?token=ab"
+      && urlDeLecture({ type: "edition", id: "e1" }) === "/api/admin/collectif/editions/e1/mise-en-page/photos");
+  ok("catalogue : adresses d'originaux valables jusqu'à une minute avant l'expiration, pas après",
+    adressesEncoreValables({ obtenuLe: 0, ttlOriginauxSecondes: 3600 }, 3_539_000) && !adressesEncoreValables({ obtenuLe: 0, ttlOriginauxSecondes: 3600 }, 3_541_000));
+  const src1 = sansComm(lireM("chargerCatalogue.ts"));
+  ok("chargerCatalogue : ne lève jamais (fetch en try), 401 → /admin/login, no-store, aucune écriture",
+    /catch \{\s*return \{ ok: false, raison: "reseau"/.test(src1) && /window\.location\.assign\("\/admin\/login"\)/.test(src1) && /cache: "no-store"/.test(src1) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(src1));
+
+  /* — la sauvegarde — */
+  const mag: MagazineMepClient = nouveauMagazine("m", "T", "2026-10-28T10:00:00.000Z");
+  const magRecent = { ...mag, modifieLe: "2026-10-28T12:00:00.000Z" };
+  const ligne = { id: "L", version: 3, modifie_par: "Louis", modifie_le: "2026-10-28T11:00:00.000Z", etat: "en_cours" };
+  const loc = (o: Partial<CopieLocale>): CopieLocale => ({ cle: "k", magazine: mag, serveurId: "L", version: 3, synchronise: false, ...o });
+  const c = (o: Partial<CopieLocale> | null, s: boolean) => choisirOuvertureMep(o === null ? null : loc(o), s ? { ligne, magazine: mag } : null);
+  ok("ouverture : rien → neuf à créer ; serveur seul → serveur ; local seul → local à pousser",
+    c(null, false).source === "nouveau" && c(null, true).source === "serveur" && c({}, false).source === "local" && (c({}, false) as { pousser: boolean }).pousser === true);
+  ok("ouverture : local tout envoyé de la même ligne → serveur (un autre poste a pu avancer) ; local non envoyé à la même version → local, poussé",
+    c({ synchronise: true }, true).source === "serveur" && c({ synchronise: false, version: 3 }, true).source === "local" && (c({ synchronise: false, version: 3 }, true) as { pousser: boolean }).pousser === true);
+  const cf = c({ synchronise: false, version: 2 }, true);
+  ok("ouverture : local non envoyé mais le serveur a avancé (version 2 contre 3) → on garde le local à l'écran, CONFLIT, rien n'est poussé",
+    cf.source === "local" && (cf as { conflit: boolean }).conflit === true && (cf as { pousser: boolean }).pousser === false);
+  const inc = (m: MagazineMepClient, sync: boolean) => choisirOuvertureMep(loc({ serveurId: null, version: null, magazine: m, synchronise: sync }), { ligne, magazine: mag });
+  ok("ouverture : un local qui ne connaît pas la ligne gagne seulement s'il est plus récent (en conflit, non poussé) ; sinon le serveur",
+    inc(magRecent, false).source === "local" && (inc(magRecent, false) as { conflit: boolean }).conflit === true && inc(mag, false).source === "serveur" && inc(magRecent, true).source === "serveur");
+  ok("réponses : 200/201 ok ; 409 conflit avec version + modifie_par ; 409 existe_deja avec l'id ; 503 table absente ; 401 ; 404 ; 400 et 413 refusés ; 500 panne",
+    issueDeReponse(201, {}).type === "ok"
+      && JSON.stringify(issueDeReponse(409, { error: "conflit", version: 5, modifie_par: "Louis", modifie_le: "x" })) === JSON.stringify({ type: "conflit", enBase: { version: 5, modifie_par: "Louis", modifie_le: "x" } })
+      && (issueDeReponse(409, { error: "existe_deja", id: "I", version: 2, modifie_par: null, modifie_le: "x" }) as { id: string }).id === "I"
+      && issueDeReponse(409, { error: "existe_deja" }).type === "panne"
+      && issueDeReponse(503, { error: "migration_mises_en_page_absente" }).type === "migration_absente" && issueDeReponse(503, null).type === "panne"
+      && issueDeReponse(401, null).type === "non_authentifie" && issueDeReponse(404, null).type === "introuvable"
+      && issueDeReponse(400, { error: "contenu_invalide" }).type === "refuse" && issueDeReponse(413, null).type === "refuse" && issueDeReponse(500, null).type === "panne");
+  ok("reprise : 5 s, 15 s, 45 s, puis une minute au plus ; délai d'envoi 2 s ; titre jamais vide ni au-delà de 300",
+    [0, 1, 2, 3, 9].map(delaiReprise).join() === "5000,15000,45000,60000,60000" && DELAI_ENVOI_MS === 2000
+      && titreAEnvoyer({ ...mag, titre: "  " }, "Projet") === "Projet" && titreAEnvoyer({ ...mag, titre: "x".repeat(400) }, "P").length === 300 && titreAEnvoyer({ ...mag, titre: "" }, "") === "Magazine");
+  ok("huit états exactement", NOMS_ETATS.join() === "enregistre,en_attente,envoi,hors_ligne,erreur,migration_absente,conflit,lecture_seule");
+  const src2 = sansComm(lireM("sauvegardeClient.ts"));
+  ok("moteur : copie locale à chaque modification (sauverLocal), envoi après DELAI_ENVOI_MS, PUT avec la version lue, POST sans ligne, 503 = migration_absente sans réessai, 409 = conflit sans écraser",
+    /void sauverLocal\(tamponne, false\)/.test(src2) && /planifierEnvoi\(DELAI_ENVOI_MS\)/.test(src2) && /\{ version: v\(\), titre: titreAEnvoyer/.test(src2)
+      && /creation \? "POST" : "PUT"/.test(src2) && /migrationAbsente = true/.test(src2) && /if \(!ouvert \|\| figee \|\| migrationAbsente \|\| !enAttente\) return/.test(src2)
+      && /dire\(\{ etat: "conflit", version: v\(\), enBase: issue\.enBase \}\)/.test(src2));
+  ok("moteur : IndexedDB seule base écrite en local ; aucun envoi sans passer par les routes magazines ; relit un contenu avec contenuValide (local et serveur)",
+    /const ROUTE = "\/api\/admin\/atelier\/mise-en-page\/magazines"/.test(src2) && (src2.match(/contenuValide\(/g) ?? []).length >= 2 && !/localStorage/.test(src2));
+
+  /* — l'export — */
+  const sof = (l: number, h: number) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x0b, 0x08, h >> 8, h & 255, l >> 8, l & 255, 0x01, 0x01, 0x11, 0x00, 0xff, 0xd9]);
+  const stk = dimensionsStockeesJpeg(sof(4032, 3024));
+  ok("octets : la taille STOCKÉE d'un JPEG est lue dans son SOF (4032 × 3024), après un segment APP0 sauté ; pas un JPEG → null",
+    stk?.l === 4032 && stk?.h === 3024 && dimensionsStockeesJpeg(new Uint8Array([1, 2, 3, 4, 5])) === null && dimensionsStockeesJpeg(new Uint8Array([0xff, 0xd8, 0xff, 0xd9])) === null);
+  const png = new Uint8Array(24);
+  png.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
+  png.set([0, 0, 0x03, 0xe8, 0, 0, 0x02, 0x58], 16);
+  ok("octets : un PNG se lit à son IHDR (1000 × 600)", dimensionsStockees(png)?.l === 1000 && dimensionsStockees(png)?.h === 600);
+  const droite = (tag: number) => decisionOrientation({ l: 4032, h: 3024 }, tag, { l: 3024, h: 4032 });
+  ok("orientation : tags 5 à 8 permutent largeur et hauteur (couchée → portrait), 1 à 4 non ; tag absent ou absurde = 1",
+    [5, 6, 7, 8].every((t) => droite(t).l === 3024 && droite(t).h === 4032 && droite(t).tournee) && [1, 2, 3, 4].every((t) => droite(t).l === 4032 && !droite(t).tournee)
+      && decisionOrientation({ l: 10, h: 20 }, undefined, { l: 10, h: 20 }).tag === 1 && decisionOrientation({ l: 10, h: 20 }, 99, { l: 10, h: 20 }).tag === 1);
+  const fauxCatalogue = decisionOrientation({ l: 4032, h: 3024 }, 6, { l: 4032, h: 3024 });
+  ok("orientation : les OCTETS font foi sur la base (base non tournée + tag 6 → 3024 × 4032 et écart signalé) ; base juste → pas d'écart ; base inconnue (1 × 1) → pas d'écart",
+    fauxCatalogue.l === 3024 && fauxCatalogue.h === 4032 && fauxCatalogue.ecart === true && fauxCatalogue.source === "octets"
+      && droite(6).ecart === false && decisionOrientation({ l: 4032, h: 3024 }, 6, { l: 1, h: 1 }).ecart === false);
+  const hei = decisionOrientation(null, 6, { l: 3024, h: 4032 });
+  ok("orientation : octets illisibles (HEIC) → dimensions de la base, source « catalogue »", hei.l === 3024 && hei.h === 4032 && hei.source === "catalogue" && hei.ecart === false);
+  ok("liens absolus : guillemets du Terminal, file://, espace échappé et barre finale nettoyés ; ~, relatif, Windows et .. refusés",
+    JSON.stringify(dossierAbsolu(" '/Users/mathias/Mon\\ Dossier/' ")) === JSON.stringify({ ok: true, dossier: "/Users/mathias/Mon Dossier" })
+      && (dossierAbsolu("file:///Users/m/a%20b") as { dossier: string }).dossier === "/Users/m/a b"
+      && !dossierAbsolu("~/Desktop").ok && !dossierAbsolu("Desktop/x").ok && !dossierAbsolu("C:\\Users\\x").ok && !dossierAbsolu("/a/../b").ok && !dossierAbsolu("  ").ok);
+  const liens3 = nomsDesLiensExport([{ id: "1", nom: "IMG_1.jpg" }, { id: "2", nom: "img_1.JPG" }, { id: "3", nom: "IMG_1.jpg" }, { id: "4", nom: "a/b:c.jpg" }]);
+  ok("Links/ : nom d'origine gardé, doublons (casse comprise) suffixés « (2) », « (3) » avant l'extension, caractères interdits en « _ »",
+    liens3.get("1") === "IMG_1.jpg" && liens3.get("2") === "img_1 (2).JPG" && liens3.get("3") === "IMG_1 (3).jpg" && liens3.get("4") === "a_b_c.jpg");
+  const lst = listesExport({
+    utilisees: [{ id: "1", nom: "IMG_1.jpg" }, { id: "2", nom: "img_1.JPG" }],
+    catalogue: [{ id: "1", nom: "IMG_1.jpg" }, { id: "2", nom: "img_1.JPG" }, { id: "5", nom: "libre.jpg" }],
+    nomsLiens: liens3, indisponibles: [{ id: "2", nom: "img_1.JPG", raison: "absente du coffre (404)" }],
+  });
+  ok("listes : posées sous leur nom de Links/ (l'illisible annotée INDISPONIBLE), non posées sous leur nom d'origine",
+    lst.utilisees.join("|") === "IMG_1.jpg|img_1 (2).JPG  [INDISPONIBLE : absente du coffre (404)]" && lst.nonUtilisees.join("|") === "libre.jpg");
+  {
+    /* Affinity ignore le tag EXIF (28/10) : la matrice de l'image fait la rotation. Chaque coin STOCKÉ doit tomber sur
+       le coin droit attendu (EXIF : où va le pixel (0,0) du fichier à l'affichage), et l'image droite remplir sa place. */
+    const L = 30, H = 40, S = 2, TX = 5, TY = 7;
+    const coinAttendu: Record<number, [number, number]> = { 1: [0, 0], 2: [L, 0], 3: [L, H], 4: [0, H], 5: [0, 0], 6: [L, 0], 7: [L, H], 8: [0, H] };
+    let bon = true;
+    for (let t = 1; t <= 8; t++) {
+      const { m, ls, hs } = placementOriente(t, L, H, S, TX, TY);
+      const ap = (x: number, y: number): [number, number] => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+      const coins = [ap(0, 0), ap(ls, 0), ap(0, hs), ap(ls, hs)];
+      const xs = coins.map((c) => c[0]), ys = coins.map((c) => c[1]);
+      const o = ap(0, 0);
+      bon &&= (t >= 5 ? ls === H && hs === L : ls === L && hs === H)
+        && Math.min(...xs) === TX && Math.max(...xs) === TX + S * L && Math.min(...ys) === TY && Math.max(...ys) === TY + S * H
+        && o[0] === TX + S * coinAttendu[t][0] && o[1] === TY + S * coinAttendu[t][1];
+    }
+    ok("IDML : image tournée (tags 1 à 8), coins stockés posés sur l'image droite, origine au bon coin", bon);
+  }
+  ok("IDML : un cadre au pli (page droite) est décollé de 0,01 pt, les autres intacts (Affinity le doublait, 28/10)",
+    JSON.stringify(cadreAuPli(0, 603.7795)) === JSON.stringify({ x: 0.01, w: 603.7695 }) && JSON.stringify(cadreAuPli(-603.7795, 603.7795)) === JSON.stringify({ x: -603.7795, w: 603.7795 })
+      && JSON.stringify(cadreAuPli(56.69, 100)) === JSON.stringify({ x: 56.69, w: 100 }));
+  {
+    titre("— Mise en page : gabarits des épingles (29/10, D28) —");
+    const ep = TEMPLATES_EPINGLES;
+    const ids = [...TEMPLATES_DESSINES.map((t) => t.id), ...toutesLesGrillesMep().map((t) => t.id)];
+    ok("épingles : 37 doubles et 17 pages (41 doubles dessinées avec l'annexe), ids « E- » uniques dans tout le catalogue, tous retrouvés par templateParId",
+      ep.filter((t) => t.portee === "double").length === 37 && ep.filter((t) => t.portee === "page").length === 17
+        && ep.every((t) => t.id.startsWith("E-") && t.origine === "epingle" && templateParId(t.id) === t) && new Set(ids).size === ids.length);
+    ok("épingles : nbPhotos = cadres photo, signature calculée, 1 à 6 par page et 1 à 12 par double",
+      ep.every((t) => t.nbPhotos === t.cadres.filter((c) => c.role === "photo").length && t.signature === signatureDeMep(t.cadres)
+        && t.nbPhotos >= 1 && t.nbPhotos <= (t.portee === "page" ? 6 : 12)));
+    const manques: string[] = [];
+    for (let n = 1; n <= 12; n++) if (TEMPLATES_DESSINES.filter((t) => t.portee === "double" && t.nbPhotos === n).length < 2) manques.push(`double ${n}`);
+    for (let n = 1; n <= 6; n++) if (TEMPLATES_DESSINES.filter((t) => t.portee === "page" && t.nbPhotos === n).length < 2) manques.push(`page ${n}`);
+    ok(`équilibre : au moins deux gabarits dessinés pour chaque nombre (double 1 à 12, page 1 à 6)${manques.length ? ` — manquent : ${manques.join(", ")}` : ""}`, manques.length === 0);
+    /* Les coins d'un cadre, tourné autour de son centre (sens horaire, Y vers le bas). */
+    const coins = (c: { x: number; y: number; l: number; h: number; rotation?: number }): [number, number][] => {
+      const r = ((c.rotation ?? 0) * Math.PI) / 180, cx = c.x + c.l / 2, cy = c.y + c.h / 2;
+      return ([[c.x, c.y], [c.x + c.l, c.y], [c.x, c.y + c.h], [c.x + c.l, c.y + c.h]] as [number, number][])
+        .map(([x, y]) => [cx + (x - cx) * Math.cos(r) - (y - cy) * Math.sin(r), cy + (x - cx) * Math.sin(r) + (y - cy) * Math.cos(r)]);
+    };
+    const e = 1e-6;
+    const dehors: string[] = [];
+    for (const t of ep) {
+      const xmin = t.portee === "double" ? -FOND_PERDU : 0, xmax = (t.portee === "double" ? PLANCHE_L : PAGE_L) + FOND_PERDU;
+      for (const c of [...t.cadres, ...(t.decor ?? [])]) {
+        if (coins(c).some(([x, y]) => x < xmin - e || x > xmax + e || y < -FOND_PERDU - e || y > PAGE_H + FOND_PERDU + e)) dehors.push(t.id);
+      }
+    }
+    ok(`épingles : chaque cadre et chaque aplat, rotation comprise, tient dans la planche élargie du fond perdu (jamais au pli d'une page)${dehors.length ? ` — ${[...new Set(dehors)].join(", ")}` : ""}`, dehors.length === 0);
+    /* Grilles, mosaïques, demi-pages, séries : aucune photo n'en recouvre une autre (le scrapbook, la cascade, la diagonale
+       et les vignettes posées sur un fond se chevauchent exprès). */
+    const sansChevauchement = /^E-(D2|D7|D8|D9|D10|D11|D12|S3|S4|S5|S6)/;
+    const recouvre = (a: { x: number; y: number; l: number; h: number }, b: { x: number; y: number; l: number; h: number }) =>
+      a.x < b.x + b.l - e && b.x < a.x + a.l - e && a.y < b.y + b.h - e && b.y < a.y + a.h - e;
+    const chev = ep.filter((t) => sansChevauchement.test(t.id)).filter((t) => {
+      const ph = t.cadres.filter((c) => c.role === "photo");
+      return ph.some((a, i) => ph.some((b, j) => j > i && recouvre(a, b)));
+    }).map((t) => t.id);
+    ok(`épingles : grilles, mosaïques et séries sans photo qui en recouvre une autre${chev.length ? ` — ${chev.join(", ")}` : ""}`, chev.length === 0);
+    ok("épingles : les textes restent lisibles par rang (les aplats ne comptent ni comme photo ni comme texte)",
+      ep.every((t) => disposerMep(t, []).textes.length === t.cadres.filter((c) => c.role !== "photo").length));
+    ok("choix : à nombre égal, un gabarit dessiné passe avant les grilles de secours (5 photos en double)",
+      candidatsMep("double", Array.from({ length: 5 }, (_, i) => ({ id: `p${i}`, nom: `p${i}`, l: 3000, h: 2000, date: null })))[0].origine !== "grille");
+    ok("miroir : l'aplat d'une page gauche suit le miroir des cadres (x' = 210 − x − l)",
+      JSON.stringify(decorPourCoteMep({ ...ep[0], portee: "page", decor: [{ x: 10, y: 0, l: 50, h: 297, teinte: "noir" }] }, "gauche")) === JSON.stringify([{ x: 150, y: 0, l: 50, h: 297, teinte: "noir" }]));
+
+    /* L'export : un magazine qui pose chaque nouveauté une fois. */
+    const phE: Map<string, PhotoExport> = new Map(Array.from({ length: 12 }, (_, i) => [`q${i}`, { id: `q${i}`, nomLien: `q${i}.jpg`, l: 4000, h: 3000 }] as [string, PhotoExport]));
+    const refs = (n: number): PhotoRef[] => Array.from({ length: n }, (_, i) => ({ id: `q${i}`, nom: `q${i}`, l: 4000, h: 3000, date: null }));
+    const disp = (id: string) => { const t = templateParId(id)!; return disposerMep(t, refs(t.nbPhotos)); };
+    const magE: MagazineMepClient = {
+      version: 1, id: "e", titre: "e", creeLe: "x", modifieLe: "x",
+      planches: [
+        { id: "e0", mode: "pages", double: null, gauche: null, droite: disp("E-S1") },
+        { id: "e1", mode: "double", gauche: null, droite: null, double: disp("E-D6a") },
+        { id: "e2", mode: "double", gauche: null, droite: null, double: disp("E-D14a") },
+        { id: "e3", mode: "double", gauche: null, droite: null, double: disp("E-D13a") },
+        { id: "e4", mode: "pages", double: null, gauche: disp("E-S4b"), droite: disp("E-S9") },
+      ],
+    };
+    const fE = construireIdml(magE, phE, { liens: { mode: "relatif" } });
+    const parE = new Map(fE.map((x) => [x.chemin, x.contenu]));
+    const sp = (i: number) => parE.get(`Spreads/Spread_sp${i}.xml`) ?? "";
+    ok("IDML épingles : la nuance « Aplat » existe (terracotta de la marque) et les deux aplats d'E-D14a la portent, sous les cadres",
+      (parE.get("Resources/Graphic.xml") ?? "").includes(COULEUR_APLAT) && (sp(3).match(/FillColor="Color\/Aplat"/g) ?? []).length === 2
+        && sp(3).indexOf('Name="Aplat 2"') < sp(3).indexOf("<Rectangle Self=\"", sp(3).indexOf('Name="Aplat 2"') + 1) && sp(3).includes('ItemLayer="ly1" ContentType="Unassigned"'));
+    ok("IDML épingles : bord blanc intérieur sur les vignettes (E-D6a : 2 sur 3), à 2,5 mm",
+      (sp(2).match(/StrokeColor="Color\/Paper" StrokeAlignment="InsideAlignment"/g) ?? []).length === 2 && sp(2).includes(`StrokeWeight="${(2.5 * PT_PAR_MM).toFixed(4)}"`));
+    ok("IDML épingles : coins arrondis sur les quatre coins du triptyque (E-S4b)",
+      (sp(5).match(/BottomRightCornerOption="RoundedCorner" BottomRightCornerRadius="/g) ?? []).length === 3);
+    ok("IDML épingles : un cadre photo tourné porte sa rotation dans la matrice du cadre, l'image garde une matrice droite (scrapbook)",
+      /<Rectangle [^>]*ContentType="GraphicType"[^>]*ItemTransform="0\.99/.test(sp(4)) && !/<Image [^>]*ItemTransform="0\.99/.test(sp(4)));
+    ok("IDML épingles : le titre posé sur la photo (E-S1) est en blanc, les autres textes restent noirs",
+      [...parE.entries()].filter(([k, v]) => k.startsWith("Stories/") && v.includes('FillColor="Color/Paper"')).length === 2);
+  }
+  const pi = photosPourIdml({ decisions: new Map([["1", droite(6)]]), nomsLiens: liens3 });
+  ok("IDML : seules les photos lues entrent (l'illisible laisse un cadre vide), avec les dimensions DROITES des octets",
+    pi.size === 1 && pi.get("1")?.l === 3024 && pi.get("1")?.h === 4032 && pi.get("1")?.nomLien === "IMG_1.jpg");
+  ok("zip : nom sans accents ni espaces, daté, jamais vide", nomDeZip("Été à Séville / n°2", "2026-10-28T10:00:00Z") === "Ete-a-Seville-n-2-2026-10-28" && nomDeZip("///", "2026-10-28T10:00:00Z") === "magazine-2026-10-28");
+  ok("dossier proposé : test-idml du Bureau + nom du projet par défaut", dossierPropose("", "2026 Découverte de la Bavière") === `${PARENT_EXPORT_PAR_DEFAUT}/2026-Decouverte-de-la-Baviere` && dossierAbsolu(dossierPropose("", "x")).ok);
+  ok("dossier proposé : le parent de la dernière fois, jamais un parent invalide", dossierPropose("/Users/l/Exports/", "Été") === "/Users/l/Exports/Ete" && dossierPropose("~/x", "a") === `${PARENT_EXPORT_PAR_DEFAUT}/a`);
+  ok("parent d'un chemin : « / » final ignoré, racine et invalide rendent vide", parentDe("/Users/l/Exports/baviere/") === "/Users/l/Exports" && parentDe("/baviere") === "" && parentDe("relatif/x") === "");
+  ok("dossier choisi : celui des projets → on crée le sous-dossier ; celui du projet → on écrit dedans ; un autre → refusé",
+    JSON.stringify(cibleDuChoix("test-idml", "/U/test-idml/Australie-Joelle")) === JSON.stringify({ cas: "creer", nom: "Australie-Joelle" })
+    && cibleDuChoix("Australie-Joelle", "/U/test-idml/Australie-Joelle").cas === "dedans"
+    && JSON.stringify(cibleDuChoix("Desktop", "/U/test-idml/Australie-Joelle")) === JSON.stringify({ cas: "autre", attendu: "test-idml" }));
+  ok("nom du dossier : un seul niveau, jamais vide", nomDossierValide(" Australie ").ok && !nomDossierValide("").ok && !nomDossierValide("a/b").ok && !nomDossierValide("..").ok);
+  {
+    const zr = unzipSync(zipperExport({ idml: new Uint8Array([1]), liens: [{ nomLien: "un.jpg", octets: new Uint8Array([2]) }], utilisees: [], nonUtilisees: [], racine: "Australie-Joelle" }));
+    ok("zip : tout sous le dossier du projet quand une racine est donnée", Object.keys(zr).sort().join("|") === "Australie-Joelle/Links/un.jpg|Australie-Joelle/magazine.idml|Australie-Joelle/photos-non-utilisees.txt|Australie-Joelle/photos-utilisees.txt");
+  }
+  const src3 = sansComm(lireM("exporter.ts"));
+  ok("export : orientation relue dans les octets (exifr.orientation sur les octets lus), originaux par fetch seulement, aucune écriture en base ni appel de route d'écriture",
+    /exifr\.orientation\(lu\.octets\)/.test(src3) && /dimensionsStockees\(lu\.octets\)/.test(src3) && !/\/api\//.test(src3.replace(/chargerCatalogue/g, "")) && !/method: "(POST|PUT|PATCH|DELETE)"/.test(src3));
+  ok("export : liens ABSOLUS (mode absolu), sélecteur de dossier jamais après un await dans le module, 404 → indisponible sans arrêter, 403 → relecture des adresses, annulation par AbortSignal",
+    /mode: "absolu", dossier/.test(src3) && /rep\.status === 404 \|\| rep\.status === 410/.test(src3) && /rep\.status === 403/.test(src3) && /signal\?\.aborted/.test(src3)
+      && /export async function choisirDestination/.test(src3) && !/await .*choisirDestination\(/.test(src3));
+  ok("export : l'IDML s'écrit APRÈS les liens (une annulation ne laisse pas un IDML qui pointe des fichiers absents), mimetype stocké par zipperIdml",
+    src3.indexOf('"Links", { create: true }') < src3.indexOf('"magazine.idml", idml') && /zipperIdml\(construireIdml/.test(src3));
+  ok("modules purs du client : ni React, ni réseau, ni IndexedDB, ni horloge",
+    !/from "react"|fetch\(|indexedDB|Date\.now|new Date|localStorage/.test(sansComm(lireM("sauvegardePure.ts")) + sansComm(lireM("exporterPur.ts"))));
+};
+verifierMepClient();
+
+verifierMepEditeur(ok, titre);
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

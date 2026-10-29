@@ -1328,6 +1328,17 @@ export default function Fiche({
                         ? "Télécharger le lot"
                         : "Télécharger les liens"}
                   </button>
+                  {/* L'outil interne de mise en page (brief §2), en lecture
+                      seule. Pas en démo : les jetons de la démo n'existent pas. */}
+                  {demo ? null : (
+                    <Link
+                      className="adm-btn adm-btn--ghost"
+                      href={`/admin/atelier/mise-en-page/${l.token}`}
+                      title="Ouvrir ce dossier dans l'outil de mise en page"
+                    >
+                      Mettre en page
+                    </Link>
+                  )}
                 </div>
               ) : null}
             </div>

@@ -85,6 +85,9 @@ export default function BarreAtelier({
 export function liensParticuliers(demo: boolean): LienBarre[] {
   return [
     { href: "/admin/atelier/carnet", libelle: "Carnet" },
+    /* L'outil interne de mise en page (brief §2). Il n'a pas de démo : comme
+       les autres écrans, le même lien vaut depuis la démo. */
+    { href: "/admin/atelier/mise-en-page", libelle: "Mise en page" },
     { href: "/admin/atelier/metriques", libelle: "Métriques" },
     { href: "/admin/atelier/cockpit", libelle: "Cockpit" },
     { href: "/admin/atelier/sante", libelle: "Santé" },

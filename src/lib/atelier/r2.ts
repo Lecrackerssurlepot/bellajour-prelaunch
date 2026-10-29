@@ -261,6 +261,18 @@ export async function signerLectureVignette(key: string, maintenantMs = Date.now
 }
 
 /**
+ * L'adresse STABLE d'une image MOYENNE (la version ~1 600 px d'une photo
+ * d'édition, `moyenne_key`) : même fenêtre, même validité et même
+ * `Cache-Control` qu'une vignette. Une moyenne est, comme elle, une image
+ * dérivée immuable à sa clé : le navigateur la garde entre deux ouvertures de
+ * l'outil de mise en page. Sibling de `signerLectureVignette`, jamais pour un
+ * original (`signerGet`).
+ */
+export async function signerLectureMoyenne(key: string, maintenantMs = Date.now()): Promise<string> {
+  return signerLectureVignette(key, maintenantMs);
+}
+
+/**
  * La même signature, à une date donnée. Pour le harnais et la vérification en
  * direct (une adresse signée il y a 1 h 58 doit encore ouvrir, une signée il y
  * a 2 h 02 plus) ; les écrans passent par `signerLectureVignette`.
