@@ -32,7 +32,19 @@ export type Cadre = Rect & {
   rotation?: number;
   /** Étape 2 (« carreaux ») : les cadres d'un même groupe montrent une seule photo. */
   groupe?: string;
+  /** Photos : bord blanc intérieur, en mm (D28, contour relu fidèlement par Affinity). */
+  bord?: number;
+  /** Photos : rayon des quatre coins, en mm (D28, coins arrondis fidèles). */
+  rayon?: number;
+  /** Textes : blanc sur une photo ou un aplat sombre. Absent = noir. */
+  couleur?: "blanc";
 };
+
+/** La teinte d'un aplat : la nuance nommée « Aplat » (une seule, changée d'un coup dans Affinity), le noir ou le blanc. */
+export type Teinte = "aplat" | "noir" | "blanc";
+
+/** Un rectangle de couleur sous les cadres (fond de page, bandeau). Ni photo ni texte : il ne compte dans aucun rang. */
+export type Aplat = Rect & { teinte: Teinte };
 
 export type Portee = "page" | "double";
 
@@ -44,8 +56,10 @@ export type Template = {
   /** Orientations des cadres photo, dans l'ordre des cadres : « P,P,L ». */
   signature: string;
   attribut: "classique" | "original";
-  origine: "annexe" | "grille";
+  origine: "annexe" | "grille" | "epingle";
   cadres: Cadre[];
+  /** Aplats dessinés SOUS les cadres, dans cet ordre. */
+  decor?: Aplat[];
 };
 
 /** L'orientation d'un cadre photo : déclarée, sinon lue sur ses mesures. */
@@ -67,4 +81,11 @@ export function pourCote(t: Template, cote: Cote): Cadre[] {
     if (c.rotation !== undefined) m.rotation = c.rotation === 0 ? 0 : -c.rotation;
     return m;
   });
+}
+
+/** Les aplats d'un template pour le côté voulu, même miroir que `pourCote`. */
+export function decorPourCote(t: Template, cote: Cote): Aplat[] {
+  const decor = t.decor ?? [];
+  if (t.portee === "double" || cote === "droite") return decor.map((a) => ({ ...a }));
+  return decor.map((a) => ({ ...a, x: PAGE_L - a.x - a.l }));
 }

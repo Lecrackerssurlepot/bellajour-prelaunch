@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, apercuDepot, cadresPlanche, idsPlanche, LIBELLE, photosDe, reperesBibliotheque, resumeIssue, SEUIL_DPI, selectionOrdonnee,
+  actionsPlanche, aplatsPlanche, apercuDepot, cadresPlanche, idsPlanche, LIBELLE, photosDe, reperesBibliotheque, resumeIssue, SEUIL_DPI, selectionOrdonnee,
   type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type RefCadre, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { Magazine, Planche } from "@/lib/mise-en-page/magazine";
@@ -107,6 +107,10 @@ export default function Scene() {
             </div>
           );
         })}
+        {aplatsPlanche(etat, pl.id).map((a, i) => (
+          <div key={`a${i}`} className={cls("ed-aplat", `ed-aplat--${a.teinte}`)} aria-hidden="true"
+            style={{ left: pc(a.x, PLANCHE_L), top: pc(a.y, PAGE_H), width: pc(a.l, PLANCHE_L), height: pc(a.h, PAGE_H), ...(montrerApercu ? { opacity: 0 } : {}) }} />
+        ))}
         {frames.map((f) => (
           <CadreVue key={`${f.ref.cible}${f.ref.index}${f.role}`} f={f} pl={pl} rep={rep} sous={montrerApercu} cibleCour={cibleCour} refus={refus} />
         ))}
@@ -144,6 +148,9 @@ export default function Scene() {
   );
 }
 
+/** Une longueur en mm, à l'échelle de la planche (la planche est un conteneur `inline-size`). */
+const mmEnCqw = (mm: number): string => `${(mm / PLANCHE_L) * 100}cqw`;
+
 /* ─── un cadre de la planche ─── */
 type Rep = ReturnType<typeof reperesBibliotheque>;
 
@@ -154,6 +161,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   const st: React.CSSProperties = {
     left: pc(f.x, PLANCHE_L), top: pc(f.y, PAGE_H), width: pc(f.l, PLANCHE_L), height: pc(f.h, PAGE_H),
     ...(f.rotation ? { transform: `rotate(${f.rotation}deg)` } : {}), ...(sous ? { opacity: 0 } : {}),
+    ...(f.role === "photo" && f.rayon ? { borderRadius: mmEnCqw(f.rayon) } : {}),
   };
   if (f.role !== "photo") return <TexteVue f={f} st={st} fantome={!!fantome} />;
   const ref = f.ref;
@@ -229,6 +237,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
         else if (e.key === " ") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "activerCadre", ref }); }
       }}>
       <img src={src} alt="" decoding="async" draggable={false} style={imgSt} />
+      {f.bord ? <span className="ed-bord" style={{ borderWidth: mmEnCqw(f.bord), borderRadius: f.rayon ? mmEnCqw(f.rayon) : undefined }} aria-hidden="true" /> : null}
       {reps.length ? <span className="ed-cadre-reps">{reps}</span> : null}
       {actif && !arme && !d && !ro ? <BarreCadre refC={ref} /> : null}
       {arme ? <span className="ed-bulle" style={{ top: 6 }}>Choisir l&apos;autre cadre</span> : null}
@@ -287,7 +296,7 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   const { etat, envoyer, lectureSeule: ro } = useEd();
   const refT = f.ref;
   const libelle = f.vide || !f.contenu;
-  const style: React.CSSProperties = { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400 };
+  const style: React.CSSProperties = { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.blanc ? { color: "#fff" } : {}) };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, refT);
   if (enEdition) {
     return (

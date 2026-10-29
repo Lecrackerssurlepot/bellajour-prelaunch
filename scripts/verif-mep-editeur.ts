@@ -147,11 +147,13 @@ const S: { n: number; titre: string; f: () => void }[] = [];
 const sc = (n: number, titre: string, f: () => void): void => { S.push({ n, titre, f }); };
 
 // Poser et ajouter
-sc(1, "A(P) sur Pl.2 droite → G-P1-a", () => {
+/* Depuis les épingles du 29/10, des gabarits DESSINÉS existent aussi pour les pages : le gabarit attendu est celui de la
+   note (`premier`), plus un nom de grille écrit en dur. L'intention de chaque scénario ne change pas. */
+sc(1, "A(P) sur Pl.2 droite → le gabarit de la note", () => {
   const s = new Seance("A:P B:L");
   s.g({ type: "naviguer", plancheId: pl(2) });
   s.glisse(s.bib(["A"]), page(2, "droite"));
-  eq(s.ids(2, "droite"), ["A"], "droite"); eq(s.tpl(2, "droite"), "G-P1-a", "gabarit"); eq(s.ids(2, "gauche"), null, "gauche vide");
+  eq(s.ids(2, "droite"), ["A"], "droite"); eq(s.tpl(2, "droite"), premier("page", s, ["A"]), "gabarit"); eq(s.ids(2, "gauche"), null, "gauche vide");
   eq(s.hist, 1, "hist");
   const ep = O.etatPhoto(s.e, "A"); ok(ep.fois === 1 && ep.surPlanche, "A utilisée, liseré bleu");
 });
@@ -160,11 +162,11 @@ sc(2, "B(L) sur Pl.2 gauche → G-P1-b", () => {
   s.glisse(s.bib(["B"]), page(2, "gauche"));
   eq(s.tpl(2, "gauche"), "G-P1-b", "gabarit");
 });
-sc(3, "A(P), B(P) sur Pl.2 droite → G-P2-d", () => {
+sc(3, "A(P), B(P) sur Pl.2 droite → le gabarit de la note", () => {
   const s = new Seance("A:P B:P");
   s.g({ type: "cliquerPhoto", id: "A", mode: "simple" }).g({ type: "cliquerPhoto", id: "B", mode: "ajout" });
   s.glisse(s.bib(O.selectionOrdonnee(s.e)), page(2, "droite"));
-  eq(s.ids(2, "droite"), ["A", "B"], "ordre"); eq(s.tpl(2, "droite"), "G-P2-d", "gabarit");
+  eq(s.ids(2, "droite"), ["A", "B"], "ordre"); eq(s.tpl(2, "droite"), premier("page", s, ["A", "B"]), "gabarit");
 });
 sc(4, "A,B,C(P) sur la zone Double → DP-01", () => {
   const s = new Seance("A:P B:P C:P");
@@ -183,10 +185,10 @@ sc(5, "A(L),B(L),C(P) sur la zone Double → G-D3-a, pas DP-03", () => {
   const n = O.gabaritsPour(s.e, pl(2), "double");
   proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.186, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 0.59, 0.001, "note DP-03");
 });
-sc(6, "droite [A] + B → [A, B], G-P2-d, A reste cadre 1", () => {
+sc(6, "droite [A] + B → [A, B], gabarit de la note, A reste cadre 1", () => {
   const s = new Seance("A:P B:P").pose(2, "droite", ["A"]).zero();
   s.glisse(s.bib(["B"]), page(2, "droite"));
-  eq(s.ids(2, "droite"), ["A", "B"], "ordre"); eq(s.tpl(2, "droite"), "G-P2-d", "gabarit");
+  eq(s.ids(2, "droite"), ["A", "B"], "ordre"); eq(s.tpl(2, "droite"), premier("page", s, ["A", "B"]), "gabarit");
 });
 sc(7, "5 + 3 → 6, deux restées à côté, toujours sélectionnées", () => {
   const s = new Seance("A:P B:P C:L D:C E:P F:L G:P H:L").pose(2, "droite", ["A", "B", "C", "D", "E"]).zero();
@@ -374,24 +376,27 @@ sc(32, "Filtre « Sur cette double page » : même message, filtre inchangé", (
 });
 
 // Gabarits
-sc(33, "R, R, Maj+R : G-P3-b → d → c → d", () => {
+sc(33, "R, R, Maj+R : le classement → 2e → 3e → 2e", () => {
   const s = new Seance("A:P B:P C:P").pose(2, "droite", ["A", "B", "C"]).zero();
   s.g({ type: "naviguer", plancheId: pl(2) });
-  eq(s.tpl(2, "droite"), "G-P3-b", "départ");
-  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), "G-P3-d", "R");
-  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), "G-P3-c", "R");
-  s.g({ type: "touche", cle: "R", shift: true }); eq(s.tpl(2, "droite"), "G-P3-d", "Maj+R");
+  const liste = O.gabaritsPour(s.e, pl(2), "droite").map((x) => x.id);
+  ok(liste.length >= 3, "au moins trois gabarits classés");
+  eq(s.tpl(2, "droite"), liste[0], "départ");
+  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), liste[1], "R");
+  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), liste[2], "R");
+  s.g({ type: "touche", cle: "R", shift: true }); eq(s.tpl(2, "droite"), liste[1], "Maj+R");
   eq(s.hist, 3, "hist"); eq(s.ids(2, "droite"), ["A", "B", "C"], "photos et ordre");
   const n = O.gabaritsPour(s.e, pl(2), "droite");
-  proche(n[0].note, 0.526, 0.001, "égalité 0,526"); proche(n[1].note, 0.526, 0.001, "égalité 0,526");
+  ok(n.every((x, i) => i === 0 || n[i - 1].note <= x.note + 1e-9 || n[i - 1].courant || x.courant), "notes croissantes");
 });
 sc(34, "Survol d'un gabarit = aperçu, sortir sans cliquer = rien", () => {
   const s = new Seance("A:P B:P C:P").pose(2, "droite", ["A", "B", "C"]).zero();
   const avant = s.e;
+  const depart = s.tpl(2, "droite");
   const vu = O.apercu(s.e, { type: "choisirGabarit", plancheId: pl(2), cible: "droite", templateId: "G-P3-a" });
   eq(def(vu.magazine.planches[1].droite, "droite").templateId, "G-P3-a", "aperçu en G-P3-a");
-  ok(s.e === avant && s.tpl(2, "droite") === "G-P3-b" && s.hist === 0, "rien n'a changé");
-  ok(def(O.gabaritsPour(s.e, pl(2), "droite").find((x) => x.courant), "gabarit courant").id === "G-P3-b", "l'actuel coché");
+  ok(depart !== "G-P3-a" && s.e === avant && s.tpl(2, "droite") === depart && s.hist === 0, "rien n'a changé");
+  ok(def(O.gabaritsPour(s.e, pl(2), "droite").find((x) => x.courant), "gabarit courant").id === depart, "l'actuel coché");
 });
 sc(35, "DP-01 + « Lisbonne » → grille : 1 texte retiré ; Annuler rend tout", () => {
   const s = new Seance("A:P B:P C:P").pose(2, "double", ["A", "B", "C"]).zero();
@@ -435,14 +440,15 @@ sc(41, "R pendant un recadrage : le recadrage s'enregistre, puis le gabarit chan
   const s = new Seance("A:P B:P C:P").pose(2, "droite", ["A", "B", "C"]).zero();
   s.g({ type: "ouvrirRecadrage", ref: ref(2, "droite", 0) }).g({ type: "zoomerImage", zoom: 2 });
   s.g({ type: "touche", cle: "r" });
-  eq(s.hist, 2, "Hist +2"); eq(s.e.recadrage, null, "recadrage fermé"); eq(s.tpl(2, "droite"), "G-P3-d", "gabarit suivant");
+  eq(s.hist, 2, "Hist +2"); eq(s.e.recadrage, null, "recadrage fermé"); eq(s.tpl(2, "droite"), O.gabaritsPour(s.e, pl(2), "droite").map((x) => x.id)[1], "gabarit suivant");
   eq(s.e.historique.passe.map((x) => x.libelle), ["Recadrer", "Autre disposition"], "les deux entrées");
 });
-sc(42, "Répétition pénalisée : Pl.3 reçoit G-P1-c après G-P1-a", () => {
+sc(42, "Répétition pénalisée : Pl.3 ne reprend pas le gabarit de Pl.2", () => {
   const s = new Seance("X:P Y:P").pose(2, "droite", ["X"]).zero();
-  eq(s.tpl(2, "droite"), "G-P1-a", "Pl.2");
+  const t2 = s.tpl(2, "droite");
+  eq(t2, premier("page", s, ["X"]), "Pl.2");
   s.glisse(s.bib(["Y"]), page(3, "droite"));
-  eq(s.tpl(3, "droite"), "G-P1-c", "Pl.3");
+  ok(s.tpl(3, "droite") !== t2, "Pl.3 change de gabarit"); eq(s.tpl(3, "droite"), premier("page", s, ["Y"], t2), "Pl.3 = la note avec la pénalité");
 });
 
 // Bande, ordre
@@ -645,6 +651,7 @@ sc(65, "Photo indisponible : jamais perdue par Séparer, Double page, R ; l'expo
 });
 sc(66, "800 × 1200 dans G-P1-a → ≈ 116 dpi, point orange ; zoom 2 → ≈ 58", () => {
   const s = new Seance("A:800x1200").pose(2, "droite", ["A"]).zero();
+  if (s.tpl(2, "droite") !== "G-P1-a") s.g({ type: "choisirGabarit", plancheId: pl(2), cible: "droite", templateId: "G-P1-a" });
   eq(s.tpl(2, "droite"), "G-P1-a", "gabarit");
   const c = photosPlanche(s.e, pl(2))[0];
   proche(c.dpi, 116.11, 0.01, "dpi"); ok(c.basseDef, "point orange"); ok(O.etatPhoto(s.e, "A").basseDef, "repère en bibliothèque");
@@ -653,6 +660,7 @@ sc(66, "800 × 1200 dans G-P1-a → ≈ 116 dpi, point orange ; zoom 2 → ≈ 5
 });
 sc(67, "4000 × 6000 dans le même cadre → ≈ 581 dpi, aucun repère", () => {
   const s = new Seance("A:4000x6000").pose(2, "droite", ["A"]).zero();
+  if (s.tpl(2, "droite") !== "G-P1-a") s.g({ type: "choisirGabarit", plancheId: pl(2), cible: "droite", templateId: "G-P1-a" });
   const c = photosPlanche(s.e, pl(2))[0];
   proche(c.dpi, 580.6, 0.1, "dpi"); ok(!c.basseDef, "aucun repère");
 });

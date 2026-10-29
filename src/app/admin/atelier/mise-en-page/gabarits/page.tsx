@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
+import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage } from "@/lib/mise-en-page/grilles";
 import type { Template } from "@/lib/mise-en-page/types";
 import BarreAtelier, { liensParticuliers } from "../../../BarreAtelier";
@@ -68,6 +69,8 @@ export default async function PageGabarits() {
   const pages = plage(MAX_PHOTOS_PAGE).map((n) => ({ n, liste: grillesPage(n) }));
   const nbDoubles = doubles.reduce((s, g) => s + g.liste.length, 0);
   const nbPages = pages.reduce((s, g) => s + g.liste.length, 0);
+  const epD = plage(MAX_PHOTOS_DOUBLE).map((n) => ({ n, liste: TEMPLATES_EPINGLES.filter((t) => t.portee === "double" && t.nbPhotos === n) }));
+  const epP = plage(MAX_PHOTOS_PAGE).map((n) => ({ n, liste: TEMPLATES_EPINGLES.filter((t) => t.portee === "page" && t.nbPhotos === n) }));
 
   return (
     <div className="adm-root ate-root mep-gabarits">
@@ -76,7 +79,7 @@ export default async function PageGabarits() {
       <header className="ate-fiche-tete">
         <h1 className="ate-h1">Gabarits</h1>
         <p className="ate-bonjour">
-          {TEMPLATES_ANNEXE.length + nbDoubles + nbPages}{" "}templates, à l&apos;échelle.
+          {TEMPLATES_ANNEXE.length + TEMPLATES_EPINGLES.length + nbDoubles + nbPages}{" "}templates, à l&apos;échelle.
         </p>
         <ul className="mep-legende" aria-label="Légende">
           <li><span className="mep-pastille mep-pastille--perdu" />Fond perdu</li>
@@ -92,6 +95,24 @@ export default async function PageGabarits() {
           Doubles pages de l&apos;annexe <span>{TEMPLATES_ANNEXE.length}</span>
         </h2>
         <Groupe liste={TEMPLATES_ANNEXE} portee="double" />
+      </section>
+
+      <section className="mep-section" id="epingles-double">
+        <h2 className="mep-titre">
+          Épingles : double page <span>{epD.reduce((s, g) => s + g.liste.length, 0)}</span>
+        </h2>
+        {epD.filter((g) => g.liste.length).map((g) => (
+          <Groupe key={g.n} titre={`${g.n} photo${g.n > 1 ? "s" : ""}`} liste={g.liste} portee="double" />
+        ))}
+      </section>
+
+      <section className="mep-section" id="epingles-page">
+        <h2 className="mep-titre">
+          Épingles : page <span>{epP.reduce((s, g) => s + g.liste.length, 0)}</span>
+        </h2>
+        {epP.filter((g) => g.liste.length).map((g) => (
+          <Groupe key={g.n} titre={`${g.n} photo${g.n > 1 ? "s" : ""}`} liste={g.liste} portee="page" />
+        ))}
       </section>
 
       <section className="mep-section" id="grilles-double">

@@ -5,7 +5,7 @@
  * cadres du template. Ce qu'on voit est donc ce que l'export reçoit. */
 
 import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, GRILLE, caseGrille, zoneUtile, type Cote } from "@/lib/mise-en-page/geometrie";
-import { orientationCadre, pourCote, type Cadre, type Template } from "@/lib/mise-en-page/types";
+import { decorPourCote, orientationCadre, pourCote, type Cadre, type Template } from "@/lib/mise-en-page/types";
 
 const LIBELLE_ROLE: Record<Cadre["role"], string> = { photo: "photo", titre: "titre", texte: "texte", legende: "légende" };
 
@@ -37,7 +37,8 @@ function CadreDessin({ c }: { c: Cadre }) {
     const lettre = Math.min(14, Math.max(4, Math.min(c.l, c.h) * 0.28));
     return (
       <g transform={transform}>
-        <rect className="mep-photo" x={c.x} y={c.y} width={c.l} height={c.h} />
+        <rect className="mep-photo" x={c.x} y={c.y} width={c.l} height={c.h} rx={c.rayon} />
+        {c.bord ? <rect className="mep-bord" x={c.x + c.bord / 2} y={c.y + c.bord / 2} width={c.l - c.bord} height={c.h - c.bord} strokeWidth={c.bord} rx={c.rayon} /> : null}
         <line className="mep-croix" x1={c.x} y1={c.y} x2={c.x + c.l} y2={c.y + c.h} />
         <line className="mep-croix" x1={c.x + c.l} y1={c.y} x2={c.x} y2={c.y + c.h} />
         <text className="mep-orient" x={cx} y={cy} fontSize={lettre} textAnchor="middle" dominantBaseline="central">
@@ -49,7 +50,7 @@ function CadreDessin({ c }: { c: Cadre }) {
   const corps = Math.min(6, Math.max(2.6, c.h * 0.7));
   return (
     <g transform={transform}>
-      <rect className={`mep-texte mep-texte--${c.role}`} x={c.x} y={c.y} width={c.l} height={c.h} />
+      <rect className={`mep-texte mep-texte--${c.role}${c.couleur === "blanc" ? " mep-texte--blanc" : ""}`} x={c.x} y={c.y} width={c.l} height={c.h} />
       <text className="mep-texte-lib" x={c.x + 1.2} y={cy} fontSize={corps} dominantBaseline="central">
         {LIBELLE_ROLE[c.role]}
         {c.taille ? ` ${c.taille} pt` : ""}
@@ -63,6 +64,7 @@ function CadreDessin({ c }: { c: Cadre }) {
 export default function Planche({ t }: { t: Template }) {
   const double = t.portee === "double";
   const cadres = double ? t.cadres : pourCote(t, "droite");
+  const aplats = decorPourCote(t, "droite");
   const largeur = double ? PLANCHE_L : PAGE_L;
   /* Le fond perdu court sur les bords extérieurs, jamais au pli : une page
      droite seule n'en a pas à gauche. */
@@ -84,6 +86,9 @@ export default function Planche({ t }: { t: Template }) {
       ) : (
         <GrillePage cote="droite" dx={0} />
       )}
+      {aplats.map((a, i) => (
+        <rect key={`a${i}`} className={`mep-aplat mep-aplat--${a.teinte}`} x={a.x} y={a.y} width={a.l} height={a.h} />
+      ))}
       {cadres.map((c, i) => (
         <CadreDessin key={i} c={c} />
       ))}

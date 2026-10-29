@@ -3,9 +3,9 @@
  * Purs : ils ne changent rien. À calculer UNE fois par rendu quand ils parcourent la bibliothèque entière.
  */
 
-import { cadresDe, dispositionDe, utilisations, type Cible, type Planche } from "../magazine";
+import { cadresDe, decorDe, dispositionDe, utilisations, type Cible, type Planche } from "../magazine";
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
-import type { Template } from "../types";
+import type { Aplat, Template } from "../types";
 import { dpi, estPleine, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
 import { visibles } from "./bibliotheque";
@@ -112,13 +112,13 @@ export function cheminDeFer(e: EtatEditeur): VignetteChemin[] {
 }
 
 export type CadrePhoto = {
-  role: "photo"; ref: RefCadre; x: number; y: number; l: number; h: number; rotation: number;
+  role: "photo"; ref: RefCadre; x: number; y: number; l: number; h: number; rotation: number; bord: number; rayon: number;
   photoId: string | null; nom: string | null; indisponible: boolean; signalee: boolean; recadrage: Recadrage; cadrage: Cadrage;
   dpi: number | null; basseDef: boolean; fois: number | undefined;
 };
 export type CadreTexte = {
   role: "titre" | "texte" | "legende"; ref: RefCadre; x: number; y: number; l: number; h: number; rotation: number;
-  contenu: string; vide: boolean; taille: number; gras: boolean;
+  contenu: string; vide: boolean; taille: number; gras: boolean; blanc: boolean;
 };
 export type CadrePlanche = CadrePhoto | CadreTexte;
 
@@ -140,6 +140,7 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const cadrage = cadrer(ph ?? refPour(e.catalogue, a.photoId), { l: c.l, h: c.h }, a.recadrage);
         const v = ph ? 25.4 / cadrage.echelle : null;
         out.push({ role: "photo", ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
+          bord: c.bord || 0, rayon: c.rayon || 0,
           photoId: a.photoId, nom: ph ? ph.nom : a.photoId, indisponible: !!a.photoId && !ph, signalee: !!(ph && ph.signalee),
           recadrage: a.recadrage, cadrage, dpi: v, basseDef: v !== null && v < SEUIL_DPI,
           fois: a.photoId ? utilisations(e.magazine).get(a.photoId) : 0 });
@@ -147,11 +148,22 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const index = iT++;
         const t = d.textes[index];
         out.push({ role: c.role, ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
-          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras });
+          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc" });
       }
     }
   }
   return out;
+}
+
+/** Les aplats d'une planche (repère PLANCHE, mm), sous les cadres. */
+export function aplatsPlanche(e: EtatEditeur, plancheId?: string): Aplat[] {
+  const p = plancheDe(e.magazine, courante(e, plancheId));
+  if (!p) return [];
+  const cibles: Cible[] = p.mode === "double" ? ["double"] : ["gauche", "droite"];
+  return cibles.flatMap((cible) => {
+    const d = dispositionDe(p, cible);
+    return d ? decorDe(d, cible) : [];
+  });
 }
 
 export type GabaritPour = { template: Template; id: string; nom: string; note: number; courant: boolean };

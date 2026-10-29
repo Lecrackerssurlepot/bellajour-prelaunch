@@ -426,9 +426,10 @@ import {
 /* Mise en page interne (T1, 27/10) : géométrie, grilles, recadrage unique, état du magazine.
    Modules purs, aucun import de l'ancien moteur de l'atelier. */
 import { PAGE_L, PAGE_H, PLANCHE_L, FOND_PERDU, PT_PAR_MM, MARGES as MARGES_MEP, GRILLE as GRILLE_MEP, zoneUtile, caseGrille } from "@/lib/mise-en-page/geometrie";
-import { orientationDe, pourCote, type Template as TemplateMep } from "@/lib/mise-en-page/types";
+import { orientationDe, pourCote, signatureDe as signatureDeMep, decorPourCote as decorPourCoteMep, type Template as TemplateMep } from "@/lib/mise-en-page/types";
+import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
 import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
-import { grillesPage, grillesDouble } from "@/lib/mise-en-page/grilles";
+import { grillesPage, grillesDouble, toutesLesGrilles as toutesLesGrillesMep } from "@/lib/mise-en-page/grilles";
 import { cadrer, deplacer, zoomer, RECADRAGE_NEUTRE } from "@/lib/mise-en-page/recadrage";
 import {
   candidats as candidatsMep,
@@ -444,10 +445,11 @@ import {
   utilisations as utilisationsMep,
   templateParId,
   cadresDe,
+  TEMPLATES_DESSINES,
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
 /* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
-import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, CALQUE, LANGUE, PROFILS_COULEUR, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, CALQUE, LANGUE, PROFILS_COULEUR, COULEUR_APLAT, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
@@ -6435,8 +6437,9 @@ const verifierMiseEnPage = () => {
     candidatsMep("double", serie("tout L", 3))[0].id === "DP-04" && candidatsMep("double", serie("tout P", 3))[0].id === "DP-01"
       && candidatsMep("double", serie("tout P", 2))[0].id === "DP-02" && candidatsMep("double", serie("tout L", 3)).at(-1)?.origine === "grille");
   const ids2L1C = candidatsMep("double", [ph(0, 4000, 3000), ph(1, 4000, 3000), ph(2, 3000, 3000)]).map((t) => t.id);
-  ok("MEP candidats : un carré est compatible avec P comme avec L (2 L + 1 C → DP-03 et DP-04 compatibles en tête, DP-01 après ; 3 C → les trois annexes)",
-    ids2L1C.slice(0, 3).join() === "DP-03,DP-04,DP-01" && candidatsMep("double", serie("carrés", 3)).slice(0, 3).map((t) => t.id).join() === "DP-01,DP-03,DP-04");
+  ok("MEP candidats : un carré est compatible avec P comme avec L (parmi les annexes : 2 L + 1 C → DP-03 et DP-04 compatibles avant DP-01 ; 3 C → les trois dans l'ordre)",
+    ids2L1C.filter((id) => id.startsWith("DP-")).join() === "DP-03,DP-04,DP-01"
+      && candidatsMep("double", serie("carrés", 3)).map((t) => t.id).filter((id) => id.startsWith("DP-")).join() === "DP-01,DP-03,DP-04");
 
   const grilles: TemplateMep[] = [];
   for (let n = 1; n <= 6; n++) grilles.push(...grillesPage(n));
@@ -7127,6 +7130,81 @@ const verifierMepClient = () => {
   ok("IDML : un cadre au pli (page droite) est décollé de 0,01 pt, les autres intacts (Affinity le doublait, 28/10)",
     JSON.stringify(cadreAuPli(0, 603.7795)) === JSON.stringify({ x: 0.01, w: 603.7695 }) && JSON.stringify(cadreAuPli(-603.7795, 603.7795)) === JSON.stringify({ x: -603.7795, w: 603.7795 })
       && JSON.stringify(cadreAuPli(56.69, 100)) === JSON.stringify({ x: 56.69, w: 100 }));
+  {
+    titre("— Mise en page : gabarits des épingles (29/10, D28) —");
+    const ep = TEMPLATES_EPINGLES;
+    const ids = [...TEMPLATES_DESSINES.map((t) => t.id), ...toutesLesGrillesMep().map((t) => t.id)];
+    ok("épingles : 37 doubles et 17 pages (41 doubles dessinées avec l'annexe), ids « E- » uniques dans tout le catalogue, tous retrouvés par templateParId",
+      ep.filter((t) => t.portee === "double").length === 37 && ep.filter((t) => t.portee === "page").length === 17
+        && ep.every((t) => t.id.startsWith("E-") && t.origine === "epingle" && templateParId(t.id) === t) && new Set(ids).size === ids.length);
+    ok("épingles : nbPhotos = cadres photo, signature calculée, 1 à 6 par page et 1 à 12 par double",
+      ep.every((t) => t.nbPhotos === t.cadres.filter((c) => c.role === "photo").length && t.signature === signatureDeMep(t.cadres)
+        && t.nbPhotos >= 1 && t.nbPhotos <= (t.portee === "page" ? 6 : 12)));
+    const manques: string[] = [];
+    for (let n = 1; n <= 12; n++) if (TEMPLATES_DESSINES.filter((t) => t.portee === "double" && t.nbPhotos === n).length < 2) manques.push(`double ${n}`);
+    for (let n = 1; n <= 6; n++) if (TEMPLATES_DESSINES.filter((t) => t.portee === "page" && t.nbPhotos === n).length < 2) manques.push(`page ${n}`);
+    ok(`équilibre : au moins deux gabarits dessinés pour chaque nombre (double 1 à 12, page 1 à 6)${manques.length ? ` — manquent : ${manques.join(", ")}` : ""}`, manques.length === 0);
+    /* Les coins d'un cadre, tourné autour de son centre (sens horaire, Y vers le bas). */
+    const coins = (c: { x: number; y: number; l: number; h: number; rotation?: number }): [number, number][] => {
+      const r = ((c.rotation ?? 0) * Math.PI) / 180, cx = c.x + c.l / 2, cy = c.y + c.h / 2;
+      return ([[c.x, c.y], [c.x + c.l, c.y], [c.x, c.y + c.h], [c.x + c.l, c.y + c.h]] as [number, number][])
+        .map(([x, y]) => [cx + (x - cx) * Math.cos(r) - (y - cy) * Math.sin(r), cy + (x - cx) * Math.sin(r) + (y - cy) * Math.cos(r)]);
+    };
+    const e = 1e-6;
+    const dehors: string[] = [];
+    for (const t of ep) {
+      const xmin = t.portee === "double" ? -FOND_PERDU : 0, xmax = (t.portee === "double" ? PLANCHE_L : PAGE_L) + FOND_PERDU;
+      for (const c of [...t.cadres, ...(t.decor ?? [])]) {
+        if (coins(c).some(([x, y]) => x < xmin - e || x > xmax + e || y < -FOND_PERDU - e || y > PAGE_H + FOND_PERDU + e)) dehors.push(t.id);
+      }
+    }
+    ok(`épingles : chaque cadre et chaque aplat, rotation comprise, tient dans la planche élargie du fond perdu (jamais au pli d'une page)${dehors.length ? ` — ${[...new Set(dehors)].join(", ")}` : ""}`, dehors.length === 0);
+    /* Grilles, mosaïques, demi-pages, séries : aucune photo n'en recouvre une autre (le scrapbook, la cascade, la diagonale
+       et les vignettes posées sur un fond se chevauchent exprès). */
+    const sansChevauchement = /^E-(D2|D7|D8|D9|D10|D11|D12|S3|S4|S5|S6)/;
+    const recouvre = (a: { x: number; y: number; l: number; h: number }, b: { x: number; y: number; l: number; h: number }) =>
+      a.x < b.x + b.l - e && b.x < a.x + a.l - e && a.y < b.y + b.h - e && b.y < a.y + a.h - e;
+    const chev = ep.filter((t) => sansChevauchement.test(t.id)).filter((t) => {
+      const ph = t.cadres.filter((c) => c.role === "photo");
+      return ph.some((a, i) => ph.some((b, j) => j > i && recouvre(a, b)));
+    }).map((t) => t.id);
+    ok(`épingles : grilles, mosaïques et séries sans photo qui en recouvre une autre${chev.length ? ` — ${chev.join(", ")}` : ""}`, chev.length === 0);
+    ok("épingles : les textes restent lisibles par rang (les aplats ne comptent ni comme photo ni comme texte)",
+      ep.every((t) => disposerMep(t, []).textes.length === t.cadres.filter((c) => c.role !== "photo").length));
+    ok("choix : à nombre égal, un gabarit dessiné passe avant les grilles de secours (5 photos en double)",
+      candidatsMep("double", Array.from({ length: 5 }, (_, i) => ({ id: `p${i}`, nom: `p${i}`, l: 3000, h: 2000, date: null })))[0].origine !== "grille");
+    ok("miroir : l'aplat d'une page gauche suit le miroir des cadres (x' = 210 − x − l)",
+      JSON.stringify(decorPourCoteMep({ ...ep[0], portee: "page", decor: [{ x: 10, y: 0, l: 50, h: 297, teinte: "noir" }] }, "gauche")) === JSON.stringify([{ x: 150, y: 0, l: 50, h: 297, teinte: "noir" }]));
+
+    /* L'export : un magazine qui pose chaque nouveauté une fois. */
+    const phE: Map<string, PhotoExport> = new Map(Array.from({ length: 12 }, (_, i) => [`q${i}`, { id: `q${i}`, nomLien: `q${i}.jpg`, l: 4000, h: 3000 }] as [string, PhotoExport]));
+    const refs = (n: number): PhotoRef[] => Array.from({ length: n }, (_, i) => ({ id: `q${i}`, nom: `q${i}`, l: 4000, h: 3000, date: null }));
+    const disp = (id: string) => { const t = templateParId(id)!; return disposerMep(t, refs(t.nbPhotos)); };
+    const magE: MagazineMepClient = {
+      version: 1, id: "e", titre: "e", creeLe: "x", modifieLe: "x",
+      planches: [
+        { id: "e0", mode: "pages", double: null, gauche: null, droite: disp("E-S1") },
+        { id: "e1", mode: "double", gauche: null, droite: null, double: disp("E-D6a") },
+        { id: "e2", mode: "double", gauche: null, droite: null, double: disp("E-D14a") },
+        { id: "e3", mode: "double", gauche: null, droite: null, double: disp("E-D13a") },
+        { id: "e4", mode: "pages", double: null, gauche: disp("E-S4b"), droite: disp("E-S9") },
+      ],
+    };
+    const fE = construireIdml(magE, phE, { liens: { mode: "relatif" } });
+    const parE = new Map(fE.map((x) => [x.chemin, x.contenu]));
+    const sp = (i: number) => parE.get(`Spreads/Spread_sp${i}.xml`) ?? "";
+    ok("IDML épingles : la nuance « Aplat » existe (terracotta de la marque) et les deux aplats d'E-D14a la portent, sous les cadres",
+      (parE.get("Resources/Graphic.xml") ?? "").includes(COULEUR_APLAT) && (sp(3).match(/FillColor="Color\/Aplat"/g) ?? []).length === 2
+        && sp(3).indexOf('Name="Aplat 2"') < sp(3).indexOf("<Rectangle Self=\"", sp(3).indexOf('Name="Aplat 2"') + 1) && sp(3).includes('ItemLayer="ly1" ContentType="Unassigned"'));
+    ok("IDML épingles : bord blanc intérieur sur les vignettes (E-D6a : 2 sur 3), à 2,5 mm",
+      (sp(2).match(/StrokeColor="Color\/Paper" StrokeAlignment="InsideAlignment"/g) ?? []).length === 2 && sp(2).includes(`StrokeWeight="${(2.5 * PT_PAR_MM).toFixed(4)}"`));
+    ok("IDML épingles : coins arrondis sur les quatre coins du triptyque (E-S4b)",
+      (sp(5).match(/BottomRightCornerOption="RoundedCorner" BottomRightCornerRadius="/g) ?? []).length === 3);
+    ok("IDML épingles : un cadre photo tourné porte sa rotation dans la matrice du cadre, l'image garde une matrice droite (scrapbook)",
+      /<Rectangle [^>]*ContentType="GraphicType"[^>]*ItemTransform="0\.99/.test(sp(4)) && !/<Image [^>]*ItemTransform="0\.99/.test(sp(4)));
+    ok("IDML épingles : le titre posé sur la photo (E-S1) est en blanc, les autres textes restent noirs",
+      [...parE.entries()].filter(([k, v]) => k.startsWith("Stories/") && v.includes('FillColor="Color/Paper"')).length === 2);
+  }
   const pi = photosPourIdml({ decisions: new Map([["1", droite(6)]]), nomsLiens: liens3 });
   ok("IDML : seules les photos lues entrent (l'illisible laisse un cadre vide), avec les dimensions DROITES des octets",
     pi.size === 1 && pi.get("1")?.l === 3024 && pi.get("1")?.h === 4032 && pi.get("1")?.nomLien === "IMG_1.jpg");

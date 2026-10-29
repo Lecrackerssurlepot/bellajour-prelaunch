@@ -15,8 +15,8 @@
 
 import { PAGE_H, PAGE_L, PT_PAR_MM, FOND_PERDU, MARGES, GRILLE } from "./geometrie";
 import { cadrer } from "./recadrage";
-import { cadresDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
-import type { Cadre, RoleCadre } from "./types";
+import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
+import type { Cadre, RoleCadre, Teinte } from "./types";
 
 /** Une photo prête à l'export : l / h en px APRÈS orientation EXIF, `nomLien` unique dans Links/. */
 /** `l` × `h` : dimensions DROITES. `tag` : orientation EXIF du fichier (1 ou absent = stocké droit). */
@@ -171,8 +171,8 @@ const LIBELLES: Record<RoleCadre, string> = { photo: "Photo", titre: "Titre", te
 
 type Element = { cadre: Cadre; disposition: Disposition; indexPhoto: number; indexTexte: number };
 
-/** Les cadres d'une planche, repère planche, avec leur affectation (photo ou texte) par index. */
-function elementsDe(p: Planche, premiere: boolean): Element[] {
+/** Les dispositions posées sur une planche, avec leur cible. */
+function partsDe(p: Planche, premiere: boolean): { d: Disposition; cible: "double" | "gauche" | "droite" }[] {
   const parts: { d: Disposition; cible: "double" | "gauche" | "droite" }[] = [];
   if (premiere) {
     const d = dispositionDe(p, "droite");
@@ -183,7 +183,12 @@ function elementsDe(p: Planche, premiere: boolean): Element[] {
     if (p.gauche) parts.push({ d: p.gauche, cible: "gauche" });
     if (p.droite) parts.push({ d: p.droite, cible: "droite" });
   }
-  return parts.flatMap(({ d, cible }) => {
+  return parts;
+}
+
+/** Les cadres d'une planche, repère planche, avec leur affectation (photo ou texte) par index. */
+function elementsDe(p: Planche, premiere: boolean): Element[] {
+  return partsDe(p, premiere).flatMap(({ d, cible }) => {
     let iP = 0, iT = 0;
     return cadresDe(d, cible).map((cadre) => {
       const e: Element = { cadre, disposition: d, indexPhoto: cadre.role === "photo" ? iP : -1, indexTexte: cadre.role === "photo" ? -1 : iT };
@@ -191,6 +196,24 @@ function elementsDe(p: Planche, premiere: boolean): Element[] {
       return e;
     });
   });
+}
+
+/** La nuance d'un aplat (D28 : un fond de couleur est relu fidèlement). */
+const NUANCE: Record<Teinte, string> = { aplat: "Color/Aplat", noir: "Color/Black", blanc: "Color/Paper" };
+
+/**
+ * « Aplat » : UNE nuance nommée pour tous les aplats du magazine, à changer d'un coup dans Affinity. Sa valeur par
+ * défaut est la terracotta de la marque (`--bj-terracotta` #bc977d, tokens.css) tant que le nuancier n'est pas choisi.
+ */
+export const COULEUR_APLAT = `<Color Self="Color/Aplat" Model="Process" Space="RGB" ColorValue="188 151 125" Name="Aplat"/>`;
+
+/** Bord blanc (intérieur) et coins arrondis d'un cadre photo, en attributs IDML. */
+export function habillagePhoto(c: Cadre): string {
+  const bord = c.bord && c.bord > 0 ? `StrokeWeight="${f(c.bord * K, 4)}" StrokeColor="Color/Paper" StrokeAlignment="InsideAlignment"` : `StrokeWeight="0"`;
+  if (!c.rayon || !(c.rayon > 0)) return bord;
+  const r = f(c.rayon * K, 4);
+  const coins = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((k) => `${k}CornerOption="RoundedCorner" ${k}CornerRadius="${r}"`).join(" ");
+  return `${bord} ${coins}`;
 }
 
 /** Le contenu d'une Story : un saut de ligne devient un `<Br/>` IDML. */
@@ -217,7 +240,9 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
   const photoXml = (e: Element, nom: string): string => {
     const { x, y, w, h } = conv(e.cadre);
     const pli = cadreAuPli(x, w);
-    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(pli.x, y, pli.w, h)}`
+    /* Cadre tourné : la rotation va dans la matrice du CADRE, l'image garde sa matrice non tournée (repère intérieur
+       du cadre), comme l'essai Affinity du 29/10 « cadre photo tourné 15° ». */
+    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" ${habillagePhoto(e.cadre)} ItemTransform="${transformRotation(e.cadre.rotation, pli.x, y, pli.w, h)}">${geom(pli.x, y, pli.w, h)}`
       + `<FrameFittingOption FittingOnEmptyFrame="FillProportionally" FittingAlignment="CenterAnchor"/>`;
     const aff = e.disposition.photos[e.indexPhoto];
     const ph = aff?.photoId ? photos.get(aff.photoId) : undefined;
@@ -244,7 +269,7 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
     stories.push({
       sid,
       corps: `<Story Self="${sid}" AppliedTOCStyle="n" StoryTitle="$ID/"><StoryPreference FrameType="TextFrameType" StoryOrientation="Horizontal" StoryDirection="LeftToRightDirection"/>`
-        + `<ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/NormalParagraphStyle"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="${taille}" FontStyle="${gras ? "Bold" : "Regular"}" AppliedLanguage="${LANGUE}"><Properties><AppliedFont type="string">Arial</AppliedFont></Properties>${contenuStory(contenu)}</CharacterStyleRange></ParagraphStyleRange></Story>`,
+        + `<ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/NormalParagraphStyle"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="${taille}" FontStyle="${gras ? "Bold" : "Regular"}"${e.cadre.couleur === "blanc" ? ` FillColor="Color/Paper"` : ""} AppliedLanguage="${LANGUE}"><Properties><AppliedFont type="string">Arial</AppliedFont></Properties>${contenuStory(contenu)}</CharacterStyleRange></ParagraphStyleRange></Story>`,
     });
     return `<TextFrame Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ParentStory="${sid}" ContentType="TextType" ItemTransform="${transformRotation(e.cadre.rotation, x, y, w, h)}">${geom(x, y, w, h)}<TextFramePreference TextColumnCount="1"/></TextFrame>`;
   };
@@ -260,6 +285,14 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
       corps += page(`pg${numeroPage}`, String(numeroPage), true);
       numeroPage += 1;
       corps += page(`pg${numeroPage}`, String(numeroPage), false);
+    }
+    let nA = 0;
+    for (const { d, cible } of partsDe(p, premiere)) {
+      for (const a of decorDe(d, cible)) {
+        const r = conv(a);
+        nA += 1;
+        corps += `<Rectangle Self="${nid()}" Name="Aplat ${nA}" ItemLayer="${CALQUE}" ContentType="Unassigned" StoryTitle="$ID/" FillColor="${NUANCE[a.teinte]}" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(r.x, r.y, r.w, r.h)}</Rectangle>`;
+      }
     }
     const elements = elementsDe(p, premiere);
     const total: Partial<Record<RoleCadre, number>> = {};
@@ -280,7 +313,7 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
 
   add("mimetype", MIMETYPE_IDML);
   add("META-INF/container.xml", `${PI}<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="designmap.xml" media-type="text/xml"/></rootfiles></container>`);
-  add("Resources/Graphic.xml", `${PI}<idPkg:Graphic ${NS}><Color Self="Color/Black" Model="Process" Space="CMYK" ColorValue="0 0 0 100" Name="Black"/><Color Self="Color/Paper" Model="Process" Space="CMYK" ColorValue="0 0 0 0" Name="Paper"/><Swatch Self="Swatch/None" Name="None"/></idPkg:Graphic>`);
+  add("Resources/Graphic.xml", `${PI}<idPkg:Graphic ${NS}><Color Self="Color/Black" Model="Process" Space="CMYK" ColorValue="0 0 0 100" Name="Black"/><Color Self="Color/Paper" Model="Process" Space="CMYK" ColorValue="0 0 0 0" Name="Paper"/>${COULEUR_APLAT}<Swatch Self="Swatch/None" Name="None"/></idPkg:Graphic>`);
   add("Resources/Fonts.xml", `${PI}<idPkg:Fonts ${NS}><FontFamily Self="di1" Name="Arial"><Font Self="di1Font1" FontFamily="Arial" Name="Arial Regular" PostScriptName="ArialMT" FontStyleName="Regular"/><Font Self="di1Font2" FontFamily="Arial" Name="Arial Bold" PostScriptName="Arial-BoldMT" FontStyleName="Bold"/></FontFamily></idPkg:Fonts>`);
   add("Resources/Styles.xml", `${PI}<idPkg:Styles ${NS}><RootCharacterStyleGroup Self="rcs"><CharacterStyle Self="CharacterStyle/$ID/[No character style]" Name="$ID/[No character style]"/></RootCharacterStyleGroup><RootParagraphStyleGroup Self="rps"><ParagraphStyle Self="ParagraphStyle/$ID/[No paragraph style]" Name="$ID/[No paragraph style]"/><ParagraphStyle Self="ParagraphStyle/$ID/NormalParagraphStyle" Name="$ID/NormalParagraphStyle" PointSize="10" FillColor="Color/Black"><Properties><BasedOn type="object">ParagraphStyle/$ID/[No paragraph style]</BasedOn><AppliedFont type="string">Arial</AppliedFont></Properties></ParagraphStyle></RootParagraphStyleGroup><RootObjectStyleGroup Self="ros"><ObjectStyle Self="ObjectStyle/$ID/[None]" Name="$ID/[None]"/></RootObjectStyleGroup></idPkg:Styles>`);
   add("Resources/Preferences.xml", `${PI}<idPkg:Preferences ${NS}><DocumentPreference PageHeight="${f(PH, 4)}" PageWidth="${f(PW, 4)}" PagesPerDocument="${nbPages}" FacingPages="true" DocumentBleedTopOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedBottomOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedInsideOrLeftOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedOutsideOrRightOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedUniformSize="true" PageBinding="LeftToRight"/>${MP}</idPkg:Preferences>`);

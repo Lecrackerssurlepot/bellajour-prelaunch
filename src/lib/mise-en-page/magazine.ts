@@ -17,8 +17,9 @@
 import { PAGE_L } from "./geometrie";
 import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, type Recadrage } from "./recadrage";
 import { TEMPLATES_ANNEXE } from "./templates";
+import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
-import { orientationCadre, orientationDe, pourCote, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
+import { decorPourCote, orientationCadre, orientationDe, pourCote, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
 
@@ -51,9 +52,12 @@ export type RefCadre = { plancheId: string; cible: Cible; index: number };
 
 /* ─────────────────────────── Le catalogue ─────────────────────────── */
 
+/** Les gabarits dessinés (annexe du brief, puis épingles du 29/10), toujours avant les grilles de secours. */
+export const TEMPLATES_DESSINES: Template[] = [...TEMPLATES_ANNEXE, ...TEMPLATES_EPINGLES];
+
 let catalogue: Map<string, Template> | null = null;
 const index = (): Map<string, Template> => {
-  if (!catalogue) catalogue = new Map([...TEMPLATES_ANNEXE, ...toutesLesGrilles()].map((t) => [t.id, t]));
+  if (!catalogue) catalogue = new Map([...TEMPLATES_DESSINES, ...toutesLesGrilles()].map((t) => [t.id, t]));
   return catalogue;
 };
 
@@ -65,6 +69,15 @@ export const templateParId = (id: string): Template | null => index().get(id) ??
  * Les cadres d'une disposition en repère PLANCHE : double telle quelle, page
  * droite décalée de +210, page gauche en miroir. Template inconnu : aucun cadre.
  */
+/** Les aplats d'une disposition, repère planche, même règle que `cadresDe`. */
+export function decorDe(disposition: Disposition, cible: Cible): Aplat[] {
+  const t = templateParId(disposition.templateId);
+  if (!t) return [];
+  if (cible === "double") return t.portee === "double" ? decorPourCote(t, "droite") : [];
+  if (t.portee !== "page") return [];
+  return decorPourCote(t, cible).map((a) => (cible === "droite" ? { ...a, x: a.x + PAGE_L } : a));
+}
+
 export function cadresDe(disposition: Disposition, cible: Cible): Cadre[] {
   const t = templateParId(disposition.templateId);
   if (!t) return [];
@@ -126,7 +139,7 @@ export function candidats(portee: Portee, photos: PhotoRef[]): Template[] {
   if (n === 0) return [];
   const os = retenues.map(orientationPhoto);
   const compat = (t: Template) => signaturesCompatibles(orientationsCadres(t), os);
-  const annexe = TEMPLATES_ANNEXE.filter((t) => t.portee === portee && t.nbPhotos === n);
+  const annexe = TEMPLATES_DESSINES.filter((t) => t.portee === portee && t.nbPhotos === n);
   const grilles = portee === "page" ? grillesPage(n) : grillesDouble(n);
   return [
     ...annexe.filter(compat),

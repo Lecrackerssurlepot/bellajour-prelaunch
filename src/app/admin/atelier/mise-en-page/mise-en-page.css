@@ -134,6 +134,12 @@
 .mep-gabarits .mep-case { fill: var(--bj-veil-6); fill-opacity: 0.6; stroke: none; }
 .mep-gabarits .mep-marge { fill: none; stroke: var(--bj-veil-16); stroke-width: 0.75; }
 .mep-gabarits .mep-photo { fill: var(--bj-veil-35); stroke: var(--bj-text-soft); stroke-width: 0.75; }
+.mep-gabarits { --mep-aplat: #bc977d; --mep-noir: #231f20; --mep-papier: #fff; }
+.mep-gabarits .mep-aplat--aplat { fill: var(--mep-aplat); }
+.mep-gabarits .mep-aplat--noir { fill: var(--mep-noir); }
+.mep-gabarits .mep-aplat--blanc { fill: var(--mep-papier); }
+.mep-gabarits .mep-bord { fill: none; stroke: var(--mep-papier); }
+.mep-gabarits .mep-texte--blanc + .mep-texte-lib { fill: var(--mep-papier); }
 .mep-gabarits .mep-croix { stroke: var(--bj-cream-tint-1); stroke-width: 0.75; opacity: 0.7; }
 .mep-gabarits .mep-orient {
   fill: var(--bj-cream-tint-1);
@@ -872,6 +878,14 @@
 .mep-editeur .ed-cote-vide { position: absolute; inset: 0; display: grid; place-items: center; color: var(--bj-text-faint); font-size: 1.35cqw; text-align: center; pointer-events: none; }
 .mep-editeur .ed-cadre { position: absolute; z-index: 2; overflow: hidden; background: var(--bj-cream-tint-2); cursor: grab; touch-action: none; }
 .mep-editeur .ed-cadre img { position: absolute; display: block; max-width: none; pointer-events: none; }
+/* Aplats et bords des gabarits d'épingles (D28) : mêmes valeurs que les nuances de l'IDML (idml.ts : « Aplat » = la
+   terracotta de la marque, le noir CMJN 0/0/0/100, le papier). Le rouge de l'aplat change dans Affinity, pas ici. */
+.mep-editeur { --mep-aplat: #bc977d; --mep-noir: #231f20; --mep-papier: #fff; }
+.mep-editeur .ed-aplat { position: absolute; z-index: 1; pointer-events: none; }
+.mep-editeur .ed-aplat--aplat { background: var(--mep-aplat); }
+.mep-editeur .ed-aplat--noir { background: var(--mep-noir); }
+.mep-editeur .ed-aplat--blanc { background: var(--mep-papier); }
+.mep-editeur .ed-bord { position: absolute; inset: 0; border-style: solid; border-color: var(--mep-papier); pointer-events: none; }
 .mep-editeur .ed-cadre--actif { z-index: 4; outline: 2px solid var(--bj-action); outline-offset: 1px; }
 .mep-editeur .ed-cadre--trainee { opacity: 0.4; }
 .mep-editeur .ed-cadre--cible { z-index: 5; outline: 3px solid var(--bj-action); outline-offset: -3px; }
@@ -1135,6 +1149,10 @@
 .mep-editeur .ed-gab-dessin { position: relative; display: block; background: var(--bj-cream-tint-1); box-shadow: 0 0 0 1px var(--bj-veil-16); }
 .mep-editeur .ed-gab-dessin i { position: absolute; background: var(--bj-cream-tint-3); }
 .mep-editeur .ed-gab-dessin i.t { background: var(--bj-veil-8); }
+.mep-editeur .ed-gab-dessin i.a { background: var(--mep-aplat); opacity: 0.55; }
+.mep-editeur .ed-gab-dessin i.a--noir { background: var(--mep-noir); }
+.mep-editeur .ed-gab-dessin i.a--blanc { background: var(--mep-papier); }
+.mep-editeur .ed-gab-dessin i.b { box-shadow: 0 0 0 1px var(--mep-papier), 0 1px 2px var(--bj-veil-16); }
 .mep-editeur .ed-gab[aria-checked="true"] .ed-gab-dessin { box-shadow: 0 0 0 2px var(--bj-action); }
 .mep-editeur .ed-gab[aria-checked="true"] { color: var(--bj-action); font-weight: 600; }
 .mep-editeur .ed-gab-actions { display: flex; flex-direction: column; align-self: stretch; justify-content: center; gap: 4px; margin-left: 2px; padding-left: 6px; border-left: 1px solid var(--bj-veil-8); }

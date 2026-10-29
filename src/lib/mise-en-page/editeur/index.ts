@@ -27,7 +27,7 @@ export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primi
 export { planDepot, planifier } from "./plans";
 export { groupes, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
-  actionsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, etatPhoto, gabaritsPour, libelleAnnuler,
+  actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, etatPhoto, gabaritsPour, libelleAnnuler,
   libelleRetablir, pagesLibelle, reperesBibliotheque, resumeIssue,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";

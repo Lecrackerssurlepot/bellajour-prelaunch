@@ -6,6 +6,10 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - `geometrie.ts` : LA source des mesures (A4, planche 420, fond perdu 3, marges, grille 6 × 6).
 - `types.ts` : templates = données (cadres en mm), `orientationDe`, `pourCote`.
 - `templates.ts` : les 4 doubles de l'annexe, recopiées à l'identique. `grilles.ts` : les grilles de secours.
+- `epingles.ts` (29/10) : 37 doubles + 17 pages tirées du tableau Pinterest de Mathias (familles D1–D15, S1–S9), ids `E-…`.
+  Avec l'annexe, ce sont les gabarits DESSINÉS (`TEMPLATES_DESSINES`, magazine.ts) : toujours avant les grilles, et le harnais
+  exige au moins deux dessinés par nombre (double 1–12, page 1–6). Aplats (`decor`, sous les cadres, hors des rangs), bord blanc,
+  coins arrondis, rotation de photo, texte blanc : tous relus fidèlement par Affinity (essai du 29/10, 271 images, 0 étirée).
 - `recadrage.ts` : LE calcul photo dans cadre. `magazine.ts` : l'état et ses transitions.
 - `idml.ts` : l'export IDML, portage fidèle de `idml-test-generator.py` (validé dans Affinity) : ne changer
   un élément ou un attribut qu'après un nouvel essai Affinity (`scripts/idml-essai.ts`). `paquet.ts` : les zips

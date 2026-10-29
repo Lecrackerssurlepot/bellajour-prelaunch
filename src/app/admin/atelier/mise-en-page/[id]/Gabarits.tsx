@@ -49,8 +49,12 @@ export function DessinGab({ t, l }: { t: Template; l: number }) {
   const larg = t.portee === "double" ? PLANCHE_L : PAGE_L;
   return (
     <span className="ed-gab-dessin" style={{ width: l, height: l * (PAGE_H / larg) }}>
+      {(t.decor ?? []).map((a, i) => (
+        <i key={`a${i}`} className={`a a--${a.teinte}`} style={{ left: pc(a.x, larg), top: pc(a.y, PAGE_H), width: pc(a.l, larg), height: pc(a.h, PAGE_H) }} />
+      ))}
       {t.cadres.map((c, i) => (
-        <i key={i} className={c.role === "photo" ? undefined : "t"} style={{ left: pc(c.x, larg), top: pc(c.y, PAGE_H), width: pc(c.l, larg), height: pc(c.h, PAGE_H) }} />
+        <i key={i} className={c.role === "photo" ? (c.bord ? "b" : undefined) : "t"}
+          style={{ left: pc(c.x, larg), top: pc(c.y, PAGE_H), width: pc(c.l, larg), height: pc(c.h, PAGE_H), ...(c.rotation ? { transform: `rotate(${c.rotation}deg)` } : {}), ...(c.rayon ? { borderRadius: 2 } : {}) }} />
       ))}
     </span>
   );

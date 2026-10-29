@@ -44,13 +44,13 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
   return 1 - Math.min(rp, rc) / Math.max(rp, rc);
 }
 
-/** Somme des pertes + pénalité de répétition − petit bonus aux doubles de l'annexe. */
+/** Somme des pertes + pénalité de répétition − petit bonus aux gabarits DESSINÉS (annexe et épingles), jamais aux grilles. */
 export function noterGabarit(t: Template, photos: readonly Dims[], precedent: string | null): number {
   const cs = cadresPhoto(t);
   let s = 0;
   for (let i = 0; i < cs.length; i++) s += perteCadre(photos[i] ?? { l: 1, h: 1 }, cs[i]);
   if (t.id === precedent) s += PENALITE_REPETITION;
-  if (t.origine === "annexe") s -= BONUS_ANNEXE;
+  if (t.origine !== "grille") s -= BONUS_ANNEXE;
   return s;
 }
 
@@ -183,7 +183,11 @@ export function composer(
   if (o.sources) for (const [k, v] of o.sources) if (!sources.has(k)) sources.set(k, v);
   const r = composerDisposition(ids, porteeDe(cible), cat, precedentDe(m, i, cible), o.templateId ?? null,
     sources, ancienne ? ancienne.textes : [], tA);
-  return { magazine: remplacerPlanche(m, i, avecDispo(p, cible, r.disposition)), textesPerdus: r.textesPerdus };
+  /* Pages → double : les textes saisis sur les deux pages ne passent pas dans le gabarit double, ils sont perdus
+     ET comptés (I18). Latent tant qu'aucun gabarit de page n'avait de texte ; les épingles du 29/10 en ont. */
+  const pagesPerdues = cible === "double" && p.mode === "pages"
+    ? [p.gauche, p.droite].reduce((n, d) => n + (d ? d.textes.filter(saisi).length : 0), 0) : 0;
+  return { magazine: remplacerPlanche(m, i, avecDispo(p, cible, r.disposition)), textesPerdus: r.textesPerdus + pagesPerdues };
 }
 
 /* ─────────────────────────── 9 à 21. Les opérations ─────────────────────────── */
