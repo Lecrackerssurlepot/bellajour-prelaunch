@@ -6,7 +6,7 @@ import {
   type CibleDepot, type EtatEditeur, type Geste, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
-import { CtxEd, UI_NEUVE, fermerTexteDom, type Adresse, type Ctx, type Projet, type Ui } from "./contexte";
+import { CtxEd, UI_NEUVE, fermerTexteDom, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
 import { Bandeaux, Barre } from "./Barre";
 import { Bande, CheminDeFer } from "./Bas";
@@ -32,9 +32,10 @@ type Props = {
   retour: { href: string; libelle: string };
   suite: { href: string; mot: string };
   selecteur: React.ReactNode;
+  imp?: Import;
 };
 
-export default function EditeurMagazine({ catalogue, source, cle, projet, archive, collecteOuverte, retour, suite, selecteur }: Props) {
+export default function EditeurMagazine({ catalogue, source, cle, projet, archive, collecteOuverte, retour, suite, selecteur, imp }: Props) {
   const [etat, setEtat] = useState<EtatEditeur | null>(null);
   const [ui, setUi] = useState<Ui>(UI_NEUVE);
   const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -70,18 +71,26 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
      développement), `ouvrir` le remet en marche. Le résultat d'un passage annulé est ignoré. */
   const { ouvrir, lectureSeule: figer } = sauve;
   const { nom, source: sourceProjet, nbPagesCible } = projet;
+  /* Le catalogue est lu par une référence : un import (création libre) l'enrichit sans rouvrir la sauvegarde. */
+  const catalogueRef = useRef(catalogue);
+  useEffect(() => { catalogueRef.current = catalogue; });
   useEffect(() => {
     let annule = false;
     void ouvrir().then((magazine) => {
       if (annule) return;
-      let e = creerEtat({ magazine, catalogue: catalogue.photos, projet: { nom, source: sourceProjet, nbPagesCible } });
+      let e = creerEtat({ magazine, catalogue: catalogueRef.current.photos, projet: { nom, source: sourceProjet, nbPagesCible } });
       if (archive) { figer("archive"); e = appliquer(e, { type: "ouvrirLectureSeule", raison: "archive" }); }
       setEtat((prev) => prev ?? e);
     });
     return () => { annule = true; };
-  }, [ouvrir, figer, catalogue, nom, sourceProjet, nbPagesCible, archive]);
+  }, [ouvrir, figer, nom, sourceProjet, nbPagesCible, archive]);
 
   useEffect(() => { etatRef.current = etat; });
+
+  /* Création libre : des photos importées après l'ouverture rejoignent le catalogue (le magazine ne bouge pas). */
+  if (etat && catalogue.photos.some((p) => !etat.catalogue.has(p.id))) {
+    setEtat(appliquer(etat, { type: "ajouterAuCatalogue", photos: catalogue.photos }));
+  }
 
   /* ─── la sauvegarde parle : un conflit passe l'écran en lecture seule ─── */
   const sv = sauve.etat;
@@ -272,7 +281,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
 
   const ro = estLectureSeule(etat);
   const ctx: Ctx = {
-    etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, flasher, gesteAvecAnnuler,
+    etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, flasher, gesteAvecAnnuler, imp,
   };
   const d = etat.glisser;
   const annonce = etat.message ? etat.message.texte : etat.derniere ? etat.derniere.libelle : "";

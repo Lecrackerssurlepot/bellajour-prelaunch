@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { chargerCatalogue, type CatalogueCharge, type ResultatCatalogue, type SourceCatalogue } from "./chargerCatalogue";
-import { cls, type Projet } from "./contexte";
+import { useCallback, useEffect, useState } from "react";
+import { chargerCatalogue, type ResultatCatalogue, type SourceCatalogue } from "./chargerCatalogue";
+import { cls, type Import, type Projet } from "./contexte";
 import EditeurMagazine from "./EditeurMagazine";
+import { catalogueLibre, importerPhotos, liberer } from "./photosLocales";
 import { cleLocale, type RattachementMep } from "./sauvegardeClient";
 
 /**
  * L'éditeur d'un projet : il lit les photos (dossier d'un particulier ou édition), choisit le magazine (une
- * édition peut en porter plusieurs), puis ouvre `EditeurMagazine`. Une création libre n'a pas de photos :
- * l'import de fichiers locaux viendra plus tard.
+ * édition peut en porter plusieurs), puis ouvre `EditeurMagazine`. Une création libre lit ses photos importées
+ * dans ce navigateur (`photosLocales.ts`) et en importe d'autres (bouton ou glisser des fichiers sur le panneau).
  */
 
 export type CibleEditeur =
@@ -17,22 +18,22 @@ export type CibleEditeur =
   | { type: "edition"; editionId: string }
   | { type: "libre"; id: string };
 
-const LIBRE: CatalogueCharge = {
-  ok: true, photos: [], magazines: [], originaux: {}, obtenuLe: 0, ttlOriginauxSecondes: 0,
-  projet: { nom: "Création libre", source: "particulier", nbPagesCible: null, collecteOuverte: false, archive: false },
-};
-
 const RETOUR = { href: "/admin/atelier/mise-en-page", libelle: "Mise en page" };
 
 export default function Editeur({ cible }: { cible: CibleEditeur }) {
   const [res, setRes] = useState<ResultatCatalogue | null>(null);
   const [essai, setEssai] = useState(0);
   const [rang, setRang] = useState(0);
-  const libre = cible.type === "libre";
+  const [enCours, setEnCours] = useState<{ fait: number; total: number } | null>(null);
+  const [bilan, setBilan] = useState<string | null>(null);
   const cleCible = cible.type === "dossier" ? cible.token : cible.type === "edition" ? cible.editionId : cible.id;
 
   useEffect(() => {
-    if (cible.type === "libre") return;
+    if (cible.type === "libre") {
+      let annule = false;
+      void catalogueLibre(cible.id).then((r) => { if (!annule) setRes(r); });
+      return () => { annule = true; liberer(); };
+    }
     const c = new AbortController();
     const source: SourceCatalogue = cible.type === "dossier" ? { type: "dossier", token: cible.token } : { type: "edition", id: cible.editionId };
     void chargerCatalogue(source, c.signal).then((r) => { if (!c.signal.aborted) setRes(r); });
@@ -40,7 +41,19 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cible.type, cleCible, essai]);
 
-  const resultat: ResultatCatalogue | null = libre ? LIBRE : res;
+  const importer = useCallback((fichiers: File[]) => {
+    if (cible.type !== "libre" || !fichiers.length) return;
+    const id = cible.id;
+    setBilan(null);
+    void importerPhotos(id, fichiers, setEnCours).then(async (b) => {
+      const r = await catalogueLibre(id);
+      setRes(r);
+      setEnCours(null);
+      setBilan(b.refusees.length ? `${b.refusees.length} non lue${b.refusees.length > 1 ? "s" : ""} (HEIC ?)` : null);
+    }, () => { setEnCours(null); setBilan("Import impossible"); });
+  }, [cible]);
+
+  const resultat = res;
   if (!resultat) {
     return (
       <div className="ed-racine ed-racine--attente" aria-busy="true" aria-live="polite">
@@ -91,6 +104,7 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
     suite = { href: RETOUR.href, mot: "Mise en page" };
     cleId = cible.id;
   }
+  const imp: Import | undefined = cible.type === "libre" ? { importer, enCours, bilan } : undefined;
   const cle = { cle: cleLocale(rattachement, cible.type === "libre" ? cible.id : undefined), rattachement, titre: projet.nom };
   const selecteur = magazines.length > 1 ? (
     <span className="ed-seg" role="group" aria-label="Magazine">
@@ -102,6 +116,6 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
 
   return (
     <EditeurMagazine key={`${cible.type}:${cleId}`} catalogue={cat} source={source} cle={cle} projet={projet}
-      archive={cat.projet.archive} collecteOuverte={cat.projet.collecteOuverte} retour={RETOUR} suite={suite} selecteur={selecteur} />
+      archive={cat.projet.archive} collecteOuverte={cat.projet.collecteOuverte} retour={RETOUR} suite={suite} selecteur={selecteur} imp={imp} />
   );
 }

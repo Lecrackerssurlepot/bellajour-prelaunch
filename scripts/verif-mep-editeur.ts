@@ -1151,6 +1151,26 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter(`éditeur ${n}. ${nom}`, msg === null);
   }
+  /* Création libre : l'import ajoute au catalogue sans toucher au magazine, ni à l'historique ; un id connu est ignoré. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:L").pose(1, "droite", ["A"]).zero();
+      const m0 = s.e.magazine;
+      const ajout = catalogue("B:P C:L D:C");
+      s.g({ type: "ajouterAuCatalogue", photos: ajout });
+      eq([...s.e.catalogue.keys()], ["A", "B", "C", "D"], "catalogue après import");
+      ok(s.e.catalogue.get("B")?.l === 3000, "B gardée telle quelle (id connu ignoré)");
+      ok(s.e.magazine === m0 && s.hist === 0, "magazine et historique intacts");
+      const meme = s.e;
+      s.g({ type: "ajouterAuCatalogue", photos: ajout });
+      ok(s.e === meme, "réimport du même lot : état inchangé");
+      s.g({ type: "poser", cible: { type: "page", plancheId: pl(2), cote: "gauche" }, ids: ["C", "D"], confirme: true });
+      eq(s.idsPleins(2, "gauche").sort(), ["C", "D"], "les photos importées se posent");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : création libre, des photos importées rejoignent le catalogue (ajout seul)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);

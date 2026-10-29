@@ -228,7 +228,9 @@ export type GesteEcran =
   | { type: "prendreSaVersion"; magazine: Magazine; version?: number; le?: string }
   | { type: "garderLaMienne" }
   | { type: "recupererCopieLocale" }
-  | { type: "ouvrirLectureSeule"; raison: RaisonLectureSeule };
+  | { type: "ouvrirLectureSeule"; raison: RaisonLectureSeule }
+  /** Création libre : des photos importées de l'ordinateur rejoignent le catalogue (ajout seul, ids déjà connus ignorés). */
+  | { type: "ajouterAuCatalogue"; photos: PhotoMaq[] };
 
 export type Geste = GesteModifiant | GesteCompose | GesteEcran;
 
