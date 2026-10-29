@@ -94,6 +94,12 @@ const PH = PAGE_H * K;
 const HH = PH / 2;
 const NS = 'xmlns:idPkg="http://ns.adobe.com/AdobeInDesign/idml/1.0/packaging" DOMVersion="16.0"';
 const PI = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+/** Essais du 29/10 dans Affinity (D28) : sans `ItemLayer`, l'objet tombe hors de « Calque 1 » ;
+ *  la `<Language>` du designmap ne suffit pas, le texte arrive en en-US sans `AppliedLanguage` ;
+ *  sans `CMYKProfile`, Affinity prend U.S. Web Coated (SWOP). */
+export const CALQUE = "ly1";
+export const LANGUE = "$ID/French";
+export const PROFILS_COULEUR = 'CMYKProfile="Coated FOGRA39 (ISO 12647-2:2004)" RGBProfile="sRGB IEC61966-2.1" SolidColorIntent="UseColorSettings" AfterBlendingIntent="UseColorSettings" DefaultImageIntent="UseColorSettings" RGBPolicy="PreserveEmbeddedProfiles" CMYKPolicy="CombinationOfPreserveAndSafeCmyk"';
 
 /** Échappement XML, contenus ET attributs. */
 export const echapperXml = (s: string): string =>
@@ -211,7 +217,7 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
   const photoXml = (e: Element, nom: string): string => {
     const { x, y, w, h } = conv(e.cadre);
     const pli = cadreAuPli(x, w);
-    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ContentType="GraphicType" StoryTitle="$ID/" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(pli.x, y, pli.w, h)}`
+    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(pli.x, y, pli.w, h)}`
       + `<FrameFittingOption FittingOnEmptyFrame="FillProportionally" FittingAlignment="CenterAnchor"/>`;
     const aff = e.disposition.photos[e.indexPhoto];
     const ph = aff?.photoId ? photos.get(aff.photoId) : undefined;
@@ -238,9 +244,9 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
     stories.push({
       sid,
       corps: `<Story Self="${sid}" AppliedTOCStyle="n" StoryTitle="$ID/"><StoryPreference FrameType="TextFrameType" StoryOrientation="Horizontal" StoryDirection="LeftToRightDirection"/>`
-        + `<ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/NormalParagraphStyle"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="${taille}" FontStyle="${gras ? "Bold" : "Regular"}"><Properties><AppliedFont type="string">Arial</AppliedFont></Properties>${contenuStory(contenu)}</CharacterStyleRange></ParagraphStyleRange></Story>`,
+        + `<ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/NormalParagraphStyle"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="${taille}" FontStyle="${gras ? "Bold" : "Regular"}" AppliedLanguage="${LANGUE}"><Properties><AppliedFont type="string">Arial</AppliedFont></Properties>${contenuStory(contenu)}</CharacterStyleRange></ParagraphStyleRange></Story>`,
     });
-    return `<TextFrame Self="${nid()}" Name="${echapperXml(nom)}" ParentStory="${sid}" ContentType="TextType" ItemTransform="${transformRotation(e.cadre.rotation, x, y, w, h)}">${geom(x, y, w, h)}<TextFramePreference TextColumnCount="1"/></TextFrame>`;
+    return `<TextFrame Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ParentStory="${sid}" ContentType="TextType" ItemTransform="${transformRotation(e.cadre.rotation, x, y, w, h)}">${geom(x, y, w, h)}<TextFramePreference TextColumnCount="1"/></TextFrame>`;
   };
 
   planches.forEach((p, i) => {
@@ -284,10 +290,10 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
   for (const st of stories) add(`Stories/Story_${st.sid}.xml`, `${PI}<idPkg:Story ${NS}>${st.corps}</idPkg:Story>`);
 
   let dm = `${PI}<?aid style="50" type="document" readerVersion="6.0" featureSet="257" product="16.0(0)" ?>\n`
-    + `<Document ${NS} Self="d" StoryList="${stories.map((s) => s.sid).join(" ")}" ZeroPoint="0 0" ActiveLayer="ly1">`;
+    + `<Document ${NS} Self="d" StoryList="${stories.map((s) => s.sid).join(" ")}" ZeroPoint="0 0" ActiveLayer="${CALQUE}" ${PROFILS_COULEUR}>`;
   dm += `<Language Self="Language/$ID/French" Name="$ID/French" SingleQuotes="‘’" DoubleQuotes="«»" PrimaryLanguageName="$ID/French" SublanguageName="$ID/" Id="268" HyphenationVendor="Hunspell" SpellingVendor="Hunspell"/>`;
   dm += `<idPkg:Graphic src="Resources/Graphic.xml"/><idPkg:Fonts src="Resources/Fonts.xml"/><idPkg:Styles src="Resources/Styles.xml"/><idPkg:Preferences src="Resources/Preferences.xml"/>`;
-  dm += `<Layer Self="ly1" Name="Calque 1" Visible="true" Locked="false" Printable="true"/>`;
+  dm += `<Layer Self="${CALQUE}" Name="Calque 1" Visible="true" Locked="false" Printable="true"/>`;
   for (const sp of spreads) dm += `<idPkg:Spread src="Spreads/Spread_${sp.sid}.xml"/>`;
   dm += `<Section Self="sec1" Length="${nbPages}" Name="" PageNumberStyle="Arabic" ContinueNumbering="true" IncludeSectionPrefix="false" PageStart="pg1" SectionPrefix=""/>`;
   for (const st of stories) dm += `<idPkg:Story src="Stories/Story_${st.sid}.xml"/>`;

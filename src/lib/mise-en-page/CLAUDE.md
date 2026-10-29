@@ -23,6 +23,7 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - Les ids de template sont stables (un magazine sauvegardé les référence) : ne jamais renuméroter.
 
 ## Les interdits
+- **D28** : n'entre dans l'export que ce qu'Affinity relit FIDÈLEMENT (catalogue des essais du 29/10 dans `docs/DECISIONS.md`). Chaque objet porte `ItemLayer`, chaque texte `AppliedLanguage` français, le document FOGRA39.
 - Aucun import de `src/lib/atelier` ni d'un ancien moteur de mise en page (le brief repart de zéro).
 - Aucune IA, aucun tri « intelligent » : des règles simples et déterministes.
 - Modules purs : ni React, ni réseau, ni horloge dans les transitions.

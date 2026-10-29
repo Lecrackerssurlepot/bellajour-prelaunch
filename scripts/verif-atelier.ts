@@ -447,7 +447,7 @@ import {
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
 /* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
-import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, CALQUE, LANGUE, PROFILS_COULEUR, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
 import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
@@ -6621,6 +6621,17 @@ const verifierIdml = () => {
       && stories.every((s) => dm.includes(s.chemin.replace("Stories/Story_", "").replace(".xml", ""))));
   ok("IDML pages : PagesPerDocument = Section Length = 1 + 2 × (planches − 1) = 5",
     (parChemin.get("Resources/Preferences.xml") ?? "").includes('PagesPerDocument="5"') && dm.includes('Length="5"'));
+  {
+    /* D28, essais Affinity du 29/10 : calque, langue, profil. */
+    const objets = spreads.flatMap((s) => s.contenu.match(/<(Rectangle|TextFrame) [^>]*>/g) ?? []);
+    const plages = stories.flatMap((s) => s.contenu.match(/<CharacterStyleRange [^>]*>/g) ?? []);
+    ok("IDML calque : chaque Rectangle et TextFrame porte ItemLayer = le Layer du designmap (sinon hors de « Calque 1 »)",
+      objets.length > 0 && objets.every((o) => o.includes(`ItemLayer="${CALQUE}"`)) && dm.includes(`<Layer Self="${CALQUE}"`) && dm.includes(`ActiveLayer="${CALQUE}"`));
+    ok("IDML langue : chaque CharacterStyleRange porte AppliedLanguage français (la Language du designmap ne suffit pas)",
+      plages.length > 0 && plages.every((c) => c.includes(`AppliedLanguage="${LANGUE}"`)));
+    ok("IDML profil : le Document déclare FOGRA39 (sinon Affinity prend U.S. Web Coated SWOP)",
+      /<Document [^>]*CMYKProfile="Coated FOGRA39 \(ISO 12647-2:2004\)"/.test(dm) && dm.includes(PROFILS_COULEUR));
+  }
   const sp1 = parChemin.get("Spreads/Spread_sp1.xml") ?? "";
   const sp3 = parChemin.get("Spreads/Spread_sp3.xml") ?? "";
   ok("IDML planches : planche 0 = une page droite (PageCount 1, BindingLocation 0) ; mode pages avec page vide = 2 pages",
