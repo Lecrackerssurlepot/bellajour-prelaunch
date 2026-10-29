@@ -669,6 +669,7 @@
 .mep-editeur .ed-ph-actifs { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px 6px; }
 .mep-editeur .ed-ph-actifs .ed-filtre { height: 24px; }
 .mep-editeur .ed-ph-vide { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 12px; color: var(--bj-text-faint); font-size: var(--bj-fs-xs); text-align: center; }
+.mep-editeur .ed-ph-bilan { padding: 4px 12px; color: var(--bj-text-faint); font-size: var(--bj-fs-xs); }
 .mep-editeur .ed-ph-retirer {
   position: absolute;
   z-index: 5;

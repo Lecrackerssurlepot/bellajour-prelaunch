@@ -193,7 +193,7 @@ export function primitif(e: EtatEditeur, g: Geste): GestePrimitif {
 
 const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte"]);
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage",
-  "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit"]);
+  "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche"]);
 
@@ -476,6 +476,13 @@ const GESTES: Gestes = {
     if (!e.copieLocale || lectureSeule(e)) return e;
     const x = adopter({ ...e, copieLocale: null }, "Récupérer ma version", e.plancheCourante, e.copieLocale);
     return { ...x, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1) };
+  },
+  ajouterAuCatalogue(e, g) {
+    const neuves = (Array.isArray(g.photos) ? g.photos : []).filter((p) => p && typeof p.id === "string" && !e.catalogue.has(p.id));
+    if (!neuves.length) return e;
+    const catalogue = new Map(e.catalogue);
+    for (const p of neuves) catalogue.set(p.id, p);
+    return { ...e, catalogue };
   },
   ouvrirLectureSeule(e, g) {
     const raison = choisir(["conflit", "photos_supprimees", "archive"] as const, g.raison) ?? "archive";

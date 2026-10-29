@@ -29,6 +29,15 @@ export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
 };
 
+/** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */
+export type Import = {
+  importer: (fichiers: File[]) => void;
+  /** L'import en cours : fichiers décodés sur le total. */
+  enCours: { fait: number; total: number } | null;
+  /** Ce que le dernier import n'a pas pu lire, en deux ou trois mots. */
+  bilan: string | null;
+};
+
 export type Projet = { nom: string; source: "particulier" | "edition" | "libre"; nbPagesCible: number | null };
 
 export type Ctx = {
@@ -47,6 +56,7 @@ export type Ctx = {
   flasher: (cible: CibleDepot) => void;
   /** Un geste annulable, avec un message court et « Annuler ». */
   gesteAvecAnnuler: (g: Geste, texte: string) => void;
+  imp?: Import;
 };
 
 export const CtxEd = createContext<Ctx | null>(null);

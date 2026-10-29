@@ -39,7 +39,9 @@ function PanneauReplie() {
 }
 
 function PanneauOuvert() {
-  const { etat, envoyer, ui, majUi, adresses, commencerAppui, clicSupprime } = useEd();
+  const { etat, envoyer, ui, majUi, adresses, commencerAppui, clicSupprime, imp } = useEd();
+  const choix = useRef<HTMLInputElement>(null);
+  const [depose, setDepose] = useState(false);
   const f = etat.filtres;
   const largeur = etat.panneau.largeur;
   const cat = etat.catalogue;
@@ -53,7 +55,14 @@ function PanneauOuvert() {
   const [scroll, setScroll] = useState(0);
   const [hauteur, setHauteur] = useState(800);
   const sens = useRef({ dernier: 0, dir: 1 });
-  const cibleBib = etat.glisser?.survol?.type === "bibliotheque";
+  const cibleBib = etat.glisser?.survol?.type === "bibliotheque" || depose;
+  /* Création libre : des fichiers glissés depuis le Finder (le glisser interne passe par le pointeur, jamais par ici). */
+  const fichiersDe = (e: React.DragEvent): boolean => Array.from(e.dataTransfer.types).includes("Files");
+  const glisserFichiers = imp ? {
+    onDragOver: (e: React.DragEvent) => { if (!fichiersDe(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDepose(true); },
+    onDragLeave: (e: React.DragEvent) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDepose(false); },
+    onDrop: (e: React.DragEvent) => { if (!fichiersDe(e)) return; e.preventDefault(); setDepose(false); imp.importer(Array.from(e.dataTransfer.files)); },
+  } : {};
 
   /* La hauteur visible de la grille, relue quand la fenêtre change. */
   useEffect(() => {
@@ -142,9 +151,18 @@ function PanneauOuvert() {
 
   return (
     <aside className={cls("ed-ph", cibleBib && "ed-ph--cible")} style={{ "--ph-l": `${largeur}px` } as React.CSSProperties} aria-label="Photos"
-      onClick={() => { if (menu && menu.startsWith("ph-")) majUi({ menu: null }); }}>
+      onClick={() => { if (menu && menu.startsWith("ph-")) majUi({ menu: null }); }} {...glisserFichiers}>
       <div className="ed-ph-tete">
         <h2>Photos <span>{vis.length.toLocaleString("fr-FR")} / {cpt.total.toLocaleString("fr-FR")}</span></h2>
+        {imp ? (
+          <>
+            <input ref={choix} type="file" accept="image/*" multiple hidden
+              onChange={(e) => { const l = Array.from(e.currentTarget.files ?? []); e.currentTarget.value = ""; imp.importer(l); }} />
+            <button type="button" className="ed-bt" disabled={!!imp.enCours} onClick={() => choix.current?.click()}>
+              {imp.enCours ? `${imp.enCours.fait} / ${imp.enCours.total}` : "Importer"}
+            </button>
+          </>
+        ) : null}
         <span className="ed-seg" role="group" aria-label="Taille des vignettes">
           {(["S", "M", "L"] as const).map((t) => (
             <button key={t} type="button" aria-pressed={f.taille === t} onClick={() => filtrer({ taille: t })}>{t}</button>
@@ -231,7 +249,8 @@ function PanneauOuvert() {
         {gColle ? <div className="ed-groupe ed-groupe--colle">{gColle.lib} <span>{gColle.n}</span></div> : null}
         {!vis.length ? (
           <div className="ed-ph-vide">
-            <span>Aucune photo</span>
+            <span>{imp && !cpt.total ? "Glissez vos photos ici" : "Aucune photo"}</span>
+            {imp && !cpt.total ? <button type="button" className="ed-bt" onClick={() => choix.current?.click()}>Importer</button> : null}
             {actifs.length ? <button type="button" className="ed-bt" onClick={() => envoyer({ type: "effacerFiltres" })}>Tout effacer</button> : null}
           </div>
         ) : null}
@@ -285,7 +304,8 @@ function PanneauOuvert() {
           ))}
         </div>
       </div>
-      {cibleBib ? <div className="ed-ph-retirer">Lâcher pour retirer</div> : null}
+      {cibleBib ? <div className="ed-ph-retirer">{depose ? "Lâcher pour importer" : "Lâcher pour retirer"}</div> : null}
+      {imp?.bilan ? <div className="ed-ph-bilan" role="status">{imp.bilan}</div> : null}
       <div className="ed-ph-pied">
         <span>{cpt.photosPosees} posées</span>
         <span className="ed-esp" />
