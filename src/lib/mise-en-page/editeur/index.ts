@@ -18,7 +18,7 @@ export {
   BONUS_ANNEXE, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, SEUIL_DPI, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
 } from "./outils";
 export {
-  ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, composer, deplacerPhoto, deplacerPlanche, dpi, echanger,
+  ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
   echangerIssue, ecrireTexteCadre, estPleine, fusionner, gabaritsClasses, insererDouble, noterGabarit, pagesDe, perteCadre, photosIndisponibles,
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
@@ -27,7 +27,7 @@ export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primi
 export { planDepot, planifier } from "./plans";
 export { groupes, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
-  actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, etatPhoto, gabaritsPour, libelleAnnuler,
+  actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, gabaritsPour, libelleAnnuler,
   libelleRetablir, pagesLibelle, reperesBibliotheque, resumeIssue,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";

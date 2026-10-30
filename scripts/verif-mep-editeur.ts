@@ -1171,6 +1171,34 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : création libre, des photos importées rejoignent le catalogue (ajout seul)", msg === null);
   }
+  /* Doubles neuves : « Poser » un groupe (au plus 12 par double, à parts égales), lâcher sur le chemin de fer, ×n. */
+  {
+    let msg: string | null = null;
+    try {
+      const vingt = Array.from({ length: 20 }, (_, i) => `F${String(i + 1).padStart(2, "0")}:${i % 3 ? "L" : "P"}`).join(" ");
+      const s = new Seance(vingt, { planches: 3 }).zero();
+      const ids = [...s.e.catalogue.keys()];
+      s.g({ type: "creerDoubles", ids });
+      eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-5", "pl-2", "pl-3"], "deux doubles après la planche courante");
+      eq([s.idsPleins(4, "double").length, s.idsPleins(5, "double").length], [10, 10], "20 photos : 10 + 10");
+      eq([...s.idsPleins(4, "double"), ...s.idsPleins(5, "double")], ids, "l'ordre du groupe suivi");
+      ok(s.e.plancheCourante === "pl-4" && s.e.prochainNumero === 6 && s.hist === 1, "on arrive sur la première, une seule annulation");
+      s.g({ type: "annuler" });
+      eq(s.e.magazine.planches.length, 3, "annuler retire les deux doubles");
+      s.g({ type: "retablir" }).zero();
+      const issueGlisse = s.glisse({ type: "bibliotheque", ids: ["F01", "F02", "F03"] }, { type: "entre", index: 3 });
+      ok(!issueGlisse.refus, "lâcher entre deux planches accepté");
+      eq(s.e.magazine.planches[3].id, "pl-6", "la double neuve est à la place 4");
+      eq(s.idsPleins(6, "double"), ["F01", "F02", "F03"], "avec les trois photos");
+      eq(O.emplacements(s.e, "F01").map((x) => [x.numero, x.pages]), [[2, "2-3"], [4, "6-7"]], "×2 : les deux emplacements");
+      const avant = s.e;
+      s.g({ type: "creerDoubles", ids: ["inconnue"] });
+      ok(s.e.magazine === avant.magazine, "photo inconnue : rien ne change");
+      ok(!O.cibleAllumee(s.e, { type: "bibliotheque", ids: ["F01"] }, { type: "entre", index: 0 }), "jamais avant la planche 1");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : doubles pages neuves (poser un groupe, lâcher sur le chemin de fer, emplacements ×n)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);

@@ -169,7 +169,9 @@ export type GesteModifiant =
   | { type: "deplacerPlanche"; plancheId: string; versIndex: number; confirme?: boolean }
   | { type: "supprimerPlanche"; plancheId: string; confirme?: boolean }
   | { type: "vider"; plancheId: string; confirme?: boolean }
-  | { type: "ajouterSurPlanche"; plancheId: string; ids?: string[]; confirme?: boolean };
+  | { type: "ajouterSurPlanche"; plancheId: string; ids?: string[]; confirme?: boolean }
+  /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
+  | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -242,7 +244,7 @@ export type GestePrimitif = GesteModifiant | GesteEcran;
 export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
-  | "supprimerPlanche" | "vider";
+  | "supprimerPlanche" | "vider" | "creerDoubles";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; photoId?: string; position?: number };
