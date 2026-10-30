@@ -252,7 +252,8 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
     const tx = x + cg.x * K;
     const ty = y + cg.y * K;
     const po = placementOriente(ph.tag, ph.l, ph.h, s, tx, ty);
-    const it = po.m[1] === 0 && po.m[2] === 0 && po.m[0] === po.m[3]
+    /* L'écriture courte ne vaut que pour une image DROITE (tag 1) : le demi-tour (tag 3) a aussi m[0] === m[3]. */
+    const it = po.m[1] === 0 && po.m[2] === 0 && po.m[0] === s && po.m[3] === s
       ? `${f(s, 6)} 0 0 ${f(s, 6)} ${f(tx, 4)} ${f(ty, 4)}`
       : `${po.m.slice(0, 4).map((v) => (v === 0 ? "0" : f(v, 6))).join(" ")} ${f(po.m[4], 4)} ${f(po.m[5], 4)}`;
     return `${ouvre}<Image Self="${nid()}" ItemTransform="${it}" ActualPpi="72 72"><Properties><Profile type="string">$ID/Embedded</Profile><GraphicBounds Left="0" Top="0" Right="${po.ls}" Bottom="${po.hs}"/></Properties>`
