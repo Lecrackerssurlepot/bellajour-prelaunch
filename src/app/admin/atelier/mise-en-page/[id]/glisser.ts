@@ -19,9 +19,8 @@ export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEdit
   const el = document.elementFromPoint(x, y);
   if (!el) return null;
   const multi = src.type === "bibliotheque" && src.ids.length > 1;
-  if (src.type === "planche") {
-    const piste = el.closest(".ed-cf-piste");
-    if (!piste) return null;
+  /* Entre deux vignettes du chemin de fer : une planche s'y déplace, des photos y font une double page neuve. */
+  const entre = (piste: Element): CibleDepot => {
     const vs = [...piste.querySelectorAll(".ed-cf-v")];
     let index = vs.length;
     for (let i = 0; i < vs.length; i++) {
@@ -29,6 +28,10 @@ export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEdit
       if (x < r.left + r.width / 2) { index = i; break; }
     }
     return { type: "entre", index: Math.max(1, index) };
+  };
+  if (src.type === "planche") {
+    const piste = el.closest(".ed-cf-piste");
+    return piste ? entre(piste) : null;
   }
   const piste = el.closest(".ed-bande-piste");
   if (piste) {
@@ -53,6 +56,8 @@ export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEdit
   }
   const vig = el.closest("[data-vignette]");
   if (vig) return { type: "vignette", plancheId: vig.getAttribute("data-vignette") ?? "" };
+  const cf = src.type === "bibliotheque" ? el.closest(".ed-cf-piste") : null;
+  if (cf) return entre(cf);
   if (el.closest(".ed-ph")) return src.type === "cadre" ? { type: "bibliotheque" } : null;
   if (el.closest(".ed-zone-double")) return { type: "double", plancheId: ed.plancheCourante };
   const cadre = el.closest("[data-cadre]");
@@ -84,7 +89,7 @@ export function libelleApercu(source: SourceGlisser, cible: CibleDepot | null, a
   else if (cible.type === "double") t = source.type === "bibliotheque" ? "Double page" : "Déplacer ici";
   else if (cible.type === "vignette") t = "Ajouter à cette planche";
   else if (cible.type === "bande") t = "Placer ici";
-  else if (cible.type === "entre") t = "Déplacer la planche";
+  else if (cible.type === "entre") t = source.type === "bibliotheque" ? (a.posees.length > 12 ? "Nouvelles doubles pages" : "Nouvelle double page") : "Déplacer la planche";
   else t = source.type === "bibliotheque" ? (a.posees.length > 1 ? `Poser ${a.posees.length} photos` : "Poser") : "Déplacer ici";
   const r = resumeIssue(a);
   return r ? `${t} · ${r}` : t;

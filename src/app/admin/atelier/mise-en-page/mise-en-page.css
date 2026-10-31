@@ -765,6 +765,23 @@
 }
 .mep-editeur .ed-groupe span { color: var(--bj-text-faint); font-weight: 400; }
 .mep-editeur .ed-groupe--colle { position: sticky; top: 0; left: auto; right: auto; margin: 0 -8px -30px; }
+/* « Poser » : les photos libres du groupe en doubles pages neuves */
+.mep-editeur .ed-groupe-poser {
+  appearance: none;
+  margin: -3px 0 0 auto;
+  height: 20px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bj-action) 12%, transparent);
+  color: var(--bj-action);
+  font-family: var(--bj-font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mep-editeur .ed-groupe-poser:hover { background: var(--bj-action); color: var(--bj-on-action); }
+.mep-editeur .ed-groupe-poser:focus-visible { outline: 2px solid var(--bj-action); outline-offset: 2px; }
 .mep-editeur .ed-vg {
   position: relative;
   display: block;
@@ -828,6 +845,12 @@
 .mep-editeur .ed-rep--coeur { background: color-mix(in srgb, var(--bj-cream-tint-1) 92%, transparent); color: var(--ate-rouge); }
 .mep-editeur .ed-rep--drapeau { background: var(--ate-rouge); }
 .mep-editeur .ed-rep--basse { background: var(--ate-orange); }
+/* « ×n » : cliquable (le reste des repères laisse passer le pointeur), la liste des emplacements dessous */
+.mep-editeur .ed-rep--fois { pointer-events: auto; cursor: pointer; }
+.mep-editeur .ed-rep--fois:hover { background: var(--bj-action); }
+.mep-editeur .ed-ou-fond { position: fixed; inset: 0; z-index: 39; }
+.mep-editeur .ed-menu.ed-ou { position: fixed; min-width: 170px; }
+.mep-editeur .ed-ou button span { margin-left: auto; color: var(--bj-text-faint); }
 .mep-editeur .ed-rep--neuve { background: var(--bj-action); }
 .mep-editeur .ed-rep--mag { background: color-mix(in srgb, var(--bj-cream-tint-1) 92%, transparent); color: var(--bj-text); }
 .mep-editeur .ed-indispo-mini { display: grid; place-items: center; width: 100%; height: 100%; padding: 2px; color: var(--bj-text-faint); font-size: 9px; text-align: center; background: repeating-linear-gradient(135deg, var(--bj-veil-8) 0 5px, var(--bj-veil-6) 5px 10px); }

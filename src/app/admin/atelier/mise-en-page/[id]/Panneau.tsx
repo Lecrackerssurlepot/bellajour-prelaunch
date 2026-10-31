@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  compteurs, groupes as lesGroupes, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  compteurs, emplacements, groupes as lesGroupes, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
   type Filtres, type PhotoMaq, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import { cls, useEd } from "./contexte";
@@ -19,7 +19,7 @@ const TAILLES = { S: 52, M: 88, L: 136 } as const;
 const HAUT_TITRE = 30;
 const ECART = 4;
 
-type Rangee = { type: "g"; lib: string; n: number; y: number } | { type: "r"; ids: string[]; y: number };
+type Rangee = { type: "g"; lib: string; n: number; y: number; ids: string[] } | { type: "r"; ids: string[]; y: number };
 
 export default function Panneau() {
   const { etat } = useEd();
@@ -39,8 +39,10 @@ function PanneauReplie() {
 }
 
 function PanneauOuvert() {
-  const { etat, envoyer, ui, majUi, adresses, commencerAppui, clicSupprime, imp } = useEd();
+  const { etat, envoyer, ui, majUi, adresses, commencerAppui, clicSupprime, imp, lectureSeule: ro } = useEd();
   const choix = useRef<HTMLInputElement>(null);
+  /* « ×n » cliqué : la liste de ses emplacements, posée sous le repère. */
+  const [ou, setOu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [depose, setDepose] = useState(false);
   const f = etat.filtres;
   const largeur = etat.panneau.largeur;
@@ -84,7 +86,7 @@ function PanneauOuvert() {
   let y = 0;
   const avecTitres = f.groupe !== "aucun";
   for (const g of groupes) {
-    if (avecTitres) { rangees.push({ type: "g", lib: g.libelle, n: g.ids.length, y }); y += HAUT_TITRE; }
+    if (avecTitres) { rangees.push({ type: "g", lib: g.libelle, n: g.ids.length, y, ids: g.ids }); y += HAUT_TITRE; }
     for (let i = 0; i < g.ids.length; i += cols) { rangees.push({ type: "r", ids: g.ids.slice(i, i + cols), y }); y += cell + ECART; }
   }
   const total = y + 8;
@@ -120,6 +122,18 @@ function PanneauOuvert() {
     if (r) g.scrollTop = Math.max(0, r.y - 40);
     majUi({ defilerVers: null });
   });
+
+  /* « Poser » sur un titre de groupe : ses photos encore libres, en doubles pages neuves après la planche courante. */
+  const poserGroupe = (ids: string[]) => {
+    if (ro) return null;
+    const libres = ids.filter((id) => !rep.utilisations.get(id));
+    if (!libres.length) return null;
+    const k = Math.ceil(libres.length / 12);
+    return (
+      <button type="button" className="ed-groupe-poser" title={`${libres.length} photo${libres.length > 1 ? "s" : ""} libre${libres.length > 1 ? "s" : ""} sur ${k > 1 ? `${k} doubles pages` : "une double page"}`}
+        onClick={() => envoyer({ type: "creerDoubles", ids: libres })}>Poser</button>
+    );
+  };
 
   const sourcePour = (id: string): SourceGlisser => (selSet.has(id) ? { type: "bibliotheque", ids: selectionOrdonnee(etat) } : { type: "bibliotheque", ids: [id] });
   const personnes = [...new Set([...cat.values()].map((p) => p.personne).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
@@ -244,9 +258,9 @@ function PanneauOuvert() {
       ) : null}
       {sel.length ? <BandeSelection /> : null}
       <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel")} tabIndex={-1}
-        onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
+        onScroll={(e) => { setScroll(e.currentTarget.scrollTop); setOu(null); }}
         onClick={(e) => { if (!(e.target as HTMLElement).closest(".ed-vg") && sel.length && !clicSupprime()) envoyer({ type: "viderSelection" }); }}>
-        {gColle ? <div className="ed-groupe ed-groupe--colle">{gColle.lib} <span>{gColle.n}</span></div> : null}
+        {gColle ? <div className="ed-groupe ed-groupe--colle">{gColle.lib} <span>{gColle.n}</span>{poserGroupe(gColle.ids)}</div> : null}
         {!vis.length ? (
           <div className="ed-ph-vide">
             <span>{imp && !cpt.total ? "Glissez vos photos ici" : "Aucune photo"}</span>
@@ -256,7 +270,7 @@ function PanneauOuvert() {
         ) : null}
         <div className="ed-grille-haut" style={{ height: total }}>
           {vues.map((r) => r.type === "g" ? (
-            <div key={`g${r.y}`} className="ed-groupe" style={{ top: r.y }}>{r.lib} <span>{r.n}</span></div>
+            <div key={`g${r.y}`} className="ed-groupe" style={{ top: r.y }}>{r.lib} <span>{r.n}</span>{poserGroupe(r.ids)}</div>
           ) : (
             <div key={`r${r.y}`} className="ed-rangee" style={{ top: r.y, gridTemplateColumns: `repeat(${cols}, ${cell}px)` }}>
               {r.ids.map((id) => {
@@ -292,7 +306,15 @@ function PanneauOuvert() {
                       {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
                     </span>
                     <span className="ed-vg-rep ed-vg-rep--b">
-                      {n > 1 ? <span className="ed-rep">×{n}</span> : null}
+                      {n > 1 ? (
+                        <span className="ed-rep ed-rep--fois" role="button" tabIndex={-1} aria-label={`Voir les ${n} emplacements`}
+                          onPointerDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation(); e.preventDefault();
+                            const b = e.currentTarget.getBoundingClientRect();
+                            setOu(ou?.id === id ? null : { id, x: b.left, y: b.bottom + 4 });
+                          }}>×{n}</span>
+                      ) : null}
                       {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
                       {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
                       {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
@@ -304,6 +326,19 @@ function PanneauOuvert() {
           ))}
         </div>
       </div>
+      {ou ? (
+        <>
+          <div className="ed-ou-fond" onClick={() => setOu(null)} />
+          <div className="ed-menu ed-ou" role="menu" style={{ left: ou.x, top: ou.y }}>
+            {emplacements(etat, ou.id).map((x) => (
+              <button key={`${x.ref.plancheId}${x.ref.cible}${x.ref.index}`} type="button" role="menuitem"
+                onClick={() => { setOu(null); envoyer({ type: "naviguer", plancheId: x.ref.plancheId }); envoyer({ type: "activerCadre", ref: x.ref }); }}>
+                Planche {x.numero}<span>p. {x.pages}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
       {cibleBib ? <div className="ed-ph-retirer">{depose ? "Lâcher pour importer" : "Lâcher pour retirer"}</div> : null}
       {imp?.bilan ? <div className="ed-ph-bilan" role="status">{imp.bilan}</div> : null}
       <div className="ed-ph-pied">

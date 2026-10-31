@@ -104,6 +104,12 @@ export type VignetteChemin = {
   id: string; index: number; numero: number; mode: Planche["mode"]; nbPhotos: number; pleine: boolean; courante: boolean; pages: string;
 };
 
+/** Où une photo est posée : chaque cadre, avec sa planche et ses pages (clic sur ×n). */
+export function emplacements(e: EtatEditeur, photoId: string): { ref: RefCadre; numero: number; pages: string }[] {
+  return e.magazine.planches.flatMap((p, index) => photosDe(p).filter((x) => x.photoId === photoId)
+    .map((x) => ({ ref: x.ref, numero: index + 1, pages: index === 0 ? "1" : `${2 * index}-${2 * index + 1}` })));
+}
+
 export function cheminDeFer(e: EtatEditeur): VignetteChemin[] {
   return e.magazine.planches.map((p, index) => ({
     id: p.id, index, numero: index + 1, mode: p.mode, nbPhotos: idsPlanche(p).length, pleine: estPleine(p, index),
@@ -198,7 +204,7 @@ export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | unde
   if (!source || !cible) return false;
   const m = e.magazine;
   if (cible.type === "bibliotheque") return source.type === "cadre";
-  if (cible.type === "entre") return source.type === "planche" && cible.index >= 1;
+  if (cible.type === "entre") return (source.type === "planche" || source.type === "bibliotheque") && cible.index >= 1;
   if (source.type === "planche") return false;
   const pid = cible.type === "cadre" ? cible.ref?.plancheId : cible.plancheId;
   const i = pid === undefined ? -1 : indexPlanche(m, pid);

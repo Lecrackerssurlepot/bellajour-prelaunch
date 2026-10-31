@@ -6,7 +6,7 @@
 import type { Cible, Magazine } from "../magazine";
 import { MAX_PHOTOS_PAGE } from "../grilles";
 import {
-  ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, deplacerPhoto, deplacerPlanche, echangerIssue, fusionner,
+  ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, creerDoubles, deplacerPhoto, deplacerPlanche, echangerIssue, fusionner,
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, idsDispo, indexPlanche } from "./outils";
@@ -56,6 +56,15 @@ function planRetirer(e: EtatEditeur, ref: RefCadre): Plan {
   return { op: "retirer", libelle: "Retirer une photo", plancheId: ref ? ref.plancheId : e.plancheCourante, issue: is, args: { ref } };
 }
 
+/** Des doubles neuves : à `index`, sinon juste après la planche courante. */
+function planCreerDoubles(e: EtatEditeur, ids: string[], index?: number): Plan {
+  const i = index !== undefined && Number.isFinite(index) ? index : indexPlanche(e.magazine, e.plancheCourante) + 1;
+  const is = creerDoubles(e.magazine, i, ids, e.catalogue, e.prochainNumero);
+  const n = e.magazine.planches.length;
+  const k = is.magazine.planches.length - n;
+  return { op: "creerDoubles", libelle: k > 1 ? `Créer ${k} doubles pages` : "Créer une double page", plancheId: is.nouvellePlanche ?? e.plancheCourante, issue: is, args: { ids } };
+}
+
 /** Le lâcher : source × cible → l'opération pure. C'est aussi l'aperçu (P0). */
 export function planDepot(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): Plan {
   const m = e.magazine;
@@ -70,6 +79,7 @@ export function planDepot(e: EtatEditeur, source: SourceGlisser | null | undefin
         return ids.length === 1 ? planRemplacer(e, cible.ref, ids[0]) : planAjouter(e, cible.ref.plancheId, cible.ref.cible, ids);
       case "bande": { const b = resoudreBande(m, cible); return b ? planAjouter(e, cible.plancheId, b.cible, ids, b.position) : planRien(e); }
       case "vignette": return planSurPlanche(e, cible.plancheId, ids);
+      case "entre": return planCreerDoubles(e, ids, cible.index);
       default: return planRien(e);
     }
   }
@@ -148,6 +158,7 @@ export function planifier(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return simple("supprimerPlanche", i === 0 ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
+    case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
     default: return null;
   }

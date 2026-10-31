@@ -424,6 +424,38 @@ export function insererDouble(m: Magazine, apresPlancheId: string, idImpose?: st
   return { magazine: { ...m, planches }, plancheId: id };
 }
 
+/**
+ * 19 bis. Des doubles pages NEUVES pour des photos (lâcher sur le chemin de fer, « Poser » un groupe) : au plus
+ * 12 par double, réparties à parts égales (20 → 10 + 10), insérées à la place `index` (jamais avant la planche 1).
+ * Ids imposés `pl-<premierNumero + j>`. Une photo déjà posée ailleurs est acceptée, comme pour `ajouter`.
+ */
+export function creerDoubles(m: Magazine, index: number, ids: readonly string[], cat: CatalogueRef, premierNumero: number): Issue {
+  if (!Array.isArray(ids) || !Number.isFinite(index)) return issue(m, "rien");
+  const vus = new Set<string>();
+  const valides: string[] = [];
+  let ignorees = 0, dejaLa = 0;
+  for (const id of ids) {
+    if (typeof id !== "string" || !cat.has(id)) { ignorees++; continue; }
+    if (vus.has(id)) { dejaLa++; continue; }
+    vus.add(id);
+    valides.push(id);
+  }
+  if (!valides.length) return issue(m, "rien", { ignorees, dejaLa });
+  const k = Math.ceil(valides.length / MAX_PHOTOS_DOUBLE);
+  let apres = m.planches[borner(Math.trunc(index), 1, m.planches.length) - 1].id;
+  let x = m, debut = 0, premiere: string | null = null;
+  for (let j = 0; j < k; j++) {
+    const n = Math.ceil((valides.length - debut) / (k - j));
+    const r = insererDouble(x, apres, `pl-${premierNumero + j}`);
+    if (!r.plancheId) return issue(m, "rien", { ignorees, dejaLa });
+    x = ajouter(r.magazine, r.plancheId, "double", valides.slice(debut, debut + n), cat).magazine;
+    premiere ??= r.plancheId;
+    apres = r.plancheId;
+    debut += n;
+  }
+  return issue(x, null, { posees: valides, ignorees, dejaLa, nouvellePlanche: premiere });
+}
+
 /** 20. Réordonner les planches ; la planche 1 ne bouge pas, rien ne passe devant elle. */
 export function deplacerPlanche(m: Magazine, plancheId: string, versIndex: number): Magazine {
   const i = indexPlanche(m, plancheId);

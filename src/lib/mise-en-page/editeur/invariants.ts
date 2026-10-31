@@ -156,6 +156,13 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       if ((pAp ? dispositionDe(pAp, a.ref.cible)?.templateId : undefined) !== tA) err.push("T17 remplacer a changé le gabarit");
       break;
     }
+    case "creerDoubles": {
+      if (!memes(plus, is.posees) || moins.length) err.push(`I12 creerDoubles bilan faux`);
+      const k = m2.planches.length - mAvant.planches.length;
+      if (k !== Math.ceil(is.posees.length / 12)) err.push(`creerDoubles : ${k} planches pour ${is.posees.length} photos`);
+      if (m2.planches[0].id !== mAvant.planches[0].id) err.push("I5 planche 1 déplacée par creerDoubles");
+      break;
+    }
     case "vider": case "supprimerPlanche": {
       const p = a.plancheId ? plancheDe(mAvant, a.plancheId) : null;
       if (!a.plancheId || !p) break;

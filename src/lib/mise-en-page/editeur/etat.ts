@@ -195,7 +195,7 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche"]);
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -222,12 +222,12 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   }
   const avant = x.magazine;
   x = adopter(x, plan.libelle, plan.plancheId, is.magazine);
-  if (plan.op === "insererDouble" && is.nouvellePlanche) {
-    x = { ...x, plancheCourante: is.nouvellePlanche, prochainNumero: Math.max(x.prochainNumero, numeroDe(is.nouvellePlanche) + 1) };
+  if ((plan.op === "insererDouble" || plan.op === "creerDoubles") && is.nouvellePlanche) {
+    x = { ...x, plancheCourante: is.nouvellePlanche, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1) };
   } else {
     x = { ...x, plancheCourante: plancheProche(x.magazine, x.plancheCourante, avant) };
   }
-  const depuisBiblio = (g.type === "deposer" && g.source && g.source.type === "bibliotheque") || g.type === "ajouterSurPlanche" || g.type === "remplacer";
+  const depuisBiblio = (g.type === "deposer" && g.source && g.source.type === "bibliotheque") || g.type === "ajouterSurPlanche" || g.type === "remplacer" || g.type === "creerDoubles";
   if (depuisBiblio) {
     /* les posées sortent de la sélection ; les restées à côté y sont (ou y entrent) */
     const posees = new Set(is.posees);
