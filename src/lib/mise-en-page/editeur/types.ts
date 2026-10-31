@@ -41,6 +41,8 @@ export type Filtres = {
   orientations: Orientation[];
   montrerSignalees: boolean;
   masquerUtilisees: boolean;
+  /** Le tri de l'atelier : par défaut les écartées sont cachées. */
+  marque: "sans_ecartees" | "choisies" | "a_trier" | "ecartees";
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
@@ -171,7 +173,10 @@ export type GesteModifiant =
   | { type: "vider"; plancheId: string; confirme?: boolean }
   | { type: "ajouterSurPlanche"; plancheId: string; ids?: string[]; confirme?: boolean }
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
-  | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean };
+  | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
+  /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
+  | { type: "marquer"; ids: string[]; marque: "choisie" | "ecartee" | null; confirme?: boolean }
+  | { type: "reglerTri"; photosParPage: number | null; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -244,7 +249,7 @@ export type GestePrimitif = GesteModifiant | GesteEcran;
 export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
-  | "supprimerPlanche" | "vider" | "creerDoubles";
+  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; photoId?: string; position?: number };

@@ -16,6 +16,7 @@ import { Loupe, Pile, posPile } from "./Pile";
 import Panneau from "./Panneau";
 import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
+import Tri from "./Tri";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -235,6 +236,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       if (e.key === "Escape") t.blur();
       return; /* pendant la saisie, aucun raccourci de l'éditeur */
     }
+    if (ui.trier) return; /* l'écran de tri a ses touches */
     if (ui.loupe) {
       if (e.key === "Escape" || e.key === " ") { e.preventDefault(); majUi({ loupe: null }); }
       else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
@@ -322,6 +324,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
         {ui.loupe ? <Loupe id={ui.loupe} /> : null}
+        {ui.trier ? <Tri /> : null}
         {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} /> : null}
       </div>
     </CtxEd.Provider>

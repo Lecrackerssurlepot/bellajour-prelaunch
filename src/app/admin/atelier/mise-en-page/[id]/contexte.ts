@@ -23,10 +23,12 @@ export type Ui = {
   defilerVers: string | null;
   ressortId: string | null;
   exportOuvert: boolean;
+  /** L'écran de tri est ouvert (les touches de l'éditeur se taisent). */
+  trier: boolean;
 };
 
 export const UI_NEUVE: Ui = {
-  menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
+  menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false, trier: false,
 };
 
 /** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */

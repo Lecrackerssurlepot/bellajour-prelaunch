@@ -6,6 +6,7 @@
 import { comparerChrono, utilisations } from "../magazine";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
+import { triDe } from "./tri";
 import type { EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -23,6 +24,8 @@ export function criteres(e: EtatEditeur): Criteres {
   const p = plancheDe(e.magazine, e.plancheCourante);
   const surPlanche = new Set(p ? idsPlanche(p) : []);
   const q = sansAccent(f.recherche.trim());
+  const t = triDe(e.magazine);
+  const ch = new Set(t.choisies), ec = new Set(t.ecartees);
   return {
     recherche: (ph) => !q || sansAccent(ph.nom).includes(q),
     statut: (ph) => f.statut === "toutes" || (f.statut === "libres" && !u.has(ph.id))
@@ -33,10 +36,12 @@ export function criteres(e: EtatEditeur): Criteres {
     orientations: (ph) => f.orientations.length === 0 || f.orientations.includes(orientationDe(ph.l, ph.h)),
     montrerSignalees: (ph) => f.montrerSignalees || !ph.signalee,
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
+    marque: (ph) => f.marque === "choisies" ? ch.has(ph.id) : f.marque === "ecartees" ? ec.has(ph.id)
+      : f.marque === "a_trier" ? !ch.has(ph.id) && !ec.has(ph.id) : !ec.has(ph.id),
   };
 }
 
-const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees"];
+const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque"];
 export const clesCriteres = (): readonly CleCritere[] => CLES_CRITERES;
 
 /** La photo passe-t-elle tous les filtres ? */

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  compteurs, emplacements, groupes as lesGroupes, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  compteurs, emplacements, groupes as lesGroupes, triDe, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
   type Filtres, type PhotoMaq, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import { cls, useEd } from "./contexte";
@@ -14,6 +14,7 @@ import { precharger, vignetteDe } from "./images";
 
 const TYPES = { lien: "Liens d'équipe", responsable: "Le responsable", atelier: "Atelier" } as const;
 const STATUTS = { toutes: "Toutes", libres: "Libres", utilisees: "Utilisées", planche: "Sur cette double page" } as const;
+const MARQUES = { sans_ecartees: "Toutes", choisies: "Pré-choisies", a_trier: "À trier", ecartees: "Écartées" } as const;
 const ORIENT = { P: "Portrait", L: "Paysage", C: "Carré" } as const;
 const TAILLES = { S: 52, M: 88, L: 136 } as const;
 const HAUT_TITRE = 30;
@@ -53,6 +54,8 @@ function PanneauOuvert() {
   const cpt = compteurs(etat);
   const rep = reperesBibliotheque(etat);
   const selSet = rep.selection;
+  const triM = triDe(etat.magazine);
+  const choisies = new Set(triM.choisies), ecartees = new Set(triM.ecartees);
   const grille = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState(0);
   const [hauteur, setHauteur] = useState(800);
@@ -149,6 +152,7 @@ function PanneauOuvert() {
   f.types.forEach((x) => actifs.push([TYPES[x], () => bascule("types", x)]));
   if (f.coeur) actifs.push(["♥ Sélection", () => envoyer({ type: "retirerFiltre", cle: "coeur" })]);
   f.orientations.forEach((x) => actifs.push([ORIENT[x], () => bascule("orientations", x)]));
+  if (f.marque !== "sans_ecartees") actifs.push([MARQUES[f.marque], () => envoyer({ type: "retirerFiltre", cle: "marque" })]);
   if (f.montrerSignalees) actifs.push(["À ne pas publier", () => envoyer({ type: "retirerFiltre", cle: "montrerSignalees" })]);
   const menu = ui.menu;
   const ouvrirMenu = (id: string) => (e: React.MouseEvent) => { e.stopPropagation(); majUi({ menu: menu === id ? null : id }); };
@@ -177,6 +181,7 @@ function PanneauOuvert() {
             </button>
           </>
         ) : null}
+        <button type="button" className="ed-bt" onClick={() => majUi({ trier: true, menu: null })}>Trier</button>
         <span className="ed-seg" role="group" aria-label="Taille des vignettes">
           {(["S", "M", "L"] as const).map((t) => (
             <button key={t} type="button" aria-pressed={f.taille === t} onClick={() => filtrer({ taille: t })}>{t}</button>
@@ -194,7 +199,11 @@ function PanneauOuvert() {
           </button>
           {menu === "ph-f" ? (
             <div className="ed-menu ed-menu--haut" role="menu" onClick={(e) => e.stopPropagation()}>
-              <span className="ed-menu-t">Statut</span>
+              <span className="ed-menu-t">Tri</span>
+              {(Object.entries(MARQUES) as [Filtres["marque"], string][]).map(([v, l]) => (
+                <button key={v} type="button" role="menuitemradio" aria-checked={f.marque === v} onClick={() => filtrer({ marque: v })}>{l}</button>
+              ))}
+              <hr /><span className="ed-menu-t">Statut</span>
               {Object.entries(STATUTS).map(([v, l]) => (
                 <button key={v} type="button" role="menuitemradio" aria-checked={f.statut === v} onClick={() => filtrer({ statut: v as Filtres["statut"] })}>{l}</button>
               ))}
@@ -282,7 +291,7 @@ function PanneauOuvert() {
                 const choisie = selSet.has(id);
                 return (
                   <button key={id} type="button" data-photo={id} style={{ width: cell, height: cell }}
-                    className={cls("ed-vg", choisie && "ed-vg--sel", n > 0 && "ed-vg--utilisee", rep.surPlanche.has(id) && "ed-vg--ici", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo")}
+                    className={cls("ed-vg", choisie && "ed-vg--sel", n > 0 && "ed-vg--utilisee", rep.surPlanche.has(id) && "ed-vg--ici", ecartees.has(id) && "ed-vg--ecartee", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo")}
                     aria-pressed={choisie} aria-label={p.nom + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
                     onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
                     onClick={(e) => { if (clicSupprime()) return; envoyer({ type: "cliquerPhoto", id, mode: e.shiftKey ? "plage" : (e.metaKey || e.ctrlKey) ? "ajout" : "simple" }); }}
@@ -302,6 +311,7 @@ function PanneauOuvert() {
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); e.preventDefault(); envoyer({ type: "cliquerPhoto", id, mode: "ajout" }); }} />
                     <span className="ed-vg-rep ed-vg-rep--h">
+                      {choisies.has(id) ? <span className="ed-rep ed-rep--choisie" title="Pré-choisie">★</span> : null}
                       {p.coeur ? <span className="ed-rep ed-rep--coeur" aria-hidden="true">♥</span> : null}
                       {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
                     </span>
@@ -367,7 +377,7 @@ function PanneauOuvert() {
 /* La bande de sélection, collée en haut du panneau : toujours à l'écran pendant le défilement et le glisser.
    Les photos que les filtres cachent y restent, marquées « masquée ». On glisse depuis elle : tout part. */
 function BandeSelection() {
-  const { etat, envoyer, adresses, commencerAppui } = useEd();
+  const { etat, envoyer, adresses, commencerAppui, lectureSeule } = useEd();
   const ids = selectionOrdonnee(etat);
   const masq = new Set(selectionMasquee(etat));
   const n = ids.length;
@@ -377,6 +387,12 @@ function BandeSelection() {
         <b>{n} sélectionnée{n > 1 ? "s" : ""}</b>
         {masq.size ? <span>· {masq.size} masquée{masq.size > 1 ? "s" : ""}</span> : null}
         <span className="ed-esp" />
+        {lectureSeule ? null : (
+          <>
+            <button type="button" className="ed-lien" title="Pré-choisir la sélection" onClick={() => { envoyer({ type: "marquer", ids, marque: "choisie" }); envoyer({ type: "viderSelection" }); }}>★ Garder</button>
+            <button type="button" className="ed-lien" title="Écarter la sélection" onClick={() => { envoyer({ type: "marquer", ids, marque: "ecartee" }); envoyer({ type: "viderSelection" }); }}>Écarter</button>
+          </>
+        )}
         <button type="button" className="ed-lien" onClick={() => envoyer({ type: "viderSelection" })}>Effacer</button>
       </div>
       <div className="ed-sel-piste">

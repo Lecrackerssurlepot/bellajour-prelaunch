@@ -10,6 +10,7 @@ import {
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, idsDispo, indexPlanche } from "./outils";
+import { marquer, reglerPhotosParPage } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
@@ -158,6 +159,13 @@ export function planifier(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return simple("supprimerPlanche", i === 0 ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
+    case "marquer": {
+      const ids = Array.isArray(g.ids) ? g.ids.filter((id) => cat.has(id)) : [];
+      const n = ids.length;
+      const libelle = g.marque === "choisie" ? (n > 1 ? `Pré-choisir ${n} photos` : "Pré-choisir") : g.marque === "ecartee" ? (n > 1 ? `Écarter ${n} photos` : "Écarter") : "Retirer la marque";
+      return simple("marquer", libelle, e.plancheCourante, marquer(m, ids, g.marque === "choisie" || g.marque === "ecartee" ? g.marque : null), {});
+    }
+    case "reglerTri": return simple("reglerTri", "Photos par page", e.plancheCourante, reglerPhotosParPage(m, g.photosParPage), {});
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
     default: return null;

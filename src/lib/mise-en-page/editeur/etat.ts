@@ -195,7 +195,7 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles"]);
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -236,6 +236,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   }
   if (g.type === "echanger" && g.desarmer) x = { ...x, echangeArme: null };
   x = { ...x, message: null, halo: null };
+  /* le tri ne touche aucune planche : pas d'éclair */
+  if (plan.op === "marquer" || plan.op === "reglerTri") x = { ...x, eclair: null };
   if (is.textesPerdus > 0) {
     x = { ...x, message: { texte: `${pluriel(is.textesPerdus, "texte retiré", "textes retirés")}`, action: { libelle: "Annuler" } } };
   } else if (is.restees.length > 0) {
@@ -318,6 +320,7 @@ const GESTES: Gestes = {
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
     const groupe = choisir(["jour", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
+    const marque = choisir(["sans_ecartees", "choisies", "a_trier", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
     return egal(f, e.filtres) ? e : { ...e, filtres: f };
   },

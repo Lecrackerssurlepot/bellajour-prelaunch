@@ -1199,6 +1199,42 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : doubles pages neuves (poser un groupe, lâcher sur le chemin de fer, emplacements ×n)", msg === null);
   }
+  /* Le tri (lot 2) : pré-choisir, écarter, retirer la marque ; filtres ; jauge et répartition ; sauvegarde. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:L C:L D:P E:C", { extra: { D: { personne: "Louise" }, E: { personne: "Louise" } } }).zero();
+      const m0 = s.e.magazine;
+      s.g({ type: "marquer", ids: ["A", "B", "D"], marque: "choisie" });
+      eq(O.triDe(s.e.magazine).choisies, ["A", "B", "D"], "trois pré-choisies");
+      ok(s.hist === 1 && s.e.eclair === null, "une annulation, pas d'éclair");
+      s.g({ type: "marquer", ids: ["B", "C"], marque: "ecartee" });
+      eq([O.triDe(s.e.magazine).choisies, O.triDe(s.e.magazine).ecartees], [["A", "D"], ["B", "C"]], "B passe de pré-choisie à écartée");
+      eq(O.visibles(s.e).sort(), ["A", "D", "E"], "les écartées sont cachées par défaut");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "D"], "filtre Pré-choisies");
+      s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e), ["E"], "filtre À trier");
+      s.g({ type: "filtrer", filtres: { marque: "ecartees" } }); eq(O.visibles(s.e).sort(), ["B", "C"], "filtre Écartées");
+      eq(O.listeTri(s.e, "a_trier"), ["E"], "vue du tri : à trier");
+      ok(O.marqueDe(s.e.magazine, "B") === "ecartee" && O.marqueDe(s.e.magazine, "E") === null, "marqueDe");
+      let b = O.bilanTri(s.e);
+      eq([b.total, b.choisies, b.ecartees, b.aTrier, b.besoin], [5, 2, 2, 1, null], "bilan sans ratio : aucun besoin inventé");
+      eq(b.parPersonne.map((x) => [x.personne, x.choisies, x.total, x.part]), [["Inès", 1, 3, 0.5], ["Louise", 1, 2, 0.5]], "répartition par personne");
+      s.g({ type: "reglerTri", photosParPage: 3 });
+      b = O.bilanTri(s.e);
+      eq([b.photosParPage, b.besoin], [3, 3 * b.pages], "besoin = pages × photos par page");
+      const avant = s.e.magazine;
+      s.g({ type: "reglerTri", photosParPage: 40 });
+      ok(s.e.magazine === avant, "ratio hors bornes refusé");
+      ok(O.contenuValide(s.e.magazine), "un magazine trié se sauvegarde");
+      ok(!O.contenuValide({ ...s.e.magazine, tri: { choisies: ["A"], ecartees: ["A"], photosParPage: null } }), "une photo pré-choisie ET écartée est refusée");
+      s.g({ type: "marquer", ids: ["A", "B", "C", "D"], marque: null }).g({ type: "reglerTri", photosParPage: null });
+      ok(s.e.magazine.tri === undefined && O.egal(s.e.magazine, m0), "tri revenu à vide : le magazine redevient celui d'avant");
+      s.g({ type: "annuler" }).g({ type: "annuler" });
+      eq(O.triDe(s.e.magazine).choisies, ["A", "D"], "annuler revient au tri précédent");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : le tri (pré-choisir, écarter, filtres, jauge, répartition, sauvegarde)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);

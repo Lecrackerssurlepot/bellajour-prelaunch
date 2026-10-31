@@ -1284,3 +1284,90 @@
   .mep-editeur *::before,
   .mep-editeur *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+
+/* ── le tri (lot 2) : repères dans la grille ── */
+.mep-editeur .ed-rep--choisie { background: var(--bj-action); color: var(--bj-on-action); }
+.mep-editeur .ed-vg--ecartee img { opacity: 0.35; filter: grayscale(1); }
+
+/* ── l'écran de tri : une photo en grand, les gestes dessous, l'objectif à droite ── */
+.mep-editeur .ed-tri {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  flex-direction: column;
+  background: var(--bj-cream);
+  animation: ed-fondu 160ms;
+}
+.mep-editeur .ed-tri-tete { display: flex; align-items: center; gap: var(--bj-sp-4); padding: 12px 20px; border-bottom: 1px solid var(--bj-veil-12); }
+.mep-editeur .ed-tri-tete h2 { margin: 0; font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-weight: 600; }
+.mep-editeur .ed-tri-tete .ed-seg button b { margin-left: 4px; color: var(--bj-text-faint); font-weight: 500; }
+.mep-editeur .ed-tri-corps { display: grid; flex: 1 1 auto; min-height: 0; grid-template-columns: minmax(0, 1fr) 280px; }
+.mep-editeur .ed-tri-scene { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; min-height: 0; padding: 20px; }
+.mep-editeur .ed-tri-photo { position: relative; display: grid; flex: 1 1 auto; place-items: center; width: 100%; min-height: 0; }
+.mep-editeur .ed-tri-photo img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 18px 50px var(--bj-veil-12); }
+.mep-editeur .ed-tri-marque { position: absolute; top: 12px; left: 50%; padding: 4px 12px; border-radius: var(--bj-r-pill); color: var(--bj-on-action); font-size: var(--bj-fs-xxs); font-weight: 600; transform: translateX(-50%); }
+.mep-editeur .ed-tri-marque--choisie { background: var(--bj-action); }
+.mep-editeur .ed-tri-marque--ecartee { background: var(--ate-rouge); }
+.mep-editeur .ed-tri-fleche {
+  position: absolute;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  border: var(--bj-glass-card-border);
+  border-radius: 50%;
+  background: var(--bj-glass-card-bg-active);
+  color: var(--bj-text);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.mep-editeur .ed-tri-fleche:disabled { opacity: 0.3; cursor: default; }
+.mep-editeur .ed-tri-fleche--g { left: 0; }
+.mep-editeur .ed-tri-fleche--d { right: 0; }
+.mep-editeur .ed-tri-info { color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-tri-gestes { display: flex; gap: 10px; }
+.mep-editeur .ed-tri-bt {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-cream-tint-1);
+  color: var(--bj-text);
+  font-family: var(--bj-font-ui);
+  font-size: var(--bj-fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.mep-editeur .ed-tri-bt:disabled { opacity: 0.4; cursor: default; }
+.mep-editeur .ed-tri-bt kbd { padding: 1px 6px; border-radius: 4px; background: var(--bj-veil-6); color: var(--bj-text-faint); font-family: inherit; font-size: 11px; font-weight: 500; }
+.mep-editeur .ed-tri-bt--garder { border-color: var(--bj-action); color: var(--bj-action); }
+.mep-editeur .ed-tri-bt--ecarter { color: var(--ate-rouge); }
+.mep-editeur .ed-tri-bt--garder.ed-tri-bt--fait { background: var(--bj-action); color: var(--bj-on-action); }
+.mep-editeur .ed-tri-bt--ecarter.ed-tri-bt--fait { border-color: var(--ate-rouge); background: var(--ate-rouge); color: var(--bj-on-action); }
+.mep-editeur .ed-tri-bt--fait kbd { background: color-mix(in srgb, var(--bj-on-action) 25%, transparent); color: inherit; }
+.mep-editeur .ed-tri-voisines { display: flex; gap: 6px; max-width: 100%; overflow-x: auto; padding: 4px; }
+.mep-editeur .ed-tri-v { position: relative; flex: none; width: 56px; height: 56px; padding: 0; border: 2px solid transparent; border-radius: 6px; background: var(--bj-veil-6); cursor: pointer; overflow: hidden; }
+.mep-editeur .ed-tri-v img { width: 100%; height: 100%; object-fit: cover; }
+.mep-editeur .ed-tri-v--ici { border-color: var(--bj-text); }
+.mep-editeur .ed-tri-v--choisie::after { content: "★"; position: absolute; top: 2px; right: 2px; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--bj-action); color: var(--bj-on-action); font-size: 9px; }
+.mep-editeur .ed-tri-v--ecartee img { opacity: 0.35; filter: grayscale(1); }
+.mep-editeur .ed-tri-vide { display: grid; flex: 1; place-items: center; color: var(--bj-text-soft); font-size: var(--bj-fs-sm); }
+.mep-editeur .ed-tri-cote { display: flex; flex-direction: column; gap: 22px; padding: 20px; border-left: 1px solid var(--bj-veil-12); overflow-y: auto; }
+.mep-editeur .ed-tri-cote h3 { margin: 0 0 8px; color: var(--bj-text-faint); font-family: var(--bj-font-ui); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.mep-editeur .ed-tri-jauge { font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-tri-jauge b { font-size: var(--bj-fs-lg); }
+.mep-editeur .ed-tri-jauge span { color: var(--bj-text-soft); }
+.mep-editeur .ed-tri-barre { height: 6px; margin: 6px 0; border-radius: 3px; background: var(--bj-veil-6); overflow: hidden; }
+.mep-editeur .ed-tri-barre span { display: block; height: 100%; border-radius: 3px; background: var(--bj-action); }
+.mep-editeur .ed-tri-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-tri-ligne input { width: 72px; height: 28px; padding: 0 8px; border: 1px solid var(--bj-veil-12); border-radius: 8px; background: var(--bj-cream-tint-1); color: var(--bj-text); font-family: var(--bj-font-ui); }
+.mep-editeur .ed-tri-pers { margin-bottom: 8px; font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-tri-pers > div:first-child { display: flex; gap: 8px; }
+.mep-editeur .ed-tri-pers span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mep-editeur .ed-tri-pers em { width: 38px; color: var(--bj-text-faint); font-style: normal; text-align: right; }

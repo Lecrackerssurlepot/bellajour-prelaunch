@@ -139,8 +139,19 @@ function plancheValide(v: unknown, indexPlanche: number): v is Planche {
  * dans les bornes de `recadrer`, textes en chaînes. Ne borne PAS la taille :
  * `tailleContenu` le fait, avant (la route refuse en 413 sans relire la forme).
  */
+/** Le tri : deux listes d'ids sans doublon ni recouvrement, et un nombre de photos par page entier (1 à 12) ou null. */
+function triValide(v: unknown): boolean {
+  if (!estObjet(v) || !clesExactes(v, ["choisies", "ecartees", "photosParPage"])) return false;
+  const { choisies, ecartees, photosParPage } = v;
+  if (!Array.isArray(choisies) || !Array.isArray(ecartees) || !choisies.every(estId) || !ecartees.every(estId)) return false;
+  const tous = new Set([...choisies, ...ecartees]);
+  if (tous.size !== choisies.length + ecartees.length) return false;
+  return photosParPage === null || (Number.isInteger(photosParPage) && (photosParPage as number) >= 1 && (photosParPage as number) <= 12);
+}
+
 export function contenuValide(x: unknown): x is Magazine {
-  if (!estObjet(x) || !clesExactes(x, ["version", "id", "titre", "planches", "creeLe", "modifieLe"])) return false;
+  const base = ["version", "id", "titre", "planches", "creeLe", "modifieLe"];
+  if (!estObjet(x) || !(clesExactes(x, base) || (clesExactes(x, [...base, "tri"]) && triValide(x.tri)))) return false;
   if (x.version !== 1 || !estId(x.id) || typeof x.titre !== "string") return false;
   if (!estDate(x.creeLe) || !estDate(x.modifieLe)) return false;
   if (!Array.isArray(x.planches) || x.planches.length === 0) return false;
