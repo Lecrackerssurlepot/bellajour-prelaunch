@@ -1305,7 +1305,7 @@
 .mep-editeur .ed-tri-corps { display: grid; flex: 1 1 auto; min-height: 0; grid-template-columns: minmax(0, 1fr) 280px; }
 .mep-editeur .ed-tri-scene { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; min-height: 0; padding: 20px; }
 .mep-editeur .ed-tri-photo { position: relative; display: grid; flex: 1 1 auto; place-items: center; width: 100%; min-height: 0; }
-.mep-editeur .ed-tri-photo img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 18px 50px var(--bj-veil-12); }
+.mep-editeur .ed-tri-photo img { max-width: 100%; max-height: calc(100vh - 290px); object-fit: contain; border-radius: 4px; box-shadow: 0 18px 50px var(--bj-veil-12); }
 .mep-editeur .ed-tri-marque { position: absolute; top: 12px; left: 50%; padding: 4px 12px; border-radius: var(--bj-r-pill); color: var(--bj-on-action); font-size: var(--bj-fs-xxs); font-weight: 600; transform: translateX(-50%); }
 .mep-editeur .ed-tri-marque--choisie { background: var(--bj-action); }
 .mep-editeur .ed-tri-marque--ecartee { background: var(--ate-rouge); }
@@ -1378,6 +1378,8 @@
 @media (max-width: 900px) {
   .mep-editeur .ed-tri-tete { flex-wrap: wrap; }
   .mep-editeur .ed-tri-tete .ed-seg { order: 3; max-width: 100%; overflow-x: auto; }
-  .mep-editeur .ed-tri-corps { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 1fr) auto; overflow-y: auto; }
+  .mep-editeur .ed-tri-corps { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; overflow-y: auto; }
+  .mep-editeur .ed-tri-scene, .mep-editeur .ed-tri-photo { flex: none; min-height: auto; }
+  .mep-editeur .ed-tri-photo img { max-height: 55vh; }
   .mep-editeur .ed-tri-cote { border-left: 0; border-top: 1px solid var(--bj-veil-12); overflow: visible; }
 }
