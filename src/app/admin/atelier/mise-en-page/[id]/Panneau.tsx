@@ -258,7 +258,7 @@ function PanneauOuvert() {
       ) : null}
       {sel.length ? <BandeSelection /> : null}
       <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel")} tabIndex={-1}
-        onScroll={(e) => setScroll(e.currentTarget.scrollTop)}
+        onScroll={(e) => { setScroll(e.currentTarget.scrollTop); setOu(null); }}
         onClick={(e) => { if (!(e.target as HTMLElement).closest(".ed-vg") && sel.length && !clicSupprime()) envoyer({ type: "viderSelection" }); }}>
         {gColle ? <div className="ed-groupe ed-groupe--colle">{gColle.lib} <span>{gColle.n}</span>{poserGroupe(gColle.ids)}</div> : null}
         {!vis.length ? (
