@@ -1300,7 +1300,7 @@
   animation: ed-fondu 160ms;
 }
 .mep-editeur .ed-tri-tete { display: flex; align-items: center; gap: var(--bj-sp-4); padding: 12px 20px; border-bottom: 1px solid var(--bj-veil-12); }
-.mep-editeur .ed-tri-tete h2 { margin: 0; font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-weight: 600; }
+.mep-editeur .ed-tri-tete h2 { flex: none; margin: 0; white-space: nowrap; font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-weight: 600; }
 .mep-editeur .ed-tri-tete .ed-seg button b { margin-left: 4px; color: var(--bj-text-faint); font-weight: 500; }
 .mep-editeur .ed-tri-corps { display: grid; flex: 1 1 auto; min-height: 0; grid-template-columns: minmax(0, 1fr) 280px; }
 .mep-editeur .ed-tri-scene { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; min-height: 0; padding: 20px; }
@@ -1327,9 +1327,11 @@
 .mep-editeur .ed-tri-fleche--g { left: 0; }
 .mep-editeur .ed-tri-fleche--d { right: 0; }
 .mep-editeur .ed-tri-info { color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); }
-.mep-editeur .ed-tri-gestes { display: flex; gap: 10px; }
+.mep-editeur .ed-tri-gestes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .mep-editeur .ed-tri-bt {
   appearance: none;
+  flex: none;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -1371,3 +1373,11 @@
 .mep-editeur .ed-tri-pers > div:first-child { display: flex; gap: 8px; }
 .mep-editeur .ed-tri-pers span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mep-editeur .ed-tri-pers em { width: 38px; color: var(--bj-text-faint); font-style: normal; text-align: right; }
+
+/* fenêtre étroite : l'objectif passe sous la photo, la vue défile */
+@media (max-width: 900px) {
+  .mep-editeur .ed-tri-tete { flex-wrap: wrap; }
+  .mep-editeur .ed-tri-tete .ed-seg { order: 3; max-width: 100%; overflow-x: auto; }
+  .mep-editeur .ed-tri-corps { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(320px, 1fr) auto; overflow-y: auto; }
+  .mep-editeur .ed-tri-cote { border-left: 0; border-top: 1px solid var(--bj-veil-12); overflow: visible; }
+}

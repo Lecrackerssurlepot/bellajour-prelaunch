@@ -122,7 +122,7 @@ export default function Tri() {
               {b.besoin !== null ? <span> · il en faut ≈ {b.besoin}</span> : null}
             </div>
             {b.besoin ? <div className="ed-tri-barre"><span style={{ width: `${Math.min(100, (b.choisies / b.besoin) * 100)}%` }} /></div> : null}
-            <div className="ed-tri-ligne">{b.pages} pages {b.pagesSignees ? "signées" : "dans le magazine"}</div>
+            <div className="ed-tri-ligne">{b.pages} page{b.pages > 1 ? "s" : ""} {b.pagesSignees ? `signée${b.pages > 1 ? "s" : ""}` : "dans le magazine"}</div>
             <label className="ed-tri-ligne">
               Photos par page
               <input type="number" min={1} max={12} step={1} placeholder="à fixer" disabled={ro} value={b.photosParPage ?? ""}
