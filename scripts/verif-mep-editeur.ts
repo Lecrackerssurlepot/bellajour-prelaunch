@@ -1199,41 +1199,75 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : doubles pages neuves (poser un groupe, lâcher sur le chemin de fer, emplacements ×n)", msg === null);
   }
-  /* Le tri (lot 2) : pré-choisir, écarter, retirer la marque ; filtres ; jauge et répartition ; sauvegarde. */
+  /* Le tri (REGLES-TRI, maquette du 31/10) : garder, écarter, bascule, gestes sans effet, filtres, jauge, posée = gardée. */
   {
     let msg: string | null = null;
     try {
       const s = new Seance("A:P B:L C:L D:P E:C", { extra: { D: { personne: "Louise" }, E: { personne: "Louise" } } }).zero();
       const m0 = s.e.magazine;
       s.g({ type: "marquer", ids: ["A", "B", "D"], marque: "choisie" });
-      eq(O.triDe(s.e.magazine).choisies, ["A", "B", "D"], "trois pré-choisies");
+      eq(O.triDe(s.e.magazine).choisies, ["A", "B", "D"], "trois gardées");
       ok(s.hist === 1 && s.e.eclair === null, "une annulation, pas d'éclair");
+      ok(s.e.message?.texte === "3 photos gardées" && s.e.message.action?.libelle === "Annuler", "R8 : le bandeau propose Annuler");
       s.g({ type: "marquer", ids: ["B", "C"], marque: "ecartee" });
-      eq([O.triDe(s.e.magazine).choisies, O.triDe(s.e.magazine).ecartees], [["A", "D"], ["B", "C"]], "B passe de pré-choisie à écartée");
-      eq(O.visibles(s.e).sort(), ["A", "D", "E"], "les écartées sont cachées par défaut");
-      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "D"], "filtre Pré-choisies");
+      eq([O.triDe(s.e.magazine).choisies, O.triDe(s.e.magazine).ecartees], [["A", "D"], ["B", "C"]], "B passe de gardée à écartée");
+      /* R2 : écarter une écartée la RETIRE, jamais une seconde fois */
+      s.g({ type: "marquer", ids: ["C"], marque: "ecartee" });
+      ok(O.marqueDe(s.e.magazine, "C") === null && s.hist === 3, "R2 : X sur une écartée retire la marque");
+      s.g({ type: "annuler" });
+      ok(O.marqueDe(s.e.magazine, "C") === "ecartee", "annuler la remet");
+      /* R1 : P sur une gardée retire */
+      s.g({ type: "marquer", ids: ["A"], marque: "choisie" });
+      ok(O.marqueDe(s.e.magazine, "A") === null, "R1 : P sur une gardée retire la marque");
+      s.g({ type: "annuler" });
+      /* R5 : une sélection mêlée reçoit la marque ; toute déjà marquée, on retire de toutes */
+      s.g({ type: "marquer", ids: ["A", "E"], marque: "choisie" });
+      eq(O.triDe(s.e.magazine).choisies, ["A", "D", "E"], "R5 : sélection mêlée → toutes gardées, A garde sa place");
+      s.g({ type: "marquer", ids: ["A", "E"], marque: "choisie" });
+      eq(O.triDe(s.e.magazine).choisies, ["D"], "R5 : toutes déjà gardées → marque retirée de toutes");
+      s.g({ type: "annuler" }).g({ type: "annuler" });
+      /* R3 / R7 : un geste sans effet ne fait rien */
+      const h0 = s.hist, mag0 = s.e.magazine;
+      s.g({ type: "marquer", ids: ["E"], marque: null });
+      ok(s.e.magazine === mag0 && s.hist === h0, "R3 : 0 sur une photo sans marque : ni changement ni historique");
+      eq(O.visibles(s.e).sort(), ["A", "B", "C", "D", "E"], "R11 : « Toutes » montre aussi les écartées");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "D"], "filtre Gardées");
       s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e), ["E"], "filtre À trier");
       s.g({ type: "filtrer", filtres: { marque: "ecartees" } }); eq(O.visibles(s.e).sort(), ["B", "C"], "filtre Écartées");
+      s.g({ type: "filtrer", filtres: { marque: "toutes" } });
       eq(O.listeTri(s.e, "a_trier"), ["E"], "vue du tri : à trier");
-      ok(O.marqueDe(s.e.magazine, "B") === "ecartee" && O.marqueDe(s.e.magazine, "E") === null, "marqueDe");
-      let b = O.bilanTri(s.e);
-      eq([b.total, b.choisies, b.ecartees, b.aTrier, b.besoin], [5, 2, 2, 1, null], "bilan sans ratio : aucun besoin inventé");
+      const b = O.bilanTri(s.e);
+      eq([b.total, b.choisies, b.ecartees, b.aTrier, b.visees, b.posees], [5, 2, 2, 1, null, 0], "bilan sans objectif : aucun chiffre inventé");
       eq(b.parPersonne.map((x) => [x.personne, x.choisies, x.total, x.part]), [["Inès", 1, 3, 0.5], ["Louise", 1, 2, 0.5]], "répartition par personne");
-      s.g({ type: "reglerTri", photosParPage: 3 });
-      b = O.bilanTri(s.e);
-      eq([b.photosParPage, b.besoin], [3, 3 * b.pages], "besoin = pages × photos par page");
+      s.g({ type: "reglerTri", visees: 180 });
+      ok(O.bilanTri(s.e).visees === 180, "R19 : objectif sur l'ensemble du magazine");
       const avant = s.e.magazine;
-      s.g({ type: "reglerTri", photosParPage: 40 });
-      ok(s.e.magazine === avant, "ratio hors bornes refusé");
+      s.g({ type: "reglerTri", visees: 2.5 }).g({ type: "reglerTri", visees: 0 }).g({ type: "reglerTri", visees: -3 });
+      ok(s.e.magazine === avant, "R19 : décimal, zéro, négatif refusés");
       ok(O.contenuValide(s.e.magazine), "un magazine trié se sauvegarde");
-      ok(!O.contenuValide({ ...s.e.magazine, tri: { choisies: ["A"], ecartees: ["A"], photosParPage: null } }), "une photo pré-choisie ET écartée est refusée");
-      s.g({ type: "marquer", ids: ["A", "B", "C", "D"], marque: null }).g({ type: "reglerTri", photosParPage: null });
-      ok(s.e.magazine.tri === undefined && O.egal(s.e.magazine, m0), "tri revenu à vide : le magazine redevient celui d'avant");
+      ok(!O.contenuValide({ ...s.e.magazine, tri: { choisies: ["A"], ecartees: ["A"], visees: null } }), "une photo gardée ET écartée est refusée");
+      ok(!O.contenuValide({ ...s.e.magazine, tri: { choisies: [], ecartees: [], photosParPage: 3 } as unknown as typeof s.e.magazine.tri }), "l'ancienne forme (photos par page) est refusée");
+      /* R22 : posée depuis la bibliothèque = gardée, dans la même annulation */
+      const h1 = s.hist;
+      s.g({ type: "ajouterSurPlanche", plancheId: s.e.plancheCourante, ids: ["C", "E"] });
+      ok(O.marqueDe(s.e.magazine, "C") === "choisie" && O.marqueDe(s.e.magazine, "E") === "choisie" && s.hist === h1 + 1, "R22 : posées → gardées, une seule entrée");
+      ok(O.bilanTri(s.e).posees === 2, "jauge : photos posées");
+      /* R25 : annuler une marque ne change pas la double affichée */
+      s.g({ type: "insererDouble" });
+      const pl = s.e.plancheCourante;
+      s.g({ type: "marquer", ids: ["B"], marque: "choisie" });
+      s.g({ type: "naviguer", sens: -1 });
+      const ailleurs = s.e.plancheCourante;
+      ok(ailleurs !== pl, "on est allé sur une autre double");
+      s.g({ type: "annuler" });
+      ok(s.e.plancheCourante === ailleurs && O.marqueDe(s.e.magazine, "B") === "ecartee", "R25 : ⌘Z d'une marque reste sur la double affichée");
       s.g({ type: "annuler" }).g({ type: "annuler" });
-      eq(O.triDe(s.e.magazine).choisies, ["A", "D"], "annuler revient au tri précédent");
+      ok(O.marqueDe(s.e.magazine, "C") === "ecartee", "annuler la pose rend aussi la marque d'avant");
+      s.g({ type: "marquer", ids: ["A", "B", "C", "D"], marque: null }).g({ type: "reglerTri", visees: null });
+      ok(s.e.magazine.tri === undefined && O.egal(s.e.magazine, m0), "tri revenu à vide : le magazine redevient celui d'avant");
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
-    rapporter("éditeur : le tri (pré-choisir, écarter, filtres, jauge, répartition, sauvegarde)", msg === null);
+    rapporter("éditeur : le tri (bascule, gestes sans effet, filtres, objectif, posée = gardée, annuler sans changer de double)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);

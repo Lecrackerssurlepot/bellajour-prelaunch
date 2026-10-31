@@ -42,7 +42,7 @@ export type Filtres = {
   montrerSignalees: boolean;
   masquerUtilisees: boolean;
   /** Le tri de l'atelier : par défaut les écartées sont cachées. */
-  marque: "sans_ecartees" | "choisies" | "a_trier" | "ecartees";
+  marque: "toutes" | "choisies" | "a_trier" | "ecartees";
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
@@ -175,8 +175,8 @@ export type GesteModifiant =
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
   | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
   /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
-  | { type: "marquer"; ids: string[]; marque: "choisie" | "ecartee" | null; confirme?: boolean }
-  | { type: "reglerTri"; photosParPage: number | null; confirme?: boolean };
+  | { type: "marquer"; ids: string[]; marque: "choisie" | "ecartee" | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; confirme?: boolean }
+  | { type: "reglerTri"; visees: number | null; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -225,6 +225,8 @@ export type GesteEcran =
   | { type: "confirmer" }
   | { type: "annulerConfirmation" }
   | { type: "fermerMessage" }
+  /** Un mot de l'écran dans le bandeau (« Comparer : 2 à 4 photos ») : rien d'autre ne change. */
+  | { type: "annoncer"; texte: string }
   | { type: "voirRetiree"; id: string }
   | { type: "sauvegardeEnvoi" }
   | { type: "sauvegardeOk"; le?: string; magazine?: Magazine }

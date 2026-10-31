@@ -9,14 +9,14 @@ import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { CtxEd, UI_NEUVE, fermerTexteDom, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
 import { Bandeaux, Barre } from "./Barre";
-import { Bande, CheminDeFer } from "./Bas";
+import { Bande, CheminDeFer, Toast } from "./Bas";
 import { ExportFeuille } from "./ExportFeuille";
 import { Rangee } from "./Gabarits";
 import { Loupe, Pile, posPile } from "./Pile";
 import Panneau from "./Panneau";
 import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
-import Tri from "./Tri";
+import { clavierTri } from "./triEcran";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -236,7 +236,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       if (e.key === "Escape") t.blur();
       return; /* pendant la saisie, aucun raccourci de l'éditeur */
     }
-    if (ui.trier) return; /* l'écran de tri a ses touches */
+    /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */
+    if (clavierTri({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
     if (ui.loupe) {
       if (e.key === "Escape" || e.key === " ") { e.preventDefault(); majUi({ loupe: null }); }
       else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
@@ -285,6 +286,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
   const ctx: Ctx = {
     etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, flasher, gesteAvecAnnuler, imp,
   };
+  /* le tri plein écran vit dans la bande des photos : elle doit être ouverte */
+  if (ui.grand && !etat.panneau.ouvert) envoyer({ type: "panneau", ouvert: true });
   const d = etat.glisser;
   const annonce = etat.message ? etat.message.texte : etat.derniere ? etat.derniere.libelle : "";
   const planche = etat.magazine.planches.find((p) => p.id === etat.plancheCourante) ?? etat.magazine.planches[0];
@@ -299,32 +302,19 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         }}>
         <Barre projet={projet} sv={sv} reessayer={sauve.reessayer} lien={retour} selecteur={selecteur} onExporter={() => { if (etat.recadrage) envoyer({ type: "fermerRecadrage" }); majUi({ exportOuvert: true }); }} />
         <Bandeaux projet={projet} sv={sv} collecteOuverte={collecteOuverte} prendreSaVersion={prendreSaVersion} garderLaMienne={garderLaMienne} />
-        <div className="ed-corps">
+        <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}`}>
           <Panneau />
-          <div className="ed-centre">
+          <div className="ed-centre" onPointerDown={() => { if (ui.zone !== "planche") majUi({ zone: "planche" }); }}>
             <Scene />
             <Bande />
             <CheminDeFer />
             {ui.rangee && !d && !ro && planche ? <Rangee pl={planche} cible={ui.rangee} /> : null}
-            {etat.message ? (
-              <div className="ed-toast" role="status">
-                {etat.message.texte}
-                {etat.message.action ? (
-                  <button type="button" className="ed-bt" onClick={() => {
-                    const a = etat.message?.action;
-                    if (!a) return;
-                    if (a.id) { majUi({ defilerVers: a.id }); envoyer({ type: "voirRetiree", id: a.id }); } else envoyer({ type: "annuler" });
-                  }}>{etat.message.action.libelle}</button>
-                ) : null}
-                <button type="button" className="ed-ico" aria-label="Fermer le message" onClick={() => envoyer({ type: "fermerMessage" })}>×</button>
-              </div>
-            ) : null}
+            {ui.grand ? null : <Toast />}
           </div>
         </div>
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
         {ui.loupe ? <Loupe id={ui.loupe} /> : null}
-        {ui.trier ? <Tri /> : null}
         {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} /> : null}
       </div>
     </CtxEd.Provider>

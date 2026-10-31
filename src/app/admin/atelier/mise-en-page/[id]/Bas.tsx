@@ -76,6 +76,26 @@ export function Bande() {
   );
 }
 
+/** Le bandeau des messages (« Gardée · Annuler », « 3 photos restées à côté ») : sous la planche, ou en bas du tri plein écran. */
+export function Toast() {
+  const { etat, envoyer, majUi } = useEd();
+  const msg = etat.message;
+  if (!msg) return null;
+  return (
+    <div className="ed-toast" role="status">
+      {msg.texte}
+      {msg.action ? (
+        <button type="button" className="ed-bt" onClick={() => {
+          const a = msg.action;
+          if (!a) return;
+          if (a.id) { majUi({ defilerVers: a.id }); envoyer({ type: "voirRetiree", id: a.id }); } else envoyer({ type: "annuler" });
+        }}>{msg.action.libelle}</button>
+      ) : null}
+      <button type="button" className="ed-ico" aria-label="Fermer le message" onClick={() => envoyer({ type: "fermerMessage" })}>×</button>
+    </div>
+  );
+}
+
 export function CheminDeFer() {
   const { etat, envoyer, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, gesteAvecAnnuler } = useEd();
   const m = etat.magazine;

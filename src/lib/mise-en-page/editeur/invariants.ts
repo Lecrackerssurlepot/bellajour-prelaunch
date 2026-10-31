@@ -247,7 +247,10 @@ export function verifierInvariants(etat: EtatEditeur, avant?: EtatEditeur, geste
     const en = g.type === "annuler"
       ? (hB.futur.length && dernier(hB.futur) !== dernier(hA.futur) ? dernier(hB.futur) : null)
       : (hA.futur.length && dernier(hB.passe) === dernier(hA.futur) ? dernier(hB.passe) : null);
-    if (en && indexPlanche(etat.magazine, en.plancheId) >= 0 && etat.plancheCourante !== en.plancheId) err.push(`T41 ${g.type} ne ramène pas à la planche concernée`);
+    /* une entrée qui ne touche que le tri (planches identiques) laisse la double affichée : REGLES-TRI R25 */
+    const seulTri = !!en && en.avant.planches === en.apres.planches;
+    if (en && !seulTri && indexPlanche(etat.magazine, en.plancheId) >= 0 && etat.plancheCourante !== en.plancheId) err.push(`T41 ${g.type} ne ramène pas à la planche concernée`);
+    if (en && seulTri && etat.plancheCourante !== avant.plancheCourante) err.push(`T41 ${g.type} d'un geste de tri a changé de double`);
   }
   if (["filtrer", "retirerFiltre", "effacerFiltres", "cliquerPhoto", "selectionner", "viderSelection", "naviguer", "panneau"].includes(g.type)) {
     if (!egal(etat.magazine, ep.magazine) || hB.passe.length !== ep.historique.passe.length || hB.futur.length !== ep.historique.futur.length) err.push(`T43 ${g.type} a touché le magazine ou l'historique`);

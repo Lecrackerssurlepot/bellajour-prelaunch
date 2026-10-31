@@ -10,7 +10,7 @@
 import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
 import type { Magazine } from "../magazine";
-import { planDepot, planifier } from "./plans";
+import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -192,7 +192,7 @@ export function primitif(e: EtatEditeur, g: Geste): GestePrimitif {
 }
 
 const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte"]);
-export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage",
+export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri"]);
@@ -214,6 +214,7 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   if (!plan) return e;
   const is = plan.issue;
   let x: EtatEditeur = { ...e, glisser: null, confirmation: null, derniere: { refus: is.refus, restees: is.restees, dejaLa: is.dejaLa, textesPerdus: is.textesPerdus, libelle: plan.libelle } };
+  if (is.refus === "pleine" && plan.op === "ajouterSurPlanche") return { ...x, message: { texte: "Double pleine · N pour une nouvelle" } };
   if (is.refus) return x;
   const signalees = is.posees.filter((id) => { const ph = e.catalogue.get(id); return ph && ph.signalee; });
   if (signalees.length && !g.confirme) {
@@ -227,8 +228,7 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   } else {
     x = { ...x, plancheCourante: plancheProche(x.magazine, x.plancheCourante, avant) };
   }
-  const depuisBiblio = (g.type === "deposer" && g.source && g.source.type === "bibliotheque") || g.type === "ajouterSurPlanche" || g.type === "remplacer" || g.type === "creerDoubles";
-  if (depuisBiblio) {
+  if (depuisBibliotheque(g)) {
     /* les posées sortent de la sélection ; les restées à côté y sont (ou y entrent) */
     const posees = new Set(is.posees);
     const ids = [...new Set([...e.selection.ids.filter((id) => !posees.has(id)), ...is.restees])];
@@ -238,6 +238,7 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   x = { ...x, message: null, halo: null };
   /* le tri ne touche aucune planche : pas d'éclair */
   if (plan.op === "marquer" || plan.op === "reglerTri") x = { ...x, eclair: null };
+  if (plan.op === "marquer") x = { ...x, message: { texte: plan.libelle, action: { libelle: "Annuler" } } };
   if (is.textesPerdus > 0) {
     x = { ...x, message: { texte: `${pluriel(is.textesPerdus, "texte retiré", "textes retirés")}`, action: { libelle: "Annuler" } } };
   } else if (is.restees.length > 0) {
@@ -251,6 +252,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
 
 /* ─────────────────────────── Les gestes, un par un ─────────────────────────── */
 
+const seulTri = (en: { avant: Magazine; apres: Magazine }): boolean => en.avant.planches === en.apres.planches;
+
 function annulerEtat(e: EtatEditeur): EtatEditeur {
   if (e.texte || lectureSeule(e)) return e;
   const x = fermerSeances(e);
@@ -259,8 +262,9 @@ function annulerEtat(e: EtatEditeur): EtatEditeur {
   const en = passe[passe.length - 1];
   return {
     ...x, magazine: en.avant, historique: { passe: passe.slice(0, -1), futur: [...x.historique.futur, en] },
-    plancheCourante: plancheProche(en.avant, en.plancheId, en.apres), sauvegarde: enAttente(x.sauvegarde),
-    glisser: null, confirmation: null, message: null, eclair: en.plancheId,
+    /* une entrée qui ne touche que le tri ne change pas la double affichée */
+    ...(seulTri(en) ? { eclair: null } : { plancheCourante: plancheProche(en.avant, en.plancheId, en.apres), eclair: en.plancheId }),
+    sauvegarde: enAttente(x.sauvegarde), glisser: null, confirmation: null, message: null,
   };
 }
 function retablirEtat(e: EtatEditeur): EtatEditeur {
@@ -271,8 +275,8 @@ function retablirEtat(e: EtatEditeur): EtatEditeur {
   const en = futur[futur.length - 1];
   return {
     ...x, magazine: en.apres, historique: { passe: [...x.historique.passe, en], futur: futur.slice(0, -1) },
-    plancheCourante: plancheProche(en.apres, en.plancheId, en.avant), sauvegarde: enAttente(x.sauvegarde),
-    glisser: null, confirmation: null, message: null, eclair: en.plancheId,
+    ...(seulTri(en) ? { eclair: null } : { plancheCourante: plancheProche(en.apres, en.plancheId, en.avant), eclair: en.plancheId }),
+    sauvegarde: enAttente(x.sauvegarde), glisser: null, confirmation: null, message: null,
   };
 }
 
@@ -320,7 +324,7 @@ const GESTES: Gestes = {
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
     const groupe = choisir(["jour", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
-    const marque = choisir(["sans_ecartees", "choisies", "a_trier", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
+    const marque = choisir(["toutes", "choisies", "a_trier", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
     return egal(f, e.filtres) ? e : { ...e, filtres: f };
   },
@@ -431,6 +435,7 @@ const GESTES: Gestes = {
   annulerConfirmation: (e) => (e.confirmation ? { ...e, confirmation: null } : e),
 
   fermerMessage: (e) => (e.message ? { ...e, message: null } : e),
+  annoncer: (e, g) => (typeof g.texte === "string" && g.texte ? { ...e, message: { texte: g.texte.slice(0, 80) } } : e),
   voirRetiree(e, g) {
     const ph = e.catalogue.get(g.id);
     if (!ph) return e;

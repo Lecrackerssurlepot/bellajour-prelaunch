@@ -49,7 +49,9 @@ export type Planche = {
  * nombre moyen de photos par page que Mathias fixera (null tant qu'il ne l'a pas fait : aucun chiffre inventé).
  * Absent d'un magazine qui n'a jamais été trié.
  */
-export type TriMagazine = { choisies: string[]; ecartees: string[]; photosParPage: number | null };
+export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: number | null };
+/** Borne technique de l'objectif « photos visées » (pas une règle de produit : un garde-fou contre une saisie folle). */
+export const VISEES_MAX = 5000;
 
 export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine };
 

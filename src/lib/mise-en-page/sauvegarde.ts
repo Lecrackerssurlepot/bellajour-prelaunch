@@ -13,7 +13,7 @@
  * refuse en 400 (c'est voulu : mieux vaut un refus franc qu'une donnée muette).
  */
 
-import { templateParId, type Affectation, type Disposition, type Magazine, type Planche, type TexteCadre } from "./magazine";
+import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Magazine, type Planche, type TexteCadre } from "./magazine";
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
@@ -139,14 +139,14 @@ function plancheValide(v: unknown, indexPlanche: number): v is Planche {
  * dans les bornes de `recadrer`, textes en chaînes. Ne borne PAS la taille :
  * `tailleContenu` le fait, avant (la route refuse en 413 sans relire la forme).
  */
-/** Le tri : deux listes d'ids sans doublon ni recouvrement, et un nombre de photos par page entier (1 à 12) ou null. */
+/** Le tri : deux listes d'ids sans doublon ni recouvrement, et un objectif de photos (entier de 1 à `VISEES_MAX`) ou null. */
 function triValide(v: unknown): boolean {
-  if (!estObjet(v) || !clesExactes(v, ["choisies", "ecartees", "photosParPage"])) return false;
-  const { choisies, ecartees, photosParPage } = v;
+  if (!estObjet(v) || !clesExactes(v, ["choisies", "ecartees", "visees"])) return false;
+  const { choisies, ecartees, visees } = v;
   if (!Array.isArray(choisies) || !Array.isArray(ecartees) || !choisies.every(estId) || !ecartees.every(estId)) return false;
   const tous = new Set([...choisies, ...ecartees]);
   if (tous.size !== choisies.length + ecartees.length) return false;
-  return photosParPage === null || (Number.isInteger(photosParPage) && (photosParPage as number) >= 1 && (photosParPage as number) <= 12);
+  return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
 }
 
 export function contenuValide(x: unknown): x is Magazine {

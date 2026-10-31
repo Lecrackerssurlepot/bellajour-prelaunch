@@ -28,9 +28,9 @@ export { planDepot, planifier } from "./plans";
 export { groupes, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, gabaritsPour, libelleAnnuler,
-  libelleRetablir, pagesLibelle, reperesBibliotheque, resumeIssue,
+  libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
 export { verifierInvariants } from "./invariants";
-export { bilanTri, listeTri, marqueDe, marquer, reglerPhotosParPage, triDe } from "./tri";
+export { bilanTri, listeTri, marqueDe, marqueEffective, marquer, reglerVisees, triDe } from "./tri";
 export type { BilanTri, Marque, PartPersonne, VueTri } from "./tri";

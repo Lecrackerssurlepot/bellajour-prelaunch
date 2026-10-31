@@ -110,6 +110,20 @@ export function emplacements(e: EtatEditeur, photoId: string): { ref: RefCadre; 
     .map((x) => ({ ref: x.ref, numero: index + 1, pages: index === 0 ? "1" : `${2 * index}-${2 * index + 1}` })));
 }
 
+/** Pour chaque photo posée, les numéros des planches qui la portent (une passe sur le magazine, pour toute la grille). */
+export function planchesDesPhotos(e: EtatEditeur): Map<string, number[]> {
+  const r = new Map<string, number[]>();
+  e.magazine.planches.forEach((p, index) => {
+    for (const x of photosDe(p)) {
+      if (!x.photoId) continue;
+      const l = r.get(x.photoId) ?? [];
+      if (l[l.length - 1] !== index + 1) l.push(index + 1);
+      r.set(x.photoId, l);
+    }
+  });
+  return r;
+}
+
 export function cheminDeFer(e: EtatEditeur): VignetteChemin[] {
   return e.magazine.planches.map((p, index) => ({
     id: p.id, index, numero: index + 1, mode: p.mode, nbPhotos: idsPlanche(p).length, pleine: estPleine(p, index),

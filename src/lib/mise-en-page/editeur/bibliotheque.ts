@@ -37,7 +37,7 @@ export function criteres(e: EtatEditeur): Criteres {
     montrerSignalees: (ph) => f.montrerSignalees || !ph.signalee,
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
     marque: (ph) => f.marque === "choisies" ? ch.has(ph.id) : f.marque === "ecartees" ? ec.has(ph.id)
-      : f.marque === "a_trier" ? !ch.has(ph.id) && !ec.has(ph.id) : !ec.has(ph.id),
+      : f.marque === "a_trier" ? !ch.has(ph.id) && !ec.has(ph.id) : true,
   };
 }
 
