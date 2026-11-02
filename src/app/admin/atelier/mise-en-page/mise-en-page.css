@@ -1495,7 +1495,8 @@
 .mep-editeur .ed-rep--rond.ed-rep--coeur { background: color-mix(in srgb, var(--bj-cream-tint-1) 95%, transparent); color: #e0445a; }
 .mep-editeur .ed-ph--grand .ed-rep--rond { width: 22px; height: 22px; }
 .mep-editeur .ed-ph--grand .ed-rep--rond svg { width: 12px; height: 12px; }
-.mep-editeur .ed-vg--reserve img { opacity: 0.78; filter: saturate(0.55); }
+/* retour du 02/11 : la réserve ne touche plus la photo ; seule une photo déjà posée devient transparente */
+.mep-editeur .ed-vg--posee img { opacity: 0.45; }
 .mep-editeur .ed-puce-svg { display: grid; width: 11px; height: 11px; }
 .mep-editeur .ed-puce-svg svg { width: 100%; height: 100%; }
 .mep-editeur .ed-puce--client { color: #d23a50; }
@@ -1556,15 +1557,17 @@
 .mep-editeur .ed-hes-encart--cible { background: var(--mep-or); border-style: solid; transform: scale(1.05); }
 .mep-editeur .ed-rep--hes { background: var(--mep-or); color: #fff; }
 .mep-editeur .ed-rep--hes-v { background: var(--bj-veil-12); color: var(--bj-text-soft); }
-.mep-editeur .ed-conf { position: fixed; z-index: 120; }
+/* à côté de la double page : une troisième colonne, la planche se réduit pour tenir */
+.mep-editeur .ed-corps--conf { grid-template-columns: auto minmax(0, 1fr) clamp(380px, 40vw, 860px); }
+.mep-editeur .ed-conf { position: relative; inset: auto; z-index: 12; min-width: 0; min-height: 0; }
 .mep-editeur .ed-conf-t { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 6px; border: 0; border-radius: 10px; background: var(--mep-nuit-2); color: #fff; font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); font-weight: 600; cursor: pointer; }
 .mep-editeur .ed-conf-t:hover { background: var(--mep-nuit-3); }
 .mep-editeur .ed-conf-t kbd { display: grid; place-items: center; min-width: 20px; height: 20px; border-radius: 5px; background: var(--mep-nuit-3); font-family: var(--bj-font-ui); font-size: 11px; }
-.mep-editeur .ed-conf-scene { display: grid; flex: 1 1 auto; grid-template-columns: 1fr 1fr; gap: 24px; min-height: 0; padding: 8px 32px 24px; }
+.mep-editeur .ed-conf-scene { display: grid; flex: 1 1 auto; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; padding: 8px 16px 20px; }
 .mep-editeur .ed-conf-cote { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; margin: 0; }
 .mep-editeur .ed-conf-img { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; min-height: 0; }
 .mep-editeur .ed-conf-img .ed-vt-img img { max-height: calc(100vh - 200px); cursor: default; }
-.mep-editeur .ed-conf-cote figcaption { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
+.mep-editeur .ed-conf-cote figcaption { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
 .mep-editeur .ed-conf-mot { flex: none; height: 20px; padding: 0 8px; border-radius: 10px; background: var(--mep-nuit-3); color: var(--mep-nuit-texte); font-size: 11px; font-weight: 600; line-height: 20px; }
 .mep-editeur .ed-conf-mot--devant { background: var(--mep-or); color: #fff; }
 .mep-editeur .ed-conf-nom { min-width: 0; overflow: hidden; color: var(--mep-nuit-pale); font-size: var(--bj-fs-xxs); text-overflow: ellipsis; white-space: nowrap; }

@@ -238,7 +238,7 @@ function PanneauOuvert() {
     const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
     return (
       <button key={id} type="button" data-photo={id} style={{ width: l, height: h }}
-        className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
+        className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
         aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
         onClick={(e) => {
@@ -268,13 +268,6 @@ function PanneauOuvert() {
           {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
-          {ec ? <span className="ed-rep ed-rep--ecartee">Écartée</span> : null}
-          {hes.ouvertes.has(id) ? <span className="ed-rep ed-rep--hes" title="Derrière une photo posée : on hésite">Hésitation</span>
-            : hes.delaissees.has(id) ? <span className="ed-rep ed-rep--hes-v" title="Hésitation tranchée contre elle">Hésitée</span> : null}
-          {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
-          {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
-          {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
-          <span className="ed-esp" />
           {nums?.length ? (
             <span className="ed-rep ed-rep--posee" role="button" tabIndex={-1} title={n > 1 ? `Posée ${n} fois : voir où` : `Sur la planche ${nums[0]}`}
               onPointerDown={(e) => e.stopPropagation()}
@@ -287,6 +280,12 @@ function PanneauOuvert() {
               {nums[0]}{n > 1 ? ` ×${n}` : ""}
             </span>
           ) : null}
+          {ec ? <span className="ed-rep ed-rep--ecartee">Écartée</span> : null}
+          {hes.ouvertes.has(id) ? <span className="ed-rep ed-rep--hes" title="Derrière une photo posée : on hésite">Hésitation</span>
+            : hes.delaissees.has(id) ? <span className="ed-rep ed-rep--hes-v" title="Hésitation tranchée contre elle">Hésitée</span> : null}
+          {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
+          {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
+          {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
         </span>
       </button>
     );

@@ -305,7 +305,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         }}>
         <Barre projet={projet} sv={sv} reessayer={sauve.reessayer} lien={retour} selecteur={selecteur} onExporter={() => { if (etat.recadrage) envoyer({ type: "fermerRecadrage" }); majUi({ exportOuvert: true }); }} />
         <Bandeaux projet={projet} sv={sv} collecteOuverte={collecteOuverte} prendreSaVersion={prendreSaVersion} garderLaMienne={garderLaMienne} />
-        <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}`}>
+        <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}${ui.confronter && !ui.grand ? " ed-corps--conf" : ""}`}>
           <Panneau />
           <div className="ed-centre" onPointerDown={() => { if (ui.zone !== "planche") majUi({ zone: "planche" }); }}>
             <Scene />
@@ -314,11 +314,11 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
             {ui.rangee && !d && !ro && planche ? <Rangee pl={planche} cible={ui.rangee} /> : null}
             {ui.grand ? null : <Toast />}
           </div>
+          {ui.confronter && !ui.grand ? <Confrontation /> : null}
         </div>
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
         {ui.loupe ? <Loupe id={ui.loupe} /> : null}
-        {ui.confronter ? <Confrontation /> : null}
         {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} /> : null}
       </div>
     </CtxEd.Provider>

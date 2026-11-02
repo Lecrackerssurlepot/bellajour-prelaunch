@@ -5,8 +5,8 @@ import { cadresPlanche, type CadrePhoto, type EtatEditeur, type Geste, type RefC
 import { memeRef, useEd, type Ui } from "./contexte";
 import { Nette } from "./Tri";
 
-/* L'hésitation (lot 3) : deux photos dans le même cadre, confrontées côte à côte. Celle de devant à gauche.
-   T intervertit, « Garder celle-ci » tranche (la délaissée reste notée derrière le cadre), Échap revient. */
+/* L'hésitation (lot 3) : deux photos dans le même cadre, confrontées côte à côte À CÔTÉ de la double page (retour du 02/11 :
+   juger en situation). Celle de devant à gauche. T intervertit, « Garder celle-ci » tranche (la délaissée reste notée), Échap ferme. */
 
 /** Le cadre photo visé, tel que la planche le dessine. */
 export function cadreHesitant(e: EtatEditeur, ref: RefCadre | null): CadrePhoto | null {
@@ -51,18 +51,18 @@ export default function Confrontation() {
     { id: cadre.hesitation.photoId, nom: cadre.hesitation.nom, mot: "Derrière", action: "garderDerriere" as const, touche: "→" },
   ];
   return (
-    <div className="ed-vt ed-conf" role="dialog" aria-modal="true" aria-label="Hésitation entre deux photos">
+    <aside className="ed-vt ed-conf" aria-label="Hésitation entre deux photos">
       <div className="ed-vt-tete">
-        <button type="button" className="ed-vt-retour" title="Retour · Échap" onClick={() => majUi({ confronter: null })}>
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4l-6 6 6 6" /></svg>Retour
-        </button>
-        <h2>Hésitation<span>Seule celle de devant part à l&apos;export</span></h2>
+        <h2>Hésitation</h2>
         <span className="ed-esp" />
         {ro ? null : (
           <button type="button" className="ed-conf-t" title="Intervertir · T" onClick={() => c.envoyer({ type: "hesiter", ref, action: "intervertir" })}>
             <kbd>T</kbd>Intervertir
           </button>
         )}
+        <button type="button" className="ed-vt-ico" aria-label="Fermer" title="Fermer · Échap" onClick={() => majUi({ confronter: null })}>
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 5l10 10M15 5L5 15" /></svg>
+        </button>
       </div>
       <div className="ed-conf-scene">
         {cotes.map((x, i) => (
@@ -80,6 +80,6 @@ export default function Confrontation() {
           </figure>
         ))}
       </div>
-    </div>
+    </aside>
   );
 }

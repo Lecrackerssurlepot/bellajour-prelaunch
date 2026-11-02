@@ -8,7 +8,8 @@ import { cls, useEd } from "./contexte";
 
 export const ETOILE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8L6 11.8l-4.2-4 5.7-.7z"/></svg>';
 export const ETINCELLE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 .9l2 4.7 5 .6-3.7 3.4 1 4.9L9 12l-4.3 2.5 1-4.9L2 6.2l5-.6z"/><path d="M15.8 12.6l.8 1.8 1.9.3-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.3z"/></svg>';
-export const DEMI = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg>';
+/* la réserve (neutre) : un simple trait, retour du 02/11 */
+export const DEMI = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 10h10"/></svg>';
 export const COEUR = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 17.5s-7-4.3-7-9.2A3.9 3.9 0 0 1 10 6a3.9 3.9 0 0 1 7 2.3c0 4.9-7 9.2-7 9.2z"/></svg>';
 /** L'icône et le mot de chaque marque, partout les mêmes. */
 export const MARQUE_UI: Record<Marque, { svg: string; mot: string; verbe: string; touche: string }> = {
