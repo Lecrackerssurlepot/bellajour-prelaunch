@@ -6,7 +6,7 @@
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
 import type { Cadre, Portee, RoleCadre, Template } from "../types";
 import type { Cible, Disposition, Magazine, Planche, RefCadre, TexteCadre } from "../magazine";
-import { dispositionDe, templateParId } from "../magazine";
+import { cadresPropres, dispositionDe } from "../magazine";
 import type { Recadrage } from "../recadrage";
 import type { Filtres } from "./types";
 
@@ -110,9 +110,15 @@ export function texteDe(m: Magazine, ref: RefCadre | null | undefined): TexteCad
   return d?.textes[ref.index] ?? null;
 }
 
+/** Les cadres photo d'une disposition, retouchés s'il y en a (lot 4), repère du gabarit. */
+export const cadresPhotoDe = (d: Disposition | null): Cadre[] => (d ? (cadresPropres(d) ?? []).filter((c) => c.role === "photo") : []);
+export const cadresTexteDe = (d: Disposition | null): (Cadre & { role: RoleTexte })[] =>
+  d ? (cadresPropres(d) ?? []).filter((c): c is Cadre & { role: RoleTexte } => c.role !== "photo") : [];
+/** La disposition a-t-elle été retouchée à la main (lot 4) ? */
+export const retouchee = (d: Disposition | null): boolean => !!d?.cadres;
+
 /** Mesures {l, h} du cadre photo n° index d'une disposition. */
 export function dimsCadre(d: Disposition | null, index: number): { l: number; h: number } | null {
-  const t = d ? templateParId(d.templateId) : null;
-  const c = t ? cadresPhoto(t)[index] : undefined;
+  const c = cadresPhotoDe(d)[index];
   return c ? { l: c.l, h: c.h } : null;
 }

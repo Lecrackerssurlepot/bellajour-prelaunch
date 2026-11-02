@@ -11,7 +11,8 @@
 
 import * as O from "@/lib/mise-en-page/editeur";
 import type { CibleDepot, EditionMep, EtatEditeur, Geste, Issue, PhotoMaq, ProjetListe, RefCadre, SourceADemarrer, SourceGlisser } from "@/lib/mise-en-page/editeur";
-import { nouveauMagazine, tousLesTemplates, type Cible, type Disposition, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
+import { gabaritDepuisDisposition, gabaritValide, ligneEnTemplate } from "@/lib/mise-en-page/gabaritsAtelier";
+import { enregistrerGabarits, nouveauMagazine, templateParId, tousLesTemplates, type Cible, type Disposition, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
 import type { Cote } from "@/lib/mise-en-page/geometrie";
 
 /* ─────────── outils ─────────── */
@@ -877,6 +878,9 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
       case 3: return { type: "bande", plancheId: plancheId(e), position: int(-1, 8), ...(h() < 0.7 ? { cote: pick(["gauche", "droite", "double"]) } : {}) };
       case 4: return { type: "bibliotheque" };
       case 5: return h() < 0.5 ? { type: "vignette", plancheId: plancheId(e) } : { type: "hesiter", ref: uneRef(e) };
+      case 6: return h() < 0.4 ? { type: "entre", index: int(-1, e.magazine.planches.length + 1) }
+        : h() < 0.5 ? { type: "miroir", plancheId: plancheId(e) }
+        : { type: "libre", plancheId: plancheId(e), cible: cible(), x: pick([0, 50, 105, 210, 300, 420, -40, NaN]), y: pick([0, 100, 148, 297, 400]) };
       default: return { type: "entre", index: int(-1, e.magazine.planches.length + 1) };
     }
   };
@@ -889,6 +893,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
       const trouvee = p ? O.photosDe(p).find((x) => x.ref.cible === r.cible && x.ref.index === r.index) : undefined;
       return { type: "cadre", ref: r, photoId: trouvee?.photoId };
     }
+    if (h() < 0.5) return { type: "cadres", refs: Array.from({ length: int(1, 4) }, () => uneRef(e)) };
     return { type: "planche", plancheId: plancheId(e) };
   };
   const filtres = (): Libre => {
@@ -942,6 +947,14 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [4, (e) => ({ type: "marquer", ids: ids(e, int(1, 4)), marque: pick(["coupDeCoeur", "choisie", "reserve", "ecartee", null, "bidon"]), ...(h() < 0.3 ? { poser: true } : {}), ...(h() < 0.15 ? { autres: ids(e, int(1, 3)) } : {}) })],
     [5, (e) => ({ type: "hesiter", ref: uneRef(e), action: pick(["ajouter", "ajouter", "intervertir", "garderDevant", "garderDerriere", "rouvrir", "oublier", "bidon"]), photoId: ids(e, 1)[0] })],
     [2, (e) => ({ type: "touche", cle: pick(["t", "T"]), ...(h() < 0.3 ? { survol: { plancheId: plancheId(e), cible: pick(["gauche", "droite", "double"]) } } : {}) })],
+    /* lot 4 : miroir, cadres retouchés, calques, plusieurs cadres */
+    [3, (e) => ({ type: "miroir", ...(h() < 0.7 ? { plancheId: plancheId(e) } : {}) })],
+    [4, (e) => ({ type: "placerCadre", ref: uneRef(e), x: pick([0, 20, 150, 300, -50, NaN]), y: pick([0, 40, 200, 320]), l: pick([5, 40, 90, 200, 500]), h: pick([5, 60, 120, 400, Infinity]) })],
+    [3, (e) => ({ type: "ajusterCadre", ref: uneRef(e) })],
+    [3, (e) => ({ type: "calque", ref: uneRef(e), sens: pick(["devant", "avancer", "reculer", "derriere", "bidon"]) })],
+    [2, (e) => ({ type: "retirerCadres", refs: Array.from({ length: int(0, 4) }, () => uneRef(e)) })],
+    [3, (e) => ({ type: "basculerCadre", ref: uneRef(e) })],
+    [3, () => ({ type: "touche", cle: pick(["m", "M", "]", "[", "ArrowUp", "ArrowDown", "Backspace"]), meta: h() < 0.6, alt: h() < 0.3, shift: h() < 0.2 })],
     [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
@@ -1343,6 +1356,119 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : l'hésitation (deux photos dans un cadre, T, trancher, rouvrir, seule celle de devant compte)", msg === null);
+  }
+  /* Le lot 4 (plan du 02/11) : miroir, ⇧-clic, pose en libre, cadres retouchés, calques, sans gabarit neuf. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:P C:L D:P E:L F:P G:L").pose(2, "gauche", ["A", "B"]).pose(2, "droite", ["C", "D", "E"]).zero();
+      /* miroir : deux à gauche, trois à droite → l'inverse, une seule annulation */
+      s.g({ type: "naviguer", plancheId: pl(2) }).g({ type: "touche", cle: "m" });
+      eq(s.idsPleins(2, "gauche"), ["C", "D", "E"], "M : les trois passent à gauche");
+      eq(s.idsPleins(2, "droite"), ["A", "B"], "M : les deux passent à droite");
+      ok(s.hist === 1, "M : une annulation");
+      s.g({ type: "touche", cle: "m" });
+      eq(s.idsPleins(2, "gauche"), ["A", "B"], "M encore : retour");
+      s.g({ type: "naviguer", plancheId: pl(1) }).g({ type: "touche", cle: "m" });
+      ok(s.hist === 2, "M sur la planche 1 : rien");
+      /* ⇧-clic : deux cadres, Suppr les retire ensemble */
+      s.g({ type: "naviguer", plancheId: pl(2) }).g({ type: "activerCadre", ref: ref(2, "droite", 0) }).g({ type: "basculerCadre", ref: ref(2, "droite", 2) });
+      ok(s.e.cadresSel.length === 2, "⇧-clic : deux cadres sélectionnés");
+      s.g({ type: "basculerCadre", ref: ref(2, "gauche", 0) });
+      ok(s.e.cadresSel.length === 3, "⇧-clic sur l'autre page de la double : trois");
+      s.g({ type: "basculerCadre", ref: ref(2, "gauche", 0) }).g({ type: "touche", cle: "Backspace" });
+      eq(s.idsPleins(2, "droite"), ["D"], "Suppr : les deux retirées d'un coup");
+      ok(s.hist === 3, "Suppr à plusieurs : une annulation");
+      s.g({ type: "annuler" });
+      /* toute une page glissée sur l'autre : la bande « Inverser » ou l'ajout */
+      const gauche = [ref(2, "gauche", 0), ref(2, "gauche", 1)];
+      ok(O.pageEntiere(s.e.magazine, gauche)?.cote === "gauche", "la page gauche entière est reconnue");
+      ok(O.pageEntiere(s.e.magazine, [ref(2, "gauche", 0)]) === null, "une seule photo : pas de bande « Inverser »");
+      s.glisse({ type: "cadres", refs: gauche }, { type: "miroir", plancheId: pl(2) });
+      eq(s.idsPleins(2, "droite"), ["A", "B"], "lâcher sur « Inverser » : miroir");
+      s.g({ type: "annuler" });
+      s.glisse({ type: "cadres", refs: gauche }, { type: "page", plancheId: pl(2), cote: "droite" });
+      eq(s.idsPleins(2, "droite"), ["C", "D", "E", "A", "B"], "lâcher ailleurs sur la page : les deux s'ajoutent");
+      ok(s.dispo(2, "gauche") === null, "la page gauche est vide");
+      s.g({ type: "annuler" });
+      /* pose en libre : rien ne se recompose */
+      const avant = s.dispo(2, "droite")!;
+      s.glisse({ type: "bibliotheque", ids: ["F"] }, { type: "libre", plancheId: pl(2), cible: "droite", x: 315, y: 148 });
+      const d = s.dispo(2, "droite")!;
+      eq(d.photos.map((a) => a.photoId), ["C", "D", "E", "F"], "⌥ : F posée en libre, les trois restent");
+      ok(!!d.cadres && d.cadres.length === 4 && d.templateId === avant.templateId, "la page garde son gabarit, ses cadres sont retouchés");
+      const f = photosPlanche(s.e, pl(2)).find((c) => c.photoId === "F")!;
+      const phF0 = s.e.catalogue.get("F")!;
+      ok(Math.abs(f.x + f.l / 2 - 315) < 1e-6 && Math.abs(f.h - O.COTE_LIBRE) < 1e-6 && Math.abs(f.l / f.h - phF0.l / phF0.h) < 1e-6, "centrée au lâcher, à son format (portrait : 80 mm de haut)");
+      ok(O.marqueDe(s.e.magazine, "F") === "choisie" && O.contenuValide(s.e.magazine), "posée = gardée ; se sauvegarde");
+      /* une page vide reçoit une photo libre */
+      s.glisse({ type: "bibliotheque", ids: ["G"] }, { type: "libre", plancheId: pl(3), cible: "gauche", x: 100, y: 100 });
+      ok(s.tpl(3, "gauche") === "libre" && s.idsPleins(3, "gauche")[0] === "G", "page vide : disposition libre");
+      /* déplacer, agrandir, ajuster au format */
+      const rF = ref(2, "droite", 3);
+      s.g({ type: "placerCadre", ref: rF, x: 230, y: 20, l: 120, h: 90 });
+      const f2 = photosPlanche(s.e, pl(2)).find((c) => c.photoId === "F")!;
+      ok(Math.abs(f2.x - 230) < 1e-6 && Math.abs(f2.l - 120) < 1e-6, "le cadre va où on le pose");
+      s.g({ type: "placerCadre", ref: rF, x: 100, y: -50, l: 5, h: 5 });
+      const f3 = photosPlanche(s.e, pl(2)).find((c) => c.photoId === "F")!;
+      ok(f3.x >= 210 - 1e-9 && f3.y >= -3 - 1e-9 && f3.l >= O.COTE_MIN - 1e-9, "jamais au-delà du pli, du fond perdu, ni plus petit que 10 mm");
+      s.g({ type: "ajusterCadre", ref: rF });
+      const f4 = photosPlanche(s.e, pl(2)).find((c) => c.photoId === "F")!;
+      const phF = s.e.catalogue.get("F")!;
+      ok(Math.abs(f4.l / f4.h - phF.l / phF.h) < 1e-6, "ajuster : le cadre prend le format de la photo");
+      const nAvant = s.hist;
+      s.g({ type: "ajusterCadre", ref: rF });
+      ok(s.hist === nAvant, "ajuster deux fois : sans effet");
+      /* calques : ⌘[ recule, ⌥⌘[ derrière, le cadre actif suit */
+      s.g({ type: "activerCadre", ref: rF }).g({ type: "touche", cle: "[", meta: true });
+      eq(s.idsPleins(2, "droite"), ["C", "D", "F", "E"], "⌘[ : F recule d'un calque");
+      ok(O.egal(s.e.cadreActif, ref(2, "droite", 2)), "le cadre actif suit F");
+      s.g({ type: "touche", cle: "[", meta: true, alt: true });
+      eq(s.idsPleins(2, "droite")[0], "F", "⌥⌘[ : F derrière tout");
+      s.g({ type: "touche", cle: "ArrowUp", meta: true, alt: true });
+      eq(s.idsPleins(2, "droite").at(-1), "F", "⌥⌘↑ : F devant tout");
+      /* retirer sur une page retouchée : seul ce cadre part */
+      const autres = s.dispo(2, "droite")!.cadres!.filter((_, k) => k !== 0);
+      s.g({ type: "retirer", ref: ref(2, "droite", 0) });
+      ok(O.egal(s.dispo(2, "droite")!.cadres, autres), "retirer : les autres cadres ne bougent pas");
+      /* le même gabarit remet la page d'origine */
+      const tpl = s.tpl(2, "droite")!;
+      s.g({ type: "choisirGabarit", plancheId: pl(2), cible: "droite", templateId: tpl });
+      ok(templateParId(tpl)?.nbPhotos === 3 && s.idsPleins(2, "droite").length === 3, "trois photos, un gabarit de trois");
+      ok(s.dispo(2, "droite")?.cadres === undefined, "le même gabarit efface les retouches");
+      /* une double retournée reste retournée quand elle change */
+      const s2 = new Seance("A:L B:P C:P D:L").pose(2, "double", ["A", "B", "C"]).zero();
+      s2.g({ type: "miroir", plancheId: pl(2) });
+      ok(s2.dispo(2, "double")?.miroir === true, "double : miroir posé");
+      const xs = photosPlanche(s2.e, pl(2)).map((c) => c.x);
+      s2.g({ type: "annuler" });
+      const xs0 = photosPlanche(s2.e, pl(2)).map((c, k) => 420 - c.x - photosPlanche(s2.e, pl(2))[k].l);
+      ok(O.egal(xs.map((v) => Math.round(v * 1e6)), xs0.map((v) => Math.round(v * 1e6))), "double : chaque cadre est retourné autour du milieu");
+      s2.g({ type: "retablir" }).g({ type: "ajouterSurPlanche", plancheId: pl(2), ids: ["D"] });
+      ok(s2.dispo(2, "double")?.miroir === true, "ajouter une photo garde le miroir");
+      /* la sauvegarde refuse ce qui ne se relit pas */
+      const m = s2.e.magazine;
+      const dd = m.planches[1].double!;
+      const avecD = (x: Record<string, unknown>) => ({ ...m, planches: [m.planches[0], { ...m.planches[1], double: { ...dd, ...x } }, ...m.planches.slice(2)] });
+      ok(!O.contenuValide(avecD({ miroir: false })), "miroir ne vaut que true");
+      ok(!O.contenuValide(avecD({ cadres: [{ x: 0, y: 0, l: -4, h: 10, role: "photo" }] })), "un cadre de largeur négative est refusé");
+      ok(!O.contenuValide(avecD({ cadres: [] })), "des cadres en moins que de photos sont refusés");
+      /* les gabarits enregistrés : ce que l'écran voit, relu par le serveur, proposé en premier, copié dans la page */
+      const gd = def(gabaritDepuisDisposition(s2.dispo(2, "double")!, "double", "Essai"), "gabarit depuis la double");
+      const vus = photosPlanche(s2.e, pl(2)).map((c) => Math.round(c.x * 1e6));
+      ok(O.egal(gd.cadres.filter((c) => c.role === "photo").map((c) => Math.round(c.x * 1e6)), vus), "le gabarit garde la double telle qu'on la voit (miroir compris)");
+      ok(!!gabaritValide(gd) && !gabaritValide({ ...gd, nom: "" }) && !gabaritValide({ ...gd, portee: "page", cadres: [...gd.cadres, ...gd.cadres] }), "le serveur relit le gabarit (nom, portée, nombre)");
+      const t = def(ligneEnTemplate({ id: "abc", nom: gd.nom, portee: gd.portee, cadres: gd.cadres, decor: gd.decor }), "ligne relue");
+      enregistrerGabarits([t]);
+      try {
+        const s3 = new Seance("A:L B:P C:P D:L").pose(2, "double", ["A", "B", "C", "D"]).zero();
+        const d3 = s3.dispo(2, "double")!;
+        ok(d3.templateId === "M-abc" && !!d3.cadres && d3.cadres.length === gd.cadres.length, "même nombre de photos : le gabarit enregistré passe en premier, ses cadres copiés");
+        ok(O.contenuValide(s3.e.magazine), "une page faite d'un gabarit enregistré se sauvegarde sans lui");
+      } finally { enregistrerGabarits([]); }
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : le lot 4 (miroir, ⇧-clic, glisser une page, pose en libre, cadres retouchés, calques)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);

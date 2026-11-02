@@ -6,6 +6,7 @@ import {
   type CibleDepot, type EtatEditeur, type Geste, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
+import { chargerGabarits } from "./gabaritsClient";
 import { CtxEd, UI_NEUVE, fermerTexteDom, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
 import { Bandeaux, Barre } from "./Barre";
@@ -89,6 +90,14 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
 
   useEffect(() => { etatRef.current = etat; });
 
+  /* lot 4 : les gabarits enregistrés par l'atelier rejoignent le catalogue (l'éditeur marche sans eux) */
+  const [, setGabaritsCharges] = useState(false);
+  useEffect(() => {
+    let annule = false;
+    void chargerGabarits().then((ok) => { if (!annule && ok) setGabaritsCharges(true); });
+    return () => { annule = true; };
+  }, []);
+
   /* Création libre : des photos importées après l'ouverture rejoignent le catalogue (le magazine ne bouge pas). */
   if (etat && catalogue.photos.some((p) => !etat.catalogue.has(p.id))) {
     setEtat(appliquer(etat, { type: "ajouterAuCatalogue", photos: catalogue.photos }));
@@ -170,8 +179,11 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     G.current?.nettoyer();
     let ok = false;
     const g: Glisse = { source, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, actif: false, cle: null, ressort: null, nettoyer: () => {} };
-    const bouger = (ev: PointerEvent) => {
+    let alt = false;
+    const bouger = (ev: { clientX: number; clientY: number; altKey: boolean }) => {
       g.x = ev.clientX; g.y = ev.clientY;
+      const altChange = ev.altKey !== alt;
+      alt = ev.altKey;
       if (!g.actif) {
         if (Math.hypot(ev.clientX - g.x0, ev.clientY - g.y0) < 8) return; /* un clic n'est jamais un glisser */
         g.actif = true;
@@ -183,9 +195,9 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       if (pile) pile.style.transform = posPile(ev.clientX, ev.clientY);
       const cur = etatRef.current;
       if (!cur) return;
-      const cible = cibleSous(ev.clientX, ev.clientY, source, cur);
+      const cible = cibleSous(ev.clientX, ev.clientY, source, cur, alt);
       const cle = cible ? JSON.stringify(cible) : null;
-      if (cle === g.cle) return;
+      if (cle === g.cle && !altChange) return;
       g.cle = cle;
       if (g.ressort) clearTimeout(g.ressort);
       g.ressort = null;
@@ -215,13 +227,19 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       envoyer({ type: "lacher" });
       if (ok && cible) flasher(cible);
     };
+    /* ⌥ pressé ou relâché sans bouger : la cible change (pose en libre, lot 4) */
+    const touche = (ev: KeyboardEvent) => { if (ev.key === "Alt" && g.actif) { ev.preventDefault(); bouger({ clientX: g.x, clientY: g.y, altKey: ev.type === "keydown" }); } };
     g.nettoyer = () => {
+      window.removeEventListener("keydown", touche);
+      window.removeEventListener("keyup", touche);
       window.removeEventListener("pointermove", bouger);
       window.removeEventListener("pointerup", lacher);
       window.removeEventListener("pointercancel", annulerGlisser);
       if (g.ressort) clearTimeout(g.ressort);
     };
     G.current = g;
+    window.addEventListener("keydown", touche);
+    window.addEventListener("keyup", touche);
     window.addEventListener("pointermove", bouger);
     window.addEventListener("pointerup", lacher);
     window.addEventListener("pointercancel", annulerGlisser);
@@ -257,9 +275,11 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && dansGrille && !e.altKey) return;
     if (e.key === "Enter" && t && t.tagName === "BUTTON") return;
     const k = e.key;
-    if (!["Escape", "ArrowLeft", "ArrowRight", "Backspace", "Delete", "Enter", "r", "R", "x", "X", "p", "P", "t", "T", "z", "Z"].includes(k)) return;
+    /* lot 4 : ⌘] ⌘[ (et ⌘↑ ⌘↓) rangent le cadre actif dans les calques */
+    const calque = (e.metaKey || e.ctrlKey) && !!ed.cadreActif && ["]", "[", "ArrowUp", "ArrowDown"].includes(k);
+    if (!calque && !["Escape", "ArrowLeft", "ArrowRight", "Backspace", "Delete", "Enter", "r", "R", "x", "X", "p", "P", "t", "T", "m", "M", "z", "Z"].includes(k)) return;
     if ((k === "z" || k === "Z") && !(e.metaKey || e.ctrlKey)) return;
-    if ((e.metaKey || e.ctrlKey) && !(k === "z" || k === "Z")) return;
+    if ((e.metaKey || e.ctrlKey) && !(k === "z" || k === "Z") && !calque) return;
     e.preventDefault();
     const g: Geste = { type: "touche", cle: k, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey };
     if ((k === "r" || k === "R") && pointeur.current) {

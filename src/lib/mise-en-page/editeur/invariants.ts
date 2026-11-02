@@ -5,14 +5,14 @@
  * par l'écran en production.
  */
 
-import { dispositionDe, templateParId, utilisations, type Cible, type Magazine } from "../magazine";
+import { TEMPLATE_LIBRE, cadresPropres, dispositionDe, templateParId, utilisations, type Cible, type Magazine } from "../magazine";
 import { cadrer } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
 import { MODIFIANTS, estModifiant, lectureSeule, numeroDe, preparer } from "./etat";
 import { planifier } from "./plans";
 import { cibleSurPlanche, gabaritsClasses, precedentDe, refPour, type CatalogueRef } from "./operations";
 import {
-  HISTORIQUE_MAX, affectation, cadresPhoto, cadresTexte, egal, estNeutre, idsDispo, idsMagazine, idsPlanche, indexPlanche, maxDe, photosDe,
+  HISTORIQUE_MAX, affectation, egal, estNeutre, idsDispo, idsMagazine, idsPlanche, indexPlanche, maxDe, photosDe,
   plancheDe, porteeDe, saisi,
 } from "./outils";
 import type { EtatEditeur, GestePrimitif, Geste, Plan } from "./types";
@@ -53,10 +53,20 @@ function invariantsStatiques(e: EtatEditeur, err: string[]): void {
     for (const [cible, d] of dispos) {
       if (!d) continue;
       const t = templateParId(d.templateId);
-      if (!t) { err.push(`I3 gabarit inconnu ${d.templateId}`); continue; }
-      if (t.portee !== porteeDe(cible)) err.push(`I3 portée ${d.templateId} sur ${cible}`);
-      if (d.photos.length !== cadresPhoto(t).length) err.push(`I2 ${p.id}/${cible} photos ${d.photos.length} ≠ ${cadresPhoto(t).length}`);
-      if (d.textes.length !== cadresTexte(t).length) err.push(`I2 ${p.id}/${cible} textes`);
+      /* lot 4 : une disposition retouchée lit ses propres cadres ; sinon le gabarit doit exister, à la bonne portée */
+      if (!d.cadres) {
+        if (!t) { err.push(`I3 gabarit inconnu ${d.templateId}`); continue; }
+        if (t.portee !== porteeDe(cible)) err.push(`I3 portée ${d.templateId} sur ${cible}`);
+      } else if (!t && d.templateId !== TEMPLATE_LIBRE && !d.templateId.startsWith("M-")) err.push(`I3 gabarit retouché inconnu ${d.templateId}`);
+      if (d.miroir && cible !== "double") err.push(`L4 miroir sur une page ${p.id}/${cible}`);
+      const propres = cadresPropres(d) ?? [];
+      const cP = propres.filter((c) => c.role === "photo");
+      if (d.photos.length !== cP.length) err.push(`I2 ${p.id}/${cible} photos ${d.photos.length} ≠ ${cP.length}`);
+      if (d.textes.length !== propres.length - cP.length) err.push(`I2 ${p.id}/${cible} textes`);
+      if (d.cadres) {
+        const xMin = cible === "double" ? -3 : 0, xMax = cible === "double" ? 423 : 213;
+        for (const c of d.cadres) if (c.role === "photo" && (c.l < 10 - 1e-9 || c.h < 10 - 1e-9 || c.x < xMin - 1e-9 || c.x + c.l > xMax + 1e-9 || c.y < -3 - 1e-9 || c.y + c.h > 300 + 1e-9)) err.push(`L4 cadre retouché hors de la page ${p.id}/${cible}`);
+      }
       const n = idsDispo(d).length;
       if (n > maxDe(porteeDe(cible))) err.push(`I7 ${p.id}/${cible} ${n} photos`);
       if (n === 0) err.push(`I8 ${p.id}/${cible} disposition sans photo`);
@@ -69,7 +79,7 @@ function invariantsStatiques(e: EtatEditeur, err: string[]): void {
         }
         const r = a.recadrage;
         if (!(Number.isFinite(r.zoom) && r.zoom >= 1 && r.zoom <= 8 && Number.isFinite(r.dx) && Number.isFinite(r.dy))) err.push(`I16 recadrage hors bornes ${p.id}/${cible}/${k}`);
-        const c = cadresPhoto(t)[k];
+        const c = cP[k];
         if (c && a.photoId) {
           const g = cadrer(refPour(e.catalogue, a.photoId), c, r);
           const eps = 1e-9;
@@ -100,7 +110,7 @@ function verifierChoix(m: Magazine, plancheId: string, cat: CatalogueRef, err: s
   const cibles: Cible[] = seule ? [seule] : p.mode === "double" ? ["double"] : ["gauche", "droite"];
   for (const cible of cibles) {
     const d = dispositionDe(p, cible);
-    if (!d) continue;
+    if (!d || d.cadres) continue;
     const premier = gabaritsClasses(porteeDe(cible), idsDispo(d).map((id) => refPour(cat, id)), precedentDe(m, i, cible))[0];
     if (!premier || premier.template.id !== d.templateId) err.push(`I19 ${op} ${plancheId}/${cible} : ${d.templateId} au lieu de ${premier && premier.template.id}`);
   }
@@ -168,6 +178,37 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       if (!a.plancheId || !p) break;
       if (plus.length || !memes(moins, idsPlanche(p))) err.push(`I12 ${op} bilan faux`);
       if (op === "supprimerPlanche" && indexPlanche(mAvant, a.plancheId) === 0 && m2.planches[0].id !== mAvant.planches[0].id) err.push("I5 planche 1 supprimée");
+      break;
+    }
+    case "poserLibre": {
+      /* lot 4 : comme un ajout, mais rien ne se recompose : les cadres d'avant restent, la photo arrive devant */
+      if (!memes(plus, is.posees) || moins.length) err.push(`I12 poserLibre bilan faux (+${plus} −${moins})`);
+      const demandees = (a.ids ?? []).length;
+      if (is.posees.length + is.restees.length + is.dejaLa + is.ignorees !== demandees) err.push("I13 poserLibre compte faux");
+      break;
+    }
+    case "retirerCadres": {
+      const cles = new Set<string>();
+      const avant = (a.refs ?? []).flatMap((r) => {
+        const x = affectation(mAvant, r), k = r ? `${r.plancheId}|${r.cible}|${r.index}` : "";
+        if (!x?.photoId || cles.has(k)) return [];
+        cles.add(k);
+        return [x.photoId];
+      });
+      if (plus.length || !memes(moins, avant)) err.push(`I12 retirerCadres bilan faux (+${plus} −${moins})`);
+      break;
+    }
+    case "deplacerCadres":
+      if (!memes(plus, moins)) err.push(`I12 deplacerCadres a perdu ou gagné une photo (+${plus} −${moins})`);
+      break;
+    case "miroir": case "placerCadre": case "ajusterCadre": case "calque": {
+      if (plus.length || moins.length) err.push(`I12 ${op} bilan non nul (+${plus} −${moins})`);
+      const id = a.plancheId ?? a.ref?.plancheId;
+      const pA = id ? plancheDe(mAvant, id) : null, pB = id ? plancheDe(m2, id) : null;
+      if (!pA || !pB || !memes(idsPlanche(pA), idsPlanche(pB))) err.push(`L4 ${op} a changé les photos de la planche`);
+      if (op !== "miroir" && pA && pB && pA.mode !== pB.mode) err.push(`L4 ${op} a changé le mode`);
+      if (op === "miroir" && pA && pB && pA.mode === "pages" && (pB.gauche !== pA.droite || pB.droite !== pA.gauche)) err.push("L4 miroir : pages non échangées");
+      for (const id2 of mAvant.planches.map((x) => x.id)) if (id2 !== id && plancheDe(mAvant, id2) !== plancheDe(m2, id2)) err.push(`L4 ${op} a touché une autre planche`);
       break;
     }
     case "hesiter": {

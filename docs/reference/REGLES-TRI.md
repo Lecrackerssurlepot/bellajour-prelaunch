@@ -69,3 +69,14 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 - **R44** Sur la vignette, l'insigne de la double (▮▮ numéro) est en bas à gauche.
 - **R45** La réserve s'affiche comme un simple trait (−) et ne change plus la couleur de la photo. Seule une photo déjà posée devient transparente.
 - **R46** T ne sert plus qu'à l'hésitation, partout (bande des photos comprise) ; le plein écran du tri passe sur G.
+
+## Lot 4 : étoffer sans gabarit neuf (plan du 02/11, codé le 03/11)
+- **R47** Miroir : M, ou le bouton « ⇄ Miroir » au centre au-dessus de la double (à côté de « Passer en double page »). Deux pages : la gauche et la droite s'échangent, chaque page se retourne. Une double : elle se retourne autour du pli, et le reste quand on y ajoute ou retire une photo. Rien sur la planche 1. Une annulation.
+- **R48** ⇧-clic sur un cadre l'ajoute à la sélection de cadres (ou l'en retire), sur la double affichée seulement. Suppr retire toute la sélection d'un coup ; glisser l'une d'elles les emmène toutes (une page, une double, une vignette du chemin de fer, la bibliothèque pour les retirer).
+- **R49** Glisser TOUTES les photos d'une page ouvre la bande « Inverser miroir » au bord extérieur de l'autre page : lâchée dessus, c'est le miroir. Lâchées ailleurs sur l'autre page, elles s'y ajoutent.
+- **R50** ⌥ tenu au lâcher : la photo se pose EN LIBRE, centrée sous le pointeur, à son format (80 mm de grand côté), par-dessus les autres, sans recomposer la page. Sans ⌥, rien ne change. L'aperçu le rappelle (« · ⌥ libre »). Une photo de la double lâchée en libre sur sa propre page y déplace son cadre.
+- **R51** Le cadre actif porte huit poignées et une poignée de déplacement au centre (ou ⌥ + glisser le cadre). Les coins gardent le format, ⇧ le libère. Jamais au-delà du pli, du fond perdu (3 mm), ni sous 10 mm. Une seule annulation par geste.
+- **R52** « Ajuster » (barre du cadre) : le cadre prend le format de sa photo, même centre, même surface ; la photo entière se voit (recadrage neutre).
+- **R53** « Position » (barre du cadre, dès qu'il y a deux cadres) : Devant, Avancer, Reculer, Derrière ; ⌘] ⌘[ (⌥ pour tout devant ou tout derrière), ou ⌘↑ ⌘↓. L'ordre des calques est celui de l'export Affinity ; le cadre actif garde son rang à l'écran.
+- **R54** Une page retouchée garde ses cadres : retirer une photo n'enlève que son cadre. Ajouter une photo sans ⌥, changer de gabarit ou R la recomposent. Sa pastille porte un point bleu ; le tiroir propose « Remettre le gabarit ».
+- **R55** « Enregistrer comme gabarit » (tiroir d'une page retouchée) : la page telle qu'on la voit devient un gabarit pour tous les projets, nommé « Page · 3 photos · 03/11 », proposé en tête (« Le mien ») pour le même nombre de photos. Une page faite d'un gabarit enregistré en garde une copie : elle se relit sans lui. Table `mep_gabarits` (migration 20261103, appliquée par Mathias) ; sans elle, « Table des gabarits absente » et rien d'autre ne change.

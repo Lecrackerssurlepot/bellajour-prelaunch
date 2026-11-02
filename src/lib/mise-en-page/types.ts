@@ -56,7 +56,8 @@ export type Template = {
   /** Orientations des cadres photo, dans l'ordre des cadres : « P,P,L ». */
   signature: string;
   attribut: "classique" | "original";
-  origine: "annexe" | "grille" | "epingle";
+  /** `atelier` (lot 4) : enregistré depuis l'éditeur, table `mep_gabarits`. */
+  origine: "annexe" | "grille" | "epingle" | "atelier";
   cadres: Cadre[];
   /** Aplats dessinés SOUS les cadres, dans cet ordre. */
   decor?: Aplat[];

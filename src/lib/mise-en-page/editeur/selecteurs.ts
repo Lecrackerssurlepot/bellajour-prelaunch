@@ -9,6 +9,7 @@ import type { Aplat, Template } from "../types";
 import { dpi, estPleine, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
 import { visibles } from "./bibliotheque";
+import { pageEntiere } from "./libre";
 import type { CibleDepot, EtatEditeur, Issue, RefCadre, SourceGlisser } from "./types";
 
 const courante = (e: EtatEditeur, id?: string): string => id ?? e.plancheCourante;
@@ -203,6 +204,8 @@ export function gabaritsPour(e: EtatEditeur, plancheId: string, cible: Cible): G
 
 export type ActionsPlanche = {
   premiere: boolean; vider: boolean; supprimer: boolean; fusionner: boolean; separer: boolean; zoneDouble: boolean; deplacable: boolean; pleine: boolean;
+  /** Lot 4 : le miroir a-t-il un sens (planche 2 et plus, pas vide) ; les cibles retouchées à la main. */
+  miroir: boolean; retouchees: Cible[];
 };
 
 export function actionsPlanche(e: EtatEditeur, plancheId: string): ActionsPlanche | null {
@@ -213,6 +216,8 @@ export function actionsPlanche(e: EtatEditeur, plancheId: string): ActionsPlanch
     premiere: i === 0, vider: !!(p.double || p.gauche || p.droite), supprimer: i > 0,
     fusionner: i > 0 && p.mode === "pages", separer: i > 0 && p.mode === "double",
     zoneDouble: i > 0 && p.mode === "pages", deplacable: i > 0, pleine: estPleine(p, i),
+    miroir: i > 0 && !!(p.double || p.gauche || p.droite),
+    retouchees: (["double", "gauche", "droite"] as const).filter((c) => !!dispositionDe(p, c)?.cadres),
   };
 }
 
@@ -220,7 +225,9 @@ export function actionsPlanche(e: EtatEditeur, plancheId: string): ActionsPlanch
 export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): boolean {
   if (!source || !cible) return false;
   const m = e.magazine;
-  if (cible.type === "bibliotheque") return source.type === "cadre";
+  if (cible.type === "bibliotheque") return source.type === "cadre" || source.type === "cadres";
+  if (cible.type === "miroir") return source.type === "cadres" && pageEntiere(m, source.refs)?.plancheId === cible.plancheId;
+  if (cible.type === "libre") return (source.type === "bibliotheque" || source.type === "cadre") && indexPlanche(m, cible.plancheId) >= 0;
   if (cible.type === "entre") return (source.type === "planche" || source.type === "bibliotheque") && cible.index >= 1;
   if (source.type === "planche") return false;
   const pid = cible.type === "cadre" || cible.type === "hesiter" ? cible.ref?.plancheId : cible.plancheId;
@@ -229,7 +236,7 @@ export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | unde
   const p = m.planches[i];
   if (cible.type === "page") return i === 0 ? cible.cote === "droite" : p.mode === "pages";
   if (cible.type === "double") return i > 0;
-  if (cible.type === "cadre") return aPhoto(m, cible.ref) && !(source.type === "bibliotheque" && (source.ids || []).length !== 1);
+  if (cible.type === "cadre") return source.type !== "cadres" && aPhoto(m, cible.ref) && !(source.type === "bibliotheque" && (source.ids || []).length !== 1);
   if (cible.type === "hesiter") return aPhoto(m, cible.ref) && source.type === "bibliotheque" && (source.ids || []).length === 1;
   return cible.type === "bande" || cible.type === "vignette";
 }

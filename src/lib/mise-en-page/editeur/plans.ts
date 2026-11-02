@@ -9,10 +9,11 @@ import {
   ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, creerDoubles, deplacerPhoto, deplacerPlanche, echangerIssue, fusionner,
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
-import { affectation, idsDispo, indexPlanche } from "./outils";
+import { affectation, dimsCadre, dispositionOuNull, idsDispo, indexPlanche } from "./outils";
 import { garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
+import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
 const planRien = (e: EtatEditeur, refus?: Refus): Plan =>
@@ -70,6 +71,47 @@ function planHesiter(e: EtatEditeur, ref: RefCadre | null | undefined, action: A
   return { op: "hesiter", libelle: LIBELLE_HESITER[action] ?? "Hésitation", plancheId: ref.plancheId, issue: { ...is, magazine: m2 }, args: { ref, photoId } };
 }
 
+/* ─── lot 4 : miroir, libre, calques, plusieurs cadres ─── */
+function planMiroir(e: EtatEditeur, plancheId: string): Plan {
+  return { op: "miroir", libelle: "Miroir", plancheId, issue: miroir(e.magazine, plancheId), args: { plancheId } };
+}
+function planLibre(e: EtatEditeur, c: Extract<CibleDepot, { type: "libre" }>, ids: string[]): Plan {
+  const is = poserLibre(e.magazine, c.plancheId, c.cible, ids, c.x, c.y, e.catalogue);
+  return { op: "poserLibre", libelle: is.posees.length > 1 ? `Poser ${is.posees.length} photos en libre` : "Poser en libre", plancheId: c.plancheId, issue: is, args: { plancheId: c.plancheId, ids } };
+}
+function planPlacer(e: EtatEditeur, ref: RefCadre, x: number, y: number, l: number, h: number, libelle: string): Plan {
+  return { op: "placerCadre", libelle, plancheId: ref.plancheId, issue: placerCadre(e.magazine, ref, { x, y, l, h }, e.catalogue), args: { ref } };
+}
+const LIBELLE_CALQUE: Record<SensCalque, string> = { devant: "Mettre devant", avancer: "Avancer", reculer: "Reculer", derriere: "Mettre derrière" };
+function planRetirerCadres(e: EtatEditeur, refs: RefCadre[]): Plan {
+  const is = retirerCadres(e.magazine, refs, e.catalogue);
+  const n = Array.isArray(refs) ? refs.length : 0;
+  return { op: "retirerCadres", libelle: n > 1 ? `Retirer ${n} photos` : "Retirer une photo", plancheId: refs?.[0]?.plancheId ?? e.plancheCourante, issue: is, args: { refs } };
+}
+function planDeplacerCadres(e: EtatEditeur, refs: RefCadre[], vers: { plancheId: string; cible: Cible }): Plan {
+  const is = deplacerCadres(e.magazine, refs, vers, e.catalogue);
+  return { op: "deplacerCadres", libelle: refs.length > 1 ? `Déplacer ${refs.length} photos` : "Déplacer une photo", plancheId: vers.plancheId, issue: is, args: { refs } };
+}
+/** Une photo de la double lâchée EN LIBRE : sur sa propre page, son cadre va là ; ailleurs, elle quitte son cadre et s'y pose. */
+function planCadreLibre(e: EtatEditeur, ref: RefCadre, c: Extract<CibleDepot, { type: "libre" }>): Plan {
+  const m = e.magazine;
+  const a = affectation(m, ref);
+  if (!a || !a.photoId) return planRien(e);
+  const i = indexPlanche(m, c.plancheId);
+  const p = m.planches[i];
+  if (!p) return planRien(e);
+  const reelle: Cible = i === 0 ? "droite" : p.mode === "double" ? "double" : c.cible;
+  if (ref.plancheId === c.plancheId && ref.cible === reelle) {
+    const dims = dimsCadre(dispositionOuNull(m, ref), ref.index);
+    if (!dims) return planRien(e);
+    return planPlacer(e, ref, c.x - dims.l / 2, c.y - dims.h / 2, dims.l, dims.h, "Déplacer le cadre");
+  }
+  const r1 = retirer(m, ref, e.catalogue);
+  const r2 = poserLibre(r1.magazine, c.plancheId, c.cible, [a.photoId], c.x, c.y, e.catalogue);
+  const ok = !r1.refus && !r2.refus && r2.posees.length === 1;
+  return { op: "deplacerCadres", libelle: "Déplacer en libre", plancheId: c.plancheId, issue: ok ? issue(r2.magazine, null, { textesPerdus: r1.textesPerdus }) : issue(m, r2.refus ?? "rien"), args: { refs: [ref] } };
+}
+
 /** Des doubles neuves : à `index`, sinon juste après la planche courante. */
 function planCreerDoubles(e: EtatEditeur, ids: string[], index?: number): Plan {
   const i = index !== undefined && Number.isFinite(index) ? index : indexPlanche(e.magazine, e.plancheCourante) + 1;
@@ -102,6 +144,22 @@ function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined,
       case "bande": { const b = resoudreBande(m, cible); return b ? planAjouter(e, cible.plancheId, b.cible, ids, b.position) : planRien(e); }
       case "vignette": return planSurPlanche(e, cible.plancheId, ids);
       case "entre": return planCreerDoubles(e, ids, cible.index);
+      case "libre": return planLibre(e, cible, ids);
+      default: return planRien(e);
+    }
+  }
+  if (source.type === "cadres") {
+    const refs = Array.isArray(source.refs) ? source.refs : [];
+    switch (cible.type) {
+      case "page": return planDeplacerCadres(e, refs, { plancheId: cible.plancheId, cible: cible.cote });
+      case "double": return planDeplacerCadres(e, refs, { plancheId: cible.plancheId, cible: "double" });
+      case "bande": { const b = resoudreBande(m, cible); return b ? planDeplacerCadres(e, refs, { plancheId: cible.plancheId, cible: b.cible }) : planRien(e); }
+      case "vignette": {
+        const c = cibleSurPlanche(m, cible.plancheId);
+        return c ? planDeplacerCadres(e, refs, { plancheId: cible.plancheId, cible: c }) : { ...planRien(e, "pleine"), op: "deplacerCadres" };
+      }
+      case "miroir": return planMiroir(e, cible.plancheId);
+      case "bibliotheque": return planRetirerCadres(e, refs);
       default: return planRien(e);
     }
   }
@@ -120,6 +178,7 @@ function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined,
         return b ? planDeplacer(e, ref, { plancheId: cible.plancheId, cible: b.cible, position: b.position }) : planRien(e);
       }
       case "bibliotheque": return planRetirer(e, ref);
+      case "libre": return planCadreLibre(e, ref, cible);
       case "vignette": {
         if (cible.plancheId === ref.plancheId || indexPlanche(m, cible.plancheId) < 0) return planRien(e);
         const c = cibleSurPlanche(m, cible.plancheId);
@@ -212,6 +271,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return simple("marquer", libelle, e.plancheCourante, marquer(m, ids, voulue), {});
     }
     case "hesiter": return planHesiter(e, g.ref, g.action, g.photoId);
+    case "miroir": return planMiroir(e, courante(e, g.plancheId));
+    case "placerCadre": return g.ref ? planPlacer(e, g.ref, g.x, g.y, g.l, g.h, "Retoucher le cadre") : planRien(e);
+    case "ajusterCadre":
+      return g.ref ? { op: "ajusterCadre", libelle: "Ajuster au format", plancheId: g.ref.plancheId, issue: ajusterCadre(m, g.ref, cat), args: { ref: g.ref } } : planRien(e);
+    case "calque":
+      return g.ref ? { op: "calque", libelle: LIBELLE_CALQUE[g.sens] ?? "Calque", plancheId: g.ref.plancheId, issue: calque(m, g.ref, g.sens), args: { ref: g.ref } } : planRien(e);
+    case "retirerCadres": return planRetirerCadres(e, Array.isArray(g.refs) ? g.refs : []);
     case "reglerTri": return simple("reglerTri", "Photos visées", e.plancheCourante, reglerVisees(m, g.visees), {});
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));

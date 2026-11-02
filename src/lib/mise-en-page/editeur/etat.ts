@@ -37,6 +37,7 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     plancheCourante: courante,
     selection: { ids: [], ancre: null },
     cadreActif: null,
+    cadresSel: [],
     echangeArme: null,
     recadrage: null,
     texte: null,
@@ -102,6 +103,10 @@ function synchroniser(e: EtatEditeur): EtatEditeur {
   let x = e;
   if (indexPlanche(x.magazine, x.plancheCourante) < 0) x = { ...x, plancheCourante: x.magazine.planches[0].id };
   if (x.cadreActif && !aPhoto(x.magazine, x.cadreActif)) x = { ...x, cadreActif: null };
+  if (x.cadresSel.length) {
+    const ok = x.cadresSel.filter((r) => aPhoto(x.magazine, r));
+    if (ok.length !== x.cadresSel.length) x = { ...x, cadresSel: ok };
+  }
   if (x.echangeArme && !aPhoto(x.magazine, x.echangeArme)) x = { ...x, echangeArme: null };
   if (x.recadrage && !aPhoto(x.magazine, x.recadrage.ref)) x = fermerSeances(x);
   if (x.texte && !texteDe(x.magazine, x.texte.ref)) x = fermerSeances(x);
@@ -145,6 +150,11 @@ function primitifTouche(e: EtatEditeur, g: Touche): GestePrimitif {
   const k = typeof g.cle === "string" ? g.cle : "";
   const bas = k.toLowerCase();
   if ((g.meta || g.ctrl) && bas === "z") return { type: g.shift ? "retablir" : "annuler" };
+  /* lot 4 : l'ordre des calques, ⌘] ⌘[ comme Canva, Figma et InDesign ; ⌘↑ ⌘↓ pour les claviers où les crochets sont loin */
+  if ((g.meta || g.ctrl) && e.cadreActif && (k === "]" || k === "[" || k === "ArrowUp" || k === "ArrowDown")) {
+    const haut = k === "]" || k === "ArrowUp";
+    return { type: "calque", ref: e.cadreActif, sens: g.alt ? (haut ? "devant" : "derriere") : (haut ? "avancer" : "reculer") };
+  }
   if (g.meta || g.ctrl) return RIEN;
   if (e.confirmation && k === "Escape") return { type: "annulerConfirmation" };
   if (e.recadrage && (k === "Escape" || k === "Enter")) return { type: "fermerRecadrage" };
@@ -154,6 +164,7 @@ function primitifTouche(e: EtatEditeur, g: Touche): GestePrimitif {
       if (e.echangeArme) return { type: "desarmerEchange" };
       if (e.selection.ids.length) return { type: "viderSelection" };
       return { type: "activerCadre", ref: null };
+    case "m": return indexPlanche(e.magazine, e.plancheCourante) > 0 ? { type: "miroir", plancheId: e.plancheCourante } : RIEN;
     case "arrowleft": case "arrowright": {
       const s = bas === "arrowleft" ? -1 : 1;
       if (g.alt && e.cadreActif) {
@@ -163,6 +174,7 @@ function primitifTouche(e: EtatEditeur, g: Touche): GestePrimitif {
       return { type: "naviguer", sens: s };
     }
     case "backspace": case "delete":
+      if (e.cadresSel.length > 1) return { type: "retirerCadres", refs: e.cadresSel };
       return e.cadreActif ? { type: "retirer", ref: e.cadreActif } : RIEN;
     case "r": { const c = cibleR(e, g); return c ? { type: "autreGabarit", ...c, sens: g.shift ? -1 : 1 } : RIEN; }
     case "x": return e.cadreActif ? { type: "armerEchange", ref: e.cadreActif } : RIEN;
@@ -201,7 +213,8 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "hesiter"]);
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "hesiter",
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -241,6 +254,10 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
     x = { ...x, selection: { ids, ancre: e.selection.ancre && ids.includes(e.selection.ancre) ? e.selection.ancre : ids[0] ?? null } };
   }
   if (g.type === "echanger" && g.desarmer) x = { ...x, echangeArme: null };
+  /* lot 4 : le cadre suit sa nouvelle place (calques) ; une sélection de cadres ne survit pas à un changement */
+  if (is.actif) x = { ...x, cadreActif: is.actif };
+  x = { ...x, cadresSel: x.cadreActif && plan.op !== "retirerCadres" && plan.op !== "deplacerCadres" ? [x.cadreActif] : [] };
+  if (plan.op === "retirerCadres" || plan.op === "deplacerCadres") x = { ...x, cadreActif: null };
   x = { ...x, message: null, halo: null };
   /* le tri ne touche aucune planche : pas d'éclair */
   if (plan.op === "marquer" || plan.op === "reglerTri") x = { ...x, eclair: null };
@@ -314,7 +331,7 @@ const GESTES: Gestes = {
     if (typeof g.plancheId === "string" && indexPlanche(e.magazine, g.plancheId) >= 0) id = g.plancheId;
     else if (g.sens === 1 || g.sens === -1) id = pl[borner(indexPlanche(e.magazine, e.plancheCourante) + g.sens, 0, pl.length - 1)].id;
     if (!id || id === e.plancheCourante) return e;
-    return { ...e, plancheCourante: id, cadreActif: null, echangeArme: null };
+    return { ...e, plancheCourante: id, cadreActif: null, cadresSel: [], echangeArme: null };
   },
 
   filtrer(e, g) {
@@ -367,7 +384,19 @@ const GESTES: Gestes = {
 
   activerCadre(e, g) {
     const ref = g.ref && aPhoto(e.magazine, g.ref) ? { plancheId: g.ref.plancheId, cible: g.ref.cible, index: g.ref.index } : null;
-    return { ...e, cadreActif: ref };
+    return { ...e, cadreActif: ref, cadresSel: ref ? [ref] : [] };
+  },
+  basculerCadre(e, g) {
+    if (!g.ref || !aPhoto(e.magazine, g.ref)) return e;
+    const ref = { plancheId: g.ref.plancheId, cible: g.ref.cible, index: g.ref.index };
+    const meme = (r: RefCadre) => r.plancheId === ref.plancheId && r.cible === ref.cible && r.index === ref.index;
+    /* une sélection de cadres reste sur UNE planche ; le cadre actif en fait partie */
+    const base = (e.cadresSel.length ? e.cadresSel : e.cadreActif ? [e.cadreActif] : []).filter((r) => r.plancheId === ref.plancheId);
+    if (base.some(meme)) {
+      const reste = base.filter((r) => !meme(r));
+      return { ...e, cadresSel: reste, cadreActif: reste.length ? reste[reste.length - 1] : null };
+    }
+    return { ...e, cadresSel: [...base, ref], cadreActif: ref };
   },
   armerEchange(e, g) {
     const ref = g.ref ?? e.cadreActif;
@@ -383,7 +412,7 @@ const GESTES: Gestes = {
 
   commencerGlisser(e, g) {
     if (lectureSeule(e) || !g.source) return e;
-    return { ...e, glisser: { source: g.source, survol: null, depuis: null, apercu: null }, cadreActif: null };
+    return { ...e, glisser: { source: g.source, survol: null, depuis: null, apercu: null }, cadreActif: null, cadresSel: [] };
   },
   survoler(e, g) {
     if (!e.glisser) return e;

@@ -113,19 +113,53 @@ function texteValide(v: unknown): v is TexteCadre {
   return typeof v.contenu === "string" && estFini(v.taille) && v.taille > 0 && typeof v.gras === "boolean";
 }
 
+/** Lot 4 : le nombre de cadres retouchés d'une disposition, borne technique (bien au-delà des 12 photos et de leurs textes). */
+const CADRES_MAX = 40;
+const ROLES = ["photo", "titre", "texte", "legende"];
+const CLES_CADRE = ["x", "y", "l", "h", "role", "orientation", "taille", "gras", "rotation", "groupe", "bord", "rayon", "couleur"];
+
+/** Un cadre retouché (lot 4) : la forme de `Cadre` (types.ts), mesures finies et positives, rien d'autre. */
+export function cadreValide(v: unknown): boolean {
+  if (!estObjet(v)) return false;
+  if (!Object.keys(v).every((k) => CLES_CADRE.includes(k))) return false;
+  if (!estFini(v.x) || !estFini(v.y) || !estFini(v.l) || !estFini(v.h) || v.l <= 0 || v.h <= 0) return false;
+  if (Math.abs(v.x) > 2000 || Math.abs(v.y) > 2000 || v.l > 2000 || v.h > 2000) return false;
+  if (typeof v.role !== "string" || !ROLES.includes(v.role)) return false;
+  if (v.orientation !== undefined && !["P", "L", "C"].includes(v.orientation as string)) return false;
+  for (const k of ["taille", "rotation", "bord", "rayon"]) if (v[k] !== undefined && !estFini(v[k])) return false;
+  if (v.gras !== undefined && typeof v.gras !== "boolean") return false;
+  if (v.groupe !== undefined && !estId(v.groupe)) return false;
+  if (v.couleur !== undefined && v.couleur !== "blanc") return false;
+  return true;
+}
+
 /**
  * Une disposition : un template CONNU (les ids sont stables, CLAUDE.md), de la
  * portée attendue (double sur une planche double, page sur une page), une
  * affectation par cadre photo et un texte par cadre texte, dans l'ordre.
+ * Lot 4 : avec des cadres RETOUCHÉS (`cadres`), ce sont eux qui comptent, et le
+ * gabarit peut être inconnu du serveur (enregistré par l'atelier, ou `libre`).
+ * `miroir` n'existe que sur une double, et seulement à `true`.
  */
 function dispositionValide(v: unknown, portee: "page" | "double"): v is Disposition {
-  if (!estObjet(v) || !clesExactes(v, ["templateId", "photos", "textes"])) return false;
-  if (typeof v.templateId !== "string") return false;
-  const t = templateParId(v.templateId);
-  if (!t || t.portee !== portee) return false;
+  if (!estObjet(v)) return false;
+  const aCadres = Object.prototype.hasOwnProperty.call(v, "cadres");
+  const aMiroir = Object.prototype.hasOwnProperty.call(v, "miroir");
+  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aCadres ? ["cadres"] : []), ...(aMiroir ? ["miroir"] : [])])) return false;
+  if (!estId(v.templateId)) return false;
+  if (aMiroir && (v.miroir !== true || portee !== "double")) return false;
+  let cadres: { role: string }[];
+  if (aCadres) {
+    if (!Array.isArray(v.cadres) || v.cadres.length > CADRES_MAX || !v.cadres.every(cadreValide)) return false;
+    cadres = v.cadres as { role: string }[];
+  } else {
+    const t = templateParId(v.templateId);
+    if (!t || t.portee !== portee) return false;
+    cadres = t.cadres;
+  }
   if (!Array.isArray(v.photos) || !Array.isArray(v.textes)) return false;
-  const nbPhotos = t.cadres.filter((c) => c.role === "photo").length;
-  const nbTextes = t.cadres.length - nbPhotos;
+  const nbPhotos = cadres.filter((c) => c.role === "photo").length;
+  const nbTextes = cadres.length - nbPhotos;
   return v.photos.length === nbPhotos && v.textes.length === nbTextes
     && v.photos.every(affectationValide) && v.textes.every(texteValide);
 }

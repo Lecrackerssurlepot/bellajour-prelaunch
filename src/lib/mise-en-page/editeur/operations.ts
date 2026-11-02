@@ -16,7 +16,7 @@ import { ZOOM_MIN, cadrer, type Recadrage } from "../recadrage";
 import type { Template } from "../types";
 import {
   BONUS_ANNEXE, CIBLES, LIBELLE, PENALITE_REPETITION, TOLERANCE_RAPPORT,
-  affectation, borner, cadresPhoto, cadresTexte, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
+  affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
 import type { Dims, Issue, Refus } from "./types";
@@ -151,7 +151,17 @@ export function composerDisposition(
     return avecHesitation({ photoId: id, recadrage: src ? reporterRecadrage(src.r, refs[i], src.cadre, { l: cs[i].l, h: cs[i].h }) : neutre() }, src?.hes);
   });
   const { textes, perdus } = reporterTextes(anciens, tA, t);
-  return { disposition: { templateId: t.id, photos, textes }, textesPerdus: perdus };
+  /* un gabarit enregistré par l'atelier (lot 4) : la disposition garde ses cadres, elle se relit sans lui */
+  const propres = t.origine === "atelier" ? { cadres: t.cadres.map((c) => ({ ...c })) } : {};
+  return { disposition: { templateId: t.id, photos, textes, ...propres }, textesPerdus: perdus };
+}
+
+/** Le gabarit vu par le report des textes : celui de la disposition, ou ses cadres retouchés (lot 4) sous un id qui
+ *  ne peut égaler aucun gabarit (le report se fait alors par rôle et par rang). */
+export function gabaritDe(d: Disposition | null): Template | null {
+  if (!d) return null;
+  if (!d.cadres) return templateParId(d.templateId);
+  return { id: `${d.templateId}~retouche`, nom: "", portee: "page", nbPhotos: 0, signature: "", attribut: "original", origine: "atelier", cadres: d.cadres };
 }
 
 export function remplacerPlanche(m: Magazine, i: number, p: Planche): Magazine {
@@ -182,7 +192,7 @@ export function composer(
   if (cible !== "double" && p.mode === "double") return { magazine: m, textesPerdus: 0 };
   if (i === 0 && cible !== "droite") return { magazine: m, textesPerdus: 0 };
   const ancienne = dispositionDe(p, cible);
-  const tA = ancienne ? templateParId(ancienne.templateId) : null;
+  const tA = gabaritDe(ancienne);
   const sources = sourcesDe(p);
   if (o.sources) for (const [k, v] of o.sources) if (!sources.has(k)) sources.set(k, v);
   const r = composerDisposition(ids, porteeDe(cible), cat, precedentDe(m, i, cible), o.templateId ?? null,
@@ -191,7 +201,9 @@ export function composer(
      ET comptés (I18). Latent tant qu'aucun gabarit de page n'avait de texte ; les épingles du 29/10 en ont. */
   const pagesPerdues = cible === "double" && p.mode === "pages"
     ? [p.gauche, p.droite].reduce((n, d) => n + (d ? d.textes.filter(saisi).length : 0), 0) : 0;
-  return { magazine: remplacerPlanche(m, i, avecDispo(p, cible, r.disposition)), textesPerdus: r.textesPerdus + pagesPerdues };
+  /* une double retournée (lot 4) le reste quand on y ajoute ou retire une photo */
+  const neuve = r.disposition && cible === "double" && ancienne?.miroir ? { ...r.disposition, miroir: true as const } : r.disposition;
+  return { magazine: remplacerPlanche(m, i, avecDispo(p, cible, neuve)), textesPerdus: r.textesPerdus + pagesPerdues };
 }
 
 /* ─────────────────────────── 9 à 21. Les opérations ─────────────────────────── */
@@ -252,6 +264,14 @@ export function retirer(m: Magazine, ref: RefCadre, cat: CatalogueRef): Issue {
   const d = p ? dispositionDe(p, ref.cible) : null;
   if (!d) return issue(m, "rien");
   const liste = d.photos.flatMap((x, k) => (k === ref.index || !x.photoId ? [] : [x.photoId]));
+  if (d.cadres && liste.length) {
+    /* une page retouchée (lot 4) garde ses autres cadres : seul celui de la photo retirée s'en va */
+    let k = -1;
+    const cadres = d.cadres.filter((c) => c.role !== "photo" || ++k !== ref.index);
+    const photos = d.photos.filter((_, j) => j !== ref.index);
+    const i = indexPlanche(m, ref.plancheId);
+    return issue(remplacerPlanche(m, i, avecDispo(m.planches[i], ref.cible, { ...d, photos, cadres })), null, { retiree: a.photoId });
+  }
   const r = composer(m, ref.plancheId, ref.cible, liste, cat);
   return issue(r.magazine, null, { textesPerdus: r.textesPerdus, retiree: a.photoId });
 }
@@ -314,12 +334,11 @@ export function reordonner(m: Magazine, plancheId: string, cible: Cible, de: num
   if (!d) return m;
   const n = d.photos.length;
   if (!estEntier(de) || !estEntier(vers) || de < 0 || vers < 0 || de >= n || vers >= n || de === vers) return m;
-  const t = templateParId(d.templateId);
-  if (!t) return m;
+  const cs = cadresPhotoDe(d);
+  if (cs.length !== n) return m;
   const ordre = d.photos.map((a, k) => ({ a, k }));
   const [x] = ordre.splice(de, 1);
   ordre.splice(vers, 0, x);
-  const cs = cadresPhoto(t);
   const photos = ordre.map(({ a, k }, j) => {
     const r = a.photoId ? reporterRecadrage(a.recadrage, refPour(cat, a.photoId), cs[k], cs[j]) : neutre();
     /* une photo restée à sa place garde son hésitation telle quelle */
@@ -367,7 +386,8 @@ export function choisirGabarit(m: Magazine, plancheId: string, cible: Cible, tem
   const d = dispositionDe(m.planches[i], cible);
   const t = templateParId(templateId);
   const ids = idsDispo(d);
-  if (!d || !t || t.portee !== porteeDe(cible) || t.nbPhotos !== ids.length || t.id === d.templateId) return issue(m, "rien");
+  /* le même gabarit sur une page retouchée (lot 4) la remet d'origine */
+  if (!d || !t || t.portee !== porteeDe(cible) || t.nbPhotos !== ids.length || (t.id === d.templateId && !d.cadres)) return issue(m, "rien");
   const r = composer(m, plancheId, cible, ids, cat, { templateId });
   return issue(r.magazine, null, { textesPerdus: r.textesPerdus });
 }
@@ -405,7 +425,7 @@ export function separer(m: Magazine, plancheId: string, cat: CatalogueRef): Issu
   const ids = idsDispo(d);
   const g = Math.ceil(ids.length / 2);
   const sources = sourcesDe(p);
-  const tA = d ? templateParId(d.templateId) : null;
+  const tA = gabaritDe(d);
   const gauche = composerDisposition(ids.slice(0, g), "page", cat, precedentDe(m, i, "gauche"), null, sources, d ? d.textes : [], tA);
   const droite = composerDisposition(ids.slice(g), "page", cat, precedentDe(m, i, "droite"), null, sources, [], null);
   const q: Planche = { ...p, mode: "pages", double: null, gauche: gauche.disposition, droite: droite.disposition };
@@ -534,8 +554,7 @@ export function ecrireTexteCadre(m: Magazine, ref: RefCadre, contenu: string): M
   if (!t || typeof contenu !== "string") return m;
   const p = plancheDe(m, ref.plancheId);
   const d = p ? dispositionDe(p, ref.cible) : null;
-  const tpl = d ? templateParId(d.templateId) : null;
-  const cadre = tpl ? cadresTexte(tpl)[ref.index] : undefined;
+  const cadre = cadresTexteDe(d)[ref.index];
   if (!cadre) return m;
   const v = contenu === "" ? LIBELLE[cadre.role] : contenu;
   if (v === t.contenu) return m;
