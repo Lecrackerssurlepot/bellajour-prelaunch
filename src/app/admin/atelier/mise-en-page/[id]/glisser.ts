@@ -4,6 +4,7 @@
  */
 
 import { cibleAllumee, resumeIssue, type CibleDepot, type EtatEditeur, type Geste, type Issue, type SourceGlisser } from "@/lib/mise-en-page/editeur";
+import { PAGE_H, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import { pluriel } from "./contexte";
 
 export type Glisse = {
@@ -15,10 +16,28 @@ export type Glisse = {
   nettoyer: () => void;
 };
 
-export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEditeur): CibleDepot | null {
+/** `alt` (lot 4) : ⌥ tenu, une photo lâchée sur la planche s'y pose EN LIBRE, là où est le pointeur. */
+export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEditeur, alt = false): CibleDepot | null {
   const el = document.elementFromPoint(x, y);
   if (!el) return null;
-  const multi = src.type === "bibliotheque" && src.ids.length > 1;
+  const multi = (src.type === "bibliotheque" && src.ids.length > 1) || src.type === "cadres";
+  const zm = src.type === "cadres" ? el.closest("[data-miroir]") : null;
+  if (zm) {
+    const c: CibleDepot = { type: "miroir", plancheId: zm.getAttribute("data-miroir") ?? "" };
+    return cibleAllumee(ed, src, c) ? c : null;
+  }
+  if (alt && (src.type === "bibliotheque" || src.type === "cadre")) {
+    const planche = el.closest(".ed-planche");
+    const cote = planche ? el.closest("[data-cote]") : null;
+    if (planche && cote) {
+      const [plancheId, c] = (cote.getAttribute("data-cote") ?? "").split("|");
+      const r = planche.getBoundingClientRect();
+      if ((c === "gauche" || c === "droite" || c === "double") && r.width > 0) {
+        const cb: CibleDepot = { type: "libre", plancheId, cible: c, x: ((x - r.left) / r.width) * PLANCHE_L, y: ((y - r.top) / r.height) * PAGE_H };
+        if (cibleAllumee(ed, src, cb)) return cb;
+      }
+    }
+  }
   /* Entre deux vignettes du chemin de fer : une planche s'y déplace, des photos y font une double page neuve. */
   const entre = (piste: Element): CibleDepot => {
     const vs = [...piste.querySelectorAll(".ed-cf-v")];
@@ -58,7 +77,7 @@ export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEdit
   if (vig) return { type: "vignette", plancheId: vig.getAttribute("data-vignette") ?? "" };
   const cf = src.type === "bibliotheque" ? el.closest(".ed-cf-piste") : null;
   if (cf) return entre(cf);
-  if (el.closest(".ed-ph")) return src.type === "cadre" ? { type: "bibliotheque" } : null;
+  if (el.closest(".ed-ph")) return src.type === "cadre" || src.type === "cadres" ? { type: "bibliotheque" } : null;
   if (el.closest(".ed-zone-double")) return { type: "double", plancheId: ed.plancheCourante };
   const encart = el.closest("[data-hesiter]");
   if (encart && !multi && src.type === "bibliotheque") {
@@ -93,6 +112,8 @@ export function libelleApercu(source: SourceGlisser, cible: CibleDepot | null, a
   if (a.refus) return resumeIssue(a);
   let t: string;
   if (cible.type === "hesiter") t = "Hésiter avec celle-ci";
+  else if (cible.type === "libre") t = source.type === "bibliotheque" ? "Poser en libre" : "Déplacer en libre";
+  else if (cible.type === "miroir") t = "Inverser";
   else if (cible.type === "cadre") t = source.type === "bibliotheque" && !a.echange ? "Remplacer" : "Échanger";
   else if (cible.type === "bibliotheque") t = "Retirer";
   else if (cible.type === "double") t = source.type === "bibliotheque" ? "Double page" : "Déplacer ici";
@@ -101,7 +122,9 @@ export function libelleApercu(source: SourceGlisser, cible: CibleDepot | null, a
   else if (cible.type === "entre") t = source.type === "bibliotheque" ? (a.posees.length > 12 ? "Nouvelles doubles pages" : "Nouvelle double page") : "Déplacer la planche";
   else t = source.type === "bibliotheque" ? (a.posees.length > 1 ? `Poser ${a.posees.length} photos` : "Poser") : "Déplacer ici";
   const r = resumeIssue(a);
-  return r ? `${t} · ${r}` : t;
+  /* lot 4 : sur la planche, rappeler que ⌥ pose en libre */
+  const astuce = (cible.type === "page" || cible.type === "double" || cible.type === "cadre") && (source.type === "bibliotheque" || source.type === "cadre") ? " · ⌥ libre" : "";
+  return r ? `${t} · ${r}` : `${t}${astuce}`;
 }
 
 export type EnvoiGeste = (g: Geste, silencieux?: boolean) => void;

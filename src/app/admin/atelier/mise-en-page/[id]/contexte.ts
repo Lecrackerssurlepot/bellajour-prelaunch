@@ -43,11 +43,16 @@ export type Ui = {
   doublesFlash: boolean;
   /** L'hésitation d'un cadre en confrontation, côte à côte (lot 3, double-clic sur le cadre). */
   confronter: RefCadre | null;
+  /** Lot 4 : le cadre qu'on déplace ou redimensionne à la souris (repère planche, mm), avant le lâcher. */
+  retouche: { ref: RefCadre; x: number; y: number; l: number; h: number } | null;
+  /** Lot 4 : le menu « Position » (ordre des calques) ouvert sur ce cadre (« planche|cible|index »). */
+  position: string | null;
 };
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
   grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null,
+  retouche: null, position: null,
 };
 
 /** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */

@@ -2,7 +2,8 @@
 
 import { actionsPlanche, apercu, gabaritsPour, type ActionsPlanche, type Cible, type Geste } from "@/lib/mise-en-page/editeur";
 import type { Planche } from "@/lib/mise-en-page/magazine";
-import { cadresDe } from "@/lib/mise-en-page/magazine";
+import { cadresDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
+import { enregistrerGabarit } from "./gabaritsClient";
 import { PAGE_H, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import type { Template } from "@/lib/mise-en-page/types";
 import { pc, pluriel, useEd } from "./contexte";
@@ -69,20 +70,33 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
   const pastille = (cible: Cible, pos: string, texte: string) => (
     <button type="button" key={cible} className={`ed-pastille ed-pastille--${pos}`} aria-expanded={ouverte === cible} aria-haspopup="true"
       onClick={(e) => { e.stopPropagation(); majUi({ rangee: ouverte === cible ? null : cible, apercuGab: null }); }}>
-      {texte} {Ico.bas}
+      {texte}{act.retouchees.includes(cible) ? <span className="ed-pastille-point" title="Retouchée à la main" /> : null} {Ico.bas}
     </button>
   );
+  /* lot 4 : le miroir (M), au centre, à côté de « Passer en double page » */
+  const miroir = act.miroir && ouverte !== "gauche" && ouverte !== "droite" ? (
+    <button type="button" key="mir" className="ed-pastille" title="Miroir · M"
+      onClick={(e) => { e.stopPropagation(); majUi({ apercuGab: null }); envoyer({ type: "miroir", plancheId: pl.id }); }}
+      onMouseEnter={() => majUi({ apercuGab: apercuGeste({ type: "miroir", plancheId: pl.id }) })}
+      onMouseLeave={() => majUi({ apercuGab: null })}>
+      <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 3v14M7 6 3 10l4 4M13 6l4 4-4 4" /></svg>
+      Miroir
+    </button>
+  ) : null;
   const out: React.ReactNode[] = [];
+  const centre: React.ReactNode[] = [];
   if (pl.mode === "double") {
     const n = nb(pl.double);
-    out.push(pastille("double", "c", n ? `Double page · ${pluriel(n, "photo")}` : "Double page vide"));
+    centre.push(pastille("double", "c", n ? `Double page · ${pluriel(n, "photo")}` : "Double page vide"));
+    if (miroir && ouverte !== "double") centre.push(miroir);
   } else {
     if (!act.premiere) {
       const n = nb(pl.gauche);
       out.push(pastille("gauche", "g", n ? pluriel(n, "photo") : "Page vide"));
+      if (miroir) centre.push(miroir);
       if (act.fusionner && ouverte !== "gauche" && ouverte !== "droite") {
-        out.push(
-          <button type="button" key="fus" className="ed-pastille ed-pastille--c"
+        centre.push(
+          <button type="button" key="fus" className="ed-pastille"
             onClick={(e) => { e.stopPropagation(); majUi({ apercuGab: null }); envoyer({ type: "fusionner", plancheId: pl.id }); }}
             onMouseEnter={() => majUi({ apercuGab: apercuGeste({ type: "fusionner", plancheId: pl.id }) })}
             onMouseLeave={() => majUi({ apercuGab: null })}>Passer en double page</button>
@@ -92,6 +106,7 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
     const n = nb(pl.droite);
     out.push(pastille("droite", "d", n ? pluriel(n, "photo") : "Page vide"));
   }
+  if (centre.length) out.push(<span key="c" className="ed-pastilles-c">{centre}</span>);
   return <>{out}</>;
 }
 
@@ -102,6 +117,11 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const act = actionsPlanche(etat, pl.id);
   if (!act) return null;
   const liste = gabaritsPour(etat, pl.id, cible);
+  /* lot 4 : une page retouchée s'enregistre comme gabarit, ou revient à son gabarit d'origine */
+  const d = dispositionDe(pl, cible);
+  const retouchee = act.retouchees.includes(cible);
+  const tD = d ? templateParId(d.templateId) : null;
+  const remettre: Geste | null = d && tD && tD.nbPhotos === d.photos.length ? { type: "choisirGabarit", plancheId: pl.id, cible, templateId: tD.id } : null;
   const apercuGeste = (g: Geste) => { const x = apercu(etat, g); return x.magazine !== etat.magazine ? x.magazine : null; };
   const voir = (g: Geste) => () => majUi({ apercuGab: apercuGeste(g) });
   const fermer = () => majUi({ rangee: null, apercuGab: null });
@@ -116,10 +136,19 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
             onMouseEnter={g.courant ? () => majUi({ apercuGab: null }) : voir(geste)} onFocus={g.courant ? undefined : voir(geste)}
             onClick={() => { majUi({ apercuGab: null }); envoyer(geste); }}>
             <DessinGab t={g.template} l={g.template.portee === "double" ? 120 : 60} />
-            <span>{g.id}</span>
+            <span>{g.template.origine === "atelier" ? "Le mien" : g.id}</span>
           </button>
         );
       })}
+      {retouchee && d ? (
+        <span className="ed-gab-actions">
+          <button type="button" className="ed-bt ed-bt--action" title="Garder cette page comme gabarit, pour tous les projets"
+            onClick={() => { void enregistrerGabarit(d, cible).then((r) => envoyer({ type: "annoncer", texte: r.texte })); }}>Enregistrer comme gabarit</button>
+          {remettre ? (
+            <button type="button" className="ed-bt" onMouseEnter={voir(remettre)} onClick={() => { majUi({ apercuGab: null }); envoyer(remettre); }}>Remettre le gabarit</button>
+          ) : null}
+        </span>
+      ) : null}
       {act.separer ? (
         <span className="ed-gab-actions">
           <button type="button" className="ed-bt" onMouseEnter={voir({ type: "separer", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "separer", plancheId: pl.id }); }}>Séparer</button>

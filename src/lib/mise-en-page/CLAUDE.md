@@ -15,6 +15,8 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
   un élément ou un attribut qu'après un nouvel essai Affinity (`scripts/idml-essai.ts`). `paquet.ts` : les zips
   (fflate) ; `mimetype` PREMIER et stocké.
 - `editeur/hesitation.ts` (lot 3, 02/11) : `Affectation.hesitation` = une seconde photo DERRIÈRE celle du cadre (facultative, écrite seulement si présente, `tranchee: true` une fois choisie). Jamais exportée ni comptée ; elle suit sa photo dans `composerDisposition`, `echanger`, `reordonner`, `deplacerPhoto`, `remplacer`.
+- `editeur/libre.ts` (lot 4, 03/11) : miroir, cadres retouchés (`Disposition.cadres`, repère du GABARIT, l'ordre = les calques ; `miroir: true` sur une double), pose en libre, plusieurs cadres. Tout passe par `cadresDe` (`versPlanche` / `versGabarit`) : écran et export lisent les mêmes cadres. Une disposition retouchée n'a plus besoin de son gabarit (`TEMPLATE_LIBRE` ou un `M-…`).
+- `gabaritsAtelier.ts` (lot 4) : les gabarits enregistrés (`mep_gabarits`, migration 20261103) ; `enregistrerGabarits` (magazine.ts) les met en tête de `candidats`, une disposition qui en vient garde une copie de ses cadres.
 - `sauvegarde.ts` : la sauvegarde partagée (table `mises_en_page`, migration 20261027, appliquée le 02/11) : `contenuValide`
   relit la forme EXACTE de `Magazine` (clé en trop = refus) ; un champ ajouté à `Magazine` s'ajoute là, sinon 400.
   `TAILLE_MAX_CONTENU` (2 Mo, borne technique) ; `issueSauvegarde` = le verrou optimiste. Routes : `/api/admin/atelier/mise-en-page/magazines`.

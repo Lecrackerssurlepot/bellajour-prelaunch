@@ -14,12 +14,12 @@
  * double et ne se supprime pas (elle se vide).
  */
 
-import { PAGE_L } from "./geometrie";
+import { PAGE_L, PLANCHE_L } from "./geometrie";
 import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, type Recadrage } from "./recadrage";
 import { TEMPLATES_ANNEXE } from "./templates";
 import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
-import { decorPourCote, orientationCadre, orientationDe, pourCote, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
+import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
 
@@ -37,6 +37,12 @@ export type Disposition = {
   photos: Affectation[];
   /** Une par cadre texte (titre, texte, légende), dans l'ordre des cadres. */
   textes: TexteCadre[];
+  /** Lot 4 : les cadres RETOUCHÉS de cette disposition (déplacés, agrandis, posés en libre, calques), dans le repère du
+   *  gabarit (page droite pour une page, planche pour une double). Présents, ils remplacent ceux du gabarit ; l'ordre du
+   *  tableau est l'ordre des calques (le dernier devant). Écrits seulement s'ils existent. */
+  cadres?: Cadre[];
+  /** Lot 4 : une double retournée en miroir (gauche ↔ droite). Écrit seulement à `true`. */
+  miroir?: true;
 };
 
 export type Planche = {
@@ -69,15 +75,55 @@ export type RefCadre = { plancheId: string; cible: Cible; index: number };
 /** Les gabarits dessinés (annexe du brief, puis épingles du 29/10), toujours avant les grilles de secours. */
 export const TEMPLATES_DESSINES: Template[] = [...TEMPLATES_ANNEXE, ...TEMPLATES_EPINGLES];
 
+/** Lot 4 : le gabarit d'une disposition composée à la main (photos posées en libre sur une page vide). Aucun cadre à lui :
+ *  ceux de la disposition (`cadres`) font foi. */
+export const TEMPLATE_LIBRE = "libre";
+
+/** Lot 4 : les gabarits enregistrés par l'atelier (table `mep_gabarits`), chargés par l'écran. Ils passent AVANT les
+ *  dessinés dans `candidats`. Une disposition qui en vient garde une copie de ses cadres : elle se relit sans eux. */
+let enregistres: Template[] = [];
 let catalogue: Map<string, Template> | null = null;
 const index = (): Map<string, Template> => {
-  if (!catalogue) catalogue = new Map([...TEMPLATES_DESSINES, ...toutesLesGrilles()].map((t) => [t.id, t]));
+  if (!catalogue) catalogue = new Map([...enregistres, ...TEMPLATES_DESSINES, ...toutesLesGrilles()].map((t) => [t.id, t]));
   return catalogue;
 };
 
-/** Tout le catalogue : annexe puis grilles. */
+/** Remplace les gabarits enregistrés connus (rechargés par l'écran). */
+export function enregistrerGabarits(liste: readonly Template[]): void {
+  enregistres = liste.filter((t) => t.origine === "atelier").map((t) => ({ ...t, cadres: t.cadres.map((c) => ({ ...c })) }));
+  catalogue = null;
+}
+export const gabaritsEnregistres = (): readonly Template[] => enregistres;
+
+/** Tout le catalogue : enregistrés, annexe puis grilles. */
 export const tousLesTemplates = (): Template[] => [...index().values()];
 export const templateParId = (id: string): Template | null => index().get(id) ?? null;
+
+/** Le miroir d'un cadre dans une largeur (x' = L − x − l, rotation inversée) : involution. */
+export function miroirCadre<C extends Cadre>(c: C, largeur: number): C {
+  const m: C = { ...c, x: largeur - c.x - c.l };
+  if (c.rotation !== undefined) m.rotation = c.rotation === 0 ? 0 : -c.rotation;
+  return m;
+}
+
+/** Les cadres d'une disposition dans le repère de son GABARIT (retouchés s'il y en a), ou null s'ils ne vont pas à la cible. */
+export function cadresPropres(d: Disposition, cible?: Cible): Cadre[] | null {
+  if (d.cadres) return d.cadres;
+  const t = templateParId(d.templateId);
+  if (!t) return null;
+  if (cible !== undefined && (t.portee === "double") !== (cible === "double")) return null;
+  return t.cadres;
+}
+
+/** Repère du gabarit → repère planche (et retour : chaque branche est une involution ou une translation inverse). */
+export function versPlanche(c: Cadre, cible: Cible, miroir: boolean): Cadre {
+  if (cible === "double") return miroir ? miroirCadre(c, PLANCHE_L) : { ...c };
+  return cible === "gauche" ? miroirCadre(c, PAGE_L) : { ...c, x: c.x + PAGE_L };
+}
+export function versGabarit(c: Cadre, cible: Cible, miroir: boolean): Cadre {
+  if (cible === "droite") return { ...c, x: c.x - PAGE_L };
+  return versPlanche(c, cible, miroir);
+}
 
 /**
  * Les cadres d'une disposition en repère PLANCHE : double telle quelle, page
@@ -87,17 +133,19 @@ export const templateParId = (id: string): Template | null => index().get(id) ??
 export function decorDe(disposition: Disposition, cible: Cible): Aplat[] {
   const t = templateParId(disposition.templateId);
   if (!t) return [];
-  if (cible === "double") return t.portee === "double" ? decorPourCote(t, "droite") : [];
+  if (cible === "double") {
+    if (t.portee !== "double") return [];
+    const a = decorPourCote(t, "droite");
+    return disposition.miroir ? a.map((x) => ({ ...x, x: PLANCHE_L - x.x - x.l })) : a;
+  }
   if (t.portee !== "page") return [];
   return decorPourCote(t, cible).map((a) => (cible === "droite" ? { ...a, x: a.x + PAGE_L } : a));
 }
 
 export function cadresDe(disposition: Disposition, cible: Cible): Cadre[] {
-  const t = templateParId(disposition.templateId);
-  if (!t) return [];
-  if (cible === "double") return t.portee === "double" ? t.cadres.map((c) => ({ ...c })) : [];
-  if (t.portee !== "page") return [];
-  return pourCote(t, cible).map((c) => (cible === "droite" ? { ...c, x: c.x + PAGE_L } : c));
+  const base = cadresPropres(disposition, cible);
+  if (!base) return [];
+  return base.map((c) => versPlanche(c, cible, !!disposition.miroir));
 }
 
 /* ─────────────────────────── Le choix ─────────────────────────── */
@@ -153,7 +201,7 @@ export function candidats(portee: Portee, photos: PhotoRef[]): Template[] {
   if (n === 0) return [];
   const os = retenues.map(orientationPhoto);
   const compat = (t: Template) => signaturesCompatibles(orientationsCadres(t), os);
-  const annexe = TEMPLATES_DESSINES.filter((t) => t.portee === portee && t.nbPhotos === n);
+  const annexe = [...enregistres, ...TEMPLATES_DESSINES].filter((t) => t.portee === portee && t.nbPhotos === n);
   const grilles = portee === "page" ? grillesPage(n) : grillesDouble(n);
   return [
     ...annexe.filter(compat),

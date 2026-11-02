@@ -12,6 +12,7 @@ import type { Orientation, Template } from "../types";
 import type { SourceMep } from "../sauvegarde";
 import type { Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
+import type { SensCalque } from "./libre";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -57,6 +58,8 @@ export type GroupeBibliotheque = { cle: string; libelle: string; ids: string[] }
 export type SourceGlisser =
   | { type: "bibliotheque"; ids: string[] }
   | { type: "cadre"; ref: RefCadre; photoId?: string | null }
+  /** Lot 4 : plusieurs cadres de la double, sélectionnés au ⇧-clic, glissés ensemble. */
+  | { type: "cadres"; refs: RefCadre[] }
   | { type: "planche"; plancheId: string };
 
 export type CibleDepot =
@@ -68,6 +71,10 @@ export type CibleDepot =
   /** `cote` précise le segment (gauche/droite) : à la frontière des deux pages, la position seule est ambiguë. */
   | { type: "bande"; plancheId: string; position: number; cote?: Cote }
   | { type: "bibliotheque" }
+  /** Lot 4 : la bande « Inverser » au bord extérieur de l'autre page, quand on glisse TOUTE une page. */
+  | { type: "miroir"; plancheId: string }
+  /** Lot 4 : ⌥ au lâcher, la photo se pose en libre, centrée en (x, y), repère planche (mm). */
+  | { type: "libre"; plancheId: string; cible: Cible; x: number; y: number }
   | { type: "vignette"; plancheId: string }
   | { type: "entre"; index: number };
 
@@ -87,6 +94,8 @@ export type Issue = {
   retiree?: string;
   echange?: boolean;
   nouvellePlanche?: string | null;
+  /** Lot 4 : la nouvelle place du cadre actif quand l'opération l'a déplacé (ordre des calques). */
+  actif?: RefCadre;
 };
 
 export type Dims = { l: number; h: number };
@@ -124,6 +133,8 @@ export type EtatEditeur = {
   plancheCourante: string;
   selection: { ids: string[]; ancre: string | null };
   cadreActif: RefCadre | null;
+  /** Lot 4 : les cadres ajoutés au ⇧-clic, en plus du cadre actif (qui en fait toujours partie s'il y en a). */
+  cadresSel: RefCadre[];
   echangeArme: RefCadre | null;
   /** Séance de recadrage ouverte : `avant` = le magazine à l'ouverture (une entrée d'historique à la fermeture). */
   recadrage: { ref: RefCadre; avant: Magazine } | null;
@@ -182,7 +193,13 @@ export type GesteModifiant =
   | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
   | { type: "reglerTri"; visees: number | null; confirme?: boolean }
   /** L'hésitation d'un cadre (lot 3) : ajouter une photo derrière, intervertir (T), trancher, rouvrir, oublier. */
-  | { type: "hesiter"; ref: RefCadre; action: ActionHesitation; photoId?: string; confirme?: boolean };
+  | { type: "hesiter"; ref: RefCadre; action: ActionHesitation; photoId?: string; confirme?: boolean }
+  /** Lot 4 : le miroir d'une planche (M) ; les cadres retouchés ; plusieurs cadres d'un coup. */
+  | { type: "miroir"; plancheId?: string; confirme?: boolean }
+  | { type: "placerCadre"; ref: RefCadre; x: number; y: number; l: number; h: number; confirme?: boolean }
+  | { type: "ajusterCadre"; ref: RefCadre; confirme?: boolean }
+  | { type: "calque"; ref: RefCadre; sens: SensCalque; confirme?: boolean }
+  | { type: "retirerCadres"; refs: RefCadre[]; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -213,6 +230,8 @@ export type GesteEcran =
   | { type: "selectionner"; ids: string[] }
   | { type: "viderSelection" }
   | { type: "activerCadre"; ref: RefCadre | null }
+  /** Lot 4 : ⇧-clic sur un cadre, il entre dans la sélection de cadres ou en sort. */
+  | { type: "basculerCadre"; ref: RefCadre }
   | { type: "armerEchange"; ref?: RefCadre }
   | { type: "desarmerEchange" }
   | { type: "panneau"; ouvert?: boolean; largeur?: number; basculer?: boolean }
@@ -257,10 +276,11 @@ export type GestePrimitif = GesteModifiant | GesteEcran;
 export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
-  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "hesiter";
+  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "hesiter"
+  | "miroir" | "placerCadre" | "ajusterCadre" | "calque" | "poserLibre" | "retirerCadres" | "deplacerCadres";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
-export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; photoId?: string; position?: number };
+export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; refs?: readonly RefCadre[]; photoId?: string; position?: number };
 
 export type Plan = { op: OpPlan; libelle: string; plancheId: string; issue: Issue; args: ArgsPlan };
 

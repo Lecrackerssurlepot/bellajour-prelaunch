@@ -2,10 +2,12 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, aplatsPlanche, apercuDepot, cadresPlanche, idsPlanche, LIBELLE, photosDe, reperesBibliotheque, resumeIssue, SEUIL_DPI, selectionOrdonnee,
-  type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type RefCadre, type SourceGlisser,
+  actionsPlanche, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
+  SEUIL_DPI, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
+  type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { Magazine, Planche } from "@/lib/mise-en-page/magazine";
+import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { PAGE_H, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
@@ -49,7 +51,15 @@ export default function Scene() {
   const zoneDouble = glisseUnePhoto && !!act?.zoneDouble;
   const cotes = pl.mode === "double" ? (["double"] as const) : premiere ? (["droite"] as const) : (["gauche", "droite"] as const);
   const estCibleCote = (c: string) => !!cibleCour && ((cibleCour.type === "page" && cibleCour.cote === c && cibleCour.plancheId === pl.id) || (cibleCour.type === "double" && c === "double" && cibleCour.plancheId === pl.id));
-  const frames = cadresPlanche(etat, pl.id);
+  /* lot 4 : pendant qu'on déplace ou redimensionne un cadre, il se dessine à sa place provisoire */
+  const rt = ui.retouche;
+  const frames = cadresPlanche(etat, pl.id).map((f) => {
+    if (!rt || f.role !== "photo" || !memeRef(f.ref, rt.ref)) return f;
+    const ph = f.photoId ? etat.catalogue.get(f.photoId) : null;
+    return { ...f, x: rt.x, y: rt.y, l: rt.l, h: rt.h, cadrage: cadrer(ph ?? { l: 1, h: 1 }, { l: rt.l, h: rt.h }, f.recadrage) };
+  });
+  /* lot 4 : toute une page glissée → la bande « Inverser » au bord extérieur de l'autre page */
+  const pe = d && d.source.type === "cadres" ? pageEntiere(m, d.source.refs) : null;
   const framesA = montrerApercu ? cadresPlanche({ ...etat, magazine: ap!.magazine }, pl.id) : null;
   const nouveaux = framesA ? framesA.filter((f) => f.role === "photo" && f.photoId && !frames.some((g) => g.role === "photo" && memeRef(g.ref, f.ref) && g.photoId === f.photoId)).map((f) => f.ref) : [];
 
@@ -70,7 +80,7 @@ export default function Scene() {
   };
   const clicPlanche = (e: React.MouseEvent) => {
     if (clicSupprime() || ro) return;
-    if ((e.target as HTMLElement).closest(".ed-pastille, .ed-rangee-gab, .ed-txt, .ed-cadre-barre, .ed-confirm, button")) return;
+    if ((e.target as HTMLElement).closest(".ed-pastille, .ed-rangee-gab, .ed-txt, .ed-cadre-barre, .ed-confirm, .ed-cs, button")) return;
     if (ss && ss.apercu && !ss.apercu.refus) { majUi({ survolSel: null }); envoyer({ type: "cliquerCible", cible: ss.cible }); flasher(ss.cible); return; }
     if (!(e.target as HTMLElement).closest("[data-cadre]") && etat.cadreActif) envoyer({ type: "activerCadre", ref: null });
   };
@@ -125,6 +135,12 @@ export default function Scene() {
           <div className={cls("ed-anneau", refus && "ed-anneau--refus")} style={cibleCour.type === "double" ? { left: 0, width: "100%" } : cibleCour.cote === "gauche" ? { left: 0, width: "50%" } : { left: "50%", width: "50%" }} />
         ) : null}
         {zoneDouble ? <div className={cls("ed-zone-double", cibleCour?.type === "double" && "ed-zone-double--cible")}>Double page</div> : null}
+        {pe && pe.plancheId === pl.id ? (
+          <div className={cls("ed-zone-miroir", pe.cote === "gauche" ? "ed-zone-miroir--d" : "ed-zone-miroir--g", cibleCour?.type === "miroir" && "ed-zone-miroir--cible")} data-miroir={pl.id}>
+            Inverser<br />miroir
+          </div>
+        ) : null}
+        {!montrerApercu ? <Selections frames={frames} /> : null}
         {!d && !ro && !(ss && ss.apercu) && act ? <Pastilles pl={pl} act={act} /> : null}
         {bullePose ? <div className="ed-bulle">{bullePose}</div> : null}
         {bulleSel ? <div className="ed-bulle">{bulleSel}</div> : null}
@@ -180,13 +196,21 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   const hes = f.hesitation;
   const attrs = fantome ? {} : { "data-cadre": `${pl.id}|${ref.cible}|${ref.index}`, "data-cote": `${pl.id}|${ref.cible}` };
   if (!f.photoId) return <div className={cls("ed-cadre", fantome && nouv && "ed-cadre--nouv")} style={st} {...attrs} />;
+  const multi = etat.cadresSel.length > 1;
+  const dansSel = etat.cadresSel.some((r) => memeRef(r, ref));
   const clic = (e: React.MouseEvent) => {
     if (fantome || clicSupprime() || etat.selection.ids.length) return;
     e.stopPropagation();
-    envoyer(etat.echangeArme ? { type: "cliquerCible", cible: { type: "cadre", ref } } : { type: "activerCadre", ref: actif ? null : ref });
+    /* lot 4 : ⇧-clic ajoute le cadre à la sélection (ou l'en retire) */
+    if (e.shiftKey && !etat.echangeArme) { envoyer({ type: "basculerCadre", ref }); return; }
+    envoyer(etat.echangeArme ? { type: "cliquerCible", cible: { type: "cadre", ref } } : { type: "activerCadre", ref: actif && !multi ? null : ref });
   };
   const appui = fantome || ro ? undefined : (e: React.PointerEvent) => {
-    if (!etat.selection.ids.length && !etat.echangeArme && !(e.target as HTMLElement).closest(".ed-cadre-barre")) commencerAppui(e, { type: "cadre", ref, photoId: f.photoId });
+    if (etat.selection.ids.length || etat.echangeArme || (e.target as HTMLElement).closest(".ed-cadre-barre")) return;
+    /* lot 4 : ⌥ + glisser déplace le cadre lui-même, à la souris */
+    if (e.altKey && e.button === 0 && f.role === "photo") { debutRetouche(e, f, "m", majUi, envoyer); return; }
+    if (e.shiftKey) return;
+    commencerAppui(e, multi && dansSel ? { type: "cadres", refs: etat.cadresSel } : { type: "cadre", ref, photoId: f.photoId });
   };
   const src = grandeDe(adresses.get(f.photoId));
   if (f.indisponible || !src) {
@@ -194,7 +218,6 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
       <div className={cls("ed-cadre ed-cadre--indispo", actif && "ed-cadre--actif", cible && "ed-cadre--cible")} style={st} {...attrs} tabIndex={fantome ? -1 : 0} role={fantome ? undefined : "button"} aria-label="Photo indisponible"
         onClick={clic} onPointerDown={appui}>
         <span>Photo indisponible</span>
-        {actif && !d && !ro ? <BarreCadre refC={ref} indispo /> : null}
       </div>
     );
   }
@@ -231,7 +254,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
     );
   }
   return (
-    <div className={cls("ed-cadre", (actif || arme) && "ed-cadre--actif", trainee && "ed-cadre--trainee", cible && "ed-cadre--cible", (flash || eclair) && "ed-cadre--flash", fantome && nouv && "ed-cadre--nouv")}
+    <div className={cls("ed-cadre", (actif || arme) && "ed-cadre--actif", (trainee || (!fantome && !!d && d.source.type === "cadres" && dansSel)) && "ed-cadre--trainee", cible && "ed-cadre--cible", (flash || eclair) && "ed-cadre--flash", fantome && nouv && "ed-cadre--nouv")}
       style={st} {...attrs}
       tabIndex={fantome ? -1 : 0} role={fantome ? undefined : "button"} aria-label={fantome ? undefined : `${f.nom ?? "Photo"}, ${NOM_COTE[ref.cible]}`}
       onPointerDown={appui} onClick={clic}
@@ -253,24 +276,136 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
         </button>
       ) : null}
       {encart ? <span className={cls("ed-hes-encart", encartCible && "ed-hes-encart--cible")} data-hesiter={`${pl.id}|${ref.cible}|${ref.index}`}>Hésiter</span> : null}
-      {actif && !arme && !d && !ro ? <BarreCadre refC={ref} hes={hes} /> : null}
       {arme ? <span className="ed-bulle" style={{ top: 6 }}>Choisir l&apos;autre cadre</span> : null}
     </div>
   );
 }
 
-function BarreCadre({ refC, indispo, hes }: { refC: RefCadre; indispo?: boolean; hes?: CadrePhoto["hesitation"] }) {
-  const { envoyer, majUi } = useEd();
+/* ─── lot 4 : le cadre actif (ou les cadres du ⇧-clic) par-dessus tous les calques : contour, poignées, barre ───
+   Le cadre lui-même reste à son rang : on voit l'ordre des calques tel qu'il partira dans Affinity. */
+const POIGNEES = ["no", "n", "ne", "e", "se", "s", "so", "o"] as const;
+type Poignee = (typeof POIGNEES)[number] | "m";
+
+function Selections({ frames }: { frames: CadrePlanche[] }) {
+  const { etat, envoyer, majUi, ui, lectureSeule: ro } = useEd();
+  if (etat.glisser || etat.recadrage) return null;
+  const multi = etat.cadresSel.length > 1;
+  const vues = frames.filter((f): f is CadrePhoto => f.role === "photo" && !!f.photoId
+    && (memeRef(etat.cadreActif, f.ref) || (multi && etat.cadresSel.some((r) => memeRef(r, f.ref)))));
+  return (
+    <>
+      {vues.map((f) => {
+        const actif = memeRef(etat.cadreActif, f.ref);
+        const arme = memeRef(etat.echangeArme, f.ref);
+        const st: React.CSSProperties = { left: pc(f.x, PLANCHE_L), top: pc(f.y, PAGE_H), width: pc(f.l, PLANCHE_L), height: pc(f.h, PAGE_H) };
+        return (
+          <div key={`${f.ref.cible}${f.ref.index}`} className={cls("ed-cs", multi && "ed-cs--multi", ui.retouche && "ed-cs--retouche")} style={st}>
+            {/* la boîte suit la rotation du cadre ; la barre, elle, reste droite */}
+            <span className="ed-cs-boite" style={f.rotation ? { transform: `rotate(${f.rotation}deg)` } : undefined}>
+            {actif && !multi && !arme && !ro && !f.indisponible ? (
+              <>
+                {POIGNEES.map((p) => (
+                  <span key={p} className={`ed-poignee ed-poignee--${p}`} onPointerDown={(e) => debutRetouche(e, f, p, majUi, envoyer)} />
+                ))}
+                <span className="ed-poignee ed-poignee--m" title="Déplacer le cadre · ou ⌥ + glisser" onPointerDown={(e) => debutRetouche(e, f, "m", majUi, envoyer)}>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v16M2 10h16M10 2l-2.5 2.5M10 2l2.5 2.5M10 18l-2.5-2.5M10 18l2.5-2.5M2 10l2.5-2.5M2 10l2.5 2.5M18 10l-2.5-2.5M18 10l-2.5 2.5" /></svg>
+                </span>
+              </>
+            ) : null}
+            </span>
+            {actif && !arme && !ro && !ui.retouche ? (multi ? <BarreMulti n={etat.cadresSel.length} /> : <BarreCadre f={f} />) : null}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function BarreCadre({ f }: { f: CadrePhoto }) {
+  const { etat, envoyer, majUi, ui } = useEd();
+  const refC = f.ref, hes = f.hesitation, indispo = f.indisponible;
+  const rang = rangCalque(etat.magazine, refC);
+  /* le menu « Position » appartient à CE cadre : il ne s'ouvre pas sur un autre */
+  const cle = `${refC.plancheId}|${refC.cible}|${refC.index}`;
+  const ouvert = ui.position === cle;
+  const calque = (sens: SensCalque) => envoyer({ type: "calque", ref: refC, sens });
   return (
     <span className="ed-cadre-barre" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
       <button type="button" onClick={() => envoyer({ type: "armerEchange", ref: refC })}>Échanger</button>
       {indispo ? null : <button type="button" onClick={() => envoyer({ type: "ouvrirRecadrage", ref: refC })}>Recadrer</button>}
+      {indispo ? null : <button type="button" title="Le cadre prend le format de la photo" onClick={() => envoyer({ type: "ajusterCadre", ref: refC })}>Ajuster</button>}
+      {rang && rang.total > 1 ? (
+        <span className="ed-pos">
+          <button type="button" aria-expanded={ouvert} onClick={() => majUi({ position: ouvert ? null : cle })}>Position</button>
+          {ouvert ? (
+            <span className="ed-pos-menu" role="menu">
+              <button type="button" role="menuitem" disabled={rang.rang === rang.total - 1} onClick={() => calque("devant")}>Devant<kbd>⌥⌘]</kbd></button>
+              <button type="button" role="menuitem" disabled={rang.rang === rang.total - 1} onClick={() => calque("avancer")}>Avancer<kbd>⌘]</kbd></button>
+              <button type="button" role="menuitem" disabled={rang.rang === 0} onClick={() => calque("reculer")}>Reculer<kbd>⌘[</kbd></button>
+              <button type="button" role="menuitem" disabled={rang.rang === 0} onClick={() => calque("derriere")}>Derrière<kbd>⌥⌘[</kbd></button>
+              <span className="ed-pos-rang">Calque {rang.rang + 1} sur {rang.total}</span>
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       {hes?.ouverte ? <button type="button" title="Double-clic sur le cadre" onClick={() => majUi({ confronter: refC })}>Comparer</button> : null}
       {hes && !hes.ouverte ? <button type="button" title={`Hésiter de nouveau avec ${hes.nom}`} onClick={() => envoyer({ type: "hesiter", ref: refC, action: "rouvrir" })}>Hésiter encore</button> : null}
       <button type="button" onClick={() => envoyer({ type: "retirer", ref: refC })}>Retirer</button>
     </span>
   );
 }
+
+function BarreMulti({ n }: { n: number }) {
+  const { etat, envoyer } = useEd();
+  return (
+    <span className="ed-cadre-barre" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+      <span className="ed-cadre-barre-n">{n} photos</span>
+      <button type="button" onClick={() => envoyer({ type: "retirerCadres", refs: etat.cadresSel })}>Retirer</button>
+    </span>
+  );
+}
+
+/* Déplacer (m) ou redimensionner un cadre à la souris : le cadre se dessine à sa place provisoire (ui.retouche), une seule
+   entrée d'historique au lâcher. Les coins gardent le format (⇧ pour le libérer), comme Canva. */
+function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: (x: { retouche: CadreRetouche | null; position?: string | null }) => void, envoyer: (g: Geste) => void) {
+  e.stopPropagation();
+  e.preventDefault();
+  const planche = (e.currentTarget as HTMLElement).closest(".ed-planche");
+  if (!planche) return;
+  const mmParPx = PLANCHE_L / planche.getBoundingClientRect().width;
+  const x0 = e.clientX, y0 = e.clientY;
+  const r0 = { x: f.x, y: f.y, l: f.l, h: f.h };
+  const format = r0.l / r0.h;
+  let r = r0;
+  const nord = p === "n" || p === "ne" || p === "no", ouest = p === "o" || p === "no" || p === "so";
+  const est = p === "e" || p === "ne" || p === "se", sud = p === "s" || p === "se" || p === "so";
+  const mv = (ev: PointerEvent) => {
+    const dx = (ev.clientX - x0) * mmParPx, dy = (ev.clientY - y0) * mmParPx;
+    if (p === "m") r = { ...r0, x: r0.x + dx, y: r0.y + dy };
+    else {
+      let l = r0.l + (est ? dx : ouest ? -dx : 0), h = r0.h + (sud ? dy : nord ? -dy : 0);
+      if (p.length === 2 && !ev.shiftKey) h = l / format;
+      l = Math.max(COTE_MIN, l); h = Math.max(COTE_MIN, h);
+      r = { x: ouest ? r0.x + r0.l - l : r0.x, y: nord ? r0.y + r0.h - h : r0.y, l, h };
+    }
+    majUi({ retouche: { ref: f.ref, ...r } });
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", mv);
+    window.removeEventListener("pointerup", up);
+    window.removeEventListener("pointercancel", up);
+    /* le clic qui suit le lâcher ne doit pas désélectionner le cadre */
+    const avaler = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); };
+    window.addEventListener("click", avaler, { capture: true, once: true });
+    setTimeout(() => window.removeEventListener("click", avaler, { capture: true }), 0);
+    majUi({ retouche: null, position: null });
+    if (r !== r0) envoyer({ type: "placerCadre", ref: f.ref, ...r });
+  };
+  window.addEventListener("pointermove", mv);
+  window.addEventListener("pointerup", up);
+  window.addEventListener("pointercancel", up);
+}
+type CadreRetouche = NonNullable<ReturnType<typeof useEd>["ui"]["retouche"]>;
 
 /* Glisser l'image dans son cadre : des millimètres, bornés par le module de recadrage. */
 function debutRecadrage(e: React.PointerEvent, f: CadrePhoto, envoyerAvec: ReturnType<typeof useEd>["envoyerAvec"]) {
