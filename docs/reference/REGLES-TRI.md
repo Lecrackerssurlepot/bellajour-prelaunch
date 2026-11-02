@@ -5,7 +5,7 @@ Validées sur la maquette du 31/10/2026 (`~/Desktop/Bellajour/maquette-mise-en-p
 Ce que la maquette DOIT faire. Toute différence est un défaut.
 
 ## Marques
-- Trois états exclusifs par photo : aucune, gardée (★), écartée.
+- Cinq états exclusifs par photo (02/11) : aucune, coup de cœur (✦, F), gardée (★, P), réserve (◐, R), écartée (✕, X). Un coup de cœur compte comme gardée partout (onglet Gardées, jauge, Poser).
 - **R1** P sur une photo déjà gardée RETIRE la marque (bascule), et le focus reste sur la photo.
   P sur une photo sans marque ou écartée la garde, puis le focus passe à la suivante de la liste filtrée.
 - **R2** X : même règle que P avec « écartée ». Écarter une photo déjà écartée ne doit JAMAIS la ré-écarter.
@@ -38,7 +38,7 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 
 ## Composer pendant le tri (v3)
 - **R21** Entrée (ou « Poser » de la pastille, ou glisser sur la planche) pose la cible (sélection 2+, sinon la photo au focus) sur la double en cours, 12 photos au plus par double. Les photos déjà sur cette double sont ignorées ; s'il n'y a rien de neuf : bandeau « Déjà sur cette double », rien dans l'historique. Double pleine : bandeau, rien posé. Trop de photos : les premières sont posées, les autres restent sélectionnées (« N restées »).
-- **R22** Une photo posée devient gardée (★), même si elle était écartée ou sans marque. Elle porte l'insigne de sa double (numéro) dans la grille.
+- **R22** Une photo posée devient gardée (★), même si elle était écartée, en réserve ou sans marque ; un coup de cœur le reste. Elle porte l'insigne de sa double (numéro) dans la grille.
 - **R23** N crée une double juste après la double en cours avec la cible (12 au plus par double, parts égales : 13 photos → 2 doubles de 7 et 6), et elle devient la double en cours. Le « + » du chemin de fer crée une double à la fin (avec la sélection 2+ s'il y en a une). Glisser dans une fente du chemin de fer crée la double à cet endroit ; glisser sur une double du chemin de fer pose dessus.
 - **R24** Le ✕ au survol d'un cadre de la planche retire la photo de la double (sa marque ne change pas).
 - **R25** Poser, créer, retirer s'annulent et se rétablissent avec ⌘Z / ⇧⌘Z, dans le même historique que les marques (marques ET doubles reviennent ensemble).
@@ -48,3 +48,11 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 - **R29** U amène le focus sur la prochaine photo à trier (en reprenant au début s'il le faut) ; s'il n'y en a plus : bandeau « Tout est trié ».
 - **R30** Un clic sur une case de la bande d'avancement (vue une photo) y amène le focus.
 - **R31** Un clic sur le titre d'une date sélectionne toutes ses photos ; ⇧ ou ⌘ les ajoute à la sélection ; un second clic, quand elles y sont toutes, les retire.
+
+## Maquette du 02/11 (tri v4)
+- **R32** F (coup de cœur) et R (réserve) suivent la règle de bascule R1 dans la grille, en comparaison et sur la sélection.
+- **R33** Vue une photo : P, X, R, F POSENT la marque (jamais de bascule) et le focus passe TOUJOURS à la suivante, même si la photo portait déjà cette marque. 0 retire.
+- **R34** Onglets : Toutes, À trier, Gardées (coups de cœur compris), Réserve, Écartées. La réserve n'est plus « à trier ».
+- **R35** Le plein écran prend toute la fenêtre, sans la barre du projet ; le bouton de gauche « Mise en page » ferme le tri, jamais le projet. Les doubles pages sont un tiroir fermé (D, ou le bouton) qui s'ouvre 2 s après Poser ou N.
+- **R36** Le cœur du client (Éditions) s'affiche en rouge sur la vignette, en étiquette « Client » dans la vue une photo et la comparaison ; la puce « Client » ne montre que ses cœurs.
+- **R37** Une sauvegarde d'avant le 02/11 (sans `coupsDeCoeur` ni `reserve`) reste valide ; ces listes ne s'écrivent que non vides.

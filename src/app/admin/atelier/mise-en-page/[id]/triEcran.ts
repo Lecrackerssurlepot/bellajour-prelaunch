@@ -1,5 +1,5 @@
 /**
- * Le tri à l'écran (maquette validée le 31/10, `docs/reference/REGLES-TRI.md`) : la cible d'un geste, l'avance du focus, le clavier.
+ * Le tri à l'écran (maquettes du 31/10 et du 02/11, `docs/reference/REGLES-TRI.md`) : la cible d'un geste, l'avance du focus, le clavier.
  * Les marques elles-mêmes sont des gestes purs (`marquer`, `ajouterSurPlanche`, `creerDoubles`) : ici on ne fait que
  * choisir la cible, envoyer le geste et déplacer le focus.
  */
@@ -25,8 +25,9 @@ export function cibleTri(e: EtatEditeur, ui: Ui, cibleId?: string): string[] {
   return f ? [f] : sel;
 }
 
-/** P / X / 0 (et les ronds) : reposer la même marque la retire, un geste sans effet ne fait rien.
- *  Une photo marquée : le focus passe à la suivante ; retirée : il reste ; sortie du filtre : la suivante prend sa place. */
+/** F / P / R / X / 0 (et les ronds) : dans la grille, reposer la même marque la retire, un geste sans effet ne fait rien.
+ *  Vue une photo (02/11) : la marque se POSE toujours (jamais de bascule) et le focus avance toujours ; 0 retire.
+ *  Dans la grille : une photo marquée passe à la suivante ; retirée : il reste ; sortie du filtre : la suivante prend sa place. */
 export function marquerTri(c: CtxTri, m: Marque | null, cibleId?: string): void {
   if (c.lectureSeule) return;
   const { etat: e, ui } = c;
@@ -35,11 +36,13 @@ export function marquerTri(c: CtxTri, m: Marque | null, cibleId?: string): void 
   if (!ids.length) return;
   const seule = ids.length === 1;
   const cur = seule ? ids[0] : focusCourant(e, ui);
-  const voulue = marqueEffective(e.magazine, ids, m);
-  const geste: Geste = { type: "marquer", ids, marque: m };
+  const une = ui.grand && ui.vue === "une" && seule;
+  const voulue = une ? m : marqueEffective(e.magazine, ids, m);
+  const geste: Geste = une ? { type: "marquer", ids, marque: m, poser: true } : { type: "marquer", ids, marque: m };
   const x = appliquer(e, geste);
   if (x.magazine === e.magazine) {
     if (!seule) c.envoyer({ type: "viderSelection" });
+    if (une && cur) { const l = visibles(e), i = l.indexOf(cur); if (i >= 0 && i < l.length - 1) c.majUi({ focus: l[i + 1], loupeTri: false }); }
     return;
   }
   c.envoyer(geste);
@@ -48,13 +51,13 @@ export function marquerTri(c: CtxTri, m: Marque | null, cibleId?: string): void 
   let suivant = cur;
   if (cur) {
     const pos = apres.indexOf(cur);
-    if (pos >= 0) suivant = seule && voulue ? apres[Math.min(pos + 1, apres.length - 1)] : cur;
+    if (pos >= 0) suivant = seule && (voulue || une) ? apres[Math.min(pos + 1, apres.length - 1)] : cur;
     else suivant = apres[Math.min(Math.max(avant.indexOf(cur), 0), apres.length - 1)] ?? null;
   }
-  c.majUi({ focus: suivant, zone: "photos" });
+  c.majUi({ focus: suivant, zone: "photos", ...(une ? { loupeTri: false } : {}) });
 }
 
-/** En comparaison : P / X / 0 marquent l'active (bascule) ; ⇧P garde l'active et écarte les autres. */
+/** En comparaison : F / P / R / X / 0 marquent l'active (bascule) ; ⇧P garde l'active et écarte les autres. */
 export function marquerComparaison(c: CtxTri, m: Marque | null, lesAutres: boolean): void {
   const { etat: e, ui } = c;
   const id = ui.comparer[ui.cmpIci];
@@ -75,7 +78,18 @@ export function marquerComparaison(c: CtxTri, m: Marque | null, lesAutres: boole
 export function poserTri(c: CtxTri): void {
   if (c.lectureSeule) return;
   const ids = cibleTri(c.etat, c.ui);
-  if (ids.length) c.envoyer({ type: "ajouterSurPlanche", plancheId: c.etat.plancheCourante, ids });
+  if (!ids.length) return;
+  c.envoyer({ type: "ajouterSurPlanche", plancheId: c.etat.plancheCourante, ids });
+  montrerDoubles(c);
+}
+
+/** En plein écran, le tiroir des doubles est fermé : il s'ouvre un instant après Poser ou N, pour voir où la photo est partie. */
+let minuteurDoubles: ReturnType<typeof setTimeout> | undefined;
+export function montrerDoubles(c: Pick<CtxTri, "ui" | "majUi">): void {
+  if (!c.ui.grand || c.ui.doubles) return;
+  c.majUi({ doublesFlash: true });
+  clearTimeout(minuteurDoubles);
+  minuteurDoubles = setTimeout(() => c.majUi({ doublesFlash: false }), 2200);
 }
 
 /** N : une nouvelle double page juste après la double en cours, avec la cible (12 au plus par double). */
@@ -83,6 +97,7 @@ export function nouvelleDouble(c: CtxTri): void {
   if (c.lectureSeule) return;
   const ids = cibleTri(c.etat, c.ui);
   c.envoyer(ids.length ? { type: "creerDoubles", ids } : { type: "insererDouble" });
+  montrerDoubles(c);
 }
 
 /** C : comparer les photos sélectionnées (2 au moins, une date entière s'il le faut). */
@@ -151,6 +166,8 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     if (pas) { const j = ui.cmpIci + pas; if (j >= 0 && j < ui.comparer.length) majUi({ cmpIci: j }); return prends(); }
     if (k === "p") { marquerComparaison(c, "choisie", ev.shiftKey); return prends(); }
     if (k === "x") { marquerComparaison(c, "ecartee", false); return prends(); }
+    if (k === "f") { marquerComparaison(c, "coupDeCoeur", false); return prends(); }
+    if (k === "r") { marquerComparaison(c, "reserve", false); return prends(); }
     if (k === "0" || k === "backspace") { marquerComparaison(c, null, false); return prends(); }
     if (k === " ") { quitterVisionneuse(c); return prends(); }
     return false;
@@ -158,6 +175,9 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
   switch (k) {
     case "p": marquerTri(c, "choisie"); return prends();
     case "x": marquerTri(c, "ecartee"); return prends();
+    case "f": marquerTri(c, "coupDeCoeur"); return prends();
+    case "r": marquerTri(c, "reserve"); return prends();
+    case "d": if (ui.grand) majUi({ doubles: !ui.doubles, doublesFlash: false }); return prends();
     case "0": case "backspace": marquerTri(c, null); return prends();
     case "arrowright": de(1); return prends();
     case "arrowleft": de(-1); return prends();

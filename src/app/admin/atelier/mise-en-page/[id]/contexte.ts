@@ -38,11 +38,14 @@ export type Ui = {
   /** La hauteur des rangées de la grille plein écran (+ et −). */
   tailleGrand: number;
   bulle: "raccourcis" | "objectif" | null;
+  /** Plein écran : le tiroir des doubles pages ouvert (D), ou montré un instant après Poser / N. */
+  doubles: boolean;
+  doublesFlash: boolean;
 };
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
-  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null,
+  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false,
 };
 
 /** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */

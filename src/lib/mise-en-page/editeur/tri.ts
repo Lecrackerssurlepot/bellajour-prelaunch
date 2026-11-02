@@ -1,7 +1,7 @@
 /**
- * Le tri de l'atelier : garder (★) ou écarter une photo, lire où l'on en est (jauge, répartition par personne).
+ * Le tri de l'atelier : quatre marques (✦ coup de cœur, ★ gardée, ◐ réserve, ✕ écartée), lire où l'on en est (jauge, répartition par personne).
  * Le tri vit dans le magazine (`Magazine.tri`) : il se sauvegarde et s'annule comme le reste.
- * Règles (maquette validée le 31/10, `docs/reference/REGLES-TRI.md`) : reposer une marque déjà là la RETIRE ; un geste qui ne change
+ * Règles (maquettes du 31/10 et du 02/11, `docs/reference/REGLES-TRI.md`) : reposer une marque déjà là la RETIRE ; un geste qui ne change
  * rien ne fait rien ; une photo posée sur une planche devient gardée.
  * Purs : aucune interface, aucune horloge.
  */
@@ -9,49 +9,66 @@
 import { VISEES_MAX, comparerChrono, utilisations, type Magazine, type TriMagazine } from "../magazine";
 import type { EtatEditeur, PhotoMaq } from "./types";
 
-export type Marque = "choisie" | "ecartee";
-export type VueTri = "a_trier" | "choisies" | "ecartees" | "toutes";
+/** Les quatre marques, de la meilleure à la pire (02/11) : coup de cœur de l'atelier, gardée, réserve (« peut servir »), écartée.
+ *  Un coup de cœur compte comme gardée partout (jauge, onglet Gardées, Poser). */
+export type Marque = "coupDeCoeur" | "choisie" | "reserve" | "ecartee";
+export const MARQUES: readonly Marque[] = ["coupDeCoeur", "choisie", "reserve", "ecartee"];
+export type VueTri = "a_trier" | "choisies" | "reserve" | "ecartees" | "toutes";
 
-const TRI_VIDE: TriMagazine = { choisies: [], ecartees: [], visees: null };
-export const triDe = (m: Magazine): TriMagazine => m.tri ?? TRI_VIDE;
+/** Le tri déplié : les quatre listes toujours présentes. */
+export type TriPlein = { coupsDeCoeur: string[]; choisies: string[]; reserve: string[]; ecartees: string[]; visees: number | null };
+const LISTE: Record<Marque, "coupsDeCoeur" | "choisies" | "reserve" | "ecartees"> = { coupDeCoeur: "coupsDeCoeur", choisie: "choisies", reserve: "reserve", ecartee: "ecartees" };
+
+export const triDe = (m: Magazine): TriPlein => {
+  const t = m.tri;
+  return { coupsDeCoeur: t?.coupsDeCoeur ?? [], choisies: t?.choisies ?? [], reserve: t?.reserve ?? [], ecartees: t?.ecartees ?? [], visees: t?.visees ?? null };
+};
 
 export function marqueDe(m: Magazine, id: string): Marque | null {
   const t = triDe(m);
-  return t.choisies.includes(id) ? "choisie" : t.ecartees.includes(id) ? "ecartee" : null;
+  return MARQUES.find((k) => t[LISTE[k]].includes(id)) ?? null;
 }
 
-/** La marque réellement posée par P / X / 0 sur ces photos : si TOUTES portent déjà la marque demandée, on la retire. */
+/** Gardée au sens large : coup de cœur ou gardée. */
+export const estGardee = (mq: Marque | null): boolean => mq === "choisie" || mq === "coupDeCoeur";
+
+/** La marque réellement posée par P / X / R / F / 0 sur ces photos : si TOUTES portent déjà la marque demandée, on la retire. */
 export function marqueEffective(m: Magazine, ids: readonly string[], marque: Marque | null): Marque | null {
   if (!marque || !ids.length) return marque;
   return ids.every((id) => marqueDe(m, id) === marque) ? null : marque;
 }
 
-/** Le magazine avec un tri neuf ; le MÊME objet si rien ne change. Un tri revenu à vide disparaît du magazine. */
-function avecTri(m: Magazine, t: TriMagazine): Magazine {
+/** Le magazine avec un tri neuf ; le MÊME objet si rien ne change. Les listes facultatives vides ne s'écrivent pas ;
+ *  un tri revenu à vide disparaît du magazine. */
+function avecTri(m: Magazine, t: TriPlein): Magazine {
   const a = triDe(m);
-  if (a.visees === t.visees && a.choisies.join("\n") === t.choisies.join("\n") && a.ecartees.join("\n") === t.ecartees.join("\n")) return m;
-  if (!t.choisies.length && !t.ecartees.length && t.visees === null) {
+  const pareil = a.visees === t.visees && MARQUES.every((k) => a[LISTE[k]].join("\n") === t[LISTE[k]].join("\n"));
+  if (pareil) return m;
+  if (MARQUES.every((k) => !t[LISTE[k]].length) && t.visees === null) {
     const { tri: _tri, ...reste } = m;
     void _tri;
     return reste;
   }
-  return { ...m, tri: t };
+  const tri: TriMagazine = { choisies: t.choisies, ecartees: t.ecartees, visees: t.visees };
+  if (t.coupsDeCoeur.length) tri.coupsDeCoeur = t.coupsDeCoeur;
+  if (t.reserve.length) tri.reserve = t.reserve;
+  return { ...m, tri };
 }
 
-/** Pose la marque (ou l'enlève avec `null`) sur ces photos ; une photo ne porte jamais les deux.
+/** Pose la marque (ou l'enlève avec `null`) sur ces photos ; une photo n'en porte jamais deux.
  *  Une photo qui porte déjà la marque garde sa place dans la liste : rien ne bouge pour elle. */
 export function marquer(m: Magazine, ids: readonly string[], marque: Marque | null): Magazine {
   const cibles = new Set(ids.filter((id) => typeof id === "string" && id.length > 0 && marqueDe(m, id) !== marque));
   if (!cibles.size) return m;
   const t = triDe(m);
-  const garder = (l: string[]) => l.filter((id) => !cibles.has(id));
-  const neuves = [...cibles];
-  return avecTri(m, {
-    choisies: marque === "choisie" ? [...garder(t.choisies), ...neuves] : garder(t.choisies),
-    ecartees: marque === "ecartee" ? [...garder(t.ecartees), ...neuves] : garder(t.ecartees),
-    visees: t.visees,
-  });
+  const n: TriPlein = { ...t };
+  for (const k of MARQUES) n[LISTE[k]] = t[LISTE[k]].filter((id) => !cibles.has(id));
+  if (marque) n[LISTE[marque]] = [...n[LISTE[marque]], ...cibles];
+  return avecTri(m, n);
 }
+
+/** Une photo posée devient gardée ; un coup de cœur le reste. */
+export const garderPosees = (m: Magazine, ids: readonly string[]): Magazine => marquer(m, ids.filter((id) => !estGardee(marqueDe(m, id))), "choisie");
 
 /** L'objectif : le nombre de photos visées pour TOUT le magazine (entier de 1 à `VISEES_MAX`, ou null). */
 export function reglerVisees(m: Magazine, n: number | null): Magazine {
@@ -62,15 +79,25 @@ export function reglerVisees(m: Magazine, n: number | null): Magazine {
 
 /** Les photos d'une vue du tri, dans l'ordre du temps (les « à ne pas publier » restent dehors). */
 export function listeTri(e: EtatEditeur, vue: VueTri): string[] {
-  const t = triDe(e.magazine);
-  const ch = new Set(t.choisies), ec = new Set(t.ecartees);
-  const garder = (p: PhotoMaq): boolean => !p.signalee && (vue === "toutes" || (vue === "choisies" ? ch.has(p.id) : vue === "ecartees" ? ec.has(p.id) : !ch.has(p.id) && !ec.has(p.id)));
+  const garder = (p: PhotoMaq): boolean => !p.signalee && dansVue(marqueDe(e.magazine, p.id), vue);
   return [...e.catalogue.values()].filter(garder).sort(comparerChrono).map((p) => p.id);
+}
+
+/** La photo de cette marque est-elle dans cette vue ? « Gardées » compte les coups de cœur. */
+export function dansVue(mq: Marque | null, vue: VueTri): boolean {
+  switch (vue) {
+    case "toutes": return true;
+    case "choisies": return estGardee(mq);
+    case "reserve": return mq === "reserve";
+    case "ecartees": return mq === "ecartee";
+    case "a_trier": return mq === null;
+  }
 }
 
 export type PartPersonne = { personne: string; total: number; choisies: number; part: number };
 export type BilanTri = {
-  total: number; choisies: number; ecartees: number; aTrier: number;
+  /** `choisies` compte les gardées ET les coups de cœur ; `coupsDeCoeur` les seuls coups de cœur. */
+  total: number; choisies: number; coupsDeCoeur: number; reserve: number; ecartees: number; aTrier: number;
   /** Photos distinctes posées sur au moins une planche. */
   posees: number;
   /** L'objectif sur l'ensemble du magazine, null tant qu'il n'est pas fixé. */
@@ -81,8 +108,10 @@ export type BilanTri = {
 export function bilanTri(e: EtatEditeur): BilanTri {
   const t = triDe(e.magazine);
   const photos = [...e.catalogue.values()].filter((p) => !p.signalee);
-  const ch = new Set(t.choisies.filter((id) => e.catalogue.has(id)));
-  const ec = new Set(t.ecartees.filter((id) => e.catalogue.has(id)));
+  const dans = (l: string[]) => new Set(l.filter((id) => e.catalogue.has(id)));
+  const cc = dans(t.coupsDeCoeur), re = dans(t.reserve);
+  const ch = new Set([...dans(t.choisies), ...cc]);
+  const ec = dans(t.ecartees);
   const parCle = new Map<string, { total: number; choisies: number }>();
   for (const p of photos) {
     const x = parCle.get(p.personne) ?? { total: 0, choisies: 0 };
@@ -92,7 +121,7 @@ export function bilanTri(e: EtatEditeur): BilanTri {
   }
   const parPersonne = [...parCle].map(([personne, x]) => ({ personne, ...x, part: ch.size ? x.choisies / ch.size : 0 }))
     .sort((a, b) => b.choisies - a.choisies || b.total - a.total || a.personne.localeCompare(b.personne, "fr"));
-  const aTrier = photos.filter((p) => !ch.has(p.id) && !ec.has(p.id)).length;
+  const aTrier = photos.filter((p) => !ch.has(p.id) && !ec.has(p.id) && !re.has(p.id)).length;
   const posees = [...utilisations(e.magazine).keys()].filter((id) => e.catalogue.has(id)).length;
-  return { total: photos.length, choisies: ch.size, ecartees: ec.size, aTrier, posees, visees: t.visees, parPersonne };
+  return { total: photos.length, choisies: ch.size, coupsDeCoeur: cc.size, reserve: re.size, ecartees: ec.size, aTrier, posees, visees: t.visees, parPersonne };
 }

@@ -10,6 +10,7 @@ import type { Recadrage } from "../recadrage";
 import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
 import type { SourceMep } from "../sauvegarde";
+import type { Marque } from "./tri";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -42,7 +43,7 @@ export type Filtres = {
   montrerSignalees: boolean;
   masquerUtilisees: boolean;
   /** Le tri de l'atelier : par défaut les écartées sont cachées. */
-  marque: "toutes" | "choisies" | "a_trier" | "ecartees";
+  marque: "toutes" | "choisies" | "a_trier" | "reserve" | "ecartees";
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
@@ -175,7 +176,7 @@ export type GesteModifiant =
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
   | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
   /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
-  | { type: "marquer"; ids: string[]; marque: "choisie" | "ecartee" | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; confirme?: boolean }
+  | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
   | { type: "reglerTri"; visees: number | null; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */

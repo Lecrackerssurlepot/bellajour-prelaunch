@@ -1295,6 +1295,7 @@
 /* ── le tri : la bande des photos, étroite ou agrandie en plein écran (maquette du 31/10) ── */
 .mep-editeur {
   --mep-ecart: #b4532a;
+  --mep-or: #c8962e;
   --mep-nuit: #16181c;
   --mep-nuit-2: #23262c;
   --mep-nuit-3: #30343b;
@@ -1310,9 +1311,28 @@
 .mep-editeur .ed-ph-tete h2 { flex: none; white-space: nowrap; }
 .mep-editeur .ed-ph-tete h2 span { font-size: var(--bj-fs-xxs); }
 .mep-editeur .ed-ph--grand .ed-ph-tete .ed-jauge { width: 260px; margin-right: 12px; }
-.mep-editeur .ed-ph-bas { position: relative; flex: none; height: 62px; }
+/* le plein écran prend toute la fenêtre : ni la barre de l'admin, ni celle du projet (on ne quitte plus le projet par erreur) */
+.mep-editeur .ed-racine--grand { position: fixed; inset: 0; z-index: 90; border: 0; border-radius: 0; background: var(--bj-cream-tint-1); }
+.mep-editeur .ed-racine--grand .ed-haut { display: none; }
+/* clip, pas hidden : le tiroir fermé (poussé sous l'écran) ne doit pas créer de défilement qui ferait remonter la tête */
+.mep-editeur .ed-racine--grand, .mep-editeur .ed-ph--grand { overflow: clip; }
+/* la tête du plein écran : une seule ligne */
+.mep-editeur .ed-ph--grand .ed-ph-tete { min-height: 52px; padding: 8px 12px 8px 8px; border-bottom: 1px solid var(--bj-veil-8); }
+.mep-editeur .ed-ph--grand .ed-tri-ligne { flex: 0 1 auto; min-width: 0; padding: 0; }
+.mep-editeur .ed-sortir { display: inline-flex; flex: none; align-items: center; gap: 2px; height: 32px; padding: 0 10px 0 6px; border: 0; border-radius: 10px; background: none; color: var(--bj-text-soft); font: 500 var(--bj-fs-xs) var(--bj-font-ui); white-space: nowrap; cursor: pointer; }
+.mep-editeur .ed-sortir:hover { background: var(--bj-cream-tint-2); color: var(--bj-text); }
+.mep-editeur .ed-sortir svg { width: 16px; height: 16px; }
+.mep-editeur .ed-ph-tete .ed-sep { flex: none; width: 1px; height: 20px; margin: 0 6px; background: var(--bj-veil-12); }
+.mep-editeur .ed-ph-outils[hidden] { display: none; }
+.mep-editeur .ed-ph--grand .ed-grille { padding-bottom: 84px; }
+/* le tiroir des doubles : fermé pendant le tri */
+.mep-editeur .ed-ph--grand .ed-ph-bas { position: absolute; right: 0; bottom: 0; left: 0; z-index: 70; height: 96px; border-top: 1px solid var(--bj-veil-8); background: color-mix(in srgb, var(--bj-cream-tint-1) 96%, transparent); box-shadow: 0 -8px 24px var(--bj-veil-8); backdrop-filter: blur(10px); transform: translateY(100%); visibility: hidden; transition: transform 0.3s var(--bj-ease), visibility 0s 0.3s; }
+.mep-editeur .ed-ph--grand .ed-ph-bas--ouvert { transform: none; visibility: visible; transition: transform 0.3s var(--bj-ease); }
 .mep-editeur .ed-ph-bas .ed-cf { height: 100%; }
-.mep-editeur .ed-ph-bas .ed-toast { bottom: calc(100% + 12px); }
+.mep-editeur .ed-ph-toast { position: absolute; right: 0; bottom: 18px; left: 0; z-index: 72; height: 0; transition: bottom 0.3s var(--bj-ease); }
+.mep-editeur .ed-ph-toast .ed-toast { bottom: 0; }
+.mep-editeur .ed-ph--grand:has(.ed-sel-flot) .ed-ph-toast { bottom: 82px; }
+.mep-editeur .ed-ph-toast--haut, .mep-editeur .ed-ph--grand:has(.ed-sel-flot) .ed-ph-toast--haut { bottom: 168px; }
 .mep-editeur .ed-rangee--j { display: flex; gap: 4px; }
 .mep-editeur .ed-rangee--j .ed-vg { flex: none; border-radius: 8px; }
 
@@ -1391,7 +1411,7 @@
 .mep-editeur .ed-bulle-fil i { display: block; height: 100%; background: var(--bj-text); opacity: 0.65; }
 
 /* la visionneuse : une photo (l'original), la comparaison, sur fond neutre sombre */
-.mep-editeur .ed-vt { position: absolute; inset: 0 0 62px; z-index: 60; display: flex; flex-direction: column; background: var(--mep-nuit); color: var(--mep-nuit-texte); font-family: var(--bj-font-ui); animation: ed-fondu 160ms; }
+.mep-editeur .ed-vt { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--mep-nuit); color: var(--mep-nuit-texte); font-family: var(--bj-font-ui); animation: ed-fondu 160ms; }
 .mep-editeur .ed-vt-tete { display: flex; align-items: center; gap: 6px; min-height: 52px; padding: 10px 12px 6px 16px; }
 .mep-editeur .ed-vt-tete h2 { margin: 0; color: var(--mep-nuit-texte); font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-style: normal; font-weight: 600; white-space: nowrap; }
 .mep-editeur .ed-vt-tete h2 span { margin-left: 6px; color: var(--mep-nuit-pale); font-weight: 400; }
@@ -1425,18 +1445,35 @@
 .mep-editeur .ed-vt-nom b { color: var(--mep-nuit-texte); font-weight: 500; }
 .mep-editeur .ed-vt-rang { color: var(--mep-nuit-pale); font-size: var(--bj-fs-xxs); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .mep-editeur .ed-vt-etq { display: inline-block; height: 20px; margin-left: 8px; padding: 0 8px; border-radius: 10px; color: #fff; font-size: 11px; font-weight: 500; line-height: 20px; vertical-align: middle; }
+.mep-editeur .ed-vt-etq i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.mep-editeur .ed-vt-etq i svg { width: 100%; height: 100%; }
 .mep-editeur .ed-vt-etq--choisie { background: var(--bj-action); }
+.mep-editeur .ed-vt-etq--coupDeCoeur { background: var(--mep-or); }
+.mep-editeur .ed-vt-etq--reserve { background: #5b6573; }
 .mep-editeur .ed-vt-etq--ecartee { background: var(--mep-ecart); }
+.mep-editeur .ed-vt-etq--client { background: rgba(224, 68, 90, 0.18); color: #ff8597; }
 .mep-editeur .ed-vt-etq--pose { position: absolute; bottom: 8px; left: 8px; margin: 0; }
-.mep-editeur .ed-vt-ronds { display: flex; gap: 18px; }
-.mep-editeur .ed-vt-rond { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--mep-nuit-3); border-radius: 50%; background: var(--mep-nuit-2); color: var(--mep-nuit-texte); cursor: pointer; transition: background 0.15s, border-color 0.15s; }
-.mep-editeur .ed-vt-rond svg { width: 16px; height: 16px; }
-.mep-editeur .ed-vt-rond--x:hover, .mep-editeur .ed-vt-rond--x.ed-vt-rond--fait { border-color: var(--mep-ecart); background: var(--mep-ecart); color: #fff; }
-.mep-editeur .ed-vt-rond--k:hover, .mep-editeur .ed-vt-rond--k.ed-vt-rond--fait { border-color: var(--bj-action); background: var(--bj-action); color: #fff; }
+/* les quatre ronds : ✕ et ★ en gros, réserve et coup de cœur en petit, comme un super like */
+.mep-editeur .ed-vt-ronds { display: flex; align-items: center; gap: 12px; }
+.mep-editeur .ed-vt-rond { display: grid; place-items: center; width: 50px; height: 50px; border: 1px solid var(--mep-nuit-3); border-radius: 50%; background: var(--mep-nuit-2); cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.12s; }
+.mep-editeur .ed-vt-rond:active { transform: scale(0.93); }
+.mep-editeur .ed-vt-rond svg { width: 19px; height: 19px; }
+.mep-editeur .ed-vt-rond--petit { width: 36px; height: 36px; }
+.mep-editeur .ed-vt-rond--petit svg { width: 15px; height: 15px; }
+.mep-editeur .ed-vt-rond--ecartee { color: #e3906d; }
+.mep-editeur .ed-vt-rond--choisie { color: #8fbcef; }
+.mep-editeur .ed-vt-rond--reserve { color: #b7c0cc; }
+.mep-editeur .ed-vt-rond--coupDeCoeur { color: var(--mep-or); }
+.mep-editeur .ed-vt-rond--ecartee:hover, .mep-editeur .ed-vt-rond--ecartee.ed-vt-rond--fait { border-color: var(--mep-ecart); background: var(--mep-ecart); color: #fff; }
+.mep-editeur .ed-vt-rond--choisie:hover, .mep-editeur .ed-vt-rond--choisie.ed-vt-rond--fait { border-color: var(--bj-action); background: var(--bj-action); color: #fff; }
+.mep-editeur .ed-vt-rond--reserve:hover, .mep-editeur .ed-vt-rond--reserve.ed-vt-rond--fait { border-color: #5b6573; background: #5b6573; color: #fff; }
+.mep-editeur .ed-vt-rond--coupDeCoeur:hover, .mep-editeur .ed-vt-rond--coupDeCoeur.ed-vt-rond--fait { border-color: var(--mep-or); background: var(--mep-or); color: #fff; }
 .mep-editeur .ed-vt-avance { display: flex; gap: 1px; height: 30px; padding: 4px 20px 12px; }
 .mep-editeur .ed-vt-avance button { flex: 1; min-width: 1px; padding: 0; border: 0; border-radius: 1px; background: var(--mep-nuit-3); cursor: pointer; }
 .mep-editeur .ed-vt-avance .ed-vt-av--choisie { background: var(--bj-action); }
 .mep-editeur .ed-vt-avance .ed-vt-av--ecartee { background: var(--mep-ecart); }
+.mep-editeur .ed-vt-avance .ed-vt-av--coupDeCoeur { background: var(--mep-or); }
+.mep-editeur .ed-vt-avance .ed-vt-av--reserve { background: #5b6573; }
 .mep-editeur .ed-vt-avance .ed-vt-av--ici { background: #fff; transform: scaleY(1.6); }
 .mep-editeur .ed-vt-cmp { display: grid; flex: 1 1 auto; grid-auto-rows: minmax(0, 1fr); gap: 12px; min-height: 0; padding: 8px 24px; overflow-y: auto; }
 .mep-editeur .ed-vt-cmp--contact { grid-auto-rows: auto; gap: 8px; }
@@ -1445,8 +1482,56 @@
 .mep-editeur .ed-vt-cmp .ed-vt-img img { max-height: max(90px, calc((100vh - 220px) / var(--cmp-rangs, 1) - 40px)); box-shadow: none; cursor: pointer; }
 .mep-editeur .ed-vt-cmp-c--actif .ed-vt-cmp-cadre { box-shadow: 0 0 0 2px #fff, 0 0 0 5px rgba(255, 255, 255, 0.18); }
 .mep-editeur .ed-vt-cmp-c--ecartee img { opacity: 0.4; filter: grayscale(0.9); }
+.mep-editeur .ed-vt-cmp-c--reserve img { opacity: 0.75; filter: saturate(0.5); }
+.mep-editeur .ed-vt-cmp-client { position: absolute; right: 8px; bottom: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff; color: #e0445a; }
+.mep-editeur .ed-vt-cmp-client svg { width: 12px; height: 12px; }
 .mep-editeur .ed-vt-star { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bj-action); color: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
 .mep-editeur .ed-vt-star svg { width: 12px; height: 12px; }
+/* les marques sur les vignettes (02/11) : ✦ coup de cœur doré, ★ gardée, ◐ réserve, et le cœur du client en rouge */
+.mep-editeur .ed-rep--rond { width: 20px; height: 20px; padding: 0; justify-content: center; border-radius: 50%; box-shadow: 0 1px 3px var(--bj-veil-35); }
+.mep-editeur .ed-rep--rond svg { width: 11px; height: 11px; }
+.mep-editeur .ed-rep--cc { background: var(--mep-or); color: #fff; }
+.mep-editeur .ed-rep--reserve { background: color-mix(in srgb, var(--bj-cream-tint-1) 95%, transparent); color: #6b7585; }
+.mep-editeur .ed-rep--rond.ed-rep--coeur { background: color-mix(in srgb, var(--bj-cream-tint-1) 95%, transparent); color: #e0445a; }
+.mep-editeur .ed-ph--grand .ed-rep--rond { width: 22px; height: 22px; }
+.mep-editeur .ed-ph--grand .ed-rep--rond svg { width: 12px; height: 12px; }
+.mep-editeur .ed-vg--reserve img { opacity: 0.78; filter: saturate(0.55); }
+.mep-editeur .ed-puce-svg { display: grid; width: 11px; height: 11px; }
+.mep-editeur .ed-puce-svg svg { width: 100%; height: 100%; }
+.mep-editeur .ed-puce--client { color: #d23a50; }
+.mep-editeur .ed-puce--client[aria-pressed="true"] { border-color: #e0445a; background: #e0445a; color: #fff; }
+
+/* les boutons de la sélection : de vrais boutons, en ligne sous le titre (bande étroite) */
+.mep-editeur .ed-sel-gestes { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 2px 4px; }
+.mep-editeur .ed-sb { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 30px; height: 28px; padding: 0 9px; border: 1px solid var(--bj-veil-12); border-radius: 9px; background: var(--bj-cream-tint-1); color: var(--bj-text); font: 500 var(--bj-fs-xxs) var(--bj-font-ui); white-space: nowrap; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.mep-editeur .ed-sb:hover { border-color: var(--bj-veil-16); background: var(--bj-cream-tint-2); }
+.mep-editeur .ed-sb span { display: grid; width: 13px; height: 13px; }
+.mep-editeur .ed-sb span svg { width: 100%; height: 100%; }
+.mep-editeur .ed-sb--ecartee span { color: var(--mep-ecart); }
+.mep-editeur .ed-sb--reserve span { color: #6b7585; }
+.mep-editeur .ed-sb--choisie span { color: var(--bj-action); }
+.mep-editeur .ed-sb--coupDeCoeur span { color: var(--mep-or); }
+.mep-editeur .ed-sb--plein { border-color: var(--bj-text); background: var(--bj-text); color: var(--bj-cream-tint-1); }
+.mep-editeur .ed-sb--plein:hover { border-color: var(--bj-text); background: var(--bj-charcoal); }
+.mep-editeur .ed-sb-sep { flex: none; width: 1px; height: 20px; margin: 4px 2px; background: var(--bj-veil-12); }
+.mep-editeur .ed-sb-x { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--bj-text-faint); cursor: pointer; }
+.mep-editeur .ed-sb-x:hover { background: var(--bj-cream-tint-2); color: var(--bj-text); }
+.mep-editeur .ed-sb-x svg { width: 12px; height: 12px; }
+/* plein écran : une barre flottante en bas, sombre */
+.mep-editeur .ed-sel-flot { position: absolute; bottom: 16px; left: 50%; z-index: 71; display: flex; align-items: center; gap: 6px; max-width: calc(100% - 24px); padding: 7px 8px 7px 16px; border-radius: 16px; background: var(--mep-nuit); color: var(--mep-nuit-texte); box-shadow: 0 14px 36px rgba(16, 24, 40, 0.3); font-family: var(--bj-font-ui); white-space: nowrap; overflow-x: auto; scrollbar-width: none; transform: translateX(-50%); animation: ed-fondu 150ms; transition: bottom 0.3s var(--bj-ease); }
+.mep-editeur .ed-sel-flot > b { margin-right: 6px; font-size: var(--bj-fs-xs); font-weight: 600; }
+.mep-editeur .ed-sel-flot .ed-sb { height: 34px; padding: 0 12px; border-color: transparent; background: var(--mep-nuit-2); color: var(--mep-nuit-texte); font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-sel-flot .ed-sb:hover { background: var(--mep-nuit-3); }
+.mep-editeur .ed-sel-flot .ed-sb--ecartee span { color: #e3906d; }
+.mep-editeur .ed-sel-flot .ed-sb--reserve span { color: #b7c0cc; }
+.mep-editeur .ed-sel-flot .ed-sb--choisie span { color: #8fbcef; }
+.mep-editeur .ed-sel-flot .ed-sb--plein { background: #fff; color: var(--bj-text); }
+.mep-editeur .ed-sel-flot .ed-sb--plein:hover { background: #e9edf3; }
+.mep-editeur .ed-sel-flot .ed-sb-sep { background: var(--mep-nuit-3); }
+.mep-editeur .ed-sel-flot .ed-sb-x { width: 34px; height: 34px; color: var(--mep-nuit-pale); }
+.mep-editeur .ed-sel-flot .ed-sb-x:hover { background: var(--mep-nuit-2); color: #fff; }
+.mep-editeur .ed-ph--grand:has(.ed-ph-bas--ouvert) .ed-sel-flot { bottom: 112px; }
+
 @media (max-width: 900px) {
   .mep-editeur .ed-vt-scene { padding: 8px; }
   .mep-editeur .ed-vt-loupe { inset: 8px; }

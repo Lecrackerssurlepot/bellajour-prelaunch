@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { marqueDe, planchesDesPhotos, visibles } from "@/lib/mise-en-page/editeur";
+import { marqueDe, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
 import { cls, useEd, type Adresse } from "./contexte";
 import { grandeDe, precharger } from "./images";
 import { colonnesComparer, focusCourant, marquerTri, quitterVisionneuse } from "./triEcran";
-import { BoutonsTri, ETOILE, CROIX } from "./TriBulles";
+import { BoutonsTri, COEUR, MARQUE_UI, NOMS_ONGLETS } from "./TriBulles";
 
 /* La visionneuse du tri, par-dessus la bande agrandie : une photo (l'ORIGINAL, en pleine définition, loupe 100 %)
    ou la comparaison de plusieurs photos (2 et plus). Fond neutre sombre pour juger. Les touches vivent dans `triEcran.ts`. */
 
-const MARQUES = { choisie: "Gardée", ecartee: "Écartée" } as const;
-const FILTRES = { toutes: "Toutes", choisies: "Gardées", a_trier: "À trier", ecartees: "Écartées" } as const;
+/** L'étiquette d'une marque, dans le pied et sur la comparaison. */
+function Etiquette({ m, pose }: { m: Marque; pose?: boolean }) {
+  return <span className={cls("ed-vt-etq", `ed-vt-etq--${m}`, pose && "ed-vt-etq--pose")}><i dangerouslySetInnerHTML={{ __html: MARQUE_UI[m].svg }} />{MARQUE_UI[m].mot}</span>;
+}
+const Client = () => <span className="ed-vt-etq ed-vt-etq--client"><i dangerouslySetInnerHTML={{ __html: COEUR }} />Client</span>;
 
 /** L'image qui se précise : l'aperçu tout de suite, l'original par-dessus dès qu'il est décodé. */
 function Nette({ a, alt, onClick, imgRef, apercuSeul }: { a: Adresse | undefined; alt: string; onClick?: (e: React.MouseEvent<HTMLImageElement>) => void; imgRef?: React.Ref<HTMLImageElement>; apercuSeul?: boolean }) {
@@ -55,16 +58,16 @@ function Tete({ titre, sous }: { titre: string; sous: string }) {
   );
 }
 
+/* Les quatre ronds, comme un super like : ✕ et ★ en gros, réserve et coup de cœur en petit de part et d'autre. */
 function Ronds({ id }: { id: string }) {
   const c = useEd();
   const m = marqueDe(c.etat.magazine, id);
   if (c.lectureSeule) return <span />;
-  return (
-    <span className="ed-vt-ronds">
-      <button type="button" className={cls("ed-vt-rond ed-vt-rond--x", m === "ecartee" && "ed-vt-rond--fait")} aria-label="Écarter" title="Écarter · X" onClick={() => marquerTri(c, "ecartee")} dangerouslySetInnerHTML={{ __html: CROIX }} />
-      <button type="button" className={cls("ed-vt-rond ed-vt-rond--k", m === "choisie" && "ed-vt-rond--fait")} aria-label="Garder" title="Garder · P" onClick={() => marquerTri(c, "choisie")} dangerouslySetInnerHTML={{ __html: ETOILE }} />
-    </span>
+  const rond = (k: Marque, petit?: boolean) => (
+    <button type="button" className={cls("ed-vt-rond", `ed-vt-rond--${k}`, petit && "ed-vt-rond--petit", m === k && "ed-vt-rond--fait")}
+      aria-label={MARQUE_UI[k].verbe} aria-pressed={m === k} title={`${MARQUE_UI[k].verbe} · ${MARQUE_UI[k].touche}`} onClick={() => marquerTri(c, k)} dangerouslySetInnerHTML={{ __html: MARQUE_UI[k].svg }} />
   );
+  return <span className="ed-vt-ronds">{rond("reserve", true)}{rond("ecartee")}{rond("choisie")}{rond("coupDeCoeur", true)}</span>;
 }
 
 function UnePhoto() {
@@ -99,7 +102,7 @@ function UnePhoto() {
 
   return (
     <div className="ed-vt" role="dialog" aria-label="Une photo">
-      <Tete titre="Trier" sous={`${FILTRES[etat.filtres.marque]}${etat.filtres.masquerUtilisees ? " · non posées" : ""}`} />
+      <Tete titre="Trier" sous={`${NOMS_ONGLETS[etat.filtres.marque]}${etat.filtres.masquerUtilisees ? " · non posées" : ""}`} />
       <div className="ed-vt-scene">
         {p && a ? <Nette key={id} a={a} alt={p.nom} onClick={ouvrirLoupe} /> : <div className="ed-vt-vide">{etat.filtres.marque === "a_trier" ? "Tout est trié" : "Rien ici"}</div>}
         {ui.loupeTri && p && a ? <Loupe100 a={a} pt={pt} boite={loupe} onMove={suivreLoupe} onClick={() => majUi({ loupeTri: false })} /> : null}
@@ -112,7 +115,7 @@ function UnePhoto() {
       </div>
       <div className="ed-vt-pied">
         <div className="ed-vt-nom">
-          {p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{m ? <span className={`ed-vt-etq ed-vt-etq--${m}`}>{MARQUES[m]}</span> : null}{doubles?.length ? ` · double ${doubles[0]}` : ""}</> : null}
+          {p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{p.coeur ? <Client /> : null}{m ? <Etiquette m={m} /> : null}{doubles?.length ? ` · double ${doubles[0]}` : ""}</> : null}
         </div>
         {id ? <Ronds id={id} /> : <span />}
         <div className="ed-vt-rang">{i >= 0 ? `${i + 1} / ${l.length}` : ""}</div>
@@ -173,18 +176,18 @@ function Comparer() {
         {ids.map((x, k) => {
           const mk = marqueDe(etat.magazine, x);
           return (
-            <div key={x} className={cls("ed-vt-cmp-c", k === ui.cmpIci && "ed-vt-cmp-c--actif", mk === "ecartee" && "ed-vt-cmp-c--ecartee")} onClick={() => majUi({ cmpIci: k })}>
+            <div key={x} className={cls("ed-vt-cmp-c", k === ui.cmpIci && "ed-vt-cmp-c--actif", mk === "ecartee" && "ed-vt-cmp-c--ecartee", mk === "reserve" && "ed-vt-cmp-c--reserve")} onClick={() => majUi({ cmpIci: k })}>
               <span className="ed-vt-cmp-cadre">
                 <Nette a={adresses.get(x)} alt={etat.catalogue.get(x)?.nom ?? ""} apercuSeul={contact && k !== ui.cmpIci} />
-                {mk === "choisie" ? <span className="ed-vt-star" dangerouslySetInnerHTML={{ __html: ETOILE }} /> : null}
-                {mk === "ecartee" ? <span className="ed-vt-etq ed-vt-etq--ecartee ed-vt-etq--pose">Écartée</span> : null}
+                {mk ? <Etiquette m={mk} pose /> : null}
+                {etat.catalogue.get(x)?.coeur ? <span className="ed-vt-cmp-client" dangerouslySetInnerHTML={{ __html: COEUR }} /> : null}
               </span>
             </div>
           );
         })}
       </div>
       <div className="ed-vt-pied">
-        <div className="ed-vt-nom">{p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{m ? <span className={`ed-vt-etq ed-vt-etq--${m}`}>{MARQUES[m]}</span> : null}</> : null}</div>
+        <div className="ed-vt-nom">{p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{p.coeur ? <Client /> : null}{m ? <Etiquette m={m} /> : null}</> : null}</div>
         {actif ? <Ronds id={actif} /> : <span />}
         <div className="ed-vt-rang">{ids.length ? `${ui.cmpIci + 1} / ${ids.length} · ⇧P garde et écarte les autres` : ""}</div>
       </div>

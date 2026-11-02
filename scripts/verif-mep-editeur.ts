@@ -893,7 +893,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
   };
   const filtres = (): Libre => {
     const f: Libre = {};
-    const k = int(0, 10);
+    const k = int(0, 11);
     if (k === 0) f.recherche = pick(["", "IMG_1", "1", "zz", "img_12"]);
     if (k === 1) f.statut = pick(["toutes", "libres", "utilisees", "planche", "n'importe"]);
     if (k === 2) f.personnes = h() < 0.5 ? [] : [pick(["Inès", "Léa", "Hugo"])];
@@ -905,6 +905,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     if (k === 8) f.groupe = pick(["jour", "personne", "type", "aucun"]);
     if (k === 9) f.taille = pick(["S", "M", "L"]);
     if (k === 10) f.masquerUtilisees = h() < 0.5;
+    if (k === 11) f.marque = pick(["toutes", "choisies", "a_trier", "reserve", "ecartees", "bidon"]);
     return f;
   };
 
@@ -938,6 +939,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [2, () => ({ type: "fermerTexte" })],
     [2, () => ({ type: "confirmer" })],
     [1, () => ({ type: "annulerConfirmation" })],
+    [4, (e) => ({ type: "marquer", ids: ids(e, int(1, 4)), marque: pick(["coupDeCoeur", "choisie", "reserve", "ecartee", null, "bidon"]), ...(h() < 0.3 ? { poser: true } : {}), ...(h() < 0.15 ? { autres: ids(e, int(1, 3)) } : {}) })],
+    [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
@@ -1265,6 +1268,29 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       ok(O.marqueDe(s.e.magazine, "C") === "ecartee", "annuler la pose rend aussi la marque d'avant");
       s.g({ type: "marquer", ids: ["A", "B", "C", "D"], marque: null }).g({ type: "reglerTri", visees: null });
       ok(s.e.magazine.tri === undefined && O.egal(s.e.magazine, m0), "tri revenu à vide : le magazine redevient celui d'avant");
+
+      /* Les quatre marques (maquette du 02/11) : ✦ coup de cœur, ★ gardée, ◐ réserve, ✕ écartée */
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur" }).g({ type: "marquer", ids: ["B"], marque: "reserve" }).g({ type: "marquer", ids: ["C"], marque: "choisie" });
+      ok(O.marqueDe(s.e.magazine, "A") === "coupDeCoeur" && O.marqueDe(s.e.magazine, "B") === "reserve", "F et R posent coup de cœur et réserve");
+      eq(s.e.magazine.tri, { choisies: ["C"], ecartees: [], visees: null, coupsDeCoeur: ["A"], reserve: ["B"] }, "une photo, une seule liste");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "C"], "Gardées compte les coups de cœur");
+      s.g({ type: "filtrer", filtres: { marque: "reserve" } }); eq(O.visibles(s.e), ["B"], "onglet Réserve");
+      s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e).sort(), ["D", "E"], "la réserve n'est plus à trier");
+      s.g({ type: "filtrer", filtres: { marque: "toutes" } });
+      const b4 = O.bilanTri(s.e);
+      eq([b4.choisies, b4.coupsDeCoeur, b4.reserve, b4.aTrier], [2, 1, 1, 2], "jauge : gardées (coups de cœur compris), ✦, réserve, à trier");
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur", poser: true });
+      ok(O.marqueDe(s.e.magazine, "A") === "coupDeCoeur", "vue une photo : reposer F ne retire jamais");
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur" });
+      ok(O.marqueDe(s.e.magazine, "A") === null, "grille : reposer F retire (bascule)");
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur" });
+      s.g({ type: "ajouterSurPlanche", plancheId: s.e.plancheCourante, ids: ["A", "B"] });
+      ok(O.marqueDe(s.e.magazine, "A") === "coupDeCoeur" && O.marqueDe(s.e.magazine, "B") === "choisie", "posée : un coup de cœur le reste, une réserve devient gardée");
+      ok(O.contenuValide(s.e.magazine), "un tri à quatre marques se sauvegarde");
+      const base = { ...s.e.magazine };
+      ok(O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null } }), "une sauvegarde d'avant le 02/11 reste valide");
+      ok(!O.contenuValide({ ...base, tri: { choisies: [], ecartees: [], visees: null, reserve: [] } }), "une liste facultative vide est refusée");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, coupsDeCoeur: ["A"] } }), "gardée ET coup de cœur est refusé");
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : le tri (bascule, gestes sans effet, filtres, objectif, posée = gardée, annuler sans changer de double)", msg === null);

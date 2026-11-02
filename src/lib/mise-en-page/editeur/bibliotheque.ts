@@ -6,7 +6,7 @@
 import { comparerChrono, utilisations } from "../magazine";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
-import { triDe } from "./tri";
+import { dansVue, triDe, type Marque } from "./tri";
 import type { EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -25,7 +25,8 @@ export function criteres(e: EtatEditeur): Criteres {
   const surPlanche = new Set(p ? idsPlanche(p) : []);
   const q = sansAccent(f.recherche.trim());
   const t = triDe(e.magazine);
-  const ch = new Set(t.choisies), ec = new Set(t.ecartees);
+  const mq = new Map<string, Marque>();
+  for (const [l, k] of [[t.coupsDeCoeur, "coupDeCoeur"], [t.choisies, "choisie"], [t.reserve, "reserve"], [t.ecartees, "ecartee"]] as const) for (const id of l) mq.set(id, k);
   return {
     recherche: (ph) => !q || sansAccent(ph.nom).includes(q),
     statut: (ph) => f.statut === "toutes" || (f.statut === "libres" && !u.has(ph.id))
@@ -36,8 +37,7 @@ export function criteres(e: EtatEditeur): Criteres {
     orientations: (ph) => f.orientations.length === 0 || f.orientations.includes(orientationDe(ph.l, ph.h)),
     montrerSignalees: (ph) => f.montrerSignalees || !ph.signalee,
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
-    marque: (ph) => f.marque === "choisies" ? ch.has(ph.id) : f.marque === "ecartees" ? ec.has(ph.id)
-      : f.marque === "a_trier" ? !ch.has(ph.id) && !ec.has(ph.id) : true,
+    marque: (ph) => dansVue(mq.get(ph.id) ?? null, f.marque),
   };
 }
 

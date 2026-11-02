@@ -294,7 +294,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
 
   return (
     <CtxEd.Provider value={ctx}>
-      <div className={`ed-racine${d ? " ed-racine--glisse" : ""}`}
+      <div className={`ed-racine${d ? " ed-racine--glisse" : ""}${ui.grand ? " ed-racine--grand" : ""}`}
         onPointerDown={(e) => {
           const t = e.target as HTMLElement;
           if (etat.recadrage && !t.closest(".ed-cadre--recadrage, .ed-recadre")) envoyer({ type: "fermerRecadrage" });

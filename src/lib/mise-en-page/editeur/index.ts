@@ -32,5 +32,5 @@ export {
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
 export { verifierInvariants } from "./invariants";
-export { bilanTri, listeTri, marqueDe, marqueEffective, marquer, reglerVisees, triDe } from "./tri";
-export type { BilanTri, Marque, PartPersonne, VueTri } from "./tri";
+export { bilanTri, dansVue, estGardee, garderPosees, listeTri, MARQUES, marqueDe, marqueEffective, marquer, reglerVisees, triDe } from "./tri";
+export type { BilanTri, Marque, PartPersonne, TriPlein, VueTri } from "./tri";

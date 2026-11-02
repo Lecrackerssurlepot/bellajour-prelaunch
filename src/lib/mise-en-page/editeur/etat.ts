@@ -324,7 +324,7 @@ const GESTES: Gestes = {
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
     const groupe = choisir(["jour", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
-    const marque = choisir(["toutes", "choisies", "a_trier", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
+    const marque = choisir(["toutes", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
     return egal(f, e.filtres) ? e : { ...e, filtres: f };
   },

@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import {
   compteurs, emplacements, groupes as lesGroupes, planchesDesPhotos, triDe, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
-  type Filtres, type PhotoMaq, type SourceGlisser,
+  type Filtres, type Marque, type PhotoMaq, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
 import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, CROIX, ETOILE, JaugeTri, OngletsTri } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -64,7 +64,9 @@ function PanneauOuvert() {
   const rep = reperesBibliotheque(etat);
   const selSet = rep.selection;
   const triM = triDe(etat.magazine);
-  const choisies = new Set(triM.choisies), ecartees = new Set(triM.ecartees);
+  /* « gardées » au sens large : un coup de cœur l'est aussi (Poser les prend en premier) */
+  const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
+  const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
   const planches = planchesDesPhotos(etat);
   const focus = focusCourant(etat, ui);
   const focusVu = grand || ui.zone === "photos";
@@ -232,11 +234,11 @@ function PanneauOuvert() {
     const trainee = etat.glisser?.source.type === "bibliotheque" && etat.glisser.source.ids.includes(id);
     const src = grand && h > 140 ? grandeDe(adresses.get(id)) : vignetteDe(adresses.get(id));
     const sel1 = selSet.has(id);
-    const ec = ecartees.has(id);
+    const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
     return (
       <button key={id} type="button" data-photo={id} style={{ width: l, height: h }}
-        className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", ec && "ed-vg--ecartee", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
-        aria-pressed={sel1} aria-label={p.nom + (choisies.has(id) ? ", gardée" : ec ? ", écartée" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
+        className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
+        aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
         onClick={(e) => {
           if (clicSupprime()) return;
@@ -258,8 +260,10 @@ function PanneauOuvert() {
           </span>
         )}
         <span className="ed-vg-rep ed-vg-rep--h">
-          {choisies.has(id) ? <span className="ed-rep ed-rep--choisie" title="Gardée" dangerouslySetInnerHTML={{ __html: ETOILE }} /> : null}
-          {p.coeur ? <span className="ed-rep ed-rep--coeur" aria-hidden="true">♥</span> : null}
+          {cc ? <span className="ed-rep ed-rep--rond ed-rep--cc" title="Coup de cœur" dangerouslySetInnerHTML={{ __html: ETINCELLE }} />
+            : choisies.has(id) ? <span className="ed-rep ed-rep--rond ed-rep--choisie" title="Gardée" dangerouslySetInnerHTML={{ __html: ETOILE }} />
+            : re ? <span className="ed-rep ed-rep--rond ed-rep--reserve" title="Réserve" dangerouslySetInnerHTML={{ __html: DEMI }} /> : null}
+          {p.coeur ? <span className="ed-rep ed-rep--rond ed-rep--coeur" title="Cœur du client" dangerouslySetInnerHTML={{ __html: COEUR }} /> : null}
           {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
@@ -290,7 +294,12 @@ function PanneauOuvert() {
       onPointerDown={() => { if (ui.zone !== "photos") majUi({ zone: "photos" }); }}
       onClick={() => { if (menu && menu.startsWith("ph-")) majUi({ menu: null }); }} {...glisserFichiers}>
       <div className="ed-ph-tete">
-        <h2>{grand ? "Trier" : "Photos"}</h2>
+        {grand ? (
+          <button type="button" className="ed-sortir" title="Revenir à la mise en page · T" onClick={() => majUi({ grand: false, vue: "grille", loupeTri: false, bulle: null, doubles: false, doublesFlash: false })}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4l-6 6 6 6" /></svg>Mise en page
+          </button>
+        ) : <h2>Photos</h2>}
+        {grand ? <><span className="ed-sep" aria-hidden="true" /><OngletsTri /></> : null}
         <span className="ed-esp" />
         {imp ? (
           <>
@@ -311,9 +320,9 @@ function PanneauOuvert() {
         <BoutonsTri />
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
-      <OngletsTri />
+      {grand ? null : <OngletsTri />}
       {grand ? null : <div className="ed-ph-jauge"><JaugeTri /></div>}
-      <div className="ed-ph-outils">
+      <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
           <input type="search" placeholder="Rechercher" aria-label="Rechercher une photo" value={f.recherche} onChange={(e) => filtrer({ recherche: e.currentTarget.value })} />
         </label>
@@ -385,7 +394,7 @@ function PanneauOuvert() {
           <button type="button" className="ed-lien" onClick={() => envoyer({ type: "effacerFiltres" })}>Tout effacer</button>
         </div>
       ) : null}
-      {sel.length ? <BandeSelection /> : null}
+      {sel.length ? <BandeSelection flottante={grand} /> : null}
       <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel")} tabIndex={-1}
         onScroll={(e) => { setScroll(e.currentTarget.scrollTop); setOu(null); }}
         onClick={(e) => { if (!(e.target as HTMLElement).closest(".ed-vg") && sel.length && !clicSupprime()) envoyer({ type: "viderSelection" }); }}>
@@ -427,10 +436,11 @@ function PanneauOuvert() {
       {cibleBib ? <div className="ed-ph-retirer">{depose ? "Lâcher pour importer" : "Lâcher pour retirer"}</div> : null}
       {imp?.bilan ? <div className="ed-ph-bilan" role="status">{imp.bilan}</div> : null}
       {grand ? (
-        <div className="ed-ph-bas">
-          <CheminDeFer />
-          <Toast />
-        </div>
+        <>
+          {/* le tiroir des doubles : fermé pendant le tri, ouvert par D ou un instant après Poser / N */}
+          <div className={cls("ed-ph-bas", (ui.doubles || ui.doublesFlash) && "ed-ph-bas--ouvert")}><CheminDeFer /></div>
+          <div className={cls("ed-ph-toast", (ui.doubles || ui.doublesFlash) && "ed-ph-toast--haut")}><Toast /></div>
+        </>
       ) : null}
       <Tri />
       <BullesTri />
@@ -452,29 +462,48 @@ function PanneauOuvert() {
 
 /* La bande de sélection, collée en haut du panneau : toujours à l'écran pendant le défilement et le glisser.
    Les photos que les filtres cachent y restent, marquées « masquée ». On glisse depuis elle : tout part. */
-function BandeSelection() {
+function BandeSelection({ flottante }: { flottante: boolean }) {
   const c = useEd();
   const { etat, envoyer, adresses, commencerAppui, lectureSeule } = c;
   const ids = selectionOrdonnee(etat);
   const masq = new Set(selectionMasquee(etat));
   const n = ids.length;
+  const marque = (m: Marque, court?: boolean) => (
+    <button type="button" className={`ed-sb ed-sb--${m}`} title={`${MARQUE_UI[m].verbe} · ${MARQUE_UI[m].touche}`} aria-label={MARQUE_UI[m].verbe} onClick={() => marquerTri(c, m)}>
+      <span dangerouslySetInnerHTML={{ __html: MARQUE_UI[m].svg }} />{court ? null : MARQUE_UI[m].verbe}
+    </button>
+  );
+  const gestes = lectureSeule ? null : (
+    <>
+      {marque("ecartee", !flottante)}{marque("reserve", !flottante)}{marque("choisie", !flottante)}{marque("coupDeCoeur", !flottante)}
+      <span className="ed-sb-sep" aria-hidden="true" />
+      {n >= 2 ? <button type="button" className="ed-sb" title="Comparer · C" onClick={() => ouvrirComparaison(c)}>Comparer</button> : null}
+      <button type="button" className="ed-sb ed-sb--plein" title="Poser sur la double · Entrée" onClick={() => poserTri(c)}>Poser</button>
+      <button type="button" className="ed-sb" title="Nouvelle double page · N" onClick={() => nouvelleDouble(c)}>{flottante ? "Nouvelle double" : "+ Double"}</button>
+    </>
+  );
+  const fermer = (
+    <button type="button" className="ed-sb-x" aria-label="Tout désélectionner" title="Tout désélectionner · Échap" onClick={() => envoyer({ type: "viderSelection" })} dangerouslySetInnerHTML={{ __html: CROIX }} />
+  );
+  /* plein écran : une barre flottante, en bas, de vrais boutons ; les photos sélectionnées se voient déjà dans la grille */
+  if (flottante) {
+    return (
+      <div className="ed-sel-flot" role="region" aria-label="Sélection">
+        <b>{n} sélectionnée{n > 1 ? "s" : ""}</b>
+        {gestes}
+        {fermer}
+      </div>
+    );
+  }
   return (
     <div className="ed-sel" role="region" aria-label="Sélection">
       <div className="ed-sel-t">
         <b>{n} sélectionnée{n > 1 ? "s" : ""}</b>
         {masq.size ? <span>· {masq.size} masquée{masq.size > 1 ? "s" : ""}</span> : null}
         <span className="ed-esp" />
-        {lectureSeule ? null : (
-          <>
-            <button type="button" className="ed-lien" title="Garder · P" onClick={() => marquerTri(c, "choisie")}>★ Garder</button>
-            <button type="button" className="ed-lien" title="Écarter · X" onClick={() => marquerTri(c, "ecartee")}>Écarter</button>
-            {n >= 2 ? <button type="button" className="ed-lien" title="Comparer · C" onClick={() => ouvrirComparaison(c)}>Comparer</button> : null}
-            <button type="button" className="ed-lien" title="Poser sur la double · Entrée" onClick={() => poserTri(c)}>Poser</button>
-            <button type="button" className="ed-lien" title="Nouvelle double page · N" onClick={() => nouvelleDouble(c)}>Nouvelle double</button>
-          </>
-        )}
-        <button type="button" className="ed-lien" onClick={() => envoyer({ type: "viderSelection" })}>Effacer</button>
+        {fermer}
       </div>
+      {gestes ? <div className="ed-sel-gestes">{gestes}</div> : null}
       <div className="ed-sel-piste">
         {ids.map((id) => {
           const p = etat.catalogue.get(id);

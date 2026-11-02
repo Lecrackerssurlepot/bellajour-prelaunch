@@ -141,11 +141,16 @@ function plancheValide(v: unknown, indexPlanche: number): v is Planche {
  */
 /** Le tri : deux listes d'ids sans doublon ni recouvrement, et un objectif de photos (entier de 1 à `VISEES_MAX`) ou null. */
 function triValide(v: unknown): boolean {
-  if (!estObjet(v) || !clesExactes(v, ["choisies", "ecartees", "visees"])) return false;
-  const { choisies, ecartees, visees } = v;
-  if (!Array.isArray(choisies) || !Array.isArray(ecartees) || !choisies.every(estId) || !ecartees.every(estId)) return false;
-  const tous = new Set([...choisies, ...ecartees]);
-  if (tous.size !== choisies.length + ecartees.length) return false;
+  if (!estObjet(v)) return false;
+  /* coupsDeCoeur et reserve sont facultatifs, mais jamais vides quand ils sont écrits */
+  const facultatives = (["coupsDeCoeur", "reserve"] as const).filter((k) => k in v);
+  if (!clesExactes(v, ["choisies", "ecartees", "visees", ...facultatives])) return false;
+  const listes = [v.choisies, v.ecartees, ...facultatives.map((k) => v[k])];
+  if (!listes.every((l) => Array.isArray(l) && l.every(estId))) return false;
+  if (facultatives.some((k) => (v[k] as unknown[]).length === 0)) return false;
+  const n = listes.reduce((s: number, l) => s + (l as unknown[]).length, 0);
+  if (new Set(listes.flat()).size !== n) return false;
+  const { visees } = v;
   return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
 }
 
