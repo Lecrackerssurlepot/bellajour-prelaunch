@@ -1538,3 +1538,35 @@
   .mep-editeur .ed-ph--grand .ed-ph-tete { flex-wrap: wrap; }
   .mep-editeur .ed-ph--grand .ed-ph-tete .ed-jauge { order: 9; width: 100%; margin: 4px 0 0; }
 }
+
+/* ── l'hésitation (lot 3) : deux photos dans un cadre, l'étiquette, l'encart du glisser, la confrontation ── */
+.mep-editeur .ed-hes {
+  position: absolute; top: 4px; left: 4px; z-index: 4; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px 0 2px;
+  border: 0; border-radius: var(--bj-r-pill); background: var(--mep-or); color: #fff; font-family: var(--bj-font-ui); font-size: 10px; font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25); cursor: pointer;
+}
+.mep-editeur .ed-hes img { width: 18px; height: 18px; border: 1.5px solid #fff; border-radius: 50%; object-fit: cover; }
+.mep-editeur .ed-hes--tranchee { background: rgba(35, 31, 32, 0.55); font-weight: 500; }
+.mep-editeur .ed-hes--tranchee img { opacity: 0.6; filter: grayscale(1); }
+.mep-editeur .ed-hes-encart {
+  position: absolute; right: 6px; bottom: 6px; z-index: 6; display: grid; place-items: center; width: max(64px, 34%); height: max(40px, 26%);
+  border: 2px dashed #fff; border-radius: 10px; background: rgba(200, 150, 46, 0.55); color: #fff; font-family: var(--bj-font-ui); font-size: 11px; font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); pointer-events: auto; transition: background 0.12s, transform 0.12s;
+}
+.mep-editeur .ed-hes-encart--cible { background: var(--mep-or); border-style: solid; transform: scale(1.05); }
+.mep-editeur .ed-rep--hes { background: var(--mep-or); color: #fff; }
+.mep-editeur .ed-rep--hes-v { background: var(--bj-veil-12); color: var(--bj-text-soft); }
+.mep-editeur .ed-conf { position: fixed; z-index: 120; }
+.mep-editeur .ed-conf-t { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px 0 6px; border: 0; border-radius: 10px; background: var(--mep-nuit-2); color: #fff; font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); font-weight: 600; cursor: pointer; }
+.mep-editeur .ed-conf-t:hover { background: var(--mep-nuit-3); }
+.mep-editeur .ed-conf-t kbd { display: grid; place-items: center; min-width: 20px; height: 20px; border-radius: 5px; background: var(--mep-nuit-3); font-family: var(--bj-font-ui); font-size: 11px; }
+.mep-editeur .ed-conf-scene { display: grid; flex: 1 1 auto; grid-template-columns: 1fr 1fr; gap: 24px; min-height: 0; padding: 8px 32px 24px; }
+.mep-editeur .ed-conf-cote { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; margin: 0; }
+.mep-editeur .ed-conf-img { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; min-height: 0; }
+.mep-editeur .ed-conf-img .ed-vt-img img { max-height: calc(100vh - 200px); cursor: default; }
+.mep-editeur .ed-conf-cote figcaption { display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; }
+.mep-editeur .ed-conf-mot { flex: none; height: 20px; padding: 0 8px; border-radius: 10px; background: var(--mep-nuit-3); color: var(--mep-nuit-texte); font-size: 11px; font-weight: 600; line-height: 20px; }
+.mep-editeur .ed-conf-mot--devant { background: var(--mep-or); color: #fff; }
+.mep-editeur .ed-conf-nom { min-width: 0; overflow: hidden; color: var(--mep-nuit-pale); font-size: var(--bj-fs-xxs); text-overflow: ellipsis; white-space: nowrap; }
+.mep-editeur .ed-conf-garder { flex: none; height: 34px; padding: 0 16px; border: 0; border-radius: var(--bj-r-pill); background: var(--bj-action); color: #fff; font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); font-weight: 600; cursor: pointer; }
+.mep-editeur .ed-conf-garder:hover { filter: brightness(1.1); }

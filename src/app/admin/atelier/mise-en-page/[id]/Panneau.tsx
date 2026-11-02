@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  compteurs, emplacements, groupes as lesGroupes, planchesDesPhotos, triDe, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  compteurs, emplacements, groupes as lesGroupes, photosEnHesitation, planchesDesPhotos, triDe, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
@@ -67,6 +67,7 @@ function PanneauOuvert() {
   /* « gardées » au sens large : un coup de cœur l'est aussi (Poser les prend en premier) */
   const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
   const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
+  const hes = photosEnHesitation(etat.magazine);
   const planches = planchesDesPhotos(etat);
   const focus = focusCourant(etat, ui);
   const focusVu = grand || ui.zone === "photos";
@@ -268,6 +269,8 @@ function PanneauOuvert() {
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
           {ec ? <span className="ed-rep ed-rep--ecartee">Écartée</span> : null}
+          {hes.ouvertes.has(id) ? <span className="ed-rep ed-rep--hes" title="Derrière une photo posée : on hésite">Hésitation</span>
+            : hes.delaissees.has(id) ? <span className="ed-rep ed-rep--hes-v" title="Hésitation tranchée contre elle">Hésitée</span> : null}
           {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
           {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
           {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}

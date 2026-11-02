@@ -9,7 +9,7 @@
 import {
   candidats, dispositionDe, ecrireTexte as ecrireTexteMagazine, recadrer as recadrerMagazine, supprimerPlanche as supprimerPlancheMagazine,
   templateParId, vider as viderMagazine,
-  type Cible, type Disposition, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
+  type Cible, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
 } from "../magazine";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
 import { ZOOM_MIN, cadrer, type Recadrage } from "../recadrage";
@@ -106,7 +106,11 @@ export function reporterTextes(anciens: readonly TexteCadre[], tA: Template | nu
 
 /* ─────────────────────────── 8. Le cœur : composer ─────────────────────────── */
 
-type SourcePhoto = { r: Recadrage | null; cadre: Dims | null };
+type SourcePhoto = { r: Recadrage | null; cadre: Dims | null; hes?: Hesitation };
+
+/** L'hésitation suit sa photo (lot 3) ; changée de cadre, la photo de derrière repart d'un recadrage neutre. */
+export const avecHesitation = <A extends Disposition["photos"][number]>(aff: A, h: Hesitation | undefined): A =>
+  h && aff.photoId && h.photoId !== aff.photoId ? { ...aff, hesitation: { ...h, recadrage: neutre() } } : aff;
 
 /** Recadrage et cadre de chaque photo posée sur la planche (pour le report T23). */
 function sourcesDe(p: Planche): Map<string, SourcePhoto> {
@@ -115,7 +119,7 @@ function sourcesDe(p: Planche): Map<string, SourcePhoto> {
     if (!x.photoId) continue;
     const d = dispositionDe(p, x.ref.cible);
     if (!d) continue;
-    s.set(x.photoId, { r: d.photos[x.ref.index].recadrage, cadre: dimsCadre(d, x.ref.index) });
+    s.set(x.photoId, { r: d.photos[x.ref.index].recadrage, cadre: dimsCadre(d, x.ref.index), hes: d.photos[x.ref.index].hesitation });
   }
   return s;
 }
@@ -144,7 +148,7 @@ export function composerDisposition(
   const cs = cadresPhoto(t);
   const photos = ids.map((id, i) => {
     const src = sources.get(id);
-    return { photoId: id, recadrage: src ? reporterRecadrage(src.r, refs[i], src.cadre, { l: cs[i].l, h: cs[i].h }) : neutre() };
+    return avecHesitation({ photoId: id, recadrage: src ? reporterRecadrage(src.r, refs[i], src.cadre, { l: cs[i].l, h: cs[i].h }) : neutre() }, src?.hes);
   });
   const { textes, perdus } = reporterTextes(anciens, tA, t);
   return { disposition: { templateId: t.id, photos, textes }, textesPerdus: perdus };
@@ -280,8 +284,8 @@ export function echangerIssue(m: Magazine, a: RefCadre, b: RefCadre, cat: Catalo
   }
   const ca = dimsDeRef(m, a);
   const cb = dimsDeRef(m, b);
-  const nA = { photoId: fb.photoId, recadrage: reporterRecadrage(fb.recadrage, refPour(cat, fb.photoId), cb, ca) };
-  const nB = { photoId: fa.photoId, recadrage: reporterRecadrage(fa.recadrage, refPour(cat, fa.photoId), ca, cb) };
+  const nA = avecHesitation({ photoId: fb.photoId, recadrage: reporterRecadrage(fb.recadrage, refPour(cat, fb.photoId), cb, ca) }, fb.hesitation);
+  const nB = avecHesitation({ photoId: fa.photoId, recadrage: reporterRecadrage(fa.recadrage, refPour(cat, fa.photoId), ca, cb) }, fa.hesitation);
   return issue(poserAffectation(poserAffectation(m, a, nA), b, nB), null);
 }
 export const echanger = (m: Magazine, a: RefCadre, b: RefCadre, cat: CatalogueRef): Magazine => echangerIssue(m, a, b, cat).magazine;
@@ -296,7 +300,9 @@ export function remplacer(m: Magazine, ref: RefCadre, photoId: string, cat: Cata
     const r = echangerIssue(m, ref, autre.ref, cat);
     return issue(r.magazine, r.refus, { echange: true });
   }
-  return issue(poserAffectation(m, ref, { photoId, recadrage: neutre() }), null, { posees: [photoId], retiree: a.photoId });
+  /* l'hésitation reste au cadre, sauf si la photo posée EST celle de derrière (elle ne peut pas être des deux côtés) */
+  const h = a.hesitation && a.hesitation.photoId !== photoId ? a.hesitation : undefined;
+  return issue(poserAffectation(m, ref, h ? { photoId, recadrage: neutre(), hesitation: h } : { photoId, recadrage: neutre() }), null, { posees: [photoId], retiree: a.photoId });
 }
 
 /** 14. Réordonner dans la même disposition ; gabarit gardé ; recadrages reportés. */
@@ -314,10 +320,11 @@ export function reordonner(m: Magazine, plancheId: string, cible: Cible, de: num
   const [x] = ordre.splice(de, 1);
   ordre.splice(vers, 0, x);
   const cs = cadresPhoto(t);
-  const photos = ordre.map(({ a, k }, j) => ({
-    photoId: a.photoId,
-    recadrage: a.photoId ? reporterRecadrage(a.recadrage, refPour(cat, a.photoId), cs[k], cs[j]) : neutre(),
-  }));
+  const photos = ordre.map(({ a, k }, j) => {
+    const r = a.photoId ? reporterRecadrage(a.recadrage, refPour(cat, a.photoId), cs[k], cs[j]) : neutre();
+    /* une photo restée à sa place garde son hésitation telle quelle */
+    return k === j && a.hesitation ? { photoId: a.photoId, recadrage: r, hesitation: a.hesitation } : avecHesitation({ photoId: a.photoId, recadrage: r }, a.hesitation);
+  });
   return remplacerPlanche(m, i, avecDispo(p, cible, { ...d, photos }));
 }
 
@@ -346,7 +353,7 @@ export function deplacerPhoto(
   }
   const photoId = a.photoId;
   const pd = plancheDe(m, de.plancheId);
-  const src = new Map<string, SourcePhoto>([[photoId, { r: a.recadrage, cadre: pd ? dimsCadre(dispositionDe(pd, de.cible), de.index) : null }]]);
+  const src = new Map<string, SourcePhoto>([[photoId, { r: a.recadrage, cadre: pd ? dimsCadre(dispositionDe(pd, de.cible), de.index) : null, hes: a.hesitation }]]);
   const r1 = retirer(m, de, cat);
   const r2 = ajouter(r1.magazine, vers.plancheId, c, [photoId], cat, vers.position, { sources: src, autorises: new Set([photoId]) });
   if (r2.refus || r2.posees.length === 0) return issue(m, r2.refus ?? "pleine");

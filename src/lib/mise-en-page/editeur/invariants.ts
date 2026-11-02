@@ -170,6 +170,14 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       if (op === "supprimerPlanche" && indexPlanche(mAvant, a.plancheId) === 0 && m2.planches[0].id !== mAvant.planches[0].id) err.push("I5 planche 1 supprimée");
       break;
     }
+    case "hesiter": {
+      /* lot 3 : au plus la photo de devant change (intervertir, trancher pour celle de derrière), le gabarit jamais */
+      if (plus.length > 1 || plus.length !== moins.length) err.push(`I12 hesiter bilan faux (+${plus} −${moins})`);
+      const pAv = a.ref ? plancheDe(mAvant, a.ref.plancheId) : null, pAp = a.ref ? plancheDe(m2, a.ref.plancheId) : null;
+      const dAv = pAv && a.ref ? dispositionDe(pAv, a.ref.cible) : null, dAp = pAp && a.ref ? dispositionDe(pAp, a.ref.cible) : null;
+      if (!dAv || !dAp || dAv.templateId !== dAp.templateId || !egal(dAv.textes, dAp.textes)) err.push("hesiter a touché le gabarit ou les textes");
+      break;
+    }
     default:
       if (plus.length || moins.length) err.push(`I12 ${op} bilan non nul (+${plus} −${moins})`);
   }

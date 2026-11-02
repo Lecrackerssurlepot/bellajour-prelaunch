@@ -11,6 +11,7 @@ import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../rec
 import { contenuValide } from "../sauvegarde";
 import type { Magazine } from "../magazine";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
+import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -167,6 +168,11 @@ function primitifTouche(e: EtatEditeur, g: Touche): GestePrimitif {
     case "x": return e.cadreActif ? { type: "armerEchange", ref: e.cadreActif } : RIEN;
     case "enter": return e.cadreActif ? { type: "ouvrirRecadrage", ref: e.cadreActif } : RIEN;
     case "p": return { type: "panneau", basculer: true };
+    case "t": {
+      /* T (lot 3) : le cadre actif s'il hésite, sinon la seule hésitation ouverte de la double affichée */
+      const ici = e.cadreActif && hesitationDe(e.magazine, e.cadreActif)?.ouverte ? [e.cadreActif] : hesitationsOuvertes(e.magazine, e.plancheCourante);
+      return ici.length === 1 ? { type: "hesiter", ref: ici[0], action: "intervertir" } : RIEN;
+    }
     default: return RIEN;
   }
 }
@@ -195,7 +201,7 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri"]);
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "hesiter"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -238,7 +244,7 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   x = { ...x, message: null, halo: null };
   /* le tri ne touche aucune planche : pas d'éclair */
   if (plan.op === "marquer" || plan.op === "reglerTri") x = { ...x, eclair: null };
-  if (plan.op === "marquer") x = { ...x, message: { texte: plan.libelle, action: { libelle: "Annuler" } } };
+  if (plan.op === "marquer" || plan.op === "hesiter") x = { ...x, message: { texte: plan.libelle, action: { libelle: "Annuler" } } };
   if (is.textesPerdus > 0) {
     x = { ...x, message: { texte: `${pluriel(is.textesPerdus, "texte retiré", "textes retirés")}`, action: { libelle: "Annuler" } } };
   } else if (is.restees.length > 0) {

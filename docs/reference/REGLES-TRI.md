@@ -56,3 +56,11 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 - **R35** Le plein écran prend toute la fenêtre, sans la barre du projet ; le bouton de gauche « Mise en page » ferme le tri, jamais le projet. Les doubles pages sont un tiroir fermé (D, ou le bouton) qui s'ouvre 2 s après Poser ou N.
 - **R36** Le cœur du client (Éditions) s'affiche en rouge sur la vignette, en étiquette « Client » dans la vue une photo et la comparaison ; la puce « Client » ne montre que ses cœurs.
 - **R37** Une sauvegarde d'avant le 02/11 (sans `coupsDeCoeur` ni `reserve`) reste valide ; ces listes ne s'écrivent que non vides.
+
+## L'hésitation (lot 3, plan du 30/10, codé le 02/11)
+- **R38** Pendant qu'on glisse UNE photo de la bibliothèque sur un cadre plein, un encart « Hésiter » apparaît dans son coin bas droit : lâchée dessus, la photo passe DERRIÈRE celle du cadre (lâchée ailleurs sur le cadre, elle remplace, comme avant). Elle devient gardée. Une photo déjà posée sur la même double est refusée (« Déjà sur cette double page »).
+- **R39** Un cadre qui hésite porte l'étiquette dorée « 2 photos » avec la miniature de celle de derrière. Double-clic sur le cadre (ou l'étiquette, ou « Comparer » de sa barre) : les deux côte à côte, celle de devant à gauche. Sans hésitation, le double-clic recadre toujours.
+- **R40** T intervertit devant et derrière (chacune garde son recadrage), dans la confrontation ou sur la planche : le cadre actif s'il hésite, sinon la seule hésitation ouverte de la double (plusieurs : T ne fait rien, choisir le cadre d'abord).
+- **R41** « Garder celle-ci » (ou ← / →) tranche : la gardée reste devant, l'autre reste NOTÉE derrière le cadre (étiquette grise « Tranchée ») et sa vignette porte « Hésitée ». « Hésiter encore » (barre du cadre) rouvre l'hésitation.
+- **R42** Seule la photo de devant compte : export IDML, liens, ×n, « posées », bilans. Celle de derrière apparaît dans « photos non utilisées ».
+- **R43** L'hésitation suit sa photo (échanger, déplacer, réordonner, changer de gabarit) ; quand la photo change de cadre, celle de derrière repart d'un recadrage neutre. Retirer la photo de devant retire aussi l'hésitation. Tout s'annule (⌘Z).

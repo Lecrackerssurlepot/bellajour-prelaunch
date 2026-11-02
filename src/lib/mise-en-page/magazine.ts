@@ -25,7 +25,10 @@ import { decorPourCote, orientationCadre, orientationDe, pourCote, type Aplat, t
 
 /** l / h en px APRÈS orientation EXIF ; date ISO ou null (inconnue). */
 export type PhotoRef = { id: string; nom: string; l: number; h: number; date: string | null };
-export type Affectation = { photoId: string | null; recadrage: Recadrage };
+/** L'hésitation (lot 3, 02/11) : une seconde photo DERRIÈRE celle du cadre. T les intervertit ; une fois tranchée (`tranchee`),
+ *  la délaissée reste notée pour qu'on puisse revenir dessus. Seule la photo de devant (`photoId`) part à l'export. */
+export type Hesitation = { photoId: string; recadrage: Recadrage; tranchee?: true };
+export type Affectation = { photoId: string | null; recadrage: Recadrage; hesitation?: Hesitation };
 export type TexteCadre = { contenu: string; taille: number; gras: boolean };
 
 export type Disposition = {

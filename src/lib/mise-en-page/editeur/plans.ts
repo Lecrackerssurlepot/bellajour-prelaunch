@@ -12,6 +12,7 @@ import {
 import { affectation, idsDispo, indexPlanche } from "./outils";
 import { garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
+import { hesiter, type ActionHesitation } from "./hesitation";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
 const planRien = (e: EtatEditeur, refus?: Refus): Plan =>
@@ -57,6 +58,18 @@ function planRetirer(e: EtatEditeur, ref: RefCadre): Plan {
   return { op: "retirer", libelle: "Retirer une photo", plancheId: ref ? ref.plancheId : e.plancheCourante, issue: is, args: { ref } };
 }
 
+const LIBELLE_HESITER: Record<ActionHesitation, string> = {
+  ajouter: "Hésiter entre deux photos", intervertir: "Intervertir l'hésitation", garderDevant: "Hésitation tranchée", garderDerriere: "Hésitation tranchée",
+  rouvrir: "Hésiter de nouveau", oublier: "Oublier l'hésitation",
+};
+/** L'hésitation (lot 3) : la photo mise derrière devient gardée, dans la même entrée d'historique. */
+function planHesiter(e: EtatEditeur, ref: RefCadre | null | undefined, action: ActionHesitation, photoId?: string): Plan {
+  if (!ref) return planRien(e);
+  const is = hesiter(e.magazine, ref, action, e.catalogue, photoId);
+  const m2 = !is.refus && action === "ajouter" && photoId ? garderPosees(is.magazine, [photoId]) : is.magazine;
+  return { op: "hesiter", libelle: LIBELLE_HESITER[action] ?? "Hésitation", plancheId: ref.plancheId, issue: { ...is, magazine: m2 }, args: { ref, photoId } };
+}
+
 /** Des doubles neuves : à `index`, sinon juste après la planche courante. */
 function planCreerDoubles(e: EtatEditeur, ids: string[], index?: number): Plan {
   const i = index !== undefined && Number.isFinite(index) ? index : indexPlanche(e.magazine, e.plancheCourante) + 1;
@@ -85,6 +98,7 @@ function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined,
       case "cadre":
         if (!cible.ref) return planRien(e);
         return ids.length === 1 ? planRemplacer(e, cible.ref, ids[0]) : planAjouter(e, cible.ref.plancheId, cible.ref.cible, ids);
+      case "hesiter": return ids.length === 1 ? planHesiter(e, cible.ref, "ajouter", ids[0]) : planRien(e);
       case "bande": { const b = resoudreBande(m, cible); return b ? planAjouter(e, cible.plancheId, b.cible, ids, b.position) : planRien(e); }
       case "vignette": return planSurPlanche(e, cible.plancheId, ids);
       case "entre": return planCreerDoubles(e, ids, cible.index);
@@ -197,6 +211,7 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       const libelle = voulue ? (n > 1 ? MOTS_N[voulue](n) : MOTS[voulue]) : (n > 1 ? `${n} photos sans marque` : "Marque retirée");
       return simple("marquer", libelle, e.plancheCourante, marquer(m, ids, voulue), {});
     }
+    case "hesiter": return planHesiter(e, g.ref, g.action, g.photoId);
     case "reglerTri": return simple("reglerTri", "Photos visées", e.plancheCourante, reglerVisees(m, g.visees), {});
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
