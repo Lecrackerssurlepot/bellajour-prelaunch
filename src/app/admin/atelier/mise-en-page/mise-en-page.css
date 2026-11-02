@@ -765,6 +765,13 @@
 }
 .mep-editeur .ed-groupe span { color: var(--bj-text-faint); font-weight: 400; }
 .mep-editeur .ed-groupe--colle { position: sticky; top: 0; left: auto; right: auto; margin: 0 -8px -30px; }
+/* le titre d'une date : un clic la sélectionne entière, la pastille se remplit */
+.mep-editeur .ed-groupe-t { appearance: none; display: inline-flex; align-items: center; gap: 6px; margin: -3px 0 0 -4px; height: 20px; padding: 0 6px 0 4px; border: 0; border-radius: 10px; background: none; color: inherit; font: inherit; cursor: pointer; }
+.mep-editeur .ed-groupe-t:hover { background: color-mix(in srgb, var(--bj-action) 8%, transparent); }
+.mep-editeur .ed-groupe-t:focus-visible { outline: 2px solid var(--bj-action); outline-offset: 1px; }
+.mep-editeur .ed-groupe-t i { width: 12px; height: 12px; border: 1.5px solid currentColor; border-radius: 50%; opacity: 0.35; transition: opacity 0.15s, background 0.15s; }
+.mep-editeur .ed-groupe-t:hover i { opacity: 0.8; }
+.mep-editeur .ed-groupe-t--sel i { border-color: var(--bj-action); background: var(--bj-action) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 6.2l2 2 4-4.4' fill='none' stroke='white' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat; opacity: 1; }
 /* « Poser » : les photos libres du groupe en doubles pages neuves */
 .mep-editeur .ed-groupe-poser {
   appearance: none;
@@ -1388,6 +1395,9 @@
 .mep-editeur .ed-vt-tete { display: flex; align-items: center; gap: 6px; min-height: 52px; padding: 10px 12px 6px 16px; }
 .mep-editeur .ed-vt-tete h2 { margin: 0; color: var(--mep-nuit-texte); font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-style: normal; font-weight: 600; white-space: nowrap; }
 .mep-editeur .ed-vt-tete h2 span { margin-left: 6px; color: var(--mep-nuit-pale); font-weight: 400; }
+.mep-editeur .ed-vt-retour { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin-right: 4px; padding: 0 12px 0 8px; border: 0; border-radius: 10px; background: var(--mep-nuit-2); color: #fff; font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); font-weight: 600; cursor: pointer; }
+.mep-editeur .ed-vt-retour:hover { background: var(--mep-nuit-3); }
+.mep-editeur .ed-vt-retour svg { width: 16px; height: 16px; }
 .mep-editeur .ed-vt-ico { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 10px; background: none; color: var(--mep-nuit-pale); cursor: pointer; }
 .mep-editeur .ed-vt-ico:hover { background: var(--mep-nuit-2); color: #fff; }
 .mep-editeur .ed-duo--sombre { background: var(--mep-nuit-2); }
@@ -1428,12 +1438,11 @@
 .mep-editeur .ed-vt-avance .ed-vt-av--choisie { background: var(--bj-action); }
 .mep-editeur .ed-vt-avance .ed-vt-av--ecartee { background: var(--mep-ecart); }
 .mep-editeur .ed-vt-avance .ed-vt-av--ici { background: #fff; transform: scaleY(1.6); }
-.mep-editeur .ed-vt-cmp { display: grid; flex: 1 1 auto; gap: 12px; min-height: 0; padding: 8px 24px; }
-.mep-editeur .ed-vt-cmp--4 { grid-template-rows: 1fr 1fr; }
+.mep-editeur .ed-vt-cmp { display: grid; flex: 1 1 auto; grid-auto-rows: minmax(0, 1fr); gap: 12px; min-height: 0; padding: 8px 24px; overflow-y: auto; }
+.mep-editeur .ed-vt-cmp--contact { grid-auto-rows: auto; gap: 8px; }
 .mep-editeur .ed-vt-cmp-c { display: flex; align-items: center; justify-content: center; min-width: 0; min-height: 0; cursor: pointer; }
 .mep-editeur .ed-vt-cmp-cadre { position: relative; display: grid; max-width: 100%; max-height: 100%; }
-.mep-editeur .ed-vt-cmp .ed-vt-img img { max-height: calc(100vh - 260px); box-shadow: none; cursor: pointer; }
-.mep-editeur .ed-vt-cmp--4 .ed-vt-img img { max-height: calc(50vh - 150px); }
+.mep-editeur .ed-vt-cmp .ed-vt-img img { max-height: max(90px, calc((100vh - 220px) / var(--cmp-rangs, 1) - 40px)); box-shadow: none; cursor: pointer; }
 .mep-editeur .ed-vt-cmp-c--actif .ed-vt-cmp-cadre { box-shadow: 0 0 0 2px #fff, 0 0 0 5px rgba(255, 255, 255, 0.18); }
 .mep-editeur .ed-vt-cmp-c--ecartee img { opacity: 0.4; filter: grayscale(0.9); }
 .mep-editeur .ed-vt-star { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--bj-action); color: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }

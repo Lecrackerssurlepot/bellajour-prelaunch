@@ -43,7 +43,8 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 - **R24** Le ✕ au survol d'un cadre de la planche retire la photo de la double (sa marque ne change pas).
 - **R25** Poser, créer, retirer s'annulent et se rétablissent avec ⌘Z / ⇧⌘Z, dans le même historique que les marques (marques ET doubles reviennent ensemble).
 - **R26** « Non posées » se combine avec le filtre de marque ; les compteurs des filtres en tiennent compte. La jauge affiche « N gardées · M posées sur V » (M = photos distinctes posées).
-- **R27** C avec 2 à 4 photos sélectionnées ouvre la comparaison (sinon un bandeau, rien d'autre) ; ← → changent la photo active ; P / X / 0 marquent l'active avec la règle de bascule R1 et R2 ; ⇧P garde l'active et écarte les autres ; Échap ou Espace reviennent à la grille avec ces photos encore sélectionnées.
+- **R27** C avec 2 photos sélectionnées ou plus ouvre la comparaison (une seule : un bandeau, rien d'autre) ; au-delà de 4, une planche contact où seule l'active charge son original ; ← → ↑ ↓ changent la photo active ; le bouton Retour vaut Échap ; P / X / 0 marquent l'active avec la règle de bascule R1 et R2 ; ⇧P garde l'active et écarte les autres ; Échap ou Espace reviennent à la grille avec ces photos encore sélectionnées.
 - **R28** Z (ou clic sur la photo) en vue une photo ouvre la loupe 100 % ; Z, un clic ou Échap la ferment. Hors vue une photo, Z ne fait rien.
 - **R29** U amène le focus sur la prochaine photo à trier (en reprenant au début s'il le faut) ; s'il n'y en a plus : bandeau « Tout est trié ».
 - **R30** Un clic sur une case de la bande d'avancement (vue une photo) y amène le focus.
+- **R31** Un clic sur le titre d'une date sélectionne toutes ses photos ; ⇧ ou ⌘ les ajoute à la sélection ; un second clic, quand elles y sont toutes, les retire.

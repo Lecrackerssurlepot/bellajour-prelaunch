@@ -188,6 +188,22 @@ function PanneauOuvert() {
     );
   };
 
+  /* le titre d'une date : un clic sélectionne toutes ses photos (⇧ ou ⌘ : en plus), un second clic les retire */
+  const titreGroupe = (lib: string, n: number, ids: string[]) => {
+    const toutes = ids.length > 0 && ids.every((id) => selSet.has(id));
+    return (
+      <button type="button" className={cls("ed-groupe-t", toutes && "ed-groupe-t--sel")} aria-pressed={toutes} title={toutes ? "Retirer la date" : "Sélectionner la date"}
+        onClick={(e) => {
+          e.stopPropagation();
+          const dans = new Set(ids);
+          const cur = selectionOrdonnee(etat);
+          envoyer({ type: "selectionner", ids: toutes ? cur.filter((id) => !dans.has(id)) : e.shiftKey || e.metaKey || e.ctrlKey ? [...cur, ...ids.filter((id) => !selSet.has(id))] : ids });
+        }}>
+        <i aria-hidden="true" />{lib} <span>{n}</span>
+      </button>
+    );
+  };
+
   const sourcePour = (id: string): SourceGlisser => (selSet.has(id) ? { type: "bibliotheque", ids: selectionOrdonnee(etat) } : { type: "bibliotheque", ids: [id] });
   const personnes = [...new Set([...cat.values()].map((p) => p.personne).filter(Boolean))].sort((a, b) => a.localeCompare(b, "fr"));
   const filtrer = (filtres: Partial<Filtres>) => envoyer({ type: "filtrer", filtres });
@@ -373,7 +389,7 @@ function PanneauOuvert() {
       <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel")} tabIndex={-1}
         onScroll={(e) => { setScroll(e.currentTarget.scrollTop); setOu(null); }}
         onClick={(e) => { if (!(e.target as HTMLElement).closest(".ed-vg") && sel.length && !clicSupprime()) envoyer({ type: "viderSelection" }); }}>
-        {gColle ? <div className="ed-groupe ed-groupe--colle">{gColle.lib} <span>{gColle.n}</span>{poserGroupe(gColle.ids)}</div> : null}
+        {gColle ? <div className="ed-groupe ed-groupe--colle">{titreGroupe(gColle.lib, gColle.n, gColle.ids)}{poserGroupe(gColle.ids)}</div> : null}
         {!vis.length ? (
           <div className="ed-ph-vide">
             <span>{imp && !cpt.total ? "Glissez vos photos ici" : f.marque === "a_trier" && cpt.total ? "Tout est trié" : "Aucune photo"}</span>
@@ -383,7 +399,7 @@ function PanneauOuvert() {
         ) : null}
         <div className="ed-grille-haut" style={{ height: total }}>
           {vues.map((r) => r.type === "g" ? (
-            <div key={`g${r.y}`} className="ed-groupe" style={{ top: r.y }}>{r.lib} <span>{r.n}</span>{poserGroupe(r.ids)}</div>
+            <div key={`g${r.y}`} className="ed-groupe" style={{ top: r.y }}>{titreGroupe(r.lib, r.n, r.ids)}{poserGroupe(r.ids)}</div>
           ) : r.type === "j" ? (
             <div key={`j${r.y}`} className="ed-rangee ed-rangee--j" style={{ top: r.y, height: r.h }}>
               {r.items.map((x) => vignette(x.id, x.l, Math.round(r.h)))}
@@ -452,7 +468,7 @@ function BandeSelection() {
           <>
             <button type="button" className="ed-lien" title="Garder · P" onClick={() => marquerTri(c, "choisie")}>★ Garder</button>
             <button type="button" className="ed-lien" title="Écarter · X" onClick={() => marquerTri(c, "ecartee")}>Écarter</button>
-            {n >= 2 && n <= 4 ? <button type="button" className="ed-lien" title="Comparer · C" onClick={() => ouvrirComparaison(c)}>Comparer</button> : null}
+            {n >= 2 ? <button type="button" className="ed-lien" title="Comparer · C" onClick={() => ouvrirComparaison(c)}>Comparer</button> : null}
             <button type="button" className="ed-lien" title="Poser sur la double · Entrée" onClick={() => poserTri(c)}>Poser</button>
             <button type="button" className="ed-lien" title="Nouvelle double page · N" onClick={() => nouvelleDouble(c)}>Nouvelle double</button>
           </>

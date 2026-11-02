@@ -85,11 +85,23 @@ export function nouvelleDouble(c: CtxTri): void {
   c.envoyer(ids.length ? { type: "creerDoubles", ids } : { type: "insererDouble" });
 }
 
-/** C : comparer 2 à 4 photos sélectionnées. */
+/** C : comparer les photos sélectionnées (2 au moins, une date entière s'il le faut). */
 export function ouvrirComparaison(c: CtxTri): void {
   const sel = selectionOrdonnee(c.etat);
-  if (sel.length < 2 || sel.length > 4) { c.envoyer({ type: "annoncer", texte: "Comparer : 2 à 4 photos" }); return; }
+  if (sel.length < 2) { c.envoyer({ type: "annoncer", texte: "Comparer : 2 photos au moins" }); return; }
   c.majUi({ grand: true, vue: "comparer", comparer: sel, cmpIci: 0, loupeTri: false, bulle: null });
+}
+
+/** Les colonnes de la comparaison : côte à côte jusqu'à 3, 2 × 2 à 4, puis une planche contact à l'écran large. */
+export const colonnesComparer = (n: number): number => (n <= 3 ? n : n === 4 ? 2 : Math.ceil(Math.sqrt(n * 1.5)));
+
+/** Le bouton retour de la visionneuse : la comparaison rend ses photos sélectionnées dans la grille, la photo seule rend la grille. */
+export function quitterVisionneuse(c: CtxTri): void {
+  const { ui } = c;
+  if (ui.vue === "comparer") {
+    c.envoyer({ type: "selectionner", ids: ui.comparer });
+    c.majUi({ vue: "grille", loupeTri: false, bulle: null, focus: ui.comparer[ui.cmpIci] ?? ui.focus });
+  } else c.majUi({ vue: "grille", loupeTri: false, bulle: null });
 }
 
 /** La vignette voisine dans la grille affichée (rangées de largeurs différentes : on vise la plus proche en x). */
@@ -127,7 +139,7 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
   if (k === "escape") {
     if (ui.bulle) { majUi({ bulle: null }); return prends(); }
     if (ui.loupeTri) { majUi({ loupeTri: false }); return prends(); }
-    if (ui.grand && ui.vue === "comparer") { c.envoyer({ type: "selectionner", ids: ui.comparer }); majUi({ vue: "grille", focus: ui.comparer[ui.cmpIci] ?? f }); return prends(); }
+    if (ui.grand && ui.vue === "comparer") { quitterVisionneuse(c); return prends(); }
     if (e.selection.ids.length) { c.envoyer({ type: "viderSelection" }); return prends(); }
     if (ui.grand && ui.vue === "une") { majUi({ vue: "grille" }); return prends(); }
     if (ui.grand) { majUi({ grand: false, vue: "grille" }); return prends(); }
@@ -135,11 +147,12 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     return prends();
   }
   if (ui.grand && ui.vue === "comparer") {
-    if (k === "arrowright" || k === "arrowleft") { majUi({ cmpIci: Math.max(0, Math.min(ui.comparer.length - 1, ui.cmpIci + (k === "arrowright" ? 1 : -1))) }); return prends(); }
+    const pas = { arrowright: 1, arrowleft: -1, arrowdown: colonnesComparer(ui.comparer.length), arrowup: -colonnesComparer(ui.comparer.length) }[k];
+    if (pas) { const j = ui.cmpIci + pas; if (j >= 0 && j < ui.comparer.length) majUi({ cmpIci: j }); return prends(); }
     if (k === "p") { marquerComparaison(c, "choisie", ev.shiftKey); return prends(); }
     if (k === "x") { marquerComparaison(c, "ecartee", false); return prends(); }
     if (k === "0" || k === "backspace") { marquerComparaison(c, null, false); return prends(); }
-    if (k === " ") { c.envoyer({ type: "selectionner", ids: ui.comparer }); majUi({ vue: "grille" }); return prends(); }
+    if (k === " ") { quitterVisionneuse(c); return prends(); }
     return false;
   }
   switch (k) {

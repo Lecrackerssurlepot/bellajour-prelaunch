@@ -30,7 +30,7 @@ export type Ui = {
   focus: string | null;
   /** Où va le clavier : la bande des photos (touches du tri) ou la planche (touches de mise en page). */
   zone: "photos" | "planche";
-  /** Les 2 à 4 photos comparées, et l'active. */
+  /** Les photos comparées (2 et plus), et l'active. */
   comparer: string[];
   cmpIci: number;
   /** La loupe 100 % de la vue une photo. */
