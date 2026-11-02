@@ -876,7 +876,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
       case 2: return { type: "cadre", ref: uneRef(e) };
       case 3: return { type: "bande", plancheId: plancheId(e), position: int(-1, 8), ...(h() < 0.7 ? { cote: pick(["gauche", "droite", "double"]) } : {}) };
       case 4: return { type: "bibliotheque" };
-      case 5: return { type: "vignette", plancheId: plancheId(e) };
+      case 5: return h() < 0.5 ? { type: "vignette", plancheId: plancheId(e) } : { type: "hesiter", ref: uneRef(e) };
       default: return { type: "entre", index: int(-1, e.magazine.planches.length + 1) };
     }
   };
@@ -940,6 +940,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [2, () => ({ type: "confirmer" })],
     [1, () => ({ type: "annulerConfirmation" })],
     [4, (e) => ({ type: "marquer", ids: ids(e, int(1, 4)), marque: pick(["coupDeCoeur", "choisie", "reserve", "ecartee", null, "bidon"]), ...(h() < 0.3 ? { poser: true } : {}), ...(h() < 0.15 ? { autres: ids(e, int(1, 3)) } : {}) })],
+    [5, (e) => ({ type: "hesiter", ref: uneRef(e), action: pick(["ajouter", "ajouter", "intervertir", "garderDevant", "garderDerriere", "rouvrir", "oublier", "bidon"]), photoId: ids(e, 1)[0] })],
+    [2, (e) => ({ type: "touche", cle: pick(["t", "T"]), ...(h() < 0.3 ? { survol: { plancheId: plancheId(e), cible: pick(["gauche", "droite", "double"]) } } : {}) })],
     [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
@@ -1294,6 +1296,53 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : le tri (bascule, gestes sans effet, filtres, objectif, posée = gardée, annuler sans changer de double)", msg === null);
+  }
+  /* L'hésitation (lot 3, plan du 30/10) : deux photos dans un cadre, T, trancher, rouvrir ; seule celle de devant compte. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:P C:L D:P").pose(1, "droite", ["A"]).zero();
+      const ref = { plancheId: pl(1), cible: "droite" as const, index: 0 };
+      const glisse = s.glisse({ type: "bibliotheque", ids: ["B"] }, { type: "hesiter", ref });
+      ok(!glisse.refus, "lâcher sur l'encart « Hésiter » accepté");
+      eq(s.idsPleins(1, "droite"), ["A"], "A reste devant");
+      eq(O.hesitationDe(s.e.magazine, ref)?.photoId, "B", "B est derrière");
+      ok(O.marqueDe(s.e.magazine, "B") === "choisie", "la photo mise derrière devient gardée");
+      ok(!O.idsMagazine(s.e.magazine).includes("B") && (O.reperesBibliotheque(s.e).utilisations.get("B") ?? 0) === 0, "derrière : ni posée, ni ×n");
+      ok(O.contenuValide(s.e.magazine), "une hésitation se sauvegarde");
+      s.zero().g({ type: "touche", cle: "t" });
+      eq(s.idsPleins(1, "droite"), ["B"], "T : B passe devant");
+      ok(O.hesitationDe(s.e.magazine, ref)?.photoId === "A" && O.hesitationDe(s.e.magazine, ref)?.ouverte === true, "A derrière, on hésite encore");
+      ok(s.hist === 1, "T : une annulation");
+      s.g({ type: "touche", cle: "t" });
+      eq(s.idsPleins(1, "droite"), ["A"], "T encore : retour à A");
+      s.g({ type: "hesiter", ref, action: "garderDerriere" });
+      eq(s.idsPleins(1, "droite"), ["B"], "garder celle de derrière : B devant");
+      ok(O.hesitationDe(s.e.magazine, ref)?.photoId === "A" && O.hesitationDe(s.e.magazine, ref)?.ouverte === false, "A délaissée, toujours notée");
+      ok(O.photosEnHesitation(s.e.magazine).delaissees.has("A"), "la bibliothèque sait que A était l'hésitation");
+      const avantT = s.e.magazine;
+      s.g({ type: "touche", cle: "t" });
+      ok(s.e.magazine === avantT, "T sur une hésitation tranchée : rien");
+      s.g({ type: "hesiter", ref, action: "rouvrir" });
+      ok(O.hesitationDe(s.e.magazine, ref)?.ouverte === true, "on peut changer d'avis : l'hésitation se rouvre");
+      s.g({ type: "hesiter", ref, action: "garderDevant" }).g({ type: "hesiter", ref, action: "oublier" });
+      ok(O.hesitationDe(s.e.magazine, ref) === null && O.contenuValide(s.e.magazine), "oublier : plus rien derrière");
+      s.g({ type: "hesiter", ref, action: "ajouter", photoId: "B" });
+      ok(O.hesitationDe(s.e.magazine, ref) === null, "la photo de devant ne peut pas être derrière elle-même");
+      s.g({ type: "hesiter", ref, action: "ajouter", photoId: "C" });
+      s.g({ type: "ajouterSurPlanche", plancheId: pl(1), ids: ["D"] });
+      const refB = O.cadresPlanche(s.e, pl(1)).find((c) => c.role === "photo" && c.photoId === "B");
+      ok(!!refB && refB.role === "photo" && refB.hesitation?.photoId === "C", "la page se recompose : l'hésitation suit sa photo");
+      s.g({ type: "annuler" }).g({ type: "annuler" });
+      ok(O.hesitationDe(s.e.magazine, ref) === null, "annuler défait l'hésitation");
+      const base = s.e.magazine;
+      const d = base.planches[0].droite!;
+      const avec = (h: unknown) => ({ ...base, planches: [{ ...base.planches[0], droite: { ...d, photos: [{ ...d.photos[0], hesitation: h }] } }] });
+      ok(!O.contenuValide(avec({ photoId: d.photos[0].photoId, recadrage: { zoom: 1, dx: 0, dy: 0 } })), "derrière elle-même : refusé à la sauvegarde");
+      ok(!O.contenuValide(avec({ photoId: "C", recadrage: { zoom: 1, dx: 0, dy: 0 }, tranchee: false })), "tranchee ne vaut que true");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : l'hésitation (deux photos dans un cadre, T, trancher, rouvrir, seule celle de devant compte)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);

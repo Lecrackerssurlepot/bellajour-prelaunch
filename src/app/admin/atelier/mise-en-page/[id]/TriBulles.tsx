@@ -8,7 +8,8 @@ import { cls, useEd } from "./contexte";
 
 export const ETOILE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.8l2.5 5.3 5.7.7-4.2 4 1.1 5.7L10 14.7l-5.1 2.8L6 11.8l-4.2-4 5.7-.7z"/></svg>';
 export const ETINCELLE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 .9l2 4.7 5 .6-3.7 3.4 1 4.9L9 12l-4.3 2.5 1-4.9L2 6.2l5-.6z"/><path d="M15.8 12.6l.8 1.8 1.9.3-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.3z"/></svg>';
-export const DEMI = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg>';
+/* la réserve (neutre) : un simple trait, retour du 02/11 */
+export const DEMI = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 10h10"/></svg>';
 export const COEUR = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 17.5s-7-4.3-7-9.2A3.9 3.9 0 0 1 10 6a3.9 3.9 0 0 1 7 2.3c0 4.9-7 9.2-7 9.2z"/></svg>';
 /** L'icône et le mot de chaque marque, partout les mêmes. */
 export const MARQUE_UI: Record<Marque, { svg: string; mot: string; verbe: string; touche: string }> = {
@@ -93,7 +94,7 @@ export function BoutonsTri({ sombre }: { sombre?: boolean }) {
         </button>
       ) : null}
       {!sombre && !ui.grand ? (
-        <button type="button" className={k} aria-label={ui.grand ? "Revenir à la mise en page" : "Trier en plein écran"} title={ui.grand ? "Revenir à la mise en page · T" : "Trier en plein écran · T"}
+        <button type="button" className={k} aria-label={ui.grand ? "Revenir à la mise en page" : "Trier en plein écran"} title={ui.grand ? "Revenir à la mise en page · G" : "Trier en plein écran · G"}
           onClick={() => majUi(ui.grand ? { grand: false, vue: "grille", loupeTri: false, bulle: null } : { grand: true, vue: "grille", zone: "photos", bulle: null })}>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             {ui.grand ? <path d="M4 9h5V4M16 11h-5v5M9 9L3 3M11 11l6 6" /> : <path d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6" />}
@@ -107,7 +108,7 @@ export function BoutonsTri({ sombre }: { sombre?: boolean }) {
 const RACCOURCIS: [string, [string, string][]][] = [
   ["Trier", [["F", "Coup de cœur"], ["P", "Garder"], ["R", "Réserve"], ["X", "Écarter"], ["0", "Retirer la marque"], ["U", "Prochaine à trier"], ["C", "Comparer la sélection"], ["Z", "Loupe 100 %"]]],
   ["Composer", [["Entrée", "Poser sur la double"], ["N", "Nouvelle double page"], ["D", "Doubles pages"]]],
-  ["Naviguer", [["← →", "Photo suivante"], ["Espace", "Grille ou une photo"], ["T", "Plein écran"], ["+ −", "Taille de la grille"], ["⇧ ⌘", "Clic : plusieurs"], ["⌘ Z", "Annuler"], ["Échap", "Revenir"]]],
+  ["Naviguer", [["← →", "Photo suivante"], ["Espace", "Grille ou une photo"], ["G", "Plein écran"], ["T", "Intervertir l'hésitation"], ["+ −", "Taille de la grille"], ["⇧ ⌘", "Clic : plusieurs"], ["⌘ Z", "Annuler"], ["Échap", "Revenir"]]],
 ];
 
 /** Les bulles : raccourcis, ou objectif et part de chacun. Un clic ailleurs les ferme. */

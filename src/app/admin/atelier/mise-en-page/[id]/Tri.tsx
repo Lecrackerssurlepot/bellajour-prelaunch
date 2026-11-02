@@ -17,7 +17,7 @@ function Etiquette({ m, pose }: { m: Marque; pose?: boolean }) {
 const Client = () => <span className="ed-vt-etq ed-vt-etq--client"><i dangerouslySetInnerHTML={{ __html: COEUR }} />Client</span>;
 
 /** L'image qui se précise : l'aperçu tout de suite, l'original par-dessus dès qu'il est décodé. */
-function Nette({ a, alt, onClick, imgRef, apercuSeul }: { a: Adresse | undefined; alt: string; onClick?: (e: React.MouseEvent<HTMLImageElement>) => void; imgRef?: React.Ref<HTMLImageElement>; apercuSeul?: boolean }) {
+export function Nette({ a, alt, onClick, imgRef, apercuSeul }: { a: Adresse | undefined; alt: string; onClick?: (e: React.MouseEvent<HTMLImageElement>) => void; imgRef?: React.Ref<HTMLImageElement>; apercuSeul?: boolean }) {
   const apercu = grandeDe(a);
   const original = apercuSeul ? null : a?.original ?? null;
   const [pret, setPret] = useState<string | null>(null);

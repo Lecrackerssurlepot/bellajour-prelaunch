@@ -9,7 +9,7 @@ import type { Magazine, Planche } from "@/lib/mise-en-page/magazine";
 import { PAGE_H, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
-import { grandeDe, precharger } from "./images";
+import { grandeDe, precharger, vignetteDe } from "./images";
 import { Pastilles } from "./Gabarits";
 
 /* La double page, en grand. Aucun calcul du magazine ici : on envoie des gestes, on dessine l'état rendu.
@@ -157,7 +157,7 @@ type Rep = ReturnType<typeof reperesBibliotheque>;
 function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   f: CadrePlanche; pl: Planche; rep: Rep; sous?: boolean; fantome?: boolean; nouv?: boolean; cibleCour: CibleDepot | null; refus: boolean;
 }) {
-  const { etat, envoyer, envoyerAvec, adresses, ui, lectureSeule: ro, commencerAppui, clicSupprime } = useEd();
+  const { etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime } = useEd();
   const st: React.CSSProperties = {
     left: pc(f.x, PLANCHE_L), top: pc(f.y, PAGE_H), width: pc(f.l, PLANCHE_L), height: pc(f.h, PAGE_H),
     ...(f.rotation ? { transform: `rotate(${f.rotation}deg)` } : {}), ...(sous ? { opacity: 0 } : {}),
@@ -174,6 +174,10 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   const flash = !fantome && !!fl && (fl.type === "cadre" ? memeRef(fl.ref, ref) : "plancheId" in fl && fl.plancheId === pl.id && ((fl.type === "page" && fl.cote === ref.cible) || fl.type === "double"));
   const eclair = !fantome && etat.eclair === pl.id;
   const recad = !fantome && !!etat.recadrage && memeRef(etat.recadrage.ref, ref);
+  /* lot 3 : pendant qu'on glisse UNE photo de la bibliothèque, l'encart « Hésiter » la met derrière au lieu de remplacer */
+  const encart = !fantome && !ro && !!d && d.source.type === "bibliotheque" && d.source.ids.length === 1 && d.source.ids[0] !== f.photoId;
+  const encartCible = encart && !!cibleCour && cibleCour.type === "hesiter" && memeRef(cibleCour.ref, ref) && !refus;
+  const hes = f.hesitation;
   const attrs = fantome ? {} : { "data-cadre": `${pl.id}|${ref.cible}|${ref.index}`, "data-cote": `${pl.id}|${ref.cible}` };
   if (!f.photoId) return <div className={cls("ed-cadre", fantome && nouv && "ed-cadre--nouv")} style={st} {...attrs} />;
   const clic = (e: React.MouseEvent) => {
@@ -231,7 +235,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
       style={st} {...attrs}
       tabIndex={fantome ? -1 : 0} role={fantome ? undefined : "button"} aria-label={fantome ? undefined : `${f.nom ?? "Photo"}, ${NOM_COTE[ref.cible]}`}
       onPointerDown={appui} onClick={clic}
-      onDoubleClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirRecadrage", ref }); }}
+      onDoubleClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); if (hes?.ouverte) majUi({ confronter: ref }); else envoyer({ type: "ouvrirRecadrage", ref }); }}
       onKeyDown={fantome ? undefined : (e) => {
         if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirRecadrage", ref }); }
         else if (e.key === " ") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "activerCadre", ref }); }
@@ -239,18 +243,30 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
       <img src={src} alt="" decoding="async" draggable={false} style={imgSt} />
       {f.bord ? <span className="ed-bord" style={{ borderWidth: mmEnCqw(f.bord), borderRadius: f.rayon ? mmEnCqw(f.rayon) : undefined }} aria-hidden="true" /> : null}
       {reps.length ? <span className="ed-cadre-reps">{reps}</span> : null}
-      {actif && !arme && !d && !ro ? <BarreCadre refC={ref} /> : null}
+      {hes && !fantome ? (
+        <button type="button" className={cls("ed-hes", !hes.ouverte && "ed-hes--tranchee")} tabIndex={-1}
+          title={hes.ouverte ? `Hésitation avec ${hes.nom} · double-clic pour comparer, T pour intervertir` : `Hésitation tranchée contre ${hes.nom}`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); if (hes.ouverte) majUi({ confronter: ref }); else envoyer({ type: "activerCadre", ref }); }}>
+          {vignetteDe(adresses.get(hes.photoId)) ? <img src={vignetteDe(adresses.get(hes.photoId)) ?? undefined} alt="" draggable={false} /> : null}
+          <span>{hes.ouverte ? "2 photos" : "Tranchée"}</span>
+        </button>
+      ) : null}
+      {encart ? <span className={cls("ed-hes-encart", encartCible && "ed-hes-encart--cible")} data-hesiter={`${pl.id}|${ref.cible}|${ref.index}`}>Hésiter</span> : null}
+      {actif && !arme && !d && !ro ? <BarreCadre refC={ref} hes={hes} /> : null}
       {arme ? <span className="ed-bulle" style={{ top: 6 }}>Choisir l&apos;autre cadre</span> : null}
     </div>
   );
 }
 
-function BarreCadre({ refC, indispo }: { refC: RefCadre; indispo?: boolean }) {
-  const { envoyer } = useEd();
+function BarreCadre({ refC, indispo, hes }: { refC: RefCadre; indispo?: boolean; hes?: CadrePhoto["hesitation"] }) {
+  const { envoyer, majUi } = useEd();
   return (
     <span className="ed-cadre-barre" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
       <button type="button" onClick={() => envoyer({ type: "armerEchange", ref: refC })}>Échanger</button>
       {indispo ? null : <button type="button" onClick={() => envoyer({ type: "ouvrirRecadrage", ref: refC })}>Recadrer</button>}
+      {hes?.ouverte ? <button type="button" title="Double-clic sur le cadre" onClick={() => majUi({ confronter: refC })}>Comparer</button> : null}
+      {hes && !hes.ouverte ? <button type="button" title={`Hésiter de nouveau avec ${hes.nom}`} onClick={() => envoyer({ type: "hesiter", ref: refC, action: "rouvrir" })}>Hésiter encore</button> : null}
       <button type="button" onClick={() => envoyer({ type: "retirer", ref: refC })}>Retirer</button>
     </span>
   );

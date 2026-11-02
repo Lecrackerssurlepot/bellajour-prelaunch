@@ -86,13 +86,26 @@ const estId = (v: unknown): v is string => typeof v === "string" && v.length > 0
 const estFini = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const estDate = (v: unknown): v is string => typeof v === "string" && v.length <= 64 && !Number.isNaN(Date.parse(v));
 
+/* Les mêmes bornes que `recadrer` et `cadrer` : zoom dans [1, 8], décalages finis. */
+const recadrageValide = (r: unknown): boolean =>
+  estObjet(r) && clesExactes(r, ["zoom", "dx", "dy"]) && estFini(r.zoom) && r.zoom >= ZOOM_MIN && r.zoom <= ZOOM_MAX && estFini(r.dx) && estFini(r.dy);
+
+/** L'hésitation (lot 3) : facultative, jamais sur un cadre vide, jamais la photo de devant elle-même. */
+function hesitationValide(h: unknown, devant: string): boolean {
+  if (!estObjet(h)) return false;
+  const tranchee = Object.prototype.hasOwnProperty.call(h, "tranchee");
+  if (!clesExactes(h, tranchee ? ["photoId", "recadrage", "tranchee"] : ["photoId", "recadrage"])) return false;
+  if (tranchee && h.tranchee !== true) return false;
+  return estId(h.photoId) && h.photoId !== devant && recadrageValide(h.recadrage);
+}
+
 function affectationValide(v: unknown): v is Affectation {
-  if (!estObjet(v) || !clesExactes(v, ["photoId", "recadrage"])) return false;
+  if (!estObjet(v)) return false;
+  const hes = Object.prototype.hasOwnProperty.call(v, "hesitation");
+  if (!clesExactes(v, hes ? ["photoId", "recadrage", "hesitation"] : ["photoId", "recadrage"])) return false;
   if (v.photoId !== null && !estId(v.photoId)) return false;
-  const r = v.recadrage;
-  if (!estObjet(r) || !clesExactes(r, ["zoom", "dx", "dy"])) return false;
-  /* Les mêmes bornes que `recadrer` et `cadrer` : zoom dans [1, 8], décalages finis. */
-  return estFini(r.zoom) && r.zoom >= ZOOM_MIN && r.zoom <= ZOOM_MAX && estFini(r.dx) && estFini(r.dy);
+  if (hes && (v.photoId === null || !hesitationValide(v.hesitation, v.photoId))) return false;
+  return recadrageValide(v.recadrage);
 }
 
 function texteValide(v: unknown): v is TexteCadre {

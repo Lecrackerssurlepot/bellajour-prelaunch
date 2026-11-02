@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext, type PointerEvent as PointerReact } from "react";
-import type { Cible, CibleDepot, EtatEditeur, Geste, Issue, SourceGlisser } from "@/lib/mise-en-page/editeur";
+import type { Cible, CibleDepot, EtatEditeur, Geste, Issue, RefCadre, SourceGlisser } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 
 export type Adresse = { vignette: string | null; moyenne: string | null; original: string | null };
@@ -41,11 +41,13 @@ export type Ui = {
   /** Plein écran : le tiroir des doubles pages ouvert (D), ou montré un instant après Poser / N. */
   doubles: boolean;
   doublesFlash: boolean;
+  /** L'hésitation d'un cadre en confrontation, côte à côte (lot 3, double-clic sur le cadre). */
+  confronter: RefCadre | null;
 };
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
-  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false,
+  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null,
 };
 
 /** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */

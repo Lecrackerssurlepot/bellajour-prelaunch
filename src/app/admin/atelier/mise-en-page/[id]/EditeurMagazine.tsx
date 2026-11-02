@@ -17,6 +17,7 @@ import Panneau from "./Panneau";
 import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
 import { clavierTri } from "./triEcran";
+import Confrontation, { clavierConfrontation } from "./Hesitation";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -237,6 +238,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       return; /* pendant la saisie, aucun raccourci de l'éditeur */
     }
     /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */
+    if (clavierConfrontation({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
+    if (ui.confronter) return;
     if (clavierTri({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
     if (ui.loupe) {
       if (e.key === "Escape" || e.key === " ") { e.preventDefault(); majUi({ loupe: null }); }
@@ -254,7 +257,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && dansGrille && !e.altKey) return;
     if (e.key === "Enter" && t && t.tagName === "BUTTON") return;
     const k = e.key;
-    if (!["Escape", "ArrowLeft", "ArrowRight", "Backspace", "Delete", "Enter", "r", "R", "x", "X", "p", "P", "z", "Z"].includes(k)) return;
+    if (!["Escape", "ArrowLeft", "ArrowRight", "Backspace", "Delete", "Enter", "r", "R", "x", "X", "p", "P", "t", "T", "z", "Z"].includes(k)) return;
     if ((k === "z" || k === "Z") && !(e.metaKey || e.ctrlKey)) return;
     if ((e.metaKey || e.ctrlKey) && !(k === "z" || k === "Z")) return;
     e.preventDefault();
@@ -302,7 +305,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         }}>
         <Barre projet={projet} sv={sv} reessayer={sauve.reessayer} lien={retour} selecteur={selecteur} onExporter={() => { if (etat.recadrage) envoyer({ type: "fermerRecadrage" }); majUi({ exportOuvert: true }); }} />
         <Bandeaux projet={projet} sv={sv} collecteOuverte={collecteOuverte} prendreSaVersion={prendreSaVersion} garderLaMienne={garderLaMienne} />
-        <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}`}>
+        <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}${ui.confronter && !ui.grand ? " ed-corps--conf" : ""}`}>
           <Panneau />
           <div className="ed-centre" onPointerDown={() => { if (ui.zone !== "planche") majUi({ zone: "planche" }); }}>
             <Scene />
@@ -311,6 +314,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
             {ui.rangee && !d && !ro && planche ? <Rangee pl={planche} cible={ui.rangee} /> : null}
             {ui.grand ? null : <Toast />}
           </div>
+          {ui.confronter && !ui.grand ? <Confrontation /> : null}
         </div>
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}

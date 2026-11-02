@@ -204,7 +204,8 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     case "n": nouvelleDouble(c); return prends();
     case "c": ouvrirComparaison(c); return prends();
     case "z": if (ui.grand && ui.vue === "une") majUi({ loupeTri: !ui.loupeTri }); return prends();
-    case "t": majUi(ui.grand ? { grand: false, vue: "grille", loupeTri: false } : { grand: true, vue: "grille" }); return prends();
+    /* G, comme la grille de Lightroom : T est à l'hésitation (retour du 02/11) */
+    case "g": majUi(ui.grand ? { grand: false, vue: "grille", loupeTri: false } : { grand: true, vue: "grille" }); return prends();
     case "+": case "=": if (ui.grand) majUi({ tailleGrand: Math.min(420, ui.tailleGrand + 40) }); return prends();
     case "-": case "_": if (ui.grand) majUi({ tailleGrand: Math.max(100, ui.tailleGrand - 40) }); return prends();
     default: return false;

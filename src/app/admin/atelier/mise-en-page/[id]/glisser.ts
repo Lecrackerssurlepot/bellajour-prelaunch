@@ -60,6 +60,14 @@ export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEdit
   if (cf) return entre(cf);
   if (el.closest(".ed-ph")) return src.type === "cadre" ? { type: "bibliotheque" } : null;
   if (el.closest(".ed-zone-double")) return { type: "double", plancheId: ed.plancheCourante };
+  const encart = el.closest("[data-hesiter]");
+  if (encart && !multi && src.type === "bibliotheque") {
+    const [plancheId, cible, index] = (encart.getAttribute("data-hesiter") ?? "").split("|");
+    if (cible === "gauche" || cible === "droite" || cible === "double") {
+      const c: CibleDepot = { type: "hesiter", ref: { plancheId, cible, index: Number(index) } };
+      if (cibleAllumee(ed, src, c)) return c;
+    }
+  }
   const cadre = el.closest("[data-cadre]");
   if (cadre && !multi) {
     const [plancheId, cible, index] = (cadre.getAttribute("data-cadre") ?? "").split("|");
@@ -84,7 +92,8 @@ export function libelleApercu(source: SourceGlisser, cible: CibleDepot | null, a
   if (!a) return null;
   if (a.refus) return resumeIssue(a);
   let t: string;
-  if (cible.type === "cadre") t = source.type === "bibliotheque" && !a.echange ? "Remplacer" : "Échanger";
+  if (cible.type === "hesiter") t = "Hésiter avec celle-ci";
+  else if (cible.type === "cadre") t = source.type === "bibliotheque" && !a.echange ? "Remplacer" : "Échanger";
   else if (cible.type === "bibliotheque") t = "Retirer";
   else if (cible.type === "double") t = source.type === "bibliotheque" ? "Double page" : "Déplacer ici";
   else if (cible.type === "vignette") t = "Ajouter à cette planche";

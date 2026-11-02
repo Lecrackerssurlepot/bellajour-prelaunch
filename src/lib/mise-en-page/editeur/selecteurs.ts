@@ -135,6 +135,8 @@ export type CadrePhoto = {
   role: "photo"; ref: RefCadre; x: number; y: number; l: number; h: number; rotation: number; bord: number; rayon: number;
   photoId: string | null; nom: string | null; indisponible: boolean; signalee: boolean; recadrage: Recadrage; cadrage: Cadrage;
   dpi: number | null; basseDef: boolean; fois: number | undefined;
+  /** La photo de derrière (lot 3) : `ouverte` tant qu'on hésite, sinon la délaissée notée. */
+  hesitation: { photoId: string; nom: string; ouverte: boolean } | null;
 };
 export type CadreTexte = {
   role: "titre" | "texte" | "legende"; ref: RefCadre; x: number; y: number; l: number; h: number; rotation: number;
@@ -163,7 +165,8 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
           bord: c.bord || 0, rayon: c.rayon || 0,
           photoId: a.photoId, nom: ph ? ph.nom : a.photoId, indisponible: !!a.photoId && !ph, signalee: !!(ph && ph.signalee),
           recadrage: a.recadrage, cadrage, dpi: v, basseDef: v !== null && v < SEUIL_DPI,
-          fois: a.photoId ? utilisations(e.magazine).get(a.photoId) : 0 });
+          fois: a.photoId ? utilisations(e.magazine).get(a.photoId) : 0,
+          hesitation: a.hesitation ? { photoId: a.hesitation.photoId, nom: e.catalogue.get(a.hesitation.photoId)?.nom ?? a.hesitation.photoId, ouverte: !a.hesitation.tranchee } : null });
       } else {
         const index = iT++;
         const t = d.textes[index];
@@ -220,13 +223,14 @@ export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | unde
   if (cible.type === "bibliotheque") return source.type === "cadre";
   if (cible.type === "entre") return (source.type === "planche" || source.type === "bibliotheque") && cible.index >= 1;
   if (source.type === "planche") return false;
-  const pid = cible.type === "cadre" ? cible.ref?.plancheId : cible.plancheId;
+  const pid = cible.type === "cadre" || cible.type === "hesiter" ? cible.ref?.plancheId : cible.plancheId;
   const i = pid === undefined ? -1 : indexPlanche(m, pid);
   if (i < 0) return false;
   const p = m.planches[i];
   if (cible.type === "page") return i === 0 ? cible.cote === "droite" : p.mode === "pages";
   if (cible.type === "double") return i > 0;
   if (cible.type === "cadre") return aPhoto(m, cible.ref) && !(source.type === "bibliotheque" && (source.ids || []).length !== 1);
+  if (cible.type === "hesiter") return aPhoto(m, cible.ref) && source.type === "bibliotheque" && (source.ids || []).length === 1;
   return cible.type === "bande" || cible.type === "vignette";
 }
 

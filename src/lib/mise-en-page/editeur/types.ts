@@ -11,6 +11,7 @@ import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
 import type { SourceMep } from "../sauvegarde";
 import type { Marque } from "./tri";
+import type { ActionHesitation } from "./hesitation";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -62,6 +63,8 @@ export type CibleDepot =
   | { type: "page"; plancheId: string; cote: Cote }
   | { type: "double"; plancheId: string }
   | { type: "cadre"; ref: RefCadre }
+  /** L'encart « Hésiter » d'un cadre (lot 3) : la photo glissée passe DERRIÈRE au lieu de remplacer. */
+  | { type: "hesiter"; ref: RefCadre }
   /** `cote` précise le segment (gauche/droite) : à la frontière des deux pages, la position seule est ambiguë. */
   | { type: "bande"; plancheId: string; position: number; cote?: Cote }
   | { type: "bibliotheque" }
@@ -177,7 +180,9 @@ export type GesteModifiant =
   | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
   /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
   | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
-  | { type: "reglerTri"; visees: number | null; confirme?: boolean };
+  | { type: "reglerTri"; visees: number | null; confirme?: boolean }
+  /** L'hésitation d'un cadre (lot 3) : ajouter une photo derrière, intervertir (T), trancher, rouvrir, oublier. */
+  | { type: "hesiter"; ref: RefCadre; action: ActionHesitation; photoId?: string; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -252,7 +257,7 @@ export type GestePrimitif = GesteModifiant | GesteEcran;
 export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
-  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri";
+  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "hesiter";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; photoId?: string; position?: number };

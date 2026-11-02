@@ -32,5 +32,7 @@ export {
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
 export { verifierInvariants } from "./invariants";
+export { hesitationDe, hesitationsOuvertes, hesiter, photosEnHesitation } from "./hesitation";
+export type { ActionHesitation } from "./hesitation";
 export { bilanTri, dansVue, estGardee, garderPosees, listeTri, MARQUES, marqueDe, marqueEffective, marquer, reglerVisees, triDe } from "./tri";
 export type { BilanTri, Marque, PartPersonne, TriPlein, VueTri } from "./tri";
