@@ -44,7 +44,18 @@ export type Planche = {
   droite: Disposition | null;
 };
 
-export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string };
+/**
+ * Le tri de l'atelier (lot 2, 31/10) : les photos pré-choisies et les écartées, jamais les deux à la fois, et le
+ * nombre moyen de photos par page que Mathias fixera (null tant qu'il ne l'a pas fait : aucun chiffre inventé).
+ * Absent d'un magazine qui n'a jamais été trié.
+ */
+/** Le tri : quatre listes disjointes. `coupsDeCoeur` et `reserve` (02/11) ne sont écrites que non vides : une sauvegarde
+ *  d'avant elles reste valide telle quelle. */
+export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: number | null; coupsDeCoeur?: string[]; reserve?: string[] };
+/** Borne technique de l'objectif « photos visées » (pas une règle de produit : un garde-fou contre une saisie folle). */
+export const VISEES_MAX = 5000;
+
+export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine };
 
 export type Cible = "gauche" | "droite" | "double";
 /** Un cadre précis : `index` compte les cadres photo (ou texte pour `ecrireTexte`) de la disposition. */

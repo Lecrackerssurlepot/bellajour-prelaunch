@@ -10,6 +10,7 @@ import {
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, idsDispo, indexPlanche } from "./outils";
+import { garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
@@ -66,7 +67,14 @@ function planCreerDoubles(e: EtatEditeur, ids: string[], index?: number): Plan {
 }
 
 /** Le lâcher : source × cible → l'opération pure. C'est aussi l'aperçu (P0). */
+/** Le plan d'un dépôt, tel que l'aperçu le montre et que le lâcher l'exécute : venues de la bibliothèque, les posées deviennent gardées. */
 export function planDepot(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): Plan {
+  const p = planDepotBrut(e, source, cible);
+  if (p.issue.refus || !p.issue.posees.length || !source || source.type !== "bibliotheque") return p;
+  return { ...p, issue: { ...p.issue, magazine: garderPosees(p.issue.magazine, p.issue.posees) } };
+}
+
+function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): Plan {
   const m = e.magazine;
   if (!source || !cible) return planRien(e);
   if (source.type === "bibliotheque") {
@@ -120,7 +128,23 @@ export function planDepot(e: EtatEditeur, source: SourceGlisser | null | undefin
 const courante = (e: EtatEditeur, id?: string): string => id ?? e.plancheCourante;
 
 /** Le plan d'un geste primitif qui change le magazine (null sinon). */
+/** Le geste pose-t-il des photos venues de la bibliothèque ? */
+const MARQUES_SURES: readonly Marque[] = ["coupDeCoeur", "choisie", "reserve", "ecartee"];
+const MOTS: Record<Marque, string> = { coupDeCoeur: "Coup de cœur", choisie: "Gardée", reserve: "Réserve", ecartee: "Écartée" };
+const MOTS_N: Record<Marque, (n: number) => string> = { coupDeCoeur: (n) => `${n} coups de cœur`, choisie: (n) => `${n} photos gardées`, reserve: (n) => `${n} photos en réserve`, ecartee: (n) => `${n} photos écartées` };
+
+export const depuisBibliotheque = (g: GesteModifiant): boolean =>
+  (g.type === "deposer" && !!g.source && g.source.type === "bibliotheque") || g.type === "ajouterSurPlanche" || g.type === "remplacer" || g.type === "creerDoubles";
+
+/** Le plan d'un geste modifiant. Une photo posée depuis la bibliothèque devient gardée (★), dans le MÊME plan,
+ *  donc dans la même entrée d'historique (REGLES-TRI R22). */
 export function planifier(e: EtatEditeur, g: GesteModifiant): Plan | null {
+  const p = planifierBrut(e, g);
+  if (!p || p.issue.refus || !p.issue.posees.length || !depuisBibliotheque(g)) return p;
+  return { ...p, issue: { ...p.issue, magazine: garderPosees(p.issue.magazine, p.issue.posees) } };
+}
+
+function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
   const m = e.magazine, cat = e.catalogue;
   const simple = (op: OpPlan, libelle: string, plancheId: string, m2: Magazine, args: ArgsPlan): Plan =>
     ({ op, libelle, plancheId, issue: issue(m2, m2 === m ? "rien" : null), args });
@@ -158,6 +182,22 @@ export function planifier(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return simple("supprimerPlanche", i === 0 ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
+    case "marquer": {
+      const ids = Array.isArray(g.ids) ? g.ids.filter((id) => cat.has(id)) : [];
+      const autres = Array.isArray(g.autres) ? g.autres.filter((id) => cat.has(id) && !ids.includes(id)) : [];
+      if (autres.length) {
+        /* ⇧P en comparaison : celle-ci gardée, les autres écartées, une seule annulation */
+        const m2 = marquer(garderPosees(m, ids), autres, "ecartee");
+        return simple("marquer", `Gardée · ${autres.length} écartée${autres.length > 1 ? "s" : ""}`, e.plancheCourante, m2, {});
+      }
+      /* reposer une marque déjà là la retire (sur toutes, ou sur aucune) ; `poser` (vue une photo) ne retire jamais */
+      const demandee = MARQUES_SURES.includes(g.marque as Marque) ? (g.marque as Marque) : null;
+      const voulue = g.poser ? demandee : marqueEffective(m, ids, demandee);
+      const n = ids.filter((id) => marqueDe(m, id) !== voulue).length;
+      const libelle = voulue ? (n > 1 ? MOTS_N[voulue](n) : MOTS[voulue]) : (n > 1 ? `${n} photos sans marque` : "Marque retirée");
+      return simple("marquer", libelle, e.plancheCourante, marquer(m, ids, voulue), {});
+    }
+    case "reglerTri": return simple("reglerTri", "Photos visées", e.plancheCourante, reglerVisees(m, g.visees), {});
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
     default: return null;

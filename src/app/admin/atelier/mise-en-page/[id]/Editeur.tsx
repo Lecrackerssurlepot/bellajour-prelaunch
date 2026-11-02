@@ -18,7 +18,7 @@ export type CibleEditeur =
   | { type: "edition"; editionId: string }
   | { type: "libre"; id: string };
 
-const RETOUR = { href: "/admin/atelier/mise-en-page", libelle: "Mise en page" };
+const RETOUR = { href: "/admin/atelier/mise-en-page", libelle: "Projets" };
 
 export default function Editeur({ cible }: { cible: CibleEditeur }) {
   const [res, setRes] = useState<ResultatCatalogue | null>(null);

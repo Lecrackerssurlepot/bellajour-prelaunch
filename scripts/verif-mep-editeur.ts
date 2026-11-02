@@ -893,7 +893,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
   };
   const filtres = (): Libre => {
     const f: Libre = {};
-    const k = int(0, 10);
+    const k = int(0, 11);
     if (k === 0) f.recherche = pick(["", "IMG_1", "1", "zz", "img_12"]);
     if (k === 1) f.statut = pick(["toutes", "libres", "utilisees", "planche", "n'importe"]);
     if (k === 2) f.personnes = h() < 0.5 ? [] : [pick(["Inès", "Léa", "Hugo"])];
@@ -905,6 +905,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     if (k === 8) f.groupe = pick(["jour", "personne", "type", "aucun"]);
     if (k === 9) f.taille = pick(["S", "M", "L"]);
     if (k === 10) f.masquerUtilisees = h() < 0.5;
+    if (k === 11) f.marque = pick(["toutes", "choisies", "a_trier", "reserve", "ecartees", "bidon"]);
     return f;
   };
 
@@ -938,6 +939,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [2, () => ({ type: "fermerTexte" })],
     [2, () => ({ type: "confirmer" })],
     [1, () => ({ type: "annulerConfirmation" })],
+    [4, (e) => ({ type: "marquer", ids: ids(e, int(1, 4)), marque: pick(["coupDeCoeur", "choisie", "reserve", "ecartee", null, "bidon"]), ...(h() < 0.3 ? { poser: true } : {}), ...(h() < 0.15 ? { autres: ids(e, int(1, 3)) } : {}) })],
+    [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
@@ -1198,6 +1201,99 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : doubles pages neuves (poser un groupe, lâcher sur le chemin de fer, emplacements ×n)", msg === null);
+  }
+  /* Le tri (REGLES-TRI, maquette du 31/10) : garder, écarter, bascule, gestes sans effet, filtres, jauge, posée = gardée. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:L C:L D:P E:C", { extra: { D: { personne: "Louise" }, E: { personne: "Louise" } } }).zero();
+      const m0 = s.e.magazine;
+      s.g({ type: "marquer", ids: ["A", "B", "D"], marque: "choisie" });
+      eq(O.triDe(s.e.magazine).choisies, ["A", "B", "D"], "trois gardées");
+      ok(s.hist === 1 && s.e.eclair === null, "une annulation, pas d'éclair");
+      ok(s.e.message?.texte === "3 photos gardées" && s.e.message.action?.libelle === "Annuler", "R8 : le bandeau propose Annuler");
+      s.g({ type: "marquer", ids: ["B", "C"], marque: "ecartee" });
+      eq([O.triDe(s.e.magazine).choisies, O.triDe(s.e.magazine).ecartees], [["A", "D"], ["B", "C"]], "B passe de gardée à écartée");
+      /* R2 : écarter une écartée la RETIRE, jamais une seconde fois */
+      s.g({ type: "marquer", ids: ["C"], marque: "ecartee" });
+      ok(O.marqueDe(s.e.magazine, "C") === null && s.hist === 3, "R2 : X sur une écartée retire la marque");
+      s.g({ type: "annuler" });
+      ok(O.marqueDe(s.e.magazine, "C") === "ecartee", "annuler la remet");
+      /* R1 : P sur une gardée retire */
+      s.g({ type: "marquer", ids: ["A"], marque: "choisie" });
+      ok(O.marqueDe(s.e.magazine, "A") === null, "R1 : P sur une gardée retire la marque");
+      s.g({ type: "annuler" });
+      /* R5 : une sélection mêlée reçoit la marque ; toute déjà marquée, on retire de toutes */
+      s.g({ type: "marquer", ids: ["A", "E"], marque: "choisie" });
+      eq(O.triDe(s.e.magazine).choisies, ["A", "D", "E"], "R5 : sélection mêlée → toutes gardées, A garde sa place");
+      s.g({ type: "marquer", ids: ["A", "E"], marque: "choisie" });
+      eq(O.triDe(s.e.magazine).choisies, ["D"], "R5 : toutes déjà gardées → marque retirée de toutes");
+      s.g({ type: "annuler" }).g({ type: "annuler" });
+      /* R3 / R7 : un geste sans effet ne fait rien */
+      const h0 = s.hist, mag0 = s.e.magazine;
+      s.g({ type: "marquer", ids: ["E"], marque: null });
+      ok(s.e.magazine === mag0 && s.hist === h0, "R3 : 0 sur une photo sans marque : ni changement ni historique");
+      eq(O.visibles(s.e).sort(), ["A", "B", "C", "D", "E"], "R11 : « Toutes » montre aussi les écartées");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "D"], "filtre Gardées");
+      s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e), ["E"], "filtre À trier");
+      s.g({ type: "filtrer", filtres: { marque: "ecartees" } }); eq(O.visibles(s.e).sort(), ["B", "C"], "filtre Écartées");
+      s.g({ type: "filtrer", filtres: { marque: "toutes" } });
+      eq(O.listeTri(s.e, "a_trier"), ["E"], "vue du tri : à trier");
+      const b = O.bilanTri(s.e);
+      eq([b.total, b.choisies, b.ecartees, b.aTrier, b.visees, b.posees], [5, 2, 2, 1, null, 0], "bilan sans objectif : aucun chiffre inventé");
+      eq(b.parPersonne.map((x) => [x.personne, x.choisies, x.total, x.part]), [["Inès", 1, 3, 0.5], ["Louise", 1, 2, 0.5]], "répartition par personne");
+      s.g({ type: "reglerTri", visees: 180 });
+      ok(O.bilanTri(s.e).visees === 180, "R19 : objectif sur l'ensemble du magazine");
+      const avant = s.e.magazine;
+      s.g({ type: "reglerTri", visees: 2.5 }).g({ type: "reglerTri", visees: 0 }).g({ type: "reglerTri", visees: -3 });
+      ok(s.e.magazine === avant, "R19 : décimal, zéro, négatif refusés");
+      ok(O.contenuValide(s.e.magazine), "un magazine trié se sauvegarde");
+      ok(!O.contenuValide({ ...s.e.magazine, tri: { choisies: ["A"], ecartees: ["A"], visees: null } }), "une photo gardée ET écartée est refusée");
+      ok(!O.contenuValide({ ...s.e.magazine, tri: { choisies: [], ecartees: [], photosParPage: 3 } as unknown as typeof s.e.magazine.tri }), "l'ancienne forme (photos par page) est refusée");
+      /* R22 : posée depuis la bibliothèque = gardée, dans la même annulation */
+      const h1 = s.hist;
+      s.g({ type: "ajouterSurPlanche", plancheId: s.e.plancheCourante, ids: ["C", "E"] });
+      ok(O.marqueDe(s.e.magazine, "C") === "choisie" && O.marqueDe(s.e.magazine, "E") === "choisie" && s.hist === h1 + 1, "R22 : posées → gardées, une seule entrée");
+      ok(O.bilanTri(s.e).posees === 2, "jauge : photos posées");
+      /* R25 : annuler une marque ne change pas la double affichée */
+      s.g({ type: "insererDouble" });
+      const pl = s.e.plancheCourante;
+      s.g({ type: "marquer", ids: ["B"], marque: "choisie" });
+      s.g({ type: "naviguer", sens: -1 });
+      const ailleurs = s.e.plancheCourante;
+      ok(ailleurs !== pl, "on est allé sur une autre double");
+      s.g({ type: "annuler" });
+      ok(s.e.plancheCourante === ailleurs && O.marqueDe(s.e.magazine, "B") === "ecartee", "R25 : ⌘Z d'une marque reste sur la double affichée");
+      s.g({ type: "annuler" }).g({ type: "annuler" });
+      ok(O.marqueDe(s.e.magazine, "C") === "ecartee", "annuler la pose rend aussi la marque d'avant");
+      s.g({ type: "marquer", ids: ["A", "B", "C", "D"], marque: null }).g({ type: "reglerTri", visees: null });
+      ok(s.e.magazine.tri === undefined && O.egal(s.e.magazine, m0), "tri revenu à vide : le magazine redevient celui d'avant");
+
+      /* Les quatre marques (maquette du 02/11) : ✦ coup de cœur, ★ gardée, ◐ réserve, ✕ écartée */
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur" }).g({ type: "marquer", ids: ["B"], marque: "reserve" }).g({ type: "marquer", ids: ["C"], marque: "choisie" });
+      ok(O.marqueDe(s.e.magazine, "A") === "coupDeCoeur" && O.marqueDe(s.e.magazine, "B") === "reserve", "F et R posent coup de cœur et réserve");
+      eq(s.e.magazine.tri, { choisies: ["C"], ecartees: [], visees: null, coupsDeCoeur: ["A"], reserve: ["B"] }, "une photo, une seule liste");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "C"], "Gardées compte les coups de cœur");
+      s.g({ type: "filtrer", filtres: { marque: "reserve" } }); eq(O.visibles(s.e), ["B"], "onglet Réserve");
+      s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e).sort(), ["D", "E"], "la réserve n'est plus à trier");
+      s.g({ type: "filtrer", filtres: { marque: "toutes" } });
+      const b4 = O.bilanTri(s.e);
+      eq([b4.choisies, b4.coupsDeCoeur, b4.reserve, b4.aTrier], [2, 1, 1, 2], "jauge : gardées (coups de cœur compris), ✦, réserve, à trier");
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur", poser: true });
+      ok(O.marqueDe(s.e.magazine, "A") === "coupDeCoeur", "vue une photo : reposer F ne retire jamais");
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur" });
+      ok(O.marqueDe(s.e.magazine, "A") === null, "grille : reposer F retire (bascule)");
+      s.g({ type: "marquer", ids: ["A"], marque: "coupDeCoeur" });
+      s.g({ type: "ajouterSurPlanche", plancheId: s.e.plancheCourante, ids: ["A", "B"] });
+      ok(O.marqueDe(s.e.magazine, "A") === "coupDeCoeur" && O.marqueDe(s.e.magazine, "B") === "choisie", "posée : un coup de cœur le reste, une réserve devient gardée");
+      ok(O.contenuValide(s.e.magazine), "un tri à quatre marques se sauvegarde");
+      const base = { ...s.e.magazine };
+      ok(O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null } }), "une sauvegarde d'avant le 02/11 reste valide");
+      ok(!O.contenuValide({ ...base, tri: { choisies: [], ecartees: [], visees: null, reserve: [] } }), "une liste facultative vide est refusée");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, coupsDeCoeur: ["A"] } }), "gardée ET coup de cœur est refusé");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : le tri (bascule, gestes sans effet, filtres, objectif, posée = gardée, annuler sans changer de double)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);

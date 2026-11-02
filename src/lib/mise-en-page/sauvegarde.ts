@@ -13,7 +13,7 @@
  * refuse en 400 (c'est voulu : mieux vaut un refus franc qu'une donnée muette).
  */
 
-import { templateParId, type Affectation, type Disposition, type Magazine, type Planche, type TexteCadre } from "./magazine";
+import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Magazine, type Planche, type TexteCadre } from "./magazine";
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
@@ -139,8 +139,24 @@ function plancheValide(v: unknown, indexPlanche: number): v is Planche {
  * dans les bornes de `recadrer`, textes en chaînes. Ne borne PAS la taille :
  * `tailleContenu` le fait, avant (la route refuse en 413 sans relire la forme).
  */
+/** Le tri : deux listes d'ids sans doublon ni recouvrement, et un objectif de photos (entier de 1 à `VISEES_MAX`) ou null. */
+function triValide(v: unknown): boolean {
+  if (!estObjet(v)) return false;
+  /* coupsDeCoeur et reserve sont facultatifs, mais jamais vides quand ils sont écrits */
+  const facultatives = (["coupsDeCoeur", "reserve"] as const).filter((k) => k in v);
+  if (!clesExactes(v, ["choisies", "ecartees", "visees", ...facultatives])) return false;
+  const listes = [v.choisies, v.ecartees, ...facultatives.map((k) => v[k])];
+  if (!listes.every((l) => Array.isArray(l) && l.every(estId))) return false;
+  if (facultatives.some((k) => (v[k] as unknown[]).length === 0)) return false;
+  const n = listes.reduce((s: number, l) => s + (l as unknown[]).length, 0);
+  if (new Set(listes.flat()).size !== n) return false;
+  const { visees } = v;
+  return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
+}
+
 export function contenuValide(x: unknown): x is Magazine {
-  if (!estObjet(x) || !clesExactes(x, ["version", "id", "titre", "planches", "creeLe", "modifieLe"])) return false;
+  const base = ["version", "id", "titre", "planches", "creeLe", "modifieLe"];
+  if (!estObjet(x) || !(clesExactes(x, base) || (clesExactes(x, [...base, "tri"]) && triValide(x.tri)))) return false;
   if (x.version !== 1 || !estId(x.id) || typeof x.titre !== "string") return false;
   if (!estDate(x.creeLe) || !estDate(x.modifieLe)) return false;
   if (!Array.isArray(x.planches) || x.planches.length === 0) return false;

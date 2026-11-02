@@ -10,6 +10,7 @@ import type { Recadrage } from "../recadrage";
 import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
 import type { SourceMep } from "../sauvegarde";
+import type { Marque } from "./tri";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -41,6 +42,8 @@ export type Filtres = {
   orientations: Orientation[];
   montrerSignalees: boolean;
   masquerUtilisees: boolean;
+  /** Le tri de l'atelier : par défaut les écartées sont cachées. */
+  marque: "toutes" | "choisies" | "a_trier" | "reserve" | "ecartees";
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
@@ -171,7 +174,10 @@ export type GesteModifiant =
   | { type: "vider"; plancheId: string; confirme?: boolean }
   | { type: "ajouterSurPlanche"; plancheId: string; ids?: string[]; confirme?: boolean }
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
-  | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean };
+  | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
+  /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
+  | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
+  | { type: "reglerTri"; visees: number | null; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -220,6 +226,8 @@ export type GesteEcran =
   | { type: "confirmer" }
   | { type: "annulerConfirmation" }
   | { type: "fermerMessage" }
+  /** Un mot de l'écran dans le bandeau (« Comparer : 2 à 4 photos ») : rien d'autre ne change. */
+  | { type: "annoncer"; texte: string }
   | { type: "voirRetiree"; id: string }
   | { type: "sauvegardeEnvoi" }
   | { type: "sauvegardeOk"; le?: string; magazine?: Magazine }
@@ -244,7 +252,7 @@ export type GestePrimitif = GesteModifiant | GesteEcran;
 export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
-  | "supprimerPlanche" | "vider" | "creerDoubles";
+  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; photoId?: string; position?: number };
