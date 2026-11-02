@@ -94,7 +94,7 @@ export function BoutonsTri({ sombre }: { sombre?: boolean }) {
         </button>
       ) : null}
       {!sombre && !ui.grand ? (
-        <button type="button" className={k} aria-label={ui.grand ? "Revenir à la mise en page" : "Trier en plein écran"} title={ui.grand ? "Revenir à la mise en page · T" : "Trier en plein écran · T"}
+        <button type="button" className={k} aria-label={ui.grand ? "Revenir à la mise en page" : "Trier en plein écran"} title={ui.grand ? "Revenir à la mise en page · G" : "Trier en plein écran · G"}
           onClick={() => majUi(ui.grand ? { grand: false, vue: "grille", loupeTri: false, bulle: null } : { grand: true, vue: "grille", zone: "photos", bulle: null })}>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             {ui.grand ? <path d="M4 9h5V4M16 11h-5v5M9 9L3 3M11 11l6 6" /> : <path d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6" />}
@@ -108,7 +108,7 @@ export function BoutonsTri({ sombre }: { sombre?: boolean }) {
 const RACCOURCIS: [string, [string, string][]][] = [
   ["Trier", [["F", "Coup de cœur"], ["P", "Garder"], ["R", "Réserve"], ["X", "Écarter"], ["0", "Retirer la marque"], ["U", "Prochaine à trier"], ["C", "Comparer la sélection"], ["Z", "Loupe 100 %"]]],
   ["Composer", [["Entrée", "Poser sur la double"], ["N", "Nouvelle double page"], ["D", "Doubles pages"]]],
-  ["Naviguer", [["← →", "Photo suivante"], ["Espace", "Grille ou une photo"], ["T", "Plein écran"], ["+ −", "Taille de la grille"], ["⇧ ⌘", "Clic : plusieurs"], ["⌘ Z", "Annuler"], ["Échap", "Revenir"]]],
+  ["Naviguer", [["← →", "Photo suivante"], ["Espace", "Grille ou une photo"], ["G", "Plein écran"], ["T", "Intervertir l'hésitation"], ["+ −", "Taille de la grille"], ["⇧ ⌘", "Clic : plusieurs"], ["⌘ Z", "Annuler"], ["Échap", "Revenir"]]],
 ];
 
 /** Les bulles : raccourcis, ou objectif et part de chacun. Un clic ailleurs les ferme. */

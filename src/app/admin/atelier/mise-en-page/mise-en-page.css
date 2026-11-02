@@ -1496,7 +1496,7 @@
 .mep-editeur .ed-ph--grand .ed-rep--rond { width: 22px; height: 22px; }
 .mep-editeur .ed-ph--grand .ed-rep--rond svg { width: 12px; height: 12px; }
 /* retour du 02/11 : la réserve ne touche plus la photo ; seule une photo déjà posée devient transparente */
-.mep-editeur .ed-vg--posee img { opacity: 0.45; }
+.mep-editeur .ed-vg--posee img { opacity: 0.6; }
 .mep-editeur .ed-puce-svg { display: grid; width: 11px; height: 11px; }
 .mep-editeur .ed-puce-svg svg { width: 100%; height: 100%; }
 .mep-editeur .ed-puce--client { color: #d23a50; }

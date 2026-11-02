@@ -26,7 +26,7 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 - **R13** Changer de filtre vide la sélection et met le focus sur la première photo.
 
 ## Vues et navigation
-- **R14** T ou le bouton ⤢ : bande étroite ↔ plein écran (grille). Espace : grille ↔ une photo (depuis la bande étroite, ouvre directement une photo en plein écran). Double-clic sur une vignette : cette photo en grand.
+- **R14** G (T jusqu'au 02/11, rendu à l'hésitation) ou le bouton ⤢ : bande étroite ↔ plein écran (grille). Espace : grille ↔ une photo (depuis la bande étroite, ouvre directement une photo en plein écran). Double-clic sur une vignette : cette photo en grand.
 - **R15** Échap, un cran à la fois : bulle ouverte → loupe → sélection → comparaison ou vue une photo → plein écran → bande étroite.
 - **R16** ← → bornés (pas de débordement). ↑ ↓ en grille changent de rangée.
 - **R17** Aucune touche n'agit pendant la saisie dans un champ ; Échap ou Entrée quittent le champ (Entrée n'y pose rien).
@@ -68,3 +68,4 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 ## Retours du 02/11 (soir)
 - **R44** Sur la vignette, l'insigne de la double (▮▮ numéro) est en bas à gauche.
 - **R45** La réserve s'affiche comme un simple trait (−) et ne change plus la couleur de la photo. Seule une photo déjà posée devient transparente.
+- **R46** T ne sert plus qu'à l'hésitation, partout (bande des photos comprise) ; le plein écran du tri passe sur G.

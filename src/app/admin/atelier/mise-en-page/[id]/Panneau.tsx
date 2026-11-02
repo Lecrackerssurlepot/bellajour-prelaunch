@@ -15,7 +15,7 @@ import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri }
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
    de l'écran existent), préchargement en avant dans le sens du défilement.
-   C'est AUSSI l'écran de tri : agrandi en plein écran (T), la grille devient justifiée (chaque photo garde sa forme),
+   C'est AUSSI l'écran de tri : agrandi en plein écran (G), la grille devient justifiée (chaque photo garde sa forme),
    le chemin de fer reste en bas, et la visionneuse (une photo, comparer) se pose par-dessus. Maquette du 31/10. */
 
 const TYPES = { lien: "Liens d'équipe", responsable: "Le responsable", atelier: "Atelier" } as const;
@@ -297,7 +297,7 @@ function PanneauOuvert() {
       onClick={() => { if (menu && menu.startsWith("ph-")) majUi({ menu: null }); }} {...glisserFichiers}>
       <div className="ed-ph-tete">
         {grand ? (
-          <button type="button" className="ed-sortir" title="Revenir à la mise en page · T" onClick={() => majUi({ grand: false, vue: "grille", loupeTri: false, bulle: null, doubles: false, doublesFlash: false })}>
+          <button type="button" className="ed-sortir" title="Revenir à la mise en page · G" onClick={() => majUi({ grand: false, vue: "grille", loupeTri: false, bulle: null, doubles: false, doublesFlash: false })}>
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4l-6 6 6 6" /></svg>Mise en page
           </button>
         ) : <h2>Photos</h2>}
