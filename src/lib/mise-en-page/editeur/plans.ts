@@ -10,7 +10,7 @@ import {
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, dimsCadre, dispositionOuNull, idsDispo, indexPlanche } from "./outils";
-import { garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, type Marque } from "./tri";
+import { etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, ETIQUETTES, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
@@ -203,8 +203,8 @@ const courante = (e: EtatEditeur, id?: string): string => id ?? e.plancheCourant
 /** Le plan d'un geste primitif qui change le magazine (null sinon). */
 /** Le geste pose-t-il des photos venues de la bibliothèque ? */
 const MARQUES_SURES: readonly Marque[] = ["coupDeCoeur", "choisie", "reserve", "ecartee"];
-const MOTS: Record<Marque, string> = { coupDeCoeur: "Coup de cœur", choisie: "Gardée", reserve: "Réserve", ecartee: "Écartée" };
-const MOTS_N: Record<Marque, (n: number) => string> = { coupDeCoeur: (n) => `${n} coups de cœur`, choisie: (n) => `${n} photos gardées`, reserve: (n) => `${n} photos en réserve`, ecartee: (n) => `${n} photos écartées` };
+const MOTS: Record<Marque, string> = { coupDeCoeur: "Pleine page", choisie: "Gardée", reserve: "Réserve", ecartee: "Écartée" };
+const MOTS_N: Record<Marque, (n: number) => string> = { coupDeCoeur: (n) => `${n} pleines pages`, choisie: (n) => `${n} photos gardées`, reserve: (n) => `${n} photos en réserve`, ecartee: (n) => `${n} photos écartées` };
 
 export const depuisBibliotheque = (g: GesteModifiant): boolean =>
   (g.type === "deposer" && !!g.source && g.source.type === "bibliotheque") || g.type === "ajouterSurPlanche" || g.type === "remplacer" || g.type === "creerDoubles";
@@ -279,6 +279,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return g.ref ? { op: "calque", libelle: LIBELLE_CALQUE[g.sens] ?? "Calque", plancheId: g.ref.plancheId, issue: calque(m, g.ref, g.sens), args: { ref: g.ref } } : planRien(e);
     case "retirerCadres": return planRetirerCadres(e, Array.isArray(g.refs) ? g.refs : []);
     case "reglerTri": return simple("reglerTri", "Photos visées", e.plancheCourante, reglerVisees(m, g.visees), {});
+    case "etiqueter": {
+      const ids = Array.isArray(g.ids) ? [...new Set(g.ids.filter((id) => cat.has(id)))] : [];
+      if (!ETIQUETTES.includes(g.etiquette) || !ids.length) return planRien(e);
+      const retirer = etiquetteRetiree(m, ids, g.etiquette);
+      const nom = g.etiquette === "couverture" ? "Couverture" : "Double page";
+      return simple("etiqueter", retirer ? `${nom} retirée` : ids.length > 1 ? `${nom} · ${ids.length} photos` : nom, e.plancheCourante, etiqueter(m, ids, g.etiquette, !retirer), {});
+    }
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
     default: return null;

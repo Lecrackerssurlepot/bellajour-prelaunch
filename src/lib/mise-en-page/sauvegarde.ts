@@ -186,17 +186,29 @@ function plancheValide(v: unknown, indexPlanche: number): v is Planche {
  * dans les bornes de `recadrer`, textes en chaînes. Ne borne PAS la taille :
  * `tailleContenu` le fait, avant (la route refuse en 413 sans relire la forme).
  */
+/** Les étiquettes du tri (05/11) : `couverture` et `double`, facultatives, jamais vides, sans doublon, seulement sur des gardées ou des ✦. */
+function etiquettesValides(v: unknown, gardees: ReadonlySet<string>): boolean {
+  if (!estObjet(v)) return false;
+  const cles = (["couverture", "double"] as const).filter((k) => k in v);
+  if (!cles.length || !clesExactes(v, cles)) return false;
+  return cles.every((k) => {
+    const l = v[k];
+    return Array.isArray(l) && l.length > 0 && l.every((id) => estId(id) && gardees.has(id)) && new Set(l).size === l.length;
+  });
+}
+
 /** Le tri : deux listes d'ids sans doublon ni recouvrement, et un objectif de photos (entier de 1 à `VISEES_MAX`) ou null. */
 function triValide(v: unknown): boolean {
   if (!estObjet(v)) return false;
   /* coupsDeCoeur et reserve sont facultatifs, mais jamais vides quand ils sont écrits */
   const facultatives = (["coupsDeCoeur", "reserve"] as const).filter((k) => k in v);
-  if (!clesExactes(v, ["choisies", "ecartees", "visees", ...facultatives])) return false;
+  if (!clesExactes(v, ["choisies", "ecartees", "visees", ...facultatives, ...("etiquettes" in v ? ["etiquettes"] : [])])) return false;
   const listes = [v.choisies, v.ecartees, ...facultatives.map((k) => v[k])];
   if (!listes.every((l) => Array.isArray(l) && l.every(estId))) return false;
   if (facultatives.some((k) => (v[k] as unknown[]).length === 0)) return false;
   const n = listes.reduce((s: number, l) => s + (l as unknown[]).length, 0);
   if (new Set(listes.flat()).size !== n) return false;
+  if ("etiquettes" in v && !etiquettesValides(v.etiquettes, new Set([...(v.choisies as string[]), ...((v.coupsDeCoeur as string[] | undefined) ?? [])]))) return false;
   const { visees } = v;
   return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
 }

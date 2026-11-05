@@ -4,7 +4,7 @@
  * choisir la cible, envoyer le geste et déplacer le focus.
  */
 
-import { appliquer, marqueDe, marqueEffective, selectionOrdonnee, visibles, type EtatEditeur, type Geste, type Marque } from "@/lib/mise-en-page/editeur";
+import { appliquer, listeTri, marqueDe, marqueEffective, selectionOrdonnee, visibles, type Etiquette, type EtatEditeur, type Geste, type Marque } from "@/lib/mise-en-page/editeur";
 import type { Ctx, Ui } from "./contexte";
 
 /** Ce dont le tri a besoin de l'éditeur (le clavier le compose sans attendre un rendu). */
@@ -55,6 +55,23 @@ export function marquerTri(c: CtxTri, m: Marque | null, cibleId?: string): void 
     else suivant = apres[Math.min(Math.max(avant.indexOf(cur), 0), apres.length - 1)] ?? null;
   }
   c.majUi({ focus: suivant, zone: "photos", ...(une ? { loupeTri: false } : {}) });
+}
+
+/** 1 / 2 (05/11) : poser ou retirer une étiquette (bascule, sur la sélection 2+ ou la photo). Le focus ne bouge pas :
+ *  sauf si la photo quitte la vue (filtre « Couverture » au tour ③), et alors la suivante prend sa place. */
+export function etiqueterTri(c: CtxTri, k: Etiquette, cibleId?: string): void {
+  if (c.lectureSeule) return;
+  const { etat: e, ui } = c;
+  const ids = ui.grand && ui.vue === "comparer" ? [ui.comparer[ui.cmpIci]].filter((x): x is string => !!x) : cibleTri(e, ui, cibleId);
+  if (!ids.length) return;
+  const g: Geste = { type: "etiqueter", ids, etiquette: k };
+  const x = appliquer(e, g);
+  if (x.magazine === e.magazine) return;
+  c.envoyer(g);
+  if (ui.vue === "comparer") return;
+  const cur = focusCourant(e, ui);
+  const avant = visibles(e), apres = visibles(x);
+  if (cur && !apres.includes(cur)) c.majUi({ focus: apres[Math.min(Math.max(avant.indexOf(cur), 0), apres.length - 1)] ?? null });
 }
 
 /** En comparaison : F / P / R / X / 0 marquent l'active (bascule) ; ⇧P garde l'active et écarte les autres. */
@@ -169,6 +186,7 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     if (k === "f") { marquerComparaison(c, "coupDeCoeur", false); return prends(); }
     if (k === "r") { marquerComparaison(c, "reserve", false); return prends(); }
     if (k === "0" || k === "backspace") { marquerComparaison(c, null, false); return prends(); }
+    if (k === "1" || k === "2") { etiqueterTri(c, k === "1" ? "couverture" : "double"); return prends(); }
     if (k === " ") { quitterVisionneuse(c); return prends(); }
     return false;
   }
@@ -179,6 +197,8 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     case "r": marquerTri(c, "reserve"); return prends();
     case "d": if (ui.grand) majUi({ doubles: !ui.doubles, doublesFlash: false }); return prends();
     case "0": case "backspace": marquerTri(c, null); return prends();
+    case "1": etiqueterTri(c, "couverture"); return prends();
+    case "2": etiqueterTri(c, "double"); return prends();
     case "arrowright": de(1); return prends();
     case "arrowleft": de(-1); return prends();
     case "arrowdown": case "arrowup":
@@ -192,7 +212,11 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
       const libre = (id: string) => marqueDe(e.magazine, id) === null;
       const j = l.findIndex((id, n) => n > i && libre(id));
       const k2 = j >= 0 ? j : l.findIndex(libre);
-      if (k2 >= 0) aller(l[k2]); else c.envoyer({ type: "annoncer", texte: "Tout est trié" });
+      if (k2 >= 0) { aller(l[k2]); return prends(); }
+      /* au tour ③ (ou dans une puce), la prochaine à trier n'est pas visible : on la cherche au tour ② */
+      const ailleurs = listeTri(e, "retenues").find(libre);
+      if (ailleurs) { c.envoyer({ type: "filtrer", filtres: { marque: "retenues" } }); majUi({ focus: ailleurs }); }
+      else c.envoyer({ type: "annoncer", texte: "Tout est trié" });
       return prends();
     }
     case " ":

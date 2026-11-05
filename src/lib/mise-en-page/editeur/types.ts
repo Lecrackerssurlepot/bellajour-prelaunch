@@ -10,7 +10,7 @@ import type { Recadrage } from "../recadrage";
 import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
 import type { SourceMep } from "../sauvegarde";
-import type { Marque } from "./tri";
+import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
 import type { SensCalque } from "./libre";
 
@@ -45,7 +45,9 @@ export type Filtres = {
   montrerSignalees: boolean;
   masquerUtilisees: boolean;
   /** Le tri de l'atelier : par défaut les écartées sont cachées. */
-  marque: "toutes" | "choisies" | "a_trier" | "reserve" | "ecartees";
+  marque: "toutes" | "retenues" | "choisies" | "a_trier" | "reserve" | "ecartees";
+  /** Au tour ③ (05/11) : seulement les photos de cette étiquette ; "" = toutes. */
+  etiquette: "" | Etiquette;
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
@@ -192,6 +194,8 @@ export type GesteModifiant =
   /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
   | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
   | { type: "reglerTri"; visees: number | null; confirme?: boolean }
+  /** 1 / 2 (05/11) : poser ou retirer une étiquette d'usage (bascule sur toutes) ; la poser garde la photo. */
+  | { type: "etiqueter"; ids: string[]; etiquette: Etiquette; confirme?: boolean }
   /** L'hésitation d'un cadre (lot 3) : ajouter une photo derrière, intervertir (T), trancher, rouvrir, oublier. */
   | { type: "hesiter"; ref: RefCadre; action: ActionHesitation; photoId?: string; confirme?: boolean }
   /** Lot 4 : le miroir d'une planche (M) ; les cadres retouchés ; plusieurs cadres d'un coup. */
@@ -276,7 +280,7 @@ export type GestePrimitif = GesteModifiant | GesteEcran;
 export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
-  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "hesiter"
+  | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "etiqueter" | "hesiter"
   | "miroir" | "placerCadre" | "ajusterCadre" | "calque" | "poserLibre" | "retirerCadres" | "deplacerCadres";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */

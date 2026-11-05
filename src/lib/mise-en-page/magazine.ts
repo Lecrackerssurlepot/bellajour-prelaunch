@@ -60,7 +60,9 @@ export type Planche = {
  */
 /** Le tri : quatre listes disjointes. `coupsDeCoeur` et `reserve` (02/11) ne sont écrites que non vides : une sauvegarde
  *  d'avant elles reste valide telle quelle. */
-export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: number | null; coupsDeCoeur?: string[]; reserve?: string[] };
+/** Les étiquettes d'usage (05/11) : où la photo pourrait aller. Jamais exclusives, seulement sur une gardée ou un ✦. */
+export type EtiquettesTri = { couverture?: string[]; double?: string[] };
+export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: number | null; coupsDeCoeur?: string[]; reserve?: string[]; etiquettes?: EtiquettesTri };
 /** Borne technique de l'objectif « photos visées » (pas une règle de produit : un garde-fou contre une saisie folle). */
 export const VISEES_MAX = 5000;
 

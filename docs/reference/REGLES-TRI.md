@@ -5,7 +5,7 @@ Validées sur la maquette du 31/10/2026 (`~/Desktop/Bellajour/maquette-mise-en-p
 Ce que la maquette DOIT faire. Toute différence est un défaut.
 
 ## Marques
-- Cinq états exclusifs par photo (02/11) : aucune, coup de cœur (✦, F), gardée (★, P), réserve (◐, R), écartée (✕, X). Un coup de cœur compte comme gardée partout (onglet Gardées, jauge, Poser).
+- Cinq états exclusifs par photo (02/11) : aucune, coup de cœur (✦, F, « Pleine page » depuis le 05/11), gardée (★, P), réserve (◐, R), écartée (✕, X). Un coup de cœur compte comme gardée partout (onglet Gardées, jauge, Poser).
 - **R1** P sur une photo déjà gardée RETIRE la marque (bascule), et le focus reste sur la photo.
   P sur une photo sans marque ou écartée la garde, puis le focus passe à la suivante de la liste filtrée.
 - **R2** X : même règle que P avec « écartée ». Écarter une photo déjà écartée ne doit JAMAIS la ré-écarter.
@@ -80,3 +80,13 @@ Ce que la maquette DOIT faire. Toute différence est un défaut.
 - **R53** « Position » (barre du cadre, dès qu'il y a deux cadres) : Devant, Avancer, Reculer, Derrière ; ⌘] ⌘[ (⌥ pour tout devant ou tout derrière), ou ⌘↑ ⌘↓. L'ordre des calques est celui de l'export Affinity ; le cadre actif garde son rang à l'écran.
 - **R54** Une page retouchée garde ses cadres : retirer une photo n'enlève que son cadre. Ajouter une photo sans ⌥, changer de gabarit ou R la recomposent. Sa pastille porte un point bleu ; le tiroir propose « Remettre le gabarit ».
 - **R55** « Enregistrer comme gabarit » (tiroir d'une page retouchée) : la page telle qu'on la voit devient un gabarit pour tous les projets, nommé « Page · 3 photos · 03/11 », proposé en tête (« Le mien ») pour le même nombre de photos. Une page faite d'un gabarit enregistré en garde une copie : elle se relit sans lui. Table `mep_gabarits` (migration 20261103, appliquée par Mathias) ; sans elle, « Table des gabarits absente » et rien d'autre ne change.
+
+## Les trois tours et les étiquettes (05/11, premier jet)
+- **R56** Les cinq onglets deviennent trois TOURS en entonnoir, chacun avec son compte : ① Écarter (toutes, écartées grisées sur place, l'ancien « Toutes »), ② Choisir (sans les écartées ; « N à décider » quand il est ouvert), ③ Finale (gardées et ✦, l'ancien « Gardées »). Un tour est un FILTRE, jamais un mode : aucune donnée par tour, on revient en arrière quand on veut, rien n'est détruit.
+- **R57** « Réserve n » et « Écartées n » sont deux puces pour repêcher (cachées à zéro) ; un second clic ramène au tour ③ (réserve) ou ① (écartées). « À trier » n'a plus d'onglet : U y mène, et cherche au tour ② si la vue n'a plus de photo sans marque.
+- **R58** ✦ (F) s'appelle « Pleine page » : c'est le super like. La clé enregistrée reste `coupsDeCoeur` (R37). Le cœur rouge du client ne change pas.
+- **R59** Deux étiquettes d'usage, indépendantes de la marque et l'une de l'autre : 1 Couverture, 2 Double page. Bascule (toutes l'ont déjà : retirée), sur la sélection 2+ ou la photo, en grille, en vue une photo et en comparaison (la photo active). Le focus ne bouge pas, sauf si la photo quitte la vue.
+- **R60** Étiqueter GARDE la photo (★) si elle n'était ni ★ ni ✦ ; la réserve, l'écart ou « sans marque » retirent ses étiquettes. Tout s'annule ensemble (⌘Z).
+- **R61** Les étiquettes se voient sous les ronds de la vue une photo (éteintes tant qu'elles ne sont pas posées) et, au tour ③ seulement, en petit sur la vignette (« Couv. », « Double »). Au tour ③, les puces « Couverture n » et « Double page n » filtrent (affichées dès qu'il y en a une, ou tant qu'elles sont actives) ; changer de tour relâche ce filtre.
+- **R62** Bande étroite : le tour actif en toutes lettres, les deux autres en numéro et compte ; repêcher et étiquettes en plein écran.
+- **R63** Sauvegarde : `tri.etiquettes = { couverture?, double? }`, jamais vides, sans doublon, seulement sur des gardées ou des ✦ (`contenuValide`).

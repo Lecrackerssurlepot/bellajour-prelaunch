@@ -10,7 +10,7 @@ import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -64,9 +64,11 @@ function PanneauOuvert() {
   const rep = reperesBibliotheque(etat);
   const selSet = rep.selection;
   const triM = triDe(etat.magazine);
-  /* « gardées » au sens large : un coup de cœur l'est aussi (Poser les prend en premier) */
+  /* « gardées » au sens large : une pleine page (✦) l'est aussi (Poser les prend en premier) */
   const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
   const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
+  /* au tour ③ seulement, les étiquettes d'usage se lisent sur la vignette (05/11) */
+  const etqVignette = (id: string): string[] => (f.marque === "choisies" ? (["couverture", "double"] as const).filter((k) => (triM.etiquettes?.[k] ?? []).includes(id)).map((k) => ETIQUETTE_UI[k].court) : []);
   const hes = photosEnHesitation(etat.magazine);
   const planches = planchesDesPhotos(etat);
   const focus = focusCourant(etat, ui);
@@ -239,7 +241,7 @@ function PanneauOuvert() {
     return (
       <button key={id} type="button" data-photo={id} style={{ width: l, height: h }}
         className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
-        aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
+        aria-pressed={sel1} aria-label={p.nom + (cc ? ", pleine page" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
         onClick={(e) => {
           if (clicSupprime()) return;
@@ -261,11 +263,12 @@ function PanneauOuvert() {
           </span>
         )}
         <span className="ed-vg-rep ed-vg-rep--h">
-          {cc ? <span className="ed-rep ed-rep--rond ed-rep--cc" title="Coup de cœur" dangerouslySetInnerHTML={{ __html: ETINCELLE }} />
+          {cc ? <span className="ed-rep ed-rep--rond ed-rep--cc" title="Pleine page" dangerouslySetInnerHTML={{ __html: ETINCELLE }} />
             : choisies.has(id) ? <span className="ed-rep ed-rep--rond ed-rep--choisie" title="Gardée" dangerouslySetInnerHTML={{ __html: ETOILE }} />
             : re ? <span className="ed-rep ed-rep--rond ed-rep--reserve" title="Réserve" dangerouslySetInnerHTML={{ __html: DEMI }} /> : null}
           {p.coeur ? <span className="ed-rep ed-rep--rond ed-rep--coeur" title="Cœur du client" dangerouslySetInnerHTML={{ __html: COEUR }} /> : null}
           {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
+          {etqVignette(id).map((t) => <span key={t} className="ed-rep ed-rep--etq">{t}</span>)}
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
           {nums?.length ? (

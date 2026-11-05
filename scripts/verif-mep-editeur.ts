@@ -898,7 +898,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
   };
   const filtres = (): Libre => {
     const f: Libre = {};
-    const k = int(0, 11);
+    const k = int(0, 12);
     if (k === 0) f.recherche = pick(["", "IMG_1", "1", "zz", "img_12"]);
     if (k === 1) f.statut = pick(["toutes", "libres", "utilisees", "planche", "n'importe"]);
     if (k === 2) f.personnes = h() < 0.5 ? [] : [pick(["Inès", "Léa", "Hugo"])];
@@ -910,7 +910,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     if (k === 8) f.groupe = pick(["jour", "personne", "type", "aucun"]);
     if (k === 9) f.taille = pick(["S", "M", "L"]);
     if (k === 10) f.masquerUtilisees = h() < 0.5;
-    if (k === 11) f.marque = pick(["toutes", "choisies", "a_trier", "reserve", "ecartees", "bidon"]);
+    if (k === 11) f.marque = pick(["toutes", "retenues", "choisies", "a_trier", "reserve", "ecartees", "bidon"]);
+    if (k === 12) f.etiquette = pick(["", "couverture", "double", "bidon"]);
     return f;
   };
 
@@ -956,6 +957,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [3, (e) => ({ type: "basculerCadre", ref: uneRef(e) })],
     [3, () => ({ type: "touche", cle: pick(["m", "M", "]", "[", "ArrowUp", "ArrowDown", "Backspace"]), meta: h() < 0.6, alt: h() < 0.3, shift: h() < 0.2 })],
     [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
+    [2, (e) => ({ type: "etiqueter", ids: ids(e, int(1, 3)), etiquette: pick(["couverture", "double", "bidon"]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
@@ -1309,6 +1311,42 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : le tri (bascule, gestes sans effet, filtres, objectif, posée = gardée, annuler sans changer de double)", msg === null);
+  }
+  /* Les trois tours et les deux étiquettes (05/11) : un tour est un filtre, une étiquette garde la photo et ne survit pas à l'écart. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:P C:L D:P E:L");
+      s.g({ type: "marquer", ids: ["A"], marque: "ecartee" }).g({ type: "marquer", ids: ["B"], marque: "coupDeCoeur" }).g({ type: "marquer", ids: ["C"], marque: "reserve" });
+      s.g({ type: "filtrer", filtres: { marque: "toutes" } }); eq(O.visibles(s.e).length, 5, "tour 1 : tout, écartées comprises");
+      s.g({ type: "filtrer", filtres: { marque: "retenues" } }); eq(O.visibles(s.e).sort(), ["B", "C", "D", "E"], "tour 2 : sans les écartées");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e), ["B"], "tour 3 : gardées et pleines pages");
+      s.g({ type: "etiqueter", ids: ["D"], etiquette: "couverture" });
+      ok(O.marqueDe(s.e.magazine, "D") === "choisie" && O.etiquettesDe(s.e.magazine, "D").join() === "couverture", "étiqueter garde la photo");
+      s.g({ type: "etiqueter", ids: ["B"], etiquette: "couverture" });
+      ok(O.marqueDe(s.e.magazine, "B") === "coupDeCoeur", "une pleine page le reste");
+      s.g({ type: "etiqueter", ids: ["B", "D"], etiquette: "couverture" });
+      eq(O.etiquettesDe(s.e.magazine, "B"), [], "toutes l'ont : la même touche la retire");
+      s.g({ type: "etiqueter", ids: ["B", "D"], etiquette: "couverture" }).g({ type: "etiqueter", ids: ["D"], etiquette: "double" });
+      eq(O.etiquettesDe(s.e.magazine, "D"), ["couverture", "double"], "deux étiquettes à la fois");
+      s.g({ type: "filtrer", filtres: { marque: "choisies", etiquette: "double" } }); eq(O.visibles(s.e), ["D"], "tour 3 filtré par étiquette");
+      s.g({ type: "filtrer", filtres: { marque: "retenues" } }); eq(s.e.filtres.etiquette, "", "changer de tour relâche l'étiquette");
+      const b = O.bilanTri(s.e); eq([b.couverture, b.double], [2, 1], "bilan des étiquettes");
+      ok(O.contenuValide(s.e.magazine), "un tri étiqueté se sauvegarde");
+      s.g({ type: "marquer", ids: ["D"], marque: "ecartee" });
+      eq(O.etiquettesDe(s.e.magazine, "D"), [], "écarter retire les étiquettes");
+      s.g({ type: "annuler" });
+      eq(O.etiquettesDe(s.e.magazine, "D"), ["couverture", "double"], "⌘Z rend les étiquettes");
+      s.g({ type: "marquer", ids: ["D"], marque: "reserve" }); eq(O.etiquettesDe(s.e.magazine, "D"), [], "la réserve les retire aussi");
+      const avant = s.e.magazine; s.g({ type: "etiqueter", ids: ["inconnue"], etiquette: "double" }); ok(s.e.magazine === avant, "photo inconnue : rien");
+      const base = { ...s.e.magazine };
+      ok(!O.contenuValide({ ...base, tri: { choisies: [], ecartees: ["A"], visees: null, etiquettes: { couverture: ["A"] } } }), "étiquette sur une écartée refusée");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, etiquettes: {} } }), "étiquettes vides refusées");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, etiquettes: { couverture: ["A", "A"] } } }), "doublon refusé");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, etiquettes: { pano: ["A"] } } as unknown as typeof base.tri }), "étiquette inconnue refusée");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : les trois tours et les étiquettes (filtres, garder en étiquetant, écarter retire, sauvegarde)", msg === null);
   }
   /* L'hésitation (lot 3, plan du 30/10) : deux photos dans un cadre, T, trancher, rouvrir ; seule celle de devant compte. */
   {

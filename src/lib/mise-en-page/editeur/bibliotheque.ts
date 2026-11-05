@@ -38,10 +38,11 @@ export function criteres(e: EtatEditeur): Criteres {
     montrerSignalees: (ph) => f.montrerSignalees || !ph.signalee,
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
     marque: (ph) => dansVue(mq.get(ph.id) ?? null, f.marque),
+    etiquette: (ph) => !f.etiquette || f.marque !== "choisies" || t.etiquettes[f.etiquette].includes(ph.id),
   };
 }
 
-const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque"];
+const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque", "etiquette"];
 export const clesCriteres = (): readonly CleCritere[] => CLES_CRITERES;
 
 /** La photo passe-t-elle tous les filtres ? */
