@@ -25,7 +25,7 @@ export {
 export { contenuValide } from "../sauvegarde";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
 export { planDepot, planifier } from "./plans";
-export { groupes, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
+export { aCote, groupes, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, gabaritsPour, libelleAnnuler,
   libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue,
@@ -34,7 +34,7 @@ export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./
 export { verifierInvariants } from "./invariants";
 export { hesitationDe, hesitationsOuvertes, hesiter, photosEnHesitation } from "./hesitation";
 export type { ActionHesitation } from "./hesitation";
-export { bilanTri, dansVue, estGardee, etiqueter, etiquetteRetiree, etiquettesDe, ETIQUETTES, garderPosees, listeTri, MARQUES, marqueDe, marqueEffective, marquer, reglerVisees, triDe } from "./tri";
-export type { BilanTri, Etiquette, Marque, PartPersonne, TriPlein, VueTri } from "./tri";
+export { bilanTri, dansVue, estGardee, estTour, marquePourZone, TOURS_TRI, etiqueter, etiquetteRetiree, etiquettesDe, ETIQUETTES, garderPosees, listeTri, MARQUES, marqueDe, marqueEffective, marquer, reglerVisees, triDe } from "./tri";
+export type { BilanTri, Etiquette, Marque, TourTri, PartPersonne, TriPlein, VueTri } from "./tri";
 export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres, miroir, pageEntiere, placerCadre, poserLibre, rangCalque, retirerCadres } from "./libre";
 export type { SensCalque } from "./libre";

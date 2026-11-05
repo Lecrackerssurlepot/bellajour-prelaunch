@@ -186,10 +186,10 @@ function plancheValide(v: unknown, indexPlanche: number): v is Planche {
  * dans les bornes de `recadrer`, textes en chaînes. Ne borne PAS la taille :
  * `tailleContenu` le fait, avant (la route refuse en 413 sans relire la forme).
  */
-/** Les étiquettes du tri (05/11) : `couverture` et `double`, facultatives, jamais vides, sans doublon, seulement sur des gardées ou des ✦. */
+/** Les étiquettes du tri (05/11) : `couverture`, `double` et `pleine`, facultatives, jamais vides, sans doublon, seulement sur des gardées ou des ✦. */
 function etiquettesValides(v: unknown, gardees: ReadonlySet<string>): boolean {
   if (!estObjet(v)) return false;
-  const cles = (["couverture", "double"] as const).filter((k) => k in v);
+  const cles = (["couverture", "double", "pleine"] as const).filter((k) => k in v);
   if (!cles.length || !clesExactes(v, cles)) return false;
   return cles.every((k) => {
     const l = v[k];

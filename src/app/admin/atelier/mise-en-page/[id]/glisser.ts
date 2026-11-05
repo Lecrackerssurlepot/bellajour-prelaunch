@@ -77,6 +77,13 @@ export function cibleSous(x: number, y: number, src: SourceGlisser, ed: EtatEdit
   if (vig) return { type: "vignette", plancheId: vig.getAttribute("data-vignette") ?? "" };
   const cf = src.type === "bibliotheque" ? el.closest(".ed-cf-piste") : null;
   if (cf) return entre(cf);
+  /* tri (05/11) : la grille du tour ou sa colonne « à côté » */
+  const zone = src.type === "bibliotheque" ? el.closest("[data-tri-zone]") : null;
+  if (zone) {
+    const z = zone.getAttribute("data-tri-zone");
+    const c: CibleDepot | null = z === "jeu" || z === "cote" ? { type: "tri", zone: z } : null;
+    return c && cibleAllumee(ed, src, c) ? c : null;
+  }
   if (el.closest(".ed-ph")) return src.type === "cadre" || src.type === "cadres" ? { type: "bibliotheque" } : null;
   if (el.closest(".ed-zone-double")) return { type: "double", plancheId: ed.plancheCourante };
   const encart = el.closest("[data-hesiter]");
@@ -111,6 +118,7 @@ export function libelleApercu(source: SourceGlisser, cible: CibleDepot | null, a
   if (!a) return null;
   if (a.refus) return resumeIssue(a);
   let t: string;
+  if (cible.type === "tri") return cible.zone === "jeu" ? `Remettre en jeu${source.type === "bibliotheque" && source.ids.length > 1 ? ` · ${source.ids.length} photos` : ""}` : "Mettre de côté";
   if (cible.type === "hesiter") t = "Hésiter avec celle-ci";
   else if (cible.type === "libre") t = source.type === "bibliotheque" ? "Poser en libre" : "Déplacer en libre";
   else if (cible.type === "miroir") t = "Inverser";

@@ -45,7 +45,7 @@ export type Filtres = {
   montrerSignalees: boolean;
   masquerUtilisees: boolean;
   /** Le tri de l'atelier : par défaut les écartées sont cachées. */
-  marque: "toutes" | "retenues" | "choisies" | "a_trier" | "reserve" | "ecartees";
+  marque: "toutes" | "ecarter" | "retenues" | "choisies" | "a_trier" | "reserve" | "ecartees";
   /** Au tour ③ (05/11) : seulement les photos de cette étiquette ; "" = toutes. */
   etiquette: "" | Etiquette;
   tri: "date" | "nom" | "personne";
@@ -73,6 +73,8 @@ export type CibleDepot =
   /** `cote` précise le segment (gauche/droite) : à la frontière des deux pages, la position seule est ambiguë. */
   | { type: "bande"; plancheId: string; position: number; cote?: Cote }
   | { type: "bibliotheque" }
+  /** Tri (05/11) : la grille du tour (« jeu ») ou sa colonne « à côté » ; y lâcher des photos change leur marque. */
+  | { type: "tri"; zone: "jeu" | "cote" }
   /** Lot 4 : la bande « Inverser » au bord extérieur de l'autre page, quand on glisse TOUTE une page. */
   | { type: "miroir"; plancheId: string }
   /** Lot 4 : ⌥ au lâcher, la photo se pose en libre, centrée en (x, y), repère planche (mm). */

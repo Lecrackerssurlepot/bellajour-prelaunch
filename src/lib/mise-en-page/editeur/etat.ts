@@ -347,8 +347,8 @@ const GESTES: Gestes = {
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
     const groupe = choisir(["jour", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
-    const marque = choisir(["toutes", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
-    const etiquette = choisir(["", "couverture", "double"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
+    const marque = choisir(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
+    const etiquette = choisir(["", "couverture", "double", "pleine"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
     /* l'étiquette ne filtre qu'au tour ③ : changer de vue la relâche */
     if (marque && marque !== "choisies" && !("etiquette" in v)) f.etiquette = "";
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;

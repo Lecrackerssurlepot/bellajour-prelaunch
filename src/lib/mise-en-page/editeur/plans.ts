@@ -10,7 +10,7 @@ import {
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, dimsCadre, dispositionOuNull, idsDispo, indexPlanche } from "./outils";
-import { etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, ETIQUETTES, type Marque } from "./tri";
+import { estTour, etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEffective, marquePourZone, marquer, reglerVisees, ETIQUETTES, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
@@ -145,6 +145,16 @@ function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined,
       case "vignette": return planSurPlanche(e, cible.plancheId, ids);
       case "entre": return planCreerDoubles(e, ids, cible.index);
       case "libre": return planLibre(e, cible, ids);
+      case "tri": {
+        const tour = e.filtres.marque;
+        if (!estTour(tour) || (cible.zone !== "jeu" && cible.zone !== "cote")) return planRien(e);
+        const z = marquePourZone(m, ids.filter((id) => e.catalogue.has(id)), tour, cible.zone);
+        if (!z.ids.length) return planRien(e, "deja_la");
+        const n = z.ids.length;
+        const mot = z.marque === null ? "Remise en jeu" : cible.zone === "jeu" ? "Remise en jeu" : z.marque === "ecartee" ? "Écartée" : "Mise de côté";
+        const m2 = marquer(m, z.ids, z.marque);
+        return { op: "marquer", libelle: n > 1 ? `${mot} · ${n} photos` : mot, plancheId: e.plancheCourante, issue: issue(m2, m2 === m ? "rien" : null), args: {} };
+      }
       default: return planRien(e);
     }
   }
@@ -203,8 +213,8 @@ const courante = (e: EtatEditeur, id?: string): string => id ?? e.plancheCourant
 /** Le plan d'un geste primitif qui change le magazine (null sinon). */
 /** Le geste pose-t-il des photos venues de la bibliothèque ? */
 const MARQUES_SURES: readonly Marque[] = ["coupDeCoeur", "choisie", "reserve", "ecartee"];
-const MOTS: Record<Marque, string> = { coupDeCoeur: "Pleine page", choisie: "Gardée", reserve: "Réserve", ecartee: "Écartée" };
-const MOTS_N: Record<Marque, (n: number) => string> = { coupDeCoeur: (n) => `${n} pleines pages`, choisie: (n) => `${n} photos gardées`, reserve: (n) => `${n} photos en réserve`, ecartee: (n) => `${n} photos écartées` };
+const MOTS: Record<Marque, string> = { coupDeCoeur: "Coup de cœur", choisie: "Gardée", reserve: "Réserve", ecartee: "Écartée" };
+const MOTS_N: Record<Marque, (n: number) => string> = { coupDeCoeur: (n) => `${n} coups de cœur`, choisie: (n) => `${n} photos gardées`, reserve: (n) => `${n} photos en réserve`, ecartee: (n) => `${n} photos écartées` };
 
 export const depuisBibliotheque = (g: GesteModifiant): boolean =>
   (g.type === "deposer" && !!g.source && g.source.type === "bibliotheque") || g.type === "ajouterSurPlanche" || g.type === "remplacer" || g.type === "creerDoubles";
@@ -283,7 +293,7 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       const ids = Array.isArray(g.ids) ? [...new Set(g.ids.filter((id) => cat.has(id)))] : [];
       if (!ETIQUETTES.includes(g.etiquette) || !ids.length) return planRien(e);
       const retirer = etiquetteRetiree(m, ids, g.etiquette);
-      const nom = g.etiquette === "couverture" ? "Couverture" : "Double page";
+      const nom = { couverture: "Couverture", double: "Double page", pleine: "Pleine page" }[g.etiquette];
       return simple("etiqueter", retirer ? `${nom} retirée` : ids.length > 1 ? `${nom} · ${ids.length} photos` : nom, e.plancheCourante, etiqueter(m, ids, g.etiquette, !retirer), {});
     }
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);

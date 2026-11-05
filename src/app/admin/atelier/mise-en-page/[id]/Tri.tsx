@@ -119,7 +119,7 @@ function UnePhoto() {
 
   return (
     <div className="ed-vt" role="dialog" aria-label="Une photo">
-      <Tete titre="Trier" sous={`${NOMS_ONGLETS[etat.filtres.marque]}${etat.filtres.masquerUtilisees ? " · non posées" : ""}`} />
+      <Tete titre="Trier" sous={NOMS_ONGLETS[etat.filtres.marque]} />
       <div className="ed-vt-scene">
         {p && a ? <Nette key={id} a={a} alt={p.nom} onClick={ouvrirLoupe} /> : <div className="ed-vt-vide">{etat.filtres.marque === "a_trier" || etat.filtres.marque === "retenues" ? "Tout est trié" : "Rien ici"}</div>}
         {ui.loupeTri && p && a ? <Loupe100 a={a} pt={pt} boite={loupe} onMove={suivreLoupe} onClick={() => majUi({ loupeTri: false })} /> : null}

@@ -186,7 +186,7 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     if (k === "f") { marquerComparaison(c, "coupDeCoeur", false); return prends(); }
     if (k === "r") { marquerComparaison(c, "reserve", false); return prends(); }
     if (k === "0" || k === "backspace") { marquerComparaison(c, null, false); return prends(); }
-    if (k === "1" || k === "2") { etiqueterTri(c, k === "1" ? "couverture" : "double"); return prends(); }
+    if (k === "1" || k === "2" || k === "3") { etiqueterTri(c, k === "1" ? "couverture" : k === "2" ? "double" : "pleine"); return prends(); }
     if (k === " ") { quitterVisionneuse(c); return prends(); }
     return false;
   }
@@ -199,6 +199,7 @@ export function clavierTri(c: CtxTri, ev: KeyboardEvent): boolean {
     case "0": case "backspace": marquerTri(c, null); return prends();
     case "1": etiqueterTri(c, "couverture"); return prends();
     case "2": etiqueterTri(c, "double"); return prends();
+    case "3": etiqueterTri(c, "pleine"); return prends();
     case "arrowright": de(1); return prends();
     case "arrowleft": de(-1); return prends();
     case "arrowdown": case "arrowup":

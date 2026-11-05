@@ -1638,3 +1638,30 @@
 .mep-editeur .ed-ph:not(.ed-ph--grand) .ed-tours small,
 .mep-editeur .ed-ph:not(.ed-ph--grand) .ed-puce--repeche,
 .mep-editeur .ed-ph:not(.ed-ph--grand) .ed-puce--etq { display: none; }
+
+/* ─── la colonne « À côté » d'un tour (05/11) : ce que le tour laisse de côté, teinté, d'où on le reglisse ─── */
+.mep-editeur .ed-ph-corps { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.mep-editeur .ed-ph--grand .ed-ph-corps { flex-direction: row; }
+.mep-editeur .ed-ph-corps > .ed-grille { min-width: 0; }
+.mep-editeur .ed-ac { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 10px 12px 12px; background: color-mix(in srgb, var(--bj-action) 6%, var(--bj-cream-tint-1)); }
+.mep-editeur .ed-ac--colonne { flex: 0 0 clamp(200px, 20vw, 300px); border-left: 1px dashed var(--bj-veil-16, var(--bj-veil-12)); padding-bottom: 96px; }
+.mep-editeur .ed-ac--rangee { flex: none; border-top: 1px dashed var(--bj-veil-12); }
+.mep-editeur .ed-ac h3 { display: flex; align-items: baseline; gap: 6px; margin: 0; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); font-style: normal; font-weight: 600; }
+.mep-editeur .ed-ac h3 b { font-weight: 400; font-variant-numeric: tabular-nums; color: var(--bj-text-soft); }
+.mep-editeur .ed-ac h3 span { margin-left: auto; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); font-weight: 400; }
+.mep-editeur .ed-ac-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.mep-editeur .ed-ac--rangee .ed-ac-grille { display: flex; overflow-x: auto; overflow-y: hidden; }
+.mep-editeur .ed-ac--rangee .ed-ac-v { flex: 0 0 56px; height: 56px; }
+.mep-editeur .ed-ac-v { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 6px; background: var(--bj-veil-8); cursor: grab; content-visibility: auto; contain-intrinsic-size: 72px; }
+.mep-editeur .ed-ac-v img { width: 100%; height: 100%; object-fit: cover; }
+/* la couleur de la marque : grise et éteinte pour une écartée, un liseré pour la réserve, rien pour une « à décider » */
+.mep-editeur .ed-ac-v--ecartee img { filter: grayscale(1); opacity: 0.55; }
+.mep-editeur .ed-ac-v--reserve { box-shadow: inset 0 -3px 0 var(--bj-text-soft); }
+.mep-editeur .ed-ac-v--reserve img { opacity: 0.85; }
+.mep-editeur .ed-ac-remettre { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: var(--bj-text); color: var(--bj-cream-tint-1); font-size: 12px; opacity: 0; cursor: pointer; transition: opacity 0.15s; }
+.mep-editeur .ed-ac-v:hover .ed-ac-remettre, .mep-editeur .ed-ac-remettre:focus-visible { opacity: 1; }
+.mep-editeur .ed-ac-vide { margin: 0; padding: 18px 8px; border: 1px dashed var(--bj-veil-12); border-radius: 8px; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); text-align: center; }
+/* pendant le glisser, la zone visée s'allume */
+.mep-editeur .ed-ac:has(.ed-ac-v), .mep-editeur .ed-ac { transition: background 0.15s; }
+.mep-editeur .ed-ac--cible { background: color-mix(in srgb, var(--bj-action) 16%, var(--bj-cream-tint-1)); outline: 2px dashed var(--bj-action); outline-offset: -4px; }
+.mep-editeur .ed-grille--cible { outline: 2px dashed var(--bj-action); outline-offset: -4px; background: color-mix(in srgb, var(--bj-action) 5%, transparent); }

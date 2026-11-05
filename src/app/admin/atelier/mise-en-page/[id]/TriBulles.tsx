@@ -13,7 +13,7 @@ export const DEMI = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" 
 export const COEUR = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 17.5s-7-4.3-7-9.2A3.9 3.9 0 0 1 10 6a3.9 3.9 0 0 1 7 2.3c0 4.9-7 9.2-7 9.2z"/></svg>';
 /** L'icône et le mot de chaque marque, partout les mêmes. */
 export const MARQUE_UI: Record<Marque, { svg: string; mot: string; verbe: string; touche: string }> = {
-  coupDeCoeur: { svg: ETINCELLE, mot: "Pleine page", verbe: "Pleine page", touche: "F" },
+  coupDeCoeur: { svg: ETINCELLE, mot: "Coup de cœur", verbe: "Coup de cœur", touche: "F" },
   choisie: { svg: ETOILE, mot: "Gardée", verbe: "Garder", touche: "P" },
   reserve: { svg: DEMI, mot: "Réserve", verbe: "Réserve", touche: "R" },
   ecartee: { verbe: "Écarter", svg: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>', mot: "Écartée", touche: "X" },
@@ -22,22 +22,23 @@ export const CROIX = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 
 /** Le nom de chaque vue (sous-titre de la visionneuse) : les trois tours, puis la réserve et les écartées repêchées. */
 export const NOMS_ONGLETS: Record<Filtres["marque"], string> = {
-  toutes: "Écarter", retenues: "Choisir", choisies: "Finale", reserve: "Réserve", ecartees: "Écartées", a_trier: "À trier",
+  ecarter: "Écarter", toutes: "Toutes", retenues: "Choisir", choisies: "Finale", reserve: "Réserve", ecartees: "Écartées", a_trier: "À trier",
 };
 /** Les trois tours (05/11) : des filtres en entonnoir sur les mêmes marques, jamais un mode. */
 const TOURS: [Filtres["marque"], string, string][] = [
-  ["toutes", "Écarter", "Tour 1 : tout voir, écarter ce qui ne va pas · X"],
-  ["retenues", "Choisir", "Tour 2 : sans les écartées · P, F, R"],
-  ["choisies", "Finale", "Tour 3 : les gardées · 1 Couverture, 2 Double page"],
+  ["ecarter", "Écarter", "Tour 1 : écarter ce qui ne va pas · X"],
+  ["retenues", "Choisir", "Tour 2 : garder, coup de cœur, réserve · P F R"],
+  ["choisies", "Finale", "Tour 3 : les gardées · 1 Couverture, 2 Double page, 3 Pleine page"],
 ];
 /** Les étiquettes d'usage : le mot, la touche. */
 export const ETIQUETTE_UI: Record<Etiquette, { mot: string; court: string; touche: string }> = {
   couverture: { mot: "Couverture", court: "Couv.", touche: "1" },
   double: { mot: "Double page", court: "Double", touche: "2" },
+  pleine: { mot: "Pleine page", court: "Pleine", touche: "3" },
 };
 
-/** Les trois tours (avec leurs comptes), les puces Réserve et Écartées pour repêcher, les étiquettes au tour ③,
- *  la puce des cœurs du client et « Non posées ». */
+/** Les trois tours (avec leurs comptes), les étiquettes au tour ③ et la puce des cœurs du client.
+ *  Plus de « Non posées » ni de puces pour repêcher (05/11) : la colonne « À côté » et l'ordre (posées après) les remplacent. */
 export function OngletsTri() {
   const { etat, envoyer, majUi } = useEd();
   const f = etat.filtres;
@@ -65,28 +66,13 @@ export function OngletsTri() {
           </button>
         ))}
       </nav>
-      {puceEtq("couverture")}{puceEtq("double")}
-      {(["reserve", "ecartees"] as const).map((v) => {
-        const n = compte(v), actif = f.marque === v;
-        if (!n && !actif) return null;
-        return (
-          <button key={v} type="button" className="ed-puce ed-puce--repeche" aria-pressed={actif} title={v === "reserve" ? "Repêcher dans la réserve" : "Revoir les écartées"}
-            onClick={() => vers(actif ? (v === "reserve" ? "choisies" : "toutes") : v)}>
-            <span className="ed-puce-lib">{v === "reserve" ? "Réserve" : "Écartées"}</span><b>{n.toLocaleString("fr-FR")}</b>
-          </button>
-        );
-      })}
+      {puceEtq("couverture")}{puceEtq("double")}{puceEtq("pleine")}
       {[...etat.catalogue.values()].some((p) => p.coeur) ? (
         <button type="button" className="ed-puce ed-puce--client" aria-pressed={f.coeur} title="Les cœurs du client"
           onClick={() => { envoyer({ type: "filtrer", filtres: { coeur: !f.coeur } }); majUi({ focus: null }); }}>
           <span className="ed-puce-svg" dangerouslySetInnerHTML={{ __html: COEUR }} /><span className="ed-puce-lib">Client</span>
         </button>
       ) : null}
-      <button type="button" className="ed-puce" aria-pressed={f.masquerUtilisees} title="Seulement les photos pas encore posées"
-        onClick={() => { envoyer({ type: "filtrer", filtres: { masquerUtilisees: !f.masquerUtilisees } }); majUi({ focus: null }); }}>
-        <span className="ed-puce-lib">Non posées</span>
-        <svg viewBox="0 0 12 12" className="ed-puce-pic" aria-hidden="true"><rect x="1" y="2" width="4.5" height="8" rx=".8" fill="none" stroke="currentColor" /><rect x="6.5" y="2" width="4.5" height="8" rx=".8" fill="none" stroke="currentColor" /></svg>
-      </button>
     </div>
   );
 }
@@ -145,7 +131,7 @@ export function BoutonsTri({ sombre }: { sombre?: boolean }) {
 }
 
 const RACCOURCIS: [string, [string, string][]][] = [
-  ["Trier", [["X", "Écarter"], ["P", "Garder"], ["F", "Pleine page"], ["R", "Réserve"], ["0", "Retirer la marque"], ["1", "Couverture"], ["2", "Double page"], ["U", "Prochaine à trier"], ["C", "Comparer la sélection"], ["Z", "Loupe 100 %"]]],
+  ["Trier", [["X", "Écarter"], ["P", "Garder"], ["F", "Coup de cœur"], ["R", "Réserve"], ["0", "Retirer la marque"], ["1", "Couverture"], ["2", "Double page"], ["3", "Pleine page"], ["U", "Prochaine à trier"], ["C", "Comparer la sélection"], ["Z", "Loupe 100 %"]]],
   ["Composer", [["Entrée", "Poser sur la double"], ["N", "Nouvelle double page"], ["D", "Doubles pages"]]],
   ["Naviguer", [["← →", "Photo suivante"], ["Espace", "Grille ou une photo"], ["G", "Plein écran"], ["T", "Intervertir l'hésitation"], ["+ −", "Taille de la grille"], ["⇧ ⌘", "Clic : plusieurs"], ["⌘ Z", "Annuler"], ["Échap", "Revenir"]]],
 ];
