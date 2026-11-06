@@ -544,6 +544,7 @@
 .mep-editeur .ed-menu--droite { left: auto; right: 0; }
 .mep-editeur .ed-menu--haut { min-width: 240px; max-height: 62vh; overflow: auto; }
 .mep-editeur .ed-menu--haut-vers { top: auto; bottom: calc(100% + 4px); min-width: 140px; }
+.mep-editeur .ed-menu--flottant { position: fixed; z-index: 90; top: auto; min-width: 140px; }
 .mep-editeur .ed-menu-t { padding: 6px 10px 2px; color: var(--bj-text-faint); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .mep-editeur .ed-menu button {
   appearance: none;
@@ -1174,6 +1175,9 @@
 }
 .mep-editeur .ed-rangee-t { flex: none; width: 86px; color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); line-height: 1.2; }
 .mep-editeur .ed-rangee-t b { display: block; color: var(--bj-text); font-weight: 600; }
+.mep-editeur .ed-rangee-tete { position: sticky; left: -12px; z-index: 1; display: flex; flex: none; flex-direction: column; align-self: stretch; align-items: flex-start; justify-content: center; gap: 6px; width: 96px; margin-left: -12px; padding-left: 12px; background: var(--bj-cream-tint-1); }
+.mep-editeur .ed-rangee-tete .ed-rangee-t { width: auto; }
+.mep-editeur .ed-rangee-tete .ed-bt { padding-inline: 10px; white-space: nowrap; }
 .mep-editeur .ed-gab { appearance: none; display: flex; flex: none; flex-direction: column; align-items: center; gap: 3px; padding: 3px; border: 0; border-radius: 8px; background: none; color: var(--bj-text-soft); font-family: var(--bj-font-ui); font-size: 10px; cursor: pointer; }
 .mep-editeur .ed-gab:hover,
 .mep-editeur .ed-gab:focus-visible { background: var(--bj-veil-8); }
@@ -1644,7 +1648,7 @@
 .mep-editeur .ed-ph--grand .ed-ph-corps { flex-direction: row; }
 .mep-editeur .ed-ph-corps > .ed-grille { min-width: 0; }
 .mep-editeur .ed-ac { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 10px 12px 12px; background: color-mix(in srgb, var(--bj-action) 6%, var(--bj-cream-tint-1)); }
-.mep-editeur .ed-ac--colonne { flex: 0 0 clamp(200px, 20vw, 300px); border-left: 1px dashed var(--bj-veil-16, var(--bj-veil-12)); padding-bottom: 96px; }
+.mep-editeur .ed-ac--colonne { flex: 0 0 clamp(280px, 32vw, 520px); border-left: 1px dashed var(--bj-veil-16, var(--bj-veil-12)); padding-bottom: 96px; }
 .mep-editeur .ed-ac--rangee { flex: none; border-top: 1px dashed var(--bj-veil-12); }
 .mep-editeur .ed-ac h3 { display: flex; align-items: baseline; gap: 6px; margin: 0; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); font-style: normal; font-weight: 600; }
 .mep-editeur .ed-ac h3 b { font-weight: 400; font-variant-numeric: tabular-nums; color: var(--bj-text-soft); }
@@ -1660,6 +1664,13 @@
 .mep-editeur .ed-ac-v--reserve img { opacity: 0.85; }
 .mep-editeur .ed-ac-remettre { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: 50%; background: var(--bj-text); color: var(--bj-cream-tint-1); font-size: 12px; opacity: 0; cursor: pointer; transition: opacity 0.15s; }
 .mep-editeur .ed-ac-v:hover .ed-ac-remettre, .mep-editeur .ed-ac-remettre:focus-visible { opacity: 1; }
+/* 06/11 : la colonne du grand écran, rangée par jour, vignettes plus grandes, la date au survol */
+.mep-editeur .ed-ac--colonne .ed-ac-grille { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); align-content: start; }
+.mep-editeur .ed-ac-jour { display: flex; grid-column: 1 / -1; align-items: baseline; gap: 6px; margin: 6px 0 0; color: var(--bj-text-soft); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xxs); font-style: normal; font-weight: 600; }
+.mep-editeur .ed-ac-jour:first-child { margin-top: 0; }
+.mep-editeur .ed-ac-jour b { color: var(--bj-text-faint); font-weight: 400; font-variant-numeric: tabular-nums; }
+.mep-editeur .ed-ac-quand { position: absolute; right: 0; bottom: 0; left: 0; padding: 10px 6px 4px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.62)); color: #fff; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.mep-editeur .ed-ac-v:hover .ed-ac-quand { opacity: 1; }
 .mep-editeur .ed-ac-vide { margin: 0; padding: 18px 8px; border: 1px dashed var(--bj-veil-12); border-radius: 8px; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); text-align: center; }
 /* pendant le glisser, la zone visée s'allume */
 .mep-editeur .ed-ac:has(.ed-ac-v), .mep-editeur .ed-ac { transition: background 0.15s; }

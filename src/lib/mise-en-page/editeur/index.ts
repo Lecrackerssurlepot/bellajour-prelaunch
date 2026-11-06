@@ -25,7 +25,7 @@ export {
 export { contenuValide } from "../sauvegarde";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
 export { planDepot, planifier } from "./plans";
-export { aCote, groupes, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
+export { aCote, aCoteParJour, groupes, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, gabaritsPour, libelleAnnuler,
   libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue,

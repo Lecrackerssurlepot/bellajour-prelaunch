@@ -1250,8 +1250,14 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const h0 = s.hist, mag0 = s.e.magazine;
       s.g({ type: "marquer", ids: ["E"], marque: null });
       ok(s.e.magazine === mag0 && s.hist === h0, "R3 : 0 sur une photo sans marque : ni changement ni historique");
-      eq(O.visibles(s.e).sort(), ["A", "D", "E"], "tour ① par défaut : les écartées passent à côté");
+      eq(O.visibles(s.e).sort(), ["A", "B", "C", "D", "E"], "barre latérale par défaut (06/11) : toutes, les non gardées à leur date");
+      eq(O.aCote(s.e), [], "… et pas de colonne « À côté » hors des tours");
+      s.g({ type: "filtrer", filtres: { marque: "ecarter" } });
+      eq(O.visibles(s.e).sort(), ["A", "D", "E"], "tour ① : les écartées passent à côté");
       eq(O.aCote(s.e).sort(), ["B", "C"], "… et restent visibles dans la colonne « À côté »");
+      eq(O.aCoteParJour(s.e).flatMap((g) => g.ids).sort(), ["B", "C"], "… rangées par jour, sans en perdre");
+      eq(O.quandPhoto({ date: "2026-08-12T14:32:00" }), "12 août · 14:32", "la date au survol");
+      eq(O.quandPhoto({ date: null }), "Sans date", "… ou « Sans date »");
       s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "D"], "filtre Gardées");
       s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e), ["E"], "filtre À trier");
       s.g({ type: "filtrer", filtres: { marque: "ecartees" } }); eq(O.visibles(s.e).sort(), ["B", "C"], "filtre Écartées");

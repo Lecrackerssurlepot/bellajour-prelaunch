@@ -107,6 +107,27 @@ export function aCote(e: EtatEditeur): string[] {
     .sort(comparerChrono).map((ph) => ph.id);
 }
 
+/** La colonne « à côté » rangée par jour, avec les mêmes intertitres que la grille (06/11). */
+export function aCoteParJour(e: EtatEditeur): GroupeBibliotheque[] {
+  const out: GroupeBibliotheque[] = [];
+  for (const id of aCote(e)) {
+    const ph = e.catalogue.get(id);
+    if (!ph) continue;
+    const k = cleGroupe("jour", ph);
+    const g = out[out.length - 1];
+    if (g && g.cle === k) g.ids.push(id); else out.push({ cle: k, libelle: libelleGroupe("jour", k, ph), ids: [id] });
+  }
+  return out;
+}
+
+/** « 12 août · 14:32 » (ou « Sans date ») : ce qu'on lit au survol d'une photo mise de côté. */
+export function quandPhoto(ph: { date: string | null }): string {
+  if (!ph.date) return "Sans date";
+  const jour = libelleGroupe("jour", ph.date.slice(0, 10), ph as PhotoMaq);
+  const h = /[T ](\d{2}:\d{2})/.exec(ph.date)?.[1];
+  return h ? `${jour} · ${h}` : jour;
+}
+
 /**
  * La sélection dans l'ordre de la bibliothèque ; les photos masquées par les filtres
  * viennent après, dans l'ordre où elles ont été choisies.

@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { bande, cheminDeFer, idsPlanche } from "@/lib/mise-en-page/editeur";
 import { cls, memeRef, pluriel, useEd } from "./contexte";
 import { Mini } from "./Gabarits";
@@ -104,6 +105,9 @@ export function CheminDeFer() {
   const cibleV = d?.survol?.type === "vignette" ? d.survol : null;
   const entre = d?.survol?.type === "entre" ? d.survol.index : null;
   const piste = useRef<HTMLDivElement>(null);
+  /* 06/11 : le menu ⋯ sort de la piste (qui défile et coupait tout ce qui dépassait) : il s'ouvre au-dessus de l'écran,
+     calé sur son bouton, dans la racine de l'éditeur pour garder ses styles. */
+  const [ancre, setAncre] = useState<{ x: number; y: number; racine: Element } | null>(null);
   useEffect(() => {
     const el = piste.current?.querySelector(".ed-cf-v--courante");
     if (el && "scrollIntoView" in el) (el as HTMLElement).scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -146,13 +150,19 @@ export function CheminDeFer() {
                 <span>{pleine ? "Pleine" : `p. ${v.pages} · ${nbv}`}</span>
                 {ro ? null : (
                   <button type="button" className="ed-cf-menu-bt" aria-label={`Menu de la planche ${v.numero}`} aria-expanded={menuOuvert}
-                    onClick={(e) => { e.stopPropagation(); majUi({ menu: menuOuvert ? null : `cf-${pl.id}` }); }}>⋯</button>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const r = e.currentTarget.getBoundingClientRect(), racine = e.currentTarget.closest(".mep-editeur");
+                      if (!menuOuvert && racine) setAncre({ x: r.left, y: r.top, racine });
+                      majUi({ menu: menuOuvert ? null : `cf-${pl.id}` });
+                    }}>⋯</button>
                 )}
-                {menuOuvert ? (
-                  <div className="ed-menu ed-menu--haut-vers" role="menu" onClick={(e) => e.stopPropagation()}>
+                {menuOuvert && ancre ? createPortal(
+                  <div className="ed-menu ed-menu--flottant" role="menu" style={{ left: ancre.x, bottom: window.innerHeight - ancre.y + 4 }}
+                    onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                     <button type="button" role="menuitem" onClick={() => { majUi({ menu: null }); gesteAvecAnnuler({ type: "vider", plancheId: pl.id }, "Planche vidée"); }}>Vider</button>
                     {i > 0 ? <button type="button" role="menuitem" onClick={() => { majUi({ menu: null }); gesteAvecAnnuler({ type: "supprimerPlanche", plancheId: pl.id }, "Planche supprimée"); }}>Supprimer</button> : null}
-                  </div>
+                  </div>, ancre.racine,
                 ) : null}
               </div>
             </Fragment>

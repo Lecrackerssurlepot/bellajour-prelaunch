@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  aCote, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
@@ -10,7 +10,7 @@ import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, VuesBarre } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -328,7 +328,7 @@ function PanneauOuvert() {
         <BoutonsTri />
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
-      {grand ? null : <OngletsTri />}
+      {grand ? null : <VuesBarre />}
       {grand ? null : <div className="ed-ph-jauge"><JaugeTri /></div>}
       <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
@@ -487,23 +487,27 @@ function ACote({ ids, grand, sourcePour }: { ids: string[]; grand: boolean; sour
       <h3>À côté<b>{ids.length.toLocaleString("fr-FR")}</b><span>{PHRASE_COTE[tour]}</span></h3>
       {ids.length ? (
         <div className="ed-ac-grille">
-          {ids.map((id) => {
+          {(grand ? aCoteParJour(etat) : [{ cle: "", libelle: "", ids }]).flatMap((g) => [
+            g.libelle ? <h4 key={`j-${g.cle}`} className="ed-ac-jour">{g.libelle}<b>{g.ids.length}</b></h4> : null,
+            ...g.ids.map((id) => {
             const p = etat.catalogue.get(id);
             if (!p) return null;
             const mk = marqueDe(etat.magazine, id);
             const src = vignetteDe(adresses.get(id));
+            const quand = quandPhoto(p);
             return (
-              <span key={id} className={cls("ed-ac-v", mk && `ed-ac-v--${mk}`)} title={p.nom}
+              <span key={id} className={cls("ed-ac-v", mk && `ed-ac-v--${mk}`)} title={`${quand}\n${p.nom}`}
                 onPointerDown={ro ? undefined : (e) => commencerAppui(e, sourcePour(id))}
                 onDoubleClick={() => c.majUi({ grand: true, vue: "une", focus: id, zone: "photos", loupeTri: false })}>
                 {src ? <img src={src} alt="" loading="lazy" decoding="async" draggable={false} /> : <i className="ed-indispo-mini">Indisponible</i>}
+                {grand ? <span className="ed-ac-quand" aria-hidden="true">{quand}</span> : null}
                 {ro ? null : (
                   <button type="button" className="ed-ac-remettre" aria-label={`Remettre en jeu : ${p.nom}`} title="Remettre en jeu"
                     onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); if (!clicSupprime()) remettre(id); }}>↩</button>
                 )}
               </span>
             );
-          })}
+          })])}
         </div>
       ) : <p className="ed-ac-vide">Glisser ici pour mettre de côté</p>}
     </section>

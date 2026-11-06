@@ -127,7 +127,15 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const fermer = () => majUi({ rangee: null, apercuGab: null });
   return (
     <div className="ed-rangee-gab" role="menu" aria-label="Gabarits compatibles" onClick={(e) => e.stopPropagation()} onMouseLeave={() => majUi({ apercuGab: null })}>
-      <span className="ed-rangee-t">{NOM_COTE[cible]}<b>{liste.length ? pluriel(liste.length, "gabarit") : ""}</b></span>
+      {/* 06/11 : « Séparer » (ou « Double page ») sous le titre, à gauche : plus besoin d'aller au bout de la rangée */}
+      <span className="ed-rangee-tete">
+        <span className="ed-rangee-t">{NOM_COTE[cible]}<b>{liste.length ? pluriel(liste.length, "gabarit") : ""}</b></span>
+        {act.separer ? (
+          <button type="button" className="ed-bt" onMouseEnter={voir({ type: "separer", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "separer", plancheId: pl.id }); }}>Séparer</button>
+        ) : act.fusionner ? (
+          <button type="button" className="ed-bt" onMouseEnter={voir({ type: "fusionner", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "fusionner", plancheId: pl.id }); }}>Double page</button>
+        ) : null}
+      </span>
       {!liste.length ? <span className="ed-sous">Aucune photo</span> : null}
       {liste.map((g) => {
         const geste: Geste = { type: "choisirGabarit", plancheId: pl.id, cible, templateId: g.id };
@@ -147,16 +155,6 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
           {remettre ? (
             <button type="button" className="ed-bt" onMouseEnter={voir(remettre)} onClick={() => { majUi({ apercuGab: null }); envoyer(remettre); }}>Remettre le gabarit</button>
           ) : null}
-        </span>
-      ) : null}
-      {act.separer ? (
-        <span className="ed-gab-actions">
-          <button type="button" className="ed-bt" onMouseEnter={voir({ type: "separer", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "separer", plancheId: pl.id }); }}>Séparer</button>
-        </span>
-      ) : null}
-      {act.fusionner ? (
-        <span className="ed-gab-actions">
-          <button type="button" className="ed-bt" onMouseEnter={voir({ type: "fusionner", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "fusionner", plancheId: pl.id }); }}>Double page</button>
         </span>
       ) : null}
       <span className="ed-esp" />

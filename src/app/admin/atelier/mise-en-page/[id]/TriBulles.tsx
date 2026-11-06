@@ -1,6 +1,6 @@
 "use client";
 
-import { bilanTri, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
+import { aCote, bilanTri, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
 import { cls, useEd } from "./contexte";
 
 /* Les petits morceaux du tri partagés par la bande étroite, la bande agrandie et la visionneuse :
@@ -67,12 +67,37 @@ export function OngletsTri() {
         ))}
       </nav>
       {puceEtq("couverture")}{puceEtq("double")}{puceEtq("pleine")}
-      {[...etat.catalogue.values()].some((p) => p.coeur) ? (
-        <button type="button" className="ed-puce ed-puce--client" aria-pressed={f.coeur} title="Les cœurs du client"
-          onClick={() => { envoyer({ type: "filtrer", filtres: { coeur: !f.coeur } }); majUi({ focus: null }); }}>
-          <span className="ed-puce-svg" dangerouslySetInnerHTML={{ __html: COEUR }} /><span className="ed-puce-lib">Client</span>
-        </button>
-      ) : null}
+      <PuceClient />
+    </div>
+  );
+}
+
+function PuceClient() {
+  const { etat, envoyer, majUi } = useEd();
+  if (![...etat.catalogue.values()].some((p) => p.coeur)) return null;
+  return (
+    <button type="button" className="ed-puce ed-puce--client" aria-pressed={etat.filtres.coeur} title="Les cœurs du client"
+      onClick={() => { envoyer({ type: "filtrer", filtres: { coeur: !etat.filtres.coeur } }); majUi({ focus: null }); }}>
+      <span className="ed-puce-svg" dangerouslySetInnerHTML={{ __html: COEUR }} /><span className="ed-puce-lib">Client</span>
+    </button>
+  );
+}
+
+/** La barre latérale (06/11) : pas de tours, ils vivent en grand écran. « Toutes » montre chaque photo à sa date,
+ *  les non gardées grisées à leur place ; « À côté » ne garde que les gardées et range le reste dans la bande du bas. */
+export function VuesBarre() {
+  const { etat, envoyer, majUi } = useEd();
+  const f = etat.filtres;
+  const cote = f.marque === "choisies";
+  const vers = (v: Filtres["marque"]) => { envoyer({ type: "filtrer", filtres: { marque: v, etiquette: "" } }); majUi({ focus: null }); };
+  const nCote = aCote({ ...etat, filtres: { ...f, marque: "choisies", etiquette: "" } }).length;
+  return (
+    <div className="ed-tri-ligne">
+      <nav className="ed-onglets ed-vues" aria-label="Vue">
+        <button type="button" aria-pressed={!cote} onClick={() => vers("toutes")}>Toutes<b>{visibles({ ...etat, filtres: { ...f, marque: "toutes", etiquette: "" } }).length.toLocaleString("fr-FR")}</b></button>
+        <button type="button" aria-pressed={cote} title="Les gardées, le reste à côté" onClick={() => vers("choisies")}>À côté<b>{nCote.toLocaleString("fr-FR")}</b></button>
+      </nav>
+      <PuceClient />
     </div>
   );
 }
