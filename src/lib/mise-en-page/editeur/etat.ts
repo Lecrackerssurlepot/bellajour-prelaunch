@@ -213,7 +213,7 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "hesiter",
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "etiqueter", "hesiter",
   "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
@@ -260,8 +260,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   if (plan.op === "retirerCadres" || plan.op === "deplacerCadres") x = { ...x, cadreActif: null };
   x = { ...x, message: null, halo: null };
   /* le tri ne touche aucune planche : pas d'éclair */
-  if (plan.op === "marquer" || plan.op === "reglerTri") x = { ...x, eclair: null };
-  if (plan.op === "marquer" || plan.op === "hesiter") x = { ...x, message: { texte: plan.libelle, action: { libelle: "Annuler" } } };
+  if (plan.op === "marquer" || plan.op === "reglerTri" || plan.op === "etiqueter") x = { ...x, eclair: null };
+  if (plan.op === "marquer" || plan.op === "etiqueter" || plan.op === "hesiter") x = { ...x, message: { texte: plan.libelle, action: { libelle: "Annuler" } } };
   if (is.textesPerdus > 0) {
     x = { ...x, message: { texte: `${pluriel(is.textesPerdus, "texte retiré", "textes retirés")}`, action: { libelle: "Annuler" } } };
   } else if (is.restees.length > 0) {
@@ -347,7 +347,10 @@ const GESTES: Gestes = {
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
     const groupe = choisir(["jour", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
-    const marque = choisir(["toutes", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
+    const marque = choisir(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
+    const etiquette = choisir(["", "couverture", "double", "pleine"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
+    /* l'étiquette ne filtre qu'au tour ③ : changer de vue la relâche */
+    if (marque && marque !== "choisies" && !("etiquette" in v)) f.etiquette = "";
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
     return egal(f, e.filtres) ? e : { ...e, filtres: f };
   },

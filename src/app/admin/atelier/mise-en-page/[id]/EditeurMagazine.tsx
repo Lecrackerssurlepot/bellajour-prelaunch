@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  appliquer, apercuDepot, creerEtat, lectureSeule as estLectureSeule, visibles,
+  appliquer, apercuDepot, creerEtat, estTour, lectureSeule as estLectureSeule, visibles,
   type CibleDepot, type EtatEditeur, type Geste, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
@@ -55,7 +55,19 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     [catalogue],
   );
 
-  const majUi = (p: Partial<Ui>) => setUi((u) => ({ ...u, ...p }));
+  /* 06/11 : la barre latérale et le grand écran ont chacun leur vue. Les tours ne vivent qu'en grand écran ;
+     la barre garde « Toutes » (ou « À côté »). Chacun retrouve la sienne en revenant. */
+  const majUi = (p: Partial<Ui>) => {
+    let vues: Partial<Ui> = {};
+    if (p.grand !== undefined && p.grand !== ui.grand && etat) {
+      const m = etat.filtres.marque;
+      const vueBarre = p.grand ? m : ui.vueBarre, vueTour = !p.grand && estTour(m) ? m : ui.vueTour;
+      vues = { vueBarre, vueTour };
+      const vers = p.grand ? vueTour : vueBarre;
+      if (vers !== m) envoyer({ type: "filtrer", filtres: { marque: vers, etiquette: "" } });
+    }
+    setUi((u) => ({ ...u, ...p, ...vues }));
+  };
   const envoyer = (g: Geste) => setEtat((e) => (e ? appliquer(e, g) : e));
   const envoyerAvec = (f: (e: EtatEditeur) => Geste | null) => setEtat((e) => {
     if (!e) return e;

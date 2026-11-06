@@ -876,7 +876,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
       case 1: return { type: "double", plancheId: plancheId(e) };
       case 2: return { type: "cadre", ref: uneRef(e) };
       case 3: return { type: "bande", plancheId: plancheId(e), position: int(-1, 8), ...(h() < 0.7 ? { cote: pick(["gauche", "droite", "double"]) } : {}) };
-      case 4: return { type: "bibliotheque" };
+      case 4: return h() < 0.6 ? { type: "bibliotheque" } : { type: "tri", zone: pick(["jeu", "cote", "bidon"]) };
       case 5: return h() < 0.5 ? { type: "vignette", plancheId: plancheId(e) } : { type: "hesiter", ref: uneRef(e) };
       case 6: return h() < 0.4 ? { type: "entre", index: int(-1, e.magazine.planches.length + 1) }
         : h() < 0.5 ? { type: "miroir", plancheId: plancheId(e) }
@@ -898,7 +898,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
   };
   const filtres = (): Libre => {
     const f: Libre = {};
-    const k = int(0, 11);
+    const k = int(0, 12);
     if (k === 0) f.recherche = pick(["", "IMG_1", "1", "zz", "img_12"]);
     if (k === 1) f.statut = pick(["toutes", "libres", "utilisees", "planche", "n'importe"]);
     if (k === 2) f.personnes = h() < 0.5 ? [] : [pick(["Inès", "Léa", "Hugo"])];
@@ -910,7 +910,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     if (k === 8) f.groupe = pick(["jour", "personne", "type", "aucun"]);
     if (k === 9) f.taille = pick(["S", "M", "L"]);
     if (k === 10) f.masquerUtilisees = h() < 0.5;
-    if (k === 11) f.marque = pick(["toutes", "choisies", "a_trier", "reserve", "ecartees", "bidon"]);
+    if (k === 11) f.marque = pick(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees", "bidon"]);
+    if (k === 12) f.etiquette = pick(["", "couverture", "double", "pleine", "bidon"]);
     return f;
   };
 
@@ -956,6 +957,7 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [3, (e) => ({ type: "basculerCadre", ref: uneRef(e) })],
     [3, () => ({ type: "touche", cle: pick(["m", "M", "]", "[", "ArrowUp", "ArrowDown", "Backspace"]), meta: h() < 0.6, alt: h() < 0.3, shift: h() < 0.2 })],
     [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
+    [2, (e) => ({ type: "etiqueter", ids: ids(e, int(1, 3)), etiquette: pick(["couverture", "double", "pleine", "bidon"]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
@@ -1248,7 +1250,14 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const h0 = s.hist, mag0 = s.e.magazine;
       s.g({ type: "marquer", ids: ["E"], marque: null });
       ok(s.e.magazine === mag0 && s.hist === h0, "R3 : 0 sur une photo sans marque : ni changement ni historique");
-      eq(O.visibles(s.e).sort(), ["A", "B", "C", "D", "E"], "R11 : « Toutes » montre aussi les écartées");
+      eq(O.visibles(s.e).sort(), ["A", "B", "C", "D", "E"], "barre latérale par défaut (06/11) : toutes, les non gardées à leur date");
+      eq(O.aCote(s.e), [], "… et pas de colonne « À côté » hors des tours");
+      s.g({ type: "filtrer", filtres: { marque: "ecarter" } });
+      eq(O.visibles(s.e).sort(), ["A", "D", "E"], "tour ① : les écartées passent à côté");
+      eq(O.aCote(s.e).sort(), ["B", "C"], "… et restent visibles dans la colonne « À côté »");
+      eq(O.aCoteParJour(s.e).flatMap((g) => g.ids).sort(), ["B", "C"], "… rangées par jour, sans en perdre");
+      eq(O.quandPhoto({ date: "2026-08-12T14:32:00" }), "12 août · 14:32", "la date au survol");
+      eq(O.quandPhoto({ date: null }), "Sans date", "… ou « Sans date »");
       s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e).sort(), ["A", "D"], "filtre Gardées");
       s.g({ type: "filtrer", filtres: { marque: "a_trier" } }); eq(O.visibles(s.e), ["E"], "filtre À trier");
       s.g({ type: "filtrer", filtres: { marque: "ecartees" } }); eq(O.visibles(s.e).sort(), ["B", "C"], "filtre Écartées");
@@ -1309,6 +1318,63 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : le tri (bascule, gestes sans effet, filtres, objectif, posée = gardée, annuler sans changer de double)", msg === null);
+  }
+  /* Les trois tours et les deux étiquettes (05/11) : un tour est un filtre, une étiquette garde la photo et ne survit pas à l'écart. */
+  {
+    let msg: string | null = null;
+    try {
+      const s = new Seance("A:P B:P C:L D:P E:L");
+      s.g({ type: "marquer", ids: ["A"], marque: "ecartee" }).g({ type: "marquer", ids: ["B"], marque: "coupDeCoeur" }).g({ type: "marquer", ids: ["C"], marque: "reserve" });
+      s.g({ type: "filtrer", filtres: { marque: "toutes" } }); eq(O.visibles(s.e).length, 5, "« Toutes » : tout, écartées comprises");
+      eq(O.aCote(s.e), [], "hors des tours, pas de colonne « À côté »");
+      s.g({ type: "filtrer", filtres: { marque: "ecarter" } }); eq(O.visibles(s.e).sort(), ["B", "C", "D", "E"], "tour ① : en jeu sans les écartées");
+      eq(O.aCote(s.e), ["A"], "tour ① : les écartées à côté");
+      s.g({ type: "filtrer", filtres: { marque: "retenues" } }); eq(O.visibles(s.e).sort(), ["B", "D", "E"], "tour ② : sans les écartées ni la réserve");
+      eq(O.aCote(s.e).sort(), ["A", "C"], "tour ② : écartées et réserve à côté");
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } }); eq(O.visibles(s.e), ["B"], "tour ③ : gardées et coups de cœur");
+      eq(O.aCote(s.e).sort(), ["A", "C", "D", "E"], "tour ③ : tout le reste à côté, rien n'est caché");
+      /* glisser entre la grille et la colonne */
+      s.g({ type: "deposer", source: { type: "bibliotheque", ids: ["A"] }, cible: { type: "tri", zone: "jeu" } });
+      ok(O.marqueDe(s.e.magazine, "A") === "choisie", "tour ③ : reglisser une écartée la garde");
+      s.g({ type: "deposer", source: { type: "bibliotheque", ids: ["A"] }, cible: { type: "tri", zone: "cote" } });
+      ok(O.marqueDe(s.e.magazine, "A") === "reserve", "tour ③ : glisser à côté la met en réserve");
+      s.g({ type: "filtrer", filtres: { marque: "ecarter" } });
+      s.g({ type: "deposer", source: { type: "bibliotheque", ids: ["D"] }, cible: { type: "tri", zone: "cote" } });
+      ok(O.marqueDe(s.e.magazine, "D") === "ecartee", "tour ① : glisser à côté l'écarte");
+      s.g({ type: "deposer", source: { type: "bibliotheque", ids: ["D"] }, cible: { type: "tri", zone: "jeu" } });
+      ok(O.marqueDe(s.e.magazine, "D") === null, "tour ① : reglisser la remet sans marque");
+      const avantB = s.e.magazine; s.g({ type: "deposer", source: { type: "bibliotheque", ids: ["B"] }, cible: { type: "tri", zone: "jeu" } });
+      ok(s.e.magazine === avantB && O.marqueDe(s.e.magazine, "B") === "coupDeCoeur", "déjà en jeu : rien, un coup de cœur le reste");
+      s.g({ type: "marquer", ids: ["A"], marque: "ecartee" });
+      s.g({ type: "filtrer", filtres: { marque: "choisies" } });
+      s.g({ type: "etiqueter", ids: ["D"], etiquette: "couverture" });
+      ok(O.marqueDe(s.e.magazine, "D") === "choisie" && O.etiquettesDe(s.e.magazine, "D").join() === "couverture", "étiqueter garde la photo");
+      s.g({ type: "etiqueter", ids: ["B"], etiquette: "couverture" });
+      ok(O.marqueDe(s.e.magazine, "B") === "coupDeCoeur", "un coup de cœur le reste");
+      s.g({ type: "etiqueter", ids: ["E"], etiquette: "pleine" });
+      ok(O.marqueDe(s.e.magazine, "E") === "choisie" && O.etiquettesDe(s.e.magazine, "E").join() === "pleine", "3 : Pleine page, et la photo est gardée");
+      s.g({ type: "etiqueter", ids: ["B", "D"], etiquette: "couverture" });
+      eq(O.etiquettesDe(s.e.magazine, "B"), [], "toutes l'ont : la même touche la retire");
+      s.g({ type: "etiqueter", ids: ["B", "D"], etiquette: "couverture" }).g({ type: "etiqueter", ids: ["D"], etiquette: "double" });
+      eq(O.etiquettesDe(s.e.magazine, "D"), ["couverture", "double"], "deux étiquettes à la fois");
+      s.g({ type: "filtrer", filtres: { marque: "choisies", etiquette: "double" } }); eq(O.visibles(s.e), ["D"], "tour 3 filtré par étiquette");
+      s.g({ type: "filtrer", filtres: { marque: "retenues" } }); eq(s.e.filtres.etiquette, "", "changer de tour relâche l'étiquette");
+      const b = O.bilanTri(s.e); eq([b.couverture, b.double, b.pleine], [2, 1, 1], "bilan des étiquettes");
+      ok(O.contenuValide(s.e.magazine), "un tri étiqueté se sauvegarde");
+      s.g({ type: "marquer", ids: ["D"], marque: "ecartee" });
+      eq(O.etiquettesDe(s.e.magazine, "D"), [], "écarter retire les étiquettes");
+      s.g({ type: "annuler" });
+      eq(O.etiquettesDe(s.e.magazine, "D"), ["couverture", "double"], "⌘Z rend les étiquettes");
+      s.g({ type: "marquer", ids: ["D"], marque: "reserve" }); eq(O.etiquettesDe(s.e.magazine, "D"), [], "la réserve les retire aussi");
+      const avant = s.e.magazine; s.g({ type: "etiqueter", ids: ["inconnue"], etiquette: "double" }); ok(s.e.magazine === avant, "photo inconnue : rien");
+      const base = { ...s.e.magazine };
+      ok(!O.contenuValide({ ...base, tri: { choisies: [], ecartees: ["A"], visees: null, etiquettes: { couverture: ["A"] } } }), "étiquette sur une écartée refusée");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, etiquettes: {} } }), "étiquettes vides refusées");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, etiquettes: { couverture: ["A", "A"] } } }), "doublon refusé");
+      ok(!O.contenuValide({ ...base, tri: { choisies: ["A"], ecartees: [], visees: null, etiquettes: { pano: ["A"] } } as unknown as typeof base.tri }), "étiquette inconnue refusée");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : les trois tours et les étiquettes (filtres, garder en étiquetant, écarter retire, sauvegarde)", msg === null);
   }
   /* L'hésitation (lot 3, plan du 30/10) : deux photos dans un cadre, T, trancher, rouvrir ; seule celle de devant compte. */
   {

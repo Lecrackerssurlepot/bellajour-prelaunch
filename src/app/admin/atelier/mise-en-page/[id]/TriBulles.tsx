@@ -1,6 +1,6 @@
 "use client";
 
-import { bilanTri, visibles, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
+import { aCote, bilanTri, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
 import { cls, useEd } from "./contexte";
 
 /* Les petits morceaux du tri partagés par la bande étroite, la bande agrandie et la visionneuse :
@@ -20,34 +20,84 @@ export const MARQUE_UI: Record<Marque, { svg: string; mot: string; verbe: string
 };
 export const CROIX = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>';
 
-const ONGLETS: [Filtres["marque"], string][] = [["toutes", "Toutes"], ["a_trier", "À trier"], ["choisies", "Gardées"], ["reserve", "Réserve"], ["ecartees", "Écartées"]];
-export const NOMS_ONGLETS = Object.fromEntries(ONGLETS) as Record<Filtres["marque"], string>;
+/** Le nom de chaque vue (sous-titre de la visionneuse) : les trois tours, puis la réserve et les écartées repêchées. */
+export const NOMS_ONGLETS: Record<Filtres["marque"], string> = {
+  ecarter: "Écarter", toutes: "Toutes", retenues: "Choisir", choisies: "Finale", reserve: "Réserve", ecartees: "Écartées", a_trier: "À trier",
+};
+/** Les trois tours (05/11) : des filtres en entonnoir sur les mêmes marques, jamais un mode. */
+const TOURS: [Filtres["marque"], string, string][] = [
+  ["ecarter", "Écarter", "Tour 1 : écarter ce qui ne va pas · X"],
+  ["retenues", "Choisir", "Tour 2 : garder, coup de cœur, réserve · P F R"],
+  ["choisies", "Finale", "Tour 3 : les gardées · 1 Couverture, 2 Double page, 3 Pleine page"],
+];
+/** Les étiquettes d'usage : le mot, la touche. */
+export const ETIQUETTE_UI: Record<Etiquette, { mot: string; court: string; touche: string }> = {
+  couverture: { mot: "Couverture", court: "Couv.", touche: "1" },
+  double: { mot: "Double page", court: "Double", touche: "2" },
+  pleine: { mot: "Pleine page", court: "Pleine", touche: "3" },
+};
 
-/** Les onglets de marque (avec leurs comptes, « Non posées » compris), la puce « Non posées » et celle des cœurs du client. */
+/** Les trois tours (avec leurs comptes), les étiquettes au tour ③ et la puce des cœurs du client.
+ *  Plus de « Non posées » ni de puces pour repêcher (05/11) : la colonne « À côté » et l'ordre (posées après) les remplacent. */
 export function OngletsTri() {
   const { etat, envoyer, majUi } = useEd();
   const f = etat.filtres;
-  const compte = (v: Filtres["marque"]) => visibles({ ...etat, filtres: { ...f, marque: v } }).length;
+  const compte = (v: Filtres["marque"]) => visibles({ ...etat, filtres: { ...f, marque: v, etiquette: "" } }).length;
+  const vers = (v: Filtres["marque"], etiquette: Filtres["etiquette"] = "") => { envoyer({ type: "filtrer", filtres: { marque: v, etiquette } }); majUi({ focus: null }); };
+  const aDecider = f.marque === "retenues" ? compte("a_trier") : 0;
+  const b = f.marque === "choisies" ? bilanTri(etat) : null;
+  const puceEtq = (k: Etiquette) => {
+    const n = b ? b[k] : 0, actif = f.etiquette === k;
+    if (!b || (!n && !actif)) return null;
+    return (
+      <button key={k} type="button" className="ed-puce ed-puce--etq" aria-pressed={actif} title={`Seulement « ${ETIQUETTE_UI[k].mot} » · ${ETIQUETTE_UI[k].touche} pour poser`}
+        onClick={() => vers("choisies", actif ? "" : k)}>
+        <span className="ed-puce-lib">{ETIQUETTE_UI[k].mot}</span><b>{n}</b>
+      </button>
+    );
+  };
   return (
     <div className="ed-tri-ligne">
-      <nav className="ed-onglets" aria-label="Tri">
-        {ONGLETS.map(([v, l]) => (
-          <button key={v} type="button" aria-pressed={f.marque === v} onClick={() => { envoyer({ type: "filtrer", filtres: { marque: v } }); majUi({ focus: null }); }}>
-            {l}<b>{compte(v).toLocaleString("fr-FR")}</b>
+      <nav className="ed-onglets ed-tours" aria-label="Tours du tri">
+        {TOURS.map(([v, l, t], i) => (
+          <button key={v} type="button" aria-pressed={f.marque === v} title={t} onClick={() => vers(v)}>
+            <i>{i + 1}</i>{l}<b>{compte(v).toLocaleString("fr-FR")}</b>
+            {v === "retenues" && f.marque === v && aDecider ? <small>{aDecider.toLocaleString("fr-FR")} à décider</small> : null}
           </button>
         ))}
       </nav>
-      {[...etat.catalogue.values()].some((p) => p.coeur) ? (
-        <button type="button" className="ed-puce ed-puce--client" aria-pressed={f.coeur} title="Les cœurs du client"
-          onClick={() => { envoyer({ type: "filtrer", filtres: { coeur: !f.coeur } }); majUi({ focus: null }); }}>
-          <span className="ed-puce-svg" dangerouslySetInnerHTML={{ __html: COEUR }} /><span className="ed-puce-lib">Client</span>
-        </button>
-      ) : null}
-      <button type="button" className="ed-puce" aria-pressed={f.masquerUtilisees} title="Seulement les photos pas encore posées"
-        onClick={() => { envoyer({ type: "filtrer", filtres: { masquerUtilisees: !f.masquerUtilisees } }); majUi({ focus: null }); }}>
-        <span className="ed-puce-lib">Non posées</span>
-        <svg viewBox="0 0 12 12" className="ed-puce-pic" aria-hidden="true"><rect x="1" y="2" width="4.5" height="8" rx=".8" fill="none" stroke="currentColor" /><rect x="6.5" y="2" width="4.5" height="8" rx=".8" fill="none" stroke="currentColor" /></svg>
-      </button>
+      {puceEtq("couverture")}{puceEtq("double")}{puceEtq("pleine")}
+      <PuceClient />
+    </div>
+  );
+}
+
+function PuceClient() {
+  const { etat, envoyer, majUi } = useEd();
+  if (![...etat.catalogue.values()].some((p) => p.coeur)) return null;
+  return (
+    <button type="button" className="ed-puce ed-puce--client" aria-pressed={etat.filtres.coeur} title="Les cœurs du client"
+      onClick={() => { envoyer({ type: "filtrer", filtres: { coeur: !etat.filtres.coeur } }); majUi({ focus: null }); }}>
+      <span className="ed-puce-svg" dangerouslySetInnerHTML={{ __html: COEUR }} /><span className="ed-puce-lib">Client</span>
+    </button>
+  );
+}
+
+/** La barre latérale (06/11) : pas de tours, ils vivent en grand écran. « Toutes » montre chaque photo à sa date,
+ *  les non gardées grisées à leur place ; « À côté » ne garde que les gardées et range le reste dans la bande du bas. */
+export function VuesBarre() {
+  const { etat, envoyer, majUi } = useEd();
+  const f = etat.filtres;
+  const cote = f.marque === "choisies";
+  const vers = (v: Filtres["marque"]) => { envoyer({ type: "filtrer", filtres: { marque: v, etiquette: "" } }); majUi({ focus: null }); };
+  const nCote = aCote({ ...etat, filtres: { ...f, marque: "choisies", etiquette: "" } }).length;
+  return (
+    <div className="ed-tri-ligne">
+      <nav className="ed-onglets ed-vues" aria-label="Vue">
+        <button type="button" aria-pressed={!cote} onClick={() => vers("toutes")}>Toutes<b>{visibles({ ...etat, filtres: { ...f, marque: "toutes", etiquette: "" } }).length.toLocaleString("fr-FR")}</b></button>
+        <button type="button" aria-pressed={cote} title="Les gardées, le reste à côté" onClick={() => vers("choisies")}>À côté<b>{nCote.toLocaleString("fr-FR")}</b></button>
+      </nav>
+      <PuceClient />
     </div>
   );
 }
@@ -106,7 +156,7 @@ export function BoutonsTri({ sombre }: { sombre?: boolean }) {
 }
 
 const RACCOURCIS: [string, [string, string][]][] = [
-  ["Trier", [["F", "Coup de cœur"], ["P", "Garder"], ["R", "Réserve"], ["X", "Écarter"], ["0", "Retirer la marque"], ["U", "Prochaine à trier"], ["C", "Comparer la sélection"], ["Z", "Loupe 100 %"]]],
+  ["Trier", [["X", "Écarter"], ["P", "Garder"], ["F", "Coup de cœur"], ["R", "Réserve"], ["0", "Retirer la marque"], ["1", "Couverture"], ["2", "Double page"], ["3", "Pleine page"], ["U", "Prochaine à trier"], ["C", "Comparer la sélection"], ["Z", "Loupe 100 %"]]],
   ["Composer", [["Entrée", "Poser sur la double"], ["N", "Nouvelle double page"], ["D", "Doubles pages"]]],
   ["Naviguer", [["← →", "Photo suivante"], ["Espace", "Grille ou une photo"], ["G", "Plein écran"], ["T", "Intervertir l'hésitation"], ["+ −", "Taille de la grille"], ["⇧ ⌘", "Clic : plusieurs"], ["⌘ Z", "Annuler"], ["Échap", "Revenir"]]],
 ];

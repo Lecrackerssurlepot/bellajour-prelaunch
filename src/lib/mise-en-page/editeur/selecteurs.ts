@@ -7,6 +7,7 @@ import { cadresDe, decorDe, dispositionDe, utilisations, type Cible, type Planch
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
 import { dpi, estPleine, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
+import { estTour, marquePourZone } from "./tri";
 import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
 import { visibles } from "./bibliotheque";
 import { pageEntiere } from "./libre";
@@ -226,6 +227,11 @@ export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | unde
   if (!source || !cible) return false;
   const m = e.magazine;
   if (cible.type === "bibliotheque") return source.type === "cadre" || source.type === "cadres";
+  if (cible.type === "tri") {
+    const t = e.filtres.marque;
+    return source.type === "bibliotheque" && estTour(t) && (cible.zone === "jeu" || cible.zone === "cote")
+      && marquePourZone(m, (source.ids || []).filter((id) => e.catalogue.has(id)), t, cible.zone).ids.length > 0;
+  }
   if (cible.type === "miroir") return source.type === "cadres" && pageEntiere(m, source.refs)?.plancheId === cible.plancheId;
   if (cible.type === "libre") return (source.type === "bibliotheque" || source.type === "cadre") && indexPlanche(m, cible.plancheId) >= 0;
   if (cible.type === "entre") return (source.type === "planche" || source.type === "bibliotheque") && cible.index >= 1;

@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  compteurs, emplacements, groupes as lesGroupes, photosEnHesitation, planchesDesPhotos, triDe, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
-  type Filtres, type Marque, type PhotoMaq, type SourceGlisser,
+  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
 import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, VuesBarre } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -67,6 +67,11 @@ function PanneauOuvert() {
   /* « gardées » au sens large : un coup de cœur l'est aussi (Poser les prend en premier) */
   const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
   const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
+  /* au tour ③ seulement, les étiquettes d'usage se lisent sur la vignette (05/11) */
+  const etqVignette = (id: string): string[] => (f.marque === "choisies" ? (["couverture", "double", "pleine"] as const).filter((k) => (triM.etiquettes?.[k] ?? []).includes(id)).map((k) => ETIQUETTE_UI[k].court) : []);
+  /* la colonne « à côté » d'un tour (05/11) : ce que le tour a laissé de côté, d'où on le reglisse */
+  const enTour = estTour(f.marque);
+  const cote = aCote(etat);
   const hes = photosEnHesitation(etat.magazine);
   const planches = planchesDesPhotos(etat);
   const focus = focusCourant(etat, ui);
@@ -266,6 +271,7 @@ function PanneauOuvert() {
             : re ? <span className="ed-rep ed-rep--rond ed-rep--reserve" title="Réserve" dangerouslySetInnerHTML={{ __html: DEMI }} /> : null}
           {p.coeur ? <span className="ed-rep ed-rep--rond ed-rep--coeur" title="Cœur du client" dangerouslySetInnerHTML={{ __html: COEUR }} /> : null}
           {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
+          {etqVignette(id).map((t) => <span key={t} className="ed-rep ed-rep--etq">{t}</span>)}
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
           {nums?.length ? (
@@ -322,7 +328,7 @@ function PanneauOuvert() {
         <BoutonsTri />
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
-      {grand ? null : <OngletsTri />}
+      {grand ? null : <VuesBarre />}
       {grand ? null : <div className="ed-ph-jauge"><JaugeTri /></div>}
       <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
@@ -397,7 +403,8 @@ function PanneauOuvert() {
         </div>
       ) : null}
       {sel.length ? <BandeSelection flottante={grand} /> : null}
-      <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel")} tabIndex={-1}
+      <div className={cls("ed-ph-corps", cote.length > 0 && "ed-ph-corps--cote")}>
+      <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel", etat.glisser?.survol?.type === "tri" && etat.glisser.survol.zone === "jeu" && "ed-grille--cible")} tabIndex={-1} data-tri-zone={enTour ? "jeu" : undefined}
         onScroll={(e) => { setScroll(e.currentTarget.scrollTop); setOu(null); }}
         onClick={(e) => { if (!(e.target as HTMLElement).closest(".ed-vg") && sel.length && !clicSupprime()) envoyer({ type: "viderSelection" }); }}>
         {gColle ? <div className="ed-groupe ed-groupe--colle">{titreGroupe(gColle.lib, gColle.n, gColle.ids)}{poserGroupe(gColle.ids)}</div> : null}
@@ -421,6 +428,8 @@ function PanneauOuvert() {
             </div>
           ))}
         </div>
+      </div>
+      {enTour ? <ACote ids={cote} grand={grand} sourcePour={sourcePour} /> : null}
       </div>
       {ou ? (
         <>
@@ -459,6 +468,49 @@ function PanneauOuvert() {
           }} />
       )}
     </aside>
+  );
+}
+
+/* La colonne « À côté » (05/11) : au tour ① les écartées, au ② la réserve aussi, au ③ tout ce qui n'est pas gardé.
+   Chaque photo garde la couleur de sa marque ; on la reglisse dans la grille (ou ↩) pour la remettre en jeu, et on glisse
+   une photo de la grille ici pour la mettre de côté. En plein écran une colonne à droite, en bande étroite une rangée en bas. */
+const PHRASE_COTE: Record<TourTri, string> = { ecarter: "Les écartées", retenues: "Écartées et réserve", choisies: "Pas gardées" };
+function ACote({ ids, grand, sourcePour }: { ids: string[]; grand: boolean; sourcePour: (id: string) => SourceGlisser }) {
+  const c = useEd();
+  const { etat, envoyer, adresses, commencerAppui, clicSupprime, lectureSeule: ro } = c;
+  const tour = etat.filtres.marque;
+  if (!estTour(tour)) return null;
+  const sv = etat.glisser?.survol;
+  const remettre = (id: string) => envoyer({ type: "deposer", source: { type: "bibliotheque", ids: [id] }, cible: { type: "tri", zone: "jeu" } });
+  return (
+    <section className={cls("ed-ac", grand ? "ed-ac--colonne" : "ed-ac--rangee", sv?.type === "tri" && sv.zone === "cote" && "ed-ac--cible")} data-tri-zone="cote" aria-label="À côté">
+      <h3>À côté<b>{ids.length.toLocaleString("fr-FR")}</b><span>{PHRASE_COTE[tour]}</span></h3>
+      {ids.length ? (
+        <div className="ed-ac-grille">
+          {(grand ? aCoteParJour(etat) : [{ cle: "", libelle: "", ids }]).flatMap((g) => [
+            g.libelle ? <h4 key={`j-${g.cle}`} className="ed-ac-jour">{g.libelle}<b>{g.ids.length}</b></h4> : null,
+            ...g.ids.map((id) => {
+            const p = etat.catalogue.get(id);
+            if (!p) return null;
+            const mk = marqueDe(etat.magazine, id);
+            const src = vignetteDe(adresses.get(id));
+            const quand = quandPhoto(p);
+            return (
+              <span key={id} className={cls("ed-ac-v", mk && `ed-ac-v--${mk}`)} title={`${quand}\n${p.nom}`}
+                onPointerDown={ro ? undefined : (e) => commencerAppui(e, sourcePour(id))}
+                onDoubleClick={() => c.majUi({ grand: true, vue: "une", focus: id, zone: "photos", loupeTri: false })}>
+                {src ? <img src={src} alt="" loading="lazy" decoding="async" draggable={false} /> : <i className="ed-indispo-mini">Indisponible</i>}
+                {grand ? <span className="ed-ac-quand" aria-hidden="true">{quand}</span> : null}
+                {ro ? null : (
+                  <button type="button" className="ed-ac-remettre" aria-label={`Remettre en jeu : ${p.nom}`} title="Remettre en jeu"
+                    onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); if (!clicSupprime()) remettre(id); }}>↩</button>
+                )}
+              </span>
+            );
+          })])}
+        </div>
+      ) : <p className="ed-ac-vide">Glisser ici pour mettre de côté</p>}
+    </section>
   );
 }
 

@@ -24,7 +24,7 @@ export const CIBLES: readonly Cible[] = ["gauche", "droite", "double"];
 
 export const FILTRES_DEFAUT: Readonly<Filtres> = Object.freeze({
   recherche: "", statut: "toutes", personnes: [], types: [], coeur: false, orientations: [],
-  montrerSignalees: false, masquerUtilisees: false, marque: "toutes", tri: "date", groupe: "jour", taille: "M",
+  montrerSignalees: false, masquerUtilisees: false, marque: "toutes", etiquette: "", tri: "date", groupe: "jour", taille: "M",
 } satisfies Filtres);
 
 /* ─────────────────────────── Petits outils ─────────────────────────── */

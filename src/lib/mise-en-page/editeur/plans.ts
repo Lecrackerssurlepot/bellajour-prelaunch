@@ -10,7 +10,7 @@ import {
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, dimsCadre, dispositionOuNull, idsDispo, indexPlanche } from "./outils";
-import { garderPosees, marqueDe, marqueEffective, marquer, reglerVisees, type Marque } from "./tri";
+import { estTour, etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEffective, marquePourZone, marquer, reglerVisees, ETIQUETTES, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
@@ -145,6 +145,16 @@ function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined,
       case "vignette": return planSurPlanche(e, cible.plancheId, ids);
       case "entre": return planCreerDoubles(e, ids, cible.index);
       case "libre": return planLibre(e, cible, ids);
+      case "tri": {
+        const tour = e.filtres.marque;
+        if (!estTour(tour) || (cible.zone !== "jeu" && cible.zone !== "cote")) return planRien(e);
+        const z = marquePourZone(m, ids.filter((id) => e.catalogue.has(id)), tour, cible.zone);
+        if (!z.ids.length) return planRien(e, "deja_la");
+        const n = z.ids.length;
+        const mot = z.marque === null ? "Remise en jeu" : cible.zone === "jeu" ? "Remise en jeu" : z.marque === "ecartee" ? "Écartée" : "Mise de côté";
+        const m2 = marquer(m, z.ids, z.marque);
+        return { op: "marquer", libelle: n > 1 ? `${mot} · ${n} photos` : mot, plancheId: e.plancheCourante, issue: issue(m2, m2 === m ? "rien" : null), args: {} };
+      }
       default: return planRien(e);
     }
   }
@@ -279,6 +289,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return g.ref ? { op: "calque", libelle: LIBELLE_CALQUE[g.sens] ?? "Calque", plancheId: g.ref.plancheId, issue: calque(m, g.ref, g.sens), args: { ref: g.ref } } : planRien(e);
     case "retirerCadres": return planRetirerCadres(e, Array.isArray(g.refs) ? g.refs : []);
     case "reglerTri": return simple("reglerTri", "Photos visées", e.plancheCourante, reglerVisees(m, g.visees), {});
+    case "etiqueter": {
+      const ids = Array.isArray(g.ids) ? [...new Set(g.ids.filter((id) => cat.has(id)))] : [];
+      if (!ETIQUETTES.includes(g.etiquette) || !ids.length) return planRien(e);
+      const retirer = etiquetteRetiree(m, ids, g.etiquette);
+      const nom = { couverture: "Couverture", double: "Double page", pleine: "Pleine page" }[g.etiquette];
+      return simple("etiqueter", retirer ? `${nom} retirée` : ids.length > 1 ? `${nom} · ${ids.length} photos` : nom, e.plancheCourante, etiqueter(m, ids, g.etiquette, !retirer), {});
+    }
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
     default: return null;

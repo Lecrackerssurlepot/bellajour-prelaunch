@@ -6,7 +6,7 @@
 import { comparerChrono, utilisations } from "../magazine";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
-import { dansVue, triDe, type Marque } from "./tri";
+import { dansVue, estTour, triDe, type Marque } from "./tri";
 import type { EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -38,10 +38,11 @@ export function criteres(e: EtatEditeur): Criteres {
     montrerSignalees: (ph) => f.montrerSignalees || !ph.signalee,
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
     marque: (ph) => dansVue(mq.get(ph.id) ?? null, f.marque),
+    etiquette: (ph) => !f.etiquette || f.marque !== "choisies" || t.etiquettes[f.etiquette].includes(ph.id),
   };
 }
 
-const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque"];
+const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque", "etiquette"];
 export const clesCriteres = (): readonly CleCritere[] => CLES_CRITERES;
 
 /** La photo passe-t-elle tous les filtres ? */
@@ -86,12 +87,46 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
     if (l) l.push(ph); else parCle.set(k, [ph]);
   }
   const cles = [...parCle.keys()].sort((a, b) => (g === "personne" ? a.localeCompare(b, "fr") : a < b ? -1 : a > b ? 1 : 0));
+  /* dans un tour, les photos déjà posées passent après les autres de leur groupe : rien n'est caché, tout est rangé (05/11) */
+  const u = estTour(e.filtres.marque) ? utilisations(e.magazine) : null;
+  const rang = (ph: PhotoMaq) => (u?.has(ph.id) ? 1 : 0);
   return cles.map((k) => {
-    const liste = (parCle.get(k) ?? []).sort(cmp);
+    const liste = (parCle.get(k) ?? []).sort((a, b) => rang(a) - rang(b) || cmp(a, b));
     return { cle: k, libelle: libelleGroupe(g, k, liste[0]), ids: liste.map((ph) => ph.id) };
   });
 }
 export const visibles = (e: EtatEditeur): string[] => groupes(e).flatMap((g) => g.ids);
+
+/** La colonne « à côté » d'un tour (05/11) : les photos qui passent tous les autres filtres mais ne sont pas en jeu,
+ *  dans l'ordre du temps. Vide hors des tours. */
+export function aCote(e: EtatEditeur): string[] {
+  if (!estTour(e.filtres.marque)) return [];
+  const c = criteres(e);
+  return [...e.catalogue.values()]
+    .filter((ph) => !c.marque(ph) && CLES_CRITERES.every((k) => k === "marque" || k === "etiquette" || c[k](ph)))
+    .sort(comparerChrono).map((ph) => ph.id);
+}
+
+/** La colonne « à côté » rangée par jour, avec les mêmes intertitres que la grille (06/11). */
+export function aCoteParJour(e: EtatEditeur): GroupeBibliotheque[] {
+  const out: GroupeBibliotheque[] = [];
+  for (const id of aCote(e)) {
+    const ph = e.catalogue.get(id);
+    if (!ph) continue;
+    const k = cleGroupe("jour", ph);
+    const g = out[out.length - 1];
+    if (g && g.cle === k) g.ids.push(id); else out.push({ cle: k, libelle: libelleGroupe("jour", k, ph), ids: [id] });
+  }
+  return out;
+}
+
+/** « 12 août · 14:32 » (ou « Sans date ») : ce qu'on lit au survol d'une photo mise de côté. */
+export function quandPhoto(ph: { date: string | null }): string {
+  if (!ph.date) return "Sans date";
+  const jour = libelleGroupe("jour", ph.date.slice(0, 10), ph as PhotoMaq);
+  const h = /[T ](\d{2}:\d{2})/.exec(ph.date)?.[1];
+  return h ? `${jour} · ${h}` : jour;
+}
 
 /**
  * La sélection dans l'ordre de la bibliothèque ; les photos masquées par les filtres

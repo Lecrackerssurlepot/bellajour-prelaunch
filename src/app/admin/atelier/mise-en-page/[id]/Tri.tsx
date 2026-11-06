@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { marqueDe, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
+import { ETIQUETTES, etiquettesDe, marqueDe, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
 import { cls, useEd, type Adresse } from "./contexte";
 import { grandeDe, precharger } from "./images";
-import { colonnesComparer, focusCourant, marquerTri, quitterVisionneuse } from "./triEcran";
-import { BoutonsTri, COEUR, MARQUE_UI, NOMS_ONGLETS } from "./TriBulles";
+import { colonnesComparer, etiqueterTri, focusCourant, marquerTri, quitterVisionneuse } from "./triEcran";
+import { BoutonsTri, COEUR, ETIQUETTE_UI, MARQUE_UI, NOMS_ONGLETS } from "./TriBulles";
 
 /* La visionneuse du tri, par-dessus la bande agrandie : une photo (l'ORIGINAL, en pleine définition, loupe 100 %)
    ou la comparaison de plusieurs photos (2 et plus). Fond neutre sombre pour juger. Les touches vivent dans `triEcran.ts`. */
@@ -58,6 +58,23 @@ function Tete({ titre, sous }: { titre: string; sous: string }) {
   );
 }
 
+/* Les deux étiquettes d'usage (05/11), sous les ronds : éteintes tant qu'elles ne sont pas posées, un clic bascule. */
+function Etiquettes({ id }: { id: string }) {
+  const c = useEd();
+  const posees = etiquettesDe(c.etat.magazine, id);
+  if (c.lectureSeule) return posees.length ? <span className="ed-vt-etqs">{posees.map((k) => <span key={k} className="ed-vt-etqb ed-vt-etqb--on">{ETIQUETTE_UI[k].mot}</span>)}</span> : null;
+  return (
+    <span className="ed-vt-etqs" role="group" aria-label="Étiquettes">
+      {ETIQUETTES.map((k) => (
+        <button key={k} type="button" className={cls("ed-vt-etqb", posees.includes(k) && "ed-vt-etqb--on")} aria-pressed={posees.includes(k)}
+          title={`${ETIQUETTE_UI[k].mot} · ${ETIQUETTE_UI[k].touche}`} onClick={() => etiqueterTri(c, k, id)}>
+          <kbd>{ETIQUETTE_UI[k].touche}</kbd>{ETIQUETTE_UI[k].mot}
+        </button>
+      ))}
+    </span>
+  );
+}
+
 /* Les quatre ronds, comme un super like : ✕ et ★ en gros, réserve et coup de cœur en petit de part et d'autre. */
 function Ronds({ id }: { id: string }) {
   const c = useEd();
@@ -67,7 +84,7 @@ function Ronds({ id }: { id: string }) {
     <button type="button" className={cls("ed-vt-rond", `ed-vt-rond--${k}`, petit && "ed-vt-rond--petit", m === k && "ed-vt-rond--fait")}
       aria-label={MARQUE_UI[k].verbe} aria-pressed={m === k} title={`${MARQUE_UI[k].verbe} · ${MARQUE_UI[k].touche}`} onClick={() => marquerTri(c, k)} dangerouslySetInnerHTML={{ __html: MARQUE_UI[k].svg }} />
   );
-  return <span className="ed-vt-ronds">{rond("reserve", true)}{rond("ecartee")}{rond("choisie")}{rond("coupDeCoeur", true)}</span>;
+  return <span className="ed-vt-ronds">{rond("reserve", true)}{rond("ecartee")}{rond("choisie")}{rond("coupDeCoeur", true)}<Etiquettes id={id} /></span>;
 }
 
 function UnePhoto() {
@@ -102,9 +119,9 @@ function UnePhoto() {
 
   return (
     <div className="ed-vt" role="dialog" aria-label="Une photo">
-      <Tete titre="Trier" sous={`${NOMS_ONGLETS[etat.filtres.marque]}${etat.filtres.masquerUtilisees ? " · non posées" : ""}`} />
+      <Tete titre="Trier" sous={NOMS_ONGLETS[etat.filtres.marque]} />
       <div className="ed-vt-scene">
-        {p && a ? <Nette key={id} a={a} alt={p.nom} onClick={ouvrirLoupe} /> : <div className="ed-vt-vide">{etat.filtres.marque === "a_trier" ? "Tout est trié" : "Rien ici"}</div>}
+        {p && a ? <Nette key={id} a={a} alt={p.nom} onClick={ouvrirLoupe} /> : <div className="ed-vt-vide">{etat.filtres.marque === "a_trier" || etat.filtres.marque === "retenues" ? "Tout est trié" : "Rien ici"}</div>}
         {ui.loupeTri && p && a ? <Loupe100 a={a} pt={pt} boite={loupe} onMove={suivreLoupe} onClick={() => majUi({ loupeTri: false })} /> : null}
         <button type="button" className="ed-vt-fl ed-vt-fl--g" aria-label="Précédente" disabled={i <= 0} onClick={() => allerA(i - 1)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M15 5l-7 7 7 7" /></svg>

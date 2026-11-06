@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext, type PointerEvent as PointerReact } from "react";
-import type { Cible, CibleDepot, EtatEditeur, Geste, Issue, RefCadre, SourceGlisser } from "@/lib/mise-en-page/editeur";
+import type { Cible, CibleDepot, EtatEditeur, Filtres, Geste, Issue, RefCadre, SourceGlisser } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 
 export type Adresse = { vignette: string | null; moyenne: string | null; original: string | null };
@@ -43,6 +43,9 @@ export type Ui = {
   doublesFlash: boolean;
   /** L'hésitation d'un cadre en confrontation, côte à côte (lot 3, double-clic sur le cadre). */
   confronter: RefCadre | null;
+  /** 06/11 : la vue que retrouve la barre latérale, et le tour que retrouve le grand écran. */
+  vueBarre: Filtres["marque"];
+  vueTour: Filtres["marque"];
   /** Lot 4 : le cadre qu'on déplace ou redimensionne à la souris (repère planche, mm), avant le lâcher. */
   retouche: { ref: RefCadre; x: number; y: number; l: number; h: number } | null;
   /** Lot 4 : le menu « Position » (ordre des calques) ouvert sur ce cadre (« planche|cible|index »). */
@@ -51,7 +54,7 @@ export type Ui = {
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
-  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null,
+  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
   retouche: null, position: null,
 };
 
