@@ -9,6 +9,7 @@ Chargé dès qu'on touche un script. Aucun n'est branché dans `package.json` : 
 |---|---|---|
 | `verif-atelier.ts` | `npx tsx --tsconfig tsconfig.json scripts/verif-atelier.ts` | **Le seul harnais de test du dépôt.** Sans base ni réseau : transitions, urgence, mails, lot |
 | `verif-mails-brevo.ts` | `npx tsx --tsconfig tsconfig.json scripts/verif-mails-brevo.ts` | Compare les `{{ params.X }}` des templates Brevo aux paramètres réellement envoyés |
+| `delais-brevo.ts` | `npx tsx --tsconfig tsconfig.json scripts/delais-brevo.ts [--jours=30] [--seuil=60]` | **T-107.** Le délai `requests` → `delivered` de chaque mail des N derniers jours (90 au plus), par messagerie, par IP de sortie Brevo, regroupé en épisodes. Deux GET, aucun envoi, aucune adresse imprimée. À relancer après tout changement de formule ou de fournisseur |
 | `fausseBase.ts` | (importé, jamais lancé) | La fausse base en mémoire de `verif-atelier.ts` (T-203) : copie de `baseEnMemoire` de `verif-collectif.ts`, qui exécute du code au chargement et ne s'importe pas. Aucune base, aucun réseau |
 | `cloudprinter-produits.mjs` | `node scripts/cloudprinter-produits.mjs produit …` | Lit le catalogue. ⚠️ API très rationnée |
 | `optimize-images*.mjs`, `images-univers.mjs` | `node scripts/…` | Optimisation sharp d'assets locaux |

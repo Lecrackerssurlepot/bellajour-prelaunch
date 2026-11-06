@@ -1067,8 +1067,9 @@ test mené jusqu'au bout débiterait une carte. Mathias s'est arrêté avant. Do
 ### Ce qui reste ouvert, et c'est court
 - **T-106** : la politique de livraison (plafond, tarif fixe ou port compris). Le client paie le
   devis complet tant que rien n'est posé. Décision de Mathias avec Louis.
-- **T-107** : le délai de remise des mails chez Brevo, INTERMITTENT (5 à 9 minutes trois fois,
-  2 secondes une fois). À caractériser avant de payer un plan.
+- **T-107** : le délai de remise des mails chez Brevo, INTERMITTENT. Caractérisé le 21/10 sur
+  90 jours : médiane 1 s, 7,4 % au-delà d'une minute, seulement vers Gmail et Microsoft, par
+  épisodes sur UNE IP partagée de Brevo (Gmail la freine). Mesure : `scripts/delais-brevo.ts`.
 - Deux incidents du jour, tous deux réparés et documentés : un script de recette a envoyé un vrai
   M0 (T-108, fermé, garde-fou posé), et la suppression des dossiers de test du matin avait laissé
   un jeton mort dans le navigateur de Mathias (corrigé, PR #121).
