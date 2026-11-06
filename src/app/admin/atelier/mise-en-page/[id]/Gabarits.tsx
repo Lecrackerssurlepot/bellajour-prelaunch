@@ -1,6 +1,6 @@
 "use client";
 
-import { actionsPlanche, apercu, gabaritsPour, type ActionsPlanche, type Cible, type Geste } from "@/lib/mise-en-page/editeur";
+import { actionsPlanche, apercu, dansFamille, gabaritsPour, type ActionsPlanche, type Cible, type FamilleGabarits, type Geste } from "@/lib/mise-en-page/editeur";
 import type { Planche } from "@/lib/mise-en-page/magazine";
 import { cadresDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
 import { enregistrerGabarit } from "./gabaritsClient";
@@ -11,6 +11,26 @@ import { Ico } from "./icones";
 import { vignetteDe } from "./images";
 
 const NOM_COTE = { gauche: "Page gauche", droite: "Page droite", double: "Double page" } as const;
+
+/* 06/11 : ce que R parcourt. Un clic passe à la suivante ; le mot dit où l'on est. */
+const FAMILLES: { f: FamilleGabarits; mot: string }[] = [{ f: "tous", mot: "Tous" }, { f: "avec", mot: "Avec texte" }, { f: "sans", mot: "Sans texte" }];
+
+function Famille({ pl }: { pl: Planche }) {
+  const { etat, envoyer } = useEd();
+  const f = etat.familleGabarits;
+  const k = Math.max(0, FAMILLES.findIndex((x) => x.f === f));
+  const suivante = FAMILLES[(k + 1) % FAMILLES.length];
+  /* aucun gabarit de cette famille pour ces photos : R ne fera rien, le mot le dit */
+  const cibles: Cible[] = pl.mode === "double" ? ["double"] : ["gauche", "droite"];
+  const aucun = f !== "tous" && cibles.every((c) => !gabaritsPour(etat, pl.id, c).some((g) => dansFamille(g.template, f)));
+  return (
+    <button type="button" className={`ed-pastille ed-famille${k ? " ed-famille--on" : ""}`} title={`R ne parcourt que : ${FAMILLES[k].mot.toLowerCase()} · clic pour « ${suivante.mot} »`}
+      onClick={(e) => { e.stopPropagation(); envoyer({ type: "familleGabarits", famille: suivante.f }); }}>
+      <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M4 5h12M4 10h8M4 15h10" /></svg>
+      {FAMILLES[k].mot}{aucun ? " · aucun" : ""}
+    </button>
+  );
+}
 
 /* ─── une planche en petit (chemin de fer, pile) ─── */
 type CadreMini = { x: number; y: number; l: number; h: number; photoId: string | null; texte: boolean };
@@ -106,6 +126,7 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
     const n = nb(pl.droite);
     out.push(pastille("droite", "d", n ? pluriel(n, "photo") : "Page vide"));
   }
+  if (!ouverte) centre.push(<Famille key="fam" pl={pl} />);
   if (centre.length) out.push(<span key="c" className="ed-pastilles-c">{centre}</span>);
   return <>{out}</>;
 }
@@ -117,6 +138,7 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const act = actionsPlanche(etat, pl.id);
   if (!act) return null;
   const liste = gabaritsPour(etat, pl.id, cible);
+  const dansLaFamille = liste.filter((g) => dansFamille(g.template, etat.familleGabarits)).length;
   /* lot 4 : une page retouchée s'enregistre comme gabarit, ou revient à son gabarit d'origine */
   const d = dispositionDe(pl, cible);
   const retouchee = act.retouchees.includes(cible);
@@ -129,7 +151,8 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
     <div className="ed-rangee-gab" role="menu" aria-label="Gabarits compatibles" onClick={(e) => e.stopPropagation()} onMouseLeave={() => majUi({ apercuGab: null })}>
       {/* 06/11 : « Séparer » (ou « Double page ») sous le titre, à gauche : plus besoin d'aller au bout de la rangée */}
       <span className="ed-rangee-tete">
-        <span className="ed-rangee-t">{NOM_COTE[cible]}<b>{liste.length ? pluriel(liste.length, "gabarit") : ""}</b></span>
+        <span className="ed-rangee-t">{NOM_COTE[cible]}<b>{dansLaFamille ? pluriel(dansLaFamille, "gabarit") : liste.length ? "Aucun ici" : ""}</b></span>
+        <Famille pl={pl} />
         {act.separer ? (
           <button type="button" className="ed-bt" onMouseEnter={voir({ type: "separer", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "separer", plancheId: pl.id }); }}>Séparer</button>
         ) : act.fusionner ? (

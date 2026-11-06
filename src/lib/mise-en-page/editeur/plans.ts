@@ -243,7 +243,7 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return { op: "choisirGabarit", libelle: "Changer de gabarit", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
     }
     case "autreGabarit": {
-      const is = autreGabarit(m, g.plancheId, g.cible, g.sens, cat);
+      const is = autreGabarit(m, g.plancheId, g.cible, g.sens, cat, e.familleGabarits);
       return { op: "autreGabarit", libelle: "Autre disposition", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
     }
     case "fusionner": {

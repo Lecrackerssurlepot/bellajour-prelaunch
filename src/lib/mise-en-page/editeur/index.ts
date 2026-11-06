@@ -5,7 +5,7 @@
 
 export type {
   ArgsPlan, BoutonEdition, BoutonSource, Catalogue, Cible, CibleDepot, Confirmation, Derniere, Dims, EditionMep,
-  EnBase, EntreeHistorique, EtatEditeur, EtatSauvegarde, Filtres, Geste, GesteCompose, GesteEcran, GesteModifiant, GestePrimitif, Glisse,
+  EnBase, EntreeHistorique, EtatEditeur, FamilleGabarits, EtatSauvegarde, Filtres, Geste, GesteCompose, GesteEcran, GesteModifiant, GestePrimitif, Glisse,
   GroupeBibliotheque, Issue, Message, OpPlan, OptionsEtat, PhotoMaq, Plan, PorteEdition, ProjetListe, Projet, RaisonLectureSeule, RefCadre,
   Refus, SourceADemarrer, SourceGlisser, SourceProjet, TypeDossier,
 } from "./types";
@@ -18,7 +18,7 @@ export {
   BONUS_ANNEXE, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, SEUIL_DPI, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
 } from "./outils";
 export {
-  ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
+  ajouter, ajouterSurPlanche, autreGabarit, avecTexte, dansFamille, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
   echangerIssue, ecrireTexteCadre, estPleine, fusionner, gabaritsClasses, insererDouble, noterGabarit, pagesDe, perteCadre, photosIndisponibles,
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
@@ -38,3 +38,5 @@ export { bilanTri, dansVue, estGardee, estTour, marquePourZone, TOURS_TRI, etiqu
 export type { BilanTri, Etiquette, Marque, TourTri, PartPersonne, TriPlein, VueTri } from "./tri";
 export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres, miroir, pageEntiere, placerCadre, poserLibre, rangCalque, retirerCadres } from "./libre";
 export type { SensCalque } from "./libre";
+export { DEPLACEMENT, aimanter, lignesAimant } from "./aimant";
+export type { Bords, Guide, Lignes } from "./aimant";

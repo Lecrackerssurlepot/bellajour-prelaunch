@@ -789,6 +789,46 @@ sc(79, "« Utilisées » masquées : les posées disparaissent de la bibliothèq
   s.g({ type: "effacerFiltres" }); eq(s.e.filtres.masquerUtilisees, true, "Tout effacer garde ce réglage d'affichage");
   s.g({ type: "retirer", ref: ref(2, "droite", 0) }); ok(O.visibles(s.e).includes("A"), "retirée = libre = visible");
 });
+sc(80, "06/11 : R ne parcourt que la famille choisie (avec texte, sans texte), le tiroir aussi", () => {
+  const s = new Seance("A:P B:L C:P").pose(2, "double", ["A", "B", "C"]).zero();
+  s.g({ type: "naviguer", plancheId: pl(2) });
+  const tous = O.gabaritsPour(s.e, pl(2), "double");
+  ok(tous.some((x) => O.avecTexte(x.template)) && tous.some((x) => !O.avecTexte(x.template)), "les deux familles existent à 3 photos");
+  for (const f of ["avec", "sans"] as const) {
+    const h0 = s.hist;
+    s.g({ type: "familleGabarits", famille: f });
+    eq(s.hist, h0, "changer de famille n'entre pas dans l'historique");
+    const liste = O.gabaritsPour(s.e, pl(2), "double");
+    ok(liste.every((x) => x.courant || O.dansFamille(x.template, f)), `tiroir : seulement « ${f} » (et le gabarit en place)`);
+    for (let k = 0; k < 4; k++) {
+      s.g({ type: "touche", cle: "r" });
+      ok(O.dansFamille(def(templateParId(def(s.tpl(2, "double"), "gabarit")), "template"), f), `R ${k + 1} reste dans « ${f} »`);
+    }
+    eq(def(s.ids(2, "double"), "photos").slice().sort(), ["A", "B", "C"], "les photos ne bougent pas");
+  }
+  s.g({ type: "familleGabarits", famille: "tous" });
+  eq(O.gabaritsPour(s.e, pl(2), "double").length, tous.length, "« Tous » rend la liste entière");
+  const e0 = s.e; s.g(G({ type: "familleGabarits", famille: "bof" })); ok(s.e === e0, "une famille inconnue ne change rien");
+});
+sc(81, "06/11 : l'aimant accroche bords et centres sous le seuil, jamais au-delà", () => {
+  const L = O.lignesAimant([{ x: 250, y: 40, l: 60, h: 80 }]);
+  /* déplacement : le centre (104 → 105) tombe sur le milieu de la page gauche */
+  const a = O.aimanter({ x: 54, y: 100, l: 100, h: 50 }, O.DEPLACEMENT, L, 2);
+  eq(a.rect.x, 55, "centre de page"); ok(a.guides.some((g) => g.axe === "x" && g.pos === 105), "guide vertical au milieu de la page");
+  /* le bord haut s'accroche au bas de l'autre cadre (120) */
+  const b = O.aimanter({ x: 260, y: 121.5, l: 40, h: 40 }, O.DEPLACEMENT, L, 2);
+  eq(b.rect.y, 120, "bas de l'autre cadre");
+  /* au-delà du seuil : rien */
+  const c = O.aimanter({ x: 60, y: 60, l: 100, h: 50 }, O.DEPLACEMENT, L, 2);
+  eq(c.rect, { x: 60, y: 60, l: 100, h: 50 }, "trop loin : pas d'accroche"); eq(c.guides, [], "… ni de guide");
+  /* redimensionnement : seul le bord tiré bouge, l'autre reste */
+  const d = O.aimanter({ x: 20, y: 20, l: 168.8, h: 50 }, { gauche: false, droite: true, haut: false, bas: false }, L, 2);
+  eq([d.rect.x, d.rect.x + d.rect.l], [20, 190], "bord droit à la marge intérieure, bord gauche immobile");
+  /* coin qui garde le format : la hauteur suit */
+  const e = O.aimanter({ x: 20, y: 20, l: 168.8, h: 84.4 }, { gauche: false, droite: true, haut: false, bas: true }, L, 2, true);
+  proche(e.rect.l / e.rect.h, 2, 1e-9, "format gardé");
+  eq(O.aimanter({ x: 54, y: 100, l: 100, h: 50 }, O.DEPLACEMENT, L, 0).guides, [], "seuil nul = aimant coupé");
+});
 
 /* ═══════════ le test aléatoire à graine ═══════════
    Des séquences de 20 à 60 gestes tirés parmi TOUS les gestes (parfois à côté, parfois invalides), invariants
@@ -1537,7 +1577,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     rapporter("éditeur : le lot 4 (miroir, ⇧-clic, glisser une page, pose en libre, cadres retouchés, calques)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
-  rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 79 && archi === 73);
+  rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 81 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);
   const b = campagneAleatoire(SEQUENCES_ALEATOIRES, GRAINE_ALEATOIRE);
   console.log(`   séquences : ${b.sequences} · gestes tirés : ${b.tires} · gestes joués (rafales comprises) : ${b.joues} · types de gestes : ${b.types} · gestes qui ont changé le magazine : ${b.changes} · confirmations ouvertes : ${b.confirmations} · échecs : ${b.echecs}`);

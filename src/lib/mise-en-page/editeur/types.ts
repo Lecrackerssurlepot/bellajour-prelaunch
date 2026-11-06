@@ -35,6 +35,9 @@ export type PhotoMaq = PhotoRef & {
 
 export type Catalogue = ReadonlyMap<string, PhotoMaq>;
 
+/** 06/11 : « Tous · Avec texte · Sans texte », déduit des gabarits eux-mêmes (un cadre de texte ou non). */
+export type FamilleGabarits = "tous" | "avec" | "sans";
+
 export type Filtres = {
   recherche: string;
   statut: "toutes" | "libres" | "utilisees" | "planche";
@@ -161,6 +164,8 @@ export type EtatEditeur = {
   derniere: Derniere | null;
   /** « Ma version » gardée une fois, après « Prendre sa version ». */
   copieLocale: Magazine | null;
+  /** 06/11 : la famille que parcourt R et que montre le tiroir (avec ou sans cadre de texte). Écran seulement. */
+  familleGabarits: FamilleGabarits;
 };
 
 export type OptionsEtat = {
@@ -232,6 +237,7 @@ export type GesteEcran =
   | { type: "filtrer"; filtres: Partial<Filtres> }
   | { type: "retirerFiltre"; cle: keyof Filtres }
   | { type: "effacerFiltres" }
+  | { type: "familleGabarits"; famille: FamilleGabarits }
   | { type: "cliquerPhoto"; id: string; mode: "simple" | "plage" | "ajout" }
   | { type: "selectionner"; ids: string[] }
   | { type: "viderSelection" }

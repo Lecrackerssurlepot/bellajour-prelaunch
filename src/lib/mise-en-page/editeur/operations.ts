@@ -19,7 +19,7 @@ import {
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
-import type { Dims, Issue, Refus } from "./types";
+import type { Dims, FamilleGabarits, Issue, Refus } from "./types";
 
 /** Le catalogue vu par les opérations : seules les mesures comptent. */
 export type CatalogueRef = ReadonlyMap<string, PhotoRef>;
@@ -55,6 +55,10 @@ export function noterGabarit(t: Template, photos: readonly Dims[], precedent: st
 }
 
 export type GabaritNote = { template: Template; note: number };
+
+/** 06/11 : la famille d'un gabarit se LIT dans ses cadres : rien à ranger à la main. */
+export const avecTexte = (t: Template): boolean => t.cadres.some((c) => c.role !== "photo");
+export const dansFamille = (t: Template, f: FamilleGabarits): boolean => f === "tous" || (f === "avec") === avecTexte(t);
 
 /**
  * Les gabarits de ce nombre et de cette portée, triés par note croissante. Tri stable : à égalité
@@ -392,14 +396,15 @@ export function choisirGabarit(m: Magazine, plancheId: string, cible: Cible, tem
   return issue(r.magazine, null, { textesPerdus: r.textesPerdus });
 }
 
-/** 16. Le suivant (ou précédent) dans `gabaritsClasses`, en boucle. */
-export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens: 1 | -1, cat: CatalogueRef): Issue {
+/** 16. Le suivant (ou précédent) dans `gabaritsClasses`, en boucle, dans la famille choisie (06/11). */
+export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens: 1 | -1, cat: CatalogueRef, famille: FamilleGabarits = "tous"): Issue {
   const i = indexPlanche(m, plancheId);
   if (i < 0) return issue(m, "rien");
   const d = dispositionDe(m.planches[i], cible);
   if (!d) return issue(m, "rien");
   const ids = idsDispo(d);
-  const liste = gabaritsClasses(porteeDe(cible), ids.map((id) => refPour(cat, id)), precedentDe(m, i, cible));
+  const liste = gabaritsClasses(porteeDe(cible), ids.map((id) => refPour(cat, id)), precedentDe(m, i, cible))
+    .filter((x) => dansFamille(x.template, famille) || x.template.id === d.templateId);
   if (liste.length < 2) return issue(m, "rien");
   const k = liste.findIndex((x) => x.template.id === d.templateId);
   const s = sens === -1 ? -1 : 1;

@@ -55,6 +55,7 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     eclair: null,
     derniere: null,
     copieLocale: null,
+    familleGabarits: "tous",
   };
 }
 
@@ -357,6 +358,10 @@ const GESTES: Gestes = {
   retirerFiltre(e, g) {
     if (!(g.cle in FILTRES_DEFAUT)) return e;
     return { ...e, filtres: avecCle(e.filtres, g.cle, defautDe(g.cle)) };
+  },
+  familleGabarits(e, g) {
+    const f = choisir(["tous", "avec", "sans"] as const, g.famille);
+    return f && f !== e.familleGabarits ? { ...e, familleGabarits: f } : e;
   },
   effacerFiltres(e) {
     const { tri, groupe, taille, masquerUtilisees } = e.filtres;

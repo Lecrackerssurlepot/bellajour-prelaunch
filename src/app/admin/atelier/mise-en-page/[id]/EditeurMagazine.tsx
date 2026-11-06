@@ -7,7 +7,7 @@ import {
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { chargerGabarits } from "./gabaritsClient";
-import { CtxEd, UI_NEUVE, fermerTexteDom, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
+import { CtxEd, fermerTexteDom, uiDeDepart, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
 import { Bandeaux, Barre } from "./Barre";
 import { Bande, CheminDeFer, Toast } from "./Bas";
@@ -40,7 +40,7 @@ type Props = {
 
 export default function EditeurMagazine({ catalogue, source, cle, projet, archive, collecteOuverte, retour, suite, selecteur, imp }: Props) {
   const [etat, setEtat] = useState<EtatEditeur | null>(null);
-  const [ui, setUi] = useState<Ui>(UI_NEUVE);
+  const [ui, setUi] = useState<Ui>(uiDeDepart);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [vu, setVu] = useState<{ pl: string; mag: unknown } | null>(null);
   const sauve = useSauvegarde(cle, etat?.magazine ?? null);

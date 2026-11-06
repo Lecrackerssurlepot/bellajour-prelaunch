@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche } from "@/lib/mise-en-page/editeur";
-import { cls, pluriel, useEd, type Projet } from "./contexte";
+import { CLE_AIMANT, cls, pluriel, useEd, type Projet } from "./contexte";
 import { Ico } from "./icones";
 import type { EtatSauvegarde } from "./sauvegardeClient";
 
@@ -25,8 +25,13 @@ const MOT_SOURCE = { particulier: "Particulier", edition: "Édition", libre: "Li
 export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
   projet: Projet; sv: EtatSauvegarde; reessayer: () => void; lien: { href: string; libelle: string }; selecteur: React.ReactNode; onExporter: () => void;
 }) {
-  const { etat, envoyer, lectureSeule: ro } = useEd();
+  const { etat, envoyer, ui, majUi, lectureSeule: ro } = useEd();
   const pl = pagesLibelle(etat);
+  const basculerAimant = () => {
+    const aimant = !ui.aimant;
+    majUi({ aimant });
+    try { window.localStorage.setItem(CLE_AIMANT, aimant ? "1" : "0"); } catch { /* stockage refusé : l'état vaut pour la séance */ }
+  };
   const la = libelleAnnuler(etat);
   const lr = libelleRetablir(etat);
   return (
@@ -43,6 +48,12 @@ export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
       <span className={cls("ed-sauve", `ed-sauve--${sv.etat}`)} role="status"><i aria-hidden="true" />{MOT_SAUVEGARDE[sv.etat]}</span>
       {sv.etat === "erreur" || sv.etat === "hors_ligne" ? <button type="button" className="ed-lien" onClick={reessayer}>Réessayer</button> : null}
       <span className="ed-sep" aria-hidden="true" />
+      <button type="button" className={cls("ed-ico", "ed-aimant", ui.aimant && "ed-aimant--on")} aria-pressed={ui.aimant}
+        title={ui.aimant ? "Aimant · ⌘ pendant le glisser pour le couper" : "Aimant coupé"} aria-label="Aimant" onClick={basculerAimant}>
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 3v7a5 5 0 0 0 10 0V3M5 6.5h3M12 6.5h3M8 3v7a2 2 0 0 0 4 0V3" />
+        </svg>
+      </button>
       <button type="button" className="ed-ico" disabled={!la || ro} title={la ?? "Rien à annuler"} aria-label={la ?? "Annuler"} onClick={() => envoyer({ type: "annuler" })}>{Ico.annuler}</button>
       <button type="button" className="ed-ico" disabled={!lr || ro} title={lr ?? "Rien à rétablir"} aria-label={lr ?? "Rétablir"} onClick={() => envoyer({ type: "retablir" })}>{Ico.retablir}</button>
       <button type="button" className="adm-btn ed-exporter" onClick={onExporter}>Exporter</button>
