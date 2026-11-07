@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
+  actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
   SEUIL_DPI, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
-  type SensCalque, type SourceGlisser,
+  type Guide, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { Magazine, Planche } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
-import { PAGE_H, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
+import { PAGE_H, PLANCHE_L, type Rect } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
 import { grandeDe, precharger, vignetteDe } from "./images";
@@ -140,6 +140,11 @@ export default function Scene() {
             Inverser<br />miroir
           </div>
         ) : null}
+        {/* 06/11 : la ligne où le cadre s'accroche, le temps du glisser */}
+        {rt ? ui.guides.map((g, i) => (
+          <i key={`g${i}`} className={cls("ed-guide", g.axe === "x" ? "ed-guide--v" : "ed-guide--h")} aria-hidden="true"
+            style={g.axe === "x" ? { left: pc(g.pos, PLANCHE_L) } : { top: pc(g.pos, PAGE_H) }} />
+        )) : null}
         {!montrerApercu ? <Selections frames={frames} /> : null}
         {!d && !ro && !(ss && ss.apercu) && act ? <Pastilles pl={pl} act={act} /> : null}
         {bullePose ? <div className="ed-bulle">{bullePose}</div> : null}
@@ -208,7 +213,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   const appui = fantome || ro ? undefined : (e: React.PointerEvent) => {
     if (etat.selection.ids.length || etat.echangeArme || (e.target as HTMLElement).closest(".ed-cadre-barre")) return;
     /* lot 4 : ⌥ + glisser déplace le cadre lui-même, à la souris */
-    if (e.altKey && e.button === 0 && f.role === "photo") { debutRetouche(e, f, "m", majUi, envoyer); return; }
+    if (e.altKey && e.button === 0 && f.role === "photo") { debutRetouche(e, f, "m", majUi, envoyer, ui.aimant ? autresCadres(etat, f) : null); return; }
     if (e.shiftKey) return;
     commencerAppui(e, multi && dansSel ? { type: "cadres", refs: etat.cadresSel } : { type: "cadre", ref, photoId: f.photoId });
   };
@@ -289,6 +294,7 @@ type Poignee = (typeof POIGNEES)[number] | "m";
 function Selections({ frames }: { frames: CadrePlanche[] }) {
   const { etat, envoyer, majUi, ui, lectureSeule: ro } = useEd();
   if (etat.glisser || etat.recadrage) return null;
+  const autres = (f: CadrePhoto) => (ui.aimant ? autresCadres(etat, f) : null);
   const multi = etat.cadresSel.length > 1;
   const vues = frames.filter((f): f is CadrePhoto => f.role === "photo" && !!f.photoId
     && (memeRef(etat.cadreActif, f.ref) || (multi && etat.cadresSel.some((r) => memeRef(r, f.ref)))));
@@ -305,9 +311,9 @@ function Selections({ frames }: { frames: CadrePlanche[] }) {
             {actif && !multi && !arme && !ro && !f.indisponible ? (
               <>
                 {POIGNEES.map((p) => (
-                  <span key={p} className={`ed-poignee ed-poignee--${p}`} onPointerDown={(e) => debutRetouche(e, f, p, majUi, envoyer)} />
+                  <span key={p} className={`ed-poignee ed-poignee--${p}`} onPointerDown={(e) => debutRetouche(e, f, p, majUi, envoyer, autres(f))} />
                 ))}
-                <span className="ed-poignee ed-poignee--m" title="Déplacer le cadre · ou ⌥ + glisser" onPointerDown={(e) => debutRetouche(e, f, "m", majUi, envoyer)}>
+                <span className="ed-poignee ed-poignee--m" title="Déplacer le cadre · ou ⌥ + glisser" onPointerDown={(e) => debutRetouche(e, f, "m", majUi, envoyer, autres(f))}>
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v16M2 10h16M10 2l-2.5 2.5M10 2l2.5 2.5M10 18l-2.5-2.5M10 18l2.5-2.5M2 10l2.5-2.5M2 10l2.5 2.5M18 10l-2.5-2.5M18 10l-2.5 2.5" /></svg>
                 </span>
               </>
@@ -365,9 +371,20 @@ function BarreMulti({ n }: { n: number }) {
   );
 }
 
+/** 06/11 : les autres cadres de la planche (photos et textes), où l'aimant peut accrocher celui qu'on bouge. */
+function autresCadres(etat: EtatEditeur, f: CadrePhoto): Rect[] {
+  return cadresPlanche(etat, f.ref.plancheId)
+    .filter((g) => !(g.role === "photo" && memeRef(g.ref, f.ref)))
+    .map((g) => ({ x: g.x, y: g.y, l: g.l, h: g.h }));
+}
+
+/** L'aimant accroche à 6 pixels d'écran, quelle que soit la taille de la planche. */
+const AIMANT_PX = 6;
+
 /* Déplacer (m) ou redimensionner un cadre à la souris : le cadre se dessine à sa place provisoire (ui.retouche), une seule
-   entrée d'historique au lâcher. Les coins gardent le format (⇧ pour le libérer), comme Canva. */
-function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: (x: { retouche: CadreRetouche | null; position?: string | null }) => void, envoyer: (g: Geste) => void) {
+   entrée d'historique au lâcher. Les coins gardent le format (⇧ pour le libérer), comme Canva. `autres` = l'aimant allumé
+   (06/11) : bords et centre s'accrochent, ⌘ tenu le coupe le temps du geste. */
+function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: (x: { retouche: CadreRetouche | null; position?: string | null; guides?: Guide[] }) => void, envoyer: (g: Geste) => void, autres: Rect[] | null) {
   e.stopPropagation();
   e.preventDefault();
   const planche = (e.currentTarget as HTMLElement).closest(".ed-planche");
@@ -379,6 +396,8 @@ function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: 
   let r = r0;
   const nord = p === "n" || p === "ne" || p === "no", ouest = p === "o" || p === "no" || p === "so";
   const est = p === "e" || p === "ne" || p === "se", sud = p === "s" || p === "se" || p === "so";
+  const lignes = autres ? lignesAimant(autres) : null;
+  const bords = p === "m" ? DEPLACEMENT : { gauche: ouest, droite: est, haut: nord, bas: sud };
   const mv = (ev: PointerEvent) => {
     const dx = (ev.clientX - x0) * mmParPx, dy = (ev.clientY - y0) * mmParPx;
     if (p === "m") r = { ...r0, x: r0.x + dx, y: r0.y + dy };
@@ -388,7 +407,12 @@ function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: 
       l = Math.max(COTE_MIN, l); h = Math.max(COTE_MIN, h);
       r = { x: ouest ? r0.x + r0.l - l : r0.x, y: nord ? r0.y + r0.h - h : r0.y, l, h };
     }
-    majUi({ retouche: { ref: f.ref, ...r } });
+    let guides: Guide[] = [];
+    if (lignes && !ev.metaKey && !ev.ctrlKey) {
+      const a = aimanter(r, bords, lignes, AIMANT_PX * mmParPx, p.length === 2 && p !== "m" && !ev.shiftKey);
+      if (a.rect.l >= COTE_MIN && a.rect.h >= COTE_MIN) { r = a.rect; guides = a.guides; }
+    }
+    majUi({ retouche: { ref: f.ref, ...r }, guides });
   };
   const up = () => {
     window.removeEventListener("pointermove", mv);
@@ -398,7 +422,7 @@ function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: 
     const avaler = (ev: MouseEvent) => { ev.stopPropagation(); ev.preventDefault(); };
     window.addEventListener("click", avaler, { capture: true, once: true });
     setTimeout(() => window.removeEventListener("click", avaler, { capture: true }), 0);
-    majUi({ retouche: null, position: null });
+    majUi({ retouche: null, position: null, guides: [] });
     if (r !== r0) envoyer({ type: "placerCadre", ref: f.ref, ...r });
   };
   window.addEventListener("pointermove", mv);

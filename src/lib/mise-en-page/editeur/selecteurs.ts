@@ -6,7 +6,7 @@
 import { cadresDe, decorDe, dispositionDe, utilisations, type Cible, type Planche } from "../magazine";
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
-import { dpi, estPleine, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
+import { dansFamille, dpi, estPleine, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
 import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
 import { visibles } from "./bibliotheque";
@@ -200,6 +200,7 @@ export function gabaritsPour(e: EtatEditeur, plancheId: string, cible: Cible): G
   if (!d) return [];
   const refs = idsDispo(d).map((id) => refPour(e.catalogue, id));
   return gabaritsClasses(porteeDe(cible), refs, precedentDe(e.magazine, i, cible))
+    .filter((x) => dansFamille(x.template, e.familleGabarits) || x.template.id === d.templateId)
     .map(({ template, note }) => ({ template, id: template.id, nom: template.nom, note, courant: template.id === d.templateId }));
 }
 

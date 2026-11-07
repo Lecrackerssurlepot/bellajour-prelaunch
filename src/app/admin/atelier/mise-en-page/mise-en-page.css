@@ -1676,3 +1676,12 @@
 .mep-editeur .ed-ac:has(.ed-ac-v), .mep-editeur .ed-ac { transition: background 0.15s; }
 .mep-editeur .ed-ac--cible { background: color-mix(in srgb, var(--bj-action) 16%, var(--bj-cream-tint-1)); outline: 2px dashed var(--bj-action); outline-offset: -4px; }
 .mep-editeur .ed-grille--cible { outline: 2px dashed var(--bj-action); outline-offset: -4px; background: color-mix(in srgb, var(--bj-action) 5%, transparent); }
+
+/* 06/11 : l'aimant et la famille de gabarits que parcourt R */
+.mep-editeur .ed-aimant--on { background: var(--bj-action-soft); color: var(--bj-action); }
+.mep-editeur .ed-aimant--on:hover:not(:disabled) { background: var(--bj-action-soft); color: var(--bj-action); }
+.mep-editeur .ed-guide { position: absolute; z-index: 7; pointer-events: none; background: var(--bj-action); }
+.mep-editeur .ed-guide--v { top: -3%; bottom: -3%; width: 1px; transform: translateX(-0.5px); }
+.mep-editeur .ed-guide--h { left: -1.5%; right: -1.5%; height: 1px; transform: translateY(-0.5px); }
+.mep-editeur .ed-famille--on { background: var(--bj-action-soft); color: var(--bj-action); }
+.mep-editeur .ed-rangee-tete .ed-famille { position: static; opacity: 1; transform: none; box-shadow: none; border: 1px solid var(--bj-veil-12); }
