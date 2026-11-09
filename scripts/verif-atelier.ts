@@ -6033,6 +6033,19 @@ const verifierProtection = async () => {
 
   titre("— pdf.js : le paquet et sa copie servie sont la même version (T-162) —");
   const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8")) as { dependencies: Record<string, string> };
+  {
+    /* lot 2 (09/11) : le wasm de MediaPipe servi par le site est la copie exacte du paquet installé, et le modèle est là */
+    const v = (JSON.parse(readFileSync(resolve(process.cwd(), "node_modules/@mediapipe/tasks-vision/package.json"), "utf8")) as { version: string }).version;
+    const memes = ["vision_wasm_internal.js", "vision_wasm_internal.wasm"].every((f) => {
+      try { return readFileSync(resolve(process.cwd(), `public/mediapipe/${v}/${f}`)).equals(readFileSync(resolve(process.cwd(), `node_modules/@mediapipe/tasks-vision/wasm/${f}`))); } catch { return false; }
+    });
+    ok(`mise en page : public/mediapipe/${v} = la copie exacte du wasm de @mediapipe/tasks-vision`, memes);
+    let modele = 0;
+    try { modele = readFileSync(resolve(process.cwd(), "public/modeles/blaze_face_short_range.tflite")).length; } catch { /* absent */ }
+    ok("mise en page : le modèle de visages BlazeFace (≈ 230 Ko) est servi depuis public/modeles", modele > 200_000 && modele < 300_000);
+    const client = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/mesuresClient.ts"), "utf8");
+    ok("mise en page : mesuresClient vise la même version de MediaPipe", client.includes(`"/mediapipe/${v}"`));
+  }
   const declaree = pkg.dependencies["pdfjs-dist"] ?? "";
   const installee = (JSON.parse(readFileSync(resolve(process.cwd(), "node_modules/pdfjs-dist/package.json"), "utf8")) as { version: string }).version;
   ok(`pdfjs-dist épinglé à une version exacte (${declaree}), celle qui est installée (${installee})`, /^\d+\.\d+\.\d+$/.test(declaree) && declaree === installee);

@@ -385,7 +385,18 @@ const GESTES: Gestes = {
     const l = g.lecture;
     if (!l || !Array.isArray(l.floues) || !Array.isArray(l.piles)) return e;
     const tetes = new Set(l.piles.map((p) => p.tete));
-    return { ...e, lecture: l, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+    /* lot 2 : la zone importante rejoint la photo du catalogue (les opérations pures la lisent pour poser et noter) */
+    const zones = l.zones && typeof l.zones === "object" ? l.zones : {};
+    let cat = e.catalogue;
+    if (Object.keys(zones).length || [...e.catalogue.values()].some((p) => p.zone)) {
+      const m = new Map(e.catalogue);
+      for (const [id, p] of e.catalogue) {
+        const z = zones[id] ?? null;
+        if ((p.zone ?? null) !== z) m.set(id, { ...p, zone: z });
+      }
+      cat = m;
+    }
+    return { ...e, catalogue: cat, lecture: { ...l, zones }, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
   },
   basculerPile(e, g) {
     if (!e.lecture.piles.some((p) => p.tete === g.tete)) return e;

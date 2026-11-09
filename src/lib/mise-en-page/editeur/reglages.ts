@@ -16,6 +16,10 @@ export const REGLAGES = {
   rafale_large_secondes: { valeur: 10, regle: "R74", depuis: "2026-11-09", raison: "réglage de départ" },
   rafale_hamming: { valeur: 14, regle: "R74", depuis: "2026-11-09", raison: "réglage de départ" },
   doublon_hamming: { valeur: 6, regle: "R75", depuis: "2026-11-09", raison: "réglage de départ (le site utilise ≤ 2 sur un pHash DCT, plus strict)" },
+  air_tete: { valeur: 0.15, regle: "R-21", depuis: "2026-11-09", raison: "15 % de la hauteur du visage au-dessus de la tête, rapport ch.03" },
+  masse_saillance: { valeur: 0.85, regle: "R-20", depuis: "2026-11-09", raison: "la zone protégée garde 85 % de la masse saillante, rapport ch.03" },
+  visage_confiance: { valeur: 0.5, regle: "A6", depuis: "2026-11-09", raison: "seuil par défaut du détecteur MediaPipe" },
+  pli_mm: { valeur: 5, regle: "R-25", depuis: "2026-11-09", raison: "HYPOTHÈSE : largeur perdue de chaque côté du pli, à confirmer avec Cloudprinter" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;

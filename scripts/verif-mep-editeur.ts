@@ -1732,6 +1732,64 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : lot 2, la mémoire (réglages versionnés, leçons d'un geste contraire, instantané)", msg === null);
   }
+  {
+    /* Lot 2 (09/11) : B1 carte de chaleur, B2 recadrage par le contenu, B3 rien dans le pli. */
+    let msg: string | null = null;
+    try {
+      const L = 96, H = 64;
+      /* un fond uni et une tache claire en haut à gauche : la saillance doit la trouver */
+      const g = new Uint8Array(L * H).fill(90);
+      for (let y = 6; y < 22; y++) for (let x = 8; x < 28; x++) g[y * L + x] = 240;
+      const carte = O.carteSaillance(g, L, H);
+      proche(carte.reduce((a, b) => a + b, 0), 1, 1e-6, "B1 : la carte est normalisée");
+      const z = def(O.zoneImportante([], carte), "B1 : une zone sans visage");
+      ok(z.x + z.l / 2 < 0.45 && z.y + z.h / 2 < 0.5, "B1 : la zone saillante est en haut à gauche, là où est la tache");
+      const v = O.zoneImportante([{ x: 0.6, y: 0.5, l: 0.2, h: 0.3 }], null);
+      ok(!!v && v.y < 0.5 && v.y + v.h >= 0.8 - 1e-9 && v.x === 0.6, "B1 : un visage impose sa zone, avec de l'air au-dessus de la tête (R-21)");
+      ok(O.zoneImportante([], null) === null, "B1 : sans visage ni carte, pas de zone");
+
+      /* B2 : un portrait 2000 × 3000 dans un cadre carré 100 × 100 : remplissage par la largeur, l'image fait 150 mm de haut */
+      const photo = { l: 2000, h: 3000 }, cadre = { l: 100, h: 100 };
+      const haut = O.recadrageParContenu(photo, cadre, { x: 0.3, y: 0.05, l: 0.4, h: 0.2 });
+      ok(haut.zoom === 1 && haut.dx === 0 && haut.dy > 0, "B2 : une zone en haut fait glisser l'image vers le bas (dy > 0)");
+      const bas = O.recadrageParContenu(photo, cadre, { x: 0.3, y: 0.8, l: 0.4, h: 0.15 });
+      ok(bas.dy < 0 && Math.abs(bas.dy) <= 25 + 1e-9, "B2 : une zone en bas glisse vers le haut, bornée par le bord de l'image (25 mm)");
+      eq(O.recadrageParContenu(photo, cadre, null), { zoom: 1, dx: 0, dy: 0 }, "B2 : sans zone, le neutre");
+      const centre = O.recadrageParContenu(photo, cadre, { x: 0.4, y: 0.45, l: 0.2, h: 0.1 });
+      proche(centre.dy, 0, 0.01, "B2 : une zone au centre ne bouge rien");
+
+      /* B3 : une double pleine page (cadre sur toute la planche) et un visage au milieu de la photo = sur le pli */
+      const pleine = { x: 0, y: 0, l: 420, h: 297 };
+      const paysage = { l: 4200, h: 2970 };
+      const auPli = O.partDansLePli(paysage, pleine, { x: 0.49, y: 0.3, l: 0.02, h: 0.1 });
+      ok(auPli > 0.9, "B3 : un visage au centre d'une pleine double est dans le pli");
+      eq(O.partDansLePli(paysage, pleine, { x: 0.1, y: 0.3, l: 0.1, h: 0.1 }), 0, "B3 : un visage à gauche n'y est pas");
+      eq(O.partDansLePli(paysage, { x: 0, y: 0, l: 200, h: 297 }, { x: 0.5, y: 0.3, l: 0.1, h: 0.1 }), 0, "B3 : un cadre qui ne touche pas le pli ne compte pas");
+      /* la note d'un gabarit pleine double monte quand la zone est au pli : un gabarit à deux cadres doit passer devant */
+      const refPli = { id: "p", nom: "p", l: 4200, h: 2970, date: null, zone: { x: 0.49, y: 0.3, l: 0.02, h: 0.1 } };
+      const refOk = { ...refPli, zone: { x: 0.1, y: 0.3, l: 0.1, h: 0.1 } };
+      const gab = (r: typeof refPli) => O.gabaritsClasses("double", [r], null);
+      const notePli = gab(refPli).find((x) => x.template.cadres.some((c) => c.role === "photo" && c.l > 400))?.note;
+      const noteOk = gab(refOk).find((x) => x.template.cadres.some((c) => c.role === "photo" && c.l > 400))?.note;
+      ok(notePli !== undefined && noteOk !== undefined && notePli > noteOk + 3, "B3 : la pleine double est pénalisée quand le visage tombe dans le pli (R-25)");
+      ok(O.REGLAGES.pli_mm.raison.startsWith("HYPOTHÈSE"), "B3 : la largeur du pli est une hypothèse à confirmer avec Cloudprinter");
+
+      /* la zone rejoint le catalogue par la lecture, et la pose s'en sert */
+      const cat = new Map(catalogue("A:P B:L").map((p) => [p.id, p]));
+      const e0 = O.creerEtat({ magazine: magazineVide(3), catalogue: cat });
+      const e1 = O.appliquer(e0, { type: "poserLecture", lecture: { ...O.LECTURE_VIDE, mesurees: 2, zones: { A: { x: 0.3, y: 0.02, l: 0.4, h: 0.2 } } } });
+      ok(e1.catalogue.get("A")?.zone?.y === 0.02 && !e1.catalogue.get("B")?.zone, "la zone de la lecture rejoint la photo du catalogue");
+      const e2 = O.appliquer(e1, { type: "deposer", source: { type: "bibliotheque", ids: ["A"] }, cible: { type: "vignette", plancheId: pl(2) } });
+      const dispo = e2.magazine.planches[1].gauche ?? e2.magazine.planches[1].droite ?? e2.magazine.planches[1].double;
+      const aff = dispo?.photos.find((a) => a.photoId === "A");
+      ok(!!aff && (aff.recadrage.dy !== 0 || aff.recadrage.dx !== 0 || aff.recadrage.zoom === 1), "B2 : à la pose, le recadrage lit la zone (ou reste neutre si le cadre a le même rapport)");
+      ok(O.contenuValide(e2.magazine), "le magazine posé par contenu se sauvegarde");
+      const e3 = O.appliquer(e1, { type: "poserLecture", lecture: O.LECTURE_VIDE });
+      ok(!e3.catalogue.get("A")?.zone, "une lecture sans zone retire la zone");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : lot 2, des yeux (carte de chaleur, recadrage par le contenu, rien dans le pli)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);

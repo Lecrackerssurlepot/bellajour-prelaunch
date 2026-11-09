@@ -14,7 +14,10 @@
 import type { Catalogue, PhotoMaq } from "./types";
 import { REGLAGES } from "./reglages";
 
-export type Mesure = { nettete: number; dhash: string };
+import type { Boite } from "./saillance";
+
+/** `visages` et `zone` (lot 2) : en fractions de l'image ; absents si la photo n'a pas été vue par le détecteur. */
+export type Mesure = { nettete: number; dhash: string; visages?: Boite[]; zone?: Boite | null };
 
 /* Les seuils vivent dans `reglages.ts` (G7) : nommés, datés, emportés par chaque leçon. Les noms d'ici restent pour le harnais. */
 export const RAFALE_SECONDES = REGLAGES.rafale_secondes.valeur;
@@ -112,9 +115,11 @@ export type Lecture = {
   piles: Pile[];
   /** Combien de photos ont été mesurées sur le catalogue. */
   mesurees: number;
+  /** Lot 2 : la zone importante de chaque photo qui en a une (recadrage par le contenu, pli). */
+  zones: Record<string, Boite>;
 };
 
-export const LECTURE_VIDE: Lecture = { floues: [], piles: [], mesurees: 0 };
+export const LECTURE_VIDE: Lecture = { floues: [], piles: [], mesurees: 0, zones: {} };
 
 /** Les secondes depuis l'époque d'une date « AAAA-MM-JJTHH:MM:SS » (heure locale de l'appareil, lue comme UTC), ou null. */
 export function secondesDe(date: string | null): number | null {
@@ -207,7 +212,9 @@ export function lireMesures(cat: Catalogue, mes: ReadonlyMap<string, Mesure>): L
   const floues = photos.filter((p) => mes.get(p.id)!.nettete < seuil && !sous.has(p.id))
     .sort((a, b) => (chrono.get(a.id)! - chrono.get(b.id)!) || (a.id < b.id ? -1 : 1)).map((p) => p.id);
 
-  return { floues, piles, mesurees: photos.length };
+  const zones: Record<string, Boite> = {};
+  for (const p of photos) { const z = mes.get(p.id)!.zone; if (z) zones[p.id] = z; }
+  return { floues, piles, mesurees: photos.length, zones };
 }
 
 /** Les photos rangées sous une autre (et la tête qui les porte), pour la bibliothèque. */

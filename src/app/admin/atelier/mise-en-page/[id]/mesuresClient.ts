@@ -8,7 +8,8 @@
  */
 
 import { useEffect, useRef } from "react";
-import { lireMesures, mesurerGris, type Catalogue, type Geste, type Mesure } from "@/lib/mise-en-page/editeur";
+import { carteSaillance, lireMesures, mesurerGris, REGLAGES, zoneImportante, type Boite, type Catalogue, type Geste, type Mesure } from "@/lib/mise-en-page/editeur";
+import type { FaceDetector } from "@mediapipe/tasks-vision";
 import type { Adresse } from "./contexte";
 
 const COTE = 256;
@@ -17,7 +18,10 @@ const PAQUET = 150;
 const BASE = "bj-mep-mesures";
 const MAGASIN = "mesures";
 /** Changer la mesure change la version : les anciennes mesures ne sont plus relues. */
-const VERSION = "v1";
+const VERSION = "v2";
+/** Lot 2 (A6) : le détecteur de visages de MediaPipe, servi depuis notre origine (copie de node_modules, voir le harnais). */
+const MEDIAPIPE = "/mediapipe/1.2.2";
+const MODELE_VISAGES = "/modeles/blaze_face_short_range.tflite";
 
 let basePromise: Promise<IDBDatabase | null> | null = null;
 function base(): Promise<IDBDatabase | null> {
@@ -38,7 +42,7 @@ async function lire(id: string): Promise<Mesure | null> {
   return new Promise((ok) => {
     try {
       const r = b.transaction(MAGASIN, "readonly").objectStore(MAGASIN).get(`${VERSION}:${id}`);
-      r.onsuccess = () => { const m = r.result as Mesure | undefined; ok(m && typeof m.nettete === "number" && typeof m.dhash === "string" ? m : null); };
+      r.onsuccess = () => { const m = r.result as Mesure | undefined; ok(m && typeof m.nettete === "number" && typeof m.dhash === "string" && "zone" in m ? m : null); };
       r.onerror = () => ok(null);
     } catch { ok(null); }
   });
@@ -49,7 +53,39 @@ async function ecrire(id: string, m: Mesure): Promise<void> {
   try { b.transaction(MAGASIN, "readwrite").objectStore(MAGASIN).put(m, `${VERSION}:${id}`); } catch { /* rien */ }
 }
 
-/** La mesure d'une image : réduite à COTE px de grand côté, en gris. Null si illisible. */
+/* ─── les yeux (A6) : un détecteur, chargé une fois, best-effort ; sans lui, la zone vient de la saillance seule ─── */
+let detecteur: Promise<FaceDetector | null> | null = null;
+function visagesDetecteur(): Promise<FaceDetector | null> {
+  if (detecteur) return detecteur;
+  detecteur = (async () => {
+    try {
+      const { FilesetResolver, FaceDetector: FD } = await import("@mediapipe/tasks-vision");
+      const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE);
+      return await FD.createFromOptions(vision, {
+        baseOptions: { modelAssetPath: MODELE_VISAGES, delegate: "CPU" },
+        runningMode: "IMAGE",
+        minDetectionConfidence: REGLAGES.visage_confiance.valeur,
+      });
+    } catch (e) { console.warn("[mise-en-page] visages : détecteur indisponible", (e as Error)?.message); return null; }
+  })();
+  return detecteur;
+}
+
+/** Les visages d'une image, en fractions (boîtes), ou null si le détecteur manque. Aucune identité, rien de gardé d'autre que les boîtes. */
+async function visagesDe(im: ImageBitmap): Promise<Boite[] | null> {
+  const d = await visagesDetecteur();
+  if (!d) return null;
+  try {
+    const r = d.detect(im);
+    return r.detections.flatMap((x) => {
+      const b = x.boundingBox;
+      if (!b || b.width <= 0 || b.height <= 0) return [];
+      return [{ x: b.originX / im.width, y: b.originY / im.height, l: b.width / im.width, h: b.height / im.height }];
+    });
+  } catch { return null; }
+}
+
+/** La mesure d'une image : réduite à COTE px de grand côté, en gris (netteté, empreinte, saillance), plus les visages. Null si illisible. */
 async function mesurer(source: string): Promise<Mesure | null> {
   let im: ImageBitmap;
   try {
@@ -67,7 +103,10 @@ async function mesurer(source: string): Promise<Mesure | null> {
     const px = ctx.getImageData(0, 0, l, h).data;
     const gris = new Uint8Array(l * h);
     for (let i = 0, j = 0; j < gris.length; i += 4, j++) gris[j] = Math.round(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
-    return mesurerGris(gris, l, h);
+    const base = mesurerGris(gris, l, h);
+    const visages = await visagesDe(im);
+    const zone = zoneImportante(visages ?? [], carteSaillance(gris, l, h));
+    return { ...base, ...(visages ? { visages } : {}), zone };
   } catch { return null; } finally { im.close(); }
 }
 

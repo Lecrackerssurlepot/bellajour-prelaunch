@@ -12,10 +12,12 @@ import {
   type Cible, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
 } from "../magazine";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
-import { ZOOM_MIN, cadrer, type Recadrage } from "../recadrage";
+import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
+import { PAGE_L, type Rect } from "../geometrie";
 import type { Template } from "../types";
+import { REGLAGES } from "./reglages";
 import {
-  BONUS_ANNEXE, CIBLES, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
+  BONUS_ANNEXE, CIBLES, LIBELLE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
@@ -38,6 +40,19 @@ const rapport = (o: Dims): number => {
   return l / h;
 };
 
+/** La part (0 à 1) de la zone importante d'une photo qui tombe dans la bande du pli (± `pli_mm` autour de la pliure),
+ *  une fois la photo posée dans ce cadre avec son recadrage par contenu. 0 si le cadre ne touche pas le pli. */
+export function partDansLePli(photo: Dims, cadre: Rect, zone: { x: number; y: number; l: number; h: number }): number {
+  const pli = REGLAGES.pli_mm.valeur;
+  if (cadre.x + cadre.l <= PAGE_L - pli || cadre.x >= PAGE_L + pli) return 0;
+  const c = cadrer(photo, cadre, recadrageParContenu(photo, cadre, zone));
+  /* la zone en mm, repère planche */
+  const zx0 = cadre.x + c.x + zone.x * c.l, zx1 = zx0 + zone.l * c.l;
+  const a = Math.max(zx0, PAGE_L - pli), b = Math.min(zx1, PAGE_L + pli);
+  if (b <= a || zx1 <= zx0) return 0;
+  return (b - a) / (zx1 - zx0);
+}
+
 /** 1 − min(rp, rc) / max(rp, rc), dans [0, 1[. */
 export function perteCadre(photo: Dims, cadre: Dims): number {
   const rp = rapport(photo), rc = rapport(cadre);
@@ -45,12 +60,14 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
 }
 
 /** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − petit bonus aux gabarits DESSINÉS (annexe et épingles), jamais aux grilles. */
-export function noterGabarit(t: Template, photos: readonly Dims[], precedent: string | null): number {
+export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null })[], precedent: string | null): number {
   const cs = cadresPhoto(t);
   let s = 0;
   for (let i = 0; i < cs.length; i++) {
     const p = perteCadre(photos[i] ?? { l: 1, h: 1 }, cs[i]);
     s += p + POIDS_GRANDE_COUPE * p * p;
+    /* lot 2 (B3, R-25) : rien d'important dans le pli d'une double ; un visage sur le pli coûte plus qu'une grande coupe */
+    if (photos[i]?.zone && t.portee === "double") s += PENALITE_PLI * partDansLePli(photos[i], cs[i], photos[i].zone!);
   }
   if (t.id === precedent) s += PENALITE_REPETITION;
   if (t.origine !== "grille") s -= BONUS_ANNEXE;
@@ -155,7 +172,7 @@ export function composerDisposition(
   const cs = cadresPhoto(t);
   const photos = ids.map((id, i) => {
     const src = sources.get(id);
-    return avecHesitation({ photoId: id, recadrage: src ? reporterRecadrage(src.r, refs[i], src.cadre, { l: cs[i].l, h: cs[i].h }) : neutre() }, src?.hes);
+    return avecHesitation({ photoId: id, recadrage: src ? reporterRecadrage(src.r, refs[i], src.cadre, { l: cs[i].l, h: cs[i].h }) : recadrageParContenu(refs[i], cs[i], refs[i].zone) }, src?.hes);
   });
   const { textes, perdus } = reporterTextes(anciens, tA, t);
   /* un gabarit enregistré par l'atelier (lot 4) : la disposition garde ses cadres, elle se relit sans lui */

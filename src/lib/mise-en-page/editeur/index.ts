@@ -50,3 +50,8 @@ export { REGLAGES, valeursReglages, versionReglages } from "./reglages";
 export type { NomReglage, Reglage } from "./reglages";
 export { instantane, jalon, leconValide, leconsDeLaPose, leconsDuTri } from "./lecons";
 export type { Instantane, Lecon, TypeLecon } from "./lecons";
+export { boiteDeMasse, carteSaillance, COTE_SAILLANCE, reduireGris, zoneImportante } from "./saillance";
+export type { Boite } from "./saillance";
+export { PENALITE_PLI } from "./outils";
+export { partDansLePli } from "./operations";
+export { recadrageParContenu } from "../recadrage";
