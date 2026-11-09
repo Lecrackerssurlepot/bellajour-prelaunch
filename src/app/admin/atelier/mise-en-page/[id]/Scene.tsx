@@ -3,15 +3,18 @@
 import { useEffect } from "react";
 import {
   actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
-  SEUIL_DPI, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
+  SEUIL_DPI, SEUIL_DPI_CONFORT, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
   type Guide, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
-import type { Magazine, Planche } from "@/lib/mise-en-page/magazine";
+import { dispositionDe, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
+import { choixDeLieux } from "@/lib/mise-en-page/lieux";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { PAGE_H, PLANCHE_L, type Rect } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
 import { grandeDe, precharger, vignetteDe } from "./images";
+import { demanderHd, useHd } from "./hd";
+import { useLieux } from "./lieuxClient";
 import { Pastilles } from "./Gabarits";
 
 /* La double page, en grand. Aucun calcul du magazine ici : on envoie des gestes, on dessine l'état rendu.
@@ -89,6 +92,10 @@ export default function Scene() {
   useEffect(() => {
     const vs = [m.planches[idx + 1], m.planches[idx - 1]].filter((x): x is Planche => !!x);
     precharger(vs.flatMap((x) => idsPlanche(x)).map((id) => grandeDe(adresses.get(id))), 1.5e9);
+    /* 09/11 : la haute définition, tirée de l'original : la planche affichée d'abord, puis ses voisines */
+    const hd = (ids: string[]) => ids.map((id) => ({ id, source: adresses.get(id)?.original }));
+    demanderHd(hd(idsPlanche(m.planches[idx])), 2e9);
+    demanderHd(hd(vs.flatMap((x) => idsPlanche(x))), 1e9);
   }, [m, idx, adresses]);
 
   const poserIci = (c: "gauche" | "droite" | "double"): CibleDepot => (c === "double" ? { type: "double", plancheId: pl.id } : { type: "page", plancheId: pl.id, cote: c });
@@ -179,6 +186,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   f: CadrePlanche; pl: Planche; rep: Rep; sous?: boolean; fantome?: boolean; nouv?: boolean; cibleCour: CibleDepot | null; refus: boolean;
 }) {
   const { etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime } = useEd();
+  const hd = useHd(f.role === "photo" ? f.photoId : null);
   const st: React.CSSProperties = {
     left: pc(f.x, PLANCHE_L), top: pc(f.y, PAGE_H), width: pc(f.l, PLANCHE_L), height: pc(f.h, PAGE_H),
     ...(f.rotation ? { transform: `rotate(${f.rotation}deg)` } : {}), ...(sous ? { opacity: 0 } : {}),
@@ -217,7 +225,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
     if (e.shiftKey) return;
     commencerAppui(e, multi && dansSel ? { type: "cadres", refs: etat.cadresSel } : { type: "cadre", ref, photoId: f.photoId });
   };
-  const src = grandeDe(adresses.get(f.photoId));
+  const src = hd ?? grandeDe(adresses.get(f.photoId));
   if (f.indisponible || !src) {
     return (
       <div className={cls("ed-cadre ed-cadre--indispo", actif && "ed-cadre--actif", cible && "ed-cadre--cible")} style={st} {...attrs} tabIndex={fantome ? -1 : 0} role={fantome ? undefined : "button"} aria-label="Photo indisponible"
@@ -233,7 +241,8 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   const am = ph ? ph.autresMagazines : [];
   const reps: React.ReactNode[] = [];
   if (f.signalee) reps.push(<span key="s" className="ed-rep ed-rep--drapeau" title="À ne pas publier">!</span>);
-  if (f.basseDef && f.dpi !== null) reps.push(<span key="b" className="ed-rep ed-rep--basse" title={`${Math.round(f.dpi)} dpi`}>Basse déf.</span>);
+  if (f.basseDef && f.dpi !== null) reps.push(<span key="b" className="ed-rep ed-rep--basse" title={`${Math.round(f.dpi)} dpi : trop faible pour l'impression`}>Basse déf.</span>);
+  else if (f.dpi !== null && f.dpi < SEUIL_DPI_CONFORT) reps.push(<span key="b" className="ed-rep ed-rep--juste" title={`Sous ${SEUIL_DPI_CONFORT} dpi : imprimable, un peu moins fine`}>{Math.round(f.dpi)} dpi</span>);
   if (n > 1) reps.push(<span key="n" className="ed-rep">×{n}</span>);
   if (am.length) reps.push(<span key="m" className="ed-rep ed-rep--mag">Mag. {am[0]}</span>);
   if (recad) {
@@ -337,6 +346,10 @@ function BarreCadre({ f }: { f: CadrePhoto }) {
   const calque = (sens: SensCalque) => envoyer({ type: "calque", ref: refC, sens });
   return (
     <span className="ed-cadre-barre" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+      {f.dpi !== null && !indispo ? (
+        <span className={cls("ed-qualite", f.dpi < SEUIL_DPI ? "ed-qualite--basse" : f.dpi < SEUIL_DPI_CONFORT && "ed-qualite--juste")}
+          title={`Résolution à l'impression, dans ce cadre et à ce zoom · ${SEUIL_DPI_CONFORT} dpi = pleine finesse`}>{Math.round(f.dpi)} dpi</span>
+      ) : null}
       <button type="button" onClick={() => envoyer({ type: "armerEchange", ref: refC })}>Échanger</button>
       {indispo ? null : <button type="button" onClick={() => envoyer({ type: "ouvrirRecadrage", ref: refC })}>Recadrer</button>}
       {indispo ? null : <button type="button" title="Le cadre prend le format de la photo" onClick={() => envoyer({ type: "ajusterCadre", ref: refC })}>Ajuster</button>}
@@ -459,7 +472,7 @@ function OutilsRecadrage() {
     <div className="ed-recadre" onPointerDown={(e) => e.stopPropagation()}>
       <span>Zoom</span>
       <input type="range" min="1" max="8" step="0.05" value={c.recadrage.zoom} aria-label="Zoom" onChange={(e) => envoyer({ type: "zoomerImage", zoom: Number(e.currentTarget.value) })} />
-      {dpi ? <span className={cls("ed-dpi", dpi < SEUIL_DPI && "ed-dpi--bas")}>{dpi} dpi</span> : null}
+      {dpi ? <span className={cls("ed-qualite", dpi < SEUIL_DPI ? "ed-qualite--basse" : dpi < SEUIL_DPI_CONFORT && "ed-qualite--juste")}>{dpi} dpi</span> : null}
       <button type="button" className="ed-bt" onClick={() => envoyer({ type: "recentrer" })}>Recentrer</button>
       <button type="button" className="ed-bt ed-bt--action" onClick={() => envoyer({ type: "fermerRecadrage" })}>OK</button>
     </div>
@@ -473,13 +486,31 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   const libelle = f.vide || !f.contenu;
   const style: React.CSSProperties = { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.blanc ? { color: "#fff" } : {}) };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, refT);
+  /* 09/11 : en écrivant un titre ou une légende, les lieux de ses photos sont proposés, du plus précis au plus large */
+  const pl = enEdition && f.role !== "texte" ? etat.magazine.planches.find((x) => x.id === refT.plancheId) : undefined;
+  const dispo = pl ? dispositionDe(pl, refT.cible) : null;
+  const lieux = useLieux(dispo ? dispo.photos.map((a) => (a.photoId ? etat.catalogue.get(a.photoId)?.gps : null)) : []);
+  const choix = choixDeLieux(lieux).slice(0, 6);
   if (enEdition) {
+    const choisir = (v: string) => (e: React.PointerEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const n = document.querySelector(".ed-txt--edit");
+      if (n) n.textContent = v;
+      fermerTexteDom(envoyer);
+    };
     return (
+      <>
+      {choix.length ? (
+        <div className="ed-lieux" style={{ left: st.left, top: `calc(${String(st.top)} + ${String(st.height)})`, minWidth: st.width }} role="listbox" aria-label="Lieux proposés">
+          {choix.map((c) => <button key={c.valeur} type="button" role="option" aria-selected={false} title={c.sorte} onPointerDown={choisir(c.valeur)}>{c.valeur}</button>)}
+        </div>
+      ) : null}
       <div className="ed-txt ed-txt--edit" style={style} contentEditable suppressContentEditableWarning role="textbox" aria-label={`Texte : ${LIBELLE[f.role]}`}
         ref={(n) => {
           if (n && !n.dataset.pret) {
             n.dataset.pret = "1";
-            n.textContent = libelle ? "" : f.contenu;
+            n.textContent = libelle ? f.parDefaut ?? "" : f.contenu;
             setTimeout(() => {
               if (!n.isConnected) return;
               n.focus();
@@ -490,14 +521,15 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
         }}
         onBlur={() => fermerTexteDom(envoyer)}
         onKeyDown={(e) => { if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) { e.preventDefault(); e.currentTarget.blur(); } }} />
+      </>
     );
   }
   return (
-    <div className={cls("ed-txt", libelle && "ed-txt--libelle")} style={style} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
-      aria-label={fantome ? undefined : `Modifier : ${libelle ? LIBELLE[f.role] : f.contenu}`}
+    <div className={cls("ed-txt", libelle && !f.parDefaut && "ed-txt--libelle", libelle && f.parDefaut && "ed-txt--auto")} style={style} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
+      aria-label={fantome ? undefined : `Modifier : ${libelle ? f.parDefaut ?? LIBELLE[f.role] : f.contenu}`}
       onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); }}
       onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); } }}>
-      {libelle ? f.contenu || LIBELLE[f.role] : f.contenu}
+      {libelle ? f.parDefaut ?? (f.contenu || LIBELLE[f.role]) : f.contenu}
     </div>
   );
 }

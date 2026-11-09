@@ -15,7 +15,7 @@ export type {
 } from "./selecteurs";
 
 export {
-  BONUS_ANNEXE, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, SEUIL_DPI, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
+  BONUS_ANNEXE, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
 } from "./outils";
 export {
   ajouter, ajouterSurPlanche, autreGabarit, avecTexte, dansFamille, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
@@ -40,3 +40,7 @@ export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres,
 export type { SensCalque } from "./libre";
 export { DEPLACEMENT, aimanter, lignesAimant } from "./aimant";
 export type { Bords, Guide, Lignes } from "./aimant";
+export { PAUSE_MOMENT_MIN, decoupage, lieuCourt, nomDuMoment, rangementDe } from "./moments";
+export type { Decoupage, Rangement } from "./moments";
+export { avecLieuxParDefaut, lieuxParDefaut } from "./lieuxTextes";
+export type { CatalogueLieux } from "./lieuxTextes";

@@ -12,8 +12,12 @@ import type { Filtres } from "./types";
 
 export const PENALITE_REPETITION = 0.25;
 export const BONUS_ANNEXE = 0.05;
+/** 09/11 : une grande coupe pèse plus que plusieurs petites (perte + POIDS × perte²) : un visage coupé se voit, 5 % de ciel non. */
+export const POIDS_GRANDE_COUPE = 3;
 export const TOLERANCE_RAPPORT = 1.15;
 export const SEUIL_DPI = 200;
+/** 09/11 : au-dessus, la photo est imprimée à pleine finesse ; entre les deux, elle est « juste ». */
+export const SEUIL_DPI_CONFORT = 300;
 export const HISTORIQUE_MAX = 200;
 
 export type RoleTexte = Exclude<RoleCadre, "photo">;

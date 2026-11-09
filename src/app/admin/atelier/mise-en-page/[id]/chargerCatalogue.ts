@@ -53,7 +53,16 @@ export type PhotoMaq = PhotoRef & {
    * jamais perdu en silence (ARCHI T44).
    */
   indisponible: boolean;
+  /** 09/11 : la ville, le pays, le GPS (absents = inconnus). */
+  ville?: string | null;
+  pays?: string | null;
+  gps?: { lat: number; lon: number } | null;
 };
+
+/** Le GPS s'il est complet et plausible, sinon null. */
+export const gpsDe = (lat: number | null | undefined, lon: number | null | undefined): { lat: number; lon: number } | null =>
+  typeof lat === "number" && typeof lon === "number" && Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0)
+    ? { lat, lon } : null;
 
 /** Ce que l'écran affiche du projet. */
 export type ProjetInfo = {
@@ -130,6 +139,9 @@ export function photoMaqDeDossier(p: PhotoDossierMep, prenom: string | null): Ph
     vignette: p.urlVignette,
     moyenne: null,
     indisponible: sansAdresse,
+    ville: p.lieuVille?.trim() || null,
+    pays: p.lieuPays?.trim() || null,
+    gps: gpsDe(p.gpsLat, p.gpsLon),
   };
 }
 
@@ -151,6 +163,9 @@ export function photoMaqDEdition(p: PhotoEditionMep): PhotoMaq {
     vignette: p.vignette,
     moyenne: p.moyenne,
     indisponible: sansAdresse,
+    ville: p.lieuVille ?? null,
+    pays: p.lieuPays ?? null,
+    gps: gpsDe(p.gpsLat, p.gpsLon),
   };
 }
 

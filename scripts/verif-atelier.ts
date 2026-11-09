@@ -7012,8 +7012,8 @@ const verifierMepClient = () => {
   const dossier: ReponsePhotosMep = {
     ok: true, token: "t".repeat(32), titre: "Malaysia", prenom: "Justine", etat: "composition", nbPages: 28, ttl: 3600,
     photos: [
-      { id: "d1", nom: "IMG_1.jpg", taille: 10, l: 3000, h: 4000, priseLe: "2026-01-02T10:00:00", appareil: null, lieuVille: null, lieuPays: null, empreinte: null, url: "https://o1", urlVignette: "https://v1" },
-      { id: "d2", nom: null, taille: 10, l: null, h: null, priseLe: null, appareil: null, lieuVille: null, lieuPays: null, empreinte: null, url: null, urlVignette: null },
+      { id: "d1", nom: "IMG_1.jpg", taille: 10, l: 3000, h: 4000, priseLe: "2026-01-02T10:00:00", appareil: null, lieuVille: "Lisbonne", lieuPays: "Portugal", gpsLat: 38.71, gpsLon: -9.14, empreinte: null, url: "https://o1", urlVignette: "https://v1" },
+      { id: "d2", nom: null, taille: 10, l: null, h: null, priseLe: null, appareil: null, lieuVille: null, lieuPays: null, gpsLat: 0, gpsLon: 0, empreinte: null, url: null, urlVignette: null },
     ],
   };
   const cd = catalogueDeDossier(dossier, 1000);
@@ -7023,14 +7023,17 @@ const verifierMepClient = () => {
       && cd.photos[1].nom === "photo-d2" && cd.photos[1].l === 1 && cd.photos[1].h === 1
       && cd.projet.nom === "Malaysia" && cd.projet.nbPagesCible === 28 && cd.projet.source === "particulier"
       && catalogueDeDossier({ ...dossier, nbPages: null }, 0).projet.nbPagesCible === null);
+  ok("09/11 : le catalogue d'un dossier porte la ville, le pays et le GPS ; un GPS à (0, 0) ou absent vaut null",
+    cd.photos[0].ville === "Lisbonne" && cd.photos[0].pays === "Portugal" && cd.photos[0].gps?.lat === 38.71 && cd.photos[0].gps?.lon === -9.14
+      && cd.photos[1].gps === null && cd.photos[1].ville === null);
   ok("catalogue : une photo sans aucune adresse est « indisponible » (jamais un plantage), les autres non ; les originaux restent à part",
     cd.photos[0].indisponible === false && cd.photos[1].indisponible === true && cd.originaux.d1 === "https://o1" && cd.originaux.d2 === null && cd.ttlOriginauxSecondes === 3600);
   const ed: ReponsePhotosEditionMep = {
     edition: { id: "e", organisation: "Audencia", evenement: "Voile", etat: "composition", collecteOuverte: false, archive: false },
     magazines: [{ id: "m1", rang: 1, nom: "Bateau 1-4" }],
     photos: [
-      { id: "p1", nom: "a.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, personne: "Mathias", lien: "Bateau 3", depot: "lien", preselection: true, signalee: true, vignette: "https://v", moyenne: "https://m", original: "https://o" },
-      { id: "p2", nom: "b.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, personne: "Le responsable", lien: null, depot: "responsable", preselection: false, signalee: false, vignette: null, moyenne: null, original: null },
+      { id: "p1", nom: "a.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, lieuVille: null, lieuPays: null, gpsLat: null, gpsLon: null, personne: "Mathias", lien: "Bateau 3", depot: "lien", preselection: true, signalee: true, vignette: "https://v", moyenne: "https://m", original: "https://o" },
+      { id: "p2", nom: "b.jpg", largeur: 4000, hauteur: 3000, priseLe: null, lieu: null, lieuVille: null, lieuPays: null, gpsLat: null, gpsLon: null, personne: "Le responsable", lien: null, depot: "responsable", preselection: false, signalee: false, vignette: null, moyenne: null, original: null },
     ],
   };
   const ce = catalogueDEdition(ed, "m1", 0);

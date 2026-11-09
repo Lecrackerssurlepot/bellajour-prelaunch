@@ -59,6 +59,8 @@ export async function GET(request: Request) {
         appareil: p.appareil ?? null,
         lieuVille: p.lieu_ville ?? null,
         lieuPays: p.lieu_pays ?? null,
+        gpsLat: p.gps_lat ?? null,
+        gpsLon: p.gps_lon ?? null,
         empreinte: p.empreinte ?? null,
         url: await signerGet(p.r2_key, APERCU_TTL_SECONDS).catch(() => null),
         urlVignette: p.vignette_key ? await signerLectureVignette(p.vignette_key).catch(() => null) : null,

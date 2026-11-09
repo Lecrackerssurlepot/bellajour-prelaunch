@@ -28,6 +28,8 @@ export type RangeePhotoEdition = {
   prise_le: string | null;
   lieu_ville: string | null;
   lieu_pays: string | null;
+  gps_lat?: number | null;
+  gps_lon?: number | null;
   provenance_id: string | null;
   role_deposant: string;
   deposant: string | null;
@@ -38,7 +40,7 @@ export type RangeePhotoEdition = {
 
 /** Les colonnes lues, `moyenne_key` à part (ajoutée par `colonnesAvecMoyenne`). */
 export const COLONNES_PHOTOS_EDITION_MEP =
-  "id, r2_key, vignette_key, nom_origine, largeur, hauteur, prise_le, lieu_ville, lieu_pays, provenance_id, role_deposant, deposant, appareil_id, preselection, signalee";
+  "id, r2_key, vignette_key, nom_origine, largeur, hauteur, prise_le, lieu_ville, lieu_pays, gps_lat, gps_lon, provenance_id, role_deposant, deposant, appareil_id, preselection, signalee";
 
 type PhotoNommable = Pick<RangeePhotoEdition, "provenance_id" | "role_deposant" | "deposant" | "appareil_id">;
 
@@ -94,6 +96,10 @@ export function photoEditionMep(p: RangeePhotoEdition, personne: string, adresse
     hauteur: p.hauteur ?? null,
     priseLe: p.prise_le ?? null,
     lieu: lieuDeLaPhoto(p.lieu_ville, p.lieu_pays),
+    lieuVille: p.lieu_ville?.trim() || null,
+    lieuPays: p.lieu_pays?.trim() || null,
+    gpsLat: p.gps_lat ?? null,
+    gpsLon: p.gps_lon ?? null,
     personne,
     lien: groupe.lien,
     depot: groupe.depot,

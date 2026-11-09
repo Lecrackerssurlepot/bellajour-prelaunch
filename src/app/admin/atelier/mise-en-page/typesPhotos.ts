@@ -19,6 +19,9 @@ export type PhotoDossierMep = {
   appareil: string | null;
   lieuVille: string | null;
   lieuPays: string | null;
+  /** GPS de la prise de vue (09/11 : le lieu détaillé des textes) ; null sans GPS. */
+  gpsLat: number | null;
+  gpsLon: number | null;
   empreinte: string | null;
   /** URL signée de l'original, `ttl` secondes ; null si la signature a échoué. */
   url: string | null;
@@ -59,6 +62,11 @@ export type PhotoEditionMep = {
   priseLe: string | null;
   /** « Lisbonne, Portugal », « Portugal » sans la ville, null sans lieu. */
   lieu: string | null;
+  /** 09/11 : la ville et le pays séparés (les séjours), le GPS (le lieu détaillé des textes). */
+  lieuVille: string | null;
+  lieuPays: string | null;
+  gpsLat: number | null;
+  gpsLon: number | null;
   /** Le nom de la personne, écrit comme l'espace Photos l'écrit (même graphie). */
   personne: string;
   /** Le NOM du lien de groupe par lequel la photo est arrivée (« Bateau 3 », « Lien général ») ; null pour le responsable et l'atelier. */

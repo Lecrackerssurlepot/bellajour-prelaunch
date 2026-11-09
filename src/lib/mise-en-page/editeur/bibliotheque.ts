@@ -6,8 +6,9 @@
 import { comparerChrono, utilisations } from "../magazine";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
+import { rangementDe } from "./moments";
 import { dansVue, estTour, triDe, type Marque } from "./tri";
-import type { EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
+import type { Catalogue, EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 export const ORDRE_TYPES: readonly TypeDossier[] = ["lien", "responsable", "atelier"];
@@ -57,13 +58,15 @@ function comparateur(tri: Filtres["tri"]): (a: PhotoMaq, b: PhotoMaq) => number 
   return comparerChrono;
 }
 
-function cleGroupe(groupe: Filtres["groupe"], ph: PhotoMaq): string {
+function cleGroupe(groupe: Filtres["groupe"], ph: PhotoMaq, cat?: Catalogue): string {
+  if ((groupe === "moment" || groupe === "lieu") && cat) return rangementDe(cat, groupe, ph.id).cle;
   if (groupe === "jour") return ph.date ? ph.date.slice(0, 10) : "~";
   if (groupe === "personne") return ph.personne;
   if (groupe === "type") return String(ORDRE_TYPES.indexOf(ph.type));
   return "";
 }
-function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq): string {
+function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq, cat?: Catalogue): string {
+  if ((groupe === "moment" || groupe === "lieu") && cat) return rangementDe(cat, groupe, ph.id).libelle;
   if (groupe === "jour") {
     if (cle === "~") return "Sans date";
     const [, mo, j] = cle.split("-");
@@ -82,7 +85,7 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const g = e.filtres.groupe;
   const parCle = new Map<string, PhotoMaq[]>();
   for (const ph of photos) {
-    const k = cleGroupe(g, ph);
+    const k = cleGroupe(g, ph, e.catalogue);
     const l = parCle.get(k);
     if (l) l.push(ph); else parCle.set(k, [ph]);
   }
@@ -92,7 +95,7 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const rang = (ph: PhotoMaq) => (u?.has(ph.id) ? 1 : 0);
   return cles.map((k) => {
     const liste = (parCle.get(k) ?? []).sort((a, b) => rang(a) - rang(b) || cmp(a, b));
-    return { cle: k, libelle: libelleGroupe(g, k, liste[0]), ids: liste.map((ph) => ph.id) };
+    return { cle: k, libelle: libelleGroupe(g, k, liste[0], e.catalogue), ids: liste.map((ph) => ph.id) };
   });
 }
 export const visibles = (e: EtatEditeur): string[] => groupes(e).flatMap((g) => g.ids);

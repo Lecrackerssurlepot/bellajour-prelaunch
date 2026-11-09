@@ -24,6 +24,7 @@
  */
 
 import { construireIdml, photosUtilisees } from "@/lib/mise-en-page/idml";
+import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 import { zipperExport, zipperIdml } from "@/lib/mise-en-page/paquet";
 import { adressesEncoreValables, chargerCatalogue, type CatalogueCharge, type SourceCatalogue } from "./chargerCatalogue";
@@ -256,7 +257,7 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
     if (aborted()) return annule();
 
     /* L'assemblage : l'IDML d'abord construit (les cadres des photos illisibles restent vides), les listes ensuite. */
-    const idml = zipperIdml(construireIdml(magazine, photosPourIdml({ decisions, nomsLiens }), { liens: { mode: "absolu", dossier } }));
+    const idml = zipperIdml(construireIdml(avecLieuxParDefaut(magazine, new Map(cat.photos.map((p) => [p.id, p]))), photosPourIdml({ decisions, nomsLiens }), { liens: { mode: "absolu", dossier } }));
     const listes = listesExport({
       utilisees: posees.map((id) => ({ id, nom: nomDe(id) })),
       catalogue: cat.photos.map((p) => ({ id: p.id, nom: p.nom })),

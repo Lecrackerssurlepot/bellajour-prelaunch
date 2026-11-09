@@ -200,7 +200,7 @@ function PanneauOuvert() {
   const titreGroupe = (lib: string, n: number, ids: string[]) => {
     const toutes = ids.length > 0 && ids.every((id) => selSet.has(id));
     return (
-      <button type="button" className={cls("ed-groupe-t", toutes && "ed-groupe-t--sel")} aria-pressed={toutes} title={toutes ? "Retirer la date" : "Sélectionner la date"}
+      <button type="button" className={cls("ed-groupe-t", toutes && "ed-groupe-t--sel")} aria-pressed={toutes} title={toutes ? "Retirer ce groupe de la sélection" : "Sélectionner ce groupe"}
         onClick={(e) => {
           e.stopPropagation();
           const dans = new Set(ids);
@@ -230,6 +230,8 @@ function PanneauOuvert() {
   const menu = ui.menu;
   const ouvrirMenu = (id: string) => (e: React.MouseEvent) => { e.stopPropagation(); majUi({ menu: menu === id ? null : id }); };
   const photoDe = (id: string): PhotoMaq | undefined => cat.get(id);
+  /* 09/11 : « Personne » et « Dépôt » ne servent qu'à une édition (plusieurs déposants) */
+  const plusieursPersonnes = new Set([...cat.values()].map((x) => x.personne)).size > 1 || f.groupe === "personne" || f.groupe === "type";
 
   /* Une vignette : la même en bande étroite (carrée) et en plein écran (à sa forme). */
   const vignette = (id: string, l: number, h: number) => {
@@ -242,7 +244,7 @@ function PanneauOuvert() {
     const sel1 = selSet.has(id);
     const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
     return (
-      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }}
+      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom}
         className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
         aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
@@ -387,7 +389,7 @@ function PanneauOuvert() {
           <button type="button" className="ed-filtre" aria-haspopup="menu" aria-expanded={menu === "ph-g"} onClick={ouvrirMenu("ph-g")}>Grouper {Ico.bas}</button>
           {menu === "ph-g" ? (
             <div className="ed-menu ed-menu--droite" role="menu" onClick={(e) => e.stopPropagation()}>
-              {([["jour", "Jour"], ["personne", "Personne"], ["type", "Dépôt"], ["aucun", "Aucun"]] as const).map(([v, l]) => (
+              {([["jour", "Jour"], ["moment", "Moment"], ["lieu", "Lieu"], ...(plusieursPersonnes ? [["personne", "Personne"], ["type", "Dépôt"]] as const : []), ["aucun", "Aucun"]] as const).map(([v, l]) => (
                 <button key={v} type="button" role="menuitemradio" aria-checked={f.groupe === v} onClick={() => { majUi({ menu: null }); filtrer({ groupe: v }); }}>{l}</button>
               ))}
             </div>
