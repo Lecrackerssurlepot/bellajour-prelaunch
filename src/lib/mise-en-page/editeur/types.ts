@@ -14,6 +14,7 @@ import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
 import type { SensCalque } from "./libre";
 import type { Lecture } from "./mesures";
+import type { Lecon } from "./lecons";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -175,6 +176,8 @@ export type EtatEditeur = {
   lecture: Lecture;
   /** Les piles ouvertes (id de leur tête) : leurs photos rangées dessous réapparaissent. Écran seulement. */
   pilesOuvertes: string[];
+  /** Lot 2 (G1) : les leçons pas encore envoyées au serveur (un geste contraire à une proposition). L'écran les vide après envoi. */
+  lecons: Lecon[];
 };
 
 export type OptionsEtat = {
@@ -251,6 +254,9 @@ export type GesteEcran =
   | { type: "poserLecture"; lecture: Lecture }
   /** Ouvre ou referme la pile portée par cette photo. */
   | { type: "basculerPile"; tete: string }
+  /** Lot 2 : l'écran a envoyé les `n` premières leçons (ou en ajoute un jalon). */
+  | { type: "leconsEnvoyees"; n: number }
+  | { type: "ajouterLecon"; lecon: Lecon }
   | { type: "cliquerPhoto"; id: string; mode: "simple" | "plage" | "ajout" }
   | { type: "selectionner"; ids: string[] }
   | { type: "viderSelection" }

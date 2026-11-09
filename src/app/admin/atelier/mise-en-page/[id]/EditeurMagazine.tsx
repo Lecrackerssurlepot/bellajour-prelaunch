@@ -20,6 +20,7 @@ import Scene from "./Scene";
 import { clavierTri } from "./triEcran";
 import Confrontation, { clavierConfrontation } from "./Hesitation";
 import { useLecture } from "./mesuresClient";
+import { useLecons } from "./leconsClient";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -77,6 +78,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
   });
   /* couche 1 (09/11) : les vignettes sont mesurées dans le navigateur, floues et piles arrivent dans l'état */
   useLecture(etat?.catalogue ?? null, adresses, envoyer);
+  /* lot 2 (G1, G2, G6) : les gestes contraires deviennent des leçons, envoyées au serveur sans rien demander */
+  const memoire = useLecons(cle.cle, etat, envoyer);
   const flasher = (cible: CibleDepot) => majUi({ flash: cible });
   const gesteAvecAnnuler = (g: Geste, texte: string) => setEtat((e) => {
     if (!e) return e;
@@ -354,7 +357,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
         {ui.loupe ? <Loupe id={ui.loupe} /> : null}
-        {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} /> : null}
+        {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} onExporte={memoire.exporte} /> : null}
       </div>
     </CtxEd.Provider>
   );

@@ -1690,6 +1690,48 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : couche 1, floues, rafales et doublons en piles (R72 à R77)", msg === null);
   }
+  {
+    /* Lot 2 (09/11) : G7 réglages versionnés, G1 leçons tirées d'un geste contraire, G2 instantané. */
+    let msg: string | null = null;
+    try {
+      ok(/^r[0-9a-f]{8}$/.test(O.versionReglages()) && O.versionReglages() === O.versionReglages(), "G7 : la version des réglages est stable et courte");
+      ok(O.REGLAGES.doublon_hamming.valeur === O.DOUBLON_HAMMING && O.REGLAGES.flou_absolu.valeur === O.FLOU_ABSOLU, "G7 : mesures.ts lit ses seuils dans les réglages");
+      ok(Object.values(O.REGLAGES).every((r) => r.regle && r.depuis && r.raison), "G7 : chaque réglage a sa règle, sa date et sa raison");
+
+      const sec = (s: number) => `2026-06-11T10:00:${String(s).padStart(2, "0")}`;
+      const cat = new Map(catalogue("A:L B:L C:L F:P G:P H:P I:P J:P K:P L:P M:P N:P", { A: { date: sec(0) }, B: { date: sec(1) }, C: { date: sec(2) } }).map((p) => [p.id, p]));
+      const h = (n: number) => n.toString(16).padStart(16, "0");
+      const mes = new Map<string, O.Mesure>([["A", { nettete: 300, dhash: h(1) }], ["B", { nettete: 900, dhash: h(2) }], ["C", { nettete: 500, dhash: h(3) }], ["F", { nettete: 10, dhash: h(0x1111111111) }],
+        ...["G", "H", "I", "J", "K", "L", "M", "N"].map((id, i) => [id, { nettete: 600 + i * 10, dhash: ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3"][i] }] as [string, O.Mesure])]);
+      const lu = O.lireMesures(cat, mes);
+      ok(lu.floues.includes("F") && lu.piles.some((p) => p.tete === "B"), "lecture d'essai : F floue, B tête de la rafale A B C");
+      const e0 = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "poserLecture", lecture: lu });
+      eq(e0.lecons.length, 0, "G1 : aucune leçon avant un geste");
+      const e1 = O.appliquer(e0, { type: "marquer", ids: ["F"], marque: "choisie" });
+      eq(e1.lecons.map((l) => l.type), ["floue_gardee"], "G1 : garder une floue est une leçon (R73)");
+      ok(e1.lecons[0].version === O.versionReglages() && e1.lecons[0].reglages.flou_absolu === O.FLOU_ABSOLU, "G1 : la leçon emporte les réglages en vigueur");
+      const e2 = O.appliquer(e1, { type: "marquer", ids: ["A"], marque: "choisie" });
+      eq(e2.lecons[e2.lecons.length - 1].type, "pile_autre_gardee", "G1 : garder A au lieu de la tête B est une leçon (R74)");
+      const e3 = O.appliquer(e2, { type: "marquer", ids: ["B"], marque: "choisie" });
+      const e4 = O.appliquer(e3, { type: "marquer", ids: ["C"], marque: "choisie" });
+      eq(e4.lecons[e4.lecons.length - 1].type, "pile_pas_un_doublon", "G1 : garder C en plus de la tête gardée = « pas un doublon »");
+      const e5 = O.appliquer(e4, { type: "marquer", ids: ["B"], marque: "ecartee", poser: true });
+      eq(e5.lecons[e5.lecons.length - 1].type, "tete_ecartee", "G1 : écarter la tête quand une autre est gardée (R76)");
+      const sans = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "marquer", ids: ["F"], marque: "choisie" });
+      eq(sans.lecons.length, 0, "G1 : sans lecture, aucune leçon (la machine n'avait rien proposé)");
+      const e6 = O.appliquer(e5, { type: "leconsEnvoyees", n: 2 });
+      eq(e6.lecons.length, e5.lecons.length - 2, "G1 : l'écran retire les leçons envoyées");
+      const pose = O.appliquer(e0, { type: "deposer", source: { type: "bibliotheque", ids: ["A"] }, cible: { type: "vignette", plancheId: pl(2) } });
+      ok(pose.lecons.some((l) => l.type === "pile_autre_gardee" && l.geste === "posée à la place de la tête"), "G1 : poser une photo rangée sous une pile est une leçon");
+      const j = O.jalon("export", "essai");
+      ok(O.leconValide(j) && !O.leconValide({ ...j, type: "autre" }) && !O.leconValide({ ...j, version: "x" }), "le serveur relit une leçon (type, version)");
+      const inst = O.instantane(e5, mes);
+      ok(inst.photos.length === cat.size && inst.photos.find((p) => p.id === "B")?.nettete === 900 && inst.planches.length === 3 && inst.lecture.piles.length === lu.piles.length, "G2 : l'instantané porte mesures, lecture, planches, sans pixels");
+      ok(O.contenuValide(e5.magazine), "les leçons ne touchent pas au magazine sauvegardé");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : lot 2, la mémoire (réglages versionnés, leçons d'un geste contraire, instantané)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);

@@ -12,23 +12,19 @@
  */
 
 import type { Catalogue, PhotoMaq } from "./types";
+import { REGLAGES } from "./reglages";
 
 export type Mesure = { nettete: number; dhash: string };
 
-/** R74 : écart maximal entre deux photos d'une rafale (même personne), qui doivent encore se ressembler un peu
- *  (deux images sans rapport diffèrent d'environ 32 bits) : deux téléphones d'un même déposant à la même seconde ne font pas une rafale. */
-export const RAFALE_SECONDES = 2;
-export const RAFALE_PROCHE_HAMMING = 24;
-/** R74 : deux photos proches dans le temps ET d'empreinte voisine sont aussi une rafale. */
-export const RAFALE_LARGE_SECONDES = 10;
-export const RAFALE_HAMMING = 14;
-/** R75 : quasi-doublon, quelle que soit l'heure. */
-export const DOUBLON_HAMMING = 6;
-/** R73 : floue sous ce seuil ET sous cette part de la netteté médiane de l'album. */
-export const FLOU_ABSOLU = 120;
-export const FLOU_RELATIF = 0.2;
-/** R73 : il faut assez de mesures pour parler de médiane. */
-export const FLOU_MIN_MESURES = 12;
+/* Les seuils vivent dans `reglages.ts` (G7) : nommés, datés, emportés par chaque leçon. Les noms d'ici restent pour le harnais. */
+export const RAFALE_SECONDES = REGLAGES.rafale_secondes.valeur;
+export const RAFALE_PROCHE_HAMMING = REGLAGES.rafale_proche_hamming.valeur;
+export const RAFALE_LARGE_SECONDES = REGLAGES.rafale_large_secondes.valeur;
+export const RAFALE_HAMMING = REGLAGES.rafale_hamming.valeur;
+export const DOUBLON_HAMMING = REGLAGES.doublon_hamming.valeur;
+export const FLOU_ABSOLU = REGLAGES.flou_absolu.valeur;
+export const FLOU_RELATIF = REGLAGES.flou_relatif.valeur;
+export const FLOU_MIN_MESURES = REGLAGES.flou_min_mesures.valeur;
 
 /* ─────────────────────────── la mesure d'une image ─────────────────────────── */
 

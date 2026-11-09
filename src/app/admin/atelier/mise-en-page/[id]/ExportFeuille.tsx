@@ -16,8 +16,10 @@ type Etape = { nom: "choix" } | { nom: "cours"; prog: ProgressionExport } | { no
 
 const mo = (o: number): string => (o > 1e9 ? `${(o / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Go` : `${Math.max(1, Math.round(o / 1e6)).toLocaleString("fr-FR")} Mo`);
 
-export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
+export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onExporte }: {
   catalogue: CatalogueCharge; source: SourceCatalogue; projet: Projet; suite: { href: string; mot: string }; onFermer: () => void;
+  /** Lot 2 : appelé quand l'export a abouti (jalon et instantané de la mémoire). */
+  onExporte?: (dossier: string) => void;
 }) {
   const { etat, envoyer } = useEd();
   const [parent, setParent] = useState(() => parentMemorise());
@@ -51,7 +53,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
         onProgression: (prog) => setEtape((e) => (e.nom === "cours" ? { nom: "cours", prog } : e)), signal: c.signal,
       });
       ctrl.current = null;
-      if (r.ok) setEtape({ nom: "fin", r });
+      if (r.ok) { setEtape({ nom: "fin", r }); onExporte?.(dossier); }
       else if (r.raison === "annule") setEtape({ nom: "choix" });
       else setEtape({ nom: "erreur", message: r.message });
     })();

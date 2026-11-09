@@ -13,6 +13,7 @@ import type { Magazine } from "../magazine";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { LECTURE_VIDE } from "./mesures";
+import { leconValide, leconsDeLaPose, leconsDuTri } from "./lecons";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -26,6 +27,9 @@ import type {
 /* ─────────────────────────── Création ─────────────────────────── */
 
 export const numeroDe = (id: string): number => { const k = /^pl-(\d+)$/.exec(id); return k ? Number(k[1]) : 0; };
+/** Au-delà, les plus anciennes leçons non envoyées partent : la mémoire ne doit jamais alourdir l'écran. */
+const LECONS_MAX = 500;
+
 const numeroMax = (m: Magazine): number => m.planches.reduce((a, p) => Math.max(a, numeroDe(p.id)), 0);
 
 export function creerEtat(o: OptionsEtat): EtatEditeur {
@@ -59,6 +63,7 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     familleGabarits: "tous",
     lecture: LECTURE_VIDE,
     pilesOuvertes: [],
+    lecons: [],
   };
 }
 
@@ -71,6 +76,9 @@ const enAttente = (s: EtatSauvegarde): EtatSauvegarde => ({ etat: "en_attente", 
 /** L'unique porte d'entrée du magazine : une entrée d'historique, futur vidé, sauvegarde en attente. */
 function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine): EtatEditeur {
   if (magazine === e.magazine) return e;
+  /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander */
+  const neuves = [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue)];
+  if (neuves.length) e = { ...e, lecons: [...e.lecons, ...neuves].slice(-LECONS_MAX) };
   const passe = [...e.historique.passe, { libelle, avant: e.magazine, apres: magazine, plancheId }].slice(-HISTORIQUE_MAX);
   return { ...e, magazine, historique: { passe, futur: [] }, sauvegarde: enAttente(e.sauvegarde), eclair: plancheId };
 }
@@ -365,6 +373,13 @@ const GESTES: Gestes = {
   familleGabarits(e, g) {
     const f = choisir(["tous", "avec", "sans"] as const, g.famille);
     return f && f !== e.familleGabarits ? { ...e, familleGabarits: f } : e;
+  },
+  leconsEnvoyees(e, g) {
+    const n = Number.isInteger(g.n) && g.n > 0 ? g.n : 0;
+    return n ? { ...e, lecons: e.lecons.slice(n) } : e;
+  },
+  ajouterLecon(e, g) {
+    return leconValide(g.lecon) ? { ...e, lecons: [...e.lecons, g.lecon].slice(-LECONS_MAX) } : e;
   },
   poserLecture(e, g) {
     const l = g.lecture;

@@ -72,8 +72,12 @@ async function mesurer(source: string): Promise<Mesure | null> {
 }
 
 /** Mesure les photos du catalogue (une fois chacune) et pose la lecture de l'album dans l'état. */
+/** Les mesures connues de cet onglet (toutes les photos mesurées depuis l'ouverture) : l'instantané (lecons.ts) les emporte. */
+const TOUTES = new Map<string, Mesure>();
+export const mesuresConnues = (): ReadonlyMap<string, Mesure> => TOUTES;
+
 export function useLecture(catalogue: Catalogue | null, adresses: ReadonlyMap<string, Adresse>, envoyer: (g: Geste) => void): void {
-  const mesures = useRef(new Map<string, Mesure>());
+  const mesures = useRef(TOUTES);
   const tentees = useRef(new Set<string>());
   const envoyerRef = useRef(envoyer);
   const catRef = useRef(catalogue);
