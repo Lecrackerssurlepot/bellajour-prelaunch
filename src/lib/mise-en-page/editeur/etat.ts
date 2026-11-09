@@ -12,6 +12,7 @@ import { contenuValide } from "../sauvegarde";
 import type { Magazine } from "../magazine";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
+import { LECTURE_VIDE } from "./mesures";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -56,6 +57,8 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     derniere: null,
     copieLocale: null,
     familleGabarits: "tous",
+    lecture: LECTURE_VIDE,
+    pilesOuvertes: [],
   };
 }
 
@@ -362,6 +365,17 @@ const GESTES: Gestes = {
   familleGabarits(e, g) {
     const f = choisir(["tous", "avec", "sans"] as const, g.famille);
     return f && f !== e.familleGabarits ? { ...e, familleGabarits: f } : e;
+  },
+  poserLecture(e, g) {
+    const l = g.lecture;
+    if (!l || !Array.isArray(l.floues) || !Array.isArray(l.piles)) return e;
+    const tetes = new Set(l.piles.map((p) => p.tete));
+    return { ...e, lecture: l, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+  },
+  basculerPile(e, g) {
+    if (!e.lecture.piles.some((p) => p.tete === g.tete)) return e;
+    const ouverte = e.pilesOuvertes.includes(g.tete);
+    return { ...e, pilesOuvertes: ouverte ? e.pilesOuvertes.filter((t) => t !== g.tete) : [...e.pilesOuvertes, g.tete] };
   },
   effacerFiltres(e) {
     const { tri, groupe, taille, masquerUtilisees } = e.filtres;

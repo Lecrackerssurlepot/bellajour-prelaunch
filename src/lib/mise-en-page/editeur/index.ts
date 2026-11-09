@@ -44,3 +44,5 @@ export { PAUSE_MOMENT_MIN, decoupage, lieuCourt, nomDuMoment, rangementDe } from
 export type { Decoupage, Rangement } from "./moments";
 export { avecLieuxParDefaut, lieuxParDefaut } from "./lieuxTextes";
 export type { CatalogueLieux } from "./lieuxTextes";
+export { DOUBLON_HAMMING, FLOU_ABSOLU, FLOU_RELATIF, LECTURE_VIDE, RAFALE_SECONDES, distanceHash, dHash, lireMesures, mesurerGris, photosEnMoins, sousPiles, varianceLaplacien } from "./mesures";
+export type { Lecture, Mesure, Pile, RaisonPile } from "./mesures";

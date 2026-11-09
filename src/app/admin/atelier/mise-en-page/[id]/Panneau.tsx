@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
@@ -67,6 +67,9 @@ function PanneauOuvert() {
   /* « gardées » au sens large : un coup de cœur l'est aussi (Poser les prend en premier) */
   const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
   const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
+  /* couche 1 (09/11) : la tête d'une pile porte « +n », une floue le dit ; une photo d'une pile ouverte dit pourquoi elle y est */
+  const piles = new Map(etat.lecture.piles.map((x) => [x.tete, x])), floues = new Set(etat.lecture.floues);
+  const sousP = sousPiles(etat.lecture), ouvertes = new Set(etat.pilesOuvertes);
   /* au tour ③ seulement, les étiquettes d'usage se lisent sur la vignette (05/11) */
   const etqVignette = (id: string): string[] => (f.marque === "choisies" ? (["couverture", "double", "pleine"] as const).filter((k) => (triM.etiquettes?.[k] ?? []).includes(id)).map((k) => ETIQUETTE_UI[k].court) : []);
   /* la colonne « à côté » d'un tour (05/11) : ce que le tour a laissé de côté, d'où on le reglisse */
@@ -294,6 +297,15 @@ function PanneauOuvert() {
           {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
           {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
           {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
+          {floues.has(id) ? <span className="ed-rep ed-rep--floue" title="Floue, à vérifier : une mesure, jamais une exclusion">Floue</span> : null}
+          {piles.has(id) ? (
+            <span className={cls("ed-rep ed-rep--pile", ouvertes.has(id) && "ed-rep--pile-ouverte")} role="button" tabIndex={-1}
+              title={`${piles.get(id)!.raison === "rafale" ? "Rafale" : "Doublons"} : ${piles.get(id)!.autres.length} autre${piles.get(id)!.autres.length > 1 ? "s" : ""}, la plus nette dessus. ${ouvertes.has(id) ? "Refermer" : "Ouvrir"}`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); envoyer({ type: "basculerPile", tete: id }); }}>
+              {ouvertes.has(id) ? "−" : "+"}{piles.get(id)!.autres.length}
+            </span>
+          ) : sousP.has(id) ? <span className="ed-rep ed-rep--sous">{piles.get(sousP.get(id)!)?.raison === "rafale" ? "Rafale" : "Doublon"}</span> : null}
         </span>
       </button>
     );

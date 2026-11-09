@@ -13,6 +13,7 @@ import type { SourceMep } from "../sauvegarde";
 import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
 import type { SensCalque } from "./libre";
+import type { Lecture } from "./mesures";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -170,6 +171,10 @@ export type EtatEditeur = {
   copieLocale: Magazine | null;
   /** 06/11 : la famille que parcourt R et que montre le tiroir (avec ou sans cadre de texte). Écran seulement. */
   familleGabarits: FamilleGabarits;
+  /** 09/11, couche 1 : floues et piles lues sur les vignettes (`mesures.ts`). Écran seulement, jamais sauvegardé. */
+  lecture: Lecture;
+  /** Les piles ouvertes (id de leur tête) : leurs photos rangées dessous réapparaissent. Écran seulement. */
+  pilesOuvertes: string[];
 };
 
 export type OptionsEtat = {
@@ -242,6 +247,10 @@ export type GesteEcran =
   | { type: "retirerFiltre"; cle: keyof Filtres }
   | { type: "effacerFiltres" }
   | { type: "familleGabarits"; famille: FamilleGabarits }
+  /** Couche 1 : la lecture des vignettes arrive (ou se met à jour). */
+  | { type: "poserLecture"; lecture: Lecture }
+  /** Ouvre ou referme la pile portée par cette photo. */
+  | { type: "basculerPile"; tete: string }
   | { type: "cliquerPhoto"; id: string; mode: "simple" | "plage" | "ajout" }
   | { type: "selectionner"; ids: string[] }
   | { type: "viderSelection" }

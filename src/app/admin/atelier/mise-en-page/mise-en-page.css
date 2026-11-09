@@ -854,6 +854,11 @@
 .mep-editeur .ed-rep--drapeau { background: var(--ate-rouge); }
 .mep-editeur .ed-rep--basse { background: var(--ate-rouge); }
 .mep-editeur .ed-rep--juste { background: var(--ate-orange); }
+/* 09/11, couche 1 : floue = une remarque (orange) ; « +n » ouvre la pile, cliquable comme « ×n » ; « Rafale » / « Doublon » sous une pile ouverte */
+.mep-editeur .ed-rep--floue { background: var(--ate-orange); }
+.mep-editeur .ed-rep--pile { pointer-events: auto; cursor: pointer; font-variant-numeric: tabular-nums; }
+.mep-editeur .ed-rep--pile:hover, .mep-editeur .ed-rep--pile-ouverte { background: var(--bj-action); }
+.mep-editeur .ed-rep--sous { background: color-mix(in srgb, var(--bj-action) 70%, transparent); }
 /* 09/11 : la résolution du cadre actif, toujours dite, en tête de sa barre */
 .mep-editeur .ed-qualite { display: inline-flex; align-items: center; gap: 5px; align-self: center; padding: 0 8px 0 6px; color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mep-editeur .ed-qualite::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ate-vert); }

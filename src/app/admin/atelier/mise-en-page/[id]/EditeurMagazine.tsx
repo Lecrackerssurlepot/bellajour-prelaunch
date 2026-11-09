@@ -19,6 +19,7 @@ import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
 import { clavierTri } from "./triEcran";
 import Confrontation, { clavierConfrontation } from "./Hesitation";
+import { useLecture } from "./mesuresClient";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -74,6 +75,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     const g = f(e);
     return g ? appliquer(e, g) : e;
   });
+  /* couche 1 (09/11) : les vignettes sont mesurées dans le navigateur, floues et piles arrivent dans l'état */
+  useLecture(etat?.catalogue ?? null, adresses, envoyer);
   const flasher = (cible: CibleDepot) => majUi({ flash: cible });
   const gesteAvecAnnuler = (g: Geste, texte: string) => setEtat((e) => {
     if (!e) return e;

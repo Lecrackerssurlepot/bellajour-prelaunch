@@ -18,6 +18,7 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - `editeur/libre.ts` (lot 4, 03/11) : miroir, cadres retouchés (`Disposition.cadres`, repère du GABARIT, l'ordre = les calques ; `miroir: true` sur une double), pose en libre, plusieurs cadres. Tout passe par `cadresDe` (`versPlanche` / `versGabarit`) : écran et export lisent les mêmes cadres. Une disposition retouchée n'a plus besoin de son gabarit (`TEMPLATE_LIBRE` ou un `M-…`).
 - `gabaritsAtelier.ts` (lot 4) : les gabarits enregistrés (`mep_gabarits`, migration 20261103) ; `enregistrerGabarits` (magazine.ts) les met en tête de `candidats`, une disposition qui en vient garde une copie de ses cadres.
 - `lieux.ts` (09/11) : les lieux détaillés (lieu connu, commune, ville proche, département, région, pays) lus dans les réponses Geoapify ; les APPELS sont dans la route `/api/admin/atelier/mise-en-page/lieux`, qui n'écrit rien. `editeur/moments.ts` : moments et séjours de la bibliothèque. `editeur/lieuxTextes.ts` : le lieu, texte par défaut d'un titre ou d'une légende non écrits (écran ET export, rien n'est stocké).
+- `editeur/mesures.ts` (09/11, couche 1 du moteur) : netteté (laplacien) et empreinte (dHash) d'une vignette en gris, puis floues et PILES (rafales + doublons, la plus nette dessus), R72 à R77. La lecture vit dans `EtatEditeur.lecture` (écran seulement) ; `[id]/mesuresClient.ts` mesure les vignettes dans le navigateur et les garde en IndexedDB. Rien en base.
 - `sauvegarde.ts` : la sauvegarde partagée (table `mises_en_page`, migration 20261027, appliquée le 02/11) : `contenuValide`
   relit la forme EXACTE de `Magazine` (clé en trop = refus) ; un champ ajouté à `Magazine` s'ajoute là, sinon 400.
   `TAILLE_MAX_CONTENU` (2 Mo, borne technique) ; `issueSauvegarde` = le verrou optimiste. Routes : `/api/admin/atelier/mise-en-page/magazines`.
@@ -33,7 +34,7 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 ## Les interdits
 - **D28** : n'entre dans l'export que ce qu'Affinity relit FIDÈLEMENT (catalogue des essais du 29/10 dans `docs/DECISIONS.md`). Chaque objet porte `ItemLayer`, chaque texte `AppliedLanguage` français, le document FOGRA39.
 - Aucun import de `src/lib/atelier` ni d'un ancien moteur de mise en page (le brief repart de zéro).
-- Aucune IA, aucun tri « intelligent » : des règles simples et déterministes.
+- Des règles simples et déterministes. Depuis le 09/11 (Notion « Éditeur Bellajour », 03 · Le moteur), les couches du moteur arrivent ici une par une : **l'IA mesure et propose, des règles décident**, on marque et on ne supprime jamais. Une couche qui appelle un modèle passe par une route serveur, jamais par un module pur.
 - Modules purs : ni React, ni réseau, ni horloge dans les transitions.
 
 ## Les tests

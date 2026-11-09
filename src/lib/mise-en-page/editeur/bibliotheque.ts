@@ -7,7 +7,8 @@ import { comparerChrono, utilisations } from "../magazine";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
 import { rangementDe } from "./moments";
-import { dansVue, estTour, triDe, type Marque } from "./tri";
+import { dansVue, estTour, marqueDe, triDe, type Marque } from "./tri";
+import { sousPiles } from "./mesures";
 import type { Catalogue, EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -80,7 +81,8 @@ function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq, cat
 /** Les groupes de la bibliothèque, dans l'ordre d'affichage. */
 export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const c = criteres(e);
-  const photos = [...e.catalogue.values()].filter((ph) => CLES_CRITERES.every((k) => c[k](ph)));
+  const passent = [...e.catalogue.values()].filter((ph) => CLES_CRITERES.every((k) => c[k](ph)));
+  const photos = horsPiles(e, passent);
   const cmp = comparateur(e.filtres.tri);
   const g = e.filtres.groupe;
   const parCle = new Map<string, PhotoMaq[]>();
@@ -99,6 +101,21 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   });
 }
 export const visibles = (e: EtatEditeur): string[] => groupes(e).flatMap((g) => g.ids);
+
+/** R77 (couche 1, 09/11) : une photo rangée sous une pile se cache derrière sa tête, sauf si la pile est ouverte, si la
+ *  tête ne passe pas les filtres (rien ne disparaît sans sa tête), ou si l'atelier l'a déjà jugée ou posée. */
+function horsPiles(e: EtatEditeur, passent: PhotoMaq[]): PhotoMaq[] {
+  if (!e.lecture.piles.length) return passent;
+  const sous = sousPiles(e.lecture);
+  const ici = new Set(passent.map((p) => p.id));
+  const ouvertes = new Set(e.pilesOuvertes);
+  const u = utilisations(e.magazine);
+  return passent.filter((p) => {
+    const tete = sous.get(p.id);
+    if (!tete || ouvertes.has(tete) || !ici.has(tete)) return true;
+    return marqueDe(e.magazine, p.id) !== null || u.has(p.id);
+  });
+}
 
 /** La colonne « à côté » d'un tour (05/11) : les photos qui passent tous les autres filtres mais ne sont pas en jeu,
  *  dans l'ordre du temps. Vide hors des tours. */

@@ -1,6 +1,6 @@
 "use client";
 
-import { aCote, bilanTri, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
+import { aCote, bilanTri, photosEnMoins, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
 import { cls, useEd } from "./contexte";
 
 /* Les petits morceaux du tri partagés par la bande étroite, la bande agrandie et la visionneuse :
@@ -106,12 +106,13 @@ export function VuesBarre() {
 export function JaugeTri() {
   const { etat, ui, majUi } = useEd();
   const b = bilanTri(etat);
+  const enPiles = photosEnMoins(etat.lecture);
   const v = b.visees;
   const pc = (n: number) => (v ? Math.min(100, (n / v) * 100) : 0);
   return (
     <button type="button" className="ed-jauge" aria-label="Objectif" onClick={(e) => { e.stopPropagation(); majUi({ bulle: ui.bulle === "objectif" ? null : "objectif" }); }}>
       <span className="ed-jauge-lig">
-        <span><b>{b.choisies.toLocaleString("fr-FR")}</b> gardées{b.coupsDeCoeur ? <> · <b>{b.coupsDeCoeur.toLocaleString("fr-FR")}</b> ✦</> : null} · <b>{b.posees.toLocaleString("fr-FR")}</b> posées</span>
+        <span><b>{b.choisies.toLocaleString("fr-FR")}</b> gardées{b.coupsDeCoeur ? <> · <b>{b.coupsDeCoeur.toLocaleString("fr-FR")}</b> ✦</> : null} · <b>{b.posees.toLocaleString("fr-FR")}</b> posées{enPiles ? <> · <b>{enPiles.toLocaleString("fr-FR")}</b> en piles</> : null}</span>
         <span>{v ? `sur ${v.toLocaleString("fr-FR")}` : "objectif ?"}</span>
       </span>
       <span className="ed-jauge-fil"><i className="ed-jauge-g" style={{ width: `${pc(b.choisies)}%` }} /><i className="ed-jauge-p" style={{ width: `${pc(b.posees)}%` }} /></span>

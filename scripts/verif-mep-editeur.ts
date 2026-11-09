@@ -1632,6 +1632,64 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : le lot 4 (miroir, ⇧-clic, glisser une page, pose en libre, cadres retouchés, calques)", msg === null);
   }
+  {
+    /* R72 à R77 (09/11, couche 1) : netteté, empreinte, floues, rafales et doublons en piles, la bibliothèque les range. */
+    let msg: string | null = null;
+    try {
+      /* une image nette (damier) contre la même floutée (aplat) */
+      const L = 32, H = 24;
+      const damier = Array.from({ length: L * H }, (_, i) => (((i % L) >> 2) + ((Math.floor(i / L)) >> 2)) % 2 ? 230 : 20);
+      const aplat = Array.from({ length: L * H }, (_, i) => 100 + (i % L));
+      ok(O.varianceLaplacien(damier, L, H) > 10 * O.varianceLaplacien(aplat, L, H), "R72 : un damier est bien plus net qu'un dégradé");
+      eq(O.dHash(damier, L, H), O.dHash(damier, L, H), "R72 : l'empreinte est stable");
+      eq(O.distanceHash("0000000000000000", "000000000000000f"), 4, "R72 : distance entre empreintes = bits différents");
+      eq(O.distanceHash("zz", "0000000000000000"), 64, "R72 : empreinte mal formée = distance maximale");
+
+      const sec = (s: number) => `2026-06-11T10:00:${String(s).padStart(2, "0")}`;
+      const cat = new Map(catalogue("A:L B:L C:L D:L E:L F:P G:P H:P I:P J:P K:P L:P M:P Z:L!", {
+        A: { date: sec(0) }, B: { date: sec(1) }, C: { date: sec(2) },          /* une rafale de trois */
+        D: { date: "2026-06-11T12:00:00" }, E: { date: "2026-06-12T09:00:00" }, /* deux doublons à un jour d'écart */
+        Z: { date: sec(3) },                                                     /* signalée : jamais dans une pile */
+      }).map((p) => [p.id, p]));
+      const h = (n: number) => n.toString(16).padStart(16, "0");
+      const mes = new Map<string, O.Mesure>([
+        ["A", { nettete: 300, dhash: h(0x1) }], ["B", { nettete: 900, dhash: h(0xff0000) }], ["C", { nettete: 500, dhash: h(0xf0f0f0f000) }],
+        ["D", { nettete: 400, dhash: h(0xabcdef) }], ["E", { nettete: 450, dhash: h(0xabcdee) }],
+        ["F", { nettete: 20, dhash: h(0x1111111111) }], ["G", { nettete: 800, dhash: h(0x2222222222) }], ["H", { nettete: 700, dhash: h(0x3333333333) }],
+        ["I", { nettete: 600, dhash: h(0x4444444444) }], ["J", { nettete: 650, dhash: h(0x5555555555) }], ["K", { nettete: 750, dhash: h(0x6666666666) }],
+        ["L", { nettete: 550, dhash: h(0x7777777777) }], ["M", { nettete: 850, dhash: h(0x8888888888) }], ["Z", { nettete: 900, dhash: h(0x1) }],
+      ]);
+      const lu = O.lireMesures(cat, mes);
+      const raf = def(lu.piles.find((x) => x.raison === "rafale"), "R74 : la rafale");
+      eq([raf.tete, ...raf.autres], ["B", "A", "C"], "R74, R76 : la rafale A B C, la plus nette (B) dessus, les autres dans l'ordre du temps");
+      const dbl = def(lu.piles.find((x) => x.raison === "doublon"), "R75 : le doublon");
+      eq([dbl.tete, ...dbl.autres], ["E", "D"], "R75 : D et E à un jour d'écart, même empreinte : un doublon, E (plus nette) dessus");
+      ok(!lu.piles.some((x) => x.tete === "Z" || x.autres.includes("Z")), "les « à ne pas publier » restent hors des piles");
+      eq(lu.floues, ["F"], "R73 : F, très en dessous de la médiane et du seuil, est floue ; les autres non");
+      eq(O.photosEnMoins(lu), 3, "trois photos rangées sous une pile");
+      eq(O.lireMesures(cat, new Map([["F", mes.get("F")!]])).floues, [], "R73 : trop peu de mesures, aucune floue");
+      const meme = new Map(catalogue("P:L Q:L", { P: { date: sec(5) }, Q: { date: sec(5) } }).map((p) => [p.id, p]));
+      eq(O.lireMesures(meme, new Map([["P", { nettete: 500, dhash: h(0) }], ["Q", { nettete: 500, dhash: "ffffffff00000000" }]])).piles, [], "R74 : même seconde mais images sans rapport : pas une rafale");
+
+      /* R77 : la bibliothèque */
+      const e0 = O.creerEtat({ magazine: magazineVide(3), catalogue: cat });
+      const e1 = O.appliquer(e0, { type: "poserLecture", lecture: lu });
+      const vis = (e: EtatEditeur) => O.visibles(e);
+      ok(!vis(e1).includes("A") && !vis(e1).includes("C") && !vis(e1).includes("D") && vis(e1).includes("B") && vis(e1).includes("E"), "R77 : sous une pile, seule la tête se montre");
+      const e2 = O.appliquer(e1, { type: "basculerPile", tete: "B" });
+      ok(vis(e2).includes("A") && vis(e2).includes("C"), "R77 : une pile ouverte montre tout");
+      ok(O.appliquer(e2, { type: "basculerPile", tete: "B" }).pilesOuvertes.length === 0, "R77 : un second clic la referme");
+      ok(O.appliquer(e1, { type: "basculerPile", tete: "A" }) === e1, "R77 : seule une tête ouvre une pile");
+      const e3 = { ...e1, magazine: O.marquer(e1.magazine, ["A"], "reserve") };
+      ok(vis(e3).includes("A") && !vis(e3).includes("C"), "R77 : une photo déjà jugée par l'atelier ne se cache jamais");
+      const e4 = O.appliquer({ ...e1, magazine: O.marquer(e1.magazine, ["B"], "ecartee") }, { type: "filtrer", filtres: { marque: "ecarter" } });
+      ok(!vis(e4).includes("B") && vis(e4).includes("A") && vis(e4).includes("C"), "R77 : tête cachée par le filtre (écartée au tour ①), ses photos réapparaissent");
+      ok(O.contenuValide(e2.magazine), "la lecture ne touche pas au magazine : il se sauvegarde tel quel");
+      ok(O.appliquer(e2, { type: "poserLecture", lecture: O.LECTURE_VIDE }).pilesOuvertes.length === 0, "une nouvelle lecture oublie les piles qui n'existent plus");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : couche 1, floues, rafales et doublons en piles (R72 à R77)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);
