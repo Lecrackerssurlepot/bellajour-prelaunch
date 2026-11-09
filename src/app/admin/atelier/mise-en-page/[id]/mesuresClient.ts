@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { carteSaillance, lireMesures, mesurerGris, REGLAGES, zoneImportante, type Boite, type Catalogue, type Geste, type Mesure } from "@/lib/mise-en-page/editeur";
+import { carteSaillance, lireMesures, mesurerGris, paletteDePixels, REGLAGES, varianceLaplacien, zoneImportante, type Boite, type Catalogue, type Geste, type Mesure, type Visage } from "@/lib/mise-en-page/editeur";
 import type { FaceDetector } from "@mediapipe/tasks-vision";
 import type { Adresse } from "./contexte";
 
@@ -18,7 +18,7 @@ const PAQUET = 150;
 const BASE = "bj-mep-mesures";
 const MAGASIN = "mesures";
 /** Changer la mesure change la version : les anciennes mesures ne sont plus relues. */
-const VERSION = "v2";
+const VERSION = "v3";
 /** Lot 2 (A6) : le détecteur de visages de MediaPipe, servi depuis notre origine (copie de node_modules, voir le harnais). */
 const MEDIAPIPE = "/mediapipe/1.2.2";
 const MODELE_VISAGES = "/modeles/blaze_face_short_range.tflite";
@@ -42,7 +42,7 @@ async function lire(id: string): Promise<Mesure | null> {
   return new Promise((ok) => {
     try {
       const r = b.transaction(MAGASIN, "readonly").objectStore(MAGASIN).get(`${VERSION}:${id}`);
-      r.onsuccess = () => { const m = r.result as Mesure | undefined; ok(m && typeof m.nettete === "number" && typeof m.dhash === "string" && "zone" in m ? m : null); };
+      r.onsuccess = () => { const m = r.result as Mesure | undefined; ok(m && typeof m.nettete === "number" && typeof m.dhash === "string" && "zone" in m && "lumi" in m ? m : null); };
       r.onerror = () => ok(null);
     } catch { ok(null); }
   });
@@ -104,9 +104,26 @@ async function mesurer(source: string): Promise<Mesure | null> {
     const gris = new Uint8Array(l * h);
     for (let i = 0, j = 0; j < gris.length; i += 4, j++) gris[j] = Math.round(0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]);
     const base = mesurerGris(gris, l, h);
-    const visages = await visagesDe(im);
+    const vus = await visagesDe(im);
+    /* A2, A7 : la netteté DANS la boîte d'un visage, en fraction de celle de la photo entière */
+    const netteteDans = (b: Boite): number | null => {
+      const x0 = Math.max(0, Math.floor(b.x * l)), y0 = Math.max(0, Math.floor(b.y * h));
+      const x1 = Math.min(l, Math.ceil((b.x + b.l) * l)), y1 = Math.min(h, Math.ceil((b.y + b.h) * h));
+      const cl = x1 - x0, ch = y1 - y0;
+      if (cl < 8 || ch < 8) return null;
+      const c = new Uint8Array(cl * ch);
+      for (let y = 0; y < ch; y++) for (let x = 0; x < cl; x++) c[y * cl + x] = gris[(y0 + y) * l + x0 + x];
+      return varianceLaplacien(c, cl, ch);
+    };
+    const visages: Visage[] | null = vus ? vus.map((v) => { const n = netteteDans(v); return n === null || !base.nettete ? v : { ...v, nettete: Math.round((n / base.nettete) * 100) / 100 }; }) : null;
     const zone = zoneImportante(visages ?? [], carteSaillance(gris, l, h));
-    return { ...base, ...(visages ? { visages } : {}), zone };
+    const sujet = visages?.length ? [...visages].sort((a, b) => b.l * b.h - a.l * a.h)[0] : zone;
+    const ns = sujet ? netteteDans(sujet) : null;
+    /* A3 : gris moyen et parts écrêtées ; E1 : 5 teintes */
+    let somme = 0, noirs = 0, blancs = 0;
+    for (const v of gris) { somme += v; if (v < 8) noirs++; else if (v > 247) blancs++; }
+    const lumi = { moyenne: Math.round(somme / gris.length), noirs: Math.round((noirs / gris.length) * 1000) / 1000, blancs: Math.round((blancs / gris.length) * 1000) / 1000 };
+    return { ...base, ...(visages ? { visages } : {}), zone, lumi, palette: paletteDePixels(px, 8), ...(ns !== null ? { netteteSujet: ns } : {}) };
   } catch { return null; } finally { im.close(); }
 }
 

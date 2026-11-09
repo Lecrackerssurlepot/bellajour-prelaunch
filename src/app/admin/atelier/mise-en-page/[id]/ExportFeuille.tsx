@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { avertissementsExport, idsMagazine, pagesLibelle } from "@/lib/mise-en-page/editeur";
+import { avertissementsExport, idsMagazine, pagesLibelle, type Lecon } from "@/lib/mise-en-page/editeur";
+import type { Memoire } from "./leconsClient";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { cls, pluriel, useEd, type Projet } from "./contexte";
 import { Ico } from "./icones";
@@ -16,10 +17,12 @@ type Etape = { nom: "choix" } | { nom: "cours"; prog: ProgressionExport } | { no
 
 const mo = (o: number): string => (o > 1e9 ? `${(o / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Go` : `${Math.max(1, Math.round(o / 1e6)).toLocaleString("fr-FR")} Mo`);
 
-export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onExporte }: {
+export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onExporte, memoire }: {
   catalogue: CatalogueCharge; source: SourceCatalogue; projet: Projet; suite: { href: string; mot: string }; onFermer: () => void;
   /** Lot 2 : appelé quand l'export a abouti (jalon et instantané de la mémoire). */
   onExporte?: (dossier: string) => void;
+  /** Lot 3 (G3) : la mémoire, pour poser au plus trois questions à la fin. */
+  memoire?: Memoire;
 }) {
   const { etat, envoyer } = useEd();
   const [parent, setParent] = useState(() => parentMemorise());
@@ -35,7 +38,8 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const dossier = parentOk.ok && nomOk.ok ? `${parentOk.dossier}/${nomOk.nom}` : "";
   const dossierOk = dossierAbsolu(dossier);
   const peutDossier = peutEcrireDansUnDossier();
-  const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0);
+  const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0)
+    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length;
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
 
   const lancer = () => {
@@ -96,6 +100,10 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
                   </button>
                 ))}
                 {av.bassesDef.length > 3 ? <span className="ed-sous">et {av.bassesDef.length - 3} autres</span> : null}
+                {av.flouesPosees.length ? <span>{pluriel(av.flouesPosees.length, "photo floue posée", "photos floues posées")} · p. {av.flouesPosees.slice(0, 4).map((z) => z.numero).join(", ")}</span> : null}
+                {av.visagesAuPli.length ? <span className="ed-ex-rouge">{pluriel(av.visagesAuPli.length, "visage dans le pli", "visages dans le pli")} · p. {av.visagesAuPli.slice(0, 4).map((z) => z.numero).join(", ")}</span> : null}
+                {av.hesitationsOuvertes ? <span>{pluriel(av.hesitationsOuvertes, "hésitation ouverte", "hésitations ouvertes")} · seule la photo de devant part</span> : null}
+                {av.pagesVides.length ? <span>{pluriel(av.pagesVides.length, "planche vide", "planches vides")} · p. {av.pagesVides.slice(0, 4).join(", ")}</span> : null}
                 {av.pagesAuDessus ? <span>{pl.pages} pages pour {pl.cible} payées</span> : null}
               </div>
             ) : null}
@@ -140,6 +148,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
               <li>Finir, exporter le PDF</li>
               <li>Déposer le PDF dans {suite.mot}</li>
             </ol>
+            {memoire ? <Questions memoire={memoire} /> : null}
             <div className="ed-ex-actions ed-ex-actions--debut">
               {projet.source === "libre" ? null : <Link className="adm-btn" href={suite.href}>{suite.mot} ↗</Link>}
               <button type="button" className={cls("adm-btn", "adm-btn--ghost")} onClick={onFermer}>Rester ici</button>
@@ -147,6 +156,42 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
           </div>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+/** G3 (lot 3, 09/11) : au plus trois questions sur ce que la machine a proposé et que l'atelier a renversé. Une réponse, un clic. */
+function Questions({ memoire }: { memoire: Memoire }) {
+  const [qs] = useState(() => memoire.questions());
+  const [faites, setFaites] = useState<Record<number, string>>({});
+  const [notes, setNotes] = useState<Record<number, string>>({});
+  if (!qs.length) return null;
+  const MOTS: Record<string, string> = {
+    floue_gardee: "La machine la disait floue, tu l'as gardée.",
+    pile_autre_gardee: "La machine avait mis une autre photo de la pile dessus, tu as pris celle-ci.",
+    pile_pas_un_doublon: "La machine la rangeait sous une autre, tu as gardé les deux.",
+    tete_ecartee: "La machine l'avait mise dessus (la plus nette), tu l'as écartée.",
+    pretri_renverse: "Tu as changé la marque proposée par le pré-tri.",
+  };
+  const choix = (i: number, q: Lecon, c: "machine" | "atelier" | "depend") => { memoire.repondre(q, c, notes[i] ?? ""); setFaites((f) => ({ ...f, [i]: c })); };
+  return (
+    <div className="ed-ex-questions">
+      <p className="ed-ex-ligne"><b>Trois questions pour la machine</b> · facultatif</p>
+      {qs.map((q, i) => (
+        <div key={`${q.type}-${i}`} className="ed-ex-q">
+          <p>{MOTS[q.type] ?? q.proposition}<span className="ed-sous"> {q.proposition} · {q.photos[0]}</span></p>
+          {faites[i] ? <span className="ate-tag ate-tag--choix">Noté</span> : (
+            <>
+              <input type="text" placeholder="Un mot si tu veux" aria-label="Ta note" value={notes[i] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [i]: e.currentTarget.value }))} />
+              <span className="ed-ex-q-bt">
+                <button type="button" className="adm-btn adm-btn--ghost" onClick={() => choix(i, q, "machine")}>Elle avait raison</button>
+                <button type="button" className="adm-btn adm-btn--ghost" onClick={() => choix(i, q, "atelier")}>J&apos;avais raison</button>
+                <button type="button" className="adm-btn adm-btn--ghost" onClick={() => choix(i, q, "depend")}>Ça dépend</button>
+              </span>
+            </>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

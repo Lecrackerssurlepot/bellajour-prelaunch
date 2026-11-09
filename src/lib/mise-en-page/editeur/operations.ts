@@ -43,9 +43,14 @@ const rapport = (o: Dims): number => {
 /** La part (0 à 1) de la zone importante d'une photo qui tombe dans la bande du pli (± `pli_mm` autour de la pliure),
  *  une fois la photo posée dans ce cadre avec son recadrage par contenu. 0 si le cadre ne touche pas le pli. */
 export function partDansLePli(photo: Dims, cadre: Rect, zone: { x: number; y: number; l: number; h: number }): number {
+  return partDansLePliPose(photo, cadre, recadrageParContenu(photo, cadre, zone), zone);
+}
+
+/** F4 : la même mesure, avec le recadrage RÉEL du cadre (après les gestes de l'atelier). */
+export function partDansLePliPose(photo: Dims, cadre: Rect, r: Recadrage, zone: { x: number; y: number; l: number; h: number }): number {
   const pli = REGLAGES.pli_mm.valeur;
   if (cadre.x + cadre.l <= PAGE_L - pli || cadre.x >= PAGE_L + pli) return 0;
-  const c = cadrer(photo, cadre, recadrageParContenu(photo, cadre, zone));
+  const c = cadrer(photo, cadre, r);
   /* la zone en mm, repère planche */
   const zx0 = cadre.x + c.x + zone.x * c.l, zx1 = zx0 + zone.l * c.l;
   const a = Math.max(zx0, PAGE_L - pli), b = Math.min(zx1, PAGE_L + pli);

@@ -15,6 +15,7 @@ import type { ActionHesitation } from "./hesitation";
 import type { SensCalque } from "./libre";
 import type { Lecture } from "./mesures";
 import type { Lecon } from "./lecons";
+import type { Proposition } from "./pretri";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -178,6 +179,8 @@ export type EtatEditeur = {
   pilesOuvertes: string[];
   /** Lot 2 (G1) : les leçons pas encore envoyées au serveur (un geste contraire à une proposition). L'écran les vide après envoi. */
   lecons: Lecon[];
+  /** Lot 3 : les propositions du dernier pré-tri appliqué (raison par photo). Un geste contraire devient une leçon. Écran seulement. */
+  pretri: Record<string, Proposition>;
 };
 
 export type OptionsEtat = {
@@ -211,6 +214,8 @@ export type GesteModifiant =
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
   | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
   /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
+  /** Lot 3 (A10) : poser d'un geste les marques que la machine propose, sur les photos encore sans marque. */
+  | { type: "preTrier"; confirme?: boolean }
   | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
   | { type: "reglerTri"; visees: number | null; confirme?: boolean }
   /** 1 / 2 (05/11) : poser ou retirer une étiquette d'usage (bascule sur toutes) ; la poser garde la photo. */

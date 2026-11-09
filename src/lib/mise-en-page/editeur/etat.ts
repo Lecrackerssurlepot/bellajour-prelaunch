@@ -13,7 +13,8 @@ import type { Magazine } from "../magazine";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { LECTURE_VIDE } from "./mesures";
-import { leconValide, leconsDeLaPose, leconsDuTri } from "./lecons";
+import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./lecons";
+import { preTrier } from "./pretri";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -64,6 +65,7 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     lecture: LECTURE_VIDE,
     pilesOuvertes: [],
     lecons: [],
+    pretri: {},
   };
 }
 
@@ -77,7 +79,7 @@ const enAttente = (s: EtatSauvegarde): EtatSauvegarde => ({ etat: "en_attente", 
 function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine): EtatEditeur {
   if (magazine === e.magazine) return e;
   /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander */
-  const neuves = [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue)];
+  const neuves = [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDuPreTri(e.magazine, magazine, e.pretri)];
   if (neuves.length) e = { ...e, lecons: [...e.lecons, ...neuves].slice(-LECONS_MAX) };
   const passe = [...e.historique.passe, { libelle, avant: e.magazine, apres: magazine, plancheId }].slice(-HISTORIQUE_MAX);
   return { ...e, magazine, historique: { passe, futur: [] }, sauvegarde: enAttente(e.sauvegarde), eclair: plancheId };
@@ -225,7 +227,7 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "etiqueter", "hesiter",
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
   "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
@@ -253,6 +255,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
     return { ...x, magazine: e.magazine, confirmation: { type: "signalee", nb: signalees.length, total, geste: { ...g, confirme: true } } };
   }
   const avant = x.magazine;
+  /* lot 3 : le pré-tri garde ses propositions (avec leur raison) pour reconnaître ensuite un geste contraire */
+  if (g.type === "preTrier") x = { ...x, pretri: { ...x.pretri, ...preTrier(e.catalogue, e.magazine, e.lecture).propositions } };
   x = adopter(x, plan.libelle, plan.plancheId, is.magazine);
   if ((plan.op === "insererDouble" || plan.op === "creerDoubles") && is.nouvellePlanche) {
     x = { ...x, plancheCourante: is.nouvellePlanche, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1) };

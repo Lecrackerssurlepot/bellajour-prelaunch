@@ -25,6 +25,10 @@ export type TypeLecon =
   | "pile_pas_un_doublon"
   /* R76 : la tête d'une pile est écartée alors qu'une autre de la pile est gardée. */
   | "tete_ecartee"
+  /* A10 : l'atelier a renversé une marque posée par le pré-tri. */
+  | "pretri_renverse"
+  /* G3 : la réponse de l'atelier à une question (la leçon d'origine dans `photos` et `proposition`). */
+  | "reponse"
   /* Jalons : la vie d'un magazine (G6). */
   | "ouverture" | "export";
 
@@ -117,6 +121,34 @@ export function leconsDeLaPose(avant: Magazine, apres: Magazine, lecture: Lectur
   return l;
 }
 
+/** Les leçons d'un geste qui renverse une marque posée par le pré-tri (A10) : la raison de la machine, et ce que l'atelier a mis. */
+export function leconsDuPreTri(avant: Magazine, apres: Magazine, pretri: Readonly<Record<string, { marque: Marque; raison: string; regle: string }>>): Lecon[] {
+  if (avant === apres || !Object.keys(pretri).length) return [];
+  const base = { reglages: valeursReglages(), version: versionReglages() };
+  const l: Lecon[] = [];
+  for (const [id, p] of Object.entries(pretri)) {
+    const de = marqueDe(avant, id), a = marqueDe(apres, id);
+    if (de === a || de !== p.marque) continue;
+    const mot: Record<string, string> = { choisie: "gardée", coupDeCoeur: "coup de cœur", reserve: "réserve", ecartee: "écartée" };
+    l.push({ ...base, type: "pretri_renverse", regle: p.regle, photos: [id], proposition: `${mot[p.marque]} : ${p.raison}`, geste: a ? mot[a] : "marque retirée" });
+  }
+  return l;
+}
+
+/** La réponse de l'atelier à une question (G3), gardée comme une leçon. */
+export const reponse = (q: Lecon, choix: "machine" | "atelier" | "depend", note: string): Lecon => ({
+  type: "reponse", regle: q.regle, photos: q.photos, proposition: `${q.type} · ${q.proposition}`,
+  geste: `${choix === "machine" ? "la machine avait raison" : choix === "atelier" ? "j'avais raison" : "ça dépend"}${note.trim() ? ` : ${note.trim().slice(0, 150)}` : ""}`,
+  reglages: q.reglages, version: q.version,
+});
+
+/** G3 : au plus trois questions parmi les leçons d'un magazine : une par règle, la plus fréquente d'abord. */
+export function troisQuestions(lecons: readonly Lecon[]): Lecon[] {
+  const parRegle = new Map<string, Lecon[]>();
+  for (const l of lecons) { if (l.type === "ouverture" || l.type === "export" || l.type === "reponse") continue; const k = `${l.regle}:${l.type}`; const x = parRegle.get(k); if (x) x.push(l); else parRegle.set(k, [l]); }
+  return [...parRegle.values()].sort((a, b) => b.length - a.length).slice(0, 3).map((x) => x[0]);
+}
+
 /** Un jalon de la vie du magazine (G6) : l'écran l'ajoute à l'ouverture et à l'export. */
 export const jalon = (type: "ouverture" | "export", geste: string): Lecon =>
   ({ type, regle: "G6", photos: [], proposition: "", geste, reglages: valeursReglages(), version: versionReglages() });
@@ -133,7 +165,8 @@ export type Instantane = {
   planches: { id: string; templateId: string | null; photos: (string | null)[] }[];
 };
 
-export function instantane(e: EtatEditeur, mesures: ReadonlyMap<string, { nettete: number; dhash: string }>): Instantane {
+export function instantane(e: EtatEditeur, mesuresConnues?: ReadonlyMap<string, { nettete: number; dhash: string }>): Instantane {
+  const mesures: ReadonlyMap<string, { nettete: number; dhash: string }> = mesuresConnues ?? new Map(Object.entries(e.lecture.mesures ?? {}));
   return {
     version: versionReglages(),
     reglages: valeursReglages(),
@@ -141,7 +174,7 @@ export function instantane(e: EtatEditeur, mesures: ReadonlyMap<string, { nettet
       const m = mesures.get(p.id);
       return { id: p.id, l: p.l, h: p.h, date: p.date, personne: p.personne, coeur: p.coeur, signalee: p.signalee, ...(m ? { nettete: m.nettete, dhash: m.dhash } : {}) };
     }),
-    lecture: e.lecture,
+    lecture: { ...e.lecture, mesures: undefined },
     tri: e.magazine.tri,
     planches: e.magazine.planches.map((pl) => ({
       id: pl.id,
@@ -155,7 +188,7 @@ export function instantane(e: EtatEditeur, mesures: ReadonlyMap<string, { nettet
 export function leconValide(x: unknown): x is Lecon {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
-  const types: TypeLecon[] = ["floue_gardee", "pile_autre_gardee", "pile_pas_un_doublon", "tete_ecartee", "ouverture", "export"];
+  const types: TypeLecon[] = ["floue_gardee", "pile_autre_gardee", "pile_pas_un_doublon", "tete_ecartee", "pretri_renverse", "reponse", "ouverture", "export"];
   return types.includes(o.type as TypeLecon) && typeof o.regle === "string" && o.regle.length <= 8
     && Array.isArray(o.photos) && o.photos.length <= 50 && o.photos.every((p) => typeof p === "string" && p.length <= 80)
     && typeof o.proposition === "string" && o.proposition.length <= 200 && typeof o.geste === "string" && o.geste.length <= 200

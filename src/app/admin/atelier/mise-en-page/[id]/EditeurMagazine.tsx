@@ -357,7 +357,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
         {ui.loupe ? <Loupe id={ui.loupe} /> : null}
-        {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} onExporte={memoire.exporte} /> : null}
+        {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} onExporte={memoire.exporte} memoire={memoire} /> : null}
       </div>
     </CtxEd.Provider>
   );

@@ -20,6 +20,16 @@ export const REGLAGES = {
   masse_saillance: { valeur: 0.85, regle: "R-20", depuis: "2026-11-09", raison: "la zone protégée garde 85 % de la masse saillante, rapport ch.03" },
   visage_confiance: { valeur: 0.5, regle: "A6", depuis: "2026-11-09", raison: "seuil par défaut du détecteur MediaPipe" },
   pli_mm: { valeur: 5, regle: "R-25", depuis: "2026-11-09", raison: "HYPOTHÈSE : largeur perdue de chaque côté du pli, à confirmer avec Cloudprinter" },
+  sombre_moyenne: { valeur: 35, regle: "A3", depuis: "2026-11-09", raison: "réglage de départ : gris moyen sous 35 sur 255" },
+  claire_moyenne: { valeur: 225, regle: "A3", depuis: "2026-11-09", raison: "réglage de départ : gris moyen au-dessus de 225" },
+  ecretage_part: { valeur: 0.4, regle: "A3", depuis: "2026-11-09", raison: "réglage de départ : 40 % des pixels bouchés ou brûlés" },
+  capture_rapport: { valeur: 1.9, regle: "A4", depuis: "2026-11-09", raison: "sans date et plus allongée que 1,9 : la forme d'un écran de téléphone" },
+  visage_flou: { valeur: 0.35, regle: "A7", depuis: "2026-11-09", raison: "réglage de départ : le plus grand visage est trois fois moins net que la photo" },
+  horloge_hamming: { valeur: 10, regle: "A5", depuis: "2026-11-09", raison: "photos jumelles entre deux déposants" },
+  horloge_paires_min: { valeur: 3, regle: "A5", depuis: "2026-11-09", raison: "au moins trois paires qui concordent avant de recaler" },
+  horloge_tolerance_s: { valeur: 120, regle: "A5", depuis: "2026-11-09", raison: "deux minutes de tolérance entre les paires" },
+  moment_deposant: { valeur: 0.5, regle: "A9", depuis: "2026-11-09", raison: "chaque déposant de plus pèse la moitié d'un moment (« vu par trois, moment fort »)" },
+  variete_lambda: { valeur: 0.7, regle: "A12", depuis: "2026-11-09", raison: "R-43 du rapport : 70 % qualité, 30 % différence" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;

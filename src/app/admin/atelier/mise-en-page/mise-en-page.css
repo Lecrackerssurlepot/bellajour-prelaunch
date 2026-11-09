@@ -1702,3 +1702,17 @@
 .mep-editeur .ed-lieux { position: absolute; z-index: 30; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 5px; border-radius: 12px; background: var(--bj-glass-card-bg, var(--bj-cream)); box-shadow: var(--bj-shadow-pop); }
 .mep-editeur .ed-lieux button { appearance: none; padding: 3px 9px; border: 0; border-radius: var(--bj-r-pill); background: var(--bj-veil-6); color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xxs); white-space: nowrap; cursor: pointer; }
 .mep-editeur .ed-lieux button:hover { background: var(--bj-action); color: var(--bj-on-action); }
+
+/* ── lot 3 (09/11) : le pré-tri et la palette, à côté de la jauge ── */
+.mep-editeur .ed-ph-jauge-pied { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.mep-editeur .ed-pretri { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.mep-editeur .ed-ph--grand .ed-ph-tete .ed-pretri { margin-right: 10px; }
+.mep-editeur .ed-palette { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+.mep-editeur .ed-palette i { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bj-text) 12%, transparent); }
+.mep-editeur .ed-ph--grand .ed-ph-tete .ed-palette { margin-right: 10px; }
+.mep-editeur .ed-vt-raison { margin-left: 10px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--bj-action) 22%, transparent); font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-ex-questions { display: grid; gap: 10px; margin: 12px 0; padding: 12px; border-radius: 12px; background: var(--bj-veil-6); }
+.mep-editeur .ed-ex-q { display: grid; gap: 6px; }
+.mep-editeur .ed-ex-q p { margin: 0; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-ex-q input { font: inherit; font-size: var(--bj-fs-xs); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--bj-veil-12); background: var(--bj-cream); color: var(--bj-text); }
+.mep-editeur .ed-ex-q-bt { display: flex; flex-wrap: wrap; gap: 6px; }

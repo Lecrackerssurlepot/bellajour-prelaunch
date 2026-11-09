@@ -10,8 +10,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { instantane, jalon, type EtatEditeur, type Geste, type Lecon } from "@/lib/mise-en-page/editeur";
-import { mesuresConnues } from "./mesuresClient";
+import { instantane, jalon, reponse, troisQuestions, type EtatEditeur, type Geste, type Lecon } from "@/lib/mise-en-page/editeur";
 
 const ROUTE = "/api/admin/atelier/mise-en-page/lecons";
 const ATTENTE_MS = 3000;
@@ -19,6 +18,8 @@ const REPRISE_MS = 60_000;
 const LOT = 200;
 /* un seul envoi à la fois pour tout l'onglet : deux lots en vol enverraient les mêmes leçons deux fois */
 let enVol = false;
+/* G3 : les leçons envoyées pendant cette séance, pour en tirer trois questions à la fin d'un export */
+const historique: Lecon[] = [];
 
 async function envoyerLot(cle: string, lecons: Lecon[], inst?: ReturnType<typeof instantane>): Promise<boolean> {
   try {
@@ -34,6 +35,10 @@ async function envoyerLot(cle: string, lecons: Lecon[], inst?: ReturnType<typeof
 export type Memoire = {
   /** À appeler quand un export a abouti : jalon + instantané. */
   exporte: (dossier: string) => void;
+  /** G3 : au plus trois questions tirées des gestes contraires de la séance. */
+  questions: () => Lecon[];
+  /** G3 : la réponse de l'atelier, envoyée comme une leçon. */
+  repondre: (q: Lecon, choix: "machine" | "atelier" | "depend", note: string) => void;
 };
 
 export function useLecons(cle: string, etat: EtatEditeur | null, envoyer: (g: Geste) => void): Memoire {
@@ -62,7 +67,7 @@ export function useLecons(cle: string, etat: EtatEditeur | null, envoyer: (g: Ge
       const ok = await envoyerLot(cle, lot);
       enVol = false;
       if (annule) return;
-      if (ok) envoyerRef.current({ type: "leconsEnvoyees", n: lot.length });
+      if (ok) { historique.push(...lot); envoyerRef.current({ type: "leconsEnvoyees", n: lot.length }); }
       else setTimeout(() => { if (!annule) void partir(); }, REPRISE_MS);
     };
     const t = setTimeout(() => { void partir(); }, ATTENTE_MS);
@@ -75,7 +80,12 @@ export function useLecons(cle: string, etat: EtatEditeur | null, envoyer: (g: Ge
     const j = jalon("export", `export IDML · ${dossier}`);
     envoyerRef.current({ type: "ajouterLecon", lecon: j });
     /* l'instantané part tout de suite, avec le jalon, sans attendre le lot : c'est le moment qui compte */
-    void envoyerLot(cle, [j], instantane(e, mesuresConnues())).then((ok) => { if (ok) envoyerRef.current({ type: "leconsEnvoyees", n: 0 }); });
+    void envoyerLot(cle, [j], instantane(e));
   };
-  return { exporte };
+  const questions = () => troisQuestions([...historique, ...(etatRef.current?.lecons ?? [])]);
+  const repondre = (q: Lecon, choix: "machine" | "atelier" | "depend", note: string) => {
+    const r = reponse(q, choix, note);
+    void envoyerLot(cle, [r]).then((ok) => { if (!ok) envoyerRef.current({ type: "ajouterLecon", lecon: r }); });
+  };
+  return { exporte, questions, repondre };
 }

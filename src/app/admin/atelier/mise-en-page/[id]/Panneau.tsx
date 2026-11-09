@@ -10,7 +10,7 @@ import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, VuesBarre } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, BoutonPreTri, PaletteTri, VuesBarre } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -247,7 +247,7 @@ function PanneauOuvert() {
     const sel1 = selSet.has(id);
     const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
     return (
-      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom}
+      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={(p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom) + (etat.pretri[id] ? ` · pré-tri : ${etat.pretri[id].raison}` : "")}
         className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
         aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
@@ -332,7 +332,7 @@ function PanneauOuvert() {
             </button>
           </>
         ) : null}
-        {grand ? <JaugeTri /> : (
+        {grand ? <><PaletteTri /><BoutonPreTri /><JaugeTri /></> : (
           <span className="ed-seg" role="group" aria-label="Taille des vignettes">
             {(["S", "M", "L"] as const).map((t) => (
               <button key={t} type="button" aria-pressed={f.taille === t} onClick={() => filtrer({ taille: t })}>{t}</button>
@@ -343,7 +343,7 @@ function PanneauOuvert() {
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
       {grand ? null : <VuesBarre />}
-      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /></div>}
+      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /><span className="ed-ph-jauge-pied"><PaletteTri /><BoutonPreTri /></span></div>}
       <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
           <input type="search" placeholder="Rechercher" aria-label="Rechercher une photo" value={f.recherche} onChange={(e) => filtrer({ recherche: e.currentTarget.value })} />

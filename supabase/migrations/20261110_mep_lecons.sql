@@ -40,7 +40,7 @@ create table if not exists public.mep_lecons (
   mise_en_page_id  uuid null references public.mises_en_page(id) on delete set null,
   -- la clé de l'écran (source + identifiant), toujours présente : un projet local n'a pas encore de ligne
   cle              text not null,
-  type             text not null check (type in ('floue_gardee', 'pile_autre_gardee', 'pile_pas_un_doublon', 'tete_ecartee', 'ouverture', 'export')),
+  type             text not null check (type in ('floue_gardee', 'pile_autre_gardee', 'pile_pas_un_doublon', 'tete_ecartee', 'pretri_renverse', 'reponse', 'ouverture', 'export')),
   regle            text not null,
   photos           jsonb not null default '[]'::jsonb,
   proposition      text not null default '',

@@ -16,8 +16,24 @@ import { REGLAGES } from "./reglages";
 
 import type { Boite } from "./saillance";
 
-/** `visages` et `zone` (lot 2) : en fractions de l'image ; absents si la photo n'a pas été vue par le détecteur. */
-export type Mesure = { nettete: number; dhash: string; visages?: Boite[]; zone?: Boite | null };
+/** Un visage détecté (A6) : sa boîte en fractions, et (A2, A7) la netteté mesurée DANS la boîte, en fraction de la netteté de l'image. */
+export type Visage = Boite & { nettete?: number };
+
+/**
+ * Ce que l'on mesure d'une vignette, dans le navigateur (`mesuresClient.ts`), sans IA :
+ * - `nettete` (R72), `dhash` (R72) ;
+ * - `visages` et `zone` (lot 2) : en fractions de l'image ; absents si la photo n'a pas été vue par le détecteur ;
+ * - `lumi` (A3) : gris moyen 0-255 et part des pixels écrêtés (noirs < 8, blancs > 247) ;
+ * - `palette` (E1) : 5 teintes dominantes en hexa, de la plus présente à la moins présente ;
+ * - `netteteSujet` (A2) : la netteté sur le plus grand visage (ou la zone), sinon absente.
+ */
+export type Mesure = {
+  nettete: number; dhash: string;
+  visages?: Visage[]; zone?: Boite | null;
+  lumi?: { moyenne: number; noirs: number; blancs: number };
+  palette?: string[];
+  netteteSujet?: number;
+};
 
 /* Les seuils vivent dans `reglages.ts` (G7) : nommés, datés, emportés par chaque leçon. Les noms d'ici restent pour le harnais. */
 export const RAFALE_SECONDES = REGLAGES.rafale_secondes.valeur;
@@ -79,7 +95,7 @@ export function dHash(g: ArrayLike<number>, l: number, h: number): string {
 }
 
 /** Une empreinte en deux entiers de 32 bits (null si mal formée) : 2 000 photos = 2 millions de comparaisons, il faut que ce soit vif. */
-function enMots(h: string): [number, number] | null {
+export function enMots(h: string): [number, number] | null {
   if (!/^[0-9a-f]{16}$/i.test(h)) return null;
   return [parseInt(h.slice(0, 8), 16) >>> 0, parseInt(h.slice(8), 16) >>> 0];
 }
@@ -88,7 +104,7 @@ function bits32(x: number): number {
   x = (x & 0x33333333) + ((x >>> 2) & 0x33333333);
   return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
 }
-const ecart = (a: [number, number] | null, b: [number, number] | null): number => (a && b ? bits32(a[0] ^ b[0]) + bits32(a[1] ^ b[1]) : 64);
+export const ecart = (a: [number, number] | null, b: [number, number] | null): number => (a && b ? bits32(a[0] ^ b[0]) + bits32(a[1] ^ b[1]) : 64);
 
 const BITS = Array.from({ length: 16 }, (_, i) => (i & 1) + ((i >> 1) & 1) + ((i >> 2) & 1) + ((i >> 3) & 1));
 
@@ -117,6 +133,10 @@ export type Lecture = {
   mesurees: number;
   /** Lot 2 : la zone importante de chaque photo qui en a une (recadrage par le contenu, pli). */
   zones: Record<string, Boite>;
+  /** Lot 3 : les mesures elles-mêmes (le pré-tri et l'instantané les lisent). Absentes d'une lecture ancienne. */
+  mesures?: Record<string, Mesure>;
+  /** E1 : la palette du magazine (6 teintes en hexa), agrégée des photos mesurées. */
+  palette?: string[];
 };
 
 export const LECTURE_VIDE: Lecture = { floues: [], piles: [], mesurees: 0, zones: {} };
@@ -213,8 +233,9 @@ export function lireMesures(cat: Catalogue, mes: ReadonlyMap<string, Mesure>): L
     .sort((a, b) => (chrono.get(a.id)! - chrono.get(b.id)!) || (a.id < b.id ? -1 : 1)).map((p) => p.id);
 
   const zones: Record<string, Boite> = {};
-  for (const p of photos) { const z = mes.get(p.id)!.zone; if (z) zones[p.id] = z; }
-  return { floues, piles, mesurees: photos.length, zones };
+  const toutes: Record<string, Mesure> = {};
+  for (const p of photos) { const m = mes.get(p.id)!; toutes[p.id] = m; if (m.zone) zones[p.id] = m.zone; }
+  return { floues, piles, mesurees: photos.length, zones, mesures: toutes, palette: paletteDuMagazine(photos.map((p) => mes.get(p.id)!.palette ?? [])) };
 }
 
 /** Les photos rangées sous une autre (et la tête qui les porte), pour la bibliothèque. */
@@ -226,3 +247,44 @@ export function sousPiles(l: Lecture): ReadonlyMap<string, string> {
 
 /** Combien de photos en moins à regarder : celles rangées sous une pile. */
 export const photosEnMoins = (l: Lecture): number => l.piles.reduce((n, p) => n + p.autres.length, 0);
+
+/* ─────────────────────────── E1 : la palette ─────────────────────────── */
+
+const versRgb = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const versHex = (r: number, g: number, b: number): string => `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")}`;
+
+/** k-moyennes déterministes (départs = les k premiers points les plus éloignés), en RGB : la palette d'une liste de couleurs pesées. */
+export function kMoyennes(points: [number, number, number][], poids: number[], k: number): { couleur: [number, number, number]; poids: number }[] {
+  if (!points.length) return [];
+  const d2 = (a: number[], b: number[]) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+  const centres: [number, number, number][] = [points[poids.indexOf(Math.max(...poids))]];
+  while (centres.length < Math.min(k, points.length)) {
+    let best = 0, bestD = -1;
+    points.forEach((p, i) => { const d = Math.min(...centres.map((c) => d2(p, c))); if (d > bestD) { bestD = d; best = i; } });
+    centres.push(points[best]);
+  }
+  let assign: number[] = [];
+  for (let it = 0; it < 12; it++) {
+    assign = points.map((p) => { let b = 0; centres.forEach((c, j) => { if (d2(p, c) < d2(p, centres[b])) b = j; }); return b; });
+    for (let j = 0; j < centres.length; j++) {
+      let w = 0; const s = [0, 0, 0];
+      points.forEach((p, i) => { if (assign[i] === j) { w += poids[i]; s[0] += p[0] * poids[i]; s[1] += p[1] * poids[i]; s[2] += p[2] * poids[i]; } });
+      if (w) centres[j] = [s[0] / w, s[1] / w, s[2] / w];
+    }
+  }
+  return centres.map((c, j) => ({ couleur: c, poids: points.reduce((s, _, i) => s + (assign[i] === j ? poids[i] : 0), 0) })).sort((a, b) => b.poids - a.poids);
+}
+
+/** E1 : la palette d'une photo (pixels RGB à plat, 4 octets par pixel) : 5 teintes, de la plus présente à la moins présente. */
+export function paletteDePixels(rgba: ArrayLike<number>, pas = 4): string[] {
+  const pts: [number, number, number][] = [], w: number[] = [];
+  for (let i = 0; i + 3 < rgba.length; i += 4 * pas) { pts.push([rgba[i], rgba[i + 1], rgba[i + 2]]); w.push(1); }
+  return kMoyennes(pts, w, 5).map((c) => versHex(...c.couleur));
+}
+
+/** E1 : la palette du magazine : les deux premières teintes de chaque photo, regroupées en 6. */
+export function paletteDuMagazine(palettes: string[][]): string[] {
+  const pts: [number, number, number][] = [], w: number[] = [];
+  for (const p of palettes) p.slice(0, 2).forEach((h, i) => { if (/^#[0-9a-f]{6}$/i.test(h)) { pts.push(versRgb(h)); w.push(i === 0 ? 2 : 1); } });
+  return kMoyennes(pts, w, 6).map((c) => versHex(...c.couleur));
+}
