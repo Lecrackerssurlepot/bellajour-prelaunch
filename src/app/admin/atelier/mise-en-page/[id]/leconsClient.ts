@@ -17,6 +17,8 @@ const ROUTE = "/api/admin/atelier/mise-en-page/lecons";
 const ATTENTE_MS = 3000;
 const REPRISE_MS = 60_000;
 const LOT = 200;
+/* un seul envoi à la fois pour tout l'onglet : deux lots en vol enverraient les mêmes leçons deux fois */
+let enVol = false;
 
 async function envoyerLot(cle: string, lecons: Lecon[], inst?: ReturnType<typeof instantane>): Promise<boolean> {
   try {
@@ -38,7 +40,6 @@ export function useLecons(cle: string, etat: EtatEditeur | null, envoyer: (g: Ge
   const etatRef = useRef(etat);
   const envoyerRef = useRef(envoyer);
   useEffect(() => { etatRef.current = etat; envoyerRef.current = envoyer; });
-  const enVol = useRef(false);
   const ouvert = useRef(false);
 
   /* le jalon d'ouverture, une fois l'état là */
@@ -53,13 +54,13 @@ export function useLecons(cle: string, etat: EtatEditeur | null, envoyer: (g: Ge
     if (!n) return;
     let annule = false;
     const partir = async () => {
-      if (annule || enVol.current) return;
+      if (annule || enVol) return;
       const e = etatRef.current;
       if (!e || !e.lecons.length) return;
-      enVol.current = true;
+      enVol = true;
       const lot = e.lecons.slice(0, LOT);
       const ok = await envoyerLot(cle, lot);
-      enVol.current = false;
+      enVol = false;
       if (annule) return;
       if (ok) envoyerRef.current({ type: "leconsEnvoyees", n: lot.length });
       else setTimeout(() => { if (!annule) void partir(); }, REPRISE_MS);
