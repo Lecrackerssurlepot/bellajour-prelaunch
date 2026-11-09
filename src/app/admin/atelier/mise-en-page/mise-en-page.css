@@ -852,7 +852,13 @@
 }
 .mep-editeur .ed-rep--coeur { background: color-mix(in srgb, var(--bj-cream-tint-1) 92%, transparent); color: var(--ate-rouge); }
 .mep-editeur .ed-rep--drapeau { background: var(--ate-rouge); }
-.mep-editeur .ed-rep--basse { background: var(--ate-orange); }
+.mep-editeur .ed-rep--basse { background: var(--ate-rouge); }
+.mep-editeur .ed-rep--juste { background: var(--ate-orange); }
+/* 09/11 : la résolution du cadre actif, toujours dite, en tête de sa barre */
+.mep-editeur .ed-qualite { display: inline-flex; align-items: center; gap: 5px; align-self: center; padding: 0 8px 0 6px; color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mep-editeur .ed-qualite::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ate-vert); }
+.mep-editeur .ed-qualite--juste::before { background: var(--ate-orange); }
+.mep-editeur .ed-qualite--basse::before { background: var(--ate-rouge); }
 /* « ×n » : cliquable (le reste des repères laisse passer le pointeur), la liste des emplacements dessous */
 .mep-editeur .ed-rep--fois { pointer-events: auto; cursor: pointer; }
 .mep-editeur .ed-rep--fois:hover { background: var(--bj-action); }
@@ -1685,3 +1691,9 @@
 .mep-editeur .ed-guide--h { left: -1.5%; right: -1.5%; height: 1px; transform: translateY(-0.5px); }
 .mep-editeur .ed-famille--on { background: var(--bj-action-soft); color: var(--bj-action); }
 .mep-editeur .ed-rangee-tete .ed-famille { position: static; opacity: 1; transform: none; box-shadow: none; border: 1px solid var(--bj-veil-12); }
+
+/* 09/11 : un titre ou une légende qui porte le lieu par défaut (rien d'écrit) ; les lieux proposés sous le texte en cours */
+.mep-editeur .ed-txt--auto { text-decoration: underline dotted color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; }
+.mep-editeur .ed-lieux { position: absolute; z-index: 30; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 5px; border-radius: 12px; background: var(--bj-glass-card-bg, var(--bj-cream)); box-shadow: var(--bj-shadow-pop); }
+.mep-editeur .ed-lieux button { appearance: none; padding: 3px 9px; border: 0; border-radius: var(--bj-r-pill); background: var(--bj-veil-6); color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xxs); white-space: nowrap; cursor: pointer; }
+.mep-editeur .ed-lieux button:hover { background: var(--bj-action); color: var(--bj-on-action); }

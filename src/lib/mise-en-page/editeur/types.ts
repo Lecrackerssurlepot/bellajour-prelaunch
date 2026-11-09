@@ -31,6 +31,10 @@ export type PhotoMaq = PhotoRef & {
   autresMagazines: number[];
   nouvelle: boolean;
   vignette: string | null;
+  /** 09/11 : la ville et le pays connus en base (Geoapify), le GPS de la photo ; absents = inconnus. */
+  ville?: string | null;
+  pays?: string | null;
+  gps?: { lat: number; lon: number } | null;
 };
 
 export type Catalogue = ReadonlyMap<string, PhotoMaq>;
@@ -52,7 +56,7 @@ export type Filtres = {
   /** Au tour ③ (05/11) : seulement les photos de cette étiquette ; "" = toutes. */
   etiquette: "" | Etiquette;
   tri: "date" | "nom" | "personne";
-  groupe: "jour" | "personne" | "type" | "aucun";
+  groupe: "jour" | "moment" | "lieu" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
 };
 

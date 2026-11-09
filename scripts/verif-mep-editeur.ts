@@ -14,6 +14,7 @@ import type { CibleDepot, EditionMep, EtatEditeur, Geste, Issue, PhotoMaq, Proje
 import { gabaritDepuisDisposition, gabaritValide, ligneEnTemplate } from "@/lib/mise-en-page/gabaritsAtelier";
 import { enregistrerGabarits, nouveauMagazine, templateParId, tousLesTemplates, type Cible, type Disposition, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
 import type { Cote } from "@/lib/mise-en-page/geometrie";
+import * as L from "@/lib/mise-en-page/lieux";
 
 /* ─────────── outils ─────────── */
 
@@ -184,7 +185,7 @@ sc(5, "A(L),B(L),C(P) sur la zone Double → G-D3-a, pas DP-03", () => {
   s.glisse(s.bib(["A", "B", "C"]), dbl(2));
   eq(s.tpl(2, "double"), "G-D3-a", "gabarit");
   const n = O.gabaritsPour(s.e, pl(2), "double");
-  proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.186, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 0.59, 0.001, "note DP-03");
+  proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.237, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 1.049, 0.001, "note DP-03");
 });
 sc(6, "droite [A] + B → [A, B], gabarit de la note, A reste cadre 1", () => {
   const s = new Seance("A:P B:P").pose(2, "droite", ["A"]).zero();
@@ -828,6 +829,61 @@ sc(81, "06/11 : l'aimant accroche bords et centres sous le seuil, jamais au-del�
   const e = O.aimanter({ x: 20, y: 20, l: 168.8, h: 84.4 }, { gauche: false, droite: true, haut: false, bas: true }, L, 2, true);
   proche(e.rect.l / e.rect.h, 2, 1e-9, "format gardé");
   eq(O.aimanter({ x: 54, y: 100, l: 100, h: 50 }, O.DEPLACEMENT, L, 0).guides, [], "seuil nul = aimant coupé");
+});
+
+sc(82, "09/11 : moments (pause de 2 h, changement de jour) et séjours (la ville change), dans l'ordre du temps", () => {
+  const ph = (id: string, date: string | null, ville: string | null): PhotoMaq => ({ id, nom: id, l: 4, h: 3, date, personne: "Moi", lien: null, type: "atelier",
+    coeur: false, signalee: false, autresMagazines: [], nouvelle: false, vignette: null, ville, pays: ville ? "Portugal" : null });
+  const cat: O.Catalogue = new Map([
+    ph("a", "2026-08-12T09:10:00", "Lisbonne"), ph("b", "2026-08-12T10:40:00", null), ph("c", "2026-08-12T13:30:00", "Sintra"),
+    ph("d", "2026-08-12T19:05:00", "Sintra"), ph("e", "2026-08-13T08:00:00", "Lisbonne"), ph("f", null, "Porto"),
+  ].map((x) => [x.id, x]));
+  const m = (id: string) => O.rangementDe(cat, "moment", id), l = (id: string) => O.rangementDe(cat, "lieu", id);
+  eq([m("a").cle === m("b").cle, m("b").cle === m("c").cle, m("c").cle === m("d").cle, m("d").cle === m("e").cle], [true, false, false, false], "coupures de moment");
+  eq([m("a").libelle, m("c").libelle, m("d").libelle, m("f").libelle], ["12 août · Matin, 9 h à 10 h", "12 août · Midi, 13 h", "12 août · Soir, 19 h", "Sans date"], "noms des moments");
+  eq([l("a").libelle, l("b").libelle, l("c").libelle, l("e").libelle, l("f").cle], ["Lisbonne · 12 août", "Lisbonne · 12 août", "Sintra · 12 août", "Lisbonne · 13 août", "~"], "séjours : la photo sans lieu suit celle d'avant");
+  ok(m("a").cle < m("c").cle && l("c").cle < l("e").cle && l("e").cle < "~", "les clés se trient dans l'ordre du temps, « Sans date » à la fin");
+  eq(O.nomDuMoment(23), "Nuit", "23 h = nuit");
+});
+
+sc(83, "09/11 : lieux détaillés (réponses Geoapify) et lieu par défaut des titres et légendes, à l'écran comme à l'export", () => {
+  const inv = { features: [{ properties: { result_type: "amenity", name: "Palácio Nacional de Sintra", town: "Sintra", city: "Sintra (Santa Maria e São Miguel)", county: "Lisbonne", country: "Portugal" } }] };
+  const lieu = def(L.assembler(inv, { features: [{ properties: { name: "Plage", distance: 900 } }, { properties: { distance: 20 } }] }, { features: [{ properties: { name: "Lisboa", name_international: { fr: "Lisbonne", en: "Lisbon" }, distance: 20000 } }] }), "lieu");
+  eq(lieu, { precis: "Palácio Nacional de Sintra", commune: "Sintra", villeProche: "Lisbonne", departement: "Lisbonne", region: null, pays: "Portugal" }, "lieu assemblé : nom du lieu connu, commune sans parenthèse, plage trop loin ignorée");
+  eq(L.choixDeLieux([lieu, lieu]).map((c) => c.valeur), ["Palácio Nacional de Sintra", "Sintra", "Lisbonne", "Portugal"], "propositions sans doublon, du plus précis au plus large");
+  eq(L.assembler(null, null, null), null, "rien de lu : null");
+  eq([L.pointsValides({ points: [{ lat: 91, lon: 0 }] }), L.pointsValides({ points: [] }), L.pointsValides({ points: [{ lat: 1, lon: 2 }] })], [null, null, [{ lat: 1, lon: 2 }]], "points relus");
+  /* le lieu par défaut : un gabarit de page à un titre et une légende */
+  const t = tousLesTemplates().find((x) => x.portee === "page" && x.cadres.some((c) => c.role === "titre") && x.cadres.some((c) => c.role === "legende"));
+  if (!t) return;
+  const nP = t.cadres.filter((c) => c.role === "photo").length;
+  const ids = ["a", "b", "c", "d", "e", "f"].slice(0, nP);
+  const cat = new Map(ids.map((id, i) => [id, { id, nom: id, l: 4, h: 3, date: null, ville: i === 0 ? "Sintra" : "Lisbonne", pays: "Portugal" }]));
+  const d: Disposition = { templateId: t.id, photos: ids.map((id) => ({ photoId: id, recadrage: { zoom: 1, dx: 0, dy: 0 } })),
+    textes: t.cadres.filter((c) => c.role !== "photo").map((c) => ({ contenu: O.LIBELLE[c.role as "titre"], taille: 10, gras: false })) };
+  const def0 = O.lieuxParDefaut(d, "droite", cat);
+  const roles = t.cadres.filter((c) => c.role !== "photo").map((c) => c.role);
+  ok(!!def0[roles.indexOf("titre")] && roles.every((r, i) => r !== "texte" || def0[i] === null), "le titre reçoit un lieu, un « Texte » jamais");
+  if (nP > 1) {
+    eq(def0[roles.indexOf("titre")], "Lisbonne", "le titre prend le lieu le plus présent");
+    eq(def0[roles.indexOf("legende")], "Sintra", "la légende de la photo prise ailleurs dit son lieu");
+  } else eq(def0[roles.indexOf("legende")], null, "une légende au même lieu que le titre ne le répète pas");
+  /* trois titres, cinq légendes au même endroit : un seul lieu écrit */
+  const dp = templateParId("DP-03");
+  if (dp) {
+    const n3 = dp.cadres.filter((c) => c.role === "photo").length;
+    const cat3 = new Map(Array.from({ length: n3 }, (_, i) => [`x${i}`, { id: `x${i}`, nom: "x", l: 4, h: 3, date: null, ville: "Lisbonne" }]));
+    const d3: Disposition = { templateId: "DP-03", photos: [...cat3.keys()].map((id) => ({ photoId: id, recadrage: { zoom: 1, dx: 0, dy: 0 } })),
+      textes: dp.cadres.filter((c) => c.role !== "photo").map(() => ({ contenu: "Titre", taille: 10, gras: false })) };
+    eq(O.lieuxParDefaut(d3, "double", cat3).filter(Boolean), ["Lisbonne"], "DP-03 tout à Lisbonne : « Lisbonne » une seule fois");
+  }
+  const m: Magazine = { ...nouveauMagazine("m", "M", "2026-11-09T00:00:00Z") };
+  const m1: Magazine = { ...m, planches: [{ ...m.planches[0], droite: d }] };
+  const ex = O.avecLieuxParDefaut(m1, cat);
+  eq(def(ex.planches[0].droite, "droite").textes[roles.indexOf("titre")].contenu, def0[roles.indexOf("titre")], "l'export écrit le lieu");
+  const ecrit: Disposition = { ...d, textes: d.textes.map((x, i) => (i === roles.indexOf("titre") ? { ...x, contenu: "Nos vacances" } : x)) };
+  eq(def(O.avecLieuxParDefaut({ ...m, planches: [{ ...m.planches[0], droite: ecrit }] }, cat).planches[0].droite, "d").textes[roles.indexOf("titre")].contenu, "Nos vacances", "un titre écrit n'est jamais remplacé");
+  ok(O.avecLieuxParDefaut(m1, new Map()) === m1, "sans lieu connu : le même magazine");
 });
 
 /* ═══════════ le test aléatoire à graine ═══════════
@@ -1577,7 +1633,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     rapporter("éditeur : le lot 4 (miroir, ⇧-clic, glisser une page, pose en libre, cadres retouchés, calques)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
-  rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 81 && archi === 73);
+  rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);
   const b = campagneAleatoire(SEQUENCES_ALEATOIRES, GRAINE_ALEATOIRE);
   console.log(`   séquences : ${b.sequences} · gestes tirés : ${b.tires} · gestes joués (rafales comprises) : ${b.joues} · types de gestes : ${b.types} · gestes qui ont changé le magazine : ${b.changes} · confirmations ouvertes : ${b.confirmations} · échecs : ${b.echecs}`);

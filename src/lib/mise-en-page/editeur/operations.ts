@@ -15,7 +15,7 @@ import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
 import { ZOOM_MIN, cadrer, type Recadrage } from "../recadrage";
 import type { Template } from "../types";
 import {
-  BONUS_ANNEXE, CIBLES, LIBELLE, PENALITE_REPETITION, TOLERANCE_RAPPORT,
+  BONUS_ANNEXE, CIBLES, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
@@ -44,11 +44,14 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
   return 1 - Math.min(rp, rc) / Math.max(rp, rc);
 }
 
-/** Somme des pertes + pénalité de répétition − petit bonus aux gabarits DESSINÉS (annexe et épingles), jamais aux grilles. */
+/** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − petit bonus aux gabarits DESSINÉS (annexe et épingles), jamais aux grilles. */
 export function noterGabarit(t: Template, photos: readonly Dims[], precedent: string | null): number {
   const cs = cadresPhoto(t);
   let s = 0;
-  for (let i = 0; i < cs.length; i++) s += perteCadre(photos[i] ?? { l: 1, h: 1 }, cs[i]);
+  for (let i = 0; i < cs.length; i++) {
+    const p = perteCadre(photos[i] ?? { l: 1, h: 1 }, cs[i]);
+    s += p + POIDS_GRANDE_COUPE * p * p;
+  }
   if (t.id === precedent) s += PENALITE_REPETITION;
   if (t.origine !== "grille") s -= BONUS_ANNEXE;
   return s;

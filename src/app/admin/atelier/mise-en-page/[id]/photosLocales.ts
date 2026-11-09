@@ -10,7 +10,7 @@
  * Un fichier que le navigateur ne sait pas décoder (HEIC dans Chrome) est refusé et compté, jamais posé à moitié.
  */
 
-import type { CatalogueCharge, PhotoMaq } from "./chargerCatalogue";
+import { gpsDe, type CatalogueCharge, type PhotoMaq } from "./chargerCatalogue";
 
 const BASE = "bj-mep-photos-libres";
 const MAGASIN = "photos";
@@ -29,6 +29,8 @@ type Fiche = {
   original: Blob;
   vignette: Blob;
   moyenne: Blob;
+  /** 09/11 : le GPS de l'EXIF ; absent sur une fiche d'avant. */
+  gps?: { lat: number; lon: number } | null;
 };
 
 export type ProgressionImport = { fait: number; total: number };
@@ -107,11 +109,22 @@ async function datePrise(f: File): Promise<string | null> {
   return f.lastModified ? isoLocal(new Date(f.lastModified)) : null;
 }
 
+/** Le GPS de l'EXIF, s'il y en a un (09/11 : les lieux détaillés des textes). */
+async function gpsPrise(f: File): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const exifr = await import("exifr");
+    const g = await exifr.gps(f);
+    return gpsDe(g?.latitude, g?.longitude);
+  } catch {
+    return null;
+  }
+}
+
 async function preparer(libre: string, f: File, rang: number): Promise<Fiche> {
   const b = await createImageBitmap(f, { imageOrientation: "from-image" });
   try {
-    const [vignette, moyenne, date] = await Promise.all([reduire(b, VIGNETTE_PX, 0.8), reduire(b, MOYENNE_PX, 0.85), datePrise(f)]);
-    return { id: `loc-${crypto.randomUUID()}`, libre, nom: f.name, l: b.width, h: b.height, date, ajoute: Date.now() + rang, original: f, vignette, moyenne };
+    const [vignette, moyenne, date, gps] = await Promise.all([reduire(b, VIGNETTE_PX, 0.8), reduire(b, MOYENNE_PX, 0.85), datePrise(f), gpsPrise(f)]);
+    return { id: `loc-${crypto.randomUUID()}`, libre, nom: f.name, l: b.width, h: b.height, date, ajoute: Date.now() + rang, original: f, vignette, moyenne, gps };
   } finally {
     b.close();
   }
@@ -174,7 +187,7 @@ export async function catalogueLibre(libre: string): Promise<CatalogueCharge> {
     photos.push({
       id: f.id, nom: f.nom, l: f.l, h: f.h, date: f.date,
       personne: "Moi", lien: null, type: "atelier", coeur: false, signalee: false, autresMagazines: [], nouvelle: false,
-      vignette: adresse(f.vignette), moyenne: adresse(f.moyenne), indisponible: false,
+      vignette: adresse(f.vignette), moyenne: adresse(f.moyenne), indisponible: false, gps: f.gps ?? null,
     });
     originaux[f.id] = adresse(f.original);
   }

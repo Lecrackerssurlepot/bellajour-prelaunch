@@ -63,6 +63,7 @@ Chargé dès qu'on touche une route.
 | `/api/atelier/checkout`, `/api/checkout` | sessions Stripe + **coupon fondatrice frappé chez Stripe** et remise de 30 € appliquée d'office (T-021) ; depuis le 10/09 le montant vient du prix GELÉ (`prix_centimes`) ; depuis le 16/09 une ligne Stripe par rang d'exemplaire (`decompteExemplaires`), la livraison est une `shipping_option` au port de zone ou au devis gelé, à 0 dès 50 € de magazines ou pour un fondateur, `allowed_countries = [pays déclaré]`, le pays est EXIGÉ ; zone C sans devis → 409 `livraison_indisponible`, jamais un montant de repli ; depuis le 19/09 un fondateur reconnu dont le crédit ne peut pas être posé → 409 `credit_indisponible` + journal, jamais un plein tarif |
 | `/api/atelier/photos/supprimer` | DELETE R2 irréversible |
 | `/api/brevo/webhook` | **rien qu'une ligne de journal** : aucun état, aucun mail |
+| `/api/admin/atelier/mise-en-page/lieux` | trois appels Geoapify par endroit (quota gratuit de 3 000 par jour), 12 endroits au plus par requête ; n'écrit RIEN, le navigateur garde les réponses |
 | `/api/admin/cockpit/*`, `/api/admin/atelier/origine` | réglages du cockpit, recalcul de l'agrégat, origine chaud/froid d'un dossier : aucun mail, aucun état, une ligne de journal pour l'origine |
 | `/api/compte/inscription`, `/api/compte/mot-de-passe-oublie` | crée un compte `auth.users` et **envoie C1/C2 par Brevo** (lien frappé par `generateLink`, URL du site, jamais celle de Supabase) |
 
