@@ -44,3 +44,10 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 
 ## Les tests
 Bloc « Mise en page » de `scripts/verif-atelier.ts`. Toute règle ajoutée ici s'y ajoute aussi.
+
+## Le registre du moteur (10/11)
+Tout ce que la machine VOIT, PROPOSE ou APPREND est une COUCHE, rangée dans `docs/moteur/INDEX.md`. Pas de couche
+sans : sa fiche (`docs/moteur/couches/Cxx-*.md`), son test au harnais, ses seuils nommés dans `editeur/reglages.ts`,
+un rejeu sur des photos réelles (`scripts/calibrer-lecture.ts`) et sa ligne dans l'index. Chaque recette de Mathias
+laisse un rapport daté dans `docs/moteur/recettes/` (modèle `MODELE.md`) et une ligne dans l'historique des fiches
+touchées. Lire l'index AVANT de toucher une couche.
