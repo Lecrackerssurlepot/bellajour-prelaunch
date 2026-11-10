@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles,
+  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
@@ -68,7 +68,7 @@ function PanneauOuvert() {
   const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
   const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
   /* couche 1 (09/11) : la tête d'une pile porte « +n », une floue le dit ; une photo d'une pile ouverte dit pourquoi elle y est */
-  const piles = new Map(etat.lecture.piles.map((x) => [x.tete, x])), floues = new Set(etat.lecture.floues);
+  const piles = new Map(etat.lecture.piles.map((x) => [x.tete, x]));
   const sousP = sousPiles(etat.lecture), ouvertes = new Set(etat.pilesOuvertes);
   /* au tour ③ seulement, les étiquettes d'usage se lisent sur la vignette (05/11) */
   const etqVignette = (id: string): string[] => (f.marque === "choisies" ? (["couverture", "double", "pleine"] as const).filter((k) => (triM.etiquettes?.[k] ?? []).includes(id)).map((k) => ETIQUETTE_UI[k].court) : []);
@@ -230,6 +230,10 @@ function PanneauOuvert() {
   if (f.coeur) actifs.push(["♥ Sélection", () => envoyer({ type: "retirerFiltre", cle: "coeur" })]);
   f.orientations.forEach((x) => actifs.push([ORIENT[x], () => bascule("orientations", x)]));
   if (f.montrerSignalees) actifs.push(["À ne pas publier", () => envoyer({ type: "retirerFiltre", cle: "montrerSignalees" })]);
+  /* 10/11 : ce que la machine a vu, filtrable (un seul tag à la fois) */
+  const tags = tagsDeLecture(cat, etat.lecture);
+  const nTags = comptesTags(tags);
+  if (f.lecture) actifs.push([MOT_TAG[f.lecture].mot, () => envoyer({ type: "retirerFiltre", cle: "lecture" })]);
   const menu = ui.menu;
   const ouvrirMenu = (id: string) => (e: React.MouseEvent) => { e.stopPropagation(); majUi({ menu: menu === id ? null : id }); };
   const photoDe = (id: string): PhotoMaq | undefined => cat.get(id);
@@ -297,7 +301,9 @@ function PanneauOuvert() {
           {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
           {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
           {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
-          {floues.has(id) ? <span className="ed-rep ed-rep--floue" title="Floue, à vérifier : une mesure, jamais une exclusion">Floue</span> : null}
+          {(tags.get(id) ?? []).filter((t) => MOT_TAG[t].vignette && t !== "doublon" && t !== "rafale").slice(0, 2).map((t) => (
+            <span key={t} className={cls("ed-rep", "ed-rep--tag", `ed-rep--tag-${t}`)} title={`${MOT_TAG[t].mot} · règle ${MOT_TAG[t].regle} · une remarque, jamais une exclusion`}>{MOT_TAG[t].mot}</span>
+          ))}
           {piles.has(id) ? (
             <span className={cls("ed-rep ed-rep--pile", ouvertes.has(id) && "ed-rep--pile-ouverte")} role="button" tabIndex={-1}
               title={`${piles.get(id)!.raison === "rafale" ? "Rafale" : "Doublons"} : ${piles.get(id)!.autres.length} autre${piles.get(id)!.autres.length > 1 ? "s" : ""}, la plus nette dessus. ${ouvertes.has(id) ? "Refermer" : "Ouvrir"}`}
@@ -374,6 +380,16 @@ function PanneauOuvert() {
                 <>
                   <hr />
                   <button type="button" role="menuitemcheckbox" aria-checked={f.coeur} onClick={() => filtrer({ coeur: !f.coeur })}>♥ Sélection</button>
+                </>
+              ) : null}
+              {etat.lecture.mesurees ? (
+                <>
+                  <hr /><span className="ed-menu-t">Ce que la machine a vu</span>
+                  {TAGS.filter((t) => nTags[t] > 0).map((t) => (
+                    <button key={t} type="button" role="menuitemradio" aria-checked={f.lecture === t} title={`Règle ${MOT_TAG[t].regle}`}
+                      onClick={() => filtrer({ lecture: f.lecture === t ? "" : t })}>{MOT_TAG[t].mot} <span className="ed-menu-n">{nTags[t]}</span></button>
+                  ))}
+                  {TAGS.every((t) => !nTags[t]) ? <span className="ed-menu-vide">Rien de remarquable</span> : null}
                 </>
               ) : null}
               <hr /><span className="ed-menu-t">Orientation</span>

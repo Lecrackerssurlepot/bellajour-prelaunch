@@ -1655,9 +1655,10 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const mes = new Map<string, O.Mesure>([
         ["A", { nettete: 300, dhash: h(0x1) }], ["B", { nettete: 900, dhash: h(0xff0000) }], ["C", { nettete: 500, dhash: h(0xf0f0f0f000) }],
         ["D", { nettete: 400, dhash: h(0xabcdef) }], ["E", { nettete: 450, dhash: h(0xabcdee) }],
-        ["F", { nettete: 20, dhash: h(0x1111111111) }], ["G", { nettete: 800, dhash: h(0x2222222222) }], ["H", { nettete: 700, dhash: h(0x3333333333) }],
-        ["I", { nettete: 600, dhash: h(0x4444444444) }], ["J", { nettete: 650, dhash: h(0x5555555555) }], ["K", { nettete: 750, dhash: h(0x6666666666) }],
-        ["L", { nettete: 550, dhash: h(0x7777777777) }], ["M", { nettete: 850, dhash: h(0x8888888888) }], ["Z", { nettete: 900, dhash: h(0x1) }],
+        /* des empreintes très différentes : F..M ne forment ni rafale ni doublon entre elles (photos à une minute d'écart) */
+        ["F", { nettete: 20, dhash: "ff00ff00ff00ff00" }], ["G", { nettete: 800, dhash: "0f0f0f0f0f0f0f0f" }], ["H", { nettete: 700, dhash: "aaaa5555aaaa5555" }],
+        ["I", { nettete: 600, dhash: "f0f0f0f0f0f0f0f0" }], ["J", { nettete: 650, dhash: "00ff00ff00ff00ff" }], ["K", { nettete: 750, dhash: "5555aaaa5555aaaa" }],
+        ["L", { nettete: 550, dhash: "3c3c3c3c3c3c3c3c" }], ["M", { nettete: 850, dhash: "c3c3c3c3c3c3c3c3" }], ["Z", { nettete: 900, dhash: h(0x1) }],
       ]);
       const lu = O.lireMesures(cat, mes);
       const raf = def(lu.piles.find((x) => x.raison === "rafale"), "R74 : la rafale");
@@ -1885,6 +1886,55 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     } catch (er) { msg = er instanceof Error ? er.message : String(er); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : lot 3, la machine propose (pré-tri, raisons, horloges, équité, variété, faits, questions, contrôle)", msg === null);
+  }
+  {
+    /* 10/11 : la lecture VISIBLE (retour du test de Mathias) : tags, filtre, captures, similaires, chaleur dessinable, panneau. */
+    let msg: string | null = null;
+    try {
+      const t = (mm: number, ss = 0) => `2026-06-11T10:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+      const cat = new Map(catalogue("A:L B:L C:L D:L E:L F:L G:L H:L I:L J:L K:L L:L CAP:1170x2532 WA:L", {
+        A: { date: t(0) }, B: { date: t(3) }, C: { date: t(20) }, D: { date: t(21) }, E: { date: t(30) }, F: { date: t(31) }, G: { date: t(32) }, H: { date: t(33) },
+        I: { date: t(34) }, J: { date: t(35) }, K: { date: t(36) }, L: { date: t(37) },
+        CAP: { date: "2026-06-11T10:40:00", appareil: null }, WA: { date: t(50), appareil: null },
+      }).map((p) => [p.id, p]));
+      const D = ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3", "ffff0000ffff0000", "0000ffff0000ffff", "f00ff00ff00ff00f", "0ff00ff00ff00ff0", "cccc3333cccc3333", "3333cccc3333cccc"];
+      const mes = new Map<string, O.Mesure>([...cat.keys()].map((id, i) => [id, { nettete: 400 + i * 10, dhash: D[i], lumi: { moyenne: 120, noirs: 0.01, blancs: 0.01 }, aplats: 0.2 }]));
+      /* A et B : même scène à 3 minutes, 12 cases d'écart : SIMILAIRES, pas doublons */
+      mes.set("B", { ...mes.get("B")!, dhash: "ff00ff00ff00f0ff" });
+      mes.set("CAP", { ...mes.get("CAP")!, aplats: 0.7 });
+      mes.set("WA", { ...mes.get("WA")!, aplats: 0.2 });
+      mes.set("E", { ...mes.get("E")!, nettete: 30 });
+      mes.set("F", { ...mes.get("F")!, visages: [{ x: 0.4, y: 0.3, l: 0.2, h: 0.3 }] });
+      const lu = O.lireMesures(cat, mes);
+      const tags = O.tagsDeLecture(cat, lu);
+      ok((lu.similaires ?? []).some((g) => g.includes("A") && g.includes("B")) && !lu.piles.some((p) => p.tete === "A" || p.tete === "B"), "R93 : A et B (même scène, 3 min, 12 cases) sont SIMILAIRES, pas une pile");
+      ok(tags.get("A")?.includes("similaire") && tags.get("B")?.includes("similaire"), "R94 : le tag « Similaire » est posé sur les deux");
+      ok(tags.get("E")?.includes("floue"), "R73 (10/11) : sous le plancher de 40, floue même sans écart à la médiane");
+      ok(tags.get("CAP")?.includes("capture"), "A4 (10/11) : sans appareil et avec aplats, capture, MÊME avec une date (le fichier en a toujours une en création libre)");
+      ok(!tags.get("WA")?.includes("capture"), "A4 : sans appareil mais sans aplats ni forme d'écran (photo reçue par messagerie) : pas une capture");
+      ok(!O.estCapture({ l: 1170, h: 2532, date: t(1), appareil: "Apple iPhone 15" }, { nettete: 1, dhash: D[0], aplats: 0.9 }), "A4 : une photo d'appareil n'est jamais une capture");
+      ok(tags.get("F")?.includes("visages") && O.MOT_TAG.visages.vignette === false, "A6 : « Avec visages » est filtrable, jamais sur la vignette");
+      const n = O.comptesTags(tags);
+      ok(n.similaire === 2 && n.capture === 1 && n.floue >= 1, "les comptes du filtre");
+
+      /* le filtre : une seule photo de chaque tag, rien de caché sous une pile pendant le filtre */
+      let e = O.appliquer(O.creerEtat({ magazine: magazineVide(2), catalogue: cat }), { type: "poserLecture", lecture: lu });
+      e = O.appliquer(e, { type: "filtrer", filtres: { lecture: "similaire" } });
+      eq(O.visibles(e).sort(), ["A", "B"], "R94 : filtrer « Similaire » ne montre que A et B");
+      e = O.appliquer(e, { type: "filtrer", filtres: { lecture: "nimporte" as never } });
+      eq(e.filtres.lecture, "similaire", "un tag inconnu ne change pas le filtre");
+      e = O.appliquer(e, { type: "retirerFiltre", cle: "lecture" });
+      eq(e.filtres.lecture, "", "retirer le filtre");
+
+      /* la chaleur dessinable et le panneau */
+      const carte = new Float64Array(64 * 64); carte[10 * 64 + 10] = 1;
+      const c = O.chaleurCompacte(carte);
+      ok(c.length === 256 && c[2 * 16 + 2] === "9" && [...c].filter((x) => x !== "0").length === 1, "B1 : la carte réduite à 16 × 16 se dessine (la case chaude au bon endroit)");
+      const l = O.lectureDePhoto("A", cat, lu, O.distanceHash);
+      ok(l.plusProche?.id === "B" && l.plusProche.ecart <= 18 && l.tags.includes("similaire") && l.seuilFloue >= 40, "le panneau Lecture explique le tag : la plus ressemblante, son écart, le seuil");
+    } catch (er) { msg = er instanceof Error ? er.message : String(er); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : la lecture visible (tags, filtre, captures, similaires, chaleur, panneau) (R93, R94)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);

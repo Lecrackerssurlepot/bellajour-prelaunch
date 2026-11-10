@@ -31,6 +31,8 @@ type Fiche = {
   moyenne: Blob;
   /** 09/11 : le GPS de l'EXIF ; absent sur une fiche d'avant. */
   gps?: { lat: number; lon: number } | null;
+  /** 10/11 : la marque et le modèle de l'appareil (EXIF) ; null sans EXIF d'appareil ; absent sur une fiche d'avant. */
+  appareil?: string | null;
 };
 
 export type ProgressionImport = { fait: number; total: number };
@@ -109,6 +111,18 @@ async function datePrise(f: File): Promise<string | null> {
   return f.lastModified ? isoLocal(new Date(f.lastModified)) : null;
 }
 
+/** L'appareil qui a pris la photo (EXIF Make + Model), null s'il n'y en a pas : une capture d'écran n'en a jamais. */
+async function appareilPrise(f: File): Promise<string | null> {
+  try {
+    const exifr = await import("exifr");
+    const t = (await exifr.parse(f, ["Make", "Model"])) as { Make?: unknown; Model?: unknown } | undefined;
+    const a = [t?.Make, t?.Model].filter((x): x is string => typeof x === "string" && x.trim().length > 0).join(" ").trim();
+    return a || null;
+  } catch {
+    return null;
+  }
+}
+
 /** Le GPS de l'EXIF, s'il y en a un (09/11 : les lieux détaillés des textes). */
 async function gpsPrise(f: File): Promise<{ lat: number; lon: number } | null> {
   try {
@@ -123,8 +137,8 @@ async function gpsPrise(f: File): Promise<{ lat: number; lon: number } | null> {
 async function preparer(libre: string, f: File, rang: number): Promise<Fiche> {
   const b = await createImageBitmap(f, { imageOrientation: "from-image" });
   try {
-    const [vignette, moyenne, date, gps] = await Promise.all([reduire(b, VIGNETTE_PX, 0.8), reduire(b, MOYENNE_PX, 0.85), datePrise(f), gpsPrise(f)]);
-    return { id: `loc-${crypto.randomUUID()}`, libre, nom: f.name, l: b.width, h: b.height, date, ajoute: Date.now() + rang, original: f, vignette, moyenne, gps };
+    const [vignette, moyenne, date, gps, appareil] = await Promise.all([reduire(b, VIGNETTE_PX, 0.8), reduire(b, MOYENNE_PX, 0.85), datePrise(f), gpsPrise(f), appareilPrise(f)]);
+    return { id: `loc-${crypto.randomUUID()}`, libre, nom: f.name, l: b.width, h: b.height, date, ajoute: Date.now() + rang, original: f, vignette, moyenne, gps, appareil };
   } finally {
     b.close();
   }
@@ -188,6 +202,7 @@ export async function catalogueLibre(libre: string): Promise<CatalogueCharge> {
       id: f.id, nom: f.nom, l: f.l, h: f.h, date: f.date,
       personne: "Moi", lien: null, type: "atelier", coeur: false, signalee: false, autresMagazines: [], nouvelle: false,
       vignette: adresse(f.vignette), moyenne: adresse(f.moyenne), indisponible: false, gps: f.gps ?? null,
+      ...(f.appareil !== undefined ? { appareil: f.appareil } : {}),
     });
     originaux[f.id] = adresse(f.original);
   }

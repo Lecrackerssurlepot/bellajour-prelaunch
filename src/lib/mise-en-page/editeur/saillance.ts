@@ -151,3 +151,15 @@ export function zoneImportante(visages: readonly Boite[], carte: Float64Array | 
   if (!z) return null;
   return { x: borne01(z.x), y: borne01(z.y), l: borne01(Math.min(z.l, 1 - z.x)), h: borne01(Math.min(z.h, 1 - z.y)) };
 }
+
+/** 10/11 : la carte réduite à 16 × 16, normalisée sur son maximum, une valeur 0-9 par case (256 caractères) : assez pour la
+ *  DESSINER sur la photo (le panneau Lecture), assez légère pour vivre dans la mesure de chaque photo. */
+export function chaleurCompacte(carte: Float64Array): string {
+  const n = Math.round(Math.sqrt(carte.length)), k = n / 16;
+  const c = new Float64Array(256);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) c[Math.floor(y / k) * 16 + Math.floor(x / k)] += carte[y * n + x];
+  const max = Math.max(...c) || 1;
+  let s = "";
+  for (const v of c) s += String(Math.min(9, Math.round((v / max) * 9)));
+  return s;
+}

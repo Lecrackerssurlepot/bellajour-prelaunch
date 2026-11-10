@@ -15,6 +15,7 @@ import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { LECTURE_VIDE } from "./mesures";
 import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./lecons";
 import { preTrier } from "./pretri";
+import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -365,6 +366,7 @@ const GESTES: Gestes = {
     const groupe = choisir(["jour", "moment", "lieu", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
     const marque = choisir(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const etiquette = choisir(["", "couverture", "double", "pleine"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
+    const lecture = choisir(["", ...TAGS] as const, v.lecture); if (lecture !== null) f.lecture = lecture;
     /* l'étiquette ne filtre qu'au tour ③ : changer de vue la relâche */
     if (marque && marque !== "choisies" && !("etiquette" in v)) f.etiquette = "";
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;

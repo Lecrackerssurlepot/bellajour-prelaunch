@@ -57,6 +57,9 @@ export type PhotoMaq = PhotoRef & {
   ville?: string | null;
   pays?: string | null;
   gps?: { lat: number; lon: number } | null;
+  /** 10/11 (capture d'écran) : l'appareil photo lu dans l'EXIF ; null = aucun appareil (indice d'une capture ou d'une image
+   *  envoyée par messagerie) ; absent = on ne sait pas (édition collective : la route ne le dit pas). */
+  appareil?: string | null;
 };
 
 /** Le GPS s'il est complet et plausible, sinon null. */
@@ -129,6 +132,7 @@ export function photoMaqDeDossier(p: PhotoDossierMep, prenom: string | null): Ph
     l: dim(p.l),
     h: dim(p.h),
     date: p.priseLe,
+    appareil: p.appareil?.trim() || null,
     personne: prenom?.trim() || "Client",
     lien: null,
     type: "responsable",

@@ -15,6 +15,7 @@ import { cibleSous, libelleApercu } from "./glisser";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import { demanderHd, useHd } from "./hd";
 import { useLieux } from "./lieuxClient";
+import { Chaleur } from "./Chaleur";
 import { Pastilles } from "./Gabarits";
 
 /* La double page, en grand. Aucun calcul du magazine ici : on envoie des gestes, on dessine l'état rendu.
@@ -278,6 +279,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
         else if (e.key === " ") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "activerCadre", ref }); }
       }}>
       <img src={src} alt="" decoding="async" draggable={false} style={imgSt} />
+      {ui.lecture && !fantome ? <Chaleur m={etat.lecture.mesures?.[f.photoId]} style={imgSt} /> : null}
       {f.bord ? <span className="ed-bord" style={{ borderWidth: mmEnCqw(f.bord), borderRadius: f.rayon ? mmEnCqw(f.rayon) : undefined }} aria-hidden="true" /> : null}
       {reps.length ? <span className="ed-cadre-reps">{reps}</span> : null}
       {hes && !fantome ? (

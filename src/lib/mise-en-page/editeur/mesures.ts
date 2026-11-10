@@ -33,6 +33,10 @@ export type Mesure = {
   lumi?: { moyenne: number; noirs: number; blancs: number };
   palette?: string[];
   netteteSujet?: number;
+  /** 10/11 (A4) : la part des pixels qui tombent dans les 3 couleurs les plus fréquentes (aplats d'une interface d'écran). */
+  aplats?: number;
+  /** 10/11 (B1, visible) : la carte de chaleur réduite à 16 × 16, une valeur 0-9 par case, ligne par ligne (256 caractères). */
+  chaleur?: string;
 };
 
 /* Les seuils vivent dans `reglages.ts` (G7) : nommés, datés, emportés par chaque leçon. Les noms d'ici restent pour le harnais. */
@@ -49,7 +53,27 @@ export const FLOU_MIN_MESURES = REGLAGES.flou_min_mesures.valeur;
 
 /** `gris` : une valeur 0-255 par pixel, ligne par ligne, `l` × `h`. */
 export function mesurerGris(gris: ArrayLike<number>, l: number, h: number): Mesure {
-  return { nettete: varianceLaplacien(gris, l, h), dhash: dHash(gris, l, h) };
+  return { nettete: netteteLocale(gris, l, h), dhash: dHash(gris, l, h) };
+}
+
+/**
+ * R72 (10/11) : la netteté de la photo = celle de sa zone LA PLUS NETTE, pas la moyenne. Calibration sur 302 vraies photos
+ * de bêta-test : la variance globale prenait pour « floues » des aurores, des ciels, des paysages doux (une image douce n'est
+ * pas floue). On découpe en 4 × 4 cases et on garde la DEUXIÈME plus nette (une seule case bruitée ne suffit pas).
+ */
+export function netteteLocale(g: ArrayLike<number>, l: number, h: number): number {
+  const N = 4;
+  if (l < N * 3 || h < N * 3) return varianceLaplacien(g, l, h);
+  const v: number[] = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const x0 = Math.floor((c * l) / N), x1 = Math.floor(((c + 1) * l) / N), y0 = Math.floor((r * h) / N), y1 = Math.floor(((r + 1) * h) / N);
+    const cl = x1 - x0, ch = y1 - y0;
+    const t = new Uint8Array(cl * ch);
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cl; x++) t[y * cl + x] = g[(y0 + y) * l + x0 + x];
+    v.push(varianceLaplacien(t, cl, ch));
+  }
+  v.sort((a, b) => b - a);
+  return v[1];
 }
 
 /** R72 : la variance du laplacien 3 × 3 (bords exclus). Une image nette a des transitions fortes, donc une forte variance. */
@@ -133,6 +157,8 @@ export type Lecture = {
   mesurees: number;
   /** Lot 2 : la zone importante de chaque photo qui en a une (recadrage par le contenu, pli). */
   zones: Record<string, Boite>;
+  /** R93 (10/11) : les groupes de photos similaires (au moins deux), dans l'ordre du temps. Absents d'une lecture ancienne. */
+  similaires?: string[][];
   /** Lot 3 : les mesures elles-mêmes (le pré-tri et l'instantané les lisent). Absentes d'une lecture ancienne. */
   mesures?: Record<string, Mesure>;
   /** E1 : la palette du magazine (6 teintes en hexa), agrégée des photos mesurées. */
@@ -174,7 +200,8 @@ export function lireMesures(cat: Catalogue, mes: ReadonlyMap<string, Mesure>): L
 
   /* R73 : floues */
   const nettetes = photos.map((p) => mes.get(p.id)!.nettete);
-  const seuil = photos.length >= FLOU_MIN_MESURES ? Math.min(FLOU_ABSOLU, FLOU_RELATIF * mediane(nettetes)) : -1;
+  /* R73 (10/11) : floue sous le plancher absolu OU très en dessous de l'album (avant : les deux à la fois, trop strict) */
+  const seuil = photos.length >= FLOU_MIN_MESURES ? Math.max(FLOU_ABSOLU, FLOU_RELATIF * mediane(nettetes)) : -1;
 
   /* R74, R75 : union de groupes */
   const parent = new Map<string, string>(photos.map((p) => [p.id, p.id]));
@@ -229,13 +256,32 @@ export function lireMesures(cat: Catalogue, mes: ReadonlyMap<string, Mesure>): L
 
   /* une floue qui n'est pas la tête de sa pile est déjà rangée dessous : on ne la signale qu'une fois */
   const sous = new Set(piles.flatMap((p) => p.autres));
-  const floues = photos.filter((p) => mes.get(p.id)!.nettete < seuil && !sous.has(p.id))
+  /* R73 (10/11) : une photo de nuit n'est floue que sous le plancher absolu (on ne compare pas une aurore à un plein jour) */
+  const estFloue = (m: Mesure) => m.nettete < FLOU_ABSOLU || (m.nettete < seuil && !(m.lumi && m.lumi.moyenne < REGLAGES.flou_nuit.valeur));
+  const floues = photos.filter((p) => seuil >= 0 && estFloue(mes.get(p.id)!) && !sous.has(p.id))
     .sort((a, b) => (chrono.get(a.id)! - chrono.get(b.id)!) || (a.id < b.id ? -1 : 1)).map((p) => p.id);
 
   const zones: Record<string, Boite> = {};
   const toutes: Record<string, Mesure> = {};
   for (const p of photos) { const m = mes.get(p.id)!; toutes[p.id] = m; if (m.zone) zones[p.id] = m.zone; }
-  return { floues, piles, mesurees: photos.length, zones, mesures: toutes, palette: paletteDuMagazine(photos.map((p) => mes.get(p.id)!.palette ?? [])) };
+  /* R93 (10/11) : les SIMILAIRES, plus larges qu'une pile (même scène, cadrage voisin, à quelques minutes) ; rien n'est
+     caché : un tag seulement. Les photos d'une même pile ne comptent pas entre elles. */
+  const pileDe = new Map<string, string>();
+  for (const p of piles) { pileDe.set(p.tete, p.tete); for (const x of p.autres) pileDe.set(x, p.tete); }
+  const parentS = new Map<string, string>(photos.map((p) => [p.id, p.id]));
+  const racineS = (x: string): string => { let r = x; while (parentS.get(r) !== r) r = parentS.get(r)!; parentS.set(x, r); return r; };
+  const datees = photos.map((p) => ({ id: p.id, t: secondesDe(p.date), m: mots.get(p.id)! })).filter((x) => x.t !== null && x.m).sort((a, b) => a.t! - b.t!);
+  const fen = REGLAGES.similaire_minutes.valeur * 60, seuilS = REGLAGES.similaire_hamming.valeur;
+  for (let i = 0; i < datees.length; i++) for (let j = i + 1; j < datees.length && datees[j].t! - datees[i].t! <= fen; j++) {
+    const a = datees[i], b = datees[j];
+    if (pileDe.has(a.id) && pileDe.get(a.id) === pileDe.get(b.id)) continue;
+    if (ecart(a.m, b.m) <= seuilS) { const ra = racineS(a.id), rb = racineS(b.id); if (ra !== rb) parentS.set(ra < rb ? rb : ra, ra < rb ? ra : rb); }
+  }
+  const gS = new Map<string, string[]>();
+  for (const p of photos) { const r = racineS(p.id); const l = gS.get(r); if (l) l.push(p.id); else gS.set(r, [p.id]); }
+  const similaires = [...gS.values()].filter((g) => g.length > 1).map((g) => g.sort((a, b) => (chrono.get(a)! - chrono.get(b)!) || (a < b ? -1 : 1)));
+
+  return { floues, piles, similaires, mesurees: photos.length, zones, mesures: toutes, palette: paletteDuMagazine(photos.map((p) => mes.get(p.id)!.palette ?? [])) };
 }
 
 /** Les photos rangées sous une autre (et la tête qui les porte), pour la bibliothèque. */

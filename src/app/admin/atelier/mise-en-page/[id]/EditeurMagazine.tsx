@@ -273,6 +273,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       if (e.key === "Escape") t.blur();
       return; /* pendant la saisie, aucun raccourci de l'éditeur */
     }
+    /* 10/11 : L montre ou cache la lecture dessinée (chaleur, visages, zone), partout */
+    if ((e.key === "l" || e.key === "L") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); majUi({ lecture: !ui.lecture }); return; }
     /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */
     if (clavierConfrontation({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
     if (ui.confronter) return;

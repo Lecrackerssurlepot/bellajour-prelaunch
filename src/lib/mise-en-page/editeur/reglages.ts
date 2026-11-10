@@ -8,14 +8,14 @@
 export type Reglage = { valeur: number; regle: string; depuis: string; raison: string };
 
 export const REGLAGES = {
-  flou_absolu: { valeur: 120, regle: "R73", depuis: "2026-11-09", raison: "réglage de départ, variance du laplacien sur une vignette de 256 px" },
-  flou_relatif: { valeur: 0.2, regle: "R73", depuis: "2026-11-09", raison: "réglage de départ : sous 20 % de la médiane de l'album" },
+  flou_absolu: { valeur: 40, regle: "R73", depuis: "2026-11-10", raison: "toujours floue sous 40 (netteté de la zone la plus nette, vignette de 256 px) ; avant le 10/11 : 120 ET relatif, sur la moyenne de l'image, aucune floue vue au test de Mathias" },
+  flou_relatif: { valeur: 0.2, regle: "R73", depuis: "2026-11-10", raison: "OU sous 20 % de la médiane de l'album (calibration du 10/11 sur 408 photos de bêta-test : 30 % prenait des photos nettes mais douces)" },
   flou_min_mesures: { valeur: 12, regle: "R73", depuis: "2026-11-09", raison: "il faut assez de photos pour parler de médiane" },
   rafale_secondes: { valeur: 2, regle: "R74", depuis: "2026-11-09", raison: "réglage de départ" },
   rafale_proche_hamming: { valeur: 24, regle: "R74", depuis: "2026-11-09", raison: "essai du 09/11 : deux images sans rapport diffèrent d'environ 32 bits" },
-  rafale_large_secondes: { valeur: 10, regle: "R74", depuis: "2026-11-09", raison: "réglage de départ" },
-  rafale_hamming: { valeur: 14, regle: "R74", depuis: "2026-11-09", raison: "réglage de départ" },
-  doublon_hamming: { valeur: 6, regle: "R75", depuis: "2026-11-09", raison: "réglage de départ (le site utilise ≤ 2 sur un pHash DCT, plus strict)" },
+  rafale_large_secondes: { valeur: 60, regle: "R74", depuis: "2026-11-10", raison: "une rafale de téléphone s'étale souvent au-delà de 10 s ; avant le 10/11 : 10" },
+  rafale_hamming: { valeur: 16, regle: "R74", depuis: "2026-11-10", raison: "avant le 10/11 : 14" },
+  doublon_hamming: { valeur: 8, regle: "R75", depuis: "2026-11-10", raison: "avant le 10/11 : 6, aucun doublon vu au test de Mathias (le site utilise ≤ 2 sur un pHash DCT, plus strict)" },
   air_tete: { valeur: 0.15, regle: "R-21", depuis: "2026-11-09", raison: "15 % de la hauteur du visage au-dessus de la tête, rapport ch.03" },
   masse_saillance: { valeur: 0.85, regle: "R-20", depuis: "2026-11-09", raison: "la zone protégée garde 85 % de la masse saillante, rapport ch.03" },
   visage_confiance: { valeur: 0.5, regle: "A6", depuis: "2026-11-09", raison: "seuil par défaut du détecteur MediaPipe" },
@@ -30,6 +30,10 @@ export const REGLAGES = {
   horloge_tolerance_s: { valeur: 120, regle: "A5", depuis: "2026-11-09", raison: "deux minutes de tolérance entre les paires" },
   moment_deposant: { valeur: 0.5, regle: "A9", depuis: "2026-11-09", raison: "chaque déposant de plus pèse la moitié d'un moment (« vu par trois, moment fort »)" },
   variete_lambda: { valeur: 0.7, regle: "A12", depuis: "2026-11-09", raison: "R-43 du rapport : 70 % qualité, 30 % différence" },
+  similaire_hamming: { valeur: 12, regle: "R93", depuis: "2026-11-10", raison: "calibration du 10/11 : sur 302 vraies photos, la plus ressemblante de presque chacune est entre 13 et 24 (le bruit) ; 12 et moins = vraiment la même scène" },
+  similaire_minutes: { valeur: 10, regle: "R93", depuis: "2026-11-10", raison: "prises à 10 minutes au plus l'une de l'autre" },
+  capture_aplats: { valeur: 0.45, regle: "A4", depuis: "2026-11-10", raison: "information seulement (panneau Lecture) : les aplats seuls prenaient des ciels pour des captures" },
+  flou_nuit: { valeur: 70, regle: "R73", depuis: "2026-11-10", raison: "calibration du 10/11 : sous ce gris moyen (nuit, aurores, feu), peu de contours par nature : on ne juge pas le flou par rapport à l'album, seulement sous le plancher absolu" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;

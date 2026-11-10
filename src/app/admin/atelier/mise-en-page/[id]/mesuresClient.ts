@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { carteSaillance, lireMesures, mesurerGris, paletteDePixels, REGLAGES, varianceLaplacien, zoneImportante, type Boite, type Catalogue, type Geste, type Mesure, type Visage } from "@/lib/mise-en-page/editeur";
+import { carteSaillance, chaleurCompacte, lireMesures, mesurerGris, paletteDePixels, REGLAGES, varianceLaplacien, zoneImportante, type Boite, type Catalogue, type Geste, type Mesure, type Visage } from "@/lib/mise-en-page/editeur";
 import type { FaceDetector } from "@mediapipe/tasks-vision";
 import type { Adresse } from "./contexte";
 
@@ -18,7 +18,7 @@ const PAQUET = 150;
 const BASE = "bj-mep-mesures";
 const MAGASIN = "mesures";
 /** Changer la mesure change la version : les anciennes mesures ne sont plus relues. */
-const VERSION = "v3";
+const VERSION = "v4";
 /** Lot 2 (A6) : le détecteur de visages de MediaPipe, servi depuis notre origine (copie de node_modules, voir le harnais). */
 const MEDIAPIPE = "/mediapipe/1.2.2";
 const MODELE_VISAGES = "/modeles/blaze_face_short_range.tflite";
@@ -42,7 +42,7 @@ async function lire(id: string): Promise<Mesure | null> {
   return new Promise((ok) => {
     try {
       const r = b.transaction(MAGASIN, "readonly").objectStore(MAGASIN).get(`${VERSION}:${id}`);
-      r.onsuccess = () => { const m = r.result as Mesure | undefined; ok(m && typeof m.nettete === "number" && typeof m.dhash === "string" && "zone" in m && "lumi" in m ? m : null); };
+      r.onsuccess = () => { const m = r.result as Mesure | undefined; ok(m && typeof m.nettete === "number" && typeof m.dhash === "string" && "zone" in m && "aplats" in m ? m : null); };
       r.onerror = () => ok(null);
     } catch { ok(null); }
   });
@@ -116,14 +116,20 @@ async function mesurer(source: string): Promise<Mesure | null> {
       return varianceLaplacien(c, cl, ch);
     };
     const visages: Visage[] | null = vus ? vus.map((v) => { const n = netteteDans(v); return n === null || !base.nettete ? v : { ...v, nettete: Math.round((n / base.nettete) * 100) / 100 }; }) : null;
-    const zone = zoneImportante(visages ?? [], carteSaillance(gris, l, h));
+    const carte = carteSaillance(gris, l, h);
+    const zone = zoneImportante(visages ?? [], carte);
     const sujet = visages?.length ? [...visages].sort((a, b) => b.l * b.h - a.l * a.h)[0] : zone;
     const ns = sujet ? netteteDans(sujet) : null;
     /* A3 : gris moyen et parts écrêtées ; E1 : 5 teintes */
     let somme = 0, noirs = 0, blancs = 0;
     for (const v of gris) { somme += v; if (v < 8) noirs++; else if (v > 247) blancs++; }
     const lumi = { moyenne: Math.round(somme / gris.length), noirs: Math.round((noirs / gris.length) * 1000) / 1000, blancs: Math.round((blancs / gris.length) * 1000) / 1000 };
-    return { ...base, ...(visages ? { visages } : {}), zone, lumi, palette: paletteDePixels(px, 8), ...(ns !== null ? { netteteSujet: ns } : {}) };
+    /* A4 : les aplats (couleurs quantifiées sur 16 niveaux par canal : une interface en a peu et très étendues) */
+    const comptes = new Map<number, number>();
+    for (let i = 0; i < px.length; i += 4) { const k = ((px[i] >> 4) << 8) | ((px[i + 1] >> 4) << 4) | (px[i + 2] >> 4); comptes.set(k, (comptes.get(k) ?? 0) + 1); }
+    const top = [...comptes.values()].sort((a, b) => b - a).slice(0, 3).reduce((x, y) => x + y, 0);
+    const aplats = Math.round((top / (px.length / 4)) * 100) / 100;
+    return { ...base, ...(visages ? { visages } : {}), zone, lumi, palette: paletteDePixels(px, 8), ...(ns !== null ? { netteteSujet: ns } : {}), aplats, chaleur: chaleurCompacte(carte) };
   } catch { return null; } finally { im.close(); }
 }
 

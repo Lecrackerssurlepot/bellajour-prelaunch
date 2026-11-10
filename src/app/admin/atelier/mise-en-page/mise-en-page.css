@@ -1716,3 +1716,27 @@
 .mep-editeur .ed-ex-q p { margin: 0; font-size: var(--bj-fs-xs); }
 .mep-editeur .ed-ex-q input { font: inherit; font-size: var(--bj-fs-xs); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--bj-veil-12); background: var(--bj-cream); color: var(--bj-text); }
 .mep-editeur .ed-ex-q-bt { display: flex; flex-wrap: wrap; gap: 6px; }
+/* ── 10/11 : les tags de la lecture, visibles (une remarque, jamais une exclusion) ── */
+.mep-editeur .ed-rep--tag { background: color-mix(in srgb, var(--bj-charcoal) 72%, transparent); }
+.mep-editeur .ed-rep--tag-floue, .mep-editeur .ed-rep--tag-visage_flou { background: var(--ate-orange); }
+.mep-editeur .ed-rep--tag-sombre { background: #2b2d33; }
+.mep-editeur .ed-rep--tag-brulee { background: #c9a227; }
+.mep-editeur .ed-rep--tag-capture { background: #7a5ab8; }
+.mep-editeur .ed-rep--tag-similaire { background: color-mix(in srgb, var(--bj-action) 75%, transparent); }
+.mep-editeur .ed-menu-n { margin-left: auto; padding-left: 10px; color: var(--bj-text-faint); font-variant-numeric: tabular-nums; }
+.mep-editeur .ed-menu-vide { display: block; padding: 6px 12px; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); }
+/* ── 10/11 : la lecture dessinée ── */
+.mep-editeur .ed-chaleur { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mep-editeur .ed-cadre .ed-chaleur { inset: auto; }
+.mep-editeur .ed-chaleur--rien { display: grid; place-items: center; background: color-mix(in srgb, var(--bj-charcoal) 30%, transparent); color: #fff; font-size: 10px; }
+.mep-editeur .ed-lec { position: absolute; top: 64px; right: 16px; z-index: 3; width: min(320px, 34vw); max-height: calc(100% - 140px); overflow: auto; padding: 12px; border-radius: 14px; background: rgba(20, 20, 22, 0.86); color: #eee; font-size: 12px; display: grid; gap: 8px; }
+.mep-editeur .ed-lec-img { position: relative; width: 100%; border-radius: 8px; overflow: hidden; background: #000; }
+.mep-editeur .ed-lec-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mep-editeur .ed-lec-leg { margin: 0; color: #aaa; font-size: 11px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.mep-editeur .ed-lec-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.mep-editeur .ed-lec-c { background: #ff5a1f; opacity: .7; }
+.mep-editeur .ed-lec-v { border: 2px solid #3ddc84; }
+.mep-editeur .ed-lec-z { border: 1px dashed #fff; }
+.mep-editeur .ed-lec-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+.mep-editeur .ed-lec-dl dt { color: #999; }
+.mep-editeur .ed-lec-dl dd { margin: 0; font-variant-numeric: tabular-nums; }

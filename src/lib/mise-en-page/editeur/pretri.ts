@@ -17,6 +17,7 @@
 import { decoupage } from "./moments";
 import { ecart, enMots, secondesDe, sousPiles, type Lecture, type Mesure } from "./mesures";
 import { REGLAGES } from "./reglages";
+import { estCapture } from "./tags";
 import { marqueDe, triDe, type Marque } from "./tri";
 import type { Catalogue, PhotoMaq } from "./types";
 import type { Magazine } from "../magazine";
@@ -128,7 +129,7 @@ function calculer(cat: Catalogue, magazine: Magazine, lecture: Lecture): PreTri 
     if (m?.lumi && m.lumi.moyenne > R.claire_moyenne.valeur && m.lumi.blancs > R.ecretage_part.valeur) { props[p.id] = { marque: "ecartee", raison: "brûlée", regle: "A3" }; continue; }
     /* la lumière avant le flou : une photo très sombre ou brûlée paraît aussi floue, sa vraie raison est la lumière */
     if (floues.has(p.id)) { props[p.id] = { marque: "ecartee", raison: "floue", regle: "R73" }; continue; }
-    if (!p.date && p.l > 0 && p.h > 0 && Math.max(p.l, p.h) / Math.min(p.l, p.h) >= R.capture_rapport.valeur) { props[p.id] = { marque: "reserve", raison: "capture d'écran probable", regle: "A4" }; continue; }
+    if (estCapture(p, m)) { props[p.id] = { marque: "reserve", raison: "capture d'écran probable", regle: "A4" }; continue; }
     const v = m?.visages?.length ? [...m.visages].sort((a, b) => b.l * b.h - a.l * a.h)[0] : null;
     if (v && typeof v.nettete === "number" && m && m.nettete > med * 0.5 && v.nettete < R.visage_flou.valeur) { props[p.id] = { marque: "reserve", raison: "visage flou", regle: "A7" }; continue; }
   }

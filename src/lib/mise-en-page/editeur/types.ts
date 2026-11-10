@@ -16,6 +16,7 @@ import type { SensCalque } from "./libre";
 import type { Lecture } from "./mesures";
 import type { Lecon } from "./lecons";
 import type { Proposition } from "./pretri";
+import type { Tag } from "./tags";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -38,6 +39,9 @@ export type PhotoMaq = PhotoRef & {
   ville?: string | null;
   pays?: string | null;
   gps?: { lat: number; lon: number } | null;
+  /** 10/11 (capture d'écran) : l'appareil photo lu dans l'EXIF ; null = aucun appareil (indice d'une capture ou d'une image
+   *  envoyée par messagerie) ; absent = on ne sait pas (édition collective : la route ne le dit pas). */
+  appareil?: string | null;
 };
 
 export type Catalogue = ReadonlyMap<string, PhotoMaq>;
@@ -58,6 +62,8 @@ export type Filtres = {
   marque: "toutes" | "ecarter" | "retenues" | "choisies" | "a_trier" | "reserve" | "ecartees";
   /** Au tour ③ (05/11) : seulement les photos de cette étiquette ; "" = toutes. */
   etiquette: "" | Etiquette;
+  /** 10/11 : seulement les photos qui portent ce tag de la lecture ("" = toutes). Rien n'est caché sous une pile pendant ce filtre. */
+  lecture: "" | Tag;
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "moment" | "lieu" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
