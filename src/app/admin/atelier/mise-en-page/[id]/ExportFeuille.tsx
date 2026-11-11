@@ -8,11 +8,23 @@ import { cls, pluriel, useEd, type Projet } from "./contexte";
 import { Ico } from "./icones";
 import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
+import { exporterPdf, type ResultatExportPdf } from "./exporterPdf";
 
-/* La feuille d'export : le dossier absolu (les liens de l'IDML en dépendent), ce que le paquet contiendra, ce qu'il
+/* La feuille d'export. Deux sorties (11/11) : Canva, un PDF téléchargé d'un clic ; Affinity, le dossier absolu (les liens de l'IDML en dépendent), ce que le paquet contiendra, ce qu'il
    faut vérifier, puis la progression avec « Annuler ». Le sélecteur de dossier s'ouvre dans le clic, avant tout await. */
 
-type Etape = { nom: "choix" } | { nom: "cours"; prog: ProgressionExport } | { nom: "fin"; r: Extract<ResultatExport, { ok: true }> } | { nom: "erreur"; message: string };
+type Etape =
+  | { nom: "choix" }
+  | { nom: "cours"; prog: ProgressionExport }
+  | { nom: "fin"; r: Extract<ResultatExport, { ok: true }> }
+  | { nom: "finPdf"; r: Extract<ResultatExportPdf, { ok: true }> }
+  | { nom: "erreur"; message: string };
+
+type Sortie = "canva" | "affinity";
+const CLE_SORTIE = "bj-mep-sortie";
+const sortieMemorisee = (): Sortie => {
+  try { return window.localStorage.getItem(CLE_SORTIE) === "affinity" ? "affinity" : "canva"; } catch { return "canva"; }
+};
 
 const mo = (o: number): string => (o > 1e9 ? `${(o / 1e9).toLocaleString("fr-FR", { maximumFractionDigits: 1 })} Go` : `${Math.max(1, Math.round(o / 1e6)).toLocaleString("fr-FR")} Mo`);
 
@@ -24,6 +36,11 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
   const [nom, setNom] = useState(() => nomDeDossier(projet.nom));
   const [etape, setEtape] = useState<Etape>({ nom: "choix" });
   const [sans, setSans] = useState(false);
+  const [sortie, setSortie] = useState<Sortie>(() => sortieMemorisee());
+  const choisirSortie = (s: Sortie) => {
+    setSortie(s);
+    try { window.localStorage.setItem(CLE_SORTIE, s); } catch { /* stockage refusé : Canva par défaut */ }
+  };
   const ctrl = useRef<AbortController | null>(null);
   const av = avertissementsExport(etat);
   const ids = [...new Set(idsMagazine(etat.magazine))].filter((id) => etat.catalogue.has(id));
@@ -36,7 +53,24 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0);
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
 
+  const lancerPdf = () => {
+    const c = new AbortController();
+    ctrl.current = c;
+    setEtape({ nom: "cours", prog: { fait: 0, total: ids.length, photo: null } });
+    void (async () => {
+      const r = await exporterPdf({
+        magazine: etat.magazine, catalogue, source, titre: projet.nom,
+        onProgression: (prog) => setEtape((e) => (e.nom === "cours" ? { nom: "cours", prog } : e)), signal: c.signal,
+      });
+      ctrl.current = null;
+      if (r.ok) setEtape({ nom: "finPdf", r });
+      else if (r.raison === "annule") setEtape({ nom: "choix" });
+      else setEtape({ nom: "erreur", message: r.message });
+    })();
+  };
+
   const lancer = () => {
+    if (sortie === "canva") { lancerPdf(); return; }
     if (!dossierOk.ok) return;
     /* ⚠️ le sélecteur de dossier s'ouvre ICI, de façon synchrone : Chrome exige une activation utilisateur fraîche. */
     const destination = choisirDestination();
@@ -61,11 +95,24 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
     <div className="ed-voile" onClick={(e) => { if (e.target === e.currentTarget && etape.nom !== "cours") onFermer(); }}>
       <div className="ed-feuille-ex" role="dialog" aria-modal="true" aria-label="Exporter">
         <div className="ed-ex-tete">
-          <h2>Exporter pour Affinity</h2>
+          <h2>Exporter</h2>
           <button type="button" className="ed-ico" aria-label="Fermer" onClick={onFermer} disabled={etape.nom === "cours"}>{Ico.fermer}</button>
         </div>
         {etape.nom === "choix" ? (
           <>
+            <span className="ed-seg ed-ex-sortie" role="group" aria-label="Pour">
+              {(["canva", "affinity"] as const).map((s) => (
+                <button key={s} type="button" aria-pressed={sortie === s} onClick={() => choisirSortie(s)}>
+                  {s === "canva" ? "Canva" : "Affinity"}
+                </button>
+              ))}
+            </span>
+            {sortie === "canva" ? (
+              <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
+                <li><span>magazine.pdf</span><span>{pluriel(av.planches, "planche")} · {pluriel(ids.length, "photo")}</span></li>
+              </ul>
+            ) : (
+            <>
             <label className="ed-ex-champ">
               <span>Dossier des projets</span>
               <input className="adm-input" type="text" value={parent} placeholder="/Users/…/Bellajour/test-idml" spellCheck={false} autoComplete="off"
@@ -84,6 +131,8 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
               <li><span>photos-utilisees.txt</span><span>{ids.length}</span></li>
               <li><span>photos-non-utilisees.txt</span><span>{Math.max(0, etat.catalogue.size - ids.length)}</span></li>
             </ul>
+            </>
+            )}
             {nbAvert ? (
               <div className="ed-ex-avert">
                 {av.indisponibles.length ? <span className="ed-ex-rouge">{pluriel(av.indisponibles.length, "photo indisponible", "photos indisponibles")} · cadre vide</span> : null}
@@ -102,13 +151,13 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
             ) : null}
             <div className="ed-ex-actions">
               <button type="button" className="adm-btn adm-btn--ghost" onClick={onFermer}>Annuler</button>
-              <button type="button" className="adm-btn" disabled={bloque || !dossierOk.ok} onClick={lancer}>Exporter</button>
+              <button type="button" className="adm-btn" disabled={bloque || (sortie === "affinity" && !dossierOk.ok)} onClick={lancer}>Exporter</button>
             </div>
           </>
         ) : null}
         {etape.nom === "cours" ? (
           <>
-            <p className="ed-ex-ligne">{etape.prog.photo ? `Links/ · ${etape.prog.fait} / ${etape.prog.total}` : etape.prog.fait >= etape.prog.total && etape.prog.total > 0 ? "magazine.idml" : "Préparation"}</p>
+            <p className="ed-ex-ligne">{etape.prog.photo ? `${sortie === "canva" ? "Photos" : "Links/"} · ${etape.prog.fait} / ${etape.prog.total}` : etape.prog.fait >= etape.prog.total && etape.prog.total > 0 ? (sortie === "canva" ? "magazine.pdf" : "magazine.idml") : "Préparation"}</p>
             <div className="ed-prog" role="progressbar" aria-label="Progression" aria-valuemin={0} aria-valuemax={100} aria-valuenow={etape.prog.total ? Math.round((etape.prog.fait / etape.prog.total) * 100) : 0}>
               <b style={{ width: `${etape.prog.total ? (etape.prog.fait / etape.prog.total) * 100 : 0}%` }} />
             </div>
@@ -123,6 +172,22 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer }: {
               <button type="button" className="adm-btn" onClick={() => setEtape({ nom: "choix" })}>Réessayer</button>
             </div>
           </>
+        ) : null}
+        {etape.nom === "finPdf" ? (
+          <div className="ed-ex-ok">
+            <span className="ate-tag ate-tag--choix">PDF téléchargé</span>
+            <p className="ed-ex-ligne">{etape.r.nomFichier} · {pluriel(etape.r.pages, "page")} · {mo(etape.r.octets)}</p>
+            {etape.r.indisponibles.length ? <p className="ed-ex-ligne ed-ex-rouge">{pluriel(etape.r.indisponibles.length, "photo illisible", "photos illisibles")} · cadre gris</p> : null}
+            {etape.r.secours.length ? <p className="ed-ex-ligne">{pluriel(etape.r.secours.length, "photo en définition réduite", "photos en définition réduite")}</p> : null}
+            <ol className="ed-ex-etapes">
+              <li>Ouvrir Canva</li>
+              <li>Importer le PDF</li>
+            </ol>
+            <div className="ed-ex-actions ed-ex-actions--debut">
+              <a className="adm-btn" href="https://www.canva.com/" target="_blank" rel="noopener noreferrer">Canva ↗</a>
+              <button type="button" className={cls("adm-btn", "adm-btn--ghost")} onClick={onFermer}>Rester ici</button>
+            </div>
+          </div>
         ) : null}
         {etape.nom === "fin" ? (
           <div className="ed-ex-ok">
