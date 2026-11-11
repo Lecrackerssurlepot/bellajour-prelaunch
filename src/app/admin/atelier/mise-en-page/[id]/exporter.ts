@@ -131,13 +131,6 @@ export type ArgumentsExport = {
   signal?: AbortSignal;
 };
 
-/** Combien d'originaux se lisent en même temps : borne technique, la bande passante fait le reste. */
-const LECTURES_PARALLELES = 3;
-
-const attendre = (ms: number): Promise<void> => new Promise((ok) => setTimeout(ok, ms));
-
-type Lu = { octets: Uint8Array } | { indisponible: string };
-
 async function ecrireDans(dossier: FileSystemDirectoryHandle, nom: string, octets: Uint8Array): Promise<void> {
   const poignee = await dossier.getFileHandle(nom, { create: true });
   const sortie = await poignee.createWritable();
@@ -148,8 +141,8 @@ async function ecrireDans(dossier: FileSystemDirectoryHandle, nom: string, octet
   }
 }
 
-function telecharger(octets: Uint8Array, nom: string): void {
-  const url = URL.createObjectURL(new Blob([octets as BlobPart], { type: "application/zip" }));
+export function telecharger(octets: Uint8Array, nom: string, type = "application/zip"): void {
+  const url = URL.createObjectURL(new Blob([octets as BlobPart], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = nom;
@@ -157,6 +150,65 @@ function telecharger(octets: Uint8Array, nom: string): void {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Combien d'originaux se lisent en même temps : borne technique, la bande passante fait le reste. */
+const LECTURES_PARALLELES = 3;
+
+const attendre = (ms: number): Promise<void> => new Promise((ok) => setTimeout(ok, ms));
+
+export type Lu = { octets: Uint8Array } | { indisponible: string };
+
+/**
+ * La lecture des originaux au coffre, partagée par l'export Affinity et l'export PDF : trois essais, une adresse
+ * expirée (403) relit la route une fois, un 404 dit « absente ». `pret()` relit d'abord des adresses périmées
+ * (écran ouvert depuis plus d'une heure).
+ */
+export function lecteurOriginaux(catalogue: CatalogueCharge, source: SourceCatalogue, signal?: AbortSignal): {
+  catalogue: () => CatalogueCharge; pret: () => Promise<void>; lire: (id: string) => Promise<Lu>;
+} {
+  let cat = catalogue;
+  const aborted = (): boolean => Boolean(signal?.aborted);
+  let rafraichissement: Promise<boolean> | null = null;
+  const rafraichir = (): Promise<boolean> => {
+    rafraichissement ??= chargerCatalogue(source, signal).then((r) => {
+      if (r.ok) cat = r;
+      return r.ok;
+    }).finally(() => { rafraichissement = null; });
+    return rafraichissement;
+  };
+  const lire = async (id: string): Promise<Lu> => {
+    for (let essai = 0; essai < 3; essai++) {
+      if (aborted()) return { indisponible: "annulé" };
+      const url = cat.originaux[id];
+      if (!url) return { indisponible: "pas d'adresse signée (photo absente ou effacée)" };
+      try {
+        const rep = await fetch(url, { signal });
+        if (rep.ok) return { octets: new Uint8Array(await rep.arrayBuffer()) };
+        if (rep.status === 404 || rep.status === 410) return { indisponible: "absente du coffre (404)" };
+        /* 403 : l'adresse a expiré en cours de route. On relit la route une fois, puis on réessaie. */
+        if (rep.status === 403) { if (!(await rafraichir())) return { indisponible: "adresse refusée (403) et relecture impossible" }; continue; }
+        await attendre(500 * (essai + 1));
+      } catch {
+        if (aborted()) return { indisponible: "annulé" };
+        await attendre(500 * (essai + 1));
+      }
+    }
+    return { indisponible: "lecture impossible après trois essais" };
+  };
+  return {
+    catalogue: () => cat,
+    pret: async () => { if (!adressesEncoreValables(cat, Date.now())) await rafraichir(); },
+    lire,
+  };
+}
+
+/** Lance `traiter` sur chaque élément, `LECTURES_PARALLELES` à la fois, jusqu'à l'annulation. */
+export async function enParallele<T>(elements: readonly T[], traiter: (e: T) => Promise<void>, signal?: AbortSignal): Promise<void> {
+  const file = [...elements];
+  await Promise.all(Array.from({ length: Math.min(LECTURES_PARALLELES, file.length) }, async () => {
+    for (let e = file.shift(); e !== undefined && !signal?.aborted; e = file.shift()) await traiter(e);
+  }));
 }
 
 export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
@@ -181,24 +233,15 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
   memoriserDossier(dossier);
 
   try {
-    let cat = args.catalogue;
-    const parId = (): Map<string, CatalogueCharge["photos"][number]> => new Map(cat.photos.map((p) => [p.id, p]));
+    const lecteur = lecteurOriginaux(args.catalogue, source, signal);
+    const cat = (): CatalogueCharge => lecteur.catalogue();
+    const parId = (): Map<string, CatalogueCharge["photos"][number]> => new Map(cat().photos.map((p) => [p.id, p]));
     const posees = photosUtilisees(magazine);
     const nomDe = (id: string): string => parId().get(id)?.nom ?? id;
 
     /* Les noms de Links/ : sur les seules photos posées, dans l'ordre du magazine, donc stables d'un export à l'autre. */
     const nomsLiens = nomsDesLiensExport(posees.map((id) => ({ id, nom: nomDe(id) })));
-
-    /* Des adresses périmées (écran ouvert depuis plus d'une heure) : relire la route avant de commencer. */
-    let rafraichissement: Promise<boolean> | null = null;
-    const rafraichir = (): Promise<boolean> => {
-      rafraichissement ??= chargerCatalogue(source, signal).then((r) => {
-        if (r.ok) cat = r;
-        return r.ok;
-      }).finally(() => { rafraichissement = null; });
-      return rafraichissement;
-    };
-    if (!adressesEncoreValables(cat, Date.now())) await rafraichir();
+    await lecteur.pret();
 
     const total = posees.length;
     let fait = 0;
@@ -207,26 +250,7 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
     const liens: { nomLien: string; octets: Uint8Array }[] = [];
     let octetsTotal = 0;
     const dossierLiens = enDossier ? await enDossier.getDirectoryHandle("Links", { create: true }) : null;
-
-    const lire = async (id: string): Promise<Lu> => {
-      for (let essai = 0; essai < 3; essai++) {
-        if (aborted()) return { indisponible: "annulé" };
-        const url = cat.originaux[id];
-        if (!url) return { indisponible: "pas d'adresse signée (photo absente ou effacée)" };
-        try {
-          const rep = await fetch(url, { signal });
-          if (rep.ok) return { octets: new Uint8Array(await rep.arrayBuffer()) };
-          if (rep.status === 404 || rep.status === 410) return { indisponible: "absente du coffre (404)" };
-          /* 403 : l'adresse a expiré en cours de route. On relit la route une fois, puis on réessaie. */
-          if (rep.status === 403) { if (!(await rafraichir())) return { indisponible: "adresse refusée (403) et relecture impossible" }; continue; }
-          await attendre(500 * (essai + 1));
-        } catch {
-          if (aborted()) return { indisponible: "annulé" };
-          await attendre(500 * (essai + 1));
-        }
-      }
-      return { indisponible: "lecture impossible après trois essais" };
-    };
+    const lire = lecteur.lire;
 
     const traiter = async (id: string): Promise<void> => {
       const nom = nomDe(id);
@@ -250,17 +274,14 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
     };
 
     args.onProgression?.({ fait: 0, total, photo: null });
-    const file = [...posees];
-    await Promise.all(Array.from({ length: Math.min(LECTURES_PARALLELES, file.length) }, async () => {
-      for (let id = file.shift(); id !== undefined && !aborted(); id = file.shift()) await traiter(id);
-    }));
+    await enParallele(posees, traiter, signal);
     if (aborted()) return annule();
 
     /* L'assemblage : l'IDML d'abord construit (les cadres des photos illisibles restent vides), les listes ensuite. */
-    const idml = zipperIdml(construireIdml(avecLieuxParDefaut(magazine, new Map(cat.photos.map((p) => [p.id, p]))), photosPourIdml({ decisions, nomsLiens }), { liens: { mode: "absolu", dossier } }));
+    const idml = zipperIdml(construireIdml(avecLieuxParDefaut(magazine, new Map(cat().photos.map((p) => [p.id, p]))), photosPourIdml({ decisions, nomsLiens }), { liens: { mode: "absolu", dossier } }));
     const listes = listesExport({
       utilisees: posees.map((id) => ({ id, nom: nomDe(id) })),
-      catalogue: cat.photos.map((p) => ({ id: p.id, nom: p.nom })),
+      catalogue: cat().photos.map((p) => ({ id: p.id, nom: p.nom })),
       nomsLiens,
       indisponibles,
     });

@@ -449,6 +449,8 @@ import {
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
 /* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
+import { planPdf, photosDuPlan, decoupe, couperLignes, textePourPolice, ecrirePdf, BOITE_PAGE_SEULE, BOITE_DOUBLE, DPI_PDF } from "@/lib/mise-en-page/pdf";
+import { PDFDocument as PdfLu } from "pdf-lib";
 import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, CALQUE, LANGUE, PROFILS_COULEUR, COULEUR_APLAT, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
@@ -6720,6 +6722,67 @@ const verifierIdml = () => {
 };
 verifierIdml();
 
+/* Export PDF pour Canva (11/11) : le format des magazines Canva de Mathias (page seule 216 × 303, doubles 426 × 303),
+   le recadrage de l'écran dans chaque JPEG, le texte qui tient dans Helvetica, et un vrai PDF relu. */
+const verifierPdfCanva = async () => {
+  titre("— Mise en page : export PDF pour Canva —");
+  const neutre = { zoom: 1, dx: 0, dy: 0 };
+  const avecDecor = TEMPLATES_DESSINES.find((t) => t.portee === "double" && (t.decor?.length ?? 0) > 0);
+  const plein = (n: number, id: string | null) => Array.from({ length: n }, () => ({ photoId: id, recadrage: neutre }));
+  const mag = {
+    version: 1 as const, id: "m", titre: "Été à Lisbonne", creeLe: "x", modifieLe: "x",
+    planches: [
+      { id: "pl-1", mode: "pages" as const, double: null, gauche: null, droite: { templateId: "G-P1-a", photos: [{ photoId: "p1", recadrage: neutre }], textes: [] } },
+      { id: "pl-2", mode: "double" as const, gauche: null, droite: null, double: {
+        templateId: "DP-04",
+        photos: [{ photoId: "p1", recadrage: neutre }, { photoId: null, recadrage: neutre }, { photoId: "p2", recadrage: { zoom: 2, dx: 10, dy: 0 } }],
+        textes: [{ contenu: "L'été à Lisbonne 🌞 « co »", taille: 30, gras: true }, { contenu: "ligne 1\nligne 2", taille: 8, gras: false }],
+      } },
+      ...(avecDecor ? [{ id: "pl-3", mode: "double" as const, gauche: null, droite: null, double: {
+        templateId: avecDecor.id, photos: plein(avecDecor.nbPhotos, "p2"), textes: avecDecor.cadres.filter((c) => c.role !== "photo").map(() => ({ contenu: "", taille: 10, gras: false })),
+      } }] : []),
+    ],
+  };
+  const pages = planPdf(mag);
+  ok("PDF format : une page par planche, la planche 0 en page seule 216 × 303, les autres en doubles 426 × 303 (fond perdu compris)",
+    pages.length === mag.planches.length && pages[0].boite === BOITE_PAGE_SEULE && pages.slice(1).every((p) => p.boite === BOITE_DOUBLE)
+      && BOITE_PAGE_SEULE.l === 216 && BOITE_PAGE_SEULE.h === 303 && BOITE_PAGE_SEULE.x === 207 && BOITE_DOUBLE.l === 426 && BOITE_DOUBLE.h === 303);
+  ok("PDF ordre : les aplats d'abord (sous les cadres), puis photos et textes ; une clé unique par photo posée",
+    pages.every((p) => { const k = p.objets.findIndex((o) => o.type !== "aplat"); return k === -1 || p.objets.slice(k).every((o) => o.type !== "aplat"); })
+      && (!avecDecor || pages[2].objets[0].type === "aplat")
+      && new Set(pages.flatMap((p) => p.objets.flatMap((o) => (o.type === "photo" ? [o.cle] : [])))).size === pages.flatMap((p) => p.objets.filter((o) => o.type === "photo")).length);
+  const pp = photosDuPlan(pages);
+  ok("PDF photos : chaque photo lue une fois pour tous ses cadres, un cadre vide n'en demande aucune",
+    pp.get("p1")?.length === 2 && (pp.get("p2")?.length ?? 0) >= 1 && !pp.has("null") && pp.size === 2);
+  const d1 = decoupe({ l: 4000, h: 3000 }, { l: 100, h: 100 }, neutre);
+  ok("PDF découpe : paysage dans un carré, centré, ramené à 300 dpi (100 mm → 1 181 px)",
+    Math.abs(d1.sx - 500) < 1e-6 && d1.sy === 0 && Math.abs(d1.sl - 3000) < 1e-6 && d1.l === Math.round((100 / 25.4) * DPI_PDF) && d1.l === d1.h);
+  const d2 = decoupe({ l: 4000, h: 3000 }, { l: 100, h: 100 }, { zoom: 2, dx: 10, dy: 0 });
+  ok("PDF découpe : le zoom et le décalage de l'écran (zoom 2 = moitié de la surface, dx > 0 montre plus à gauche)",
+    Math.abs(d2.sl - 1500) < 1e-6 && d2.sx < 2000 - 750 && d2.sx >= 0);
+  const d3 = decoupe({ l: 800, h: 600 }, { l: 200, h: 150 }, neutre);
+  ok("PDF découpe : une petite photo n'est jamais agrandie (800 px restent 800)", d3.l === 800 && d3.h === 600);
+  const mesure = (t: string) => t.length;
+  ok("PDF texte : coupure aux espaces, saut de ligne gardé, mot trop long seul sur sa ligne",
+    couperLignes("un deux trois\nquatre", 8, mesure).join("|") === "un deux|trois|quatre"
+      && couperLignes("anticonstitutionnellement court", 10, mesure).join("|") === "anticonstitutionnellement|court");
+  const connus = new Set([..."L'été à Lisbonne «» co"].map((c) => c.codePointAt(0) ?? 0));
+  ok("PDF texte : ce que Helvetica ne sait pas écrire (émoji) part, le français reste", textePourPolice("L'été 🌞 « co »", connus) === "L'été  « co »");
+
+  const jpeg = new Uint8Array(readFileSync("archive/images-v1/divers/decor-album-email.jpg"));
+  const images = new Map(pages.flatMap((p) => p.objets.flatMap((o) => (o.type === "photo" && o.photoId ? [[o.cle, jpeg] as const] : []))));
+  const r = await ecrirePdf(pages, images, mag.titre);
+  const lu = await PdfLu.load(r.octets, { updateMetadata: false });
+  const tailles = lu.getPages().map((p) => p.getSize());
+  const K = 72 / 25.4;
+  ok("PDF écrit et relu : autant de pages que de planches, aux tailles 216 × 303 et 426 × 303 en points",
+    r.pages === pages.length && tailles.length === pages.length && Math.abs(tailles[0].width - 216 * K) < 0.01 && Math.abs(tailles[0].height - 303 * K) < 0.01
+      && tailles.slice(1).every((t) => Math.abs(t.width - 426 * K) < 0.01));
+  ok("PDF écrit : chaque photo posée a son image, le cadre sans photo est compté vide, le titre est celui du projet",
+    r.photosPosees === images.size && r.cadresVides === 1 && lu.getTitle() === "Été à Lisbonne");
+};
+
+
 /* ═══════════════ MISE EN PAGE T3 : lire un dossier, ne rien écrire ═══════════════ */
 const verifierMepPhotos = () => {
   titre("— mise en page : les photos d'un dossier, en lecture seule (T3) —");
@@ -7249,7 +7312,7 @@ verifierMepClient();
 
 verifierMepEditeur(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
