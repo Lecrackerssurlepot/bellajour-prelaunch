@@ -55,6 +55,8 @@ import {
   dernierChoixCouvertureDate,
   MAX_DOUBLES,
   MAX_PLANCHES,
+  cleVisuelDemandee,
+  adresseVisuel,
 } from "@/lib/atelier/apercu";
 import {
   construirePlanche,
@@ -589,6 +591,28 @@ ok("51 pages refusees (impair, hors grille)", !p52.ok && p52.erreurs[0].champ ==
 ok("12 pages refusees", !preparerTransition("publier_apercu", "photos_recues", { nb_pages: 12, pays_livraison: "FR", ...VISUELS }).ok);
 const sansImg = preparerTransition("publier_apercu", "photos_recues", { nb_pages: 34, pays_livraison: "FR", apercu_c1: "k/c1.jpg" });
 ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length === 2);
+
+/* ── apercu : la route stable des visuels ne lit que les cles du dossier (12/11) ── */
+{
+  const ID = "b09c3f84-0aa7-41f9-905a-8a8aeb92fa15";
+  const AUTRE = "0012f40c-48dd-4ab5-aaa2-5b74f018aa26";
+  const brut = {
+    plats: [`numeros/${ID}/apercu/plat-a1.png`],
+    doubles: [`numeros/${ID}/apercu/double-b2.png`, `numeros/${AUTRE}/apercu/double-c3.png`, "https://exemple.fr/x.png"],
+  };
+  ok("visuel : une cle declaree du dossier est servie",
+     cleVisuelDemandee(brut, ID, "double-b2.png") === `numeros/${ID}/apercu/double-b2.png`);
+  ok("visuel : une cle d'un AUTRE dossier, meme declaree, est refusee",
+     cleVisuelDemandee(brut, ID, "double-c3.png") === null);
+  ok("visuel : un nom non declare est refuse", cleVisuelDemandee(brut, ID, "photo.jpg") === null);
+  ok("visuel : un chemin ou un .. est refuse",
+     cleVisuelDemandee(brut, ID, "../plat-a1.png") === null && cleVisuelDemandee(brut, ID, "apercu/plat-a1.png") === null);
+  ok("visuel : une URL absolue n'est jamais lue au coffre", cleVisuelDemandee(brut, ID, "x.png") === null);
+  ok("visuel : un apercu absent ne sert rien", cleVisuelDemandee(null, ID, "plat-a1.png") === null);
+  ok("visuel : l'adresse ne porte que le nom, jamais la cle",
+     adresseVisuel("T".repeat(32), `numeros/${ID}/apercu/plat-a1.png`) ===
+       `/api/atelier/visuel?token=${"T".repeat(32)}&v=plat-a1.png`);
+}
 
 /* ── apercu : 1 a 5 doubles pages, avec repli sur l'ancien format (T-089) ── */
 ok("doubles : le nouveau format tableau est lu dans l'ordre",

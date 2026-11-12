@@ -45,7 +45,7 @@ export default async function MagazinePage({
   const dossier = dossiers.find((d) => d.token === token)
   if (!dossier || dossier.etat !== 'livree') notFound()
 
-  const apercu = await resoudreApercu(dossier.apercu_urls)
+  const apercu = await resoudreApercu(dossier.apercu_urls, { token: dossier.token })
   const titre = dossier.titre?.trim() || 'Votre numéro'
 
   /* `plats.length` compte aussi : `plat` n'est que la PREMIÈRE planche, gardée
