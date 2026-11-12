@@ -229,7 +229,7 @@ export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", 
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres"]);
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -277,7 +277,7 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   if (plan.op === "retirerCadres" || plan.op === "deplacerCadres") x = { ...x, cadreActif: null };
   x = { ...x, message: null, halo: null };
   /* le tri ne touche aucune planche : pas d'éclair */
-  if (plan.op === "marquer" || plan.op === "reglerTri" || plan.op === "etiqueter") x = { ...x, eclair: null };
+  if (plan.op === "marquer" || plan.op === "reglerTri" || plan.op === "etiqueter" || plan.op === "styler") x = { ...x, eclair: null };
   if (plan.op === "marquer" || plan.op === "etiqueter" || plan.op === "hesiter") x = { ...x, message: { texte: plan.libelle, action: { libelle: "Annuler" } } };
   if (is.textesPerdus > 0) {
     x = { ...x, message: { texte: `${pluriel(is.textesPerdus, "texte retiré", "textes retirés")}`, action: { libelle: "Annuler" } } };

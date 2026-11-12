@@ -8,6 +8,7 @@
 import { TEMPLATE_LIBRE, cadresPropres, dispositionDe, templateParId, utilisations, type Cible, type Magazine } from "../magazine";
 import { cadrer } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
+import { styleValide } from "../style";
 import { MODIFIANTS, estModifiant, lectureSeule, numeroDe, preparer } from "./etat";
 import { planifier } from "./plans";
 import { cibleSurPlanche, gabaritsClasses, precedentDe, refPour, type CatalogueRef } from "./operations";
@@ -211,6 +212,11 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       for (const id2 of mAvant.planches.map((x) => x.id)) if (id2 !== id && plancheDe(mAvant, id2) !== plancheDe(m2, id2)) err.push(`L4 ${op} a touché une autre planche`);
       break;
     }
+    case "styler":
+      /* lot C : le style ne touche ni une photo ni une planche, et ce qu'il écrit se relit */
+      if (plus.length || moins.length || m2.planches !== mAvant.planches) err.push("S1 styler a touché les planches ou les photos");
+      if (m2.style !== undefined && !styleValide(m2.style)) err.push("S1 styler a écrit un style invalide");
+      break;
     case "hesiter": {
       /* lot 3 : au plus la photo de devant change (intervertir, trancher pour celle de derrière), le gabarit jamais */
       if (plus.length > 1 || plus.length !== moins.length) err.push(`I12 hesiter bilan faux (+${plus} −${moins})`);

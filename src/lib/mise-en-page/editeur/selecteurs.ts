@@ -6,6 +6,7 @@
 import { cadresDe, decorDe, dispositionDe, utilisations, type Cible, type Planche } from "../magazine";
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
+import { texteStyle, type TexteStyle } from "../style";
 import { lieuxParDefaut } from "./lieuxTextes";
 import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
@@ -146,6 +147,8 @@ export type CadreTexte = {
   contenu: string; vide: boolean; taille: number; gras: boolean; blanc: boolean;
   /** 09/11 : le lieu qui remplace le libellé tant que rien n'est écrit (null : le libellé). */
   parDefaut: string | null;
+  /** Lot C : ce que la feuille de style du magazine fait de ce texte (police, graisse, corps, capitales, couleur) ; null sans style. */
+  style: TexteStyle | null;
 };
 export type CadrePlanche = CadrePhoto | CadreTexte;
 
@@ -177,7 +180,8 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const index = iT++;
         const t = d.textes[index];
         out.push({ role: c.role, ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
-          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut: defauts[index] ?? null });
+          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut: defauts[index] ?? null,
+          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, t.taille, c.couleur) : null });
       }
     }
   }
