@@ -934,7 +934,7 @@ function monde(graine: number): EtatEditeur {
   m = O.ajouter(m, m.planches[0].id, "droite", indispo.slice(0, 1), catTout).magazine;
   if (m.planches[1]) m = O.ajouter(m, m.planches[1].id, m.planches[1].mode === "double" ? "double" : "gauche", indispo.slice(1), catTout).magazine;
   const cat = photos.filter((p) => !indispo.includes(p.id));
-  return O.creerEtat({ magazine: m, catalogue: cat, projet: { nom: "Aléa", source: "edition", nbPagesCible: h() < 0.5 ? 28 : null } });
+  return O.creerEtat({ magazine: m, catalogue: cat, projet: { nom: "Aléa", source: "edition", nbPagesCible: h() < 0.5 ? 28 : null, finition: null } });
 }
 
 /** Le tireur de gestes : lit l'état pour viser juste, parfois à côté. */

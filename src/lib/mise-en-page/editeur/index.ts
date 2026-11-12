@@ -6,7 +6,7 @@
 export type {
   ArgsPlan, BoutonEdition, BoutonSource, Catalogue, Cible, CibleDepot, Confirmation, Derniere, Dims, EditionMep,
   EnBase, EntreeHistorique, EtatEditeur, FamilleGabarits, EtatSauvegarde, Filtres, Geste, GesteCompose, GesteEcran, GesteModifiant, GestePrimitif, Glisse,
-  GroupeBibliotheque, Issue, Message, OpPlan, OptionsEtat, PhotoMaq, Plan, PorteEdition, ProjetListe, Projet, RaisonLectureSeule, RefCadre,
+  FinitionMep, GroupeBibliotheque, Issue, Message, OpPlan, OptionsEtat, PhotoMaq, Plan, PorteEdition, ProjetListe, Projet, RaisonLectureSeule, RefCadre,
   Refus, SourceADemarrer, SourceGlisser, SourceProjet, TypeDossier,
 } from "./types";
 export type { GabaritNote, CatalogueRef, OptionsAjouter, OptionsComposer } from "./operations";

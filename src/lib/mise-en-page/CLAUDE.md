@@ -27,6 +27,12 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - `editeur/tags.ts` (10/11, R93, R94) : les TAGS de la lecture (Floue, Doublon, Rafale, Similaire, Sombre, Brûlée, Capture, Visage flou, Avec visages), visibles sur la vignette, filtrables (`Filtres.lecture`), expliqués dans le panneau Lecture (`lectureDePhoto`). `[id]/Chaleur.tsx` dessine la carte de chaleur (`Mesure.chaleur`, 16 × 16), la zone et les visages, sur la photo posée et en grand, quand `ui.lecture` (bouton œil, touche L). Les seuils ont été calibrés le 10/11 sur de vraies photos par `scripts/calibrer-lecture.ts` : toute retouche d'une règle de lecture s'y rejoue d'abord. Un champ ajouté à `Mesure` change `VERSION` de `mesuresClient.ts` (sinon le cache IndexedDB sert l'ancienne mesure).
 - `sauvegarde.ts` : la sauvegarde partagée (table `mises_en_page`, migration 20261027, appliquée le 02/11) : `contenuValide`
   relit la forme EXACTE de `Magazine` (clé en trop = refus) ; un champ ajouté à `Magazine` s'ajoute là, sinon 400.
+  Depuis le lot 0 (12/11), les clés FACULTATIVES sont une liste nommée (`CLES_FACULTATIVES`, chacune avec son validateur,
+  acceptée seulement présente avec une valeur valide, jamais `undefined`) : `tri` y est acceptée, `style` et `couverture`
+  y sont PRÉPARÉES mais refusées (`refuseeEnAttendant`) jusqu'à ce que leurs lots écrivent leur validateur ; la marche à
+  suivre est dans le commentaire de la liste. Le `Projet` de l'éditeur est UN seul type (`editeur/types.ts`), passé entier ;
+  il porte `nbPagesCible` (pages payées) et `finition` (null = inconnue) ; le dos se calcule à l'écran
+  (`[id]/dosCouverture.ts`, `dosDuProjet`), jamais ici : ce dossier n'importe pas `src/lib/atelier`.
   `TAILLE_MAX_CONTENU` (2 Mo, borne technique) ; `issueSauvegarde` = le verrou optimiste. Routes : `/api/admin/atelier/mise-en-page/magazines`.
 
 ## Le contrat

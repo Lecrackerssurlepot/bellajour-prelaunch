@@ -37,6 +37,12 @@ export type ReponsePhotosMep = {
   etat: string;
   /** Le nombre de pages payé (gelé, D20) ; null s'il n'est pas connu. */
   nbPages: number | null;
+  /**
+   * Le pelliculage choisi par le client (`numeros.finition`, migration 20260911) : il fixe le papier intérieur, donc le dos
+   * de la couverture. `null` = jamais choisi, ou colonne absente (repli 42703) : on ne devine rien ici, le défaut brillant
+   * est l'affaire de la commande, pas de cette lecture.
+   */
+  finition: "gloss" | "matte" | null;
   ttl: number;
   photos: PhotoDossierMep[];
 };

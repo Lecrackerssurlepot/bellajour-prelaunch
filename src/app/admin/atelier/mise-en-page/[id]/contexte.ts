@@ -87,8 +87,6 @@ export type Import = {
   bilan: string | null;
 };
 
-export type Projet = { nom: string; source: "particulier" | "edition" | "libre"; nbPagesCible: number | null };
-
 export type Ctx = {
   etat: EtatEditeur;
   envoyer: (g: Geste, silencieux?: boolean) => void;

@@ -135,7 +135,21 @@ export type EtatSauvegarde =
 
 /* ─────────────────────────── L'état d'écran ─────────────────────────── */
 
-export type Projet = { nom: string; source: SourceMep; nbPagesCible: number | null };
+/**
+ * Le pelliculage choisi par le client : le mot de `numeros.finition` (`Finition`, src/lib/atelier/impression.ts). Redit ici
+ * parce que ce module n'importe pas `src/lib/atelier` ; l'écran passe `projet.finition` à `dosMmPourPages`, et le
+ * compilateur refuse la moindre divergence entre les deux listes de mots.
+ */
+export type FinitionMep = "gloss" | "matte";
+
+/**
+ * LE projet ouvert dans l'éditeur (un seul type : il existait en double, côté écran et ici, et l'écran le reconstruisait
+ * champ par champ, si bien qu'un champ ajouté se perdait en silence). L'écran passe l'objet ENTIER à `creerEtat`.
+ * `nbPagesCible` : le nombre de pages PAYÉ (gelé, D20) ; `finition` : le pelliculage du dossier, qui fixe le papier
+ * intérieur donc le dos. L'un et l'autre valent `null` pour une édition, une création libre, ou quand on ne sait pas
+ * (colonne absente, jamais choisi) : l'inconnu n'est jamais deviné.
+ */
+export type Projet = { nom: string; source: SourceMep; nbPagesCible: number | null; finition: FinitionMep | null };
 
 export type EntreeHistorique = { libelle: string; avant: Magazine; apres: Magazine; plancheId: string };
 

@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   appliquer, apercuDepot, creerEtat, estTour, lectureSeule as estLectureSeule, visibles,
-  type CibleDepot, type EtatEditeur, type Geste, type SourceGlisser,
+  type CibleDepot, type EtatEditeur, type Geste, type Projet, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { chargerGabarits } from "./gabaritsClient";
-import { CtxEd, basculerGrille, fermerTexteDom, uiDeDepart, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
+import { CtxEd, basculerGrille, fermerTexteDom, uiDeDepart, type Adresse, type Ctx, type Import, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
 import { Bandeaux, Barre } from "./Barre";
 import { Bande, CheminDeFer, Toast } from "./Bas";
@@ -91,20 +91,24 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
      Pas de garde « une seule fois » : le crochet de sauvegarde se suspend au démontage (et React le simule en
      développement), `ouvrir` le remet en marche. Le résultat d'un passage annulé est ignoré. */
   const { ouvrir, lectureSeule: figer } = sauve;
-  const { nom, source: sourceProjet, nbPagesCible } = projet;
   /* Le catalogue est lu par une référence : un import (création libre) l'enrichit sans rouvrir la sauvegarde. */
   const catalogueRef = useRef(catalogue);
-  useEffect(() => { catalogueRef.current = catalogue; });
+  /* Le projet passe ENTIER à `creerEtat` (jamais reconstruit champ par champ : un champ ajouté au type ne se perd plus en
+     silence). Sa clé (le JSON de ses champs) tient lieu de dépendance : la page en refait un objet à chaque rendu, et le
+     moindre champ qui change, présent ou futur, rouvre la sauvegarde comme avant. */
+  const projetRef = useRef(projet);
+  const cleProjet = JSON.stringify(projet);
+  useEffect(() => { catalogueRef.current = catalogue; projetRef.current = projet; });
   useEffect(() => {
     let annule = false;
     void ouvrir().then((magazine) => {
       if (annule) return;
-      let e = creerEtat({ magazine, catalogue: catalogueRef.current.photos, projet: { nom, source: sourceProjet, nbPagesCible } });
+      let e = creerEtat({ magazine, catalogue: catalogueRef.current.photos, projet: projetRef.current });
       if (archive) { figer("archive"); e = appliquer(e, { type: "ouvrirLectureSeule", raison: "archive" }); }
       setEtat((prev) => prev ?? e);
     });
     return () => { annule = true; };
-  }, [ouvrir, figer, nom, sourceProjet, nbPagesCible, archive]);
+  }, [ouvrir, figer, cleProjet, archive]);
 
   useEffect(() => { etatRef.current = etat; });
 
