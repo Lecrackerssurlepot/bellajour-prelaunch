@@ -11,17 +11,19 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import * as O from "@/lib/mise-en-page/editeur";
-import type { EtatEditeur, PhotoMaq } from "@/lib/mise-en-page/editeur";
+import { zoneApresDepot, type EtatEditeur, type PhotoMaq } from "@/lib/mise-en-page/editeur";
 import { textesInitiaux } from "@/lib/mise-en-page/editeur/outils";
 import { GABARITS_COUVERTURE, couvertureNeuve, type Couverture } from "@/lib/mise-en-page/couverture";
 import { construireIdml, construireIdmlCouverture, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { planPdf, planPdfCouverture } from "@/lib/mise-en-page/pdf";
-import { ajouterDouble, cadresDe, disposer, nouveauMagazine, templateParId, tousLesTemplates, type Disposition, type Magazine, type PhotoRef, type TexteCadre } from "@/lib/mise-en-page/magazine";
-import { COULEURS_ORIGINE, styleDePaire } from "@/lib/mise-en-page/style";
+import { ajouterDouble, cadresDe, candidats, disposer, nouveauMagazine, templateParId, tousLesTemplates, type Disposition, type Magazine, type PhotoRef, type TexteCadre } from "@/lib/mise-en-page/magazine";
+import { COULEURS_ORIGINE, PAIRES, styleDePaire } from "@/lib/mise-en-page/style";
+import { uiDeDepart } from "@/app/admin/atelier/mise-en-page/[id]/contexte";
+import { clavierTri } from "@/app/admin/atelier/mise-en-page/[id]/triEcran";
 import { orientationCadre, orientationDe, signatureDe, type Orientation, type Template } from "@/lib/mise-en-page/types";
-import { genereParId, idsDePage, legendeCourte, legendesDistinctes, partEnRupture, partVide } from "@/lib/mise-en-page/genere";
+import { genereParId, genereesPour, idsDePage, legendeCourte, legendesDistinctes, partEnRupture, partVide } from "@/lib/mise-en-page/genere";
 import { COTES_MAX, genereDoubleParId, genereesDoublesPour } from "@/lib/mise-en-page/genereDouble";
-import { FOND_PERDU, MARGES, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
+import { FOND_PERDU, GRILLE, MARGES, PAGE_L, PLANCHE_L, caseGrille } from "@/lib/mise-en-page/geometrie";
 
 const EPS = 1e-6;
 const um = (v: number): number => Math.round(v * 1e6);
@@ -414,6 +416,94 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
     rapporter("D3 écran : la question lit `detailQuestion` (et non `q.photos[0]`), montre la vignette de la photo, et ne s'écrit plus en `ed-sous` sans retour à la ligne : la fenêtre ne s'élargit plus, le champ « Un mot si tu veux » tient dedans",
       /detailQuestion\(q,/.test(fiche) && !/\{q\.photos\[0\]\}/.test(fiche) && /vignetteDe\(adresses\.get\(q\.photos\[0\]\)\)/.test(fiche)
         && /\.ed-ex-q p \{[^}]*overflow-wrap: anywhere/.test(css) && /\.ed-ex-q input \{[^}]*width: 100%/.test(css) && /\.ed-ex-q \{[^}]*minmax\(0, 1fr\)/.test(css));
+  }
+
+  /* ─── D6. après un dépôt sur la planche, R est « Autre disposition », pas « Réserve » ─── */
+  {
+    const cibles: O.CibleDepot[] = [
+      { type: "page", plancheId: "pl-2", cote: "droite" }, { type: "double", plancheId: "pl-2" }, { type: "cadre", ref: { plancheId: "pl-2", cible: "droite", index: 0 } },
+      { type: "hesiter", ref: { plancheId: "pl-2", cible: "droite", index: 0 } }, { type: "bande", plancheId: "pl-2", position: 1 }, { type: "miroir", plancheId: "pl-2" },
+      { type: "libre", plancheId: "pl-2", cible: "droite", x: 10, y: 10 }, { type: "vignette", plancheId: "pl-2" }, { type: "entre", index: 1 },
+    ];
+    const rien: (O.CibleDepot | null)[] = [{ type: "tri", zone: "jeu" }, { type: "tri", zone: "cote" }, { type: "bibliotheque" }, null];
+    /* le vrai clavier du tri, joué sur un état : zone « photos » = R réserve (le tri prend la touche), zone « planche » = le tri la laisse passer */
+    const catalogue: PhotoMaq[] = ["A", "B", "C"].map((id, i) => ({ id, nom: `${id}.jpg`, l: 3000, h: 2000, date: `2026-06-11T08:0${i}:00.000Z`, personne: "Inès", lien: null, type: "lien", coeur: false, signalee: false, autresMagazines: [], nouvelle: false, vignette: null }));
+    const etat: EtatEditeur = O.creerEtat({ magazine: ajouterDouble(nouveauMagazine("m", "t", "2026-11-12T10:00:00.000Z")), catalogue });
+    const touche = { key: "r", metaKey: false, ctrlKey: false, altKey: false, shiftKey: false, preventDefault: () => {} } as unknown as KeyboardEvent;
+    const joue = (zone: "photos" | "planche"): { pris: boolean; gestes: string[] } => {
+      const gestes: string[] = [];
+      const ui = { ...uiDeDepart(), zone };
+      const pris = clavierTri({ etat, ui, majUi: () => {}, envoyer: (g) => gestes.push(g.type), lectureSeule: false }, touche);
+      return { pris, gestes };
+    };
+    const avant = joue("photos"), apres = joue("planche");
+    /* la suite d'un dépôt : la zone calculée remplace celle du clic dans le panneau */
+    const zoneDuDepot = zoneApresDepot({ type: "page", plancheId: "pl-2", cote: "droite" });
+    const suite = joue(zoneDuDepot ?? "photos");
+    rapporter("D6 zone : un dépôt sur la planche (page, double, cadre, hésiter, bande, miroir, libre, vignette, entre) rend la main à la planche ; dans le tri ou la bibliothèque (ou sans cible) rien ne change",
+      cibles.every((c) => zoneApresDepot(c) === "planche") && rien.every((c) => zoneApresDepot(c) === null));
+    rapporter("D6 clavier : zone « photos », le tri prend R (Réserve) ; après un dépôt sur la planche, la zone est « planche » et le tri laisse passer R (Autre disposition)",
+      avant.pris && avant.gestes.length > 0 && !apres.pris && apres.gestes.length === 0 && zoneDuDepot === "planche" && !suite.pris);
+    const ed = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/EditeurMagazine.tsx"), "utf8");
+    rapporter("D6 écran : le lâcher du glisser applique `zoneApresDepot` juste après le geste « lacher »",
+      /envoyer\(\{ type: "lacher" \}\);[\s\S]{0,260}zoneApresDepot\(cible\)[\s\S]{0,120}setUi\(\(u\) => \(u\.zone === zone \? u : \{ \.\.\.u, zone \}\)\)/.test(ed));
+
+    /* D8, D9 : Échap ferme d'abord ce qui est ouvert par-dessus, avant le clavier du tri et sans dépendre du focus */
+    const iEchap = ed.indexOf('e.key === "Escape" && !G.current && (ui.menu || ui.style || ui.rangee)');
+    rapporter("D8 Échap : un seul Échap ferme le menu Filtres (ou le panneau Style, ou le tiroir), quelle que soit la zone et le focus : le test vient avant le clavier de la confrontation et du tri, et après la saisie de texte",
+      iEchap > 0 && iEchap < ed.indexOf("clavierConfrontation({") && iEchap < ed.indexOf("clavierTri({") && iEchap > ed.indexOf("pendant la saisie") && /majUi\(ui\.menu \|\| ui\.rangee \? \{ rangee: null, menu: null, apercuGab: null \} : \{ style: false \}\)/.test(ed));
+  }
+
+  /* ─── D9. le panneau Style : les dix-huit paires sont atteignables ─── */
+  {
+    const sp = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/StylePanneau.tsx"), "utf8");
+    const css = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/mise-en-page.css"), "utf8");
+    const regle = (sel: string): string => new RegExp(`\\.mep-editeur ${sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} \\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+    const liste = regle(".ed-sty-paires");
+    rapporter(`D9 style : les ${PAIRES.length} paires sont toutes dans la liste (aucun filtre ni tranche), le nombre est dit, la liste défile en hauteur libre (plus de plafond de 188 px, barre toujours là, fondu en bas tant qu'il en reste) et la paire choisie est ramenée dans la vue`,
+      PAIRES.length === 18 && /\{PAIRES\.map\(\(p\) =>/.test(sp) && !/PAIRES\.slice|PAIRES\.filter/.test(sp) && /\{PAIRES\.length\} paires/.test(sp)
+        && !/max-height: 188px/.test(css) && /overflow-y: scroll/.test(liste) && /flex: 1 1 auto/.test(liste) && /min-height: 150px/.test(liste) && /max-height: 420px/.test(liste)
+        && /ed-sty-paires--suite/.test(css) && /scrollIntoView\(\{ block: "nearest" \}\)/.test(sp));
+  }
+
+  /* ─── D5. une page de 5 photos avec 4 ou 5 paysages : la grammaire n'a rien à proposer, et on le prouve ─── */
+  {
+    /* Tous les pavages de la zone 6 × 6 en 5 rectangles (ratio 0,5 à 2, 2 colonnes au moins, comme la grammaire), SANS ses règles de taille : */
+    const N = GRILLE.colonnes;
+    const dims = (nc: number, nl: number) => caseGrille("droite", 0, 0, nc, nl);
+    const oriente = (nc: number, nl: number): Orientation => { const r = dims(nc, nl); return orientationDe(r.l, r.h); };
+    const grille = Array.from({ length: N }, () => Array<boolean>(N).fill(false));
+    const pieces: number[][] = [];
+    const pavages: number[][][] = [];
+    const rec = (): void => {
+      let fy = -1, fx = -1;
+      for (let y = 0; y < N && fy < 0; y++) for (let x = 0; x < N; x++) if (!grille[y][x]) { fy = y; fx = x; break; }
+      if (fy < 0) { if (pieces.length === 5) pavages.push(pieces.map((q) => q.slice())); return; }
+      if (pieces.length >= 5) return;
+      for (let nc = 1; nc <= N - fx; nc++) {
+        if (grille[fy][fx + nc - 1]) break;
+        for (let nl = 1; nl <= N - fy; nl++) {
+          let libre = true;
+          for (let y = fy; y < fy + nl && libre; y++) for (let x = fx; x < fx + nc; x++) if (grille[y][x]) { libre = false; break; }
+          if (!libre) break;
+          const q = dims(nc, nl).l / dims(nc, nl).h;
+          if (nc < 2 || q < 0.5 || q > 2) continue;
+          for (let y = fy; y < fy + nl; y++) for (let x = fx; x < fx + nc; x++) grille[y][x] = true;
+          pieces.push([fx, fy, nc, nl]); rec(); pieces.pop();
+          for (let y = fy; y < fy + nl; y++) for (let x = fx; x < fx + nc; x++) grille[y][x] = false;
+        }
+      }
+    };
+    rec();
+    const nbL = (p: number[][]): number => p.filter((q) => oriente(q[2], q[3]) === "L").length;
+    const quatreL = pavages.filter((p) => nbL(p) >= 4);
+    const aires = (p: number[][]): number[] => p.map((q) => dims(q[2], q[3]).l * dims(q[2], q[3]).h).sort((a, b) => b - a);
+    const toutesViolent = quatreL.every((p) => { const a = aires(p); const r = a[0] / a[1]; return r > 1.15 && r < 2; });
+    const ls = (os: string): number => genereesPour([...os] as Orientation[]).length;
+    const dessines = (os: string): number => candidats("page", [...os].map((o, i) => ({ id: `p${i}`, nom: `p${i}`, l: o === "L" ? 3000 : 2000, h: o === "L" ? 2000 : 3000, date: null }))).filter((t) => t.origine !== "genere" && t.origine !== "grille").length;
+    rapporter(`D5 cinq photos : sur les ${pavages.length} façons de paver la zone en 5 rectangles, aucune n'a 5 paysages ; les ${quatreL.length} qui en ont 4 (et un portrait) ont leurs deux plus grandes cases à ${quatreL.length ? (aires(quatreL[0])[0] / aires(quatreL[0])[1]).toFixed(2) : "?"} de rapport : « presque égales », que la règle R-P-02 du maquettiste écarte. Donc 0 gabarit généré pour 4 ou 5 paysages (${ls("LLLLP")}, ${ls("PLLLL")}, ${ls("LLLLL")}, ${ls("LLLLC")}), et les dessinés (${dessines("LLLLP")}) y suffisent : rien n'est forcé`,
+      pavages.length > 20 && !pavages.some((p) => nbL(p) >= 5) && quatreL.length === 4 && toutesViolent && ls("LLLLP") === 0 && ls("PLLLL") === 0 && ls("LLLLL") === 0 && ls("LLLLC") === 0
+        && ls("PPPLL") > 0 && ls("LPPLC") > 0 && dessines("LLLLP") >= 2 && dessines("LLLLL") >= 2);
   }
 
 }

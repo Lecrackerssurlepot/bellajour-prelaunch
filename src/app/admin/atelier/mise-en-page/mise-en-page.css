@@ -1820,6 +1820,8 @@
   -webkit-user-select: text;
   animation: ed-fondu 150ms;
 }
+.mep-editeur .ed-style > * { flex: none; }
+.mep-editeur .ed-style > .ed-sty-paires { flex: 1 1 auto; }
 .mep-editeur .ed-sty-tete { display: flex; align-items: center; gap: 8px; }
 .mep-editeur .ed-sty-tete h2 { flex: 1; margin: 0; font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-style: normal; font-weight: 600; }
 .mep-editeur .ed-sty-echantillon { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 12px; background: var(--mep-r-papier); box-shadow: inset 0 0 0 1px var(--bj-veil-8); }
@@ -1827,7 +1829,13 @@
 .mep-editeur .ed-sty-ech-x { color: var(--mep-r-encre); font-size: 12px; line-height: 1.2; }
 .mep-editeur .ed-sty-ech-l { color: var(--mep-r-encre); font-size: 10px; line-height: 1.2; }
 .mep-editeur .ed-sty-vide { margin: 0; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); line-height: 1.4; }
-.mep-editeur .ed-sty-paires { display: flex; flex-direction: column; gap: 1px; max-height: 188px; padding: 2px; border-radius: 12px; background: var(--bj-veil-6); overflow: auto; }
+/* lot R (D9) : la liste des paires prend la place qui reste dans le panneau (min 150 px, jamais plus de 420) et défile ; le panneau ne défile en bloc que si même ce minimum ne tient pas */
+.mep-editeur .ed-sty-paires-t { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: -6px; font-size: var(--bj-fs-xs); font-weight: 600; }
+.mep-editeur .ed-sty-paires-t small { color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); font-weight: 400; }
+.mep-editeur .ed-sty-paires { display: flex; flex: 1 1 auto; flex-direction: column; gap: 1px; min-height: 150px; max-height: 420px; padding: 2px; border-radius: 12px; background: var(--bj-veil-6); overflow-x: hidden; overflow-y: scroll; scrollbar-width: thin; scrollbar-color: var(--bj-veil-16) transparent; }
+.mep-editeur .ed-sty-paires::-webkit-scrollbar { width: 8px; }
+.mep-editeur .ed-sty-paires::-webkit-scrollbar-thumb { border-radius: 8px; background: var(--bj-veil-16); }
+.mep-editeur .ed-sty-paires--suite { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 26px), transparent); }
 .mep-editeur .ed-sty-paire { appearance: none; display: flex; flex: none; align-items: baseline; gap: 8px; padding: 6px 10px; border: 0; border-radius: 10px; background: none; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); text-align: left; cursor: pointer; }
 .mep-editeur .ed-sty-paire b { flex: none; font-weight: 600; white-space: nowrap; }
 .mep-editeur .ed-sty-paire span { min-width: 0; overflow: hidden; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); text-overflow: ellipsis; white-space: nowrap; }

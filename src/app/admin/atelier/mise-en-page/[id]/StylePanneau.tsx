@@ -52,6 +52,17 @@ export function StylePanneau() {
   const prop = useMemo(() => proposerNuancier(palettes), [palettes]);
   const memeNuancier = !!style && !!prop && ROLES_COULEUR.every((r) => style.couleurs[r] === prop.couleurs[r]);
 
+  /* la liste des paires : le fondu du bas disparaît quand on est au bout ; la paire choisie est ramenée dans la vue à l'ouverture (le haut de la liste sinon) */
+  const liste = useRef<HTMLDivElement | null>(null);
+  const [finListe, setFinListe] = useState(false);
+  const suivreListe = () => { const n = liste.current; if (n) setFinListe(n.scrollTop + n.clientHeight >= n.scrollHeight - 2); };
+  useEffect(() => {
+    const n = liste.current;
+    if (!n) return;
+    n.querySelector<HTMLElement>('[aria-checked="true"]')?.scrollIntoView({ block: "nearest" });
+    suivreListe();
+  }, []);
+
   const choisirPaire = (id: string) => {
     const s = styleDePaire(id, style?.couleurs ?? { ...COULEURS_ORIGINE });
     if (s && !ro) envoyer({ type: "styler", style: s });
@@ -84,7 +95,10 @@ export function StylePanneau() {
         <p className="ed-sty-vide">Rendu d&apos;origine. Choisir une paire de polices applique un style à tout le magazine.</p>
       )}
 
-      <div className="ed-sty-paires" role="radiogroup" aria-label="Paire de polices">
+      {/* lot R (D9) : les dix-huit paires sont TOUTES atteignables : le nombre est dit, la liste prend la place qui reste dans le panneau et défile (barre toujours visible,
+          fondu en bas tant qu'il en reste), la paire choisie est ramenée dans la vue à l'ouverture */}
+      <div className="ed-sty-paires-t"><span>Paires de polices</span><small>{PAIRES.length} paires · {style ? "défiler pour voir les autres" : "faire défiler"}</small></div>
+      <div className={cls("ed-sty-paires", !finListe && "ed-sty-paires--suite")} ref={liste} role="radiogroup" aria-label="Paire de polices" onScroll={suivreListe}>
         {PAIRES.map((p) => (
           <button key={p.id} type="button" role="radio" aria-checked={style?.paire === p.id} disabled={ro} className="ed-sty-paire" onClick={() => choisirPaire(p.id)}>
             <b>{p.nom}</b>

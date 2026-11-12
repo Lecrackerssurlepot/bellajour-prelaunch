@@ -256,6 +256,16 @@ export function actionsPlanche(e: EtatEditeur, plancheId: string): ActionsPlanch
   };
 }
 
+/**
+ * Lot R (D6, 12/11) : la zone du clavier après un dépôt. Poser une photo sur la planche (page, double, cadre, bande, vignette du chemin
+ * de fer, miroir, pose en libre) rend la main à la PLANCHE : sans cela, la zone restait « photos » et R voulait dire « Réserve » au lieu
+ * d'« Autre disposition ». Un dépôt dans le tri ou la bibliothèque ne change rien.
+ */
+export function zoneApresDepot(cible: CibleDepot | null | undefined): "planche" | null {
+  if (!cible) return null;
+  return cible.type === "tri" || cible.type === "bibliotheque" ? null : "planche";
+}
+
 /** T4 et T9 : une cible s'allume-t-elle pendant le glisser ? */
 export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): boolean {
   if (!source || !cible) return false;
