@@ -14,6 +14,7 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 - `idml.ts` : l'export IDML, portage fidèle de `idml-test-generator.py` (validé dans Affinity) : ne changer
   un élément ou un attribut qu'après un nouvel essai Affinity (`scripts/idml-essai.ts`). `paquet.ts` : les zips
   (fflate) ; `mimetype` PREMIER et stocké.
+- `pdf.ts` (11/11) : l'export PDF pour Canva, au format des magazines Canva de Mathias (planche 0 en page seule 216 × 303, doubles 426 × 303, fond perdu compris). Chaque photo est RECADRÉE à son cadre (`decoupe` = `cadrer`, 300 dpi au plus, jamais agrandie) par le navigateur (`[id]/exporterPdf.ts`) ; textes en Helvetica, émojis retirés. Hors D28 : Canva n'est pas Affinity, rien ne s'y relie.
 - `editeur/hesitation.ts` (lot 3, 02/11) : `Affectation.hesitation` = une seconde photo DERRIÈRE celle du cadre (facultative, écrite seulement si présente, `tranchee: true` une fois choisie). Jamais exportée ni comptée ; elle suit sa photo dans `composerDisposition`, `echanger`, `reordonner`, `deplacerPhoto`, `remplacer`.
 - `editeur/libre.ts` (lot 4, 03/11) : miroir, cadres retouchés (`Disposition.cadres`, repère du GABARIT, l'ordre = les calques ; `miroir: true` sur une double), pose en libre, plusieurs cadres. Tout passe par `cadresDe` (`versPlanche` / `versGabarit`) : écran et export lisent les mêmes cadres. Une disposition retouchée n'a plus besoin de son gabarit (`TEMPLATE_LIBRE` ou un `M-…`).
 - `gabaritsAtelier.ts` (lot 4) : les gabarits enregistrés (`mep_gabarits`, migration 20261103) ; `enregistrerGabarits` (magazine.ts) les met en tête de `candidats`, une disposition qui en vient garde une copie de ses cadres.
@@ -39,7 +40,7 @@ magazine à partir de photos et l'exporte vers Affinity (IDML). Référence : `b
 ## Les interdits
 - **D28** : n'entre dans l'export que ce qu'Affinity relit FIDÈLEMENT (catalogue des essais du 29/10 dans `docs/DECISIONS.md`). Chaque objet porte `ItemLayer`, chaque texte `AppliedLanguage` français, le document FOGRA39.
 - Aucun import de `src/lib/atelier` ni d'un ancien moteur de mise en page (le brief repart de zéro).
-- Des règles simples et déterministes. Depuis le 09/11 (Notion « Éditeur Bellajour », 03 · Le moteur), les couches du moteur arrivent ici une par une : **l'IA mesure et propose, des règles décident**, on marque et on ne supprime jamais. Une couche qui appelle un modèle passe par une route serveur, jamais par un module pur.
+- **La machine mesure et propose, des règles nommées décident, l'atelier tranche.** On détecte un visage, on ne reconnaît jamais une personne. Toute couche a sa fiche dans `docs/moteur/` et ses tests au harnais. (Depuis le 09/11, décision de Mathias : les couches du moteur arrivent ici une par une.) On marque et on ne supprime jamais ; une couche qui appelle un modèle passe par une route serveur, jamais par un module pur.
 - Modules purs : ni React, ni réseau, ni horloge dans les transitions.
 
 ## Les tests

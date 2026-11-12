@@ -114,7 +114,7 @@ export default async function ComptePage({
      alors sur sa moitié droite. */
   const livres: LivreVue[] = await Promise.all(
     bibliotheque.map(async (d) => {
-      const apercu = await resoudreApercu(d.apercu_urls)
+      const apercu = await resoudreApercu(d.apercu_urls, { token: d.token })
       return {
         token: d.token,
         titre: d.titre?.trim() || 'Votre numéro',

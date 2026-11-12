@@ -1740,3 +1740,5 @@
 .mep-editeur .ed-lec-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
 .mep-editeur .ed-lec-dl dt { color: #999; }
 .mep-editeur .ed-lec-dl dd { margin: 0; font-variant-numeric: tabular-nums; }
+/* 11/11 : Canva ou Affinity, en tête de la feuille d'export */
+.mep-editeur .ed-ex-sortie { align-self: flex-start; }

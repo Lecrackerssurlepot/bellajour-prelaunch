@@ -410,7 +410,7 @@ export default async function NumeroPage({
      se connaissent pas davantage que les deux premiers : l'un signe des URL
      R2, l'autre relit le dossier pour le compte. */
   const [apercu, lien, creditEuros] = await Promise.all([
-    numero.etat === 'apercu_pret' ? resoudreApercu(numero.apercu_urls) : null,
+    numero.etat === 'apercu_pret' ? resoudreApercu(numero.apercu_urls, { token: numero.token }) : null,
     qui ? rattacherParToken(makeSupabase(), qui, token) : null,
     /* ── LE CRÉDIT FONDATEUR, EN LECTURE SEULE (lot 6, 10/09/2026) ──
        Le bon de commande doit dire un TOTAL, donc connaître la remise avant

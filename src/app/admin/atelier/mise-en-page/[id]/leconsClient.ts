@@ -33,8 +33,8 @@ async function envoyerLot(cle: string, lecons: Lecon[], inst?: ReturnType<typeof
 }
 
 export type Memoire = {
-  /** À appeler quand un export a abouti : jalon + instantané. */
-  exporte: (dossier: string) => void;
+  /** À appeler quand un export a abouti : jalon + instantané. `format` : Affinity (IDML, par défaut) ou Canva (PDF, 11/11). */
+  exporte: (dossier: string, format?: "IDML" | "PDF") => void;
   /** G3 : au plus trois questions tirées des gestes contraires de la séance. */
   questions: () => Lecon[];
   /** G3 : la réponse de l'atelier, envoyée comme une leçon. */
@@ -74,10 +74,10 @@ export function useLecons(cle: string, etat: EtatEditeur | null, envoyer: (g: Ge
     return () => { annule = true; clearTimeout(t); };
   }, [n, cle]);
 
-  const exporte = (dossier: string) => {
+  const exporte = (dossier: string, format: "IDML" | "PDF" = "IDML") => {
     const e = etatRef.current;
     if (!e) return;
-    const j = jalon("export", `export IDML · ${dossier}`);
+    const j = jalon("export", `export ${format} · ${dossier}`);
     envoyerRef.current({ type: "ajouterLecon", lecon: j });
     /* l'instantané part tout de suite, avec le jalon, sans attendre le lot : c'est le moment qui compte */
     void envoyerLot(cle, [j], instantane(e));
