@@ -64,3 +64,9 @@ export { faitsDePage } from "./faits";
 export type { Fait } from "./faits";
 export { aVisageFlou, comptesTags, estBrulee, estCapture, estSombre, lectureDePhoto, MOT_TAG, TAGS, tagsDeLecture } from "./tags";
 export type { LectureDePhoto, Tag } from "./tags";
+/* lot B (12/11) : la couverture à plat */
+export { autreGabaritCouverture, choisirGabaritCouverture, echangerSurCouverture, ecrireCouverture, pagesCouverture, planDepotCouverture, planGesteCouverture, poserSurCouverture, recadrerCouverture, retirerDeCouverture } from "./gestesCouverture";
+export { aplatsDeCouverture, bilanCouverture, cadresDeCouverture, cibleCouvertureAllumee } from "./selecteursCouverture";
+export type { BilanCouverture, CadreCouvertureEcran } from "./selecteursCouverture";
+export { couvertureDe, estCouverture } from "./outils";
+export { lieuCouverture } from "./lieuxTextes";

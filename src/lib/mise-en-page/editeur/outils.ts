@@ -8,6 +8,7 @@ import type { Cadre, Portee, RoleCadre, Template } from "../types";
 import type { Cible, Disposition, Magazine, Planche, RefCadre, TexteCadre } from "../magazine";
 import { cadresPropres, dispositionDe } from "../magazine";
 import type { Recadrage } from "../recadrage";
+import { ID_COUVERTURE, cadresPhotoCouverture, couvertureNeuve, gabaritCouverture, idsCouverture, type Couverture } from "../couverture";
 import type { Filtres } from "./types";
 
 export const PENALITE_REPETITION = 0.25;
@@ -88,12 +89,21 @@ export const idsPlanche = (p: Planche): string[] => photosDe(p).flatMap((x) => (
 export const indexPlanche = (m: Magazine, id: string): number => m.planches.findIndex((p) => p.id === id);
 export const plancheDe = (m: Magazine, id: string): Planche | null => m.planches.find((p) => p.id === id) ?? null;
 
-/** Tous les ids posés du magazine, en multiset (avec répétitions). */
+/** Tous les ids posés du magazine, en multiset (avec répétitions). La couverture compte (lot B), après les planches. */
 export function idsMagazine(m: Magazine): string[] {
   const out: string[] = [];
   for (const p of m.planches) for (const d of [p.double, p.gauche, p.droite]) out.push(...idsDispo(d));
+  out.push(...idsCouverture(m.couverture));
   return out;
 }
+
+/* ─────────────────────────── La couverture (lot B) ─────────────────────────── */
+
+/** Une référence vise-t-elle la couverture (`plancheId` réservé, jamais celui d'une planche) ? */
+export const estCouverture = (ref: { plancheId: string } | null | undefined): boolean => !!ref && ref.plancheId === ID_COUVERTURE;
+/** La couverture du magazine, sinon une neuve au gabarit par défaut : on la voit et on y écrit avant qu'elle existe, rien
+ *  n'est sauvegardé tant qu'aucun geste ne l'a touchée. */
+export const couvertureDe = (m: Magazine): Couverture => m.couverture ?? couvertureNeuve();
 
 /** La disposition d'une planche, ou null : jamais d'exception sur un id périmé. */
 export const dispositionOuNull = (m: Magazine, ref: RefCadre): Disposition | null => {
@@ -105,6 +115,7 @@ export const dispositionOuNull = (m: Magazine, ref: RefCadre): Disposition | nul
 /** L'affectation visée par une référence, ou null. */
 export function affectation(m: Magazine, ref: RefCadre | null | undefined): Disposition["photos"][number] | null {
   if (!ref || !estEntier(ref.index)) return null;
+  if (estCouverture(ref)) return couvertureDe(m).photos[ref.index] ?? null;
   const d = dispositionOuNull(m, ref);
   return d?.photos[ref.index] ?? null;
 }
@@ -112,6 +123,7 @@ export const aPhoto = (m: Magazine, ref: RefCadre | null | undefined): boolean =
 
 export function texteDe(m: Magazine, ref: RefCadre | null | undefined): TexteCadre | null {
   if (!ref || !estEntier(ref.index)) return null;
+  if (estCouverture(ref)) return couvertureDe(m).textes[ref.index] ?? null;
   const d = dispositionOuNull(m, ref);
   return d?.textes[ref.index] ?? null;
 }
@@ -127,4 +139,14 @@ export const retouchee = (d: Disposition | null): boolean => !!d?.cadres;
 export function dimsCadre(d: Disposition | null, index: number): { l: number; h: number } | null {
   const c = cadresPhotoDe(d)[index];
   return c ? { l: c.l, h: c.h } : null;
+}
+
+/** Mesures {l, h} du cadre photo visé, planche ou couverture (un cadre de couverture ne dépend pas du dos). */
+export function dimsDeRef(m: Magazine, ref: RefCadre): { l: number; h: number } | null {
+  if (estCouverture(ref)) {
+    const g = gabaritCouverture(couvertureDe(m).templateId);
+    const c = g ? cadresPhotoCouverture(g)[ref.index] : undefined;
+    return c ? { l: c.l, h: c.h } : null;
+  }
+  return dimsCadre(dispositionOuNull(m, ref), ref.index);
 }
