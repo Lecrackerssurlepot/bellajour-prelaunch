@@ -115,7 +115,7 @@ export function planPdf(magazine: Magazine): PagePdf[] {
         } else {
           const t = d.textes[iT++];
           const contenu = t?.contenu ?? "", taille = t?.taille ?? cadre.taille ?? 10, gras = t?.gras ?? cadre.gras ?? false;
-          const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur) : null;
+          const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur, { contenu, l: cadre.l, h: cadre.h }) : null;
           objets.push(ts
             ? { type: "texte", cadre, contenu: texteSousStyle(contenu, ts), taille, gras, style: { police: ts.police.id, graisse: ts.graisse, corps: ts.corps, interligne: ts.interligne, capitales: ts.capitales, approche: ts.approche, couleur: ts.couleur } }
             : { type: "texte", cadre, contenu, taille, gras });
