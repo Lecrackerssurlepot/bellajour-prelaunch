@@ -1,6 +1,6 @@
 # C13 : la feuille de style du magazine (paire de polices, nuancier, typographie française)
 
-**Statut (12/11, lot C)** : sur la branche `feat/mise-en-page-feuille-de-style`, non fusionnée. Règles R97 à R100.
+**Statut (12/11, lot C)** : sur la branche `feat/mise-en-page-feuille-de-style`, non fusionnée. Règles R120 à R123.
 
 ## Ce qu'elle fait
 - **Propose** une paire de polices (catalogue fermé de 18, avec humeur) et un nuancier à six rôles d'après les palettes des photos du
@@ -12,6 +12,13 @@
   couleur, CIEDE2000, contraste), `francais.ts` (typographie française) ; le geste `styler` dans `editeur/stylage.ts` et `plans.ts`.
 - Écran : `[id]/StylePanneau.tsx`, `[id]/polices.ts` (next/font/google, 30 familles, `preload: false`), `[id]/layout.tsx`.
 - Export : `idml.ts` (polices, nuances, styles), `pdf.ts` (polices embarquées par `@pdf-lib/fontkit`), `scripts/polices-pdf.ts` (copie dans `public/polices/`).
+
+## La couverture (12/11, après la fusion du lot B)
+Le style gouverne aussi la couverture à plat : `SceneCouverture.tsx` (variables CSS du style), `construireIdmlCouverture` (mêmes fabriques que l'intérieur :
+polices nommées, six nuances, styles Titre / Texte / Légende, rectangle « Papier ») et `planPdfCouverture` (polices embarquées dans le PDF de couverture).
+Le corps du mot-titre de la 1re est recalculé avec la police de TITRE choisie (`mesureMotTitre(style)` donne la mesure à `tailleMotTitre` : chasses de la
+police, capitales et approche de la paire) ; sans style, chasses d'Arial Bold comme avant (empreinte au harnais). Le mot-titre fait toujours au moins
+60 % de la 1re. Limite : un mot géant en capitales dans le cadre du « mot géant » d'un gabarit d'intérieur n'est pas ajusté en largeur.
 
 ## Réglages
 Nommés et commentés dans `nuancier.ts` (`REGLAGES_NUANCIER`, pas dans `editeur/reglages.ts` : le module est pur et sans leçons ; à y rapatrier si une
