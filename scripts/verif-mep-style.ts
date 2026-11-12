@@ -25,22 +25,29 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
-import { construireIdml, fontsDuStyle, nuancesDuStyle, stylesDuStyle, STYLE_PARAGRAPHE, type PhotoExport } from "@/lib/mise-en-page/idml";
-import { clePolice, ecrirePdf, FINE_EM, largeurLigne, planPdf, policesDuPlan, textePourPoliceStyle } from "@/lib/mise-en-page/pdf";
+import { construireIdml, construireIdmlCouverture, fontsDuStyle, nuancesDuStyle, stylesDuStyle, STYLE_PARAGRAPHE, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { clePolice, ecrirePdf, FINE_EM, largeurLigne, planPdf, planPdfCouverture, policesDuPlan, textePourPoliceStyle } from "@/lib/mise-en-page/pdf";
 import { enregistrerGabarits, templateParId, type Magazine } from "@/lib/mise-en-page/magazine";
+import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
+import { PAGE_L } from "@/lib/mise-en-page/geometrie";
+import {
+  CHASSES_HELVETICA_GRAS, GABARITS_COUVERTURE, cadresTexteCouverture, couvertureNeuve, couverturePourExport, gabaritCouverture, largeurEm, largeurImprimee,
+  mesureMotTitre, partDuMotTitre, tailleMotTitre, textesDeCouverture, type Couverture,
+} from "@/lib/mise-en-page/couverture";
+import { CHASSES_POLICES } from "@/lib/mise-en-page/chassesPolices";
 import { cadreValide, contenuValide, NOMS_CLES_FACULTATIVES } from "@/lib/mise-en-page/sauvegarde";
 import { gabaritValide } from "@/lib/mise-en-page/gabaritsAtelier";
 import { TEINTES, type Template } from "@/lib/mise-en-page/types";
 import {
   COULEURS_ORIGINE, DOSSIER_POLICES, INTERLIGNE_STYLE, NIVEAUX, NUANCE_ROLE, PAIRES, POLICES, REFERENCE_CORPS, ROLES_COULEUR, cheminPolice, classeRole,
-  corpsDe, enCapitales, facettesDe, nomFichierPolice, paireParId, policeParId, premiereBase, roleDeCouleurTexte, roleDeTeinte, styleDePaire, styleEgal,
+  AVANCE_FINE_EM, corpsDe, enCapitales, facettesDe, largeurEmPolice, nomFichierPolice, paireParId, policeParId, premiereBase, roleDeCouleurTexte, roleDeTeinte, styleDePaire, styleEgal,
   styleValide, teinteAncienne, texteSousStyle, texteStyle, texteTypo, variablesStyle, type StyleMagazine,
 } from "@/lib/mise-en-page/style";
 import {
   REGLAGES_NUANCIER, chromaImprimable, contraste, deltaE00, deltaE00Lab, ecartTeinte, estHex, hexDeLch, lchDeHex, luminance, normaliserHex, proposerNuancier,
 } from "@/lib/mise-en-page/nuancier";
 import { FINE, INSECABLE, typographieFrancaise } from "@/lib/mise-en-page/francais";
-import { DOSSIER_COPIE, fichierDuPaquet, woffVersTtf } from "./polices-pdf";
+import { DOSSIER_COPIE, FICHIER_CHASSES, chassesDuFichier, fichierDuPaquet, sourceChasses, woffVersTtf } from "./polices-pdf";
 
 type Rapporter = (nom: string, reussi: boolean) => void;
 
@@ -183,6 +190,20 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
       /^\d+\.\d+\.\d+$/.test(pj.dependencies["@pdf-lib/fontkit"] ?? "") && POLICES.every((p) => /^\d+\.\d+\.\d+$/.test(pj.devDependencies[`@fontsource/${p.id}`] ?? "")));
   }
 
+  /* ═════ 2 bis. les chasses des polices (le corps du mot-titre de la couverture se calcule dessus) ═════ */
+  {
+    const table = new Map<string, number[]>();
+    for (const p of POLICES) for (const g of Object.keys(p.graisses).map(Number)) table.set(`${p.id}-${g}`, chassesDuFichier(new Uint8Array(readFileSync(`${DOSSIER_COPIE}/${nomFichierPolice(p.id, g)}`))));
+    ok("chasses : chassesPolices.ts est, octet pour octet, ce que scripts/polices-pdf.ts tire des fichiers de police (une ligne par famille et graisse ; fichier périmé = échec, relancer le script)",
+      lire(FICHIER_CHASSES) === sourceChasses(table) && Object.keys(CHASSES_POLICES).length === table.size && POLICES.every((p) => Object.keys(p.graisses).every((g) => `${p.id}-${g}` in CHASSES_POLICES)));
+    ok("chasses : largeurEmPolice lit ces tables (Archivo Black « M » plus large que « i », l'espace fine vaut un cinquième, un caractère absent compte un cadratin entier, police inconnue : null)",
+      (largeurEmPolice("archivo", 900, "M") ?? 0) > 2 * (largeurEmPolice("archivo", 900, "i") ?? 9) && largeurEmPolice("archivo", 900, FINE) === AVANCE_FINE_EM && largeurEmPolice("archivo", 900, "🌞") === 1
+        && largeurEmPolice("inconnue", 400, "a") === null && Math.abs((largeurEmPolice("anton", 400, "ab") ?? 0) - (largeurEmPolice("anton", 400, "a") ?? 0) - (largeurEmPolice("anton", 400, "b") ?? 0)) < 1e-9);
+    ok("chasses : le corps du mot-titre sous un style est mesuré sur les polices du CATALOGUE, pas sur Arial : une didone et une condensée n'ont pas la chasse d'Arial Bold, la condensée est plus étroite",
+      (largeurEmPolice("anton", 400, "MARTINIQUE") ?? 9) < largeurEm("MARTINIQUE") && (largeurEmPolice("bodoni-moda", 400, "MARTINIQUE") ?? 0) !== largeurEm("MARTINIQUE")
+        && Math.abs((largeurEmPolice("archivo", 900, "MARTINIQUE") ?? 0) - largeurEm("MARTINIQUE")) > 0.05);
+  }
+
   /* ═════ 3. l'écran : polices, layout, CSS ═════ */
   {
     const pol = sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/polices.ts"));
@@ -254,8 +275,9 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
       && !contenuValide({ ...vrai, style: undefined }) && !contenuValide({ ...vrai, style: null }) && !contenuValide({ ...vrai, style: {} })
       && !contenuValide({ ...vrai, style: { paire: "T-04", couleurs: COULEURS_ORIGINE } }) && !contenuValide({ ...vrai, style: { ...bon, pirate: 1 } })
       && cassures.every(([, v]) => !contenuValide({ ...vrai, style: v })));
-  ok("contenuValide : une sauvegarde d'avant le lot C (sans style) reste valide ; `couverture` reste refusée jusqu'à son lot, seule ou à côté d'un style valide",
-    contenuValide(vrai) && contenuValide({ ...vrai, tri: triOk }) && !contenuValide({ ...vrai, couverture: {} }) && !contenuValide({ ...vrai, style: bon, couverture: {} }));
+  ok("contenuValide : une sauvegarde d'avant le lot C (sans style) reste valide ; `style` et `couverture` (lot B) se combinent (style + couverture valides, avec `tri` aussi) ; une couverture vide ou cassée reste refusée, seule ou à côté d'un style valide",
+    contenuValide(vrai) && contenuValide({ ...vrai, tri: triOk }) && contenuValide({ ...vrai, style: bon, couverture: couvertureNeuve() }) && contenuValide({ ...vrai, tri: triOk, style: bon, couverture: couvertureNeuve() })
+      && !contenuValide({ ...vrai, couverture: {} }) && !contenuValide({ ...vrai, style: bon, couverture: {} }) && !contenuValide({ ...vrai, style: {}, couverture: couvertureNeuve() }));
   ok("cadreValide : la couleur d'un texte est « blanc » (d'avant) ou un des six rôles, rien d'autre ; gabaritValide accepte les neuf teintes d'aplat et refuse une teinte inconnue",
     ["blanc", ...ROLES_COULEUR].every((c) => cadreValide({ x: 0, y: 0, l: 10, h: 5, role: "texte", couleur: c })) && !cadreValide({ x: 0, y: 0, l: 10, h: 5, role: "texte", couleur: "noir" })
       && !cadreValide({ x: 0, y: 0, l: 10, h: 5, role: "texte", couleur: "#fff" }) && cadreValide({ x: 0, y: 0, l: 10, h: 5, role: "texte" })
@@ -597,10 +619,125 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
     ok("panneau Style : un bouton « Aa » de la barre l'ouvre (ui.style, écran seulement) ; le choix d'une couleur n'écrit qu'une fois la main posée (minuteur), pas à chaque pixel du sélecteur",
       /majUi\(\{ style: !ui\.style \}\)/.test(barre) && /aria-label="Style"/.test(barre) && /setTimeout\(/.test(pan) && /450/.test(pan));
     ok("export PDF : les polices du plan sont lues dans /polices/ AVANT l'écriture, ecrirePdf reçoit leurs octets ; la feuille dit les polices embarquées et chaque alerte en rouge",
-      /policesDuPlan\(pages\)/.test(exp) && /cheminPolice\(id, graisse\)/.test(exp) && /ecrirePdf\(pages, images, args\.titre \|\| args\.magazine\.titre, polices\)/.test(exp)
+      /policesDuPlan\(pageCouverture \? \[\.\.\.pages, pageCouverture\] : pages\)/.test(exp) && /cheminPolice\(id, graisse\)/.test(exp) && /ecrirePdf\(pages, images, titre, polices\)/.test(exp) && /ecrirePdf\(\[pageCouverture\], images, `\$\{titre\} · couverture`, polices\)/.test(exp)
         && /etape\.r\.alertes\.map/.test(ex) && /ed-ex-rouge/.test(ex) && /Polices embarquées/.test(ex) && /polices: r\.polices, alertes: r\.alertes/.test(exp));
     ok("export Affinity : la feuille dit les familles à installer sur le Mac (sans elles Affinity les remplace) et ce qui arrive quand même (noms, nuances, styles) ; l'IDML n'a besoin d'aucune route ni d'aucun fichier de police",
       /Installer \{famillesDuStyle\.join\(" et "\)\} sur ce Mac/.test(ex) && /Styles Titre · Texte · Légende, six nuances/.test(ex) && !/polices/.test(sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/exporter.ts")).replace(/Polices/g, "")));
+  }
+
+  /* ═════ 14 bis. la couverture sous un style (lot B + lot C) ═════ */
+  {
+    const creme = { ...COULEURS_ORIGINE, papier: "#f8ecdd", encre: "#1d242c", aplatSourd: "#7a8fa6", aplatClair: "#dde4ec", accent: "#a3432e", nuit: "#16202c" };
+    const st = styleDePaire("T-05", creme)!;
+    /* une couverture par gabarit : le mot-titre écrit, les autres textes laissés à leur libellé */
+    const couvAvec = (id: string, mot: string): Couverture => {
+      const c = couvertureNeuve(id);
+      const cad = cadresTexteCouverture(gabaritCouverture(id)!);
+      return { ...c, textes: c.textes.map((t, i) => (cad[i]?.motTitre && cad[i].face === "premiere" ? { ...t, contenu: mot } : t)), photos: c.photos.map((a, i) => ({ ...a, photoId: i % 2 ? "p1" : "p2" })) };
+    };
+    const premier = GABARITS_COUVERTURE.find((g) => g.cadres.some((c) => c.motTitre && c.face === "premiere"))!;
+    const cadreMot = premier.cadres.find((c) => c.motTitre && c.face === "premiere")!;
+    const c0 = couvAvec(premier.id, "Martinique");
+    const iMot = cadresTexteCouverture(premier).findIndex((c) => c.motTitre && c.face === "premiere");
+
+    /* — le corps du mot-titre se recalcule avec la police de titre — */
+    const sans = textesDeCouverture(c0, null)[iMot];
+    const avec = textesDeCouverture(c0, null, st)[iMot];
+    const mesure = mesureMotTitre(st)!;
+    ok("couverture, mot-titre : sans style le corps est celui d'Arial Bold (inchangé, lot B) ; sous un style il est recalculé sur les chasses de la police de TITRE de la paire, capitales comprises (T-05 : Archivo Black)",
+      sans.taille === tailleMotTitre("Martinique", cadreMot) && avec.taille === tailleMotTitre("Martinique", cadreMot, mesure) && avec.taille !== sans.taille
+        && mesureMotTitre(null) === undefined && mesureMotTitre(undefined) === undefined && textesDeCouverture(c0, null, null)[iMot].taille === sans.taille);
+    ok("couverture, mot-titre : le mesureur lit le texte tel qu'il s'imprime (capitales, typographie française, approche après chaque lettre) : « Martinique » et « MARTINIQUE » ont la même chasse sous T-05 (titre en capitales), l'approche de TW-1 (0,2 em) s'ajoute à chaque lettre",
+      Math.abs(mesure("Martinique") - mesure("MARTINIQUE")) < 1e-9
+        && Math.abs((mesureMotTitre(styleDePaire("TW-1")!)!("Madrid") - (largeurEmPolice("eb-garamond", 400, "MADRID") ?? 0)) - 6 * 0.2) < 1e-9
+        && Math.abs((mesureMotTitre(styleDePaire("T-02")!)!("Madrid") - (largeurEmPolice("instrument-serif", 400, "Madrid") ?? 0))) < 1e-9);
+    /* — pour chaque paire : le mot ne déborde jamais de son cadre, et couvre au moins 60 % de la 1re quand la hauteur du cadre ne le limite pas — */
+    const cadreStd = { l: 180, h: 46 };
+    const parPaire = PAIRES.map((p) => {
+      const m = mesureMotTitre(styleDePaire(p.id))!;
+      const t = tailleMotTitre("MARTINIQUE", cadreStd, m);
+      const largeur = largeurImprimee("MARTINIQUE", t, m);
+      const court = tailleMotTitre("MADRID", cadreStd, m);
+      return { id: p.id, t, largeur, part: largeur / PAGE_L, partCourt: largeurImprimee("MADRID", court, m) / PAGE_L };
+    });
+    const trop = parPaire.filter((x) => x.largeur > 180 + 1e-6 || x.t < 6);
+    const sous60 = parPaire.filter((x) => x.part < 0.6);
+    if (sous60.length) console.log(`   mot-titre « MARTINIQUE » sous 60 % (hauteur du cadre) : ${sous60.map((x) => `${x.id} ${Math.round(x.part * 100)} %`).join(", ")}`);
+    ok(`couverture, mot-titre : pour les dix-huit paires, « MARTINIQUE » dans un cadre de 180 × 46 mm ne déborde jamais de la largeur du cadre et couvre ${Math.round(Math.min(...parPaire.map((x) => x.part)) * 100)} % de la 1re au moins (≥ 60 %, P3-11) ; un mot court (« MADRID ») le dit par partDuMotTitre quand une condensée ne remplit pas`,
+      trop.length === 0 && sous60.length === 0 && parPaire.every((x) => x.partCourt > 0.3));
+    ok("couverture, mot-titre : partDuMotTitre et couverturePourExport suivent le style (même corps à l'écran, dans l'IDML et dans le PDF) ; avecLieuxParDefaut, par où passent les deux exports, le calcule sur le style du magazine",
+      (() => {
+        const part = partDuMotTitre(c0, null, st);
+        const pret = couverturePourExport(c0, null, st);
+        const magEx = avecLieuxParDefaut({ ...magazineStyle(st), couverture: c0 }, new Map());
+        return part !== null && Math.abs(part - largeurImprimee("Martinique", avec.taille, mesure) / PAGE_L) < 1e-9 && pret.textes[iMot].taille === avec.taille
+          && magEx.couverture?.textes[iMot].taille === avec.taille && JSON.stringify(couverturePourExport(pret, null, st)) === JSON.stringify(pret)
+          && avecLieuxParDefaut({ ...magazineStyle(st), style: undefined, couverture: c0 }, new Map()).couverture?.textes[iMot].taille === sans.taille;
+      })());
+
+    /* — l'IDML de la couverture partage les fabriques de l'intérieur — */
+    const pret = couverturePourExport(c0, null, st);
+    const liens = { liens: { mode: "relatif" as const }, dosMm: 3.8 };
+    const fc = construireIdmlCouverture(pret, PHOTOS, { ...liens, style: st });
+    const parC = new Map(fc.map((f) => [f.chemin, f.contenu]));
+    const fi = construireIdml(magazineStyle(st), PHOTOS, { liens: { mode: "relatif" } });
+    const parI = new Map(fi.map((f) => [f.chemin, f.contenu]));
+    ok("IDML couverture sous un style : XML bien formé ; MÊMES Fonts.xml, Graphic.xml et Styles.xml que l'intérieur (polices nommées avec leur nom PostScript, six nuances nommées, styles Titre, Texte, Légende)",
+      fc.every((f) => f.chemin === "mimetype" || bienForme(f.contenu)) && parC.get("Resources/Fonts.xml") === parI.get("Resources/Fonts.xml") && parC.get("Resources/Graphic.xml") === parI.get("Resources/Graphic.xml")
+        && parC.get("Resources/Styles.xml") === parI.get("Resources/Styles.xml") && (parC.get("Resources/Fonts.xml") ?? "").includes('PostScriptName="Archivo-Black"') && !/Arial/.test((parC.get("Resources/Fonts.xml") ?? "") + (parC.get("Resources/Styles.xml") ?? "")));
+    const storiesC = fc.filter((f) => f.chemin.startsWith("Stories/")).map((f) => f.contenu).join("");
+    const spreadC = parC.get("Spreads/Spread_sp1.xml") ?? "";
+    ok("IDML couverture sous un style : le mot-titre porte le style Titre et SON corps calculé (PointSize), les textes le style de leur rôle, plus aucune police ni graisse locale ; le texte est celui du client corrigé en français",
+      /AppliedParagraphStyle="ParagraphStyle\/Titre"/.test(storiesC) && storiesC.includes(`PointSize="${avec.taille}"`) && !/<AppliedFont/.test(storiesC) && !/FontStyle=/.test(storiesC)
+        && storiesC.includes("<Content>Martinique</Content>") && !/Arial/.test(storiesC + spreadC) && !/Color\/Paper"/.test(storiesC + spreadC));
+    ok("IDML couverture sous un style : le papier teinté est un aplat Papier sous tout (la couverture entière et son fond perdu), le dos prend la nuance de son rôle, un bord blanc de photo la nuance Papier ; papier blanc : rien d'écrit",
+      /<Rectangle [^>]*Name="Papier"[^>]*FillColor="Color\/Papier"/.test(spreadC) && spreadC.indexOf('Name="Papier"') < spreadC.indexOf('Name="Aplat 1"') && /FillColor="Color\/(Aplat|Nuit|Papier|Encre|Accent)/.test(spreadC)
+        && !construireIdmlCouverture(pret, PHOTOS, { ...liens, style: { ...st, couleurs: { ...creme, papier: "#ffffff" } } }).some((f) => f.chemin.startsWith("Spreads/") && f.contenu.includes('Name="Papier"')));
+    const sansStyle = construireIdmlCouverture(couverturePourExport(c0, null), PHOTOS, liens);
+    ok("IDML couverture SANS style : exactement celle d'avant (Arial, nuance « Aplat »), que l'option soit absente, null ou une paire retirée du catalogue",
+      /Name="Arial"/.test(sansStyle.find((f) => f.chemin === "Resources/Fonts.xml")?.contenu ?? "") && !sansStyle.some((f) => /ParagraphStyle\/Titre/.test(f.contenu))
+        && sha(sansStyle.map((f) => f.contenu).join()) === sha(construireIdmlCouverture(couverturePourExport(c0, null), PHOTOS, { ...liens, style: null }).map((f) => f.contenu).join())
+        && sha(sansStyle.map((f) => f.contenu).join()) === sha(construireIdmlCouverture(couverturePourExport(c0, null), PHOTOS, { ...liens, style: { paire: "T-04", couleurs: creme } as StyleMagazine }).map((f) => f.contenu).join()));
+    ok("IDML couverture : tous les gabarits (CV-01 à CV-11) sous les dix-huit paires s'écrivent en XML bien formé, sans nuance orpheline",
+      GABARITS_COUVERTURE.every((g) => PAIRES.every((p) => {
+        const f = construireIdmlCouverture(couverturePourExport(couvAvec(g.id, "Madère"), null, styleDePaire(p.id)), PHOTOS, { ...liens, style: styleDePaire(p.id) });
+        const graphic = f.find((x) => x.chemin === "Resources/Graphic.xml")?.contenu ?? "";
+        const definies = new Set([...graphic.matchAll(/<Color Self="([^"]+)"/g)].map((x) => x[1]));
+        return f.every((x) => x.chemin === "mimetype" || bienForme(x.contenu)) && f.filter((x) => /^(Spreads|Stories)/.test(x.chemin)).every((x) => [...x.contenu.matchAll(/(?:FillColor|StrokeColor)="(Color\/[^"]+)"/g)].every((m) => definies.has(m[1])));
+      })));
+
+    /* — le PDF de la couverture embarque les mêmes polices — */
+    const pageC = planPdfCouverture(pret, 3.8, st);
+    const textesC = pageC.objets.filter((o) => o.type === "texte");
+    ok("PDF couverture sous un style : chaque texte porte son style (police, graisse, corps, couleur du rôle), le mot-titre son corps calculé et ses capitales ; le dos prend la couleur de son rôle, le papier teinté est le fond de la page ; sans style, rien de tout cela",
+      textesC.length > 0 && textesC.every((o) => o.type === "texte" && !!o.style && o.interligne === 1.2) && textesC.some((o) => o.type === "texte" && o.style?.police === "archivo" && o.style.graisse === 900 && o.style.corps === avec.taille && o.contenu === "MARTINIQUE")
+        && pageC.fond === "#f8ecdd" && pageC.objets.filter((o) => o.type === "aplat").every((o) => o.type === "aplat" && estHex(o.couleur ?? "")) && pageC.objets.filter((o) => o.type === "photo").every((o) => o.type === "photo" && o.couleurBord === "#f8ecdd")
+        && planPdfCouverture(pret, 3.8).fond === undefined && planPdfCouverture(pret, 3.8).objets.every((o) => o.type !== "texte" || !o.style));
+    const interieur = planPdf(magazineStyle(st));
+    const besoinsC = policesDuPlan([...interieur, pageC]);
+    ok("PDF couverture : intérieur et couverture demandent les MÊMES polices, une fois chacune (la paire du magazine) ; ecrirePdf de la couverture les embarque sans alerte, et dit celle qui manque",
+      besoinsC.length === policesDuPlan(interieur).length && besoinsC.length === 2 && besoinsC.every((b) => policesDuPlan(interieur).some((x) => x.id === b.id && x.graisse === b.graisse))
+        && await (async () => {
+          const octets = new Map(besoinsC.map((b) => [clePolice(b.id, b.graisse), new Uint8Array(readFileSync(`public${cheminPolice(b.id, b.graisse)}`))]));
+          const rc = await ecrirePdf([pageC], new Map(), "Couverture", octets);
+          const rs = await ecrirePdf([pageC], new Map(), "Couverture", new Map());
+          const lu = await PDFDocument.load(rc.octets, { updateMetadata: false });
+          return rc.alertes.length === 0 && rc.polices.length === 2 && lu.getPageCount() === 1 && rs.alertes.length === 2 && rs.alertes.every((a) => /Helvetica/.test(a));
+        })());
+
+    /* — l'écran — */
+    const scc = sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/SceneCouverture.tsx"));
+    const sel = sansComm(lire("src/lib/mise-en-page/editeur/selecteursCouverture.ts"));
+    const exI = sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/exporter.ts"));
+    const exP = sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/exporterPdf.ts"));
+    ok("écran et exports de la couverture : le texte de la 1re lit police, graisse, corps calculé, capitales, approche et couleur du style ; les sélecteurs, les deux exports et avecLieuxParDefaut passent le style du magazine ; sans style, Arial et le rendu d'avant",
+      /const ts = f\.style/.test(scc) && /ts\.police\.variable/.test(scc) && /textTransform: ts\.capitales/.test(scc) && /mep-r-\$\{classeRole\(ts\.role\)\}/.test(scc) && /texteTypo\(contenuImprime/.test(scc) && /fontWeight: f\.gras \? 700 : 400/.test(scc)
+        && /textesDeCouverture\(c, lieuCouverture\(c, e\.catalogue\), e\.magazine\.style\)/.test(sel) && /partDuMotTitre\(c, lieu, e\.magazine\.style\)/.test(sel) && /style: pret\.style/.test(exI)
+        && /planPdfCouverture\(magazine\.couverture, choix\.couverture\.dosMm, magazine\.style\)/.test(exP)
+        && /couverturePourExport\(m\.couverture, lieuCouverture\(m\.couverture, cat\), m\.style\)/.test(sansComm(lire("src/lib/mise-en-page/editeur/lieuxTextes.ts")))
+        && /font-family: Arial, Helvetica, sans-serif/.test(lire("src/app/admin/atelier/mise-en-page/mise-en-page.css")));
+    ok("couverture : les chasses d'Arial Bold de couverture.ts sont inchangées (lot B : 56 caractères, chaque lettre accentuée prend la chasse de sa base) et les gabarits CV-01 à CV-11 sont ceux du lot B",
+      Object.keys(CHASSES_HELVETICA_GRAS).length > 50 && CHASSES_HELVETICA_GRAS["M"] === 833 && GABARITS_COUVERTURE.length === 11 && GABARITS_COUVERTURE.every((g) => /^CV-\d{2}$/.test(g.id)));
   }
 
   /* ═════ 14. rien ne sort du périmètre ═════ */
