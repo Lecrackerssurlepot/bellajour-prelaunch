@@ -15,6 +15,8 @@
 
 import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Magazine, type Planche, type TexteCadre } from "./magazine";
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
+import { ROLES_COULEUR } from "./nuancier";
+import { styleValide } from "./style";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -129,7 +131,7 @@ export function cadreValide(v: unknown): boolean {
   for (const k of ["taille", "rotation", "bord", "rayon"]) if (v[k] !== undefined && !estFini(v[k])) return false;
   if (v.gras !== undefined && typeof v.gras !== "boolean") return false;
   if (v.groupe !== undefined && !estId(v.groupe)) return false;
-  if (v.couleur !== undefined && v.couleur !== "blanc") return false;
+  if (v.couleur !== undefined && v.couleur !== "blanc" && !(ROLES_COULEUR as readonly unknown[]).includes(v.couleur)) return false;
   return true;
 }
 
@@ -234,7 +236,7 @@ export function clesAdmises(x: Record<string, unknown>, base: readonly string[],
  * se combinent librement (base, base + tri, base + style + couverture…) : plus de jeu de clés écrit en dur.
  *
  * ── Ajouter une clé facultative au Magazine (les lots « feuille de style » et « couverture ») ──
- *  1. le type : `style?: …` / `couverture?: …` sur `Magazine` (magazine.ts) ;
+ *  1. le type : `style?: …` (fait, lot C) / `couverture?: …` sur `Magazine` (magazine.ts) ;
  *  2. son validateur, pur, écrit ici (modèle : `triValide`) : relire la forme EXACTE (`clesExactes`), les bornes, les ids ;
  *  3. dans la liste ci-dessous, REMPLACER `refuseeEnAttendant` par ce validateur (la ligne y est déjà) ;
  *  4. l'écrire seulement quand elle existe (modèle : `tri.ts`), jamais `style: undefined` ;
@@ -246,8 +248,9 @@ export function clesAdmises(x: Record<string, unknown>, base: readonly string[],
 const refuseeEnAttendant = (): boolean => false;
 const CLES_FACULTATIVES: readonly CleFacultative[] = [
   { cle: "tri", valide: triValide },
-  /* Prévues, pas encore acceptées : leurs validateurs viendront avec leurs lots (feuille de style, couverture). */
-  { cle: "style", valide: refuseeEnAttendant },
+  /* Lot C (12/11) : la feuille de style, relue EXACTEMENT par `styleValide` (style.ts) : une paire du catalogue, six couleurs #rrggbb. */
+  { cle: "style", valide: styleValide },
+  /* Prévue, pas encore acceptée : son validateur viendra avec son lot (couverture). */
   { cle: "couverture", valide: refuseeEnAttendant },
 ];
 /** Les noms des clés facultatives connues (acceptées ou seulement prévues), pour le harnais. */

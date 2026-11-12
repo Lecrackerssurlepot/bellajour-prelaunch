@@ -20,6 +20,7 @@ import { TEMPLATES_ANNEXE } from "./templates";
 import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
 import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
+import type { StyleMagazine } from "./style";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
 
@@ -67,7 +68,11 @@ export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: numb
 /** Borne technique de l'objectif « photos visées » (pas une règle de produit : un garde-fou contre une saisie folle). */
 export const VISEES_MAX = 5000;
 
-export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine };
+/**
+ * `tri` (lot 2) et `style` (lot C, 12/11) sont FACULTATIFS : écrits seulement quand ils existent (jamais `undefined`). Un magazine sans
+ * `style` garde exactement son rendu d'avant : Arial dans l'IDML, Helvetica dans le PDF, le terracotta de la marque en aplat.
+ */
+export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; style?: StyleMagazine };
 
 export type Cible = "gauche" | "droite" | "double";
 /** Un cadre précis : `index` compte les cadres photo (ou texte pour `ecrireTexte`) de la disposition. */
