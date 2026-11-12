@@ -21,10 +21,12 @@ import type { EtatEditeur, PhotoMaq } from "@/lib/mise-en-page/editeur";
 import {
   SCHEMAS, affecter, decoupesDePage, estRupture, decoupesPour, genereParId, genereesParSchema, genereesPour, idDeRecette, nomDe, templateDeDecoupe, type CaseG,
 } from "@/lib/mise-en-page/genere";
+import { construireIdml, type PhotoExport } from "@/lib/mise-en-page/idml";
+import { planPdf } from "@/lib/mise-en-page/pdf";
 import { FOND_PERDU, GRILLE, MARGES, PAGE_H, PAGE_L, PLEINE_PAGE_DROITE, zoneUtile, type Rect } from "@/lib/mise-en-page/geometrie";
 import { grillesDouble, grillesPage, toutesLesGrilles } from "@/lib/mise-en-page/grilles";
 import {
-  TEMPLATES_DESSINES, candidats, cadresDe, nouveauMagazine, signaturesCompatibles, templateParId, tousLesTemplates, type Magazine, type PhotoRef,
+  TEMPLATES_DESSINES, candidats, cadresDe, disposer, nouveauMagazine, signaturesCompatibles, templateParId, tousLesTemplates, type Magazine, type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
 import { orientationDe, pourCote, signatureDe, type Orientation, type Template } from "@/lib/mise-en-page/types";
 
@@ -371,7 +373,32 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
         && !["m", "r", "x", "p", "t", "z", "l", "f", "u", "c", "n", "d", "g"].includes("o"));
   }
 
-  /* ─── 12. le catalogue : par schéma ─── */
+  /* ─── 12. l'export : un gabarit généré part en IDML et en PDF comme n'importe quel cadre (rien de neuf pour Affinity : cadres photo, bord blanc intérieur) ─── */
+  {
+    const photos = Array.from({ length: 12 }, (_, i) => ({ id: `q${i}`, nom: `q${i}`, l: i % 3 === 0 ? 4000 : 3000, h: i % 3 === 0 ? 3000 : 4000, date: null } as PhotoRef));
+    const dispo = (id: string) => { const t = templateParId(id)!; return disposer(t, photos.slice(0, t.nbPhotos)); };
+    const ids = ["GG1-IN-0021.2021", "GG1-HS-0063.0322.2322", "GG1-MO-0033.3033.0363-p201", "GG1-RG-0032.0232.0432"];
+    const magG: Magazine = {
+      version: 1, id: "g", titre: "g", creeLe: "2026-11-12T10:00:00.000Z", modifieLe: "2026-11-12T10:00:00.000Z",
+      planches: [
+        { id: "g0", mode: "pages", double: null, gauche: null, droite: dispo(ids[0]) },
+        { id: "g1", mode: "pages", double: null, gauche: dispo(ids[1]), droite: dispo(ids[2]) },
+        { id: "g2", mode: "pages", double: null, gauche: dispo(ids[3]), droite: null },
+      ],
+    };
+    const phE: Map<string, PhotoExport> = new Map(photos.map((p) => [p.id, { id: p.id, nomLien: `${p.id}.jpg`, l: p.l, h: p.h }] as [string, PhotoExport]));
+    const nbCadres = magG.planches.reduce((s, p) => s + [p.gauche, p.droite].reduce((u, d) => u + (d ? d.photos.length : 0), 0), 0);
+    const fG = construireIdml(magG, phE, { liens: { mode: "relatif" } });
+    const xml = fG.filter((x) => x.chemin.startsWith("Spreads/")).map((x) => x.contenu).join("");
+    const nbRect = (xml.match(/<Rectangle [^>]*ContentType="GraphicType"/g) ?? []).length;
+    const pdf = planPdf(magG);
+    const nbPdf = pdf.reduce((s, p) => s + p.objets.filter((o) => o.type === "photo").length, 0);
+    rapporter(`export : un magazine de gabarits générés (${ids.join(", ")}) part en IDML (${nbRect} cadres photo pour ${nbCadres} posés, le bord blanc de l'incrustation 2 fois, aucun cadre texte) et en PDF (${nbPdf} photos)`,
+      O.contenuValide(JSON.parse(JSON.stringify(magG))) && nbRect === nbCadres && nbPdf === nbCadres && (xml.match(/StrokeAlignment="InsideAlignment"/g) ?? []).length === 2
+        && (xml.match(/<TextFrame /g) ?? []).length === 0 && pdf.length === 3);
+  }
+
+  /* ─── 13. le catalogue : par schéma ─── */
   {
     const page = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/gabarits/page.tsx"), "utf8");
     rapporter("catalogue : /admin/atelier/mise-en-page/gabarits montre les générés, par schéma (un <details> chacun, dessin léger), et compte leur total",
