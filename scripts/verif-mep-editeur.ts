@@ -187,7 +187,10 @@ sc(5, "A(L),B(L),C(P) sur la zone Double → G-D3-a, pas DP-03", () => {
   s.glisse(s.bib(["A", "B", "C"]), dbl(2));
   eq(s.tpl(2, "double"), "G-D3-a", "gabarit");
   const n = O.gabaritsPour(s.e, pl(2), "double");
-  proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.237, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 1.049, 0.001, "note DP-03");
+  /* lot R (D1) : la grille d'avant garde sa note et sa première place (0,237) ; DP-03 gagne l'écart dessinés / grilles de la page (0,2 au lieu de 0,05 : 1,049 − 0,15) ;
+     les doubles générées sont au tiroir derrière elle */
+  proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.237, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 0.899, 0.001, "note DP-03");
+  ok(n.some((x) => x.id.startsWith("GD1-")) && n.findIndex((x) => x.id.startsWith("GD1-")) === 1, "les doubles générées suivent");
 });
 sc(6, "droite [A] + B → [A, B], gabarit de la note, A reste cadre 1", () => {
   const s = new Seance("A:P B:P").pose(2, "droite", ["A"]).zero();

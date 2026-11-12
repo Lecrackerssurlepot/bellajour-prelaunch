@@ -207,7 +207,7 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
       && [1, 2, 3, 4, 5, 6].map((n) => grillesPage(n).length).join() === "4,4,4,4,3,3" && Array.from({ length: 12 }, (_, i) => grillesDouble(i + 1).length).join() === "7,8,8,8,8,8,8,8,8,8,8,8"
       && toutesLesGrilles().every((t) => t.origine === "grille" && /^G-[PD]\d+-[a-h]$/.test(t.id)));
   /* les doubles ne changent pas : aucun générés pour une double */
-  rapporter("doubles : aucun gabarit généré (pages seulement) ; la liste d'une double est celle d'avant",
+  rapporter("doubles : `candidats` d'une double ne contient aucun généré (les doubles générées du lot R se présélectionnent dans `gabaritsClasses`, par la note de page) ; ses dessinés et ses grilles sont ceux d'avant",
     [1, 2, 3, 5, 8, 12].every((n) => candidats("double", refs(Array.from({ length: n }, () => "L" as const))).every((t) => t.origine !== "genere")));
 
   /* ─── 8. l'ordre : dessinés, puis générés, puis grilles ─── */
@@ -251,8 +251,9 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
         && Math.abs(O.videDe(templateParId("GG1-EN-1242")!) - (1 - (115 * 84) / (175 * 262))) < 1e-9 && O.videDe(templateParId("GG1-IN-0021")!) === 0
         && O.MALUS_VIDE > 0 && O.MALUS_RUPTURE > 0 && estRupture(templateParId("GG1-CH-0133.2121")!) && estRupture(templateParId("GG1-IN-0021")!) && !estRupture(templateParId("GG1-HS-0063.0322.2322")!) && !estRupture(templateParId("E-S1")!));
     rapporter(`ordre : dans candidats, tous les dessinés, puis les générés, puis les grilles (${ordreListe} lot(s) à l'envers)`, ordreListe === 0);
-    rapporter("ordre : les réglages sont nommés (un seul tableau BONUS_ORIGINE par portée) ; la double garde BONUS_ANNEXE sur les grilles, comme avant",
-      O.BONUS_ORIGINE.double.epingle === O.BONUS_ANNEXE && O.BONUS_ORIGINE.double.annexe === O.BONUS_ANNEXE && O.BONUS_ORIGINE.double.grille === 0 && O.BONUS_ORIGINE.double.genere === 0
+    rapporter("ordre : les réglages sont nommés (un seul tableau BONUS_ORIGINE par portée) ; depuis le lot R la double a ses générées et le même ordre que la page (dessinés, générées, grilles)",
+      O.BONUS_ORIGINE.double.epingle === O.AVANCE_DESSINES + O.AVANCE_GENERES && O.BONUS_ORIGINE.double.annexe === O.BONUS_ORIGINE.double.epingle && O.BONUS_ORIGINE.double.atelier === O.BONUS_ORIGINE.double.epingle
+        && O.BONUS_ORIGINE.double.grille === 0 && O.BONUS_ORIGINE.double.genere === O.AVANCE_GENERES && O.BONUS_ANNEXE > 0
         && O.BONUS_ORIGINE.page.genere === O.AVANCE_GENERES && O.BONUS_ORIGINE.page.grille === 0 && O.BONUS_ORIGINE.page.epingle === O.AVANCE_DESSINES + O.AVANCE_GENERES
         && O.AVANCE_DESSINES > 0 && O.AVANCE_GENERES > 0);
   }
