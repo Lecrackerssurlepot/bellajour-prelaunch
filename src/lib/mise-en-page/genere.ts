@@ -369,7 +369,7 @@ export function nomDe(schema: SchemaGenere, cases: readonly CaseG[]): string {
       const pli = p[0] + p[2] / 2 < h[0] + h[2] / 2;
       return `Grande et petite qui la mord · coin ${haut ? "haut" : "bas"}, ${pli ? "côté pli" : "côté extérieur"}`;
     }
-    case "IN": return avec(`Fond plein et ${MOT[n]} vignette${n > 1 ? "s" : ""}`, calageDit(cases));
+    case "IN": return avec(`Fond plein et ${n === 1 ? "une" : MOT[n]} vignette${n > 1 ? "s" : ""}`, calageDit(cases));
   }
 }
 
