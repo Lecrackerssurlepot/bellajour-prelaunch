@@ -306,7 +306,7 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
     const idml = zipperIdml(construireIdml(pret, pourIdml, { liens: { mode: "absolu", dossier } }));
     /* lot B : la couverture à part, mêmes liens (Links/ partagé), à côté de magazine.idml */
     const idmlCouverture = couverture.etat === "ecrite" && pret.couverture
-      ? zipperIdml(construireIdmlCouverture(pret.couverture, pourIdml, { liens: { mode: "absolu", dossier }, dosMm: couverture.dosMm }))
+      ? zipperIdml(construireIdmlCouverture(pret.couverture, pourIdml, { liens: { mode: "absolu", dossier }, dosMm: couverture.dosMm, style: pret.style }))
       : null;
     const listes = listesExport({
       utilisees: posees.map((id) => ({ id, nom: nomDe(id) })),
