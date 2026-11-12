@@ -21,6 +21,7 @@ import { COULEURS_ORIGINE, ROLES_COULEUR, estHex, type CouleursNuancier, type Ro
 import { FINE, typographieFrancaise } from "./francais";
 import { CHASSES_POLICES, PLAGES } from "./chassesPolices";
 import type { Cadre, RoleCadre, Teinte } from "./types";
+import { PT_PAR_MM } from "./geometrie";
 
 export { ROLES_COULEUR, estHex };
 export type Role = RoleCouleur;
@@ -277,6 +278,8 @@ export type TexteStyle = {
   approche: number;
   role: Role;
   couleur: string;
+  /** Un titre que le cadre ne peut pas tenir, même au corps minimal (`REGLAGES_TITRE.CORPS_MIN`) : le contrôle avant export le dit. */
+  trop?: true;
 };
 
 /** Le niveau d'un rôle de cadre texte (titre, texte, légende). */
@@ -286,8 +289,14 @@ export const niveauDeRole = (role: Exclude<RoleCadre, "photo">): NiveauNom => ro
  * Tout ce qu'il faut pour écrire un texte sous un style : sa police, sa graisse, son corps (à l'échelle de son gabarit),
  * son interlignage, ses capitales, son approche et sa couleur (par rôle). Rend null si la paire ne se relit plus (un id
  * qui sortirait du catalogue : le texte retombe alors sur le rendu d'avant le style).
+ *
+ * `ajuste` (titres seulement) : le texte tel qu'il s'écrit et le cadre qui le porte. Le corps est alors AJUSTÉ pour que le titre
+ * tienne dans son cadre avec les chasses de SA police (`ajusterTitre`) : un titre n'est jamais coupé en silence, ni à l'écran,
+ * ni dans l'IDML, ni dans le PDF (les trois lisent ce même corps). Sans `ajuste`, le corps du gabarit, tel quel.
  */
-export function texteStyle(s: StyleMagazine, role: Exclude<RoleCadre, "photo">, taille: number, couleur?: Cadre["couleur"]): TexteStyle | null {
+export function texteStyle(
+  s: StyleMagazine, role: Exclude<RoleCadre, "photo">, taille: number, couleur?: Cadre["couleur"], ajuste?: { contenu: string; l: number; h: number },
+): TexteStyle | null {
   const p = paireParId(s.paire);
   if (!p) return null;
   const n = p.niveaux[niveauDeRole(role)];
@@ -295,10 +304,15 @@ export function texteStyle(s: StyleMagazine, role: Exclude<RoleCadre, "photo">, 
   const fac = pol?.graisses[n.graisse];
   if (!pol || !fac) return null;
   const r = roleDeCouleurTexte(couleur);
-  return {
+  const ts: TexteStyle = {
     niveau: niveauDeRole(role), police: pol, graisse: n.graisse, facette: fac, corps: corpsDe(n, niveauDeRole(role), taille),
     interligne: n.interligne, capitales: n.capitales, approche: n.approche, role: r, couleur: s.couleurs[r],
   };
+  if (ajuste && role === "titre") {
+    const a = ajusterTitre(ajuste.contenu, ts, ajuste);
+    return a.trop ? { ...ts, corps: a.corps, trop: true } : { ...ts, corps: a.corps };
+  }
+  return ts;
 }
 
 /** Le texte du client, corrigé en français pour l'affichage et l'export (le texte gardé ne change jamais). */
@@ -342,4 +356,79 @@ export function largeurEmPolice(id: string, graisse: number, texte: string): num
     n += (w > 0 ? w : 1000) / 1000;
   }
   return n;
+}
+
+/* ─────────────────────────── un titre ne se coupe jamais ─────────────────────────── */
+
+/**
+ * Les réglages du titre ajusté (de DÉPART, nommés ici et nulle part ailleurs).
+ * - `REMPLISSAGE` : la part de la largeur du cadre que le mot le plus long peut prendre. Le crénage n'est pas mesuré, la marge le
+ *   couvre (c'est aussi celle du mot-titre de la couverture).
+ * - `CORPS_MIN` : le plus petit corps où un titre descend (en points). Plus bas, il serait plus petit que le texte qui l'accompagne :
+ *   on garde ce minimum et le contrôle avant export dit « titre trop long ».
+ * - `PAS` : le corps se règle au demi-point.
+ */
+export const REGLAGES_TITRE = { REMPLISSAGE: 0.96, CORPS_MIN: 14, PAS: 0.5 } as const;
+
+export type TitreAjuste = {
+  /** Le corps retenu (pt) : celui du gabarit s'il tient, sinon le plus grand qui tient, sinon le minimum. */
+  corps: number;
+  /** Vrai quand même le corps minimal ne suffit pas : le titre déborde et l'atelier doit le raccourcir. */
+  trop: boolean;
+};
+
+/**
+ * Le corps d'un titre pour qu'il TIENNE dans son cadre (mm) : chaque mot sur une ligne (un mot ne se coupe pas), les lignes à la coupure
+ * des espaces, la hauteur du bloc dans celle du cadre. Mesuré avec les chasses de la police et de la graisse du titre, l'approche et
+ * les capitales du niveau (les mêmes que l'écran, l'IDML et le PDF). Ne grossit jamais un titre : au plus le corps du gabarit.
+ * Un cadre vide, un texte vide ou une police inconnue : le corps du gabarit, sans alerte.
+ *
+ * La hauteur est celle de l'ENCRE, pas de la boîte de ligne : première ligne de base (`premiereBase`), lignes suivantes à
+ * l'interlignage, puis la descente de la police si le niveau n'est pas en capitales. Un mot géant d'un cadre bas peut ainsi garder
+ * son corps tant que ses lettres tiennent.
+ */
+export function ajusterTitre(
+  contenu: string, ts: Pick<TexteStyle, "police" | "graisse" | "corps" | "interligne" | "capitales" | "approche">, cadre: { l: number; h: number },
+): TitreAjuste {
+  const vu = texteSousStyle(contenu, ts);
+  const paragraphes = vu.split(/\r\n|\r|\n/).map((p) => p.split(/ +/).filter(Boolean));
+  const garde: TitreAjuste = { corps: ts.corps, trop: false };
+  if (!paragraphes.some((p) => p.length) || !(cadre.l > 0) || !(cadre.h > 0) || largeurEmPolice(ts.police.id, ts.graisse, "M") === null) return garde;
+  const apres = (m: string): number => (largeurEmPolice(ts.police.id, ts.graisse, m) ?? 0) + [...m].length * ts.approche;
+  const mots = paragraphes.map((p) => p.map((m) => apres(m)));
+  const espace = apres(" ");
+  const plusLong = Math.max(...mots.flat());
+  const largeur = cadre.l * PT_PAR_MM * REGLAGES_TITRE.REMPLISSAGE;
+  const hauteur = cadre.h * PT_PAR_MM;
+  const base = premiereBase(ts.police, ts.interligne);
+  const descente = ts.capitales ? 0 : ts.police.metriques.desc / ts.police.metriques.upm;
+
+  /** Le nombre de lignes au corps `c`, ou null si un mot dépasse la largeur. */
+  const lignesAu = (c: number): number | null => {
+    const lim = largeur / c;
+    if (plusLong > lim) return null;
+    let n = 0;
+    for (const p of mots) {
+      if (!p.length) { n++; continue; }
+      let cour = p[0];
+      n++;
+      for (const m of p.slice(1)) {
+        if (cour + espace + m <= lim) cour += espace + m;
+        else { n++; cour = m; }
+      }
+    }
+    return n;
+  };
+  const tient = (c: number): boolean => {
+    const n = lignesAu(c);
+    return n !== null && (base + (n - 1) * ts.interligne + descente) * c <= hauteur + 1e-6;
+  };
+
+  if (tient(ts.corps)) return garde;
+  const plancher = Math.min(ts.corps, REGLAGES_TITRE.CORPS_MIN);
+  const pas = REGLAGES_TITRE.PAS;
+  let c = Math.min(Math.floor(ts.corps / pas) * pas, Math.floor(largeur / plusLong / pas) * pas);
+  if (c >= ts.corps) c -= pas;
+  for (; c >= plancher; c -= pas) if (tient(c)) return { corps: c, trop: false };
+  return { corps: plancher, trop: true };
 }
