@@ -7,7 +7,9 @@ import { comparerChrono, utilisations } from "../magazine";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
 import { rangementDe } from "./moments";
-import { dansVue, estTour, triDe, type Marque } from "./tri";
+import { dansVue, estTour, marqueDe, triDe, type Marque } from "./tri";
+import { sousPiles } from "./mesures";
+import { tagsDeLecture } from "./tags";
 import type { Catalogue, EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -27,6 +29,7 @@ export function criteres(e: EtatEditeur): Criteres {
   const q = sansAccent(f.recherche.trim());
   const t = triDe(e.magazine);
   const mq = new Map<string, Marque>();
+  const tags = f.lecture ? tagsDeLecture(e.catalogue, e.lecture) : null;
   for (const [l, k] of [[t.coupsDeCoeur, "coupDeCoeur"], [t.choisies, "choisie"], [t.reserve, "reserve"], [t.ecartees, "ecartee"]] as const) for (const id of l) mq.set(id, k);
   return {
     recherche: (ph) => !q || sansAccent(ph.nom).includes(q),
@@ -40,10 +43,11 @@ export function criteres(e: EtatEditeur): Criteres {
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
     marque: (ph) => dansVue(mq.get(ph.id) ?? null, f.marque),
     etiquette: (ph) => !f.etiquette || f.marque !== "choisies" || t.etiquettes[f.etiquette].includes(ph.id),
+    lecture: (ph) => !f.lecture || (tags?.get(ph.id) ?? []).includes(f.lecture),
   };
 }
 
-const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque", "etiquette"];
+const CLES_CRITERES: readonly CleCritere[] = ["recherche", "statut", "personnes", "types", "coeur", "orientations", "montrerSignalees", "masquerUtilisees", "marque", "etiquette", "lecture"];
 export const clesCriteres = (): readonly CleCritere[] => CLES_CRITERES;
 
 /** La photo passe-t-elle tous les filtres ? */
@@ -80,7 +84,8 @@ function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq, cat
 /** Les groupes de la bibliothèque, dans l'ordre d'affichage. */
 export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const c = criteres(e);
-  const photos = [...e.catalogue.values()].filter((ph) => CLES_CRITERES.every((k) => c[k](ph)));
+  const passent = [...e.catalogue.values()].filter((ph) => CLES_CRITERES.every((k) => c[k](ph)));
+  const photos = horsPiles(e, passent);
   const cmp = comparateur(e.filtres.tri);
   const g = e.filtres.groupe;
   const parCle = new Map<string, PhotoMaq[]>();
@@ -99,6 +104,21 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   });
 }
 export const visibles = (e: EtatEditeur): string[] => groupes(e).flatMap((g) => g.ids);
+
+/** R77 (couche 1, 09/11) : une photo rangée sous une pile se cache derrière sa tête, sauf si la pile est ouverte, si la
+ *  tête ne passe pas les filtres (rien ne disparaît sans sa tête), ou si l'atelier l'a déjà jugée ou posée. */
+function horsPiles(e: EtatEditeur, passent: PhotoMaq[]): PhotoMaq[] {
+  if (!e.lecture.piles.length || e.filtres.lecture) return passent;
+  const sous = sousPiles(e.lecture);
+  const ici = new Set(passent.map((p) => p.id));
+  const ouvertes = new Set(e.pilesOuvertes);
+  const u = utilisations(e.magazine);
+  return passent.filter((p) => {
+    const tete = sous.get(p.id);
+    if (!tete || ouvertes.has(tete) || !ici.has(tete)) return true;
+    return marqueDe(e.magazine, p.id) !== null || u.has(p.id);
+  });
+}
 
 /** La colonne « à côté » d'un tour (05/11) : les photos qui passent tous les autres filtres mais ne sont pas en jeu,
  *  dans l'ordre du temps. Vide hors des tours. */

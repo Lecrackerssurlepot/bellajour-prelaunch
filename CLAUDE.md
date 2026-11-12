@@ -36,6 +36,7 @@ Documents lus à la demande, jamais chargés d'office :
   ressemblent à du ménage. **À lire avant tout déplacement de fichier ou réécriture de texte
   dans `/composer` → `/numero` → `/admin/atelier`.**
 - `docs/DECISIONS.md` — ce qu'on a tranché et pourquoi. À lire avant de rouvrir un débat.
+- `docs/moteur/INDEX.md` — le registre du moteur de mise en page : une fiche par couche, une recette datée par test.
 - `docs/produit/VISION.md` et `ROADMAP.md` — où on va, et dans quel ordre.
 
 ## Comment on travaille

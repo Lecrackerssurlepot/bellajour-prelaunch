@@ -1632,6 +1632,310 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
     rapporter("éditeur : le lot 4 (miroir, ⇧-clic, glisser une page, pose en libre, cadres retouchés, calques)", msg === null);
   }
+  {
+    /* R72 à R77 (09/11, couche 1) : netteté, empreinte, floues, rafales et doublons en piles, la bibliothèque les range. */
+    let msg: string | null = null;
+    try {
+      /* une image nette (damier) contre la même floutée (aplat) */
+      const L = 32, H = 24;
+      const damier = Array.from({ length: L * H }, (_, i) => (((i % L) >> 2) + ((Math.floor(i / L)) >> 2)) % 2 ? 230 : 20);
+      const aplat = Array.from({ length: L * H }, (_, i) => 100 + (i % L));
+      ok(O.varianceLaplacien(damier, L, H) > 10 * O.varianceLaplacien(aplat, L, H), "R72 : un damier est bien plus net qu'un dégradé");
+      eq(O.dHash(damier, L, H), O.dHash(damier, L, H), "R72 : l'empreinte est stable");
+      eq(O.distanceHash("0000000000000000", "000000000000000f"), 4, "R72 : distance entre empreintes = bits différents");
+      eq(O.distanceHash("zz", "0000000000000000"), 64, "R72 : empreinte mal formée = distance maximale");
+
+      const sec = (s: number) => `2026-06-11T10:00:${String(s).padStart(2, "0")}`;
+      const cat = new Map(catalogue("A:L B:L C:L D:L E:L F:P G:P H:P I:P J:P K:P L:P M:P Z:L!", {
+        A: { date: sec(0) }, B: { date: sec(1) }, C: { date: sec(2) },          /* une rafale de trois */
+        D: { date: "2026-06-11T12:00:00" }, E: { date: "2026-06-12T09:00:00" }, /* deux doublons à un jour d'écart */
+        Z: { date: sec(3) },                                                     /* signalée : jamais dans une pile */
+      }).map((p) => [p.id, p]));
+      const h = (n: number) => n.toString(16).padStart(16, "0");
+      const mes = new Map<string, O.Mesure>([
+        ["A", { nettete: 300, dhash: h(0x1) }], ["B", { nettete: 900, dhash: h(0xff0000) }], ["C", { nettete: 500, dhash: h(0xf0f0f0f000) }],
+        ["D", { nettete: 400, dhash: h(0xabcdef) }], ["E", { nettete: 450, dhash: h(0xabcdee) }],
+        /* des empreintes très différentes : F..M ne forment ni rafale ni doublon entre elles (photos à une minute d'écart) */
+        ["F", { nettete: 20, dhash: "ff00ff00ff00ff00" }], ["G", { nettete: 800, dhash: "0f0f0f0f0f0f0f0f" }], ["H", { nettete: 700, dhash: "aaaa5555aaaa5555" }],
+        ["I", { nettete: 600, dhash: "f0f0f0f0f0f0f0f0" }], ["J", { nettete: 650, dhash: "00ff00ff00ff00ff" }], ["K", { nettete: 750, dhash: "5555aaaa5555aaaa" }],
+        ["L", { nettete: 550, dhash: "3c3c3c3c3c3c3c3c" }], ["M", { nettete: 850, dhash: "c3c3c3c3c3c3c3c3" }], ["Z", { nettete: 900, dhash: h(0x1) }],
+      ]);
+      const lu = O.lireMesures(cat, mes);
+      const raf = def(lu.piles.find((x) => x.raison === "rafale"), "R74 : la rafale");
+      eq([raf.tete, ...raf.autres], ["B", "A", "C"], "R74, R76 : la rafale A B C, la plus nette (B) dessus, les autres dans l'ordre du temps");
+      const dbl = def(lu.piles.find((x) => x.raison === "doublon"), "R75 : le doublon");
+      eq([dbl.tete, ...dbl.autres], ["E", "D"], "R75 : D et E à un jour d'écart, même empreinte : un doublon, E (plus nette) dessus");
+      ok(!lu.piles.some((x) => x.tete === "Z" || x.autres.includes("Z")), "les « à ne pas publier » restent hors des piles");
+      eq(lu.floues, ["F"], "R73 : F, très en dessous de la médiane et du seuil, est floue ; les autres non");
+      eq(O.photosEnMoins(lu), 3, "trois photos rangées sous une pile");
+      eq(O.lireMesures(cat, new Map([["F", mes.get("F")!]])).floues, [], "R73 : trop peu de mesures, aucune floue");
+      const meme = new Map(catalogue("P:L Q:L", { P: { date: sec(5) }, Q: { date: sec(5) } }).map((p) => [p.id, p]));
+      eq(O.lireMesures(meme, new Map([["P", { nettete: 500, dhash: h(0) }], ["Q", { nettete: 500, dhash: "ffffffff00000000" }]])).piles, [], "R74 : même seconde mais images sans rapport : pas une rafale");
+
+      /* R77 : la bibliothèque */
+      const e0 = O.creerEtat({ magazine: magazineVide(3), catalogue: cat });
+      const e1 = O.appliquer(e0, { type: "poserLecture", lecture: lu });
+      const vis = (e: EtatEditeur) => O.visibles(e);
+      ok(!vis(e1).includes("A") && !vis(e1).includes("C") && !vis(e1).includes("D") && vis(e1).includes("B") && vis(e1).includes("E"), "R77 : sous une pile, seule la tête se montre");
+      const e2 = O.appliquer(e1, { type: "basculerPile", tete: "B" });
+      ok(vis(e2).includes("A") && vis(e2).includes("C"), "R77 : une pile ouverte montre tout");
+      ok(O.appliquer(e2, { type: "basculerPile", tete: "B" }).pilesOuvertes.length === 0, "R77 : un second clic la referme");
+      ok(O.appliquer(e1, { type: "basculerPile", tete: "A" }) === e1, "R77 : seule une tête ouvre une pile");
+      const e3 = { ...e1, magazine: O.marquer(e1.magazine, ["A"], "reserve") };
+      ok(vis(e3).includes("A") && !vis(e3).includes("C"), "R77 : une photo déjà jugée par l'atelier ne se cache jamais");
+      const e4 = O.appliquer({ ...e1, magazine: O.marquer(e1.magazine, ["B"], "ecartee") }, { type: "filtrer", filtres: { marque: "ecarter" } });
+      ok(!vis(e4).includes("B") && vis(e4).includes("A") && vis(e4).includes("C"), "R77 : tête cachée par le filtre (écartée au tour ①), ses photos réapparaissent");
+      ok(O.contenuValide(e2.magazine), "la lecture ne touche pas au magazine : il se sauvegarde tel quel");
+      ok(O.appliquer(e2, { type: "poserLecture", lecture: O.LECTURE_VIDE }).pilesOuvertes.length === 0, "une nouvelle lecture oublie les piles qui n'existent plus");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : couche 1, floues, rafales et doublons en piles (R72 à R77)", msg === null);
+  }
+  {
+    /* Lot 2 (09/11) : G7 réglages versionnés, G1 leçons tirées d'un geste contraire, G2 instantané. */
+    let msg: string | null = null;
+    try {
+      ok(/^r[0-9a-f]{8}$/.test(O.versionReglages()) && O.versionReglages() === O.versionReglages(), "G7 : la version des réglages est stable et courte");
+      ok(O.REGLAGES.doublon_hamming.valeur === O.DOUBLON_HAMMING && O.REGLAGES.flou_absolu.valeur === O.FLOU_ABSOLU, "G7 : mesures.ts lit ses seuils dans les réglages");
+      ok(Object.values(O.REGLAGES).every((r) => r.regle && r.depuis && r.raison), "G7 : chaque réglage a sa règle, sa date et sa raison");
+
+      const sec = (s: number) => `2026-06-11T10:00:${String(s).padStart(2, "0")}`;
+      const cat = new Map(catalogue("A:L B:L C:L F:P G:P H:P I:P J:P K:P L:P M:P N:P", { A: { date: sec(0) }, B: { date: sec(1) }, C: { date: sec(2) } }).map((p) => [p.id, p]));
+      const h = (n: number) => n.toString(16).padStart(16, "0");
+      const mes = new Map<string, O.Mesure>([["A", { nettete: 300, dhash: h(1) }], ["B", { nettete: 900, dhash: h(2) }], ["C", { nettete: 500, dhash: h(3) }], ["F", { nettete: 10, dhash: h(0x1111111111) }],
+        ...["G", "H", "I", "J", "K", "L", "M", "N"].map((id, i) => [id, { nettete: 600 + i * 10, dhash: ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3"][i] }] as [string, O.Mesure])]);
+      const lu = O.lireMesures(cat, mes);
+      ok(lu.floues.includes("F") && lu.piles.some((p) => p.tete === "B"), "lecture d'essai : F floue, B tête de la rafale A B C");
+      const e0 = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "poserLecture", lecture: lu });
+      eq(e0.lecons.length, 0, "G1 : aucune leçon avant un geste");
+      const e1 = O.appliquer(e0, { type: "marquer", ids: ["F"], marque: "choisie" });
+      eq(e1.lecons.map((l) => l.type), ["floue_gardee"], "G1 : garder une floue est une leçon (R73)");
+      ok(e1.lecons[0].version === O.versionReglages() && e1.lecons[0].reglages.flou_absolu === O.FLOU_ABSOLU, "G1 : la leçon emporte les réglages en vigueur");
+      const e2 = O.appliquer(e1, { type: "marquer", ids: ["A"], marque: "choisie" });
+      eq(e2.lecons[e2.lecons.length - 1].type, "pile_autre_gardee", "G1 : garder A au lieu de la tête B est une leçon (R74)");
+      const e3 = O.appliquer(e2, { type: "marquer", ids: ["B"], marque: "choisie" });
+      const e4 = O.appliquer(e3, { type: "marquer", ids: ["C"], marque: "choisie" });
+      eq(e4.lecons[e4.lecons.length - 1].type, "pile_pas_un_doublon", "G1 : garder C en plus de la tête gardée = « pas un doublon »");
+      const e5 = O.appliquer(e4, { type: "marquer", ids: ["B"], marque: "ecartee", poser: true });
+      eq(e5.lecons[e5.lecons.length - 1].type, "tete_ecartee", "G1 : écarter la tête quand une autre est gardée (R76)");
+      const sans = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "marquer", ids: ["F"], marque: "choisie" });
+      eq(sans.lecons.length, 0, "G1 : sans lecture, aucune leçon (la machine n'avait rien proposé)");
+      const e6 = O.appliquer(e5, { type: "leconsEnvoyees", n: 2 });
+      eq(e6.lecons.length, e5.lecons.length - 2, "G1 : l'écran retire les leçons envoyées");
+      const pose = O.appliquer(e0, { type: "deposer", source: { type: "bibliotheque", ids: ["A"] }, cible: { type: "vignette", plancheId: pl(2) } });
+      ok(pose.lecons.some((l) => l.type === "pile_autre_gardee" && l.geste === "posée à la place de la tête"), "G1 : poser une photo rangée sous une pile est une leçon");
+      const j = O.jalon("export", "essai");
+      ok(O.leconValide(j) && !O.leconValide({ ...j, type: "autre" }) && !O.leconValide({ ...j, version: "x" }), "le serveur relit une leçon (type, version)");
+      const inst = O.instantane(e5, mes);
+      ok(inst.photos.length === cat.size && inst.photos.find((p) => p.id === "B")?.nettete === 900 && inst.planches.length === 3 && inst.lecture.piles.length === lu.piles.length, "G2 : l'instantané porte mesures, lecture, planches, sans pixels");
+      ok(O.contenuValide(e5.magazine), "les leçons ne touchent pas au magazine sauvegardé");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : lot 2, la mémoire (réglages versionnés, leçons d'un geste contraire, instantané)", msg === null);
+  }
+  {
+    /* Lot 2 (09/11) : B1 carte de chaleur, B2 recadrage par le contenu, B3 rien dans le pli. */
+    let msg: string | null = null;
+    try {
+      const L = 96, H = 64;
+      /* un fond uni et une tache claire en haut à gauche : la saillance doit la trouver */
+      const g = new Uint8Array(L * H).fill(90);
+      for (let y = 6; y < 22; y++) for (let x = 8; x < 28; x++) g[y * L + x] = 240;
+      const carte = O.carteSaillance(g, L, H);
+      proche(carte.reduce((a, b) => a + b, 0), 1, 1e-6, "B1 : la carte est normalisée");
+      const z = def(O.zoneImportante([], carte), "B1 : une zone sans visage");
+      ok(z.x + z.l / 2 < 0.45 && z.y + z.h / 2 < 0.5, "B1 : la zone saillante est en haut à gauche, là où est la tache");
+      const v = O.zoneImportante([{ x: 0.6, y: 0.5, l: 0.2, h: 0.3 }], null);
+      ok(!!v && v.y < 0.5 && v.y + v.h >= 0.8 - 1e-9 && v.x === 0.6, "B1 : un visage impose sa zone, avec de l'air au-dessus de la tête (R-21)");
+      ok(O.zoneImportante([], null) === null, "B1 : sans visage ni carte, pas de zone");
+
+      /* B2 : un portrait 2000 × 3000 dans un cadre carré 100 × 100 : remplissage par la largeur, l'image fait 150 mm de haut */
+      const photo = { l: 2000, h: 3000 }, cadre = { l: 100, h: 100 };
+      const haut = O.recadrageParContenu(photo, cadre, { x: 0.3, y: 0.05, l: 0.4, h: 0.2 });
+      ok(haut.zoom === 1 && haut.dx === 0 && haut.dy > 0, "B2 : une zone en haut fait glisser l'image vers le bas (dy > 0)");
+      const bas = O.recadrageParContenu(photo, cadre, { x: 0.3, y: 0.8, l: 0.4, h: 0.15 });
+      ok(bas.dy < 0 && Math.abs(bas.dy) <= 25 + 1e-9, "B2 : une zone en bas glisse vers le haut, bornée par le bord de l'image (25 mm)");
+      eq(O.recadrageParContenu(photo, cadre, null), { zoom: 1, dx: 0, dy: 0 }, "B2 : sans zone, le neutre");
+      const centre = O.recadrageParContenu(photo, cadre, { x: 0.4, y: 0.45, l: 0.2, h: 0.1 });
+      proche(centre.dy, 0, 0.01, "B2 : une zone au centre ne bouge rien");
+
+      /* B3 : une double pleine page (cadre sur toute la planche) et un visage au milieu de la photo = sur le pli */
+      const pleine = { x: 0, y: 0, l: 420, h: 297 };
+      const paysage = { l: 4200, h: 2970 };
+      const auPli = O.partDansLePli(paysage, pleine, { x: 0.49, y: 0.3, l: 0.02, h: 0.1 });
+      ok(auPli > 0.9, "B3 : un visage au centre d'une pleine double est dans le pli");
+      eq(O.partDansLePli(paysage, pleine, { x: 0.1, y: 0.3, l: 0.1, h: 0.1 }), 0, "B3 : un visage à gauche n'y est pas");
+      eq(O.partDansLePli(paysage, { x: 0, y: 0, l: 200, h: 297 }, { x: 0.5, y: 0.3, l: 0.1, h: 0.1 }), 0, "B3 : un cadre qui ne touche pas le pli ne compte pas");
+      /* la note d'un gabarit pleine double monte quand la zone est au pli : un gabarit à deux cadres doit passer devant */
+      const refPli = { id: "p", nom: "p", l: 4200, h: 2970, date: null, zone: { x: 0.49, y: 0.3, l: 0.02, h: 0.1 } };
+      const refOk = { ...refPli, zone: { x: 0.1, y: 0.3, l: 0.1, h: 0.1 } };
+      const gab = (r: typeof refPli) => O.gabaritsClasses("double", [r], null);
+      const notePli = gab(refPli).find((x) => x.template.cadres.some((c) => c.role === "photo" && c.l > 400))?.note;
+      const noteOk = gab(refOk).find((x) => x.template.cadres.some((c) => c.role === "photo" && c.l > 400))?.note;
+      ok(notePli !== undefined && noteOk !== undefined && notePli > noteOk + 3, "B3 : la pleine double est pénalisée quand le visage tombe dans le pli (R-25)");
+      ok(O.REGLAGES.pli_mm.raison.startsWith("HYPOTHÈSE"), "B3 : la largeur du pli est une hypothèse à confirmer avec Cloudprinter");
+
+      /* la zone rejoint le catalogue par la lecture, et la pose s'en sert */
+      const cat = new Map(catalogue("A:P B:L").map((p) => [p.id, p]));
+      const e0 = O.creerEtat({ magazine: magazineVide(3), catalogue: cat });
+      const e1 = O.appliquer(e0, { type: "poserLecture", lecture: { ...O.LECTURE_VIDE, mesurees: 2, zones: { A: { x: 0.3, y: 0.02, l: 0.4, h: 0.2 } } } });
+      ok(e1.catalogue.get("A")?.zone?.y === 0.02 && !e1.catalogue.get("B")?.zone, "la zone de la lecture rejoint la photo du catalogue");
+      const e2 = O.appliquer(e1, { type: "deposer", source: { type: "bibliotheque", ids: ["A"] }, cible: { type: "vignette", plancheId: pl(2) } });
+      const dispo = e2.magazine.planches[1].gauche ?? e2.magazine.planches[1].droite ?? e2.magazine.planches[1].double;
+      const aff = dispo?.photos.find((a) => a.photoId === "A");
+      ok(!!aff && (aff.recadrage.dy !== 0 || aff.recadrage.dx !== 0 || aff.recadrage.zoom === 1), "B2 : à la pose, le recadrage lit la zone (ou reste neutre si le cadre a le même rapport)");
+      ok(O.contenuValide(e2.magazine), "le magazine posé par contenu se sauvegarde");
+      const e3 = O.appliquer(e1, { type: "poserLecture", lecture: O.LECTURE_VIDE });
+      ok(!e3.catalogue.get("A")?.zone, "une lecture sans zone retire la zone");
+    } catch (e) { msg = e instanceof Error ? e.message : String(e); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : lot 2, des yeux (carte de chaleur, recadrage par le contenu, rien dans le pli)", msg === null);
+  }
+  {
+    /* Lot 3 (09/11) : A10 pré-tri et raisons, A3 lumière, A4 capture, A7 visage flou, A5 horloges, A9 moments, A11 équité,
+       A12 variété, A16 objectif, E1 palette, D7 faits, G3 questions, F4 contrôle avant export. */
+    let msg: string | null = null;
+    try {
+      const h = (n: number) => n.toString(16).padStart(16, "0");
+      const DH = ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3", "ffff0000ffff0000", "0000ffff0000ffff", "f00ff00ff00ff00f", "0ff00ff00ff00ff0", "cccc3333cccc3333", "3333cccc3333cccc"];
+      const t = (hh: number, mm: number, ss = 0) => `2026-06-11T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+      /* matin : A1..A6 (Inès) ; soir : B1..B4 (Inès) et L1 (Léo, un seul) ; S sombre ; C capture ; V visage flou ; F floue */
+      const cat = new Map(catalogue("A1:L A2:L A3:L A4:L A5:L A6:L B1:L B2:L B3:L B4:L L1:L S:L F:L V:P C:1000x2200", {
+        A1: { date: t(9, 0) }, A2: { date: t(9, 10) }, A3: { date: t(9, 20) }, A4: { date: t(9, 30) }, A5: { date: t(9, 40) }, A6: { date: t(9, 50) },
+        B1: { date: t(20, 0) }, B2: { date: t(20, 10) }, B3: { date: t(20, 20) }, B4: { date: t(20, 30) }, L1: { date: t(20, 40), personne: "Léo" },
+        S: { date: t(12, 0) }, F: { date: t(12, 30) }, V: { date: t(13, 0) }, C: { date: null },
+      }).map((p) => [p.id, p]));
+      const ids = [...cat.keys()];
+      const mesures: Record<string, O.Mesure> = Object.fromEntries(ids.map((id, i) => [id, { nettete: 500 + i * 20, dhash: DH[i % DH.length] ?? h(i), lumi: { moyenne: 120, noirs: 0.02, blancs: 0.02 }, palette: ["#336699", "#cc9966"] }]));
+      mesures.S = { ...mesures.S, nettete: 5, lumi: { moyenne: 20, noirs: 0.7, blancs: 0 } };
+      mesures.F = { ...mesures.F, nettete: 10 };
+      mesures.V = { ...mesures.V, nettete: 700, visages: [{ x: 0.3, y: 0.2, l: 0.4, h: 0.3, nettete: 0.1 }] };
+      mesures.C = { ...mesures.C, dhash: "1234567812345678" };
+      const lecture = O.lireMesures(cat, new Map(Object.entries(mesures)));
+      ok(lecture.mesures !== undefined && Object.keys(lecture.mesures).length === cat.size && (lecture.palette?.length ?? 0) >= 1, "E1 : la lecture porte les mesures et une palette du magazine");
+      let e = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "poserLecture", lecture });
+      const sans = O.preTrier(e.catalogue, e.magazine, e.lecture);
+      eq(sans.objectif, null, "A16 : sans objectif fixé, l'objectif est inconnu");
+      ok(!Object.values(sans.propositions).some((p) => p.marque === "choisie"), "A16 : sans objectif, la machine ne propose rien à garder");
+      eq(sans.propositions.F?.raison, "floue", "A10 : F écartée, raison « floue »");
+      eq(sans.propositions.S?.raison, "trop sombre", "A3 : S écartée, raison « trop sombre » (la lumière passe avant le flou : vu à l'essai du 09/11)");
+      eq(sans.propositions.C?.marque, "reserve", "A4 : sans date et allongée : capture probable, en réserve");
+      eq(sans.propositions.V?.raison, "visage flou", "A7 : visage trois fois moins net que la photo : réserve « visage flou »");
+
+      /* objectif : 4 photos ; le matin (6 photos) pèse plus que le soir (5 photos, 2 déposants : pondéré) */
+      e = O.appliquer(e, { type: "reglerTri", visees: 4 } as unknown as Geste);
+      if (O.triDe(e.magazine).visees !== 4) e = { ...e, magazine: O.reglerVisees(e.magazine, 4) };
+      const avec = O.preTrier(e.catalogue, e.magazine, e.lecture);
+      const gardees = Object.entries(avec.propositions).filter(([, p]) => p.marque === "choisie").map(([id]) => id);
+      ok(gardees.length >= 4, "A16 : avec un objectif de 4, au moins 4 photos proposées à garder");
+      ok(gardees.some((id) => id.startsWith("A")) && gardees.some((id) => id.startsWith("B") || id === "L1"), "A9 : chaque moment a sa part");
+      ok(gardees.includes("L1") || avec.propositions.L1?.raison === "seule photo de Léo" || gardees.some((id) => cat.get(id)?.personne === "Léo"), "A11 : Léo, seul de son côté, a sa photo gardée");
+      ok(avec.moments.every((m) => m.poids > 0 && m.poids <= 1), "A9 : chaque moment a un poids entre 0 et 1");
+      const matin = avec.moments.find((m) => m.libelle.includes("Matin"));
+      ok(!!matin && matin.visees >= 1, "A9 : le matin a au moins une gardée visée");
+
+      /* le geste : un seul, annulable, qui ne touche jamais une photo déjà marquée */
+      const e1 = O.appliquer({ ...e, magazine: O.marquer(e.magazine, ["F"], "choisie") }, { type: "preTrier" });
+      ok(O.marqueDe(e1.magazine, "F") === "choisie", "A10 : une photo déjà marquée par l'atelier n'est jamais touchée");
+      ok(O.marqueDe(e1.magazine, "S") === "ecartee" && O.marqueDe(e1.magazine, "C") === "reserve", "A10 : le pré-tri pose ses marques");
+      ok(e1.pretri.S?.raison === "trop sombre", "A10 : la raison reste attachée à la photo");
+      const annule = O.appliquer(e1, { type: "annuler" });
+      ok(O.marqueDe(annule.magazine, "S") === null, "A10 : une seule annulation défait tout le pré-tri");
+      const e2 = O.appliquer(e1, { type: "marquer", ids: ["S"], marque: "choisie" });
+      ok(e2.lecons.some((l) => l.type === "pretri_renverse" && l.photos[0] === "S" && l.proposition.includes("trop sombre")), "A10 : renverser une marque du pré-tri est une leçon, avec sa raison");
+
+      /* A5 : Léo a 1 h de retard sur Inès, trois photos jumelles le prouvent */
+      const cat2 = new Map(catalogue("I1:L I2:L I3:L I4:L J1:L J2:L J3:L", {
+        I1: { date: t(10, 0) }, I2: { date: t(11, 0) }, I3: { date: t(12, 0) }, I4: { date: t(12, 30) },
+        J1: { date: t(9, 0), personne: "Léo" }, J2: { date: t(10, 0), personne: "Léo" }, J3: { date: t(11, 0), personne: "Léo" },
+      }).map((p) => [p.id, p]));
+      const m2 = new Map<string, O.Mesure>([["I1", { nettete: 1, dhash: DH[0] }], ["I2", { nettete: 1, dhash: DH[1] }], ["I3", { nettete: 1, dhash: DH[2] }], ["I4", { nettete: 1, dhash: DH[3] }],
+        ["J1", { nettete: 1, dhash: DH[0] }], ["J2", { nettete: 1, dhash: DH[1] }], ["J3", { nettete: 1, dhash: DH[2] }]]);
+      eq(O.decalagesHorloges(cat2, m2), { Léo: 3600 }, "A5 : trois photos jumelles concordent : Léo est recalé d'une heure");
+      eq(O.decalagesHorloges(cat2, new Map([...m2].slice(0, 5))), {}, "A5 : moins de trois paires : on ne recale rien");
+
+      /* A12 : deux quasi-jumelles très nettes et une différente : la variété l'emporte */
+      const cat3 = new Map(catalogue("X:L Y:L Z:L", { X: { date: t(8, 0) }, Y: { date: t(8, 5) }, Z: { date: t(8, 10) } }).map((p) => [p.id, p]));
+      const lec3 = { ...O.LECTURE_VIDE, mesurees: 3, mesures: { X: { nettete: 900, dhash: "ff00ff00ff00ff00" }, Y: { nettete: 880, dhash: "ff00ff00ff00ff0f" }, Z: { nettete: 600, dhash: "00ff00ff00ff00ff" } } };
+      const mag3 = O.reglerVisees(magazineVide(2), 2);
+      const g3 = Object.entries(O.preTrier(cat3, mag3, lec3).propositions).filter(([, p]) => p.marque === "choisie").map(([id]) => id).sort();
+      eq(g3, ["X", "Z"], "A12 : deux à garder : la plus nette, puis la différente (pas sa jumelle)");
+
+      /* E1 */
+      const px = new Uint8Array(400 * 4); for (let i = 0; i < 400; i++) { const r = i < 300; px.set(r ? [200, 30, 30, 255] : [20, 40, 200, 255], i * 4); }
+      const pal = O.paletteDePixels(px, 1);
+      ok(pal[0] === "#c81e1e" && pal.includes("#1428c8"), "E1 : la palette d'une photo, la teinte dominante d'abord");
+
+      /* D7 */
+      const f = O.faitsDePage(["A1", "A2"], cat).map((x) => x.valeur);
+      ok(f.includes("Jeudi 11 juin") && f.some((v) => v.includes("matin")) && f.includes("Juin 2026"), "D7 : jour, moment et mois, calculés");
+      ok(O.faitsDePage(["C"], cat).length === 0, "D7 : une photo sans date ne donne aucun fait (R-66)");
+      ok(O.faitsDePage(["A1"], cat).some((x) => x.valeur === "9 h 00") && O.faitsDePage(["A1"], cat).some((x) => /photos ce jour-là/.test(x.valeur)), "D7 : l'heure d'une photo seule et le nombre de photos du jour");
+
+      /* G3 */
+      const qs = O.troisQuestions([...e2.lecons, ...e2.lecons, O.jalon("export", "x")]);
+      ok(qs.length >= 1 && qs.length <= 3 && qs.every((q) => q.type !== "export"), "G3 : au plus trois questions, jamais un jalon");
+      const rep = O.reponse(qs[0], "atelier", "  trop sombre mais belle  ");
+      ok(rep.type === "reponse" && rep.geste === "j'avais raison : trop sombre mais belle" && O.leconValide(rep), "G3 : la réponse est une leçon valide, la note nettoyée");
+
+      /* F4 */
+      const e3 = O.appliquer(e, { type: "deposer", source: { type: "bibliotheque", ids: ["F"] }, cible: { type: "vignette", plancheId: pl(2) } });
+      const av = O.avertissementsExport(e3);
+      ok(av.flouesPosees.some((z) => z.photoId === "F"), "F4 : une photo floue posée est signalée avant l'export");
+      ok(av.pagesVides.includes(3), "F4 : une planche vide est signalée");
+    } catch (er) { msg = er instanceof Error ? er.message : String(er); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : lot 3, la machine propose (pré-tri, raisons, horloges, équité, variété, faits, questions, contrôle)", msg === null);
+  }
+  {
+    /* 10/11 : la lecture VISIBLE (retour du test de Mathias) : tags, filtre, captures, similaires, chaleur dessinable, panneau. */
+    let msg: string | null = null;
+    try {
+      const t = (mm: number, ss = 0) => `2026-06-11T10:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+      const cat = new Map(catalogue("A:L B:L C:L D:L E:L F:L G:L H:L I:L J:L K:L L:L CAP:1170x2532 WA:L", {
+        A: { date: t(0) }, B: { date: t(3) }, C: { date: t(20) }, D: { date: t(21) }, E: { date: t(30) }, F: { date: t(31) }, G: { date: t(32) }, H: { date: t(33) },
+        I: { date: t(34) }, J: { date: t(35) }, K: { date: t(36) }, L: { date: t(37) },
+        CAP: { date: "2026-06-11T10:40:00", appareil: null }, WA: { date: t(50), appareil: null },
+      }).map((p) => [p.id, p]));
+      const D = ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3", "ffff0000ffff0000", "0000ffff0000ffff", "f00ff00ff00ff00f", "0ff00ff00ff00ff0", "cccc3333cccc3333", "3333cccc3333cccc"];
+      const mes = new Map<string, O.Mesure>([...cat.keys()].map((id, i) => [id, { nettete: 400 + i * 10, dhash: D[i], lumi: { moyenne: 120, noirs: 0.01, blancs: 0.01 }, aplats: 0.2 }]));
+      /* A et B : même scène à 3 minutes, 12 cases d'écart : SIMILAIRES, pas doublons */
+      mes.set("B", { ...mes.get("B")!, dhash: "ff00ff00ff00f0ff" });
+      mes.set("CAP", { ...mes.get("CAP")!, aplats: 0.7 });
+      mes.set("WA", { ...mes.get("WA")!, aplats: 0.2 });
+      mes.set("E", { ...mes.get("E")!, nettete: 30 });
+      mes.set("F", { ...mes.get("F")!, visages: [{ x: 0.4, y: 0.3, l: 0.2, h: 0.3 }] });
+      const lu = O.lireMesures(cat, mes);
+      const tags = O.tagsDeLecture(cat, lu);
+      ok((lu.similaires ?? []).some((g) => g.includes("A") && g.includes("B")) && !lu.piles.some((p) => p.tete === "A" || p.tete === "B"), "R93 : A et B (même scène, 3 min, 12 cases) sont SIMILAIRES, pas une pile");
+      ok(tags.get("A")?.includes("similaire") && tags.get("B")?.includes("similaire"), "R94 : le tag « Similaire » est posé sur les deux");
+      ok(tags.get("E")?.includes("floue"), "R73 (10/11) : sous le plancher de 40, floue même sans écart à la médiane");
+      ok(tags.get("CAP")?.includes("capture"), "A4 (10/11) : sans appareil et avec aplats, capture, MÊME avec une date (le fichier en a toujours une en création libre)");
+      ok(!tags.get("WA")?.includes("capture"), "A4 : sans appareil mais sans aplats ni forme d'écran (photo reçue par messagerie) : pas une capture");
+      ok(!O.estCapture({ l: 1170, h: 2532, date: t(1), appareil: "Apple iPhone 15" }, { nettete: 1, dhash: D[0], aplats: 0.9 }), "A4 : une photo d'appareil n'est jamais une capture");
+      ok(tags.get("F")?.includes("visages") && O.MOT_TAG.visages.vignette === false, "A6 : « Avec visages » est filtrable, jamais sur la vignette");
+      const n = O.comptesTags(tags);
+      ok(n.similaire === 2 && n.capture === 1 && n.floue >= 1, "les comptes du filtre");
+
+      /* le filtre : une seule photo de chaque tag, rien de caché sous une pile pendant le filtre */
+      let e = O.appliquer(O.creerEtat({ magazine: magazineVide(2), catalogue: cat }), { type: "poserLecture", lecture: lu });
+      e = O.appliquer(e, { type: "filtrer", filtres: { lecture: "similaire" } });
+      eq(O.visibles(e).sort(), ["A", "B"], "R94 : filtrer « Similaire » ne montre que A et B");
+      e = O.appliquer(e, { type: "filtrer", filtres: { lecture: "nimporte" as never } });
+      eq(e.filtres.lecture, "similaire", "un tag inconnu ne change pas le filtre");
+      e = O.appliquer(e, { type: "retirerFiltre", cle: "lecture" });
+      eq(e.filtres.lecture, "", "retirer le filtre");
+
+      /* la chaleur dessinable et le panneau */
+      const carte = new Float64Array(64 * 64); carte[10 * 64 + 10] = 1;
+      const c = O.chaleurCompacte(carte);
+      ok(c.length === 256 && c[2 * 16 + 2] === "9" && [...c].filter((x) => x !== "0").length === 1, "B1 : la carte réduite à 16 × 16 se dessine (la case chaude au bon endroit)");
+      const l = O.lectureDePhoto("A", cat, lu, O.distanceHash);
+      ok(l.plusProche?.id === "B" && l.plusProche.ecart <= 18 && l.tags.includes("similaire") && l.seuilFloue >= 40, "le panneau Lecture explique le tag : la plus ressemblante, son écart, le seuil");
+    } catch (er) { msg = er instanceof Error ? er.message : String(er); }
+    if (msg !== null) { echecs++; console.log(`   ${msg}`); }
+    rapporter("éditeur : la lecture visible (tags, filtre, captures, similaires, chaleur, panneau) (R93, R94)", msg === null);
+  }
   const archi = S.filter((x) => x.n <= 73).length;
   rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);

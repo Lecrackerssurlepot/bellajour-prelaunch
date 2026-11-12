@@ -13,6 +13,10 @@ import type { SourceMep } from "../sauvegarde";
 import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
 import type { SensCalque } from "./libre";
+import type { Lecture } from "./mesures";
+import type { Lecon } from "./lecons";
+import type { Proposition } from "./pretri";
+import type { Tag } from "./tags";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -35,6 +39,9 @@ export type PhotoMaq = PhotoRef & {
   ville?: string | null;
   pays?: string | null;
   gps?: { lat: number; lon: number } | null;
+  /** 10/11 (capture d'écran) : l'appareil photo lu dans l'EXIF ; null = aucun appareil (indice d'une capture ou d'une image
+   *  envoyée par messagerie) ; absent = on ne sait pas (édition collective : la route ne le dit pas). */
+  appareil?: string | null;
 };
 
 export type Catalogue = ReadonlyMap<string, PhotoMaq>;
@@ -55,6 +62,8 @@ export type Filtres = {
   marque: "toutes" | "ecarter" | "retenues" | "choisies" | "a_trier" | "reserve" | "ecartees";
   /** Au tour ③ (05/11) : seulement les photos de cette étiquette ; "" = toutes. */
   etiquette: "" | Etiquette;
+  /** 10/11 : seulement les photos qui portent ce tag de la lecture ("" = toutes). Rien n'est caché sous une pile pendant ce filtre. */
+  lecture: "" | Tag;
   tri: "date" | "nom" | "personne";
   groupe: "jour" | "moment" | "lieu" | "personne" | "type" | "aucun";
   taille: "S" | "M" | "L";
@@ -170,6 +179,14 @@ export type EtatEditeur = {
   copieLocale: Magazine | null;
   /** 06/11 : la famille que parcourt R et que montre le tiroir (avec ou sans cadre de texte). Écran seulement. */
   familleGabarits: FamilleGabarits;
+  /** 09/11, couche 1 : floues et piles lues sur les vignettes (`mesures.ts`). Écran seulement, jamais sauvegardé. */
+  lecture: Lecture;
+  /** Les piles ouvertes (id de leur tête) : leurs photos rangées dessous réapparaissent. Écran seulement. */
+  pilesOuvertes: string[];
+  /** Lot 2 (G1) : les leçons pas encore envoyées au serveur (un geste contraire à une proposition). L'écran les vide après envoi. */
+  lecons: Lecon[];
+  /** Lot 3 : les propositions du dernier pré-tri appliqué (raison par photo). Un geste contraire devient une leçon. Écran seulement. */
+  pretri: Record<string, Proposition>;
 };
 
 export type OptionsEtat = {
@@ -203,6 +220,8 @@ export type GesteModifiant =
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
   | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
   /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
+  /** Lot 3 (A10) : poser d'un geste les marques que la machine propose, sur les photos encore sans marque. */
+  | { type: "preTrier"; confirme?: boolean }
   | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
   | { type: "reglerTri"; visees: number | null; confirme?: boolean }
   /** 1 / 2 (05/11) : poser ou retirer une étiquette d'usage (bascule sur toutes) ; la poser garde la photo. */
@@ -242,6 +261,13 @@ export type GesteEcran =
   | { type: "retirerFiltre"; cle: keyof Filtres }
   | { type: "effacerFiltres" }
   | { type: "familleGabarits"; famille: FamilleGabarits }
+  /** Couche 1 : la lecture des vignettes arrive (ou se met à jour). */
+  | { type: "poserLecture"; lecture: Lecture }
+  /** Ouvre ou referme la pile portée par cette photo. */
+  | { type: "basculerPile"; tete: string }
+  /** Lot 2 : l'écran a envoyé les `n` premières leçons (ou en ajoute un jalon). */
+  | { type: "leconsEnvoyees"; n: number }
+  | { type: "ajouterLecon"; lecon: Lecon }
   | { type: "cliquerPhoto"; id: string; mode: "simple" | "plage" | "ajout" }
   | { type: "selectionner"; ids: string[] }
   | { type: "viderSelection" }

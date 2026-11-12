@@ -35,6 +35,8 @@ export type Ui = {
   cmpIci: number;
   /** La loupe 100 % de la vue une photo. */
   loupeTri: boolean;
+  /** 10/11 : la lecture dessinée (carte de chaleur, visages, zone) par-dessus les photos posées et la photo ouverte. */
+  lecture: boolean;
   /** La hauteur des rangées de la grille plein écran (+ et −). */
   tailleGrand: number;
   bulle: "raccourcis" | "objectif" | null;
@@ -57,7 +59,7 @@ export type Ui = {
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
-  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
+  grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, lecture: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
   retouche: null, position: null, aimant: true, guides: [],
 };
 

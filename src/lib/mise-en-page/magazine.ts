@@ -15,7 +15,7 @@
  */
 
 import { PAGE_L, PLANCHE_L } from "./geometrie";
-import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, type Recadrage } from "./recadrage";
+import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, recadrageParContenu, type Recadrage } from "./recadrage";
 import { TEMPLATES_ANNEXE } from "./templates";
 import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
@@ -24,7 +24,8 @@ import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre,
 /* ─────────────────────────── Les données ─────────────────────────── */
 
 /** l / h en px APRÈS orientation EXIF ; date ISO ou null (inconnue). */
-export type PhotoRef = { id: string; nom: string; l: number; h: number; date: string | null };
+/** `zone` (lot 2, facultative, écran seulement) : la zone importante de la photo en fractions, posée par la lecture (saillance.ts). */
+export type PhotoRef = { id: string; nom: string; l: number; h: number; date: string | null; zone?: { x: number; y: number; l: number; h: number } | null };
 /** L'hésitation (lot 3, 02/11) : une seconde photo DERRIÈRE celle du cadre. T les intervertit ; une fois tranchée (`tranchee`),
  *  la délaissée reste notée pour qu'on puisse revenir dessus. Seule la photo de devant (`photoId`) part à l'export. */
 export type Hesitation = { photoId: string; recadrage: Recadrage; tranchee?: true };
@@ -247,7 +248,7 @@ export function disposer(template: Template, photos: PhotoRef[]): Disposition {
   });
   return {
     templateId: template.id,
-    photos: choix.map((p) => ({ photoId: p ? p.id : null, recadrage: { ...RECADRAGE_NEUTRE } })),
+    photos: choix.map((p, i) => ({ photoId: p ? p.id : null, recadrage: p ? recadrageParContenu(p, cadres[i], p.zone) : { ...RECADRAGE_NEUTRE } })),
     textes: textesInitiaux(template),
   };
 }

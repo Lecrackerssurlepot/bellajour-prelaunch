@@ -54,6 +54,12 @@ export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
           <path d="M5 3v7a5 5 0 0 0 10 0V3M5 6.5h3M12 6.5h3M8 3v7a2 2 0 0 0 4 0V3" />
         </svg>
       </button>
+      <button type="button" className={cls("ed-ico", "ed-aimant", ui.lecture && "ed-aimant--on")} aria-pressed={ui.lecture}
+        title={ui.lecture ? "Lecture affichée : chaleur, visages, zone protégée · L" : "Voir ce que la machine a lu · L"} aria-label="Lecture" onClick={() => majUi({ lecture: !ui.lecture })}>
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10z" /><circle cx="10" cy="10" r="2.6" />
+        </svg>
+      </button>
       <button type="button" className="ed-ico" disabled={!la || ro} title={la ?? "Rien à annuler"} aria-label={la ?? "Annuler"} onClick={() => envoyer({ type: "annuler" })}>{Ico.annuler}</button>
       <button type="button" className="ed-ico" disabled={!lr || ro} title={lr ?? "Rien à rétablir"} aria-label={lr ?? "Rétablir"} onClick={() => envoyer({ type: "retablir" })}>{Ico.retablir}</button>
       <button type="button" className="adm-btn ed-exporter" onClick={onExporter}>Exporter</button>

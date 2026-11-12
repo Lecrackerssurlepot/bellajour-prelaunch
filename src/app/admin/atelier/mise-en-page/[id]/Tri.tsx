@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ETIQUETTES, etiquettesDe, marqueDe, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
+import { distanceHash, ETIQUETTES, etiquettesDe, lectureDePhoto, marqueDe, MOT_TAG, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
+import { Chaleur } from "./Chaleur";
 import { cls, useEd, type Adresse } from "./contexte";
 import { grandeDe, precharger } from "./images";
 import { colonnesComparer, etiqueterTri, focusCourant, marquerTri, quitterVisionneuse } from "./triEcran";
@@ -130,9 +131,10 @@ function UnePhoto() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M9 5l7 7-7 7" /></svg>
         </button>
       </div>
+      {ui.lecture && id && p ? <PanneauLecture id={id} /> : null}
       <div className="ed-vt-pied">
         <div className="ed-vt-nom">
-          {p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{p.coeur ? <Client /> : null}{m ? <Etiquette m={m} /> : null}{doubles?.length ? ` · double ${doubles[0]}` : ""}</> : null}
+          {p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{p.coeur ? <Client /> : null}{m ? <Etiquette m={m} /> : null}{doubles?.length ? ` · double ${doubles[0]}` : ""}{id && etat.pretri[id] ? <span className="ed-vt-raison">pré-tri : {etat.pretri[id].raison}</span> : null}</> : null}
         </div>
         {id ? <Ronds id={id} /> : <span />}
         <div className="ed-vt-rang">{i >= 0 ? `${i + 1} / ${l.length}` : ""}</div>
@@ -209,5 +211,36 @@ function Comparer() {
         <div className="ed-vt-rang">{ids.length ? `${ui.cmpIci + 1} / ${ids.length} · ⇧P garde et écarte les autres` : ""}</div>
       </div>
     </div>
+  );
+}
+
+/* 10/11 : le panneau Lecture d'une photo ouverte en grand (L) : la vignette avec ce que la machine a vu dessus, et les
+   chiffres qui expliquent chaque tag (où est la photo par rapport au seuil). De quoi juger, et régler, une règle. */
+function PanneauLecture({ id }: { id: string }) {
+  const { etat, adresses } = useEd();
+  const m = etat.lecture.mesures?.[id];
+  const p = etat.catalogue.get(id);
+  const l = lectureDePhoto(id, etat.catalogue, etat.lecture, distanceHash);
+  const src = adresses.get(id)?.vignette ?? adresses.get(id)?.moyenne ?? null;
+  const pc = (x: number) => `${Math.round(x * 100)} %`;
+  return (
+    <aside className="ed-lec" aria-label="Lecture de la photo">
+      <div className="ed-lec-img" style={{ aspectRatio: p && p.l > 1 && p.h > 1 ? `${p.l} / ${p.h}` : undefined }}>
+        {src ? <img src={src} alt="" draggable={false} /> : null}
+        <Chaleur m={m} />
+      </div>
+      <p className="ed-lec-leg"><i className="ed-lec-c" /> ce qui ressort · <i className="ed-lec-v" /> visage · <i className="ed-lec-z" /> zone protégée</p>
+      {!m ? <p className="ed-lec-l">Pas encore lue.</p> : (
+        <dl className="ed-lec-dl">
+          <dt>Tags</dt><dd>{l.tags.length ? l.tags.map((t) => MOT_TAG[t].mot).join(", ") : "aucun"}</dd>
+          <dt>Netteté</dt><dd>{l.nettete} · médiane du magazine {l.medianeNettete} · floue sous {l.seuilFloue || "—"}</dd>
+          <dt>La plus ressemblante</dt><dd>{l.plusProche ? `${l.plusProche.nom} · écart ${l.plusProche.ecart} / 64 (doublon ≤ 8, similaire ≤ 12)` : "aucune"}</dd>
+          <dt>Lumière</dt><dd>{l.lumi ? `moyenne ${l.lumi.moyenne} / 255 · bouchés ${pc(l.lumi.noirs)} · brûlés ${pc(l.lumi.blancs)}` : "—"}</dd>
+          <dt>Aplats</dt><dd>{l.aplats !== null ? `${pc(l.aplats)} des pixels dans 3 couleurs (une information : un grand ciel en a autant qu'un écran)` : "—"}</dd>
+          <dt>Appareil</dt><dd>{l.appareil === undefined ? "inconnu (photo importée avant le 10/11, ou édition)" : l.appareil ?? "aucun dans le fichier"}{p?.date ? "" : " · sans date"}{l.tags.includes("capture") ? " · capture : sans appareil et forme d'écran" : ""}</dd>
+          <dt>Visages</dt><dd>{l.visages === null ? "détecteur indisponible" : l.visages}</dd>
+        </dl>
+      )}
+    </aside>
   );
 }

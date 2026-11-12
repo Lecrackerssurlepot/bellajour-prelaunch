@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee,
+  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { CheminDeFer, Toast } from "./Bas";
@@ -10,7 +10,7 @@ import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, VuesBarre } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, BoutonPreTri, PaletteTri, VuesBarre } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -67,6 +67,9 @@ function PanneauOuvert() {
   /* « gardées » au sens large : un coup de cœur l'est aussi (Poser les prend en premier) */
   const choisies = new Set([...triM.choisies, ...triM.coupsDeCoeur]), ecartees = new Set(triM.ecartees);
   const coups = new Set(triM.coupsDeCoeur), reserve = new Set(triM.reserve);
+  /* couche 1 (09/11) : la tête d'une pile porte « +n », une floue le dit ; une photo d'une pile ouverte dit pourquoi elle y est */
+  const piles = new Map(etat.lecture.piles.map((x) => [x.tete, x]));
+  const sousP = sousPiles(etat.lecture), ouvertes = new Set(etat.pilesOuvertes);
   /* au tour ③ seulement, les étiquettes d'usage se lisent sur la vignette (05/11) */
   const etqVignette = (id: string): string[] => (f.marque === "choisies" ? (["couverture", "double", "pleine"] as const).filter((k) => (triM.etiquettes?.[k] ?? []).includes(id)).map((k) => ETIQUETTE_UI[k].court) : []);
   /* la colonne « à côté » d'un tour (05/11) : ce que le tour a laissé de côté, d'où on le reglisse */
@@ -227,6 +230,10 @@ function PanneauOuvert() {
   if (f.coeur) actifs.push(["♥ Sélection", () => envoyer({ type: "retirerFiltre", cle: "coeur" })]);
   f.orientations.forEach((x) => actifs.push([ORIENT[x], () => bascule("orientations", x)]));
   if (f.montrerSignalees) actifs.push(["À ne pas publier", () => envoyer({ type: "retirerFiltre", cle: "montrerSignalees" })]);
+  /* 10/11 : ce que la machine a vu, filtrable (un seul tag à la fois) */
+  const tags = tagsDeLecture(cat, etat.lecture);
+  const nTags = comptesTags(tags);
+  if (f.lecture) actifs.push([MOT_TAG[f.lecture].mot, () => envoyer({ type: "retirerFiltre", cle: "lecture" })]);
   const menu = ui.menu;
   const ouvrirMenu = (id: string) => (e: React.MouseEvent) => { e.stopPropagation(); majUi({ menu: menu === id ? null : id }); };
   const photoDe = (id: string): PhotoMaq | undefined => cat.get(id);
@@ -244,7 +251,7 @@ function PanneauOuvert() {
     const sel1 = selSet.has(id);
     const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
     return (
-      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom}
+      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={(p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom) + (etat.pretri[id] ? ` · pré-tri : ${etat.pretri[id].raison}` : "")}
         className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
         aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
@@ -294,6 +301,17 @@ function PanneauOuvert() {
           {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
           {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
           {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
+          {(tags.get(id) ?? []).filter((t) => MOT_TAG[t].vignette && t !== "doublon" && t !== "rafale").slice(0, 2).map((t) => (
+            <span key={t} className={cls("ed-rep", "ed-rep--tag", `ed-rep--tag-${t}`)} title={`${MOT_TAG[t].mot} · règle ${MOT_TAG[t].regle} · une remarque, jamais une exclusion`}>{MOT_TAG[t].mot}</span>
+          ))}
+          {piles.has(id) ? (
+            <span className={cls("ed-rep ed-rep--pile", ouvertes.has(id) && "ed-rep--pile-ouverte")} role="button" tabIndex={-1}
+              title={`${piles.get(id)!.raison === "rafale" ? "Rafale" : "Doublons"} : ${piles.get(id)!.autres.length} autre${piles.get(id)!.autres.length > 1 ? "s" : ""}, la plus nette dessus. ${ouvertes.has(id) ? "Refermer" : "Ouvrir"}`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); envoyer({ type: "basculerPile", tete: id }); }}>
+              {ouvertes.has(id) ? "−" : "+"}{piles.get(id)!.autres.length}
+            </span>
+          ) : sousP.has(id) ? <span className="ed-rep ed-rep--sous">{piles.get(sousP.get(id)!)?.raison === "rafale" ? "Rafale" : "Doublon"}</span> : null}
         </span>
       </button>
     );
@@ -320,7 +338,7 @@ function PanneauOuvert() {
             </button>
           </>
         ) : null}
-        {grand ? <JaugeTri /> : (
+        {grand ? <><PaletteTri /><BoutonPreTri /><JaugeTri /></> : (
           <span className="ed-seg" role="group" aria-label="Taille des vignettes">
             {(["S", "M", "L"] as const).map((t) => (
               <button key={t} type="button" aria-pressed={f.taille === t} onClick={() => filtrer({ taille: t })}>{t}</button>
@@ -331,7 +349,7 @@ function PanneauOuvert() {
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
       {grand ? null : <VuesBarre />}
-      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /></div>}
+      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /><span className="ed-ph-jauge-pied"><PaletteTri /><BoutonPreTri /></span></div>}
       <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
           <input type="search" placeholder="Rechercher" aria-label="Rechercher une photo" value={f.recherche} onChange={(e) => filtrer({ recherche: e.currentTarget.value })} />
@@ -362,6 +380,16 @@ function PanneauOuvert() {
                 <>
                   <hr />
                   <button type="button" role="menuitemcheckbox" aria-checked={f.coeur} onClick={() => filtrer({ coeur: !f.coeur })}>♥ Sélection</button>
+                </>
+              ) : null}
+              {etat.lecture.mesurees ? (
+                <>
+                  <hr /><span className="ed-menu-t">Ce que la machine a vu</span>
+                  {TAGS.filter((t) => nTags[t] > 0).map((t) => (
+                    <button key={t} type="button" role="menuitemradio" aria-checked={f.lecture === t} title={`Règle ${MOT_TAG[t].regle}`}
+                      onClick={() => filtrer({ lecture: f.lecture === t ? "" : t })}>{MOT_TAG[t].mot} <span className="ed-menu-n">{nTags[t]}</span></button>
+                  ))}
+                  {TAGS.every((t) => !nTags[t]) ? <span className="ed-menu-vide">Rien de remarquable</span> : null}
                 </>
               ) : null}
               <hr /><span className="ed-menu-t">Orientation</span>

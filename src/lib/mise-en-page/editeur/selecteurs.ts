@@ -7,7 +7,7 @@ import { cadresDe, decorDe, dispositionDe, utilisations, type Cible, type Planch
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
 import { lieuxParDefaut } from "./lieuxTextes";
-import { dansFamille, dpi, estPleine, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
+import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
 import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
 import { visibles } from "./bibliotheque";
@@ -277,6 +277,11 @@ export type AvertissementsExport = {
   indisponibles: string[];
   signaleesPosees: string[];
   bassesDef: { photoId: string; plancheId: string; numero: number; dpi: number }[];
+  /** Lot 3 (F4) : une photo marquée floue posée, un visage dans le pli, une hésitation encore ouverte, une page vide. */
+  flouesPosees: { photoId: string; plancheId: string; numero: number }[];
+  visagesAuPli: { photoId: string; plancheId: string; numero: number }[];
+  hesitationsOuvertes: number;
+  pagesVides: number[];
   pagesAuDessus: number;
   planches: number;
   photos: number;
@@ -296,7 +301,27 @@ export function avertissementsExport(e: EtatEditeur): AvertissementsExport {
       if (v < SEUIL_DPI) bassesDef.push({ photoId: x.photoId, plancheId: p.id, numero: index + 1, dpi: Math.round(v) });
     }
   });
+  /* F4 : ce que la lecture sait des photos posées */
+  const floues = new Set(e.lecture.floues);
+  const flouesPosees: AvertissementsExport["flouesPosees"] = [];
+  const visagesAuPli: AvertissementsExport["visagesAuPli"] = [];
+  let hesitationsOuvertes = 0;
+  const pagesVides: number[] = [];
+  e.magazine.planches.forEach((p, index) => {
+    const xs = photosDe(p);
+    if (index > 0 && !xs.some((x) => x.photoId)) pagesVides.push(index + 1);
+    for (const x of xs) {
+      if (!x.photoId) continue;
+      const d = dispositionDe(p, x.ref.cible);
+      const aff = d?.photos[x.ref.index];
+      if (aff?.hesitation && !aff.hesitation.tranchee) hesitationsOuvertes++;
+      if (floues.has(x.photoId)) flouesPosees.push({ photoId: x.photoId, plancheId: p.id, numero: index + 1 });
+      const ph = e.catalogue.get(x.photoId);
+      const c = d && x.ref.cible === "double" ? cadresDe(d, "double").filter((k) => k.role === "photo")[x.ref.index] : null;
+      if (ph?.zone && c && aff && partDansLePliPose(ph, c, aff.recadrage, ph.zone) > 0.3) visagesAuPli.push({ photoId: x.photoId, plancheId: p.id, numero: index + 1 });
+    }
+  });
   const pl = pagesLibelle(e);
-  return { indisponibles, signaleesPosees, bassesDef, pagesAuDessus: pl.depasse && pl.cible !== null ? pl.pages - pl.cible : 0,
+  return { indisponibles, signaleesPosees, bassesDef, flouesPosees, visagesAuPli, hesitationsOuvertes, pagesVides, pagesAuDessus: pl.depasse && pl.cible !== null ? pl.pages - pl.cible : 0,
     planches: e.magazine.planches.length, photos: idsMagazine(e.magazine).length };
 }

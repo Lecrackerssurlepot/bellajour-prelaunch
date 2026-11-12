@@ -14,6 +14,8 @@ export const PENALITE_REPETITION = 0.25;
 export const BONUS_ANNEXE = 0.05;
 /** 09/11 : une grande coupe pèse plus que plusieurs petites (perte + POIDS × perte²) : un visage coupé se voit, 5 % de ciel non. */
 export const POIDS_GRANDE_COUPE = 3;
+/** Lot 2 (B3) : toute la zone importante dans le pli coûte autant qu'une perte totale pesée (1 + 3). */
+export const PENALITE_PLI = 4;
 export const TOLERANCE_RAPPORT = 1.15;
 export const SEUIL_DPI = 200;
 /** 09/11 : au-dessus, la photo est imprimée à pleine finesse ; entre les deux, elle est « juste ». */
@@ -28,7 +30,7 @@ export const CIBLES: readonly Cible[] = ["gauche", "droite", "double"];
 
 export const FILTRES_DEFAUT: Readonly<Filtres> = Object.freeze({
   recherche: "", statut: "toutes", personnes: [], types: [], coeur: false, orientations: [],
-  montrerSignalees: false, masquerUtilisees: false, marque: "toutes", etiquette: "", tri: "date", groupe: "jour", taille: "M",
+  montrerSignalees: false, masquerUtilisees: false, marque: "toutes", etiquette: "", lecture: "", tri: "date", groupe: "jour", taille: "M",
 } satisfies Filtres);
 
 /* ─────────────────────────── Petits outils ─────────────────────────── */

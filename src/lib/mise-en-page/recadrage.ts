@@ -66,3 +66,18 @@ export function zoomer(r: Recadrage, zoom: number, photoPx: { l: number; h: numb
   const c = cadrer(photoPx, cadreMm, { zoom, dx: r.dx, dy: r.dy });
   return { zoom: c.zoom, dx: c.dx, dy: c.dy };
 }
+
+/**
+ * Lot 2 (B2, R-20 à R-23) : le recadrage de départ quand on connaît la ZONE importante de la photo (fractions de l'image).
+ * Même remplissage (zoom 1), mais l'image glisse pour que le centre de la zone soit au centre du cadre, borné comme
+ * toujours : jamais de blanc. Sans zone, le neutre (centré). Sert à la pose ; l'atelier reste libre de déplacer ensuite.
+ */
+export function recadrageParContenu(photoPx: { l: number; h: number }, cadreMm: { l: number; h: number }, zone: { x: number; y: number; l: number; h: number } | null | undefined): Recadrage {
+  if (!zone || ![zone.x, zone.y, zone.l, zone.h].every(Number.isFinite)) return { ...RECADRAGE_NEUTRE };
+  const c = cadrer(photoPx, cadreMm, RECADRAGE_NEUTRE);
+  /* le centre de la zone, en mm dans l'image posée ; le décalage qui l'amène au centre du cadre */
+  const zx = (zone.x + zone.l / 2) * c.l, zy = (zone.y + zone.h / 2) * c.h;
+  const dx = c.l / 2 - zx, dy = c.h / 2 - zy;
+  const b = cadrer(photoPx, cadreMm, { zoom: 1, dx, dy });
+  return { zoom: 1, dx: Math.round(b.dx * 100) / 100, dy: Math.round(b.dy * 100) / 100 };
+}

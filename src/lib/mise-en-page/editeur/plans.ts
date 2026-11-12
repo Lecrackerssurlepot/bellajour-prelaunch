@@ -10,6 +10,7 @@ import {
   insererDouble, issue, remplacer, reordonner, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 import { affectation, dimsCadre, dispositionOuNull, idsDispo, indexPlanche } from "./outils";
+import { marquesProposees, preTrier } from "./pretri";
 import { estTour, etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEffective, marquePourZone, marquer, reglerVisees, ETIQUETTES, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
@@ -265,6 +266,14 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return simple("supprimerPlanche", i === 0 ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
+    case "preTrier": {
+      const pm = marquesProposees(preTrier(cat, m, e.lecture));
+      let m2 = m;
+      for (const k of ["ecartee", "reserve", "choisie"] as const) if (pm[k].length) m2 = marquer(m2, pm[k], k);
+      const n = pm.ecartee.length + pm.reserve.length + pm.choisie.length;
+      const parts = [pm.choisie.length ? `${pm.choisie.length} gardée${pm.choisie.length > 1 ? "s" : ""}` : "", pm.reserve.length ? `${pm.reserve.length} en réserve` : "", pm.ecartee.length ? `${pm.ecartee.length} écartée${pm.ecartee.length > 1 ? "s" : ""}` : ""].filter(Boolean);
+      return simple("marquer", n ? `Pré-tri · ${parts.join(", ")}` : "Pré-tri · rien à proposer", e.plancheCourante, m2, {});
+    }
     case "marquer": {
       const ids = Array.isArray(g.ids) ? g.ids.filter((id) => cat.has(id)) : [];
       const autres = Array.isArray(g.autres) ? g.autres.filter((id) => cat.has(id) && !ids.includes(id)) : [];

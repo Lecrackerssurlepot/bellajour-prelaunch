@@ -12,6 +12,10 @@ import { contenuValide } from "../sauvegarde";
 import type { Magazine } from "../magazine";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
+import { LECTURE_VIDE } from "./mesures";
+import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./lecons";
+import { preTrier } from "./pretri";
+import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -25,6 +29,9 @@ import type {
 /* ─────────────────────────── Création ─────────────────────────── */
 
 export const numeroDe = (id: string): number => { const k = /^pl-(\d+)$/.exec(id); return k ? Number(k[1]) : 0; };
+/** Au-delà, les plus anciennes leçons non envoyées partent : la mémoire ne doit jamais alourdir l'écran. */
+const LECONS_MAX = 500;
+
 const numeroMax = (m: Magazine): number => m.planches.reduce((a, p) => Math.max(a, numeroDe(p.id)), 0);
 
 export function creerEtat(o: OptionsEtat): EtatEditeur {
@@ -56,6 +63,10 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     derniere: null,
     copieLocale: null,
     familleGabarits: "tous",
+    lecture: LECTURE_VIDE,
+    pilesOuvertes: [],
+    lecons: [],
+    pretri: {},
   };
 }
 
@@ -68,6 +79,9 @@ const enAttente = (s: EtatSauvegarde): EtatSauvegarde => ({ etat: "en_attente", 
 /** L'unique porte d'entrée du magazine : une entrée d'historique, futur vidé, sauvegarde en attente. */
 function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine): EtatEditeur {
   if (magazine === e.magazine) return e;
+  /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander */
+  const neuves = [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDuPreTri(e.magazine, magazine, e.pretri)];
+  if (neuves.length) e = { ...e, lecons: [...e.lecons, ...neuves].slice(-LECONS_MAX) };
   const passe = [...e.historique.passe, { libelle, avant: e.magazine, apres: magazine, plancheId }].slice(-HISTORIQUE_MAX);
   return { ...e, magazine, historique: { passe, futur: [] }, sauvegarde: enAttente(e.sauvegarde), eclair: plancheId };
 }
@@ -214,7 +228,7 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "etiqueter", "hesiter",
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
   "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
@@ -242,6 +256,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
     return { ...x, magazine: e.magazine, confirmation: { type: "signalee", nb: signalees.length, total, geste: { ...g, confirme: true } } };
   }
   const avant = x.magazine;
+  /* lot 3 : le pré-tri garde ses propositions (avec leur raison) pour reconnaître ensuite un geste contraire */
+  if (g.type === "preTrier") x = { ...x, pretri: { ...x.pretri, ...preTrier(e.catalogue, e.magazine, e.lecture).propositions } };
   x = adopter(x, plan.libelle, plan.plancheId, is.magazine);
   if ((plan.op === "insererDouble" || plan.op === "creerDoubles") && is.nouvellePlanche) {
     x = { ...x, plancheCourante: is.nouvellePlanche, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1) };
@@ -350,6 +366,7 @@ const GESTES: Gestes = {
     const groupe = choisir(["jour", "moment", "lieu", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
     const marque = choisir(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const etiquette = choisir(["", "couverture", "double", "pleine"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
+    const lecture = choisir(["", ...TAGS] as const, v.lecture); if (lecture !== null) f.lecture = lecture;
     /* l'étiquette ne filtre qu'au tour ③ : changer de vue la relâche */
     if (marque && marque !== "choisies" && !("etiquette" in v)) f.etiquette = "";
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
@@ -362,6 +379,35 @@ const GESTES: Gestes = {
   familleGabarits(e, g) {
     const f = choisir(["tous", "avec", "sans"] as const, g.famille);
     return f && f !== e.familleGabarits ? { ...e, familleGabarits: f } : e;
+  },
+  leconsEnvoyees(e, g) {
+    const n = Number.isInteger(g.n) && g.n > 0 ? g.n : 0;
+    return n ? { ...e, lecons: e.lecons.slice(n) } : e;
+  },
+  ajouterLecon(e, g) {
+    return leconValide(g.lecon) ? { ...e, lecons: [...e.lecons, g.lecon].slice(-LECONS_MAX) } : e;
+  },
+  poserLecture(e, g) {
+    const l = g.lecture;
+    if (!l || !Array.isArray(l.floues) || !Array.isArray(l.piles)) return e;
+    const tetes = new Set(l.piles.map((p) => p.tete));
+    /* lot 2 : la zone importante rejoint la photo du catalogue (les opérations pures la lisent pour poser et noter) */
+    const zones = l.zones && typeof l.zones === "object" ? l.zones : {};
+    let cat = e.catalogue;
+    if (Object.keys(zones).length || [...e.catalogue.values()].some((p) => p.zone)) {
+      const m = new Map(e.catalogue);
+      for (const [id, p] of e.catalogue) {
+        const z = zones[id] ?? null;
+        if ((p.zone ?? null) !== z) m.set(id, { ...p, zone: z });
+      }
+      cat = m;
+    }
+    return { ...e, catalogue: cat, lecture: { ...l, zones }, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+  },
+  basculerPile(e, g) {
+    if (!e.lecture.piles.some((p) => p.tete === g.tete)) return e;
+    const ouverte = e.pilesOuvertes.includes(g.tete);
+    return { ...e, pilesOuvertes: ouverte ? e.pilesOuvertes.filter((t) => t !== g.tete) : [...e.pilesOuvertes, g.tete] };
   },
   effacerFiltres(e) {
     const { tri, groupe, taille, masquerUtilisees } = e.filtres;

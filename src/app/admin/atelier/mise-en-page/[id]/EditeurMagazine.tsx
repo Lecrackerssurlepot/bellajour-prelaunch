@@ -19,6 +19,8 @@ import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
 import { clavierTri } from "./triEcran";
 import Confrontation, { clavierConfrontation } from "./Hesitation";
+import { useLecture } from "./mesuresClient";
+import { useLecons } from "./leconsClient";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -74,6 +76,10 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     const g = f(e);
     return g ? appliquer(e, g) : e;
   });
+  /* couche 1 (09/11) : les vignettes sont mesurées dans le navigateur, floues et piles arrivent dans l'état */
+  useLecture(etat?.catalogue ?? null, adresses, envoyer);
+  /* lot 2 (G1, G2, G6) : les gestes contraires deviennent des leçons, envoyées au serveur sans rien demander */
+  const memoire = useLecons(cle.cle, etat, envoyer);
   const flasher = (cible: CibleDepot) => majUi({ flash: cible });
   const gesteAvecAnnuler = (g: Geste, texte: string) => setEtat((e) => {
     if (!e) return e;
@@ -267,6 +273,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       if (e.key === "Escape") t.blur();
       return; /* pendant la saisie, aucun raccourci de l'éditeur */
     }
+    /* 10/11 : L montre ou cache la lecture dessinée (chaleur, visages, zone), partout */
+    if ((e.key === "l" || e.key === "L") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); majUi({ lecture: !ui.lecture }); return; }
     /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */
     if (clavierConfrontation({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
     if (ui.confronter) return;
@@ -351,7 +359,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
         {ui.loupe ? <Loupe id={ui.loupe} /> : null}
-        {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} /> : null}
+        {ui.exportOuvert ? <ExportFeuille catalogue={catalogue} source={source} projet={projet} suite={suite} onFermer={() => majUi({ exportOuvert: false })} onExporte={memoire.exporte} memoire={memoire} /> : null}
       </div>
     </CtxEd.Provider>
   );
