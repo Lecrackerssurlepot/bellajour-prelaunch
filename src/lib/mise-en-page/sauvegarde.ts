@@ -15,6 +15,7 @@
 
 import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Magazine, type Planche, type TexteCadre } from "./magazine";
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
+import { PAGES_MAX_SAISIE, nombresDuGabarit } from "./couverture";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -213,6 +214,24 @@ function triValide(v: unknown): boolean {
   return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
 }
 
+/**
+ * La couverture (lot B, 12/11) : un gabarit de couverture CONNU (`CV-…`, ids stables), une affectation par cadre photo et
+ * un texte par cadre texte de ce gabarit, dans l'ordre ; `pages` (saisie quand le projet ne connaît pas ses pages) est
+ * facultatif, jamais `undefined`, un entier de 2 à `PAGES_MAX_SAISIE` (borne technique : le dos, lui, se refuse hors
+ * de 24 à 60 pages paires, à l'écran).
+ */
+function couvertureValide(v: unknown): boolean {
+  if (!estObjet(v)) return false;
+  const aPages = Object.prototype.hasOwnProperty.call(v, "pages");
+  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aPages ? ["pages"] : [])])) return false;
+  if (!estId(v.templateId)) return false;
+  const n = nombresDuGabarit(v.templateId);
+  if (!n || !Array.isArray(v.photos) || !Array.isArray(v.textes)) return false;
+  if (v.photos.length !== n.photos || v.textes.length !== n.textes) return false;
+  if (aPages && !(Number.isInteger(v.pages) && (v.pages as number) >= 2 && (v.pages as number) <= PAGES_MAX_SAISIE)) return false;
+  return v.photos.every(affectationValide) && v.textes.every(texteValide);
+}
+
 /** Un validateur de clé facultative : relit la VALEUR de la clé (jamais son absence : une clé absente n'est pas relue). */
 export type CleFacultative = { cle: string; valide: (v: unknown) => boolean };
 
@@ -246,9 +265,10 @@ export function clesAdmises(x: Record<string, unknown>, base: readonly string[],
 const refuseeEnAttendant = (): boolean => false;
 const CLES_FACULTATIVES: readonly CleFacultative[] = [
   { cle: "tri", valide: triValide },
-  /* Prévues, pas encore acceptées : leurs validateurs viendront avec leurs lots (feuille de style, couverture). */
+  /* Prévue, pas encore acceptée : son validateur viendra avec son lot (feuille de style). */
   { cle: "style", valide: refuseeEnAttendant },
-  { cle: "couverture", valide: refuseeEnAttendant },
+  /* Lot B (12/11) : la couverture à plat. */
+  { cle: "couverture", valide: couvertureValide },
 ];
 /** Les noms des clés facultatives connues (acceptées ou seulement prévues), pour le harnais. */
 export const NOMS_CLES_FACULTATIVES: readonly string[] = CLES_FACULTATIVES.map((c) => c.cle);
