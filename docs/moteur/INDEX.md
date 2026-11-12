@@ -21,22 +21,22 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 
 ## Les couches
 
-| Fiche | Couche | Règles | Statut au 10/11 |
+| Fiche | Couche | Règles | Statut au 12/11 |
 |---|---|---|---|
-| [C01](couches/C01-mesures.md) | Mesures : netteté, empreinte, lumière | R72, R73 | branche, harnais vert, testé par Mathias le 10/11 |
-| [C02](couches/C02-piles.md) | Piles : rafales, doublons, similaires | R74 à R77, R93 | branche, harnais vert, recalibré le 10/11 |
-| [C03](couches/C03-defauts.md) | Défauts : sombre, brûlée, capture, visage flou | R85 (A3, A4, A7) | branche, harnais vert |
-| [C04](couches/C04-visages.md) | Visages détectés, jamais reconnus | R81 | branche, harnais vert |
-| [C05](couches/C05-zone-pli.md) | Zone importante, recadrage par contenu, pli | R82, R83 | branche ; pli = HYPOTHÈSE 5 mm |
-| [C06](couches/C06-pretri.md) | Pré-tri avec raisons, objectif, équité | R84 à R87, R89 | branche, harnais vert |
-| [C07](couches/C07-horloges.md) | Horloges entre téléphones | R88 | branche, harnais vert |
-| [C08](couches/C08-moments-lieux.md) | Moments, séjours, lieux, faits | R70, R71, R91 | moments et lieux EN PROD (#352) ; faits sur la branche |
-| [C09](couches/C09-palette.md) | Palette | R92 | branche ; pas encore reliée aux aplats |
-| [C10](couches/C10-gabarits.md) | Choix du gabarit et sa note | R66, R67, R69, R83 | EN PROD (#351, #352) ; pli sur la branche |
-| [C11](couches/C11-qualite-export.md) | Qualité d'impression, contrôle avant export | R68, R90 | dpi EN PROD (#352) ; contrôle sur la branche |
-| [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | branche ; tables NON créées (migration 20261110) |
+| [C01](couches/C01-mesures.md) | Mesures : netteté, empreinte, lumière | R72, R73 | EN PROD (lot A, 12/11), testé par Mathias le 10/11 |
+| [C02](couches/C02-piles.md) | Piles : rafales, doublons, similaires | R74 à R77, R93 | EN PROD (lot A, 12/11), recalibré le 10/11 |
+| [C03](couches/C03-defauts.md) | Défauts : sombre, brûlée, capture, visage flou | R85 (A3, A4, A7) | EN PROD (lot A, 12/11) |
+| [C04](couches/C04-visages.md) | Visages détectés, jamais reconnus | R81 | EN PROD (lot A, 12/11) |
+| [C05](couches/C05-zone-pli.md) | Zone importante, recadrage par contenu, pli | R82, R83 | EN PROD (lot A, 12/11) ; pli = HYPOTHÈSE 5 mm |
+| [C06](couches/C06-pretri.md) | Pré-tri avec raisons, objectif, équité | R84 à R87, R89 | EN PROD (lot A, 12/11) |
+| [C07](couches/C07-horloges.md) | Horloges entre téléphones | R88 | EN PROD (lot A, 12/11) |
+| [C08](couches/C08-moments-lieux.md) | Moments, séjours, lieux, faits | R70, R71, R91 | EN PROD : moments et lieux (#352), faits (lot A, 12/11) |
+| [C09](couches/C09-palette.md) | Palette | R92 | EN PROD (lot A, 12/11) ; pas encore reliée aux aplats |
+| [C10](couches/C10-gabarits.md) | Choix du gabarit et sa note | R66, R67, R69, R83 | EN PROD (#351, #352) ; pli (lot A, 12/11) |
+| [C11](couches/C11-qualite-export.md) | Qualité d'impression, contrôle avant export | R68, R90 | EN PROD : dpi (#352), contrôle avant export (lot A, 12/11) |
+| [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (lot A, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
 
-« Branche » = `feat/mise-en-page-couche1-mesures`, non fusionnée.
+Le lot A (12/11) = la branche `feat/mise-en-page-couche1-mesures`, fusionnée dans `main` avec l'export PDF de #353 : l'instantané, le jalon et les trois questions valent pour Canva (PDF) comme pour Affinity (IDML).
 
 ## Les couches à venir (ordre décidé le 10/11)
 - **Page Analyse** : entre « Démarrer » et l'éditeur, fait passer C01 à C09 sur tout le dossier et montre le rapport.

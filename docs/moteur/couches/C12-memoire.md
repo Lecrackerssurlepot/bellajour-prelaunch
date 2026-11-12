@@ -21,4 +21,4 @@ bloc du lot 2 « la mémoire » dans `verif-mep-editeur.ts`. Rejeu sur photos r�
 **Tables non créées au 10/11** : sans elles la route répond 503 et les leçons restent sur l'appareil (500 au plus). C'est la base de l'entraînement futur : sans migration, rien ne s'accumule.
 
 ## Historique
-09/11 : créée. 10/11 : migration toujours à appliquer par Mathias.
+09/11 : créée. 10/11 : migration toujours à appliquer par Mathias. 12/11 : migration appliquée (tables `mep_lecons`, 2 lignes, et `mep_instantanes`, 0 ligne, vues en base) ; fusionnée dans `main` (lot A) ; le jalon et l'instantané partent aussi à l'export PDF (Canva), le jalon dit « export PDF » ou « export IDML ».
