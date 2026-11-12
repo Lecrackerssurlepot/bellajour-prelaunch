@@ -18,6 +18,7 @@
  */
 
 import type { PhotoRef } from "@/lib/mise-en-page/magazine";
+import type { Projet } from "@/lib/mise-en-page/editeur";
 import type {
   MagazineEditionMep,
   PhotoDossierMep,
@@ -67,12 +68,14 @@ export const gpsDe = (lat: number | null | undefined, lon: number | null | undef
   typeof lat === "number" && typeof lon === "number" && Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(lat === 0 && lon === 0)
     ? { lat, lon } : null;
 
-/** Ce que l'écran affiche du projet. */
-export type ProjetInfo = {
-  nom: string;
+/**
+ * Ce que l'écran sait du projet : les champs du `Projet` de l'éditeur (UN type, lib/mise-en-page/editeur/types.ts : le
+ * nombre de pages payé, la finition, tout champ à venir) plus les deux drapeaux d'écran, qui ne font pas partie du projet.
+ * `nbPagesCible` : le nombre de pages payé (dossier) ; null s'il n'est pas connu (édition, ou dossier sans pagination).
+ * `finition` : le pelliculage du dossier ; null pour une édition, une création libre, ou si on ne sait pas.
+ */
+export type ProjetInfo = Omit<Projet, "source"> & {
   source: "particulier" | "edition";
-  /** Le nombre de pages payé (dossier) ; null s'il n'est pas connu (édition, ou dossier sans pagination). */
-  nbPagesCible: number | null;
   /** Édition seulement : la collecte est encore ouverte (l'éditeur avertit, sans bloquer). */
   collecteOuverte: boolean;
   /** Édition seulement : archivée. */
@@ -181,6 +184,7 @@ export function catalogueDeDossier(r: ReponsePhotosMep, obtenuLe: number): Catal
       nom: r.titre?.trim() || (r.prenom ? `Dossier de ${r.prenom}` : "Dossier"),
       source: "particulier",
       nbPagesCible: typeof r.nbPages === "number" && r.nbPages > 0 ? r.nbPages : null,
+      finition: r.finition === "gloss" || r.finition === "matte" ? r.finition : null,
       collecteOuverte: false,
       archive: false,
     },
@@ -201,6 +205,7 @@ export function catalogueDEdition(r: ReponsePhotosEditionMep, magazineId: string
       nom: mag ? `${nom} · ${mag.nom}` : nom,
       source: "edition",
       nbPagesCible: null,
+      finition: null,
       collecteOuverte: r.edition.collecteOuverte,
       archive: r.edition.archive,
     },
