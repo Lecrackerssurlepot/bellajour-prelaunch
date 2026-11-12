@@ -467,6 +467,8 @@ import type { Magazine as MagazineMepClient } from "@/lib/mise-en-page/magazine"
 import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
 /* L'éditeur de mise en page (couche logique pure) : 79 scénarios + séquences aléatoires à graine fixe. */
 import { verifierMepEditeur } from "./verif-mep-editeur";
+/* La couverture à plat (lot B, 12/11) : son propre fichier de tests, rejoué à la fin. */
+import { verifierMepCouverture } from "./verif-mep-couverture";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -7047,7 +7049,7 @@ const verifierMepSauvegarde = () => {
   ok("lot 0 : une clé facultative n'est acceptée que présente AVEC une valeur valide, jamais `undefined`, `null` ni une forme cassée",
     !contenuValide({ ...vrai, tri: undefined }) && !contenuValide({ ...vrai, tri: null }) && !contenuValide({ ...vrai, tri: "tri" })
       && !contenuValide({ ...vrai, tri: { choisies: ["a"], ecartees: ["a"], visees: null } }) && !contenuValide({ ...vrai, tri: { ...triOk, visees: 0 } }));
-  ok("lot 0 : `style` et `couverture` sont PRÉPARÉES dans la liste (leurs noms y sont) mais REFUSÉES tant que leurs lots n'ont pas écrit leur validateur : seules, absentes de valeur, plausibles ou combinées",
+  ok("lot 0 : `style` est PRÉPARÉE dans la liste mais REFUSÉE tant que son lot n'a pas écrit son validateur ; `couverture` (lot B) a le sien : vide, absente de valeur ou d'une autre forme, elle reste refusée",
     NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture"
       && !contenuValide({ ...vrai, style: {} }) && !contenuValide({ ...vrai, style: undefined }) && !contenuValide({ ...vrai, style: null })
       && !contenuValide({ ...vrai, style: { titre: "Playfair Display", texte: "DM Sans", legende: "DM Sans" } })
@@ -7432,7 +7434,7 @@ verifierMepLot0();
 
 verifierMepEditeur(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
