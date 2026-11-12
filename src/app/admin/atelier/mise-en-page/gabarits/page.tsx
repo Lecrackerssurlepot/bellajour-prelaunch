@@ -134,7 +134,7 @@ export default async function PageGabarits() {
           Générés : page <span>{nbGeneres}</span>
         </h2>
         <p className="mep-note">
-          La grammaire des pages (schémas de découpe sur la grille 6 × 6), refaite par la machine : un id <code>GG1-…</code> est la recette du gabarit,
+          La grammaire des pages (schémas de découpe sur la grille 6 × 6), refaite par la machine : un id <code>GG1-…</code>{" "}est la recette du gabarit,
           relue sans table. Chaque schéma s&apos;ouvre ; les gabarits sont rangés par nombre de photos.
         </p>
         {generes.map((g) => (
