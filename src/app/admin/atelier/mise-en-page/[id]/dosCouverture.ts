@@ -24,3 +24,32 @@ export function dosDuProjet(projet: Pick<Projet, "nbPagesCible" | "finition"> | 
      diverge un jour de `Finition` (impression.ts). */
   return dosMmPourPages(projet.nbPagesCible, projet.finition);
 }
+
+/**
+ * Le dos de la COUVERTURE affichée et exportée (lot B, 12/11), décision du chef de projet :
+ * - les pages : celles PAYÉES du projet ; inconnues (édition, création libre), celles SAISIES sur la couverture ;
+ *   aucune des deux = dos inconnu, l'export de la couverture s'arrête avec une phrase (jamais un dos inventé) ;
+ * - la finition : celle du dossier ; jamais choisie, le défaut documenté de la COMMANDE réelle (brillant, comme
+ *   `finitionDuDossier`), et l'écran le DIT (`finitionParDefaut`).
+ */
+export type DosCouverture = {
+  dos: number | null;
+  pages: number | null;
+  source: "projet" | "saisie" | null;
+  finition: "gloss" | "matte";
+  finitionParDefaut: boolean;
+  /** La phrase qui dit pourquoi le dos manque (null s'il est connu). */
+  manque: string | null;
+};
+
+export function dosDeLaCouverture(projet: Pick<Projet, "nbPagesCible" | "finition"> | null | undefined, pagesSaisies: number | null | undefined): DosCouverture {
+  const finition = projet?.finition ?? "gloss";
+  const finitionParDefaut = !projet?.finition;
+  const duProjet = projet && Number.isInteger(projet.nbPagesCible) ? projet.nbPagesCible : null;
+  const saisies = Number.isInteger(pagesSaisies) ? (pagesSaisies as number) : null;
+  const pages = duProjet ?? saisies;
+  const source = duProjet !== null ? "projet" : saisies !== null ? "saisie" : null;
+  if (pages === null) return { dos: null, pages, source, finition, finitionParDefaut, manque: "Pages à saisir pour le dos" };
+  const dos = dosMmPourPages(pages, finition);
+  return { dos, pages, source, finition, finitionParDefaut, manque: dos === null ? "Dos carré : 24 à 60 pages paires" : null };
+}

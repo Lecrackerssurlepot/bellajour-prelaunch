@@ -17,6 +17,8 @@ import { Loupe, Pile, posPile } from "./Pile";
 import Panneau from "./Panneau";
 import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
+import SceneCouverture, { BandeCouverture, RangeeCouverture } from "./SceneCouverture";
+import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { clavierTri } from "./triEcran";
 import Confrontation, { clavierConfrontation } from "./Hesitation";
 import { useLecture } from "./mesuresClient";
@@ -338,6 +340,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
   const d = etat.glisser;
   const annonce = etat.message ? etat.message.texte : etat.derniere ? etat.derniere.libelle : "";
   const planche = etat.magazine.planches.find((p) => p.id === etat.plancheCourante) ?? etat.magazine.planches[0];
+  /* lot B : la couverture à plat a sa scène, sa bande et son tiroir */
+  const surCouverture = etat.plancheCourante === ID_COUVERTURE;
 
   return (
     <CtxEd.Provider value={ctx}>
@@ -352,10 +356,10 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
         <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}${ui.confronter && !ui.grand ? " ed-corps--conf" : ""}`}>
           <Panneau />
           <div className="ed-centre" onPointerDown={() => { if (ui.zone !== "planche") majUi({ zone: "planche" }); }}>
-            <Scene />
-            <Bande />
+            {surCouverture ? <SceneCouverture /> : <Scene />}
+            {surCouverture ? <BandeCouverture /> : <Bande />}
             <CheminDeFer />
-            {ui.rangee && !d && !ro && planche ? <Rangee pl={planche} cible={ui.rangee} /> : null}
+            {ui.rangee && !d && !ro ? (surCouverture ? <RangeeCouverture /> : planche ? <Rangee pl={planche} cible={ui.rangee} /> : null) : null}
             {ui.grand ? null : <Toast />}
           </div>
           {ui.confronter && !ui.grand ? <Confrontation /> : null}
