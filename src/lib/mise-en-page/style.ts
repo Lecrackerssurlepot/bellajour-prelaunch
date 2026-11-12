@@ -17,7 +17,7 @@
  * relit dans les fichiers.
  */
 
-import { ROLES_COULEUR, estHex, type CouleursNuancier, type RoleCouleur } from "./nuancier";
+import { COULEURS_ORIGINE, ROLES_COULEUR, estHex, type CouleursNuancier, type RoleCouleur } from "./nuancier";
 import { typographieFrancaise } from "./francais";
 import type { Cadre, RoleCadre, Teinte } from "./types";
 
@@ -198,13 +198,8 @@ export function facettesDe(p: Paire): { police: Police; graisse: number; facette
 
 export type StyleMagazine = { paire: string; couleurs: Couleurs };
 
-/**
- * Le nuancier d'avant le style, rendu explicite : l'aplat terracotta de la marque (`--bj-terracotta`, l'ancienne nuance
- * « Aplat ») devient le rôle aplat sourd ; le noir de l'écran (#231f20) sert l'encre et la nuit ; le papier est blanc.
- */
-export const COULEURS_ORIGINE: Readonly<Couleurs> = {
-  papier: "#ffffff", encre: "#231f20", aplatClair: "#ebdace", aplatSourd: "#bc977d", accent: "#856045", nuit: "#231f20",
-};
+/** Le nuancier d'avant le style (l'ancien terracotta = aplat sourd), voir nuancier.ts. */
+export { COULEURS_ORIGINE };
 
 /** Le style d'une paire avec le nuancier d'origine (ou celui donné). */
 export const styleDePaire = (id: string, couleurs: Couleurs = { ...COULEURS_ORIGINE }): StyleMagazine | null => (paireParId(id) ? { paire: id, couleurs: { ...couleurs } } : null);

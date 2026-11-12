@@ -134,10 +134,17 @@ export const ecartTeinte = (a: number, b: number): number => { const d = Math.ab
 
 /** Les valeurs du banc (`reglages.py`) : réglages de départ, à calibrer sur les choix de Mathias. */
 export const REGLAGES_NUANCIER = {
-  /** R-C-04 : une teinte est « chromatique » à partir d'une saturation de 8 (en dessous, un gris : jamais un aplat). */
-  CHROMA_MIN: 8,
+  /** R-C-04 : une teinte est « chromatique » à partir d'une saturation de 8 (en dessous, un gris : jamais un aplat) ; elle pèse plein poids à 30 (une dominante est une couleur franche : un beige C 15 pèse la moitié d'une brique C 40). */
+  CHROMA_MIN: 8, CHROMA_PLEIN: 30,
   /** R-C-02 : un blanc brûlé (L > 97) et un noir bouché (L < 5) ne votent pas. */
   L_BRULE: 97, L_BOUCHE: 5,
+  /**
+   * Une OMBRE n'est pas une couleur d'aplat : les palettes de la lecture sont des centres de k-moyennes sur toute la vignette, et la
+   * plus présente d'une photo est souvent son ombre (brun ou bleu nuit très sombre) ; un papier presque blanc n'est pas un aplat non plus.
+   * Poids nul sous L 22 (le noir composé de la nuit les couvre), plein poids dès L 34 ; plein poids jusqu'à L 90, nul à 97.
+   * Réglage de départ, mesuré sur les photos de Klervie et de Merisa le 12/11 (sans cela, la dominante de Madeira était un bleu nuit).
+   */
+  OMBRE_NULLE: 22, OMBRE_PLEINE: 34, CLAIR_PLEIN: 90,
   /** Une famille réunit des teintes à 12° au plus (le banc prend 10° sur des surfaces ; ici des centres de k-moyennes, plus bruités). */
   FAMILLE_DH: 12,
   /** R-C-03 : récurrence, +0,15 par photo où la famille apparaît. */
@@ -178,6 +185,16 @@ export const ROLES_COULEUR = ["papier", "encre", "aplatClair", "aplatSourd", "ac
 export type RoleCouleur = (typeof ROLES_COULEUR)[number];
 export type CouleursNuancier = Record<RoleCouleur, string>;
 
+/**
+ * Le nuancier d'avant le style, rendu explicite : l'aplat terracotta de la marque (`--bj-terracotta`, l'ancienne nuance « Aplat »)
+ * devient le rôle aplat sourd ; le noir de l'écran (#231f20) sert l'encre et la nuit ; le papier est blanc ; l'aplat clair est sa
+ * version pâle et l'accent sa version sombre (contraste 5,6:1 sur le papier). C'est aussi ce qu'on garde quand les photos n'ont
+ * aucune couleur à proposer (jamais un gris en aplat).
+ */
+export const COULEURS_ORIGINE: Readonly<CouleursNuancier> = {
+  papier: "#ffffff", encre: "#231f20", aplatClair: "#ebdace", aplatSourd: "#bc977d", accent: "#856045", nuit: "#231f20",
+};
+
 export type PropositionNuancier = {
   couleurs: CouleursNuancier;
   /** R-C-10 : l'accord nommé, en une phrase que l'atelier peut refuser d'un mot. */
@@ -204,7 +221,11 @@ function famillesDe(palettes: readonly (readonly string[])[]): Famille[] {
       const lch = lchDeHex(hex);
       if (lch.C < R.CHROMA_MIN || lch.L > R.L_BRULE || lch.L < R.L_BOUCHE) return;
       const base = R.POIDS_RANG[Math.min(rang, R.POIDS_RANG.length - 1)];
-      membres.push({ hex, lch, poids: base * (estPeau(lch) ? R.POIDS_PEAU : 1), photo });
+      const ombre = Math.min(1, Math.max(0, (lch.L - R.OMBRE_NULLE) / (R.OMBRE_PLEINE - R.OMBRE_NULLE)));
+      const clair = lch.L <= R.CLAIR_PLEIN ? 1 : Math.max(0, (R.L_BRULE - lch.L) / (R.L_BRULE - R.CLAIR_PLEIN));
+      const franc = Math.min(1, (lch.C - R.CHROMA_MIN) / (R.CHROMA_PLEIN - R.CHROMA_MIN));
+      const poids = base * ombre * clair * franc * (estPeau(lch) ? R.POIDS_PEAU : 1);
+      if (poids > 0.001) membres.push({ hex, lch, poids, photo });
     });
   });
   const familles: { h: number; membres: Membre[] }[] = [];
@@ -224,8 +245,8 @@ function famillesDe(palettes: readonly (readonly string[])[]): Famille[] {
       const photos = new Set(f.membres.map((x) => x.photo)).size;
       const rep = f.membres.reduce((a, b) => (b.poids > a.poids ? b : a));
       const chromas = f.membres.map((x) => x.lch.C).sort((a, b) => a - b);
-      /* « pas plus saturé que sa source » : le quart le moins saturé de la famille, jamais plus que le représentant */
-      const C = Math.min(rep.lch.C, chromas[Math.floor((chromas.length - 1) * 0.25)]);
+      /* « pas plus saturé que sa source » : la saturation médiane de la famille, jamais plus que celle du représentant */
+      const C = Math.min(rep.lch.C, chromas[Math.floor((chromas.length - 1) * 0.5)]);
       return { h: rep.lch.h, membres: f.membres, photos, rep, C, score: f.membres.reduce((s, x) => s + x.poids, 0) + R.BONUS_RECURRENCE * photos };
     })
     .sort((a, b) => b.score - a.score || (a.rep.hex < b.rep.hex ? -1 : 1));
@@ -284,7 +305,7 @@ export function proposerNuancier(palettes: readonly (readonly string[])[]): Prop
   pourquoi.nuit = "Un noir composé, pour les fonds de soirée";
 
   /* 3. les aplats : une teinte d'UNE photo, jamais plus saturée qu'elle, version sourde (écho) et version claire (A-03) */
-  let aplatSourd = "#bc977d", aplatClair = "#eadfd5";
+  let aplatSourd: string = COULEURS_ORIGINE.aplatSourd, aplatClair: string = COULEURS_ORIGINE.aplatClair;
   pourquoi.aplatSourd = "Le terracotta d'origine : les photos n'ont pas de couleur franche";
   pourquoi.aplatClair = "Une version pâle du terracotta d'origine";
   if (dom) {
@@ -314,8 +335,8 @@ export function proposerNuancier(palettes: readonly (readonly string[])[]): Prop
   /* 4. l'accent : la teinte la plus saturée qui revient, désaturée puis assombrie jusqu'au contraste (R-C-04, R-61) */
   let accent: string;
   const candidat = familles
-    .filter((f) => f.photos >= R.ACCENT_PHOTOS_MIN && f.C >= R.ACCENT_CHROMA_MIN && (!dom || f === dom ? false : ecartTeinte(f.h, dom.h) >= 25))
-    .sort((a, b) => b.C - a.C)[0];
+    .filter((f) => f.photos >= R.ACCENT_PHOTOS_MIN && f.rep.lch.C >= R.ACCENT_CHROMA_MIN && (!dom || f === dom ? false : ecartTeinte(f.h, dom.h) >= 25))
+    .sort((a, b) => b.rep.lch.C - a.rep.lch.C)[0];
   const base = candidat ?? (dom ? dom : undefined);
   if (base) {
     let L = Math.min(base.rep.lch.L, 50);
