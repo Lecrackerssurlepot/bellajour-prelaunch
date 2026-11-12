@@ -19,6 +19,7 @@ import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, recadrageParContenu, type Recadra
 import { TEMPLATES_ANNEXE } from "./templates";
 import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
+import { genereParId, genereesPour } from "./genere";
 import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
 import type { StyleMagazine } from "./style";
 
@@ -90,6 +91,7 @@ export const TEMPLATE_LIBRE = "libre";
 /** Lot 4 : les gabarits enregistrés par l'atelier (table `mep_gabarits`), chargés par l'écran. Ils passent AVANT les
  *  dessinés dans `candidats`. Une disposition qui en vient garde une copie de ses cadres : elle se relit sans eux. */
 let enregistres: Template[] = [];
+let versionEnregistres = 0;
 let catalogue: Map<string, Template> | null = null;
 const index = (): Map<string, Template> => {
   if (!catalogue) catalogue = new Map([...enregistres, ...TEMPLATES_DESSINES, ...toutesLesGrilles()].map((t) => [t.id, t]));
@@ -99,13 +101,17 @@ const index = (): Map<string, Template> => {
 /** Remplace les gabarits enregistrés connus (rechargés par l'écran). */
 export function enregistrerGabarits(liste: readonly Template[]): void {
   enregistres = liste.filter((t) => t.origine === "atelier").map((t) => ({ ...t, cadres: t.cadres.map((c) => ({ ...c })) }));
+  versionEnregistres++;
   catalogue = null;
 }
+/** Change à chaque `enregistrerGabarits` : la clé d'une mémoïsation qui dépend des gabarits enregistrés (lot D, `gabaritsClasses`). */
+export const versionGabaritsEnregistres = (): number => versionEnregistres;
 export const gabaritsEnregistres = (): readonly Template[] => enregistres;
 
 /** Tout le catalogue : enregistrés, annexe puis grilles. */
 export const tousLesTemplates = (): Template[] => [...index().values()];
-export const templateParId = (id: string): Template | null => index().get(id) ?? null;
+/** Les gabarits GÉNÉRÉS (id `GG1-…`, lot D) ne sont dans aucune table : l'id est leur recette, `genereParId` la relit. */
+export const templateParId = (id: string): Template | null => index().get(id) ?? genereParId(id);
 
 /** Le miroir d'un cadre dans une largeur (x' = L − x − l, rotation inversée) : involution. */
 export function miroirCadre<C extends Cadre>(c: C, largeur: number): C {
@@ -197,9 +203,11 @@ const orientationPhoto = (p: PhotoRef): Orientation => orientationDe(p.l, p.h);
 
 /**
  * Les templates candidats, dans l'ordre où « Autre disposition » les parcourt :
- * (a) annexe de même portée, même nombre, signature compatible ;
- * (b) annexe de même nombre ;
- * (c) grilles de ce nombre (compatibles d'abord, ordre stable).
+ * (a) dessinés (enregistrés, annexe, épingles) de même portée, même nombre, signature compatible ;
+ * (b) dessinés de même nombre ;
+ * (c) pages seulement (lot D) : les gabarits GÉNÉRÉS de la grammaire dont les cadres vont à ces photos, chacun rangé
+ *     pour que la photo i aille au cadre i (genere.ts) ;
+ * (d) grilles de ce nombre (compatibles d'abord, ordre stable).
  * Toujours non vide pour 1 à 6 photos (page) et 1 à 12 (double). Au-delà du
  * maximum, seules les photos retenues (`retenir`) comptent.
  */
@@ -211,9 +219,11 @@ export function candidats(portee: Portee, photos: PhotoRef[]): Template[] {
   const compat = (t: Template) => signaturesCompatibles(orientationsCadres(t), os);
   const annexe = [...enregistres, ...TEMPLATES_DESSINES].filter((t) => t.portee === portee && t.nbPhotos === n);
   const grilles = portee === "page" ? grillesPage(n) : grillesDouble(n);
+  const generes = portee === "page" ? genereesPour(os) : [];
   return [
     ...annexe.filter(compat),
     ...annexe.filter((t) => !compat(t)),
+    ...generes,
     ...grilles.filter(compat),
     ...grilles.filter((t) => !compat(t)),
   ];

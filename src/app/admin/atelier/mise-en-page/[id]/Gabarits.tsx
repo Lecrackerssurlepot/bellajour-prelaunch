@@ -1,6 +1,7 @@
 "use client";
 
-import { actionsPlanche, apercu, dansFamille, gabaritsPour, type ActionsPlanche, type Cible, type FamilleGabarits, type Geste } from "@/lib/mise-en-page/editeur";
+import { useState } from "react";
+import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
 import type { Planche } from "@/lib/mise-en-page/magazine";
 import { cadresDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
 import { enregistrerGabarit } from "./gabaritsClient";
@@ -134,11 +135,14 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
 /* ─── le tiroir : les gabarits compatibles en vignettes. La double page reste entière sous l'aperçu en direct. ─── */
 export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const { etat, envoyer, majUi } = useEd();
+  /* lot D : les générés se comptent par centaines ; le tiroir en montre `PLAFOND_TIROIR`, « Plus » en ajoute (le parent le remonte à chaque page ou côté : `key`) */
+  const [montres, setMontres] = useState(PLAFOND_TIROIR);
   if ((pl.mode === "double") !== (cible === "double")) return null;
   const act = actionsPlanche(etat, pl.id);
   if (!act) return null;
   const liste = gabaritsPour(etat, pl.id, cible);
   const dansLaFamille = liste.filter((g) => dansFamille(g.template, etat.familleGabarits)).length;
+  const courant: GabaritPour | undefined = liste.find((g) => g.courant);
   /* lot 4 : une page retouchée s'enregistre comme gabarit, ou revient à son gabarit d'origine */
   const d = dispositionDe(pl, cible);
   const retouchee = act.retouchees.includes(cible);
@@ -160,17 +164,23 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
         ) : null}
       </span>
       {!liste.length ? <span className="ed-sous">Aucune photo</span> : null}
-      {liste.map((g) => {
+      {/* le gabarit courant reste sous les yeux même s'il est plus loin que le plafond : en tête, juste après le titre */}
+      {[...(courant && liste.indexOf(courant) >= montres ? [courant] : []), ...liste.slice(0, montres)].map((g) => {
         const geste: Geste = { type: "choisirGabarit", plancheId: pl.id, cible, templateId: g.id };
+        const genere = g.template.origine === "genere";
         return (
-          <button key={g.id} type="button" className="ed-gab" role="menuitemradio" aria-checked={g.courant} aria-current={g.courant} title={g.nom}
+          <button key={g.id} type="button" className="ed-gab" role="menuitemradio" aria-checked={g.courant} aria-current={g.courant} title={genere ? `${g.nom} · ${g.id}` : g.nom}
             onMouseEnter={g.courant ? () => majUi({ apercuGab: null }) : voir(geste)} onFocus={g.courant ? undefined : voir(geste)}
             onClick={() => { majUi({ apercuGab: null }); envoyer(geste); }}>
             <DessinGab t={g.template} l={g.template.portee === "double" ? 120 : 60} />
-            <span>{g.template.origine === "atelier" ? "Le mien" : g.id}</span>
+            <span className={genere ? "ed-gab-nom" : undefined}>{g.template.origine === "atelier" ? "Le mien" : genere ? g.nom.split(" · ")[0] : g.id}</span>
           </button>
         );
       })}
+      {liste.length > montres ? (
+        <button type="button" className="ed-bt ed-gab-plus" title={`${pluriel(liste.length - montres, "gabarit autre", "gabarits autres")}`}
+          onClick={() => setMontres(montres + PAS_TIROIR)}>Plus<b>{(liste.length - montres).toLocaleString("fr-FR")}</b></button>
+      ) : null}
       {retouchee && d ? (
         <span className="ed-gab-actions">
           <button type="button" className="ed-bt ed-bt--action" title="Garder cette page comme gabarit, pour tous les projets"
