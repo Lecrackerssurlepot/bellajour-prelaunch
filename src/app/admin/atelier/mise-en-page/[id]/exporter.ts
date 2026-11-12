@@ -23,7 +23,7 @@
  * `exporter` ne lève jamais : il rend un résultat typé.
  */
 
-import { construireIdml, photosUtilisees } from "@/lib/mise-en-page/idml";
+import { construireIdml, construireIdmlCouverture, photosUtilisees } from "@/lib/mise-en-page/idml";
 import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 import { zipperExport, zipperIdml } from "@/lib/mise-en-page/paquet";
@@ -114,11 +114,33 @@ export type ResultatExport =
       /** Les photos dont les octets n'ont pas livré de dimensions (HEIC, WebP) : la base a servi. */
       dimensionsDeLaBase: string[];
       octets: number;
+      /** Lot B : `couverture.idml` écrit (avec son dos), bloqué (la phrase), ou aucune couverture. */
+      couverture: CouvertureExport;
     }
   | { ok: false; raison: "annule" | "dossier_invalide" | "erreur"; message: string };
 
+/** Lot B : la couverture d'un export. `bloquee` = le dos manque (jamais un dos inventé) : l'intérieur part seul. */
+export type CouvertureExport = { etat: "ecrite"; dosMm: number } | { etat: "bloquee"; raison: string } | { etat: "aucune" };
+
+/**
+ * Lot B : ce que l'export fait de la couverture, et le magazine qu'il exporte. Sans dos, la couverture est retirée du
+ * magazine exporté (ses photos ne partent pas dans Links/) et l'export le dit.
+ */
+export function couvertureDeLExport(magazine: Magazine, dosMm: number | null, raison: string | null): { magazine: Magazine; couverture: CouvertureExport } {
+  if (!magazine.couverture) return { magazine, couverture: { etat: "aucune" } };
+  if (dosMm === null) {
+    const { couverture: _, ...sans } = magazine;
+    void _;
+    return { magazine: sans, couverture: { etat: "bloquee", raison: raison ?? "Dos inconnu" } };
+  }
+  return { magazine, couverture: { etat: "ecrite", dosMm } };
+}
+
 export type ArgumentsExport = {
   magazine: Magazine;
+  /** Lot B : le dos de la couverture (null = inconnu : la couverture ne part pas) et la phrase qui dit pourquoi. */
+  dosMm?: number | null;
+  raisonDos?: string | null;
   catalogue: CatalogueCharge;
   /** Pour relire les adresses signées d'originaux quand elles ont expiré. */
   source: SourceCatalogue;
@@ -212,7 +234,8 @@ export async function enParallele<T>(elements: readonly T[], traiter: (e: T) => 
 }
 
 export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
-  const { magazine, source, signal } = args;
+  const { source, signal } = args;
+  const { magazine, couverture } = couvertureDeLExport(args.magazine, args.dosMm ?? null, args.raisonDos ?? null);
   const annule = (): ResultatExport => ({ ok: false, raison: "annule", message: "Export annulé." });
   const aborted = (): boolean => Boolean(signal?.aborted);
 
@@ -278,7 +301,13 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
     if (aborted()) return annule();
 
     /* L'assemblage : l'IDML d'abord construit (les cadres des photos illisibles restent vides), les listes ensuite. */
-    const idml = zipperIdml(construireIdml(avecLieuxParDefaut(magazine, new Map(cat().photos.map((p) => [p.id, p]))), photosPourIdml({ decisions, nomsLiens }), { liens: { mode: "absolu", dossier } }));
+    const pret = avecLieuxParDefaut(magazine, new Map(cat().photos.map((p) => [p.id, p])));
+    const pourIdml = photosPourIdml({ decisions, nomsLiens });
+    const idml = zipperIdml(construireIdml(pret, pourIdml, { liens: { mode: "absolu", dossier } }));
+    /* lot B : la couverture à part, mêmes liens (Links/ partagé), à côté de magazine.idml */
+    const idmlCouverture = couverture.etat === "ecrite" && pret.couverture
+      ? zipperIdml(construireIdmlCouverture(pret.couverture, pourIdml, { liens: { mode: "absolu", dossier }, dosMm: couverture.dosMm }))
+      : null;
     const listes = listesExport({
       utilisees: posees.map((id) => ({ id, nom: nomDe(id) })),
       catalogue: cat().photos.map((p) => ({ id: p.id, nom: p.nom })),
@@ -292,9 +321,10 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
       /* L'IDML en dernier, après les liens : une annulation ne laisse jamais un IDML qui pointe des fichiers absents. */
       await ecrireDans(enDossier, "photos-utilisees.txt", enTexte(listes.utilisees));
       await ecrireDans(enDossier, "photos-non-utilisees.txt", enTexte(listes.nonUtilisees));
+      if (idmlCouverture) await ecrireDans(enDossier, "couverture.idml", idmlCouverture);
       await ecrireDans(enDossier, "magazine.idml", idml);
     } else {
-      const zip = zipperExport({ idml, liens, utilisees: listes.utilisees, nonUtilisees: listes.nonUtilisees, racine: dossier.slice(dossier.lastIndexOf("/") + 1) });
+      const zip = zipperExport({ idml, ...(idmlCouverture ? { couverture: idmlCouverture } : {}), liens, utilisees: listes.utilisees, nonUtilisees: listes.nonUtilisees, racine: dossier.slice(dossier.lastIndexOf("/") + 1) });
       nomZip = `${nomDeZip(args.titre || magazine.titre, new Date().toISOString())}.zip`;
       telecharger(zip, nomZip);
     }
@@ -312,6 +342,7 @@ export async function exporter(args: ArgumentsExport): Promise<ResultatExport> {
       ecartsDimensions: lesNoms((d) => d.ecart),
       dimensionsDeLaBase: lesNoms((d) => d.source === "catalogue"),
       octets: octetsTotal,
+      couverture,
     };
   } catch (e) {
     if (aborted()) return annule();

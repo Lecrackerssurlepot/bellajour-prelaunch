@@ -38,7 +38,8 @@ import {
   type PDFPage,
   type RGB,
 } from "pdf-lib";
-import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM, type Rect } from "./geometrie";
+import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM, boiteCouverture, type Rect } from "./geometrie";
+import { INTERLIGNE_COUVERTURE, cadresCouverture, contenuImprime, decorCouverture, type Couverture } from "./couverture";
 import { cadrer, type Recadrage } from "./recadrage";
 import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
 import type { Cadre, Teinte } from "./types";
@@ -57,7 +58,8 @@ const RETRAIT_TEXTE = PLANCHE_L * 0.0015;
 export type ObjetPdf =
   | { type: "aplat"; rect: Rect; teinte: Teinte }
   | { type: "photo"; cle: string; cadre: Cadre; photoId: string | null; recadrage: Recadrage }
-  | { type: "texte"; cadre: Cadre; contenu: string; taille: number; gras: boolean };
+  /** `interligne` (lot B) : celui de la couverture (120 %, comme Affinity) ; absent = celui de l'écran (`INTERLIGNE`). */
+  | { type: "texte"; cadre: Cadre; contenu: string; taille: number; gras: boolean; interligne?: number };
 
 /** Une page du PDF : sa boîte en mm repère planche (fond perdu compris) et ce qu'elle porte. */
 export type PagePdf = { boite: Rect; objets: ObjetPdf[] };
@@ -101,6 +103,28 @@ export function planPdf(magazine: Magazine): PagePdf[] {
     }
     return { boite: i === 0 ? BOITE_PAGE_SEULE : BOITE_DOUBLE, objets };
   });
+}
+
+/**
+ * Lot B : la page de la COUVERTURE, à part (un fichier à elle) : 4e · dos · 1re, boîte 426 + dos × 303 (fond perdu de
+ * 3 mm sur les quatre bords), le dos peint de sa couleur. Les clés de ses photos commencent par « c- » : elles ne se
+ * mêlent jamais à celles de l'intérieur. La couverture reçue est prête (`couverturePourExport`).
+ */
+export function planPdfCouverture(couverture: Couverture, dosMm: number): PagePdf {
+  const objets: ObjetPdf[] = decorCouverture(couverture, dosMm).map((a): ObjetPdf => ({ type: "aplat", rect: a, teinte: a.teinte }));
+  let iP = 0, iT = 0;
+  for (const { face: _f, motTitre: _m, repeter, ...cadre } of cadresCouverture(couverture, dosMm)) {
+    void _f; void _m;
+    if (cadre.role === "photo") {
+      const a = couverture.photos[iP];
+      objets.push({ type: "photo", cle: `c-${iP}`, cadre, photoId: a?.photoId ?? null, recadrage: a?.recadrage ?? { zoom: 1, dx: 0, dy: 0 } });
+      iP++;
+    } else {
+      const t = couverture.textes[iT++];
+      objets.push({ type: "texte", cadre, contenu: contenuImprime(t?.contenu ?? "", { repeter }), taille: t?.taille ?? cadre.taille ?? 10, gras: t?.gras ?? cadre.gras ?? false, interligne: INTERLIGNE_COUVERTURE });
+    }
+  }
+  return { boite: boiteCouverture(dosMm), objets };
 }
 
 /** Les photos posées du plan, chacune avec ses cadres : le navigateur lit une photo une fois pour tous ses cadres. */
@@ -245,7 +269,7 @@ export async function ecrirePdf(pages: PagePdf[], images: ReadonlyMap<string, Ui
         x: -l / 2 + retrait,
         y: h / 2 - o.taille * PREMIERE_BASE,
         size: o.taille,
-        lineHeight: o.taille * INTERLIGNE,
+        lineHeight: o.taille * (o.interligne ?? INTERLIGNE),
         font: police,
         color: c.couleur === "blanc" ? TEINTES.blanc : TEINTES.noir,
       });
