@@ -32,12 +32,12 @@ import { cadreValide, contenuValide, NOMS_CLES_FACULTATIVES } from "@/lib/mise-e
 import { gabaritValide } from "@/lib/mise-en-page/gabaritsAtelier";
 import { TEINTES, type Template } from "@/lib/mise-en-page/types";
 import {
-  COULEURS_ORIGINE, DOSSIER_POLICES, INTERLIGNE_STYLE, NIVEAUX, NOM_ROLE, NUANCE_ROLE, PAIRES, POLICES, REFERENCE_CORPS, ROLES_COULEUR, cheminPolice, classeRole,
+  COULEURS_ORIGINE, DOSSIER_POLICES, INTERLIGNE_STYLE, NIVEAUX, NUANCE_ROLE, PAIRES, POLICES, REFERENCE_CORPS, ROLES_COULEUR, cheminPolice, classeRole,
   corpsDe, enCapitales, facettesDe, nomFichierPolice, paireParId, policeParId, premiereBase, roleDeCouleurTexte, roleDeTeinte, styleDePaire, styleEgal,
   styleValide, teinteAncienne, texteSousStyle, texteStyle, texteTypo, variablesStyle, type StyleMagazine,
 } from "@/lib/mise-en-page/style";
 import {
-  REGLAGES_NUANCIER, chromaImprimable, contraste, deltaE00, deltaE00Lab, ecartTeinte, estHex, hexDeLch, hexVersLab, lchDeHex, luminance, normaliserHex, proposerNuancier,
+  REGLAGES_NUANCIER, chromaImprimable, contraste, deltaE00, deltaE00Lab, ecartTeinte, estHex, hexDeLch, lchDeHex, luminance, normaliserHex, proposerNuancier,
 } from "@/lib/mise-en-page/nuancier";
 import { FINE, INSECABLE, typographieFrancaise } from "@/lib/mise-en-page/francais";
 import { DOSSIER_COPIE, fichierDuPaquet, woffVersTtf } from "./polices-pdf";
@@ -149,7 +149,7 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
 
   /* ═════ 2. les fichiers de police ═════ */
   {
-    let fichiersOk = true, octetsOk = true, nomsOk = true, metriquesOk = true, lettresOk = true;
+    let fichiersOk = true, octetsOk = true, nomsOk = true, metriquesOk = true;
     const trous: string[] = [];
     const LETTRES = "ÉÈÊÀÇÙŒœ«»’…–—ÂÎÔÛËÏÜéèêàçùâîôûëïü";
     for (const p of POLICES) {
@@ -163,7 +163,7 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
         const f = fontkit.create(Buffer.from(lu)) as unknown as { postscriptName: string; unitsPerEm: number; ascent: number; descent: number; hasGlyphForCodePoint(c: number): boolean };
         if (f.postscriptName !== p.graisses[g].ps) { nomsOk = false; console.log(`   nom PostScript : ${p.id} ${g} → ${f.postscriptName}, catalogue ${p.graisses[g].ps}`); }
         if (f.unitsPerEm !== p.metriques.upm || f.ascent !== p.metriques.asc || -f.descent !== p.metriques.desc) { metriquesOk = false; console.log(`   métriques : ${p.id} ${g}`); }
-        for (const c of LETTRES) if (!f.hasGlyphForCodePoint(c.codePointAt(0) ?? 0)) { lettresOk = false; trous.push(`${p.famille} ${g} : ${c}`); }
+        for (const c of LETTRES) if (!f.hasGlyphForCodePoint(c.codePointAt(0) ?? 0)) trous.push(`${p.famille} ${g} : ${c}`);
       }
     }
     ok("polices : chaque famille et graisse du catalogue a son fichier dans public/polices/ et son paquet @fontsource", fichiersOk && existsSync(`${DOSSIER_COPIE}/LICENCES.md`) && DOSSIER_POLICES === "/polices");
