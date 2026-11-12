@@ -29,6 +29,20 @@ export const BONUS_ORIGINE: Readonly<Record<Portee, Readonly<Record<Template["or
     genere: AVANCE_GENERES, grille: 0,
   },
 };
+/**
+ * Lot D : la note d'un GÉNÉRÉ monte de `MALUS_VIDE` × la part de la zone utile qu'il laisse nue (0 à 1). La note ne lit que
+ * le rapport photo / cadre : sans cela, trois petites flottantes (une colonne de large) rangent devant une page pleine dès que
+ * leurs cases ont le bon rapport, et la première chose qu'on voit en posant des photos est un confetti. Les flottantes, la petite
+ * encadrée et les rangées maigres restent au tiroir et sous R, plus loin ; les dessinés (choisis par Mathias) et les grilles
+ * (pleines par construction) n'ont pas ce malus.
+ */
+export const MALUS_VIDE = 0.6;
+/**
+ * Lot D : un chevauchement (CH) ou une incrustation (IN) est une RUPTURE de la grammaire (R-G-07, R-101) : bonne quand les photos s'y prêtent
+ * (un fond calme, un coin sans sujet), ce que la note ne voit pas. Elle ne se propose donc pas d'office : `MALUS_RUPTURE` l'éloigne de la tête
+ * du classement, elle reste au tiroir et sous R.
+ */
+export const MALUS_RUPTURE = 0.25;
 /** Lot D : le tiroir des gabarits montre d'abord ce nombre de vignettes ; « Plus » en ajoute `PAS_TIROIR`. Les générés se comptent par centaines. */
 export const PLAFOND_TIROIR = 40;
 export const PAS_TIROIR = 80;

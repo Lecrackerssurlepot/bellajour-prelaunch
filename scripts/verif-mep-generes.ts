@@ -19,7 +19,7 @@ import { resolve } from "node:path";
 import * as O from "@/lib/mise-en-page/editeur";
 import type { EtatEditeur, PhotoMaq } from "@/lib/mise-en-page/editeur";
 import {
-  SCHEMAS, affecter, decoupesDePage, decoupesPour, genereParId, genereesParSchema, genereesPour, idDeRecette, nomDe, templateDeDecoupe, type CaseG,
+  SCHEMAS, affecter, decoupesDePage, estRupture, decoupesPour, genereParId, genereesParSchema, genereesPour, idDeRecette, nomDe, templateDeDecoupe, type CaseG,
 } from "@/lib/mise-en-page/genere";
 import { FOND_PERDU, GRILLE, MARGES, PAGE_H, PAGE_L, PLEINE_PAGE_DROITE, zoneUtile, type Rect } from "@/lib/mise-en-page/geometrie";
 import { grillesDouble, grillesPage, toutesLesGrilles } from "@/lib/mise-en-page/grilles";
@@ -232,6 +232,22 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
       if (!(dernierDessine < (premierGen < 0 ? l.length : premierGen)) || (premierGen >= 0 && premiereGrille >= 0 && premierGen > premiereGrille)) ordreListe++;
     }
     rapporter(`ordre : à qualité égale, les dessinés d'abord (jusqu'à ${O.AVANCE_DESSINES} de note), puis les générés (jusqu'à ${O.AVANCE_GENERES}), puis les grilles : ${paires} paires lues sur ${essais} lots de photos, ${malRanges} mal rangée(s)`, malRanges === 0 && paires > 10000);
+    /* pas de confetti en tête : trois flottantes ne se proposent pas d'office ; ni une rupture (CH, IN) ; la première page est pleine */
+    let confetti = 0, ruptures = 0, vides = 0;
+    const h2 = hasard(1112);
+    for (let k = 0; k < 400; k++) {
+      const n = 1 + Math.floor(h2() * 6);
+      const photos: PhotoRef[] = Array.from({ length: n }, (_, i) => { const d = DIMS[Math.floor(h2() * DIMS.length)]; return { id: `p${i}`, nom: `p${i}`, l: d[0], h: d[1], date: null }; });
+      const t = O.gabaritsClasses("page", photos, null)[0].template;
+      if (t.origine !== "genere") continue;
+      if (t.id.startsWith("GG1-FL-")) confetti++;
+      if (estRupture(t)) ruptures++;
+      if (O.videDe(t) > 0.7) vides++;
+    }
+    rapporter(`ordre : pas de confetti en tête (400 lots : ${confetti} flottantes, ${ruptures} ruptures CH ou IN, ${vides} pages aux trois quarts vides en tête) ; videDe : encadrée pleine zone 0, demi-page 4 × 2 0,79, incrustation 0`,
+      confetti === 0 && ruptures <= 4 && vides === 0 && O.videDe(templateParId("GG1-EN-0066")!) < 1e-9
+        && Math.abs(O.videDe(templateParId("GG1-EN-1242")!) - (1 - (115 * 84) / (175 * 262))) < 1e-9 && O.videDe(templateParId("GG1-IN-0021")!) === 0
+        && O.MALUS_VIDE > 0 && O.MALUS_RUPTURE > 0 && estRupture(templateParId("GG1-CH-0133.2121")!) && estRupture(templateParId("GG1-IN-0021")!) && !estRupture(templateParId("GG1-HS-0063.0322.2322")!) && !estRupture(templateParId("E-S1")!));
     rapporter(`ordre : dans candidats, tous les dessinés, puis les générés, puis les grilles (${ordreListe} lot(s) à l'envers)`, ordreListe === 0);
     rapporter("ordre : les réglages sont nommés (un seul tableau BONUS_ORIGINE par portée) ; la double garde BONUS_ANNEXE sur les grilles, comme avant",
       O.BONUS_ORIGINE.double.epingle === O.BONUS_ANNEXE && O.BONUS_ORIGINE.double.annexe === O.BONUS_ANNEXE && O.BONUS_ORIGINE.double.grille === 0 && O.BONUS_ORIGINE.double.genere === 0

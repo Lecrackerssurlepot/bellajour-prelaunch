@@ -388,6 +388,9 @@ export function idDeRecette(schema: SchemaGenere, cases: readonly CaseG[], ordre
 
 export const estIdGenere = (id: string): boolean => id.startsWith(`${PREFIXE_RECETTE}-`);
 
+/** Un gabarit généré qui SUPERPOSE des cadres (chevauchement, incrustation) : une rupture de la grammaire, que la note ne propose pas d'office. */
+export const estRupture = (t: Template): boolean => t.origine === "genere" && (t.id.startsWith(`${PREFIXE_RECETTE}-CH-`) || t.id.startsWith(`${PREFIXE_RECETTE}-IN-`));
+
 /** Le nombre de photos d'une découpe : ses cases, plus le fond de l'incrustation. */
 const nbPhotosDe = (schema: SchemaGenere, cases: readonly CaseG[]): number => cases.length + (schema === "IN" ? 1 : 0);
 

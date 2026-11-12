@@ -12,12 +12,13 @@ import {
   type Cible, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
 } from "../magazine";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
+import { estRupture } from "../genere";
 import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
-import { PAGE_L, type Rect } from "../geometrie";
+import { PAGE_L, zoneUtile, type Rect } from "../geometrie";
 import type { Template } from "../types";
 import { REGLAGES } from "./reglages";
 import {
-  BONUS_ORIGINE, CIBLES, LIBELLE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
+  BONUS_ORIGINE, CIBLES, LIBELLE, MALUS_RUPTURE, MALUS_VIDE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
@@ -64,6 +65,13 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
   return 1 - Math.min(rp, rc) / Math.max(rp, rc);
 }
 
+/** La part (0 à 1) de la zone utile d'une page que ses photos laissent nue : la somme de leurs aires, bornée (une pleine page au fond perdu dépasse la zone). */
+export function videDe(t: Template): number {
+  const z = zoneUtile("droite");
+  const aire = t.cadres.reduce((s, c) => s + (c.role === "photo" ? c.l * c.h : 0), 0);
+  return Math.min(1, Math.max(0, 1 - aire / (z.l * z.h)));
+}
+
 /** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − le bonus de l'ORIGINE (`BONUS_ORIGINE` : les dessinés devant, puis les générés du lot D, jamais les grilles). */
 export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null })[], precedent: string | null): number {
   const cs = cadresPhoto(t);
@@ -76,6 +84,7 @@ export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x:
   }
   if (t.id === precedent) s += PENALITE_REPETITION;
   s -= BONUS_ORIGINE[t.portee][t.origine];
+  if (t.origine === "genere") s += MALUS_VIDE * videDe(t) + (estRupture(t) ? MALUS_RUPTURE : 0);
   return s;
 }
 
