@@ -68,7 +68,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const dossierOk = dossierAbsolu(dossier);
   const peutDossier = peutEcrireDansUnDossier();
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0)
-    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length;
+    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length + av.titresTropLongs.length;
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
   /* lot C : les polices que le style met en jeu (jamais deux fois la même famille) ; la couverture parle la même langue */
   const paireStyle = etat.magazine.style ? paireParId(etat.magazine.style.paire) : null;
@@ -170,6 +170,12 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
             {nbAvert ? (
               <div className="ed-ex-avert">
                 {av.indisponibles.length ? <span className="ed-ex-rouge">{pluriel(av.indisponibles.length, "photo indisponible", "photos indisponibles")} · cadre vide</span> : null}
+                {av.titresTropLongs.slice(0, 3).map((z) => (
+                  <button key={`${z.plancheId}${z.texte}`} type="button" className="ed-ex-rouge" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>
+                    Titre trop long · planche {z.numero} →
+                  </button>
+                ))}
+                {av.titresTropLongs.length > 3 ? <span className="ed-sous">et {av.titresTropLongs.length - 3} autres titres trop longs</span> : null}
                 {av.signaleesPosees.length ? <span>{pluriel(av.signaleesPosees.length, "photo à ne pas publier posée", "photos à ne pas publier posées")}</span> : null}
                 {av.bassesDef.slice(0, 3).map((z) => (
                   <button key={`${z.photoId}${z.plancheId}`} type="button" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>
