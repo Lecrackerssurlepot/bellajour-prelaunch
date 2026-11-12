@@ -10,7 +10,7 @@ import { texteStyle, type TexteStyle } from "../style";
 import { lieuxParDefaut } from "./lieuxTextes";
 import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
-import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
+import { LIBELLE, SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
 import { visibles } from "./bibliotheque";
 import { pageEntiere } from "./libre";
 import type { CibleDepot, EtatEditeur, Issue, RefCadre, SourceGlisser } from "./types";
@@ -201,9 +201,12 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
       } else {
         const index = iT++;
         const t = d.textes[index];
+        const parDefaut = defauts[index] ?? null;
+        /* un titre s'ajuste à son cadre avec les chasses de sa police : on mesure ce que l'écran montre (le lieu qui remplace le libellé, sinon le texte) */
+        const affiche = !saisi(t) || !t.contenu ? parDefaut ?? (t.contenu || LIBELLE[c.role]) : t.contenu;
         out.push({ role: c.role, ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
-          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut: defauts[index] ?? null,
-          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, t.taille, c.couleur) : null });
+          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut,
+          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, t.taille, c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null });
       }
     }
   }
@@ -310,6 +313,8 @@ export type AvertissementsExport = {
   visagesAuPli: { photoId: string; plancheId: string; numero: number }[];
   hesitationsOuvertes: number;
   pagesVides: number[];
+  /** Lot C : un titre écrit que son cadre ne tient pas, même au corps minimal (REGLAGES_TITRE.CORPS_MIN) : il déborde à l'export. */
+  titresTropLongs: { plancheId: string; numero: number; texte: string }[];
   pagesAuDessus: number;
   planches: number;
   photos: number;
@@ -355,7 +360,14 @@ export function avertissementsExport(e: EtatEditeur): AvertissementsExport {
       if (ph?.zone && c && aff && partDansLePliPose(ph, c, aff.recadrage, ph.zone) > 0.3) visagesAuPli.push({ photoId: x.photoId, plancheId: p.id, numero: index + 1 });
     }
   });
+  /* lot C : un titre écrit que le cadre ne tient pas, même au corps minimal ; seul un magazine sous style ajuste ses titres */
+  const titresTropLongs: AvertissementsExport["titresTropLongs"] = [];
+  if (e.magazine.style) {
+    e.magazine.planches.forEach((p, index) => {
+      for (const f of cadresPlanche(e, p.id)) if (f.role === "titre" && !f.vide && f.style?.trop) titresTropLongs.push({ plancheId: p.id, numero: index + 1, texte: f.contenu });
+    });
+  }
   const pl = pagesLibelle(e);
-  return { indisponibles, signaleesPosees, bassesDef, flouesPosees, visagesAuPli, hesitationsOuvertes, pagesVides, pagesAuDessus: pl.depasse && pl.cible !== null ? pl.pages - pl.cible : 0,
+  return { indisponibles, signaleesPosees, bassesDef, flouesPosees, visagesAuPli, hesitationsOuvertes, pagesVides, titresTropLongs, pagesAuDessus: pl.depasse && pl.cible !== null ? pl.pages - pl.cible : 0,
     planches: e.magazine.planches.length, photos: idsMagazine(e.magazine).length };
 }
