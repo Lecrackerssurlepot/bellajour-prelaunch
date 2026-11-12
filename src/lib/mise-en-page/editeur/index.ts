@@ -39,6 +39,8 @@ export type { BilanTri, Etiquette, Marque, TourTri, PartPersonne, TriPlein, VueT
 export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres, miroir, pageEntiere, placerCadre, poserLibre, rangCalque, retirerCadres } from "./libre";
 export type { SensCalque } from "./libre";
 export { DEPLACEMENT, aimanter, lignesAimant } from "./aimant";
+export { OR_GRAND, OR_PETIT, grilleArtiste, pagesDeLaPlanche } from "./grilleArtiste";
+export type { GenreLigne, LigneArtiste } from "./grilleArtiste";
 export type { Bords, Guide, Lignes } from "./aimant";
 export { PAUSE_MOMENT_MIN, decoupage, lieuCourt, nomDuMoment, rangementDe } from "./moments";
 export type { Decoupage, Rangement } from "./moments";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche } from "@/lib/mise-en-page/editeur";
-import { CLE_AIMANT, cls, pluriel, useEd, type Projet } from "./contexte";
+import { CLE_AIMANT, basculerGrille, cls, pluriel, useEd, type Projet } from "./contexte";
 import { Ico } from "./icones";
 import type { EtatSauvegarde } from "./sauvegardeClient";
 
@@ -52,6 +52,12 @@ export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
         title={ui.aimant ? "Aimant · ⌘ pendant le glisser pour le couper" : "Aimant coupé"} aria-label="Aimant" onClick={basculerAimant}>
         <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M5 3v7a5 5 0 0 0 10 0V3M5 6.5h3M12 6.5h3M8 3v7a2 2 0 0 0 4 0V3" />
+        </svg>
+      </button>
+      <button type="button" className={cls("ed-ico", "ed-aimant", ui.grille && "ed-aimant--on")} aria-pressed={ui.grille}
+        title={ui.grille ? "Grille d'artiste affichée : tiers, nombre d'or, diagonales · O" : "Grille d'artiste : tiers, nombre d'or, diagonales · O"} aria-label="Grille d'artiste" onClick={() => basculerGrille(ui, majUi)}>
+        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="14" height="14" rx="1.5" /><path d="M7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14" />
         </svg>
       </button>
       <button type="button" className={cls("ed-ico", "ed-aimant", ui.lecture && "ed-aimant--on")} aria-pressed={ui.lecture}

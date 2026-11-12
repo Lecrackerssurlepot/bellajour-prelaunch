@@ -7,7 +7,7 @@ import {
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { chargerGabarits } from "./gabaritsClient";
-import { CtxEd, fermerTexteDom, uiDeDepart, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
+import { CtxEd, basculerGrille, fermerTexteDom, uiDeDepart, type Adresse, type Ctx, type Import, type Projet, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
 import { Bandeaux, Barre } from "./Barre";
 import { Bande, CheminDeFer, Toast } from "./Bas";
@@ -275,6 +275,9 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     }
     /* 10/11 : L montre ou cache la lecture dessinée (chaleur, visages, zone), partout */
     if ((e.key === "l" || e.key === "L") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); majUi({ lecture: !ui.lecture }); return; }
+    /* 12/11 : O montre ou cache la grille d'artiste (tiers, nombre d'or, diagonales), comme l'« overlay » des logiciels de retouche.
+       Les lettres prises : planche M R X P T Z (⌘ Z) ; tri X P F R U C Z N D G T 0 à 3 ; L la lecture. O est libre dans les trois. */
+    if ((e.key === "o" || e.key === "O") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); basculerGrille(ui, majUi); return; }
     /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */
     if (clavierConfrontation({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
     if (ui.confronter) return;
@@ -351,7 +354,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
             <Scene />
             <Bande />
             <CheminDeFer />
-            {ui.rangee && !d && !ro && planche ? <Rangee pl={planche} cible={ui.rangee} /> : null}
+            {ui.rangee && !d && !ro && planche ? <Rangee key={`${planche.id}|${ui.rangee}`} pl={planche} cible={ui.rangee} /> : null}
             {ui.grand ? null : <Toast />}
           </div>
           {ui.confronter && !ui.grand ? <Confrontation /> : null}

@@ -17,6 +17,7 @@ import { demanderHd, useHd } from "./hd";
 import { useLieux } from "./lieuxClient";
 import { Chaleur } from "./Chaleur";
 import { Pastilles } from "./Gabarits";
+import { GrilleArtiste } from "./GrilleArtiste";
 
 /* La double page, en grand. Aucun calcul du magazine ici : on envoie des gestes, on dessine l'état rendu.
    Pendant un glisser, le module pur joue le dépôt à blanc (`glisser.apercu`) : on le montre en transparence. */
@@ -132,6 +133,7 @@ export default function Scene() {
         {frames.map((f) => (
           <CadreVue key={`${f.ref.cible}${f.ref.index}${f.role}`} f={f} pl={pl} rep={rep} sous={montrerApercu} cibleCour={cibleCour} refus={refus} />
         ))}
+        {ui.grille ? <GrilleArtiste premiere={premiere} /> : null}
         {framesA ? (
           <div className={cls("ed-fantome", ap!.genre !== "echange" && "ed-fantome--plein")} aria-hidden="true">
             {framesA.map((f) => (
