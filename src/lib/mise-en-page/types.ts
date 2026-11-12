@@ -9,6 +9,7 @@
  */
 
 import { PAGE_L, type Cote, type Rect } from "./geometrie";
+import { ROLES_COULEUR, type RoleCouleur } from "./nuancier";
 
 export type Orientation = "P" | "L" | "C";
 
@@ -36,12 +37,18 @@ export type Cadre = Rect & {
   bord?: number;
   /** Photos : rayon des quatre coins, en mm (D28, coins arrondis fidèles). */
   rayon?: number;
-  /** Textes : blanc sur une photo ou un aplat sombre. Absent = noir. */
-  couleur?: "blanc";
+  /** Textes : blanc sur une photo ou un aplat sombre, ou un RÔLE du nuancier (lot C). Absent = l'encre (le noir d'avant le style). */
+  couleur?: "blanc" | RoleCouleur;
 };
 
-/** La teinte d'un aplat : la nuance nommée « Aplat » (une seule, changée d'un coup dans Affinity), le noir ou le blanc. */
-export type Teinte = "aplat" | "noir" | "blanc";
+/**
+ * La teinte d'un aplat. Depuis le lot C, une teinte est un RÔLE du nuancier du magazine (papier, encre, aplatClair, aplatSourd,
+ * accent, nuit) ; « aplat », « noir » et « blanc » restent comme ALIAS, parce que des gabarits dessinés ET des gabarits
+ * enregistrés (`mep_gabarits.decor`) les portent : aplat = aplatSourd (l'ancien terracotta), noir = nuit, blanc = papier.
+ * Ne jamais renommer ni retirer une teinte : un gabarit sauvegardé perdrait son aplat sans erreur (`roleDeTeinte`, style.ts).
+ */
+export const TEINTES = ["aplat", "noir", "blanc", ...ROLES_COULEUR] as const;
+export type Teinte = (typeof TEINTES)[number];
 
 /** Un rectangle de couleur sous les cadres (fond de page, bandeau). Ni photo ni texte : il ne compte dans aucun rang. */
 export type Aplat = Rect & { teinte: Teinte };
