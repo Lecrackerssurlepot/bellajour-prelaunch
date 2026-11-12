@@ -45,7 +45,7 @@ import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM, type Rect } from "./g
 import { cadrer, type Recadrage } from "./recadrage";
 import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
 import type { Cadre, Teinte } from "./types";
-import { facettesDe, paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
+import { paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
 import { hexVersRgb } from "./nuancier";
 import { FINE } from "./francais";
 
