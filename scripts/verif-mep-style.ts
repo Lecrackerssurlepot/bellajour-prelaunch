@@ -26,9 +26,11 @@ import { resolve } from "node:path";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import { construireIdml, construireIdmlCouverture, fontsDuStyle, nuancesDuStyle, stylesDuStyle, STYLE_PARAGRAPHE, type PhotoExport } from "@/lib/mise-en-page/idml";
-import { clePolice, ecrirePdf, FINE_EM, largeurLigne, planPdf, planPdfCouverture, policesDuPlan, textePourPoliceStyle } from "@/lib/mise-en-page/pdf";
-import { enregistrerGabarits, templateParId, type Magazine } from "@/lib/mise-en-page/magazine";
-import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
+import { clePolice, couperLignes, ecrirePdf, FINE_EM, largeurLigne, planPdf, planPdfCouverture, policesDuPlan, textePourPoliceStyle } from "@/lib/mise-en-page/pdf";
+import { cadresDe, enregistrerGabarits, templateParId, type Disposition, type Magazine } from "@/lib/mise-en-page/magazine";
+import { avecLieuxParDefaut, avertissementsExport, cadresPlanche, creerEtat } from "@/lib/mise-en-page/editeur";
+import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
+import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
 import { PAGE_L } from "@/lib/mise-en-page/geometrie";
 import {
   CHASSES_HELVETICA_GRAS, GABARITS_COUVERTURE, cadresTexteCouverture, couvertureNeuve, couverturePourExport, gabaritCouverture, largeurEm, largeurImprimee,
@@ -39,7 +41,7 @@ import { cadreValide, contenuValide, NOMS_CLES_FACULTATIVES } from "@/lib/mise-e
 import { gabaritValide } from "@/lib/mise-en-page/gabaritsAtelier";
 import { TEINTES, type Template } from "@/lib/mise-en-page/types";
 import {
-  COULEURS_ORIGINE, DOSSIER_POLICES, INTERLIGNE_STYLE, NIVEAUX, NUANCE_ROLE, PAIRES, POLICES, REFERENCE_CORPS, ROLES_COULEUR, cheminPolice, classeRole,
+  COULEURS_ORIGINE, DOSSIER_POLICES, INTERLIGNE_STYLE, NIVEAUX, NUANCE_ROLE, PAIRES, POLICES, REFERENCE_CORPS, REGLAGES_TITRE, ROLES_COULEUR, ajusterTitre, cheminPolice, classeRole,
   AVANCE_FINE_EM, corpsDe, enCapitales, facettesDe, largeurEmPolice, nomFichierPolice, paireParId, policeParId, premiereBase, roleDeCouleurTexte, roleDeTeinte, styleDePaire, styleEgal,
   styleValide, teinteAncienne, texteSousStyle, texteStyle, texteTypo, variablesStyle, type StyleMagazine,
 } from "@/lib/mise-en-page/style";
@@ -537,7 +539,12 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
     ok("IDML textes : chaque texte porte le style de paragraphe de SON rôle (Titre, Texte, Légende), plus de police ni de graisse locale ; le corps n'est écrit que s'il s'écarte du style (échelle du gabarit) ; la langue reste française",
       /AppliedParagraphStyle="ParagraphStyle\/Titre"/.test(toutes) && /AppliedParagraphStyle="ParagraphStyle\/Texte"/.test(toutes) && /AppliedParagraphStyle="ParagraphStyle\/Legende"/.test(toutes)
         && !/NormalParagraphStyle"><CharacterStyleRange/.test(toutes) && !/<AppliedFont/.test(toutes) && !/FontStyle=/.test(toutes) && stories.every((s) => s.includes(`AppliedLanguage="$ID/French"`))
-        && /PointSize="60"/.test(toutes) && /PointSize="11"/.test(toutes) && !/ PointSize="16"/.test(toutes));
+        && (() => {
+          /* le titre de E-S1 (60 pt, trop long pour son cadre de 175 × 40 mm) est ajusté : son corps est celui de `texteStyle`, plus petit que 60 */
+          const cS1 = templateParId("E-S1")!.cadres.find((c) => c.role === "titre")!;
+          const ajuste = texteStyle(st, "titre", 60, cS1.couleur, { contenu: "A notre rythme : coeur de Lisbonne !", l: cS1.l, h: cS1.h })!.corps;
+          return ajuste < 60 && toutes.includes(`PointSize="${ajuste}"`) && !/PointSize="60"/.test(toutes);
+        })() && /PointSize="11"/.test(toutes) && !/ PointSize="16"/.test(toutes));
     ok("IDML couleur du texte : l'encre vient du style, un texte « blanc » sur photo prend le PAPIER du style (nuance Papier), jamais Paper",
       stories.some((s) => s.includes('FillColor="Color/Papier"')) && !/Color\/Paper"/.test(toutes) && !/FillColor="Color\/Encre"/.test(toutes));
     ok("IDML typographie : le texte écrit est le texte du client corrigé en français (cœur, À, espace fine avant !, insécable avant :, 18 h 02) ; les capitales sont un attribut du style, pas un texte modifié",
@@ -623,6 +630,139 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
         && /etape\.r\.alertes\.map/.test(ex) && /ed-ex-rouge/.test(ex) && /Polices embarquées/.test(ex) && /polices: r\.polices, alertes: r\.alertes/.test(exp));
     ok("export Affinity : la feuille dit les familles à installer sur le Mac (sans elles Affinity les remplace) et ce qui arrive quand même (noms, nuances, styles) ; l'IDML n'a besoin d'aucune route ni d'aucun fichier de police",
       /Installer \{famillesDuStyle\.join\(" et "\)\} sur ce Mac/.test(ex) && /Styles Titre · Texte · Légende, six nuances/.test(ex) && !/polices/.test(sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/exporter.ts")).replace(/Polices/g, "")));
+  }
+
+  /* ═════ 13 ter. un titre ne se coupe jamais : le corps s'ajuste à son cadre avec les chasses de sa police ═════ */
+  {
+    const PT = 72 / 25.4;
+    const gabaritsGeants = [...TEMPLATES_EPINGLES, ...TEMPLATES_ANNEXE].filter((t) => t.cadres.some((c) => c.role === "titre" && (c.taille ?? 0) >= 60));
+    const idsGeants = gabaritsGeants.map((t) => t.id);
+    ok(`gabarits à mot géant (un titre de 60 pt et plus) : ${idsGeants.join(", ")} ; le mot géant (E-D4a), le titre géant (E-S2) et le damier (E-D15) en font partie`,
+      ["E-D4a", "E-D4b", "E-D15", "E-S2", "DP-02", "DP-03", "E-S1"].every((id) => idsGeants.includes(id)));
+
+    /* une mesure INDÉPENDANTE de la nôtre : la police réelle, crénage compris (fontkit sur le fichier de public/polices) */
+    type PoliceReelle = { layout(s: string): { advanceWidth: number }; unitsPerEm: number };
+    const reelles = new Map<string, PoliceReelle>();
+    const reelle = (id: string, graisse: number): PoliceReelle => {
+      const k = `${id}-${graisse}`;
+      let f = reelles.get(k);
+      if (!f) { f = fontkit.create(Buffer.from(readFileSync(resolve(process.cwd(), `public${cheminPolice(id, graisse)}`)))) as unknown as PoliceReelle; reelles.set(k, f); }
+      return f;
+    };
+    const largeurReelle = (texte: string, id: string, graisse: number, corps: number, approche: number): number => {
+      const f = reelle(id, graisse);
+      return (f.layout(texte).advanceWidth / f.unitsPerEm) * corps + [...texte].length * approche * corps;
+    };
+
+    const LONGS = ["Les plus belles vacances de Madère", "Anticonstitutionnellement", "Écrire à Lisbonne en été"];
+    let combinaisons = 0;
+    const debordements: string[] = [], grossis: string[] = [], tropAttendus: string[] = [];
+    for (const t of gabaritsGeants) for (const paire of PAIRES) for (const titreLong of LONGS) {
+      const st = styleDePaire(paire.id)!;
+      for (const c of t.cadres.filter((x) => x.role === "titre")) {
+        combinaisons++;
+        const taille = c.taille ?? 16;
+        const ts = texteStyle(st, "titre", taille, c.couleur, { contenu: titreLong, l: c.l, h: c.h })!;
+        const gabarit = texteStyle(st, "titre", taille, c.couleur)!;
+        const nom = `${t.id} · ${paire.id} · « ${titreLong} »`;
+        if (ts.corps > gabarit.corps + 1e-9) grossis.push(nom);
+        if (ts.trop) { tropAttendus.push(`${nom} : trop long à ${ts.corps} pt`); continue; }
+        /* tient : chaque mot, mesuré dans la vraie police, dans la largeur du cadre, et le bloc dans sa hauteur */
+        const vu = texteSousStyle(titreLong, ts);
+        const lignes = couperLignes(vu, c.l * PT, (x) => largeurReelle(x, ts.police.id, ts.graisse, ts.corps, ts.approche));
+        const motsOk = lignes.every((l) => l.split(/ +/).every((m) => largeurReelle(m, ts.police.id, ts.graisse, ts.corps, ts.approche) <= c.l * PT + 1e-6));
+        const m = ts.police.metriques;
+        const hauteur = (premiereBase(ts.police, ts.interligne) + (lignes.length - 1) * ts.interligne + (ts.capitales ? 0 : m.desc / m.upm)) * ts.corps;
+        if (!motsOk || lignes.some((l) => largeurReelle(l, ts.police.id, ts.graisse, ts.corps, ts.approche) > c.l * PT * 1.0001 && l.includes(" ")) || hauteur > c.h * PT + 0.01) debordements.push(`${nom} : ${ts.corps} pt, ${lignes.length} ligne(s)`);
+      }
+    }
+    ok(`titre ajusté : ${combinaisons} cas (chaque gabarit à mot géant × dix-huit paires × trois titres longs) : mesuré dans la VRAIE police, crénage compris, aucun mot ne dépasse son cadre et le bloc tient dans sa hauteur${debordements.length ? ` (${debordements.slice(0, 3).join(" ; ")})` : ""}`,
+      combinaisons > 0 && debordements.length === 0);
+    ok(`titre ajusté : jamais plus grand que le corps du gabarit${grossis.length ? ` (${grossis.slice(0, 3).join(" ; ")})` : ""} ; ces titres raisonnables n'atteignent jamais le minimum de ${REGLAGES_TITRE.CORPS_MIN} pt${tropAttendus.length ? ` (${tropAttendus.slice(0, 3).join(" ; ")})` : ""}`,
+      grossis.length === 0 && tropAttendus.length === 0);
+
+    /* le cas que Mathias a vu : « TITR » dans le mot géant */
+    const archivoSt = styleDePaire("T-05")!;
+    const dMot = templateParId("E-D4a")!;
+    const cMot = dMot.cadres.find((c) => c.role === "titre")!;
+    const motLibelle = texteStyle(archivoSt, "titre", cMot.taille ?? 16, cMot.couleur, { contenu: "Titre", l: cMot.l, h: cMot.h })!;
+    const motSans = texteStyle(archivoSt, "titre", cMot.taille ?? 16, cMot.couleur)!;
+    ok("le mot géant (E-D4a, 200 pt) sous Archivo Black : « TITRE » ne tenait pas dans son cadre (il était rogné en « TITR »), il tient maintenant, avec le plus grand corps qui tient",
+      motSans.corps === 200 && largeurReelle("TITRE", "archivo", 900, 200, 0) > cMot.l * PT && motLibelle.corps < 200 && !motLibelle.trop
+        && largeurReelle("TITRE", "archivo", 900, motLibelle.corps, 0) <= cMot.l * PT && largeurReelle("TITRE", "archivo", 900, motLibelle.corps + REGLAGES_TITRE.PAS, 0) > cMot.l * PT * REGLAGES_TITRE.REMPLISSAGE - 1);
+    ok("un titre court qui tient déjà garde EXACTEMENT le corps de son gabarit (rien ne rétrécit sans raison) ; un texte vide ne change rien ; ni les textes ni les légendes ne sont ajustés",
+      texteStyle(archivoSt, "titre", 60, undefined, { contenu: "Rio", l: 175, h: 40 })!.corps === 60 && ajusterTitre("", motSans, { l: 190, h: 127 }).corps === motSans.corps
+        && texteStyle(archivoSt, "texte", 10, undefined, { contenu: "x".repeat(300), l: 20, h: 5 })!.corps === 10 && texteStyle(archivoSt, "legende", 7, undefined, { contenu: "x".repeat(300), l: 20, h: 5 })!.corps === 7);
+
+    /* l'écran, l'IDML et le PDF lisent le MÊME corps ; sous le minimum, le titre garde le minimum et le contrôle avant export le dit */
+    const disposer = (id: string, titre: string): Disposition => {
+      const t = templateParId(id)!;
+      return {
+        templateId: id,
+        photos: Array.from({ length: t.nbPhotos }, () => ({ photoId: null, recadrage: neutre })),
+        textes: t.cadres.filter((c) => c.role !== "photo").map((c) => ({ contenu: c.role === "titre" ? titre : "Texte", taille: c.taille ?? 10, gras: c.gras ?? false })),
+      };
+    };
+    const magazineDe = (style: StyleMagazine | undefined, titre: string): Magazine => ({
+      version: 1, id: "t", titre: "Essai titres", creeLe: "x", modifieLe: "x", ...(style ? { style } : {}),
+      planches: [
+        { id: "pl-1", mode: "pages", double: null, gauche: null, droite: disposer("E-S1", titre) },
+        ...gabaritsGeants.filter((t) => t.id !== "E-S1").map((t, i) => (t.portee === "double"
+          ? { id: `pl-${i + 2}`, mode: "double" as const, gauche: null, droite: null, double: disposer(t.id, titre) }
+          : { id: `pl-${i + 2}`, mode: "pages" as const, double: null, gauche: disposer(t.id, titre), droite: null })),
+      ],
+    });
+    let trois = 0;
+    const desaccord: string[] = [];
+    for (const paire of [PAIRES[0], PAIRES.find((p) => p.id === "T-05")!, PAIRES[PAIRES.length - 1]]) {
+      const st = styleDePaire(paire.id)!;
+      const mag = magazineDe(st, LONGS[0]);
+      const etat = creerEtat({ magazine: mag, catalogue: [] });
+      const attendus: number[] = [];
+      for (const p of mag.planches) for (const cible of (p.mode === "double" ? ["double"] as const : ["gauche", "droite"] as const)) {
+        const d = p.mode === "double" ? p.double : p[cible];
+        if (!d) continue;
+        let iT = 0;
+        for (const c of cadresDe(d, cible)) {
+          if (c.role === "photo") continue;
+          const tx = d.textes[iT++];
+          if (c.role === "titre") attendus.push(texteStyle(st, "titre", tx.taille, c.couleur, { contenu: tx.contenu, l: c.l, h: c.h })!.corps);
+        }
+      }
+      const ecran = mag.planches.flatMap((p) => cadresPlanche(etat, p.id)).filter((f) => f.role === "titre").map((f) => (f.role === "titre" && f.style ? f.style.corps : -1));
+      const pdf = planPdf(mag).flatMap((pg) => pg.objets).filter((o) => o.type === "texte" && o.cadre.role === "titre").map((o) => (o.type === "texte" && o.style ? o.style.corps : -1));
+      const idml = construireIdml(mag, new Map(), { liens: { mode: "relatif" } }).filter((f) => /^Stories\//.test(f.chemin) && f.contenu.includes(STYLE_PARAGRAPHE.titre.self))
+        .map((f) => { const m = /<CharacterStyleRange[^>]*PointSize="([\d.]+)"/.exec(f.contenu); return m ? Number(m[1]) : REFERENCE_CORPS.titre; });
+      const tri = (a: number[]) => [...a].sort((x, y) => x - y).join(",");
+      trois++;
+      if (!attendus.length || tri(ecran) !== tri(attendus) || tri(pdf) !== tri(attendus) || tri(idml) !== tri(attendus)) desaccord.push(`${paire.id} : attendu ${tri(attendus)} ; écran ${tri(ecran)} ; pdf ${tri(pdf)} ; idml ${tri(idml)}`);
+    }
+    ok(`titre ajusté : l'écran (cadresPlanche), le PDF (planPdf) et l'IDML (PointSize du style Titre) lisent le MÊME corps sur chaque titre des gabarits à mot géant, sous ${trois} paires${desaccord.length ? ` (${desaccord[0]})` : ""}`,
+      trois === 3 && desaccord.length === 0);
+
+    /* trop long : le minimum est gardé, le contrôle avant export le dit ; rien sans style, rien pour un titre qui tient */
+    const absurde = "Anticonstitutionnellement".repeat(4);
+    const stArch = styleDePaire("T-05")!;
+    const trop = texteStyle(stArch, "titre", 60, undefined, { contenu: absurde, l: 175, h: 40 })!;
+    const enTrop = avertissementsExport(creerEtat({ magazine: magazineDe(stArch, absurde), catalogue: [] }));
+    const enOrdre = avertissementsExport(creerEtat({ magazine: magazineDe(stArch, "Madère"), catalogue: [] }));
+    const sansStyle = avertissementsExport(creerEtat({ magazine: magazineDe(undefined, absurde), catalogue: [] }));
+    const libelleSeul = avertissementsExport(creerEtat({ magazine: magazineDe(stArch, "Titre"), catalogue: [] }));
+    ok(`titre trop long (un mot de cent lettres dans un cadre de 175 mm) : le corps garde le minimum de ${REGLAGES_TITRE.CORPS_MIN} pt, jamais en dessous, et le titre est marqué « trop »`,
+      trop.trop === true && trop.corps === REGLAGES_TITRE.CORPS_MIN && ajusterTitre(absurde, { ...trop, corps: 8 }, { l: 175, h: 40 }).corps === 8);
+    ok("contrôle avant export : un titre trop long dit sa planche (titresTropLongs) ; aucun avertissement pour un titre qui tient, pour le libellé d'origine, ni sans style (le rendu d'avant n'ajuste rien)",
+      enTrop.titresTropLongs.length >= 1 && enTrop.titresTropLongs.every((z) => /^pl-\d+$/.test(z.plancheId) && z.numero >= 1 && z.texte === absurde)
+        && enOrdre.titresTropLongs.length === 0 && libelleSeul.titresTropLongs.length === 0 && sansStyle.titresTropLongs.length === 0);
+    const exF = sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/ExportFeuille.tsx"));
+    ok("feuille d'export : « Titre trop long · planche N » en rouge, qui renvoie à la planche, compté parmi les avertissements ; ajuster ne passe que par le corps de texteStyle (ni l'écran, ni l'IDML, ni le PDF n'ont leur propre calcul)",
+      /Titre trop long · planche \{z\.numero\}/.test(exF) && /av\.titresTropLongs\.length/.test(exF) && /className="ed-ex-rouge"/.test(exF)
+        && /ajusterTitre\(/.test(sansComm(lire("src/lib/mise-en-page/style.ts"))) && !/ajusterTitre\(/.test(sansComm(lire("src/lib/mise-en-page/pdf.ts"))) && !/ajusterTitre\(/.test(sansComm(lire("src/lib/mise-en-page/idml.ts")))
+        && /ajusterTitres \? \{ contenu, l: e\.cadre\.l, h: e\.cadre\.h \}/.test(sansComm(lire("src/lib/mise-en-page/idml.ts"))) && /fabrique\(photos, options, convCouverture, sty\)/.test(sansComm(lire("src/lib/mise-en-page/idml.ts"))));
+
+    /* l'échantillon du panneau Style n'invente ni lieu ni date */
+    const pan = sansComm(lire("src/app/admin/atelier/mise-en-page/[id]/StylePanneau.tsx"));
+    ok("panneau Style : l'échantillon montre le titre du magazine (le mot « Titre » à défaut) et deux lignes neutres ; jamais un lieu ni une date qui ne viennent pas du dossier (plus de « Lisbonne », « Alfama », « 12 juin »)",
+      /etat\.magazine\.titre\.trim\(\) \|\| "Titre"/.test(pan) && /\{titreEchantillon\}/.test(pan) && !/Lisbonne|Alfama|juin|Ce que vous avez vécu/.test(pan));
   }
 
   /* ═════ 14 bis. la couverture sous un style (lot B + lot C) ═════ */
