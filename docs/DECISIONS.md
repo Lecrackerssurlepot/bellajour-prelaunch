@@ -668,3 +668,28 @@ Ce qui est tranché.
 
 **Conséquence :** à corriger dans `idml.ts` : `ItemLayer` sur chaque objet, `AppliedLanguage`
 français sur le texte, `CMYKProfile` FOGRA39 sur le document.
+
+**D28, suite (12/11/2026, lot C : la feuille de style) : l'essai Affinity.**
+Trois IDML produits par `construireIdml` sous un style (T-05 avec un papier crème et des aplats, T-14 à deux familles, T-01 sur une double
+à texte), ouverts un par un dans Affinity par le SDK (`Application.documents.load`), relus par `getGlyphAtts`, `getParagraphAtts` et
+`brushFillDescriptor`, puis refermés (fichiers dans `~/Desktop/Bellajour/test-idml/lot-c/`, supprimés après l'essai). Les polices Google ne
+sont pas installées sur ce Mac (Archivo, IBM Plex, Jost absentes des 247 familles d'Affinity) : c'est le cas voulu, « on fait comme si on les avait ».
+
+Verdict FIDÈLE (entre dans l'export) :
+- **Polices nommées** : famille, nom PostScript exact et graisse arrivent tels qu'écrits dans `Fonts.xml`, même quand la police est absente
+  (`Archivo-Black` 900, `IBMPlexSansCond-SemiBold` 600, `IBMPlexMono-Regular`, `BodoniModa-Regular`, `HankenGrotesk-Regular`). Affinity garde
+  l'identité demandée dans le fichier ; à l'écran il substitue tant que la police n'est pas installée (rendu vu : Helvetica).
+- **Styles de paragraphe nommés** Titre, Texte, Légende, appliqués à chaque texte (`styleName`), avec héritage du style normal.
+- **Corps** relus au point près (60, 16, 11, 8, 7), **capitales** (`CapsType.AllCaps`, `Capitalization="AllCaps"`) et **approche**
+  (`characterSpacing` 0,08, soit `Tracking="80"`).
+- **Nuances nommées RVB** et couleur de texte par plage : l'aplat « noir » devient la nuance Nuit (22, 32, 44), le texte blanc sur photo la
+  nuance Papier (248, 236, 221), l'encre du style de paragraphe (29, 36, 44) ; la page teintée est un rectangle Papier sous tout.
+- **Typographie** : U+202F, U+00A0, U+2019 et U+2013 arrivent intacts.
+- **Interlignage** : toujours EXCLU, mais sans dommage. Rien n'est écrit (`Leading` absent) et Affinity relit `leadingType = RelativeToHeight`,
+  `relativeLeading = 1,2` : les trois niveaux sont donc à 120 % (`INTERLIGNE_STYLE`), ce qui est aussi le bas de la fourchette de R-112.
+  L'écran, le PDF et Affinity montrent le même interligne ; un interlignage serré (capitales empilées) attend toujours un autre essai.
+
+Ce que l'essai ne dit pas : la LISTE des nuances nommées n'est pas lisible par le SDK (seules leurs valeurs le sont, et elles sont justes) ;
+une police absente est substituée à l'ouverture, jamais prévenue par Affinity : la feuille d'export le dit (« installer … sur ce Mac »).
+**Conséquence :** `idml.ts` écrit, sous un style, `Fonts.xml`, `Graphic.xml` (six nuances par rôle) et `Styles.xml` (trois styles) ; sans style
+l'export est inchangé au bit près (empreinte au harnais). Le PDF embarque les polices (pdf-lib et `@pdf-lib/fontkit`) et n'a pas cette limite.
