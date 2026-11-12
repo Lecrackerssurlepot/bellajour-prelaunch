@@ -45,6 +45,7 @@
 import { useEffect, useState } from 'react'
 import Reveal from '../../(atelier)/components/Reveal'
 import Loupe, { type VueLoupe } from '../../components/Loupe'
+import { useLiensFrais } from './liensFrais'
 import {
   construirePlanche,
   enTeteCouvertures,
@@ -105,6 +106,9 @@ export default function Apercu({
   previsualisation?: boolean
 }) {
   const [ouvert, setOuvert] = useState<number | null>(null)
+  /* Un lien signé expire au bout d'une heure : une image qui échoue redemande
+     des liens neufs au serveur (liensFrais.ts, 12/11/2026). */
+  const rafraichirLiens = useLiensFrais()
   /* T-093 — la couverture retenue. Elle part à 0 : la première est proposée
      par défaut, et la cliente peut payer sans jamais rien choisir (décision
      de Mathias, 07/09 — on n'ajoute pas d'obstacle devant le paiement).
@@ -254,7 +258,7 @@ export default function Apercu({
 
   return (
     <Reveal>
-      <div className="nu-planche">
+      <div className="nu-planche" onErrorCapture={rafraichirLiens}>
         {couvertures.length > 0 && (
           <section className="nu-pl-section">
             <h3 className="nu-pl-titre">{enTete.titre}</h3>
@@ -431,7 +435,9 @@ export default function Apercu({
       </div>
 
       {/* Hors du flux animé : la loupe se positionne sur le plein écran. */}
-      <Loupe vues={agrandissables} index={ouvert} onIndex={setOuvert} onFermer={() => setOuvert(null)} />
+      <span style={{ display: 'contents' }} onErrorCapture={rafraichirLiens}>
+        <Loupe vues={agrandissables} index={ouvert} onIndex={setOuvert} onFermer={() => setOuvert(null)} />
+      </span>
     </Reveal>
   )
 }
