@@ -23,6 +23,7 @@ import { COLLAGE_DOS, MARGES, PAGE_H, PAGE_L, PT_PAR_MM, origineFace, rectDos, t
 import { cadrer, type Recadrage } from "./recadrage";
 import type { Affectation, PhotoRef, TexteCadre } from "./magazine";
 import type { Aplat, Cadre, RoleCadre, Teinte } from "./types";
+import { largeurEmPolice, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
 
@@ -231,6 +232,9 @@ const CHASSES: Readonly<Record<string, number>> = {
 const CHASSE_INCONNUE = 1000;
 export const CHASSES_HELVETICA_GRAS = CHASSES;
 
+/** La chasse d'une ligne en corps 1 (em) : Arial Bold sans style, la police de titre du style sinon (voir `mesureMotTitre`). */
+export type MesureTitre = (ligne: string) => number;
+
 /** La chasse d'une ligne en corps 1 (em). */
 export function largeurEm(ligne: string): number {
   let n = 0;
@@ -239,6 +243,21 @@ export function largeurEm(ligne: string): number {
     n += k / 1000;
   }
   return n;
+}
+
+/**
+ * Lot C : sous un style, le mot-titre s'écrit dans la police de TITRE de la paire, avec ses capitales, son approche et la typographie
+ * française : sa chasse se mesure sur ce texte-là (`largeurEmPolice`, les fichiers de police), jamais sur Arial Bold. Sans style (ou paire
+ * inconnue) : undefined, c'est Arial Bold, comme avant. Le crénage n'est pas mesuré : `REMPLISSAGE` (96 %) garde la marge.
+ */
+export function mesureMotTitre(style: StyleMagazine | null | undefined): MesureTitre | undefined {
+  const ts = style ? texteStyle(style, "titre", 16) : null;
+  if (!ts) return undefined;
+  return (ligne) => {
+    const vu = texteSousStyle(ligne, ts);
+    const em = largeurEmPolice(ts.police.id, ts.graisse, vu);
+    return (em ?? largeurEm(ligne)) + [...vu].length * ts.approche;
+  };
 }
 
 /** L'interligne qu'Affinity relit (auto 120 %, D28) et la hauteur qu'une ligne occupe dans son cadre, en corps. */
@@ -256,9 +275,9 @@ export const contenuImprime = (contenu: string, c: { repeter?: number }): string
  * Le corps (pt) qui fait remplir au texte la largeur de son cadre, sans dépasser sa hauteur (ligne la plus longue,
  * toutes les lignes, interligne 120 %). Arrondi au demi-point inférieur.
  */
-export function tailleMotTitre(texte: string, cadre: { l: number; h: number }): number {
+export function tailleMotTitre(texte: string, cadre: { l: number; h: number }, mesure: MesureTitre = largeurEm): number {
   const lignes = texte.split("\n");
-  const em = Math.max(0, ...lignes.map(largeurEm));
+  const em = Math.max(0, ...lignes.map(mesure));
   if (!(em > 0)) return CORPS_MIN;
   const parLargeur = (cadre.l * PT_PAR_MM * REMPLISSAGE) / em;
   const parHauteur = (cadre.h * PT_PAR_MM) / (INTERLIGNE_COUVERTURE * (lignes.length - 1) + HAUTEUR_LIGNE);
@@ -266,8 +285,8 @@ export function tailleMotTitre(texte: string, cadre: { l: number; h: number }): 
 }
 
 /** La largeur imprimée (mm) d'un texte en Helvetica Bold à ce corps : sa ligne la plus longue. */
-export const largeurImprimee = (texte: string, taille: number): number =>
-  (Math.max(0, ...texte.split("\n").map(largeurEm)) * taille) / PT_PAR_MM;
+export const largeurImprimee = (texte: string, taille: number, mesure: MesureTitre = largeurEm): number =>
+  (Math.max(0, ...texte.split("\n").map(mesure)) * taille) / PT_PAR_MM;
 
 /**
  * Les textes tels qu'ils s'affichent et s'exportent. Un texte non écrit prend `parDefaut` pour le mot-titre (le lieu de
@@ -275,9 +294,10 @@ export const largeurImprimee = (texte: string, taille: number): number =>
  * son libellé. Le corps d'un mot-titre se recalcule toujours sur ce qui s'affiche. Idempotent.
  */
 export type TexteCouverture = TexteCadre & { saisi: boolean; parDefaut: string | null };
-export function textesDeCouverture(c: Couverture, lieu: string | null): TexteCouverture[] {
+export function textesDeCouverture(c: Couverture, lieu: string | null, style?: StyleMagazine | null): TexteCouverture[] {
   const g = gabaritCouverture(c.templateId);
   if (!g) return [];
+  const mesure = mesureMotTitre(style);
   const cadres = cadresTexteCouverture(g);
   return c.textes.map((t, i) => {
     const cadre = cadres[i];
@@ -285,28 +305,28 @@ export function textesDeCouverture(c: Couverture, lieu: string | null): TexteCou
     const parDefaut = cadre?.motTitre && lieu ? lieu.toLocaleUpperCase("fr-FR") : null;
     if (!cadre) return { ...t, saisi, parDefaut };
     const vu = saisi ? t.contenu : parDefaut ?? t.contenu;
-    return { ...t, taille: cadre.motTitre ? tailleMotTitre(contenuImprime(vu, cadre), cadre) : t.taille, saisi, parDefaut };
+    return { ...t, taille: cadre.motTitre ? tailleMotTitre(contenuImprime(vu, cadre), cadre, mesure) : t.taille, saisi, parDefaut };
   });
 }
 
 /** La couverture prête à exporter : textes non écrits remplis (lieu) ou vidés, corps des mots-titres calculés. Idempotent. */
-export function couverturePourExport(c: Couverture, lieu: string | null): Couverture {
-  const textes = textesDeCouverture(c, lieu).map(({ saisi, parDefaut, ...t }) => ({ ...t, contenu: saisi ? t.contenu : parDefaut ?? "" }));
+export function couverturePourExport(c: Couverture, lieu: string | null, style?: StyleMagazine | null): Couverture {
+  const textes = textesDeCouverture(c, lieu, style).map(({ saisi, parDefaut, ...t }) => ({ ...t, contenu: saisi ? t.contenu : parDefaut ?? "" }));
   return { ...c, textes };
 }
 
 /** La part de la largeur de la 1re couverte par le premier mot-titre de la 1re (P3-11), ou null sans mot-titre écrit. */
-export function partDuMotTitre(c: Couverture, lieu: string | null): number | null {
+export function partDuMotTitre(c: Couverture, lieu: string | null, style?: StyleMagazine | null): number | null {
   const g = gabaritCouverture(c.templateId);
   if (!g) return null;
   const cadres = cadresTexteCouverture(g);
-  const textes = textesDeCouverture(c, lieu);
+  const textes = textesDeCouverture(c, lieu, style);
   const i = cadres.findIndex((x) => x.motTitre && x.face === "premiere");
   if (i < 0) return null;
   const t = textes[i];
   const vu = t.saisi ? t.contenu : t.parDefaut;
   if (!vu) return null;
-  return largeurImprimee(contenuImprime(vu, cadres[i]), t.taille) / PAGE_L;
+  return largeurImprimee(contenuImprime(vu, cadres[i]), t.taille, mesureMotTitre(style)) / PAGE_L;
 }
 
 /* ─────────────────────────── La géométrie résolue ─────────────────────────── */

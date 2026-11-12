@@ -80,5 +80,5 @@ export function avecLieuxParDefaut(m: Magazine, cat: CatalogueLieux): Magazine {
   });
   const sansChangement = planches.every((p, i) => p === m.planches[i]);
   if (!m.couverture) return sansChangement ? m : { ...m, planches };
-  return { ...m, planches: sansChangement ? m.planches : planches, couverture: couverturePourExport(m.couverture, lieuCouverture(m.couverture, cat)) };
+  return { ...m, planches: sansChangement ? m.planches : planches, couverture: couverturePourExport(m.couverture, lieuCouverture(m.couverture, cat), m.style) };
 }
