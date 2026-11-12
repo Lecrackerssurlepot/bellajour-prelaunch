@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { idsMagazine, marqueDe, type EtatEditeur } from "@/lib/mise-en-page/editeur";
 import { proposerNuancier } from "@/lib/mise-en-page/nuancier";
-import { COULEURS_ORIGINE, NOM_ROLE, PAIRES, ROLES_COULEUR, paireParId, styleDePaire, type Role, type StyleMagazine } from "@/lib/mise-en-page/style";
+import { COULEURS_ORIGINE, NOM_ROLE, PAIRES, ROLES_COULEUR, paireParId, styleDePaire, texteTypo, type Role, type StyleMagazine } from "@/lib/mise-en-page/style";
 import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 
@@ -45,6 +45,9 @@ export function StylePanneau() {
   const { etat, envoyer, majUi, lectureSeule: ro } = useEd();
   const style = etat.magazine.style;
   const paire = style ? paireParId(style.paire) : null;
+  /* l'échantillon n'invente rien : le titre du magazine tel qu'il est (le mot « Titre » à défaut), puis deux lignes neutres,
+     jamais un lieu ni une date qui ne viennent pas du dossier */
+  const titreEchantillon = texteTypo(etat.magazine.titre.trim() || "Titre");
   const { palettes, posees } = useMemo(() => palettesDuNuancier(etat), [etat]);
   const prop = useMemo(() => proposerNuancier(palettes), [palettes]);
   const memeNuancier = !!style && !!prop && ROLES_COULEUR.every((r) => style.couleurs[r] === prop.couleurs[r]);
@@ -73,9 +76,9 @@ export function StylePanneau() {
 
       {paire && style ? (
         <div className="ed-sty-echantillon" aria-hidden="true">
-          <span className="ed-sty-ech-t" style={{ fontFamily: `var(--pf-${paire.niveaux.titre.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.titre.graisse, textTransform: paire.niveaux.titre.capitales ? "uppercase" : "none", color: `var(--mep-r-encre)` }}>Lisbonne</span>
-          <span className="ed-sty-ech-x" style={{ fontFamily: `var(--pf-${paire.niveaux.texte.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.texte.graisse }}>Ce que vous avez vécu, nous le composons.</span>
-          <span className="ed-sty-ech-l" style={{ fontFamily: `var(--pf-${paire.niveaux.legende.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.legende.graisse, textTransform: paire.niveaux.legende.capitales ? "uppercase" : "none", letterSpacing: paire.niveaux.legende.approche ? `${paire.niveaux.legende.approche}em` : undefined }}>12 juin · Alfama</span>
+          <span className="ed-sty-ech-t" style={{ fontFamily: `var(--pf-${paire.niveaux.titre.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.titre.graisse, textTransform: paire.niveaux.titre.capitales ? "uppercase" : "none", color: `var(--mep-r-encre)` }}>{titreEchantillon}</span>
+          <span className="ed-sty-ech-x" style={{ fontFamily: `var(--pf-${paire.niveaux.texte.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.texte.graisse }}>{texteTypo("Le texte courant s'écrit ainsi.")}</span>
+          <span className="ed-sty-ech-l" style={{ fontFamily: `var(--pf-${paire.niveaux.legende.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.legende.graisse, textTransform: paire.niveaux.legende.capitales ? "uppercase" : "none", letterSpacing: paire.niveaux.legende.approche ? `${paire.niveaux.legende.approche}em` : undefined }}>Légende de la photo</span>
         </div>
       ) : (
         <p className="ed-sty-vide">Rendu d&apos;origine. Choisir une paire de polices applique un style à tout le magazine.</p>
