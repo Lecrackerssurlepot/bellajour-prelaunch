@@ -9,8 +9,8 @@
  * au harnais : EN 87, RG 98, GR 62, HS 863, MO 170, FL 498, CH 196, IN 102 (le script en donne 2 121 avec les 25
  * pages qui ne se posent pas sur la grille et les 20 photos éclatées : aucune des deux n'a de cadre à elle ici).
  *
- * Pages seulement : pas de double traversante. Photos seulement : pas de cadre texte (la famille « Avec texte » ne
- * montre que les dessinés).
+ * Pages seulement ici : pas de double traversante (les DOUBLES générées, lot R, sont faites de deux de ces pages : genereDouble.ts).
+ * Photos seulement : pas de cadre texte (la famille « Avec texte » ne montre que les dessinés).
  *
  * L'ID EST LA RECETTE, versionnée. `GG1-HS-0033.3012.3412` = version 1 de l'encodage, schéma HS, puis les cases en
  * modules, chacune `colonne ligne nbColonnes nbLignes` (un chiffre chacun). Les mesures sont DANS l'id : si l'énumération
