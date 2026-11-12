@@ -18,6 +18,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { unzlibSync } from "fflate";
+import fontkit from "@pdf-lib/fontkit";
 import { POLICES, nomFichierPolice } from "@/lib/mise-en-page/style";
 
 /**
@@ -66,6 +67,37 @@ export function woffVersTtf(woff: Uint8Array): Uint8Array {
   return out;
 }
 
+/**
+ * Les caractères dont on garde la CHASSE (largeur d'avance, en millièmes de cadratin) : le latin de base, le latin-1, œ Œ, les tirets,
+ * les apostrophes, les guillemets anglais, l'ellipse et l'euro. Au-delà, le corps d'un mot-titre compte large (jamais un débordement).
+ */
+export const PLAGES_CHASSES: readonly (readonly [number, number])[] = [[0x20, 0x7e], [0xa0, 0xff], [0x152, 0x153], [0x2013, 0x2014], [0x2018, 0x2019], [0x201c, 0x201d], [0x2026, 0x2026], [0x20ac, 0x20ac]];
+export const codesChasses = (): number[] => PLAGES_CHASSES.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i));
+
+/** Les chasses d'un fichier de police (hors crénage), dans l'ordre de `codesChasses()`. Un caractère absent de la police vaut 0 : il compte large à l'usage. */
+export function chassesDuFichier(octets: Uint8Array): number[] {
+  const f = fontkit.create(Buffer.from(octets)) as unknown as { unitsPerEm: number; hasGlyphForCodePoint(c: number): boolean; glyphForCodePoint(c: number): { advanceWidth: number } };
+  return codesChasses().map((c) => (f.hasGlyphForCodePoint(c) ? Math.round((f.glyphForCodePoint(c).advanceWidth * 1000) / f.unitsPerEm) : 0));
+}
+
+/** Le module généré `chassesPolices.ts` : une ligne par famille et graisse. */
+export const FICHIER_CHASSES = "src/lib/mise-en-page/chassesPolices.ts";
+export function sourceChasses(parCle: ReadonlyMap<string, number[]>): string {
+  const lignes = [...parCle.entries()].map(([k, v]) => `  "${k}": [${v.join(",")}],`).join("\n");
+  return `/**
+ * GÉNÉRÉ par \`scripts/polices-pdf.ts\` : ne pas éditer. Les chasses (largeurs d'avance, millièmes de cadratin, crénage non compris) des
+ * ${parCle.size} polices du catalogue de style.ts, pour les caractères de \`PLAGES\`. Le corps du mot-titre de la couverture se calcule
+ * dessus (couverture.ts) : une chasse à 0 = le caractère manque à la police. Le harnais refait ce calcul sur les fichiers et compare.
+ */
+
+export const PLAGES: readonly (readonly [number, number])[] = ${JSON.stringify(PLAGES_CHASSES)};
+
+export const CHASSES_POLICES: Readonly<Record<string, readonly number[]>> = {
+${lignes}
+};
+`;
+}
+
 export const DOSSIER_SOURCE = "node_modules/@fontsource";
 export const DOSSIER_COPIE = "public/polices";
 /** Le fichier d'un paquet pour une graisse (WOFF, latin : toutes les lettres du français, « œ » compris). */
@@ -81,6 +113,7 @@ function licenceDe(id: string): { type: string; droit: string } {
 function main(): void {
   mkdirSync(DOSSIER_COPIE, { recursive: true });
   const lignes: string[] = [];
+  const chasses = new Map<string, number[]>();
   let n = 0;
   for (const p of POLICES) {
     const l = licenceDe(p.id);
@@ -88,7 +121,9 @@ function main(): void {
     for (const g of Object.keys(p.graisses).map(Number)) {
       const src = fichierDuPaquet(p.id, g);
       if (!existsSync(src)) throw new Error(`Fichier absent du paquet : ${src}`);
-      writeFileSync(join(DOSSIER_COPIE, nomFichierPolice(p.id, g)), woffVersTtf(new Uint8Array(readFileSync(src))));
+      const ttf = woffVersTtf(new Uint8Array(readFileSync(src)));
+      writeFileSync(join(DOSSIER_COPIE, nomFichierPolice(p.id, g)), ttf);
+      chasses.set(`${p.id}-${g}`, chassesDuFichier(ttf));
       n += 1;
     }
   }
@@ -101,6 +136,7 @@ function main(): void {
     ...lignes,
     "",
   ].join("\n"));
+  writeFileSync(FICHIER_CHASSES, sourceChasses(chasses));
   console.log(`${n} fichiers de police copiés dans ${DOSSIER_COPIE}/ (${POLICES.length} familles).`);
 }
 

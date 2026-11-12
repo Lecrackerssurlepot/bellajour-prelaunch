@@ -18,7 +18,8 @@
  */
 
 import { COULEURS_ORIGINE, ROLES_COULEUR, estHex, type CouleursNuancier, type RoleCouleur } from "./nuancier";
-import { typographieFrancaise } from "./francais";
+import { FINE, typographieFrancaise } from "./francais";
+import { CHASSES_POLICES, PLAGES } from "./chassesPolices";
 import type { Cadre, RoleCadre, Teinte } from "./types";
 
 export { ROLES_COULEUR, estHex };
@@ -312,4 +313,33 @@ export function premiereBase(pol: Police, interligne: number): number {
   const { upm, asc, desc } = pol.metriques;
   const contenu = (asc + desc) / upm;
   return (interligne - contenu) / 2 + asc / upm;
+}
+
+/* ─────────────────────────── les chasses ─────────────────────────── */
+
+/** L'avance d'une espace fine insécable : un cinquième de cadratin (aucune police du catalogue n'a U+202F). */
+export const AVANCE_FINE_EM = 0.2;
+const INDEX_CHASSE: ReadonlyMap<number, number> = (() => {
+  const m = new Map<number, number>();
+  let i = 0;
+  for (const [a, b] of PLAGES) for (let c = a; c <= b; c++) m.set(c, i++);
+  return m;
+})();
+
+/**
+ * La chasse d'un texte (largeur en corps 1, em) dans une police du catalogue, d'après `chassesPolices.ts` (généré depuis les fichiers
+ * de police, crénage non compris). Un caractère que la police n'a pas, ou hors des plages gardées, compte LARGE (1 em) : un corps
+ * calculé dessus ne fait jamais déborder un mot. L'espace fine vaut `AVANCE_FINE_EM`. Une police inconnue du catalogue : null.
+ */
+export function largeurEmPolice(id: string, graisse: number, texte: string): number | null {
+  const t = CHASSES_POLICES[`${id}-${graisse}`];
+  if (!t) return null;
+  let n = 0;
+  for (const ch of texte.normalize("NFC")) {
+    if (ch === FINE) { n += AVANCE_FINE_EM; continue; }
+    const k = INDEX_CHASSE.get(ch.codePointAt(0) ?? 0);
+    const w = k === undefined ? 0 : t[k];
+    n += (w > 0 ? w : 1000) / 1000;
+  }
+  return n;
 }
