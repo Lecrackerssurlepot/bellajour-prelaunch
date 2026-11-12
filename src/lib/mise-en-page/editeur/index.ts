@@ -15,11 +15,11 @@ export type {
 } from "./selecteurs";
 
 export {
-  BONUS_ANNEXE, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
+  AVANCE_DESSINES, AVANCE_GENERES, BONUS_ANNEXE, BONUS_ORIGINE, MALUS_RUPTURE, MALUS_VIDE, PAS_TIROIR, PLAFOND_TIROIR, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
 } from "./outils";
 export {
   ajouter, ajouterSurPlanche, autreGabarit, avecTexte, dansFamille, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
-  echangerIssue, ecrireTexteCadre, estPleine, fusionner, gabaritsClasses, insererDouble, noterGabarit, pagesDe, perteCadre, photosIndisponibles,
+  echangerIssue, ecrireTexteCadre, estPleine, fusionner, gabaritsClasses, insererDouble, noterGabarit, pagesDe, perteCadre, videDe, photosIndisponibles,
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 export { contenuValide } from "../sauvegarde";
@@ -39,6 +39,8 @@ export type { BilanTri, Etiquette, Marque, TourTri, PartPersonne, TriPlein, VueT
 export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres, miroir, pageEntiere, placerCadre, poserLibre, rangCalque, retirerCadres } from "./libre";
 export type { SensCalque } from "./libre";
 export { DEPLACEMENT, aimanter, lignesAimant } from "./aimant";
+export { OR_GRAND, OR_PETIT, grilleArtiste, pagesDeLaPlanche } from "./grilleArtiste";
+export type { GenreLigne, LigneArtiste } from "./grilleArtiste";
 export type { Bords, Guide, Lignes } from "./aimant";
 export { PAUSE_MOMENT_MIN, decoupage, lieuCourt, nomDuMoment, rangementDe } from "./moments";
 export type { Decoupage, Rangement } from "./moments";

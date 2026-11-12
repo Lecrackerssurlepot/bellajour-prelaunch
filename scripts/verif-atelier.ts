@@ -467,6 +467,8 @@ import type { Magazine as MagazineMepClient } from "@/lib/mise-en-page/magazine"
 import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atelier/mise-en-page/typesPhotos";
 /* L'éditeur de mise en page (couche logique pure) : 79 scénarios + séquences aléatoires à graine fixe. */
 import { verifierMepEditeur } from "./verif-mep-editeur";
+/* Lot D (12/11) : les gabarits de page générés par la grammaire (GG1-…) et la grille d'artiste. */
+import { verifierMepGeneres } from "./verif-mep-generes";
 /* La couverture à plat (lot B, 12/11) : son propre fichier de tests, rejoué à la fin. */
 import { verifierMepCouverture } from "./verif-mep-couverture";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
@@ -7433,6 +7435,7 @@ const verifierMepLot0 = () => {
 verifierMepLot0();
 
 verifierMepEditeur(ok, titre);
+verifierMepGeneres(ok, titre);
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);

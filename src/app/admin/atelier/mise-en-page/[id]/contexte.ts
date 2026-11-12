@@ -55,18 +55,27 @@ export type Ui = {
   /** 06/11 : l'aimant allumé (gardé sur ce Mac), et les lignes où le cadre s'accroche pendant le glisser. */
   aimant: boolean;
   guides: Guide[];
+  /** Lot D (12/11) : la grille d'artiste (tiers, nombre d'or, diagonales) par-dessus chaque page, gardée sur ce Mac. Écran seulement. */
+  grille: boolean;
 };
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
   grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, lecture: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
-  retouche: null, position: null, aimant: true, guides: [],
+  retouche: null, position: null, aimant: true, guides: [], grille: false,
 };
 
-/** L'aimant se rappelle d'une séance à l'autre, sur ce Mac seulement. Jamais d'exception. */
+/** L'aimant et la grille d'artiste se rappellent d'une séance à l'autre, sur ce Mac seulement. Jamais d'exception. */
 export const CLE_AIMANT = "bj-mep-aimant";
+export const CLE_GRILLE = "bj-mep-grille";
 export function uiDeDepart(): Ui {
-  try { return { ...UI_NEUVE, aimant: window.localStorage.getItem(CLE_AIMANT) !== "0" }; } catch { return UI_NEUVE; }
+  try { return { ...UI_NEUVE, aimant: window.localStorage.getItem(CLE_AIMANT) !== "0", grille: window.localStorage.getItem(CLE_GRILLE) === "1" }; } catch { return UI_NEUVE; }
+}
+/** Allume ou éteint la grille d'artiste (la barre et la touche O) et s'en souvient ; le stockage refusé = l'état vaut pour la séance. */
+export function basculerGrille(ui: Ui, majUi: (p: Partial<Ui>) => void): void {
+  const grille = !ui.grille;
+  majUi({ grille });
+  try { window.localStorage.setItem(CLE_GRILLE, grille ? "1" : "0"); } catch { /* stockage refusé */ }
 }
 
 /** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */

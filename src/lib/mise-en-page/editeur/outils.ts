@@ -13,6 +13,40 @@ import type { Filtres } from "./types";
 
 export const PENALITE_REPETITION = 0.25;
 export const BONUS_ANNEXE = 0.05;
+/**
+ * Lot D (12/11) : ce que chaque ORIGINE retranche à la note d'un gabarit, par portée. Les DESSINÉS (enregistrés, annexe,
+ * épingles : ce que Mathias a validé) passent devant les GÉNÉRÉS (la grammaire : des centaines par nombre de photos), qui
+ * passent devant les grilles de secours. Une double n'a pas de générés : elle garde `BONUS_ANNEXE` sur les grilles, comme
+ * avant. Sur une page, un dessiné reste devant tant qu'il perd au plus `AVANCE_DESSINES` de note sur un généré (de l'ordre
+ * d'un cadre dont le rapport s'éloigne de 10 % : à fit égal, un dessiné ne se laisse pas noyer par des centaines de
+ * découpes) ; un généré reste devant une grille qui va aussi bien (`AVANCE_GENERES`). Un seul endroit pour régler l'ordre.
+ */
+export const AVANCE_DESSINES = 0.15;
+export const AVANCE_GENERES = 0.05;
+export const BONUS_ORIGINE: Readonly<Record<Portee, Readonly<Record<Template["origine"], number>>>> = {
+  double: { annexe: BONUS_ANNEXE, epingle: BONUS_ANNEXE, atelier: BONUS_ANNEXE, genere: 0, grille: 0 },
+  page: {
+    annexe: AVANCE_DESSINES + AVANCE_GENERES, epingle: AVANCE_DESSINES + AVANCE_GENERES, atelier: AVANCE_DESSINES + AVANCE_GENERES,
+    genere: AVANCE_GENERES, grille: 0,
+  },
+};
+/**
+ * Lot D : la note d'un GÉNÉRÉ monte de `MALUS_VIDE` × la part de la zone utile qu'il laisse nue (0 à 1). La note ne lit que
+ * le rapport photo / cadre : sans cela, trois petites flottantes (une colonne de large) rangent devant une page pleine dès que
+ * leurs cases ont le bon rapport, et la première chose qu'on voit en posant des photos est un confetti. Les flottantes, la petite
+ * encadrée et les rangées maigres restent au tiroir et sous R, plus loin ; les dessinés (choisis par Mathias) et les grilles
+ * (pleines par construction) n'ont pas ce malus.
+ */
+export const MALUS_VIDE = 0.6;
+/**
+ * Lot D : un chevauchement (CH) ou une incrustation (IN) est une RUPTURE de la grammaire (R-G-07, R-101) : bonne quand les photos s'y prêtent
+ * (un fond calme, un coin sans sujet), ce que la note ne voit pas. Elle ne se propose donc pas d'office : `MALUS_RUPTURE` l'éloigne de la tête
+ * du classement, elle reste au tiroir et sous R.
+ */
+export const MALUS_RUPTURE = 0.25;
+/** Lot D : le tiroir des gabarits montre d'abord ce nombre de vignettes ; « Plus » en ajoute `PAS_TIROIR`. Les générés se comptent par centaines. */
+export const PLAFOND_TIROIR = 40;
+export const PAS_TIROIR = 80;
 /** 09/11 : une grande coupe pèse plus que plusieurs petites (perte + POIDS × perte²) : un visage coupé se voit, 5 % de ciel non. */
 export const POIDS_GRANDE_COUPE = 3;
 /** Lot 2 (B3) : toute la zone importante dans le pli coûte autant qu'une perte totale pesée (1 + 3). */
