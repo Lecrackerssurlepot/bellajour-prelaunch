@@ -97,3 +97,19 @@ export default function Planche({ t }: { t: Template }) {
     </svg>
   );
 }
+
+/** Une page droite en LÉGER (lot D) : le papier, la zone utile et les cadres, sans les 36 cases ni les croix ni les lettres. Les générés
+ *  se comptent par milliers : le dessin complet de `Planche` ferait une page de plusieurs mégaoctets. */
+export function PlancheLegere({ t }: { t: Template }) {
+  const z = zoneUtile("droite");
+  return (
+    <svg className="mep-svg" viewBox={`0 ${-FOND_PERDU} ${PAGE_L + FOND_PERDU} ${PAGE_H + 2 * FOND_PERDU}`} role="img" aria-label={`${t.id}, ${t.nom}`}>
+      <rect className="mep-papier" x={0} y={0} width={PAGE_L} height={PAGE_H} />
+      <rect className="mep-marge" x={z.x} y={z.y} width={z.l} height={z.h} />
+      {pourCote(t, "droite").map((c, i) => (
+        <rect key={i} className="mep-photo" x={c.x} y={c.y} width={c.l} height={c.h} />
+      ))}
+      <rect className="mep-coupe" x={0} y={0} width={PAGE_L} height={PAGE_H} />
+    </svg>
+  );
+}
