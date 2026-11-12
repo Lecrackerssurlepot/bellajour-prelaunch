@@ -15,6 +15,8 @@ import { estTour, etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEff
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
+import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
+import { ID_COUVERTURE } from "../couverture";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
 const planRien = (e: EtatEditeur, refus?: Refus): Plan =>
@@ -133,6 +135,9 @@ export function planDepot(e: EtatEditeur, source: SourceGlisser | null | undefin
 function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): Plan {
   const m = e.magazine;
   if (!source || !cible) return planRien(e);
+  /* lot B : un lâcher qui touche la couverture a ses propres gestes */
+  const couv = planDepotCouverture(e, source, cible);
+  if (couv) return couv;
   if (source.type === "bibliotheque") {
     const ids = Array.isArray(source.ids) ? source.ids : [];
     switch (cible.type) {
@@ -209,7 +214,11 @@ function planDepotBrut(e: EtatEditeur, source: SourceGlisser | null | undefined,
   return planRien(e);
 }
 
-const courante = (e: EtatEditeur, id?: string): string => id ?? e.plancheCourante;
+/** La planche visée, sinon la courante ; sur la couverture (lot B), la planche 1 (une double s'insère après elle). */
+const courante = (e: EtatEditeur, id?: string): string => {
+  const x = id ?? e.plancheCourante;
+  return x === ID_COUVERTURE ? e.magazine.planches[0].id : x;
+};
 
 /** Le plan d'un geste primitif qui change le magazine (null sinon). */
 /** Le geste pose-t-il des photos venues de la bibliothèque ? */
@@ -230,6 +239,9 @@ export function planifier(e: EtatEditeur, g: GesteModifiant): Plan | null {
 
 function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
   const m = e.magazine, cat = e.catalogue;
+  /* lot B : un geste qui vise la couverture a ses propres opérations */
+  const couv = planGesteCouverture(e, g);
+  if (couv !== undefined) return couv;
   const simple = (op: OpPlan, libelle: string, plancheId: string, m2: Magazine, args: ArgsPlan): Plan =>
     ({ op, libelle, plancheId, issue: issue(m2, m2 === m ? "rien" : null), args });
   switch (g.type) {

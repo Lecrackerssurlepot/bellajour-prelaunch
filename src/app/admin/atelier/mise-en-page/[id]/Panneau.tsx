@@ -5,6 +5,7 @@ import {
   aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
+import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { CheminDeFer, Toast } from "./Bas";
 import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
@@ -284,15 +285,15 @@ function PanneauOuvert() {
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
           {nums?.length ? (
-            <span className="ed-rep ed-rep--posee" role="button" tabIndex={-1} title={n > 1 ? `Posée ${n} fois : voir où` : `Sur la planche ${nums[0]}`}
+            <span className="ed-rep ed-rep--posee" role="button" tabIndex={-1} title={n > 1 ? `Posée ${n} fois : voir où` : nums[0] === 0 ? "Sur la couverture" : `Sur la planche ${nums[0]}`}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation(); e.preventDefault();
                 if (n > 1) { const b = e.currentTarget.getBoundingClientRect(); setOu(ou?.id === id ? null : { id, x: b.left, y: b.bottom + 4 }); }
-                else envoyer({ type: "naviguer", plancheId: etat.magazine.planches[nums[0] - 1].id });
+                else envoyer({ type: "naviguer", plancheId: nums[0] === 0 ? ID_COUVERTURE : etat.magazine.planches[nums[0] - 1].id });
               }}>
               <svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><rect x="1" y="2" width="4.5" height="8" rx=".8" /><rect x="6.5" y="2" width="4.5" height="8" rx=".8" /></svg>
-              {nums[0]}{n > 1 ? ` ×${n}` : ""}
+              {nums[0] === 0 ? "C" : nums[0]}{n > 1 ? ` ×${n}` : ""}
             </span>
           ) : null}
           {ec ? <span className="ed-rep ed-rep--ecartee">Écartée</span> : null}
@@ -468,7 +469,7 @@ function PanneauOuvert() {
             {emplacements(etat, ou.id).map((x) => (
               <button key={`${x.ref.plancheId}${x.ref.cible}${x.ref.index}`} type="button" role="menuitem"
                 onClick={() => { setOu(null); envoyer({ type: "naviguer", plancheId: x.ref.plancheId }); envoyer({ type: "activerCadre", ref: x.ref }); }}>
-                Planche {x.numero}<span>p. {x.pages}</span>
+                {x.numero === 0 ? "Couverture" : `Planche ${x.numero}`}<span>{x.numero === 0 ? x.pages : `p. ${x.pages}`}</span>
               </button>
             ))}
           </div>

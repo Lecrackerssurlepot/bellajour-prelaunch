@@ -10,6 +10,7 @@
  */
 
 import { cadresDe, type Cible, type Disposition, type Magazine, type PhotoRef, type Planche } from "../magazine";
+import { cadresPhotoCouverture, couverturePourExport, gabaritCouverture, type Couverture } from "../couverture";
 import { lieuCourt } from "./moments";
 import { saisi } from "./outils";
 
@@ -53,11 +54,31 @@ function avecLieux(d: Disposition | null, cible: Cible, cat: CatalogueLieux): Di
   return { ...d, textes: d.textes.map((t, i) => (!saisi(t) && defaut[i] ? { ...t, contenu: defaut[i] } : t)) };
 }
 
-/** Le magazine tel qu'il part à l'export : chaque titre et légende non écrit porte son lieu. */
+/**
+ * Lot B : le lieu de la couverture, mot-titre par défaut de la 1re : celui de la photo du plus grand cadre de la 1re dont on
+ * connaît le lieu (la ville, sinon le pays). Null si aucune ne le dit.
+ */
+export function lieuCouverture(c: Couverture | null | undefined, cat: CatalogueLieux): string | null {
+  const g = c ? gabaritCouverture(c.templateId) : null;
+  if (!c || !g) return null;
+  const parAire = cadresPhotoCouverture(g).map((x, i) => ({ x, i })).filter((y) => y.x.face === "premiere").sort((a, b) => b.x.l * b.x.h - a.x.l * a.x.h || a.i - b.i);
+  for (const { i } of parAire) {
+    const id = c.photos[i]?.photoId;
+    const p = id ? cat.get(id) : undefined;
+    const l = p ? lieuCourt(p) : null;
+    if (l) return l;
+  }
+  return null;
+}
+
+/** Le magazine tel qu'il part à l'export : chaque titre et légende non écrit porte son lieu ; la couverture est prête
+ *  (mot-titre au lieu ou vide, corps calculé : `couverturePourExport`). */
 export function avecLieuxParDefaut(m: Magazine, cat: CatalogueLieux): Magazine {
   const planches = m.planches.map((p): Planche => {
     const double = avecLieux(p.double, "double", cat), gauche = avecLieux(p.gauche, "gauche", cat), droite = avecLieux(p.droite, "droite", cat);
     return double === p.double && gauche === p.gauche && droite === p.droite ? p : { ...p, double, gauche, droite };
   });
-  return planches.every((p, i) => p === m.planches[i]) ? m : { ...m, planches };
+  const sansChangement = planches.every((p, i) => p === m.planches[i]);
+  if (!m.couverture) return sansChangement ? m : { ...m, planches };
+  return { ...m, planches: sansChangement ? m.planches : planches, couverture: couverturePourExport(m.couverture, lieuCouverture(m.couverture, cat)) };
 }

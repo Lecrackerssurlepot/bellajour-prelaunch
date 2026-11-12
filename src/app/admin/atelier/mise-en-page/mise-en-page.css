@@ -1759,3 +1759,48 @@
 .mep-editeur .ed-lec-dl dd { margin: 0; font-variant-numeric: tabular-nums; }
 /* 11/11 : Canva ou Affinity, en tête de la feuille d'export */
 .mep-editeur .ed-ex-sortie { align-self: flex-start; }
+
+/* ── lot B (12/11) : la couverture à plat, 4e · dos · 1re ──
+   La largeur suit le dos (--couv-l = 420 + dos, en mm) ; le dos est une bande à sa vraie cote, entre deux plis.
+   Les textes sont en Arial (la police de l'IDML, dont les chasses calculent le corps du mot-titre), interligne 120 %
+   (ce qu'Affinity relit), sans retrait : ce qu'on voit est ce qui part. */
+.mep-editeur .ed-couv { position: relative; width: min(100cqw, calc(100cqh * var(--couv-l) / 297)); aspect-ratio: var(--couv-l) / 297; container-type: inline-size; }
+.mep-editeur .ed-feuille--couv { background: var(--mep-papier); }
+.mep-editeur .ed-feuille--couv::after { display: none; }
+.mep-editeur .ed-couv-dos { position: absolute; top: 0; bottom: 0; z-index: 3; pointer-events: none; }
+.mep-editeur .ed-couv-dos--inconnu { background: repeating-linear-gradient(135deg, var(--bj-veil-16) 0 3px, transparent 3px 6px); }
+.mep-editeur .ed-couv-pli { position: absolute; top: -8px; bottom: -8px; z-index: 4; width: 0; border-left: 1px dashed color-mix(in srgb, var(--bj-text) 45%, transparent); pointer-events: none; }
+.mep-editeur .ed-couv-cote {
+  position: absolute;
+  top: -26px;
+  z-index: 6;
+  padding: 2px 9px;
+  border-radius: var(--bj-r-pill);
+  background: var(--bj-charcoal);
+  color: var(--bj-cream-tint-1);
+  font-size: var(--bj-fs-xxs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.mep-editeur .ed-couv-cote--manque { background: var(--ate-orange); }
+.mep-editeur .ed-couv-face { position: absolute; top: -22px; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); pointer-events: none; }
+.mep-editeur .ed-pastille--couv { right: 0; opacity: 1; }
+.mep-editeur .ed-cadre--couv-vide { display: grid; place-items: center; background: color-mix(in srgb, var(--bj-cream-tint-3) 85%, transparent); box-shadow: inset 0 0 0 1px var(--bj-veil-16); color: var(--bj-text-faint); font-size: 1cqw; text-align: center; cursor: pointer; }
+.mep-editeur .ed-cadre--couv-vide:hover { background: color-mix(in srgb, var(--bj-action) 8%, var(--bj-cream-tint-3)); }
+.mep-editeur .ed-cadre--fantome { pointer-events: none; animation: ed-apparait 180ms ease-out; }
+.mep-editeur .ed-txt--couv { padding: 0; font-family: Arial, Helvetica, sans-serif; line-height: 1.2; white-space: pre-wrap; }
+.mep-editeur .ed-txt--couv.ed-txt--edit { color: var(--bj-text); }
+.mep-editeur .ed-bande--couv { gap: 14px; }
+.mep-editeur .ed-couv-info { color: var(--bj-text-soft); font-size: var(--bj-fs-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mep-editeur .ed-couv-info b { color: var(--bj-text); font-weight: 600; }
+.mep-editeur .ed-couv-info--manque b { color: var(--ate-orange); }
+.mep-editeur .ed-couv-pages { display: inline-flex; align-items: center; gap: 6px; color: var(--bj-text-soft); font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-couv-pages input { min-height: 28px; padding: 0 8px; }
+.mep-editeur .ed-couv-alerte { padding: 2px 9px; border-radius: var(--bj-r-pill); background: color-mix(in srgb, var(--ate-orange) 14%, transparent); color: var(--ate-orange); font-size: var(--bj-fs-xxs); font-weight: 600; white-space: nowrap; }
+.mep-editeur .ed-couv-dessin i { overflow: hidden; }
+.mep-editeur .ed-couv-dessin i img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mep-editeur .ed-cf-couv { margin-right: 4px; padding-right: 8px; border-right: 1px solid var(--bj-veil-8); border-radius: 8px 0 0 8px; }
+.mep-editeur .ed-cf-v--courante .ed-couv-dessin { box-shadow: 0 0 0 2px var(--bj-action); }
+.mep-editeur .ed-couv-pages .adm-input { flex: none; width: 76px; min-width: 0; }

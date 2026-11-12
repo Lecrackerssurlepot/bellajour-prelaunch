@@ -10,6 +10,7 @@
 import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
 import type { Magazine } from "../magazine";
+import { ID_COUVERTURE } from "../couverture";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { LECTURE_VIDE } from "./mesures";
@@ -19,7 +20,7 @@ import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
-  FILTRES_DEFAUT, HISTORIQUE_MAX, affectation, aPhoto, borner, dimsCadre, dispositionOuNull, egal, indexPlanche, neutre, pluriel, texteDe,
+  FILTRES_DEFAUT, HISTORIQUE_MAX, affectation, aPhoto, borner, dimsDeRef, egal, indexPlanche, neutre, pluriel, texteDe,
 } from "./outils";
 import type {
   CibleDepot, EtatEditeur, EtatSauvegarde, Filtres, Geste, GesteCompose, GesteEcran, GesteModifiant, GestePrimitif, OptionsEtat,
@@ -37,7 +38,7 @@ const numeroMax = (m: Magazine): number => m.planches.reduce((a, p) => Math.max(
 export function creerEtat(o: OptionsEtat): EtatEditeur {
   const magazine = o.magazine;
   const cat: ReadonlyMap<string, PhotoMaq> = o.catalogue instanceof Map ? o.catalogue : new Map((o.catalogue as readonly PhotoMaq[] ?? []).map((p) => [p.id, p]));
-  const courante = o.plancheCourante && indexPlanche(magazine, o.plancheCourante) >= 0 ? o.plancheCourante : magazine.planches[0].id;
+  const courante = o.plancheCourante && (o.plancheCourante === ID_COUVERTURE || indexPlanche(magazine, o.plancheCourante) >= 0) ? o.plancheCourante : magazine.planches[0].id;
   return {
     magazine,
     catalogue: cat,
@@ -105,9 +106,9 @@ function fermerSeances(e: EtatEditeur): EtatEditeur {
   return x;
 }
 
-/** La planche à montrer : `id` si elle existe, sinon la plus proche de sa place dans `autre`. */
+/** La planche à montrer : `id` si elle existe (la couverture existe toujours, lot B), sinon la plus proche de sa place dans `autre`. */
 function plancheProche(m: Magazine, id: string, autre: Magazine | null): string {
-  if (indexPlanche(m, id) >= 0) return id;
+  if (id === ID_COUVERTURE || indexPlanche(m, id) >= 0) return id;
   const k = autre ? indexPlanche(autre, id) : -1;
   return m.planches[k < 0 ? 0 : Math.min(k, m.planches.length - 1)].id;
 }
@@ -116,7 +117,7 @@ function plancheProche(m: Magazine, id: string, autre: Magazine | null): string 
  *  Un filtre ne vide plus la sélection : les photos masquées restent sélectionnées. */
 function synchroniser(e: EtatEditeur): EtatEditeur {
   let x = e;
-  if (indexPlanche(x.magazine, x.plancheCourante) < 0) x = { ...x, plancheCourante: x.magazine.planches[0].id };
+  if (x.plancheCourante !== ID_COUVERTURE && indexPlanche(x.magazine, x.plancheCourante) < 0) x = { ...x, plancheCourante: x.magazine.planches[0].id };
   if (x.cadreActif && !aPhoto(x.magazine, x.cadreActif)) x = { ...x, cadreActif: null };
   if (x.cadresSel.length) {
     const ok = x.cadresSel.filter((r) => aPhoto(x.magazine, r));
@@ -144,6 +145,8 @@ type Touche = Extract<GesteCompose, { type: "touche" }>;
  *  côté qui n'existe plus dans ce mode) est ignoré. */
 function cibleR(e: EtatEditeur, g: Touche): { plancheId: string; cible: RefCadre["cible"] } | null {
   if (e.recadrage && e.recadrage.ref) return { plancheId: e.recadrage.ref.plancheId, cible: e.recadrage.ref.cible };
+  /* lot B : sur la couverture, R parcourt les gabarits de couverture */
+  if (e.plancheCourante === ID_COUVERTURE) return { plancheId: ID_COUVERTURE, cible: "double" };
   const i = indexPlanche(e.magazine, e.plancheCourante);
   const p = e.magazine.planches[i];
   const s = g.survol;
@@ -229,7 +232,7 @@ export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", 
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres"]);
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "pagesCouverture"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -292,7 +295,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
 
 /* ─────────────────────────── Les gestes, un par un ─────────────────────────── */
 
-const seulTri = (en: { avant: Magazine; apres: Magazine }): boolean => en.avant.planches === en.apres.planches;
+/** Une entrée qui ne touche ni les planches ni la couverture (le tri) laisse la double affichée. */
+const seulTri = (en: { avant: Magazine; apres: Magazine }): boolean => en.avant.planches === en.apres.planches && en.avant.couverture === en.apres.couverture;
 
 function annulerEtat(e: EtatEditeur): EtatEditeur {
   if (e.texte || lectureSeule(e)) return e;
@@ -321,7 +325,7 @@ function retablirEtat(e: EtatEditeur): EtatEditeur {
 }
 
 const UNITE = { l: 1, h: 1 };
-const cadreDeRef = (e: EtatEditeur, ref: RefCadre): { l: number; h: number } => dimsCadre(dispositionOuNull(e.magazine, ref), ref.index) ?? UNITE;
+const cadreDeRef = (e: EtatEditeur, ref: RefCadre): { l: number; h: number } => dimsDeRef(e.magazine, ref) ?? UNITE;
 
 /** Remet un critère à sa valeur d'origine (tableau vide pour les listes). */
 function defautDe<K extends keyof Filtres>(k: K): Filtres[K] {
@@ -345,8 +349,12 @@ const GESTES: Gestes = {
   naviguer(e, g) {
     const pl = e.magazine.planches;
     let id: string | null = null;
-    if (typeof g.plancheId === "string" && indexPlanche(e.magazine, g.plancheId) >= 0) id = g.plancheId;
-    else if (g.sens === 1 || g.sens === -1) id = pl[borner(indexPlanche(e.magazine, e.plancheCourante) + g.sens, 0, pl.length - 1)].id;
+    /* lot B : la couverture vient avant la planche 1 (index −1) ; ← depuis la planche 1 y mène, → en revient */
+    if (typeof g.plancheId === "string" && (g.plancheId === ID_COUVERTURE || indexPlanche(e.magazine, g.plancheId) >= 0)) id = g.plancheId;
+    else if (g.sens === 1 || g.sens === -1) {
+      const k = borner(indexPlanche(e.magazine, e.plancheCourante) + g.sens, -1, pl.length - 1);
+      id = k < 0 ? ID_COUVERTURE : pl[k].id;
+    }
     if (!id || id === e.plancheCourante) return e;
     return { ...e, plancheCourante: id, cadreActif: null, cadresSel: [], echangeArme: null };
   },

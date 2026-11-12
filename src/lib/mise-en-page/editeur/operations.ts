@@ -19,10 +19,11 @@ import type { Template } from "../types";
 import { REGLAGES } from "./reglages";
 import {
   BONUS_ORIGINE, CIBLES, LIBELLE, MALUS_RUPTURE, MALUS_VIDE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
-  affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
+  affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, dimsDeRef, egal, estCouverture, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
 import type { Dims, FamilleGabarits, Issue, Refus } from "./types";
+import { ecrireCouverture, recadrerCouverture } from "./gestesCouverture";
 
 /** Le catalogue vu par les opérations : seules les mesures comptent. */
 export type CatalogueRef = ReadonlyMap<string, PhotoRef>;
@@ -340,10 +341,6 @@ function poserAffectation(m: Magazine, ref: RefCadre, aff: Disposition["photos"]
   return remplacerPlanche(m, i, avecDispo(p, ref.cible, { ...d, photos }));
 }
 
-const dimsDeRef = (m: Magazine, ref: RefCadre): Dims | null => {
-  const p = plancheDe(m, ref.plancheId);
-  return p ? dimsCadre(dispositionDe(p, ref.cible), ref.index) : null;
-};
 
 /** 12. Échanger deux photos posées ; gabarits inchangés ; recadrages reportés. Refus si doublon sur une planche (I9). */
 export function echangerIssue(m: Magazine, a: RefCadre, b: RefCadre, cat: CatalogueRef): Issue {
@@ -592,6 +589,7 @@ export function supprimerPlanche(m: Magazine, plancheId: string): Magazine {
 
 /** Recadrage borné (jamais de blanc), sans effet si identique. */
 export function recadrerCadre(m: Magazine, ref: RefCadre, r: Recadrage | null | undefined, cat: CatalogueRef): Magazine {
+  if (estCouverture(ref)) return recadrerCouverture(m, ref.index, r, cat);
   const a = affectation(m, ref);
   if (!a || !a.photoId || !r) return m;
   const cadre = dimsDeRef(m, ref) ?? { l: 1, h: 1 };
@@ -605,6 +603,7 @@ export function recadrerCadre(m: Magazine, ref: RefCadre, r: Recadrage | null | 
 
 /** Écrire un texte ; vide = le libellé revient (T29). */
 export function ecrireTexteCadre(m: Magazine, ref: RefCadre, contenu: string): Magazine {
+  if (estCouverture(ref)) return ecrireCouverture(m, ref.index, contenu);
   const t = texteDe(m, ref);
   if (!t || typeof contenu !== "string") return m;
   const p = plancheDe(m, ref.plancheId);

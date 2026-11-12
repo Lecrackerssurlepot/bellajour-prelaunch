@@ -2,7 +2,9 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { bande, cheminDeFer, idsPlanche } from "@/lib/mise-en-page/editeur";
+import { bande, cheminDeFer, couvertureDe, idsPlanche } from "@/lib/mise-en-page/editeur";
+import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
+import { DessinCouverture } from "./SceneCouverture";
 import { cls, memeRef, pluriel, useEd } from "./contexte";
 import { Mini } from "./Gabarits";
 import { vignetteDe } from "./images";
@@ -115,6 +117,14 @@ export function CheminDeFer() {
   return (
     <div className="ed-cf" aria-label="Chemin de fer">
       <div className="ed-cf-piste" ref={piste} role="listbox" aria-label="Planches">
+        {/* lot B : la couverture, en tête du chemin de fer (4e · dos · 1re) */}
+        <div className={cls("ed-cf-v", "ed-cf-couv", etat.plancheCourante === ID_COUVERTURE && "ed-cf-v--courante")} role="option" tabIndex={0}
+          aria-selected={etat.plancheCourante === ID_COUVERTURE} aria-label="Couverture"
+          onClick={() => envoyer({ type: "naviguer", plancheId: ID_COUVERTURE })}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); envoyer({ type: "naviguer", plancheId: ID_COUVERTURE }); } }}>
+          <DessinCouverture c={couvertureDe(m)} l={64} photos />
+          <span>Couverture</span>
+        </div>
         {vignettes.map((v, i) => {
           const pl = m.planches[i];
           let plv = pl;

@@ -26,12 +26,20 @@ const lignes = (noms: string[]): Uint8Array => strToU8(noms.length ? `${noms.joi
  * Le paquet téléchargé. `magazine.idml` et les images sont stockés sans
  * recompression (déjà compressés) ; les listes en deflate.
  */
-/** `racine` : un dossier qui enveloppe tout (décompressé dans le dossier des projets, il donne le dossier du projet). */
-export function zipperExport(e: { idml: Uint8Array; liens: { nomLien: string; octets: Uint8Array }[]; utilisees: string[]; nonUtilisees: string[]; racine?: string }): Uint8Array {
+/** `racine` : un dossier qui enveloppe tout (décompressé dans le dossier des projets, il donne le dossier du projet).
+ *  `couverture` (lot B) : `couverture.idml` à côté de `magazine.idml`, mêmes Links/ (un seul zip, jamais deux téléchargements). */
+export function zipperExport(e: { idml: Uint8Array; couverture?: Uint8Array; liens: { nomLien: string; octets: Uint8Array }[]; utilisees: string[]; nonUtilisees: string[]; racine?: string }): Uint8Array {
   const r = e.racine ? `${e.racine}/` : "";
   const z: Zippable = { [`${r}magazine.idml`]: [e.idml, { level: 0 }] };
+  if (e.couverture) z[`${r}couverture.idml`] = [e.couverture, { level: 0 }];
   for (const l of e.liens) z[`${r}Links/${l.nomLien}`] = [l.octets, { level: 0 }];
   z[`${r}photos-utilisees.txt`] = [lignes(e.utilisees), { level: 6 }];
   z[`${r}photos-non-utilisees.txt`] = [lignes(e.nonUtilisees), { level: 6 }];
   return zipSync(z);
+}
+
+/** Lot B : les deux PDF pour Canva (intérieur et couverture) dans UN zip, stockés tels quels (déjà compressés). */
+export function zipperPdfs(e: { magazine: Uint8Array; couverture: Uint8Array; racine?: string }): Uint8Array {
+  const r = e.racine ? `${e.racine}/` : "";
+  return zipSync({ [`${r}magazine.pdf`]: [e.magazine, { level: 0 }], [`${r}couverture.pdf`]: [e.couverture, { level: 0 }] });
 }
