@@ -1235,7 +1235,10 @@
 .mep-editeur .ed-gab-dessin i.a--accent { background: var(--mep-r-accent); }
 .mep-editeur .ed-gab-dessin i.a--nuit { background: var(--mep-r-nuit); }
 .mep-editeur .ed-gab-dessin i.b { box-shadow: 0 0 0 1px var(--mep-papier), 0 1px 2px var(--bj-veil-16); }
-.mep-editeur .ed-gab-nom { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* lot R (D4) : la légende d'un généré, deux lignes courtes et distinctes ; chaque ligne se coupe seule, jamais la légende entière */
+.mep-editeur .ed-gab-nom { display: flex; flex-direction: column; align-items: center; max-width: 66px; line-height: 1.15; text-align: center; }
+.mep-editeur .ed-gab-nom--double { max-width: 126px; }
+.mep-editeur .ed-gab-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mep-editeur .ed-gab-plus { flex: none; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 12px; line-height: 1.1; }
 .mep-editeur .ed-gab-plus b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .mep-editeur .ed-gab[aria-checked="true"] .ed-gab-dessin { box-shadow: 0 0 0 2px var(--bj-action); }

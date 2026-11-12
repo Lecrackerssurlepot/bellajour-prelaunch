@@ -8,6 +8,8 @@
  *   - D1 : les gabarits générés des DOUBLES (GD1) ; D3 : les questions de la machine lisibles ; D4 : la légende courte du tiroir.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import * as O from "@/lib/mise-en-page/editeur";
 import type { EtatEditeur, PhotoMaq } from "@/lib/mise-en-page/editeur";
 import { textesInitiaux } from "@/lib/mise-en-page/editeur/outils";
@@ -17,7 +19,7 @@ import { planPdf, planPdfCouverture } from "@/lib/mise-en-page/pdf";
 import { ajouterDouble, cadresDe, disposer, nouveauMagazine, templateParId, tousLesTemplates, type Disposition, type Magazine, type PhotoRef, type TexteCadre } from "@/lib/mise-en-page/magazine";
 import { COULEURS_ORIGINE, styleDePaire } from "@/lib/mise-en-page/style";
 import { orientationCadre, orientationDe, signatureDe, type Orientation, type Template } from "@/lib/mise-en-page/types";
-import { genereParId, idsDePage, partEnRupture, partVide } from "@/lib/mise-en-page/genere";
+import { genereParId, idsDePage, legendeCourte, legendesDistinctes, partEnRupture, partVide } from "@/lib/mise-en-page/genere";
 import { COTES_MAX, genereDoubleParId, genereesDoublesPour } from "@/lib/mise-en-page/genereDouble";
 import { FOND_PERDU, MARGES, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 
@@ -355,6 +357,40 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
     const pdf = planPdf(bonne);
     rapporter(`D1 export : une double générée (${idGen.id}) part en IDML (${nbRect} cadres photo pour ${photos.length}, aucun cadre texte) et en PDF (${pdf[1].objets.filter((o) => o.type === "photo").length} photos sur la planche)`,
       nbRect === photos.length && (xml.match(/<TextFrame /g) ?? []).length === 0 && pdf[1].objets.filter((o) => o.type === "photo").length === photos.length);
+  }
+
+  /* ─── D4. la légende courte et distincte des générés, dans le tiroir ─── */
+  {
+    const refsDe = (os: string): PhotoRef[] => [...os].map((o, i) => ({ id: `p${i}`, nom: `p${i}`, l: o === "L" ? 3000 : 2000, h: o === "L" ? 2000 : 3000, date: null }));
+    const verifs: string[] = [];
+    let total = 0;
+    for (const [portee, os] of [["page", "LPP"], ["page", "PPP"], ["page", "PPLPL"], ["page", "PL"], ["double", "LPPLPL"], ["double", "PPL"], ["double", "PPPLLP"]] as const) {
+      const liste = O.gabaritsClasses(portee, refsDe(os), null).map((x) => x.template).filter((t) => t.origine === "genere");
+      const lg = legendesDistinctes(liste);
+      const textes = lg.map((l) => l.join("\n"));
+      total += liste.length;
+      if (new Set(textes).size !== textes.length) verifs.push(`${portee} ${os} : légendes identiques`);
+      if (lg.some((l) => l.length !== 2 || l.some((x) => !x.trim()))) verifs.push(`${portee} ${os} : une légende n'a pas deux lignes pleines`);
+      if (lg.some((l) => l.some((x) => [...x].length > (portee === "double" ? 24 : 15)))) verifs.push(`${portee} ${os} : une ligne trop longue ${lg.find((l) => l.some((x) => [...x].length > (portee === "double" ? 24 : 15)))?.join("/")}`);
+      if (portee === "double" && lg.some((l) => !/^G /.test(l[0]) || !/^D /.test(l[1]))) verifs.push(`double ${os} : G puis D`);
+      /* le tiroir montre les 40 premiers : tous distincts, là où l'ancienne légende (« Héros et de… ») se répétait */
+      const avant = new Set(liste.slice(0, O.PLAFOND_TIROIR).map((t) => t.nom.split(" · ")[0]));
+      if (new Set(textes.slice(0, O.PLAFOND_TIROIR)).size !== Math.min(O.PLAFOND_TIROIR, liste.length) || (liste.length >= O.PLAFOND_TIROIR && avant.size > 12)) verifs.push(`${portee} ${os} : 40 premières (avant ${avant.size} légendes différentes)`);
+      if (liste.some((t) => !t.nom)) verifs.push(`${portee} ${os} : nom entier`);
+    }
+    const heros = templateParId("GG1-HS-0063.0322.2322")!;
+    rapporter(`D4 légendes : sur ${total} générés (pages et doubles), chaque légende du tiroir est courte (deux lignes de 15 signes au plus, 24 pour une double : G puis D), DISTINCTE des autres de la liste, le nom entier reste à l'infobulle${verifs.length ? ` — ${verifs.slice(0, 3).join(" ; ")}` : ""}`,
+      verifs.length === 0 && total > 500 && legendeCourte(heros).length === 2 && legendeCourte(heros)[0] === "Héros 6×3 +2" && legendeCourte(templateParId("E-S1")!).length === 0 && legendeCourte(templateParId("G-P1-a")!).length === 0);
+    /* la première légende d'une liste reste telle quelle, la suivante identique reçoit son rang */
+    const a = templateParId("GG1-HS-0063.0322.2322")!, b = templateParId("GG1-HS-0063.0322.2322")!;
+    const dist = legendesDistinctes([a, b, a]);
+    rapporter("D4 légendes : une légende déjà vue reçoit son rang (·2, ·3) au bout de sa dernière ligne, la première reste intacte ; un gabarit dessiné n'a pas de légende courte",
+      dist[0].join("/") === legendeCourte(a).join("/") && dist[1][1].endsWith(" ·2") && dist[2][1].endsWith(" ·3") && dist[1][0] === dist[0][0] && legendesDistinctes([templateParId("E-S1")!])[0].length === 0);
+    const tiroir = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/Gabarits.tsx"), "utf8");
+    const css = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/mise-en-page.css"), "utf8");
+    rapporter("D4 écran : le tiroir lit `legendesDistinctes` (plus de nom coupé à la première moitié), chaque ligne se coupe seule (ellipsis par ligne), l'infobulle garde le nom et l'id",
+      /legendesDistinctes\(liste/.test(tiroir) && !/\.split\(" · "\)\[0\]/.test(tiroir) && /title=\{genere \? `\$\{g\.nom\} · \$\{g\.id\}`/.test(tiroir)
+        && /\.ed-gab-l \{[^}]*text-overflow: ellipsis/.test(css) && /\.ed-gab-nom \{[^}]*flex-direction: column/.test(css));
   }
 
 }

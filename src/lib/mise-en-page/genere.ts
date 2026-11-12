@@ -397,10 +397,13 @@ export function legendeDe(schema: SchemaGenere, cases: readonly CaseG[]): [strin
     case "EN": return [`Seule ${dim(cases[0])}`, calageCourt(cases)];
     case "RG": {
       const ligne = new Set(cases.map((r) => r[1])).size === 1;
-      return [`${n === 2 ? (ligne ? "Duo" : "Duo vert.") : ligne ? `Bande ${n}` : `Colonne ${n}`} ${dim(cases[0])}`, calageCourt(cases)];
+      return [`${n === 2 && ligne ? "Duo" : ligne ? `Bande ${n}` : `Colonne ${n}`} ${dim(cases[0])}`, calageCourt(cases)];
     }
     case "GR": return [`Grille ${new Set(cases.map((r) => r[0])).size}×${new Set(cases.map((r) => r[1])).size}`, `${dim(cases[0])} ${calageCourt(cases)}`.trim()];
-    case "HS": { const { heros, sats, cote } = herosEtSatellites(cases); return [`Héros ${dim(heros)} +${sats.length}`, cote.replace("côté extérieur", "ext.").replace("côté pli", "pli")]; }
+    case "HS": {
+      const { heros, sats, cote } = herosEtSatellites(cases);
+      return [`Héros ${dim(heros)} +${sats.length}`, `${cote.replace("côté extérieur", "ext.").replace("côté pli", "pli")} ${dim(sats[0])}`];
+    }
     case "MO": return [`Mosaïque ${n}`, `max ${dim(cases.reduce((a, b) => (aire(b) > aire(a) ? b : a)))}`];
     case "FL": return [`Flottantes ${n}`, calageCourt(cases)];
     case "CH": {
@@ -526,6 +529,22 @@ export function genereParId(id: string): Template | null {
   if (deja) return deja;
   const r = recetteDe(id);
   return r ? templateDe(r.schema, r.cases, r.ordre) : null;
+}
+
+/**
+ * Les légendes d'une LISTE de gabarits (le tiroir), toutes distinctes : une légende déjà vue plus haut dans la liste reçoit son rang
+ * (« ·2 », « ·3 ») au bout de sa dernière ligne ; la première reste telle quelle. Un gabarit qui n'est pas généré rend `[]`.
+ */
+export function legendesDistinctes(liste: readonly Template[]): string[][] {
+  const vues = new Map<string, number>();
+  return liste.map((t) => {
+    const l = legendeCourte(t);
+    if (!l.length) return [];
+    const cle = l.join("\n");
+    const k = (vues.get(cle) ?? 0) + 1;
+    vues.set(cle, k);
+    return k === 1 ? l : [...l.slice(0, -1), `${l[l.length - 1]} ·${k}`];
+  });
 }
 
 /**

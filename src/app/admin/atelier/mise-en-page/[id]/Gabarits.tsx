@@ -6,6 +6,7 @@ import type { Planche } from "@/lib/mise-en-page/magazine";
 import { cadresDe, decorDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
 import { enregistrerGabarit } from "./gabaritsClient";
 import { PAGE_H, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
+import { legendesDistinctes } from "@/lib/mise-en-page/genere";
 import type { Template } from "@/lib/mise-en-page/types";
 import { pc, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
@@ -152,6 +153,7 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const liste = gabaritsPour(etat, pl.id, cible);
   const dansLaFamille = liste.filter((g) => dansFamille(g.template, etat.familleGabarits)).length;
   const courant: GabaritPour | undefined = liste.find((g) => g.courant);
+  const legendes = new Map(legendesDistinctes(liste.map((g) => g.template)).map((l, i) => [liste[i].id, l] as const));
   /* lot 4 : une page retouchée s'enregistre comme gabarit, ou revient à son gabarit d'origine */
   const d = dispositionDe(pl, cible);
   const retouchee = act.retouchees.includes(cible);
@@ -177,12 +179,16 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
       {[...(courant && liste.indexOf(courant) >= montres ? [courant] : []), ...liste.slice(0, montres)].map((g) => {
         const geste: Geste = { type: "choisirGabarit", plancheId: pl.id, cible, templateId: g.id };
         const genere = g.template.origine === "genere";
+        /* lot R (D4) : la légende d'un généré est COURTE et distincte (le schéma, sa variante, et un rang quand deux se ressemblent) ; le nom entier est à l'infobulle */
+        const legende = genere ? (legendes.get(g.id) ?? []) : [];
         return (
           <button key={g.id} type="button" className="ed-gab" role="menuitemradio" aria-checked={g.courant} aria-current={g.courant} title={genere ? `${g.nom} · ${g.id}` : g.nom}
             onMouseEnter={g.courant ? () => majUi({ apercuGab: null }) : voir(geste)} onFocus={g.courant ? undefined : voir(geste)}
             onClick={() => { majUi({ apercuGab: null }); envoyer(geste); }}>
             <DessinGab t={g.template} l={g.template.portee === "double" ? 120 : 60} />
-            <span className={genere ? "ed-gab-nom" : undefined}>{g.template.origine === "atelier" ? "Le mien" : genere ? g.nom.split(" · ")[0] : g.id}</span>
+            {genere && legende.length
+              ? <span className={`ed-gab-nom${g.template.portee === "double" ? " ed-gab-nom--double" : ""}`}>{legende.map((l, i) => <span key={i} className="ed-gab-l">{l}</span>)}</span>
+              : <span>{g.template.origine === "atelier" ? "Le mien" : g.id}</span>}
           </button>
         );
       })}
