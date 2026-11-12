@@ -275,9 +275,63 @@ function lireListe(
   return unique ? [unique] : [];
 }
 
-async function resoudre(valeur: string | null): Promise<string | null> {
+/* ══════════════════════════════════════════════════════════════════════
+   LES VISUELS SERVIS PAR LE SITE (12/11/2026)
+
+   Un aperçu publié pèse 4 à 6 Mo (PNG de 2000 px exporté de Canva) : sept
+   visuels, près de 40 Mo sur un téléphone. Et son lien R2 signé meurt au
+   bout d'une heure : une page gardée en mémoire montre des cadres vides.
+   Héloïse (« La Geffroy family en Martinique ») a ouvert sa page sans voir
+   ses visuels. Quand on connaît le token, la page pointe donc
+   /api/atelier/visuel : une adresse STABLE, qui relit le coffre et rend un
+   JPEG d'environ 400 Ko. Le coffre reste privé : la route ne sert que les
+   clés que le dossier du token déclare lui-même.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/** Le nom de fichier d'une clé : la seule chose qui voyage dans l'adresse. */
+const NOM_VISUEL_SUR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$/;
+
+/** Toutes les clés de coffre qu'un aperçu déclare (URL absolues exclues). Pur. */
+export function clesDuCoffre(brut: unknown): string[] {
+  if (!brut || typeof brut !== "object" || Array.isArray(brut)) return [];
+  const source = brut as Record<string, unknown>;
+  const toutes = [
+    ...lirePlanchesBrutes(source),
+    ...lireDoublesBrutes(source),
+    lire(source, "c1", "couverture", "recto"),
+    lire(source, "c4", "dos", "verso"),
+  ];
+  return toutes.filter((c): c is string => typeof c === "string" && !/^https?:\/\//i.test(c));
+}
+
+/**
+ * La clé que désigne `nom` dans l'aperçu de CE dossier, ou `null`. Pur —
+ * c'est la seule barrière entre une route publique et le coffre : le nom
+ * est filtré, et la clé doit à la fois être déclarée par l'aperçu et vivre
+ * sous `numeros/<id du dossier>/`. Un nom deviné ou un `..` ne lit rien.
+ */
+export function cleVisuelDemandee(brut: unknown, numeroId: string, nom: string): string | null {
+  if (!NOM_VISUEL_SUR.test(nom) || nom.includes("..")) return null;
+  const prefixe = `numeros/${numeroId}/`;
+  for (const cle of clesDuCoffre(brut)) {
+    if (cle.startsWith(prefixe) && cle.slice(cle.lastIndexOf("/") + 1) === nom) return cle;
+  }
+  return null;
+}
+
+/** L'adresse stable d'un visuel, relative au site. Pur. */
+export function adresseVisuel(token: string, cle: string): string {
+  const nom = cle.slice(cle.lastIndexOf("/") + 1);
+  return `/api/atelier/visuel?token=${encodeURIComponent(token)}&v=${encodeURIComponent(nom)}`;
+}
+
+async function resoudre(valeur: string | null, token?: string): Promise<string | null> {
   if (!valeur) return null;
   if (/^https?:\/\//i.test(valeur)) return valeur;
+  if (token) {
+    const nom = valeur.slice(valeur.lastIndexOf("/") + 1);
+    if (NOM_VISUEL_SUR.test(nom)) return adresseVisuel(token, valeur);
+  }
   try {
     return await signerGet(valeur);
   } catch (err) {
@@ -288,7 +342,12 @@ async function resoudre(valeur: string | null): Promise<string | null> {
   }
 }
 
-export async function resoudreApercu(brut: unknown): Promise<Apercu> {
+/**
+ * `options.token` : le token du dossier, quand l'appelant le connaît. Les
+ * visuels pointent alors la route stable et allégée ; sans lui, liens R2
+ * signés pour une heure, comme avant.
+ */
+export async function resoudreApercu(brut: unknown, options: { token?: string } = {}): Promise<Apercu> {
   if (!brut || typeof brut !== "object" || Array.isArray(brut)) return VIDE;
   const source = brut as Record<string, unknown>;
 
@@ -299,10 +358,10 @@ export async function resoudreApercu(brut: unknown): Promise<Apercu> {
   const cadrages = lireCadrages(source);
 
   const [platsResolues, c1, c4, doublesResolues] = await Promise.all([
-    Promise.all(platsBrutes.map(resoudre)),
-    resoudre(lire(source, "c1", "couverture", "recto")),
-    resoudre(lire(source, "c4", "dos", "verso")),
-    Promise.all(doublesBrutes.map(resoudre)),
+    Promise.all(platsBrutes.map((v) => resoudre(v, options.token))),
+    resoudre(lire(source, "c1", "couverture", "recto"), options.token),
+    resoudre(lire(source, "c4", "dos", "verso"), options.token),
+    Promise.all(doublesBrutes.map((v) => resoudre(v, options.token))),
   ]);
 
   /* Une double page qui ne se résout pas (clé morte) est retirée plutôt que de
