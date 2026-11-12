@@ -693,6 +693,11 @@ Ce que l'essai ne dit pas : la LISTE des nuances nommées n'est pas lisible par 
 une police absente est substituée à l'ouverture, jamais prévenue par Affinity : la feuille d'export le dit (« installer … sur ce Mac »).
 **Conséquence :** `idml.ts` écrit, sous un style, `Fonts.xml`, `Graphic.xml` (six nuances par rôle) et `Styles.xml` (trois styles) ; sans style
 l'export est inchangé au bit près (empreinte au harnais). Le PDF embarque les polices (pdf-lib et `@pdf-lib/fontkit`) et n'a pas cette limite.
+**Même essai sur la couverture (12/11/2026, après la fusion du lot B) : FIDÈLE.** `construireIdmlCouverture` sous le style T-05 (papier crème
+`#f8ecdd`), rouvert dans Affinity : le mot-titre « Martinique » relu en `Archivo` / `Archivo-Black` 900, 67,5 pt, `AllCaps`, style de
+paragraphe Titre ; la légende en `Archivo-Regular` 11 pt, approche 0,08, style Légende ; le texte blanc devient la nuance Papier (248, 236, 221),
+l'aplat de dos la nuance Aplat sourd (122, 143, 166), le rectangle « Papier » couvre la page avec son fond perdu (-3 à 426,8 × 303 mm).
+Le corps 67,5 pt est celui calculé sur les chasses d'Archivo Black (au moins 60 % de la 1re), pas sur celles d'Arial Bold.
 **Essai du 12/11/2026 (lot B, la couverture à plat) — verdict FIDÈLE.** `construireIdmlCouverture` : un document
 d'UNE page non vis-à-vis (`FacingPages="false"`, `PagesPerDocument="1"`) de 420 + dos mm, fond perdu de 3 mm sur les
 quatre bords, deux colonnes de marge dont la gouttière (30 + dos) encadre le dos. Ouvert dans Affinity sur de vraies
