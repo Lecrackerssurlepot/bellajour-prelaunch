@@ -115,6 +115,7 @@ export function planPdf(magazine: Magazine): PagePdf[] {
         } else {
           const t = d.textes[iT++];
           const contenu = t?.contenu ?? "", taille = t?.taille ?? cadre.taille ?? 10, gras = t?.gras ?? cadre.gras ?? false;
+          if (!contenu.trim()) continue; /* lot R (D2) : un cadre de texte vide n'est jamais exporté (le mot-repère reste à l'écran) */
           const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur, { contenu, l: cadre.l, h: cadre.h }) : null;
           objets.push(ts
             ? { type: "texte", cadre, contenu: texteSousStyle(contenu, ts), taille, gras, style: { police: ts.police.id, graisse: ts.graisse, corps: ts.corps, interligne: ts.interligne, capitales: ts.capitales, approche: ts.approche, couleur: ts.couleur } }
@@ -154,6 +155,7 @@ export function planPdfCouverture(couverture: Couverture, dosMm: number, style?:
     } else {
       const t = couverture.textes[iT++];
       const contenu = contenuImprime(t?.contenu ?? "", { repeter }), taille = t?.taille ?? cadre.taille ?? 10, gras = t?.gras ?? cadre.gras ?? false;
+      if (!contenu.trim()) continue; /* lot R (D2) : un cadre de texte vide n'est jamais exporté (la couverture non plus) */
       const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur) : null;
       objets.push(ts
         ? { type: "texte", cadre, contenu: texteSousStyle(contenu, ts), taille, gras, interligne: INTERLIGNE_COUVERTURE, style: { police: ts.police.id, graisse: ts.graisse, corps: ts.corps, interligne: ts.interligne, capitales: ts.capitales, approche: ts.approche, couleur: ts.couleur } }

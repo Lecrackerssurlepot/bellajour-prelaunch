@@ -473,6 +473,8 @@ import { verifierMepGeneres } from "./verif-mep-generes";
 import { verifierMepCouverture } from "./verif-mep-couverture";
 /* La feuille de style (lot C, 12/11) : paires de polices, nuancier, typographie française, exports, couverture comprise. */
 import { verifierMepStyle } from "./verif-mep-style";
+/* Le lot R (12/11) : les corrections de la recette croisée (D1 à D9). */
+import { verifierMepRecette } from "./verif-mep-recette";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -6719,7 +6721,8 @@ const verifierIdml = () => {
   }
   /* Rotation : DP-03 porte une légende à −90° ; la transformée tourne autour du centre du cadre. */
   const rot = construireIdml({ ...mag, planches: [mag.planches[0], { id: "pl-2", mode: "double", gauche: null, droite: null,
-    double: { templateId: "DP-03", photos: [], textes: [] } }] }, ph, { liens: { mode: "relatif" } });
+    /* lot R (D2) : un cadre de texte vide n'est plus exporté : les textes de DP-03 sont écrits pour que leurs cadres partent */
+    double: { templateId: "DP-03", photos: [], textes: Array.from({ length: 9 }, () => ({ contenu: "écrit", taille: 8, gras: false })) } }] }, ph, { liens: { mode: "relatif" } });
   const sr = rot.find((x) => x.chemin === "Spreads/Spread_sp2.xml")?.contenu ?? "";
   /* Légende (15, 148,5, 40 × 4) à −90° : centre (35, 150,5) mm ; a = 0, b = −1, c = 1, d = 0 ;
      tx = cx − cy, ty = cy + cx, en points du repère IDML. */
@@ -7440,7 +7443,7 @@ verifierMepLot0();
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

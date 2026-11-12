@@ -299,10 +299,13 @@ export function textesDeCouverture(c: Couverture, lieu: string | null, style?: S
   if (!g) return [];
   const mesure = mesureMotTitre(style);
   const cadres = cadresTexteCouverture(g);
+  /* lot R (D2) : le lieu n'est le texte par défaut que du PREMIER mot-titre (comme à l'intérieur : seul le premier titre) ; un second
+     mot-titre non écrit (« Les photos entre les mots ») reste vide, donc n'est jamais exporté */
+  const premierMotTitre = cadres.findIndex((x) => x.motTitre);
   return c.textes.map((t, i) => {
     const cadre = cadres[i];
     const saisi = texteSaisi(t);
-    const parDefaut = cadre?.motTitre && lieu ? lieu.toLocaleUpperCase("fr-FR") : null;
+    const parDefaut = cadre?.motTitre && i === premierMotTitre && lieu ? lieu.toLocaleUpperCase("fr-FR") : null;
     if (!cadre) return { ...t, saisi, parDefaut };
     const vu = saisi ? t.contenu : parDefaut ?? t.contenu;
     return { ...t, taille: cadre.motTitre ? tailleMotTitre(contenuImprime(vu, cadre), cadre, mesure) : t.taille, saisi, parDefaut };

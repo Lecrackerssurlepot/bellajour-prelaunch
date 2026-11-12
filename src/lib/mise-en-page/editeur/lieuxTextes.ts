@@ -7,6 +7,7 @@
  *     cinq fois) ; sans titre sur la page, la première légende porte le lieu principal.
  * Le lieu, c'est la ville, sinon le pays (`lieuCourt`). Rien n'est écrit dans le magazine : changer les photos change
  * le lieu. Dès qu'on écrit le texte (ou qu'on choisit un lieu proposé), c'est ce texte qui compte. Un « Texte » reste vide.
+ * Lot R : à l'export, ce qui n'a pas de lieu est VIDÉ (le mot-repère « Titre » ne s'imprime jamais), voir `avecLieux`.
  */
 
 import { cadresDe, type Cible, type Disposition, type Magazine, type PhotoRef, type Planche } from "../magazine";
@@ -47,11 +48,16 @@ export function lieuxParDefaut(d: Disposition, cible: Cible, cat: CatalogueLieux
   });
 }
 
+/**
+ * Lot R (D2, 12/11) : à l'export, un texte NON ÉCRIT prend son lieu quand il en a un, sinon il est VIDÉ. Le mot-repère
+ * (« Titre », « Texte », « Légende ») n'existe qu'à l'écran : il ne s'imprime jamais, ni dans le PDF ni dans l'IDML, et un
+ * cadre vide ne part pas (`planPdf`, `elementsXml`). Un texte écrit n'est jamais touché ; le même objet revient quand il n'y a rien à changer.
+ */
 function avecLieux(d: Disposition | null, cible: Cible, cat: CatalogueLieux): Disposition | null {
   if (!d || !d.textes.length) return d;
   const defaut = lieuxParDefaut(d, cible, cat);
-  if (!defaut.some((x, i) => x && !saisi(d.textes[i]))) return d;
-  return { ...d, textes: d.textes.map((t, i) => (!saisi(t) && defaut[i] ? { ...t, contenu: defaut[i] } : t)) };
+  if (d.textes.every(saisi)) return d;
+  return { ...d, textes: d.textes.map((t, i) => (saisi(t) ? t : { ...t, contenu: defaut[i] ?? "" })) };
 }
 
 /**
