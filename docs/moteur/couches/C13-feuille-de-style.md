@@ -1,6 +1,6 @@
 # C13 : la feuille de style du magazine (paire de polices, nuancier, typographie française)
 
-**Statut (12/11, lot C)** : sur la branche `feat/mise-en-page-feuille-de-style`, non fusionnée. Règles R120 à R123.
+**Statut (12/11, lot C)** : sur la branche `feat/mise-en-page-feuille-de-style`, non fusionnée. Règles R120 à R124.
 
 ## Ce qu'elle fait
 - **Propose** une paire de polices (catalogue fermé de 18, avec humeur) et un nuancier à six rôles d'après les palettes des photos du
@@ -18,7 +18,16 @@ Le style gouverne aussi la couverture à plat : `SceneCouverture.tsx` (variables
 polices nommées, six nuances, styles Titre / Texte / Légende, rectangle « Papier ») et `planPdfCouverture` (polices embarquées dans le PDF de couverture).
 Le corps du mot-titre de la 1re est recalculé avec la police de TITRE choisie (`mesureMotTitre(style)` donne la mesure à `tailleMotTitre` : chasses de la
 police, capitales et approche de la paire) ; sans style, chasses d'Arial Bold comme avant (empreinte au harnais). Le mot-titre fait toujours au moins
-60 % de la 1re. Limite : un mot géant en capitales dans le cadre du « mot géant » d'un gabarit d'intérieur n'est pas ajusté en largeur.
+60 % de la 1re.
+
+## Un titre ne se coupe jamais (12/11, après la recette du lot C)
+Sous un style, le corps d'un TITRE d'intérieur est ajusté à son cadre avec les chasses de sa police (`ajusterTitre`, style.ts, appelé par `texteStyle`
+quand on lui passe le texte et le cadre) : les mots restent entiers, les lignes se coupent aux espaces, la hauteur de l'encre (première ligne de base,
+interlignage, descente hors capitales) tient dans le cadre. On ne grossit jamais : au plus le corps du gabarit. L'écran (`cadresPlanche`), le PDF
+(`planPdf`) et l'IDML (`texteXml`) lisent ce même corps, donc le même titre. Si le corps minimal (`REGLAGES_TITRE.CORPS_MIN`, 14 pt, réglage de départ) ne
+suffit pas, le minimum est gardé et le contrôle avant export dit « Titre trop long · planche N » (`titresTropLongs`, en rouge, il ne bloque pas).
+Sans style, rien ne change (le rendu d'avant garde son empreinte). Textes et légendes ne sont pas ajustés. La couverture garde le calcul de son mot-titre.
+Harnais : chaque gabarit à mot géant (titre de 60 pt et plus) × les dix-huit paires × trois titres longs, mesurés dans la vraie police (fontkit, crénage compris).
 
 ## Réglages
 Nommés et commentés dans `nuancier.ts` (`REGLAGES_NUANCIER`, pas dans `editeur/reglages.ts` : le module est pur et sans leçons ; à y rapatrier si une
