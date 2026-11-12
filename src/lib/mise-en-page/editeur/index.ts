@@ -60,6 +60,7 @@ export { recadrageParContenu } from "../recadrage";
 export { decalagesHorloges, marquesProposees, preTrier, qualite } from "./pretri";
 export type { PreTri, Proposition } from "./pretri";
 export { leconsDuPreTri, reponse, troisQuestions } from "./lecons";
+export { avecStyle, libelleStyle } from "./stylage";
 export { kMoyennes, paletteDePixels, paletteDuMagazine } from "./mesures";
 export type { Visage } from "./mesures";
 export { faitsDePage } from "./faits";

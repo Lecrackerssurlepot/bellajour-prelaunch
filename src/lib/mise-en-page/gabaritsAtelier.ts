@@ -6,7 +6,7 @@
 import { PLANCHE_L } from "./geometrie";
 import { cadresPropres, miroirCadre, templateParId, type Cible, type Disposition } from "./magazine";
 import { cadreValide } from "./sauvegarde";
-import { signatureDe, type Aplat, type Cadre, type Portee, type Template } from "./types";
+import { TEINTES, signatureDe, type Aplat, type Cadre, type Portee, type Template } from "./types";
 
 /** Le nom d'un gabarit : borne technique d'une ligne d'écran. */
 export const NOM_GABARIT_MAX = 80;
@@ -20,7 +20,7 @@ const estAplat = (a: unknown): a is Aplat => {
   const o = a as Record<string, unknown>;
   const fini = (v: unknown) => typeof v === "number" && Number.isFinite(v);
   return Object.keys(o).every((k) => ["x", "y", "l", "h", "teinte"].includes(k)) && fini(o.x) && fini(o.y) && fini(o.l) && fini(o.h)
-    && (o.l as number) > 0 && (o.h as number) > 0 && ["aplat", "noir", "blanc"].includes(o.teinte as string);
+    && (o.l as number) > 0 && (o.h as number) > 0 && (TEINTES as readonly string[]).includes(o.teinte as string);
 };
 
 /** Ce que l'écran voit d'une disposition, en gabarit : ses cadres (miroir appliqué) et le décor de son gabarit d'origine. */

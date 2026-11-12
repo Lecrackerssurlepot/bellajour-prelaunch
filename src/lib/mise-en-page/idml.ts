@@ -17,6 +17,11 @@ import { PAGE_H, PAGE_L, PT_PAR_MM, FOND_PERDU, MARGES, GRILLE, largeurCouvertur
 import { cadrer } from "./recadrage";
 import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
 import type { Aplat, Cadre, RoleCadre, Teinte } from "./types";
+import {
+  NIVEAUX, NUANCE_ROLE, ROLES_COULEUR, facettesDe, paireParId, roleDeTeinte, teinteAncienne, texteStyle, texteTypo,
+  type NiveauNom, type Paire, type StyleMagazine,
+} from "./style";
+import { hexVersRgb } from "./nuancier";
 import { cadresCouverture, contenuImprime, decorCouverture, idsCouverture, type Couverture } from "./couverture";
 
 /** Une photo prête à l'export : l / h en px APRÈS orientation EXIF, `nomLien` unique dans Links/. */
@@ -201,8 +206,13 @@ function elementsDe(p: Planche, premiere: boolean): Element[] {
   });
 }
 
-/** La nuance d'un aplat (D28 : un fond de couleur est relu fidèlement). */
-const NUANCE: Record<Teinte, string> = { aplat: "Color/Aplat", noir: "Color/Black", blanc: "Color/Paper" };
+/** La nuance d'un aplat (D28 : un fond de couleur est relu fidèlement). Sans style : les trois nuances d'avant le lot C. */
+const NUANCE: Record<"aplat" | "noir" | "blanc", string> = { aplat: "Color/Aplat", noir: "Color/Black", blanc: "Color/Paper" };
+/** Sans style, une teinte qui est un RÔLE du nuancier (un gabarit récent) retombe sur la nuance d'avant la plus proche. */
+const nuanceSansStyle = (t: Teinte): string => NUANCE[teinteAncienne(t)];
+/** Avec un style : la nuance NOMMÉE du rôle de la teinte (aplat → aplat sourd, noir → nuit, blanc → papier). */
+const nuanceSousStyle = (t: Teinte): string => NUANCE_ROLE[roleDeTeinte(t)].self;
+
 
 /**
  * « Aplat » : UNE nuance nommée pour tous les aplats du magazine, à changer d'un coup dans Affinity. Sa valeur par
@@ -211,8 +221,8 @@ const NUANCE: Record<Teinte, string> = { aplat: "Color/Aplat", noir: "Color/Blac
 export const COULEUR_APLAT = `<Color Self="Color/Aplat" Model="Process" Space="RGB" ColorValue="188 151 125" Name="Aplat"/>`;
 
 /** Bord blanc (intérieur) et coins arrondis d'un cadre photo, en attributs IDML. */
-export function habillagePhoto(c: Cadre): string {
-  const bord = c.bord && c.bord > 0 ? `StrokeWeight="${f(c.bord * K, 4)}" StrokeColor="Color/Paper" StrokeAlignment="InsideAlignment"` : `StrokeWeight="0"`;
+export function habillagePhoto(c: Cadre, couleurBord = "Color/Paper"): string {
+  const bord = c.bord && c.bord > 0 ? `StrokeWeight="${f(c.bord * K, 4)}" StrokeColor="${couleurBord}" StrokeAlignment="InsideAlignment"` : `StrokeWeight="0"`;
   if (!c.rayon || !(c.rayon > 0)) return bord;
   const r = f(c.rayon * K, 4);
   const coins = ["TopLeft", "TopRight", "BottomLeft", "BottomRight"].map((k) => `${k}CornerOption="RoundedCorner" ${k}CornerRadius="${r}"`).join(" ");
@@ -223,18 +233,79 @@ export function habillagePhoto(c: Cadre): string {
 const contenuStory = (texte: string): string =>
   texte.split(/\r\n|\r|\n/).map((l) => `<Content>${echapperXml(l)}</Content>`).join("<Br/>");
 
+/* ─────────────────────────── Le style du magazine (lot C) ─────────────────────────── */
+
+/** Le style qui s'applique à un export : celui du magazine et sa paire, ou null (le rendu d'avant le lot C). */
+export type StyleActif = { style: StyleMagazine; paire: Paire };
+/** Le style qui s'applique : celui du magazine si sa paire est encore au catalogue, sinon aucun (le rendu d'avant). */
+export const styleActif = (style: StyleMagazine | null | undefined): StyleActif | null => {
+  const paire = style ? paireParId(style.paire) : null;
+  return style && paire ? { style, paire } : null;
+};
+
+/** Les six nuances nommées, une par rôle (RVB, comme l'ancienne nuance « Aplat »). */
+export const nuancesDuStyle = (s: StyleMagazine): string =>
+  ROLES_COULEUR.map((r) => `<Color Self="${NUANCE_ROLE[r].self}" Model="Process" Space="RGB" ColorValue="${hexVersRgb(s.couleurs[r]).join(" ")}" Name="${echapperXml(NUANCE_ROLE[r].nom)}"/>`).join("");
+
 /**
- * Les fichiers XML du paquet IDML, dans l'ordre du Python (mimetype d'abord,
- * designmap en dernier). Planche 0 = une page droite seule ; les suivantes =
- * deux pages, même en mode pages avec une page vide.
+ * Les polices NOMMÉES de la paire : chaque famille avec ses styles, chaque style avec son nom PostScript EXACT (lu dans le
+ * fichier de police, relu par le harnais). Une police absente du poste est substituée sans bruit par Affinity : on ne peut
+ * que la nommer juste.
  */
+export function fontsDuStyle(p: Paire): string {
+  const familles = new Map<string, { famille: string; faces: { ps: string; style: string }[] }>();
+  for (const { police, facette } of facettesDe(p)) {
+    const g = familles.get(police.id) ?? { famille: police.famille, faces: [] };
+    g.faces.push(facette);
+    familles.set(police.id, g);
+  }
+  let i = 0;
+  return [...familles.values()].map((g) => {
+    i += 1;
+    const faces = g.faces.map((fc, k) => `<Font Self="di${i}Font${k + 1}" FontFamily="${echapperXml(g.famille)}" Name="${echapperXml(`${g.famille} ${fc.style}`)}" PostScriptName="${echapperXml(fc.ps)}" FontStyleName="${echapperXml(fc.style)}"/>`).join("");
+    return `<FontFamily Self="di${i}" Name="${echapperXml(g.famille)}">${faces}</FontFamily>`;
+  }).join("");
+}
+
+/** Le nom du style de paragraphe d'un niveau (« Titre », « Texte », « Légende »). */
+export const STYLE_PARAGRAPHE: Readonly<Record<NiveauNom, { self: string; nom: string }>> = {
+  titre: { self: "ParagraphStyle/Titre", nom: "Titre" },
+  texte: { self: "ParagraphStyle/Texte", nom: "Texte" },
+  legende: { self: "ParagraphStyle/Legende", nom: "Légende" },
+};
+
+/**
+ * Les styles de paragraphe Titre, Texte et Légende, qui héritent du style normal : police, style de la police, corps,
+ * capitales, approche et couleur (l'encre). Pas d'interlignage écrit : Affinity le relit toujours en auto 120 % (D28), qui est
+ * justement l'interlignage de tous les niveaux (`INTERLIGNE_STYLE`).
+ */
+export function stylesDuStyle(p: Paire): string {
+  const niveaux = NIVEAUX.map((n) => {
+    const nv = p.niveaux[n];
+    const pol = facettesDe(p).find((x) => x.police.id === nv.police && x.graisse === nv.graisse);
+    if (!pol) return "";
+    const ps = STYLE_PARAGRAPHE[n];
+    const attrs = `PointSize="${nv.corps}" FontStyle="${echapperXml(pol.facette.style)}" FillColor="${NUANCE_ROLE.encre.self}" Justification="LeftAlign"`
+      + (nv.capitales ? ` Capitalization="AllCaps"` : "") + (nv.approche ? ` Tracking="${Math.round(nv.approche * 1000)}"` : "");
+    return `<ParagraphStyle Self="${ps.self}" Name="${echapperXml(ps.nom)}" ${attrs}><Properties><BasedOn type="object">ParagraphStyle/$ID/NormalParagraphStyle</BasedOn><AppliedFont type="string">${echapperXml(pol.police.famille)}</AppliedFont></Properties></ParagraphStyle>`;
+  }).join("");
+  const base = facettesDe(p).find((x) => x.police.id === p.niveaux.texte.police && x.graisse === p.niveaux.texte.graisse);
+  return `<RootCharacterStyleGroup Self="rcs"><CharacterStyle Self="CharacterStyle/$ID/[No character style]" Name="$ID/[No character style]"/></RootCharacterStyleGroup>`
+    + `<RootParagraphStyleGroup Self="rps"><ParagraphStyle Self="ParagraphStyle/$ID/[No paragraph style]" Name="$ID/[No paragraph style]"/>`
+    + `<ParagraphStyle Self="ParagraphStyle/$ID/NormalParagraphStyle" Name="$ID/NormalParagraphStyle" PointSize="${p.niveaux.texte.corps}" FillColor="${NUANCE_ROLE.encre.self}"><Properties><BasedOn type="object">ParagraphStyle/$ID/[No paragraph style]</BasedOn><AppliedFont type="string">${echapperXml(base?.police.famille ?? "Arial")}</AppliedFont></Properties></ParagraphStyle>`
+    + `${niveaux}</RootParagraphStyleGroup><RootObjectStyleGroup Self="ros"><ObjectStyle Self="ObjectStyle/$ID/[None]" Name="$ID/[None]"/></RootObjectStyleGroup>`;
+}
+
+/** Le fond de la page quand le papier du style n'est pas blanc : un aplat « Papier » sous tout, fond perdu compris. */
+const FOND_PAGE_BLANC = "#ffffff";
+
 /**
  * Les fabriques d'objets d'UN paquet (lot B : sorties de `construireIdml` pour que la couverture écrive ses photos et ses
  * textes avec EXACTEMENT les mêmes éléments ; l'IDML intérieur n'a pas changé d'un octet, empreinte au harnais).
  * `convertir` passe du repère mm de l'élément aux points du Spread.
  */
 type Spread = { sid: string; pc: number; bl: number; corps: string };
-function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }, convertir: (c: { x: number; y: number; l: number; h: number }) => { x: number; y: number; w: number; h: number }) {
+function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }, convertir: (c: { x: number; y: number; l: number; h: number }) => { x: number; y: number; w: number; h: number }, sty: StyleActif | null = null, ajusterTitres = false) {
   let uid = 100;
   const nid = (p = "u"): string => { uid += 1; return `${p}${uid.toString(16)}`; };
   const stories: { sid: string; corps: string }[] = [];
@@ -244,7 +315,7 @@ function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLie
     const pli = cadreAuPli(x, w);
     /* Cadre tourné : la rotation va dans la matrice du CADRE, l'image garde sa matrice non tournée (repère intérieur
        du cadre), comme l'essai Affinity du 29/10 « cadre photo tourné 15° ». */
-    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" ${habillagePhoto(e.cadre)} ItemTransform="${transformRotation(e.cadre.rotation, pli.x, y, pli.w, h)}">${geom(pli.x, y, pli.w, h)}`
+    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" ${habillagePhoto(e.cadre, sty ? NUANCE_ROLE.papier.self : undefined)} ItemTransform="${transformRotation(e.cadre.rotation, pli.x, y, pli.w, h)}">${geom(pli.x, y, pli.w, h)}`
       + `<FrameFittingOption FittingOnEmptyFrame="FillProportionally" FittingAlignment="CenterAnchor"/>`;
     const aff = e.disposition.photos[e.indexPhoto];
     const ph = aff?.photoId ? photos.get(aff.photoId) : undefined;
@@ -269,19 +340,39 @@ function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLie
     const taille = t?.taille ?? e.cadre.taille ?? 10;
     const gras = t?.gras ?? e.cadre.gras ?? false;
     const sid = nid("st");
+    /* un titre s'ajuste à son cadre avec les chasses de sa police (l'intérieur ; le mot-titre de la couverture a son propre calcul) */
+    const ts = sty && e.cadre.role !== "photo"
+      ? texteStyle(sty.style, e.cadre.role, taille, e.cadre.couleur, ajusterTitres ? { contenu, l: e.cadre.l, h: e.cadre.h } : undefined)
+      : null;
+    const ouvreStory = `<Story Self="${sid}" AppliedTOCStyle="n" StoryTitle="$ID/"><StoryPreference FrameType="TextFrameType" StoryOrientation="Horizontal" StoryDirection="LeftToRightDirection"/>`;
+    if (sty && ts && e.cadre.role !== "photo") {
+      /* sous un style : le style de paragraphe du rôle du cadre porte tout ; la plage ne redit que ce qui s'écarte de lui
+         (le corps à l'échelle du gabarit, une couleur de texte qui n'est pas l'encre). Capitales : l'attribut du style, le texte reste le sien. */
+      const nv = sty.paire.niveaux[e.cadre.role];
+      const ecart = (Math.abs(ts.corps - nv.corps) > 0.005 ? ` PointSize="${ts.corps}"` : "") + (ts.role !== "encre" ? ` FillColor="${NUANCE_ROLE[ts.role].self}"` : "");
+      stories.push({
+        sid,
+        corps: `${ouvreStory}<ParagraphStyleRange AppliedParagraphStyle="${STYLE_PARAGRAPHE[e.cadre.role].self}"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]"${ecart} AppliedLanguage="${LANGUE}">${contenuStory(texteTypo(contenu))}</CharacterStyleRange></ParagraphStyleRange></Story>`,
+      });
+    } else {
     stories.push({
       sid,
       corps: `<Story Self="${sid}" AppliedTOCStyle="n" StoryTitle="$ID/"><StoryPreference FrameType="TextFrameType" StoryOrientation="Horizontal" StoryDirection="LeftToRightDirection"/>`
         + `<ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/$ID/NormalParagraphStyle"><CharacterStyleRange AppliedCharacterStyle="CharacterStyle/$ID/[No character style]" PointSize="${taille}" FontStyle="${gras ? "Bold" : "Regular"}"${e.cadre.couleur === "blanc" ? ` FillColor="Color/Paper"` : ""} AppliedLanguage="${LANGUE}"><Properties><AppliedFont type="string">Arial</AppliedFont></Properties>${contenuStory(contenu)}</CharacterStyleRange></ParagraphStyleRange></Story>`,
     });
+    }
     return `<TextFrame Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ParentStory="${sid}" ContentType="TextType" ItemTransform="${transformRotation(e.cadre.rotation, x, y, w, h)}">${geom(x, y, w, h)}<TextFramePreference TextColumnCount="1"/></TextFrame>`;
   };
 
   /** Un aplat (D28 : un fond de couleur est relu fidèlement). */
   const aplatXml = (a: Aplat, n: number): string => {
     const r = convertir(a);
-    return `<Rectangle Self="${nid()}" Name="Aplat ${n}" ItemLayer="${CALQUE}" ContentType="Unassigned" StoryTitle="$ID/" FillColor="${NUANCE[a.teinte]}" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(r.x, r.y, r.w, r.h)}</Rectangle>`;
+    return `<Rectangle Self="${nid()}" Name="Aplat ${n}" ItemLayer="${CALQUE}" ContentType="Unassigned" StoryTitle="$ID/" FillColor="${sty ? nuanceSousStyle(a.teinte) : nuanceSansStyle(a.teinte)}" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(r.x, r.y, r.w, r.h)}</Rectangle>`;
   };
+
+  /** Le papier teinté d'un style : un aplat « Papier » sous tout, de x sur la largeur donnée, fond perdu `bl` (pt) compris en hauteur. */
+  const papierXml = (x: number, largeur: number, bl: number): string =>
+    `<Rectangle Self="${nid()}" Name="Papier" ItemLayer="${CALQUE}" ContentType="Unassigned" StoryTitle="$ID/" FillColor="${NUANCE_ROLE.papier.self}" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(x, -HH - bl, largeur, PH + 2 * bl)}</Rectangle>`;
 
   /** Les cadres d'un morceau, dans l'ordre des calques, nommés « Photo 1 », « Titre », « Légende 2 »… */
   const elementsXml = (elements: Element[]): string => {
@@ -298,20 +389,28 @@ function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLie
     return corps;
   };
 
-  return { nid, stories, photoXml, texteXml, aplatXml, elementsXml };
+  return { nid, stories, photoXml, texteXml, aplatXml, elementsXml, papierXml };
 }
 
 /** Le paquet autour des spreads et des stories, dans l'ordre du Python (mimetype d'abord, designmap en dernier). */
-function paquet(spreads: Spread[], stories: { sid: string; corps: string }[], doc: { largeurPt: number; nbPages: number; vis: boolean; marges: string }): FichierIdml[] {
+function paquet(spreads: Spread[], stories: { sid: string; corps: string }[], doc: { largeurPt: number; nbPages: number; vis: boolean; marges: string; sty?: StyleActif | null }): FichierIdml[] {
   const { nbPages } = doc;
+  const sty = doc.sty ?? null;
   const fichiers: FichierIdml[] = [];
   const add = (chemin: string, contenu: string) => fichiers.push({ chemin, contenu });
 
   add("mimetype", MIMETYPE_IDML);
   add("META-INF/container.xml", `${PI}<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="designmap.xml" media-type="text/xml"/></rootfiles></container>`);
-  add("Resources/Graphic.xml", `${PI}<idPkg:Graphic ${NS}><Color Self="Color/Black" Model="Process" Space="CMYK" ColorValue="0 0 0 100" Name="Black"/><Color Self="Color/Paper" Model="Process" Space="CMYK" ColorValue="0 0 0 0" Name="Paper"/>${COULEUR_APLAT}<Swatch Self="Swatch/None" Name="None"/></idPkg:Graphic>`);
-  add("Resources/Fonts.xml", `${PI}<idPkg:Fonts ${NS}><FontFamily Self="di1" Name="Arial"><Font Self="di1Font1" FontFamily="Arial" Name="Arial Regular" PostScriptName="ArialMT" FontStyleName="Regular"/><Font Self="di1Font2" FontFamily="Arial" Name="Arial Bold" PostScriptName="Arial-BoldMT" FontStyleName="Bold"/></FontFamily></idPkg:Fonts>`);
-  add("Resources/Styles.xml", `${PI}<idPkg:Styles ${NS}><RootCharacterStyleGroup Self="rcs"><CharacterStyle Self="CharacterStyle/$ID/[No character style]" Name="$ID/[No character style]"/></RootCharacterStyleGroup><RootParagraphStyleGroup Self="rps"><ParagraphStyle Self="ParagraphStyle/$ID/[No paragraph style]" Name="$ID/[No paragraph style]"/><ParagraphStyle Self="ParagraphStyle/$ID/NormalParagraphStyle" Name="$ID/NormalParagraphStyle" PointSize="10" FillColor="Color/Black"><Properties><BasedOn type="object">ParagraphStyle/$ID/[No paragraph style]</BasedOn><AppliedFont type="string">Arial</AppliedFont></Properties></ParagraphStyle></RootParagraphStyleGroup><RootObjectStyleGroup Self="ros"><ObjectStyle Self="ObjectStyle/$ID/[None]" Name="$ID/[None]"/></RootObjectStyleGroup></idPkg:Styles>`);
+  if (sty) {
+    /* lot C : Noir et Papier restent (le style normal d'InDesign les attend), l'ancienne « Aplat » laisse la place aux six rôles */
+    add("Resources/Graphic.xml", `${PI}<idPkg:Graphic ${NS}><Color Self="Color/Black" Model="Process" Space="CMYK" ColorValue="0 0 0 100" Name="Black"/><Color Self="Color/Paper" Model="Process" Space="CMYK" ColorValue="0 0 0 0" Name="Paper"/>${nuancesDuStyle(sty.style)}<Swatch Self="Swatch/None" Name="None"/></idPkg:Graphic>`);
+    add("Resources/Fonts.xml", `${PI}<idPkg:Fonts ${NS}>${fontsDuStyle(sty.paire)}</idPkg:Fonts>`);
+    add("Resources/Styles.xml", `${PI}<idPkg:Styles ${NS}>${stylesDuStyle(sty.paire)}</idPkg:Styles>`);
+  } else {
+    add("Resources/Graphic.xml", `${PI}<idPkg:Graphic ${NS}><Color Self="Color/Black" Model="Process" Space="CMYK" ColorValue="0 0 0 100" Name="Black"/><Color Self="Color/Paper" Model="Process" Space="CMYK" ColorValue="0 0 0 0" Name="Paper"/>${COULEUR_APLAT}<Swatch Self="Swatch/None" Name="None"/></idPkg:Graphic>`);
+    add("Resources/Fonts.xml", `${PI}<idPkg:Fonts ${NS}><FontFamily Self="di1" Name="Arial"><Font Self="di1Font1" FontFamily="Arial" Name="Arial Regular" PostScriptName="ArialMT" FontStyleName="Regular"/><Font Self="di1Font2" FontFamily="Arial" Name="Arial Bold" PostScriptName="Arial-BoldMT" FontStyleName="Bold"/></FontFamily></idPkg:Fonts>`);
+    add("Resources/Styles.xml", `${PI}<idPkg:Styles ${NS}><RootCharacterStyleGroup Self="rcs"><CharacterStyle Self="CharacterStyle/$ID/[No character style]" Name="$ID/[No character style]"/></RootCharacterStyleGroup><RootParagraphStyleGroup Self="rps"><ParagraphStyle Self="ParagraphStyle/$ID/[No paragraph style]" Name="$ID/[No paragraph style]"/><ParagraphStyle Self="ParagraphStyle/$ID/NormalParagraphStyle" Name="$ID/NormalParagraphStyle" PointSize="10" FillColor="Color/Black"><Properties><BasedOn type="object">ParagraphStyle/$ID/[No paragraph style]</BasedOn><AppliedFont type="string">Arial</AppliedFont></Properties></ParagraphStyle></RootParagraphStyleGroup><RootObjectStyleGroup Self="ros"><ObjectStyle Self="ObjectStyle/$ID/[None]" Name="$ID/[None]"/></RootObjectStyleGroup></idPkg:Styles>`);
+  }
   add("Resources/Preferences.xml", `${PI}<idPkg:Preferences ${NS}><DocumentPreference PageHeight="${f(PH, 4)}" PageWidth="${f(doc.largeurPt, 4)}" PagesPerDocument="${nbPages}" FacingPages="${doc.vis ? "true" : "false"}" DocumentBleedTopOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedBottomOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedInsideOrLeftOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedOutsideOrRightOffset="${f(FOND_PERDU * K, 4)}" DocumentBleedUniformSize="true" PageBinding="LeftToRight"/>${doc.marges}</idPkg:Preferences>`);
   for (const sp of spreads) {
     add(`Spreads/Spread_${sp.sid}.xml`, `${PI}<idPkg:Spread ${NS}><Spread Self="${sp.sid}" PageCount="${sp.pc}" BindingLocation="${sp.bl}" ShowMasterItems="true" ItemTransform="1 0 0 1 0 0">${sp.corps}</Spread></idPkg:Spread>`);
@@ -337,7 +436,9 @@ function paquet(spreads: Spread[], stories: { sid: string; corps: string }[], do
  * deux pages, même en mode pages avec une page vide.
  */
 export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }): FichierIdml[] {
-  const { stories, aplatXml, elementsXml } = fabrique(photos, options, conv);
+  /* Lot C : avec un style, polices et nuances nommées, styles de paragraphe ; sans, exactement l'export d'avant. */
+  const sty = styleActif(magazine.style);
+  const { stories, aplatXml, elementsXml, papierXml } = fabrique(photos, options, conv, sty, true);
 
   const planches: Planche[] = magazine.planches.length > 0
     ? magazine.planches
@@ -358,6 +459,12 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
       numeroPage += 1;
       corps += page(`pg${numeroPage}`, String(numeroPage), false);
     }
+    /* le papier teinté d'un style (crème) : un aplat sous tout, la page entière et son fond perdu ; blanc : rien, comme avant */
+    if (sty && sty.style.couleurs.papier !== FOND_PAGE_BLANC) {
+      const bl = FOND_PERDU * K;
+      const x0 = premiere ? 0 : -PW - bl, x1 = PW + bl;
+      corps += papierXml(x0, x1 - x0, bl);
+    }
     let nA = 0;
     for (const { d, cible } of partsDe(p, premiere)) {
       for (const a of decorDe(d, cible)) {
@@ -369,7 +476,7 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
     spreads.push({ sid: `sp${i + 1}`, pc: premiere ? 1 : 2, bl: premiere ? 0 : 1, corps });
   });
 
-  return paquet(spreads, stories, { largeurPt: PW, nbPages: numeroPage, vis: true, marges: MP });
+  return paquet(spreads, stories, { largeurPt: PW, nbPages: numeroPage, vis: true, marges: MP, sty });
 }
 
 /* ─────────────────────────── La couverture (lot B, 12/11) ─────────────────────────── */
@@ -392,12 +499,16 @@ export const convCouverture = (c: { x: number; y: number; l: number; h: number }
  * cadres de chaque face sont posés à leur place pour CE dos ; textes prêts (`couverturePourExport`, appelé par
  * `avecLieuxParDefaut`), le texte répété écrit ligne à ligne. Mêmes photos, mêmes liens que l'intérieur (Links/ partagé).
  */
-export function construireIdmlCouverture(couverture: Couverture, photos: Map<string, PhotoExport>, options: { liens: OptionsLiens; dosMm: number }): FichierIdml[] {
+export function construireIdmlCouverture(couverture: Couverture, photos: Map<string, PhotoExport>, options: { liens: OptionsLiens; dosMm: number; style?: StyleMagazine | null }): FichierIdml[] {
   const dos = options.dosMm;
   const largeur = largeurCouverture(dos) * K;
-  const { aplatXml, elementsXml, stories } = fabrique(photos, options, convCouverture);
+  /* Lot C : la couverture parle la langue du magazine (R-T-23) : mêmes polices nommées, mêmes nuances, mêmes styles de paragraphe. */
+  const sty = styleActif(options.style);
+  const { aplatXml, elementsXml, stories, papierXml } = fabrique(photos, options, convCouverture, sty);
   const marges = margesCouverture(dos);
   let corps = `<Page Self="pg1" Name="1" AppliedMaster="n" GeometricBounds="0 0 ${f(PH, 4)} ${f(largeur, 4)}" ItemTransform="1 0 0 1 0 ${f(-HH, 4)}">${marges}</Page>`;
+  /* le papier teinté d'un style : un aplat sous tout, la couverture entière et son fond perdu ; blanc : rien, comme avant */
+  if (sty && sty.style.couleurs.papier !== FOND_PAGE_BLANC) corps += papierXml(-FOND_PERDU * K, largeur + 2 * FOND_PERDU * K, FOND_PERDU * K);
   decorCouverture(couverture, dos).forEach((a, i) => { corps += aplatXml(a, i + 1); });
   /* le texte répété (titre en motif) part en lignes, comme l'écran le montre */
   const cadres = cadresCouverture(couverture, dos);
@@ -410,7 +521,7 @@ export function construireIdmlCouverture(couverture: Couverture, photos: Map<str
     if (cadre.role === "photo") iP++; else iT++;
     return e;
   }));
-  return paquet([{ sid: "sp1", pc: 1, bl: 0, corps }], stories, { largeurPt: largeur, nbPages: 1, vis: false, marges });
+  return paquet([{ sid: "sp1", pc: 1, bl: 0, corps }], stories, { largeurPt: largeur, nbPages: 1, vis: false, marges, sty });
 }
 
 /** Les photos posées, dans l'ordre du magazine, sans doublon (pour Links/ et photos-utilisees.txt). Celles de la

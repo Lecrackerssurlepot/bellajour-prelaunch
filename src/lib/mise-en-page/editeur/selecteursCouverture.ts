@@ -11,6 +11,7 @@ import {
   GABARITS_COUVERTURE, ID_COUVERTURE, PART_MOT_TITRE_MIN, PART_SUJET_SOUS_TITRE, cadresCouverture, decorCouverture, gabaritCouverture,
   partDuMotTitre, textesDeCouverture, titreSurLeSujet, type GabaritCouverture,
 } from "../couverture";
+import { texteStyle } from "../style";
 import { SEUIL_DPI, couvertureDe, estCouverture } from "./outils";
 import { lieuCouverture } from "./lieuxTextes";
 import { refPour } from "./operations";
@@ -24,7 +25,8 @@ const refC = (index: number): RefCadre => ({ plancheId: ID_COUVERTURE, cible: "d
 /** Les cadres de la couverture, repère couverture, dans l'ordre des calques. */
 export function cadresDeCouverture(e: EtatEditeur, dosMm: number): CadreCouvertureEcran[] {
   const c = couvertureDe(e.magazine);
-  const textes = textesDeCouverture(c, lieuCouverture(c, e.catalogue));
+  /* lot C : le mot-titre se calcule avec la police de TITRE du style (ses chasses, ses capitales), pas avec Arial Bold */
+  const textes = textesDeCouverture(c, lieuCouverture(c, e.catalogue), e.magazine.style);
   const u = utilisations(e.magazine);
   let iP = 0, iT = 0;
   return cadresCouverture(c, dosMm).map((x): CadreCouvertureEcran => {
@@ -45,6 +47,7 @@ export function cadresDeCouverture(e: EtatEditeur, dosMm: number): CadreCouvertu
     return {
       role: x.role, face: x.face, ref: refC(index), x: x.x, y: x.y, l: x.l, h: x.h, rotation: x.rotation || 0,
       contenu: t.contenu, vide: !t.saisi, taille: t.taille, gras: t.gras, blanc: x.couleur === "blanc", parDefaut: t.parDefaut, repeter: x.repeter ?? 1,
+      style: e.magazine.style ? texteStyle(e.magazine.style, x.role, t.taille, x.couleur) : null,
     };
   });
 }
@@ -72,7 +75,7 @@ export function bilanCouverture(e: EtatEditeur): BilanCouverture {
   const c = couvertureDe(e.magazine);
   const g = gabaritCouverture(c.templateId) ?? GABARITS_COUVERTURE[0];
   const lieu = lieuCouverture(c, e.catalogue);
-  const part = partDuMotTitre(c, lieu);
+  const part = partDuMotTitre(c, lieu, e.magazine.style);
   const sujet = titreSurLeSujet(c, e.catalogue);
   const photosG = g.cadres.filter((x) => x.role === "photo");
   return {

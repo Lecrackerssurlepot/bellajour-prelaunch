@@ -9,6 +9,7 @@ import {
 import { dispositionDe, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
 import { choixDeLieux } from "@/lib/mise-en-page/lieux";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
+import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
 import { PAGE_H, PLANCHE_L, type Rect } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
@@ -488,7 +489,16 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   const { etat, envoyer, lectureSeule: ro } = useEd();
   const refT = f.ref;
   const libelle = f.vide || !f.contenu;
-  const style: React.CSSProperties = { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.blanc ? { color: "#fff" } : {}) };
+  /* lot C : sous un style, la police, la graisse, le corps (à l'échelle du gabarit), l'interlignage, les capitales, l'approche et la
+     couleur viennent du style du magazine (variables CSS posées sur la racine) ; sans style, le rendu d'avant, mot pour mot. */
+  const ts = f.style;
+  const style: React.CSSProperties = ts
+    ? {
+        ...st, fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
+        fontSize: `max(9px, ${((ts.corps * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, color: `var(--mep-r-${classeRole(ts.role)})`,
+        textTransform: ts.capitales ? "uppercase" : "none", ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
+      }
+    : { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.blanc ? { color: "#fff" } : {}) };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, refT);
   /* 09/11 : en écrivant un titre ou une légende, les lieux de ses photos sont proposés, du plus précis au plus large */
   const pl = enEdition && f.role !== "texte" ? etat.magazine.planches.find((x) => x.id === refT.plancheId) : undefined;
@@ -534,7 +544,7 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
       aria-label={fantome ? undefined : `Modifier : ${libelle ? f.parDefaut ?? LIBELLE[f.role] : f.contenu}`}
       onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); }}
       onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); } }}>
-      {libelle ? f.parDefaut ?? (f.contenu || LIBELLE[f.role]) : f.contenu}
+      {ts ? texteTypo(libelle ? f.parDefaut ?? (f.contenu || LIBELLE[f.role]) : f.contenu) : libelle ? f.parDefaut ?? (f.contenu || LIBELLE[f.role]) : f.contenu}
     </div>
   );
 }

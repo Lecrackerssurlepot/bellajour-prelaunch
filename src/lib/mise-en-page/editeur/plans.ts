@@ -14,6 +14,8 @@ import { marquesProposees, preTrier } from "./pretri";
 import { estTour, etiqueter, etiquetteRetiree, garderPosees, marqueDe, marqueEffective, marquePourZone, marquer, reglerVisees, ETIQUETTES, type Marque } from "./tri";
 import { selectionOrdonnee } from "./bibliotheque";
 import { hesiter, type ActionHesitation } from "./hesitation";
+import { avecStyle, libelleStyle } from "./stylage";
+import { styleValide } from "../style";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
 import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
 import { ID_COUVERTURE } from "../couverture";
@@ -310,6 +312,11 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return g.ref ? { op: "calque", libelle: LIBELLE_CALQUE[g.sens] ?? "Calque", plancheId: g.ref.plancheId, issue: calque(m, g.ref, g.sens), args: { ref: g.ref } } : planRien(e);
     case "retirerCadres": return planRetirerCadres(e, Array.isArray(g.refs) ? g.refs : []);
     case "reglerTri": return simple("reglerTri", "Photos visées", e.plancheCourante, reglerVisees(m, g.visees), {});
+    case "styler": {
+      /* lot C : un style qui ne se relit pas n'est pas écrit ; poser le même style ne fait rien */
+      if (g.style !== null && !styleValide(g.style)) return planRien(e);
+      return simple("styler", libelleStyle(m.style, g.style), e.plancheCourante, avecStyle(m, g.style), {});
+    }
     case "etiqueter": {
       const ids = Array.isArray(g.ids) ? [...new Set(g.ids.filter((id) => cat.has(id)))] : [];
       if (!ETIQUETTES.includes(g.etiquette) || !ids.length) return planRien(e);

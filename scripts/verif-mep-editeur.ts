@@ -15,6 +15,8 @@ import { gabaritDepuisDisposition, gabaritValide, ligneEnTemplate } from "@/lib/
 import { enregistrerGabarits, nouveauMagazine, templateParId, tousLesTemplates, type Cible, type Disposition, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
 import type { Cote } from "@/lib/mise-en-page/geometrie";
 import * as L from "@/lib/mise-en-page/lieux";
+import { COULEURS_ORIGINE, styleDePaire, styleValide } from "@/lib/mise-en-page/style";
+import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
 
 /* ─────────── outils ─────────── */
 
@@ -886,6 +888,49 @@ sc(83, "09/11 : lieux détaillés (réponses Geoapify) et lieu par défaut des t
   ok(O.avecLieuxParDefaut(m1, new Map()) === m1, "sans lieu connu : le même magazine");
 });
 
+sc(84, "lot C : la feuille de style du magazine : poser, changer une couleur, annuler, rétablir, retirer ; un style invalide est ignoré ; aucune planche ni photo ne bouge", () => {
+  const s = new Seance("A:P B:L C:P").pose(1, "droite", ["A"]).zero();
+  const planches0 = s.e.magazine.planches;
+  ok(!("style" in s.e.magazine), "sans style : aucune clé style (jamais `style: undefined`)");
+  const s1 = def(styleDePaire("T-05"), "T-05");
+  s.g({ type: "styler", style: s1 });
+  eq(s.e.magazine.style, s1, "le style est posé");
+  ok(s.e.magazine.planches === planches0, "les planches gardent la même référence");
+  ok(contenuValide(s.e.magazine), "le magazine avec style reste une sauvegarde valide");
+  eq(s.hist, 1, "une entrée d'historique");
+  eq(s.e.historique.passe[0].libelle, "Style · Archivo", "libellé : la paire (T-05 est une seule famille)");
+  s.g({ type: "styler", style: s1 });
+  eq(s.hist, 1, "poser le même style ne fait rien");
+  const s2 = { paire: "T-05", couleurs: { ...s1.couleurs, aplatSourd: "#7a8fa6" } };
+  s.g({ type: "styler", style: s2 });
+  eq(s.e.magazine.style?.couleurs.aplatSourd, "#7a8fa6", "une pastille change");
+  eq(s.e.historique.passe[1].libelle, "Aplat sourd", "libellé : le rôle changé");
+  const s3 = def(styleDePaire("T-01", s2.couleurs), "T-01");
+  s.g({ type: "styler", style: s3 });
+  eq(s.e.magazine.style?.paire, "T-01", "la paire change");
+  eq(s.e.magazine.style?.couleurs.aplatSourd, "#7a8fa6", "le nuancier reste quand la paire change");
+  eq(s.e.historique.passe[2].libelle, "Style · Bodoni Moda + Hanken Grotesk", "libellé : les deux familles");
+  const avantInvalides = s.e.magazine;
+  for (const mauvais of [{ paire: "T-04", couleurs: COULEURS_ORIGINE }, { paire: "T-01" }, { paire: "T-01", couleurs: { ...COULEURS_ORIGINE, papier: "#FFF" } }, 12, "T-01", undefined, []] as unknown[]) {
+    s.g({ type: "styler", style: mauvais } as unknown as Geste);
+  }
+  ok(s.e.magazine === avantInvalides && s.hist === 3, "sept styles invalides (T-04 compris) sont ignorés : même magazine, aucune entrée");
+  s.g({ type: "annuler" });
+  eq(s.e.magazine.style?.paire, "T-05", "annuler revient à la paire d'avant");
+  ok(s.e.plancheCourante === "pl-1", "annuler un style ne change pas la double affichée");
+  s.g({ type: "retablir" });
+  eq(s.e.magazine.style?.paire, "T-01", "rétablir");
+  s.g({ type: "styler", style: null });
+  ok(!("style" in s.e.magazine) && s.e.magazine.planches === planches0, "retirer : la clé disparaît (pas de `style: undefined`), les planches ne bougent pas");
+  eq(s.e.historique.passe[s.e.historique.passe.length - 1].libelle, "Style retiré", "libellé : retiré");
+  const n = s.hist;
+  s.g({ type: "styler", style: null });
+  eq(s.hist, n, "retirer un style absent ne fait rien");
+  s.g({ type: "styler", style: s3 });
+  s.g({ type: "poser", cible: { type: "page", plancheId: pl(1), cote: "droite" }, ids: ["B"], confirme: true });
+  ok(styleValide(s.e.magazine.style), "le style survit aux gestes de mise en page");
+});
+
 /* ═══════════ le test aléatoire à graine ═══════════
    Des séquences de 20 à 60 gestes tirés parmi TOUS les gestes (parfois à côté, parfois invalides), invariants
    vérifiés après chaque geste, puis « annuler tout, rétablir tout ». En cas d'échec : la graine et la séquence
@@ -1053,6 +1098,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     [3, (e) => ({ type: "basculerCadre", ref: uneRef(e) })],
     [3, () => ({ type: "touche", cle: pick(["m", "M", "]", "[", "ArrowUp", "ArrowDown", "Backspace"]), meta: h() < 0.6, alt: h() < 0.3, shift: h() < 0.2 })],
     [1, () => ({ type: "reglerTri", visees: pick([null, 1, 120, 2.5, 0, 6000]) })],
+    /* lot C : le style, valide, retiré, ou cassé (T-04 n'existe pas, un hexa en majuscules, une forme folle) */
+    [2, () => ({ type: "styler", style: pick([null, styleDePaire("T-01"), styleDePaire("T-17", { ...COULEURS_ORIGINE, papier: "#f8ecdd" }), styleDePaire("TW-1"), { paire: "T-04", couleurs: COULEURS_ORIGINE }, { paire: "T-01" }, { paire: "T-01", couleurs: { ...COULEURS_ORIGINE, nuit: "#ABCDEF" } }, 12, "style"]) })],
     [2, (e) => ({ type: "etiqueter", ids: ids(e, int(1, 3)), etiquette: pick(["couverture", "double", "pleine", "bidon"]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
@@ -1937,7 +1984,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     rapporter("éditeur : la lecture visible (tags, filtre, captures, similaires, chaleur, panneau) (R93, R94)", msg === null);
   }
   const archi = S.filter((x) => x.n <= 73).length;
-  rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 83 && archi === 73);
+  rapporter(`éditeur : ${S.length} scénarios (ARCHI ${archi} + ${S.length - archi} en plus), ${totalGestes} gestes joués, ${echecs} échec(s)`, echecs === 0 && S.length === 84 && archi === 73);
   titre(`— Mise en page : l'éditeur, ${SEQUENCES_ALEATOIRES} séquences aléatoires (graine ${GRAINE_ALEATOIRE}) —`);
   const b = campagneAleatoire(SEQUENCES_ALEATOIRES, GRAINE_ALEATOIRE);
   console.log(`   séquences : ${b.sequences} · gestes tirés : ${b.tires} · gestes joués (rafales comprises) : ${b.joues} · types de gestes : ${b.types} · gestes qui ont changé le magazine : ${b.changes} · confirmations ouvertes : ${b.confirmations} · échecs : ${b.echecs}`);

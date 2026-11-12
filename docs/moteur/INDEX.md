@@ -35,6 +35,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C10](couches/C10-gabarits.md) | Choix du gabarit et sa note | R66, R67, R69, R83 | EN PROD (#351, #352) ; pli (lot A, 12/11) |
 | [C11](couches/C11-qualite-export.md) | Qualité d'impression, contrôle avant export | R68, R90 | EN PROD : dpi (#352), contrôle avant export (lot A, 12/11) |
 | [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (lot A, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
+| [C13](couches/C13-feuille-de-style.md) | Feuille de style : paire de polices, nuancier proposé, typographie française | R120 à R124 | Lot C (12/11), branche `feat/mise-en-page-feuille-de-style`, pas encore fusionnée ; remplit « palette pas encore reliée aux aplats » de C09 |
 
 Le lot A (12/11) = la branche `feat/mise-en-page-couche1-mesures`, fusionnée dans `main` avec l'export PDF de #353 : l'instantané, le jalon et les trois questions valent pour Canva (PDF) comme pour Affinity (IDML).
 

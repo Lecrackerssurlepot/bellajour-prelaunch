@@ -10,6 +10,7 @@ import { Ico } from "./icones";
 import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
 import { exporterPdf, type ResultatExportPdf } from "./exporterPdf";
+import { facettesDe, paireParId } from "@/lib/mise-en-page/style";
 import { dosDeLaCouverture } from "./dosCouverture";
 import type { CouvertureExport } from "./exporter";
 
@@ -67,8 +68,11 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const dossierOk = dossierAbsolu(dossier);
   const peutDossier = peutEcrireDansUnDossier();
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0)
-    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length;
+    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length + av.titresTropLongs.length;
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
+  /* lot C : les polices que le style met en jeu (jamais deux fois la même famille) ; la couverture parle la même langue */
+  const paireStyle = etat.magazine.style ? paireParId(etat.magazine.style.paire) : null;
+  const famillesDuStyle = paireStyle ? [...new Set(facettesDe(paireStyle).map((x) => x.police.famille))] : [];
   /* lot B : la couverture part avec l'intérieur si son dos est connu ; sinon l'écran dit pourquoi AVANT le clic */
   const couv = etat.magazine.couverture;
   const dosC = dosDeLaCouverture(projet, couv?.pages ?? null);
@@ -137,6 +141,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
               <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
                 <li><span>magazine.pdf</span><span>{pluriel(av.planches, "planche")} · {pluriel(idsInterieur, "photo")}</span></li>
                 {ligneCouv("couverture.pdf")}
+                {famillesDuStyle.length ? <li><span>Polices embarquées</span><span>{famillesDuStyle.join(" · ")}</span></li> : null}
               </ul>
             ) : (
             <>
@@ -158,12 +163,19 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
               <li><span>Links/</span><span>{pluriel(ids.length, "photo")}</span></li>
               <li><span>photos-utilisees.txt</span><span>{ids.length}</span></li>
               <li><span>photos-non-utilisees.txt</span><span>{Math.max(0, etat.catalogue.size - ids.length)}</span></li>
+              {famillesDuStyle.length ? <li><span>Styles Titre · Texte · Légende, six nuances</span><span>{famillesDuStyle.join(" · ")}</span></li> : null}
             </ul>
             </>
             )}
             {nbAvert ? (
               <div className="ed-ex-avert">
                 {av.indisponibles.length ? <span className="ed-ex-rouge">{pluriel(av.indisponibles.length, "photo indisponible", "photos indisponibles")} · cadre vide</span> : null}
+                {av.titresTropLongs.slice(0, 3).map((z) => (
+                  <button key={`${z.plancheId}${z.texte}`} type="button" className="ed-ex-rouge" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>
+                    Titre trop long · planche {z.numero} →
+                  </button>
+                ))}
+                {av.titresTropLongs.length > 3 ? <span className="ed-sous">et {av.titresTropLongs.length - 3} autres titres trop longs</span> : null}
                 {av.signaleesPosees.length ? <span>{pluriel(av.signaleesPosees.length, "photo à ne pas publier posée", "photos à ne pas publier posées")}</span> : null}
                 {av.bassesDef.slice(0, 3).map((z) => (
                   <button key={`${z.photoId}${z.plancheId}`} type="button" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>
@@ -177,6 +189,9 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
                 {av.pagesVides.length ? <span>{pluriel(av.pagesVides.length, "planche vide", "planches vides")} · p. {av.pagesVides.slice(0, 4).join(", ")}</span> : null}
                 {av.pagesAuDessus ? <span>{pl.pages} pages pour {pl.cible} payées</span> : null}
               </div>
+            ) : null}
+            {sortie === "affinity" && famillesDuStyle.length ? (
+              <div className="ed-ex-avert"><span>Installer {famillesDuStyle.join(" et ")} sur ce Mac avant d&apos;ouvrir l&apos;IDML : sans elles, Affinity les remplace (les noms, les nuances et les styles arrivent quand même).</span></div>
             ) : null}
             {av.indisponibles.length ? (
               <label className="ed-ex-sans"><input type="checkbox" checked={sans} onChange={(e) => setSans(e.currentTarget.checked)} /> Exporter sans elles</label>
@@ -212,6 +227,8 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
             <LigneCouverture c={etape.r.couverture} fichier="couverture.pdf" />
             {etape.r.indisponibles.length ? <p className="ed-ex-ligne ed-ex-rouge">{pluriel(etape.r.indisponibles.length, "photo illisible", "photos illisibles")} · cadre gris</p> : null}
             {etape.r.secours.length ? <p className="ed-ex-ligne">{pluriel(etape.r.secours.length, "photo en définition réduite", "photos en définition réduite")}</p> : null}
+            {etape.r.polices.length ? <p className="ed-ex-ligne">Polices embarquées · {etape.r.polices.join(", ")}</p> : null}
+            {etape.r.alertes.map((a) => <p key={a} className="ed-ex-ligne ed-ex-rouge">{a}</p>)}
             <ol className="ed-ex-etapes">
               <li>Ouvrir Canva</li>
               <li>{etape.r.couverture.etat === "ecrite" ? "Importer les deux PDF" : "Importer le PDF"}</li>

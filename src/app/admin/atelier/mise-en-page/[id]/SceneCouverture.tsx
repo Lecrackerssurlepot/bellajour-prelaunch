@@ -10,6 +10,7 @@ import {
 } from "@/lib/mise-en-page/couverture";
 import { PAGE_H, PAGE_L, largeurCouverture } from "@/lib/mise-en-page/geometrie";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
+import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
 import { cls, fermerTexteDom, memeRef, pc, useEd } from "./contexte";
 import { dosDeLaCouverture, type DosCouverture } from "./dosCouverture";
 import { grandeDe, vignetteDe } from "./images";
@@ -196,9 +197,18 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
   const ref = f.ref;
   const libelle = f.vide && !f.parDefaut;
   const vu = f.vide ? f.parDefaut ?? f.contenu : f.contenu;
+  /* lot C : sous un style, la couverture parle la langue du magazine (R-T-23) : la police de la paire, le corps calculé sur ses chasses,
+     les capitales, l'approche et la couleur du rôle ; sans style, Arial et le rendu d'avant. */
+  const ts = f.style;
   const style: React.CSSProperties = {
     left: pc(f.x, W), top: pc(f.y, PAGE_H), width: pc(f.l, W), height: pc(f.h, PAGE_H),
-    fontSize: `max(6px, ${((f.taille * 25.4) / 72 / W) * 100}cqw)`, fontWeight: f.gras ? 700 : 400, ...(f.blanc ? { color: "#fff" } : {}),
+    ...(ts
+      ? {
+          fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
+          fontSize: `max(6px, ${((ts.corps * 25.4) / 72 / W) * 100}cqw)`, color: `var(--mep-r-${classeRole(ts.role)})`,
+          textTransform: ts.capitales ? ("uppercase" as const) : ("none" as const), ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
+        }
+      : { fontSize: `max(6px, ${((f.taille * 25.4) / 72 / W) * 100}cqw)`, fontWeight: f.gras ? 700 : 400, ...(f.blanc ? { color: "#fff" } : {}) }),
     ...(sous ? { opacity: 0 } : {}),
   };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, ref);
@@ -226,7 +236,7 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
       role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0} aria-label={fantome ? undefined : `Modifier : ${vu}`}
       onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref }); }}
       onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref }); } }}>
-      {contenuImprime(vu, { repeter: f.repeter })}
+      {ts ? texteTypo(contenuImprime(vu, { repeter: f.repeter })) : contenuImprime(vu, { repeter: f.repeter })}
     </div>
   );
 }

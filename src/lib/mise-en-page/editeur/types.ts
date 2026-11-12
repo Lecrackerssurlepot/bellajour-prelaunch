@@ -9,6 +9,7 @@ import type { Cible, Disposition, Magazine, PhotoRef, RefCadre } from "../magazi
 import type { Recadrage } from "../recadrage";
 import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
+import type { StyleMagazine } from "../style";
 import type { SourceMep } from "../sauvegarde";
 import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
@@ -248,6 +249,8 @@ export type GesteModifiant =
   | { type: "ajusterCadre"; ref: RefCadre; confirme?: boolean }
   | { type: "calque"; ref: RefCadre; sens: SensCalque; confirme?: boolean }
   | { type: "retirerCadres"; refs: RefCadre[]; confirme?: boolean }
+  /** Lot C : la feuille de style du magazine (paire de polices, nuancier) : la poser, la changer, ou la retirer avec `null`. */
+  | { type: "styler"; style: StyleMagazine | null; confirme?: boolean }
   /** Lot B : le nombre de pages saisi sur la couverture quand le projet ne le connaît pas (null l'efface). */
   | { type: "pagesCouverture"; pages: number | null; confirme?: boolean };
 
@@ -335,7 +338,7 @@ export type OpPlan =
   | "rien" | "ajouter" | "ajouterSurPlanche" | "remplacer" | "deplacerPhoto" | "echanger" | "retirer" | "reordonner"
   | "choisirGabarit" | "autreGabarit" | "fusionner" | "separer" | "insererDouble" | "deplacerPlanche"
   | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "etiqueter" | "hesiter"
-  | "miroir" | "placerCadre" | "ajusterCadre" | "calque" | "poserLibre" | "retirerCadres" | "deplacerCadres"
+  | "miroir" | "placerCadre" | "ajusterCadre" | "calque" | "poserLibre" | "retirerCadres" | "deplacerCadres" | "styler"
   /* lot B : la couverture */
   | "couvPoser" | "couvRetirer" | "couvEchanger" | "couvGabarit" | "couvPages";
 

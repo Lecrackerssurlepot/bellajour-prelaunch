@@ -32,6 +32,7 @@ Le token vivant est `--bj-topbar-h`. Ne pas « réparer » en le définissant.
 `next/font/google`, self-hosté, **pas de `<link>` dans le `<head>`**. Déclarées dans trois
 layouts (`layout.tsx`, `(atelier)/layout.tsx`, `numero/layout.tsx`) ; next/font déduplique.
 **Cormorant Garamond** (display) et **DM Sans** (UI) — c'est bien la Garamond, pas « Cormorant ».
+**L'éditeur de mise en page** (lot C, 12/11) déclare en plus, dans son propre `[id]/layout.tsx`, les 30 familles de son catalogue de styles (`[id]/polices.ts`, next/font/google, `preload: false`, variables `--pf-<famille>` : rien ne se télécharge tant qu'un texte du magazine ne s'en sert ; chaque appel doit être littéral ET assigné à une `const`, sinon le build échoue). Aucune n'est chargée sur les pages du site.
 **Playfair Display** n'est PLUS chargée nulle part depuis le 15/09/2026 : elle ne vivait que dans
 `opengraph-image.tsx`, archivé avec la vignette de partage fabriquée (`archive/opengraph-genere/`).
 

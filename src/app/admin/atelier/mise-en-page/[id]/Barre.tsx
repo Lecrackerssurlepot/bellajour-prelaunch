@@ -66,6 +66,10 @@ export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
           <path d="M1.5 10s3-5.5 8.5-5.5S18.5 10 18.5 10s-3 5.5-8.5 5.5S1.5 10 1.5 10z" /><circle cx="10" cy="10" r="2.6" />
         </svg>
       </button>
+      <button type="button" className={cls("ed-ico", "ed-aimant", (ui.style || etat.magazine.style) && "ed-aimant--on")} aria-pressed={ui.style}
+        title={etat.magazine.style ? "Style du magazine : polices et couleurs" : "Style : choisir les polices et les couleurs"} aria-label="Style" onClick={() => majUi({ style: !ui.style })}>
+        <span className="ed-ico-aa" aria-hidden="true">Aa</span>
+      </button>
       <button type="button" className="ed-ico" disabled={!la || ro} title={la ?? "Rien à annuler"} aria-label={la ?? "Annuler"} onClick={() => envoyer({ type: "annuler" })}>{Ico.annuler}</button>
       <button type="button" className="ed-ico" disabled={!lr || ro} title={lr ?? "Rien à rétablir"} aria-label={lr ?? "Rétablir"} onClick={() => envoyer({ type: "retablir" })}>{Ico.retablir}</button>
       <button type="button" className="adm-btn ed-exporter" onClick={onExporter}>Exporter</button>

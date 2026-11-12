@@ -21,6 +21,7 @@ import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
 import { genereParId, genereesPour } from "./genere";
 import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
+import type { StyleMagazine } from "./style";
 import type { Couverture } from "./couverture";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
@@ -69,8 +70,12 @@ export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: numb
 /** Borne technique de l'objectif « photos visées » (pas une règle de produit : un garde-fou contre une saisie folle). */
 export const VISEES_MAX = 5000;
 
-/** `couverture` (lot B, 12/11) : la couverture à plat, à côté des planches (couverture.ts), écrite seulement quand on y a touché. */
-export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; couverture?: Couverture };
+/**
+ * `tri` (lot 2), `style` (lot C, 12/11) et `couverture` (lot B, 12/11) sont FACULTATIFS : écrits seulement quand ils existent (jamais
+ * `undefined`). `couverture` : la couverture à plat, à côté des planches (couverture.ts), écrite seulement quand on y a touché. Un magazine
+ * sans `style` garde exactement son rendu d'avant : Arial dans l'IDML, Helvetica dans le PDF, le terracotta de la marque en aplat.
+ */
+export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; style?: StyleMagazine; couverture?: Couverture };
 
 export type Cible = "gauche" | "droite" | "double";
 /** Un cadre précis : `index` compte les cadres photo (ou texte pour `ecrireTexte`) de la disposition. */
