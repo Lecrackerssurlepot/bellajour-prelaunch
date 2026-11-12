@@ -10,6 +10,7 @@ import { Ico } from "./icones";
 import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
 import { exporterPdf, type ResultatExportPdf } from "./exporterPdf";
+import { facettesDe, paireParId } from "@/lib/mise-en-page/style";
 
 /* La feuille d'export. Deux sorties (11/11) : Canva, un PDF téléchargé d'un clic ; Affinity, le dossier absolu (les liens de l'IDML en dépendent), ce que le paquet contiendra, ce qu'il
    faut vérifier, puis la progression avec « Annuler ». Le sélecteur de dossier s'ouvre dans le clic, avant tout await. */
@@ -58,6 +59,9 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0)
     + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length;
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
+  /* lot C : les polices que le style met en jeu (jamais deux fois la même famille) */
+  const paireStyle = etat.magazine.style ? paireParId(etat.magazine.style.paire) : null;
+  const famillesDuStyle = paireStyle ? [...new Set(facettesDe(paireStyle).map((x) => x.police.famille))] : [];
 
   const lancerPdf = () => {
     const c = new AbortController();
@@ -116,6 +120,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
             {sortie === "canva" ? (
               <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
                 <li><span>magazine.pdf</span><span>{pluriel(av.planches, "planche")} · {pluriel(ids.length, "photo")}</span></li>
+                {famillesDuStyle.length ? <li><span>Polices embarquées</span><span>{famillesDuStyle.join(" · ")}</span></li> : null}
               </ul>
             ) : (
             <>
@@ -136,6 +141,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
               <li><span>Links/</span><span>{pluriel(ids.length, "photo")}</span></li>
               <li><span>photos-utilisees.txt</span><span>{ids.length}</span></li>
               <li><span>photos-non-utilisees.txt</span><span>{Math.max(0, etat.catalogue.size - ids.length)}</span></li>
+              {famillesDuStyle.length ? <li><span>Styles Titre · Texte · Légende, six nuances</span><span>{famillesDuStyle.join(" · ")}</span></li> : null}
             </ul>
             </>
             )}
@@ -155,6 +161,9 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
                 {av.pagesVides.length ? <span>{pluriel(av.pagesVides.length, "planche vide", "planches vides")} · p. {av.pagesVides.slice(0, 4).join(", ")}</span> : null}
                 {av.pagesAuDessus ? <span>{pl.pages} pages pour {pl.cible} payées</span> : null}
               </div>
+            ) : null}
+            {sortie === "affinity" && famillesDuStyle.length ? (
+              <div className="ed-ex-avert"><span>Installer {famillesDuStyle.join(" et ")} sur ce Mac avant d&apos;ouvrir l&apos;IDML : sans elles, Affinity les remplace (les noms, les nuances et les styles arrivent quand même).</span></div>
             ) : null}
             {av.indisponibles.length ? (
               <label className="ed-ex-sans"><input type="checkbox" checked={sans} onChange={(e) => setSans(e.currentTarget.checked)} /> Exporter sans elles</label>
@@ -189,6 +198,8 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
             <p className="ed-ex-ligne">{etape.r.nomFichier} · {pluriel(etape.r.pages, "page")} · {mo(etape.r.octets)}</p>
             {etape.r.indisponibles.length ? <p className="ed-ex-ligne ed-ex-rouge">{pluriel(etape.r.indisponibles.length, "photo illisible", "photos illisibles")} · cadre gris</p> : null}
             {etape.r.secours.length ? <p className="ed-ex-ligne">{pluriel(etape.r.secours.length, "photo en définition réduite", "photos en définition réduite")}</p> : null}
+            {etape.r.polices.length ? <p className="ed-ex-ligne">Polices embarquées · {etape.r.polices.join(", ")}</p> : null}
+            {etape.r.alertes.map((a) => <p key={a} className="ed-ex-ligne ed-ex-rouge">{a}</p>)}
             <ol className="ed-ex-etapes">
               <li>Ouvrir Canva</li>
               <li>Importer le PDF</li>

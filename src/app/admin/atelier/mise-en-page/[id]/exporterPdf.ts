@@ -11,13 +11,14 @@
 
 import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
-import { QUALITE_JPEG_PDF, decoupe, ecrirePdf, photosDuPlan, planPdf } from "@/lib/mise-en-page/pdf";
+import { QUALITE_JPEG_PDF, clePolice, decoupe, ecrirePdf, photosDuPlan, planPdf, policesDuPlan } from "@/lib/mise-en-page/pdf";
+import { cheminPolice } from "@/lib/mise-en-page/style";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { enParallele, lecteurOriginaux, telecharger, type ProgressionExport } from "./exporter";
 import { nomDeZip, type Indisponible } from "./exporterPur";
 
 export type ResultatExportPdf =
-  | { ok: true; nomFichier: string; pages: number; nbPhotos: number; indisponibles: Indisponible[]; secours: string[]; octets: number }
+  | { ok: true; nomFichier: string; pages: number; nbPhotos: number; indisponibles: Indisponible[]; secours: string[]; octets: number; polices: string[]; alertes: string[] }
   | { ok: false; raison: "annule" | "erreur"; message: string };
 
 /** L'image droite (EXIF appliqué) ou null si le navigateur ne sait pas la lire. */
@@ -33,6 +34,21 @@ async function depuisAdresse(url: string | null | undefined, signal?: AbortSigna
     const r = await fetch(url, { signal });
     return r.ok ? decoder(await r.blob()) : null;
   } catch { return null; }
+}
+
+/**
+ * Lot C : les octets des polices que le PDF embarque (`/polices/<famille>-<graisse>.ttf`, servis par Next). Une police qui ne se
+ * lit pas manque dans la table : `ecrirePdf` la remplace par Helvetica ET le dit (`alertes`), jamais en silence.
+ */
+async function chargerPolices(besoins: { id: string; graisse: number }[], signal?: AbortSignal): Promise<Map<string, Uint8Array>> {
+  const m = new Map<string, Uint8Array>();
+  await Promise.all(besoins.map(async ({ id, graisse }) => {
+    try {
+      const r = await fetch(cheminPolice(id, graisse), { signal });
+      if (r.ok) m.set(clePolice(id, graisse), new Uint8Array(await r.arrayBuffer()));
+    } catch { /* absente : l'alerte de `ecrirePdf` le dira */ }
+  }));
+  return m;
 }
 
 export async function exporterPdf(args: {
@@ -94,11 +110,12 @@ export async function exporterPdf(args: {
     if (signal?.aborted) return annule();
 
     args.onProgression?.({ fait: total, total, photo: null });
-    const r = await ecrirePdf(pages, images, args.titre || args.magazine.titre);
+    const polices = await chargerPolices(policesDuPlan(pages), signal);
+    const r = await ecrirePdf(pages, images, args.titre || args.magazine.titre, polices);
     if (signal?.aborted) return annule();
     const nomFichier = `${nomDeZip(args.titre || args.magazine.titre, new Date().toISOString())}.pdf`;
     telecharger(r.octets, nomFichier, "application/pdf");
-    return { ok: true, nomFichier, pages: r.pages, nbPhotos: total - indisponibles.length, indisponibles, secours, octets: r.octets.byteLength };
+    return { ok: true, nomFichier, pages: r.pages, nbPhotos: total - indisponibles.length, indisponibles, secours, octets: r.octets.byteLength, polices: r.polices, alertes: r.alertes };
   } catch (e) {
     if (signal?.aborted) return annule();
     console.error("[mise-en-page] export PDF échoué", (e as Error)?.message);
