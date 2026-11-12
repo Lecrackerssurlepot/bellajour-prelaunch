@@ -20,6 +20,7 @@ import { TEMPLATES_ANNEXE } from "./templates";
 import { TEMPLATES_EPINGLES } from "./epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
 import { genereParId, genereesPour } from "./genere";
+import { genereDoubleParId } from "./genereDouble";
 import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
 import type { StyleMagazine } from "./style";
 import type { Couverture } from "./couverture";
@@ -112,8 +113,8 @@ export const gabaritsEnregistres = (): readonly Template[] => enregistres;
 
 /** Tout le catalogue : enregistrés, annexe puis grilles. */
 export const tousLesTemplates = (): Template[] => [...index().values()];
-/** Les gabarits GÉNÉRÉS (id `GG1-…`, lot D) ne sont dans aucune table : l'id est leur recette, `genereParId` la relit. */
-export const templateParId = (id: string): Template | null => index().get(id) ?? genereParId(id);
+/** Les gabarits GÉNÉRÉS ne sont dans aucune table : l'id est leur recette. `GG1-…` (une page, lot D) ; `GD1-…` (une double : les recettes de ses deux pages, lot R). */
+export const templateParId = (id: string): Template | null => index().get(id) ?? genereParId(id) ?? genereDoubleParId(id);
 
 /** Le miroir d'un cadre dans une largeur (x' = L − x − l, rotation inversée) : involution. */
 export function miroirCadre<C extends Cadre>(c: C, largeur: number): C {
@@ -208,7 +209,8 @@ const orientationPhoto = (p: PhotoRef): Orientation => orientationDe(p.l, p.h);
  * (a) dessinés (enregistrés, annexe, épingles) de même portée, même nombre, signature compatible ;
  * (b) dessinés de même nombre ;
  * (c) pages seulement (lot D) : les gabarits GÉNÉRÉS de la grammaire dont les cadres vont à ces photos, chacun rangé
- *     pour que la photo i aille au cadre i (genere.ts) ;
+ *     pour que la photo i aille au cadre i (genere.ts). Les doubles générées (lot R, genereDouble.ts) ne sont PAS ici : leur
+ *     présélection passe par la note de page de l'éditeur, elles s'ajoutent dans `gabaritsClasses` (editeur/operations.ts) ;
  * (d) grilles de ce nombre (compatibles d'abord, ordre stable).
  * Toujours non vide pour 1 à 6 photos (page) et 1 à 12 (double). Au-delà du
  * maximum, seules les photos retenues (`retenir`) comptent.

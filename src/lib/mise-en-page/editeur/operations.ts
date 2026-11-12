@@ -12,9 +12,10 @@ import {
   type Cible, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
 } from "../magazine";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
-import { estRupture } from "../genere";
+import { partEnRupture, partVide } from "../genere";
+import { genereesDoublesPour } from "../genereDouble";
 import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
-import { PAGE_L, zoneUtile, type Rect } from "../geometrie";
+import { PAGE_L, type Rect } from "../geometrie";
 import type { Template } from "../types";
 import { REGLAGES } from "./reglages";
 import {
@@ -66,12 +67,8 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
   return 1 - Math.min(rp, rc) / Math.max(rp, rc);
 }
 
-/** La part (0 à 1) de la zone utile d'une page que ses photos laissent nue : la somme de leurs aires, bornée (une pleine page au fond perdu dépasse la zone). */
-export function videDe(t: Template): number {
-  const z = zoneUtile("droite");
-  const aire = t.cadres.reduce((s, c) => s + (c.role === "photo" ? c.l * c.h : 0), 0);
-  return Math.min(1, Math.max(0, 1 - aire / (z.l * z.h)));
-}
+/** La part (0 à 1) de la zone utile d'une page que ses photos laissent nue (genere.ts : `partVide`) ; une double (lot R) : la moyenne de ses deux pages. */
+export const videDe = (t: Template): number => partVide(t);
 
 /** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − le bonus de l'ORIGINE (`BONUS_ORIGINE` : les dessinés devant, puis les générés du lot D, jamais les grilles). */
 export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null })[], precedent: string | null): number {
@@ -85,7 +82,7 @@ export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x:
   }
   if (t.id === precedent) s += PENALITE_REPETITION;
   s -= BONUS_ORIGINE[t.portee][t.origine];
-  if (t.origine === "genere") s += MALUS_VIDE * videDe(t) + (estRupture(t) ? MALUS_RUPTURE : 0);
+  if (t.origine === "genere") s += MALUS_VIDE * videDe(t) + MALUS_RUPTURE * partEnRupture(t);
   return s;
 }
 
@@ -112,7 +109,11 @@ export function gabaritsClasses(portee: "page" | "double", photos: readonly Phot
     const deja = memoClasses.get(cle);
     if (deja) return deja.slice();
   }
-  const liste = candidats(portee, [...photos])
+  /* lot R (D1) : les doubles GÉNÉRÉES (deux pages de la grammaire) prennent place entre les dessinés et les grilles ; leur présélection
+     par page se fait avec la note de page d'ici (un seul endroit règle l'ordre) */
+  const brut = candidats(portee, [...photos]);
+  const generees = portee === "double" ? genereesDoublesPour(photos, (t, ph) => noterGabarit(t, ph, null)) : [];
+  const liste = (generees.length ? [...brut.filter((t) => t.origine !== "grille"), ...generees, ...brut.filter((t) => t.origine === "grille")] : brut)
     .filter((t) => t.nbPhotos === photos.length && t.portee === portee)
     .map((template, i) => {
       const note = noterGabarit(template, photos, precedent);

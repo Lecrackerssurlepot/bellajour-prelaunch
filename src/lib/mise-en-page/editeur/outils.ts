@@ -16,15 +16,19 @@ export const BONUS_ANNEXE = 0.05;
 /**
  * Lot D (12/11) : ce que chaque ORIGINE retranche à la note d'un gabarit, par portée. Les DESSINÉS (enregistrés, annexe,
  * épingles : ce que Mathias a validé) passent devant les GÉNÉRÉS (la grammaire : des centaines par nombre de photos), qui
- * passent devant les grilles de secours. Une double n'a pas de générés : elle garde `BONUS_ANNEXE` sur les grilles, comme
- * avant. Sur une page, un dessiné reste devant tant qu'il perd au plus `AVANCE_DESSINES` de note sur un généré (de l'ordre
+ * passent devant les grilles de secours. Depuis le lot R (D1) la double a ses générés (deux pages de la grammaire) : même ordre,
+ * mêmes écarts que la page (`BONUS_ANNEXE`, l'écart d'avant sur les grilles, reste exporté). Sur une page, un dessiné reste devant tant qu'il perd au plus `AVANCE_DESSINES` de note sur un généré (de l'ordre
  * d'un cadre dont le rapport s'éloigne de 10 % : à fit égal, un dessiné ne se laisse pas noyer par des centaines de
  * découpes) ; un généré reste devant une grille qui va aussi bien (`AVANCE_GENERES`). Un seul endroit pour régler l'ordre.
  */
 export const AVANCE_DESSINES = 0.15;
 export const AVANCE_GENERES = 0.05;
 export const BONUS_ORIGINE: Readonly<Record<Portee, Readonly<Record<Template["origine"], number>>>> = {
-  double: { annexe: BONUS_ANNEXE, epingle: BONUS_ANNEXE, atelier: BONUS_ANNEXE, genere: 0, grille: 0 },
+  /* lot R (D1) : la double a ses générées (deux pages de la grammaire) : même ordre que la page, mêmes écarts ; `BONUS_ANNEXE` reste l'écart d'avant sur les grilles */
+  double: {
+    annexe: AVANCE_DESSINES + AVANCE_GENERES, epingle: AVANCE_DESSINES + AVANCE_GENERES, atelier: AVANCE_DESSINES + AVANCE_GENERES,
+    genere: AVANCE_GENERES, grille: 0,
+  },
   page: {
     annexe: AVANCE_DESSINES + AVANCE_GENERES, epingle: AVANCE_DESSINES + AVANCE_GENERES, atelier: AVANCE_DESSINES + AVANCE_GENERES,
     genere: AVANCE_GENERES, grille: 0,

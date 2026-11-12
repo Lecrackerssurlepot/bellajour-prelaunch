@@ -187,7 +187,10 @@ sc(5, "A(L),B(L),C(P) sur la zone Double → G-D3-a, pas DP-03", () => {
   s.glisse(s.bib(["A", "B", "C"]), dbl(2));
   eq(s.tpl(2, "double"), "G-D3-a", "gabarit");
   const n = O.gabaritsPour(s.e, pl(2), "double");
-  proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.237, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 1.049, 0.001, "note DP-03");
+  /* lot R (D1) : la grille d'avant garde sa note et sa première place (0,237) ; DP-03 gagne l'écart dessinés / grilles de la page (0,2 au lieu de 0,05 : 1,049 − 0,15) ;
+     les doubles générées sont au tiroir derrière elle */
+  proche(def(n.find((x) => x.id === "G-D3-a"), "G-D3-a").note, 0.237, 0.001, "note G-D3-a"); proche(def(n.find((x) => x.id === "DP-03"), "DP-03").note, 0.899, 0.001, "note DP-03");
+  ok(n.some((x) => x.id.startsWith("GD1-")) && n.findIndex((x) => x.id.startsWith("GD1-")) === 1, "les doubles générées suivent");
 });
 sc(6, "droite [A] + B → [A, B], gabarit de la note, A reste cadre 1", () => {
   const s = new Seance("A:P B:P").pose(2, "droite", ["A"]).zero();
@@ -885,7 +888,11 @@ sc(83, "09/11 : lieux détaillés (réponses Geoapify) et lieu par défaut des t
   eq(def(ex.planches[0].droite, "droite").textes[roles.indexOf("titre")].contenu, def0[roles.indexOf("titre")], "l'export écrit le lieu");
   const ecrit: Disposition = { ...d, textes: d.textes.map((x, i) => (i === roles.indexOf("titre") ? { ...x, contenu: "Nos vacances" } : x)) };
   eq(def(O.avecLieuxParDefaut({ ...m, planches: [{ ...m.planches[0], droite: ecrit }] }, cat).planches[0].droite, "d").textes[roles.indexOf("titre")].contenu, "Nos vacances", "un titre écrit n'est jamais remplacé");
-  ok(O.avecLieuxParDefaut(m1, new Map()) === m1, "sans lieu connu : le même magazine");
+  /* lot R (D2) : sans lieu connu, le mot-repère n'est plus gardé pour l'export : il est VIDÉ (jamais imprimé) ; un magazine dont tous les textes sont écrits revient identique */
+  const sansLieu = O.avecLieuxParDefaut(m1, new Map()).planches[0].droite!;
+  ok(sansLieu.textes.every((x) => x.contenu === "") && sansLieu.templateId === d.templateId && O.egal(sansLieu.photos, d.photos), "sans lieu connu : les mots-repères sont vidés à l'export, rien d'autre ne bouge");
+  const toutEcrit: Magazine = { ...m, planches: [{ ...m.planches[0], droite: { ...d, textes: d.textes.map((x) => ({ ...x, contenu: "écrit" })) } }] };
+  ok(O.avecLieuxParDefaut(toutEcrit, new Map()) === toutEcrit, "sans lieu connu et tout écrit : le même magazine");
 });
 
 sc(84, "lot C : la feuille de style du magazine : poser, changer une couleur, annuler, rétablir, retirer ; un style invalide est ignoré ; aucune planche ni photo ne bouge", () => {

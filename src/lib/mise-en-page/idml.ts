@@ -375,7 +375,10 @@ function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLie
     `<Rectangle Self="${nid()}" Name="Papier" ItemLayer="${CALQUE}" ContentType="Unassigned" StoryTitle="$ID/" FillColor="${NUANCE_ROLE.papier.self}" StrokeWeight="0" ItemTransform="1 0 0 1 0 0">${geom(x, -HH - bl, largeur, PH + 2 * bl)}</Rectangle>`;
 
   /** Les cadres d'un morceau, dans l'ordre des calques, nommés « Photo 1 », « Titre », « Légende 2 »… */
-  const elementsXml = (elements: Element[]): string => {
+  const elementsXml = (tous: Element[]): string => {
+    /* lot R (D2, 12/11) : un cadre de texte VIDE n'est jamais écrit. Le mot-repère (« Titre », « Texte ») reste à l'écran ; à l'export, `avecLieuxParDefaut`
+       l'a vidé, et le cadre vide ne part pas (ni story, ni TextFrame). Les photos, elles, partent toujours (un cadre photo vide reste un cadre). */
+    const elements = tous.filter((e) => e.cadre.role === "photo" || (e.disposition.textes[e.indexTexte]?.contenu ?? "").trim() !== "");
     const total: Partial<Record<RoleCadre, number>> = {};
     for (const e of elements) total[e.cadre.role] = (total[e.cadre.role] ?? 0) + 1;
     const vus: Partial<Record<RoleCadre, number>> = {};

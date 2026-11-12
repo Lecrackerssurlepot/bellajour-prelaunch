@@ -129,7 +129,8 @@ export async function verifierMepCouverture(ok: (nom: string, reussi: boolean) =
     empreinteIdml(avecCouv) === EMPREINTE_IDML_INTERIEUR && JSON.stringify(planPdf(avecCouv)) === JSON.stringify(planPdf(etalon)));
   ok("sans couverture, rien ne change : utilisations, ids du magazine, photos utilisées et magazine exporté identiques",
     O.egal(utilisations(etalon), utilisations({ ...etalon })) && O.idsMagazine(etalon).length === 16 && photosUtilisees(etalon).join() === "p2,p1,p3"
-      && O.avecLieuxParDefaut(etalon, new Map()) === etalon);
+      /* lot R (D2) : un export vide les mots-repères ; l'étalon en porte (« Titre », « Légende ») : seuls ses textes vides changent, jamais une planche ni une photo */
+      && O.avecLieuxParDefaut(etalon, new Map()).planches.every((p, i) => O.egal({ ...p, double: null, gauche: null, droite: null }, { ...etalon.planches[i], double: null, gauche: null, droite: null })));
   ok("avec une couverture : ses photos comptent APRÈS l'intérieur (les noms de Links/ de l'intérieur ne bougent pas)",
     photosUtilisees({ ...etalon, couverture: { ...couvertureNeuve("CV-02"), photos: [{ photoId: "z", recadrage: neutre }, { photoId: "p1", recadrage: neutre }] } }).join() === "p2,p1,p3,z");
 

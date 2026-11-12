@@ -854,13 +854,15 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
         && pageC.fond === "#f8ecdd" && pageC.objets.filter((o) => o.type === "aplat").every((o) => o.type === "aplat" && estHex(o.couleur ?? "")) && pageC.objets.filter((o) => o.type === "photo").every((o) => o.type === "photo" && o.couleurBord === "#f8ecdd")
         && planPdfCouverture(pret, 3.8).fond === undefined && planPdfCouverture(pret, 3.8).objets.every((o) => o.type !== "texte" || !o.style));
     const interieur = planPdf(magazineStyle(st));
-    const besoinsC = policesDuPlan([...interieur, pageC]);
+    /* lot R (D2) : un cadre vide n'est plus exporté, donc ne demande plus sa police : la couverture de l'essai écrit aussi ses lignes pour demander les deux */
+    const pageCEcrite = planPdfCouverture(couverturePourExport({ ...c0, textes: c0.textes.map((t, i) => (i === iMot ? t : { ...t, contenu: "Août 2026" })) }, null, st), 3.8, st);
+    const besoinsC = policesDuPlan([...interieur, pageCEcrite]);
     ok("PDF couverture : intérieur et couverture demandent les MÊMES polices, une fois chacune (la paire du magazine) ; ecrirePdf de la couverture les embarque sans alerte, et dit celle qui manque",
       besoinsC.length === policesDuPlan(interieur).length && besoinsC.length === 2 && besoinsC.every((b) => policesDuPlan(interieur).some((x) => x.id === b.id && x.graisse === b.graisse))
         && await (async () => {
           const octets = new Map(besoinsC.map((b) => [clePolice(b.id, b.graisse), new Uint8Array(readFileSync(`public${cheminPolice(b.id, b.graisse)}`))]));
-          const rc = await ecrirePdf([pageC], new Map(), "Couverture", octets);
-          const rs = await ecrirePdf([pageC], new Map(), "Couverture", new Map());
+          const rc = await ecrirePdf([pageCEcrite], new Map(), "Couverture", octets);
+          const rs = await ecrirePdf([pageCEcrite], new Map(), "Couverture", new Map());
           const lu = await PDFDocument.load(rc.octets, { updateMetadata: false });
           return rc.alertes.length === 0 && rc.polices.length === 2 && lu.getPageCount() === 1 && rs.alertes.length === 2 && rs.alertes.every((a) => /Helvetica/.test(a));
         })());

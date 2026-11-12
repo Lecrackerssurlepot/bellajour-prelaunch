@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  appliquer, apercuDepot, creerEtat, estTour, lectureSeule as estLectureSeule, visibles,
+  appliquer, apercuDepot, creerEtat, estTour, lectureSeule as estLectureSeule, visibles, zoneApresDepot,
   type CibleDepot, type EtatEditeur, type Geste, type Projet, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
@@ -252,6 +252,9 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       const cible = g.cle ? (JSON.parse(g.cle) as CibleDepot) : null;
       envoyer({ type: "lacher" });
       if (ok && cible) flasher(cible);
+      /* lot R (D6) : après un dépôt sur la planche, la main est à la planche (R = « Autre disposition », pas « Réserve ») */
+      const zone = zoneApresDepot(cible);
+      if (zone) setUi((u) => (u.zone === zone ? u : { ...u, zone }));
     };
     /* ⌥ pressé ou relâché sans bouger : la cible change (pose en libre, lot 4) */
     const touche = (ev: KeyboardEvent) => { if (ev.key === "Alt" && g.actif) { ev.preventDefault(); bouger({ clientX: g.x, clientY: g.y, altKey: ev.type === "keydown" }); } };
@@ -280,6 +283,13 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     if (t && (t.isContentEditable || t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) {
       if (e.key === "Escape") t.blur();
       return; /* pendant la saisie, aucun raccourci de l'éditeur */
+    }
+    /* lot R (D8, D9) : Échap ferme d'abord ce qui est ouvert PAR-DESSUS (un menu de filtres, le panneau Style, le tiroir des gabarits), quelle que soit la zone
+       du clavier et où est le focus : avant, la bande des photos prenait le premier Échap (vider la sélection, quitter la zone) et il en fallait deux */
+    if (e.key === "Escape" && !G.current && (ui.menu || ui.style || ui.rangee)) {
+      e.preventDefault();
+      majUi(ui.menu || ui.rangee ? { rangee: null, menu: null, apercuGab: null } : { style: false });
+      return;
     }
     /* 10/11 : L montre ou cache la lecture dessinée (chaleur, visages, zone), partout */
     if ((e.key === "l" || e.key === "L") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); majUi({ lecture: !ui.lecture }); return; }

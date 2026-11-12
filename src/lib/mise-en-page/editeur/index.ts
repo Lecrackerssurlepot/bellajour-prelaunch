@@ -28,7 +28,7 @@ export { planDepot, planifier } from "./plans";
 export { aCote, aCoteParJour, groupes, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, gabaritsPour, libelleAnnuler,
-  libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue,
+  libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
 export { verifierInvariants } from "./invariants";
@@ -59,7 +59,7 @@ export { partDansLePli } from "./operations";
 export { recadrageParContenu } from "../recadrage";
 export { decalagesHorloges, marquesProposees, preTrier, qualite } from "./pretri";
 export type { PreTri, Proposition } from "./pretri";
-export { leconsDuPreTri, reponse, troisQuestions } from "./lecons";
+export { detailQuestion, leconsDuPreTri, reponse, troisQuestions } from "./lecons";
 export { avecStyle, libelleStyle } from "./stylage";
 export { kMoyennes, paletteDePixels, paletteDuMagazine } from "./mesures";
 export type { Visage } from "./mesures";

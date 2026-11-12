@@ -9,8 +9,8 @@
  * au harnais : EN 87, RG 98, GR 62, HS 863, MO 170, FL 498, CH 196, IN 102 (le script en donne 2 121 avec les 25
  * pages qui ne se posent pas sur la grille et les 20 photos éclatées : aucune des deux n'a de cadre à elle ici).
  *
- * Pages seulement : pas de double traversante. Photos seulement : pas de cadre texte (la famille « Avec texte » ne
- * montre que les dessinés).
+ * Pages seulement ici : pas de double traversante (les DOUBLES générées, lot R, sont faites de deux de ces pages : genereDouble.ts).
+ * Photos seulement : pas de cadre texte (la famille « Avec texte » ne montre que les dessinés).
  *
  * L'ID EST LA RECETTE, versionnée. `GG1-HS-0033.3012.3412` = version 1 de l'encodage, schéma HS, puis les cases en
  * modules, chacune `colonne ligne nbColonnes nbLignes` (un chiffre chacun). Les mesures sont DANS l'id : si l'énumération
@@ -22,7 +22,7 @@
  * Module PUR : ni React, ni réseau, ni horloge. Déterministe. Tout est mémoïsé.
  */
 
-import { GRILLE, PLEINE_PAGE_DROITE, caseGrille, type Rect } from "./geometrie";
+import { GRILLE, PAGE_L, PLEINE_PAGE_DROITE, caseGrille, zoneUtile, type Rect } from "./geometrie";
 import { BORD_POSE } from "./epingles";
 import { orientationDe, signatureDe, type Cadre, type Orientation, type Template } from "./types";
 
@@ -338,6 +338,20 @@ function calageDit(cases: readonly CaseG[]): string {
 }
 const avec = (nom: string, calage: string): string => (calage ? `${nom} · ${calage}` : nom);
 
+/** HS : le héros (la plus grande case), les satellites, et de quel côté du héros ils tiennent. */
+function herosEtSatellites(cases: readonly CaseG[]): { heros: CaseG; sats: CaseG[]; cote: "côté extérieur" | "côté pli" | "dessous" | "dessus" | "en coin" } {
+  const heros = cases.reduce((a, b) => (aire(b) > aire(a) ? b : a));
+  const sats = cases.filter((r) => r !== heros);
+  const bb = bornes(sats);
+  const chevaucheX = bb.c0 < heros[0] + heros[2] && heros[0] < bb.c1;
+  const chevaucheY = bb.l0 < heros[1] + heros[3] && heros[1] < bb.l1;
+  const cote = chevaucheY && bb.c0 >= heros[0] + heros[2] ? "côté extérieur"
+    : chevaucheY && bb.c1 <= heros[0] ? "côté pli"
+      : chevaucheX && bb.l0 >= heros[1] + heros[3] ? "dessous"
+        : chevaucheX && bb.l1 <= heros[1] ? "dessus" : "en coin";
+  return { heros, sats, cote };
+}
+
 /** Le nom lisible d'une découpe, tiré de son schéma et de ses cases (donc recalculable depuis l'id, sans table). */
 export function nomDe(schema: SchemaGenere, cases: readonly CaseG[]): string {
   const n = cases.length;
@@ -350,15 +364,7 @@ export function nomDe(schema: SchemaGenere, cases: readonly CaseG[]): string {
     }
     case "GR": return avec(`Grille ${new Set(cases.map((r) => r[0])).size} × ${new Set(cases.map((r) => r[1])).size}`, calageDit(cases));
     case "HS": {
-      const heros = cases.reduce((a, b) => (aire(b) > aire(a) ? b : a));
-      const sats = cases.filter((r) => r !== heros);
-      const bb = bornes(sats);
-      const chevaucheX = bb.c0 < heros[0] + heros[2] && heros[0] < bb.c1;
-      const chevaucheY = bb.l0 < heros[1] + heros[3] && heros[1] < bb.l1;
-      const cote = chevaucheY && bb.c0 >= heros[0] + heros[2] ? "côté extérieur"
-        : chevaucheY && bb.c1 <= heros[0] ? "côté pli"
-          : chevaucheX && bb.l0 >= heros[1] + heros[3] ? "dessous"
-            : chevaucheX && bb.l1 <= heros[1] ? "dessus" : "en coin";
+      const { sats, cote } = herosEtSatellites(cases);
       return `Héros et ${MOT[sats.length]} satellite${sats.length > 1 ? "s" : ""} · ${cote}`;
     }
     case "MO": return `Mosaïque de ${MOT[n]}`;
@@ -370,6 +376,47 @@ export function nomDe(schema: SchemaGenere, cases: readonly CaseG[]): string {
       return `Grande et petite qui la mord · coin ${haut ? "haut" : "bas"}, ${pli ? "côté pli" : "côté extérieur"}`;
     }
     case "IN": return avec(`Fond plein et ${n === 1 ? "une" : MOT[n]} vignette${n > 1 ? "s" : ""}`, calageDit(cases));
+  }
+}
+
+/**
+ * Lot R (D4, 12/11) : la légende COURTE d'un gabarit généré, pour le tiroir : deux lignes d'une douzaine de signes, le schéma et sa
+ * variante (la taille d'une case en modules, le côté, le calage), au lieu d'un nom entier coupé après sa première moitié
+ * (« Héros et de… » quarante fois de suite). Le nom entier reste à l'infobulle. Recalculable depuis l'id, sans table.
+ */
+const dim = (c: CaseG): string => `${c[2]}×${c[3]}`;
+const calageCourt = (cases: readonly CaseG[]): string => {
+  const b = bornes(cases);
+  const x = b.c0 === 0 && b.c1 === N ? "" : b.c0 === 0 ? "pli" : b.c1 === N ? "ext." : "ctr";
+  const y = b.l0 === 0 && b.l1 === N ? "" : b.l0 === 0 ? "haut" : b.l1 === N ? "bas" : "mil.";
+  return [y, x].filter(Boolean).join(" ");
+};
+export function legendeDe(schema: SchemaGenere, cases: readonly CaseG[]): [string, string] {
+  const n = cases.length;
+  switch (schema) {
+    case "EN": return [`Seule ${dim(cases[0])}`, calageCourt(cases)];
+    case "RG": {
+      const ligne = new Set(cases.map((r) => r[1])).size === 1;
+      return [`${n === 2 && ligne ? "Duo" : ligne ? `Bande ${n}` : `Colonne ${n}`} ${dim(cases[0])}`, calageCourt(cases)];
+    }
+    case "GR": return [`Grille ${new Set(cases.map((r) => r[0])).size}×${new Set(cases.map((r) => r[1])).size}`, `${dim(cases[0])} ${calageCourt(cases)}`.trim()];
+    case "HS": {
+      /* le côté du héros où tiennent les satellites, puis où ils sont le long de ce côté : « dessous pli », « ext. haut » */
+      const { heros, sats, cote } = herosEtSatellites(cases);
+      const bs = bornes(sats);
+      const dessusDessous = cote === "dessous" || cote === "dessus";
+      const le_long = dessusDessous
+        ? (bs.c0 === 0 && bs.c1 === N ? "" : bs.c0 === 0 ? "pli" : bs.c1 === N ? "ext." : "ctr")
+        : (bs.l0 === 0 && bs.l1 === N ? "" : bs.l0 === 0 ? "haut" : bs.l1 === N ? "bas" : "mil.");
+      return [`Héros ${dim(heros)} +${sats.length}`, `${cote.replace("côté extérieur", "ext.").replace("côté pli", "pli")} ${le_long}`.trim()];
+    }
+    case "MO": return [`Mosaïque ${n}`, `${dim(cases.reduce((a, b) => (aire(b) > aire(a) ? b : a)))} en tête`];
+    case "FL": return [`Flottantes ${n}`, calageCourt(cases)];
+    case "CH": {
+      const [h, p] = cases;
+      return ["Chevauche", `${p[1] + p[3] / 2 < h[1] + h[3] / 2 ? "haut" : "bas"} ${p[0] + p[2] / 2 < h[0] + h[2] / 2 ? "pli" : "ext."}`];
+    }
+    case "IN": return [`Fond +${n} vign.`, calageCourt(cases)];
   }
 }
 
@@ -388,8 +435,43 @@ export function idDeRecette(schema: SchemaGenere, cases: readonly CaseG[], ordre
 
 export const estIdGenere = (id: string): boolean => id.startsWith(`${PREFIXE_RECETTE}-`);
 
-/** Un gabarit généré qui SUPERPOSE des cadres (chevauchement, incrustation) : une rupture de la grammaire, que la note ne propose pas d'office. */
-export const estRupture = (t: Template): boolean => t.origine === "genere" && (t.id.startsWith(`${PREFIXE_RECETTE}-CH-`) || t.id.startsWith(`${PREFIXE_RECETTE}-IN-`));
+/**
+ * Lot R (D1, 12/11) : l'id d'une DOUBLE générée contient les deux recettes de page : `GD1-<gauche>_<droite>`, chacune la recette d'un
+ * `GG1-…` sans son préfixe (la page gauche est le miroir de sa recette). Décodée par `genereDoubleParId` (genereDouble.ts), sans table.
+ */
+export const PREFIXE_DOUBLE = "GD1";
+export const estIdDouble = (id: string): boolean => id.startsWith(`${PREFIXE_DOUBLE}-`);
+/** Les ids de page `GG1-…` d'un gabarit généré : un seul pour une page, deux (gauche puis droite) pour une double ; vide pour tout autre. */
+export function idsDePage(id: string): string[] {
+  if (estIdGenere(id)) return [id];
+  if (!estIdDouble(id)) return [];
+  const m = /^GD1-([^_]+)_([^_]+)$/.exec(id);
+  return m ? [`${PREFIXE_RECETTE}-${m[1]}`, `${PREFIXE_RECETTE}-${m[2]}`] : [];
+}
+const estCH_IN = (idPage: string): boolean => idPage.startsWith(`${PREFIXE_RECETTE}-CH-`) || idPage.startsWith(`${PREFIXE_RECETTE}-IN-`);
+
+/** Un gabarit généré qui SUPERPOSE des cadres (chevauchement, incrustation) sur l'une de ses pages : une rupture de la grammaire, que la note ne propose pas d'office. */
+export const estRupture = (t: Template): boolean => t.origine === "genere" && idsDePage(t.id).some(estCH_IN);
+
+/** La part des PAGES d'un gabarit généré qui sont en rupture : 0 ou 1 pour une page ; 0, ½ ou 1 pour une double (chaque page garde son malus, la double en fait la moyenne). */
+export function partEnRupture(t: Template): number {
+  if (t.origine !== "genere") return 0;
+  const pages = idsDePage(t.id);
+  return pages.length ? pages.filter(estCH_IN).length / pages.length : 0;
+}
+
+/**
+ * La part (0 à 1) de la zone utile d'une page que ses photos laissent nue : la somme de leurs aires, bornée (une pleine page au fond
+ * perdu dépasse la zone). Une DOUBLE (lot R) : chaque page à son tour (un cadre est de la page où tombe son centre), puis la moyenne,
+ * pour qu'une page pleine ne cache pas une page presque vide.
+ */
+export function partVide(t: Template): number {
+  const z = zoneUtile("droite");
+  const zone = z.l * z.h;
+  const nue = (cadres: readonly Cadre[]): number => Math.min(1, Math.max(0, 1 - cadres.reduce((s, c) => s + (c.role === "photo" ? c.l * c.h : 0), 0) / zone));
+  if (t.portee !== "double") return nue(t.cadres);
+  return (nue(t.cadres.filter((c) => c.x + c.l / 2 < PAGE_L)) + nue(t.cadres.filter((c) => c.x + c.l / 2 >= PAGE_L))) / 2;
+}
 
 /** Le nombre de photos d'une découpe : ses cases, plus le fond de l'incrustation. */
 const nbPhotosDe = (schema: SchemaGenere, cases: readonly CaseG[]): number => cases.length + (schema === "IN" ? 1 : 0);
@@ -421,14 +503,11 @@ function templateDe(schema: SchemaGenere, cases: readonly CaseG[], ordre: readon
   return t;
 }
 
-/**
- * Retrouve le gabarit d'un id `GG1-…` SANS table : il n'est lu que dans l'id. null si l'id n'est pas de la forme exacte
- * (schéma connu, cases dans la grille, 1 à 6 photos, ordre = une permutation, forme canonique). Les mesures viennent de
- * `caseGrille` : mêmes nombres que partout, au micron.
- */
-export function genereParId(id: string): Template | null {
-  const deja = memoTemplates.get(id);
-  if (deja) return deja;
+/** Une recette lue dans un id `GG1-…` : le schéma, les cases, et l'ordre des cadres quand il n'est pas celui de la lecture. */
+export type Recette = { schema: SchemaGenere; cases: readonly CaseG[]; ordre: number[] | null };
+
+/** Lit un id `GG1-…` (schéma connu, cases dans la grille, 1 à 6 photos, ordre = une permutation, forme canonique), ou null. */
+export function recetteDe(id: string): Recette | null {
   const m = RE_ID.exec(id);
   if (!m) return null;
   const schema = m[1] as SchemaGenere;
@@ -444,7 +523,45 @@ export function genereParId(id: string): Template | null {
     ordre = [...m[3]].map(Number);
     if (ordre.length !== n || new Set(ordre).size !== n || ordre.some((v) => v >= n) || estIdentite(ordre)) return null;
   }
-  return idDeRecette(schema, cases, ordre) === id ? templateDe(schema, cases, ordre) : null;
+  return idDeRecette(schema, cases, ordre) === id ? { schema, cases, ordre } : null;
+}
+
+/**
+ * Retrouve le gabarit d'un id `GG1-…` SANS table : il n'est lu que dans l'id (`recetteDe`). null si l'id n'est pas de la forme
+ * exacte. Les mesures viennent de `caseGrille` : mêmes nombres que partout, au micron.
+ */
+export function genereParId(id: string): Template | null {
+  const deja = memoTemplates.get(id);
+  if (deja) return deja;
+  const r = recetteDe(id);
+  return r ? templateDe(r.schema, r.cases, r.ordre) : null;
+}
+
+/**
+ * Les légendes d'une LISTE de gabarits (le tiroir), toutes distinctes : une légende déjà vue plus haut dans la liste reçoit son rang
+ * (« ·2 », « ·3 ») au bout de sa dernière ligne ; la première reste telle quelle. Un gabarit qui n'est pas généré rend `[]`.
+ */
+export function legendesDistinctes(liste: readonly Template[]): string[][] {
+  const vues = new Map<string, number>();
+  return liste.map((t) => {
+    const l = legendeCourte(t);
+    if (!l.length) return [];
+    const cle = l.join("\n");
+    const k = (vues.get(cle) ?? 0) + 1;
+    vues.set(cle, k);
+    return k === 1 ? l : [...l.slice(0, -1), `${l[l.length - 1]} ·${k}`];
+  });
+}
+
+/**
+ * La légende courte d'un gabarit généré (D4) : deux lignes. Une page : son schéma et sa variante. Une double : la page gauche (G) puis la
+ * page droite (D), chacune par son schéma et sa variante. Vide pour un gabarit qui n'est pas généré.
+ */
+export function legendeCourte(t: Template): string[] {
+  const pages = idsDePage(t.id).map((id) => recetteDe(id));
+  if (!pages.length || pages.some((r) => !r)) return [];
+  const l = pages.map((r) => legendeDe(r!.schema, r!.cases));
+  return l.length === 1 ? [...l[0]] : [`G ${l[0].join(" ")}`.trim(), `D ${l[1].join(" ")}`.trim()];
 }
 
 /* ─────────────────────────── Les découpes, et ce qui reste pour des photos données ─────────────────────────── */
