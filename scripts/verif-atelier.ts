@@ -250,6 +250,7 @@ import {
   payloadCommande,
   payloadDevis,
   normaliserFinition,
+  type Finition,
   finitionDuDossier,
   FINITION_DEFAUT,
   FINITION_OPTION,
@@ -456,7 +457,9 @@ import { PDFDocument as PdfLu } from "pdf-lib";
 import { construireIdml, nomsDeLiens, echapperXml, uriDeLien, MIMETYPE_IDML, placementOriente, cadreAuPli, CALQUE, LANGUE, PROFILS_COULEUR, COULEUR_APLAT, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { zipperIdml, zipperExport } from "@/lib/mise-en-page/paquet";
 import { unzipSync, strFromU8 } from "fflate";
-import { contenuValide, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
+import { contenuValide, clesAdmises, NOMS_CLES_FACULTATIVES, issueSauvegarde, tailleContenu, TAILLE_MAX_CONTENU, TAILLE_MAX_CORPS, estVersion } from "@/lib/mise-en-page/sauvegarde";
+import { dosDuProjet } from "@/app/admin/atelier/mise-en-page/[id]/dosCouverture";
+import type { FinitionMep } from "@/lib/mise-en-page/editeur";
 import { catalogueDeDossier, catalogueDEdition, refusDeStatut, urlDeLecture, adressesEncoreValables } from "@/app/admin/atelier/mise-en-page/[id]/chargerCatalogue";
 import { choisirOuverture as choisirOuvertureMep, issueDeReponse, delaiReprise, titreAEnvoyer, DELAI_ENVOI_MS, NOMS_ETATS, type CopieLocale } from "@/app/admin/atelier/mise-en-page/[id]/sauvegardePure";
 import { dimensionsStockeesJpeg, dimensionsStockees, decisionOrientation, dossierAbsolu, nomsDesLiensExport, listesExport, photosPourIdml, nomDeZip, dossierPropose, parentDe, PARENT_EXPORT_PAR_DEFAUT, cibleDuChoix, nomDossierValide } from "@/app/admin/atelier/mise-en-page/[id]/exporterPur";
@@ -6842,6 +6845,11 @@ const verifierMepPhotos = () => {
     /lirePhotos\(supabase, numero\.id\)/.test(route) && /signerGet\(p\.r2_key, APERCU_TTL_SECONDS\)/.test(route)
       && /signerLectureVignette\(p\.vignette_key\)/.test(route) && !/signerGet\(p\.vignette_key/.test(route) && /ttl: APERCU_TTL_SECONDS/.test(route)
       && /nb_pages/.test(route) && /nbPages: numero\.nb_pages \?\? null/.test(route));
+  ok("lot 0 : la route lit la finition du dossier (numeros.finition, 20260911) avec son repli 42703 (relue SANS elle, jamais en panne), la rend par normaliserFinition (null si jamais choisie ou absente, jamais le défaut brillant)",
+    /select\("id, titre, prenom, etat, nb_pages, finition"\)|lireNumero\("id, titre, prenom, etat, nb_pages, finition"\)/.test(route)
+      && /code === "42703"/.test(route) && /lireNumero\("id, titre, prenom, etat, nb_pages"\)/.test(route)
+      && /finition: normaliserFinition\(numero\.finition\)/.test(route) && !/finitionDuDossier|FINITION_DEFAUT/.test(route)
+      && /finition: "gloss" \| "matte" \| null;/.test(types));
   ok("route photos et chargerDossiersMep : aucune écriture (base, coffre, journal, mail), aucun log de token ni d'URL",
     !ECRIT.test(route) && !ECRIT.test(donneesMep) && !/console\.\w+\([^)]*(token|url)/i.test(route));
   ok("lirePhotos exportée sans être simplifiée : trois paliers, chacun ne retombe que sur 42703",
@@ -7028,6 +7036,35 @@ const verifierMepSauvegarde = () => {
       && !casse((b) => { b.planches[0].gauche = b.planches[0].droite; })
       && !casse((b) => { b.planches[2].id = b.planches[1].id; })
       && !casse((b) => { b.planches[1].gauche = null; b.planches[1].droite = b.planches[0].droite; }));
+  /* ── lot 0 (12/11) : les clés FACULTATIVES du Magazine sont une liste nommée, chacune avec son validateur ── */
+  const triOk = { choisies: ["a"], ecartees: ["b"], visees: null };
+  ok("lot 0 : une sauvegarde d'aujourd'hui reste valide, sans clé facultative (base) et avec `tri` (base + tri), même relue depuis JSON",
+    !("tri" in vrai) && contenuValide(vrai) && contenuValide({ ...vrai, tri: triOk }) && contenuValide(clone({ ...vrai, tri: triOk }))
+      && contenuValide({ ...vrai, tri: { ...triOk, coupsDeCoeur: ["c"], reserve: ["d"], etiquettes: { couverture: ["a"] } } }));
+  ok("lot 0 : une clé inconnue reste refusée, seule ou à côté d'un `tri` valide ; une clé facultative absente de la liste ne passe jamais",
+    !contenuValide({ ...vrai, pirate: 1 }) && !contenuValide({ ...vrai, tri: triOk, pirate: 1 }) && !contenuValide({ ...vrai, Tri: triOk })
+      && !contenuValide({ ...vrai, styles: {} }) && !contenuValide({ ...vrai, couvertures: {} }));
+  ok("lot 0 : une clé facultative n'est acceptée que présente AVEC une valeur valide, jamais `undefined`, `null` ni une forme cassée",
+    !contenuValide({ ...vrai, tri: undefined }) && !contenuValide({ ...vrai, tri: null }) && !contenuValide({ ...vrai, tri: "tri" })
+      && !contenuValide({ ...vrai, tri: { choisies: ["a"], ecartees: ["a"], visees: null } }) && !contenuValide({ ...vrai, tri: { ...triOk, visees: 0 } }));
+  ok("lot 0 : `style` et `couverture` sont PRÉPARÉES dans la liste (leurs noms y sont) mais REFUSÉES tant que leurs lots n'ont pas écrit leur validateur : seules, absentes de valeur, plausibles ou combinées",
+    NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture"
+      && !contenuValide({ ...vrai, style: {} }) && !contenuValide({ ...vrai, style: undefined }) && !contenuValide({ ...vrai, style: null })
+      && !contenuValide({ ...vrai, style: { titre: "Playfair Display", texte: "DM Sans", legende: "DM Sans" } })
+      && !contenuValide({ ...vrai, couverture: {} }) && !contenuValide({ ...vrai, couverture: undefined }) && !contenuValide({ ...vrai, couverture: { titre: "Été" } })
+      && !contenuValide({ ...vrai, style: {}, couverture: {} }) && !contenuValide({ ...vrai, tri: triOk, style: {} }) && !contenuValide({ ...vrai, tri: triOk, couverture: {} })
+      && !contenuValide({ ...vrai, tri: triOk, style: {}, couverture: {} }));
+  /* La liste est GÉNÉRALE : sur une liste de son cru, `clesAdmises` accepte chaque combinaison de clés valides, et seulement elles. */
+  {
+    const base = ["id"];
+    const liste = [{ cle: "a", valide: (v: unknown) => typeof v === "string" }, { cle: "b", valide: (v: unknown) => typeof v === "number" }];
+    ok("lot 0 : `clesAdmises` : base, base + a, base + b, base + a + b passent ; clé inconnue, clé de base absente, valeur invalide ou `undefined` sont refusées",
+      clesAdmises({ id: 1 }, base, liste) && clesAdmises({ id: 1, a: "x" }, base, liste) && clesAdmises({ id: 1, b: 2 }, base, liste) && clesAdmises({ id: 1, a: "x", b: 2 }, base, liste)
+        && !clesAdmises({ id: 1, c: 3 }, base, liste) && !clesAdmises({ id: 1, a: "x", c: 3 }, base, liste) && !clesAdmises({ a: "x" }, base, liste)
+        && !clesAdmises({ id: 1, a: 5 }, base, liste) && !clesAdmises({ id: 1, a: undefined }, base, liste) && !clesAdmises({ id: 1, a: "x", b: undefined }, base, liste)
+        && !clesAdmises({ id: 1, a: "x", b: "2" }, base, liste));
+  }
+
   ok("taille : octets UTF-8 du JSON ; borne 2 Mo, corps = contenu + 64 Ko ; non sérialisable = Infinity",
     TAILLE_MAX_CONTENU === 2 * 1024 * 1024 && TAILLE_MAX_CORPS === TAILLE_MAX_CONTENU + 64 * 1024
       && tailleContenu({ t: "é" }) === 10 && tailleContenu(m) < TAILLE_MAX_CONTENU && tailleContenu(undefined) === Infinity
@@ -7110,7 +7147,7 @@ const verifierMepClient = () => {
 
   /* — le catalogue — */
   const dossier: ReponsePhotosMep = {
-    ok: true, token: "t".repeat(32), titre: "Malaysia", prenom: "Justine", etat: "composition", nbPages: 28, ttl: 3600,
+    ok: true, token: "t".repeat(32), titre: "Malaysia", prenom: "Justine", etat: "composition", nbPages: 28, finition: null, ttl: 3600,
     photos: [
       { id: "d1", nom: "IMG_1.jpg", taille: 10, l: 3000, h: 4000, priseLe: "2026-01-02T10:00:00", appareil: null, lieuVille: "Lisbonne", lieuPays: "Portugal", gpsLat: 38.71, gpsLon: -9.14, empreinte: null, url: "https://o1", urlVignette: "https://v1" },
       { id: "d2", nom: null, taille: 10, l: null, h: null, priseLe: null, appareil: null, lieuVille: null, lieuPays: null, gpsLat: 0, gpsLon: 0, empreinte: null, url: null, urlVignette: null },
@@ -7123,6 +7160,11 @@ const verifierMepClient = () => {
       && cd.photos[1].nom === "photo-d2" && cd.photos[1].l === 1 && cd.photos[1].h === 1
       && cd.projet.nom === "Malaysia" && cd.projet.nbPagesCible === 28 && cd.projet.source === "particulier"
       && catalogueDeDossier({ ...dossier, nbPages: null }, 0).projet.nbPagesCible === null);
+  ok("lot 0 : le catalogue d'un dossier porte la finition (gloss / matte) jusqu'au projet ; une valeur inconnue ou absente vaut null (jamais le défaut) ; édition : null",
+    cd.projet.finition === null
+      && catalogueDeDossier({ ...dossier, finition: "gloss" }, 0).projet.finition === "gloss" && catalogueDeDossier({ ...dossier, finition: "matte" }, 0).projet.finition === "matte"
+      && catalogueDeDossier({ ...dossier, finition: "brillant" as unknown as "gloss" }, 0).projet.finition === null
+      && catalogueDeDossier({ ...dossier, finition: undefined as unknown as null }, 0).projet.finition === null);
   ok("09/11 : le catalogue d'un dossier porte la ville, le pays et le GPS ; un GPS à (0, 0) ou absent vaut null",
     cd.photos[0].ville === "Lisbonne" && cd.photos[0].pays === "Portugal" && cd.photos[0].gps?.lat === 38.71 && cd.photos[0].gps?.lon === -9.14
       && cd.photos[1].gps === null && cd.photos[1].ville === null);
@@ -7140,7 +7182,7 @@ const verifierMepClient = () => {
   ok("catalogue édition : personne, lien, type, cœur, signalée, vignette, moyenne recopiés ; projet = « Organisation · Événement · Magazine », pas de nb de pages",
     ce.photos[0].personne === "Mathias" && ce.photos[0].lien === "Bateau 3" && ce.photos[0].type === "lien" && ce.photos[0].coeur === true && ce.photos[0].signalee === true
       && ce.photos[0].moyenne === "https://m" && ce.photos[1].type === "responsable" && ce.photos[1].lien === null && ce.photos[1].indisponible === true
-      && ce.projet.nom === "Audencia · Voile · Bateau 1-4" && ce.projet.nbPagesCible === null && ce.projet.source === "edition" && ce.magazines.length === 1);
+      && ce.projet.nom === "Audencia · Voile · Bateau 1-4" && ce.projet.nbPagesCible === null && ce.projet.finition === null && ce.projet.source === "edition" && ce.magazines.length === 1);
   ok("catalogue : refus HTTP traduits (401 connexion, 404, 410 photos effacées avec la phrase du serveur, 503, lecture incomplète) ; urls de lecture",
     refusDeStatut(401, null, null).raison === "non_authentifie" && refusDeStatut(404, "introuvable", null).raison === "introuvable"
       && refusDeStatut(410, "photos_effacees", "Les photos ont été effacées").message === "Les photos ont été effacées" && refusDeStatut(503, null, null).raison === "migration_absente"
@@ -7346,6 +7388,47 @@ const verifierMepClient = () => {
     !/from "react"|fetch\(|indexedDB|Date\.now|new Date|localStorage/.test(sansComm(lireM("sauvegardePure.ts")) + sansComm(lireM("exporterPur.ts"))));
 };
 verifierMepClient();
+
+/* ═══════════════ MISE EN PAGE, LOT 0 : un seul Projet, passé entier ; le dos du projet ═══════════════ */
+const verifierMepLot0 = () => {
+  titre("— mise en page, lot 0 : Projet unique et entier, finition et pages payées, dos du projet —");
+  const dossierMep = "src/app/admin/atelier/mise-en-page/[id]";
+  const lireM = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const sansComm = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  const contexte = sansComm(lireM(`${dossierMep}/contexte.ts`));
+  const types = sansComm(lireM("src/lib/mise-en-page/editeur/types.ts"));
+  const em = sansComm(lireM(`${dossierMep}/EditeurMagazine.tsx`));
+  const ed = sansComm(lireM(`${dossierMep}/Editeur.tsx`));
+  ok("Projet : UN seul type (editeur/types.ts), plus de doublon dans contexte.ts ; il porte nbPagesCible ET finition",
+    !/\btype Projet\b/.test(contexte) && (types.match(/export type Projet = /g) ?? []).length === 1
+      && /export type Projet = \{ nom: string; source: SourceMep; nbPagesCible: number \| null; finition: FinitionMep \| null \}/.test(types));
+  ok("Projet : EditeurMagazine passe le projet ENTIER à creerEtat (plus de reconstruction champ par champ) ; Editeur.tsx ne recopie plus les champs du catalogue",
+    /projet: projetRef\.current/.test(em) && !/nbPagesCible/.test(em) && !/source: sourceProjet/.test(em) && /JSON\.stringify\(projet\)/.test(em)
+      && !/nbPagesCible: cat\.projet/.test(ed) && /\.\.\.infos/.test(ed));
+  /* Le compilateur tient l'égalité des deux listes de mots de finition (FinitionMep côté éditeur, Finition côté atelier). */
+  const accord: Finition = "gloss" as FinitionMep;
+  const accordInverse: FinitionMep = "matte" as Finition;
+  ok("finition : les mots de l'éditeur sont ceux de l'atelier (gloss, matte), dans les deux sens", accord === "gloss" && accordInverse === "matte");
+  const p = (nbPagesCible: number | null, finition: FinitionMep | null) => ({ nbPagesCible, finition });
+  ok("dos du projet : le dos de dosMmPourPages pour les pages PAYÉES et la finition du dossier (24 gloss 2,25 ; 24 mat 2,40 ; 32 mat 2,87 ; 60 mat 4,51 ; 60 gloss 4,12)",
+    dosDuProjet(p(24, "gloss")) === 2.25 && dosDuProjet(p(24, "matte")) === 2.4 && dosDuProjet(p(32, "matte")) === 2.87
+      && dosDuProjet(p(60, "matte")) === 4.51 && dosDuProjet(p(60, "gloss")) === 4.12
+      && dosDuProjet(p(28, "gloss")) === dosMmPourPages(28, "gloss") && dosDuProjet(p(28, "matte")) === dosMmPourPages(28, "matte"));
+  ok("dos du projet : null hors 24 à 60 pages paires (jamais zéro), même avec une finition connue",
+    [0, 2, 20, 22, 23, 25, 27, 61, 62, 64, 100].every((n) => dosDuProjet(p(n, "gloss")) === null && dosDuProjet(p(n, "matte")) === null)
+      && [24, 26, 28, 30, 32, 40, 50, 58, 60].every((n) => typeof dosDuProjet(p(n, "gloss")) === "number"));
+  ok("dos du projet : null si le nombre de pages payé est inconnu (édition, création libre, dossier sans pagination) ou si le projet manque",
+    dosDuProjet(p(null, "gloss")) === null && dosDuProjet(p(null, null)) === null && dosDuProjet(null) === null && dosDuProjet(undefined) === null
+      && dosDuProjet({ nbPagesCible: NaN, finition: "gloss" }) === null);
+  ok("dos du projet : null sur une finition INCONNUE (jamais choisie, colonne absente), même avec 24 à 60 pages : jamais le défaut brillant deviné",
+    dosDuProjet(p(24, null)) === null && dosDuProjet(p(32, null)) === null && dosDuProjet(p(60, null)) === null
+      && dosMmPourPages(24, null) === 2.25 /* la commande, elle, replie sur le brillant : ce n'est pas le rôle de cet écran */);
+  const dosSrc = sansComm(lireM(`${dossierMep}/dosCouverture.ts`));
+  ok("dos du projet : module PUR de l'écran (ni React, ni réseau, ni horloge), qui relit dosMmPourPages ; src/lib/mise-en-page n'importe toujours rien de src/lib/atelier",
+    /from "@\/lib\/atelier\/impression"/.test(dosSrc) && !/from "react"|fetch\(|Date\.now|new Date|process\.env|makeSupabase/.test(dosSrc)
+      && !/@\/lib\/atelier/.test(types) && !/@\/lib\/atelier/.test(sansComm(lireM("src/lib/mise-en-page/sauvegarde.ts"))));
+};
+verifierMepLot0();
 
 verifierMepEditeur(ok, titre);
 

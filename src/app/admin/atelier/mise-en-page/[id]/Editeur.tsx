@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { chargerCatalogue, type ResultatCatalogue, type SourceCatalogue } from "./chargerCatalogue";
-import { cls, type Import, type Projet } from "./contexte";
+import type { Projet } from "@/lib/mise-en-page/editeur";
+import { cls, type Import } from "./contexte";
 import EditeurMagazine from "./EditeurMagazine";
 import { catalogueLibre, importerPhotos, liberer } from "./photosLocales";
 import { cleLocale, type RattachementMep } from "./sauvegardeClient";
@@ -76,6 +77,8 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
 
   const cat = resultat;
   const magazines = cat.magazines;
+  /* Les deux drapeaux d'écran se lisent à part ; tout le reste de `cat.projet` EST le projet (jamais recopié champ par champ). */
+  const { collecteOuverte, archive, ...infos } = cat.projet;
   let rattachement: RattachementMep;
   let source: SourceCatalogue;
   let projet: Projet;
@@ -84,7 +87,7 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
   if (cible.type === "dossier") {
     rattachement = { source: "particulier", numeroToken: cible.token };
     source = { type: "dossier", token: cible.token };
-    projet = { nom: cat.projet.nom, source: "particulier", nbPagesCible: cat.projet.nbPagesCible };
+    projet = { ...infos, source: "particulier" };
     suite = { href: `/admin/atelier/${cible.token}`, mot: "Fichiers d'impression" };
     cleId = cible.token;
   } else if (cible.type === "edition") {
@@ -94,13 +97,13 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
     }
     rattachement = { source: "edition", editionId: cible.editionId, magazineId: mag.id };
     source = { type: "edition", id: cible.editionId, magazineId: mag.id };
-    projet = { nom: cat.projet.nom, source: "edition", nbPagesCible: null };
+    projet = { ...infos, source: "edition", nbPagesCible: null, finition: null };
     suite = { href: `/admin/collectif/${cible.editionId}`, mot: "Bon à tirer" };
     cleId = mag.id;
   } else {
     rattachement = { source: "libre" };
     source = { type: "dossier", token: "libre" };
-    projet = { nom: cat.projet.nom, source: "libre", nbPagesCible: null };
+    projet = { ...infos, source: "libre", nbPagesCible: null, finition: null };
     suite = { href: RETOUR.href, mot: "Mise en page" };
     cleId = cible.id;
   }
@@ -116,6 +119,6 @@ export default function Editeur({ cible }: { cible: CibleEditeur }) {
 
   return (
     <EditeurMagazine key={`${cible.type}:${cleId}`} catalogue={cat} source={source} cle={cle} projet={projet}
-      archive={cat.projet.archive} collecteOuverte={cat.projet.collecteOuverte} retour={RETOUR} suite={suite} selecteur={selecteur} imp={imp} />
+      archive={archive} collecteOuverte={collecteOuverte} retour={RETOUR} suite={suite} selecteur={selecteur} imp={imp} />
   );
 }

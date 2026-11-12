@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { avertissementsExport, idsMagazine, pagesLibelle, type Lecon } from "@/lib/mise-en-page/editeur";
+import { avertissementsExport, idsMagazine, pagesLibelle, type Lecon, type Projet } from "@/lib/mise-en-page/editeur";
 import type { Memoire } from "./leconsClient";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
-import { cls, pluriel, useEd, type Projet } from "./contexte";
+import { cls, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";

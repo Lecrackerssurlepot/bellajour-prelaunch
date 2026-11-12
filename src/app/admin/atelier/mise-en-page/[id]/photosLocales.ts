@@ -213,6 +213,6 @@ export async function catalogueLibre(libre: string): Promise<CatalogueCharge> {
     originaux,
     obtenuLe: Date.now(),
     ttlOriginauxSecondes: SANS_EXPIRATION_S,
-    projet: { nom: "Création libre", source: "particulier", nbPagesCible: null, collecteOuverte: false, archive: false },
+    projet: { nom: "Création libre", source: "particulier", nbPagesCible: null, finition: null, collecteOuverte: false, archive: false },
   };
 }

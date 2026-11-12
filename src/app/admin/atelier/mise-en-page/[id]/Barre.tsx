@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche } from "@/lib/mise-en-page/editeur";
-import { CLE_AIMANT, cls, pluriel, useEd, type Projet } from "./contexte";
+import { libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche, type Projet } from "@/lib/mise-en-page/editeur";
+import { CLE_AIMANT, cls, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
 import type { EtatSauvegarde } from "./sauvegardeClient";
 

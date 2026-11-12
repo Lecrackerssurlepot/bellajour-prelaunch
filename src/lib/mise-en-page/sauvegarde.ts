@@ -213,9 +213,49 @@ function triValide(v: unknown): boolean {
   return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
 }
 
+/** Un validateur de clé facultative : relit la VALEUR de la clé (jamais son absence : une clé absente n'est pas relue). */
+export type CleFacultative = { cle: string; valide: (v: unknown) => boolean };
+
+/**
+ * Les clés de `x` sont EXACTEMENT celles de `base`, plus celles des `facultatives` qui sont PRÉSENTES, et chaque
+ * facultative présente porte une valeur que son validateur accepte. Une clé présente à `undefined` ou à `null` est
+ * présente : son validateur la juge (et la refuse). Toute clé hors liste est refusée. Les facultatives se combinent
+ * librement. Exportée pour le harnais, qui la rejoue sur une liste de son cru.
+ */
+export function clesAdmises(x: Record<string, unknown>, base: readonly string[], facultatives: readonly CleFacultative[]): boolean {
+  const presentes = facultatives.filter((c) => Object.prototype.hasOwnProperty.call(x, c.cle));
+  return clesExactes(x, [...base, ...presentes.map((c) => c.cle)]) && presentes.every((c) => c.valide(x[c.cle]));
+}
+
+/**
+ * Les clés FACULTATIVES du `Magazine` (lot 0, 12/11) : la liste NOMMÉE de tout ce qu'un magazine peut porter en plus des
+ * clés de base. Une clé n'est acceptée que si elle est PRÉSENTE avec une valeur que son validateur accepte : `{ ...m, tri:
+ * undefined }` est refusé (la clé existe, sa valeur n'est rien), comme toute clé qui n'est pas dans cette liste. Les clés
+ * se combinent librement (base, base + tri, base + style + couverture…) : plus de jeu de clés écrit en dur.
+ *
+ * ── Ajouter une clé facultative au Magazine (les lots « feuille de style » et « couverture ») ──
+ *  1. le type : `style?: …` / `couverture?: …` sur `Magazine` (magazine.ts) ;
+ *  2. son validateur, pur, écrit ici (modèle : `triValide`) : relire la forme EXACTE (`clesExactes`), les bornes, les ids ;
+ *  3. dans la liste ci-dessous, REMPLACER `refuseeEnAttendant` par ce validateur (la ligne y est déjà) ;
+ *  4. l'écrire seulement quand elle existe (modèle : `tri.ts`), jamais `style: undefined` ;
+ *  5. le harnais : une sauvegarde sans la clé reste valide (celles d'aujourd'hui), la clé valide passe, la clé cassée est refusée ;
+ *  6. sens unique : une sauvegarde au nouveau format relue par un déploiement ancien est refusée à l'ouverture
+ *     (sauvegardeClient.ts) : déployer AVANT la première sauvegarde, pas de retour arrière.
+ * Aucune migration SQL : `contenu` est du jsonb.
+ */
+const refuseeEnAttendant = (): boolean => false;
+const CLES_FACULTATIVES: readonly CleFacultative[] = [
+  { cle: "tri", valide: triValide },
+  /* Prévues, pas encore acceptées : leurs validateurs viendront avec leurs lots (feuille de style, couverture). */
+  { cle: "style", valide: refuseeEnAttendant },
+  { cle: "couverture", valide: refuseeEnAttendant },
+];
+/** Les noms des clés facultatives connues (acceptées ou seulement prévues), pour le harnais. */
+export const NOMS_CLES_FACULTATIVES: readonly string[] = CLES_FACULTATIVES.map((c) => c.cle);
+
 export function contenuValide(x: unknown): x is Magazine {
   const base = ["version", "id", "titre", "planches", "creeLe", "modifieLe"];
-  if (!estObjet(x) || !(clesExactes(x, base) || (clesExactes(x, [...base, "tri"]) && triValide(x.tri)))) return false;
+  if (!estObjet(x) || !clesAdmises(x, base, CLES_FACULTATIVES)) return false;
   if (x.version !== 1 || !estId(x.id) || typeof x.titre !== "string") return false;
   if (!estDate(x.creeLe) || !estDate(x.modifieLe)) return false;
   if (!Array.isArray(x.planches) || x.planches.length === 0) return false;
