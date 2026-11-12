@@ -8,7 +8,7 @@
 
 import {
   candidats, dispositionDe, ecrireTexte as ecrireTexteMagazine, recadrer as recadrerMagazine, supprimerPlanche as supprimerPlancheMagazine,
-  templateParId, vider as viderMagazine,
+  templateParId, vider as viderMagazine, versionGabaritsEnregistres,
   type Cible, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
 } from "../magazine";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
@@ -17,7 +17,7 @@ import { PAGE_L, type Rect } from "../geometrie";
 import type { Template } from "../types";
 import { REGLAGES } from "./reglages";
 import {
-  BONUS_ANNEXE, CIBLES, LIBELLE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
+  BONUS_ORIGINE, CIBLES, LIBELLE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, egal, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
@@ -64,7 +64,7 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
   return 1 - Math.min(rp, rc) / Math.max(rp, rc);
 }
 
-/** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − petit bonus aux gabarits DESSINÉS (annexe et épingles), jamais aux grilles. */
+/** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − le bonus de l'ORIGINE (`BONUS_ORIGINE` : les dessinés devant, puis les générés du lot D, jamais les grilles). */
 export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null })[], precedent: string | null): number {
   const cs = cadresPhoto(t);
   let s = 0;
@@ -75,7 +75,7 @@ export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x:
     if (photos[i]?.zone && t.portee === "double") s += PENALITE_PLI * partDansLePli(photos[i], cs[i], photos[i].zone!);
   }
   if (t.id === precedent) s += PENALITE_REPETITION;
-  if (t.origine !== "grille") s -= BONUS_ANNEXE;
+  s -= BONUS_ORIGINE[t.portee][t.origine];
   return s;
 }
 
@@ -85,13 +85,24 @@ export type GabaritNote = { template: Template; note: number };
 export const avecTexte = (t: Template): boolean => t.cadres.some((c) => c.role !== "photo");
 export const dansFamille = (t: Template, f: FamilleGabarits): boolean => f === "tous" || (f === "avec") === avecTexte(t);
 
+/* Lot D : une page de 3 photos a des centaines de candidats générés ; le tiroir redemande le classement à chaque survol et R à chaque
+   pression. Les pages se mémoïsent par ce qui les détermine (les mesures des photos, le gabarit d'avant, les gabarits enregistrés) ; la note
+   d'une page ne lit jamais `zone` (seul le pli d'une double s'en sert), les doubles ne se mémoïsent pas. Les listes rendues ne se modifient pas. */
+const MEMO_CLASSES_MAX = 300;
+const memoClasses = new Map<string, readonly GabaritNote[]>();
+
 /**
  * Les gabarits de ce nombre et de cette portée, triés par note croissante. Tri stable : à égalité
  * (au milliardième près, pour absorber l'ordre des additions flottantes), l'ordre de `candidats`.
  */
 export function gabaritsClasses(portee: "page" | "double", photos: readonly PhotoRef[], precedent: string | null): GabaritNote[] {
   if (!Array.isArray(photos) || photos.length === 0 || photos.length > maxDe(portee)) return [];
-  return candidats(portee, [...photos])
+  const cle = portee === "page" ? `${versionGabaritsEnregistres()}|${precedent ?? ""}|${photos.map((p) => `${p.l}x${p.h}`).join(",")}` : null;
+  if (cle !== null) {
+    const deja = memoClasses.get(cle);
+    if (deja) return deja.slice();
+  }
+  const liste = candidats(portee, [...photos])
     .filter((t) => t.nbPhotos === photos.length && t.portee === portee)
     .map((template, i) => {
       const note = noterGabarit(template, photos, precedent);
@@ -99,6 +110,11 @@ export function gabaritsClasses(portee: "page" | "double", photos: readonly Phot
     })
     .sort((a, b) => a.cle - b.cle || a.i - b.i)
     .map(({ template, note }) => ({ template, note }));
+  if (cle !== null) {
+    if (memoClasses.size >= MEMO_CLASSES_MAX) memoClasses.clear();
+    memoClasses.set(cle, liste);
+  }
+  return liste.slice();
 }
 
 /** T23 : rapport à moins de 15 % = zoom gardé, décalages à l'échelle, rebornés ; sinon neutre. */

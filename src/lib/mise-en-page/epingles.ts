@@ -47,8 +47,9 @@ const rect = (x: number, y: number, l: number, h: number): Rect => ({ x, y, l, h
 /** Une bande de légende sous un cadre. */
 const sous = (r: Rect, h = 6, ecart = 3): Rect => ({ x: r.x, y: r.y + r.h + ecart, l: r.l, h });
 
-/** Bord blanc des vignettes posées et du scrapbook (mm). */
-const BORD = 2.5;
+/** Bord blanc des vignettes posées et du scrapbook (mm). Exporté : les incrustations générées (genere.ts) posent le même. */
+export const BORD_POSE = 2.5;
+const BORD = BORD_POSE;
 
 function tpl(id: string, nom: string, portee: Portee, cadres: Cadre[], decor?: Aplat[]): Template {
   const t: Template = {

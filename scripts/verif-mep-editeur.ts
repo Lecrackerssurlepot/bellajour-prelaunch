@@ -159,10 +159,11 @@ sc(1, "A(P) sur Pl.2 droite → le gabarit de la note", () => {
   eq(s.hist, 1, "hist");
   const ep = O.etatPhoto(s.e, "A"); ok(ep.fois === 1 && ep.surPlanche, "A utilisée, liseré bleu");
 });
-sc(2, "B(L) sur Pl.2 gauche → G-P1-b", () => {
+sc(2, "B(L) sur Pl.2 gauche → le gabarit de la note (une encadrée générée, lot D : G-P1-b ne passe plus qu'après)", () => {
   const s = new Seance("A:P B:L");
   s.glisse(s.bib(["B"]), page(2, "gauche"));
-  eq(s.tpl(2, "gauche"), "G-P1-b", "gabarit");
+  eq(s.tpl(2, "gauche"), premier("page", s, ["B"]), "gabarit");
+  ok((s.tpl(2, "gauche") ?? "").startsWith("GG1-EN-"), "une photo paysage seule : une encadrée de la grammaire, pas une grille");
 });
 sc(3, "A(P), B(P) sur Pl.2 droite → le gabarit de la note", () => {
   const s = new Seance("A:P B:P");
@@ -290,7 +291,7 @@ sc(21, "Échange : rapport voisin = recadrage gardé, paysage = neutre", () => {
   eq(s.aff(2, "double", 1), { photoId: "A", recadrage: { zoom: 2, dx: 5, dy: 0 } }, "même rapport : gardé");
   const r = O.reporterRecadrage({ zoom: 2, dx: 5, dy: 0 }, { l: 2000, h: 3000 }, { l: 85, h: 128.5 }, { l: 175, h: 262 });
   eq(r.zoom, 2, "zoom gardé vers un cadre voisin plus grand"); proche(r.dx, 5 * 175 / 85, 1e-9, "dx mis à l'échelle");
-  eq(s.tpl(3, "droite"), "G-P1-b", "Pl.3 en paysage");
+  eq(s.tpl(3, "droite"), premier("page", s, ["X"]), "Pl.3 en paysage");
   s.g({ type: "echanger", a: ref(2, "double", 1), b: ref(3, "droite", 0) });
   eq(s.aff(3, "droite", 0), { photoId: "A", recadrage: { zoom: 1, dx: 0, dy: 0 } }, "cadre paysage : neutre");
 });

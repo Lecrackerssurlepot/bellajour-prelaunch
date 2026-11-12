@@ -15,7 +15,7 @@ export type {
 } from "./selecteurs";
 
 export {
-  BONUS_ANNEXE, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
+  AVANCE_DESSINES, AVANCE_GENERES, BONUS_ANNEXE, BONUS_ORIGINE, PAS_TIROIR, PLAFOND_TIROIR, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
 } from "./outils";
 export {
   ajouter, ajouterSurPlanche, autreGabarit, avecTexte, dansFamille, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
