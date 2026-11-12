@@ -1760,9 +1760,14 @@
 .mep-editeur .ed-ph--grand .ed-ph-tete .ed-palette { margin-right: 10px; }
 .mep-editeur .ed-vt-raison { margin-left: 10px; padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--bj-action) 22%, transparent); font-size: var(--bj-fs-xxs); }
 .mep-editeur .ed-ex-questions { display: grid; gap: 10px; margin: 12px 0; padding: 12px; border-radius: 12px; background: var(--bj-veil-6); }
-.mep-editeur .ed-ex-q { display: grid; gap: 6px; }
-.mep-editeur .ed-ex-q p { margin: 0; font-size: var(--bj-fs-xs); }
-.mep-editeur .ed-ex-q input { font: inherit; font-size: var(--bj-fs-xs); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--bj-veil-12); background: var(--bj-cream); color: var(--bj-text); }
+.mep-editeur .ed-ex-questions { min-width: 0; }
+.mep-editeur .ed-ex-q { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+.mep-editeur .ed-ex-q p { margin: 0; min-width: 0; font-size: var(--bj-fs-xs); overflow-wrap: anywhere; }
+/* lot R (D3) : la photo concernée (vignette et nom de fichier) ; le texte se coupe à la ligne, jamais la fenêtre */
+.mep-editeur .ed-ex-q-tete { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.mep-editeur .ed-ex-q-vig { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; box-shadow: inset 0 0 0 1px var(--bj-veil-12); }
+.mep-editeur .ed-ex-q-nom { display: block; margin-top: 2px; color: var(--bj-text-faint); overflow-wrap: anywhere; }
+.mep-editeur .ed-ex-q input { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; font-size: var(--bj-fs-xs); padding: 6px 10px; border-radius: 10px; border: 1px solid var(--bj-veil-12); background: var(--bj-cream); color: var(--bj-text); }
 .mep-editeur .ed-ex-q-bt { display: flex; flex-wrap: wrap; gap: 6px; }
 /* ── 10/11 : les tags de la lecture, visibles (une remarque, jamais une exclusion) ── */
 .mep-editeur .ed-rep--tag { background: color-mix(in srgb, var(--bj-charcoal) 72%, transparent); }

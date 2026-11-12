@@ -393,6 +393,29 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
         && /\.ed-gab-l \{[^}]*text-overflow: ellipsis/.test(css) && /\.ed-gab-nom \{[^}]*flex-direction: column/.test(css));
   }
 
+  /* ─── D3. les questions pour la machine : le nom du fichier, jamais l'identifiant interne ─── */
+  {
+    const a = `loc-${"35004732-3285-4b00-9b4f-408f3a1c2d7e"}`, b = `loc-${"3e659f82-a07a-4be3-844c-c99479681de3"}`, c = `loc-${"aa0e1234-0000-4000-8000-000000000001"}`;
+    const noms = new Map([[a, "IMG_4021.jpg"], [b, "IMG_4022.jpg"], [c, "DSC_0099.heic"]]);
+    const nom = (id: string): string | null => noms.get(id) ?? null;
+    const base = { regle: "R73", reglages: O.valeursReglages(), version: O.versionReglages(), geste: "gardée" };
+    const floue: O.Lecon = { ...base, type: "floue_gardee", photos: [a], proposition: "floue" };
+    const pile: O.Lecon = { ...base, regle: "R74", type: "pile_autre_gardee", photos: [a, b], proposition: `rafale : rangée sous ${b}`, geste: "gardée à la place de la tête" };
+    const tete: O.Lecon = { ...base, regle: "R76", type: "tete_ecartee", photos: [b, a, c], proposition: "la plus nette de la pile", geste: "écartée, une autre gardée" };
+    const inconnue: O.Lecon = { ...base, type: "floue_gardee", photos: ["loc-0badc0de-1111-4222-8333-444455556666"], proposition: "floue" };
+    const sale: O.Lecon = { ...base, type: "pile_autre_gardee", photos: [a], proposition: `doublon : rangée sous ${c}` };
+    const vus = [floue, pile, tete, inconnue, sale].map((q) => O.detailQuestion(q, nom));
+    rapporter(`D3 questions : le détail montre le nom du fichier (« ${vus[0]} », « ${vus[1]} »), les noms des autres photos de la leçon, « une photo » pour un identifiant sans fichier connu, jamais un identifiant « loc-… » ; la leçon gardée n'est pas modifiée`,
+      vus[0] === "IMG_4021.jpg · floue" && vus[1] === "IMG_4021.jpg · rafale : rangée sous IMG_4022.jpg" && vus[2] === "IMG_4022.jpg · la plus nette de la pile"
+        && vus[3] === "une photo · floue" && vus[4] === "IMG_4021.jpg · doublon : rangée sous une photo" && vus.every((v) => !/loc-/.test(v))
+        && pile.proposition.includes(b) && pile.photos[1] === b);
+    const fiche = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/ExportFeuille.tsx"), "utf8");
+    const css = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/mise-en-page.css"), "utf8");
+    rapporter("D3 écran : la question lit `detailQuestion` (et non `q.photos[0]`), montre la vignette de la photo, et ne s'écrit plus en `ed-sous` sans retour à la ligne : la fenêtre ne s'élargit plus, le champ « Un mot si tu veux » tient dedans",
+      /detailQuestion\(q,/.test(fiche) && !/\{q\.photos\[0\]\}/.test(fiche) && /vignetteDe\(adresses\.get\(q\.photos\[0\]\)\)/.test(fiche)
+        && /\.ed-ex-q p \{[^}]*overflow-wrap: anywhere/.test(css) && /\.ed-ex-q input \{[^}]*width: 100%/.test(css) && /\.ed-ex-q \{[^}]*minmax\(0, 1fr\)/.test(css));
+  }
+
 }
 
 /* lancé seul : `npx tsx --tsconfig tsconfig.json scripts/verif-mep-recette.ts` */

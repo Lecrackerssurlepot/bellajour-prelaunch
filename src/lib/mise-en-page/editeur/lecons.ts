@@ -142,6 +142,20 @@ export const reponse = (q: Lecon, choix: "machine" | "atelier" | "depend", note:
   reglages: q.reglages, version: q.version,
 });
 
+/**
+ * Lot R (D3, 12/11) : ce que la fenêtre d'export montre d'une question, LISIBLE : le nom de fichier de la photo (jamais son identifiant
+ * interne `loc-…`), puis ce que la machine proposait avec les noms des autres photos. Les identifiants gardés dans la leçon (elle part
+ * telle quelle vers `mep_lecons`) ne sont changés qu'à l'affichage. Un identifiant sans photo au catalogue devient « une photo ».
+ */
+export function detailQuestion(q: Lecon, nom: (id: string) => string | null): string {
+  const vu = (id: string): string => nom(id) ?? "une photo";
+  let d = q.proposition;
+  for (const id of [...new Set(q.photos)].sort((a, b) => b.length - a.length)) if (id) d = d.split(id).join(vu(id));
+  /* un identifiant interne qui ne serait pas dans `photos` : jamais montré */
+  d = d.replace(/\b(?:loc|ph|edi|ed)-[0-9a-f]{8}(?:-[0-9a-f]+)*/gi, "une photo");
+  return q.photos[0] ? `${vu(q.photos[0])} · ${d}` : d;
+}
+
 /** G3 : au plus trois questions parmi les leçons d'un magazine : une par règle, la plus fréquente d'abord. */
 export function troisQuestions(lecons: readonly Lecon[]): Lecon[] {
   const parRegle = new Map<string, Lecon[]>();

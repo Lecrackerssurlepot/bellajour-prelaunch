@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { avertissementsExport, idsMagazine, idsPlanche, pagesLibelle, type Lecon, type Projet } from "@/lib/mise-en-page/editeur";
+import { avertissementsExport, detailQuestion, idsMagazine, idsPlanche, pagesLibelle, type Lecon, type Projet } from "@/lib/mise-en-page/editeur";
 import type { Memoire } from "./leconsClient";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { cls, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
+import { vignetteDe } from "./images";
 import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, type ProgressionExport, type ResultatExport } from "./exporter";
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
 import { exporterPdf, type ResultatExportPdf } from "./exporterPdf";
@@ -269,6 +270,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
 
 /** G3 (lot 3, 09/11) : au plus trois questions sur ce que la machine a proposé et que l'atelier a renversé. Une réponse, un clic. */
 function Questions({ memoire }: { memoire: Memoire }) {
+  const { etat, adresses } = useEd();
   const [qs] = useState(() => memoire.questions());
   const [faites, setFaites] = useState<Record<number, string>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
@@ -286,7 +288,11 @@ function Questions({ memoire }: { memoire: Memoire }) {
       <p className="ed-ex-ligne"><b>Trois questions pour la machine</b> · facultatif</p>
       {qs.map((q, i) => (
         <div key={`${q.type}-${i}`} className="ed-ex-q">
-          <p>{MOTS[q.type] ?? q.proposition}<span className="ed-sous"> {q.proposition} · {q.photos[0]}</span></p>
+          {/* lot R (D3) : le nom du fichier et sa vignette, jamais l'identifiant interne ; le texte passe à la ligne, la fenêtre ne s'élargit pas */}
+          <div className="ed-ex-q-tete">
+            {q.photos[0] && vignetteDe(adresses.get(q.photos[0])) ? <img className="ed-ex-q-vig" src={vignetteDe(adresses.get(q.photos[0])) ?? undefined} alt="" decoding="async" draggable={false} /> : null}
+            <p>{MOTS[q.type] ?? q.proposition}<span className="ed-ex-q-nom">{detailQuestion(q, (id) => etat.catalogue.get(id)?.nom ?? null)}</span></p>
+          </div>
           {faites[i] ? <span className="ate-tag ate-tag--choix">Noté</span> : (
             <>
               <input type="text" placeholder="Un mot si tu veux" aria-label="Ta note" value={notes[i] ?? ""} onChange={(e) => setNotes((n) => ({ ...n, [i]: e.currentTarget.value }))} />
