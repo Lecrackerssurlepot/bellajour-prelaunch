@@ -305,7 +305,7 @@ const FOND_PAGE_BLANC = "#ffffff";
  * `convertir` passe du repère mm de l'élément aux points du Spread.
  */
 type Spread = { sid: string; pc: number; bl: number; corps: string };
-function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }, convertir: (c: { x: number; y: number; l: number; h: number }) => { x: number; y: number; w: number; h: number }, sty: StyleActif | null = null) {
+function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }, convertir: (c: { x: number; y: number; l: number; h: number }) => { x: number; y: number; w: number; h: number }, sty: StyleActif | null = null, ajusterTitres = false) {
   let uid = 100;
   const nid = (p = "u"): string => { uid += 1; return `${p}${uid.toString(16)}`; };
   const stories: { sid: string; corps: string }[] = [];
@@ -340,7 +340,10 @@ function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLie
     const taille = t?.taille ?? e.cadre.taille ?? 10;
     const gras = t?.gras ?? e.cadre.gras ?? false;
     const sid = nid("st");
-    const ts = sty && e.cadre.role !== "photo" ? texteStyle(sty.style, e.cadre.role, taille, e.cadre.couleur) : null;
+    /* un titre s'ajuste à son cadre avec les chasses de sa police (l'intérieur ; le mot-titre de la couverture a son propre calcul) */
+    const ts = sty && e.cadre.role !== "photo"
+      ? texteStyle(sty.style, e.cadre.role, taille, e.cadre.couleur, ajusterTitres ? { contenu, l: e.cadre.l, h: e.cadre.h } : undefined)
+      : null;
     const ouvreStory = `<Story Self="${sid}" AppliedTOCStyle="n" StoryTitle="$ID/"><StoryPreference FrameType="TextFrameType" StoryOrientation="Horizontal" StoryDirection="LeftToRightDirection"/>`;
     if (sty && ts && e.cadre.role !== "photo") {
       /* sous un style : le style de paragraphe du rôle du cadre porte tout ; la plage ne redit que ce qui s'écarte de lui
@@ -435,7 +438,7 @@ function paquet(spreads: Spread[], stories: { sid: string; corps: string }[], do
 export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }): FichierIdml[] {
   /* Lot C : avec un style, polices et nuances nommées, styles de paragraphe ; sans, exactement l'export d'avant. */
   const sty = styleActif(magazine.style);
-  const { stories, aplatXml, elementsXml, papierXml } = fabrique(photos, options, conv, sty);
+  const { stories, aplatXml, elementsXml, papierXml } = fabrique(photos, options, conv, sty, true);
 
   const planches: Planche[] = magazine.planches.length > 0
     ? magazine.planches
