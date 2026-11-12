@@ -373,7 +373,7 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       total += liste.length;
       if (new Set(textes).size !== textes.length) verifs.push(`${portee} ${os} : légendes identiques`);
       if (lg.some((l) => l.length !== 2 || l.some((x) => !x.trim()))) verifs.push(`${portee} ${os} : une légende n'a pas deux lignes pleines`);
-      if (lg.some((l) => l.some((x) => [...x].length > (portee === "double" ? 24 : 15)))) verifs.push(`${portee} ${os} : une ligne trop longue ${lg.find((l) => l.some((x) => [...x].length > (portee === "double" ? 24 : 15)))?.join("/")}`);
+      if (lg.some((l) => l.some((x) => [...x].length > (portee === "double" ? 30 : 15)))) verifs.push(`${portee} ${os} : une ligne trop longue ${lg.find((l) => l.some((x) => [...x].length > (portee === "double" ? 30 : 15)))?.join("/")}`);
       if (portee === "double" && lg.some((l) => !/^G /.test(l[0]) || !/^D /.test(l[1]))) verifs.push(`double ${os} : G puis D`);
       /* le tiroir montre les 40 premiers : tous distincts, là où l'ancienne légende (« Héros et de… ») se répétait */
       const avant = new Set(liste.slice(0, O.PLAFOND_TIROIR).map((t) => t.nom.split(" · ")[0]));
@@ -381,7 +381,7 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       if (liste.some((t) => !t.nom)) verifs.push(`${portee} ${os} : nom entier`);
     }
     const heros = templateParId("GG1-HS-0063.0322.2322")!;
-    rapporter(`D4 légendes : sur ${total} générés (pages et doubles), chaque légende du tiroir est courte (deux lignes de 15 signes au plus, 24 pour une double : G puis D), DISTINCTE des autres de la liste, le nom entier reste à l'infobulle${verifs.length ? ` — ${verifs.slice(0, 3).join(" ; ")}` : ""}`,
+    rapporter(`D4 légendes : sur ${total} générés (pages et doubles), chaque légende du tiroir est courte (deux lignes de 15 signes au plus, 30 pour une double : G puis D, chacune avec sa variante), DISTINCTE des autres de la liste, le nom entier reste à l'infobulle${verifs.length ? ` — ${verifs.slice(0, 3).join(" ; ")}` : ""}`,
       verifs.length === 0 && total > 500 && legendeCourte(heros).length === 2 && legendeCourte(heros)[0] === "Héros 6×3 +2" && legendeCourte(templateParId("E-S1")!).length === 0 && legendeCourte(templateParId("G-P1-a")!).length === 0);
     /* la première légende d'une liste reste telle quelle, la suivante identique reçoit son rang */
     const a = templateParId("GG1-HS-0063.0322.2322")!, b = templateParId("GG1-HS-0063.0322.2322")!;

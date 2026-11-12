@@ -387,8 +387,8 @@ export function nomDe(schema: SchemaGenere, cases: readonly CaseG[]): string {
 const dim = (c: CaseG): string => `${c[2]}×${c[3]}`;
 const calageCourt = (cases: readonly CaseG[]): string => {
   const b = bornes(cases);
-  const x = b.c0 === 0 && b.c1 === N ? "" : b.c0 === 0 ? "pli" : b.c1 === N ? "ext." : "centre";
-  const y = b.l0 === 0 && b.l1 === N ? "" : b.l0 === 0 ? "haut" : b.l1 === N ? "bas" : "milieu";
+  const x = b.c0 === 0 && b.c1 === N ? "" : b.c0 === 0 ? "pli" : b.c1 === N ? "ext." : "ctr";
+  const y = b.l0 === 0 && b.l1 === N ? "" : b.l0 === 0 ? "haut" : b.l1 === N ? "bas" : "mil.";
   return [y, x].filter(Boolean).join(" ");
 };
 export function legendeDe(schema: SchemaGenere, cases: readonly CaseG[]): [string, string] {
@@ -401,10 +401,16 @@ export function legendeDe(schema: SchemaGenere, cases: readonly CaseG[]): [strin
     }
     case "GR": return [`Grille ${new Set(cases.map((r) => r[0])).size}×${new Set(cases.map((r) => r[1])).size}`, `${dim(cases[0])} ${calageCourt(cases)}`.trim()];
     case "HS": {
+      /* le côté du héros où tiennent les satellites, puis où ils sont le long de ce côté : « dessous pli », « ext. haut » */
       const { heros, sats, cote } = herosEtSatellites(cases);
-      return [`Héros ${dim(heros)} +${sats.length}`, `${cote.replace("côté extérieur", "ext.").replace("côté pli", "pli")} ${dim(sats[0])}`];
+      const bs = bornes(sats);
+      const dessusDessous = cote === "dessous" || cote === "dessus";
+      const le_long = dessusDessous
+        ? (bs.c0 === 0 && bs.c1 === N ? "" : bs.c0 === 0 ? "pli" : bs.c1 === N ? "ext." : "ctr")
+        : (bs.l0 === 0 && bs.l1 === N ? "" : bs.l0 === 0 ? "haut" : bs.l1 === N ? "bas" : "mil.");
+      return [`Héros ${dim(heros)} +${sats.length}`, `${cote.replace("côté extérieur", "ext.").replace("côté pli", "pli")} ${le_long}`.trim()];
     }
-    case "MO": return [`Mosaïque ${n}`, `max ${dim(cases.reduce((a, b) => (aire(b) > aire(a) ? b : a)))}`];
+    case "MO": return [`Mosaïque ${n}`, `${dim(cases.reduce((a, b) => (aire(b) > aire(a) ? b : a)))} en tête`];
     case "FL": return [`Flottantes ${n}`, calageCourt(cases)];
     case "CH": {
       const [h, p] = cases;
@@ -549,13 +555,13 @@ export function legendesDistinctes(liste: readonly Template[]): string[][] {
 
 /**
  * La légende courte d'un gabarit généré (D4) : deux lignes. Une page : son schéma et sa variante. Une double : la page gauche (G) puis la
- * page droite (D), chacune par son schéma. Vide pour un gabarit qui n'est pas généré.
+ * page droite (D), chacune par son schéma et sa variante. Vide pour un gabarit qui n'est pas généré.
  */
 export function legendeCourte(t: Template): string[] {
   const pages = idsDePage(t.id).map((id) => recetteDe(id));
   if (!pages.length || pages.some((r) => !r)) return [];
   const l = pages.map((r) => legendeDe(r!.schema, r!.cases));
-  return l.length === 1 ? [...l[0]] : [`G ${l[0][0]}`, `D ${l[1][0]}`];
+  return l.length === 1 ? [...l[0]] : [`G ${l[0].join(" ")}`.trim(), `D ${l[1].join(" ")}`.trim()];
 }
 
 /* ─────────────────────────── Les découpes, et ce qui reste pour des photos données ─────────────────────────── */
