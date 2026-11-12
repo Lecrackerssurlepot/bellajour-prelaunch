@@ -23,6 +23,8 @@ export type Ui = {
   defilerVers: string | null;
   ressortId: string | null;
   exportOuvert: boolean;
+  /** Lot C : le panneau « Style » (paire de polices, nuancier) ouvert sous la barre. Écran seulement. */
+  style: boolean;
   /** Le tri : la bande des photos agrandie en plein écran (grille), ou une photo, ou la comparaison. */
   grand: boolean;
   vue: "grille" | "une" | "comparer";
@@ -60,7 +62,7 @@ export type Ui = {
 };
 
 export const UI_NEUVE: Ui = {
-  menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false,
+  menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false, style: false,
   grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, lecture: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
   retouche: null, position: null, aimant: true, guides: [], grille: false,
 };

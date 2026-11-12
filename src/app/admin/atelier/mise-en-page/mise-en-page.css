@@ -146,6 +146,13 @@
 .mep-gabarits .mep-aplat--aplat { fill: var(--mep-aplat); }
 .mep-gabarits .mep-aplat--noir { fill: var(--mep-noir); }
 .mep-gabarits .mep-aplat--blanc { fill: var(--mep-papier); }
+/* lot C : les teintes qui sont des rôles (valeurs d'avant le style, la page des gabarits n'a pas de magazine) */
+.mep-gabarits .mep-aplat--papier { fill: var(--mep-papier); }
+.mep-gabarits .mep-aplat--encre,
+.mep-gabarits .mep-aplat--nuit { fill: var(--mep-noir); }
+.mep-gabarits .mep-aplat--aplatSourd { fill: var(--mep-aplat); }
+.mep-gabarits .mep-aplat--aplatClair { fill: #ebdace; }
+.mep-gabarits .mep-aplat--accent { fill: #856045; }
 .mep-gabarits .mep-bord { fill: none; stroke: var(--mep-papier); }
 .mep-gabarits .mep-texte--blanc + .mep-texte-lib { fill: var(--mep-papier); }
 .mep-gabarits .mep-croix { stroke: var(--bj-cream-tint-1); stroke-width: 0.75; opacity: 0.7; }
@@ -932,10 +939,25 @@
 /* Aplats et bords des gabarits d'épingles (D28) : mêmes valeurs que les nuances de l'IDML (idml.ts : « Aplat » = la
    terracotta de la marque, le noir CMJN 0/0/0/100, le papier). Le rouge de l'aplat change dans Affinity, pas ici. */
 .mep-editeur { --mep-aplat: #bc977d; --mep-noir: #231f20; --mep-papier: #fff; }
+/* Lot C (12/11) : les six RÔLES du nuancier. Sans style, les valeurs d'avant (COULEURS_ORIGINE, style.ts) ; avec un style, la racine
+   (`.ed-racine`) les redéfinit en ligne (`variablesStyle`), et les trois alias ci-dessus avec elles : l'ancien terracotta = aplat sourd,
+   le noir = nuit, le blanc = papier. `--mep-nuit` est PRIS (le grand écran de tri) : le rôle s'appelle `--mep-r-nuit`. */
+.mep-editeur { --mep-r-papier: #ffffff; --mep-r-encre: #231f20; --mep-r-aplat-clair: #ebdace; --mep-r-aplat-sourd: #bc977d; --mep-r-accent: #856045; --mep-r-nuit: #231f20; }
 .mep-editeur .ed-aplat { position: absolute; z-index: 1; pointer-events: none; }
 .mep-editeur .ed-aplat--aplat { background: var(--mep-aplat); }
 .mep-editeur .ed-aplat--noir { background: var(--mep-noir); }
 .mep-editeur .ed-aplat--blanc { background: var(--mep-papier); }
+.mep-editeur .ed-aplat--papier { background: var(--mep-r-papier); }
+.mep-editeur .ed-aplat--encre { background: var(--mep-r-encre); }
+.mep-editeur .ed-aplat--aplatClair { background: var(--mep-r-aplat-clair); }
+.mep-editeur .ed-aplat--aplatSourd { background: var(--mep-r-aplat-sourd); }
+.mep-editeur .ed-aplat--accent { background: var(--mep-r-accent); }
+.mep-editeur .ed-aplat--nuit { background: var(--mep-r-nuit); }
+/* sous un style, la feuille elle-même prend le papier du style (crème ou blanc) ; la miniature et le dessin d'un gabarit aussi */
+.mep-editeur .ed-racine--style .ed-feuille,
+.mep-editeur .ed-racine--style .ed-mini,
+.mep-editeur .ed-racine--style .ed-gab-dessin { background: var(--mep-r-papier); }
+.mep-editeur .ed-mini .ed-mini-a { z-index: 0; }
 .mep-editeur .ed-bord { position: absolute; inset: 0; border-style: solid; border-color: var(--mep-papier); pointer-events: none; }
 /* lot 4 : le cadre actif garde son rang de calque ; son contour, ses poignées et sa barre vivent dans .ed-cs, au-dessus */
 .mep-editeur .ed-cadre--trainee { opacity: 0.4; }
@@ -1206,6 +1228,12 @@
 .mep-editeur .ed-gab-dessin i.a { background: var(--mep-aplat); opacity: 0.55; }
 .mep-editeur .ed-gab-dessin i.a--noir { background: var(--mep-noir); }
 .mep-editeur .ed-gab-dessin i.a--blanc { background: var(--mep-papier); }
+.mep-editeur .ed-gab-dessin i.a--papier { background: var(--mep-r-papier); }
+.mep-editeur .ed-gab-dessin i.a--encre { background: var(--mep-r-encre); }
+.mep-editeur .ed-gab-dessin i.a--aplatClair { background: var(--mep-r-aplat-clair); }
+.mep-editeur .ed-gab-dessin i.a--aplatSourd { background: var(--mep-r-aplat-sourd); }
+.mep-editeur .ed-gab-dessin i.a--accent { background: var(--mep-r-accent); }
+.mep-editeur .ed-gab-dessin i.a--nuit { background: var(--mep-r-nuit); }
 .mep-editeur .ed-gab-dessin i.b { box-shadow: 0 0 0 1px var(--mep-papier), 0 1px 2px var(--bj-veil-16); }
 .mep-editeur .ed-gab-nom { max-width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mep-editeur .ed-gab-plus { flex: none; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 12px; line-height: 1.1; }
@@ -1759,3 +1787,57 @@
 .mep-editeur .ed-lec-dl dd { margin: 0; font-variant-numeric: tabular-nums; }
 /* 11/11 : Canva ou Affinity, en tête de la feuille d'export */
 .mep-editeur .ed-ex-sortie { align-self: flex-start; }
+
+/* ── lot C (12/11) : le panneau « Style » ── */
+.mep-editeur .ed-ico-aa { font-family: var(--bj-font-display); font-size: 14px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
+.mep-editeur .ed-style {
+  position: absolute;
+  z-index: 45;
+  top: 52px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 64px);
+  padding: 14px;
+  border: var(--bj-glass-card-border);
+  border-radius: 18px;
+  background: var(--bj-glass-card-bg-active);
+  box-shadow: var(--bj-shadow-pop);
+  -webkit-backdrop-filter: var(--bj-glass-card-blur);
+  backdrop-filter: var(--bj-glass-card-blur);
+  overflow: auto;
+  user-select: text;
+  -webkit-user-select: text;
+  animation: ed-fondu 150ms;
+}
+.mep-editeur .ed-sty-tete { display: flex; align-items: center; gap: 8px; }
+.mep-editeur .ed-sty-tete h2 { flex: 1; margin: 0; font-family: var(--bj-font-ui); font-size: var(--bj-fs-sm); font-style: normal; font-weight: 600; }
+.mep-editeur .ed-sty-echantillon { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 12px; background: var(--mep-r-papier); box-shadow: inset 0 0 0 1px var(--bj-veil-8); }
+.mep-editeur .ed-sty-ech-t { font-size: 24px; line-height: 1.2; }
+.mep-editeur .ed-sty-ech-x { color: var(--mep-r-encre); font-size: 12px; line-height: 1.2; }
+.mep-editeur .ed-sty-ech-l { color: var(--mep-r-encre); font-size: 10px; line-height: 1.2; }
+.mep-editeur .ed-sty-vide { margin: 0; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); line-height: 1.4; }
+.mep-editeur .ed-sty-paires { display: flex; flex-direction: column; gap: 1px; max-height: 188px; padding: 2px; border-radius: 12px; background: var(--bj-veil-6); overflow: auto; }
+.mep-editeur .ed-sty-paire { appearance: none; display: flex; flex: none; align-items: baseline; gap: 8px; padding: 6px 10px; border: 0; border-radius: 10px; background: none; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); text-align: left; cursor: pointer; }
+.mep-editeur .ed-sty-paire b { flex: none; font-weight: 600; white-space: nowrap; }
+.mep-editeur .ed-sty-paire span { min-width: 0; overflow: hidden; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); text-overflow: ellipsis; white-space: nowrap; }
+.mep-editeur .ed-sty-paire:hover:not(:disabled) { background: var(--bj-cream-tint-1); }
+.mep-editeur .ed-sty-paire[aria-checked="true"] { background: var(--bj-cream-tint-1); box-shadow: 0 1px 3px var(--bj-veil-12); color: var(--bj-action); }
+.mep-editeur .ed-sty-paire:disabled { opacity: 0.5; cursor: default; }
+.mep-editeur .ed-sty-nuancier { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.mep-editeur .ed-sty-past { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+.mep-editeur .ed-sty-past--off { cursor: default; opacity: 0.6; }
+.mep-editeur .ed-sty-rond { display: block; width: 34px; height: 34px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--bj-veil-16), 0 1px 3px var(--bj-veil-8); }
+.mep-editeur .ed-sty-past input { position: absolute; top: 0; left: 50%; width: 34px; height: 34px; margin: 0 0 0 -17px; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.mep-editeur .ed-sty-past:focus-within .ed-sty-rond { box-shadow: 0 0 0 3px var(--bj-action-ring); }
+.mep-editeur .ed-sty-past small { color: var(--bj-text-soft); font-size: 10px; line-height: 1.1; text-align: center; white-space: nowrap; }
+.mep-editeur .ed-sty-prop { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--bj-veil-6); }
+.mep-editeur .ed-sty-prop-t { display: flex; flex-direction: column; gap: 2px; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-sty-prop-t b { font-weight: 600; }
+.mep-editeur .ed-sty-prop-t span { color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); line-height: 1.35; }
+.mep-editeur .ed-sty-prop-r { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.mep-editeur .ed-sty-mini { display: inline-flex; gap: 3px; }
+.mep-editeur .ed-sty-mini i { display: block; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--bj-veil-16); }
+.mep-editeur .ed-sty-prop .ed-bt:disabled { opacity: 0.5; cursor: default; }

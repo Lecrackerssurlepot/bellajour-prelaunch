@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
 import type { Planche } from "@/lib/mise-en-page/magazine";
-import { cadresDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
+import { cadresDe, decorDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
 import { enregistrerGabarit } from "./gabaritsClient";
 import { PAGE_H, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import type { Template } from "@/lib/mise-en-page/types";
@@ -51,11 +51,20 @@ function cadresMini(p: Planche): CadreMini[] {
   return out;
 }
 
+/** Lot C : les aplats d'une planche en petit (repère planche), pour que la miniature suive le style. */
+function aplatsMini(p: Planche): { x: number; y: number; l: number; h: number; teinte: string }[] {
+  const un = (d: Planche["double"], cible: Cible) => (d ? decorDe(d, cible) : []);
+  return p.mode === "double" ? un(p.double, "double") : [...un(p.gauche, "gauche"), ...un(p.droite, "droite")];
+}
+
 export function Mini({ planche, premiere }: { planche: Planche; premiere?: boolean }) {
-  const { adresses } = useEd();
+  const { adresses, etat } = useEd();
   return (
     <span className="ed-mini" aria-hidden="true">
       {premiere ? <span className="ed-mini-g" /> : null}
+      {etat.magazine.style ? aplatsMini(planche).map((a, i) => (
+        <i key={`a${i}`} className={`ed-mini-a ed-aplat--${a.teinte}`} style={{ left: pc(a.x, PLANCHE_L), top: pc(a.y, PAGE_H), width: pc(a.l, PLANCHE_L), height: pc(a.h, PAGE_H) }} />
+      )) : null}
       {cadresMini(planche).map((c, i) => {
         const st = { left: pc(c.x, PLANCHE_L), top: pc(c.y, PAGE_H), width: pc(c.l, PLANCHE_L), height: pc(c.h, PAGE_H) };
         if (c.texte) return <i key={i} className="ed-mini-t" style={st} />;

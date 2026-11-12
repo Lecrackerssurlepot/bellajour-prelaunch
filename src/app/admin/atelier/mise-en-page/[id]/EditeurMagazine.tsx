@@ -21,6 +21,8 @@ import { clavierTri } from "./triEcran";
 import Confrontation, { clavierConfrontation } from "./Hesitation";
 import { useLecture } from "./mesuresClient";
 import { useLecons } from "./leconsClient";
+import { variablesStyle } from "@/lib/mise-en-page/style";
+import { StylePanneau } from "./StylePanneau";
 
 /**
  * L'éditeur d'UN magazine : il porte l'état pur (`EtatEditeur`, jamais muté : `appliquer(etat, geste)`), l'état
@@ -344,13 +346,15 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
 
   return (
     <CtxEd.Provider value={ctx}>
-      <div className={`ed-racine${d ? " ed-racine--glisse" : ""}${ui.grand ? " ed-racine--grand" : ""}`}
+      <div className={`ed-racine${d ? " ed-racine--glisse" : ""}${ui.grand ? " ed-racine--grand" : ""}${etat.magazine.style ? " ed-racine--style" : ""}`}
+        style={etat.magazine.style ? (variablesStyle(etat.magazine.style) as React.CSSProperties) : undefined}
         onPointerDown={(e) => {
           const t = e.target as HTMLElement;
           if (etat.recadrage && !t.closest(".ed-cadre--recadrage, .ed-recadre")) envoyer({ type: "fermerRecadrage" });
           if (etat.texte && !t.closest(".ed-txt--edit")) fermerTexteDom(envoyer);
         }}>
         <Barre projet={projet} sv={sv} reessayer={sauve.reessayer} lien={retour} selecteur={selecteur} onExporter={() => { if (etat.recadrage) envoyer({ type: "fermerRecadrage" }); majUi({ exportOuvert: true }); }} />
+        {ui.style ? <StylePanneau /> : null}
         <Bandeaux projet={projet} sv={sv} collecteOuverte={collecteOuverte} prendreSaVersion={prendreSaVersion} garderLaMienne={garderLaMienne} />
         <div className={`ed-corps${ui.grand ? " ed-corps--grand" : ""}${ui.confronter && !ui.grand ? " ed-corps--conf" : ""}`}>
           <Panneau />
