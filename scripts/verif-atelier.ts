@@ -469,6 +469,9 @@ import type { ReponsePhotosMep, ReponsePhotosEditionMep } from "@/app/admin/atel
 import { verifierMepEditeur } from "./verif-mep-editeur";
 /* Lot D (12/11) : les gabarits de page générés par la grammaire (GG1-…) et la grille d'artiste. */
 import { verifierMepGeneres } from "./verif-mep-generes";
+/* La couverture à plat (lot B, 12/11) : son propre fichier de tests, rejoué à la fin. */
+import { verifierMepCouverture } from "./verif-mep-couverture";
+/* La feuille de style (lot C, 12/11) : paires de polices, nuancier, typographie française, exports, couverture comprise. */
 import { verifierMepStyle } from "./verif-mep-style";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
@@ -7050,7 +7053,7 @@ const verifierMepSauvegarde = () => {
   ok("lot 0 : une clé facultative n'est acceptée que présente AVEC une valeur valide, jamais `undefined`, `null` ni une forme cassée",
     !contenuValide({ ...vrai, tri: undefined }) && !contenuValide({ ...vrai, tri: null }) && !contenuValide({ ...vrai, tri: "tri" })
       && !contenuValide({ ...vrai, tri: { choisies: ["a"], ecartees: ["a"], visees: null } }) && !contenuValide({ ...vrai, tri: { ...triOk, visees: 0 } }));
-  ok("lot 0 : `style` (lot C, 12/11) est ACCEPTÉE avec un validateur strict (paire du catalogue, six couleurs #rrggbb) et `couverture` reste PRÉPARÉE mais REFUSÉE tant que son lot n'a pas écrit son validateur : seule, absente de valeur, plausible ou combinée",
+  ok("lot 0 : `style` (lot C, 12/11) est ACCEPTÉE avec un validateur strict (paire du catalogue, six couleurs #rrggbb) ; `couverture` (lot B) a le sien : vide, absente de valeur ou d'une autre forme, elle reste refusée, seule ou combinée",
     NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture"
       && contenuValide({ ...vrai, style: { paire: "T-01", couleurs: { papier: "#ffffff", encre: "#231f20", aplatClair: "#ebdace", aplatSourd: "#bc977d", accent: "#856045", nuit: "#231f20" } } })
       && !contenuValide({ ...vrai, style: {} }) && !contenuValide({ ...vrai, style: undefined }) && !contenuValide({ ...vrai, style: null })
@@ -7437,7 +7440,7 @@ verifierMepLot0();
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepStyle(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

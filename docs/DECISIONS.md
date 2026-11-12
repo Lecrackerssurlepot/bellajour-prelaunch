@@ -693,3 +693,18 @@ Ce que l'essai ne dit pas : la LISTE des nuances nommées n'est pas lisible par 
 une police absente est substituée à l'ouverture, jamais prévenue par Affinity : la feuille d'export le dit (« installer … sur ce Mac »).
 **Conséquence :** `idml.ts` écrit, sous un style, `Fonts.xml`, `Graphic.xml` (six nuances par rôle) et `Styles.xml` (trois styles) ; sans style
 l'export est inchangé au bit près (empreinte au harnais). Le PDF embarque les polices (pdf-lib et `@pdf-lib/fontkit`) et n'a pas cette limite.
+**Essai du 12/11/2026 (lot B, la couverture à plat) — verdict FIDÈLE.** `construireIdmlCouverture` : un document
+d'UNE page non vis-à-vis (`FacingPages="false"`, `PagesPerDocument="1"`) de 420 + dos mm, fond perdu de 3 mm sur les
+quatre bords, deux colonnes de marge dont la gouttière (30 + dos) encadre le dos. Ouvert dans Affinity sur de vraies
+photos (Martinique, dos 2,66 mm = 32 pages en brillant), fichiers `~/Desktop/Bellajour/test-idml/couverture-lot-b/`
+(générateur `scripts/idml-essai-couverture.ts`, valeurs attendues dans `attendu-CV-xx.json`), contrôlé valeur par valeur :
+- page relue à 422,66 × 297 mm, calque au fond perdu −3 / 428,66 × 303 mm : la cote de Cloudprinter (426 + dos × 303) ;
+- dos : un aplat de 2,66 mm exactement à x = 210 ; photo pleine de la 4e à −3 (213 × 303), de la 1re à 212,66 (213 × 303),
+  mot-titre à 227,66 : chaque cadre au centième de mm près, la 1re décalée du dos et rien d'autre ;
+- 0 image étirée sur 6 (le rapport du cadre de l'image placée = celui des pixels, 1 500 × 2 000 ou 2 000 × 1 500) ;
+- textes : « MARTINIQUE » en Arial Bold au corps calculé (77 pt, une ligne, aucun débordement), la ligne à 11 pt, le
+  texte blanc sur photo, le noir sur la bande blanche (CV-05) ; le titre en motif (CV-11, C-01) en CINQ lignes, interligne
+  auto relu comme prévu ; l'ordre des calques tenu (la photo passe devant le titre répété).
+Ce qui entre donc dans l'export : le document non vis-à-vis de largeur variable, les colonnes de marge comme repères des
+plis, les sauts de ligne d'un texte répété. Les trois gabarits essayés (CV-01, CV-05, CV-11) couvrent les objets de tous
+les autres (photos pleines et à bord blanc, aplats de face et de dos, textes blanc et noir, plusieurs mots-titres).

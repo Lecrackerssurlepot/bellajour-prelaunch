@@ -22,6 +22,7 @@ import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesL
 import { genereParId, genereesPour } from "./genere";
 import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
 import type { StyleMagazine } from "./style";
+import type { Couverture } from "./couverture";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
 
@@ -70,10 +71,11 @@ export type TriMagazine = { choisies: string[]; ecartees: string[]; visees: numb
 export const VISEES_MAX = 5000;
 
 /**
- * `tri` (lot 2) et `style` (lot C, 12/11) sont FACULTATIFS : écrits seulement quand ils existent (jamais `undefined`). Un magazine sans
- * `style` garde exactement son rendu d'avant : Arial dans l'IDML, Helvetica dans le PDF, le terracotta de la marque en aplat.
+ * `tri` (lot 2), `style` (lot C, 12/11) et `couverture` (lot B, 12/11) sont FACULTATIFS : écrits seulement quand ils existent (jamais
+ * `undefined`). `couverture` : la couverture à plat, à côté des planches (couverture.ts), écrite seulement quand on y a touché. Un magazine
+ * sans `style` garde exactement son rendu d'avant : Arial dans l'IDML, Helvetica dans le PDF, le terracotta de la marque en aplat.
  */
-export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; style?: StyleMagazine };
+export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; style?: StyleMagazine; couverture?: Couverture };
 
 export type Cible = "gauche" | "droite" | "double";
 /** Un cadre précis : `index` compte les cadres photo (ou texte pour `ecrireTexte`) de la disposition. */
@@ -454,7 +456,8 @@ export function ecrireTexte(m: Magazine, ref: RefCadre, texte: Partial<TexteCadr
   });
 }
 
-/** Combien de fois chaque photo est posée dans le magazine (badge « utilisée ×n »). */
+/** Combien de fois chaque photo est posée dans le magazine (badge « utilisée ×n »). La couverture compte (lot B) : sa
+ *  photo sort des « libres » et des propositions de l'intérieur, et n'y revient qu'en écho voulu (×2). */
 export function utilisations(m: Magazine): Map<string, number> {
   const compte = new Map<string, number>();
   for (const p of m.planches) {
@@ -462,5 +465,6 @@ export function utilisations(m: Magazine): Map<string, number> {
       for (const id of idsDe(d)) compte.set(id, (compte.get(id) ?? 0) + 1);
     }
   }
+  for (const a of m.couverture?.photos ?? []) if (a.photoId) compte.set(a.photoId, (compte.get(a.photoId) ?? 0) + 1);
   return compte;
 }

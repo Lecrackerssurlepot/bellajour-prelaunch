@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState } from "react";
-import { avertissementsExport, idsMagazine, pagesLibelle, type Lecon, type Projet } from "@/lib/mise-en-page/editeur";
+import { avertissementsExport, idsMagazine, idsPlanche, pagesLibelle, type Lecon, type Projet } from "@/lib/mise-en-page/editeur";
 import type { Memoire } from "./leconsClient";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
 import { cls, pluriel, useEd } from "./contexte";
@@ -11,6 +11,17 @@ import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, 
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
 import { exporterPdf, type ResultatExportPdf } from "./exporterPdf";
 import { facettesDe, paireParId } from "@/lib/mise-en-page/style";
+import { dosDeLaCouverture } from "./dosCouverture";
+import type { CouvertureExport } from "./exporter";
+
+const mmFr = (v: number): string => v.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
+
+/** Lot B : ce que la fin de l'export dit de la couverture. */
+function LigneCouverture({ c, fichier }: { c: CouvertureExport; fichier: string }) {
+  if (c.etat === "aucune") return null;
+  if (c.etat === "bloquee") return <p className="ed-ex-ligne ed-ex-rouge">Couverture non exportée · {c.raison}</p>;
+  return <p className="ed-ex-ligne">{fichier} · dos {mmFr(c.dosMm)} mm</p>;
+}
 
 /* La feuille d'export. Deux sorties (11/11) : Canva, un PDF téléchargé d'un clic ; Affinity, le dossier absolu (les liens de l'IDML en dépendent), ce que le paquet contiendra, ce qu'il
    faut vérifier, puis la progression avec « Annuler ». Le sélecteur de dossier s'ouvre dans le clic, avant tout await. */
@@ -59,9 +70,18 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0)
     + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length;
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
-  /* lot C : les polices que le style met en jeu (jamais deux fois la même famille) */
+  /* lot C : les polices que le style met en jeu (jamais deux fois la même famille) ; la couverture parle la même langue */
   const paireStyle = etat.magazine.style ? paireParId(etat.magazine.style.paire) : null;
   const famillesDuStyle = paireStyle ? [...new Set(facettesDe(paireStyle).map((x) => x.police.famille))] : [];
+  /* lot B : la couverture part avec l'intérieur si son dos est connu ; sinon l'écran dit pourquoi AVANT le clic */
+  const couv = etat.magazine.couverture;
+  const dosC = dosDeLaCouverture(projet, couv?.pages ?? null);
+  const largeurC = dosC.dos !== null ? `${mmFr(426 + dosC.dos)} × 303 mm` : "";
+  /* les photos de l'intérieur seul (celles de la couverture partent dans son fichier à elle) */
+  const idsInterieur = new Set(etat.magazine.planches.flatMap(idsPlanche).filter((id) => etat.catalogue.has(id))).size;
+  const ligneCouv = (fichier: string) => (couv ? (
+    <li className={dosC.dos === null ? "ed-ex-rouge" : undefined}><span>{fichier}</span><span>{dosC.dos !== null ? `dos ${mmFr(dosC.dos)} mm · ${largeurC}` : `bloquée · ${dosC.manque}`}</span></li>
+  ) : null);
 
   const lancerPdf = () => {
     const c = new AbortController();
@@ -69,7 +89,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
     setEtape({ nom: "cours", prog: { fait: 0, total: ids.length, photo: null } });
     void (async () => {
       const r = await exporterPdf({
-        magazine: etat.magazine, catalogue, source, titre: projet.nom,
+        magazine: etat.magazine, catalogue, source, titre: projet.nom, dosMm: dosC.dos, raisonDos: dosC.manque,
         onProgression: (prog) => setEtape((e) => (e.nom === "cours" ? { nom: "cours", prog } : e)), signal: c.signal,
       });
       ctrl.current = null;
@@ -91,7 +111,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
       ctrl.current = c;
       setEtape({ nom: "cours", prog: { fait: 0, total: ids.length, photo: null } });
       const r = await exporter({
-        magazine: etat.magazine, catalogue, source, dossier, destination: dest, titre: projet.nom,
+        magazine: etat.magazine, catalogue, source, dossier, destination: dest, titre: projet.nom, dosMm: dosC.dos, raisonDos: dosC.manque,
         onProgression: (prog) => setEtape((e) => (e.nom === "cours" ? { nom: "cours", prog } : e)), signal: c.signal,
       });
       ctrl.current = null;
@@ -119,7 +139,8 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
             </span>
             {sortie === "canva" ? (
               <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
-                <li><span>magazine.pdf</span><span>{pluriel(av.planches, "planche")} · {pluriel(ids.length, "photo")}</span></li>
+                <li><span>magazine.pdf</span><span>{pluriel(av.planches, "planche")} · {pluriel(idsInterieur, "photo")}</span></li>
+                {ligneCouv("couverture.pdf")}
                 {famillesDuStyle.length ? <li><span>Polices embarquées</span><span>{famillesDuStyle.join(" · ")}</span></li> : null}
               </ul>
             ) : (
@@ -138,6 +159,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
             </label>
             <ul className="ed-ex-arbre" aria-label="Contenu de l'export">
               <li><span>magazine.idml</span><span>{pluriel(av.planches, "planche")} · {pluriel(pl.pages, "page")}</span></li>
+              {ligneCouv("couverture.idml")}
               <li><span>Links/</span><span>{pluriel(ids.length, "photo")}</span></li>
               <li><span>photos-utilisees.txt</span><span>{ids.length}</span></li>
               <li><span>photos-non-utilisees.txt</span><span>{Math.max(0, etat.catalogue.size - ids.length)}</span></li>
@@ -151,7 +173,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
                 {av.signaleesPosees.length ? <span>{pluriel(av.signaleesPosees.length, "photo à ne pas publier posée", "photos à ne pas publier posées")}</span> : null}
                 {av.bassesDef.slice(0, 3).map((z) => (
                   <button key={`${z.photoId}${z.plancheId}`} type="button" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>
-                    Basse déf. · planche {z.numero} · {z.dpi} dpi →
+                    Basse déf. · {z.numero === 0 ? "couverture" : `planche ${z.numero}`} · {z.dpi} dpi →
                   </button>
                 ))}
                 {av.bassesDef.length > 3 ? <span className="ed-sous">et {av.bassesDef.length - 3} autres</span> : null}
@@ -194,15 +216,16 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
         ) : null}
         {etape.nom === "finPdf" ? (
           <div className="ed-ex-ok">
-            <span className="ate-tag ate-tag--choix">PDF téléchargé</span>
+            <span className="ate-tag ate-tag--choix">{etape.r.couverture.etat === "ecrite" ? "Zip téléchargé" : "PDF téléchargé"}</span>
             <p className="ed-ex-ligne">{etape.r.nomFichier} · {pluriel(etape.r.pages, "page")} · {mo(etape.r.octets)}</p>
+            <LigneCouverture c={etape.r.couverture} fichier="couverture.pdf" />
             {etape.r.indisponibles.length ? <p className="ed-ex-ligne ed-ex-rouge">{pluriel(etape.r.indisponibles.length, "photo illisible", "photos illisibles")} · cadre gris</p> : null}
             {etape.r.secours.length ? <p className="ed-ex-ligne">{pluriel(etape.r.secours.length, "photo en définition réduite", "photos en définition réduite")}</p> : null}
             {etape.r.polices.length ? <p className="ed-ex-ligne">Polices embarquées · {etape.r.polices.join(", ")}</p> : null}
             {etape.r.alertes.map((a) => <p key={a} className="ed-ex-ligne ed-ex-rouge">{a}</p>)}
             <ol className="ed-ex-etapes">
               <li>Ouvrir Canva</li>
-              <li>Importer le PDF</li>
+              <li>{etape.r.couverture.etat === "ecrite" ? "Importer les deux PDF" : "Importer le PDF"}</li>
             </ol>
             {memoire ? <Questions memoire={memoire} /> : null}
             <div className="ed-ex-actions ed-ex-actions--debut">
@@ -218,6 +241,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
               {etape.r.livraison === "dossier" ? `${pluriel(etape.r.nbPhotos, "photo")} écrite${etape.r.nbPhotos > 1 ? "s" : ""} dans ${etape.r.dossier.slice(etape.r.dossier.lastIndexOf("/") + 1)}` : `${etape.r.nomZip ?? "Le zip"} téléchargé · à décompresser dans ${etape.r.dossier.slice(0, etape.r.dossier.lastIndexOf("/"))}`}
               {" · "}{mo(etape.r.octets)}
             </p>
+            <LigneCouverture c={etape.r.couverture} fichier="couverture.idml" />
             {etape.r.indisponibles.length ? <p className="ed-ex-ligne ed-ex-rouge">{pluriel(etape.r.indisponibles.length, "photo illisible", "photos illisibles")} · cadre vide</p> : null}
             {etape.r.tournees.length ? <p className="ed-ex-ligne">{pluriel(etape.r.tournees.length, "photo couchée", "photos couchées")} à regarder en premier</p> : null}
             <ol className="ed-ex-etapes">

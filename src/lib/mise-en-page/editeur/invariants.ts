@@ -17,6 +17,7 @@ import {
   plancheDe, porteeDe, saisi,
 } from "./outils";
 import type { EtatEditeur, GestePrimitif, Geste, Plan } from "./types";
+import { ID_COUVERTURE, cadresPhotoCouverture, gabaritCouverture, idsCouverture } from "../couverture";
 
 function multiset(ids: readonly string[]): Map<string, number> {
   const m = new Map<string, number>();
@@ -90,11 +91,36 @@ function invariantsStatiques(e: EtatEditeur, err: string[]): void {
       });
     }
   });
+  /* lot B : la couverture, si elle existe, tient comme une disposition (gabarit connu, comptes, recadrages, une photo une fois) */
+  if (m.couverture) {
+    const c = m.couverture;
+    const g = gabaritCouverture(c.templateId);
+    if (!g) err.push(`C1 gabarit de couverture inconnu ${c.templateId}`);
+    else {
+      const cP = cadresPhotoCouverture(g);
+      if (c.photos.length !== cP.length || c.textes.length !== g.cadres.length - cP.length) err.push("C2 couverture : comptes faux");
+      const vus = new Set<string>();
+      c.photos.forEach((a, k) => {
+        if (a.photoId) {
+          if (vus.has(a.photoId)) err.push(`C3 ${a.photoId} deux fois sur la couverture`);
+          vus.add(a.photoId);
+          direct.set(a.photoId, (direct.get(a.photoId) || 0) + 1);
+          const cd = cP[k];
+          if (cd) {
+            const k2 = cadrer(refPour(e.catalogue, a.photoId), cd, a.recadrage);
+            if (!(k2.l >= cd.l - 1e-9 && k2.h >= cd.h - 1e-9 && k2.x <= 1e-9 && k2.y <= 1e-9)) err.push(`C4 blanc dans la couverture ${k}`);
+          }
+        }
+        const r = a.recadrage;
+        if (!(Number.isFinite(r.zoom) && r.zoom >= 1 && r.zoom <= 8 && Number.isFinite(r.dx) && Number.isFinite(r.dy))) err.push(`C4 recadrage de couverture hors bornes ${k}`);
+      });
+    }
+  }
   const p0 = m.planches[0];
   if (p0.mode !== "pages" || p0.gauche !== null) err.push("I5 planche 1 mal formée");
   if (p0.id !== e.premiereId) err.push(`I5 id de la planche 1 changé : ${p0.id} ≠ ${e.premiereId}`);
   if (!egal(utilisations(m), direct)) err.push("I10 utilisations ≠ décompte direct");
-  if (indexPlanche(m, e.plancheCourante) < 0) err.push("I29 planche courante absente");
+  if (e.plancheCourante !== ID_COUVERTURE && indexPlanche(m, e.plancheCourante) < 0) err.push("I29 planche courante absente");
   if (e.selection.ids.length) {
     if (!e.selection.ids.every((id) => e.catalogue.has(id))) err.push("I31 sélection hors du catalogue");
     if (new Set(e.selection.ids).size !== e.selection.ids.length) err.push("I31 doublon dans la sélection");
@@ -130,6 +156,18 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
   const ancienIds = new Set(idsMagazine(mAvant));
   for (const id of plus) if (!cat.has(id) && !ancienIds.has(id)) err.push(`I11 id inconnu introduit : ${id}`);
   const a = plan.args;
+  /* lot B : un geste de couverture ne touche jamais l'intérieur, et son bilan se lit sur la couverture */
+  if (op.startsWith("couv")) {
+    if (m2.planches !== mAvant.planches) err.push(`C5 ${op} a touché l'intérieur`);
+    const cA = idsCouverture(mAvant.couverture), cB = idsCouverture(m2.couverture);
+    const d = diffMultiset(cA, cB);
+    if (!egal(d, { plus, moins })) err.push(`C5 ${op} bilan hors de la couverture`);
+    if (op === "couvPoser" && !is.echange && (!egal(plus, [a.photoId]) || !egal(moins, is.retiree ? [is.retiree] : []))) err.push(`C6 couvPoser bilan faux (+${plus} −${moins})`);
+    if ((op === "couvEchanger" || (op === "couvPoser" && is.echange) || op === "couvPages") && (plus.length || moins.length)) err.push(`C6 ${op} bilan non nul`);
+    if (op === "couvRetirer" && (plus.length || !egal(moins, is.retiree ? [is.retiree] : ["?"]))) err.push("C6 couvRetirer bilan faux");
+    if (op === "couvGabarit" && (plus.length || !memes(moins, is.restees))) err.push(`C6 couvGabarit : les photos perdues ne sont pas les restées (+${plus} −${moins} restées ${is.restees})`);
+    return;
+  }
   switch (op) {
     case "ajouter": case "ajouterSurPlanche": {
       if (!memes(plus, is.posees) || moins.length) err.push(`I12 ${op} bilan faux (+${plus} −${moins} posées ${is.posees})`);
@@ -303,8 +341,8 @@ export function verifierInvariants(etat: EtatEditeur, avant?: EtatEditeur, geste
       ? (hB.futur.length && dernier(hB.futur) !== dernier(hA.futur) ? dernier(hB.futur) : null)
       : (hA.futur.length && dernier(hB.passe) === dernier(hA.futur) ? dernier(hB.passe) : null);
     /* une entrée qui ne touche que le tri (planches identiques) laisse la double affichée : REGLES-TRI R25 */
-    const seulTri = !!en && en.avant.planches === en.apres.planches;
-    if (en && !seulTri && indexPlanche(etat.magazine, en.plancheId) >= 0 && etat.plancheCourante !== en.plancheId) err.push(`T41 ${g.type} ne ramène pas à la planche concernée`);
+    const seulTri = !!en && en.avant.planches === en.apres.planches && en.avant.couverture === en.apres.couverture;
+    if (en && !seulTri && (en.plancheId === ID_COUVERTURE || indexPlanche(etat.magazine, en.plancheId) >= 0) && etat.plancheCourante !== en.plancheId) err.push(`T41 ${g.type} ne ramène pas à la planche concernée`);
     if (en && seulTri && etat.plancheCourante !== avant.plancheCourante) err.push(`T41 ${g.type} d'un geste de tri a changé de double`);
   }
   if (["filtrer", "retirerFiltre", "effacerFiltres", "cliquerPhoto", "selectionner", "viderSelection", "naviguer", "panneau"].includes(g.type)) {

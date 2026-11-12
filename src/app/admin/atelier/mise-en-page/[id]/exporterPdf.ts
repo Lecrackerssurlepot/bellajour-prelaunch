@@ -11,14 +11,15 @@
 
 import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
-import { QUALITE_JPEG_PDF, clePolice, decoupe, ecrirePdf, photosDuPlan, planPdf, policesDuPlan } from "@/lib/mise-en-page/pdf";
+import { QUALITE_JPEG_PDF, clePolice, decoupe, ecrirePdf, photosDuPlan, planPdf, planPdfCouverture, policesDuPlan } from "@/lib/mise-en-page/pdf";
 import { cheminPolice } from "@/lib/mise-en-page/style";
+import { zipperPdfs } from "@/lib/mise-en-page/paquet";
 import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
-import { enParallele, lecteurOriginaux, telecharger, type ProgressionExport } from "./exporter";
+import { couvertureDeLExport, enParallele, lecteurOriginaux, telecharger, type CouvertureExport, type ProgressionExport } from "./exporter";
 import { nomDeZip, type Indisponible } from "./exporterPur";
 
 export type ResultatExportPdf =
-  | { ok: true; nomFichier: string; pages: number; nbPhotos: number; indisponibles: Indisponible[]; secours: string[]; octets: number; polices: string[]; alertes: string[] }
+  | { ok: true; nomFichier: string; pages: number; nbPhotos: number; indisponibles: Indisponible[]; secours: string[]; octets: number; couverture: CouvertureExport; polices: string[]; alertes: string[] }
   | { ok: false; raison: "annule" | "erreur"; message: string };
 
 /** L'image droite (EXIF appliqué) ou null si le navigateur ne sait pas la lire. */
@@ -53,6 +54,9 @@ async function chargerPolices(besoins: { id: string; graisse: number }[], signal
 
 export async function exporterPdf(args: {
   magazine: Magazine;
+  /** Lot B : le dos de la couverture (null = inconnu : elle ne part pas) et la phrase qui dit pourquoi. */
+  dosMm?: number | null;
+  raisonDos?: string | null;
   catalogue: CatalogueCharge;
   source: SourceCatalogue;
   titre: string;
@@ -65,9 +69,12 @@ export async function exporterPdf(args: {
     const lecteur = lecteurOriginaux(args.catalogue, args.source, signal);
     await lecteur.pret();
     const parId = new Map(lecteur.catalogue().photos.map((p) => [p.id, p]));
-    const magazine = avecLieuxParDefaut(args.magazine, parId);
+    const choix = couvertureDeLExport(args.magazine, args.dosMm ?? null, args.raisonDos ?? null);
+    const magazine = avecLieuxParDefaut(choix.magazine, parId);
     const pages = planPdf(magazine);
-    const parPhoto = photosDuPlan(pages);
+    /* lot B : la page de la couverture, à part ; ses photos se lisent avec celles de l'intérieur (une lecture par photo) */
+    const pageCouverture = choix.couverture.etat === "ecrite" && magazine.couverture ? planPdfCouverture(magazine.couverture, choix.couverture.dosMm, magazine.style) : null;
+    const parPhoto = photosDuPlan(pageCouverture ? [...pages, pageCouverture] : pages);
     const ids = [...parPhoto.keys()];
     const total = ids.length;
     let fait = 0;
@@ -110,12 +117,27 @@ export async function exporterPdf(args: {
     if (signal?.aborted) return annule();
 
     args.onProgression?.({ fait: total, total, photo: null });
-    const polices = await chargerPolices(policesDuPlan(pages), signal);
-    const r = await ecrirePdf(pages, images, args.titre || args.magazine.titre, polices);
+    const titre = args.titre || args.magazine.titre;
+    /* lot C : les polices du style, pour l'intérieur ET pour la couverture (la même paire, une seule lecture de chaque fichier) */
+    const polices = await chargerPolices(policesDuPlan(pageCouverture ? [...pages, pageCouverture] : pages), signal);
+    const r = await ecrirePdf(pages, images, titre, polices);
     if (signal?.aborted) return annule();
-    const nomFichier = `${nomDeZip(args.titre || args.magazine.titre, new Date().toISOString())}.pdf`;
+    const base = nomDeZip(titre, new Date().toISOString());
+    if (pageCouverture) {
+      /* les deux fichiers partent ensemble : un zip, jamais deux téléchargements */
+      const rc = await ecrirePdf([pageCouverture], images, `${titre} · couverture`, polices);
+      if (signal?.aborted) return annule();
+      const zip = zipperPdfs({ magazine: r.octets, couverture: rc.octets, racine: base });
+      const nomFichier = `${base}.zip`;
+      telecharger(zip, nomFichier);
+      return {
+        ok: true, nomFichier, pages: r.pages, nbPhotos: total - indisponibles.length, indisponibles, secours, octets: zip.byteLength, couverture: choix.couverture,
+        polices: [...new Set([...r.polices, ...rc.polices])], alertes: [...new Set([...r.alertes, ...rc.alertes])],
+      };
+    }
+    const nomFichier = `${base}.pdf`;
     telecharger(r.octets, nomFichier, "application/pdf");
-    return { ok: true, nomFichier, pages: r.pages, nbPhotos: total - indisponibles.length, indisponibles, secours, octets: r.octets.byteLength, polices: r.polices, alertes: r.alertes };
+    return { ok: true, nomFichier, pages: r.pages, nbPhotos: total - indisponibles.length, indisponibles, secours, octets: r.octets.byteLength, couverture: choix.couverture, polices: r.polices, alertes: r.alertes };
   } catch (e) {
     if (signal?.aborted) return annule();
     console.error("[mise-en-page] export PDF échoué", (e as Error)?.message);

@@ -41,11 +41,12 @@ import {
   type PDFPage,
   type RGB,
 } from "pdf-lib";
-import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM, type Rect } from "./geometrie";
+import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM, boiteCouverture, type Rect } from "./geometrie";
+import { INTERLIGNE_COUVERTURE, cadresCouverture, contenuImprime, decorCouverture, type Couverture } from "./couverture";
 import { cadrer, type Recadrage } from "./recadrage";
 import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
 import type { Cadre, Teinte } from "./types";
-import { paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
+import { AVANCE_FINE_EM, paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
 import { hexVersRgb } from "./nuancier";
 import { FINE } from "./francais";
 
@@ -68,8 +69,8 @@ export type ObjetPdf =
   | { type: "aplat"; rect: Rect; teinte: Teinte; couleur?: string }
   /** `couleurBord` : le papier du style, pour le bord intérieur (absente : blanc). */
   | { type: "photo"; cle: string; cadre: Cadre; photoId: string | null; recadrage: Recadrage; couleurBord?: string }
-  /** `style` : sous un style, le contenu est déjà celui qu'on écrit (typographie française, capitales). */
-  | { type: "texte"; cadre: Cadre; contenu: string; taille: number; gras: boolean; style?: StyleTextePdf };
+  /** `interligne` (lot B) : celui de la couverture (120 %, comme Affinity) ; absent = celui de l'écran (`INTERLIGNE`). `style` (lot C) : sous un style, le contenu est déjà celui qu'on écrit (typographie française, capitales). */
+  | { type: "texte"; cadre: Cadre; contenu: string; taille: number; gras: boolean; interligne?: number; style?: StyleTextePdf };
 
 /** Une page du PDF : sa boîte en mm repère planche (fond perdu compris) et ce qu'elle porte. `fond` : le papier teinté du style (absent : blanc). */
 export type PagePdf = { boite: Rect; objets: ObjetPdf[]; fond?: string };
@@ -133,6 +134,34 @@ export function policesDuPlan(pages: readonly PagePdf[]): { id: string; graisse:
 }
 /** La clé d'une police dans la table des octets que reçoit `ecrirePdf`. */
 export const clePolice = (id: string, graisse: number): string => `${id}|${graisse}`;
+
+/**
+ * Lot B : la page de la COUVERTURE, à part (un fichier à elle) : 4e · dos · 1re, boîte 426 + dos × 303 (fond perdu de
+ * 3 mm sur les quatre bords), le dos peint de sa couleur. Les clés de ses photos commencent par « c- » : elles ne se
+ * mêlent jamais à celles de l'intérieur. La couverture reçue est prête (`couverturePourExport`).
+ * Lot C : `style` (celui du magazine) donne à la couverture les polices, les couleurs par rôle et le papier de l'intérieur.
+ */
+export function planPdfCouverture(couverture: Couverture, dosMm: number, style?: StyleMagazine | null): PagePdf {
+  const sty = style && paireParId(style.paire) ? style : null;
+  const objets: ObjetPdf[] = decorCouverture(couverture, dosMm).map((a): ObjetPdf => ({ type: "aplat", rect: a, teinte: a.teinte, ...(sty ? { couleur: sty.couleurs[roleDeTeinte(a.teinte)] } : {}) }));
+  let iP = 0, iT = 0;
+  for (const { face: _f, motTitre: _m, repeter, ...cadre } of cadresCouverture(couverture, dosMm)) {
+    void _f; void _m;
+    if (cadre.role === "photo") {
+      const a = couverture.photos[iP];
+      objets.push({ type: "photo", cle: `c-${iP}`, cadre, photoId: a?.photoId ?? null, recadrage: a?.recadrage ?? { zoom: 1, dx: 0, dy: 0 }, ...(sty ? { couleurBord: sty.couleurs.papier } : {}) });
+      iP++;
+    } else {
+      const t = couverture.textes[iT++];
+      const contenu = contenuImprime(t?.contenu ?? "", { repeter }), taille = t?.taille ?? cadre.taille ?? 10, gras = t?.gras ?? cadre.gras ?? false;
+      const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur) : null;
+      objets.push(ts
+        ? { type: "texte", cadre, contenu: texteSousStyle(contenu, ts), taille, gras, interligne: INTERLIGNE_COUVERTURE, style: { police: ts.police.id, graisse: ts.graisse, corps: ts.corps, interligne: ts.interligne, capitales: ts.capitales, approche: ts.approche, couleur: ts.couleur } }
+        : { type: "texte", cadre, contenu, taille, gras, interligne: INTERLIGNE_COUVERTURE });
+    }
+  }
+  return { boite: boiteCouverture(dosMm), objets, ...(sty && sty.couleurs.papier !== "#ffffff" ? { fond: sty.couleurs.papier } : {}) };
+}
 
 /** Les photos posées du plan, chacune avec ses cadres : le navigateur lit une photo une fois pour tous ses cadres. */
 export function photosDuPlan(pages: PagePdf[]): Map<string, Extract<ObjetPdf, { type: "photo" }>[]> {
@@ -204,8 +233,8 @@ export function textePourPoliceStyle(texte: string, connus: ReadonlySet<number>)
   }).join("");
 }
 
-/** L'avance d'une espace fine : un cinquième de cadratin. */
-export const FINE_EM = 0.2;
+/** L'avance d'une espace fine : un cinquième de cadratin (la même que celle des chasses, style.ts). */
+export const FINE_EM = AVANCE_FINE_EM;
 
 /** La largeur d'une ligne sous un style : la police, l'approche après chaque lettre, les fines avances. */
 export function largeurLigne(ligne: string, corps: number, approche: number, mesure: (s: string) => number): number {
@@ -374,7 +403,7 @@ export async function ecrirePdf(pages: PagePdf[], images: ReadonlyMap<string, Ui
         x: -l / 2 + retrait,
         y: h / 2 - o.taille * PREMIERE_BASE,
         size: o.taille,
-        lineHeight: o.taille * INTERLIGNE,
+        lineHeight: o.taille * (o.interligne ?? INTERLIGNE),
         font: police,
         color: c.couleur === "blanc" ? TEINTES.blanc : TEINTES.noir,
       });

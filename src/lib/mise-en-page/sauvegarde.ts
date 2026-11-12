@@ -17,6 +17,7 @@ import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Mag
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
 import { ROLES_COULEUR } from "./nuancier";
 import { styleValide } from "./style";
+import { PAGES_MAX_SAISIE, nombresDuGabarit } from "./couverture";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -215,6 +216,24 @@ function triValide(v: unknown): boolean {
   return visees === null || (Number.isInteger(visees) && (visees as number) >= 1 && (visees as number) <= VISEES_MAX);
 }
 
+/**
+ * La couverture (lot B, 12/11) : un gabarit de couverture CONNU (`CV-…`, ids stables), une affectation par cadre photo et
+ * un texte par cadre texte de ce gabarit, dans l'ordre ; `pages` (saisie quand le projet ne connaît pas ses pages) est
+ * facultatif, jamais `undefined`, un entier de 2 à `PAGES_MAX_SAISIE` (borne technique : le dos, lui, se refuse hors
+ * de 24 à 60 pages paires, à l'écran).
+ */
+function couvertureValide(v: unknown): boolean {
+  if (!estObjet(v)) return false;
+  const aPages = Object.prototype.hasOwnProperty.call(v, "pages");
+  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aPages ? ["pages"] : [])])) return false;
+  if (!estId(v.templateId)) return false;
+  const n = nombresDuGabarit(v.templateId);
+  if (!n || !Array.isArray(v.photos) || !Array.isArray(v.textes)) return false;
+  if (v.photos.length !== n.photos || v.textes.length !== n.textes) return false;
+  if (aPages && !(Number.isInteger(v.pages) && (v.pages as number) >= 2 && (v.pages as number) <= PAGES_MAX_SAISIE)) return false;
+  return v.photos.every(affectationValide) && v.textes.every(texteValide);
+}
+
 /** Un validateur de clé facultative : relit la VALEUR de la clé (jamais son absence : une clé absente n'est pas relue). */
 export type CleFacultative = { cle: string; valide: (v: unknown) => boolean };
 
@@ -236,24 +255,23 @@ export function clesAdmises(x: Record<string, unknown>, base: readonly string[],
  * se combinent librement (base, base + tri, base + style + couverture…) : plus de jeu de clés écrit en dur.
  *
  * ── Ajouter une clé facultative au Magazine (les lots « feuille de style » et « couverture ») ──
- *  1. le type : `style?: …` (fait, lot C) / `couverture?: …` sur `Magazine` (magazine.ts) ;
+ *  1. le type : `style?: …` (lot C) et `couverture?: …` (lot B) sont faits ; une nouvelle clé s'ajoute sur `Magazine` (magazine.ts) ;
  *  2. son validateur, pur, écrit ici (modèle : `triValide`) : relire la forme EXACTE (`clesExactes`), les bornes, les ids ;
- *  3. dans la liste ci-dessous, REMPLACER `refuseeEnAttendant` par ce validateur (la ligne y est déjà) ;
+ *  3. l'ajouter à la liste ci-dessous avec ce validateur ;
  *  4. l'écrire seulement quand elle existe (modèle : `tri.ts`), jamais `style: undefined` ;
  *  5. le harnais : une sauvegarde sans la clé reste valide (celles d'aujourd'hui), la clé valide passe, la clé cassée est refusée ;
  *  6. sens unique : une sauvegarde au nouveau format relue par un déploiement ancien est refusée à l'ouverture
  *     (sauvegardeClient.ts) : déployer AVANT la première sauvegarde, pas de retour arrière.
  * Aucune migration SQL : `contenu` est du jsonb.
  */
-const refuseeEnAttendant = (): boolean => false;
 const CLES_FACULTATIVES: readonly CleFacultative[] = [
   { cle: "tri", valide: triValide },
   /* Lot C (12/11) : la feuille de style, relue EXACTEMENT par `styleValide` (style.ts) : une paire du catalogue, six couleurs #rrggbb. */
   { cle: "style", valide: styleValide },
-  /* Prévue, pas encore acceptée : son validateur viendra avec son lot (couverture). */
-  { cle: "couverture", valide: refuseeEnAttendant },
+  /* Lot B (12/11) : la couverture à plat. */
+  { cle: "couverture", valide: couvertureValide },
 ];
-/** Les noms des clés facultatives connues (acceptées ou seulement prévues), pour le harnais. */
+/** Les noms des clés facultatives connues, pour le harnais. */
 export const NOMS_CLES_FACULTATIVES: readonly string[] = CLES_FACULTATIVES.map((c) => c.cle);
 
 export function contenuValide(x: unknown): x is Magazine {

@@ -14,6 +14,19 @@ import { SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanch
 import { visibles } from "./bibliotheque";
 import { pageEntiere } from "./libre";
 import type { CibleDepot, EtatEditeur, Issue, RefCadre, SourceGlisser } from "./types";
+import { ID_COUVERTURE, cadresPhotoCouverture, gabaritCouverture } from "../couverture";
+import { cibleCouvertureAllumee } from "./selecteursCouverture";
+
+/** Lot B : les photos posées sur la couverture, avec leur référence et leurs mesures de cadre (pour le dpi). */
+function photosCouverture(e: EtatEditeur): { ref: RefCadre; photoId: string; cadre: { l: number; h: number }; recadrage: Recadrage }[] {
+  const c = e.magazine.couverture;
+  const g = c ? gabaritCouverture(c.templateId) : null;
+  if (!c || !g) return [];
+  return cadresPhotoCouverture(g).flatMap((x, index) => {
+    const a = c.photos[index];
+    return a?.photoId ? [{ ref: { plancheId: ID_COUVERTURE, cible: "double" as const, index }, photoId: a.photoId, cadre: { l: x.l, h: x.h }, recadrage: a.recadrage }] : [];
+  });
+}
 
 const courante = (e: EtatEditeur, id?: string): string => id ?? e.plancheCourante;
 const UNITE = { l: 1, h: 1 };
@@ -31,6 +44,10 @@ export function dpiMinimaux(e: EtatEditeur): Map<string, number> {
       const v = dpi(ph, dimsCadre(d, x.ref.index) ?? UNITE, d.photos[x.ref.index].recadrage);
       out.set(x.photoId, Math.min(out.get(x.photoId) ?? Infinity, v));
     }
+  }
+  for (const x of photosCouverture(e)) {
+    const ph = e.catalogue.get(x.photoId);
+    if (ph) out.set(x.photoId, Math.min(out.get(x.photoId) ?? Infinity, dpi(ph, x.cadre, x.recadrage)));
   }
   return out;
 }
@@ -108,15 +125,20 @@ export type VignetteChemin = {
   id: string; index: number; numero: number; mode: Planche["mode"]; nbPhotos: number; pleine: boolean; courante: boolean; pages: string;
 };
 
-/** Où une photo est posée : chaque cadre, avec sa planche et ses pages (clic sur ×n). */
+/** Où une photo est posée : chaque cadre, avec sa planche et ses pages (clic sur ×n). La couverture (lot B) : numéro 0, « couv. ». */
 export function emplacements(e: EtatEditeur, photoId: string): { ref: RefCadre; numero: number; pages: string }[] {
-  return e.magazine.planches.flatMap((p, index) => photosDe(p).filter((x) => x.photoId === photoId)
-    .map((x) => ({ ref: x.ref, numero: index + 1, pages: index === 0 ? "1" : `${2 * index}-${2 * index + 1}` })));
+  return [
+    ...photosCouverture(e).filter((x) => x.photoId === photoId).map((x) => ({ ref: x.ref, numero: 0, pages: "couv." })),
+    ...e.magazine.planches.flatMap((p, index) => photosDe(p).filter((x) => x.photoId === photoId)
+      .map((x) => ({ ref: x.ref, numero: index + 1, pages: index === 0 ? "1" : `${2 * index}-${2 * index + 1}` }))),
+  ];
 }
 
 /** Pour chaque photo posée, les numéros des planches qui la portent (une passe sur le magazine, pour toute la grille). */
 export function planchesDesPhotos(e: EtatEditeur): Map<string, number[]> {
   const r = new Map<string, number[]>();
+  /* lot B : la couverture compte comme la planche 0 */
+  for (const x of photosCouverture(e)) if (!(r.get(x.photoId) ?? []).includes(0)) r.set(x.photoId, [0]);
   e.magazine.planches.forEach((p, index) => {
     for (const x of photosDe(p)) {
       if (!x.photoId) continue;
@@ -234,6 +256,8 @@ export function actionsPlanche(e: EtatEditeur, plancheId: string): ActionsPlanch
 /** T4 et T9 : une cible s'allume-t-elle pendant le glisser ? */
 export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | undefined, cible: CibleDepot | null | undefined): boolean {
   if (!source || !cible) return false;
+  const couv = cibleCouvertureAllumee(source, cible);
+  if (couv !== null) return couv;
   const m = e.magazine;
   if (cible.type === "bibliotheque") return source.type === "cadre" || source.type === "cadres";
   if (cible.type === "tri") {
@@ -305,6 +329,12 @@ export function avertissementsExport(e: EtatEditeur): AvertissementsExport {
       if (v < SEUIL_DPI) bassesDef.push({ photoId: x.photoId, plancheId: p.id, numero: index + 1, dpi: Math.round(v) });
     }
   });
+  /* lot B : une photo trop faible sur la couverture se dit aussi (planche 0 = la couverture) */
+  for (const x of photosCouverture(e)) {
+    const ph = e.catalogue.get(x.photoId);
+    const v = ph ? dpi(ph, x.cadre, x.recadrage) : Infinity;
+    if (v < SEUIL_DPI) bassesDef.unshift({ photoId: x.photoId, plancheId: ID_COUVERTURE, numero: 0, dpi: Math.round(v) });
+  }
   /* F4 : ce que la lecture sait des photos posées */
   const floues = new Set(e.lecture.floues);
   const flouesPosees: AvertissementsExport["flouesPosees"] = [];
