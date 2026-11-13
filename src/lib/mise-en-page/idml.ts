@@ -15,7 +15,7 @@
 
 import { PAGE_H, PAGE_L, PT_PAR_MM, FOND_PERDU, MARGES, GRILLE, largeurCouverture } from "./geometrie";
 import { cadrer } from "./recadrage";
-import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
+import { cadresDe, coteSeul, decorDe, dispositionDe, type CoteSeul, type Disposition, type Magazine, type Planche } from "./magazine";
 import type { Aplat, Cadre, RoleCadre, Teinte } from "./types";
 import {
   NIVEAUX, NUANCE_ROLE, ROLES_COULEUR, facettesDe, paireParId, roleDeTeinte, teinteAncienne, texteStyle, texteTypo,
@@ -179,12 +179,12 @@ const LIBELLES: Record<RoleCadre, string> = { photo: "Photo", titre: "Titre", te
 type Porteur = Pick<Disposition, "photos" | "textes">;
 type Element = { cadre: Cadre; disposition: Porteur; indexPhoto: number; indexTexte: number };
 
-/** Les dispositions posées sur une planche, avec leur cible. */
-function partsDe(p: Planche, premiere: boolean): { d: Disposition; cible: "double" | "gauche" | "droite" }[] {
+/** Les dispositions posées sur une planche, avec leur cible. `seul` : le côté de la page seule (la première : droite ; la dernière, lot E : gauche), `null` pour une planche courante. */
+function partsDe(p: Planche, seul: CoteSeul | null): { d: Disposition; cible: "double" | "gauche" | "droite" }[] {
   const parts: { d: Disposition; cible: "double" | "gauche" | "droite" }[] = [];
-  if (premiere) {
-    const d = dispositionDe(p, "droite");
-    if (d) parts.push({ d, cible: "droite" });
+  if (seul) {
+    const d = dispositionDe(p, seul);
+    if (d) parts.push({ d, cible: seul });
   } else if (p.mode === "double") {
     if (p.double) parts.push({ d: p.double, cible: "double" });
   } else {
@@ -195,8 +195,8 @@ function partsDe(p: Planche, premiere: boolean): { d: Disposition; cible: "doubl
 }
 
 /** Les cadres d'une planche, repère planche, avec leur affectation (photo ou texte) par index. */
-function elementsDe(p: Planche, premiere: boolean): Element[] {
-  return partsDe(p, premiere).flatMap(({ d, cible }) => {
+function elementsDe(p: Planche, seul: CoteSeul | null): Element[] {
+  return partsDe(p, seul).flatMap(({ d, cible }) => {
     let iP = 0, iT = 0;
     return cadresDe(d, cible).map((cadre) => {
       const e: Element = { cadre, disposition: d, indexPhoto: cadre.role === "photo" ? iP : -1, indexTexte: cadre.role === "photo" ? -1 : iT };
@@ -436,7 +436,9 @@ function paquet(spreads: Spread[], stories: { sid: string; corps: string }[], do
 /**
  * Les fichiers XML du paquet IDML, dans l'ordre du Python (mimetype d'abord,
  * designmap en dernier). Planche 0 = une page droite seule ; les suivantes =
- * deux pages, même en mode pages avec une page vide.
+ * deux pages, même en mode pages avec une page vide ; la dernière (lot E,
+ * `magazine.derniere`) = une page GAUCHE seule, en face de la couverture
+ * intérieure arrière (un spread d'une page, binding à sa droite).
  */
 export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExport>, options: { liens: OptionsLiens }): FichierIdml[] {
   /* Lot C : avec un style, polices et nuances nommées, styles de paragraphe ; sans, exactement l'export d'avant. */
@@ -451,11 +453,14 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
   let numeroPage = 0;
 
   planches.forEach((p, i) => {
-    const premiere = i === 0;
+    const seul = coteSeul(magazine, i);
     let corps = "";
-    if (premiere) {
+    if (seul === "droite") {
       numeroPage += 1;
       corps += page(`pg${numeroPage}`, String(numeroPage), false);
+    } else if (seul === "gauche") {
+      numeroPage += 1;
+      corps += page(`pg${numeroPage}`, String(numeroPage), true);
     } else {
       numeroPage += 1;
       corps += page(`pg${numeroPage}`, String(numeroPage), true);
@@ -465,18 +470,18 @@ export function construireIdml(magazine: Magazine, photos: Map<string, PhotoExpo
     /* le papier teinté d'un style (crème) : un aplat sous tout, la page entière et son fond perdu ; blanc : rien, comme avant */
     if (sty && sty.style.couleurs.papier !== FOND_PAGE_BLANC) {
       const bl = FOND_PERDU * K;
-      const x0 = premiere ? 0 : -PW - bl, x1 = PW + bl;
+      const x0 = seul === "droite" ? 0 : -PW - bl, x1 = seul === "gauche" ? 0 : PW + bl;
       corps += papierXml(x0, x1 - x0, bl);
     }
     let nA = 0;
-    for (const { d, cible } of partsDe(p, premiere)) {
+    for (const { d, cible } of partsDe(p, seul)) {
       for (const a of decorDe(d, cible)) {
         nA += 1;
         corps += aplatXml(a, nA);
       }
     }
-    corps += elementsXml(elementsDe(p, premiere));
-    spreads.push({ sid: `sp${i + 1}`, pc: premiere ? 1 : 2, bl: premiere ? 0 : 1, corps });
+    corps += elementsXml(elementsDe(p, seul));
+    spreads.push({ sid: `sp${i + 1}`, pc: seul ? 1 : 2, bl: seul === "droite" ? 0 : 1, corps });
   });
 
   return paquet(spreads, stories, { largeurPt: PW, nbPages: numeroPage, vis: true, marges: MP, sty });
@@ -532,7 +537,7 @@ export function construireIdmlCouverture(couverture: Couverture, photos: Map<str
 export function photosUtilisees(magazine: Magazine): string[] {
   const vus = new Set<string>();
   magazine.planches.forEach((p, i) => {
-    for (const e of elementsDe(p, i === 0)) {
+    for (const e of elementsDe(p, coteSeul(magazine, i))) {
       if (e.cadre.role !== "photo") continue;
       const id = e.disposition.photos[e.indexPhoto]?.photoId;
       if (id) vus.add(id);

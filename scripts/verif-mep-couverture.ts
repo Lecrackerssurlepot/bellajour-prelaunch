@@ -104,7 +104,7 @@ export async function verifierMepCouverture(ok: (nom: string, reussi: boolean) =
   /* ── le validateur ── */
   const mag0 = (): Magazine => {
     const m = nouveauMagazine("m-couv", "Martinique", "2026-11-12T10:00:00.000Z");
-    return { ...m, planches: [{ ...m.planches[0], droite: { templateId: "G-P1-a", photos: [{ photoId: "a", recadrage: neutre }], textes: [] } }] };
+    return { ...m, planches: [{ ...m.planches[0], droite: { templateId: "G-P1-a", photos: [{ photoId: "a", recadrage: neutre }], textes: [] } }, m.planches[1]] };
   };
   const vraie: Couverture = { ...couvertureNeuve("CV-01"), photos: [{ photoId: "b", recadrage: neutre }, { photoId: null, recadrage: neutre }, { photoId: "c", recadrage: { zoom: 1.4, dx: 3, dy: -2 } }] };
   const m0 = mag0();

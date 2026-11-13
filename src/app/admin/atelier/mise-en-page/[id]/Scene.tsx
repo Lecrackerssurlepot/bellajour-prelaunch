@@ -6,7 +6,7 @@ import {
   SEUIL_DPI, SEUIL_DPI_CONFORT, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
   type Guide, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
-import { dispositionDe, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
+import { coteSeul, dispositionDe, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
 import { choixDeLieux } from "@/lib/mise-en-page/lieux";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
@@ -41,7 +41,8 @@ export default function Scene() {
   const m = etat.magazine;
   const idx = Math.max(0, m.planches.findIndex((p) => p.id === etat.plancheCourante));
   const pl = m.planches[idx];
-  const premiere = idx === 0;
+  /* la première planche est une page droite seule, la dernière (lot E) une page gauche seule : en face de la couverture intérieure */
+  const seule = coteSeul(m, idx);
   const d = etat.glisser;
   const ss = ui.survolSel;
   const ap = apercuCourant(etat, ui);
@@ -55,7 +56,7 @@ export default function Scene() {
   const act = actionsPlanche(etat, pl.id);
   const glisseUnePhoto = !!d && d.source.type !== "planche";
   const zoneDouble = glisseUnePhoto && !!act?.zoneDouble;
-  const cotes = pl.mode === "double" ? (["double"] as const) : premiere ? (["droite"] as const) : (["gauche", "droite"] as const);
+  const cotes = pl.mode === "double" ? (["double"] as const) : seule ? ([seule] as const) : (["gauche", "droite"] as const);
   const estCibleCote = (c: string) => !!cibleCour && ((cibleCour.type === "page" && cibleCour.cote === c && cibleCour.plancheId === pl.id) || (cibleCour.type === "double" && c === "double" && cibleCour.plancheId === pl.id));
   /* lot 4 : pendant qu'on déplace ou redimensionne un cadre, il se dessine à sa place provisoire */
   const rt = ui.retouche;
@@ -117,7 +118,7 @@ export default function Scene() {
       <button type="button" className="ed-nav ed-nav--d" aria-label="Double page suivante" disabled={idx >= m.planches.length - 1} onClick={() => envoyer({ type: "naviguer", sens: 1 })}>›</button>
       <div key={pl.id} className={cls("ed-planche", ui.dir === "d" && "ed-planche--d", ui.dir === "g" && "ed-planche--g")} aria-label={`Planche ${idx + 1}`} onClick={clicPlanche}>
         <div className="ed-feuille" />
-        {premiere ? <div className="ed-couv-int" aria-hidden="true">Couverture intérieure</div> : null}
+        {seule ? <div className={cls("ed-couv-int", seule === "gauche" && "ed-couv-int--d")} aria-hidden="true">{seule === "gauche" ? "Couverture intérieure arrière" : "Couverture intérieure"}</div> : null}
         {cotes.map((c) => {
           const vide = !(c === "double" ? pl.double : pl[c]);
           return (
@@ -134,7 +135,7 @@ export default function Scene() {
         {frames.map((f) => (
           <CadreVue key={`${f.ref.cible}${f.ref.index}${f.role}`} f={f} pl={pl} rep={rep} sous={montrerApercu} cibleCour={cibleCour} refus={refus} />
         ))}
-        {ui.grille ? <GrilleArtiste premiere={premiere} /> : null}
+        {ui.grille ? <GrilleArtiste seule={seule} /> : null}
         {framesA ? (
           <div className={cls("ed-fantome", ap!.genre !== "echange" && "ed-fantome--plein")} aria-hidden="true">
             {framesA.map((f) => (

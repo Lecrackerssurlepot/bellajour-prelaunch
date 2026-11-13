@@ -9,7 +9,7 @@
 
 import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
-import type { Magazine } from "../magazine";
+import { avecDerniere, coteSeul, type Magazine } from "../magazine";
 import { ID_COUVERTURE } from "../couverture";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
@@ -36,7 +36,8 @@ const LECONS_MAX = 500;
 const numeroMax = (m: Magazine): number => m.planches.reduce((a, p) => Math.max(a, numeroDe(p.id)), 0);
 
 export function creerEtat(o: OptionsEtat): EtatEditeur {
-  const magazine = o.magazine;
+  /* lot E : un magazine d'avant reçoit sa dernière page (planche vide) ; un magazine qui l'a déjà revient tel quel (même objet) */
+  const magazine = avecDerniere(o.magazine);
   const cat: ReadonlyMap<string, PhotoMaq> = o.catalogue instanceof Map ? o.catalogue : new Map((o.catalogue as readonly PhotoMaq[] ?? []).map((p) => [p.id, p]));
   const courante = o.plancheCourante && (o.plancheCourante === ID_COUVERTURE || indexPlanche(magazine, o.plancheCourante) >= 0) ? o.plancheCourante : magazine.planches[0].id;
   return {
@@ -152,13 +153,16 @@ function cibleR(e: EtatEditeur, g: Touche): { plancheId: string; cible: RefCadre
   const s = g.survol;
   if (p && s && s.plancheId === p.id) {
     const okDouble = p.mode === "double" && s.cible === "double";
-    const okPage = p.mode !== "double" && (s.cible === "droite" || (s.cible === "gauche" && i > 0));
+    const seul = coteSeul(e.magazine, i);
+    const okPage = p.mode !== "double" && (seul ? s.cible === seul : s.cible === "droite" || s.cible === "gauche");
     if (okDouble || okPage) return { plancheId: p.id, cible: s.cible };
   }
   if (e.cadreActif) return { plancheId: e.cadreActif.plancheId, cible: e.cadreActif.cible };
   if (!p) return null;
   if (p.mode === "double") return { plancheId: p.id, cible: "double" };
-  if (i > 0 && p.gauche) return { plancheId: p.id, cible: "gauche" };
+  const seul = coteSeul(e.magazine, i);
+  if (seul) return p[seul] ? { plancheId: p.id, cible: seul } : null;
+  if (p.gauche) return { plancheId: p.id, cible: "gauche" };
   if (p.droite) return { plancheId: p.id, cible: "droite" };
   return null;
 }
@@ -565,7 +569,7 @@ const GESTES: Gestes = {
   },
   prendreSaVersion(e, g) {
     if (!g.magazine || !contenuValide(g.magazine)) return e;
-    const m = g.magazine;
+    const m = avecDerniere(g.magazine);
     return {
       ...e, magazine: m, copieLocale: e.magazine, historique: { passe: [], futur: [] },
       sauvegarde: { etat: "enregistre", version: Number.isInteger(g.version) ? (g.version as number) : e.sauvegarde.version, le: g.le || m.modifieLe },

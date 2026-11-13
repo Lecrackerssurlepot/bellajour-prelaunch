@@ -5,13 +5,13 @@
  * par l'écran en production.
  */
 
-import { TEMPLATE_LIBRE, cadresPropres, dispositionDe, templateParId, utilisations, type Cible, type Magazine } from "../magazine";
+import { TEMPLATE_LIBRE, aDerniere, cadresPropres, coteSeul, dispositionDe, templateParId, utilisations, type Cible, type Magazine } from "../magazine";
 import { cadrer } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
 import { styleValide } from "../style";
 import { MODIFIANTS, estModifiant, lectureSeule, numeroDe, preparer } from "./etat";
 import { planifier } from "./plans";
-import { cibleSurPlanche, gabaritsClasses, precedentDe, refPour, type CatalogueRef } from "./operations";
+import { cibleSurPlanche, gabaritsClasses, pagesDe, precedentDe, refPour, type CatalogueRef } from "./operations";
 import {
   HISTORIQUE_MAX, affectation, egal, estNeutre, idsDispo, idsMagazine, idsPlanche, indexPlanche, maxDe, photosDe,
   plancheDe, porteeDe, saisi,
@@ -118,6 +118,13 @@ function invariantsStatiques(e: EtatEditeur, err: string[]): void {
   }
   const p0 = m.planches[0];
   if (p0.mode !== "pages" || p0.gauche !== null) err.push("I5 planche 1 mal formée");
+  /* lot E : tout état de l'éditeur a sa dernière page, une page gauche seule, en dernier ; le nombre de pages est pair */
+  if (!aDerniere(m)) err.push("E1 la dernière page manque");
+  else {
+    const pn = m.planches[m.planches.length - 1];
+    if (pn.mode !== "pages" || pn.droite !== null || pn.double !== null) err.push("E1 la dernière page est mal formée");
+    if (pagesDe(m) % 2 !== 0) err.push("E1 le nombre de pages est impair");
+  }
   if (p0.id !== e.premiereId) err.push(`I5 id de la planche 1 changé : ${p0.id} ≠ ${e.premiereId}`);
   if (!egal(utilisations(m), direct)) err.push("I10 utilisations ≠ décompte direct");
   if (e.plancheCourante !== ID_COUVERTURE && indexPlanche(m, e.plancheCourante) < 0) err.push("I29 planche courante absente");
@@ -210,6 +217,7 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       const k = m2.planches.length - mAvant.planches.length;
       if (k !== Math.ceil(is.posees.length / 12)) err.push(`creerDoubles : ${k} planches pour ${is.posees.length} photos`);
       if (m2.planches[0].id !== mAvant.planches[0].id) err.push("I5 planche 1 déplacée par creerDoubles");
+      if (m2.planches[m2.planches.length - 1].id !== mAvant.planches[mAvant.planches.length - 1].id) err.push("E1 la dernière page a bougé (creerDoubles)");
       break;
     }
     case "vider": case "supprimerPlanche": {
@@ -217,6 +225,7 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       if (!a.plancheId || !p) break;
       if (plus.length || !memes(moins, idsPlanche(p))) err.push(`I12 ${op} bilan faux`);
       if (op === "supprimerPlanche" && indexPlanche(mAvant, a.plancheId) === 0 && m2.planches[0].id !== mAvant.planches[0].id) err.push("I5 planche 1 supprimée");
+      if (op === "supprimerPlanche" && coteSeul(mAvant, indexPlanche(mAvant, a.plancheId)) && m2.planches.length !== mAvant.planches.length) err.push("E1 une page seule supprimée");
       break;
     }
     case "poserLibre": {
@@ -285,10 +294,12 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
   }
   if (op === "deplacerPlanche") {
     if (m2.planches[0].id !== mAvant.planches[0].id) err.push("I24 planche 1 déplacée");
+    if (m2.planches[m2.planches.length - 1].id !== mAvant.planches[mAvant.planches.length - 1].id) err.push("E1 la dernière page déplacée");
     if (!memes(m2.planches.map((p) => p.id), mAvant.planches.map((p) => p.id))) err.push("I24 pas une permutation");
   }
   if (op === "insererDouble") {
     if (m2.planches.length !== mAvant.planches.length + 1) err.push("insererDouble : pas une planche de plus");
+    if (m2.planches[m2.planches.length - 1].id !== mAvant.planches[mAvant.planches.length - 1].id) err.push("E1 insererDouble : la dernière page n'est plus en dernier");
   }
 }
 

@@ -9,7 +9,7 @@
  */
 
 import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, type Rect } from "../geometrie";
-import { TEMPLATE_LIBRE, cadresPropres, dispositionDe, versGabarit, type Cible, type Disposition, type Magazine } from "../magazine";
+import { TEMPLATE_LIBRE, cadresPropres, coteSeul, dispositionDe, versGabarit, type Cible, type Disposition, type Magazine } from "../magazine";
 import { cadrer } from "../recadrage";
 import type { Cadre } from "../types";
 import { ajouter, avecDispo, issue, refPour, remplacerPlanche, retirer, type CatalogueRef } from "./operations";
@@ -68,11 +68,11 @@ const dispoDe = (m: Magazine, ref: RefCadre): Disposition | null => {
 
 /**
  * Le miroir d'une planche (M). Deux pages : la gauche et la droite s'échangent, et chaque disposition se retourne
- * d'elle-même (une page gauche est le miroir de son gabarit). Une double : `miroir` bascule. La planche 1 ne bouge pas.
+ * d'elle-même (une page gauche est le miroir de son gabarit). Une double : `miroir` bascule. La planche 1 et la dernière page (lot E) ne bougent pas.
  */
 export function miroir(m: Magazine, plancheId: string): Issue {
   const i = indexPlanche(m, plancheId);
-  if (i <= 0) return issue(m, "rien");
+  if (i <= 0 || coteSeul(m, i)) return issue(m, "rien");
   const p = m.planches[i];
   if (p.mode === "pages") {
     if (!p.gauche && !p.droite) return issue(m, "rien");
@@ -183,7 +183,7 @@ export function poserLibre(m: Magazine, plancheId: string, cible: Cible, ids: re
   const i = indexPlanche(m, plancheId);
   if (i < 0 || !Array.isArray(ids) || !Number.isFinite(x) || !Number.isFinite(y)) return issue(m, "rien");
   const p = m.planches[i];
-  const c: Cible = i === 0 ? "droite" : p.mode === "double" ? "double" : cible === "double" ? (x < PAGE_L ? "gauche" : "droite") : cible;
+  const c: Cible = coteSeul(m, i) ?? (p.mode === "double" ? "double" : cible === "double" ? (x < PAGE_L ? "gauche" : "droite") : cible);
   if (!CIBLES.includes(c)) return issue(m, "rien");
   const d = dispositionDe(p, c);
   const surPlanche = new Set(idsPlanche(p));
@@ -249,7 +249,7 @@ export function retirerCadres(m: Magazine, refs: readonly RefCadre[], cat: Catal
 export function deplacerCadres(m: Magazine, refs: readonly RefCadre[], vers: { plancheId: string; cible: Cible }, cat: CatalogueRef): Issue {
   const iv = indexPlanche(m, vers?.plancheId);
   if (iv < 0) return issue(m, "rien");
-  const c: Cible = iv === 0 ? "droite" : m.planches[iv].mode === "double" ? "double" : vers.cible;
+  const c: Cible = coteSeul(m, iv) ?? (m.planches[iv].mode === "double" ? "double" : vers.cible);
   const liste = refsValides(m, refs).filter((r) => !(r.plancheId === vers.plancheId && (r.cible === c || c === "double")));
   if (!liste.length) return issue(m, "rien");
   const ids = liste.map((r) => affectation(m, r)!.photoId!);
@@ -269,6 +269,6 @@ export function pageEntiere(m: Magazine, refs: readonly RefCadre[]): { plancheId
   if (cible === "double" || liste.some((r) => r.plancheId !== plancheId || r.cible !== cible)) return null;
   const p = plancheDe(m, plancheId);
   const d = p ? dispositionDe(p, cible) : null;
-  if (!p || p.mode !== "pages" || indexPlanche(m, plancheId) === 0 || !d) return null;
+  if (!p || p.mode !== "pages" || coteSeul(m, indexPlanche(m, plancheId)) || !d) return null;
   return idsDispo(d).length === liste.length ? { plancheId, cote: cible } : null;
 }

@@ -3,7 +3,7 @@
  * Le lâcher (source × cible) est AUSSI l'aperçu pendant le survol : l'aperçu EST l'opération (P0), jamais une copie.
  */
 
-import type { Cible, Magazine } from "../magazine";
+import { coteSeul, type Cible, type Magazine } from "../magazine";
 import { MAX_PHOTOS_PAGE } from "../grilles";
 import {
   ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, creerDoubles, deplacerPhoto, deplacerPlanche, echangerIssue, fusionner,
@@ -29,7 +29,8 @@ export function resoudreBande(m: Magazine, cible: Extract<CibleDepot, { type: "b
   const i = indexPlanche(m, cible.plancheId);
   if (i < 0 || !Number.isFinite(cible.position)) return null;
   const p = m.planches[i];
-  if (i === 0) return { cible: "droite", position: cible.position };
+  const seul = coteSeul(m, i);
+  if (seul) return { cible: seul, position: cible.position };
   if (p.mode === "double") return { cible: "double", position: cible.position };
   if (cible.cote === "gauche" || cible.cote === "droite") return { cible: cible.cote, position: cible.position };
   const nG = idsDispo(p.gauche).length;
@@ -105,7 +106,7 @@ function planCadreLibre(e: EtatEditeur, ref: RefCadre, c: Extract<CibleDepot, { 
   const i = indexPlanche(m, c.plancheId);
   const p = m.planches[i];
   if (!p) return planRien(e);
-  const reelle: Cible = i === 0 ? "droite" : p.mode === "double" ? "double" : c.cible;
+  const reelle: Cible = coteSeul(m, i) ?? (p.mode === "double" ? "double" : c.cible);
   if (ref.plancheId === c.plancheId && ref.cible === reelle) {
     const dims = dimsCadre(dispositionOuNull(m, ref), ref.index);
     if (!dims) return planRien(e);
@@ -277,7 +278,7 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
     case "deplacerPlanche": return simple("deplacerPlanche", "Déplacer une planche", g.plancheId, deplacerPlanche(m, g.plancheId, g.versIndex), { plancheId: g.plancheId });
     case "supprimerPlanche": {
       const i = indexPlanche(m, g.plancheId);
-      return simple("supprimerPlanche", i === 0 ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
+      return simple("supprimerPlanche", coteSeul(m, i) ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
     case "preTrier": {
