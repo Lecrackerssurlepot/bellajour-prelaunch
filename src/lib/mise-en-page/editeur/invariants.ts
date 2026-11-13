@@ -170,7 +170,7 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
     const d = diffMultiset(cA, cB);
     if (!egal(d, { plus, moins })) err.push(`C5 ${op} bilan hors de la couverture`);
     if (op === "couvPoser" && !is.echange && (!egal(plus, [a.photoId]) || !egal(moins, is.retiree ? [is.retiree] : []))) err.push(`C6 couvPoser bilan faux (+${plus} −${moins})`);
-    if ((op === "couvEchanger" || (op === "couvPoser" && is.echange) || op === "couvPages") && (plus.length || moins.length)) err.push(`C6 ${op} bilan non nul`);
+    if ((op === "couvEchanger" || (op === "couvPoser" && is.echange) || op === "couvPages" || op === "couvDos") && (plus.length || moins.length)) err.push(`C6 ${op} bilan non nul`);
     if (op === "couvRetirer" && (plus.length || !egal(moins, is.retiree ? [is.retiree] : ["?"]))) err.push("C6 couvRetirer bilan faux");
     if (op === "couvGabarit" && (plus.length || !memes(moins, is.restees))) err.push(`C6 couvGabarit : les photos perdues ne sont pas les restées (+${plus} −${moins} restées ${is.restees})`);
     return;

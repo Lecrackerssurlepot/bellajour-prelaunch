@@ -17,6 +17,11 @@ import { PT_PAR_MM } from "@/lib/mise-en-page/geometrie";
 import { construireIdml, photosUtilisees, type PhotoExport } from "@/lib/mise-en-page/idml";
 import { BOITE_DERNIERE_PAGE, BOITE_DOUBLE, BOITE_PAGE_SEULE, ecrirePdf, planPdf } from "@/lib/mise-en-page/pdf";
 import { zipperIdml } from "@/lib/mise-en-page/paquet";
+import { DOS_SAISI_MAX_MM, DOS_SAISI_MIN_MM, GABARITS_COUVERTURE, couvertureNeuve, dosSaisiValide } from "@/lib/mise-en-page/couverture";
+import { construireIdmlCouverture } from "@/lib/mise-en-page/idml";
+import { largeurCouverture } from "@/lib/mise-en-page/geometrie";
+import { dosDeLEtat, dosDeLaCouverture } from "@/app/admin/atelier/mise-en-page/[id]/dosCouverture";
+import { couvertureDeLExport } from "@/app/admin/atelier/mise-en-page/[id]/exporter";
 import { EMPREINTE_IDML_INTERIEUR, PHOTOS_ETALON, empreinteIdml, magazineEtalon } from "./etalon-idml";
 
 const K = PT_PAR_MM;
@@ -197,4 +202,79 @@ export async function verifierMepDerniere(ok: (nom: string, reussi: boolean) => 
   ok("PDF écrit et relu : 5 pages ; la première et la DERNIÈRE à 216 × 303 mm en points, les trois doubles à 426 × 303",
     ecrit.pages === 5 && tailles.length === 5 && [0, 4].every((i) => Math.abs(tailles[i].width - 216 * K) < 0.01 && Math.abs(tailles[i].height - 303 * K) < 0.01)
       && [1, 2, 3].every((i) => Math.abs(tailles[i].width - 426 * K) < 0.01));
+
+  /* ═════════════════════════ 2. la tranche : calculée seule, ou saisie à la main ═════════════════════════ */
+  titre("— mise en page, lot E : la tranche (le dos) saisie à la main, qui remplace le calcul jusqu'à ce qu'on l'efface —");
+  ok(`dos saisi : les bornes sont NOMMÉES (${DOS_SAISI_MIN_MM} à ${DOS_SAISI_MAX_MM} mm) ; le centième de mm, comme le calcul ; hors bornes, non fini, chaîne, null, millièmes : refusés`,
+    DOS_SAISI_MIN_MM === 1 && DOS_SAISI_MAX_MM === 20 && [1, 20, 2.25, 2.66, 3.2, 4.51, 10].every(dosSaisiValide)
+      && [0.99, 20.01, 0, -3, NaN, Infinity, "3", null, undefined, 2.666, 3.005].every((v) => !dosSaisiValide(v)));
+
+  const couvOk = { ...couvertureNeuve("CV-02"), photos: couvertureNeuve("CV-02").photos };
+  const baseC = nouveauMagazine("m-dos", "Dos", "2026-11-13T10:00:00.000Z");
+  ok("validateur : `dosMm` est une clé FACULTATIVE de la couverture : absente = comme avant ; présente et valide (seule, avec `pages`, relue depuis JSON) passe",
+    contenuValide({ ...baseC, couverture: couvOk }) && contenuValide({ ...baseC, couverture: { ...couvOk, dosMm: 3.2 } }) && contenuValide({ ...baseC, couverture: { ...couvOk, dosMm: 1 } })
+      && contenuValide({ ...baseC, couverture: { ...couvOk, dosMm: 20 } }) && contenuValide({ ...baseC, couverture: { ...couvOk, pages: 32, dosMm: 2.66 } })
+      && contenuValide(clone({ ...baseC, couverture: { ...couvOk, pages: 32, dosMm: 2.66 } })));
+  ok("validateur : `dosMm` hors bornes (0,5 et 25), `undefined`, `null`, chaîne, NaN (null en JSON), millièmes, ou une clé voisine en trop : REFUSÉS",
+    [0.5, 25, undefined, null, "3,2", NaN, 3.205, Infinity].every((v) => !contenuValide({ ...baseC, couverture: { ...couvOk, dosMm: v } }))
+      && !contenuValide(clone({ ...baseC, couverture: { ...couvOk, dosMm: NaN } })) && !contenuValide({ ...baseC, couverture: { ...couvOk, dos: 3.2 } })
+      && !contenuValide({ ...baseC, couverture: { ...couvOk, dosMm: 3.2, extra: 1 } }));
+  /* un geste sans effet laisse le MÊME magazine et ne pousse aucune entrée d'historique */
+  const sansEffet = (e: ReturnType<typeof O.creerEtat>, dosMm: number | null): boolean => {
+    const x = O.appliquer(e, { type: "dosCouverture", dosMm });
+    return x.magazine === e.magazine && x.historique.passe.length === e.historique.passe.length;
+  };
+  let e2 = O.creerEtat({ magazine: baseC, catalogue: catMaq, projet: { nbPagesCible: 32, finition: "gloss" } as never });
+  const avantDos = e2.magazine;
+  e2 = O.appliquer(e2, { type: "dosCouverture", dosMm: 3.2 });
+  ok("geste : saisir le dos l'écrit dans `couverture` (la couverture neuve au gabarit par défaut), une seule entrée d'historique ; le MÊME dos ne change rien ; hors bornes ne change rien",
+    e2.magazine.couverture?.dosMm === 3.2 && contenuValide(e2.magazine) && e2.historique.passe.length === 1 && e2.historique.passe[0].libelle === "Dos saisi"
+      && sansEffet(e2, 3.2) && sansEffet(e2, 0.5) && sansEffet(e2, 25) && sansEffet(e2, NaN) && O.verifierInvariants(e2).length === 0);
+  const e3 = O.appliquer(e2, { type: "choisirGabarit", plancheId: "couverture", cible: "double", templateId: "CV-05" });
+  ok("geste : changer de gabarit de couverture GARDE le dos saisi (et les pages saisies) ; Annuler rend l'état d'avant ; l'effacer retire la clé (jamais `undefined`) et le calcul reprend",
+    e3.magazine.couverture?.templateId === "CV-05" && e3.magazine.couverture.dosMm === 3.2 && contenuValide(e3.magazine)
+      && O.appliquer(e2, { type: "annuler" }).magazine === avantDos
+      && (() => {
+        const e4 = O.appliquer(e3, { type: "dosCouverture", dosMm: null });
+        return !!e4.magazine.couverture && !("dosMm" in e4.magazine.couverture) && contenuValide(e4.magazine) && sansEffet(e4, null)
+          && sansEffet(O.creerEtat({ magazine: baseC, catalogue: catMaq }), null);
+      })());
+
+  /* le calcul, ou la saisie : lequel est utilisé, dit par `origine` */
+  const p32 = { nbPagesCible: 32, finition: "gloss" as const };
+  const calc = dosDeLaCouverture(p32, null);
+  const main = dosDeLaCouverture(p32, null, { dosSaisi: 3.2 });
+  ok("tranche : calculée seule (32 pages brillant : 2,66 mm, origine « calcule ») ; avec une largeur saisie, CELLE-CI remplace le calcul (3,2 mm, origine « main », le calcul gardé en repère) ; effacée, le calcul revient",
+    calc.dos === 2.66 && calc.origine === "calcule" && calc.saisi === null && calc.calcule === 2.66 && calc.manque === null
+      && main.dos === 3.2 && main.origine === "main" && main.saisi === 3.2 && main.calcule === 2.66 && main.manque === null && main.source === "projet"
+      && dosDeLaCouverture(p32, null, { dosSaisi: null }).dos === 2.66 && dosDeLaCouverture(p32, null, { dosSaisi: undefined }).origine === "calcule");
+  ok("tranche : une saisie hors bornes ou non finie est ignorée (le calcul reste) ; une saisie sans pages ni projet est utilisée (dos connu) ; le calcul inconnu reste dit sans bloquer la saisie",
+    [0.5, 25, NaN, Infinity].every((v) => dosDeLaCouverture(p32, null, { dosSaisi: v }).origine === "calcule" && dosDeLaCouverture(p32, null, { dosSaisi: v }).dos === 2.66)
+      && (() => {
+        const sans = dosDeLaCouverture({ nbPagesCible: null, finition: null }, null, { dosSaisi: 4.1 });
+        return sans.dos === 4.1 && sans.origine === "main" && sans.calcule === null && sans.manque === null && sans.finitionParDefaut;
+      })()
+      && dosDeLaCouverture({ nbPagesCible: null, finition: null }, null).dos === null && dosDeLaCouverture({ nbPagesCible: null, finition: null }, null).manque === "Pages à saisir pour le dos");
+  /* le nombre de pages PAIR du magazine entre enfin dans le calcul du dos */
+  let m24 = neuf;
+  for (let k = 0; k < 11; k++) m24 = O.insererDouble(m24, "pl-1").magazine;
+  const sansProjet = { nbPagesCible: null, finition: null } as const;
+  const d24 = dosDeLEtat({ projet: sansProjet as never, magazine: m24 });
+  const m10 = O.insererDouble(O.insererDouble(O.insererDouble(O.insererDouble(neuf, "pl-1").magazine, "pl-1").magazine, "pl-1").magazine, "pl-1").magazine;
+  ok("tranche : sans pages payées ni saisies, le dos se calcule sur les pages COMPOSÉES (24 pages = 12 planches : 2,25 mm en brillant, source « magazine ») ; 10 pages : pas de dos carré, dit avec le nombre de pages",
+    O.pagesDe(m24) === 24 && d24.dos === 2.25 && d24.source === "magazine" && d24.pages === 24 && d24.manque === null
+      && O.pagesDe(m10) === 10 && dosDeLEtat({ projet: sansProjet as never, magazine: m10 }).dos === null && /10 pages composées/.test(dosDeLEtat({ projet: sansProjet as never, magazine: m10 }).manque ?? "")
+      && dosDeLEtat({ projet: sansProjet as never, magazine: vieux }).dos === null);
+  ok("tranche : les pages PAYÉES priment sur les composées (D20), les pages SAISIES sur les composées ; la saisie à la main prime sur tout",
+    dosDeLaCouverture({ nbPagesCible: 32, finition: "gloss" }, null, { pagesMagazine: 24 }).dos === 2.66 && dosDeLaCouverture(sansProjet as never, 32, { pagesMagazine: 24 }).dos === 2.66
+      && dosDeLaCouverture(sansProjet as never, 32, { pagesMagazine: 24 }).source === "saisie" && dosDeLaCouverture({ nbPagesCible: 32, finition: "gloss" }, 40, { pagesMagazine: 24, dosSaisi: 5 }).dos === 5);
+  /* l'export part avec le dos saisi : la largeur de la couverture suit */
+  const choix = couvertureDeLExport({ ...baseC, couverture: { ...couvOk, dosMm: 3.2 } }, main.dos, main.manque);
+  const photosC = new Map<string, PhotoExport>();
+  const fc = construireIdmlCouverture({ ...couvOk, dosMm: 3.2 }, photosC, { liens: { mode: "relatif" }, dosMm: 3.2 });
+  const prefs = fc.find((x) => x.chemin === "Resources/Preferences.xml")?.contenu ?? "";
+  const largeurPt = Number(/PageWidth="([\d.]+)"/.exec(prefs)?.[1] ?? "0");
+  ok("tranche : l'export de la couverture part avec le dos saisi (couverture « ecrite », 3,2 mm) ; l'IDML a la largeur 420 + 3,2 mm ; sans dos du tout, elle reste bloquée avec sa phrase",
+    choix.couverture.etat === "ecrite" && choix.couverture.dosMm === 3.2 && Math.abs(largeurPt - largeurCouverture(3.2) * K) < 0.001 && Math.abs(largeurCouverture(3.2) - 423.2) < 1e-9
+      && couvertureDeLExport({ ...baseC, couverture: couvOk }, null, "Pages à saisir pour le dos").couverture.etat === "bloquee" && GABARITS_COUVERTURE.length > 0);
 }

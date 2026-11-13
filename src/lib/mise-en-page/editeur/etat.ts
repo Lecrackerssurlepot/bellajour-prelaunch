@@ -236,7 +236,7 @@ export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", 
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture"]);
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 

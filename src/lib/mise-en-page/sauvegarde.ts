@@ -17,7 +17,7 @@ import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Mag
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
 import { ROLES_COULEUR } from "./nuancier";
 import { styleValide } from "./style";
-import { PAGES_MAX_SAISIE, nombresDuGabarit } from "./couverture";
+import { PAGES_MAX_SAISIE, dosSaisiValide, nombresDuGabarit } from "./couverture";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -224,12 +224,15 @@ function triValide(v: unknown): boolean {
  * La couverture (lot B, 12/11) : un gabarit de couverture CONNU (`CV-…`, ids stables), une affectation par cadre photo et
  * un texte par cadre texte de ce gabarit, dans l'ordre ; `pages` (saisie quand le projet ne connaît pas ses pages) est
  * facultatif, jamais `undefined`, un entier de 2 à `PAGES_MAX_SAISIE` (borne technique : le dos, lui, se refuse hors
- * de 24 à 60 pages paires, à l'écran).
+ * de 24 à 60 pages paires, à l'écran). Lot E : `dosMm`, la largeur du dos saisie à la main, est facultatif aussi (jamais `undefined`) :
+ * un nombre fini au centième de mm entre `DOS_SAISI_MIN_MM` et `DOS_SAISI_MAX_MM` (couverture.ts), rien d'autre.
  */
 function couvertureValide(v: unknown): boolean {
   if (!estObjet(v)) return false;
   const aPages = Object.prototype.hasOwnProperty.call(v, "pages");
-  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aPages ? ["pages"] : [])])) return false;
+  const aDos = Object.prototype.hasOwnProperty.call(v, "dosMm");
+  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aPages ? ["pages"] : []), ...(aDos ? ["dosMm"] : [])])) return false;
+  if (aDos && !dosSaisiValide(v.dosMm)) return false;
   if (!estId(v.templateId)) return false;
   const n = nombresDuGabarit(v.templateId);
   if (!n || !Array.isArray(v.photos) || !Array.isArray(v.textes)) return false;

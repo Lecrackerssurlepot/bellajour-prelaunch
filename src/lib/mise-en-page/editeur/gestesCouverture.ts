@@ -11,7 +11,7 @@
 
 import type { Affectation, Magazine, PhotoRef } from "../magazine";
 import {
-  GABARITS_COUVERTURE, ID_COUVERTURE, PAGES_MAX_SAISIE, cadresPhotoCouverture, cadresTexteCouverture, gabaritCouverture, libelleCouverture,
+  GABARITS_COUVERTURE, ID_COUVERTURE, PAGES_MAX_SAISIE, dosSaisiValide, cadresPhotoCouverture, cadresTexteCouverture, gabaritCouverture, libelleCouverture,
   texteSaisi, textesInitiauxCouverture, type Couverture,
 } from "../couverture";
 import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
@@ -109,7 +109,7 @@ const aire = (r: { l: number; h: number }): number => r.l * r.h;
 /**
  * Changer de gabarit. Les photos restent sur LEUR face : la plus grande va au plus grand cadre de la face, et ainsi de
  * suite ; celles qui n'ont plus de place quittent la couverture (`restees`, rendues à la bibliothèque). Les textes écrits
- * suivent par rôle et par rang (1er titre → 1er titre) ; sans place, ils sont comptés perdus. Les pages saisies restent.
+ * suivent par rôle et par rang (1er titre → 1er titre) ; sans place, ils sont comptés perdus. Les pages saisies et le dos saisi restent.
  */
 export function choisirGabaritCouverture(m: Magazine, templateId: string, cat: Cat): Issue {
   const c = couvertureDe(m);
@@ -144,7 +144,7 @@ export function choisirGabaritCouverture(m: Magazine, templateId: string, cat: C
     if (k < 0) textesPerdus++;
     else textes[k] = { ...textes[k], contenu: t.contenu };
   });
-  const neuve: Couverture = { templateId: gB.id, photos, textes, ...(c.pages !== undefined ? { pages: c.pages } : {}) };
+  const neuve: Couverture = { templateId: gB.id, photos, textes, ...(c.pages !== undefined ? { pages: c.pages } : {}), ...(c.dosMm !== undefined ? { dosMm: c.dosMm } : {}) };
   return issueC(avec(m, neuve), null, { restees, textesPerdus });
 }
 
@@ -168,6 +168,22 @@ export function pagesCouverture(m: Magazine, pages: number | null): Magazine {
   }
   if (!Number.isInteger(pages) || pages < 2 || pages > PAGES_MAX_SAISIE || pages === c.pages) return m;
   return avec(m, { ...c, pages });
+}
+
+/**
+ * Lot E : la largeur du dos saisie à la main (mm, au centième, bornes `DOS_SAISI_MIN_MM` à `DOS_SAISI_MAX_MM`) ; `null` l'efface et le
+ * calcul (pages et finition) reprend la main. Une valeur hors des bornes, non finie ou déjà posée ne change rien (même magazine).
+ */
+export function dosCouverture(m: Magazine, dosMm: number | null): Magazine {
+  const c = couvertureDe(m);
+  if (dosMm === null) {
+    if (c.dosMm === undefined) return m;
+    const { dosMm: _, ...reste } = c;
+    void _;
+    return avec(m, reste);
+  }
+  if (!dosSaisiValide(dosMm) || dosMm === c.dosMm) return m;
+  return avec(m, { ...c, dosMm });
 }
 
 /* ─────────────────────────── Les plans (appelés en tête de plans.ts) ─────────────────────────── */
@@ -211,6 +227,10 @@ export function planDepotCouverture(e: EtatEditeur, source: SourceGlisser | null
 export function planGesteCouverture(e: EtatEditeur, g: GesteModifiant): Plan | null | undefined {
   const m = e.magazine, cat = e.catalogue;
   switch (g.type) {
+    case "dosCouverture": {
+      const m2 = dosCouverture(m, g.dosMm);
+      return { op: "couvDos", libelle: g.dosMm === null ? "Dos : calcul" : "Dos saisi", plancheId: ID_COUVERTURE, issue: issueC(m2, m2 === m ? "rien" : null), args: { plancheId: ID_COUVERTURE } };
+    }
     case "pagesCouverture": {
       const m2 = pagesCouverture(m, g.pages);
       return { op: "couvPages", libelle: "Pages de la couverture", plancheId: ID_COUVERTURE, issue: issueC(m2, m2 === m ? "rien" : null), args: { plancheId: ID_COUVERTURE } };
