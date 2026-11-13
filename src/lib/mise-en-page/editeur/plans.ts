@@ -18,6 +18,7 @@ import { avecStyle, libelleStyle } from "./stylage";
 import { styleValide } from "../style";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
 import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
+import { appliquerPremierJet } from "./premierJet";
 import { ID_COUVERTURE } from "../couverture";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
@@ -324,6 +325,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       const retirer = etiquetteRetiree(m, ids, g.etiquette);
       const nom = { couverture: "Couverture", double: "Double page", pleine: "Pleine page" }[g.etiquette];
       return simple("etiqueter", retirer ? `${nom} retirée` : ids.length > 1 ? `${nom} · ${ids.length} photos` : nom, e.plancheCourante, etiqueter(m, ids, g.etiquette, !retirer), {});
+    }
+    case "chargerPremierJet": {
+      /* lot E : les planches du fichier remplacent celles du magazine, les photos reliées par leur nom de fichier ; un fichier qui ne se
+         compose pas en magazine valide ne change rien */
+      const r = appliquerPremierJet(g.jet, m, cat);
+      if (r.refus) return planRien(e);
+      return simple("chargerPremierJet", "Premier jet chargé", r.magazine.planches[0].id, r.magazine, {});
     }
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));

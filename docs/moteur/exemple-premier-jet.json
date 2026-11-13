@@ -1,0 +1,181 @@
+{
+  "format": "bellajour-premier-jet",
+  "version": 1,
+  "photos": {
+    "p001": "IMG_0101.JPG",
+    "p002": "IMG_0102.JPG",
+    "p003": "IMG_0103.JPG",
+    "p004": "IMG_0104.JPG",
+    "p005": "IMG_0105.JPG",
+    "p006": "IMG_0106.JPG",
+    "p007": "IMG_0107.JPG"
+  },
+  "raisons": {
+    "p001": "ouvre le magazine : la lumière du matin",
+    "p002": "portrait de la double",
+    "p007": "floue : la rafale a une photo plus nette"
+  },
+  "magazine": {
+    "version": 1,
+    "id": "exemple",
+    "titre": "Exemple de premier jet",
+    "planches": [
+      {
+        "id": "pl-1",
+        "mode": "pages",
+        "double": null,
+        "gauche": null,
+        "droite": {
+          "templateId": "G-P1-b",
+          "photos": [
+            {
+              "photoId": "p001",
+              "recadrage": {
+                "zoom": 1,
+                "dx": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "textes": []
+        }
+      },
+      {
+        "id": "pl-2",
+        "mode": "double",
+        "double": {
+          "templateId": "GD1-EN-0065_HS-0021.0163",
+          "photos": [
+            {
+              "photoId": "p002",
+              "recadrage": {
+                "zoom": 1,
+                "dx": 0,
+                "dy": 0
+              }
+            },
+            {
+              "photoId": "p003",
+              "recadrage": {
+                "zoom": 1,
+                "dx": 0,
+                "dy": 0
+              }
+            },
+            {
+              "photoId": "p004",
+              "recadrage": {
+                "zoom": 1,
+                "dx": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "textes": []
+        },
+        "gauche": null,
+        "droite": null
+      },
+      {
+        "id": "pl-fin",
+        "mode": "pages",
+        "double": null,
+        "gauche": {
+          "templateId": "E-S1",
+          "photos": [
+            {
+              "photoId": "p005",
+              "recadrage": {
+                "zoom": 1,
+                "dx": 0,
+                "dy": 0
+              }
+            }
+          ],
+          "textes": [
+            {
+              "contenu": "Titre",
+              "taille": 60,
+              "gras": true
+            },
+            {
+              "contenu": "Légende",
+              "taille": 7,
+              "gras": false
+            }
+          ]
+        },
+        "droite": null
+      }
+    ],
+    "creeLe": "2026-11-13T09:00:00.000Z",
+    "modifieLe": "2026-11-13T09:00:00.000Z",
+    "derniere": true,
+    "couverture": {
+      "templateId": "CV-01",
+      "photos": [
+        {
+          "photoId": "p003",
+          "recadrage": {
+            "zoom": 1,
+            "dx": 0,
+            "dy": 0
+          }
+        },
+        {
+          "photoId": null,
+          "recadrage": {
+            "zoom": 1,
+            "dx": 0,
+            "dy": 0
+          }
+        },
+        {
+          "photoId": "p006",
+          "recadrage": {
+            "zoom": 1,
+            "dx": 0,
+            "dy": 0
+          }
+        }
+      ],
+      "textes": [
+        {
+          "contenu": "Titre",
+          "taille": 48,
+          "gras": true
+        },
+        {
+          "contenu": "Légende",
+          "taille": 11,
+          "gras": false
+        }
+      ]
+    },
+    "style": {
+      "paire": "T-01",
+      "couleurs": {
+        "papier": "#ffffff",
+        "encre": "#231f20",
+        "aplatClair": "#ebdace",
+        "aplatSourd": "#bc977d",
+        "accent": "#856045",
+        "nuit": "#231f20"
+      }
+    },
+    "tri": {
+      "choisies": [
+        "p001",
+        "p002",
+        "p003",
+        "p004",
+        "p005",
+        "p006"
+      ],
+      "ecartees": [
+        "p007"
+      ],
+      "visees": 24
+    }
+  }
+}

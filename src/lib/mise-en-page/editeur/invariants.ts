@@ -188,7 +188,7 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
           const d = dispositionDe(pB, x.ref.cible);
           if (x.photoId && is.posees.includes(x.photoId) && d && !estNeutre(d.photos[x.ref.index].recadrage)) err.push("I17 photo ajoutée non neutre");
         }
-        const cible = pB.mode === "double" ? "double" : indexPlanche(m2, a.plancheId) === 0 ? "droite" : a.cible ?? cibleSurPlanche(mAvant, a.plancheId) ?? undefined;
+        const cible = pB.mode === "double" ? "double" : coteSeul(m2, indexPlanche(m2, a.plancheId)) ?? a.cible ?? cibleSurPlanche(mAvant, a.plancheId) ?? undefined;
         verifierChoix(m2, a.plancheId, cat, err, op, cible);
       }
       break;
@@ -259,6 +259,10 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       for (const id2 of mAvant.planches.map((x) => x.id)) if (id2 !== id && plancheDe(mAvant, id2) !== plancheDe(m2, id2)) err.push(`L4 ${op} a touché une autre planche`);
       break;
     }
+    case "chargerPremierJet":
+      /* lot E : le magazine entier est remplacé : ni bilan de photos ni report de textes à tenir, seulement un magazine qui se relit */
+      if (!contenuValide(m2)) err.push("PJ le premier jet a produit un magazine invalide");
+      break;
     case "styler":
       /* lot C : le style ne touche ni une photo ni une planche, et ce qu'il écrit se relit */
       if (plus.length || moins.length || m2.planches !== mAvant.planches) err.push("S1 styler a touché les planches ou les photos");
@@ -288,7 +292,7 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       if (op === "fusionner" || op === "separer") verifierChoix(m2, id, cat, err, op);
     }
   }
-  if (op !== "vider" && op !== "supprimerPlanche") {
+  if (op !== "vider" && op !== "supprimerPlanche" && op !== "chargerPremierJet") {
     const sA = saisisDe(mAvant), sB = saisisDe(m2);
     if (sA !== sB + is.textesPerdus) err.push(`I18 ${op} textes : ${sA} ≠ ${sB} + ${is.textesPerdus}`);
   }

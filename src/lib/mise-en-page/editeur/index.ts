@@ -23,6 +23,8 @@ export {
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 export { contenuValide } from "../sauvegarde";
+export { FORMAT_PREMIER_JET, NOM_FICHIER_MAX, PREFIXE_ABSENTE, RAISON_MAX, REGLE_PREMIER_JET, TAILLE_MAX_PREMIER_JET, VERSION_PREMIER_JET, appliquerPremierJet, idsDuMagazine, lirePremierJet, motProposition, nomComparable } from "./premierJet";
+export type { BilanPremierJet, LecturePremierJet, PremierJet } from "./premierJet";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
 export { planDepot, planifier } from "./plans";
 export { aCote, aCoteParJour, groupes, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";

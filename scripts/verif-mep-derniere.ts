@@ -7,6 +7,8 @@
  *      NOM DE FICHIER d'origine.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { PDFDocument } from "pdf-lib";
 import { strFromU8, unzipSync } from "fflate";
 import * as O from "@/lib/mise-en-page/editeur";
@@ -22,6 +24,8 @@ import { construireIdmlCouverture } from "@/lib/mise-en-page/idml";
 import { largeurCouverture } from "@/lib/mise-en-page/geometrie";
 import { dosDeLEtat, dosDeLaCouverture } from "@/app/admin/atelier/mise-en-page/[id]/dosCouverture";
 import { couvertureDeLExport } from "@/app/admin/atelier/mise-en-page/[id]/exporter";
+import { LECTURE_VIDE } from "@/lib/mise-en-page/editeur/mesures";
+import { marqueDe } from "@/lib/mise-en-page/editeur/tri";
 import { EMPREINTE_IDML_INTERIEUR, PHOTOS_ETALON, empreinteIdml, magazineEtalon } from "./etalon-idml";
 
 const K = PT_PAR_MM;
@@ -277,4 +281,154 @@ export async function verifierMepDerniere(ok: (nom: string, reussi: boolean) => 
   ok("tranche : l'export de la couverture part avec le dos saisi (couverture « ecrite », 3,2 mm) ; l'IDML a la largeur 420 + 3,2 mm ; sans dos du tout, elle reste bloquée avec sa phrase",
     choix.couverture.etat === "ecrite" && choix.couverture.dosMm === 3.2 && Math.abs(largeurPt - largeurCouverture(3.2) * K) < 0.001 && Math.abs(largeurCouverture(3.2) - 423.2) < 1e-9
       && couvertureDeLExport({ ...baseC, couverture: couvOk }, null, "Pages à saisir pour le dos").couverture.etat === "bloquee" && GABARITS_COUVERTURE.length > 0);
+
+  /* ═════════════════════════ 3. le premier jet : un magazine composé hors de l'éditeur, relié par les noms de fichier ═════════════════════════ */
+  titre("— mise en page, lot E : le premier jet (un fichier JSON de magazine, les photos reliées par leur nom de fichier) —");
+  const exempleTexte = readFileSync(resolve(process.cwd(), "docs/moteur/exemple-premier-jet.json"), "utf8");
+  const lu1 = O.lirePremierJet(exempleTexte);
+  ok("premier jet : le fichier d'exemple de docs/moteur se lit (texte JSON ou objet), son magazine passe `contenuValide`, il porte la dernière page, la table des noms et les raisons",
+    lu1.ok && contenuValide(lu1.jet.magazine) && lu1.jet.magazine.derniere === true && Object.keys(lu1.jet.photos).length === 7 && !!lu1.jet.raisons && Object.keys(lu1.jet.raisons).length === 3
+      && O.lirePremierJet(JSON.parse(exempleTexte)).ok && O.FORMAT_PREMIER_JET === "bellajour-premier-jet" && O.VERSION_PREMIER_JET === 1);
+  if (!lu1.ok) return;
+  const jet = lu1.jet;
+  const exemple = JSON.parse(exempleTexte) as Record<string, unknown> & { magazine: Record<string, unknown> & { planches: Record<string, unknown>[] }; photos: Record<string, string>; raisons: Record<string, string> };
+
+  /* les photos importées : autres identifiants (loc-…), noms de fichier d'origine (casse, dossier et espaces d'un export) */
+  const importees = (noms: string[]): PhotoMaq[] => noms.map((n, i) => photoMaq(`loc-${String(i).padStart(4, "0")}`, i % 2 ? 3024 : 4032, i % 2 ? 4032 : 3024)).map((p, i) => ({ ...p, nom: noms[i] }));
+  const tous = importees(["img_0101.jpg", "DCIM/IMG_0102.JPG", " IMG_0103.JPG ", "IMG_0104.JPG", "IMG_0105.JPG", "IMG_0106.JPG", "IMG_0107.JPG", "IMG_9999.JPG"]);
+  const catTous = new Map(tous.map((p) => [p.id, p]));
+  const courant = nouveauMagazine("courant-libre", "Création libre", "2026-11-13T08:00:00.000Z");
+  const b = O.appliquerPremierJet(jet, courant, catTous);
+  const jetVersCat: Record<string, string> = { p001: "loc-0000", p002: "loc-0001", p003: "loc-0002", p004: "loc-0003", p005: "loc-0004", p006: "loc-0005", p007: "loc-0006" };
+  ok("premier jet : les 7 photos du fichier se relient aux photos importées par leur NOM DE FICHIER (casse, dossier et espaces ignorés), sans en oublier ; rien n'est introuvable ; le magazine composé est valide",
+    b.reliees === 7 && b.total === 7 && b.manquantes.length === 0 && b.ambigues.length === 0 && b.refus === null && contenuValide(b.magazine)
+      && O.idsMagazine(b.magazine).every((id) => catTous.has(id)) && b.magazine.planches[0].droite?.photos[0].photoId === "loc-0000"
+      && b.magazine.planches[1].double?.photos.map((a) => a.photoId).join() === "loc-0001,loc-0002,loc-0003" && b.magazine.planches[2].gauche?.photos[0].photoId === "loc-0004"
+      && b.magazine.couverture?.photos.map((a) => a.photoId).join() === "loc-0002,,loc-0005");
+  /* rien de plus que les identifiants ne change : on remet les identifiants du fichier et on retrouve le magazine du fichier (planches, gabarits, recadrages, textes, style, couverture) */
+  const retour = JSON.parse(JSON.stringify(b.magazine).replace(/"(loc-\d{4})"/g, (_, id: string) => `"${Object.entries(jetVersCat).find(([, v]) => v === id)![0]}"`)) as Record<string, unknown>;
+  const original = clone(jet.magazine) as unknown as Record<string, unknown>;
+  ok("premier jet : le magazine arrive TEL QUEL (planches, gabarits, photos, recadrages, textes, style, couverture, tri, dernière page) : en remettant les identifiants du fichier, on retrouve le magazine du fichier, à l'identité du projet près",
+    JSON.stringify({ ...retour, id: 0, titre: 0, creeLe: 0, modifieLe: 0 }, Object.keys({ ...retour, id: 0 }).sort()) === JSON.stringify({ ...original, id: 0, titre: 0, creeLe: 0, modifieLe: 0 }, Object.keys({ ...original, id: 0 }).sort())
+      && b.magazine.id === "courant-libre" && b.magazine.titre === "Création libre" && b.magazine.creeLe === courant.creeLe && b.magazine.modifieLe === courant.modifieLe
+      && b.magazine.style?.paire === "T-01" && b.magazine.couverture?.templateId === "CV-01" && b.magazine.planches.length === 3 && b.magazine.derniere === true);
+  ok("premier jet : le TRI et les RAISONS arrivent : gardées, écartée, objectif ; les raisons deviennent des propositions « PJ » sur les photos reliées, avec la marque que le tri porte (jamais celle de la raison)",
+    b.magazine.tri?.choisies.length === 6 && b.magazine.tri.ecartees.join() === "loc-0006" && b.magazine.tri.visees === 24 && marqueDe(b.magazine, "loc-0000") === "choisie" && marqueDe(b.magazine, "loc-0006") === "ecartee"
+      && Object.keys(b.propositions).sort().join() === "loc-0000,loc-0001,loc-0006" && b.propositions["loc-0006"].marque === "ecartee" && b.propositions["loc-0006"].regle === "PJ"
+      && b.propositions["loc-0000"].marque === "choisie" && /lumière/.test(b.propositions["loc-0000"].raison) && O.motProposition(b.propositions["loc-0006"]) === "premier jet"
+      && O.motProposition({ regle: "A10" }) === "pré-tri");
+
+  /* les photos qui ne trouvent pas leur photo : listées, jamais perdues, rien ne casse */
+  const sans = importees(["IMG_0101.JPG", "IMG_0103.JPG", "IMG_0104.JPG", "IMG_0106.JPG", "IMG_9999.JPG"]);
+  const catSans = new Map(sans.map((p) => [p.id, p]));
+  const bm = O.appliquerPremierJet(jet, courant, catSans);
+  ok("premier jet : les photos sans photo importée du même nom sont LISTÉES par leur nom de fichier (IMG_0102, 0105, 0107), restent posées « indisponibles » sous un identifiant `jet:…`, sans toucher au catalogue ; le magazine reste valide ; 4 reliées sur 7",
+    bm.reliees === 4 && bm.total === 7 && bm.manquantes.map((x) => x.nom).sort().join() === "IMG_0102.JPG,IMG_0105.JPG,IMG_0107.JPG" && bm.manquantes.every((x) => x.id.startsWith(O.PREFIXE_ABSENTE) && !catSans.has(x.id))
+      && contenuValide(bm.magazine) && O.photosIndisponibles(bm.magazine, catSans as never).sort().join() === "jet:p002,jet:p005"
+      && bm.magazine.planches[1].double?.photos[0].photoId === "jet:p002" && bm.refus === null);
+  ok("premier jet : le tri ne garde que les photos RECONNUES (une photo introuvable n'est ni gardée ni écartée à sa place), sans doublon ni recouvrement ; leurs raisons ne sont pas écrites ; les étiquettes restent des gardées",
+    bm.magazine.tri?.choisies.join() === "loc-0000,loc-0001,loc-0002,loc-0003" && bm.magazine.tri.ecartees.length === 0 && !JSON.stringify(bm.magazine.tri).includes("jet:")
+      && Object.keys(bm.propositions).join() === "loc-0000" && contenuValide(bm.magazine));
+  ok("premier jet : aucune photo importée ne correspond : tout est listé, rien ne casse, le magazine reste valide et sans tri ; un catalogue vide de même",
+    (() => {
+      const nul = O.appliquerPremierJet(jet, courant, new Map());
+      return nul.reliees === 0 && nul.total === 7 && nul.manquantes.length === 7 && contenuValide(nul.magazine) && nul.magazine.tri?.choisies.length === 0 && nul.magazine.planches.length === 3 && nul.refus === null;
+    })());
+  ok("premier jet : deux photos importées de même nom : la PREMIÈRE du catalogue est prise et le nom est signalé ; deux photos du fichier qui n'en font qu'une sur la même planche : refus en une phrase, rien n'est chargé",
+    (() => {
+      const dbl = importees(["IMG_0101.JPG", "IMG_0101.JPG", "IMG_0102.JPG", "IMG_0103.JPG", "IMG_0104.JPG", "IMG_0105.JPG", "IMG_0106.JPG", "IMG_0107.JPG"]);
+      const r = O.appliquerPremierJet(jet, courant, new Map(dbl.map((p) => [p.id, p])));
+      const fusion = clone(exemple);
+      fusion.photos.p003 = "IMG_0102.JPG";
+      const lu = O.lirePremierJet(fusion);
+      const r2 = lu.ok ? O.appliquerPremierJet(lu.jet, courant, catTous) : null;
+      return r.ambigues.join() === "IMG_0101.JPG" && r.magazine.planches[0].droite?.photos[0].photoId === "loc-0000" && !!r2 && !!r2.refus && /deux fois sur une planche/.test(r2.refus);
+    })());
+  ok("premier jet : le magazine courant GARDE ce que le fichier ne porte pas (tri, style, couverture) ; un fichier sans dernière page en reçoit une vide ; les planches du fichier remplacent toujours celles du courant",
+    (() => {
+      const ancien = clone(exemple);
+      delete (ancien.magazine as Record<string, unknown>).tri; delete (ancien.magazine as Record<string, unknown>).style; delete (ancien.magazine as Record<string, unknown>).couverture; delete (ancien.magazine as Record<string, unknown>).derniere;
+      ancien.magazine.planches = ancien.magazine.planches.slice(0, 2);
+      delete (ancien as Record<string, unknown>).raisons;
+      const lu = O.lirePremierJet(ancien);
+      if (!lu.ok) return false;
+      const deja: Magazine = { ...courant, tri: { choisies: ["loc-0000"], ecartees: [], visees: 12 }, style: jet.magazine.style, couverture: { ...couvertureNeuve("CV-02"), dosMm: 3.2 } };
+      const r = O.appliquerPremierJet(lu.jet, deja, catTous);
+      return contenuValide(r.magazine) && r.magazine.derniere === true && r.magazine.planches.length === 3 && r.magazine.planches[2].id === "pl-fin" && O.pagesDe(r.magazine) === 4
+        && r.magazine.tri === deja.tri && r.magazine.style === deja.style && r.magazine.couverture === deja.couverture && r.magazine.planches[1].double !== null
+        && Object.keys(r.propositions).length === 0;
+    })());
+
+  /* les refus : une PHRASE chaque fois, jamais une exception */
+  const refus = (x: unknown): string | null => { const r = O.lirePremierJet(x); return r.ok ? null : r.phrase; };
+  const modif = (f: (j: typeof exemple) => void): unknown => { const j = clone(exemple); f(j); return j; };
+  const cas: [string, unknown, RegExp][] = [
+    ["JSON illisible", "{ pas du json", /JSON lisible/], ["un tableau", [], /objet JSON/], ["une chaîne JSON", "\"x\"", /objet JSON/], ["null", null, /objet JSON/], ["rien", undefined, /objet JSON/],
+    ["format absent", modif((j) => { delete (j as Record<string, unknown>).format; }), /format/], ["autre format", modif((j) => { (j as Record<string, unknown>).format = "autre"; }), /bellajour-premier-jet/],
+    ["version 2", modif((j) => { (j as Record<string, unknown>).version = 2; }), /Version 2 inconnue/], ["version absente", modif((j) => { delete (j as Record<string, unknown>).version; }), /Version absente/],
+    ["champ en trop", modif((j) => { (j as Record<string, unknown>).pirate = 1; }), /« pirate »/], ["sans magazine", modif((j) => { delete (j as Record<string, unknown>).magazine; }), /pas de « magazine »/],
+    ["un magazine qui n'est pas un objet", modif((j) => { (j as Record<string, unknown>).magazine = "x"; }), /pas de « magazine »/],
+    ["planches cassées", modif((j) => { j.magazine.planches[0].mode = "triple"; }), /« planches » est refusé/],
+    ["couverture cassée", modif((j) => { (j.magazine as Record<string, unknown>).couverture = { templateId: "CV-99" }; }), /« couverture » est refusé/],
+    ["style cassé", modif((j) => { (j.magazine as Record<string, unknown>).style = { paire: "T-04" }; }), /« style » est refusé/],
+    ["tri cassé", modif((j) => { (j.magazine as Record<string, unknown>).tri = { choisies: ["p001"], ecartees: ["p001"], visees: null }; }), /« tri » est refusé/],
+    ["clé de magazine en trop", modif((j) => { (j.magazine as Record<string, unknown>).pirate = 1; }), /magazine sauvegardé/],
+    ["dernière page cassée", modif((j) => { j.magazine.planches[2].mode = "double"; }), /refusé/],
+    ["sans table des noms", modif((j) => { delete (j as Record<string, unknown>).photos; }), /table « photos »/], ["table en tableau", modif((j) => { (j as Record<string, unknown>).photos = ["a"]; }), /table « photos »/],
+    ["un nom vide", modif((j) => { j.photos.p001 = "  "; }), /p001/], ["un nom qui n'est pas un texte", modif((j) => { (j.photos as Record<string, unknown>).p002 = 12; }), /p002/],
+    ["un nom trop long", modif((j) => { j.photos.p001 = "x".repeat(O.NOM_FICHIER_MAX + 1); }), /p001/],
+    ["une photo posée sans nom", modif((j) => { delete (j.photos as Record<string, unknown>).p004; }), /pas de nom de fichier pour p004/],
+    ["une photo de la couverture sans nom", modif((j) => { delete (j.photos as Record<string, unknown>).p006; }), /p006/],
+    ["des raisons qui ne sont pas un objet", modif((j) => { (j as Record<string, unknown>).raisons = "x"; }), /« raisons »/], ["une raison pour une photo inconnue", modif((j) => { j.raisons.p999 = "x"; }), /p999/],
+    ["une raison vide", modif((j) => { j.raisons.p001 = ""; }), /p001/], ["une raison trop longue", modif((j) => { j.raisons.p001 = "x".repeat(O.RAISON_MAX + 1); }), /p001/],
+    ["une raison qui n'est pas un texte", modif((j) => { (j.raisons as Record<string, unknown>).p001 = 3; }), /p001/],
+    ["un fichier énorme", "x".repeat(O.TAILLE_MAX_PREMIER_JET + 1), /trop gros/],
+  ];
+  const echecs = cas.filter(([, x, re]) => { const p = refus(x); return p === null || !re.test(p) || p.length < 12; }).map(([n]) => n);
+  ok(`premier jet : ${cas.length} fichiers invalides sont REFUSÉS chacun avec une phrase qui dit la cause (JSON illisible, format, version, magazine, planches, couverture, style, tri, table des noms, raisons, taille)${echecs.length ? ` — ratés : ${echecs.join(" · ")}` : ""}`,
+    echecs.length === 0);
+  ok("premier jet : une raison est facultative, une table peut nommer plus de photos que le magazine n'en pose, un nom peut porter le dossier ; une raison de 120 signes passe",
+    !refus(modif((j) => { delete (j as Record<string, unknown>).raisons; })) && !refus(modif((j) => { j.photos.p888 = "IMG_8888.JPG"; })) && !refus(modif((j) => { j.photos.p001 = "Lisbonne/IMG_0101.JPG"; }))
+      && !refus(modif((j) => { j.raisons.p001 = "x".repeat(O.RAISON_MAX); })) && O.nomComparable("Lisbonne\\Été/IMG_0101.JPG") === "img_0101.jpg" && O.nomComparable("  IMG_0101.JPG ") === "img_0101.jpg");
+
+  /* ── le geste : un seul pas d'historique, annulable, rétablissable, jamais une leçon ── */
+  const base0 = O.creerEtat({ magazine: courant, catalogue: tous });
+  const charge = O.appliquer(base0, { type: "chargerPremierJet", jet });
+  ok("geste : « Premier jet » remplace les planches en UNE entrée d'historique (libellé « Premier jet chargé »), arrive sur la première planche, garde l'identité du projet ; le message propose Annuler ; les invariants tiennent",
+    charge.magazine !== base0.magazine && charge.magazine.planches.length === 3 && charge.historique.passe.length === 1 && charge.historique.passe[0].libelle === "Premier jet chargé"
+      && charge.plancheCourante === "pl-1" && charge.premiereId === "pl-1" && charge.prochainNumero >= 3 && charge.magazine.id === "courant-libre" && charge.message?.action?.libelle === "Annuler"
+      && charge.message.texte === "Premier jet chargé" && Object.keys(charge.pretri).length === 3 && O.verifierInvariants(charge).length === 0 && contenuValide(charge.magazine));
+  const annule = O.appliquer(charge, { type: "annuler" });
+  const refait = O.appliquer(annule, { type: "retablir" });
+  ok("geste : Annuler rend EXACTEMENT le magazine d'avant (même objet, deux planches), Rétablir le premier jet ; les invariants tiennent à chaque pas ; tout reste modifiable (poser, écrire, marquer après le chargement)",
+    annule.magazine === base0.magazine && refait.magazine === charge.magazine && O.verifierInvariants(annule).length === 0 && O.verifierInvariants(refait).length === 0
+      && (() => {
+        let e = charge;
+        e = O.appliquer(e, { type: "deposer", source: { type: "bibliotheque", ids: ["loc-0007"] }, cible: { type: "page", plancheId: "pl-fin", cote: "gauche" } });
+        e = O.appliquer(e, { type: "marquer", ids: ["loc-0007"], marque: "reserve", poser: true });
+        return e.historique.passe.length === 3 && e.magazine.planches[2].gauche?.photos.length === 2 && O.verifierInvariants(e).length === 0 && contenuValide(e.magazine)
+          && O.appliquer(O.appliquer(e, { type: "annuler" }), { type: "annuler" }).magazine === charge.magazine;
+      })());
+  /* jamais une leçon : ce n'est pas un geste de l'atelier, même quand le fichier garde une photo que la lecture dit floue */
+  const flou = O.creerEtat({ magazine: courant, catalogue: tous });
+  const lectureFloue = { ...flou, lecture: { ...LECTURE_VIDE, floues: ["loc-0003"], mesurees: 8 } };
+  const viaMarque = O.appliquer(lectureFloue, { type: "marquer", ids: ["loc-0003"], marque: "choisie", poser: true });
+  const viaJet = O.appliquer(lectureFloue, { type: "chargerPremierJet", jet });
+  ok("geste : le chargement ne produit AUCUNE leçon (garder une floue à la main en fait une, le fichier non), les propositions du fichier servent ensuite : renverser une marque du premier jet est une leçon « PJ »",
+    viaMarque.lecons.length === 1 && viaMarque.lecons[0].type === "floue_gardee" && viaJet.lecons.length === 0
+      && (() => {
+        const apres = O.appliquer(viaJet, { type: "marquer", ids: ["loc-0006"], marque: "choisie", poser: true });
+        return apres.lecons.length === 1 && apres.lecons[0].type === "pretri_renverse" && apres.lecons[0].regle === "PJ" && /écartée : floue/.test(apres.lecons[0].proposition) && O.leconValide(apres.lecons[0]);
+      })());
+  const lectureSeuleE = O.appliquer(base0, { type: "ouvrirLectureSeule", raison: "archive" });
+  const doublon = O.creerEtat({ magazine: courant, catalogue: new Map([...catTous]) });
+  const fusionLu = O.lirePremierJet(modif((j) => { j.photos.p003 = "IMG_0102.JPG"; }));
+  ok("geste : en lecture seule, ou pour un fichier qui ne compose pas un magazine valide, rien ne change (même état, aucune entrée d'historique)",
+    O.appliquer(lectureSeuleE, { type: "chargerPremierJet", jet }).magazine === lectureSeuleE.magazine && fusionLu.ok
+      && O.appliquer(doublon, { type: "chargerPremierJet", jet: fusionLu.jet }).magazine === doublon.magazine && O.appliquer(doublon, { type: "chargerPremierJet", jet: fusionLu.jet }).historique.passe.length === 0);
+  const eSans = O.appliquer(O.creerEtat({ magazine: courant, catalogue: catSans }), { type: "chargerPremierJet", jet });
+  ok("geste : avec des photos introuvables, le message le dit (« 3 photos introuvables ») et l'écran les liste ; elles restent posées, le bandeau « photos indisponibles » les compte (jet:p002, jet:p005) ; invariants tenus",
+    /3 photos introuvables/.test(eSans.message?.texte ?? "") && O.photosIndisponibles(eSans.magazine, eSans.catalogue).length === 2 && O.verifierInvariants(eSans).filter((x) => !/I8|photo|catalogue|indispon/i.test(x)).length === 0);
+  /* le fichier ne touche à rien d'autre : ni photos, ni catalogue, ni sélection */
+  ok("geste : le catalogue et la sélection restent tels quels (le fichier ne crée aucune photo)", charge.catalogue === base0.catalogue && charge.selection === base0.selection);
 }

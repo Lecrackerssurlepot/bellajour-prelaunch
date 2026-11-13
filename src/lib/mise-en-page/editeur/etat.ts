@@ -18,6 +18,7 @@ import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./leco
 import { preTrier } from "./pretri";
 import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
+import { appliquerPremierJet } from "./premierJet";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
   FILTRES_DEFAUT, HISTORIQUE_MAX, affectation, aPhoto, borner, dimsDeRef, egal, indexPlanche, neutre, pluriel, texteDe,
@@ -79,10 +80,10 @@ const enAttente = (s: EtatSauvegarde): EtatSauvegarde => ({ etat: "en_attente", 
 /* ─────────────────────────── Historique et séances ─────────────────────────── */
 
 /** L'unique porte d'entrée du magazine : une entrée d'historique, futur vidé, sauvegarde en attente. */
-function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine): EtatEditeur {
+function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine, sansLecons = false): EtatEditeur {
   if (magazine === e.magazine) return e;
-  /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander */
-  const neuves = [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDuPreTri(e.magazine, magazine, e.pretri)];
+  /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander. Lot E : pas le chargement d'un premier jet (ce n'est pas un geste de l'atelier) */
+  const neuves = sansLecons ? [] : [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDuPreTri(e.magazine, magazine, e.pretri)];
   if (neuves.length) e = { ...e, lecons: [...e.lecons, ...neuves].slice(-LECONS_MAX) };
   const passe = [...e.historique.passe, { libelle, avant: e.magazine, apres: magazine, plancheId }].slice(-HISTORIQUE_MAX);
   return { ...e, magazine, historique: { passe, futur: [] }, sauvegarde: enAttente(e.sauvegarde), eclair: plancheId };
@@ -236,7 +237,7 @@ export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", 
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture"]);
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -265,6 +266,17 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   const avant = x.magazine;
   /* lot 3 : le pré-tri garde ses propositions (avec leur raison) pour reconnaître ensuite un geste contraire */
   if (g.type === "preTrier") x = { ...x, pretri: { ...x.pretri, ...preTrier(e.catalogue, e.magazine, e.lecture).propositions } };
+  /* lot E : le premier jet remplace les planches : le tri et les raisons qu'il porte, la première planche et le compteur suivent */
+  if (g.type === "chargerPremierJet") {
+    const r = appliquerPremierJet(g.jet, e.magazine, e.catalogue);
+    x = adopter({ ...x, pretri: { ...x.pretri, ...r.propositions } }, plan.libelle, plan.plancheId, is.magazine, true);
+    x = {
+      ...x, plancheCourante: plan.plancheId, premiereId: x.magazine.planches[0].id, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1),
+      cadreActif: null, cadresSel: [], echangeArme: null, eclair: null, halo: null,
+      message: { texte: r.manquantes.length ? `Premier jet chargé · ${pluriel(r.manquantes.length, "photo introuvable", "photos introuvables")}` : "Premier jet chargé", action: { libelle: "Annuler" } },
+    };
+    return x;
+  }
   x = adopter(x, plan.libelle, plan.plancheId, is.magazine);
   if ((plan.op === "insererDouble" || plan.op === "creerDoubles") && is.nouvellePlanche) {
     x = { ...x, plancheCourante: is.nouvellePlanche, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1) };
@@ -310,6 +322,8 @@ function annulerEtat(e: EtatEditeur): EtatEditeur {
   const en = passe[passe.length - 1];
   return {
     ...x, magazine: en.avant, historique: { passe: passe.slice(0, -1), futur: [...x.historique.futur, en] },
+    /* lot E : le chargement d'un premier jet change l'id de la première planche, et défaire ou refaire le rend */
+    premiereId: en.avant.planches[0].id, prochainNumero: Math.max(x.prochainNumero, numeroMax(en.avant) + 1),
     /* une entrée qui ne touche que le tri ne change pas la double affichée */
     ...(seulTri(en) ? { eclair: null } : { plancheCourante: plancheProche(en.avant, en.plancheId, en.apres), eclair: en.plancheId }),
     sauvegarde: enAttente(x.sauvegarde), glisser: null, confirmation: null, message: null,
@@ -323,6 +337,7 @@ function retablirEtat(e: EtatEditeur): EtatEditeur {
   const en = futur[futur.length - 1];
   return {
     ...x, magazine: en.apres, historique: { passe: [...x.historique.passe, en], futur: futur.slice(0, -1) },
+    premiereId: en.apres.planches[0].id, prochainNumero: Math.max(x.prochainNumero, numeroMax(en.apres) + 1),
     ...(seulTri(en) ? { eclair: null } : { plancheCourante: plancheProche(en.apres, en.plancheId, en.avant), eclair: en.plancheId }),
     sauvegarde: enAttente(x.sauvegarde), glisser: null, confirmation: null, message: null,
   };

@@ -59,12 +59,19 @@ export type Ui = {
   guides: Guide[];
   /** Lot D (12/11) : la grille d'artiste (tiers, nombre d'or, diagonales) par-dessus chaque page, gardée sur ce Mac. Écran seulement. */
   grille: boolean;
+  /** Lot E : ce que le dernier fichier de premier jet a donné (chargé : photos reliées et introuvables ; refusé : la phrase). Écran seulement, jusqu'à « Fermer ». */
+  premierJet: BandeauPremierJet | null;
 };
+
+/** Lot E : le bandeau du premier jet. */
+export type BandeauPremierJet =
+  | { type: "ok"; fichier: string; reliees: number; total: number; manquantes: string[]; ambigues: string[] }
+  | { type: "refuse"; fichier: string; phrase: string };
 
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false, style: false,
   grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, lecture: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
-  retouche: null, position: null, aimant: true, guides: [], grille: false,
+  retouche: null, position: null, aimant: true, guides: [], grille: false, premierJet: null,
 };
 
 /** L'aimant et la grille d'artiste se rappellent d'une séance à l'autre, sur ce Mac seulement. Jamais d'exception. */
