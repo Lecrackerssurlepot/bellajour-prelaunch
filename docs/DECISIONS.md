@@ -713,3 +713,10 @@ photos (Martinique, dos 2,66 mm = 32 pages en brillant), fichiers `~/Desktop/Bel
 Ce qui entre donc dans l'export : le document non vis-à-vis de largeur variable, les colonnes de marge comme repères des
 plis, les sauts de ligne d'un texte répété. Les trois gabarits essayés (CV-01, CV-05, CV-11) couvrent les objets de tous
 les autres (photos pleines et à bord blanc, aplats de face et de dos, textes blanc et noir, plusieurs mots-titres).
+**D28, suite (13/11/2026, lot E : la dernière page seule) : essai Affinity EN ATTENTE.** Nouveauté d'export : un spread d'UNE page GAUCHE
+(`PageCount="1" BindingLocation="1"`, page décalée de −595,2756 pt, numéro pair) en fin de document, jamais écrit avant. Prouvé jusqu'ici : XML bien formé
+(xmllint), 4 pages / 4 pages au `Section`, les spreads d'avant identiques à l'octet, l'ancien format identique à l'octet (harnais). PAS prouvé : la relecture par
+Affinity (nombre de pages, position du dernier spread, cadres à gauche du pli). Le générateur est prêt, `scripts/idml-essai-derniere.ts <dossier de JPEG> <sortie>`
+(Affinity ne lit que le Bureau : sortie `~/Desktop/Bellajour/test-idml/derniere-lot-e`, valeurs attendues dans `attendu.json`) ; l'agent du lot n'avait pas le
+droit d'écrire sur le Bureau. À faire AVANT de compter la dernière page comme relue fidèlement ; sans verdict FIDÈLE, l'export de l'intérieur d'un magazine à
+dernière page n'est pas garanti dans Affinity (le PDF pour Canva, lui, est lu par pdf-lib : 216 × 303 mm vérifié).
