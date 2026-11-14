@@ -173,14 +173,14 @@ export default function Apercu() {
         points={[
           { texte: 'A6 paysage, montant, code, 12 mois, prénom, message', ok: true },
           { texte: 'Survol et entrée : transform et opacity, rien sous reduced-motion', ok: true },
-          { texte: 'Phrase à choisir', ok: false },
+          { texte: 'Phrase retenue le 14/11 : « Vos photos deviennent un magazine. »', ok: true },
         ]}
       >
         <div className="nl-cartes">
           {PHRASES.map((p) => (
             <figure key={p} className="nl-carte-cadre">
               <CarteCadeau phrase={p} montant="35 €" prenom="Camille" message="Pour nos étés à Noosa." />
-              <figcaption>{p === PHRASES[PHRASES.length - 1] ? 'L’ancienne, pour comparer' : `Proposition ${PHRASES.indexOf(p) + 1}`}</figcaption>
+              <figcaption>{p === PHRASES[0] ? 'Retenue' : p === PHRASES[PHRASES.length - 1] ? 'L’ancienne, écartée' : 'Écartée'}</figcaption>
             </figure>
           ))}
         </div>

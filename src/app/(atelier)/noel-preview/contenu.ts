@@ -15,6 +15,7 @@ export const SIGNATURE = 'L’atelier Bellajour'
 /* La phrase en grand sur la carte (retour de Mathias, 14/11) : la tagline
    ne lui parlait pas. Quatre propositions à comparer, l'ancienne en dernier
    pour mémoire. */
+/* La première est RETENUE (Mathias, 14/11) ; les autres restent pour mémoire. */
 export const PHRASES = [
   'Vos photos deviennent un magazine.',
   'Un magazine, composé avec vos photos.',

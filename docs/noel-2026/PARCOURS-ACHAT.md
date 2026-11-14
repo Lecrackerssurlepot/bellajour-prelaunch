@@ -18,7 +18,7 @@
 | Emplacement | Sobre | Plus décontracté |
 |---|---|---|
 | Titre section | Offrez un souvenir. | Et si le cadeau, c'était leurs photos ? |
-| Accroche carte | On vous attend à l'intérieur. | On vous attend à l'intérieur. |
+| Accroche carte | Vos photos deviennent un magazine. | Vos photos deviennent un magazine. (retenue par Mathias le 14/11, en grand sur la carte) |
 | Sous-titre | Une carte, un magazine composé avec leurs photos. | Vous offrez la carte, ils choisissent les photos. Nous composons. |
 | Bouton | Offrir une carte | Offrir une carte |
 | Après achat | Votre carte est prête. | C'est fait. Il ne reste qu'à la glisser sous le sapin. |
