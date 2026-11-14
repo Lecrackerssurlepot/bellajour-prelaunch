@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import {
   aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, motProposition, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
-  type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
+  estTagIA, misesEnAvant, propositionRafale, tagsIA, MOT_CAPTURE, MOT_ROLE, MOT_TAG_IA, MOT_USAGE, TAGS_IA,
+  type Filtres, type Marque, type MiseEnAvant, type PhotoMaq, type RafaleReliee, type SourceGlisser, type Tag, type TagIA, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { CheminDeFer, Toast } from "./Bas";
@@ -27,7 +28,12 @@ const TAILLES = { S: 52, M: 88, L: 136 } as const;
 const HAUT_TITRE = 30;
 const ECART = 4;
 
-type Rangee = { type: "g"; lib: string; n: number; y: number; ids: string[] } | { type: "r"; ids: string[]; y: number }
+/* lot F : les mises en avant de la lecture IA, en un mot court sur la vignette (seulement celles-là) */
+const MOT_MAV: Record<MiseEnAvant, string> = { couverture: "Couv.", pleine: "Pleine", double: "Double" };
+const TAGS_MAV: readonly TagIA[] = ["ia_couverture", "ia_pleine", "ia_double"];
+const motDeTag = (t: Tag | TagIA): string => (estTagIA(t) ? MOT_TAG_IA[t].mot : MOT_TAG[t].mot);
+
+type Rangee = { type: "g"; lib: string; n: number; y: number; ids: string[]; cle: string } | { type: "r"; ids: string[]; y: number }
   /* plein écran : une rangée justifiée, chaque photo à sa largeur */
   | { type: "j"; items: { id: string; l: number }[]; y: number; h: number };
 
@@ -116,7 +122,7 @@ function PanneauOuvert() {
   const avecTitres = f.groupe !== "aucun";
   const T = ui.tailleGrand;
   for (const g of groupes) {
-    if (avecTitres) { rangees.push({ type: "g", lib: g.libelle, n: g.ids.length, y, ids: g.ids }); y += HAUT_TITRE; }
+    if (avecTitres) { rangees.push({ type: "g", lib: g.libelle, n: g.ids.length, y, ids: g.ids, cle: g.cle }); y += HAUT_TITRE; }
     if (!grand) {
       for (let i = 0; i < g.ids.length; i += cols) { rangees.push({ type: "r", ids: g.ids.slice(i, i + cols), y }); y += cell + ECART; }
       continue;
@@ -188,8 +194,17 @@ function PanneauOuvert() {
 
   /* « Poser » sur un titre de groupe : ses photos GARDÉES encore libres (sinon toutes ses libres non écartées),
      en doubles pages neuves après la planche courante. Le pont direct entre le tri et la page. */
-  const poserGroupe = (ids: string[]) => {
+  const poserGroupe = (ids: string[], cle?: string) => {
     if (ro) return null;
+    /* lot F (R144) : un groupe de la lecture IA (duo, trio, combo) se pose ENTIER sur une double neuve, sauf ses écartées et ses posées */
+    if (groupeIA(cle)) {
+      const tout = ids.filter((id) => !rep.utilisations.get(id) && !ecartees.has(id));
+      if (!tout.length) return null;
+      return (
+        <button type="button" className="ed-groupe-poser" title={`${tout.length} photo${tout.length > 1 ? "s" : ""} sur une double page neuve`}
+          onClick={() => envoyer({ type: "creerDoubles", ids: tout })}>Poser</button>
+      );
+    }
     const nonPosees = ids.filter((id) => !rep.utilisations.get(id) && !ecartees.has(id));
     const gardees = nonPosees.filter((id) => choisies.has(id));
     const libres = gardees.length ? gardees : nonPosees;
@@ -202,12 +217,18 @@ function PanneauOuvert() {
   };
 
   /* le titre d'une date : un clic sélectionne toutes ses photos (⇧ ou ⌘ : en plus), un second clic les retire */
-  const titreGroupe = (lib: string, n: number, ids: string[]) => {
+  const groupeIA = (cle?: string): boolean => f.groupe === "ia" && !!cle && cle !== "~";
+  const titreGroupe = (lib: string, n: number, ids: string[], cle?: string) => {
     const toutes = ids.length > 0 && ids.every((id) => selSet.has(id));
+    /* lot F : le titre d'un groupe de la lecture IA se GLISSE (le groupe entier part sur la double visée) */
+    const glissable = groupeIA(cle) && !ro;
     return (
-      <button type="button" className={cls("ed-groupe-t", toutes && "ed-groupe-t--sel")} aria-pressed={toutes} title={toutes ? "Retirer ce groupe de la sélection" : "Sélectionner ce groupe"}
+      <button type="button" className={cls("ed-groupe-t", toutes && "ed-groupe-t--sel", glissable && "ed-groupe-t--ia")} aria-pressed={toutes}
+        title={glissable ? `${lib} · glisser sur une double, ou Poser` : toutes ? "Retirer ce groupe de la sélection" : "Sélectionner ce groupe"}
+        onPointerDown={glissable ? (e) => commencerAppui(e, { type: "bibliotheque", ids: ids.filter((id) => !ecartees.has(id)) }) : undefined}
         onClick={(e) => {
           e.stopPropagation();
+          if (glissable && clicSupprime()) return;
           const dans = new Set(ids);
           const cur = selectionOrdonnee(etat);
           envoyer({ type: "selectionner", ids: toutes ? cur.filter((id) => !dans.has(id)) : e.shiftKey || e.metaKey || e.ctrlKey ? [...cur, ...ids.filter((id) => !selSet.has(id))] : ids });
@@ -235,7 +256,26 @@ function PanneauOuvert() {
   /* 10/11 : ce que la machine a vu, filtrable (un seul tag à la fois) */
   const tags = tagsDeLecture(cat, etat.lecture);
   const nTags = comptesTags(tags);
-  if (f.lecture) actifs.push([MOT_TAG[f.lecture].mot, () => envoyer({ type: "retirerFiltre", cle: "lecture" })]);
+  if (f.lecture) actifs.push([motDeTag(f.lecture), () => envoyer({ type: "retirerFiltre", cle: "lecture" })]);
+  /* lot F : la lecture IA (rôles, groupes, rafales, captures, lieux), et ses tags pour le filtre */
+  const ia = etat.lectureIA;
+  const tIA = tagsIA(ia);
+  const nIA = new Map<TagIA, number>();
+  for (const [id, l] of tIA) if (cat.has(id)) for (const t of l) nIA.set(t, (nIA.get(t) ?? 0) + 1);
+  const rafaleIA = new Map<string, RafaleReliee>();
+  for (const r of ia?.rafales ?? []) for (const id of r.photos) rafaleIA.set(id, r);
+  const garderIA = new Set((ia?.rafales ?? []).flatMap((r) => r.garder));
+  /* ce que la lecture IA dit de la photo, en lignes, pour le survol */
+  const survolIA = (id: string): string => {
+    const p = ia?.photos.get(id);
+    const l: string[] = [];
+    if (p?.role) l.push(`IA · ${MOT_ROLE[p.role.role]}${p.role.couverture ? `, couverture (${p.role.couverture})` : ""} : ${p.role.raison}`);
+    if (p?.capture) l.push(`${MOT_CAPTURE[p.capture.type]}${p.capture.utile ? "" : " (inutile)"} : ${p.capture.dit}`);
+    if (p?.lieu) l.push(`${p.lieu.nom}${p.lieu.statut === "sur" ? "" : " (à vérifier)"}`);
+    const r = rafaleIA.get(id);
+    if (r) l.push(`Rafale${garderIA.has(id) ? " : à garder" : ""} · ${r.pourquoi}`);
+    return l.length ? `\n${l.join("\n")}` : "";
+  };
   const menu = ui.menu;
   const ouvrirMenu = (id: string) => (e: React.MouseEvent) => { e.stopPropagation(); majUi({ menu: menu === id ? null : id }); };
   const photoDe = (id: string): PhotoMaq | undefined => cat.get(id);
@@ -252,8 +292,19 @@ function PanneauOuvert() {
     const src = grand && h > 140 ? grandeDe(adresses.get(id)) : vignetteDe(adresses.get(id));
     const sel1 = selSet.has(id);
     const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
+    /* lot F : ce que la lecture IA propose, seulement là où elle propose quelque chose (rien de répété sur toutes) */
+    const pia = ia?.photos.get(id);
+    /* sa propre étiquette (couverture, double, pleine) prime : le repère de la machine s'efface */
+    const mav = !ec && !Object.values(triM.etiquettes).some((l) => l.includes(id)) ? misesEnAvant(pia) : [];
+    const aGarder = garderIA.has(id) && !ec && !re && !choisies.has(id);
+    const capIA = pia?.capture;
+    /* une capture lue par la lecture IA ne porte que ce qu'elle raconte : « Capture », « Sombre » n'y disent rien de plus */
+    const tagsVignette = capIA ? [] : (tags.get(id) ?? []).filter((t) => MOT_TAG[t].vignette && t !== "doublon" && t !== "rafale").slice(0, 2);
+    const pile = piles.get(id);
+    const rafIA = pile?.source === "ia" ? rafaleIA.get(id) : undefined;
+    const aAccepter = rafIA && !ro ? propositionRafale(rafIA, (x) => marqueDe(etat.magazine, x)) : null;
     return (
-      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={(p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom) + (etat.pretri[id] ? ` · ${motProposition(etat.pretri[id])} : ${etat.pretri[id].raison}` : "")}
+      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={(p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom) + (etat.pretri[id] ? ` · ${motProposition(etat.pretri[id])} : ${etat.pretri[id].raison}` : "") + survolIA(id)}
         className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
         aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
@@ -283,6 +334,8 @@ function PanneauOuvert() {
           {p.coeur ? <span className="ed-rep ed-rep--rond ed-rep--coeur" title="Cœur du client" dangerouslySetInnerHTML={{ __html: COEUR }} /> : null}
           {p.signalee ? <span className="ed-rep ed-rep--drapeau" aria-hidden="true">!</span> : null}
           {etqVignette(id).map((t) => <span key={t} className="ed-rep ed-rep--etq">{t}</span>)}
+          {mav.map((k) => <span key={k} className="ed-rep ed-rep--ia" title={`Proposée en ${MOT_ROLE[k].toLowerCase()} · ${pia?.role?.raison ?? ""}`}>{MOT_MAV[k]}</span>)}
+          {aGarder ? <span className="ed-rep ed-rep--rond ed-rep--propose" title={`La machine la garderait : ${rafaleIA.get(id)?.pourquoi ?? ""}`} dangerouslySetInnerHTML={{ __html: ETOILE }} /> : null}
         </span>
         <span className="ed-vg-rep ed-vg-rep--b">
           {nums?.length ? (
@@ -303,12 +356,24 @@ function PanneauOuvert() {
           {p.autresMagazines.length ? <span className="ed-rep ed-rep--mag">Mag. {p.autresMagazines[0]}</span> : null}
           {p.nouvelle ? <span className="ed-rep ed-rep--neuve">Nouvelle</span> : null}
           {rep.bassesDef.has(id) ? <span className="ed-rep ed-rep--basse">Basse déf.</span> : null}
-          {(tags.get(id) ?? []).filter((t) => MOT_TAG[t].vignette && t !== "doublon" && t !== "rafale").slice(0, 2).map((t) => (
+          {capIA ? (
+            <span className={cls("ed-rep", "ed-rep--tag", "ed-rep--tag-capture", !capIA.utile && "ed-rep--inutile")} title={`${MOT_CAPTURE[capIA.type]}${capIA.utile ? "" : " · inutile"} : ${capIA.dit}`}>{MOT_CAPTURE[capIA.type]}</span>
+          ) : null}
+          {tagsVignette.map((t) => (
             <span key={t} className={cls("ed-rep", "ed-rep--tag", `ed-rep--tag-${t}`)} title={`${MOT_TAG[t].mot} · règle ${MOT_TAG[t].regle} · une remarque, jamais une exclusion`}>{MOT_TAG[t].mot}</span>
           ))}
+          {pile && ouvertes.has(id) && aAccepter && (aAccepter.garder.length || aAccepter.ecarter.length) ? (
+            <span className="ed-rep ed-rep--accepter" role="button" tabIndex={-1}
+              title={`Garder ${aAccepter.garder.length}, écarter ${aAccepter.ecarter.length} · ${rafIA?.pourquoi ?? ""}`}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); envoyer({ type: "accepterRafale", tete: id }); }}>
+              ✓ Accepter
+            </span>
+          ) : null}
           {piles.has(id) ? (
             <span className={cls("ed-rep ed-rep--pile", ouvertes.has(id) && "ed-rep--pile-ouverte")} role="button" tabIndex={-1}
-              title={`${piles.get(id)!.raison === "rafale" ? "Rafale" : "Doublons"} : ${piles.get(id)!.autres.length} autre${piles.get(id)!.autres.length > 1 ? "s" : ""}, la plus nette dessus. ${ouvertes.has(id) ? "Refermer" : "Ouvrir"}`}
+              title={rafIA ? `Rafale : ${rafIA.photos.length} photos, la machine en garde ${rafIA.garder.length} (${MOT_USAGE[rafIA.usage]}) · ${rafIA.pourquoi} · ${ouvertes.has(id) ? "Refermer" : "Ouvrir"}`
+                : `${piles.get(id)!.raison === "rafale" ? "Rafale" : "Doublons"} : ${piles.get(id)!.autres.length} autre${piles.get(id)!.autres.length > 1 ? "s" : ""}, la plus nette dessus. ${ouvertes.has(id) ? "Refermer" : "Ouvrir"}`}
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); e.preventDefault(); envoyer({ type: "basculerPile", tete: id }); }}>
               {ouvertes.has(id) ? "−" : "+"}{piles.get(id)!.autres.length}
@@ -395,6 +460,20 @@ function PanneauOuvert() {
                   {TAGS.every((t) => !nTags[t]) ? <span className="ed-menu-vide">Rien de remarquable</span> : null}
                 </>
               ) : null}
+              {ia ? (
+                <>
+                  {TAGS_MAV.some((t) => nIA.get(t)) ? <><hr /><span className="ed-menu-t">Mises en avant</span></> : null}
+                  {TAGS_IA.filter((t) => TAGS_MAV.includes(t) && nIA.get(t)).map((t) => (
+                    <button key={t} type="button" role="menuitemradio" aria-checked={f.lecture === t} title={`Règle ${MOT_TAG_IA[t].regle}`}
+                      onClick={() => filtrer({ lecture: f.lecture === t ? "" : t })}>{MOT_TAG_IA[t].mot} <span className="ed-menu-n">{nIA.get(t)}</span></button>
+                  ))}
+                  <hr /><span className="ed-menu-t">Lecture IA</span>
+                  {TAGS_IA.filter((t) => !TAGS_MAV.includes(t) && nIA.get(t)).map((t) => (
+                    <button key={t} type="button" role="menuitemradio" aria-checked={f.lecture === t} title={`Règle ${MOT_TAG_IA[t].regle}`}
+                      onClick={() => filtrer({ lecture: f.lecture === t ? "" : t })}>{MOT_TAG_IA[t].mot} <span className="ed-menu-n">{nIA.get(t)}</span></button>
+                  ))}
+                </>
+              ) : null}
               <hr /><span className="ed-menu-t">Orientation</span>
               {(Object.entries(ORIENT) as [keyof typeof ORIENT, string][]).map(([v, l]) => <button key={v} type="button" role="menuitemcheckbox" aria-checked={f.orientations.includes(v)} onClick={() => bascule("orientations", v)}>{l}</button>)}
               {[...cat.values()].some((p) => p.signalee) ? (
@@ -420,7 +499,7 @@ function PanneauOuvert() {
           <button type="button" className="ed-filtre" aria-haspopup="menu" aria-expanded={menu === "ph-g"} onClick={ouvrirMenu("ph-g")}>Grouper {Ico.bas}</button>
           {menu === "ph-g" ? (
             <div className="ed-menu ed-menu--droite" role="menu" onClick={(e) => e.stopPropagation()}>
-              {([["jour", "Jour"], ["moment", "Moment"], ["lieu", "Lieu"], ...(plusieursPersonnes ? [["personne", "Personne"], ["type", "Dépôt"]] as const : []), ["aucun", "Aucun"]] as const).map(([v, l]) => (
+              {([["jour", "Jour"], ["moment", "Moment"], ["lieu", "Lieu"], ...(ia?.groupes.length || f.groupe === "ia" ? [["ia", "Groupes"]] as const : []), ...(plusieursPersonnes ? [["personne", "Personne"], ["type", "Dépôt"]] as const : []), ["aucun", "Aucun"]] as const).map(([v, l]) => (
                 <button key={v} type="button" role="menuitemradio" aria-checked={f.groupe === v} onClick={() => { majUi({ menu: null }); filtrer({ groupe: v }); }}>{l}</button>
               ))}
             </div>
@@ -440,7 +519,7 @@ function PanneauOuvert() {
       <div ref={grille} className={cls("ed-grille", sel.length > 0 && "ed-grille--sel", etat.glisser?.survol?.type === "tri" && etat.glisser.survol.zone === "jeu" && "ed-grille--cible")} tabIndex={-1} data-tri-zone={enTour ? "jeu" : undefined}
         onScroll={(e) => { setScroll(e.currentTarget.scrollTop); setOu(null); }}
         onClick={(e) => { if (!(e.target as HTMLElement).closest(".ed-vg") && sel.length && !clicSupprime()) envoyer({ type: "viderSelection" }); }}>
-        {gColle ? <div className="ed-groupe ed-groupe--colle">{titreGroupe(gColle.lib, gColle.n, gColle.ids)}{poserGroupe(gColle.ids)}</div> : null}
+        {gColle ? <div className="ed-groupe ed-groupe--colle">{titreGroupe(gColle.lib, gColle.n, gColle.ids, gColle.cle)}{poserGroupe(gColle.ids, gColle.cle)}</div> : null}
         {!vis.length ? (
           <div className="ed-ph-vide">
             <span>{imp && !cpt.total ? "Glissez vos photos ici" : f.marque === "a_trier" && cpt.total ? "Tout est trié" : "Aucune photo"}</span>
@@ -450,7 +529,7 @@ function PanneauOuvert() {
         ) : null}
         <div className="ed-grille-haut" style={{ height: total }}>
           {vues.map((r) => r.type === "g" ? (
-            <div key={`g${r.y}`} className="ed-groupe" style={{ top: r.y }}>{titreGroupe(r.lib, r.n, r.ids)}{poserGroupe(r.ids)}</div>
+            <div key={`g${r.y}`} className="ed-groupe" style={{ top: r.y }}>{titreGroupe(r.lib, r.n, r.ids, r.cle)}{poserGroupe(r.ids, r.cle)}</div>
           ) : r.type === "j" ? (
             <div key={`j${r.y}`} className="ed-rangee ed-rangee--j" style={{ top: r.y, height: r.h }}>
               {r.items.map((x) => vignette(x.id, x.l, Math.round(r.h)))}

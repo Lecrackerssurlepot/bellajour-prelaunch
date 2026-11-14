@@ -1857,7 +1857,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const cat = new Map(catalogue("A1:L A2:L A3:L A4:L A5:L A6:L B1:L B2:L B3:L B4:L L1:L S:L F:L V:P C:1000x2200", {
         A1: { date: t(9, 0) }, A2: { date: t(9, 10) }, A3: { date: t(9, 20) }, A4: { date: t(9, 30) }, A5: { date: t(9, 40) }, A6: { date: t(9, 50) },
         B1: { date: t(20, 0) }, B2: { date: t(20, 10) }, B3: { date: t(20, 20) }, B4: { date: t(20, 30) }, L1: { date: t(20, 40), personne: "Léo" },
-        S: { date: t(12, 0) }, F: { date: t(12, 30) }, V: { date: t(13, 0) }, C: { date: null },
+        S: { date: t(12, 0) }, F: { date: t(12, 30) }, V: { date: t(13, 0) }, C: { date: null, nom: "C.PNG" },
       }).map((p) => [p.id, p]));
       const ids = [...cat.keys()];
       const mesures: Record<string, O.Mesure> = Object.fromEntries(ids.map((id, i) => [id, { nettete: 500 + i * 20, dhash: DH[i % DH.length] ?? h(i), lumi: { moyenne: 120, noirs: 0.02, blancs: 0.02 }, palette: ["#336699", "#cc9966"] }]));
@@ -1949,7 +1949,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const cat = new Map(catalogue("A:L B:L C:L D:L E:L F:L G:L H:L I:L J:L K:L L:L CAP:1170x2532 WA:L", {
         A: { date: t(0) }, B: { date: t(3) }, C: { date: t(20) }, D: { date: t(21) }, E: { date: t(30) }, F: { date: t(31) }, G: { date: t(32) }, H: { date: t(33) },
         I: { date: t(34) }, J: { date: t(35) }, K: { date: t(36) }, L: { date: t(37) },
-        CAP: { date: "2026-06-11T10:40:00", appareil: null }, WA: { date: t(50), appareil: null },
+        CAP: { date: "2026-06-11T10:40:00", appareil: null, nom: "CAP.png" }, WA: { date: t(50), appareil: null },
       }).map((p) => [p.id, p]));
       const D = ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3", "ffff0000ffff0000", "0000ffff0000ffff", "f00ff00ff00ff00f", "0ff00ff00ff00ff0", "cccc3333cccc3333", "3333cccc3333cccc"];
       const mes = new Map<string, O.Mesure>([...cat.keys()].map((id, i) => [id, { nettete: 400 + i * 10, dhash: D[i], lumi: { moyenne: 120, noirs: 0.01, blancs: 0.01 }, aplats: 0.2 }]));
@@ -1964,9 +1964,9 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       ok((lu.similaires ?? []).some((g) => g.includes("A") && g.includes("B")) && !lu.piles.some((p) => p.tete === "A" || p.tete === "B"), "R93 : A et B (même scène, 3 min, 12 cases) sont SIMILAIRES, pas une pile");
       ok(tags.get("A")?.includes("similaire") && tags.get("B")?.includes("similaire"), "R94 : le tag « Similaire » est posé sur les deux");
       ok(tags.get("E")?.includes("floue"), "R73 (10/11) : sous le plancher de 40, floue même sans écart à la médiane");
-      ok(tags.get("CAP")?.includes("capture"), "A4 (10/11) : sans appareil et avec aplats, capture, MÊME avec une date (le fichier en a toujours une en création libre)");
+      ok(tags.get("CAP")?.includes("capture"), "A4 (10/11), R141 : sans appareil, forme d'écran et PNG : capture, MÊME avec une date (le fichier en a toujours une en création libre)");
       ok(!tags.get("WA")?.includes("capture"), "A4 : sans appareil mais sans aplats ni forme d'écran (photo reçue par messagerie) : pas une capture");
-      ok(!O.estCapture({ l: 1170, h: 2532, date: t(1), appareil: "Apple iPhone 15" }, { nettete: 1, dhash: D[0], aplats: 0.9 }), "A4 : une photo d'appareil n'est jamais une capture");
+      ok(!O.estCapture({ l: 1170, h: 2532, date: t(1), appareil: "Apple iPhone 15", nom: "IMG_1.PNG" }, { nettete: 1, dhash: D[0], aplats: 0.9 }), "A4 : une photo d'appareil n'est jamais une capture");
       ok(tags.get("F")?.includes("visages") && O.MOT_TAG.visages.vignette === false, "A6 : « Avec visages » est filtrable, jamais sur la vignette");
       const n = O.comptesTags(tags);
       ok(n.similaire === 2 && n.capture === 1 && n.floue >= 1, "les comptes du filtre");

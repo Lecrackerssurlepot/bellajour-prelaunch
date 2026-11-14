@@ -13,6 +13,7 @@
 
 import type { Catalogue, PhotoMaq } from "./types";
 import { REGLAGES } from "./reglages";
+import { orientationDe } from "../types";
 
 import type { Boite } from "./saillance";
 
@@ -37,6 +38,9 @@ export type Mesure = {
   aplats?: number;
   /** 10/11 (B1, visible) : la carte de chaleur réduite à 16 × 16, une valeur 0-9 par case, ligne par ligne (256 caractères). */
   chaleur?: string;
+  /** R141 (14/11) : le nombre de lignes de texte lues sur l'image. Le navigateur ne lit pas encore le texte (aucune mesure ne
+   *  le pose) : la branche « texte abondant » de `estCapture` dort tant qu'une lecture ne l'apporte pas. */
+  texte?: number;
 };
 
 /* Les seuils vivent dans `reglages.ts` (G7) : nommés, datés, emportés par chaque leçon. Les noms d'ici restent pour le harnais. */
@@ -147,7 +151,7 @@ export function distanceHash(a: string, b: string): number {
 /* ─────────────────────────── la lecture de l'album ─────────────────────────── */
 
 export type RaisonPile = "rafale" | "doublon";
-export type Pile = { tete: string; autres: string[]; raison: RaisonPile };
+export type Pile = { tete: string; autres: string[]; raison: RaisonPile; /** R145 (lot F) : une rafale venue de la lecture IA (la tête est la photo que la machine garde). Absent = mesurée ici. */ source?: "ia" };
 export type Lecture = {
   /** Les photos jugées floues (R73), dans l'ordre du temps. */
   floues: string[];
@@ -225,7 +229,11 @@ export function lireMesures(cat: Catalogue, mes: ReadonlyMap<string, Mesure>): L
         const d = ecart(mots.get(l[i].p.id)!, mots.get(l[j].p.id)!);
         const proches = dt <= RAFALE_SECONDES && j === i + 1 && d <= RAFALE_PROCHE_HAMMING;
         const voisines = d <= RAFALE_HAMMING;
-        if (proches || voisines) { unir(l[i].p.id, l[j].p.id); rafale.add(l[i].p.id); rafale.add(l[j].p.id); }
+        /* R140 (14/11) : deux photos qui SE SUIVENT, à 30 s au plus, proches à l'empreinte ; un cadre tourné (portrait et paysage)
+           ne se compare pas case à case : sa marge s'ajoute, l'orientation n'exclut plus la paire */
+        const tournee = orientationDe(l[i].p.l, l[i].p.h) !== orientationDe(l[j].p.l, l[j].p.h);
+        const suite = j === i + 1 && dt <= REGLAGES.rafale_suite_secondes.valeur && d <= REGLAGES.rafale_suite_hamming.valeur + (tournee ? REGLAGES.rafale_tournee_marge.valeur : 0);
+        if (proches || voisines || suite) { unir(l[i].p.id, l[j].p.id); rafale.add(l[i].p.id); rafale.add(l[j].p.id); }
       }
     }
   }

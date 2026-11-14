@@ -21,23 +21,30 @@ export const MOT_TAG: Readonly<Record<Tag, { mot: string; regle: string; vignett
   similaire: { mot: "Similaire", regle: "R93", vignette: true },
   sombre: { mot: "Sombre", regle: "A3", vignette: true },
   brulee: { mot: "Brûlée", regle: "A3", vignette: true },
-  capture: { mot: "Capture", regle: "A4", vignette: true },
+  capture: { mot: "Capture", regle: "R141", vignette: true },
   visage_flou: { mot: "Visage flou", regle: "A7", vignette: true },
   /* trop fréquent pour la vignette (« rien de répété sur chaque vignette ») : seulement dans le filtre et la Lecture */
   visages: { mot: "Avec visages", regle: "A6", vignette: false },
 };
 
 /**
- * A4 : une capture d'écran probable = AUCUN appareil photo dans le fichier (ou aucune date) ET la forme d'un écran de
- * téléphone (plus allongée que 1,9 ; un iPhone fait 2,16). Calibration du 10/11 sur les photos de bêta-test : les 6 captures
- * (1170 × 2532, 1284 × 2778, PNG) sont toutes trouvées ; les « aplats » seuls prenaient de grands ciels gris pour des
- * captures : ils ne servent plus qu'au panneau Lecture. Une capture de tablette (plus carrée) n'est pas reconnue.
+ * A4, R141 (14/11) : une capture d'écran probable = AUCUN appareil photo dans le fichier (ou aucune date), la forme d'un écran
+ * de téléphone (plus allongée que 1,9 ; un iPhone fait 2,16), ET une preuve d'écran : un PNG (le format d'une capture), ou un
+ * texte abondant sur un grand aplat sans visage. La forme seule ne suffit plus : chez marjorie, 7 exports Snapchat (1 : 2,05,
+ * JPEG, ni appareil ni date : des portraits, un chien, un ascenseur) étaient pris pour des captures (contrôle du 14/11,
+ * `demo-2026-11-13/jugements/fiabilite.md`) ; les deux vraies captures des six lots sont des PNG et restent trouvées.
+ * Le seuil de forme ne baisse pas : à 1,78 (16 : 9), toutes les photos Snapchat d'un lot deviendraient des captures.
+ * Calibration du 10/11 : les 6 captures de bêta-test (1170 × 2532, 1284 × 2778, PNG) sont toutes trouvées. Une capture de
+ * tablette (plus carrée) n'est pas reconnue ; une capture renvoyée en JPEG par une messagerie non plus, sauf texte lu.
  */
-export function estCapture(p: Pick<PhotoMaq, "l" | "h" | "date" | "appareil">, m: Mesure | undefined): boolean {
-  void m;
+export const estPng = (nom: string): boolean => /\.png$/i.test(nom.trim());
+export function estCapture(p: Pick<PhotoMaq, "l" | "h" | "date" | "appareil" | "nom">, m: Mesure | undefined): boolean {
   const sansAppareil = p.appareil === null || !p.date;
   if (!sansAppareil) return false;
-  return p.l > 0 && p.h > 0 && Math.max(p.l, p.h) / Math.min(p.l, p.h) >= REGLAGES.capture_rapport.valeur;
+  const forme = p.l > 0 && p.h > 0 && Math.max(p.l, p.h) / Math.min(p.l, p.h) >= REGLAGES.capture_rapport.valeur;
+  if (!forme) return false;
+  if (estPng(p.nom)) return true;
+  return (m?.texte ?? 0) >= REGLAGES.capture_texte_lignes.valeur && !m?.visages?.length && (m?.aplats ?? 0) >= REGLAGES.capture_aplat_texte.valeur;
 }
 
 export const estSombre = (m: Mesure | undefined): boolean => !!m?.lumi && m.lumi.moyenne < REGLAGES.sombre_moyenne.valeur && m.lumi.noirs > REGLAGES.ecretage_part.valeur;

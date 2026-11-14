@@ -34,7 +34,7 @@ export const RAISON_MAX = 120;
 /** La règle que porte une marque venue du premier jet (`Proposition.regle` : 8 signes au plus, comme les autres règles). */
 export const REGLE_PREMIER_JET = "PJ";
 /** Le mot qui précède la raison d'une marque proposée : « premier jet » pour celles du fichier, « pré-tri » pour celles du pré-tri. */
-export const motProposition = (p: { regle: string }): string => (p.regle === REGLE_PREMIER_JET ? "premier jet" : "pré-tri");
+export const motProposition = (p: { regle: string }): string => (p.regle === REGLE_PREMIER_JET ? "premier jet" : p.regle === "IA" ? "IA" : "pré-tri");
 /** Le préfixe de l'identifiant d'une photo du fichier qui n'a pas trouvé la sienne : jamais un identifiant du catalogue (`loc-…`, uuid). */
 export const PREFIXE_ABSENTE = "jet:";
 

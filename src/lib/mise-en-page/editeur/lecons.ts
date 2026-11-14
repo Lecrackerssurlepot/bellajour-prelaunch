@@ -84,16 +84,16 @@ export function leconsDuTri(avant: Magazine, apres: Magazine, lecture: Lecture, 
       l.push({
         ...base,
         type: teteGardee ? "pile_pas_un_doublon" : "pile_autre_gardee",
-        regle: p.raison === "rafale" ? "R74" : "R75",
+        regle: p.source === "ia" ? "IA" : p.raison === "rafale" ? "R74" : "R75",
         photos: [c.id, tete],
-        proposition: `${p.raison === "rafale" ? "rafale" : "doublon"} : rangée sous ${tete}`,
+        proposition: `${p.source === "ia" ? "rafale de la lecture IA" : p.raison === "rafale" ? "rafale" : "doublon"} : rangée sous ${tete}`,
         geste: teteGardee ? "gardée en plus de la tête" : "gardée à la place de la tête",
       });
     }
     if (c.a === "ecartee" && pileDe.get(c.id)?.tete === c.id) {
       const p = pileDe.get(c.id)!;
       if (p.autres.some((x) => gardee(marqueDe(apres, x)))) {
-        l.push({ ...base, type: "tete_ecartee", regle: "R76", photos: [c.id, ...p.autres], proposition: "la plus nette de la pile", geste: "écartée, une autre gardée" });
+        l.push({ ...base, type: "tete_ecartee", regle: p.source === "ia" ? "IA" : "R76", photos: [c.id, ...p.autres], proposition: p.source === "ia" ? "celle que la lecture IA garde" : "la plus nette de la pile", geste: "écartée, une autre gardée" });
       }
     }
   }
@@ -115,7 +115,7 @@ export function leconsDeLaPose(avant: Magazine, apres: Magazine, lecture: Lectur
     const tete = sous.get(id);
     if (tete && !u2.has(tete)) {
       const p = lecture.piles.find((x) => x.tete === tete)!;
-      l.push({ ...base, type: "pile_autre_gardee", regle: p.raison === "rafale" ? "R74" : "R75", photos: [id, tete], proposition: `${p.raison === "rafale" ? "rafale" : "doublon"} : rangée sous ${tete}`, geste: "posée à la place de la tête" });
+      l.push({ ...base, type: "pile_autre_gardee", regle: p.source === "ia" ? "IA" : p.raison === "rafale" ? "R74" : "R75", photos: [id, tete], proposition: `${p.source === "ia" ? "rafale de la lecture IA" : p.raison === "rafale" ? "rafale" : "doublon"} : rangée sous ${tete}`, geste: "posée à la place de la tête" });
     }
   }
   return l;
