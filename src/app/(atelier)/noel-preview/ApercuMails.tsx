@@ -10,7 +10,7 @@
    remplacera. */
 
 import { useState } from 'react'
-import { MAILS, SIGNATURE, type Ton } from './contenu'
+import { MAILS, SIGNATURE, type Mail, type Ton } from './contenu'
 
 const C = {
   fond: '#070708',
@@ -49,38 +49,52 @@ export default function ApercuMails({ ton }: { ton: Ton }) {
         {mail.preheader && <span><span className="nl-faible">Preheader</span> {mail.preheader}</span>}
       </div>
 
-      <div className="nl-mail-fond" style={{ background: C.fond }}>
-        <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 600, margin: '0 auto', borderCollapse: 'separate' }}>
-          <tbody>
-            <tr>
-              <td style={{ background: C.cadre, border: `1px solid ${C.filet}`, borderRadius: 16, padding: '32px 28px' }}>
-                <div style={{ fontFamily: SERIF, fontSize: 26, color: C.texte, letterSpacing: '0.02em', marginBottom: 24 }}>Bellajour</div>
-                {mail.corps[ton].map((ligne, i) => {
-                  const bouton = /^\[(.+)\]$/.exec(ligne)
-                  if (bouton) {
-                    return (
-                      <div key={i} style={{ margin: '24px 0' }}>
-                        <span style={{ display: 'inline-block', background: C.bouton, color: '#ffffff', fontFamily: SANS, fontSize: 15, fontWeight: 500, padding: '13px 26px', borderRadius: 999 }}>
-                          {bouton[1]}
-                        </span>
-                      </div>
-                    )
-                  }
-                  return (
-                    <div key={i} style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.6, color: i === 0 ? C.texte : C.doux, margin: '0 0 14px', overflowWrap: 'break-word' }}>
-                      {ligne}
-                    </div>
-                  )
-                })}
-                <div style={{ borderTop: `1px solid ${C.filet}`, marginTop: 24, paddingTop: 18, fontFamily: SERIF, fontSize: 19, fontStyle: 'italic', color: C.texte }}>
-                  {SIGNATURE}
-                </div>
-                <div style={{ fontFamily: SANS, fontSize: 12, color: C.faible, marginTop: 6 }}>bellajour.fr</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <MailRendu mail={mail} ton={ton} />
     </div>
   )
+}
+
+/* Le corps d'un mail. `valeurs` remplace les `{{ params.X }}` connus (le
+   récit de /offrir montre le mail GC2 rempli avec la saisie) ; les autres
+   restent visibles, c'est ce que Brevo remplacera. */
+export function MailRendu({ mail, ton, valeurs = {} }: { mail: Mail; ton: Ton; valeurs?: Record<string, string> }) {
+  return (
+    <div className="nl-mail-fond" style={{ background: C.fond }}>
+      <table role="presentation" width="100%" cellPadding={0} cellSpacing={0} style={{ maxWidth: 600, margin: '0 auto', borderCollapse: 'separate' }}>
+        <tbody>
+          <tr>
+            <td style={{ background: C.cadre, border: `1px solid ${C.filet}`, borderRadius: 16, padding: '32px 28px' }}>
+              <div style={{ fontFamily: SERIF, fontSize: 26, color: C.texte, letterSpacing: '0.02em', marginBottom: 24 }}>Bellajour</div>
+              {mail.corps[ton].map((brute, i) => {
+                const ligne = remplir(brute, valeurs)
+                const bouton = /^\[(.+)\]$/.exec(ligne)
+                if (bouton) {
+                  return (
+                    <div key={i} style={{ margin: '24px 0' }}>
+                      <span style={{ display: 'inline-block', background: C.bouton, color: '#ffffff', fontFamily: SANS, fontSize: 15, fontWeight: 500, padding: '13px 26px', borderRadius: 999 }}>
+                        {bouton[1]}
+                      </span>
+                    </div>
+                  )
+                }
+                return (
+                  <div key={i} style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.6, color: i === 0 ? C.texte : C.doux, margin: '0 0 14px', overflowWrap: 'break-word' }}>
+                    {ligne}
+                  </div>
+                )
+              })}
+              <div style={{ borderTop: `1px solid ${C.filet}`, marginTop: 24, paddingTop: 18, fontFamily: SERIF, fontSize: 19, fontStyle: 'italic', color: C.texte }}>
+                {SIGNATURE}
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 12, color: C.faible, marginTop: 6 }}>bellajour.fr</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function remplir(ligne: string, valeurs: Record<string, string>): string {
+  return ligne.replace(/\{\{ params\.([A-Z_]+) \}\}/g, (tout, cle: string) => valeurs[cle] || tout)
 }

@@ -14,9 +14,6 @@
 
 /* ── barre ── */
 .nl-preview .nl-barre {
-  position: sticky;
-  top: 0;
-  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -91,31 +88,36 @@
 /* ════════ LA CARTE ════════ */
 .nl-preview .nl-cartes {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
   gap: clamp(20px, 3vw, 32px);
 }
 .nl-preview .nl-carte-cadre figcaption { margin-top: 12px; font-size: 13px; color: var(--c-text-faint); text-align: center; }
 
-.nl-preview .nl-carte {
-  container-type: inline-size;
-  width: 100%;
+.nl-preview .nl-carte { container-type: inline-size; width: 100%; }
+.nl-preview .nl-carte[data-entree='1'] {
   opacity: 0;
   transform: translateY(24px);
   transition: opacity var(--t-reveal) var(--ease-recit), transform var(--t-reveal) var(--ease-recit);
 }
-.nl-preview .nl-carte[data-vue='1'] { opacity: 1; transform: none; }
+.nl-preview .nl-carte[data-entree='1'][data-vue='1'] { opacity: 1; transform: none; }
 .nl-preview .nl-cartes .nl-carte-cadre:nth-child(2) .nl-carte { transition-delay: 90ms; }
 .nl-preview .nl-cartes .nl-carte-cadre:nth-child(3) .nl-carte { transition-delay: 180ms; }
+.nl-preview .nl-cartes .nl-carte-cadre:nth-child(4) .nl-carte { transition-delay: 270ms; }
 
+/* Le dégradé de couverture, le seul que Mathias trouve vivant. */
 .nl-preview .nl-carte-face {
   position: relative;
   aspect-ratio: 148 / 105;
   overflow: hidden;
   border-radius: 3cqw;
-  padding: 6.5cqw 7cqw;
+  padding: 6cqw 6.5cqw;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  gap: 2cqw;
+  background: var(--grad-cover);
+  color: var(--c-text);
+  border: 1px solid var(--c-line-strong);
   box-shadow: var(--shadow-soft);
   transition: transform var(--t-reveal) var(--ease-spring);
 }
@@ -135,38 +137,31 @@
 .nl-preview .nl-carte-face:hover .nl-carte-reflet { opacity: 0.18; transform: translateX(330%) skewX(-12deg); }
 
 .nl-preview .nl-carte-haut,
-.nl-preview .nl-carte-bas { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 4cqw; }
-.nl-preview .nl-carte-milieu { position: relative; display: flex; flex-direction: column; gap: 2cqw; }
-.nl-preview .nl-carte-marque { font-family: var(--font-display); font-size: 6cqw; line-height: 1; }
-.nl-preview .nl-carte-type { font-size: 2.9cqw; letter-spacing: 0.16em; text-transform: uppercase; }
-.nl-preview .nl-carte-tagline { font-family: var(--font-display); font-style: italic; font-size: 7.4cqw; line-height: 1.05; }
-.nl-preview .nl-carte-message { font-size: 3.3cqw; line-height: 1.35; min-height: 1.35em; }
-.nl-preview .nl-carte-montant { font-family: var(--font-display); font-size: 11cqw; line-height: 0.9; white-space: nowrap; }
-.nl-preview .nl-carte-infos { display: flex; flex-direction: column; align-items: flex-end; font-size: 2.9cqw; line-height: 1.4; text-align: right; }
-.nl-preview .nl-carte-code { letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
-
-/* Sombre : le monde du site. */
-.nl-preview .nl-carte--sombre .nl-carte-face {
-  background: var(--grad-cover);
-  color: var(--c-text);
-  border: 1px solid var(--c-line-strong);
+.nl-preview .nl-carte-bas { position: relative; display: flex; justify-content: space-between; align-items: flex-end; gap: 4cqw; }
+.nl-preview .nl-carte-haut { align-items: baseline; }
+.nl-preview .nl-carte-marque { font-family: var(--font-display); font-size: 5.6cqw; line-height: 1; }
+.nl-preview .nl-carte-type { font-size: 2.7cqw; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-overlay-text); }
+.nl-preview .nl-carte-phrase {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 9.4cqw;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
 }
-.nl-preview .nl-carte--sombre .nl-carte-type,
-.nl-preview .nl-carte--sombre .nl-carte-infos { color: var(--c-overlay-text); }
-
-/* Crème éditoriale : une page de magazine. */
-.nl-preview .nl-carte--creme .nl-carte-face { background: var(--paper); color: var(--paper-text); }
-.nl-preview .nl-carte--creme .nl-carte-haut { border-bottom: 1px solid var(--paper-3); padding-bottom: 2.5cqw; }
-.nl-preview .nl-carte--creme .nl-carte-type,
-.nl-preview .nl-carte--creme .nl-carte-infos,
-.nl-preview .nl-carte--creme .nl-carte-message { color: var(--paper-text-soft); }
-.nl-preview .nl-carte--creme .nl-carte-montant { color: var(--c-accent); }
-
-/* Typographique : la phrase prend la carte. */
-.nl-preview .nl-carte--typo .nl-carte-face { background: var(--c-accent); color: var(--c-text-onaccent); }
-.nl-preview .nl-carte--typo .nl-carte-tagline { font-style: normal; font-size: 10.5cqw; line-height: 0.95; letter-spacing: -0.02em; }
-.nl-preview .nl-carte--typo .nl-carte-montant { font-size: 8cqw; }
-.nl-preview .nl-carte--typo .nl-carte-message { font-size: 3cqw; }
+.nl-preview .nl-carte-gauche { display: flex; flex-direction: column; gap: 1cqw; min-width: 0; }
+.nl-preview .nl-carte-montant { font-family: var(--font-display); font-size: 8cqw; line-height: 0.9; white-space: nowrap; color: var(--c-accent-strong); }
+.nl-preview .nl-carte-message {
+  font-size: 2.8cqw;
+  line-height: 1.35;
+  color: var(--c-text-soft);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.nl-preview .nl-carte-infos { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 2.7cqw; line-height: 1.4; text-align: right; color: var(--c-overlay-text); }
+.nl-preview .nl-carte-code { letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
 
 /* ════════ OFFRIR ════════ */
 .nl-preview .nl-offrir { display: grid; gap: clamp(32px, 5vw, 56px); }
@@ -392,11 +387,274 @@
   .nl-preview .nl-egaux { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ════════ V2 : LE PARCOURS (14/11) ════════ */
+.nl-preview .nl-reglages { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; min-width: 0; }
+.nl-preview .nl-choix-phrase { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nl-preview .nl-choix-phrase select {
+  max-width: 100%;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line-md);
+  background: var(--c-surface-1);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 13px;
+  color-scheme: dark;
+}
+.nl-preview .nl-intro { margin-top: 28px; max-width: 62ch; color: var(--c-text-soft); }
+.nl-preview .nl-partie-noms { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.nl-preview .nl-partie-ou { font-size: 14px; color: var(--c-text-faint); }
+
+/* ── 01 le bandeau, sur une fausse page d'accueil ── */
+.nl-preview .nl-site { display: flex; flex-direction: column; gap: 16px; }
+.nl-preview .nl-ecran {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--c-line-md);
+  background: var(--c-void);
+}
+.nl-preview .nl-bandeau-site {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  gap: 2px 14px;
+  padding: 9px 16px;
+  background: var(--c-accent);
+  color: var(--c-text-onaccent);
+  font-size: 13px;
+  text-align: center;
+  text-decoration: none;
+}
+.nl-preview .nl-bandeau-site-lien { font-weight: 500; white-space: nowrap; }
+.nl-preview .nl-bandeau-site-lien::after { content: ' \2192'; }
+.nl-preview .nl-fausse-barre {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px clamp(16px, 4vw, 32px);
+  background: var(--glass-bg-strong);
+}
+.nl-preview .nl-fausse-signature { font-family: var(--font-display); font-size: 24px; }
+.nl-preview .nl-fausse-droite { display: flex; align-items: center; gap: 12px; }
+.nl-preview .nl-faux-compte { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--c-line-strong); flex: 0 0 auto; }
+.nl-preview .nl-faux-cta { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--c-line-strong); font-size: 13px; white-space: nowrap; }
+.nl-preview .nl-faux-hero img { display: block; width: 100%; aspect-ratio: 16 / 7; object-fit: cover; opacity: 0.75; }
+
+/* ── 02 le chapitre : piste haute, scène collante ── */
+.nl-preview .nl-chapitre {
+  --p: 0;
+  position: relative;
+  height: calc(300 * var(--uh));
+  margin: calc(-1 * clamp(20px, 4vw, 40px));
+}
+.nl-preview .nl-scene {
+  position: sticky;
+  top: 0;
+  height: var(--app-height);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  align-items: center;
+  gap: calc(2 * var(--uh));
+  padding: calc(6 * var(--uh)) 20px calc(5 * var(--uh));
+  border-radius: 20px;
+  background: radial-gradient(90% 70% at 50% 40%, var(--c-surface-2), var(--c-void));
+  text-align: center;
+}
+.nl-preview .nl-scene-titre {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.02;
+  overflow-wrap: normal !important;
+}
+/* Le titre s'efface dès que la carte monte : c'est elle qui parle ensuite. */
+.nl-preview .nl-scene-texte--1 { opacity: clamp(0, calc((0.32 - var(--p)) * 8), 1); }
+/* Hors du flux : l'objet garde toute la hauteur et descend sous le titre. */
+.nl-preview .nl-scene-texte--2 {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: calc(5 * var(--uh));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: clamp(0, calc((var(--p) - 0.66) * 6), 1);
+  transform: translateY(calc((1 - clamp(0, calc((var(--p) - 0.66) * 6), 1)) * 24px));
+}
+.nl-preview .nl-scene-sous { color: var(--c-text-soft); max-width: 34ch; font-size: 17px; }
+.nl-preview .nl-scene-places { font-size: 14px; color: var(--c-text-faint); }
+.nl-preview .nl-scene-places-n { font-family: var(--font-display); font-size: 22px; color: var(--c-accent); }
+
+/* L'objet : enveloppe, carte, poche, couvertures, empilés au même endroit. */
+.nl-preview .nl-scene-objet {
+  position: relative;
+  width: min(84vw, 420px, calc(40 * var(--uh) * 1.4));
+  aspect-ratio: 148 / 105;
+}
+.nl-preview .nl-enveloppe,
+.nl-preview .nl-env-poche,
+.nl-preview .nl-scene-carte { position: absolute; inset: 0; }
+.nl-preview .nl-enveloppe,
+.nl-preview .nl-env-poche {
+  opacity: clamp(0, calc((0.6 - var(--p)) * 6), 1);
+  transform: translateY(calc(clamp(0, calc((var(--p) - 0.4) * 2), 1) * 40%));
+}
+.nl-preview .nl-env-fond {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: var(--c-surface-3);
+  border: 1px solid var(--c-line-md);
+}
+/* Le rabat pivote sur son bord haut ; ouvert, il passe derrière la carte. */
+.nl-preview .nl-env-rabat {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 50%;
+  background: var(--c-surface-4);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  transform: perspective(900px) rotateX(calc(clamp(0, calc(var(--p) * 6), 1) * 178deg));
+  z-index: 3;
+}
+.nl-preview .nl-chapitre[data-ouverte='1'] .nl-env-rabat { z-index: 0; }
+.nl-preview .nl-env-poche {
+  z-index: 2;
+  border-radius: 0 0 10px 10px;
+  background: var(--c-surface-3);
+  clip-path: polygon(0 34%, 50% 70%, 100% 34%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+.nl-preview .nl-scene-carte {
+  z-index: 1;
+  padding: 4% 5%;
+  transform:
+    translateY(calc(clamp(0, calc((var(--p) - 0.15) * 3), 1) * -48%))
+    scale(calc(0.92 + clamp(0, calc((var(--p) - 0.15) * 3), 1) * 0.16));
+  /* Cachée tant que l'enveloppe est fermée, effacée quand les magazines arrivent. */
+  opacity: min(clamp(0, calc((var(--p) - 0.08) * 12), 1), clamp(0, calc((0.74 - var(--p)) * 8), 1));
+}
+.nl-preview .nl-chapitre[data-ouverte='1'] .nl-scene-carte { z-index: 4; }
+/* Ce qu'il recevra : trois couvertures qui s'ouvrent en éventail. */
+/* En arrivant, elles montent dans la place que le titre effacé a laissée :
+   sans quoi, sur un écran court, elles couvrent la phrase du bas. */
+.nl-preview .nl-scene-couvs {
+  position: absolute;
+  inset: -14% 0;
+  pointer-events: none;
+  transform: translateY(calc(clamp(0, calc((var(--p) - 0.6) * 4), 1) * -14 * var(--uh)));
+}
+.nl-preview .nl-scene-couv {
+  --q: clamp(0, calc((var(--p) - 0.6) * 4), 1);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: var(--shadow-pop);
+  opacity: var(--q);
+}
+.nl-preview .nl-scene-couv--1 { transform: translateX(calc(-50% - var(--q) * 62%)) rotate(calc(var(--q) * -7deg)) scale(0.86); }
+.nl-preview .nl-scene-couv--2 { transform: translateX(-50%) translateY(calc((1 - var(--q)) * 30%)); z-index: 1; }
+.nl-preview .nl-scene-couv--3 { transform: translateX(calc(-50% + var(--q) * 62%)) rotate(calc(var(--q) * 7deg)) scale(0.86); }
+
+/* ── 03 le bloc de /magazine ── */
+.nl-preview .nl-bloc-mag {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 48px);
+  align-items: center;
+}
+
+/* ── 04 /offrir en récit ── */
+.nl-preview .nl-recit { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.nl-preview .nl-fil { list-style: none; display: flex; gap: clamp(12px, 4vw, 32px); margin: 0; padding: 0; }
+.nl-preview .nl-fil li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--c-text-faint); }
+.nl-preview .nl-fil-n {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--c-line-md);
+  font-size: 12px;
+}
+.nl-preview .nl-fil li[data-etat='ici'] { color: var(--c-text); }
+.nl-preview .nl-fil li[data-etat='ici'] .nl-fil-n { border-color: var(--c-accent); color: var(--c-accent); }
+.nl-preview .nl-fil li[data-etat='fait'] .nl-fil-n { background: var(--c-accent-soft); border-color: var(--c-accent); color: var(--c-accent); }
+.nl-preview .nl-recit-carte { width: min(100%, 440px); transition: transform var(--t-reveal) var(--ease-spring); }
+.nl-preview .nl-recit-carte[data-temps='2'] { transform: scale(0.86) rotate(-2deg); }
+.nl-preview .nl-recit-temps { width: min(100%, 440px); display: flex; flex-direction: column; gap: 18px; }
+.nl-preview .nl-recit-temps--large { width: 100%; }
+.nl-preview .nl-recit-titre {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(30px, 4.4vw, 44px);
+  line-height: 1.05;
+  text-align: center;
+  overflow-wrap: normal !important;
+}
+.nl-preview .nl-suivant {
+  padding: 15px 24px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-surface-3);
+  font-size: 16px;
+  transition: background-color var(--dur) var(--ease);
+}
+.nl-preview .nl-suivant:hover { background: var(--c-surface-4); }
+.nl-preview .nl-retour {
+  align-self: center;
+  border: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--c-surface-2);
+  font-size: 13px;
+  color: var(--c-text-faint);
+}
+.nl-preview .nl-egaux--grands { margin-top: 0; }
+.nl-preview .nl-choix-titre { font-family: var(--font-display); font-size: 22px; line-height: 1.15; }
+.nl-preview .nl-recu {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+}
+.nl-preview .nl-recu-mail,
+.nl-preview .nl-recu-mag { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.nl-preview .nl-recu-legende { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-accent); }
+.nl-preview .nl-recu-couvs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.nl-preview .nl-recu-couvs img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 4px; display: block; }
+.nl-preview .nl-recit-temps--large .nl-payer { align-self: center; width: min(100%, 440px); }
+
+@media (max-width: 767px) {
+  .nl-preview .nl-bloc-mag,
+  .nl-preview .nl-recu { grid-template-columns: minmax(0, 1fr); }
+  .nl-preview .nl-faux-cta { display: none; }
+  .nl-preview .nl-scene-objet { width: min(78vw, calc(40 * var(--uh) * 1.4)); }
+}
+
 /* ── mouvement réduit : tout est là, rien ne bouge ── */
 @media (prefers-reduced-motion: reduce) {
-  .nl-preview .nl-carte { opacity: 1; transform: none; transition: none; }
+  .nl-preview .nl-carte[data-entree='1'] { opacity: 1; transform: none; transition: none; }
   .nl-preview .nl-carte-face,
-  .nl-preview .nl-carte-reflet { transition: none; }
+  .nl-preview .nl-carte-reflet,
+  .nl-preview .nl-recit-carte { transition: none; }
   .nl-preview .nl-carte-face:hover { transform: none; }
   .nl-preview .nl-carte-face:hover .nl-carte-reflet { opacity: 0; }
+  .nl-preview .nl-chapitre { height: auto; }
+  .nl-preview .nl-scene { position: relative; }
 }

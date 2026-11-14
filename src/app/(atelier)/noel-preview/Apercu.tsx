@@ -1,16 +1,23 @@
 'use client'
 
-/* La planche de Noël : un visuel par partie, et sous chacun la checklist
-   charte. Une case n'est cochée qu'après une mesure réelle à 375 px et à
-   1280 px (captures dans docs/noel-2026/captures/) ; une case vide dit ce
-   qui reste à trancher. Le ton (sobre / décontracté) est un état d'écran. */
+/* La planche de Noël, version 2 (retours de Mathias du 14/11) : on ne
+   montre plus des pièces séparées, on suit le parcours du client sur le
+   site, du bandeau jusqu'au mail que reçoit la personne qui reçoit la carte.
+
+   Sous chaque visuel, la checklist charte. Une case n'est cochée qu'après
+   une mesure réelle à 375 px et à 1280 px (captures dans
+   docs/noel-2026/captures/) ; une case vide dit ce qui reste à trancher.
+   Le ton et la phrase de la carte sont des états d'écran, réglés dans la
+   barre du haut et appliqués partout. */
 
 import { useState } from 'react'
-import CarteCadeau, { type Variante } from './CarteCadeau'
+import CarteCadeau from './CarteCadeau'
+import Bandeau from './Bandeau'
+import Chapitre from './Chapitre'
 import Offrir from './Offrir'
 import Exemplaire from './Exemplaire'
 import ApercuMails from './ApercuMails'
-import { PLACES_EXEMPLE, TEXTES, type Ton } from './contenu'
+import { PHRASES, TEXTES, type Ton } from './contenu'
 
 type Point = { texte: string; ok: boolean }
 
@@ -36,10 +43,11 @@ function Checklist({ points }: { points: Point[] }) {
   )
 }
 
-function Partie({ id, numero, titre, children, points }: {
+function Partie({ id, numero, titre, ou, children, points }: {
   id: string
   numero: string
   titre: string
+  ou: string
   children: React.ReactNode
   points: Point[]
 }) {
@@ -47,7 +55,10 @@ function Partie({ id, numero, titre, children, points }: {
     <section className="nl-partie" id={id}>
       <header className="nl-partie-tete">
         <span className="nl-partie-num">{numero}</span>
-        <h2 className="nl-partie-titre">{titre}</h2>
+        <div className="nl-partie-noms">
+          <h2 className="nl-partie-titre">{titre}</h2>
+          <span className="nl-partie-ou">{ou}</span>
+        </div>
       </header>
       <div className="nl-visuel">{children}</div>
       <Checklist points={points} />
@@ -55,14 +66,9 @@ function Partie({ id, numero, titre, children, points }: {
   )
 }
 
-const VARIANTES: { v: Variante; nom: string }[] = [
-  { v: 'sombre', nom: 'Sombre' },
-  { v: 'creme', nom: 'Crème éditoriale' },
-  { v: 'typo', nom: 'Typographique' },
-]
-
 export default function Apercu() {
   const [ton, setTon] = useState<Ton>('sobre')
+  const [phrase, setPhrase] = useState<string>(PHRASES[0])
   const [panier, setPanier] = useState<'question' | 'ajoutee' | 'refusee'>('question')
   const t = TEXTES[ton]
 
@@ -73,57 +79,118 @@ export default function Apercu() {
           <span className="nl-barre-marque">Noël 2026</span>
           <span className="nl-barre-note">Aperçu interne, rien n&apos;est en ligne</span>
         </div>
-        <div className="nl-ton" role="group" aria-label="Ton des textes">
-          <button type="button" aria-pressed={ton === 'sobre'} onClick={() => setTon('sobre')}>Sobre</button>
-          <button type="button" aria-pressed={ton === 'decontracte'} onClick={() => setTon('decontracte')}>Décontracté</button>
+        <div className="nl-reglages">
+          <div className="nl-ton" role="group" aria-label="Ton des textes">
+            <button type="button" aria-pressed={ton === 'sobre'} onClick={() => setTon('sobre')}>Sobre</button>
+            <button type="button" aria-pressed={ton === 'decontracte'} onClick={() => setTon('decontracte')}>Décontracté</button>
+          </div>
+          <label className="nl-choix-phrase">
+            <span className="nl-faible">Phrase de la carte</span>
+            <select value={phrase} onChange={(e) => setPhrase(e.target.value)}>
+              {PHRASES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </label>
         </div>
       </div>
 
+      <p className="nl-intro">
+        Le parcours d&apos;un client, dans l&apos;ordre : il voit le bandeau, traverse le chapitre de Noël de
+        l&apos;accueil, offre la carte sur /offrir. Puis, au panier, les deux offres.
+      </p>
+
+      <Partie
+        id="bandeau"
+        numero="01"
+        titre="Le bandeau"
+        ou="Au-dessus de la barre, sur / et /magazine"
+        points={[
+          { texte: 'La barre ne change pas : au téléphone, elle ne porte que le compte', ok: true },
+          { texte: 'Après le 7 décembre, le texte bascule seul sur la carte par e-mail', ok: true },
+          { texte: 'Intégration réelle : --nav-h (nav.css) devra compter le bandeau', ok: false },
+        ]}
+      >
+        <Bandeau />
+      </Partie>
+
+      <Partie
+        id="chapitre"
+        numero="02"
+        titre="Le chapitre de Noël"
+        ou="Une page de plus dans le récit de l'accueil"
+        points={[
+          { texte: 'L’enveloppe s’ouvre, la carte sort, le magazine prend sa place', ok: true },
+          { texte: 'Défilement : rAF seulement quand la scène est visible, transform et opacity', ok: true },
+          { texte: 'prefers-reduced-motion : la scène finale, sans piste', ok: true },
+          { texte: '25 places = plafond du premier jour, la valeur sera lue en base', ok: false },
+          { texte: 'Place exacte parmi les sept pages : à choisir', ok: false },
+        ]}
+      >
+        <Chapitre ton={ton} phrase={phrase} />
+      </Partie>
+
+      <Partie
+        id="magazine"
+        numero="03"
+        titre="Sur /magazine"
+        ou="Un bloc sous le kiosque, pour qui compare déjà"
+        points={[
+          { texte: 'Un seul bouton', ok: true },
+        ]}
+      >
+        <div className="nl-bloc-mag">
+          <div className="nl-bloc-mag-carte">
+            <CarteCadeau phrase={phrase} montant="35 €" prenom="" message="" />
+          </div>
+          <div className="nl-section-texte">
+            <span className="nl-surtitre">Pour Noël</span>
+            <h3 className="nl-section-titre">{t.titre}</h3>
+            <p className="nl-section-sous">{t.sousTitre}</p>
+            <a className="nl-cta" href="#offrir">Offrir une carte</a>
+          </div>
+        </div>
+      </Partie>
+
+      <Partie
+        id="offrir"
+        numero="04"
+        titre="/offrir, en trois temps"
+        ou="Écrire, donner, découvrir ce qu'il recevra"
+        points={[
+          { texte: 'La carte se remplit pendant la saisie', ok: true },
+          { texte: 'Un bouton principal par temps, le bleu de commande au seul paiement', ok: true },
+          { texte: 'Le mail GC2 montré rempli, tel qu’il arrive', ok: true },
+          { texte: 'Montants : exemples ; montant libre : minimum et maximum à fixer', ok: false },
+        ]}
+      >
+        <Offrir ton={ton} phrase={phrase} />
+      </Partie>
+
       <Partie
         id="carte"
-        numero="01"
-        titre="La carte cadeau"
+        numero="05"
+        titre="La carte, quatre phrases"
+        ou="La variante sombre seule ; la phrase choisie s'applique partout"
         points={[
-          { texte: 'A6 paysage (148 × 105), montant, code, 12 mois, prénom, message, tagline', ok: true },
-          { texte: 'Survol et entrée : transform et opacity seulement', ok: true },
-          { texte: 'prefers-reduced-motion : aucune animation', ok: true },
-          { texte: 'Montant 35 € : exemple, montants à trancher (TARIFICATION.md)', ok: false },
+          { texte: 'A6 paysage, montant, code, 12 mois, prénom, message', ok: true },
+          { texte: 'Survol et entrée : transform et opacity, rien sous reduced-motion', ok: true },
+          { texte: 'Phrase à choisir', ok: false },
         ]}
       >
         <div className="nl-cartes">
-          {VARIANTES.map(({ v, nom }) => (
-            <figure key={v} className="nl-carte-cadre">
-              <CarteCadeau
-                variante={v}
-                montant="35 €"
-                prenom="Camille"
-                message="Pour nos étés à Noosa."
-              />
-              <figcaption>{nom}</figcaption>
+          {PHRASES.map((p) => (
+            <figure key={p} className="nl-carte-cadre">
+              <CarteCadeau phrase={p} montant="35 €" prenom="Camille" message="Pour nos étés à Noosa." />
+              <figcaption>{p === PHRASES[PHRASES.length - 1] ? 'L’ancienne, pour comparer' : `Proposition ${PHRASES.indexOf(p) + 1}`}</figcaption>
             </figure>
           ))}
         </div>
       </Partie>
 
       <Partie
-        id="offrir"
-        numero="02"
-        titre="« Offrir » sur l’accueil et /offrir"
-        points={[
-          { texte: 'Un seul bouton par endroit', ok: true },
-          { texte: 'Message limité à 140 caractères, compteur visible', ok: true },
-          { texte: 'Date programmée bornée du 8 au 24 décembre', ok: true },
-          { texte: 'Le bleu de commande réservé au seul bouton de paiement', ok: true },
-          { texte: 'Montant libre : minimum et maximum à fixer', ok: false },
-        ]}
-      >
-        <Offrir ton={ton} />
-      </Partie>
-
-      <Partie
         id="panier"
-        numero="03"
+        numero="06"
         titre="Au panier : offrir aussi une carte"
+        ou="Récapitulatif d'une commande de magazine"
         points={[
           { texte: 'Deux choix de même poids : Ajouter / Non merci', ok: true },
           { texte: 'Refus : le bloc disparaît, aucune relance', ok: true },
@@ -148,7 +215,7 @@ export default function Apercu() {
           {panier === 'ajoutee' && (
             <div className="nl-bloc">
               <p className="nl-bloc-titre">Une carte cadeau ajoutée</p>
-              <p className="nl-bloc-texte">Montant, prénom et message se choisissent à l&apos;étape suivante.</p>
+              <p className="nl-bloc-texte">Montant, prénom et message à l&apos;étape suivante.</p>
             </div>
           )}
           {panier !== 'question' && (
@@ -161,8 +228,9 @@ export default function Apercu() {
 
       <Partie
         id="exemplaire"
-        numero="04"
+        numero="07"
         titre="Le 2ᵉ exemplaire, en France"
+        ou="Au panier, si la livraison est en France"
         points={[
           { texte: '-40 % même couverture, -20 % autre couverture, sans prix barré', ok: true },
           { texte: 'Hors France : le bloc disparaît, une ligne l’explique', ok: true },
@@ -174,36 +242,10 @@ export default function Apercu() {
       </Partie>
 
       <Partie
-        id="places"
-        numero="05"
-        titre="Le compteur et le 7 décembre"
-        points={[
-          { texte: 'Texte du compteur au ton choisi (PARCOURS-ACHAT.md)', ok: true },
-          { texte: `${PLACES_EXEMPLE} = plafond du premier jour, la valeur sera lue en base`, ok: false },
-          { texte: 'Après le 7 décembre : la carte par e-mail prend le relais', ok: true },
-        ]}
-      >
-        <div className="nl-places">
-          <div className="nl-bandeau">
-            <span className="nl-bandeau-date">Lundi 7 décembre</span>
-            <span className="nl-bandeau-texte">Dernier jour pour nous confier vos photos et recevoir le magazine avant Noël.</span>
-          </div>
-          <p className="nl-compteur">
-            {t.compteur.avant && <span className="nl-compteur-texte">{t.compteur.avant}</span>}
-            <span className="nl-compteur-n">{PLACES_EXEMPLE}</span>
-            <span className="nl-compteur-texte">{t.compteur.apres}</span>
-          </p>
-          <div className="nl-bandeau nl-bandeau--apres">
-            <span className="nl-bandeau-date">Après le 7 décembre</span>
-            <span className="nl-bandeau-texte">La carte cadeau par e-mail reste disponible jusqu&apos;au 24.</span>
-          </div>
-        </div>
-      </Partie>
-
-      <Partie
         id="mails"
-        numero="06"
+        numero="08"
         titre="Les mails"
+        ou="Fondateurs, acheteur, destinataire, blocs M4 et M5"
         points={[
           { texte: 'Tableau de 600 px, cadre arrondi, accent #4A90D9', ok: true },
           { texte: 'Signature « L’atelier Bellajour » partout', ok: true },

@@ -12,6 +12,22 @@ export type Ton = 'sobre' | 'decontracte'
 export const TAGLINE = 'On vous attend à l’intérieur.'
 export const SIGNATURE = 'L’atelier Bellajour'
 
+/* La phrase en grand sur la carte (retour de Mathias, 14/11) : la tagline
+   ne lui parlait pas. Quatre propositions à comparer, l'ancienne en dernier
+   pour mémoire. */
+export const PHRASES = [
+  'Vos photos deviennent un magazine.',
+  'Un magazine, composé avec vos photos.',
+  'Choisissez vos photos, nous composons.',
+  TAGLINE,
+] as const
+
+export const COUVERTURES_ACCUEIL = [
+  { src: '/images/v2/accueil/couverture-lisbonne-360.webp', alt: 'Couverture « Lisbonne »' },
+  { src: '/images/v2/accueil/couverture-rio-450.webp', alt: 'Couverture « Rio »' },
+  { src: '/images/v2/accueil/couverture-cote-azur-360.webp', alt: 'Couverture « Côte d\u2019Azur »' },
+] as const
+
 export const MONTANTS_EXEMPLE = [25, 35, 45] as const
 export const PLACES_EXEMPLE = 25
 export const MESSAGE_MAX = 140
