@@ -28,7 +28,7 @@ import { join } from "node:path";
 import { CopyObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { createClient } from "@supabase/supabase-js";
 import { bucket, makeR2 } from "@/lib/atelier/r2";
-import type { Disposition, Magazine, Planche, TriMagazine } from "@/lib/mise-en-page/magazine";
+import { avecDerniere, type Disposition, type Magazine, type Planche, type TriMagazine } from "@/lib/mise-en-page/magazine";
 import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
 
 function sansGuillemets(v: string): string {
@@ -96,16 +96,28 @@ function fusionnerTri(a: TriMagazine | undefined, b: TriMagazine | undefined): T
   return tri;
 }
 
-/** Les planches de la source à la suite de la cible ; la couverture de la source remplace une couverture vide. */
-export function fusionnerMagazines(cible: Magazine, source: Magazine, maintenant: string): Magazine {
-  const [couvCible, ...resteCible] = cible.planches;
-  const [couvSource, ...resteSource] = source.planches;
+/**
+ * Les planches de la source à la suite de la cible ; la couverture de la source remplace une couverture vide.
+ * Lot E (13/11) : les deux magazines passent d'abord au format AVEC dernière page (`avecDerniere`) ; on fusionne leurs corps, la
+ * dernière page de la CIBLE reste en dernier, celle de la source devient une planche courante (sa page gauche) si elle porte des
+ * photos, sinon elle est écartée. Le résultat porte `derniere`.
+ */
+export function fusionnerMagazines(cible0: Magazine, source0: Magazine, maintenant: string): Magazine {
+  const cible = avecDerniere(cible0), source = avecDerniere(source0);
+  const finCible = cible.planches[cible.planches.length - 1];
+  const finSource = source.planches[source.planches.length - 1];
+  const corpsCible = cible.planches.slice(0, -1), corpsSource = source.planches.slice(0, -1);
+  const [couvCible, ...resteCible] = corpsCible;
+  const [couvSource, ...resteSource] = corpsSource;
   const prendreCouverture = planche0Vide(couvCible) && !planche0Vide(couvSource);
   const couverture = prendreCouverture ? { ...couvSource, id: couvCible.id } : couvCible;
-  const ajout = prendreCouverture ? resteSource : source.planches.map((p, i) => (i === 0 ? { ...p, mode: "pages" as const } : p));
+  const ajout = [
+    ...(prendreCouverture ? resteSource : corpsSource.map((p, i) => (i === 0 ? { ...p, mode: "pages" as const } : p))),
+    ...(planche0Vide(finSource) ? [] : [finSource]),
+  ];
   const base = [couverture, ...resteCible];
   const tri = fusionnerTri(cible.tri, source.tri);
-  const m: Magazine = { ...cible, planches: [...base, ...renumeroter(base, ajout)], modifieLe: maintenant };
+  const m: Magazine = { ...cible, planches: [...base, ...renumeroter(base, ajout), finCible], modifieLe: maintenant };
   if (tri) m.tri = tri; else delete m.tri;
   return m;
 }

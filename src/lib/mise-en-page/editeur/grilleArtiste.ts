@@ -34,8 +34,13 @@ export function grilleArtiste(r: Rect): LigneArtiste[] {
   ];
 }
 
-/** Les pages d'une planche, repère PLANCHE (mm) : la droite seule pour la planche 0, sinon la gauche puis la droite (une double : les deux pages). */
-export function pagesDeLaPlanche(premiere: boolean): Rect[] {
+/**
+ * Les pages d'une planche, repère PLANCHE (mm) : la droite seule pour la planche 0 (`"droite"`, ou `true` comme avant le lot E), la
+ * gauche seule pour la dernière page (lot E, `"gauche"`), sinon la gauche puis la droite (une double : les deux pages).
+ */
+export function pagesDeLaPlanche(seule: boolean | "droite" | "gauche" | null): Rect[] {
+  const gauche: Rect = { x: 0, y: 0, l: PAGE_L, h: PAGE_H };
   const droite: Rect = { x: PAGE_L, y: 0, l: PAGE_L, h: PAGE_H };
-  return premiere ? [droite] : [{ x: 0, y: 0, l: PAGE_L, h: PAGE_H }, droite];
+  if (seule === true || seule === "droite") return [droite];
+  return seule === "gauche" ? [gauche] : [gauche, droite];
 }

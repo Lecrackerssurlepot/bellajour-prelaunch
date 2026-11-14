@@ -37,6 +37,8 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (lot A, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
 | [C13](couches/C13-feuille-de-style.md) | Feuille de style : paire de polices, nuancier proposé, typographie française | R120 à R124 | Lot C (12/11), branche `feat/mise-en-page-feuille-de-style`, pas encore fusionnée ; remplit « palette pas encore reliée aux aplats » de C09 |
 
+Le **premier jet** (lot E, 13/11) n'est pas une couche : c'est le format du magazine que la démo de composition écrit hors de l'éditeur et que « Premier jet » charge sur les photos importées, reliées par leur nom de fichier. [PREMIER-JET.md](PREMIER-JET.md), exemple [exemple-premier-jet.json](exemple-premier-jet.json), règle R136.
+
 Le lot A (12/11) = la branche `feat/mise-en-page-couche1-mesures`, fusionnée dans `main` avec l'export PDF de #353 : l'instantané, le jalon et les trois questions valent pour Canva (PDF) comme pour Affinity (IDML).
 
 ## Les couches à venir (ordre décidé le 10/11)

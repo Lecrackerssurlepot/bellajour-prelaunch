@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
 import type { Planche } from "@/lib/mise-en-page/magazine";
-import { cadresDe, decorDe, dispositionDe, templateParId } from "@/lib/mise-en-page/magazine";
+import { cadresDe, decorDe, dispositionDe, templateParId, type CoteSeul } from "@/lib/mise-en-page/magazine";
 import { enregistrerGabarit } from "./gabaritsClient";
 import { PAGE_H, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import { legendesDistinctes } from "@/lib/mise-en-page/genere";
@@ -58,11 +58,12 @@ function aplatsMini(p: Planche): { x: number; y: number; l: number; h: number; t
   return p.mode === "double" ? un(p.double, "double") : [...un(p.gauche, "gauche"), ...un(p.droite, "droite")];
 }
 
-export function Mini({ planche, premiere }: { planche: Planche; premiere?: boolean }) {
+/** `seule` : le côté de la page seule (planche 1 : droite, la moitié gauche est la couverture intérieure ; dernière page, lot E : gauche), `null` pour une planche courante. */
+export function Mini({ planche, seule }: { planche: Planche; seule?: CoteSeul | null }) {
   const { adresses, etat } = useEd();
   return (
     <span className="ed-mini" aria-hidden="true">
-      {premiere ? <span className="ed-mini-g" /> : null}
+      {seule ? <span className={seule === "gauche" ? "ed-mini-g ed-mini-g--d" : "ed-mini-g"} /> : null}
       {etat.magazine.style ? aplatsMini(planche).map((a, i) => (
         <i key={`a${i}`} className={`ed-mini-a ed-aplat--${a.teinte}`} style={{ left: pc(a.x, PLANCHE_L), top: pc(a.y, PAGE_H), width: pc(a.l, PLANCHE_L), height: pc(a.h, PAGE_H) }} />
       )) : null}
@@ -121,7 +122,7 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
     centre.push(pastille("double", "c", n ? `Double page · ${pluriel(n, "photo")}` : "Double page vide"));
     if (miroir && ouverte !== "double") centre.push(miroir);
   } else {
-    if (!act.premiere) {
+    if (act.seule !== "droite") {
       const n = nb(pl.gauche);
       out.push(pastille("gauche", "g", n ? pluriel(n, "photo") : "Page vide"));
       if (miroir) centre.push(miroir);
@@ -134,8 +135,10 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
         );
       }
     }
-    const n = nb(pl.droite);
-    out.push(pastille("droite", "d", n ? pluriel(n, "photo") : "Page vide"));
+    if (act.seule !== "gauche") {
+      const n = nb(pl.droite);
+      out.push(pastille("droite", "d", n ? pluriel(n, "photo") : "Page vide"));
+    }
   }
   if (!ouverte) centre.push(<Famille key="fam" pl={pl} />);
   if (centre.length) out.push(<span key="c" className="ed-pastilles-c">{centre}</span>);

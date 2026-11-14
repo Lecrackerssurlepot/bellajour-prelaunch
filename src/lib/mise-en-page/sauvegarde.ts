@@ -17,7 +17,7 @@ import { VISEES_MAX, templateParId, type Affectation, type Disposition, type Mag
 import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
 import { ROLES_COULEUR } from "./nuancier";
 import { styleValide } from "./style";
-import { PAGES_MAX_SAISIE, nombresDuGabarit } from "./couverture";
+import { PAGES_MAX_SAISIE, dosSaisiValide, nombresDuGabarit } from "./couverture";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -167,17 +167,21 @@ function dispositionValide(v: unknown, portee: "page" | "double"): v is Disposit
     && v.photos.every(affectationValide) && v.textes.every(texteValide);
 }
 
-/** La planche d'index 0 est une page droite seule : mode pages, jamais de page gauche (magazine.ts). */
-function plancheValide(v: unknown, indexPlanche: number): v is Planche {
+/**
+ * La planche d'index 0 est une page droite seule : mode pages, jamais de page gauche (magazine.ts). Lot E : la DERNIÈRE planche
+ * d'un magazine qui porte `derniere` est une page gauche seule : mode pages, jamais de page droite.
+ */
+function plancheValide(v: unknown, indexPlanche: number, derniere: boolean): v is Planche {
   if (!estObjet(v) || !clesExactes(v, ["id", "mode", "double", "gauche", "droite"])) return false;
   if (!estId(v.id)) return false;
   const ouNul = (d: unknown, portee: "page" | "double") => d === null || dispositionValide(d, portee);
   if (v.mode === "double") {
-    return indexPlanche !== 0 && v.gauche === null && v.droite === null && ouNul(v.double, "double");
+    return indexPlanche !== 0 && !derniere && v.gauche === null && v.droite === null && ouNul(v.double, "double");
   }
   if (v.mode === "pages") {
     if (v.double !== null) return false;
     if (indexPlanche === 0 && v.gauche !== null) return false;
+    if (derniere && v.droite !== null) return false;
     return ouNul(v.gauche, "page") && ouNul(v.droite, "page");
   }
   return false;
@@ -220,12 +224,15 @@ function triValide(v: unknown): boolean {
  * La couverture (lot B, 12/11) : un gabarit de couverture CONNU (`CV-…`, ids stables), une affectation par cadre photo et
  * un texte par cadre texte de ce gabarit, dans l'ordre ; `pages` (saisie quand le projet ne connaît pas ses pages) est
  * facultatif, jamais `undefined`, un entier de 2 à `PAGES_MAX_SAISIE` (borne technique : le dos, lui, se refuse hors
- * de 24 à 60 pages paires, à l'écran).
+ * de 24 à 60 pages paires, à l'écran). Lot E : `dosMm`, la largeur du dos saisie à la main, est facultatif aussi (jamais `undefined`) :
+ * un nombre fini au centième de mm entre `DOS_SAISI_MIN_MM` et `DOS_SAISI_MAX_MM` (couverture.ts), rien d'autre.
  */
 function couvertureValide(v: unknown): boolean {
   if (!estObjet(v)) return false;
   const aPages = Object.prototype.hasOwnProperty.call(v, "pages");
-  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aPages ? ["pages"] : [])])) return false;
+  const aDos = Object.prototype.hasOwnProperty.call(v, "dosMm");
+  if (!clesExactes(v, ["templateId", "photos", "textes", ...(aPages ? ["pages"] : []), ...(aDos ? ["dosMm"] : [])])) return false;
+  if (aDos && !dosSaisiValide(v.dosMm)) return false;
   if (!estId(v.templateId)) return false;
   const n = nombresDuGabarit(v.templateId);
   if (!n || !Array.isArray(v.photos) || !Array.isArray(v.textes)) return false;
@@ -270,6 +277,10 @@ const CLES_FACULTATIVES: readonly CleFacultative[] = [
   { cle: "style", valide: styleValide },
   /* Lot B (12/11) : la couverture à plat. */
   { cle: "couverture", valide: couvertureValide },
+  /* Lot E (13/11) : la dernière page. Seule valeur admise : `true` (la dernière planche est une page gauche seule). Les planches ET
+     cette clé se relisent ensemble dans `contenuValide` (au moins deux planches, la dernière en page gauche). Absente : l'ancien
+     format, lu tel quel ; l'éditeur le complète à l'ouverture (`avecDerniere`, magazine.ts). */
+  { cle: "derniere", valide: (v) => v === true },
 ];
 /** Les noms des clés facultatives connues, pour le harnais. */
 export const NOMS_CLES_FACULTATIVES: readonly string[] = CLES_FACULTATIVES.map((c) => c.cle);
@@ -280,7 +291,11 @@ export function contenuValide(x: unknown): x is Magazine {
   if (x.version !== 1 || !estId(x.id) || typeof x.titre !== "string") return false;
   if (!estDate(x.creeLe) || !estDate(x.modifieLe)) return false;
   if (!Array.isArray(x.planches) || x.planches.length === 0) return false;
-  if (!x.planches.every((p, i) => plancheValide(p, i))) return false;
+  /* lot E : avec `derniere`, la première et la dernière planche sont deux planches distinctes (au moins deux) */
+  const derniere = x.derniere === true;
+  if (derniere && x.planches.length < 2) return false;
+  const n = x.planches.length;
+  if (!x.planches.every((p, i) => plancheValide(p, i, derniere && i === n - 1))) return false;
   const ids = new Set((x.planches as Planche[]).map((p) => p.id));
   return ids.size === x.planches.length;
 }

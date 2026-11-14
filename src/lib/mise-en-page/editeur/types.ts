@@ -17,6 +17,7 @@ import type { SensCalque } from "./libre";
 import type { Lecture } from "./mesures";
 import type { Lecon } from "./lecons";
 import type { Proposition } from "./pretri";
+import type { PremierJet } from "./premierJet";
 import type { Tag } from "./tags";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
@@ -252,7 +253,11 @@ export type GesteModifiant =
   /** Lot C : la feuille de style du magazine (paire de polices, nuancier) : la poser, la changer, ou la retirer avec `null`. */
   | { type: "styler"; style: StyleMagazine | null; confirme?: boolean }
   /** Lot B : le nombre de pages saisi sur la couverture quand le projet ne le connaît pas (null l'efface). */
-  | { type: "pagesCouverture"; pages: number | null; confirme?: boolean };
+  | { type: "pagesCouverture"; pages: number | null; confirme?: boolean }
+  /** Lot E : la largeur du dos saisie à la main (mm) ; `null` l'efface, le calcul reprend. */
+  | { type: "dosCouverture"; dosMm: number | null; confirme?: boolean }
+  /** Lot E : le PREMIER JET (un magazine composé hors de l'éditeur, premierJet.ts) chargé sur les photos importées, reliées par leur nom de fichier. Une seule entrée d'historique : Annuler le défait. */
+  | { type: "chargerPremierJet"; jet: PremierJet; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -340,7 +345,9 @@ export type OpPlan =
   | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "etiqueter" | "hesiter"
   | "miroir" | "placerCadre" | "ajusterCadre" | "calque" | "poserLibre" | "retirerCadres" | "deplacerCadres" | "styler"
   /* lot B : la couverture */
-  | "couvPoser" | "couvRetirer" | "couvEchanger" | "couvGabarit" | "couvPages";
+  | "couvPoser" | "couvRetirer" | "couvEchanger" | "couvGabarit" | "couvPages" | "couvDos"
+  /* lot E : le premier jet */
+  | "chargerPremierJet";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; refs?: readonly RefCadre[]; photoId?: string; position?: number };

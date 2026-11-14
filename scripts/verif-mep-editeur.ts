@@ -491,7 +491,7 @@ sc(46, "Sur Pl.3, « + Double page » → index 3, pages, vide, affichée", () =
 sc(47, "Réordonner : Pl.4 avant Pl.2 ; jamais avant Pl.1", () => {
   const s = new Seance("A:P", { planches: 4 });
   s.g({ type: "deposer", source: { type: "planche", plancheId: pl(4) }, cible: { type: "entre", index: 1 } });
-  eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-2", "pl-3"], "ordre");
+  eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-2", "pl-3", "pl-fin"], "ordre : la dernière page reste en dernier (lot E)");
   ok(!O.cibleAllumee(s.e, { type: "planche", plancheId: pl(3) }, { type: "entre", index: 0 }), "pas de ligne avant Pl.1");
   s.g({ type: "deposer", source: { type: "planche", plancheId: pl(3) }, cible: { type: "entre", index: 0 } });
   eq(s.e.magazine.planches[0].id, "pl-1", "Pl.1 en tête"); eq(s.e.magazine.planches[1].id, "pl-3", "bornée à l'index 1");
@@ -1349,12 +1349,12 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const s = new Seance(vingt, { planches: 3 }).zero();
       const ids = [...s.e.catalogue.keys()];
       s.g({ type: "creerDoubles", ids });
-      eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-5", "pl-2", "pl-3"], "deux doubles après la planche courante");
+      eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-5", "pl-2", "pl-3", "pl-fin"], "deux doubles après la planche courante, la dernière page reste en dernier");
       eq([s.idsPleins(4, "double").length, s.idsPleins(5, "double").length], [10, 10], "20 photos : 10 + 10");
       eq([...s.idsPleins(4, "double"), ...s.idsPleins(5, "double")], ids, "l'ordre du groupe suivi");
       ok(s.e.plancheCourante === "pl-4" && s.e.prochainNumero === 6 && s.hist === 1, "on arrive sur la première, une seule annulation");
       s.g({ type: "annuler" });
-      eq(s.e.magazine.planches.length, 3, "annuler retire les deux doubles");
+      eq(s.e.magazine.planches.length, 4, "annuler retire les deux doubles (la première, deux doubles, la dernière page)");
       s.g({ type: "retablir" }).zero();
       const issueGlisse = s.glisse({ type: "bibliotheque", ids: ["F01", "F02", "F03"] }, { type: "entre", index: 3 });
       ok(!issueGlisse.refus, "lâcher entre deux planches accepté");
@@ -1781,7 +1781,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const j = O.jalon("export", "essai");
       ok(O.leconValide(j) && !O.leconValide({ ...j, type: "autre" }) && !O.leconValide({ ...j, version: "x" }), "le serveur relit une leçon (type, version)");
       const inst = O.instantane(e5, mes);
-      ok(inst.photos.length === cat.size && inst.photos.find((p) => p.id === "B")?.nettete === 900 && inst.planches.length === 3 && inst.lecture.piles.length === lu.piles.length, "G2 : l'instantané porte mesures, lecture, planches, sans pixels");
+      ok(inst.photos.length === cat.size && inst.photos.find((p) => p.id === "B")?.nettete === 900 && inst.planches.length === 4 && inst.lecture.piles.length === lu.piles.length, "G2 : l'instantané porte mesures, lecture, planches, sans pixels");
       ok(O.contenuValide(e5.magazine), "les leçons ne touchent pas au magazine sauvegardé");
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }

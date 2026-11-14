@@ -44,7 +44,7 @@ import {
 import { FOND_PERDU, PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM, boiteCouverture, type Rect } from "./geometrie";
 import { INTERLIGNE_COUVERTURE, cadresCouverture, contenuImprime, decorCouverture, type Couverture } from "./couverture";
 import { cadrer, type Recadrage } from "./recadrage";
-import { cadresDe, decorDe, dispositionDe, type Disposition, type Magazine, type Planche } from "./magazine";
+import { cadresDe, coteSeul, decorDe, dispositionDe, type CoteSeul, type Disposition, type Magazine, type Planche } from "./magazine";
 import type { Cadre, Teinte } from "./types";
 import { AVANCE_FINE_EM, paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
 import { hexVersRgb } from "./nuancier";
@@ -75,16 +75,18 @@ export type ObjetPdf =
 /** Une page du PDF : sa boîte en mm repère planche (fond perdu compris) et ce qu'elle porte. `fond` : le papier teinté du style (absent : blanc). */
 export type PagePdf = { boite: Rect; objets: ObjetPdf[]; fond?: string };
 
-/** La planche 0 : page droite seule, fond perdu sur ses quatre bords. */
+/** La planche 0 : page droite seule, fond perdu sur ses quatre bords (216 × 303). */
 export const BOITE_PAGE_SEULE: Rect = { x: PAGE_L - FOND_PERDU, y: -FOND_PERDU, l: PAGE_L + 2 * FOND_PERDU, h: PAGE_H + 2 * FOND_PERDU };
+/** La dernière page (lot E) : page gauche seule, fond perdu sur ses quatre bords, 216 × 303 comme la première. */
+export const BOITE_DERNIERE_PAGE: Rect = { x: -FOND_PERDU, y: -FOND_PERDU, l: PAGE_L + 2 * FOND_PERDU, h: PAGE_H + 2 * FOND_PERDU };
 /** Une double : la planche et son fond perdu extérieur. */
 export const BOITE_DOUBLE: Rect = { x: -FOND_PERDU, y: -FOND_PERDU, l: PLANCHE_L + 2 * FOND_PERDU, h: PAGE_H + 2 * FOND_PERDU };
 
 /** Les dispositions d'une planche et leur cible : le même parcours que l'IDML. */
-function partsDe(p: Planche, premiere: boolean): { d: Disposition; cible: "double" | "gauche" | "droite" }[] {
-  if (premiere) {
-    const d = dispositionDe(p, "droite");
-    return d ? [{ d, cible: "droite" }] : [];
+function partsDe(p: Planche, seul: CoteSeul | null): { d: Disposition; cible: "double" | "gauche" | "droite" }[] {
+  if (seul) {
+    const d = dispositionDe(p, seul);
+    return d ? [{ d, cible: seul }] : [];
   }
   if (p.mode === "double") return p.double ? [{ d: p.double, cible: "double" }] : [];
   return [
@@ -101,7 +103,8 @@ export function planPdf(magazine: Magazine): PagePdf[] {
   const planches = magazine.planches.length > 0 ? magazine.planches : [{ id: "pl-1", mode: "pages" as const, double: null, gauche: null, droite: null }];
   const sty = styleActif(magazine);
   return planches.map((p, i) => {
-    const parts = partsDe(p, i === 0);
+    const seul = coteSeul(magazine, i);
+    const parts = partsDe(p, seul);
     const objets: ObjetPdf[] = parts.flatMap(({ d, cible }) => decorDe(d, cible).map((a): ObjetPdf => ({
       type: "aplat", rect: a, teinte: a.teinte, ...(sty ? { couleur: sty.couleurs[roleDeTeinte(a.teinte)] } : {}),
     })));
@@ -123,7 +126,7 @@ export function planPdf(magazine: Magazine): PagePdf[] {
         }
       }
     }
-    return { boite: i === 0 ? BOITE_PAGE_SEULE : BOITE_DOUBLE, objets, ...(sty && sty.couleurs.papier !== "#ffffff" ? { fond: sty.couleurs.papier } : {}) };
+    return { boite: seul === "droite" ? BOITE_PAGE_SEULE : seul === "gauche" ? BOITE_DERNIERE_PAGE : BOITE_DOUBLE, objets, ...(sty && sty.couleurs.papier !== "#ffffff" ? { fond: sty.couleurs.papier } : {}) };
   });
 }
 

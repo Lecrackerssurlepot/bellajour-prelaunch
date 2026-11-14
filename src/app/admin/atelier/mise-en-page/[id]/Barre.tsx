@@ -80,7 +80,7 @@ export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
 export function Bandeaux({ projet, sv, collecteOuverte, prendreSaVersion, garderLaMienne }: {
   projet: Projet; sv: EtatSauvegarde; collecteOuverte: boolean; prendreSaVersion: () => void; garderLaMienne: () => void;
 }) {
-  const { etat, envoyer } = useEd();
+  const { etat, envoyer, ui, majUi } = useEd();
   const out: React.ReactNode[] = [];
   const lectureSeuleRaison = etat.sauvegarde.etat === "lecture_seule" ? etat.sauvegarde.raison : null;
   if (collecteOuverte) out.push(<div key="c" className="ed-bandeau">Collecte ouverte : des photos peuvent encore arriver</div>);
@@ -112,6 +112,29 @@ export function Bandeaux({ projet, sv, collecteOuverte, prendreSaVersion, garder
           const pl = etat.magazine.planches.find((x) => idsPlanche(x).some((id) => indispo.includes(id)));
           if (pl) envoyer({ type: "naviguer", plancheId: pl.id });
         }}>Voir</button>
+      </div>
+    );
+  }
+  /* lot E : le premier jet chargé (ce qui n'a pas trouvé sa photo, nommé par son fichier d'origine) ou refusé (une phrase) */
+  const pj = ui.premierJet;
+  if (pj) {
+    const NOMS_MAX = 24;
+    out.push(
+      <div key="pj" className={cls("ed-bandeau", pj.type === "refuse" ? "ed-bandeau--rouge" : pj.manquantes.length || pj.ambigues.length ? undefined : "ed-bandeau--bleu")} role="status">
+        {pj.type === "refuse" ? (
+          <><strong>Premier jet refusé · {pj.fichier}</strong><span>{pj.phrase}</span></>
+        ) : (
+          <>
+            <strong>Premier jet chargé · {pj.reliees} photo{pj.reliees > 1 ? "s" : ""} reliée{pj.reliees > 1 ? "s" : ""} sur {pj.total}</strong>
+            {pj.manquantes.length ? (
+              <span title={pj.manquantes.join(", ")}>
+                {pj.manquantes.length > 1 ? `${pj.manquantes.length} photos introuvables parmi vos photos importées` : "1 photo introuvable parmi vos photos importées"} : {pj.manquantes.slice(0, NOMS_MAX).join(", ")}{pj.manquantes.length > NOMS_MAX ? ` et ${pj.manquantes.length - NOMS_MAX} autres` : ""}
+              </span>
+            ) : null}
+            {pj.ambigues.length ? <span title={pj.ambigues.join(", ")}>Plusieurs photos portent le même nom : la première est prise ({pj.ambigues.slice(0, 5).join(", ")})</span> : null}
+          </>
+        )}
+        <button type="button" className="ed-bt" onClick={() => majUi({ premierJet: null })}>Fermer</button>
       </div>
     );
   }

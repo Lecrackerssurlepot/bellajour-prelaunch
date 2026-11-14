@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { bande, cheminDeFer, couvertureDe, idsPlanche } from "@/lib/mise-en-page/editeur";
 import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
+import { aDerniere, coteSeul } from "@/lib/mise-en-page/magazine";
 import { DessinCouverture } from "./SceneCouverture";
 import { cls, memeRef, pluriel, useEd } from "./contexte";
 import { Mini } from "./Gabarits";
@@ -105,7 +106,9 @@ export function CheminDeFer() {
   const d = etat.glisser;
   const vignettes = cheminDeFer(etat);
   const cibleV = d?.survol?.type === "vignette" ? d.survol : null;
-  const entre = d?.survol?.type === "entre" ? d.survol.index : null;
+  /* lot E : la dernière page reste en dernier : le repère « entre » ne passe jamais derrière elle */
+  const finCorps = aDerniere(m) ? m.planches.length - 1 : m.planches.length;
+  const entre = d?.survol?.type === "entre" ? Math.min(d.survol.index, finCorps) : null;
   const piste = useRef<HTMLDivElement>(null);
   /* 06/11 : le menu ⋯ sort de la piste (qui défile et coupait tout ce qui dépassait) : il s'ouvre au-dessus de l'écran,
      calé sur son bouton, dans la racine de l'éditeur pour garder ses styles. */
@@ -127,6 +130,7 @@ export function CheminDeFer() {
         </div>
         {vignettes.map((v, i) => {
           const pl = m.planches[i];
+          const seule = coteSeul(m, i);
           let plv = pl;
           let pleine = false;
           if (cibleV && cibleV.plancheId === pl.id && d?.apercu) {
@@ -141,11 +145,11 @@ export function CheminDeFer() {
               {entre === i ? <span className="ed-cf-ins" aria-hidden="true" /> : null}
               <div className={cls("ed-cf-v", v.courante && "ed-cf-v--courante", !!cibleV && cibleV.plancheId === pl.id && !pleine && "ed-cf-v--cible", pleine && "ed-cf-v--pleine", trainee && "ed-cf-v--trainee", ui.ressortId === pl.id && "ed-cf-v--ressort")}
                 data-vignette={pl.id} role="option" aria-selected={v.courante} tabIndex={0} aria-label={`Planche ${v.numero}, page ${v.pages}, ${pluriel(v.nbPhotos, "photo")}`}
-                onPointerDown={(e) => { if (i > 0 && !ro && !(e.target as HTMLElement).closest(".ed-cf-menu-bt, .ed-menu")) commencerAppui(e, { type: "planche", plancheId: pl.id }); }}
+                onPointerDown={(e) => { if (i > 0 && !seule && !ro && !(e.target as HTMLElement).closest(".ed-cf-menu-bt, .ed-menu")) commencerAppui(e, { type: "planche", plancheId: pl.id }); }}
                 onClick={(e) => { if (clicSupprime() || (e.target as HTMLElement).closest(".ed-cf-menu-bt, .ed-menu")) return; envoyer({ type: "naviguer", plancheId: pl.id }); }}
                 onKeyDown={(e) => {
                   const cible = e.currentTarget;
-                  if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight") && i > 0 && !ro) {
+                  if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight") && i > 0 && !seule && !ro) {
                     e.preventDefault(); e.stopPropagation();
                     envoyer({ type: "deplacerPlanche", plancheId: pl.id, versIndex: i + (e.key === "ArrowRight" ? 1 : -1) });
                     setTimeout(() => document.querySelector<HTMLElement>(`[data-vignette="${pl.id}"]`)?.focus(), 0);
@@ -156,7 +160,7 @@ export function CheminDeFer() {
                     nx?.focus();
                   }
                 }}>
-                <Mini planche={plv} premiere={i === 0} />
+                <Mini planche={plv} seule={seule} />
                 <span>{pleine ? "Pleine" : `p. ${v.pages} · ${nbv}`}</span>
                 {ro ? null : (
                   <button type="button" className="ed-cf-menu-bt" aria-label={`Menu de la planche ${v.numero}`} aria-expanded={menuOuvert}
@@ -171,14 +175,14 @@ export function CheminDeFer() {
                   <div className="ed-menu ed-menu--flottant" role="menu" style={{ left: ancre.x, bottom: window.innerHeight - ancre.y + 4 }}
                     onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                     <button type="button" role="menuitem" onClick={() => { majUi({ menu: null }); gesteAvecAnnuler({ type: "vider", plancheId: pl.id }, "Planche vidée"); }}>Vider</button>
-                    {i > 0 ? <button type="button" role="menuitem" onClick={() => { majUi({ menu: null }); gesteAvecAnnuler({ type: "supprimerPlanche", plancheId: pl.id }, "Planche supprimée"); }}>Supprimer</button> : null}
+                    {i > 0 && !seule ? <button type="button" role="menuitem" onClick={() => { majUi({ menu: null }); gesteAvecAnnuler({ type: "supprimerPlanche", plancheId: pl.id }, "Planche supprimée"); }}>Supprimer</button> : null}
                   </div>, ancre.racine,
                 ) : null}
               </div>
             </Fragment>
           );
         })}
-        {entre === m.planches.length ? <span className="ed-cf-ins" aria-hidden="true" /> : null}
+        {entre !== null && entre === m.planches.length ? <span className="ed-cf-ins" aria-hidden="true" /> : null}
         {ro ? null : <button type="button" className="ed-cf-plus" onClick={() => envoyer({ type: "insererDouble" })}>+ Double page</button>}
       </div>
     </div>

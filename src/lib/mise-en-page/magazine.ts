@@ -10,8 +10,11 @@
  * dimensions et des dates), sauf dans `poser` où c'est la sélection à poser.
  *
  * Règle tenue partout : la planche d'index 0 est une page droite seule (la
- * page 1 du magazine, en face de la couverture). Elle ne bascule jamais en
- * double et ne se supprime pas (elle se vide).
+ * page 1 du magazine, en face de la couverture intérieure avant). Elle ne bascule
+ * jamais en double et ne se supprime pas (elle se vide). Lot E (13/11) : la DERNIÈRE
+ * planche est son pendant, une page GAUCHE seule (en face de la couverture intérieure
+ * arrière) : le nombre de pages est toujours PAIR, elle existe toujours, ne bascule
+ * pas, ne se supprime pas, et reste en dernier (rien ne s'insère après elle).
  */
 
 import { PAGE_L, PLANCHE_L } from "./geometrie";
@@ -75,8 +78,30 @@ export const VISEES_MAX = 5000;
  * `tri` (lot 2), `style` (lot C, 12/11) et `couverture` (lot B, 12/11) sont FACULTATIFS : écrits seulement quand ils existent (jamais
  * `undefined`). `couverture` : la couverture à plat, à côté des planches (couverture.ts), écrite seulement quand on y a touché. Un magazine
  * sans `style` garde exactement son rendu d'avant : Arial dans l'IDML, Helvetica dans le PDF, le terracotta de la marque en aplat.
+ *
+ * `derniere` (lot E, 13/11) : `true` = la DERNIÈRE de `planches` est la page gauche seule de la fin (format d'après le lot E ; tout
+ * magazine neuf l'a). Absente : un magazine d'AVANT, dont la dernière planche est une planche comme les autres ; on le lit tel quel,
+ * et l'éditeur lui ajoute la planche manquante à l'ouverture (`avecDerniere`). Jamais écrite à `false`.
  */
-export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; style?: StyleMagazine; couverture?: Couverture };
+export type Magazine = { version: 1; id: string; titre: string; planches: Planche[]; creeLe: string; modifieLe: string; tri?: TriMagazine; style?: StyleMagazine; couverture?: Couverture; derniere?: true };
+
+/* ─────────────────────────── Les pages seules : la première et la dernière ─────────────────────────── */
+
+/**
+ * L'id de la dernière planche : jamais « pl-N » (la suite des ids de planche, `prochainId`, n'en est pas touchée : les doubles
+ * ajoutées gardent leurs numéros, et la dernière page garde le sien quoi qu'on insère avant elle).
+ */
+export const ID_DERNIERE = "pl-fin";
+
+/** Le côté de la page SEULE d'une planche : la première est une page droite, la dernière une page gauche. */
+export type CoteSeul = "droite" | "gauche";
+
+/** Ce magazine a-t-il sa dernière planche (page gauche seule) ? Faux pour un magazine d'avant le lot E. */
+export const aDerniere = (m: Pick<Magazine, "derniere" | "planches">): boolean => m.derniere === true && m.planches.length >= 2;
+/** La planche d'index `i` est-elle la dernière page, seule ? */
+export const estDerniere = (m: Pick<Magazine, "derniere" | "planches">, i: number): boolean => aDerniere(m) && i === m.planches.length - 1;
+/** `"droite"` pour la première planche, `"gauche"` pour la dernière, `null` pour une planche courante (double, ou deux pages). */
+export const coteSeul = (m: Pick<Magazine, "derniere" | "planches">, i: number): CoteSeul | null => (i === 0 ? "droite" : estDerniere(m, i) ? "gauche" : null);
 
 export type Cible = "gauche" | "droite" | "double";
 /** Un cadre précis : `index` compte les cadres photo (ou texte pour `ecrireTexte`) de la disposition. */
@@ -320,22 +345,38 @@ const choisir = (portee: Portee, photos: PhotoRef[]): Disposition | null => {
 
 /* ─────────────────────────── Les transitions ─────────────────────────── */
 
+/** Un magazine neuf : la première page (droite) et la dernière (gauche), toutes deux seules, vides (lot E : deux pages, toujours un nombre pair). */
 export function nouveauMagazine(id: string, titre: string, maintenant: string = new Date().toISOString()): Magazine {
-  return { version: 1, id, titre, planches: [plancheVide("pl-1", "pages")], creeLe: maintenant, modifieLe: maintenant };
+  return { version: 1, id, titre, planches: [plancheVide("pl-1", "pages"), plancheVide(ID_DERNIERE, "pages")], creeLe: maintenant, modifieLe: maintenant, derniere: true };
+}
+
+/**
+ * Lot E : la lecture de l'ANCIEN format. Un magazine sauvegardé avant le lot E n'a pas de dernière page : on lui AJOUTE une planche
+ * vide à la fin et on pose `derniere`. Rien d'existant ne bouge (les planches, leurs ids, leurs dispositions, le tri, le style, la
+ * couverture restent tels quels) ; ce qui était la dernière planche devient une planche courante. Un magazine qui a déjà sa dernière
+ * page est rendu tel quel (le MÊME objet) : idempotent. Appelé par l'écran à l'ouverture, jamais par une transition.
+ */
+export function avecDerniere(m: Magazine): Magazine {
+  if (m.derniere === true && m.planches.length >= 2) return m;
+  const id = m.planches.some((p) => p.id === ID_DERNIERE) ? `${ID_DERNIERE}-${prochainId(m).slice(3)}` : ID_DERNIERE;
+  return { ...m, planches: [...m.planches, plancheVide(id, "pages")], derniere: true };
 }
 
 /** Posé par la couche de sauvegarde, jamais par une transition. */
 export const horodater = (m: Magazine, maintenant: string): Magazine => ({ ...m, modifieLe: maintenant });
 
+/** Une double de plus, à la fin du corps du magazine : AVANT la dernière page (lot E), qui reste en dernier. */
 export function ajouterDouble(m: Magazine): Magazine {
-  return { ...m, planches: [...m.planches, plancheVide(prochainId(m), "double")] };
+  const planches = m.planches.slice();
+  planches.splice(aDerniere(m) ? planches.length - 1 : planches.length, 0, plancheVide(prochainId(m), "double"));
+  return { ...m, planches };
 }
 
-/** La planche 0 ne se supprime pas : elle se vide. */
+/** La première et la dernière planche ne se suppriment pas : elles se vident. */
 export function supprimerPlanche(m: Magazine, plancheId: string): Magazine {
   const i = m.planches.findIndex((p) => p.id === plancheId);
   if (i < 0) return m;
-  if (i === 0) return vider(m, plancheId);
+  if (coteSeul(m, i)) return vider(m, plancheId);
   return { ...m, planches: m.planches.filter((p) => p.id !== plancheId) };
 }
 
@@ -348,13 +389,13 @@ export function vider(m: Magazine, plancheId: string): Magazine {
  * Pose une sélection. Sur une page d'une planche en double : la planche repasse
  * en mode pages (l'autre page vide). En double : la planche devient une double
  * (les deux pages fusionnent), son contenu est remplacé. Sur la planche 0,
- * toute cible devient la page droite. Au-delà du maximum, les plus récentes
+ * toute cible devient la page droite ; sur la dernière (lot E), la page gauche. Au-delà du maximum, les plus récentes
  * sont rendues dans `nonPosees`.
  */
 export function poser(m: Magazine, plancheId: string, cible: Cible, photos: PhotoRef[]): { magazine: Magazine; nonPosees: string[] } {
   const i = m.planches.findIndex((p) => p.id === plancheId);
   if (i < 0 || photos.length === 0) return { magazine: m, nonPosees: [] };
-  const vraie: Cible = i === 0 ? "droite" : cible;
+  const vraie: Cible = coteSeul(m, i) ?? cible;
   const portee: Portee = vraie === "double" ? "double" : "page";
   const { nonPosees } = retenir(portee, photos);
   const d = choisir(portee, photos);
@@ -392,11 +433,11 @@ export function autreDisposition(m: Magazine, plancheId: string, cible: Cible, p
 /**
  * Page ↔ double page (brief §7). Pages → double : fusion des photos des deux
  * pages, nouveau choix. Double → pages : partage chronologique (ceil à gauche,
- * floor à droite), nouveau choix de chaque côté. La planche 0 ne bascule pas.
+ * floor à droite), nouveau choix de chaque côté. La planche 0 et la dernière ne basculent pas.
  */
 export function basculer(m: Magazine, plancheId: string, photos: PhotoRef[]): Magazine {
   return avecPlanche(m, plancheId, (p, i) => {
-    if (i === 0) return p;
+    if (coteSeul(m, i)) return p;
     if (p.mode === "pages") {
       const refs = resoudre([...idsDe(p.gauche), ...idsDe(p.droite)], photos);
       return { ...plancheVide(p.id, "double"), double: choisir("double", refs) };

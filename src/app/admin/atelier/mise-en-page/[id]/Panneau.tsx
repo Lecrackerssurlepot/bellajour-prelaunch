@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
+  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, motProposition, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
   type Filtres, type Marque, type PhotoMaq, type SourceGlisser, type TourTri,
 } from "@/lib/mise-en-page/editeur";
 import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { CheminDeFer, Toast } from "./Bas";
 import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
+import { BoutonPremierJet } from "./PremierJet";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
 import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, BoutonPreTri, PaletteTri, VuesBarre } from "./TriBulles";
@@ -252,7 +253,7 @@ function PanneauOuvert() {
     const sel1 = selSet.has(id);
     const ec = ecartees.has(id), cc = coups.has(id), re = reserve.has(id);
     return (
-      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={(p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom) + (etat.pretri[id] ? ` · pré-tri : ${etat.pretri[id].raison}` : "")}
+      <button key={id} type="button" data-photo={id} style={{ width: l, height: h }} title={(p.l > 1 && p.h > 1 ? `${p.nom} · ${p.l} × ${p.h} px` : p.nom) + (etat.pretri[id] ? ` · ${motProposition(etat.pretri[id])} : ${etat.pretri[id].raison}` : "")}
         className={cls("ed-vg", sel1 && "ed-vg--sel", rep.surPlanche.has(id) && "ed-vg--ici", n > 0 && "ed-vg--posee", ec && "ed-vg--ecartee", re && "ed-vg--reserve", trainee && "ed-vg--trainee", etat.halo === id && "ed-vg--halo", focusVu && focus === id && "ed-vg--focus")}
         aria-pressed={sel1} aria-label={p.nom + (cc ? ", coup de cœur" : choisies.has(id) ? ", gardée" : re ? ", réserve" : ec ? ", écartée" : "") + (p.coeur ? ", cœur du client" : "") + (n ? ", posée" : "") + (p.signalee ? ", à ne pas publier" : "")}
         onPointerDown={(e) => commencerAppui(e, sourcePour(id))}
@@ -337,6 +338,7 @@ function PanneauOuvert() {
             <button type="button" className="ed-bt" disabled={!!imp.enCours} onClick={() => choix.current?.click()}>
               {imp.enCours ? `${imp.enCours.fait} / ${imp.enCours.total}` : "Importer"}
             </button>
+            <BoutonPremierJet />
           </>
         ) : null}
         {grand ? <><PaletteTri /><BoutonPreTri /><JaugeTri /></> : (

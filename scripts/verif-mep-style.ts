@@ -272,7 +272,7 @@ export async function verifierMepStyle(ok: Rapporter, titre: (t: string) => void
   const vrai = { version: 1, id: "m", titre: "t", creeLe: "2026-11-12T00:00:00Z", modifieLe: "2026-11-12T00:00:00Z", planches: [{ id: "pl-1", mode: "pages", double: null, gauche: null, droite: null }] };
   const triOk = { choisies: ["a"], ecartees: ["b"], visees: null };
   ok("contenuValide : `style` est ACCEPTÉE quand elle est valide (seule, avec `tri`, relue depuis JSON), refusée sinon : undefined, null, vide, T-04, clé en trop",
-    NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture"
+    NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture,derniere"
       && contenuValide({ ...vrai, style: bon }) && contenuValide({ ...vrai, tri: triOk, style: bon }) && contenuValide(JSON.parse(JSON.stringify({ ...vrai, style: bon })))
       && !contenuValide({ ...vrai, style: undefined }) && !contenuValide({ ...vrai, style: null }) && !contenuValide({ ...vrai, style: {} })
       && !contenuValide({ ...vrai, style: { paire: "T-04", couleurs: COULEURS_ORIGINE } }) && !contenuValide({ ...vrai, style: { ...bon, pirate: 1 } })

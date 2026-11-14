@@ -23,11 +23,13 @@ export {
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 export { contenuValide } from "../sauvegarde";
+export { FORMAT_PREMIER_JET, NOM_FICHIER_MAX, PREFIXE_ABSENTE, RAISON_MAX, REGLE_PREMIER_JET, TAILLE_MAX_PREMIER_JET, VERSION_PREMIER_JET, appliquerPremierJet, idsDuMagazine, lirePremierJet, motProposition, nomComparable } from "./premierJet";
+export type { BilanPremierJet, LecturePremierJet, PremierJet } from "./premierJet";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
 export { planDepot, planifier } from "./plans";
 export { aCote, aCoteParJour, groupes, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
-  actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, gabaritsPour, libelleAnnuler,
+  actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, etiquettePages, gabaritsPour, libelleAnnuler,
   libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
@@ -68,7 +70,7 @@ export type { Fait } from "./faits";
 export { aVisageFlou, comptesTags, estBrulee, estCapture, estSombre, lectureDePhoto, MOT_TAG, TAGS, tagsDeLecture } from "./tags";
 export type { LectureDePhoto, Tag } from "./tags";
 /* lot B (12/11) : la couverture à plat */
-export { autreGabaritCouverture, choisirGabaritCouverture, echangerSurCouverture, ecrireCouverture, pagesCouverture, planDepotCouverture, planGesteCouverture, poserSurCouverture, recadrerCouverture, retirerDeCouverture } from "./gestesCouverture";
+export { autreGabaritCouverture, choisirGabaritCouverture, echangerSurCouverture, dosCouverture, ecrireCouverture, pagesCouverture, planDepotCouverture, planGesteCouverture, poserSurCouverture, recadrerCouverture, retirerDeCouverture } from "./gestesCouverture";
 export { aplatsDeCouverture, bilanCouverture, cadresDeCouverture, cibleCouvertureAllumee } from "./selecteursCouverture";
 export type { BilanCouverture, CadreCouvertureEcran } from "./selecteursCouverture";
 export { couvertureDe, estCouverture } from "./outils";

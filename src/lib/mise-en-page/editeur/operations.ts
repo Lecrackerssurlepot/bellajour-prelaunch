@@ -7,9 +7,9 @@
  */
 
 import {
-  candidats, dispositionDe, ecrireTexte as ecrireTexteMagazine, recadrer as recadrerMagazine, supprimerPlanche as supprimerPlancheMagazine,
+  aDerniere, candidats, coteSeul, dispositionDe, ecrireTexte as ecrireTexteMagazine, recadrer as recadrerMagazine, supprimerPlanche as supprimerPlancheMagazine,
   templateParId, vider as viderMagazine, versionGabaritsEnregistres,
-  type Cible, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
+  type Cible, type CoteSeul, type Disposition, type Hesitation, type Magazine, type Planche, type PhotoRef, type RefCadre, type TexteCadre,
 } from "../magazine";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
 import { partEnRupture, partVide } from "../genere";
@@ -246,7 +246,8 @@ export function composer(
   if (i < 0 || !CIBLES.includes(cible)) return { magazine: m, textesPerdus: 0 };
   const p = m.planches[i];
   if (cible !== "double" && p.mode === "double") return { magazine: m, textesPerdus: 0 };
-  if (i === 0 && cible !== "droite") return { magazine: m, textesPerdus: 0 };
+  const seul = coteSeul(m, i);
+  if (seul && cible !== seul) return { magazine: m, textesPerdus: 0 };
   const ancienne = dispositionDe(p, cible);
   const tA = gabaritDe(ancienne);
   const sources = sourcesDe(p);
@@ -268,9 +269,10 @@ export const issue = (magazine: Magazine, refus: Refus | null, extra?: Partial<I
   magazine, restees: [], textesPerdus: 0, refus, dejaLa: 0, posees: [], ignorees: 0, ...(extra ?? {}),
 });
 
-/** La cible réelle d'un dépôt : planche 1 → droite ; planche en double → double. */
+/** La cible réelle d'un dépôt : planche 1 → droite ; dernière planche → gauche (lot E) ; planche en double → double. */
 function cibleReelle(m: Magazine, i: number, cible: Cible): Cible {
-  if (i === 0) return "droite";
+  const seul = coteSeul(m, i);
+  if (seul) return seul;
   return m.planches[i].mode === "double" ? "double" : cible;
 }
 
@@ -463,7 +465,7 @@ export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens:
 /** 17. Pages → double, gauche puis droite. Jamais de surplus (6 + 6 = 12). */
 export function fusionner(m: Magazine, plancheId: string, cat: CatalogueRef): Issue {
   const i = indexPlanche(m, plancheId);
-  if (i <= 0 || m.planches[i].mode !== "pages") return issue(m, "rien");
+  if (i <= 0 || coteSeul(m, i) || m.planches[i].mode !== "pages") return issue(m, "rien");
   const p = m.planches[i];
   const r = composer(m, plancheId, "double", [...idsDispo(p.gauche), ...idsDispo(p.droite)], cat);
   return issue(r.magazine, null, { textesPerdus: r.textesPerdus });
@@ -472,7 +474,7 @@ export function fusionner(m: Magazine, plancheId: string, cat: CatalogueRef): Is
 /** 18. Double → pages : ceil(n/2) à gauche, le reste à droite (T26). */
 export function separer(m: Magazine, plancheId: string, cat: CatalogueRef): Issue {
   const i = indexPlanche(m, plancheId);
-  if (i <= 0 || m.planches[i].mode !== "double") return issue(m, "rien");
+  if (i <= 0 || coteSeul(m, i) || m.planches[i].mode !== "double") return issue(m, "rien");
   const p = m.planches[i];
   const d = p.double;
   const ids = idsDispo(d);
@@ -494,19 +496,19 @@ export function prochainId(m: Magazine): string {
   return `pl-${max + 1}`;
 }
 
-/** 19. Une planche « pages » vide juste après. `idImpose` (unique) prime sur `prochainId`. */
+/** 19. Une planche « pages » vide juste après. `idImpose` (unique) prime sur `prochainId`. Lot E : jamais après la dernière page, qui reste en dernier (après elle = juste avant elle). */
 export function insererDouble(m: Magazine, apresPlancheId: string, idImpose?: string): { magazine: Magazine; plancheId: string | null } {
   const i = indexPlanche(m, apresPlancheId);
   if (i < 0) return { magazine: m, plancheId: null };
   const id = idImpose && indexPlanche(m, idImpose) < 0 ? idImpose : prochainId(m);
   const planches = m.planches.slice();
-  planches.splice(i + 1, 0, { id, mode: "pages", double: null, gauche: null, droite: null });
+  planches.splice(Math.min(i + 1, aDerniere(m) ? planches.length - 1 : planches.length), 0, { id, mode: "pages", double: null, gauche: null, droite: null });
   return { magazine: { ...m, planches }, plancheId: id };
 }
 
 /**
  * 19 bis. Des doubles pages NEUVES pour des photos (lâcher sur le chemin de fer, « Poser » un groupe) : au plus
- * 12 par double, réparties à parts égales (20 → 10 + 10), insérées à la place `index` (jamais avant la planche 1).
+ * 12 par double, réparties à parts égales (20 → 10 + 10), insérées à la place `index` (jamais avant la planche 1, jamais après la dernière page, lot E).
  * Ids imposés `pl-<premierNumero + j>`. Une photo déjà posée ailleurs est acceptée, comme pour `ajouter`.
  */
 export function creerDoubles(m: Magazine, index: number, ids: readonly string[], cat: CatalogueRef, premierNumero: number): Issue {
@@ -522,7 +524,7 @@ export function creerDoubles(m: Magazine, index: number, ids: readonly string[],
   }
   if (!valides.length) return issue(m, "rien", { ignorees, dejaLa });
   const k = Math.ceil(valides.length / MAX_PHOTOS_DOUBLE);
-  let apres = m.planches[borner(Math.trunc(index), 1, m.planches.length) - 1].id;
+  let apres = m.planches[borner(Math.trunc(index), 1, m.planches.length - (aDerniere(m) ? 1 : 0)) - 1].id;
   let x = m, debut = 0, premiere: string | null = null;
   for (let j = 0; j < k; j++) {
     const n = Math.ceil((valides.length - debut) / (k - j));
@@ -536,11 +538,11 @@ export function creerDoubles(m: Magazine, index: number, ids: readonly string[],
   return issue(x, null, { posees: valides, ignorees, dejaLa, nouvellePlanche: premiere });
 }
 
-/** 20. Réordonner les planches ; la planche 1 ne bouge pas, rien ne passe devant elle. */
+/** 20. Réordonner les planches ; la planche 1 ne bouge pas, rien ne passe devant elle ; la dernière page (lot E) non plus, rien ne passe derrière elle. */
 export function deplacerPlanche(m: Magazine, plancheId: string, versIndex: number): Magazine {
   const i = indexPlanche(m, plancheId);
-  if (i <= 0 || !Number.isFinite(versIndex)) return m;
-  const v = borner(Math.trunc(versIndex), 1, m.planches.length - 1);
+  if (i <= 0 || coteSeul(m, i) || !Number.isFinite(versIndex)) return m;
+  const v = borner(Math.trunc(versIndex), 1, m.planches.length - 1 - (aDerniere(m) ? 1 : 0));
   if (v === i) return m;
   const planches = m.planches.slice();
   const [p] = planches.splice(i, 1);
@@ -548,10 +550,10 @@ export function deplacerPlanche(m: Magazine, plancheId: string, versIndex: numbe
   return { ...m, planches };
 }
 
-/** La planche est-elle pleine ? (planche 1 : sa seule page droite). */
-export function estPleine(p: Planche, index: number): boolean {
+/** La planche est-elle pleine ? `seul` : le côté de sa page seule (planche 1 : la droite ; dernière page : la gauche), `null` pour une planche courante. */
+export function estPleine(p: Planche, seul: CoteSeul | null): boolean {
   const n = (d: Disposition | null) => idsDispo(d).length;
-  if (index === 0) return n(p.droite) >= MAX_PHOTOS_PAGE;
+  if (seul) return n(p[seul]) >= MAX_PHOTOS_PAGE;
   if (p.mode === "double") return n(p.double) >= MAX_PHOTOS_DOUBLE;
   return n(p.gauche) >= MAX_PHOTOS_PAGE && n(p.droite) >= MAX_PHOTOS_PAGE;
 }
@@ -561,8 +563,9 @@ export function cibleSurPlanche(m: Magazine, plancheId: string): Cible | null {
   const i = indexPlanche(m, plancheId);
   if (i < 0) return null;
   const p = m.planches[i];
-  if (estPleine(p, i)) return null;
-  if (i === 0) return "droite";
+  const seul = coteSeul(m, i);
+  if (estPleine(p, seul)) return null;
+  if (seul) return seul;
   if (p.mode === "double") return "double";
   return idsDispo(p.gauche).length <= idsDispo(p.droite).length ? "gauche" : "droite";
 }
@@ -584,7 +587,7 @@ export function vider(m: Magazine, plancheId: string): Magazine {
 export function supprimerPlanche(m: Magazine, plancheId: string): Magazine {
   const i = indexPlanche(m, plancheId);
   if (i < 0) return m;
-  if (i === 0) return vider(m, plancheId);
+  if (coteSeul(m, i)) return vider(m, plancheId);
   return supprimerPlancheMagazine(m, plancheId);
 }
 
@@ -622,4 +625,5 @@ export function photosIndisponibles(m: Magazine, cat: CatalogueRef): string[] {
   return [...new Set(idsMagazine(m).filter((id) => !cat.has(id)))];
 }
 export const dpi = (photo: Dims, cadre: Dims, r?: Recadrage | null): number => 25.4 / cadrer(photo, cadre, r ?? neutre()).echelle;
-export const pagesDe = (m: Magazine): number => 1 + 2 * (m.planches.length - 1);
+/** Le nombre de pages : la première (1) et la dernière (1) seules, deux par planche entre elles (lot E : toujours PAIR). Un magazine d'avant le lot E (sans dernière page) : 1 + 2 par planche suivante, impair. */
+export const pagesDe = (m: Magazine): number => (aDerniere(m) ? 2 * (m.planches.length - 1) : 1 + 2 * (m.planches.length - 1));

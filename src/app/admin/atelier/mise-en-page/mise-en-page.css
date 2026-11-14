@@ -927,6 +927,8 @@
   pointer-events: none;
 }
 .mep-editeur .ed-couv-int { position: absolute; z-index: 1; display: grid; place-items: center; left: 0; top: 0; width: 50%; height: 100%; background: repeating-linear-gradient(135deg, var(--bj-veil-8) 0 6px, var(--bj-veil-6) 6px 12px); color: var(--bj-text-soft); font-size: 1.3cqw; }
+/* lot E : la dernière page est à gauche, la couverture intérieure arrière est la moitié droite */
+.mep-editeur .ed-couv-int--d { left: 50%; }
 .mep-editeur .ed-cote { position: absolute; z-index: 1; top: 0; width: 50%; height: 100%; }
 .mep-editeur .ed-cote--g { left: 0; }
 .mep-editeur .ed-cote--d { left: 50%; }
@@ -1197,6 +1199,7 @@
 .mep-editeur .ed-mini i img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .mep-editeur .ed-mini .ed-mini-t { background: var(--bj-veil-8); }
 .mep-editeur .ed-mini-g { position: absolute; top: 0; left: 0; width: 50%; height: 100%; background: var(--bj-veil-8); }
+.mep-editeur .ed-mini-g--d { left: auto; right: 0; }
 
 /* ── le tiroir des gabarits ── */
 .mep-editeur .ed-rangee-gab {

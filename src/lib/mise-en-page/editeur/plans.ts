@@ -3,7 +3,7 @@
  * Le lâcher (source × cible) est AUSSI l'aperçu pendant le survol : l'aperçu EST l'opération (P0), jamais une copie.
  */
 
-import type { Cible, Magazine } from "../magazine";
+import { coteSeul, type Cible, type Magazine } from "../magazine";
 import { MAX_PHOTOS_PAGE } from "../grilles";
 import {
   ajouter, ajouterSurPlanche, autreGabarit, choisirGabarit, cibleSurPlanche, creerDoubles, deplacerPhoto, deplacerPlanche, echangerIssue, fusionner,
@@ -18,6 +18,7 @@ import { avecStyle, libelleStyle } from "./stylage";
 import { styleValide } from "../style";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
 import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
+import { appliquerPremierJet } from "./premierJet";
 import { ID_COUVERTURE } from "../couverture";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
@@ -29,7 +30,8 @@ export function resoudreBande(m: Magazine, cible: Extract<CibleDepot, { type: "b
   const i = indexPlanche(m, cible.plancheId);
   if (i < 0 || !Number.isFinite(cible.position)) return null;
   const p = m.planches[i];
-  if (i === 0) return { cible: "droite", position: cible.position };
+  const seul = coteSeul(m, i);
+  if (seul) return { cible: seul, position: cible.position };
   if (p.mode === "double") return { cible: "double", position: cible.position };
   if (cible.cote === "gauche" || cible.cote === "droite") return { cible: cible.cote, position: cible.position };
   const nG = idsDispo(p.gauche).length;
@@ -105,7 +107,7 @@ function planCadreLibre(e: EtatEditeur, ref: RefCadre, c: Extract<CibleDepot, { 
   const i = indexPlanche(m, c.plancheId);
   const p = m.planches[i];
   if (!p) return planRien(e);
-  const reelle: Cible = i === 0 ? "droite" : p.mode === "double" ? "double" : c.cible;
+  const reelle: Cible = coteSeul(m, i) ?? (p.mode === "double" ? "double" : c.cible);
   if (ref.plancheId === c.plancheId && ref.cible === reelle) {
     const dims = dimsCadre(dispositionOuNull(m, ref), ref.index);
     if (!dims) return planRien(e);
@@ -277,7 +279,7 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
     case "deplacerPlanche": return simple("deplacerPlanche", "Déplacer une planche", g.plancheId, deplacerPlanche(m, g.plancheId, g.versIndex), { plancheId: g.plancheId });
     case "supprimerPlanche": {
       const i = indexPlanche(m, g.plancheId);
-      return simple("supprimerPlanche", i === 0 ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
+      return simple("supprimerPlanche", coteSeul(m, i) ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
     case "preTrier": {
@@ -323,6 +325,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       const retirer = etiquetteRetiree(m, ids, g.etiquette);
       const nom = { couverture: "Couverture", double: "Double page", pleine: "Pleine page" }[g.etiquette];
       return simple("etiqueter", retirer ? `${nom} retirée` : ids.length > 1 ? `${nom} · ${ids.length} photos` : nom, e.plancheCourante, etiqueter(m, ids, g.etiquette, !retirer), {});
+    }
+    case "chargerPremierJet": {
+      /* lot E : les planches du fichier remplacent celles du magazine, les photos reliées par leur nom de fichier ; un fichier qui ne se
+         compose pas en magazine valide ne change rien */
+      const r = appliquerPremierJet(g.jet, m, cat);
+      if (r.refus) return planRien(e);
+      return simple("chargerPremierJet", "Premier jet chargé", r.magazine.planches[0].id, r.magazine, {});
     }
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));

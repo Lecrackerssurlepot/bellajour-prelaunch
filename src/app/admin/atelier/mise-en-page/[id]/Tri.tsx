@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { distanceHash, ETIQUETTES, etiquettesDe, lectureDePhoto, marqueDe, MOT_TAG, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
+import { distanceHash, ETIQUETTES, etiquettesDe, lectureDePhoto, marqueDe, motProposition, MOT_TAG, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
 import { Chaleur } from "./Chaleur";
 import { cls, useEd, type Adresse } from "./contexte";
 import { grandeDe, precharger } from "./images";
@@ -134,7 +134,7 @@ function UnePhoto() {
       {ui.lecture && id && p ? <PanneauLecture id={id} /> : null}
       <div className="ed-vt-pied">
         <div className="ed-vt-nom">
-          {p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{p.coeur ? <Client /> : null}{m ? <Etiquette m={m} /> : null}{doubles?.length ? (doubles[0] === 0 ? " · couverture" : ` · double ${doubles[0]}`) : ""}{id && etat.pretri[id] ? <span className="ed-vt-raison">pré-tri : {etat.pretri[id].raison}</span> : null}</> : null}
+          {p ? <><b>{p.nom}</b>{p.personne ? ` · ${p.personne}` : ""}{p.coeur ? <Client /> : null}{m ? <Etiquette m={m} /> : null}{doubles?.length ? (doubles[0] === 0 ? " · couverture" : ` · double ${doubles[0]}`) : ""}{id && etat.pretri[id] ? <span className="ed-vt-raison">{motProposition(etat.pretri[id])} : {etat.pretri[id].raison}</span> : null}</> : null}
         </div>
         {id ? <Ronds id={id} /> : <span />}
         <div className="ed-vt-rang">{i >= 0 ? `${i + 1} / ${l.length}` : ""}</div>

@@ -3,7 +3,7 @@
  * Purs : ils ne changent rien. À calculer UNE fois par rendu quand ils parcourent la bibliothèque entière.
  */
 
-import { cadresDe, decorDe, dispositionDe, utilisations, type Cible, type Planche } from "../magazine";
+import { cadresDe, coteSeul, decorDe, dispositionDe, estDerniere, utilisations, type Cible, type CoteSeul, type Magazine, type Planche } from "../magazine";
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
 import { texteStyle, type TexteStyle } from "../style";
@@ -111,7 +111,8 @@ export function bande(e: EtatEditeur, plancheId?: string): SegmentBande[] {
   const p = plancheDe(e.magazine, courante(e, plancheId));
   if (!p) return [];
   const mins = dpiMinimaux(e);
-  const segs: Cible[] = p.mode === "double" ? ["double"] : indexPlanche(e.magazine, p.id) === 0 ? ["droite"] : ["gauche", "droite"];
+  const seul = coteSeul(e.magazine, indexPlanche(e.magazine, p.id));
+  const segs: Cible[] = p.mode === "double" ? ["double"] : seul ? [seul] : ["gauche", "droite"];
   return segs.map((cible) => ({
     cible,
     photos: idsDispo(dispositionDe(p, cible)).map((photoId, index) => {
@@ -125,12 +126,22 @@ export type VignetteChemin = {
   id: string; index: number; numero: number; mode: Planche["mode"]; nbPhotos: number; pleine: boolean; courante: boolean; pages: string;
 };
 
+/**
+ * Les pages d'une planche, pour l'étiquette : « 1 » pour la première (page droite seule), « 2-3 », « 4-5 »… pour une planche courante,
+ * et pour la dernière page (lot E, page gauche seule) son numéro seul : « 32 ». Un magazine d'avant le lot E n'a pas de dernière page : sa
+ * dernière planche est une planche courante.
+ */
+export function etiquettePages(m: Pick<Magazine, "derniere" | "planches">, index: number): string {
+  if (index === 0) return "1";
+  return estDerniere(m, index) ? String(2 * index) : `${2 * index}-${2 * index + 1}`;
+}
+
 /** Où une photo est posée : chaque cadre, avec sa planche et ses pages (clic sur ×n). La couverture (lot B) : numéro 0, « couv. ». */
 export function emplacements(e: EtatEditeur, photoId: string): { ref: RefCadre; numero: number; pages: string }[] {
   return [
     ...photosCouverture(e).filter((x) => x.photoId === photoId).map((x) => ({ ref: x.ref, numero: 0, pages: "couv." })),
     ...e.magazine.planches.flatMap((p, index) => photosDe(p).filter((x) => x.photoId === photoId)
-      .map((x) => ({ ref: x.ref, numero: index + 1, pages: index === 0 ? "1" : `${2 * index}-${2 * index + 1}` }))),
+      .map((x) => ({ ref: x.ref, numero: index + 1, pages: etiquettePages(e.magazine, index) }))),
   ];
 }
 
@@ -152,8 +163,8 @@ export function planchesDesPhotos(e: EtatEditeur): Map<string, number[]> {
 
 export function cheminDeFer(e: EtatEditeur): VignetteChemin[] {
   return e.magazine.planches.map((p, index) => ({
-    id: p.id, index, numero: index + 1, mode: p.mode, nbPhotos: idsPlanche(p).length, pleine: estPleine(p, index),
-    courante: p.id === e.plancheCourante, pages: index === 0 ? "1" : `${2 * index}-${2 * index + 1}`,
+    id: p.id, index, numero: index + 1, mode: p.mode, nbPhotos: idsPlanche(p).length, pleine: estPleine(p, coteSeul(e.magazine, index)),
+    courante: p.id === e.plancheCourante, pages: etiquettePages(e.magazine, index),
   }));
 }
 
@@ -238,7 +249,8 @@ export function gabaritsPour(e: EtatEditeur, plancheId: string, cible: Cible): G
 }
 
 export type ActionsPlanche = {
-  premiere: boolean; vider: boolean; supprimer: boolean; fusionner: boolean; separer: boolean; zoneDouble: boolean; deplacable: boolean; pleine: boolean;
+  /** Lot E : `premiere` (page droite seule) et `derniere` (page gauche seule) ; `seule` = le côté de la page seule, `null` pour une planche courante. */
+  premiere: boolean; derniere: boolean; seule: CoteSeul | null; vider: boolean; supprimer: boolean; fusionner: boolean; separer: boolean; zoneDouble: boolean; deplacable: boolean; pleine: boolean;
   /** Lot 4 : le miroir a-t-il un sens (planche 2 et plus, pas vide) ; les cibles retouchées à la main. */
   miroir: boolean; retouchees: Cible[];
 };
@@ -247,11 +259,13 @@ export function actionsPlanche(e: EtatEditeur, plancheId: string): ActionsPlanch
   const i = indexPlanche(e.magazine, plancheId);
   if (i < 0) return null;
   const p = e.magazine.planches[i];
+  const seule = coteSeul(e.magazine, i);
+  const courante = i > 0 && !seule;
   return {
-    premiere: i === 0, vider: !!(p.double || p.gauche || p.droite), supprimer: i > 0,
-    fusionner: i > 0 && p.mode === "pages", separer: i > 0 && p.mode === "double",
-    zoneDouble: i > 0 && p.mode === "pages", deplacable: i > 0, pleine: estPleine(p, i),
-    miroir: i > 0 && !!(p.double || p.gauche || p.droite),
+    premiere: i === 0, derniere: estDerniere(e.magazine, i), seule, vider: !!(p.double || p.gauche || p.droite), supprimer: courante,
+    fusionner: courante && p.mode === "pages", separer: courante && p.mode === "double",
+    zoneDouble: courante && p.mode === "pages", deplacable: courante, pleine: estPleine(p, seule),
+    miroir: courante && !!(p.double || p.gauche || p.droite),
     retouchees: (["double", "gauche", "droite"] as const).filter((c) => !!dispositionDe(p, c)?.cadres),
   };
 }
@@ -286,8 +300,9 @@ export function cibleAllumee(e: EtatEditeur, source: SourceGlisser | null | unde
   const i = pid === undefined ? -1 : indexPlanche(m, pid);
   if (i < 0) return false;
   const p = m.planches[i];
-  if (cible.type === "page") return i === 0 ? cible.cote === "droite" : p.mode === "pages";
-  if (cible.type === "double") return i > 0;
+  const seul = coteSeul(m, i);
+  if (cible.type === "page") return seul ? cible.cote === seul : p.mode === "pages";
+  if (cible.type === "double") return i > 0 && !seul;
   if (cible.type === "cadre") return source.type !== "cadres" && aPhoto(m, cible.ref) && !(source.type === "bibliotheque" && (source.ids || []).length !== 1);
   if (cible.type === "hesiter") return aPhoto(m, cible.ref) && source.type === "bibliotheque" && (source.ids || []).length === 1;
   return cible.type === "bande" || cible.type === "vignette";
@@ -358,7 +373,8 @@ export function avertissementsExport(e: EtatEditeur): AvertissementsExport {
   const pagesVides: number[] = [];
   e.magazine.planches.forEach((p, index) => {
     const xs = photosDe(p);
-    if (index > 0 && !xs.some((x) => x.photoId)) pagesVides.push(index + 1);
+    /* la première et la dernière page restent vides sans alerte : une page seule peut être voulue blanche */
+    if (index > 0 && !estDerniere(e.magazine, index) && !xs.some((x) => x.photoId)) pagesVides.push(index + 1);
     for (const x of xs) {
       if (!x.photoId) continue;
       const d = dispositionDe(p, x.ref.cible);
