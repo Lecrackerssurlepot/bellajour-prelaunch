@@ -75,6 +75,19 @@ export { aplatsDeCouverture, bilanCouverture, cadresDeCouverture, cibleCouvertur
 export type { BilanCouverture, CadreCouvertureEcran } from "./selecteursCouverture";
 export { couvertureDe, estCouverture } from "./outils";
 export { lieuCouverture } from "./lieuxTextes";
+/* lot F (14/11) : la lecture IA dans le tri (rôles, groupes, rafales, captures, lieux) */
+export {
+  CAPTURES_IA, COUVERTURES_IA, FORMAT_LECTURE_IA, IDEE_MOTS_MAX, MOT_CAPTURE, MOT_ROLE, MOT_TAG_IA, MOT_USAGE, PHOTOS_MAX_LECTURE_IA, RAISON_MOTS_MAX, REGLE_IA, ROLES_IA,
+  TAGS_IA, TAILLE_MAX_LECTURE_IA, TYPES_GROUPE, TYPES_PROJET, USAGES_RAFALE, VERSION_LECTURE_IA, estLectureIA, estTagIA, groupeDe, lieuSur, lireLectureIA, misesEnAvant,
+  pilesAvecIA, propositionRafale, rafaleDe, relierLectureIA, tagsIA,
+} from "./lectureIA";
+export type {
+  CaptureIA, ComboCouleurs, CouvertureIA, GroupeIA, GroupeRelie, LectureIA, LectureIAReliee, LectureLectureIA, LieuIA, MiseEnAvant, PhotoIA, ProjetIA, RafaleIA,
+  RafaleReliee, RoleIA, RoleProposeIA, TagIA, TypeCapture, TypeGroupe, TypeProjet, UsageRafale, VisagesIA,
+} from "./lectureIA";
+export { libelleGroupeIA } from "./bibliotheque";
+export { lieuDeTexte } from "./lieuxTextes";
+export { estPng } from "./tags";
 /* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
 export { colorerFond, colorerTexte, couleursPosees, libelleFond, libelleTexte, nomCouleur } from "./couleurs";
 export { fondsPlanche } from "./selecteurs";

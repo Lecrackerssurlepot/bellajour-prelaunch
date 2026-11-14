@@ -20,6 +20,7 @@ import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, 
 import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
 import { appliquerPremierJet } from "./premierJet";
 import { colorerFond, colorerTexte, libelleFond, libelleTexte } from "./couleurs";
+import { propositionRafale, rafaleDe } from "./lectureIA";
 import { ID_COUVERTURE } from "../couverture";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
@@ -342,6 +343,16 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
     }
     case "colorerTexte":
       return g.ref ? simple("colorerTexte", libelleTexte(g.couleur), g.ref.plancheId, colorerTexte(m, g.ref, g.couleur), { ref: g.ref }) : planRien(e);
+    case "accepterRafale": {
+      /* lot F (R145) : la proposition de la lecture IA sur une rafale, posée d'un geste sur ses photos encore sans marque */
+      const r = typeof g.tete === "string" ? rafaleDe(e.lectureIA, g.tete) : null;
+      if (!r) return planRien(e);
+      const p = propositionRafale(r, (id) => marqueDe(m, id));
+      if (!p.garder.length && !p.ecarter.length) return planRien(e);
+      const m2 = marquer(marquer(m, p.garder, "choisie"), p.ecarter, "ecartee");
+      const parts = [p.garder.length ? `${p.garder.length} gardée${p.garder.length > 1 ? "s" : ""}` : "", p.ecarter.length ? `${p.ecarter.length} écartée${p.ecarter.length > 1 ? "s" : ""}` : ""].filter(Boolean);
+      return simple("marquer", `Rafale · ${parts.join(", ")}`, e.plancheCourante, m2, { ids: [...p.garder, ...p.ecarter] });
+    }
     case "creerDoubles": return planCreerDoubles(e, Array.isArray(g.ids) ? g.ids : [], g.index);
     case "ajouterSurPlanche": return planSurPlanche(e, g.plancheId, Array.isArray(g.ids) ? g.ids : selectionOrdonnee(e));
     default: return null;

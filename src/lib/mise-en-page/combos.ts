@@ -37,7 +37,10 @@ export type IdCombo = "dominante" | "complementaire" | "douce" | "contraste";
 export const IDS_COMBOS: readonly IdCombo[] = ["dominante", "complementaire", "douce", "contraste"];
 
 export type Combo = {
-  id: IdCombo;
+  /** `dominante`, `complementaire`, `douce`, `contraste` pour ceux des photos (`IDS_COMBOS`) ; `ia-1`, `ia-2`… pour ceux de la lecture IA. */
+  id: IdCombo | `ia-${number}`;
+  /** D'où il vient : les palettes des photos (`proposerCombos`), ou la lecture IA chargée (`combosDeLaLecture`, lot F). */
+  origine: "photos" | "lecture";
   /** Un nom court : « Ocre », « Ocre et bleu ». */
   nom: string;
   /** Pourquoi, en deux à six mots. */
@@ -160,7 +163,7 @@ export function proposerCombos(palettes: readonly (readonly string[])[], base: R
   /* 1. la dominante : l'objet qui revient, sourd (écho), pâle, et l'accent dans sa teinte */
   const sourd = aplatLisible(borne(L, R.SOURD_L_MIN, R.SOURD_L_MAX), Math.min(C * R.SOURD_C_FACTEUR, R.SOURD_C_MAX), h, base);
   const dominante: Combo = {
-    id: "dominante", nom: nomDe(h), raison: `Revient sur ${dom.photos} photos`,
+    id: "dominante", origine: "photos", nom: nomDe(h), raison: `Revient sur ${dom.photos} photos`,
     couleurs: avec(sourd, pale(C, h, papier), accentLisible(Math.min(L, R.ACCENT_L_MAX), imprimable(Math.max(R.ACCENT_C_MIN, C * REGLAGES_NUANCIER.ACCENT_DESATURATION), h), h, papier)),
     roles: ["aplatSourd", "aplatClair", "accent"], source: dom.rep.hex, dansLesPhotos: true,
   };
@@ -175,7 +178,7 @@ export function proposerCombos(palettes: readonly (readonly string[])[], base: R
      (un titre, un filet), jamais un aplat ; l'aplat clair reste alors la version pâle de la dominante */
   const opposeeCiel = h2 >= R.CIEL_H_MIN && h2 <= R.CIEL_H_MAX;
   const complementaire: Combo = {
-    id: "complementaire", nom: `${nomDe(h)} et ${nomDeTeinte(h2)}`, raison: trouvee || dansLesPalettes(accent2, valides) ? "Son opposée, dans les photos" : "Son opposée, hors des photos",
+    id: "complementaire", origine: "photos", nom: `${nomDe(h)} et ${nomDeTeinte(h2)}`, raison: trouvee || dansLesPalettes(accent2, valides) ? "Son opposée, dans les photos" : "Son opposée, hors des photos",
     couleurs: avec(sourd, opposeeCiel ? pale(C, h, papier) : pale(C2, h2, papier, R.CLAIR_L, 14), accent2),
     roles: ["aplatSourd", "accent", "aplatClair"], source: dom.rep.hex, dansLesPhotos: !!trouvee || dansLesPalettes(accent2, valides),
   };
@@ -186,7 +189,7 @@ export function proposerCombos(palettes: readonly (readonly string[])[], base: R
   const C3 = Math.min(C, R.DOUCE_C_MAX);
   const nom3 = nomDeTeinte(h3) === nomDeTeinte(h) ? `${nomDe(h)} doux` : `${nomDe(h)} et ${nomDeTeinte(h3)}`;
   const douce: Combo = {
-    id: "douce", nom: nom3, raison: voisine ? "Deux voisines des photos" : "Deux voisines, tout en douceur",
+    id: "douce", origine: "photos", nom: nom3, raison: voisine ? "Deux voisines des photos" : "Deux voisines, tout en douceur",
     couleurs: avec(aplatLisible(R.DOUCE_L, C3, h, base, 50, 78), pale(Math.min(C3, 12), h3, papier, 90, 12), accentLisible(R.ACCENT_L_MAX, Math.min(imprimable(voisine ? voisine.C : C, h3), 28), h3, papier)),
     roles: ["aplatClair", "aplatSourd", "accent"], source: dom.rep.hex, dansLesPhotos: !!voisine,
   };
@@ -198,7 +201,7 @@ export function proposerCombos(palettes: readonly (readonly string[])[], base: R
   const h4 = franche ? franche.rep.lch.h : opposee;
   const sombre = aplatLisible(R.CONTRASTE_L_SOMBRE, Math.min(C, 40), h, base, 18, 34);
   const contrasteFort: Combo = {
-    id: "contraste", nom: `${nomDe(h)} profond`, raison: "Le sombre contre le clair",
+    id: "contraste", origine: "photos", nom: `${nomDe(h)} profond`, raison: "Le sombre contre le clair",
     couleurs: avec(sombre, pale(C, h, papier, R.CONTRASTE_L_PALE, 10), accentLisible(R.ACCENT_L_MAX, imprimable(borne(franche ? franche.rep.lch.C * REGLAGES_NUANCIER.ACCENT_DESATURATION : C, R.ACCENT_C_MIN, R.ACCENT_C_MAX), h4), h4, papier)),
     roles: ["aplatSourd", "accent", "aplatClair"], source: dom.rep.hex, dansLesPhotos: !!franche,
   };
@@ -213,7 +216,26 @@ export function proposerCombos(palettes: readonly (readonly string[])[], base: R
   });
 }
 
-/** Le combo que le nuancier porte déjà (ses trois rôles à l'identique), ou null. */
+/**
+ * Les combos de la LECTURE IA (lot F : `lecture.couleurs`, validés par `lireLectureIA`, six rôles `#rrggbb` chacun) mis au format des
+ * combos de l'éditeur : ids `ia-1`, `ia-2`… dans l'ordre du fichier. Un combo de la lecture pose les SIX rôles (le papier, l'encre et la
+ * nuit compris : c'est le nuancier que la lecture propose) ; ses trois couleurs d'aplat et d'accent viennent en tête. Pur.
+ */
+export function combosDeLaLecture(liste: readonly { nom: string; couleurs: Readonly<CouleursNuancier>; raison: string; dansLesPhotos?: boolean }[] | null | undefined): Combo[] {
+  return (liste ?? []).map((c, i): Combo => ({
+    id: `ia-${i + 1}`, origine: "lecture", nom: c.nom, raison: c.raison, couleurs: { ...c.couleurs },
+    roles: ["aplatSourd", "accent", "aplatClair", "papier", "encre", "nuit"], source: c.couleurs.aplatSourd, dansLesPhotos: c.dansLesPhotos === true,
+  }));
+}
+
+/** Les combos que l'écran propose : ceux des photos, puis ceux de la lecture IA qui ne les répètent pas (mêmes six couleurs). */
+export function combosProposes(photos: readonly Combo[], lecture: readonly Combo[]): Combo[] {
+  const cle = (c: Combo) => JSON.stringify(c.couleurs);
+  const vus = new Set(photos.map(cle));
+  return [...photos, ...lecture.filter((c) => !vus.has(cle(c)))];
+}
+
+/** Le combo que le nuancier porte déjà (ses rôles à l'identique : trois pour un combo des photos, six pour un combo de la lecture), ou null. */
 export function comboApplique(combos: readonly Combo[], couleurs: Readonly<CouleursNuancier> | null | undefined): Combo | null {
   if (!couleurs) return null;
   return combos.find((c) => c.roles.every((r) => c.couleurs[r] === couleurs[r])) ?? null;

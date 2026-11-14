@@ -6,7 +6,7 @@
 
 import { useMemo } from "react";
 import { idsMagazine, marqueDe, type EtatEditeur } from "@/lib/mise-en-page/editeur";
-import { comboApplique, proposerCombos, type Combo } from "@/lib/mise-en-page/combos";
+import { comboApplique, combosDeLaLecture, combosProposes, proposerCombos, type Combo } from "@/lib/mise-en-page/combos";
 import { COULEURS_ORIGINE, deltaE00, estHex, type CouleursNuancier } from "@/lib/mise-en-page/nuancier";
 
 /** Deux couleurs des photos plus proches que ça (ΔE00) n'en font qu'une dans le sélecteur (« presque pareil », couleur.md §0). */
@@ -29,11 +29,12 @@ export const nuancierDe = (e: EtatEditeur): CouleursNuancier => e.magazine.style
  */
 export function useCombos(e: EtatEditeur): { combos: Combo[]; applique: Combo | null; posees: boolean } {
   const { palettes, posees } = palettesDuMagazine(e);
-  /* la clé dit tout ce dont les combos dépendent : les palettes et le nuancier de départ */
-  const cle = JSON.stringify([palettes, nuancierDe(e)]);
+  /* la clé dit tout ce dont les combos dépendent : les palettes, le nuancier de départ, et les combos de la lecture IA quand elle est
+     chargée (lot F, `lecture.couleurs` : proposés après ceux des photos) */
+  const cle = JSON.stringify([palettes, nuancierDe(e), e.lectureIA?.source.couleurs ?? []]);
   const combos = useMemo(() => {
-    const [p, b] = JSON.parse(cle) as [string[][], CouleursNuancier];
-    return proposerCombos(p, b);
+    const [p, b, ia] = JSON.parse(cle) as [string[][], CouleursNuancier, Parameters<typeof combosDeLaLecture>[0]];
+    return combosProposes(proposerCombos(p, b), combosDeLaLecture(ia));
   }, [cle]);
   return { combos, applique: e.magazine.style ? comboApplique(combos, e.magazine.style.couleurs) : null, posees };
 }

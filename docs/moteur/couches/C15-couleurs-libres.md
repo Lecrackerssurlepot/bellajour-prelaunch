@@ -1,7 +1,7 @@
 # C15 : les couleurs libres et les combos (fond d'une page, couleur d'un texte, combos tirés des photos)
 
-**Statut (14/11, lot G)** : branche `feat/mise-en-page-couleurs-libres`, non fusionnée. Règles R140 à R144 (`docs/reference/REGLES-TRI.md`).
-Numérotée C15 et R140 pour ne pas croiser le lot F, codé en même temps.
+**Statut (14/11, lot G)** : branche `feat/mise-en-page-couleurs-libres`, non fusionnée. Règles R149 à R153 (`docs/reference/REGLES-TRI.md`).
+Numérotée C15 et R149 : le lot F, fusionné avant (#363), a pris C14 et R140 à R148.
 
 ## Ce qu'elle fait
 - **Pose** une couleur où l'atelier la veut : le FOND d'une page ou d'une double (indépendant du gabarit), la couleur de chaque
@@ -9,6 +9,8 @@ Numérotée C15 et R140 pour ne pas croiser le lot F, codé en même temps.
   un hexa (la pipette, les couleurs des photos, le choix libre).
 - **Propose** quatre COMBOS d'après les palettes des photos (C09) : la couleur d'objet qui revient, sa complémentaire, une harmonie
   douce, un contraste fort. Un clic les pose sur les rôles du nuancier (aplat sourd, aplat clair, accent), « Annuler » les défait.
+- **Reprend** les combos de la lecture IA quand elle est chargée (lot F, `lecture.couleurs`) : proposés après ceux des photos, sous
+  « Lecture IA » ; un clic pose leurs six rôles (`combosDeLaLecture`, `combosProposes`).
 - La machine propose, l'atelier choisit : rien n'est posé d'office.
 
 ## Où

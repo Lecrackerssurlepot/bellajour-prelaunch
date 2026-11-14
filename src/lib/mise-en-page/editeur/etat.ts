@@ -20,6 +20,8 @@ import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { colorerTexte } from "./couleurs";
 import { appliquerPremierJet } from "./premierJet";
+import { REGLE_IA, TAGS_IA, lieuSur, pilesAvecIA, propositionRafale, rafaleDe, relierLectureIA, type LectureIA } from "./lectureIA";
+import { marqueDe } from "./tri";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
   FILTRES_DEFAUT, HISTORIQUE_MAX, affectation, aPhoto, borner, dimsDeRef, egal, indexPlanche, neutre, pluriel, texteDe,
@@ -71,7 +73,35 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     pilesOuvertes: [],
     lecons: [],
     pretri: {},
+    lectureIA: null,
+    lectureMesuree: LECTURE_VIDE,
   };
+}
+
+/**
+ * Lot F (14/11) : la lecture IA, reliée au catalogue par les noms de fichier ; ses rafales entrent dans les piles (R145, la
+ * lecture mesurée est gardée à part dans `lectureMesuree`) ; son lieu SÛR rejoint chaque photo (R147, `PhotoMaq.lieuIA`). Rien
+ * ne touche au magazine. Rejoué quand la lecture mesurée arrive et quand le catalogue s'agrandit.
+ */
+function avecLectureIA(e: EtatEditeur, source: LectureIA | null): EtatEditeur {
+  const reliee = source ? relierLectureIA(source, e.catalogue) : null;
+  const voulu = (id: string): string | null => (reliee ? lieuSur(reliee.photos.get(id)) : null);
+  let cat = e.catalogue;
+  if ([...cat].some(([id, p]) => (p.lieuIA ?? null) !== voulu(id))) {
+    const m = new Map(cat);
+    for (const [id, p] of cat) {
+      const v = voulu(id);
+      if ((p.lieuIA ?? null) === v) continue;
+      if (v) m.set(id, { ...p, lieuIA: v });
+      else { const { lieuIA: _sans, ...reste } = p; void _sans; m.set(id, reste); }
+    }
+    cat = m;
+  }
+  const lm = e.lectureMesuree;
+  const piles = pilesAvecIA(lm.piles, reliee);
+  const lecture = piles === lm.piles ? lm : { ...lm, piles };
+  const tetes = new Set(lecture.piles.map((p) => p.tete));
+  return { ...e, catalogue: cat, lectureIA: reliee, lecture, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
 }
 
 export const lectureSeule = (e: EtatEditeur): boolean => e.sauvegarde.etat === "conflit" || e.sauvegarde.etat === "lecture_seule";
@@ -239,10 +269,10 @@ export function primitif(e: EtatEditeur, g: Geste): GestePrimitif {
 
 const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte", "teinterTexte"]);
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
-  "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
+  "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue", "poserLectureIA"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet",
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet", "accepterRafale",
   /* lot G : les couleurs libres */
   "colorerFond", "colorerTexte"]);
 
@@ -273,6 +303,16 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   const avant = x.magazine;
   /* lot 3 : le pré-tri garde ses propositions (avec leur raison) pour reconnaître ensuite un geste contraire */
   if (g.type === "preTrier") x = { ...x, pretri: { ...x.pretri, ...preTrier(e.catalogue, e.magazine, e.lecture).propositions } };
+  /* lot F (R148) : accepter une rafale de la lecture IA laisse ses propositions ; renverser l'une d'elles ensuite est une leçon « IA » */
+  if (g.type === "accepterRafale") {
+    const r = rafaleDe(e.lectureIA, g.tete);
+    if (r) {
+      const p = propositionRafale(r, (id) => marqueDe(e.magazine, id));
+      const raison = r.pourquoi.length > 150 ? `${r.pourquoi.slice(0, 149).trimEnd()}…` : r.pourquoi;
+      const props = Object.fromEntries([...p.garder.map((id) => [id, { marque: "choisie" as const, raison, regle: REGLE_IA }]), ...p.ecarter.map((id) => [id, { marque: "ecartee" as const, raison, regle: REGLE_IA }])]);
+      x = { ...x, pretri: { ...x.pretri, ...props } };
+    }
+  }
   /* lot E : le premier jet remplace les planches : le tri et les raisons qu'il porte, la première planche et le compteur suivent */
   if (g.type === "chargerPremierJet") {
     const r = appliquerPremierJet(g.jet, e.magazine, e.catalogue);
@@ -397,10 +437,10 @@ const GESTES: Gestes = {
     if (typeof v.masquerUtilisees === "boolean") f.masquerUtilisees = v.masquerUtilisees;
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
-    const groupe = choisir(["jour", "moment", "lieu", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
+    const groupe = choisir(["jour", "moment", "lieu", "personne", "type", "ia", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
     const marque = choisir(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const etiquette = choisir(["", "couverture", "double", "pleine"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
-    const lecture = choisir(["", ...TAGS] as const, v.lecture); if (lecture !== null) f.lecture = lecture;
+    const lecture = choisir(["", ...TAGS, ...TAGS_IA] as const, v.lecture); if (lecture !== null) f.lecture = lecture;
     /* l'étiquette ne filtre qu'au tour ③ : changer de vue la relâche */
     if (marque && marque !== "choisies" && !("etiquette" in v)) f.etiquette = "";
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
@@ -436,7 +476,15 @@ const GESTES: Gestes = {
       }
       cat = m;
     }
-    return { ...e, catalogue: cat, lecture: { ...l, zones }, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+    const x: EtatEditeur = { ...e, catalogue: cat, lecture: { ...l, zones }, lectureMesuree: { ...l, zones }, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+    /* lot F : les rafales et les lieux de la lecture IA se reposent sur la nouvelle lecture mesurée */
+    return e.lectureIA ? avecLectureIA(x, e.lectureIA.source) : x;
+  },
+  poserLectureIA(e, g) {
+    if (g.lecture === null) return e.lectureIA ? avecLectureIA(e, null) : e;
+    const l = g.lecture;
+    if (!l || l.format !== "bellajour-lecture-ia" || typeof l.photos !== "object" || !Array.isArray(l.rafales) || !Array.isArray(l.groupes)) return e;
+    return avecLectureIA(e, l);
   },
   basculerPile(e, g) {
     if (!e.lecture.piles.some((p) => p.tete === g.tete)) return e;
@@ -617,7 +665,8 @@ const GESTES: Gestes = {
     if (!neuves.length) return e;
     const catalogue = new Map(e.catalogue);
     for (const p of neuves) catalogue.set(p.id, p);
-    return { ...e, catalogue };
+    /* lot F : une photo importée après la lecture IA s'y relie aussitôt (par son nom) */
+    return e.lectureIA ? avecLectureIA({ ...e, catalogue }, e.lectureIA.source) : { ...e, catalogue };
   },
   ouvrirLectureSeule(e, g) {
     const raison = choisir(["conflit", "photos_supprimees", "archive"] as const, g.raison) ?? "archive";

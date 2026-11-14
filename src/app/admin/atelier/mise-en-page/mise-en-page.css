@@ -1905,6 +1905,23 @@
 .mep-editeur .ed-cf-couv { margin-right: 4px; padding-right: 8px; border-right: 1px solid var(--bj-veil-8); border-radius: 8px 0 0 8px; }
 .mep-editeur .ed-cf-v--courante .ed-couv-dessin { box-shadow: 0 0 0 2px var(--bj-action); }
 .mep-editeur .ed-couv-pages .adm-input { flex: none; width: 76px; min-width: 0; }
+/* Lot F (14/11) : ce que la lecture IA propose, dans le tri. Un repère DISCRET, seulement sur les vignettes concernées :
+   le pointillé dit « proposé par la machine », le plein reste la marque de l'atelier. */
+.mep-editeur .ed-rep--ia { height: 16px; padding: 0 5px; border: 1px dashed var(--bj-action); border-radius: 4px; background: color-mix(in srgb, var(--bj-cream-tint-1) 90%, transparent); color: var(--bj-action); font-size: 9px; font-weight: 600; letter-spacing: 0.02em; }
+.mep-editeur .ed-rep--propose { border: 1.5px dashed var(--bj-action); background: color-mix(in srgb, var(--bj-cream-tint-1) 90%, transparent); color: var(--bj-action); box-shadow: none; }
+/* une capture inutile : claire et barrée, lisible sur une capture sombre comme sur une claire */
+.mep-editeur .ed-rep--tag.ed-rep--inutile { background: color-mix(in srgb, var(--bj-cream-tint-1) 94%, transparent); color: #7a5ab8; text-decoration: line-through; text-decoration-thickness: 1.5px; box-shadow: 0 1px 3px var(--bj-veil-16); }
+/* « Accepter » se lit à côté de la pile ouverte (pleine, bleue) : clair, bordé, il devient plein au survol */
+.mep-editeur .ed-rep--accepter { pointer-events: auto; cursor: pointer; border: 1px solid var(--bj-action); background: color-mix(in srgb, var(--bj-cream-tint-1) 94%, transparent); color: var(--bj-action); box-shadow: 0 1px 3px var(--bj-veil-16); }
+.mep-editeur .ed-rep--accepter:hover { background: var(--bj-action); color: var(--bj-on-action); }
+.mep-editeur .ed-groupe-t--ia { cursor: grab; max-width: calc(100% - 64px); overflow: hidden; white-space: nowrap; }
+.mep-editeur .ed-groupe-t--ia:active { cursor: grabbing; }
+.mep-editeur .ed-lec-ia { padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+/* la Lecture s'allonge avec ce que dit la lecture IA : chaque rangée garde sa hauteur (l'image ne passe plus sous le texte), le panneau défile */
+.mep-editeur .ed-lec { grid-auto-rows: max-content; }
+.mep-editeur .ed-lec-averifier { color: #f0b35a; }
+.mep-editeur .ed-lieux button.ed-lieux-ia { background: color-mix(in srgb, var(--bj-action) 14%, transparent); font-weight: 600; }
+.mep-editeur .ed-lieux button.ed-lieux-averifier { font-style: italic; color: var(--bj-text-soft); }
 
 /* ── lot G (14/11) : les couleurs libres ──
    Le fond d'une page ou d'une double (`.ed-fond`, sous les aplats du gabarit et sous les zones de dépôt ; le pli de la feuille reste
@@ -1980,6 +1997,7 @@
 .mep-editeur .ed-sty-combos { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 12px; background: var(--bj-veil-6); }
 .mep-editeur .ed-sty-combos-t { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 4px; font-size: var(--bj-fs-xs); }
 .mep-editeur .ed-sty-combos-t b { font-weight: 600; }
+.mep-editeur .ed-sty-combos-ia { padding: 6px 4px 2px; color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); }
 .mep-editeur .ed-sty-combo { appearance: none; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); text-align: left; cursor: pointer; }
 .mep-editeur .ed-sty-combo-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
 .mep-editeur .ed-sty-combo-t b { font-weight: 600; }

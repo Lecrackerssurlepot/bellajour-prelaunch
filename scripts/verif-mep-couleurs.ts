@@ -12,6 +12,8 @@
  * Sans base, sans réseau, sans écriture.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { PDFArray, PDFDocument, PDFRawStream, decodePDFRawStream } from "pdf-lib";
 import * as O from "@/lib/mise-en-page/editeur";
 import type { EtatEditeur, PhotoMaq } from "@/lib/mise-en-page/editeur";
@@ -25,7 +27,7 @@ import { styleDePaire } from "@/lib/mise-en-page/style";
 import {
   couleurLibreValide, cssDeCouleur, fondValide, hexDeCouleur, nomDeCouleur, nuanceIdml, piecesDuFond,
 } from "@/lib/mise-en-page/couleursLibres";
-import { IDS_COMBOS, REGLAGES_COMBOS, comboApplique, estCielOuMer, proposerCombos } from "@/lib/mise-en-page/combos";
+import { IDS_COMBOS, REGLAGES_COMBOS, comboApplique, combosDeLaLecture, combosProposes, estCielOuMer, proposerCombos } from "@/lib/mise-en-page/combos";
 
 type Rapporter = (nom: string, reussi: boolean) => void;
 const clone = <T,>(x: T): T => JSON.parse(JSON.stringify(x)) as T;
@@ -231,6 +233,15 @@ export async function verifierMepCouleurs(ok: Rapporter, titre: (t: string) => v
     proposerCombos(Array.from({ length: 8 }, () => [ciel, "#3b6fa8", "#9a9a9a", "#2b2b2b", "#e6e6e6"]), base).length === 0 && proposerCombos([], base).length === 0 && proposerCombos([["pas", "un", "hexa"]], base).length === 0);
   ok("combos : `comboApplique` reconnaît le combo que le nuancier porte (ses trois rôles), et aucun sur le nuancier d'origine",
     comboApplique(c1, c1[2].couleurs)?.id === c1[2].id && comboApplique(c1, base) === null && comboApplique(c1, null) === null);
+  /* lot F : les combos de la lecture IA chargée (`lecture.couleurs`), proposés après ceux des photos */
+  const exemple = O.lireLectureIA(JSON.parse(readFileSync(resolve(process.cwd(), "docs/moteur/exemple-lecture-ia.json"), "utf8")));
+  const ia = combosDeLaLecture(exemple.ok ? exemple.lecture.couleurs : []);
+  const tous = combosProposes(c1, [...ia, { ...ia[0], id: "ia-9" as const, couleurs: { ...c1[0].couleurs } }]);
+  ok("combos de la lecture IA : l'exemple du lot F se lit, son combo devient `ia-1` (origine « lecture », six rôles posés, l'aplat et l'accent en tête), proposé APRÈS les quatre des photos ; un combo qui répète un des photos n'est pas redit",
+    exemple.ok && ia.length === 1 && ia[0].id === "ia-1" && ia[0].origine === "lecture" && ia[0].nom === "Terre cuite et crème" && ia[0].roles.length === 6 && ia[0].roles[0] === "aplatSourd"
+      && tous.length === c1.length + 1 && tous[c1.length].id === "ia-1" && tous.slice(0, c1.length).every((c) => c.origine === "photos") && combosDeLaLecture(null).length === 0);
+  ok("combos de la lecture IA : appliqué, il est reconnu sur ses SIX rôles (un nuancier qui n'a que ses trois couleurs d'aplat ne le porte pas)",
+    comboApplique(tous, ia[0].couleurs)?.id === "ia-1" && comboApplique(ia, { ...base, aplatSourd: ia[0].couleurs.aplatSourd, aplatClair: ia[0].couleurs.aplatClair, accent: ia[0].couleurs.accent }) === null);
   const merisa = proposerCombos(MERISA, base);
   const nMerisa = MERISA.length;
   ok("combos, rejeu sur un lot réel (Merisa, Madère, 23 palettes) : quatre combos ; la mer et le ciel (bleus qui reviennent) sont PRÉSUMÉS ciel ; aucun aplat sourd n'est bleu",

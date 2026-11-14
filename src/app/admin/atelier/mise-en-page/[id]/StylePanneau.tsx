@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { proposerNuancier } from "@/lib/mise-en-page/nuancier";
 import { COULEURS_ORIGINE, NOM_ROLE, PAIRES, ROLES_COULEUR, paireParId, styleDePaire, texteTypo, type Role, type StyleMagazine } from "@/lib/mise-en-page/style";
 import { cls, useEd } from "./contexte";
@@ -130,12 +130,16 @@ export function StylePanneau() {
                 <b>Combos</b>
                 {annulable ? <button type="button" className="ed-lien" disabled={ro} onClick={annulerCombo}>Annuler</button> : null}
               </div>
-              {combos.map((c) => (
-                <button key={c.id} type="button" className="ed-sty-combo" aria-pressed={applique?.id === c.id} disabled={ro} onClick={() => appliquerCombo(c)}
-                  title={c.roles.map((r) => `${NOM_ROLE[r]} ${c.couleurs[r]}`).join(" · ")}>
-                  <span className="ed-sty-mini" aria-hidden="true">{c.roles.map((r) => <i key={r} style={{ background: c.couleurs[r] }} />)}</span>
-                  <span className="ed-sty-combo-t"><b>{c.nom}</b><small>{c.raison}</small></span>
-                </button>
+              {combos.map((c, i) => (
+                <Fragment key={c.id}>
+                  {/* lot F : les combos de la lecture IA chargée viennent après ceux des photos, sous leur titre */}
+                  {c.origine === "lecture" && combos[i - 1]?.origine !== "lecture" ? <span className="ed-sty-combos-ia">Lecture IA</span> : null}
+                  <button type="button" className="ed-sty-combo" aria-pressed={applique?.id === c.id} disabled={ro} onClick={() => appliquerCombo(c)}
+                    title={c.roles.map((r) => `${NOM_ROLE[r]} ${c.couleurs[r]}`).join(" · ")}>
+                    <span className="ed-sty-mini" aria-hidden="true">{c.roles.slice(0, 3).map((r) => <i key={r} style={{ background: c.couleurs[r] }} />)}</span>
+                    <span className="ed-sty-combo-t"><b>{c.nom}</b><small>{c.raison}</small></span>
+                  </button>
+                </Fragment>
               ))}
             </div>
           ) : null}

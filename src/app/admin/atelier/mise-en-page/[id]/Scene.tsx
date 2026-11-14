@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
+  actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lieuSur, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
   SEUIL_DPI, SEUIL_DPI_CONFORT, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
   type Guide, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
@@ -513,8 +513,16 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   const pl = enEdition && f.role !== "texte" ? etat.magazine.planches.find((x) => x.id === refT.plancheId) : undefined;
   const dispo = pl ? dispositionDe(pl, refT.cible) : null;
   const lieux = useLieux(dispo ? dispo.photos.map((a) => (a.photoId ? etat.catalogue.get(a.photoId)?.gps : null)) : []);
-  /* lot 3 (D7) : les faits calculés de la page (jour, moment, heure, nombre) suivent les lieux */
-  const choix = [...choixDeLieux(lieux).slice(0, 5), ...(dispo ? faitsDePage(dispo.photos.map((a) => a.photoId), etat.catalogue) : [])].slice(0, 9);
+  /* lot 3 (D7) : les faits calculés de la page (jour, moment, heure, nombre) suivent les lieux.
+     Lot F (R147) : le lieu NOMMÉ par la lecture IA vient EN PREMIER quand il est sûr (« BMW Welt » avant « Munich ») ; un lieu
+     « à vérifier » n'est jamais premier : il vient en dernier, et le dit au survol. */
+  const lieuxIA = dispo ? dispo.photos.map((a) => (a.photoId ? etat.lectureIA?.photos.get(a.photoId) : undefined)) : [];
+  const surs = lieuxIA.map((x) => lieuSur(x)).filter((x): x is string => !!x).map((valeur) => ({ valeur, sorte: "Lieu nommé" }));
+  const aVerifier = lieuxIA.filter((x) => x?.lieu && !lieuSur(x)).map((x) => ({ valeur: x!.lieu!.nom, sorte: "Lieu à vérifier" }));
+  const vus = new Set<string>();
+  const choix = [...surs, ...choixDeLieux(lieux).slice(0, 5), ...(dispo ? faitsDePage(dispo.photos.map((a) => a.photoId), etat.catalogue) : [])]
+    .filter((c) => { const k = c.valeur.toLocaleLowerCase("fr"); if (vus.has(k)) return false; vus.add(k); return true; }).slice(0, 9)
+    .concat(aVerifier.filter((c) => { const k = c.valeur.toLocaleLowerCase("fr"); if (vus.has(k)) return false; vus.add(k); return true; }).slice(0, 2));
   if (enEdition) {
     const choisir = (v: string) => (e: React.PointerEvent) => {
       e.preventDefault();
@@ -532,7 +540,7 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
           onChoix={(c) => envoyer({ type: "colorerTexte", ref: refT, couleur: c })} />
         {choix.length ? (
           <div className="ed-lieux" role="listbox" aria-label="Lieux proposés">
-            {choix.map((c) => <button key={c.valeur} type="button" role="option" aria-selected={false} title={c.sorte} onPointerDown={choisir(c.valeur)}>{c.valeur}</button>)}
+            {choix.map((c) => <button key={c.valeur} type="button" role="option" aria-selected={false} title={c.sorte} className={c.sorte === "Lieu à vérifier" ? "ed-lieux-averifier" : c.sorte === "Lieu nommé" ? "ed-lieux-ia" : undefined} onPointerDown={choisir(c.valeur)}>{c.valeur}</button>)}
           </div>
         ) : null}
       </div>
