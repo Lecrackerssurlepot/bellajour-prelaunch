@@ -75,3 +75,6 @@ export { aplatsDeCouverture, bilanCouverture, cadresDeCouverture, cibleCouvertur
 export type { BilanCouverture, CadreCouvertureEcran } from "./selecteursCouverture";
 export { couvertureDe, estCouverture } from "./outils";
 export { lieuCouverture } from "./lieuxTextes";
+/* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
+export { colorerFond, colorerTexte, couleursPosees, libelleFond, libelleTexte, nomCouleur } from "./couleurs";
+export { fondsPlanche } from "./selecteurs";

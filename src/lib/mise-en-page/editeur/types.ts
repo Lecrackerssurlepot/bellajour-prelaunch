@@ -10,6 +10,7 @@ import type { Recadrage } from "../recadrage";
 import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
 import type { StyleMagazine } from "../style";
+import type { CouleurLibre } from "../couleursLibres";
 import type { SourceMep } from "../sauvegarde";
 import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
@@ -257,7 +258,11 @@ export type GesteModifiant =
   /** Lot E : la largeur du dos saisie à la main (mm) ; `null` l'efface, le calcul reprend. */
   | { type: "dosCouverture"; dosMm: number | null; confirme?: boolean }
   /** Lot E : le PREMIER JET (un magazine composé hors de l'éditeur, premierJet.ts) chargé sur les photos importées, reliées par leur nom de fichier. Une seule entrée d'historique : Annuler le défait. */
-  | { type: "chargerPremierJet"; jet: PremierJet; confirme?: boolean };
+  | { type: "chargerPremierJet"; jet: PremierJet; confirme?: boolean }
+  /** Lot G : le fond de couleur d'une page (`gauche`, `droite`) ou de la double entière (`double`) ; `null` le retire. */
+  | { type: "colorerFond"; plancheId: string; cible: Cible; couleur: CouleurLibre | null; confirme?: boolean }
+  /** Lot G : la couleur d'un texte (intérieur ou couverture) ; `null` rend celle du gabarit. Pendant la séance de ce texte, elle s'y fond (une entrée). */
+  | { type: "colorerTexte"; ref: RefCadre; couleur: CouleurLibre | null; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -312,6 +317,8 @@ export type GesteEcran =
   | { type: "fermerRecadrage" }
   | { type: "ouvrirTexte"; ref: RefCadre }
   | { type: "taper"; contenu: string }
+  /** Lot G : la couleur du texte EN COURS d'écriture (la séance de texte), sans entrée d'historique à part. */
+  | { type: "teinterTexte"; couleur: CouleurLibre | null }
   | { type: "fermerTexte" }
   | { type: "confirmer" }
   | { type: "annulerConfirmation" }
@@ -347,7 +354,9 @@ export type OpPlan =
   /* lot B : la couverture */
   | "couvPoser" | "couvRetirer" | "couvEchanger" | "couvGabarit" | "couvPages" | "couvDos"
   /* lot E : le premier jet */
-  | "chargerPremierJet";
+  | "chargerPremierJet"
+  /* lot G : les couleurs libres */
+  | "colorerFond" | "colorerTexte";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; refs?: readonly RefCadre[]; photoId?: string; position?: number };

@@ -138,11 +138,12 @@ export function choisirGabaritCouverture(m: Magazine, templateId: string, cat: C
     const role = tA[j]?.role;
     if (!role) return;
     rang[role] = (rang[role] ?? -1) + 1;
-    if (!texteSaisi(t)) return;
+    /* lot G : un texte coloré suit aussi, écrit ou non ; seul un texte écrit compte perdu */
+    if (!texteSaisi(t) && !t.couleur) return;
     let vu = -1;
     const k = tB.findIndex((x) => x.role === role && ++vu === rang[role]);
-    if (k < 0) textesPerdus++;
-    else textes[k] = { ...textes[k], contenu: t.contenu };
+    if (k < 0) { if (texteSaisi(t)) textesPerdus++; }
+    else textes[k] = { ...textes[k], ...(texteSaisi(t) ? { contenu: t.contenu } : {}), ...(t.couleur ? { couleur: t.couleur } : {}) };
   });
   const neuve: Couverture = { templateId: gB.id, photos, textes, ...(c.pages !== undefined ? { pages: c.pages } : {}), ...(c.dosMm !== undefined ? { dosMm: c.dosMm } : {}) };
   return issueC(avec(m, neuve), null, { restees, textesPerdus });

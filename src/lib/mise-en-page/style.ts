@@ -233,9 +233,14 @@ export function teinteAncienne(t: Teinte): "aplat" | "noir" | "blanc" {
   if (t === "aplat" || t === "noir" || t === "blanc") return t;
   return t === "papier" ? "blanc" : t === "encre" || t === "nuit" ? "noir" : "aplat";
 }
-/** Le rôle de la couleur d'un texte : absente = l'encre ; « blanc » = le papier (en réserve) ; un rôle = lui-même. */
-export function roleDeCouleurTexte(c: Cadre["couleur"]): Role {
-  return c === undefined ? "encre" : c === "blanc" ? "papier" : c;
+/**
+ * La couleur d'un texte : celle du gabarit (`Cadre.couleur` : absente = l'encre, « blanc ») ou, depuis le lot G, celle choisie pour
+ * ce texte (`TexteCadre.couleur` : un rôle, ou un hexa `#rrggbb`).
+ */
+export type CouleurTexte = Cadre["couleur"] | `#${string}`;
+/** Le rôle de la couleur d'un texte : absente = l'encre ; « blanc » = le papier (en réserve) ; un rôle = lui-même ; un hexa (lot G) : aucun rôle (null). */
+export function roleDeCouleurTexte(c: CouleurTexte): Role | null {
+  return c === undefined ? "encre" : c === "blanc" ? "papier" : estHex(c) ? null : c;
 }
 export const couleurDeRole = (s: StyleMagazine, r: Role): string => s.couleurs[r];
 
@@ -276,7 +281,9 @@ export type TexteStyle = {
   interligne: number;
   capitales: boolean;
   approche: number;
-  role: Role;
+  /** Le rôle de la couleur (l'écran lit sa variable, l'IDML sa nuance) ; null pour une couleur LIBRE en hexa (lot G), alors dans `couleur`. */
+  role: Role | null;
+  /** La couleur en hexa : celle du rôle dans le nuancier du style, ou l'hexa choisi. */
   couleur: string;
   /** Un titre que le cadre ne peut pas tenir, même au corps minimal (`REGLAGES_TITRE.CORPS_MIN`) : le contrôle avant export le dit. */
   trop?: true;
@@ -295,7 +302,7 @@ export const niveauDeRole = (role: Exclude<RoleCadre, "photo">): NiveauNom => ro
  * ni dans l'IDML, ni dans le PDF (les trois lisent ce même corps). Sans `ajuste`, le corps du gabarit, tel quel.
  */
 export function texteStyle(
-  s: StyleMagazine, role: Exclude<RoleCadre, "photo">, taille: number, couleur?: Cadre["couleur"], ajuste?: { contenu: string; l: number; h: number },
+  s: StyleMagazine, role: Exclude<RoleCadre, "photo">, taille: number, couleur?: CouleurTexte, ajuste?: { contenu: string; l: number; h: number },
 ): TexteStyle | null {
   const p = paireParId(s.paire);
   if (!p) return null;
@@ -306,7 +313,7 @@ export function texteStyle(
   const r = roleDeCouleurTexte(couleur);
   const ts: TexteStyle = {
     niveau: niveauDeRole(role), police: pol, graisse: n.graisse, facette: fac, corps: corpsDe(n, niveauDeRole(role), taille),
-    interligne: n.interligne, capitales: n.capitales, approche: n.approche, role: r, couleur: s.couleurs[r],
+    interligne: n.interligne, capitales: n.capitales, approche: n.approche, role: r, couleur: r ? s.couleurs[r] : (couleur as string),
   };
   if (ajuste && role === "titre") {
     const a = ajusterTitre(ajuste.contenu, ts, ajuste);

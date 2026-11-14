@@ -18,6 +18,7 @@ import { ZOOM_MAX, ZOOM_MIN } from "./recadrage";
 import { ROLES_COULEUR } from "./nuancier";
 import { styleValide } from "./style";
 import { PAGES_MAX_SAISIE, dosSaisiValide, nombresDuGabarit } from "./couverture";
+import { couleurLibreValide, fondValide } from "./couleursLibres";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -111,8 +112,15 @@ function affectationValide(v: unknown): v is Affectation {
   return recadrageValide(v.recadrage);
 }
 
+/**
+ * Lot G (14/11) : les clés FACULTATIVES d'un texte, sur le modèle de `CLES_FACULTATIVES` (même relecture : `clesAdmises`). `couleur`
+ * = la couleur choisie pour ce texte, un rôle du nuancier ou `#rrggbb` minuscule (`couleurLibreValide`), rien d'autre ; elle vaut
+ * pour les textes de l'intérieur ET de la couverture.
+ */
+const CLES_FACULTATIVES_TEXTE: readonly CleFacultative[] = [{ cle: "couleur", valide: couleurLibreValide }];
+
 function texteValide(v: unknown): v is TexteCadre {
-  if (!estObjet(v) || !clesExactes(v, ["contenu", "taille", "gras"])) return false;
+  if (!estObjet(v) || !clesAdmises(v, ["contenu", "taille", "gras"], CLES_FACULTATIVES_TEXTE)) return false;
   return typeof v.contenu === "string" && estFini(v.taille) && v.taille > 0 && typeof v.gras === "boolean";
 }
 
@@ -172,7 +180,10 @@ function dispositionValide(v: unknown, portee: "page" | "double"): v is Disposit
  * d'un magazine qui porte `derniere` est une page gauche seule : mode pages, jamais de page droite.
  */
 function plancheValide(v: unknown, indexPlanche: number, derniere: boolean): v is Planche {
-  if (!estObjet(v) || !clesExactes(v, ["id", "mode", "double", "gauche", "droite"])) return false;
+  /* lot G : le fond de la planche, facultatif ; la première page n'a pas de fond gauche, la dernière pas de fond droit */
+  const seul = indexPlanche === 0 ? "droite" : derniere ? "gauche" : null;
+  const facultatives: readonly CleFacultative[] = [{ cle: "fond", valide: (f) => fondValide(f, seul) }];
+  if (!estObjet(v) || !clesAdmises(v, ["id", "mode", "double", "gauche", "droite"], facultatives)) return false;
   if (!estId(v.id)) return false;
   const ouNul = (d: unknown, portee: "page" | "double") => d === null || dispositionValide(d, portee);
   if (v.mode === "double") {
@@ -270,6 +281,11 @@ export function clesAdmises(x: Record<string, unknown>, base: readonly string[],
  *  6. sens unique : une sauvegarde au nouveau format relue par un déploiement ancien est refusée à l'ouverture
  *     (sauvegardeClient.ts) : déployer AVANT la première sauvegarde, pas de retour arrière.
  * Aucune migration SQL : `contenu` est du jsonb.
+ *
+ * Lot G (14/11) : le même mécanisme vaut DANS le magazine. Une planche admet la clé facultative `fond` (`fondValide`, couleursLibres.ts :
+ * `{ gauche?, droite? }`, au moins un côté, jamais le côté absent d'une page seule) et un texte la clé `couleur`
+ * (`CLES_FACULTATIVES_TEXTE`) : un rôle du nuancier ou `#rrggbb` minuscule. Absentes, la sauvegarde est celle d'avant, octet pour
+ * octet. Même sens unique : un déploiement d'avant le lot G REFUSE un magazine qui porte un fond ou une couleur de texte.
  */
 const CLES_FACULTATIVES: readonly CleFacultative[] = [
   { cle: "tri", valide: triValide },

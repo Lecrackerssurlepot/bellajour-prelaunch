@@ -1108,6 +1108,9 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     /* lot C : le style, valide, retiré, ou cassé (T-04 n'existe pas, un hexa en majuscules, une forme folle) */
     [2, () => ({ type: "styler", style: pick([null, styleDePaire("T-01"), styleDePaire("T-17", { ...COULEURS_ORIGINE, papier: "#f8ecdd" }), styleDePaire("TW-1"), { paire: "T-04", couleurs: COULEURS_ORIGINE }, { paire: "T-01" }, { paire: "T-01", couleurs: { ...COULEURS_ORIGINE, nuit: "#ABCDEF" } }, 12, "style"]) })],
     [2, (e) => ({ type: "etiqueter", ids: ids(e, int(1, 3)), etiquette: pick(["couverture", "double", "pleine", "bidon"]) })],
+    /* lot G : les couleurs libres, valides ou cassées (un hexa en majuscules, trois chiffres, « blanc », un nom, un nombre) ; la couverture aussi */
+    [2, (e) => ({ type: "colorerFond", plancheId: h() < 0.1 ? "couverture" : plancheId(e), cible: pick(["gauche", "droite", "double", "bidon"]), couleur: pick([null, null, "accent", "aplatClair", "nuit", "#ca7749", "#CA7749", "#abc", "blanc", "rouge", 3]) })],
+    [2, (e) => ({ type: "colorerTexte", ref: h() < 0.15 ? { plancheId: "couverture", cible: "double", index: int(0, 3) } : refTexte(e), couleur: pick([null, "encre", "papier", "accent", "#1f3a5c", "#FFF", "blanc", ""]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],

@@ -18,6 +18,7 @@ import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./leco
 import { preTrier } from "./pretri";
 import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
+import { colorerTexte } from "./couleurs";
 import { appliquerPremierJet } from "./premierJet";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
@@ -227,17 +228,23 @@ export function primitif(e: EtatEditeur, g: Geste): GestePrimitif {
     }
     case "lacher":
       return e.glisser && e.glisser.survol ? { type: "deposer", source: e.glisser.source, cible: e.glisser.survol, depuisGlisser: true } : { type: "abandonnerGlisser" };
+    /* lot G : la couleur du texte qu'on écrit se pose DANS la séance (une seule entrée « Modifier un texte » à la fermeture) */
+    case "colorerTexte":
+      return e.texte && g.ref && e.texte.ref.plancheId === g.ref.plancheId && e.texte.ref.cible === g.ref.cible && e.texte.ref.index === g.ref.index
+        ? { type: "teinterTexte", couleur: g.couleur } : g;
     case "touche": return primitifTouche(e, g);
     default: return g;
   }
 }
 
-const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte"]);
+const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte", "teinterTexte"]);
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet"]);
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet",
+  /* lot G : les couleurs libres */
+  "colorerFond", "colorerTexte"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -542,6 +549,10 @@ const GESTES: Gestes = {
     return enSeance(e, ecrireTexteCadre(e.magazine, e.texte.ref, g.contenu));
   },
   fermerTexte: (e) => (e.texte ? fermerSeances(e) : e),
+  teinterTexte(e, g) {
+    if (!e.texte || lectureSeule(e)) return e;
+    return enSeance(e, colorerTexte(e.magazine, e.texte.ref, g.couleur));
+  },
 
   confirmer(e) {
     if (!e.confirmation) return e;

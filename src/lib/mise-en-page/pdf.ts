@@ -48,6 +48,7 @@ import { cadresDe, coteSeul, decorDe, dispositionDe, type CoteSeul, type Disposi
 import type { Cadre, Teinte } from "./types";
 import { AVANCE_FINE_EM, paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
 import { hexVersRgb } from "./nuancier";
+import { hexDeCouleur, piecesDuFond, type CouleurLibre } from "./couleursLibres";
 import { FINE } from "./francais";
 
 const K = PT_PAR_MM;
@@ -65,12 +66,17 @@ const RETRAIT_TEXTE = PLANCHE_L * 0.0015;
 export type StyleTextePdf = { police: string; graisse: number; corps: number; interligne: number; capitales: boolean; approche: number; couleur: string };
 
 export type ObjetPdf =
+  /** Lot G : le FOND de couleur d'une page ou d'une double (`Planche.fond`), sous les aplats du gabarit : la couleur en hexa, et ce
+   *  qui a été choisi (un rôle ou l'hexa). */
+  | { type: "fond"; rect: Rect; couleur: string; teinte: CouleurLibre }
   /** `couleur` : la couleur du RÔLE sous un style (absente : la teinte d'avant). */
   | { type: "aplat"; rect: Rect; teinte: Teinte; couleur?: string }
   /** `couleurBord` : le papier du style, pour le bord intérieur (absente : blanc). */
   | { type: "photo"; cle: string; cadre: Cadre; photoId: string | null; recadrage: Recadrage; couleurBord?: string }
   /** `interligne` (lot B) : celui de la couverture (120 %, comme Affinity) ; absent = celui de l'écran (`INTERLIGNE`). `style` (lot C) : sous un style, le contenu est déjà celui qu'on écrit (typographie française, capitales). */
-  | { type: "texte"; cadre: Cadre; contenu: string; taille: number; gras: boolean; interligne?: number; style?: StyleTextePdf };
+  | { type: "texte"; cadre: Cadre; contenu: string; taille: number; gras: boolean; interligne?: number; style?: StyleTextePdf;
+      /** Lot G, sans style : la couleur CHOISIE pour ce texte, en hexa (absente : le noir, ou le blanc du gabarit). Sous un style, elle est dans `style.couleur`. */
+      couleur?: string };
 
 /** Une page du PDF : sa boîte en mm repère planche (fond perdu compris) et ce qu'elle porte. `fond` : le papier teinté du style (absent : blanc). */
 export type PagePdf = { boite: Rect; objets: ObjetPdf[]; fond?: string };
@@ -105,9 +111,13 @@ export function planPdf(magazine: Magazine): PagePdf[] {
   return planches.map((p, i) => {
     const seul = coteSeul(magazine, i);
     const parts = partsDe(p, seul);
-    const objets: ObjetPdf[] = parts.flatMap(({ d, cible }) => decorDe(d, cible).map((a): ObjetPdf => ({
-      type: "aplat", rect: a, teinte: a.teinte, ...(sty ? { couleur: sty.couleurs[roleDeTeinte(a.teinte)] } : {}),
-    })));
+    /* lot G : le fond de la planche d'abord (la page seule déborde aussi côté pli : ses quatre fonds perdus), puis les aplats du gabarit */
+    const objets: ObjetPdf[] = [
+      ...piecesDuFond(p.fond, seul, { perdu: true, pliPerdu: true }).map((f): ObjetPdf => ({ type: "fond", rect: f.rect, couleur: hexDeCouleur(f.couleur, sty), teinte: f.couleur })),
+      ...parts.flatMap(({ d, cible }) => decorDe(d, cible).map((a): ObjetPdf => ({
+        type: "aplat", rect: a, teinte: a.teinte, ...(sty ? { couleur: sty.couleurs[roleDeTeinte(a.teinte)] } : {}),
+      }))),
+    ];
     let n = 0;
     for (const { d, cible } of parts) {
       let iP = 0, iT = 0;
@@ -119,10 +129,10 @@ export function planPdf(magazine: Magazine): PagePdf[] {
           const t = d.textes[iT++];
           const contenu = t?.contenu ?? "", taille = t?.taille ?? cadre.taille ?? 10, gras = t?.gras ?? cadre.gras ?? false;
           if (!contenu.trim()) continue; /* lot R (D2) : un cadre de texte vide n'est jamais exporté (le mot-repère reste à l'écran) */
-          const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur, { contenu, l: cadre.l, h: cadre.h }) : null;
+          const ts = sty ? texteStyle(sty, cadre.role, taille, t?.couleur ?? cadre.couleur, { contenu, l: cadre.l, h: cadre.h }) : null;
           objets.push(ts
             ? { type: "texte", cadre, contenu: texteSousStyle(contenu, ts), taille, gras, style: { police: ts.police.id, graisse: ts.graisse, corps: ts.corps, interligne: ts.interligne, capitales: ts.capitales, approche: ts.approche, couleur: ts.couleur } }
-            : { type: "texte", cadre, contenu, taille, gras });
+            : { type: "texte", cadre, contenu, taille, gras, ...(t?.couleur ? { couleur: hexDeCouleur(t.couleur, null) } : {}) });
         }
       }
     }
@@ -159,10 +169,10 @@ export function planPdfCouverture(couverture: Couverture, dosMm: number, style?:
       const t = couverture.textes[iT++];
       const contenu = contenuImprime(t?.contenu ?? "", { repeter }), taille = t?.taille ?? cadre.taille ?? 10, gras = t?.gras ?? cadre.gras ?? false;
       if (!contenu.trim()) continue; /* lot R (D2) : un cadre de texte vide n'est jamais exporté (la couverture non plus) */
-      const ts = sty ? texteStyle(sty, cadre.role, taille, cadre.couleur) : null;
+      const ts = sty ? texteStyle(sty, cadre.role, taille, t?.couleur ?? cadre.couleur) : null;
       objets.push(ts
         ? { type: "texte", cadre, contenu: texteSousStyle(contenu, ts), taille, gras, interligne: INTERLIGNE_COUVERTURE, style: { police: ts.police.id, graisse: ts.graisse, corps: ts.corps, interligne: ts.interligne, capitales: ts.capitales, approche: ts.approche, couleur: ts.couleur } }
-        : { type: "texte", cadre, contenu, taille, gras, interligne: INTERLIGNE_COUVERTURE });
+        : { type: "texte", cadre, contenu, taille, gras, interligne: INTERLIGNE_COUVERTURE, ...(t?.couleur ? { couleur: hexDeCouleur(t.couleur, null) } : {}) });
     }
   }
   return { boite: boiteCouverture(dosMm), objets, ...(sty && sty.couleurs.papier !== "#ffffff" ? { fond: sty.couleurs.papier } : {}) };
@@ -358,6 +368,12 @@ export async function ecrirePdf(pages: PagePdf[], images: ReadonlyMap<string, Ui
     const page = doc.addPage([pg.boite.l * K, pg.boite.h * K]);
     if (pg.fond) page.drawRectangle({ x: 0, y: 0, width: pg.boite.l * K, height: pg.boite.h * K, color: rgbDeHex(pg.fond), borderWidth: 0 });
     for (const o of pg.objets) {
+      if (o.type === "fond") {
+        const { l, h } = ouvrir(page, pg.boite, o.rect, undefined);
+        page.drawRectangle({ x: -l / 2, y: -h / 2, width: l, height: h, color: rgbDeHex(o.couleur), borderWidth: 0 });
+        page.pushOperators(popGraphicsState());
+        continue;
+      }
       if (o.type === "aplat") {
         const { l, h } = ouvrir(page, pg.boite, o.rect, undefined);
         page.drawRectangle({ x: -l / 2, y: -h / 2, width: l, height: h, color: o.couleur ? rgbDeHex(o.couleur) : TEINTES[teinteAncienne(o.teinte)], borderWidth: 0 });
@@ -410,7 +426,7 @@ export async function ecrirePdf(pages: PagePdf[], images: ReadonlyMap<string, Ui
         size: o.taille,
         lineHeight: o.taille * (o.interligne ?? INTERLIGNE),
         font: police,
-        color: c.couleur === "blanc" ? TEINTES.blanc : TEINTES.noir,
+        color: o.couleur ? rgbDeHex(o.couleur) : c.couleur === "blanc" ? TEINTES.blanc : TEINTES.noir,
       });
       page.pushOperators(popGraphicsState());
     }
