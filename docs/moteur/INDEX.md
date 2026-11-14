@@ -36,6 +36,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C11](couches/C11-qualite-export.md) | Qualité d'impression, contrôle avant export | R68, R90 | EN PROD : dpi (#352), contrôle avant export (lot A, 12/11) |
 | [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (lot A, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
 | [C13](couches/C13-feuille-de-style.md) | Feuille de style : paire de polices, nuancier proposé, typographie française | R120 à R124 | Lot C (12/11), branche `feat/mise-en-page-feuille-de-style`, pas encore fusionnée ; remplit « palette pas encore reliée aux aplats » de C09 |
+| [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R140 à R144 | Lot G (14/11), branche `feat/mise-en-page-couleurs-libres`, pas encore fusionnée ; essai Affinity en attente |
 
 Le **premier jet** (lot E, 13/11) n'est pas une couche : c'est le format du magazine que la démo de composition écrit hors de l'éditeur et que « Premier jet » charge sur les photos importées, reliées par leur nom de fichier. [PREMIER-JET.md](PREMIER-JET.md), exemple [exemple-premier-jet.json](exemple-premier-jet.json), règle R136.
 
