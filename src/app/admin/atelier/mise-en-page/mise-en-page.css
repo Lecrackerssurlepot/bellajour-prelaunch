@@ -1905,3 +1905,85 @@
 .mep-editeur .ed-cf-couv { margin-right: 4px; padding-right: 8px; border-right: 1px solid var(--bj-veil-8); border-radius: 8px 0 0 8px; }
 .mep-editeur .ed-cf-v--courante .ed-couv-dessin { box-shadow: 0 0 0 2px var(--bj-action); }
 .mep-editeur .ed-couv-pages .adm-input { flex: none; width: 76px; min-width: 0; }
+
+/* ── lot G (14/11) : les couleurs libres ──
+   Le fond d'une page ou d'une double (`.ed-fond`, sous les aplats du gabarit et sous les zones de dépôt ; le pli de la feuille reste
+   par-dessus), le sélecteur (`.ed-nuances` : le combo appliqué en tête, les photos, la pipette, le libre), sa forme d'une ligne sous un
+   texte qu'on écrit (`.ed-txt-outils`), le bouton « Fond » du tiroir et les combos du panneau Style. */
+.mep-editeur .ed-fond { position: absolute; z-index: 1; pointer-events: none; }
+.mep-editeur .ed-nuances {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 14px;
+  border: var(--bj-glass-card-border);
+  border-radius: 16px;
+  background: var(--bj-glass-card-bg-active);
+  box-shadow: var(--bj-shadow-pop);
+  -webkit-backdrop-filter: var(--bj-glass-card-blur);
+  backdrop-filter: var(--bj-glass-card-blur);
+  font-family: var(--bj-font-ui);
+  cursor: default;
+}
+.mep-editeur .ed-nu-titre { grid-column: 1 / -1; font-size: var(--bj-fs-xs); font-weight: 600; }
+.mep-editeur .ed-nu-t { color: var(--bj-text-soft); font-size: var(--bj-fs-xxs); white-space: nowrap; }
+.mep-editeur .ed-nu-ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.mep-editeur .ed-nu-pt {
+  appearance: none;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--bj-veil-16), 0 1px 2px var(--bj-veil-8);
+  cursor: pointer;
+}
+.mep-editeur .ed-nu-pt:hover:not(:disabled) { box-shadow: inset 0 0 0 1px var(--bj-veil-16), 0 0 0 3px var(--bj-veil-12); }
+.mep-editeur .ed-nu-pt--choisi { box-shadow: inset 0 0 0 1px var(--bj-veil-16), 0 0 0 2px var(--bj-cream-tint-1), 0 0 0 4px var(--bj-action); }
+.mep-editeur .ed-nu-outil {
+  appearance: none;
+  position: relative;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 50%;
+  background: var(--bj-cream-tint-1);
+  color: var(--bj-text-soft);
+  font-family: var(--bj-font-ui);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.mep-editeur .ed-nu-outil:hover:not(:disabled) { color: var(--bj-text); box-shadow: 0 0 0 3px var(--bj-veil-8); }
+.mep-editeur .ed-nu-libre { overflow: hidden; border: 0; background: conic-gradient(#e2534a, #e8b04a, #a7c95a, #4bb3a4, #4a7fd1, #9b6ad1, #e2534a); }
+.mep-editeur .ed-nu-libre span { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px var(--bj-cream-tint-1); }
+.mep-editeur .ed-nu-libre input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.mep-editeur .ed-nu-retirer { grid-column: 1 / -1; justify-self: start; padding: 0; }
+.mep-editeur .ed-nu-sep { flex: none; width: 1px; height: 18px; background: var(--bj-veil-12); }
+.mep-editeur .ed-nuances--compact { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 5px 7px; border-radius: var(--bj-r-pill); }
+.mep-editeur .ed-nuances--compact .ed-nu-pt,
+.mep-editeur .ed-nuances--compact .ed-nu-outil { width: 20px; height: 20px; font-size: 13px; }
+/* sous le texte qu'on écrit : la couleur, puis les lieux (qui ne sont plus placés à part) */
+.mep-editeur .ed-txt-outils { position: absolute; z-index: 30; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-top: 6px; }
+.mep-editeur .ed-txt-outils .ed-lieux { position: static; margin-top: 0; }
+/* le bouton « Fond » du tiroir, et son sélecteur au-dessus du tiroir (le tiroir défile en largeur : il couperait un menu posé dedans) */
+.mep-editeur .ed-bt-fond i { display: block; width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--bj-veil-16); }
+.mep-editeur .ed-bt-fond i.ed-bt-fond--vide { background: linear-gradient(135deg, transparent 45%, var(--bj-text-faint) 45% 55%, transparent 55%), var(--bj-cream-tint-1); }
+.mep-editeur .ed-fond-pop { position: absolute; left: 12px; bottom: calc(var(--bas-h) + 8px); z-index: 31; width: min(340px, calc(100% - 24px)); animation: ed-fondu 150ms; }
+/* les combos du panneau Style : une pastille par combo, la paire de couleurs, le nom, la raison */
+.mep-editeur .ed-sty-combos { display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 12px; background: var(--bj-veil-6); }
+.mep-editeur .ed-sty-combos-t { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 4px; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-sty-combos-t b { font-weight: 600; }
+.mep-editeur .ed-sty-combo { appearance: none; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); text-align: left; cursor: pointer; }
+.mep-editeur .ed-sty-combo b { flex: none; font-weight: 600; white-space: nowrap; }
+.mep-editeur .ed-sty-combo span:last-child { min-width: 0; overflow: hidden; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); text-overflow: ellipsis; white-space: nowrap; }
+.mep-editeur .ed-sty-combo .ed-sty-mini i { width: 16px; height: 16px; }
+.mep-editeur .ed-sty-combo:hover:not(:disabled) { background: var(--bj-cream-tint-1); }
+.mep-editeur .ed-sty-combo[aria-pressed="true"] { background: var(--bj-cream-tint-1); box-shadow: 0 1px 3px var(--bj-veil-12); color: var(--bj-action); }
+.mep-editeur .ed-sty-combo:disabled { opacity: 0.5; cursor: default; }

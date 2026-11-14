@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
+  actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
   SEUIL_DPI, SEUIL_DPI_CONFORT, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
   type Guide, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
@@ -10,6 +10,7 @@ import { coteSeul, dispositionDe, type Magazine, type Planche } from "@/lib/mise
 import { choixDeLieux } from "@/lib/mise-en-page/lieux";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
+import { cssDeCouleur } from "@/lib/mise-en-page/couleursLibres";
 import { PAGE_H, PLANCHE_L, type Rect } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
@@ -19,6 +20,7 @@ import { useLieux } from "./lieuxClient";
 import { Chaleur } from "./Chaleur";
 import { Pastilles } from "./Gabarits";
 import { GrilleArtiste } from "./GrilleArtiste";
+import { Nuances } from "./Nuances";
 
 /* La double page, en grand. Aucun calcul du magazine ici : on envoie des gestes, on dessine l'état rendu.
    Pendant un glisser, le module pur joue le dépôt à blanc (`glisser.apercu`) : on le montre en transparence. */
@@ -118,6 +120,11 @@ export default function Scene() {
       <button type="button" className="ed-nav ed-nav--d" aria-label="Double page suivante" disabled={idx >= m.planches.length - 1} onClick={() => envoyer({ type: "naviguer", sens: 1 })}>›</button>
       <div key={pl.id} className={cls("ed-planche", ui.dir === "d" && "ed-planche--d", ui.dir === "g" && "ed-planche--g")} aria-label={`Planche ${idx + 1}`} onClick={clicPlanche}>
         <div className="ed-feuille" />
+        {/* lot G : le fond de couleur de la page ou de la double, sous tout le reste (le pli reste visible par-dessus) */}
+        {fondsPlanche(etat, pl.id).map((f) => (
+          <div key={`f${f.cote}`} className="ed-fond" aria-hidden="true"
+            style={{ left: pc(f.rect.x, PLANCHE_L), top: pc(f.rect.y, PAGE_H), width: pc(f.rect.l, PLANCHE_L), height: pc(f.rect.h, PAGE_H), background: cssDeCouleur(f.couleur) }} />
+        ))}
         {seule ? <div className={cls("ed-couv-int", seule === "gauche" && "ed-couv-int--d")} aria-hidden="true">{seule === "gauche" ? "Couverture intérieure arrière" : "Couverture intérieure"}</div> : null}
         {cotes.map((c) => {
           const vide = !(c === "double" ? pl.double : pl[c]);
@@ -493,13 +500,14 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   /* lot C : sous un style, la police, la graisse, le corps (à l'échelle du gabarit), l'interlignage, les capitales, l'approche et la
      couleur viennent du style du magazine (variables CSS posées sur la racine) ; sans style, le rendu d'avant, mot pour mot. */
   const ts = f.style;
+  /* lot G : la couleur choisie pour ce texte prime sur celle du gabarit ; un rôle lit sa variable, un hexa est tel quel */
   const style: React.CSSProperties = ts
     ? {
         ...st, fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
-        fontSize: `max(9px, ${((ts.corps * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, color: `var(--mep-r-${classeRole(ts.role)})`,
+        fontSize: `max(9px, ${((ts.corps * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
         textTransform: ts.capitales ? "uppercase" : "none", ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
       }
-    : { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.blanc ? { color: "#fff" } : {}) };
+    : { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.teinte ? { color: cssDeCouleur(f.teinte) } : f.blanc ? { color: "#fff" } : {}) };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, refT);
   /* 09/11 : en écrivant un titre ou une légende, les lieux de ses photos sont proposés, du plus précis au plus large */
   const pl = enEdition && f.role !== "texte" ? etat.magazine.planches.find((x) => x.id === refT.plancheId) : undefined;
@@ -515,13 +523,19 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
       if (n) n.textContent = v;
       fermerTexteDom(envoyer);
     };
+    /* lot G : sous le texte qu'on écrit, sa couleur (le combo d'abord, les photos de la planche, la pipette, le libre), puis les lieux */
+    const plT = etat.magazine.planches.find((x) => x.id === refT.plancheId);
     return (
       <>
-      {choix.length ? (
-        <div className="ed-lieux" style={{ left: st.left, top: `calc(${String(st.top)} + ${String(st.height)})`, minWidth: st.width }} role="listbox" aria-label="Lieux proposés">
-          {choix.map((c) => <button key={c.valeur} type="button" role="option" aria-selected={false} title={c.sorte} onPointerDown={choisir(c.valeur)}>{c.valeur}</button>)}
-        </div>
-      ) : null}
+      <div className="ed-txt-outils" style={{ left: st.left, top: `calc(${String(st.top)} + ${String(st.height)})`, minWidth: st.width }}>
+        <Nuances compact valeur={f.teinte} photos={plT ? idsPlanche(plT) : []} retirer="Couleur du gabarit"
+          onChoix={(c) => envoyer({ type: "colorerTexte", ref: refT, couleur: c })} />
+        {choix.length ? (
+          <div className="ed-lieux" role="listbox" aria-label="Lieux proposés">
+            {choix.map((c) => <button key={c.valeur} type="button" role="option" aria-selected={false} title={c.sorte} onPointerDown={choisir(c.valeur)}>{c.valeur}</button>)}
+          </div>
+        ) : null}
+      </div>
       <div className="ed-txt ed-txt--edit" style={style} contentEditable suppressContentEditableWarning role="textbox" aria-label={`Texte : ${LIBELLE[f.role]}`}
         ref={(n) => {
           if (n && !n.dataset.pret) {
@@ -535,7 +549,7 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
             }, 0);
           }
         }}
-        onBlur={() => fermerTexteDom(envoyer)}
+        onBlur={(e) => { if ((e.relatedTarget as HTMLElement | null)?.closest?.(".ed-nuances")) return; fermerTexteDom(envoyer); }}
         onKeyDown={(e) => { if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) { e.preventDefault(); e.currentTarget.blur(); } }} />
       </>
     );

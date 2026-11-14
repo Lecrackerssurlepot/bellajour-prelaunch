@@ -1,25 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { idsMagazine, marqueDe, type EtatEditeur } from "@/lib/mise-en-page/editeur";
 import { proposerNuancier } from "@/lib/mise-en-page/nuancier";
 import { COULEURS_ORIGINE, NOM_ROLE, PAIRES, ROLES_COULEUR, paireParId, styleDePaire, texteTypo, type Role, type StyleMagazine } from "@/lib/mise-en-page/style";
 import { cls, useEd } from "./contexte";
+import { palettesDuMagazine, useCombos } from "./couleursEcran";
+import type { Combo } from "@/lib/mise-en-page/combos";
 import { Ico } from "./icones";
 
 /**
  * Le panneau « Style » (lot C) : la paire de polices du magazine avec son humeur, le nuancier en six pastilles (chacune se
  * modifie), le nuancier PROPOSÉ d'après les photos (un clic pour l'appliquer). Changer la paire ou une couleur change tout le
  * magazine : l'écran, le PDF et l'IDML lisent le même style. Rien n'est écrit ailleurs que dans le magazine (clé `style`).
+ * Lot G (14/11) : les COMBOS (combos.ts) en pastilles sous le nuancier : un clic pose le combo sur les rôles, « Annuler » rend le
+ * nuancier d'avant ; chaque pose est aussi une entrée d'historique (⌘Z).
  */
 
-/** Les palettes des photos du magazine : les posées, sinon toutes celles que la lecture a mesurées (hors écartées). */
-function palettesDuNuancier(e: EtatEditeur): { palettes: string[][]; posees: boolean } {
-  const mesures = e.lecture.mesures ?? {};
-  const posees = [...new Set(idsMagazine(e.magazine))];
-  const ids = posees.length ? posees : [...e.catalogue.keys()].filter((id) => marqueDe(e.magazine, id) !== "ecartee");
-  return { palettes: ids.flatMap((id) => (mesures[id]?.palette ? [mesures[id].palette as string[]] : [])), posees: posees.length > 0 };
-}
 
 /** Une pastille : un clic ouvre le sélecteur de couleur du navigateur ; le choix s'enregistre une fois la main posée. */
 function Pastille({ role, hex, desactive, onChoix }: { role: Role; hex: string; desactive: boolean; onChoix: (r: Role, v: string) => void }) {
@@ -48,8 +44,12 @@ export function StylePanneau() {
   /* l'échantillon n'invente rien : le titre du magazine tel qu'il est (le mot « Titre » à défaut), puis deux lignes neutres,
      jamais un lieu ni une date qui ne viennent pas du dossier */
   const titreEchantillon = texteTypo(etat.magazine.titre.trim() || "Titre");
-  const { palettes, posees } = useMemo(() => palettesDuNuancier(etat), [etat]);
+  const { palettes, posees } = useMemo(() => palettesDuMagazine(etat), [etat]);
   const prop = useMemo(() => proposerNuancier(palettes), [palettes]);
+  /* lot G : les combos, et ce qu'« Annuler » rend (le nuancier d'avant le dernier combo appliqué ici) */
+  const { combos, applique } = useCombos(etat);
+  const [avant, setAvant] = useState<{ couleurs: StyleMagazine["couleurs"]; combo: string } | null>(null);
+  const annulable = !!avant && !!applique && applique.id === avant.combo;
   const memeNuancier = !!style && !!prop && ROLES_COULEUR.every((r) => style.couleurs[r] === prop.couleurs[r]);
 
   /* la liste des paires : le fondu du bas disparaît quand on est au bout ; la paire choisie est ramenée dans la vue à l'ouverture (le haut de la liste sinon) */
@@ -75,6 +75,18 @@ export function StylePanneau() {
   const appliquer = () => {
     if (!style || !prop || ro) return;
     envoyer({ type: "styler", style: { paire: style.paire, couleurs: { ...prop.couleurs } } });
+  };
+  const appliquerCombo = (c: Combo) => {
+    if (!style || ro) return;
+    if (applique?.id === c.id) return;
+    /* « Annuler » rend le nuancier d'AVANT le premier combo essayé : passer d'un combo à l'autre ne perd pas le point de départ */
+    setAvant({ couleurs: annulable && avant ? avant.couleurs : { ...style.couleurs }, combo: c.id });
+    envoyer({ type: "styler", style: { paire: style.paire, couleurs: { ...c.couleurs } } });
+  };
+  const annulerCombo = () => {
+    if (!style || !avant || ro) return;
+    envoyer({ type: "styler", style: { paire: style.paire, couleurs: { ...avant.couleurs } } });
+    setAvant(null);
   };
 
   return (
@@ -112,6 +124,22 @@ export function StylePanneau() {
           <div className="ed-sty-nuancier" aria-label="Nuancier du magazine">
             {ROLES_COULEUR.map((r) => <Pastille key={r} role={r} hex={style.couleurs[r]} desactive={ro} onChoix={choisirCouleur} />)}
           </div>
+          {combos.length ? (
+            <div className="ed-sty-combos" role="group" aria-label="Combos">
+              <div className="ed-sty-combos-t">
+                <b>Combos</b>
+                {annulable ? <button type="button" className="ed-lien" disabled={ro} onClick={annulerCombo}>Annuler</button> : null}
+              </div>
+              {combos.map((c) => (
+                <button key={c.id} type="button" className="ed-sty-combo" aria-pressed={applique?.id === c.id} disabled={ro} onClick={() => appliquerCombo(c)}
+                  title={c.roles.map((r) => `${NOM_ROLE[r]} ${c.couleurs[r]}`).join(" · ")}>
+                  <span className="ed-sty-mini" aria-hidden="true">{c.roles.map((r) => <i key={r} style={{ background: c.couleurs[r] }} />)}</span>
+                  <b>{c.nom}</b>
+                  <span>{c.raison}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
           {prop ? (
             <div className="ed-sty-prop">
               <div className="ed-sty-prop-t">
