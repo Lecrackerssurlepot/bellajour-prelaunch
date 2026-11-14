@@ -19,6 +19,7 @@ import { styleValide } from "../style";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
 import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
 import { appliquerPremierJet } from "./premierJet";
+import { colorerFond, colorerTexte, libelleFond, libelleTexte } from "./couleurs";
 import { propositionRafale, rafaleDe } from "./lectureIA";
 import { ID_COUVERTURE } from "../couverture";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
@@ -334,6 +335,14 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       if (r.refus) return planRien(e);
       return simple("chargerPremierJet", "Premier jet chargé", r.magazine.planches[0].id, r.magazine, {});
     }
+    /* lot G : les couleurs libres, une entrée d'historique chacune ; une couleur qui ne se relit pas ne change rien */
+    case "colorerFond": {
+      if (g.plancheId === ID_COUVERTURE) return planRien(e);
+      const id = courante(e, g.plancheId);
+      return simple("colorerFond", libelleFond(g.couleur), id, colorerFond(m, id, g.cible, g.couleur), { plancheId: id, cible: g.cible });
+    }
+    case "colorerTexte":
+      return g.ref ? simple("colorerTexte", libelleTexte(g.couleur), g.ref.plancheId, colorerTexte(m, g.ref, g.couleur), { ref: g.ref }) : planRien(e);
     case "accepterRafale": {
       /* lot F (R145) : la proposition de la lecture IA sur une rafale, posée d'un geste sur ses photos encore sans marque */
       const r = typeof g.tete === "string" ? rafaleDe(e.lectureIA, g.tete) : null;

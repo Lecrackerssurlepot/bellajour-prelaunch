@@ -37,6 +37,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (lot A, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
 | [C13](couches/C13-feuille-de-style.md) | Feuille de style : paire de polices, nuancier proposé, typographie française | R120 à R124 | Lot C (12/11), branche `feat/mise-en-page-feuille-de-style`, pas encore fusionnée ; remplit « palette pas encore reliée aux aplats » de C09 |
 | [C14](couches/C14-lecture-ia.md) | Lecture IA dans le tri : rôles, groupes, rafales, captures, lieux nommés (aucune reconnaissance de visages, D29) | R142 à R148 (et R140, R141 sur C02, C03) | Lot F (14/11), branche `feat/mise-en-page-propositions-tri`, non fusionnée |
+| [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | Lot G (14/11), branche `feat/mise-en-page-couleurs-libres`, pas encore fusionnée ; essai Affinity en attente |
 
 La **lecture IA** (lot F, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 

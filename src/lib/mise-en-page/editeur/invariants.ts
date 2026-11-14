@@ -268,6 +268,17 @@ function verifierOperation(plan: Plan, mAvant: Magazine, cat: CatalogueRef, err:
       if (plus.length || moins.length || m2.planches !== mAvant.planches) err.push("S1 styler a touché les planches ou les photos");
       if (m2.style !== undefined && !styleValide(m2.style)) err.push("S1 styler a écrit un style invalide");
       break;
+    case "colorerFond": case "colorerTexte": {
+      /* lot G : une couleur ne touche ni une photo, ni un gabarit, ni un texte écrit, ni une autre planche ; ce qu'elle écrit se relit */
+      if (plus.length || moins.length) err.push(`G1 ${op} a touché les photos (+${plus} −${moins})`);
+      const id = a.plancheId ?? a.ref?.plancheId;
+      for (const p of mAvant.planches) if (p.id !== id && plancheDe(m2, p.id) !== p) err.push(`G1 ${op} a touché une autre planche`);
+      if (op === "colorerFond" && m2.couverture !== mAvant.couverture) err.push("G1 colorerFond a touché la couverture");
+      const pA = id ? plancheDe(mAvant, id) : null, pB = id ? plancheDe(m2, id) : null;
+      if (pA && pB && (pA.mode !== pB.mode || !egal(photosDe(pA), photosDe(pB)))) err.push(`G1 ${op} a changé le mode ou les cadres`);
+      if (contenuValide(mAvant) && !contenuValide(m2)) err.push(`G1 ${op} a écrit un magazine qui ne se relit pas`);
+      break;
+    }
     case "hesiter": {
       /* lot 3 : au plus la photo de devant change (intervertir, trancher pour celle de derrière), le gabarit jamais */
       if (plus.length > 1 || plus.length !== moins.length) err.push(`I12 hesiter bilan faux (+${plus} −${moins})`);

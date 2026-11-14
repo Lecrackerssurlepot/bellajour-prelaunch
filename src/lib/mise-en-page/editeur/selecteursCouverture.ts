@@ -47,7 +47,8 @@ export function cadresDeCouverture(e: EtatEditeur, dosMm: number): CadreCouvertu
     return {
       role: x.role, face: x.face, ref: refC(index), x: x.x, y: x.y, l: x.l, h: x.h, rotation: x.rotation || 0,
       contenu: t.contenu, vide: !t.saisi, taille: t.taille, gras: t.gras, blanc: x.couleur === "blanc", parDefaut: t.parDefaut, repeter: x.repeter ?? 1,
-      style: e.magazine.style ? texteStyle(e.magazine.style, x.role, t.taille, x.couleur) : null,
+      style: e.magazine.style ? texteStyle(e.magazine.style, x.role, t.taille, t.couleur ?? x.couleur) : null,
+      teinte: t.couleur ?? null,
     };
   });
 }

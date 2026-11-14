@@ -7,6 +7,7 @@ import { cadresDe, coteSeul, decorDe, dispositionDe, estDerniere, utilisations, 
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
 import { texteStyle, type TexteStyle } from "../style";
+import { piecesDuFond, type CouleurLibre, type PieceFond } from "../couleursLibres";
 import { lieuxParDefaut } from "./lieuxTextes";
 import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
@@ -182,6 +183,8 @@ export type CadreTexte = {
   parDefaut: string | null;
   /** Lot C : ce que la feuille de style du magazine fait de ce texte (police, graisse, corps, capitales, couleur) ; null sans style. */
   style: TexteStyle | null;
+  /** Lot G : la couleur CHOISIE pour ce texte (un rôle ou un hexa), null = celle du gabarit. Elle prime sur `blanc`. */
+  teinte: CouleurLibre | null;
 };
 export type CadrePlanche = CadrePhoto | CadreTexte;
 
@@ -217,11 +220,20 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const affiche = !saisi(t) || !t.contenu ? parDefaut ?? (t.contenu || LIBELLE[c.role]) : t.contenu;
         out.push({ role: c.role, ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
           contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut,
-          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, t.taille, c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null });
+          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, t.taille, t.couleur ?? c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null,
+          teinte: t.couleur ?? null });
       }
     }
   }
   return out;
+}
+
+/** Lot G : le fond de couleur d'une planche, à l'écran (repère PLANCHE, mm, sans fond perdu), sous les aplats du gabarit. */
+export function fondsPlanche(e: EtatEditeur, plancheId?: string): PieceFond[] {
+  const id = courante(e, plancheId);
+  const i = indexPlanche(e.magazine, id);
+  const p = e.magazine.planches[i];
+  return p ? piecesDuFond(p.fond, coteSeul(e.magazine, i), { perdu: false }) : [];
 }
 
 /** Les aplats d'une planche (repère PLANCHE, mm), sous les cadres. */
