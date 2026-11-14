@@ -1965,7 +1965,7 @@
 .mep-editeur .ed-nu-libre span { width: 12px; height: 12px; border-radius: 50%; box-shadow: 0 0 0 2px var(--bj-cream-tint-1); }
 .mep-editeur .ed-nu-libre input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
 .mep-editeur .ed-nu-retirer { grid-column: 1 / -1; justify-self: start; padding: 0; }
-.mep-editeur .ed-nu-sep { flex: none; width: 1px; height: 18px; background: var(--bj-veil-12); }
+.mep-editeur .ed-nu-sep { flex: none; width: 1px; height: 16px; margin: 0 3px; background: var(--bj-veil-16); }
 .mep-editeur .ed-nuances--compact { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 5px 7px; border-radius: var(--bj-r-pill); }
 .mep-editeur .ed-nuances--compact .ed-nu-pt,
 .mep-editeur .ed-nuances--compact .ed-nu-outil { width: 20px; height: 20px; font-size: 13px; }
@@ -1981,8 +1981,10 @@
 .mep-editeur .ed-sty-combos-t { display: flex; align-items: baseline; justify-content: space-between; padding: 0 4px 4px; font-size: var(--bj-fs-xs); }
 .mep-editeur .ed-sty-combos-t b { font-weight: 600; }
 .mep-editeur .ed-sty-combo { appearance: none; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xs); text-align: left; cursor: pointer; }
-.mep-editeur .ed-sty-combo b { flex: none; font-weight: 600; white-space: nowrap; }
-.mep-editeur .ed-sty-combo span:last-child { min-width: 0; overflow: hidden; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); text-overflow: ellipsis; white-space: nowrap; }
+.mep-editeur .ed-sty-combo-t { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.mep-editeur .ed-sty-combo-t b { font-weight: 600; }
+.mep-editeur .ed-sty-combo-t small { color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-sty-combo[aria-pressed="true"] .ed-sty-combo-t small { color: var(--bj-text-soft); }
 .mep-editeur .ed-sty-combo .ed-sty-mini i { width: 16px; height: 16px; }
 .mep-editeur .ed-sty-combo:hover:not(:disabled) { background: var(--bj-cream-tint-1); }
 .mep-editeur .ed-sty-combo[aria-pressed="true"] { background: var(--bj-cream-tint-1); box-shadow: 0 1px 3px var(--bj-veil-12); color: var(--bj-action); }

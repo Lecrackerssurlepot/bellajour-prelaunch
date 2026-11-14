@@ -134,8 +134,7 @@ export function StylePanneau() {
                 <button key={c.id} type="button" className="ed-sty-combo" aria-pressed={applique?.id === c.id} disabled={ro} onClick={() => appliquerCombo(c)}
                   title={c.roles.map((r) => `${NOM_ROLE[r]} ${c.couleurs[r]}`).join(" · ")}>
                   <span className="ed-sty-mini" aria-hidden="true">{c.roles.map((r) => <i key={r} style={{ background: c.couleurs[r] }} />)}</span>
-                  <b>{c.nom}</b>
-                  <span>{c.raison}</span>
+                  <span className="ed-sty-combo-t"><b>{c.nom}</b><small>{c.raison}</small></span>
                 </button>
               ))}
             </div>

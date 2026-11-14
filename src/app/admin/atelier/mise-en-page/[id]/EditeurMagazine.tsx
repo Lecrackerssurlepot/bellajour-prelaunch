@@ -181,7 +181,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       setUi((u) => {
         let n = u;
         if (u.menu && !t.closest(".ed-menu, .ed-ancre, .ed-cf-menu-bt")) n = { ...n, menu: null };
-        if (u.rangee && !t.closest(".ed-rangee-gab, .ed-pastille")) n = { ...n, rangee: null, apercuGab: null };
+        /* lot G : le sélecteur du fond (au-dessus du tiroir) fait partie du tiroir */
+        if (u.rangee && !t.closest(".ed-rangee-gab, .ed-pastille, .ed-fond-pop")) n = { ...n, rangee: null, apercuGab: null };
         return n;
       });
     };

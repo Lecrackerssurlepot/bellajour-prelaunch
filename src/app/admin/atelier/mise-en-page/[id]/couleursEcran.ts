@@ -7,7 +7,10 @@
 import { useMemo } from "react";
 import { idsMagazine, marqueDe, type EtatEditeur } from "@/lib/mise-en-page/editeur";
 import { comboApplique, proposerCombos, type Combo } from "@/lib/mise-en-page/combos";
-import { COULEURS_ORIGINE, estHex, type CouleursNuancier } from "@/lib/mise-en-page/nuancier";
+import { COULEURS_ORIGINE, deltaE00, estHex, type CouleursNuancier } from "@/lib/mise-en-page/nuancier";
+
+/** Deux couleurs des photos plus proches que ça (ΔE00) n'en font qu'une dans le sélecteur (« presque pareil », couleur.md §0). */
+const PRESQUE_PAREIL = 8;
 
 /** Les palettes des photos du magazine : les posées, sinon toutes celles que la lecture a mesurées (hors écartées). */
 export function palettesDuMagazine(e: EtatEditeur): { palettes: string[][]; posees: boolean } {
@@ -40,7 +43,8 @@ export function couleursDesPhotos(e: EtatEditeur, ids: readonly string[], max = 
   const mesures = e.lecture.mesures ?? {};
   const pals = ids.map((id) => (mesures[id]?.palette ?? []).filter(estHex));
   const out: string[] = [];
-  /* les deux premières de chaque photo d'abord (ses dominantes), puis le reste */
-  for (const rang of [0, 1, 2, 3, 4]) for (const p of pals) { const c = p[rang]; if (c && !out.includes(c)) out.push(c); }
+  /* les deux premières de chaque photo d'abord (ses dominantes), puis le reste ; une couleur presque pareille à une déjà montrée
+     (ΔE00 < 8) ne revient pas : dix bleus de ciel ne font qu'un */
+  for (const rang of [0, 1, 2, 3, 4]) for (const p of pals) { const c = p[rang]; if (c && !out.some((x) => deltaE00(x, c) < PRESQUE_PAREIL)) out.push(c); }
   return out.slice(0, max);
 }
