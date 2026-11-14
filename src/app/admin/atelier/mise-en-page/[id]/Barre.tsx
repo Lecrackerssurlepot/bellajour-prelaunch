@@ -115,17 +115,18 @@ export function Bandeaux({ projet, sv, collecteOuverte, prendreSaVersion, garder
       </div>
     );
   }
-  /* lot E : le premier jet chargé (ce qui n'a pas trouvé sa photo, nommé par son fichier d'origine) ou refusé (une phrase) */
-  const pj = ui.premierJet;
-  if (pj) {
+  /* lot E : le premier jet chargé (ce qui n'a pas trouvé sa photo, nommé par son fichier d'origine) ou refusé (une phrase) ;
+     lot F : la lecture IA chargée par le même bouton, son propre bandeau, les mêmes mots */
+  for (const [cle, pj, mot] of [["pj", ui.premierJet, "Premier jet"], ["lia", ui.lectureIA, "Lecture IA"]] as const) {
+    if (!pj) continue;
     const NOMS_MAX = 24;
     out.push(
-      <div key="pj" className={cls("ed-bandeau", pj.type === "refuse" ? "ed-bandeau--rouge" : pj.manquantes.length || pj.ambigues.length ? undefined : "ed-bandeau--bleu")} role="status">
+      <div key={cle} className={cls("ed-bandeau", pj.type === "refuse" ? "ed-bandeau--rouge" : pj.manquantes.length || pj.ambigues.length ? undefined : "ed-bandeau--bleu")} role="status">
         {pj.type === "refuse" ? (
-          <><strong>Premier jet refusé · {pj.fichier}</strong><span>{pj.phrase}</span></>
+          <><strong>{mot} refusé{cle === "lia" ? "e" : ""} · {pj.fichier}</strong><span>{pj.phrase}</span></>
         ) : (
           <>
-            <strong>Premier jet chargé · {pj.reliees} photo{pj.reliees > 1 ? "s" : ""} reliée{pj.reliees > 1 ? "s" : ""} sur {pj.total}</strong>
+            <strong>{mot} chargé{cle === "lia" ? "e" : ""} · {pj.reliees} photo{pj.reliees > 1 ? "s" : ""} reliée{pj.reliees > 1 ? "s" : ""} sur {pj.total}</strong>
             {pj.manquantes.length ? (
               <span title={pj.manquantes.join(", ")}>
                 {pj.manquantes.length > 1 ? `${pj.manquantes.length} photos introuvables parmi vos photos importées` : "1 photo introuvable parmi vos photos importées"} : {pj.manquantes.slice(0, NOMS_MAX).join(", ")}{pj.manquantes.length > NOMS_MAX ? ` et ${pj.manquantes.length - NOMS_MAX} autres` : ""}
@@ -134,7 +135,7 @@ export function Bandeaux({ projet, sv, collecteOuverte, prendreSaVersion, garder
             {pj.ambigues.length ? <span title={pj.ambigues.join(", ")}>Plusieurs photos portent le même nom : la première est prise ({pj.ambigues.slice(0, 5).join(", ")})</span> : null}
           </>
         )}
-        <button type="button" className="ed-bt" onClick={() => majUi({ premierJet: null })}>Fermer</button>
+        <button type="button" className="ed-bt" onClick={() => majUi(cle === "pj" ? { premierJet: null } : { lectureIA: null })}>Fermer</button>
       </div>
     );
   }

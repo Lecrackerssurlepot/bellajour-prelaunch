@@ -61,6 +61,8 @@ export type Ui = {
   grille: boolean;
   /** Lot E : ce que le dernier fichier de premier jet a donné (chargé : photos reliées et introuvables ; refusé : la phrase). Écran seulement, jusqu'à « Fermer ». */
   premierJet: BandeauPremierJet | null;
+  /** Lot F : ce que la dernière lecture IA chargée a donné (photos reliées, introuvables) ou sa phrase de refus. Écran seulement. */
+  lectureIA: BandeauPremierJet | null;
 };
 
 /** Lot E : le bandeau du premier jet. */
@@ -71,7 +73,7 @@ export type BandeauPremierJet =
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false, style: false,
   grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, lecture: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
-  retouche: null, position: null, aimant: true, guides: [], grille: false, premierJet: null,
+  retouche: null, position: null, aimant: true, guides: [], grille: false, premierJet: null, lectureIA: null,
 };
 
 /** L'aimant et la grille d'artiste se rappellent d'une séance à l'autre, sur ce Mac seulement. Jamais d'exception. */
@@ -113,6 +115,8 @@ export type Ctx = {
   /** Un geste annulable, avec un message court et « Annuler ». */
   gesteAvecAnnuler: (g: Geste, texte: string) => void;
   imp?: Import;
+  /** Lot F : la clé locale du projet (`cleLocale`), sous laquelle ce navigateur garde la lecture IA. */
+  cleProjet?: string;
 };
 
 export const CtxEd = createContext<Ctx | null>(null);

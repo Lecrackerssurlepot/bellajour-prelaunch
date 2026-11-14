@@ -10,6 +10,7 @@ import { rangementDe } from "./moments";
 import { dansVue, estTour, marqueDe, triDe, type Marque } from "./tri";
 import { sousPiles } from "./mesures";
 import { tagsDeLecture } from "./tags";
+import { estTagIA, groupeDe, tagsIA, type LectureIAReliee } from "./lectureIA";
 import type { Catalogue, EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -29,7 +30,8 @@ export function criteres(e: EtatEditeur): Criteres {
   const q = sansAccent(f.recherche.trim());
   const t = triDe(e.magazine);
   const mq = new Map<string, Marque>();
-  const tags = f.lecture ? tagsDeLecture(e.catalogue, e.lecture) : null;
+  /* lot F : un tag de la lecture IA se filtre comme un tag de la lecture mesurée */
+  const tags = !f.lecture ? null : estTagIA(f.lecture) ? tagsIA(e.lectureIA) : tagsDeLecture(e.catalogue, e.lecture);
   for (const [l, k] of [[t.coupsDeCoeur, "coupDeCoeur"], [t.choisies, "choisie"], [t.reserve, "reserve"], [t.ecartees, "ecartee"]] as const) for (const id of l) mq.set(id, k);
   return {
     recherche: (ph) => !q || sansAccent(ph.nom).includes(q),
@@ -43,7 +45,7 @@ export function criteres(e: EtatEditeur): Criteres {
     masquerUtilisees: (ph) => !f.masquerUtilisees || !u.has(ph.id),
     marque: (ph) => dansVue(mq.get(ph.id) ?? null, f.marque),
     etiquette: (ph) => !f.etiquette || f.marque !== "choisies" || t.etiquettes[f.etiquette].includes(ph.id),
-    lecture: (ph) => !f.lecture || (tags?.get(ph.id) ?? []).includes(f.lecture),
+    lecture: (ph) => !f.lecture || ((tags?.get(ph.id) ?? []) as readonly string[]).includes(f.lecture),
   };
 }
 
@@ -62,14 +64,21 @@ function comparateur(tri: Filtres["tri"]): (a: PhotoMaq, b: PhotoMaq) => number 
   return comparerChrono;
 }
 
-function cleGroupe(groupe: Filtres["groupe"], ph: PhotoMaq, cat?: Catalogue): string {
+/** Lot F (R144) : les groupes de la lecture IA, dans l'ordre du fichier (la trame) ; les photos sans groupe en dernier (« ~ »). */
+const SANS_GROUPE = "~";
+const MOT_GROUPE = { duo: "Duo", trio: "Trio", combo: "Combo" } as const;
+export const libelleGroupeIA = (g: { type: keyof typeof MOT_GROUPE; idee: string }): string => `${MOT_GROUPE[g.type]} · ${g.idee}`;
+
+function cleGroupe(groupe: Filtres["groupe"], ph: PhotoMaq, cat?: Catalogue, ia?: LectureIAReliee | null): string {
+  if (groupe === "ia") return groupeDe(ia ?? null, ph.id)?.cle ?? SANS_GROUPE;
   if ((groupe === "moment" || groupe === "lieu") && cat) return rangementDe(cat, groupe, ph.id).cle;
   if (groupe === "jour") return ph.date ? ph.date.slice(0, 10) : "~";
   if (groupe === "personne") return ph.personne;
   if (groupe === "type") return String(ORDRE_TYPES.indexOf(ph.type));
   return "";
 }
-function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq, cat?: Catalogue): string {
+function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq, cat?: Catalogue, ia?: LectureIAReliee | null): string {
+  if (groupe === "ia") { const g = groupeDe(ia ?? null, ph.id); return g ? libelleGroupeIA(g) : "Sans groupe"; }
   if ((groupe === "moment" || groupe === "lieu") && cat) return rangementDe(cat, groupe, ph.id).libelle;
   if (groupe === "jour") {
     if (cle === "~") return "Sans date";
@@ -90,7 +99,7 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const g = e.filtres.groupe;
   const parCle = new Map<string, PhotoMaq[]>();
   for (const ph of photos) {
-    const k = cleGroupe(g, ph, e.catalogue);
+    const k = cleGroupe(g, ph, e.catalogue, e.lectureIA);
     const l = parCle.get(k);
     if (l) l.push(ph); else parCle.set(k, [ph]);
   }
@@ -100,7 +109,7 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const rang = (ph: PhotoMaq) => (u?.has(ph.id) ? 1 : 0);
   return cles.map((k) => {
     const liste = (parCle.get(k) ?? []).sort((a, b) => rang(a) - rang(b) || cmp(a, b));
-    return { cle: k, libelle: libelleGroupe(g, k, liste[0], e.catalogue), ids: liste.map((ph) => ph.id) };
+    return { cle: k, libelle: libelleGroupe(g, k, liste[0], e.catalogue, e.lectureIA), ids: liste.map((ph) => ph.id) };
   });
 }
 export const visibles = (e: EtatEditeur): string[] => groupes(e).flatMap((g) => g.ids);
@@ -113,9 +122,11 @@ function horsPiles(e: EtatEditeur, passent: PhotoMaq[]): PhotoMaq[] {
   const ici = new Set(passent.map((p) => p.id));
   const ouvertes = new Set(e.pilesOuvertes);
   const u = utilisations(e.magazine);
+  /* lot F (R144) : rangée par groupes, une photo d'un groupe se montre toujours (le groupe est entier, même sous une pile) */
+  const enGroupe = e.filtres.groupe === "ia" && e.lectureIA ? new Set(e.lectureIA.groupes.flatMap((g) => g.photos)) : null;
   return passent.filter((p) => {
     const tete = sous.get(p.id);
-    if (!tete || ouvertes.has(tete) || !ici.has(tete)) return true;
+    if (!tete || ouvertes.has(tete) || !ici.has(tete) || enGroupe?.has(p.id)) return true;
     return marqueDe(e.magazine, p.id) !== null || u.has(p.id);
   });
 }

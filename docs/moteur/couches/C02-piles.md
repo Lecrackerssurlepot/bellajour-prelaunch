@@ -22,3 +22,4 @@ La tête d'une pile est la plus NETTE, pas la plus belle (expression, yeux, gest
 
 ## Historique
 09/11 : créée. 10/11 : aucune rafale ni doublon vus → 60 s / 16 bits, doublon 8 bits, similaires ajoutés.
+14/11 (lot F, R140) : 11 rafales manquées au contrôle à l'œil des six lots → deux photos qui se suivent à 30 s et 20 bits sont une rafale, un cadre tourné ajoute 4 bits ; rejeu : 62 paires vraies sur 83 au lieu de 57. Les rafales de la lecture IA deviennent des piles qui priment (R145, C14).

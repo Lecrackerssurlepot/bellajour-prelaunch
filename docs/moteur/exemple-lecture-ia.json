@@ -1,0 +1,50 @@
+{
+  "format": "bellajour-lecture-ia",
+  "version": 1,
+  "projet": { "type": "couple", "source": "comptage", "raison": "deux visages sur la plupart des photos avec visages" },
+  "photos": {
+    "IMG_0101.JPG": {
+      "visages": { "nombre": 2, "plusGrand": 0.21, "selfie": false },
+      "role": { "role": "pleine", "interet": 0.8, "raison": "les deux ensemble, lumière du matin", "couverture": "couple" },
+      "lieu": { "nom": "BMW Welt", "confiance": 0.9, "source": "ia", "statut": "sur", "preuve": "panneau" }
+    },
+    "IMG_0102.JPG": {
+      "visages": { "nombre": 1, "plusGrand": 0.34, "selfie": true },
+      "role": { "role": "heros", "interet": 0.7, "raison": "un sourire franc devant la tour" },
+      "lieu": { "nom": "Olympiapark", "confiance": 0.6, "source": "ia", "statut": "a_verifier" }
+    },
+    "IMG_0103.JPG": {
+      "visages": { "nombre": 0, "plusGrand": null, "selfie": false },
+      "role": { "role": "satellite", "interet": 0.5, "raison": "la tour seule, ciel net" }
+    },
+    "IMG_0104.JPG": {
+      "visages": { "nombre": 0, "plusGrand": null, "selfie": false },
+      "role": { "role": "detail", "interet": 0.45, "raison": "une main sur la rambarde" }
+    },
+    "IMG_0105.JPG": {
+      "capture": { "type": "billet", "dit": "Billet de train Munich → Salzbourg, le 12 juin à 9 h 14, deux places.", "utile": true }
+    },
+    "IMG_0106.JPG": {
+      "visages": { "nombre": 2, "plusGrand": 0.12, "selfie": false },
+      "role": { "role": "double", "interet": 0.75, "raison": "le lac entier, deux silhouettes au bord", "couverture": "paysage" }
+    },
+    "IMG_0107.JPG": {
+      "visages": { "nombre": 2, "plusGrand": 0.11, "selfie": false },
+      "role": { "role": "a_ecarter", "interet": 0.2, "raison": "floue, la même que 0106" }
+    }
+  },
+  "rafales": [
+    { "photos": ["IMG_0106.JPG", "IMG_0107.JPG"], "garder": ["IMG_0106.JPG"], "usage": "meilleure_seule", "pourquoi": "Même cadrage : 0106 nette, 0107 bougée." }
+  ],
+  "groupes": [
+    { "type": "trio", "photos": ["IMG_0102.JPG", "IMG_0103.JPG", "IMG_0104.JPG"], "idee": "Le titre dans le ciel" }
+  ],
+  "couleurs": [
+    {
+      "nom": "Terre cuite et crème",
+      "couleurs": { "papier": "#ffffff", "encre": "#312b27", "aplatClair": "#f8d5cc", "aplatSourd": "#a4604e", "accent": "#a7513d", "nuit": "#211d1a" },
+      "raison": "la terre des toits et des murs",
+      "dansLesPhotos": true
+    }
+  ]
+}

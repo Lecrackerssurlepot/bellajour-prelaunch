@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { distanceHash, ETIQUETTES, etiquettesDe, lectureDePhoto, marqueDe, motProposition, MOT_TAG, planchesDesPhotos, visibles, type Marque } from "@/lib/mise-en-page/editeur";
+import { distanceHash, ETIQUETTES, etiquettesDe, groupeDe, lectureDePhoto, libelleGroupeIA, lieuSur, marqueDe, motProposition, MOT_CAPTURE, MOT_ROLE, MOT_TAG, MOT_USAGE, planchesDesPhotos, rafaleDe, visibles, type Marque } from "@/lib/mise-en-page/editeur";
 import { Chaleur } from "./Chaleur";
 import { cls, useEd, type Adresse } from "./contexte";
 import { grandeDe, precharger } from "./images";
@@ -218,6 +218,7 @@ function Comparer() {
    chiffres qui expliquent chaque tag (où est la photo par rapport au seuil). De quoi juger, et régler, une règle. */
 function PanneauLecture({ id }: { id: string }) {
   const { etat, adresses } = useEd();
+  const ia = etat.lectureIA && (etat.lectureIA.photos.has(id) || groupeDe(etat.lectureIA, id) || rafaleDe(etat.lectureIA, id)) ? etat.lectureIA : null;
   const m = etat.lecture.mesures?.[id];
   const p = etat.catalogue.get(id);
   const l = lectureDePhoto(id, etat.catalogue, etat.lecture, distanceHash);
@@ -230,7 +231,9 @@ function PanneauLecture({ id }: { id: string }) {
         <Chaleur m={m} />
       </div>
       <p className="ed-lec-leg"><i className="ed-lec-c" /> ce qui ressort · <i className="ed-lec-v" /> visage · <i className="ed-lec-z" /> zone protégée</p>
-      {!m ? <p className="ed-lec-l">Pas encore lue.</p> : (
+      {!m && !ia ? <p className="ed-lec-l">Pas encore lue.</p> : null}
+      {ia ? <LectureIAPhoto id={id} /> : null}
+      {!m ? null : (
         <dl className="ed-lec-dl">
           <dt>Tags</dt><dd>{l.tags.length ? l.tags.map((t) => MOT_TAG[t].mot).join(", ") : "aucun"}</dd>
           <dt>Netteté</dt><dd>{l.nettete} · médiane du magazine {l.medianeNettete} · floue sous {l.seuilFloue || "—"}</dd>
@@ -242,5 +245,29 @@ function PanneauLecture({ id }: { id: string }) {
         </dl>
       )}
     </aside>
+  );
+}
+
+/* Lot F (14/11) : ce que la LECTURE IA dit de la photo (rôle proposé, lieu nommé, capture, groupe, rafale, visages comptés). Des
+   propositions, jamais des décisions ; un lieu « à vérifier » le dit. Aucune identité : on compte les visages, on ne les reconnaît pas (D29). */
+function LectureIAPhoto({ id }: { id: string }) {
+  const { etat } = useEd();
+  const r = etat.lectureIA;
+  const p = r?.photos.get(id);
+  const g = groupeDe(r, id);
+  const ra = rafaleDe(r, id);
+  const nb = (x: number) => x.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
+  const nom = (x: string) => etat.catalogue.get(x)?.nom ?? x;
+  return (
+    <dl className="ed-lec-dl ed-lec-ia">
+      {p?.role ? <><dt>Proposée</dt><dd>{MOT_ROLE[p.role.role]}{p.role.couverture ? `, couverture (${p.role.couverture})` : ""} · intérêt {nb(p.role.interet)} · {p.role.raison}</dd></> : null}
+      {p?.lieu ? (
+        <><dt>Lieu</dt><dd className={lieuSur(p) ? undefined : "ed-lec-averifier"}>{p.lieu.nom} · {p.lieu.source === "gps" ? "GPS" : "IA"} {nb(p.lieu.confiance)} · {p.lieu.statut === "sur" ? `sûr (${p.lieu.preuve === "gps" ? "GPS" : "panneau"})` : "à vérifier"}</dd></>
+      ) : null}
+      {p?.capture ? <><dt>Capture</dt><dd className={p.capture.utile ? undefined : "ed-lec-averifier"}>{MOT_CAPTURE[p.capture.type]} · {p.capture.utile ? "utile" : "inutile"} · {p.capture.dit}</dd></> : null}
+      {g ? <><dt>Groupe</dt><dd>{libelleGroupeIA(g)} · {g.photos.length} photos</dd></> : null}
+      {ra ? <><dt>Rafale</dt><dd>{ra.photos.length} photos · garder {ra.garder.map(nom).join(", ") || "aucune"} ({MOT_USAGE[ra.usage]}) · {ra.pourquoi}</dd></> : null}
+      {p?.visages ? <><dt>Visages comptés</dt><dd>{p.visages.nombre}{p.visages.plusGrand !== null && p.visages.nombre ? ` · le plus grand ${Math.round(p.visages.plusGrand * 100)} % de la hauteur` : ""}{p.visages.selfie ? " · selfie" : ""}</dd></> : null}
+    </dl>
   );
 }
