@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { makeSupabase } from "@/lib/supabase";
@@ -88,7 +89,7 @@ const codeStripe = (p: PaysLivraison): PaysStripe => p;
 
 export const runtime = "nodejs";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 /**
  * T-049 — l'en-tête `Origin` est ce que le client VEUT bien envoyer : un client

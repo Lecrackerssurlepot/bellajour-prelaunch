@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { SupabaseClient } from "@supabase/supabase-js";
@@ -77,7 +78,7 @@ const OFFER_LABELS: Record<OfferType, string> = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 /* Allowlist des codes influenceur — source de vérité côté serveur (env var,
    modifiable sans déploiement DB). Format : INFLUENCER_CODES="JADE,LUCAS".

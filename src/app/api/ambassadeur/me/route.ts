@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { verifyToken } from "@/lib/ambassadeur-token";
@@ -7,7 +8,7 @@ import { verifyToken } from "@/lib/ambassadeur-token";
    ⚠️ Confidentialité : ne renvoie JAMAIS d'email — uniquement des prénoms.
    Ne compte QUE le confirmé (jamais le "pending"). */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

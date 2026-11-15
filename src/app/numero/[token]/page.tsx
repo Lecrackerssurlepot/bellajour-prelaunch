@@ -14,6 +14,7 @@
  * composants clients : les cases de l'état 2 et le bouton de l'état 4.
  */
 
+import { origineDuSite } from '@/lib/site'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Footer from '../../(atelier)/components/Footer'
@@ -52,7 +53,7 @@ import '../numero.css'
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
    yeux de la cliente. Même valeur que celle des mails (mails.ts) : le lien
    qu'elle lit ici doit être exactement celui qu'elle a reçu. */
-const SITE_URL_PUBLIC = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bellajour.fr'
+const SITE_URL_PUBLIC = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 /* L'état change dans le dos de la cliente — un mail la ramène ici juste après
    une action de l'atelier. Aucune mise en cache : une page d'état périmée est
