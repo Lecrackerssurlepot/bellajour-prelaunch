@@ -480,6 +480,7 @@ import { verifierMepRecette } from "./verif-mep-recette";
 import { verifierMepDerniere } from "./verif-mep-derniere";
 /* Le lot F (14/11) : la lecture IA dans le tri (format, lien par nom, groupes, rafales, lieux) et les règles R140, R141. */
 import { verifierMepLectureIA } from "./verif-mep-lecture-ia";
+import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -7446,6 +7447,42 @@ const verifierMepLot0 = () => {
       && !/@\/lib\/atelier/.test(types) && !/@\/lib\/atelier/.test(sansComm(lireM("src/lib/mise-en-page/sauvegarde.ts"))));
 };
 verifierMepLot0();
+
+/* ── 15/11 : un lien envoyé à un client vise TOUJOURS le vrai site ─────────
+   Le mail M3 d'Eloïse (11/11) menait à une préversion *.vercel.app, morte le
+   14/11 (DEPLOYMENT_NOT_FOUND) : la variable des préversions pointait sur la
+   branche chantier/atelier depuis le 24/08. */
+{
+  ok("site : le vrai site passe, avec ou sans www, nettoyé",
+    origineDuSite("https://www.bellajour.fr") === "https://www.bellajour.fr"
+      && origineDuSite(" https://bellajour.fr/ ") === "https://bellajour.fr"
+      && origineDuSite("HTTPS://WWW.BELLAJOUR.FR") === "https://www.bellajour.fr");
+  ok("site : une préversion vercel.app, vide ou un intrus retombent sur www.bellajour.fr",
+    ORIGINE_SITE === "https://www.bellajour.fr"
+      && origineDuSite("https://bellajour-prelaunch-git-cha-a10ca9-lecrackerssurlepots-projects.vercel.app") === ORIGINE_SITE
+      && origineDuSite("https://bellajour-prelaunch-7s863l1nd-lecrackerssurlepots-projects.vercel.app") === ORIGINE_SITE
+      && origineDuSite(undefined) === ORIGINE_SITE && origineDuSite("") === ORIGINE_SITE
+      && origineDuSite("https://bellajour.fr.pirate.example") === ORIGINE_SITE
+      && origineDuSite("http://bellajour.fr") === ORIGINE_SITE
+      && origineDuSite("https://www.bellajour.fr/numero") === ORIGINE_SITE);
+  ok("site : le poste local passe (essais en développement)",
+    origineDuSite("http://localhost:3005") === "http://localhost:3005" && origineDuSite("http://127.0.0.1") === "http://127.0.0.1"
+      && origineDuSite("http://localhost.pirate.example") === ORIGINE_SITE);
+  const lecteursBruts: string[] = [];
+  const parcourir = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = `${d}/${e.name}`;
+      if (e.isDirectory()) parcourir(p);
+      else if (/\.(ts|tsx)$/.test(e.name) && p !== "src/lib/site.ts"
+        && /NEXT_PUBLIC_SITE_URL/.test(readFileSync(p, "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ""))
+        && !/origineDuSite\(process\.env\.NEXT_PUBLIC_SITE_URL\)|origineDuSite\(env\.NEXT_PUBLIC_SITE_URL\)/.test(readFileSync(p, "utf8")))
+        lecteursBruts.push(p);
+    }
+  };
+  parcourir("src");
+  ok(`site : aucun fichier de src/ ne lit NEXT_PUBLIC_SITE_URL sans origineDuSite${lecteursBruts.length ? " (" + lecteursBruts.join(", ") + ")" : ""}`,
+    lecteursBruts.length === 0);
+}
 
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);

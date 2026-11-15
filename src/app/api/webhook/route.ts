@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -13,7 +14,7 @@ import {
   traiterRemboursementAtelier,
 } from "@/lib/atelier/paiement";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 const REF_LINK_BASE = "https://www.bellajour.fr";
 
 /**

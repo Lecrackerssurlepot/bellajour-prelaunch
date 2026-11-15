@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import type { SupabaseClient, PostgrestError } from "@supabase/supabase-js";
 import { logEvenement } from "./evenements";
 import { sendBrevoEmailDetail, deleteBrevoScheduledEmail } from "@/lib/brevo";
@@ -58,7 +59,7 @@ import {
  * table de verrou, elle, se nettoie sans remords quand il faut relancer.
  */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 export type CodeMail =
   /* M0 — l'accusé, PROGRAMMÉ à la seconde où le dossier existe (fin de
