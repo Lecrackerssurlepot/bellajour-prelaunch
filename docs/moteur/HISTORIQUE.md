@@ -180,6 +180,16 @@ Captures : `design-explorations/editeur-lots-2026-11-16/recette/palette/`. Fiche
 | Ce qui va avec | Après un fond : le texte qui s'y lit, la page d'en face du même combo, la même couleur (double unie). Après un texte coloré : le fond qui lui va. Un clic applique, Annuler défait | sur la branche |
 | Le bouton « Fond » du tiroir retiré | La palette le remplace | sur la branche. Code dans `archive/fond-tiroir-2026-11/` |
 
+### 16/11, vague 2 : lot Types (branche `feat/mise-en-page-types`, poussée, pas encore fusionnée)
+Ton retour du 16/11 : « une différence entre les templates qui sont du coup différents vraiment en termes de position et ceux qui
+modifient un petit peu la taille d'une photo, un petit peu son orientation ». Captures : `design-explorations/editeur-lots-2026-11-16/recette/types/`.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Le tiroir par types (T-208) | Une vignette par DISPOSITION (où sont les photos les unes par rapport aux autres, la page qui porte quoi), le nombre de ses variantes dans un petit rond. Un clic sur le type posé ouvre ses variantes (même disposition, une photo plus grande, l'autre orientation, calée ailleurs). Un gabarit dessiné reste toujours en tête de son type. Une page de 2 photos de Merisa : 16 types au lieu de 406 gabarits | sur la branche. Fiche C18, R170 à R179 |
+| R par types, V par variantes (T-208) | R passe à la disposition suivante (plus à la même avec une case de plus) ; la nouvelle touche V passe à la variante suivante du type posé. « Poser » et le premier jet ne changent pas | sur la branche |
+| Le catalogue des gabarits par types | Une section « Générés : les types » : 81 types pour les 2 062 pages générées | sur la branche |
+
 Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur). Plus les cinq de la vague 1, pas encore fusionnées.
 
 ---
@@ -202,6 +212,7 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 | Les trois gabarits d'épingles à aplat (E-D8c « Pleine + photomaton » sur fond noir, E-D14a et E-D14b « Aplats ») | 16/11, vague 1 (branche, pas encore fusionnée) | Le fond libre (#364), et leurs copies sans aplat E-D8f, E-D14c, E-D14d | `EPINGLES_RETIREES` (`epingles.ts`), écartés par `candidats` (`magazine.ts`) : ni tiroir, ni R, ni Poser. Toujours lisibles par `templateParId` : un magazine sauvegardé qui s'en sert s'ouvre avec ses aplats (harnais `verif-mep-vague-1.ts`). Les dix gabarits de couverture GARDENT leurs aplats : la couverture n'a pas de fond libre |
 | Le pré-tri (bouton « Pré-trier », R84 à R88, couches C06 et C07) | 16/11, vague 1 (branche, pas encore fusionnée) | Rien à sa place : ce qu'il voyait de juste reste dans les étiquettes et les filtres (C03), les piles (C02) et la lecture IA (C14) | `archive/pretri-2026-11/` (`pretri.ts`, `BoutonPreTri.tsx`, `verif-pretri.ts`, README). Les leçons `pretri_renverse` restent lisibles et se produisent encore (premier jet, rafale acceptée). Ses réglages restent dans `reglages.ts` (les retirer changerait l'empreinte des leçons) |
 | La grille d'artiste seule derrière O | 16/11, vague 1 (branche, pas encore fusionnée) | Le menu Grille : 6 × 6, 8 × 8, ou Artiste | La grille d'artiste n'est pas retirée : c'est la troisième option du menu (`GrilleArtiste.tsx`) |
+| R qui passait au gabarit SUIVANT du classement (souvent le même avec une case de plus) | 16/11, vague 2, lot Types (branche, pas encore fusionnée) | R passe à la tête du TYPE suivant ; V aux variantes du type posé | `autreGabarit(…, quoi)`, `editeur/operations.ts` ; `rangerParTypes`, `typesGabarits.ts`. Le classement lui-même n'a pas bougé |
 | L'export Affinity seul | 11/11 | Rien n'est retiré : Canva s'y est ajouté | PR #353. `ExportFeuille.tsx`, ligne 137 |
 | Les grilles de secours | pas remplacées | Passent après les dessinés et les générés | `magazine.ts`, lignes 245 à 263 : « grilles de ce nombre » en dernier |
 

@@ -42,6 +42,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | EN PROD (lot G, #364, 16/11) ; essai Affinity FIDÈLE (16/11, D28) |
 | [C16](couches/C16-texte-ajoute.md) | Texte ajouté proprement : la place d'un titre (zone libre alignée sur la grille, sinon l'endroit calme d'une photo) | R159 | Branche `feat/mise-en-page-vague-1` (vague 1, 16/11, T-212), pas encore fusionnée |
 | [C17](couches/C17-palette-a-glisser.md) | Palette à glisser : une couleur lâchée sur une page (fond uni) ou un texte, et ce qui va avec (texte lisible, page d'en face, fond) | R160 à R166 | Branche `feat/mise-en-page-palette` (vague 2, 16/11, T-209 second temps), pas encore fusionnée |
+| [C18](couches/C18-types-de-gabarits.md) | Types de gabarits : une disposition par vignette du tiroir, ses variantes (taille, orientation, calage) dessous ; R par types, V par variantes | R170 à R179 | Branche `feat/mise-en-page-types` (vague 2, 16/11, T-208), pas encore fusionnée |
 
 La **lecture IA** (lot F, #363, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 

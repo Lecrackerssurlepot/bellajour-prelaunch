@@ -1248,6 +1248,23 @@
 .mep-editeur .ed-gab-plus { flex: none; align-self: center; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 12px; line-height: 1.1; }
 .mep-editeur .ed-gab-plus b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .mep-editeur .ed-gab[aria-checked="true"] .ed-gab-dessin { box-shadow: 0 0 0 2px var(--bj-action); }
+/* T-208 : un TYPE qui a des variantes se lit comme une petite pile (une carte décalée derrière) et porte leur nombre ; ouvert, ses variantes
+   suivent dans un plateau. Rien de plus sur la vignette : le geste est le clic sur le type posé (ou V au clavier). */
+.mep-editeur .ed-gab { position: relative; }
+.mep-editeur .ed-gab--pile .ed-gab-dessin { box-shadow: 0 0 0 1px var(--bj-veil-16), 4px -4px 0 -1px var(--bj-cream-tint-1), 4px -4px 0 0 var(--bj-veil-16); }
+.mep-editeur .ed-gab--pile[aria-checked="true"] .ed-gab-dessin { box-shadow: 0 0 0 2px var(--bj-action), 5px -5px 0 0 var(--bj-cream-tint-1), 5px -5px 0 1px var(--bj-action-soft); }
+.mep-editeur .ed-gab-n {
+  position: absolute; top: -3px; right: -4px; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
+  background: var(--bj-cream-tint-1); box-shadow: 0 0 0 1px var(--bj-veil-16), 0 1px 3px var(--bj-veil-8);
+  color: var(--bj-text-soft); font-size: 9.5px; font-weight: 600; line-height: 17px; font-variant-numeric: tabular-nums; text-align: center;
+}
+.mep-editeur .ed-gab[aria-checked="true"] .ed-gab-n { background: var(--bj-action); box-shadow: none; color: #fff; }
+.mep-editeur .ed-gab--ouvert { background: var(--bj-veil-8); border-radius: 10px 0 0 10px; }
+.mep-editeur .ed-gab-var {
+  display: flex; flex: none; align-items: center; align-self: stretch; gap: 4px; margin-left: -6px; padding: 0 8px 0 4px;
+  border-radius: 0 12px 12px 0; background: var(--bj-veil-8); box-shadow: inset 1px 0 0 var(--bj-veil-8);
+}
+.mep-editeur .ed-gab-var .ed-gab:hover, .mep-editeur .ed-gab-var .ed-gab:focus-visible { background: var(--bj-cream-tint-1); }
 .mep-editeur .ed-gab[aria-checked="true"] { color: var(--bj-action); font-weight: 600; }
 .mep-editeur .ed-gab-actions { display: flex; flex-direction: column; align-self: stretch; justify-content: center; gap: 4px; margin-left: 2px; padding-left: 6px; border-left: 1px solid var(--bj-veil-8); }
 

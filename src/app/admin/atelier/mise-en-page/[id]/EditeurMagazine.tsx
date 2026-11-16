@@ -299,7 +299,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     if ((e.key === "l" || e.key === "L") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); majUi({ lecture: !ui.lecture }); return; }
     /* 12/11 : O montre ou cache la grille, comme l'« overlay » des logiciels de retouche ; depuis le 16/11 (T-213), celle choisie dans le menu
        de la barre : la grille de mise en page (6 × 6 par défaut, 8 × 8) ou la grille d'artiste (tiers, nombre d'or, diagonales).
-       Les lettres prises : planche M R X P T Z (⌘ Z) ; tri X P F R U C Z N D G T 0 à 3 ; L la lecture. O est libre dans les trois. */
+       Les lettres prises : planche M R V X P T Z (⌘ Z ; V depuis T-208) ; tri X P F R U C Z N D G T 0 à 3 ; L la lecture. O est libre dans les trois. */
     if ((e.key === "o" || e.key === "O") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); basculerGrille(ui, majUi); return; }
     /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */
     if (clavierConfrontation({ etat: ed, ui, majUi, envoyer, lectureSeule: estLectureSeule(ed) }, e)) return;
@@ -323,12 +323,13 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     const k = e.key;
     /* lot 4 : ⌘] ⌘[ (et ⌘↑ ⌘↓) rangent le cadre actif dans les calques */
     const calque = (e.metaKey || e.ctrlKey) && !!ed.cadreActif && ["]", "[", "ArrowUp", "ArrowDown"].includes(k);
-    if (!calque && !["Escape", "ArrowLeft", "ArrowRight", "Backspace", "Delete", "Enter", "r", "R", "x", "X", "p", "P", "t", "T", "m", "M", "z", "Z"].includes(k)) return;
+    if (!calque && !["Escape", "ArrowLeft", "ArrowRight", "Backspace", "Delete", "Enter", "r", "R", "v", "V", "x", "X", "p", "P", "t", "T", "m", "M", "z", "Z"].includes(k)) return;
     if ((k === "z" || k === "Z") && !(e.metaKey || e.ctrlKey)) return;
     if ((e.metaKey || e.ctrlKey) && !(k === "z" || k === "Z") && !calque) return;
     e.preventDefault();
     const g: Geste = { type: "touche", cle: k, shift: e.shiftKey, meta: e.metaKey, ctrl: e.ctrlKey, alt: e.altKey };
-    if ((k === "r" || k === "R") && pointeur.current) {
+    /* R (le type suivant) et V (T-208 : la variante suivante) visent la page survolée */
+    if ((k === "r" || k === "R" || k === "v" || k === "V") && pointeur.current) {
       const el = document.elementFromPoint(pointeur.current.x, pointeur.current.y);
       const c = el?.closest?.(".ed-planche [data-cote]");
       if (c) {
