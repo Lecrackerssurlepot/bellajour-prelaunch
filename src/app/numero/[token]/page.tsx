@@ -51,6 +51,7 @@ import { rattacherParToken } from '@/lib/compte/donnees'
    pour une cliente, cette page est exactement celle d'avant. */
 import { quiEstConnecte } from '@/lib/admin-session'
 import { appliquerBrouillon, lireBrouillon, TYPE_BROUILLON } from '@/lib/atelier/brouillon'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -740,6 +741,7 @@ export default async function NumeroPage({
               quantite={quantite}
               exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite, regle) : null}
               regle={regle}
+              offrirCarte={lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert}
               commande={commande}
               portOffert={creditEuros !== null}
               cgvOk={numero.cgv_ok}

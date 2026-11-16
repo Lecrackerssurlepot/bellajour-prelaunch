@@ -108,6 +108,9 @@ type Props = {
      (`regleDuDossier`) : Noël (2 au plus, le 2e à −40 % ou −20 % selon la
      couverture, France) ou l'ordinaire. Absente = ordinaire. */
   regle?: RegleExemplaires
+  /** Noël (16/11) : proposer une carte cadeau pour un proche avant de payer.
+   *  Vrai seulement quand le drapeau de Noël est ouvert (lu par la page). */
+  offrirCarte?: boolean
   cgvOk: boolean
   renonciation: boolean
   /* T2-8 — les deux temps de la promesse, calculés par la page depuis
@@ -145,7 +148,7 @@ type Props = {
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
-  quantite, exemplaires, regle = REGLE_ORDINAIRE,
+  quantite, exemplaires, regle = REGLE_ORDINAIRE, offrirCarte = false,
   cgvOk, renonciation, joursComposition, joursLivraison, finition,
   previsualisation = false,
   carte = null,
@@ -850,6 +853,16 @@ export default function CasesEtCommande({
       ) : (
         <p className="nu-prix-sub">Le prix vous sera confirmé par mail, avant tout paiement.</p>
       )}
+
+      {/* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE (16/11, Mathias) ──
+          Juste avant de payer. Elle s'ouvre dans un nouvel onglet : la
+          commande en cours reste là, intacte. */}
+      {offrirCarte && !previsualisation ? (
+        <a className="nu-noel-carte" href="/offrir" target="_blank" rel="noopener">
+          <span className="nu-noel-carte-q">Offrir une carte cadeau à un proche&nbsp;?</span>
+          <span className="nu-noel-carte-l">Choisir une carte</span>
+        </a>
+      ) : null}
 
       <button
         type="button"
