@@ -13,7 +13,8 @@ l'appliquent, ceux de l'atelier le prendront à leur prochaine réécriture.
 - **Le ton d'un magazine, pas d'un SaaS** : jamais « Cliquez ici », jamais « Bonne réception »
   (`scripts/mails-atelier.mjs`, règle 3).
 - Pas de vocabulaire promotionnel. Sur le site : ni « ! » ni emoji. Dans les mails (16/11) : emoji
-  libres, un « ! » au plus par mail.
+  libres, un « ! » au plus par mail. Noël : un emoji de saison dans l'objet (🎄 🎁 ✨), aucun dans
+  ceux qui parlent d'argent ou tombent hors saison (rappel de fin, remboursement).
 - On dit « magazine » et « numéro », jamais « album » (le skill « bellajour-mail » qui dit « album » est périmé).
 
 ## Les règles d'écriture, toutes tranchées

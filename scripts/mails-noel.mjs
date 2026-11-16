@@ -17,7 +17,9 @@
  * Un mail court saute des blocs, il n'en invente pas.
  *
  * Choix de Mathias (16/11) : emoji libres, UN « ! » au plus par mail, un seul
- * ton, signature « L'atelier Bellajour ».
+ * ton, signature « L'atelier Bellajour ». Les objets de la saison portent un
+ * emoji de Noël (🎄 🎁 ✨, « que ça fasse un peu plus Noël », 16/11) ; ceux qui
+ * parlent d'argent ou tombent hors saison (GC4, GC4b, GC5) n'en ont pas.
  *
  * Les images sont des JPEG hébergés sur le site (Outlook ne lit pas le WebP),
  * fabriquées par `scripts/images-mails-noel.mjs` : chaque couverture y est
@@ -329,7 +331,7 @@ export const MAILS = [
     nom: "Noël N2 · Plus qu'un week-end",
     quand: "campagne, vendredi 4/12",
     a: "fondateurs",
-    sujet: "Dernier jour garanti : lundi",
+    sujet: "Dernier jour garanti : lundi 🎄",
     preheader: "Le 7 décembre, nous fermons les dépôts.",
     liens: [LIENS.composer, LIENS.offrir],
     blocs: [
@@ -351,7 +353,7 @@ export const MAILS = [
     nom: "Noël N3 · Pas trop tard pour l'offrir",
     quand: "campagne, mardi 8/12 (date à valider)",
     a: "fondateurs",
-    sujet: "Trop tard pour le magazine, pas pour l'offrir",
+    sujet: "Trop tard pour le magazine, pas pour l'offrir 🎁",
     preheader: "La carte cadeau part par e-mail, le jour de votre choix.",
     liens: [LIENS.offrir, LIENS.conditions],
     blocs: [
@@ -374,7 +376,7 @@ export const MAILS = [
     nom: "Noël N4 · La carte part encore",
     quand: "campagne, lundi 21/12 (date à valider)",
     a: "fondateurs",
-    sujet: "La carte cadeau part encore 🎁",
+    sujet: "La carte cadeau part encore 🎄🎁",
     preheader: "Achetée aujourd'hui, reçue aujourd'hui. Ou le 24 au matin.",
     liens: [LIENS.offrir, LIENS.conditions],
     blocs: [
@@ -398,7 +400,7 @@ export const MAILS = [
     nom: "Carte GC1 · acheteur, carte envoyée ou à imprimer",
     quand: "au paiement, envoi immédiat ou à imprimer",
     a: "acheteur",
-    sujet: "Votre carte cadeau Bellajour",
+    sujet: "Votre carte cadeau Bellajour 🎁",
     preheader: `${SI("EMAIL_DEST", `Elle est partie chez ${DEST}.`, "Prête à imprimer.")}`,
     liens: ["LIEN_CARTE", "LIEN_RECU", LIENS.conditions],
     blocs: [
@@ -433,7 +435,7 @@ export const MAILS = [
     nom: "Carte GC1b · acheteur, envoi programmé",
     quand: "au paiement d'une carte programmée",
     a: "acheteur",
-    sujet: `Votre carte partira le ${P("DATE_ENVOI")}`,
+    sujet: `Votre carte partira le ${P("DATE_ENVOI")} 🎄`,
     preheader: `Nous l'envoyons à ${DEST} au matin.`,
     liens: ["LIEN_CARTE", "LIEN_RECU", LIENS.conditions],
     blocs: [
@@ -464,7 +466,7 @@ export const MAILS = [
     nom: "Carte GC2 · destinataire",
     quand: "au paiement, ou le matin du jour choisi",
     a: "destinataire",
-    sujet: `Un cadeau pour vous, ${DEST} 🎁`,
+    sujet: `Un cadeau pour vous, ${DEST} 🎄🎁`,
     preheader: "Votre code est à l'intérieur.",
     liens: ["LIEN_COMPOSER", LIENS.conditions],
     blocs: [
@@ -488,7 +490,7 @@ export const MAILS = [
     nom: "Carte GC2b · acheteur, la carte programmée est partie",
     quand: "au départ d'une carte programmée",
     a: "acheteur",
-    sujet: `${DEST} a reçu votre carte`,
+    sujet: `${DEST} a reçu votre carte ✨`,
     preheader: "Elle est partie ce matin.",
     liens: ["LIEN_CARTE"],
     blocs: [
@@ -564,7 +566,7 @@ export const MAILS = [
     nom: "Carte GC6 · destinataire, vos photos des fêtes",
     quand: "mi-janvier, carte jamais utilisée",
     a: "destinataire",
-    sujet: "Vos photos des fêtes ?",
+    sujet: "Vos photos des fêtes ? ✨",
     preheader: `Votre carte de ${P("MONTANT")} € attend toujours.`,
     liens: ["LIEN_COMPOSER", LIENS.conditions],
     blocs: [
@@ -584,7 +586,7 @@ export const MAILS = [
     nom: "Carte GC7 · acheteur, le cadeau a servi",
     quand: "quand le destinataire paie son numéro avec la carte",
     a: "acheteur",
-    sujet: `${DEST} compose son magazine`,
+    sujet: `${DEST} compose son magazine ✨`,
     preheader: "Votre carte vient d'offrir un numéro.",
     liens: [LIENS.offrir],
     blocs: [
