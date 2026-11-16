@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { clientCompte, compteOuvert } from "@/lib/compte/session";
@@ -21,7 +22,7 @@ import { COOKIE_SUITE, suiteSure } from "@/lib/compte/garde";
 
 export const runtime = "nodejs";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 export async function GET(request: Request) {
   if (!compteOuvert()) {

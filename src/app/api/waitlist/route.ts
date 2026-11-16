@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
@@ -10,7 +11,7 @@ const BREVO_API_URL = "https://api.brevo.com/v3/contacts";
 import { VAR_MAILS_COUPES, envoisCoupes, motDeCoupure } from "@/lib/envois";
 
 const BREVO_SMTP_URL = "https://api.brevo.com/v3/smtp/email";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 const W1_REF_LINK_BASE = "https://www.bellajour.fr";
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();

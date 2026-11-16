@@ -14,6 +14,7 @@
  */
 
 import type { TokensEdition } from "./droits";
+import { origineDuSite } from "@/lib/site";
 
 export type QuelLien = "responsable" | "equipe" | "depot";
 export const QUELS_LIENS: readonly QuelLien[] = ["responsable", "equipe", "depot"];
@@ -45,15 +46,15 @@ export const ORIGINE_SITE = "https://www.bellajour.fr";
 
 /**
  * L'origine des liens qui partent par mail : `NEXT_PUBLIC_SITE_URL` (posée sur
- * Vercel), sinon `ORIGINE_SITE`. Une origine nue seulement : https, ou http
- * vers le poste local ; un chemin, un autre protocole ou une valeur illisible
+ * Vercel), sinon `ORIGINE_SITE`. Seuls le vrai site (avec ou sans www) et le
+ * poste local passent (`origineDuSite`, src/lib/site.ts) : une préversion
+ * `*.vercel.app`, un chemin, un autre protocole ou une valeur illisible
  * retombent sur `ORIGINE_SITE`. Ne lit AUCUN en-tête de la requête.
  */
 export function origineDesMails(env: Record<string, string | undefined>): string {
-  const brut = (env.NEXT_PUBLIC_SITE_URL ?? "").trim().replace(/\/+$/, "").toLowerCase();
-  if (/^https:\/\/[a-z0-9.-]+(:\d{1,5})?$/.test(brut)) return brut;
-  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(brut)) return brut;
-  return ORIGINE_SITE;
+  /* La même règle que le B2C (15/11, lien mort chez Eloïse) : le vrai site ou
+     le poste local, jamais une adresse *.vercel.app, quel que soit le réglage. */
+  return origineDuSite(env.NEXT_PUBLIC_SITE_URL);
 }
 
 /** `https://bellajour.fr` ou `http://localhost:3006`, sans barre finale ; `""` si illisible. Pour un lien AFFICHÉ, jamais envoyé. */

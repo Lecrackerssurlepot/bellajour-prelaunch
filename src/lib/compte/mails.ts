@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { clientAuthAdmin } from "@/lib/compte/session";
 
@@ -27,7 +28,7 @@ import { clientAuthAdmin } from "@/lib/compte/session";
  * boîte, et seul son propriétaire voit lequel.
  */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 /* Supabase dit « email_exists » (code) ou « already been registered » (texte)
    selon la version. On lit les deux, comme creer-comptes-fondateurs.ts. */
