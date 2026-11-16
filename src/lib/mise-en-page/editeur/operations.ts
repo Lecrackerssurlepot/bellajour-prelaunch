@@ -14,12 +14,14 @@ import {
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
 import { partEnRupture, partVide } from "../genere";
 import { genereesDoublesPour } from "../genereDouble";
+import { rangerParTypes, typeContenant } from "../typesGabarits";
 import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
 import { PAGE_L, type Rect } from "../geometrie";
 import type { Template } from "../types";
 import { REGLAGES } from "./reglages";
+import { convientSignature, fondPropose } from "../signatures";
 import {
-  BONUS_ORIGINE, CIBLES, LIBELLE, MALUS_RUPTURE, MALUS_VIDE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
+  BONUS_ORIGINE, CIBLES, LIBELLE, MALUS_RUPTURE, MALUS_SIGNATURE_HORS, MALUS_VIDE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, dimsDeRef, egal, estCouverture, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
@@ -71,7 +73,7 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
 export const videDe = (t: Template): number => partVide(t);
 
 /** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − le bonus de l'ORIGINE (`BONUS_ORIGINE` : les dessinés devant, puis les générés du lot D, jamais les grilles). */
-export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null })[], precedent: string | null): number {
+export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null; date?: string | null })[], precedent: string | null): number {
   const cs = cadresPhoto(t);
   let s = 0;
   for (let i = 0; i < cs.length; i++) {
@@ -83,6 +85,8 @@ export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x:
   if (t.id === precedent) s += PENALITE_REPETITION;
   s -= BONUS_ORIGINE[t.portee][t.origine];
   if (t.origine === "genere") s += MALUS_VIDE * videDe(t) + MALUS_RUPTURE * partEnRupture(t);
+  /* lot Signatures (R183) : une signature qui ne convient pas aux photos (un fait sans date, deux jours pour une journée) passe derrière les dessinés */
+  if (t.origine === "signature" && !convientSignature(t, photos)) s += MALUS_SIGNATURE_HORS;
   return s;
 }
 
@@ -261,7 +265,19 @@ export function composer(
     ? [p.gauche, p.droite].reduce((n, d) => n + (d ? d.textes.filter(saisi).length : 0), 0) : 0;
   /* une double retournée (lot 4) le reste quand on y ajoute ou retire une photo */
   const neuve = r.disposition && cible === "double" && ancienne?.miroir ? { ...r.disposition, miroir: true as const } : r.disposition;
-  return { magazine: remplacerPlanche(m, i, avecDispo(p, cible, neuve)), textesPerdus: r.textesPerdus + pagesPerdues };
+  return { magazine: remplacerPlanche(m, i, avecFondPropose(avecDispo(p, cible, neuve), p, cible, ancienne, neuve)), textesPerdus: r.textesPerdus + pagesPerdues };
+}
+
+/**
+ * Lot Signatures (16/11, R182) : une signature qui PROPOSE un fond (`Template.fond`, un rôle du nuancier) le pose dans `Planche.fond` quand
+ * elle arrive sur la planche (elle n'y était pas) et que la planche n'a AUCUN fond : jamais elle n'écrase une couleur posée par l'atelier.
+ * Ensuite le fond est une couleur libre comme une autre ; Annuler le retire avec la pose (le même geste).
+ */
+function avecFondPropose(neuve: Planche, avant: Planche, cible: Cible, ancienne: Disposition | null, d: Disposition | null): Planche {
+  if (!d || avant.fond || (ancienne && ancienne.templateId === d.templateId)) return neuve;
+  const t = templateParId(d.templateId);
+  const f = t ? fondPropose(t, cible, !!d.miroir) : null;
+  return f ? { ...neuve, fond: f } : neuve;
 }
 
 /* ─────────────────────────── 9 à 21. Les opérations ─────────────────────────── */
@@ -447,8 +463,13 @@ export function choisirGabarit(m: Magazine, plancheId: string, cible: Cible, tem
   return issue(r.magazine, null, { textesPerdus: r.textesPerdus });
 }
 
-/** 16. Le suivant (ou précédent) dans `gabaritsClasses`, en boucle, dans la famille choisie (06/11). */
-export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens: 1 | -1, cat: CatalogueRef, famille: FamilleGabarits = "tous"): Issue {
+/**
+ * 16. R (06/11 ; T-208, 16/11, R177) : la TÊTE du type suivant (ou précédent), en boucle, dans la famille choisie. Les types rangent
+ * `gabaritsClasses` sans en changer l'ordre (`rangerParTypes`) : R passe d'une disposition à une autre, plus d'une taille à l'autre.
+ * `quoi: "variante"` (touche V, R178) : la variante suivante DU TYPE POSÉ (la tête, puis l'ordre du classement), en boucle.
+ * Un gabarit hors de la liste (retiré, retouché en libre) : R va à la tête du premier type, V ne fait rien.
+ */
+export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens: 1 | -1, cat: CatalogueRef, famille: FamilleGabarits = "tous", quoi: "type" | "variante" = "type"): Issue {
   const i = indexPlanche(m, plancheId);
   if (i < 0) return issue(m, "rien");
   const d = dispositionDe(m.planches[i], cible);
@@ -457,9 +478,19 @@ export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens:
   const liste = gabaritsClasses(porteeDe(cible), ids.map((id) => refPour(cat, id)), precedentDe(m, i, cible))
     .filter((x) => dansFamille(x.template, famille) || x.template.id === d.templateId);
   if (liste.length < 2) return issue(m, "rien");
-  const k = liste.findIndex((x) => x.template.id === d.templateId);
+  const types = rangerParTypes(liste);
+  const k = typeContenant(types, d.templateId);
   const s = sens === -1 ? -1 : 1;
-  const suivant = k < 0 ? liste[0].template : liste[(k + s + liste.length) % liste.length].template;
+  let suivant: Template;
+  if (quoi === "variante") {
+    if (k < 0 || types[k].membres.length < 2) return issue(m, "rien");
+    const ms = types[k].membres;
+    const j = ms.findIndex((x) => x.template.id === d.templateId);
+    suivant = ms[(j + s + ms.length) % ms.length].template;
+  } else {
+    if (!types.length || (k >= 0 && types.length < 2)) return issue(m, "rien");
+    suivant = k < 0 ? types[0].tete.template : types[(k + s + types.length) % types.length].tete.template;
+  }
   return choisirGabarit(m, plancheId, cible, suivant.id, cat);
 }
 

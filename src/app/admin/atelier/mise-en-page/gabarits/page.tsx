@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
-import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
+import { EPINGLES_RETIREES, TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage } from "@/lib/mise-en-page/grilles";
-import { decoupesDePage, genereesParSchema } from "@/lib/mise-en-page/genere";
+import { decoupesDePage, genereesParSchema, partVide, templateDeDecoupe } from "@/lib/mise-en-page/genere";
 import type { Template } from "@/lib/mise-en-page/types";
+import { rangerParTypes } from "@/lib/mise-en-page/typesGabarits";
 import BarreAtelier, { liensParticuliers } from "../../../BarreAtelier";
 import Planche, { PlancheLegere } from "./Planche";
 import "../../../admin.css";
@@ -53,6 +54,17 @@ function CarteGeneree({ t }: { t: Template }) {
   );
 }
 
+/** T-208 : un TYPE de page générée (une disposition) : sa première découpe, et combien de variantes (tailles, orientations, calages) il range. */
+function CarteType({ t, n }: { t: Template; n: number }) {
+  return (
+    <li className="mep-carte mep-carte--dense" title={t.id}>
+      <span className="mep-nom">{n} variante{n > 1 ? "s" : ""}</span>
+      <PlancheLegere t={t} />
+      <span className="mep-id mep-id--petit">{t.id}</span>
+    </li>
+  );
+}
+
 function Groupe({ titre, liste, portee }: { titre?: string; liste: readonly Template[]; portee: "double" | "page" }) {
   if (liste.length === 0) return null;
   return (
@@ -83,8 +95,18 @@ export default async function PageGabarits() {
   const nbPages = pages.reduce((s, g) => s + g.liste.length, 0);
   const generes = genereesParSchema();
   const nbGeneres = decoupesDePage().length;
-  const epD = plage(MAX_PHOTOS_DOUBLE).map((n) => ({ n, liste: TEMPLATES_EPINGLES.filter((t) => t.portee === "double" && t.nbPhotos === n) }));
-  const epP = plage(MAX_PHOTOS_PAGE).map((n) => ({ n, liste: TEMPLATES_EPINGLES.filter((t) => t.portee === "page" && t.nbPhotos === n) }));
+  /* T-208 : les mêmes découpes rangées par TYPES (typesGabarits.ts), comme le tiroir de l'éditeur ; sans photos à classer, chaque type
+     est montré par sa variante la plus pleine (la moins de blanc), les types dans l'ordre de leur variante la plus pleine */
+  const parTypes = plage(MAX_PHOTOS_PAGE).map((n) => ({
+    n,
+    types: rangerParTypes(decoupesDePage().filter((d) => d.nbPhotos === n).map((d) => templateDeDecoupe(d))
+      .map((template, i) => ({ template, i, vide: partVide(template) })).sort((a, b) => a.vide - b.vide || a.i - b.i)),
+  }));
+  const nbTypes = parTypes.reduce((s, g) => s + g.types.length, 0);
+  /* T-209 : les épingles retirées (leur seule différence était un aplat) ne sont plus montrées : l'éditeur ne les propose plus */
+  const proposees = TEMPLATES_EPINGLES.filter((t) => !EPINGLES_RETIREES.has(t.id));
+  const epD = plage(MAX_PHOTOS_DOUBLE).map((n) => ({ n, liste: proposees.filter((t) => t.portee === "double" && t.nbPhotos === n) }));
+  const epP = plage(MAX_PHOTOS_PAGE).map((n) => ({ n, liste: proposees.filter((t) => t.portee === "page" && t.nbPhotos === n) }));
 
   return (
     <div className="adm-root ate-root mep-gabarits">
@@ -93,7 +115,7 @@ export default async function PageGabarits() {
       <header className="ate-fiche-tete">
         <h1 className="ate-h1">Gabarits</h1>
         <p className="ate-bonjour">
-          {TEMPLATES_ANNEXE.length + TEMPLATES_EPINGLES.length + nbDoubles + nbPages + nbGeneres}{" "}templates, à l&apos;échelle (les générés en dessin léger).
+          {TEMPLATES_ANNEXE.length + proposees.length + nbDoubles + nbPages + nbGeneres}{" "}templates, à l&apos;échelle (les générés en dessin léger).
         </p>
         <ul className="mep-legende" aria-label="Légende">
           <li><span className="mep-pastille mep-pastille--perdu" />Fond perdu</li>
@@ -126,6 +148,28 @@ export default async function PageGabarits() {
         </h2>
         {epP.filter((g) => g.liste.length).map((g) => (
           <Groupe key={g.n} titre={`${g.n} photo${g.n > 1 ? "s" : ""}`} liste={g.liste} portee="page" />
+        ))}
+      </section>
+
+      <section className="mep-section" id="types-page">
+        <h2 className="mep-titre">
+          Générés : les types <span>{nbTypes}</span>
+        </h2>
+        <p className="mep-note">
+          Un type est une disposition : où sont les photos les unes par rapport aux autres. Ses variantes changent une taille, une orientation
+          ou un calage. Le tiroir de l&apos;éditeur montre les types ; R passe au suivant, V parcourt les variantes.
+        </p>
+        {parTypes.map((g) => (
+          <details key={g.n} className="mep-schema">
+            <summary>
+              {g.n} photo{g.n > 1 ? "s" : ""} <span>{g.types.length} type{g.types.length > 1 ? "s" : ""}</span>
+            </summary>
+            <ul className="mep-grille mep-grille--dense">
+              {g.types.map((x) => (
+                <CarteType key={x.tete.template.id} t={x.tete.template} n={x.membres.length} />
+              ))}
+            </ul>
+          </details>
         ))}
       </section>
 

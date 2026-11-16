@@ -34,8 +34,16 @@ dans le code, et rangés en trois vagues :
 1. **Vague 1, tout de suite, petits gestes** : retirer le pré-tri (T-210), mettre les photos de couverture en tête
    quand on est sur la couverture (T-211), une vraie grille avec marges et colonnes (T-213), sortir du tiroir les
    trois gabarits à aplat (T-209, premier temps), ajouter un texte proprement dans une zone libre (T-212, premier temps).
+   **En production le 16/11 (#367)** : captures dans
+   `design-explorations/editeur-lots-2026-11-14/recette/vague-1/`. T-210, T-211 et T-213 sont fermés ; T-209 et T-212
+   gardent leur second temps.
 2. **Vague 2, le goût** : les gabarits signature tirés de la vitrine Merisa (T-214), le tiroir rangé par types de
    gabarits (T-208), la palette à glisser sur le fond ou le texte, avec propositions (T-209, second temps).
+   **En production le 16/11** : palette #369, types #370, signatures #371 (11 doubles SG-01 à SG-11, textes tirés des faits,
+   géant ajusté, fond proposé, ombre douce). Essais Affinity FIDÈLES le même jour : lots E et G (#368) et l'ombre des tirages.
+   Captures : `design-explorations/editeur-lots-2026-11-16/recette/` (palette, types, signatures, ensemble). T-208, T-209 et
+   T-214 restent `en cours` jusqu'à l'essai à l'œil de Mathias ; ce qui reste de T-214 est dans le ticket (noir et blanc,
+   manuscrit, détourage, horizon, couvertures signature, deux finitions vues à l'écran).
 3. **Vague 3, avec les vrais services** (clé OpenAI, GPS et Geoapify, texte de confidentialité à valider : voir aussi
    T-203) : des titres précis, le plat et le lieu nommé (T-212).
 
@@ -413,9 +421,9 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-206 | Il n'existe pas de rôle « aide au tri » : l'équipe ne voit qu'en lecture, le responsable fait tout (Karim, PME) | collectif | serieux | avis-requis | nouveau (26/10) — troisième lien : voir, cœurs, corbeille (sans vider). Terminer, valider le BAT, plafonds restent au responsable (`droits.ts`) |
 | T-207 | Une photo gênante entre tout de suite dans la collecte : pas de mode « en attente d'accord » (Claire, école) | collectif | serieux | avis-requis | nouveau (26/10) — réglage au choix du responsable : file « à valider », accepter ou refuser. Mathias dit d'abord si c'est une promesse ; sinon on écrit honnêtement que la corbeille agit après coup |
 | T-208 | Dans l'éditeur, les gabarits vraiment différents et les simples variantes (taille ou orientation d'une photo un peu changée) se mélangent : il faut des types, les variantes rangées dessous | atelier | confort | libre | nouveau (16/11), vérifié, vague 2 |
-| T-209 | Les gabarits « à fond » doublonnent les couleurs libres : le fond et la couleur d'un texte devraient se poser en glissant une couleur depuis une palette à côté du magazine, avec des propositions pour le reste | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 (retrait du tiroir) puis vague 2 (palette à glisser) |
-| T-210 | Le bouton « Pré-trier » de l'éditeur ne sert toujours à rien pour Mathias, et certaines de ses marques sont incompréhensibles | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 |
-| T-211 | Sur la couverture, l'éditeur ne montre pas en premier les photos sélectionnées pour la couverture | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 |
-| T-212 | Les titres proposés restent la ville : il faudrait le plat, le lieu précis (Mario World, Mont Fuji), des titres qui s'accordent entre eux, et des textes ajoutés proprement | atelier | confort | libre | nouveau (16/11), vérifié, vague 3 (texte propre en vague 1) |
-| T-213 | La grille d'artiste (tiers, nombre d'or, diagonales) n'est pas utilisable : il faut une vraie grille comme dans Affinity, avec marges et colonnes et lignes (8 par 8) | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 |
+| T-209 | Les gabarits « à fond » doublonnent les couleurs libres : le fond et la couleur d'un texte devraient se poser en glissant une couleur depuis une palette à côté du magazine, avec des propositions pour le reste | atelier | confort | libre | en cours (16/11) : premier temps fait sur la branche `feat/mise-en-page-vague-1` (E-D8c, E-D14a, E-D14b plus proposés mais lisibles, copies sans aplat E-D8f, E-D14c, E-D14d) ; reste la palette à glisser, vague 2 |
+| T-210 | Le bouton « Pré-trier » de l'éditeur ne sert toujours à rien pour Mathias, et certaines de ses marques sont incompréhensibles | atelier | confort | libre | **fermé** (fiche dans `fermes/`), 16/11, branche `feat/mise-en-page-vague-1` : bouton retiré, code et tests dans `archive/pretri-2026-11/`, leçons lisibles, étiquettes et filtres gardés |
+| T-211 | Sur la couverture, l'éditeur ne montre pas en premier les photos sélectionnées pour la couverture | atelier | confort | libre | **fermé** (fiche dans `fermes/`), 16/11, branche `feat/mise-en-page-vague-1` : « Pour la couverture » en tête de la barre (étiquetées au tri, puis « Couv. » de la lecture IA) |
+| T-212 | Les titres proposés restent la ville : il faudrait le plat, le lieu précis (Mario World, Mont Fuji), des titres qui s'accordent entre eux, et des textes ajoutés proprement | atelier | confort | libre | en cours (16/11) : « Texte » pose un titre dans la plus grande zone libre alignée sur la grille, sinon sur l'endroit calme d'une photo, branche `feat/mise-en-page-vague-1` ; reste les titres précis, vague 3 |
+| T-213 | La grille d'artiste (tiers, nombre d'or, diagonales) n'est pas utilisable : il faut une vraie grille comme dans Affinity, avec marges et colonnes et lignes (8 par 8) | atelier | confort | libre | **fermé** (fiche dans `fermes/`), 16/11, branche `feat/mise-en-page-vague-1` : menu Aucune, 6 × 6 (le moteur, par défaut), 8 × 8, Artiste ; marges et modules par page, couverture comprise ; l'aimant y accroche |
 | T-214 | L'éditeur n'a pas de « goût » : Mathias adore les doubles faites à la main pour la vitrine Merisa et veut qu'un minimum de goût en vienne dans l'éditeur | atelier | serieux | libre | nouveau (16/11), vérifié, vague 2 |

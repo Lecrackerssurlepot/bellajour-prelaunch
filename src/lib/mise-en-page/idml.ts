@@ -24,6 +24,7 @@ import {
 import { hexVersRgb } from "./nuancier";
 import { cadresCouverture, contenuImprime, decorCouverture, idsCouverture, type Couverture } from "./couverture";
 import { nuanceIdml, piecesDuFond, type CouleurLibre, type PieceFond } from "./couleursLibres";
+import { OMBRE_DOUCE } from "./signatures";
 
 /** Une photo prête à l'export : l / h en px APRÈS orientation EXIF, `nomLien` unique dans Links/. */
 /** `l` × `h` : dimensions DROITES. `tag` : orientation EXIF du fichier (1 ou absent = stocké droit). */
@@ -230,6 +231,19 @@ export function habillagePhoto(c: Cadre, couleurBord = "Color/Paper"): string {
   return `${bord} ${coins}`;
 }
 
+/**
+ * Lot Signatures (16/11, R184) : l'OMBRE DOUCE d'un tirage (`Cadre.ombre`), l'élément de l'essai Affinity du 29/10 « photo avec ombre portée
+ * (cadre) » (D28 : ombre portée FIDÈLE), copié attribut pour attribut (`Mode`, `BlendMode`, `Opacity`, `Size`, `XOffset`, `YOffset`,
+ * `EffectColor`), placé comme dans l'essai : après la géométrie du cadre, avant `FrameFittingOption`. Seules les valeurs sont les nôtres
+ * (`OMBRE_DOUCE`, les mêmes que l'écran et le PDF). Un cadre sans ombre n'écrit rien : l'IDML d'avant reste identique à l'octet.
+ */
+export function ombreXml(c: Cadre): string {
+  if (!c.ombre) return "";
+  const o = OMBRE_DOUCE;
+  const pt = (mm: number): string => (mm === 0 ? "0" : f(mm * K, 4));
+  return `<TransparencySetting><DropShadowSetting Mode="Drop" BlendMode="Multiply" Opacity="${Math.round(o.opacite * 100)}" Size="${pt(o.flou)}" XOffset="${pt(o.dx)}" YOffset="${pt(o.dy)}" EffectColor="Color/Black"/></TransparencySetting>`;
+}
+
 /** Le contenu d'une Story : un saut de ligne devient un `<Br/>` IDML. */
 const contenuStory = (texte: string): string =>
   texte.split(/\r\n|\r|\n/).map((l) => `<Content>${echapperXml(l)}</Content>`).join("<Br/>");
@@ -324,7 +338,7 @@ function fabrique(photos: Map<string, PhotoExport>, options: { liens: OptionsLie
     const pli = cadreAuPli(x, w);
     /* Cadre tourné : la rotation va dans la matrice du CADRE, l'image garde sa matrice non tournée (repère intérieur
        du cadre), comme l'essai Affinity du 29/10 « cadre photo tourné 15° ». */
-    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" ${habillagePhoto(e.cadre, sty ? NUANCE_ROLE.papier.self : undefined)} ItemTransform="${transformRotation(e.cadre.rotation, pli.x, y, pli.w, h)}">${geom(pli.x, y, pli.w, h)}`
+    const ouvre = `<Rectangle Self="${nid()}" Name="${echapperXml(nom)}" ItemLayer="${CALQUE}" ContentType="GraphicType" StoryTitle="$ID/" ${habillagePhoto(e.cadre, sty ? NUANCE_ROLE.papier.self : undefined)} ItemTransform="${transformRotation(e.cadre.rotation, pli.x, y, pli.w, h)}">${geom(pli.x, y, pli.w, h)}${ombreXml(e.cadre)}`
       + `<FrameFittingOption FittingOnEmptyFrame="FillProportionally" FittingAlignment="CenterAnchor"/>`;
     const aff = e.disposition.photos[e.indexPhoto];
     const ph = aff?.photoId ? photos.get(aff.photoId) : undefined;

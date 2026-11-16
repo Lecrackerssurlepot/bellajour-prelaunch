@@ -20,7 +20,8 @@
 import { PAGE_L, PLANCHE_L } from "./geometrie";
 import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, recadrageParContenu, type Recadrage } from "./recadrage";
 import { TEMPLATES_ANNEXE } from "./templates";
-import { TEMPLATES_EPINGLES } from "./epingles";
+import { EPINGLES_RETIREES, TEMPLATES_EPINGLES } from "./epingles";
+import { TEMPLATES_SIGNATURES } from "./signatures";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
 import { genereParId, genereesPour } from "./genere";
 import { genereDoubleParId } from "./genereDouble";
@@ -115,8 +116,10 @@ export type RefCadre = { plancheId: string; cible: Cible; index: number };
 
 /* ─────────────────────────── Le catalogue ─────────────────────────── */
 
-/** Les gabarits dessinés (annexe du brief, puis épingles du 29/10), toujours avant les grilles de secours. */
-export const TEMPLATES_DESSINES: Template[] = [...TEMPLATES_ANNEXE, ...TEMPLATES_EPINGLES];
+/** Les gabarits dessinés (annexe du brief, puis épingles du 29/10), toujours avant les grilles de secours. Lot Signatures (16/11) : les
+ *  SIGNATURES de la vitrine du 14/11 (`SG-…`, signatures.ts) À LA SUITE : l'ordre de cette liste ne change rien d'avant (`candidats`, le
+ *  premier candidat de `poser`) ; dans l'éditeur, c'est la NOTE qui les met devant quand elles conviennent aux photos (`BONUS_ORIGINE`). */
+export const TEMPLATES_DESSINES: Template[] = [...TEMPLATES_ANNEXE, ...TEMPLATES_EPINGLES, ...TEMPLATES_SIGNATURES];
 
 /** Lot 4 : le gabarit d'une disposition composée à la main (photos posées en libre sur une page vide). Aucun cadre à lui :
  *  ceux de la disposition (`cadres`) font foi. */
@@ -237,7 +240,7 @@ const orientationPhoto = (p: PhotoRef): Orientation => orientationDe(p.l, p.h);
 
 /**
  * Les templates candidats, dans l'ordre où « Autre disposition » les parcourt :
- * (a) dessinés (enregistrés, annexe, épingles) de même portée, même nombre, signature compatible ;
+ * (a) dessinés (enregistrés, annexe, épingles, sauf les RETIRÉS : `EPINGLES_RETIREES`, T-209) de même portée, même nombre, signature compatible ;
  * (b) dessinés de même nombre ;
  * (c) pages seulement (lot D) : les gabarits GÉNÉRÉS de la grammaire dont les cadres vont à ces photos, chacun rangé
  *     pour que la photo i aille au cadre i (genere.ts). Les doubles générées (lot R, genereDouble.ts) ne sont PAS ici : leur
@@ -252,7 +255,8 @@ export function candidats(portee: Portee, photos: PhotoRef[]): Template[] {
   if (n === 0) return [];
   const os = retenues.map(orientationPhoto);
   const compat = (t: Template) => signaturesCompatibles(orientationsCadres(t), os);
-  const annexe = [...enregistres, ...TEMPLATES_DESSINES].filter((t) => t.portee === portee && t.nbPhotos === n);
+  /* T-209 : un gabarit retiré n'est plus proposé (il reste lisible par `templateParId`) */
+  const annexe = [...enregistres, ...TEMPLATES_DESSINES].filter((t) => t.portee === portee && t.nbPhotos === n && !EPINGLES_RETIREES.has(t.id));
   const grilles = portee === "page" ? grillesPage(n) : grillesDouble(n);
   const generes = portee === "page" ? genereesPour(os) : [];
   return [

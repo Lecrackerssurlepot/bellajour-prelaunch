@@ -37,7 +37,7 @@ export function cadresDeCouverture(e: EtatEditeur, dosMm: number): CadreCouvertu
       const cadrage = cadrer(ph ?? refPour(e.catalogue, a.photoId), { l: x.l, h: x.h }, a.recadrage);
       const v = ph ? 25.4 / cadrage.echelle : null;
       return {
-        role: "photo", face: x.face, ref: refC(index), x: x.x, y: x.y, l: x.l, h: x.h, rotation: x.rotation || 0, bord: x.bord || 0, rayon: x.rayon || 0,
+        role: "photo", face: x.face, ref: refC(index), x: x.x, y: x.y, l: x.l, h: x.h, rotation: x.rotation || 0, bord: x.bord || 0, rayon: x.rayon || 0, ombre: !!x.ombre,
         photoId: a.photoId, nom: ph ? ph.nom : a.photoId, indisponible: !!a.photoId && !ph, signalee: !!(ph && ph.signalee),
         recadrage: a.recadrage, cadrage, dpi: v, basseDef: v !== null && v < SEUIL_DPI, fois: a.photoId ? u.get(a.photoId) : 0, hesitation: null,
       };

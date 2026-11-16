@@ -5,13 +5,17 @@
 Comment lire :
 - Les dates sont celles de la FUSION dans `main` (heure UTC de GitHub). Une PR contient souvent du travail des jours d'avant : c'est dit dans la ligne.
 - Le statut est celui d'aujourd'hui (16/11) : **actif**, **remplacé** (par quoi, depuis quand), **retiré**, **derrière un interrupteur**, **jamais branché**. Tout statut autre qu'« actif » a sa preuve : un fichier et une ligne, ou la PR.
-- Aucun fichier de l'éditeur n'a jamais été supprimé de `main` (`git log --diff-filter=D` est vide), et rien n'est dans `archive/`. « Retiré » veut donc dire « n'apparaît plus à l'écran », jamais « effacé ».
+- Aucun fichier de l'éditeur n'a jamais été supprimé de `main` (`git log --diff-filter=D` est vide), et jusqu'à la vague 1 rien n'était dans `archive/` ; depuis, le pré-tri y est rangé (`archive/pretri-2026-11/`, déplacé, pas effacé). « Retiré » veut donc dire « n'apparaît plus à l'écran » ou « rangé dans `archive/` », jamais « effacé ».
 
 ---
 
 ## 1. L'éditeur au 16/11
 
 Tout ce qui suit est en production sur bellajour.fr. Admin seulement : aucune cliente ne voit cet outil.
+
+La vague 1 du 16/11 (#367, en production) change cinq points de ce qui suit : le
+pré-tri disparaît, la couverture met ses photos en tête, la grille devient une vraie grille de mise en page, trois gabarits à aplat
+sortent du tiroir, et « Texte » ajoute un titre à sa place. Le détail est au §2, « 16/11, vague 1 ».
 
 ### Photos et tri
 - Importer ses photos en création libre (bouton ou glisser). Elles restent dans ce navigateur.
@@ -144,7 +148,7 @@ Tout ce qui suit est en production sur bellajour.fr. Admin seulement : aucune cl
 ### 14/11
 | Modification | Ce que ça change pour toi | Statut |
 |---|---|---|
-| Lot E : la dernière page seule (#362) | Une page gauche seule en fin de magazine, nombre de pages toujours pair. Les anciens magazines reçoivent une dernière page vide à l'ouverture | actif. **Essai Affinity pas fait** (`DECISIONS.md`, ligne 716) |
+| Lot E : la dernière page seule (#362) | Une page gauche seule en fin de magazine, nombre de pages toujours pair. Les anciens magazines reçoivent une dernière page vide à l'ouverture | actif. **Essai Affinity fait le 16/11 : FIDÈLE** (`DECISIONS.md`, D28) |
 | Lot E : la tranche saisie (#362) | Le dos se tape au centième de mm et remplace le calcul jusqu'à « Effacer ». L'écran dit lequel sert | actif |
 | Lot E : le premier jet (#362) | Bouton « Premier jet » du panneau Photos : charge un magazine composé hors de l'éditeur | actif, en création libre seulement |
 | Lot F : la lecture IA dans le tri (#363) | Rôles, mises en avant, groupes duo/trio/combo, rafales à garder avec « Accepter », captures, lieu sûr proposé en premier. Aucune identité (D29) | actif, mais seulement si on charge un fichier de lecture |
@@ -152,9 +156,53 @@ Tout ce qui suit est en production sur bellajour.fr. Admin seulement : aucune cl
 ### 16/11
 | Modification | Ce que ça change pour toi | Statut |
 |---|---|---|
-| Lot G : couleurs libres et combos (#364) | Fond de couleur sur une page ou une double, couleur de chaque texte, sélecteur avec pipette, quatre combos d'après les photos | actif. **Essai Affinity pas fait** (`DECISIONS.md`, ligne 723) |
+| Lot G : couleurs libres et combos (#364) | Fond de couleur sur une page ou une double, couleur de chaque texte, sélecteur avec pipette, quatre combos d'après les photos | actif. **Essai Affinity fait le 16/11 : FIDÈLE** (`DECISIONS.md`, D28) |
 
-Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur).
+### 16/11, vague 1 (#367, en production le 16/11)
+Tes retours du 16/11, premier temps. Rien n'est en production tant que la branche n'est pas fusionnée. Captures :
+`design-explorations/editeur-lots-2026-11-14/recette/vague-1/`.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Le pré-tri retiré (T-210) | Plus de bouton « Pré-trier ». Les étiquettes et les filtres disent toujours floue, sombre, rafale, capture, visage flou | actif (#367, 16/11). Code, bouton et tests dans `archive/pretri-2026-11/` (README : pourquoi, comment le remettre)  |
+| Les photos de couverture en tête (T-211) | Sur la couverture, la barre commence par « Pour la couverture » : tes photos étiquetées Couverture, puis les « Couv. » de la lecture IA, puis le reste | actif (#367, 16/11) |
+| Une vraie grille (T-213) | Le bouton Grille ouvre un menu : Aucune, 6 × 6 (celle des gabarits, par défaut), 8 × 8, Artiste. Marges en magenta, modules en cyan, par page, couverture comprise. L'aimant s'accroche à la grille affichée | actif (#367, 16/11). Écran seulement, rien ne change à l'export (D28)  |
+| Trois gabarits à aplat sortis du tiroir (T-209, premier temps) | E-D8c, E-D14a, E-D14b ne sont plus proposés ; leurs dispositions restent, sans fond : E-D8f, E-D14c, E-D14d. Le fond se pose en couleur libre. Un magazine qui s'en sert s'ouvre comme avant | actif (#367, 16/11). Reste la palette à glisser (vague 2)  |
+| Ajouter un texte proprement (T-212, premier temps) | « Texte », à côté de « Fond » dans le tiroir : un titre dans la plus grande zone libre, aligné sur la grille ; sinon sur l'endroit calme d'une photo, jamais sur un visage, en blanc sur une photo sombre. Le survol montre où. Annuler le défait | actif (#367, 16/11). Reste les titres précis (vague 3)  |
+
+### 16/11, vague 2, lot Palette (#369, en production le 16/11)
+Ton retour du 16/11 (« les couleurs à côté du magazine, on les glisse sur le fond ou sur une typo, et ça fait des propositions »).
+Captures : `design-explorations/editeur-lots-2026-11-16/recette/palette/`. Fiche C17.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| La palette à glisser (T-209, second temps) | Une colonne à droite de la planche : nuancier, couleurs des photos, libres, pastille barrée. On glisse une couleur sur une page (fond uni) ou un texte (sa couleur) ; la page se remplit pendant le survol ; Échap annule | actif (#369, 16/11) |
+| Ce qui va avec | Après un fond : le texte qui s'y lit, la page d'en face du même combo, la même couleur (double unie). Après un texte coloré : le fond qui lui va. Un clic applique, Annuler défait | actif (#369, 16/11) |
+| Le bouton « Fond » du tiroir retiré | La palette le remplace | actif (#369, 16/11). Code dans `archive/fond-tiroir-2026-11/`  |
+
+### 16/11, vague 2 : lot Types (#370, en production le 16/11)
+Ton retour du 16/11 : « une différence entre les templates qui sont du coup différents vraiment en termes de position et ceux qui
+modifient un petit peu la taille d'une photo, un petit peu son orientation ». Captures : `design-explorations/editeur-lots-2026-11-16/recette/types/`.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Le tiroir par types (T-208) | Une vignette par DISPOSITION (où sont les photos les unes par rapport aux autres, la page qui porte quoi), le nombre de ses variantes dans un petit rond. Un clic sur le type posé ouvre ses variantes (même disposition, une photo plus grande, l'autre orientation, calée ailleurs). Un gabarit dessiné reste toujours en tête de son type. Une page de 2 photos de Merisa : 16 types au lieu de 406 gabarits | actif (#370, 16/11). Fiche C18, R170 à R179  |
+| R par types, V par variantes (T-208) | R passe à la disposition suivante (plus à la même avec une case de plus) ; la nouvelle touche V passe à la variante suivante du type posé. « Poser » et le premier jet ne changent pas | actif (#370, 16/11) |
+| Le catalogue des gabarits par types | Une section « Générés : les types » : 81 types pour les 2 062 pages générées | actif (#370, 16/11) |
+
+### 16/11, vague 2, lot Signatures (#371, en production le 16/11)
+Le goût de la vitrine du 14/11 (T-214). Rien n'est en production tant que la branche n'est pas fusionnée. Comparaisons « vitrine | éditeur » :
+`design-explorations/editeur-lots-2026-11-16/recette/signatures/index.html`. Fiche C19, règles R180 à R185.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Onze doubles signature (`SG-01` à `SG-11`) | Au tiroir et sous R, avec leurs noms tirés de la vitrine (« Le chiffre du jour », « La planche du jour », « Le pli dans l'eau », « Les tirages jetés »…) ; en tête quand elles conviennent aux photos | actif (#371, 16/11) |
+| Les textes tirés des faits | Un titre ou une légende de signature montre le jour, l'heure, le mois et le lieu sûr, la période, tant que tu n'as rien écrit ; rien d'inventé | actif (#371, 16/11) |
+| Le mot ou le chiffre géant | Il remplit son cadre, le même à l'écran, dans le PDF et dans l'IDML | actif (#371, 16/11) |
+| Le fond proposé | Poser une signature à aplat pose son fond (couleur des photos) si la page n'en a pas ; Annuler le retire | actif (#371, 16/11) |
+| L'ombre douce des tirages | Les tirages jetés ont une ombre, à l'écran, dans le PDF et dans l'IDML | actif (#371, 16/11), essai Affinity FIDÈLE |
+
+Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur). Depuis : les cinq de la vague 1 (#367), les essais Affinity des lots E et G (#368, documentation), la vague 2 (#369 palette, #370 types, #371 signatures), toutes en production le 16/11.
 
 ---
 
@@ -173,8 +221,10 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 | Un magazine à nombre de pages impair, sans dernière page | 14/11 | Dernière page gauche seule, nombre de pages toujours pair | PR #362. `magazine.ts` : `coteSeul` ligne 110, `avecDerniere` ligne 365, appelé à l'ouverture (`sauvegardeClient.ts`, ligne 323). La planche 0 (page droite seule) n'a PAS été remplacée : la dernière en est le pendant |
 | Le dos toujours calculé | 14/11 | La saisie à la main, qui prime jusqu'à « Effacer » | PR #362. `Couverture.dosMm`, `couverture.ts` ligne 61. Le calcul sert toujours quand rien n'est saisi |
 | La sauvegarde sur ce Mac seulement | 02/11 | La sauvegarde serveur (`mises_en_page`) | Migration 20261027 appliquée le 02/11. La sauvegarde locale sert encore de repli |
-| Les gabarits à aplat | pas remplacés | Les fonds libres (#364) se posent dessous, rien ne les rend inutiles | Trois gabarits d'épingles ont un aplat (`epingles.ts`, lignes 131, 215, 219), plus dix gabarits de couverture. Le fond libre est dessiné « après le papier et avant les aplats » (`CLAUDE.md` du dossier, lot G) |
-| Le pré-tri | pas remplacé | Il reste. La lecture IA le double sur les rafales seulement | `etat.ts` ligne 101 : `pilesAvecIA` fait primer les rafales de l'IA. `TriBulles.tsx` ligne 109 : le bouton Pré-trier existe toujours |
+| Les trois gabarits d'épingles à aplat (E-D8c « Pleine + photomaton » sur fond noir, E-D14a et E-D14b « Aplats ») | 16/11, vague 1 (#367) | Le fond libre (#364), et leurs copies sans aplat E-D8f, E-D14c, E-D14d | `EPINGLES_RETIREES` (`epingles.ts`), écartés par `candidats` (`magazine.ts`) : ni tiroir, ni R, ni Poser. Toujours lisibles par `templateParId` : un magazine sauvegardé qui s'en sert s'ouvre avec ses aplats (harnais `verif-mep-vague-1.ts`). Les dix gabarits de couverture GARDENT leurs aplats : la couverture n'a pas de fond libre |
+| Le pré-tri (bouton « Pré-trier », R84 à R88, couches C06 et C07) | 16/11, vague 1 (#367) | Rien à sa place : ce qu'il voyait de juste reste dans les étiquettes et les filtres (C03), les piles (C02) et la lecture IA (C14) | `archive/pretri-2026-11/` (`pretri.ts`, `BoutonPreTri.tsx`, `verif-pretri.ts`, README). Les leçons `pretri_renverse` restent lisibles et se produisent encore (premier jet, rafale acceptée). Ses réglages restent dans `reglages.ts` (les retirer changerait l'empreinte des leçons) |
+| La grille d'artiste seule derrière O | 16/11, vague 1 (#367) | Le menu Grille : 6 × 6, 8 × 8, ou Artiste | La grille d'artiste n'est pas retirée : c'est la troisième option du menu (`GrilleArtiste.tsx`) |
+| R qui passait au gabarit SUIVANT du classement (souvent le même avec une case de plus) | 16/11, vague 2, lot Types (#367) | R passe à la tête du TYPE suivant ; V aux variantes du type posé | `autreGabarit(…, quoi)`, `editeur/operations.ts` ; `rangerParTypes`, `typesGabarits.ts`. Le classement lui-même n'a pas bougé |
 | L'export Affinity seul | 11/11 | Rien n'est retiré : Canva s'y est ajouté | PR #353. `ExportFeuille.tsx`, ligne 137 |
 | Les grilles de secours | pas remplacées | Passent après les dessinés et les générés | `magazine.ts`, lignes 245 à 263 : « grilles de ce nombre » en dernier |
 
@@ -196,10 +246,13 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 
 ## 4. Ce qui n'a pas été essayé ou reste fragile
 
-**Fusionné sans essai Affinity (D28).** Toi seul as donné l'ordre de fusionner.
-- **Lot E, dernière page seule** (#362, 14/11). Le fichier IDML d'une page gauche seule en fin de document n'a jamais été rouvert dans Affinity. Prouvé : XML valide, les autres spreads identiques à l'octet. Pas prouvé : le nombre de pages, la position du dernier spread, les cadres à gauche du pli. Le PDF, lui, est lu par un outil (216 × 303 vérifié). Générateur prêt : `scripts/idml-essai-derniere.ts`.
-- **Lot G, couleurs libres** (#364, 16/11). Les nuances nommées, le fond sous les photos et la couleur des textes n'ont pas été relus par Affinity. Un magazine sans couleur libre sort identique à l'octet. Générateur prêt : `scripts/idml-essai-couleurs.ts`.
-- Conséquence : tant que l'essai n'est pas fait, ce qu'Affinity ouvre peut différer de l'écran sur ces deux points. Le PDF Canva n'est pas concerné.
+**Fusionnés sans essai Affinity, puis essayés le 16/11 (D28) : FIDÈLES.** Tu avais donné l'ordre de fusionner sans l'essai ; le 16/11, tu as autorisé
+l'écriture des fichiers d'essai sur ton Bureau, et Affinity les a relus sans écart.
+- **Lot E, dernière page seule** (#362). Affinity relit 4 pages, la dernière seule, à gauche du pli, chaque cadre au centième de mm, aucune image étirée.
+- **Lot G, couleurs libres** (#364). Les fonds (page, double en un seul rectangle, page gauche seule) et les couleurs de texte arrivent aux valeurs exactes, sous
+  style comme sans style, et sur la couverture.
+- Fichiers : `~/Desktop/Bellajour/test-idml/derniere-lot-e` et `couleurs-lot-g`. Détail valeur par valeur : `DECISIONS.md`, D28, « Essais du 16/11/2026 ».
+- **Lot Signatures, ombre douce des tirages** (vague 2, 16/11) : essayée AVANT la fusion, le même jour. Cinq tirages tournés, à bord blanc, chacun avec son ombre : relus mode Produit, 35 %, flou 5 mm, décalage 2 mm vers le bas, noire ; angles et contours exacts ; le chiffre géant au corps calculé. Fichiers : `test-idml/signatures`.
 
 **Jamais vu en vrai.**
 - **La pipette** (lot G) : jamais essayée dans un vrai navigateur. Elle n'existe que dans Chrome (`Nuances.tsx`, ligne 18) : ailleurs, elle ne s'affiche pas.
@@ -212,7 +265,7 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 - **La sauvegarde ne revient pas en arrière.** Un magazine qui porte une couverture, un style, une dernière page, un fond ou une couleur de texte n'est plus accepté par une version plus ancienne du site (`contenuValide`, `sauvegarde.ts` ligne 304). Aucun retour arrière à faire, juste à savoir.
 - **Le pli de 5 mm, la limite d'encre, le dpi minimum** : hypothèses, en attente du mail à Cloudprinter (décision 23).
 - **Réglages de départ non validés** : pénalités des gabarits générés (`MALUS_VIDE` 0,6, `MALUS_RUPTURE` 0,25), seuils de dpi, réglages du nuancier et des combos. Rien n'a changé sans ton oui.
-- **Les cadres de la couverture ne se déplacent pas**, et la grille d'artiste n'y est pas (`gestesCouverture.ts` n'a aucun geste de déplacement, `GrilleArtiste` n'est branchée que dans `Scene.tsx`).
+- **Les cadres de la couverture ne se déplacent pas** (`gestesCouverture.ts` n'a aucun geste de déplacement). La grille y est depuis la vague 1 (#367), sans aimant puisque rien n'y bouge.
 - **Les gabarits générés n'ont pas de zone de texte**, et aucune photo ne traverse le pli. Une page de 5 photos toutes en paysage n'a pas de gabarit généré (décision 25).
 - **Interlignage** : Affinity relit toujours 120 %. Les titres empilés serrés se règlent à la main.
 - **La lecture IA vit dans un navigateur.** Un autre Mac ne la voit pas tant qu'on ne l'y recharge pas. Le « premier jet » ne se charge qu'en création libre.
@@ -227,22 +280,22 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 
 Tes retours du 16/11 sont devenus sept tickets (T-208 à T-214, dans `docs/backlog/`), tous vérifiés dans le code. Je les ai rangés en trois vagues.
 
-**Vague 1 : tout de suite, des petits gestes qui enlèvent de la gêne.**
+**Vague 1 : tout de suite, des petits gestes qui enlèvent de la gêne.** En production le 16/11 (#367, voir §2) ; la grille par défaut est la 6 × 6 du moteur, la 8 × 8 est au menu.
 - Retirer le bouton « Pré-trier » : la lecture IA fait mieux, et ses marques sont incompréhensibles. Le code part dans `archive/` (T-210).
 - Sur la couverture, mettre en tête les photos choisies pour la couverture et les « Couv. » de la lecture IA (T-211).
 - Une vraie grille, comme dans Affinity : marges, colonnes, lignes, gouttières, avec l'aimant. La grille 6 × 6 existe déjà dans le moteur, mais n'est jamais dessinée ; tu as dit « 8 par 8, je crois » : on tranche ensemble (T-213).
 - Sortir du tiroir les trois gabarits à aplat, que le fond libre remplace. Ils restent lisibles pour les magazines déjà sauvegardés (T-209, premier temps). Les dix gabarits de couverture gardent leurs aplats tant que la couverture n'a pas de fond libre.
 - Ajouter un texte proprement : dans une zone libre et calme, aligné sur la grille (T-212, premier temps).
 
-**Vague 2 : le goût.**
+**Vague 2 : le goût.** En production le 16/11 (#369 palette, #370 types, #371 signatures) ; reste ton essai à l'œil.
 - Les gabarits « signature » tirés de la vitrine Merisa, les deux directions (T-214).
 - Le tiroir rangé par TYPES de gabarits, les variantes de taille ou d'orientation rangées dessous (T-208).
 - Une palette à côté du magazine : on glisse une couleur sur le fond ou sur un texte, et elle propose ce qui va avec (T-209, second temps).
-- Les gestes qui manquent pour la vitrine, un par un, chacun essayé dans Affinity : photo à cheval sur le pli, mot géant, tirage tourné, bande de photomaton, détourage.
+- Les gestes qui manquent pour la vitrine, un par un, chacun essayé dans Affinity. Faits : photo à cheval sur le pli, mot géant ajusté, tirage tourné avec ombre douce (essai FIDÈLE), bande de photomaton (en couleur). Restent : le noir et blanc, l'écriture manuscrite, le détourage, l'alignement sur l'horizon, les deux couvertures de la vitrine (la couverture n'a pas de fond libre).
 
 **Vague 3 : avec les vrais services.**
 - Brancher la lecture sur un vrai dossier, côté serveur : OpenAI (rôles, rafales, captures, lieux) et le GPS avec Geoapify. Il faut ta clé et ton accord sur le texte de confidentialité (voir T-203, qui promet encore la reconnaissance des visages, contraire à D29).
 - Des titres précis : le plat, le lieu nommé (« Mont Fuji », « BMW Welt »), des titres qui se répondent (T-212, second temps).
 - Plus tard, le bouton « Composer » sur le site, testé sur un vrai dossier sans retoucher les règles.
 
-**En attente de toi, sans urgence** : les essais Affinity des lots E et G, les 25 décisions du 12/11 et les décisions 2 à 15 du 13/11, l'effacement des empreintes de visages de la démo.
+**En attente de toi, sans urgence** : les 25 décisions du 12/11 et les décisions 2 à 15 du 13/11, l'effacement des empreintes de visages de la démo.

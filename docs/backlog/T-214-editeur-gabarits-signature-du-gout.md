@@ -1,7 +1,7 @@
 ---
 id: T-214
 titre: L'éditeur n'a pas de « goût » : Mathias adore les doubles faites à la main pour la vitrine Merisa et veut qu'un minimum de goût en vienne dans l'éditeur
-etat: nouveau
+etat: en cours
 domaine: atelier
 gravite: serieux
 autonomie: libre
@@ -24,3 +24,27 @@ Tirer de la vitrine du 14/11 (`design-explorations/vitrine-2026-11-14/`, directi
 **Quand : vague 2, la prochaine grosse étape.** Mathias a dit qu'il adore les deux directions : on part des deux. Ordre : une double signature à la fois, d'abord celles qu'on sait déjà faire (pleine + mot géant, planche de vignettes égales, photo sur toute la double), puis les gestes nouveaux, chacun essayé dans Affinity (D28). Gros.
 
 ## Ce qui a été fait
+16/11, vague 2, lot Signatures (branche `feat/mise-en-page-signatures`, poussée, pas de PR) :
+- Inventaire des 6 doubles et 2 couvertures des deux directions : `docs/moteur/couches/C19-signatures.md`. 11 doubles sur 12 sont faites
+  en signature ; « les plongeons traversent les lettres » attend le détourage, les deux couvertures attendent un fond libre de couverture
+  (l'audacieuse, aussi l'horizon et le manuscrit).
+- Onze signatures `SG-01` à `SG-11` (`src/lib/mise-en-page/signatures.ts`), `origine: "signature"`, devant les autres dessinés quand elles
+  conviennent aux photos (R183).
+- Quatre briques testées : textes tirés des faits (R180), géant ajusté à son cadre (R181), fond proposé à la pose (R182), ombre douce des
+  tirages à l'écran, dans le PDF et dans l'IDML (R184, essai Affinity FIDÈLE le 16/11 : `scripts/idml-essai-signatures.ts`, D28).
+- Recette : `design-explorations/editeur-lots-2026-11-16/recette/signatures/index.html`, onze planches « vitrine | éditeur » et l'avis
+  franc sur ce qui reste en dessous (typographie d'une seule paire, alignements sur l'horizon, photos en 1 500 px, manuscrit, N&B).
+- Harnais : 33 vérifications (`scripts/verif-mep-signatures.ts`).
+- Pas fait : les couvertures signature (étape 5).
+
+**Recette des trois lots ensemble (16/11, avant fusion)**, `design-explorations/editeur-lots-2026-11-16/recette/ensemble/` : palette à droite,
+tiroir par types sans « Fond », signatures en tête du tiroir quand elles conviennent (SG-08, SG-05), fond proposé posé avec SG-08, faits
+(date, heure) écrits seuls ; aucune erreur de page dans la console. Corrigé à la fusion : le tiroir dit le NOM d'une signature (« Les
+tirages jetés »), plus son code. Reste à polir, vu à l'écran :
+- le mot géant pas encore écrit affiche « TITRE » en très grand (repère d'écran, jamais imprimé, D2) : sur une photo sombre il est illisible ;
+- une légende longue reportée d'un autre gabarit dans un petit cadre (4,5 mm sous la vignette de SG-08) est rognée ;
+- SG-09 et SG-01 n'ont pas été revues dans l'ensemble (aucune double du premier jet de Merisa ne leur convient) : elles l'ont été seules,
+  dans les comparaisons du lot.
+
+**En production le 16/11 (#371).** Fusionné après la recette locale et la recette des trois lots ensemble
+(`design-explorations/editeur-lots-2026-11-16/recette/ensemble/`). Reste : l'essai à l'œil de Mathias sur les onze doubles signature, avant de fermer.

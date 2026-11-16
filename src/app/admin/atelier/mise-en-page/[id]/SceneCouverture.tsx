@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  apercu, apercuDepot, aplatsDeCouverture, bilanCouverture, cadresDeCouverture, couvertureDe, SEUIL_DPI, SEUIL_DPI_CONFORT,
+  apercu, apercuDepot, aplatsDeCouverture, bilanCouverture, cadresDeCouverture, couvertureDe, pagesDeCouverture, SEUIL_DPI, SEUIL_DPI_CONFORT,
   type CadreCouvertureEcran, type CadrePhoto, type EtatEditeur, type Geste, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import {
@@ -13,6 +13,7 @@ import type { Magazine } from "@/lib/mise-en-page/magazine";
 import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
 import { cssDeCouleur } from "@/lib/mise-en-page/couleursLibres";
 import { Nuances } from "./Nuances";
+import { GrilleEcran } from "./GrilleArtiste";
 import { cls, fermerTexteDom, memeRef, pc, useEd } from "./contexte";
 import { dosDeLEtat, type DosCouverture } from "./dosCouverture";
 import { DOS_SAISI_MAX_MM, DOS_SAISI_MIN_MM, dosSaisiValide, idsCouverture } from "@/lib/mise-en-page/couverture";
@@ -81,6 +82,8 @@ export default function SceneCouverture() {
         {frames.map((f) => (f.role === "photo"
           ? <CadreCouv key={`p${f.ref.index}`} f={f} W={W} fantome={false} sous={!!framesA} />
           : <TexteCouv key={`t${f.ref.index}`} f={f} W={W} fantome={false} sous={!!framesA} />))}
+        {/* T-213 : la grille aussi sur la couverture, sur la 4e et la 1re (pas sur le dos) */}
+        {ui.grille ? <GrilleEcran largeur={W} pages={pagesDeCouverture(d)} choix={ui.trame} /> : null}
         {framesA ? (
           <div className="ed-fantome ed-fantome--plein" aria-hidden="true">
             {aplats.map((a, i) => (
@@ -242,7 +245,7 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
     );
   }
   return (
-    <div className={cls("ed-txt ed-txt--couv", libelle && "ed-txt--libelle", f.vide && f.parDefaut && "ed-txt--auto")} style={style}
+    <div className={cls("ed-txt ed-txt--couv", libelle && "ed-txt--libelle", f.vide && f.parDefaut && "ed-txt--auto")} style={style} data-texte={fantome ? undefined : `${ref.plancheId}|${ref.cible}|${ref.index}`}
       role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0} aria-label={fantome ? undefined : `Modifier : ${vu}`}
       onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref }); }}
       onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref }); } }}>

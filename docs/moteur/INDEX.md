@@ -30,8 +30,8 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C03](couches/C03-defauts.md) | Défauts : sombre, brûlée, capture, visage flou | R85 (A3, A4, A7) | EN PROD (#356, 12/11) |
 | [C04](couches/C04-visages.md) | Visages détectés, jamais reconnus | R81 | EN PROD (#356, 12/11) |
 | [C05](couches/C05-zone-pli.md) | Zone importante, recadrage par contenu, pli | R82, R83 | EN PROD (#356, 12/11) ; pli = HYPOTHÈSE 5 mm |
-| [C06](couches/C06-pretri.md) | Pré-tri avec raisons, objectif, équité | R84 à R87, R89 | EN PROD (#356, 12/11) |
-| [C07](couches/C07-horloges.md) | Horloges entre téléphones | R88 | EN PROD (#356, 12/11) |
+| [C06](couches/C06-pretri.md) | Pré-tri avec raisons, objectif, équité | R84 à R87, R89 | EN PROD (#356, 12/11) ; **ARCHIVÉ par la vague 1 du 16/11** (T-210, R154, #367) : `archive/pretri-2026-11/`. R89 (les leçons) vit encore |
+| [C07](couches/C07-horloges.md) | Horloges entre téléphones | R88 | EN PROD (#356, 12/11) ; **ARCHIVÉ avec le pré-tri** (vague 1, 16/11, branche) : `decalagesHorloges` ne servait qu'à lui |
 | [C08](couches/C08-moments-lieux.md) | Moments, séjours, lieux, faits | R70, R71, R91 | EN PROD : moments et lieux (#352), faits (#356, 12/11) |
 | [C09](couches/C09-palette.md) | Palette | R92 | EN PROD (#356, 12/11) ; reliée aux aplats par le nuancier (C13, #360) et aux couleurs libres (C15, #364) |
 | [C10](couches/C10-gabarits.md) | Choix du gabarit et sa note | R66, R67, R69, R83 | EN PROD (#351, #352) ; pli (#356, 12/11) ; gabarits générés (#358, #361) |
@@ -39,7 +39,11 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (#356, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
 | [C13](couches/C13-feuille-de-style.md) | Feuille de style : paire de polices, nuancier proposé, typographie française | R120 à R124 | EN PROD (lot C, #360, 12/11) ; relie la palette de C09 aux aplats |
 | [C14](couches/C14-lecture-ia.md) | Lecture IA dans le tri : rôles, groupes, rafales, captures, lieux nommés (aucune reconnaissance de visages, D29) | R142 à R148 (et R140, R141 sur C02, C03) | EN PROD (lot F, #363, 14/11) ; actif seulement quand un fichier de lecture est chargé |
-| [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | EN PROD (lot G, #364, 16/11) ; essai Affinity en attente (D28) |
+| [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | EN PROD (lot G, #364, 16/11) ; essai Affinity FIDÈLE (16/11, D28) |
+| [C16](couches/C16-texte-ajoute.md) | Texte ajouté proprement : la place d'un titre (zone libre alignée sur la grille, sinon l'endroit calme d'une photo) | R159 | EN PROD (vague 1, #367, 16/11, T-212) |
+| [C17](couches/C17-palette-a-glisser.md) | Palette à glisser : une couleur lâchée sur une page (fond uni) ou un texte, et ce qui va avec (texte lisible, page d'en face, fond) | R160 à R166 | EN PROD (vague 2, #369, 16/11, T-209 second temps) |
+| [C18](couches/C18-types-de-gabarits.md) | Types de gabarits : une disposition par vignette du tiroir, ses variantes (taille, orientation, calage) dessous ; R par types, V par variantes | R170 à R179 | EN PROD (vague 2, #370, 16/11, T-208) |
+| [C19](couches/C19-signatures.md) | Doubles signature tirées de la vitrine du 14/11 : textes tirés des faits, mot ou chiffre géant ajusté, fond proposé, ombre douce des tirages | R180 à R185 | EN PROD (vague 2, #371, 16/11, T-214) ; essai Affinity de l'ombre FIDÈLE (D28) |
 
 La **lecture IA** (lot F, #363, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 

@@ -25,7 +25,8 @@ export type TypeLecon =
   | "pile_pas_un_doublon"
   /* R76 : la tête d'une pile est écartée alors qu'une autre de la pile est gardée. */
   | "tete_ecartee"
-  /* A10 : l'atelier a renversé une marque posée par le pré-tri. */
+  /* A10 : l'atelier a renversé une marque PROPOSÉE (premier jet, rafale acceptée ; avant le 16/11, le pré-tri, archivé : T-210).
+     Le nom reste : les leçons déjà en base le portent. */
   | "pretri_renverse"
   /* G3 : la réponse de l'atelier à une question (la leçon d'origine dans `photos` et `proposition`). */
   | "reponse"
@@ -121,7 +122,8 @@ export function leconsDeLaPose(avant: Magazine, apres: Magazine, lecture: Lectur
   return l;
 }
 
-/** Les leçons d'un geste qui renverse une marque posée par le pré-tri (A10) : la raison de la machine, et ce que l'atelier a mis. */
+/** Les leçons d'un geste qui renverse une marque PROPOSÉE (A10 : premier jet, rafale acceptée ; le pré-tri jusqu'au 16/11) : la raison de la
+ *  machine, et ce que l'atelier a mis. Le nom reste celui du lot 3. */
 export function leconsDuPreTri(avant: Magazine, apres: Magazine, pretri: Readonly<Record<string, { marque: Marque; raison: string; regle: string }>>): Lecon[] {
   if (avant === apres || !Object.keys(pretri).length) return [];
   const base = { reglages: valeursReglages(), version: versionReglages() };

@@ -17,12 +17,17 @@ import type { ActionHesitation } from "./hesitation";
 import type { SensCalque } from "./libre";
 import type { Lecture } from "./mesures";
 import type { Lecon } from "./lecons";
-import type { Proposition } from "./pretri";
 import type { PremierJet } from "./premierJet";
 import type { Tag } from "./tags";
 import type { LectureIA, LectureIAReliee, TagIA } from "./lectureIA";
+import type { Trame } from "./grilleMiseEnPage";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
+
+/** Une marque PROPOSÉE par la machine, avec sa raison en quelques mots et la règle qui la porte : `PJ` (premier jet, lot E),
+ *  `IA` (une rafale acceptée, lot F). Avant le 16/11, le pré-tri en posait aussi (règles R74, R75, R73, A3, A4, A7, A10, A11 ;
+ *  archivé dans `archive/pretri-2026-11/`). Renverser une proposition est une leçon `pretri_renverse` (lecons.ts). */
+export type Proposition = { marque: Exclude<Marque, "coupDeCoeur">; raison: string; regle: string };
 
 /* ─────────────────────────── La bibliothèque ─────────────────────────── */
 
@@ -77,7 +82,8 @@ export type Filtres = {
   taille: "S" | "M" | "L";
 };
 
-export type GroupeBibliotheque = { cle: string; libelle: string; ids: string[] };
+/** `tete` (T-211, 16/11) : le groupe posé EN TÊTE de la barre (les candidates de la couverture ouverte) ; il a toujours son titre. */
+export type GroupeBibliotheque = { cle: string; libelle: string; ids: string[]; tete?: true };
 
 /* ─────────────────────────── Les dépôts ─────────────────────────── */
 
@@ -207,7 +213,8 @@ export type EtatEditeur = {
   pilesOuvertes: string[];
   /** Lot 2 (G1) : les leçons pas encore envoyées au serveur (un geste contraire à une proposition). L'écran les vide après envoi. */
   lecons: Lecon[];
-  /** Lot 3 : les propositions du dernier pré-tri appliqué (raison par photo). Un geste contraire devient une leçon. Écran seulement. */
+  /** Les marques PROPOSÉES par la machine et posées d'un geste (raison par photo) : premier jet (lot E), rafale acceptée (lot F).
+   *  Un geste contraire devient une leçon. Écran seulement. Le nom vient du pré-tri (lot 3), archivé le 16/11 (T-210). */
   pretri: Record<string, Proposition>;
   /** Lot F (14/11) : la lecture IA reliée aux photos (rôles, groupes, rafales, captures, lieux). Écran seulement : jamais dans le
    *  magazine ni dans sa sauvegarde ; le navigateur la garde avec le projet (`lectureIAClient.ts`). */
@@ -236,7 +243,8 @@ export type GesteModifiant =
   | { type: "deplacerPhoto"; de: RefCadre; vers: { plancheId: string; cible: Cible; position?: number }; confirme?: boolean }
   | { type: "reordonner"; plancheId: string; cible: Cible; de: number; vers: number; confirme?: boolean }
   | { type: "choisirGabarit"; plancheId: string; cible: Cible; templateId: string; confirme?: boolean }
-  | { type: "autreGabarit"; plancheId: string; cible: Cible; sens: 1 | -1; confirme?: boolean }
+  /* T-208 (16/11) : R passe au TYPE suivant ; `variante` (touche V) à la variante suivante du type posé */
+  | { type: "autreGabarit"; plancheId: string; cible: Cible; sens: 1 | -1; confirme?: boolean; variante?: boolean }
   | { type: "fusionner"; plancheId?: string; confirme?: boolean }
   | { type: "separer"; plancheId?: string; confirme?: boolean }
   | { type: "insererDouble"; apres?: string; confirme?: boolean }
@@ -246,9 +254,8 @@ export type GesteModifiant =
   | { type: "ajouterSurPlanche"; plancheId: string; ids?: string[]; confirme?: boolean }
   /** Des doubles pages neuves pour ces photos, à la place `index` (par défaut juste après la planche courante). */
   | { type: "creerDoubles"; ids: string[]; index?: number; confirme?: boolean }
-  /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. */
-  /** Lot 3 (A10) : poser d'un geste les marques que la machine propose, sur les photos encore sans marque. */
-  | { type: "preTrier"; confirme?: boolean }
+  /** Le tri : pré-choisir, écarter (ou rendre « à trier » avec `null`) ; fixer les photos par page. Le geste « preTrier » (lot 3) est
+   *  archivé depuis le 16/11 (T-210, `archive/pretri-2026-11/`). */
   | { type: "marquer"; ids: string[]; marque: Marque | null; /** Comparaison (⇧P) : garder `ids`, écarter celles-ci, en un seul geste. */ autres?: string[]; /** Vue une photo : poser la marque sans bascule (jamais retirer). */ poser?: boolean; confirme?: boolean }
   | { type: "reglerTri"; visees: number | null; confirme?: boolean }
   /** 1 / 2 (05/11) : poser ou retirer une étiquette d'usage (bascule sur toutes) ; la poser garde la photo. */
@@ -273,6 +280,11 @@ export type GesteModifiant =
   | { type: "colorerFond"; plancheId: string; cible: Cible; couleur: CouleurLibre | null; confirme?: boolean }
   /** Lot G : la couleur d'un texte (intérieur ou couverture) ; `null` rend celle du gabarit. Pendant la séance de ce texte, elle s'y fond (une entrée). */
   | { type: "colorerTexte"; ref: RefCadre; couleur: CouleurLibre | null; confirme?: boolean }
+  /** Lot Palette (T-209, second temps) : la couleur de PLUSIEURS textes d'une même planche en un geste (la proposition « Texte » d'un fond posé). Une entrée d'historique. */
+  | { type: "colorerTextes"; refs: RefCadre[]; couleur: CouleurLibre; confirme?: boolean }
+  /** T-212 (16/11) : poser un titre à sa place sur la page (ou la double) : la plus grande zone libre alignée sur la grille `trame`
+   *  (celle que l'écran montre, 6 par défaut), sinon l'endroit le plus calme d'une photo lue. Une entrée d'historique. */
+  | { type: "ajouterTexte"; plancheId: string; cible: Cible; trame?: Trame; confirme?: boolean }
   /** Lot F (R145) : accepter ce que la lecture IA propose sur une rafale (sa tête) : les photos qu'elle garde, gardées ; les autres,
    *  écartées ; seulement celles encore sans marque. Une entrée d'historique, des propositions « IA » (un geste contraire = une leçon). */
   | { type: "accepterRafale"; tete: string; confirme?: boolean };
@@ -371,7 +383,9 @@ export type OpPlan =
   /* lot E : le premier jet */
   | "chargerPremierJet"
   /* lot G : les couleurs libres */
-  | "colorerFond" | "colorerTexte";
+  | "colorerFond" | "colorerTexte" | "colorerTextes"
+  /* T-212 : un texte ajouté proprement */
+  | "ajouterTexte";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; refs?: readonly RefCadre[]; photoId?: string; position?: number };

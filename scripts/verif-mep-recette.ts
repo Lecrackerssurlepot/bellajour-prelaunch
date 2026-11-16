@@ -43,7 +43,11 @@ function hasard(graine: number): () => number {
 const DIMS: [number, number][] = [[4000, 3000], [6000, 4000], [3000, 4000], [4000, 6000], [3000, 3000], [1920, 1080], [1080, 1920]];
 const lotAleatoire = (h: () => number, n: number): PhotoRef[] => Array.from({ length: n }, (_, i) => { const d = DIMS[Math.floor(h() * DIMS.length)]; return { id: `p${i}`, nom: `p${i}`, l: d[0], h: d[1], date: null }; });
 const neutre = { zoom: 1, dx: 0, dy: 0 };
-const EMPREINTE_DOUBLES = "0b3cd4b6";
+/* 16/11 (T-209, vague 1) : E-D14a et E-D14b retirés, remplacés par leurs copies sans aplat E-D14c et E-D14d (mêmes cadres). L'empreinte
+   change ; celle du 12/11 se retrouve EXACTEMENT en renommant les copies du nom des retirés : rien d'autre n'a bougé (test ci-dessous). */
+const EMPREINTE_DOUBLES = "b1acc34a";
+const EMPREINTE_DOUBLES_12_11 = "0b3cd4b6";
+const COPIES_SANS_APLAT: Record<string, string> = { "E-D8f": "E-D8c", "E-D14c": "E-D14a", "E-D14d": "E-D14b" };
 const LIBELLES = ["Titre", "Texte", "Légende"];
 
 /** Les photos d'essai : p1 à p14, de formes variées (le contenu n'est jamais lu, seules les cotes comptent à l'export). */
@@ -228,11 +232,16 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
     /* déterminisme : deux lectures identiques ; l'énumération figée par une empreinte (cinq lots fixes) */
     const lotsFixes = [["P", "P"], ["L", "P", "P"], ["L", "L", "P", "P"], ["P", "L", "P", "P", "L"], ["L", "L", "L", "L", "L", "L", "L", "L", "L", "L"]] as const;
     const refsDe = (os: readonly ("P" | "L" | "C")[]): PhotoRef[] => os.map((o, i) => ({ id: `p${i}`, nom: `p${i}`, l: o === "L" ? 3000 : o === "P" ? 2000 : 2000, h: o === "L" ? 2000 : o === "P" ? 3000 : 2000, date: null }));
-    const lecture = (os: readonly ("P" | "L" | "C")[]) => O.gabaritsClasses("double", refsDe(os), null).map((x) => `${x.template.id}:${Math.round(x.note * 1e6)}`).join("|");
+    /* lot Signatures (16/11) : les SIGNATURES (`SG-…`) s'intercalent par leur note ; l'empreinte se relève sans elles : tout le reste garde son ordre
+       et sa note au millionième (leur propre classement a son empreinte dans scripts/verif-mep-signatures.ts) */
+    const lecture = (os: readonly ("P" | "L" | "C")[]) => O.gabaritsClasses("double", refsDe(os), null).filter((x) => x.template.origine !== "signature").map((x) => `${x.template.id}:${Math.round(x.note * 1e6)}`).join("|");
     const a = lotsFixes.map(lecture).join("#"), b = lotsFixes.map(lecture).join("#");
     const empreinte = fnv(a);
     console.log(`      empreinte des classements de doubles (5 lots fixes) : ${empreinte}`);
-    rapporter(`D1 déterminisme : deux classements du même lot sont identiques mot pour mot ; l'empreinte des cinq lots fixes est celle relevée le 12/11 (${EMPREINTE_DOUBLES})`, a === b && empreinte === EMPREINTE_DOUBLES);
+    rapporter(`D1 déterminisme : deux classements du même lot sont identiques mot pour mot ; l'empreinte des cinq lots fixes est celle relevée le 16/11 (${EMPREINTE_DOUBLES})`, a === b && empreinte === EMPREINTE_DOUBLES);
+    const renomme = a.replace(/E-D8f|E-D14c|E-D14d/g, (id) => COPIES_SANS_APLAT[id]);
+    rapporter(`D1 / T-209 : les copies sans aplat renommées du nom des retirés, l'empreinte redevient celle du 12/11 (${EMPREINTE_DOUBLES_12_11}) : seuls les gabarits à aplat ont changé, à la même place et à la même note`,
+      fnv(renomme) === EMPREINTE_DOUBLES_12_11);
   }
   {
     /* l'ordre : à qualité égale, les dessinés d'abord (jusqu'à 0,15 de note), puis les générées (jusqu'à 0,05), puis les grilles ; mêmes malus que les pages */
@@ -292,7 +301,7 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       if (err.length) throw new Error(`invariants après ${JSON.stringify(g)} : ${err.join(" ; ")}`);
     };
     let msg: string | null = null;
-    let nbListe = 0, nbR = 0, vus = 0, nbGeneres = 0, valide = true, retour = true, pose = "", miroirOk = false, retireOk = false, nbPlus = 0;
+    let nbListe = 0, nbTypes = 0, nbR = 0, vus = 0, nbGeneres = 0, valide = true, retour = true, pose = "", miroirOk = false, retireOk = false, nbPlus = 0;
     try {
       pas({ type: "poser", cible: { type: "double", plancheId: "pl-2" }, ids, confirme: true });
       pas({ type: "naviguer", plancheId: "pl-2" });
@@ -303,17 +312,20 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       nbPlus = nbListe - O.PLAFOND_TIROIR;
       if (!liste.some((x) => x.courant && x.id === pose)) throw new Error("le gabarit courant n'est pas dans le tiroir");
       if (new Set(liste.map((x) => x.id)).size !== liste.length) throw new Error("un gabarit deux fois dans le tiroir");
-      const vusIds = new Set<string>([pose]);
-      for (let i = 0; i < liste.length; i++) {
+      /* T-208 : R passe par chaque TYPE (sa tête) et revient au type du départ */
+      const types = O.typesPour(e, "pl-2", "double", liste);
+      nbTypes = types.length;
+      const vusTypes = new Set<string>([O.typeDeGabarit(templateParId(pose)!)]);
+      for (let i = 0; i < types.length; i++) {
         pas({ type: "touche", cle: "r", shift: false, meta: false, ctrl: false, alt: false, survol: { plancheId: "pl-2", cible: "double" } });
         nbR++;
         const t = e.magazine.planches[1].double!.templateId;
-        vusIds.add(t);
+        vusTypes.add(O.typeDeGabarit(templateParId(t)!));
         if (!templateParId(t)) valide = false;
         if (i % 9 === 0 && !O.contenuValide(JSON.parse(JSON.stringify(e.magazine)))) valide = false;
       }
-      vus = vusIds.size;
-      retour = e.magazine.planches[1].double!.templateId === pose;
+      vus = vusTypes.size;
+      retour = types.findIndex((t) => t.membres.some((g) => g.id === e.magazine.planches[1].double!.templateId)) === 0;
       /* un gabarit généré choisi au tiroir : ses cadres sont ceux de l'id, le miroir les retourne et se relit, retirer une photo recompose */
       const choisi = liste.find((x) => x.id.startsWith("GD1-") && x.id !== pose)!;
       pas({ type: "choisirGabarit", plancheId: "pl-2", cible: "double", templateId: choisi.id });
@@ -330,8 +342,8 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       for (let i = 0; i < 3 + nbR; i++) pas({ type: "annuler" });
     } catch (x) { msg = x instanceof Error ? x.message : String(x); }
     if (msg) console.log(`   ${msg}`);
-    rapporter(`D1 éditeur : « Poser » six photos sur une double : ${nbListe} gabarits au tiroir dont ${nbGeneres} générées ; R les parcourt tous (${nbR} pas, ${vus} différents) et revient au départ ; chaque pas passe les invariants et la sauvegarde ; le gabarit choisi donne les cadres de son id, le miroir les retourne, retirer une photo recompose ; annuler tout revient`,
-      msg === null && nbGeneres > 100 && vus === nbListe && retour && valide && miroirOk && retireOk);
+    rapporter(`D1 éditeur : « Poser » six photos sur une double : ${nbListe} gabarits au tiroir dont ${nbGeneres} générées, en ${nbTypes} types ; R passe par chaque type (${nbR} pas, ${vus} différents) et revient au premier ; chaque pas passe les invariants et la sauvegarde ; le gabarit choisi donne les cadres de son id, le miroir les retourne, retirer une photo recompose ; annuler tout revient`,
+      msg === null && nbGeneres > 100 && nbTypes >= 3 && nbTypes < nbListe && vus === nbTypes && retour && valide && miroirOk && retireOk);
     rapporter(`D1 tiroir : le plafond (${O.PLAFOND_TIROIR}) est plus petit que la liste (${nbListe}) : « Plus » ajoute ${O.PAS_TIROIR} à chaque clic (${nbPlus} derrière le plafond)`, nbPlus > 0 && O.PAS_TIROIR >= O.PLAFOND_TIROIR);
     void pose;
   }

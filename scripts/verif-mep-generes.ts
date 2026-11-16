@@ -270,7 +270,7 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
       if (err.length) throw new Error(`invariants après ${JSON.stringify(geste)} : ${err.join(" ; ")}`);
     };
     let msg: string | null = null;
-    let nbListe = 0, nbR = 0, vus = 0, tousGeneres = true, valide = true, retour = true;
+    let nbListe = 0, nbTypes = 0, nbR = 0, vus = 0, tousGeneres = true, valide = true, retour = true;
     try {
       pas({ type: "poser", cible: { type: "page", plancheId: "pl-1", cote: "droite" }, ids: ["A", "B", "C"], confirme: true });
       const d0 = e.magazine.planches[0].droite!;
@@ -278,27 +278,43 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
       nbListe = liste.length;
       if (!liste.some((x) => x.courant && x.id === d0.templateId)) throw new Error("le gabarit courant n'est pas dans le tiroir");
       if (new Set(liste.map((x) => x.id)).size !== liste.length) throw new Error("un gabarit deux fois dans le tiroir");
-      /* R : on parcourt toute la liste, une fois, et on revient au départ ; chaque pas passe les invariants (I19, etc.) et reste sauvegardable */
+      /* T-208 : R parcourt les TYPES (la tête de chacun), une fois, et revient au type du départ ; V parcourt les variantes du type posé.
+         Chaque pas passe les invariants (I19, etc.) et reste sauvegardable */
       const depart = d0.templateId;
+      const types = O.typesPour(e, "pl-1", "droite", liste);
+      nbTypes = types.length;
       const vusIds = new Set<string>([depart]);
-      for (let i = 0; i < liste.length; i++) {
+      const vusTypes = new Set<string>([O.typeDeGabarit(templateParId(depart)!)]);
+      for (let i = 0; i < types.length; i++) {
         pas({ type: "touche", cle: "r", shift: false, meta: false, ctrl: false, alt: false, survol: { plancheId: "pl-1", cible: "droite" } });
         nbR++;
         const t = e.magazine.planches[0].droite!.templateId;
         vusIds.add(t);
+        vusTypes.add(O.typeDeGabarit(templateParId(t)!));
         if (!templateParId(t)) valide = false;
         if (i % 7 === 0 && !O.contenuValide(JSON.parse(JSON.stringify(e.magazine)))) valide = false;
       }
-      vus = vusIds.size;
-      retour = e.magazine.planches[0].droite!.templateId === depart;
+      retour = types.findIndex((t) => t.membres.some((g) => g.id === e.magazine.planches[0].droite!.templateId)) === 0;
+      /* puis V : toutes les variantes du premier type, une fois chacune, et retour */
+      const membres = types[0].membres.map((g) => g.id);
+      const posee = e.magazine.planches[0].droite!.templateId;
+      for (let i = 0; membres.length > 1 && i < membres.length; i++) {
+        pas({ type: "touche", cle: "v", shift: false, meta: false, ctrl: false, alt: false, survol: { plancheId: "pl-1", cible: "droite" } });
+        nbR++;
+        const t = e.magazine.planches[0].droite!.templateId;
+        vusIds.add(t);
+        if (!membres.includes(t)) valide = false;
+      }
+      if (e.magazine.planches[0].droite!.templateId !== posee) retour = false;
+      vus = vusTypes.size;
       tousGeneres = [...vusIds].some((id) => id.startsWith("GG1-"));
       /* annuler tout ce qu'on vient de faire : on retrouve le gabarit du départ */
       for (let i = 0; i < nbR; i++) pas({ type: "annuler" });
       if (e.magazine.planches[0].droite!.templateId !== depart) throw new Error("annuler tout ne ramène pas au gabarit du départ");
     } catch (x) { msg = x instanceof Error ? x.message : String(x); }
     if (msg) console.log(`   ${msg}`);
-    rapporter(`éditeur : trois photos (L, P, P) sur une page : ${nbListe} gabarits au tiroir ; R les parcourt tous (${nbR} pas, ${vus} différents) et revient au départ ; chaque pas passe les invariants et la sauvegarde ; annuler tout revient`,
-      msg === null && nbListe > 100 && vus === nbListe && retour && valide && tousGeneres);
+    rapporter(`éditeur : trois photos (L, P, P) sur une page : ${nbListe} gabarits au tiroir en ${nbTypes} types ; R passe par chaque type (${vus} différents) et revient au premier, V fait le tour de ses variantes (${nbR} pas en tout) ; chaque pas passe les invariants et la sauvegarde ; annuler tout revient`,
+      msg === null && nbListe > 100 && nbTypes >= 3 && nbTypes < nbListe && vus === nbTypes && retour && valide && tousGeneres);
     rapporter(`tiroir : le plafond (${O.PLAFOND_TIROIR}) est bien plus petit que la liste (${nbListe}) : « Plus » ajoute ${O.PAS_TIROIR} à chaque clic`, O.PLAFOND_TIROIR >= 10 && O.PLAFOND_TIROIR < nbListe && O.PAS_TIROIR >= O.PLAFOND_TIROIR);
   }
   {
@@ -357,20 +373,22 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
     const E = "src/app/admin/atelier/mise-en-page/[id]/";
     const scene = lire(`${E}Scene.tsx`), gab = lire(`${E}Gabarits.tsx`), css = lire("src/app/admin/atelier/mise-en-page/mise-en-page.css");
     const dehors = ["src/lib/mise-en-page/idml.ts", "src/lib/mise-en-page/pdf.ts", "src/lib/mise-en-page/magazine.ts", "src/lib/mise-en-page/sauvegarde.ts", `${E}exporter.ts`, `${E}exporterPdf.ts`, `${E}exporterPur.ts`, `${E}ExportFeuille.tsx`]
-      .every((f) => !/grilleArtiste|GrilleArtiste|ui\.grille/.test(lire(f)));
+      .every((f) => !/grilleArtiste|GrilleArtiste|GrilleEcran|grilleMiseEnPage|lignesDeGrille|ui\.grille|ui\.trame/.test(lire(f)));
     const mini = gab.slice(gab.indexOf("export function Mini"), gab.indexOf("/* ─── le dessin d'un gabarit"));
-    const montage = scene.match(/<GrilleArtiste /g) ?? [];
+    /* T-213 (16/11) : la grille d'artiste est une option du menu « Grille », montée avec la grille de mise en page par `GrilleEcran` */
+    const montage = scene.match(/<GrilleEcran /g) ?? [];
     const z = Number(/\.ed-grille-art \{[^}]*z-index: (\d+)/.exec(css)?.[1]);
-    rapporter("grille d'artiste : écran seulement (ni l'IDML, ni le PDF, ni les exports, ni la sauvegarde, ni Mini n'en parlent) ; montée en UNE ligne dans Scene, après les cadres et avant les sélections ; sans pointeur, sous le cadre actif (z entre 2 et 8)",
-      dehors && !/Grille/.test(mini) && montage.length === 1 && scene.indexOf("<GrilleArtiste ") > scene.indexOf("{frames.map") && scene.indexOf("<GrilleArtiste ") < scene.indexOf("<Selections frames")
-        && /\.ed-grille-art \{[^}]*pointer-events: none/.test(css) && z > 2 && z < 8 && /\.ed-cs \{ position: absolute; z-index: 8/.test(css));
+    const zM = Number(/\.ed-grille-mep \{[^}]*z-index: (\d+)/.exec(css)?.[1]);
+    rapporter("grilles (artiste et mise en page) : écran seulement (ni l'IDML, ni le PDF, ni les exports, ni la sauvegarde, ni Mini n'en parlent) ; montées en UNE ligne dans Scene, après les cadres et avant les sélections ; sans pointeur, sous le cadre actif (z entre 2 et 8)",
+      dehors && !/Grille/.test(mini) && montage.length === 1 && scene.indexOf("<GrilleEcran ") > scene.indexOf("{frames.map") && scene.indexOf("<GrilleEcran ") < scene.indexOf("<Selections frames")
+        && /\.ed-grille-art \{[^}]*pointer-events: none/.test(css) && /\.ed-grille-mep \{[^}]*pointer-events: none/.test(css) && z > 2 && z < 8 && zM === z && /\.ed-cs \{ position: absolute; z-index: 8/.test(css));
     /* la touche et la mémoire */
     const ed = lire(`${E}EditeurMagazine.tsx`), ctx = lire(`${E}contexte.ts`), barre = lire(`${E}Barre.tsx`);
     const liste = /!calque && !\[([^\]]*)\]\.includes\(k\)/.exec(ed)?.[1] ?? "";
-    rapporter("grille d'artiste : la touche O (libre : planche M R X P T Z, tri X P F R U C Z N D G T 0 à 3, lecture L), jamais pendant une saisie, jamais avec ⌘ ou Ctrl ; bouton dans la barre avec mémoire locale (bj-mep-grille), jamais d'exception",
+    rapporter("grille : la touche O (libre : planche M R X P T Z, tri X P F R U C Z N D G T 0 à 3, lecture L), jamais pendant une saisie, jamais avec ⌘ ou Ctrl ; menu « Grille » dans la barre (T-213), mémoire locale (bj-mep-grille, bj-mep-grille-trame), jamais d'exception",
       /e\.key === "o" \|\| e\.key === "O"\) && !e\.metaKey && !e\.ctrlKey && !e\.altKey/.test(ed) && !/"o"|"O"/.test(liste) && ed.indexOf("e.key === \"o\"") > ed.indexOf("pendant la saisie")
         && /CLE_GRILLE = "bj-mep-grille"/.test(ctx) && /grille: false/.test(ctx) && /localStorage\.getItem\(CLE_GRILLE\) === "1"/.test(ctx) && /catch \{ \/\* stockage refusé \*\/ \}/.test(ctx)
-        && /aria-label="Grille d'artiste"/.test(barre) && /basculerGrille\(ui, majUi\)/.test(barre)
+        && /aria-label="Grille"/.test(barre) && /choisirGrille\(/.test(barre) && /basculerGrille\(ui, majUi\)/.test(ed) && /CLE_TRAME = "bj-mep-grille-trame"/.test(ctx)
         && !["m", "r", "x", "p", "t", "z", "l", "f", "u", "c", "n", "d", "g"].includes("o"));
   }
 

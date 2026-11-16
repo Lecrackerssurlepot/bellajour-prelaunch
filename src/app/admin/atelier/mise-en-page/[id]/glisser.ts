@@ -3,6 +3,7 @@
  * et la phrase de l'aperçu. Lecture du DOM par `data-*` et classes `ed-*` ; aucun calcul du magazine ici.
  */
 
+import type { RefCadre } from "@/lib/mise-en-page/magazine";
 import { cibleAllumee, resumeIssue, type CibleDepot, type EtatEditeur, type Geste, type Issue, type SourceGlisser } from "@/lib/mise-en-page/editeur";
 import { PAGE_H, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import { pluriel } from "./contexte";
@@ -133,6 +134,31 @@ export function libelleApercu(source: SourceGlisser, cible: CibleDepot | null, a
   /* lot 4 : sur la planche, rappeler que ⌥ pose en libre */
   const astuce = (cible.type === "page" || cible.type === "double" || cible.type === "cadre") && (source.type === "bibliotheque" || source.type === "cadre") ? " · ⌥ libre" : "";
   return r ? `${t} · ${r}` : `${t}${astuce}`;
+}
+
+/**
+ * Lot Palette (T-209, second temps) : le glisser d'une COULEUR (source « couleur », la palette). Ce qu'il y a sous le pointeur, traduit
+ * en cible : un texte (`data-texte`, intérieur ou couverture) ou la PAGE sous le pointeur d'une planche (la moitié gauche ou droite ;
+ * une page seule est sa moitié). La couverture n'a pas de fond libre : rien d'autre que ses textes. Lecture du DOM seulement.
+ */
+export type CibleCouleur =
+  | { type: "texte"; ref: RefCadre; el: HTMLElement }
+  | { type: "fond"; plancheId: string; cote: "gauche" | "droite"; planche: HTMLElement };
+
+export function cibleCouleurSous(x: number, y: number): CibleCouleur | null {
+  const el = document.elementFromPoint(x, y);
+  if (!el) return null;
+  const t = el.closest<HTMLElement>("[data-texte]");
+  if (t) {
+    const [plancheId, cible, index] = (t.getAttribute("data-texte") ?? "").split("|");
+    if (plancheId && (cible === "gauche" || cible === "droite" || cible === "double") && Number.isInteger(Number(index))) return { type: "texte", ref: { plancheId, cible, index: Number(index) }, el: t };
+  }
+  const planche = el.closest<HTMLElement>(".ed-planche");
+  if (!planche) return null;
+  const id = (planche.querySelector("[data-cote]")?.getAttribute("data-cote") ?? "").split("|")[0];
+  const r = planche.getBoundingClientRect();
+  if (!id || r.width <= 0 || x < r.left || x > r.right || y < r.top || y > r.bottom) return null;
+  return { type: "fond", plancheId: id, cote: x - r.left < r.width / 2 ? "gauche" : "droite", planche };
 }
 
 export type EnvoiGeste = (g: Geste, silencieux?: boolean) => void;

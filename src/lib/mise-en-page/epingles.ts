@@ -129,6 +129,11 @@ const DOUBLES: Template[] = [
     photo(PLEINE_G),
     ...[270, 320].flatMap((x) => [0, 1, 2, 3].map((i) => photo(rect(x, 62.5 + i * 44, 40, 40)))),
   ], [aplat(PLEINE_D, "noir")]),
+  /* T-209 (16/11) : la même disposition SANS son aplat noir (le fond se pose désormais en couleur libre, lot G) ; E-D8c est retiré */
+  tpl("E-D8f", "Pleine + photomaton", "double", [
+    photo(PLEINE_G),
+    ...[270, 320].flatMap((x) => [0, 1, 2, 3].map((i) => photo(rect(x, 62.5 + i * 44, 40, 40)))),
+  ]),
   tpl("E-D8d", "Pleine + planche 3 × 3", "double", [
     photo(PLEINE_G), ...[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => photo(D(c * 2, r * 2, 2, 2)))),
   ]),
@@ -217,6 +222,15 @@ const DOUBLES: Template[] = [
     photo(G(1, 1, 4, 3)), photo(D(0, 1, 3, 2)), photo(D(3, 2, 3, 2)),
     titre(G(0, 0, 6, 1), 28), texte(G(0, 4, 6, 2), 9), titre(D(0, 0, 6, 1), 28), texte(D(0, 4, 6, 2), 9),
   ], [aplat(PLEINE_G), aplat(PLEINE_D)]),
+  /* T-209 (16/11) : les deux mêmes dispositions SANS leurs aplats (titre, photo, texte sur chaque page) ; E-D14a et E-D14b sont retirés */
+  tpl("E-D14c", "Titres, une + une", "double", [
+    photo(G(1, 1, 4, 3)), photo(D(0, 2, 6, 2)),
+    titre(G(0, 0, 6, 1), 28), texte(G(0, 4, 6, 2), 9), titre(D(0, 0, 6, 1), 28), texte(D(0, 4, 6, 2), 9),
+  ]),
+  tpl("E-D14d", "Titres, une + deux", "double", [
+    photo(G(1, 1, 4, 3)), photo(D(0, 1, 3, 2)), photo(D(3, 2, 3, 2)),
+    titre(G(0, 0, 6, 1), 28), texte(G(0, 4, 6, 2), 9), titre(D(0, 0, 6, 1), 28), texte(D(0, 4, 6, 2), 9),
+  ]),
 
   /* D15 · Damier titre / photo */
   tpl("E-D15", "Damier titre / photo", "double", [
@@ -282,3 +296,13 @@ const PAGES: Template[] = [
 ];
 
 export const TEMPLATES_EPINGLES: Template[] = [...DOUBLES, ...PAGES];
+
+/**
+ * T-209 (16/11, R158) : les gabarits RETIRÉS. Ils ne sont plus PROPOSÉS (ni au tiroir, ni par R, ni par « Poser » : `candidats`,
+ * magazine.ts), mais restent dans le catalogue : `templateParId` les relit, un magazine sauvegardé qui s'en sert s'ouvre et
+ * s'exporte comme avant (un id inconnu est refusé à la relecture, sauvegarde.ts). Ne jamais retirer un id d'ici pour le « nettoyer ».
+ * - E-D8c, E-D14a, E-D14b : leur seule différence était un APLAT (fond noir ou terracotta) ; depuis le lot G (#364), un fond se pose
+ *   en couleur libre sur n'importe quelle page. Leurs dispositions restent proposées sans aplat : E-D8f, E-D14c, E-D14d.
+ * Les gabarits de COUVERTURE gardent leurs aplats : la couverture n'a pas encore de fond libre.
+ */
+export const EPINGLES_RETIREES: ReadonlySet<string> = new Set(["E-D8c", "E-D14a", "E-D14b"]);

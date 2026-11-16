@@ -9,7 +9,7 @@ Un seul geste « Pré-trier » pose les marques proposées sur les photos SANS m
 `moment_deposant`, `variete_lambda` (+ ceux de C01 à C03). Valeurs, dates et raisons : `src/lib/mise-en-page/editeur/reglages.ts` (la seule source).
 
 ## Code
-`editeur/pretri.ts`
+`editeur/pretri.ts` (archivé le 16/11 : `archive/pretri-2026-11/pretri.ts`)
 
 ## Test
 bloc du lot 3 « la machine propose » dans `verif-mep-editeur.ts`. Rejeu sur photos réelles : `npx tsx --tsconfig tsconfig.json scripts/calibrer-lecture.ts <dossier> <sortie>`.
@@ -22,3 +22,4 @@ Tri et sélection sont deux étapes : le pré-tri juge le goût et les défauts 
 
 ## Historique
 09/11 : créée.
+16/11 : ARCHIVÉE par la vague 1 (T-210, R154), branche `feat/mise-en-page-vague-1`, pas encore fusionnée. Retour de Mathias : « ça sert toujours à rien, il y a des trucs que je ne comprends pas ». Code, bouton et tests dans `archive/pretri-2026-11/` (README : comment le remettre). Ce qu'elle voyait de juste reste dans les étiquettes et les filtres (C03), les piles (C02) et la lecture IA (C14). Les leçons `pretri_renverse` restent lisibles et se produisent encore (premier jet, rafale acceptée).

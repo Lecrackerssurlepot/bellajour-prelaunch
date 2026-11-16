@@ -19,6 +19,7 @@ import { ROLES_COULEUR } from "./nuancier";
 import { styleValide } from "./style";
 import { PAGES_MAX_SAISIE, dosSaisiValide, nombresDuGabarit } from "./couverture";
 import { couleurLibreValide, fondValide } from "./couleursLibres";
+import { SORTES_FAIT } from "./types";
 
 /* ─────────────────────────── la migration, vue du code ─────────────────────────── */
 
@@ -127,7 +128,8 @@ function texteValide(v: unknown): v is TexteCadre {
 /** Lot 4 : le nombre de cadres retouchés d'une disposition, borne technique (bien au-delà des 12 photos et de leurs textes). */
 const CADRES_MAX = 40;
 const ROLES = ["photo", "titre", "texte", "legende"];
-const CLES_CADRE = ["x", "y", "l", "h", "role", "orientation", "taille", "gras", "rotation", "groupe", "bord", "rayon", "couleur"];
+/* lot Signatures (16/11) : `geant`, `fait`, `ombre` suivent un cadre retouché ou enregistré (sinon la sauvegarde serait refusée, 400) */
+const CLES_CADRE = ["x", "y", "l", "h", "role", "orientation", "taille", "gras", "rotation", "groupe", "bord", "rayon", "couleur", "geant", "fait", "ombre"];
 
 /** Un cadre retouché (lot 4) : la forme de `Cadre` (types.ts), mesures finies et positives, rien d'autre. */
 export function cadreValide(v: unknown): boolean {
@@ -141,6 +143,9 @@ export function cadreValide(v: unknown): boolean {
   if (v.gras !== undefined && typeof v.gras !== "boolean") return false;
   if (v.groupe !== undefined && !estId(v.groupe)) return false;
   if (v.couleur !== undefined && v.couleur !== "blanc" && !(ROLES_COULEUR as readonly unknown[]).includes(v.couleur)) return false;
+  if (v.geant !== undefined && (v.geant !== true || v.role === "photo")) return false;
+  if (v.fait !== undefined && (v.role === "photo" || !(SORTES_FAIT as readonly unknown[]).includes(v.fait))) return false;
+  if (v.ombre !== undefined && (v.ombre !== true || v.role !== "photo")) return false;
   return true;
 }
 

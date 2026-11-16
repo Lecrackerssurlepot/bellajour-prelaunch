@@ -11,7 +11,7 @@ export type {
 } from "./types";
 export type { GabaritNote, CatalogueRef, OptionsAjouter, OptionsComposer } from "./operations";
 export type {
-  ActionsPlanche, AvertissementsExport, CadrePhoto, CadrePlanche, CadreTexte, EtatPhoto, GabaritPour, PhotoBande, SegmentBande, VignetteChemin,
+  ActionsPlanche, AvertissementsExport, CadrePhoto, CadrePlanche, CadreTexte, EtatPhoto, GabaritPour, PhotoBande, SegmentBande, TypePour, VignetteChemin,
 } from "./selecteurs";
 
 export {
@@ -23,14 +23,16 @@ export {
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 export { contenuValide } from "../sauvegarde";
+export { REGLAGES_TYPES, estDessine, rangerParTypes, typeContenant, typeDeGabarit } from "../typesGabarits";
+export type { TypeDeGabarits } from "../typesGabarits";
 export { FORMAT_PREMIER_JET, NOM_FICHIER_MAX, PREFIXE_ABSENTE, RAISON_MAX, REGLE_PREMIER_JET, TAILLE_MAX_PREMIER_JET, VERSION_PREMIER_JET, appliquerPremierJet, idsDuMagazine, lirePremierJet, motProposition, nomComparable } from "./premierJet";
 export type { BilanPremierJet, LecturePremierJet, PremierJet } from "./premierJet";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
 export { planDepot, planifier } from "./plans";
-export { aCote, aCoteParJour, groupes, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
+export { aCote, aCoteParJour, candidatesCouverture, CLE_COUVERTURE_TETE, groupes, LIBELLE_COUVERTURE_TETE, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, etiquettePages, gabaritsPour, libelleAnnuler,
-  libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
+  libelleRetablir, typesPour, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
 export { verifierInvariants } from "./invariants";
@@ -41,6 +43,13 @@ export type { BilanTri, Etiquette, Marque, TourTri, PartPersonne, TriPlein, VueT
 export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres, miroir, pageEntiere, placerCadre, poserLibre, rangCalque, retirerCadres } from "./libre";
 export type { SensCalque } from "./libre";
 export { DEPLACEMENT, aimanter, lignesAimant } from "./aimant";
+/* T-212 (16/11) : ajouter un texte proprement */
+export { REGLAGES_TEXTE_AJOUTE, ajouterTexte, corpsPourLargeur, motSansTexte, placeDuTexte } from "./texteAjoute";
+export type { LecturePourTexte, PlaceTexte } from "./texteAjoute";
+export { lirePourTexte } from "./plans";
+/* T-213 (16/11) : la grille de mise en page (6 × 6 du moteur, 8 × 8 dans les mêmes marges) */
+export { CHOIX_GRILLE, TRAMES, TRAME_DEFAUT, caseTrame, estChoixGrille, grillePage, lignesDeGrille, modulesDe, pagesDeCouverture, pagesPosees } from "./grilleMiseEnPage";
+export type { Bande, ChoixGrille, GrillePage, Modules, PagePosee, Trame } from "./grilleMiseEnPage";
 export { OR_GRAND, OR_PETIT, grilleArtiste, pagesDeLaPlanche } from "./grilleArtiste";
 export type { GenreLigne, LigneArtiste } from "./grilleArtiste";
 export type { Bords, Guide, Lignes } from "./aimant";
@@ -59,8 +68,8 @@ export type { Boite } from "./saillance";
 export { PENALITE_PLI } from "./outils";
 export { partDansLePli } from "./operations";
 export { recadrageParContenu } from "../recadrage";
-export { decalagesHorloges, marquesProposees, preTrier, qualite } from "./pretri";
-export type { PreTri, Proposition } from "./pretri";
+/* le pré-tri (lot 3 : `preTrier`, `marquesProposees`, `decalagesHorloges`, `qualite`) est archivé depuis le 16/11 (T-210) : archive/pretri-2026-11/ */
+export type { Proposition } from "./types";
 export { detailQuestion, leconsDuPreTri, reponse, troisQuestions } from "./lecons";
 export { avecStyle, libelleStyle } from "./stylage";
 export { kMoyennes, paletteDePixels, paletteDuMagazine } from "./mesures";
@@ -89,5 +98,6 @@ export { libelleGroupeIA } from "./bibliotheque";
 export { lieuDeTexte } from "./lieuxTextes";
 export { estPng } from "./tags";
 /* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
-export { colorerFond, colorerTexte, couleursPosees, libelleFond, libelleTexte, nomCouleur } from "./couleurs";
+export { colorerFond, colorerTexte, colorerTextes, couleursPosees, libelleFond, libelleTexte, nomCouleur, propositionsApres, textesDuCote, textesLisibles, REGLAGES_PROPOSITIONS } from "./couleurs";
+export type { PoseCouleur, PropositionCouleur, GesteProposition } from "./couleurs";
 export { fondsPlanche } from "./selecteurs";

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  aCote, aCoteParJour, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, motProposition, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
+  aCote, aCoteParJour, CLE_COUVERTURE_TETE, compteurs, emplacements, estTour, groupes as lesGroupes, marqueDe, motProposition, photosEnHesitation, planchesDesPhotos, triDe, quandPhoto, reperesBibliotheque, selectionMasquee, selectionOrdonnee, sousPiles, comptesTags, MOT_TAG, TAGS, tagsDeLecture,
   estTagIA, misesEnAvant, propositionRafale, tagsIA, MOT_CAPTURE, MOT_ROLE, MOT_TAG_IA, MOT_USAGE, TAGS_IA,
   type Filtres, type Marque, type MiseEnAvant, type PhotoMaq, type RafaleReliee, type SourceGlisser, type Tag, type TagIA, type TourTri,
 } from "@/lib/mise-en-page/editeur";
@@ -13,7 +13,7 @@ import { Ico } from "./icones";
 import { BoutonPremierJet } from "./PremierJet";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, BoutonPreTri, PaletteTri, VuesBarre } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, PaletteTri, VuesBarre } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -119,7 +119,8 @@ function PanneauOuvert() {
   const cell = Math.floor((W - (cols - 1) * ECART) / cols);
   const rangees: Rangee[] = [];
   let y = 0;
-  const avecTitres = f.groupe !== "aucun";
+  /* T-211 : la couverture ouverte met ses candidates en tête, sous leur titre, même sans groupement */
+  const avecTitres = f.groupe !== "aucun" || groupes.some((g) => g.tete);
   const T = ui.tailleGrand;
   for (const g of groupes) {
     if (avecTitres) { rangees.push({ type: "g", lib: g.libelle, n: g.ids.length, y, ids: g.ids, cle: g.cle }); y += HAUT_TITRE; }
@@ -195,7 +196,8 @@ function PanneauOuvert() {
   /* « Poser » sur un titre de groupe : ses photos GARDÉES encore libres (sinon toutes ses libres non écartées),
      en doubles pages neuves après la planche courante. Le pont direct entre le tri et la page. */
   const poserGroupe = (ids: string[], cle?: string) => {
-    if (ro) return null;
+    /* T-211 : les candidates de la couverture se glissent sur la couverture, une à une ; pas de doubles neuves pour elles */
+    if (ro || cle === CLE_COUVERTURE_TETE) return null;
     /* lot F (R144) : un groupe de la lecture IA (duo, trio, combo) se pose ENTIER sur une double neuve, sauf ses écartées et ses posées */
     if (groupeIA(cle)) {
       const tout = ids.filter((id) => !rep.utilisations.get(id) && !ecartees.has(id));
@@ -406,7 +408,7 @@ function PanneauOuvert() {
             <BoutonPremierJet />
           </>
         ) : null}
-        {grand ? <><PaletteTri /><BoutonPreTri /><JaugeTri /></> : (
+        {grand ? <><PaletteTri /><JaugeTri /></> : (
           <span className="ed-seg" role="group" aria-label="Taille des vignettes">
             {(["S", "M", "L"] as const).map((t) => (
               <button key={t} type="button" aria-pressed={f.taille === t} onClick={() => filtrer({ taille: t })}>{t}</button>
@@ -417,7 +419,7 @@ function PanneauOuvert() {
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
       {grand ? null : <VuesBarre />}
-      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /><span className="ed-ph-jauge-pied"><PaletteTri /><BoutonPreTri /></span></div>}
+      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /><span className="ed-ph-jauge-pied"><PaletteTri /></span></div>}
       <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
           <input type="search" placeholder="Rechercher" aria-label="Rechercher une photo" value={f.recherche} onChange={(e) => filtrer({ recherche: e.currentTarget.value })} />
