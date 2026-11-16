@@ -148,7 +148,7 @@ sortent du tiroir, et « Texte » ajoute un titre à sa place. Le détail est au
 ### 14/11
 | Modification | Ce que ça change pour toi | Statut |
 |---|---|---|
-| Lot E : la dernière page seule (#362) | Une page gauche seule en fin de magazine, nombre de pages toujours pair. Les anciens magazines reçoivent une dernière page vide à l'ouverture | actif. **Essai Affinity pas fait** (`DECISIONS.md`, ligne 716) |
+| Lot E : la dernière page seule (#362) | Une page gauche seule en fin de magazine, nombre de pages toujours pair. Les anciens magazines reçoivent une dernière page vide à l'ouverture | actif. **Essai Affinity fait le 16/11 : FIDÈLE** (`DECISIONS.md`, D28) |
 | Lot E : la tranche saisie (#362) | Le dos se tape au centième de mm et remplace le calcul jusqu'à « Effacer ». L'écran dit lequel sert | actif |
 | Lot E : le premier jet (#362) | Bouton « Premier jet » du panneau Photos : charge un magazine composé hors de l'éditeur | actif, en création libre seulement |
 | Lot F : la lecture IA dans le tri (#363) | Rôles, mises en avant, groupes duo/trio/combo, rafales à garder avec « Accepter », captures, lieu sûr proposé en premier. Aucune identité (D29) | actif, mais seulement si on charge un fichier de lecture |
@@ -156,7 +156,7 @@ sortent du tiroir, et « Texte » ajoute un titre à sa place. Le détail est au
 ### 16/11
 | Modification | Ce que ça change pour toi | Statut |
 |---|---|---|
-| Lot G : couleurs libres et combos (#364) | Fond de couleur sur une page ou une double, couleur de chaque texte, sélecteur avec pipette, quatre combos d'après les photos | actif. **Essai Affinity pas fait** (`DECISIONS.md`, ligne 723) |
+| Lot G : couleurs libres et combos (#364) | Fond de couleur sur une page ou une double, couleur de chaque texte, sélecteur avec pipette, quatre combos d'après les photos | actif. **Essai Affinity fait le 16/11 : FIDÈLE** (`DECISIONS.md`, D28) |
 
 ### 16/11, vague 1 (branche `feat/mise-en-page-vague-1`, poussée, pas encore fusionnée)
 Tes retours du 16/11, premier temps. Rien n'est en production tant que la branche n'est pas fusionnée. Captures :
@@ -213,10 +213,12 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 
 ## 4. Ce qui n'a pas été essayé ou reste fragile
 
-**Fusionné sans essai Affinity (D28).** Toi seul as donné l'ordre de fusionner.
-- **Lot E, dernière page seule** (#362, 14/11). Le fichier IDML d'une page gauche seule en fin de document n'a jamais été rouvert dans Affinity. Prouvé : XML valide, les autres spreads identiques à l'octet. Pas prouvé : le nombre de pages, la position du dernier spread, les cadres à gauche du pli. Le PDF, lui, est lu par un outil (216 × 303 vérifié). Générateur prêt : `scripts/idml-essai-derniere.ts`.
-- **Lot G, couleurs libres** (#364, 16/11). Les nuances nommées, le fond sous les photos et la couleur des textes n'ont pas été relus par Affinity. Un magazine sans couleur libre sort identique à l'octet. Générateur prêt : `scripts/idml-essai-couleurs.ts`.
-- Conséquence : tant que l'essai n'est pas fait, ce qu'Affinity ouvre peut différer de l'écran sur ces deux points. Le PDF Canva n'est pas concerné.
+**Fusionnés sans essai Affinity, puis essayés le 16/11 (D28) : FIDÈLES.** Tu avais donné l'ordre de fusionner sans l'essai ; le 16/11, tu as autorisé
+l'écriture des fichiers d'essai sur ton Bureau, et Affinity les a relus sans écart.
+- **Lot E, dernière page seule** (#362). Affinity relit 4 pages, la dernière seule, à gauche du pli, chaque cadre au centième de mm, aucune image étirée.
+- **Lot G, couleurs libres** (#364). Les fonds (page, double en un seul rectangle, page gauche seule) et les couleurs de texte arrivent aux valeurs exactes, sous
+  style comme sans style, et sur la couverture.
+- Fichiers : `~/Desktop/Bellajour/test-idml/derniere-lot-e` et `couleurs-lot-g`. Détail valeur par valeur : `DECISIONS.md`, D28, « Essais du 16/11/2026 ».
 
 **Jamais vu en vrai.**
 - **La pipette** (lot G) : jamais essayée dans un vrai navigateur. Elle n'existe que dans Chrome (`Nuances.tsx`, ligne 18) : ailleurs, elle ne s'affiche pas.
@@ -262,4 +264,4 @@ Tes retours du 16/11 sont devenus sept tickets (T-208 à T-214, dans `docs/backl
 - Des titres précis : le plat, le lieu nommé (« Mont Fuji », « BMW Welt »), des titres qui se répondent (T-212, second temps).
 - Plus tard, le bouton « Composer » sur le site, testé sur un vrai dossier sans retoucher les règles.
 
-**En attente de toi, sans urgence** : les essais Affinity des lots E et G, les 25 décisions du 12/11 et les décisions 2 à 15 du 13/11, l'effacement des empreintes de visages de la démo.
+**En attente de toi, sans urgence** : les 25 décisions du 12/11 et les décisions 2 à 15 du 13/11, l'effacement des empreintes de visages de la démo.
