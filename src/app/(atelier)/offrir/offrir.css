@@ -1,0 +1,38 @@
+/* Les pages réelles de la carte (/offrir, /offrir/merci, /carte/<token>),
+   sur le scope .nl-preview de noel.css. */
+
+.nl-preview.nl-page { padding-top: 24px; }
+.nl-preview .nl-page-marque {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 28px;
+  font-family: var(--font-display);
+  font-size: 26px;
+  color: var(--c-text);
+  text-decoration: none;
+}
+.nl-preview .nl-erreur {
+  margin: 0;
+  color: var(--c-accent);
+  font-size: 14px;
+  text-align: center;
+}
+.nl-preview .nl-payer:disabled { opacity: 0.6; cursor: progress; }
+.nl-preview .nl-merci {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+.nl-preview .nl-merci .nl-recit-carte { width: min(100%, 440px); }
+.nl-preview .nl-merci-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.nl-preview .nl-merci-actions a { text-decoration: none; }
+
+@media print {
+  .nl-preview .nl-imprimer-non { display: none !important; }
+  .nl-preview.nl-page { padding: 0; }
+  .nl-preview .nl-merci .nl-recit-carte { width: 148mm; }
+}

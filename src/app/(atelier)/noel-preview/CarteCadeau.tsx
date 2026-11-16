@@ -20,9 +20,13 @@ type Props = {
   message: string
   /* Faux quand un parent pilote déjà le mouvement (l'enveloppe). */
   entree?: boolean
+  /* Le vrai code (page /carte/<token>, page de retour) ; l'exemple sinon. */
+  code?: string
+  /* « Valable jusqu'au 16 novembre 2027 » sur une vraie carte. */
+  validite?: string
 }
 
-export default function CarteCadeau({ phrase, montant, prenom, message, entree = true }: Props) {
+export default function CarteCadeau({ phrase, montant, prenom, message, entree = true, code = CODE_EXEMPLE, validite = 'Valable 12 mois' }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -58,8 +62,8 @@ export default function CarteCadeau({ phrase, montant, prenom, message, entree =
             {dedicace && <span className="nl-carte-message">{dedicace}</span>}
           </span>
           <span className="nl-carte-infos">
-            <span className="nl-carte-code">{CODE_EXEMPLE}</span>
-            <span>Valable 12 mois</span>
+            <span className="nl-carte-code">{code}</span>
+            <span>{validite}</span>
           </span>
         </div>
       </div>

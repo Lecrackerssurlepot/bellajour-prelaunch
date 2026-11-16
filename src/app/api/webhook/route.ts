@@ -12,6 +12,12 @@ import {
   traiterExpirationAtelier,
   traiterRemboursementAtelier,
 } from "@/lib/atelier/paiement";
+import {
+  enregistrerCarte,
+  estChargeCarte,
+  estSessionCarte,
+  traiterRemboursementCarte,
+} from "@/lib/atelier/carteServeur";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
 const REF_LINK_BASE = "https://www.bellajour.fr";
@@ -695,7 +701,11 @@ export async function POST(request: Request) {
          simplement plus jamais un événement qui ne les concerne pas. */
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (estSessionAtelier(session)) {
+        /* La carte cadeau de Noël (`kind: "carte_cadeau"`), triée en premier
+           et sur le même patron : un prédicat pur, avant toute base. */
+        if (estSessionCarte(session)) {
+          ok = !(await enregistrerCarte(supabase, session)).erreur;
+        } else if (estSessionAtelier(session)) {
           ok = await traiterPaiementAtelier(supabase, session, stripe);
         } else if (estSessionPrevente(session)) {
           ok = await handleCheckoutCompleted(supabase, session);
@@ -706,7 +716,10 @@ export async function POST(request: Request) {
       }
       case "checkout.session.expired": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (estSessionAtelier(session)) {
+        if (estSessionCarte(session)) {
+          /* Une carte abandonnée n'a jamais existé en base : rien à défaire. */
+          ok = true;
+        } else if (estSessionAtelier(session)) {
           ok = await traiterExpirationAtelier(supabase, session);
         } else if (estSessionPrevente(session)) {
           ok = await handleCheckoutExpired(supabase, session);
@@ -731,7 +744,9 @@ export async function POST(request: Request) {
            que ce commit corrige — c'est l'identification par email qui
            l'avait, et elle ne concerne que les deux événements de session. */
         const charge = event.data.object as Stripe.Charge;
-        ok = estChargeAtelier(charge)
+        ok = estChargeCarte(charge)
+          ? await traiterRemboursementCarte(supabase, charge)
+          : estChargeAtelier(charge)
           ? await traiterRemboursementAtelier(supabase, charge)
           : await handleChargeRefunded(supabase, charge);
         break;

@@ -11,6 +11,8 @@ import {
   reglementCommande,
   refusCarte,
 } from "@/lib/atelier/carteCadeau";
+import type Stripe from "stripe";
+import { carteDepuisSession, estSessionCarte, genererCodeCarte, genererTokenCarte } from "@/lib/atelier/carteServeur";
 
 type Ok = (n: string, c: boolean) => void;
 
@@ -68,4 +70,30 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
   const src = readFileSync("src/lib/atelier/carteCadeau.ts", "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
   ok("carteCadeau.ts reste PUR (ni crypto, ni réseau, ni horloge, ni base) : le navigateur le lit",
     !/node:crypto|fetch\(|Date\.now|new Date\(\)|process\.env|supabase/i.test(src));
+
+  titre("— Noël : la session Stripe d'une carte, relue au paiement (lot 2) —");
+  const base = {
+    id: "cs_test_abc", created: 1794830400, livemode: false, payment_status: "paid", amount_total: 5000,
+    customer_details: { email: "Acheteur@Exemple.fr" }, payment_intent: "pi_1",
+    metadata: { kind: "carte_cadeau", montant_centimes: "5000", destinataire_prenom: "Camille", acheteur_prenom: "Léa",
+      message: "Pour nos étés.", remise: "email", destinataire_email: "camille@exemple.fr", envoi_le: "" },
+  };
+  const sess = (patch: Record<string, unknown>, meta: Record<string, string> = {}) =>
+    ({ ...base, ...patch, metadata: { ...base.metadata, ...meta } }) as unknown as Stripe.Checkout.Session;
+  const lue = carteDepuisSession(sess({}));
+  ok("session : une carte payée se relit (montant encaissé, acheteur en minuscules, test marqué)",
+    lue.ok && lue.ligne.montant_centimes === 5000 && lue.ligne.acheteur_email === "acheteur@exemple.fr"
+      && lue.ligne.livemode === false && lue.ligne.envoi_le === null && lue.ligne.stripe_payment_intent === "pi_1");
+  ok("session : le tri ne reconnaît que kind = carte_cadeau", estSessionCarte(sess({})) && !estSessionCarte(sess({}, { kind: "atelier" })));
+  const refus = (s: Stripe.Checkout.Session) => { const r = carteDepuisSession(s); return r.ok ? "" : r.raison; };
+  ok("session : non payée, montant encaissé différent des métadonnées, ou hors bornes : refusée",
+    refus(sess({ payment_status: "unpaid" })) === "non_payee" && refus(sess({ amount_total: 3000 })) === "montant_incoherent"
+      && refus(sess({ amount_total: 25000 }, { montant_centimes: "25000" })) === "montant_incoherent");
+  ok("session : par e-mail sans adresse du destinataire, ou sans prénom : refusée",
+    refus(sess({}, { destinataire_email: "" })) === "destinataire_sans_email" && refus(sess({}, { destinataire_prenom: " " })) === "destinataire_sans_prenom");
+  const imp = carteDepuisSession(sess({}, { remise: "imprimer", destinataire_email: "x@y.fr", envoi_le: "2026-12-24" }));
+  ok("session : à imprimer, l'adresse du destinataire n'est pas gardée",
+    imp.ok && imp.ligne.destinataire_email === null);
+  ok("tirage serveur : un code de la bonne forme et un token de 32 caractères",
+    normaliserCode(genererCodeCarte()) !== null && /^[A-Za-z0-9_-]{32}$/.test(genererTokenCarte()));
 }
