@@ -1,7 +1,7 @@
 ---
 id: T-213
 titre: La grille d'artiste (tiers, nombre d'or, diagonales) n'est pas utilisable : il faut une vraie grille comme dans Affinity, avec marges et colonnes et lignes (8 par 8)
-etat: nouveau
+etat: fermé
 domaine: atelier
 gravite: confort
 autonomie: libre
@@ -25,3 +25,19 @@ Une grille de mise en page réglable : marges, colonnes et lignes (8 × 8 par d�
 **Quand : vague 1.** Montrer la vraie grille : marges, colonnes, lignes, gouttières, avec l'aimant des cadres. Sa taille (6 × 6 ou 8 × 8) se tranche avec Mathias. La grille d'artiste reste une option. Moyen.
 
 ## Ce qui a été fait
+Le 16/11, vague 1, branche `feat/mise-en-page-vague-1` (pas encore fusionnée).
+- Le bouton grille de la barre ouvre un menu court : « Aucune », « 6 × 6 », « 8 × 8 », « Artiste ». O allume ou éteint la grille
+  choisie ; le choix est gardé sur ce Mac (`bj-mep-grille`, `bj-mep-grille-trame`).
+- 6 × 6 est la grille de structure du moteur (marges 20 au pli, 15 à la tranche, 15 en haut, 20 en bas, gouttière 5 mm,
+  modules 25 × 39,5 mm), celle sur laquelle tous les gabarits sont bâtis : c'est la grille par défaut. 8 × 8 est calculée dans
+  les mêmes marges avec la même gouttière (modules 17,5 × 28,375 mm). La grille d'artiste devient la troisième option.
+- Dessin par page, comme dans Affinity : les marges en magenta, les modules en cyan léger, les gouttières entre eux. Sur les
+  planches ET sur la couverture (4e et 1re). Écran seulement. Module pur `editeur/grilleMiseEnPage.ts`, écran `GrilleArtiste.tsx`.
+- L'aimant des cadres accroche aussi aux lignes de la grille affichée (cadre libre ; la grille d'artiste prête ses tiers et son
+  nombre d'or) ; grille cachée, il n'accroche rien de plus qu'avant.
+- Rien ne change à l'export : l'IDML porte déjà les colonnes 6 × 6 ; un repère de plus exigerait un essai Affinity (D28), il
+  n'est pas fait.
+- Harnais : `scripts/verif-mep-vague-1.ts` (bloc T-213 : chaque case 6 × 6 de l'écran = celle des gabarits, le 8 × 8, l'aimant)
+  et `verif-mep-generes.ts` (montage, touche, mémoire).
+- Recette locale : captures `06` (le menu), `07` (6 × 6), `08` (8 × 8), `09` (artiste), `10` (un cadre déplacé accroché à la
+  colonne de 40 mm et à la ligne de 59,5 mm, guides affichés), `11` (la couverture).

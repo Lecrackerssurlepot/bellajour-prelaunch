@@ -1,7 +1,7 @@
 ---
 id: T-211
 titre: Sur la couverture, l'éditeur ne montre pas en premier les photos sélectionnées pour la couverture
-etat: nouveau
+etat: fermé
 domaine: atelier
 gravite: confort
 autonomie: libre
@@ -24,3 +24,13 @@ Quand la couverture est ouverte, la barre latérale met en tête les photos marq
 **Quand : vague 1.** Couverture ouverte : en tête, les photos marquées « couverture », puis les « Couv. » de la lecture IA, puis le reste. Petit.
 
 ## Ce qui a été fait
+Le 16/11, vague 1, branche `feat/mise-en-page-vague-1` (pas encore fusionnée).
+- Couverture ouverte, la barre latérale commence par un petit titre « Pour la couverture » : d'abord les photos étiquetées
+  « Couverture » au tri, puis les « Couv. » de la lecture IA, chacune dans l'ordre habituel ; puis le reste, comme avant, sans
+  elles (sans groupement, le reste prend le titre « Les autres »). `candidatesCouverture` et `groupes` (`editeur/bibliotheque.ts`).
+- Les filtres valent pour la tête aussi (on range, on n'ajoute rien) ; une candidate rangée sous une pile se montre quand même.
+  Pas de bouton « Poser » sur ce groupe (moins de boutons : on glisse une photo sur la couverture).
+- Sans aucune candidate, la barre est celle d'avant ; sur une page, rien ne change.
+- Harnais : `scripts/verif-mep-vague-1.ts` (bloc T-211, 9 tests).
+- Recette locale : Merisa, lecture `lecture-merisa.json` chargée par « Premier jet », une photo étiquetée Couverture : captures
+  `03` et `04` (« Pour la couverture 19 » : l'étiquetée, puis les 18 « Couv. »), `05` (sur une page, la barre d'avant).
