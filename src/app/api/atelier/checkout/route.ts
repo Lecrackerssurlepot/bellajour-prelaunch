@@ -13,7 +13,9 @@ import {
 } from "@/lib/atelier/prix";
 import { PAYS_LIBELLE, normaliserPays, type PaysLivraison } from "@/lib/atelier/pays";
 import { reglementAvecCarte } from "@/lib/atelier/carteCommande";
-import { META_CARTE } from "@/lib/atelier/carteServeur";
+import { META_CADEAU, META_CARTE } from "@/lib/atelier/carteServeur";
+import { montantCadeau, prenomCadeau } from "@/lib/atelier/carteCadeau";
+import { lireInterrupteur } from "@/lib/collectif/interrupteur";
 import { CODE_FISCAL_LIVRAISON, portClient, totalCommande } from "@/lib/atelier/livraison";
 import { libelleLigne, quantiteDuDossier } from "@/lib/atelier/exemplaires";
 import { regleDuDossier } from "@/lib/atelier/noelExemplaire";
@@ -199,6 +201,22 @@ export async function POST(request: Request) {
     const token = typeof body.token === "string" ? body.token.trim() : "";
     if (!isValidNumeroToken(token)) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
+    }
+
+    /* ── UNE CARTE CADEAU AJOUTÉE À LA COMMANDE (Noël 2026, 16/11) ──────
+       30 ou 50 €, un prénom, et le drapeau de Noël ouvert : sinon on refuse
+       plutôt que d'encaisser une carte que la page n'a pas montrée. Elle
+       part chez l'ACHETEUR (remise « imprimer »), au webhook
+       (`enregistrerCarteAjoutee`). */
+    let cadeau: { centimes: number; prenom: string } | null = null;
+    if (body.cadeau !== undefined && body.cadeau !== null) {
+      const c = body.cadeau as Record<string, unknown>;
+      const centimes = montantCadeau(c?.montant_centimes);
+      const prenom = prenomCadeau(c?.prenom);
+      if (!lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert || centimes === null || prenom === null) {
+        return NextResponse.json({ error: "cadeau_invalide" }, { status: 400 });
+      }
+      cadeau = { centimes, prenom };
     }
 
     const supabase = makeSupabase();
@@ -410,7 +428,19 @@ export async function POST(request: Request) {
       creditCentimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
       portOffert: portOffertFondateur,
       regle,
+      cadeauCentimes: cadeau?.centimes ?? 0,
     });
+    /* La carte ajoutée et le crédit fondateur (16/11). Le crédit est un
+       code promo Stripe de 30 € qui s'impute sur TOUT le panier : sous 30 €
+       de magazines, Stripe prendrait le reste sur la carte cadeau, que
+       `totalCommande` refuse de payer par un crédit. Cas rare (20 à 28
+       pages), on refuse l'ajout plutôt que d'offrir une partie de la carte. */
+    if (cadeau && remiseAppliquee && CREDIT_FONDATRICE_CENTIMES > commande.prix) {
+      return NextResponse.json(
+        { error: "cadeau_refuse", phrase: "La carte cadeau se commande à part ici : bellajour.fr/offrir." },
+        { status: 409 },
+      );
+    }
     const portOffert = commande.livraisonOfferte;
     const livraison = commande.livraison;
     if (credit.statut === "indisponible") {
@@ -587,7 +617,7 @@ export async function POST(request: Request) {
            sur l'écran de paiement et sur la facture, et c'est exactement le
            décompte du bon de commande (`decompteExemplaires`). Une seule
            ligne à quantité 3 et prix moyen ne dirait pas la remise. */
-        line_items: decompte.lignes.map((ligne) => ({
+        line_items: decompte.lignes.map((ligne): Stripe.Checkout.SessionCreateParams.LineItem => ({
           quantity: ligne.quantite,
           price_data: {
             currency: "eur",
@@ -608,7 +638,25 @@ export async function POST(request: Request) {
               tax_code: CODE_FISCAL_ALBUM,
             },
           },
-        })),
+        })).concat(
+          /* La carte cadeau ajoutée : un bon à usages multiples, sans TVA à
+             la vente (la TVA se paiera sur le magazine qu'elle achètera).
+             La fatura du magazine l'écarte (`creerJobFacture`). */
+          cadeau
+            ? [<Stripe.Checkout.SessionCreateParams.LineItem>{
+                quantity: 1,
+                price_data: {
+                  currency: "eur",
+                  unit_amount: cadeau.centimes,
+                  tax_behavior: "inclusive" as const,
+                  product_data: {
+                    name: `Carte cadeau Bellajour, ${cadeau.centimes / 100} €`,
+                    description: `Pour ${cadeau.prenom}. Valable 12 mois, sur un magazine Bellajour.`,
+                  },
+                },
+              }]
+            : [],
+        ),
 
         /* Le discriminant du webhook partagé. `kind` est lu au `switch` de
            /api/webhook AVANT tout accès en base ; sans lui, ce paiement
@@ -631,6 +679,7 @@ export async function POST(request: Request) {
           regle_exemplaires: decompte.regle,
           couverture_exemplaire: decompte.regle === "noel" && quantite === 2 ? regle.couverture : "",
           total_produit_centimes: String(decompte.totalCentimes),
+          ...(cadeau ? { [META_CADEAU.centimes]: String(cadeau.centimes), [META_CADEAU.prenom]: cadeau.prenom } : {}),
           livraison_centimes: String(livraisonDue),
           livraison_zone: port.zone,
           port_offert: portOffert ? "true" : "false",
@@ -741,6 +790,7 @@ export async function POST(request: Request) {
       session_id: session.id,
       palier: numero.palier,
       montant_centimes: centimes,
+      cadeau_centimes: cadeau?.centimes ?? 0,
       /* D'où vient ce montant : de la colonne gelée, ou d'un recalcul depuis
          la grille. Le jour où la grille change, c'est cette ligne qui dira si
          une commande a été chiffrée au barème d'hier ou à celui du jour. */

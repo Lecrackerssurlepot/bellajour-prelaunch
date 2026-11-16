@@ -14,7 +14,9 @@ import {
   traiterRemboursementAtelier,
 } from "@/lib/atelier/paiement";
 import {
+  cadeauDeSession,
   enregistrerCarte,
+  enregistrerCarteAjoutee,
   estChargeCarte,
   estSessionCarte,
   traiterRemboursementCarte,
@@ -708,6 +710,12 @@ export async function POST(request: Request) {
           ok = !(await enregistrerCarte(supabase, session)).erreur;
         } else if (estSessionAtelier(session)) {
           ok = await traiterPaiementAtelier(supabase, session, stripe);
+          /* Noël (16/11) : une carte cadeau achetée AVEC le magazine. À chaque
+             livraison de l'évènement (idempotent par la session) : un rejeu
+             répare une carte qui n'a pas pu s'écrire. */
+          if (ok && cadeauDeSession(session) > 0) {
+            ok = !(await enregistrerCarteAjoutee(supabase, session)).erreur;
+          }
         } else if (estSessionPrevente(session)) {
           ok = await handleCheckoutCompleted(supabase, session);
         } else {
@@ -748,7 +756,9 @@ export async function POST(request: Request) {
         ok = estChargeCarte(charge)
           ? await traiterRemboursementCarte(supabase, charge)
           : estChargeAtelier(charge)
-          ? await traiterRemboursementAtelier(supabase, charge)
+          ? (await traiterRemboursementAtelier(supabase, charge)) &&
+            /* La carte ajoutée à la commande suit le paiement du magazine. */
+            (await traiterRemboursementCarte(supabase, charge, { silencieux: true }))
           : await handleChargeRefunded(supabase, charge);
         break;
       }

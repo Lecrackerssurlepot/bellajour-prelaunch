@@ -22,9 +22,8 @@ export default function OffrirPage() {
       <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} /></Link>
       <Achat />
       {/* « Toutes les conditions » des mails de Noël mène ici (#conditions).
-          Uniquement ce que le code FAIT (carteCadeau.ts, carteServeur.ts) :
-          les CGV ne parlent pas encore de la carte, leur texte attend
-          l'accord de Mathias (interdit 2 du socle). */}
+          Uniquement ce que le code FAIT (carteCadeau.ts, carteServeur.ts),
+          comme l'article 4bis.12 des CGV v4.1 (16/11, accord de Mathias). */}
       <section id="conditions" className="nl-conditions" aria-labelledby="nl-conditions-titre">
         <h2 id="nl-conditions-titre">Bon à savoir</h2>
         <dl>

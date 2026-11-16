@@ -34,7 +34,9 @@ import {
   rappelCredit,
   recapCarteM4,
   expirationCarte,
+  montantCadeau,
   montantCarteValide,
+  prenomCadeau,
   normaliserCode,
   refusCarte,
   soldeCredit,
@@ -155,7 +157,16 @@ export async function enregistrerCarte(
     return { carte: null };
   }
 
-  const deja = await supabase.from("cartes_cadeau").select(COLONNES).eq("stripe_session_id", session.id).maybeSingle();
+  return insererCarte(supabase, session.id, lue.ligne);
+}
+
+/** Une ligne de carte, une seule fois par session Stripe, puis ses mails. */
+async function insererCarte(
+  supabase: SupabaseClient,
+  sessionId: string,
+  ligne: LigneCarteNeuve,
+): Promise<{ carte: CarteLigne | null; erreur?: string }> {
+  const deja = await supabase.from("cartes_cadeau").select(COLONNES).eq("stripe_session_id", sessionId).maybeSingle();
   if (deja.error) return { carte: null, erreur: deja.error.code ?? "lecture" };
   let carte = deja.data as CarteLigne | null;
 
@@ -163,7 +174,7 @@ export async function enregistrerCarte(
     for (let essai = 0; essai < 5 && !carte; essai++) {
       const ins = await supabase
         .from("cartes_cadeau")
-        .insert({ ...lue.ligne, code: genererCodeCarte(lue.ligne.destinataire_prenom), token: genererTokenCarte() })
+        .insert({ ...ligne, code: genererCodeCarte(ligne.destinataire_prenom), token: genererTokenCarte() })
         .select(COLONNES)
         .single();
       if (!ins.error) {
@@ -173,7 +184,7 @@ export async function enregistrerCarte(
       if (ins.error.code !== "23505") return { carte: null, erreur: ins.error.code ?? "ecriture" };
       /* 23505 : soit l'autre chemin vient d'écrire la même session (on relit),
          soit un code tiré existe déjà (on retire). */
-      const autre = await supabase.from("cartes_cadeau").select(COLONNES).eq("stripe_session_id", session.id).maybeSingle();
+      const autre = await supabase.from("cartes_cadeau").select(COLONNES).eq("stripe_session_id", sessionId).maybeSingle();
       if (autre.data) carte = autre.data as CarteLigne;
     }
     if (!carte) return { carte: null, erreur: "code_introuvable" };
@@ -181,6 +192,85 @@ export async function enregistrerCarte(
 
   await mailsAchat(supabase, carte);
   return { carte };
+}
+
+/* ─────────── la carte AJOUTÉE à la commande d'un magazine (16/11) ─────────── */
+
+/** Les métadonnées de la session du magazine qui portent la carte ajoutée. */
+export const META_CADEAU = { centimes: "cadeau_centimes", prenom: "cadeau_prenom" } as const;
+
+type LigneCarteNeuve = Omit<CarteLigne, "id" | "code" | "token" | "statut" | "envoyee_le" | "created_at"> & {
+  stripe_session_id: string;
+  stripe_payment_intent: string | null;
+};
+
+/** Le montant de la carte ajoutée à une session de magazine, 0 sans carte. Pur. */
+export function cadeauDeSession(session: Pick<Stripe.Checkout.Session, "metadata">): number {
+  return montantCadeau(session.metadata?.[META_CADEAU.centimes]) ?? 0;
+}
+
+/**
+ * La carte qu'une session de MAGAZINE payée a vendue en plus, relue et
+ * revalidée. Pur. Remise « imprimer » : elle part chez l'acheteur (GC1), à
+ * transmettre ou imprimer. `null` sans carte ; `{ raison }` si incohérente.
+ */
+export function carteAjouteeDepuisSession(
+  session: Stripe.Checkout.Session,
+  acheteurPrenom: string | null,
+): { ligne: LigneCarteNeuve } | { raison: string } | null {
+  const m = session.metadata ?? {};
+  if (m[META_CADEAU.centimes] === undefined) return null;
+  if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") return { raison: "non_payee" };
+  const montant = montantCadeau(m[META_CADEAU.centimes]);
+  if (montant === null) return { raison: "montant_invalide" };
+  if ((session.amount_total ?? 0) < montant) return { raison: "montant_incoherent" };
+  const prenom = prenomCadeau(m[META_CADEAU.prenom]);
+  if (!prenom) return { raison: "destinataire_sans_prenom" };
+  const acheteur = session.customer_details?.email ?? session.customer_email ?? null;
+  if (!acheteur) return { raison: "acheteur_sans_email" };
+  const achat = new Date((session.created ?? Math.floor(Date.now() / 1000)) * 1000);
+  return {
+    ligne: {
+      montant_centimes: montant,
+      acheteur_email: acheteur.trim().toLowerCase(),
+      acheteur_prenom: texte(acheteurPrenom, PRENOM_CARTE_MAX),
+      destinataire_prenom: prenom,
+      destinataire_email: null,
+      message: null,
+      remise: "imprimer",
+      envoi_le: null,
+      livemode: session.livemode,
+      expire_le: expirationCarte(achat).toISOString(),
+      stripe_session_id: session.id,
+      stripe_payment_intent:
+        typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
+    },
+  };
+}
+
+/**
+ * Enregistre la carte ajoutée à une commande de magazine payée, une seule
+ * fois (clé : la session), puis GC1 à l'acheteur. Appelé par le webhook à
+ * CHAQUE livraison de l'évènement (idempotent) : une écriture ratée rend
+ * `{ erreur }` et Stripe rejoue. Ne throw pas.
+ */
+export async function enregistrerCarteAjoutee(
+  supabase: SupabaseClient,
+  session: Stripe.Checkout.Session,
+): Promise<{ carte: CarteLigne | null; erreur?: string }> {
+  const numeroId = session.metadata?.numero_id ?? null;
+  let prenom: string | null = null;
+  if (numeroId) {
+    const n = await supabase.from("numeros").select("prenom").eq("id", numeroId).maybeSingle();
+    prenom = (n.data as { prenom?: string | null } | null)?.prenom ?? null;
+  }
+  const lue = carteAjouteeDepuisSession(session, prenom);
+  if (lue === null) return { carte: null };
+  if ("raison" in lue) {
+    if (lue.raison !== "non_payee") console.error(`[carte] carte ajoutée refusée, session ${session.id} : ${lue.raison}`);
+    return { carte: null };
+  }
+  return insererCarte(supabase, session.id, lue.ligne);
 }
 
 /* ─────────────────────────────── les mails ─────────────────────────────── */
@@ -338,14 +428,19 @@ export async function carteParToken(supabase: SupabaseClient, token: string): Pr
  * annulée par une machine : le magazine est peut-être imprimé ; on le dit
  * dans les logs, l'atelier tranche.
  */
-export async function traiterRemboursementCarte(supabase: SupabaseClient, charge: Stripe.Charge): Promise<boolean> {
+export async function traiterRemboursementCarte(
+  supabase: SupabaseClient,
+  charge: Stripe.Charge,
+  options: { silencieux?: boolean } = {},
+): Promise<boolean> {
   const pi = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
   if (!pi) return true;
   const r = await supabase.from("cartes_cadeau").select(COLONNES).eq("stripe_payment_intent", pi).maybeSingle();
   if (r.error) return false;
   const carte = r.data as CarteLigne | null;
   if (!carte) {
-    console.warn(`[carte] remboursement sans carte connue (${pi})`);
+    /* Silencieux pour un magazine : la plupart n'ont pas de carte ajoutée. */
+    if (!options.silencieux) console.warn(`[carte] remboursement sans carte connue (${pi})`);
     return true;
   }
   if (!charge.refunded) {

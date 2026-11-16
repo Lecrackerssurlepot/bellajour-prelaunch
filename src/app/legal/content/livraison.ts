@@ -1,7 +1,7 @@
 import type { LocalizedDoc } from '../types'
 import { FRANCO_CENTIMES, ZONES_PORT, paysDesservisZone } from '@/lib/atelier/livraison'
 import { PAYS_LIBELLE } from '@/lib/atelier/pays'
-import { QUANTITE_MAX, REMISE_DEUXIEME_PCT, REMISE_SUIVANTS_PCT } from '@/lib/atelier/exemplaires'
+import { NOEL_EXEMPLAIRES_MAX, NOEL_REMISE_AUTRE_PCT, NOEL_REMISE_MEME_PCT, QUANTITE_MAX, REMISE_DEUXIEME_PCT, REMISE_SUIVANTS_PCT } from '@/lib/atelier/exemplaires'
 import { JOURS_LIVRAISON } from '@/lib/atelier/urgence'
 
 /* LA PAGE LIVRAISON (16/09/2026) — la politique de livraison du tableur
@@ -56,8 +56,9 @@ export const LIVRAISON: LocalizedDoc = {
             [`B`, PAYS_B_FR, `${ZONE_B} €`],
             [`C`, PAYS_C_FR, `Chiffrés pour votre pays et votre colis, affichés avant paiement`],
           ] },
-          { kind: 'p', value: `Livraison offerte dès ${FRANCO} € de magazines dans une même commande, remises déduites. En France, c'est à partir de 44 pages.` },
+          { kind: 'p', value: `Livraison offerte dès ${FRANCO} € de magazines dans une même commande, remises déduites ; une carte cadeau achetée dans la même commande compte aussi. En France, c'est à partir de 44 pages.` },
           { kind: 'p', value: `Plusieurs exemplaires du même numéro ? Jusqu'à ${QUANTITE_MAX}, depuis votre page de commande : le 2e à −${REMISE_DEUXIEME_PCT} %, le 3e et les suivants à −${REMISE_SUIVANTS_PCT} %. Les frais de livraison ne changent pas, et les exemplaires partent ensemble.` },
+          { kind: 'p', value: `Offre de Noël, du 16 novembre au 7 décembre 2026, livraison en France : le 2e exemplaire à −${NOEL_REMISE_MEME_PCT} % avec la même couverture, ou −${NOEL_REMISE_AUTRE_PCT} % avec une autre couverture, ${NOEL_EXEMPLAIRES_MAX} au plus (CGV, article 4bis.10).` },
         ],
       },
       {
@@ -103,8 +104,9 @@ export const LIVRAISON: LocalizedDoc = {
             [`B`, PAYS_B_PT, `${ZONE_B} €`],
             [`C`, PAYS_C_PT, `Calculado para o seu país e a sua encomenda, exibido antes do pagamento`],
           ] },
-          { kind: 'p', value: `Entrega oferecida a partir de ${FRANCO} € de revistas numa mesma encomenda, descontos deduzidos.` },
+          { kind: 'p', value: `Entrega oferecida a partir de ${FRANCO} € de revistas numa mesma encomenda, descontos deduzidos; um cartão-presente comprado na mesma encomenda também conta.` },
           { kind: 'p', value: `Vários exemplares do mesmo número? Até ${QUANTITE_MAX}, a partir da sua página de encomenda: o 2.º a −${REMISE_DEUXIEME_PCT} %, o 3.º e seguintes a −${REMISE_SUIVANTS_PCT} %. Os custos de entrega não mudam, e os exemplares seguem juntos.` },
+          { kind: 'p', value: `Oferta de Natal, de 16 de novembro a 7 de dezembro de 2026, entrega em França: o 2.º exemplar a −${NOEL_REMISE_MEME_PCT} % com a mesma capa, ou −${NOEL_REMISE_AUTRE_PCT} % com outra capa, no máximo ${NOEL_EXEMPLAIRES_MAX} (CGV, artigo 4.º-A.10).` },
         ],
       },
       {
@@ -150,8 +152,9 @@ export const LIVRAISON: LocalizedDoc = {
             [`B`, PAYS_B_EN, `€${ZONE_B}`],
             [`C`, PAYS_C_EN, `Quoted for your country and parcel, shown before payment`],
           ] },
-          { kind: 'p', value: `Free delivery from €${FRANCO} of magazines in the same order, after discounts.` },
+          { kind: 'p', value: `Free delivery from €${FRANCO} of magazines in the same order, after discounts; a gift card bought in the same order also counts.` },
           { kind: 'p', value: `Several copies of the same issue? Up to ${QUANTITE_MAX}, from your order page: the 2nd at −${REMISE_DEUXIEME_PCT}%, the 3rd and following at −${REMISE_SUIVANTS_PCT}%. Delivery costs do not change, and the copies ship together.` },
+          { kind: 'p', value: `Christmas offer, from 16 November to 7 December 2026, delivery in France: the 2nd copy at −${NOEL_REMISE_MEME_PCT}% with the same cover, or −${NOEL_REMISE_AUTRE_PCT}% with a different cover, ${NOEL_EXEMPLAIRES_MAX} at most (Terms, Article 4a.10).` },
         ],
       },
       {

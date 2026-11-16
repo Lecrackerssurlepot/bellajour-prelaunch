@@ -113,6 +113,26 @@ export function montantCarteValide(centimes: unknown): centimes is number {
   );
 }
 
+/* ── LA CARTE AJOUTÉE À LA COMMANDE D'UN MAGAZINE (16/11, Mathias : « on veut
+   créer de l'upsell ») ── Deux montants seulement, ceux de /offrir, et le
+   prénom de la personne qui la recevra. La carte part chez l'ACHETEUR, à
+   transmettre ou à imprimer (remise « imprimer ») : pas d'adresse à saisir
+   au moment de payer. Le paramètre d'adresse est `?cadeau=5000`. */
+export const PARAM_CADEAU = "cadeau";
+
+/** Le montant d'une carte ajoutée, ou `null` s'il n'est pas l'un des deux proposés. */
+export function montantCadeau(v: unknown): number | null {
+  const n = typeof v === "string" && /^\d{4,5}$/.test(v) ? Number(v) : v;
+  return (MONTANTS_CARTE_CENTIMES as readonly unknown[]).includes(n) ? (n as number) : null;
+}
+
+/** Le prénom de la personne qui recevra la carte ajoutée, ou `null`. */
+export function prenomCadeau(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.replace(/\s+/g, " ").trim();
+  return t.length >= 1 && t.length <= PRENOM_CARTE_MAX ? t : null;
+}
+
 /** La fin de validité : douze mois jour pour jour, et le dernier jour du mois si le jour n'existe pas (29 février). */
 export function expirationCarte(achat: Date): Date {
   const d = new Date(achat.getTime());

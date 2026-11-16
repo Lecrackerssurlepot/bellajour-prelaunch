@@ -52,6 +52,7 @@ import { rattacherParToken } from '@/lib/compte/donnees'
 import { quiEstConnecte } from '@/lib/admin-session'
 import { appliquerBrouillon, lireBrouillon, TYPE_BROUILLON } from '@/lib/atelier/brouillon'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { montantCadeau } from '@/lib/atelier/carteCadeau'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -295,10 +296,10 @@ export default async function NumeroPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string; carte?: string }>
+  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string; carte?: string; cadeau?: string }>
 }) {
   const { token } = await params
-  const { paiement, de, brouillon: brouillonDemande, carte: carteSaisie } = await searchParams
+  const { paiement, de, brouillon: brouillonDemande, carte: carteSaisie, cadeau: cadeauSaisi } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -465,6 +466,13 @@ export default async function NumeroPage({
         })
       : null
   const portBrut = port && port.source !== 'inconnu' ? port.brutCentimes : null
+  /* ── UNE CARTE CADEAU AJOUTÉE À LA COMMANDE (Noël 2026, 16/11) ──────
+     Par l'adresse (`?cadeau=5000`), comme le code d'une carte qui paie : le
+     total, le seuil de la livraison offerte et le montant du bouton sont
+     ceux du serveur. Seulement drapeau ouvert, à l'état 2, hors aperçu. */
+  const offrirCarte = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert
+  const cadeauCentimes =
+    offrirCarte && numero.etat === 'apercu_pret' && !previsualisation ? montantCadeau(cadeauSaisi) ?? 0 : 0
   const commande =
     prixCentimes !== null && portBrut !== null
       ? totalCommande({
@@ -474,6 +482,7 @@ export default async function NumeroPage({
           creditCentimes: (creditEuros ?? 0) * 100,
           portOffert: creditEuros !== null,
           regle,
+          cadeauCentimes,
         })
       : null
 
@@ -502,7 +511,8 @@ export default async function NumeroPage({
         carteCentimes: reglement.imputation?.carteCentimes ?? 0,
         creditCentimes: reglement.imputation?.creditCentimes ?? 0,
         reliquatCentimes: reglement.imputation?.reliquatCentimes ?? 0,
-        aPayerCentimes: reglement.imputation?.aPayerCentimes ?? null,
+        aPayerCentimes:
+          reglement.imputation?.aPayerCentimes != null ? reglement.imputation.aPayerCentimes + cadeauCentimes : null,
       }
     : null
   /* Après le paiement : ce que la carte a payé, et ce qui reste au compte. */
@@ -741,7 +751,8 @@ export default async function NumeroPage({
               quantite={quantite}
               exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite, regle) : null}
               regle={regle}
-              offrirCarte={lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert}
+              offrirCarte={offrirCarte}
+              cadeauCentimes={cadeauCentimes}
               commande={commande}
               portOffert={creditEuros !== null}
               cgvOk={numero.cgv_ok}

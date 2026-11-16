@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { deciderFacture } from "./facturation";
+import { cadeauDeSession } from "./carteServeur";
 import { envoyerAlerteFacturation } from "@/lib/alerteFacturation";
 
 /**
@@ -39,6 +40,18 @@ export async function creerJobFacture(
      fatura n'est pas écrit pour ce cas : elle part en revue manuelle, chez
      Louis, avec le détail. Même chose à 0 € (aucun payment intent). */
   const parCarte = (dossier.carteCentimes ?? 0) + (dossier.creditCompteCentimes ?? 0);
+  /* UNE CARTE CADEAU VENDUE AVEC LE MAGAZINE (16/11). Encaissée dans le même
+     paiement, mais c'est un bon à usages multiples : pas de TVA à la vente,
+     elle ne va PAS dans la fatura du magazine. Revue manuelle, chez Louis,
+     avec le montant à retirer. */
+  const cadeau = cadeauDeSession(session);
+  if (cadeau > 0 && session.livemode !== false) {
+    await envoyerAlerteFacturation("Commande avec une carte cadeau ajoutée : fatura à faire à la main", {
+      Session: session.id,
+      "Carte cadeau vendue, hors TVA (€)": (cadeau / 100).toFixed(2),
+      "Encaissé par Stripe (€)": ((session.amount_total ?? 0) / 100).toFixed(2),
+    });
+  }
   if (parCarte > 0 && session.livemode !== false) {
     await envoyerAlerteFacturation("Commande payée avec une carte cadeau : fatura à faire à la main", {
       Session: session.id,
@@ -89,7 +102,9 @@ export async function creerJobFacture(
       creditFondateur: dossier.creditFondateur,
     });
     const decision: typeof decisionBrute =
-      parCarte > 0
+      cadeau > 0
+        ? { statut: "manual_review", motif: `carte cadeau vendue avec la commande : ${(cadeau / 100).toFixed(2)} € hors TVA (bon à usages multiples), à retirer de la base` }
+        : parCarte > 0
         ? { statut: "manual_review", motif: `carte cadeau ou crédit du compte : ${(parCarte / 100).toFixed(2)} € réglés hors Stripe, TVA sur le prix plein` }
         : decisionBrute;
 

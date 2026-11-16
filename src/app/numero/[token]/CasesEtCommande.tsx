@@ -33,7 +33,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { CLE_CARTE_RETENUE } from '@/lib/atelier/carteCadeau'
+import { CLE_CARTE_RETENUE, MONTANTS_CARTE_CENTIMES, PARAM_CADEAU, PRENOM_CARTE_MAX, prenomCadeau } from '@/lib/atelier/carteCadeau'
 import { formaterCentimes } from '@/lib/atelier/prix'
 /* `pays.ts` est PUR et sans montant : la liste des pays a précisément
    déménagé là pour pouvoir descendre dans le navigateur (cf. son en-tête).
@@ -93,6 +93,7 @@ type Props = {
     livraison: number
     livraisonOfferte: boolean
     remise: number
+    cadeau?: number
     total: number
   } | null
   /** Un fondateur ne paie ni son crédit ni son port. Décidé côté serveur. */
@@ -111,6 +112,8 @@ type Props = {
   /** Noël (16/11) : proposer une carte cadeau pour un proche avant de payer.
    *  Vrai seulement quand le drapeau de Noël est ouvert (lu par la page). */
   offrirCarte?: boolean
+  /** La carte cadeau AJOUTÉE à la commande (`?cadeau=`), relue par le serveur. 0 = aucune. */
+  cadeauCentimes?: number
   cgvOk: boolean
   renonciation: boolean
   /* T2-8 — les deux temps de la promesse, calculés par la page depuis
@@ -148,7 +151,7 @@ type Props = {
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
-  quantite, exemplaires, regle = REGLE_ORDINAIRE, offrirCarte = false,
+  quantite, exemplaires, regle = REGLE_ORDINAIRE, offrirCarte = false, cadeauCentimes = 0,
   cgvOk, renonciation, joursComposition, joursLivraison, finition,
   previsualisation = false,
   carte = null,
@@ -165,6 +168,21 @@ export default function CasesEtCommande({
     if (code) u.searchParams.set('carte', code)
     else u.searchParams.delete('carte')
     u.searchParams.delete('paiement')
+    router.replace(`${u.pathname}${u.search}`, { scroll: false })
+  }, [router])
+
+  /* ── LA CARTE CADEAU AJOUTÉE (Noël, 16/11) ── Le montant passe par
+     l'adresse (`?cadeau=`) : le serveur recalcule total et livraison offerte,
+     ce composant n'additionne rien. Le prénom reste ici, il ne change aucun
+     montant ; il part avec le paiement. */
+  const [prenomCadeauTape, setPrenomCadeauTape] = useState('')
+  const [erreurCadeau, setErreurCadeau] = useState<string | null>(null)
+  const choisirCadeau = useCallback((centimes: number) => {
+    const u = new URL(window.location.href)
+    if (centimes > 0) u.searchParams.set(PARAM_CADEAU, String(centimes))
+    else u.searchParams.delete(PARAM_CADEAU)
+    u.searchParams.delete('paiement')
+    setErreurCadeau(null)
     router.replace(`${u.pathname}${u.search}`, { scroll: false })
   }, [router])
 
@@ -309,6 +327,12 @@ export default function CasesEtCommande({
     /* Ceinture : le bouton est déjà désactivé, mais un raccourci clavier ou
        un rendu futur ne doit pas pouvoir ouvrir une caisse depuis ici. */
     if (previsualisation) return
+    /* La carte ajoutée porte un prénom : sans lui, rien ne part. */
+    if (cadeauCentimes > 0 && !prenomCadeau(prenomCadeauTape)) {
+      setErreurCadeau('Le prénom de la personne qui recevra la carte.')
+      document.getElementById('nu-cadeau-prenom')?.focus()
+      return
+    }
     setOccupe(true)
     setErreur(null)
     try {
@@ -318,9 +342,18 @@ export default function CasesEtCommande({
       const r = await fetch('/api/atelier/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, ...(carte?.code ? { carte: carte.code } : {}) }),
+        body: JSON.stringify({
+          token,
+          ...(carte?.code ? { carte: carte.code } : {}),
+          ...(cadeauCentimes > 0 ? { cadeau: { montant_centimes: cadeauCentimes, prenom: prenomCadeau(prenomCadeauTape) } } : {}),
+        }),
       })
       const data = (await r.json().catch(() => ({}))) as { url?: string; error?: string; phrase?: string }
+      if (data.error === 'cadeau_refuse') {
+        setErreurCadeau(data.phrase ?? 'La carte cadeau se commande à part.')
+        setOccupe(false)
+        return
+      }
       if (data.error === 'carte_refusee') {
         setErreurCarte(data.phrase ?? 'Cette carte ne peut pas servir.')
         setOccupe(false)
@@ -340,7 +373,7 @@ export default function CasesEtCommande({
       )
       setOccupe(false)
     }
-  }, [token, previsualisation, carte])
+  }, [token, previsualisation, carte, cadeauCentimes, prenomCadeauTape])
 
   /* ⚠️ « CONNU » VEUT DIRE LES DEUX. Depuis que la livraison se facture à
      part, un prix de magazine sans port n'est pas un prix : la cliente
@@ -404,7 +437,7 @@ export default function CasesEtCommande({
       : null
   /* Ce qu'il manque pour la livraison offerte, sur le total des magazines
      (remise déduite), jamais sur le port. Zéro = atteint. */
-  const manqueFranco = commande ? manquePourFranco(commande.prix) : null
+  const manqueFranco = commande ? manquePourFranco(commande.prix + (commande.cadeau ?? 0)) : null
 
   const calculerLivraison = useCallback(async () => {
     /* Même désarmement que le paiement et les cases : en prévisualisation,
@@ -734,6 +767,12 @@ export default function CasesEtCommande({
               <b>&minus;{formaterCentimes(carte.creditCentimes)}</b>
             </div>
           ) : null}
+          {commande && (commande.cadeau ?? 0) > 0 ? (
+            <div className="nu-bon-l">
+              <span>Carte cadeau{prenomCadeau(prenomCadeauTape) ? ` pour ${prenomCadeau(prenomCadeauTape)}` : ''}</span>
+              <b>{formaterCentimes(commande.cadeau ?? 0)}</b>
+            </div>
+          ) : null}
           {/* ── LE SEUIL DE LA LIVRAISON OFFERTE (15/09/2026) ──
               Dit AVANT qu'on paie, et seulement quand il reste quelque chose
               à gagner : « plus que 14 € de magazines » se lit comme une
@@ -741,7 +780,7 @@ export default function CasesEtCommande({
               réserve. Atteint, la ligne de livraison dit déjà « offerte ». */}
           {commande && portConnu && !portOffert && !commande.livraisonOfferte && manqueFranco !== null && manqueFranco > 0 ? (
             <p className="nu-bon-franco">
-              Plus que {formaterCentimes(manqueFranco)} de magazines et la livraison est offerte.
+              Plus que {formaterCentimes(manqueFranco)} de {offrirCarte ? 'magazines ou de carte cadeau' : 'magazines'} et la livraison est offerte.
             </p>
           ) : null}
           {/* ⚠️ PAS DE TOTAL TANT QUE LE PORT MANQUE. Un total qui n'inclut
@@ -854,14 +893,45 @@ export default function CasesEtCommande({
         <p className="nu-prix-sub">Le prix vous sera confirmé par mail, avant tout paiement.</p>
       )}
 
-      {/* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE (16/11, Mathias) ──
-          Juste avant de payer. Elle s'ouvre dans un nouvel onglet : la
-          commande en cours reste là, intacte. */}
+      {/* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE (16/11, Mathias : « on veut
+          créer de l'upsell ») ── Juste avant de payer, dans le MÊME paiement :
+          30 ou 50 €, un prénom. Elle compte pour la livraison offerte. */}
       {offrirCarte && !previsualisation ? (
-        <a className="nu-noel-carte" href="/offrir" target="_blank" rel="noopener">
-          <span className="nu-noel-carte-q">Offrir une carte cadeau à un proche&nbsp;?</span>
-          <span className="nu-noel-carte-l">Choisir une carte</span>
-        </a>
+        <div className={`nu-noel-carte${cadeauCentimes > 0 ? ' est-choisie' : ''}`}>
+          <span className="nu-noel-carte-q" id="nu-cadeau-lbl">Offrir une carte cadeau à un proche&nbsp;?</span>
+          <div className="nu-noel-carte-choix" role="group" aria-labelledby="nu-cadeau-lbl">
+            {MONTANTS_CARTE_CENTIMES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={cadeauCentimes === m}
+                className={`nu-noel-carte-m${cadeauCentimes === m ? ' est-choisi' : ''}`}
+                onClick={() => choisirCadeau(cadeauCentimes === m ? 0 : m)}
+                disabled={occupe}
+              >
+                {formaterCentimes(m)}
+              </button>
+            ))}
+          </div>
+          {cadeauCentimes > 0 ? (
+            <div className="nu-noel-carte-pour">
+              <label htmlFor="nu-cadeau-prenom">Pour</label>
+              <input
+                id="nu-cadeau-prenom"
+                className="nu-noel-carte-input"
+                value={prenomCadeauTape}
+                onChange={(e) => { setPrenomCadeauTape(e.target.value); setErreurCadeau(null) }}
+                maxLength={PRENOM_CARTE_MAX}
+                placeholder="Prénom"
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
+          {erreurCadeau ? <p className="nu-noel-carte-err" role="alert">{erreurCadeau}</p> : null}
+          {cadeauCentimes > 0 ? (
+            <small className="nu-noel-carte-note">Elle vous arrive par e-mail, prête à offrir. Valable 12 mois.</small>
+          ) : null}
+        </div>
       ) : null}
 
       <button
