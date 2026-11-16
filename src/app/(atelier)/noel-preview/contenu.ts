@@ -29,7 +29,10 @@ export const COUVERTURES_ACCUEIL = [
   { src: '/images/v2/accueil/couverture-cote-azur-360.webp', alt: 'Couverture « Côte d\u2019Azur »' },
 ] as const
 
-export const MONTANTS_EXEMPLE = [25, 35, 45] as const
+/* Décision de Mathias, 16/11 : 30 € et 50 €, plus un montant libre de 20 à 200 €. */
+export const MONTANTS_EXEMPLE = [30, 50] as const
+export const LIBRE_MIN = 20
+export const LIBRE_MAX = 200
 export const PLACES_EXEMPLE = 25
 export const MESSAGE_MAX = 140
 
@@ -70,7 +73,7 @@ export type Mail = {
   propose?: Ton[]
 }
 
-export const MAILS: Mail[] = [
+const MAILS_BRUTS: Mail[] = [
   {
     code: 'N1',
     nom: 'Fondateurs n°1',
@@ -116,7 +119,7 @@ export const MAILS: Mail[] = [
     corps: {
       sobre: [
         '{{ params.PRENOM }}, votre carte de {{ params.MONTANT }} € est prête.',
-        'Code : {{ params.CODE }}. Valable douze mois, utilisable en une fois ; si la commande coûte moins, le reste est crédité sur le compte.',
+        'Code : {{ params.CODE }}. Valable douze mois, utilisable en une fois ; si la commande coûte moins, le reste va sur le compte de la personne qui l’utilise.',
         '[Voir et imprimer la carte]',
         'Pour une livraison avant Noël, les photos doivent arriver avant le 7 décembre.',
       ],
@@ -149,15 +152,70 @@ export const MAILS: Mail[] = [
     },
   },
   {
+    code: 'GC1b',
+    nom: 'Carte programmée, acheteur',
+    objet: 'Votre carte partira le {{ params.DATE_ENVOI }}',
+    preheader: 'Rien à faire d’ici là.',
+    corps: {
+      sobre: [
+        '{{ params.PRENOM }}, votre carte de {{ params.MONTANT }} € pour {{ params.PRENOM_DEST }} est prête.',
+        'Elle partira par e-mail le {{ params.DATE_ENVOI }} au matin. Nous vous écrirons quand elle sera arrivée.',
+        'Code : {{ params.CODE }}, valable douze mois à partir de ce jour.',
+        '[Voir et imprimer la carte]',
+      ],
+      decontracte: [
+        '{{ params.PRENOM }}, la carte de {{ params.PRENOM_DEST }} attend son jour : le {{ params.DATE_ENVOI }}, au matin.',
+        'Nous vous préviendrons quand elle sera partie.',
+        '[Voir et imprimer la carte]',
+      ],
+    },
+    propose: ['sobre', 'decontracte'],
+  },
+  {
+    code: 'GC2b',
+    nom: 'Carte remise, acheteur',
+    objet: '{{ params.PRENOM_DEST }} a reçu votre carte',
+    preheader: 'Elle est partie ce matin.',
+    corps: {
+      sobre: [
+        '{{ params.PRENOM }}, votre carte est partie ce matin chez {{ params.PRENOM_DEST }}.',
+        'S’il ne la trouve pas, il peut regarder dans ses courriers indésirables. Vous pouvez aussi lui transmettre la carte vous-même.',
+        '[Voir et imprimer la carte]',
+      ],
+      decontracte: [
+        '{{ params.PRENOM }}, c’est parti : {{ params.PRENOM_DEST }} a sa carte depuis ce matin.',
+        '[Voir et imprimer la carte]',
+      ],
+    },
+    propose: ['sobre', 'decontracte'],
+  },
+  {
+    code: 'GC5',
+    nom: 'Carte annulée et remboursée',
+    objet: 'Votre carte cadeau est remboursée',
+    preheader: 'Le code ne fonctionne plus.',
+    corps: {
+      sobre: [
+        '{{ params.PRENOM }}, nous avons remboursé votre carte de {{ params.MONTANT }} €.',
+        'Le code {{ params.CODE }} ne fonctionne plus. Le remboursement apparaît sur votre relevé sous quelques jours ouvrés.',
+      ],
+      decontracte: [
+        '{{ params.PRENOM }}, la carte de {{ params.MONTANT }} € est remboursée et son code désactivé.',
+        'Le montant revient sur votre carte bancaire sous quelques jours ouvrés.',
+      ],
+    },
+    propose: ['sobre', 'decontracte'],
+  },
+  {
     code: 'GC3',
     nom: 'Carte utilisée',
     objet: 'Votre carte a servi',
     preheader: 'Le reste est sur votre compte.',
     corps: {
-      sobre: ['Votre carte a servi. Il reste {{ params.RELIQUAT }} € sur votre compte.', '[Voir mon compte]'],
+      sobre: ['{{ params.PRENOM }}, votre carte a servi pour votre magazine.', 'Il reste {{ params.RELIQUAT }} €, gardés sur votre compte Bellajour jusqu’au {{ params.DATE }}. Connectez-vous avec cette adresse e-mail pour les retrouver.', '[Voir mon compte]'],
       decontracte: ['Carte utilisée.', '{{ params.RELIQUAT }} € vous attendent sur votre compte.', '[Voir mon compte]'],
     },
-    propose: ['decontracte'],
+    propose: ['sobre', 'decontracte'],
   },
   {
     code: 'GC4',
@@ -193,3 +251,7 @@ export const MAILS: Mail[] = [
     propose: ['decontracte'],
   },
 ]
+
+/* L'ordre de la liste complète (MAILS.md, 16/11) : celui où ils partent. */
+const ORDRE = ['N1', 'N2', 'GC1', 'GC1b', 'GC2', 'GC2b', 'GC3', 'GC4', 'GC5', 'M4', 'M5']
+export const MAILS: Mail[] = [...MAILS_BRUTS].sort((a, b) => ORDRE.indexOf(a.code) - ORDRE.indexOf(b.code))

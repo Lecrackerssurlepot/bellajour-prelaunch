@@ -13,6 +13,27 @@ Signature DÉCIDÉE (13/11) : « L'atelier Bellajour » dans tous les mails Noë
 | GC4 | Avis d'expiration de la carte | J-30 avant 12 mois (janv. 2027 pour les premières) | porteuse | nouveau, à valider |
 | M4 | Confirmation de commande (mention 2 exemplaires, carte appliquée) | paiement | cliente | existant, à adapter |
 | M5 | Validation d'épreuve + bloc « 2ᵉ exemplaire » (FR) | ~J+5 | cliente FR | existant, bloc ajouté |
+
+## Liste complète au 16/11 (décisions de DECISIONS-16-11.md)
+Aperçu de chacun, aux deux tons, sur `/noel-preview` partie 08 AVANT toute programmation Brevo. « Proposé » = texte écrit le 16/11, à relire.
+
+| # | Code | Mail | Part quand | À qui | Statut |
+|---|---|---|---|---|---|
+| 1 | N1 | Fondateurs n°1 : la carte et le 2ᵉ exemplaire | à la main, sur ton accord | 14 fondateurs | texte de MAILS.md |
+| 2 | N2 | Fondateurs n°2 : dernier jour lundi 7/12 | à la main, ven. 4/12 | 14 fondateurs | texte de MAILS.md |
+| 3 | GC1 | Votre carte cadeau (reçu et code) | paiement de la carte, envoi immédiat ou impression | acheteur | texte de MAILS.md, reliquat corrigé (compte) |
+| 4 | GC1b | Votre carte partira le JJ/MM | paiement d'une carte programmée | acheteur | proposé |
+| 5 | GC2 | X vous offre un magazine | paiement, ou le matin du jour choisi | destinataire | texte de MAILS.md |
+| 6 | GC2b | Y a reçu votre carte | départ d'une carte programmée | acheteur | proposé |
+| 7 | GC3 | Votre carte a servi, il reste N € sur votre compte | commande payée avec la carte, s'il reste un solde | porteur | proposé (compte lié à l'adresse e-mail) |
+| 8 | GC4 | Votre carte expire le JJ/MM | 30 jours avant les 12 mois, s'il reste un solde | porteur | proposé, texte légal à valider |
+| 9 | GC5 | Votre carte est remboursée | remboursement Stripe de la carte | acheteur | proposé |
+| 10 | M4 + bloc | Paiement reçu : exemplaires et carte appliquée | paiement du magazine (aussi à 0 € réglé par la carte) | client | M4 existant, bloc proposé |
+| 11 | M5 + bloc | Maquette complète : « un 2ᵉ exemplaire » (France, pendant Noël) | publication de la maquette | client FR | M5 existant, bloc proposé |
+
+Hors liste, déjà automatiques : le reçu Stripe de l'acheteur (si activé chez Stripe) et la fatura InvoiceXpress du magazine, que Louis finalise. Aucune fatura à l'achat de la carte (bon à usages multiples).
+Un envoi programmé part avec la relève du matin (Vercel, 7 h UTC, « dans l'heure ») : « au matin », jamais à une heure précise.
+
 Pas de mail à la waitlist non-acheteurs (opt-in non prouvé). Un mail max par 24 h par personne.
 
 ## Textes (80-200 mots, variables Brevo `{{ params.X }}` avec repli)

@@ -12,7 +12,7 @@
 import { useState } from 'react'
 import CarteCadeau from './CarteCadeau'
 import { MailRendu } from './ApercuMails'
-import { COUVERTURES_ACCUEIL, MAILS, MESSAGE_MAX, MONTANTS_EXEMPLE, TEXTES, type Ton } from './contenu'
+import { COUVERTURES_ACCUEIL, LIBRE_MAX, LIBRE_MIN, MAILS, MESSAGE_MAX, MONTANTS_EXEMPLE, TEXTES, type Ton } from './contenu'
 
 type Montant = (typeof MONTANTS_EXEMPLE)[number] | 'libre'
 type Temps = 1 | 2 | 3 | 'fini'
@@ -22,7 +22,7 @@ const NOMS = ['Écrire', 'Donner', 'Découvrir'] as const
 export default function Offrir({ ton, phrase }: { ton: Ton; phrase: string }) {
   const t = TEXTES[ton]
   const [temps, setTemps] = useState<Temps>(1)
-  const [montant, setMontant] = useState<Montant>(35)
+  const [montant, setMontant] = useState<Montant>(50)
   const [libre, setLibre] = useState('')
   const [prenom, setPrenom] = useState('Camille')
   /* GC2 dit « X vous offre un magazine » : il faut le prénom de qui offre. */
@@ -56,7 +56,7 @@ export default function Offrir({ ton, phrase }: { ton: Ton; phrase: string }) {
         <div className="nl-recit-temps">
           <h3 className="nl-recit-titre">Écrivez-lui.</h3>
           <fieldset className="nl-champ">
-            <legend>Montant <span className="nl-faible">(exemples, à trancher)</span></legend>
+            <legend>Montant</legend>
             <div className="nl-puces">
               {MONTANTS_EXEMPLE.map((m) => (
                 <button key={m} type="button" className="nl-puce" aria-pressed={montant === m} onClick={() => setMontant(m)}>
@@ -71,7 +71,7 @@ export default function Offrir({ ton, phrase }: { ton: Ton; phrase: string }) {
               <input
                 className="nl-input"
                 inputMode="numeric"
-                placeholder="Montant en euros"
+                placeholder={`De ${LIBRE_MIN} à ${LIBRE_MAX} €`}
                 aria-label="Montant libre en euros"
                 value={libre}
                 onChange={(e) => setLibre(e.target.value.replace(/\D/g, '').slice(0, 4))}

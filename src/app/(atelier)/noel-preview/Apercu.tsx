@@ -139,7 +139,7 @@ export default function Apercu() {
       >
         <div className="nl-bloc-mag">
           <div className="nl-bloc-mag-carte">
-            <CarteCadeau phrase={phrase} montant="35 €" prenom="" message="" />
+            <CarteCadeau phrase={phrase} montant="50 €" prenom="" message="" />
           </div>
           <div className="nl-section-texte">
             <span className="nl-surtitre">Pour Noël</span>
@@ -159,7 +159,7 @@ export default function Apercu() {
           { texte: 'La carte se remplit pendant la saisie', ok: true },
           { texte: 'Un bouton principal par temps, le bleu de commande au seul paiement', ok: true },
           { texte: 'Le mail GC2 montré rempli, tel qu’il arrive', ok: true },
-          { texte: 'Montants : exemples ; montant libre : minimum et maximum à fixer', ok: false },
+          { texte: 'Montants tranchés le 16/11 : 30 €, 50 €, libre de 20 à 200 €', ok: true },
         ]}
       >
         <Offrir ton={ton} phrase={phrase} />
@@ -179,7 +179,7 @@ export default function Apercu() {
         <div className="nl-cartes">
           {PHRASES.map((p) => (
             <figure key={p} className="nl-carte-cadre">
-              <CarteCadeau phrase={p} montant="35 €" prenom="Camille" message="Pour nos étés à Noosa." />
+              <CarteCadeau phrase={p} montant="50 €" prenom="Camille" message="Pour nos étés à Noosa." />
               <figcaption>{p === PHRASES[0] ? 'Retenue' : p === PHRASES[PHRASES.length - 1] ? 'L’ancienne, écartée' : 'Écartée'}</figcaption>
             </figure>
           ))}

@@ -72,7 +72,7 @@ export default function Chapitre({ ton, phrase }: { ton: Ton; phrase: string }) 
             <span className="nl-env-rabat" />
           </div>
           <div className="nl-scene-carte">
-            <CarteCadeau phrase={phrase} montant="35 €" prenom="Camille" message="" entree={false} />
+            <CarteCadeau phrase={phrase} montant="50 €" prenom="Camille" message="" entree={false} />
           </div>
           <span className="nl-env-poche" aria-hidden="true" />
           <div className="nl-scene-couvs">
