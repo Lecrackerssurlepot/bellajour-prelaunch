@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, idsPlanche, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
+import { Fragment, useState } from "react";
+import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, idsPlanche, typesPour, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
 import { cssDeCouleur, hexDeCouleur, piecesDuFond, type CouleurLibre } from "@/lib/mise-en-page/couleursLibres";
 import { Nuances } from "./Nuances";
 import type { Planche } from "@/lib/mise-en-page/magazine";
@@ -10,7 +10,7 @@ import { enregistrerGabarit } from "./gabaritsClient";
 import { PAGE_H, PAGE_L, PLANCHE_L } from "@/lib/mise-en-page/geometrie";
 import { legendesDistinctes } from "@/lib/mise-en-page/genere";
 import type { Template } from "@/lib/mise-en-page/types";
-import { pc, pluriel, useEd } from "./contexte";
+import { cls, pc, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { vignetteDe } from "./images";
 
@@ -151,19 +151,39 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
   return <>{out}</>;
 }
 
+/** La légende d'une vignette : courte et distincte pour un généré (lot R, D4 : le schéma, sa variante ; le nom entier à l'infobulle), l'id sinon. */
+function Legende({ g, legende }: { g: GabaritPour; legende?: string[] }) {
+  if (g.template.origine === "genere" && legende && legende.length) {
+    return <span className={`ed-gab-nom${g.template.portee === "double" ? " ed-gab-nom--double" : ""}`}>{legende.map((l, i) => <span key={i} className="ed-gab-l">{l}</span>)}</span>;
+  }
+  return <span>{g.template.origine === "atelier" ? "Le mien" : g.id}</span>;
+}
+
 /* ─── le tiroir : les gabarits compatibles en vignettes. La double page reste entière sous l'aperçu en direct. ─── */
 export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const { etat, envoyer, ui, majUi } = useEd();
   /* lot D : les générés se comptent par centaines ; le tiroir en montre `PLAFOND_TIROIR`, « Plus » en ajoute (le parent le remonte à chaque page ou côté : `key`) */
   const [montres, setMontres] = useState(PLAFOND_TIROIR);
   const [fondOuvert, setFondOuvert] = useState(false);
+  /* T-208 : les variantes du type posé, ouvertes par un clic sur sa vignette (l'id de la tête du type ouvert ; R, qui change de type, les referme) */
+  const [ouvert, setOuvert] = useState<string | null>(null);
+  const [montresVar, setMontresVar] = useState(PLAFOND_TIROIR);
   if ((pl.mode === "double") !== (cible === "double")) return null;
   const act = actionsPlanche(etat, pl.id);
   if (!act) return null;
   const liste = gabaritsPour(etat, pl.id, cible);
-  const dansLaFamille = liste.filter((g) => dansFamille(g.template, etat.familleGabarits)).length;
-  const courant: GabaritPour | undefined = liste.find((g) => g.courant);
-  const legendes = new Map(legendesDistinctes(liste.map((g) => g.template)).map((l, i) => [liste[i].id, l] as const));
+  /* T-208 : le tiroir montre des TYPES (une disposition), chacun par sa tête ou par le gabarit posé ; ses variantes s'ouvrent dessous */
+  const types = typesPour(etat, pl.id, cible, liste);
+  const dansLaFamille = types.filter((t) => t.membres.some((g) => dansFamille(g.template, etat.familleGabarits))).length;
+  const typePose = types.find((t) => t.pose);
+  const montre = (t: (typeof types)[number]): GabaritPour => t.pose ?? t.tete;
+  const typesVus = [...(typePose && types.indexOf(typePose) >= montres ? [typePose] : []), ...types.slice(0, montres)];
+  /* lot R (D4) : la légende d'un généré est COURTE et distincte parmi ce que le tiroir montre ; le nom entier et l'id restent à l'infobulle */
+  const legendeDe = (liste: readonly GabaritPour[]) => new Map(legendesDistinctes(liste.map((g) => g.template)).map((x, i) => [liste[i].id, x] as const));
+  const legendes = legendeDe(typesVus.map(montre));
+  const variantesOuvertes = typePose && typePose.membres.length > 1 && ouvert === typePose.tete.id ? typePose : null;
+  /* le gabarit posé en premier : une variante du plateau qui lui ressemble reçoit son rang (·2), elle ne répète pas sa légende */
+  const legendesVar = variantesOuvertes && variantesOuvertes.pose ? legendeDe([variantesOuvertes.pose, ...variantesOuvertes.membres.filter((g) => !g.courant)]) : new Map<string, string[]>();
   /* lot 4 : une page retouchée s'enregistre comme gabarit, ou revient à son gabarit d'origine */
   const d = dispositionDe(pl, cible);
   const retouchee = act.retouchees.includes(cible);
@@ -189,7 +209,7 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
     <div className="ed-rangee-gab" role="menu" aria-label="Gabarits compatibles" onClick={(e) => e.stopPropagation()} onMouseLeave={() => majUi({ apercuGab: null })}>
       {/* 06/11 : « Séparer » (ou « Double page ») sous le titre, à gauche : plus besoin d'aller au bout de la rangée */}
       <span className="ed-rangee-tete">
-        <span className="ed-rangee-t">{NOM_COTE[cible]}<b>{dansLaFamille ? pluriel(dansLaFamille, "gabarit") : liste.length ? "Aucun ici" : ""}</b></span>
+        <span className="ed-rangee-t" title={liste.length ? `${pluriel(liste.length, "gabarit")} · R type · V variante` : undefined}>{NOM_COTE[cible]}<b>{dansLaFamille ? pluriel(dansLaFamille, "type") : liste.length ? "Aucun ici" : ""}</b></span>
         <Famille pl={pl} />
         {act.separer ? (
           <button type="button" className="ed-bt" onMouseEnter={voir({ type: "separer", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "separer", plancheId: pl.id }); }}>Séparer</button>
@@ -209,26 +229,58 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
         </span>
       </span>
       {!liste.length ? <span className="ed-sous">Aucune photo</span> : null}
-      {/* le gabarit courant reste sous les yeux même s'il est plus loin que le plafond : en tête, juste après le titre */}
-      {[...(courant && liste.indexOf(courant) >= montres ? [courant] : []), ...liste.slice(0, montres)].map((g) => {
-        const geste: Geste = { type: "choisirGabarit", plancheId: pl.id, cible, templateId: g.id };
-        const genere = g.template.origine === "genere";
-        /* lot R (D4) : la légende d'un généré est COURTE et distincte (le schéma, sa variante, et un rang quand deux se ressemblent) ; le nom entier est à l'infobulle */
-        const legende = genere ? (legendes.get(g.id) ?? []) : [];
-        return (
-          <button key={g.id} type="button" className="ed-gab" role="menuitemradio" aria-checked={g.courant} aria-current={g.courant} title={genere ? `${g.nom} · ${g.id}` : g.nom}
-            onMouseEnter={g.courant ? () => majUi({ apercuGab: null }) : voir(geste)} onFocus={g.courant ? undefined : voir(geste)}
-            onClick={() => { majUi({ apercuGab: null }); envoyer(geste); }}>
+      {/* T-208 : une vignette par TYPE. Le type posé reste sous les yeux même au-delà du plafond (en tête) ; il montre le gabarit posé, et un
+          clic sur lui ouvre ses variantes. Un clic sur un autre type pose sa tête (un gabarit dessiné l'est toujours, R175). */}
+      {typesVus.map((t) => {
+        const g = montre(t);
+        const pose = !!t.pose;
+        const n = t.membres.length;
+        const geste: Geste = { type: "choisirGabarit", plancheId: pl.id, cible, templateId: t.tete.id };
+        const ouvre = pose && n > 1;
+        const vignette = (
+          <button key={t.tete.id} type="button" className={cls("ed-gab", n > 1 && "ed-gab--pile", variantesOuvertes === t && "ed-gab--ouvert")} role="menuitemradio"
+            aria-checked={pose} aria-current={pose} aria-expanded={ouvre ? variantesOuvertes === t : undefined}
+            title={`${g.template.origine === "genere" ? `${g.nom} · ${g.id}` : g.nom}${n > 1 ? ` · ${pluriel(n, "variante")}` : ""}`}
+            onMouseEnter={pose ? () => majUi({ apercuGab: null }) : voir(geste)} onFocus={pose ? undefined : voir(geste)}
+            onClick={() => {
+              majUi({ apercuGab: null });
+              if (pose) { if (ouvre) { setOuvert(variantesOuvertes === t ? null : t.tete.id); setMontresVar(PLAFOND_TIROIR); } return; }
+              setOuvert(null);
+              envoyer(geste);
+            }}>
             <DessinGab t={g.template} l={g.template.portee === "double" ? 120 : 60} />
-            {genere && legende.length
-              ? <span className={`ed-gab-nom${g.template.portee === "double" ? " ed-gab-nom--double" : ""}`}>{legende.map((l, i) => <span key={i} className="ed-gab-l">{l}</span>)}</span>
-              : <span>{g.template.origine === "atelier" ? "Le mien" : g.id}</span>}
+            <Legende g={g} legende={legendes.get(g.id)} />
+            {n > 1 ? <b className="ed-gab-n" aria-hidden="true">{n}</b> : null}
           </button>
         );
+        if (variantesOuvertes !== t) return vignette;
+        /* les AUTRES variantes du type posé (celle qui est posée est déjà sa vignette), dans l'ordre du classement, la tête d'abord ; V les parcourt au clavier */
+        return (
+          <Fragment key={t.tete.id}>
+            {vignette}
+            <span className="ed-gab-var" role="group" aria-label="Variantes">
+              {t.membres.filter((g) => !g.courant).slice(0, montresVar).map((g) => {
+                const gv: Geste = { type: "choisirGabarit", plancheId: pl.id, cible, templateId: g.id };
+                const genere = g.template.origine === "genere";
+                return (
+                  <button key={g.id} type="button" className="ed-gab" role="menuitemradio" aria-checked={g.courant} title={genere ? `${g.nom} · ${g.id}` : g.nom}
+                    onMouseEnter={g.courant ? () => majUi({ apercuGab: null }) : voir(gv)} onFocus={g.courant ? undefined : voir(gv)}
+                    onClick={() => { majUi({ apercuGab: null }); envoyer(gv); }}>
+                    <DessinGab t={g.template} l={g.template.portee === "double" ? 120 : 60} />
+                    <Legende g={g} legende={legendesVar.get(g.id)} />
+                  </button>
+                );
+              })}
+              {n - 1 > montresVar ? (
+                <button type="button" className="ed-bt ed-gab-plus" onClick={() => setMontresVar(montresVar + PAS_TIROIR)}>Plus<b>{(n - 1 - montresVar).toLocaleString("fr-FR")}</b></button>
+              ) : null}
+            </span>
+          </Fragment>
+        );
       })}
-      {liste.length > montres ? (
-        <button type="button" className="ed-bt ed-gab-plus" title={`${pluriel(liste.length - montres, "gabarit autre", "gabarits autres")}`}
-          onClick={() => setMontres(montres + PAS_TIROIR)}>Plus<b>{(liste.length - montres).toLocaleString("fr-FR")}</b></button>
+      {types.length > montres ? (
+        <button type="button" className="ed-bt ed-gab-plus" title={pluriel(types.length - montres, "type autre", "types autres")}
+          onClick={() => setMontres(montres + PAS_TIROIR)}>Plus<b>{(types.length - montres).toLocaleString("fr-FR")}</b></button>
       ) : null}
       {retouchee && d ? (
         <span className="ed-gab-actions">

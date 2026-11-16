@@ -231,6 +231,8 @@ function primitifTouche(e: EtatEditeur, g: Touche): GestePrimitif {
       if (e.cadresSel.length > 1) return { type: "retirerCadres", refs: e.cadresSel };
       return e.cadreActif ? { type: "retirer", ref: e.cadreActif } : RIEN;
     case "r": { const c = cibleR(e, g); return c ? { type: "autreGabarit", ...c, sens: g.shift ? -1 : 1 } : RIEN; }
+    /* T-208 (R178) : V parcourt les variantes du type posé (même disposition, une taille ou une orientation) ; la couverture n'a pas de types */
+    case "v": { const c = cibleR(e, g); return c && c.plancheId !== ID_COUVERTURE ? { type: "autreGabarit", ...c, sens: g.shift ? -1 : 1, variante: true } : RIEN; }
     case "x": return e.cadreActif ? { type: "armerEchange", ref: e.cadreActif } : RIEN;
     case "enter": return e.cadreActif ? { type: "ouvrirRecadrage", ref: e.cadreActif } : RIEN;
     case "p": return { type: "panneau", basculer: true };

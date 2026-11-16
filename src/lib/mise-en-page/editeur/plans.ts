@@ -270,8 +270,9 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return { op: "choisirGabarit", libelle: "Changer de gabarit", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
     }
     case "autreGabarit": {
-      const is = autreGabarit(m, g.plancheId, g.cible, g.sens, cat, e.familleGabarits);
-      return { op: "autreGabarit", libelle: "Autre disposition", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
+      /* T-208 : R va au type suivant, V (`variante`) à la variante suivante du même type */
+      const is = autreGabarit(m, g.plancheId, g.cible, g.sens, cat, e.familleGabarits, g.variante ? "variante" : "type");
+      return { op: "autreGabarit", libelle: g.variante ? "Autre variante" : "Autre disposition", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
     }
     case "fusionner": {
       const id = courante(e, g.plancheId);

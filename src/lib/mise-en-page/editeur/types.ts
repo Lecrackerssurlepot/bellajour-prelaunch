@@ -243,7 +243,8 @@ export type GesteModifiant =
   | { type: "deplacerPhoto"; de: RefCadre; vers: { plancheId: string; cible: Cible; position?: number }; confirme?: boolean }
   | { type: "reordonner"; plancheId: string; cible: Cible; de: number; vers: number; confirme?: boolean }
   | { type: "choisirGabarit"; plancheId: string; cible: Cible; templateId: string; confirme?: boolean }
-  | { type: "autreGabarit"; plancheId: string; cible: Cible; sens: 1 | -1; confirme?: boolean }
+  /* T-208 (16/11) : R passe au TYPE suivant ; `variante` (touche V) à la variante suivante du type posé */
+  | { type: "autreGabarit"; plancheId: string; cible: Cible; sens: 1 | -1; confirme?: boolean; variante?: boolean }
   | { type: "fusionner"; plancheId?: string; confirme?: boolean }
   | { type: "separer"; plancheId?: string; confirme?: boolean }
   | { type: "insererDouble"; apres?: string; confirme?: boolean }

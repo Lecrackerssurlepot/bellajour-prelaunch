@@ -270,7 +270,7 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
       if (err.length) throw new Error(`invariants après ${JSON.stringify(geste)} : ${err.join(" ; ")}`);
     };
     let msg: string | null = null;
-    let nbListe = 0, nbR = 0, vus = 0, tousGeneres = true, valide = true, retour = true;
+    let nbListe = 0, nbTypes = 0, nbR = 0, vus = 0, tousGeneres = true, valide = true, retour = true;
     try {
       pas({ type: "poser", cible: { type: "page", plancheId: "pl-1", cote: "droite" }, ids: ["A", "B", "C"], confirme: true });
       const d0 = e.magazine.planches[0].droite!;
@@ -278,27 +278,43 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
       nbListe = liste.length;
       if (!liste.some((x) => x.courant && x.id === d0.templateId)) throw new Error("le gabarit courant n'est pas dans le tiroir");
       if (new Set(liste.map((x) => x.id)).size !== liste.length) throw new Error("un gabarit deux fois dans le tiroir");
-      /* R : on parcourt toute la liste, une fois, et on revient au départ ; chaque pas passe les invariants (I19, etc.) et reste sauvegardable */
+      /* T-208 : R parcourt les TYPES (la tête de chacun), une fois, et revient au type du départ ; V parcourt les variantes du type posé.
+         Chaque pas passe les invariants (I19, etc.) et reste sauvegardable */
       const depart = d0.templateId;
+      const types = O.typesPour(e, "pl-1", "droite", liste);
+      nbTypes = types.length;
       const vusIds = new Set<string>([depart]);
-      for (let i = 0; i < liste.length; i++) {
+      const vusTypes = new Set<string>([O.typeDeGabarit(templateParId(depart)!)]);
+      for (let i = 0; i < types.length; i++) {
         pas({ type: "touche", cle: "r", shift: false, meta: false, ctrl: false, alt: false, survol: { plancheId: "pl-1", cible: "droite" } });
         nbR++;
         const t = e.magazine.planches[0].droite!.templateId;
         vusIds.add(t);
+        vusTypes.add(O.typeDeGabarit(templateParId(t)!));
         if (!templateParId(t)) valide = false;
         if (i % 7 === 0 && !O.contenuValide(JSON.parse(JSON.stringify(e.magazine)))) valide = false;
       }
-      vus = vusIds.size;
-      retour = e.magazine.planches[0].droite!.templateId === depart;
+      retour = types.findIndex((t) => t.membres.some((g) => g.id === e.magazine.planches[0].droite!.templateId)) === 0;
+      /* puis V : toutes les variantes du premier type, une fois chacune, et retour */
+      const membres = types[0].membres.map((g) => g.id);
+      const posee = e.magazine.planches[0].droite!.templateId;
+      for (let i = 0; membres.length > 1 && i < membres.length; i++) {
+        pas({ type: "touche", cle: "v", shift: false, meta: false, ctrl: false, alt: false, survol: { plancheId: "pl-1", cible: "droite" } });
+        nbR++;
+        const t = e.magazine.planches[0].droite!.templateId;
+        vusIds.add(t);
+        if (!membres.includes(t)) valide = false;
+      }
+      if (e.magazine.planches[0].droite!.templateId !== posee) retour = false;
+      vus = vusTypes.size;
       tousGeneres = [...vusIds].some((id) => id.startsWith("GG1-"));
       /* annuler tout ce qu'on vient de faire : on retrouve le gabarit du départ */
       for (let i = 0; i < nbR; i++) pas({ type: "annuler" });
       if (e.magazine.planches[0].droite!.templateId !== depart) throw new Error("annuler tout ne ramène pas au gabarit du départ");
     } catch (x) { msg = x instanceof Error ? x.message : String(x); }
     if (msg) console.log(`   ${msg}`);
-    rapporter(`éditeur : trois photos (L, P, P) sur une page : ${nbListe} gabarits au tiroir ; R les parcourt tous (${nbR} pas, ${vus} différents) et revient au départ ; chaque pas passe les invariants et la sauvegarde ; annuler tout revient`,
-      msg === null && nbListe > 100 && vus === nbListe && retour && valide && tousGeneres);
+    rapporter(`éditeur : trois photos (L, P, P) sur une page : ${nbListe} gabarits au tiroir en ${nbTypes} types ; R passe par chaque type (${vus} différents) et revient au premier, V fait le tour de ses variantes (${nbR} pas en tout) ; chaque pas passe les invariants et la sauvegarde ; annuler tout revient`,
+      msg === null && nbListe > 100 && nbTypes >= 3 && nbTypes < nbListe && vus === nbTypes && retour && valide && tousGeneres);
     rapporter(`tiroir : le plafond (${O.PLAFOND_TIROIR}) est bien plus petit que la liste (${nbListe}) : « Plus » ajoute ${O.PAS_TIROIR} à chaque clic`, O.PLAFOND_TIROIR >= 10 && O.PLAFOND_TIROIR < nbListe && O.PAS_TIROIR >= O.PLAFOND_TIROIR);
   }
   {
