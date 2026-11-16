@@ -145,3 +145,20 @@
 @media (max-width: 520px) {
   .nl-preview .nl-conditions dl > div { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* Et pour vous ? : le magazine de l'acheteur, après sa carte (16/11). */
+.nl-preview .nl-merci-pour-vous {
+  margin-top: 28px;
+  width: min(100%, 440px);
+  padding: 22px 22px 24px;
+  border-radius: 22px;
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-surface-2);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  text-align: center;
+}
+.nl-preview .nl-merci-pour-vous-titre { margin: 0; font-family: var(--font-display); font-size: 26px; line-height: 1.1; }
+.nl-preview .nl-merci-pour-vous .nl-faible { margin: 0 0 6px; }
+.nl-preview .nl-merci-pour-vous a { text-decoration: none; }
+.nl-preview .nl-suivant--plein { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+.nl-preview .nl-suivant--plein:hover { background: var(--c-accent); filter: brightness(1.06); }

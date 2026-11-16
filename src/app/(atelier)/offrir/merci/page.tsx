@@ -12,6 +12,7 @@ import Stripe from 'stripe'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { makeSupabase } from '@/lib/supabase'
 import { enregistrerCarte, type CarteLigne } from '@/lib/atelier/carteServeur'
+import { dansFenetreNoel, NOEL_REMISE_AUTRE_PCT, NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
 import CarteCadeau from '../../noel-preview/CarteCadeau'
 import { PHRASES, TEXTES } from '../../noel-preview/contenu'
 import '../../noel-preview/noel.css'
@@ -72,6 +73,8 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
           ? `Elle est partie chez ${carte.destinataire_prenom}.`
           : `${carte.destinataire_prenom} la reçoit par e-mail.`
 
+  const fenetre = dansFenetreNoel(new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }))
+
   return (
     <main className="nl-preview nl-page">
       <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} /></Link>
@@ -95,6 +98,20 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
             {carte.remise === 'imprimer' ? 'Imprimer la carte' : 'Imprimer aussi'}
           </a>
         </div>
+        {/* L'upsell après la carte (16/11) : l'acheteur a un Noël en tête,
+            le sien est le magazine qu'il n'a pas encore commandé. Un achat à
+            part : la carte ne paie pas sa propre commande. */}
+        <aside className="nl-merci-pour-vous">
+          <p className="nl-merci-pour-vous-titre">Et pour vous&nbsp;?</p>
+          <p className="nl-faible">
+            {fenetre ? (
+              <>Composez votre magazine. Le 2<sup>e</sup> à −{NOEL_REMISE_MEME_PCT}&nbsp;%, −{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture, jusqu&apos;au 7 décembre.</>
+            ) : (
+              <>Vos photos, notre atelier, votre magazine.</>
+            )}
+          </p>
+          <a className="nl-suivant nl-suivant--plein" href="/composer?nouveau=1">Composer mon magazine</a>
+        </aside>
       </div>
     </main>
   )
