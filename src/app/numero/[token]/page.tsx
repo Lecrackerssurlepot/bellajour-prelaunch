@@ -24,11 +24,14 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { ICONE_EXTERNE } from './icones'
 import { resoudreApercu } from '@/lib/atelier/apercu'
-import { eurosDuDossier, centimesDuDossier, type PalierCle } from '@/lib/atelier/prix'
+import { eurosDuDossier, centimesDuDossier, formaterCentimes, type PalierCle } from '@/lib/atelier/prix'
 import { finitionDuDossier } from '@/lib/atelier/impression'
 import { totalCommande, portClient } from '@/lib/atelier/livraison'
 import { quantiteDuDossier, totalExemplaires } from '@/lib/atelier/exemplaires'
-import { creditDuPourMail } from '@/lib/atelier/fondatrice'
+import { regleDuDossier } from '@/lib/atelier/noelExemplaire'
+import { creditDuPourMail, modeStripe } from '@/lib/atelier/fondatrice'
+import { reglementAvecCarte } from '@/lib/atelier/carteCommande'
+import { lireCarteDuNumero } from '@/lib/atelier/carteServeur'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
@@ -48,6 +51,8 @@ import { rattacherParToken } from '@/lib/compte/donnees'
    pour une cliente, cette page est exactement celle d'avant. */
 import { quiEstConnecte } from '@/lib/admin-session'
 import { appliquerBrouillon, lireBrouillon, TYPE_BROUILLON } from '@/lib/atelier/brouillon'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { montantCadeau } from '@/lib/atelier/carteCadeau'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -291,10 +296,10 @@ export default async function NumeroPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string }>
+  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string; carte?: string; cadeau?: string }>
 }) {
   const { token } = await params
-  const { paiement, de, brouillon: brouillonDemande } = await searchParams
+  const { paiement, de, brouillon: brouillonDemande, carte: carteSaisie, cadeau: cadeauSaisi } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -455,15 +460,30 @@ export default async function NumeroPage({
      En zone A et B le port est connu même sans devis gelé (c'est une règle,
      pas une devinette) ; en zone C sans devis, la page se tait. */
   const quantite = quantiteDuDossier(numero.quantite)
+  /* ── LA RÈGLE DE NOËL DU 2e EXEMPLAIRE (lot 4, 16/11/2026) ───────────
+     Lue ici comme au checkout (`regleDuDossier`) : même jour, même pays,
+     même couverture choisie. Hors fenêtre ou hors France, l'ordinaire. */
+  const regle = await regleDuDossier(makeSupabase(), { id: numero.id, pays_livraison: paysLivraison })
   const port =
     prixCentimes !== null && paysLivraison
       ? portClient({
           pays: paysLivraison,
-          totalProduitCentimes: totalExemplaires(prixCentimes, quantite)?.totalCentimes ?? prixCentimes,
+          totalProduitCentimes: totalExemplaires(prixCentimes, quantite, regle)?.totalCentimes ?? prixCentimes,
           devisTtcCentimes: livraisonCentimes,
         })
       : null
   const portBrut = port && port.source !== 'inconnu' ? port.brutCentimes : null
+  /* ── UNE CARTE CADEAU AJOUTÉE À LA COMMANDE (Noël 2026, 16/11) ──────
+     Par l'adresse (`?cadeau=5000`), comme le code d'une carte qui paie : le
+     total, le seuil de la livraison offerte et le montant du bouton sont
+     ceux du serveur. Seulement drapeau ouvert, à l'état 2, hors aperçu. */
+  /* Pas d'ajout de carte quand un coupon paie déjà une part (crédit
+     fondateur, code de carte) : Stripe le répartirait sur la carte, et le
+     checkout refuse (`cadeau_refuse`). On ne propose pas ce qu'on refusera. */
+  const offrirCarte =
+    lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && creditEuros === null && !carteSaisie
+  const cadeauCentimes =
+    offrirCarte && numero.etat === 'apercu_pret' && !previsualisation ? montantCadeau(cadeauSaisi) ?? 0 : 0
   const commande =
     prixCentimes !== null && portBrut !== null
       ? totalCommande({
@@ -472,8 +492,43 @@ export default async function NumeroPage({
           livraisonCentimes: portBrut,
           creditCentimes: (creditEuros ?? 0) * 100,
           portOffert: creditEuros !== null,
+          regle,
+          cadeauCentimes,
         })
       : null
+
+  /* ── LA CARTE CADEAU ET LE CRÉDIT DU COMPTE (Noël 2026, lot 3) ───────
+     Le MÊME calcul que `/api/atelier/checkout` (`reglementAvecCarte`) : le
+     code arrive par l'adresse (`?carte=`), posé par le champ du bon de
+     commande ; le crédit du compte s'applique tout seul. Seulement à l'état
+     2, avec un total connu : ailleurs il n'y a rien à régler. */
+  const livemode = modeStripe(process.env.STRIPE_SECRET_KEY) === 'live'
+  const reglement =
+    numero.etat === 'apercu_pret' && commande && !previsualisation
+      ? await reglementAvecCarte(makeSupabase(), {
+          email: numero.email,
+          codeSaisi: carteSaisie ?? null,
+          prixCentimes: commande.prix - commande.remise,
+          livraisonCentimes: commande.livraison,
+          fondateur: creditEuros !== null,
+          livemode,
+        })
+      : null
+  const carteVue = reglement
+    ? {
+        saisie: typeof carteSaisie === 'string' ? carteSaisie.slice(0, 40) : '',
+        code: reglement.carte?.code ?? null,
+        refus: reglement.refus,
+        carteCentimes: reglement.imputation?.carteCentimes ?? 0,
+        creditCentimes: reglement.imputation?.creditCentimes ?? 0,
+        reliquatCentimes: reglement.imputation?.reliquatCentimes ?? 0,
+        aPayerCentimes:
+          reglement.imputation?.aPayerCentimes != null ? reglement.imputation.aPayerCentimes + cadeauCentimes : null,
+      }
+    : null
+  /* Après le paiement : ce que la carte a payé, et ce qui reste au compte. */
+  const carteUtilisee =
+    numero.etat !== 'apercu_pret' ? await lireCarteDuNumero(makeSupabase(), numero.id) : null
 
   /* Le COMPTE (04/09) — il s'AJOUTE au token, jamais il ne le remplace.
      Déconnectée : une invitation discrète (« ce lien, à l'abri d'un compte »).
@@ -705,7 +760,10 @@ export default async function NumeroPage({
               livraisonCentimes={portBrut}
               pays={paysLivraison}
               quantite={quantite}
-              exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite) : null}
+              exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite, regle) : null}
+              regle={regle}
+              offrirCarte={offrirCarte}
+              cadeauCentimes={cadeauCentimes}
               commande={commande}
               portOffert={creditEuros !== null}
               cgvOk={numero.cgv_ok}
@@ -716,6 +774,7 @@ export default async function NumeroPage({
                  décide de rien : il montre l'état du dossier. */
               finition={finitionDuDossier(numero.finition)}
               previsualisation={previsualisation}
+              carte={carteVue}
             />
           )}
         </>
@@ -727,26 +786,44 @@ export default async function NumeroPage({
            voilà ce qui se passe, voilà comment demander un détail. Les
            chiffres viennent de DELAIS, jamais en dur. */
         <>
+          {/* 16/11 (retour de Mathias) : un récapitulatif en lignes courtes,
+              plus quatre paragraphes. Le délai, ce que la carte a réglé, ce
+              qui reste au compte, la facture : une ligne chacun. */}
           <p className="nu-mot">Merci.</p>
-          <p className="nu-sub">
-            Votre paiement est bien reçu. L’atelier compose maintenant votre
-            numéro complet.
-          </p>
-          <p className="nu-sub">
-            Il vous attend ici <b>sous {JOURS_COMPOSITION} jours ouvrés</b>, et
-            vous serez prévenu par mail.
-          </p>
-          {numero.facture_url && (
-            <p className="nu-sub">
-              <a className="nu-lien" href={numero.facture_url} target="_blank" rel="noopener noreferrer">
-                Votre facture
-              </a>
-              , hébergée par Stripe, reste accessible ici à tout moment.
-            </p>
-          )}
-          <p className="nu-note">
-            Un détail à changer ? Répondez au mail, on ajuste sans frais.
-          </p>
+          <p className="nu-sub">Paiement reçu. L’atelier compose votre numéro.</p>
+          <dl className="nu-recap">
+            <div>
+              <dt>Votre numéro</dt>
+              <dd>Sous {JOURS_COMPOSITION} jours ouvrés</dd>
+            </div>
+            {carteUtilisee?.code ? (
+              <div>
+                <dt>Carte cadeau</dt>
+                <dd>−{formaterCentimes(carteUtilisee.montantCentimes - carteUtilisee.reliquatCentimes)}</dd>
+              </div>
+            ) : null}
+            {carteUtilisee && carteUtilisee.creditCentimes > 0 ? (
+              <div>
+                <dt>Crédit du compte</dt>
+                <dd>−{formaterCentimes(carteUtilisee.creditCentimes)}</dd>
+              </div>
+            ) : null}
+            {carteUtilisee && carteUtilisee.reliquatCentimes > 0 ? (
+              <div>
+                <dt>Reste sur votre compte</dt>
+                <dd className="nu-recap-fort">{formaterCentimes(carteUtilisee.reliquatCentimes)}</dd>
+              </div>
+            ) : null}
+            {numero.facture_url ? (
+              <div>
+                <dt>Facture</dt>
+                <dd>
+                  <a className="nu-lien" href={numero.facture_url} target="_blank" rel="noopener noreferrer">Voir</a>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+          <p className="nu-note">Prévenu par mail. Un détail à changer ? Répondez-y.</p>
         </>
       )}
 

@@ -34,11 +34,13 @@
    Le scroll-padding vit sur la racine (c'est elle qui defile), garde par
    :has — les pages creme gardent leur 76 px. Sans :has (vieux moteur), on
    retombe sur le comportement d'avant : degrade, jamais casse. */
-html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
+html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px)); }
 
 .at-nav {
   position: fixed;
-  top: 0;
+  /* `--nl-bh` : la hauteur du bandeau de Noël (noel/noel.css), posée seulement
+     quand il est dans le document. Repli 0 : sans bandeau, rien ne change. */
+  top: var(--nl-bh, 0px);
   left: 0;
   right: 0;
   z-index: 50;

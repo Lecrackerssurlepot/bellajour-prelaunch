@@ -29,7 +29,8 @@ import { MODELES_VALIDES } from "@/app/(atelier)/composer/coverModels";
 import { depotTerminable } from "@/app/(atelier)/composer/depot/paliers";
 import { normaliserFinition } from "@/lib/atelier/impression";
 import { normaliserPays } from "@/lib/atelier/pays";
-import { normaliserQuantite } from "@/lib/atelier/exemplaires";
+import { normaliserCouverture, normaliserQuantite, quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { ecrireCouverture, regleDuDossier } from "@/lib/atelier/noelExemplaire";
 import { rangSuivant } from "@/lib/atelier/rang";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 
@@ -564,7 +565,18 @@ export async function PATCH(request: Request) {
     }
     if (quantite !== null) maj.quantite = quantite;
 
-    if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement && !choisitCouverture) {
+    /* ── LA COUVERTURE DU 2e EXEMPLAIRE (Noël 2026, lot 4) ──────────────
+       « meme » ou « autre » : elle change la remise (−40 % ou −20 %), donc
+       c'est un paramètre de COMMANDE, écrit dans `noel_exemplaires` (table à
+       part, `numeros` n'est pas touchée) et relu par la page ET le checkout
+       (`regleDuDossier`). Valeur inconnue : 400, jamais ramenée en douce. */
+    const couvertureExemplaire =
+      body.couverture_exemplaire === undefined ? null : normaliserCouverture(body.couverture_exemplaire);
+    if (body.couverture_exemplaire !== undefined && couvertureExemplaire === null) {
+      return NextResponse.json({ error: "couverture_invalide" }, { status: 400 });
+    }
+
+    if (!Object.keys(maj).length && !demandeRetouches && !demandeAjustement && !choisitCouverture && !couvertureExemplaire) {
       return NextResponse.json({ error: "rien_a_faire" }, { status: 400 });
     }
 
@@ -622,8 +634,34 @@ export async function PATCH(request: Request) {
     /* Le pelliculage non plus : après paiement, l'objet est commandé et son
        apparence ne se change plus d'un clic. Avant l'état 2, il n'y a rien à
        commander. Même règle, même raison que les deux cases. */
-    if ((finition || quantite !== null) && numero.etat !== "apercu_pret") {
+    if ((finition || quantite !== null || couvertureExemplaire) && numero.etat !== "apercu_pret") {
       return NextResponse.json({ error: "etat_incompatible" }, { status: 409 });
+    }
+
+    /* La règle de Noël plafonne à DEUX exemplaires (France, pendant la
+       fenêtre) : on refuse d'en AJOUTER au-delà ; un dossier déjà plus haut
+       peut toujours descendre. La règle se relit ici, comme au checkout. */
+    if (quantite !== null || couvertureExemplaire) {
+      const { data: ligne } = await supabase
+        .from("numeros")
+        .select("id, quantite, pays_livraison")
+        .eq("id", numero.id)
+        .maybeSingle<{ id: string; quantite: number | null; pays_livraison: string | null }>();
+      const regle = await regleDuDossier(supabase, { id: numero.id, pays_livraison: ligne?.pays_livraison ?? null });
+      const actuelle = quantiteDuDossier(ligne?.quantite);
+      if (quantite !== null && regle.nom === "noel" && quantite > regle.max && quantite > actuelle) {
+        return NextResponse.json({ error: "quantite_noel_max", max: regle.max }, { status: 409 });
+      }
+      if (couvertureExemplaire) {
+        if (regle.nom !== "noel") {
+          return NextResponse.json({ error: "hors_noel" }, { status: 409 });
+        }
+        if (!(await ecrireCouverture(supabase, numero.id, couvertureExemplaire))) {
+          console.error("[atelier/numero] couverture du 2e exemplaire non écrite (migration 20261117_noel_exemplaires ?)");
+          return NextResponse.json({ error: "internal" }, { status: 500 });
+        }
+        await logEvenement(supabase, numero.id, "exemplaire_couverture", { couverture: couvertureExemplaire });
+      }
     }
 
     if (choisitCouverture) {

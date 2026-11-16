@@ -3,7 +3,17 @@ import { GRILLE_PUBLIQUE, PAGES_MIN, PAGES_MAX_PUBLIC } from '@/lib/atelier/gril
 import { GRAMMAGE_INTERIEUR_GSM } from '@/lib/atelier/impression'
 import { FRANCO_CENTIMES, ZONES_PORT, paysDesservisZone } from '@/lib/atelier/livraison'
 import { PAYS_LIBELLE } from '@/lib/atelier/pays'
-import { QUANTITE_MAX, REMISE_DEUXIEME_PCT, REMISE_SUIVANTS_PCT } from '@/lib/atelier/exemplaires'
+import {
+  NOEL_EXEMPLAIRES_MAX,
+  NOEL_EXEMPLAIRE_DEBUT,
+  NOEL_EXEMPLAIRE_FIN,
+  NOEL_REMISE_AUTRE_PCT,
+  NOEL_REMISE_MEME_PCT,
+  QUANTITE_MAX,
+  REMISE_DEUXIEME_PCT,
+  REMISE_SUIVANTS_PCT,
+} from '@/lib/atelier/exemplaires'
+import { LIBRE_MAX_CENTIMES, LIBRE_MIN_CENTIMES, MONTANTS_CARTE_CENTIMES, VALIDITE_MOIS } from '@/lib/atelier/carteCadeau'
 
 /* ── v4.0 (16/09/2026, accord de Mathias, validée par Louis) ────────────────
    LA GRILLE EST HORS TAXES et le TTC dépend du pays de livraison ; la livraison
@@ -16,6 +26,39 @@ import { QUANTITE_MAX, REMISE_DEUXIEME_PCT, REMISE_SUIVANTS_PCT } from '@/lib/at
    ⚠️ La date d'entrée en vigueur est celle de la mise en ligne : à ajuster
    dans CGV_DATE si la fusion glisse. */
 const CGV_DATE = '16/09/2026'
+/* ── v4.1 (16/11/2026, accord de Mathias : « Mets à jour les CGV avec −40 % et
+   −20 % (période de Noël) ») ──────────────────────────────────────────────
+   Trois ajouts, dans les trois langues, tous DÉRIVÉS du code :
+   - art. 4bis.10 : l'offre de Noël du 2e exemplaire (exemplaires.ts,
+     NOEL_*), −40 % même couverture, −20 % autre couverture, 2 au plus,
+     France, du 16/11 au 7/12/2026 inclus ;
+   - art. 4bis.11 : une carte cadeau achetée dans la même commande compte
+     pour le seuil de la livraison offerte (livraison.ts, totalCommande) ;
+   - art. 4bis.12 (nouveau) : la carte cadeau, telle que le code la fait
+     (carteCadeau.ts, carteServeur.ts). Rien de plus : ni exclusion du droit de
+     rétractation, ni « non remboursable », que le code ne fait pas et que
+     Louis n'a pas relus.
+   `CGV_DATE` reste la date de la GRILLE (inchangée) ; la version vit dans
+   `CGV_VERSION_DATE`, à ajuster au jour de la mise en ligne. Les .docx de
+   legal-source ont une version de retard. */
+const CGV_VERSION = '4.1'
+const CGV_VERSION_DATE = '16/11/2026'
+const MOIS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
+const MOIS_PT = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+const MOIS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+const jourLong = (iso: string, mois: string[]) => {
+  const [a, m, j] = iso.split('-').map(Number)
+  return `${j} ${mois[m - 1]} ${a}`
+}
+const NOEL_DU_FR = jourLong(NOEL_EXEMPLAIRE_DEBUT, MOIS_FR)
+const NOEL_AU_FR = jourLong(NOEL_EXEMPLAIRE_FIN, MOIS_FR)
+const NOEL_DU_PT = jourLong(NOEL_EXEMPLAIRE_DEBUT, MOIS_PT).replace(/ (\S+) /, ' de $1 de ')
+const NOEL_AU_PT = jourLong(NOEL_EXEMPLAIRE_FIN, MOIS_PT).replace(/ (\S+) /, ' de $1 de ')
+const NOEL_DU_EN = jourLong(NOEL_EXEMPLAIRE_DEBUT, MOIS_EN)
+const NOEL_AU_EN = jourLong(NOEL_EXEMPLAIRE_FIN, MOIS_EN)
+const CARTES_FR = MONTANTS_CARTE_CENTIMES.map((c) => `${c / 100} €`).join(' ou ')
+const CARTES_PT = MONTANTS_CARTE_CENTIMES.map((c) => `${c / 100} €`).join(' ou ')
+const CARTES_EN = MONTANTS_CARTE_CENTIMES.map((c) => `€${c / 100}`).join(' or ')
 const euros = (centimes: number, decimales = false) =>
   decimales ? `${(centimes / 100).toFixed(2).replace('.', ',')} €` : `${centimes / 100} €`
 const eurosEn = (centimes: number, decimales = false) =>
@@ -71,7 +114,7 @@ const PAYS_ZONE_B_EN = 'Italy, Ireland, Sweden, Denmark, Romania, Luxembourg, Po
 export const CGV: LocalizedDoc = {
   fr: {
     title: `Conditions générales de vente`,
-    lastUpdated: `Version 4.0 — En vigueur le ${CGV_DATE}`,
+    lastUpdated: `Version ${CGV_VERSION} — En vigueur le ${CGV_VERSION_DATE}`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Traduction française à titre informatif. La version juridiquement prévalente est le texte portugais ; en cas de divergence, ce dernier prime.`,
@@ -155,8 +198,9 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `4bis.7 Délai de livraison. Le délai court à compter de la validation de la maquette. Il est estimé à 10 jours (3 jours ouvrés de fabrication, puis 3 à 7 jours d'acheminement), auxquels s'ajoutent, pour les livraisons hors Union européenne, les délais de dédouanement éventuels, et n'excède en tout état de cause pas 30 jours, conformément à l'article 10.1 et à l'article 9.º du DL 24/2014.` },
           { kind: 'p', value: `4bis.8 Cases préalables au paiement. Avant tout paiement, le client coche deux cases distinctes, décochées par défaut et horodatées : (i) l'acceptation des présentes Conditions ; (ii) la reconnaissance, au sens de l'article 8.5, de ce que son album est manifestement personnalisé et de ce que son droit de libre résolution s'éteindra à la validation de la maquette, conformément à l'article 8.3. Le paiement est techniquement impossible tant que ces deux cases ne sont pas cochées et horodatées.` },
           { kind: 'p', value: `4bis.9 Faculté de remboursement jusqu'à la maquette. Nonobstant le paiement intégral, et conformément aux articles 8.2 et 8.3, le client conserve jusqu'à la validation de sa maquette la faculté d'obtenir le remboursement intégral des sommes versées, frais de livraison compris, sans retenue, sans frais et sans pénalité. Cette faculté disparaît à la validation de la maquette, qui rend la commande définitive.` },
-          { kind: 'p', value: `4bis.10 Exemplaires. Le client peut commander, depuis sa page de commande et avant le paiement, de 1 à ${QUANTITE_MAX} exemplaires identiques du même numéro. Le premier exemplaire est facturé au prix de l'article 4bis.4 ; le deuxième bénéficie d'une remise de ${REMISE_DEUXIEME_PCT} % sur ce prix ; le troisième et chacun des suivants d'une remise de ${REMISE_SUIVANTS_PCT} %. Ces remises portent sur le prix du magazine seulement, jamais sur les frais de livraison, et sont appliquées automatiquement ; le détail figure sur le récapitulatif de commande et sur la facture. Les exemplaires d'une même commande sont expédiés ensemble.` },
-          { kind: 'p', value: `4bis.11 Frais de livraison. Chaque magazine est fabriqué à la commande, sans stock. Les frais de livraison, toutes taxes comprises et identiques quel que soit le nombre d'exemplaires, sont les suivants : zone A, ${euros(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_FR}) ; zone B, ${euros(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_FR}) ; zone C, pour les autres pays de la zone de livraison (dont la Suisse, la Norvège, Chypre, Malte et le Brésil), le tarif de l'expédition suivie est chiffré pour le pays et le colis concernés et porté à la connaissance du client avant tout paiement. La livraison est offerte dès ${euros(FRANCO_CENTIMES)} toutes taxes comprises de magazines dans une même commande, remises de l'article 4bis.10 déduites. Le détail par zone figure dans la Fiche produit et sur la page Livraison du site.` },
+          { kind: 'p', value: `4bis.10 Exemplaires. Le client peut commander, depuis sa page de commande et avant le paiement, de 1 à ${QUANTITE_MAX} exemplaires identiques du même numéro. Le premier exemplaire est facturé au prix de l'article 4bis.4 ; le deuxième bénéficie d'une remise de ${REMISE_DEUXIEME_PCT} % sur ce prix ; le troisième et chacun des suivants d'une remise de ${REMISE_SUIVANTS_PCT} %. Ces remises portent sur le prix du magazine seulement, jamais sur les frais de livraison, et sont appliquées automatiquement ; le détail figure sur le récapitulatif de commande et sur la facture. Les exemplaires d'une même commande sont expédiés ensemble. Par exception, pendant l'offre de Noël, pour une commande passée du ${NOEL_DU_FR} au ${NOEL_AU_FR} inclus et livrée en France, le client peut commander au plus ${NOEL_EXEMPLAIRES_MAX} exemplaires : le second bénéficie d'une remise de ${NOEL_REMISE_MEME_PCT} % s'il porte la même couverture, ou de ${NOEL_REMISE_AUTRE_PCT} % s'il porte une autre couverture, composée par l'atelier à partir des photographies du client. Hors de cette période ou de la France, la règle de l'alinéa précédent s'applique.` },
+          { kind: 'p', value: `4bis.11 Frais de livraison. Chaque magazine est fabriqué à la commande, sans stock. Les frais de livraison, toutes taxes comprises et identiques quel que soit le nombre d'exemplaires, sont les suivants : zone A, ${euros(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_FR}) ; zone B, ${euros(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_FR}) ; zone C, pour les autres pays de la zone de livraison (dont la Suisse, la Norvège, Chypre, Malte et le Brésil), le tarif de l'expédition suivie est chiffré pour le pays et le colis concernés et porté à la connaissance du client avant tout paiement. La livraison est offerte dès ${euros(FRANCO_CENTIMES)} toutes taxes comprises de magazines dans une même commande, remises de l'article 4bis.10 déduites ; le montant d'une carte cadeau achetée dans la même commande (article 4bis.12) compte pour ce seuil. Le détail par zone figure dans la Fiche produit et sur la page Livraison du site.` },
+          { kind: 'p', value: `4bis.12 Carte cadeau. Le client peut acheter une carte cadeau Bellajour depuis la page « Offrir » du site, d'un montant de ${CARTES_FR} ou d'un montant libre de ${euros(LIBRE_MIN_CENTIMES)} à ${euros(LIBRE_MAX_CENTIMES)}, ou l'ajouter à sa commande depuis sa page de commande, pour ${CARTES_FR}. La carte porte un code unique ; elle est valable ${VALIDITE_MOIS} mois à compter de son achat et s'utilise lors du paiement d'un magazine Bellajour, une carte par commande : elle règle les magazines, puis les frais de livraison. La part non utilisée est portée au crédit du compte Bellajour rattaché à l'adresse e-mail de la personne qui l'utilise, jusqu'à l'échéance de la carte, et se déduit de sa commande suivante. Une carte ajoutée à une commande est adressée par e-mail à l'acheteur, qui la remet à son destinataire ; si le paiement de cette commande est intégralement remboursé avant que la carte ait servi, la carte est annulée.` },
         ],
       },
       {
@@ -302,7 +346,7 @@ export const CGV: LocalizedDoc = {
             [`B`, PAYS_ZONE_B_FR, euros(ZONES_PORT.B.centimes)],
             [`C`, `Autres pays de la zone de livraison (article 4bis.6)`, `Chiffrés pour le pays et le colis, avant paiement`],
           ] },
-          { kind: 'p', value: `Livraison offerte dès ${euros(FRANCO_CENTIMES)} TTC de magazines dans une même commande (article 4bis.11). Exemplaires : le 2e à −${REMISE_DEUXIEME_PCT} %, le 3e et les suivants à −${REMISE_SUIVANTS_PCT} % (article 4bis.10).` },
+          { kind: 'p', value: `Livraison offerte dès ${euros(FRANCO_CENTIMES)} TTC de magazines dans une même commande, carte cadeau comprise (article 4bis.11). Exemplaires : le 2e à −${REMISE_DEUXIEME_PCT} %, le 3e et les suivants à −${REMISE_SUIVANTS_PCT} % ; offre de Noël en France du ${NOEL_DU_FR} au ${NOEL_AU_FR} : le 2e à −${NOEL_REMISE_MEME_PCT} % (même couverture) ou −${NOEL_REMISE_AUTRE_PCT} % (autre couverture), ${NOEL_EXEMPLAIRES_MAX} au plus (article 4bis.10).` },
           { kind: 'h3', text: `Grille tarifaire — Prévente (commandes du 13/06 au 15/08/2026)` },
           { kind: 'p', value: `Grille close, conservée pour les seules commandes de prévente (article 5). Prix catalogue standard, hors offre promotionnelle, affichés en euros, toutes taxes comprises. TVA appliquée au taux du pays de résidence du consommateur (régime OSS-Union) après le seuil des 10 000 € de chiffre d'affaires.` },
           { kind: 'table', columns: [`Pagination`, `Prix TTC`], rows: [
@@ -318,7 +362,7 @@ export const CGV: LocalizedDoc = {
   },
   pt: {
     title: `Condições gerais de venda`,
-    lastUpdated: `Versão 4.0 — Em vigor em ${CGV_DATE}`,
+    lastUpdated: `Versão ${CGV_VERSION} — Em vigor em ${CGV_VERSION_DATE}`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `Texto de referência (versão portuguesa), juridicamente prevalecente. As traduções para francês e inglês são meramente informativas; em caso de divergência, prevalece o presente texto português.`,
@@ -402,8 +446,9 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `4.º-A.7 Prazo de entrega. O prazo conta-se a partir da validação da maquete. Estima-se em 10 dias (3 dias úteis de fabrico e 3 a 7 dias de transporte), aos quais acrescem, para as entregas fora da União Europeia, os eventuais prazos de desalfandegamento, e não excede, em caso algum, 30 dias, nos termos do artigo 10.1 e do artigo 9.º do DL 24/2014.` },
           { kind: 'p', value: `4.º-A.8 Caixas prévias ao pagamento. Antes de qualquer pagamento, o cliente assinala duas caixas distintas, não assinaladas por defeito e com registo de data e hora: (i) a aceitação das presentes Condições; (ii) o reconhecimento, na aceção do artigo 8.5, de que o seu álbum é manifestamente personalizado e de que o seu direito de livre resolução se extinguirá com a validação da maquete, nos termos do artigo 8.3. O pagamento é tecnicamente impossível enquanto ambas as caixas não estiverem assinaladas e registadas.` },
           { kind: 'p', value: `4.º-A.9 Faculdade de reembolso até à maquete. Não obstante o pagamento integral, e nos termos dos artigos 8.2 e 8.3, o cliente conserva, até à validação da sua maquete, a faculdade de obter o reembolso integral das quantias pagas, custos de entrega incluídos, sem retenção, sem encargos e sem penalização. Esta faculdade extingue-se com a validação da maquete, que torna a encomenda definitiva.` },
-          { kind: 'p', value: `4.º-A.10 Exemplares. O cliente pode encomendar, a partir da sua página de encomenda e antes do pagamento, de 1 a ${QUANTITE_MAX} exemplares idênticos do mesmo número. O primeiro exemplar é faturado ao preço do artigo 4.º-A.4; o segundo beneficia de um desconto de ${REMISE_DEUXIEME_PCT} % sobre esse preço; o terceiro e cada um dos seguintes de um desconto de ${REMISE_SUIVANTS_PCT} %. Estes descontos incidem apenas sobre o preço da revista, nunca sobre os custos de entrega, e são aplicados automaticamente; o detalhe consta do resumo da encomenda e da fatura. Os exemplares de uma mesma encomenda são expedidos em conjunto.` },
-          { kind: 'p', value: `4.º-A.11 Custos de entrega. Cada revista é fabricada por encomenda, sem stock. Os custos de entrega, com todos os impostos incluídos e idênticos qualquer que seja o número de exemplares, são os seguintes: zona A, ${euros(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_PT}); zona B, ${euros(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_PT}); zona C, para os restantes países da zona de entrega (incluindo Suíça, Noruega, Chipre, Malta e Brasil), a tarifa da expedição com seguimento é calculada para o país e a encomenda em causa e dada a conhecer ao cliente antes de qualquer pagamento. A entrega é oferecida a partir de ${euros(FRANCO_CENTIMES)} com IVA de revistas numa mesma encomenda, deduzidos os descontos do artigo 4.º-A.10. O detalhe por zona consta da Ficha de Produto e da página Entrega do sítio.` },
+          { kind: 'p', value: `4.º-A.10 Exemplares. O cliente pode encomendar, a partir da sua página de encomenda e antes do pagamento, de 1 a ${QUANTITE_MAX} exemplares idênticos do mesmo número. O primeiro exemplar é faturado ao preço do artigo 4.º-A.4; o segundo beneficia de um desconto de ${REMISE_DEUXIEME_PCT} % sobre esse preço; o terceiro e cada um dos seguintes de um desconto de ${REMISE_SUIVANTS_PCT} %. Estes descontos incidem apenas sobre o preço da revista, nunca sobre os custos de entrega, e são aplicados automaticamente; o detalhe consta do resumo da encomenda e da fatura. Os exemplares de uma mesma encomenda são expedidos em conjunto. Por exceção, durante a oferta de Natal, para uma encomenda feita de ${NOEL_DU_PT} a ${NOEL_AU_PT}, inclusive, e entregue em França, o cliente pode encomendar no máximo ${NOEL_EXEMPLAIRES_MAX} exemplares: o segundo beneficia de um desconto de ${NOEL_REMISE_MEME_PCT} % se tiver a mesma capa, ou de ${NOEL_REMISE_AUTRE_PCT} % se tiver outra capa, composta pelo atelier a partir das fotografias do cliente. Fora deste período ou de França, aplica-se a regra do parágrafo anterior.` },
+          { kind: 'p', value: `4.º-A.11 Custos de entrega. Cada revista é fabricada por encomenda, sem stock. Os custos de entrega, com todos os impostos incluídos e idênticos qualquer que seja o número de exemplares, são os seguintes: zona A, ${euros(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_PT}); zona B, ${euros(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_PT}); zona C, para os restantes países da zona de entrega (incluindo Suíça, Noruega, Chipre, Malta e Brasil), a tarifa da expedição com seguimento é calculada para o país e a encomenda em causa e dada a conhecer ao cliente antes de qualquer pagamento. A entrega é oferecida a partir de ${euros(FRANCO_CENTIMES)} com IVA de revistas numa mesma encomenda, deduzidos os descontos do artigo 4.º-A.10; o montante de um cartão-presente comprado na mesma encomenda (artigo 4.º-A.12) conta para este limiar. O detalhe por zona consta da Ficha de Produto e da página Entrega do sítio.` },
+          { kind: 'p', value: `4.º-A.12 Cartão-presente. O cliente pode comprar um cartão-presente Bellajour na página « Oferecer » do sítio, no montante de ${CARTES_PT} ou num montante livre de ${euros(LIBRE_MIN_CENTIMES)} a ${euros(LIBRE_MAX_CENTIMES)}, ou acrescentá-lo à sua encomenda a partir da sua página de encomenda, por ${CARTES_PT}. O cartão tem um código único; é válido durante ${VALIDITE_MOIS} meses a contar da compra e utiliza-se no pagamento de uma revista Bellajour, um cartão por encomenda: paga as revistas e, depois, os custos de entrega. A parte não utilizada é creditada na conta Bellajour associada ao endereço de e-mail de quem o utiliza, até ao termo de validade do cartão, e é deduzida da encomenda seguinte. Um cartão acrescentado a uma encomenda é enviado por e-mail ao comprador, que o entrega ao destinatário; se o pagamento dessa encomenda for integralmente reembolsado antes de o cartão ter sido utilizado, o cartão é anulado.` },
         ],
       },
       {
@@ -549,7 +594,7 @@ export const CGV: LocalizedDoc = {
             [`B`, PAYS_ZONE_B_PT, euros(ZONES_PORT.B.centimes)],
             [`C`, `Restantes países da zona de entrega (artigo 4.º-A.6)`, `Calculados para o país e a encomenda, antes do pagamento`],
           ] },
-          { kind: 'p', value: `Entrega oferecida a partir de ${euros(FRANCO_CENTIMES)} c/ IVA de revistas numa mesma encomenda (artigo 4.º-A.11). Exemplares: o 2.º a −${REMISE_DEUXIEME_PCT} %, o 3.º e seguintes a −${REMISE_SUIVANTS_PCT} % (artigo 4.º-A.10).` },
+          { kind: 'p', value: `Entrega oferecida a partir de ${euros(FRANCO_CENTIMES)} c/ IVA de revistas numa mesma encomenda, cartão-presente incluído (artigo 4.º-A.11). Exemplares: o 2.º a −${REMISE_DEUXIEME_PCT} %, o 3.º e seguintes a −${REMISE_SUIVANTS_PCT} %; oferta de Natal em França de ${NOEL_DU_PT} a ${NOEL_AU_PT}: o 2.º a −${NOEL_REMISE_MEME_PCT} % (mesma capa) ou −${NOEL_REMISE_AUTRE_PCT} % (outra capa), no máximo ${NOEL_EXEMPLAIRES_MAX} (artigo 4.º-A.10).` },
           { kind: 'h3', text: `Grelha tarifária — Pré-venda (encomendas de 13/06 a 15/08/2026)` },
           { kind: 'p', value: `Grelha encerrada, conservada apenas para as encomendas de pré-venda (artigo 5.º). Preços de catálogo padrão, fora de oferta promocional, exibidos em euros, com todos os impostos incluídos. IVA aplicado à taxa do país de residência do consumidor (regime OSS-União) após o limiar de 10 000 € de volume de negócios.` },
           { kind: 'table', columns: [`Paginação`, `Preço c/ IVA`], rows: [
@@ -565,7 +610,7 @@ export const CGV: LocalizedDoc = {
   },
   en: {
     title: `Terms and Conditions of Sale`,
-    lastUpdated: `Version 4.0 — Effective ${CGV_DATE}`,
+    lastUpdated: `Version ${CGV_VERSION} — Effective ${CGV_VERSION_DATE}`,
     intro: [
       `MISTÉRIO HERMÉTICO, LDA · NIPC 519443284`,
       `English translation for information only. The legally prevailing version is the Portuguese text; in the event of any discrepancy, the Portuguese text prevails.`,
@@ -649,8 +694,9 @@ export const CGV: LocalizedDoc = {
           { kind: 'p', value: `4a.7 Delivery time. Time runs from validation of the proof. It is estimated at 10 days (3 business days of manufacturing, then 3 to 7 days in transit), plus any customs clearance time for deliveries outside the European Union, and shall in no event exceed 30 days, in accordance with Article 10.1 and Article 9 of DL 24/2014.` },
           { kind: 'p', value: `4a.8 Checkboxes preceding payment. Before any payment, the customer ticks two separate checkboxes, unticked by default and timestamped: (i) acceptance of these Conditions; (ii) acknowledgement, within the meaning of Article 8.5, that their album is clearly personalised and that their right of withdrawal will be extinguished upon validation of the proof, in accordance with Article 8.3. Payment is technically impossible until both boxes are ticked and timestamped.` },
           { kind: 'p', value: `4a.9 Right to a refund until the proof. Notwithstanding payment in full, and in accordance with Articles 8.2 and 8.3, the customer retains, until validation of their proof, the right to obtain a full refund of the amounts paid, delivery costs included, with no deduction, no charge and no penalty. This right is extinguished upon validation of the proof, which makes the order definitive.` },
-          { kind: 'p', value: `4a.10 Copies. The customer may order, from their order page and before payment, 1 to ${QUANTITE_MAX} identical copies of the same issue. The first copy is invoiced at the price of Article 4a.4; the second benefits from a ${REMISE_DEUXIEME_PCT}% discount on that price; the third and each subsequent copy from a ${REMISE_SUIVANTS_PCT}% discount. These discounts apply to the magazine price only, never to delivery costs, and are applied automatically; the breakdown appears on the order summary and on the invoice. Copies in the same order are shipped together.` },
-          { kind: 'p', value: `4a.11 Delivery costs. Each magazine is made to order, without stock. Delivery costs, inclusive of all taxes and identical whatever the number of copies, are as follows: zone A, ${eurosEn(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_EN}); zone B, ${eurosEn(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_EN}); zone C, for the other countries of the delivery zone (including Switzerland, Norway, Cyprus, Malta and Brazil), the tracked shipping rate is quoted for the country and parcel concerned and made known to the customer before any payment. Delivery is free from ${eurosEn(FRANCO_CENTIMES)} inclusive of all taxes of magazines in the same order, after the discounts of Article 4a.10. The breakdown by zone is set out in the Product Sheet and on the site's Delivery page.` },
+          { kind: 'p', value: `4a.10 Copies. The customer may order, from their order page and before payment, 1 to ${QUANTITE_MAX} identical copies of the same issue. The first copy is invoiced at the price of Article 4a.4; the second benefits from a ${REMISE_DEUXIEME_PCT}% discount on that price; the third and each subsequent copy from a ${REMISE_SUIVANTS_PCT}% discount. These discounts apply to the magazine price only, never to delivery costs, and are applied automatically; the breakdown appears on the order summary and on the invoice. Copies in the same order are shipped together. By way of exception, during the Christmas offer, for an order placed from ${NOEL_DU_EN} to ${NOEL_AU_EN} inclusive and delivered in France, the customer may order no more than ${NOEL_EXEMPLAIRES_MAX} copies: the second benefits from a ${NOEL_REMISE_MEME_PCT}% discount if it has the same cover, or ${NOEL_REMISE_AUTRE_PCT}% if it has a different cover, composed by the atelier from the customer's photographs. Outside this period or outside France, the rule in the previous paragraph applies.` },
+          { kind: 'p', value: `4a.11 Delivery costs. Each magazine is made to order, without stock. Delivery costs, inclusive of all taxes and identical whatever the number of copies, are as follows: zone A, ${eurosEn(ZONES_PORT.A.centimes)} (${PAYS_ZONE_A_EN}); zone B, ${eurosEn(ZONES_PORT.B.centimes)} (${PAYS_ZONE_B_EN}); zone C, for the other countries of the delivery zone (including Switzerland, Norway, Cyprus, Malta and Brazil), the tracked shipping rate is quoted for the country and parcel concerned and made known to the customer before any payment. Delivery is free from ${eurosEn(FRANCO_CENTIMES)} inclusive of all taxes of magazines in the same order, after the discounts of Article 4a.10; the amount of a gift card bought in the same order (Article 4a.12) counts towards this threshold. The breakdown by zone is set out in the Product Sheet and on the site's Delivery page.` },
+          { kind: 'p', value: `4a.12 Gift card. The customer may buy a Bellajour gift card from the site's "Give" page, for ${CARTES_EN} or a free amount from ${eurosEn(LIBRE_MIN_CENTIMES)} to ${eurosEn(LIBRE_MAX_CENTIMES)}, or add one to their order from their order page, for ${CARTES_EN}. The card carries a unique code; it is valid for ${VALIDITE_MOIS} months from purchase and is used when paying for a Bellajour magazine, one card per order: it pays for the magazines, then the delivery costs. Any unused balance is credited to the Bellajour account linked to the email address of the person using it, until the card expires, and is deducted from their next order. A card added to an order is sent by email to the buyer, who passes it on to the recipient; if the payment for that order is refunded in full before the card has been used, the card is cancelled.` },
         ],
       },
       {
@@ -796,7 +842,7 @@ export const CGV: LocalizedDoc = {
             [`B`, PAYS_ZONE_B_EN, eurosEn(ZONES_PORT.B.centimes)],
             [`C`, `Other countries of the delivery zone (Article 4a.6)`, `Quoted for the country and parcel, before payment`],
           ] },
-          { kind: 'p', value: `Free delivery from ${eurosEn(FRANCO_CENTIMES)} incl. VAT of magazines in the same order (Article 4a.11). Copies: the 2nd at −${REMISE_DEUXIEME_PCT}%, the 3rd and following at −${REMISE_SUIVANTS_PCT}% (Article 4a.10).` },
+          { kind: 'p', value: `Free delivery from ${eurosEn(FRANCO_CENTIMES)} incl. VAT of magazines in the same order, gift card included (Article 4a.11). Copies: the 2nd at −${REMISE_DEUXIEME_PCT}%, the 3rd and following at −${REMISE_SUIVANTS_PCT}%; Christmas offer in France from ${NOEL_DU_EN} to ${NOEL_AU_EN}: the 2nd at −${NOEL_REMISE_MEME_PCT}% (same cover) or −${NOEL_REMISE_AUTRE_PCT}% (different cover), ${NOEL_EXEMPLAIRES_MAX} at most (Article 4a.10).` },
           { kind: 'h3', text: `Price list — Pre-sale (orders from 13/06 to 15/08/2026)` },
           { kind: 'p', value: `Closed price list, retained for pre-sale orders only (Article 5). Standard catalogue prices, excluding promotional offers, displayed in euros, inclusive of all taxes. VAT applied at the rate of the consumer's country of residence (OSS-Union scheme) after the €10,000 turnover threshold.` },
           { kind: 'table', columns: [`Pagination`, `Price incl. VAT`], rows: [

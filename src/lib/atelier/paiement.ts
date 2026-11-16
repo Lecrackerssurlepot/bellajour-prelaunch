@@ -6,6 +6,7 @@ import { quantiteDuDossier } from "./exemplaires";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 import { creerJobFacture, alerterRemboursementFacture } from "./jobFacture";
+import { consommerCarteEtCredit, parametresM4Carte } from "./carteServeur";
 
 /**
  * Les deux handlers de webhook de l'atelier (PRD §9).
@@ -326,6 +327,11 @@ export async function traiterPaiementAtelier(
     payment_intent: asId(session.payment_intent),
     montant_total: session.amount_total,
     devise: session.currency,
+    /* Noël 2026 (lot 4) : la règle du 2e exemplaire et, si l'atelier doit
+       composer une AUTRE couverture, la trace est ici, au moment du paiement. */
+    regle_exemplaires: session.metadata?.regle_exemplaires ?? null,
+    cadeau_centimes: Number(session.metadata?.cadeau_centimes) || 0,
+    couverture_exemplaire: session.metadata?.couverture_exemplaire || null,
     tva: session.total_details?.amount_tax ?? null,
     pays_livraison: adresse?.address?.country ?? null,
     /* ── LE PORT RÉELLEMENT ENCAISSÉ (lot 6, 10/09/2026) ──────────────
@@ -439,17 +445,33 @@ export async function traiterPaiementAtelier(
      Le job de facture, pour l'Edge Function `emit-invoices`. Après la
      transition réussie, donc jamais sur un rejeu. Ne lève jamais : une
      facture qui ne se prépare pas n'empêche ni le paiement ni M4. */
+  /* Noël 2026 (lot 3) : la carte cadeau devient « utilisée », son reste va
+     au compte, le crédit pris est débité. Après la transition, donc jamais
+     sur un rejeu ; idempotent de toute façon. Ne lève jamais. */
+  const parCarte = await consommerCarteEtCredit(supabase, session, {
+    id: numero.id,
+    email: numero.email ?? null,
+    prenom: numero.prenom ?? null,
+  });
+
   await creerJobFacture(supabase, session, stripe, {
     numeroId: numero.id,
     titre: numero.titre,
     quantite: quantiteDuDossier((numero as { quantite?: number | null }).quantite),
     creditFondateur: !!codeCredit && (session.total_details?.amount_discount ?? 0) > 0,
+    carteCentimes: parCarte.carteCentimes,
+    creditCompteCentimes: parCarte.creditCentimes,
   });
 
   /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :
      même verrou anti-doublon que M1 et M3 (Stripe rejoue volontiers ses
      webhooks), même repli de titre, même trace dans le journal. */
-  await envoyerMailAtelier(supabase, "M4", numero);
+  /* Noël (16/11) : M4 porte le récapitulatif carte et crédit (l'ex-GC3),
+     lu en base APRÈS la consommation de la carte. Sans carte, tout est vide
+     et le bloc disparaît. */
+  const recapCarte =
+    parCarte.carteCentimes > 0 || parCarte.creditCentimes > 0 ? await parametresM4Carte(supabase, numero.id) : undefined;
+  await envoyerMailAtelier(supabase, "M4", numero, recapCarte);
 
   return true;
 }

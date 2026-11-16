@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { deciderFacture } from "./facturation";
+import { cadeauDeSession } from "./carteServeur";
 import { envoyerAlerteFacturation } from "@/lib/alerteFacturation";
 
 /**
@@ -23,8 +24,42 @@ export async function creerJobFacture(
   supabase: SupabaseClient,
   session: Stripe.Checkout.Session,
   stripe: Stripe | undefined,
-  dossier: { numeroId: string; titre: unknown; quantite: number; creditFondateur: boolean },
+  dossier: {
+    numeroId: string;
+    titre: unknown;
+    quantite: number;
+    creditFondateur: boolean;
+    /** Noël 2026 : ce que la carte cadeau et le crédit du compte ont payé. */
+    carteCentimes?: number;
+    creditCompteCentimes?: number;
+  },
 ): Promise<void> {
+  /* UNE CARTE CADEAU A SERVI (Noël 2026, lot 3). La carte est un bon à usages
+     multiples : la TVA se règle ICI, sur le prix du magazine, et pas sur ce
+     que Stripe a encaissé (la carte n'est pas une remise). Le calcul de la
+     fatura n'est pas écrit pour ce cas : elle part en revue manuelle, chez
+     Louis, avec le détail. Même chose à 0 € (aucun payment intent). */
+  const parCarte = (dossier.carteCentimes ?? 0) + (dossier.creditCompteCentimes ?? 0);
+  /* UNE CARTE CADEAU VENDUE AVEC LE MAGAZINE (16/11). Encaissée dans le même
+     paiement, mais c'est un bon à usages multiples : pas de TVA à la vente,
+     elle ne va PAS dans la fatura du magazine. Revue manuelle, chez Louis,
+     avec le montant à retirer. */
+  const cadeau = cadeauDeSession(session);
+  if (cadeau > 0 && session.livemode !== false) {
+    await envoyerAlerteFacturation("Commande avec une carte cadeau ajoutée : fatura à faire à la main", {
+      Session: session.id,
+      "Carte cadeau vendue, hors TVA (€)": (cadeau / 100).toFixed(2),
+      "Encaissé par Stripe (€)": ((session.amount_total ?? 0) / 100).toFixed(2),
+    });
+  }
+  if (parCarte > 0 && session.livemode !== false) {
+    await envoyerAlerteFacturation("Commande payée avec une carte cadeau : fatura à faire à la main", {
+      Session: session.id,
+      "Payé par la carte (€)": ((dossier.carteCentimes ?? 0) / 100).toFixed(2),
+      "Payé par le crédit du compte (€)": ((dossier.creditCompteCentimes ?? 0) / 100).toFixed(2),
+      "Encaissé par Stripe (€)": ((session.amount_total ?? 0) / 100).toFixed(2),
+    });
+  }
   try {
     /* Un paiement de test n'a rien à faire en comptabilité. */
     if (session.livemode === false) {
@@ -57,7 +92,7 @@ export async function creerJobFacture(
     const pays = adresse?.address?.country ?? null;
     const codePostal = adresse?.address?.postal_code ?? null;
 
-    const decision = deciderFacture({
+    const decisionBrute = deciderFacture({
       pays,
       codePostal,
       taxIds: session.customer_details?.tax_ids ?? null,
@@ -66,6 +101,12 @@ export async function creerJobFacture(
       titre: dossier.titre,
       creditFondateur: dossier.creditFondateur,
     });
+    const decision: typeof decisionBrute =
+      cadeau > 0
+        ? { statut: "manual_review", motif: `carte cadeau vendue avec la commande : ${(cadeau / 100).toFixed(2)} € hors TVA (bon à usages multiples), à retirer de la base` }
+        : parCarte > 0
+        ? { statut: "manual_review", motif: `carte cadeau ou crédit du compte : ${(parCarte / 100).toFixed(2)} € réglés hors Stripe, TVA sur le prix plein` }
+        : decisionBrute;
 
     const commun = {
       stripe_payment_intent: pi,

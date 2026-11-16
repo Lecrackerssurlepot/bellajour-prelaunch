@@ -31,8 +31,9 @@
  * ne reçoit que le token et rechoisit le prix lui-même.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CLE_CARTE_RETENUE, MONTANTS_CARTE_CENTIMES, PARAM_CADEAU, PRENOM_CARTE_MAX, prenomCadeau } from '@/lib/atelier/carteCadeau'
 import { formaterCentimes } from '@/lib/atelier/prix'
 /* `pays.ts` est PUR et sans montant : la liste des pays a précisément
    déménagé là pour pouvoir descendre dans le navigateur (cf. son en-tête).
@@ -53,9 +54,14 @@ import { FINITION_LIBELLE, type Finition } from '@/lib/atelier/impression'
    pour dessiner le sélecteur et sa légende. */
 import {
   QUANTITE_MAX,
-  PHRASE_DEGRESSIF,
+  REGLE_ORDINAIRE,
+  NOEL_REMISE_AUTRE_PCT,
+  NOEL_REMISE_MEME_PCT,
   libelleLigne,
+  phraseRegle,
+  type CouvertureExemplaire,
   type Exemplaires,
+  type RegleExemplaires,
 } from '@/lib/atelier/exemplaires'
 import { manquePourFranco } from '@/lib/atelier/livraison'
 import FeuilleAjustement from './FeuilleAjustement'
@@ -87,6 +93,7 @@ type Props = {
     livraison: number
     livraisonOfferte: boolean
     remise: number
+    cadeau?: number
     total: number
   } | null
   /** Un fondateur ne paie ni son crédit ni son port. Décidé côté serveur. */
@@ -98,6 +105,15 @@ type Props = {
      en forme et envoie un nouveau nombre ; il n'additionne rien. */
   quantite: number
   exemplaires: Exemplaires | null
+  /* La règle des exemplaires du dossier, lue PAR LE SERVEUR
+     (`regleDuDossier`) : Noël (2 au plus, le 2e à −40 % ou −20 % selon la
+     couverture, France) ou l'ordinaire. Absente = ordinaire. */
+  regle?: RegleExemplaires
+  /** Noël (16/11) : proposer une carte cadeau pour un proche avant de payer.
+   *  Vrai seulement quand le drapeau de Noël est ouvert (lu par la page). */
+  offrirCarte?: boolean
+  /** La carte cadeau AJOUTÉE à la commande (`?cadeau=`), relue par le serveur. 0 = aucune. */
+  cadeauCentimes?: number
   cgvOk: boolean
   renonciation: boolean
   /* T2-8 — les deux temps de la promesse, calculés par la page depuis
@@ -118,15 +134,68 @@ type Props = {
      C'est le SEUL paramètre d'impression que le client choisit lui-même —
      le format, la reliure et le papier se déduisent de sa pagination. */
   finition: Finition
+  /* ── LA CARTE CADEAU ET LE CRÉDIT DU COMPTE (Noël 2026, lot 3) ───────
+     Calculés PAR LE SERVEUR (`reglementAvecCarte`, le même que le checkout).
+     Le code tapé part dans l'adresse (`?carte=`), la page se recalcule ; ce
+     composant n'additionne rien. `null` hors état 2 ou sans total connu. */
+  carte?: {
+    saisie: string
+    code: string | null
+    refus: string | null
+    carteCentimes: number
+    creditCentimes: number
+    reliquatCentimes: number
+    aPayerCentimes: number | null
+  } | null
 }
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
-  quantite, exemplaires,
+  quantite, exemplaires, regle = REGLE_ORDINAIRE, offrirCarte = false, cadeauCentimes = 0,
   cgvOk, renonciation, joursComposition, joursLivraison, finition,
   previsualisation = false,
+  carte = null,
 }: Props) {
   const router = useRouter()
+  const [ouvreCarte, setOuvreCarte] = useState(false)
+  const [codeTape, setCodeTape] = useState(carte?.saisie ?? '')
+  const [erreurCarte, setErreurCarte] = useState<string | null>(null)
+
+  /* Le code se pose dans l'adresse : la page serveur le vérifie et recalcule
+     le total. `replace`, pour que « retour » ne rejoue pas chaque essai. */
+  const appliquerCarte = useCallback((code: string | null) => {
+    const u = new URL(window.location.href)
+    if (code) u.searchParams.set('carte', code)
+    else u.searchParams.delete('carte')
+    u.searchParams.delete('paiement')
+    router.replace(`${u.pathname}${u.search}`, { scroll: false })
+  }, [router])
+
+  /* ── LA CARTE CADEAU AJOUTÉE (Noël, 16/11) ── Le montant passe par
+     l'adresse (`?cadeau=`) : le serveur recalcule total et livraison offerte,
+     ce composant n'additionne rien. Le prénom reste ici, il ne change aucun
+     montant ; il part avec le paiement. */
+  const [prenomCadeauTape, setPrenomCadeauTape] = useState('')
+  const [erreurCadeau, setErreurCadeau] = useState<string | null>(null)
+  const choisirCadeau = useCallback((centimes: number) => {
+    const u = new URL(window.location.href)
+    if (centimes > 0) u.searchParams.set(PARAM_CADEAU, String(centimes))
+    else u.searchParams.delete(PARAM_CADEAU)
+    u.searchParams.delete('paiement')
+    setErreurCadeau(null)
+    router.replace(`${u.pathname}${u.search}`, { scroll: false })
+  }, [router])
+
+  /* Le code venu du mail (« Composer mon magazine » mène à
+     /composer?carte=…, qui le range ici) s'applique tout seul, une fois. */
+  useEffect(() => {
+    if (!carte || carte.saisie || previsualisation) return
+    let retenu: string | null = null
+    try { retenu = window.localStorage.getItem(CLE_CARTE_RETENUE) } catch { /* stockage fermé */ }
+    if (retenu) appliquerCarte(retenu)
+  }, [carte, previsualisation, appliquerCarte])
+
+  const totalAffiche = commande ? (carte?.aPayerCentimes ?? commande.total) : null
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -138,6 +207,9 @@ export default function CasesEtCommande({
      du dossier et REVIENT à elle si l'enregistrement échoue. */
   const [nombre, setNombre] = useState<number>(quantite)
   const [changeNombre, setChangeNombre] = useState(false)
+  /* Noël : deux au plus ; un dossier déjà au-dessus peut redescendre. */
+  const maxExemplaires = regle.nom === 'noel' ? regle.max : QUANTITE_MAX
+  const [couvEx, setCouvEx] = useState<CouvertureExemplaire>(regle.couverture)
 
   const enregistrer = useCallback(
     async (champ: 'cgv_ok' | 'renonciation_retractation', valeur: boolean) => {
@@ -200,7 +272,7 @@ export default function CasesEtCommande({
   const choisirNombre = useCallback(
     async (valeur: number) => {
       const precedent = nombre
-      if (valeur === precedent || valeur < 1 || valeur > QUANTITE_MAX) return
+      if (valeur === precedent || valeur < 1 || (valeur > maxExemplaires && valeur > precedent)) return
       setNombre(valeur)
       setErreur(null)
       if (previsualisation) return
@@ -220,13 +292,47 @@ export default function CasesEtCommande({
         setChangeNombre(false)
       }
     },
-    [token, nombre, previsualisation, router]
+    [token, nombre, previsualisation, router, maxExemplaires]
+  )
+
+  /* La couverture du 2e exemplaire (Noël) : même régime que le nombre,
+     l'écran bouge, le serveur écrit, la page se recalcule. */
+  const choisirCouvEx = useCallback(
+    async (valeur: CouvertureExemplaire) => {
+      const precedent = couvEx
+      if (valeur === precedent) return
+      setCouvEx(valeur)
+      setErreur(null)
+      if (previsualisation) return
+      setChangeNombre(true)
+      try {
+        const r = await fetch('/api/atelier/numero', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, couverture_exemplaire: valeur }),
+        })
+        if (!r.ok) throw new Error('patch')
+        router.refresh()
+      } catch {
+        setCouvEx(precedent)
+        setErreur('Votre choix de couverture n’a pas pu être enregistré. Réessayez dans un instant.')
+      } finally {
+        setChangeNombre(false)
+      }
+    },
+    [token, couvEx, previsualisation, router]
   )
 
   const commander = useCallback(async () => {
     /* Ceinture : le bouton est déjà désactivé, mais un raccourci clavier ou
        un rendu futur ne doit pas pouvoir ouvrir une caisse depuis ici. */
     if (previsualisation) return
+    /* La carte ajoutée porte un prénom : sans lui, rien ne part. */
+    if (cadeauCentimes > 0 && !prenomCadeau(prenomCadeauTape)) {
+      setErreurCadeau('Le prénom de la personne qui recevra la carte.')
+      document.getElementById('nu-cadeau-prenom')?.focus()
+      return
+    }
     setOccupe(true)
     setErreur(null)
     try {
@@ -236,9 +342,23 @@ export default function CasesEtCommande({
       const r = await fetch('/api/atelier/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({
+          token,
+          ...(carte?.code ? { carte: carte.code } : {}),
+          ...(cadeauCentimes > 0 ? { cadeau: { montant_centimes: cadeauCentimes, prenom: prenomCadeau(prenomCadeauTape) } } : {}),
+        }),
       })
-      const data = (await r.json().catch(() => ({}))) as { url?: string; error?: string }
+      const data = (await r.json().catch(() => ({}))) as { url?: string; error?: string; phrase?: string }
+      if (data.error === 'cadeau_refuse') {
+        setErreurCadeau(data.phrase ?? 'La carte cadeau se commande à part.')
+        setOccupe(false)
+        return
+      }
+      if (data.error === 'carte_refusee') {
+        setErreurCarte(data.phrase ?? 'Cette carte ne peut pas servir.')
+        setOccupe(false)
+        return
+      }
       if (!r.ok || !data.url) throw new Error(data.error ?? 'checkout')
       window.location.href = data.url
     } catch (e) {
@@ -253,7 +373,7 @@ export default function CasesEtCommande({
       )
       setOccupe(false)
     }
-  }, [token, previsualisation])
+  }, [token, previsualisation, carte, cadeauCentimes, prenomCadeauTape])
 
   /* ⚠️ « CONNU » VEUT DIRE LES DEUX. Depuis que la livraison se facture à
      part, un prix de magazine sans port n'est pas un prix : la cliente
@@ -317,7 +437,7 @@ export default function CasesEtCommande({
       : null
   /* Ce qu'il manque pour la livraison offerte, sur le total des magazines
      (remise déduite), jamais sur le port. Zéro = atteint. */
-  const manqueFranco = commande ? manquePourFranco(commande.prix) : null
+  const manqueFranco = commande ? manquePourFranco(commande.prix + (commande.cadeau ?? 0)) : null
 
   const calculerLivraison = useCallback(async () => {
     /* Même désarmement que le paiement et les cases : en prévisualisation,
@@ -421,10 +541,29 @@ export default function CasesEtCommande({
               de commande : c'est un trait de la commande, comme la finition.
               La légende dit la remise AVANT qu'on clique, et l'économie
               réalisée quand il y en a une. Dix au plus (QUANTITE_MAX). */}
+          {/* ── NOËL : L'OFFRE EN ÉVIDENCE (16/11, Mathias : « le −40 % doit
+              pousser l'achat ») ── Un seul geste : passer à deux exemplaires.
+              Disparaît dès qu'on a deux exemplaires (la ligne de remise le
+              dit alors dans le récapitulatif). */}
+          {regle.nom === 'noel' && nombre === 1 ? (
+            <button
+              type="button"
+              className="nu-noel-offre"
+              onClick={() => void choisirNombre(2)}
+              disabled={previsualisation || changeNombre}
+            >
+              <span className="nu-noel-offre-pct">−{NOEL_REMISE_MEME_PCT}&nbsp;%</span>
+              <span className="nu-noel-offre-txt">
+                <b>Noël : 2<sup>e</sup> magazine</b>
+                <small>−{NOEL_REMISE_AUTRE_PCT}&nbsp;% si autre couverture</small>
+              </span>
+              <span className="nu-noel-offre-plus">Ajouter</span>
+            </button>
+          ) : null}
           <div className="nu-bon-l nu-bon-l--choix">
             <span id="nu-exemplaires-lbl">
               Exemplaires
-              <small className="nu-bon-legende">{PHRASE_DEGRESSIF}</small>
+              <small className="nu-bon-legende">{phraseRegle(regle)}</small>
             </span>
             <div className="nu-nombre" role="group" aria-labelledby="nu-exemplaires-lbl">
               <button
@@ -441,13 +580,41 @@ export default function CasesEtCommande({
                 type="button"
                 className="nu-nombre-b"
                 onClick={() => void choisirNombre(nombre + 1)}
-                disabled={previsualisation || changeNombre || nombre >= QUANTITE_MAX}
+                disabled={previsualisation || changeNombre || nombre >= maxExemplaires}
                 aria-label="Un exemplaire de plus"
               >
                 +
               </button>
             </div>
           </div>
+          {/* ── NOËL : LA COUVERTURE DU 2e EXEMPLAIRE (lot 4) ──
+              Deux réponses, deux boutons, la remise écrite sur chacun. */}
+          {regle.nom === 'noel' && nombre === 2 ? (
+            <div className="nu-bon-l nu-bon-l--choix">
+              <span id="nu-couvex-lbl">Couverture du 2e exemplaire</span>
+              <div className="nu-finition" role="radiogroup" aria-labelledby="nu-couvex-lbl">
+                {([
+                  ['meme', 'Même', NOEL_REMISE_MEME_PCT],
+                  ['autre', 'Autre', NOEL_REMISE_AUTRE_PCT],
+                ] as const).map(([v, mot, pct]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={couvEx === v}
+                    className={`nu-finition-b${couvEx === v ? ' est-choisi' : ''}`}
+                    onClick={() => void choisirCouvEx(v)}
+                    disabled={previsualisation || changeNombre}
+                  >
+                    {mot}, −{pct} %
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {regle.nom === 'noel' && nombre === 2 && couvEx === 'autre' ? (
+            <p className="nu-bon-econ">L’atelier compose une autre couverture avec vos photos.</p>
+          ) : null}
           {exemplaires && exemplaires.economieCentimes > 0 ? (
             <p className="nu-bon-econ">
               Vous économisez {formaterCentimes(exemplaires.economieCentimes)} sur
@@ -588,6 +755,24 @@ export default function CasesEtCommande({
               <b>&minus;{formaterCentimes(commande.remise)}</b>
             </div>
           ) : null}
+          {carte && carte.carteCentimes > 0 ? (
+            <div className="nu-bon-l">
+              <span>Carte cadeau</span>
+              <b>&minus;{formaterCentimes(carte.carteCentimes)}</b>
+            </div>
+          ) : null}
+          {carte && carte.creditCentimes > 0 ? (
+            <div className="nu-bon-l">
+              <span>Crédit de votre compte</span>
+              <b>&minus;{formaterCentimes(carte.creditCentimes)}</b>
+            </div>
+          ) : null}
+          {commande && (commande.cadeau ?? 0) > 0 ? (
+            <div className="nu-bon-l">
+              <span>Carte cadeau{prenomCadeau(prenomCadeauTape) ? ` pour ${prenomCadeau(prenomCadeauTape)}` : ''}</span>
+              <b>{formaterCentimes(commande.cadeau ?? 0)}</b>
+            </div>
+          ) : null}
           {/* ── LE SEUIL DE LA LIVRAISON OFFERTE (15/09/2026) ──
               Dit AVANT qu'on paie, et seulement quand il reste quelque chose
               à gagner : « plus que 14 € de magazines » se lit comme une
@@ -595,7 +780,7 @@ export default function CasesEtCommande({
               réserve. Atteint, la ligne de livraison dit déjà « offerte ». */}
           {commande && portConnu && !portOffert && !commande.livraisonOfferte && manqueFranco !== null && manqueFranco > 0 ? (
             <p className="nu-bon-franco">
-              Plus que {formaterCentimes(manqueFranco)} de magazines et la livraison est offerte.
+              Plus que {formaterCentimes(manqueFranco)} de {offrirCarte ? 'magazines ou de carte cadeau' : 'magazines'} et la livraison est offerte.
             </p>
           ) : null}
           {/* ⚠️ PAS DE TOTAL TANT QUE LE PORT MANQUE. Un total qui n'inclut
@@ -604,7 +789,57 @@ export default function CasesEtCommande({
           {commande && portConnu ? (
             <div className="nu-bon-t">
               <span>À payer</span>
-              <b>{formaterCentimes(commande.total)}</b>
+              <b>{formaterCentimes(totalAffiche ?? commande.total)}</b>
+            </div>
+          ) : null}
+          {carte && carte.reliquatCentimes > 0 && portConnu ? (
+            <p className="nu-bon-franco">
+              Il restera {formaterCentimes(carte.reliquatCentimes)} sur votre compte Bellajour.
+            </p>
+          ) : null}
+          {/* ── LA CARTE CADEAU (Noël 2026) ── un lien discret, un champ au
+              clic : la plupart des clients n'en ont pas, la ligne ne doit
+              pas leur faire croire qu'il leur manque quelque chose. */}
+          {carte && portConnu ? (
+            <div className="nu-carte">
+              {carte.code ? (
+                <p className="nu-carte-ok">
+                  <span>{carte.code}</span>
+                  <button type="button" className="nu-bon-changer" disabled={previsualisation} onClick={() => {
+                    try { window.localStorage.removeItem(CLE_CARTE_RETENUE) } catch { /* rien */ }
+                    setCodeTape('')
+                    appliquerCarte(null)
+                  }}>Retirer</button>
+                </p>
+              ) : ouvreCarte || carte.refus ? (
+                <form
+                  className="nu-carte-form"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    setErreurCarte(null)
+                    if (codeTape.trim()) appliquerCarte(codeTape.trim())
+                  }}
+                >
+                  <input
+                    className="nu-carte-champ"
+                    value={codeTape}
+                    onChange={(e) => setCodeTape(e.target.value.toUpperCase())}
+                    placeholder="PRÉNOM-NOEL-1234"
+                    aria-label="Code de la carte cadeau"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={24}
+                    disabled={previsualisation}
+                  />
+                  <button type="submit" className="nu-bon-calc" disabled={previsualisation || !codeTape.trim()}>Appliquer</button>
+                </form>
+              ) : (
+                <button type="button" className="nu-bon-changer" onClick={() => setOuvreCarte(true)} disabled={previsualisation}>
+                  J’ai une carte cadeau
+                </button>
+              )}
+              {(erreurCarte ?? carte.refus) ? <p className="nu-carte-refus" role="alert">{erreurCarte ?? carte.refus}</p> : null}
             </div>
           ) : null}
         </div>
@@ -658,6 +893,47 @@ export default function CasesEtCommande({
         <p className="nu-prix-sub">Le prix vous sera confirmé par mail, avant tout paiement.</p>
       )}
 
+      {/* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE (16/11, Mathias : « on veut
+          créer de l'upsell ») ── Juste avant de payer, dans le MÊME paiement :
+          30 ou 50 €, un prénom. Elle compte pour la livraison offerte. */}
+      {offrirCarte && !previsualisation ? (
+        <div className={`nu-noel-carte${cadeauCentimes > 0 ? ' est-choisie' : ''}`}>
+          <span className="nu-noel-carte-q" id="nu-cadeau-lbl">Offrir une carte cadeau à un proche&nbsp;?</span>
+          <div className="nu-noel-carte-choix" role="group" aria-labelledby="nu-cadeau-lbl">
+            {MONTANTS_CARTE_CENTIMES.map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={cadeauCentimes === m}
+                className={`nu-noel-carte-m${cadeauCentimes === m ? ' est-choisi' : ''}`}
+                onClick={() => choisirCadeau(cadeauCentimes === m ? 0 : m)}
+                disabled={occupe}
+              >
+                {formaterCentimes(m)}
+              </button>
+            ))}
+          </div>
+          {cadeauCentimes > 0 ? (
+            <div className="nu-noel-carte-pour">
+              <label htmlFor="nu-cadeau-prenom">Pour</label>
+              <input
+                id="nu-cadeau-prenom"
+                className="nu-noel-carte-input"
+                value={prenomCadeauTape}
+                onChange={(e) => { setPrenomCadeauTape(e.target.value); setErreurCadeau(null) }}
+                maxLength={PRENOM_CARTE_MAX}
+                placeholder="Prénom"
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
+          {erreurCadeau ? <p className="nu-noel-carte-err" role="alert">{erreurCadeau}</p> : null}
+          {cadeauCentimes > 0 ? (
+            <small className="nu-noel-carte-note">Elle vous arrive par e-mail, prête à offrir. Valable 12 mois.</small>
+          ) : null}
+        </div>
+      ) : null}
+
       <button
         type="button"
         className="nu-order nu-order--plein"
@@ -682,8 +958,8 @@ export default function CasesEtCommande({
         {occupe
           ? 'Un instant…'
           : confirmer
-            ? `Payer${prixConnu && commande ? ` ${formaterCentimes(commande.total)}` : ''}`
-            : `Commander${prixConnu && commande ? ` · ${formaterCentimes(commande.total)}` : ''}`}
+            ? `Payer${prixConnu && totalAffiche !== null ? ` ${formaterCentimes(totalAffiche)}` : ''}`
+            : `Commander${prixConnu && totalAffiche !== null ? ` · ${formaterCentimes(totalAffiche)}` : ''}`}
       </button>
 
       {/* Ce qui vient après le clic, dit avant. Deux accords, pas une

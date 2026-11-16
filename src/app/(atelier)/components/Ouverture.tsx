@@ -19,6 +19,7 @@ import { useEffect, useRef } from 'react'
 /* Le prix d'appel vient de content.ts, qui le dérive de la grille : la note
    sous le bouton ne peut pas rester en arrière d'un changement de prix. */
 import { CTA_NOTE_PRICE } from '../content'
+import { auClicGlisser } from '../noel/glisser'
 import './ouverture.css'
 
 const PLI = 120, FONDU = 1700, BATTEMENT = 1000
@@ -52,7 +53,12 @@ const MARQUE_VUE = 'data-ouverture-vue'
    réservée au retour sur la page (déjà vue), où il n'y a rien à jouer. */
 const PRISE_EN_MAIN = 0.25
 
-export default function Ouverture() {
+/* `noel` : le drapeau de la carte cadeau, lu par la page serveur
+   (NEXT_PUBLIC_GIFT_CARD_ENABLED). Fermé, l'ouverture est celle d'avant au
+   caractère près. Ouvert (Mathias, 16/11) : « ou ce Noël » dans l'amorce, en
+   orange, qui glisse vers le chapitre de la carte, posé juste dessous. La
+   pastille du 16/11 est retirée : elle allongeait l'ouverture. */
+export default function Ouverture({ noel = false }: { noel?: boolean }) {
   const cadre = useRef<HTMLElement>(null)
 
   /* Signe au chien de garde du layout racine que le code client tourne.
@@ -418,7 +424,11 @@ export default function Ouverture() {
 
         <div className="h-bas">
           <div className="h-gauche">
-            <p className="h-amorce">Ce festival, cette soirée, ce road trip…</p>
+            <p className="h-amorce">
+              {noel
+                ? <>Ce festival, cette soirée, ce road trip ou <a className="h-amorce-noel" href="#noel-accueil" onClick={auClicGlisser('noel-accueil')}>ce Noël</a>…</>
+                : 'Ce festival, cette soirée, ce road trip…'}
+            </p>
             {/* Deux souffles, deux lignes (Mathias, 14/09/2026) : la promesse
                 d'abord, le geste ensuite. Le <br> vaut sur tous les écrans :
                 la première phrase tient sur une ligne dès 320 px. */}

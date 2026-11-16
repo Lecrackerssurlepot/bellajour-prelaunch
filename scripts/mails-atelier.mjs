@@ -254,6 +254,33 @@ ${contenu}
   )}{% endif %}`;
 }
 
+/**
+ * Le récapitulatif carte cadeau et crédit de M4 (Noël, 16/11/2026).
+ *
+ * Remplace l'ancien mail GC3 (« il reste 12 € sur votre compte ») : il
+ * partait à la même seconde que M4, et la règle est un mail par 24 h par
+ * personne. Rendu SEULEMENT si une carte ou un crédit a payé ce numéro
+ * (`RECAP_CARTE`, chaîne vide sinon) ; chaque ligne absente vaut mieux qu'une
+ * ligne à zéro (docs/marque/STRUCTURE-INFO.md). Les montants viennent de
+ * `lireCarteDuNumero` (mails.ts), jamais écrits ici.
+ */
+function encartCarteCredit() {
+  const rang = (lib, val, fort = false, bord = true) =>
+    `<tr><td style="padding: 13px 0;${bord ? " border-bottom: 1px solid #26262a;" : ""} font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: #928d84;">${lib}</td><td align="right" style="padding: 13px 0;${bord ? " border-bottom: 1px solid #26262a;" : ""} font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: ${fort ? "#d68a63" : "#e9e4da"}; font-weight: ${fort ? 500 : 400}; white-space: nowrap;">${val}</td></tr>`;
+  return `{% if params.RECAP_CARTE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border-radius: 16px;">
+<tr><td style="padding: 4px 20px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+{% if params.CARTE_MONTANT %}${rang("{% if params.CARTE_DE %}La carte de {{ params.CARTE_DE }}{% else %}Carte cadeau{% endif %}", "&minus;{{ params.CARTE_MONTANT }}&nbsp;&euro;")}{% endif %}
+{% if params.CREDIT %}${rang("Cr&eacute;dit de votre compte", "&minus;{{ params.CREDIT }}&nbsp;&euro;")}{% endif %}
+{% if params.RELIQUAT %}${rang("Pour le prochain num&eacute;ro", "{{ params.RELIQUAT }}&nbsp;&euro;", true, false)}{% endif %}
+</table>
+</td></tr>
+{% if params.RELIQUAT %}<tr><td style="padding: 0 20px 18px 20px; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #928d84;">Ils restent sur votre compte jusqu&rsquo;au {{ params.RELIQUAT_JUSQU }} et se d&eacute;duisent tout seuls au prochain num&eacute;ro.</td></tr>{% endif %}
+</table>
+</td></tr>{% endif %}`;
+}
+
 function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied, hero }) {
   return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
@@ -501,7 +528,7 @@ export const MAILS = [
       { valeur: "{{ params.NB_PAGES }}", legende: "pages composées", grand: true },
       { valeur: "{{ params.PRIX }}&nbsp;&euro;", legende: "le numéro, impression comprise", grand: true },
       "Le montant exact réglé, livraison et crédit compris, figure sur votre facture, qui vous parvient séparément.",
-    ),
+    ) + encartCarteCredit(),
     cta: "Suivre mon numéro",
     lien: LIEN,
     pied: "Vous n’avez rien à faire d’ici là. Une question, une envie de changement ? Répondez simplement à ce message.",
@@ -884,6 +911,14 @@ async function main() {
        du questionnaire abandonné se lit en vidant cette valeur. */
     COUVERTURE_PRETE: "oui",
     LIEN: "https://www.bellajour.fr/numero/apercu",
+    /* Noël : le récapitulatif carte et crédit de M4 (vider RECAP_CARTE pour
+       le cas sans carte, de loin le plus fréquent). */
+    RECAP_CARTE: "oui",
+    CARTE_DE: "Léa",
+    CARTE_MONTANT: "38",
+    CREDIT: "",
+    RELIQUAT: "12",
+    RELIQUAT_JUSQU: "16 novembre 2027",
   };
   const remplir = (html) =>
     html.replace(/\{\{\s*params\.([A-Z_]+)\s*\}\}/g, (t, cle) => EXEMPLE[cle] ?? t);

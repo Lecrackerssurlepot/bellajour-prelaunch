@@ -30,7 +30,7 @@ import {
   type PalierCle,
 } from "./grille";
 import { PAYS_DEFAUT, normaliserPays } from "./pays";
-import { QUANTITE_MAX, totalExemplaires, type Exemplaires } from "./exemplaires";
+import { QUANTITE_MAX, REGLE_ORDINAIRE, totalExemplaires, type Exemplaires, type RegleExemplaires } from "./exemplaires";
 
 export { QUANTITE_MAX };
 
@@ -200,16 +200,18 @@ export function formaterCentimes(centimes: number): string {
 export function totalPour(
   centimesUnitaire: number | null | undefined,
   quantite: number,
+  regle: RegleExemplaires = REGLE_ORDINAIRE,
 ): number | null {
-  return totalExemplaires(centimesUnitaire, quantite)?.totalCentimes ?? null;
+  return totalExemplaires(centimesUnitaire, quantite, regle)?.totalCentimes ?? null;
 }
 
 /** Le même décompte, ligne par ligne : ce que Stripe et le reçu affichent. */
 export function decompteExemplaires(
   centimesUnitaire: number | null | undefined,
   quantite: number,
+  regle: RegleExemplaires = REGLE_ORDINAIRE,
 ): Exemplaires | null {
-  return totalExemplaires(centimesUnitaire, quantite);
+  return totalExemplaires(centimesUnitaire, quantite, regle);
 }
 
 /* ────────────────────────── réimpression (T-105) ──────────────────────────

@@ -166,6 +166,18 @@ async function relever(request: Request) {
      COLLECTIF_RETENTION_AUTO ouvert (et COLLECTIF_OUVERT), elle rend sans même lire la base. Ne
      lève jamais, au plus deux éditions par passage, ne touche à aucune table des particuliers. */
   after(() => import("@/lib/collectif/retentionServeur").then((m) => m.retentionQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
+  /* Noël 2026 (lot 3) — les cartes cadeau PROGRAMMÉES dont le jour est venu : GC2 à la personne
+     qui la reçoit, GC2b à l'acheteur. La relève passe à 7 h UTC (8 h à Paris) : « le matin du jour
+     choisi ». Sans gabarit GC2, rien ne part ni n'est marqué (réessayé le lendemain). Ne lève jamais. */
+  /* Puis les rappels (16/11) : GC4 carte jamais utilisée à J−30, GC6 mi-janvier, GC4b reste au
+     compte à J−30. APRÈS les envois du jour, dans le même `after` : une carte remise ce matin
+     n'est jamais rappelée le même jour. Même garde de mode, même verrou, ne lève jamais. */
+  after(() =>
+    import("@/lib/atelier/carteServeur").then(async (m) => {
+      await m.envoyerCartesProgrammees(makeSupabase());
+      await m.envoyerRappelsCartes(makeSupabase());
+    }),
+  );
 
   try {
     const supabase = makeSupabase();
@@ -305,7 +317,9 @@ async function relever(request: Request) {
         if (manque.length) {
           incomplets.push({ code: "M4", token: d.token, manque });
         } else {
-          const r = await envoyerMailAtelier(supabase, "M4", d);
+          /* Le récapitulatif carte et crédit suit le M4 réparé (vide sans carte). */
+          const recapCarte = await import("@/lib/atelier/carteServeur").then((m) => m.parametresM4Carte(supabase, d.id));
+          const r = await envoyerMailAtelier(supabase, "M4", d, recapCarte);
           if (r.statut === "envoye") envoyes.push({ code: "M4", token: d.token, titre: d.titre });
           else if (r.statut === "sans_template") sansTemplate.push({ code: "M4", token: d.token });
           else if (r.statut !== "deja_envoye") echecs.push({ code: "M4", token: d.token });

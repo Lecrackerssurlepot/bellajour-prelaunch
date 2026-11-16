@@ -1736,3 +1736,154 @@
   color: var(--c-text-soft);
 }
 .nu-bon-franco { color: var(--c-accent); }
+
+/* ── LA CARTE CADEAU (Noël 2026, lot 3) ──
+   Un lien discret sous le total ; au clic, un champ et « Appliquer » sur une
+   ligne. Appliquée, le code et « Retirer ». Même dessin que le choix du pays. */
+.nu-carte { margin: 12px 0 0; }
+.nu-carte .nu-bon-changer { margin-left: 0; }
+.nu-carte-form { display: flex; gap: 8px; }
+.nu-carte-champ {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: 8px;
+  background: var(--c-surface-1);
+  padding: 11px 12px;
+  font-family: var(--font-ui);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--c-text);
+}
+.nu-carte-champ:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-carte-ok {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--c-text-soft);
+}
+.nu-carte-refus { margin: 8px 0 0; font-size: 13.5px; color: var(--c-accent); }
+
+/* Le récapitulatif après paiement (16/11) : des lignes courtes, libellé à
+   gauche, valeur à droite, comme un ticket. */
+.nu-recap {
+  max-width: 520px;
+  margin: 22px auto 0;
+  text-align: left;
+  padding: 4px 18px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+}
+.nu-recap > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 13px 0;
+  border-top: 1px solid var(--c-line);
+}
+.nu-recap > div:first-child { border-top: 0; }
+.nu-recap dt { font-size: 14px; color: var(--c-text-soft); }
+.nu-recap dd { margin: 0; font-size: 15px; color: var(--c-text); text-align: right; font-variant-numeric: tabular-nums; }
+.nu-recap .nu-recap-fort { color: var(--c-accent); }
+
+/* ── NOËL : L'OFFRE DU 2e EXEMPLAIRE EN ÉVIDENCE (16/11/2026) ────────────
+   Un encart-bouton dans le bon de commande, tant qu'un seul exemplaire est
+   commandé pendant la fenêtre de Noël. Le chiffre d'abord. */
+.nu-noel-offre {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 6px 0 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+.nu-noel-offre:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 18%, transparent); }
+.nu-noel-offre:disabled { opacity: 0.6; cursor: default; }
+.nu-noel-offre-pct {
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--c-accent-strong);
+}
+.nu-noel-offre-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nu-noel-offre-txt b { font-weight: 500; font-size: 15px; white-space: nowrap; }
+.nu-noel-offre-txt sup { font-size: 0.7em; }
+.nu-noel-offre-txt small { font-size: 12.5px; color: var(--c-text-soft); }
+.nu-noel-offre-plus {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: var(--c-text-onaccent, #1a1410);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+@media (max-width: 400px) {
+  .nu-noel-offre { gap: 10px; padding: 12px; }
+  .nu-noel-offre-pct { font-size: 28px; }
+  .nu-noel-offre-plus { padding: 7px 12px; }
+}
+
+/* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE, DANS LE MÊME PAIEMENT (16/11/2026) ── */
+.nu-noel-carte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin: 4px 0 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--c-accent);
+  color: var(--c-text);
+}
+.nu-noel-carte.est-choisie { border-style: solid; background: color-mix(in srgb, var(--c-accent) 8%, transparent); }
+.nu-noel-carte-q { flex: 1 1 200px; font-size: 14.5px; line-height: 1.35; }
+.nu-noel-carte-choix { display: flex; gap: 8px; flex: 0 0 auto; }
+.nu-noel-carte-m {
+  min-width: 64px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--c-accent);
+  background: transparent;
+  color: var(--c-accent-strong);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nu-noel-carte-m.est-choisi { background: var(--c-accent); color: var(--c-text-onaccent, #1a1410); }
+.nu-noel-carte-m:disabled { opacity: 0.6; cursor: default; }
+.nu-noel-carte-pour { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.nu-noel-carte-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  font-size: 16px;
+}
+.nu-noel-carte-input:focus { outline: none; border-color: var(--c-accent); }
+.nu-noel-carte-err { flex: 1 1 100%; margin: 0; font-size: 13px; color: var(--c-accent-strong); }
+.nu-noel-carte-note { flex: 1 1 100%; font-size: 12.5px; color: var(--c-text-soft); }

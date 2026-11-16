@@ -66,7 +66,7 @@ import {
   tauxTvaPour,
   type PaysLivraison,
 } from "./pays";
-import { totalExemplaires } from "./exemplaires";
+import { totalExemplaires, type RegleExemplaires } from "./exemplaires";
 
 /* Les deux vivent dans `pays.ts` depuis le 15/09 (le taux décide du prix du
    magazine, pas seulement du port). Ré-exportés pour les lecteurs historiques. */
@@ -355,6 +355,12 @@ export type Commande = {
   creditCentimes: number;
   /** Le port est-il offert pour une AUTRE raison que le seuil (fondateur) ? */
   portOffert: boolean;
+  /** La règle des exemplaires (Noël ou ordinaire, exemplaires.ts). Absente = ordinaire. */
+  regle?: RegleExemplaires;
+  /** Noël 2026 : une carte cadeau ACHETÉE avec la commande (pas une carte qui
+   *  paie). Elle compte pour le seuil de la livraison offerte (décision de
+   *  Mathias du 16/11) et s'ajoute au total ; aucune remise ne la touche. */
+  cadeauCentimes?: number;
 };
 
 /**
@@ -381,15 +387,17 @@ export function totalCommande(c: Commande): {
   livraison: number;
   livraisonOfferte: boolean;
   remise: number;
+  cadeau: number;
   total: number;
 } {
   const quantite = c.quantite ?? 1;
   const unitaire = Math.max(0, Math.round(c.prixCentimes));
-  const ex = totalExemplaires(unitaire, quantite);
+  const ex = totalExemplaires(unitaire, quantite, c.regle);
   const prix = ex ? ex.totalCentimes : unitaire * Math.max(1, quantite);
-  const parSeuil = livraisonOfferte(prix);
+  const cadeau = Math.max(0, Math.round(c.cadeauCentimes ?? 0));
+  const parSeuil = livraisonOfferte(prix + cadeau);
   const livraison = c.portOffert || parSeuil ? 0 : Math.max(0, Math.round(c.livraisonCentimes));
   const remise = Math.min(Math.max(0, Math.round(c.creditCentimes)), prix);
-  const total = Math.max(0, prix - remise + livraison);
-  return { prix, quantite, livraison, livraisonOfferte: c.portOffert || parSeuil, remise, total };
+  const total = Math.max(0, prix - remise + livraison) + cadeau;
+  return { prix, quantite, livraison, livraisonOfferte: c.portOffert || parSeuil, remise, cadeau, total };
 }

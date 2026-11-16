@@ -98,7 +98,7 @@ export function baseEnMemoire(tables: Record<string, LigneMem[]>, panne: PanneMe
   const instant = () => new Date((horloge += 1000)).toISOString();
   const table = (t: string) => (tables[t] ??= []);
   const condition = (c: string): ((l: LigneMem) => boolean) => {
-    const m = /^([a-z0-9_]+)\.(not\.is|is|eq|neq|in|gt|lt)\.([\s\S]*)$/.exec(c);
+    const m = /^([a-z0-9_]+)\.(not\.is|is|eq|neq|in|gte|lte|gt|lt)\.([\s\S]*)$/.exec(c);
     if (!m) throw new Error(`fausse base : condition illisible ${c}`);
     const [, col, op, val] = m;
     if (op === "is") return (l) => l[col] === null || l[col] === undefined;
@@ -107,6 +107,8 @@ export function baseEnMemoire(tables: Record<string, LigneMem[]>, panne: PanneMe
     if (op === "neq") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) !== val;
     if (op === "gt") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) > val;
     if (op === "lt") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) < val;
+    if (op === "lte") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) <= val;
+    if (op === "gte") return (l) => l[col] !== null && l[col] !== undefined && String(l[col]) >= val;
     const liste = lireListePostgrest(val);
     if (!liste) throw new Error(`fausse base : liste illisible ${val}`);
     return (l) => l[col] !== null && l[col] !== undefined && liste.includes(String(l[col]));

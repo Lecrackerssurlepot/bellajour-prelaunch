@@ -38,6 +38,91 @@ export const QUANTITE_MAX = 10;
 export const REMISE_DEUXIEME_PCT = 30;
 export const REMISE_SUIVANTS_PCT = 50;
 
+/* ══════════════════════════════════════════════════════════════════════════
+   LA RÈGLE DE NOËL (décision de Mathias du 16/11/2026, DECISIONS-16-11.md)
+
+   « 2ᵉ exemplaire : −40 % même couverture, −20 % autre couverture, 2 au plus,
+   France seulement, pendant Noël seulement, puis retour automatique à
+   l'ancienne règle. » Libellé légal (STRATEGIE.md) : « Pour un 1ᵉʳ exemplaire
+   acheté, le 2ᵉ à −40 % », sans prix barré.
+
+   Elle ne REMPLACE pas la règle ordinaire : elle la suspend, le temps de la
+   fenêtre, pour un dossier livré en France qui ne dépasse pas deux
+   exemplaires. Hors fenêtre, hors France, ou un dossier déjà à trois
+   exemplaires et plus : la règle ordinaire, sans rien toucher.
+
+   Fin tranchée par Mathias le 16/11 : le 7 décembre inclus, comme la date
+   limite des photos et le compteur de places. Le 8, retour automatique à la
+   règle ordinaire. Changer `NOEL_EXEMPLAIRE_FIN` suffit.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+export type CouvertureExemplaire = "meme" | "autre";
+
+export const NOEL_EXEMPLAIRE_DEBUT = "2026-11-16";
+export const NOEL_EXEMPLAIRE_FIN = "2026-12-07";
+export const NOEL_EXEMPLAIRES_MAX = 2;
+export const NOEL_REMISE_MEME_PCT = 40;
+export const NOEL_REMISE_AUTRE_PCT = 20;
+export const NOEL_PAYS: readonly string[] = ["FR"];
+
+export type RegleExemplaires = {
+  nom: "ordinaire" | "noel";
+  /** Le plus grand nombre d'exemplaires que la règle accepte. */
+  max: number;
+  remiseDeuxiemePct: number;
+  remiseSuivantsPct: number;
+  /** La couverture du 2e exemplaire (Noël seulement ; « meme » sinon). */
+  couverture: CouvertureExemplaire;
+};
+
+export const REGLE_ORDINAIRE: RegleExemplaires = {
+  nom: "ordinaire",
+  max: QUANTITE_MAX,
+  remiseDeuxiemePct: REMISE_DEUXIEME_PCT,
+  remiseSuivantsPct: REMISE_SUIVANTS_PCT,
+  couverture: "meme",
+};
+
+/** Une couverture recevable, ou `null`. */
+export function normaliserCouverture(v: unknown): CouvertureExemplaire | null {
+  return v === "meme" || v === "autre" ? v : null;
+}
+
+/** La fenêtre de Noël, bornes comprises, sur un jour AAAA-MM-JJ (heure de Paris). */
+export function dansFenetreNoel(jour: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(jour) && jour >= NOEL_EXEMPLAIRE_DEBUT && jour <= NOEL_EXEMPLAIRE_FIN;
+}
+
+/**
+ * La règle d'un dossier : Noël si le jour est dans la fenêtre ET le pays de
+ * livraison est la France ; l'ordinaire sinon. Pur : le jour et le pays sont
+ * passés par l'appelant (serveur pour le prix, navigateur pour l'affichage).
+ */
+export function regleExemplaires(c: {
+  pays: string | null | undefined;
+  jour: string;
+  couverture?: unknown;
+}): RegleExemplaires {
+  const pays = typeof c.pays === "string" ? c.pays.toUpperCase() : "";
+  if (!dansFenetreNoel(c.jour) || !NOEL_PAYS.includes(pays)) return REGLE_ORDINAIRE;
+  const couverture = normaliserCouverture(c.couverture) ?? "meme";
+  return {
+    nom: "noel",
+    max: NOEL_EXEMPLAIRES_MAX,
+    remiseDeuxiemePct: couverture === "autre" ? NOEL_REMISE_AUTRE_PCT : NOEL_REMISE_MEME_PCT,
+    remiseSuivantsPct: 0,
+    couverture,
+  };
+}
+
+/**
+ * La règle qui s'applique VRAIMENT à `quantite` exemplaires : celle de Noël ne
+ * couvre que deux exemplaires ; un dossier à trois et plus garde l'ordinaire.
+ */
+export function regleEffective(regle: RegleExemplaires, quantite: number): RegleExemplaires {
+  return quantite > regle.max ? REGLE_ORDINAIRE : regle;
+}
+
 /** Une quantité recevable : un entier de 1 à `QUANTITE_MAX`. */
 export function quantiteValide(q: unknown): q is number {
   return typeof q === "number" && Number.isInteger(q) && q >= 1 && q <= QUANTITE_MAX;
@@ -60,18 +145,18 @@ export function quantiteDuDossier(v: unknown): number {
 }
 
 /** La remise, en pourcentage, de l'exemplaire de rang `rang` (1 = le premier). */
-export function remisePourRang(rang: number): number {
+export function remisePourRang(rang: number, regle: RegleExemplaires = REGLE_ORDINAIRE): number {
   if (rang <= 1) return 0;
-  if (rang === 2) return REMISE_DEUXIEME_PCT;
-  return REMISE_SUIVANTS_PCT;
+  if (rang === 2) return regle.remiseDeuxiemePct;
+  return regle.remiseSuivantsPct;
 }
 
 /**
  * Le prix d'UN exemplaire de rang `rang`, en centimes, arrondi au centime :
  * un montant Stripe est un entier. 3600 → 3600, 2520, 1800.
  */
-export function centimesDuRang(unitaireCentimes: number, rang: number): number {
-  return Math.round((unitaireCentimes * (100 - remisePourRang(rang))) / 100);
+export function centimesDuRang(unitaireCentimes: number, rang: number, regle: RegleExemplaires = REGLE_ORDINAIRE): number {
+  return Math.round((unitaireCentimes * (100 - remisePourRang(rang, regle))) / 100);
 }
 
 export type LigneExemplaires = {
@@ -85,6 +170,8 @@ export type LigneExemplaires = {
   unitaireCentimes: number;
   /** `quantite × unitaireCentimes`. */
   totalCentimes: number;
+  /** Règle de Noël : la couverture du 2e exemplaire (absent sinon). */
+  couverture?: CouvertureExemplaire;
 };
 
 export type Exemplaires = {
@@ -97,6 +184,8 @@ export type Exemplaires = {
   economieCentimes: number;
   /** Une, deux ou trois lignes : c'est ce que Stripe et le bon de commande affichent. */
   lignes: LigneExemplaires[];
+  /** La règle appliquée (Noël ou ordinaire). */
+  regle: RegleExemplaires["nom"];
 };
 
 /**
@@ -115,7 +204,9 @@ export type Exemplaires = {
 export function totalExemplaires(
   unitaireCentimes: number | null | undefined,
   quantite: number,
+  regleDemandee: RegleExemplaires = REGLE_ORDINAIRE,
 ): Exemplaires | null {
+  const regle = regleEffective(regleDemandee, quantite);
   if (!quantiteValide(quantite)) return null;
   if (
     typeof unitaireCentimes !== "number" ||
@@ -128,13 +219,14 @@ export function totalExemplaires(
   const lignes: LigneExemplaires[] = [];
   const pousser = (rang: 1 | 2 | 3, q: number) => {
     if (q <= 0) return;
-    const unitaire = centimesDuRang(unitaireCentimes, rang);
+    const unitaire = centimesDuRang(unitaireCentimes, rang, regle);
     lignes.push({
       rang,
       quantite: q,
-      remisePct: remisePourRang(rang),
+      remisePct: remisePourRang(rang, regle),
       unitaireCentimes: unitaire,
       totalCentimes: unitaire * q,
+      ...(regle.nom === "noel" && rang === 2 ? { couverture: regle.couverture } : {}),
     });
   };
   pousser(1, 1);
@@ -149,6 +241,7 @@ export function totalExemplaires(
     pleinTarifCentimes,
     economieCentimes: pleinTarifCentimes - totalCentimes,
     lignes,
+    regle: regle.nom,
   };
 }
 
@@ -158,6 +251,8 @@ export function totalExemplaires(
  */
 export function libelleLigne(ligne: LigneExemplaires): string {
   if (ligne.rang === 1) return "Votre numéro";
+  if (ligne.rang === 2 && ligne.couverture === "autre") return `2e exemplaire, autre couverture, −${ligne.remisePct} %`;
+  if (ligne.rang === 2 && ligne.couverture === "meme") return `2e exemplaire, même couverture, −${ligne.remisePct} %`;
   if (ligne.rang === 2) return `2e exemplaire, −${ligne.remisePct} %`;
   return ligne.quantite === 1
     ? `3e exemplaire, −${ligne.remisePct} %`
@@ -170,3 +265,11 @@ export function libelleLigne(ligne: LigneExemplaires): string {
  * pas vieillir.
  */
 export const PHRASE_DEGRESSIF = `Le 2e exemplaire à −${REMISE_DEUXIEME_PCT} %, le 3e et les suivants à −${REMISE_SUIVANTS_PCT} %.`;
+
+/** La phrase de Noël, au libellé de STRATEGIE.md (sans prix barré). */
+export const PHRASE_NOEL = `Pour un 1er exemplaire acheté, le 2e à −${NOEL_REMISE_MEME_PCT} % (même couverture) ou −${NOEL_REMISE_AUTRE_PCT} % (autre couverture). ${NOEL_EXEMPLAIRES_MAX} au plus, livraison en France.`;
+
+/** La phrase qui va avec une règle. */
+export function phraseRegle(regle: RegleExemplaires): string {
+  return regle.nom === "noel" ? PHRASE_NOEL : PHRASE_DEGRESSIF;
+}

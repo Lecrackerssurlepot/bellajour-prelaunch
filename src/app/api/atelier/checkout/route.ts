@@ -12,8 +12,13 @@ import {
   type PalierCle,
 } from "@/lib/atelier/prix";
 import { PAYS_LIBELLE, normaliserPays, type PaysLivraison } from "@/lib/atelier/pays";
+import { reglementAvecCarte } from "@/lib/atelier/carteCommande";
+import { META_CADEAU, META_CARTE } from "@/lib/atelier/carteServeur";
+import { montantCadeau, prenomCadeau } from "@/lib/atelier/carteCadeau";
+import { lireInterrupteur } from "@/lib/collectif/interrupteur";
 import { CODE_FISCAL_LIVRAISON, portClient, totalCommande } from "@/lib/atelier/livraison";
 import { libelleLigne, quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { regleDuDossier } from "@/lib/atelier/noelExemplaire";
 import { JOURS_LIVRAISON } from "@/lib/atelier/urgence";
 import {
   assurerCreditFondatrice,
@@ -198,6 +203,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "token_invalide" }, { status: 400 });
     }
 
+    /* ── UNE CARTE CADEAU AJOUTÉE À LA COMMANDE (Noël 2026, 16/11) ──────
+       30 ou 50 €, un prénom, et le drapeau de Noël ouvert : sinon on refuse
+       plutôt que d'encaisser une carte que la page n'a pas montrée. Elle
+       part chez l'ACHETEUR (remise « imprimer »), au webhook
+       (`enregistrerCarteAjoutee`). */
+    let cadeau: { centimes: number; prenom: string } | null = null;
+    if (body.cadeau !== undefined && body.cadeau !== null) {
+      const c = body.cadeau as Record<string, unknown>;
+      const centimes = montantCadeau(c?.montant_centimes);
+      const prenom = prenomCadeau(c?.prenom);
+      if (!lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert || centimes === null || prenom === null) {
+        return NextResponse.json({ error: "cadeau_invalide" }, { status: 400 });
+      }
+      cadeau = { centimes, prenom };
+    }
+
     const supabase = makeSupabase();
 
     const CHAMPS_BASE =
@@ -284,7 +305,10 @@ export async function POST(request: Request) {
        bon de commande a jouée à l'écran : ce que le client a lu est ce que
        Stripe débite, ligne par ligne. */
     const quantite = quantiteDuDossier(numero.quantite);
-    const decompte = decompteExemplaires(centimes, quantite);
+    /* Noël 2026 (lot 4) : la règle du 2e exemplaire, relue comme la page
+       l'a lue (`regleDuDossier`) : même jour, même pays, même couverture. */
+    const regle = await regleDuDossier(supabase, { id: numero.id, pays_livraison: numero.pays_livraison ?? null });
+    const decompte = decompteExemplaires(centimes, quantite, regle);
     if (!decompte) {
       console.error("[atelier/checkout] décompte impossible", numero.id, centimes, quantite);
       return NextResponse.json({ error: "prix_indisponible" }, { status: 409 });
@@ -403,7 +427,22 @@ export async function POST(request: Request) {
       livraisonCentimes: port.brutCentimes,
       creditCentimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
       portOffert: portOffertFondateur,
+      regle,
+      cadeauCentimes: cadeau?.centimes ?? 0,
     });
+    /* La carte ajoutée et le crédit fondateur (16/11). Le crédit est un
+       code promo Stripe de 30 € qui s'impute sur TOUT le panier, au prorata
+       des lignes : même au-dessus de 30 € de magazines, une part du crédit
+       tomberait sur la ligne de la carte (relevé par la recette du 16/11 :
+       24 € + carte 30 € payés par code → magazine 13,34 €, carte 16,66 €).
+       Le total est juste, le détail ment. On refuse l'ajout : la carte se
+       commande à part. */
+    if (cadeau && remiseAppliquee) {
+      return NextResponse.json(
+        { error: "cadeau_refuse", phrase: "La carte cadeau se commande à part ici : bellajour.fr/offrir." },
+        { status: 409 },
+      );
+    }
     const portOffert = commande.livraisonOfferte;
     const livraison = commande.livraison;
     if (credit.statut === "indisponible") {
@@ -439,6 +478,53 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "credit_indisponible" }, { status: 409 });
       }
     }
+
+    /* ─── LA CARTE CADEAU ET LE CRÉDIT DU COMPTE (Noël 2026, lot 3) ─────
+       Le code vient du corps (`carte`), il est REVÉRIFIÉ ici : la page ne
+       fait qu'afficher le même calcul (`reglementAvecCarte`). Un code tapé
+       qui ne sert plus refuse le paiement plutôt que d'encaisser plein tarif
+       quelqu'un qui croit payer avec sa carte. Le crédit du compte (reste
+       d'une carte précédente) s'applique tout seul, par l'adresse du dossier. */
+    const codeCarte = typeof body.carte === "string" && body.carte.trim() !== "" ? body.carte : null;
+    const reglement = await reglementAvecCarte(supabase, {
+      email: numero.email,
+      codeSaisi: codeCarte,
+      prixCentimes: commande.prix - commande.remise,
+      livraisonCentimes: livraison,
+      fondateur: remiseAppliquee,
+      livemode: modeStripe(stripeKey) === "live",
+    });
+    if (codeCarte && !reglement.carte) {
+      return NextResponse.json({ error: "carte_refusee", phrase: reglement.refus }, { status: 409 });
+    }
+    const imputation = reglement.imputation;
+    /* Même raison qu'au-dessus pour un code de carte ou un crédit de compte :
+       le coupon se répartirait aussi sur la carte ajoutée. */
+    if (cadeau && imputation && imputation.remiseMagazinesCentimes > 0) {
+      return NextResponse.json(
+        { error: "cadeau_refuse", phrase: "La carte cadeau se commande à part ici : bellajour.fr/offrir." },
+        { status: 409 },
+      );
+    }
+    let couponCarte: string | null = null;
+    if (imputation && imputation.remiseMagazinesCentimes > 0) {
+      try {
+        const coupon = await stripe.coupons.create({
+          amount_off: imputation.remiseMagazinesCentimes,
+          currency: "eur",
+          duration: "once",
+          max_redemptions: 1,
+          name: reglement.carte ? `Carte cadeau ${reglement.carte.code}` : "Crédit de votre compte",
+          metadata: { kind: KIND_ATELIER, numero_id: numero.id, carte_code: reglement.carte?.code ?? "" },
+        });
+        couponCarte = coupon.id;
+      } catch (e) {
+        console.error("[atelier/checkout] coupon de carte refusé par Stripe", (e as Error)?.message);
+        return NextResponse.json({ error: "stripe_error" }, { status: 500 });
+      }
+    }
+    const livraisonDue = imputation ? imputation.livraisonCentimes : livraison;
+    const portParCarte = imputation !== null && livraisonDue < livraison;
 
     /* Le mode de la clé, dans le journal et dans les logs : c'est le
        piège des deux comptes Stripe. Une clé de test en production frapperait
@@ -483,9 +569,11 @@ export async function POST(request: Request) {
                 ? "Livraison offerte, fondateur"
                 : portOffert
                   ? "Livraison offerte"
-                  : `Livraison suivie, ${PAYS_LIBELLE[pays]}`,
+                  : portParCarte
+                    ? `Livraison suivie, ${PAYS_LIBELLE[pays]}, réglée ${livraisonDue === 0 ? "" : "en partie "}par la carte`
+                    : `Livraison suivie, ${PAYS_LIBELLE[pays]}`,
               type: "fixed_amount",
-              fixed_amount: { amount: livraison, currency: "eur" },
+              fixed_amount: { amount: livraisonDue, currency: "eur" },
               /* TTC, comme le prix du magazine : le total ne gonfle pas au
                  moment de payer. La conversion HT → TTC a eu lieu au devis
                  (livraison.ts). La TVA réellement facturée est celle de la
@@ -529,7 +617,9 @@ export async function POST(request: Request) {
            fondatrices) est borné à 30 € une fois, tracé, et réparable. */
         ...(remiseAppliquee
           ? { discounts: [{ promotion_code: credit.promotionCodeId }] }
-          : { allow_promotion_codes: true }),
+          : couponCarte
+            ? { discounts: [{ coupon: couponCarte }] }
+            : { allow_promotion_codes: true }),
 
         /* ─── LES LIGNES, UNE PAR RANG D'EXEMPLAIRE (15/09/2026) ───────────
            « Votre numéro », puis « 2e exemplaire, −30 % », puis « N
@@ -537,7 +627,7 @@ export async function POST(request: Request) {
            sur l'écran de paiement et sur la facture, et c'est exactement le
            décompte du bon de commande (`decompteExemplaires`). Une seule
            ligne à quantité 3 et prix moyen ne dirait pas la remise. */
-        line_items: decompte.lignes.map((ligne) => ({
+        line_items: decompte.lignes.map((ligne): Stripe.Checkout.SessionCreateParams.LineItem => ({
           quantity: ligne.quantite,
           price_data: {
             currency: "eur",
@@ -558,7 +648,25 @@ export async function POST(request: Request) {
               tax_code: CODE_FISCAL_ALBUM,
             },
           },
-        })),
+        })).concat(
+          /* La carte cadeau ajoutée : un bon à usages multiples, sans TVA à
+             la vente (la TVA se paiera sur le magazine qu'elle achètera).
+             La fatura du magazine l'écarte (`creerJobFacture`). */
+          cadeau
+            ? [<Stripe.Checkout.SessionCreateParams.LineItem>{
+                quantity: 1,
+                price_data: {
+                  currency: "eur",
+                  unit_amount: cadeau.centimes,
+                  tax_behavior: "inclusive" as const,
+                  product_data: {
+                    name: `Carte cadeau Bellajour, ${cadeau.centimes / 100} €`,
+                    description: `Pour ${cadeau.prenom}. Valable 12 mois, sur un magazine Bellajour.`,
+                  },
+                },
+              }]
+            : [],
+        ),
 
         /* Le discriminant du webhook partagé. `kind` est lu au `switch` de
            /api/webhook AVANT tout accès en base ; sans lui, ce paiement
@@ -576,8 +684,13 @@ export async function POST(request: Request) {
           prix_centimes: String(centimes),
           prix_ht_centimes: String(numero.prix_ht_centimes ?? ""),
           quantite: String(quantite),
+          /* La règle appliquée et, pour Noël, la couverture du 2e exemplaire :
+             l'atelier la lit pour savoir s'il compose une autre couverture. */
+          regle_exemplaires: decompte.regle,
+          couverture_exemplaire: decompte.regle === "noel" && quantite === 2 ? regle.couverture : "",
           total_produit_centimes: String(decompte.totalCentimes),
-          livraison_centimes: String(livraison),
+          ...(cadeau ? { [META_CADEAU.centimes]: String(cadeau.centimes), [META_CADEAU.prenom]: cadeau.prenom } : {}),
+          livraison_centimes: String(livraisonDue),
           livraison_zone: port.zone,
           port_offert: portOffert ? "true" : "false",
           port_offert_fondateur: portOffertFondateur ? "true" : "false",
@@ -588,6 +701,15 @@ export async function POST(request: Request) {
              (et non un code promo quelconque tapé à la main). Vide quand il
              n'y a pas de remise d'office : une métadonnée qui ne dit rien
              n'encombre pas la lecture. */
+          ...(imputation
+            ? {
+                [META_CARTE.id]: reglement.carte?.id ?? "",
+                [META_CARTE.code]: reglement.carte?.code ?? "",
+                [META_CARTE.centimes]: String(imputation.carteCentimes),
+                [META_CARTE.credit]: String(imputation.creditCentimes),
+                [META_CARTE.reliquat]: String(imputation.reliquatCentimes),
+              }
+            : {}),
           ...(remiseAppliquee
             ? {
                 [META_CREDIT]: credit.code,
@@ -678,6 +800,7 @@ export async function POST(request: Request) {
       session_id: session.id,
       palier: numero.palier,
       montant_centimes: centimes,
+      cadeau_centimes: cadeau?.centimes ?? 0,
       /* D'où vient ce montant : de la colonne gelée, ou d'un recalcul depuis
          la grille. Le jour où la grille change, c'est cette ligne qui dira si
          une commande a été chiffrée au barème d'hier ou à celui du jour. */

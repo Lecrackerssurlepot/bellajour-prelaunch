@@ -24,6 +24,10 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Kiosque from './Kiosque'
 import Corps from './Corps'
+import Bandeau from '../noel/Bandeau'
+import BlocMagazine from '../noel/BlocMagazine'
+import AmorceMagazine from '../noel/AmorceMagazine'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { EUROS_MAX_PUBLIC, EUROS_MIN, GRILLE_PUBLIQUE } from '@/lib/atelier/grille'
 import { PAYS_LIVRAISON } from '@/lib/atelier/pays'
 import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
@@ -159,6 +163,8 @@ const JSON_LD = [
 ]
 
 export default function PageProduit() {
+  /* Noël 2026 : drapeau fermé = la page d'avant, au pixel près. */
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert
   return (
     <>
       {/* La première photo du collage est l'élément LCP. On la demande AVANT
@@ -193,13 +199,16 @@ export default function PageProduit() {
           et là seulement, que le geste a un sens sans quitter la page. */}
       {/* `compteOuvert()` lu au build : la silhouette du compte entre dans le
           HTML au lieu d'attendre l'hydratation (cf. NavCompte). */}
+      {noel && <Bandeau />}
       <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" compteOuvert={compteOuvert()} />
 
       {/* ⚠️ `.at-pdp` n'est pas décoratif : toute pdp.css y est scopée, et les
           noms de classes y sont courts (.mot, .pas, .prix). Le retirer
           dépeindrait la page ET repeindrait /composer. */}
       <main className="at-pdp">
-        <Kiosque />
+        {/* Noël : le repère sous le bouton, et le bloc juste après le premier
+            écran (piège 2 : le kiosque va toujours jusqu'au bouton). */}
+        <Kiosque amorce={noel ? <AmorceMagazine /> : undefined} noel={noel ? <BlocMagazine /> : undefined} />
         <Corps />
       </main>
 

@@ -173,6 +173,7 @@ export default function Espace({
   enCours,
   livres,
   ongletInitial = null,
+  credit = null,
 }: {
   email: string
   photo: string | null
@@ -184,6 +185,8 @@ export default function Espace({
      serveur. Un lien « ← Ma bibliothèque » qui rouvrait « Mes numéros »
      était un retour qui mentait. Null : l'heuristique décide. */
   ongletInitial?: Onglet | null
+  /* Noël 2026 : le crédit du compte (reste d'une carte cadeau), déjà formaté. */
+  credit?: { montant: string; jusquau: string | null } | null
 }) {
   const numeros = [...aTerminer, ...enCours]
   const [onglet, setOnglet] = useState<Onglet>(
@@ -240,6 +243,15 @@ export default function Espace({
       </header>
 
       <main className="cpt-main">
+        {credit ? (
+          <section className="cpt-credit" aria-label="Votre crédit">
+            <span className="cpt-credit-mot">Votre crédit</span>
+            <span className="cpt-credit-montant">{credit.montant}</span>
+            <span className="cpt-credit-note">
+              Déduit au paiement{credit.jusquau ? ` · jusqu’au ${credit.jusquau}` : ''}
+            </span>
+          </section>
+        ) : null}
         {onglet === 'numeros' ? (
           numeros.length === 0 ? (
             <section className="cpt-vide">
