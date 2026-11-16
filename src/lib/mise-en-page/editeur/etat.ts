@@ -11,6 +11,7 @@ import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../rec
 import { contenuValide } from "../sauvegarde";
 import { avecDerniere, coteSeul, type Magazine } from "../magazine";
 import { ID_COUVERTURE } from "../couverture";
+import { motSansTexte } from "./texteAjoute";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { LECTURE_VIDE } from "./mesures";
@@ -273,7 +274,9 @@ export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "r
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "etiqueter", "hesiter",
   "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet", "accepterRafale",
   /* lot G : les couleurs libres */
-  "colorerFond", "colorerTexte"]);
+  "colorerFond", "colorerTexte",
+  /* T-212 : un texte ajouté proprement */
+  "ajouterTexte"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -293,6 +296,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   const is = plan.issue;
   let x: EtatEditeur = { ...e, glisser: null, confirmation: null, derniere: { refus: is.refus, restees: is.restees, dejaLa: is.dejaLa, textesPerdus: is.textesPerdus, libelle: plan.libelle } };
   if (is.refus === "pleine" && plan.op === "ajouterSurPlanche") return { ...x, message: { texte: "Double pleine · N pour une nouvelle" } };
+  /* T-212 : rien de posé, l'écran dit pourquoi en deux mots */
+  if (is.refus && plan.op === "ajouterTexte" && g.type === "ajouterTexte") return { ...x, message: { texte: motSansTexte(e.magazine, g.plancheId, g.cible) } };
   if (is.refus) return x;
   const signalees = is.posees.filter((id) => { const ph = e.catalogue.get(id); return ph && ph.signalee; });
   if (signalees.length && !g.confirme) {

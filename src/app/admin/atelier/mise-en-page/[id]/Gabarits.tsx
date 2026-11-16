@@ -153,7 +153,7 @@ export function Pastilles({ pl, act }: { pl: Planche; act: ActionsPlanche }) {
 
 /* ─── le tiroir : les gabarits compatibles en vignettes. La double page reste entière sous l'aperçu en direct. ─── */
 export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
-  const { etat, envoyer, majUi } = useEd();
+  const { etat, envoyer, ui, majUi } = useEd();
   /* lot D : les générés se comptent par centaines ; le tiroir en montre `PLAFOND_TIROIR`, « Plus » en ajoute (le parent le remonte à chaque page ou côté : `key`) */
   const [montres, setMontres] = useState(PLAFOND_TIROIR);
   const [fondOuvert, setFondOuvert] = useState(false);
@@ -182,6 +182,8 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
     return f[cible] ?? null;
   };
   const fond = fondDe();
+  /* T-212 : la grille que l'écran montre guide la place du texte (6 × 6 sinon) */
+  const texte: Geste = { type: "ajouterTexte", plancheId: pl.id, cible, trame: ui.grille && ui.trame !== "artiste" ? ui.trame : 6 };
   return (
     <>
     <div className="ed-rangee-gab" role="menu" aria-label="Gabarits compatibles" onClick={(e) => e.stopPropagation()} onMouseLeave={() => majUi({ apercuGab: null })}>
@@ -197,6 +199,11 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
         <button type="button" className="ed-bt ed-bt-fond" aria-expanded={fondOuvert} onClick={() => setFondOuvert(!fondOuvert)}>
           <i className={fond ? undefined : "ed-bt-fond--vide"} style={fond ? { background: hexDeCouleur(fond, etat.magazine.style) } : undefined} aria-hidden="true" />Fond
         </button>
+        {/* T-212 : un titre posé à sa place (la plus grande zone libre, alignée sur la grille affichée ; sinon l'endroit calme d'une photo) ;
+            le survol montre où, le clic le pose, Annuler le défait */}
+        <button type="button" className="ed-bt" disabled={!d} title={d ? "Ajouter un titre à sa place" : "Page vide"}
+          onMouseEnter={d ? voir(texte) : undefined} onFocus={d ? voir(texte) : undefined}
+          onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer(texte); }}>Texte</button>
       </span>
       {!liste.length ? <span className="ed-sous">Aucune photo</span> : null}
       {/* le gabarit courant reste sous les yeux même s'il est plus loin que le plafond : en tête, juste après le titre */}

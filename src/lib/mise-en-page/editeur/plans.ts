@@ -20,6 +20,8 @@ import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
 import { appliquerPremierJet } from "./premierJet";
 import { colorerFond, colorerTexte, libelleFond, libelleTexte } from "./couleurs";
 import { propositionRafale, rafaleDe } from "./lectureIA";
+import { ajouterTexte, type LecturePourTexte } from "./texteAjoute";
+import { TRAMES, TRAME_DEFAUT } from "./grilleMiseEnPage";
 import { ID_COUVERTURE } from "../couverture";
 import type { ArgsPlan, CibleDepot, EtatEditeur, GesteModifiant, OpPlan, Plan, RefCadre, Refus, SourceGlisser } from "./types";
 
@@ -39,6 +41,13 @@ export function resoudreBande(m: Magazine, cible: Extract<CibleDepot, { type: "b
   if (cible.position <= nG && nG < MAX_PHOTOS_PAGE) return { cible: "gauche", position: cible.position };
   return { cible: "droite", position: cible.position - nG };
 }
+
+/** T-212 : ce que la machine a lu d'une photo, pour poser un texte dessus (visages, zone importante, chaleur, lumière). */
+export const lirePourTexte = (e: EtatEditeur) => (id: string): LecturePourTexte | null => {
+  const me = e.lecture.mesures?.[id];
+  if (!me) return null;
+  return { visages: me.visages, zone: me.zone ?? e.catalogue.get(id)?.zone ?? null, chaleur: me.chaleur, lumi: me.lumi };
+};
 
 const libellePose = (n: number): string => (n > 1 ? `Poser ${n} photos` : "Poser une photo");
 
@@ -283,6 +292,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return simple("supprimerPlanche", coteSeul(m, i) ? "Vider une planche" : "Supprimer une planche", g.plancheId, supprimerPlanche(m, g.plancheId), { plancheId: g.plancheId });
     }
     case "vider": return simple("vider", "Vider une planche", g.plancheId, vider(m, g.plancheId), { plancheId: g.plancheId });
+    /* T-212 : un titre posé à sa place (zone libre alignée sur la grille, sinon l'endroit calme d'une photo lue) */
+    case "ajouterTexte": {
+      const trame = TRAMES.includes(g.trame as never) ? g.trame! : TRAME_DEFAUT;
+      const { place: _place, ...is } = ajouterTexte(m, g.plancheId, g.cible, cat, lirePourTexte(e), trame);
+      void _place;
+      return { op: "ajouterTexte", libelle: "Ajouter un texte", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
+    }
     case "marquer": {
       const ids = Array.isArray(g.ids) ? g.ids.filter((id) => cat.has(id)) : [];
       const autres = Array.isArray(g.autres) ? g.autres.filter((id) => cat.has(id) && !ids.includes(id)) : [];

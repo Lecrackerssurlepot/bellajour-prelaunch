@@ -18,7 +18,9 @@ import { TEMPLATES_DESSINES, candidats, cadresDe, decorDe, nouveauMagazine, temp
 import { EPINGLES_RETIREES } from "@/lib/mise-en-page/epingles";
 import { GABARITS_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
-import { GRILLE, MARGES, PAGE_H, PAGE_L, caseGrille, zoneUtile, type Rect } from "@/lib/mise-en-page/geometrie";
+import { FOND_PERDU, GRILLE, MARGES, PAGE_H, PAGE_L, caseGrille, zoneUtile, type Rect } from "@/lib/mise-en-page/geometrie";
+import { planPdf } from "@/lib/mise-en-page/pdf";
+import { disposer, TEMPLATE_LIBRE, type Disposition } from "@/lib/mise-en-page/magazine";
 
 type Rapporter = (nom: string, reussi: boolean) => void;
 
@@ -54,6 +56,7 @@ export async function verifierMepVague1(ok: Rapporter, titre: (t: string) => voi
   verifierT211(ok);
   verifierT213(ok);
   verifierT209(ok);
+  verifierT212(ok);
 }
 
 /* ─────────────────────────── 1. T-210 : le pré-tri retiré ─────────────────────────── */
@@ -244,4 +247,94 @@ function verifierT209(ok: Rapporter): void {
   ok("T-209 : R depuis un gabarit retiré passe à un gabarit proposé (le titre écrit le suit, s'il a une place)",
     !EPINGLES_RETIREES.has(r.magazine.planches[1].double?.templateId ?? "E-D14a") && r.magazine !== ouvert.magazine);
   ok("T-209 : les gabarits de couverture gardent leurs aplats (la couverture n'a pas encore de fond libre)", GABARITS_COUVERTURE.some((g) => g.decor.length > 0));
+}
+
+/* ─────────────────────────── 5. T-212 : ajouter un texte proprement ─────────────────────────── */
+
+function verifierT212(ok: Rapporter): void {
+  const neutre = { zoom: 1, dx: 0, dy: 0 };
+  const proche = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+  const recouvre = (a: Rect, b: Rect) => Math.min(a.x + a.l, b.x + b.l) - Math.max(a.x, b.x) > 0.01 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 0.01;
+  const dans = (a: Rect, b: Rect) => b.x >= a.x - 1e-6 && b.y >= a.y - 1e-6 && b.x + b.l <= a.x + a.l + 1e-6 && b.y + b.h <= a.y + a.h + 1e-6;
+  const zoneDroite: Rect = { ...zoneUtile("droite"), x: PAGE_L + zoneUtile("droite").x };
+  /* une page droite (planche 2, en pages) avec une photo retouchée dans les trois lignes du haut de la grille 6 × 6 */
+  const cat = new Map<string, PhotoMaq>([["h", photo("h", { l: 4000, h: 3000 })], ["v", photo("v", { l: 3000, h: 4000 })], ["w", photo("w", { l: 3000, h: 4000 })]]);
+  const avecDroite = (d: Disposition | null, gauche: Disposition | null = null): Magazine => {
+    const m = magazine(3);
+    return { ...m, planches: m.planches.map((p, i) => (i === 1 ? { ...p, mode: "pages" as const, double: null, gauche, droite: d } : p)) };
+  };
+  const haut = { role: "photo" as const, ...caseGrille("droite", 0, 0, 6, 3) };
+  const m0 = avecDroite({ templateId: TEMPLATE_LIBRE, photos: [{ photoId: "h", recadrage: neutre }], textes: [], cadres: [haut] });
+  const e0 = O.creerEtat({ magazine: m0, catalogue: cat });
+  const pl = m0.planches[1].id;
+  const e1 = O.appliquer(e0, { type: "ajouterTexte", plancheId: pl, cible: "droite" });
+  const d1 = e1.magazine.planches[1].droite!;
+  const estTitre = (c: O.CadrePlanche): c is O.CadreTexte => c.role === "titre";
+  const t = O.cadresPlanche(e1, pl).find(estTitre);
+  ok("T-212 : un seul geste pose UN titre (« Titre », à écrire), une entrée d'historique « Ajouter un texte », un magazine valide",
+    !!t && d1.textes.length === 1 && d1.textes[0].contenu === "Titre" && e1.historique.passe.length === 1 && e1.historique.passe[0].libelle === "Ajouter un texte"
+      && contenuValide(e1.magazine) && O.verifierInvariants(e1, e0, { type: "ajouterTexte", plancheId: pl, cible: "droite" }).length === 0);
+  ok("T-212 : dans la plus grande zone LIBRE, alignée sur la grille : sous la photo, de marge à marge (175 mm), une ligne de la grille, 28 pt",
+    !!t && proche(t.x, PAGE_L + MARGES.interieure) && proche(t.y, MARGES.haut + 3 * (GRILLE.moduleH + GRILLE.gouttiere)) && proche(t.l, 175) && proche(t.h, GRILLE.moduleH)
+      && t.taille === 28 && !recouvre(t, { ...haut, x: haut.x + PAGE_L }) && dans(zoneDroite, t));
+  ok("T-212 : Annuler le défait d'un coup (le magazine d'avant, à l'identique)", O.appliquer(e1, { type: "annuler" }).magazine === m0);
+  const e8 = O.appliquer(e0, { type: "ajouterTexte", plancheId: pl, cible: "droite", trame: 8 });
+  const t8 = O.cadresPlanche(e8, pl).find(estTitre);
+  ok("T-212 : la grille affichée en 8 × 8 guide la place : le titre commence sur une ligne de 8 (148,5 mm) et prend un module de haut (28,375 mm)",
+    !!t8 && proche(t8.y, 148.5) && proche(t8.h, 28.375) && proche(t8.x, PAGE_L + MARGES.interieure) && dans(zoneDroite, t8));
+  const e2 = O.appliquer(e1, { type: "ajouterTexte", plancheId: pl, cible: "droite" });
+  const titres = O.cadresPlanche(e2, pl).filter((c) => c.role === "titre");
+  ok("T-212 : un second texte ne se pose jamais sur le premier", titres.length === 2 && !recouvre(titres[0], titres[1]) && titres.every((x) => dans(zoneDroite, x)));
+  const pdf = planPdf(O.avecLieuxParDefaut(O.ecrireTexteCadre(e1.magazine, { plancheId: pl, cible: "droite", index: 0 }, "Madère"), e1.catalogue));
+  const pdfVide = planPdf(O.avecLieuxParDefaut(e1.magazine, e1.catalogue));
+  ok("T-212 : écrit, il part à l'export comme tout cadre de texte ; tant qu'il dit « Titre » (et qu'aucun lieu ne le remplace), il n'est jamais imprimé (D2)",
+    pdf.some((pg) => pg.objets.some((o) => o.type === "texte" && o.contenu === "Madère")) && !pdfVide.some((pg) => pg.objets.some((o) => o.type === "texte")));
+
+  /* aucune place libre : sur la zone la plus calme d'une photo LUE, jamais sur un visage */
+  const plein = { role: "photo" as const, x: 0, y: -FOND_PERDU, l: PAGE_L + FOND_PERDU, h: PAGE_H + 2 * FOND_PERDU };
+  const mP = avecDroite({ templateId: TEMPLATE_LIBRE, photos: [{ photoId: "v", recadrage: neutre }], textes: [], cadres: [plein] });
+  const chaud = "9".repeat(16 * 8) + "1".repeat(16 * 8);
+  const lu = (o: Partial<O.LecturePourTexte> = {}) => (id: string): O.LecturePourTexte | null => (id === "v" ? { visages: [{ x: 0.3, y: 0.15, l: 0.4, h: 0.25 }], zone: { x: 0.25, y: 0.1, l: 0.5, h: 0.4 }, chaleur: chaud, lumi: { moyenne: 60 }, ...o } : null);
+  const place = O.placeDuTexte(mP, pl, "droite", cat, lu(), 6);
+  const visageMm = (() => { const c = { x: PAGE_L, y: -FOND_PERDU, l: PAGE_L + FOND_PERDU, h: PAGE_H + 2 * FOND_PERDU }; return { x: c.x + 0.3 * c.l, y: c.y + 0.15 * c.h, l: 0.4 * c.l, h: 0.25 * c.h }; })();
+  ok("T-212 : page pleine : le titre va sur la photo, dans sa moitié CALME (chaleur basse), en blanc sur une photo sombre, jamais sur le visage, dans les marges",
+    !!place && place.surPhoto === "v" && place.chaleur !== null && place.chaleur <= O.REGLAGES_TEXTE_AJOUTE.CHALEUR_MAX && place.blanc
+      && place.rect.y >= PAGE_H / 2 - 1 && !recouvre(place.rect, visageMm) && dans(zoneDroite, place.rect));
+  const eP = O.appliquer(O.creerEtat({ magazine: mP, catalogue: cat }), { type: "poserLecture", lecture: { ...O.LECTURE_VIDE, mesurees: 1, mesures: { v: { nettete: 500, dhash: "0f0f0f0f0f0f0f0f", visages: [{ x: 0.3, y: 0.15, l: 0.4, h: 0.25 }], chaleur: chaud, lumi: { moyenne: 60, noirs: 0.1, blancs: 0 } } } } });
+  const eP1 = O.appliquer(eP, { type: "ajouterTexte", plancheId: pl, cible: "droite" });
+  const tP = O.cadresPlanche(eP1, pl).find(estTitre);
+  ok("T-212 : le geste lit la lecture de l'éditeur (visages, chaleur, lumière) : le titre posé est blanc, sur la partie calme",
+    !!tP && tP.role === "titre" && tP.blanc && tP.y >= PAGE_H / 2 - 1 && eP1.historique.passe.length === 1);
+  ok("T-212 : une photo claire reçoit un titre à l'encre", O.placeDuTexte(mP, pl, "droite", cat, lu({ lumi: { moyenne: 200 } }), 6)?.blanc === false);
+  ok("T-212 : si le seul endroit calme est un visage, rien n'est posé (« Pas de place calme »)",
+    O.placeDuTexte(mP, pl, "droite", cat, lu({ visages: [{ x: 0, y: 0.5, l: 1, h: 0.5 }] }), 6) === null);
+  const eSans = O.appliquer(O.creerEtat({ magazine: mP, catalogue: cat }), { type: "ajouterTexte", plancheId: pl, cible: "droite" });
+  ok("T-212 : une photo que la machine n'a pas lue ne reçoit rien (on ne sait pas où sont les visages) : rien n'est posé, l'écran dit « Pas de place calme »",
+    eSans.magazine === mP && eSans.message?.texte === "Pas de place calme" && eSans.historique.passe.length === 0);
+  const eVide = O.appliquer(O.creerEtat({ magazine: avecDroite(null), catalogue: cat }), { type: "ajouterTexte", plancheId: pl, cible: "droite" });
+  ok("T-212 : une page sans photo n'en reçoit pas (une disposition sans photo n'existe pas) : « Page vide »", eVide.message?.texte === "Page vide" && eVide.historique.passe.length === 0);
+
+  /* jamais hors de la page, jamais sur un cadre : sur TOUS les gabarits dessinés proposés d'une page, et des doubles */
+  const photos = (n: number, l = 4000, h = 3000) => Array.from({ length: n }, (_, i) => ({ id: ["h", "v", "w"][i % 3] + (i >= 3 ? i : ""), nom: `x${i}`, l, h, date: null }));
+  const catN = new Map<string, PhotoMaq>(Array.from({ length: 12 }, (_, i) => { const id = ["h", "v", "w"][i % 3] + (i >= 3 ? i : ""); return [id, photo(id)]; }));
+  let fautes = 0, poses = 0;
+  for (const t of TEMPLATES_DESSINES.filter((x) => !EPINGLES_RETIREES.has(x.id))) {
+    const d = disposer(t, photos(t.nbPhotos));
+    const m = t.portee === "page" ? avecDroite(d) : (() => { const x = magazine(3); return { ...x, planches: x.planches.map((p, i) => (i === 1 ? { ...p, mode: "double" as const, gauche: null, droite: null, double: d } : p)) }; })();
+    const cible = t.portee === "page" ? "droite" : "double";
+    for (const n of [6, 8] as const) {
+      const pz = O.placeDuTexte(m, pl, cible, catN, () => null, n);
+      if (!pz) continue;
+      poses++;
+      const zu = pz.cote === "droite" ? zoneDroite : zoneUtile("gauche");
+      const cadres = O.cadresPlanche(O.creerEtat({ magazine: m, catalogue: catN }), pl);
+      /* un cadre tourné (une légende à 90°) occupe sa boîte tournée */
+      const boite = (c: O.CadrePlanche): Rect => { const a = (c.rotation * Math.PI) / 180, co = Math.abs(Math.cos(a)), si = Math.abs(Math.sin(a)); const l = c.l * co + c.h * si, h = c.l * si + c.h * co; return { x: c.x + c.l / 2 - l / 2, y: c.y + c.h / 2 - h / 2, l, h }; };
+      if (!dans(zu, pz.rect) || cadres.some((c) => recouvre(boite(c), pz.rect)) || pz.taille < O.REGLAGES_TEXTE_AJOUTE.CORPS_MIN || pz.taille > O.REGLAGES_TEXTE_AJOUTE.CORPS_MAX) {
+        fautes++;
+        console.log(`      faute : ${t.id} (grille ${n}) ${JSON.stringify(pz)} ; cadres touchés : ${JSON.stringify(cadres.filter((c) => recouvre(boite(c), pz.rect)).map((c) => [c.role, c.x, c.y, c.l, c.h, c.rotation]))}`);
+      }
+    }
+  }
+  ok(`T-212 : sur chaque gabarit dessiné proposé (pages et doubles, grilles 6 et 8), un titre posé reste dans les marges et ne touche aucun cadre (même tourné) (${poses} poses, ${fautes} fautes)`, poses > 20 && fautes === 0);
 }

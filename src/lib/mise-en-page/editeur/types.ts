@@ -20,6 +20,7 @@ import type { Lecon } from "./lecons";
 import type { PremierJet } from "./premierJet";
 import type { Tag } from "./tags";
 import type { LectureIA, LectureIAReliee, TagIA } from "./lectureIA";
+import type { Trame } from "./grilleMiseEnPage";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -278,6 +279,9 @@ export type GesteModifiant =
   | { type: "colorerFond"; plancheId: string; cible: Cible; couleur: CouleurLibre | null; confirme?: boolean }
   /** Lot G : la couleur d'un texte (intérieur ou couverture) ; `null` rend celle du gabarit. Pendant la séance de ce texte, elle s'y fond (une entrée). */
   | { type: "colorerTexte"; ref: RefCadre; couleur: CouleurLibre | null; confirme?: boolean }
+  /** T-212 (16/11) : poser un titre à sa place sur la page (ou la double) : la plus grande zone libre alignée sur la grille `trame`
+   *  (celle que l'écran montre, 6 par défaut), sinon l'endroit le plus calme d'une photo lue. Une entrée d'historique. */
+  | { type: "ajouterTexte"; plancheId: string; cible: Cible; trame?: Trame; confirme?: boolean }
   /** Lot F (R145) : accepter ce que la lecture IA propose sur une rafale (sa tête) : les photos qu'elle garde, gardées ; les autres,
    *  écartées ; seulement celles encore sans marque. Une entrée d'historique, des propositions « IA » (un geste contraire = une leçon). */
   | { type: "accepterRafale"; tete: string; confirme?: boolean };
@@ -376,7 +380,9 @@ export type OpPlan =
   /* lot E : le premier jet */
   | "chargerPremierJet"
   /* lot G : les couleurs libres */
-  | "colorerFond" | "colorerTexte";
+  | "colorerFond" | "colorerTexte"
+  /* T-212 : un texte ajouté proprement */
+  | "ajouterTexte";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; refs?: readonly RefCadre[]; photoId?: string; position?: number };

@@ -1111,6 +1111,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     /* lot G : les couleurs libres, valides ou cassées (un hexa en majuscules, trois chiffres, « blanc », un nom, un nombre) ; la couverture aussi */
     [2, (e) => ({ type: "colorerFond", plancheId: h() < 0.1 ? "couverture" : plancheId(e), cible: pick(["gauche", "droite", "double", "bidon"]), couleur: pick([null, null, "accent", "aplatClair", "nuit", "#ca7749", "#CA7749", "#abc", "blanc", "rouge", 3]) })],
     [2, (e) => ({ type: "colorerTexte", ref: h() < 0.15 ? { plancheId: "couverture", cible: "double", index: int(0, 3) } : refTexte(e), couleur: pick([null, "encre", "papier", "accent", "#1f3a5c", "#FFF", "blanc", ""]) })],
+    /* T-212 (16/11) : un titre ajouté à sa place, sur une planche, une page ou une double, valides ou non, grille 6, 8 ou folle */
+    [2, (e) => ({ type: "ajouterTexte", plancheId: h() < 0.1 ? "bidon" : plancheId(e), cible: pick(["gauche", "droite", "double", "bidon"]), ...(h() < 0.5 ? { trame: pick([6, 8, 7, "artiste"]) } : {}) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
