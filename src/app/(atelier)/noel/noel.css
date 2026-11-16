@@ -204,7 +204,12 @@
   height: var(--app-height);
   overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr;
+  /* Titre, objet, texte final : trois rangées. Le texte final est DANS le
+     flux (il était posé en absolu au bas de l'écran et les couvertures le
+     recouvraient sur un écran court, retour du 16/11) ; l'objet prend ce qui
+     reste et se règle sur cette hauteur. */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'haut' 'objet' 'bas';
   justify-items: center;
   align-items: center;
   gap: calc(2 * var(--uh));
@@ -219,12 +224,11 @@
   line-height: 1.02;
   overflow-wrap: normal !important;
 }
-.nl-noel .nl-scene-texte--1 { display: flex; flex-direction: column; align-items: center; opacity: clamp(0, calc((0.32 - var(--p)) * 8), 1); }
+.nl-noel .nl-scene-texte--1 { grid-area: haut; display: flex; flex-direction: column; align-items: center; opacity: clamp(0, calc((0.32 - var(--p)) * 8), 1); }
 .nl-noel .nl-scene-texte--2 {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  bottom: calc(5 * var(--uh));
+  grid-area: bas;
+  position: relative;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -236,8 +240,12 @@
 .nl-noel .nl-scene-places { font-size: 14px; color: var(--c-text-faint); }
 
 .nl-noel .nl-scene-objet {
+  grid-area: objet;
   position: relative;
-  width: min(84vw, 420px, calc(40 * var(--uh) * 1.4));
+  /* La hauteur décide : la rangée qui reste, moins la marge des couvertures
+     (elles débordent de 14 % en haut et en bas, `inset: -14% 0`). */
+  height: min(76%, calc(40 * var(--uh)), calc(84vw / 1.4095), 360px);
+  width: auto;
   aspect-ratio: 148 / 105;
 }
 .nl-noel .nl-enveloppe,
@@ -282,7 +290,7 @@
   position: absolute;
   inset: -14% 0;
   pointer-events: none;
-  transform: translateY(calc(clamp(0, calc((var(--p) - 0.6) * 4), 1) * -14 * var(--uh)));
+  transform: translateY(calc(clamp(0, calc((var(--p) - 0.6) * 4), 1) * -6 * var(--uh)));
 }
 .nl-noel .nl-scene-couv {
   --q: clamp(0, calc((var(--p) - 0.6) * 4), 1);
@@ -304,7 +312,7 @@
 @media (max-width: 767px) {
   .nl-noel .nl-mag-grille { grid-template-columns: minmax(0, 1fr); }
   .nl-noel .nl-gestes { flex-direction: column; align-items: stretch; align-self: stretch; }
-  .nl-noel .nl-scene-objet { width: min(78vw, calc(40 * var(--uh) * 1.4)); }
+  .nl-noel .nl-scene-objet { height: min(76%, calc(40 * var(--uh)), calc(78vw / 1.4095)); }
 }
 
 /* ── mouvement réduit : tout est là, rien ne bouge ── */
@@ -353,42 +361,19 @@
 .nl-noel .nl-scene-offre { font-size: 17px; color: var(--c-text); }
 .nl-noel .nl-scene-offre strong { font-family: var(--font-display); font-size: 1.6em; font-weight: 400; color: var(--c-accent-strong); }
 
-/* ════════ L'OUVERTURE DE L'ACCUEIL : LA LIGNE DE NOËL (16/11) ════════
-   Sous la mention, une pastille qui descend au chapitre de la carte. Elle
-   apparaît après la mention, comme le reste du bas de l'ouverture, et reste
-   visible au téléphone (où la mention est masquée). */
-.at-accueil .h-noel {
-  /* inline-block, pas flex : en flex, chaque bout de texte devient un
-     élément et la phrase se casse en colonnes au téléphone. */
-  display: inline-block;
-  text-align: center;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--c-accent);
-  background: rgba(0, 0, 0, 0.28);
-  color: var(--c-text);
-  font-size: clamp(13px, 1vw, 16px);
+/* ════════ L'OUVERTURE DE L'ACCUEIL : « CE NOËL » (16/11) ════════
+   Le mot de Noël en orange dans l'amorce, et un lien (il glisse vers le
+   chapitre). Rien d'autre : l'ouverture garde sa hauteur. Au-dessus de 768 px
+   l'amorce prend un peu plus que sa colonne pour rester sur une ligne ; la
+   colonne elle-même (et donc le chapeau) ne bouge pas. */
+.bj-atelier .at-accueil .h-amorce-noel {
+  color: var(--c-accent-strong);
   text-decoration: none;
-  opacity: 0;
-  transform: translateY(1.6vh);
+  white-space: nowrap;
 }
-.at-accueil .h-noel b { font-weight: 600; color: var(--c-accent-strong); }
-.at-accueil .h-noel sup { font-size: 0.7em; }
-.at-accueil .h-noel:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
-.at-accueil .h-noel:hover b { color: inherit; }
-.at-accueil.pret .h-noel {
-  opacity: 1;
-  transform: none;
-  transition: opacity var(--t-lux) var(--ease-out) 1320ms, transform var(--t-lux) var(--ease-out) 1320ms, background 0.2s;
-}
-html:not([data-anim]) .at-accueil .h-noel { opacity: 1 !important; transform: none !important; }
-/* L'amorce gagne « ou ce Noël » : un peu plus de largeur pour rester sur une
-   ligne, la colonne de droite ne porte qu'un bouton. */
+.bj-atelier .at-accueil .h-amorce-noel:hover { color: var(--c-text); }
 @media (min-width: 768px) {
-  :root:has(.nl-noel-bandeau) .at-accueil .h-gauche { max-width: 46vw; }
-}
-@media (max-width: 767px) {
-  .at-accueil .h-noel { font-size: 13px; padding: 7px 13px; }
+  :root:has(.nl-noel-bandeau) .at-accueil .h-amorce { width: max-content; max-width: 46vw; }
 }
 
 /* ════════ /MAGAZINE : LE REPÈRE DU PREMIER ÉCRAN ET LA PLACE DU BLOC ════════
@@ -396,33 +381,39 @@ html:not([data-anim]) .at-accueil .h-noel { opacity: 1 !important; transform: no
    deux colonnes et le parcours. Le repère vit sous les gages. */
 .at-pdp .kiosque > .kiosque-noel { grid-column: 1 / -1; display: block; }
 .at-pdp .kiosque-noel .nl-noel.nl-noel-mag { padding: clamp(40px, 6vw, 72px) 0; border-bottom: 1px solid var(--c-line); margin-bottom: clamp(24px, 4vw, 48px); }
-.at-pdp .nl-amorce {
+.at-pdp .nl-amorce-bloc { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; max-width: 440px; }
+.at-pdp .nl-amorce-info { margin: 0; font-size: 14px; line-height: 1.45; color: var(--c-text-soft); }
+.at-pdp .nl-amorce-info strong { font-weight: 600; color: var(--c-accent-strong); }
+.at-pdp .nl-amorce-info sup { font-size: 0.7em; }
+.bj-atelier .at-pdp .nl-amorce {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 10px 14px 10px 10px;
+  gap: 14px;
+  padding: 10px 16px 10px 10px;
   border-radius: 14px;
-  border: 1px solid var(--c-accent);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--c-line-md);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--c-text);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.35;
-  max-width: 420px;
 }
-.at-pdp .nl-amorce:hover { background: rgba(255, 255, 255, 0.07); }
+.bj-atelier .at-pdp .nl-amorce:hover { border-color: var(--c-accent); background: rgba(255, 255, 255, 0.07); }
+/* Une vraie petite carte : le fond des mails (brun dégradé), la signature,
+   le montant. Plus d'aplat orange (« ce n'est pas clair », 16/11). */
 .at-pdp .nl-amorce-carte {
+  position: relative;
   flex: 0 0 auto;
-  width: 46px;
-  height: 30px;
-  border-radius: 5px;
-  background: linear-gradient(135deg, var(--c-accent-strong), var(--c-accent));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  transform: rotate(-6deg);
+  width: 68px;
+  height: 46px;
+  border-radius: 6px;
+  background: url('/images/mails/noel/carte-fond-1040.jpg') center / cover, #4a3d33;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transform: rotate(-5deg);
 }
+.at-pdp .nl-amorce-carte img { position: absolute; left: 7px; top: 7px; width: 34px; height: auto; }
+.at-pdp .nl-amorce-carte span { position: absolute; right: 6px; bottom: 4px; font-family: var(--font-display); font-style: italic; font-size: 13px; color: #fff; }
 .at-pdp .nl-amorce-texte { display: flex; flex-direction: column; min-width: 0; }
-.at-pdp .nl-amorce-titre { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-faint); }
-.at-pdp .nl-amorce b { font-weight: 600; color: var(--c-accent-strong); }
-.at-pdp .nl-amorce sup { font-size: 0.7em; }
+.at-pdp .nl-amorce-titre { font-weight: 500; }
+.at-pdp .nl-amorce-sous { font-size: 12.5px; color: var(--c-text-faint); }
 .at-pdp .nl-amorce-fleche { margin-left: auto; color: var(--c-accent-strong); font-size: 18px; }

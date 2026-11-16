@@ -19,8 +19,7 @@ import { useEffect, useRef } from 'react'
 /* Le prix d'appel vient de content.ts, qui le dérive de la grille : la note
    sous le bouton ne peut pas rester en arrière d'un changement de prix. */
 import { CTA_NOTE_PRICE } from '../content'
-import { NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
-import { useFenetreNoel } from '../noel/places'
+import { auClicGlisser } from '../noel/glisser'
 import './ouverture.css'
 
 const PLI = 120, FONDU = 1700, BATTEMENT = 1000
@@ -56,11 +55,11 @@ const PRISE_EN_MAIN = 0.25
 
 /* `noel` : le drapeau de la carte cadeau, lu par la page serveur
    (NEXT_PUBLIC_GIFT_CARD_ENABLED). Fermé, l'ouverture est celle d'avant au
-   caractère près. Ouvert (Mathias, 16/11) : « ou ce Noël » dans l'amorce, et
-   une ligne qui descend vers le chapitre de la carte, posé juste dessous. */
+   caractère près. Ouvert (Mathias, 16/11) : « ou ce Noël » dans l'amorce, en
+   orange, qui glisse vers le chapitre de la carte, posé juste dessous. La
+   pastille du 16/11 est retirée : elle allongeait l'ouverture. */
 export default function Ouverture({ noel = false }: { noel?: boolean }) {
   const cadre = useRef<HTMLElement>(null)
-  const fenetreNoel = useFenetreNoel()
 
   /* Signe au chien de garde du layout racine que le code client tourne.
      Sans cette signature, `data-anim` serait retire au bout de 5 s et la
@@ -425,7 +424,11 @@ export default function Ouverture({ noel = false }: { noel?: boolean }) {
 
         <div className="h-bas">
           <div className="h-gauche">
-            <p className="h-amorce">{noel ? 'Ce festival, cette soirée, ce road trip ou ce Noël…' : 'Ce festival, cette soirée, ce road trip…'}</p>
+            <p className="h-amorce">
+              {noel
+                ? <>Ce festival, cette soirée, ce road trip ou <a className="h-amorce-noel" href="#noel-accueil" onClick={auClicGlisser('noel-accueil')}>ce Noël</a>…</>
+                : 'Ce festival, cette soirée, ce road trip…'}
+            </p>
             {/* Deux souffles, deux lignes (Mathias, 14/09/2026) : la promesse
                 d'abord, le geste ensuite. Le <br> vaut sur tous les écrans :
                 la première phrase tient sur une ligne dès 320 px. */}
@@ -433,13 +436,6 @@ export default function Ouverture({ noel = false }: { noel?: boolean }) {
             <p className="mention h-note">Premier aperçu gratuit · Votre magazine sur-mesure dès <b>{CTA_NOTE_PRICE}</b>.</p>
           </div>
           <div className="h-droite">
-              {noel && (
-                <a className="h-noel" href="#noel-accueil">
-                  {fenetreNoel
-                    ? <>Noël : le 2<sup>e</sup> magazine à <b>−{NOEL_REMISE_MEME_PCT}&nbsp;%</b>, ou une carte cadeau&nbsp;<span aria-hidden="true">↓</span></>
-                    : <>Noël : offrez une carte cadeau&nbsp;<span aria-hidden="true">↓</span></>}
-                </a>
-              )}
             <button className="acte acte--seul descente" type="button" onClick={descendre}>
               <span className="mot">Découvrir l’univers Bellajour</span>
               <span className="rond" aria-hidden="true">

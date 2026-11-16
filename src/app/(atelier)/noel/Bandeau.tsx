@@ -20,6 +20,7 @@ import Link from 'next/link'
 import { useAndroid } from '@/hooks/useClient'
 import { NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
 import { useFenetreNoel, usePlaces } from './places'
+import { VERS_NOEL_MAGAZINE, auClicGlisser } from './glisser'
 import './noel.css'
 
 export default function Bandeau() {
@@ -30,7 +31,7 @@ export default function Bandeau() {
   return (
     <div className={`nl-noel-bandeau ${plat ? 'nl-noel-bandeau--plat' : ''}`}>
       {fenetre ? (
-        <Link className="nl-noel-bandeau-offre" href="/magazine#noel" prefetch={false}>
+        <Link className="nl-noel-bandeau-offre" href={VERS_NOEL_MAGAZINE} prefetch={false} onClick={auClicGlisser('noel')}>
           <span className="nl-noel-bandeau-long">Noël : le </span>2<sup>e</sup> magazine<span className="nl-noel-bandeau-long"> à</span>{' '}
           <strong>−{NOEL_REMISE_MEME_PCT}&nbsp;%</strong>
           {places !== null && places > 0 && <span className="nl-noel-bandeau-n"> · {places} {places === 1 ? 'place' : 'places'}</span>}
@@ -38,7 +39,7 @@ export default function Bandeau() {
       ) : (
         <span className="nl-noel-bandeau-offre">Noël : offrez un magazine</span>
       )}
-      <Link className="nl-noel-bandeau-lien" href="/magazine#noel" prefetch={false}>Carte cadeau</Link>
+      <Link className="nl-noel-bandeau-lien" href={VERS_NOEL_MAGAZINE} prefetch={false} onClick={auClicGlisser('noel')}>Carte cadeau</Link>
     </div>
   )
 }

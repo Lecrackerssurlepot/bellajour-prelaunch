@@ -17,6 +17,7 @@ import { PARAM_NOUVEAU } from '../composer/draft'
 import CarteCadeau from '../noel-preview/CarteCadeau'
 import { PHRASES } from '../noel-preview/contenu'
 import { ligneCompteur, useFenetreNoel, usePlaces } from './places'
+import { useGlisserAuChargement } from './glisser'
 import './noel.css'
 
 /* Composer pour Noël COMMENCE un numéro : `?nouveau=1`, comme le lien de
@@ -25,6 +26,7 @@ import './noel.css'
 const COMPOSER_NOEL = `${COMPOSER_HREF}?${PARAM_NOUVEAU}=1`
 
 export default function BlocMagazine() {
+  useGlisserAuChargement('noel', 'noel')
   const places = usePlaces()
   const fenetre = useFenetreNoel()
   return (
@@ -53,7 +55,7 @@ export default function BlocMagazine() {
           ) : (
             <h2 id="nl-noel-mag-titre" className="nl-titre">Offrez un magazine.</h2>
           )}
-          <p className="nl-sous">Ou offrez la carte cadeau : la personne compose le sien avec ses photos.</p>
+          <p className="nl-sous">Offrez une carte cadeau à vos proches, du montant de votre choix.</p>
           {places !== null && <p className="nl-places">{ligneCompteur(places)}</p>}
           <div className="nl-gestes">
             {fenetre && <Link className="nl-cta nl-cta--plein" href={COMPOSER_NOEL} prefetch={false}>Composer pour Noël</Link>}
