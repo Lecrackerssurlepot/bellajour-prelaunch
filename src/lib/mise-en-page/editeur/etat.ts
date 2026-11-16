@@ -274,7 +274,7 @@ export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "r
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "etiqueter", "hesiter",
   "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet", "accepterRafale",
   /* lot G : les couleurs libres */
-  "colorerFond", "colorerTexte",
+  "colorerFond", "colorerTexte", "colorerTextes",
   /* T-212 : un texte ajouté proprement */
   "ajouterTexte"]);
 

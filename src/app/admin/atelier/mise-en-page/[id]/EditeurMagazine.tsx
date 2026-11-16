@@ -15,6 +15,7 @@ import { ExportFeuille } from "./ExportFeuille";
 import { Rangee } from "./Gabarits";
 import { Loupe, Pile, posPile } from "./Pile";
 import Panneau from "./Panneau";
+import { Palette } from "./Palette";
 import { useSauvegarde, type CleSauvegarde } from "./sauvegardeClient";
 import Scene from "./Scene";
 import SceneCouverture, { BandeCouverture, RangeeCouverture } from "./SceneCouverture";
@@ -184,8 +185,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       setUi((u) => {
         let n = u;
         if (u.menu && !t.closest(".ed-menu, .ed-ancre, .ed-cf-menu-bt")) n = { ...n, menu: null };
-        /* lot G : le sélecteur du fond (au-dessus du tiroir) fait partie du tiroir */
-        if (u.rangee && !t.closest(".ed-rangee-gab, .ed-pastille, .ed-fond-pop")) n = { ...n, rangee: null, apercuGab: null };
+        if (u.rangee && !t.closest(".ed-rangee-gab, .ed-pastille")) n = { ...n, rangee: null, apercuGab: null };
         return n;
       });
     };
@@ -385,6 +385,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
             {ui.grand ? null : <Toast />}
           </div>
           {ui.confronter && !ui.grand ? <Confrontation /> : null}
+          {/* T-209 : la palette à côté du magazine (vue planche et couverture) ; ni en confrontation ni en tri plein écran */}
+          {ui.confronter || ui.grand ? null : <Palette />}
         </div>
         <div className="ed-sr" aria-live="polite">{annonce}</div>
         {d ? <Pile x={pos.x} y={pos.y} /> : null}
