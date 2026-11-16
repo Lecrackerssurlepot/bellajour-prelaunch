@@ -414,7 +414,15 @@
    écran rien ne bouge : 10 unités dépassent la taille indexée sur la largeur. */
 @media (min-width: 768px) {
   :root:has(.nl-noel-bandeau) .at-accueil .h-titre { font-size: min(clamp(36px, 6.4vw, 122px), calc(10.4 * var(--uh)), calc(var(--app-height) - 500px)); }
-  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-bottom: clamp(6px, calc(var(--app-height) - 600px), calc(5 * var(--uh))); }
+  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-bottom: clamp(24px, calc(var(--app-height) - 600px), calc(5 * var(--uh))); }
+  /* L'espace réservé à la photo entre les lignes du titre (h-bandeau, 19vh,
+     128 px au moins) est ce qui faisait déborder les portables de 650 à
+     820 px de haut, bouton sous le pli. Il se reprend sur la hauteur gelée :
+     inchangé dès 900 px de haut, 40 px au plus court (retour du 16/11). */
+  :root:has(.nl-noel-bandeau) .at-accueil .h-bandeau {
+    min-height: 0;
+    height: clamp(40px, calc(var(--app-height) - 700px), calc(19 * var(--uh)));
+  }
 }
 
 /* ════════ /MAGAZINE : LE REPÈRE DU PREMIER ÉCRAN ET LA PLACE DU BLOC ════════
@@ -461,3 +469,14 @@
 
 /* Le « e » de « 2e » dans le bandeau : sans ça il décroche la ligne et se lit « 2 e ». */
 .nl-noel-bandeau sup { font-size: 0.68em; line-height: 0; vertical-align: 0.45em; margin-left: 0.04em; }
+
+/* Portable bas sous 1000 px de large (1000 × 550, 16/11) : la mise en page
+   empilée n'a pas de réserve photo à reprendre. On resserre le bas : chapo,
+   corps et bouton se rapprochent, toujours par la hauteur gelée. */
+@media (min-width: 768px) and (max-width: 1000px) {
+  :root:has(.nl-noel-bandeau) .bj-atelier .at-accueil .h-bas {
+    margin-top: clamp(6px, calc(var(--app-height) - 580px), calc(3 * var(--uh)));
+    gap: clamp(6px, calc(var(--app-height) - 580px), calc(2.8 * var(--uh)));
+  }
+  :root:has(.nl-noel-bandeau) .bj-atelier .at-accueil .h-lede { margin-top: clamp(8px, calc(var(--app-height) - 560px), 20px); }
+}
