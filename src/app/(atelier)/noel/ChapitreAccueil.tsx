@@ -15,7 +15,8 @@ import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import CarteCadeau from '../noel-preview/CarteCadeau'
 import { COUVERTURES_ACCUEIL, PHRASES, TEXTES } from '../noel-preview/contenu'
-import { ligneCompteur, usePlaces } from './places'
+import { NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
+import { ligneCompteur, useFenetreNoel, usePlaces } from './places'
 import './noel.css'
 
 const T = TEXTES.sobre
@@ -23,6 +24,7 @@ const T = TEXTES.sobre
 export default function ChapitreAccueil() {
   const piste = useRef<HTMLDivElement>(null)
   const places = usePlaces()
+  const fenetre = useFenetreNoel()
 
   useEffect(() => {
     const el = piste.current
@@ -84,7 +86,12 @@ export default function ChapitreAccueil() {
 
         <div className="nl-scene-texte nl-scene-texte--2">
           <p className="nl-scene-sous">{T.sousTitre}</p>
-          <Link className="nl-cta nl-cta--plein" href="/offrir" prefetch={false}>Offrir une carte</Link>
+          {fenetre && (
+            <p className="nl-scene-offre">
+              Le 2<sup>e</sup> magazine à <strong>−{NOEL_REMISE_MEME_PCT}&nbsp;%</strong>
+            </p>
+          )}
+          <Link className="nl-cta nl-cta--plein" href="/offrir" prefetch={false}>Offrir une carte cadeau</Link>
           {places !== null && <p className="nl-scene-places">{ligneCompteur(places)}</p>}
         </div>
       </div>

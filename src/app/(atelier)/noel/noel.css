@@ -43,16 +43,32 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+.nl-noel-bandeau a { color: inherit; text-decoration: none; }
+.nl-noel-bandeau .nl-noel-bandeau-offre { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--c-text); }
+.nl-noel-bandeau .nl-noel-bandeau-offre sup { font-size: 0.7em; }
+.nl-noel-bandeau .nl-noel-bandeau-offre strong { font-weight: 600; color: var(--c-accent-strong); }
 .nl-noel-bandeau .nl-noel-bandeau-n { color: var(--c-text-faint); }
-.nl-noel-bandeau .nl-noel-bandeau-lien { flex: 0 0 auto; font-weight: 500; color: var(--c-accent-strong); }
+.nl-noel-bandeau .nl-noel-bandeau-lien {
+  flex: 0 0 auto;
+  font-weight: 500;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent-strong);
+}
 .nl-noel-bandeau .nl-noel-bandeau-lien::after { content: ' \2192'; }
-.nl-noel-bandeau:hover .nl-noel-bandeau-lien { color: var(--c-text); }
+.nl-noel-bandeau .nl-noel-bandeau-lien:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
 @media (max-width: 479px) {
   .nl-noel-bandeau { font-size: 12px; gap: 10px; padding: 0 12px; }
 }
 @media (max-width: 399px) {
   /* Une seule ligne, rien de coupé : le nombre passe dans le bloc. */
   .nl-noel-bandeau .nl-noel-bandeau-n { display: none; }
+}
+@media (max-width: 359px) {
+  /* « 2e magazine −40 % » : le chiffre ne se coupe jamais. */
+  .nl-noel-bandeau .nl-noel-bandeau-long { display: none; }
+  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: 3px 10px; }
 }
 
 /* ════════ LA CARTE ════════ */
@@ -303,3 +319,34 @@
 @media (min-width: 1001px) {
   :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-top: calc(11vh + var(--nl-bh, 0px)); }
 }
+
+/* ════════ L'OFFRE DU 2ᵉ MAGAZINE (16/11) ════════
+   Les chiffres d'abord : c'est eux qui doivent se voir. */
+.nl-noel.nl-noel-mag { scroll-margin-top: calc(var(--nav-h, 86px) + 12px); }
+.nl-noel .nl-offre {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 460px;
+  padding: 18px 20px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--c-accent) 9%, transparent);
+}
+.nl-noel .nl-offre-ligne { display: flex; align-items: baseline; gap: 16px; }
+.nl-noel .nl-offre-pct {
+  flex: 0 0 auto;
+  min-width: 3.3ch;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5vw, 56px);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--c-accent-strong);
+  font-variant-numeric: lining-nums;
+}
+.nl-noel .nl-offre-quoi { font-size: 16px; line-height: 1.35; color: var(--c-text); }
+.nl-noel .nl-offre-quoi sup, .nl-noel .nl-scene-offre sup { font-size: 0.7em; }
+.nl-noel .nl-offre-note { font-size: 13px; color: var(--c-text-faint); margin-top: -4px; }
+.nl-noel .nl-scene-offre { font-size: 17px; color: var(--c-text); }
+.nl-noel .nl-scene-offre strong { font-family: var(--font-display); font-size: 1.6em; font-weight: 400; color: var(--c-accent-strong); }

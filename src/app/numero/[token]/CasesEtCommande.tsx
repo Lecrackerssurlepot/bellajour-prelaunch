@@ -505,6 +505,25 @@ export default function CasesEtCommande({
               de commande : c'est un trait de la commande, comme la finition.
               La légende dit la remise AVANT qu'on clique, et l'économie
               réalisée quand il y en a une. Dix au plus (QUANTITE_MAX). */}
+          {/* ── NOËL : L'OFFRE EN ÉVIDENCE (16/11, Mathias : « le −40 % doit
+              pousser l'achat ») ── Un seul geste : passer à deux exemplaires.
+              Disparaît dès qu'on a deux exemplaires (la ligne de remise le
+              dit alors dans le récapitulatif). */}
+          {regle.nom === 'noel' && nombre === 1 ? (
+            <button
+              type="button"
+              className="nu-noel-offre"
+              onClick={() => void choisirNombre(2)}
+              disabled={previsualisation || changeNombre}
+            >
+              <span className="nu-noel-offre-pct">−{NOEL_REMISE_MEME_PCT}&nbsp;%</span>
+              <span className="nu-noel-offre-txt">
+                <b>Noël : 2<sup>e</sup> magazine</b>
+                <small>−{NOEL_REMISE_AUTRE_PCT}&nbsp;% si autre couverture</small>
+              </span>
+              <span className="nu-noel-offre-plus">Ajouter</span>
+            </button>
+          ) : null}
           <div className="nu-bon-l nu-bon-l--choix">
             <span id="nu-exemplaires-lbl">
               Exemplaires
