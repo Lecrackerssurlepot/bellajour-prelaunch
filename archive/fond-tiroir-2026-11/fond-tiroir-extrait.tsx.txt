@@ -1,0 +1,24 @@
+BOUTON:
+          <button type="button" className="ed-bt ed-bt-fond" aria-expanded={fondOuvert} onClick={() => setFondOuvert(!fondOuvert)}>
+            <i className={fond ? undefined : "ed-bt-fond--vide"} style={fond ? { background: hexDeCouleur(fond, etat.magazine.style) } : undefined} aria-hidden="true" />Fond
+          </button>
+
+POP:
+    {fondOuvert ? (
+      <div className="ed-fond-pop">
+        <Nuances titre={seul || cible !== "double" ? "Fond de la page" : "Fond de la double"} valeur={fond} photos={idsPlanche(pl)} retirer="Sans fond"
+          onChoix={(c) => envoyer({ type: "colorerFond", plancheId: pl.id, cible, couleur: c })} />
+      </div>
+    ) : null}
+
+FONDDE:
+  /* lot G : le fond de couleur de cette page (ou de la double entière), indépendant du gabarit ; la page seule ne connaît que son côté */
+  const seul = act.seule;
+  const fondDe = (): CouleurLibre | null => {
+    const f = pl.fond;
+    if (!f) return null;
+    if (seul) return f[seul] ?? null;
+    if (cible === "double") return f.gauche && f.gauche === f.droite ? f.gauche : null;
+    return f[cible] ?? null;
+  };
+  const fond = fondDe();
