@@ -357,20 +357,22 @@ export function verifierMepGeneres(rapporter: (nom: string, reussi: boolean) => 
     const E = "src/app/admin/atelier/mise-en-page/[id]/";
     const scene = lire(`${E}Scene.tsx`), gab = lire(`${E}Gabarits.tsx`), css = lire("src/app/admin/atelier/mise-en-page/mise-en-page.css");
     const dehors = ["src/lib/mise-en-page/idml.ts", "src/lib/mise-en-page/pdf.ts", "src/lib/mise-en-page/magazine.ts", "src/lib/mise-en-page/sauvegarde.ts", `${E}exporter.ts`, `${E}exporterPdf.ts`, `${E}exporterPur.ts`, `${E}ExportFeuille.tsx`]
-      .every((f) => !/grilleArtiste|GrilleArtiste|ui\.grille/.test(lire(f)));
+      .every((f) => !/grilleArtiste|GrilleArtiste|GrilleEcran|grilleMiseEnPage|lignesDeGrille|ui\.grille|ui\.trame/.test(lire(f)));
     const mini = gab.slice(gab.indexOf("export function Mini"), gab.indexOf("/* ─── le dessin d'un gabarit"));
-    const montage = scene.match(/<GrilleArtiste /g) ?? [];
+    /* T-213 (16/11) : la grille d'artiste est une option du menu « Grille », montée avec la grille de mise en page par `GrilleEcran` */
+    const montage = scene.match(/<GrilleEcran /g) ?? [];
     const z = Number(/\.ed-grille-art \{[^}]*z-index: (\d+)/.exec(css)?.[1]);
-    rapporter("grille d'artiste : écran seulement (ni l'IDML, ni le PDF, ni les exports, ni la sauvegarde, ni Mini n'en parlent) ; montée en UNE ligne dans Scene, après les cadres et avant les sélections ; sans pointeur, sous le cadre actif (z entre 2 et 8)",
-      dehors && !/Grille/.test(mini) && montage.length === 1 && scene.indexOf("<GrilleArtiste ") > scene.indexOf("{frames.map") && scene.indexOf("<GrilleArtiste ") < scene.indexOf("<Selections frames")
-        && /\.ed-grille-art \{[^}]*pointer-events: none/.test(css) && z > 2 && z < 8 && /\.ed-cs \{ position: absolute; z-index: 8/.test(css));
+    const zM = Number(/\.ed-grille-mep \{[^}]*z-index: (\d+)/.exec(css)?.[1]);
+    rapporter("grilles (artiste et mise en page) : écran seulement (ni l'IDML, ni le PDF, ni les exports, ni la sauvegarde, ni Mini n'en parlent) ; montées en UNE ligne dans Scene, après les cadres et avant les sélections ; sans pointeur, sous le cadre actif (z entre 2 et 8)",
+      dehors && !/Grille/.test(mini) && montage.length === 1 && scene.indexOf("<GrilleEcran ") > scene.indexOf("{frames.map") && scene.indexOf("<GrilleEcran ") < scene.indexOf("<Selections frames")
+        && /\.ed-grille-art \{[^}]*pointer-events: none/.test(css) && /\.ed-grille-mep \{[^}]*pointer-events: none/.test(css) && z > 2 && z < 8 && zM === z && /\.ed-cs \{ position: absolute; z-index: 8/.test(css));
     /* la touche et la mémoire */
     const ed = lire(`${E}EditeurMagazine.tsx`), ctx = lire(`${E}contexte.ts`), barre = lire(`${E}Barre.tsx`);
     const liste = /!calque && !\[([^\]]*)\]\.includes\(k\)/.exec(ed)?.[1] ?? "";
-    rapporter("grille d'artiste : la touche O (libre : planche M R X P T Z, tri X P F R U C Z N D G T 0 à 3, lecture L), jamais pendant une saisie, jamais avec ⌘ ou Ctrl ; bouton dans la barre avec mémoire locale (bj-mep-grille), jamais d'exception",
+    rapporter("grille : la touche O (libre : planche M R X P T Z, tri X P F R U C Z N D G T 0 à 3, lecture L), jamais pendant une saisie, jamais avec ⌘ ou Ctrl ; menu « Grille » dans la barre (T-213), mémoire locale (bj-mep-grille, bj-mep-grille-trame), jamais d'exception",
       /e\.key === "o" \|\| e\.key === "O"\) && !e\.metaKey && !e\.ctrlKey && !e\.altKey/.test(ed) && !/"o"|"O"/.test(liste) && ed.indexOf("e.key === \"o\"") > ed.indexOf("pendant la saisie")
         && /CLE_GRILLE = "bj-mep-grille"/.test(ctx) && /grille: false/.test(ctx) && /localStorage\.getItem\(CLE_GRILLE\) === "1"/.test(ctx) && /catch \{ \/\* stockage refusé \*\/ \}/.test(ctx)
-        && /aria-label="Grille d'artiste"/.test(barre) && /basculerGrille\(ui, majUi\)/.test(barre)
+        && /aria-label="Grille"/.test(barre) && /choisirGrille\(/.test(barre) && /basculerGrille\(ui, majUi\)/.test(ed) && /CLE_TRAME = "bj-mep-grille-trame"/.test(ctx)
         && !["m", "r", "x", "p", "t", "z", "l", "f", "u", "c", "n", "d", "g"].includes("o"));
   }
 

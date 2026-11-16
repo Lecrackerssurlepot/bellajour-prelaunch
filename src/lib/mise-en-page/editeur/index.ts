@@ -41,6 +41,9 @@ export type { BilanTri, Etiquette, Marque, TourTri, PartPersonne, TriPlein, VueT
 export { COTE_LIBRE, COTE_MIN, ajusterCadre, bornerRect, calque, deplacerCadres, miroir, pageEntiere, placerCadre, poserLibre, rangCalque, retirerCadres } from "./libre";
 export type { SensCalque } from "./libre";
 export { DEPLACEMENT, aimanter, lignesAimant } from "./aimant";
+/* T-213 (16/11) : la grille de mise en page (6 × 6 du moteur, 8 × 8 dans les mêmes marges) */
+export { CHOIX_GRILLE, TRAMES, TRAME_DEFAUT, caseTrame, estChoixGrille, grillePage, lignesDeGrille, modulesDe, pagesDeCouverture, pagesPosees } from "./grilleMiseEnPage";
+export type { Bande, ChoixGrille, GrillePage, Modules, PagePosee, Trame } from "./grilleMiseEnPage";
 export { OR_GRAND, OR_PETIT, grilleArtiste, pagesDeLaPlanche } from "./grilleArtiste";
 export type { GenreLigne, LigneArtiste } from "./grilleArtiste";
 export type { Bords, Guide, Lignes } from "./aimant";

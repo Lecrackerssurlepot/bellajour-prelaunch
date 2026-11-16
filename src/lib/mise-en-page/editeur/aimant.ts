@@ -1,7 +1,8 @@
 /**
  * L'aimant (06/11) : pendant qu'on déplace ou redimensionne un cadre, ses bords et son centre s'accrochent aux lignes
- * qui comptent (bords, centres et marges des pages, centre de la double, autres cadres). Le minimum : pas de grille 6 × 6,
- * qui accrocherait partout. Repère planche, mm. Module pur : l'écran donne le seuil (quelques pixels en mm) et dessine les guides.
+ * qui comptent (bords, centres et marges des pages, centre de la double, autres cadres). La grille seulement quand elle est
+ * AFFICHÉE (T-213, 16/11 : `lignesDeGrille`, grilleMiseEnPage.ts) : on accroche à ce qu'on voit, jamais à une grille cachée.
+ * Repère planche, mm. Module pur : l'écran donne le seuil (quelques pixels en mm) et dessine les guides.
  */
 
 import { MARGES, PAGE_H, PAGE_L, PLANCHE_L, type Rect } from "../geometrie";
@@ -13,8 +14,8 @@ export type Bords = { gauche: boolean; droite: boolean; haut: boolean; bas: bool
 
 export const DEPLACEMENT: Bords = { gauche: true, droite: true, haut: true, bas: true };
 
-/** Les lignes de la planche, puis celles des autres cadres (bords et centres). */
-export function lignesAimant(autres: readonly Rect[]): Lignes {
+/** Les lignes de la planche, puis celles des autres cadres (bords et centres), puis celles de la grille affichée s'il y en a une. */
+export function lignesAimant(autres: readonly Rect[], grille?: Lignes | null): Lignes {
   const x = [
     0, PAGE_L / 2, PAGE_L, PAGE_L + PAGE_L / 2, PLANCHE_L,
     MARGES.exterieure, PAGE_L - MARGES.interieure, PAGE_L + MARGES.interieure, PLANCHE_L - MARGES.exterieure,
@@ -24,6 +25,7 @@ export function lignesAimant(autres: readonly Rect[]): Lignes {
     x.push(r.x, r.x + r.l / 2, r.x + r.l);
     y.push(r.y, r.y + r.h / 2, r.y + r.h);
   }
+  if (grille) { x.push(...grille.x); y.push(...grille.y); }
   return { x, y };
 }
 

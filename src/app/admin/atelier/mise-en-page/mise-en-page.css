@@ -1745,6 +1745,12 @@
 .mep-editeur .ed-grille-art--tiers { stroke: #fff; stroke-opacity: 0.9; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)); }
 .mep-editeur .ed-grille-art--or { stroke: #f2b01e; stroke-opacity: 0.95; stroke-dasharray: 6 4; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)); }
 .mep-editeur .ed-grille-art--diagonale { stroke: #3aa9ff; stroke-opacity: 0.8; stroke-dasharray: 2 5; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
+/* T-213 (16/11) : la grille de mise en page, comme celle d'Affinity : les marges en magenta, les modules en cyan léger, les
+   gouttières se lisent entre eux. Même couche que la grille d'artiste (au-dessus des cadres, sous le cadre actif, sans pointeur). */
+.mep-editeur .ed-grille-mep { position: absolute; inset: 0; z-index: 4; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.mep-editeur .ed-grille-mep-module { fill: rgba(0, 160, 230, 0.07); stroke: #18a4e0; stroke-opacity: 0.75; stroke-width: 1; }
+.mep-editeur .ed-grille-mep-marges { fill: none; stroke: #e0218a; stroke-opacity: 0.9; stroke-width: 1; }
+.mep-editeur .ed-menu--grille { min-width: 120px; }
 .mep-editeur .ed-famille--on { background: var(--bj-action-soft); color: var(--bj-action); }
 .mep-editeur .ed-rangee-tete .ed-famille { position: static; opacity: 1; transform: none; box-shadow: none; border: 1px solid var(--bj-veil-12); }
 

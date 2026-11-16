@@ -16,6 +16,7 @@ import { MODIFIANTS } from "@/lib/mise-en-page/editeur/etat";
 import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { nouveauMagazine, type Magazine } from "@/lib/mise-en-page/magazine";
 import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
+import { GRILLE, MARGES, PAGE_H, PAGE_L, caseGrille, zoneUtile, type Rect } from "@/lib/mise-en-page/geometrie";
 
 type Rapporter = (nom: string, reussi: boolean) => void;
 
@@ -49,6 +50,7 @@ export async function verifierMepVague1(ok: Rapporter, titre: (t: string) => voi
   titre("— mise en page, vague 1 (16/11) : pré-tri retiré, couverture, grille, gabarits à aplat, texte ajouté —");
   verifierT210(ok);
   verifierT211(ok);
+  verifierT213(ok);
 }
 
 /* ─────────────────────────── 1. T-210 : le pré-tri retiré ─────────────────────────── */
@@ -134,4 +136,59 @@ function verifierT211(ok: Rapporter): void {
   ok("T-211 : la candidate du tri compte une seule fois, même proposée aussi par la lecture IA",
     O.candidatesCouverture(O.appliquer(couv, { type: "poserLectureIA", lecture: lectureIA({ "e.jpg": { role: { role: "couverture", interet: 0.9, raison: "x" } } }) })).join() === "e");
   void contenuValide;
+}
+
+/* ─────────────────────────── 3. T-213 : la grille de mise en page ─────────────────────────── */
+
+function verifierT213(ok: Rapporter): void {
+  const proche = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+  const memeRect = (a: Rect, b: Rect) => proche(a.x, b.x) && proche(a.y, b.y) && proche(a.l, b.l) && proche(a.h, b.h);
+  const m6 = O.modulesDe(6), m8 = O.modulesDe(8);
+  ok("T-213 : par défaut, la grille de structure du moteur (6 × 6, `GRILLE` de geometrie.ts) : 25 × 39,5 mm, gouttière 5 mm",
+    O.TRAME_DEFAUT === 6 && m6.colonnes === GRILLE.colonnes && m6.lignes === GRILLE.lignes && m6.moduleL === GRILLE.moduleL && m6.moduleH === GRILLE.moduleH && m6.gouttiere === GRILLE.gouttiere);
+  const z = zoneUtile("droite");
+  ok("T-213 : le 8 × 8 dans les MÊMES marges et avec la MÊME gouttière : 17,5 × 28,375 mm, 8 modules + 7 gouttières = la zone utile (175 × 262)",
+    m8.colonnes === 8 && m8.lignes === 8 && m8.gouttiere === GRILLE.gouttiere && proche(m8.moduleL, 17.5) && proche(m8.moduleH, 28.375)
+      && proche(8 * m8.moduleL + 7 * m8.gouttiere, z.l) && proche(8 * m8.moduleH + 7 * m8.gouttiere, z.h) && z.l === 175 && z.h === 262);
+  const pl = O.pagesPosees(null);
+  const gG = O.grillePage(pl[0], 6), gD = O.grillePage(pl[1], 6);
+  ok("T-213 : les marges par page : gauche 15 / 20 au pli (x 15 à 190), droite 20 au pli / 15 (x 230 à 405), haut 15, bas 20",
+    pl.length === 2 && pl[0].cote === "gauche" && pl[1].cote === "droite" && memeRect(gG.marges, { x: MARGES.exterieure, y: MARGES.haut, l: 175, h: 262 })
+      && memeRect(gD.marges, { x: PAGE_L + MARGES.interieure, y: MARGES.haut, l: 175, h: 262 }) && proche(gD.marges.x + gD.marges.l, 2 * PAGE_L - MARGES.exterieure) && proche(gG.marges.y + gG.marges.h, PAGE_H - MARGES.bas));
+  ok("T-213 : six colonnes et six lignes séparées d'une gouttière, de la marge à la marge",
+    gG.colonnes.length === 6 && gG.lignes.length === 6 && gG.colonnes.every((c, i) => i === 0 || proche(c.debut - gG.colonnes[i - 1].fin, 5))
+      && proche(gG.colonnes[0].debut, gG.marges.x) && proche(gG.colonnes[5].fin, gG.marges.x + gG.marges.l) && proche(gG.lignes[5].fin, gG.marges.y + gG.marges.h));
+  let toutes = true;
+  for (const cote of ["gauche", "droite"] as const) for (let c = 0; c < 6; c++) for (let l = 0; l < 6; l++) for (let nc = 1; c + nc <= 6; nc++) for (let nl = 1; l + nl <= 6; nl++)
+    toutes &&= memeRect(O.caseTrame(cote, 6, c, l, nc, nl), caseGrille(cote, c, l, nc, nl));
+  ok("T-213 : chaque case 6 × 6 de l'écran est EXACTEMENT celle sur laquelle les gabarits sont bâtis (`caseGrille`), sur les deux pages", toutes);
+  ok("T-213 : une case 8 × 8 tient dans les marges ; les huit colonnes font la zone utile",
+    memeRect(O.caseTrame("gauche", 8, 0, 0, 8, 8), zoneUtile("gauche")) && O.grillePage(pl[1], 8).colonnes.length === 8);
+  ok("T-213 : planche 1 = la page droite seule, dernière page = la gauche seule ; la couverture : la 4e à 0 (gauche), la 1re après le dos (droite)",
+    O.pagesPosees("droite").length === 1 && O.pagesPosees("droite")[0].x === PAGE_L && O.pagesPosees("gauche")[0].cote === "gauche"
+      && JSON.stringify(O.pagesDeCouverture(12)) === JSON.stringify([{ x: 0, cote: "gauche" }, { x: PAGE_L + 12, cote: "droite" }])
+      && proche(O.grillePage(O.pagesDeCouverture(12)[1], 6).marges.x, PAGE_L + 12 + MARGES.interieure));
+
+  /* l'aimant : il accroche aux lignes de la grille AFFICHÉE, en cadre libre */
+  const L6 = O.lignesDeGrille(pl, 6);
+  ok("T-213 : les lignes de l'aimant : les bords de chaque colonne et de chaque ligne (12 par page en x, 12 en y), sans doublon",
+    L6.x.length === 24 && L6.y.length === 12 && L6.x.includes(40) && L6.x.includes(45) && L6.x.includes(405) && L6.y.includes(54.5));
+  const LA = O.lignesDeGrille(pl, "artiste");
+  ok("T-213 : la grille d'artiste prête ses tiers et son nombre d'or (pas ses diagonales)", LA.x.includes(70) && LA.x.includes(280) && LA.y.includes(99) && LA.x.length === 8);
+  const r = { x: 41.5, y: 120, l: 60, h: 40 };
+  const sans = O.aimanter(r, O.DEPLACEMENT, O.lignesAimant([]), 2);
+  const avec = O.aimanter(r, O.DEPLACEMENT, O.lignesAimant([], L6), 2);
+  ok("T-213 : un cadre lâché à 41,5 mm n'accroche rien sans grille ; grille affichée, il se cale sur la colonne (40 mm) et le guide le dit",
+    sans.rect.x === 41.5 && proche(avec.rect.x, 40) && avec.guides.some((g) => g.axe === "x" && proche(g.pos, 40)));
+  const r8 = O.aimanter({ x: 31.5, y: 120, l: 20, h: 40 }, O.DEPLACEMENT, O.lignesAimant([], O.lignesDeGrille(pl, 8)), 2);
+  ok("T-213 : en 8 × 8, il se cale sur la colonne de 8 (15 + 17,5 = 32,5 mm)", proche(r8.rect.x, 32.5));
+
+  /* écran seulement */
+  const lire = (f: string) => readFileSync(resolve(process.cwd(), f), "utf8");
+  const E = "src/app/admin/atelier/mise-en-page/[id]/";
+  const dehors = ["src/lib/mise-en-page/idml.ts", "src/lib/mise-en-page/pdf.ts", "src/lib/mise-en-page/magazine.ts", "src/lib/mise-en-page/sauvegarde.ts", `${E}exporter.ts`, `${E}exporterPdf.ts`, `${E}exporterPur.ts`]
+    .every((f) => !/grilleMiseEnPage|lignesDeGrille|GrilleEcran|trame/.test(lire(f)));
+  const couv = lire(`${E}SceneCouverture.tsx`);
+  ok("T-213 : écran seulement (ni l'IDML, ni le PDF, ni la sauvegarde) ; la couverture la montre aussi, sur la 4e et la 1re",
+    dehors && /<GrilleEcran largeur=\{W\} pages=\{pagesDeCouverture\(d\)\}/.test(couv));
 }
