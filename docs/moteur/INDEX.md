@@ -41,6 +41,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C14](couches/C14-lecture-ia.md) | Lecture IA dans le tri : rôles, groupes, rafales, captures, lieux nommés (aucune reconnaissance de visages, D29) | R142 à R148 (et R140, R141 sur C02, C03) | EN PROD (lot F, #363, 14/11) ; actif seulement quand un fichier de lecture est chargé |
 | [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | EN PROD (lot G, #364, 16/11) ; essai Affinity en attente (D28) |
 | [C16](couches/C16-texte-ajoute.md) | Texte ajouté proprement : la place d'un titre (zone libre alignée sur la grille, sinon l'endroit calme d'une photo) | R159 | Branche `feat/mise-en-page-vague-1` (vague 1, 16/11, T-212), pas encore fusionnée |
+| [C19](couches/C19-signatures.md) | Doubles signature tirées de la vitrine du 14/11 : textes tirés des faits, mot ou chiffre géant ajusté, fond proposé, ombre douce des tirages | R180 à R185 | Branche `feat/mise-en-page-signatures` (vague 2, 16/11, T-214), pas encore fusionnée ; essai Affinity de l'ombre en attente (D28) |
 
 La **lecture IA** (lot F, #363, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 

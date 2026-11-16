@@ -1,7 +1,7 @@
 ---
 id: T-214
 titre: L'éditeur n'a pas de « goût » : Mathias adore les doubles faites à la main pour la vitrine Merisa et veut qu'un minimum de goût en vienne dans l'éditeur
-etat: nouveau
+etat: en cours
 domaine: atelier
 gravite: serieux
 autonomie: libre
@@ -24,3 +24,15 @@ Tirer de la vitrine du 14/11 (`design-explorations/vitrine-2026-11-14/`, directi
 **Quand : vague 2, la prochaine grosse étape.** Mathias a dit qu'il adore les deux directions : on part des deux. Ordre : une double signature à la fois, d'abord celles qu'on sait déjà faire (pleine + mot géant, planche de vignettes égales, photo sur toute la double), puis les gestes nouveaux, chacun essayé dans Affinity (D28). Gros.
 
 ## Ce qui a été fait
+16/11, vague 2, lot Signatures (branche `feat/mise-en-page-signatures`, poussée, pas de PR) :
+- Inventaire des 6 doubles et 2 couvertures des deux directions : `docs/moteur/couches/C19-signatures.md`. 11 doubles sur 12 sont faites
+  en signature ; « les plongeons traversent les lettres » attend le détourage, les deux couvertures attendent un fond libre de couverture
+  (l'audacieuse, aussi l'horizon et le manuscrit).
+- Onze signatures `SG-01` à `SG-11` (`src/lib/mise-en-page/signatures.ts`), `origine: "signature"`, devant les autres dessinés quand elles
+  conviennent aux photos (R183).
+- Quatre briques testées : textes tirés des faits (R180), géant ajusté à son cadre (R181), fond proposé à la pose (R182), ombre douce des
+  tirages à l'écran, dans le PDF et dans l'IDML (R184, essai Affinity EN ATTENTE : `scripts/idml-essai-signatures.ts`).
+- Recette : `design-explorations/editeur-lots-2026-11-16/recette/signatures/index.html`, onze planches « vitrine | éditeur » et l'avis
+  franc sur ce qui reste en dessous (typographie d'une seule paire, alignements sur l'horizon, photos en 1 500 px, manuscrit, N&B).
+- Harnais : 33 vérifications (`scripts/verif-mep-signatures.ts`).
+- Pas fait : les couvertures signature (étape 5).

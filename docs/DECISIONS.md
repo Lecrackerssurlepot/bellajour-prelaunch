@@ -730,6 +730,23 @@ couverture ; valeurs attendues dans `attendu.json`). La sortie se choisit en arg
 le Bureau. À faire AVANT de compter fonds et couleurs de texte comme relus fidèlement ; le PDF pour Canva, lui, est relu au harnais (couleurs des fonds et
 des textes dans le flux de la page).
 
+**D28, suite (16/11/2026, lot Signatures : l'ombre douce des tirages) : essai Affinity EN ATTENTE.** Nouveauté d'export : sur un cadre photo
+qui porte `ombre`, l'élément `<TransparencySetting><DropShadowSetting Mode="Drop" BlendMode="Multiply" Opacity="35" Size="14.1732" XOffset="0"
+YOffset="5.6693" EffectColor="Color/Black"/></TransparencySetting>`, copié attribut pour attribut de l'essai du 29/10 « photo avec ombre portée
+(cadre) » (verdict FIDÈLE) et placé comme lui (après la géométrie, avant `FrameFittingOption`) ; seules les valeurs sont les nôtres. Prouvé
+(harnais) : l'élément exact, cinq tirages sur cinq, rien sans ombre (IDML d'avant à l'octet), XML bien formé. PAS prouvé : la relecture de
+l'ombre sur un cadre qui porte AUSSI un contour intérieur et une rotation (le cas des tirages), ni le corps des titres géants au-delà de
+77 pt. Générateur prêt : `scripts/idml-essai-signatures.ts <dossier de JPEG> <sortie>` (deux IDML et `attendu.json`) ; l'agent du lot
+n'écrit pas sur le Bureau. Le PDF pour Canva n'est pas concerné (douze couches en produit, au harnais).
+
+D30 (16/11/2026) — **Le goût entre dans l'éditeur par des doubles SIGNATURE, et leurs textes ne viennent que des faits.** Proposé par le lot
+Signatures (T-214), à confirmer par Mathias à la recette. Une signature est une double de la vitrine du 14/11 redite en cadres, avec un nom
+court tiré de la vitrine ; elle ne porte que ce qui est fidèle à l'export (D28) : ni détourage, ni noir et blanc, ni écriture manuscrite, ni
+aplat dans le gabarit (le fond est proposé, puis libre). Ses textes par défaut sont des FAITS (date et heure EXIF, lieu sûr, période du
+dossier), jamais inventés ; ce qui n'a pas de source reste vide et ne s'imprime pas (D2). Elle passe devant quand elle convient aux photos,
+jamais en retirant un autre gabarit.
+**Conséquence :** `signatures.ts`, `Cadre.fait`, `Cadre.geant`, `Cadre.ombre`, `Template.fond` ; règles R180 à R185 ; fiche C19.
+
 D29 (14/11/2026) — **Pas de reconnaissance de visages : on compte les visages, on ne les reconnaît jamais.** Décision de
 Mathias, pour maintenant et pour plus tard. La machine peut dire combien de visages une photo porte, la taille du plus grand,
 si c'est un selfie ; elle ne dit jamais qui est qui, qui revient d'une photo à l'autre, et ne calcule ni n'enregistre aucune

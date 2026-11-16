@@ -170,6 +170,18 @@ Tes retours du 16/11, premier temps. Rien n'est en production tant que la branch
 | Trois gabarits à aplat sortis du tiroir (T-209, premier temps) | E-D8c, E-D14a, E-D14b ne sont plus proposés ; leurs dispositions restent, sans fond : E-D8f, E-D14c, E-D14d. Le fond se pose en couleur libre. Un magazine qui s'en sert s'ouvre comme avant | sur la branche. Reste la palette à glisser (vague 2) |
 | Ajouter un texte proprement (T-212, premier temps) | « Texte », à côté de « Fond » dans le tiroir : un titre dans la plus grande zone libre, aligné sur la grille ; sinon sur l'endroit calme d'une photo, jamais sur un visage, en blanc sur une photo sombre. Le survol montre où. Annuler le défait | sur la branche. Reste les titres précis (vague 3) |
 
+### 16/11, vague 2, lot Signatures (branche `feat/mise-en-page-signatures`, poussée, pas encore fusionnée)
+Le goût de la vitrine du 14/11 (T-214). Rien n'est en production tant que la branche n'est pas fusionnée. Comparaisons « vitrine | éditeur » :
+`design-explorations/editeur-lots-2026-11-16/recette/signatures/index.html`. Fiche C19, règles R180 à R185.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Onze doubles signature (`SG-01` à `SG-11`) | Au tiroir et sous R, avec leurs noms tirés de la vitrine (« Le chiffre du jour », « La planche du jour », « Le pli dans l'eau », « Les tirages jetés »…) ; en tête quand elles conviennent aux photos | sur la branche |
+| Les textes tirés des faits | Un titre ou une légende de signature montre le jour, l'heure, le mois et le lieu sûr, la période, tant que tu n'as rien écrit ; rien d'inventé | sur la branche |
+| Le mot ou le chiffre géant | Il remplit son cadre, le même à l'écran, dans le PDF et dans l'IDML | sur la branche |
+| Le fond proposé | Poser une signature à aplat pose son fond (couleur des photos) si la page n'en a pas ; Annuler le retire | sur la branche |
+| L'ombre douce des tirages | Les tirages jetés ont une ombre, à l'écran, dans le PDF et dans l'IDML | sur la branche, essai Affinity EN ATTENTE |
+
 Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur). Plus les cinq de la vague 1, pas encore fusionnées.
 
 ---
@@ -216,6 +228,7 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 **Fusionné sans essai Affinity (D28).** Toi seul as donné l'ordre de fusionner.
 - **Lot E, dernière page seule** (#362, 14/11). Le fichier IDML d'une page gauche seule en fin de document n'a jamais été rouvert dans Affinity. Prouvé : XML valide, les autres spreads identiques à l'octet. Pas prouvé : le nombre de pages, la position du dernier spread, les cadres à gauche du pli. Le PDF, lui, est lu par un outil (216 × 303 vérifié). Générateur prêt : `scripts/idml-essai-derniere.ts`.
 - **Lot G, couleurs libres** (#364, 16/11). Les nuances nommées, le fond sous les photos et la couleur des textes n'ont pas été relus par Affinity. Un magazine sans couleur libre sort identique à l'octet. Générateur prêt : `scripts/idml-essai-couleurs.ts`.
+- **Lot Signatures, ombre douce des tirages** (branche du 16/11). L'élément `DropShadowSetting` est FIDÈLE seul (29/10) ; avec un contour intérieur et une rotation sur le même cadre, jamais rouvert dans Affinity. Générateur prêt : `scripts/idml-essai-signatures.ts`.
 - Conséquence : tant que l'essai n'est pas fait, ce qu'Affinity ouvre peut différer de l'écran sur ces deux points. Le PDF Canva n'est pas concerné.
 
 **Jamais vu en vrai.**
