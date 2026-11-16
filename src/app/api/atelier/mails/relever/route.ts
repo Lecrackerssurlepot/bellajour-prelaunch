@@ -177,6 +177,10 @@ async function relever(request: Request) {
         .from("numeros")
         .select(champs)
         .in("etat", ETATS_BALAYES)
+        /* T-113 : un dossier archivé n'a plus de page. Lui écrire, c'est
+           envoyer un lien mort (et réveiller un dossier de test : relevé par
+           la recette du 16/11, des dossiers archivés restaient balayés). */
+        .is("archive_le", null)
         .order("etat_maj_le", { ascending: true })
         .limit(MAX_DOSSIERS)
         .returns<NumeroPourReleve[]>(),
