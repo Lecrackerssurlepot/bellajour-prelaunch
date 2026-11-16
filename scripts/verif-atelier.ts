@@ -475,6 +475,8 @@ import { verifierMepCouverture } from "./verif-mep-couverture";
 import { verifierMepStyle } from "./verif-mep-style";
 /* Le lot R (12/11) : les corrections de la recette croisée (D1 à D9). */
 import { verifierMepRecette } from "./verif-mep-recette";
+/* Noël 2026 : la carte cadeau (16/11). */
+import { verifierNoelCartes } from "./verif-noel";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -7442,6 +7444,7 @@ verifierMepLot0();
 
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
+verifierNoelCartes(ok, titre);
 
 void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
