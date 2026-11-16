@@ -170,6 +170,16 @@ Tes retours du 16/11, premier temps. Rien n'est en production tant que la branch
 | Trois gabarits à aplat sortis du tiroir (T-209, premier temps) | E-D8c, E-D14a, E-D14b ne sont plus proposés ; leurs dispositions restent, sans fond : E-D8f, E-D14c, E-D14d. Le fond se pose en couleur libre. Un magazine qui s'en sert s'ouvre comme avant | sur la branche. Reste la palette à glisser (vague 2) |
 | Ajouter un texte proprement (T-212, premier temps) | « Texte », à côté de « Fond » dans le tiroir : un titre dans la plus grande zone libre, aligné sur la grille ; sinon sur l'endroit calme d'une photo, jamais sur un visage, en blanc sur une photo sombre. Le survol montre où. Annuler le défait | sur la branche. Reste les titres précis (vague 3) |
 
+### 16/11, vague 2, lot Palette (branche `feat/mise-en-page-palette`, poussée, pas encore fusionnée)
+Ton retour du 16/11 (« les couleurs à côté du magazine, on les glisse sur le fond ou sur une typo, et ça fait des propositions »).
+Captures : `design-explorations/editeur-lots-2026-11-16/recette/palette/`. Fiche C17.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| La palette à glisser (T-209, second temps) | Une colonne à droite de la planche : nuancier, couleurs des photos, libres, pastille barrée. On glisse une couleur sur une page (fond uni) ou un texte (sa couleur) ; la page se remplit pendant le survol ; Échap annule | sur la branche |
+| Ce qui va avec | Après un fond : le texte qui s'y lit, la page d'en face du même combo, la même couleur (double unie). Après un texte coloré : le fond qui lui va. Un clic applique, Annuler défait | sur la branche |
+| Le bouton « Fond » du tiroir retiré | La palette le remplace | sur la branche. Code dans `archive/fond-tiroir-2026-11/` |
+
 Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur). Plus les cinq de la vague 1, pas encore fusionnées.
 
 ---

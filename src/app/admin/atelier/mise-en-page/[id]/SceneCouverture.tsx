@@ -245,7 +245,7 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
     );
   }
   return (
-    <div className={cls("ed-txt ed-txt--couv", libelle && "ed-txt--libelle", f.vide && f.parDefaut && "ed-txt--auto")} style={style}
+    <div className={cls("ed-txt ed-txt--couv", libelle && "ed-txt--libelle", f.vide && f.parDefaut && "ed-txt--auto")} style={style} data-texte={fantome ? undefined : `${ref.plancheId}|${ref.cible}|${ref.index}`}
       role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0} aria-label={fantome ? undefined : `Modifier : ${vu}`}
       onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref }); }}
       onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref }); } }}>

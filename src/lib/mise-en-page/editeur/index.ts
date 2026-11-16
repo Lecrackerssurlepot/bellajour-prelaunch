@@ -96,5 +96,6 @@ export { libelleGroupeIA } from "./bibliotheque";
 export { lieuDeTexte } from "./lieuxTextes";
 export { estPng } from "./tags";
 /* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
-export { colorerFond, colorerTexte, couleursPosees, libelleFond, libelleTexte, nomCouleur } from "./couleurs";
+export { colorerFond, colorerTexte, colorerTextes, couleursPosees, libelleFond, libelleTexte, nomCouleur, propositionsApres, textesDuCote, textesLisibles, REGLAGES_PROPOSITIONS } from "./couleurs";
+export type { PoseCouleur, PropositionCouleur, GesteProposition } from "./couleurs";
 export { fondsPlanche } from "./selecteurs";

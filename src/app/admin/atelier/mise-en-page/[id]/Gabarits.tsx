@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, idsPlanche, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
-import { cssDeCouleur, hexDeCouleur, piecesDuFond, type CouleurLibre } from "@/lib/mise-en-page/couleursLibres";
-import { Nuances } from "./Nuances";
+import { PAS_TIROIR, PLAFOND_TIROIR, actionsPlanche, apercu, dansFamille, gabaritsPour, type ActionsPlanche, type Cible, type FamilleGabarits, type GabaritPour, type Geste } from "@/lib/mise-en-page/editeur";
+import { cssDeCouleur, piecesDuFond } from "@/lib/mise-en-page/couleursLibres";
 import type { Planche } from "@/lib/mise-en-page/magazine";
 import { cadresDe, decorDe, dispositionDe, templateParId, type CoteSeul } from "@/lib/mise-en-page/magazine";
 import { enregistrerGabarit } from "./gabaritsClient";
@@ -156,7 +155,6 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const { etat, envoyer, ui, majUi } = useEd();
   /* lot D : les générés se comptent par centaines ; le tiroir en montre `PLAFOND_TIROIR`, « Plus » en ajoute (le parent le remonte à chaque page ou côté : `key`) */
   const [montres, setMontres] = useState(PLAFOND_TIROIR);
-  const [fondOuvert, setFondOuvert] = useState(false);
   if ((pl.mode === "double") !== (cible === "double")) return null;
   const act = actionsPlanche(etat, pl.id);
   if (!act) return null;
@@ -172,16 +170,6 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
   const apercuGeste = (g: Geste) => { const x = apercu(etat, g); return x.magazine !== etat.magazine ? x.magazine : null; };
   const voir = (g: Geste) => () => majUi({ apercuGab: apercuGeste(g) });
   const fermer = () => majUi({ rangee: null, apercuGab: null });
-  /* lot G : le fond de couleur de cette page (ou de la double entière), indépendant du gabarit ; la page seule ne connaît que son côté */
-  const seul = act.seule;
-  const fondDe = (): CouleurLibre | null => {
-    const f = pl.fond;
-    if (!f) return null;
-    if (seul) return f[seul] ?? null;
-    if (cible === "double") return f.gauche && f.gauche === f.droite ? f.gauche : null;
-    return f[cible] ?? null;
-  };
-  const fond = fondDe();
   /* T-212 : la grille que l'écran montre guide la place du texte (6 × 6 sinon) */
   const texte: Geste = { type: "ajouterTexte", plancheId: pl.id, cible, trame: ui.grille && ui.trame !== "artiste" ? ui.trame : 6 };
   return (
@@ -196,11 +184,8 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
         ) : act.fusionner ? (
           <button type="button" className="ed-bt" onMouseEnter={voir({ type: "fusionner", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "fusionner", plancheId: pl.id }); }}>Double page</button>
         ) : null}
-        {/* lot G : le fond ; T-212 : le texte. Côte à côte : la colonne de tête du tiroir n'a que quatre rangs */}
+        {/* T-212 : le texte (le fond se glisse depuis la palette, T-209) */}
         <span className="ed-rangee-duo">
-          <button type="button" className="ed-bt ed-bt-fond" aria-expanded={fondOuvert} onClick={() => setFondOuvert(!fondOuvert)}>
-            <i className={fond ? undefined : "ed-bt-fond--vide"} style={fond ? { background: hexDeCouleur(fond, etat.magazine.style) } : undefined} aria-hidden="true" />Fond
-          </button>
           {/* T-212 : un titre posé à sa place (la plus grande zone libre, alignée sur la grille affichée ; sinon l'endroit calme d'une photo) ;
               le survol montre où, le clic le pose, Annuler le défait */}
           <button type="button" className="ed-bt" disabled={!d} title={d ? "Ajouter un titre à sa place" : "Page vide"}
@@ -242,12 +227,6 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
       <span className="ed-esp" />
       <button type="button" className="ed-ico" aria-label="Fermer les gabarits" onClick={fermer}>{Ico.fermer}</button>
     </div>
-    {fondOuvert ? (
-      <div className="ed-fond-pop">
-        <Nuances titre={seul || cible !== "double" ? "Fond de la page" : "Fond de la double"} valeur={fond} photos={idsPlanche(pl)} retirer="Sans fond"
-          onChoix={(c) => envoyer({ type: "colorerFond", plancheId: pl.id, cible, couleur: c })} />
-      </div>
-    ) : null}
     </>
   );
 }
