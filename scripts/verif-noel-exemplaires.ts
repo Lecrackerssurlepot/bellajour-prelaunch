@@ -91,8 +91,8 @@ export function verifierNoelExemplaires(ok: Ok, titre: (t: string) => void): voi
   const route = readFileSync("src/app/api/atelier/checkout/route.ts", "utf8");
   ok("paiement : la carte entre dans totalCommande (seuil) ET dans les lignes Stripe, refusée sans drapeau",
     /cadeauCentimes: cadeau\?\.centimes/.test(route) && /Carte cadeau Bellajour/.test(route) && /cadeau_invalide/.test(route) && /NEXT_PUBLIC_GIFT_CARD_ENABLED/.test(route));
-  ok("paiement : crédit fondateur au-delà des magazines + carte ajoutée = refusé (Stripe imputerait la carte)",
-    /cadeau && remiseAppliquee && CREDIT_FONDATRICE_CENTIMES > commande\.prix/.test(route) && /cadeau_refuse/.test(route));
+  ok("paiement : carte ajoutée + crédit fondateur, code de carte ou crédit de compte = refusé (Stripe répartirait le coupon sur la carte)",
+    /if \(cadeau && remiseAppliquee\)/.test(route) && /cadeau && imputation && imputation\.remiseMagazinesCentimes > 0/.test(route) && /cadeau_refuse/.test(route));
   const webhook = readFileSync("src/app/api/webhook/route.ts", "utf8");
   ok("webhook : la carte ajoutée s'écrit après le paiement du magazine, et suit son remboursement",
     /enregistrerCarteAjoutee\(supabase, session\)/.test(webhook) && /traiterRemboursementCarte\(supabase, charge, \{ silencieux: true \}\)/.test(webhook));

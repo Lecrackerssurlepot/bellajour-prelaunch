@@ -107,7 +107,7 @@
 .nl-noel-bandeau .nl-noel-bandeau-lien:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
 @media (max-width: 479px) {
   .nl-noel-bandeau { font-size: 12.5px; gap: 10px; padding: 0 12px; }
-  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: 4px 10px; }
+  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: 8px 12px; }
 }
 
 /* ════════ LA CARTE ════════ */
@@ -405,7 +405,16 @@
 }
 .bj-atelier .at-accueil .h-amorce-noel:hover { color: var(--c-text); }
 @media (min-width: 768px) {
-  :root:has(.nl-noel-bandeau) .at-accueil .h-amorce { width: max-content; max-width: 46vw; }
+  :root:has(.nl-noel-bandeau) .at-accueil .h-amorce { width: max-content; max-width: max(46vw, 640px); }
+}
+/* Écran court (portable bas, 16/11) : les 44 px du bandeau se reprennent sur
+   le titre et le bas du héros, sinon « Découvrir l'univers » passe sous le
+   pli (1000 × 550). Par `--uh` et `--app-height`, hauteur GELÉE, jamais une
+   media query de hauteur (ouverture.css explique pourquoi). Sur un grand
+   écran rien ne bouge : 10 unités dépassent la taille indexée sur la largeur. */
+@media (min-width: 768px) {
+  :root:has(.nl-noel-bandeau) .at-accueil .h-titre { font-size: min(clamp(36px, 6.4vw, 122px), calc(10.4 * var(--uh)), calc(var(--app-height) - 500px)); }
+  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-bottom: clamp(6px, calc(var(--app-height) - 600px), calc(5 * var(--uh))); }
 }
 
 /* ════════ /MAGAZINE : LE REPÈRE DU PREMIER ÉCRAN ET LA PLACE DU BLOC ════════
@@ -449,3 +458,6 @@
 .at-pdp .nl-amorce-titre { font-weight: 500; }
 .at-pdp .nl-amorce-sous { font-size: 12.5px; color: var(--c-text-faint); }
 .at-pdp .nl-amorce-fleche { margin-left: auto; color: var(--c-accent-strong); font-size: 18px; }
+
+/* Le « e » de « 2e » dans le bandeau : sans ça il décroche la ligne et se lit « 2 e ». */
+.nl-noel-bandeau sup { font-size: 0.68em; line-height: 0; vertical-align: 0.45em; margin-left: 0.04em; }

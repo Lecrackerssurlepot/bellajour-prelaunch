@@ -18,7 +18,7 @@ export default function AmorceMagazine() {
       {fenetre && (
         <p className="nl-amorce-info">
           Spécial Noël : le 2<sup>e</sup> magazine à <strong>−{NOEL_REMISE_MEME_PCT}&nbsp;%</strong>,
-          {' '}−{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture. Jusqu&apos;au 7 décembre.
+          {' '}−{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture. Jusqu&apos;au 7 décembre, en France.
         </p>
       )}
       <a className="nl-amorce" href="#noel" onClick={auClicGlisser('noel')}>

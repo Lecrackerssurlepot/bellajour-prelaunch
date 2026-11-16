@@ -431,11 +431,13 @@ export async function POST(request: Request) {
       cadeauCentimes: cadeau?.centimes ?? 0,
     });
     /* La carte ajoutée et le crédit fondateur (16/11). Le crédit est un
-       code promo Stripe de 30 € qui s'impute sur TOUT le panier : sous 30 €
-       de magazines, Stripe prendrait le reste sur la carte cadeau, que
-       `totalCommande` refuse de payer par un crédit. Cas rare (20 à 28
-       pages), on refuse l'ajout plutôt que d'offrir une partie de la carte. */
-    if (cadeau && remiseAppliquee && CREDIT_FONDATRICE_CENTIMES > commande.prix) {
+       code promo Stripe de 30 € qui s'impute sur TOUT le panier, au prorata
+       des lignes : même au-dessus de 30 € de magazines, une part du crédit
+       tomberait sur la ligne de la carte (relevé par la recette du 16/11 :
+       24 € + carte 30 € payés par code → magazine 13,34 €, carte 16,66 €).
+       Le total est juste, le détail ment. On refuse l'ajout : la carte se
+       commande à part. */
+    if (cadeau && remiseAppliquee) {
       return NextResponse.json(
         { error: "cadeau_refuse", phrase: "La carte cadeau se commande à part ici : bellajour.fr/offrir." },
         { status: 409 },
@@ -496,6 +498,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "carte_refusee", phrase: reglement.refus }, { status: 409 });
     }
     const imputation = reglement.imputation;
+    /* Même raison qu'au-dessus pour un code de carte ou un crédit de compte :
+       le coupon se répartirait aussi sur la carte ajoutée. */
+    if (cadeau && imputation && imputation.remiseMagazinesCentimes > 0) {
+      return NextResponse.json(
+        { error: "cadeau_refuse", phrase: "La carte cadeau se commande à part ici : bellajour.fr/offrir." },
+        { status: 409 },
+      );
+    }
     let couponCarte: string | null = null;
     if (imputation && imputation.remiseMagazinesCentimes > 0) {
       try {

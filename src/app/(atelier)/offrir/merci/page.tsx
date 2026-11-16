@@ -105,7 +105,7 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
           <p className="nl-merci-pour-vous-titre">Et pour vous&nbsp;?</p>
           <p className="nl-faible">
             {fenetre ? (
-              <>Composez votre magazine. Le 2<sup>e</sup> à −{NOEL_REMISE_MEME_PCT}&nbsp;%, −{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture, jusqu&apos;au 7 décembre.</>
+              <>Composez votre magazine. Le 2<sup>e</sup> à −{NOEL_REMISE_MEME_PCT}&nbsp;%, −{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture, jusqu&apos;au 7 décembre, en France.</>
             ) : (
               <>Vos photos, notre atelier, votre magazine.</>
             )}

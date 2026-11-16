@@ -477,7 +477,11 @@ export default async function NumeroPage({
      Par l'adresse (`?cadeau=5000`), comme le code d'une carte qui paie : le
      total, le seuil de la livraison offerte et le montant du bouton sont
      ceux du serveur. Seulement drapeau ouvert, à l'état 2, hors aperçu. */
-  const offrirCarte = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert
+  /* Pas d'ajout de carte quand un coupon paie déjà une part (crédit
+     fondateur, code de carte) : Stripe le répartirait sur la carte, et le
+     checkout refuse (`cadeau_refuse`). On ne propose pas ce qu'on refusera. */
+  const offrirCarte =
+    lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && creditEuros === null && !carteSaisie
   const cadeauCentimes =
     offrirCarte && numero.etat === 'apercu_pret' && !previsualisation ? montantCadeau(cadeauSaisi) ?? 0 : 0
   const commande =
