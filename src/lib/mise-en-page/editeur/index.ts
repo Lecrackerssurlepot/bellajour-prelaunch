@@ -27,7 +27,7 @@ export { FORMAT_PREMIER_JET, NOM_FICHIER_MAX, PREFIXE_ABSENTE, RAISON_MAX, REGLE
 export type { BilanPremierJet, LecturePremierJet, PremierJet } from "./premierJet";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
 export { planDepot, planifier } from "./plans";
-export { aCote, aCoteParJour, groupes, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
+export { aCote, aCoteParJour, candidatesCouverture, CLE_COUVERTURE_TETE, groupes, LIBELLE_COUVERTURE_TETE, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, etiquettePages, gabaritsPour, libelleAnnuler,
   libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,

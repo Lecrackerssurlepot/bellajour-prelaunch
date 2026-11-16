@@ -4,13 +4,14 @@
  */
 
 import { comparerChrono, utilisations } from "../magazine";
+import { ID_COUVERTURE } from "../couverture";
 import { orientationDe } from "../types";
 import { idsPlanche, plancheDe } from "./outils";
 import { rangementDe } from "./moments";
 import { dansVue, estTour, marqueDe, triDe, type Marque } from "./tri";
 import { sousPiles } from "./mesures";
 import { tagsDeLecture } from "./tags";
-import { estTagIA, groupeDe, tagsIA, type LectureIAReliee } from "./lectureIA";
+import { estTagIA, groupeDe, misesEnAvant, tagsIA, type LectureIAReliee } from "./lectureIA";
 import type { Catalogue, EtatEditeur, Filtres, GroupeBibliotheque, PhotoMaq, TypeDossier } from "./types";
 
 const sansAccent = (s: string): string => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -90,11 +91,33 @@ function libelleGroupe(groupe: Filtres["groupe"], cle: string, ph: PhotoMaq, cat
   return "Toutes";
 }
 
+/**
+ * T-211 (16/11, R155) : quand la COUVERTURE est ouverte, ses photos candidates passent en tête de la barre, sous un petit titre :
+ * d'abord celles que l'atelier a étiquetées « Couverture » au tri, puis celles que la lecture IA propose (« Couv. », R143), chaque
+ * liste dans l'ordre habituel de la barre. Seulement celles qui passent les filtres (on range, on n'ajoute rien), même rangées sous
+ * une pile (une candidate ne se cache pas derrière sa tête). Rien d'autre ne bouge ; aucune candidate : la barre reste celle d'avant.
+ */
+export const CLE_COUVERTURE_TETE = "couverture";
+export const LIBELLE_COUVERTURE_TETE = "Pour la couverture";
+export function candidatesCouverture(e: EtatEditeur, passent?: readonly PhotoMaq[]): string[] {
+  if (e.plancheCourante !== ID_COUVERTURE) return [];
+  const ici = passent ?? (() => { const c = criteres(e); return [...e.catalogue.values()].filter((ph) => CLES_CRITERES.every((k) => c[k](ph))); })();
+  const cmp = comparateur(e.filtres.tri);
+  const etiquetees = new Set(triDe(e.magazine).etiquettes.couverture);
+  const ia = e.lectureIA;
+  const proposees = (ph: PhotoMaq): boolean => !!ia && misesEnAvant(ia.photos.get(ph.id)).includes("couverture");
+  const tri = ici.filter((ph) => etiquetees.has(ph.id)).sort(cmp);
+  const parIA = ici.filter((ph) => !etiquetees.has(ph.id) && proposees(ph)).sort(cmp);
+  return [...tri, ...parIA].map((ph) => ph.id);
+}
+
 /** Les groupes de la bibliothèque, dans l'ordre d'affichage. */
 export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   const c = criteres(e);
   const passent = [...e.catalogue.values()].filter((ph) => CLES_CRITERES.every((k) => c[k](ph)));
-  const photos = horsPiles(e, passent);
+  const tete = candidatesCouverture(e, passent);
+  const enTete = new Set(tete);
+  const photos = horsPiles(e, passent).filter((ph) => !enTete.has(ph.id));
   const cmp = comparateur(e.filtres.tri);
   const g = e.filtres.groupe;
   const parCle = new Map<string, PhotoMaq[]>();
@@ -107,10 +130,13 @@ export function groupes(e: EtatEditeur): GroupeBibliotheque[] {
   /* dans un tour, les photos déjà posées passent après les autres de leur groupe : rien n'est caché, tout est rangé (05/11) */
   const u = estTour(e.filtres.marque) ? utilisations(e.magazine) : null;
   const rang = (ph: PhotoMaq) => (u?.has(ph.id) ? 1 : 0);
-  return cles.map((k) => {
+  const reste = cles.map((k) => {
     const liste = (parCle.get(k) ?? []).sort((a, b) => rang(a) - rang(b) || cmp(a, b));
     return { cle: k, libelle: libelleGroupe(g, k, liste[0], e.catalogue, e.lectureIA), ids: liste.map((ph) => ph.id) };
   });
+  if (!tete.length) return reste;
+  /* sans groupement, le reste a lui aussi un titre : sinon il se lirait comme la suite des candidates */
+  return [{ cle: CLE_COUVERTURE_TETE, libelle: LIBELLE_COUVERTURE_TETE, ids: tete, tete: true }, ...reste.map((x) => (g === "aucun" ? { ...x, libelle: "Les autres" } : x))];
 }
 export const visibles = (e: EtatEditeur): string[] => groupes(e).flatMap((g) => g.ids);
 

@@ -81,7 +81,8 @@ export type Filtres = {
   taille: "S" | "M" | "L";
 };
 
-export type GroupeBibliotheque = { cle: string; libelle: string; ids: string[] };
+/** `tete` (T-211, 16/11) : le groupe posé EN TÊTE de la barre (les candidates de la couverture ouverte) ; il a toujours son titre. */
+export type GroupeBibliotheque = { cle: string; libelle: string; ids: string[]; tete?: true };
 
 /* ─────────────────────────── Les dépôts ─────────────────────────── */
 
