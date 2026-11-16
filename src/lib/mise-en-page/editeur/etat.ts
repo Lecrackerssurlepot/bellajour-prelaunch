@@ -11,11 +11,11 @@ import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../rec
 import { contenuValide } from "../sauvegarde";
 import { avecDerniere, coteSeul, type Magazine } from "../magazine";
 import { ID_COUVERTURE } from "../couverture";
+import { motSansTexte } from "./texteAjoute";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
 import { LECTURE_VIDE } from "./mesures";
 import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./lecons";
-import { preTrier } from "./pretri";
 import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
 import { colorerTexte } from "./couleurs";
@@ -271,10 +271,12 @@ const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "re
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
   "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue", "poserLectureIA"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
-  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
+  "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "reglerTri", "etiqueter", "hesiter",
   "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet", "accepterRafale",
   /* lot G : les couleurs libres */
-  "colorerFond", "colorerTexte"]);
+  "colorerFond", "colorerTexte",
+  /* T-212 : un texte ajouté proprement */
+  "ajouterTexte"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -294,6 +296,8 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   const is = plan.issue;
   let x: EtatEditeur = { ...e, glisser: null, confirmation: null, derniere: { refus: is.refus, restees: is.restees, dejaLa: is.dejaLa, textesPerdus: is.textesPerdus, libelle: plan.libelle } };
   if (is.refus === "pleine" && plan.op === "ajouterSurPlanche") return { ...x, message: { texte: "Double pleine · N pour une nouvelle" } };
+  /* T-212 : rien de posé, l'écran dit pourquoi en deux mots */
+  if (is.refus && plan.op === "ajouterTexte" && g.type === "ajouterTexte") return { ...x, message: { texte: motSansTexte(e.magazine, g.plancheId, g.cible) } };
   if (is.refus) return x;
   const signalees = is.posees.filter((id) => { const ph = e.catalogue.get(id); return ph && ph.signalee; });
   if (signalees.length && !g.confirme) {
@@ -301,8 +305,6 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
     return { ...x, magazine: e.magazine, confirmation: { type: "signalee", nb: signalees.length, total, geste: { ...g, confirme: true } } };
   }
   const avant = x.magazine;
-  /* lot 3 : le pré-tri garde ses propositions (avec leur raison) pour reconnaître ensuite un geste contraire */
-  if (g.type === "preTrier") x = { ...x, pretri: { ...x.pretri, ...preTrier(e.catalogue, e.magazine, e.lecture).propositions } };
   /* lot F (R148) : accepter une rafale de la lecture IA laisse ses propositions ; renverser l'une d'elles ensuite est une leçon « IA » */
   if (g.type === "accepterRafale") {
     const r = rafaleDe(e.lectureIA, g.tete);

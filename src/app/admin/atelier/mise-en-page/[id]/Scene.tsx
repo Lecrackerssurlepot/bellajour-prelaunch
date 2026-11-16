@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, aimanter, aplatsPlanche, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lieuSur, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
+  actionsPlanche, aimanter, aplatsPlanche, lignesDeGrille, pagesPosees, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lieuSur, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
   SEUIL_DPI, SEUIL_DPI_CONFORT, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
-  type Guide, type SensCalque, type SourceGlisser,
+  type Guide, type Lignes, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
 import { coteSeul, dispositionDe, type Magazine, type Planche } from "@/lib/mise-en-page/magazine";
 import { choixDeLieux } from "@/lib/mise-en-page/lieux";
@@ -19,7 +19,7 @@ import { demanderHd, useHd } from "./hd";
 import { useLieux } from "./lieuxClient";
 import { Chaleur } from "./Chaleur";
 import { Pastilles } from "./Gabarits";
-import { GrilleArtiste } from "./GrilleArtiste";
+import { GrilleEcran } from "./GrilleArtiste";
 import { Nuances } from "./Nuances";
 
 /* La double page, en grand. Aucun calcul du magazine ici : on envoie des gestes, on dessine l'état rendu.
@@ -142,7 +142,7 @@ export default function Scene() {
         {frames.map((f) => (
           <CadreVue key={`${f.ref.cible}${f.ref.index}${f.role}`} f={f} pl={pl} rep={rep} sous={montrerApercu} cibleCour={cibleCour} refus={refus} />
         ))}
-        {ui.grille ? <GrilleArtiste seule={seule} /> : null}
+        {ui.grille ? <GrilleEcran largeur={PLANCHE_L} pages={pagesPosees(seule)} choix={ui.trame} /> : null}
         {framesA ? (
           <div className={cls("ed-fantome", ap!.genre !== "echange" && "ed-fantome--plein")} aria-hidden="true">
             {framesA.map((f) => (
@@ -233,7 +233,7 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
   const appui = fantome || ro ? undefined : (e: React.PointerEvent) => {
     if (etat.selection.ids.length || etat.echangeArme || (e.target as HTMLElement).closest(".ed-cadre-barre")) return;
     /* lot 4 : ⌥ + glisser déplace le cadre lui-même, à la souris */
-    if (e.altKey && e.button === 0 && f.role === "photo") { debutRetouche(e, f, "m", majUi, envoyer, ui.aimant ? autresCadres(etat, f) : null); return; }
+    if (e.altKey && e.button === 0 && f.role === "photo") { debutRetouche(e, f, "m", majUi, envoyer, ui.aimant ? autresCadres(etat, f) : null, grilleAimant(etat, ui)); return; }
     if (e.shiftKey) return;
     commencerAppui(e, multi && dansSel ? { type: "cadres", refs: etat.cadresSel } : { type: "cadre", ref, photoId: f.photoId });
   };
@@ -317,6 +317,7 @@ function Selections({ frames }: { frames: CadrePlanche[] }) {
   const { etat, envoyer, majUi, ui, lectureSeule: ro } = useEd();
   if (etat.glisser || etat.recadrage) return null;
   const autres = (f: CadrePhoto) => (ui.aimant ? autresCadres(etat, f) : null);
+  const grille = grilleAimant(etat, ui);
   const multi = etat.cadresSel.length > 1;
   const vues = frames.filter((f): f is CadrePhoto => f.role === "photo" && !!f.photoId
     && (memeRef(etat.cadreActif, f.ref) || (multi && etat.cadresSel.some((r) => memeRef(r, f.ref)))));
@@ -333,9 +334,9 @@ function Selections({ frames }: { frames: CadrePlanche[] }) {
             {actif && !multi && !arme && !ro && !f.indisponible ? (
               <>
                 {POIGNEES.map((p) => (
-                  <span key={p} className={`ed-poignee ed-poignee--${p}`} onPointerDown={(e) => debutRetouche(e, f, p, majUi, envoyer, autres(f))} />
+                  <span key={p} className={`ed-poignee ed-poignee--${p}`} onPointerDown={(e) => debutRetouche(e, f, p, majUi, envoyer, autres(f), grille)} />
                 ))}
-                <span className="ed-poignee ed-poignee--m" title="Déplacer le cadre · ou ⌥ + glisser" onPointerDown={(e) => debutRetouche(e, f, "m", majUi, envoyer, autres(f))}>
+                <span className="ed-poignee ed-poignee--m" title="Déplacer le cadre · ou ⌥ + glisser" onPointerDown={(e) => debutRetouche(e, f, "m", majUi, envoyer, autres(f), grille)}>
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M10 2v16M2 10h16M10 2l-2.5 2.5M10 2l2.5 2.5M10 18l-2.5-2.5M10 18l2.5-2.5M2 10l2.5-2.5M2 10l2.5 2.5M18 10l-2.5-2.5M18 10l-2.5 2.5" /></svg>
                 </span>
               </>
@@ -404,13 +405,20 @@ function autresCadres(etat: EtatEditeur, f: CadrePhoto): Rect[] {
     .map((g) => ({ x: g.x, y: g.y, l: g.l, h: g.h }));
 }
 
+/** T-213 : la grille AFFICHÉE (trame ou artiste) prête ses lignes à l'aimant ; cachée, elle n'accroche rien. */
+function grilleAimant(etat: EtatEditeur, ui: Ui): Lignes | null {
+  if (!ui.grille) return null;
+  const i = etat.magazine.planches.findIndex((p) => p.id === etat.plancheCourante);
+  return i < 0 ? null : lignesDeGrille(pagesPosees(coteSeul(etat.magazine, i)), ui.trame);
+}
+
 /** L'aimant accroche à 6 pixels d'écran, quelle que soit la taille de la planche. */
 const AIMANT_PX = 6;
 
 /* Déplacer (m) ou redimensionner un cadre à la souris : le cadre se dessine à sa place provisoire (ui.retouche), une seule
    entrée d'historique au lâcher. Les coins gardent le format (⇧ pour le libérer), comme Canva. `autres` = l'aimant allumé
-   (06/11) : bords et centre s'accrochent, ⌘ tenu le coupe le temps du geste. */
-function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: (x: { retouche: CadreRetouche | null; position?: string | null; guides?: Guide[] }) => void, envoyer: (g: Geste) => void, autres: Rect[] | null) {
+   (06/11) : bords et centre s'accrochent, ⌘ tenu le coupe le temps du geste ; `grille` (T-213) = les lignes de la grille affichée. */
+function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: (x: { retouche: CadreRetouche | null; position?: string | null; guides?: Guide[] }) => void, envoyer: (g: Geste) => void, autres: Rect[] | null, grille: Lignes | null) {
   e.stopPropagation();
   e.preventDefault();
   const planche = (e.currentTarget as HTMLElement).closest(".ed-planche");
@@ -422,7 +430,7 @@ function debutRetouche(e: React.PointerEvent, f: CadrePhoto, p: Poignee, majUi: 
   let r = r0;
   const nord = p === "n" || p === "ne" || p === "no", ouest = p === "o" || p === "no" || p === "so";
   const est = p === "e" || p === "ne" || p === "se", sud = p === "s" || p === "se" || p === "so";
-  const lignes = autres ? lignesAimant(autres) : null;
+  const lignes = autres ? lignesAimant(autres, grille) : null;
   const bords = p === "m" ? DEPLACEMENT : { gauche: ouest, droite: est, haut: nord, bas: sud };
   const mv = (ev: PointerEvent) => {
     const dx = (ev.clientX - x0) * mmParPx, dy = (ev.clientY - y0) * mmParPx;

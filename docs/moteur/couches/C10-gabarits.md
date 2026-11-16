@@ -22,3 +22,4 @@ La note ne lit encore ni les couleurs ni la chronologie. Beaucoup de gabarits = 
 
 ## Historique
 06/11 : familles et aimant (#351). 09/11 : grande coupe pesée plus lourd (#352), pli (branche).
+16/11 (vague 1, branche `feat/mise-en-page-vague-1`, pas encore fusionnée) : E-D8c, E-D14a, E-D14b ne sont plus proposés (R158, `EPINGLES_RETIREES`), toujours lisibles ; leurs copies sans aplat E-D8f, E-D14c, E-D14d. L'aimant accroche aussi à la grille affichée (R157, `lignesDeGrille`).

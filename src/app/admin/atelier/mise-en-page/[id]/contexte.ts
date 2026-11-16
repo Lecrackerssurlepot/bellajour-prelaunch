@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext, type PointerEvent as PointerReact } from "react";
-import type { Cible, CibleDepot, EtatEditeur, Filtres, Geste, Guide, Issue, RefCadre, SourceGlisser } from "@/lib/mise-en-page/editeur";
+import { TRAME_DEFAUT, estChoixGrille, type ChoixGrille, type Cible, type CibleDepot, type EtatEditeur, type Filtres, type Geste, type Guide, type Issue, type RefCadre, type SourceGlisser } from "@/lib/mise-en-page/editeur";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 
 export type Adresse = { vignette: string | null; moyenne: string | null; original: string | null };
@@ -57,8 +57,11 @@ export type Ui = {
   /** 06/11 : l'aimant allumé (gardé sur ce Mac), et les lignes où le cadre s'accroche pendant le glisser. */
   aimant: boolean;
   guides: Guide[];
-  /** Lot D (12/11) : la grille d'artiste (tiers, nombre d'or, diagonales) par-dessus chaque page, gardée sur ce Mac. Écran seulement. */
+  /** Lot D (12/11) : une grille par-dessus chaque page, gardée sur ce Mac (O l'allume ou l'éteint). Écran seulement. */
   grille: boolean;
+  /** T-213 (16/11) : laquelle, choisie dans le menu de la barre : la grille de mise en page 6 × 6 (celle du moteur, par défaut) ou
+   *  8 × 8, ou la grille d'artiste (tiers, nombre d'or, diagonales). Gardée sur ce Mac. */
+  trame: ChoixGrille;
   /** Lot E : ce que le dernier fichier de premier jet a donné (chargé : photos reliées et introuvables ; refusé : la phrase). Écran seulement, jusqu'à « Fermer ». */
   premierJet: BandeauPremierJet | null;
   /** Lot F : ce que la dernière lecture IA chargée a donné (photos reliées, introuvables) ou sa phrase de refus. Écran seulement. */
@@ -73,20 +76,37 @@ export type BandeauPremierJet =
 export const UI_NEUVE: Ui = {
   menu: null, rangee: null, apercuGab: null, loupe: null, flash: null, survolSel: null, dir: null, defilerVers: null, ressortId: null, exportOuvert: false, style: false,
   grand: false, vue: "grille", focus: null, zone: "planche", comparer: [], cmpIci: 0, loupeTri: false, lecture: false, tailleGrand: 200, bulle: null, doubles: false, doublesFlash: false, confronter: null, vueBarre: "toutes", vueTour: "ecarter",
-  retouche: null, position: null, aimant: true, guides: [], grille: false, premierJet: null, lectureIA: null,
+  retouche: null, position: null, aimant: true, guides: [], grille: false, trame: TRAME_DEFAUT, premierJet: null, lectureIA: null,
 };
 
-/** L'aimant et la grille d'artiste se rappellent d'une séance à l'autre, sur ce Mac seulement. Jamais d'exception. */
+/** L'aimant et la grille se rappellent d'une séance à l'autre, sur ce Mac seulement. Jamais d'exception. */
 export const CLE_AIMANT = "bj-mep-aimant";
 export const CLE_GRILLE = "bj-mep-grille";
+/** T-213 : la grille choisie (« 6 », « 8 », « artiste »). Avant le 16/11, « bj-mep-grille » à « 1 » voulait dire la grille d'artiste ;
+ *  sans choix gardé, c'est la grille du moteur qui s'affiche : c'est celle que Mathias demandait. */
+export const CLE_TRAME = "bj-mep-grille-trame";
+const lireTrame = (v: string | null): ChoixGrille => {
+  const x: unknown = v === "artiste" ? v : Number(v);
+  return estChoixGrille(x) ? x : TRAME_DEFAUT;
+};
 export function uiDeDepart(): Ui {
-  try { return { ...UI_NEUVE, aimant: window.localStorage.getItem(CLE_AIMANT) !== "0", grille: window.localStorage.getItem(CLE_GRILLE) === "1" }; } catch { return UI_NEUVE; }
+  try {
+    return { ...UI_NEUVE, aimant: window.localStorage.getItem(CLE_AIMANT) !== "0", grille: window.localStorage.getItem(CLE_GRILLE) === "1", trame: lireTrame(window.localStorage.getItem(CLE_TRAME)) };
+  } catch { return UI_NEUVE; }
 }
-/** Allume ou éteint la grille d'artiste (la barre et la touche O) et s'en souvient ; le stockage refusé = l'état vaut pour la séance. */
+/** Allume ou éteint la grille (la touche O), sans changer laquelle, et s'en souvient ; le stockage refusé = l'état vaut pour la séance. */
 export function basculerGrille(ui: Ui, majUi: (p: Partial<Ui>) => void): void {
   const grille = !ui.grille;
   majUi({ grille });
   try { window.localStorage.setItem(CLE_GRILLE, grille ? "1" : "0"); } catch { /* stockage refusé */ }
+}
+/** T-213 : le menu de la barre : une grille (elle s'allume), ou aucune (`null`, elle s'éteint et garde la dernière choisie). */
+export function choisirGrille(choix: ChoixGrille | null, majUi: (p: Partial<Ui>) => void): void {
+  majUi(choix === null ? { grille: false, menu: null } : { grille: true, trame: choix, menu: null });
+  try {
+    window.localStorage.setItem(CLE_GRILLE, choix === null ? "0" : "1");
+    if (choix !== null) window.localStorage.setItem(CLE_TRAME, String(choix));
+  } catch { /* stockage refusé */ }
 }
 
 /** Création libre : importer des photos de l'ordinateur (absent pour un dossier ou une édition). */

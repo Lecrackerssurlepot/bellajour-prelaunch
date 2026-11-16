@@ -43,7 +43,11 @@ function hasard(graine: number): () => number {
 const DIMS: [number, number][] = [[4000, 3000], [6000, 4000], [3000, 4000], [4000, 6000], [3000, 3000], [1920, 1080], [1080, 1920]];
 const lotAleatoire = (h: () => number, n: number): PhotoRef[] => Array.from({ length: n }, (_, i) => { const d = DIMS[Math.floor(h() * DIMS.length)]; return { id: `p${i}`, nom: `p${i}`, l: d[0], h: d[1], date: null }; });
 const neutre = { zoom: 1, dx: 0, dy: 0 };
-const EMPREINTE_DOUBLES = "0b3cd4b6";
+/* 16/11 (T-209, vague 1) : E-D14a et E-D14b retirés, remplacés par leurs copies sans aplat E-D14c et E-D14d (mêmes cadres). L'empreinte
+   change ; celle du 12/11 se retrouve EXACTEMENT en renommant les copies du nom des retirés : rien d'autre n'a bougé (test ci-dessous). */
+const EMPREINTE_DOUBLES = "b1acc34a";
+const EMPREINTE_DOUBLES_12_11 = "0b3cd4b6";
+const COPIES_SANS_APLAT: Record<string, string> = { "E-D8f": "E-D8c", "E-D14c": "E-D14a", "E-D14d": "E-D14b" };
 const LIBELLES = ["Titre", "Texte", "Légende"];
 
 /** Les photos d'essai : p1 à p14, de formes variées (le contenu n'est jamais lu, seules les cotes comptent à l'export). */
@@ -232,7 +236,10 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
     const a = lotsFixes.map(lecture).join("#"), b = lotsFixes.map(lecture).join("#");
     const empreinte = fnv(a);
     console.log(`      empreinte des classements de doubles (5 lots fixes) : ${empreinte}`);
-    rapporter(`D1 déterminisme : deux classements du même lot sont identiques mot pour mot ; l'empreinte des cinq lots fixes est celle relevée le 12/11 (${EMPREINTE_DOUBLES})`, a === b && empreinte === EMPREINTE_DOUBLES);
+    rapporter(`D1 déterminisme : deux classements du même lot sont identiques mot pour mot ; l'empreinte des cinq lots fixes est celle relevée le 16/11 (${EMPREINTE_DOUBLES})`, a === b && empreinte === EMPREINTE_DOUBLES);
+    const renomme = a.replace(/E-D8f|E-D14c|E-D14d/g, (id) => COPIES_SANS_APLAT[id]);
+    rapporter(`D1 / T-209 : les copies sans aplat renommées du nom des retirés, l'empreinte redevient celle du 12/11 (${EMPREINTE_DOUBLES_12_11}) : seuls les gabarits à aplat ont changé, à la même place et à la même note`,
+      fnv(renomme) === EMPREINTE_DOUBLES_12_11);
   }
   {
     /* l'ordre : à qualité égale, les dessinés d'abord (jusqu'à 0,15 de note), puis les générées (jusqu'à 0,05), puis les grilles ; mêmes malus que les pages */

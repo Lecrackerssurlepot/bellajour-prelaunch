@@ -1,6 +1,6 @@
 "use client";
 
-import { aCote, bilanTri, marquesProposees, photosEnMoins, preTrier, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
+import { aCote, bilanTri, photosEnMoins, visibles, type Etiquette, type Filtres, type Marque } from "@/lib/mise-en-page/editeur";
 import { cls, useEd } from "./contexte";
 
 /* Les petits morceaux du tri partagés par la bande étroite, la bande agrandie et la visionneuse :
@@ -100,18 +100,6 @@ export function VuesBarre() {
       <PuceClient />
     </div>
   );
-}
-
-/** Lot 3 (A10) : un geste pose les marques que la machine propose, sur les photos encore sans marque. Annulable. */
-export function BoutonPreTri() {
-  const { etat, envoyer, lectureSeule } = useEd();
-  if (lectureSeule || !etat.lecture.mesurees) return null;
-  const pt = preTrier(etat.catalogue, etat.magazine, etat.lecture);
-  const pm = marquesProposees(pt);
-  const n = pm.choisie.length + pm.reserve.length + pm.ecartee.length;
-  const detail = [pm.choisie.length ? `${pm.choisie.length} à garder` : "", pm.reserve.length ? `${pm.reserve.length} en réserve` : "", pm.ecartee.length ? `${pm.ecartee.length} à écarter` : ""].filter(Boolean).join(" · ");
-  const titre = n ? `${detail}${pt.objectif ? "" : " · fixe l'objectif pour que la machine propose aussi quoi garder"}` : "Rien à proposer";
-  return <button type="button" className="ed-bt ed-pretri" disabled={!n} title={titre} onClick={(e) => { e.stopPropagation(); envoyer({ type: "preTrier" }); }}>Pré-trier{n ? ` · ${n}` : ""}</button>;
 }
 
 /** E1 : la palette du magazine, tirée de ses photos. Rien à cliquer : elle se lit. */

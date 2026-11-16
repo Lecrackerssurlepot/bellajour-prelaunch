@@ -297,7 +297,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
     }
     /* 10/11 : L montre ou cache la lecture dessinée (chaleur, visages, zone), partout */
     if ((e.key === "l" || e.key === "L") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); majUi({ lecture: !ui.lecture }); return; }
-    /* 12/11 : O montre ou cache la grille d'artiste (tiers, nombre d'or, diagonales), comme l'« overlay » des logiciels de retouche.
+    /* 12/11 : O montre ou cache la grille, comme l'« overlay » des logiciels de retouche ; depuis le 16/11 (T-213), celle choisie dans le menu
+       de la barre : la grille de mise en page (6 × 6 par défaut, 8 × 8) ou la grille d'artiste (tiers, nombre d'or, diagonales).
        Les lettres prises : planche M R X P T Z (⌘ Z) ; tri X P F R U C Z N D G T 0 à 3 ; L la lecture. O est libre dans les trois. */
     if ((e.key === "o" || e.key === "O") && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); basculerGrille(ui, majUi); return; }
     /* le tri d'abord, quand la bande des photos a la main ou en plein écran (P, X, flèches, Entrée, N…) */

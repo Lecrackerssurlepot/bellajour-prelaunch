@@ -1111,6 +1111,8 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     /* lot G : les couleurs libres, valides ou cassées (un hexa en majuscules, trois chiffres, « blanc », un nom, un nombre) ; la couverture aussi */
     [2, (e) => ({ type: "colorerFond", plancheId: h() < 0.1 ? "couverture" : plancheId(e), cible: pick(["gauche", "droite", "double", "bidon"]), couleur: pick([null, null, "accent", "aplatClair", "nuit", "#ca7749", "#CA7749", "#abc", "blanc", "rouge", 3]) })],
     [2, (e) => ({ type: "colorerTexte", ref: h() < 0.15 ? { plancheId: "couverture", cible: "double", index: int(0, 3) } : refTexte(e), couleur: pick([null, "encre", "papier", "accent", "#1f3a5c", "#FFF", "blanc", ""]) })],
+    /* T-212 (16/11) : un titre ajouté à sa place, sur une planche, une page ou une double, valides ou non, grille 6, 8 ou folle */
+    [2, (e) => ({ type: "ajouterTexte", plancheId: h() < 0.1 ? "bidon" : plancheId(e), cible: pick(["gauche", "droite", "double", "bidon"]), ...(h() < 0.5 ? { trame: pick([6, 8, 7, "artiste"]) } : {}) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
@@ -1849,8 +1851,8 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
     rapporter("éditeur : lot 2, des yeux (carte de chaleur, recadrage par le contenu, rien dans le pli)", msg === null);
   }
   {
-    /* Lot 3 (09/11) : A10 pré-tri et raisons, A3 lumière, A4 capture, A7 visage flou, A5 horloges, A9 moments, A11 équité,
-       A12 variété, A16 objectif, E1 palette, D7 faits, G3 questions, F4 contrôle avant export. */
+    /* Lot 3 (09/11) : E1 palette, D7 faits, G3 questions, F4 contrôle avant export. Le pré-tri (A10, A3, A4, A5, A7, A9, A11, A12, A16)
+       est archivé le 16/11 (T-210) avec ses tests : archive/pretri-2026-11/verif-pretri.ts. */
     let msg: string | null = null;
     try {
       const h = (n: number) => n.toString(16).padStart(16, "0");
@@ -1870,53 +1872,14 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       mesures.C = { ...mesures.C, dhash: "1234567812345678" };
       const lecture = O.lireMesures(cat, new Map(Object.entries(mesures)));
       ok(lecture.mesures !== undefined && Object.keys(lecture.mesures).length === cat.size && (lecture.palette?.length ?? 0) >= 1, "E1 : la lecture porte les mesures et une palette du magazine");
-      let e = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "poserLecture", lecture });
-      const sans = O.preTrier(e.catalogue, e.magazine, e.lecture);
-      eq(sans.objectif, null, "A16 : sans objectif fixé, l'objectif est inconnu");
-      ok(!Object.values(sans.propositions).some((p) => p.marque === "choisie"), "A16 : sans objectif, la machine ne propose rien à garder");
-      eq(sans.propositions.F?.raison, "floue", "A10 : F écartée, raison « floue »");
-      eq(sans.propositions.S?.raison, "trop sombre", "A3 : S écartée, raison « trop sombre » (la lumière passe avant le flou : vu à l'essai du 09/11)");
-      eq(sans.propositions.C?.marque, "reserve", "A4 : sans date et allongée : capture probable, en réserve");
-      eq(sans.propositions.V?.raison, "visage flou", "A7 : visage trois fois moins net que la photo : réserve « visage flou »");
-
-      /* objectif : 4 photos ; le matin (6 photos) pèse plus que le soir (5 photos, 2 déposants : pondéré) */
-      e = O.appliquer(e, { type: "reglerTri", visees: 4 } as unknown as Geste);
-      if (O.triDe(e.magazine).visees !== 4) e = { ...e, magazine: O.reglerVisees(e.magazine, 4) };
-      const avec = O.preTrier(e.catalogue, e.magazine, e.lecture);
-      const gardees = Object.entries(avec.propositions).filter(([, p]) => p.marque === "choisie").map(([id]) => id);
-      ok(gardees.length >= 4, "A16 : avec un objectif de 4, au moins 4 photos proposées à garder");
-      ok(gardees.some((id) => id.startsWith("A")) && gardees.some((id) => id.startsWith("B") || id === "L1"), "A9 : chaque moment a sa part");
-      ok(gardees.includes("L1") || avec.propositions.L1?.raison === "seule photo de Léo" || gardees.some((id) => cat.get(id)?.personne === "Léo"), "A11 : Léo, seul de son côté, a sa photo gardée");
-      ok(avec.moments.every((m) => m.poids > 0 && m.poids <= 1), "A9 : chaque moment a un poids entre 0 et 1");
-      const matin = avec.moments.find((m) => m.libelle.includes("Matin"));
-      ok(!!matin && matin.visees >= 1, "A9 : le matin a au moins une gardée visée");
-
-      /* le geste : un seul, annulable, qui ne touche jamais une photo déjà marquée */
-      const e1 = O.appliquer({ ...e, magazine: O.marquer(e.magazine, ["F"], "choisie") }, { type: "preTrier" });
-      ok(O.marqueDe(e1.magazine, "F") === "choisie", "A10 : une photo déjà marquée par l'atelier n'est jamais touchée");
-      ok(O.marqueDe(e1.magazine, "S") === "ecartee" && O.marqueDe(e1.magazine, "C") === "reserve", "A10 : le pré-tri pose ses marques");
-      ok(e1.pretri.S?.raison === "trop sombre", "A10 : la raison reste attachée à la photo");
-      const annule = O.appliquer(e1, { type: "annuler" });
-      ok(O.marqueDe(annule.magazine, "S") === null, "A10 : une seule annulation défait tout le pré-tri");
-      const e2 = O.appliquer(e1, { type: "marquer", ids: ["S"], marque: "choisie" });
-      ok(e2.lecons.some((l) => l.type === "pretri_renverse" && l.photos[0] === "S" && l.proposition.includes("trop sombre")), "A10 : renverser une marque du pré-tri est une leçon, avec sa raison");
-
-      /* A5 : Léo a 1 h de retard sur Inès, trois photos jumelles le prouvent */
-      const cat2 = new Map(catalogue("I1:L I2:L I3:L I4:L J1:L J2:L J3:L", {
-        I1: { date: t(10, 0) }, I2: { date: t(11, 0) }, I3: { date: t(12, 0) }, I4: { date: t(12, 30) },
-        J1: { date: t(9, 0), personne: "Léo" }, J2: { date: t(10, 0), personne: "Léo" }, J3: { date: t(11, 0), personne: "Léo" },
-      }).map((p) => [p.id, p]));
-      const m2 = new Map<string, O.Mesure>([["I1", { nettete: 1, dhash: DH[0] }], ["I2", { nettete: 1, dhash: DH[1] }], ["I3", { nettete: 1, dhash: DH[2] }], ["I4", { nettete: 1, dhash: DH[3] }],
-        ["J1", { nettete: 1, dhash: DH[0] }], ["J2", { nettete: 1, dhash: DH[1] }], ["J3", { nettete: 1, dhash: DH[2] }]]);
-      eq(O.decalagesHorloges(cat2, m2), { Léo: 3600 }, "A5 : trois photos jumelles concordent : Léo est recalé d'une heure");
-      eq(O.decalagesHorloges(cat2, new Map([...m2].slice(0, 5))), {}, "A5 : moins de trois paires : on ne recale rien");
-
-      /* A12 : deux quasi-jumelles très nettes et une différente : la variété l'emporte */
-      const cat3 = new Map(catalogue("X:L Y:L Z:L", { X: { date: t(8, 0) }, Y: { date: t(8, 5) }, Z: { date: t(8, 10) } }).map((p) => [p.id, p]));
-      const lec3 = { ...O.LECTURE_VIDE, mesurees: 3, mesures: { X: { nettete: 900, dhash: "ff00ff00ff00ff00" }, Y: { nettete: 880, dhash: "ff00ff00ff00ff0f" }, Z: { nettete: 600, dhash: "00ff00ff00ff00ff" } } };
-      const mag3 = O.reglerVisees(magazineVide(2), 2);
-      const g3 = Object.entries(O.preTrier(cat3, mag3, lec3).propositions).filter(([, p]) => p.marque === "choisie").map(([id]) => id).sort();
-      eq(g3, ["X", "Z"], "A12 : deux à garder : la plus nette, puis la différente (pas sa jumelle)");
+      const e = O.appliquer(O.creerEtat({ magazine: magazineVide(3), catalogue: cat }), { type: "poserLecture", lecture });
+      /* T-210 (16/11) : le pré-tri (A10, A3, A4, A5, A7, A9, A11, A12, A16) est archivé avec ses tests : archive/pretri-2026-11/.
+         Ce que la machine voyait de juste reste dans les ÉTIQUETTES et les filtres : floue, sombre, capture, visage flou. */
+      const tg = O.tagsDeLecture(e.catalogue, e.lecture);
+      ok((tg.get("F") ?? []).includes("floue") && (tg.get("S") ?? []).includes("sombre") && (tg.get("C") ?? []).includes("capture") && (tg.get("V") ?? []).includes("visage_flou"),
+        "T-210 : sans pré-tri, F reste étiquetée floue, S sombre, C capture, V visage flou");
+      const filtrees = O.visibles(O.appliquer(e, { type: "filtrer", filtres: { lecture: "floue" } }));
+      ok(filtrees.includes("F") && !filtrees.includes("A1"), "T-210 : le filtre « Floue » montre la floue, pas les nettes");
 
       /* E1 */
       const px = new Uint8Array(400 * 4); for (let i = 0; i < 400; i++) { const r = i < 300; px.set(r ? [200, 30, 30, 255] : [20, 40, 200, 255], i * 4); }
@@ -1929,20 +1892,23 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       ok(O.faitsDePage(["C"], cat).length === 0, "D7 : une photo sans date ne donne aucun fait (R-66)");
       ok(O.faitsDePage(["A1"], cat).some((x) => x.valeur === "9 h 00") && O.faitsDePage(["A1"], cat).some((x) => /photos ce jour-là/.test(x.valeur)), "D7 : l'heure d'une photo seule et le nombre de photos du jour");
 
+      /* F4 (et la leçon qu'il laisse : poser une floue = « floue gardée », R89) */
+      const e3 = O.appliquer(e, { type: "deposer", source: { type: "bibliotheque", ids: ["F"] }, cible: { type: "vignette", plancheId: pl(2) } });
+      ok(e3.lecons.some((l) => l.type === "floue_gardee" && l.photos[0] === "F"), "R89 : poser une floue est une leçon « floue gardée »");
+
       /* G3 */
-      const qs = O.troisQuestions([...e2.lecons, ...e2.lecons, O.jalon("export", "x")]);
+      const qs = O.troisQuestions([...e3.lecons, ...e3.lecons, O.jalon("export", "x")]);
       ok(qs.length >= 1 && qs.length <= 3 && qs.every((q) => q.type !== "export"), "G3 : au plus trois questions, jamais un jalon");
       const rep = O.reponse(qs[0], "atelier", "  trop sombre mais belle  ");
       ok(rep.type === "reponse" && rep.geste === "j'avais raison : trop sombre mais belle" && O.leconValide(rep), "G3 : la réponse est une leçon valide, la note nettoyée");
 
       /* F4 */
-      const e3 = O.appliquer(e, { type: "deposer", source: { type: "bibliotheque", ids: ["F"] }, cible: { type: "vignette", plancheId: pl(2) } });
       const av = O.avertissementsExport(e3);
       ok(av.flouesPosees.some((z) => z.photoId === "F"), "F4 : une photo floue posée est signalée avant l'export");
       ok(av.pagesVides.includes(3), "F4 : une planche vide est signalée");
     } catch (er) { msg = er instanceof Error ? er.message : String(er); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
-    rapporter("éditeur : lot 3, la machine propose (pré-tri, raisons, horloges, équité, variété, faits, questions, contrôle)", msg === null);
+    rapporter("éditeur : lot 3, la machine propose (étiquettes sans pré-tri, palette, faits, questions, contrôle)", msg === null);
   }
   {
     /* 10/11 : la lecture VISIBLE (retour du test de Mathias) : tags, filtre, captures, similaires, chaleur dessinable, panneau. */

@@ -41,6 +41,11 @@ export const REGLAGES = {
   capture_texte_lignes: { valeur: 10, regle: "R141", depuis: "2026-11-14", raison: "les deux vraies captures des six lots portent 22 et 29 lignes de texte, les sept fausses (exports Snapchat) 0 à 1 ; l'éditeur ne lit pas encore le texte : branche dormante tant qu'aucune mesure ne l'apporte" },
   capture_aplat_texte: { valeur: 0.3, regle: "R141", depuis: "2026-11-14", raison: "aplats des deux vraies captures : 0,47 et 0,40 ; un aplat seul prenait des ciels pour des écrans" },
   lieu_ia_confiance: { valeur: 0.7, regle: "R147", depuis: "2026-11-14", raison: "brief du lot F : un lieu nommé n'est proposé en premier dans les textes qu'à 0,7 et plus, ET sûr (panneau lisible ou GPS qui confirme)" },
+  /* vague 1 (16/11, T-212) : un texte ajouté proprement (texteAjoute.ts). Réglages de DÉPART, à revoir sur l'œil de Mathias */
+  texte_largeur_min: { valeur: 50, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : une zone libre plus étroite que 50 mm ne reçoit pas de titre (deux modules de la grille 6 × 6 en font 55)" },
+  texte_marge_sujet: { valeur: 3, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : sur une photo, 3 mm gardés autour de chaque visage et de la zone importante" },
+  texte_chaleur_max: { valeur: 4, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : sur une photo, au-delà d'une chaleur moyenne de 4 (sur 9) sous le texte, l'endroit n'est pas calme et rien n'est posé" },
+  texte_claire: { valeur: 150, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : sous ce gris moyen (sur 255, la photo entière : aucune mesure locale), le titre posé sur la photo est blanc ; au-dessus, à l'encre" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;

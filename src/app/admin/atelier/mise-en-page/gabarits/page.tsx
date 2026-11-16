@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
-import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
+import { EPINGLES_RETIREES, TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage } from "@/lib/mise-en-page/grilles";
 import { decoupesDePage, genereesParSchema } from "@/lib/mise-en-page/genere";
 import type { Template } from "@/lib/mise-en-page/types";
@@ -83,8 +83,10 @@ export default async function PageGabarits() {
   const nbPages = pages.reduce((s, g) => s + g.liste.length, 0);
   const generes = genereesParSchema();
   const nbGeneres = decoupesDePage().length;
-  const epD = plage(MAX_PHOTOS_DOUBLE).map((n) => ({ n, liste: TEMPLATES_EPINGLES.filter((t) => t.portee === "double" && t.nbPhotos === n) }));
-  const epP = plage(MAX_PHOTOS_PAGE).map((n) => ({ n, liste: TEMPLATES_EPINGLES.filter((t) => t.portee === "page" && t.nbPhotos === n) }));
+  /* T-209 : les épingles retirées (leur seule différence était un aplat) ne sont plus montrées : l'éditeur ne les propose plus */
+  const proposees = TEMPLATES_EPINGLES.filter((t) => !EPINGLES_RETIREES.has(t.id));
+  const epD = plage(MAX_PHOTOS_DOUBLE).map((n) => ({ n, liste: proposees.filter((t) => t.portee === "double" && t.nbPhotos === n) }));
+  const epP = plage(MAX_PHOTOS_PAGE).map((n) => ({ n, liste: proposees.filter((t) => t.portee === "page" && t.nbPhotos === n) }));
 
   return (
     <div className="adm-root ate-root mep-gabarits">
@@ -93,7 +95,7 @@ export default async function PageGabarits() {
       <header className="ate-fiche-tete">
         <h1 className="ate-h1">Gabarits</h1>
         <p className="ate-bonjour">
-          {TEMPLATES_ANNEXE.length + TEMPLATES_EPINGLES.length + nbDoubles + nbPages + nbGeneres}{" "}templates, à l&apos;échelle (les générés en dessin léger).
+          {TEMPLATES_ANNEXE.length + proposees.length + nbDoubles + nbPages + nbGeneres}{" "}templates, à l&apos;échelle (les générés en dessin léger).
         </p>
         <ul className="mep-legende" aria-label="Légende">
           <li><span className="mep-pastille mep-pastille--perdu" />Fond perdu</li>

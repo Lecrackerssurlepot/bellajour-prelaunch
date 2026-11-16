@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche, type Projet } from "@/lib/mise-en-page/editeur";
-import { CLE_AIMANT, basculerGrille, cls, pluriel, useEd } from "./contexte";
+import { CHOIX_GRILLE, libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche, type Projet } from "@/lib/mise-en-page/editeur";
+import { CLE_AIMANT, choisirGrille, cls, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
 import type { EtatSauvegarde } from "./sauvegardeClient";
 
@@ -21,6 +21,8 @@ const MOT_SAUVEGARDE: Record<EtatSauvegarde["etat"], string> = {
 };
 
 const MOT_SOURCE = { particulier: "Particulier", edition: "Édition", libre: "Libre" } as const;
+/** T-213 : le nom court de chaque grille du menu. */
+const NOM_GRILLE: Record<string, string> = { "6": "6 × 6", "8": "8 × 8", artiste: "Artiste" };
 
 export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
   projet: Projet; sv: EtatSauvegarde; reessayer: () => void; lien: { href: string; libelle: string }; selecteur: React.ReactNode; onExporter: () => void;
@@ -54,12 +56,23 @@ export function Barre({ projet, sv, reessayer, lien, selecteur, onExporter }: {
           <path d="M5 3v7a5 5 0 0 0 10 0V3M5 6.5h3M12 6.5h3M8 3v7a2 2 0 0 0 4 0V3" />
         </svg>
       </button>
-      <button type="button" className={cls("ed-ico", "ed-aimant", ui.grille && "ed-aimant--on")} aria-pressed={ui.grille}
-        title={ui.grille ? "Grille d'artiste affichée : tiers, nombre d'or, diagonales · O" : "Grille d'artiste : tiers, nombre d'or, diagonales · O"} aria-label="Grille d'artiste" onClick={() => basculerGrille(ui, majUi)}>
-        <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="3" y="3" width="14" height="14" rx="1.5" /><path d="M7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14" />
-        </svg>
-      </button>
+      {/* T-213 : un menu court : la grille de mise en page (6 × 6 du moteur, 8 × 8), la grille d'artiste, ou aucune. O l'allume ou l'éteint. */}
+      <span className="ed-ancre">
+        <button type="button" className={cls("ed-ico", "ed-aimant", ui.grille && "ed-aimant--on")} aria-haspopup="menu" aria-expanded={ui.menu === "grille"}
+          title={ui.grille ? `Grille ${NOM_GRILLE[String(ui.trame)]} · O` : "Grille · O"} aria-label="Grille" onClick={() => majUi({ menu: ui.menu === "grille" ? null : "grille" })}>
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="14" height="14" rx="1.5" /><path d="M7.7 3v14M12.3 3v14M3 7.7h14M3 12.3h14" />
+          </svg>
+        </button>
+        {ui.menu === "grille" ? (
+          <div className="ed-menu ed-menu--droite ed-menu--grille" role="menu" aria-label="Grille">
+            <button type="button" role="menuitemradio" aria-checked={!ui.grille} onClick={() => choisirGrille(null, majUi)}>Aucune</button>
+            {CHOIX_GRILLE.map((c) => (
+              <button key={String(c)} type="button" role="menuitemradio" aria-checked={ui.grille && ui.trame === c} onClick={() => choisirGrille(c, majUi)}>{NOM_GRILLE[String(c)]}</button>
+            ))}
+          </div>
+        ) : null}
+      </span>
       <button type="button" className={cls("ed-ico", "ed-aimant", ui.lecture && "ed-aimant--on")} aria-pressed={ui.lecture}
         title={ui.lecture ? "Lecture affichée : chaleur, visages, zone protégée · L" : "Voir ce que la machine a lu · L"} aria-label="Lecture" onClick={() => majUi({ lecture: !ui.lecture })}>
         <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -1,7 +1,7 @@
 ---
 id: T-209
 titre: Les gabarits « à fond » doublonnent les couleurs libres : le fond et la couleur d'un texte devraient se poser en glissant une couleur depuis une palette à côté du magazine, avec des propositions pour le reste
-etat: nouveau
+etat: en cours
 domaine: atelier
 gravite: confort
 autonomie: libre
@@ -26,3 +26,17 @@ Une palette visible à côté du magazine (nuancier, combos, couleurs des photos
 **Quand : en deux temps.** Vague 1, retirer les trois gabarits à aplat du tiroir (petit). Vague 2, la palette à glisser avec ses propositions (moyen), en même temps que T-214, dont les doubles en ont besoin.
 
 ## Ce qui a été fait
+**Premier temps, le 16/11, vague 1**, branche `feat/mise-en-page-vague-1` (pas encore fusionnée).
+- `E-D8c`, `E-D14a` et `E-D14b` ne sont plus proposés : ni au tiroir, ni sous R, ni par « Poser » (`EPINGLES_RETIREES`,
+  `epingles.ts`, écartés par `candidats`, `magazine.ts`). Le catalogue `/admin/atelier/mise-en-page/gabarits` ne les montre plus.
+- Ils restent lisibles par `templateParId` : un magazine sauvegardé qui s'en sert s'ouvre, garde ses aplats et s'exporte comme
+  avant (harnais). R depuis un de ces gabarits passe à un gabarit proposé.
+- Leurs dispositions restent proposées SANS aplat, sous de nouveaux ids : `E-D8f` « Pleine + photomaton », `E-D14c` « Titres, une
+  + une », `E-D14d` « Titres, une + deux » (mêmes cadres). Le fond se pose désormais en couleur libre (lot G).
+- Les gabarits de couverture gardent leurs aplats : la couverture n'a pas encore de fond libre.
+- Harnais : `scripts/verif-mep-vague-1.ts` (bloc T-209) ; le compte des épingles de `verif-atelier.ts` passe à 40 doubles,
+  l'équilibre « deux dessinés par nombre » compte les PROPOSÉS.
+- Recette locale : captures `12` (deux photos : 24 gabarits, ni E-D14a ni E-D14b), `16` (neuf photos : E-D8f au tiroir, sans
+  fond noir), `18` (E-D14c au survol, sans aplat).
+
+**Reste (vague 2)** : la palette à côté du magazine, glisser une couleur sur le fond ou sur un texte, avec des propositions.

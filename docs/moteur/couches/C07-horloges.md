@@ -9,7 +9,7 @@ Entre deux déposants, des photos jumelles (empreintes très proches) dont l'éc
 `horloge_hamming`, `horloge_paires_min`, `horloge_tolerance_s`. Valeurs, dates et raisons : `src/lib/mise-en-page/editeur/reglages.ts` (la seule source).
 
 ## Code
-`editeur/pretri.ts`, `editeur/mesures.ts`
+`editeur/pretri.ts` (archivé le 16/11 : `archive/pretri-2026-11/pretri.ts`), `editeur/mesures.ts`
 
 ## Test
 bloc du lot 3. Rejeu sur photos réelles : `npx tsx --tsconfig tsconfig.json scripts/calibrer-lecture.ts <dossier> <sortie>`.
@@ -22,3 +22,4 @@ Ne sert que pour les éditions à plusieurs déposants. Jamais vu sur un vrai do
 
 ## Historique
 09/11 : créée.
+16/11 : ARCHIVÉE avec le pré-tri (vague 1, T-210), branche `feat/mise-en-page-vague-1`, pas encore fusionnée : `decalagesHorloges` ne servait qu'à lui. Code et test dans `archive/pretri-2026-11/`. Ses réglages `horloge_*` restent dans `reglages.ts`.

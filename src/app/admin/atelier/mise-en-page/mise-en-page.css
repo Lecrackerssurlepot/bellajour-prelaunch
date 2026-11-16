@@ -1222,6 +1222,9 @@
 .mep-editeur .ed-rangee-tete { position: sticky; left: -12px; z-index: 1; display: flex; flex: none; flex-direction: column; align-self: stretch; align-items: flex-start; justify-content: center; gap: 6px; width: 96px; margin-left: -12px; padding-left: 12px; background: var(--bj-cream-tint-1); }
 .mep-editeur .ed-rangee-tete .ed-rangee-t { width: auto; }
 .mep-editeur .ed-rangee-tete .ed-bt { padding-inline: 10px; white-space: nowrap; }
+/* T-212 : « Fond » et « Texte » sur un même rang (la colonne s'élargit d'autant, le tiroir défile en largeur) */
+.mep-editeur .ed-rangee-tete:has(.ed-rangee-duo) { width: auto; min-width: 96px; }
+.mep-editeur .ed-rangee-duo { display: flex; gap: 4px; }
 .mep-editeur .ed-gab { appearance: none; display: flex; flex: none; flex-direction: column; align-items: center; gap: 3px; padding: 3px; border: 0; border-radius: 8px; background: none; color: var(--bj-text-soft); font-family: var(--bj-font-ui); font-size: 10px; cursor: pointer; }
 .mep-editeur .ed-gab:hover,
 .mep-editeur .ed-gab:focus-visible { background: var(--bj-veil-8); }
@@ -1745,6 +1748,12 @@
 .mep-editeur .ed-grille-art--tiers { stroke: #fff; stroke-opacity: 0.9; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)); }
 .mep-editeur .ed-grille-art--or { stroke: #f2b01e; stroke-opacity: 0.95; stroke-dasharray: 6 4; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.7)); }
 .mep-editeur .ed-grille-art--diagonale { stroke: #3aa9ff; stroke-opacity: 0.8; stroke-dasharray: 2 5; filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6)); }
+/* T-213 (16/11) : la grille de mise en page, comme celle d'Affinity : les marges en magenta, les modules en cyan léger, les
+   gouttières se lisent entre eux. Même couche que la grille d'artiste (au-dessus des cadres, sous le cadre actif, sans pointeur). */
+.mep-editeur .ed-grille-mep { position: absolute; inset: 0; z-index: 4; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.mep-editeur .ed-grille-mep-module { fill: rgba(0, 160, 230, 0.07); stroke: #18a4e0; stroke-opacity: 0.75; stroke-width: 1; }
+.mep-editeur .ed-grille-mep-marges { fill: none; stroke: #e0218a; stroke-opacity: 0.9; stroke-width: 1; }
+.mep-editeur .ed-menu--grille { min-width: 120px; }
 .mep-editeur .ed-famille--on { background: var(--bj-action-soft); color: var(--bj-action); }
 .mep-editeur .ed-rangee-tete .ed-famille { position: static; opacity: 1; transform: none; box-shadow: none; border: 1px solid var(--bj-veil-12); }
 
@@ -1754,10 +1763,9 @@
 .mep-editeur .ed-lieux button { appearance: none; padding: 3px 9px; border: 0; border-radius: var(--bj-r-pill); background: var(--bj-veil-6); color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xxs); white-space: nowrap; cursor: pointer; }
 .mep-editeur .ed-lieux button:hover { background: var(--bj-action); color: var(--bj-on-action); }
 
-/* ── lot 3 (09/11) : le pré-tri et la palette, à côté de la jauge ── */
+/* ── lot 3 (09/11) : la palette, à côté de la jauge (le bouton « Pré-trier » qui la suivait est archivé le 16/11, T-210) ── */
 .mep-editeur .ed-ph-jauge-pied { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
-.mep-editeur .ed-pretri { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-.mep-editeur .ed-ph--grand .ed-ph-tete .ed-pretri { margin-right: 10px; }
+.mep-editeur .ed-ph-jauge-pied:empty { display: none; }
 .mep-editeur .ed-palette { display: inline-flex; gap: 2px; flex: 0 0 auto; }
 .mep-editeur .ed-palette i { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bj-text) 12%, transparent); }
 .mep-editeur .ed-ph--grand .ed-ph-tete .ed-palette { margin-right: 10px; }
