@@ -1,6 +1,6 @@
 # C19 : les doubles signature (le goût de la vitrine du 14/11)
 
-**Statut** : branche `feat/mise-en-page-signatures` (vague 2 du 16/11, T-214), poussée, pas encore fusionnée. Règles R180 à R185
+**Statut** : EN PROD le 16/11 (#371, vague 2 du 16/11, T-214). Règles R180 à R185
 (`docs/reference/REGLES-TRI.md`). Essai Affinity de l'ombre douce FIDÈLE le 16/11 (D28, suite du 16/11).
 
 Mathias, 16/11, après la vitrine Merisa : « j'adore les présentations que tu as pu faire […] je trouve ça très intéressant qu'il y ait

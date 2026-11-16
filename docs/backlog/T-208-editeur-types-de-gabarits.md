@@ -49,3 +49,5 @@ après la recette de Mathias.
   un rangement de plus (« combien de photos à gauche, combien à droite ») si Mathias trouve ce tiroir long. Le seuil du héros (1,7) est à
   revoir sur son œil.
 
+**En production le 16/11 (#370).** Fusionné après la recette locale et la recette des trois lots ensemble
+(`design-explorations/editeur-lots-2026-11-16/recette/ensemble/`). Reste : l'essai à l'œil de Mathias sur le tiroir par types, avant de fermer.
