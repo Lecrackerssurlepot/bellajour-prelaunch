@@ -24,6 +24,21 @@ exactement l'écart que la passe du 01/09/2026 a corrigé, sur 36 lignes.
 Semé le 29/08/2026 par l'audit de structure. Tous les tickets ci-dessous sont **prouvés dans le
 code** (chemin + ligne dans chaque fiche), aucun n'est une intuition.
 
+## Où on en est (16/11/2026 : l'éditeur de mise en page)
+
+Les lots E, F et G sont en production : dernière page seule, tranche saisie, premier jet (#362) ; ce que la machine
+propose, dans le tri (#363) ; couleurs libres et combos (#364). L'historique complet, daté, avec ce qui n'est plus
+actif : `docs/moteur/HISTORIQUE.md`. Les retours de Mathias du 16/11 sont ouverts en T-208 à T-214, tous vérifiés
+dans le code, et rangés en trois vagues :
+
+1. **Vague 1, tout de suite, petits gestes** : retirer le pré-tri (T-210), mettre les photos de couverture en tête
+   quand on est sur la couverture (T-211), une vraie grille avec marges et colonnes (T-213), sortir du tiroir les
+   trois gabarits à aplat (T-209, premier temps), ajouter un texte proprement dans une zone libre (T-212, premier temps).
+2. **Vague 2, le goût** : les gabarits signature tirés de la vitrine Merisa (T-214), le tiroir rangé par types de
+   gabarits (T-208), la palette à glisser sur le fond ou le texte, avec propositions (T-209, second temps).
+3. **Vague 3, avec les vrais services** (clé OpenAI, GPS et Geoapify, texte de confidentialité à valider : voir aussi
+   T-203) : des titres précis, le plat et le lieu nommé (T-212).
+
 ## Où on en est (20/10/2026 : Audencia, la première vraie édition)
 
 Le parcours complet a été relu sur main pour une édition de 80 personnes sur 8 bateaux. L'envoi
@@ -397,3 +412,10 @@ templates Brevo appellent leurs images par URL absolue, et deux fichiers « non 
 | T-205 | Le responsable ne voit pas qui n'a encore rien envoyé, et ne peut relancer personne (Sophie, Karim) | collectif | serieux | avis-requis | nouveau (26/10) — liste d'invités facultative, statut « pas encore envoyé », relance groupée après accord écrit. Rappel et relances des participants restent dans T-146 (cité, non repris). Coût et délai à décider par Mathias |
 | T-206 | Il n'existe pas de rôle « aide au tri » : l'équipe ne voit qu'en lecture, le responsable fait tout (Karim, PME) | collectif | serieux | avis-requis | nouveau (26/10) — troisième lien : voir, cœurs, corbeille (sans vider). Terminer, valider le BAT, plafonds restent au responsable (`droits.ts`) |
 | T-207 | Une photo gênante entre tout de suite dans la collecte : pas de mode « en attente d'accord » (Claire, école) | collectif | serieux | avis-requis | nouveau (26/10) — réglage au choix du responsable : file « à valider », accepter ou refuser. Mathias dit d'abord si c'est une promesse ; sinon on écrit honnêtement que la corbeille agit après coup |
+| T-208 | Dans l'éditeur, les gabarits vraiment différents et les simples variantes (taille ou orientation d'une photo un peu changée) se mélangent : il faut des types, les variantes rangées dessous | atelier | confort | libre | nouveau (16/11), vérifié, vague 2 |
+| T-209 | Les gabarits « à fond » doublonnent les couleurs libres : le fond et la couleur d'un texte devraient se poser en glissant une couleur depuis une palette à côté du magazine, avec des propositions pour le reste | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 (retrait du tiroir) puis vague 2 (palette à glisser) |
+| T-210 | Le bouton « Pré-trier » de l'éditeur ne sert toujours à rien pour Mathias, et certaines de ses marques sont incompréhensibles | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 |
+| T-211 | Sur la couverture, l'éditeur ne montre pas en premier les photos sélectionnées pour la couverture | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 |
+| T-212 | Les titres proposés restent la ville : il faudrait le plat, le lieu précis (Mario World, Mont Fuji), des titres qui s'accordent entre eux, et des textes ajoutés proprement | atelier | confort | libre | nouveau (16/11), vérifié, vague 3 (texte propre en vague 1) |
+| T-213 | La grille d'artiste (tiers, nombre d'or, diagonales) n'est pas utilisable : il faut une vraie grille comme dans Affinity, avec marges et colonnes et lignes (8 par 8) | atelier | confort | libre | nouveau (16/11), vérifié, vague 1 |
+| T-214 | L'éditeur n'a pas de « goût » : Mathias adore les doubles faites à la main pour la vitrine Merisa et veut qu'un minimum de goût en vienne dans l'éditeur | atelier | serieux | libre | nouveau (16/11), vérifié, vague 2 |

@@ -1,6 +1,6 @@
 # C14 : la lecture IA dans le tri (rôles, groupes, rafales, captures, lieux)
 
-**Statut (14/11, lot F)** : branche `feat/mise-en-page-propositions-tri`, non fusionnée. Règles R142 à R148 ; R140 (rafales) et R141
+**Statut** : en production depuis le 14/11 (lot F, PR #363). Règles R142 à R148 ; R140 (rafales) et R141
 (captures) revoient C02 et C03. Décision D29 : aucune reconnaissance de visages.
 
 ## Ce qu'elle fait
@@ -41,7 +41,7 @@ l'œil du 14/11 (scripts de rejeu dans `design-explorations/demo-2026-11-13/lect
 - Le lieu d'un moment de la démo est nommé sur UNE photo : l'exporteur ne le pose que sur elle et ses voisines à 300 m (GPS).
 - « Sûr » dans la démo = le contrôle à l'œil du 14/11 contre le GPS ; le vrai service le prouvera par Geoapify dans le rayon.
 - Le type de projet est un comptage (une famille photographiée deux par deux se lit « couple ») ; il n'est pas encore affiché.
-- Les combos de couleurs sont lus et validés, pas affichés : lot G.
+- Les combos de couleurs sont lus et validés ; depuis le lot G (#364, 16/11), le panneau Style les propose sous « Lecture IA ».
 - La lecture vit dans un navigateur : un autre Mac ne la voit pas tant qu'on ne l'y recharge pas (le titre par défaut y reste la ville).
 
 ## Historique
