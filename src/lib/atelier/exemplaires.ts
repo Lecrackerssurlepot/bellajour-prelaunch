@@ -51,15 +51,15 @@ export const REMISE_SUIVANTS_PCT = 50;
    exemplaires. Hors fenêtre, hors France, ou un dossier déjà à trois
    exemplaires et plus : la règle ordinaire, sans rien toucher.
 
-   ⚠️ La date de FIN n'a pas été donnée par Mathias (« pendant Noël ») : le
-   24 décembre est posé ici pour que la règle s'éteigne d'elle-même, et le
-   rapport du 16/11 le lui demande. Changer `NOEL_EXEMPLAIRE_FIN` suffit.
+   Fin tranchée par Mathias le 16/11 : le 7 décembre inclus, comme la date
+   limite des photos et le compteur de places. Le 8, retour automatique à la
+   règle ordinaire. Changer `NOEL_EXEMPLAIRE_FIN` suffit.
    ══════════════════════════════════════════════════════════════════════════ */
 
 export type CouvertureExemplaire = "meme" | "autre";
 
 export const NOEL_EXEMPLAIRE_DEBUT = "2026-11-16";
-export const NOEL_EXEMPLAIRE_FIN = "2026-12-24";
+export const NOEL_EXEMPLAIRE_FIN = "2026-12-07";
 export const NOEL_EXEMPLAIRES_MAX = 2;
 export const NOEL_REMISE_MEME_PCT = 40;
 export const NOEL_REMISE_AUTRE_PCT = 20;

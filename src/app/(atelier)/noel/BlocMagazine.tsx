@@ -48,7 +48,7 @@ export default function BlocMagazine() {
                   <span className="nl-offre-quoi">le 2<sup>e</sup>, avec une autre couverture</span>
                 </div>
               </div>
-              <p className="nl-offre-note">Pendant Noël, livraison en France.</p>
+              <p className="nl-offre-note">Jusqu&apos;au 7 décembre, livraison en France.</p>
             </>
           ) : (
             <h2 id="nl-noel-mag-titre" className="nl-titre">Offrez un magazine.</h2>

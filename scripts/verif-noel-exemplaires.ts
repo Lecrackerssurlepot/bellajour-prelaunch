@@ -28,7 +28,7 @@ export function verifierNoelExemplaires(ok: Ok, titre: (t: string) => void): voi
   ok("hors France, avant ou après la fenêtre : l'ordinaire, sans rien toucher",
     regleExemplaires({ pays: "BE", jour }) === REGLE_ORDINAIRE
       && regleExemplaires({ pays: "FR", jour: "2026-11-15" }) === REGLE_ORDINAIRE
-      && regleExemplaires({ pays: "FR", jour: "2026-12-25" }) === REGLE_ORDINAIRE
+      && regleExemplaires({ pays: "FR", jour: "2026-12-08" }) === REGLE_ORDINAIRE
       && regleExemplaires({ pays: null, jour }) === REGLE_ORDINAIRE);
   ok("bornes comprises : premier et dernier jour", regleExemplaires({ pays: "FR", jour: NOEL_EXEMPLAIRE_DEBUT }).nom === "noel"
     && regleExemplaires({ pays: "FR", jour: NOEL_EXEMPLAIRE_FIN }).nom === "noel");
