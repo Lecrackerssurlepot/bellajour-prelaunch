@@ -49,7 +49,7 @@ Avant le poids de franchise, la dominante tombait sur un kaki de falaise (Merisa
 
 ## Le test
 `scripts/verif-mep-couleurs.ts` (lancé par `verif-atelier.ts`) ; les gestes entrent aussi dans les séquences au hasard de
-`verif-mep-editeur.ts` (invariant G1). L'essai Affinity (D28) : `scripts/idml-essai-couleurs.ts`, EN ATTENTE.
+`verif-mep-editeur.ts` (invariant G1). L'essai Affinity (D28) : `scripts/idml-essai-couleurs.ts`, fait le 16/11, FIDÈLE sur les trois fichiers (sous style, sans style, couverture), toutes les valeurs d'`attendu.json` sans écart (DECISIONS.md, D28).
 
 ## Ce qu'elle ne sait pas
 - Où est le ciel dans une photo : c'est une présomption sur la teinte et la récurrence ; un lot de vestes bleues verra ses
