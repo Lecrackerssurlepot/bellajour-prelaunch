@@ -636,6 +636,8 @@ ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length
      cleVisuelDemandee(brut, ID, "../plat-a1.png") === null && cleVisuelDemandee(brut, ID, "apercu/plat-a1.png") === null);
   ok("visuel : une URL absolue n'est jamais lue au coffre", cleVisuelDemandee(brut, ID, "x.png") === null);
   ok("visuel : un apercu absent ne sert rien", cleVisuelDemandee(null, ID, "plat-a1.png") === null);
+  ok("prévisualisation : un brouillon ne passe pas par la route stable (elle ne lit que la base)",
+    /previsualisation \? \{\} : \{ token: numero\.token \}/.test(readFileSync("src/app/numero/[token]/page.tsx", "utf8")));
   ok("visuel : l'adresse ne porte que le nom, jamais la cle",
      adresseVisuel("T".repeat(32), `numeros/${ID}/apercu/plat-a1.png`) ===
        `/api/atelier/visuel?token=${"T".repeat(32)}&v=plat-a1.png`);
