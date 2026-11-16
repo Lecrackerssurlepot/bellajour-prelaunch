@@ -36,3 +36,12 @@ Tirer de la vitrine du 14/11 (`design-explorations/vitrine-2026-11-14/`, directi
   franc sur ce qui reste en dessous (typographie d'une seule paire, alignements sur l'horizon, photos en 1 500 px, manuscrit, N&B).
 - Harnais : 33 vérifications (`scripts/verif-mep-signatures.ts`).
 - Pas fait : les couvertures signature (étape 5).
+
+**Recette des trois lots ensemble (16/11, avant fusion)**, `design-explorations/editeur-lots-2026-11-16/recette/ensemble/` : palette à droite,
+tiroir par types sans « Fond », signatures en tête du tiroir quand elles conviennent (SG-08, SG-05), fond proposé posé avec SG-08, faits
+(date, heure) écrits seuls ; aucune erreur de page dans la console. Corrigé à la fusion : le tiroir dit le NOM d'une signature (« Les
+tirages jetés »), plus son code. Reste à polir, vu à l'écran :
+- le mot géant pas encore écrit affiche « TITRE » en très grand (repère d'écran, jamais imprimé, D2) : sur une photo sombre il est illisible ;
+- une légende longue reportée d'un autre gabarit dans un petit cadre (4,5 mm sous la vignette de SG-08) est rognée ;
+- SG-09 et SG-01 n'ont pas été revues dans l'ensemble (aucune double du premier jet de Merisa ne leur convient) : elles l'ont été seules,
+  dans les comparaisons du lot.
