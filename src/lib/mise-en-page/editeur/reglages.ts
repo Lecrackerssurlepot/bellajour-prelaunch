@@ -34,6 +34,13 @@ export const REGLAGES = {
   similaire_minutes: { valeur: 10, regle: "R93", depuis: "2026-11-10", raison: "prises à 10 minutes au plus l'une de l'autre" },
   capture_aplats: { valeur: 0.45, regle: "A4", depuis: "2026-11-10", raison: "information seulement (panneau Lecture) : les aplats seuls prenaient des ciels pour des captures" },
   flou_nuit: { valeur: 70, regle: "R73", depuis: "2026-11-10", raison: "calibration du 10/11 : sous ce gris moyen (nuit, aurores, feu), peu de contours par nature : on ne juge pas le flou par rapport à l'album, seulement sous le plancher absolu" },
+  /* lot F (14/11) : le contrôle de fiabilité à l'œil sur les six lots de la démo (demo-2026-11-13/jugements/fiabilite.md) */
+  rafale_suite_secondes: { valeur: 30, regle: "R140", depuis: "2026-11-14", raison: "11 rafales manquées sur six lots, toutes à plus de 10 s ou à cadre tourné : deux photos qui se SUIVENT à 30 s au plus et proches (empreinte) sont une rafale ; rejoué sur le cache de la démo : 62 paires vraies sur 83 au lieu de 57, trois paires de plus hors du jugement, deux scènes vues à l'œil, chacune une vraie rafale (une allée sous des arceaux, un restaurant cadré deux fois)" },
+  rafale_suite_hamming: { valeur: 20, regle: "R140", depuis: "2026-11-14", raison: "à 22 et 24 : 64 et 67 vraies, mais 34 et 36 hors du jugement (contre 32) ; 20 garde le meilleur rapport" },
+  rafale_tournee_marge: { valeur: 4, regle: "R140", depuis: "2026-11-14", raison: "un cadre tourné (portrait et paysage) ne se compare pas case à case : l'empreinte s'éloigne de 4 à 8 de plus pour la même scène (candice 123/124, 157/091)" },
+  capture_texte_lignes: { valeur: 10, regle: "R141", depuis: "2026-11-14", raison: "les deux vraies captures des six lots portent 22 et 29 lignes de texte, les sept fausses (exports Snapchat) 0 à 1 ; l'éditeur ne lit pas encore le texte : branche dormante tant qu'aucune mesure ne l'apporte" },
+  capture_aplat_texte: { valeur: 0.3, regle: "R141", depuis: "2026-11-14", raison: "aplats des deux vraies captures : 0,47 et 0,40 ; un aplat seul prenait des ciels pour des écrans" },
+  lieu_ia_confiance: { valeur: 0.7, regle: "R147", depuis: "2026-11-14", raison: "brief du lot F : un lieu nommé n'est proposé en premier dans les textes qu'à 0,7 et plus, ET sûr (panneau lisible ou GPS qui confirme)" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;

@@ -713,3 +713,30 @@ photos (Martinique, dos 2,66 mm = 32 pages en brillant), fichiers `~/Desktop/Bel
 Ce qui entre donc dans l'export : le document non vis-à-vis de largeur variable, les colonnes de marge comme repères des
 plis, les sauts de ligne d'un texte répété. Les trois gabarits essayés (CV-01, CV-05, CV-11) couvrent les objets de tous
 les autres (photos pleines et à bord blanc, aplats de face et de dos, textes blanc et noir, plusieurs mots-titres).
+**D28, suite (13/11/2026, lot E : la dernière page seule) : essai Affinity EN ATTENTE.** Nouveauté d'export : un spread d'UNE page GAUCHE
+(`PageCount="1" BindingLocation="1"`, page décalée de −595,2756 pt, numéro pair) en fin de document, jamais écrit avant. Prouvé jusqu'ici : XML bien formé
+(xmllint), 4 pages / 4 pages au `Section`, les spreads d'avant identiques à l'octet, l'ancien format identique à l'octet (harnais). PAS prouvé : la relecture par
+Affinity (nombre de pages, position du dernier spread, cadres à gauche du pli). Le générateur est prêt, `scripts/idml-essai-derniere.ts <dossier de JPEG> <sortie>`
+(Affinity ne lit que le Bureau : sortie `~/Desktop/Bellajour/test-idml/derniere-lot-e`, valeurs attendues dans `attendu.json`) ; l'agent du lot n'avait pas le
+droit d'écrire sur le Bureau. À faire AVANT de compter la dernière page comme relue fidèlement ; sans verdict FIDÈLE, l'export de l'intérieur d'un magazine à
+dernière page n'est pas garanti dans Affinity (le PDF pour Canva, lui, est lu par pdf-lib : 216 × 303 mm vérifié).
+**D28, suite (14/11/2026, lot G : les couleurs libres) : essai Affinity EN ATTENTE.** Nouveautés d'export : un rectangle « Fond », « Fond gauche » ou
+« Fond droite » par page ou double colorée (après le papier, sous les aplats du gabarit, `ContentType="Unassigned"`, sans contour, sur le calque : la forme
+des aplats déjà relus) ; des nuances RVB NOMMÉES de plus dans Graphic.xml (`Color/Libre-rrggbb`, « Ocre #ca7749 » ; sans style, les rôles posés `Color/Accent`…
+à leur valeur d'origine) ; un `FillColor` sur la plage d'un texte vers ces nuances. Prouvé jusqu'ici (harnais) : aucune nuance orpheline, le fond d'une double
+unie en UN rectangle, l'IDML sans couleur libre identique à l'octet. PAS prouvé : la relecture par Affinity (nuances nommées et leurs valeurs, fond sous les
+photos, couleur des textes). Le générateur est prêt : `scripts/idml-essai-couleurs.ts <dossier de JPEG> <sortie>` (trois IDML : sous style, sans style,
+couverture ; valeurs attendues dans `attendu.json`). La sortie se choisit en argument (Affinity ne lit bien que le Bureau) ; l'agent du lot n'écrit pas sur
+le Bureau. À faire AVANT de compter fonds et couleurs de texte comme relus fidèlement ; le PDF pour Canva, lui, est relu au harnais (couleurs des fonds et
+des textes dans le flux de la page).
+
+D29 (14/11/2026) — **Pas de reconnaissance de visages : on compte les visages, on ne les reconnaît jamais.** Décision de
+Mathias, pour maintenant et pour plus tard. La machine peut dire combien de visages une photo porte, la taille du plus grand,
+si c'est un selfie ; elle ne dit jamais qui est qui, qui revient d'une photo à l'autre, et ne calcule ni n'enregistre aucune
+empreinte de visage ni aucun regroupement par personne. Seuls des services sans biométrie seront branchés : OpenAI pour les
+rôles, les rafales, les captures et les lieux ; le GPS et Geoapify. AWS Rekognition (le « casting » simulé de la démo du 13/11)
+est écarté. Le type de projet (solo, couple, bande) vient de ce que le client déclare ou d'un comptage de visages.
+**Conséquence :** la lecture IA (`docs/moteur/LECTURE-IA.md`, `editeur/lectureIA.ts`) n'admet aucune clé d'identité (le
+validateur refuse toute clé inconnue, le harnais le vérifie) ; rien de `casting/` de la démo n'entre dans l'éditeur ; aucune
+couche ne doit réintroduire des « personnes principales » sans une nouvelle décision. La détection de visages de l'éditeur
+(MediaPipe, C04) reste une détection : des boîtes, jamais une identité.

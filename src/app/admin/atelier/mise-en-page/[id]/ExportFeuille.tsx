@@ -12,7 +12,7 @@ import { choisirDestination, exporter, parentMemorise, peutEcrireDansUnDossier, 
 import { dossierAbsolu, nomDeDossier, nomDossierValide } from "./exporterPur";
 import { exporterPdf, type ResultatExportPdf } from "./exporterPdf";
 import { facettesDe, paireParId } from "@/lib/mise-en-page/style";
-import { dosDeLaCouverture } from "./dosCouverture";
+import { dosDeLEtat } from "./dosCouverture";
 import type { CouvertureExport } from "./exporter";
 
 const mmFr = (v: number): string => v.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
@@ -76,12 +76,12 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const famillesDuStyle = paireStyle ? [...new Set(facettesDe(paireStyle).map((x) => x.police.famille))] : [];
   /* lot B : la couverture part avec l'intérieur si son dos est connu ; sinon l'écran dit pourquoi AVANT le clic */
   const couv = etat.magazine.couverture;
-  const dosC = dosDeLaCouverture(projet, couv?.pages ?? null);
+  const dosC = dosDeLEtat({ projet, magazine: etat.magazine });
   const largeurC = dosC.dos !== null ? `${mmFr(426 + dosC.dos)} × 303 mm` : "";
   /* les photos de l'intérieur seul (celles de la couverture partent dans son fichier à elle) */
   const idsInterieur = new Set(etat.magazine.planches.flatMap(idsPlanche).filter((id) => etat.catalogue.has(id))).size;
   const ligneCouv = (fichier: string) => (couv ? (
-    <li className={dosC.dos === null ? "ed-ex-rouge" : undefined}><span>{fichier}</span><span>{dosC.dos !== null ? `dos ${mmFr(dosC.dos)} mm · ${largeurC}` : `bloquée · ${dosC.manque}`}</span></li>
+    <li className={dosC.dos === null ? "ed-ex-rouge" : undefined}><span>{fichier}</span><span>{dosC.dos !== null ? `dos ${mmFr(dosC.dos)} mm${dosC.origine === "main" ? " (à la main)" : ""} · ${largeurC}` : `bloquée · ${dosC.manque}`}</span></li>
   ) : null);
 
   const lancerPdf = () => {

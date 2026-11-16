@@ -76,12 +76,12 @@ function dispositionDe(t: Template, textes?: (i: number) => string | null): Disp
   };
 }
 
-/** Un magazine à deux planches : la 1re page seule, puis la planche du gabarit (double, ou page droite). */
+/** Un magazine à trois planches : la 1re page seule, la planche du gabarit (double, ou page droite), puis la dernière page (lot E). */
 function magazineDe(t: Template, d: Disposition, style: boolean): Magazine {
   const m = nouveauMagazine("m", "Essai", "2026-11-12T10:00:00.000Z");
   const planches: Magazine["planches"] = t.portee === "double"
-    ? [m.planches[0], { id: "pl-2", mode: "double", double: d, gauche: null, droite: null }]
-    : [m.planches[0], { id: "pl-2", mode: "pages", double: null, gauche: null, droite: d }];
+    ? [m.planches[0], { id: "pl-2", mode: "double", double: d, gauche: null, droite: null }, m.planches[1]]
+    : [m.planches[0], { id: "pl-2", mode: "pages", double: null, gauche: null, droite: d }, m.planches[1]];
   const s = style ? styleDePaire("T-03", { ...COULEURS_ORIGINE }) : null;
   return { ...m, planches, ...(s ? { style: s } : {}) };
 }

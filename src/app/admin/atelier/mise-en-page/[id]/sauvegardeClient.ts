@@ -19,7 +19,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { horodater, nouveauMagazine, type Magazine } from "@/lib/mise-en-page/magazine";
+import { avecDerniere, horodater, nouveauMagazine, type Magazine } from "@/lib/mise-en-page/magazine";
 import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
 import {
   DELAI_ENVOI_MS,
@@ -318,7 +318,9 @@ export function creerMoteur(cle: CleSauvegarde): Moteur {
     }
   }
 
-  const adopter = (m: Magazine): Magazine => { refOuverte = m; derniere = m; return m; };
+  /* Lot E : un magazine d'AVANT reçoit sa dernière page (planche vide) en s'ouvrant ; celui qui l'a déjà revient tel quel (même objet).
+     La version complétée est la référence ouverte : rien n'est envoyé tant qu'un geste ne l'a pas modifiée. */
+  const adopter = (m: Magazine): Magazine => { const n = avecDerniere(m); refOuverte = n; derniere = n; return n; };
 
   async function ouvrirProjet(): Promise<Magazine> {
     ouvert = true;

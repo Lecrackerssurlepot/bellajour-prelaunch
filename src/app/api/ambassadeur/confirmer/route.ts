@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { signToken, verifyTokenConfirmation } from "@/lib/ambassadeur-token";
@@ -26,7 +27,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
  * Idempotente : deux clics sur le même lien ne réécrivent pas le consentement
  * et ne renvoient pas deux fois le mail de bienvenue. */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 const CHARTE_VERSION = "cercle-2026-vague-1";
 
 export async function POST(request: Request) {

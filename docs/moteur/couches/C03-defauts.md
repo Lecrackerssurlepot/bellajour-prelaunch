@@ -22,3 +22,4 @@ Une capture de tablette n'est pas reconnue. Les yeux fermés ne se voient pas (l
 
 ## Historique
 09/11 : créée. 10/11 : la capture ne repose plus sur les aplats (des ciels passaient pour des captures).
+14/11 (lot F, R141) : 7 exports Snapchat (JPEG 1 : 2,05, sans appareil ni date) pris pour des captures chez marjorie → une capture exige en plus un PNG, ou du texte abondant sur un grand aplat sans visage ; les deux vraies captures des six lots restent trouvées. Une capture lue par l'IA dit ce qu'elle raconte (R146, C14).

@@ -10,6 +10,7 @@ import type { Recadrage } from "../recadrage";
 import type { Cote } from "../geometrie";
 import type { Orientation, Template } from "../types";
 import type { StyleMagazine } from "../style";
+import type { CouleurLibre } from "../couleursLibres";
 import type { SourceMep } from "../sauvegarde";
 import type { Etiquette, Marque } from "./tri";
 import type { ActionHesitation } from "./hesitation";
@@ -17,7 +18,9 @@ import type { SensCalque } from "./libre";
 import type { Lecture } from "./mesures";
 import type { Lecon } from "./lecons";
 import type { Proposition } from "./pretri";
+import type { PremierJet } from "./premierJet";
 import type { Tag } from "./tags";
+import type { LectureIA, LectureIAReliee, TagIA } from "./lectureIA";
 
 export type { Cible, Magazine, PhotoRef, RefCadre, Recadrage, Cote, Orientation, Template, Disposition, SourceMep };
 
@@ -43,6 +46,9 @@ export type PhotoMaq = PhotoRef & {
   /** 10/11 (capture d'écran) : l'appareil photo lu dans l'EXIF ; null = aucun appareil (indice d'une capture ou d'une image
    *  envoyée par messagerie) ; absent = on ne sait pas (édition collective : la route ne le dit pas). */
   appareil?: string | null;
+  /** Lot F (14/11, R147) : le lieu NOMMÉ de la lecture IA quand il est SÛR (preuve, confiance ≥ 0,7). Posé par la lecture IA,
+   *  jamais sauvegardé ; les titres et légendes non écrits le prennent avant la ville (`lieuxTextes.ts`). */
+  lieuIA?: string | null;
 };
 
 export type Catalogue = ReadonlyMap<string, PhotoMaq>;
@@ -64,9 +70,10 @@ export type Filtres = {
   /** Au tour ③ (05/11) : seulement les photos de cette étiquette ; "" = toutes. */
   etiquette: "" | Etiquette;
   /** 10/11 : seulement les photos qui portent ce tag de la lecture ("" = toutes). Rien n'est caché sous une pile pendant ce filtre. */
-  lecture: "" | Tag;
+  lecture: "" | Tag | TagIA;
   tri: "date" | "nom" | "personne";
-  groupe: "jour" | "moment" | "lieu" | "personne" | "type" | "aucun";
+  /** Lot F (R144) : « ia » range la barre par GROUPES de la lecture IA (duo, trio, combo), le reste à la fin. */
+  groupe: "jour" | "moment" | "lieu" | "personne" | "type" | "ia" | "aucun";
   taille: "S" | "M" | "L";
 };
 
@@ -202,6 +209,11 @@ export type EtatEditeur = {
   lecons: Lecon[];
   /** Lot 3 : les propositions du dernier pré-tri appliqué (raison par photo). Un geste contraire devient une leçon. Écran seulement. */
   pretri: Record<string, Proposition>;
+  /** Lot F (14/11) : la lecture IA reliée aux photos (rôles, groupes, rafales, captures, lieux). Écran seulement : jamais dans le
+   *  magazine ni dans sa sauvegarde ; le navigateur la garde avec le projet (`lectureIAClient.ts`). */
+  lectureIA: LectureIAReliee | null;
+  /** La lecture mesurée dans le navigateur, AVANT que les rafales de la lecture IA y entrent (`lecture` = les deux réunies, R145). */
+  lectureMesuree: Lecture;
 };
 
 export type OptionsEtat = {
@@ -252,7 +264,18 @@ export type GesteModifiant =
   /** Lot C : la feuille de style du magazine (paire de polices, nuancier) : la poser, la changer, ou la retirer avec `null`. */
   | { type: "styler"; style: StyleMagazine | null; confirme?: boolean }
   /** Lot B : le nombre de pages saisi sur la couverture quand le projet ne le connaît pas (null l'efface). */
-  | { type: "pagesCouverture"; pages: number | null; confirme?: boolean };
+  | { type: "pagesCouverture"; pages: number | null; confirme?: boolean }
+  /** Lot E : la largeur du dos saisie à la main (mm) ; `null` l'efface, le calcul reprend. */
+  | { type: "dosCouverture"; dosMm: number | null; confirme?: boolean }
+  /** Lot E : le PREMIER JET (un magazine composé hors de l'éditeur, premierJet.ts) chargé sur les photos importées, reliées par leur nom de fichier. Une seule entrée d'historique : Annuler le défait. */
+  | { type: "chargerPremierJet"; jet: PremierJet; confirme?: boolean }
+  /** Lot G : le fond de couleur d'une page (`gauche`, `droite`) ou de la double entière (`double`) ; `null` le retire. */
+  | { type: "colorerFond"; plancheId: string; cible: Cible; couleur: CouleurLibre | null; confirme?: boolean }
+  /** Lot G : la couleur d'un texte (intérieur ou couverture) ; `null` rend celle du gabarit. Pendant la séance de ce texte, elle s'y fond (une entrée). */
+  | { type: "colorerTexte"; ref: RefCadre; couleur: CouleurLibre | null; confirme?: boolean }
+  /** Lot F (R145) : accepter ce que la lecture IA propose sur une rafale (sa tête) : les photos qu'elle garde, gardées ; les autres,
+   *  écartées ; seulement celles encore sans marque. Une entrée d'historique, des propositions « IA » (un geste contraire = une leçon). */
+  | { type: "accepterRafale"; tete: string; confirme?: boolean };
 
 /** Les gestes composés : le réducteur les traduit en gestes primitifs (`primitif`). */
 export type GesteCompose =
@@ -282,6 +305,8 @@ export type GesteEcran =
   | { type: "familleGabarits"; famille: FamilleGabarits }
   /** Couche 1 : la lecture des vignettes arrive (ou se met à jour). */
   | { type: "poserLecture"; lecture: Lecture }
+  /** Lot F : la lecture IA arrive (fichier chargé, ou relue dans ce navigateur) ; `null` la retire. Jamais une entrée d'historique. */
+  | { type: "poserLectureIA"; lecture: LectureIA | null }
   /** Ouvre ou referme la pile portée par cette photo. */
   | { type: "basculerPile"; tete: string }
   /** Lot 2 : l'écran a envoyé les `n` premières leçons (ou en ajoute un jalon). */
@@ -307,6 +332,8 @@ export type GesteEcran =
   | { type: "fermerRecadrage" }
   | { type: "ouvrirTexte"; ref: RefCadre }
   | { type: "taper"; contenu: string }
+  /** Lot G : la couleur du texte EN COURS d'écriture (la séance de texte), sans entrée d'historique à part. */
+  | { type: "teinterTexte"; couleur: CouleurLibre | null }
   | { type: "fermerTexte" }
   | { type: "confirmer" }
   | { type: "annulerConfirmation" }
@@ -340,7 +367,11 @@ export type OpPlan =
   | "supprimerPlanche" | "vider" | "creerDoubles" | "marquer" | "reglerTri" | "etiqueter" | "hesiter"
   | "miroir" | "placerCadre" | "ajusterCadre" | "calque" | "poserLibre" | "retirerCadres" | "deplacerCadres" | "styler"
   /* lot B : la couverture */
-  | "couvPoser" | "couvRetirer" | "couvEchanger" | "couvGabarit" | "couvPages";
+  | "couvPoser" | "couvRetirer" | "couvEchanger" | "couvGabarit" | "couvPages" | "couvDos"
+  /* lot E : le premier jet */
+  | "chargerPremierJet"
+  /* lot G : les couleurs libres */
+  | "colorerFond" | "colorerTexte";
 
 /** Les arguments d'un plan, juste ce que les invariants relisent. */
 export type ArgsPlan = { ids?: readonly string[]; plancheId?: string; cible?: Cible; ref?: RefCadre; refs?: readonly RefCadre[]; photoId?: string; position?: number };

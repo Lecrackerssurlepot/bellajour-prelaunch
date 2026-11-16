@@ -11,8 +11,11 @@ import {
 import { PAGE_H, PAGE_L, largeurCouverture } from "@/lib/mise-en-page/geometrie";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
+import { cssDeCouleur } from "@/lib/mise-en-page/couleursLibres";
+import { Nuances } from "./Nuances";
 import { cls, fermerTexteDom, memeRef, pc, useEd } from "./contexte";
-import { dosDeLaCouverture, type DosCouverture } from "./dosCouverture";
+import { dosDeLEtat, type DosCouverture } from "./dosCouverture";
+import { DOS_SAISI_MAX_MM, DOS_SAISI_MIN_MM, dosSaisiValide, idsCouverture } from "@/lib/mise-en-page/couverture";
 import { grandeDe, vignetteDe } from "./images";
 import { demanderHd, useHd } from "./hd";
 import { libelleApercu } from "./glisser";
@@ -25,10 +28,10 @@ import { Ico } from "./icones";
 const DOS_ECRAN_INCONNU = 3;
 const mm = (v: number): string => v.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 
-/** Le dos de l'écran : celui du projet ou des pages saisies, finition par défaut dite. */
+/** Le dos de l'écran (lot E) : la largeur saisie à la main si elle existe, sinon celui du calcul (pages payées, saisies ou composées, finition par défaut dite). */
 export function useDosCouverture(): DosCouverture {
   const { etat } = useEd();
-  return dosDeLaCouverture(etat.projet, couvertureDe(etat.magazine).pages ?? null);
+  return dosDeLEtat(etat);
 }
 
 /** Le magazine montré en transparence : un dépôt en cours, un gabarit survolé, une sélection qui attend. */
@@ -205,15 +208,21 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
     ...(ts
       ? {
           fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
-          fontSize: `max(6px, ${((ts.corps * 25.4) / 72 / W) * 100}cqw)`, color: `var(--mep-r-${classeRole(ts.role)})`,
+          fontSize: `max(6px, ${((ts.corps * 25.4) / 72 / W) * 100}cqw)`, color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
           textTransform: ts.capitales ? ("uppercase" as const) : ("none" as const), ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
         }
-      : { fontSize: `max(6px, ${((f.taille * 25.4) / 72 / W) * 100}cqw)`, fontWeight: f.gras ? 700 : 400, ...(f.blanc ? { color: "#fff" } : {}) }),
+      : { fontSize: `max(6px, ${((f.taille * 25.4) / 72 / W) * 100}cqw)`, fontWeight: f.gras ? 700 : 400, ...(f.teinte ? { color: cssDeCouleur(f.teinte) } : f.blanc ? { color: "#fff" } : {}) }),
     ...(sous ? { opacity: 0 } : {}),
   };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, ref);
   if (enEdition) {
+    /* lot G : sous le texte qu'on écrit, sa couleur (le mot-titre à l'encre sur un ciel clair, par exemple) */
     return (
+      <>
+      <div className="ed-txt-outils" style={{ left: style.left, top: `calc(${String(style.top)} + ${String(style.height)})`, minWidth: style.width }}>
+        <Nuances compact valeur={f.teinte} photos={idsCouverture(etat.magazine.couverture)} retirer="Couleur du gabarit"
+          onChoix={(c) => envoyer({ type: "colorerTexte", ref, couleur: c })} />
+      </div>
       <div className="ed-txt ed-txt--couv ed-txt--edit" style={{ ...style, color: undefined }} contentEditable suppressContentEditableWarning role="textbox" aria-label="Texte de la couverture"
         ref={(n) => {
           if (n && !n.dataset.pret) {
@@ -227,8 +236,9 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
             }, 0);
           }
         }}
-        onBlur={() => fermerTexteDom(envoyer)}
+        onBlur={(e) => { if ((e.relatedTarget as HTMLElement | null)?.closest?.(".ed-nuances")) return; fermerTexteDom(envoyer); }}
         onKeyDown={(e) => { if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) { e.preventDefault(); e.currentTarget.blur(); } }} />
+      </>
     );
   }
   return (
@@ -302,7 +312,22 @@ export function BandeCouverture() {
   const dos = useDosCouverture();
   const b = bilanCouverture(etat);
   const saisies = couvertureDe(etat.magazine).pages;
+  const dosSaisi = couvertureDe(etat.magazine).dosMm;
   const [pages, setPages] = useState<string>(saisies ? String(saisies) : "");
+  /* lot E : le dos saisi à la main. `brouillon` = ce qu'on tape (null : on affiche l'état du magazine, qui suit Annuler et Rétablir) */
+  const [brouillon, setBrouillon] = useState<string | null>(null);
+  const dosTexte = brouillon ?? (dosSaisi !== undefined ? String(dosSaisi) : "");
+  const dosSaisiLu = (t: string): number | null => { const n = Math.round(Number(t.trim().replace(",", ".")) * 100) / 100; return t.trim() !== "" && dosSaisiValide(n) ? n : null; };
+  const dosInvalide = brouillon !== null && brouillon.trim() !== "" && dosSaisiLu(brouillon) === null;
+  const validerDos = () => {
+    const v = (brouillon ?? "").trim();
+    if (brouillon === null) return;
+    if (v === "") { if (dosSaisi !== undefined) envoyer({ type: "dosCouverture", dosMm: null }); setBrouillon(null); return; }
+    const n = dosSaisiLu(v);
+    if (n === null) return;
+    if (n !== dosSaisi) envoyer({ type: "dosCouverture", dosMm: n });
+    setBrouillon(null);
+  };
   const valider = () => {
     const v = pages.trim();
     if (!v) { if (saisies !== undefined) envoyer({ type: "pagesCouverture", pages: null }); return; }
@@ -313,11 +338,24 @@ export function BandeCouverture() {
     <div className="ed-bande ed-bande--couv" aria-label="La couverture">
       <div className="ed-bande-t">Couverture<b>{b.posees} / {b.cadres}</b></div>
       <span className={cls("ed-couv-info", dos.dos === null && "ed-couv-info--manque")}>
-        {dos.dos !== null ? <>Dos <b>{mm(dos.dos)} mm</b></> : <b>{dos.manque}</b>}
-        {dos.source === "projet" ? <> · {dos.pages} pages payées</> : null}
-        {" · "}{dos.finition === "matte" ? "papier mat" : "papier brillant"}{dos.finitionParDefaut ? " par défaut" : ""}
+        {dos.origine === "main"
+          ? <>Dos <b>{mm(dos.dos ?? 0)} mm</b> · saisi à la main{dos.calcule !== null ? <> (le calcul donnerait {mm(dos.calcule)} mm)</> : null}</>
+          : <>
+            {dos.dos !== null ? <>Dos <b>{mm(dos.dos)} mm</b> · calculé</> : <b>{dos.manque}</b>}
+            {dos.dos !== null && dos.pages !== null ? <> sur {dos.pages} pages {dos.source === "projet" ? "payées" : dos.source === "saisie" ? "saisies" : "composées"}</> : null}
+            {" · "}{dos.finition === "matte" ? "papier mat" : "papier brillant"}{dos.finitionParDefaut ? " par défaut" : ""}
+          </>}
       </span>
-      {dos.source !== "projet" ? (
+      {/* lot E : le dos à la main remplace le calcul jusqu'à ce qu'on l'efface */}
+      <label className="ed-couv-pages ed-couv-dos-main">
+        <span>Dos</span>
+        <input className="adm-input" type="text" inputMode="decimal" value={dosTexte} disabled={ro} placeholder={dos.calcule !== null ? mm(dos.calcule) : "mm"} aria-label="Largeur du dos en millimètres, à la main : elle remplace le calcul"
+          aria-invalid={dosInvalide} onChange={(e) => setBrouillon(e.currentTarget.value)} onBlur={validerDos} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); } }} />
+        <span>mm</span>
+      </label>
+      {dosInvalide ? <span className="ed-couv-alerte">Entre {DOS_SAISI_MIN_MM} et {DOS_SAISI_MAX_MM} mm</span> : null}
+      {dosSaisi !== undefined && !ro ? <button type="button" className="ed-bt" onClick={() => { setBrouillon(null); envoyer({ type: "dosCouverture", dosMm: null }); }}>Effacer</button> : null}
+      {dos.source !== "projet" && dos.origine !== "main" ? (
         <label className="ed-couv-pages">
           <span>Pages</span>
           <input className="adm-input" type="number" inputMode="numeric" min={24} max={60} step={2} value={pages} disabled={ro} placeholder="32" aria-label="Pages du magazine, pour le dos"

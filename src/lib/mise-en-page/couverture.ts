@@ -55,13 +55,25 @@ export type GabaritCouverture = {
  * La couverture d'un magazine : son gabarit, une affectation par cadre photo et un texte par cadre texte (dans
  * l'ordre des cadres, comme une `Disposition`), et `pages` : le nombre de pages SAISI à la main quand le projet ne le
  * connaît pas (édition, création libre), écrit seulement s'il existe. Le dos s'en déduit à l'écran, jamais ici.
+ * Lot E (13/11) : `dosMm` = la LARGEUR DU DOS saisie à la main (en mm, au centième, entre `DOS_SAISI_MIN_MM` et `DOS_SAISI_MAX_MM`) ;
+ * quand elle existe, elle REMPLACE le calcul (pages et finition) jusqu'à ce qu'on l'efface ; écrite seulement s'il existe.
  */
-export type Couverture = { templateId: string; photos: Affectation[]; textes: TexteCadre[]; pages?: number };
+export type Couverture = { templateId: string; photos: Affectation[]; textes: TexteCadre[]; pages?: number; dosMm?: number };
 
 /** L'identifiant réservé par lequel l'éditeur vise la couverture (une planche s'appelle toujours « pl-N »). */
 export const ID_COUVERTURE = "couverture";
 /** Borne technique d'une saisie de pages (pas une règle : le dos, lui, n'existe que de 24 à 60 pages paires). */
 export const PAGES_MAX_SAISIE = 400;
+/**
+ * Lot E : les BORNES d'un dos saisi à la main, en mm. Des gardes-fous techniques (une faute de frappe, un « 25 » pour « 2,5 »), pas des
+ * règles de produit : le dos calculé va de 2,25 à 4,51 mm (24 à 60 pages), 1 mm est la plus fine tranche qu'on puisse plier et coller, 20 mm
+ * plus de quatre fois le plus épais des dos calculés. La précision est le centième de mm, comme `dosMmPourPages`.
+ */
+export const DOS_SAISI_MIN_MM = 1;
+export const DOS_SAISI_MAX_MM = 20;
+/** Un dos saisi est-il recevable : un nombre fini, au centième de mm, dans les bornes ? */
+export const dosSaisiValide = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v) && v >= DOS_SAISI_MIN_MM && v <= DOS_SAISI_MAX_MM && Math.round(v * 100) / 100 === v;
 /** P3-11 : le mot-titre couvre au moins 60 % de la largeur de la 1re. */
 export const PART_MOT_TITRE_MIN = 0.6;
 /** Au-delà de cette part du sujet recouverte, l'écran dit que le titre est posé sur le sujet (hors de la zone calme). */

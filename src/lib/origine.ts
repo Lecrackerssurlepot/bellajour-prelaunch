@@ -4,7 +4,10 @@
  * (un fichier de route ne peut pas exporter d'aide) : la carte cadeau la lit
  * d'ici, la route de l'atelier n'a pas été touchée.
  */
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+import { origineDuSite } from "@/lib/site";
+
+/* Le vrai site seulement (ou le poste local) : voir src/lib/site.ts. */
+export const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 export function originDeConfiance(brut: string | null): string {
   if (!brut) return SITE_URL;

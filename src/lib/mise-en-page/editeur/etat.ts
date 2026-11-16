@@ -9,7 +9,7 @@
 
 import { deplacer as deplacerRecadrage, zoomer as zoomerRecadrage } from "../recadrage";
 import { contenuValide } from "../sauvegarde";
-import type { Magazine } from "../magazine";
+import { avecDerniere, coteSeul, type Magazine } from "../magazine";
 import { ID_COUVERTURE } from "../couverture";
 import { depuisBibliotheque, planDepot, planifier } from "./plans";
 import { hesitationDe, hesitationsOuvertes } from "./hesitation";
@@ -18,6 +18,10 @@ import { leconValide, leconsDeLaPose, leconsDuPreTri, leconsDuTri } from "./leco
 import { preTrier } from "./pretri";
 import { TAGS } from "./tags";
 import { recadrerCadre, ecrireTexteCadre, refPour } from "./operations";
+import { colorerTexte } from "./couleurs";
+import { appliquerPremierJet } from "./premierJet";
+import { REGLE_IA, TAGS_IA, lieuSur, pilesAvecIA, propositionRafale, rafaleDe, relierLectureIA, type LectureIA } from "./lectureIA";
+import { marqueDe } from "./tri";
 import { clesCriteres, criteres, selectionOrdonnee, visibles, visible } from "./bibliotheque";
 import {
   FILTRES_DEFAUT, HISTORIQUE_MAX, affectation, aPhoto, borner, dimsDeRef, egal, indexPlanche, neutre, pluriel, texteDe,
@@ -36,7 +40,8 @@ const LECONS_MAX = 500;
 const numeroMax = (m: Magazine): number => m.planches.reduce((a, p) => Math.max(a, numeroDe(p.id)), 0);
 
 export function creerEtat(o: OptionsEtat): EtatEditeur {
-  const magazine = o.magazine;
+  /* lot E : un magazine d'avant reçoit sa dernière page (planche vide) ; un magazine qui l'a déjà revient tel quel (même objet) */
+  const magazine = avecDerniere(o.magazine);
   const cat: ReadonlyMap<string, PhotoMaq> = o.catalogue instanceof Map ? o.catalogue : new Map((o.catalogue as readonly PhotoMaq[] ?? []).map((p) => [p.id, p]));
   const courante = o.plancheCourante && (o.plancheCourante === ID_COUVERTURE || indexPlanche(magazine, o.plancheCourante) >= 0) ? o.plancheCourante : magazine.planches[0].id;
   return {
@@ -68,7 +73,35 @@ export function creerEtat(o: OptionsEtat): EtatEditeur {
     pilesOuvertes: [],
     lecons: [],
     pretri: {},
+    lectureIA: null,
+    lectureMesuree: LECTURE_VIDE,
   };
+}
+
+/**
+ * Lot F (14/11) : la lecture IA, reliée au catalogue par les noms de fichier ; ses rafales entrent dans les piles (R145, la
+ * lecture mesurée est gardée à part dans `lectureMesuree`) ; son lieu SÛR rejoint chaque photo (R147, `PhotoMaq.lieuIA`). Rien
+ * ne touche au magazine. Rejoué quand la lecture mesurée arrive et quand le catalogue s'agrandit.
+ */
+function avecLectureIA(e: EtatEditeur, source: LectureIA | null): EtatEditeur {
+  const reliee = source ? relierLectureIA(source, e.catalogue) : null;
+  const voulu = (id: string): string | null => (reliee ? lieuSur(reliee.photos.get(id)) : null);
+  let cat = e.catalogue;
+  if ([...cat].some(([id, p]) => (p.lieuIA ?? null) !== voulu(id))) {
+    const m = new Map(cat);
+    for (const [id, p] of cat) {
+      const v = voulu(id);
+      if ((p.lieuIA ?? null) === v) continue;
+      if (v) m.set(id, { ...p, lieuIA: v });
+      else { const { lieuIA: _sans, ...reste } = p; void _sans; m.set(id, reste); }
+    }
+    cat = m;
+  }
+  const lm = e.lectureMesuree;
+  const piles = pilesAvecIA(lm.piles, reliee);
+  const lecture = piles === lm.piles ? lm : { ...lm, piles };
+  const tetes = new Set(lecture.piles.map((p) => p.tete));
+  return { ...e, catalogue: cat, lectureIA: reliee, lecture, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
 }
 
 export const lectureSeule = (e: EtatEditeur): boolean => e.sauvegarde.etat === "conflit" || e.sauvegarde.etat === "lecture_seule";
@@ -78,10 +111,10 @@ const enAttente = (s: EtatSauvegarde): EtatSauvegarde => ({ etat: "en_attente", 
 /* ─────────────────────────── Historique et séances ─────────────────────────── */
 
 /** L'unique porte d'entrée du magazine : une entrée d'historique, futur vidé, sauvegarde en attente. */
-function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine): EtatEditeur {
+function adopter(e: EtatEditeur, libelle: string, plancheId: string, magazine: Magazine, sansLecons = false): EtatEditeur {
   if (magazine === e.magazine) return e;
-  /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander */
-  const neuves = [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDuPreTri(e.magazine, magazine, e.pretri)];
+  /* lot 2 (G1) : un geste contraire à la lecture devient une leçon, sans rien demander. Lot E : pas le chargement d'un premier jet (ce n'est pas un geste de l'atelier) */
+  const neuves = sansLecons ? [] : [...leconsDuTri(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDeLaPose(e.magazine, magazine, e.lecture, e.catalogue), ...leconsDuPreTri(e.magazine, magazine, e.pretri)];
   if (neuves.length) e = { ...e, lecons: [...e.lecons, ...neuves].slice(-LECONS_MAX) };
   const passe = [...e.historique.passe, { libelle, avant: e.magazine, apres: magazine, plancheId }].slice(-HISTORIQUE_MAX);
   return { ...e, magazine, historique: { passe, futur: [] }, sauvegarde: enAttente(e.sauvegarde), eclair: plancheId };
@@ -152,13 +185,16 @@ function cibleR(e: EtatEditeur, g: Touche): { plancheId: string; cible: RefCadre
   const s = g.survol;
   if (p && s && s.plancheId === p.id) {
     const okDouble = p.mode === "double" && s.cible === "double";
-    const okPage = p.mode !== "double" && (s.cible === "droite" || (s.cible === "gauche" && i > 0));
+    const seul = coteSeul(e.magazine, i);
+    const okPage = p.mode !== "double" && (seul ? s.cible === seul : s.cible === "droite" || s.cible === "gauche");
     if (okDouble || okPage) return { plancheId: p.id, cible: s.cible };
   }
   if (e.cadreActif) return { plancheId: e.cadreActif.plancheId, cible: e.cadreActif.cible };
   if (!p) return null;
   if (p.mode === "double") return { plancheId: p.id, cible: "double" };
-  if (i > 0 && p.gauche) return { plancheId: p.id, cible: "gauche" };
+  const seul = coteSeul(e.magazine, i);
+  if (seul) return p[seul] ? { plancheId: p.id, cible: seul } : null;
+  if (p.gauche) return { plancheId: p.id, cible: "gauche" };
   if (p.droite) return { plancheId: p.id, cible: "droite" };
   return null;
 }
@@ -222,17 +258,23 @@ export function primitif(e: EtatEditeur, g: Geste): GestePrimitif {
     }
     case "lacher":
       return e.glisser && e.glisser.survol ? { type: "deposer", source: e.glisser.source, cible: e.glisser.survol, depuisGlisser: true } : { type: "abandonnerGlisser" };
+    /* lot G : la couleur du texte qu'on écrit se pose DANS la séance (une seule entrée « Modifier un texte » à la fermeture) */
+    case "colorerTexte":
+      return e.texte && g.ref && e.texte.ref.plancheId === g.ref.plancheId && e.texte.ref.cible === g.ref.cible && e.texte.ref.index === g.ref.index
+        ? { type: "teinterTexte", couleur: g.couleur } : g;
     case "touche": return primitifTouche(e, g);
     default: return g;
   }
 }
 
-const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte"]);
+const SEANCE: ReadonlySet<string> = new Set(["deplacerImage", "zoomerImage", "recadrer", "recentrer", "fermerRecadrage", "taper", "fermerTexte", "teinterTexte"]);
 export const SANS_FERMETURE: ReadonlySet<string> = new Set(["rien", "survoler", "annuler", "retablir", "fermerMessage", "annoncer",
-  "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue"]);
+  "sauvegardeEnvoi", "sauvegardeOk", "sauvegardeHorsLigne", "sauvegardeErreur", "sauvegardeMigrationAbsente", "sauvegardeConflit", "ajouterAuCatalogue", "poserLectureIA"]);
 export const MODIFIANTS: ReadonlySet<string> = new Set(["deposer", "retirer", "remplacer", "echanger", "deplacerPhoto", "reordonner", "choisirGabarit",
   "autreGabarit", "fusionner", "separer", "insererDouble", "deplacerPlanche", "supprimerPlanche", "vider", "ajouterSurPlanche", "creerDoubles", "marquer", "preTrier", "reglerTri", "etiqueter", "hesiter",
-  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture"]);
+  "miroir", "placerCadre", "ajusterCadre", "calque", "retirerCadres", "styler", "pagesCouverture", "dosCouverture", "chargerPremierJet", "accepterRafale",
+  /* lot G : les couleurs libres */
+  "colorerFond", "colorerTexte"]);
 
 export const estModifiant = (g: GestePrimitif): g is GesteModifiant => MODIFIANTS.has(g.type);
 
@@ -261,6 +303,27 @@ function executer(e: EtatEditeur, g: GesteModifiant): EtatEditeur {
   const avant = x.magazine;
   /* lot 3 : le pré-tri garde ses propositions (avec leur raison) pour reconnaître ensuite un geste contraire */
   if (g.type === "preTrier") x = { ...x, pretri: { ...x.pretri, ...preTrier(e.catalogue, e.magazine, e.lecture).propositions } };
+  /* lot F (R148) : accepter une rafale de la lecture IA laisse ses propositions ; renverser l'une d'elles ensuite est une leçon « IA » */
+  if (g.type === "accepterRafale") {
+    const r = rafaleDe(e.lectureIA, g.tete);
+    if (r) {
+      const p = propositionRafale(r, (id) => marqueDe(e.magazine, id));
+      const raison = r.pourquoi.length > 150 ? `${r.pourquoi.slice(0, 149).trimEnd()}…` : r.pourquoi;
+      const props = Object.fromEntries([...p.garder.map((id) => [id, { marque: "choisie" as const, raison, regle: REGLE_IA }]), ...p.ecarter.map((id) => [id, { marque: "ecartee" as const, raison, regle: REGLE_IA }])]);
+      x = { ...x, pretri: { ...x.pretri, ...props } };
+    }
+  }
+  /* lot E : le premier jet remplace les planches : le tri et les raisons qu'il porte, la première planche et le compteur suivent */
+  if (g.type === "chargerPremierJet") {
+    const r = appliquerPremierJet(g.jet, e.magazine, e.catalogue);
+    x = adopter({ ...x, pretri: { ...x.pretri, ...r.propositions } }, plan.libelle, plan.plancheId, is.magazine, true);
+    x = {
+      ...x, plancheCourante: plan.plancheId, premiereId: x.magazine.planches[0].id, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1),
+      cadreActif: null, cadresSel: [], echangeArme: null, eclair: null, halo: null,
+      message: { texte: r.manquantes.length ? `Premier jet chargé · ${pluriel(r.manquantes.length, "photo introuvable", "photos introuvables")}` : "Premier jet chargé", action: { libelle: "Annuler" } },
+    };
+    return x;
+  }
   x = adopter(x, plan.libelle, plan.plancheId, is.magazine);
   if ((plan.op === "insererDouble" || plan.op === "creerDoubles") && is.nouvellePlanche) {
     x = { ...x, plancheCourante: is.nouvellePlanche, prochainNumero: Math.max(x.prochainNumero, numeroMax(x.magazine) + 1) };
@@ -306,6 +369,8 @@ function annulerEtat(e: EtatEditeur): EtatEditeur {
   const en = passe[passe.length - 1];
   return {
     ...x, magazine: en.avant, historique: { passe: passe.slice(0, -1), futur: [...x.historique.futur, en] },
+    /* lot E : le chargement d'un premier jet change l'id de la première planche, et défaire ou refaire le rend */
+    premiereId: en.avant.planches[0].id, prochainNumero: Math.max(x.prochainNumero, numeroMax(en.avant) + 1),
     /* une entrée qui ne touche que le tri ne change pas la double affichée */
     ...(seulTri(en) ? { eclair: null } : { plancheCourante: plancheProche(en.avant, en.plancheId, en.apres), eclair: en.plancheId }),
     sauvegarde: enAttente(x.sauvegarde), glisser: null, confirmation: null, message: null,
@@ -319,6 +384,7 @@ function retablirEtat(e: EtatEditeur): EtatEditeur {
   const en = futur[futur.length - 1];
   return {
     ...x, magazine: en.apres, historique: { passe: [...x.historique.passe, en], futur: futur.slice(0, -1) },
+    premiereId: en.apres.planches[0].id, prochainNumero: Math.max(x.prochainNumero, numeroMax(en.apres) + 1),
     ...(seulTri(en) ? { eclair: null } : { plancheCourante: plancheProche(en.apres, en.plancheId, en.avant), eclair: en.plancheId }),
     sauvegarde: enAttente(x.sauvegarde), glisser: null, confirmation: null, message: null,
   };
@@ -371,10 +437,10 @@ const GESTES: Gestes = {
     if (typeof v.masquerUtilisees === "boolean") f.masquerUtilisees = v.masquerUtilisees;
     const statut = choisir(["toutes", "libres", "utilisees", "planche"] as const, v.statut); if (statut) f.statut = statut;
     const tri = choisir(["date", "nom", "personne"] as const, v.tri); if (tri) f.tri = tri;
-    const groupe = choisir(["jour", "moment", "lieu", "personne", "type", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
+    const groupe = choisir(["jour", "moment", "lieu", "personne", "type", "ia", "aucun"] as const, v.groupe); if (groupe) f.groupe = groupe;
     const marque = choisir(["toutes", "ecarter", "retenues", "choisies", "a_trier", "reserve", "ecartees"] as const, v.marque); if (marque) f.marque = marque;
     const etiquette = choisir(["", "couverture", "double", "pleine"] as const, v.etiquette); if (etiquette !== null) f.etiquette = etiquette;
-    const lecture = choisir(["", ...TAGS] as const, v.lecture); if (lecture !== null) f.lecture = lecture;
+    const lecture = choisir(["", ...TAGS, ...TAGS_IA] as const, v.lecture); if (lecture !== null) f.lecture = lecture;
     /* l'étiquette ne filtre qu'au tour ③ : changer de vue la relâche */
     if (marque && marque !== "choisies" && !("etiquette" in v)) f.etiquette = "";
     const taille = choisir(["S", "M", "L"] as const, v.taille); if (taille) f.taille = taille;
@@ -410,7 +476,15 @@ const GESTES: Gestes = {
       }
       cat = m;
     }
-    return { ...e, catalogue: cat, lecture: { ...l, zones }, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+    const x: EtatEditeur = { ...e, catalogue: cat, lecture: { ...l, zones }, lectureMesuree: { ...l, zones }, pilesOuvertes: e.pilesOuvertes.filter((t) => tetes.has(t)) };
+    /* lot F : les rafales et les lieux de la lecture IA se reposent sur la nouvelle lecture mesurée */
+    return e.lectureIA ? avecLectureIA(x, e.lectureIA.source) : x;
+  },
+  poserLectureIA(e, g) {
+    if (g.lecture === null) return e.lectureIA ? avecLectureIA(e, null) : e;
+    const l = g.lecture;
+    if (!l || l.format !== "bellajour-lecture-ia" || typeof l.photos !== "object" || !Array.isArray(l.rafales) || !Array.isArray(l.groupes)) return e;
+    return avecLectureIA(e, l);
   },
   basculerPile(e, g) {
     if (!e.lecture.piles.some((p) => p.tete === g.tete)) return e;
@@ -523,6 +597,10 @@ const GESTES: Gestes = {
     return enSeance(e, ecrireTexteCadre(e.magazine, e.texte.ref, g.contenu));
   },
   fermerTexte: (e) => (e.texte ? fermerSeances(e) : e),
+  teinterTexte(e, g) {
+    if (!e.texte || lectureSeule(e)) return e;
+    return enSeance(e, colorerTexte(e.magazine, e.texte.ref, g.couleur));
+  },
 
   confirmer(e) {
     if (!e.confirmation) return e;
@@ -565,7 +643,7 @@ const GESTES: Gestes = {
   },
   prendreSaVersion(e, g) {
     if (!g.magazine || !contenuValide(g.magazine)) return e;
-    const m = g.magazine;
+    const m = avecDerniere(g.magazine);
     return {
       ...e, magazine: m, copieLocale: e.magazine, historique: { passe: [], futur: [] },
       sauvegarde: { etat: "enregistre", version: Number.isInteger(g.version) ? (g.version as number) : e.sauvegarde.version, le: g.le || m.modifieLe },
@@ -587,7 +665,8 @@ const GESTES: Gestes = {
     if (!neuves.length) return e;
     const catalogue = new Map(e.catalogue);
     for (const p of neuves) catalogue.set(p.id, p);
-    return { ...e, catalogue };
+    /* lot F : une photo importée après la lecture IA s'y relie aussitôt (par son nom) */
+    return e.lectureIA ? avecLectureIA({ ...e, catalogue }, e.lectureIA.source) : { ...e, catalogue };
   },
   ouvrirLectureSeule(e, g) {
     const raison = choisir(["conflit", "photos_supprimees", "archive"] as const, g.raison) ?? "archive";

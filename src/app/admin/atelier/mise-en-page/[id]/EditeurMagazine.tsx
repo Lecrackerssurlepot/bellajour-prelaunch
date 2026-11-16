@@ -23,6 +23,7 @@ import { clavierTri } from "./triEcran";
 import Confrontation, { clavierConfrontation } from "./Hesitation";
 import { useLecture } from "./mesuresClient";
 import { useLecons } from "./leconsClient";
+import { useLectureIAGardee } from "./lectureIAClient";
 import { variablesStyle } from "@/lib/mise-en-page/style";
 import { StylePanneau } from "./StylePanneau";
 
@@ -84,6 +85,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
   useLecture(etat?.catalogue ?? null, adresses, envoyer);
   /* lot 2 (G1, G2, G6) : les gestes contraires deviennent des leçons, envoyées au serveur sans rien demander */
   const memoire = useLecons(cle.cle, etat, envoyer);
+  /* lot F : la lecture IA gardée avec ce projet, dans ce navigateur, revient à l'ouverture */
+  useLectureIAGardee(cle.cle, etat !== null, envoyer);
   const flasher = (cible: CibleDepot) => majUi({ flash: cible });
   const gesteAvecAnnuler = (g: Geste, texte: string) => setEtat((e) => {
     if (!e) return e;
@@ -181,7 +184,8 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
       setUi((u) => {
         let n = u;
         if (u.menu && !t.closest(".ed-menu, .ed-ancre, .ed-cf-menu-bt")) n = { ...n, menu: null };
-        if (u.rangee && !t.closest(".ed-rangee-gab, .ed-pastille")) n = { ...n, rangee: null, apercuGab: null };
+        /* lot G : le sélecteur du fond (au-dessus du tiroir) fait partie du tiroir */
+        if (u.rangee && !t.closest(".ed-rangee-gab, .ed-pastille, .ed-fond-pop")) n = { ...n, rangee: null, apercuGab: null };
         return n;
       });
     };
@@ -348,7 +352,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
 
   const ro = estLectureSeule(etat);
   const ctx: Ctx = {
-    etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, flasher, gesteAvecAnnuler, imp,
+    etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, flasher, gesteAvecAnnuler, imp, cleProjet: cle.cle,
   };
   /* le tri plein écran vit dans la bande des photos : elle doit être ouverte */
   if (ui.grand && !etat.panneau.ouvert) envoyer({ type: "panneau", ouvert: true });

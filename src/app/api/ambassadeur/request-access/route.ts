@@ -1,3 +1,4 @@
+import { origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { canonicalizeEmail } from "@/lib/email";
 import { makeSupabase } from "@/lib/supabase";
@@ -9,7 +10,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
    jamais si l'email existe / est ambassadeur (anti-énumération). L'envoi du lien
    est conditionné en interne (is_ambassadeur=true). */
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = process.env.NODE_ENV === "production" ? 3 : 20;

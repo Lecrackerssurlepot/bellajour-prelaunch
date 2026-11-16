@@ -21,6 +21,7 @@ import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendBrevoEmailDetail } from "@/lib/brevo";
 import { canonicalizeEmail } from "@/lib/email";
+import { origineDuSite } from "@/lib/site";
 import { logEvenement } from "./evenements";
 import { modeStripe } from "./fondatrice";
 import {
@@ -200,8 +201,9 @@ function gabarit(code: CodeMailCarte): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+/** Un lien de mail vise toujours le vrai site (src/lib/site.ts, incident du 11/11). */
 function origine(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr").replace(/\/$/, "");
+  return origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 }
 
 const euros = eurosMail;

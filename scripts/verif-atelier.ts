@@ -451,6 +451,7 @@ import {
   TEMPLATES_DESSINES,
   type PhotoRef,
 } from "@/lib/mise-en-page/magazine";
+import { pagesDe as pagesDeMep } from "@/lib/mise-en-page/editeur/operations";
 /* Export IDML (T2, 27/10) : portage de idml-test-generator.py, validé dans Affinity. */
 import { planPdf, photosDuPlan, decoupe, couperLignes, textePourPolice, ecrirePdf, BOITE_PAGE_SEULE, BOITE_DOUBLE, DPI_PDF } from "@/lib/mise-en-page/pdf";
 import { PDFDocument as PdfLu } from "pdf-lib";
@@ -477,6 +478,13 @@ import { verifierMepStyle } from "./verif-mep-style";
 import { verifierMepRecette } from "./verif-mep-recette";
 /* Noël 2026 : la carte cadeau (16/11). */
 import { verifierNoelCartes } from "./verif-noel";
+/* Le lot E (13/11) : la dernière page seule (pages paires), la tranche saisie à la main, le premier jet chargé. */
+import { verifierMepDerniere } from "./verif-mep-derniere";
+/* Le lot F (14/11) : la lecture IA dans le tri (format, lien par nom, groupes, rafales, lieux) et les règles R140, R141. */
+import { verifierMepLectureIA } from "./verif-mep-lecture-ia";
+/* Le lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte), les combos, et leurs exports. */
+import { verifierMepCouleurs } from "./verif-mep-couleurs";
+import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -6574,7 +6582,9 @@ const verifierMiseEnPage = () => {
   /* Le magazine. */
   const cat = Array.from({ length: 14 }, (_, i) => motifs["P L C"](i));
   let m = nouveauMagazine("m1", "Essai", "2026-10-27T00:00:00.000Z");
-  ok("MEP magazine : une seule planche, page droite seule et vide", m.planches.length === 1 && m.planches[0].mode === "pages" && m.planches[0].droite === null);
+  ok("MEP magazine : deux planches neuves, la page droite seule (planche 0) et la page gauche seule (dernière, lot E), vides ; le nombre de pages est pair",
+    m.planches.length === 2 && m.derniere === true && m.planches[0].mode === "pages" && m.planches[0].droite === null && m.planches[1].id === "pl-fin"
+      && m.planches[1].mode === "pages" && m.planches[1].gauche === null && m.planches[1].droite === null && pagesDeMep(m) === 2);
   m = ajouterDouble(ajouterDouble(m));
   const [p0, p1, p2] = m.planches.map((p) => p.id);
   const r7 = poserMep(m, p1, "droite", cat.slice(0, 8));
@@ -6592,8 +6602,8 @@ const verifierMiseEnPage = () => {
   const m0 = poserMep(m, p0, "double", cat.slice(0, 3)).magazine;
   ok("MEP planche 0 : poser en double la garde en page droite, basculer ne fait rien, supprimer la vide",
     m0.planches[0].mode === "pages" && m0.planches[0].droite !== null && m0.planches[0].gauche === null
-      && basculerMep(m0, p0, cat) === m0 && supprimerPlanche(m0, p0).planches.length === 3 && supprimerPlanche(m0, p0).planches[0].droite === null
-      && supprimerPlanche(m0, p2).planches.length === 2);
+      && basculerMep(m0, p0, cat) === m0 && supprimerPlanche(m0, p0).planches.length === 4 && supprimerPlanche(m0, p0).planches[0].droite === null
+      && supprimerPlanche(m0, p2).planches.length === 3);
   const vierge = ajouterDouble(nouveauMagazine("m2", "Essai", "x"));
   const m2 = poserMep(poserMep(vierge, "pl-2", "double", [cat[0], cat[1]]).magazine, "pl-1", "droite", [cat[0]]).magazine;
   const u = utilisationsMep(m2);
@@ -7059,7 +7069,7 @@ const verifierMepSauvegarde = () => {
     !contenuValide({ ...vrai, tri: undefined }) && !contenuValide({ ...vrai, tri: null }) && !contenuValide({ ...vrai, tri: "tri" })
       && !contenuValide({ ...vrai, tri: { choisies: ["a"], ecartees: ["a"], visees: null } }) && !contenuValide({ ...vrai, tri: { ...triOk, visees: 0 } }));
   ok("lot 0 : `style` (lot C, 12/11) est ACCEPTÉE avec un validateur strict (paire du catalogue, six couleurs #rrggbb) ; `couverture` (lot B) a le sien : vide, absente de valeur ou d'une autre forme, elle reste refusée, seule ou combinée",
-    NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture"
+    NOMS_CLES_FACULTATIVES.join() === "tri,style,couverture,derniere"
       && contenuValide({ ...vrai, style: { paire: "T-01", couleurs: { papier: "#ffffff", encre: "#231f20", aplatClair: "#ebdace", aplatSourd: "#bc977d", accent: "#856045", nuit: "#231f20" } } })
       && !contenuValide({ ...vrai, style: {} }) && !contenuValide({ ...vrai, style: undefined }) && !contenuValide({ ...vrai, style: null })
       && !contenuValide({ ...vrai, style: { titre: "Playfair Display", texte: "DM Sans", legende: "DM Sans" } })
@@ -7442,11 +7452,47 @@ const verifierMepLot0 = () => {
 };
 verifierMepLot0();
 
+/* ── 15/11 : un lien envoyé à un client vise TOUJOURS le vrai site ─────────
+   Le mail M3 d'Eloïse (11/11) menait à une préversion *.vercel.app, morte le
+   14/11 (DEPLOYMENT_NOT_FOUND) : la variable des préversions pointait sur la
+   branche chantier/atelier depuis le 24/08. */
+{
+  ok("site : le vrai site passe, avec ou sans www, nettoyé",
+    origineDuSite("https://www.bellajour.fr") === "https://www.bellajour.fr"
+      && origineDuSite(" https://bellajour.fr/ ") === "https://bellajour.fr"
+      && origineDuSite("HTTPS://WWW.BELLAJOUR.FR") === "https://www.bellajour.fr");
+  ok("site : une préversion vercel.app, vide ou un intrus retombent sur www.bellajour.fr",
+    ORIGINE_SITE === "https://www.bellajour.fr"
+      && origineDuSite("https://bellajour-prelaunch-git-cha-a10ca9-lecrackerssurlepots-projects.vercel.app") === ORIGINE_SITE
+      && origineDuSite("https://bellajour-prelaunch-7s863l1nd-lecrackerssurlepots-projects.vercel.app") === ORIGINE_SITE
+      && origineDuSite(undefined) === ORIGINE_SITE && origineDuSite("") === ORIGINE_SITE
+      && origineDuSite("https://bellajour.fr.pirate.example") === ORIGINE_SITE
+      && origineDuSite("http://bellajour.fr") === ORIGINE_SITE
+      && origineDuSite("https://www.bellajour.fr/numero") === ORIGINE_SITE);
+  ok("site : le poste local passe (essais en développement)",
+    origineDuSite("http://localhost:3005") === "http://localhost:3005" && origineDuSite("http://127.0.0.1") === "http://127.0.0.1"
+      && origineDuSite("http://localhost.pirate.example") === ORIGINE_SITE);
+  const lecteursBruts: string[] = [];
+  const parcourir = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = `${d}/${e.name}`;
+      if (e.isDirectory()) parcourir(p);
+      else if (/\.(ts|tsx)$/.test(e.name) && p !== "src/lib/site.ts"
+        && /NEXT_PUBLIC_SITE_URL/.test(readFileSync(p, "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ""))
+        && !/origineDuSite\(process\.env\.NEXT_PUBLIC_SITE_URL\)|origineDuSite\(env\.NEXT_PUBLIC_SITE_URL\)/.test(readFileSync(p, "utf8")))
+        lecteursBruts.push(p);
+    }
+  };
+  parcourir("src");
+  ok(`site : aucun fichier de src/ ne lit NEXT_PUBLIC_SITE_URL sans origineDuSite${lecteursBruts.length ? " (" + lecteursBruts.join(", ") + ")" : ""}`,
+    lecteursBruts.length === 0);
+}
+
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
 verifierNoelCartes(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

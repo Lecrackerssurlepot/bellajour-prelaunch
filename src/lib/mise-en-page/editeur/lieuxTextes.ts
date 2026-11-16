@@ -15,14 +15,18 @@ import { cadresPhotoCouverture, couverturePourExport, gabaritCouverture, type Co
 import { lieuCourt } from "./moments";
 import { saisi } from "./outils";
 
-type PhotoLieu = PhotoRef & { ville?: string | null; pays?: string | null };
+type PhotoLieu = PhotoRef & { ville?: string | null; pays?: string | null; lieuIA?: string | null };
+
+/** Lot F (R147) : le lieu d'une photo pour un titre ou une légende : le lieu NOMMÉ de la lecture IA quand il est sûr (posé dans
+ *  `lieuIA` par l'état, jamais un lieu « à vérifier »), sinon la ville, sinon le pays. La couverture et les séjours gardent `lieuCourt`. */
+export const lieuDeTexte = (p: PhotoLieu): string | null => p.lieuIA?.trim() || lieuCourt(p);
 export type CatalogueLieux = ReadonlyMap<string, PhotoLieu>;
 
 /** Le texte par défaut de chaque cadre de texte de la disposition (null = garder le libellé). */
 export function lieuxParDefaut(d: Disposition, cible: Cible, cat: CatalogueLieux): (string | null)[] {
   const lieux = d.photos.map((a) => {
     const p = a.photoId ? cat.get(a.photoId) : undefined;
-    return p ? lieuCourt(p) : null;
+    return p ? lieuDeTexte(p) : null;
   });
   const compte = new Map<string, number>();
   for (const l of lieux) if (l) compte.set(l, (compte.get(l) ?? 0) + 1);

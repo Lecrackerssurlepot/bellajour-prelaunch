@@ -491,7 +491,7 @@ sc(46, "Sur Pl.3, « + Double page » → index 3, pages, vide, affichée", () =
 sc(47, "Réordonner : Pl.4 avant Pl.2 ; jamais avant Pl.1", () => {
   const s = new Seance("A:P", { planches: 4 });
   s.g({ type: "deposer", source: { type: "planche", plancheId: pl(4) }, cible: { type: "entre", index: 1 } });
-  eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-2", "pl-3"], "ordre");
+  eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-2", "pl-3", "pl-fin"], "ordre : la dernière page reste en dernier (lot E)");
   ok(!O.cibleAllumee(s.e, { type: "planche", plancheId: pl(3) }, { type: "entre", index: 0 }), "pas de ligne avant Pl.1");
   s.g({ type: "deposer", source: { type: "planche", plancheId: pl(3) }, cible: { type: "entre", index: 0 } });
   eq(s.e.magazine.planches[0].id, "pl-1", "Pl.1 en tête"); eq(s.e.magazine.planches[1].id, "pl-3", "bornée à l'index 1");
@@ -1108,6 +1108,9 @@ function tireur(h: () => number): (e: EtatEditeur) => Libre {
     /* lot C : le style, valide, retiré, ou cassé (T-04 n'existe pas, un hexa en majuscules, une forme folle) */
     [2, () => ({ type: "styler", style: pick([null, styleDePaire("T-01"), styleDePaire("T-17", { ...COULEURS_ORIGINE, papier: "#f8ecdd" }), styleDePaire("TW-1"), { paire: "T-04", couleurs: COULEURS_ORIGINE }, { paire: "T-01" }, { paire: "T-01", couleurs: { ...COULEURS_ORIGINE, nuit: "#ABCDEF" } }, 12, "style"]) })],
     [2, (e) => ({ type: "etiqueter", ids: ids(e, int(1, 3)), etiquette: pick(["couverture", "double", "pleine", "bidon"]) })],
+    /* lot G : les couleurs libres, valides ou cassées (un hexa en majuscules, trois chiffres, « blanc », un nom, un nombre) ; la couverture aussi */
+    [2, (e) => ({ type: "colorerFond", plancheId: h() < 0.1 ? "couverture" : plancheId(e), cible: pick(["gauche", "droite", "double", "bidon"]), couleur: pick([null, null, "accent", "aplatClair", "nuit", "#ca7749", "#CA7749", "#abc", "blanc", "rouge", 3]) })],
+    [2, (e) => ({ type: "colorerTexte", ref: h() < 0.15 ? { plancheId: "couverture", cible: "double", index: int(0, 3) } : refTexte(e), couleur: pick([null, "encre", "papier", "accent", "#1f3a5c", "#FFF", "blanc", ""]) })],
     [5, () => ({ type: "filtrer", filtres: {} })],
     [5, () => ({ type: "filtrer", filtres: filtres() })],
     [1, () => ({ type: "retirerFiltre", cle: pick(["statut", "personnes", "montrerSignalees", "bidon"]) })],
@@ -1349,12 +1352,12 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const s = new Seance(vingt, { planches: 3 }).zero();
       const ids = [...s.e.catalogue.keys()];
       s.g({ type: "creerDoubles", ids });
-      eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-5", "pl-2", "pl-3"], "deux doubles après la planche courante");
+      eq(s.e.magazine.planches.map((p) => p.id), ["pl-1", "pl-4", "pl-5", "pl-2", "pl-3", "pl-fin"], "deux doubles après la planche courante, la dernière page reste en dernier");
       eq([s.idsPleins(4, "double").length, s.idsPleins(5, "double").length], [10, 10], "20 photos : 10 + 10");
       eq([...s.idsPleins(4, "double"), ...s.idsPleins(5, "double")], ids, "l'ordre du groupe suivi");
       ok(s.e.plancheCourante === "pl-4" && s.e.prochainNumero === 6 && s.hist === 1, "on arrive sur la première, une seule annulation");
       s.g({ type: "annuler" });
-      eq(s.e.magazine.planches.length, 3, "annuler retire les deux doubles");
+      eq(s.e.magazine.planches.length, 4, "annuler retire les deux doubles (la première, deux doubles, la dernière page)");
       s.g({ type: "retablir" }).zero();
       const issueGlisse = s.glisse({ type: "bibliotheque", ids: ["F01", "F02", "F03"] }, { type: "entre", index: 3 });
       ok(!issueGlisse.refus, "lâcher entre deux planches accepté");
@@ -1781,7 +1784,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const j = O.jalon("export", "essai");
       ok(O.leconValide(j) && !O.leconValide({ ...j, type: "autre" }) && !O.leconValide({ ...j, version: "x" }), "le serveur relit une leçon (type, version)");
       const inst = O.instantane(e5, mes);
-      ok(inst.photos.length === cat.size && inst.photos.find((p) => p.id === "B")?.nettete === 900 && inst.planches.length === 3 && inst.lecture.piles.length === lu.piles.length, "G2 : l'instantané porte mesures, lecture, planches, sans pixels");
+      ok(inst.photos.length === cat.size && inst.photos.find((p) => p.id === "B")?.nettete === 900 && inst.planches.length === 4 && inst.lecture.piles.length === lu.piles.length, "G2 : l'instantané porte mesures, lecture, planches, sans pixels");
       ok(O.contenuValide(e5.magazine), "les leçons ne touchent pas au magazine sauvegardé");
     } catch (e) { msg = e instanceof Error ? e.message : String(e); }
     if (msg !== null) { echecs++; console.log(`   ${msg}`); }
@@ -1857,7 +1860,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const cat = new Map(catalogue("A1:L A2:L A3:L A4:L A5:L A6:L B1:L B2:L B3:L B4:L L1:L S:L F:L V:P C:1000x2200", {
         A1: { date: t(9, 0) }, A2: { date: t(9, 10) }, A3: { date: t(9, 20) }, A4: { date: t(9, 30) }, A5: { date: t(9, 40) }, A6: { date: t(9, 50) },
         B1: { date: t(20, 0) }, B2: { date: t(20, 10) }, B3: { date: t(20, 20) }, B4: { date: t(20, 30) }, L1: { date: t(20, 40), personne: "Léo" },
-        S: { date: t(12, 0) }, F: { date: t(12, 30) }, V: { date: t(13, 0) }, C: { date: null },
+        S: { date: t(12, 0) }, F: { date: t(12, 30) }, V: { date: t(13, 0) }, C: { date: null, nom: "C.PNG" },
       }).map((p) => [p.id, p]));
       const ids = [...cat.keys()];
       const mesures: Record<string, O.Mesure> = Object.fromEntries(ids.map((id, i) => [id, { nettete: 500 + i * 20, dhash: DH[i % DH.length] ?? h(i), lumi: { moyenne: 120, noirs: 0.02, blancs: 0.02 }, palette: ["#336699", "#cc9966"] }]));
@@ -1949,7 +1952,7 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       const cat = new Map(catalogue("A:L B:L C:L D:L E:L F:L G:L H:L I:L J:L K:L L:L CAP:1170x2532 WA:L", {
         A: { date: t(0) }, B: { date: t(3) }, C: { date: t(20) }, D: { date: t(21) }, E: { date: t(30) }, F: { date: t(31) }, G: { date: t(32) }, H: { date: t(33) },
         I: { date: t(34) }, J: { date: t(35) }, K: { date: t(36) }, L: { date: t(37) },
-        CAP: { date: "2026-06-11T10:40:00", appareil: null }, WA: { date: t(50), appareil: null },
+        CAP: { date: "2026-06-11T10:40:00", appareil: null, nom: "CAP.png" }, WA: { date: t(50), appareil: null },
       }).map((p) => [p.id, p]));
       const D = ["ff00ff00ff00ff00", "0f0f0f0f0f0f0f0f", "aaaa5555aaaa5555", "f0f0f0f0f0f0f0f0", "00ff00ff00ff00ff", "5555aaaa5555aaaa", "3c3c3c3c3c3c3c3c", "c3c3c3c3c3c3c3c3", "ffff0000ffff0000", "0000ffff0000ffff", "f00ff00ff00ff00f", "0ff00ff00ff00ff0", "cccc3333cccc3333", "3333cccc3333cccc"];
       const mes = new Map<string, O.Mesure>([...cat.keys()].map((id, i) => [id, { nettete: 400 + i * 10, dhash: D[i], lumi: { moyenne: 120, noirs: 0.01, blancs: 0.01 }, aplats: 0.2 }]));
@@ -1964,9 +1967,9 @@ export function verifierMepEditeur(rapporter: (nom: string, reussi: boolean) => 
       ok((lu.similaires ?? []).some((g) => g.includes("A") && g.includes("B")) && !lu.piles.some((p) => p.tete === "A" || p.tete === "B"), "R93 : A et B (même scène, 3 min, 12 cases) sont SIMILAIRES, pas une pile");
       ok(tags.get("A")?.includes("similaire") && tags.get("B")?.includes("similaire"), "R94 : le tag « Similaire » est posé sur les deux");
       ok(tags.get("E")?.includes("floue"), "R73 (10/11) : sous le plancher de 40, floue même sans écart à la médiane");
-      ok(tags.get("CAP")?.includes("capture"), "A4 (10/11) : sans appareil et avec aplats, capture, MÊME avec une date (le fichier en a toujours une en création libre)");
+      ok(tags.get("CAP")?.includes("capture"), "A4 (10/11), R141 : sans appareil, forme d'écran et PNG : capture, MÊME avec une date (le fichier en a toujours une en création libre)");
       ok(!tags.get("WA")?.includes("capture"), "A4 : sans appareil mais sans aplats ni forme d'écran (photo reçue par messagerie) : pas une capture");
-      ok(!O.estCapture({ l: 1170, h: 2532, date: t(1), appareil: "Apple iPhone 15" }, { nettete: 1, dhash: D[0], aplats: 0.9 }), "A4 : une photo d'appareil n'est jamais une capture");
+      ok(!O.estCapture({ l: 1170, h: 2532, date: t(1), appareil: "Apple iPhone 15", nom: "IMG_1.PNG" }, { nettete: 1, dhash: D[0], aplats: 0.9 }), "A4 : une photo d'appareil n'est jamais une capture");
       ok(tags.get("F")?.includes("visages") && O.MOT_TAG.visages.vignette === false, "A6 : « Avec visages » est filtrable, jamais sur la vignette");
       const n = O.comptesTags(tags);
       ok(n.similaire === 2 && n.capture === 1 && n.floue >= 1, "les comptes du filtre");
