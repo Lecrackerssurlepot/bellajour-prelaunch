@@ -14,7 +14,9 @@ import * as O from "@/lib/mise-en-page/editeur";
 import type { EtatEditeur, LectureIA, PhotoMaq } from "@/lib/mise-en-page/editeur";
 import { MODIFIANTS } from "@/lib/mise-en-page/editeur/etat";
 import { ID_COUVERTURE } from "@/lib/mise-en-page/couverture";
-import { nouveauMagazine, type Magazine } from "@/lib/mise-en-page/magazine";
+import { TEMPLATES_DESSINES, candidats, cadresDe, decorDe, nouveauMagazine, templateParId, type Magazine, type PhotoRef } from "@/lib/mise-en-page/magazine";
+import { EPINGLES_RETIREES } from "@/lib/mise-en-page/epingles";
+import { GABARITS_COUVERTURE } from "@/lib/mise-en-page/couverture";
 import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
 import { GRILLE, MARGES, PAGE_H, PAGE_L, caseGrille, zoneUtile, type Rect } from "@/lib/mise-en-page/geometrie";
 
@@ -51,6 +53,7 @@ export async function verifierMepVague1(ok: Rapporter, titre: (t: string) => voi
   verifierT210(ok);
   verifierT211(ok);
   verifierT213(ok);
+  verifierT209(ok);
 }
 
 /* ─────────────────────────── 1. T-210 : le pré-tri retiré ─────────────────────────── */
@@ -191,4 +194,54 @@ function verifierT213(ok: Rapporter): void {
   const couv = lire(`${E}SceneCouverture.tsx`);
   ok("T-213 : écran seulement (ni l'IDML, ni le PDF, ni la sauvegarde) ; la couverture la montre aussi, sur la 4e et la 1re",
     dehors && /<GrilleEcran largeur=\{W\} pages=\{pagesDeCouverture\(d\)\}/.test(couv));
+}
+
+/* ─────────────────────────── 4. T-209 : les gabarits à aplat ─────────────────────────── */
+
+function verifierT209(ok: Rapporter): void {
+  const RETIRES = ["E-D8c", "E-D14a", "E-D14b"];
+  const COPIES: [string, string][] = [["E-D8c", "E-D8f"], ["E-D14a", "E-D14c"], ["E-D14b", "E-D14d"]];
+  ok("T-209 : les trois gabarits à aplat sont retirés (E-D8c, E-D14a, E-D14b), et ce sont bien les seuls gabarits dessinés qui portaient un aplat",
+    [...EPINGLES_RETIREES].sort().join() === [...RETIRES].sort().join() && RETIRES.every((id) => (templateParId(id)?.decor?.length ?? 0) > 0)
+      && TEMPLATES_DESSINES.filter((t) => !EPINGLES_RETIREES.has(t.id)).every((t) => !(t.decor?.length)));
+  ok("T-209 : leurs dispositions restent proposées SANS aplat, sous un nouvel id (mêmes cadres, aucun décor)",
+    COPIES.every(([a, b]) => { const ta = templateParId(a), tb = templateParId(b); return !!ta && !!tb && !tb.decor && JSON.stringify(ta.cadres) === JSON.stringify(tb.cadres) && ta.nbPhotos === tb.nbPhotos; }));
+
+  /* ni au tiroir, ni sous R, ni par « Poser » : `candidats` les écarte, pour tous les nombres et toutes les orientations */
+  const ph = (i: number, l: number, h: number): PhotoRef => ({ id: `p${i}`, nom: `p${i}.jpg`, l, h, date: `2026-06-12T1${i % 10}:00:00` });
+  let jamais = true;
+  for (let n = 1; n <= 12; n++) for (const forme of [[4000, 3000], [3000, 4000], [3000, 3000]] as const) {
+    const photos = Array.from({ length: n }, (_, i) => ph(i, forme[0], forme[1]));
+    jamais &&= candidats("double", photos).every((t) => !EPINGLES_RETIREES.has(t.id)) && O.gabaritsClasses("double", photos, null).every((x) => !EPINGLES_RETIREES.has(x.template.id));
+  }
+  ok("T-209 : `candidats` et `gabaritsClasses` (le tiroir, R, Poser) ne proposent jamais un gabarit retiré, de 1 à 12 photos, paysage, portrait ou carré", jamais);
+
+  const cat = new Map<string, PhotoMaq>(Array.from({ length: 9 }, (_, i) => [`p${i}`, photo(`p${i}`, { date: heure(8 + i), l: i % 2 ? 3000 : 4000, h: i % 2 ? 4000 : 3000 })]));
+  let e: EtatEditeur = O.creerEtat({ magazine: magazine(3), catalogue: cat });
+  const pl2 = e.magazine.planches[1].id;
+  e = O.appliquer(e, { type: "deposer", source: { type: "bibliotheque", ids: ["p0", "p1"] }, cible: { type: "double", plancheId: pl2 } });
+  const tiroir = O.gabaritsPour(e, pl2, "double").map((g) => g.id);
+  let vus = new Set<string>();
+  let x = e;
+  for (let k = 0; k < tiroir.length + 2; k++) { x = O.appliquer(x, { type: "autreGabarit", plancheId: pl2, cible: "double", sens: 1 }); vus.add(x.magazine.planches[1].double?.templateId ?? ""); }
+  ok("T-209 : deux photos sur une double : le tiroir n'offre ni E-D14a ni sa copie retirée, mais E-D14c ; R fait le tour sans jamais tomber sur un retiré",
+    tiroir.length > 2 && !tiroir.some((id) => EPINGLES_RETIREES.has(id)) && tiroir.includes("E-D14c") && ![...vus].some((id) => EPINGLES_RETIREES.has(id)) && vus.size > 2);
+  let e9: EtatEditeur = O.creerEtat({ magazine: magazine(3), catalogue: cat });
+  e9 = O.appliquer(e9, { type: "deposer", source: { type: "bibliotheque", ids: [...cat.keys()] }, cible: { type: "double", plancheId: e9.magazine.planches[1].id } });
+  vus = new Set(O.gabaritsPour(e9, e9.magazine.planches[1].id, "double").map((g) => g.id));
+  ok("T-209 : neuf photos : le photomaton sans aplat (E-D8f) est au tiroir, celui à fond noir (E-D8c) n'y est plus", vus.has("E-D8f") && !vus.has("E-D8c"));
+
+  /* un magazine sauvegardé qui s'en sert s'ouvre toujours, avec son aplat */
+  const neutre = { zoom: 1, dx: 0, dy: 0 };
+  const vieux: Magazine = { ...magazine(3) };
+  vieux.planches = vieux.planches.map((p, i) => (i !== 1 ? p : { ...p, mode: "double" as const, gauche: null, droite: null,
+    double: { templateId: "E-D14a", photos: [{ photoId: "p0", recadrage: neutre }, { photoId: "p1", recadrage: neutre }], textes: [{ contenu: "Madère", taille: 28, gras: true }, { contenu: "Texte", taille: 9, gras: false }, { contenu: "Titre", taille: 28, gras: true }, { contenu: "Texte", taille: 9, gras: false }] } }));
+  const ouvert = O.creerEtat({ magazine: vieux, catalogue: cat });
+  const d = ouvert.magazine.planches[1].double!;
+  ok("T-209 : un magazine sauvegardé sur E-D14a est valide, s'ouvre sans erreur d'invariant, et garde ses cadres et ses deux aplats",
+    contenuValide(vieux) && O.verifierInvariants(ouvert).length === 0 && cadresDe(d, "double").length === 6 && decorDe(d, "double").length === 2);
+  const r = O.appliquer(ouvert, { type: "autreGabarit", plancheId: vieux.planches[1].id, cible: "double", sens: 1 });
+  ok("T-209 : R depuis un gabarit retiré passe à un gabarit proposé (le titre écrit le suit, s'il a une place)",
+    !EPINGLES_RETIREES.has(r.magazine.planches[1].double?.templateId ?? "E-D14a") && r.magazine !== ouvert.magazine);
+  ok("T-209 : les gabarits de couverture gardent leurs aplats (la couverture n'a pas encore de fond libre)", GABARITS_COUVERTURE.some((g) => g.decor.length > 0));
 }

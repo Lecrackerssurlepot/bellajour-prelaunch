@@ -430,7 +430,7 @@ import {
    Modules purs, aucun import de l'ancien moteur de l'atelier. */
 import { PAGE_L, PAGE_H, PLANCHE_L, FOND_PERDU, PT_PAR_MM, MARGES as MARGES_MEP, GRILLE as GRILLE_MEP, zoneUtile, caseGrille } from "@/lib/mise-en-page/geometrie";
 import { orientationDe, pourCote, signatureDe as signatureDeMep, decorPourCote as decorPourCoteMep, type Template as TemplateMep } from "@/lib/mise-en-page/types";
-import { TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
+import { EPINGLES_RETIREES, TEMPLATES_EPINGLES } from "@/lib/mise-en-page/epingles";
 import { TEMPLATES_ANNEXE } from "@/lib/mise-en-page/templates";
 import { grillesPage, grillesDouble, toutesLesGrilles as toutesLesGrillesMep } from "@/lib/mise-en-page/grilles";
 import { cadrer, deplacer, zoomer, RECADRAGE_NEUTRE } from "@/lib/mise-en-page/recadrage";
@@ -7311,16 +7311,18 @@ const verifierMepClient = () => {
     titre("— Mise en page : gabarits des épingles (29/10, D28) —");
     const ep = TEMPLATES_EPINGLES;
     const ids = [...TEMPLATES_DESSINES.map((t) => t.id), ...toutesLesGrillesMep().map((t) => t.id)];
-    ok("épingles : 37 doubles et 17 pages (41 doubles dessinées avec l'annexe), ids « E- » uniques dans tout le catalogue, tous retrouvés par templateParId",
-      ep.filter((t) => t.portee === "double").length === 37 && ep.filter((t) => t.portee === "page").length === 17
+    ok("épingles : 40 doubles (37 du 29/10, plus les 3 copies sans aplat du 16/11, T-209) et 17 pages, ids « E- » uniques dans tout le catalogue, tous retrouvés par templateParId (les 3 retirées comprises)",
+      ep.filter((t) => t.portee === "double").length === 40 && ep.filter((t) => t.portee === "page").length === 17 && EPINGLES_RETIREES.size === 3 && [...EPINGLES_RETIREES].every((id) => !!templateParId(id))
         && ep.every((t) => t.id.startsWith("E-") && t.origine === "epingle" && templateParId(t.id) === t) && new Set(ids).size === ids.length);
     ok("épingles : nbPhotos = cadres photo, signature calculée, 1 à 6 par page et 1 à 12 par double",
       ep.every((t) => t.nbPhotos === t.cadres.filter((c) => c.role === "photo").length && t.signature === signatureDeMep(t.cadres)
         && t.nbPhotos >= 1 && t.nbPhotos <= (t.portee === "page" ? 6 : 12)));
     const manques: string[] = [];
-    for (let n = 1; n <= 12; n++) if (TEMPLATES_DESSINES.filter((t) => t.portee === "double" && t.nbPhotos === n).length < 2) manques.push(`double ${n}`);
-    for (let n = 1; n <= 6; n++) if (TEMPLATES_DESSINES.filter((t) => t.portee === "page" && t.nbPhotos === n).length < 2) manques.push(`page ${n}`);
-    ok(`équilibre : au moins deux gabarits dessinés pour chaque nombre (double 1 à 12, page 1 à 6)${manques.length ? ` — manquent : ${manques.join(", ")}` : ""}`, manques.length === 0);
+    /* T-209 : on compte ceux qui sont PROPOSÉS (les retirés ne le sont plus) */
+    const proposes = TEMPLATES_DESSINES.filter((t) => !EPINGLES_RETIREES.has(t.id));
+    for (let n = 1; n <= 12; n++) if (proposes.filter((t) => t.portee === "double" && t.nbPhotos === n).length < 2) manques.push(`double ${n}`);
+    for (let n = 1; n <= 6; n++) if (proposes.filter((t) => t.portee === "page" && t.nbPhotos === n).length < 2) manques.push(`page ${n}`);
+    ok(`équilibre : au moins deux gabarits dessinés PROPOSÉS pour chaque nombre (double 1 à 12, page 1 à 6)${manques.length ? ` — manquent : ${manques.join(", ")}` : ""}`, manques.length === 0);
     /* Les coins d'un cadre, tourné autour de son centre (sens horaire, Y vers le bas). */
     const coins = (c: { x: number; y: number; l: number; h: number; rotation?: number }): [number, number][] => {
       const r = ((c.rotation ?? 0) * Math.PI) / 180, cx = c.x + c.l / 2, cy = c.y + c.h / 2;
