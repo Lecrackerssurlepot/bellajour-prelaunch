@@ -60,7 +60,6 @@ export default function BlocMagazine() {
           <div className="nl-gestes">
             {fenetre && <Link className="nl-cta nl-cta--plein" href={COMPOSER_NOEL} prefetch={false}>Composer pour Noël</Link>}
             <Link className={`nl-cta ${fenetre ? '' : 'nl-cta--plein'}`} href="/offrir" prefetch={false}>Offrir une carte cadeau</Link>
-            <Link className="nl-cta nl-cta--discret" href="/offrir#conditions" prefetch={false}>Bon à savoir</Link>
           </div>
         </div>
       </div>

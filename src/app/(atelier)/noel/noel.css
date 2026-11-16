@@ -22,13 +22,19 @@
    de la page, qui commence sous le bandeau. Ce qui se colle à la FENÊTRE
    (sticky, scroll-padding) ajoute `--nl-bh` lui-même. */
 :root:has(.nl-noel-bandeau) body { padding-top: var(--nl-bh); }
+/* Le premier écran de l'accueil tient TOUJOURS dans la fenêtre : le bandeau
+   prend sa hauteur au héros, sinon le bas (bouton, fondu) passait sous le pli
+   (retour du 16/11 : « ne prend pas bien toute la zone »). */
+:root:has(.nl-noel-bandeau) .at-accueil .hero { min-height: calc(var(--app-height, 100vh) - var(--nl-bh)); }
 
 .nl-noel-bandeau {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 51;
+  /* Au-dessus du grain de l'accueil (.grain, z 900, ouverture.css) : sous
+     lui, le verre clair du bandeau le montrait pixelisé (retour du 16/11). */
+  z-index: 901;
   height: var(--nl-bh, 44px);
   display: flex;
   align-items: center;
@@ -40,7 +46,7 @@
   font-size: 13.5px;
   letter-spacing: 0.01em;
   color: var(--c-text-soft);
-  background: var(--glass-bg);
+  background: var(--glass-bg-plein);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
 }
