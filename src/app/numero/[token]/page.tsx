@@ -411,7 +411,14 @@ export default async function NumeroPage({
      se connaissent pas davantage que les deux premiers : l'un signe des URL
      R2, l'autre relit le dossier pour le compte. */
   const [apercu, lien, creditEuros] = await Promise.all([
-    numero.etat === 'apercu_pret' ? resoudreApercu(numero.apercu_urls, { token: numero.token }) : null,
+    /* ⚠️ PAS de route stable en prévisualisation (16/11, dossier « Japon ») :
+       /api/atelier/visuel ne sert que les clés que le dossier déclare EN
+       BASE, et un brouillon n'y est pas encore. Avec le token, chaque visuel
+       rendait 404 et l'atelier voyait des cadres vides avant de publier.
+       Le brouillon garde donc les liens signés (une heure, l'atelier seul). */
+    numero.etat === 'apercu_pret'
+      ? resoudreApercu(numero.apercu_urls, previsualisation ? {} : { token: numero.token })
+      : null,
     qui ? rattacherParToken(makeSupabase(), qui, token) : null,
     /* ── LE CRÉDIT FONDATEUR, EN LECTURE SEULE (lot 6, 10/09/2026) ──
        Le bon de commande doit dire un TOTAL, donc connaître la remise avant
