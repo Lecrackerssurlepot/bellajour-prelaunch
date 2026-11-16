@@ -5,7 +5,7 @@
 - Imprimeur : SoBook. Plafond : 25 dossiers « fait pour toi », photos + questionnaire reçus avant lun. 7 déc. 2026 (13 jours photos → livraison : 2 couverture + 2 finition + 1 client + 8 prod/livraison).
 
 ## Offres
-- Carte cadeau : usage unique, 12 mois, reliquat crédité. Code BJ-CADEAU-XXXXXX, page imprimable /carte/[token] (noindex, token non devinable). Montants : voir TARIFICATION.md.
+- Carte cadeau : usage unique, 12 mois, reliquat crédité. Code BJ-CADEAU-XXXXXX, page imprimable /carte/[token] (noindex, token non devinable). Montants : 30 €, 50 € ou libre de 20 à 200 € (DECISIONS-16-11.md).
 - 2ᵉ exemplaire (France) : même commande/colis/adresse, 2 max, -40 % même couverture, -20 % couverture différente (choix parmi les autres couvertures ; « couverture 1 / 2 » faites sous Canva). Libellé légal : « Pour un 1ᵉʳ exemplaire acheté, le 2ᵉ à -40 % », sans prix barré (offre conditionnelle, hors Omnibus art. 6a / L112-1-1 — je ne suis pas juriste).
 - « Fait pour toi » : photos avant le 7 déc., livraison vers le 20.
 

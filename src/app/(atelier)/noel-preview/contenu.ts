@@ -1,9 +1,9 @@
-/* Les textes de Noël 2026, recopiés de docs/noel-2026 (PARCOURS-ACHAT.md,
+/* Les textes de Noël 2026, recopiés de docs/noel-2026 (archive/PARCOURS-ACHAT.md,
    MAILS.md). Un texte marqué `propose: true` n'existe pas dans ces fichiers :
    je l'ai écrit pour que le visuel tienne, il attend la relecture de Mathias.
 
    Aucun chiffre n'est tranché ici. Les montants de carte sont ceux de
-   l'option D de TARIFICATION.md (25 / 35 / 45 + libre), affichés comme des
+   l'option D de archive/TARIFICATION.md (25 / 35 / 45 + libre), affichés comme des
    EXEMPLES ; le nombre de places est le plafond de STRATEGIE.md (25), la
    valeur du premier jour, pas une lecture en base. */
 
@@ -38,7 +38,7 @@ export const MESSAGE_MAX = 140
 
 export const CODE_EXEMPLE = 'BJ-CADEAU-7KQ4MR'
 
-/* PARCOURS-ACHAT.md, tableau « Wording ». */
+/* archive/PARCOURS-ACHAT.md, tableau « Wording ». */
 export const TEXTES: Record<Ton, {
   titre: string
   sousTitre: string

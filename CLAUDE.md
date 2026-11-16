@@ -38,6 +38,8 @@ Documents lus à la demande, jamais chargés d'office :
 - `docs/DECISIONS.md` — ce qu'on a tranché et pourquoi. À lire avant de rouvrir un débat.
 - `docs/moteur/INDEX.md` — le registre du moteur de mise en page : une fiche par couche, une recette datée par test.
 - `docs/produit/VISION.md` et `ROADMAP.md` — où on va, et dans quel ordre.
+- `docs/marque/` — la charte graphique, le ton, la façon de poser une information. **À lire avant
+  toute maquette, tout texte visible et tout mail.**
 
 ## Comment on travaille
 

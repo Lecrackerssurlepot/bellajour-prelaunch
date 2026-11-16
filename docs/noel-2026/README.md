@@ -1,23 +1,44 @@
-# Noël 2026 — dossier stratégie B2C (13/11/2026)
+# Noël 2026 : le dossier
 
-Source de vérité de la stratégie Noël. Version Notion : fiche « Stratégie Noel » (Board Cofondateurs).
-Règle : toute décision change ICI d'abord, puis Notion.
+Source de vérité de Noël B2C (cartes cadeau, 2ᵉ exemplaire, mails, réseaux). Branche `noel-2026`,
+aperçu `/noel-preview` derrière `NEXT_PUBLIC_GIFT_CARD_ENABLED` (posé sur le Preview de la branche seulement).
+Règle : une décision change ICI d'abord, puis la fiche Notion « Stratégie Noel ».
 
-| Fichier | Contenu |
-|---|---|
-| STRATEGIE.md | règles, offres, segments, calendrier, capacité, points ouverts |
-| TARIFICATION.md | options de prix (cartes, 2ᵉ exemplaire) à trancher |
-| PARCOURS-ACHAT.md | carte cadeau et 2ᵉ exemplaire dans le tunnel, wording festif |
-| MAILS.md | liste complète des mails, 2 tons, calendrier |
-| CA-PREVISION.md | scénarios de chiffre d'affaires (HYPOTHÈSES, pas des données) |
-| COMMUNICATION-RESEAUX.md | plan Instagram organique + accueil sur le site |
-| PROMPT-TOTAL.md | le prompt unique à coller dans Claude Code |
-| LOOP.md | la liste de tâches du /loop + règles de sécurité |
+## Ce qu'il faut lire, dans cet ordre
 
-## Constats du 13/11 (vérifiés)
-- Charte réelle = `CLAUDE.md` du repo + `src/app/CLAUDE.md` (monde sombre `(atelier)/theme.css`, Cormorant Garamond + DM Sans, accent #4a90d9). Le skill « bellajour-mail » (palette #B8834A, Playfair, « album », 1 page = 1 €) est PÉRIMÉ. Le gabarit Brevo 24 utilise #4A90D9 et un cadre à coins arrondis : il suit le repo, pas le skill.
-- `src/lib/atelier/exemplaires.ts` code 2ᵉ à -30 %, suivants à -50 %, max 10, figé dans `scripts/verif-atelier.ts` : à REMPLACER (prompt 4).
-- Supabase : aucune table carte cadeau. Existe `pages_credits` (email, montant entier, source, status) et `numeros.compte_id → auth.users`. RLS activée partout, sans policy : accès serveur par service key uniquement (cohérent avec le socle).
-- Colonne `numeros.cloudprinter_order_id` et `docs/reference/SPECS-CLOUDPRINTER.md` : le code parle encore Cloudprinter. SoBook = manuel ou à brancher ? OUVERT.
-- Stripe : compte live unique « Bellajour », aucun produit actif. Pas d'environnement test visible via l'outil : les tests se font avec les clés test du repo (`.env`), jamais en live.
-- Brevo : compte « Bellajour » (contact@bellajour.com), plan gratuit 300 envois/jour : à surveiller pour un envoi massif. Attributs existants : PRENOM, NOM, OPT_IN, REF_CODE… ; à créer si besoin : MONTANT, CODE, PRENOM_DONATEUR (passés en params transactionnels, pas besoin d'attribut).
+| Fichier | Contenu | État |
+|---|---|---|
+| `DECISIONS-16-11.md` | les décisions de Mathias du 16/11 et l'état de chaque lot | **fait foi** |
+| `STRATEGIE.md` | règles, offres, segments, calendrier, capacité, points ouverts | vivant, corrigé par DECISIONS |
+| `MAILS.md` | la liste des 11 mails de Noël, leurs déclencheurs, les textes aux deux tons | textes **à réécrire** au nouveau ton (`docs/marque/TON.md`) |
+| `COMMUNICATION-RESEAUX.md` | Instagram organique, accueil sur le site | vivant |
+| `captures/` | captures 375 px et ordinateur des visuels v1 et v2 | historique visuel |
+| `archive/` | ce qui a été remplacé, avec la raison (voir `archive/README.md`) | ne plus suivre |
+
+La charte, le ton et la façon de présenter l'information ne vivent pas ici : `docs/marque/`.
+
+## L'évolution
+
+| Date | Ce qui s'est passé | Trace |
+|---|---|---|
+| 13/11 | Dossier stratégie écrit : règles, prix envisagés, parcours, mails, prévision de CA, plan réseaux, prompt et /loop. Page `/noel-preview` pour juger les visuels | a9e4800b, b771ffc6, ddc00c20 |
+| 14/11 | Parcours v2 (carte sombre, bandeau, chapitre de l'accueil, `/offrir` en récit). Phrase retenue : « Vos photos deviennent un magazine. » | 52ad27ec, 3e48dc65, afe1903b |
+| 16/11 matin | Décisions de Mathias : montants 30 / 50 / libre 20 à 200 €, vrais prix de `grille.ts`, 2ᵉ exemplaire −40 / −20 % pendant Noël seulement, reliquat sur le compte, SoBook par API, migration autorisée | f8e3b9c4 |
+| 16/11 | Lot 1 (tables `cartes_cadeau`, `credits_mouvements`, migration appliquée en production) et lot 2 (acheter une carte, Stripe en mode test) | e2249960, 3a7ffce3 |
+| 16/11 | Retouches de `/offrir` (moins de défilement, vraie signature sur la carte, dédicace au-dessus de la phrase, bandeau de jours, e-mail ET impression, carte bancaire seule) et lot 3 (la carte au paiement du magazine, le reste au compte, l'envoi programmé) | 0bbb0ca2 |
+| 16/11 soir | Le bloc « payé » de `/numero` réécrit en récapitulatif ligne par ligne (retour de Mathias : « beaucoup plus structuré ») | 955e1e57 |
+| 16/11 soir | Dossier rangé : documents remplacés en `archive/`, charte, ton et structure écrits dans `docs/marque/` | ce commit |
+
+## Où on en est
+
+- **Fait** (lots 1 à 3) : acheter, recevoir, imprimer, utiliser une carte ; le reste au compte, visible à `/numero` et `/compte`.
+- **Validé à l'œil par Mathias le 16/11** : toutes les pages, sauf le bloc payé de `/numero`, refait le soir même.
+- **À faire** : lot 4 (règle de Noël du 2ᵉ exemplaire, compteur de places), lot 5 (bandeau, chapitre, bloc `/magazine` sur le vrai site), lot 6 (SoBook, en attente de sa documentation et de sa clé).
+- **Mails** : rien dans Brevo. Mathias envoie d'abord ses idées et ses retouches, on écrit le ton (`docs/marque/TON.md`), puis les textes, puis la programmation. Aucun gabarit, aucun envoi de test sans son accord.
+
+## Constats du 13/11 encore vrais
+
+- Le skill « bellajour-mail » (palette `#B8834A`, Playfair, « album », 1 page = 1 €) est PÉRIMÉ. Le gabarit Brevo 24 suit le dépôt (`#4A90D9`, cadre arrondi).
+- `numeros.cloudprinter_order_id` et `docs/reference/SPECS-CLOUDPRINTER.md` : le code parle encore Cloudprinter ; SoBook est à brancher.
+- Stripe test n'a **aucun webhook** : un paiement de test ne déclenche rien ; on rejoue l'événement signé en local.
+- Brevo : plan gratuit, 300 envois par jour, à surveiller pour un envoi groupé. Les valeurs propres à un mail passent en paramètres transactionnels, sans créer d'attribut.
