@@ -13,9 +13,22 @@ import {
   imputationCommande,
   soldeCredit,
   carteAEnvoyer,
+  dateNoelPourMail,
+  decalerJour,
+  doitRappelerCarte,
+  doitRappelerFetes,
+  rappelCredit,
+  recapCarteM4,
 } from "@/lib/atelier/carteCadeau";
 import type Stripe from "stripe";
-import { carteDepuisSession, estSessionCarte, genererCodeCarte, genererTokenCarte } from "@/lib/atelier/carteServeur";
+import {
+  carteDepuisSession,
+  estSessionCarte,
+  genererCodeCarte,
+  genererTokenCarte,
+  parametresCarte,
+  type CarteLigne,
+} from "@/lib/atelier/carteServeur";
 
 type Ok = (n: string, c: boolean) => void;
 
@@ -127,5 +140,66 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
     carteAEnvoyer(prog, "2026-12-24") && !carteAEnvoyer(prog, "2026-12-23")
       && !carteAEnvoyer({ ...prog, envoyee_le: "2026-12-24T07:00:00Z" }, "2026-12-24")
       && !carteAEnvoyer({ ...prog, statut: "remboursee" }, "2026-12-24")
-      && !carteAEnvoyer({ ...prog, envoi_le: null }, "2026-12-24"));
+      && carteAEnvoyer({ ...prog, envoi_le: null }, "2026-12-24"));
+  ok("envoi tout de suite raté au paiement : la relève la reprend (envoi_le vide, pas encore partie)",
+    carteAEnvoyer({ ...prog, envoi_le: null }, "2026-11-20") && !carteAEnvoyer({ ...prog, envoi_le: null, remise: "imprimer" }, "2026-11-20"));
+
+  titre("— Noël : les mails de la carte (16/11) —");
+  ok("la date de Noël se dit jusqu'au 7 décembre inclus, plus après",
+    dateNoelPourMail("2026-12-07") === "lundi 7 décembre" && dateNoelPourMail("2026-12-08") === "");
+  ok("décaler un jour : 30 jours avant le 16/11/2027, en traversant un mois",
+    decalerJour("2027-11-16", -30) === "2027-10-17" && decalerJour("2027-03-01", -1) === "2027-02-28");
+  const recue = {
+    statut: "payee" as const, remise: "email", destinataire_email: "camille@exemple.fr",
+    envoyee_le: "2026-12-20T07:00:00Z", expire_le: "2027-11-16T10:00:00Z",
+  };
+  ok("GC4 : à J−30 pile, pas la veille, plus le jour de la fin",
+    doitRappelerCarte(recue, "2027-10-17") && !doitRappelerCarte(recue, "2027-10-16") && !doitRappelerCarte(recue, "2027-11-16"));
+  ok("GC4 : jamais une carte utilisée, à imprimer, ou pas encore partie",
+    !doitRappelerCarte({ ...recue, statut: "utilisee" }, "2027-10-20")
+      && !doitRappelerCarte({ ...recue, remise: "imprimer", destinataire_email: null }, "2027-10-20")
+      && !doitRappelerCarte({ ...recue, envoyee_le: null }, "2027-10-20"));
+  ok("GC6 : le 15 janvier pour une carte des fêtes, pas avant, pas pour une carte de février",
+    doitRappelerFetes(recue, "2027-01-15") && !doitRappelerFetes(recue, "2027-01-14")
+      && !doitRappelerFetes({ ...recue, envoyee_le: "2027-02-03T07:00:00Z" }, "2027-03-01"));
+  ok("GC6 ne croise jamais GC4 : il s'arrête où GC4 commence",
+    !doitRappelerFetes(recue, "2027-10-17") && doitRappelerFetes(recue, "2027-10-16"));
+  const reste = { montant_centimes: 1200, expire_le: "2027-11-16T10:00:00Z" };
+  ok("GC4b : le reste à J−30, borné au solde, rien si le compte est vide ou la fin passée",
+    rappelCredit(reste, 5000, "2027-10-20") === 1200 && rappelCredit(reste, 700, "2027-10-20") === 700
+      && rappelCredit(reste, 0, "2027-10-20") === 0 && rappelCredit(reste, 5000, "2027-10-16") === 0
+      && rappelCredit(reste, 5000, "2027-11-16") === 0);
+  const vide = recapCarteM4(null);
+  ok("M4 sans carte ni crédit : tout vide, le bloc disparaît", Object.values(vide).every((v) => v === "") && vide.RECAP_CARTE === "");
+  const r50 = recapCarteM4({ carteCentimes: 5000, donateur: "Léa", creditCentimes: 0, reliquatCentimes: 1200, reliquatJusqu: "16 novembre 2027" });
+  ok("M4 : carte de 50 sur un numéro de 38 -> −38, 12 pour le prochain, la carte de Léa",
+    r50.RECAP_CARTE === "oui" && r50.CARTE_MONTANT === "38" && r50.RELIQUAT === "12" && r50.CARTE_DE === "Léa" && r50.CREDIT === "");
+  const rCredit = recapCarteM4({ carteCentimes: 0, donateur: null, creditCentimes: 1250, reliquatCentimes: 0, reliquatJusqu: "" });
+  ok("M4 : crédit seul -> une ligne, au centime (12,50)", rCredit.CREDIT === "12,50" && rCredit.CARTE_MONTANT === "" && rCredit.RELIQUAT === "");
+
+  const ligneCarte: CarteLigne = {
+    id: "c", code: "BJ-CADEAU-7KQ4MR", token: "t".repeat(32), montant_centimes: 5000,
+    acheteur_email: "lea@exemple.fr", acheteur_prenom: "Léa", destinataire_prenom: "Camille",
+    destinataire_email: "camille@exemple.fr", message: null, remise: "email", envoi_le: null, envoyee_le: null,
+    livemode: false, statut: "payee", expire_le: "2027-11-16T10:00:00Z", created_at: "2026-11-16T10:00:00Z",
+  };
+  const p = parametresCarte(ligneCarte, new Date("2026-11-20T10:00:00Z"));
+  ok("paramètres : la fin avec l'année, l'adresse du destinataire, la date de Noël avant le 7/12",
+    p.DATE === "16 novembre 2027" && p.EMAIL_DEST === "camille@exemple.fr" && p.DATE_NOEL === "lundi 7 décembre");
+  ok("paramètres : le bouton de GC2 applique le code (/composer?nouveau=1&carte=CODE)",
+    p.LIEN_COMPOSER.endsWith("/composer?nouveau=1&carte=BJ-CADEAU-7KQ4MR") && /\/carte\/t{32}$/.test(p.LIEN_CARTE));
+
+  /* Le texte des mails (scripts/mails-noel.mjs) et le code doivent se répondre :
+     chaque code a son gabarit, chaque variable d'un gabarit est fournie. */
+  const texte = readFileSync("scripts/mails-noel.mjs", "utf8");
+  const serveur = readFileSync("src/lib/atelier/carteServeur.ts", "utf8");
+  const codes = (serveur.match(/export type CodeMailCarte = ([^;]+);/)?.[1] ?? "").match(/"([A-Z0-9a-z]+)"/g)?.map((c) => c.slice(1, -1)) ?? [];
+  ok(`chaque mail de carte a son texte (${codes.join(", ")})`,
+    codes.length === 9 && codes.every((c) => texte.includes(`code: "${c}"`)));
+  const fournies = new Set([...Object.keys(p), "RELIQUAT", "PLACES"]);
+  const demandees = new Set([...texte.matchAll(/\b(?:P|SI)\("([A-Z_]+)"/g)].map((m) => m[1]));
+  const orphelines = [...demandees].filter((k) => !fournies.has(k));
+  ok(`chaque variable des mails de Noël est fournie par le code${orphelines.length ? ` (manquent : ${orphelines.join(", ")})` : ""}`,
+    orphelines.length === 0);
+  ok("GC3 n'existe plus : son reste est un bloc de M4", !/"GC3"/.test(serveur) && /RECAP_CARTE/.test(readFileSync("scripts/mails-atelier.mjs", "utf8")));
 }

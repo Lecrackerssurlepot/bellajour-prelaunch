@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import CarteCadeau from '../noel-preview/CarteCadeau'
 import { MailRendu } from '../noel-preview/ApercuMails'
 import { COUVERTURES_ACCUEIL, MAILS, PHRASES } from '../noel-preview/contenu'
+import { suggestionEmail } from '@/lib/atelier/questionnaire'
 import {
   ENVOI_PROGRAMME_MAX,
   LIBRE_MAX_CENTIMES,
@@ -227,6 +228,15 @@ export default function Achat() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+              {/* La faute de frappe la plus fréquente (gmial.com) : la carte
+                  partirait dans le vide. On SUGGÈRE, sans bloquer (même règle
+                  que /composer, suggestionEmail en Damerau). */}
+              {suggestionEmail(email) && (
+                <p className="nl-suggestion" role="status">
+                  Vouliez-vous dire{' '}
+                  <button type="button" onClick={() => setEmail(suggestionEmail(email) ?? email)}>{suggestionEmail(email)}</button> ?
+                </p>
+              )}
               <div className="nl-puces">
                 <button type="button" className="nl-puce" aria-pressed={quand === 'maintenant'} onClick={() => setQuand('maintenant')}>Tout de suite</button>
                 <button type="button" className="nl-puce" aria-pressed={quand === 'date'} onClick={() => { setQuand('date'); if (!jour) setJour(ENVOI_PROGRAMME_MAX) }}>Un autre jour</button>
@@ -268,6 +278,7 @@ export default function Achat() {
               ) : (
                 <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code="BJ-CADEAU-······" />
               )}
+              {parEmail && <p className="nl-faible nl-adresse">Envoyée à <strong>{email.trim().toLowerCase()}</strong>{quand === 'date' && jour ? `, le ${fmtJour(jour, { day: 'numeric', month: 'long' })} au matin` : ''}</p>}
               {parEmail && imprime && <p className="nl-faible">La carte à imprimer vous attend après le paiement.</p>}
             </div>
             <div className="nl-recu-mag">

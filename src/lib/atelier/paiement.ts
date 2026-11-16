@@ -6,7 +6,7 @@ import { quantiteDuDossier } from "./exemplaires";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 import { creerJobFacture, alerterRemboursementFacture } from "./jobFacture";
-import { consommerCarteEtCredit } from "./carteServeur";
+import { consommerCarteEtCredit, parametresM4Carte } from "./carteServeur";
 
 /**
  * Les deux handlers de webhook de l'atelier (PRD §9).
@@ -461,7 +461,12 @@ export async function traiterPaiementAtelier(
   /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :
      même verrou anti-doublon que M1 et M3 (Stripe rejoue volontiers ses
      webhooks), même repli de titre, même trace dans le journal. */
-  await envoyerMailAtelier(supabase, "M4", numero);
+  /* Noël (16/11) : M4 porte le récapitulatif carte et crédit (l'ex-GC3),
+     lu en base APRÈS la consommation de la carte. Sans carte, tout est vide
+     et le bloc disparaît. */
+  const recapCarte =
+    parCarte.carteCentimes > 0 || parCarte.creditCentimes > 0 ? await parametresM4Carte(supabase, numero.id) : undefined;
+  await envoyerMailAtelier(supabase, "M4", numero, recapCarte);
 
   return true;
 }

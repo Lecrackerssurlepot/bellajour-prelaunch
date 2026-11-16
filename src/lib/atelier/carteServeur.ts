@@ -26,6 +26,12 @@ import { modeStripe } from "./fondatrice";
 import {
   carteAEnvoyer,
   codeDepuisOctets,
+  dateNoelPourMail,
+  doitRappelerCarte,
+  doitRappelerFetes,
+  eurosMail,
+  rappelCredit,
+  recapCarteM4,
   expirationCarte,
   montantCarteValide,
   normaliserCode,
@@ -178,7 +184,15 @@ export async function enregistrerCarte(
 
 /* ─────────────────────────────── les mails ─────────────────────────────── */
 
-export type CodeMailCarte = "GC1" | "GC1b" | "GC2" | "GC2b" | "GC3" | "GC4" | "GC5";
+/**
+ * Les mails de la carte (texte : `scripts/mails-noel.mjs`). GC3 n'existe plus
+ * depuis le 16/11 : son « il reste 12 € » est un bloc de M4, qui part à la
+ * même seconde (un mail par personne et par jour).
+ */
+export type CodeMailCarte = "GC1" | "GC1b" | "GC2" | "GC2b" | "GC4" | "GC4b" | "GC5" | "GC6" | "GC7";
+
+/** Les mails qui vont à la personne qui REÇOIT la carte ; les autres vont à l'acheteur. */
+const POUR_LE_DESTINATAIRE: ReadonlySet<CodeMailCarte> = new Set(["GC2", "GC4", "GC6"]);
 
 function gabarit(code: CodeMailCarte): number | null {
   const brut = process.env[`BREVO_TEMPLATE_${code.toUpperCase()}_ID`];
@@ -190,7 +204,7 @@ function origine(): string {
   return (process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr").replace(/\/$/, "");
 }
 
-const euros = (c: number) => (c % 100 === 0 ? String(c / 100) : (c / 100).toFixed(2).replace(".", ","));
+const euros = eurosMail;
 
 function jourLisible(iso: string): string {
   return new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("fr-FR", {
@@ -200,7 +214,17 @@ function jourLisible(iso: string): string {
   });
 }
 
-export function parametresCarte(carte: CarteLigne): Record<string, string> {
+/** Une fin de validité, avec l'année : elle tombe toujours l'année suivante. */
+function finLisible(iso: string): string {
+  return new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Paris",
+  });
+}
+
+export function parametresCarte(carte: CarteLigne, maintenant = new Date()): Record<string, string> {
   return {
     PRENOM: carte.acheteur_prenom ?? "",
     PRENOM_DONATEUR: carte.acheteur_prenom ?? "",
@@ -209,7 +233,11 @@ export function parametresCarte(carte: CarteLigne): Record<string, string> {
     CODE: carte.code,
     MESSAGE: carte.message ?? "",
     DATE_ENVOI: carte.envoi_le ? jourLisible(carte.envoi_le) : "",
-    DATE: jourLisible(carte.expire_le),
+    DATE: finLisible(carte.expire_le),
+    /* L'adresse de la personne qui reçoit : GC1 ne la montre (« Envoyée à »)
+       que lorsque GC2 est vraiment parti, voir `remettreAuDestinataire`. */
+    EMAIL_DEST: carte.destinataire_email ?? "",
+    DATE_NOEL: dateNoelPourMail(aujourdhuiParis(maintenant)),
     LIEN_CARTE: `${origine()}/carte/${carte.token}`,
     LIEN_COMPOSER: `${origine()}/composer?nouveau=1&carte=${encodeURIComponent(carte.code)}`,
   };
@@ -224,15 +252,15 @@ export async function envoyerMailCarte(
   supabase: SupabaseClient,
   code: CodeMailCarte,
   carte: CarteLigne,
-  /** GC3 et GC4 vont à la personne qui a UTILISÉ la carte, pas à l'acheteur. */
-  destinataire?: { email: string; params?: Record<string, string> },
+  /** Une autre adresse (GC4b : le titulaire du compte), et des paramètres en plus. */
+  destinataire?: { email?: string; params?: Record<string, string> },
 ): Promise<"envoye" | "deja" | "sans_gabarit" | "sans_adresse" | "echec"> {
   const templateId = gabarit(code);
   if (!templateId) {
     console.warn(`[carte] ${code} sauté : BREVO_TEMPLATE_${code.toUpperCase()}_ID absent`);
     return "sans_gabarit";
   }
-  const email = destinataire?.email ?? (code === "GC2" ? carte.destinataire_email : carte.acheteur_email);
+  const email = destinataire?.email ?? (POUR_LE_DESTINATAIRE.has(code) ? carte.destinataire_email : carte.acheteur_email);
   if (!email) return "sans_adresse";
 
   const verrou = await supabase.from("cartes_mails").insert({ carte_id: carte.id, code });
@@ -254,24 +282,40 @@ export async function envoyerMailCarte(
 }
 
 /**
- * Les mails de l'achat. Une carte par e-mail sans jour choisi : GC1 à
- * l'acheteur, GC2 à la personne qui la reçoit. Une carte programmée : GC1b
- * à l'acheteur ; GC2 et GC2b partiront le matin du jour choisi (relève).
- * Une carte à imprimer : GC1 seulement.
+ * Les mails de l'achat.
+ * - À imprimer : GC1 (« elle est prête »).
+ * - Programmée : GC1b (« elle partira le … ») ; GC2 et GC2b le matin du jour.
+ * - Par e-mail tout de suite : GC2 D'ABORD, puis GC1 qui dit « elle est
+ *   partie chez Camille, à camille@… » (Mathias, 16/11 : l'acheteur doit
+ *   recevoir la preuve). Si GC2 n'a pas pu partir, GC1 attend : la relève
+ *   reprend la carte, et l'acheteur n'apprend jamais qu'elle est partie
+ *   avant qu'elle le soit.
  */
 async function mailsAchat(supabase: SupabaseClient, carte: CarteLigne): Promise<void> {
   if (carte.statut !== "payee") return;
-  if (carte.remise === "email" && carte.envoi_le) {
+  if (carte.remise === "imprimer") {
+    await envoyerMailCarte(supabase, "GC1", carte, { params: { EMAIL_DEST: "" } });
+    return;
+  }
+  if (carte.envoi_le) {
     await envoyerMailCarte(supabase, "GC1b", carte);
     return;
   }
-  await envoyerMailCarte(supabase, "GC1", carte);
-  if (carte.remise === "email" && !carte.envoyee_le) {
-    const r = await envoyerMailCarte(supabase, "GC2", carte);
-    if (r === "envoye") {
-      await supabase.from("cartes_cadeau").update({ envoyee_le: new Date().toISOString() }).eq("id", carte.id);
-    }
-  }
+  await remettreAuDestinataire(supabase, carte);
+}
+
+/**
+ * GC2 à la personne qui reçoit, `envoyee_le` posé, puis la confirmation à
+ * l'acheteur : GC2b pour une carte programmée, GC1 pour une carte « tout de
+ * suite » (dont GC1 n'est jamais parti avant). Rend vrai si la carte est
+ * partie (ou l'était déjà).
+ */
+async function remettreAuDestinataire(supabase: SupabaseClient, carte: CarteLigne): Promise<boolean> {
+  const e = await envoyerMailCarte(supabase, "GC2", carte);
+  if (e !== "envoye" && e !== "deja") return false;
+  await supabase.from("cartes_cadeau").update({ envoyee_le: new Date().toISOString() }).eq("id", carte.id).is("envoyee_le", null);
+  await envoyerMailCarte(supabase, carte.envoi_le ? "GC2b" : "GC1", carte);
+  return true;
 }
 
 /* ─────────────────────────────── lectures ──────────────────────────────── */
@@ -355,7 +399,7 @@ export async function envoyerCartesProgrammees(
       .eq("remise", "email")
       .eq("statut", "payee")
       .is("envoyee_le", null)
-      .lte("envoi_le", jour)
+      .or(`envoi_le.is.null,envoi_le.lte.${jour}`)
       .limit(200);
     if (r.error) {
       if (r.error.code !== "PGRST205") console.error("[carte] relève : lecture", r.error.code);
@@ -364,11 +408,7 @@ export async function envoyerCartesProgrammees(
     const cartes = ((r.data ?? []) as CarteLigne[]).filter((c) => carteAEnvoyer(c, jour));
     let parties = 0;
     for (const c of cartes) {
-      const e = await envoyerMailCarte(supabase, "GC2", c);
-      if (e !== "envoye" && e !== "deja") continue;
-      await supabase.from("cartes_cadeau").update({ envoyee_le: new Date().toISOString() }).eq("id", c.id).is("envoyee_le", null);
-      await envoyerMailCarte(supabase, "GC2b", c);
-      parties++;
+      if (await remettreAuDestinataire(supabase, c)) parties++;
     }
     if (cartes.length) console.log(`[carte] relève : ${parties}/${cartes.length} carte(s) programmée(s) parties`);
     return { vues: cartes.length, parties };
@@ -430,7 +470,8 @@ export const META_CARTE = {
 
 /**
  * Après un paiement de magazine : la carte devient « utilisée », son reste
- * va au compte (+), le crédit pris est débité (−), et GC3 dit le reste.
+ * va au compte (+), le crédit pris est débité (−), et GC7 dit à l'acheteur
+ * que son cadeau a servi. Le reste se dit dans M4 (`parametresM4Carte`).
  * Idempotente (index uniques du grand livre, `.eq("statut", "payee")`).
  * Ne lève jamais ; une anomalie se dit dans les logs ET au journal du dossier.
  */
@@ -480,14 +521,12 @@ export async function consommerCarteEtCredit(
         expire_le: carte.expire_le,
         livemode: session.livemode,
       });
-      if (!ins.error && numero.email) {
-        await envoyerMailCarte(supabase, "GC3", carte, {
-          email: numero.email,
-          params: { PRENOM: numero.prenom ?? "", RELIQUAT: euros(reliquat), LIEN_COMPTE: `${origine()}/compte` },
-        });
-      } else if (ins.error && ins.error.code !== "23505") {
-        console.error("[carte] reliquat non écrit", ins.error.code);
-      }
+      if (ins.error && ins.error.code !== "23505") console.error("[carte] reliquat non écrit", ins.error.code);
+    }
+    /* GC7 : l'acheteur apprend que son cadeau a servi, sauf s'il l'a utilisé
+       lui-même (même adresse). Le verrou empêche le second envoi au rejeu. */
+    if (carte && (!cle || canonicalizeEmail(carte.acheteur_email) !== cle)) {
+      await envoyerMailCarte(supabase, "GC7", carte);
     }
     if (creditCentimes > 0 && cle) {
       const deb = await supabase.from("credits_mouvements").insert({
@@ -527,4 +566,100 @@ export async function lireCarteDuNumero(
   } catch {
     return null;
   }
+}
+
+/**
+ * Les paramètres du récapitulatif carte et crédit de M4 (lu en base après
+ * `consommerCarteEtCredit`). Tout vide sans carte ni crédit, et sur une
+ * erreur de lecture : M4 part alors sans le bloc, jamais l'inverse.
+ */
+export async function parametresM4Carte(supabase: SupabaseClient, numeroId: string): Promise<Record<string, string>> {
+  try {
+    const [c, m] = await Promise.all([
+      supabase.from("cartes_cadeau").select("montant_centimes, acheteur_prenom").eq("utilisee_numero_id", numeroId).maybeSingle(),
+      supabase.from("credits_mouvements").select("montant_centimes, motif, expire_le").eq("numero_id", numeroId),
+    ]);
+    const carte = c.data as { montant_centimes: number; acheteur_prenom: string | null } | null;
+    const lignes = (m.data ?? []) as { montant_centimes: number; motif: string; expire_le: string | null }[];
+    const reliquats = lignes.filter((l) => l.motif === "reliquat_carte");
+    const fin = reliquats.map((l) => l.expire_le).find(Boolean) ?? null;
+    return recapCarteM4({
+      carteCentimes: carte?.montant_centimes ?? 0,
+      donateur: carte?.acheteur_prenom ?? null,
+      creditCentimes: -lignes.filter((l) => l.motif === "paiement_numero").reduce((a, l) => a + l.montant_centimes, 0),
+      reliquatCentimes: reliquats.reduce((a, l) => a + l.montant_centimes, 0),
+      reliquatJusqu: fin ? finLisible(fin) : "",
+    });
+  } catch {
+    return recapCarteM4(null);
+  }
+}
+
+/**
+ * Les rappels de la relève du matin, du mode de la clé Stripe seulement :
+ * GC4 (carte jamais utilisée, J−30), GC6 (mi-janvier, cartes des fêtes) et
+ * GC4b (reste au compte, J−30). Chaque mail a son verrou dans `cartes_mails`.
+ * Ne lève jamais.
+ */
+export async function envoyerRappelsCartes(
+  supabase: SupabaseClient,
+  maintenant = new Date(),
+): Promise<{ gc4: number; gc6: number; gc4b: number }> {
+  const bilan = { gc4: 0, gc6: 0, gc4b: 0 };
+  const mode = modeStripe(process.env.STRIPE_SECRET_KEY);
+  if (!mode) return bilan;
+  const livemode = mode === "live";
+  const jour = aujourdhuiParis(maintenant);
+  try {
+    const r = await supabase
+      .from("cartes_cadeau")
+      .select(COLONNES)
+      .eq("livemode", livemode)
+      .eq("statut", "payee")
+      .eq("remise", "email")
+      .not("envoyee_le", "is", null)
+      .limit(500);
+    for (const c of (r.data ?? []) as CarteLigne[]) {
+      if (doitRappelerCarte(c, jour)) {
+        if ((await envoyerMailCarte(supabase, "GC4", c)) === "envoye") bilan.gc4++;
+      } else if (doitRappelerFetes(c, jour)) {
+        if ((await envoyerMailCarte(supabase, "GC6", c)) === "envoye") bilan.gc6++;
+      }
+    }
+
+    const rel = await supabase
+      .from("credits_mouvements")
+      .select("carte_id, numero_id, email_canonical, montant_centimes, expire_le")
+      .eq("motif", "reliquat_carte")
+      .eq("livemode", livemode)
+      .not("carte_id", "is", null)
+      .limit(500);
+    for (const l of (rel.data ?? []) as {
+      carte_id: string; numero_id: string | null; email_canonical: string; montant_centimes: number; expire_le: string | null;
+    }[]) {
+      const tout = await supabase
+        .from("credits_mouvements")
+        .select("montant_centimes, expire_le, livemode")
+        .eq("email_canonical", l.email_canonical);
+      const solde = soldeCredit((tout.data ?? []) as MouvementCredit[], maintenant, livemode);
+      const montant = rappelCredit(l, solde, jour);
+      if (montant <= 0 || !l.numero_id) continue;
+      const [carteR, numeroR] = await Promise.all([
+        supabase.from("cartes_cadeau").select(COLONNES).eq("id", l.carte_id).maybeSingle(),
+        supabase.from("numeros").select("email, prenom").eq("id", l.numero_id).maybeSingle(),
+      ]);
+      const carte = carteR.data as CarteLigne | null;
+      const n = numeroR.data as { email: string | null; prenom: string | null } | null;
+      if (!carte || !n?.email) continue;
+      const e = await envoyerMailCarte(supabase, "GC4b", carte, {
+        email: n.email,
+        params: { PRENOM: n.prenom ?? "", RELIQUAT: euros(montant), DATE: finLisible(l.expire_le as string) },
+      });
+      if (e === "envoye") bilan.gc4b++;
+    }
+    if (bilan.gc4 + bilan.gc6 + bilan.gc4b) console.log(`[carte] rappels : ${JSON.stringify(bilan)}`);
+  } catch (e) {
+    console.error("[carte] rappels :", e instanceof Error ? e.message : e);
+  }
+  return bilan;
 }

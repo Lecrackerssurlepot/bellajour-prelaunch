@@ -217,7 +217,12 @@ export function soldeCredit(mouvements: MouvementCredit[], maintenant: Date, liv
   return Math.max(0, s);
 }
 
-/** Une carte programmée dont le jour est venu (heure de Paris, passée par l'appelant). */
+/**
+ * Une carte par e-mail pas encore partie et dont le jour est venu (heure de
+ * Paris, passée par l'appelant). Sans jour choisi, c'est « tout de suite » :
+ * elle part au paiement, et si Brevo a refusé ce jour-là, la relève du
+ * lendemain la reprend (avant le 16/11 soir, elle restait en plan).
+ */
 export function carteAEnvoyer(
   carte: { remise: string; envoi_le: string | null; envoyee_le: string | null; statut: StatutCarte },
   aujourdhui: string,
@@ -226,9 +231,118 @@ export function carteAEnvoyer(
     carte.remise === "email" &&
     carte.statut === "payee" &&
     !carte.envoyee_le &&
-    !!carte.envoi_le &&
-    carte.envoi_le.slice(0, 10) <= aujourdhui
+    (!carte.envoi_le || carte.envoi_le.slice(0, 10) <= aujourdhui)
   );
+}
+
+/* ───────────────────────── les mails de la relève ───────────────────────── */
+
+/** Le dernier jour de dépôt pour un magazine livré avant Noël (inclus). Décision du 13/11. */
+export const DEPOT_NOEL_MAX = "2026-12-07";
+/** Ce que les mails écrivent pour ce jour-là. */
+export const DEPOT_NOEL_TEXTE = "lundi 7 décembre";
+
+/** La phrase « pour Noël, avant le … » n'a de sens que jusqu'au dernier jour de dépôt. */
+export function dateNoelPourMail(aujourdhui: string): string {
+  return aujourdhui <= DEPOT_NOEL_MAX ? DEPOT_NOEL_TEXTE : "";
+}
+
+/** Combien de jours avant la fin d'une carte (ou d'un crédit) le rappel part. */
+export const RAPPEL_FIN_JOURS = 30;
+
+/** AAAA-MM-JJ décalé de `jours` (calendrier UTC, sans heure : pas de piège d'heure d'été). */
+export function decalerJour(jour: string, jours: number): string {
+  const d = new Date(`${jour.slice(0, 10)}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + jours);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * GC4 : une carte reçue par e-mail, jamais utilisée, dont la fin approche.
+ * Part à partir de J−30 et tant qu'elle vaut encore (le verrou empêche le
+ * second envoi). Une carte à imprimer n'a pas d'adresse : rien ne part.
+ */
+export function doitRappelerCarte(
+  carte: { statut: StatutCarte; remise: string; destinataire_email: string | null; envoyee_le: string | null; expire_le: string },
+  aujourdhui: string,
+): boolean {
+  const fin = carte.expire_le.slice(0, 10);
+  return (
+    carte.statut === "payee" &&
+    carte.remise === "email" &&
+    !!carte.destinataire_email &&
+    !!carte.envoyee_le &&
+    aujourdhui >= decalerJour(fin, -RAPPEL_FIN_JOURS) &&
+    aujourdhui < fin
+  );
+}
+
+/** GC6 « vos photos des fêtes ? » : seulement pour les cartes parties pendant les fêtes de 2026. */
+export const FETES_ENVOYEES_AVANT = "2026-12-31";
+/** Le jour où il part (proposé le 16/11, à la mi-janvier). */
+export const FETES_RAPPEL_LE = "2027-01-15";
+
+export function doitRappelerFetes(
+  carte: { statut: StatutCarte; remise: string; destinataire_email: string | null; envoyee_le: string | null; expire_le: string },
+  aujourdhui: string,
+): boolean {
+  return (
+    carte.statut === "payee" &&
+    carte.remise === "email" &&
+    !!carte.destinataire_email &&
+    !!carte.envoyee_le &&
+    carte.envoyee_le.slice(0, 10) <= FETES_ENVOYEES_AVANT &&
+    aujourdhui >= FETES_RAPPEL_LE &&
+    // Jamais en même temps que GC4 : un mail par personne et par jour.
+    aujourdhui < decalerJour(carte.expire_le, -RAPPEL_FIN_JOURS)
+  );
+}
+
+/**
+ * GC4b : un reste de carte au compte dont la fin approche, et le compte
+ * vaut encore quelque chose. Rend le montant à annoncer (le plus petit du
+ * reste et du solde : on n'annonce jamais plus que ce qui sera perdu), ou 0.
+ */
+export function rappelCredit(
+  reliquat: { montant_centimes: number; expire_le: string | null },
+  soldeCentimes: number,
+  aujourdhui: string,
+): number {
+  if (!reliquat.expire_le || reliquat.montant_centimes <= 0 || soldeCentimes <= 0) return 0;
+  const fin = reliquat.expire_le.slice(0, 10);
+  if (aujourdhui < decalerJour(fin, -RAPPEL_FIN_JOURS) || aujourdhui >= fin) return 0;
+  return Math.min(reliquat.montant_centimes, soldeCentimes);
+}
+
+/** Un montant pour un mail : « 12 », « 12,50 » (le gabarit ajoute « € »). */
+export function eurosMail(centimes: number): string {
+  return centimes % 100 === 0 ? String(centimes / 100) : (centimes / 100).toFixed(2).replace(".", ",");
+}
+
+/**
+ * Les paramètres du récapitulatif carte et crédit de M4 (ex-GC3). Tout vide
+ * quand ni carte ni crédit n'ont payé : le bloc disparaît du mail. Une
+ * ligne à zéro est une ligne absente.
+ */
+export function recapCarteM4(lu: {
+  carteCentimes: number;
+  donateur: string | null;
+  creditCentimes: number;
+  reliquatCentimes: number;
+  reliquatJusqu: string;
+} | null): Record<string, string> {
+  if (!lu || (lu.carteCentimes <= 0 && lu.creditCentimes <= 0)) {
+    return { RECAP_CARTE: "", CARTE_DE: "", CARTE_MONTANT: "", CREDIT: "", RELIQUAT: "", RELIQUAT_JUSQU: "" };
+  }
+  const servi = Math.max(0, lu.carteCentimes - lu.reliquatCentimes);
+  return {
+    RECAP_CARTE: "oui",
+    CARTE_DE: lu.carteCentimes > 0 ? lu.donateur ?? "" : "",
+    CARTE_MONTANT: servi > 0 ? eurosMail(servi) : "",
+    CREDIT: lu.creditCentimes > 0 ? eurosMail(lu.creditCentimes) : "",
+    RELIQUAT: lu.reliquatCentimes > 0 ? eurosMail(lu.reliquatCentimes) : "",
+    RELIQUAT_JUSQU: lu.reliquatCentimes > 0 ? lu.reliquatJusqu : "",
+  };
 }
 
 /** La clé (navigateur) où `/composer?carte=` range le code venu du mail GC2 ; le bon de commande le relit. */

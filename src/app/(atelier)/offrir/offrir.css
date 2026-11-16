@@ -127,3 +127,21 @@
 }
 
 .nl-preview .nl-page-marque img { display: block; width: 116px; height: auto; }
+
+/* La suggestion d'adresse (gmial.com → gmail.com) et l'adresse relue avant de payer. */
+.nl-suggestion { margin: 8px 0 0; font-size: 14px; color: var(--c-text-soft); }
+.nl-suggestion button { font: inherit; color: var(--c-accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
+.nl-adresse strong { font-weight: 500; color: inherit; overflow-wrap: anywhere; }
+
+/* « Bon à savoir » (#conditions) : le récapitulatif de STRUCTURE-INFO.md,
+   libellé à gauche, valeur à droite, un filet entre deux lignes. */
+.nl-preview .nl-conditions { max-width: 640px; margin: 72px auto 40px; padding: 0 16px; scroll-margin-top: 24px; }
+.nl-preview .nl-conditions h2 { margin: 0 0 16px; font-family: var(--font-display); font-weight: 500; font-size: 28px; color: var(--c-text); }
+.nl-preview .nl-conditions dl { margin: 0; }
+.nl-preview .nl-conditions dl > div { display: grid; grid-template-columns: 9em 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--c-line-md); font-size: 14px; line-height: 1.55; }
+.nl-preview .nl-conditions dl > div:last-child { border-bottom: 0; }
+.nl-preview .nl-conditions dt { color: var(--c-text-faint); }
+.nl-preview .nl-conditions dd { margin: 0; color: var(--c-text-soft); }
+@media (max-width: 520px) {
+  .nl-preview .nl-conditions dl > div { grid-template-columns: 1fr; gap: 2px; }
+}
