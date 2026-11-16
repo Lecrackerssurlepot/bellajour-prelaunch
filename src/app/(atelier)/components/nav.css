@@ -26,7 +26,7 @@
    Posee sur :root (et plus sur .bj-atelier) depuis le lot 2 : la racine
    defile, et c'est elle qui doit connaitre la barre pour scroll-padding-top.
    Les consommateurs (.at-pdp, ouverture.css) heritent comme avant. */
-:root { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px) + var(--nl-bh, 0px)); }
+:root { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
 
 /* Lot 2 (07/09) — les ancres du monde SOMBRE visaient 76 px, le
    --bj-topbar-h du monde creme pose par globals.css, alors que la barre de
@@ -34,7 +34,7 @@
    Le scroll-padding vit sur la racine (c'est elle qui defile), garde par
    :has — les pages creme gardent leur 76 px. Sans :has (vieux moteur), on
    retombe sur le comportement d'avant : degrade, jamais casse. */
-html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
+html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px)); }
 
 .at-nav {
   position: fixed;
@@ -92,7 +92,7 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
    1000 px, la coupure du site. Le padding n'est toujours PAS anime (voir
    la note de .at-nav : re-rasterisation du flou). */
 @media (min-width: 1000px) {
-  :root { --nav-h: calc(3.6 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px) + var(--nl-bh, 0px)); }
+  :root { --nav-h: calc(3.6 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
   .at-nav {
     padding-top: calc(1.8 * var(--uh));
     padding-bottom: calc(1.8 * var(--uh));

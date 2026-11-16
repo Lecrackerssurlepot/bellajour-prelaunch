@@ -61,7 +61,7 @@ export default function ChapitreAccueil() {
   }, [])
 
   return (
-    <section className="nl-noel nl-noel-chapitre" ref={piste} data-ouverte="0" aria-label="Pour Noël">
+    <section id="noel-accueil" className="nl-noel nl-noel-chapitre" ref={piste} data-ouverte="0" aria-label="Pour Noël">
       <div className="nl-scene">
         <div className="nl-scene-texte nl-scene-texte--1">
           <span className="nl-surtitre">Pour Noël</span>
@@ -91,7 +91,7 @@ export default function ChapitreAccueil() {
               Le 2<sup>e</sup> magazine à <strong>−{NOEL_REMISE_MEME_PCT}&nbsp;%</strong>
             </p>
           )}
-          <Link className="nl-cta nl-cta--plein" href="/offrir" prefetch={false}>Offrir une carte cadeau</Link>
+          <Link className="nl-cta nl-cta--plein" href="/magazine#noel" prefetch={false}>Offrir une carte cadeau</Link>
           {places !== null && <p className="nl-scene-places">{ligneCompteur(places)}</p>}
         </div>
       </div>

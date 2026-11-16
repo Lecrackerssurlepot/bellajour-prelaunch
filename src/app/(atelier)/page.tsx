@@ -201,11 +201,13 @@ export default function AtelierHome() {
             nom. Desktop et pointeur fin uniquement, monté vide et piloté
             par Ouverture. */}
         <div className="curseur" aria-hidden="true"><i /><b /></div>
-        <Ouverture />
-        <Univers />
-        {/* Le chapitre de Noël vient APRÈS les sept pages : le séquenceur et
-            le chemin de fer d'Univers ne le connaissent pas. */}
+        <Ouverture noel={noel} />
+        {/* Le chapitre de Noël JUSTE SOUS l'ouverture (Mathias, 16/11 : « la
+            carte cadeau juste en dessous de la section header »). Le
+            séquenceur et le chemin de fer d'Univers ne le connaissent pas ;
+            « Découvrir l'univers » vise #u1 et passe par-dessus. */}
         {noel && <ChapitreAccueil />}
+        <Univers />
       </div>
       <Footer />
     </>

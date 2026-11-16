@@ -3,8 +3,9 @@
 /* Le bandeau de Noël : une bande de verre au-dessus de la barre du site
    (`/` et `/magazine`). Deux gestes (Mathias, 16/11 : « on ne comprend pas
    que c'est une carte cadeau », le −40 % doit pousser l'achat) :
-   l'offre du 2ᵉ magazine mène au bloc de Noël de /magazine, « Carte cadeau »
-   mène à /offrir. Pas de croix (« moins de boutons »). Il n'existe que si le
+   l'offre du 2ᵉ magazine ET « Carte cadeau » mènent au bloc de Noël de
+   /magazine, dans le parcours d'achat (Mathias, 16/11 : /offrir directement
+   « bloque ») ; c'est le bloc qui ouvre /offrir. Pas de croix (« moins de boutons »). Il n'existe que si le
    drapeau de Noël est ouvert : la page serveur ne le monte pas sinon.
 
    ⚠️ La barre `.at-nav` est fixe. Le bandeau entre donc dans son calcul :
@@ -37,7 +38,7 @@ export default function Bandeau() {
       ) : (
         <span className="nl-noel-bandeau-offre">Noël : offrez un magazine</span>
       )}
-      <Link className="nl-noel-bandeau-lien" href="/offrir" prefetch={false}>Carte cadeau</Link>
+      <Link className="nl-noel-bandeau-lien" href="/magazine#noel" prefetch={false}>Carte cadeau</Link>
     </div>
   )
 }

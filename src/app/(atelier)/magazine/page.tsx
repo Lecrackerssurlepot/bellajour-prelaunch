@@ -26,6 +26,7 @@ import Kiosque from './Kiosque'
 import Corps from './Corps'
 import Bandeau from '../noel/Bandeau'
 import BlocMagazine from '../noel/BlocMagazine'
+import AmorceMagazine from '../noel/AmorceMagazine'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { EUROS_MAX_PUBLIC, EUROS_MIN, GRILLE_PUBLIQUE } from '@/lib/atelier/grille'
 import { PAYS_LIVRAISON } from '@/lib/atelier/pays'
@@ -205,9 +206,9 @@ export default function PageProduit() {
           noms de classes y sont courts (.mot, .pas, .prix). Le retirer
           dépeindrait la page ET repeindrait /composer. */}
       <main className="at-pdp">
-        <Kiosque />
-        {/* Après le premier écran (piège 2) : le kiosque va jusqu'au bouton. */}
-        {noel && <BlocMagazine />}
+        {/* Noël : le repère sous le bouton, et le bloc juste après le premier
+            écran (piège 2 : le kiosque va toujours jusqu'au bouton). */}
+        <Kiosque amorce={noel ? <AmorceMagazine /> : undefined} noel={noel ? <BlocMagazine /> : undefined} />
         <Corps />
       </main>
 

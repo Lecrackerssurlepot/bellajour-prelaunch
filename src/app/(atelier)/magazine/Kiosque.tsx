@@ -17,6 +17,7 @@ import {
   PRIX_LIGNE,
   LIVRAISON_BANDEAU,
 } from '../content'
+import type { ReactNode } from 'react'
 import LienComposer from '../components/LienComposer'
 
 /* Le rythme annoncé à chaque étape. Il vit ICI et non dans content.ts : ce
@@ -26,7 +27,11 @@ import LienComposer from '../components/LienComposer'
    avoir deux endroits qui promettent deux choses. */
 const RYTHME = ['2 min', '40 à 100', '48 h'] as const
 
-export default function Kiosque() {
+/* `amorce` et `noel` (Noël 2026, 16/11) : la page les passe seulement quand
+   le drapeau de la carte est ouvert. `amorce` se pose sous les deux gages, au
+   premier écran ; `noel` (le bloc de la carte et du 2ᵉ magazine) entre JUSTE
+   APRÈS les deux colonnes, avant le parcours : « on ne la voit pas ». */
+export default function Kiosque({ amorce, noel }: { amorce?: ReactNode; noel?: ReactNode } = {}) {
   return (
     <section className="wrap kiosque">
       {/* ── colonne gauche : le mot, puis le collage qui lui passe devant ── */}
@@ -224,6 +229,7 @@ export default function Kiosque() {
                 <span>Rien à payer avant<span className="g-plus"> la couverture</span></span>
               </li>
             </ul>
+            {amorce}
           </div>
         </Reveal>
       </div>
@@ -239,6 +245,7 @@ export default function Kiosque() {
           ⚠️ Il reste APRES la colonne de droite dans le DOM, donc apres le
           bouton pour le clavier et le lecteur d'ecran — c'est l'ordre de
           lecture voulu, et il n'a plus besoin d'`order` pour l'obtenir. */}
+      {noel && <div className="kiosque-noel">{noel}</div>}
       <Reveal delay={70} className="bloc-pas">
         {/* Lot 3 (07/09) — l'arbitrage T-086 : la bande gagne un titre et un
             sous-texte au lieu de flotter sans nom entre deux zones denses.

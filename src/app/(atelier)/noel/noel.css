@@ -14,7 +14,14 @@
    dessous). Hauteur FIXE, dite une seule fois : `--nl-bh`, posée sur la
    racine dès que le bandeau est dans le document. nav.css la lit (`top` de
    la barre, `--nav-h`) avec un repli à 0, donc sans bandeau rien ne bouge. */
-:root:has(.nl-noel-bandeau) { --nl-bh: 36px; }
+:root:has(.nl-noel-bandeau) { --nl-bh: 44px; }
+/* EN PLUS DE LA PAGE, PAS PAR-DESSUS (Mathias, 16/11 : « tu dois pas venir
+   agrandir le reste »). Le bandeau est fixe ; le corps descend de sa hauteur,
+   donc l'ouverture et le kiosque gardent leur premier écran entier, et
+   `--nav-h` (nav.css) ne le compte PLUS : il mesure la barre depuis le haut
+   de la page, qui commence sous le bandeau. Ce qui se colle à la FENÊTRE
+   (sticky, scroll-padding) ajoute `--nl-bh` lui-même. */
+:root:has(.nl-noel-bandeau) body { padding-top: var(--nl-bh); }
 
 .nl-noel-bandeau {
   position: fixed;
@@ -22,7 +29,7 @@
   left: 0;
   right: 0;
   z-index: 51;
-  height: var(--nl-bh, 36px);
+  height: var(--nl-bh, 44px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,7 +37,7 @@
   padding: 0 var(--mg, 16px);
   white-space: nowrap;
   overflow: hidden;
-  font-size: 12.5px;
+  font-size: 13.5px;
   letter-spacing: 0.01em;
   color: var(--c-text-soft);
   background: var(--glass-bg);
@@ -51,7 +58,7 @@
 .nl-noel-bandeau .nl-noel-bandeau-lien {
   flex: 0 0 auto;
   font-weight: 500;
-  padding: 3px 12px;
+  padding: 5px 14px;
   border-radius: 999px;
   border: 1px solid var(--c-accent);
   color: var(--c-accent-strong);
@@ -59,7 +66,7 @@
 .nl-noel-bandeau .nl-noel-bandeau-lien::after { content: ' \2192'; }
 .nl-noel-bandeau .nl-noel-bandeau-lien:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
 @media (max-width: 479px) {
-  .nl-noel-bandeau { font-size: 12px; gap: 10px; padding: 0 12px; }
+  .nl-noel-bandeau { font-size: 12.5px; gap: 10px; padding: 0 12px; }
 }
 @media (max-width: 399px) {
   /* Une seule ligne, rien de coupé : le nombre passe dans le bloc. */
@@ -68,7 +75,7 @@
 @media (max-width: 359px) {
   /* « 2e magazine −40 % » : le chiffre ne se coupe jamais. */
   .nl-noel-bandeau .nl-noel-bandeau-long { display: none; }
-  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: 3px 10px; }
+  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: 4px 10px; }
 }
 
 /* ════════ LA CARTE ════════ */
@@ -202,7 +209,7 @@
   align-items: center;
   gap: calc(2 * var(--uh));
   /* La barre (et son bandeau) est fixe : la scène démarre dessous. */
-  padding: calc(var(--nav-h) + 2 * var(--uh)) 20px calc(5 * var(--uh));
+  padding: calc(var(--nav-h) + var(--nl-bh, 0px) + 2 * var(--uh)) 20px calc(5 * var(--uh));
   background: radial-gradient(90% 70% at 50% 40%, var(--c-surface-2), var(--c-void));
   text-align: center;
 }
@@ -311,18 +318,13 @@
   .nl-noel .nl-scene { position: relative; }
 }
 
-/* ════════ L'OUVERTURE DE L'ACCUEIL, DESKTOP ════════
-   Au-dessus de 1000 px, `.hero` se cale à `11vh` (ouverture.css), sans lire
-   --nav-h : le bandeau, qui allonge la barre de 36 px, ferait mordre le titre
-   dessous. On rajoute sa hauteur, et seulement là : sous 1000 px la règle de
-   l'ouverture lit déjà --nav-h, donc le bandeau. */
-@media (min-width: 1001px) {
-  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-top: calc(11vh + var(--nl-bh, 0px)); }
-}
+/* L'ouverture de l'accueil n'a plus de surcharge : le corps descend sous le
+   bandeau (plus haut), elle reste exactement celle d'avant. */
 
 /* ════════ L'OFFRE DU 2ᵉ MAGAZINE (16/11) ════════
    Les chiffres d'abord : c'est eux qui doivent se voir. */
-.nl-noel.nl-noel-mag { scroll-margin-top: calc(var(--nav-h, 86px) + 12px); }
+.nl-noel.nl-noel-mag,
+.nl-noel.nl-noel-chapitre { scroll-margin-top: 12px; } /* la barre et le bandeau : scroll-padding (nav.css) */
 .nl-noel .nl-offre {
   display: flex;
   flex-direction: column;
@@ -350,3 +352,77 @@
 .nl-noel .nl-offre-note { font-size: 13px; color: var(--c-text-faint); margin-top: -4px; }
 .nl-noel .nl-scene-offre { font-size: 17px; color: var(--c-text); }
 .nl-noel .nl-scene-offre strong { font-family: var(--font-display); font-size: 1.6em; font-weight: 400; color: var(--c-accent-strong); }
+
+/* ════════ L'OUVERTURE DE L'ACCUEIL : LA LIGNE DE NOËL (16/11) ════════
+   Sous la mention, une pastille qui descend au chapitre de la carte. Elle
+   apparaît après la mention, comme le reste du bas de l'ouverture, et reste
+   visible au téléphone (où la mention est masquée). */
+.at-accueil .h-noel {
+  /* inline-block, pas flex : en flex, chaque bout de texte devient un
+     élément et la phrase se casse en colonnes au téléphone. */
+  display: inline-block;
+  text-align: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--c-accent);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--c-text);
+  font-size: clamp(13px, 1vw, 16px);
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(1.6vh);
+}
+.at-accueil .h-noel b { font-weight: 600; color: var(--c-accent-strong); }
+.at-accueil .h-noel sup { font-size: 0.7em; }
+.at-accueil .h-noel:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
+.at-accueil .h-noel:hover b { color: inherit; }
+.at-accueil.pret .h-noel {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--t-lux) var(--ease-out) 1320ms, transform var(--t-lux) var(--ease-out) 1320ms, background 0.2s;
+}
+html:not([data-anim]) .at-accueil .h-noel { opacity: 1 !important; transform: none !important; }
+/* L'amorce gagne « ou ce Noël » : un peu plus de largeur pour rester sur une
+   ligne, la colonne de droite ne porte qu'un bouton. */
+@media (min-width: 768px) {
+  :root:has(.nl-noel-bandeau) .at-accueil .h-gauche { max-width: 46vw; }
+}
+@media (max-width: 767px) {
+  .at-accueil .h-noel { font-size: 13px; padding: 7px 13px; }
+}
+
+/* ════════ /MAGAZINE : LE REPÈRE DU PREMIER ÉCRAN ET LA PLACE DU BLOC ════════
+   Le bloc entre dans la grille du kiosque, sur toute sa largeur, entre les
+   deux colonnes et le parcours. Le repère vit sous les gages. */
+.at-pdp .kiosque > .kiosque-noel { grid-column: 1 / -1; display: block; }
+.at-pdp .kiosque-noel .nl-noel.nl-noel-mag { padding: clamp(40px, 6vw, 72px) 0; border-bottom: 1px solid var(--c-line); margin-bottom: clamp(24px, 4vw, 48px); }
+.at-pdp .nl-amorce {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 14px 10px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--c-accent);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--c-text);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.35;
+  max-width: 420px;
+}
+.at-pdp .nl-amorce:hover { background: rgba(255, 255, 255, 0.07); }
+.at-pdp .nl-amorce-carte {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 30px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, var(--c-accent-strong), var(--c-accent));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: rotate(-6deg);
+}
+.at-pdp .nl-amorce-texte { display: flex; flex-direction: column; min-width: 0; }
+.at-pdp .nl-amorce-titre { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-text-faint); }
+.at-pdp .nl-amorce b { font-weight: 600; color: var(--c-accent-strong); }
+.at-pdp .nl-amorce sup { font-size: 0.7em; }
+.at-pdp .nl-amorce-fleche { margin-left: auto; color: var(--c-accent-strong); font-size: 18px; }
