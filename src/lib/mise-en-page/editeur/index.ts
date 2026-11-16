@@ -59,8 +59,8 @@ export type { Boite } from "./saillance";
 export { PENALITE_PLI } from "./outils";
 export { partDansLePli } from "./operations";
 export { recadrageParContenu } from "../recadrage";
-export { decalagesHorloges, marquesProposees, preTrier, qualite } from "./pretri";
-export type { PreTri, Proposition } from "./pretri";
+/* le pré-tri (lot 3 : `preTrier`, `marquesProposees`, `decalagesHorloges`, `qualite`) est archivé depuis le 16/11 (T-210) : archive/pretri-2026-11/ */
+export type { Proposition } from "./types";
 export { detailQuestion, leconsDuPreTri, reponse, troisQuestions } from "./lecons";
 export { avecStyle, libelleStyle } from "./stylage";
 export { kMoyennes, paletteDePixels, paletteDuMagazine } from "./mesures";

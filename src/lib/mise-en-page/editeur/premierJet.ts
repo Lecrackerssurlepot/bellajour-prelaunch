@@ -21,7 +21,7 @@ import { avecDerniere, type Magazine, type Planche, type Disposition, type Affec
 import type { Couverture } from "../couverture";
 import { contenuValide, tailleContenu } from "../sauvegarde";
 import { marqueDe, type Marque } from "./tri";
-import type { Proposition } from "./pretri";
+import type { Proposition } from "./types";
 
 /** Le marqueur du fichier, et sa version. Un changement de forme = une autre version, jamais une retouche de la 1. */
 export const FORMAT_PREMIER_JET = "bellajour-premier-jet";
@@ -33,7 +33,8 @@ export const NOM_FICHIER_MAX = 260;
 export const RAISON_MAX = 120;
 /** La règle que porte une marque venue du premier jet (`Proposition.regle` : 8 signes au plus, comme les autres règles). */
 export const REGLE_PREMIER_JET = "PJ";
-/** Le mot qui précède la raison d'une marque proposée : « premier jet » pour celles du fichier, « pré-tri » pour celles du pré-tri. */
+/** Le mot qui précède la raison d'une marque proposée : « premier jet » pour celles du fichier, « IA » pour une rafale acceptée,
+ *  « pré-tri » pour les autres (le pré-tri est archivé depuis le 16/11 : ce mot ne sert plus qu'à relire ses anciennes raisons). */
 export const motProposition = (p: { regle: string }): string => (p.regle === REGLE_PREMIER_JET ? "premier jet" : p.regle === "IA" ? "IA" : "pré-tri");
 /** Le préfixe de l'identifiant d'une photo du fichier qui n'a pas trouvé la sienne : jamais un identifiant du catalogue (`loc-…`, uuid). */
 export const PREFIXE_ABSENTE = "jet:";

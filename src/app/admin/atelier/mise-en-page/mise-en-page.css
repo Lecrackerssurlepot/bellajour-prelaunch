@@ -1754,10 +1754,9 @@
 .mep-editeur .ed-lieux button { appearance: none; padding: 3px 9px; border: 0; border-radius: var(--bj-r-pill); background: var(--bj-veil-6); color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xxs); white-space: nowrap; cursor: pointer; }
 .mep-editeur .ed-lieux button:hover { background: var(--bj-action); color: var(--bj-on-action); }
 
-/* ── lot 3 (09/11) : le pré-tri et la palette, à côté de la jauge ── */
+/* ── lot 3 (09/11) : la palette, à côté de la jauge (le bouton « Pré-trier » qui la suivait est archivé le 16/11, T-210) ── */
 .mep-editeur .ed-ph-jauge-pied { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
-.mep-editeur .ed-pretri { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
-.mep-editeur .ed-ph--grand .ed-ph-tete .ed-pretri { margin-right: 10px; }
+.mep-editeur .ed-ph-jauge-pied:empty { display: none; }
 .mep-editeur .ed-palette { display: inline-flex; gap: 2px; flex: 0 0 auto; }
 .mep-editeur .ed-palette i { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bj-text) 12%, transparent); }
 .mep-editeur .ed-ph--grand .ed-ph-tete .ed-palette { margin-right: 10px; }

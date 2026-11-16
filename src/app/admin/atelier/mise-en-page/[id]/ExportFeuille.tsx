@@ -280,7 +280,7 @@ function Questions({ memoire }: { memoire: Memoire }) {
     pile_autre_gardee: "La machine avait mis une autre photo de la pile dessus, tu as pris celle-ci.",
     pile_pas_un_doublon: "La machine la rangeait sous une autre, tu as gardé les deux.",
     tete_ecartee: "La machine l'avait mise dessus (la plus nette), tu l'as écartée.",
-    pretri_renverse: "Tu as changé la marque proposée par le pré-tri.",
+    pretri_renverse: "Tu as changé la marque que la machine proposait.",
   };
   const choix = (i: number, q: Lecon, c: "machine" | "atelier" | "depend") => { memoire.repondre(q, c, notes[i] ?? ""); setFaites((f) => ({ ...f, [i]: c })); };
   return (

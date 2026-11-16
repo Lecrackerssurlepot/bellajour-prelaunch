@@ -183,13 +183,7 @@ export async function verifierMepLectureIA(ok: (nom: string, reussi: boolean) =>
     cap("x.jpeg", 1170, 2532, {}, { texte: 22, aplats: 0.47 }) && !cap("x.jpeg", 1170, 2532, {}, { texte: 22, aplats: 0.47, visages: [{ x: 0.4, y: 0.3, l: 0.2, h: 0.2 }] })
       && !cap("x.jpeg", 1170, 2532, {}, { texte: 5, aplats: 0.6 }) && !cap("x.jpeg", 1170, 2532, {}, { texte: 22, aplats: 0.2 }) && !cap("x.png", 1080, 1920)
       && !cap("x.png", 1170, 2532, { date: sec(1), appareil: "Apple iPhone 15" }));
-  ok("R141 : le pré-tri suit la règle : une capture PNG va en réserve, l'export Snapchat de même forme n'est plus touché pour cela",
-    (() => {
-      const c = new Map<string, PhotoMaq>([["S", photo("S", "s.png", { l: 1170, h: 2532, date: null, appareil: null })], ["N", photo("N", "Snapchat-1.jpeg", { l: 1080, h: 2214, date: null, appareil: null })]]);
-      const lect = O.lireMesures(c, new Map([["S", { nettete: 500, dhash: bits(0) }], ["N", { nettete: 500, dhash: bits(40) }]]));
-      const pt = O.preTrier(c, magazine(2), lect);
-      return pt.propositions.S?.marque === "reserve" && pt.propositions.N?.raison !== "capture d'écran probable";
-    })());
+  /* R141 et le pré-tri (« une capture PNG va en réserve ») : archivé avec le pré-tri le 16/11 (T-210), archive/pretri-2026-11/verif-pretri.ts */
 
   /* ── la lecture ne s'invite pas dans un état sans elle (rien ne change pour un projet d'avant) ── */
   const eSans: EtatEditeur = O.creerEtat({ magazine: magazine(), catalogue: cat });

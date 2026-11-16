@@ -13,7 +13,7 @@ import { Ico } from "./icones";
 import { BoutonPremierJet } from "./PremierJet";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
-import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, BoutonPreTri, PaletteTri, VuesBarre } from "./TriBulles";
+import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, PaletteTri, VuesBarre } from "./TriBulles";
 import { focusCourant, marquerTri, nouvelleDouble, ouvrirComparaison, poserTri } from "./triEcran";
 
 /* Le panneau Photos : filtres, sélection collée en haut, grille VIRTUALISÉE (seules les rangées proches
@@ -406,7 +406,7 @@ function PanneauOuvert() {
             <BoutonPremierJet />
           </>
         ) : null}
-        {grand ? <><PaletteTri /><BoutonPreTri /><JaugeTri /></> : (
+        {grand ? <><PaletteTri /><JaugeTri /></> : (
           <span className="ed-seg" role="group" aria-label="Taille des vignettes">
             {(["S", "M", "L"] as const).map((t) => (
               <button key={t} type="button" aria-pressed={f.taille === t} onClick={() => filtrer({ taille: t })}>{t}</button>
@@ -417,7 +417,7 @@ function PanneauOuvert() {
         {grand ? null : <button type="button" className="ed-ico" aria-label="Replier les photos" title="Replier les photos" onClick={() => envoyer({ type: "panneau", ouvert: false })}>{Ico.panneau}</button>}
       </div>
       {grand ? null : <VuesBarre />}
-      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /><span className="ed-ph-jauge-pied"><PaletteTri /><BoutonPreTri /></span></div>}
+      {grand ? null : <div className="ed-ph-jauge"><JaugeTri /><span className="ed-ph-jauge-pied"><PaletteTri /></span></div>}
       <div className="ed-ph-outils" hidden={grand}>
         <label className="ed-recherche">{Ico.loupe}
           <input type="search" placeholder="Rechercher" aria-label="Rechercher une photo" value={f.recherche} onChange={(e) => filtrer({ recherche: e.currentTarget.value })} />
