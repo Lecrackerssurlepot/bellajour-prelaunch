@@ -5,7 +5,7 @@
  * Un seul geste (« Texte », dans le tiroir de la page ou de la double) pose un TITRE, une entrée d'historique, Annuler le défait :
  * 1. dans la plus grande zone LIBRE de la page (aucun cadre, ni photo ni texte), faite de cases entières de la grille (6 × 6 du moteur
  *    ou 8 × 8, celle que l'écran montre) : le cadre prend la largeur de la zone et les lignes qu'il lui faut, en haut de la zone ;
- * 2. à défaut, sur la zone la plus CALME d'une photo (carte de chaleur la plus basse, `Mesure.chaleur`), jamais sur un visage ni sur la
+ * 2. à défaut, sur la zone la plus CALME d'une photo (carte de chaleur la plus basse par degré entier, puis la plus large ; `Mesure.chaleur`), jamais sur un visage ni sur la
  *    zone importante (visages et saillance, C05), jamais par-dessus une autre photo, seulement sur une photo que la machine a LUE (sans
  *    lecture, on ne sait pas où sont les visages : on n'y pose rien) ; en blanc sur une photo sombre, à l'encre sur une photo claire ;
  * 3. sinon, rien : « Pas de place calme ».
@@ -203,7 +203,9 @@ export function placeDuTexte(m: Magazine, plancheId: string, cible: Cible, cat: 
         const chaleur = chaleurSous(rect, img, lu.chaleur);
         if (chaleur === null || chaleur > R.CHALEUR_MAX) continue;
         const blanc = !!lu.lumi && lu.lumi.moyenne < R.CLAIRE;
-        surPhotos.push({ place: { cote, rect, taille, surPhoto: o.photo, chaleur, blanc }, cle: [Math.round(chaleur * 100), -nc, l0, ip, c0] });
+        /* la chaleur se compare par degré entier (0 à 9) : à calme égal, le plus large l'emporte (un titre de deux colonnes dans un coin
+           de ciel ne bat pas toute la largeur du même ciel pour un dixième de degré) */
+        surPhotos.push({ place: { cote, rect, taille, surPhoto: o.photo, chaleur, blanc }, cle: [Math.round(chaleur), -nc, Math.round(chaleur * 100), l0, ip, c0] });
       }
     });
   });

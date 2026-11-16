@@ -1222,6 +1222,9 @@
 .mep-editeur .ed-rangee-tete { position: sticky; left: -12px; z-index: 1; display: flex; flex: none; flex-direction: column; align-self: stretch; align-items: flex-start; justify-content: center; gap: 6px; width: 96px; margin-left: -12px; padding-left: 12px; background: var(--bj-cream-tint-1); }
 .mep-editeur .ed-rangee-tete .ed-rangee-t { width: auto; }
 .mep-editeur .ed-rangee-tete .ed-bt { padding-inline: 10px; white-space: nowrap; }
+/* T-212 : « Fond » et « Texte » sur un même rang (la colonne s'élargit d'autant, le tiroir défile en largeur) */
+.mep-editeur .ed-rangee-tete:has(.ed-rangee-duo) { width: auto; min-width: 96px; }
+.mep-editeur .ed-rangee-duo { display: flex; gap: 4px; }
 .mep-editeur .ed-gab { appearance: none; display: flex; flex: none; flex-direction: column; align-items: center; gap: 3px; padding: 3px; border: 0; border-radius: 8px; background: none; color: var(--bj-text-soft); font-family: var(--bj-font-ui); font-size: 10px; cursor: pointer; }
 .mep-editeur .ed-gab:hover,
 .mep-editeur .ed-gab:focus-visible { background: var(--bj-veil-8); }

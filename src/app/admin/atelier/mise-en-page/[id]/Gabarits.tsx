@@ -196,14 +196,17 @@ export function Rangee({ pl, cible }: { pl: Planche; cible: Cible }) {
         ) : act.fusionner ? (
           <button type="button" className="ed-bt" onMouseEnter={voir({ type: "fusionner", plancheId: pl.id })} onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer({ type: "fusionner", plancheId: pl.id }); }}>Double page</button>
         ) : null}
-        <button type="button" className="ed-bt ed-bt-fond" aria-expanded={fondOuvert} onClick={() => setFondOuvert(!fondOuvert)}>
-          <i className={fond ? undefined : "ed-bt-fond--vide"} style={fond ? { background: hexDeCouleur(fond, etat.magazine.style) } : undefined} aria-hidden="true" />Fond
-        </button>
-        {/* T-212 : un titre posé à sa place (la plus grande zone libre, alignée sur la grille affichée ; sinon l'endroit calme d'une photo) ;
-            le survol montre où, le clic le pose, Annuler le défait */}
-        <button type="button" className="ed-bt" disabled={!d} title={d ? "Ajouter un titre à sa place" : "Page vide"}
-          onMouseEnter={d ? voir(texte) : undefined} onFocus={d ? voir(texte) : undefined}
-          onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer(texte); }}>Texte</button>
+        {/* lot G : le fond ; T-212 : le texte. Côte à côte : la colonne de tête du tiroir n'a que quatre rangs */}
+        <span className="ed-rangee-duo">
+          <button type="button" className="ed-bt ed-bt-fond" aria-expanded={fondOuvert} onClick={() => setFondOuvert(!fondOuvert)}>
+            <i className={fond ? undefined : "ed-bt-fond--vide"} style={fond ? { background: hexDeCouleur(fond, etat.magazine.style) } : undefined} aria-hidden="true" />Fond
+          </button>
+          {/* T-212 : un titre posé à sa place (la plus grande zone libre, alignée sur la grille affichée ; sinon l'endroit calme d'une photo) ;
+              le survol montre où, le clic le pose, Annuler le défait */}
+          <button type="button" className="ed-bt" disabled={!d} title={d ? "Ajouter un titre à sa place" : "Page vide"}
+            onMouseEnter={d ? voir(texte) : undefined} onFocus={d ? voir(texte) : undefined}
+            onClick={() => { majUi({ rangee: null, apercuGab: null }); envoyer(texte); }}>Texte</button>
+        </span>
       </span>
       {!liste.length ? <span className="ed-sous">Aucune photo</span> : null}
       {/* le gabarit courant reste sous les yeux même s'il est plus loin que le plafond : en tête, juste après le titre */}
