@@ -484,6 +484,7 @@ import { verifierMepLectureIA } from "./verif-mep-lecture-ia";
 import { verifierMepCouleurs } from "./verif-mep-couleurs";
 /* La vague 1 (16/11) : pré-tri retiré, couverture, grille de mise en page, gabarits à aplat, texte ajouté proprement. */
 import { verifierMepVague1 } from "./verif-mep-vague-1";
+import { verifierMepSignatures } from "./verif-mep-signatures";
 import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
@@ -7493,7 +7494,7 @@ verifierMepLot0();
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

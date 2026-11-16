@@ -384,23 +384,13 @@ export type TitreAjuste = {
   trop: boolean;
 };
 
-/**
- * Le corps d'un titre pour qu'il TIENNE dans son cadre (mm) : chaque mot sur une ligne (un mot ne se coupe pas), les lignes à la coupure
- * des espaces, la hauteur du bloc dans celle du cadre. Mesuré avec les chasses de la police et de la graisse du titre, l'approche et
- * les capitales du niveau (les mêmes que l'écran, l'IDML et le PDF). Ne grossit jamais un titre : au plus le corps du gabarit.
- * Un cadre vide, un texte vide ou une police inconnue : le corps du gabarit, sans alerte.
- *
- * La hauteur est celle de l'ENCRE, pas de la boîte de ligne : première ligne de base (`premiereBase`), lignes suivantes à
- * l'interlignage, puis la descente de la police si le niveau n'est pas en capitales. Un mot géant d'un cadre bas peut ainsi garder
- * son corps tant que ses lettres tiennent.
- */
-export function ajusterTitre(
+/** Ce qu'il faut pour savoir si un titre TIENT à un corps donné (le même calcul pour `ajusterTitre` et `corpsGeant`), ou null (rien à mesurer). */
+function mesurerTitre(
   contenu: string, ts: Pick<TexteStyle, "police" | "graisse" | "corps" | "interligne" | "capitales" | "approche">, cadre: { l: number; h: number },
-): TitreAjuste {
+): { tient: (c: number) => boolean; parLargeur: number; parHauteur: number } | null {
   const vu = texteSousStyle(contenu, ts);
   const paragraphes = vu.split(/\r\n|\r|\n/).map((p) => p.split(/ +/).filter(Boolean));
-  const garde: TitreAjuste = { corps: ts.corps, trop: false };
-  if (!paragraphes.some((p) => p.length) || !(cadre.l > 0) || !(cadre.h > 0) || largeurEmPolice(ts.police.id, ts.graisse, "M") === null) return garde;
+  if (!paragraphes.some((p) => p.length) || !(cadre.l > 0) || !(cadre.h > 0) || largeurEmPolice(ts.police.id, ts.graisse, "M") === null) return null;
   const apres = (m: string): number => (largeurEmPolice(ts.police.id, ts.graisse, m) ?? 0) + [...m].length * ts.approche;
   const mots = paragraphes.map((p) => p.map((m) => apres(m)));
   const espace = apres(" ");
@@ -430,12 +420,66 @@ export function ajusterTitre(
     const n = lignesAu(c);
     return n !== null && (base + (n - 1) * ts.interligne + descente) * c <= hauteur + 1e-6;
   };
+  return { tient, parLargeur: plusLong > 0 ? largeur / plusLong : Infinity, parHauteur: hauteur / (base + descente) };
+}
 
-  if (tient(ts.corps)) return garde;
+/**
+ * Le corps d'un titre pour qu'il TIENNE dans son cadre (mm) : chaque mot sur une ligne (un mot ne se coupe pas), les lignes à la coupure
+ * des espaces, la hauteur du bloc dans celle du cadre. Mesuré avec les chasses de la police et de la graisse du titre, l'approche et
+ * les capitales du niveau (les mêmes que l'écran, l'IDML et le PDF). Ne grossit jamais un titre : au plus le corps du gabarit.
+ * Un cadre vide, un texte vide ou une police inconnue : le corps du gabarit, sans alerte.
+ *
+ * La hauteur est celle de l'ENCRE, pas de la boîte de ligne : première ligne de base (`premiereBase`), lignes suivantes à
+ * l'interlignage, puis la descente de la police si le niveau n'est pas en capitales. Un mot géant d'un cadre bas peut ainsi garder
+ * son corps tant que ses lettres tiennent.
+ */
+export function ajusterTitre(
+  contenu: string, ts: Pick<TexteStyle, "police" | "graisse" | "corps" | "interligne" | "capitales" | "approche">, cadre: { l: number; h: number },
+): TitreAjuste {
+  const garde: TitreAjuste = { corps: ts.corps, trop: false };
+  const m = mesurerTitre(contenu, ts, cadre);
+  if (!m) return garde;
+  if (m.tient(ts.corps)) return garde;
   const plancher = Math.min(ts.corps, REGLAGES_TITRE.CORPS_MIN);
   const pas = REGLAGES_TITRE.PAS;
-  let c = Math.min(Math.floor(ts.corps / pas) * pas, Math.floor(largeur / plusLong / pas) * pas);
+  let c = Math.min(Math.floor(ts.corps / pas) * pas, Math.floor(m.parLargeur / pas) * pas);
   if (c >= ts.corps) c -= pas;
-  for (; c >= plancher; c -= pas) if (tient(c)) return { corps: c, trop: false };
+  for (; c >= plancher; c -= pas) if (m.tient(c)) return { corps: c, trop: false };
   return { corps: plancher, trop: true };
+}
+
+/* ─────────────────────────── le mot ou le chiffre GÉANT (lot Signatures, 16/11, R181) ─────────────────────────── */
+
+/**
+ * Les réglages du géant (de DÉPART, pris à l'œil sur la vitrine du 14/11). `CORPS_MAX` : le plus grand corps qu'un géant prend (le « 21 »
+ * de la vitrine éditoriale fait ≈ 470 pt dans une page) ; au-delà, le cadre est trop grand pour son texte et le vide est voulu.
+ * Sans style (Arial Bold à l'export) : `PREMIERE_BASE` et `INTERLIGNE` sont ceux du PDF sans style, `DESCENTE` celle d'Arial.
+ */
+export const REGLAGES_GEANT = { CORPS_MAX: 720, CORPS_MIN: REGLAGES_TITRE.CORPS_MIN, PAS: REGLAGES_TITRE.PAS, PREMIERE_BASE: 0.92, INTERLIGNE: 1.15, DESCENTE: 0.212 } as const;
+
+/**
+ * Le corps (pt) d'un texte GÉANT (`Cadre.geant`) : le plus grand qui tient dans son cadre, en largeur ET en hauteur, au demi-point, entre
+ * `CORPS_MIN` et `CORPS_MAX`. Sous un style : les chasses de la police du niveau du cadre, ses capitales, son approche, la typographie
+ * française, mots entiers et hauteur de l'encre, EXACTEMENT le calcul de `ajusterTitre` (qui le garde donc tel quel à l'export). Sans style :
+ * les chasses d'Arial Bold (`largeurArialGras`, donnée par l'appelant pour éviter un import circulaire), une ligne par paragraphe.
+ * L'écran (`cadresPlanche`) et l'export (`avecLieuxParDefaut`) l'appellent sur le MÊME texte : seul le corps change (D28). Rien n'est stocké.
+ */
+export function corpsGeant(
+  contenu: string, cadre: { role: Exclude<RoleCadre, "photo">; l: number; h: number }, style: StyleMagazine | null | undefined, largeurArialGras: (ligne: string) => number,
+): number {
+  const { CORPS_MAX, CORPS_MIN, PAS } = REGLAGES_GEANT;
+  const ts = style ? texteStyle(style, cadre.role, REFERENCE_CORPS[niveauDeRole(cadre.role)]) : null;
+  if (ts) {
+    const m = mesurerTitre(contenu, ts, cadre);
+    if (!m) return CORPS_MIN;
+    let c = Math.floor(Math.min(CORPS_MAX, m.parLargeur, m.parHauteur) / PAS) * PAS;
+    for (; c >= CORPS_MIN; c -= PAS) if (m.tient(c)) return c;
+    return CORPS_MIN;
+  }
+  const lignes = contenu.split(/\r\n|\r|\n/);
+  const em = Math.max(0, ...lignes.map(largeurArialGras));
+  if (!(em > 0) || !(cadre.l > 0) || !(cadre.h > 0)) return CORPS_MIN;
+  const parLargeur = (cadre.l * PT_PAR_MM * REGLAGES_TITRE.REMPLISSAGE) / em;
+  const parHauteur = (cadre.h * PT_PAR_MM) / (REGLAGES_GEANT.PREMIERE_BASE + (lignes.length - 1) * REGLAGES_GEANT.INTERLIGNE + REGLAGES_GEANT.DESCENTE);
+  return Math.max(CORPS_MIN, Math.floor(Math.min(CORPS_MAX, parLargeur, parHauteur) / PAS) * PAS);
 }

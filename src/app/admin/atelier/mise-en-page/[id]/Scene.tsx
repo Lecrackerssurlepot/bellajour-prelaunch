@@ -11,6 +11,7 @@ import { choixDeLieux } from "@/lib/mise-en-page/lieux";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
 import { cssDeCouleur } from "@/lib/mise-en-page/couleursLibres";
+import { OMBRE_DOUCE } from "@/lib/mise-en-page/signatures";
 import { PAGE_H, PLANCHE_L, type Rect } from "@/lib/mise-en-page/geometrie";
 import { cls, fermerTexteDom, memeRef, pc, useEd, type Ui } from "./contexte";
 import { cibleSous, libelleApercu } from "./glisser";
@@ -203,6 +204,8 @@ function CadreVue({ f, pl, rep, sous, fantome, nouv, cibleCour, refus }: {
     left: pc(f.x, PLANCHE_L), top: pc(f.y, PAGE_H), width: pc(f.l, PLANCHE_L), height: pc(f.h, PAGE_H),
     ...(f.rotation ? { transform: `rotate(${f.rotation}deg)` } : {}), ...(sous ? { opacity: 0 } : {}),
     ...(f.role === "photo" && f.rayon ? { borderRadius: mmEnCqw(f.rayon) } : {}),
+    /* lot Signatures (R184) : l'ombre douce d'un tirage, les mêmes nombres que le PDF et l'IDML */
+    ...(f.role === "photo" && f.ombre && !sous ? { boxShadow: `${mmEnCqw(OMBRE_DOUCE.dx)} ${mmEnCqw(OMBRE_DOUCE.dy)} ${mmEnCqw(OMBRE_DOUCE.flou)} rgba(0, 0, 0, ${OMBRE_DOUCE.opacite})` } : {}),
   };
   if (f.role !== "photo") return <TexteVue f={f} st={st} fantome={!!fantome} />;
   const ref = f.ref;

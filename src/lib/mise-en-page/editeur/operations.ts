@@ -18,8 +18,9 @@ import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadr
 import { PAGE_L, type Rect } from "../geometrie";
 import type { Template } from "../types";
 import { REGLAGES } from "./reglages";
+import { convientSignature, fondPropose } from "../signatures";
 import {
-  BONUS_ORIGINE, CIBLES, LIBELLE, MALUS_RUPTURE, MALUS_VIDE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
+  BONUS_ORIGINE, CIBLES, LIBELLE, MALUS_RUPTURE, MALUS_SIGNATURE_HORS, MALUS_VIDE, PENALITE_PLI, PENALITE_REPETITION, POIDS_GRANDE_COUPE, TOLERANCE_RAPPORT,
   affectation, borner, cadresPhoto, cadresPhotoDe, cadresTexte, cadresTexteDe, dimsCadre, dimsDeRef, egal, estCouverture, estEntier, estNeutre, idsDispo, idsMagazine, idsPlanche,
   indexPlanche, maxDe, neutre, photosDe, plancheDe, porteeDe, saisi, texteDe, textesInitiaux,
 } from "./outils";
@@ -71,7 +72,7 @@ export function perteCadre(photo: Dims, cadre: Dims): number {
 export const videDe = (t: Template): number => partVide(t);
 
 /** Somme des pertes (une grande coupe compte plus, 09/11) + pénalité de répétition − le bonus de l'ORIGINE (`BONUS_ORIGINE` : les dessinés devant, puis les générés du lot D, jamais les grilles). */
-export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null })[], precedent: string | null): number {
+export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x: number; y: number; l: number; h: number } | null; date?: string | null })[], precedent: string | null): number {
   const cs = cadresPhoto(t);
   let s = 0;
   for (let i = 0; i < cs.length; i++) {
@@ -83,6 +84,8 @@ export function noterGabarit(t: Template, photos: readonly (Dims & { zone?: { x:
   if (t.id === precedent) s += PENALITE_REPETITION;
   s -= BONUS_ORIGINE[t.portee][t.origine];
   if (t.origine === "genere") s += MALUS_VIDE * videDe(t) + MALUS_RUPTURE * partEnRupture(t);
+  /* lot Signatures (R183) : une signature qui ne convient pas aux photos (un fait sans date, deux jours pour une journée) passe derrière les dessinés */
+  if (t.origine === "signature" && !convientSignature(t, photos)) s += MALUS_SIGNATURE_HORS;
   return s;
 }
 
@@ -261,7 +264,19 @@ export function composer(
     ? [p.gauche, p.droite].reduce((n, d) => n + (d ? d.textes.filter(saisi).length : 0), 0) : 0;
   /* une double retournée (lot 4) le reste quand on y ajoute ou retire une photo */
   const neuve = r.disposition && cible === "double" && ancienne?.miroir ? { ...r.disposition, miroir: true as const } : r.disposition;
-  return { magazine: remplacerPlanche(m, i, avecDispo(p, cible, neuve)), textesPerdus: r.textesPerdus + pagesPerdues };
+  return { magazine: remplacerPlanche(m, i, avecFondPropose(avecDispo(p, cible, neuve), p, cible, ancienne, neuve)), textesPerdus: r.textesPerdus + pagesPerdues };
+}
+
+/**
+ * Lot Signatures (16/11, R182) : une signature qui PROPOSE un fond (`Template.fond`, un rôle du nuancier) le pose dans `Planche.fond` quand
+ * elle arrive sur la planche (elle n'y était pas) et que la planche n'a AUCUN fond : jamais elle n'écrase une couleur posée par l'atelier.
+ * Ensuite le fond est une couleur libre comme une autre ; Annuler le retire avec la pose (le même geste).
+ */
+function avecFondPropose(neuve: Planche, avant: Planche, cible: Cible, ancienne: Disposition | null, d: Disposition | null): Planche {
+  if (!d || avant.fond || (ancienne && ancienne.templateId === d.templateId)) return neuve;
+  const t = templateParId(d.templateId);
+  const f = t ? fondPropose(t, cible, !!d.miroir) : null;
+  return f ? { ...neuve, fond: f } : neuve;
 }
 
 /* ─────────────────────────── 9 à 21. Les opérations ─────────────────────────── */

@@ -23,13 +23,24 @@ export const BONUS_ANNEXE = 0.05;
  */
 export const AVANCE_DESSINES = 0.15;
 export const AVANCE_GENERES = 0.05;
+/**
+ * Lot Signatures (16/11, R183) : une SIGNATURE (signatures.ts) passe devant les autres dessinés quand elle convient aux photos
+ * (`convientSignature` : ses faits ont une date, sa journée est une seule journée, son miroir deux jours) ; sinon `MALUS_SIGNATURE_HORS`
+ * l'envoie derrière : deux points de note, bien plus que toute son avance d'origine et que les coupes d'une planche de neuf vignettes mal
+ * proportionnées (≈ 1,6 : une « planche du jour » faite de deux journées ne passe pas devant « Pleine + planche 3 × 3 » parce que ses cases
+ * vont mieux aux photos). Elle reste au tiroir et sous R : jamais tuée.
+ */
+export const AVANCE_SIGNATURES = 0.1;
+export const MALUS_SIGNATURE_HORS = 2;
 export const BONUS_ORIGINE: Readonly<Record<Portee, Readonly<Record<Template["origine"], number>>>> = {
   /* lot R (D1) : la double a ses générées (deux pages de la grammaire) : même ordre que la page, mêmes écarts ; `BONUS_ANNEXE` reste l'écart d'avant sur les grilles */
   double: {
+    signature: AVANCE_SIGNATURES + AVANCE_DESSINES + AVANCE_GENERES,
     annexe: AVANCE_DESSINES + AVANCE_GENERES, epingle: AVANCE_DESSINES + AVANCE_GENERES, atelier: AVANCE_DESSINES + AVANCE_GENERES,
     genere: AVANCE_GENERES, grille: 0,
   },
   page: {
+    signature: AVANCE_SIGNATURES + AVANCE_DESSINES + AVANCE_GENERES,
     annexe: AVANCE_DESSINES + AVANCE_GENERES, epingle: AVANCE_DESSINES + AVANCE_GENERES, atelier: AVANCE_DESSINES + AVANCE_GENERES,
     genere: AVANCE_GENERES, grille: 0,
   },

@@ -232,7 +232,9 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
     /* déterminisme : deux lectures identiques ; l'énumération figée par une empreinte (cinq lots fixes) */
     const lotsFixes = [["P", "P"], ["L", "P", "P"], ["L", "L", "P", "P"], ["P", "L", "P", "P", "L"], ["L", "L", "L", "L", "L", "L", "L", "L", "L", "L"]] as const;
     const refsDe = (os: readonly ("P" | "L" | "C")[]): PhotoRef[] => os.map((o, i) => ({ id: `p${i}`, nom: `p${i}`, l: o === "L" ? 3000 : o === "P" ? 2000 : 2000, h: o === "L" ? 2000 : o === "P" ? 3000 : 2000, date: null }));
-    const lecture = (os: readonly ("P" | "L" | "C")[]) => O.gabaritsClasses("double", refsDe(os), null).map((x) => `${x.template.id}:${Math.round(x.note * 1e6)}`).join("|");
+    /* lot Signatures (16/11) : les SIGNATURES (`SG-…`) s'intercalent par leur note ; l'empreinte se relève sans elles : tout le reste garde son ordre
+       et sa note au millionième (leur propre classement a son empreinte dans scripts/verif-mep-signatures.ts) */
+    const lecture = (os: readonly ("P" | "L" | "C")[]) => O.gabaritsClasses("double", refsDe(os), null).filter((x) => x.template.origine !== "signature").map((x) => `${x.template.id}:${Math.round(x.note * 1e6)}`).join("|");
     const a = lotsFixes.map(lecture).join("#"), b = lotsFixes.map(lecture).join("#");
     const empreinte = fnv(a);
     console.log(`      empreinte des classements de doubles (5 lots fixes) : ${empreinte}`);

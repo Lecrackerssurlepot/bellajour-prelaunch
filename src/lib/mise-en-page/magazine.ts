@@ -21,6 +21,7 @@ import { PAGE_L, PLANCHE_L } from "./geometrie";
 import { RECADRAGE_NEUTRE, ZOOM_MAX, ZOOM_MIN, recadrageParContenu, type Recadrage } from "./recadrage";
 import { TEMPLATES_ANNEXE } from "./templates";
 import { EPINGLES_RETIREES, TEMPLATES_EPINGLES } from "./epingles";
+import { TEMPLATES_SIGNATURES } from "./signatures";
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE, grillesDouble, grillesPage, toutesLesGrilles } from "./grilles";
 import { genereParId, genereesPour } from "./genere";
 import { genereDoubleParId } from "./genereDouble";
@@ -115,8 +116,10 @@ export type RefCadre = { plancheId: string; cible: Cible; index: number };
 
 /* ─────────────────────────── Le catalogue ─────────────────────────── */
 
-/** Les gabarits dessinés (annexe du brief, puis épingles du 29/10), toujours avant les grilles de secours. */
-export const TEMPLATES_DESSINES: Template[] = [...TEMPLATES_ANNEXE, ...TEMPLATES_EPINGLES];
+/** Les gabarits dessinés (annexe du brief, puis épingles du 29/10), toujours avant les grilles de secours. Lot Signatures (16/11) : les
+ *  SIGNATURES de la vitrine du 14/11 (`SG-…`, signatures.ts) À LA SUITE : l'ordre de cette liste ne change rien d'avant (`candidats`, le
+ *  premier candidat de `poser`) ; dans l'éditeur, c'est la NOTE qui les met devant quand elles conviennent aux photos (`BONUS_ORIGINE`). */
+export const TEMPLATES_DESSINES: Template[] = [...TEMPLATES_ANNEXE, ...TEMPLATES_EPINGLES, ...TEMPLATES_SIGNATURES];
 
 /** Lot 4 : le gabarit d'une disposition composée à la main (photos posées en libre sur une page vide). Aucun cadre à lui :
  *  ceux de la disposition (`cadres`) font foi. */
