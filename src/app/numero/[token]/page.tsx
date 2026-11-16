@@ -754,34 +754,44 @@ export default async function NumeroPage({
            voilà ce qui se passe, voilà comment demander un détail. Les
            chiffres viennent de DELAIS, jamais en dur. */
         <>
+          {/* 16/11 (retour de Mathias) : un récapitulatif en lignes courtes,
+              plus quatre paragraphes. Le délai, ce que la carte a réglé, ce
+              qui reste au compte, la facture : une ligne chacun. */}
           <p className="nu-mot">Merci.</p>
-          <p className="nu-sub">
-            Votre paiement est bien reçu. L’atelier compose maintenant votre
-            numéro complet.
-          </p>
-          {carteUtilisee ? (
-            <p className="nu-sub">
-              {carteUtilisee.code ? `Réglé avec votre carte cadeau (${formaterCentimes(carteUtilisee.montantCentimes)})` : 'Réglé en partie avec le crédit de votre compte'}
-              {carteUtilisee.reliquatCentimes > 0
-                ? `. Il vous reste ${formaterCentimes(carteUtilisee.reliquatCentimes)} sur votre compte Bellajour, pour un prochain numéro.`
-                : '.'}
-            </p>
-          ) : null}
-          <p className="nu-sub">
-            Il vous attend ici <b>sous {JOURS_COMPOSITION} jours ouvrés</b>, et
-            vous serez prévenu par mail.
-          </p>
-          {numero.facture_url && (
-            <p className="nu-sub">
-              <a className="nu-lien" href={numero.facture_url} target="_blank" rel="noopener noreferrer">
-                Votre facture
-              </a>
-              , hébergée par Stripe, reste accessible ici à tout moment.
-            </p>
-          )}
-          <p className="nu-note">
-            Un détail à changer ? Répondez au mail, on ajuste sans frais.
-          </p>
+          <p className="nu-sub">Paiement reçu. L’atelier compose votre numéro.</p>
+          <dl className="nu-recap">
+            <div>
+              <dt>Votre numéro</dt>
+              <dd>Sous {JOURS_COMPOSITION} jours ouvrés</dd>
+            </div>
+            {carteUtilisee?.code ? (
+              <div>
+                <dt>Carte cadeau</dt>
+                <dd>−{formaterCentimes(carteUtilisee.montantCentimes - carteUtilisee.reliquatCentimes)}</dd>
+              </div>
+            ) : null}
+            {carteUtilisee && carteUtilisee.creditCentimes > 0 ? (
+              <div>
+                <dt>Crédit du compte</dt>
+                <dd>−{formaterCentimes(carteUtilisee.creditCentimes)}</dd>
+              </div>
+            ) : null}
+            {carteUtilisee && carteUtilisee.reliquatCentimes > 0 ? (
+              <div>
+                <dt>Reste sur votre compte</dt>
+                <dd className="nu-recap-fort">{formaterCentimes(carteUtilisee.reliquatCentimes)}</dd>
+              </div>
+            ) : null}
+            {numero.facture_url ? (
+              <div>
+                <dt>Facture</dt>
+                <dd>
+                  <a className="nu-lien" href={numero.facture_url} target="_blank" rel="noopener noreferrer">Voir</a>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+          <p className="nu-note">Prévenu par mail. Un détail à changer ? Répondez-y.</p>
         </>
       )}
 

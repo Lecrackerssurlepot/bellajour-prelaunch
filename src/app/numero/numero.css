@@ -1767,3 +1767,27 @@
   color: var(--c-text-soft);
 }
 .nu-carte-refus { margin: 8px 0 0; font-size: 13.5px; color: var(--c-accent); }
+
+/* Le récapitulatif après paiement (16/11) : des lignes courtes, libellé à
+   gauche, valeur à droite, comme un ticket. */
+.nu-recap {
+  max-width: 520px;
+  margin: 22px auto 0;
+  text-align: left;
+  padding: 4px 18px;
+  border: 1px solid var(--c-line-md);
+  border-radius: 16px;
+  background: var(--c-surface-1);
+}
+.nu-recap > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 13px 0;
+  border-top: 1px solid var(--c-line);
+}
+.nu-recap > div:first-child { border-top: 0; }
+.nu-recap dt { font-size: 14px; color: var(--c-text-soft); }
+.nu-recap dd { margin: 0; font-size: 15px; color: var(--c-text); text-align: right; font-variant-numeric: tabular-nums; }
+.nu-recap .nu-recap-fort { color: var(--c-accent); }
