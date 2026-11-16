@@ -39,7 +39,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C12](couches/C12-memoire.md) | Mémoire : réglages, leçons, instantanés | R78 à R80, R89 | EN PROD (#356, 12/11) ; tables `mep_lecons` et `mep_instantanes` créées (migration 20261110, vues en base le 12/11) |
 | [C13](couches/C13-feuille-de-style.md) | Feuille de style : paire de polices, nuancier proposé, typographie française | R120 à R124 | EN PROD (lot C, #360, 12/11) ; relie la palette de C09 aux aplats |
 | [C14](couches/C14-lecture-ia.md) | Lecture IA dans le tri : rôles, groupes, rafales, captures, lieux nommés (aucune reconnaissance de visages, D29) | R142 à R148 (et R140, R141 sur C02, C03) | EN PROD (lot F, #363, 14/11) ; actif seulement quand un fichier de lecture est chargé |
-| [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | EN PROD (lot G, #364, 16/11) ; essai Affinity en attente (D28) |
+| [C15](couches/C15-couleurs-libres.md) | Couleurs libres (fond d'une page, couleur d'un texte) et combos tirés des photos | R149 à R153 | EN PROD (lot G, #364, 16/11) ; essai Affinity FIDÈLE (16/11, D28) |
 | [C16](couches/C16-texte-ajoute.md) | Texte ajouté proprement : la place d'un titre (zone libre alignée sur la grille, sinon l'endroit calme d'une photo) | R159 | Branche `feat/mise-en-page-vague-1` (vague 1, 16/11, T-212), pas encore fusionnée |
 | [C17](couches/C17-palette-a-glisser.md) | Palette à glisser : une couleur lâchée sur une page (fond uni) ou un texte, et ce qui va avec (texte lisible, page d'en face, fond) | R160 à R166 | Branche `feat/mise-en-page-palette` (vague 2, 16/11, T-209 second temps), pas encore fusionnée |
 
