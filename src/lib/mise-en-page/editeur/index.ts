@@ -88,3 +88,6 @@ export type {
 export { libelleGroupeIA } from "./bibliotheque";
 export { lieuDeTexte } from "./lieuxTextes";
 export { estPng } from "./tags";
+/* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
+export { colorerFond, colorerTexte, couleursPosees, libelleFond, libelleTexte, nomCouleur } from "./couleurs";
+export { fondsPlanche } from "./selecteurs";

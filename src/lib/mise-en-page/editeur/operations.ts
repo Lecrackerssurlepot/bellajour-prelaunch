@@ -151,11 +151,12 @@ export function reporterTextes(anciens: readonly TexteCadre[], tA: Template | nu
     const role = rolesA[j];
     if (!role) { if (saisi(t)) perdus++; return; }
     rang[role] = (rang[role] ?? -1) + 1;
-    if (!saisi(t)) return;
+    /* lot G : un texte coloré suit aussi, écrit ou non (sa couleur va avec lui) ; seul un texte écrit compte perdu */
+    if (!saisi(t) && !t.couleur) return;
     let vu = -1, cible = -1;
     for (let x = 0; x < rolesB.length; x++) if (rolesB[x] === role && ++vu === rang[role]) { cible = x; break; }
-    if (cible < 0) perdus++;
-    else textes[cible] = { ...textes[cible], contenu: t.contenu };
+    if (cible < 0) { if (saisi(t)) perdus++; }
+    else textes[cible] = { ...textes[cible], ...(saisi(t) ? { contenu: t.contenu } : {}), ...(t.couleur ? { couleur: t.couleur } : {}) };
   });
   return { textes, perdus };
 }

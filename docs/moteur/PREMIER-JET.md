@@ -90,6 +90,10 @@ TexteCadre  { contenu, taille, gras }
   un texte par cadre texte du gabarit de couverture. `pages` (2 à 400) et `dosMm` (1 à 20, au centième de mm) sont facultatifs :
   `dosMm` remplace le dos calculé tant qu'on ne l'efface pas.
 - `derniere` : `true` (la dernière planche est la dernière page), ou absent.
+- Lot G (14/11), les couleurs libres, toutes deux facultatives : une planche peut porter `fond: { gauche?, droite? }` (au moins un
+  côté ; la page 1 n'a que `droite`, la dernière page que `gauche` ; une double colorée porte les deux), et un texte (planche ou
+  couverture) `couleur`. Une couleur est un rôle du nuancier (`papier`, `encre`, `aplatClair`, `aplatSourd`, `accent`, `nuit` : elle
+  suit le style) ou un hexa `#rrggbb` en minuscules, rien d'autre. Le décideur peut donc écrire l'aplat d'une double en `fond`.
 
 ## Ce que fait l'éditeur au chargement
 

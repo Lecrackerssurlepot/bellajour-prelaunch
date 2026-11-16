@@ -11,9 +11,11 @@ import {
 import { PAGE_H, PAGE_L, largeurCouverture } from "@/lib/mise-en-page/geometrie";
 import type { Magazine } from "@/lib/mise-en-page/magazine";
 import { classeRole, texteTypo } from "@/lib/mise-en-page/style";
+import { cssDeCouleur } from "@/lib/mise-en-page/couleursLibres";
+import { Nuances } from "./Nuances";
 import { cls, fermerTexteDom, memeRef, pc, useEd } from "./contexte";
 import { dosDeLEtat, type DosCouverture } from "./dosCouverture";
-import { DOS_SAISI_MAX_MM, DOS_SAISI_MIN_MM, dosSaisiValide } from "@/lib/mise-en-page/couverture";
+import { DOS_SAISI_MAX_MM, DOS_SAISI_MIN_MM, dosSaisiValide, idsCouverture } from "@/lib/mise-en-page/couverture";
 import { grandeDe, vignetteDe } from "./images";
 import { demanderHd, useHd } from "./hd";
 import { libelleApercu } from "./glisser";
@@ -206,15 +208,21 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
     ...(ts
       ? {
           fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
-          fontSize: `max(6px, ${((ts.corps * 25.4) / 72 / W) * 100}cqw)`, color: `var(--mep-r-${classeRole(ts.role)})`,
+          fontSize: `max(6px, ${((ts.corps * 25.4) / 72 / W) * 100}cqw)`, color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
           textTransform: ts.capitales ? ("uppercase" as const) : ("none" as const), ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
         }
-      : { fontSize: `max(6px, ${((f.taille * 25.4) / 72 / W) * 100}cqw)`, fontWeight: f.gras ? 700 : 400, ...(f.blanc ? { color: "#fff" } : {}) }),
+      : { fontSize: `max(6px, ${((f.taille * 25.4) / 72 / W) * 100}cqw)`, fontWeight: f.gras ? 700 : 400, ...(f.teinte ? { color: cssDeCouleur(f.teinte) } : f.blanc ? { color: "#fff" } : {}) }),
     ...(sous ? { opacity: 0 } : {}),
   };
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, ref);
   if (enEdition) {
+    /* lot G : sous le texte qu'on écrit, sa couleur (le mot-titre à l'encre sur un ciel clair, par exemple) */
     return (
+      <>
+      <div className="ed-txt-outils" style={{ left: style.left, top: `calc(${String(style.top)} + ${String(style.height)})`, minWidth: style.width }}>
+        <Nuances compact valeur={f.teinte} photos={idsCouverture(etat.magazine.couverture)} retirer="Couleur du gabarit"
+          onChoix={(c) => envoyer({ type: "colorerTexte", ref, couleur: c })} />
+      </div>
       <div className="ed-txt ed-txt--couv ed-txt--edit" style={{ ...style, color: undefined }} contentEditable suppressContentEditableWarning role="textbox" aria-label="Texte de la couverture"
         ref={(n) => {
           if (n && !n.dataset.pret) {
@@ -228,8 +236,9 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
             }, 0);
           }
         }}
-        onBlur={() => fermerTexteDom(envoyer)}
+        onBlur={(e) => { if ((e.relatedTarget as HTMLElement | null)?.closest?.(".ed-nuances")) return; fermerTexteDom(envoyer); }}
         onKeyDown={(e) => { if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) { e.preventDefault(); e.currentTarget.blur(); } }} />
+      </>
     );
   }
   return (

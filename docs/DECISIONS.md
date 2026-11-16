@@ -720,6 +720,15 @@ Affinity (nombre de pages, position du dernier spread, cadres à gauche du pli).
 (Affinity ne lit que le Bureau : sortie `~/Desktop/Bellajour/test-idml/derniere-lot-e`, valeurs attendues dans `attendu.json`) ; l'agent du lot n'avait pas le
 droit d'écrire sur le Bureau. À faire AVANT de compter la dernière page comme relue fidèlement ; sans verdict FIDÈLE, l'export de l'intérieur d'un magazine à
 dernière page n'est pas garanti dans Affinity (le PDF pour Canva, lui, est lu par pdf-lib : 216 × 303 mm vérifié).
+**D28, suite (14/11/2026, lot G : les couleurs libres) : essai Affinity EN ATTENTE.** Nouveautés d'export : un rectangle « Fond », « Fond gauche » ou
+« Fond droite » par page ou double colorée (après le papier, sous les aplats du gabarit, `ContentType="Unassigned"`, sans contour, sur le calque : la forme
+des aplats déjà relus) ; des nuances RVB NOMMÉES de plus dans Graphic.xml (`Color/Libre-rrggbb`, « Ocre #ca7749 » ; sans style, les rôles posés `Color/Accent`…
+à leur valeur d'origine) ; un `FillColor` sur la plage d'un texte vers ces nuances. Prouvé jusqu'ici (harnais) : aucune nuance orpheline, le fond d'une double
+unie en UN rectangle, l'IDML sans couleur libre identique à l'octet. PAS prouvé : la relecture par Affinity (nuances nommées et leurs valeurs, fond sous les
+photos, couleur des textes). Le générateur est prêt : `scripts/idml-essai-couleurs.ts <dossier de JPEG> <sortie>` (trois IDML : sous style, sans style,
+couverture ; valeurs attendues dans `attendu.json`). La sortie se choisit en argument (Affinity ne lit bien que le Bureau) ; l'agent du lot n'écrit pas sur
+le Bureau. À faire AVANT de compter fonds et couleurs de texte comme relus fidèlement ; le PDF pour Canva, lui, est relu au harnais (couleurs des fonds et
+des textes dans le flux de la page).
 
 D29 (14/11/2026) — **Pas de reconnaissance de visages : on compte les visages, on ne les reconnaît jamais.** Décision de
 Mathias, pour maintenant et pour plus tard. La machine peut dire combien de visages une photo porte, la taille du plus grand,

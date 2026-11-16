@@ -37,7 +37,7 @@ la démo du 13/11 le produit déjà (`design-explorations/demo-2026-11-13/lectur
 | `photos` | oui | `{ "<nom de fichier>": { visages?, role?, lieu?, capture? } }`, une entrée par photo, chaque partie facultative |
 | `rafales` | oui | liste (vide s'il n'y en a pas) |
 | `groupes` | oui | liste (vide s'il n'y en a pas) |
-| `couleurs` | non | les combos de couleurs proposés (pour le lot G : l'éditeur ne les affiche pas encore) |
+| `couleurs` | non | les combos de couleurs proposés : le panneau Style les montre sous « Lecture IA », après ceux des photos (lot G) |
 
 Aucun autre champ n'est admis, à aucun niveau : le fichier est refusé avec une phrase qui nomme le champ en trop. Taille : 8 Mo, 10 000
 photos au plus (bornes techniques).
@@ -93,8 +93,9 @@ nombre de photos. `idee` : l'idée de la double, **6 mots au plus** (3 à 6 vis�
   "aplatSourd": "#a4604e", "accent": "#a7513d", "nuit": "#211d1a" }, "raison": "la terre des toits", "dansLesPhotos": true }
 ```
 
-Douze combos au plus, chacun les six rôles du nuancier de l'éditeur (`#rrggbb` en minuscules). L'éditeur les lit et les valide ; il ne
-les affiche pas (c'est le lot G).
+Douze combos au plus, chacun les six rôles du nuancier de l'éditeur (`#rrggbb` en minuscules). L'éditeur les lit et les valide ; depuis le
+lot G, le panneau Style les propose sous « Lecture IA », après les quatre combos tirés des photos (`combosDeLaLecture`, ids `ia-1`…) : un clic
+pose les SIX rôles, « Annuler » rend le nuancier d'avant. Un combo qui répète un combo des photos n'est pas redit.
 
 ## Ce que fait l'éditeur au chargement
 

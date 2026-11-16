@@ -252,8 +252,17 @@ function famillesDe(palettes: readonly (readonly string[])[]): Famille[] {
     .sort((a, b) => b.score - a.score || (a.rep.hex < b.rep.hex ? -1 : 1));
 }
 
+/**
+ * Lot G : les familles de teintes des palettes (R-C-01, R-C-03), la plus lourde d'abord, pour les COMBOS (combos.ts) : le même calcul que
+ * le nuancier, rien de changé. `h` = la teinte d'une couleur RÉELLE (le représentant), `C` = la saturation médiane (jamais plus que lui),
+ * `photos` = le nombre de photos où la famille apparaît.
+ */
+export type FamilleTeinte = { h: number; C: number; photos: number; score: number; rep: { hex: string; lch: Lch } };
+export const famillesDesPalettes = (palettes: readonly (readonly string[])[]): FamilleTeinte[] =>
+  famillesDe(palettes.filter((p) => p.some(estHex))).map((f) => ({ h: f.h, C: f.C, photos: f.photos, score: f.score, rep: { hex: f.rep.hex, lch: f.rep.lch } }));
+
 /** R-C-08 (proxy) : la saturation retenue ne dépasse jamais ce que le papier rend à cette teinte. */
-const imprimable = (C: number, h: number): number => Math.min(C, chromaImprimable(h));
+export const imprimable = (C: number, h: number): number => Math.min(C, chromaImprimable(h));
 
 /** Le nom de l'accord (R-C-10), parmi ceux de couleur.md §4 que les palettes permettent de mesurer. Un nom, pas une liste de codes. */
 function accordDe(familles: readonly Famille[], dom: Famille | undefined): string {

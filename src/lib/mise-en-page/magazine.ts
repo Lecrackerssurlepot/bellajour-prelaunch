@@ -26,6 +26,7 @@ import { genereParId, genereesPour } from "./genere";
 import { genereDoubleParId } from "./genereDouble";
 import { decorPourCote, orientationCadre, orientationDe, type Aplat, type Cadre, type Orientation, type Portee, type RoleCadre, type Template } from "./types";
 import type { StyleMagazine } from "./style";
+import type { CouleurLibre, FondPlanche } from "./couleursLibres";
 import type { Couverture } from "./couverture";
 
 /* ─────────────────────────── Les données ─────────────────────────── */
@@ -37,7 +38,9 @@ export type PhotoRef = { id: string; nom: string; l: number; h: number; date: st
  *  la délaissée reste notée pour qu'on puisse revenir dessus. Seule la photo de devant (`photoId`) part à l'export. */
 export type Hesitation = { photoId: string; recadrage: Recadrage; tranchee?: true };
 export type Affectation = { photoId: string | null; recadrage: Recadrage; hesitation?: Hesitation };
-export type TexteCadre = { contenu: string; taille: number; gras: boolean };
+/** `couleur` (lot G, 14/11, facultative, écrite seulement quand elle existe) : la couleur CHOISIE pour ce texte, un rôle du nuancier
+ *  ou un hexa (couleursLibres.ts) ; absente, c'est celle du gabarit (l'encre, ou « blanc »). Elle suit le texte d'un gabarit à l'autre. */
+export type TexteCadre = { contenu: string; taille: number; gras: boolean; couleur?: CouleurLibre };
 
 export type Disposition = {
   templateId: string;
@@ -59,6 +62,9 @@ export type Planche = {
   double: Disposition | null;
   gauche: Disposition | null;
   droite: Disposition | null;
+  /** Lot G (14/11) : le FOND de couleur de la planche, un côté ou les deux (couleursLibres.ts), indépendant du gabarit et du mode :
+   *  il reste quand on change de gabarit, sépare, fusionne ou déplace la planche. Facultatif, écrit seulement quand il existe. */
+  fond?: FondPlanche;
 };
 
 /**
@@ -400,7 +406,7 @@ export function poser(m: Magazine, plancheId: string, cible: Cible, photos: Phot
   const { nonPosees } = retenir(portee, photos);
   const d = choisir(portee, photos);
   const magazine = avecPlanche(m, plancheId, (p) => {
-    const base = vraie !== "double" && p.mode === "double" ? plancheVide(p.id, "pages") : p;
+    const base = vraie !== "double" && p.mode === "double" ? { ...plancheVide(p.id, "pages"), ...(p.fond ? { fond: p.fond } : {}) } : p;
     return avecDisposition(base, vraie, d);
   });
   return { magazine, nonPosees };
@@ -425,7 +431,13 @@ export function autreDisposition(m: Magazine, plancheId: string, cible: Cible, p
     const k = liste.findIndex((t) => t.id === d.templateId);
     const suivant = liste[(k + 1) % liste.length];
     const neuve = disposer(suivant, retenir(portee, refs).retenues);
-    neuve.textes = neuve.textes.map((t, j) => (d.textes[j] && saisi(d.textes[j]) ? { ...t, contenu: d.textes[j].contenu } : t));
+    neuve.textes = neuve.textes.map((t, j) => {
+      const a = d.textes[j];
+      if (!a) return t;
+      /* lot G : la couleur choisie suit le texte, écrit ou non */
+      const c = a.couleur ? { ...t, couleur: a.couleur } : t;
+      return saisi(a) ? { ...c, contenu: a.contenu } : c;
+    });
     return avecDisposition(p, cible, neuve);
   });
 }
@@ -440,11 +452,11 @@ export function basculer(m: Magazine, plancheId: string, photos: PhotoRef[]): Ma
     if (coteSeul(m, i)) return p;
     if (p.mode === "pages") {
       const refs = resoudre([...idsDe(p.gauche), ...idsDe(p.droite)], photos);
-      return { ...plancheVide(p.id, "double"), double: choisir("double", refs) };
+      return { ...plancheVide(p.id, "double"), ...(p.fond ? { fond: p.fond } : {}), double: choisir("double", refs) };
     }
     const refs = resoudre(idsDe(p.double), photos).sort(comparerChrono);
     const g = Math.ceil(refs.length / 2);
-    return { ...plancheVide(p.id, "pages"), gauche: choisir("page", refs.slice(0, g)), droite: choisir("page", refs.slice(g)) };
+    return { ...plancheVide(p.id, "pages"), ...(p.fond ? { fond: p.fond } : {}), gauche: choisir("page", refs.slice(0, g)), droite: choisir("page", refs.slice(g)) };
   });
 }
 
