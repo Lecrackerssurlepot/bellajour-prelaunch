@@ -20,6 +20,7 @@
 
 import fontkit from "@pdf-lib/fontkit";
 import {
+  BlendMode,
   PDFDocument,
   StandardFonts,
   appendBezierCurve,
@@ -48,6 +49,7 @@ import { cadresDe, coteSeul, decorDe, dispositionDe, type CoteSeul, type Disposi
 import type { Cadre, Teinte } from "./types";
 import { AVANCE_FINE_EM, paireParId, policeParId, premiereBase, roleDeTeinte, teinteAncienne, texteSousStyle, texteStyle, type StyleMagazine } from "./style";
 import { hexVersRgb } from "./nuancier";
+import { OMBRE_DOUCE } from "./signatures";
 import { hexDeCouleur, piecesDuFond, type CouleurLibre } from "./couleursLibres";
 import { FINE } from "./francais";
 
@@ -297,6 +299,23 @@ function ouvrir(page: PDFPage, boite: Rect, r: Rect, rotation: number | undefine
   return { l, h };
 }
 
+/**
+ * Lot Signatures (R184) : l'OMBRE DOUCE d'un tirage, en PDF. pdf-lib ne floute pas : `OMBRE_COUCHES` rectangles noirs en produit (Multiply),
+ * du plus large (le rectangle décalé grossi de la moitié du flou) au plus étroit (rétréci d'autant), chacun d'une opacité telle que leur
+ * empilement au centre fasse `OMBRE_DOUCE.opacite` : le bord s'efface en dégradé, comme le flou de l'écran et d'Affinity. Origine au centre
+ * du cadre (`ouvrir`), y vers le haut.
+ */
+export const OMBRE_COUCHES = 12;
+function ombrePdf(page: PDFPage, l: number, h: number): void {
+  const o = OMBRE_DOUCE;
+  const a = 1 - Math.pow(1 - o.opacite, 1 / OMBRE_COUCHES);
+  const flou = o.flou * K;
+  for (let k = 0; k < OMBRE_COUCHES; k++) {
+    const e = flou / 2 - (flou * k) / (OMBRE_COUCHES - 1);
+    page.drawRectangle({ x: -l / 2 - e + o.dx * K, y: -h / 2 - e - o.dy * K, width: l + 2 * e, height: h + 2 * e, color: rgb(0, 0, 0), opacity: a, blendMode: BlendMode.Multiply, borderWidth: 0 });
+  }
+}
+
 /** Une couleur hexa en couleur pdf-lib. */
 const rgbDeHex = (hex: string): RGB => { const [r, g, b] = hexVersRgb(hex); return rgb(r / 255, g / 255, b / 255); };
 
@@ -384,6 +403,8 @@ export async function ecrirePdf(pages: PagePdf[], images: ReadonlyMap<string, Ui
       if (o.type === "photo") {
         const { l, h } = ouvrir(page, pg.boite, c, c.rotation);
         const r = (c.rayon ?? 0) * K;
+        /* lot Signatures (R184) : l'ombre douce d'un tirage, sous la photo, dans son repère tourné (comme l'écran) */
+        if (c.ombre) ombrePdf(page, l, h);
         if (r > 0) page.pushOperators(...chemin(-l / 2, -h / 2, l, h, r), clip(), endPath());
         const jpeg = images.get(o.cle);
         if (jpeg) {

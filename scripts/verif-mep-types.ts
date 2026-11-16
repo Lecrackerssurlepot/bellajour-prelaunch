@@ -122,8 +122,10 @@ function verifierComptes(ok: Rapporter): void {
   const nbGeneres = compte(generes);
   const grilles = toutesLesGrilles();
   console.log(`      dessinés proposés : ${proposes.length} gabarits, ${nbDessines} types ; générés de page : ${generes.length} découpes, ${nbGeneres} types (1 à 6 photos : ${parNombre.join(", ")}) ; grilles : ${grilles.length}, ${compte(grilles)} types`);
-  ok(`R179 : les ${proposes.length} gabarits dessinés proposés font ${nbDessines} types (deux paires seulement se partagent une disposition : DP-02 et E-D14c, E-D3a et E-D4a ; chacun reste une tête)`,
-    nbDessines === 56 && proposes.length === 58);
+  /* 16/11, fusion du lot Signatures : les 11 signatures (SG-01 à SG-11) s'ajoutent aux 58 ; deux rejoignent une disposition existante
+     (SG-06 « Le nom en grand » celle d'E-D3a et E-D4a, SG-08 « Les mots sur l'aplat » celle d'E-D3b) : la clé ignore textes géants et fond. */
+  ok(`R179 : les ${proposes.length} gabarits dessinés proposés font ${nbDessines} types (se partagent une disposition : DP-02 et E-D14c ; E-D3a, E-D4a et SG-06 ; E-D3b et SG-08 ; chacun reste une tête)`,
+    nbDessines === 65 && proposes.length === 69);
   ok(`R179 : les ${generes.length} découpes de page générées font ${nbGeneres} types (1 photo : ${parNombre[0]}, 2 : ${parNombre[1]}, 3 : ${parNombre[2]}, 4 : ${parNombre[3]}, 5 : ${parNombre[4]}, 6 : ${parNombre[5]}) ; une photo encadrée de toute taille est UN type`,
     nbGeneres === 81 && parNombre.join() === [1, 12, 20, 16, 8, 24].join());
 }

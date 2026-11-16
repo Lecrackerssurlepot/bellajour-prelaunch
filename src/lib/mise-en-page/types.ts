@@ -39,7 +39,23 @@ export type Cadre = Rect & {
   rayon?: number;
   /** Textes : blanc sur une photo ou un aplat sombre, ou un RÔLE du nuancier (lot C). Absent = l'encre (le noir d'avant le style). */
   couleur?: "blanc" | RoleCouleur;
+  /** Lot Signatures (16/11, R181) : un titre GÉANT, dont le corps se calcule pour REMPLIR son cadre (largeur, sans dépasser la hauteur),
+   *  sur les chasses de sa police (`corpsGeant`, style.ts). Une seule valeur pour l'écran, l'IDML et le PDF : seul le corps change (D28). */
+  geant?: true;
+  /** Lot Signatures (R180) : le FAIT qui sert de texte par défaut à ce cadre tant que rien n'est écrit (le jour EXIF, l'heure, le lieu
+   *  sûr…), calculé à l'écran et à l'export comme le lieu par défaut, jamais stocké ; sans date, rien (D2). Voir `faitDeCadre` (faits.ts). */
+  fait?: SorteFait;
+  /** Lot Signatures (R184) : photos, l'OMBRE DOUCE d'un tirage posé (D28 : ombre portée relue fidèlement par Affinity, essai du 29/10). */
+  ombre?: true;
 };
+
+/**
+ * Lot Signatures (16/11, R180) : les faits qu'un cadre de texte peut porter par défaut. Les faits d'une PHOTO (heure, jour et heure,
+ * date et heure, repère, lieu daté) se lisent sur la k-ième photo de la disposition pour le k-ième cadre qui en porte un ; ceux de la
+ * PAGE (jour, date courte, date longue, lieu) sur la première photo datée ; la période sur tout le dossier.
+ */
+export const SORTES_FAIT = ["jour", "dateCourte", "dateLongue", "lieu", "heure", "jourHeure", "dateHeure", "repere", "lieuDateHeure", "periode"] as const;
+export type SorteFait = (typeof SORTES_FAIT)[number];
 
 /**
  * La teinte d'un aplat. Depuis le lot C, une teinte est un RÔLE du nuancier du magazine (papier, encre, aplatClair, aplatSourd,
@@ -63,11 +79,15 @@ export type Template = {
   /** Orientations des cadres photo, dans l'ordre des cadres : « P,P,L ». */
   signature: string;
   attribut: "classique" | "original";
-  /** `atelier` (lot 4) : enregistré depuis l'éditeur, table `mep_gabarits`. `genere` (lot D) : une découpe de la grammaire, id `GG1-…` (genere.ts). */
-  origine: "annexe" | "grille" | "epingle" | "atelier" | "genere";
+  /** `atelier` (lot 4) : enregistré depuis l'éditeur, table `mep_gabarits`. `genere` (lot D) : une découpe de la grammaire, id `GG1-…` (genere.ts).
+   *  `signature` (16/11) : une double tirée de la vitrine du 14/11, id `SG-…` (signatures.ts), un gabarit DESSINÉ. */
+  origine: "annexe" | "grille" | "epingle" | "atelier" | "genere" | "signature";
   cadres: Cadre[];
   /** Aplats dessinés SOUS les cadres, dans cet ordre. */
   decor?: Aplat[];
+  /** Lot Signatures (R182) : le FOND PROPOSÉ, un rôle du nuancier par côté, posé dans `Planche.fond` à la pose si la planche n'en a pas.
+   *  Jamais un aplat : ensuite, c'est une couleur libre comme une autre (T-209). */
+  fond?: Partial<Record<"gauche" | "droite", RoleCouleur>>;
 };
 
 /** L'orientation d'un cadre photo : déclarée, sinon lue sur ses mesures. */

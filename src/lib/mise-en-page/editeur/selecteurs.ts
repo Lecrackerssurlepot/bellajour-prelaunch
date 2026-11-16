@@ -9,7 +9,7 @@ import type { Aplat, Template } from "../types";
 import { texteStyle, type TexteStyle } from "../style";
 import { piecesDuFond, type CouleurLibre, type PieceFond } from "../couleursLibres";
 import { rangerParTypes, type TypeDeGabarits } from "../typesGabarits";
-import { lieuxParDefaut } from "./lieuxTextes";
+import { corpsAffiche, lieuxParDefaut } from "./lieuxTextes";
 import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
 import { LIBELLE, SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
@@ -172,6 +172,8 @@ export function cheminDeFer(e: EtatEditeur): VignetteChemin[] {
 
 export type CadrePhoto = {
   role: "photo"; ref: RefCadre; x: number; y: number; l: number; h: number; rotation: number; bord: number; rayon: number;
+  /** Lot Signatures (R184) : l'ombre douce d'un tirage posé. */
+  ombre: boolean;
   photoId: string | null; nom: string | null; indisponible: boolean; signalee: boolean; recadrage: Recadrage; cadrage: Cadrage;
   dpi: number | null; basseDef: boolean; fois: number | undefined;
   /** La photo de derrière (lot 3) : `ouverte` tant qu'on hésite, sinon la délaissée notée. */
@@ -208,7 +210,7 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const cadrage = cadrer(ph ?? refPour(e.catalogue, a.photoId), { l: c.l, h: c.h }, a.recadrage);
         const v = ph ? 25.4 / cadrage.echelle : null;
         out.push({ role: "photo", ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
-          bord: c.bord || 0, rayon: c.rayon || 0,
+          bord: c.bord || 0, rayon: c.rayon || 0, ombre: !!c.ombre,
           photoId: a.photoId, nom: ph ? ph.nom : a.photoId, indisponible: !!a.photoId && !ph, signalee: !!(ph && ph.signalee),
           recadrage: a.recadrage, cadrage, dpi: v, basseDef: v !== null && v < SEUIL_DPI,
           fois: a.photoId ? utilisations(e.magazine).get(a.photoId) : 0,
@@ -219,9 +221,11 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const parDefaut = defauts[index] ?? null;
         /* un titre s'ajuste à son cadre avec les chasses de sa police : on mesure ce que l'écran montre (le lieu qui remplace le libellé, sinon le texte) */
         const affiche = !saisi(t) || !t.contenu ? parDefaut ?? (t.contenu || LIBELLE[c.role]) : t.contenu;
+        /* lot Signatures (R181) : un cadre GÉANT prend le corps qui le remplit, calculé sur ce que l'écran montre (comme l'export) */
+        const taille = corpsAffiche(c, affiche, e.magazine.style) ?? t.taille;
         out.push({ role: c.role, ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
-          contenu: t.contenu, vide: !saisi(t), taille: t.taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut,
-          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, t.taille, t.couleur ?? c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null,
+          contenu: t.contenu, vide: !saisi(t), taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut,
+          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, taille, t.couleur ?? c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null,
           teinte: t.couleur ?? null });
       }
     }

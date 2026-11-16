@@ -190,6 +190,18 @@ modifient un petit peu la taille d'une photo, un petit peu son orientation ». C
 | R par types, V par variantes (T-208) | R passe à la disposition suivante (plus à la même avec une case de plus) ; la nouvelle touche V passe à la variante suivante du type posé. « Poser » et le premier jet ne changent pas | sur la branche |
 | Le catalogue des gabarits par types | Une section « Générés : les types » : 81 types pour les 2 062 pages générées | sur la branche |
 
+### 16/11, vague 2, lot Signatures (branche `feat/mise-en-page-signatures`, poussée, pas encore fusionnée)
+Le goût de la vitrine du 14/11 (T-214). Rien n'est en production tant que la branche n'est pas fusionnée. Comparaisons « vitrine | éditeur » :
+`design-explorations/editeur-lots-2026-11-16/recette/signatures/index.html`. Fiche C19, règles R180 à R185.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Onze doubles signature (`SG-01` à `SG-11`) | Au tiroir et sous R, avec leurs noms tirés de la vitrine (« Le chiffre du jour », « La planche du jour », « Le pli dans l'eau », « Les tirages jetés »…) ; en tête quand elles conviennent aux photos | sur la branche |
+| Les textes tirés des faits | Un titre ou une légende de signature montre le jour, l'heure, le mois et le lieu sûr, la période, tant que tu n'as rien écrit ; rien d'inventé | sur la branche |
+| Le mot ou le chiffre géant | Il remplit son cadre, le même à l'écran, dans le PDF et dans l'IDML | sur la branche |
+| Le fond proposé | Poser une signature à aplat pose son fond (couleur des photos) si la page n'en a pas ; Annuler le retire | sur la branche |
+| L'ombre douce des tirages | Les tirages jetés ont une ombre, à l'écran, dans le PDF et dans l'IDML | sur la branche, essai Affinity FIDÈLE (16/11) |
+
 Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur). Plus les cinq de la vague 1, pas encore fusionnées.
 
 ---
@@ -240,6 +252,7 @@ l'écriture des fichiers d'essai sur ton Bureau, et Affinity les a relus sans é
 - **Lot G, couleurs libres** (#364). Les fonds (page, double en un seul rectangle, page gauche seule) et les couleurs de texte arrivent aux valeurs exactes, sous
   style comme sans style, et sur la couverture.
 - Fichiers : `~/Desktop/Bellajour/test-idml/derniere-lot-e` et `couleurs-lot-g`. Détail valeur par valeur : `DECISIONS.md`, D28, « Essais du 16/11/2026 ».
+- **Lot Signatures, ombre douce des tirages** (vague 2, 16/11) : essayée AVANT la fusion, le même jour. Cinq tirages tournés, à bord blanc, chacun avec son ombre : relus mode Produit, 35 %, flou 5 mm, décalage 2 mm vers le bas, noire ; angles et contours exacts ; le chiffre géant au corps calculé. Fichiers : `test-idml/signatures`.
 
 **Jamais vu en vrai.**
 - **La pipette** (lot G) : jamais essayée dans un vrai navigateur. Elle n'existe que dans Chrome (`Nuances.tsx`, ligne 18) : ailleurs, elle ne s'affiche pas.

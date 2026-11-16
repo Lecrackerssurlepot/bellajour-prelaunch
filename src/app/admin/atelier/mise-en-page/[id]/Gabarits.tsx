@@ -155,7 +155,8 @@ function Legende({ g, legende }: { g: GabaritPour; legende?: string[] }) {
   if (g.template.origine === "genere" && legende && legende.length) {
     return <span className={`ed-gab-nom${g.template.portee === "double" ? " ed-gab-nom--double" : ""}`}>{legende.map((l, i) => <span key={i} className="ed-gab-l">{l}</span>)}</span>;
   }
-  return <span>{g.template.origine === "atelier" ? "Le mien" : g.id}</span>;
+  /* T-214 : une signature se dit par son nom (« Les tirages jetés »), pas par son code SG-xx */
+  return <span>{g.template.origine === "atelier" ? "Le mien" : g.template.origine === "signature" ? g.template.nom : g.id}</span>;
 }
 
 /* ─── le tiroir : les gabarits compatibles en vignettes. La double page reste entière sous l'aperçu en direct. ─── */

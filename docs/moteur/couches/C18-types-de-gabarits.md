@@ -60,6 +60,7 @@ différentes dès 2 ; 1,7 laisse passer les gouttières : un 6 × 3 contre un 3 
 ## Les comptes (R179, tenus au harnais)
 - Les 58 gabarits DESSINÉS proposés : **56 types** (deux paires partagent une disposition : DP-02 et E-D14c ; E-D3a et E-D4a ; chacun
   reste une tête).
+- Depuis la fusion du lot Signatures (16/11) : **69 dessinés, 65 types**. SG-06 « Le nom en grand » rejoint la disposition d'E-D3a et E-D4a, SG-08 « Les mots sur l'aplat » celle d'E-D3b (une pleine page en face d'une page de texte : la clé ne lit ni le géant ni le fond) ; chacun reste une tête.
 - Les 2 062 découpes de PAGE générées : **81 types** (1 photo : 1 ; 2 : 12 ; 3 : 20 ; 4 : 16 ; 5 : 8 ; 6 : 24). Une photo encadrée de
   toute taille et de tout calage est UN type (87 variantes).
 - Les doubles générées (GD1) sont des paires de deux pages : leur type est la paire des types de page. Le nombre dépend des photos.

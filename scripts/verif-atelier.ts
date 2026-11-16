@@ -488,6 +488,8 @@ import { verifierMepVague1 } from "./verif-mep-vague-1";
 import { verifierMepPalette } from "./verif-mep-palette";
 // T-208 (vague 2, lot Types) : les types de gabarits, R et V.
 import { verifierMepTypes } from "./verif-mep-types";
+/* Le lot Signatures (16/11, T-214) : les doubles signature, textes des faits, géant, fond proposé, ombre douce. */
+import { verifierMepSignatures } from "./verif-mep-signatures";
 import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
@@ -7497,7 +7499,7 @@ verifierMepLot0();
 verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

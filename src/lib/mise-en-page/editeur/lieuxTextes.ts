@@ -14,34 +14,46 @@ import { cadresDe, type Cible, type Disposition, type Magazine, type PhotoRef, t
 import { cadresPhotoCouverture, couverturePourExport, gabaritCouverture, type Couverture } from "../couverture";
 import { lieuCourt } from "./moments";
 import { saisi } from "./outils";
+import { FAITS_DE_PHOTO, texteDeFait } from "./faits";
+import { corpsGeant, type StyleMagazine } from "../style";
+import { largeurEm } from "../couverture";
+import type { Cadre } from "../types";
 
-type PhotoLieu = PhotoRef & { ville?: string | null; pays?: string | null; lieuIA?: string | null };
+type PhotoLieu = PhotoRef & { ville?: string | null; pays?: string | null; lieuIA?: string | null; signalee?: boolean };
 
 /** Lot F (R147) : le lieu d'une photo pour un titre ou une légende : le lieu NOMMÉ de la lecture IA quand il est sûr (posé dans
  *  `lieuIA` par l'état, jamais un lieu « à vérifier »), sinon la ville, sinon le pays. La couverture et les séjours gardent `lieuCourt`. */
 export const lieuDeTexte = (p: PhotoLieu): string | null => p.lieuIA?.trim() || lieuCourt(p);
 export type CatalogueLieux = ReadonlyMap<string, PhotoLieu>;
 
-/** Le texte par défaut de chaque cadre de texte de la disposition (null = garder le libellé). */
+/**
+ * Le texte par défaut de chaque cadre de texte de la disposition (null = garder le libellé).
+ * Lot Signatures (16/11, R180) : un cadre qui porte un FAIT (`Cadre.fait`) prend ce fait (faits.ts), jamais le lieu ; les faits d'une
+ * PHOTO se lisent sur la k-ième photo pour le k-ième cadre qui en porte un. Sans aucun cadre à fait (tous les gabarits d'avant), rien ne change.
+ */
 export function lieuxParDefaut(d: Disposition, cible: Cible, cat: CatalogueLieux): (string | null)[] {
-  const lieux = d.photos.map((a) => {
-    const p = a.photoId ? cat.get(a.photoId) : undefined;
-    return p ? lieuDeTexte(p) : null;
-  });
+  const photos = d.photos.map((a) => (a.photoId ? cat.get(a.photoId) ?? null : null));
+  const lieux = photos.map((p) => (p ? lieuDeTexte(p) : null));
   const compte = new Map<string, number>();
   for (const l of lieux) if (l) compte.set(l, (compte.get(l) ?? 0) + 1);
   let principal: string | null = null;
   for (const l of lieux) if (l && (principal === null || (compte.get(l) ?? 0) > (compte.get(principal) ?? 0))) principal = l;
-  const roles = cadresDe(d, cible).filter((c) => c.role !== "photo").map((c) => c.role);
-  const avecTitre = roles.includes("titre");
-  let k = 0, titreVu = false, legendeVue = false;
-  return roles.map((r) => {
-    if (r === "titre") {
+  const textes = cadresDe(d, cible).filter((c) => c.role !== "photo");
+  const avecTitre = textes.some((c) => c.role === "titre" && !c.fait);
+  const page = photos.flatMap((p) => (p ? [{ date: p.date }] : []));
+  let k = 0, kFait = 0, titreVu = false, legendeVue = false;
+  return textes.map((c) => {
+    if (c.fait) {
+      const i = FAITS_DE_PHOTO.has(c.fait) ? kFait++ : -1;
+      const p = i >= 0 ? photos[i] ?? null : null;
+      return texteDeFait(c.fait, p ? { date: p.date, lieu: lieux[i] } : null, page, cat.values(), principal);
+    }
+    if (c.role === "titre") {
       if (titreVu) return null;
       titreVu = true;
       return principal;
     }
-    if (r === "legende") {
+    if (c.role === "legende") {
       const l = lieux[k++] ?? null;
       const premiere = !legendeVue;
       legendeVue = true;
@@ -52,16 +64,40 @@ export function lieuxParDefaut(d: Disposition, cible: Cible, cat: CatalogueLieux
   });
 }
 
+/** Les chasses d'Arial Bold de la couverture : le géant sans style se mesure comme le mot-titre (la police de l'IDML sans style). */
+export const largeurArialGras = largeurEm;
+
+/**
+ * Lot Signatures (R181) : le corps d'un cadre GÉANT pour ce qu'il montre (le texte écrit, sinon son fait ou son lieu) ; null pour un cadre
+ * qui n'est pas géant (son corps est celui du texte). L'écran et l'export l'appellent sur le même texte.
+ */
+export function corpsAffiche(c: Cadre, contenu: string, style: StyleMagazine | null | undefined): number | null {
+  if (!c.geant || c.role === "photo" || !contenu.trim()) return null;
+  return corpsGeant(contenu, { role: c.role, l: c.l, h: c.h }, style, largeurArialGras);
+}
+
 /**
  * Lot R (D2, 12/11) : à l'export, un texte NON ÉCRIT prend son lieu quand il en a un, sinon il est VIDÉ. Le mot-repère
  * (« Titre », « Texte », « Légende ») n'existe qu'à l'écran : il ne s'imprime jamais, ni dans le PDF ni dans l'IDML, et un
  * cadre vide ne part pas (`planPdf`, `elementsXml`). Un texte écrit n'est jamais touché ; le même objet revient quand il n'y a rien à changer.
+ * Lot Signatures : un cadre GÉANT reçoit le corps qui le remplit (`corpsAffiche`), calculé sur le texte qui part.
  */
-function avecLieux(d: Disposition | null, cible: Cible, cat: CatalogueLieux): Disposition | null {
+function avecLieux(d: Disposition | null, cible: Cible, cat: CatalogueLieux, style: StyleMagazine | null | undefined): Disposition | null {
   if (!d || !d.textes.length) return d;
+  const cadres = cadresDe(d, cible).filter((c) => c.role !== "photo");
+  const geants = cadres.some((c) => c.geant);
+  if (d.textes.every(saisi) && !geants) return d;
   const defaut = lieuxParDefaut(d, cible, cat);
-  if (d.textes.every(saisi)) return d;
-  return { ...d, textes: d.textes.map((t, i) => (saisi(t) ? t : { ...t, contenu: defaut[i] ?? "" })) };
+  let change = false;
+  const textes = d.textes.map((t, i) => {
+    let u = saisi(t) ? t : { ...t, contenu: defaut[i] ?? "" };
+    const c = cadres[i];
+    const corps = c ? corpsAffiche(c, u.contenu, style) : null;
+    if (corps !== null && corps !== u.taille) u = { ...u, taille: corps };
+    if (u !== t) change = true;
+    return u;
+  });
+  return change ? { ...d, textes } : d;
 }
 
 /**
@@ -85,7 +121,7 @@ export function lieuCouverture(c: Couverture | null | undefined, cat: CatalogueL
  *  (mot-titre au lieu ou vide, corps calculé : `couverturePourExport`). */
 export function avecLieuxParDefaut(m: Magazine, cat: CatalogueLieux): Magazine {
   const planches = m.planches.map((p): Planche => {
-    const double = avecLieux(p.double, "double", cat), gauche = avecLieux(p.gauche, "gauche", cat), droite = avecLieux(p.droite, "droite", cat);
+    const double = avecLieux(p.double, "double", cat, m.style), gauche = avecLieux(p.gauche, "gauche", cat, m.style), droite = avecLieux(p.droite, "droite", cat, m.style);
     return double === p.double && gauche === p.gauche && droite === p.droite ? p : { ...p, double, gauche, droite };
   });
   const sansChangement = planches.every((p, i) => p === m.planches[i]);
