@@ -1,6 +1,6 @@
 # C13 : la feuille de style du magazine (paire de polices, nuancier, typographie française)
 
-**Statut (12/11, lot C)** : sur la branche `feat/mise-en-page-feuille-de-style`, non fusionnée. Règles R120 à R124.
+**Statut** : en production depuis le 12/11 (lot C, PR #360). Règles R120 à R124.
 
 ## Ce qu'elle fait
 - **Propose** une paire de polices (catalogue fermé de 18, avec humeur) et un nuancier à six rôles d'après les palettes des photos du

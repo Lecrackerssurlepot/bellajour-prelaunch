@@ -18,7 +18,7 @@ bloc du lot 3. Rejeu sur photos réelles : `npx tsx --tsconfig tsconfig.json scr
 aucune
 
 ## Limites connues
-Pas encore reliée aux aplats ni au choix des gabarits (lot 5).
+Reliée aux aplats depuis le 12/11 : le nuancier proposé d'après les photos (lot C, #360) et les combos (lot G, #364). Pas reliée au choix des gabarits.
 
 ## Historique
 09/11 : créée.

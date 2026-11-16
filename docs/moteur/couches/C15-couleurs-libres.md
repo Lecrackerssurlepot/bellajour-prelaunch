@@ -1,6 +1,6 @@
 # C15 : les couleurs libres et les combos (fond d'une page, couleur d'un texte, combos tirés des photos)
 
-**Statut (14/11, lot G)** : branche `feat/mise-en-page-couleurs-libres`, non fusionnée. Règles R149 à R153 (`docs/reference/REGLES-TRI.md`).
+**Statut** : en production depuis le 16/11 (lot G, PR #364), fusionné sans l'essai Affinity (D28) sur l'ordre de Mathias. Règles R149 à R153 (`docs/reference/REGLES-TRI.md`).
 Numérotée C15 et R149 : le lot F, fusionné avant (#363), a pris C14 et R140 à R148.
 
 ## Ce qu'elle fait
