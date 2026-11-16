@@ -1,8 +1,8 @@
 # Le ton Bellajour
 
 État au 16/11/2026. Les règles ci-dessous sont celles que Mathias a déjà tranchées, avec leur date.
-**Le ton des mails ne va pas** (Mathias, 16/11) : il sera réécrit à partir de ses idées et de ses
-retouches, dans la section « Le nouveau ton des mails », avant toute programmation.
+Le nouveau ton des mails est **validé le 16/11** (section « Le ton des mails ») ; les mails de Noël
+l'appliquent, ceux de l'atelier le prendront à leur prochaine réécriture.
 
 ## La voix
 
@@ -12,7 +12,8 @@ retouches, dans la section « Le nouveau ton des mails », avant toute programma
   le registre choisi par l'édition (vous ou tu).
 - **Le ton d'un magazine, pas d'un SaaS** : jamais « Cliquez ici », jamais « Bonne réception »
   (`scripts/mails-atelier.mjs`, règle 3).
-- Pas de vocabulaire promotionnel, pas de « ! », pas d'emoji (dossier Noël, 13/11).
+- Pas de vocabulaire promotionnel. Sur le site : ni « ! » ni emoji. Dans les mails (16/11) : emoji
+  libres, un « ! » au plus par mail.
 - On dit « magazine » et « numéro », jamais « album » (le skill « bellajour-mail » qui dit « album » est périmé).
 
 ## Les règles d'écriture, toutes tranchées
@@ -40,23 +41,39 @@ le gabarit (`--pousser --seulement <CODE>`), rien d'autre.
 | Relances manuelles | RD*, RP*, RA* | rejouent M2, M2b ou M3b (`src/lib/atelier/relance.ts`) | oui, au clic de l'atelier |
 | Édition collective (B2B) | rendez-vous et espace | `src/lib/collectif/mailsTextes.ts`, `mailsRdv.ts` | coupé tant que `COLLECTIF_MAILS` n'est pas ouvert |
 | Prévente (archivée) | W1, P1, F1, S1, A1 à A3, RELANCE | gabarits Brevo, routes `api/waitlist`, `api/webhook`, `api/ambassadeur` | préventes closes depuis le 01/09 |
-| **Noël** | N1, N2, GC1, GC1b, GC2, GC2b, GC3, GC4, GC5, blocs M4 et M5 | `docs/noel-2026/MAILS.md` (brouillons) ; codes dans `src/lib/atelier/carteServeur.ts` | **rien** : aucun gabarit dans Brevo |
+| **Noël** | N1 à N4 (campagnes), GC1, GC1b, GC2, GC2b, GC4, GC4b, GC5, GC6, GC7 ; bloc carte et crédit de M4 | `scripts/mails-noel.mjs` (M4 : `mails-atelier.mjs`) ; envois dans `src/lib/atelier/carteServeur.ts` | **rien encore** : gabarits à pousser sur l'accord de Mathias |
 
 La forme commune des mails de l'atelier : une phrase, un bouton, aucune image dans le corps (le
 logo seul ; l'image d'en-tête de C0 est l'exception voulue du 16/09). Une question ? « Répondez à
 ce message, nous vous répondrons nous-mêmes. »
 
-## Le nouveau ton des mails (à écrire avec Mathias)
+## Le ton des mails (validé le 16/11)
 
-Mathias juge le ton actuel des mails faux. Ce qui suit se remplit avec ses exemples et ses
-retouches, puis s'applique à tous les mails, ceux de Noël d'abord.
+Validé sur l'artefact « Mails de Noël » (16/11). Tiré de ses brouillons et du Guide Notion de mai.
 
-- **Ce qui ne va pas aujourd'hui** : à recueillir.
-- **Mails modèles** (les siens, collés tels quels) : à recueillir.
-- **Les mots qu'on garde / les mots qu'on bannit** : à recueillir.
-- **Longueur, salutation, signature** : à trancher (aujourd'hui à l'atelier : le prénom ouvre la première phrase, sans « Bonjour » ; l'Édition collective dit « Bonjour <prénom> » ; les brouillons de Noël signent « L'atelier Bellajour »).
-- **Un ou deux tons** : `MAILS.md` propose « sobre » et « décontracté » pour Noël ; à trancher.
+- **Ouvrir par une vie** : un moment, une personne, un voyage. Jamais le produit en premier.
+  Avant : « Une carte cadeau, valable douze mois, pour offrir un magazine… ». Après : « Votre sœur
+  rêve de garder son dernier voyage ? Offrez-lui le magazine. »
+- **Une idée par bloc**, et **chaque bloc ramène** vers une page précise (`/offrir`, `/composer`,
+  la carte, le compte), jamais l'accueil.
+- **Un seul bouton**, avec un verbe (« Offrir une carte », « Choisir mes photos »).
+- **Les conditions en bas** : un « À noter » de trois puces au plus, puis « Toutes les conditions »
+  vers `/offrir#conditions`.
+- **Les montants en lignes** : le récapitulatif de `STRUCTURE-INFO.md`.
+- **Nous, vous** : « nous » de l'atelier, vouvoiement, masculin générique, aucun tiret.
+- **Les mots** : magazine, numéro, composer, confier. Jamais album, profitez, cliquez ici, magique.
+  « Votre carte a servi » est refusé (« moche ») : on dit ce qu'elle a fait (« La carte de Léa a
+  offert votre numéro »).
+- **Emoji** : libres. **« ! »** : un au plus par mail. **Un seul ton** (pas de sobre / décontracté).
+- **Signature** : « L'atelier Bellajour ».
+- **Images** : toutes s'apparentent à des magazines (Mathias, 16/11). Une couverture est posée
+  comme un objet (reliure, tranche, ombre : `scripts/images-mails-noel.mjs`), jamais recadrée en
+  bandeau. La carte cadeau est dessinée en HTML (visible même quand Gmail masque les images).
 
-Ensuite seulement : réécrire les textes, les montrer en aperçu (`/noel-preview` partie 08 ou
-`.mails-apercus/`), puis la liste d'envoi et la programmation. Aucun gabarit poussé, aucun mail de
-test sans son accord, et un test ne part qu'à son adresse.
+Le squelette commun : logo · image · titre (2 à 5 mots) · évocation (1 ou 2 phrases) · blocs avec
+leur lien · un bouton · À noter · signature. Un mail court saute des blocs, il n'en invente pas.
+Le script vérifie la forme avant tout aperçu ou poussée (tirets, « ! », « album », entités dans
+l'objet, conditionnelles équilibrées).
+
+Aucun gabarit poussé, aucun mail de test sans l'accord de Mathias, et un test ne part qu'à son
+adresse.

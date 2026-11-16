@@ -478,6 +478,7 @@ import { verifierMepStyle } from "./verif-mep-style";
 import { verifierMepRecette } from "./verif-mep-recette";
 /* Noël 2026 : la carte cadeau (16/11). */
 import { verifierNoelCartes } from "./verif-noel";
+import { verifierNoelParcours } from "./verif-noel-parcours";
 /* Le lot E (13/11) : la dernière page seule (pages paires), la tranche saisie à la main, le premier jet chargé. */
 import { verifierMepDerniere } from "./verif-mep-derniere";
 /* Le lot F (14/11) : la lecture IA dans le tri (format, lien par nom, groupes, rafales, lieux) et les règles R140, R141. */
@@ -7492,7 +7493,7 @@ verifierMepEditeur(ok, titre);
 verifierMepGeneres(ok, titre);
 verifierNoelCartes(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
