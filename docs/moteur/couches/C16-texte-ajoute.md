@@ -1,6 +1,6 @@
 # C16 : le texte ajouté proprement (la machine choisit sa place)
 
-**Statut** : sur la branche `feat/mise-en-page-vague-1` (vague 1 du 16/11, T-212 premier temps), poussée, pas encore fusionnée.
+**Statut** : EN PROD le 16/11 (#367, vague 1 du 16/11, T-212 premier temps).
 Règle R159 (`docs/reference/REGLES-TRI.md`). Retour de Mathias : « venir ajouter des textes aussi de manière très propre, par contre,
 pas que ça passe le bordel ».
 

@@ -1,6 +1,6 @@
 # C18 : les types de gabarits (une disposition, et ses variantes dessous)
 
-**Statut** : sur la branche `feat/mise-en-page-types` (vague 2 du 16/11, T-208), poussée, pas encore fusionnée.
+**Statut** : EN PROD le 16/11 (#370, vague 2 du 16/11, T-208).
 Règles R170 à R179 (`docs/reference/REGLES-TRI.md`). Retour de Mathias du 16/11 : « il doit y avoir une différence entre les templates
 qui sont du coup différents vraiment en termes de position et ceux qui modifient un petit peu la taille d'une photo, un petit peu son
 orientation. […] des types de templates différents. »

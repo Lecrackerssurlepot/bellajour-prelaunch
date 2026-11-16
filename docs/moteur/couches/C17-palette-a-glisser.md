@@ -1,6 +1,6 @@
 # C17 : la palette à glisser (une couleur lâchée sur une page ou un texte, et ce qui va avec)
 
-**Statut** : sur la branche `feat/mise-en-page-palette` (vague 2 du 16/11, T-209 second temps), poussée, pas encore fusionnée.
+**Statut** : EN PROD le 16/11 (#369, vague 2 du 16/11, T-209 second temps).
 Règles R160 à R166 (`docs/reference/REGLES-TRI.md`). Retour de Mathias : « on doit avoir les couleurs qui sont à côté du magazine,
 on peut bien la glisser la couleur sur le fond pour que ça vienne vraiment la remplir de manière unie ou sur une typo, et même que
 quand on vient remplir l'un ou l'autre ça nous fasse des propositions ».

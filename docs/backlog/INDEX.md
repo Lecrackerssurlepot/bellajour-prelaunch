@@ -34,11 +34,16 @@ dans le code, et rangés en trois vagues :
 1. **Vague 1, tout de suite, petits gestes** : retirer le pré-tri (T-210), mettre les photos de couverture en tête
    quand on est sur la couverture (T-211), une vraie grille avec marges et colonnes (T-213), sortir du tiroir les
    trois gabarits à aplat (T-209, premier temps), ajouter un texte proprement dans une zone libre (T-212, premier temps).
-   **Codée le 16/11** sur la branche `feat/mise-en-page-vague-1`, poussée, pas encore fusionnée : captures dans
+   **En production le 16/11 (#367)** : captures dans
    `design-explorations/editeur-lots-2026-11-14/recette/vague-1/`. T-210, T-211 et T-213 sont fermés ; T-209 et T-212
    gardent leur second temps.
 2. **Vague 2, le goût** : les gabarits signature tirés de la vitrine Merisa (T-214), le tiroir rangé par types de
    gabarits (T-208), la palette à glisser sur le fond ou le texte, avec propositions (T-209, second temps).
+   **En production le 16/11** : palette #369, types #370, signatures #371 (11 doubles SG-01 à SG-11, textes tirés des faits,
+   géant ajusté, fond proposé, ombre douce). Essais Affinity FIDÈLES le même jour : lots E et G (#368) et l'ombre des tirages.
+   Captures : `design-explorations/editeur-lots-2026-11-16/recette/` (palette, types, signatures, ensemble). T-208, T-209 et
+   T-214 restent `en cours` jusqu'à l'essai à l'œil de Mathias ; ce qui reste de T-214 est dans le ticket (noir et blanc,
+   manuscrit, détourage, horizon, couvertures signature, deux finitions vues à l'écran).
 3. **Vague 3, avec les vrais services** (clé OpenAI, GPS et Geoapify, texte de confidentialité à valider : voir aussi
    T-203) : des titres précis, le plat et le lieu nommé (T-212).
 

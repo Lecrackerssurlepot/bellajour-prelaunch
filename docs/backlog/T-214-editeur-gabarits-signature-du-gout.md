@@ -45,3 +45,6 @@ tirages jetés »), plus son code. Reste à polir, vu à l'écran :
 - une légende longue reportée d'un autre gabarit dans un petit cadre (4,5 mm sous la vignette de SG-08) est rognée ;
 - SG-09 et SG-01 n'ont pas été revues dans l'ensemble (aucune double du premier jet de Merisa ne leur convient) : elles l'ont été seules,
   dans les comparaisons du lot.
+
+**En production le 16/11 (#371).** Fusionné après la recette locale et la recette des trois lots ensemble
+(`design-explorations/editeur-lots-2026-11-16/recette/ensemble/`). Reste : l'essai à l'œil de Mathias sur les onze doubles signature, avant de fermer.

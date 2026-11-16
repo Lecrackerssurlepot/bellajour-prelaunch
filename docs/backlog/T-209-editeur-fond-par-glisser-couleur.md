@@ -49,3 +49,6 @@ Une palette visible à côté du magazine (nuancier, combos, couleurs des photos
 - Le bouton « Fond » du tiroir est retiré (archive/fond-tiroir-2026-11/) : la palette le remplace.
 - Reste : le fond libre de la COUVERTURE (ses dix gabarits portent leurs aplats ; la palette n'y colore que les textes) ; le glisser
   au clavier ; la recette de Mathias avant fermeture. Captures : `design-explorations/editeur-lots-2026-11-16/recette/palette/`.
+
+**En production le 16/11 (#369).** Fusionné après la recette locale et la recette des trois lots ensemble
+(`design-explorations/editeur-lots-2026-11-16/recette/ensemble/`). Reste : l'essai à l'œil de Mathias sur la palette à glisser, avant de fermer.

@@ -187,7 +187,7 @@ Numérotées à partir de R149 (le lot F, fusionné avant, a pris R140 à R148).
 
 ## Vague 1 : les retours de Mathias du 16/11, premier temps (16/11)
 
-Numérotées à partir de R154 (le lot G a pris R149 à R153). Branche `feat/mise-en-page-vague-1`, pas encore fusionnée. Tests : `scripts/verif-mep-vague-1.ts`.
+Numérotées à partir de R154 (le lot G a pris R149 à R153). En production le 16/11 (#367). Tests : `scripts/verif-mep-vague-1.ts`.
 
 - **R154** (16/11, T-210) LE PRÉ-TRI EST RETIRÉ : plus de bouton « Pré-trier », plus de geste `preTrier` ; R84 à R88 ne s'appliquent plus. Le code, le bouton et leurs tests sont dans `archive/pretri-2026-11/` (README). Ce qu'il voyait de juste reste visible SANS geste : les étiquettes et les filtres « Ce que la machine a vu » (R93, R94 : floue, sombre, brûlée, rafale, doublon, capture, visage flou) et les piles (R74 à R77). Les leçons `pretri_renverse` (R89) restent lisibles, quelle que soit leur règle.
 - **R155** (16/11, T-211) LA COUVERTURE OUVERTE met ses photos candidates en TÊTE de la barre, sous « Pour la couverture » : d'abord celles que l'atelier a étiquetées « Couverture » (au tri, touche 1), puis celles que la lecture IA propose pour la couverture (« Couv. », R143), chaque liste dans l'ordre habituel de la barre, chacune une seule fois ; puis le reste, comme avant, sans elles (sans groupement, il s'appelle « Les autres »). Les filtres valent pour la tête (on range, on n'ajoute rien) ; une candidate rangée sous une pile se montre quand même. Aucune candidate : la barre est celle d'avant. Pas de « Poser » sur ce groupe.
@@ -198,7 +198,7 @@ Numérotées à partir de R154 (le lot G a pris R149 à R153). Branche `feat/mis
 
 ## Vague 2 : la palette à glisser (16/11, lot Palette, T-209 second temps)
 
-Numérotées R160 à R166 (plage du lot : R160 à R169). Branche `feat/mise-en-page-palette`, pas encore fusionnée. Tests : `scripts/verif-mep-palette.ts`. Fiche C17.
+Numérotées R160 à R166 (plage du lot : R160 à R169). En production le 16/11 (#369). Tests : `scripts/verif-mep-palette.ts`. Fiche C17.
 
 - **R160** (16/11) LA PALETTE est une colonne à droite de la planche et de la couverture (ni en tri plein écran ni en confrontation) : le nuancier (le combo appliqué en tête), les couleurs des photos de la page, les libres (pipette, roue, déjà posées), la pastille barrée. Un clic sur une pastille ne fait RIEN ; seul le glisser agit.
 - **R161** (16/11) LE GLISSER d'une couleur (événements pointeur, 6 px avant d'être un glisser, Échap annule) : lâchée sur un TEXTE, elle le colore (`colorerTexte`) ; sur une PAGE (la moitié de la planche sous le pointeur ; la page seule est sa moitié), elle la remplit (`colorerFond`). Aperçu au survol : la page se remplit (un fond posé dans la planche, sous les photos), le texte change, une bulle dit « Fond · Ocre » ou « Texte · Ocre ». Sur la couverture : les textes seulement (« Textes seulement »).
@@ -210,7 +210,7 @@ Numérotées R160 à R166 (plage du lot : R160 à R169). Branche `feat/mise-en-p
 
 ## Vague 2, lot Types : les types de gabarits (16/11, T-208)
 
-Numérotées R170 à R179 (plage du lot). Branche `feat/mise-en-page-types`, pas encore fusionnée. Module `src/lib/mise-en-page/typesGabarits.ts`, tests `scripts/verif-mep-types.ts`, fiche `docs/moteur/couches/C18-types-de-gabarits.md`.
+Numérotées R170 à R179 (plage du lot). En production le 16/11 (#370). Module `src/lib/mise-en-page/typesGabarits.ts`, tests `scripts/verif-mep-types.ts`, fiche `docs/moteur/couches/C18-types-de-gabarits.md`.
 
 - **R170** (16/11, T-208) UN TYPE = UNE DISPOSITION, lue dans les cadres sans table (`typeDeGabarit`) : région par région (la page ; sur une double, la gauche puis la droite, ou la planche entière dès qu'une photo passe le pli), la pleine page (« F », une photo qui couvre 90 % de la page) et ce qui est posé dessus, l'arbre des photos par coupes franches (côte à côte, l'une sur l'autre), le héros et sa place, le fond perdu, le texte. La clé ne lit ni l'id, ni le nom, ni l'origine. Seuils nommés : `REGLAGES_TYPES` (pli 5 mm, fond 0,9, coupe 1 mm, décalage 0,5, héros 1,7, fond perdu 0,5 mm).
 - **R171** (16/11, T-208) UNE VARIANTE ne change que la TAILLE (une case de plus ou de moins), l'ORIENTATION, le CALAGE (plus haut, plus bas, au centre), le bord blanc, les coins arrondis ou un aplat : même type. Exemples tenus au harnais (des découpes réelles) : une photo encadrée de la pleine zone ou de 4 × 4, en portrait ou en paysage ; un héros 3 × 3 ou 5 × 4 avec son satellite dessous ; un duo 3 × 2 ou de deux 1 × 1 ; la grille 2 × 3 dessinée (E-S5) et la même découpe générée ; E-D14a et E-D14c ; dans une mosaïque, la petite paire à gauche, au milieu ou à droite.
@@ -225,7 +225,7 @@ Numérotées R170 à R179 (plage du lot). Branche `feat/mise-en-page-types`, pas
 
 ## Lot Signatures : le goût de la vitrine du 14/11 (vague 2, 16/11)
 
-Numérotées R180 à R199 (plage du lot). Branche `feat/mise-en-page-signatures`, pas encore fusionnée. Tests : `scripts/verif-mep-signatures.ts`. Fiche C19.
+Numérotées R180 à R199 (plage du lot). En production le 16/11 (#371). Tests : `scripts/verif-mep-signatures.ts`. Fiche C19.
 
 - **R180** (16/11, T-214) LE TEXTE TIRÉ DES FAITS : un cadre de texte d'un gabarit peut porter un fait (`Cadre.fait` : `jour` « 21 », `dateCourte` « 22.08 », `dateLongue` « 22 août 2026 », `heure` « 12 h 04 », `jourHeure`, `dateHeure`, `repere` « Août 2026 · Aéroport de Madère · 20 h 27 », `lieuDateHeure`, `lieu`, `periode` « Du 21 au 30 août 2026 »). Tant que rien n'est écrit, il se montre ET s'exporte avec ce fait, calculé sur les photos comme le lieu par défaut, jamais stocké. Les faits d'une PHOTO se lisent sur la k-ième photo pour le k-ième cadre qui en porte un ; ceux de la PAGE sur sa première photo datée ; le lieu est le lieu sûr (lecture IA sûre, sinon la ville, sinon le pays) ; la période court sur tout le dossier, photos signalées exclues. Sans date, aucun fait, et un cadre vide n'est jamais imprimé (D2). Les espaces qui ne doivent pas casser sont insécables. Les gabarits d'avant gardent exactement leurs textes par défaut.
 - **R181** (16/11, T-214) LE GÉANT AJUSTÉ : un titre `geant` prend le plus GRAND corps qui tient dans son cadre, en largeur et en hauteur (mots entiers, chasses de la police du niveau, capitales, approche, hauteur de l'encre ; sans style, Arial Bold), au demi-point, entre 14 et 720 pt (`REGLAGES_GEANT`). Calculé sur ce qui s'affiche (le texte écrit, sinon son fait ou son lieu), à l'écran et à l'export ; le même corps dans l'IDML (seul `PointSize` change) et le PDF ; `ajusterTitre` le garde. Rien n'est stocké.
