@@ -29,11 +29,13 @@ import { avecDispo, issue, remplacerPlanche, type CatalogueRef } from "./operati
 import { CIBLES, indexPlanche } from "./outils";
 import { caseTrame, modulesDe, TRAME_DEFAUT, type Trame } from "./grilleMiseEnPage";
 import type { Boite } from "./saillance";
+import { REGLAGES } from "./reglages";
 import type { Issue } from "./types";
 
 /**
- * Les réglages du texte ajouté. Des réglages de DÉPART (16/11), à revoir sur les leçons et l'œil de Mathias ; aucun n'est une mesure
- * promise au client.
+ * La typographie du texte ajouté : des valeurs de DÉPART (16/11), aucune n'est une mesure promise au client. Les SEUILS (largeur
+ * minimale, marge autour du sujet, chaleur, clarté) sont des réglages du moteur, nommés et datés dans `reglages.ts` (`texte_*`, R159) :
+ * chaque leçon les emporte.
  */
 export const REGLAGES_TEXTE_AJOUTE = {
   /** Le plus grand corps proposé : celui des titres des gabarits à texte (E-D14, 28 pt). */
@@ -47,14 +49,11 @@ export const REGLAGES_TEXTE_AJOUTE = {
   /** La place prévue en hauteur : deux lignes, à l'interlignage d'Affinity (120 %, D28). */
   LIGNES: 2,
   INTERLIGNE: 1.2,
-  /** Une zone libre plus étroite que 50 mm ne reçoit pas de titre (deux modules de la grille 6 × 6 en font 55). */
-  LARGEUR_MIN: 50,
-  /** Sur une photo : la marge gardée autour d'un visage et de la zone importante (mm). */
-  MARGE_SUJET: 3,
-  /** Sur une photo : au-delà de cette chaleur moyenne (0 à 9) sous le texte, l'endroit n'est pas calme, on n'y pose rien. */
-  CHALEUR_MAX: 4,
-  /** Sur une photo : sous ce gris moyen (0 à 255), le texte est blanc ; au-dessus, à l'encre. Mesuré sur la photo entière. */
-  CLAIRE: 150,
+  /** Les seuils, lus dans `reglages.ts` (R159). */
+  LARGEUR_MIN: REGLAGES.texte_largeur_min.valeur,
+  MARGE_SUJET: REGLAGES.texte_marge_sujet.valeur,
+  CHALEUR_MAX: REGLAGES.texte_chaleur_max.valeur,
+  CLAIRE: REGLAGES.texte_claire.valeur,
 } as const;
 
 /** Ce que la machine a lu d'une photo (sous-ensemble de `Mesure`) : `visages` absent = le détecteur ne l'a pas vue. */
