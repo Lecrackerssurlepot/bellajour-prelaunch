@@ -695,7 +695,7 @@ export default function CasesEtCommande({
                     className="nu-carte-champ"
                     value={codeTape}
                     onChange={(e) => setCodeTape(e.target.value.toUpperCase())}
-                    placeholder="PRÉNOM-XXXXXX"
+                    placeholder="PRÉNOM-NOEL-1234"
                     aria-label="Code de la carte cadeau"
                     autoCapitalize="characters"
                     autoComplete="off"

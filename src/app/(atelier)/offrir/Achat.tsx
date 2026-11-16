@@ -89,7 +89,7 @@ export default function Achat() {
   const montantOk = montantCarteValide(centimes)
   const affiche = montantOk ? `${centimes / 100} €` : '… €'
   // Le code porte le prénom : l'aperçu le montre tel qu'il sera tiré.
-  const codeApercu = `${prefixeCode(prenom)}······`
+  const codeApercu = `${prefixeCode(prenom)}····`
   const gc2 = MAILS.find((m) => m.code === 'GC2')
 
   function verifierTemps1(): boolean {

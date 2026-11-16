@@ -10,27 +10,33 @@
  *     l'utilise (grand livre `credits_mouvements`, par adresse canonique) ;
  *   - aucune remise sur la carte elle-même.
  *
- * Le code porte le prénom de la personne qui le reçoit (Mathias, 16/11) :
- * CAMILLE-XXXXXX, puis six signes d'un alphabet de 31 sans 0/O, 1/I/L
- * (887 millions de codes par prénom). Sans prénom lisible : BJ-CADEAU-XXXXXX,
- * la forme d'avant, toujours acceptée. Le prénom ne protège rien, il se lit. Il ne se devine pas à la main,
- * et la route qui le vérifie est limitée en débit : ce n'est pas l'alphabet
+ * Le code se lit et se dicte (Mathias, 16/11) : le prénom de la personne qui
+ * reçoit, NOEL, puis un nombre de quatre chiffres. CAMILLE-NOEL-4821.
+ * Sans prénom lisible : BJ-NOEL-4821. Les toutes premières cartes de test
+ * (BJ-CADEAU-XXXXXX, six signes) restent acceptées.
+ * Neuf mille nombres par prénom : ce n'est pas le nombre qui protège. Un code
+ * ne s'essaie que depuis un vrai dossier (token de 32 caractères), et la route
+ * qui le vérifie est limitée en débit : ce n'est pas l'alphabet
  * qui protège, c'est la limite. Le tirage reçoit ses octets de l'appelant
  * (crypto côté serveur), ce qui garde ce module pur et testable.
  */
 
 export const ALPHABET_CODE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-export const PREFIXE_CODE = "BJ-CADEAU-";
-export const LONGUEUR_CODE = 6;
+/** Le mot du milieu : sans tréma, un code s'écrit en ASCII. */
+export const MOT_CODE = "NOEL";
+/** Le préfixe quand le prénom ne se lit pas. */
+export const PRENOM_PAR_DEFAUT = "BJ";
 /** Le prénom dans le code : de 2 à 12 lettres A à Z, sans accent. */
 export const PRENOM_CODE_MAX = 12;
-const FORME_CODE = /^(BJ-CADEAU|[A-Z]{2,12})-[A-HJKMNP-Z2-9]{6}$/;
+/** Le nombre : quatre chiffres, de 1000 à 9999 (jamais un zéro en tête qui se perd). */
+export const NOMBRE_MIN = 1000;
+export const NOMBRE_MAX = 9999;
+const FORME_CODE = /^(?:[A-Z]{2,12}-NOEL-[1-9][0-9]{3}|BJ-CADEAU-[A-HJKMNP-Z2-9]{6})$/;
 
 /**
  * Le prénom tel qu'il entre dans le code : majuscules, accents retirés,
  * lettres seules (« Marie-Hélène » → MARIEHELENE), douze au plus. Moins de
- * deux lettres (« Zoé » donne ZOE, « J. » ne donne rien) : `null`, et le
- * code garde BJ-CADEAU.
+ * deux lettres (« J. ») : `null`, et le code prend BJ.
  */
 export function prenomPourCode(prenom: unknown): string | null {
   if (typeof prenom !== "string") return null;
@@ -46,9 +52,9 @@ export function prenomPourCode(prenom: unknown): string | null {
   return lettres.length >= 2 ? lettres : null;
 }
 
-/** Le préfixe d'une carte : le prénom, ou BJ-CADEAU. */
+/** Le début d'une carte : « CAMILLE-NOEL- », ou « BJ-NOEL- ». */
 export function prefixeCode(prenom: unknown): string {
-  return `${prenomPourCode(prenom) ?? "BJ-CADEAU"}-`;
+  return `${prenomPourCode(prenom) ?? PRENOM_PAR_DEFAUT}-${MOT_CODE}-`;
 }
 
 /** Les deux montants proposés, en centimes. */
@@ -61,27 +67,26 @@ export const PRENOM_CARTE_MAX = 40;
 export const VALIDITE_MOIS = 12;
 
 /**
- * Un code à partir d'octets aléatoires. Le rejet des octets ≥ 248 (8 × 31)
- * garde la loi uniforme ; s'il n'y en a pas assez, `null` et l'appelant
- * retire des octets.
+ * Un code à partir d'octets aléatoires, lus deux par deux (0 à 65 535). Le
+ * rejet au-delà de 62 999 (7 × 9 000) garde la loi uniforme sur 1000 à 9999 ;
+ * s'il n'y a pas assez d'octets, `null` et l'appelant en retire.
  */
 export function codeDepuisOctets(octets: ArrayLike<number>, prenom?: unknown): string | null {
-  const n = ALPHABET_CODE.length;
-  const limite = Math.floor(256 / n) * n;
-  let suite = "";
-  for (let i = 0; i < octets.length && suite.length < LONGUEUR_CODE; i++) {
-    if (octets[i] < limite) suite += ALPHABET_CODE[octets[i] % n];
+  const etendue = NOMBRE_MAX - NOMBRE_MIN + 1;
+  const limite = Math.floor(65536 / etendue) * etendue;
+  for (let i = 0; i + 1 < octets.length; i += 2) {
+    const n = (octets[i] << 8) | octets[i + 1];
+    if (n < limite) return prefixeCode(prenom) + String(NOMBRE_MIN + (n % etendue));
   }
-  return suite.length === LONGUEUR_CODE ? prefixeCode(prenom) + suite : null;
+  return null;
 }
 
 /**
  * Ce que la personne a tapé devient un code, ou `null`. Majuscules, accents,
- * espaces et tirets oubliés pardonnés (« camille 7kq4mr », « bj cadeau
- * 7kq4mr », « 7KQ4MR » seul pour les anciennes cartes). Les six derniers
- * signes sont le code, ce qui les précède est le prénom. Un signe hors de
- * l'alphabet (0, O, 1, I, L) dans les six est refusé, jamais « corrigé » :
- * deviner le code de quelqu'un d'autre est précisément ce qu'on ne veut pas.
+ * espaces et tirets oubliés pardonnés (« camille noël 4821 », « Camille-Noel-4821 »,
+ * « CAMILLENOEL4821 »). Les premières cartes (BJ-CADEAU-XXXXXX) passent
+ * toujours ; un signe hors de leur alphabet (0, O, 1, I, L) est refusé, jamais
+ * « corrigé » : deviner le code de quelqu'un d'autre est ce qu'on ne veut pas.
  */
 export function normaliserCode(saisie: unknown): string | null {
   if (typeof saisie !== "string") return null;
@@ -90,12 +95,11 @@ export function normaliserCode(saisie: unknown): string | null {
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase()
     .replace(/[\s_.-]/g, "");
-  if (brut.length < LONGUEUR_CODE) return null;
-  const suite = brut.slice(-LONGUEUR_CODE);
-  const tete = brut.slice(0, -LONGUEUR_CODE);
-  const prefixe = tete === "" || tete === "BJCADEAU" ? "BJ-CADEAU" : tete;
-  const code = `${prefixe}-${suite}`;
-  return FORME_CODE.test(code) ? code : null;
+  const noel = /^([A-Z]{2,12})NOEL([1-9][0-9]{3})$/.exec(brut);
+  if (noel) return `${noel[1]}-${MOT_CODE}-${noel[2]}`;
+  const ancien = /^(?:BJCADEAU)?([A-HJKMNP-Z2-9]{6})$/.exec(brut);
+  const code = ancien ? `BJ-CADEAU-${ancien[1]}` : null;
+  return code && FORME_CODE.test(code) ? code : null;
 }
 
 /** Un montant recevable, en centimes : 30 €, 50 €, ou un entier d'euros de 20 à 200 €. */

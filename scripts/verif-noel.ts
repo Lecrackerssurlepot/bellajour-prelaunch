@@ -37,15 +37,14 @@ type Ok = (n: string, c: boolean) => void;
 export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
   titre("— Noël : la carte cadeau (décisions du 16/11) —");
 
-  ok("alphabet : 31 signes, ni 0, O, 1, I, L", ALPHABET_CODE.length === 31 && !/[0O1IL]/.test(ALPHABET_CODE));
-  const code = codeDepuisOctets([0, 1, 2, 3, 4, 30]);
-  ok("code tiré d'octets : BJ-CADEAU-ABCDE9", code === "BJ-CADEAU-ABCDE9");
-  ok("code : les octets >= 248 sont rejetés (loi uniforme), et trop peu d'octets rend null",
-    codeDepuisOctets([255, 250, 248, 0, 0, 0, 0, 0, 0]) === "BJ-CADEAU-AAAAAA" && codeDepuisOctets([0, 0, 0]) === null);
-  ok("saisie : minuscules, espaces et préfixe oublié pardonnés",
+  ok("code tiré d'octets : 0x0000 donne 1000, 0x2327 (8999) donne 9999",
+    codeDepuisOctets([0, 0]) === "BJ-NOEL-1000" && codeDepuisOctets([0x23, 0x27]) === "BJ-NOEL-9999");
+  ok("code : les paires >= 63000 sont rejetées (loi uniforme), et trop peu d'octets rend null",
+    codeDepuisOctets([0xff, 0xff, 0xf6, 0x18, 0, 5]) === "BJ-NOEL-1005" && codeDepuisOctets([0xff, 0xff]) === null && codeDepuisOctets([7]) === null);
+  ok("saisie : les premières cartes (BJ-CADEAU-XXXXXX) passent toujours, préfixe oublié pardonné",
     normaliserCode("bj cadeau 7kq4mr") === "BJ-CADEAU-7KQ4MR" && normaliserCode(" 7KQ4MR ") === "BJ-CADEAU-7KQ4MR"
-      && normaliserCode("BJ-CADEAU-7KQ4MR") === "BJ-CADEAU-7KQ4MR");
-  ok("saisie : un signe hors alphabet est refusé, jamais corrigé (0, O, 1, I, L), comme une longueur fausse",
+      && normaliserCode("BJ-CADEAU-7KQ4MR") === "BJ-CADEAU-7KQ4MR" && ALPHABET_CODE.length === 31);
+  ok("saisie : un signe hors alphabet d'une ancienne carte est refusé, jamais corrigé, comme une longueur fausse",
     ["7KQ4M0", "7KQ4MO", "7KQ4M1", "7KQ4MI", "7KQ4ML", "7KQ4M", "7KQ4MRR", "", null, 42].every((s) => normaliserCode(s) === null));
 
   ok("montants : 30, 50, 20 et 200 EUR passent",
@@ -115,27 +114,34 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
   ok("tirage serveur : un code de la bonne forme et un token de 32 caractères",
     normaliserCode(genererCodeCarte()) !== null && /^[A-Za-z0-9_-]{32}$/.test(genererTokenCarte()));
 
-  titre("— Noël : le code porte le prénom (Mathias, 16/11) —");
+  titre("— Noël : le code, PRÉNOM-NOEL-1234 (Mathias, 16/11) —");
   ok("prénom : accents, tirets et espaces retirés, douze lettres au plus",
     prenomPourCode("Marie-Hélène") === "MARIEHELENE" && prenomPourCode("Zoé") === "ZOE" && prenomPourCode("Anne Sophie") === "ANNESOPHIE"
       && prenomPourCode("Maximilienne-Charlotte") === "MAXIMILIENNE" && prenomPourCode("Chloë") === "CHLOE" && prenomPourCode("Lætitia") === "LAETITIA");
-  ok("prénom illisible (une lettre, chiffres, vide) : BJ-CADEAU",
-    prenomPourCode("J.") === null && prenomPourCode("42") === null && prenomPourCode("") === null && prefixeCode(null) === "BJ-CADEAU-");
-  const tire = genererCodeCarte("Camille");
-  ok("tirage : CAMILLE- puis six signes de l'alphabet", /^CAMILLE-[A-HJKMNP-Z2-9]{6}$/.test(tire) && normaliserCode(tire) === tire);
-  ok("tirage d'octets avec prénom : CAMILLE-ABCDE9", codeDepuisOctets([0, 1, 2, 3, 4, 30], "Camille") === "CAMILLE-ABCDE9");
-  ok("saisie : « camille 7kq4mr », « Camille-7KQ4MR », « CAMILLE7KQ4MR » donnent CAMILLE-7KQ4MR",
-    ["camille 7kq4mr", "Camille-7KQ4MR", "CAMILLE7KQ4MR", " camille-7kq4mr "].every((s) => normaliserCode(s) === "CAMILLE-7KQ4MR"));
-  ok("saisie : le prénom accentué tapé tel quel est pardonné (« Zoé 7KQ4MR »)", normaliserCode("Zoé 7KQ4MR") === "ZOE-7KQ4MR");
-  ok("saisie : les anciennes cartes passent toujours", normaliserCode("BJ-CADEAU-7KQ4MR") === "BJ-CADEAU-7KQ4MR" && normaliserCode("7kq4mr") === "BJ-CADEAU-7KQ4MR");
-  ok("saisie : prénom trop long, chiffre dans le prénom, signe interdit dans les six : refusé",
-    normaliserCode("MAXIMILIENNEC-7KQ4MR") === null && normaliserCode("CAM1LLE-7KQ4MR") === null && normaliserCode("CAMILLE-7KQ4M0") === null);
+  ok("prénom illisible (une lettre, chiffres, vide) : BJ-NOEL-",
+    prenomPourCode("J.") === null && prenomPourCode("42") === null && prenomPourCode("") === null && prefixeCode(null) === "BJ-NOEL-");
+  {
+    const tires = Array.from({ length: 200 }, () => genererCodeCarte("Camille"));
+    ok("tirage : CAMILLE-NOEL- puis quatre chiffres de 1000 à 9999, relu tel quel",
+      tires.every((t) => /^CAMILLE-NOEL-[1-9][0-9]{3}$/.test(t) && normaliserCode(t) === t));
+  }
+  ok("tirage d'octets avec prénom : 0x0EED (3821) donne ZOE-NOEL-4821", codeDepuisOctets([0x0e, 0xed], "Zoé") === "ZOE-NOEL-4821");
+  ok("saisie : « camille noël 4821 », « Camille-Noel-4821 », « CAMILLENOEL4821 » donnent CAMILLE-NOEL-4821",
+    ["camille noël 4821", "Camille-Noel-4821", "CAMILLENOEL4821", " camille-noel-4821 ", "Camille Noël 4821"].every((s) => normaliserCode(s) === "CAMILLE-NOEL-4821"));
+  ok("saisie : un prénom accentué tapé tel quel est pardonné (« Zoé Noël 4821 »)", normaliserCode("Zoé Noël 4821") === "ZOE-NOEL-4821");
+  ok("saisie : un prénom NOEL ne trompe pas (« Noël Noël 4821 »)", normaliserCode("Noël Noël 4821") === "NOEL-NOEL-4821");
+  ok("saisie : nombre à trois ou cinq chiffres, zéro en tête, sans NOEL, prénom trop long ou avec chiffre : refusé",
+    ["CAMILLE-NOEL-482", "CAMILLE-NOEL-48210", "CAMILLE-NOEL-0821", "CAMILLE-4821", "MAXIMILIENNEC-NOEL-4821", "CAM1LLE-NOEL-4821", "4821"]
+      .every((s) => normaliserCode(s) === null));
+  {
+    const sql = readFileSync("supabase/migrations/20261117_noel_code_prenom_noel.sql", "utf8");
+    ok("base : la contrainte du code est celle du module (PRÉNOM-NOEL-1234, ou BJ-CADEAU-XXXXXX)",
+      sql.includes("'^([A-Z]{2,12}-NOEL-[1-9][0-9]{3}|BJ-CADEAU-[A-HJKMNP-Z2-9]{6})$'"));
+  }
   {
     const sql = readFileSync("supabase/migrations/20261117_noel_codes_et_mails.sql", "utf8");
     const serveurTs = readFileSync("src/lib/atelier/carteServeur.ts", "utf8");
     const CODES_MAIL_CARTE = (serveurTs.match(/export type CodeMailCarte = ([^;]+);/)?.[1] ?? "").match(/"([A-Za-z0-9]+)"/g)?.map((c) => c.slice(1, -1)) ?? [];
-    ok("base : la contrainte du code est celle du module (prénom ou BJ-CADEAU, puis six signes)",
-      sql.includes("'^(BJ-CADEAU|[A-Z]{2,12})-[A-HJKMNP-Z2-9]{6}$'"));
     const permis = (sql.match(/cartes_mails_code_check\s+check \(code in \(([^)]*)\)/) ?? [])[1] ?? "";
     ok("base : chaque mail de carte est permis par la contrainte de cartes_mails (GC4b, GC6, GC7 étaient refusés)",
       CODES_MAIL_CARTE.length === 9 && CODES_MAIL_CARTE.every((c) => permis.includes(`'${c}'`)));
@@ -206,7 +212,7 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
   ok("M4 : crédit seul -> une ligne, au centime (12,50)", rCredit.CREDIT === "12,50" && rCredit.CARTE_MONTANT === "" && rCredit.RELIQUAT === "");
 
   const ligneCarte: CarteLigne = {
-    id: "c", code: "BJ-CADEAU-7KQ4MR", token: "t".repeat(32), montant_centimes: 5000,
+    id: "c", code: "CAMILLE-NOEL-4821", token: "t".repeat(32), montant_centimes: 5000,
     acheteur_email: "lea@exemple.fr", acheteur_prenom: "Léa", destinataire_prenom: "Camille",
     destinataire_email: "camille@exemple.fr", message: null, remise: "email", envoi_le: null, envoyee_le: null,
     livemode: false, statut: "payee", expire_le: "2027-11-16T10:00:00Z", created_at: "2026-11-16T10:00:00Z",
@@ -215,7 +221,7 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
   ok("paramètres : la fin avec l'année, l'adresse du destinataire, la date de Noël avant le 7/12",
     p.DATE === "16 novembre 2027" && p.EMAIL_DEST === "camille@exemple.fr" && p.DATE_NOEL === "lundi 7 décembre");
   ok("paramètres : le bouton de GC2 applique le code (/composer?nouveau=1&carte=CODE)",
-    p.LIEN_COMPOSER.endsWith("/composer?nouveau=1&carte=BJ-CADEAU-7KQ4MR") && /\/carte\/t{32}$/.test(p.LIEN_CARTE));
+    p.LIEN_COMPOSER.endsWith("/composer?nouveau=1&carte=CAMILLE-NOEL-4821") && /\/carte\/t{32}$/.test(p.LIEN_CARTE));
 
   /* Le texte des mails (scripts/mails-noel.mjs) et le code doivent se répondre :
      chaque code a son gabarit, chaque variable d'un gabarit est fournie. */

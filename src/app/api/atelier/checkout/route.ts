@@ -469,7 +469,7 @@ export async function POST(request: Request) {
           currency: "eur",
           duration: "once",
           max_redemptions: 1,
-          name: reglement.carte ? `Carte cadeau ${reglement.carte.code.slice(-6)}` : "Crédit de votre compte",
+          name: reglement.carte ? `Carte cadeau ${reglement.carte.code}` : "Crédit de votre compte",
           metadata: { kind: KIND_ATELIER, numero_id: numero.id, carte_code: reglement.carte?.code ?? "" },
         });
         couponCarte = coupon.id;

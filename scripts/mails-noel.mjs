@@ -641,7 +641,7 @@ export const EXEMPLE = {
   PRENOM_DEST: "Camille",
   EMAIL_DEST: "camille@exemple.fr",
   MONTANT: "50",
-  CODE: "CAMILLE-7KQ4MR",
+  CODE: "CAMILLE-NOEL-4821",
   MESSAGE: "Pour nos étés à Noosa.",
   DATE_ENVOI: "24 décembre",
   DATE: "16 novembre 2027",
@@ -650,7 +650,7 @@ export const EXEMPLE = {
   PLACES: "6",
   LIEN_CARTE: `${SITE}/carte/exemple`,
   LIEN_RECU: `${SITE}/api/cartes/recu/exemple`,
-  LIEN_COMPOSER: `${SITE}/composer?nouveau=1&carte=CAMILLE-7KQ4MR`,
+  LIEN_COMPOSER: `${SITE}/composer?nouveau=1&carte=CAMILLE-NOEL-4821`,
 };
 
 /**
