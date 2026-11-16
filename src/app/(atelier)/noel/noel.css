@@ -337,14 +337,21 @@
   box-shadow: var(--shadow-pop);
   opacity: var(--q);
 }
-.nl-noel .nl-scene-couv--1 { transform: translateX(calc(-50% - var(--q) * 62%)) rotate(calc(var(--q) * -7deg)) scale(0.86); }
+.nl-noel .nl-scene-couv--1 { transform: translateX(calc(-50% - var(--q) * var(--couv-dx, 62%))) rotate(calc(var(--q) * -7deg)) scale(var(--couv-s, 0.86)); }
 .nl-noel .nl-scene-couv--2 { transform: translateX(-50%) translateY(calc((1 - var(--q)) * 30%)); z-index: 1; }
-.nl-noel .nl-scene-couv--3 { transform: translateX(calc(-50% + var(--q) * 62%)) rotate(calc(var(--q) * 7deg)) scale(0.86); }
+.nl-noel .nl-scene-couv--3 { transform: translateX(calc(-50% + var(--q) * var(--couv-dx, 62%))) rotate(calc(var(--q) * 7deg)) scale(var(--couv-s, 0.86)); }
 
 @media (max-width: 767px) {
   .nl-noel .nl-mag-grille { grid-template-columns: minmax(0, 1fr); }
   .nl-noel .nl-gestes { flex-direction: column; align-items: stretch; align-self: stretch; }
   .nl-noel .nl-scene-objet { height: min(76%, calc(40 * var(--uh)), calc(78vw / 1.4095)); }
+  /* Au téléphone l'éventail s'écarte de 62 % : les deux couvertures du bord
+     sortaient de l'écran (retour du 16/11, 393 px). Plus serrées et un peu
+     plus petites, elles tiennent avec ~25 px de marge. La tablette aussi
+     (768 px : 2 px dehors). */
+}
+@media (max-width: 1023px) {
+  .nl-noel .nl-scene-couvs { --couv-dx: 36%; --couv-s: 0.76; }
 }
 
 /* ── mouvement réduit : tout est là, rien ne bouge ── */
