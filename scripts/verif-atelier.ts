@@ -640,6 +640,8 @@ ok("2 visuels manquants nommes un par un", !sansImg.ok && sansImg.erreurs.length
      cleVisuelDemandee(brut, ID, "../plat-a1.png") === null && cleVisuelDemandee(brut, ID, "apercu/plat-a1.png") === null);
   ok("visuel : une URL absolue n'est jamais lue au coffre", cleVisuelDemandee(brut, ID, "x.png") === null);
   ok("visuel : un apercu absent ne sert rien", cleVisuelDemandee(null, ID, "plat-a1.png") === null);
+  ok("relève : un dossier archivé n'est jamais balayé (aucun mail vers une page morte)",
+    /\.in\("etat", ETATS_BALAYES\)[\s\S]{0,400}\.is\("archive_le", null\)/.test(readFileSync("src/app/api/atelier/mails/relever/route.ts", "utf8")));
   ok("prévisualisation : un brouillon ne passe pas par la route stable (elle ne lit que la base)",
     /previsualisation \? \{\} : \{ token: numero\.token \}/.test(readFileSync("src/app/numero/[token]/page.tsx", "utf8")));
   ok("visuel : l'adresse ne porte que le nom, jamais la cle",
