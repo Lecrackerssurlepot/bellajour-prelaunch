@@ -15,3 +15,16 @@ Prises dans la conversation du 16/11. Elles remplacent les hypothèses de TARIFI
 | Imprimeur de Noël | **SoBook**, par son API (à brancher : documentation et clé à fournir par Mathias) |
 | Bandeau | « Offrir une carte » mène à `/offrir` |
 | Chapitre de l'accueil | Gardé tel quel pour l'instant (« pas festif, mais okay ») |
+
+## État du développement
+
+| Lot | État au 16/11 |
+|---|---|
+| 1. Tables + règles pures | Fait. Migration `20261116_noel_cartes_cadeau.sql` appliquée en production, vérifiée en SQL |
+| 2. Acheter une carte | Fait sur `noel-2026` (Stripe en mode test). `/offrir` → Stripe → `/offrir/merci` (code + lien d'impression) ; `/carte/<token>` imprimable. Testé de bout en bout en local : une seule carte en base après deux chargements de la page de retour. Mails GC1, GC1b, GC2 branchés mais **sautés tant que les gabarits Brevo n'existent pas** (`BREVO_TEMPLATE_GC*_ID`) |
+| 3. Utiliser la carte au paiement du magazine | À faire |
+| 4. Règle de Noël du 2ᵉ exemplaire + compteur de places | À faire |
+| 5. Bandeau, chapitre, bloc /magazine sur le vrai site | À faire |
+| 6. SoBook | En attente de la documentation et de la clé |
+
+À trancher plus tard (pas bloquant) : Stripe propose aussi Klarna, Bancontact, Amazon Pay et MB WAY sur la carte (moyens activés sur le compte de test) ; à garder ou à restreindre à la carte bancaire.
