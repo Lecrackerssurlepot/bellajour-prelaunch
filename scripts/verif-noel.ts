@@ -8,6 +8,8 @@ import {
   jourEnvoiValide,
   montantCarteValide,
   normaliserCode,
+  prefixeCode,
+  prenomPourCode,
   reglementCommande,
   refusCarte,
   imputationCommande,
@@ -112,6 +114,32 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
     imp.ok && imp.ligne.destinataire_email === null);
   ok("tirage serveur : un code de la bonne forme et un token de 32 caractères",
     normaliserCode(genererCodeCarte()) !== null && /^[A-Za-z0-9_-]{32}$/.test(genererTokenCarte()));
+
+  titre("— Noël : le code porte le prénom (Mathias, 16/11) —");
+  ok("prénom : accents, tirets et espaces retirés, douze lettres au plus",
+    prenomPourCode("Marie-Hélène") === "MARIEHELENE" && prenomPourCode("Zoé") === "ZOE" && prenomPourCode("Anne Sophie") === "ANNESOPHIE"
+      && prenomPourCode("Maximilienne-Charlotte") === "MAXIMILIENNE" && prenomPourCode("Chloë") === "CHLOE" && prenomPourCode("Lætitia") === "LAETITIA");
+  ok("prénom illisible (une lettre, chiffres, vide) : BJ-CADEAU",
+    prenomPourCode("J.") === null && prenomPourCode("42") === null && prenomPourCode("") === null && prefixeCode(null) === "BJ-CADEAU-");
+  const tire = genererCodeCarte("Camille");
+  ok("tirage : CAMILLE- puis six signes de l'alphabet", /^CAMILLE-[A-HJKMNP-Z2-9]{6}$/.test(tire) && normaliserCode(tire) === tire);
+  ok("tirage d'octets avec prénom : CAMILLE-ABCDE9", codeDepuisOctets([0, 1, 2, 3, 4, 30], "Camille") === "CAMILLE-ABCDE9");
+  ok("saisie : « camille 7kq4mr », « Camille-7KQ4MR », « CAMILLE7KQ4MR » donnent CAMILLE-7KQ4MR",
+    ["camille 7kq4mr", "Camille-7KQ4MR", "CAMILLE7KQ4MR", " camille-7kq4mr "].every((s) => normaliserCode(s) === "CAMILLE-7KQ4MR"));
+  ok("saisie : le prénom accentué tapé tel quel est pardonné (« Zoé 7KQ4MR »)", normaliserCode("Zoé 7KQ4MR") === "ZOE-7KQ4MR");
+  ok("saisie : les anciennes cartes passent toujours", normaliserCode("BJ-CADEAU-7KQ4MR") === "BJ-CADEAU-7KQ4MR" && normaliserCode("7kq4mr") === "BJ-CADEAU-7KQ4MR");
+  ok("saisie : prénom trop long, chiffre dans le prénom, signe interdit dans les six : refusé",
+    normaliserCode("MAXIMILIENNEC-7KQ4MR") === null && normaliserCode("CAM1LLE-7KQ4MR") === null && normaliserCode("CAMILLE-7KQ4M0") === null);
+  {
+    const sql = readFileSync("supabase/migrations/20261117_noel_codes_et_mails.sql", "utf8");
+    const serveurTs = readFileSync("src/lib/atelier/carteServeur.ts", "utf8");
+    const CODES_MAIL_CARTE = (serveurTs.match(/export type CodeMailCarte = ([^;]+);/)?.[1] ?? "").match(/"([A-Za-z0-9]+)"/g)?.map((c) => c.slice(1, -1)) ?? [];
+    ok("base : la contrainte du code est celle du module (prénom ou BJ-CADEAU, puis six signes)",
+      sql.includes("'^(BJ-CADEAU|[A-Z]{2,12})-[A-HJKMNP-Z2-9]{6}$'"));
+    const permis = (sql.match(/cartes_mails_code_check\s+check \(code in \(([^)]*)\)/) ?? [])[1] ?? "";
+    ok("base : chaque mail de carte est permis par la contrainte de cartes_mails (GC4b, GC6, GC7 étaient refusés)",
+      CODES_MAIL_CARTE.length === 9 && CODES_MAIL_CARTE.every((c) => permis.includes(`'${c}'`)));
+  }
 
   titre("— Noël : la carte au paiement du magazine (lot 3) —");
   const i1 = imputationCommande(4100, 500, 5000, 0);

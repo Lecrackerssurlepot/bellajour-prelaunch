@@ -187,7 +187,12 @@ export async function verifierNoelParcours(ok: Ok, titre: (t: string) => void): 
     const fetes = depuis(avant);
     ok("15 janvier : GC6 aux deux cartes reçues pendant les fêtes et jamais utilisées (Jules, Nina), pas à Camille qui l'a utilisée",
       fetes.length === 2 && fetes.includes("GC6>jules@exemple.fr") && fetes.includes("GC6>nina@exemple.fr"));
-    ok("GC6 : le bouton applique le code de SA carte", dernier("GC6")?.params.LIEN_COMPOSER.includes("carte=BJ-CADEAU-") === true);
+    {
+      const g6 = dernier("GC6");
+      const sienne = tables.cartes_cadeau.find((c) => c.destinataire_email === g6?.email);
+      ok("GC6 : le bouton applique le code de SA carte, qui porte son prénom",
+        !!sienne && /^(JULES|NINA)-/.test(String(sienne.code)) && g6?.params.LIEN_COMPOSER.endsWith(`carte=${sienne.code}`) === true);
+    }
     avant = boite.length;
     await envoyerRappelsCartes(sb, new Date("2027-01-16T07:00:00Z"));
     ok("le lendemain : GC6 ne repart pas", depuis(avant).length === 0);

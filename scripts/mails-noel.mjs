@@ -73,23 +73,33 @@ function image(fichier, alt, largeur = 520) {
  * La carte cadeau, en HTML : le même objet que `/carte/<token>` (fond brun
  * dégradé, signature, phrase, montant). `pour` et `bas` sont du HTML déjà
  * conditionnel.
+ *
+ * Mathias, 16/11, deux retours sur le premier envoi :
+ * - « pas visible en mode sombre » : le fond était une COULEUR, que Gmail et
+ *   Outlook assombrissent jusqu'à la confondre avec le noir du mail. Il est
+ *   maintenant une IMAGE (`carte-fond-1040.jpg`, jamais retouchée par le mode
+ *   sombre), la couleur ne sert que de repli, plus claire, et un filet cuivre
+ *   dessine le bord quoi qu'il arrive ;
+ * - « le prix est collé au titre » : le montant monte en haut, face à la
+ *   signature ; la phrase garde toute la largeur.
  */
 function carte({ pour, mot = true, bas, montant }) {
+  const fond = `${IMG}/carte-fond-1040.jpg`;
   return ligne(
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#4a4038" style="background-color: #4a4038; background-image: linear-gradient(160deg, #8e7a68, #4a4038 55%, #211d1a); border-radius: 16px;">
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#6e5d4f" background="${fond}" style="background-color: #6e5d4f; background-image: url('${fond}'); background-size: cover; background-position: center; border: 1px solid #a07c64; border-radius: 16px;">
 <tr><td style="padding: 24px 26px 0 26px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td align="left" valign="middle"><img src="${IMG}/signature-240.png" width="84" alt="Bellajour" style="display: block; width: 84px; height: auto; border: 0;" /></td>
-<td align="right" valign="middle" style="font-family: ${SANS}; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: #e9e1d6;">Carte cadeau</td>
+<td align="right" valign="middle" style="font-family: ${SERIF}; font-size: 34px; line-height: 1; font-weight: 500; color: #f5f0e7; white-space: nowrap;">${montant}</td>
 </tr></table>
 </td></tr>
-<tr><td style="padding: 34px 26px 0 26px; font-family: ${SANS}; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #f0c3a6;">${pour}</td></tr>
+<tr><td style="padding: 40px 26px 0 26px; font-family: ${SANS}; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #f0c3a6;">${pour}</td></tr>
 <tr><td style="padding: 8px 26px 0 26px; font-family: ${SERIF}; font-size: 30px; line-height: 1.1; color: #f5f0e7;">Vos photos deviennent un magazine.</td></tr>
-${mot ? `{% if params.MESSAGE %}<tr><td style="padding: 10px 26px 0 26px; font-family: ${SERIF}; font-style: italic; font-size: 17px; line-height: 1.4; color: #eee6da;">« ${P("MESSAGE")} »</td></tr>{% endif %}` : ""}
-<tr><td style="padding: 30px 26px 24px 26px;">
+${mot ? `{% if params.MESSAGE %}<tr><td style="padding: 12px 26px 0 26px; font-family: ${SERIF}; font-style: italic; font-size: 17px; line-height: 1.4; color: #eee6da;">« ${P("MESSAGE")} »</td></tr>{% endif %}` : ""}
+<tr><td style="padding: 32px 26px 24px 26px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
 <td align="left" valign="bottom" style="font-family: ${SANS}; font-size: 12px; color: #e9e1d6;">${bas}</td>
-<td align="right" valign="bottom" style="font-family: ${SERIF}; font-size: 36px; font-weight: 500; color: #f5f0e7; white-space: nowrap;">${montant}</td>
+<td align="right" valign="bottom" style="font-family: ${SANS}; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: #e9e1d6; white-space: nowrap;">Carte cadeau</td>
 </tr></table>
 </td></tr>
 </table>`,
@@ -123,16 +133,20 @@ function duo(a, b) {
 }
 
 /** Une petite carte cadeau pour le bloc « Pour offrir » du duo. */
-const miniCarte = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#4a4038" style="background-color: #4a4038; background-image: linear-gradient(160deg, #8e7a68, #4a4038 55%, #211d1a); border-radius: 10px;">
+const miniCarte = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#6e5d4f" background="${IMG}/carte-fond-1040.jpg" style="background-color: #6e5d4f; background-image: url('${IMG}/carte-fond-1040.jpg'); background-size: cover; background-position: center; border: 1px solid #a07c64; border-radius: 10px;">
 <tr><td style="padding: 14px 14px 0 14px;"><img src="${IMG}/signature-240.png" width="64" alt="Bellajour" style="display: block; width: 64px; height: auto; border: 0;" /></td></tr>
 <tr><td style="padding: 34px 14px 16px 14px; font-family: ${SERIF}; font-size: 19px; line-height: 1.15; color: #f5f0e7;">Vos photos deviennent un magazine.</td></tr>
 </table>`;
 
-/** Le code de la carte, à recopier si le bouton ne sert pas. */
+/**
+ * Le code de la carte, à recopier si le bouton ne sert pas. Le libellé AU-DESSUS
+ * du code : un prénom de douze lettres plus six signes ne tient pas à côté
+ * d'un libellé sur un téléphone.
+ */
 const codeCarte = () =>
   ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border: 1px dashed #8a5a40; border-radius: 14px;">
-<tr><td style="padding: 16px 20px; font-family: ${SANS}; font-size: 13px; color: #928d84;">Votre code</td>
-<td align="right" style="padding: 16px 20px; font-family: ${SANS}; font-size: 17px; font-weight: 500; letter-spacing: 2px; color: #f5f0e7; white-space: nowrap;">${P("CODE")}</td></tr>
+<tr><td style="padding: 16px 20px 4px 20px; font-family: ${SANS}; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #928d84;">Votre code</td></tr>
+<tr><td style="padding: 0 20px 16px 20px; font-family: ${SANS}; font-size: 19px; font-weight: 500; letter-spacing: 1.5px; color: #f5f0e7;">${P("CODE")}</td></tr>
 </table>`);
 
 /**
@@ -386,7 +400,7 @@ export const MAILS = [
     a: "acheteur",
     sujet: "Votre carte cadeau Bellajour",
     preheader: `${SI("EMAIL_DEST", `Elle est partie chez ${DEST}.`, "Prête à imprimer.")}`,
-    liens: ["LIEN_CARTE", LIENS.conditions],
+    liens: ["LIEN_CARTE", "LIEN_RECU", LIENS.conditions],
     blocs: [
       carteDe(),
       titre(SI("EMAIL_DEST", "Elle est partie.", "Elle est prête.")),
@@ -403,6 +417,7 @@ export const MAILS = [
         { lib: "Montant", val: MONTANT },
         { lib: "Code", val: P("CODE") },
         { lib: "Valable jusqu&rsquo;au", val: P("DATE") },
+        { lib: "Reçu de paiement", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
       ]),
       bouton("Voir et imprimer la carte", P("LIEN_CARTE")),
       aNoter([
@@ -420,7 +435,7 @@ export const MAILS = [
     a: "acheteur",
     sujet: `Votre carte partira le ${P("DATE_ENVOI")}`,
     preheader: `Nous l'envoyons à ${DEST} au matin.`,
-    liens: ["LIEN_CARTE", LIENS.conditions],
+    liens: ["LIEN_CARTE", "LIEN_RECU", LIENS.conditions],
     blocs: [
       carteDe(),
       titre(`Elle partira le ${P("DATE_ENVOI")}.`),
@@ -433,6 +448,7 @@ export const MAILS = [
         { lib: "Le", val: `${P("DATE_ENVOI")} au matin`, fort: true },
         { lib: "Montant", val: MONTANT },
         { lib: "Code", val: P("CODE") },
+        { lib: "Reçu de paiement", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
       ]),
       bouton("Voir et imprimer la carte", P("LIEN_CARTE")),
       aNoter([
@@ -625,7 +641,7 @@ export const EXEMPLE = {
   PRENOM_DEST: "Camille",
   EMAIL_DEST: "camille@exemple.fr",
   MONTANT: "50",
-  CODE: "BJ-CADEAU-7KQ4MR",
+  CODE: "CAMILLE-7KQ4MR",
   MESSAGE: "Pour nos étés à Noosa.",
   DATE_ENVOI: "24 décembre",
   DATE: "16 novembre 2027",
@@ -633,7 +649,8 @@ export const EXEMPLE = {
   RELIQUAT: "12",
   PLACES: "6",
   LIEN_CARTE: `${SITE}/carte/exemple`,
-  LIEN_COMPOSER: `${SITE}/composer?nouveau=1&carte=BJ-CADEAU-7KQ4MR`,
+  LIEN_RECU: `${SITE}/api/cartes/recu/exemple`,
+  LIEN_COMPOSER: `${SITE}/composer?nouveau=1&carte=CAMILLE-7KQ4MR`,
 };
 
 /**

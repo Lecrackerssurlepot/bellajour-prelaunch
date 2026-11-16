@@ -86,6 +86,22 @@ async function scene(fichier, largeur, hauteur, poses, fond = FOND) {
 
 mkdirSync(SORTIE, { recursive: true });
 
+// Le fond de la carte cadeau des mails (Mathias, 16/11 : la carte disparaissait
+// en mode sombre). Une IMAGE et non un dégradé CSS : Gmail et Outlook assombrissent
+// les couleurs de fond en mode sombre, jamais les images. Même dégradé que la carte
+// de /carte/<token> (160°, #8e7a68 → #4a4038 à 55 % → #211d1a).
+await sharp(
+  Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="760">
+  <defs><linearGradient id="d" x1="0.33" y1="0" x2="0.67" y2="1">
+    <stop offset="0" stop-color="#8e7a68"/><stop offset="0.55" stop-color="#4a4038"/><stop offset="1" stop-color="#211d1a"/>
+  </linearGradient></defs>
+  <rect width="1040" height="760" fill="url(#d)"/>
+</svg>`),
+)
+  .jpeg({ quality: 86, mozjpeg: true })
+  .toFile(resolve(SORTIE, "carte-fond-1040.jpg"));
+console.log("✓ carte-fond-1040.jpg");
+
 // Les magazines sur la table (photo réelle), en JPEG.
 await sharp(resolve(SOURCE, "header-magazines-paysage-1280.webp"))
   .resize(1040)

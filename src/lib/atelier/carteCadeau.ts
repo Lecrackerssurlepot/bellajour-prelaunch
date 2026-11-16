@@ -10,8 +10,10 @@
  *     l'utilise (grand livre `credits_mouvements`, par adresse canonique) ;
  *   - aucune remise sur la carte elle-même.
  *
- * Le code se tape à la main : BJ-CADEAU-XXXXXX, six signes d'un alphabet de
- * 31 sans 0/O, 1/I/L (887 millions de codes). Il ne se devine pas à la main,
+ * Le code porte le prénom de la personne qui le reçoit (Mathias, 16/11) :
+ * CAMILLE-XXXXXX, puis six signes d'un alphabet de 31 sans 0/O, 1/I/L
+ * (887 millions de codes par prénom). Sans prénom lisible : BJ-CADEAU-XXXXXX,
+ * la forme d'avant, toujours acceptée. Le prénom ne protège rien, il se lit. Il ne se devine pas à la main,
  * et la route qui le vérifie est limitée en débit : ce n'est pas l'alphabet
  * qui protège, c'est la limite. Le tirage reçoit ses octets de l'appelant
  * (crypto côté serveur), ce qui garde ce module pur et testable.
@@ -20,7 +22,34 @@
 export const ALPHABET_CODE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 export const PREFIXE_CODE = "BJ-CADEAU-";
 export const LONGUEUR_CODE = 6;
-const FORME_CODE = /^BJ-CADEAU-[A-HJKMNP-Z2-9]{6}$/;
+/** Le prénom dans le code : de 2 à 12 lettres A à Z, sans accent. */
+export const PRENOM_CODE_MAX = 12;
+const FORME_CODE = /^(BJ-CADEAU|[A-Z]{2,12})-[A-HJKMNP-Z2-9]{6}$/;
+
+/**
+ * Le prénom tel qu'il entre dans le code : majuscules, accents retirés,
+ * lettres seules (« Marie-Hélène » → MARIEHELENE), douze au plus. Moins de
+ * deux lettres (« Zoé » donne ZOE, « J. » ne donne rien) : `null`, et le
+ * code garde BJ-CADEAU.
+ */
+export function prenomPourCode(prenom: unknown): string | null {
+  if (typeof prenom !== "string") return null;
+  const lettres = prenom
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/Æ/gi, "AE")
+    .replace(/Œ/gi, "OE")
+    .replace(/ß/g, "SS")
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, PRENOM_CODE_MAX);
+  return lettres.length >= 2 ? lettres : null;
+}
+
+/** Le préfixe d'une carte : le prénom, ou BJ-CADEAU. */
+export function prefixeCode(prenom: unknown): string {
+  return `${prenomPourCode(prenom) ?? "BJ-CADEAU"}-`;
+}
 
 /** Les deux montants proposés, en centimes. */
 export const MONTANTS_CARTE_CENTIMES = [3000, 5000] as const;
@@ -36,27 +65,36 @@ export const VALIDITE_MOIS = 12;
  * garde la loi uniforme ; s'il n'y en a pas assez, `null` et l'appelant
  * retire des octets.
  */
-export function codeDepuisOctets(octets: ArrayLike<number>): string | null {
+export function codeDepuisOctets(octets: ArrayLike<number>, prenom?: unknown): string | null {
   const n = ALPHABET_CODE.length;
   const limite = Math.floor(256 / n) * n;
   let suite = "";
   for (let i = 0; i < octets.length && suite.length < LONGUEUR_CODE; i++) {
     if (octets[i] < limite) suite += ALPHABET_CODE[octets[i] % n];
   }
-  return suite.length === LONGUEUR_CODE ? PREFIXE_CODE + suite : null;
+  return suite.length === LONGUEUR_CODE ? prefixeCode(prenom) + suite : null;
 }
 
 /**
- * Ce que la personne a tapé devient un code, ou `null`. Majuscules, espaces
- * et tirets oubliés pardonnés (« bj cadeau 7kq4mr », « 7KQ4MR »). Un signe
- * hors de l'alphabet (0, O, 1, I, L) est refusé, jamais « corrigé » : deviner
- * le code de quelqu'un d'autre est précisément ce qu'on ne veut pas.
+ * Ce que la personne a tapé devient un code, ou `null`. Majuscules, accents,
+ * espaces et tirets oubliés pardonnés (« camille 7kq4mr », « bj cadeau
+ * 7kq4mr », « 7KQ4MR » seul pour les anciennes cartes). Les six derniers
+ * signes sont le code, ce qui les précède est le prénom. Un signe hors de
+ * l'alphabet (0, O, 1, I, L) dans les six est refusé, jamais « corrigé » :
+ * deviner le code de quelqu'un d'autre est précisément ce qu'on ne veut pas.
  */
 export function normaliserCode(saisie: unknown): string | null {
   if (typeof saisie !== "string") return null;
-  const brut = saisie.toUpperCase().replace(/[\s_-]/g, "");
-  const suite = brut.startsWith("BJCADEAU") ? brut.slice("BJCADEAU".length) : brut;
-  const code = PREFIXE_CODE + suite;
+  const brut = saisie
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[\s_.-]/g, "");
+  if (brut.length < LONGUEUR_CODE) return null;
+  const suite = brut.slice(-LONGUEUR_CODE);
+  const tete = brut.slice(0, -LONGUEUR_CODE);
+  const prefixe = tete === "" || tete === "BJCADEAU" ? "BJ-CADEAU" : tete;
+  const code = `${prefixe}-${suite}`;
   return FORME_CODE.test(code) ? code : null;
 }
 

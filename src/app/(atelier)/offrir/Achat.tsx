@@ -18,6 +18,7 @@ import {
   MONTANTS_CARTE_CENTIMES,
   PRENOM_CARTE_MAX,
   montantCarteValide,
+  prefixeCode,
 } from '@/lib/atelier/carteCadeau'
 
 type Montant = (typeof MONTANTS_CARTE_CENTIMES)[number] | 'libre'
@@ -87,6 +88,8 @@ export default function Achat() {
   const centimes = montant === 'libre' ? Number(libre) * 100 : montant
   const montantOk = montantCarteValide(centimes)
   const affiche = montantOk ? `${centimes / 100} €` : '… €'
+  // Le code porte le prénom : l'aperçu le montre tel qu'il sera tiré.
+  const codeApercu = `${prefixeCode(prenom)}······`
   const gc2 = MAILS.find((m) => m.code === 'GC2')
 
   function verifierTemps1(): boolean {
@@ -151,7 +154,7 @@ export default function Achat() {
       {temps !== 3 && (
       <div className="nl-achat-scene">
         <div className="nl-recit-carte" data-temps={temps}>
-          <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code="BJ-CADEAU-······" />
+          <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code={codeApercu} />
         </div>
 
       {temps === 1 && (
@@ -273,10 +276,10 @@ export default function Achat() {
                 <MailRendu
                   mail={gc2}
                   ton={TON}
-                  valeurs={{ PRENOM: prenom, PRENOM_DONATEUR: donateur || 'Un proche', MESSAGE: message, CODE: 'BJ-CADEAU-······' }}
+                  valeurs={{ PRENOM: prenom, PRENOM_DONATEUR: donateur || 'Un proche', MESSAGE: message, CODE: codeApercu }}
                 />
               ) : (
-                <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code="BJ-CADEAU-······" />
+                <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code={codeApercu} />
               )}
               {parEmail && <p className="nl-faible nl-adresse">Envoyée à <strong>{email.trim().toLowerCase()}</strong>{quand === 'date' && jour ? `, le ${fmtJour(jour, { day: 'numeric', month: 'long' })} au matin` : ''}</p>}
               {parEmail && imprime && <p className="nl-faible">La carte à imprimer vous attend après le paiement.</p>}

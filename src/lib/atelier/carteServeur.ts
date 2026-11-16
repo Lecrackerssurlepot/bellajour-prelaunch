@@ -75,9 +75,9 @@ export function estChargeCarte(charge: Stripe.Charge): boolean {
   return charge.metadata?.kind === KIND_CARTE;
 }
 
-export function genererCodeCarte(): string {
+export function genererCodeCarte(prenom?: unknown): string {
   for (;;) {
-    const code = codeDepuisOctets(randomBytes(16));
+    const code = codeDepuisOctets(randomBytes(16), prenom);
     if (code) return code;
   }
 }
@@ -163,7 +163,7 @@ export async function enregistrerCarte(
     for (let essai = 0; essai < 5 && !carte; essai++) {
       const ins = await supabase
         .from("cartes_cadeau")
-        .insert({ ...lue.ligne, code: genererCodeCarte(), token: genererTokenCarte() })
+        .insert({ ...lue.ligne, code: genererCodeCarte(lue.ligne.destinataire_prenom), token: genererTokenCarte() })
         .select(COLONNES)
         .single();
       if (!ins.error) {
@@ -241,6 +241,8 @@ export function parametresCarte(carte: CarteLigne, maintenant = new Date()): Rec
     EMAIL_DEST: carte.destinataire_email ?? "",
     DATE_NOEL: dateNoelPourMail(aujourdhuiParis(maintenant)),
     LIEN_CARTE: `${origine()}/carte/${carte.token}`,
+    /* Le reçu Stripe de l'achat, relu au clic (api/cartes/recu). */
+    LIEN_RECU: `${origine()}/api/cartes/recu/${carte.token}`,
     LIEN_COMPOSER: `${origine()}/composer?nouveau=1&carte=${encodeURIComponent(carte.code)}`,
   };
 }
