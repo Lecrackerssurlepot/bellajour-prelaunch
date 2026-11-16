@@ -118,6 +118,8 @@ export async function POST(request: Request) {
         },
       ],
       metadata,
+      // La carte seule : Apple Pay et Google Pay passent par elle (décision du 16/11).
+      payment_method_types: ["card"],
       payment_intent_data: { metadata: { kind: KIND_CARTE } },
       success_url: `${origin}/offrir/merci?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/offrir`,

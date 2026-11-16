@@ -30,7 +30,7 @@ export default async function CartePage({ params }: { params: Promise<{ token: s
   const annulee = carte.statut === 'remboursee'
   return (
     <main className="nl-preview nl-page">
-      <Link className="nl-page-marque nl-imprimer-non" href="/">Bellajour</Link>
+      <Link className="nl-page-marque nl-imprimer-non" href="/"><img src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} /></Link>
       <div className="nl-merci">
         <div className="nl-recit-carte">
           <CarteCadeau

@@ -45,22 +45,24 @@ export default function CarteCadeau({ phrase, montant, prenom, message, entree =
     return () => io.disconnect()
   }, [entree])
 
-  const dedicace = [prenom ? `Pour ${prenom}.` : '', message].filter(Boolean).join(' ')
+  const pour = prenom.trim()
+  const mot = message.trim()
 
   return (
     <div ref={ref} className="nl-carte" data-entree={entree ? '1' : '0'}>
       <div className="nl-carte-face">
         <span className="nl-carte-reflet" aria-hidden="true" />
         <div className="nl-carte-haut">
-          <span className="nl-carte-marque">Bellajour</span>
+          <img className="nl-carte-marque" src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} />
           <span className="nl-carte-type">Carte cadeau</span>
         </div>
-        <span className="nl-carte-phrase">{phrase}</span>
+        <div className="nl-carte-milieu" data-mot={mot ? '1' : '0'}>
+          {pour && <span className="nl-carte-pour">Pour {pour}</span>}
+          <span className="nl-carte-phrase">{phrase}</span>
+          {mot && <span className="nl-carte-message">{`«\u00a0${mot}\u00a0»`}</span>}
+        </div>
         <div className="nl-carte-bas">
-          <span className="nl-carte-gauche">
-            <span className="nl-carte-montant">{montant}</span>
-            {dedicace && <span className="nl-carte-message">{dedicace}</span>}
-          </span>
+          <span className="nl-carte-montant">{montant}</span>
           <span className="nl-carte-infos">
             <span className="nl-carte-code">{code}</span>
             <span>{validite}</span>

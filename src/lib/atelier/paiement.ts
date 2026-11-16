@@ -6,6 +6,7 @@ import { quantiteDuDossier } from "./exemplaires";
 import { lireNumerosMail, envoyerMailAtelier, type NumeroPourMail } from "./mails";
 import { EVT_CREDIT_CONSOMME } from "./fondatrice";
 import { creerJobFacture, alerterRemboursementFacture } from "./jobFacture";
+import { consommerCarteEtCredit } from "./carteServeur";
 
 /**
  * Les deux handlers de webhook de l'atelier (PRD §9).
@@ -439,11 +440,22 @@ export async function traiterPaiementAtelier(
      Le job de facture, pour l'Edge Function `emit-invoices`. Après la
      transition réussie, donc jamais sur un rejeu. Ne lève jamais : une
      facture qui ne se prépare pas n'empêche ni le paiement ni M4. */
+  /* Noël 2026 (lot 3) : la carte cadeau devient « utilisée », son reste va
+     au compte, le crédit pris est débité. Après la transition, donc jamais
+     sur un rejeu ; idempotent de toute façon. Ne lève jamais. */
+  const parCarte = await consommerCarteEtCredit(supabase, session, {
+    id: numero.id,
+    email: numero.email ?? null,
+    prenom: numero.prenom ?? null,
+  });
+
   await creerJobFacture(supabase, session, stripe, {
     numeroId: numero.id,
     titre: numero.titre,
     quantite: quantiteDuDossier((numero as { quantite?: number | null }).quantite),
     creditFondateur: !!codeCredit && (session.total_details?.amount_discount ?? 0) > 0,
+    carteCentimes: parCarte.carteCentimes,
+    creditCompteCentimes: parCarte.creditCentimes,
   });
 
   /* M4 « {{titre}}, nous composons » (PRD §10). Passe par le helper commun :

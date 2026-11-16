@@ -21,12 +21,19 @@ import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendBrevoEmailDetail } from "@/lib/brevo";
 import { canonicalizeEmail } from "@/lib/email";
+import { logEvenement } from "./evenements";
+import { modeStripe } from "./fondatrice";
 import {
+  carteAEnvoyer,
   codeDepuisOctets,
   expirationCarte,
   montantCarteValide,
+  normaliserCode,
+  refusCarte,
+  soldeCredit,
   MESSAGE_CARTE_MAX,
   PRENOM_CARTE_MAX,
+  type MouvementCredit,
 } from "./carteCadeau";
 
 export const KIND_CARTE = "carte_cadeau";
@@ -204,7 +211,7 @@ export function parametresCarte(carte: CarteLigne): Record<string, string> {
     DATE_ENVOI: carte.envoi_le ? jourLisible(carte.envoi_le) : "",
     DATE: jourLisible(carte.expire_le),
     LIEN_CARTE: `${origine()}/carte/${carte.token}`,
-    LIEN_COMPOSER: `${origine()}/composer?nouveau=1`,
+    LIEN_COMPOSER: `${origine()}/composer?nouveau=1&carte=${encodeURIComponent(carte.code)}`,
   };
 }
 
@@ -217,14 +224,15 @@ export async function envoyerMailCarte(
   supabase: SupabaseClient,
   code: CodeMailCarte,
   carte: CarteLigne,
+  /** GC3 et GC4 vont à la personne qui a UTILISÉ la carte, pas à l'acheteur. */
+  destinataire?: { email: string; params?: Record<string, string> },
 ): Promise<"envoye" | "deja" | "sans_gabarit" | "sans_adresse" | "echec"> {
   const templateId = gabarit(code);
   if (!templateId) {
     console.warn(`[carte] ${code} sauté : BREVO_TEMPLATE_${code.toUpperCase()}_ID absent`);
     return "sans_gabarit";
   }
-  const versDestinataire = code === "GC2" || code === "GC3" || code === "GC4";
-  const email = versDestinataire && code === "GC2" ? carte.destinataire_email : carte.acheteur_email;
+  const email = destinataire?.email ?? (code === "GC2" ? carte.destinataire_email : carte.acheteur_email);
   if (!email) return "sans_adresse";
 
   const verrou = await supabase.from("cartes_mails").insert({ carte_id: carte.id, code });
@@ -233,7 +241,7 @@ export async function envoyerMailCarte(
   const r = await sendBrevoEmailDetail({
     templateId,
     email,
-    params: parametresCarte(carte),
+    params: { ...parametresCarte(carte), ...(destinataire?.params ?? {}) },
     apiKey: process.env.BREVO_API_KEY,
     label: `carte ${code}`,
   });
@@ -315,4 +323,208 @@ export async function traiterRemboursementCarte(supabase: SupabaseClient, charge
 /** Une adresse e-mail canonique (même règle que `waitlist.email_canonical`). */
 export function cleCredit(email: string): string {
   return canonicalizeEmail(email);
+}
+
+/* ─────────────────── l'envoi programmé (relève du matin) ─────────────────── */
+
+export function aujourdhuiParis(maintenant = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(maintenant);
+}
+
+/**
+ * Les cartes programmées dont le jour est venu : GC2 à la personne qui la
+ * reçoit, puis GC2b à l'acheteur (« elle est partie »). Appelée par la relève
+ * quotidienne (`/api/atelier/mails/relever`, 7 h UTC, soit 8 h à Paris).
+ * Sans gabarit GC2, rien ne part et rien n'est marqué : la carte repartira à
+ * la relève suivante, en retard plutôt que jamais. Ne lève jamais.
+ */
+export async function envoyerCartesProgrammees(
+  supabase: SupabaseClient,
+  maintenant = new Date(),
+): Promise<{ vues: number; parties: number }> {
+  const jour = aujourdhuiParis(maintenant);
+  /* Seules les cartes du MODE de la clé partent : une carte de test programmée
+     ne doit jamais recevoir un vrai mail depuis la production. */
+  const mode = modeStripe(process.env.STRIPE_SECRET_KEY);
+  if (!mode) return { vues: 0, parties: 0 };
+  try {
+    const r = await supabase
+      .from("cartes_cadeau")
+      .select(COLONNES)
+      .eq("livemode", mode === "live")
+      .eq("remise", "email")
+      .eq("statut", "payee")
+      .is("envoyee_le", null)
+      .lte("envoi_le", jour)
+      .limit(200);
+    if (r.error) {
+      if (r.error.code !== "PGRST205") console.error("[carte] relève : lecture", r.error.code);
+      return { vues: 0, parties: 0 };
+    }
+    const cartes = ((r.data ?? []) as CarteLigne[]).filter((c) => carteAEnvoyer(c, jour));
+    let parties = 0;
+    for (const c of cartes) {
+      const e = await envoyerMailCarte(supabase, "GC2", c);
+      if (e !== "envoye" && e !== "deja") continue;
+      await supabase.from("cartes_cadeau").update({ envoyee_le: new Date().toISOString() }).eq("id", c.id).is("envoyee_le", null);
+      await envoyerMailCarte(supabase, "GC2b", c);
+      parties++;
+    }
+    if (cartes.length) console.log(`[carte] relève : ${parties}/${cartes.length} carte(s) programmée(s) parties`);
+    return { vues: cartes.length, parties };
+  } catch (e) {
+    console.error("[carte] relève :", e instanceof Error ? e.message : e);
+    return { vues: 0, parties: 0 };
+  }
+}
+
+/* ─────────────────────── au paiement du magazine ─────────────────────── */
+
+/** Un code tapé : la carte, ou la phrase qui dit pourquoi elle ne sert pas. */
+export async function verifierCodeCarte(
+  supabase: SupabaseClient,
+  saisie: unknown,
+  livemode: boolean,
+  maintenant = new Date(),
+): Promise<{ ok: true; carte: CarteLigne } | { ok: false; phrase: string }> {
+  const code = normaliserCode(saisie);
+  if (!code) return { ok: false, phrase: "Ce code ne ressemble pas à celui d’une carte." };
+  const r = await supabase.from("cartes_cadeau").select(COLONNES).eq("code", code).maybeSingle();
+  if (r.error) return { ok: false, phrase: "La carte ne peut pas être vérifiée pour l’instant." };
+  const carte = r.data as CarteLigne | null;
+  if (!carte) return { ok: false, phrase: "Ce code est inconnu." };
+  const refus = refusCarte(carte, maintenant, livemode);
+  return refus ? { ok: false, phrase: refus } : { ok: true, carte };
+}
+
+/** Le crédit du compte d'une adresse (somme du grand livre, bon mode, sans l'expiré). */
+export async function soldeDuCompte(
+  supabase: SupabaseClient,
+  email: string | null,
+  livemode: boolean,
+  maintenant = new Date(),
+): Promise<{ solde: number; expireLe: string | null }> {
+  if (!email) return { solde: 0, expireLe: null };
+  const r = await supabase
+    .from("credits_mouvements")
+    .select("montant_centimes, expire_le, livemode")
+    .eq("email_canonical", canonicalizeEmail(email));
+  if (r.error || !r.data) return { solde: 0, expireLe: null };
+  const lignes = r.data as MouvementCredit[];
+  const solde = soldeCredit(lignes, maintenant, livemode);
+  const fins = lignes
+    .filter((m) => m.livemode === livemode && m.montant_centimes > 0 && m.expire_le && Date.parse(m.expire_le) > maintenant.getTime())
+    .map((m) => m.expire_le as string)
+    .sort();
+  return { solde, expireLe: solde > 0 ? fins[0] ?? null : null };
+}
+
+/** Les métadonnées que le checkout pose et que le webhook relit. */
+export const META_CARTE = {
+  id: "carte_id",
+  code: "carte_code",
+  centimes: "carte_centimes",
+  credit: "credit_compte_centimes",
+  reliquat: "reliquat_centimes",
+} as const;
+
+/**
+ * Après un paiement de magazine : la carte devient « utilisée », son reste
+ * va au compte (+), le crédit pris est débité (−), et GC3 dit le reste.
+ * Idempotente (index uniques du grand livre, `.eq("statut", "payee")`).
+ * Ne lève jamais ; une anomalie se dit dans les logs ET au journal du dossier.
+ */
+export async function consommerCarteEtCredit(
+  supabase: SupabaseClient,
+  session: Stripe.Checkout.Session,
+  numero: { id: string; email: string | null; prenom?: string | null },
+): Promise<{ carteCentimes: number; creditCentimes: number }> {
+  const m = session.metadata ?? {};
+  const carteId = (m[META_CARTE.id] ?? "").trim();
+  const carteCentimes = Number(m[META_CARTE.centimes] ?? 0) || 0;
+  const creditCentimes = Number(m[META_CARTE.credit] ?? 0) || 0;
+  const reliquat = Number(m[META_CARTE.reliquat] ?? 0) || 0;
+  if (!carteId && creditCentimes <= 0) return { carteCentimes: 0, creditCentimes: 0 };
+  const cle = numero.email ? canonicalizeEmail(numero.email) : null;
+  const maintenant = new Date().toISOString();
+  try {
+    let carte: CarteLigne | null = null;
+    if (carteId) {
+      const u = await supabase
+        .from("cartes_cadeau")
+        .update({ statut: "utilisee", utilisee_le: maintenant, utilisee_numero_id: numero.id })
+        .eq("id", carteId)
+        .eq("statut", "payee")
+        .select(COLONNES);
+      carte = ((u.data ?? []) as CarteLigne[])[0] ?? null;
+      if (!carte) {
+        const deja = await supabase.from("cartes_cadeau").select(`${COLONNES}, utilisee_numero_id`).eq("id", carteId).maybeSingle();
+        const d = deja.data as (CarteLigne & { utilisee_numero_id: string | null }) | null;
+        if (d && d.utilisee_numero_id === numero.id) {
+          carte = d; // rejeu du webhook
+        } else {
+          console.error(`[carte] ⚠️ carte ${carteId} déjà utilisée ailleurs ou annulée, payée ici avec : à vérifier`);
+          await logEvenement(supabase, numero.id, "carte_cadeau_anomalie", {
+            carte_id: carteId, statut: d?.statut ?? null, session: session.id, a_verifier_a_la_main: true,
+          });
+        }
+      }
+    }
+    if (carte && reliquat > 0 && cle) {
+      const ins = await supabase.from("credits_mouvements").insert({
+        email_canonical: cle,
+        montant_centimes: reliquat,
+        motif: "reliquat_carte",
+        carte_id: carte.id,
+        numero_id: numero.id,
+        expire_le: carte.expire_le,
+        livemode: session.livemode,
+      });
+      if (!ins.error && numero.email) {
+        await envoyerMailCarte(supabase, "GC3", carte, {
+          email: numero.email,
+          params: { PRENOM: numero.prenom ?? "", RELIQUAT: euros(reliquat), LIEN_COMPTE: `${origine()}/compte` },
+        });
+      } else if (ins.error && ins.error.code !== "23505") {
+        console.error("[carte] reliquat non écrit", ins.error.code);
+      }
+    }
+    if (creditCentimes > 0 && cle) {
+      const deb = await supabase.from("credits_mouvements").insert({
+        email_canonical: cle,
+        montant_centimes: -creditCentimes,
+        motif: "paiement_numero",
+        numero_id: numero.id,
+        livemode: session.livemode,
+      });
+      if (deb.error && deb.error.code !== "23505") console.error("[carte] débit du crédit non écrit", deb.error.code);
+    }
+    await logEvenement(supabase, numero.id, "carte_cadeau_utilisee", {
+      carte_code: carte?.code ?? null, carte_centimes: carteCentimes, credit_centimes: creditCentimes, reliquat_centimes: reliquat, livemode: session.livemode,
+    });
+  } catch (e) {
+    console.error("[carte] consommation :", e instanceof Error ? e.message : e);
+  }
+  return { carteCentimes, creditCentimes };
+}
+
+/** Après paiement, pour la page du numéro : la carte qui a servi et ce qui en reste au compte. */
+export async function lireCarteDuNumero(
+  supabase: SupabaseClient,
+  numeroId: string,
+): Promise<{ code: string | null; montantCentimes: number; reliquatCentimes: number; creditCentimes: number } | null> {
+  try {
+    const [c, m] = await Promise.all([
+      supabase.from("cartes_cadeau").select("code, montant_centimes").eq("utilisee_numero_id", numeroId).maybeSingle(),
+      supabase.from("credits_mouvements").select("montant_centimes, motif").eq("numero_id", numeroId),
+    ]);
+    const carte = c.data as { code: string; montant_centimes: number } | null;
+    const lignes = (m.data ?? []) as { montant_centimes: number; motif: string }[];
+    const reliquat = lignes.filter((l) => l.motif === "reliquat_carte").reduce((a, l) => a + l.montant_centimes, 0);
+    const credit = -lignes.filter((l) => l.motif === "paiement_numero").reduce((a, l) => a + l.montant_centimes, 0);
+    if (!carte && credit <= 0) return null;
+    return { code: carte?.code ?? null, montantCentimes: carte?.montant_centimes ?? 0, reliquatCentimes: reliquat, creditCentimes: credit };
+  } catch {
+    return null;
+  }
 }

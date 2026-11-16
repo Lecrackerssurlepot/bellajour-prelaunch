@@ -10,6 +10,9 @@ import {
   normaliserCode,
   reglementCommande,
   refusCarte,
+  imputationCommande,
+  soldeCredit,
+  carteAEnvoyer,
 } from "@/lib/atelier/carteCadeau";
 import type Stripe from "stripe";
 import { carteDepuisSession, estSessionCarte, genererCodeCarte, genererTokenCarte } from "@/lib/atelier/carteServeur";
@@ -96,4 +99,33 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
     imp.ok && imp.ligne.destinataire_email === null);
   ok("tirage serveur : un code de la bonne forme et un token de 32 caractères",
     normaliserCode(genererCodeCarte()) !== null && /^[A-Za-z0-9_-]{32}$/.test(genererTokenCarte()));
+
+  titre("— Noël : la carte au paiement du magazine (lot 3) —");
+  const i1 = imputationCommande(4100, 500, 5000, 0);
+  ok("imputation : 50 EUR sur 41 + 5 de port -> magazines payés, port payé, 4 EUR au compte, 0 à payer",
+    i1 !== null && i1.remiseMagazinesCentimes === 4100 && i1.livraisonCentimes === 0 && i1.aPayerCentimes === 0 && i1.reliquatCentimes === 400);
+  const i2 = imputationCommande(5400, 0, 3000, 0);
+  ok("imputation : 30 EUR sur 54 (port offert) -> 24 par Stripe, rien au compte",
+    i2 !== null && i2.remiseMagazinesCentimes === 3000 && i2.aPayerCentimes === 2400 && i2.reliquatCentimes === 0);
+  const i3 = imputationCommande(2400, 500, 2000, 1000);
+  ok("imputation : carte de 20 + 10 de crédit sur 24 + 5 -> magazines couverts, 1 EUR de port, crédit pris 9",
+    i3 !== null && i3.carteCentimes === 2000 && i3.creditCentimes === 900 && i3.remiseMagazinesCentimes === 2400
+      && i3.livraisonCentimes === 0 && i3.aPayerCentimes === 0);
+  const i4 = imputationCommande(4100, 500, 4300, 0);
+  ok("imputation : ce que la carte laisse du port se paie (43 sur 41 + 5 -> 3 EUR de port)",
+    i4 !== null && i4.livraisonCentimes === 300 && i4.aPayerCentimes === 300);
+  const t = new Date("2026-12-01T00:00:00Z");
+  ok("solde : reliquat moins dépense, du bon mode, sans l'expiré",
+    soldeCredit([
+      { montant_centimes: 400, expire_le: "2027-11-16T00:00:00Z", livemode: true },
+      { montant_centimes: -100, expire_le: null, livemode: true },
+      { montant_centimes: 900, expire_le: "2026-11-30T00:00:00Z", livemode: true },
+      { montant_centimes: 5000, expire_le: null, livemode: false },
+    ], t, true) === 300);
+  const prog = { remise: "email", envoi_le: "2026-12-24", envoyee_le: null, statut: "payee" as const };
+  ok("envoi programmé : part le jour choisi, pas la veille, jamais deux fois, jamais une carte annulée",
+    carteAEnvoyer(prog, "2026-12-24") && !carteAEnvoyer(prog, "2026-12-23")
+      && !carteAEnvoyer({ ...prog, envoyee_le: "2026-12-24T07:00:00Z" }, "2026-12-24")
+      && !carteAEnvoyer({ ...prog, statut: "remboursee" }, "2026-12-24")
+      && !carteAEnvoyer({ ...prog, envoi_le: null }, "2026-12-24"));
 }

@@ -7,6 +7,9 @@ import { classerDossiers } from '@/lib/compte/rattachement'
 import { LIBELLE_ETAT, type Etat } from '@/lib/atelier/transitions'
 import { etapeDepot, QUI_ATTEND } from '@/lib/atelier/urgence'
 import { resoudreApercu } from '@/lib/atelier/apercu'
+import { modeStripe } from '@/lib/atelier/fondatrice'
+import { soldeDuCompte } from '@/lib/atelier/carteServeur'
+import { formaterCentimes } from '@/lib/atelier/prix'
 import { AVANCEMENT } from './jalons'
 import Espace, { type DossierVue, type LivreVue } from './Espace'
 import './compte.css'
@@ -127,8 +130,17 @@ export default async function ComptePage({
     }),
   )
 
+  /* Noël 2026 (lot 3) : le reste d'une carte cadeau vit sur le compte. Il
+     s'affiche ici, en tête, et se déduit tout seul au prochain paiement. */
+  const credit = await soldeDuCompte(supabase, qui.email, modeStripe(process.env.STRIPE_SECRET_KEY) === 'live')
+  const creditVue =
+    credit.solde > 0
+      ? { montant: formaterCentimes(credit.solde), jusquau: credit.expireLe ? dateLongue(credit.expireLe) : null }
+      : null
+
   return (
     <Espace
+      credit={creditVue}
       email={qui.email}
       photo={qui.photo}
       initiale={initialeDe(qui)}

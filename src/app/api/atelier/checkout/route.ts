@@ -11,6 +11,8 @@ import {
   type PalierCle,
 } from "@/lib/atelier/prix";
 import { PAYS_LIBELLE, normaliserPays, type PaysLivraison } from "@/lib/atelier/pays";
+import { reglementAvecCarte } from "@/lib/atelier/carteCommande";
+import { META_CARTE } from "@/lib/atelier/carteServeur";
 import { CODE_FISCAL_LIVRAISON, portClient, totalCommande } from "@/lib/atelier/livraison";
 import { libelleLigne, quantiteDuDossier } from "@/lib/atelier/exemplaires";
 import { JOURS_LIVRAISON } from "@/lib/atelier/urgence";
@@ -439,6 +441,45 @@ export async function POST(request: Request) {
       }
     }
 
+    /* ─── LA CARTE CADEAU ET LE CRÉDIT DU COMPTE (Noël 2026, lot 3) ─────
+       Le code vient du corps (`carte`), il est REVÉRIFIÉ ici : la page ne
+       fait qu'afficher le même calcul (`reglementAvecCarte`). Un code tapé
+       qui ne sert plus refuse le paiement plutôt que d'encaisser plein tarif
+       quelqu'un qui croit payer avec sa carte. Le crédit du compte (reste
+       d'une carte précédente) s'applique tout seul, par l'adresse du dossier. */
+    const codeCarte = typeof body.carte === "string" && body.carte.trim() !== "" ? body.carte : null;
+    const reglement = await reglementAvecCarte(supabase, {
+      email: numero.email,
+      codeSaisi: codeCarte,
+      prixCentimes: commande.prix - commande.remise,
+      livraisonCentimes: livraison,
+      fondateur: remiseAppliquee,
+      livemode: modeStripe(stripeKey) === "live",
+    });
+    if (codeCarte && !reglement.carte) {
+      return NextResponse.json({ error: "carte_refusee", phrase: reglement.refus }, { status: 409 });
+    }
+    const imputation = reglement.imputation;
+    let couponCarte: string | null = null;
+    if (imputation && imputation.remiseMagazinesCentimes > 0) {
+      try {
+        const coupon = await stripe.coupons.create({
+          amount_off: imputation.remiseMagazinesCentimes,
+          currency: "eur",
+          duration: "once",
+          max_redemptions: 1,
+          name: reglement.carte ? `Carte cadeau ${reglement.carte.code.slice(-6)}` : "Crédit de votre compte",
+          metadata: { kind: KIND_ATELIER, numero_id: numero.id, carte_code: reglement.carte?.code ?? "" },
+        });
+        couponCarte = coupon.id;
+      } catch (e) {
+        console.error("[atelier/checkout] coupon de carte refusé par Stripe", (e as Error)?.message);
+        return NextResponse.json({ error: "stripe_error" }, { status: 500 });
+      }
+    }
+    const livraisonDue = imputation ? imputation.livraisonCentimes : livraison;
+    const portParCarte = imputation !== null && livraisonDue < livraison;
+
     /* Le mode de la clé, dans le journal et dans les logs : c'est le
        piège des deux comptes Stripe. Une clé de test en production frapperait
        des codes que la clé live ne relira jamais — exactement le bug du 19/09. */
@@ -482,9 +523,11 @@ export async function POST(request: Request) {
                 ? "Livraison offerte, fondateur"
                 : portOffert
                   ? "Livraison offerte"
-                  : `Livraison suivie, ${PAYS_LIBELLE[pays]}`,
+                  : portParCarte
+                    ? `Livraison suivie, ${PAYS_LIBELLE[pays]}, réglée ${livraisonDue === 0 ? "" : "en partie "}par la carte`
+                    : `Livraison suivie, ${PAYS_LIBELLE[pays]}`,
               type: "fixed_amount",
-              fixed_amount: { amount: livraison, currency: "eur" },
+              fixed_amount: { amount: livraisonDue, currency: "eur" },
               /* TTC, comme le prix du magazine : le total ne gonfle pas au
                  moment de payer. La conversion HT → TTC a eu lieu au devis
                  (livraison.ts). La TVA réellement facturée est celle de la
@@ -528,7 +571,9 @@ export async function POST(request: Request) {
            fondatrices) est borné à 30 € une fois, tracé, et réparable. */
         ...(remiseAppliquee
           ? { discounts: [{ promotion_code: credit.promotionCodeId }] }
-          : { allow_promotion_codes: true }),
+          : couponCarte
+            ? { discounts: [{ coupon: couponCarte }] }
+            : { allow_promotion_codes: true }),
 
         /* ─── LES LIGNES, UNE PAR RANG D'EXEMPLAIRE (15/09/2026) ───────────
            « Votre numéro », puis « 2e exemplaire, −30 % », puis « N
@@ -576,7 +621,7 @@ export async function POST(request: Request) {
           prix_ht_centimes: String(numero.prix_ht_centimes ?? ""),
           quantite: String(quantite),
           total_produit_centimes: String(decompte.totalCentimes),
-          livraison_centimes: String(livraison),
+          livraison_centimes: String(livraisonDue),
           livraison_zone: port.zone,
           port_offert: portOffert ? "true" : "false",
           port_offert_fondateur: portOffertFondateur ? "true" : "false",
@@ -587,6 +632,15 @@ export async function POST(request: Request) {
              (et non un code promo quelconque tapé à la main). Vide quand il
              n'y a pas de remise d'office : une métadonnée qui ne dit rien
              n'encombre pas la lecture. */
+          ...(imputation
+            ? {
+                [META_CARTE.id]: reglement.carte?.id ?? "",
+                [META_CARTE.code]: reglement.carte?.code ?? "",
+                [META_CARTE.centimes]: String(imputation.carteCentimes),
+                [META_CARTE.credit]: String(imputation.creditCentimes),
+                [META_CARTE.reliquat]: String(imputation.reliquatCentimes),
+              }
+            : {}),
           ...(remiseAppliquee
             ? {
                 [META_CREDIT]: credit.code,

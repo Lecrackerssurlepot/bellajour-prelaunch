@@ -5,10 +5,10 @@
    il envoie la saisie à /api/cartes/checkout, qui valide de nouveau et
    ouvre la session ; la carte naît au paiement. */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import CarteCadeau from '../noel-preview/CarteCadeau'
 import { MailRendu } from '../noel-preview/ApercuMails'
-import { COUVERTURES_ACCUEIL, MAILS, PHRASES, TEXTES } from '../noel-preview/contenu'
+import { COUVERTURES_ACCUEIL, MAILS, PHRASES } from '../noel-preview/contenu'
 import {
   ENVOI_PROGRAMME_MAX,
   LIBRE_MAX_CENTIMES,
@@ -31,6 +31,7 @@ const ERREURS: Record<string, string> = {
   montant: `Choisissez un montant de ${LIBRE_MIN_CENTIMES / 100} à ${LIBRE_MAX_CENTIMES / 100} €.`,
   prenom: 'Son prénom, s’il vous plaît.',
   email: 'Cette adresse ne semble pas complète.',
+  remise: 'Choisissez au moins une façon de la donner.',
   jour: 'Choisissez un jour entre demain et le 24 décembre.',
   trop_de_demandes: 'Un instant, puis réessayez.',
 }
@@ -40,15 +41,31 @@ function demainParis(): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(d)
 }
 
+/* Les jours proposés, du lendemain au 24 décembre, en AAAA-MM-JJ. Calcul à
+   midi UTC : aucun changement d'heure ne fait sauter ni doubler un jour. */
+function joursProposes(depuis: string, jusqua: string): string[] {
+  const jours: string[] = []
+  const d = new Date(`${depuis}T12:00:00Z`)
+  const fin = new Date(`${jusqua}T12:00:00Z`)
+  while (d <= fin && jours.length < 400) {
+    jours.push(d.toISOString().slice(0, 10))
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  return jours
+}
+
+const fmtJour = (j: string, o: Intl.DateTimeFormatOptions) =>
+  new Intl.DateTimeFormat('fr-FR', { ...o, timeZone: 'UTC' }).format(new Date(`${j}T12:00:00Z`)).replace('.', '')
+
 export default function Achat() {
-  const t = TEXTES[TON]
   const [temps, setTemps] = useState<Temps>(1)
   const [montant, setMontant] = useState<Montant>(5000)
   const [libre, setLibre] = useState('')
   const [prenom, setPrenom] = useState('')
   const [donateur, setDonateur] = useState('')
   const [message, setMessage] = useState('')
-  const [comment, setComment] = useState<'email' | 'imprimer'>('email')
+  const [parEmail, setParEmail] = useState(true)
+  const [imprime, setImprime] = useState(false)
   const [email, setEmail] = useState('')
   const [quand, setQuand] = useState<'maintenant' | 'date'>('maintenant')
   const [jour, setJour] = useState('')
@@ -56,6 +73,16 @@ export default function Achat() {
   const [envoi, setEnvoi] = useState(false)
 
   const demain = useMemo(() => demainParis(), [])
+  const jours = useMemo(() => joursProposes(demain, ENVOI_PROGRAMME_MAX), [demain])
+  const bandeau = useRef<HTMLDivElement>(null)
+  const comment: 'email' | 'imprimer' = parEmail ? 'email' : 'imprimer'
+
+  /* Le jour choisi se montre dans le bandeau, sans faire défiler la page. */
+  useEffect(() => {
+    const b = bandeau.current
+    const el = b?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (b && el) b.scrollLeft = el.offsetLeft - (b.clientWidth - el.offsetWidth) / 2
+  }, [quand, jour])
   const centimes = montant === 'libre' ? Number(libre) * 100 : montant
   const montantOk = montantCarteValide(centimes)
   const affiche = montantOk ? `${centimes / 100} €` : '… €'
@@ -68,7 +95,8 @@ export default function Achat() {
     return true
   }
   function verifierTemps2(): boolean {
-    if (comment === 'email') {
+    if (!parEmail && !imprime) return setErreur(ERREURS.remise), false
+    if (parEmail) {
       if (!MAIL.test(email.trim())) return setErreur(ERREURS.email), false
       if (quand === 'date' && !(jour >= demain && jour <= ENVOI_PROGRAMME_MAX)) return setErreur(ERREURS.jour), false
     }
@@ -109,7 +137,7 @@ export default function Achat() {
   }
 
   return (
-    <div className="nl-recit">
+    <div className="nl-recit nl-achat">
       <ol className="nl-fil" aria-label="Étapes">
         {NOMS.map((nom, i) => (
           <li key={nom} data-etat={temps > i + 1 ? 'fait' : temps === i + 1 ? 'ici' : 'apres'}>
@@ -120,10 +148,10 @@ export default function Achat() {
       </ol>
 
       {temps !== 3 && (
+      <div className="nl-achat-scene">
         <div className="nl-recit-carte" data-temps={temps}>
           <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code="BJ-CADEAU-······" />
         </div>
-      )}
 
       {temps === 1 && (
         <div className="nl-recit-temps">
@@ -151,14 +179,16 @@ export default function Achat() {
               />
             )}
           </fieldset>
-          <label className="nl-champ">
-            <span className="nl-label">Son prénom</span>
-            <input className="nl-input" value={prenom} maxLength={PRENOM_CARTE_MAX} autoComplete="off" onChange={(e) => setPrenom(e.target.value)} />
-          </label>
-          <label className="nl-champ">
-            <span className="nl-label">De la part de</span>
-            <input className="nl-input" value={donateur} maxLength={PRENOM_CARTE_MAX} autoComplete="given-name" onChange={(e) => setDonateur(e.target.value)} />
-          </label>
+          <div className="nl-duo">
+            <label className="nl-champ">
+              <span className="nl-label">Son prénom</span>
+              <input className="nl-input" value={prenom} maxLength={PRENOM_CARTE_MAX} autoComplete="off" onChange={(e) => setPrenom(e.target.value)} />
+            </label>
+            <label className="nl-champ">
+              <span className="nl-label">De la part de</span>
+              <input className="nl-input" value={donateur} maxLength={PRENOM_CARTE_MAX} autoComplete="given-name" onChange={(e) => setDonateur(e.target.value)} />
+            </label>
+          </div>
           <label className="nl-champ">
             <span className="nl-label">
               Un mot <span className="nl-faible">{message.length}/{MESSAGE_CARTE_MAX}</span>
@@ -173,17 +203,20 @@ export default function Achat() {
       {temps === 2 && (
         <div className="nl-recit-temps">
           <h1 className="nl-recit-titre">Comment la lui donner ?</h1>
+          <p className="nl-faible nl-achat-aide">L&apos;un, l&apos;autre, ou les deux.</p>
           <div className="nl-egaux nl-egaux--grands">
-            <button type="button" className="nl-choix" aria-pressed={comment === 'email'} onClick={() => setComment('email')}>
+            <button type="button" className="nl-choix" aria-pressed={parEmail} onClick={() => setParEmail((v) => !v)}>
+              <span className="nl-choix-coche" aria-hidden="true" />
               <span className="nl-choix-titre">Par e-mail</span>
-              <span className="nl-faible">Il la reçoit le jour choisi</span>
+              <span className="nl-faible">Le jour choisi</span>
             </button>
-            <button type="button" className="nl-choix" aria-pressed={comment === 'imprimer'} onClick={() => setComment('imprimer')}>
+            <button type="button" className="nl-choix" aria-pressed={imprime} onClick={() => setImprime((v) => !v)}>
+              <span className="nl-choix-coche" aria-hidden="true" />
               <span className="nl-choix-titre">Je l&apos;imprime</span>
-              <span className="nl-faible">À glisser sous le sapin</span>
+              <span className="nl-faible">Sous le sapin</span>
             </button>
           </div>
-          {comment === 'email' && (
+          {parEmail && (
             <>
               <input
                 className="nl-input"
@@ -195,11 +228,20 @@ export default function Achat() {
                 onChange={(e) => setEmail(e.target.value)}
               />
               <div className="nl-puces">
-                <button type="button" className="nl-puce" aria-pressed={quand === 'maintenant'} onClick={() => setQuand('maintenant')}>Aujourd&apos;hui</button>
-                <button type="button" className="nl-puce" aria-pressed={quand === 'date'} onClick={() => { setQuand('date'); if (!jour) setJour(ENVOI_PROGRAMME_MAX) }}>Choisir le jour</button>
+                <button type="button" className="nl-puce" aria-pressed={quand === 'maintenant'} onClick={() => setQuand('maintenant')}>Tout de suite</button>
+                <button type="button" className="nl-puce" aria-pressed={quand === 'date'} onClick={() => { setQuand('date'); if (!jour) setJour(ENVOI_PROGRAMME_MAX) }}>Un autre jour</button>
               </div>
               {quand === 'date' && (
-                <input className="nl-input" type="date" min={demain} max={ENVOI_PROGRAMME_MAX} value={jour} onChange={(e) => setJour(e.target.value)} aria-label="Jour d'envoi" />
+                <div className="nl-jours" ref={bandeau} role="group" aria-label="Jour d'envoi">
+                  {jours.map((j) => (
+                    <button key={j} type="button" className="nl-jour" aria-pressed={jour === j} onClick={() => setJour(j)}
+                      aria-label={fmtJour(j, { weekday: 'long', day: 'numeric', month: 'long' })}>
+                      <span className="nl-jour-sem">{fmtJour(j, { weekday: 'short' })}</span>
+                      <span className="nl-jour-n">{fmtJour(j, { day: 'numeric' })}</span>
+                      <span className="nl-jour-mois">{fmtJour(j, { month: 'short' })}</span>
+                    </button>
+                  ))}
+                </div>
               )}
             </>
           )}
@@ -208,14 +250,16 @@ export default function Achat() {
           <button type="button" className="nl-retour" onClick={() => { setErreur(''); setTemps(1) }}>Retour</button>
         </div>
       )}
+      </div>
+      )}
 
       {temps === 3 && (
         <div className="nl-recit-temps nl-recit-temps--large">
           <h1 className="nl-recit-titre">Voici ce qu&apos;il recevra.</h1>
           <div className="nl-recu">
             <div className="nl-recu-mail">
-              <span className="nl-recu-legende">{comment === 'email' ? 'Dans sa boîte' : 'Dans vos mains'}</span>
-              {comment === 'email' && gc2 ? (
+              <span className="nl-recu-legende">{parEmail && !imprime ? 'Dans sa boîte' : parEmail ? 'Dans sa boîte, et dans vos mains' : 'Dans vos mains'}</span>
+              {parEmail && gc2 ? (
                 <MailRendu
                   mail={gc2}
                   ton={TON}
@@ -224,6 +268,7 @@ export default function Achat() {
               ) : (
                 <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code="BJ-CADEAU-······" />
               )}
+              {parEmail && imprime && <p className="nl-faible">La carte à imprimer vous attend après le paiement.</p>}
             </div>
             <div className="nl-recu-mag">
               <span className="nl-recu-legende">Puis son magazine</span>
@@ -233,14 +278,15 @@ export default function Achat() {
                 ))}
               </div>
               <p className="nl-faible">Il choisit ses photos, nous composons.</p>
+              <div className="nl-recu-actions">
+                {erreur && <p className="nl-erreur" role="alert">{erreur}</p>}
+                <button type="button" className="nl-payer" disabled={envoi} onClick={payer}>
+                  {envoi ? 'Ouverture du paiement…' : `Offrir la carte · ${affiche}`}
+                </button>
+                <button type="button" className="nl-retour" onClick={() => { setErreur(''); setTemps(2) }}>Retour</button>
+              </div>
             </div>
           </div>
-          {erreur && <p className="nl-erreur" role="alert">{erreur}</p>}
-          <button type="button" className="nl-payer" disabled={envoi} onClick={payer}>
-            {envoi ? 'Ouverture du paiement…' : `Offrir la carte · ${affiche}`}
-          </button>
-          <button type="button" className="nl-retour" onClick={() => { setErreur(''); setTemps(2) }}>Retour</button>
-          <p className="nl-faible">{t.partage}</p>
         </div>
       )}
     </div>

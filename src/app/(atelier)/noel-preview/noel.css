@@ -138,28 +138,33 @@
 
 .nl-preview .nl-carte-haut,
 .nl-preview .nl-carte-bas { position: relative; display: flex; justify-content: space-between; align-items: flex-end; gap: 4cqw; }
-.nl-preview .nl-carte-haut { align-items: baseline; }
-.nl-preview .nl-carte-marque { font-family: var(--font-display); font-size: 5.6cqw; line-height: 1; }
-.nl-preview .nl-carte-type { font-size: 2.7cqw; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-overlay-text); }
+.nl-preview .nl-carte-haut { align-items: center; }
+.nl-preview .nl-carte-marque { display: block; width: 19cqw; height: auto; }
+.nl-preview .nl-carte-type { font-size: 2.5cqw; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-overlay-text); }
+/* La dédicace encadre la phrase comme sur un faire-part : le prénom en
+   petites capitales au-dessus, le mot en italique dessous. */
+.nl-preview .nl-carte-milieu { position: relative; display: flex; flex-direction: column; gap: 2.2cqw; min-width: 0; }
+.nl-preview .nl-carte-pour { font-size: 2.5cqw; letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-accent-strong); }
 .nl-preview .nl-carte-phrase {
-  position: relative;
   font-family: var(--font-display);
   font-size: 9.4cqw;
   line-height: 0.98;
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
-.nl-preview .nl-carte-gauche { display: flex; flex-direction: column; gap: 1cqw; min-width: 0; }
-.nl-preview .nl-carte-montant { font-family: var(--font-display); font-size: 8cqw; line-height: 0.9; white-space: nowrap; color: var(--c-accent-strong); }
+.nl-preview .nl-carte-milieu[data-mot='1'] .nl-carte-phrase { font-size: 8.2cqw; }
 .nl-preview .nl-carte-message {
-  font-size: 2.8cqw;
-  line-height: 1.35;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 3.6cqw;
+  line-height: 1.25;
   color: var(--c-text-soft);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
+.nl-preview .nl-carte-montant { font-family: var(--font-display); font-size: 8cqw; line-height: 0.9; white-space: nowrap; color: var(--c-accent-strong); }
 .nl-preview .nl-carte-infos { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 2.7cqw; line-height: 1.4; text-align: right; color: var(--c-overlay-text); }
 .nl-preview .nl-carte-code { letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
 

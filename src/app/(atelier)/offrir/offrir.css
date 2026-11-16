@@ -31,8 +31,99 @@
 .nl-preview .nl-merci-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
 .nl-preview .nl-merci-actions a { text-decoration: none; }
 
+/* ── /offrir : le moins de défilement possible (retour du 16/11) ──
+   Ordinateur : la carte à gauche, le formulaire à droite, tout tient dans
+   l'écran. Téléphone : carte réduite, champs serrés, prénoms côte à côte. */
+.nl-preview .nl-achat { gap: 16px; }
+.nl-preview .nl-achat .nl-recit-temps { gap: 12px; }
+.nl-preview .nl-achat .nl-recit-titre { font-size: clamp(26px, 3.4vw, 36px); }
+.nl-preview .nl-achat .nl-label,
+.nl-preview .nl-achat .nl-champ legend { margin-bottom: 4px; }
+.nl-preview .nl-achat .nl-champ { gap: 4px; }
+.nl-preview .nl-achat .nl-input { padding: 10px 14px; }
+.nl-preview .nl-achat .nl-suivant { padding: 13px 24px; }
+.nl-preview .nl-achat-scene { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+.nl-preview .nl-achat .nl-achat-scene .nl-recit-carte { width: min(78%, 340px); }
+.nl-preview .nl-achat .nl-recit-carte[data-temps='2'] { transform: none; }
+.nl-preview .nl-achat .nl-achat-scene .nl-recit-carte[data-temps='2'] { width: min(58%, 260px); }
+.nl-preview .nl-achat .nl-egaux { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.nl-preview .nl-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.nl-preview .nl-achat-aide { margin: -4px 0 0; text-align: center; }
+
+.nl-preview .nl-recu-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.nl-preview .nl-achat .nl-recit-temps--large .nl-recu-actions .nl-payer { width: 100%; }
+.nl-preview .nl-achat .nl-recu { gap: clamp(20px, 4vw, 48px); }
+
+/* Les deux remises se cumulent : une coche ronde dit qu'on peut les prendre ensemble. */
+.nl-preview .nl-achat .nl-choix { position: relative; padding: 12px 14px; }
+.nl-preview .nl-achat .nl-choix-titre { font-size: 20px; }
+.nl-preview .nl-choix-coche {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line-strong);
+}
+.nl-preview .nl-choix[aria-pressed='true'] .nl-choix-coche {
+  border-color: var(--c-accent);
+  background: radial-gradient(circle, var(--c-accent) 0 4px, transparent 5px);
+}
+
+/* Le bandeau des jours, à la place du calendrier du navigateur. */
+.nl-preview .nl-jours {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  padding: 2px 2px 4px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+}
+.nl-preview .nl-jours::-webkit-scrollbar { display: none; }
+.nl-preview .nl-jour {
+  flex: 0 0 58px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 9px;
+  border-radius: 14px;
+  border: 1px solid var(--c-line-md);
+  background: transparent;
+  color: var(--c-text-soft);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.nl-preview .nl-jour[aria-pressed='true'] { border-color: var(--c-accent); background: var(--c-accent-soft); color: var(--c-text); }
+.nl-preview .nl-jour-sem,
+.nl-preview .nl-jour-mois { font-size: 11px; letter-spacing: 0.06em; text-transform: lowercase; color: var(--c-text-faint); }
+.nl-preview .nl-jour-n { font-family: var(--font-display); font-size: 24px; line-height: 1; }
+
+@media (min-width: 900px) {
+  .nl-preview .nl-achat-scene {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(32px, 5vw, 72px);
+    max-width: 1040px;
+  }
+  .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte,
+  .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte[data-temps='2'] { width: 100%; position: sticky; top: 24px; }
+  .nl-preview .nl-achat .nl-achat-scene .nl-recit-temps { width: 100%; }
+  .nl-preview .nl-achat-scene .nl-recit-titre { text-align: left; }
+}
+@media (max-width: 767px) {
+  .nl-preview.nl-page { padding-top: 12px; }
+  .nl-preview .nl-page-marque { margin-bottom: 14px; }
+}
+
 @media print {
   .nl-preview .nl-imprimer-non { display: none !important; }
   .nl-preview.nl-page { padding: 0; }
   .nl-preview .nl-merci .nl-recit-carte { width: 148mm; }
 }
+
+.nl-preview .nl-page-marque img { display: block; width: 116px; height: auto; }

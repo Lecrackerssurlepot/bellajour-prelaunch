@@ -54,7 +54,7 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
   if (carte === 'attente') {
     return (
       <main className="nl-preview nl-page">
-        <Link className="nl-page-marque" href="/">Bellajour</Link>
+        <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} /></Link>
         <div className="nl-merci">
           <h1 className="nl-recit-titre">Paiement en cours.</h1>
           <p className="nl-faible">Rechargez cette page dans un instant. Votre carte arrive aussi par e-mail.</p>
@@ -74,7 +74,7 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="nl-preview nl-page">
-      <Link className="nl-page-marque" href="/">Bellajour</Link>
+      <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} /></Link>
       <div className="nl-merci">
         <h1 className="nl-recit-titre">{TEXTES.sobre.apresAchat}</h1>
         <div className="nl-recit-carte">

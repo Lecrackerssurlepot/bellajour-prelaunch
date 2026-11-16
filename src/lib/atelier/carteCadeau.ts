@@ -153,3 +153,83 @@ export function refusCarte(
   }
   return null;
 }
+
+/* ───────────────────── au paiement du magazine (lot 3) ───────────────────── */
+
+export type Imputation = {
+  /** Ce que la carte paie (magazines puis port). */
+  carteCentimes: number;
+  /** Ce que le crédit du compte paie, après la carte. */
+  creditCentimes: number;
+  /** La part posée en remise sur les MAGAZINES (coupon Stripe, plafonné à leur prix). */
+  remiseMagazinesCentimes: number;
+  /** Le port qui reste à facturer, une fois la carte et le crédit passés dessus. */
+  livraisonCentimes: number;
+  /** Ce que Stripe encaissera (0 = la session se solde sans moyen de paiement). */
+  aPayerCentimes: number;
+  /** Ce qui reste de la carte : au compte de la personne qui l'utilise. */
+  reliquatCentimes: number;
+};
+
+/**
+ * Comment une carte et un crédit se posent sur une commande. Chez Stripe, une
+ * remise (coupon) ne touche QUE les lignes de produits, jamais l'option de
+ * livraison : la carte paie donc les magazines d'abord, puis ce qu'il en
+ * reste baisse le port. `prixCentimes` = magazines, exemplaires compris, après
+ * toute autre remise ; `livraisonCentimes` = port déjà passé par le seuil.
+ */
+export function imputationCommande(
+  prixCentimes: number,
+  livraisonCentimes: number,
+  carteCentimes: number,
+  creditCentimes: number,
+): Imputation | null {
+  if (!Number.isInteger(prixCentimes) || prixCentimes < 0) return null;
+  if (!Number.isInteger(livraisonCentimes) || livraisonCentimes < 0) return null;
+  const r = reglementCommande(prixCentimes + livraisonCentimes, carteCentimes, creditCentimes);
+  if (!r) return null;
+  const couvert = r.carteCentimes + r.creditCentimes;
+  const surMagazines = Math.min(couvert, prixCentimes);
+  return {
+    carteCentimes: r.carteCentimes,
+    creditCentimes: r.creditCentimes,
+    remiseMagazinesCentimes: surMagazines,
+    livraisonCentimes: livraisonCentimes - (couvert - surMagazines),
+    aPayerCentimes: r.aPayerCentimes,
+    reliquatCentimes: r.reliquatCentimes,
+  };
+}
+
+export type MouvementCredit = { montant_centimes: number; expire_le: string | null; livemode: boolean };
+
+/**
+ * Le solde du compte : la somme du grand livre, du bon mode (une ligne de
+ * test ne vaut rien en production), sans les reliquats expirés. Jamais
+ * négatif à l'affichage.
+ */
+export function soldeCredit(mouvements: MouvementCredit[], maintenant: Date, livemode: boolean): number {
+  let s = 0;
+  for (const m of mouvements) {
+    if (m.livemode !== livemode || !Number.isInteger(m.montant_centimes)) continue;
+    if (m.montant_centimes > 0 && m.expire_le && Date.parse(m.expire_le) <= maintenant.getTime()) continue;
+    s += m.montant_centimes;
+  }
+  return Math.max(0, s);
+}
+
+/** Une carte programmée dont le jour est venu (heure de Paris, passée par l'appelant). */
+export function carteAEnvoyer(
+  carte: { remise: string; envoi_le: string | null; envoyee_le: string | null; statut: StatutCarte },
+  aujourdhui: string,
+): boolean {
+  return (
+    carte.remise === "email" &&
+    carte.statut === "payee" &&
+    !carte.envoyee_le &&
+    !!carte.envoi_le &&
+    carte.envoi_le.slice(0, 10) <= aujourdhui
+  );
+}
+
+/** La clé (navigateur) où `/composer?carte=` range le code venu du mail GC2 ; le bon de commande le relit. */
+export const CLE_CARTE_RETENUE = "bj-carte-cadeau";

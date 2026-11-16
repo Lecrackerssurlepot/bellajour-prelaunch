@@ -23,11 +23,13 @@ import { makeSupabase } from '@/lib/supabase'
 import { isValidNumeroToken } from '@/lib/atelier/tokenForme'
 import { ICONE_EXTERNE } from './icones'
 import { resoudreApercu } from '@/lib/atelier/apercu'
-import { eurosDuDossier, centimesDuDossier, type PalierCle } from '@/lib/atelier/prix'
+import { eurosDuDossier, centimesDuDossier, formaterCentimes, type PalierCle } from '@/lib/atelier/prix'
 import { finitionDuDossier } from '@/lib/atelier/impression'
 import { totalCommande, portClient } from '@/lib/atelier/livraison'
 import { quantiteDuDossier, totalExemplaires } from '@/lib/atelier/exemplaires'
-import { creditDuPourMail } from '@/lib/atelier/fondatrice'
+import { creditDuPourMail, modeStripe } from '@/lib/atelier/fondatrice'
+import { reglementAvecCarte } from '@/lib/atelier/carteCommande'
+import { lireCarteDuNumero } from '@/lib/atelier/carteServeur'
 import { DELAIS, JOURS_LIVRAISON, etapeDepot, QUI_ATTEND, type Camp, type EtapeDepot } from '@/lib/atelier/urgence'
 import { JOURS_AVANT_AUTO_VALIDATION } from '@/lib/atelier/mails'
 import { MIN_PHOTOS } from '../../(atelier)/composer/depot/paliers'
@@ -290,10 +292,10 @@ export default async function NumeroPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string }>
+  searchParams: Promise<{ paiement?: string; de?: string; brouillon?: string; carte?: string }>
 }) {
   const { token } = await params
-  const { paiement, de, brouillon: brouillonDemande } = await searchParams
+  const { paiement, de, brouillon: brouillonDemande, carte: carteSaisie } = await searchParams
 
   /* Test §17.7 : un token inexistant donne une page d'erreur propre, et
      AUCUNE information ne fuite. Forme invalide et dossier introuvable
@@ -466,6 +468,38 @@ export default async function NumeroPage({
           portOffert: creditEuros !== null,
         })
       : null
+
+  /* ── LA CARTE CADEAU ET LE CRÉDIT DU COMPTE (Noël 2026, lot 3) ───────
+     Le MÊME calcul que `/api/atelier/checkout` (`reglementAvecCarte`) : le
+     code arrive par l'adresse (`?carte=`), posé par le champ du bon de
+     commande ; le crédit du compte s'applique tout seul. Seulement à l'état
+     2, avec un total connu : ailleurs il n'y a rien à régler. */
+  const livemode = modeStripe(process.env.STRIPE_SECRET_KEY) === 'live'
+  const reglement =
+    numero.etat === 'apercu_pret' && commande && !previsualisation
+      ? await reglementAvecCarte(makeSupabase(), {
+          email: numero.email,
+          codeSaisi: carteSaisie ?? null,
+          prixCentimes: commande.prix - commande.remise,
+          livraisonCentimes: commande.livraison,
+          fondateur: creditEuros !== null,
+          livemode,
+        })
+      : null
+  const carteVue = reglement
+    ? {
+        saisie: typeof carteSaisie === 'string' ? carteSaisie.slice(0, 40) : '',
+        code: reglement.carte?.code ?? null,
+        refus: reglement.refus,
+        carteCentimes: reglement.imputation?.carteCentimes ?? 0,
+        creditCentimes: reglement.imputation?.creditCentimes ?? 0,
+        reliquatCentimes: reglement.imputation?.reliquatCentimes ?? 0,
+        aPayerCentimes: reglement.imputation?.aPayerCentimes ?? null,
+      }
+    : null
+  /* Après le paiement : ce que la carte a payé, et ce qui reste au compte. */
+  const carteUtilisee =
+    numero.etat !== 'apercu_pret' ? await lireCarteDuNumero(makeSupabase(), numero.id) : null
 
   /* Le COMPTE (04/09) — il s'AJOUTE au token, jamais il ne le remplace.
      Déconnectée : une invitation discrète (« ce lien, à l'abri d'un compte »).
@@ -708,6 +742,7 @@ export default async function NumeroPage({
                  décide de rien : il montre l'état du dossier. */
               finition={finitionDuDossier(numero.finition)}
               previsualisation={previsualisation}
+              carte={carteVue}
             />
           )}
         </>
@@ -724,6 +759,14 @@ export default async function NumeroPage({
             Votre paiement est bien reçu. L’atelier compose maintenant votre
             numéro complet.
           </p>
+          {carteUtilisee ? (
+            <p className="nu-sub">
+              {carteUtilisee.code ? `Réglé avec votre carte cadeau (${formaterCentimes(carteUtilisee.montantCentimes)})` : 'Réglé en partie avec le crédit de votre compte'}
+              {carteUtilisee.reliquatCentimes > 0
+                ? `. Il vous reste ${formaterCentimes(carteUtilisee.reliquatCentimes)} sur votre compte Bellajour, pour un prochain numéro.`
+                : '.'}
+            </p>
+          ) : null}
           <p className="nu-sub">
             Il vous attend ici <b>sous {JOURS_COMPOSITION} jours ouvrés</b>, et
             vous serez prévenu par mail.

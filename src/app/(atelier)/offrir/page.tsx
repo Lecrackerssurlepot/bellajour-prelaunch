@@ -19,7 +19,7 @@ export default function OffrirPage() {
   if (!lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert) notFound()
   return (
     <main className="nl-preview nl-page">
-      <Link className="nl-page-marque" href="/">Bellajour</Link>
+      <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/signature-bellajour-240.webp" alt="Bellajour" width={240} height={92} /></Link>
       <Achat />
     </main>
   )

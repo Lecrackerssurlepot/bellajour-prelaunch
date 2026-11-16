@@ -31,8 +31,9 @@
  * ne reçoit que le token et rechoisit le prix lui-même.
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CLE_CARTE_RETENUE } from '@/lib/atelier/carteCadeau'
 import { formaterCentimes } from '@/lib/atelier/prix'
 /* `pays.ts` est PUR et sans montant : la liste des pays a précisément
    déménagé là pour pouvoir descendre dans le navigateur (cf. son en-tête).
@@ -118,6 +119,19 @@ type Props = {
      C'est le SEUL paramètre d'impression que le client choisit lui-même —
      le format, la reliure et le papier se déduisent de sa pagination. */
   finition: Finition
+  /* ── LA CARTE CADEAU ET LE CRÉDIT DU COMPTE (Noël 2026, lot 3) ───────
+     Calculés PAR LE SERVEUR (`reglementAvecCarte`, le même que le checkout).
+     Le code tapé part dans l'adresse (`?carte=`), la page se recalcule ; ce
+     composant n'additionne rien. `null` hors état 2 ou sans total connu. */
+  carte?: {
+    saisie: string
+    code: string | null
+    refus: string | null
+    carteCentimes: number
+    creditCentimes: number
+    reliquatCentimes: number
+    aPayerCentimes: number | null
+  } | null
 }
 
 export default function CasesEtCommande({
@@ -125,8 +139,33 @@ export default function CasesEtCommande({
   quantite, exemplaires,
   cgvOk, renonciation, joursComposition, joursLivraison, finition,
   previsualisation = false,
+  carte = null,
 }: Props) {
   const router = useRouter()
+  const [ouvreCarte, setOuvreCarte] = useState(false)
+  const [codeTape, setCodeTape] = useState(carte?.saisie ?? '')
+  const [erreurCarte, setErreurCarte] = useState<string | null>(null)
+
+  /* Le code se pose dans l'adresse : la page serveur le vérifie et recalcule
+     le total. `replace`, pour que « retour » ne rejoue pas chaque essai. */
+  const appliquerCarte = useCallback((code: string | null) => {
+    const u = new URL(window.location.href)
+    if (code) u.searchParams.set('carte', code)
+    else u.searchParams.delete('carte')
+    u.searchParams.delete('paiement')
+    router.replace(`${u.pathname}${u.search}`, { scroll: false })
+  }, [router])
+
+  /* Le code venu du mail (« Composer mon magazine » mène à
+     /composer?carte=…, qui le range ici) s'applique tout seul, une fois. */
+  useEffect(() => {
+    if (!carte || carte.saisie || previsualisation) return
+    let retenu: string | null = null
+    try { retenu = window.localStorage.getItem(CLE_CARTE_RETENUE) } catch { /* stockage fermé */ }
+    if (retenu) appliquerCarte(retenu)
+  }, [carte, previsualisation, appliquerCarte])
+
+  const totalAffiche = commande ? (carte?.aPayerCentimes ?? commande.total) : null
   const [cgv, setCgv] = useState(cgvOk)
   const [reno, setReno] = useState(renonciation)
   const [erreur, setErreur] = useState<string | null>(null)
@@ -236,9 +275,14 @@ export default function CasesEtCommande({
       const r = await fetch('/api/atelier/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token, ...(carte?.code ? { carte: carte.code } : {}) }),
       })
-      const data = (await r.json().catch(() => ({}))) as { url?: string; error?: string }
+      const data = (await r.json().catch(() => ({}))) as { url?: string; error?: string; phrase?: string }
+      if (data.error === 'carte_refusee') {
+        setErreurCarte(data.phrase ?? 'Cette carte ne peut pas servir.')
+        setOccupe(false)
+        return
+      }
       if (!r.ok || !data.url) throw new Error(data.error ?? 'checkout')
       window.location.href = data.url
     } catch (e) {
@@ -253,7 +297,7 @@ export default function CasesEtCommande({
       )
       setOccupe(false)
     }
-  }, [token, previsualisation])
+  }, [token, previsualisation, carte])
 
   /* ⚠️ « CONNU » VEUT DIRE LES DEUX. Depuis que la livraison se facture à
      part, un prix de magazine sans port n'est pas un prix : la cliente
@@ -588,6 +632,18 @@ export default function CasesEtCommande({
               <b>&minus;{formaterCentimes(commande.remise)}</b>
             </div>
           ) : null}
+          {carte && carte.carteCentimes > 0 ? (
+            <div className="nu-bon-l">
+              <span>Carte cadeau</span>
+              <b>&minus;{formaterCentimes(carte.carteCentimes)}</b>
+            </div>
+          ) : null}
+          {carte && carte.creditCentimes > 0 ? (
+            <div className="nu-bon-l">
+              <span>Crédit de votre compte</span>
+              <b>&minus;{formaterCentimes(carte.creditCentimes)}</b>
+            </div>
+          ) : null}
           {/* ── LE SEUIL DE LA LIVRAISON OFFERTE (15/09/2026) ──
               Dit AVANT qu'on paie, et seulement quand il reste quelque chose
               à gagner : « plus que 14 € de magazines » se lit comme une
@@ -604,7 +660,57 @@ export default function CasesEtCommande({
           {commande && portConnu ? (
             <div className="nu-bon-t">
               <span>À payer</span>
-              <b>{formaterCentimes(commande.total)}</b>
+              <b>{formaterCentimes(totalAffiche ?? commande.total)}</b>
+            </div>
+          ) : null}
+          {carte && carte.reliquatCentimes > 0 && portConnu ? (
+            <p className="nu-bon-franco">
+              Il restera {formaterCentimes(carte.reliquatCentimes)} sur votre compte Bellajour.
+            </p>
+          ) : null}
+          {/* ── LA CARTE CADEAU (Noël 2026) ── un lien discret, un champ au
+              clic : la plupart des clients n'en ont pas, la ligne ne doit
+              pas leur faire croire qu'il leur manque quelque chose. */}
+          {carte && portConnu ? (
+            <div className="nu-carte">
+              {carte.code ? (
+                <p className="nu-carte-ok">
+                  <span>{carte.code}</span>
+                  <button type="button" className="nu-bon-changer" disabled={previsualisation} onClick={() => {
+                    try { window.localStorage.removeItem(CLE_CARTE_RETENUE) } catch { /* rien */ }
+                    setCodeTape('')
+                    appliquerCarte(null)
+                  }}>Retirer</button>
+                </p>
+              ) : ouvreCarte || carte.refus ? (
+                <form
+                  className="nu-carte-form"
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    setErreurCarte(null)
+                    if (codeTape.trim()) appliquerCarte(codeTape.trim())
+                  }}
+                >
+                  <input
+                    className="nu-carte-champ"
+                    value={codeTape}
+                    onChange={(e) => setCodeTape(e.target.value.toUpperCase())}
+                    placeholder="BJ-CADEAU-XXXXXX"
+                    aria-label="Code de la carte cadeau"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={24}
+                    disabled={previsualisation}
+                  />
+                  <button type="submit" className="nu-bon-calc" disabled={previsualisation || !codeTape.trim()}>Appliquer</button>
+                </form>
+              ) : (
+                <button type="button" className="nu-bon-changer" onClick={() => setOuvreCarte(true)} disabled={previsualisation}>
+                  J’ai une carte cadeau
+                </button>
+              )}
+              {(erreurCarte ?? carte.refus) ? <p className="nu-carte-refus" role="alert">{erreurCarte ?? carte.refus}</p> : null}
             </div>
           ) : null}
         </div>
@@ -682,8 +788,8 @@ export default function CasesEtCommande({
         {occupe
           ? 'Un instant…'
           : confirmer
-            ? `Payer${prixConnu && commande ? ` ${formaterCentimes(commande.total)}` : ''}`
-            : `Commander${prixConnu && commande ? ` · ${formaterCentimes(commande.total)}` : ''}`}
+            ? `Payer${prixConnu && totalAffiche !== null ? ` ${formaterCentimes(totalAffiche)}` : ''}`
+            : `Commander${prixConnu && totalAffiche !== null ? ` · ${formaterCentimes(totalAffiche)}` : ''}`}
       </button>
 
       {/* Ce qui vient après le clic, dit avant. Deux accords, pas une

@@ -166,6 +166,10 @@ async function relever(request: Request) {
      COLLECTIF_RETENTION_AUTO ouvert (et COLLECTIF_OUVERT), elle rend sans même lire la base. Ne
      lève jamais, au plus deux éditions par passage, ne touche à aucune table des particuliers. */
   after(() => import("@/lib/collectif/retentionServeur").then((m) => m.retentionQuotidienne(makeSupabase(), debut + ECHEANCE_RELEVE_MS)));
+  /* Noël 2026 (lot 3) — les cartes cadeau PROGRAMMÉES dont le jour est venu : GC2 à la personne
+     qui la reçoit, GC2b à l'acheteur. La relève passe à 7 h UTC (8 h à Paris) : « le matin du jour
+     choisi ». Sans gabarit GC2, rien ne part ni n'est marqué (réessayé le lendemain). Ne lève jamais. */
+  after(() => import("@/lib/atelier/carteServeur").then((m) => m.envoyerCartesProgrammees(makeSupabase())));
 
   try {
     const supabase = makeSupabase();
