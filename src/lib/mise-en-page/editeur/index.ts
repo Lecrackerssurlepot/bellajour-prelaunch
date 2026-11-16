@@ -11,7 +11,7 @@ export type {
 } from "./types";
 export type { GabaritNote, CatalogueRef, OptionsAjouter, OptionsComposer } from "./operations";
 export type {
-  ActionsPlanche, AvertissementsExport, CadrePhoto, CadrePlanche, CadreTexte, EtatPhoto, GabaritPour, PhotoBande, SegmentBande, VignetteChemin,
+  ActionsPlanche, AvertissementsExport, CadrePhoto, CadrePlanche, CadreTexte, EtatPhoto, GabaritPour, PhotoBande, SegmentBande, TypePour, VignetteChemin,
 } from "./selecteurs";
 
 export {
@@ -23,6 +23,8 @@ export {
   prochainId, recadrerCadre, refPour, remplacer, reordonner, reporterRecadrage, reporterTextes, retirer, separer, supprimerPlanche, vider,
 } from "./operations";
 export { contenuValide } from "../sauvegarde";
+export { REGLAGES_TYPES, estDessine, rangerParTypes, typeContenant, typeDeGabarit } from "../typesGabarits";
+export type { TypeDeGabarits } from "../typesGabarits";
 export { FORMAT_PREMIER_JET, NOM_FICHIER_MAX, PREFIXE_ABSENTE, RAISON_MAX, REGLE_PREMIER_JET, TAILLE_MAX_PREMIER_JET, VERSION_PREMIER_JET, appliquerPremierJet, idsDuMagazine, lirePremierJet, motProposition, nomComparable } from "./premierJet";
 export type { BilanPremierJet, LecturePremierJet, PremierJet } from "./premierJet";
 export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primitif, retablir } from "./etat";
@@ -30,7 +32,7 @@ export { planDepot, planifier } from "./plans";
 export { aCote, aCoteParJour, candidatesCouverture, CLE_COUVERTURE_TETE, groupes, LIBELLE_COUVERTURE_TETE, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
   actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, etiquettePages, gabaritsPour, libelleAnnuler,
-  libelleRetablir, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
+  libelleRetablir, typesPour, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";
 export { verifierInvariants } from "./invariants";
@@ -96,5 +98,6 @@ export { libelleGroupeIA } from "./bibliotheque";
 export { lieuDeTexte } from "./lieuxTextes";
 export { estPng } from "./tags";
 /* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
-export { colorerFond, colorerTexte, couleursPosees, libelleFond, libelleTexte, nomCouleur } from "./couleurs";
+export { colorerFond, colorerTexte, colorerTextes, couleursPosees, libelleFond, libelleTexte, nomCouleur, propositionsApres, textesDuCote, textesLisibles, REGLAGES_PROPOSITIONS } from "./couleurs";
+export type { PoseCouleur, PropositionCouleur, GesteProposition } from "./couleurs";
 export { fondsPlanche } from "./selecteurs";

@@ -8,6 +8,7 @@ import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
 import { texteStyle, type TexteStyle } from "../style";
 import { piecesDuFond, type CouleurLibre, type PieceFond } from "../couleursLibres";
+import { rangerParTypes, type TypeDeGabarits } from "../typesGabarits";
 import { corpsAffiche, lieuxParDefaut } from "./lieuxTextes";
 import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
@@ -262,6 +263,14 @@ export function gabaritsPour(e: EtatEditeur, plancheId: string, cible: Cible): G
   return gabaritsClasses(porteeDe(cible), refs, precedentDe(e.magazine, i, cible))
     .filter((x) => dansFamille(x.template, e.familleGabarits) || x.template.id === d.templateId)
     .map(({ template, note }) => ({ template, id: template.id, nom: template.nom, note, courant: template.id === d.templateId }));
+}
+
+/** T-208 : un type du tiroir (`rangerParTypes`), et le gabarit POSÉ quand il en fait partie (la vignette montre alors celui-là). */
+export type TypePour = TypeDeGabarits<GabaritPour> & { pose: GabaritPour | null };
+
+/** T-208 (R176) : les gabarits du tiroir rangés par TYPES, dans l'ordre du classement ; une liste déjà calculée peut être passée. */
+export function typesPour(e: EtatEditeur, plancheId: string, cible: Cible, liste?: readonly GabaritPour[]): TypePour[] {
+  return rangerParTypes(liste ?? gabaritsPour(e, plancheId, cible)).map((t) => ({ ...t, pose: t.membres.find((g) => g.courant) ?? null }));
 }
 
 export type ActionsPlanche = {

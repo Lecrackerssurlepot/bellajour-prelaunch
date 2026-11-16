@@ -148,7 +148,7 @@ sortent du tiroir, et « Texte » ajoute un titre à sa place. Le détail est au
 ### 14/11
 | Modification | Ce que ça change pour toi | Statut |
 |---|---|---|
-| Lot E : la dernière page seule (#362) | Une page gauche seule en fin de magazine, nombre de pages toujours pair. Les anciens magazines reçoivent une dernière page vide à l'ouverture | actif. **Essai Affinity pas fait** (`DECISIONS.md`, ligne 716) |
+| Lot E : la dernière page seule (#362) | Une page gauche seule en fin de magazine, nombre de pages toujours pair. Les anciens magazines reçoivent une dernière page vide à l'ouverture | actif. **Essai Affinity fait le 16/11 : FIDÈLE** (`DECISIONS.md`, D28) |
 | Lot E : la tranche saisie (#362) | Le dos se tape au centième de mm et remplace le calcul jusqu'à « Effacer ». L'écran dit lequel sert | actif |
 | Lot E : le premier jet (#362) | Bouton « Premier jet » du panneau Photos : charge un magazine composé hors de l'éditeur | actif, en création libre seulement |
 | Lot F : la lecture IA dans le tri (#363) | Rôles, mises en avant, groupes duo/trio/combo, rafales à garder avec « Accepter », captures, lieu sûr proposé en premier. Aucune identité (D29) | actif, mais seulement si on charge un fichier de lecture |
@@ -156,7 +156,7 @@ sortent du tiroir, et « Texte » ajoute un titre à sa place. Le détail est au
 ### 16/11
 | Modification | Ce que ça change pour toi | Statut |
 |---|---|---|
-| Lot G : couleurs libres et combos (#364) | Fond de couleur sur une page ou une double, couleur de chaque texte, sélecteur avec pipette, quatre combos d'après les photos | actif. **Essai Affinity pas fait** (`DECISIONS.md`, ligne 723) |
+| Lot G : couleurs libres et combos (#364) | Fond de couleur sur une page ou une double, couleur de chaque texte, sélecteur avec pipette, quatre combos d'après les photos | actif. **Essai Affinity fait le 16/11 : FIDÈLE** (`DECISIONS.md`, D28) |
 
 ### 16/11, vague 1 (branche `feat/mise-en-page-vague-1`, poussée, pas encore fusionnée)
 Tes retours du 16/11, premier temps. Rien n'est en production tant que la branche n'est pas fusionnée. Captures :
@@ -170,6 +170,26 @@ Tes retours du 16/11, premier temps. Rien n'est en production tant que la branch
 | Trois gabarits à aplat sortis du tiroir (T-209, premier temps) | E-D8c, E-D14a, E-D14b ne sont plus proposés ; leurs dispositions restent, sans fond : E-D8f, E-D14c, E-D14d. Le fond se pose en couleur libre. Un magazine qui s'en sert s'ouvre comme avant | sur la branche. Reste la palette à glisser (vague 2) |
 | Ajouter un texte proprement (T-212, premier temps) | « Texte », à côté de « Fond » dans le tiroir : un titre dans la plus grande zone libre, aligné sur la grille ; sinon sur l'endroit calme d'une photo, jamais sur un visage, en blanc sur une photo sombre. Le survol montre où. Annuler le défait | sur la branche. Reste les titres précis (vague 3) |
 
+### 16/11, vague 2, lot Palette (branche `feat/mise-en-page-palette`, poussée, pas encore fusionnée)
+Ton retour du 16/11 (« les couleurs à côté du magazine, on les glisse sur le fond ou sur une typo, et ça fait des propositions »).
+Captures : `design-explorations/editeur-lots-2026-11-16/recette/palette/`. Fiche C17.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| La palette à glisser (T-209, second temps) | Une colonne à droite de la planche : nuancier, couleurs des photos, libres, pastille barrée. On glisse une couleur sur une page (fond uni) ou un texte (sa couleur) ; la page se remplit pendant le survol ; Échap annule | sur la branche |
+| Ce qui va avec | Après un fond : le texte qui s'y lit, la page d'en face du même combo, la même couleur (double unie). Après un texte coloré : le fond qui lui va. Un clic applique, Annuler défait | sur la branche |
+| Le bouton « Fond » du tiroir retiré | La palette le remplace | sur la branche. Code dans `archive/fond-tiroir-2026-11/` |
+
+### 16/11, vague 2 : lot Types (branche `feat/mise-en-page-types`, poussée, pas encore fusionnée)
+Ton retour du 16/11 : « une différence entre les templates qui sont du coup différents vraiment en termes de position et ceux qui
+modifient un petit peu la taille d'une photo, un petit peu son orientation ». Captures : `design-explorations/editeur-lots-2026-11-16/recette/types/`.
+
+| Modification | Ce que ça change pour toi | Statut |
+|---|---|---|
+| Le tiroir par types (T-208) | Une vignette par DISPOSITION (où sont les photos les unes par rapport aux autres, la page qui porte quoi), le nombre de ses variantes dans un petit rond. Un clic sur le type posé ouvre ses variantes (même disposition, une photo plus grande, l'autre orientation, calée ailleurs). Un gabarit dessiné reste toujours en tête de son type. Une page de 2 photos de Merisa : 16 types au lieu de 406 gabarits | sur la branche. Fiche C18, R170 à R179 |
+| R par types, V par variantes (T-208) | R passe à la disposition suivante (plus à la même avec une case de plus) ; la nouvelle touche V passe à la variante suivante du type posé. « Poser » et le premier jet ne changent pas | sur la branche |
+| Le catalogue des gabarits par types | Une section « Générés : les types » : 81 types pour les 2 062 pages générées | sur la branche |
+
 ### 16/11, vague 2, lot Signatures (branche `feat/mise-en-page-signatures`, poussée, pas encore fusionnée)
 Le goût de la vitrine du 14/11 (T-214). Rien n'est en production tant que la branche n'est pas fusionnée. Comparaisons « vitrine | éditeur » :
 `design-explorations/editeur-lots-2026-11-16/recette/signatures/index.html`. Fiche C19, règles R180 à R185.
@@ -180,7 +200,7 @@ Le goût de la vitrine du 14/11 (T-214). Rien n'est en production tant que la br
 | Les textes tirés des faits | Un titre ou une légende de signature montre le jour, l'heure, le mois et le lieu sûr, la période, tant que tu n'as rien écrit ; rien d'inventé | sur la branche |
 | Le mot ou le chiffre géant | Il remplit son cadre, le même à l'écran, dans le PDF et dans l'IDML | sur la branche |
 | Le fond proposé | Poser une signature à aplat pose son fond (couleur des photos) si la page n'en a pas ; Annuler le retire | sur la branche |
-| L'ombre douce des tirages | Les tirages jetés ont une ombre, à l'écran, dans le PDF et dans l'IDML | sur la branche, essai Affinity EN ATTENTE |
+| L'ombre douce des tirages | Les tirages jetés ont une ombre, à l'écran, dans le PDF et dans l'IDML | sur la branche, essai Affinity FIDÈLE (16/11) |
 
 Total : 37 modifications recensées, plus deux lignes qui notent un remplacement, en 20 PR fusionnées (#343 à #353 et #356 à #364 ; #354 et #355 du 12/11 ne touchent pas l'éditeur). Plus les cinq de la vague 1, pas encore fusionnées.
 
@@ -204,6 +224,7 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 | Les trois gabarits d'épingles à aplat (E-D8c « Pleine + photomaton » sur fond noir, E-D14a et E-D14b « Aplats ») | 16/11, vague 1 (branche, pas encore fusionnée) | Le fond libre (#364), et leurs copies sans aplat E-D8f, E-D14c, E-D14d | `EPINGLES_RETIREES` (`epingles.ts`), écartés par `candidats` (`magazine.ts`) : ni tiroir, ni R, ni Poser. Toujours lisibles par `templateParId` : un magazine sauvegardé qui s'en sert s'ouvre avec ses aplats (harnais `verif-mep-vague-1.ts`). Les dix gabarits de couverture GARDENT leurs aplats : la couverture n'a pas de fond libre |
 | Le pré-tri (bouton « Pré-trier », R84 à R88, couches C06 et C07) | 16/11, vague 1 (branche, pas encore fusionnée) | Rien à sa place : ce qu'il voyait de juste reste dans les étiquettes et les filtres (C03), les piles (C02) et la lecture IA (C14) | `archive/pretri-2026-11/` (`pretri.ts`, `BoutonPreTri.tsx`, `verif-pretri.ts`, README). Les leçons `pretri_renverse` restent lisibles et se produisent encore (premier jet, rafale acceptée). Ses réglages restent dans `reglages.ts` (les retirer changerait l'empreinte des leçons) |
 | La grille d'artiste seule derrière O | 16/11, vague 1 (branche, pas encore fusionnée) | Le menu Grille : 6 × 6, 8 × 8, ou Artiste | La grille d'artiste n'est pas retirée : c'est la troisième option du menu (`GrilleArtiste.tsx`) |
+| R qui passait au gabarit SUIVANT du classement (souvent le même avec une case de plus) | 16/11, vague 2, lot Types (branche, pas encore fusionnée) | R passe à la tête du TYPE suivant ; V aux variantes du type posé | `autreGabarit(…, quoi)`, `editeur/operations.ts` ; `rangerParTypes`, `typesGabarits.ts`. Le classement lui-même n'a pas bougé |
 | L'export Affinity seul | 11/11 | Rien n'est retiré : Canva s'y est ajouté | PR #353. `ExportFeuille.tsx`, ligne 137 |
 | Les grilles de secours | pas remplacées | Passent après les dessinés et les générés | `magazine.ts`, lignes 245 à 263 : « grilles de ce nombre » en dernier |
 
@@ -225,11 +246,13 @@ Rien n'a été supprimé. Voici ce qui a été remplacé, corrigé ou mis de cô
 
 ## 4. Ce qui n'a pas été essayé ou reste fragile
 
-**Fusionné sans essai Affinity (D28).** Toi seul as donné l'ordre de fusionner.
-- **Lot E, dernière page seule** (#362, 14/11). Le fichier IDML d'une page gauche seule en fin de document n'a jamais été rouvert dans Affinity. Prouvé : XML valide, les autres spreads identiques à l'octet. Pas prouvé : le nombre de pages, la position du dernier spread, les cadres à gauche du pli. Le PDF, lui, est lu par un outil (216 × 303 vérifié). Générateur prêt : `scripts/idml-essai-derniere.ts`.
-- **Lot G, couleurs libres** (#364, 16/11). Les nuances nommées, le fond sous les photos et la couleur des textes n'ont pas été relus par Affinity. Un magazine sans couleur libre sort identique à l'octet. Générateur prêt : `scripts/idml-essai-couleurs.ts`.
-- **Lot Signatures, ombre douce des tirages** (branche du 16/11). L'élément `DropShadowSetting` est FIDÈLE seul (29/10) ; avec un contour intérieur et une rotation sur le même cadre, jamais rouvert dans Affinity. Générateur prêt : `scripts/idml-essai-signatures.ts`.
-- Conséquence : tant que l'essai n'est pas fait, ce qu'Affinity ouvre peut différer de l'écran sur ces deux points. Le PDF Canva n'est pas concerné.
+**Fusionnés sans essai Affinity, puis essayés le 16/11 (D28) : FIDÈLES.** Tu avais donné l'ordre de fusionner sans l'essai ; le 16/11, tu as autorisé
+l'écriture des fichiers d'essai sur ton Bureau, et Affinity les a relus sans écart.
+- **Lot E, dernière page seule** (#362). Affinity relit 4 pages, la dernière seule, à gauche du pli, chaque cadre au centième de mm, aucune image étirée.
+- **Lot G, couleurs libres** (#364). Les fonds (page, double en un seul rectangle, page gauche seule) et les couleurs de texte arrivent aux valeurs exactes, sous
+  style comme sans style, et sur la couverture.
+- Fichiers : `~/Desktop/Bellajour/test-idml/derniere-lot-e` et `couleurs-lot-g`. Détail valeur par valeur : `DECISIONS.md`, D28, « Essais du 16/11/2026 ».
+- **Lot Signatures, ombre douce des tirages** (vague 2, 16/11) : essayée AVANT la fusion, le même jour. Cinq tirages tournés, à bord blanc, chacun avec son ombre : relus mode Produit, 35 %, flou 5 mm, décalage 2 mm vers le bas, noire ; angles et contours exacts ; le chiffre géant au corps calculé. Fichiers : `test-idml/signatures`.
 
 **Jamais vu en vrai.**
 - **La pipette** (lot G) : jamais essayée dans un vrai navigateur. Elle n'existe que dans Chrome (`Nuances.tsx`, ligne 18) : ailleurs, elle ne s'affiche pas.
@@ -275,4 +298,4 @@ Tes retours du 16/11 sont devenus sept tickets (T-208 à T-214, dans `docs/backl
 - Des titres précis : le plat, le lieu nommé (« Mont Fuji », « BMW Welt »), des titres qui se répondent (T-212, second temps).
 - Plus tard, le bouton « Composer » sur le site, testé sur un vrai dossier sans retoucher les règles.
 
-**En attente de toi, sans urgence** : les essais Affinity des lots E et G, les 25 décisions du 12/11 et les décisions 2 à 15 du 13/11, l'effacement des empreintes de visages de la démo.
+**En attente de toi, sans urgence** : les 25 décisions du 12/11 et les décisions 2 à 15 du 13/11, l'effacement des empreintes de visages de la démo.

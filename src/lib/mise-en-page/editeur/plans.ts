@@ -18,7 +18,7 @@ import { styleValide } from "../style";
 import { ajusterCadre, calque, deplacerCadres, miroir, placerCadre, poserLibre, retirerCadres, type SensCalque } from "./libre";
 import { planDepotCouverture, planGesteCouverture } from "./gestesCouverture";
 import { appliquerPremierJet } from "./premierJet";
-import { colorerFond, colorerTexte, libelleFond, libelleTexte } from "./couleurs";
+import { colorerFond, colorerTexte, colorerTextes, libelleFond, libelleTexte } from "./couleurs";
 import { propositionRafale, rafaleDe } from "./lectureIA";
 import { ajouterTexte, type LecturePourTexte } from "./texteAjoute";
 import { TRAMES, TRAME_DEFAUT } from "./grilleMiseEnPage";
@@ -270,8 +270,9 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
       return { op: "choisirGabarit", libelle: "Changer de gabarit", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
     }
     case "autreGabarit": {
-      const is = autreGabarit(m, g.plancheId, g.cible, g.sens, cat, e.familleGabarits);
-      return { op: "autreGabarit", libelle: "Autre disposition", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
+      /* T-208 : R va au type suivant, V (`variante`) à la variante suivante du même type */
+      const is = autreGabarit(m, g.plancheId, g.cible, g.sens, cat, e.familleGabarits, g.variante ? "variante" : "type");
+      return { op: "autreGabarit", libelle: g.variante ? "Autre variante" : "Autre disposition", plancheId: g.plancheId, issue: is, args: { plancheId: g.plancheId, cible: g.cible } };
     }
     case "fusionner": {
       const id = courante(e, g.plancheId);
@@ -350,6 +351,13 @@ function planifierBrut(e: EtatEditeur, g: GesteModifiant): Plan | null {
     }
     case "colorerTexte":
       return g.ref ? simple("colorerTexte", libelleTexte(g.couleur), g.ref.plancheId, colorerTexte(m, g.ref, g.couleur), { ref: g.ref }) : planRien(e);
+    case "colorerTextes": {
+      /* lot Palette : tous les textes visés sont de la MÊME planche (sinon rien), une seule entrée d'historique */
+      const refs = Array.isArray(g.refs) ? g.refs : [];
+      const id = refs[0]?.plancheId;
+      if (!id || id === ID_COUVERTURE || refs.some((r) => r.plancheId !== id)) return planRien(e);
+      return { ...simple("colorerTextes", libelleTexte(g.couleur), id, colorerTextes(m, refs, g.couleur), { plancheId: id, refs }) };
+    }
     case "accepterRafale": {
       /* lot F (R145) : la proposition de la lecture IA sur une rafale, posée d'un geste sur ses photos encore sans marque */
       const r = typeof g.tete === "string" ? rafaleDe(e.lectureIA, g.tete) : null;

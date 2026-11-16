@@ -301,7 +301,7 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       if (err.length) throw new Error(`invariants après ${JSON.stringify(g)} : ${err.join(" ; ")}`);
     };
     let msg: string | null = null;
-    let nbListe = 0, nbR = 0, vus = 0, nbGeneres = 0, valide = true, retour = true, pose = "", miroirOk = false, retireOk = false, nbPlus = 0;
+    let nbListe = 0, nbTypes = 0, nbR = 0, vus = 0, nbGeneres = 0, valide = true, retour = true, pose = "", miroirOk = false, retireOk = false, nbPlus = 0;
     try {
       pas({ type: "poser", cible: { type: "double", plancheId: "pl-2" }, ids, confirme: true });
       pas({ type: "naviguer", plancheId: "pl-2" });
@@ -312,17 +312,20 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       nbPlus = nbListe - O.PLAFOND_TIROIR;
       if (!liste.some((x) => x.courant && x.id === pose)) throw new Error("le gabarit courant n'est pas dans le tiroir");
       if (new Set(liste.map((x) => x.id)).size !== liste.length) throw new Error("un gabarit deux fois dans le tiroir");
-      const vusIds = new Set<string>([pose]);
-      for (let i = 0; i < liste.length; i++) {
+      /* T-208 : R passe par chaque TYPE (sa tête) et revient au type du départ */
+      const types = O.typesPour(e, "pl-2", "double", liste);
+      nbTypes = types.length;
+      const vusTypes = new Set<string>([O.typeDeGabarit(templateParId(pose)!)]);
+      for (let i = 0; i < types.length; i++) {
         pas({ type: "touche", cle: "r", shift: false, meta: false, ctrl: false, alt: false, survol: { plancheId: "pl-2", cible: "double" } });
         nbR++;
         const t = e.magazine.planches[1].double!.templateId;
-        vusIds.add(t);
+        vusTypes.add(O.typeDeGabarit(templateParId(t)!));
         if (!templateParId(t)) valide = false;
         if (i % 9 === 0 && !O.contenuValide(JSON.parse(JSON.stringify(e.magazine)))) valide = false;
       }
-      vus = vusIds.size;
-      retour = e.magazine.planches[1].double!.templateId === pose;
+      vus = vusTypes.size;
+      retour = types.findIndex((t) => t.membres.some((g) => g.id === e.magazine.planches[1].double!.templateId)) === 0;
       /* un gabarit généré choisi au tiroir : ses cadres sont ceux de l'id, le miroir les retourne et se relit, retirer une photo recompose */
       const choisi = liste.find((x) => x.id.startsWith("GD1-") && x.id !== pose)!;
       pas({ type: "choisirGabarit", plancheId: "pl-2", cible: "double", templateId: choisi.id });
@@ -339,8 +342,8 @@ export function verifierMepRecette(rapporter: (nom: string, reussi: boolean) => 
       for (let i = 0; i < 3 + nbR; i++) pas({ type: "annuler" });
     } catch (x) { msg = x instanceof Error ? x.message : String(x); }
     if (msg) console.log(`   ${msg}`);
-    rapporter(`D1 éditeur : « Poser » six photos sur une double : ${nbListe} gabarits au tiroir dont ${nbGeneres} générées ; R les parcourt tous (${nbR} pas, ${vus} différents) et revient au départ ; chaque pas passe les invariants et la sauvegarde ; le gabarit choisi donne les cadres de son id, le miroir les retourne, retirer une photo recompose ; annuler tout revient`,
-      msg === null && nbGeneres > 100 && vus === nbListe && retour && valide && miroirOk && retireOk);
+    rapporter(`D1 éditeur : « Poser » six photos sur une double : ${nbListe} gabarits au tiroir dont ${nbGeneres} générées, en ${nbTypes} types ; R passe par chaque type (${nbR} pas, ${vus} différents) et revient au premier ; chaque pas passe les invariants et la sauvegarde ; le gabarit choisi donne les cadres de son id, le miroir les retourne, retirer une photo recompose ; annuler tout revient`,
+      msg === null && nbGeneres > 100 && nbTypes >= 3 && nbTypes < nbListe && vus === nbTypes && retour && valide && miroirOk && retireOk);
     rapporter(`D1 tiroir : le plafond (${O.PLAFOND_TIROIR}) est plus petit que la liste (${nbListe}) : « Plus » ajoute ${O.PAS_TIROIR} à chaque clic (${nbPlus} derrière le plafond)`, nbPlus > 0 && O.PAS_TIROIR >= O.PLAFOND_TIROIR);
     void pose;
   }

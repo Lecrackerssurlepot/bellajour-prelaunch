@@ -713,14 +713,14 @@ photos (Martinique, dos 2,66 mm = 32 pages en brillant), fichiers `~/Desktop/Bel
 Ce qui entre donc dans l'export : le document non vis-à-vis de largeur variable, les colonnes de marge comme repères des
 plis, les sauts de ligne d'un texte répété. Les trois gabarits essayés (CV-01, CV-05, CV-11) couvrent les objets de tous
 les autres (photos pleines et à bord blanc, aplats de face et de dos, textes blanc et noir, plusieurs mots-titres).
-**D28, suite (13/11/2026, lot E : la dernière page seule) : essai Affinity EN ATTENTE.** Nouveauté d'export : un spread d'UNE page GAUCHE
+**D28, suite (13/11/2026, lot E : la dernière page seule) : essai Affinity FAIT LE 16/11, verdict FIDÈLE (plus bas).** Nouveauté d'export : un spread d'UNE page GAUCHE
 (`PageCount="1" BindingLocation="1"`, page décalée de −595,2756 pt, numéro pair) en fin de document, jamais écrit avant. Prouvé jusqu'ici : XML bien formé
 (xmllint), 4 pages / 4 pages au `Section`, les spreads d'avant identiques à l'octet, l'ancien format identique à l'octet (harnais). PAS prouvé : la relecture par
 Affinity (nombre de pages, position du dernier spread, cadres à gauche du pli). Le générateur est prêt, `scripts/idml-essai-derniere.ts <dossier de JPEG> <sortie>`
 (Affinity ne lit que le Bureau : sortie `~/Desktop/Bellajour/test-idml/derniere-lot-e`, valeurs attendues dans `attendu.json`) ; l'agent du lot n'avait pas le
 droit d'écrire sur le Bureau. À faire AVANT de compter la dernière page comme relue fidèlement ; sans verdict FIDÈLE, l'export de l'intérieur d'un magazine à
 dernière page n'est pas garanti dans Affinity (le PDF pour Canva, lui, est lu par pdf-lib : 216 × 303 mm vérifié).
-**D28, suite (14/11/2026, lot G : les couleurs libres) : essai Affinity EN ATTENTE.** Nouveautés d'export : un rectangle « Fond », « Fond gauche » ou
+**D28, suite (14/11/2026, lot G : les couleurs libres) : essai Affinity FAIT LE 16/11, verdict FIDÈLE (plus bas).** Nouveautés d'export : un rectangle « Fond », « Fond gauche » ou
 « Fond droite » par page ou double colorée (après le papier, sous les aplats du gabarit, `ContentType="Unassigned"`, sans contour, sur le calque : la forme
 des aplats déjà relus) ; des nuances RVB NOMMÉES de plus dans Graphic.xml (`Color/Libre-rrggbb`, « Ocre #ca7749 » ; sans style, les rôles posés `Color/Accent`…
 à leur valeur d'origine) ; un `FillColor` sur la plage d'un texte vers ces nuances. Prouvé jusqu'ici (harnais) : aucune nuance orpheline, le fond d'une double
@@ -729,8 +729,27 @@ photos, couleur des textes). Le générateur est prêt : `scripts/idml-essai-cou
 couverture ; valeurs attendues dans `attendu.json`). La sortie se choisit en argument (Affinity ne lit bien que le Bureau) ; l'agent du lot n'écrit pas sur
 le Bureau. À faire AVANT de compter fonds et couleurs de texte comme relus fidèlement ; le PDF pour Canva, lui, est relu au harnais (couleurs des fonds et
 des textes dans le flux de la page).
+**Essais du 16/11/2026 (lots E et G) — verdict FIDÈLE.** Mathias a autorisé l'écriture des fichiers d'essai sur le Bureau. Générés depuis main (dea74261)
+sur les douze photos de l'essai du lot B (`~/Desktop/Bellajour/test-idml/couverture-lot-b/Links`), ouverts un par un dans Affinity par le SDK
+(`Document.loadAsync`), relus nœud par nœud (`getSpreadBaseBox`, `brushFillDescriptor.fill.colour.rgba8`, `story.getGlyphAtts(0)`), refermés.
+- **Lot E** (`test-idml/derniere-lot-e/magazine.idml`) : 4 pages, 3 spreads ; le dernier spread porte UNE page (`pageCount` 1, `firstPageIndex` 3, page 4,
+  210 × 297), à gauche du pli : les deux photos à x = 15 (côté tranche), le texte « Fin » à 135 / 104, 55 × 84, chaque cadre au centième de mm des valeurs
+  d'`attendu.json` (15/15 85 × 128,5 ; 15/148,5 85 × 128,5) ; 0 image étirée sur 6 (rapport du cadre de l'image = celui des pixels, 1 500 × 2 000 ou
+  2 000 × 1 500) ; rendu du spread vu. La dernière page seule entre donc dans l'export comme relue fidèlement.
+- **Lot G, sous style** (`test-idml/couleurs-lot-g/magazine-style.idml`, paire T-03) : 6 pages ; « Fond droite » de la page 1 à 0 / −3, 213 × 303 en
+  157 126 100 (hexa libre #9d7e64) ; « Fond » de la double en UN rectangle −3 / −3, 426 × 303 en 110 86 37 (aplat sourd) ; « Fond gauche » de la planche
+  suivante en 237 218 191 (aplat clair) ; celui de la dernière page en 35 31 32 (nuit) ; chaque fond SOUS la photo et le texte (premier enfant du calque).
+  Textes : « Madère » 255 255 255 (papier), « Funchal » 61 111 146 (accent), « Le marché » 31 58 92 (hexa libre #1f3a5c), « Fin » 255 255 255.
+- **Lot G, sans style** (`magazine-sans-style.idml`) : les mêmes fonds aux valeurs d'ORIGINE des rôles (aplat sourd 188 151 125, aplat clair
+  235 218 206, nuit 35 31 32, l'hexa 157 126 100 inchangé) ; « Funchal » à l'accent d'origine 133 96 69 ; les autres textes comme sous style.
+- **Lot G, couverture** (`couverture.idml`, CV-01, dos 3 mm) : une page ; le dos, aplat de 3 mm à x = 210, en 110 86 37 ; le mot-titre « MADÈRE »
+  à l'encre 35 31 32 (aucun `FillColor` sur la plage : l'encre du style Titre) au corps calculé 104 pt ; « Juin 2026 » en 31 58 92 (hexa libre).
+Toutes les valeurs sont celles d'`attendu.json`, sans écart. Ce que l'essai ne dit pas : le NOM des nuances (« Ocre #9d7e64 ») n'est pas lisible par le
+SDK, seules leurs valeurs le sont. Pendant l'essai, Affinity a perdu une fois la liaison du SDK au chargement du deuxième fichier (délai dépassé) ; le
+document était pourtant ouvert et complet à la reprise : c'est le délai du SDK, pas le fichier.
+**Conséquence :** fonds de page libres, couleurs de texte libres et dernière page seule sont relus fidèlement ; rien à changer dans `idml.ts`.
 
-**D28, suite (16/11/2026, lot Signatures : l'ombre douce des tirages) : essai Affinity EN ATTENTE.** Nouveauté d'export : sur un cadre photo
+**D28, suite (16/11/2026, lot Signatures : l'ombre douce des tirages) : essai Affinity FAIT LE 16/11, verdict FIDÈLE (fin du paragraphe).** Nouveauté d'export : sur un cadre photo
 qui porte `ombre`, l'élément `<TransparencySetting><DropShadowSetting Mode="Drop" BlendMode="Multiply" Opacity="35" Size="14.1732" XOffset="0"
 YOffset="5.6693" EffectColor="Color/Black"/></TransparencySetting>`, copié attribut pour attribut de l'essai du 29/10 « photo avec ombre portée
 (cadre) » (verdict FIDÈLE) et placé comme lui (après la géométrie, avant `FrameFittingOption`) ; seules les valeurs sont les nôtres. Prouvé
@@ -738,6 +757,14 @@ YOffset="5.6693" EffectColor="Color/Black"/></TransparencySetting>`, copié attr
 l'ombre sur un cadre qui porte AUSSI un contour intérieur et une rotation (le cas des tirages), ni le corps des titres géants au-delà de
 77 pt. Générateur prêt : `scripts/idml-essai-signatures.ts <dossier de JPEG> <sortie>` (deux IDML et `attendu.json`) ; l'agent du lot
 n'écrit pas sur le Bureau. Le PDF pour Canva n'est pas concerné (douze couches en produit, au harnais).
+**Essai du 16/11/2026, avant la fusion du lot — verdict FIDÈLE.** Généré sur la branche du lot (`test-idml/signatures`, photos de l'essai
+du lot B), ouvert dans Affinity par le SDK, relu nœud par nœud. Sous style (T-01) : 8 pages ; les cinq tirages de SG-09 portent chacun un
+`OuterShadowLayerEffect` actif, mode Produit (Multiply), opacité 0,35, flou 118,11 px à 600 ppp = 5 mm (14,17 pt), décalage 47,24 px = 2 mm, angle
+π/2 (vers le bas), noir ; rotations relues −1,8°, 5°, −6°, −7°, 6° ; contours 11,34 pt (4 mm) et 9,92 pt (3,5 mm) ; aucune image étirée (échelle
+X = échelle Y, cisaillement nul : la rotation est portée par le cadre, l'image garde la sienne à 0) ; l'ombre passe sous le tirage et au-dessus
+du fond (rendu du spread vu). SG-01 : « 12 » en Bodoni Moda à 506,5 pt (le corps d'`attendu.json`), une ligne ; SG-03 : la date et l'heure, puis
+l'heure sous chaque vignette, en Hanken Grotesk 7 et 6 pt. Sans style : les mêmes cinq ombres, le géant en Arial à 430,5 pt (le corps attendu).
+**Conséquence :** l'ombre douce, sur un cadre tourné à contour intérieur, et le géant au-delà de 77 pt entrent dans l'export comme relus fidèlement.
 
 D30 (16/11/2026) — **Le goût entre dans l'éditeur par des doubles SIGNATURE, et leurs textes ne viennent que des faits.** Proposé par le lot
 Signatures (T-214), à confirmer par Mathias à la recette. Une signature est une double de la vitrine du 14/11 redite en cadres, avec un nom

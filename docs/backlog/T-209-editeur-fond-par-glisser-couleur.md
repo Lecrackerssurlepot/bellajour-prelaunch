@@ -40,3 +40,12 @@ Une palette visible à côté du magazine (nuancier, combos, couleurs des photos
   fond noir), `18` (E-D14c au survol, sans aplat).
 
 **Reste (vague 2)** : la palette à côté du magazine, glisser une couleur sur le fond ou sur un texte, avec des propositions.
+
+**Second temps, le 16/11, vague 2**, branche `feat/mise-en-page-palette` (pas encore fusionnée), fiche C17, règles R160 à R166.
+- Une palette en colonne à droite de la planche (nuancier, couleurs des photos, libres, pastille barrée) : on glisse une couleur sur
+  une page (fond uni) ou sur un texte (sa couleur). Aperçu pendant le survol, Échap annule, un clic sur une pastille ne fait rien.
+- Après un fond posé : le texte qui s'y lit (4,5:1), la page d'en face du même combo, la même couleur (double unie). Après un texte
+  coloré : le fond qui lui va. `propositionsApres` est pure et testée (`scripts/verif-mep-palette.ts`, 22 vérifications).
+- Le bouton « Fond » du tiroir est retiré (archive/fond-tiroir-2026-11/) : la palette le remplace.
+- Reste : le fond libre de la COUVERTURE (ses dix gabarits portent leurs aplats ; la palette n'y colore que les textes) ; le glisser
+  au clavier ; la recette de Mathias avant fermeture. Captures : `design-explorations/editeur-lots-2026-11-16/recette/palette/`.

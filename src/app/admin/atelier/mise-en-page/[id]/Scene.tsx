@@ -574,7 +574,7 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
     );
   }
   return (
-    <div className={cls("ed-txt", libelle && !f.parDefaut && "ed-txt--libelle", libelle && f.parDefaut && "ed-txt--auto")} style={style} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
+    <div className={cls("ed-txt", libelle && !f.parDefaut && "ed-txt--libelle", libelle && f.parDefaut && "ed-txt--auto")} style={style} data-texte={fantome ? undefined : `${refT.plancheId}|${refT.cible}|${refT.index}`} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
       aria-label={fantome ? undefined : `Modifier : ${libelle ? f.parDefaut ?? LIBELLE[f.role] : f.contenu}`}
       onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); }}
       onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); } }}>

@@ -383,15 +383,17 @@ sc(32, "Filtre « Sur cette double page » : même message, filtre inchangé", (
 });
 
 // Gabarits
-sc(33, "R, R, Maj+R : le classement → 2e → 3e → 2e", () => {
+sc(33, "R, R, Maj+R : le type posé → la tête du 2e type → du 3e → du 2e (T-208 : R parcourt les TYPES)", () => {
   const s = new Seance("A:P B:P C:P").pose(2, "droite", ["A", "B", "C"]).zero();
   s.g({ type: "naviguer", plancheId: pl(2) });
   const liste = O.gabaritsPour(s.e, pl(2), "droite").map((x) => x.id);
-  ok(liste.length >= 3, "au moins trois gabarits classés");
-  eq(s.tpl(2, "droite"), liste[0], "départ");
-  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), liste[1], "R");
-  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), liste[2], "R");
-  s.g({ type: "touche", cle: "R", shift: true }); eq(s.tpl(2, "droite"), liste[1], "Maj+R");
+  const types = O.typesPour(s.e, pl(2), "droite").map((t) => t.tete.id);
+  ok(types.length >= 3, "au moins trois types classés");
+  eq(s.tpl(2, "droite"), liste[0], "départ : le premier du classement (« Poser » n'a pas bougé)");
+  ok(O.typesPour(s.e, pl(2), "droite")[0].pose?.id === liste[0], "il est dans le premier type");
+  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), types[1], "R");
+  s.g({ type: "touche", cle: "r" }); eq(s.tpl(2, "droite"), types[2], "R");
+  s.g({ type: "touche", cle: "R", shift: true }); eq(s.tpl(2, "droite"), types[1], "Maj+R");
   eq(s.hist, 3, "hist"); eq(s.ids(2, "droite"), ["A", "B", "C"], "photos et ordre");
   const n = O.gabaritsPour(s.e, pl(2), "droite");
   ok(n.every((x, i) => i === 0 || n[i - 1].note <= x.note + 1e-9 || n[i - 1].courant || x.courant), "notes croissantes");
@@ -447,7 +449,7 @@ sc(41, "R pendant un recadrage : le recadrage s'enregistre, puis le gabarit chan
   const s = new Seance("A:P B:P C:P").pose(2, "droite", ["A", "B", "C"]).zero();
   s.g({ type: "ouvrirRecadrage", ref: ref(2, "droite", 0) }).g({ type: "zoomerImage", zoom: 2 });
   s.g({ type: "touche", cle: "r" });
-  eq(s.hist, 2, "Hist +2"); eq(s.e.recadrage, null, "recadrage fermé"); eq(s.tpl(2, "droite"), O.gabaritsPour(s.e, pl(2), "droite").map((x) => x.id)[1], "gabarit suivant");
+  eq(s.hist, 2, "Hist +2"); eq(s.e.recadrage, null, "recadrage fermé"); eq(s.tpl(2, "droite"), O.typesPour(s.e, pl(2), "droite").map((t) => t.tete.id)[1], "tête du type suivant (T-208)");
   eq(s.e.historique.passe.map((x) => x.libelle), ["Recadrer", "Autre disposition"], "les deux entrées");
 });
 sc(42, "Répétition pénalisée : Pl.3 ne reprend pas le gabarit de Pl.2", () => {

@@ -14,6 +14,7 @@ import {
 import { MAX_PHOTOS_DOUBLE, MAX_PHOTOS_PAGE } from "../grilles";
 import { partEnRupture, partVide } from "../genere";
 import { genereesDoublesPour } from "../genereDouble";
+import { rangerParTypes, typeContenant } from "../typesGabarits";
 import { ZOOM_MIN, cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
 import { PAGE_L, type Rect } from "../geometrie";
 import type { Template } from "../types";
@@ -462,8 +463,13 @@ export function choisirGabarit(m: Magazine, plancheId: string, cible: Cible, tem
   return issue(r.magazine, null, { textesPerdus: r.textesPerdus });
 }
 
-/** 16. Le suivant (ou précédent) dans `gabaritsClasses`, en boucle, dans la famille choisie (06/11). */
-export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens: 1 | -1, cat: CatalogueRef, famille: FamilleGabarits = "tous"): Issue {
+/**
+ * 16. R (06/11 ; T-208, 16/11, R177) : la TÊTE du type suivant (ou précédent), en boucle, dans la famille choisie. Les types rangent
+ * `gabaritsClasses` sans en changer l'ordre (`rangerParTypes`) : R passe d'une disposition à une autre, plus d'une taille à l'autre.
+ * `quoi: "variante"` (touche V, R178) : la variante suivante DU TYPE POSÉ (la tête, puis l'ordre du classement), en boucle.
+ * Un gabarit hors de la liste (retiré, retouché en libre) : R va à la tête du premier type, V ne fait rien.
+ */
+export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens: 1 | -1, cat: CatalogueRef, famille: FamilleGabarits = "tous", quoi: "type" | "variante" = "type"): Issue {
   const i = indexPlanche(m, plancheId);
   if (i < 0) return issue(m, "rien");
   const d = dispositionDe(m.planches[i], cible);
@@ -472,9 +478,19 @@ export function autreGabarit(m: Magazine, plancheId: string, cible: Cible, sens:
   const liste = gabaritsClasses(porteeDe(cible), ids.map((id) => refPour(cat, id)), precedentDe(m, i, cible))
     .filter((x) => dansFamille(x.template, famille) || x.template.id === d.templateId);
   if (liste.length < 2) return issue(m, "rien");
-  const k = liste.findIndex((x) => x.template.id === d.templateId);
+  const types = rangerParTypes(liste);
+  const k = typeContenant(types, d.templateId);
   const s = sens === -1 ? -1 : 1;
-  const suivant = k < 0 ? liste[0].template : liste[(k + s + liste.length) % liste.length].template;
+  let suivant: Template;
+  if (quoi === "variante") {
+    if (k < 0 || types[k].membres.length < 2) return issue(m, "rien");
+    const ms = types[k].membres;
+    const j = ms.findIndex((x) => x.template.id === d.templateId);
+    suivant = ms[(j + s + ms.length) % ms.length].template;
+  } else {
+    if (!types.length || (k >= 0 && types.length < 2)) return issue(m, "rien");
+    suivant = k < 0 ? types[0].tete.template : types[(k + s + types.length) % types.length].tete.template;
+  }
   return choisirGabarit(m, plancheId, cible, suivant.id, cat);
 }
 

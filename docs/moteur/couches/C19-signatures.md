@@ -1,7 +1,7 @@
 # C19 : les doubles signature (le goût de la vitrine du 14/11)
 
 **Statut** : branche `feat/mise-en-page-signatures` (vague 2 du 16/11, T-214), poussée, pas encore fusionnée. Règles R180 à R185
-(`docs/reference/REGLES-TRI.md`). Essai Affinity de l'ombre douce EN ATTENTE (D28, suite du 16/11).
+(`docs/reference/REGLES-TRI.md`). Essai Affinity de l'ombre douce FIDÈLE le 16/11 (D28, suite du 16/11).
 
 Mathias, 16/11, après la vitrine Merisa : « j'adore les présentations que tu as pu faire […] je trouve ça très intéressant qu'il y ait
 un minimum de goût qui puisse être développé ». Le 14/11, sur l'éditeur : « Tes mises en page ne sont pas impressionnantes. » Il juge
@@ -98,9 +98,8 @@ de Merisa, captures de la planche par Chrome sans fenêtre (repères d'atelier �
 
 ## L'essai Affinity (D28)
 `scripts/idml-essai-signatures.ts <dossier de JPEG> <sortie>` : SG-09 (cinq tirages ombrés, contour et rotation), SG-01 (le géant) et
-SG-03 (les heures), sous style et sans style, plus `attendu.json`. EN ATTENTE : à faire par le chef de projet, avec l'accord de Mathias,
-sur le Bureau. Sans verdict FIDÈLE, l'ombre des tirages n'est pas garantie dans Affinity (l'élément seul est FIDÈLE au 29/10 ; sa
-combinaison avec un contour et une rotation n'a pas été vue).
+SG-03 (les heures), sous style et sans style, plus `attendu.json`. FAIT le 16/11 par le chef de projet, avec l'accord de Mathias, sur le
+Bureau (`test-idml/signatures`) : FIDÈLE, ombres, rotations, contours et corps géants relus aux valeurs attendues (DECISIONS.md, D28).
 
 ## Historique
 - 16/11 : onze signatures, quatre briques, recette « vitrine | éditeur » (branche `feat/mise-en-page-signatures`).

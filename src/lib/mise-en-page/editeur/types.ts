@@ -243,7 +243,8 @@ export type GesteModifiant =
   | { type: "deplacerPhoto"; de: RefCadre; vers: { plancheId: string; cible: Cible; position?: number }; confirme?: boolean }
   | { type: "reordonner"; plancheId: string; cible: Cible; de: number; vers: number; confirme?: boolean }
   | { type: "choisirGabarit"; plancheId: string; cible: Cible; templateId: string; confirme?: boolean }
-  | { type: "autreGabarit"; plancheId: string; cible: Cible; sens: 1 | -1; confirme?: boolean }
+  /* T-208 (16/11) : R passe au TYPE suivant ; `variante` (touche V) à la variante suivante du type posé */
+  | { type: "autreGabarit"; plancheId: string; cible: Cible; sens: 1 | -1; confirme?: boolean; variante?: boolean }
   | { type: "fusionner"; plancheId?: string; confirme?: boolean }
   | { type: "separer"; plancheId?: string; confirme?: boolean }
   | { type: "insererDouble"; apres?: string; confirme?: boolean }
@@ -279,6 +280,8 @@ export type GesteModifiant =
   | { type: "colorerFond"; plancheId: string; cible: Cible; couleur: CouleurLibre | null; confirme?: boolean }
   /** Lot G : la couleur d'un texte (intérieur ou couverture) ; `null` rend celle du gabarit. Pendant la séance de ce texte, elle s'y fond (une entrée). */
   | { type: "colorerTexte"; ref: RefCadre; couleur: CouleurLibre | null; confirme?: boolean }
+  /** Lot Palette (T-209, second temps) : la couleur de PLUSIEURS textes d'une même planche en un geste (la proposition « Texte » d'un fond posé). Une entrée d'historique. */
+  | { type: "colorerTextes"; refs: RefCadre[]; couleur: CouleurLibre; confirme?: boolean }
   /** T-212 (16/11) : poser un titre à sa place sur la page (ou la double) : la plus grande zone libre alignée sur la grille `trame`
    *  (celle que l'écran montre, 6 par défaut), sinon l'endroit le plus calme d'une photo lue. Une entrée d'historique. */
   | { type: "ajouterTexte"; plancheId: string; cible: Cible; trame?: Trame; confirme?: boolean }
@@ -380,7 +383,7 @@ export type OpPlan =
   /* lot E : le premier jet */
   | "chargerPremierJet"
   /* lot G : les couleurs libres */
-  | "colorerFond" | "colorerTexte"
+  | "colorerFond" | "colorerTexte" | "colorerTextes"
   /* T-212 : un texte ajouté proprement */
   | "ajouterTexte";
 
