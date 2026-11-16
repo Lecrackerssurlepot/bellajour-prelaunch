@@ -16,6 +16,7 @@ import { reglementAvecCarte } from "@/lib/atelier/carteCommande";
 import { META_CARTE } from "@/lib/atelier/carteServeur";
 import { CODE_FISCAL_LIVRAISON, portClient, totalCommande } from "@/lib/atelier/livraison";
 import { libelleLigne, quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { regleDuDossier } from "@/lib/atelier/noelExemplaire";
 import { JOURS_LIVRAISON } from "@/lib/atelier/urgence";
 import {
   assurerCreditFondatrice,
@@ -286,7 +287,10 @@ export async function POST(request: Request) {
        bon de commande a jouée à l'écran : ce que le client a lu est ce que
        Stripe débite, ligne par ligne. */
     const quantite = quantiteDuDossier(numero.quantite);
-    const decompte = decompteExemplaires(centimes, quantite);
+    /* Noël 2026 (lot 4) : la règle du 2e exemplaire, relue comme la page
+       l'a lue (`regleDuDossier`) : même jour, même pays, même couverture. */
+    const regle = await regleDuDossier(supabase, { id: numero.id, pays_livraison: numero.pays_livraison ?? null });
+    const decompte = decompteExemplaires(centimes, quantite, regle);
     if (!decompte) {
       console.error("[atelier/checkout] décompte impossible", numero.id, centimes, quantite);
       return NextResponse.json({ error: "prix_indisponible" }, { status: 409 });
@@ -405,6 +409,7 @@ export async function POST(request: Request) {
       livraisonCentimes: port.brutCentimes,
       creditCentimes: remiseAppliquee ? CREDIT_FONDATRICE_CENTIMES : 0,
       portOffert: portOffertFondateur,
+      regle,
     });
     const portOffert = commande.livraisonOfferte;
     const livraison = commande.livraison;
@@ -621,6 +626,10 @@ export async function POST(request: Request) {
           prix_centimes: String(centimes),
           prix_ht_centimes: String(numero.prix_ht_centimes ?? ""),
           quantite: String(quantite),
+          /* La règle appliquée et, pour Noël, la couverture du 2e exemplaire :
+             l'atelier la lit pour savoir s'il compose une autre couverture. */
+          regle_exemplaires: decompte.regle,
+          couverture_exemplaire: decompte.regle === "noel" && quantite === 2 ? regle.couverture : "",
           total_produit_centimes: String(decompte.totalCentimes),
           livraison_centimes: String(livraisonDue),
           livraison_zone: port.zone,

@@ -49,6 +49,7 @@ import { devisLivraison } from "@/lib/atelier/cloudprinter";
 import { portClient, ttcDepuisHt, zonePour } from "@/lib/atelier/livraison";
 import { totalPour, ttcPourPays } from "@/lib/atelier/prix";
 import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { regleDuDossier } from "@/lib/atelier/noelExemplaire";
 import { creditDuPourMail } from "@/lib/atelier/fondatrice";
 
 export const runtime = "nodejs";
@@ -171,7 +172,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "devis_indisponible" }, { status: 502 });
     }
     const quantite = quantiteDuDossier(numero.quantite);
-    const totalProduit = totalPour(ttcMagazine, quantite) ?? ttcMagazine * quantite;
+    /* Noël 2026 : le 2e exemplaire suit la règle du pays CHOISI ici. */
+    const regle = await regleDuDossier(supabase, { id: numero.id, pays_livraison: pays });
+    const totalProduit = totalPour(ttcMagazine, quantite, regle) ?? ttcMagazine * quantite;
     const zone = zonePour(pays);
 
     /* ── LE DEVIS, EN DIRECT ────────────────────────────────────────────

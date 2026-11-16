@@ -26,7 +26,7 @@
    Posee sur :root (et plus sur .bj-atelier) depuis le lot 2 : la racine
    defile, et c'est elle qui doit connaitre la barre pour scroll-padding-top.
    Les consommateurs (.at-pdp, ouverture.css) heritent comme avant. */
-:root { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
+:root { --nav-h: calc(5.2 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px) + var(--nl-bh, 0px)); }
 
 /* Lot 2 (07/09) — les ancres du monde SOMBRE visaient 76 px, le
    --bj-topbar-h du monde creme pose par globals.css, alors que la barre de
@@ -38,7 +38,9 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
 
 .at-nav {
   position: fixed;
-  top: 0;
+  /* `--nl-bh` : la hauteur du bandeau de Noël (noel/noel.css), posée seulement
+     quand il est dans le document. Repli 0 : sans bandeau, rien ne change. */
+  top: var(--nl-bh, 0px);
   left: 0;
   right: 0;
   z-index: 50;
@@ -90,7 +92,7 @@ html:has(.bj-atelier) { scroll-padding-top: var(--nav-h); }
    1000 px, la coupure du site. Le padding n'est toujours PAS anime (voir
    la note de .at-nav : re-rasterisation du flou). */
 @media (min-width: 1000px) {
-  :root { --nav-h: calc(3.6 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px)); }
+  :root { --nav-h: calc(3.6 * var(--uh) + clamp(44px, 1.6vw + 24px, 52px) + var(--nl-bh, 0px)); }
   .at-nav {
     padding-top: calc(1.8 * var(--uh));
     padding-bottom: calc(1.8 * var(--uh));

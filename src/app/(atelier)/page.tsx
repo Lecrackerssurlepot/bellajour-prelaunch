@@ -27,6 +27,9 @@ import Nav from './components/Nav'
 import Ouverture from './components/Ouverture'
 import Univers from './components/Univers'
 import Footer from './components/Footer'
+import Bandeau from './noel/Bandeau'
+import ChapitreAccueil from './noel/ChapitreAccueil'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { compteOuvert } from '@/lib/compte/session'
 import { EUROS_MIN } from '@/lib/atelier/grille'
 
@@ -128,6 +131,9 @@ const JSON_LD = [
 ]
 
 export default function AtelierHome() {
+  /* Noël 2026 : drapeau fermé = la page d'avant, au pixel près. Lu ICI (page
+     serveur), comme compteOuvert() : le bandeau entre dans le HTML prérendu. */
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert
   return (
     <>
       {/* L'image de couverture est l'element LCP de la page : elle occupe tout
@@ -184,6 +190,7 @@ export default function AtelierHome() {
           que la silhouette du compte soit dans le HTML plutôt que dessinée une
           seconde plus tard (cf. NavCompte). Optimiste : `false` ne ferme rien,
           le fetch de la barre ouvrira quand même. */}
+      {noel && <Bandeau />}
       <Nav compteOuvert={compteOuvert()} />
       <div className={`at-accueil ${titreFort.variable}`}>
         {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,
@@ -196,6 +203,9 @@ export default function AtelierHome() {
         <div className="curseur" aria-hidden="true"><i /><b /></div>
         <Ouverture />
         <Univers />
+        {/* Le chapitre de Noël vient APRÈS les sept pages : le séquenceur et
+            le chemin de fer d'Univers ne le connaissent pas. */}
+        {noel && <ChapitreAccueil />}
       </div>
       <Footer />
     </>

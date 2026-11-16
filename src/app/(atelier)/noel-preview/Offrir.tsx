@@ -142,7 +142,7 @@ export default function Offrir({ ton, phrase }: { ton: Ton; phrase: string }) {
                 <MailRendu
                   mail={gc2}
                   ton={ton}
-                  valeurs={{ PRENOM: prenom || 'Camille', PRENOM_DONATEUR: donateur || 'Léa', MESSAGE: message, CODE: 'BJ-CADEAU-7KQ4MR' }}
+                  valeurs={{ PRENOM: prenom || 'Camille', PRENOM_DONATEUR: donateur || 'Léa', MESSAGE: message, CODE: 'CAMILLE-NOEL-4821' }}
                 />
               ) : (
                 <CarteCadeau phrase={phrase} montant={affiche} prenom={prenom} message={message} entree={false} />

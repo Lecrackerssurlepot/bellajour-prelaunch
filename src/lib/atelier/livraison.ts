@@ -66,7 +66,7 @@ import {
   tauxTvaPour,
   type PaysLivraison,
 } from "./pays";
-import { totalExemplaires } from "./exemplaires";
+import { totalExemplaires, type RegleExemplaires } from "./exemplaires";
 
 /* Les deux vivent dans `pays.ts` depuis le 15/09 (le taux décide du prix du
    magazine, pas seulement du port). Ré-exportés pour les lecteurs historiques. */
@@ -355,6 +355,8 @@ export type Commande = {
   creditCentimes: number;
   /** Le port est-il offert pour une AUTRE raison que le seuil (fondateur) ? */
   portOffert: boolean;
+  /** La règle des exemplaires (Noël ou ordinaire, exemplaires.ts). Absente = ordinaire. */
+  regle?: RegleExemplaires;
 };
 
 /**
@@ -385,7 +387,7 @@ export function totalCommande(c: Commande): {
 } {
   const quantite = c.quantite ?? 1;
   const unitaire = Math.max(0, Math.round(c.prixCentimes));
-  const ex = totalExemplaires(unitaire, quantite);
+  const ex = totalExemplaires(unitaire, quantite, c.regle);
   const prix = ex ? ex.totalCentimes : unitaire * Math.max(1, quantite);
   const parSeuil = livraisonOfferte(prix);
   const livraison = c.portOffert || parSeuil ? 0 : Math.max(0, Math.round(c.livraisonCentimes));

@@ -1,0 +1,305 @@
+/* Noël 2026 sur le vrai site : le bandeau (`/` et `/magazine`), le bloc de
+   /magazine, le chapitre de l'accueil. Rien de tout cela n'existe tant que
+   `NEXT_PUBLIC_GIFT_CARD_ENABLED` est fermé : les pages serveur ne montent
+   pas les composants, donc cette feuille n'est pas chargée.
+
+   Scope : `.nl-noel` (bloc, chapitre, et la carte qu'ils contiennent) et
+   `.nl-noel-bandeau`. Les classes `nl-*` de /noel-preview vivent sous
+   `.nl-preview` : les deux mondes ne se touchent pas. Couleurs : jetons de
+   theme.css seulement. Règles en (0,2,0) au moins : `.bj-atelier h2` (0,1,1)
+   et `.bj-atelier a` (0,1,1) battraient une classe seule. */
+
+/* ════════ LE BANDEAU ════════
+   Une bande de verre (--glass-bg, un cran plus clair que la barre qui est
+   dessous). Hauteur FIXE, dite une seule fois : `--nl-bh`, posée sur la
+   racine dès que le bandeau est dans le document. nav.css la lit (`top` de
+   la barre, `--nav-h`) avec un repli à 0, donc sans bandeau rien ne bouge. */
+:root:has(.nl-noel-bandeau) { --nl-bh: 36px; }
+
+.nl-noel-bandeau {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 51;
+  height: var(--nl-bh, 36px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  padding: 0 var(--mg, 16px);
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 12.5px;
+  letter-spacing: 0.01em;
+  color: var(--c-text-soft);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+}
+/* Repli Android (piège 3 de src/app/CLAUDE.md) : un flou sur un fixe rame. */
+.nl-noel-bandeau.nl-noel-bandeau--plat {
+  background: var(--c-nav-android-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.nl-noel-bandeau .nl-noel-bandeau-n { color: var(--c-text-faint); }
+.nl-noel-bandeau .nl-noel-bandeau-lien { flex: 0 0 auto; font-weight: 500; color: var(--c-accent-strong); }
+.nl-noel-bandeau .nl-noel-bandeau-lien::after { content: ' \2192'; }
+.nl-noel-bandeau:hover .nl-noel-bandeau-lien { color: var(--c-text); }
+@media (max-width: 479px) {
+  .nl-noel-bandeau { font-size: 12px; gap: 10px; padding: 0 12px; }
+}
+@media (max-width: 399px) {
+  /* Une seule ligne, rien de coupé : le nombre passe dans le bloc. */
+  .nl-noel-bandeau .nl-noel-bandeau-n { display: none; }
+}
+
+/* ════════ LA CARTE ════════ */
+.nl-noel .nl-carte { container-type: inline-size; width: 100%; }
+.nl-noel .nl-carte[data-entree='1'] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity var(--t-reveal) var(--ease-recit), transform var(--t-reveal) var(--ease-recit);
+}
+.nl-noel .nl-carte[data-entree='1'][data-vue='1'] { opacity: 1; transform: none; }
+.nl-noel .nl-carte-face {
+  position: relative;
+  aspect-ratio: 148 / 105;
+  overflow: hidden;
+  border-radius: 3cqw;
+  padding: 6cqw 6.5cqw;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2cqw;
+  background: var(--grad-cover);
+  color: var(--c-text);
+  border: 1px solid var(--c-line-strong);
+  box-shadow: var(--shadow-soft);
+  transition: transform var(--t-reveal) var(--ease-spring);
+}
+.nl-noel .nl-carte-face:hover { transform: translateY(-6px) rotate(-1deg); }
+.nl-noel .nl-carte-reflet {
+  position: absolute;
+  inset: -20% auto -20% 0;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, var(--c-overlay-faint), transparent);
+  opacity: 0;
+  transform: translateX(-120%) skewX(-12deg);
+  transition: transform var(--t-lent) var(--ease-recit), opacity var(--t-lent) var(--ease-recit);
+  pointer-events: none;
+}
+.nl-noel .nl-carte-face:hover .nl-carte-reflet { opacity: 0.18; transform: translateX(330%) skewX(-12deg); }
+.nl-noel .nl-carte-haut,
+.nl-noel .nl-carte-bas { position: relative; display: flex; justify-content: space-between; align-items: flex-end; gap: 4cqw; }
+.nl-noel .nl-carte-haut { align-items: center; }
+.nl-noel .nl-carte-marque { display: block; width: 19cqw; height: auto; }
+.nl-noel .nl-carte-type { font-size: 2.5cqw; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-overlay-text); }
+.nl-noel .nl-carte-milieu { position: relative; display: flex; flex-direction: column; gap: 2.2cqw; min-width: 0; }
+.nl-noel .nl-carte-pour { font-size: 2.5cqw; letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-accent-strong); }
+.nl-noel .nl-carte-phrase {
+  font-family: var(--font-display);
+  font-size: 9.4cqw;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.nl-noel .nl-carte-milieu[data-mot='1'] .nl-carte-phrase { font-size: 8.2cqw; }
+.nl-noel .nl-carte-message {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 3.6cqw;
+  line-height: 1.25;
+  color: var(--c-text-soft);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.nl-noel .nl-carte-montant { font-family: var(--font-display); font-size: 8cqw; line-height: 0.9; white-space: nowrap; color: var(--c-accent-strong); }
+.nl-noel .nl-carte-infos { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 2.7cqw; line-height: 1.4; text-align: right; color: var(--c-overlay-text); }
+.nl-noel .nl-carte-code { letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+
+/* ════════ TEXTES ET BOUTONS (communs) ════════ */
+.nl-noel .nl-texte { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; min-width: 0; }
+.nl-noel .nl-surtitre { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-accent); }
+.nl-noel .nl-titre {
+  font-size: clamp(30px, 4.6vw, 48px);
+  line-height: 1.05;
+  overflow-wrap: normal !important;
+}
+.nl-noel .nl-sous { color: var(--c-text-soft); max-width: 36ch; }
+.nl-noel .nl-places { font-size: 14px; color: var(--c-text-faint); }
+.nl-noel .nl-gestes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 6px; }
+.nl-noel .nl-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line-strong);
+  color: var(--c-text);
+  font-size: 15px;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--dur, 250ms) var(--ease);
+}
+.nl-noel .nl-cta:hover { background: var(--c-surface-3); }
+.nl-noel .nl-cta.nl-cta--plein { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-text-onaccent); font-weight: 500; }
+.nl-noel .nl-cta.nl-cta--plein:hover { background: var(--c-accent-strong); }
+.nl-noel .nl-cta.nl-cta--discret { border-color: transparent; color: var(--c-text-soft); padding: 0 12px; }
+
+/* ════════ LE BLOC DE /magazine ════════ */
+.nl-noel.nl-noel-mag {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(56px, 8vw, 96px) clamp(20px, 6vw, 80px);
+  border-top: 1px solid var(--c-line);
+}
+.nl-noel .nl-mag-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 48px);
+  align-items: center;
+}
+.nl-noel .nl-mag-carte { max-width: 520px; width: 100%; justify-self: center; }
+
+/* ════════ LE CHAPITRE DE L'ACCUEIL ════════
+   Une piste haute de trois écrans, une scène collante dedans. `--p` (0 → 1)
+   est écrite par la boucle rAF de ChapitreAccueil. */
+.nl-noel.nl-noel-chapitre {
+  --p: 0;
+  position: relative;
+  height: calc(300 * var(--uh));
+}
+.nl-noel .nl-scene {
+  position: sticky;
+  top: 0;
+  height: var(--app-height);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  align-items: center;
+  gap: calc(2 * var(--uh));
+  /* La barre (et son bandeau) est fixe : la scène démarre dessous. */
+  padding: calc(var(--nav-h) + 2 * var(--uh)) 20px calc(5 * var(--uh));
+  background: radial-gradient(90% 70% at 50% 40%, var(--c-surface-2), var(--c-void));
+  text-align: center;
+}
+.nl-noel .nl-scene-titre {
+  margin: 8px 0 0;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.02;
+  overflow-wrap: normal !important;
+}
+.nl-noel .nl-scene-texte--1 { display: flex; flex-direction: column; align-items: center; opacity: clamp(0, calc((0.32 - var(--p)) * 8), 1); }
+.nl-noel .nl-scene-texte--2 {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: calc(5 * var(--uh));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: clamp(0, calc((var(--p) - 0.66) * 6), 1);
+  transform: translateY(calc((1 - clamp(0, calc((var(--p) - 0.66) * 6), 1)) * 24px));
+}
+.nl-noel .nl-scene-sous { color: var(--c-text-soft); max-width: 34ch; font-size: 17px; }
+.nl-noel .nl-scene-places { font-size: 14px; color: var(--c-text-faint); }
+
+.nl-noel .nl-scene-objet {
+  position: relative;
+  width: min(84vw, 420px, calc(40 * var(--uh) * 1.4));
+  aspect-ratio: 148 / 105;
+}
+.nl-noel .nl-enveloppe,
+.nl-noel .nl-env-poche,
+.nl-noel .nl-scene-carte { position: absolute; inset: 0; }
+.nl-noel .nl-enveloppe,
+.nl-noel .nl-env-poche {
+  opacity: clamp(0, calc((0.6 - var(--p)) * 6), 1);
+  transform: translateY(calc(clamp(0, calc((var(--p) - 0.4) * 2), 1) * 40%));
+}
+.nl-noel .nl-env-fond { position: absolute; inset: 0; border-radius: 10px; background: var(--c-surface-3); border: 1px solid var(--c-line-md); }
+.nl-noel .nl-env-rabat {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 50%;
+  background: var(--c-surface-4);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  transform: perspective(900px) rotateX(calc(clamp(0, calc(var(--p) * 6), 1) * 178deg));
+  z-index: 3;
+}
+.nl-noel.nl-noel-chapitre[data-ouverte='1'] .nl-env-rabat { z-index: 0; }
+.nl-noel .nl-env-poche {
+  z-index: 2;
+  border-radius: 0 0 10px 10px;
+  background: var(--c-surface-3);
+  clip-path: polygon(0 34%, 50% 70%, 100% 34%, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+.nl-noel .nl-scene-carte {
+  z-index: 1;
+  padding: 4% 5%;
+  transform:
+    translateY(calc(clamp(0, calc((var(--p) - 0.15) * 3), 1) * -48%))
+    scale(calc(0.92 + clamp(0, calc((var(--p) - 0.15) * 3), 1) * 0.16));
+  opacity: min(clamp(0, calc((var(--p) - 0.08) * 12), 1), clamp(0, calc((0.74 - var(--p)) * 8), 1));
+}
+.nl-noel.nl-noel-chapitre[data-ouverte='1'] .nl-scene-carte { z-index: 4; }
+.nl-noel .nl-scene-couvs {
+  position: absolute;
+  inset: -14% 0;
+  pointer-events: none;
+  transform: translateY(calc(clamp(0, calc((var(--p) - 0.6) * 4), 1) * -14 * var(--uh)));
+}
+.nl-noel .nl-scene-couv {
+  --q: clamp(0, calc((var(--p) - 0.6) * 4), 1);
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: var(--shadow-pop);
+  opacity: var(--q);
+}
+.nl-noel .nl-scene-couv--1 { transform: translateX(calc(-50% - var(--q) * 62%)) rotate(calc(var(--q) * -7deg)) scale(0.86); }
+.nl-noel .nl-scene-couv--2 { transform: translateX(-50%) translateY(calc((1 - var(--q)) * 30%)); z-index: 1; }
+.nl-noel .nl-scene-couv--3 { transform: translateX(calc(-50% + var(--q) * 62%)) rotate(calc(var(--q) * 7deg)) scale(0.86); }
+
+@media (max-width: 767px) {
+  .nl-noel .nl-mag-grille { grid-template-columns: minmax(0, 1fr); }
+  .nl-noel .nl-gestes { flex-direction: column; align-items: stretch; align-self: stretch; }
+  .nl-noel .nl-scene-objet { width: min(78vw, calc(40 * var(--uh) * 1.4)); }
+}
+
+/* ── mouvement réduit : tout est là, rien ne bouge ── */
+@media (prefers-reduced-motion: reduce) {
+  .nl-noel .nl-carte[data-entree='1'] { opacity: 1; transform: none; transition: none; }
+  .nl-noel .nl-carte-face,
+  .nl-noel .nl-carte-reflet { transition: none; }
+  .nl-noel .nl-carte-face:hover { transform: none; }
+  .nl-noel .nl-carte-face:hover .nl-carte-reflet { opacity: 0; }
+  .nl-noel.nl-noel-chapitre { height: auto; }
+  .nl-noel .nl-scene { position: relative; }
+}
+
+/* ════════ L'OUVERTURE DE L'ACCUEIL, DESKTOP ════════
+   Au-dessus de 1000 px, `.hero` se cale à `11vh` (ouverture.css), sans lire
+   --nav-h : le bandeau, qui allonge la barre de 36 px, ferait mordre le titre
+   dessous. On rajoute sa hauteur, et seulement là : sous 1000 px la règle de
+   l'ouverture lit déjà --nav-h, donc le bandeau. */
+@media (min-width: 1001px) {
+  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-top: calc(11vh + var(--nl-bh, 0px)); }
+}

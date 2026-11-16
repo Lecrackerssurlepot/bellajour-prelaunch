@@ -36,7 +36,7 @@ export const LIBRE_MAX = 200
 export const PLACES_EXEMPLE = 25
 export const MESSAGE_MAX = 140
 
-export const CODE_EXEMPLE = 'BJ-CADEAU-7KQ4MR'
+export const CODE_EXEMPLE = 'CAMILLE-NOEL-4821'
 
 /* archive/PARCOURS-ACHAT.md, tableau « Wording ». */
 export const TEXTES: Record<Ton, {

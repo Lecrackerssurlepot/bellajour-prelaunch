@@ -121,7 +121,7 @@ const evocation = (t) =>
 function duo(a, b) {
   const cellule = (o) => `<td class="duo" width="50%" valign="top" style="padding: 0 7px;">
 <a href="${o.lien}" style="text-decoration: none; display: block;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border: 1px solid rgba(255,255,255,0.11); border-radius: 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border: 1px solid rgba(255,255,255,0.11); border-radius: 16px;">
 <tr><td align="center" style="padding: 16px 16px 0 16px;">${o.visuel}</td></tr>
 <tr><td style="padding: 16px 18px 4px 18px; font-family: ${SANS}; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #928d84;">${o.titre}</td></tr>
 <tr><td style="padding: 0 18px 12px 18px; font-family: ${SERIF}; font-size: 18px; line-height: 1.4; color: #e9e4da;">${o.texte}</td></tr>
@@ -146,9 +146,9 @@ const miniCarte = `<table role="presentation" width="100%" cellpadding="0" cells
  * d'un libellé sur un téléphone.
  */
 const codeCarte = () =>
-  ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border: 1px dashed #8a5a40; border-radius: 14px;">
+  ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border: 1px dashed #8a5a40; border-radius: 14px;">
 <tr><td style="padding: 16px 20px 4px 20px; font-family: ${SANS}; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #928d84;">Votre code</td></tr>
-<tr><td style="padding: 0 20px 16px 20px; font-family: ${SANS}; font-size: 19px; font-weight: 500; letter-spacing: 1.5px; color: #f5f0e7;">${P("CODE")}</td></tr>
+<tr><td class="code-carte" style="padding: 0 20px 16px 20px; font-family: ${SANS}; font-size: 19px; font-weight: 500; letter-spacing: 1px; color: #f5f0e7; white-space: nowrap;">${P("CODE")}</td></tr>
 </table>`);
 
 /**
@@ -163,7 +163,7 @@ function recap(lignes) {
 <td align="right" style="padding: 13px 0; ${bord} font-family: ${SANS}; font-size: 14px; color: ${l.fort ? "#d68a63" : "#e9e4da"}; font-weight: ${l.fort ? 500 : 400}; white-space: nowrap;">${l.val}</td></tr>`;
     return l.si ? `{% if params.${l.si} %}${rang}{% endif %}` : rang;
   });
-  return ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-radius: 16px;">
+  return ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border-radius: 16px;">
 <tr><td style="padding: 4px 20px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rangs.join("")}</table>
 </td></tr></table>`);
@@ -175,7 +175,9 @@ function bouton(cta, lien) {
 <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${lien}" style="height:54px;v-text-anchor:middle;width:300px;" arcsize="50%" stroke="f" fillcolor="#f5f0e7"><w:anchorlock/><center style="color:#1a1210;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">${cta}</center></v:roundrect>
 <![endif]-->
 <!--[if !mso]><!-- -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#f5f0e7" style="background-color: #f5f0e7; border-radius: 999px;">
 <a href="${lien}" class="btn-cta" style="display: inline-block; padding: 17px 34px; background-color: #f5f0e7; border-radius: 999px; text-decoration: none; font-family: ${SANS}; font-size: 15px; font-weight: 500; color: #1a1210;">${cta}</a>
+</td></tr></table>
 <!--<![endif]-->`,
     44,
   );
@@ -236,6 +238,7 @@ a { text-decoration: none; }
   .px-mobile-duo { padding-left: 17px !important; padding-right: 17px !important; }
   .duo { display: block !important; width: 100% !important; padding-bottom: 14px !important; }
   .hero-title { font-size: 36px !important; line-height: 1.08 !important; }
+  .code-carte { font-size: 16px !important; letter-spacing: 0.5px !important; }
 }
 </style>
 </head>
@@ -419,7 +422,7 @@ export const MAILS = [
         { lib: "Montant", val: MONTANT },
         { lib: "Code", val: P("CODE") },
         { lib: "Valable jusqu&rsquo;au", val: P("DATE") },
-        { lib: "Reçu de paiement", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
+        { lib: "Reçu", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
       ]),
       bouton("Voir et imprimer la carte", P("LIEN_CARTE")),
       aNoter([
@@ -450,7 +453,7 @@ export const MAILS = [
         { lib: "Le", val: `${P("DATE_ENVOI")} au matin`, fort: true },
         { lib: "Montant", val: MONTANT },
         { lib: "Code", val: P("CODE") },
-        { lib: "Reçu de paiement", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
+        { lib: "Reçu", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
       ]),
       bouton("Voir et imprimer la carte", P("LIEN_CARTE")),
       aNoter([

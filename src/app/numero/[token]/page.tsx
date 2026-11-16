@@ -28,6 +28,7 @@ import { eurosDuDossier, centimesDuDossier, formaterCentimes, type PalierCle } f
 import { finitionDuDossier } from '@/lib/atelier/impression'
 import { totalCommande, portClient } from '@/lib/atelier/livraison'
 import { quantiteDuDossier, totalExemplaires } from '@/lib/atelier/exemplaires'
+import { regleDuDossier } from '@/lib/atelier/noelExemplaire'
 import { creditDuPourMail, modeStripe } from '@/lib/atelier/fondatrice'
 import { reglementAvecCarte } from '@/lib/atelier/carteCommande'
 import { lireCarteDuNumero } from '@/lib/atelier/carteServeur'
@@ -450,11 +451,15 @@ export default async function NumeroPage({
      En zone A et B le port est connu même sans devis gelé (c'est une règle,
      pas une devinette) ; en zone C sans devis, la page se tait. */
   const quantite = quantiteDuDossier(numero.quantite)
+  /* ── LA RÈGLE DE NOËL DU 2e EXEMPLAIRE (lot 4, 16/11/2026) ───────────
+     Lue ici comme au checkout (`regleDuDossier`) : même jour, même pays,
+     même couverture choisie. Hors fenêtre ou hors France, l'ordinaire. */
+  const regle = await regleDuDossier(makeSupabase(), { id: numero.id, pays_livraison: paysLivraison })
   const port =
     prixCentimes !== null && paysLivraison
       ? portClient({
           pays: paysLivraison,
-          totalProduitCentimes: totalExemplaires(prixCentimes, quantite)?.totalCentimes ?? prixCentimes,
+          totalProduitCentimes: totalExemplaires(prixCentimes, quantite, regle)?.totalCentimes ?? prixCentimes,
           devisTtcCentimes: livraisonCentimes,
         })
       : null
@@ -467,6 +472,7 @@ export default async function NumeroPage({
           livraisonCentimes: portBrut,
           creditCentimes: (creditEuros ?? 0) * 100,
           portOffert: creditEuros !== null,
+          regle,
         })
       : null
 
@@ -732,7 +738,8 @@ export default async function NumeroPage({
               livraisonCentimes={portBrut}
               pays={paysLivraison}
               quantite={quantite}
-              exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite) : null}
+              exemplaires={prixCentimes !== null ? totalExemplaires(prixCentimes, quantite, regle) : null}
+              regle={regle}
               commande={commande}
               portOffert={creditEuros !== null}
               cgvOk={numero.cgv_ok}

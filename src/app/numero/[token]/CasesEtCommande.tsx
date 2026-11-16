@@ -54,9 +54,14 @@ import { FINITION_LIBELLE, type Finition } from '@/lib/atelier/impression'
    pour dessiner le sélecteur et sa légende. */
 import {
   QUANTITE_MAX,
-  PHRASE_DEGRESSIF,
+  REGLE_ORDINAIRE,
+  NOEL_REMISE_AUTRE_PCT,
+  NOEL_REMISE_MEME_PCT,
   libelleLigne,
+  phraseRegle,
+  type CouvertureExemplaire,
   type Exemplaires,
+  type RegleExemplaires,
 } from '@/lib/atelier/exemplaires'
 import { manquePourFranco } from '@/lib/atelier/livraison'
 import FeuilleAjustement from './FeuilleAjustement'
@@ -99,6 +104,10 @@ type Props = {
      en forme et envoie un nouveau nombre ; il n'additionne rien. */
   quantite: number
   exemplaires: Exemplaires | null
+  /* La règle des exemplaires du dossier, lue PAR LE SERVEUR
+     (`regleDuDossier`) : Noël (2 au plus, le 2e à −40 % ou −20 % selon la
+     couverture, France) ou l'ordinaire. Absente = ordinaire. */
+  regle?: RegleExemplaires
   cgvOk: boolean
   renonciation: boolean
   /* T2-8 — les deux temps de la promesse, calculés par la page depuis
@@ -136,7 +145,7 @@ type Props = {
 
 export default function CasesEtCommande({
   token, nbPages, euros, livraisonCentimes, pays, prixCentimes, commande, portOffert,
-  quantite, exemplaires,
+  quantite, exemplaires, regle = REGLE_ORDINAIRE,
   cgvOk, renonciation, joursComposition, joursLivraison, finition,
   previsualisation = false,
   carte = null,
@@ -177,6 +186,9 @@ export default function CasesEtCommande({
      du dossier et REVIENT à elle si l'enregistrement échoue. */
   const [nombre, setNombre] = useState<number>(quantite)
   const [changeNombre, setChangeNombre] = useState(false)
+  /* Noël : deux au plus ; un dossier déjà au-dessus peut redescendre. */
+  const maxExemplaires = regle.nom === 'noel' ? regle.max : QUANTITE_MAX
+  const [couvEx, setCouvEx] = useState<CouvertureExemplaire>(regle.couverture)
 
   const enregistrer = useCallback(
     async (champ: 'cgv_ok' | 'renonciation_retractation', valeur: boolean) => {
@@ -239,7 +251,7 @@ export default function CasesEtCommande({
   const choisirNombre = useCallback(
     async (valeur: number) => {
       const precedent = nombre
-      if (valeur === precedent || valeur < 1 || valeur > QUANTITE_MAX) return
+      if (valeur === precedent || valeur < 1 || (valeur > maxExemplaires && valeur > precedent)) return
       setNombre(valeur)
       setErreur(null)
       if (previsualisation) return
@@ -259,7 +271,35 @@ export default function CasesEtCommande({
         setChangeNombre(false)
       }
     },
-    [token, nombre, previsualisation, router]
+    [token, nombre, previsualisation, router, maxExemplaires]
+  )
+
+  /* La couverture du 2e exemplaire (Noël) : même régime que le nombre,
+     l'écran bouge, le serveur écrit, la page se recalcule. */
+  const choisirCouvEx = useCallback(
+    async (valeur: CouvertureExemplaire) => {
+      const precedent = couvEx
+      if (valeur === precedent) return
+      setCouvEx(valeur)
+      setErreur(null)
+      if (previsualisation) return
+      setChangeNombre(true)
+      try {
+        const r = await fetch('/api/atelier/numero', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, couverture_exemplaire: valeur }),
+        })
+        if (!r.ok) throw new Error('patch')
+        router.refresh()
+      } catch {
+        setCouvEx(precedent)
+        setErreur('Votre choix de couverture n’a pas pu être enregistré. Réessayez dans un instant.')
+      } finally {
+        setChangeNombre(false)
+      }
+    },
+    [token, couvEx, previsualisation, router]
   )
 
   const commander = useCallback(async () => {
@@ -468,7 +508,7 @@ export default function CasesEtCommande({
           <div className="nu-bon-l nu-bon-l--choix">
             <span id="nu-exemplaires-lbl">
               Exemplaires
-              <small className="nu-bon-legende">{PHRASE_DEGRESSIF}</small>
+              <small className="nu-bon-legende">{phraseRegle(regle)}</small>
             </span>
             <div className="nu-nombre" role="group" aria-labelledby="nu-exemplaires-lbl">
               <button
@@ -485,13 +525,41 @@ export default function CasesEtCommande({
                 type="button"
                 className="nu-nombre-b"
                 onClick={() => void choisirNombre(nombre + 1)}
-                disabled={previsualisation || changeNombre || nombre >= QUANTITE_MAX}
+                disabled={previsualisation || changeNombre || nombre >= maxExemplaires}
                 aria-label="Un exemplaire de plus"
               >
                 +
               </button>
             </div>
           </div>
+          {/* ── NOËL : LA COUVERTURE DU 2e EXEMPLAIRE (lot 4) ──
+              Deux réponses, deux boutons, la remise écrite sur chacun. */}
+          {regle.nom === 'noel' && nombre === 2 ? (
+            <div className="nu-bon-l nu-bon-l--choix">
+              <span id="nu-couvex-lbl">Couverture du 2e exemplaire</span>
+              <div className="nu-finition" role="radiogroup" aria-labelledby="nu-couvex-lbl">
+                {([
+                  ['meme', 'Même', NOEL_REMISE_MEME_PCT],
+                  ['autre', 'Autre', NOEL_REMISE_AUTRE_PCT],
+                ] as const).map(([v, mot, pct]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={couvEx === v}
+                    className={`nu-finition-b${couvEx === v ? ' est-choisi' : ''}`}
+                    onClick={() => void choisirCouvEx(v)}
+                    disabled={previsualisation || changeNombre}
+                  >
+                    {mot}, −{pct} %
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {regle.nom === 'noel' && nombre === 2 && couvEx === 'autre' ? (
+            <p className="nu-bon-econ">L’atelier compose une autre couverture avec vos photos.</p>
+          ) : null}
           {exemplaires && exemplaires.economieCentimes > 0 ? (
             <p className="nu-bon-econ">
               Vous économisez {formaterCentimes(exemplaires.economieCentimes)} sur

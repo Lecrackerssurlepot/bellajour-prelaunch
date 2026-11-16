@@ -63,6 +63,7 @@ import {
   FRANCO_CENTIMES,
 } from "@/lib/atelier/livraison";
 import { quantiteDuDossier } from "@/lib/atelier/exemplaires";
+import { regleDuDossier } from "@/lib/atelier/noelExemplaire";
 import { territoireHorsTvaUE } from "@/lib/atelier/pays";
 import { centimesDuDossier, totalPour } from "@/lib/atelier/prix";
 import {
@@ -347,7 +348,8 @@ export async function POST(request: Request) {
          choisis par le client : c'est ce total qui décide du seuil. */
       const unitaire =
         typeof prepa.patch.prix_centimes === "number" ? prepa.patch.prix_centimes : centimesDuDossier(numero);
-      const totalProduit = unitaire === null ? null : totalPour(unitaire, quantite);
+      const regle = await regleDuDossier(supabase, { id: numero.id, pays_livraison: pays || null });
+      const totalProduit = unitaire === null ? null : totalPour(unitaire, quantite, regle);
       const vide = {
         niveau: null, service: null, transporteur: null, niveauVouluAbsent: false,
         devisHtCentimes: null, devisTtcCentimes: null, existant, totalProduitCentimes: totalProduit, quantite,

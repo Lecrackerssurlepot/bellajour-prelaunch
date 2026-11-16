@@ -327,6 +327,10 @@ export async function traiterPaiementAtelier(
     payment_intent: asId(session.payment_intent),
     montant_total: session.amount_total,
     devise: session.currency,
+    /* Noël 2026 (lot 4) : la règle du 2e exemplaire et, si l'atelier doit
+       composer une AUTRE couverture, la trace est ici, au moment du paiement. */
+    regle_exemplaires: session.metadata?.regle_exemplaires ?? null,
+    couverture_exemplaire: session.metadata?.couverture_exemplaire || null,
     tva: session.total_details?.amount_tax ?? null,
     pays_livraison: adresse?.address?.country ?? null,
     /* ── LE PORT RÉELLEMENT ENCAISSÉ (lot 6, 10/09/2026) ──────────────

@@ -268,7 +268,7 @@ function encartCarteCredit() {
   const rang = (lib, val, fort = false, bord = true) =>
     `<tr><td style="padding: 13px 0;${bord ? " border-bottom: 1px solid #26262a;" : ""} font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: #928d84;">${lib}</td><td align="right" style="padding: 13px 0;${bord ? " border-bottom: 1px solid #26262a;" : ""} font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: ${fort ? "#d68a63" : "#e9e4da"}; font-weight: ${fort ? 500 : 400}; white-space: nowrap;">${val}</td></tr>`;
   return `{% if params.RECAP_CARTE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-radius: 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border-radius: 16px;">
 <tr><td style="padding: 4px 20px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
 {% if params.CARTE_MONTANT %}${rang("{% if params.CARTE_DE %}La carte de {{ params.CARTE_DE }}{% else %}Carte cadeau{% endif %}", "&minus;{{ params.CARTE_MONTANT }}&nbsp;&euro;")}{% endif %}
