@@ -103,7 +103,7 @@ export async function creerJobFacture(
     });
     const decision: typeof decisionBrute =
       cadeau > 0
-        ? { statut: "manual_review", motif: `carte cadeau vendue avec la commande : ${(cadeau / 100).toFixed(2)} € hors TVA (bon à usages multiples), à retirer de la base` }
+        ? { statut: "manual_review", motif: `carte cadeau vendue avec la commande : ${(cadeau / 100).toFixed(2)} € hors TVA (bon à usages multiples), à retirer de la base${parCarte > 0 ? ` ; et ${(parCarte / 100).toFixed(2)} € réglés par une carte ou le crédit du compte, TVA sur le prix plein` : ""}` }
         : parCarte > 0
         ? { statut: "manual_review", motif: `carte cadeau ou crédit du compte : ${(parCarte / 100).toFixed(2)} € réglés hors Stripe, TVA sur le prix plein` }
         : decisionBrute;

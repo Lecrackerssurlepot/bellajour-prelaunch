@@ -498,17 +498,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "carte_refusee", phrase: reglement.refus }, { status: 409 });
     }
     const imputation = reglement.imputation;
-    /* Même raison qu'au-dessus pour un code de carte ou un crédit de compte :
-       le coupon se répartirait aussi sur la carte ajoutée. */
-    if (cadeau && imputation && imputation.remiseMagazinesCentimes > 0) {
-      return NextResponse.json(
-        { error: "cadeau_refuse", phrase: "La carte cadeau se commande à part ici : bellajour.fr/offrir." },
-        { status: 409 },
-      );
-    }
+    /* Les lignes des magazines, nommées une fois pour Stripe. */
+    const nomLigne = (ligne: (typeof decompte.lignes)[number]) =>
+      `Bellajour — ${titre}${ligne.rang === 1 ? "" : `, ${libelleLigne(ligne)}`}`;
+    const descriptionMagazine = numero.nb_pages
+      ? `Numéro de ${numero.nb_pages} pages, impression comprise`
+      : "Impression comprise";
+
+    /* UNE CARTE PAYE UNE PART ET UNE AUTRE EST OFFERTE (17/11). Un coupon
+       Stripe sans cible se répartit sur TOUTES les lignes, carte offerte
+       comprise (24 € + carte 30 € : magazine 13,34 €, carte 16,66 €). On
+       vise donc les seuls magazines : chaque ligne de magazine reçoit un
+       produit Stripe à elle, et le coupon ne s'applique qu'à ces produits
+       (`applies_to`, éprouvé en test le 17/11 : la carte reste entière).
+       Sans carte offerte, rien ne change. */
     let couponCarte: string | null = null;
+    let produitsMagazines: string[] | null = null;
     if (imputation && imputation.remiseMagazinesCentimes > 0) {
       try {
+        if (cadeau) {
+          produitsMagazines = [];
+          for (const ligne of decompte.lignes) {
+            const produit = await stripe.products.create({
+              name: nomLigne(ligne),
+              description: descriptionMagazine,
+              tax_code: CODE_FISCAL_ALBUM,
+              metadata: { kind: KIND_ATELIER, numero_id: numero.id },
+            });
+            produitsMagazines.push(produit.id);
+          }
+        }
         const coupon = await stripe.coupons.create({
           amount_off: imputation.remiseMagazinesCentimes,
           currency: "eur",
@@ -516,6 +535,7 @@ export async function POST(request: Request) {
           max_redemptions: 1,
           name: reglement.carte ? `Carte cadeau ${reglement.carte.code}` : "Crédit de votre compte",
           metadata: { kind: KIND_ATELIER, numero_id: numero.id, carte_code: reglement.carte?.code ?? "" },
+          ...(produitsMagazines ? { applies_to: { products: produitsMagazines } } : {}),
         });
         couponCarte = coupon.id;
       } catch (e) {
@@ -619,7 +639,9 @@ export async function POST(request: Request) {
           ? { discounts: [{ promotion_code: credit.promotionCodeId }] }
           : couponCarte
             ? { discounts: [{ coupon: couponCarte }] }
-            : { allow_promotion_codes: true }),
+            : cadeau
+              ? /* Un code tapé chez Stripe se répartirait sur la carte offerte. */ {}
+              : { allow_promotion_codes: true }),
 
         /* ─── LES LIGNES, UNE PAR RANG D'EXEMPLAIRE (15/09/2026) ───────────
            « Votre numéro », puis « 2e exemplaire, −30 % », puis « N
@@ -627,7 +649,7 @@ export async function POST(request: Request) {
            sur l'écran de paiement et sur la facture, et c'est exactement le
            décompte du bon de commande (`decompteExemplaires`). Une seule
            ligne à quantité 3 et prix moyen ne dirait pas la remise. */
-        line_items: decompte.lignes.map((ligne): Stripe.Checkout.SessionCreateParams.LineItem => ({
+        line_items: decompte.lignes.map((ligne, i): Stripe.Checkout.SessionCreateParams.LineItem => ({
           quantity: ligne.quantite,
           price_data: {
             currency: "eur",
@@ -636,17 +658,19 @@ export async function POST(request: Request) {
                TVA derrière. Un prix qui gonfle au moment de payer est la
                première cause d'abandon d'un panier. */
             tax_behavior: "inclusive" as const,
-            product_data: {
-              name: `Bellajour — ${titre}${ligne.rang === 1 ? "" : `, ${libelleLigne(ligne)}`}`,
-              /* La livraison SORT du prix depuis le lot 6 : la dire
-                 « comprise » ici, alors qu'une ligne de port s'ajoute juste
-                 en dessous, serait la contradiction la plus visible de tout
-                 le tunnel — sur l'écran de paiement ET sur la facture. */
-              description: numero.nb_pages
-                ? `Numéro de ${numero.nb_pages} pages, impression comprise`
-                : "Impression comprise",
-              tax_code: CODE_FISCAL_ALBUM,
-            },
+            ...(produitsMagazines
+              ? { product: produitsMagazines[i] }
+              : {
+                  product_data: {
+                    name: nomLigne(ligne),
+                    /* La livraison SORT du prix depuis le lot 6 : la dire
+                       « comprise » ici, alors qu'une ligne de port s'ajoute
+                       juste en dessous, serait la contradiction la plus
+                       visible de tout le tunnel. */
+                    description: descriptionMagazine,
+                    tax_code: CODE_FISCAL_ALBUM,
+                  },
+                }),
           },
         })).concat(
           /* La carte cadeau ajoutée : un bon à usages multiples, sans TVA à
