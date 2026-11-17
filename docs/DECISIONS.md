@@ -766,7 +766,15 @@ du fond (rendu du spread vu). SG-01 : « 12 » en Bodoni Moda à 506,5 pt (le co
 l'heure sous chaque vignette, en Hanken Grotesk 7 et 6 pt. Sans style : les mêmes cinq ombres, le géant en Arial à 430,5 pt (le corps attendu).
 **Conséquence :** l'ombre douce, sur un cadre tourné à contour intérieur, et le géant au-delà de 77 pt entrent dans l'export comme relus fidèlement.
 
-D31 (17/11/2026, PROPOSÉE, à valider par Mathias) — **« Lire les photos » est un ENTONNOIR à deux modèles, et l'IA ne trie rien :
+D32 (17/11/2026, plan approuvé par Mathias) — **Le tunnel : à l'ouverture d'un projet, l'analyse se lance seule et rend un magazine proposé.**
+Sept couches d'analyse (quatre sans IA, trois avec), des règles par profil de projet, un compositeur, un contrôle, une boucle. Tout vit dans
+`docs/moteur/tunnel/` ; les règles y sont GÉNÉRALES, jamais écrites pour un projet (M-01). Bornes posées par Mathias : 1 € au plus pour l'analyse d'un
+gros projet ; **10 $ d'API au plus pour toute la campagne de tests** ; accord d'envoi à OpenAI limité aux albums de test (le projet Australie et le
+dossier « Magazine Clients Atelier »), les vrais dossiers en production restent fermés jusqu'à T-203 ; polices prises dans une banque, téléchargées
+après vérification de la licence ; filtres à trois portées (photo, double, magazine), l'outil à la main existe toujours.
+**Conséquence :** banc hors git `design-explorations/tunnel-2026-11-17/` ; intégration par lots (compositeur, lancement automatique, parcours, filtres, apprentissage).
+
+D31 (17/11/2026, **VALIDÉE par Mathias le 17/11** : « Je valide D31 ») — **« Lire les photos » est un ENTONNOIR à deux modèles, et l'IA ne trie rien :
 elle pose des tags, l'atelier trie.** Plan validé par Mathias le 17/11 ; la décision écrite ici attend son « Je valide D31 ».
 A (local, gratuit) : la lecture de l'éditeur écarte d'abord floues, autres photos d'une pile (seule la tête part), captures, sombres,
 brûlées, trop petites et photos écartées par l'atelier. B : des planches de 16 vignettes numérotées lues par **gpt-5.4** (rôle, sujet,
