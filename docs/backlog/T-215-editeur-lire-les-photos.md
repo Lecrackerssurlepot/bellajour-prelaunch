@@ -1,7 +1,7 @@
 ---
 id: T-215
 titre: L'éditeur ne sait pas lire les photos lui-même : la lecture IA n'arrive que par un fichier préparé à côté
-etat: en pause
+etat: en cours
 domaine: atelier
 gravite: serieux
 autonomie: avis-requis
@@ -35,7 +35,7 @@ d'un clic, chaque correction devenant une leçon. Les photos de clients attenden
   5xx, rien en base) ; 403 `photos_clients_non_autorisees` hors création libre, 503 `openai_absente` sans clé.
 - Écran : bouton « Lire les photos » (`[id]/LireLesPhotos.tsx`, pixels dans `[id]/lireLesPhotosClient.ts`), annonce du coût,
   progression, « Arrêter », « Relire tout », coût réel à la fin ; tags lus sur la vignette et petit choix de correction ; Lecture (L).
-- Leçon `tag_corrige` (règle IA) ; migration `20261117_mep_lecons_tag_corrige.sql` ÉCRITE, pas appliquée (sans elle, ces leçons-là
+- Leçon `tag_corrige` (règle IA) ; migration `20261117_mep_lecons_tag_corrige.sql` APPLIQUÉE le 17/11 (vérifiée en SQL) (sans elle, ces leçons-là
   sont dites `perdues` par la route, les autres partent).
 - Harnais : `scripts/verif-mep-lire-les-photos.ts` (37 vérifications, réponses simulées). Règles R188 à R196, D31 proposée.
 - Vu dans le navigateur (build local sans base, réponses d'OpenAI simulées dans la page) : annonce, progression, tags planche par
@@ -45,3 +45,8 @@ d'un clic, chaque correction devenant une leçon. Les photos de clients attenden
 - **Recette réelle** sur de vraies photos (création libre), avec la vraie clé : coût réel contre l'estimation.
 - Mathias valide D31 ; applique la migration 20261117 (avis requis).
 - Les photos de clients : T-203 (politique de confidentialité, accord de Mathias), puis `MEP_LECTURE_IA_CLIENTS=1`.
+
+**Recette réelle du 17/11** (build local sans base, vrais appels OpenAI, photos de Mathias « Test 2 » en JPEG pleine taille) : annonce
+« 65 photos · 59 lues par l'IA · ≈ 0,09 $ » ; 4 planches + 23 regards fins, 27 réponses 200 ; bilan « Lu : 59 photos · 0,11 $ » en 42 s ;
+tags rôle et sujet sur les vignettes ; correction Satellite → Héros ; à la relance « 0 lues par l'IA » (rien renvoyé). Captures :
+`design-explorations/essai-ia-2026-11-17/recette-bouton/` (hors git, photos de Mathias).

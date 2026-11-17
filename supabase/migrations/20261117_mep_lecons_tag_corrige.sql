@@ -1,7 +1,7 @@
 -- 17/11/2026 : « Lire les photos » (éditeur de mise en page). L'atelier corrige un tag posé par l'IA (rôle, sujet) : le geste
 -- devient une leçon de type `tag_corrige` (règle IA, R194). La contrainte de 20261110 ne connaît pas ce type.
 --
--- ÉCRITE, PAS APPLIQUÉE (17/11). Sans elle, la route `lecons` envoie les autres leçons et dit `perdues` pour celles-là : rien ne bloque.
+-- APPLIQUÉE le 17/11/2026 (MCP Supabase, vérifiée par pg_get_constraintdef : tag_corrige présent, 17 leçons intactes). Sans elle, la route `lecons` envoie les autres leçons et dit `perdues` pour celles-là : rien ne bloque.
 -- Aucune donnée touchée : on remplace seulement la liste des types admis (l'ancienne liste + `tag_corrige`).
 --
 -- Vérifier après application :
