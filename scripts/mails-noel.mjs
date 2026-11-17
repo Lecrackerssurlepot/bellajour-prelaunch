@@ -289,12 +289,12 @@ const carteDe = () =>
   });
 
 export const MAILS = [
-  /* ── Campagnes : envoyées à la main par scripts/noel-campagne.ts ── */
+  /* ── Campagnes : brouillons Brevo créés par scripts/noel-campagnes.mjs ── */
   {
     code: "N1",
     nom: "Noël N1 · Pour offrir, avant Noël",
     quand: "campagne, semaine du 23/11 (date à valider)",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "Pour offrir, avant Noël 🎄",
     preheader: "Une carte cadeau, et votre magazine pour les fêtes.",
     liens: [LIENS.offrir, LIENS.composer, LIENS.conditions],
@@ -302,7 +302,7 @@ export const MAILS = [
       image("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table"),
       titre("Un premier Noël."),
       evocation(
-        `${vous("vous faites partie des premiers à nous avoir confié vos photos.")} Merci. Bellajour grandit, et pour son premier Noël, nous avons pensé à vous.`,
+        `${vous("vous faites partie des premiers à suivre Bellajour.")} Merci. Bellajour grandit, et pour son premier Noël, nous avons pensé à vous.`,
       ),
       duo(
         {
@@ -333,7 +333,7 @@ export const MAILS = [
     code: "N2",
     nom: "Noël N2 · Plus qu'un week-end",
     quand: "campagne, vendredi 4/12",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "Dernier jour garanti : lundi 🎄",
     preheader: "Le 7 décembre, nous fermons les dépôts.",
     liens: [LIENS.composer, LIENS.offrir],
@@ -355,7 +355,7 @@ export const MAILS = [
     code: "N3",
     nom: "Noël N3 · Pas trop tard pour l'offrir",
     quand: "campagne, mardi 8/12 (date à valider)",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "Trop tard pour le magazine, pas pour l'offrir 🎁",
     preheader: "La carte cadeau part par e-mail, le jour de votre choix.",
     liens: [LIENS.offrir, LIENS.conditions],
@@ -378,7 +378,7 @@ export const MAILS = [
     code: "N4",
     nom: "Noël N4 · La carte part encore",
     quand: "campagne, lundi 21/12 (date à valider)",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "La carte cadeau part encore 🎄🎁",
     preheader: "Achetée aujourd'hui, reçue aujourd'hui. Ou le 24 au matin.",
     liens: [LIENS.offrir, LIENS.conditions],
