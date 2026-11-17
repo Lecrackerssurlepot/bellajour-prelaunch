@@ -17,6 +17,11 @@
  * ignorés) ; une photo absente est listée, rien ne casse. La lecture ne touche JAMAIS au magazine ni à sa sauvegarde : elle vit
  * dans l'état d'écran (`EtatEditeur.lectureIA`) et dans ce navigateur (`[id]/lectureIAClient.ts`).
  *
+ * VERSION 2 (17/11, bouton « Lire les photos ») : la version 1 ne se retouche pas ; la 2 = la 1 plus, par photo, `sujet`, `candidate`,
+ * `texte` (ce que la planche de vignettes a dit), `regard` (ce que le regard fin a rendu : moment, idée, recadrage, plat) et
+ * `corrige` (les tags corrigés par l'atelier, qui priment partout), plus `lecture` à la racine ({ modeles, dollars, quand }).
+ * Le validateur lit les deux versions ; un fichier v1 se lit exactement comme avant (un champ de la v2 y reste un champ en trop).
+ *
  * Module PUR : ni React, ni réseau, ni horloge.
  */
 
@@ -27,6 +32,10 @@ import { REGLAGES } from "./reglages";
 
 export const FORMAT_LECTURE_IA = "bellajour-lecture-ia";
 export const VERSION_LECTURE_IA = 1;
+/** 17/11 : la version 2, écrite par « Lire les photos » (lireLesPhotos.ts). Une autre forme sera une autre version, jamais une retouche. */
+export const VERSION_LECTURE_IA_2 = 2;
+export const VERSIONS_LECTURE_IA = [VERSION_LECTURE_IA, VERSION_LECTURE_IA_2] as const;
+export type VersionLectureIA = (typeof VERSIONS_LECTURE_IA)[number];
 /** Bornes TECHNIQUES (octets du fichier, nombre de photos) : un magazine en porte quelques centaines. */
 export const TAILLE_MAX_LECTURE_IA = 8 * 1024 * 1024;
 export const PHOTOS_MAX_LECTURE_IA = 10000;
@@ -52,20 +61,43 @@ export type RoleProposeIA = { role: RoleIA; interet: number; raison: string; cou
 /** Le lieu NOMMÉ (« BMW Welt »). `statut` « sur » exige une `preuve` (panneau ou enseigne lisible, ou GPS qui confirme) ; sinon « a_verifier ». */
 export type LieuIA = { nom: string; confiance: number; source: "ia" | "gps"; statut: "sur" | "a_verifier"; preuve?: "panneau" | "gps" };
 export type CaptureIA = { type: TypeCapture; dit: string; utile: boolean };
-export type PhotoIA = { visages?: VisagesIA; role?: RoleProposeIA; lieu?: LieuIA; capture?: CaptureIA };
+export type PhotoIA = {
+  visages?: VisagesIA; role?: RoleProposeIA; lieu?: LieuIA; capture?: CaptureIA;
+  /* v2 seulement */
+  sujet?: SujetIA; candidate?: CandidateIA; texte?: boolean; regard?: RegardIA; corrige?: CorrigeIA;
+};
 export type RafaleIA = { photos: string[]; garder: string[]; usage: UsageRafale; pourquoi: string };
 export type GroupeIA = { type: TypeGroupe; photos: string[]; idee: string };
 export type ComboCouleurs = { nom: string; couleurs: CouleursMagazine; raison: string; dansLesPhotos?: boolean };
 export type ProjetIA = { type: TypeProjet; source: "client" | "comptage"; raison: string };
 
+/* ── v2 (17/11) ── */
+/** Ce que la photo montre, lu sur la planche de vignettes (jamais qui : D29). */
+export const SUJETS_IA = ["personnes", "paysage", "lieu", "plat", "objet", "autre"] as const;
+export type SujetIA = (typeof SUJETS_IA)[number];
+/** Ce que la planche pressent pour la photo (au plus une sur quatre). */
+export const CANDIDATES_IA = ["aucune", "couverture", "pleine", "double"] as const;
+export type CandidateIA = (typeof CANDIDATES_IA)[number];
+/** Ce que le regard fin a rendu, en mots comptés (bornes du schéma C). Une chaîne vide = rien à dire. */
+export type RegardIA = { moment: string; idee: string; recadrage: string; plat: string };
+export const MOMENT_MOTS_MAX = 6;
+export const IDEE_REGARD_MOTS_MAX = 10;
+export const RECADRAGE_MOTS_MAX = 10;
+/** Les tags corrigés par l'atelier : ils priment sur la proposition, partout (filtres, vignette, mises en avant). */
+export type CorrigeIA = { role?: RoleIA; sujet?: SujetIA };
+/** Qui a lu, combien ça a coûté (jetons × prix datés), quand. */
+export type SourceLecture = { modeles: string[]; dollars: number; quand: string };
+
 export type LectureIA = {
   format: typeof FORMAT_LECTURE_IA;
-  version: typeof VERSION_LECTURE_IA;
+  version: VersionLectureIA;
   projet?: ProjetIA;
   photos: Readonly<Record<string, PhotoIA>>;
   rafales: RafaleIA[];
   groupes: GroupeIA[];
   couleurs?: ComboCouleurs[];
+  /** v2 : la lecture faite par « Lire les photos ». */
+  lecture?: SourceLecture;
 };
 
 export type LectureLectureIA = { ok: true; lecture: LectureIA } | { ok: false; phrase: string };
@@ -84,11 +116,17 @@ const HEX = /^#[0-9a-f]{6}$/;
 export const RAISON_MOTS_MAX = 8;
 export const IDEE_MOTS_MAX = 6;
 
-function lirePhoto(nom: string, x: unknown): string | PhotoIA {
+const CLES_PHOTO_V1 = ["visages", "role", "lieu", "capture"] as const;
+const CLES_PHOTO_V2 = [...CLES_PHOTO_V1, "sujet", "candidate", "texte", "regard", "corrige"] as const;
+/** Un texte de mots comptés : vide permis, 120 signes au plus. */
+const motsAuPlus = (v: unknown, max: number): v is string => typeof v === "string" && v.length <= 120 && mots(v) <= max;
+
+function lirePhoto(nom: string, x: unknown, version: VersionLectureIA): string | PhotoIA {
   const ou = `la photo « ${nom} »`;
   if (!estObjet(x)) return `${ou} doit être un objet.`;
-  const k = clesEn(x, ["visages", "role", "lieu", "capture"]);
-  if (k) return `${ou} : le champ « ${k} » n'existe pas (visages, role, lieu, capture). Aucune identité de personne n'est admise.`;
+  const admises: readonly string[] = version === VERSION_LECTURE_IA ? CLES_PHOTO_V1 : CLES_PHOTO_V2;
+  const k = clesEn(x, admises);
+  if (k) return `${ou} : le champ « ${k} » n'existe pas (${admises.join(", ")}). Aucune identité de personne n'est admise.`;
   const p: PhotoIA = {};
   if (x.visages !== undefined) {
     const v = x.visages;
@@ -126,6 +164,35 @@ function lirePhoto(nom: string, x: unknown): string | PhotoIA {
     if (typeof c.utile !== "boolean") return `${ou} : « utile » est vrai ou faux.`;
     p.capture = { type: c.type, dit: c.dit.trim(), utile: c.utile };
   }
+  if (version === VERSION_LECTURE_IA) return p;
+  if (x.sujet !== undefined) {
+    if (!dans(SUJETS_IA, x.sujet)) return `${ou} : sujet inconnu (${SUJETS_IA.join(", ")}).`;
+    p.sujet = x.sujet;
+  }
+  if (x.candidate !== undefined) {
+    if (!dans(CANDIDATES_IA, x.candidate)) return `${ou} : candidate inconnue (${CANDIDATES_IA.join(", ")}).`;
+    p.candidate = x.candidate;
+  }
+  if (x.texte !== undefined) {
+    if (typeof x.texte !== "boolean") return `${ou} : « texte » (un texte lisible en grand) est vrai ou faux.`;
+    p.texte = x.texte;
+  }
+  if (x.regard !== undefined) {
+    const r = x.regard;
+    if (!estObjet(r) || clesEn(r, ["moment", "idee", "recadrage", "plat"])) return `${ou} : « regard » = { moment, idee, recadrage, plat }.`;
+    if (!motsAuPlus(r.moment, MOMENT_MOTS_MAX)) return `${ou} : le moment tient en ${MOMENT_MOTS_MAX} mots au plus.`;
+    if (!motsAuPlus(r.idee, IDEE_REGARD_MOTS_MAX)) return `${ou} : l'idée tient en ${IDEE_REGARD_MOTS_MAX} mots au plus.`;
+    if (!motsAuPlus(r.recadrage, RECADRAGE_MOTS_MAX)) return `${ou} : le recadrage tient en ${RECADRAGE_MOTS_MAX} mots au plus.`;
+    if (!(typeof r.plat === "string" && r.plat.length <= 80)) return `${ou} : le plat tient en 80 signes au plus.`;
+    p.regard = { moment: r.moment.trim(), idee: r.idee.trim(), recadrage: r.recadrage.trim(), plat: r.plat.trim() };
+  }
+  if (x.corrige !== undefined) {
+    const c = x.corrige;
+    if (!estObjet(c) || clesEn(c, ["role", "sujet"]) || !Object.keys(c).length) return `${ou} : « corrige » = { role?, sujet? }, au moins l'un des deux.`;
+    if (c.role !== undefined && !dans(ROLES_IA, c.role)) return `${ou} : rôle corrigé inconnu (${ROLES_IA.join(", ")}).`;
+    if (c.sujet !== undefined && !dans(SUJETS_IA, c.sujet)) return `${ou} : sujet corrigé inconnu (${SUJETS_IA.join(", ")}).`;
+    p.corrige = { ...(dans(ROLES_IA, c.role) ? { role: c.role } : {}), ...(dans(SUJETS_IA, c.sujet) ? { sujet: c.sujet } : {}) };
+  }
   return p;
 }
 
@@ -147,9 +214,11 @@ export function lireLectureIA(entree: unknown): LectureLectureIA {
   }
   if (!estObjet(x)) return refus("Ce fichier n'est pas une lecture : il faut un objet JSON.");
   if (x.format !== FORMAT_LECTURE_IA) return refus(`Ce JSON n'est pas une lecture IA Bellajour : le champ « format » doit valoir « ${FORMAT_LECTURE_IA} ».`);
-  if (x.version !== VERSION_LECTURE_IA) return refus(`Version ${typeof x.version === "number" || typeof x.version === "string" ? String(x.version) : "absente"} inconnue : seule la version ${VERSION_LECTURE_IA} se charge.`);
-  const k = clesEn(x, ["format", "version", "projet", "photos", "rafales", "groupes", "couleurs"]);
-  if (k) return refus(`Le champ « ${k} » n'existe pas dans une lecture (format, version, projet, photos, rafales, groupes, couleurs).`);
+  if (x.version !== VERSION_LECTURE_IA && x.version !== VERSION_LECTURE_IA_2) return refus(`Version ${typeof x.version === "number" || typeof x.version === "string" ? String(x.version) : "absente"} inconnue : seules les versions 1 et 2 se chargent.`);
+  const version: VersionLectureIA = x.version;
+  const racine = ["format", "version", "projet", "photos", "rafales", "groupes", "couleurs", ...(version === VERSION_LECTURE_IA_2 ? ["lecture"] : [])];
+  const k = clesEn(x, racine);
+  if (k) return refus(`Le champ « ${k} » n'existe pas dans une lecture (${racine.join(", ")}).`);
 
   let projet: ProjetIA | undefined;
   if (x.projet !== undefined) {
@@ -170,7 +239,7 @@ export function lireLectureIA(entree: unknown): LectureLectureIA {
     const c = nomComparable(nom);
     if (vus.has(c)) return refus(`« ${vus.get(c)} » et « ${nom} » sont le même nom de fichier : une seule entrée par photo.`);
     vus.set(c, nom);
-    const p = lirePhoto(nom, x.photos[nom]);
+    const p = lirePhoto(nom, x.photos[nom], version);
     if (typeof p === "string") return refus(`${p.charAt(0).toUpperCase()}${p.slice(1)}`);
     photos[nom.trim()] = p;
   }
@@ -224,7 +293,18 @@ export function lireLectureIA(entree: unknown): LectureLectureIA {
     }
   }
 
-  return { ok: true, lecture: { format: FORMAT_LECTURE_IA, version: VERSION_LECTURE_IA, ...(projet ? { projet } : {}), photos, rafales, groupes, ...(couleurs ? { couleurs } : {}) } };
+  let lecture: SourceLecture | undefined;
+  if (x.lecture !== undefined) {
+    const s = x.lecture;
+    if (!estObjet(s) || clesEn(s, ["modeles", "dollars", "quand"])) return refus("« lecture » = { modeles, dollars, quand }.");
+    const ms = s.modeles;
+    if (!Array.isArray(ms) || ms.length > 8 || !ms.every((m) => texte(m, 60))) return refus("« lecture.modeles » est une liste de noms de modèles (8 au plus).");
+    if (!entre(s.dollars, 0, 10000)) return refus("« lecture.dollars » est un coût en dollars, positif.");
+    if (typeof s.quand !== "string" || s.quand.length > 40 || !Number.isFinite(Date.parse(s.quand))) return refus("« lecture.quand » est une date ISO.");
+    lecture = { modeles: ms.map((m) => String(m).trim()), dollars: s.dollars, quand: s.quand };
+  }
+
+  return { ok: true, lecture: { format: FORMAT_LECTURE_IA, version, ...(projet ? { projet } : {}), photos, rafales, groupes, ...(couleurs ? { couleurs } : {}), ...(lecture ? { lecture } : {}) } };
 }
 
 /** Le fichier est-il une lecture IA (et pas un premier jet) ? Juste le marqueur : le bouton « Premier jet » aiguille ainsi. */
@@ -259,7 +339,7 @@ export function relierLectureIA(l: LectureIA, catalogue: ReadonlyMap<string, { n
   for (const g of l.groupes) g.photos.forEach(noter);
   const id = (n: string): string | undefined => parNom.get(nomComparable(n));
   const photos = new Map<string, PhotoIA>();
-  for (const [n, p] of Object.entries(l.photos)) { const i = id(n); if (i && !photos.has(i)) photos.set(i, p); }
+  for (const [n, p] of Object.entries(l.photos)) { const i = id(n); if (i && !photos.has(i)) photos.set(i, photoCorrigee(p)); }
   const rafales: RafaleReliee[] = [];
   for (const r of l.rafales) {
     const ph = [...new Set(r.photos.map(id).filter((x): x is string => !!x))];
@@ -278,6 +358,23 @@ export function relierLectureIA(l: LectureIA, catalogue: ReadonlyMap<string, { n
 }
 
 /* ─────────────────────────── ce que l'écran en tire ─────────────────────────── */
+
+/**
+ * R194 (17/11) : la photo telle que l'écran la lit : un tag corrigé par l'atelier PRIME sur la proposition (rôle, sujet), partout.
+ * Corrigée « à écarter », elle perd sa candidature à la couverture. Sans correction, la même photo (même objet).
+ */
+export function photoCorrigee(p: PhotoIA): PhotoIA {
+  const c = p.corrige;
+  if (!c) return p;
+  const x: PhotoIA = { ...p };
+  if (c.sujet) x.sujet = c.sujet;
+  if (c.role) {
+    const base: RoleProposeIA = p.role ?? { role: c.role, interet: 0, raison: "corrigé par l'atelier" };
+    const { couverture, ...sans } = base;
+    x.role = { ...sans, role: c.role, ...(couverture && c.role !== "a_ecarter" ? { couverture } : {}) };
+  }
+  return x;
+}
 
 /** R147 : le lieu nommé qu'on propose EN PREMIER dans les textes : seulement s'il est SÛR (preuve) et assez confiant. Sinon null. */
 export function lieuSur(p: PhotoIA | undefined): string | null {
@@ -299,8 +396,12 @@ export function misesEnAvant(p: PhotoIA | undefined): MiseEnAvant[] {
 
 /** Les tags de la lecture IA, filtrables comme ceux de la lecture locale (R143 à R147). */
 export type TagIA = "ia_couverture" | "ia_pleine" | "ia_double" | "ia_ecarter" | "ia_groupe" | "ia_garder"
-  | "ia_billet" | "ia_carte" | "ia_message" | "ia_recu" | "ia_meme" | "ia_capture" | "ia_inutile" | "ia_lieu" | "ia_lieu_a_verifier";
+  | "ia_billet" | "ia_carte" | "ia_message" | "ia_recu" | "ia_meme" | "ia_capture" | "ia_inutile" | "ia_lieu" | "ia_lieu_a_verifier"
+  /* 17/11 (R193) : le rôle et le sujet lus par « Lire les photos » */
+  | "ia_heros" | "ia_satellite" | "ia_detail" | "ia_vue_ensemble"
+  | "ia_personnes" | "ia_paysage" | "ia_sujet_lieu" | "ia_plat" | "ia_objet";
 export const TAGS_IA: readonly TagIA[] = ["ia_couverture", "ia_pleine", "ia_double", "ia_groupe", "ia_garder", "ia_ecarter",
+  "ia_heros", "ia_satellite", "ia_detail", "ia_vue_ensemble", "ia_personnes", "ia_paysage", "ia_sujet_lieu", "ia_plat", "ia_objet",
   "ia_billet", "ia_carte", "ia_message", "ia_recu", "ia_meme", "ia_capture", "ia_inutile", "ia_lieu", "ia_lieu_a_verifier"];
 export const MOT_TAG_IA: Readonly<Record<TagIA, { mot: string; regle: string }>> = {
   ia_couverture: { mot: "Couverture", regle: "R143" },
@@ -318,7 +419,23 @@ export const MOT_TAG_IA: Readonly<Record<TagIA, { mot: string; regle: string }>>
   ia_inutile: { mot: "Capture inutile", regle: "R146" },
   ia_lieu: { mot: "Lieu nommé", regle: "R147" },
   ia_lieu_a_verifier: { mot: "Lieu à vérifier", regle: "R147" },
+  ia_heros: { mot: "Héros", regle: "R193" },
+  ia_satellite: { mot: "Satellite", regle: "R193" },
+  ia_detail: { mot: "Détail", regle: "R193" },
+  ia_vue_ensemble: { mot: "Vue d'ensemble", regle: "R193" },
+  ia_personnes: { mot: "Personnes", regle: "R193" },
+  ia_paysage: { mot: "Paysage", regle: "R193" },
+  ia_sujet_lieu: { mot: "Lieu", regle: "R193" },
+  ia_plat: { mot: "Plat", regle: "R193" },
+  ia_objet: { mot: "Objet", regle: "R193" },
 };
+/** Le mot d'un sujet, sur la vignette et dans le petit choix qui le corrige. */
+export const MOT_SUJET: Readonly<Record<SujetIA, string>> = { personnes: "Personnes", paysage: "Paysage", lieu: "Lieu", plat: "Plat", objet: "Objet", autre: "Autre" };
+/** Les rôles que lit la planche (et que l'atelier corrige) : les autres (couverture, pleine, double) sont des mises en avant. */
+export const ROLES_PLANCHE = ["heros", "satellite", "detail", "vue_ensemble", "a_ecarter"] as const;
+export type RolePlanche = (typeof ROLES_PLANCHE)[number];
+export const estRolePlanche = (r: unknown): r is RolePlanche => dans(ROLES_PLANCHE, r);
+const TAG_SUJET: Readonly<Record<Exclude<SujetIA, "autre">, TagIA>> = { personnes: "ia_personnes", paysage: "ia_paysage", lieu: "ia_sujet_lieu", plat: "ia_plat", objet: "ia_objet" };
 export const estTagIA = (t: string): t is TagIA => (TAGS_IA as readonly string[]).includes(t);
 /** Le mot d'une capture lue (« Billet », « Carte »…) : ce que la capture raconte, sur la vignette. */
 export const MOT_CAPTURE: Readonly<Record<TypeCapture, string>> = { billet: "Billet", carte: "Carte", message: "Message", recu: "Reçu", meme: "Mème", autre: "Capture" };
@@ -336,6 +453,10 @@ export function tagsIA(r: LectureIAReliee | null): ReadonlyMap<string, TagIA[]> 
   for (const [id, p] of r.photos) {
     for (const m of misesEnAvant(p)) ajouter(id, `ia_${m}`);
     if (p.role?.role === "a_ecarter") ajouter(id, "ia_ecarter");
+    const ro = p.role?.role;
+    if (ro === "heros" || ro === "satellite" || ro === "detail" || ro === "vue_ensemble") ajouter(id, `ia_${ro}`);
+    if (p.sujet && p.sujet !== "autre") ajouter(id, TAG_SUJET[p.sujet]);
+
     if (p.capture) { ajouter(id, p.capture.type === "autre" ? "ia_capture" : `ia_${p.capture.type}`); if (!p.capture.utile) ajouter(id, "ia_inutile"); }
     if (p.lieu) ajouter(id, lieuSur(p) ? "ia_lieu" : "ia_lieu_a_verifier");
   }

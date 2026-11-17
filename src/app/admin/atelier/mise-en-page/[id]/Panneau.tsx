@@ -11,6 +11,7 @@ import { CheminDeFer, Toast } from "./Bas";
 import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { BoutonPremierJet } from "./PremierJet";
+import { BoutonLireLesPhotos, TagsLus } from "./LireLesPhotos";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
 import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, PaletteTri, VuesBarre } from "./TriBulles";
@@ -361,7 +362,10 @@ function PanneauOuvert() {
           {capIA ? (
             <span className={cls("ed-rep", "ed-rep--tag", "ed-rep--tag-capture", !capIA.utile && "ed-rep--inutile")} title={`${MOT_CAPTURE[capIA.type]}${capIA.utile ? "" : " · inutile"} : ${capIA.dit}`}>{MOT_CAPTURE[capIA.type]}</span>
           ) : null}
+          {/* 17/11 (R193) : le rôle et le sujet lus par « Lire les photos », un clic les corrige (R194) */}
+          <TagsLus id={id} p={pia} />
           {tagsVignette.map((t) => (
+
             <span key={t} className={cls("ed-rep", "ed-rep--tag", `ed-rep--tag-${t}`)} title={`${MOT_TAG[t].mot} · règle ${MOT_TAG[t].regle} · une remarque, jamais une exclusion`}>{MOT_TAG[t].mot}</span>
           ))}
           {pile && ouvertes.has(id) && aAccepter && (aAccepter.garder.length || aAccepter.ecarter.length) ? (
@@ -408,6 +412,8 @@ function PanneauOuvert() {
             <BoutonPremierJet />
           </>
         ) : null}
+        {/* 17/11 : « Lire les photos » (création libre ; un dossier ou une édition le montre grisé : T-203) */}
+        <BoutonLireLesPhotos />
         {grand ? <><PaletteTri /><JaugeTri /></> : (
           <span className="ed-seg" role="group" aria-label="Taille des vignettes">
             {(["S", "M", "L"] as const).map((t) => (

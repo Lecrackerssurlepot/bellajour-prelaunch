@@ -22,6 +22,10 @@ export const dynamic = "force-dynamic";
 
 export const ERREUR_MEP_LECONS_ABSENTE = "migration_mep_lecons_absente";
 export const MIGRATION_MEP_LECONS = "supabase/migrations/20261110_mep_lecons.sql";
+/** 17/11 : la contrainte de `mep_lecons.type` d'avant le type `tag_corrige` (migration 20261117, écrite, pas appliquée le 17/11). */
+export const MIGRATION_TAG_CORRIGE = "supabase/migrations/20261117_mep_lecons_tag_corrige.sql";
+const TYPES_AVANT_20261117: ReadonlySet<string> = new Set(["floue_gardee", "pile_autre_gardee", "pile_pas_un_doublon", "tete_ecartee", "pretri_renverse", "reponse", "ouverture", "export"]);
+
 /** 200 leçons de quelques centaines d'octets, plus un instantané de 2 000 photos (≈ 300 Ko) : 2 Mo est une borne large. */
 const TAILLE_MAX = 2 * 1024 * 1024;
 const LOT_MAX = 200;
@@ -84,7 +88,17 @@ export async function POST(request: Request) {
   try {
     const sb = makeSupabase();
     if (lignes.length) {
-      const { error } = await sb.from("mep_lecons").insert(lignes);
+      let { error } = await sb.from("mep_lecons").insert(lignes);
+      /* 17/11 : une leçon `tag_corrige` (« Lire les photos ») refusée par la contrainte d'avant la migration 20261117 (23514) : les
+         autres leçons partent quand même, celles-là sont dites perdues (`perdues`), jamais un lot bloqué à l'infini. */
+      let perdues = 0;
+      if (error?.code === "23514" && lignes.some((l) => !TYPES_AVANT_20261117.has(String(l.type)))) {
+        const reste = lignes.filter((l) => TYPES_AVANT_20261117.has(String(l.type)));
+        perdues = lignes.length - reste.length;
+        error = reste.length ? (await sb.from("mep_lecons").insert(reste)).error : null;
+        if (!error) console.warn(`[admin/mise-en-page/lecons] ${perdues} leçon(s) tag_corrige refusée(s) : appliquer ${MIGRATION_TAG_CORRIGE}`);
+      }
+      if (!error && perdues) return NextResponse.json({ ok: true, lecons: lignes.length - perdues, perdues, migration: MIGRATION_TAG_CORRIGE, instantane: false }, { status: 200, headers: SANS_CACHE });
       if (error) {
         if (tableMepAbsente(error.code)) return refus(503, ERREUR_MEP_LECONS_ABSENTE, { message: `La table mep_lecons n'existe pas : appliquer ${MIGRATION_MEP_LECONS}.` });
         console.error("[admin/mise-en-page/lecons] écriture", error.code, error.message);

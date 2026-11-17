@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { distanceHash, ETIQUETTES, etiquettesDe, groupeDe, lectureDePhoto, libelleGroupeIA, lieuSur, marqueDe, motProposition, MOT_CAPTURE, MOT_ROLE, MOT_TAG, MOT_USAGE, planchesDesPhotos, rafaleDe, visibles, type Marque } from "@/lib/mise-en-page/editeur";
+import { distanceHash, ETIQUETTES, etiquettesDe, groupeDe, lectureDePhoto, libelleGroupeIA, lieuSur, marqueDe, motProposition, MOT_CAPTURE, MOT_ROLE, MOT_SUJET, MOT_TAG, MOT_USAGE, planchesDesPhotos, rafaleDe, visibles, type Marque } from "@/lib/mise-en-page/editeur";
 import { Chaleur } from "./Chaleur";
 import { cls, useEd, type Adresse } from "./contexte";
 import { grandeDe, precharger } from "./images";
@@ -260,7 +260,14 @@ function LectureIAPhoto({ id }: { id: string }) {
   const nom = (x: string) => etat.catalogue.get(x)?.nom ?? x;
   return (
     <dl className="ed-lec-dl ed-lec-ia">
-      {p?.role ? <><dt>Proposée</dt><dd>{MOT_ROLE[p.role.role]}{p.role.couverture ? `, couverture (${p.role.couverture})` : ""} · intérêt {nb(p.role.interet)} · {p.role.raison}</dd></> : null}
+      {p?.role ? <><dt>{p.corrige?.role ? "Rôle corrigé" : "Proposée"}</dt><dd>{MOT_ROLE[p.role.role]}{p.role.couverture ? `, couverture (${p.role.couverture})` : ""} · intérêt {nb(p.role.interet)} · {p.role.raison}</dd></> : null}
+      {/* 17/11 : ce que « Lire les photos » a rendu (le sujet en planche, le reste au regard fin) */}
+      {p?.sujet ? <><dt>{p.corrige?.sujet ? "Sujet corrigé" : "Sujet"}</dt><dd>{MOT_SUJET[p.sujet]}{p.texte ? " · texte lisible" : ""}</dd></> : null}
+      {p?.regard?.moment ? <><dt>Moment</dt><dd>{p.regard.moment}</dd></> : null}
+      {p?.regard?.idee ? <><dt>Idée</dt><dd>{p.regard.idee}</dd></> : null}
+      {p?.regard?.recadrage ? <><dt>Recadrage</dt><dd>{p.regard.recadrage}</dd></> : null}
+      {p?.regard?.plat ? <><dt>Plat</dt><dd>{p.regard.plat}</dd></> : null}
+
       {p?.lieu ? (
         <><dt>Lieu</dt><dd className={lieuSur(p) ? undefined : "ed-lec-averifier"}>{p.lieu.nom} · {p.lieu.source === "gps" ? "GPS" : "IA"} {nb(p.lieu.confiance)} · {p.lieu.statut === "sur" ? `sûr (${p.lieu.preuve === "gps" ? "GPS" : "panneau"})` : "à vérifier"}</dd></>
       ) : null}

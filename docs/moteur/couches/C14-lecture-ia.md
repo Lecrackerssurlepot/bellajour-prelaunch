@@ -46,3 +46,11 @@ l'œil du 14/11 (scripts de rejeu dans `design-explorations/demo-2026-11-13/lect
 
 ## Historique
 14/11 : créée (lot F).
+17/11 : **« Lire les photos »** (T-215, branche `feat/mise-en-page-lire-les-photos`, pas fusionnée) : la lecture n'arrive plus seulement
+par fichier, l'éditeur la FAIT, en création libre. Entonnoir A (lecture locale, gratuit) → B (planches de 16 vignettes, gpt-5.4) → C
+(regard fin, gpt-5.1), consignes et schémas repris tels quels de l'essai du 17/11 (`design-explorations/essai-ia-2026-11-17/essai.py`).
+Format **version 2** (sujet, candidate, texte, regard, corrige, `lecture`), la v1 lue comme avant. Tags de rôle et de sujet sur la
+vignette, corrigés d'un clic (leçon `tag_corrige`). Photos de clients refusées tant que T-203 n'est pas tranché. Règles R188 à R196,
+décision proposée D31. Module `editeur/lireLesPhotos.ts`, route `lecture-ia`, écran `[id]/LireLesPhotos.tsx`, `[id]/lireLesPhotosClient.ts`.
+Tests `scripts/verif-mep-lire-les-photos.ts` (37 vérifications, réponses simulées, aucun appel réseau). Recette réelle sur de vraies
+photos : à faire.

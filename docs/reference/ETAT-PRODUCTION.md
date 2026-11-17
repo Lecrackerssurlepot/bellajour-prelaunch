@@ -1,4 +1,4 @@
-# État du système — au 27/10/2026
+# État du système — au 17/11/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -10,7 +10,21 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 17/11/2026 — « Lire les photos » de l'éditeur : sur branche, PAS en production
+
+- Branche `feat/mise-en-page-lire-les-photos` (T-215, poussée, pas de PR) : bouton « Lire les photos » de l'éditeur de mise en page,
+  entonnoir A local, B gpt-5.4, C gpt-5.1, lecture IA version 2. **Création libre seulement** : les photos de clients attendent T-203
+  (route en 403 `photos_clients_non_autorisees` ; `MEP_LECTURE_IA_CLIENTS` posée NULLE PART). Décision D31 PROPOSÉE.
+- `OPENAI_API_KEY` : présente dans `.env.local` (17/11) ; sur Vercel, non vérifiée. Sans elle, la route rend 503 `openai_absente`.
+- Migration `20261117_mep_lecons_tag_corrige.sql` APPLIQUÉE le 17/11 (vérifiée en SQL). Avant elle : sans elle, les leçons `tag_corrige` sont refusées par la
+  base et dites `perdues` (les autres leçons partent). Et `mep_lecons` elle-même (20261110) : voir `supabase/CLAUDE.md`.
+- Pas encore prouvé : un passage réel sur de vraies photos (aucun appel à OpenAI n'a été fait depuis la branche ; tout est prouvé au
+  harnais et dans le navigateur avec des réponses simulées).
+
+---
+
 ## 26-27/10/2026 — Campagne « rude épreuve » : #316 et #317 en production
+
 
 Onze agents ont éprouvé l'Édition collective et le tunnel B2C (5 éditions TEST-RE vivantes en même
 temps, 360 photos en charge simultanée, 658 captures sur 7 tailles d'écran, 92 fenêtres ouvertes).

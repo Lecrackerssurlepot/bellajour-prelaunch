@@ -766,7 +766,25 @@ du fond (rendu du spread vu). SG-01 : « 12 » en Bodoni Moda à 506,5 pt (le co
 l'heure sous chaque vignette, en Hanken Grotesk 7 et 6 pt. Sans style : les mêmes cinq ombres, le géant en Arial à 430,5 pt (le corps attendu).
 **Conséquence :** l'ombre douce, sur un cadre tourné à contour intérieur, et le géant au-delà de 77 pt entrent dans l'export comme relus fidèlement.
 
-D30 (16/11/2026) — **Le goût entre dans l'éditeur par des doubles SIGNATURE, et leurs textes ne viennent que des faits.** Proposé par le lot
+D31 (17/11/2026, PROPOSÉE, à valider par Mathias) — **« Lire les photos » est un ENTONNOIR à deux modèles, et l'IA ne trie rien :
+elle pose des tags, l'atelier trie.** Plan validé par Mathias le 17/11 ; la décision écrite ici attend son « Je valide D31 ».
+A (local, gratuit) : la lecture de l'éditeur écarte d'abord floues, autres photos d'une pile (seule la tête part), captures, sombres,
+brûlées, trop petites et photos écartées par l'atelier. B : des planches de 16 vignettes numérotées lues par **gpt-5.4** (rôle, sujet,
+candidature, intérêt, texte lisible ; aucune description, le petit format fait inventer). C : le regard fin d'une photo à la fois par
+**gpt-5.1** (couverture, lieu lisible en entier, plat, moment, idée, recadrage), sur les candidates les plus intéressantes, au plus un
+quart des photos lues en B, plus les photos à texte lisible. Pourquoi ces deux modèles : le **banc de stabilité du 17/11**
+(`design-explorations/essai-ia-2026-11-17/stabilite.py`, deux passes sur les 57 photos du dossier « Test 2 » de Mathias) : gpt-5.4
+garde le même rôle sur 48/57 photos, le même sujet sur 52/57 et la même candidature sur 53/57, contre 39, 38 et 40 pour gpt-5.4-nano ;
+la planche doit être STABLE, sinon l'atelier corrige deux fois la même photo. Coût mesuré le même jour : B ≈ 0,061 $ pour 57 photos,
+C ≈ 0,034 $ pour 17 photos regardées (prix des pages officielles lues le 13/11). L'occasion déclarée n'est qu'un indice, jamais repris
+si la photo ne le montre pas ; D29 tient (aucune identité, ni dans les consignes ni dans les schémas). **Les photos de clients
+attendent T-203** : la politique de confidentialité doit le dire et Mathias doit l'accorder ; d'ici là, création libre seulement.
+**Conséquence :** `editeur/lireLesPhotos.ts`, route `/api/admin/atelier/mise-en-page/lecture-ia` (403 hors création libre sauf
+`MEP_LECTURE_IA_CLIENTS=1`, posée nulle part), lecture IA version 2, leçon `tag_corrige` ; règles R188 à R196 ; fiche C14. Changer de
+modèle = rejouer le banc de stabilité et l'essai de coût, puis une nouvelle date ici.
+
+D30 (16/11/2026) — **Le goût entre dans l'éditeur par des doubles SIGNATURE
+, et leurs textes ne viennent que des faits.** Proposé par le lot
 Signatures (T-214), **validé par Mathias le 17/11/2026** (« Je valide D30 »). Une signature est une double de la vitrine du 14/11 redite en cadres, avec un nom
 court tiré de la vitrine ; elle ne porte que ce qui est fidèle à l'export (D28) : ni détourage, ni noir et blanc, ni écriture manuscrite, ni
 aplat dans le gabarit (le fond est proposé, puis libre). Ses textes par défaut sont des FAITS (date et heure EXIF, lieu sûr, période du

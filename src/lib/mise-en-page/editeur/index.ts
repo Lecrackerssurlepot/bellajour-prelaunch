@@ -94,7 +94,25 @@ export type {
   CaptureIA, ComboCouleurs, CouvertureIA, GroupeIA, GroupeRelie, LectureIA, LectureIAReliee, LectureLectureIA, LieuIA, MiseEnAvant, PhotoIA, ProjetIA, RafaleIA,
   RafaleReliee, RoleIA, RoleProposeIA, TagIA, TypeCapture, TypeGroupe, TypeProjet, UsageRafale, VisagesIA,
 } from "./lectureIA";
+/* 17/11 : la lecture IA v2 et « Lire les photos » (l'entonnoir A local, B planches, C regard fin) */
+export {
+  CANDIDATES_IA, MOT_SUJET, ROLES_PLANCHE, SUJETS_IA, VERSION_LECTURE_IA_2, VERSIONS_LECTURE_IA, estRolePlanche, photoCorrigee,
+  IDEE_REGARD_MOTS_MAX, MOMENT_MOTS_MAX, RECADRAGE_MOTS_MAX,
+} from "./lectureIA";
+export type { CandidateIA, CorrigeIA, RegardIA, RolePlanche, SourceLecture, SujetIA, VersionLectureIA } from "./lectureIA";
+export {
+  CASE_PLANCHE_PX, CLE_LIBRE, COLONNES_PLANCHE, CONFIANCE_LIEU_LU, CONSIGNE_B, ESSAI_17_11, MODELE_PLANCHE, MODELE_REGARD, MOT_RAISON_A, PAR_PLANCHE, PART_REGARD,
+  PLANCHE_MAX_PX, POURQUOI_REGARD, PRIX_LUS_LE, PRIX_MODELES, PRIX_SOURCE, QUALITE_JPEG, REGARD_MAX_PX, SCHEMA_B, SCHEMA_C, TAILLE_MAX_DEMANDE, TROP_PETITE_PX,
+  TYPES_COUVERTURE_REGARD, aEnvoyer, choisirPourRegard, cleDeRoute, consigneRegard, corpsPlanche, corpsRegard, corrigerTag, couperMots, coutDollars,
+  dimensionsJpeg, entonnoirA, estCleLibre, estModeleLecture, estimer, gardeLecture, indiceDuProjet, indicePropre, lireDemande, lireEnveloppe, lireReponsePlanche,
+  lireReponseRegard, motDollars, photosLues, plafondRegard, planchesDe, repliEffort, versLectureIA,
+} from "./lireLesPhotos";
+export type {
+  CorpsOpenAI, Correction, Demande, Effort, Garde, Jetons, LuPlanche, LuRegard, ModeleLecture, PourRegard, PourquoiRegard, RaisonA, Relu, ResultatsLecture,
+  TypeCouvertureRegard,
+} from "./lireLesPhotos";
 export { libelleGroupeIA } from "./bibliotheque";
+
 export { lieuDeTexte } from "./lieuxTextes";
 export { estPng } from "./tags";
 /* lot G (14/11) : les couleurs libres (fond d'une page, couleur d'un texte) */
