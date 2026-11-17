@@ -338,9 +338,9 @@ export const MAILS = [
     a: "toute la liste (Waitlist + conversations)",
     sujet: "Dernier jour garanti : lundi 🎄",
     preheader: "Le 7 décembre, nous fermons les dépôts.",
-    liens: [LIENS.composer, LIENS.offrir],
+    liens: [LIENS.magazine, LIENS.composer, LIENS.offrir],
     blocs: [
-      image("aussie-1040.jpg", "Le magazine Aussie, une ville la nuit en couverture"),
+      image("aussie-1040.jpg", "Le magazine Aussie, une ville la nuit en couverture", 520, LIENS.magazine),
       titre("Plus qu&rsquo;un week-end."),
       evocation(
         `${vous("lundi 7 décembre, nous fermons les dépôts pour Noël.")}${SI("PLACES", ` Il reste ${P("PLACES")} places.`)} Vos photos du week-end ont encore le temps d&rsquo;y entrer.`,
@@ -360,9 +360,9 @@ export const MAILS = [
     a: "toute la liste (Waitlist + conversations)",
     sujet: "Trop tard pour le magazine, pas pour l'offrir 🎁",
     preheader: "La carte cadeau part par e-mail, le jour de votre choix.",
-    liens: [LIENS.offrir, LIENS.conditions],
+    liens: [LIENS.magazine, LIENS.offrir, LIENS.conditions],
     blocs: [
-      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail"),
+      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail", 520, LIENS.magazine),
       titre("Pas trop tard."),
       evocation(
         `${vous("les dépôts pour Noël sont fermés.")} La carte cadeau, elle, part encore : par e-mail le jour que vous choisissez, ou à imprimer ce soir.`,
@@ -383,7 +383,7 @@ export const MAILS = [
     a: "toute la liste (Waitlist + conversations)",
     sujet: "La carte cadeau part encore 🎄🎁",
     preheader: "Achetée aujourd'hui, reçue aujourd'hui. Ou le 24 au matin.",
-    liens: [LIENS.offrir, LIENS.conditions],
+    liens: [LIENS.offrir, LIENS.magazine],
     blocs: [
       carte({ pour: "À offrir", mot: false, bas: "Valable 12 mois", montant: "30&nbsp;€ ou 50&nbsp;€" }),
       titre("Il est encore temps."),
@@ -394,7 +394,7 @@ export const MAILS = [
       aNoter([
         "Dernier envoi programmé : le 24 décembre au matin.",
         "À imprimer : elle est prête dès le paiement.",
-      ]),
+      ], { href: LIENS.magazine, texte: "Voir les magazines" }),
       signature(),
     ],
   },
