@@ -17,6 +17,8 @@ Ce format est celui que remplira le vrai service côté serveur (les appels d'IA
 la démo du 13/11 le produit déjà (`design-explorations/demo-2026-11-13/lecture/exporter.py`). Il ne suppose rien de la démo.
 
 - Code qui le lit : `src/lib/mise-en-page/editeur/lectureIA.ts` (pur), testé par `scripts/verif-mep-lecture-ia.ts`.
+- Code qui l'ÉCRIT depuis le 17/11 : le bouton « Lire les photos » (`editeur/lireLesPhotos.ts`, pur ; route
+  `/api/admin/atelier/mise-en-page/lecture-ia`), en **version 2** (voir plus bas), testé par `scripts/verif-mep-lire-les-photos.ts`.
 - Exemple complet et valide : [`exemple-lecture-ia.json`](exemple-lecture-ia.json).
 - Vérifier un fichier : `npx tsx --tsconfig tsconfig.json scripts/lecture-ia.ts <fichier.json> [<dossier de photos>]`.
 
@@ -32,12 +34,13 @@ la démo du 13/11 le produit déjà (`design-explorations/demo-2026-11-13/lectur
 | Champ | Obligatoire | Contenu |
 |---|---|---|
 | `format` | oui | exactement `"bellajour-lecture-ia"` |
-| `version` | oui | exactement `1` (un autre format sera une autre version, jamais une retouche de la 1) |
+| `version` | oui | `1` ou `2` (17/11). La 1 ne se retouche pas : un fichier v1 se lit exactement comme avant, et un champ de la v2 y reste un champ en trop |
 | `projet` | non | `{ type, source, raison }` : `type` = `solo`, `couple` ou `bande` ; `source` = `client` (déclaré dans le questionnaire) ou `comptage` (des visages comptés) ; `raison` 160 signes |
 | `photos` | oui | `{ "<nom de fichier>": { visages?, role?, lieu?, capture? } }`, une entrée par photo, chaque partie facultative |
 | `rafales` | oui | liste (vide s'il n'y en a pas) |
 | `groupes` | oui | liste (vide s'il n'y en a pas) |
 | `couleurs` | non | les combos de couleurs proposés : le panneau Style les montre sous « Lecture IA », après ceux des photos (lot G) |
+| `lecture` | non, **v2 seulement** | `{ modeles, dollars, quand }` : les modèles qui ont lu, le coût réel cumulé en dollars (jetons × prix datés), la date ISO du dernier passage |
 
 Aucun autre champ n'est admis, à aucun niveau : le fichier est refusé avec une phrase qui nomme le champ en trop. Taille : 8 Mo, 10 000
 photos au plus (bornes techniques).
@@ -132,7 +135,56 @@ hors de 0 à 1, raison de plus de 8 mots, lieu « sûr » sans preuve, type de c
 une photo à garder n'est pas dans la rafale ; une photo dans deux rafales ou deux groupes ; un groupe dont le type ne correspond pas
 au nombre de photos, ou dont l'idée dépasse 6 mots ; un combo de couleurs sans ses six rôles.
 
+## La version 2 (17/11) : ce que « Lire les photos » écrit
+
+La v2 = la v1, plus ces champs FACULTATIFS, et rien d'autre :
+
+| Où | Champ | Contenu |
+|---|---|---|
+| photo | `sujet` | ce que la photo montre : `personnes`, `paysage`, `lieu`, `plat`, `objet`, `autre` (jamais QUI : D29) |
+| photo | `candidate` | ce que la planche pressent : `aucune`, `couverture`, `pleine`, `double` |
+| photo | `texte` | vrai si un panneau, une enseigne ou une carte porte un texte lisible en grand |
+| photo | `regard` | ce que le regard fin a rendu : `{ moment (6 mots), idee (10 mots), recadrage (10 mots), plat (80 signes) }`, chaînes vides permises |
+| photo | `corrige` | les tags CORRIGÉS par l'atelier : `{ role?, sujet? }`, au moins l'un des deux. Ils priment sur la proposition PARTOUT (vignette, filtres, mises en avant, Lecture) ; la proposition reste écrite, pour la leçon |
+| racine | `lecture` | `{ modeles, dollars, quand }` |
+
+Comment le résultat de l'IA devient la lecture : le `role` est celui de la planche (`heros`, `satellite`, `detail`, `vue_ensemble`,
+`a_ecarter`), sauf une candidate `pleine` ou `double`, qui devient ce rôle ; une candidate `couverture` porte `role.couverture` = le
+type rendu par le regard fin s'il la confirme ; la `raison` dit le sujet et l'étape (« Paysage · regard fin ») ; un `lieu_lu` devient
+`lieu: { nom, confiance: 0.9, source: "ia", statut: "sur", preuve: "panneau" }`. Corriger une lecture v1 la fait passer en v2.
+
+## Le bouton « Lire les photos » (17/11)
+
+Dans la tête du panneau Photos, à côté de « Premier jet ». **Création libre seulement** : sur un dossier ou une édition, il est grisé
+et dit « Photos de clients : accord à venir » (T-203 ; la route refuse aussi, 403). L'IA ne trie rien : elle pose des tags, l'atelier trie.
+
+1. **Avant de lancer**, une ligne, par exemple « 57 photos · 57 lues par l'IA · ≈ 0,09 $ » (l'estimation d'après l'essai du 17/11 : 0,061 $ pour
+   57 photos en planche, 0,034 $ pour 17 photos regardées). Un clic sur « Lancer » lance. « Relire tout » (seulement si une lecture
+   existe) relit aussi ce qui l'est déjà.
+2. **A, local, gratuit** : ne partent que les photos que la lecture de l'éditeur n'écarte pas (floues, autres photos d'une pile,
+   captures, sombres, brûlées, sous 1 600 px de grand côté, écartées par l'atelier), UNE par pile (sa tête), et jamais une photo
+   déjà lue (le cache = la lecture du projet, par nom de fichier).
+3. **B, les planches** : 16 vignettes numérotées par planche (le navigateur les compose : 4 colonnes, cases de 384 px, numéro blanc
+   sur pavé noir, JPEG de 1 536 px au plus), lues par **gpt-5.4** (effort « low », image en détail « high », schéma JSON strict).
+   Les tags arrivent planche par planche sur les vignettes.
+4. **C, le regard fin** : une photo à la fois (1 024 px), **gpt-5.1** (effort « none », repli « minimal ») ; les candidates les plus
+   intéressantes, au plus un quart des photos lues en B, plus toute photo à texte lisible. L'occasion du projet n'est qu'un INDICE
+   (« qui peut être faux ou vague », « Ne le reprends JAMAIS si la photo ne le montre pas ») ; le nom par défaut « Création libre »
+   n'en est pas un.
+5. **« Arrêter »** à tout moment : ce qui est lu reste, ce qui a été payé est compté.
+6. **À la fin**, une fois : « Lu : 57 photos · 0,09 $ », le coût RÉEL (jetons de chaque réponse × prix datés du 13/11).
+
+Sur chaque vignette lue : le rôle (Héros, Satellite, Détail, Vue d'ensemble, À écarter) et le sujet (Personnes, Paysage, Lieu, Plat,
+Objet). Un clic sur l'un ouvre un petit choix qui corrige l'un ou l'autre ; corrigé, le tag passe au bleu de l'atelier, et le geste
+devient une leçon `tag_corrige` de règle IA (la proposition et le geste ; migration `20261117_mep_lecons_tag_corrige.sql`, écrite,
+pas appliquée : sans elle, ces leçons-là sont refusées par la base et dites `perdues`, les autres partent). Les filtres reçoivent les
+rôles et les sujets ; la Lecture (touche L) montre le sujet, le moment, l'idée, le recadrage, le plat et le lieu lu.
+
+Rien n'est écrit en base, aucune photo n'est gardée côté serveur ; la lecture vit dans ce navigateur, avec le projet, comme une lecture
+chargée par fichier.
+
 ## L'exemple
+
 
 [`exemple-lecture-ia.json`](exemple-lecture-ia.json) : les sept photos de l'exemple du premier jet (`IMG_0101.JPG` à `IMG_0107.JPG`),
 un projet « couple » compté, une pleine page candidate couverture, un lieu sûr (panneau) et un lieu à vérifier, un billet utile, une

@@ -39,8 +39,8 @@ export async function verifierMepLectureIA(ok: (nom: string, reussi: boolean) =>
   const refuse = (x: unknown, mot: string): boolean => { const r = O.lireLectureIA(x); return !r.ok && r.phrase.includes(mot); };
   const avec = (f: (l: Record<string, unknown>) => void): unknown => { const l = clone(L0) as unknown as Record<string, unknown>; f(l); return l; };
   const photos = (l: Record<string, unknown>) => l.photos as Record<string, Record<string, unknown>>;
-  ok("format : refus en UNE phrase : JSON illisible, autre format, version 2, champ en trop à la racine",
-    refuse("{", "JSON") && refuse({ ...clone(L0), format: "bellajour-premier-jet" }, "format") && refuse({ ...clone(L0), version: 2 }, "Version 2")
+  ok("format : refus en UNE phrase : JSON illisible, autre format, version 3 (la 2 existe depuis le 17/11), champ en trop à la racine",
+    refuse("{", "JSON") && refuse({ ...clone(L0), format: "bellajour-premier-jet" }, "format") && refuse({ ...clone(L0), version: 3 }, "Version 3")
       && refuse({ ...clone(L0), personnes: ["P1"] }, "« personnes »"));
   ok("D29 : AUCUNE identité de personne : un champ « personnes », « principaux » ou « empreinte » sur une photo est refusé ; « visages » n'admet que nombre, plusGrand, selfie",
     refuse(avec((l) => { photos(l)["IMG_0101.JPG"].personnes = ["P1", "P2"]; }), "« personnes »")

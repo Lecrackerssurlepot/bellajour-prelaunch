@@ -494,6 +494,8 @@ import { verifierMepPalette } from "./verif-mep-palette";
 import { verifierMepTypes } from "./verif-mep-types";
 /* Le lot Signatures (16/11, T-214) : les doubles signature, textes des faits, géant, fond proposé, ombre douce. */
 import { verifierMepSignatures } from "./verif-mep-signatures";
+/* 17/11 : « Lire les photos » (entonnoir A → B → C, lecture IA v2, correction, garde des photos de clients) */
+import { verifierMepLireLesPhotos } from "./verif-mep-lire-les-photos";
 import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
@@ -7509,7 +7511,7 @@ verifierMepGeneres(ok, titre);
 verifierNoelCartes(ok, titre);
 verifierNoelExemplaires(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => verifierMepLireLesPhotos(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
