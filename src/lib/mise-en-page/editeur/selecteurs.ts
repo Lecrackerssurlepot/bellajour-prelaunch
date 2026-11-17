@@ -6,10 +6,11 @@
 import { cadresDe, coteSeul, decorDe, dispositionDe, estDerniere, utilisations, type Cible, type CoteSeul, type Magazine, type Planche } from "../magazine";
 import { cadrer, type Cadrage, type Recadrage } from "../recadrage";
 import type { Aplat, Template } from "../types";
-import { texteStyle, type TexteStyle } from "../style";
+import { grossirSansStyle, placeDuTexte, texteStyle, type TexteStyle } from "../style";
+import { PLANCHE_L } from "../geometrie";
 import { piecesDuFond, type CouleurLibre, type PieceFond } from "../couleursLibres";
 import { rangerParTypes, type TypeDeGabarits } from "../typesGabarits";
-import { corpsAffiche, lieuxParDefaut } from "./lieuxTextes";
+import { corpsAffiche, largeurArialGras, lieuxParDefaut } from "./lieuxTextes";
 import { dansFamille, dpi, estPleine, partDansLePliPose, gabaritsClasses, pagesDe, photosIndisponibles, precedentDe, refPour } from "./operations";
 import { estTour, marquePourZone } from "./tri";
 import { LIBELLE, SEUIL_DPI, aPhoto, dimsCadre, pluriel, idsDispo, idsMagazine, idsPlanche, indexPlanche, photosDe, plancheDe, porteeDe, saisi } from "./outils";
@@ -188,8 +189,23 @@ export type CadreTexte = {
   style: TexteStyle | null;
   /** Lot G : la couleur CHOISIE pour ce texte (un rôle ou un hexa), null = celle du gabarit. Elle prime sur `blanc`. */
   teinte: CouleurLibre | null;
+  /** Lot Signatures : un cadre GÉANT. Vide (ni texte, ni fait), l'écran montre un REPÈRE discret, jamais le mot « Titre » géant (finitions du 16/11). */
+  geant: boolean;
+  /** Finitions du 16/11 : le texte écrit tient dans son cadre à son corps (sous un style ; sans style, toujours vrai). Faux = il déborde à l'export. */
+  tient: boolean;
+  /** Finitions du 16/11 : de combien l'écran peut le grossir (plancher de lisibilité) en gardant ses lignes et sans sortir du cadre (≥ 1). */
+  grossir: number;
 };
 export type CadrePlanche = CadrePhoto | CadreTexte;
+
+/**
+ * Finitions du 16/11 : la lecture d'un texte à l'écran.
+ * - `PLANCHER_PX` : le plus petit corps d'écran (px), pour qu'une légende de 7 pt reste lisible sur une planche réduite ; il ne grossit un
+ *   texte que de `grossir` (mêmes lignes, dans son cadre), sinon une ligne de 9 px coupait un cadre de 4,5 mm par le milieu des lettres ;
+ * - `RETRAIT_MM` : le `padding: 0 0.15cqw` de `.ed-txt` (0,15 % de la planche de chaque côté), ôté de la largeur mesurée ;
+ * - `INTERLIGNE_SANS_STYLE` : le `line-height` de `.ed-txt` sans style.
+ */
+export const REGLAGES_TEXTE_ECRAN = { PLANCHER_PX: 9, RETRAIT_MM: 0.0015 * PLANCHE_L, INTERLIGNE_SANS_STYLE: 1.15 } as const;
 
 /** Les cadres d'une planche en repère PLANCHE (mm), prêts à dessiner. */
 export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[] {
@@ -223,10 +239,16 @@ export function cadresPlanche(e: EtatEditeur, plancheId?: string): CadrePlanche[
         const affiche = !saisi(t) || !t.contenu ? parDefaut ?? (t.contenu || LIBELLE[c.role]) : t.contenu;
         /* lot Signatures (R181) : un cadre GÉANT prend le corps qui le remplit, calculé sur ce que l'écran montre (comme l'export) */
         const taille = corpsAffiche(c, affiche, e.magazine.style) ?? t.taille;
+        const style = e.magazine.style ? texteStyle(e.magazine.style, c.role, taille, t.couleur ?? c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null;
+        /* finitions du 16/11 : ce que l'écran montre tient-il dans son cadre, et de combien le plancher de lisibilité peut-il le grossir ? */
+        const utile = { l: Math.max(0, c.l - 2 * REGLAGES_TEXTE_ECRAN.RETRAIT_MM), h: c.h };
+        const place = style ? placeDuTexte(affiche, style, utile) : null;
+        const ecrit = saisi(t) && !!t.contenu.trim();
         out.push({ role: c.role, ref: { plancheId: p.id, cible, index }, x: c.x, y: c.y, l: c.l, h: c.h, rotation: c.rotation || 0,
-          contenu: t.contenu, vide: !saisi(t), taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut,
-          style: e.magazine.style ? texteStyle(e.magazine.style, c.role, taille, t.couleur ?? c.couleur, { contenu: affiche, l: c.l, h: c.h }) : null,
-          teinte: t.couleur ?? null });
+          contenu: t.contenu, vide: !saisi(t), taille, gras: t.gras, blanc: c.couleur === "blanc", parDefaut, style,
+          teinte: t.couleur ?? null, geant: !!c.geant,
+          tient: !place || place.tient || !(ecrit || parDefaut !== null),
+          grossir: place ? place.grossir : style ? 1 : grossirSansStyle(affiche, taille, REGLAGES_TEXTE_ECRAN.INTERLIGNE_SANS_STYLE, utile, largeurArialGras) });
       }
     }
   }
@@ -365,6 +387,9 @@ export type AvertissementsExport = {
   pagesVides: number[];
   /** Lot C : un titre écrit que son cadre ne tient pas, même au corps minimal (REGLAGES_TITRE.CORPS_MIN) : il déborde à l'export. */
   titresTropLongs: { plancheId: string; numero: number; texte: string }[];
+  /** Finitions du 16/11 : une légende ou un texte qui part à l'export (écrit, ou son fait, son lieu) et que son cadre ne tient pas à son corps :
+   *  le PDF l'écrirait sous le cadre, Affinity le cacherait. Sous un style seulement (les chasses de sa police), comme les titres. */
+  textesTropLongs: { plancheId: string; numero: number; texte: string; role: "texte" | "legende" }[];
   pagesAuDessus: number;
   planches: number;
   photos: number;
@@ -418,7 +443,16 @@ export function avertissementsExport(e: EtatEditeur): AvertissementsExport {
       for (const f of cadresPlanche(e, p.id)) if (f.role === "titre" && !f.vide && f.style?.trop) titresTropLongs.push({ plancheId: p.id, numero: index + 1, texte: f.contenu });
     });
   }
+  /* finitions du 16/11 : une légende ou un texte trop long pour son cadre (R-T-18 : une légende garde son corps, elle ne rapetisse pas) */
+  const textesTropLongs: AvertissementsExport["textesTropLongs"] = [];
+  if (e.magazine.style) {
+    e.magazine.planches.forEach((p, index) => {
+      for (const f of cadresPlanche(e, p.id)) {
+        if ((f.role === "legende" || f.role === "texte") && !f.tient) textesTropLongs.push({ plancheId: p.id, numero: index + 1, texte: f.vide || !f.contenu ? f.parDefaut ?? "" : f.contenu, role: f.role });
+      }
+    });
+  }
   const pl = pagesLibelle(e);
-  return { indisponibles, signaleesPosees, bassesDef, flouesPosees, visagesAuPli, hesitationsOuvertes, pagesVides, titresTropLongs, pagesAuDessus: pl.depasse && pl.cible !== null ? pl.pages - pl.cible : 0,
+  return { indisponibles, signaleesPosees, bassesDef, flouesPosees, visagesAuPli, hesitationsOuvertes, pagesVides, titresTropLongs, textesTropLongs, pagesAuDessus: pl.depasse && pl.cible !== null ? pl.pages - pl.cible : 0,
     planches: e.magazine.planches.length, photos: idsMagazine(e.magazine).length };
 }

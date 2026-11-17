@@ -69,7 +69,7 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
   const dossierOk = dossierAbsolu(dossier);
   const peutDossier = peutEcrireDansUnDossier();
   const nbAvert = av.indisponibles.length + av.signaleesPosees.length + av.bassesDef.length + (av.pagesAuDessus ? 1 : 0)
-    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length + av.titresTropLongs.length;
+    + av.flouesPosees.length + av.visagesAuPli.length + (av.hesitationsOuvertes ? 1 : 0) + av.pagesVides.length + av.titresTropLongs.length + av.textesTropLongs.length;
   const bloque = !ids.length || (av.indisponibles.length > 0 && !sans);
   /* lot C : les polices que le style met en jeu (jamais deux fois la même famille) ; la couverture parle la même langue */
   const paireStyle = etat.magazine.style ? paireParId(etat.magazine.style.paire) : null;
@@ -177,6 +177,13 @@ export function ExportFeuille({ catalogue, source, projet, suite, onFermer, onEx
                   </button>
                 ))}
                 {av.titresTropLongs.length > 3 ? <span className="ed-sous">et {av.titresTropLongs.length - 3} autres titres trop longs</span> : null}
+                {/* finitions du 16/11 : une légende ou un texte que son cadre ne tient pas (le PDF l'écrirait dessous, Affinity le cacherait) */}
+                {av.textesTropLongs.slice(0, 3).map((z, k) => (
+                  <button key={`${z.plancheId}${k}${z.texte}`} type="button" className="ed-ex-rouge" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>
+                    {z.role === "legende" ? "Légende trop longue" : "Texte trop long"} · planche {z.numero} →
+                  </button>
+                ))}
+                {av.textesTropLongs.length > 3 ? <span className="ed-sous">et {av.textesTropLongs.length - 3} autres textes trop longs</span> : null}
                 {av.signaleesPosees.length ? <span>{pluriel(av.signaleesPosees.length, "photo à ne pas publier posée", "photos à ne pas publier posées")}</span> : null}
                 {av.bassesDef.slice(0, 3).map((z) => (
                   <button key={`${z.photoId}${z.plancheId}`} type="button" onClick={() => { onFermer(); envoyer({ type: "naviguer", plancheId: z.plancheId }); }}>

@@ -49,6 +49,8 @@ export function cadresDeCouverture(e: EtatEditeur, dosMm: number): CadreCouvertu
       contenu: t.contenu, vide: !t.saisi, taille: t.taille, gras: t.gras, blanc: x.couleur === "blanc", parDefaut: t.parDefaut, repeter: x.repeter ?? 1,
       style: e.magazine.style ? texteStyle(e.magazine.style, x.role, t.taille, t.couleur ?? x.couleur) : null,
       teinte: t.couleur ?? null,
+      /* finitions du 16/11 : la couverture a son propre rendu (`TexteCouv`, plancher de 6 px) et aucun cadre géant */
+      geant: false, tient: true, grossir: 1,
     };
   });
 }

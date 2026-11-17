@@ -9,10 +9,14 @@
  *   5. le RANG (R183) : devant quand la signature convient aux photos, derrière sinon, jamais retirée ; une empreinte du classement ;
  *   6. l'OMBRE DOUCE (R184) : l'élément exact de l'essai du 29/10 dans l'IDML, des couches en produit dans le PDF, l'écran ;
  *      un magazine sans ombre ne change pas d'un octet ;
- *   7. la sauvegarde des cadres retouchés (`geant`, `fait`, `ombre`), relus exactement.
+ *   7. la sauvegarde des cadres retouchés (`geant`, `fait`, `ombre`), relus exactement ;
+ *   8. les FINITIONS du 16/11 : le géant vide montre un repère discret, jamais « TITRE » géant (R186) ; un texte ne se coupe plus à l'écran et
+ *      celui que son cadre ne tient pas est marqué et dit avant l'export (R187).
  * Sans base, sans réseau, sans écriture.
  */
 
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { PDFDocument, PDFRawStream, decodePDFRawStream, PDFArray } from "pdf-lib";
 import * as O from "@/lib/mise-en-page/editeur";
 import type { PhotoMaq } from "@/lib/mise-en-page/editeur";
@@ -24,7 +28,7 @@ import { MARGE_TEXTE, OMBRE_DOUCE, TEMPLATES_SIGNATURES, convientSignature, fond
 import { FAITS_DE_PHOTO, periodeDe, texteDeFait } from "@/lib/mise-en-page/editeur/faits";
 import { corpsAffiche, largeurArialGras } from "@/lib/mise-en-page/editeur/lieuxTextes";
 import { lieuCourt } from "@/lib/mise-en-page/editeur/moments";
-import { REGLAGES_GEANT, REGLAGES_TITRE, ajusterTitre, corpsGeant, styleDePaire, texteStyle } from "@/lib/mise-en-page/style";
+import { REGLAGES_GEANT, REGLAGES_TITRE, ajusterTitre, corpsGeant, grossirSansStyle, placeDuTexte, styleDePaire, texteStyle } from "@/lib/mise-en-page/style";
 import { PAGE_H, PAGE_L, PLANCHE_L, PT_PAR_MM } from "@/lib/mise-en-page/geometrie";
 import { SORTES_FAIT, type Template } from "@/lib/mise-en-page/types";
 import { AVANCE_SIGNATURES, BONUS_ORIGINE, MALUS_SIGNATURE_HORS } from "@/lib/mise-en-page/editeur/outils";
@@ -287,6 +291,64 @@ export async function verifierMepSignatures(ok: Rapporter, titre: (t: string) =>
     const m = magazineDe([planche("pl-2", { ...dispo(sg("SG-09"), IDS), cadres: clone(sg("SG-09").cadres) })]);
     ok("sauvegarde : une signature retouchée à la main (ses cadres copiés dans la disposition) passe, ombres comprises", contenuValide(m) && contenuValide(clone(m)));
     void FAITS_DE_PHOTO;
+  }
+
+  /* ── 8. les finitions du 16/11 (R186, R187) ── */
+  {
+    const lire = (f: string): string => readFileSync(resolve(process.cwd(), f), "utf8");
+    const scene = lire("src/app/admin/atelier/mise-en-page/[id]/Scene.tsx");
+    const css = lire("src/app/admin/atelier/mise-en-page/mise-en-page.css");
+    const exF = lire("src/app/admin/atelier/mise-en-page/[id]/ExportFeuille.tsx");
+
+    /* R186 : le géant vide */
+    /* des photos datées dont on ne connaît pas le lieu (la recette du 16/11 : sans base, aucun lieu) ; avec un lieu, le géant le prend (D2) */
+    const SANS_LIEU: Map<string, PhotoMaq> = new Map(IDS.map((id, i) => [id, maq(id, DATES[i])]));
+    const m = magazineDe([planche("pl-2", dispo(sg("SG-08"), IDS))]);
+    const e = O.creerEtat({ magazine: m, catalogue: SANS_LIEU });
+    const textes = O.cadresPlanche(e, "pl-2").filter((x): x is O.CadreTexte => x.role !== "photo");
+    const geant = textes.find((x) => x.geant);
+    const avecLieu = O.cadresPlanche(O.creerEtat({ magazine: m, catalogue: CATALOGUE }), "pl-2").find((x): x is O.CadreTexte => x.role !== "photo" && x.geant);
+    ok(`R186 : le cadre géant de SG-08 sans texte ni lieu est un repère (geant, vide, sans défaut) ; les deux légendes à fait ne le sont pas ; avec un lieu connu, le géant le montre (« ${avecLieu?.parDefaut ?? "?"} »)`,
+      !!geant && geant.vide && geant.parDefaut === null && textes.filter((x) => !x.geant).length === 2 && textes.filter((x) => !x.geant).every((x) => x.parDefaut !== null)
+        && !!avecLieu && avecLieu.parDefaut !== null);
+    ok(`R186 : l'écran montre « ${O.REPERE_GEANT} » sur une pastille (classe ed-txt--geant-vide, sa règle CSS), jamais le libellé « Titre » au corps du géant`,
+      O.REPERE_GEANT === "Mot géant" && /const repereGeant = f\.geant && libelle && !f\.parDefaut;/.test(scene) && /ed-txt ed-txt--geant-vide/.test(scene)
+        && /<span>\{REPERE_GEANT\}<\/span>/.test(scene) && /\.ed-txt--geant-vide > span \{[^}]*background:/.test(css));
+    const pret = O.avecLieuxParDefaut(m, SANS_LIEU);
+    const plan = planPdf(pret).flatMap((pg) => pg.objets).filter((o) => o.type === "texte");
+    const stories = storiesDe(construireIdml(pret, PHOTOS_EXPORT, { liens: { mode: "relatif" } }));
+    ok("R186 : à l'export, le géant vide ne part pas (D2) : ni « Titre » ni « Mot géant » dans le PDF ni dans l'IDML, les deux faits partent",
+      plan.length === 2 && plan.every((o) => o.type === "texte" && !/Titre|Mot géant/.test(o.contenu)) && !/Mot géant|>Titre</.test(stories));
+
+    /* R187 : un texte ne se coupe pas */
+    const style = styleDePaire("T-01")!;
+    const ts = texteStyle(style, "legende", 7)!;
+    const petit = { l: 52, h: 4.5 };
+    const court = placeDuTexte("16 h 58", ts, petit);
+    const boite = (g: number): number => g * ts.corps * ts.interligne;
+    ok(`R187 : « 16 h 58 » tient dans le cadre de 4,5 mm sous la vignette ; l'écran peut le grossir ×${court ? court.grossir.toFixed(2) : "?"} sans que sa ligne dépasse le cadre (avant : 9 px coupaient la ligne au milieu des lettres)`,
+      !!court && court.tient && court.grossir >= 1 && boite(court.grossir) <= petit.h * PT_PAR_MM + 1e-6);
+    const longue = "Les piscines naturelles de Porto Moniz, au bout de l'île, à marée haute";
+    const trop = placeDuTexte(longue, ts, petit);
+    ok("R187 : une légende longue ne tient pas dans ce cadre (deux lignes au moins) : elle n'y est pas rapetissée (R-T-18, le corps légende reste)",
+      !!trop && !trop.tient && trop.grossir === 1 && placeDuTexte(longue, ts, { l: 52, h: 30 })?.tient === true);
+    const avec = magazineDe([planche("pl-2", dispo(sg("SG-08"), IDS, { 1: longue }))]);
+    const eL = O.creerEtat({ magazine: avec, catalogue: CATALOGUE });
+    const av = O.avertissementsExport(eL);
+    const leg = O.cadresPlanche(eL, "pl-2").filter((x): x is O.CadreTexte => x.role === "legende");
+    ok(`R187 : avant l'export, « Légende trop longue · planche 2 » (${av.textesTropLongs.length} texte) ; l'écran la marque (tient = faux) ; la date à côté tient`,
+      av.textesTropLongs.length === 1 && av.textesTropLongs[0].role === "legende" && av.textesTropLongs[0].numero === 2 && av.textesTropLongs[0].texte === longue
+        && leg.length === 2 && leg[0].tient && !leg[1].tient && /ed-txt--trop/.test(scene) && /\.ed-txt--trop \{/.test(css)
+        && /"Légende trop longue" : "Texte trop long"\} · planche \{z\.numero\}/.test(exF) && /av\.textesTropLongs\.length/.test(exF));
+    const sansStyle = O.avertissementsExport(O.creerEtat({ magazine: magazineDe([planche("pl-2", dispo(sg("SG-08"), IDS, { 1: longue }))], false), catalogue: CATALOGUE }));
+    const libelleSeul = O.avertissementsExport(O.creerEtat({ magazine: magazineDe([planche("pl-2", dispo(sg("SG-08"), IDS))]), catalogue: SANS_DATE }));
+    ok("R187 : rien à dire pour les faits qui tiennent, pour un libellé qui ne part pas (photos sans date), ni sans style (comme les titres)",
+      av.titresTropLongs.length === 0 && O.avertissementsExport(e).textesTropLongs.length === 0 && sansStyle.textesTropLongs.length === 0 && libelleSeul.textesTropLongs.length === 0);
+    const g = grossirSansStyle("16 h 58", 7, O.REGLAGES_TEXTE_ECRAN.INTERLIGNE_SANS_STYLE, petit, largeurArialGras);
+    ok(`R187 : sans style aussi, l'écran grossit au plus ×${g.toFixed(2)} (chasses d'Arial Bold, interligne de l'écran) : la ligne reste dans son cadre`,
+      g >= 1 && g * 7 * O.REGLAGES_TEXTE_ECRAN.INTERLIGNE_SANS_STYLE <= petit.h * PT_PAR_MM + 1e-6 && grossirSansStyle("", 7, 1.15, petit, largeurArialGras) === 1);
+    ok("R187 : l'écran lit le plancher nommé et le grossissement mesuré (plus aucun « max(9px, … ) » dans Scene.tsx), et ne descend jamais sous le corps vrai",
+      !/max\(9px/.test(scene) && /REGLAGES_TEXTE_ECRAN\.PLANCHER_PX/.test(scene) && /max\(\$\{vrai\}cqw, min\(/.test(scene) && /\$\{vrai \* f\.grossir\}cqw/.test(scene));
   }
 }
 

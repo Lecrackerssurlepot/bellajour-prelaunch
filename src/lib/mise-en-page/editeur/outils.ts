@@ -74,6 +74,8 @@ export const HISTORIQUE_MAX = 200;
 
 export type RoleTexte = Exclude<RoleCadre, "photo">;
 export const LIBELLE: Readonly<Record<RoleTexte, string>> = { titre: "Titre", texte: "Texte", legende: "Légende" };
+/** Finitions du 16/11 : le repère d'un cadre GÉANT vide, à l'écran seulement (petit, sur une pastille lisible sur toute photo ; jamais exporté, D2). */
+export const REPERE_GEANT = "Mot géant";
 export const TAILLE_DEFAUT: Readonly<Record<RoleTexte, number>> = { titre: 16, texte: 10, legende: 7 };
 const LIBELLES = new Set<string>(Object.values(LIBELLE));
 export const CIBLES: readonly Cible[] = ["gauche", "droite", "double"];

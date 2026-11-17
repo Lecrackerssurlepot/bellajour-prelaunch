@@ -15,7 +15,7 @@ export type {
 } from "./selecteurs";
 
 export {
-  AVANCE_DESSINES, AVANCE_GENERES, BONUS_ANNEXE, BONUS_ORIGINE, MALUS_RUPTURE, MALUS_VIDE, PAS_TIROIR, PLAFOND_TIROIR, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
+  AVANCE_DESSINES, AVANCE_GENERES, BONUS_ANNEXE, BONUS_ORIGINE, MALUS_RUPTURE, MALUS_VIDE, PAS_TIROIR, PLAFOND_TIROIR, FILTRES_DEFAUT, HISTORIQUE_MAX, LIBELLE, PENALITE_REPETITION, REPERE_GEANT, POIDS_GRANDE_COUPE, SEUIL_DPI, SEUIL_DPI_CONFORT, TOLERANCE_RAPPORT, egal, idsMagazine, idsPlanche, photosDe,
 } from "./outils";
 export {
   ajouter, ajouterSurPlanche, autreGabarit, avecTexte, dansFamille, choisirGabarit, cibleSurPlanche, composer, creerDoubles, deplacerPhoto, deplacerPlanche, dpi, echanger,
@@ -31,7 +31,7 @@ export { annuler, apercu, apercuDepot, appliquer, creerEtat, lectureSeule, primi
 export { planDepot, planifier } from "./plans";
 export { aCote, aCoteParJour, candidatesCouverture, CLE_COUVERTURE_TETE, groupes, LIBELLE_COUVERTURE_TETE, quandPhoto, selectionMasquee, selectionOrdonnee, visibles } from "./bibliotheque";
 export {
-  actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, etiquettePages, gabaritsPour, libelleAnnuler,
+  REGLAGES_TEXTE_ECRAN, actionsPlanche, aplatsPlanche, avertissementsExport, bande, cadresPlanche, cheminDeFer, cibleAllumee, compteurs, emplacements, etatPhoto, etiquettePages, gabaritsPour, libelleAnnuler,
   libelleRetablir, typesPour, pagesLibelle, planchesDesPhotos, reperesBibliotheque, resumeIssue, zoneApresDepot,
 } from "./selecteurs";
 export { bandeauOuverture, boutonSource, ongletsProjets, porteEdition } from "./projets";

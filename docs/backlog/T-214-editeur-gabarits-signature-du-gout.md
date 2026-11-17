@@ -48,3 +48,10 @@ tirages jetés »), plus son code. Reste à polir, vu à l'écran :
 
 **En production le 16/11 (#371).** Fusionné après la recette locale et la recette des trois lots ensemble
 (`design-explorations/editeur-lots-2026-11-16/recette/ensemble/`). Reste : l'essai à l'œil de Mathias sur les onze doubles signature, avant de fermer.
+
+**Finitions du 16/11 au soir** (« Oui, corrige »), branche `fix/mise-en-page-finitions-signatures` :
+- le mot géant vide ne s'affiche plus « TITRE » en 200 pt : contour en tirets et pastille « Mot géant », lisibles sur une photo sombre (R186) ;
+- la légende rognée avait deux causes : le plancher d'écran de 9 px, plus haut qu'un cadre de 4,5 mm (une ligne coupée au milieu des
+  lettres même pour « 16 h 58 »), et un texte long reporté dans ce petit cadre. Le plancher ne grossit plus un texte au-delà de son cadre ;
+  un texte trop long n'est pas rapetissé (R-T-18 : la légende garde son corps) mais marqué en rouge, et la feuille d'export dit
+  « Légende trop longue · planche n » (R187). Les cadres des signatures gardent leur taille (taillés pour leur fait).

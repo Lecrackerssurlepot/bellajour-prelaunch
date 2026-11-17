@@ -384,10 +384,30 @@ export type TitreAjuste = {
   trop: boolean;
 };
 
+/**
+ * Les lignes d'un texte coupé aux espaces dans `lim` (em) : leur nombre et la plus large (em), ou null si un mot seul dépasse.
+ * `paragraphes` : la chasse de chaque mot, paragraphe par paragraphe (un paragraphe vide compte une ligne). Le calcul de l'export.
+ */
+function lignesGloutonnes(paragraphes: readonly (readonly number[])[], espace: number, lim: number): { n: number; plusLarge: number } | null {
+  let n = 0, plusLarge = 0;
+  for (const p of paragraphes) {
+    if (!p.length) { n++; continue; }
+    if (p.some((m) => m > lim)) return null;
+    let cour = p[0];
+    n++;
+    for (const m of p.slice(1)) {
+      if (cour + espace + m <= lim) cour += espace + m;
+      else { n++; plusLarge = Math.max(plusLarge, cour); cour = m; }
+    }
+    plusLarge = Math.max(plusLarge, cour);
+  }
+  return { n, plusLarge };
+}
+
 /** Ce qu'il faut pour savoir si un titre TIENT à un corps donné (le même calcul pour `ajusterTitre` et `corpsGeant`), ou null (rien à mesurer). */
 function mesurerTitre(
   contenu: string, ts: Pick<TexteStyle, "police" | "graisse" | "corps" | "interligne" | "capitales" | "approche">, cadre: { l: number; h: number },
-): { tient: (c: number) => boolean; parLargeur: number; parHauteur: number } | null {
+): { tient: (c: number) => boolean; parLargeur: number; parHauteur: number; lignes: (c: number) => { n: number; plusLarge: number } | null } | null {
   const vu = texteSousStyle(contenu, ts);
   const paragraphes = vu.split(/\r\n|\r|\n/).map((p) => p.split(/ +/).filter(Boolean));
   if (!paragraphes.some((p) => p.length) || !(cadre.l > 0) || !(cadre.h > 0) || largeurEmPolice(ts.police.id, ts.graisse, "M") === null) return null;
@@ -400,27 +420,50 @@ function mesurerTitre(
   const base = premiereBase(ts.police, ts.interligne);
   const descente = ts.capitales ? 0 : ts.police.metriques.desc / ts.police.metriques.upm;
 
-  /** Le nombre de lignes au corps `c`, ou null si un mot dépasse la largeur. */
-  const lignesAu = (c: number): number | null => {
-    const lim = largeur / c;
-    if (plusLong > lim) return null;
-    let n = 0;
-    for (const p of mots) {
-      if (!p.length) { n++; continue; }
-      let cour = p[0];
-      n++;
-      for (const m of p.slice(1)) {
-        if (cour + espace + m <= lim) cour += espace + m;
-        else { n++; cour = m; }
-      }
-    }
-    return n;
-  };
+  /** Les lignes au corps `c` (leur nombre, la plus large en em), ou null si un mot dépasse la largeur. */
+  const lignes = (c: number): { n: number; plusLarge: number } | null => lignesGloutonnes(mots, espace, largeur / c);
   const tient = (c: number): boolean => {
-    const n = lignesAu(c);
-    return n !== null && (base + (n - 1) * ts.interligne + descente) * c <= hauteur + 1e-6;
+    const l = lignes(c);
+    return l !== null && (base + (l.n - 1) * ts.interligne + descente) * c <= hauteur + 1e-6;
   };
-  return { tient, parLargeur: plusLong > 0 ? largeur / plusLong : Infinity, parHauteur: hauteur / (base + descente) };
+  return { tient, parLargeur: plusLong > 0 ? largeur / plusLong : Infinity, parHauteur: hauteur / (base + descente), lignes };
+}
+
+/* ─────────────────────────── un texte ne se coupe pas à l'écran (finitions du 16/11) ─────────────────────────── */
+
+/**
+ * La PLACE d'un texte sous un style, à son corps (`ts.corps`), mesurée avec les chasses de sa police comme `ajusterTitre` (mots entiers,
+ * `REGLAGES_TITRE.REMPLISSAGE` de la largeur, hauteur de l'encre) :
+ * - `tient` : le texte entre dans son cadre. Faux = il déborde à l'export (le PDF l'écrit sous le cadre, Affinity le cache) : l'écran le
+ *   marque et le contrôle avant export le dit (`avertissementsExport().textesTropLongs`) ;
+ * - `grossir` : de combien l'ÉCRAN peut le grossir (plancher de lisibilité, `REGLAGES_ECRAN.PLANCHER_PX`) en gardant les mêmes lignes et
+ *   sans sortir du cadre : la ligne la plus large dans la largeur utile, les boîtes de ligne du navigateur (n × interligne × corps) dans la
+ *   hauteur. ≥ 1 quand le texte tient ; l'écran ne descend jamais sous le corps vrai.
+ * Null : rien à mesurer (texte vide, cadre nul, police sans chasses).
+ */
+export function placeDuTexte(
+  contenu: string, ts: Pick<TexteStyle, "police" | "graisse" | "corps" | "interligne" | "capitales" | "approche">, cadre: { l: number; h: number },
+): { tient: boolean; grossir: number } | null {
+  const m = mesurerTitre(contenu, ts, cadre);
+  if (!m) return null;
+  const l = m.lignes(ts.corps);
+  if (!l || !(l.plusLarge > 0)) return { tient: false, grossir: 1 };
+  const parLargeur = (cadre.l * PT_PAR_MM * REGLAGES_TITRE.REMPLISSAGE) / (l.plusLarge * ts.corps);
+  const parHauteur = (cadre.h * PT_PAR_MM) / (l.n * ts.interligne * ts.corps);
+  return { tient: m.tient(ts.corps), grossir: Math.max(1, Math.min(parLargeur, parHauteur)) };
+}
+
+/**
+ * Sans style : de combien l'écran peut grossir un texte (mêmes lignes, dans son cadre), sur les chasses d'Arial Bold (`largeurArialGras`, donnée
+ * par l'appelant comme pour `corpsGeant` ; plus larges que le romain, la mesure reste prudente) et l'interligne de l'écran. 1 : rien à gagner.
+ */
+export function grossirSansStyle(contenu: string, taille: number, interligne: number, cadre: { l: number; h: number }, chasse: (s: string) => number): number {
+  const mots = contenu.split(/\r\n|\r|\n/).map((p) => p.split(/ +/).filter(Boolean).map(chasse));
+  if (!mots.some((p) => p.length) || !(cadre.l > 0) || !(cadre.h > 0) || !(taille > 0) || !(interligne > 0)) return 1;
+  const lim = (cadre.l * PT_PAR_MM * REGLAGES_TITRE.REMPLISSAGE) / taille;
+  const l = lignesGloutonnes(mots, chasse(" "), lim);
+  if (!l || !(l.plusLarge > 0)) return 1;
+  return Math.max(1, Math.min(lim / l.plusLarge, (cadre.h * PT_PAR_MM) / (l.n * interligne * taille)));
 }
 
 /**
