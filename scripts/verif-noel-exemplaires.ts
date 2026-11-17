@@ -91,8 +91,17 @@ export function verifierNoelExemplaires(ok: Ok, titre: (t: string) => void): voi
   const route = readFileSync("src/app/api/atelier/checkout/route.ts", "utf8");
   ok("paiement : la carte entre dans totalCommande (seuil) ET dans les lignes Stripe, refusée sans drapeau",
     /cadeauCentimes: cadeau\?\.centimes/.test(route) && /Carte cadeau Bellajour/.test(route) && /cadeau_invalide/.test(route) && /NEXT_PUBLIC_GIFT_CARD_ENABLED/.test(route));
-  ok("paiement : carte ajoutée + crédit fondateur, code de carte ou crédit de compte = refusé (Stripe répartirait le coupon sur la carte)",
-    /if \(cadeau && remiseAppliquee\)/.test(route) && /cadeau && imputation && imputation\.remiseMagazinesCentimes > 0/.test(route) && /cadeau_refuse/.test(route));
+  ok("paiement : carte ajoutée + crédit fondateur = refusé (code promo Stripe, non restreignable)",
+    /if \(cadeau && remiseAppliquee\)/.test(route) && /cadeau_refuse/.test(route));
+  ok("paiement : carte ajoutée + code de carte ou crédit de compte = coupon sur les SEULS magazines (applies_to), jamais sur la carte",
+    !/cadeau && imputation && imputation\.remiseMagazinesCentimes > 0/.test(route)
+      && /applies_to: \{ products: produitsMagazines \}/.test(route)
+      && /product: produitsMagazines\[i\]/.test(route)
+      && /stripe\.products\.create\(/.test(route));
+  ok("paiement : avec une carte ajoutée, pas de champ code promo chez Stripe (il se répartirait sur la carte)",
+    /: cadeau\s*\n?\s*\? \/\*[^*]*\*\/ \{\}/.test(route));
+  ok("page : une carte reçue n'empêche plus d'en offrir une (seul le fondateur)",
+    /ouvert && creditEuros === null\n/.test(readFileSync("src/app/numero/[token]/page.tsx", "utf8")));
   const webhook = readFileSync("src/app/api/webhook/route.ts", "utf8");
   ok("webhook : la carte ajoutée s'écrit après le paiement du magazine, et suit son remboursement",
     /enregistrerCarteAjoutee\(supabase, session\)/.test(webhook) && /traiterRemboursementCarte\(supabase, charge, \{ silencieux: true \}\)/.test(webhook));

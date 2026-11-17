@@ -757,7 +757,7 @@ export default function CasesEtCommande({
           ) : null}
           {carte && carte.carteCentimes > 0 ? (
             <div className="nu-bon-l">
-              <span>Carte cadeau</span>
+              <span>Votre carte cadeau</span>
               <b>&minus;{formaterCentimes(carte.carteCentimes)}</b>
             </div>
           ) : null}
@@ -769,7 +769,7 @@ export default function CasesEtCommande({
           ) : null}
           {commande && (commande.cadeau ?? 0) > 0 ? (
             <div className="nu-bon-l">
-              <span>Carte cadeau{prenomCadeau(prenomCadeauTape) ? ` pour ${prenomCadeau(prenomCadeauTape)}` : ''}</span>
+              <span>{prenomCadeau(prenomCadeauTape) ? `Carte pour ${prenomCadeau(prenomCadeauTape)}` : 'Carte à offrir'}</span>
               <b>{formaterCentimes(commande.cadeau ?? 0)}</b>
             </div>
           ) : null}
