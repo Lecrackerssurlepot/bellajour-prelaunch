@@ -49,6 +49,7 @@ export const LIENS = {
   offrir: `${SITE}/offrir`,
   conditions: `${SITE}/offrir#conditions`,
   composer: `${SITE}/composer?nouveau=1`,
+  magazine: `${SITE}/magazine`,
   compte: `${SITE}/compte`,
 };
 
@@ -63,9 +64,10 @@ const SI = (n, oui, non = "") => `{% if params.${n} %}${oui}${non ? `{% else %}$
 const ligne = (contenu, bas = 40, align = "left") =>
   `<tr><td align="${align}" class="px-mobile" style="padding: 0 40px ${bas}px 40px;">${contenu}</td></tr>`;
 
-function image(fichier, alt, largeur = 520) {
+function image(fichier, alt, largeur = 520, lien = null) {
+  const img = `<img src="${IMG}/${fichier}" width="${largeur}" alt="${alt}" style="display: block; width: 100%; max-width: ${largeur}px; height: auto; border: 0; outline: none; text-decoration: none; margin: 0 auto;" />`;
   return ligne(
-    `<img src="${IMG}/${fichier}" width="${largeur}" alt="${alt}" style="display: block; width: 100%; max-width: ${largeur}px; height: auto; border: 0; outline: none; text-decoration: none; margin: 0 auto;" />`,
+    lien ? `<a href="${lien}" style="display: block; text-decoration: none;">${img}</a>` : img,
     40,
     "center",
   );
@@ -289,20 +291,20 @@ const carteDe = () =>
   });
 
 export const MAILS = [
-  /* ── Campagnes : envoyées à la main par scripts/noel-campagne.ts ── */
+  /* ── Campagnes : brouillons Brevo créés par scripts/noel-campagnes.mjs ── */
   {
     code: "N1",
     nom: "Noël N1 · Pour offrir, avant Noël",
     quand: "campagne, semaine du 23/11 (date à valider)",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "Pour offrir, avant Noël 🎄",
     preheader: "Une carte cadeau, et votre magazine pour les fêtes.",
-    liens: [LIENS.offrir, LIENS.composer, LIENS.conditions],
+    liens: [LIENS.offrir, LIENS.magazine, LIENS.conditions],
     blocs: [
-      image("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table"),
+      image("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table", 520, LIENS.magazine),
       titre("Un premier Noël."),
       evocation(
-        `${vous("vous faites partie des premiers à nous avoir confié vos photos.")} Merci. Bellajour grandit, et pour son premier Noël, nous avons pensé à vous.`,
+        `${vous("vous faites partie des premiers à suivre Bellajour.")} Merci. Bellajour grandit, et pour son premier Noël, nous avons pensé à vous.`,
       ),
       duo(
         {
@@ -313,11 +315,11 @@ export const MAILS = [
           libelle: "Offrir une carte",
         },
         {
-          lien: LIENS.composer,
+          lien: LIENS.magazine,
           visuel: `<img src="${IMG}/lisbonne-480.jpg" width="240" alt="Le magazine Lisbonne" style="display: block; width: 100%; max-width: 240px; height: auto; border: 0;" />`,
           titre: "Pour vous",
           texte: "Votre magazine sous le sapin, et un deuxième dans le même colis, à prix doux.",
-          libelle: "Composer le mien",
+          libelle: "Voir les magazines",
         },
       ),
       bouton("Offrir une carte", LIENS.offrir),
@@ -333,12 +335,12 @@ export const MAILS = [
     code: "N2",
     nom: "Noël N2 · Plus qu'un week-end",
     quand: "campagne, vendredi 4/12",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "Dernier jour garanti : lundi 🎄",
     preheader: "Le 7 décembre, nous fermons les dépôts.",
-    liens: [LIENS.composer, LIENS.offrir],
+    liens: [LIENS.magazine, LIENS.composer, LIENS.offrir],
     blocs: [
-      image("aussie-1040.jpg", "Le magazine Aussie, une ville la nuit en couverture"),
+      image("aussie-1040.jpg", "Le magazine Aussie, une ville la nuit en couverture", 520, LIENS.magazine),
       titre("Plus qu&rsquo;un week-end."),
       evocation(
         `${vous("lundi 7 décembre, nous fermons les dépôts pour Noël.")}${SI("PLACES", ` Il reste ${P("PLACES")} places.`)} Vos photos du week-end ont encore le temps d&rsquo;y entrer.`,
@@ -355,12 +357,12 @@ export const MAILS = [
     code: "N3",
     nom: "Noël N3 · Pas trop tard pour l'offrir",
     quand: "campagne, mardi 8/12 (date à valider)",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "Trop tard pour le magazine, pas pour l'offrir 🎁",
     preheader: "La carte cadeau part par e-mail, le jour de votre choix.",
-    liens: [LIENS.offrir, LIENS.conditions],
+    liens: [LIENS.magazine, LIENS.offrir, LIENS.conditions],
     blocs: [
-      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail"),
+      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail", 520, LIENS.magazine),
       titre("Pas trop tard."),
       evocation(
         `${vous("les dépôts pour Noël sont fermés.")} La carte cadeau, elle, part encore : par e-mail le jour que vous choisissez, ou à imprimer ce soir.`,
@@ -378,10 +380,10 @@ export const MAILS = [
     code: "N4",
     nom: "Noël N4 · La carte part encore",
     quand: "campagne, lundi 21/12 (date à valider)",
-    a: "fondateurs",
+    a: "toute la liste (Waitlist + conversations)",
     sujet: "La carte cadeau part encore 🎄🎁",
     preheader: "Achetée aujourd'hui, reçue aujourd'hui. Ou le 24 au matin.",
-    liens: [LIENS.offrir, LIENS.conditions],
+    liens: [LIENS.offrir, LIENS.magazine],
     blocs: [
       carte({ pour: "À offrir", mot: false, bas: "Valable 12 mois", montant: "30&nbsp;€ ou 50&nbsp;€" }),
       titre("Il est encore temps."),
@@ -392,7 +394,7 @@ export const MAILS = [
       aNoter([
         "Dernier envoi programmé : le 24 décembre au matin.",
         "À imprimer : elle est prête dès le paiement.",
-      ]),
+      ], { href: LIENS.magazine, texte: "Voir les magazines" }),
       signature(),
     ],
   },
