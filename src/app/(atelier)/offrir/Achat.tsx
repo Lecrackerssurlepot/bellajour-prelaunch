@@ -242,7 +242,10 @@ export default function Achat() {
               )}
               <div className="nl-puces">
                 <button type="button" className="nl-puce" aria-pressed={quand === 'maintenant'} onClick={() => setQuand('maintenant')}>Tout de suite</button>
-                <button type="button" className="nl-puce" aria-pressed={quand === 'date'} onClick={() => { setQuand('date'); if (!jour) setJour(ENVOI_PROGRAMME_MAX) }}>Un autre jour</button>
+                {/* Après le 23 décembre, plus aucun jour à proposer : le geste disparaît. */}
+                {jours.length > 0 && (
+                  <button type="button" className="nl-puce" aria-pressed={quand === 'date'} onClick={() => { setQuand('date'); if (!jour) setJour(jours[jours.length - 1]) }}>Un autre jour</button>
+                )}
               </div>
               {quand === 'date' && (
                 <div className="nl-jours" ref={bandeau} role="group" aria-label="Jour d'envoi">

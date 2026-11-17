@@ -717,6 +717,11 @@ export async function envoyerRappelsCartes(
       .eq("statut", "payee")
       .eq("remise", "email")
       .not("envoyee_le", "is", null)
+      /* Seules les cartes encore valides ont un rappel à recevoir ; la plus
+         proche de sa fin passe d'abord, le plafond ne laisse donc jamais de
+         côté celle qui en a besoin. */
+      .gt("expire_le", maintenant.toISOString())
+      .order("expire_le", { ascending: true })
       .limit(500);
     for (const c of (r.data ?? []) as CarteLigne[]) {
       if (doitRappelerCarte(c, jour)) {
@@ -732,6 +737,8 @@ export async function envoyerRappelsCartes(
       .eq("motif", "reliquat_carte")
       .eq("livemode", livemode)
       .not("carte_id", "is", null)
+      .gt("expire_le", maintenant.toISOString())
+      .order("expire_le", { ascending: true })
       .limit(500);
     for (const l of (rel.data ?? []) as {
       carte_id: string; numero_id: string | null; email_canonical: string; montant_centimes: number; expire_le: string | null;

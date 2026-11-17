@@ -28,6 +28,7 @@ import Bandeau from '../noel/Bandeau'
 import BlocMagazine from '../noel/BlocMagazine'
 import AmorceMagazine from '../noel/AmorceMagazine'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import { EUROS_MAX_PUBLIC, EUROS_MIN, GRILLE_PUBLIQUE } from '@/lib/atelier/grille'
 import { PAYS_LIVRAISON } from '@/lib/atelier/pays'
 import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
@@ -64,6 +65,10 @@ const DESCRIPTION =
    qui était alors la seule page du site sans aperçu de partage — sur le
    premier canal d'acquisition, un lien collé dans un DM Instagram. Tout ce
    qui est écrasé se redéclare donc ici, en entier. */
+/* Noël s'éteint seul après le 25 décembre (noelAuSite) : la page, statique,
+   se refait au plus tard une heure après minuit. */
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
@@ -164,7 +169,7 @@ const JSON_LD = [
 
 export default function PageProduit() {
   /* Noël 2026 : drapeau fermé = la page d'avant, au pixel près. */
-  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
   return (
     <>
       {/* La première photo du collage est l'élément LCP. On la demande AVANT

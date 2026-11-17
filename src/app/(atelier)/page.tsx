@@ -30,6 +30,7 @@ import Footer from './components/Footer'
 import Bandeau from './noel/Bandeau'
 import ChapitreAccueil from './noel/ChapitreAccueil'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import { compteOuvert } from '@/lib/compte/session'
 import { EUROS_MIN } from '@/lib/atelier/grille'
 
@@ -74,6 +75,10 @@ const DESCRIPTION =
    SEULE page du site sans apercu de partage. Un lien colle dans une story ou
    un DM Instagram, c'est-a-dire le premier canal d'acquisition, montrait un
    rectangle vide. Tout ce qui est ecrase doit donc etre redeclare ici. */
+/* Noël s'éteint seul après le 25 décembre (noelAuSite) : la page, statique,
+   se refait au plus tard une heure après minuit. */
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
@@ -133,7 +138,7 @@ const JSON_LD = [
 export default function AtelierHome() {
   /* Noël 2026 : drapeau fermé = la page d'avant, au pixel près. Lu ICI (page
      serveur), comme compteOuvert() : le bandeau entre dans le HTML prérendu. */
-  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
   return (
     <>
       {/* L'image de couverture est l'element LCP de la page : elle occupe tout
