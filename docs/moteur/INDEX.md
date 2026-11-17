@@ -68,6 +68,10 @@ Le lot A (12/11, #356) = la branche `feat/mise-en-page-couche1-mesures`, fusionn
 | Réglages et leur version | `editeur/reglages.ts` (`versionReglages`) | chaque leçon emporte la version |
 | Rejeu sur photos du disque | dossier de sortie local | `scripts/calibrer-lecture.ts` |
 
+## Le tunnel (17/11/2026)
+`tunnel/README.md` : de l'analyse au magazine proposé. L'analyse en sept couches, les règles générales par équipe, les retours de Mathias
+(`tunnel/RETOURS-MATHIAS.md`, qui priment). Point d'entrée de tout travail sur l'analyse, la sélection et la composition automatique.
+
 ## Les recettes
 Un fichier par séance de test : `recettes/AAAA-MM-JJ.md`, sur le modèle `recettes/MODELE.md`. Ce que Mathias a testé,
 ce qu'il a dit (ses mots), ce qui a été mesuré, ce qui a changé, ce qui est enregistré et où.
