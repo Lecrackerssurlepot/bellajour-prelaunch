@@ -103,3 +103,4 @@ Bureau (`test-idml/signatures`) : FIDÈLE, ombres, rotations, contours et corps 
 
 ## Historique
 - 16/11 : onze signatures, quatre briques, recette « vitrine | éditeur » (branche `feat/mise-en-page-signatures`).
+- 16/11 soir : finitions vues à la recette d'ensemble (branche `fix/mise-en-page-finitions-signatures`) : le géant vide devient un repère « Mot géant » (R186) ; un texte ne se coupe plus à l'écran, et celui que son cadre ne tient pas est marqué et dit avant l'export (R187). Captures `design-explorations/editeur-lots-2026-11-16/recette/finitions/`.

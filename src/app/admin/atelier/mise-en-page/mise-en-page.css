@@ -1776,6 +1776,15 @@
 
 /* 09/11 : un titre ou une légende qui porte le lieu par défaut (rien d'écrit) ; les lieux proposés sous le texte en cours */
 .mep-editeur .ed-txt--auto { text-decoration: underline dotted color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; }
+/* finitions du 16/11 : un cadre GÉANT vide montre son contour en tirets et une pastille « Mot géant », lisibles sur une photo sombre comme sur
+   un aplat clair (deux traits, blanc et sombre) ; jamais « TITRE » en 200 pt. Rien de tout cela n'est exporté (D2). */
+.mep-editeur .ed-txt--geant-vide { align-items: center; justify-content: center; border: 1px dashed rgba(255, 255, 255, 0.8); box-shadow: inset 0 0 0 1px rgba(20, 28, 40, 0.22); }
+.mep-editeur .ed-txt--geant-vide > span { padding: 4px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.9); color: #1c2430; font: 500 11px/1.2 var(--bj-font-ui); letter-spacing: 0.02em; white-space: nowrap; box-shadow: 0 1px 6px rgba(20, 28, 40, 0.2); }
+.mep-editeur .ed-txt--geant-vide:hover > span, .mep-editeur .ed-txt--geant-vide:focus-visible > span { color: var(--bj-action); }
+/* finitions du 16/11 : un texte que son cadre ne tient pas (il déborderait à l'export) : le cadre en rouge et un « + » au coin, comme un texte
+   en excès dans Affinity ; la feuille d'export le redit (« Légende trop longue · planche n ») */
+.mep-editeur .ed-txt--trop { border: 1px dashed var(--ate-rouge); }
+.mep-editeur .ed-txt--trop::after { content: "+"; position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; background: var(--ate-rouge); color: #fff; font: 700 10px/10px var(--bj-font-ui); text-align: center; }
 .mep-editeur .ed-lieux { position: absolute; z-index: 30; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; padding: 5px; border-radius: 12px; background: var(--bj-glass-card-bg, var(--bj-cream)); box-shadow: var(--bj-shadow-pop); }
 .mep-editeur .ed-lieux button { appearance: none; padding: 3px 9px; border: 0; border-radius: var(--bj-r-pill); background: var(--bj-veil-6); color: var(--bj-text); font-family: var(--bj-font-ui); font-size: var(--bj-fs-xxs); white-space: nowrap; cursor: pointer; }
 .mep-editeur .ed-lieux button:hover { background: var(--bj-action); color: var(--bj-on-action); }

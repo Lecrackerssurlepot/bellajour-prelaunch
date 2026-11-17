@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import {
-  actionsPlanche, aimanter, aplatsPlanche, lignesDeGrille, pagesPosees, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lieuSur, lignesAimant, idsPlanche, LIBELLE, pageEntiere, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
+  actionsPlanche, aimanter, aplatsPlanche, lignesDeGrille, pagesPosees, apercuDepot, cadresPlanche, COTE_MIN, DEPLACEMENT, faitsDePage, fondsPlanche, lieuSur, lignesAimant, idsPlanche, LIBELLE, pageEntiere, REGLAGES_TEXTE_ECRAN, REPERE_GEANT, photosDe, rangCalque, reperesBibliotheque, resumeIssue,
   SEUIL_DPI, SEUIL_DPI_CONFORT, selectionOrdonnee, type CadrePhoto, type CadrePlanche, type CadreTexte, type CibleDepot, type EtatEditeur, type Geste,
   type Guide, type Lignes, type SensCalque, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
@@ -511,14 +511,22 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   /* lot C : sous un style, la police, la graisse, le corps (à l'échelle du gabarit), l'interlignage, les capitales, l'approche et la
      couleur viennent du style du magazine (variables CSS posées sur la racine) ; sans style, le rendu d'avant, mot pour mot. */
   const ts = f.style;
+  /* finitions du 16/11 : le plancher de lisibilité (9 px) ne grossit un texte que tant qu'il garde ses lignes et tient dans son cadre
+     (`f.grossir`, mesuré sur les chasses de sa police) ; avant, une légende de 7 pt dans un cadre de 4,5 mm était coupée au milieu des lettres */
+  const corpsEcran = (corps: number): string => {
+    const vrai = ((corps * 25.4) / 72 / PLANCHE_L) * 100;
+    return `max(${vrai}cqw, min(${REGLAGES_TEXTE_ECRAN.PLANCHER_PX}px, ${vrai * f.grossir}cqw))`;
+  };
   /* lot G : la couleur choisie pour ce texte prime sur celle du gabarit ; un rôle lit sa variable, un hexa est tel quel */
   const style: React.CSSProperties = ts
     ? {
         ...st, fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
-        fontSize: `max(9px, ${((ts.corps * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
+        fontSize: corpsEcran(ts.corps), color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
         textTransform: ts.capitales ? "uppercase" : "none", ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
       }
-    : { ...st, fontSize: `max(9px, ${((f.taille * 25.4) / 72 / PLANCHE_L) * 100}cqw)`, fontWeight: f.gras ? 600 : 400, ...(f.teinte ? { color: cssDeCouleur(f.teinte) } : f.blanc ? { color: "#fff" } : {}) };
+    : { ...st, fontSize: corpsEcran(f.taille), fontWeight: f.gras ? 600 : 400, ...(f.teinte ? { color: cssDeCouleur(f.teinte) } : f.blanc ? { color: "#fff" } : {}) };
+  /* finitions du 16/11 : un cadre GÉANT vide (ni texte, ni fait) montre un repère discret, lisible sur toute photo, jamais « TITRE » en 200 pt */
+  const repereGeant = f.geant && libelle && !f.parDefaut;
   const enEdition = !fantome && !!etat.texte && memeRef(etat.texte.ref, refT);
   /* 09/11 : en écrivant un titre ou une légende, les lieux de ses photos sont proposés, du plus précis au plus large */
   const pl = enEdition && f.role !== "texte" ? etat.magazine.planches.find((x) => x.id === refT.plancheId) : undefined;
@@ -573,11 +581,20 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
       </>
     );
   }
+  const ouvrir = fantome || ro ? undefined : (e: React.MouseEvent) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); };
+  const clavier = fantome || ro ? undefined : (e: React.KeyboardEvent) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); } };
+  if (repereGeant) {
+    return (
+      <div className="ed-txt ed-txt--geant-vide" style={st} data-texte={fantome ? undefined : `${refT.plancheId}|${refT.cible}|${refT.index}`} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
+        aria-label={fantome ? undefined : `Modifier : ${REPERE_GEANT}`} onClick={ouvrir} onKeyDown={clavier}>
+        <span>{REPERE_GEANT}</span>
+      </div>
+    );
+  }
   return (
-    <div className={cls("ed-txt", libelle && !f.parDefaut && "ed-txt--libelle", libelle && f.parDefaut && "ed-txt--auto")} style={style} data-texte={fantome ? undefined : `${refT.plancheId}|${refT.cible}|${refT.index}`} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
-      aria-label={fantome ? undefined : `Modifier : ${libelle ? f.parDefaut ?? LIBELLE[f.role] : f.contenu}`}
-      onClick={fantome || ro ? undefined : (e) => { e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); }}
-      onKeyDown={fantome || ro ? undefined : (e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); envoyer({ type: "ouvrirTexte", ref: refT }); } }}>
+    <div className={cls("ed-txt", libelle && !f.parDefaut && "ed-txt--libelle", libelle && f.parDefaut && "ed-txt--auto", !f.tient && "ed-txt--trop")} style={style} data-texte={fantome ? undefined : `${refT.plancheId}|${refT.cible}|${refT.index}`} role={fantome ? undefined : "button"} tabIndex={fantome || ro ? -1 : 0}
+      aria-label={fantome ? undefined : `Modifier : ${libelle ? f.parDefaut ?? LIBELLE[f.role] : f.contenu}`} title={f.tient ? undefined : "Trop long pour son cadre"}
+      onClick={ouvrir} onKeyDown={clavier}>
       {ts ? texteTypo(libelle ? f.parDefaut ?? (f.contenu || LIBELLE[f.role]) : f.contenu) : libelle ? f.parDefaut ?? (f.contenu || LIBELLE[f.role]) : f.contenu}
     </div>
   );
