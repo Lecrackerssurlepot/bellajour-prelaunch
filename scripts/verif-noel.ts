@@ -5,6 +5,8 @@ import {
   ALPHABET_CODE,
   codeDepuisOctets,
   expirationCarte,
+  noelAuSite,
+  DEPOT_NOEL_MAX,
   jourEnvoiValide,
   montantCarteValide,
   normaliserCode,
@@ -23,6 +25,7 @@ import {
   recapCarteM4,
 } from "@/lib/atelier/carteCadeau";
 import type Stripe from "stripe";
+import { NOEL_EXEMPLAIRE_FIN } from "../src/lib/atelier/exemplaires";
 import {
   carteDepuisSession,
   estSessionCarte,
@@ -52,11 +55,31 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
   ok("montants : 19, 201 EUR, des centimes, un nombre écrit en texte ou négatif sont refusés",
     [1900, 20100, 2050, -3000, 0, NaN, "3000"].every((m) => !montantCarteValide(m)));
 
-  ok("expiration : douze mois jour pour jour (16/11/2026 -> 16/11/2027)",
-    expirationCarte(new Date("2026-11-16T10:00:00Z")).toISOString() === "2027-11-16T10:00:00.000Z");
+  ok("expiration : douze mois jour pour jour, jusqu'à 23 h 59 à Paris (16/11/2026 -> 16/11/2027)",
+    expirationCarte(new Date("2026-11-16T10:00:00Z")).toISOString() === "2027-11-16T22:59:59.999Z");
+  ok("expiration : un achat à 0 h 30 à Paris compte le jour de Paris, pas la veille UTC",
+    expirationCarte(new Date("2026-11-15T23:30:00Z")).toISOString() === "2027-11-16T22:59:59.999Z");
+  ok("expiration : en heure d'été, la fin reste 23 h 59 à Paris et le jour lu par les mails est le bon",
+    expirationCarte(new Date("2026-06-10T12:00:00Z")).toISOString() === "2027-06-10T21:59:59.999Z");
   ok("expiration : un 29 février finit le 28 février de l'année suivante",
     expirationCarte(new Date("2028-02-29T09:00:00Z")).toISOString().startsWith("2029-02-28"));
 
+  ok("Noël au site : le 25/12 à 23 h 30 à Paris, encore là",
+    noelAuSite(new Date("2026-12-25T22:30:00Z")));
+  ok("Noël au site : le 26/12 à 0 h 30 à Paris, éteint (bandeau, chapitre, bloc /magazine, carte sur /numero)",
+    !noelAuSite(new Date("2026-12-25T23:30:00Z")));
+  ok("la fin des dépôts de Noël et la fin du 2e exemplaire à −40/−20 sont le même jour",
+    DEPOT_NOEL_MAX === NOEL_EXEMPLAIRE_FIN);
+  {
+    const achat = readFileSync("src/app/(atelier)/offrir/Achat.tsx", "utf8");
+    ok("/offrir : « Un autre jour » n'est proposé que s'il reste un jour à proposer (après le 23/12, plus rien)",
+      /\{jours\.length > 0 && \(\s*<button[^\n]*>Un autre jour<\/button>/.test(achat));
+  }
+  for (const page of ["src/app/(atelier)/page.tsx", "src/app/(atelier)/magazine/page.tsx"]) {
+    const src = readFileSync(page, "utf8");
+    ok(`${page} : Noël s'éteint seul après le 25/12 (noelAuSite + revalidate)`,
+      src.includes(".ouvert && noelAuSite(new Date())") && /export const revalidate = \d+/.test(src));
+  }
   ok("jour d'envoi : vide = tout de suite (null)", jourEnvoiValide("", "2026-11-20") === null && jourEnvoiValide(undefined, "2026-11-20") === null);
   ok("jour d'envoi : du lendemain au 24 décembre",
     jourEnvoiValide("2026-11-21", "2026-11-20") === "2026-11-21" && jourEnvoiValide("2026-12-24", "2026-11-20") === "2026-12-24");

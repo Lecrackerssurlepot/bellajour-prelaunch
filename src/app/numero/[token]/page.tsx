@@ -52,7 +52,7 @@ import { rattacherParToken } from '@/lib/compte/donnees'
 import { quiEstConnecte } from '@/lib/admin-session'
 import { appliquerBrouillon, lireBrouillon, TYPE_BROUILLON } from '@/lib/atelier/brouillon'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
-import { montantCadeau } from '@/lib/atelier/carteCadeau'
+import { montantCadeau, noelAuSite } from '@/lib/atelier/carteCadeau'
 import '../numero.css'
 
 /* L'adresse publique du site, pour écrire le lien EN TOUTES LETTRES sous les
@@ -482,7 +482,7 @@ export default async function NumeroPage({
      Seul le crédit fondateur, un code promo Stripe qu'on ne peut pas
      restreindre, la refuse encore (`cadeau_refuse`) : on ne la propose pas. */
   const offrirCarte =
-    lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && creditEuros === null
+    lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date()) && creditEuros === null
   const cadeauCentimes =
     offrirCarte && numero.etat === 'apercu_pret' && !previsualisation ? montantCadeau(cadeauSaisi) ?? 0 : 0
   const commande =

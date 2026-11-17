@@ -101,7 +101,7 @@ export function verifierNoelExemplaires(ok: Ok, titre: (t: string) => void): voi
   ok("paiement : avec une carte ajoutée, pas de champ code promo chez Stripe (il se répartirait sur la carte)",
     /: cadeau\s*\n?\s*\? \/\*[^*]*\*\/ \{\}/.test(route));
   ok("page : une carte reçue n'empêche plus d'en offrir une (seul le fondateur)",
-    /ouvert && creditEuros === null\n/.test(readFileSync("src/app/numero/[token]/page.tsx", "utf8")));
+    /ouvert && noelAuSite\(new Date\(\)\) && creditEuros === null\n/.test(readFileSync("src/app/numero/[token]/page.tsx", "utf8")));
   const webhook = readFileSync("src/app/api/webhook/route.ts", "utf8");
   ok("webhook : la carte ajoutée s'écrit après le paiement du magazine, et suit son remboursement",
     /enregistrerCarteAjoutee\(supabase, session\)/.test(webhook) && /traiterRemboursementCarte\(supabase, charge, \{ silencieux: true \}\)/.test(webhook));

@@ -133,15 +133,48 @@ export function prenomCadeau(v: unknown): string | null {
   return t.length >= 1 && t.length <= PRENOM_CARTE_MAX ? t : null;
 }
 
-/** La fin de validité : douze mois jour pour jour, et le dernier jour du mois si le jour n'existe pas (29 février). */
+/**
+ * La fin de validité : douze mois jour pour jour À PARIS, et le dernier jour
+ * du mois si le jour n'existe pas (29 février). La carte vaut jusqu'à la FIN
+ * de ce jour, 23 h 59 heure de Paris (17/11 : l'instant exact de l'achat,
+ * en UTC, faisait dire au mail un jour de moins que la page pour un achat
+ * entre minuit et une heure, et refusait la carte l'après-midi de son
+ * dernier jour annoncé). Stocké ainsi, `expire_le.slice(0, 10)` (lu par les
+ * mails et les rappels) est le jour de Paris, été comme hiver.
+ */
 export function expirationCarte(achat: Date): Date {
-  const d = new Date(achat.getTime());
-  const jour = d.getUTCDate();
-  d.setUTCDate(1);
-  d.setUTCMonth(d.getUTCMonth() + VALIDITE_MOIS);
-  const dernier = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
-  d.setUTCDate(Math.min(jour, dernier));
-  return d;
+  const [a, m, j] = jourDeParis(achat).split("-").map(Number);
+  const cible = new Date(Date.UTC(a, m - 1 + VALIDITE_MOIS, 1));
+  const dernier = new Date(Date.UTC(cible.getUTCFullYear(), cible.getUTCMonth() + 1, 0)).getUTCDate();
+  return finDuJourParis(cible.getUTCFullYear(), cible.getUTCMonth(), Math.min(j, dernier));
+}
+
+/**
+ * Le dernier jour où le site PARLE de Noël (bandeau, chapitre d'accueil, bloc
+ * de /magazine, carte proposée sur /numero), inclus, heure de Paris. Le
+ * drapeau `NEXT_PUBLIC_GIFT_CARD_ENABLED` reste l'interrupteur ; cette date
+ * éteint seule ce qu'on aurait oublié d'éteindre le 26 décembre. Les cartes
+ * déjà vendues restent utilisables : rien ici ne touche à leur usage.
+ */
+export const NOEL_SITE_FIN = "2026-12-25";
+export function noelAuSite(maintenant: Date): boolean {
+  return jourDeParis(maintenant) <= NOEL_SITE_FIN;
+}
+
+export function jourDeParis(instant: Date): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(instant);
+}
+
+/** 23:59:59.999 heure de Paris ce jour-là (mois de 0 à 11), en instant UTC. */
+function finDuJourParis(annee: number, mois: number, jour: number): Date {
+  const naif = Date.UTC(annee, mois, jour, 23, 59, 59, 999);
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Paris", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+      .formatToParts(new Date(naif))
+      .map((x) => [x.type, Number(x.value)]),
+  );
+  const decalage = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second, 999) - naif;
+  return new Date(naif - decalage);
 }
 
 /** Le dernier jour où une carte peut être programmée pour Noël (inclus). */
