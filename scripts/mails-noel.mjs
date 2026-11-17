@@ -49,6 +49,7 @@ export const LIENS = {
   offrir: `${SITE}/offrir`,
   conditions: `${SITE}/offrir#conditions`,
   composer: `${SITE}/composer?nouveau=1`,
+  magazine: `${SITE}/magazine`,
   compte: `${SITE}/compte`,
 };
 
@@ -63,9 +64,10 @@ const SI = (n, oui, non = "") => `{% if params.${n} %}${oui}${non ? `{% else %}$
 const ligne = (contenu, bas = 40, align = "left") =>
   `<tr><td align="${align}" class="px-mobile" style="padding: 0 40px ${bas}px 40px;">${contenu}</td></tr>`;
 
-function image(fichier, alt, largeur = 520) {
+function image(fichier, alt, largeur = 520, lien = null) {
+  const img = `<img src="${IMG}/${fichier}" width="${largeur}" alt="${alt}" style="display: block; width: 100%; max-width: ${largeur}px; height: auto; border: 0; outline: none; text-decoration: none; margin: 0 auto;" />`;
   return ligne(
-    `<img src="${IMG}/${fichier}" width="${largeur}" alt="${alt}" style="display: block; width: 100%; max-width: ${largeur}px; height: auto; border: 0; outline: none; text-decoration: none; margin: 0 auto;" />`,
+    lien ? `<a href="${lien}" style="display: block; text-decoration: none;">${img}</a>` : img,
     40,
     "center",
   );
@@ -297,9 +299,9 @@ export const MAILS = [
     a: "toute la liste (Waitlist + conversations)",
     sujet: "Pour offrir, avant Noël 🎄",
     preheader: "Une carte cadeau, et votre magazine pour les fêtes.",
-    liens: [LIENS.offrir, LIENS.composer, LIENS.conditions],
+    liens: [LIENS.offrir, LIENS.magazine, LIENS.conditions],
     blocs: [
-      image("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table"),
+      image("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table", 520, LIENS.magazine),
       titre("Un premier Noël."),
       evocation(
         `${vous("vous faites partie des premiers à suivre Bellajour.")} Merci. Bellajour grandit, et pour son premier Noël, nous avons pensé à vous.`,
@@ -313,11 +315,11 @@ export const MAILS = [
           libelle: "Offrir une carte",
         },
         {
-          lien: LIENS.composer,
+          lien: LIENS.magazine,
           visuel: `<img src="${IMG}/lisbonne-480.jpg" width="240" alt="Le magazine Lisbonne" style="display: block; width: 100%; max-width: 240px; height: auto; border: 0;" />`,
           titre: "Pour vous",
           texte: "Votre magazine sous le sapin, et un deuxième dans le même colis, à prix doux.",
-          libelle: "Composer le mien",
+          libelle: "Voir les magazines",
         },
       ),
       bouton("Offrir une carte", LIENS.offrir),
