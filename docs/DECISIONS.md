@@ -767,7 +767,7 @@ l'heure sous chaque vignette, en Hanken Grotesk 7 et 6 pt. Sans style : les mêm
 **Conséquence :** l'ombre douce, sur un cadre tourné à contour intérieur, et le géant au-delà de 77 pt entrent dans l'export comme relus fidèlement.
 
 D30 (16/11/2026) — **Le goût entre dans l'éditeur par des doubles SIGNATURE, et leurs textes ne viennent que des faits.** Proposé par le lot
-Signatures (T-214), à confirmer par Mathias à la recette. Une signature est une double de la vitrine du 14/11 redite en cadres, avec un nom
+Signatures (T-214), **validé par Mathias le 17/11/2026** (« Je valide D30 »). Une signature est une double de la vitrine du 14/11 redite en cadres, avec un nom
 court tiré de la vitrine ; elle ne porte que ce qui est fidèle à l'export (D28) : ni détourage, ni noir et blanc, ni écriture manuscrite, ni
 aplat dans le gabarit (le fond est proposé, puis libre). Ses textes par défaut sont des FAITS (date et heure EXIF, lieu sûr, période du
 dossier), jamais inventés ; ce qui n'a pas de source reste vide et ne s'imprime pas (D2). Elle passe devant quand elle convient aux photos,

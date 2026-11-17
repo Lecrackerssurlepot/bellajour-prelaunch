@@ -55,3 +55,6 @@ tirages jetés »), plus son code. Reste à polir, vu à l'écran :
   lettres même pour « 16 h 58 »), et un texte long reporté dans ce petit cadre. Le plancher ne grossit plus un texte au-delà de son cadre ;
   un texte trop long n'est pas rapetissé (R-T-18 : la légende garde son corps) mais marqué en rouge, et la feuille d'export dit
   « Légende trop longue · planche n » (R187). Les cadres des signatures gardent leur taille (taillés pour leur fait).
+
+**D30 validée par Mathias le 17/11** (« Je valide D30 ») : le goût passe par les doubles signature, leurs textes ne viennent que des
+faits. Reste avant de fermer : son essai à l'œil des onze signatures et des finitions (#376), en production.
