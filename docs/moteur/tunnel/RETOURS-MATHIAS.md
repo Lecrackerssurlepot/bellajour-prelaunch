@@ -45,3 +45,29 @@ et l'IA répondait « à écarter » pour une case vide ; cette lecture était e
 | « C'est un échec ! » (164 photos « à écarter ») | **M-13** Jamais une case vide chez l'IA : adresses relues avant une lecture, chaque image essayée à toutes ses tailles, une illisible est RETIRÉE de la planche ; au-delà de 10 % d'illisibles (planche ou lot) on s'arrête AVANT de payer, avec une phrase et « Réessayer ». Une lecture où plus de la moitié des photos sont « à écarter », ou dont une planche d'au moins 8 photos a partout le même rôle, est DOUTEUSE : elle ne sert pas à écarter et « Composer le magazine » propose de relire ses photos. Les marques de l'atelier (coup de cœur, gardée) priment toujours sur la machine. | codée (18/11, `fix/composer-dossier-reel`) : `editeur/lireLesPhotos.ts` (`arretIllisibles`, `plancheSansVide`, `lectureSuspecte`), seuils `lecture_*` dans `editeur/reglages.ts`, `compositeur/selection.ts` (`gardee`) |
 | « C'est un échec ! » (« Composition impossible : aucune répartition des doubles (60) ») | **M-14** Jamais d'impasse : une taille infaisable devient la taille faisable la plus proche (multiple de 4), et c'est dit (« 60 pages impossible avec 85 photos : 48 pages proposées ») ; quand il n'y a vraiment pas de quoi composer, la feuille dit la cause comptée et le geste, jamais un message technique. | codée (18/11) : `compositeur/trame.ts` (`ImpasseComposition`, recherche de la plus proche), `composerSur` |
 | « Il y a des questions comme le nombre de pages, je ne peux pas te dire ! » | **M-15** La machine propose la taille : le nombre de pages n'est jamais demandé avant ; par défaut le nombre COMMANDÉ du dossier s'il est connu, sinon M-09 (tout garder) ; après la proposition, le bandeau offre les autres tailles avec leurs vrais chiffres (« Plus court : 48 pages · 69 photos »), un clic recompose. Chaque question restante peut rester vide. | codée (18/11) : `compositeur/fiche.ts` (`tailleACompose`, `autresTailles`), écran `[id]/Composer.tsx` |
+
+## 18/11/2026, ses décisions sur les douze points de la définition v2 (`DEFINITION.md`)
+
+Ses mots, tels qu'il les a donnés ; la règle générale ; le statut. Les règles du compositeur v2 qui les appliquent sont N-40 à N-54
+(registre, `regles/definitionV2.ts`).
+
+| Point | Ses mots | Règle générale | Statut |
+|---|---|---|---|
+| D1 | « Cela veut dire ? » (puis, une fois expliqué : en faire un réglage, montré en deux versions) | **M-16** Quand les bonnes photos ne tiennent pas dans les pages commandées, la densité monte jusqu'au plafond du profil AVANT toute réserve « pas de place » : un RÉGLAGE nommé (« serrée » ou « avant »), les deux versions montrées côte à côte, il tranche à l'œil. | réglage codé (`ReglagesV2.densite`, N-47b) ; à trancher à l'œil |
+| D2 | « Okay » | **M-17** On n'écarte que pour cinq causes fermées (doublon exact, floue sans sujet net, inimprimable même en vignette, hors sujet, son geste) ; tout le reste va en réserve avec sa raison. | codée (N-41) |
+| D3 | « OUI » | **M-18** Une photo sans date ni preuve de lieu est placée par ressemblance, avec « à vérifier », jamais mise en réserve pour une raison de rangement. | codée (N-43) |
+| D4 | « OUI » | **M-19** Une seule photo pour les quasi-identiques (empreinte presque égale) ; au-delà, la série garde tout ce qui est assez différent. | codée (N-42) |
+| D5 | « OUI » | **M-20** Cinq notes lisibles (technique, histoire, image, gens, unicité), en mots, chacune avec sa phrase ; plus de note unique opaque. | codée (N-40) |
+| D6 | « OUI » | **M-21** 150 ppp acceptés en double pour un paysage sans visage, provisoirement (l'imprimeur n'a pas donné son seuil). | codée (`dpiDouble150`, N-49) |
+| D7 | « OUI » | **M-22** Petite entorse libre dans la journée (une double au plus, même chapitre, rien de signalé) ; grande entorse titrée. | petite entorse codée (N-52) ; grande entorse : réglage écrit, aucun cas sur le projet de test |
+| D8 | « OUI » | **M-23** Neuf photos au plus sur une double, douze en série voulue. | codée (N-44) |
+| D9 | « OUI mais pour une journée événement ou à un lieu nouveau cela peut marcher, certaines personnes veulent les lieux de partout ! » | **M-24** Texte aux ouvertures, en légende sûre, sur une page trop vide, ET un titre pour une journée événement ou un lieu nouveau. Nouvelle QUESTION ouverte : « Les lieux : aux chapitres seulement, ou partout ? » (réglage `lieux` : chapitres, nouveaux, partout). | codée (N-53) ; la question attend sa réponse |
+| D10 | « OKAY, un peu comme notre processus d'avant » | **M-25** Trois questions facultatives au client (combien étiez-vous, les lieux à ne pas oublier, vos photos préférées), dans le ton du questionnaire de /composer ; l'occasion et le titre déjà donnés ne sont jamais redemandés. | codée (`QUESTIONS_CLIENT`, N-54) ; l'écran client n'existe pas encore |
+| D11 | « OK » | **M-26** Une passe d'analyse de plus lit les tags manquants ; une lecture ancienne reste lisible et un tag absent n'est jamais un zéro. | codée (planche B6, lecture v4) ; passe de complément jouée au banc le 18/11 (0,28 $) |
+| D12 | « OUI » | **M-27** Les corrections de l'atelier sont gardées à part et priment toujours ; la composition se lance seule après l'Analyse. | primauté codée (`appliquerCorrections`) ; le lancement seul reste à brancher à l'écran |
+
+## 18/11/2026, sa demande sur la densité
+
+| Ses mots | Règle générale | Statut |
+|---|---|---|
+| « Tu dois avoir les règles pour déterminer le nombre de photos qu'il faut par page ! » | **M-28** Le nombre de photos d'une double se DÉCIDE par une table de règles écrites, générales, expliquées (N-44 à N-50), jamais par un curseur global ; chaque double dit « N photos ici parce que… ». | codée (`compositeur/densite.ts`, table en tête de `DEFINITION.md`) |

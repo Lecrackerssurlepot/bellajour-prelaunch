@@ -86,6 +86,26 @@ Retour de Mathias en production sur un dossier de 164 photos (`tunnel/RETOURS-MA
 - Aucun appel réel à OpenAI pour les deux étapes nouvelles depuis l'éditeur : leurs consignes sont celles du banc (mesurées le 17/11),
   leurs réponses ont été simulées à la recette.
 
+## 18/11 : le compositeur v2 (définition v2, M-16 à M-28)
+Branche `feat/compositeur-v2`, NON fusionnée (Mathias valide les sorties d'abord). Présent seulement quand l'entrée porte `v2`
+(`ReglagesV2`) : sans lui, le compositeur est la v1 à l'identique (le témoin ; rejeu inchangé). Règles N-40 à N-54 au registre
+(`regles/definitionV2.ts`), définition généralisée dans `docs/moteur/tunnel/DEFINITION.md`.
+- `notes.ts` : les CINQ notes lisibles (technique, histoire, image, gens, unicité), crans par quarts du lot, une phrase chacune.
+- `selectionV2.ts` : cinq causes fermées d'écarter ; réserve avec raison ; quasi-identiques sur l'empreinte, séries typées ; sans date
+  placée par ressemblance ; l'ordre de sortie ; la BELLE photo.
+- `densite.ts` : la TABLE DE DÉCISION du nombre de photos par double (`TABLE_DENSITE`, `nombreVoulu`, `phraseDouble`).
+- `trame.ts` : `decouperV2` (la table, les recettes de plus, les paires, l'écho ou le contraste, l'état du rythme), `pairesEtEntorses`,
+  la densité qui absorbe (réglage `densite`), les titres de la décision 9 (réglage `lieux`), le sommet = une belle très large.
+- `index.ts` : `appliquerCorrections` (D12) ; `ResultatCompo.doubles` (« N photos ici parce que… ») ; `PhotoChoisie.notes`, `cause`,
+  `placement`, `serie`.
+- Lecture : planche B6 et lecture IA version 4 (`editeur/lireLesPhotos.ts`, `editeur/lectureIA.ts`), demandées par la route dès la prochaine
+  lecture ; un champ absent n'est jamais un zéro (`charger`, v2).
+- Rejeu : `scripts/compositeur-rejeu.ts --matrice` et `scripts/compositeur-planche-tests.ts` ; tests `scripts/verif-mep-compositeur-v2.ts`.
+- Limites : la pose n'a pas changé (ses fautes sur des doubles plus denses sont dites) ; la grande entorse et le regard fin du complément
+  (expression, yeux, accroche, regard) et le classement des couvertures ne sont lus qu'au banc ; l'écran (Composer.tsx) ne montre pas encore
+  les cinq notes ni les réglages : il compose toujours en v1.
+
 ## Historique
 - 18/11 : couche créée (T-217), branche `feat/editeur-qui-compose`.
 - 18/11 au soir : M-13, M-14, M-15 et trois défauts de recette, branche `fix/composer-dossier-reel`.
+- 18/11 : compositeur v2 (définition v2, M-16 à M-28, N-40 à N-54), branche `feat/compositeur-v2`, planche de tests hors git.
