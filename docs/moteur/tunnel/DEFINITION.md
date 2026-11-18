@@ -18,7 +18,8 @@ La densité n'est pas un curseur : c'est une décision par double, prise par cet
 | N-45 | une photo de la double montre des personnes | 6 photos au plus (4 sur une page) | M-08 : 70 mm de côté et 100 cm² chacune | aucune |
 | N-46 | les formats des photos | très larges NON RECADRABLES : 6 au plus, en bandes (deux ou trois par page, seules sur leur page, jamais une seule) ; verticales seules : 8 ; formats mêlés : 7 ; une page sans très large : 6 au plus | une très large prend une bande, une verticale une colonne | v2.1 : une très large RECADRABLE (sa zone importante tient dans une demi-page, N-55) compte comme une photo de format libre |
 | N-46b | une photo n'a pas la définition d'une demi-page | jamais seule : 2 photos au moins | une photo faible en pixels ne peut pas être grande | aucune |
-| N-49 | une BELLE photo (note image forte, définition de la pleine page ou 150 ppp en double sans visage, aucun défaut, un point d'accroche pour un paysage) ou un coup de cœur | dans le dixième le plus fort : seule (1 photo), jamais dans une double dense ; sinon à deux ; v2.1 : une belle verticale va à deux (pleine et encadrée) pour ne jamais laisser la page d'en face vide | une belle photo n'est jamais noyée | le dixième le plus fort du lot ne sort jamais pour la taille |
+| N-49 | une BELLE photo (note image forte, définition de la pleine page ou 150 ppp en double sans visage, aucun défaut, un point d'accroche pour un paysage) ou un coup de cœur | dans le dixième le plus fort : seule (1 photo) ; sinon à deux ; v2.1 : une belle verticale va à deux (pleine et encadrée) pour ne jamais laisser la page d'en face vide | une belle photo n'est jamais noyée | le dixième le plus fort du lot ne sort jamais pour la taille |
+| N-49b | une belle photo du dixième le plus fort tombe dans une double dense (6 et plus) | elle n'y entre que si la double a du SENS pour elle : une paire ou une série de la double, ou la moitié des autres du même moment ou prises à 30 minutes d'elle (RD) ; elle y est alors le héros, la plus grande | M-32 : « tout dépend de la chronologie, du fait d'avoir du sens dans la double page » | sans ce sens, jamais noyée |
 | N-59 | une ou deux photos dont aucune ne tient une page | coûte autant qu'un défaut grave (v2.1) ; une page à moins de 30 % sans texte écrit est une faute DURE, même colorée | M-07 redevenue dure | une page de titre (ouverture) tient par son texte |
 | N-23 | le sommet (la plus belle très large entre 55 et 85 % du livre) | 1 photo, la double entière | S-053 | sans belle très large, pas de sommet imposé |
 | N-48 | les photos gardées du moment | voulu = densité visée × √(photos du moment ÷ photos d'un moment ordinaire), borné par N-44 à N-46 | on photographie plus quand ça compte : une période chargée n'est jamais étalée en doubles vides | N-49 et N-23 priment |
@@ -26,6 +27,16 @@ La densité n'est pas un curseur : c'est une décision par double, prise par cet
 | N-50 | une paire (pancarte + sujet, portrait + ambiance, large + détail) ou une série | indivisible : la couper coûte ; un détail n'est jamais seul | la pancarte nomme, la photo montre | une coupure reste permise si rien d'autre ne tient |
 | N-48b | le profil et l'ambiance | densité visée = milieu de la fourchette du profil ; sobre : un demi-cran plus bas ; stylisée : un demi-cran plus haut | M-06 | aucune |
 | N-47b | la taille (décision 1, réglage « serrée ») | si les bonnes photos ne tiennent pas, la densité monte jusqu'au plafond du profil (moyenne sur toutes les doubles) AVANT toute réserve « pas de place » | M-16 | réglage « avant » : 2,9 photos par double, le reste en réserve |
+
+## 0 ter. Jamais une personne coupée (M-31, N-60, 18/11 au soir) : interdit absolu
+
+| Règle | Si… | Alors… |
+|---|---|---|
+| N-60 | toujours | la zone à protéger contient tous les visages ET corps détectés ; un corps (sous un visage qui ne touche pas le bord de l'image) reste entier en largeur |
+| N-60 | la lecture compte plus de personnes que de visages détectés, ou des personnes et aucun visage | dans le doute, on ne coupe pas : aucun rognage en largeur, ni en hauteur du côté où la chaleur touche le bord |
+| N-60 | sans lecture du nombre de personnes, la carte de chaleur touche un bord | ce côté n'est pas rogné |
+| N-60 | aucun gabarit ne garde la personne entière | le cadre prend le rapport de la photo dans sa case (un peu de blanc), jamais à cheval sur le pli ; une personne coupée est une faute dure |
+| N-60 | la détection | les visages se cherchent sur l'image entière ET en tuiles carrées qui se chevauchent (les personnes petites au bord d'une très large) |
 
 ## 0 bis. Le recadrage : ce qu'on coupe, pas combien (M-29, v2.1)
 
@@ -105,8 +116,9 @@ ne pas oublier ? », « Vos photos préférées ? » (`QUESTIONS_CLIENT`). Jamai
 La planche lit aussi, depuis le 18/11 (planche B6, lecture IA version 4) : nombre exact de personnes (0 à 6, 7 et plus), animal ou
 document, force d'image, posé ou spontané, geste, insolite. Une lecture ancienne reste lisible ; **un champ absent n'est jamais un zéro**
 (sans « personnes », le compte vient des visages). Le regard fin du banc lit en plus l'expression, les yeux fermés, le point d'accroche et la
-direction du regard, et un classement des candidates couverture : ces quatre tags et ce classement ne sont pas encore demandés par
-l'éditeur (le banc seulement).
+direction du regard, et un classement des candidates couverture : depuis le 18/11 au soir, l'éditeur les demande aussi (lecture IA
+version 5, `editeur/lectureComplete.ts`) : après la lecture normale, le regard complémentaire et le classement ; pour une lecture ancienne,
+seulement ce qui manque (planche de complément de six ou dix champs, regard, classement), jamais une planche relue (`planComplement`).
 
 ## 7. Les corrections (M-27)
 
@@ -132,6 +144,12 @@ plafonds de double et de série. Les règles ne changent pas d'un profil à l'au
 `scripts/compositeur-rejeu.ts <banc> <projet> <sortie> --matrice <matrice.json>` compose toute une liste de variantes (version, taille,
 réglages, réponses, corrections) à coût nul à partir des lectures gardées ; `--reglages` et `--reponses` pour une seule. Sortie par
 variante : planche-contact, magazine.pdf (épreuve à l'œil), « Posées et laissées » ; puis une comparaison de toutes les variantes.
+
+## 9 bis. Ce que l'éditeur compose (18/11 au soir)
+
+La v2.1 est ce que l'éditeur compose : densité par les règles (« serrée »), lieux « nouveaux » (la réponse à la question les change),
+recadrage « normal ». La v1 reste rejouable. La page Analyse (C21) montre tout avant la mise en page, et « Ce que j'ai changé » relève ce
+que l'atelier change après la machine, chaque différence rattachée à sa règle (M-30).
 
 ## 10. Ce qui n'est pas prouvé
 

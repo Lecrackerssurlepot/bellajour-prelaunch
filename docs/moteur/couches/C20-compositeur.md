@@ -114,7 +114,30 @@ zone entamé, très large rognée en largeur quand tout le cadre compte, page pr
 avec la section « Ce qu'on a rogné ». Constat : deux fois moins de sujets entamés, même nombre de photos sur le projet de test ; les visages
 au bord non détectés restent le point faible.
 
+## 18/11 au soir : la v2.1 dans l'éditeur, jamais une personne coupée (M-31 à M-34)
+Branche `feat/analyse-et-v2` (T-218), partie de `feat/compositeur-v2` + `main`.
+- **La v2.1 est ce que l'éditeur compose** (`REGLAGES_EDITEUR` : densité « serrée », lieux « nouveaux », recadrage « normal ») ; la v1 reste
+  rejouable (`DonneesEditeur.version: 1`). Les corrections de l'Analyse (D12) passent par `DonneesEditeur.corrections`.
+- **M-31, N-60 : jamais une personne coupée.** La zone à protéger porte tous les visages ET corps détectés (`zoneV2`) ; dans le doute
+  (`cotesProteges` : plus de personnes lues que de visages trouvés, ou des personnes et aucun visage), la photo n'est plus rognée en largeur,
+  ni en hauteur du côté où la chaleur touche le bord ; sans lecture des personnes, chaque côté où la chaleur touche le bord est protégé.
+  La pose (`pose.ts`) compte `personnes_coupees` (un corps sous un visage qui ne touche pas le bord, coupé en largeur ; un côté protégé
+  entamé au-delà de `PROTEGE_TOLERANCE`, 2 %), l'évite au premier tour (un cadre qui obligerait à rogner deux côtés protégés coûte comme un
+  visage coupé) et au second (forme dure) ; si AUCUNE forme ne garde la personne entière, le cadre se PLIE à la photo dans sa case
+  (`ajusterAuxPersonnes`, jamais à cheval sur le pli), un peu de blanc plutôt qu'une personne coupée. Le contrôle en fait une faute dure
+  (« personne coupée », M-31). Les visages se cherchent aussi en tuiles (`editeur/visagesTuiles.ts`, la variante du banc).
+- **M-32, N-49b** : une belle photo du dixième le plus fort entre dans une double dense quand la double a du sens pour elle
+  (`sensPourBelle` : paire, série, la moitié des autres du même moment ou à 30 minutes d'elle, `SENS_SCENE_MINUTES`) ; elle y est le héros
+  (seules restent les recettes qui la posent en grand). Sans ce sens, l'interdit d'avant tient.
+- La sortie porte `paires` (les paires N-50 de la trame) et, dans `zones`, la raison d'une protection (`proteges`), pour l'Analyse (C21).
+- Rejeu : `scripts/compositeur-rejeu.ts --matrice` écrit aussi `magazine-editeur.pdf` par l'export PDF de l'éditeur (`pdf.ts`, polices
+  embarquées ; la couverture n'est pas rendue).
+- Projet de test (`tests-v2-2/`, contre `tests-v2-1/`) : 48 pages, 66 posées, 94 en réserve (inchangé) ; « tout garder » 128 pages, 157 posées,
+  3 en réserve (inchangé) ; personnes ou visages coupés : 0 et 0 (avant : 0 et 1 visage hors cadre) ; 59 photos protégées dont 57 jamais
+  rognées en largeur ; 3 cadres pliés à la photo à 48 pages, 5 en « tout garder ». M-32 ne change rien sur ce lot (aucune double dense n'avait besoin d'une belle photo).
+
 ## Historique
 - 18/11 : couche créée (T-217), branche `feat/editeur-qui-compose`.
 - 18/11 au soir : M-13, M-14, M-15 et trois défauts de recette, branche `fix/composer-dossier-reel`.
 - 18/11 : compositeur v2 (définition v2, M-16 à M-28, N-40 à N-54), branche `feat/compositeur-v2`, planche de tests hors git.
+- 18/11 au soir : v2.1 dans l'éditeur, M-31 à M-34, N-60, N-49b, branche `feat/analyse-et-v2` (T-218, C21).

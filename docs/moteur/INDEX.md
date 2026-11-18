@@ -45,6 +45,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C18](couches/C18-types-de-gabarits.md) | Types de gabarits : une disposition par vignette du tiroir, ses variantes (taille, orientation, calage) dessous ; R par types, V par variantes | R170 à R179 | EN PROD (vague 2, #370, 16/11, T-208) |
 | [C19](couches/C19-signatures.md) | Doubles signature tirées de la vitrine du 14/11 : textes tirés des faits, mot ou chiffre géant ajusté, fond proposé, ombre douce des tirages | R180 à R185 | EN PROD (vague 2, #371, 16/11, T-214) ; essai Affinity de l'ombre FIDÈLE (D28) |
 | [C20](couches/C20-compositeur.md) | Le compositeur : les questions (fiche qui prime), l'analyse (planches B5, regard fin, voyage, lieux), la composition portée du banc du tunnel (sélection, trame, pose, contrôle), chargée comme un premier jet ; « Posées et laissées », M-10 | R197 à R205 ; M-01 à M-10, N-32 à N-36 | sur branche (T-217, 18/11), PAS en prod |
+| [C21](couches/C21-analyse.md) | La page Analyse : le projet en une ligne, les questions, les chapitres, chaque photo (tags corrigeables, cinq notes, zone importante, relations), gardée / réserve / écartée renversable ; la composition qui se lance seule ; « Ce que j'ai changé » et ses leçons | M-30 à M-34, N-60, N-49b | sur branche (T-218, 18/11 soir), PAS en prod |
 
 La **lecture IA** (lot F, #363, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 
