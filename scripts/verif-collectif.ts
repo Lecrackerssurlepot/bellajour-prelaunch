@@ -182,7 +182,9 @@ import { cheminSection, MENU, RAISON_VERROU, sectionDuChemin, verrousPour } from
 import { chevauche, creneauxDuJour, creneauxLibres, heuresDeDebut, joursOuvres, libelleCreneau, lireCreneau, lireMotif, lireReglageAgenda, lundiDeSemaine, REGLES_RDV } from "@/lib/collectif/creneaux";
 import { invitationIcs, replier } from "@/lib/collectif/ics";
 import { mailRendezVous } from "@/lib/collectif/mailsRdv";
-import { lireCompteAgenda } from "@/lib/collectif/agenda";
+import { chiffrerJeton, clientOAuth, dechiffrerJeton, emailDuJetonIdentite, lireCompteAgenda, urlConsentement } from "@/lib/collectif/agenda";
+import { lireDemandeProspect } from "@/lib/collectif/prospectsSaisie";
+import { titreRendezVous } from "@/lib/collectif/rendezvous";
 import * as Pieces from "@/app/edition/[token]/style/pieces";
 import * as FiltresPhotos from "@/app/edition/[token]/photos/filtres";
 /* L'écran d'AVANT le 22/10 (« Photos, en plus simple ») : ses règles pures (Jour, Afficher, Ma sélection, la fiche d'une personne) sont archivées, et les
@@ -2164,6 +2166,76 @@ titre("— D23 / T-148 : les rendez-vous dans l'espace —");
   const fil = filDeConversation([], [], () => "j", [{ id: "r1", quand: "2026-10-14T09:00:00Z" }]);
   ok("le rendez-vous pris entre au fil", fil.some((e) => e.genre === "rendezvous"));
   ok("le journal dit les rendez-vous", phraseEvenement("rdv_pris", { par: "Camille", quand: "jeudi 15 octobre à 10 h 30", avec: "Mathias" }).includes("Mathias"));
+}
+
+titre("— 18/11 : la connexion Google de chacun, le titre par étape, la page /partenaires —");
+{
+  const agendaSrc = lire("src/lib/collectif/agenda.ts");
+  const avant = { id: process.env.GOOGLE_AGENDA_CLIENT_ID, secret: process.env.GOOGLE_AGENDA_CLIENT_SECRET };
+  delete process.env.GOOGLE_AGENDA_CLIENT_ID;
+  delete process.env.GOOGLE_AGENDA_CLIENT_SECRET;
+  ok("sans les deux variables, pas de client OAuth, et rien ne se chiffre ni ne se déchiffre", clientOAuth() === null && chiffrerJeton("x") === null && dechiffrerJeton("v1.a.b.c") === null);
+  process.env.GOOGLE_AGENDA_CLIENT_ID = "id-essai";
+  process.env.GOOGLE_AGENDA_CLIENT_SECRET = "secret-essai";
+  const chiffre = chiffrerJeton("1//jeton-de-renouvellement") ?? "";
+  ok("le jeton de renouvellement ne dort jamais en clair : chiffré (jamais deux fois pareil), relu à l'identique",
+    chiffre.startsWith("v1.") && !chiffre.includes("jeton") && chiffrerJeton("1//jeton-de-renouvellement") !== chiffre && dechiffrerJeton(chiffre) === "1//jeton-de-renouvellement");
+  ok("un jeton trafiqué, vide ou d'une autre forme ne se lit pas", dechiffrerJeton(`${chiffre.slice(0, -2)}AA`) === null && dechiffrerJeton("") === null && dechiffrerJeton(null) === null && dechiffrerJeton("1//en-clair") === null);
+  process.env.GOOGLE_AGENDA_CLIENT_SECRET = "autre-secret";
+  ok("changer le secret du client rend les connexions illisibles (il faut se reconnecter)", dechiffrerJeton(chiffre) === null);
+  const consentement = new URL(urlConsentement({ id: "id-essai", secret: "s" }, "https://www.bellajour.fr/api/admin/collectif/agendas/google/retour", "mathias.abc"));
+  ok("la page d'accord : accès hors ligne, accord redemandé (un jeton à chaque connexion), l'état, et SEULEMENT poser ses événements + libre / occupé",
+    consentement.searchParams.get("access_type") === "offline" && consentement.searchParams.get("prompt") === "consent" && consentement.searchParams.get("state") === "mathias.abc"
+      && consentement.searchParams.get("scope") === "openid email https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.freebusy");
+  const idToken = `x.${Buffer.from(JSON.stringify({ email: "Mathias@Exemple.fr" })).toString("base64url")}.y`;
+  ok("l'adresse du compte se lit dans le jeton d'identité (aucun appel de plus), en minuscules ; illisible = null", emailDuJetonIdentite(idToken) === "mathias@exemple.fr" && emailDuJetonIdentite("n'importe quoi") === null && emailDuJetonIdentite(undefined) === null);
+  if (avant.id === undefined) delete process.env.GOOGLE_AGENDA_CLIENT_ID; else process.env.GOOGLE_AGENDA_CLIENT_ID = avant.id;
+  if (avant.secret === undefined) delete process.env.GOOGLE_AGENDA_CLIENT_SECRET; else process.env.GOOGLE_AGENDA_CLIENT_SECRET = avant.secret;
+  ok("invités et visio ne partent qu'avec la connexion de la personne (un compte de service ne peut ni l'un ni l'autre)",
+    /const riche = Boolean\(connexion\);/.test(agendaSrc) && /riche && e\.invites\?\.length/.test(agendaSrc) && /riche && creation && e\.visio/.test(agendaSrc) && /if \(!connexion\) return "";/.test(agendaSrc));
+
+  const base = { organisation: "Audencia voile", cloture_le: null as string | null };
+  const quand = new Date("2026-11-18T10:00:00Z");
+  ok("le titre de l'événement dit l'étape du projet, par le nom que le client lit, pour l'état EFFECTIF",
+    titreRendezVous({ ...base, etat: "preparation" }, quand) === "Bellajour · Audencia voile · Style et photos"
+      && titreRendezVous({ ...base, etat: "preparation", cloture_le: "2026-11-01T22:59:00Z" }, quand) === "Bellajour · Audencia voile · Composition"
+      && titreRendezVous({ ...base, etat: "bat" }, quand) === "Bellajour · Audencia voile · Bon à tirer"
+      && titreRendezVous({ ...base, etat: "livree" }, quand) === "Bellajour · Audencia voile · Livraison");
+  const rdvSrc = lire("src/lib/collectif/rendezvous.ts");
+  ok("connecté, Google invite le responsable : notre mail ne part pas en double ; le jeton ne sort que par `connexionDe` (jamais dans `lireInterlocuteurs`)",
+    /const mail = connexion \? "coupe" : await envoyerMailRdv\(/.test(rdvSrc) && !/select\("cle, prenom, agenda_id, meet_url, actif[^"]*google/.test(rdvSrc) && /email: l\.google_refresh && dechiffrerJeton\(l\.google_refresh\) \? l\.google_email : null/.test(rdvSrc));
+  const pageAgendasSrc = lire("src/app/admin/collectif/agendas/Agendas.tsx") + lire("src/app/admin/collectif/agendas/page.tsx");
+  ok("la page « Les agendas » ne reçoit jamais un jeton : seulement l'adresse connectée", !/google_refresh|connexionDe/.test(pageAgendasSrc));
+  const retourSrc = lire("src/app/api/admin/collectif/agendas/google/retour/route.ts");
+  ok("le retour de Google : atelier connecté, état comparé au cookie à durée constante, jeton chiffré AVANT la base, jamais dans l'adresse",
+    retourSrc.indexOf("quiEstConnecteRequete(") < retourSrc.indexOf("memes(etat") && retourSrc.indexOf("memes(etat") < retourSrc.indexOf("echangerCode(") && retourSrc.indexOf("chiffrerJeton(") < retourSrc.indexOf(".update(")
+      && /timingSafeEqual/.test(retourSrc) && !/searchParams\.set\("(jeton|refresh|code)"/.test(retourSrc));
+
+  const bon = lireDemandeProspect({ nom: "  Camille   Martin ", organisation: "BDE Kedge", email: " Camille@Exemple.FR ", telephone: "", message: "  Notre WEI  " });
+  ok("la demande d'un prospect : espaces rangés, adresse en minuscules, vide = null",
+    bon.ok && bon.demande.nom === "Camille Martin" && bon.demande.email === "camille@exemple.fr" && bon.demande.telephone === null && bon.demande.message === "Notre WEI");
+  const refus = (c: Record<string, unknown>) => { const l = lireDemandeProspect({ nom: "Camille", organisation: "BDE", email: "c@e.fr", ...c }); return l.ok ? null : l.champ; };
+  ok("elle nomme le champ qui manque : nom, organisation, e-mail, téléphone", refus({ nom: " " }) === "nom" && refus({ organisation: "" }) === "organisation" && refus({ email: "camille@" }) === "email" && refus({ telephone: "appelez-moi" }) === "telephone" && refus({}) === null);
+  const prospectsSrc = lire("src/lib/collectif/prospects.ts");
+  const reserver = prospectsSrc.slice(prospectsSrc.indexOf("export async function reserverProspect"));
+  ok("réserver : l'équipe, la règle (un rendez-vous à venir par adresse), les agendas, le VERROU en base, puis l'événement Google",
+    reserver.indexOf("equipeDeLAppel(") < reserver.indexOf("deja_un_rdv") && reserver.indexOf("deja_un_rdv") < reserver.indexOf("occupesDeLEquipe(") && reserver.indexOf("occupesDeLEquipe(") < reserver.indexOf(".insert(") && reserver.indexOf(".insert(") < reserver.indexOf("poserEvenementComplet("));
+  ok("un événement Google raté défait la ligne ; une personne active non connectée ferme tout (jamais un créneau sans savoir si elle est libre)",
+    /if \(!ev\.ok\) \{[\s\S]{0,260}statut: "annule"/.test(reserver) && /if \(!connexion\) return \{ ok: false, echec: PAS_PRET \};/.test(prospectsSrc));
+  ok("les prospects n'écrivent dans aucune table d'édition ni du B2C, et n'envoient aucun mail", !/collectif_editions|collectif_rendez_vous"|brevo|envoyerMail/i.test(prospectsSrc));
+  const migP = lire("supabase/migrations/20261118_partenaires_rendez_vous.sql");
+  ok("migration 20261118 : atomique, RLS sans policy, un créneau pris l'est pour tout l'atelier (index unique sur le début)",
+    /^begin;/m.test(migP) && /^commit;/m.test(migP) && /collectif_rdv_prospects enable row level security/.test(migP) && !/create policy/i.test(migP)
+      && /create unique index if not exists collectif_rdv_prospects_creneau_unique[\s\S]{0,80}\(debut\)[\s\S]{0,40}where statut = 'pris'/.test(migP));
+  const routeC = lire("src/app/api/partenaires/creneaux/route.ts");
+  const routeR = lire("src/app/api/partenaires/rendez-vous/route.ts");
+  ok("les deux routes publiques : interrupteur, frein par appelant, et le créneau REFAIT depuis les règles avant de réserver",
+    /collectifOuvert\(\)/.test(routeC) && /collectifOuvert\(\)/.test(routeR) && /tropVite\(request\)/.test(routeC) && /tropVite\(request\)/.test(routeR) && routeR.indexOf("lireCreneau(") < routeR.indexOf("reserverProspect(") && routeR.indexOf("lireDemandeProspect(") < routeR.indexOf("reserverProspect("));
+  ok("le piège à robots répond comme une réussite sans rien écrire", routeR.indexOf("corps.site") < routeR.indexOf("reserverProspect(") && /typeof corps\.site === "string" && corps\.site\.trim\(\) !== ""/.test(routeR));
+  const cssP = lire("src/app/(atelier)/partenaires/partenaires.css").replace(/\/\*[\s\S]*?\*\//g, "");
+  const ecranP = lire("src/app/(atelier)/partenaires/Partenaires.tsx");
+  ok("/partenaires : aucune couleur en dur, aucun dvh, tout sous .pa-page ou préfixé pa-", !/#[0-9a-f]{3,8}\b/i.test(cssP) && !/rgba?\(/.test(cssP) && !/\ddvh/.test(cssP) && !/#[0-9a-f]{6}\b/i.test(ecranP) && !/next\/image/.test(ecranP));
+  ok("l'écran relit la demande par la MÊME règle que la route, et ne fabrique aucun créneau", /lireDemandeProspect\(corps\)/.test(ecranP) && !/creneauxDuJour|REGLES_RDV/.test(ecranP));
 }
 
 titre("— retours de Mathias du 14/10 —");
@@ -8329,7 +8401,9 @@ function verifCreationEdition() {
       && fiche.indexOf("<ACompleter lignes={lignesACompleter} />") < fiche.indexOf('<div className="eca-cartes">') && !/Photos par personne : à régler\./.test(fiche));
   ok("la fiche passe a la fonction pure l'etat EFFECTIF, l'archive, et l'agenda relie ; jamais une regle reecrite dans la page",
     /aCompleter\(e, lu\.fiche\.liens, \{ etat, archivee: Boolean\(e\.archive_le\), rdvParAgenda \}\)/.test(fiche)
-      && /const rdvParAgenda = !rdvAbsent && compteAgenda\(\) !== null && listeInters\.some\(\(i\) => i\.cle === e\.interlocuteur_cle && Boolean\(i\.agenda_id\)\);/.test(fiche));
+      /* 18/11 : « agenda relie » = connecte a Google OU compte de service, UNE regle (`clesAgendaPret`, rendezvous.ts). */
+      && /const agendasPrets = rdvAbsent \? new Set<string>\(\) : await clesAgendaPret\(makeSupabase\(\), listeInters\);/.test(fiche)
+      && /const rdvParAgenda = Boolean\(e\.interlocuteur_cle && agendasPrets\.has\(e\.interlocuteur_cle\)\);/.test(fiche));
   const encart = lire("src/app/admin/collectif/[id]/ACompleter.tsx");
   ok("le composant ne calcule rien : il lit la liste (vide : rien), le nombre, la phrase de tete, une puce par niveau (ambre, bleu, gris) et un bouton qui est un lien `data-onglet` + `data-etape`",
     /if \(lignes\.length === 0\) return null;/.test(encart) && /introACompleter\(lignes\)/.test(encart) && /\{lignes\.length\}/.test(encart) && /bloque: "eca-puce--ambre", conseille: "eca-puce--bleu", facultatif: "eca-puce--gris"/.test(encart)

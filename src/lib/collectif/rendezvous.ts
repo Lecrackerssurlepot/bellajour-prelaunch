@@ -22,8 +22,10 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { envoisCoupes, VAR_MAILS_COUPES } from "@/lib/envois";
-import { deplacerEvenement, plagesOccupees, poserEvenement, retirerEvenement, type EvenementAPoser, type Raison } from "./agenda";
+import { compteAgenda, dechiffrerJeton, deplacerEvenement, plagesOccupees, poserEvenement, retirerEvenement, type EvenementAPoser, type Raison } from "./agenda";
 import { chevauche, libelleCreneau, RDV_A_VENIR_MAX, REGLES_RDV, type Creneau } from "./creneaux";
+import { ETAPES_CLIENT, etapeClient } from "./espace";
+import { etatEffectif } from "./etats";
 import { invitationIcs } from "./ics";
 import { lireInterrupteur } from "./interrupteur";
 import { journaliser } from "./journal";
@@ -76,6 +78,54 @@ export async function lireRendezVous(supabase: SupabaseClient, editionId: string
   return lu((data ?? []) as RendezVous[], error);
 }
 
+/**
+ * La connexion Google d'une personne de l'atelier (18/11) : son jeton de
+ * renouvellement, déchiffré, pour agenda.ts. ⚠️ SERVEUR SEULEMENT : il ne
+ * sort jamais dans une réponse ni dans une prop. `null` (pas connectée, pas
+ * de migration 20261118, secret changé) = le compte de service, comme avant.
+ */
+export async function connexionDe(supabase: SupabaseClient, cle: string): Promise<string | null> {
+  const { data, error } = await supabase.from("collectif_interlocuteurs").select("google_refresh").eq("cle", cle).maybeSingle<{ google_refresh: string | null }>();
+  if (error || !data) return null;
+  return dechiffrerJeton(data.google_refresh);
+}
+
+export type ConnexionGoogle = { cle: string; email: string | null; connecte_le: string | null };
+
+/** Qui est connecté à Google, pour la page « Les agendas » : l'adresse, jamais le jeton. */
+export async function lireConnexions(supabase: SupabaseClient): Promise<ConnexionGoogle[] | null> {
+  const { data, error } = await supabase.from("collectif_interlocuteurs").select("cle, google_email, google_refresh, google_connecte_le");
+  if (error) return null;
+  return ((data ?? []) as { cle: string; google_email: string | null; google_refresh: string | null; google_connecte_le: string | null }[]).map((l) => ({
+    cle: l.cle,
+    email: l.google_refresh && dechiffrerJeton(l.google_refresh) ? l.google_email : null,
+    connecte_le: l.google_connecte_le,
+  }));
+}
+
+/**
+ * Les personnes dont l'agenda peut servir : connectées à Google, ou toutes
+ * celles qui ont un agenda quand le compte de service est posé. UNE règle pour
+ * l'espace, la fiche et /partenaires.
+ */
+export async function clesAgendaPret(supabase: SupabaseClient, inters: readonly Interlocuteur[]): Promise<Set<string>> {
+  const avecAgenda = inters.filter((i) => i.agenda_id);
+  if (compteAgenda()) return new Set(avecAgenda.map((i) => i.cle));
+  const connexions = (await lireConnexions(supabase)) ?? [];
+  const connectees = new Set(connexions.filter((c) => c.email).map((c) => c.cle));
+  return new Set(avecAgenda.filter((i) => connectees.has(i.cle)).map((i) => i.cle));
+}
+
+/**
+ * L'étape du projet, dans le titre de l'événement (demande de Mathias du
+ * 18/11 : « mettre le nom du cal suivant l'avancée du projet ») : le nom que
+ * le client lit dans son espace (`ETAPES_CLIENT`), pour l'état EFFECTIF.
+ */
+export function titreRendezVous(edition: Pick<EditionLigne, "organisation" | "etat" | "cloture_le">, maintenant: Date): string {
+  const etape = ETAPES_CLIENT[etapeClient(etatEffectif(edition.etat, edition.cloture_le, maintenant))]?.libelle;
+  return etape ? `Bellajour · ${edition.organisation} · ${etape}` : `Bellajour · ${edition.organisation}`;
+}
+
 const absente = (): Echec => ({ statut: 503, error: "migration_rdv_absente", message: MESSAGE_RDV_ABSENTE });
 
 function echecAgenda(raison: Raison, message: string): Echec {
@@ -100,11 +150,14 @@ export async function interlocuteurPret(supabase: SupabaseClient, edition: Editi
   return { ok: true, inter: data };
 }
 
-function evenement(edition: EditionLigne, inter: Interlocuteur, c: Creneau, motif: string | null): EvenementAPoser {
+/* Avec la connexion de l'interlocuteur (`rdvId` donné), Google invite le
+   responsable et crée la visio ; sans elle, ni invité ni visio (agenda.ts). */
+function evenement(edition: EditionLigne, inter: Interlocuteur, c: Creneau, motif: string | null, maintenant: Date, rdvId: string | null = null): EvenementAPoser {
   return {
+    ...(rdvId ? { invites: [{ email: edition.responsable_email, nom: edition.responsable_nom }], visio: !inter.meet_url, visioCle: `bj-${rdvId}` } : {}),
     debut: c.debut,
     fin: c.fin,
-    titre: `Bellajour · ${edition.organisation}`,
+    titre: titreRendezVous(edition, maintenant),
     description: [
       "Rendez-vous pris depuis l'espace client de l'Édition collective.",
       `Édition : ${edition.organisation} · ${edition.evenement}`,
@@ -132,7 +185,8 @@ export async function prendre(g: Geste & { creneau: Creneau; motif: string | nul
     return { ok: false, echec: { statut: 409, error: "trop_de_rdv", message: `${RDV_A_VENIR_MAX} rendez-vous à venir au plus : déplacez ou annulez d'abord l'un d'eux.` } };
   }
 
-  const occ = await plagesOccupees(inter.agenda_id as string, g.creneau.debut, g.creneau.fin);
+  const connexion = await connexionDe(g.supabase, inter.cle);
+  const occ = await plagesOccupees(inter.agenda_id as string, g.creneau.debut, g.creneau.fin, connexion);
   if (!occ.ok) return { ok: false, echec: echecAgenda(occ.raison, occ.message) };
   if (occ.valeur.some((o) => chevauche(o, g.creneau))) {
     return { ok: false, echec: { statut: 409, error: "creneau_pris", message: "Ce créneau vient d'être pris. Choisissez-en un autre." } };
@@ -148,7 +202,7 @@ export async function prendre(g: Geste & { creneau: Creneau; motif: string | nul
     return { ok: false, echec: rdvAbsent(error.code) ? absente() : { statut: 500, error: "ecriture_impossible", message: "Le rendez-vous n'a pas été enregistré." } };
   }
 
-  const ev = await poserEvenement(inter.agenda_id as string, evenement(g.edition, inter, g.creneau, g.motif));
+  const ev = await poserEvenement(inter.agenda_id as string, evenement(g.edition, inter, g.creneau, g.motif, g.maintenant, connexion ? ligne.id : null), connexion);
   if (!ev.ok) {
     /* Défait : le créneau se libère, rien ne s'affiche côté client. */
     await g.supabase.from("collectif_rendez_vous").update({ statut: "annule", annule_le: new Date().toISOString() }).eq("id", ligne.id);
@@ -159,7 +213,8 @@ export async function prendre(g: Geste & { creneau: Creneau; motif: string | nul
   if (errId) console.error("[collectif] identifiant d'événement non gardé", errId.code);
 
   await journaliser(g.supabase, { editionId: g.edition.id }, "rdv_pris", { par: g.par, quand: libelleCreneau(rdv.debut), avec: inter.prenom }, g.qui);
-  const mail = await envoyerMailRdv(g.supabase, g.edition, rdv, inter, "pris", null, g.origine);
+  /* Connecté : Google a déjà invité le responsable, notre mail ferait doublon. */
+  const mail = connexion ? "coupe" : await envoyerMailRdv(g.supabase, g.edition, rdv, inter, "pris", null, g.origine);
   return { ok: true, valeur: rdv, mail, avertissement: null };
 }
 
@@ -192,7 +247,8 @@ export async function deplacer(g: Geste & { rdvId: string; creneau: Creneau }): 
     return { ok: false, echec: { statut: 409, error: "interlocuteur_change", message: "Votre interlocuteur a changé : annulez ce rendez-vous puis prenez-en un nouveau." } };
   }
 
-  const occ = await plagesOccupees(inter.agenda_id as string, g.creneau.debut, g.creneau.fin);
+  const connexion = await connexionDe(g.supabase, inter.cle);
+  const occ = await plagesOccupees(inter.agenda_id as string, g.creneau.debut, g.creneau.fin, connexion);
   if (!occ.ok) return { ok: false, echec: echecAgenda(occ.raison, occ.message) };
   /* Le rendez-vous déplacé occupe encore SON créneau : il ne se bloque pas lui-même. */
   if (occ.valeur.some((o) => chevauche(o, g.creneau) && !chevauche(o, ancien))) {
@@ -214,7 +270,7 @@ export async function deplacer(g: Geste & { rdvId: string; creneau: Creneau }): 
   if (!ligne) return { ok: false, echec: { statut: 409, error: "change_entre_temps", message: "Ce rendez-vous a changé entre-temps : rechargez la page." } };
 
   if (ancien.google_event_id) {
-    const ev = await deplacerEvenement(inter.agenda_id as string, ancien.google_event_id, evenement(g.edition, inter, g.creneau, ancien.motif));
+    const ev = await deplacerEvenement(inter.agenda_id as string, ancien.google_event_id, evenement(g.edition, inter, g.creneau, ancien.motif, g.maintenant, connexion ? ancien.id : null), connexion);
     if (!ev.ok) {
       await g.supabase.from("collectif_rendez_vous").update({ debut: ancien.debut, fin: ancien.fin, sequence: ancien.sequence }).eq("id", ancien.id);
       return { ok: false, echec: echecAgenda(ev.raison, `${ev.message} Le rendez-vous reste à son créneau.`) };
@@ -228,7 +284,7 @@ export async function deplacer(g: Geste & { rdvId: string; creneau: Creneau }): 
     { par: g.par, avant: libelleCreneau(ancien.debut), quand: libelleCreneau(ligne.debut), avec: inter.prenom },
     g.qui
   );
-  const mail = await envoyerMailRdv(g.supabase, g.edition, ligne, inter, "deplace", ancien.debut, g.origine);
+  const mail = connexion ? "coupe" : await envoyerMailRdv(g.supabase, g.edition, ligne, inter, "deplace", ancien.debut, g.origine);
   return { ok: true, valeur: ligne, mail, avertissement: null };
 }
 
@@ -253,12 +309,13 @@ export async function annuler(g: Geste & { rdvId: string }): Promise<Issue<Rende
     .eq("cle", rdv.interlocuteur_cle)
     .maybeSingle<Interlocuteur>();
   let avertissement: string | null = null;
+  const connexion = inter ? await connexionDe(g.supabase, inter.cle) : null;
   if (rdv.google_event_id && inter?.agenda_id) {
-    const ev = await retirerEvenement(inter.agenda_id, rdv.google_event_id);
+    const ev = await retirerEvenement(inter.agenda_id, rdv.google_event_id, connexion);
     if (!ev.ok) avertissement = `Annulé ici, mais l'événement reste dans l'agenda de ${inter.prenom} : à retirer à la main.`;
   }
   await journaliser(g.supabase, { editionId: g.edition.id }, "rdv_annule", { par: g.par, quand: libelleCreneau(rdv.debut), avec: inter?.prenom ?? rdv.interlocuteur_cle }, g.qui);
-  const mail = inter ? await envoyerMailRdv(g.supabase, g.edition, ligne, inter, "annule", null, g.origine) : "echec";
+  const mail = !inter ? "echec" : connexion ? "coupe" : await envoyerMailRdv(g.supabase, g.edition, ligne, inter, "annule", null, g.origine);
   return { ok: true, valeur: ligne, mail, avertissement };
 }
 

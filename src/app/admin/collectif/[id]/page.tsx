@@ -15,7 +15,7 @@ import { lienDeGroupe, liensEdition, origineDepuis } from "@/lib/collectif/liens
 import { compteAgenda } from "@/lib/collectif/agenda";
 import { libelleCreneau } from "@/lib/collectif/creneaux";
 import { MIGRATION_COLLECTIF, MIGRATION_RDV } from "@/lib/collectif/migration";
-import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
+import { clesAgendaPret, lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import { etapesEdition, prochaineEtape } from "@/lib/collectif/prochaine";
 import { plafondLienMax } from "@/lib/collectif/plafonds";
 import { quandRdv } from "@/lib/collectif/boite";
@@ -228,7 +228,8 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
      Le plafond par personne n'y est plus qu'un plafond de sécurité facultatif (100 sans plafond d'atelier). */
   const devisEnAttente = devisAEnvoyer(documents);
   /* Le client peut déjà prendre rendez-vous par l'agenda de l'atelier : le lien de rendez-vous n'est plus le seul chemin. */
-  const rdvParAgenda = !rdvAbsent && compteAgenda() !== null && listeInters.some((i) => i.cle === e.interlocuteur_cle && Boolean(i.agenda_id));
+  const agendasPrets = rdvAbsent ? new Set<string>() : await clesAgendaPret(makeSupabase(), listeInters);
+  const rdvParAgenda = Boolean(e.interlocuteur_cle && agendasPrets.has(e.interlocuteur_cle));
   const lignesACompleter = aCompleter(e, lu.fiche.liens, { etat, archivee: Boolean(e.archive_le), rdvParAgenda });
 
   const pluriel = (n: number, mot: string) => `${n.toLocaleString("fr-FR")} ${mot}${n > 1 ? "s" : ""}`;
@@ -580,9 +581,9 @@ export default async function PageFiche({ params, searchParams }: { params: Prom
               id={e.id}
               absent={rdvAbsent}
               migration={MIGRATION_RDV}
-              interlocuteurs={listeInters.map((i) => ({ cle: i.cle, prenom: i.prenom, relie: Boolean(i.agenda_id) }))}
+              interlocuteurs={listeInters.map((i) => ({ cle: i.cle, prenom: i.prenom, relie: agendasPrets.has(i.cle) }))}
               courant={e.interlocuteur_cle ?? null}
-              compteRelie={compteAgenda() !== null}
+              compteRelie={agendasPrets.size > 0 || compteAgenda() !== null}
               rendezVous={(rdvs.ok ? rdvs.valeur : []).map((r) => ({
                 id: r.id,
                 libelle: libelleCreneau(r.debut),

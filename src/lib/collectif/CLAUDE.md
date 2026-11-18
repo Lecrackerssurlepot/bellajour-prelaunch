@@ -1272,6 +1272,47 @@ l'éditeur de styles), `demo`, `photos_supprimees_le`. Aucun mail ne part avant 
 jamais sans l'accord de Mathias. Le webhook Brevo ne connaît que `numeros` : un rebond B2B y est
 aujourd'hui ignoré.
 
+## La connexion Google de chacun et la page /partenaires (D33, 18/11)
+
+- **Deux connexions, une seule porte** (`agenda.ts`) : chaque fonction prend en dernier `connexion` (le jeton de
+  renouvellement de la personne, en clair) ; `null` = le compte de service d'avant. Avec une connexion, et seulement
+  alors, l'événement porte des invités et une visio Meet (`invites`, `visio`, `visioCle` = une clé stable par
+  rendez-vous) et Google envoie lui-même invitation, déplacement et annulation (`sendUpdates=all`). Les portées n'ont
+  pas grandi : poser ses événements, lire libre / occupé. Toujours aucun GET, aucun événement lu.
+- ⚠️ **Le jeton ne dort jamais en clair et ne sort jamais du serveur** : chiffré en base (`google_refresh`, AES-256-GCM,
+  clé tirée de `GOOGLE_AGENDA_CLIENT_SECRET` : changer ce secret oblige à se reconnecter), lu par `connexionDe`
+  (rendezvous.ts) et par personne d'autre. `lireInterlocuteurs` ne le sélectionne pas (son résultat part dans une prop
+  de composant client) ; la page « Les agendas » ne reçoit que l'adresse connectée (`lireConnexions`).
+- **Se connecter** : `GET /api/admin/collectif/agendas/google?cle=` pose un état aléatoire dans un cookie httpOnly de dix
+  minutes et envoie chez Google ; `…/google/retour` compare l'état à durée constante, échange le code, chiffre, écrit.
+  L'adresse du compte (lue dans le jeton d'identité) devient `agenda_id`. ⚠️ L'application Google doit être PUBLIÉE
+  (« En production ») : en mode test, Google retire le jeton au bout de sept jours (à confirmer au premier usage réel).
+- **« Agenda prêt » est UNE règle** : `clesAgendaPret` (connectée à Google, ou un agenda et le compte de service). L'espace,
+  la fiche et l'encart « À compléter » la lisent ; plus personne ne teste `compteAgenda()` seul.
+- **Connecté, notre mail de rendez-vous ne part pas** (`mail = "coupe"`) : Google a déjà invité le responsable.
+  `COLLECTIF_MAILS_RDV` ne sert plus qu'au compte de service.
+- **Le titre dit l'étape** : `titreRendezVous` (« Bellajour · <organisation> · <étape> », `ETAPES_CLIENT`, état EFFECTIF).
+- **Les prospects** (`prospects.ts` à effets, `prospectsSaisie.ts` pur) : table à part `collectif_rdv_prospects`, aucune
+  clé vers une édition. L'équipe de l'appel = toutes les personnes `actif` ; UNE seule non connectée ferme tout (503
+  `agenda_non_relie`, la page montre l'adresse de contact). Les occupés de chacun sont FUSIONNÉS avant de sortir : la
+  page ne sait jamais qui est pris. L'ordre d'une réservation : l'équipe → un seul rendez-vous à venir par adresse → les
+  agendas → le VERROU (index unique sur `debut`) → l'événement chez l'organisateur (Mathias s'il est de l'appel), les
+  autres et le prospect invités ; un événement raté défait la ligne.
+- **Les routes sont HORS de `/api/collectif`** (`/api/partenaires/creneaux`, `/api/partenaires/rendez-vous`) : elles
+  n'ont ni token ni rôle, et le harnais exige `peut(…)` de toute route de `api/collectif`. Derrière `COLLECTIF_OUVERT`,
+  un frein par appelant (40 lectures, 5 réservations par minute), un champ piège (`site`) qui répond comme une réussite
+  sans rien écrire. Le créneau est refait par `lireCreneau`, la demande par `lireDemandeProspect` (la même règle que l'écran).
+- **La page** (`src/app/(atelier)/partenaires/`, monde sombre, tout sous `.pa-page`) est statique. Retour de Mathias du
+  18/11 : « on veut juste prendre un rendez-vous comme CTA, et que le PDF soit gros ». Donc : la brochure prend TOUTE
+  la page, une feuille sous l'autre (1 040 px au plus, bord à bord au téléphone), et UN seul geste, « Prendre
+  rendez-vous » (en-tête collé en haut, et fin de brochure), ouvre le panneau des créneaux : un volet à droite à
+  l'ordinateur, une feuille du bas au téléphone, monté dès l'arrivée (créneaux déjà lus). Ni encart à côté de la
+  brochure, ni titre, ni bouton fixe en bas (il faisait trois fois le même bouton). Le carrousel du premier jet est dans
+  le commit 336ab946. Les images sont versionnées (`brochure-ecoles-v1-N-800|1600.webp`) : une brochure refaite =
+  `v2`, jamais un fichier écrasé.
+- **Sans la migration `20261118`** (appliquée le 18/11, le repli reste) : rien ne casse. `connexionDe` et `lireConnexions` rendent `null` (compte de service
+  comme avant), « Connecter Google » dit la migration à appliquer, `/partenaires` montre la brochure et l'adresse.
+
 ## Vérifier
 
 `npx tsx --tsconfig tsconfig.json scripts/verif-collectif.ts` — sans base ni réseau. Toute règle

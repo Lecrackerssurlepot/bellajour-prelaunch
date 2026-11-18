@@ -1,7 +1,7 @@
 ---
 id: T-148
 titre: Le client B2B prend son rendez-vous hors de l'espace et ne le retrouve pas dedans
-etat: en pause
+etat: en cours
 domaine: collectif
 gravite: serieux
 autonomie: avis-requis
@@ -77,3 +77,14 @@ la page « Les agendas », pas des règles ni de l'écran client.
 4. Relire le texte des mails ; ouvrir `COLLECTIF_MAILS_RDV` seulement après validation.
 5. Claude : rejouer le parcours complet en vrai (prendre, déplacer, annuler, agenda, mail à
    l'adresse de Mathias), puis PR.
+
+## Repris le 18/11/2026 (D33, branche `feat/partenaires-rendez-vous`)
+Mathias : « on va en profiter pour connecter le Calendar pour la session BtoB […] mettre le nom du cal suivant
+l'avancée du projet ». La question de la visio est tranchée : la connexion Google de chacun.
+- Fait : `agenda.ts` (OAuth, jeton chiffré, Meet, invitations par Google), « Connecter Google » sur
+  `/admin/collectif/agendas`, le titre par étape, `clesAgendaPret`, et la page `/partenaires` (brochure + rendez-vous
+  sur les deux agendas). Harnais, types, lint, build verts ; l'écran prouvé en local sans écrire en base.
+- **Pas prouvé** : rien n'a parlé à Google (aucun client OAuth n'existe encore). L'échange du code, la création du Meet
+  et l'invitation restent à rejouer en vrai.
+- Reste, Mathias : créer le client OAuth (pas-à-pas sur la page Agendas), poser les deux variables sur Vercel, puis se
+  connecter chacun (la migration `20261118` est appliquée et vérifiée depuis le 18/11) (lui, Louis). Reste, Claude : le parcours complet en vrai.

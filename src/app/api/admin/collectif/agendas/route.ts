@@ -7,6 +7,7 @@ import { lireReglageAgenda } from "@/lib/collectif/creneaux";
 import { instantDeParis, versChampParis } from "@/lib/collectif/dates";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
 import { ERREUR_RDV_ABSENTE, MESSAGE_RDV_ABSENTE, rdvAbsent } from "@/lib/collectif/migration";
+import { connexionDe } from "@/lib/collectif/rendezvous";
 
 /**
  * POST /api/admin/collectif/agendas — les agendas des interlocuteurs (D23).
@@ -15,7 +16,10 @@ import { ERREUR_RDV_ABSENTE, MESSAGE_RDV_ABSENTE, rdvAbsent } from "@/lib/collec
  * - `{ action: "tester", cle }` : LIRE les disponibilités des sept prochains
  *   jours (on ne rend que leur NOMBRE, jamais leur contenu), puis ÉCRIRE et
  *   retirer aussitôt un événement d'une minute, la veille à minuit (passé :
- *   aucun rappel ne sonne). Les deux droits d'un rendez-vous sont prouvés.
+ *   aucun rappel ne sonne). Les deux droits d'un rendez-vous sont prouvés ;
+ * - `{ action: "deconnecter", cle }` : oublier la connexion Google de la
+ *   personne (son jeton est effacé ; l'accès se retire aussi chez Google,
+ *   dans « Applications tierces » de son compte).
  */
 
 export const runtime = "nodejs";
@@ -56,6 +60,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (corps.action === "deconnecter") {
+    const { error } = await supabase.from("collectif_interlocuteurs").update({ google_refresh: null, google_email: null, google_connecte_le: null }).eq("cle", cle);
+    if (error) {
+      return rdvAbsent(error.code)
+        ? NextResponse.json({ error: ERREUR_RDV_ABSENTE, message: "La mise à jour de la base (20261118_partenaires_rendez_vous.sql) n'est pas encore appliquée." }, { status: 503 })
+        : NextResponse.json({ error: "ecriture_impossible" }, { status: 500 });
+    }
+    console.info(`[collectif] agenda de ${cle} déconnecté de Google par ${prenomDe(qui)}`);
+    return NextResponse.json({ ok: true });
+  }
+
   if (corps.action === "tester") {
     const { data, error } = await supabase.from("collectif_interlocuteurs").select("prenom, agenda_id").eq("cle", cle).maybeSingle<{ prenom: string; agenda_id: string | null }>();
     if (error) {
@@ -66,7 +81,8 @@ export async function POST(request: Request) {
     if (!data?.agenda_id) return NextResponse.json({ error: "saisie", message: "Renseigner d'abord l'agenda." }, { status: 422 });
 
     const maintenant = new Date();
-    const lu = await plagesOccupees(data.agenda_id, maintenant.toISOString(), new Date(maintenant.getTime() + 7 * 86400000).toISOString());
+    const connexion = await connexionDe(supabase, cle);
+    const lu = await plagesOccupees(data.agenda_id, maintenant.toISOString(), new Date(maintenant.getTime() + 7 * 86400000).toISOString(), connexion);
     if (!lu.ok) return NextResponse.json({ ok: false, etape: "lecture", message: lu.message }, { status: 200 });
 
     const hier = versChampParis(new Date(maintenant.getTime() - 86400000).toISOString()).slice(0, 10);
@@ -77,9 +93,9 @@ export async function POST(request: Request) {
       titre: "Bellajour · essai de connexion (retiré aussitôt)",
       description: "Posé et retiré par le bouton « Tester » de l'atelier.",
       lieu: null,
-    });
+    }, connexion);
     if (!essai.ok) return NextResponse.json({ ok: false, etape: "ecriture", message: essai.message, occupes: lu.valeur.length }, { status: 200 });
-    const retire = await retirerEvenement(data.agenda_id, essai.valeur);
+    const retire = await retirerEvenement(data.agenda_id, essai.valeur, connexion);
     return NextResponse.json({
       ok: true,
       occupes: lu.valeur.length,

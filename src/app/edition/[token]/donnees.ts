@@ -25,9 +25,8 @@ import { COLONNES_RESUME, couvertureDe, enLignesPesees, resumeAbsent, resumerPho
 import { formaterInstantParis, formaterJourParis } from "@/lib/collectif/dates";
 import { phraseFichierEfface } from "@/lib/collectif/retention";
 import { libelleTypeDocument, nomTelechargement } from "@/lib/collectif/documents";
-import { compteAgenda } from "@/lib/collectif/agenda";
 import { lireMessages } from "@/lib/collectif/messagerie";
-import { lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
+import { clesAgendaPret, lireInterlocuteurs, lireRendezVous } from "@/lib/collectif/rendezvous";
 import type { Message } from "@/lib/collectif/messages";
 import { couverturesDesTours, magazinesPourGeste, toursDuMagazine } from "@/lib/collectif/tours";
 import type { Zone } from "@/lib/collectif/bat";
@@ -462,7 +461,7 @@ export async function chargerReservation(edition: EditionLigne): Promise<Reserva
   if (!inters.ok || !rdvs.ok) return repli;
   const prenom = (cle: string) => inters.valeur.find((i) => i.cle === cle)?.prenom ?? "l'atelier";
   const inter = inters.valeur.find((i) => i.cle === edition.interlocuteur_cle) ?? null;
-  const pret = Boolean(inter && inter.actif && inter.agenda_id && compteAgenda());
+  const pret = Boolean(inter && inter.actif && (await clesAgendaPret(supabase, inters.valeur)).has(inter.cle));
   return {
     mode: pret ? "agenda" : repli.mode,
     avec: inter?.prenom ?? null,
