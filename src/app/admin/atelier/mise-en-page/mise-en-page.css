@@ -2209,3 +2209,91 @@
 .mep-editeur .ed-compo-confirmer { display: inline-flex; align-items: center; gap: 6px; }
 @media (prefers-reduced-motion: reduce) { .mep-editeur .ed-compo-etape--encours .ed-compo-pastille { animation: none; } }
 @media (max-width: 560px) { .mep-editeur .ed-compo { padding: 14px 16px; } .mep-editeur .ed-compo-groupe ul { grid-template-columns: 1fr; } }
+
+/* ─── 18/11 soir (M-34, C21) : la page ANALYSE, avant la mise en page. Un plein écran de verre au-dessus de l'éditeur, deux onglets
+   (Analyse, Mise en page) ; à gauche le projet, les questions, les filtres et les chapitres, à droite la fiche de la photo choisie.
+   Au téléphone : une colonne, la fiche en feuille du bas. Jetons Porcelaine / Charbon de l'admin (admin.css), aucun nombre de couleur
+   hors des repères dessinés sur la photo. ─── */
+.mep-editeur .ed-ana-fond { position: fixed; inset: 0; z-index: 60; display: flex; padding: 12px; background: color-mix(in srgb, var(--bj-charcoal) 22%, transparent); }
+.mep-editeur .ed-ana {
+  display: flex; flex-direction: column; gap: 10px; width: 100%; min-width: 0; max-height: calc(var(--app-height, 100vh) - 24px); overflow: hidden;
+  padding: 12px 14px; border-radius: 20px; border: var(--bj-glass-card-border); background: var(--bj-glass-card-bg-active); box-shadow: var(--bj-shadow-pop);
+  -webkit-backdrop-filter: var(--bj-glass-card-blur); backdrop-filter: var(--bj-glass-card-blur); color: var(--bj-text);
+}
+.mep-editeur .ed-ana-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.mep-editeur .ed-ana-etat-lecture { margin-right: auto; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); font-variant-numeric: tabular-nums; }
+.mep-editeur .ed-ana-confirmer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; background: var(--bj-action-soft); font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-ana-confirmer strong { margin-right: auto; font-weight: 600; }
+.mep-editeur .ed-ana-vide { display: flex; flex-direction: column; gap: 10px; max-width: 560px; overflow: auto; }
+.mep-editeur .ed-ana-corps { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: 12px; min-height: 0; flex: 1; }
+.mep-editeur .ed-ana-gauche { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: auto; padding-right: 2px; }
+.mep-editeur .ed-ana-bloc { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; background: var(--bj-cream-tint-1); border: 1px solid var(--bj-veil-8); }
+.mep-editeur .ed-ana-h { margin: 0; font-size: var(--bj-fs-sm, 14px); font-weight: 600; font-style: normal; }
+.mep-editeur .ed-ana-ligne { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-ana-mot { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; min-height: 40px; padding: 4px 10px; border: 1px solid var(--bj-veil-12); border-radius: 12px; background: transparent; color: var(--bj-text); font: inherit; font-size: var(--bj-fs-xs); cursor: pointer; }
+.mep-editeur .ed-ana-mot:disabled { cursor: default; opacity: 0.85; }
+.mep-editeur .ed-ana-mot[aria-expanded="true"] { border-color: var(--bj-action); }
+.mep-editeur .ed-ana-mot--corrige { border-color: var(--bj-action); box-shadow: inset 0 0 0 1px var(--bj-action); }
+.mep-editeur .ed-ana-edite { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.mep-editeur .ed-ana-edite input { height: 32px; padding: 0 10px; border: 1px solid var(--bj-veil-12); border-radius: 10px; background: var(--bj-cream-tint-1); color: var(--bj-text); font: inherit; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-ana-dossier { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-ana-dossier dt { color: var(--bj-text-faint); }
+.mep-editeur .ed-ana-dossier dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.mep-editeur .ed-ana-histoire { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.mep-editeur .ed-ana-filtres { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.mep-editeur .ed-ana-selects { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.mep-editeur .ed-ana-selects select { height: 30px; max-width: 100%; padding: 0 8px; border: 1px solid var(--bj-veil-12); border-radius: 10px; background: var(--bj-cream-tint-1); color: var(--bj-text); font: inherit; font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-ana-chap-tete { display: flex; flex-direction: column; gap: 2px; }
+.mep-editeur .ed-ana-chap-titre { height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--bj-text); font: inherit; font-size: var(--bj-fs-sm, 14px); font-weight: 600; }
+.mep-editeur .ed-ana-chap-titre:hover, .mep-editeur .ed-ana-chap-titre:focus { border-color: var(--bj-veil-12); outline: none; }
+.mep-editeur .ed-ana-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-ana-vig { position: relative; display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: var(--bj-veil-8); cursor: pointer; }
+.mep-editeur .ed-ana-vig img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mep-editeur .ed-ana-vig--reserve img { opacity: 0.55; }
+.mep-editeur .ed-ana-vig--ecartee img { opacity: 0.3; filter: grayscale(1); }
+.mep-editeur .ed-ana-vig--choisie { border-color: var(--bj-action); }
+.mep-editeur .ed-ana-vig--reserve::after, .mep-editeur .ed-ana-vig--ecartee::after { content: ""; position: absolute; inset: auto 6px 6px auto; width: 8px; height: 8px; border-radius: 50%; background: var(--bj-text-faint); }
+.mep-editeur .ed-ana-coeur { position: absolute; top: 3px; left: 5px; color: #fff; font-size: 13px; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
+.mep-editeur .ed-ana-fiche { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow: auto; padding: 10px 12px; border-radius: 14px; background: var(--bj-cream-tint-1); border: 1px solid var(--bj-veil-8); }
+.mep-editeur .ed-ana-fiche--vide { display: grid; place-items: center; }
+/* la fiche défile : ses blocs ne rétrécissent jamais (une image en overflow hidden serait écrasée par la colonne flex) */
+.mep-editeur .ed-ana-fiche > *, .mep-editeur .ed-ana-gauche > * { flex-shrink: 0; }
+.mep-editeur .ed-ana-fiche-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mep-editeur .ed-ana-etat { padding: 2px 10px; border-radius: var(--bj-r-pill); background: var(--bj-action-soft); color: var(--bj-action); font-size: var(--bj-fs-xxs); font-weight: 600; }
+.mep-editeur .ed-ana-etat--reserve, .mep-editeur .ed-ana-etat--ecartee { background: var(--bj-veil-8); color: var(--bj-text-soft); }
+.mep-editeur .ed-ana-image { position: relative; border-radius: 10px; overflow: hidden; background: var(--bj-veil-8); }
+.mep-editeur .ed-ana-image img { display: block; width: 100%; height: auto; }
+.mep-editeur .ed-ana-image svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mep-editeur .ed-ana-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.mep-editeur .ed-ana-raison { margin: 0; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-ana-notes { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-ana-note { display: grid; grid-template-columns: 76px 64px 1fr; gap: 6px; align-items: baseline; font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-ana-note-nom { font-weight: 600; }
+.mep-editeur .ed-ana-note-cran { padding: 0 6px; border-radius: var(--bj-r-pill); background: var(--bj-veil-6); text-align: center; }
+.mep-editeur .ed-ana-note--forte .ed-ana-note-cran, .mep-editeur .ed-ana-note--bonne .ed-ana-note-cran { background: var(--bj-action-soft); color: var(--bj-action); }
+.mep-editeur .ed-ana-note-phrase { color: var(--bj-text-soft); min-width: 0; }
+.mep-editeur .ed-ana-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-ana-tag { display: inline-flex; align-items: baseline; gap: 4px; min-height: 28px; padding: 3px 10px; border: 1px solid var(--bj-veil-12); border-radius: var(--bj-r-pill); background: transparent; color: var(--bj-text); font: inherit; font-size: var(--bj-fs-xxs); cursor: pointer; }
+.mep-editeur .ed-ana-tag--absent { color: var(--bj-text-faint); border-style: dashed; }
+.mep-editeur .ed-ana-relations { display: flex; flex-direction: column; gap: 6px; font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-ana-relations p { margin: 0; }
+.mep-editeur .ed-ana-mini { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.mep-editeur .ed-ana-mini button { width: 40px; height: 40px; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: var(--bj-veil-8); cursor: pointer; }
+.mep-editeur .ed-ana-mini img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* « Ce que j'ai changé » (M-30) */
+.mep-editeur .ed-releve { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-releve-ligne { display: grid; grid-template-columns: 40px minmax(70px, auto) 1fr auto; align-items: center; gap: 8px; padding: 4px; border-radius: 10px; background: var(--bj-cream-tint-1); font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-releve-ligne img, .mep-editeur .ed-releve-sans { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--bj-veil-8); }
+.mep-editeur .ed-releve-ou { color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-releve-regles { color: var(--bj-text-faint); font-size: 10px; font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) {
+  .mep-editeur .ed-ana-fond { padding: 0; }
+  .mep-editeur .ed-ana { max-height: var(--app-height, 100vh); border-radius: 0; padding: 10px 12px; }
+  .mep-editeur .ed-ana-corps { display: flex; flex-direction: column; overflow: auto; }
+  .mep-editeur .ed-ana-gauche { overflow: visible; }
+  .mep-editeur .ed-ana-fiche:not(.ed-ana-fiche--vide) { position: fixed; inset: auto 0 0 0; z-index: 61; max-height: 72%; border-radius: 18px 18px 0 0; box-shadow: var(--bj-shadow-pop); background: var(--bj-glass-card-bg-active); -webkit-backdrop-filter: var(--bj-glass-card-blur); backdrop-filter: var(--bj-glass-card-blur); }
+  .mep-editeur .ed-ana-fiche--vide { display: none; }
+  .mep-editeur .ed-ana-grille { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .mep-editeur .ed-releve-ligne { grid-template-columns: 40px 1fr; }
+  .mep-editeur .ed-releve-ou, .mep-editeur .ed-releve-regles { grid-column: 2; }
+}

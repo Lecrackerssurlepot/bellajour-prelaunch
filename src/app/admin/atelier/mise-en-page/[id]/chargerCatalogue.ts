@@ -185,6 +185,7 @@ export function catalogueDeDossier(r: ReponsePhotosMep, obtenuLe: number): Catal
       source: "particulier",
       nbPagesCible: typeof r.nbPages === "number" && r.nbPages > 0 ? r.nbPages : null,
       finition: r.finition === "gloss" || r.finition === "matte" ? r.finition : null,
+      dossier: { occasion: r.occasion?.trim() || null, histoire: r.histoire?.trim() || null, titre: r.titre?.trim() || null },
       collecteOuverte: false,
       archive: false,
     },

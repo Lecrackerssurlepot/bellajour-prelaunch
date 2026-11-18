@@ -6,6 +6,7 @@ import { estUuid } from "@/lib/collectif/cles";
 import BarreAtelier, { liensParticuliers } from "../../../BarreAtelier";
 import { LIBRE_PATTERN } from "../libelles";
 import Editeur, { type CibleEditeur } from "./Editeur";
+import { versionRegles } from "@/lib/mise-en-page/regles";
 import "../../../admin.css";
 import "../../atelier.css";
 import "../mise-en-page.css";
@@ -42,7 +43,9 @@ export default async function PageEditeur({ params }: { params: Promise<{ id: st
   const liens = liensParticuliers(false).map((l) => (l.href === "/admin/atelier/mise-en-page" ? { ...l, courant: true } : l));
 
   return (
-    <div className="adm-root ate-root mep-editeur">
+    /* 18/11 (M-30) : la version du registre des règles, lue au serveur (le navigateur n'importe jamais le registre entier) : la
+       proposition gardée la porte, « Ce que j'ai changé » la cite */
+    <div className="adm-root ate-root mep-editeur" data-version-regles={versionRegles()}>
       <BarreAtelier monde="particuliers" collectif={collectifOuvert()} liens={liens} />
       <Editeur cible={cible} />
     </div>
