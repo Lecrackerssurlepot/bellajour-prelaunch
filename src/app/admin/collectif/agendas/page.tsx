@@ -6,7 +6,10 @@ import { adresseDuCompte, cheminRetourOAuth, clientOAuth, VAR_COMPTE_AGENDA, VAR
 import { origineDepuis } from "@/lib/collectif/liens";
 import { MIGRATION_RDV } from "@/lib/collectif/migration";
 import { lireConnexions, lireInterlocuteurs } from "@/lib/collectif/rendezvous";
+import { libelleCreneau } from "@/lib/collectif/creneaux";
+import { lireRdvProspects } from "@/lib/collectif/prospects";
 import Agendas from "./Agendas";
+import RdvProspects from "./RdvProspects";
 import BarreAtelier, { liensEditions } from "../../BarreAtelier";
 import "../../admin.css";
 import "../../atelier/atelier.css";
@@ -40,7 +43,7 @@ export default async function PageAgendas({ searchParams }: { searchParams: Prom
   const qui = await quiEstConnecte();
   if (!qui) redirect("/admin/login");
   const supabase = makeSupabase();
-  const [lu, connexions, params, entetes] = await Promise.all([lireInterlocuteurs(supabase), lireConnexions(supabase), searchParams, headers()]);
+  const [lu, connexions, params, entetes, prospects] = await Promise.all([lireInterlocuteurs(supabase), lireConnexions(supabase), searchParams, headers(), lireRdvProspects(supabase, new Date())]);
   const adresse = adresseDuCompte();
   const oauth = clientOAuth() !== null;
   const retour = typeof params.google === "string" ? (RETOURS[params.google] ?? null) : null;
@@ -119,6 +122,15 @@ export default async function PageAgendas({ searchParams }: { searchParams: Prom
           </p>
         ) : (
           <p className="eca-sous">Lecture impossible.</p>
+        )}
+      </section>
+
+      <section className="ate-carte">
+        <h2 className="ate-carte-titre">3. Les rendez-vous pris sur la page partenaires</h2>
+        {prospects ? (
+          <RdvProspects rendezVous={prospects.map((r) => ({ ...r, quand: libelleCreneau(r.debut) }))} />
+        ) : (
+          <p className="eca-sous">Migration à appliquer : 20261118_partenaires_rendez_vous.sql.</p>
         )}
       </section>
     </div>
