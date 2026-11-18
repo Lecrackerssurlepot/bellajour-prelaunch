@@ -8,6 +8,21 @@ Dossier ouvert le 17/11/2026 (mission validée par Mathias, plan D32). Il porte 
 avec des personnes », « une page couverte à moins de N % »), jamais pour un projet nommé. Un cas vu sur un projet de test devient une règle
 générale, ou n'entre pas. Les essais chiffrés sur un projet précis restent sur le banc, hors du dépôt.
 
+## Le registre des règles : LA source (18/11, T-216, M-11)
+Depuis le 18/11, une règle du tunnel n'existe que si elle est au **registre** : `src/lib/mise-en-page/regles/`, une règle = une donnée
+(identifiant, domaine, interdit ou préférence avec un poids, quand / alors sur des données mesurables, profils, réglages nommés de
+`editeur/reglages.ts`, statut, source, date, contrôle). Le registre est versionné (`versionRegles()`), contrôlé au harnais
+(`scripts/verif-mep-regles.ts`), montré dans l'atelier (`/admin/atelier/mise-en-page/regles`, avec le nombre de corrections de l'atelier
+par règle) et écrit en clair dans [`REGISTRE.md`](REGISTRE.md), **généré, à ne pas éditer**.
+- Les retours de Mathias (M-02 à M-10) y sont `confirmee_mathias` ; les interdits durs déjà contrôlés dans l'éditeur (I-01 à I-07) `codee` ;
+  les règles nées du banc (N-…, DA-…) et toute la matière des équipes (S-…, C-…, F-…, R-T-…) `hypothese`.
+- **Les fichiers de `regles/` deviennent la matière d'origine** : on les lit pour comprendre une règle, on ne les cite plus comme source
+  de vérité. `scripts/regles-reprise.ts` les reprend (en généralisant, M-01) dans `regles/reprise.ts` ; le harnais refuse une reprise
+  qui ne les suit pas. Une règle reprise se retouche dans `regles/surcharges.ts`.
+- Statuts : `hypothese` → `en_ombre` (calculée et montrée, jamais appliquée) → `codee` (appliquée et contrôlée) ; `confirmee_mathias`
+  pour un retour de Mathias ; `retiree` sans jamais réutiliser l'identifiant. Le compositeur citera une règle à chaque décision (`Decision`).
+- Comment ajouter une règle : `src/lib/mise-en-page/CLAUDE.md`, section « Le registre des règles ».
+
 ## Le parcours
 1. **Analyse** (`TUNNEL.md`, `INVENTAIRE-PHOTO.md`) : sept couches. 1 fichier, 2 pixels, 3 ensembles, 4 lieux : sans IA, gratuites. 5 planches de
    16 vignettes, 6 regard fin photo par photo, 7 le voyage en un appel texte : IA, payantes. Seules les photos utiles arrivent à l'IA, jamais deux fois.
@@ -29,6 +44,7 @@ générale, ou n'entre pas. Les essais chiffrés sur un projet précis restent s
 | `regles/BANQUE-POLICES.md`, `COMBOS-TYPO.md`, `CHOIX-AUTO.md` | la banque de polices par thème, 40 combos, le choix automatique de trois propositions |
 | `regles/REGLES-CODEES-AU-BANC.md` | les règles réellement codées dans le compositeur du banc, celles qui n'ont pas pu l'être, les règles nées des critiques |
 | `RETOURS-MATHIAS.md` | les retours de Mathias et leurs règles générales |
+| `REGISTRE.md` | **généré** par `scripts/regles-doc.ts` : le registre des règles, par domaine, avec sa version |
 
 ## État (17/11/2026)
 - Dans l'éditeur : couches 1 à 3, et « Lire les photos » (couches 5 et 6) sur les créations libres (T-215, D31).
