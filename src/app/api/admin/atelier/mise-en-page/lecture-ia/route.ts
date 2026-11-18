@@ -69,6 +69,14 @@ async function appeler(corps: CorpsOpenAI, cle: string, fin: number): Promise<Ap
 }
 
 
+/** GET ?cle=… : la lecture est-elle ouverte pour ce projet ? Aucun appel à OpenAI, rien d'écrit : l'écran s'en sert pour griser ou non son bouton. */
+export async function GET(request: Request) {
+  const qui = await quiEstConnecteRequete(request);
+  if (!qui) return refus(401, "non_authentifie");
+  const garde = gardeLecture(new URL(request.url).searchParams.get("cle"), { OPENAI_API_KEY: process.env.OPENAI_API_KEY, MEP_LECTURE_IA_CLIENTS: process.env.MEP_LECTURE_IA_CLIENTS });
+  return NextResponse.json({ ok: true, ouvert: garde.ok, raison: garde.ok ? null : garde.erreur }, { status: 200, headers: SANS_CACHE });
+}
+
 export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);
   if (!qui) return refus(401, "non_authentifie");

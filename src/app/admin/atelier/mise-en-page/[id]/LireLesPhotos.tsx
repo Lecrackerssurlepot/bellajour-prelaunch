@@ -48,7 +48,16 @@ export function BoutonLireLesPhotos() {
   }, [ouvert]);
   const arret = useRef<AbortController | null>(null);
   const cle = cleProjet ? cleDeRoute(cleProjet) : "";
-  const libre = estCleLibre(cle);
+  /* une création libre est toujours ouverte ; pour un dossier, c'est le serveur qui le dit (R196, `MEP_LECTURE_IA_CLIENTS`) */
+  const [ouvertServeur, setOuvertServeur] = useState(false);
+  useEffect(() => {
+    if (!cle || estCleLibre(cle)) return;
+    let annule = false;
+    void fetch(`/api/admin/atelier/mise-en-page/lecture-ia?cle=${encodeURIComponent(cle)}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null)).then((j: { ouvert?: boolean } | null) => { if (!annule) setOuvertServeur(!!j?.ouvert); }).catch(() => {});
+    return () => { annule = true; };
+  }, [cle]);
+  const libre = estCleLibre(cle) || ouvertServeur;
   const enCours = phase.type === "planches" || phase.type === "regard";
 
   /* l'annonce, recalculée à chaque rendu (rien n'est payé) */

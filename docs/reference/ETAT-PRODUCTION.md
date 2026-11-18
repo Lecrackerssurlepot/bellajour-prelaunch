@@ -14,7 +14,7 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 - Branche `feat/mise-en-page-lire-les-photos` (T-215, poussée, pas de PR) : bouton « Lire les photos » de l'éditeur de mise en page,
   entonnoir A local, B gpt-5.4, C gpt-5.1, lecture IA version 2. **Création libre seulement** : les photos de clients attendent T-203
-  (route en 403 `photos_clients_non_autorisees` ; `MEP_LECTURE_IA_CLIENTS` posée NULLE PART). Décision D31 PROPOSÉE.
+  (route en 403 `photos_clients_non_autorisees` ; `MEP_LECTURE_IA_CLIENTS` posée le 18/11 en Production et Preview : dossiers de particuliers ouverts à l'atelier, éditions toujours fermées, M-12). D31 validée le 17/11.
 - `OPENAI_API_KEY` : présente dans `.env.local` (17/11) ; sur Vercel, non vérifiée. Sans elle, la route rend 503 `openai_absente`.
 - Migration `20261117_mep_lecons_tag_corrige.sql` APPLIQUÉE le 17/11 (vérifiée en SQL). Avant elle : sans elle, les leçons `tag_corrige` sont refusées par la
   base et dites `perdues` (les autres leçons partent). Et `mep_lecons` elle-même (20261110) : voir `supabase/CLAUDE.md`.

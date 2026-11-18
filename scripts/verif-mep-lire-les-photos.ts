@@ -154,11 +154,12 @@ export async function verifierMepLireLesPhotos(ok: (nom: string, reussi: boolean
 
   /* ── 6. la garde, la demande, D29, la route ── */
   const libre = `libre-${UUID}`;
-  ok("garde (T-203) : une création libre passe ; un dossier ou une édition reçoit 403 photos_clients_non_autorisees, sauf MEP_LECTURE_IA_CLIENTS=1",
+  ok("garde (T-203) : une création libre passe ; un dossier reçoit 403 sauf MEP_LECTURE_IA_CLIENTS=1 ; une édition reçoit 403 TOUJOURS",
     O.gardeLecture(libre, { OPENAI_API_KEY: "k" }).ok
       && JSON.stringify(O.gardeLecture("dossier:abc", { OPENAI_API_KEY: "k" })) === JSON.stringify({ ok: false, statut: 403, erreur: "photos_clients_non_autorisees" })
       && JSON.stringify(O.gardeLecture(`edition:${UUID}:${UUID}`, { OPENAI_API_KEY: "k", MEP_LECTURE_IA_CLIENTS: "0" })) === JSON.stringify({ ok: false, statut: 403, erreur: "photos_clients_non_autorisees" })
-      && O.gardeLecture("dossier:abc", { OPENAI_API_KEY: "k", MEP_LECTURE_IA_CLIENTS: "1" }).ok);
+      && O.gardeLecture("dossier:abc", { OPENAI_API_KEY: "k", MEP_LECTURE_IA_CLIENTS: "1" }).ok
+      && !O.gardeLecture(`edition:${UUID}:${UUID}`, { OPENAI_API_KEY: "k", MEP_LECTURE_IA_CLIENTS: "1" }).ok);
   ok("garde : sans clé OpenAI, 503 openai_absente ; une clé de projet absente ou trop longue, 400 ; la garde des clients passe AVANT la clé",
     JSON.stringify(O.gardeLecture(libre, {})) === JSON.stringify({ ok: false, statut: 503, erreur: "openai_absente" })
       && (O.gardeLecture(undefined, { OPENAI_API_KEY: "k" }) as { statut?: number }).statut === 400 && (O.gardeLecture("x".repeat(121), { OPENAI_API_KEY: "k" }) as { statut?: number }).statut === 400
