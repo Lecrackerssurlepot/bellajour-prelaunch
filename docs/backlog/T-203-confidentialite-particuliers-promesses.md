@@ -62,3 +62,8 @@ Texte légal : accord explicite de Mathias requis. Deux voies, à trancher :
   n'existent toujours pas dans le code ; « supprimées » ne vaut que pour le coffre (pas les lots
   téléchargés, Canva, l'imprimeur, ni d'éventuelles sauvegardes) ; tant que personne ne lance le
   script, rien n'est supprimé à 90 jours.
+- **18/11/2026 : « Oui, ouvre ».** Mathias ouvre « Lire les photos » (envoi de planches et de photos réduites à OpenAI) à l'atelier sur les dossiers
+  de particuliers, pour ses essais (`MEP_LECTURE_IA_CLIENTS=1` en Production et Preview ; M-12, D32). Les éditions collectives restent fermées dans le
+  code. **Le texte de la politique n'est pas changé** : il cite déjà OpenAI comme sous-traitant, mais pour la couverture illustrée, pas pour l'analyse
+  des photos. À mettre à jour avec lui avant d'en faire un usage courant.
+
