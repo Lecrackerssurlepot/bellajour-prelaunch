@@ -21,3 +21,13 @@ les règles des équipes. Statut : `à coder` tant que le compositeur ne l'appli
 - des lieux sûrs par étape : M-05 (sans GPS, il faut la fiche ou un géocodage des panneaux lus) ;
 - la surface occupée par page et la taille de chaque cadre : M-07, M-08 (le contrôle les mesure déjà) ;
 - le nombre de personnes vues par photo (couche 5) : M-08.
+
+## 18/11/2026, ses réponses
+
+| Ses mots | Règle générale | Statut |
+|---|---|---|
+| « Tu as retiré beaucoup dont énormément qui sont bien » | **M-09** La réserve ne contient que des photos faibles (doublon, floue, sous un plancher de note). Une bonne photo n'est jamais laissée de côté : quand le lot arrive déjà trié par le client (presque aucune rafale ni doublon, notes hautes), la machine garde presque tout, et c'est le nombre de pages et la densité qui s'adaptent. Elle propose plusieurs tailles. | à coder |
+| « La couverture c'est très compliqué, je serais obligé de repasser dessus. Ce qu'il faut c'est que suivant les photos que l'on choisit pour la cover, le magazine s'adapte pour ne pas avoir de photos doublons. » | **M-10** La couverture reste un choix de l'atelier (M-03 et M-04 valent pour les propositions, sans y passer plus de temps). Quand une photo est prise en couverture, l'intérieur se recompose pour ne pas la porter en double. | à coder |
+| (chapitres par lieux d'un road trip) « Oui pour le coup c'est un bon exemple de thème d'album » | M-05 confirmée. Le « thème d'album » (road trip, ville, plage…) choisit la façon de nommer les chapitres. | confirmée |
+| (sobriété, jamais de vide, personnes jamais petites) « Yes », « Oui », « Oui » | M-06, M-07, M-08 confirmées. | confirmées |
+| « On construit un système donc ce n'est pas dans une conversation lambda. On doit l'ancrer dans le système. » | **M-11** Une règle n'existe que si elle est dans le dépôt : écrite dans `docs/moteur/tunnel/`, puis portée en DONNÉE lue par le code (registre des règles), avec son contrôle au harnais. Rien ne vit dans une conversation. | en cours |
