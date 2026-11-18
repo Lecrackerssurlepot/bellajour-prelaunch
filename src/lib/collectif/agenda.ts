@@ -15,9 +15,18 @@
  * Un compte de service ne peut pas inviter le client hors Google Workspace :
  * l'événement est posé dans l'agenda de l'interlocuteur, et le client reçoit
  * notre mail avec l'invitation .ics (rendezvous.ts).
+ *
+ * DEPUIS LE 18/11/2026, LA CONNEXION DE CHACUN (choix de Mathias) : Mathias et
+ * Louis cliquent une fois « Connecter Google » dans l'atelier (OAuth,
+ * `GOOGLE_AGENDA_CLIENT_ID` + `GOOGLE_AGENDA_CLIENT_SECRET`). On garde leur
+ * jeton de renouvellement CHIFFRÉ en base ; l'événement est alors posé EN
+ * LEUR NOM, avec une visio Meet neuve, et Google invite lui-même le client.
+ * Chaque fonction prend en dernier `connexion` (ce jeton, en clair, jamais
+ * rendu à un navigateur) ; `null` = le compte de service, comme avant.
+ * Les portées restent les mêmes : poser ses événements, lire libre / occupé.
  */
 
-import { createSign } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, createSign, randomBytes } from "node:crypto";
 import type { Plage } from "./creneaux";
 
 export const VAR_COMPTE_AGENDA = "GOOGLE_AGENDA_COMPTE";
@@ -105,10 +114,151 @@ async function jetonAcces(compte: CompteAgenda): Promise<Resultat<string>> {
   }
 }
 
-async function appeler<T>(chemin: string, init: { method: string; body?: unknown }): Promise<Resultat<{ statut: number; json: T | null }>> {
-  const compte = compteAgenda();
-  if (!compte) return { ok: false, raison: "non_configure", message: "La prise de rendez-vous n'est pas encore branchée à l'agenda." };
-  const j = await jetonAcces(compte);
+/* ─────────────────────── la connexion Google de chacun (18/11) ─────────────────────── */
+
+export const VAR_OAUTH_ID = "GOOGLE_AGENDA_CLIENT_ID";
+export const VAR_OAUTH_SECRET = "GOOGLE_AGENDA_CLIENT_SECRET";
+const CONSENTEMENT_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+const PORTEES_OAUTH = ["openid", "email", ...PORTEES.split(" ")].join(" ");
+
+export type ClientOAuth = { id: string; secret: string };
+
+/** Le client OAuth de l'atelier, ou `null` : « Connecter Google » reste éteint. */
+export function clientOAuth(): ClientOAuth | null {
+  const id = (process.env[VAR_OAUTH_ID] ?? "").trim();
+  const secret = (process.env[VAR_OAUTH_SECRET] ?? "").trim();
+  return id && secret ? { id, secret } : null;
+}
+
+/** L'adresse où Google ramène après l'accord : à déclarer telle quelle dans la console Google. */
+export function cheminRetourOAuth(): string {
+  return "/api/admin/collectif/agendas/google/retour";
+}
+
+/** La page d'accord de Google. `prompt=consent` : un jeton de renouvellement à CHAQUE connexion. */
+export function urlConsentement(client: ClientOAuth, retour: string, etat: string): string {
+  const q = new URLSearchParams({
+    client_id: client.id,
+    redirect_uri: retour,
+    response_type: "code",
+    scope: PORTEES_OAUTH,
+    access_type: "offline",
+    prompt: "consent",
+    include_granted_scopes: "false",
+    state: etat,
+  });
+  return `${CONSENTEMENT_URL}?${q.toString()}`;
+}
+
+/** L'adresse du compte, lue dans le jeton d'identité que Google joint (aucun appel de plus). */
+export function emailDuJetonIdentite(idToken: string | undefined): string | null {
+  const milieu = (idToken ?? "").split(".")[1];
+  if (!milieu) return null;
+  try {
+    const j = JSON.parse(Buffer.from(milieu, "base64url").toString("utf8")) as { email?: unknown };
+    return typeof j.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(j.email) ? j.email.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Le code rendu par Google → le jeton de renouvellement et l'adresse du compte. */
+export async function echangerCode(client: ClientOAuth, code: string, retour: string): Promise<Resultat<{ refresh: string; email: string }>> {
+  try {
+    const rep = await fetch(JETON_URL, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "authorization_code", code, client_id: client.id, client_secret: client.secret, redirect_uri: retour }),
+      signal: AbortSignal.timeout(DELAI_MS),
+    });
+    const json = (await rep.json().catch(() => ({}))) as { refresh_token?: string; id_token?: string; scope?: string; error?: string };
+    if (!rep.ok || !json.refresh_token) {
+      console.error("[collectif] échange OAuth refusé", rep.status, json.error ?? "");
+      return { ok: false, raison: "google", message: "Google n'a pas donné l'accès. Recommencer la connexion." };
+    }
+    const accordees = (json.scope ?? "").split(" ");
+    if (!PORTEES.split(" ").every((p) => accordees.includes(p))) {
+      return { ok: false, raison: "acces_refuse", message: "Il faut cocher les deux accès à l'agenda sur la page de Google. Recommencer la connexion." };
+    }
+    const email = emailDuJetonIdentite(json.id_token);
+    if (!email) return { ok: false, raison: "google", message: "Google n'a pas dit quel compte s'est connecté." };
+    return { ok: true, valeur: { refresh: json.refresh_token, email } };
+  } catch {
+    return { ok: false, raison: "reseau", message: "Google n'a pas répondu." };
+  }
+}
+
+/**
+ * Le jeton de renouvellement ne dort jamais en clair en base : AES-256-GCM,
+ * clé tirée du secret du client OAuth (changer ce secret oblige à se
+ * reconnecter, ce qui est voulu). Illisible ou secret absent : `null`.
+ */
+function cleDeChiffrement(): Buffer | null {
+  const c = clientOAuth();
+  return c ? createHash("sha256").update(`bellajour-agenda:${c.secret}`).digest() : null;
+}
+
+export function chiffrerJeton(clair: string): string | null {
+  const cle = cleDeChiffrement();
+  if (!cle) return null;
+  const iv = randomBytes(12);
+  const c = createCipheriv("aes-256-gcm", cle, iv);
+  const corps = Buffer.concat([c.update(clair, "utf8"), c.final()]);
+  return `v1.${iv.toString("base64url")}.${c.getAuthTag().toString("base64url")}.${corps.toString("base64url")}`;
+}
+
+export function dechiffrerJeton(chiffre: string | null | undefined): string | null {
+  const cle = cleDeChiffrement();
+  const parts = (chiffre ?? "").split(".");
+  if (!cle || parts.length !== 4 || parts[0] !== "v1") return null;
+  try {
+    const d = createDecipheriv("aes-256-gcm", cle, Buffer.from(parts[1], "base64url"));
+    d.setAuthTag(Buffer.from(parts[2], "base64url"));
+    return Buffer.concat([d.update(Buffer.from(parts[3], "base64url")), d.final()]).toString("utf8") || null;
+  } catch {
+    return null;
+  }
+}
+
+/* Un jeton d'accès par connexion, gardé 55 minutes par instance. */
+const jetonsOAuth = new Map<string, { valeur: string; expire: number }>();
+
+async function jetonOAuth(refresh: string): Promise<Resultat<string>> {
+  const client = clientOAuth();
+  if (!client) return { ok: false, raison: "non_configure", message: "La connexion Google de l'atelier n'est pas encore posée." };
+  const maintenant = Math.floor(Date.now() / 1000);
+  const garde = jetonsOAuth.get(refresh);
+  if (garde && garde.expire > maintenant + 60) return { ok: true, valeur: garde.valeur };
+  try {
+    const rep = await fetch(JETON_URL, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh, client_id: client.id, client_secret: client.secret }),
+      signal: AbortSignal.timeout(DELAI_MS),
+    });
+    const json = (await rep.json().catch(() => ({}))) as { access_token?: string; expires_in?: number; error?: string };
+    if (!rep.ok || !json.access_token) {
+      console.error("[collectif] jeton OAuth refusé", rep.status, json.error ?? "");
+      /* `invalid_grant` : l'accès a été retiré chez Google, ou le jeton a expiré. */
+      return { ok: false, raison: "acces_refuse", message: "La connexion Google a expiré ou a été retirée : la refaire dans « Les agendas »." };
+    }
+    jetonsOAuth.set(refresh, { valeur: json.access_token, expire: maintenant + Math.min(json.expires_in ?? 3600, 3300) });
+    return { ok: true, valeur: json.access_token };
+  } catch {
+    return { ok: false, raison: "reseau", message: "Google n'a pas répondu." };
+  }
+}
+
+
+async function appeler<T>(chemin: string, init: { method: string; body?: unknown }, connexion: string | null = null): Promise<Resultat<{ statut: number; json: T | null }>> {
+  let j: Resultat<string>;
+  if (connexion) {
+    j = await jetonOAuth(connexion);
+  } else {
+    const compte = compteAgenda();
+    if (!compte) return { ok: false, raison: "non_configure", message: "La prise de rendez-vous n'est pas encore branchée à l'agenda." };
+    j = await jetonAcces(compte);
+  }
   if (!j.ok) return j;
   try {
     const rep = await fetch(`${API}${chemin}`, {
@@ -131,9 +281,9 @@ const enc = (id: string) => encodeURIComponent(id);
  * de Google (« free/busy »). Un agenda non partagé avec le compte de service
  * répond une erreur que l'on dit en clair.
  */
-export async function plagesOccupees(agendaId: string, debut: string, fin: string): Promise<Resultat<Plage[]>> {
+export async function plagesOccupees(agendaId: string, debut: string, fin: string, connexion: string | null = null): Promise<Resultat<Plage[]>> {
   type Rep = { calendars?: Record<string, { busy?: { start: string; end: string }[]; errors?: { reason: string }[] }> };
-  const r = await appeler<Rep>("/freeBusy", { method: "POST", body: { timeMin: debut, timeMax: fin, items: [{ id: agendaId }] } });
+  const r = await appeler<Rep>("/freeBusy", { method: "POST", body: { timeMin: debut, timeMax: fin, items: [{ id: agendaId }] } }, connexion);
   if (!r.ok) return r;
   if (r.valeur.statut !== 200 || !r.valeur.json?.calendars) {
     console.error("[collectif] free/busy refusé", r.valeur.statut);
@@ -144,15 +294,25 @@ export async function plagesOccupees(agendaId: string, debut: string, fin: strin
     return {
       ok: false,
       raison: "acces_refuse",
-      message: "Cet agenda n'est pas partagé avec le compte de l'atelier (ou son adresse est fausse).",
+      message: connexion ? "Google refuse de lire cet agenda : refaire la connexion dans « Les agendas »." : "Cet agenda n'est pas partagé avec le compte de l'atelier (ou son adresse est fausse).",
     };
   }
   return { ok: true, valeur: (agenda.busy ?? []).map((b) => ({ debut: new Date(b.start).toISOString(), fin: new Date(b.end).toISOString() })) };
 }
 
-export type EvenementAPoser = { debut: string; fin: string; titre: string; description: string; lieu: string | null };
+/**
+ * `invites` et `visio` ne valent qu'avec la connexion de chacun (un compte de
+ * service ne peut ni inviter ni créer de Meet hors Workspace) : Google envoie
+ * alors LUI-MÊME l'invitation, ses mises à jour et son annulation.
+ * `visioCle` : une clé stable par rendez-vous (son id), pour qu'un second
+ * envoi ne crée pas une seconde visio.
+ */
+export type Invite = { email: string; nom?: string | null };
+export type EvenementAPoser = { debut: string; fin: string; titre: string; description: string; lieu: string | null; invites?: Invite[]; visio?: boolean; visioCle?: string };
+export type EvenementPose = { id: string; visio: string | null };
 
-function corpsEvenement(e: EvenementAPoser) {
+function corpsEvenement(e: EvenementAPoser, connexion: string | null, creation: boolean) {
+  const riche = Boolean(connexion);
   return {
     summary: e.titre,
     description: e.description,
@@ -160,24 +320,44 @@ function corpsEvenement(e: EvenementAPoser) {
     start: { dateTime: e.debut, timeZone: "Europe/Paris" },
     end: { dateTime: e.fin, timeZone: "Europe/Paris" },
     reminders: { useDefault: true },
+    ...(riche && e.invites?.length ? { attendees: e.invites.map((i) => ({ email: i.email, ...(i.nom ? { displayName: i.nom } : {}) })), guestsCanModify: false } : {}),
+    ...(riche && creation && e.visio ? { conferenceData: { createRequest: { requestId: (e.visioCle ?? `bj-${Date.parse(e.debut)}`).slice(0, 60), conferenceSolutionKey: { type: "hangoutsMeet" } } } } : {}),
   };
 }
 
-/** Pose le rendez-vous dans l'agenda de l'interlocuteur ; rend l'identifiant de l'événement. */
-export async function poserEvenement(agendaId: string, e: EvenementAPoser): Promise<Resultat<string>> {
-  const r = await appeler<{ id?: string }>(`/calendars/${enc(agendaId)}/events`, { method: "POST", body: corpsEvenement(e) });
+/* Les options d'écriture, hors du chemin : visio à la création, invitations envoyées par Google. */
+function options(connexion: string | null, creation: boolean): string {
+  if (!connexion) return "";
+  const q = new URLSearchParams({ sendUpdates: "all" });
+  if (creation) q.set("conferenceDataVersion", "1");
+  return `?${q.toString()}`;
+}
+
+/** Pose le rendez-vous ; rend l'identifiant de l'événement et le lien de la visio créée, s'il y en a une. */
+export async function poserEvenementComplet(agendaId: string, e: EvenementAPoser, connexion: string | null = null): Promise<Resultat<EvenementPose>> {
+  const base = `/calendars/${enc(agendaId)}/events`;
+  const r = await appeler<{ id?: string; hangoutLink?: string }>(`${base}${options(connexion, true)}`, { method: "POST", body: corpsEvenement(e, connexion, true) }, connexion);
   if (!r.ok) return r;
-  if ((r.valeur.statut === 200 || r.valeur.statut === 201) && r.valeur.json?.id) return { ok: true, valeur: r.valeur.json.id };
+  if ((r.valeur.statut === 200 || r.valeur.statut === 201) && r.valeur.json?.id) {
+    const visio = typeof r.valeur.json.hangoutLink === "string" && r.valeur.json.hangoutLink.startsWith("https://") ? r.valeur.json.hangoutLink : null;
+    return { ok: true, valeur: { id: r.valeur.json.id, visio } };
+  }
   if (r.valeur.statut === 403 || r.valeur.statut === 404) {
-    return { ok: false, raison: "acces_refuse", message: "L'agenda n'est pas partagé en écriture avec le compte de l'atelier." };
+    return { ok: false, raison: "acces_refuse", message: connexion ? "Google refuse d'écrire dans cet agenda : refaire la connexion dans « Les agendas »." : "L'agenda n'est pas partagé en écriture avec le compte de l'atelier." };
   }
   console.error("[collectif] événement non posé", r.valeur.statut);
   return { ok: false, raison: "google", message: "Google Agenda n'a pas enregistré le rendez-vous." };
 }
 
+/** Pose le rendez-vous dans l'agenda de l'interlocuteur ; rend l'identifiant de l'événement. */
+export async function poserEvenement(agendaId: string, e: EvenementAPoser, connexion: string | null = null): Promise<Resultat<string>> {
+  const r = await poserEvenementComplet(agendaId, e, connexion);
+  return r.ok ? { ok: true, valeur: r.valeur.id } : r;
+}
+
 /** Déplace un événement que NOUS avons posé. */
-export async function deplacerEvenement(agendaId: string, eventId: string, e: EvenementAPoser): Promise<Resultat<true>> {
-  const r = await appeler(`/calendars/${enc(agendaId)}/events/${enc(eventId)}`, { method: "PATCH", body: corpsEvenement(e) });
+export async function deplacerEvenement(agendaId: string, eventId: string, e: EvenementAPoser, connexion: string | null = null): Promise<Resultat<true>> {
+  const r = await appeler(`/calendars/${enc(agendaId)}/events/${enc(eventId)}${options(connexion, false)}`, { method: "PATCH", body: corpsEvenement(e, connexion, false) }, connexion);
   if (!r.ok) return r;
   if (r.valeur.statut === 200) return { ok: true, valeur: true };
   if (r.valeur.statut === 404 || r.valeur.statut === 410) return { ok: false, raison: "introuvable", message: "L'événement n'est plus dans l'agenda." };
@@ -186,8 +366,8 @@ export async function deplacerEvenement(agendaId: string, eventId: string, e: Ev
 }
 
 /** Retire un événement que NOUS avons posé. Déjà retiré (404, 410) = fait. */
-export async function retirerEvenement(agendaId: string, eventId: string): Promise<Resultat<true>> {
-  const r = await appeler(`/calendars/${enc(agendaId)}/events/${enc(eventId)}`, { method: "DELETE" });
+export async function retirerEvenement(agendaId: string, eventId: string, connexion: string | null = null): Promise<Resultat<true>> {
+  const r = await appeler(`/calendars/${enc(agendaId)}/events/${enc(eventId)}${options(connexion, false)}`, { method: "DELETE" }, connexion);
   if (!r.ok) return r;
   if (r.valeur.statut === 204 || r.valeur.statut === 200 || r.valeur.statut === 404 || r.valeur.statut === 410) return { ok: true, valeur: true };
   console.error("[collectif] événement non retiré", r.valeur.statut);

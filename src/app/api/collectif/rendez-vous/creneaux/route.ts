@@ -8,7 +8,7 @@ import { creneauxDuJour, creneauxLibres, joursOuvres, libelleJour, lundiDeSemain
 import { formaterHeureParis, instantDeParis } from "@/lib/collectif/dates";
 import { peut } from "@/lib/collectif/droits";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { interlocuteurPret } from "@/lib/collectif/rendezvous";
+import { connexionDe, interlocuteurPret } from "@/lib/collectif/rendezvous";
 import { lireCorps, refusAcces, refusDroit } from "@/lib/collectif/reponses";
 
 /**
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
   const fin = instantDeParis(`${plusJours(lundi, 7)}T00:00`);
   if (!debut || !fin) return NextResponse.json({ error: "semaine_illisible" }, { status: 422 });
 
-  const occ = await plagesOccupees(pret.inter.agenda_id as string, debut, fin);
+  const occ = await plagesOccupees(pret.inter.agenda_id as string, debut, fin, await connexionDe(supabase, pret.inter.cle));
   if (!occ.ok) {
     return NextResponse.json(
       { error: `agenda_${occ.raison}`, message: occ.message },

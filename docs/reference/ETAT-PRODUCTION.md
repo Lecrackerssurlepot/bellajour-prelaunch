@@ -1988,3 +1988,13 @@ Deux conséquences pratiques :
 Rappel utile : toutes ces faces sont en `display: swap`. Elles ne bloquent pas le rendu — le
 texte s'affiche en repli puis bascule. Les 202 Ko coûtent de la bande passante, pas un écran
 blanc.
+
+## 18/11/2026 — La page /partenaires et la connexion Google de chacun (D32, T-148), sur branche
+
+- **Code** sur `feat/partenaires-rendez-vous`. Rien en production.
+- **Migration `20261118_partenaires_rendez_vous.sql` : ÉCRITE, PAS appliquée** (trois colonnes sur
+  `collectif_interlocuteurs`, la table `collectif_rdv_prospects`). Sans elle, tout se replie.
+- **Variables absentes partout** : `GOOGLE_AGENDA_CLIENT_ID`, `GOOGLE_AGENDA_CLIENT_SECRET`. Aucun client OAuth n'existe
+  chez Google. Personne n'est connecté : `/partenaires` montrerait la brochure et contact@bellajour.com.
+- **Jamais essayé contre Google** : l'échange du code, la visio Meet, l'invitation au client.
+

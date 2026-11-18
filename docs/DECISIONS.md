@@ -810,3 +810,23 @@ est écarté. Le type de projet (solo, couple, bande) vient de ce que le client 
 validateur refuse toute clé inconnue, le harnais le vérifie) ; rien de `casting/` de la démo n'entre dans l'éditeur ; aucune
 couche ne doit réintroduire des « personnes principales » sans une nouvelle décision. La détection de visages de l'éditeur
 (MediaPipe, C04) reste une détection : des boîtes, jamais une identité.
+
+D32 (18/11/2026) — **Une page `/partenaires` montre la brochure et laisse prendre rendez-vous, sur les agendas Google de
+Mathias ET de Louis, chacun connecté par son propre compte.** Demande de Mathias : « limiter les aller-retours en B2B ».
+Elle complète D23 (les rendez-vous de l'espace client) et tranche sa question restée ouverte, la connexion.
+
+Ce qui est tranché.
+- La page montre « Bellajour · Brochure Écoles » (cinq pages, en images) et la prise de rendez-vous. Rien d'autre.
+- **Vous deux libres** : un créneau ne se montre que si toutes les personnes de l'atelier qui prennent des rendez-vous
+  (`actif`) sont libres ; l'appel se fait à deux. Pour un appel à un seul, décocher l'autre dans « Les agendas ».
+- **La connexion Google de chacun (OAuth)**, à la place du compte de service : l'événement est posé au nom de la personne,
+  avec une visio Meet neuve, et c'est Google qui invite le client. Aucun mail ne part de chez nous pour un rendez-vous
+  pris ainsi. Le compte de service reste lu pour une personne pas encore connectée.
+- Dans l'espace client, **le titre de l'événement dit l'étape du projet** (« Bellajour · Audencia voile · Bon à tirer »),
+  par le nom que le client lit dans son espace.
+- Les créneaux restent ceux de D23 (lundi-vendredi, 10 h à 18 h, 30 minutes). Aucune autre règle n'a été inventée.
+
+**Conséquence :** migration `20261118_partenaires_rendez_vous.sql`, deux variables (`GOOGLE_AGENDA_CLIENT_ID`,
+`GOOGLE_AGENDA_CLIENT_SECRET`), le pas-à-pas sur `/admin/collectif/agendas`. Les règles sont dans
+`src/lib/collectif/CLAUDE.md`. Reste ouvert : un délai minimum avant un appel pris par un inconnu (aujourd'hui aucun,
+comme D23), et la durée annoncée (la brochure dit « 15 minutes », le créneau en fait 30).
