@@ -1310,7 +1310,7 @@ aujourd'hui ignoré.
   brochure, ni titre, ni bouton fixe en bas (il faisait trois fois le même bouton). Le carrousel du premier jet est dans
   le commit 336ab946. Les images sont versionnées (`brochure-ecoles-v1-N-800|1600.webp`) : une brochure refaite =
   `v2`, jamais un fichier écrasé.
-- **Sans la migration `20261118`** : rien ne casse. `connexionDe` et `lireConnexions` rendent `null` (compte de service
+- **Sans la migration `20261118`** (appliquée le 18/11, le repli reste) : rien ne casse. `connexionDe` et `lireConnexions` rendent `null` (compte de service
   comme avant), « Connecter Google » dit la migration à appliquer, `/partenaires` montre la brochure et l'adresse.
 
 ## Vérifier

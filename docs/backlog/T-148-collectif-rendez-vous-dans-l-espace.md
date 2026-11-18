@@ -86,5 +86,5 @@ l'avancée du projet ». La question de la visio est tranchée : la connexion Go
   sur les deux agendas). Harnais, types, lint, build verts ; l'écran prouvé en local sans écrire en base.
 - **Pas prouvé** : rien n'a parlé à Google (aucun client OAuth n'existe encore). L'échange du code, la création du Meet
   et l'invitation restent à rejouer en vrai.
-- Reste, Mathias : créer le client OAuth (pas-à-pas sur la page Agendas), poser les deux variables sur Vercel, accorder
-  la migration `20261118`, puis se connecter chacun (lui, Louis). Reste, Claude : le parcours complet en vrai.
+- Reste, Mathias : créer le client OAuth (pas-à-pas sur la page Agendas), poser les deux variables sur Vercel, puis se
+  connecter chacun (la migration `20261118` est appliquée et vérifiée depuis le 18/11) (lui, Louis). Reste, Claude : le parcours complet en vrai.

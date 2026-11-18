@@ -1,8 +1,10 @@
 -- ══════════════════════════════════════════════════════════════════════════
 -- La page /partenaires et la connexion Google de chacun (18/11/2026)
 --
--- ÉCRITE le 18/11/2026, PAS appliquée : à appliquer par Mathias (ou sur son
--- accord explicite), puis à vérifier en SQL.
+-- APPLIQUÉE le 18/11/2026 via le MCP Supabase, sur accord explicite de Mathias
+-- (« Oui, applique »), et vérifiée en SQL : trois colonnes sur
+-- collectif_interlocuteurs, la table (14 colonnes, RLS, aucune policy), ses
+-- deux index, zéro ligne.
 --
 -- 1. `collectif_interlocuteurs` : la connexion Google de la personne (OAuth).
 --    `google_refresh` : son jeton de renouvellement, CHIFFRÉ par le serveur

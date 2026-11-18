@@ -1992,8 +1992,11 @@ blanc.
 ## 18/11/2026 — La page /partenaires et la connexion Google de chacun (D32, T-148), sur branche
 
 - **Code** sur `feat/partenaires-rendez-vous`. Rien en production.
-- **Migration `20261118_partenaires_rendez_vous.sql` : ÉCRITE, PAS appliquée** (trois colonnes sur
-  `collectif_interlocuteurs`, la table `collectif_rdv_prospects`). Sans elle, tout se replie.
+- **Migration `20261118_partenaires_rendez_vous.sql` : APPLIQUÉE le 18/11 via le MCP Supabase, sur accord explicite de
+  Mathias, vérifiée en SQL** (avant : aucune des trois colonnes, pas de table ; après : `google_refresh`, `google_email`,
+  `google_connecte_le` sur `collectif_interlocuteurs`, `collectif_rdv_prospects` à 14 colonnes, RLS activée, zéro policy,
+  index `…_creneau_unique` et `…_email_idx`, zéro ligne). Personne n'est connecté : la route des créneaux répond
+  503 `agenda_non_relie`, comme prévu.
 - **Variables absentes partout** : `GOOGLE_AGENDA_CLIENT_ID`, `GOOGLE_AGENDA_CLIENT_SECRET`. Aucun client OAuth n'existe
   chez Google. Personne n'est connecté : `/partenaires` montrerait la brochure et contact@bellajour.com.
 - **Jamais essayé contre Google** : l'échange du code, la visio Meet, l'invitation au client.
