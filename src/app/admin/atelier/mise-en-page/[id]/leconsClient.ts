@@ -32,6 +32,34 @@ async function envoyerLot(cle: string, lecons: Lecon[], inst?: ReturnType<typeof
   } catch { return false; }
 }
 
+/**
+ * 18/11 (« je repasserai après toi ») : envoie les leçons d'ÉCART à la proposition (`leconsDesDifferences`, type `ecart_proposition`),
+ * par lots de 200, tout de suite (le bouton de « Ce que j'ai changé »). Jamais d'exception : la phrase dit ce qui s'est passé, en mots
+ * courts. Avant la migration 20261119, la route les range sous `pretri_renverse` (`replis`) : elles comptent quand même par règle.
+ */
+export async function envoyerEcarts(cle: string, lecons: readonly Lecon[]): Promise<{ ok: boolean; envoyees: number; phrase: string }> {
+  if (!lecons.length) return { ok: true, envoyees: 0, phrase: "Rien à envoyer" };
+  let envoyees = 0;
+  try {
+    for (let i = 0; i < lecons.length; i += LOT) {
+      const quand = new Date().toISOString();
+      const rep = await fetch(ROUTE, {
+        method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ cle, lecons: lecons.slice(i, i + LOT).map((lecon) => ({ lecon, quand })) }),
+      });
+      const j = (await rep.json().catch(() => null)) as { ok?: boolean; lecons?: number; error?: string } | null;
+      if (!rep.ok || !j?.ok) {
+        const phrase = rep.status === 503 ? "Mémoire absente, rien envoyé" : rep.status === 401 ? "Session expirée" : "Envoi impossible, réessaie";
+        return { ok: false, envoyees, phrase: envoyees ? `${envoyees} envoyées, la suite a échoué` : phrase };
+      }
+      envoyees += typeof j.lecons === "number" ? j.lecons : Math.min(LOT, lecons.length - i);
+    }
+    return { ok: true, envoyees, phrase: `${envoyees} leçon${envoyees > 1 ? "s" : ""} envoyée${envoyees > 1 ? "s" : ""}` };
+  } catch {
+    return { ok: false, envoyees, phrase: "Réseau absent, réessaie" };
+  }
+}
+
 export type Memoire = {
   /** À appeler quand un export a abouti : jalon + instantané. `format` : Affinity (IDML, par défaut) ou Canva (PDF, 11/11). */
   exporte: (dossier: string, format?: "IDML" | "PDF") => void;

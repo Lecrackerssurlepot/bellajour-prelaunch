@@ -29,7 +29,7 @@ import { valeursReglages, versionReglages } from "./reglages";
 import { nomComparable } from "./premierJet";
 import {
   CANDIDATES_IA, COUVERTURES_IA, FORMAT_LECTURE_IA, IDEE_REGARD_MOTS_MAX, MOMENT_MOTS_MAX, MOT_ROLE, MOT_SUJET, RECADRAGE_MOTS_MAX, REGLE_IA,
-  AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, lireLectureIA, PROFILS_IA, QUI_IA, ROLES_PLANCHE, SUJETS_IA, TONS_IA, TYPES_VOYAGE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3,
+  AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, lireLectureIA, PROFILS_IA, QUI_IA, ROLES_PLANCHE, SUJETS_IA, TONS_IA, TYPES_VOYAGE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3, VERSION_LECTURE_IA_4, VERSION_LECTURE_IA_5, POSES_IA, SUJETS_SPECIAUX_IA, PERSONNES_NOMBRE_MAX,
   type AmbianceIA, type CandidateIA, type CouvertureIA, type LectureIA, type LieuxIA, type MomentIA, type PersonnesIA, type PhotoIA, type PlanIA, type RoleIA,
   type RolePlanche, type SujetIA, type VoyageIA,
 } from "./lectureIA";
@@ -169,6 +169,8 @@ export type LuPlanche = {
   numero: number; role: RolePlanche; sujet: SujetIA; candidate: CandidateIA; interet: number; texte: boolean;
   /* 18/11 (planche « B5 » du banc du tunnel) : facultatifs, absents d'une planche lue avant */
   plan?: PlanIA; moment_journee?: MomentIA; ambiance?: AmbianceIA; personnes?: PersonnesIA;
+  /* B6 (18/11, définition v2) : le complément de planche */
+  personnes_nombre?: number; sujet_special?: (typeof SUJETS_SPECIAUX_IA)[number]; force_image?: number; pose?: (typeof POSES_IA)[number]; geste?: boolean; insolite?: boolean;
 };
 
 /* ─────────────────────────── C. le regard fin ─────────────────────────── */
@@ -424,8 +426,12 @@ export type ResultatsLecture = {
   lieux?: LieuxIA;
 };
 
-/** La version la plus BASSE qui porte tout (une 3 seulement si un champ de la 3 existe : un fichier relu par un éditeur d'avant reste lisible). */
-function versionPour(photos: Readonly<Record<string, PhotoIA>>, voyage?: VoyageIA, lieux?: LieuxIA): 2 | 3 {
+/** La version la plus BASSE qui porte tout (une 3 seulement si un champ de la 3 existe, une 4 si un champ du complément existe : un fichier
+ *  relu par un éditeur d'avant reste lisible). */
+export function versionPour(photos: Readonly<Record<string, PhotoIA>>, voyage?: VoyageIA, lieux?: LieuxIA): 2 | 3 | 4 | 5 {
+  /* v5 (18/11) : le regard complémentaire ou le classement des couvertures */
+  if (Object.values(photos).some((p) => p.expression || p.yeux_fermes || p.point_accroche !== undefined || p.accroche !== undefined || p.regard_vers || p.couverture_classee)) return VERSION_LECTURE_IA_5;
+  if (Object.values(photos).some((p) => p.personnes_nombre !== undefined || p.force_image !== undefined || p.sujet_special || p.pose || p.geste !== undefined || p.insolite !== undefined)) return VERSION_LECTURE_IA_4;
   if (voyage || lieux) return VERSION_LECTURE_IA_3;
   return Object.values(photos).some((p) => p.plan || p.moment_journee || p.ambiance || p.personnes) ? VERSION_LECTURE_IA_3 : VERSION_LECTURE_IA_2;
 }
@@ -462,6 +468,9 @@ export function versLectureIA(avant: LectureIA | null, cat: Catalogue, r: Result
       sujet: b.sujet, candidate: b.candidate, texte: b.texte,
       ...(b.plan ? { plan: b.plan } : {}), ...(b.moment_journee ? { moment_journee: b.moment_journee } : {}),
       ...(b.ambiance ? { ambiance: b.ambiance } : {}), ...(b.personnes ? { personnes: b.personnes } : {}),
+      ...(b.personnes_nombre !== undefined ? { personnes_nombre: b.personnes_nombre } : {}), ...(b.sujet_special ? { sujet_special: b.sujet_special } : {}),
+      ...(b.force_image !== undefined ? { force_image: b.force_image } : {}), ...(b.pose ? { pose: b.pose } : {}),
+      ...(b.geste !== undefined ? { geste: b.geste } : {}), ...(b.insolite !== undefined ? { insolite: b.insolite } : {}),
     };
     if (c) {
       p.regard = { moment: c.moment, idee: c.idee, recadrage: c.recadrage, plat: c.plat };
@@ -542,7 +551,7 @@ export function corrigerTag(l: LectureIA, cat: Catalogue, id: string, quoi: Corr
   const { corrige: _v, ...sans } = p;
   void _v;
   const np: PhotoIA = Object.keys(corrige).length ? { ...sans, corrige } : sans;
-  const lecture: LectureIA = { ...l, version: l.version === VERSION_LECTURE_IA_3 ? VERSION_LECTURE_IA_3 : VERSION_LECTURE_IA_2, photos: { ...l.photos, [k]: np } };
+  const lecture: LectureIA = { ...l, version: l.version === VERSION_LECTURE_IA_3 || l.version === VERSION_LECTURE_IA_4 || l.version === VERSION_LECTURE_IA_5 ? l.version : VERSION_LECTURE_IA_2, photos: { ...l.photos, [k]: np } };
   const mot = (v: string | undefined): string => (v === undefined ? "rien" : champ === "role" ? (MOT_ROLE[v as RoleIA] ?? v) : (MOT_SUJET[v as SujetIA] ?? v));
   const lecon: Lecon | null = voulu === propose ? null : {
     type: "tag_corrige", regle: REGLE_IA, photos: [id],
@@ -588,6 +597,65 @@ Rends aussi, pour chaque numéro :
 - moment_journee : matin, jour, dore (lumière rasante et chaude du lever ou du coucher), nuit, interieur (intérieur éclairé, on ne sait pas l'heure) ;
 - ambiance : calme, vivant (mouvement, rue, activité), festif (fête, verres levés, danse), intime (proche, tendre), grandiose (paysage immense, panorama) ;
 - personnes : combien de personnes on voit nettement, en mots : 0, 1, 2 ou groupe (3 et plus). Compte, n'identifie pas.`;
+
+/**
+ * B6 (18/11, définition v2, décision 11 de Mathias : « OK ») : la planche B5 PLUS les six tags du complément, testés au banc le 18/11 sur
+ * 161 photos (0,20 $ en passe de complément seule ; inclus dans la première lecture, la sortie grossit d'environ 30 jetons par photo).
+ * La consigne des six champs est celle du banc (`banc/complement.ts`), telle quelle. D29 : un COMPTE, jamais une identité.
+ */
+export const SCHEMA_B6 = {
+  type: "object", additionalProperties: false, required: ["photos"], properties: {
+    photos: {
+      type: "array", items: {
+        type: "object", additionalProperties: false,
+        required: [...SCHEMA_B5.properties.photos.items.required, "personnes_nombre", "sujet_special", "force_image", "pose", "geste", "insolite"],
+        properties: {
+          ...SCHEMA_B5.properties.photos.items.properties,
+          personnes_nombre: { type: "integer" },
+          sujet_special: { type: "string", enum: [...SUJETS_SPECIAUX_IA] },
+          force_image: { type: "number" },
+          pose: { type: "string", enum: [...POSES_IA] },
+          geste: { type: "boolean" },
+          insolite: { type: "boolean" },
+        },
+      },
+    },
+  },
+} as const;
+export const CONSIGNE_B6 = `${CONSIGNE_B5}
+- personnes_nombre : combien de personnes on voit nettement (0 à 6 ; 7 pour sept et plus). Compte aussi les personnes de dos ou de loin si on les distingue. Compte, n'identifie jamais ;
+- sujet_special : animal (un animal est le sujet), document (billet, carte, plan, capture d'écran, conversation, affiche ou tableau photographié), sinon aucun ;
+- force_image : de 0 à 1, la photo tient-elle SEULE en grand, sur une page entière, par sa lumière, sa composition, son instant ? (0,5 = correcte, 0,8 = forte) ;
+- pose : pose (on pose pour la photo), spontane (pris sur le vif), sans_personne ;
+- geste : true si une action se lit (saut, plongeon, danse, toast, course, jeu) ;
+- insolite : true pour le détail inattendu qui touche, celui qu'on n'aurait pas choisi (rare : un ou deux par planche au plus).`;
+
+export const corpsPlanche6 = (image: string): CorpsCompo => ({
+  model: MODELE_PLANCHE, reasoning: { effort: "low" },
+  input: [{ role: "user", content: [{ type: "input_text", text: CONSIGNE_B6 }, { type: "input_image", image_url: image, detail: "high" }] }],
+  text: { format: { type: "json_schema", name: "lecture_planche", schema: SCHEMA_B6, strict: true } },
+});
+
+/** La planche B6 : la relecture stricte de B5, plus les six champs du complément, chacun dans ses bornes (un nombre hors 0 à 7 est refusé). */
+export function lireReponsePlanche6(x: unknown, n0: number, n: number): Relu<{ photos: LuPlanche[]; absents: number[] }> {
+  const r = json(x);
+  if (!estObjet(r) || !clesExactes(r, ["photos"]) || !Array.isArray(r.photos)) return { ok: false, phrase: "planche : il faut { photos: [...] }, rien d'autre" };
+  const extra = new Map<number, Pick<LuPlanche, "personnes_nombre" | "sujet_special" | "force_image" | "pose" | "geste" | "insolite">>();
+  const base: unknown[] = [];
+  for (const e of r.photos) {
+    if (!estObjet(e)) return { ok: false, phrase: "planche : une entrée n'est pas un objet" };
+    const { personnes_nombre, sujet_special, force_image, pose, geste, insolite, ...reste } = e;
+    if (!Number.isInteger(personnes_nombre) || (personnes_nombre as number) < 0 || (personnes_nombre as number) > PERSONNES_NOMBRE_MAX || !dans(SUJETS_SPECIAUX_IA, sujet_special)
+      || typeof force_image !== "number" || force_image < 0 || force_image > 1 || !dans(POSES_IA, pose) || typeof geste !== "boolean" || typeof insolite !== "boolean") {
+      return { ok: false, phrase: `planche : un tag du complément hors bornes (n° ${String(e.numero)})` };
+    }
+    if (typeof e.numero === "number") extra.set(e.numero, { personnes_nombre: personnes_nombre as number, sujet_special, force_image, pose, geste, insolite });
+    base.push(reste);
+  }
+  const lu = lireReponsePlanche5({ photos: base }, n0, n);
+  if (!lu.ok) return lu;
+  return { ok: true, valeur: { photos: lu.valeur.photos.map((p) => ({ ...p, ...extra.get(p.numero) })), absents: lu.valeur.absents } };
+}
 
 export const MODELE_VOYAGE = MODELE_REGARD;
 export const MODELE_LIEUX = MODELE_PLANCHE;

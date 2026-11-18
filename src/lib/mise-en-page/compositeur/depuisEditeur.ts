@@ -10,7 +10,7 @@ import type { LectureIAReliee } from "../editeur/lectureIA";
 import { nomComparable } from "../editeur/premierJet";
 import { decoupage } from "../editeur/moments";
 import type { Boite } from "../editeur/saillance";
-import type { EntreeCompo, Fiche, LieuxChapitres, Luminance, PhotoCompo, Voyage } from "./types";
+import { REGLAGES_EDITEUR, type CorrectionsAtelier, type EntreeCompo, type Fiche, type LieuxChapitres, type Luminance, type PhotoCompo, type ReglagesV2, type Voyage } from "./types";
 import type { StyleMagazine } from "../style";
 
 /** La bande la plus calme pour un titre, lue sur la carte de chaleur 16 × 16 (le banc y ajoutait la texture des pixels, que l'éditeur ne
@@ -51,6 +51,12 @@ export type DonneesEditeur = {
   douteuse?: { photos: ReadonlySet<string>; toute: boolean; raison: string } | null;
   /** M-15 : le nombre de pages commandé (payé) du dossier, s'il est connu. */
   pagesCommandees?: number | null;
+  /** 18/11 : la version composée : 2 (la v2.1, par défaut) ou 1 (le témoin, rejouable). */
+  version?: 1 | 2;
+  /** Les réglages de la v2 (absents = `REGLAGES_EDITEUR`). */
+  reglages?: ReglagesV2;
+  /** D12 / M-27 : les corrections de l'atelier faites dans l'Analyse (tags, marques, réponses), gardées à part ; elles priment. */
+  corrections?: CorrectionsAtelier | null;
 };
 
 export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
@@ -114,7 +120,21 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
           interet: ia.role?.interet ?? 0.5, role: ia.role?.role ?? null, sujet: ia.sujet ?? null, plan: ia.plan ?? null, personnes: ia.personnes ?? null,
           momentJournee: ia.moment_journee ?? null, ambiance: ia.ambiance ?? null,
           lieuLu: ia.lieu && ia.lieu.source === "ia" && ia.lieu.preuve === "panneau" ? ia.lieu.nom : null, couverture: !!ia.role?.couverture,
+          /* v4 (18/11) : le complément de planche ; ABSENT reste absent (une lecture ancienne n'a pas « 0 personne », le compte vient des visages) */
+          ...(ia.personnes_nombre !== undefined ? { personnesNombre: ia.personnes_nombre } : {}),
+          ...(ia.sujet_special && ia.sujet_special !== "aucun" ? { sujetSpecial: ia.sujet_special } : {}),
+          ...(ia.force_image !== undefined ? { forceImage: ia.force_image } : {}),
+          ...(ia.pose && ia.pose !== "sans_personne" ? { pose: ia.pose } : {}),
+          ...(ia.geste !== undefined ? { geste: ia.geste } : {}), ...(ia.insolite !== undefined ? { insolite: ia.insolite } : {}),
+          /* v5 (18/11) : le regard complémentaire et le classement des couvertures ; ABSENT reste absent, « sans_visage » devient null (lu, aucun visage) */
+          ...(ia.expression !== undefined ? { expression: ia.expression === "sans_visage" ? null : ia.expression } : {}),
+          ...(ia.yeux_fermes !== undefined ? { yeuxFermes: ia.yeux_fermes === "sans_visage" ? null : ia.yeux_fermes } : {}),
+          ...(ia.point_accroche !== undefined ? { pointAccroche: ia.point_accroche } : {}),
+          ...(ia.regard_vers !== undefined ? { regardVers: ia.regard_vers === "sans_visage" ? null : ia.regard_vers } : {}),
+          ...(ia.couverture_classee ? { rangCouverture: ia.couverture_classee.rang } : {}),
         } : null,
+        empreinte: m?.dhash ?? null, chaleur: m?.chaleur ?? null,
+        ...(ia?.regard?.recadrage ? { recadrageConseil: ia.regard.recadrage } : {}),
         chapitre: chapDe.get(p.id) ?? null,
         ...(gardees.has(p.id) && !d.ecarteesAtelier.has(p.id) ? { gardee: true as const } : {}),
       };
@@ -125,5 +145,7 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
     ...(d.marques ? { marques: d.marques } : {}),
     ...(d.pagesCommandees ? { pagesCommandees: d.pagesCommandees } : {}),
     ...(d.douteuse && d.douteuse.photos.size ? { lectureDouteuse: { photos: d.douteuse.photos.size, raison: d.douteuse.raison } } : {}),
+    /* 18/11 : l'éditeur compose en v2.1 par défaut ; la v1 seulement sur demande */
+    ...(d.version === 1 ? {} : { v2: d.reglages ?? REGLAGES_EDITEUR, ...(d.corrections ? { corrections: d.corrections } : {}) }),
   };
 }

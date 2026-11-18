@@ -10,6 +10,25 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 18/11/2026 au soir — la version 2 dans l'éditeur, la page Analyse, « Ce que j'ai changé » : sur branche, PAS en production
+
+- Branche `feat/analyse-et-v2` (poussée, pas de PR), partie de `origin/feat/compositeur-v2` + `origin/main`. L'éditeur compose en v2.1
+  (`REGLAGES_EDITEUR` : densité par les règles, recadrage « normal ») ; la v1 reste rejouable (`version: 1`, rejeu `--version 1`).
+- Le bouton « Composer le magazine » devient « Analyse » : un plein écran à deux onglets (Analyse, Mise en page), C21, M-34.
+- M-31 « jamais une personne coupée » (N-60) codée ; visages cherchés aussi EN TUILES dans le navigateur : la mesure locale change de
+  version (`mesuresClient.ts` v5) : à la première ouverture après déploiement, toutes les photos sont REMESURÉES (une fois, en local).
+- Lecture IA format v5 : regard complémentaire (expression, yeux, accroche, regard) et classement des couvertures demandés ; une lecture
+  ancienne se complète sans tout repayer (`planComplement`). Trois étapes de plus sur la route `lecture-ia` (même garde). Aucun appel réel
+  à OpenAI n'a été fait : les réponses ont été SIMULÉES à la recette.
+- Leçons `ecart_proposition` (« Ce que j'ai changé ») : migration `supabase/migrations/20261119_mep_lecons_ecart_proposition.sql`
+  ÉCRITE, PAS APPLIQUÉE. Sans elle la route range ces leçons sous `pretri_renverse` (préfixe `ecart_proposition · `) : rien ne bloque,
+  elles comptent quand même par règle à l'écran « Règles ».
+- La route `photos` lit en plus `occasion` et `histoire` du dossier (colonnes d'origine), pour pré-remplir l'Analyse. Lecture seule.
+- 18/11 au soir (suite, recette réelle de Mathias : 58 appels réels, 0,26 $ payés pour 0,23 $ annoncés) : défaut bloquant corrigé sur la
+  même branche : « la machine propose » proposait trop de pages ; désormais la densité visée du profil, entre 24 et 60 pages (N-62, N-61).
+- Le rejeu sort aussi `magazine-editeur.pdf` par l'export PDF de l'éditeur (`pdf.ts`). Projet de test : 0 personne coupée (48 pages et
+  « tout garder »), contre 1 visage coupé dans « tout garder » avant.
+
 ## 18/11/2026 au soir — correction de « Composer le magazine » sur un vrai dossier : sur branche, PAS en production
 
 - Constat de Mathias EN PRODUCTION (PR #388 fusionnée), dossier de 164 photos ouvert depuis longtemps : « Composition impossible : aucune

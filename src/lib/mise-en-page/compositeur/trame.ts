@@ -9,9 +9,13 @@
  */
 
 import { POIDS_ROLE, REGLAGES_COMPO } from "./reglagesCompositeur";
-import { T, casseTitre, plageFr, rond, rondPy, type Boite4, type Ph } from "./selection";
+import { T, casseTitre, dateFr, plageFr, rond, rondPy, type Boite4, type Ph } from "./selection";
 import type { CouvertureTrame, PhotoPlanche, PlancheTrame, Trame } from "./pose";
-import type { ChapitreCompo, Decision, Fiche } from "./types";
+import type { ChapitreCompo, Decision, Fiche, PourquoiDouble, ReglagesV2 } from "./types";
+import { REGLAGES_V2, type ParametresProfil } from "./reglagesCompositeur";
+import { nombreVoulu, phraseDouble, type CtxDensite } from "./densite";
+import { belle, ecartPalettes } from "./selectionV2";
+import { cotesProteges, recadrable, zoneV2 } from "./recadrageV2";
 import type { StyleMagazine } from "../style";
 
 /* ─────────────────────────── les tests de forme ─────────────────────────── */
@@ -180,7 +184,8 @@ function recettes(g: Ph[], sommetId: string | null, mode: Mode = "banc"): Recett
   const U = g.filter((x) => x.forme === "U");
   const V = g.filter((x) => x.forme === "H" || x.forme === "P");
   const out: Recette[] = [];
-  if (g.some((x) => x.oeuvre) && n < 3) return out;
+  /* S-013 : une œuvre ou un document n'est jamais seul ni en grand ; v2 : il peut aller à deux (sinon il bloque un chapitre entier) */
+  if (g.some((x) => x.oeuvre) && n < (g[0].v2 ? 2 : 3)) return out;
   /* pano : une 21:9 seule à fond perdu (S-109) ; chère sauf pour le SOMMET (DA-9) */
   if (n === 1 && U.length && tientDouble(g[0]) && g[0].s >= R.PANO_MIN && !g[0].corps.length && g[0].nbPers === 0) {
     const c = g[0].id === sommetId ? -6.0 : 0.6 - (g[0].s - R.PANO_MIN);
@@ -307,17 +312,267 @@ export function decouper(seq: Ph[], nd: number, sommetId: string | null, mode: M
   return [total, out.reverse()];
 }
 
+/* ─────────────────────────── v2 : les recettes de plus et le découpage par la table de densité ─────────────────────────── */
+
+/** Un DÉTAIL (Notion Av #08) : un plan serré d'objet, de plat ou d'autre chose qu'une personne ou un paysage. */
+const estDetail = (x: Ph): boolean => x.plan === "serre" && x.nbPers === 0 && (x.sujet === "objet" || x.sujet === "plat" || x.sujet === "autre");
+
+/** N-51 (Notion R-55) : les deux moitiés d'une double se répondent par un ÉCHO de couleur ou par un CONTRASTE, jamais « ni l'un ni l'autre ». */
+export function echoOuContraste(a: readonly Ph[], b: readonly Ph[]): "écho" | "contraste" | null {
+  if (!a.length || !b.length) return null;
+  const R2 = REGLAGES_V2;
+  const d = ecartPalettes(a[0].palette, b[0].palette);
+  const plans = new Set([...a, ...b].map((x) => x.plan));
+  if (d <= R2.ECHO_DELTA_E) return "écho";
+  if (d >= R2.CONTRASTE_DELTA_E || (plans.has("large") && plans.has("serre"))) return "contraste";
+  return null;
+}
+
+/**
+ * M-32 (18/11, Mathias : « Oui, tout dépend de la chronologie, du fait d'avoir du sens dans la double page ») : une BELLE photo entre
+ * dans une double dense quand la double a du SENS pour elle (N-49b) : elle appartient à une paire ou à une série de la double, ou la
+ * plupart des autres photos sont du même moment qu'elle, ou de la même scène (prises à `SENS_SCENE_MINUTES` d'elle au plus). Rend la
+ * raison en mots, ou null (alors la règle d'avant tient : jamais noyée).
+ */
+export function sensPourBelle(b: Ph, g: readonly Ph[], paires: ReadonlySet<string>): string | null {
+  const autres = g.filter((x) => x !== b);
+  if (!autres.length) return null;
+  if (autres.some((x) => paires.has(`${b.id}|${x.id}`) || paires.has(`${x.id}|${b.id}`))) return "une paire de la double";
+  if (b.v2?.serie && b.v2.serie.type !== "quasi_identiques" && autres.some((x) => x.v2?.serie?.id === b.v2!.serie!.id)) return "une série de la double";
+  const moitie = Math.ceil(autres.length / 2);
+  if (b.moment && autres.filter((x) => x.moment === b.moment).length >= moitie) return "le même moment";
+  if (b.date) {
+    const t0 = T(b.date).getTime(), M = REGLAGES_V2.SENS_SCENE_MINUTES * 60000;
+    if (autres.filter((x) => x.date && Math.abs(T(x.date).getTime() - t0) <= M).length >= moitie) return "la même scène";
+  }
+  return null;
+}
+
+/** Les recettes de la v2 : celles du banc et du repli (N-36), plus la belle photo seule (N-49), la double dense (N-44 à N-46) et la série.
+ *  `heros` (M-32) : la belle photo admise dans la double dense, qui y est alors la plus grande. */
+function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mode: Mode, recadrage = false, heros: Ph | null = null): Recette[] {
+  const out = recettes(g, sommetId, mode);
+  /* v2.1 : la pleine et l'encadrée (une verticale pleine page face aux autres) est toujours proposée, jamais seulement en repli */
+  if (recadrage && mode === "banc") out.push(...recettesRepli(g).filter(([, sp]) => sp.idee !== "seule"));
+  const n = g.length;
+  if (n === 1) {
+    const b = belle(g[0], dpiDouble150);
+    if (b === "pleine" && !g[0].v2?.zone21) {
+      const sp: Spec = { idee: "seule", classe: "G", perdu: true, type: "pages", regles: ["N-49", "M-07"], pourquoi: "la belle photo seule, la page d'en face habillée de sa couleur" };
+      sp.droite = { photos: [{ id: g[0].id, role: "pleine", poids: 1.0 }] };
+      sp.gauche = { photos: [] };
+      out.push([0.2, sp]);
+    } else if (b === "double") {
+      out.push([0.1, { idee: "pano", classe: "G", perdu: true, type: "double", photos: [{ id: g[0].id, role: "double", poids: 1.0, fond_perdu: true }], regles: ["N-49", "S-109"], pourquoi: "la belle photo très large traverse la double" }]);
+    }
+  }
+  const serie = g.length >= 3 && !!g[0].v2?.serie && g[0].v2.serie.type !== "quasi_identiques" && g.every((x) => x.v2?.serie?.id === g[0].v2!.serie!.id);
+  if (serie && n <= 12) out.push([0.2, { idee: "serie", classe: n >= 6 ? "D" : "M", perdu: false, type: "double", photos: g.map((x) => ({ id: x.id, role: "satellite", poids: 0.5 })), serie: true, rupture: { type: "serie", raison: "une série, cadres égaux (S-094)" }, regles: ["N-50", "N-44", "S-094"], pourquoi: `une série de ${n}` }]);
+  if (n >= 5 && n <= 12) {
+    /* N-46 : la capacité d'une PAGE : trois très larges au plus, en bandes (N-12 : jamais quatre), seules ou avec une autre photo ;
+       sans très large, six photos au plus, quatre quand il y a des personnes (M-08 : 70 mm et 100 cm² chacune) */
+    const pageOk = (p: Ph[]): boolean => {
+      const U = p.filter((x) => x.r >= 1.6 && !x.v2?.recadrable).length;
+      /* une très large non recadrable ne va qu'en bandes : deux ou trois sur la page, seules (une seule laisserait du blanc ou serait rognée) */
+      if (U > 3 || (U >= 1 && p.length > U) || (U === 1 && p.length === 1)) return false;
+      return p.length <= (p.some((x) => x.nbPers > 0) ? 4 : 6);
+    };
+    const essais: [Ph[], Ph[]][] = [];
+    for (let k = 1; k < n; k++) essais.push([g.slice(0, k), g.slice(k)]);
+    const Ug = g.filter((x) => x.r >= 1.6 && !x.v2?.recadrable), Vg = g.filter((x) => !(x.r >= 1.6 && !x.v2?.recadrable));
+    if (Ug.length && Vg.length) essais.push(g.indexOf(Ug[0]) < g.indexOf(Vg[0]) ? [Ug, Vg] : [Vg, Ug]);
+    const bons = essais.filter(([a, b]) => pageOk(a) && pageOk(b)).sort((x, y) => Math.abs(x[0].length - x[1].length) - Math.abs(y[0].length - y[1].length));
+    if (bons.length) {
+      const [G, D] = bons[0];
+      const h = heros ?? meilleur(g, (x) => !x.msg) ?? meilleur(g);
+      const sp: Spec = { idee: "dense", classe: n >= 6 ? "D" : "M", perdu: false, type: "pages", regles: heros ? ["N-48", "N-44", "N-46", "S-088", "M-32", "N-49b"] : ["N-48", "N-44", "N-46", "S-088"], pourquoi: heros ? `le moment dense : ${G.length} et ${D.length} photos, la belle photo en héros` : `le moment dense : ${G.length} et ${D.length} photos` };
+      sp.gauche = { photos: rolesSatellites(G, h && G.includes(h) ? h : null) };
+      sp.droite = { photos: rolesSatellites(D, h && D.includes(h) ? h : null) };
+      out.push([0.5 + 0.03 * n, sp]);
+    }
+  }
+  return out;
+}
+
+/** Les moitiés d'une spec (pages : gauche et droite ; double : la première moitié et le reste). */
+function moities(g: Ph[], spec: Spec): [Ph[], Ph[]] {
+  if (spec.type === "pages") {
+    const ids = (c?: Cote) => new Set((c?.photos ?? []).map((p) => p.id));
+    const a = ids(spec.gauche), b = ids(spec.droite);
+    return [g.filter((x) => a.has(x.id)), g.filter((x) => b.has(x.id))];
+  }
+  const k = Math.ceil(g.length / 2);
+  return [g.slice(0, k), g.slice(k)];
+}
+
+type CleV2 = [number, string, number, number, number, number];
+const cleV2 = (k: CleV2): string => k.join("|");
+
+/**
+ * Le DÉCOUPAGE v2 d'un chapitre en `nd` doubles : chaque groupe est jugé par la TABLE DE DENSITÉ (`nombreVoulu` : le nombre voulu, ses
+ * bornes dures), les recettes de forme, les paires (N-50), l'écho ou le contraste (N-51), et l'ÉTAT DU RYTHME (N-47) : doubles denses de
+ * suite, doubles chargées de suite, page récit vue. État : (position, classe, doubles sans fond perdu, denses de suite, chargées de suite, récit).
+ */
+export function decouperV2(seq: Ph[], nd: number, sommetId: string | null, mode: Mode, cd: CtxDensite, paires: ReadonlySet<string>): [number, [Ph[], Spec][]] | null {
+  const R = REGLAGES_COMPO, R2 = REGLAGES_V2;
+  const n = seq.length;
+  const trans: Record<string, number> = { "G|G": R.C_GG, "D|D": R.C_DD, "M|M": R.C_MM };
+  const memo = new Map<string, [number, Spec] | null>();
+  const coupe = (j: number): number => {
+    if (j <= 0 || j >= n) return 0;
+    const a = seq[j - 1], b = seq[j];
+    let c = 0;
+    if (a.moment && a.moment === b.moment) c += R.C_COUPE_MOMENT;
+    if (paires.has(`${a.id}|${b.id}`)) c += R2.PEN_COUPE_PAIRE;
+    if (a.v2?.serie && a.v2.serie.type !== "quasi_identiques" && a.v2.serie.id === b.v2?.serie?.id) c += 2 * R2.PEN_COUPE_PAIRE;
+    return c;
+  };
+  const cg = (i: number, j: number): [number, Spec] | null => {
+    const k = `${i}|${j}`;
+    if (!memo.has(k)) {
+      const g = seq.slice(i, j);
+      const v = nombreVoulu(g, cd);
+      /* N-49 : une belle photo du dixième le plus fort n'est jamais noyée dans une double dense (6 photos et plus, hors série) ; les autres coûtent.
+         M-32 (N-49b) : sauf quand la double a du SENS pour elle (paire, série, même moment, même scène) : elle y entre, et y est la plus grande */
+      const belles = g.length >= REGLAGES_V2.DENSE_MIN && !v.serie ? g.filter((x) => !!belle(x, cd.dpiDouble150) && (x.v2?.notes?.image.valeur ?? 0) >= (cd.seuilTopImage ?? 0)) : [];
+      const admise = belles.length === 1 && sensPourBelle(belles[0], g, paires) ? belles[0] : null;
+      const noyee = belles.length > 0 && !admise;
+      /* v2.1 (M-07 dure) : une ou deux photos dont aucune ne tient une page laissent la double presque vide : refusé */
+      const maigre = !!cd.recadrage && g.length <= 2 && !g.some((x) => pleinDef(x) || (g.length === 1 && tientDouble(x)) || (!!x.v2?.recadrable && x.dpi.demi >= 200) || x.id === sommetId);
+      const rs = noyee || g.length > v.max || (sommetId && g.length > 1 && g.some((x) => x.id === sommetId)) ? [] : recettesV2(g, sommetId, cd.dpiDouble150, mode, !!cd.recadrage, admise);
+      /* M-32 : admise, la belle photo est le HÉROS de la double : seules les recettes qui la posent en héros (la plus grande) restent */
+      const rsH = admise ? rs.filter(([, sp]) => [...(sp.photos ?? []), ...(sp.gauche?.photos ?? []), ...(sp.droite?.photos ?? [])].some((p) => p.id === admise.id && (p.role === "heros" || p.role === "pleine" || p.role === "double"))) : rs;
+      if (!rsH.length) memo.set(k, null);
+      else {
+        /* N-46 : le gabarit LIBRE (la pose choisit) coupe les très larges quand elles se mêlent aux verticales : il coûte plus ; M-08 : une
+           très large où l'on voit des gens ne devient pas une bande fine dans une double chargée */
+        const U = g.filter((x) => x.r >= 1.6 && !x.v2?.recadrable), V = g.filter((x) => x.r <= 0.9 || !!x.v2?.recadrable);
+        /* N-49 : une photo seule sur sa page qui ne tient PAS la pleine page laisse une page presque vide : elle coûte */
+        /* N-49 : une double à une ou deux photos dont aucune ne tient une page (ni pleine page, ni très large en double) reste presque vide */
+        const petiteRespiration = g.length <= 2 && !g.some((x) => pleinDef(x) || tientDouble(x) || (!!x.v2?.recadrable && x.dpi.demi >= 200)) ? R2.PEN_SEULE_PETITE * (cd.recadrage ? 3 : 1) : 0;
+        /* v2.1 (M-07 dure) : une photo seule sur sa page, la page d'en face vide : jamais */
+        const pageVide = (x: Recette) => (cd.recadrage && x[1].type === "pages" && (!(x[1].gauche?.photos?.length) || !(x[1].droite?.photos?.length)) ? 6 : 0);
+        const toutCadre = (x: Recette) => (cd.recadrage && (x[1].idee === "libre" || x[1].idee === "dense") && g.some((y) => y.v2?.zone21?.toutLeCadre) ? 3 : 0);   // N-57 : une photo dont tout le cadre compte va en bande ou en grand, pas dans un gabarit libre
+        /* N-46, N-57 : une très large qui ne se recadre pas ne tient une page qu'en BANDES (deux ou trois, seules) : seule sur sa page, ou mêlée à
+           d'autres formats, elle serait rognée en largeur ou laisserait la page à moitié vide */
+        const rigide = (y: Ph) => y.r >= 1.6 && !y.v2?.recadrable;
+        const pageRigide = (x: Recette) => {
+          if (!cd.recadrage || x[1].type !== "pages") return 0;
+          let c = 0;
+          for (const cote of [x[1].gauche, x[1].droite]) {
+            const ps = (cote?.photos ?? []).map((p) => g.find((y) => y.id === p.id)).filter((y): y is Ph => !!y);
+            const n = ps.filter(rigide).length;
+            if (n && (n !== ps.length || n === 1)) c += 4;
+          }
+          return c;
+        };
+        const ajuste = (x: Recette): Recette => [x[0] + petiteRespiration + pageVide(x) + toutCadre(x) + pageRigide(x) + (x[1].idee === "seule" && !pleinDef(g[0]) ? R2.PEN_SEULE_PETITE : 0) + (x[1].idee === "libre" ? (U.length && V.length ? 1.0 : 0) + (U.length >= 2 ? 0.8 : 0) + (cd.recadrage && g.length <= 3 && U.length && V.length ? R2.PEN_LIBRE_LARGE_MELEE : 0) : 0) + (g.length >= 4 && U.some((y) => y.nbPers > 0) ? 0.6 : 0), x[1]];
+        let best = ajuste(rsH[0]);
+        for (const x0 of rsH) { const x = ajuste(x0); if (x[0] < best[0]) best = x; }
+        let c = best[0] + (R2.W_CIBLE * (g.length - v.cible) ** 2) / v.cible + (g.length < v.min ? 2 : 0) + (maigre ? R2.PEN_PAGE_MAIGRE_V21 : 0);
+        if (v.belle && g.length >= 3 && v.belle !== admise) c += R2.PEN_BELLE_NOYEE;   // M-32 : admise avec du sens, elle n'est pas noyée
+        if (g.every(estDetail) && g.length < 4) c += R2.PEN_DETAIL_SEUL;
+        if (g.length >= 2) { const [a, b] = moities(g, best[1]); if (!echoOuContraste(a, b)) c += R2.PEN_NI_ECHO_NI_CONTRASTE; }
+        c += coupe(j);
+        memo.set(k, [c, best[1]]);
+      }
+    }
+    return memo.get(k) ?? null;
+  };
+  type Val = [number, [CleV2, number, Spec] | null];
+  const depart: CleV2 = [0, "G", 0, 0, 0, 0];
+  const couches: Map<string, { cle: CleV2; v: Val }>[] = [new Map([[cleV2(depart), { cle: depart, v: [0.0, null] as Val }]])];
+  for (let k = 0; k < nd; k++) {
+    const nouv = new Map<string, { cle: CleV2; v: Val }>();
+    for (const { cle, v: [c0] } of couches[couches.length - 1].values()) {
+      const [i, cl, run, denses, chargees, recit] = cle;
+      for (let j = i + 1; j <= Math.min(n, i + R2.PHOTOS_MAX_SERIE); j++) {
+        if (n - j < nd - k - 1) break;
+        if (k === nd - 1 && j !== n) continue;
+        const r = cg(i, j);
+        if (r === null) continue;
+        const spec = r[1], m = j - i;
+        const run2 = spec.perdu ? 0 : run + 1;
+        if (run2 > 2 && mode !== "repli-sans-DA2") continue;
+        const denses2 = m >= R2.DENSE_MIN ? denses + 1 : 0;
+        if (denses2 > R2.DENSES_DE_SUITE) continue;
+        const chargees2 = Math.min(R2.CHARGEES_DE_SUITE + 1, m >= R2.CHARGEE_MIN ? chargees + 1 : 0);
+        const recit2 = recit || m >= R2.CHARGEE_MIN ? 1 : 0;
+        const classe = m <= 2 ? "G" : m >= R2.DENSE_MIN ? "D" : "M";
+        let c = r[0] + (trans[`${cl}|${classe}`] ?? 0.0) + (chargees2 > R2.CHARGEES_DE_SUITE ? R2.PEN_SANS_RESPIRATION : 0);
+        if (k === nd - 1 && !recit2 && n >= R2.CHARGEE_MIN) c += R2.PEN_SANS_RECIT;
+        const cle2: CleV2 = [j, classe, run2, denses2, chargees2, recit2];
+        const t = cleV2(cle2);
+        const deja = nouv.get(t);
+        if (!deja || c0 + c < deja.v[0]) nouv.set(t, { cle: cle2, v: [c0 + c, [cle, i, spec]] });
+      }
+    }
+    couches.push(nouv);
+  }
+  const fin = [...couches[couches.length - 1].values()].filter((x) => x.cle[0] === n);
+  if (!fin.length) return null;
+  fin.sort((a, b) => a.v[0] - b.v[0] || (cleV2(a.cle) < cleV2(b.cle) ? -1 : 1));
+  let cur = fin[0];
+  const out: [Ph[], Spec][] = [];
+  for (let k = nd; k > 0; k--) {
+    const [prec, i, spec] = cur.v[1]!;
+    out.push([seq.slice(i, cur.cle[0]), spec]);
+    cur = couches[k - 1].get(cleV2(prec))!;
+  }
+  return [fin[0].v[0], out.reverse()];
+}
+
+/**
+ * Les PAIRES (N-50) et la PETITE ENTORSE (N-52, D7) : une pancarte ou un détail rejoint son sujet (même journée, une heure au plus),
+ * en bougeant de `ENTORSE_PLACES` places au plus (une double) ; un portrait et l'ambiance voisine du même moment forment une paire.
+ * Le chapitre ne change jamais. Rend la suite réordonnée et les paires (« a|b », voisines dans la suite).
+ */
+export function pairesEtEntorses(seq: readonly Ph[], journal: Decision[], ou: string): { seq: Ph[]; paires: Set<string> } {
+  const R2 = REGLAGES_V2;
+  const l = [...seq];
+  const paires = new Set<string>();
+  const jour = (x: Ph) => (x.date ?? x.ancre ?? "").slice(0, 10);
+  const minutes = (a: Ph, b: Ph) => (a.date && b.date ? Math.abs(T(a.date).getTime() - T(b.date).getTime()) / 60000 : Infinity);
+  const pancarte = (x: Ph) => !!x.lieuLu && x.nbPers === 0 && x.plan !== "large";
+  for (const x of [...l]) {
+    const detail = estDetail(x), panneau = pancarte(x);
+    if (!detail && !panneau) continue;
+    const ok = (y: Ph) => y !== x && jour(y) === jour(x) && minutes(x, y) <= R2.PAIRE_MINUTES && !estDetail(y) && !pancarte(y)
+      && (detail ? y.plan === "large" || y.plan === "moyen" : y.sujet === "paysage" || y.sujet === "lieu" || y.nbPers > 0);
+    const cands = l.filter(ok).sort((a, b) => minutes(x, a) - minutes(x, b) || a.ordre - b.ordre);
+    const y = cands[0];
+    if (!y) continue;
+    const ix = l.indexOf(x), iy = l.indexOf(y);
+    if (Math.abs(ix - iy) > 1 && Math.abs(ix - iy) <= R2.ENTORSE_PLACES) {
+      l.splice(ix, 1);
+      l.splice(l.indexOf(y) + 1, 0, x);
+      journal.push({ quoi: "petite entorse", ou, detail: `${x.nom} rejoint ${y.nom} (${panneau ? "pancarte + sujet" : "large + détail"}, ${Math.round(minutes(x, y))} min, même journée)`, regles: ["N-52", "N-50", "D7"] });
+    }
+    const a = l.indexOf(y), b = l.indexOf(x);
+    if (Math.abs(a - b) === 1) paires.add(a < b ? `${y.id}|${x.id}` : `${x.id}|${y.id}`);
+  }
+  for (let i = 0; i + 1 < l.length; i++) {
+    const a = l[i], b = l[i + 1];
+    const portrait = (x: Ph) => x.nbPers > 0 && x.sujet === "personnes";
+    const ambiance = (x: Ph) => x.nbPers === 0 && (x.sujet === "paysage" || x.sujet === "lieu");
+    if (a.moment && a.moment === b.moment && ((portrait(a) && ambiance(b)) || (portrait(b) && ambiance(a)))) paires.add(`${a.id}|${b.id}`);
+  }
+  return { seq: l, paires };
+}
+
 /* ─────────────────────────── la répartition des doubles par chapitre ─────────────────────────── */
 
 type Repartition = Map<number, [number, [Ph[], Spec][]]>;
 
 type Decoupe = [number, [Ph[], Spec][]] | null;
 /** Les découpages déjà calculés (ils ne dépendent pas du nombre de pages) et le mode retenu par chapitre (N-36), pour la trace. */
-type Memoire = { decoupes: Map<string, Decoupe>; modes: Map<number, Mode> };
+type Memoire = { decoupes: Map<string, Decoupe>; modes: Map<number, Mode>; minK?: Map<number, number> };
 
 /** D-TRA-04 + DA-2 + DA-9 : la répartition des doubles par chapitre et le découpage. `etendu` (N-36) : un nombre de doubles que les
  *  recettes du banc ne savent pas faire est tenté avec le repli ; jamais quand les recettes du banc suffisent (fidélité au banc). */
-function composerChapitres(chaps: number[], seqs: Map<number, Ph[]>, ouvertures: Map<number, Ph | null>, ndDispo: number, sommet: Ph | null, avant: number, etendu: boolean, mem: Memoire): Repartition | null {
+type Decoupeur = (seq: Ph[], nd: number, sommetId: string | null, mode: Mode) => [number, [Ph[], Spec][]] | null;
+
+function composerChapitres(chaps: number[], seqs: Map<number, Ph[]>, ouvertures: Map<number, Ph | null>, ndDispo: number, sommet: Ph | null, avant: number, etendu: boolean, mem: Memoire, dec: Decoupeur = decouper): Repartition | null {
   const R = REGLAGES_COMPO;
   const brutTot = chaps.reduce((s, c) => s + seqs.get(c)!.length + 1, 0);
   const brut = new Map(chaps.map((c) => [c, (ndDispo * (seqs.get(c)!.length + 1)) / brutTot]));
@@ -337,7 +592,7 @@ function composerChapitres(chaps: number[], seqs: Map<number, Ph[]>, ouvertures:
       let r: Decoupe = null;
       for (const mode of etendu ? (["banc", "repli", "repli-sans-DA2"] as const) : (["banc"] as const)) {
         const cle = `${nD}|${mode}|${sommet?.id ?? ""}|${seq.map((x) => x.id).join(",")}`;
-        if (!mem.decoupes.has(cle)) mem.decoupes.set(cle, decouper(seq, nD, sommet ? sommet.id : null, mode));
+        if (!mem.decoupes.has(cle)) mem.decoupes.set(cle, dec(seq, nD, sommet ? sommet.id : null, mode));
         r = mem.decoupes.get(cle) ?? null;
         if (r) { if (mode !== "banc") mem.modes.set(c, mode); break; }
       }
@@ -347,6 +602,8 @@ function composerChapitres(chaps: number[], seqs: Map<number, Ph[]>, ouvertures:
       o.set(k, [r[0] + R.ECART_REPARTITION * Math.abs(k - brut.get(c)!), r[1], idx]);
     }
   }
+  /* v2 : le plus petit nombre de doubles qui tient chaque chapitre (la table de densité et le rythme le bornent) */
+  mem.minK = new Map(chaps.map((c) => [c, Math.min(Infinity, ...options.get(c)!.keys())]));
   const nPl = ndDispo + avant + 1;
   let acc = new Map<number, [number, Repartition]>([[0, [0.0, new Map()]]]);
   for (const c of chaps) {
@@ -409,6 +666,8 @@ export type Contexte = {
   sobre: boolean;
   style: StyleMagazine | null;
   couverture: { premiere: string[]; quatrieme: string[] } | null;
+  /** v2 (absent = v1) : les réglages, les paramètres du profil, l'ordre de sortie et la taille du groupe comptée. */
+  v2?: { reglages: ReglagesV2; profil: ParametresProfil; groupe: number; ordreDeSortie: (l: readonly Ph[]) => Ph[]; stylise: boolean } | null;
 };
 
 export type LieuPhoto = { n: number; type: string; idee: string; role: string };
@@ -416,6 +675,8 @@ export type LieuPhoto = { n: number; type: string; idee: string; role: string };
 export type ResultatTrame = {
   trame: Trame & { faits: string[]; sommet: string | null; chapitres: Record<string, { titre: string; statut: string; repli: string }>; m10: unknown[] };
   pages: number;
+  /** v2 : les paires (N-50) gardées ensemble. */
+  paires?: string[];
   chapitres: ChapitreCompo[];
   journal: Decision[];
   /** La place et la raison de chaque photo (M-02). */
@@ -426,6 +687,8 @@ export type ResultatTrame = {
   ajustement: { demandee: "tout" | number; obtenue: number; photos: number } | null;
   nommees: Set<string>;
   propositions: CouvertureTrame[];
+  /** v2 : pour chaque double, « N photos ici parce que… ». */
+  doubles: PourquoiDouble[];
 };
 
 export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTrame {
@@ -475,7 +738,10 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   for (const c of chaps) {
     const repli = ctx.chapNom.get(c) ?? `Chapitre ${c}`;
     const fiche = ctx.chapFiche.get(c);
-    if (fiche) { titreDe.set(c, fiche); statutDe.set(c, "sûr : saisi dans la fiche"); }
+    /* M-34 : un chapitre renommé dans l'Analyse garde le nom de l'atelier */
+    const renomme = ctx.fiche.chapitres?.[String(c)]?.trim();
+    if (renomme) { titreDe.set(c, renomme); statutDe.set(c, "sûr : renommé par l'atelier"); }
+    else if (fiche) { titreDe.set(c, fiche); statutDe.set(c, "sûr : saisi dans la fiche"); }
     else if (!ctx.parLieux) { titreDe.set(c, repli); statutDe.set(c, "thème de l'album : nom du chapitre"); }
     else {
       /* E (18/11) : un bout de panneau (« View ») ne devient jamais un nom de chapitre. Un nom de lieu vaut un titre s'il est CONFIRMÉ
@@ -511,7 +777,62 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   const taille = ctx.fiche.taille ?? "tout";
   let garde: Set<string>;
   let pagesVoulues: number | null;
-  if (typeof taille === "number") {
+  const V2 = ctx.v2 ?? null;
+  let choisirV2: ((moy: number) => void) | null = null;
+  /* v2 (DA-1, N-49) : l'ouverture de chaque chapitre (sa plus forte verticale en pleine définition) ne sort jamais pour la taille :
+     sans elle, le chapitre perd son titre */
+  const ouverturesProtegees = new Set<string>();
+  if (V2) for (const c of chaps) { const o = meilleur(parChap.get(c)!.filter((x) => pleinDef(x) && x.s >= R.OUVERTURE_MIN)); if (o) ouverturesProtegees.add(o.id); }
+  const sortie = (l: readonly Ph[]): Ph[] => (V2 ? V2.ordreDeSortie(l).filter((x) => !ouverturesProtegees.has(x.id)) : []);
+  /* v2.1 (M-29, N-55, N-57) : la zone importante lue dans la carte de chaleur, et ce qui est « recadrable » */
+  const modeRec = V2?.reglages.recadrage ?? "aucun";
+  if (V2 && modeRec !== "aucun") for (const x of tous_) {
+    if (!x.v2) continue;
+    x.v2.zone21 = zoneV2(x, x.v2.chaleur, modeRec);
+    x.v2.recadrable = recadrable(x, x.v2.zone21);
+    /* M-31 (N-60) : dans le doute, on ne coupe pas une personne */
+    const p = cotesProteges(x, x.v2.zone21);
+    if (p) x.v2.proteges = p;
+  }
+  if (V2 && modeRec !== "aucun") {
+    const larges = tous_.filter((x) => x.r >= 1.6 && !x.ecart);
+    journal.push({ quoi: "recadrage", ou: "lot", detail: `mode ${modeRec} : ${larges.filter((x) => x.v2?.recadrable).length} très larges recadrables sur ${larges.length} ; tout le cadre compte pour ${tous_.filter((x) => x.v2?.zone21?.toutLeCadre).length} photos`, regles: ["M-29", "N-55", "N-57"] });
+    const prot = tous_.filter((x) => x.v2?.proteges && !x.ecart);
+    if (prot.length) journal.push({ quoi: "recadrage", ou: "lot", detail: `${prot.length} photos protégées : des personnes peut-être au bord (${prot.filter((x) => x.v2!.proteges!.gauche && x.v2!.proteges!.droite).length} jamais rognées en largeur)`, regles: ["M-31", "N-60"] });
+  }
+  /* N-48b : la densité visée = le milieu de la fourchette du profil, un demi-cran plus bas en sobre, plus haut en stylisé (M-06) */
+  let moyenneV2 = V2 ? (V2.profil.moyenne[0] + V2.profil.moyenne[1]) / 2 + (ctx.sobre ? -0.25 : V2.stylise ? 0.25 : 0) : 0;
+  if (V2) {
+    garde = new Set(milieu.map((x) => x.id));
+    pagesVoulues = typeof taille === "number" ? taille : null;
+    if (typeof taille === "number") {
+      const ndTotal = Math.floor(taille / 2) - 1 - (carte ? 1 : 0);
+      const nOuv = chaps.filter((c) => parChap.get(c)!.some((x) => pleinDef(x) && x.s >= R.OUVERTURE_MIN)).length;
+      const corps = Math.max(1, ndTotal - nOuv);
+      let vise = 0;
+      if (V2.reglages.densite === "avant") {
+        /* réglage « avant » (décision 1, la densité témoin) : 2,9 photos par double, le reste en réserve « pas de place » */
+        moyenneV2 = R.DENSITE_TAILLE;
+        vise = rondPy(R.DENSITE_TAILLE * (ndTotal + 2)) - 3;
+      } else {
+        /* N-47b (décision 1, « serrée ») : la densité monte jusqu'au plafond du profil AVANT toute réserve « pas de place ». Le plafond est
+           une moyenne sur TOUTES les doubles (ouvertures comprises, comme le chiffrage de la décision 1) : les doubles du corps portent le reste */
+        moyenneV2 = Math.min((V2.profil.plafond * ndTotal - nOuv) / corps, Math.max(moyenneV2, (milieu.length - nOuv) / corps));
+      }
+      /* la sélection pour une densité donnée ; rappelée plus bas quand le découpage ne tient pas (la densité redescend d'un quart de photo) */
+      choisirV2 = (moy: number) => {
+        vise = V2.reglages.densite === "avant" ? rondPy(R.DENSITE_TAILLE * (ndTotal + 2)) - 3 : Math.floor(moy * corps) + nOuv;
+        garde = new Set(milieu.map((x) => x.id));
+        for (const x of milieu) if (x.reserve?.[1].startsWith(`taille ${taille} pages`)) x.reserve = null;
+        if (milieu.length > vise) {
+          const sortent = sortie(milieu).slice(0, milieu.length - vise);
+          for (const x of sortent) { garde.delete(x.id); x.reserve = [`bonne photo, mais pas de place dans ${taille} pages (densité ${moy.toFixed(1)} par double)`, `taille ${taille} pages, N-47b`]; }
+        }
+      };
+      choisirV2(moyenneV2);
+      journal.push({ quoi: "taille", ou: "densité", detail: `${V2.reglages.densite === "avant" ? "densité d'avant" : "densité serrée"} : ${moyenneV2.toFixed(2)} photos par double visées, ${garde.size} gardées sur ${milieu.length}`, regles: V2.reglages.densite === "avant" ? ["D-TAI-01", "D1"] : ["N-47b", "D1", "M-09"] });
+    }
+  } else if (typeof taille === "number") {
     pagesVoulues = taille;
     const ndTotal = Math.floor(taille / 2) - 1;
     const vise = rondPy(R.DENSITE_TAILLE * (ndTotal + 2)) - 3;
@@ -549,19 +870,41 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
 
   const avant = 1 + (carte ? 1 : 0);
   const memoire: Memoire = { decoupes: new Map(), modes: new Map() };
+  let cdV2: CtxDensite | null = null;
+  let retraitsV2 = 0;
+  const pairesV2 = new Set<string>();
+  const decV2: Decoupeur = (seq, nd, sId, mode) => decouperV2(seq, nd, sId, mode, { ...cdV2!, sommetId: sId }, pairesV2);
+  const dec: Decoupeur = V2 ? decV2 : decouper;
   const composer = (interdites: ReadonlySet<string> = new Set()): { pages: number; rep: Repartition; ouvertures: Map<number, Ph | null>; sommet: Ph | null; ajustee: boolean } => {
     const ouvertures = new Map(chaps.map((c) => [c, ouvertureDe(c, interdites)]));
     const pan = enOrdre([...garde]).filter((x) => tientDouble(x) && x.nbPers === 0 && !x.corps.length && !interdites.has(x.id));
     const ordreG = enOrdre([...garde]).sort((a, b) => (a.chap! - b.chap!) || rang.get(a.id)! - rang.get(b.id)!);
     const frac = new Map(ordreG.map((x, i) => [x.id, i / Math.max(1, ordreG.length - 1)]));
     const dans = pan.filter((x) => frac.get(x.id)! >= R.SOMMET_DEBUT && frac.get(x.id)! <= R.SOMMET_FIN);
-    const sommet = pan.length ? meilleur(dans.length ? dans : pan) : null;
+    /* v2 (N-23, N-49) : le sommet est une BELLE photo très large (note image forte) ; la plus forte de la fenêtre, sinon aucun sommet */
+    const sommet = V2
+      ? maxPar((dans.length ? dans : pan).filter((x) => belle(x, V2.reglages.dpiDouble150) === "double"), (x) => x.v2?.notes?.image.valeur ?? 0)
+      : pan.length ? meilleur(dans.length ? dans : pan) : null;
     const seqs = new Map(chaps.map((c) => [c, parChap.get(c)!.filter((x) => garde.has(x.id) && x !== ouvertures.get(c) && !interdites.has(x.id)).sort((a, b) => rang.get(a.id)! - rang.get(b.id)!)]));
+    if (V2) {
+      /* N-50, N-52 : les paires, et la petite entorse qui les rapproche (même journée, une double au plus) */
+      pairesV2.clear();
+      for (const c of chaps) { const pe = pairesEtEntorses(seqs.get(c)!, journal, `chapitre ${c}`); seqs.set(c, pe.seq); for (const k of pe.paires) pairesV2.add(k); }
+      const parMoment = new Map<string, number>();
+      for (const c of chaps) for (const x of seqs.get(c)!) { const k = x.moment ?? `seule:${x.id}`; parMoment.set(k, (parMoment.get(k) ?? 0) + 1); }
+      const tailles = [...parMoment.values()].sort((a, b) => a - b);
+      cdV2 = {
+        moyenne: moyenneV2, plafond: V2.profil.plafond, maxDouble: Math.min(V2.profil.maxDouble, REGLAGES_V2.PHOTOS_MAX_DOUBLE), maxSerie: Math.min(V2.profil.maxSerie, REGLAGES_V2.PHOTOS_MAX_SERIE),
+        serree: V2.reglages.densite === "serree", momentTaille: parMoment, medianeMoment: tailles.length ? tailles[Math.floor(tailles.length / 2)] : 1,
+        sommetId: sommet?.id ?? null, dpiDouble150: V2.reglages.dpiDouble150, recadrage: modeRec !== "aucun",
+        seuilTopImage: (() => { const v = cand.map((x) => x.v2?.notes?.image.valeur ?? 0).sort((a, b) => b - a); return v.length ? v[Math.max(0, Math.ceil(v.length * REGLAGES_V2.PART_TOP_IMAGE) - 1)] : 0; })(),
+      };
+    }
     const nPh = chaps.reduce((s, c) => s + seqs.get(c)!.length, 0) + [...ouvertures.values()].filter(Boolean).length;
-    const depart = pagesVoulues ?? Math.max(R.PAGES_MIN, Math.ceil((2 * (Math.ceil(nPh / R.DENSITE_TOUT) + avant)) / 4.0) * 4);
+    const depart = pagesVoulues ?? Math.max(R.PAGES_MIN, Math.ceil((2 * (Math.ceil(nPh / (V2 ? moyenneV2 : R.DENSITE_TOUT)) + avant)) / 4.0) * 4);
     const essai = (p: number, etendu: boolean): Repartition | null => {
       const ndDispo = Math.floor(p / 2) - 1 - (carte ? 1 : 0);
-      return ndDispo >= 0 ? composerChapitres(chaps, seqs, ouvertures, ndDispo, sommet, avant, etendu, memoire) : null;
+      return ndDispo >= 0 ? composerChapitres(chaps, seqs, ouvertures, ndDispo, sommet, avant, V2 ? true : etendu, memoire, dec) : null;
     };
     /* d'abord les recettes du banc (comme decider.py) ; puis, si aucune taille ne se compose, le repli (N-36) depuis la même taille */
     for (const etendu of [false, true]) {
@@ -569,6 +912,31 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
         const rep = essai(p, etendu);
         if (rep !== null) return { pages: p, rep, ouvertures, sommet, ajustee: false };
         if (pagesVoulues !== null || p >= R.PAGES_MAX) break;
+      }
+    }
+    /* v2 (N-47b) : à la taille COMMANDÉE, si le découpage ne tient pas (plafonds de la table), quelques photos sortent par l'ordre de sortie,
+       quatre par quatre, avant de proposer une autre taille (M-14) */
+    /* N-47b : la densité serrée qui ne se découpe pas redescend d'un quart de photo par double, jusqu'à celle d'avant, AVANT tout retrait */
+    const choisir = choisirV2 as ((moy: number) => void) | null;
+    if (V2 && choisir && pagesVoulues !== null && V2.reglages.densite === "serree" && moyenneV2 - 0.25 >= R.DENSITE_TAILLE) {
+      moyenneV2 -= 0.25;
+      choisir(moyenneV2);
+      journal.push({ quoi: "taille", ou: "densité", detail: `le découpage ne tient pas : densité redescendue à ${moyenneV2.toFixed(2)} photos par double`, regles: ["N-47b", "N-47", "N-44"] });
+      return composer(interdites);
+    }
+    if (V2 && pagesVoulues !== null && retraitsV2 < 60) {
+      /* le chapitre le plus à l'étroit (le plus de doubles minimales pour sa part de photos) cède deux photos, par l'ordre de sortie */
+      const ndDispo = Math.floor(pagesVoulues / 2) - 1 - (carte ? 1 : 0);
+      const minK = memoire.minK ?? new Map<number, number>();
+      const tot = chaps.reduce((a, c) => a + seqs.get(c)!.length + 1, 0);
+      const serre = [...chaps].filter((c) => seqs.get(c)!.length > 0)
+        .sort((a, b) => ((minK.get(b) ?? 0) / ((ndDispo * (seqs.get(b)!.length + 1)) / tot)) - ((minK.get(a) ?? 0) / ((ndDispo * (seqs.get(a)!.length + 1)) / tot)) || a - b)[0];
+      const pool = milieu.filter((x) => garde.has(x.id) && !interdites.has(x.id) && (serre === undefined || x.chap === serre));
+      const sortent = (sortie(pool).length ? sortie(pool) : sortie(milieu.filter((x) => garde.has(x.id) && !interdites.has(x.id)))).slice(0, 2);
+      if (sortent.length) {
+        retraitsV2++;
+        for (const x of sortent) { garde.delete(x.id); x.reserve = [`bonne photo, mais pas de place dans ${pagesVoulues} pages (la table de densité ne la tient pas)`, `taille ${pagesVoulues} pages, N-47b, N-44`]; }
+        return composer(interdites);
       }
     }
     /* M-14 (18/11) : jamais d'impasse. La taille faisable la PLUS PROCHE de celle demandée (multiple de 4, la plus petite à distance
@@ -601,13 +969,17 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   let G = 0;
   for (let k = 2; k <= 8; k++) { let n = 0; for (const [kk, v] of visN) if (kk >= k) n += v; if (n >= 3) G = k; }
   if (ctx.fiche.personnes && ctx.fiche.personnes >= 1) G = ctx.fiche.personnes;
+  else if (V2 && V2.groupe) G = V2.groupe;
   const notesC = cand.map((x) => x.s).sort((a, b) => b - a);
   const seuilFort = notesC.length ? notesC[Math.max(0, Math.trunc(0.25 * cand.length) - 1)] : 0;
   const couvOk = (x: Ph): boolean => {
-    const toutLeGroupe = G ? x.visages.length >= G : false;
+    /* v2 (comptage exact, fin du « groupe = 3 ») : tout le groupe = le nombre de personnes LU, sinon les visages */
+    const toutLeGroupe = G ? (V2 ? x.nbPers >= G : x.visages.length >= G) : false;
     return pleinDef(x) && x.s >= seuilFort && ((x.nbPers === 0 && !x.visages.length) || toutLeGroupe) && x !== derniere && x !== page1;
   };
   let candidates = cand.filter(couvOk).sort((a, b) => (b.s + (b.calme === "haut" ? 0.1 : 0)) - (a.s + (a.calme === "haut" ? 0.1 : 0)));
+  /* v2 : le CLASSEMENT des candidates couverture lu par l'IA passe devant la note (M-03), quand il existe */
+  if (V2) candidates = [...candidates].sort((a, b) => (a.v2?.ia?.rangCouverture ?? 99) - (b.v2?.ia?.rangCouverture ?? 99));
   const sansGens = cand.filter((x) => pleinDef(x) && x.nbPers === 0 && !x.visages.length && x !== page1 && x !== derniere).sort((a, b) => b.s - a.s);
   const props: CouvertureTrame[] = [];
   const pris = new Set<string>();
@@ -648,8 +1020,8 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
       const k = repartition.get(c)![0];
       const nD = k - (o ? 1 : 0);
       const mode = memoire.modes.get(c) ?? "banc";
-      let r = nD >= 1 && seq.length ? decouper(seq, nD, sommet && !ids.has(sommet.id) ? sommet.id : null, mode) : null;
-      if (r === null && nD >= 1 && seq.length) r = decouper(seq, nD, null, mode);
+      let r = nD >= 1 && seq.length ? dec(seq, nD, sommet && !ids.has(sommet.id) ? sommet.id : null, mode) : null;
+      if (r === null && nD >= 1 && seq.length) r = dec(seq, nD, null, mode);
       /* N-34 : si le chapitre ne se redécoupe pas dans le même nombre de doubles, on refait toute la répartition sans ces photos */
       if (r === null && !(nD === 0 && !seq.length)) {
         const tout = composer(ids);
@@ -690,6 +1062,15 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     journal.push({ quoi: `planche ${numero}`, ou: "itinéraire", detail: `${carte.nom} : les étapes et leurs dates`, regles: ["S-061", "S-128", "C-047"] });
   }
   const place = new Map<string, string>();
+  const doubles: PourquoiDouble[] = [];
+  /* v2, décision 9 : le réglage « lieux » ; les lieux déjà titrés, les jours forts (S-068, N-53) */
+  const lieuxVus = new Set<string>(chaps.map((c) => titreDe.get(c)!));
+  const parJour = new Map<string, number>();
+  for (const x of tous_) if (x.date) parJour.set(x.date.slice(0, 10), (parJour.get(x.date.slice(0, 10)) ?? 0) + 1);
+  const joursTries = [...parJour.values()].sort((a, b) => b - a);
+  const seuilJourFort = joursTries.length ? joursTries[Math.max(0, Math.ceil(joursTries.length * REGLAGES_V2.JOUR_FORT_PART) - 1)] : Infinity;
+  const joursTitres = new Set<string>();
+  let chargeesDeSuite = 0;
   for (const c of chaps) {
     const [, res] = repartition.get(c)!;
     const dc = datesDuChap(c);
@@ -699,6 +1080,7 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     const o = ouvertures.get(c);
     if (o) {
       numero++;
+      if (V2) { doubles.push({ planche: numero, chapitre: c, photos: 1, phrase: "1 photo : l'ouverture du chapitre, le titre en grand", regles: ["DA-1", "S-059", "N-44"] }); chargeesDeSuite = 0; }
       planches.push({
         n: numero, type: "double", idee: "ouverture", gabarit: "SG-06", repetition_voulue: true,
         raison: "ouverture unique : pleine page, le lieu en grand, les dates (DA-1, M-05)",
@@ -715,12 +1097,35 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
         rupture: spec.rupture ?? null, repetition_voulue: false, couleur: null, chapitre: c, classe: spec.classe, perdu: spec.perdu, regles: [...spec.regles],
       };
       const textes: { role: string; contenu: string; lie_a: string | null; source: string; facultatif: boolean }[] = [];
-      if (["hautes_et_bandes", "pleine_et_bandes", "pleine_et_hautes", "trois_bandes"].includes(spec.idee) && g.length < 6) {
+      /* v2, décision 9 : « chapitres » retire les légendes de lieu ; « partout » les permet sur toute double de moins de 6 photos (N-07) */
+      const legendeOk = V2 ? V2.reglages.lieux !== "chapitres" && (V2.reglages.lieux === "partout" || ["hautes_et_bandes", "pleine_et_bandes", "pleine_et_hautes", "trois_bandes"].includes(spec.idee))
+        : ["hautes_et_bandes", "pleine_et_bandes", "pleine_et_hautes", "trois_bandes"].includes(spec.idee);
+      if (legendeOk && g.length < 6) {
         for (const x of g) {
           const hit = tous_.find((y) => y.lieuSur && y.date && x.date && Math.abs(T(x.date).getTime() - T(y.date).getTime()) / 1000 <= R.LEGENDE_MINUTES * 60
             && y.chap === c && y !== x && y.lieuSur !== titreDe.get(c));
           if (hit) { textes.push({ role: "legende", contenu: hit.lieuSur!, lie_a: x.id, source: "ia-lieux", facultatif: true }); faits.add(hit.lieuSur!); break; }
         }
+      }
+      const cdPose = cdV2 as CtxDensite | null;
+      if (V2 && cdPose) {
+        /* décision 9 : un titre pour un LIEU NOUVEAU (lu sûr) ou une JOURNÉE ÉVÉNEMENT (jour fort), avec « lieux partout » ; jamais sur une
+           double dense (V2-TXT-02 : pas de titre dans une grille), jamais deux titres sur une double */
+        if (g.length <= 5 && !textes.some((t) => t.role === "titre")) {
+          const nouveau = V2.reglages.lieux === "chapitres" ? undefined : g.find((x) => x.lieuSur && !lieuxVus.has(x.lieuSur) && !textes.some((t) => t.contenu === x.lieuSur) && motsPorteurs(x.lieuSur).length >= 1);
+          const j = g[0].date?.slice(0, 10);
+          if (nouveau) { lieuxVus.add(nouveau.lieuSur!); textes.push({ role: "titre", contenu: nouveau.lieuSur!, lie_a: null, source: "ia-lieux", facultatif: true }); faits.add(nouveau.lieuSur!); pl.regles!.push("N-53", "D9"); }
+          else if (j && (parJour.get(j) ?? 0) >= seuilJourFort && !joursTitres.has(j)) { joursTitres.add(j); const t = dateFr(T(`${j}T12:00:00`)); textes.push({ role: "titre", contenu: t, lie_a: null, source: "dates", facultatif: true }); faits.add(t); pl.regles!.push("N-53", "D9"); }
+        }
+        const v = nombreVoulu(g, { ...cdPose, sommetId: sommet?.id ?? null });
+        const respiration = chargeesDeSuite >= REGLAGES_V2.CHARGEES_DE_SUITE - 1 && g.length <= 2;
+        const ph = phraseDouble(g, v, { respiration }, { ...cdPose, sommetId: sommet?.id ?? null });
+        const [a, b] = moities(g, spec);
+        const eoc = g.length >= 2 ? echoOuContraste(a, b) : null;
+        const ids = new Set(g.map((x) => x.id));
+        const paires = [...pairesV2].filter((k) => k.split("|").every((id) => ids.has(id)));
+        doubles.push({ planche: numero, chapitre: c, photos: g.length, phrase: ph.phrase, regles: [...new Set([...ph.regles, ...spec.regles])], ...(eoc ? { couleur: eoc } : {}), ...(paires.length ? { paires } : {}) });
+        chargeesDeSuite = g.length >= REGLAGES_V2.CHARGEE_MIN ? chargeesDeSuite + 1 : 0;
       }
       if (spec.type === "double") { pl.photos = spec.photos; pl.textes = textes; }
       else {
@@ -759,8 +1164,9 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   const photosT: Trame["photos"] = {};
   for (const x of tous_) {
     photosT[x.id] = {
-      fichier: x.nom, l: x.l, h: x.h, visages: x.visages.length ? x.visages : null, zone: x.zone as Boite4 | null, corps: x.corps.length ? x.corps : null,
+      fichier: x.nom, l: x.l, h: x.h, visages: x.visages.length ? x.visages : null, zone: (x.v2?.zone21?.coeur ?? x.zone) as Boite4 | null, corps: x.corps.length ? x.corps : null,
       personnes: x.nbPers, teinte: teinteDe(x), ...(x.date ? { date: x.date } : {}),
+      ...(x.v2?.proteges ? { proteges: { gauche: x.v2.proteges.gauche, droite: x.v2.proteges.droite, haut: x.v2.proteges.haut, bas: x.v2.proteges.bas } } : {}),
     };
   }
   const chapitresT: Record<string, { titre: string; statut: string; repli: string }> = {};
@@ -776,8 +1182,9 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
       visees: posees.size || null,
     },
     faits: [...faits].sort(), sommet: sommet?.id ?? null, chapitres: chapitresT, m10: traceM10,
+    ...(V2 && modeRec !== "aucun" ? { recadrage: { mode: modeRec, toutLeCadre: tous_.filter((x) => x.v2?.zone21?.toutLeCadre).map((x) => x.id).sort(), air: Object.fromEntries(tous_.filter((x) => x.v2?.zone21).map((x) => [x.id, x.v2!.zone21!.zone])) } } : {}),
   };
   const chapitres: ChapitreCompo[] = chaps.map((c) => ({ numero: c, titre: titreDe.get(c)!, statut: statutDe.get(c)!, repli: ctx.chapNom.get(c) ?? `Chapitre ${c}` }));
   void rond;
-  return { trame, pages, chapitres, journal, place, lieu, nommees, propositions: props, ajustement };
+  return { trame, pages, chapitres, journal, place, lieu, nommees, propositions: props, ajustement, doubles, paires: [...pairesV2].sort() };
 }

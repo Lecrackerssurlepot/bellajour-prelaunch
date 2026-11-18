@@ -7,7 +7,8 @@
 
 import { useSyncExternalStore } from "react";
 import { LIEUX_CASE_PX, LIEUX_COLONNES, QUALITE_JPEG, type LuLieux } from "@/lib/mise-en-page/editeur";
-import { lireFiche, type Fiche, type Luminance, type ResultatCompo } from "@/lib/mise-en-page/compositeur";
+import { lireFiche, type CorrectionsAtelier, type Fiche, type Luminance, type ReglagesV2, type ResultatCompo } from "@/lib/mise-en-page/compositeur";
+import type { Magazine } from "@/lib/mise-en-page/magazine";
 
 const ROUTE = "/api/admin/atelier/mise-en-page/lecture-ia";
 const BASE = "bj-mep-composer";
@@ -27,9 +28,20 @@ export type Proposition = {
   /** M-13 : ce que la MACHINE a marqué « gardée » en chargeant la proposition (le premier jet écrit ses posées dans le tri), et ce que
    *  l'atelier gardait avant : une recomposition ne prend jamais un choix de la machine pour une marque de l'atelier. */
   machine?: { choisies: string[]; avant: string[] };
+  /** 18/11 (« je repasserai après toi », M-30) : la proposition de la machine TELLE QUELLE (le magazine chargé, couverture comprise), la
+   *  version des règles et les réglages : « Ce que j'ai changé » compare l'état courant à elle (`releverDifferences`). */
+  magazine?: Magazine;
+  versionRegles?: string;
+  reglages?: { v2: ReglagesV2; fiche: Fiche };
+  decisions?: ResultatCompo["decisions"];
+  doubles?: ResultatCompo["doubles"];
+  /** L'empreinte des planches PROPOSÉES (sans les retouches) : une Analyse corrigée qui rend la même ne recharge rien. */
+  empreinteJet?: string;
 };
 export type AutreTaille = { mot: string; taille: "tout" | number; pages: number; posees: number };
-export type Garde = { fiche: Fiche; proposition: Proposition | null };
+/** `corrections` (D12, M-27) : ce que l'atelier corrige dans l'Analyse, gardé À PART, qui prime ; `lieux` : la réponse à « Les lieux :
+ *  aux chapitres seulement, ou partout ? » (réglage `lieux` de la v2). */
+export type Garde = { fiche: Fiche; proposition: Proposition | null; corrections?: CorrectionsAtelier; lieux?: ReglagesV2["lieux"] };
 
 let basePromise: Promise<IDBDatabase | null> | null = null;
 function base(): Promise<IDBDatabase | null> {
@@ -72,7 +84,9 @@ export async function charger(cle: string): Promise<void> {
   if (etats.has(cle)) return;
   const o = v && typeof v === "object" ? (v as Record<string, unknown>) : {};
   const p = o.proposition && typeof o.proposition === "object" ? (o.proposition as Proposition) : null;
-  etats.set(cle, { fiche: lireFiche(o.fiche), proposition: p && typeof p.pages === "number" && p.resultat?.selection ? p : null });
+  const corr = o.corrections && typeof o.corrections === "object" ? (o.corrections as CorrectionsAtelier) : undefined;
+  const lieux = o.lieux === "chapitres" || o.lieux === "nouveaux" || o.lieux === "partout" ? o.lieux : undefined;
+  etats.set(cle, { fiche: lireFiche(o.fiche), proposition: p && typeof p.pages === "number" && p.resultat?.selection ? p : null, ...(corr ? { corrections: corr } : {}), ...(lieux ? { lieux } : {}) });
   avertir();
 }
 

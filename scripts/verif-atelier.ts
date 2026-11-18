@@ -496,8 +496,12 @@ import { verifierMepTypes } from "./verif-mep-types";
 import { verifierMepSignatures } from "./verif-mep-signatures";
 /* 17/11 : « Lire les photos » (entonnoir A → B → C, lecture IA v2, correction, garde des photos de clients) */
 import { verifierMepLireLesPhotos } from "./verif-mep-lire-les-photos";
+/* 18/11 (feat/analyse-et-v2) : la lecture COMPLÈTE (regard complémentaire, classement des couvertures, lecture v5, complément sans tout repayer) */
+import { verifierMepLectureComplete } from "./verif-mep-lecture-complete";
 /* C20 (18/11) : le compositeur, « Composer le magazine » */
 import { verifierMepCompositeur } from "./verif-mep-compositeur";
+import { verifierMepReleve } from "./verif-mep-releve";
+import { verifierMepAnalyseV2 } from "./verif-mep-analyse-v2";
 /* 18/11 (T-216, M-11) : le registre des règles du tunnel (forme, retours de Mathias, contrôles, M-01, version, docs générées). */
 import { verifierMepRegles } from "./verif-mep-regles";
 import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
@@ -6887,8 +6891,8 @@ const verifierMepPhotos = () => {
       && /signerLectureVignette\(p\.vignette_key\)/.test(route) && !/signerGet\(p\.vignette_key/.test(route) && /ttl: APERCU_TTL_SECONDS/.test(route)
       && /nb_pages/.test(route) && /nbPages: numero\.nb_pages \?\? null/.test(route));
   ok("lot 0 : la route lit la finition du dossier (numeros.finition, 20260911) avec son repli 42703 (relue SANS elle, jamais en panne), la rend par normaliserFinition (null si jamais choisie ou absente, jamais le défaut brillant)",
-    /select\("id, titre, prenom, etat, nb_pages, finition"\)|lireNumero\("id, titre, prenom, etat, nb_pages, finition"\)/.test(route)
-      && /code === "42703"/.test(route) && /lireNumero\("id, titre, prenom, etat, nb_pages"\)/.test(route)
+    /select\("id, titre, prenom, etat, nb_pages, finition"\)|lireNumero\("id, titre, prenom, etat, nb_pages, finition(, occasion, histoire)?"\)/.test(route)
+      && /code === "42703"/.test(route) && /lireNumero\("id, titre, prenom, etat, nb_pages(, occasion, histoire)?"\)/.test(route)
       && /finition: normaliserFinition\(numero\.finition\)/.test(route) && !/finitionDuDossier|FINITION_DEFAUT/.test(route)
       && /finition: "gloss" \| "matte" \| null;/.test(types));
   ok("route photos et chargerDossiersMep : aucune écriture (base, coffre, journal, mail), aucun log de token ni d'URL",
@@ -7445,7 +7449,7 @@ const verifierMepLot0 = () => {
   const ed = sansComm(lireM(`${dossierMep}/Editeur.tsx`));
   ok("Projet : UN seul type (editeur/types.ts), plus de doublon dans contexte.ts ; il porte nbPagesCible ET finition",
     !/\btype Projet\b/.test(contexte) && (types.match(/export type Projet = /g) ?? []).length === 1
-      && /export type Projet = \{ nom: string; source: SourceMep; nbPagesCible: number \| null; finition: FinitionMep \| null \}/.test(types));
+      && /export type Projet = \{\s*nom: string; source: SourceMep; nbPagesCible: number \| null; finition: FinitionMep \| null;/.test(types));
   ok("Projet : EditeurMagazine passe le projet ENTIER à creerEtat (plus de reconstruction champ par champ) ; Editeur.tsx ne recopie plus les champs du catalogue",
     /projet: projetRef\.current/.test(em) && !/nbPagesCible/.test(em) && !/source: sourceProjet/.test(em) && /JSON\.stringify\(projet\)/.test(em)
       && !/nbPagesCible: cat\.projet/.test(ed) && /\.\.\.infos/.test(ed));
@@ -7515,7 +7519,7 @@ verifierMepGeneres(ok, titre);
 verifierNoelCartes(ok, titre);
 verifierNoelExemplaires(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => verifierMepLireLesPhotos(ok, titre)).then(() => verifierMepRegles(ok, titre)).then(() => verifierMepCompositeur(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => verifierMepLireLesPhotos(ok, titre)).then(() => verifierMepLectureComplete(ok, titre)).then(() => verifierMepRegles(ok, titre)).then(() => verifierMepCompositeur(ok, titre)).then(() => verifierMepReleve(ok, titre)).then(() => verifierMepAnalyseV2(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });

@@ -10,6 +10,7 @@
 import { useEffect, useRef } from "react";
 import { carteSaillance, chaleurCompacte, lireMesures, mesurerGris, paletteDePixels, REGLAGES, varianceLaplacien, zoneImportante, type Boite, type Catalogue, type Geste, type Mesure, type Visage } from "@/lib/mise-en-page/editeur";
 import type { FaceDetector } from "@mediapipe/tasks-vision";
+import { TUILES_SCORE_MIN, fusionnerVisages, tuilesDe, type VisageNote } from "@/lib/mise-en-page/editeur/visagesTuiles";
 import type { Adresse } from "./contexte";
 
 const COTE = 256;
@@ -18,7 +19,7 @@ const PAQUET = 150;
 const BASE = "bj-mep-mesures";
 const MAGASIN = "mesures";
 /** Changer la mesure change la version : les anciennes mesures ne sont plus relues. */
-const VERSION = "v4";
+const VERSION = "v5";   // 18/11 (M-31) : les visages se cherchent aussi EN TUILES
 /** Lot 2 (A6) : le détecteur de visages de MediaPipe, servi depuis notre origine (copie de node_modules, voir le harnais). */
 const MEDIAPIPE = "/mediapipe/1.2.2";
 const MODELE_VISAGES = "/modeles/blaze_face_short_range.tflite";
@@ -76,12 +77,20 @@ async function visagesDe(im: ImageBitmap): Promise<Boite[] | null> {
   const d = await visagesDetecteur();
   if (!d) return null;
   try {
-    const r = d.detect(im);
-    return r.detections.flatMap((x) => {
-      const b = x.boundingBox;
-      if (!b || b.width <= 0 || b.height <= 0) return [];
-      return [{ x: b.originX / im.width, y: b.originY / im.height, l: b.width / im.width, h: b.height / im.height }];
-    });
+    /* M-31 (N-60) : l'image entière, puis des carrés qui se chevauchent sur sa longueur (les visages du bord d'une photo très large) */
+    const toutes: VisageNote[] = [];
+    for (const [k, [sx, sy, sw, sh]] of tuilesDe(im.width, im.height).entries()) {
+      const t = k === 0 ? im : await createImageBitmap(im, sx, sy, sw, sh);
+      try {
+        for (const x of d.detect(t).detections) {
+          const b = x.boundingBox;
+          const score = x.categories?.[0]?.score ?? 0;
+          if (!b || b.width <= 0 || b.height <= 0 || (k > 0 && score < TUILES_SCORE_MIN)) continue;
+          toutes.push({ x: (sx + b.originX) / im.width, y: (sy + b.originY) / im.height, l: b.width / im.width, h: b.height / im.height, score: k === 0 ? score + 1 : score });
+        }
+      } finally { if (t !== im) t.close(); }
+    }
+    return fusionnerVisages(toutes);
   } catch { return null; }
 }
 

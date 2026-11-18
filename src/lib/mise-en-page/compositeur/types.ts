@@ -34,6 +34,23 @@ export type IAPhoto = {
   lieuLu: string | null;
   /** Le regard fin la voit en couverture. */
   couverture: boolean;
+  /* ── v2 (18/11, définition v2, décision 11) : les tags du complément, tous FACULTATIFS (absent = inconnu, jamais zéro ni faux) ── */
+  /** Le nombre EXACT de personnes vues (0 à 6, 7 = sept et plus) : remplace le « groupe = 3 » quand il est lu. */
+  personnesNombre?: number | null;
+  /** Un animal ou un document (billet, carte, capture, conversation, œuvre photographiée) est le sujet. */
+  sujetSpecial?: "animal" | "document" | null;
+  /** La force d'image (0 à 1) : la photo tient-elle seule, en grand ? La note « image » en part. */
+  forceImage?: number | null;
+  pose?: "pose" | "spontane" | null;
+  geste?: boolean | null;
+  insolite?: boolean | null;
+  /** Regard fin : ce que dit le visage principal ; les yeux fermés ; un point d'accroche (paysage) ; la direction du regard. */
+  expression?: "rire" | "sourire" | "tendre" | "neutre" | "grimace_subie" | null;
+  yeuxFermes?: "oui" | "non" | "incertain" | null;
+  pointAccroche?: boolean | null;
+  regardVers?: "gauche" | "droite" | "face" | null;
+  /** Le rang parmi les candidates couverture (1 = la meilleure), quand le classement a été lu. */
+  rangCouverture?: number | null;
 };
 
 /** Une photo, telle que le compositeur la lit. `id` est l'identifiant de l'éditeur ; `nom` le nom de fichier (le premier jet s'y relie). */
@@ -64,6 +81,14 @@ export type PhotoCompo = {
   /** M-13 (18/11) : gardée par l'atelier (coup de cœur ou gardée). Sa marque PRIME : la machine ne l'écarte jamais, ne la met jamais en
    *  réserve pour une note ou un « à écarter », et la pose avant les autres quand la place manque. Absente = sans marque. */
   gardee?: true;
+  /** v2 : l'empreinte dHash 64 bits (16 hexas) : « presque identique » se juge sur les IMAGES (distance), jamais sur des étiquettes. */
+  empreinte?: string | null;
+  /** v2 (V2-CHR-04) : le numéro de galerie du fichier (ordre d'arrivée), un indice pour placer une photo sans date. */
+  numeroGalerie?: number | null;
+  /** v2.1 (M-29) : la carte de chaleur 16 × 16 (256 chiffres de 0 à 9, `Mesure.chaleur`) : ce qu'on peut enlever, ce qu'on met en avant. */
+  chaleur?: string | null;
+  /** v2.1 : ce que le regard fin propose d'enlever (« couper légèrement bas du trottoir »), en mots, pour la raison d'un rognage. */
+  recadrageConseil?: string | null;
 };
 
 export const THEMES = ["road_trip", "ville", "plage", "fete", "evenement", "annee", "autre"] as const;
@@ -85,6 +110,21 @@ export type Fiche = {
   taille?: "machine" | "tout" | number;
   /** Les lieux ou les mots à faire apparaître, dans l'ordre (les étapes d'un road trip). */
   lieux?: string[];
+  /* ── v2 (18/11, décision 10 : « un peu comme notre processus d'avant ») : les trois questions facultatives au client, et ce que le
+     dossier porte déjà (questionnaire de /composer : occasion, histoire, titre). Toutes peuvent rester vides. ── */
+  /** Q3 « Vos photos préférées » : des identifiants de photos ; elles valent un coup de cœur (grand format si la définition suit). */
+  preferees?: string[];
+  /** Ce que c'était, dans les mots du client (écran 1 de /composer) : aide à deviner le thème, jamais imprimé. */
+  occasion?: string;
+  /** Le titre donné par le client (écran 3 de /composer) : le seul texte qu'on n'invente pas (couverture, page 1). */
+  titreClient?: string;
+  /* ── la page Analyse (18/11 soir, M-34) : chaque mot de la ligne du projet se corrige d'un clic ; la correction prime ── */
+  /** « Où » corrigé (le pays ou la région) : il passe avant le pays lu par le voyage pour le mot-titre. */
+  pays?: string;
+  /** « Profil » corrigé : il passe avant le profil déduit du thème et de la durée. */
+  profil?: Profil;
+  /** Les chapitres RENOMMÉS par l'atelier (numéro → titre) : le nom saisi passe avant tout nom lu. */
+  chapitres?: Record<string, string>;
 };
 
 /** Le voyage (couche 7, un appel texte) : chapitres en identifiants de l'éditeur. */
@@ -132,7 +172,54 @@ export type EntreeCompo = {
   marques?: { coeurs: readonly string[]; gardees: readonly string[] } | null;
   /** M-13 : une lecture IA jugée douteuse et donc NON utilisée (les photos concernées sont passées sans lecture IA), pour le dire. */
   lectureDouteuse?: { photos: number; raison: string } | null;
+  /** v2 (18/11) : présent = le compositeur v2 (définition v2) ; absent = v1, à l'identique (le témoin). */
+  v2?: ReglagesV2 | null;
+  /** v2 (décision 12) : les corrections de l'atelier, gardées À PART, qui priment toujours sur la machine. */
+  corrections?: CorrectionsAtelier | null;
 };
+
+/**
+ * Les RÉGLAGES nommés de la v2 (patron de `editeur/reglages.ts` : chacun a sa raison dans `REGLES_V2`) : ce que Mathias tranche à l'œil.
+ *  - `densite` (décision 1) : « serree » = la densité monte jusqu'au plafond du profil AVANT de mettre une bonne photo en réserve ;
+ *    « avant » = la densité d'avant (2,9 photos par double), le reste en réserve « pas de place » ;
+ *  - `lieux` (décision 9 et la question qu'elle ouvre, « Les lieux : aux chapitres seulement, ou partout ? ») :
+ *    « nouveaux » (la décision 9 telle quelle) = titres d'ouverture, légende sûre, page trop vide, ET un titre pour une journée événement
+ *    ou un lieu nouveau ; « chapitres » = les lieux ne nomment que les chapitres (une journée événement garde son titre daté) ;
+ *    « partout » = en plus, la légende du lieu sûr sur chaque double qui en a un ;
+ *  - `entorses` (décision 7) : le nombre de grandes entorses titrées permises ;
+ *  - `dpiDouble150` (décision 6) : 150 ppp acceptés en double pour un paysage sans visage (provisoire).
+ */
+export type ReglagesV2 = {
+  densite: "serree" | "avant"; lieux: "chapitres" | "nouveaux" | "partout"; entorses: "strict" | "normal" | "genereux"; dpiDouble150: boolean;
+  /** v2.1 (M-29) : le recadrage par CE QU'ON COUPE. Absent ou « aucun » = la v2 d'avant (une 21:9 ne perd jamais plus de 45 %) ;
+   *  « prudent » (beaucoup d'air, aucun resserrement : le réglage d'un profil sobre), « normal », « franc » (peu d'air, resserrement fort). */
+  recadrage?: "aucun" | "prudent" | "normal" | "franc";
+};
+export const REGLAGES_V2_DEFAUT: ReglagesV2 = { densite: "serree", lieux: "nouveaux", entorses: "normal", dpiDouble150: true };
+/** 18/11 (soir) : ce que l'ÉDITEUR compose par défaut : la v2.1 (densité par les règles, recadrage « normal »). La v1 reste rejouable
+ *  (`DonneesEditeur.version: 1`, `scripts/compositeur-rejeu.ts --version 1`). */
+export const REGLAGES_EDITEUR: ReglagesV2 = { ...REGLAGES_V2_DEFAUT, recadrage: "normal" };
+
+/** Les corrections de l'atelier (décision 12, V2-ANA-01) : tags corrigés, marques, réponses. Elles priment TOUJOURS et survivent à une
+ *  nouvelle analyse (elles ne sont jamais écrites dans la lecture). */
+export type CorrectionsAtelier = {
+  tags?: Readonly<Record<string, Partial<IAPhoto>>>;
+  marques?: { coeurs?: readonly string[]; gardees?: readonly string[]; ecartees?: readonly string[]; sorties?: readonly string[] };
+  reponses?: Fiche;
+};
+
+/** Une des cinq notes lisibles (définition v2, décision 5) : sa valeur (0 à 1), son cran PRIS DANS LE LOT, et la phrase qui l'explique. */
+export type Cran = "faible" | "correcte" | "bonne" | "forte";
+export type NoteLisible = { valeur: number; cran: Cran; phrase: string };
+export type CinqNotes = { technique: NoteLisible; histoire: NoteLisible; image: NoteLisible; gens: NoteLisible; unicite: NoteLisible };
+export const NOMS_NOTES = ["technique", "histoire", "image", "gens", "unicite"] as const;
+
+/** Les CINQ causes fermées d'écarter (décision 2). Rien d'autre n'écarte. */
+export const CAUSES_ECART = ["doublon_exact", "floue_sans_sujet", "inimprimable", "hors_sujet", "atelier"] as const;
+export type CauseEcart = (typeof CAUSES_ECART)[number];
+
+/** Pour chaque double : combien de photos, et pourquoi (ajout de Mathias du 18/11 : « les règles pour déterminer le nombre de photos »). */
+export type PourquoiDouble = { planche: number; chapitre: number | null; photos: number; phrase: string; regles: string[]; couleur?: string; paires?: string[] };
 
 /** Une décision, et la ou les règles qui l'ont prise (identifiants en chaînes : « M-07 », « S-098 », « N-13 », « P3-00 »…). */
 export type Decision = { quoi: string; ou: string; detail: string; regles: string[] };
@@ -140,7 +227,11 @@ export type Decision = { quoi: string; ou: string; detail: string; regles: strin
 export type EtatPhoto = "posee" | "couverture" | "reserve" | "ecartee";
 /** `raison` : en mots d'atelier (E, 18/11 : « Double 2, à côté d'une pleine page », « Note trop basse ») ; `detail` : la raison technique
  *  (identifiants, notes), pour la trace et le survol, jamais affichée comme raison. */
-export type PhotoChoisie = { id: string; etat: EtatPhoto; chapitre: number | null; raison: string; detail?: string; regles: string[]; note: number; place?: string };
+export type PhotoChoisie = {
+  id: string; etat: EtatPhoto; chapitre: number | null; raison: string; detail?: string; regles: string[]; note: number; place?: string;
+  /** v2 : les cinq notes en clair ; la cause fermée d'un écart ; « placée par ressemblance, à vérifier » ; la série. */
+  notes?: CinqNotes; cause?: CauseEcart; placement?: string; serie?: string;
+};
 export type Selection = { photos: PhotoChoisie[]; compte: Record<EtatPhoto, number> };
 
 export type Faute = { faute: string; ou: string; detail: string; regle: string };
@@ -167,6 +258,13 @@ export type ResultatCompo = {
   controle: Controle;
   /** Les photos de la couverture proposée (1re, 4e) : M-10 les surveille. */
   couverture: { premiere: string[]; quatrieme: string[] } | null;
+  /** v2 : la version du compositeur, et pour chaque double « N photos ici parce que… ». */
+  version?: 1 | 2;
+  doubles?: PourquoiDouble[];
+  /** v2.1 : la zone importante lue de chaque photo (cœur sans air, avec l'air, « tout le cadre compte »), pour montrer ce qu'on a rogné. */
+  zones?: Record<string, { coeur: [number, number, number, number]; air: [number, number, number, number]; toutLeCadre: boolean; recadrable: boolean; conseil: string | null; proteges?: string }>;
+  /** v2 : les paires (N-50, « a|b ») que la trame garde ensemble, pour l'Analyse (les relations d'une photo). */
+  paires?: string[];
 };
 
 /** M-14 (18/11) : jamais d'impasse montrée telle quelle. Quand il n'y a vraiment pas de quoi composer, la phrase dit la cause et le

@@ -36,6 +36,14 @@ export function motLaissee(technique: string, pages: number): string {
   const t = technique.trim();
   let m: RegExpExecArray | null;
   if ((m = /^même scène que (.+?) \(/.exec(t))) return `Presque la même photo que ${nomCourt(m[1])}`;
+  /* v2 (définition v2 du 18/11) : les raisons fermées, en mots d'atelier */
+  if ((m = /^presque identique à (.+?) \(/.exec(t))) return `Presque la même photo que ${nomCourt(m[1])}`;
+  if (/^faible : technique faible/.test(t)) return "Faible : mal imprimable, rien d'autre de fort";
+  if (/^floue, mais on y voit/.test(t)) return "Floue, mais on y voit quelqu'un : à ton œil";
+  if (/^floue, sans aucun sujet/.test(t)) return "Floue, sans rien de net";
+  if (/^inimprimable/.test(t)) return "Trop petite, même en vignette";
+  if (/^hors sujet/.test(t)) return "Hors sujet (document)";
+  if (/^sortie par l'atelier/.test(t)) return "Sortie par l'atelier";
   if (/^note .* sous le plancher/.test(t)) return "Note trop basse";
   if (/^l'IA la juge faible/.test(t)) return "Jugée faible à la lecture";
   if (/^trop petite/.test(t)) return "Trop petite pour l'impression";

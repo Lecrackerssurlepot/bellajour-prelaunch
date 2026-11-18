@@ -112,12 +112,12 @@ export type {
   TypeCouvertureRegard,
 } from "./lireLesPhotos";
 /* 18/11 : « Composer le magazine » (C20) : la lecture IA v3 (tags de planche, voyage, lieux) et les deux étapes nouvelles */
-export { AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, VERSION_LECTURE_IA_3 } from "./lectureIA";
+export { AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, VERSION_LECTURE_IA_3, VERSION_LECTURE_IA_4, POSES_IA, SUJETS_SPECIAUX_IA, PERSONNES_NOMBRE_MAX } from "./lectureIA";
 export type { AmbianceIA, ChapitreIA, LieuxIA, MomentIA, PersonnesIA, PlanIA, VoyageIA } from "./lectureIA";
 export {
   BANC_17_11, CONSIGNE_B5, LECTURE_MAX_PHOTOS, LIEUX_CASE_PX, LIEUX_COLONNES, LIEUX_PAR_CHAPITRE, LIEUX_PLANCHE_MAX_PX, LIEUX_SANS_DATE_MAX, MODELE_LIEUX, MODELE_VOYAGE,
   REGARD_MAX_CANDIDATES, REGARD_MAX_TEXTES, SCHEMA_B5, SCHEMA_LIEUX, SCHEMA_VOYAGE, TAILLE_MAX_DEMANDE_COMPO, choisirReperes, consigneLieux, consigneVoyage, corpsLieux,
-  corpsPlanche5, corpsVoyage, entreeVoyage, estEtapeCompo, estimerComposition, heriterPlanche, lireDemandeCompo, lireReponseLieux, lireReponsePlanche5, lireReponseVoyage,
+  corpsPlanche5, corpsPlanche6, lireReponsePlanche6, SCHEMA_B6, CONSIGNE_B6, corpsVoyage, entreeVoyage, estEtapeCompo, estimerComposition, heriterPlanche, lireDemandeCompo, lireReponseLieux, lireReponsePlanche5, lireReponseVoyage,
   planDegradation, releveVoyage,
 } from "./lireLesPhotos";
 export type { ChapitreDemande, CorpsCompo, DemandeCompo, EstimationCompo, InfoRepere, LigneReleve, LuLieux } from "./lireLesPhotos";
@@ -132,3 +132,16 @@ export { estPng } from "./tags";
 export { colorerFond, colorerTexte, colorerTextes, couleursPosees, libelleFond, libelleTexte, nomCouleur, propositionsApres, textesDuCote, textesLisibles, REGLAGES_PROPOSITIONS } from "./couleurs";
 export type { PoseCouleur, PropositionCouleur, GesteProposition } from "./couleurs";
 export { fondsPlanche } from "./selecteurs";
+/* 18/11 (feat/analyse-et-v2, point 3) : la lecture COMPLÈTE (regard complémentaire, classement des couvertures, lecture v5) et le complément
+   d'une lecture ancienne sans tout repayer */
+export {
+  ACCROCHE_MOTS_MAX, CLASSEMENT_MAX, EXPRESSIONS_IA, REGARDS_VERS_IA, TYPES_CLASSEMENT_IA, VERSION_LECTURE_IA_5, YEUX_FERMES_IA,
+} from "./lectureIA";
+export type { CouvertureClassee, ExpressionIA, RegardVersIA, TypeClassementIA, YeuxFermesIA } from "./lectureIA";
+export { versionPour } from "./lireLesPhotos";
+export {
+  BANC_18_11_COMPLEMENT, CLASSEMENT_MIN, CONSIGNE_K, CONSIGNE_P, CONSIGNE_P10, CONSIGNE_R, ETAPES_COMPLEMENT, MAX_PX_COMPLEMENT, REGARD_COMPLEMENT_MAX,
+  SCHEMA_K, SCHEMA_P, SCHEMA_P10, SCHEMA_R, appliquerComplement, classementVersPhotos, corpsClassement, corpsComplement, corpsRegardComplement,
+  estEtapeComplement, lireDemandeComplement, lireReponseClassement, lireReponseComplement, lireReponseRegardComplement, manque, planComplement,
+} from "./lectureComplete";
+export type { ChampsComplement, DemandeComplement, LuComplement, LuRegardComplement, PlanComplement, ResultatsComplement } from "./lectureComplete";

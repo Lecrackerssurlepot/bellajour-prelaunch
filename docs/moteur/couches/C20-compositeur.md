@@ -86,6 +86,73 @@ Retour de Mathias en production sur un dossier de 164 photos (`tunnel/RETOURS-MA
 - Aucun appel réel à OpenAI pour les deux étapes nouvelles depuis l'éditeur : leurs consignes sont celles du banc (mesurées le 17/11),
   leurs réponses ont été simulées à la recette.
 
+## 18/11 : le compositeur v2 (définition v2, M-16 à M-28)
+Branche `feat/compositeur-v2`, NON fusionnée (Mathias valide les sorties d'abord). Présent seulement quand l'entrée porte `v2`
+(`ReglagesV2`) : sans lui, le compositeur est la v1 à l'identique (le témoin ; rejeu inchangé). Règles N-40 à N-54 au registre
+(`regles/definitionV2.ts`), définition généralisée dans `docs/moteur/tunnel/DEFINITION.md`.
+- `notes.ts` : les CINQ notes lisibles (technique, histoire, image, gens, unicité), crans par quarts du lot, une phrase chacune.
+- `selectionV2.ts` : cinq causes fermées d'écarter ; réserve avec raison ; quasi-identiques sur l'empreinte, séries typées ; sans date
+  placée par ressemblance ; l'ordre de sortie ; la BELLE photo.
+- `densite.ts` : la TABLE DE DÉCISION du nombre de photos par double (`TABLE_DENSITE`, `nombreVoulu`, `phraseDouble`).
+- `trame.ts` : `decouperV2` (la table, les recettes de plus, les paires, l'écho ou le contraste, l'état du rythme), `pairesEtEntorses`,
+  la densité qui absorbe (réglage `densite`), les titres de la décision 9 (réglage `lieux`), le sommet = une belle très large.
+- `index.ts` : `appliquerCorrections` (D12) ; `ResultatCompo.doubles` (« N photos ici parce que… ») ; `PhotoChoisie.notes`, `cause`,
+  `placement`, `serie`.
+- Lecture : planche B6 et lecture IA version 4 (`editeur/lireLesPhotos.ts`, `editeur/lectureIA.ts`), demandées par la route dès la prochaine
+  lecture ; un champ absent n'est jamais un zéro (`charger`, v2).
+- Rejeu : `scripts/compositeur-rejeu.ts --matrice` et `scripts/compositeur-planche-tests.ts` ; tests `scripts/verif-mep-compositeur-v2.ts`.
+- Limites : la pose n'a pas changé (ses fautes sur des doubles plus denses sont dites) ; la grande entorse et le regard fin du complément
+  (expression, yeux, accroche, regard) et le classement des couvertures ne sont lus qu'au banc ; l'écran (Composer.tsx) ne montre pas encore
+  les cinq notes ni les réglages : il compose toujours en v1.
+
+## 18/11 (suite) : la v2.1, le recadrage par ce qu'on coupe (M-29, N-55 à N-59)
+Réglage `ReglagesV2.recadrage` (« aucun » = la v2 d'avant à l'identique ; « prudent », « normal », « franc »). `compositeur/recadrageV2.ts` :
+la zone importante lue dans la carte de chaleur (chaleur au-dessus de la médiane, visages, corps, air du regard), « recadrable », « tout le
+cadre compte », le resserrement qui met en avant. La pose (`pose.ts`) remplace la règle « une 21:9 ne perd jamais plus de 45 % » par
+« la zone avec son air tient dans le cadre » et propose le resserrement ; le contrôle (`controle.ts`) en fait des fautes dures (cœur de la
+zone entamé, très large rognée en largeur quand tout le cadre compte, page presque vide même colorée). Planche : `tests-v2-1/` (hors dépôt),
+avec la section « Ce qu'on a rogné ». Constat : deux fois moins de sujets entamés, même nombre de photos sur le projet de test ; les visages
+au bord non détectés restent le point faible.
+
+## 18/11 au soir : la v2.1 dans l'éditeur, jamais une personne coupée (M-31 à M-34)
+Branche `feat/analyse-et-v2` (T-218), partie de `feat/compositeur-v2` + `main`.
+- **La v2.1 est ce que l'éditeur compose** (`REGLAGES_EDITEUR` : densité « serrée », lieux « nouveaux », recadrage « normal ») ; la v1 reste
+  rejouable (`DonneesEditeur.version: 1`). Les corrections de l'Analyse (D12) passent par `DonneesEditeur.corrections`.
+- **M-31, N-60 : jamais une personne coupée.** La zone à protéger porte tous les visages ET corps détectés (`zoneV2`) ; dans le doute
+  (`cotesProteges` : plus de personnes lues que de visages trouvés, ou des personnes et aucun visage), la photo n'est plus rognée en largeur,
+  ni en hauteur du côté où la chaleur touche le bord ; sans lecture des personnes, chaque côté où la chaleur touche le bord est protégé.
+  La pose (`pose.ts`) compte `personnes_coupees` (un corps sous un visage qui ne touche pas le bord, coupé en largeur ; un côté protégé
+  entamé au-delà de `PROTEGE_TOLERANCE`, 2 %), l'évite au premier tour (un cadre qui obligerait à rogner deux côtés protégés coûte comme un
+  visage coupé) et au second (forme dure) ; si AUCUNE forme ne garde la personne entière, le cadre se PLIE à la photo dans sa case
+  (`ajusterAuxPersonnes`, jamais à cheval sur le pli), un peu de blanc plutôt qu'une personne coupée. Le contrôle en fait une faute dure
+  (« personne coupée », M-31). Les visages se cherchent aussi en tuiles (`editeur/visagesTuiles.ts`, la variante du banc).
+- **M-32, N-49b** : une belle photo du dixième le plus fort entre dans une double dense quand la double a du sens pour elle
+  (`sensPourBelle` : paire, série, la moitié des autres du même moment ou à 30 minutes d'elle, `SENS_SCENE_MINUTES`) ; elle y est le héros
+  (seules restent les recettes qui la posent en grand). Sans ce sens, l'interdit d'avant tient.
+- La sortie porte `paires` (les paires N-50 de la trame) et, dans `zones`, la raison d'une protection (`proteges`), pour l'Analyse (C21).
+- Rejeu : `scripts/compositeur-rejeu.ts --matrice` écrit aussi `magazine-editeur.pdf` par l'export PDF de l'éditeur (`pdf.ts`, polices
+  embarquées ; la couverture n'est pas rendue).
+- Projet de test (`tests-v2-2/`, contre `tests-v2-1/`) : 48 pages, 66 posées, 94 en réserve (inchangé) ; « tout garder » 128 pages, 157 posées,
+  3 en réserve (inchangé) ; personnes ou visages coupés : 0 et 0 (avant : 0 et 1 visage hors cadre) ; 59 photos protégées dont 57 jamais
+  rognées en largeur ; 3 cadres pliés à la photo à 48 pages, 5 en « tout garder ». M-32 ne change rien sur ce lot (aucune double dense n'avait besoin d'une belle photo).
+
+## 18/11 au soir (suite) : la taille que la machine propose (N-62, N-61)
+Recette réelle de l'Analyse (65 photos) : « la machine propose » gardait tout, 44 pages pour 50 photos posées. Désormais
+(`compositeur/index.ts`) : `tailleDeLaMachine(photos gardées, densiteVisee(profil, sobre, stylisé))`, au multiple de 4, entre `VENDABLE_MIN`
+(24) et `VENDABLE_MAX` (60), relus au harnais contre la grille des prix ; la trame tient la taille par N-47b (densité serrée), la réserve « pas
+de place » en dernier. `autresTailles` offre toujours « Tout garder », et « Plus court » jamais sous 24 pages. `fondreChapitresMinuscules`
+(N-61). La pose traite une page presque vide comme une forme dure (v2.1), et le découpage fait payer un gabarit libre de trois photos au plus
+qui mêle une très large non recadrable (`PEN_LIBRE_LARGE_MELEE`).
+- Projet de test (`tests-v2-2/m-v22-machine`) : 60 pages, 110 posées, 50 en réserve « pas de place », 3,72 photos par double, 9 doubles à une
+  photo sur 29, 19 fautes (aucune page presque vide, aucune personne coupée) ; « tout garder » : 128 pages, 157 posées, 2,46 par double, 22 doubles
+  à une photo, 43 fautes.
+- Lots fabriqués déjà triés (harnais) : 30 photos → 24 pages (2,45 par double, sous la fourchette de l'événement : 24 est le plus petit vendu) ;
+  65 → 44 (2,62) ; 164 → 60 (4,38, plafonnée par 60 pages) ; 400 → 60 (3,38, 297 en réserve).
+- Limite : sur les lots de 30 et 65 photos, une ou deux pages presque vides restent, comme en « tout garder » (la pose ne trouve aucune forme
+  qui les remplisse) ; le harnais vérifie seulement que la taille proposée n'en ajoute pas.
+
 ## Historique
 - 18/11 : couche créée (T-217), branche `feat/editeur-qui-compose`.
 - 18/11 au soir : M-13, M-14, M-15 et trois défauts de recette, branche `fix/composer-dossier-reel`.
+- 18/11 : compositeur v2 (définition v2, M-16 à M-28, N-40 à N-54), branche `feat/compositeur-v2`, planche de tests hors git.
+- 18/11 au soir : v2.1 dans l'éditeur, M-31 à M-34, N-60, N-49b, branche `feat/analyse-et-v2` (T-218, C21).

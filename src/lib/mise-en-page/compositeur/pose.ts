@@ -12,10 +12,16 @@
  * Chaque règle porte son identifiant P-xx (REGLES-POSE.md) ; chaque écart à la trame est écrit dans pose.json.
  */
 
-import { TEMPLATES_DESSINES, TEMPLATE_LIBRE, decorDe, versGabarit, versPlanche } from "../magazine";
+import { TEMPLATES_DESSINES, TEMPLATE_LIBRE, decorDe, templateParId, versGabarit, versPlanche } from "../magazine";
+import { orientationDe } from "../types";
 import type { Disposition, Magazine, Planche, PhotoRef, TexteCadre, Affectation } from "../magazine";
 import type { Template, Cadre, RoleCadre } from "../types";
 import { cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
+import { PROTEGE_TOLERANCE, zoneTient, zoomMiseEnAvant } from "./recadrageV2";
+/** v2.1 : le coût du zoom (P-14) n'empêche pas à lui seul un resserrement proposé (N-58). */
+const R2_ZOOM = 0.8;
+/** v2.1 (M-07 dure) : la part imprimée sous laquelle une page sans texte écrit est presque vide (`PAGE_PRESQUE_VIDE` du contrôle). */
+const PAGE_PRESQUE_VIDE_POSE = 0.3;
 import {
   GABARITS_COUVERTURE, GABARIT_COUVERTURE_DEFAUT, cadresPhotoCouverture, cadresTexteCouverture, gabaritCouverture, titreSurLeSujet,
   type Couverture, type CadreCouverture, type GabaritCouverture,
@@ -44,7 +50,11 @@ type Moteur = typeof MOTEUR;
 /* ─────────────────────────── La trame (CONTRAT-TRAME.md) ─────────────────────────── */
 
 export type Boite = [number, number, number, number];
-export type PhotoTrame = { fichier: string; l: number; h: number; visages?: Boite[] | null; zone?: Boite | null; date?: string | null; corps?: Boite[] | null; personnes?: number; teinte?: string | null };
+export type PhotoTrame = {
+  fichier: string; l: number; h: number; visages?: Boite[] | null; zone?: Boite | null; date?: string | null; corps?: Boite[] | null; personnes?: number; teinte?: string | null;
+  /** M-31 (v2.1) : les côtés qu'aucun recadrage n'entame (des personnes peut-être au bord, non détectées). Absent = rien de plus que les visages. */
+  proteges?: { gauche: boolean; droite: boolean; haut: boolean; bas: boolean };
+};
 export type RolePhoto = "pleine" | "double" | "heros" | "satellite" | "detail" | "vue_ensemble";
 export type PhotoPlanche = { id: string; role: RolePhoto | string; poids?: number | null; fond_perdu?: boolean };
 export type RoleTexte = "titre" | "texte" | "legende";
@@ -69,6 +79,10 @@ export type Trame = {
   couvertures?: CouvertureTrame[];
   style?: { paire: string; couleurs: Record<string, string>; raison?: string } | null;
   tri?: { choisies?: string[]; ecartees?: ({ id: string; raison?: string } | string)[]; reserve?: string[]; visees?: number | null } | null;
+  /** v2.1 (M-29) : le recadrage par CE QU'ON COUPE. Présent = la règle « plus de 45 % » d'une 21:9 est remplacée par « la zone importante
+   *  (avec son air) tient dans le cadre » ; `toutLeCadre` : les photos dont tout le cadre compte (15 % au plus retirés) ; `mode` : prudent,
+   *  normal ou franc (le resserrement qui met en avant). Absent = la pose d'avant, à l'identique. */
+  recadrage?: { mode: "prudent" | "normal" | "franc"; toutLeCadre: string[]; air?: Record<string, Boite> } | null;
 };
 
 /* Les réglages du poseur (REGLES-POSE.md) vivent dans `reglagesCompositeur.ts` (`REGLAGES_POSE`), mêmes noms, mêmes valeurs. */
@@ -83,6 +97,8 @@ export type BilanPhoto = {
   id: string; role: string; poids: number; cadre: { x: number; y: number; l: number; h: number; aire_rel: number };
   recadrage: Recadrage; recadrage_editeur: Recadrage; coupe: { haut: number; bas: number; gauche: number; droite: number; part: number };
   zone_perdue: number; zone_cachee: number; visages: number; visages_coupes: number; visages_au_bord: number; visages_hors_secondaires: number; visages_hors: number; visages_pli: number; visages_sous_texte: number; visages_sous_photo: number; corps_pli: number; dpi: number;
+  /** M-31 (v2.1) : personnes coupées par ce recadrage (un corps détecté coupé en largeur, ou un côté protégé entamé). */
+  personnes_coupees: number;
 };
 export type BilanTexte = { role: string; contenu: string; lie_a: string | null; place: "gabarit" | "ajoute-vide" | "ajoute-sur-photo" | "sans-cadre"; cadre?: Rect; couleur?: string; sur_photo?: string; zone_sous_texte?: number };
 export type Ecarte = { id: string; rang: number; raison: string };
@@ -190,7 +206,7 @@ export function trouEnveloppe(cadres: Rect[], page: Rect): { l: number; h: numbe
 
 /* ─────────────────────────── Le poseur ─────────────────────────── */
 
-type InfoPhoto = { id: string; ref: PhotoRef; visages: Rect[]; zone: Rect | null; px: { l: number; h: number }; corps: Rect[]; personnes: number };
+type InfoPhoto = { id: string; ref: PhotoRef; visages: Rect[]; zone: Rect | null; px: { l: number; h: number }; corps: Rect[]; personnes: number; proteges: PhotoTrame["proteges"] | null };
 /** Ce qui entoure un cadre au recadrage : le pli, les textes posés, les photos posées PAR-DESSUS (calques suivants). */
 type Ctx = { pli: boolean; textes: Rect[]; dessus?: Rect[] };
 type TexteGabarit = { role: RoleTexte; rect: Rect; cadre: Cadre; index: number; surPhoto: boolean };
@@ -256,7 +272,7 @@ export class Poseur {
       }
       const ref: PhotoRef = { id, nom: p.fichier, l: p.l, h: p.h, date: p.date ?? null, ...(zone ? { zone } : {}) };
       const corps = (p.corps ?? []).map(boiteEnRect).filter((r): r is Rect => !!r);
-      this.infos.set(id, { id, ref, visages, zone, px: { l: p.l, h: p.h }, corps, personnes: p.personnes ?? 0 });
+      this.infos.set(id, { id, ref, visages, zone, px: { l: p.l, h: p.h }, corps, personnes: p.personnes ?? 0, proteges: p.proteges ?? null });
     }
     const st = trame.style ? { paire: trame.style.paire, couleurs: { ...trame.style.couleurs } } : null;
     this.style = st && this.M.style.styleValide(st) ? (st as StyleMagazine) : null;
@@ -459,6 +475,8 @@ export class Poseur {
       /* P4-02 : une seule photo, centrée sur sa page, sans texte : le passe-partout voulu, pas du blanc perdu */
       const ici = photos.filter((f) => inter(f, coupe) > 1);
       const centree = ici.length === 1 && Math.abs(ici[0].x + ici[0].l / 2 - (coupe.x + coupe.l / 2)) < 12 && !tx.length;
+      /* v2.1 (M-07 dure) : sous 30 % sans texte, la page est presque vide, centrée ou non, colorée ou non */
+      if (this.trame.recadrage && part < 0.3 && !tx.length && part >= R.PAGE_VIDE_PART) { cout += R.PEN_PAGE_VIDE; raisons.push(`page ${pg} imprimée à ${Math.round(part * 100)} % (presque vide, M-07)`); }
       if (part < R.PAGE_VIDE_PART) { cout += R.PEN_PAGE_VIDE; raisons.push(`page ${pg} imprimée sur ${Math.round(part * 100)} % (presque vide)`); }
       else if (part < R.PAGE_MAIGRE_PART && !centree) {
         cout += (R.PEN_PAGE_MAIGRE * (R.PAGE_MAIGRE_PART - part)) / (R.PAGE_MAIGRE_PART - R.PAGE_VIDE_PART);
@@ -566,19 +584,50 @@ export class Poseur {
       if (zp && ctx.dessus?.length) zoneCachee = Math.min(1, ctx.dessus.reduce((t, d) => t + inter(zp, d), 0) / Math.max(1e-9, aire(zp)));
     }
     cout += R.W_ZONE * (zonePerdue + zoneCachee) + R.W_ZOOM * (c.zoom - 1) + (zonePerdue > 0.5 ? 10 : 0);   // la moitié du sujet perdue : presque interdit
+    /* v2.1 (M-29, N-55) : la zone importante porte son air ; en entamer plus de 10 % coupe le sujet : interdit */
+    if (this.trame.recadrage && zonePerdue > 0.1) cout += R.PEN_VISAGE_DUR * zonePerdue;   // dès 10 % : la faute dure du contrôle est à 20 %
+    /* v2.1 (M-31, N-60) : JAMAIS une personne coupée. Un corps détecté (sous un visage qui ne touche pas le bord de l'image) reste entier en
+       largeur ; un côté protégé (des personnes peut-être au bord, non détectées) n'est pas entamé */
+    let personnesCoupees = 0;
+    if (this.trame.recadrage) {
+      const T = PROTEGE_TOLERANCE;
+      info.corps.forEach((b, k) => {
+        const v = info.visages[k];
+        if (!v || v.x <= 0.01 || v.x + v.l >= 0.99) return;
+        const vu = (Math.min(b.x + b.l, win.x + win.l) - Math.max(b.x, win.x)) / Math.max(1e-9, b.l);
+        if (vu < 1 - T) personnesCoupees++;
+      });
+      const p = info.proteges;
+      if (p) for (const k of ["gauche", "droite", "haut", "bas"] as const) if (p[k] && coupe[k] > T) personnesCoupees++;
+      cout += R.PEN_VISAGE_DUR * personnesCoupees;
+    }
     const dpi = Math.round(info.px.l / (c.l / 25.4));
     return {
       cout,
-      bilan: { recadrage: { zoom: r2(c.zoom), dx: r2(c.dx), dy: r2(c.dy) }, coupe, zone_perdue: r3(zonePerdue), zone_cachee: r3(zoneCachee), visages: info.visages.length, visages_coupes: coupes, visages_au_bord: bord, visages_hors_secondaires: horsSec, visages_hors: hors, visages_pli: pli, visages_sous_texte: sousTexte, visages_sous_photo: sousPhoto, corps_pli: corpsPli, dpi },
+      bilan: { recadrage: { zoom: r2(c.zoom), dx: r2(c.dx), dy: r2(c.dy) }, coupe, zone_perdue: r3(zonePerdue), zone_cachee: r3(zoneCachee), visages: info.visages.length, visages_coupes: coupes, visages_au_bord: bord, visages_hors_secondaires: horsSec, visages_hors: hors, visages_pli: pli, visages_sous_texte: sousTexte, visages_sous_photo: sousPhoto, corps_pli: corpsPli, dpi, personnes_coupees: personnesCoupees },
     };
   }
 
   /** P-14 : le recadrage de l'éditeur (`recadrageParContenu`, zone au centre) d'abord ; s'il coupe un visage, en met un dans le pli ou
    *  sous un texte, on cherche le glissement (puis le zoom, jusqu'à 1,5) qui l'évite en perdant le moins de la zone. */
   meilleurRecadrage(info: InfoPhoto, F: Rect, ctx: Ctx): { cout: number; bilan: ReturnType<Poseur["evaluer"]>["bilan"]; editeur: Recadrage } {
-    const r0 = this.M.rec.recadrageParContenu(info.px, F, info.zone);
+    let r0 = this.M.rec.recadrageParContenu(info.px, F, info.zone);
+    /* v2.1 (N-58) : quand le sujet tient peu de place, le resserrement qui le met en avant est PROPOSÉ (mode normal ou franc), centré sur
+       la zone ; gardé seulement s'il ne coûte pas plus (aucun visage, aucune zone, aucune définition perdus) */
+    const rc = this.trame.recadrage;
+    if (rc && rc.mode !== "prudent" && info.zone && !rc.toutLeCadre.includes(info.id) && !info.proteges) {
+      const z = zoomMiseEnAvant({ zone: rc.air?.[info.id] ?? [info.zone.x, info.zone.y, info.zone.l, info.zone.h], toutLeCadre: false, regard: null, source: "" }, info.px, F, rc.mode);
+      if (z > 1) {
+        const c = this.M.rec.cadrer(info.px, F, { zoom: z, dx: 0, dy: 0 });
+        const zx = (info.zone.x + info.zone.l / 2) * c.l, zy = (info.zone.y + info.zone.h / 2) * c.h;
+        const rz = this.M.rec.cadrer(info.px, F, { zoom: z, dx: c.l / 2 - zx, dy: c.h / 2 - zy });
+        const essai: Recadrage = { zoom: z, dx: Math.round(rz.dx * 100) / 100, dy: Math.round(rz.dy * 100) / 100 };
+        const e0 = this.evaluer(info, F, r0, ctx), e1 = this.evaluer(info, F, essai, ctx);
+        if (e1.cout - R2_ZOOM * (z - 1) <= e0.cout + 1e-9 && e1.bilan.dpi >= 200) r0 = essai;
+      }
+    }
     let best = this.evaluer(info, F, r0, ctx);
-    const probleme = (b: typeof best) => b.bilan.corps_pli + b.bilan.visages_coupes + b.bilan.visages_pli + b.bilan.visages_sous_texte + b.bilan.visages_sous_photo + b.bilan.visages_hors > 0 || b.bilan.zone_cachee > 0.05;
+    const probleme = (b: typeof best) => b.bilan.personnes_coupees + b.bilan.corps_pli + b.bilan.visages_coupes + b.bilan.visages_pli + b.bilan.visages_sous_texte + b.bilan.visages_sous_photo + b.bilan.visages_hors > 0 || b.bilan.zone_cachee > 0.05;
     if (!probleme(best)) return { ...best, editeur: r0 };
     for (const zoom of REGLAGES_POSE.ZOOMS) {
       const c0 = this.M.rec.cadrer(info.px, F, { zoom, dx: 0, dy: 0 });
@@ -629,8 +678,21 @@ export class Poseur {
     /* M-08 (Mathias, 17/11) : une photo où l'on voit des personnes ne se pose jamais en petite vignette (profil P1 : 70 mm au plus petit côté
        et 120 cm² au moins, réglage de départ) */
     if (info.personnes >= 1 && (Math.min(F.l, F.h) < R.PERSONNES_COTE_MIN || F.l * F.h < R.PERSONNES_AIRE_MIN)) extra += R.PEN_VISAGE_DUR;
-    /* compositeur du 17/11, S-098 : une 21:9 (rapport ≥ 1,9) ne perd jamais plus de 45 % de sa surface (jamais seule en portrait) */
-    if (info.px.l / info.px.h >= 1.9 && perte > R.PERTE_MAX_LARGE) extra += R.PEN_LARGE_COUPEE;
+    /* compositeur du 17/11, S-098 : une 21:9 (rapport ≥ 1,9) ne perd jamais plus de 45 % de sa surface (jamais seule en portrait).
+       v2.1 (M-29, N-55, N-57) : ce qui compte est CE QU'ON COUPE : la zone importante (avec son air) doit tenir dans le cadre ; une photo dont
+       tout le cadre compte ne perd jamais plus de 15 %. La surface retirée seule ne refuse plus rien. */
+    const rc = this.trame.recadrage;
+    if (rc) {
+      /* « tout le cadre compte » : sa zone fait toute la LARGEUR ; elle se rogne en hauteur seulement (le ciel, le premier plan) */
+      if (info.zone && !zoneTient(rc.air?.[info.id] ?? [info.zone.x, info.zone.y, info.zone.l, info.zone.h], info.px, F.l / F.h)) extra += R.PEN_LARGE_COUPEE;
+      /* M-31 (N-60) : un cadre qui obligerait à rogner les DEUX côtés protégés d'une photo (largeur ou hauteur) coupe peut-être une personne */
+      const p = info.proteges;
+      if (p) {
+        const rp = info.px.l / info.px.h, rf = F.l / F.h, T = PROTEGE_TOLERANCE;
+        if (p.gauche && p.droite && rf < rp * (1 - 2 * T)) extra += R.PEN_VISAGE_DUR;
+        if (p.haut && p.bas && rf > rp * (1 + 2 * T)) extra += R.PEN_VISAGE_DUR;
+      }
+    } else if (info.px.l / info.px.h >= 1.9 && perte > R.PERTE_MAX_LARGE) extra += R.PEN_LARGE_COUPEE;
     /* P2-04 : la définition */
     const dpi = this.dpiDans(info, F);
     if (dpi < 150) extra += R.PEN_DPI_150;
@@ -1154,6 +1216,52 @@ export class Poseur {
     };
   }
 
+  /** M-31 : le cadre de la photo `b` devient celui de la photo (son rapport, centré dans la case), recadrage neutre ; la disposition est
+   *  retouchée (`Disposition.cadres`), le bilan suit. Rend faux si le cadre n'a pas été trouvé. */
+  private ajusterAuxPersonnes(k: Construit, b: BilanPhoto): boolean {
+    const info = this.infos.get(b.id);
+    if (!info) return false;
+    const rp = info.px.l / info.px.h;
+    const plier = <T extends { x: number; y: number; l: number; h: number }>(c: T): T => {
+      if (c.l / c.h > rp) { const l = c.h * rp; return { ...c, x: c.x + (c.l - l) / 2, l }; }
+      const h = c.l / rp; return { ...c, y: c.y + (c.h - h) / 2, h };
+    };
+    /* une double : le cadre plié ne reste jamais à cheval sur le pli (une personne y serait) ; il glisse, dans sa case, vers la page
+       qui en portait le plus */
+    const plierDouble = <T extends { x: number; y: number; l: number; h: number }>(c: T): T => {
+      const n = plier(c), M = REGLAGES_POSE.MARGE_PLI_CORPS;
+      if (!(n.x < 210 && n.x + n.l > 210)) return n;
+      if (c.x + c.l / 2 <= 210 && 210 - M - n.l >= c.x) return { ...n, x: 210 - M - n.l };
+      if (c.x + c.l / 2 > 210 && 210 + M + n.l <= c.x + c.l) return { ...n, x: 210 + M };
+      return n;
+    };
+    const disps = [k.disposition, k.pages?.gauche, k.pages?.droite].filter((d): d is Disposition => !!d);
+    for (const d of disps) {
+      const j = d.photos.findIndex((a) => a.photoId === b.id);
+      if (j < 0) continue;
+      const base = d.cadres ?? templateParId(d.templateId)?.cadres;
+      if (!base) return false;
+      let vu = -1;
+      const cadres = base.map((c) => {
+        if (c.role !== "photo") return { ...c };
+        vu++;
+        if (vu !== j) return { ...c };
+        const n = d === k.disposition && !k.pages ? plierDouble(c) : plier(c);
+        return { ...n, ...(c.orientation ? { orientation: orientationDe(n.l, n.h) } : {}) };
+      });
+      d.cadres = cadres;
+      d.photos[j] = { ...d.photos[j], recadrage: { zoom: 1, dx: 0, dy: 0 } };
+      const nc = d === k.disposition && !k.pages ? plierDouble(b.cadre) : plier(b.cadre);
+      b.cadre = { ...nc, aire_rel: r2(b.cadre.aire_rel * (nc.l * nc.h) / Math.max(1e-9, b.cadre.l * b.cadre.h)) };
+      b.recadrage = { zoom: 1, dx: 0, dy: 0 };
+      b.coupe = { haut: 0, bas: 0, gauche: 0, droite: 0, part: 0 };
+      b.zone_perdue = 0; b.visages_coupes = 0; b.visages_hors = 0; b.visages_hors_secondaires = 0; b.personnes_coupees = 0;
+      b.dpi = Math.round(info.px.l / (nc.l / 25.4));
+      return true;
+    }
+    return false;
+  }
+
   /* ───── une partie (une double, une page) ───── */
 
   /** P2-03 : une page qui ne porte QUE des textes : posés en mot géant (ou bloc lisible) sur une disposition libre, sans photo. */
@@ -1311,7 +1419,16 @@ export class Poseur {
     /* second tour */
     let meilleur: { c: Candidat; k: Construit } | null = null;
     const construits = new Map<Candidat, Construit>();
-    const dur = (k: Construit) => k.photos.some((b) => b.visages_coupes > 0 || b.visages_hors > 0);
+    /* v2.1 (M-07 dure, N-59) : une page imprimée sous 30 % sans texte écrit est une faute DURE au contrôle : la pose la traite comme un
+       visage coupé (on pose les formes suivantes tant qu'elle reste), sauf sur une page de titre (ouverture, itinéraire) */
+    const idee = String(this.trame.planches.find((x) => x.n === partie.n)?.idee ?? "");
+    const pageDeTitre = idee === "ouverture" || idee === "itineraire";
+    const pageVide = (k: Construit) => !!this.trame.recadrage && !pageDeTitre && k.couverturePages.some((pg) => {
+      if (pg.part >= PAGE_PRESQUE_VIDE_POSE) return false;
+      const coupe = COUPES[pg.page as "gauche" | "droite"];
+      return !k.textes.some((t) => !!t.contenu && t.contenu.trim() !== "" && !!t.cadre && inter(t.cadre, coupe) > 0);
+    });
+    const dur = (k: Construit) => k.photos.some((b) => b.visages_coupes > 0 || b.visages_hors > 0 || b.personnes_coupees > 0) || pageVide(k);
     /* P3-00 : tant que la meilleure forme coupe un visage (ou sort un visage principal), on pose les suivantes, par paquets, jusqu'à 96 */
     for (let debut = 0; debut < Math.min(ouverts.length, 96); debut += REGLAGES_POSE.TOP_K) {
       if (meilleur && !dur(meilleur.k)) break;
@@ -1336,6 +1453,9 @@ export class Poseur {
       if (!dur(meilleur.k)) ecarts.push(`un visage aurait été coupé par toutes les formes non répétées : ${meilleur.c.g.t.id} repris malgré la répétition (P3-00 passe avant P2-01)`);
     }
     const { c, k } = meilleur!;
+    /* M-31 (N-60) : si AUCUNE forme ne garde une personne entière, le cadre se plie à la photo (dans sa case, centré) : un peu de blanc,
+       jamais une personne coupée (« dans le doute, on ne coupe pas ») */
+    if (this.trame.recadrage) for (const b of k.photos) if (b.personnes_coupees + b.visages_coupes + b.visages_hors > 0 && this.ajusterAuxPersonnes(k, b)) ecarts.push(`${b.id} : aucune forme ne la gardait entière : cadre ajusté à la photo, personne n'est coupé (M-31)`);
     let couleurPosee: string | null = null, comment = R ? `couleur ${R} non posée` : "pas d'aplat demandé";
     if (R && c.aplat) {
       couleurPosee = R;

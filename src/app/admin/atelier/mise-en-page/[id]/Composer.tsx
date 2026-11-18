@@ -9,9 +9,15 @@ import {
   type CibleDepot, type EtatEditeur, type LectureIA, type LieuxIA, type LuPlanche, type LuRegard, type Suspicion, type VerdictLu, type VoyageIA,
 } from "@/lib/mise-en-page/editeur";
 import {
-  MOT_AMBIANCE, MOT_THEME, THEMES, AMBIANCES_FICHE, autresTailles, composerSur, devinerFiche, entreeDepuisEditeur, lieuxDeTexte, titreImprimable,
-  type Fiche, type IssueCompo, type Luminance, type PhotoChoisie, type ResultatCompo, type Theme,
+  REGLAGES_EDITEUR, appliquerCorrections, autresTailles, composerSur, devinerFiche, entreeDepuisEditeur, leconsDesDifferences, lieuxDeTexte,
+  releverDifferences, titreImprimable,
+  type CorrectionsAtelier, type Difference, type EntreeCompo, type Fiche, type IssueCompo, type Luminance, type PhotoChoisie, type ReglagesV2,
+  type ResultatCompo,
 } from "@/lib/mise-en-page/compositeur";
+import { BANC_18_11_COMPLEMENT, REGARD_COMPLEMENT_MAX, relierLectureIA as relier, type Lecon } from "@/lib/mise-en-page/editeur";
+import { VueAnalyse } from "./Analyse";
+import { completerLecture, estimerComplement } from "./completerClient";
+import { envoyerEcarts } from "./leconsClient";
 import { cadresPhotoCouverture, gabaritCouverture } from "@/lib/mise-en-page/couverture";
 import { cls, pluriel, useEd, type Adresse } from "./contexte";
 import { vignetteDe } from "./images";
@@ -33,14 +39,13 @@ import {
    M-14 : jamais d'impasse, jamais un message technique. */
 
 const EN_VOL = 3;
-type Etape = "images" | "mesures" | "planches" | "regard" | "voyage" | "lieux" | "composition";
-const MOT_ETAPE: Readonly<Record<Etape, string>> = { images: "Les images", mesures: "Mesures locales", planches: "Planches", regard: "Regard fin", voyage: "Le voyage", lieux: "Les lieux", composition: "La composition" };
+type Etape = "images" | "mesures" | "planches" | "regard" | "complement" | "voyage" | "lieux" | "composition";
+const MOT_ETAPE: Readonly<Record<Etape, string>> = { images: "Les images", mesures: "Mesures locales", planches: "Planches", regard: "Regard fin", voyage: "Le voyage", lieux: "Les lieux", complement: "Tags manquants", composition: "La composition" };
 type Avance = { etat: "attente" | "encours" | "fait" | "saute"; fait?: number; total?: number; note?: string };
 type Phase =
   | { type: "questions" }
   | { type: "analyse"; etapes: Record<Etape, Avance>; dollars: number }
   | { type: "arret"; texte: string; dollars: number }
-  | { type: "remplacer"; r: ResultatCompo; dollars: number; autres: AutreTaille[]; marques: { coeurs: string[]; gardees: string[] } }
   | { type: "erreur"; phrase: string; cause: string; geste: string; technique: string };
 type Mode = "normal" | "relire" | "tout";
 
@@ -78,11 +83,21 @@ function marquesAtelier(e: EtatEditeur, p: Proposition | null): { coeurs: string
   return { coeurs: t.coupsDeCoeur, gardees: t.choisies.filter((id) => !machine.has(id) || avant.has(id)) };
 }
 
+/** 18/11 soir : ce que l'atelier a corrigé dans l'Analyse (D12) et sa réponse à « Les lieux : aux chapitres seulement, ou partout ? ».
+ *  L'éditeur compose en v2.1 (`REGLAGES_EDITEUR`) ; la v1 reste rejouable par le script de rejeu. */
+type Extra = { corrections?: CorrectionsAtelier; lieux?: ReglagesV2["lieux"] };
+const reglagesDe = (x: Extra): ReglagesV2 => ({ ...REGLAGES_EDITEUR, ...(x.lieux ? { lieux: x.lieux } : {}) });
+
 function composerLocal(e: EtatEditeur, fiche: Fiche, luminances: ReadonlyMap<string, Luminance> | undefined, couverture: { premiere: string[]; quatrieme: string[] } | null,
-  marques: { coeurs: string[]; gardees: string[] }): IssueCompo {
+  marques: { coeurs: string[]; gardees: string[] }, x: Extra = {}): IssueCompo {
+  return composerSur(entreeLocale(e, fiche, luminances, couverture, marques, x));
+}
+
+function entreeLocale(e: EtatEditeur, fiche: Fiche, luminances: ReadonlyMap<string, Luminance> | undefined, couverture: { premiere: string[]; quatrieme: string[] } | null,
+  marques: { coeurs: string[]; gardees: string[] }, x: Extra = {}): EntreeCompo {
   const t = triDe(e.magazine);
   const s = suspicionDe(e);
-  return composerSur(entreeDepuisEditeur({
+  return (entreeDepuisEditeur({
     catalogue: e.catalogue, lecture: e.lecture, lectureIA: e.lectureIA, ecarteesAtelier: new Set(t.ecartees), fiche,
     /* E (18/11) : le titre de page 1 est le nom du projet, jamais un nom par défaut de l'outil */
     titre: titreImprimable(e.projet?.nom), quand: QUAND(),
@@ -90,23 +105,30 @@ function composerLocal(e: EtatEditeur, fiche: Fiche, luminances: ReadonlyMap<str
     marques,
     douteuse: s.suspecte ? { photos: s.douteuses, toute: s.toute, raison: s.raisons.join(", ") } : null,
     pagesCommandees: e.projet?.nbPagesCible ?? null,
+    reglages: reglagesDe(x), corrections: x.corrections ?? null,
   }));
 }
 
-function resumer(r: ResultatCompo, dollars: number, autres: AutreTaille[], avant: { gardees: string[] }): Proposition {
+/** La version du registre des règles, posée par la page serveur sur la racine de l'éditeur (le navigateur n'importe pas le registre). */
+const versionReglesEcran = (): string => (typeof document !== "undefined" ? document.querySelector<HTMLElement>(".mep-editeur")?.dataset.versionRegles ?? "" : "");
+
+function resumer(r: ResultatCompo, dollars: number, autres: AutreTaille[], avant: { gardees: string[] }, x: Extra = {}, fiche: Fiche = {}): Proposition {
   const garde = new Set(avant.gardees);
   return {
     quand: QUAND(), dollars, pages: r.pages, empreinte: "", autres,
+    /* M-30 : la proposition gardée telle quelle (le magazine est relevé APRÈS le chargement, par le bandeau), ses règles et ses réglages */
+    versionRegles: versionReglesEcran(), reglages: { v2: reglagesDe(x), fiche }, decisions: r.decisions, ...(r.doubles ? { doubles: r.doubles } : {}),
+    empreinteJet: empreinte(r.jet.magazine.planches),
     machine: { choisies: (r.jet.magazine.tri?.choisies ?? []).filter((id) => !garde.has(id)), avant: [...avant.gardees] },
     resultat: { selection: r.selection, chapitres: r.chapitres, controle: r.controle, couverture: r.couverture, profil: r.profil, sobre: r.sobre, taille: r.taille, origineTaille: r.origineTaille, ajustement: r.ajustement },
   };
 }
 
 /** M-15 : les autres tailles, COMPOSÉES (leurs chiffres sont ceux d'un vrai magazine, jamais une estimation). */
-function composerAutres(e: EtatEditeur, fiche: Fiche, r: ResultatCompo, lums: ReadonlyMap<string, Luminance> | undefined, marques: { coeurs: string[]; gardees: string[] }): AutreTaille[] {
+function composerAutres(e: EtatEditeur, fiche: Fiche, r: ResultatCompo, lums: ReadonlyMap<string, Luminance> | undefined, marques: { coeurs: string[]; gardees: string[] }, ex: Extra = {}): AutreTaille[] {
   const out: AutreTaille[] = [];
   for (const a of autresTailles(r.pages, r.origineTaille, e.projet?.nbPagesCible ?? null)) {
-    const x = composerLocal(e, { ...fiche, taille: a.taille }, lums, null, marques);
+    const x = composerLocal(e, { ...fiche, taille: a.taille }, lums, null, marques, ex);
     if (x.ok && x.r.pages !== r.pages && !out.some((o) => o.pages === x.r.pages)) out.push({ mot: a.mot, taille: a.taille, pages: x.r.pages, posees: x.r.selection.compte.posee });
   }
   return out;
@@ -121,8 +143,8 @@ export function BoutonComposer() {
   const vide = etat.catalogue.size === 0;
   return (
     <>
-      <button type="button" className="ed-bt ed-bt--plein" disabled={ro || vide} title={vide ? "Importez d'abord vos photos" : "Questions, analyse, magazine proposé"} onClick={() => setOuvert(true)}>
-        Composer le magazine
+      <button type="button" className="ed-bt ed-bt--plein" disabled={vide} title={vide ? "Importez d'abord vos photos" : ro ? "Lecture seule" : "Lire, analyser, composer"} onClick={() => setOuvert(true)}>
+        Analyse
       </button>
       {ouvert && typeof document !== "undefined" ? createPortal(<Feuille fermer={() => setOuvert(false)} />, document.querySelector(".mep-editeur") ?? document.body) : null}
     </>
@@ -130,13 +152,19 @@ export function BoutonComposer() {
 }
 
 function Feuille({ fermer }: { fermer: () => void }) {
-  const { etat, envoyer, adresses, cleProjet, rafraichirAdresses } = useEd();
+  const { etat, envoyer, adresses, cleProjet, rafraichirAdresses, lectureSeule: ro } = useEd();
   const etatRef = useRef<EtatEditeur>(etat);
   useEffect(() => { etatRef.current = etat; });
   const garde = useGarde(cleProjet);
   const [saisie, setSaisie] = useState<Fiche>(garde.fiche);
   const [lieuxTexte, setLieuxTexte] = useState((garde.fiche.lieux ?? []).join(", "));
   const [phase, setPhase] = useState<Phase>({ type: "questions" });
+  /* l'Analyse : les corrections (D12) et la réponse aux lieux, gardées avec le projet ; la proposition à confirmer (rien n'écrase sans oui) */
+  const [corrections, setCorrections] = useState<CorrectionsAtelier>(garde.corrections ?? {});
+  const [repLieux, setLieuxR] = useState<ReglagesV2["lieux"]>(garde.lieux ?? REGLAGES_EDITEUR.lieux);
+  const [confirmer, setConfirmer] = useState<{ r: ResultatCompo; dollars: number; autres: AutreTaille[]; marques: { coeurs: string[]; gardees: string[] } } | null>(null);
+  const [paye, setPaye] = useState<number | null>(null);
+  const extra: Extra = { corrections, lieux: repLieux };
   const arret = useRef<AbortController | null>(null);
   const dernierMode = useRef<Mode>("normal");
   const cle = cleProjet ? cleDeRoute(cleProjet) : "";
@@ -175,10 +203,10 @@ function Feuille({ fermer }: { fermer: () => void }) {
     void _t;
     const fiche: Fiche = { ...sansTaille, ...(lieuxDeTexte(lieuxTexte).length ? { lieux: lieuxDeTexte(lieuxTexte) } : {}) };
     if (!lieuxDeTexte(lieuxTexte).length) delete fiche.lieux;
-    if (cleProjet) void garder(cleProjet, { ...(garde as Garde), fiche });
+    if (cleProjet) void garder(cleProjet, { ...(garde as Garde), fiche, corrections, lieux: repLieux });
     const ctrl = new AbortController();
     arret.current = ctrl;
-    const etapes: Record<Etape, Avance> = { images: { etat: "attente" }, mesures: { etat: "encours" }, planches: { etat: "attente" }, regard: { etat: "attente" }, voyage: { etat: "attente" }, lieux: { etat: "attente" }, composition: { etat: "attente" } };
+    const etapes: Record<Etape, Avance> = { images: { etat: "attente" }, mesures: { etat: "encours" }, planches: { etat: "attente" }, regard: { etat: "attente" }, complement: { etat: "attente" }, voyage: { etat: "attente" }, lieux: { etat: "attente" }, composition: { etat: "attente" } };
     let dollars = 0;
     const maj = () => setPhase({ type: "analyse", etapes: { ...etapes }, dollars });
     const e0 = etatRef.current;
@@ -284,6 +312,7 @@ function Feuille({ fermer }: { fermer: () => void }) {
         if (choix.length) { etapes.regard = { ...etapes.regard, etat: arretPhrase ? "saute" : "fait", note: illisibles ? `${illisibles} illisible${illisibles > 1 ? "s" : ""}` : undefined }; if (regard.size) publier(); }
       } else if (douteuseLue) etapes.regard = { etat: "saute", note: "lecture douteuse" };
 
+
       /* 7 : le voyage, un appel texte (seulement s'il manque, ou si des photos viennent d'être lues) */
       if (!ctrl.signal.aborted && !bloquant && !arretPhrase && !douteuseLue && (!base?.voyage || planche.size)) {
         etapes.voyage = { etat: "encours" };
@@ -345,8 +374,31 @@ function Feuille({ fermer }: { fermer: () => void }) {
         } else etapes.lieux = { etat: "saute", note: "aucun repère" };
         maj();
       } else etapes.lieux = { etat: "saute", note: douteuseLue ? "lecture douteuse" : fiche.lieux ? "saisis" : !themeVoyage ? "pas un road trip" : !sansGps ? "GPS" : undefined };
+
+      /* 3 (18/11 soir) : TOUS les tags de la définition ; une lecture ancienne se complète, seuls les champs manquants sont demandés.
+         EN DERNIER : la lecture publiée ensuite (voyage, lieux) repartirait de la lecture d'avant et effacerait le complément */
+      if (!ctrl.signal.aborted && !bloquant && !arretPhrase && !douteuseLue) {
+        const avant = lecture();
+        const eC: EtatEditeur = { ...etatRef.current, lectureIA: relier(avant, etatRef.current.catalogue) };
+        const plan = estimerComplement(eC, A.lues);
+        if (plan.cout.appels) {
+          etapes.complement = { etat: "encours", fait: 0, total: plan.cout.appels };
+          maj();
+          let fait = 0;
+          const c = await completerLecture({
+            cle, etat: eC, adresses: table, signal: ctrl.signal, lues: A.lues,
+            surAvance: () => { fait += 1; etapes.complement = { etat: "encours", fait: Math.min(fait, plan.cout.appels), total: plan.cout.appels }; maj(); },
+            poser: (l) => { envoyer({ type: "poserLectureIA", lecture: l }); if (cleProjet) void garderLectureIA(cleProjet, l); },
+          });
+          dollars += c.dollars;
+          if (c.arret) arretPhrase = c.arret;
+          if (c.bloquant) bloquant = c.bloquant;
+          etapes.complement = { etat: c.arret ? "saute" : "fait", note: c.arret ? "arrêté" : `${motDollars(c.dollars)}` };
+          maj();
+        } else etapes.complement = { etat: "saute", note: "déjà lus" };
+      } else etapes.complement = { etat: "saute", note: douteuseLue ? "lecture douteuse" : undefined };
     } else {
-      for (const k of ["images", "planches", "regard", "voyage", "lieux"] as const) etapes[k] = { etat: "saute", note: k === "planches" ? "IA fermée" : undefined };
+      for (const k of ["images", "planches", "regard", "complement", "voyage", "lieux"] as const) etapes[k] = { etat: "saute", note: k === "planches" ? "IA fermée" : undefined };
     }
     if (ctrl.signal.aborted) { arret.current = null; setPhase({ type: "questions" }); return; }
     if (arretPhrase) { arret.current = null; setPhase({ type: "arret", texte: arretPhrase, dollars }); return; }
@@ -365,89 +417,128 @@ function Feuille({ fermer }: { fermer: () => void }) {
     }));
     if (cleProjet) garderLuminances(cleProjet, lums);
     const marques = marquesAtelier(etatRef.current, garde.proposition);
-    const issue = composerLocal(etatRef.current, fiche, lums, null, marques);
+    const issue = composerLocal(etatRef.current, fiche, lums, null, marques, extra);
     arret.current = null;
+    setPaye(dollars);
     if (!issue.ok) { setPhase({ type: "erreur", phrase: issue.phrase, cause: issue.cause, geste: issue.geste, technique: issue.technique }); return; }
     const r = issue.r;
     etapes.composition = { etat: "fait", note: `${r.pages} pages` };
     maj();
-    const autres = composerAutres(etatRef.current, fiche, r, lums, marques);
-    if (posees(etatRef.current).size) { setPhase({ type: "remplacer", r, dollars, autres, marques }); return; }
+    const autres = composerAutres(etatRef.current, fiche, r, lums, marques, extra);
+    /* M-34 : l'analyse est là, la composition se lance SEULE ; un magazine commencé n'est jamais écrasé sans « Remplacer » */
+    setPhase({ type: "questions" });
+    if (touche(etatRef.current)) { setConfirmer({ r, dollars, autres, marques }); return; }
     charger_(r, dollars, autres, marques);
   };
 
-  const charger_ = (r: ResultatCompo, dollars: number, autres: AutreTaille[], marques: { gardees: string[] }) => {
-    envoyer({ type: "chargerPremierJet", jet: r.jet });
+  /** Le magazine a-t-il été retouché depuis la dernière proposition chargée (ou commencé à la main sans elle) ? */
+  const touche = (e: EtatEditeur): boolean => {
+    if (!posees(e).size) return false;
+    const p = garde.proposition;
+    return !p || !p.empreinte || p.empreinte !== empreinte(e.magazine.planches);
+  };
+
+  const ficheSaisie = (): Fiche => {
     const { taille: _t, ...sansTaille } = saisie;
     void _t;
-    if (cleProjet) void garder(cleProjet, { fiche: { ...sansTaille, ...(lieuxDeTexte(lieuxTexte).length ? { lieux: lieuxDeTexte(lieuxTexte) } : {}) }, proposition: resumer(r, dollars, autres, marques) });
+    const f: Fiche = { ...sansTaille, ...(lieuxDeTexte(lieuxTexte).length ? { lieux: lieuxDeTexte(lieuxTexte) } : {}) };
+    if (!lieuxDeTexte(lieuxTexte).length) delete f.lieux;
+    return f;
+  };
+  const charger_ = (r: ResultatCompo, dollars: number, autres: AutreTaille[], marques: { gardees: string[] }) => {
+    envoyer({ type: "chargerPremierJet", jet: r.jet });
+    setConfirmer(null);
+    if (cleProjet) void garder(cleProjet, { fiche: ficheSaisie(), proposition: resumer(r, dollars, autres, marques, extra, ficheSaisie()), corrections, lieux: repLieux });
+  };
+
+  /* l'Analyse, recomposée sans rien payer à chaque correction (la lecture est déjà là) */
+  const ficheCourante = ficheSaisie();
+  const cleFiche = JSON.stringify(ficheCourante);
+  const marquesC = marquesAtelier(etat, garde.proposition);
+  const cleMarques = JSON.stringify(marquesC);
+  const ecarteesC = triDe(etat.magazine).ecartees.join();
+  const vue = useMemo(() => {
+    const lums = luminancesGardees(cleProjet);
+    const e = entreeLocale(etat, JSON.parse(cleFiche) as Fiche, lums, null, JSON.parse(cleMarques) as { coeurs: string[]; gardees: string[] }, { corrections, lieux: repLieux });
+    return { entree: appliquerCorrections(e), iaLue: new Map(e.photos.map((x) => [x.id, x.ia])), issue: composerSur(e) };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etat.catalogue, etat.lecture, etat.lectureIA, ecarteesC, cleFiche, cleMarques, corrections, repLieux, cleProjet]);
+  const corriger = (c: CorrectionsAtelier) => { setCorrections(c); if (cleProjet) void garder(cleProjet, { ...garde, fiche: ficheSaisie(), corrections: c, lieux: repLieux }); };
+  const setLieux = (l: ReglagesV2["lieux"]) => { setLieuxR(l); if (cleProjet) void garder(cleProjet, { ...garde, fiche: ficheSaisie(), corrections, lieux: l }); };
+  const lecon = (l: Lecon) => envoyer({ type: "ajouterLecon", lecon: l });
+
+  /* « Mise en page » : elle s'ouvre sur la proposition déjà faite ; une Analyse corrigée la recharge, jamais par-dessus des retouches sans oui */
+  const versMiseEnPage = () => {
+    if (!ro && vue.issue.ok && phase.type === "questions") {
+      const r = vue.issue.r;
+      const p = garde.proposition;
+      const neuve = !p || p.empreinteJet !== empreinte(r.jet.magazine.planches);
+      if (neuve) {
+        if (touche(etat)) { setConfirmer({ r, dollars: p?.dollars ?? 0, autres: p?.autres ?? [], marques: marquesC }); return; }
+        charger_(r, p?.dollars ?? 0, p?.autres ?? [], marquesC);
+      }
+    }
     fermer();
   };
 
   const enCours = phase.type === "analyse" && arret.current !== null;
-  const titre = phase.type === "questions" ? "Les questions" : phase.type === "analyse" ? "Analyse en cours" : phase.type === "remplacer" ? "Remplacer la mise en page ?" : phase.type === "arret" ? "Lecture arrêtée" : "Composition";
+  /* le coût ANNONCÉ avant tout appel payant : lecture des photos nouvelles, complément des lectures d'avant (chiffres du banc) et, pour
+     les photos nouvelles, la borne haute de leur regard complémentaire et du classement des couvertures */
+  const planC = estimerComplement(etat, A.lues);
+  const nouvelles = Math.max(0, est.lues - fiables);
+  const complementNeuf = nouvelles ? (Math.min(REGARD_COMPLEMENT_MAX, nouvelles) * BANC_18_11_COMPLEMENT.regard.dollars) / BANC_18_11_COMPLEMENT.regard.photos + BANC_18_11_COMPLEMENT.classement.dollars : 0;
+  const annonce = est.dollars + planC.cout.dollars + complementNeuf;
+  const aLire = nouvelles > 0 || planC.cout.appels > 0;
+  const lu = { pays: etat.lectureIA?.source.voyage?.ou.pays?.trim() || null, qui: etat.lectureIA?.source.voyage?.qui.type ?? null };
   return (
-    <div className="ed-compo-fond" onPointerDown={(e) => { if (e.target === e.currentTarget && !enCours) fermer(); }}>
-      <section className="ed-compo" role="dialog" aria-modal="true" aria-label="Composer le magazine">
-        <header className="ed-compo-tete">
-          <h3>{titre}</h3>
-          {!enCours ? <button type="button" className="ed-bt" onClick={fermer}>Fermer</button> : null}
+    <div className="ed-ana-fond" role="dialog" aria-modal="true" aria-label="Analyse">
+      <section className="ed-ana">
+        <header className="ed-ana-tete">
+          <span className="ed-seg" role="group" aria-label="Vue">
+            <button type="button" aria-pressed="true" className="ed-seg-actif">Analyse</button>
+            <button type="button" aria-pressed="false" disabled={enCours} onClick={versMiseEnPage}>Mise en page</button>
+          </span>
+          <span className="ed-ana-etat-lecture">
+            {phase.type === "questions" && vue.issue.ok ? `${vue.issue.r.pages} pages · ${pluriel(vue.issue.r.selection.compte.posee, "photo posée", "photos posées")}` : ""}
+            {paye !== null ? ` · Payé ${motDollars(paye)}` : ""}
+          </span>
+          {phase.type === "questions" && iaOuverte && !susp.suspecte && aLire && !ro ? (
+            <button type="button" className="ed-bt ed-bt--plein" onClick={() => { void lancer("normal"); }}
+              title={`${pluriel(nouvelles, "photo nouvelle", "photos nouvelles")} · ${pluriel(planC.cout.appels, "appel de complément", "appels de complément")}`}>Lire les photos · ≈ {motDollars(annonce)}</button>
+          ) : phase.type === "questions" && iaOuverte && susp.suspecte && !ro ? (
+            <button type="button" className="ed-bt ed-bt--plein" onClick={() => { void lancer("relire"); }}>Relire {pluriel(aRelire, "photo")} · ≈ {motDollars(est.dollars)}</button>
+          ) : phase.type === "questions" && !iaOuverte ? <span className="ed-compo-sous">IA fermée · lecture locale</span> : null}
+          {phase.type === "questions" && iaOuverte && dejaLues.size && !ro ? (
+            <button type="button" className="ed-lien" title={`${pluriel(A.lues.length, "photo")} · ≈ ${motDollars(estTout.dollars)}`} onClick={() => { void lancer("tout"); }}>Relire tout</button>
+          ) : null}
+          {enCours ? <button type="button" className="ed-bt" onClick={() => arret.current?.abort()}>Arrêter</button> : null}
         </header>
+        {confirmer ? (
+          <div className="ed-ana-confirmer" role="alertdialog" aria-label="Remplacer la mise en page ?">
+            <strong>Remplacer la mise en page ?</strong>
+            <span>{confirmer.r.pages} pages · {pluriel(confirmer.r.selection.compte.posee, "photo posée", "photos posées")}</span>
+            <button type="button" className="ed-bt" onClick={() => setConfirmer(null)}>Garder la mienne</button>
+            <button type="button" className="ed-bt ed-bt--plein" onClick={() => charger_(confirmer.r, confirmer.dollars, confirmer.autres, confirmer.marques)}>Remplacer</button>
+          </div>
+        ) : null}
+        {susp.suspecte && phase.type === "questions" ? (
+          <div className="ed-compo-alerte" role="status"><strong>Lecture douteuse</strong><span>{susp.raisons.join(" · ")} : elle ne sert pas à écarter.</span></div>
+        ) : null}
         {phase.type === "questions" ? (
-          <>
-            {susp.suspecte ? (
-              <div className="ed-compo-alerte" role="status">
-                <strong>Lecture douteuse</strong>
-                <span>{susp.raisons.join(" · ")} : elle ne servira pas à écarter.</span>
-              </div>
-            ) : null}
-            <div className="ed-compo-champ">
-              <span className="ed-compo-l">Type d&apos;album</span>
-              <span className="ed-compo-choix">
-                {THEMES.map((t: Theme) => (
-                  <button key={t} type="button" aria-pressed={vaut("theme") === t} className={cls(saisie.theme === undefined && devinee.theme === t && "ed-compo-devine")}
-                    onClick={() => poser({ theme: saisie.theme === t ? undefined : t })}>{MOT_THEME[t]}</button>
-                ))}
-              </span>
+          vue.issue.ok ? (
+            <VueAnalyse r={vue.issue.r} entree={vue.entree} iaLue={vue.iaLue} saisie={saisie} poser={poser} devinee={devinee} lu={lu}
+              lieuxTexte={lieuxTexte} setLieuxTexte={setLieuxTexte} corrections={corrections} corriger={corriger} lieux={repLieux} setLieux={setLieux}
+              dossier={etat.projet?.dossier ?? null} pagesCommandees={etat.projet?.nbPagesCible ?? null} adresses={adresses}
+              mesures={etat.lecture.mesures ?? {}} lecon={lecon} ro={ro} />
+          ) : (
+            <div className="ed-ana-vide">
+              <p className="ed-compo-texte ed-lire-err" role="status">{vue.issue.phrase}</p>
+              <p className="ed-compo-texte">{vue.issue.cause}</p>
+              <p className="ed-compo-texte ed-compo-sous">{vue.issue.geste}</p>
             </div>
-            <label className="ed-compo-champ">
-              <span className="ed-compo-l">Personnes du groupe</span>
-              <input type="number" min={1} max={60} inputMode="numeric" value={saisie.personnes ?? ""} placeholder={devinee.personnes ? String(devinee.personnes) : "?"}
-                onChange={(e) => { const n = Number(e.currentTarget.value); poser({ personnes: Number.isInteger(n) && n >= 1 && n <= 60 ? n : undefined }); }} />
-            </label>
-            <div className="ed-compo-champ">
-              <span className="ed-compo-l">Ambiance</span>
-              <span className="ed-compo-choix">
-                {AMBIANCES_FICHE.map((a) => (
-                  <button key={a} type="button" aria-pressed={vaut("ambiance") === a} className={cls(saisie.ambiance === undefined && devinee.ambiance === a && "ed-compo-devine")}
-                    onClick={() => poser({ ambiance: saisie.ambiance === a ? undefined : a })}>{MOT_AMBIANCE[a]}</button>
-                ))}
-              </span>
-            </div>
-            <label className="ed-compo-champ">
-              <span className="ed-compo-l">Lieux à faire apparaître</span>
-              <input type="text" value={lieuxTexte} placeholder="Facultatif" maxLength={400} onChange={(e) => setLieuxTexte(e.currentTarget.value)} />
-            </label>
-            <p className="ed-compo-taille">Taille : {etat.projet?.nbPagesCible ? `${etat.projet.nbPagesCible} pages, le nombre commandé` : "la machine la propose"}</p>
-            <footer className="ed-compo-pied">
-              <span className="ed-compo-cout">
-                {!iaOuverte ? "IA fermée · composition locale" : susp.suspecte ? "" : `${pluriel(est.lues, "photo")} lues · ≈ ${motDollars(est.dollars)}`}
-              </span>
-              {iaOuverte && dejaLues.size ? (
-                <button type="button" className="ed-lien" title={`${pluriel(A.lues.length, "photo")} · ≈ ${motDollars(estTout.dollars)}`} onClick={() => { void lancer("tout"); }}>Relire tout</button>
-              ) : null}
-              {iaOuverte && susp.suspecte ? (
-                <>
-                  <button type="button" className="ed-bt" onClick={() => { void lancer("normal"); }} title="Composer sans cette lecture">Composer sans elle</button>
-                  <button type="button" className="ed-bt ed-bt--plein" onClick={() => { void lancer("relire"); }}>Relire {pluriel(aRelire, "photo")} · ≈ {motDollars(est.dollars)}</button>
-                </>
-              ) : (
-                <button type="button" className="ed-bt ed-bt--plein" onClick={() => { void lancer("normal"); }}>Composer</button>
-              )}
-            </footer>
-          </>
+          )
         ) : phase.type === "analyse" ? (
-          <>
+          <div className="ed-ana-vide">
             <ol className="ed-compo-etapes">
               {(Object.keys(MOT_ETAPE) as Etape[]).map((k) => {
                 const a = phase.etapes[k];
@@ -460,38 +551,27 @@ function Feuille({ fermer }: { fermer: () => void }) {
                 );
               })}
             </ol>
-            <footer className="ed-compo-pied">
-              <span className="ed-compo-cout">Payé · {motDollars(phase.dollars)}</span>
-              {enCours ? <button type="button" className="ed-bt" onClick={() => arret.current?.abort()}>Arrêter</button> : null}
-            </footer>
-          </>
+            <p className="ed-compo-cout">Payé · {motDollars(phase.dollars)}</p>
+          </div>
         ) : phase.type === "arret" ? (
-          <>
+          <div className="ed-ana-vide">
             <p className="ed-compo-texte ed-lire-err" role="status">{phase.texte}</p>
             <p className="ed-compo-texte ed-compo-sous">Rien n&apos;a été envoyé pour ces photos.{phase.dollars ? ` Déjà payé : ${motDollars(phase.dollars)}.` : ""}</p>
             <footer className="ed-compo-pied">
               <button type="button" className="ed-bt" onClick={() => setPhase({ type: "questions" })}>Retour</button>
               <button type="button" className="ed-bt ed-bt--plein" onClick={() => { void lancer(dernierMode.current); }}>Réessayer</button>
             </footer>
-          </>
-        ) : phase.type === "remplacer" ? (
-          <>
-            <p className="ed-compo-texte">{phase.r.pages} pages proposées · {pluriel(phase.r.selection.compte.posee, "photo posée", "photos posées")}</p>
-            <footer className="ed-compo-pied">
-              <button type="button" className="ed-bt" onClick={fermer}>Garder la mienne</button>
-              <button type="button" className="ed-bt ed-bt--plein" onClick={() => charger_(phase.r, phase.dollars, phase.autres, phase.marques)}>Remplacer</button>
-            </footer>
-          </>
+          </div>
         ) : (
-          <>
+          <div className="ed-ana-vide">
             <p className="ed-compo-texte ed-lire-err" role="status">{phase.phrase}</p>
             <p className="ed-compo-texte">{phase.cause}</p>
             <p className="ed-compo-texte ed-compo-sous">{phase.geste}</p>
             <details className="ed-compo-trace"><summary>Trace</summary><code>{phase.technique}</code></details>
             <footer className="ed-compo-pied">
-              <button type="button" className="ed-bt ed-bt--plein" onClick={() => setPhase({ type: "questions" })}>Retour aux questions</button>
+              <button type="button" className="ed-bt ed-bt--plein" onClick={() => setPhase({ type: "questions" })}>Retour</button>
             </footer>
-          </>
+          </div>
         )}
       </section>
     </div>
@@ -509,8 +589,12 @@ export function BandeauProposition() {
   const [confirmer, setConfirmer] = useState<AutreTaille | null>(null);
   const [refus, setRefus] = useState<string | null>(null);
   const emp = empreinte(etat.magazine.planches);
+  const magCourant = etat.magazine;
   /* l'empreinte de l'intérieur tel qu'il vient d'être chargé */
-  useEffect(() => { if (p && !p.empreinte && cleProjet) void garder(cleProjet, { ...garde, proposition: { ...p, empreinte: emp } }); }, [p, emp, cleProjet, garde]);
+  /* M-30 : la proposition TELLE QUE CHARGÉE (le magazine de la machine, couverture comprise) : « Ce que j'ai changé » la compare */
+  useEffect(() => { if (p && !p.empreinte && cleProjet) void garder(cleProjet, { ...garde, proposition: { ...p, empreinte: emp, magazine: p.magazine ?? (JSON.parse(JSON.stringify(magCourant)) as typeof magCourant) } }); }, [p, emp, cleProjet, garde, magCourant]);
+  const extra: Extra = { corrections: garde.corrections, lieux: garde.lieux };
+  const [releve, setReleve] = useState(false);
   /* M-10 : une photo de couverture posée aussi à l'intérieur : on recompose l'intérieur sans elle (sans demander si l'intérieur n'a pas bougé) */
   const faces = facesCouverture(etat);
   const dedans = posees(etat);
@@ -520,11 +604,11 @@ export function BandeauProposition() {
   const tenterSansDoublon = (): string | null => {
     if (!faces) return null;
     const m = marquesAtelier(etat, p);
-    const x = composerLocal(etat, ficheDe(), luminancesGardees(cleProjet), faces, m);
+    const x = composerLocal(etat, ficheDe(), luminancesGardees(cleProjet), faces, m, extra);
     if (!x.ok) return x.phrase;
     const jet = { ...x.r.jet, magazine: { ...x.r.jet.magazine, couverture: etat.magazine.couverture } };
     envoyer({ type: "chargerPremierJet", jet });
-    if (cleProjet) void garder(cleProjet, { ...garde, proposition: { ...resumer(x.r, p?.dollars ?? 0, p?.autres ?? [], m) } });
+    if (cleProjet) void garder(cleProjet, { ...garde, proposition: { ...resumer(x.r, p?.dollars ?? 0, p?.autres ?? [], m, extra, garde.fiche) } });
     return null;
   };
   const recomposer = () => setRefus(tenterSansDoublon());
@@ -532,13 +616,13 @@ export function BandeauProposition() {
   const autreTaille = (a: AutreTaille) => {
     setConfirmer(null);
     const m = marquesAtelier(etat, p);
-    const x = composerLocal(etat, ficheDe(a.taille), luminancesGardees(cleProjet), null, m);
+    const x = composerLocal(etat, ficheDe(a.taille), luminancesGardees(cleProjet), null, m, extra);
     if (!x.ok) { setRefus(x.phrase); return; }
     setRefus(null);
     envoyer({ type: "chargerPremierJet", jet: x.r.jet });
     const autres = [...(p?.autres ?? []).filter((o) => o.pages !== x.r.pages), ...(p ? [{ mot: p.resultat.origineTaille === "commandee" ? "Commandé" : "Proposé", taille: p.resultat.taille, pages: p.pages, posees: p.resultat.selection.compte.posee }] : [])]
       .sort((u, v) => u.pages - v.pages);
-    if (cleProjet) void garder(cleProjet, { ...garde, proposition: resumer(x.r, p?.dollars ?? 0, autres, m) });
+    if (cleProjet) void garder(cleProjet, { ...garde, proposition: resumer(x.r, p?.dollars ?? 0, autres, m, extra, garde.fiche) });
   };
   const auto = useRef<string | null>(null);
   useEffect(() => {
@@ -550,6 +634,10 @@ export function BandeauProposition() {
   });
   if (!p || ferme === p.quand) return null;
   const c = p.resultat.selection.compte;
+  const diffs: Difference[] = p.magazine ? releverDifferences({
+    magazine: p.magazine, versionRegles: p.versionRegles ?? "", reglages: p.reglages ?? null, quand: p.quand, selection: p.resultat.selection,
+    decisions: p.decisions ?? [], ...(p.doubles ? { doubles: p.doubles } : {}),
+  }, etat.magazine) : [];
   const s = suspicionDe(etat);
   const origine = p.resultat.origineTaille === "commandee" ? "le nombre commandé" : p.resultat.origineTaille === "machine" ? "proposé par la machine" : "choisi";
   return (
@@ -574,9 +662,11 @@ export function BandeauProposition() {
         {refus ? <span className="ed-lire-err">{refus}</span> : null}
         {doublon && p.empreinte !== emp ? <button type="button" className="ed-bt" disabled={ro} onClick={recomposer}>Recomposer sans doublon</button> : null}
         <button type="button" className="ed-bt" onClick={() => setOuvert(true)}>Posées et laissées</button>
+        {diffs.length ? <button type="button" className="ed-bt" onClick={() => setReleve(true)}>Ce que j&apos;ai changé · {diffs.length}</button> : null}
         <button type="button" className="ed-bt" onClick={() => setFerme(p.quand)}>Fermer</button>
       </div>
       {ouvert && typeof document !== "undefined" ? createPortal(<PoseesEtLaissees p={p} fermer={() => setOuvert(false)} />, document.querySelector(".mep-editeur") ?? document.body) : null}
+      {releve && typeof document !== "undefined" ? createPortal(<CeQueJaiChange p={p} diffs={diffs} fermer={() => setReleve(false)} />, document.querySelector(".mep-editeur") ?? document.body) : null}
     </>
   );
 }
@@ -641,6 +731,56 @@ function PoseesEtLaissees({ p, fermer }: { p: Proposition; fermer: () => void })
             </section>
           ))}
         </div>
+      </section>
+    </div>
+  );
+}
+
+/* ─────────────────────────── « Ce que j'ai changé » (M-30) ─────────────────────────── */
+
+const MOT_TYPE_DIFF: Readonly<Record<Difference["type"], string>> = {
+  double_ajoutee: "Double ajoutée", double_supprimee: "Double supprimée", gabarit_change: "Gabarit changé", photo_ajoutee: "Photo ajoutée",
+  photo_retiree: "Photo retirée", photo_deplacee: "Photo déplacée", photo_agrandie: "Photo agrandie", photo_reduite: "Photo réduite",
+  recadrage_change: "Recadrage changé", texte_change: "Texte changé", couverture_gabarit: "Couverture changée", couverture_photo: "Couverture changée",
+};
+
+function CeQueJaiChange({ p, diffs, fermer }: { p: Proposition; diffs: Difference[]; fermer: () => void }) {
+  const { adresses, cleProjet, lectureSeule: ro } = useEd();
+  const [envoi, setEnvoi] = useState<{ ok: boolean; phrase: string } | null>(null);
+  const [enCours, setEnCours] = useState(false);
+  const envoyer = async () => {
+    if (!cleProjet) return;
+    setEnCours(true);
+    const lecons = leconsDesDifferences(diffs, { versionRegles: p.versionRegles ?? "", reglages: p.reglages ?? null });
+    setEnvoi(await envoyerEcarts(cleProjet, lecons));
+    setEnCours(false);
+  };
+  const parType = new Map<string, number>();
+  for (const d of diffs) parType.set(MOT_TYPE_DIFF[d.type], (parType.get(MOT_TYPE_DIFF[d.type]) ?? 0) + 1);
+  return (
+    <div className="ed-compo-fond" onPointerDown={(e) => { if (e.target === e.currentTarget) fermer(); }}>
+      <section className="ed-compo ed-compo--large" role="dialog" aria-modal="true" aria-label="Ce que j'ai changé">
+        <header className="ed-compo-tete">
+          <h3>Ce que j&apos;ai changé</h3>
+          <button type="button" className="ed-bt" onClick={fermer}>Fermer</button>
+        </header>
+        <p className="ed-compo-sous">{[...parType].map(([k, n]) => `${k} · ${n}`).join("  ·  ")}</p>
+        <ul className="ed-releve">
+          {diffs.map((d, i) => (
+            <li key={`${d.type}-${d.plancheId}-${d.photo ?? ""}-${i}`} className="ed-releve-ligne">
+              {d.photo ? <img src={vignetteDe(adresses.get(d.photo)) ?? undefined} alt="" loading="lazy" /> : <span className="ed-releve-sans" aria-hidden="true" />}
+              <span className="ed-releve-ou">{d.ou}</span>
+              <span className="ed-releve-phrase">{d.phrase}</span>
+              <span className="ed-releve-regles" title={d.decision ?? ""}>{d.regles.join(", ")}</span>
+            </li>
+          ))}
+        </ul>
+        <footer className="ed-compo-pied">
+          <span className={cls("ed-compo-cout", envoi && !envoi.ok && "ed-lire-err")}>{envoi?.phrase ?? `Règles ${p.versionRegles ? p.versionRegles.slice(0, 8) : "inconnues"}`}</span>
+          <button type="button" className="ed-bt ed-bt--plein" disabled={ro || enCours || !!envoi?.ok} onClick={() => { void envoyer(); }}>
+            {envoi?.ok ? "Envoyées" : "Envoyer en leçons"}
+          </button>
+        </footer>
       </section>
     </div>
   );

@@ -47,6 +47,16 @@ ignorait les coups de cœur et les gardées de l'atelier. Branche `fix/composer-
   « Tout garder », « Commandé » avec leurs vrais chiffres, un clic recompose.
 - Recette du 18/11 : page 1 sans repère vide, « View » jamais en chapitre, raisons en mots d'atelier.
 
+## 18/11 : le compositeur v2 (définition v2, décisions M-16 à M-28)
+Branche `feat/compositeur-v2` (poussée, PAS de PR, PAS de fusion : Mathias juge d'abord la planche de tests, hors git dans
+`design-explorations/tunnel-2026-11-17/tests-v2/`). Fait : cinq notes lisibles, cinq causes fermées d'écarter, réserve avec raison, sans
+date par ressemblance, séries sur l'empreinte, table de décision du nombre de photos par double (M-28), rythme, paires, petite entorse,
+écho ou contraste, titres de la décision 9 (réglage `lieux`), comptage exact, corrections qui priment, paramètres par profil en données ;
+planche B6 et lecture v4 (demandées à la prochaine lecture) ; passe de complément au banc (0,276 $) ; rejeu en matrice ; harnais v2.
+Reste : trancher à l'œil « serrée » ou « avant » (M-16) et « lieux partout ou aux chapitres » (M-24) ; brancher la v2 à l'écran
+(cinq notes, réglages, lancement seul après l'Analyse) ; regard fin du complément et classement des couvertures dans l'éditeur ;
+grande entorse ; la pose sur des doubles plus denses (bandes coupées).
+
 ## Ce qui reste
 - L'essai de Mathias sur une création libre, puis sur un dossier (`MEP_LECTURE_IA_CLIENTS=1`).
 - Un premier appel RÉEL des étapes voyage et lieux depuis l'éditeur (la recette les a simulés) ; mesurer leur coût réel.

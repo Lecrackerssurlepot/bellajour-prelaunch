@@ -41,7 +41,14 @@ export const VERSION_LECTURE_IA = 1;
 export const VERSION_LECTURE_IA_2 = 2;
 /** 18/11 : la version 3, écrite par « Composer le magazine » (tags de la planche, voyage, lieux). */
 export const VERSION_LECTURE_IA_3 = 3;
-export const VERSIONS_LECTURE_IA = [VERSION_LECTURE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3] as const;
+/** 18/11 (définition v2, décision 11) : la version 4, les six tags du complément de planche (nombre exact de personnes, animal ou document,
+ *  force d'image, posé ou spontané, geste, insolite). Les versions 1 à 3 se lisent toujours, à l'identique. */
+export const VERSION_LECTURE_IA_4 = 4;
+/** 18/11 (feat/analyse-et-v2, point 3 : « TOUS les tags de la définition ») : la version 5, le regard COMPLÉMENTAIRE du banc (expression,
+ *  yeux fermés, point d'accroche et son mot, direction du regard) et le CLASSEMENT des candidates couverture (rang, type, raison). Tous
+ *  facultatifs : un champ absent veut dire « pas lu », jamais « non » ni « zéro ». Les versions 1 à 4 se lisent toujours, à l'identique. */
+export const VERSION_LECTURE_IA_5 = 5;
+export const VERSIONS_LECTURE_IA = [VERSION_LECTURE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3, VERSION_LECTURE_IA_4, VERSION_LECTURE_IA_5] as const;
 export type VersionLectureIA = (typeof VERSIONS_LECTURE_IA)[number];
 /** Bornes TECHNIQUES (octets du fichier, nombre de photos) : un magazine en porte quelques centaines. */
 export const TAILLE_MAX_LECTURE_IA = 8 * 1024 * 1024;
@@ -74,7 +81,32 @@ export type PhotoIA = {
   sujet?: SujetIA; candidate?: CandidateIA; texte?: boolean; regard?: RegardIA; corrige?: CorrigeIA;
   /* v3 seulement */
   plan?: PlanIA; moment_journee?: MomentIA; ambiance?: AmbianceIA; personnes?: PersonnesIA;
+  /* v4 seulement (un COMPTE de personnes, jamais une identité : D29) */
+  personnes_nombre?: number; sujet_special?: SujetSpecialIA; force_image?: number; pose?: PoseIA; geste?: boolean; insolite?: boolean;
+  /* v5 seulement : le regard complémentaire (« sans_visage » = lu, aucun visage) et le classement des couvertures */
+  expression?: ExpressionIA; yeux_fermes?: YeuxFermesIA; point_accroche?: boolean; accroche?: string; regard_vers?: RegardVersIA;
+  couverture_classee?: CouvertureClassee;
 };
+export const EXPRESSIONS_IA = ["rire", "sourire", "tendre", "neutre", "grimace_subie", "sans_visage"] as const;
+export type ExpressionIA = (typeof EXPRESSIONS_IA)[number];
+export const YEUX_FERMES_IA = ["oui", "non", "incertain", "sans_visage"] as const;
+export type YeuxFermesIA = (typeof YEUX_FERMES_IA)[number];
+export const REGARDS_VERS_IA = ["gauche", "droite", "face", "sans_visage"] as const;
+export type RegardVersIA = (typeof REGARDS_VERS_IA)[number];
+export const TYPES_CLASSEMENT_IA = ["lieu", "lieu_avec_personnes", "groupe", "portrait", "detail"] as const;
+export type TypeClassementIA = (typeof TYPES_CLASSEMENT_IA)[number];
+/** Le rang parmi les candidates couverture classées ENSEMBLE (1 = la meilleure), le type et une raison de 8 mots au plus. */
+export type CouvertureClassee = { rang: number; type: TypeClassementIA; raison: string };
+/** Le mot du point d'accroche : 5 mots au plus (consigne du banc). */
+export const ACCROCHE_MOTS_MAX = 5;
+/** Le nombre de candidates classées ensemble (une planche de 16, consigne du banc). */
+export const CLASSEMENT_MAX = 16;
+export const SUJETS_SPECIAUX_IA = ["aucun", "animal", "document"] as const;
+export type SujetSpecialIA = (typeof SUJETS_SPECIAUX_IA)[number];
+export const POSES_IA = ["pose", "spontane", "sans_personne"] as const;
+export type PoseIA = (typeof POSES_IA)[number];
+/** Le nombre de personnes : 0 à 6, 7 pour « sept et plus ». */
+export const PERSONNES_NOMBRE_MAX = 7;
 export type RafaleIA = { photos: string[]; garder: string[]; usage: UsageRafale; pourquoi: string };
 export type GroupeIA = { type: TypeGroupe; photos: string[]; idee: string };
 export type ComboCouleurs = { nom: string; couleurs: CouleursMagazine; raison: string; dansLesPhotos?: boolean };
@@ -168,13 +200,15 @@ export const IDEE_MOTS_MAX = 6;
 const CLES_PHOTO_V1 = ["visages", "role", "lieu", "capture"] as const;
 const CLES_PHOTO_V2 = [...CLES_PHOTO_V1, "sujet", "candidate", "texte", "regard", "corrige"] as const;
 const CLES_PHOTO_V3 = [...CLES_PHOTO_V2, "plan", "moment_journee", "ambiance", "personnes"] as const;
+const CLES_PHOTO_V4 = [...CLES_PHOTO_V3, "personnes_nombre", "sujet_special", "force_image", "pose", "geste", "insolite"] as const;
+const CLES_PHOTO_V5 = [...CLES_PHOTO_V4, "expression", "yeux_fermes", "point_accroche", "accroche", "regard_vers", "couverture_classee"] as const;
 /** Un texte de mots comptés : vide permis, 120 signes au plus. */
 const motsAuPlus = (v: unknown, max: number): v is string => typeof v === "string" && v.length <= 120 && mots(v) <= max;
 
 function lirePhoto(nom: string, x: unknown, version: VersionLectureIA): string | PhotoIA {
   const ou = `la photo « ${nom} »`;
   if (!estObjet(x)) return `${ou} doit être un objet.`;
-  const admises: readonly string[] = version === VERSION_LECTURE_IA ? CLES_PHOTO_V1 : version === VERSION_LECTURE_IA_2 ? CLES_PHOTO_V2 : CLES_PHOTO_V3;
+  const admises: readonly string[] = version === VERSION_LECTURE_IA ? CLES_PHOTO_V1 : version === VERSION_LECTURE_IA_2 ? CLES_PHOTO_V2 : version === VERSION_LECTURE_IA_3 ? CLES_PHOTO_V3 : version === VERSION_LECTURE_IA_4 ? CLES_PHOTO_V4 : CLES_PHOTO_V5;
   const k = clesEn(x, admises);
   if (k) return `${ou} : le champ « ${k} » n'existe pas (${admises.join(", ")}). Aucune identité de personne n'est admise.`;
   const p: PhotoIA = {};
@@ -243,11 +277,31 @@ function lirePhoto(nom: string, x: unknown, version: VersionLectureIA): string |
     if (c.sujet !== undefined && !dans(SUJETS_IA, c.sujet)) return `${ou} : sujet corrigé inconnu (${SUJETS_IA.join(", ")}).`;
     p.corrige = { ...(dans(ROLES_IA, c.role) ? { role: c.role } : {}), ...(dans(SUJETS_IA, c.sujet) ? { sujet: c.sujet } : {}) };
   }
-  if (version !== VERSION_LECTURE_IA_3) return p;
+  if (version !== VERSION_LECTURE_IA_3 && version !== VERSION_LECTURE_IA_4 && version !== VERSION_LECTURE_IA_5) return p;
   if (x.plan !== undefined) { if (!dans(PLANS_IA, x.plan)) return `${ou} : plan inconnu (${PLANS_IA.join(", ")}).`; p.plan = x.plan; }
   if (x.moment_journee !== undefined) { if (!dans(MOMENTS_IA, x.moment_journee)) return `${ou} : moment de la journée inconnu (${MOMENTS_IA.join(", ")}).`; p.moment_journee = x.moment_journee; }
   if (x.ambiance !== undefined) { if (!dans(AMBIANCES_IA, x.ambiance)) return `${ou} : ambiance inconnue (${AMBIANCES_IA.join(", ")}).`; p.ambiance = x.ambiance; }
   if (x.personnes !== undefined) { if (!dans(PERSONNES_IA, x.personnes)) return `${ou} : « personnes » est un compte en mots (${PERSONNES_IA.join(", ")}), jamais une identité.`; p.personnes = x.personnes; }
+  if (version !== VERSION_LECTURE_IA_4 && version !== VERSION_LECTURE_IA_5) return p;
+  if (x.personnes_nombre !== undefined) { if (!Number.isInteger(x.personnes_nombre) || !entre(x.personnes_nombre, 0, PERSONNES_NOMBRE_MAX)) return `${ou} : « personnes_nombre » est un compte de 0 à ${PERSONNES_NOMBRE_MAX}, jamais une identité.`; p.personnes_nombre = x.personnes_nombre as number; }
+  if (x.sujet_special !== undefined) { if (!dans(SUJETS_SPECIAUX_IA, x.sujet_special)) return `${ou} : sujet spécial inconnu (${SUJETS_SPECIAUX_IA.join(", ")}).`; p.sujet_special = x.sujet_special; }
+  if (x.force_image !== undefined) { if (!entre(x.force_image, 0, 1)) return `${ou} : « force_image » va de 0 à 1.`; p.force_image = x.force_image as number; }
+  if (x.pose !== undefined) { if (!dans(POSES_IA, x.pose)) return `${ou} : « pose » inconnue (${POSES_IA.join(", ")}).`; p.pose = x.pose; }
+  if (x.geste !== undefined) { if (typeof x.geste !== "boolean") return `${ou} : « geste » est vrai ou faux.`; p.geste = x.geste; }
+  if (x.insolite !== undefined) { if (typeof x.insolite !== "boolean") return `${ou} : « insolite » est vrai ou faux.`; p.insolite = x.insolite; }
+  if (version !== VERSION_LECTURE_IA_5) return p;
+  if (x.expression !== undefined) { if (!dans(EXPRESSIONS_IA, x.expression)) return `${ou} : expression inconnue (${EXPRESSIONS_IA.join(", ")}).`; p.expression = x.expression; }
+  if (x.yeux_fermes !== undefined) { if (!dans(YEUX_FERMES_IA, x.yeux_fermes)) return `${ou} : « yeux_fermes » inconnu (${YEUX_FERMES_IA.join(", ")}).`; p.yeux_fermes = x.yeux_fermes; }
+  if (x.point_accroche !== undefined) { if (typeof x.point_accroche !== "boolean") return `${ou} : « point_accroche » est vrai ou faux.`; p.point_accroche = x.point_accroche; }
+  if (x.accroche !== undefined) { if (!motsAuPlus(x.accroche, ACCROCHE_MOTS_MAX)) return `${ou} : l'accroche tient en ${ACCROCHE_MOTS_MAX} mots au plus.`; p.accroche = x.accroche.trim(); }
+  if (x.regard_vers !== undefined) { if (!dans(REGARDS_VERS_IA, x.regard_vers)) return `${ou} : « regard_vers » inconnu (${REGARDS_VERS_IA.join(", ")}).`; p.regard_vers = x.regard_vers; }
+  if (x.couverture_classee !== undefined) {
+    const c = x.couverture_classee;
+    if (!estObjet(c) || clesEn(c, ["rang", "type", "raison"]) || !Number.isInteger(c.rang) || !entre(c.rang, 1, CLASSEMENT_MAX) || !dans(TYPES_CLASSEMENT_IA, c.type) || !motsAuPlus(c.raison, RAISON_MOTS_MAX)) {
+      return `${ou} : « couverture_classee » = { rang (1 à ${CLASSEMENT_MAX}), type (${TYPES_CLASSEMENT_IA.join(", ")}), raison de ${RAISON_MOTS_MAX} mots au plus }.`;
+    }
+    p.couverture_classee = { rang: c.rang as number, type: c.type, raison: (c.raison as string).trim() };
+  }
   return p;
 }
 
@@ -335,9 +389,9 @@ export function lireLectureIA(entree: unknown): LectureLectureIA {
   }
   if (!estObjet(x)) return refus("Ce fichier n'est pas une lecture : il faut un objet JSON.");
   if (x.format !== FORMAT_LECTURE_IA) return refus(`Ce JSON n'est pas une lecture IA Bellajour : le champ « format » doit valoir « ${FORMAT_LECTURE_IA} ».`);
-  if (x.version !== VERSION_LECTURE_IA && x.version !== VERSION_LECTURE_IA_2 && x.version !== VERSION_LECTURE_IA_3) return refus(`Version ${typeof x.version === "number" || typeof x.version === "string" ? String(x.version) : "absente"} inconnue : seules les versions 1, 2 et 3 se chargent.`);
+  if (x.version !== VERSION_LECTURE_IA && x.version !== VERSION_LECTURE_IA_2 && x.version !== VERSION_LECTURE_IA_3 && x.version !== VERSION_LECTURE_IA_4 && x.version !== VERSION_LECTURE_IA_5) return refus(`Version ${typeof x.version === "number" || typeof x.version === "string" ? String(x.version) : "absente"} inconnue : seules les versions 1 à 5 se chargent.`);
   const version: VersionLectureIA = x.version;
-  const racine = ["format", "version", "projet", "photos", "rafales", "groupes", "couleurs", ...(version !== VERSION_LECTURE_IA ? ["lecture"] : []), ...(version === VERSION_LECTURE_IA_3 ? ["voyage", "lieux"] : [])];
+  const racine = ["format", "version", "projet", "photos", "rafales", "groupes", "couleurs", ...(version !== VERSION_LECTURE_IA ? ["lecture"] : []), ...(version === VERSION_LECTURE_IA_3 || version === VERSION_LECTURE_IA_4 || version === VERSION_LECTURE_IA_5 ? ["voyage", "lieux"] : [])];
   const k = clesEn(x, racine);
   if (k) return refus(`Le champ « ${k} » n'existe pas dans une lecture (${racine.join(", ")}).`);
 

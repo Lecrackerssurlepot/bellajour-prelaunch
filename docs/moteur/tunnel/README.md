@@ -44,6 +44,7 @@ par règle) et écrit en clair dans [`REGISTRE.md`](REGISTRE.md), **généré, �
 | `regles/BANQUE-POLICES.md`, `COMBOS-TYPO.md`, `CHOIX-AUTO.md` | la banque de polices par thème, 40 combos, le choix automatique de trois propositions |
 | `regles/REGLES-CODEES-AU-BANC.md` | les règles réellement codées dans le compositeur du banc, celles qui n'ont pas pu l'être, les règles nées des critiques |
 | `RETOURS-MATHIAS.md` | les retours de Mathias et leurs règles générales |
+| `DEFINITION.md` | la définition v2 (18/11) : la table du nombre de photos par double, les cinq notes, écarter et réserver, structure, textes, questions, tags, corrections, paramètres par profil |
 | `REGISTRE.md` | **généré** par `scripts/regles-doc.ts` : le registre des règles, par domaine, avec sa version |
 
 ## État (18/11/2026)

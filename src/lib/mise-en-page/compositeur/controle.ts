@@ -15,6 +15,12 @@ import { trouEnveloppe, type PlancheTrame, type Resultat, type Trame } from "./p
 import type { Controle, Faute } from "./types";
 
 const TEXTES_PAR_DEFAUT = /^(Titre|Texte|Légende)$/;
+/** v2.1 (M-07) : sous 30 % de page imprimée, une page sans texte écrit est presque vide, même colorée. */
+export const PAGE_PRESQUE_VIDE = 0.3;
+/** v2.1 (M-29) : le CŒUR de la zone importante (sans son air) entamé de plus de 10 % : le sujet est coupé. */
+export const ZONE_AIR_PERDUE_MAX = 0.1;
+/** N-57 : une photo dont tout le cadre compte ne perd jamais plus de 10 % de sa LARGEUR (elle se rogne en hauteur). */
+export const TOUT_LE_CADRE_LARGEUR_PERDUE = 0.1;
 
 export function controler(trame: Trame & { faits: string[] }, pose: Resultat, magazine: Magazine): Controle {
   const fautes: Faute[] = [];
@@ -37,6 +43,11 @@ export function controler(trame: Trame & { faits: string[] }, pose: Resultat, ma
     const d = pl.mode === "double" ? pl.double : pl[cote];
     return (d?.textes ?? []).some((t) => t.contenu && t.contenu.trim() && !TEXTES_PAR_DEFAUT.test(t.contenu));
   };
+  const texteEcrit = (i: number, cote: "gauche" | "droite"): boolean => {
+    const pl = magazine.planches[i];
+    const d = pl?.mode === "double" ? pl.double : pl?.[cote];
+    return (d?.textes ?? []).some((t) => t.contenu && t.contenu.trim() && !TEXTES_PAR_DEFAUT.test(t.contenu));
+  };
   const vues = new Map<string, string[]>();
   pose.planches.forEach((p, i) => {
     const ou = i === 0 ? "page 1" : i === pose.planches.length - 1 ? "dernière page" : `double ${i}`;
@@ -47,14 +58,18 @@ export function controler(trame: Trame & { faits: string[] }, pose: Resultat, ma
         else if (b.dpi < 200) signal("photo entre 150 et 200 dpi", ou, `${nom(b.id)} à ${b.dpi} dpi`, "P2-04");
         if (b.visages_coupes + b.visages_hors > 0) dur("visage coupé", ou, `${nom(b.id)} : ${b.visages_coupes} coupé(s), ${b.visages_hors} hors cadre`, "P3-00");
         if (b.visages_pli > 0) dur("visage dans le pli", ou, nom(b.id), "P-15");
+        /* M-31 (N-60) : jamais une personne coupée (corps détecté coupé en largeur, ou côté protégé entamé : dans le doute, on ne coupe pas) */
+        if ((b.personnes_coupees ?? 0) > 0) dur("personne coupée", ou, `${nom(b.id)} : ${b.personnes_coupees} côté(s) ou corps entamé(s)`, "M-31");
         if (b.corps_pli > 0) dur("personne sur le pli", ou, nom(b.id), "DA-3");
         if ((trame.photos[b.id]?.personnes ?? 0) >= 1 && (Math.min(b.cadre.l, b.cadre.h) < REGLAGES_POSE.PERSONNES_COTE_MIN || b.cadre.l * b.cadre.h < REGLAGES_POSE.PERSONNES_AIRE_MIN))
           dur("photo de personnes trop petite", ou, `${nom(b.id)} dans ${Math.round(b.cadre.l)} × ${Math.round(b.cadre.h)} mm`, "M-08");
         if (b.visages_sous_texte + b.visages_sous_photo > 0) dur("visage caché", ou, `${nom(b.id)} sous un texte ou une photo`, "P-16");
         if (b.zone_perdue > 0.5) dur("zone importante coupée", ou, `${nom(b.id)} perd ${Math.round(b.zone_perdue * 100)} % de sa zone importante`, "P-14");
+        else if (trame.recadrage && b.zone_perdue > ZONE_AIR_PERDUE_MAX) dur("sujet entamé par le recadrage", ou, `${nom(b.id)} perd ${Math.round(b.zone_perdue * 100)} % de sa zone importante (cœur de la zone)`, "M-29");
+        if (trame.recadrage?.toutLeCadre.includes(b.id) && b.coupe.gauche + b.coupe.droite > TOUT_LE_CADRE_LARGEUR_PERDUE + 1e-6) dur("photo où tout le cadre compte, rognée en largeur", ou, `${nom(b.id)} perd ${Math.round((b.coupe.gauche + b.coupe.droite) * 100)} % de sa largeur`, "N-57");
         else if (b.zone_perdue > 0.25) signal("zone importante entamée", ou, `${nom(b.id)} perd ${Math.round(b.zone_perdue * 100)} %`, "P-14");
         const ph = trame.photos[b.id];
-        if (ph && ph.l / ph.h >= 1.9 && (b.cadre.l / b.cadre.h < 1.19 || b.coupe.part > 0.45)) dur("21:9 mal posée", ou, `${nom(b.id)} coupée de ${Math.round(b.coupe.part * 100)} %`, "S-098");
+        if (!trame.recadrage && ph && ph.l / ph.h >= 1.9 && (b.cadre.l / b.cadre.h < 1.19 || b.coupe.part > 0.45)) dur("21:9 mal posée", ou, `${nom(b.id)} coupée de ${Math.round(b.coupe.part * 100)} %`, "S-098");
       }
       const textesT = [...(pt.get(p.n)?.textes ?? []), ...(pt.get(p.n)?.gauche?.textes ?? []), ...(pt.get(p.n)?.droite?.textes ?? [])];
       for (const t of x.textes) {
@@ -68,6 +83,8 @@ export function controler(trame: Trame & { faits: string[] }, pose: Resultat, ma
         if (pageDeTitre) continue;
         const cote = pi.page as "gauche" | "droite";
         if (pi.part < REGLAGES_POSE.OCCUPATION_MIN && !habillee(i, cote)) dur("page presque vide", ou, `${cote} imprimée à ${Math.round(pi.part * 100)} %`, "M-07");
+        /* v2.1 (M-07 redevenue DURE) : une couleur ne sauve pas une page presque vide ; seul un texte écrit la tient */
+        else if (trame.recadrage && pi.part < PAGE_PRESQUE_VIDE && !texteEcrit(i, cote)) dur("page presque vide, même colorée", ou, `${cote} imprimée à ${Math.round(pi.part * 100)} %`, "M-07");
         else if (pi.part < REGLAGES_POSE.OCCUPATION_MIN) signal("page maigre, habillée", ou, `${cote} à ${Math.round(pi.part * 100)} %`, "M-07");
       }
     }

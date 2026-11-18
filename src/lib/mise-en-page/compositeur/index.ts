@@ -16,19 +16,87 @@ import { controler } from "./controle";
 import { PAIRE_DU_PROFIL, chapitrer, devinerFiche, ficheEffective, profilDe, sobreDe, tailleACompose } from "./fiche";
 import { Poseur } from "./pose";
 import { charger, entonnoir } from "./selection";
+import { entonnoirV2 } from "./selectionV2";
+import { PARAMETRES_PROFIL } from "./reglagesCompositeur";
+import { themeDeLOccasion } from "./fiche";
+import type { EntreeCompo as Entree, PhotoCompo } from "./types";
 import { ImpasseComposition, construireTrame, phraseAjustement } from "./trame";
 import { motLaissee, motPlace } from "./mots";
-import { REGLAGES_COMPO } from "./reglagesCompositeur";
+import { REGLAGES_COMPO, REGLAGES_V2 } from "./reglagesCompositeur";
+import type { Ph } from "./selection";
+import type { Profil } from "./types";
+
+/** N-48b : la densité visée d'un profil : le milieu de sa fourchette, un demi-cran plus bas en sobre, plus haut en stylisé (M-06). */
+export function densiteVisee(profil: Profil, sobre: boolean, stylise: boolean): number {
+  const m = PARAMETRES_PROFIL[profil].moyenne;
+  return (m[0] + m[1]) / 2 + (sobre ? -0.25 : stylise ? 0.25 : 0);
+}
+
+/** N-62 : la taille que la machine propose : pages ≈ 2 × photos gardées ÷ densité visée, au multiple de 4 le plus proche, bornée par les
+ *  tailles vendues (`VENDABLE_MIN`, `VENDABLE_MAX`, la grille des prix). */
+export function tailleDeLaMachine(photos: number, densite: number): number {
+  const brut = (2 * photos) / Math.max(0.5, densite);
+  const p = Math.round(brut / 4) * 4;
+  const min = Math.ceil(REGLAGES_V2.VENDABLE_MIN / 4) * 4, max = Math.floor(REGLAGES_V2.VENDABLE_MAX / 4) * 4;
+  return Math.max(min, Math.min(max, p));
+}
+
+/**
+ * N-61 : un chapitre de moins de `CHAPITRE_PHOTOS_MIN` photos gardées se FOND dans son voisin le plus proche dans le temps (le précédent,
+ * sinon le suivant) : il ne coûte plus une double d'ouverture. Le voisin garde son nom. Rien ne bouge s'il n'y a qu'un chapitre.
+ */
+export function fondreChapitresMinuscules(P: ReadonlyMap<string, Ph>, cand: readonly Ph[], noms: ReadonlyMap<number, string>, journal: Decision[]): void {
+  const min = REGLAGES_V2.CHAPITRE_PHOTOS_MIN;
+  for (;;) {
+    const compte = new Map<number, number>();
+    for (const x of cand) if (x.chap !== null) compte.set(x.chap, (compte.get(x.chap) ?? 0) + 1);
+    const chaps = [...compte.keys()].sort((a, b) => a - b);
+    if (chaps.length < 2) return;
+    const petit = chaps.filter((c) => compte.get(c)! < min).sort((a, b) => compte.get(a)! - compte.get(b)! || a - b)[0];
+    if (petit === undefined) return;
+    const i = chaps.indexOf(petit);
+    const vers = i > 0 ? chaps[i - 1] : chaps[i + 1];
+    for (const x of P.values()) if (x.chap === petit) x.chap = vers;
+    journal.push({ quoi: `chapitre ${petit}`, ou: "structure", detail: `${compte.get(petit)} photo${compte.get(petit)! > 1 ? "s" : ""} gardée${compte.get(petit)! > 1 ? "s" : ""} seulement : fondu dans « ${noms.get(vers) ?? `chapitre ${vers}`} » (pas de double d'ouverture pour lui)`, regles: ["N-61"] });
+  }
+}
 import { templateParId, type Magazine } from "../magazine";
 import type { Decision, EntreeCompo, EtatPhoto, IssueCompo, PhotoChoisie, ResultatCompo } from "./types";
 
 export * from "./types";
+export * from "./releve";
+export * from "./analyse";
 export { REGLAGES_COMPO, REGLAGES_POSE, REGLES_COMPO, REGLES_POSE } from "./reglagesCompositeur";
 export { AMBIANCES_FICHE, PROFILS, THEMES } from "./types";
 export { LIEUX_MAX, MOT_AMBIANCE, MOT_THEME, TAILLES_PROPOSEES, autresTailles, devinerFiche, ficheEffective, lieuxDeTexte, lireFiche, profilDe, sobreDe, tailleACompose, titreImprimable } from "./fiche";
 export { ImpasseComposition, motsPorteurs, phraseAjustement, teinteDe } from "./trame";
 export { motLaissee, motPlace, nomCourt } from "./mots";
 export { bandeCalme, entreeDepuisEditeur, type DonneesEditeur } from "./depuisEditeur";
+export { REGLAGES_V2, REGLES_V2, PARAMETRES_PROFIL } from "./reglagesCompositeur";
+export { TABLE_DENSITE, nombreVoulu, phraseDouble } from "./densite";
+export { motsDesNotes, distanceEmpreinte } from "./notes";
+export { QUESTIONS_CLIENT, themeDeLOccasion } from "./fiche";
+
+/**
+ * D12 (« OUI ») : les CORRECTIONS de l'atelier, gardées à part, priment TOUJOURS. Appliquées avant tout le reste : les tags corrigés
+ * remplacent ceux de la lecture, les marques (coup de cœur, gardée, écartée, sortie) passent devant la machine, les réponses priment
+ * sur la fiche. Rien n'est écrit dans la lecture : une nouvelle analyse ne les efface jamais.
+ */
+export function appliquerCorrections(e: Entree): Entree {
+  const c = e.corrections;
+  if (!c) return e;
+  const ec = new Set(c.marques?.ecartees ?? []);
+  const gardees = new Set([...(c.marques?.gardees ?? []), ...(c.marques?.coeurs ?? [])]);
+  const photos: PhotoCompo[] = e.photos.map((p) => {
+    const t = c.tags?.[p.id];
+    let q: PhotoCompo = t ? { ...p, ia: { ...(p.ia ?? { interet: 0.6, role: null, sujet: null, plan: null, personnes: null, momentJournee: null, ambiance: null, lieuLu: null, couverture: false }), ...t } } : p;
+    if (ec.has(p.id)) q = { ...q, ecart: { raison: "écartée par l'atelier", regle: "atelier" } };
+    else if (gardees.has(p.id)) q = { ...q, gardee: true };
+    return q;
+  });
+  const marques = { coeurs: [...new Set([...(e.marques?.coeurs ?? []), ...(c.marques?.coeurs ?? [])])], gardees: [...new Set([...(e.marques?.gardees ?? []), ...(c.marques?.gardees ?? [])])] };
+  return { ...e, photos, fiche: { ...e.fiche, ...(c.reponses ?? {}) }, marques };
+}
 
 /** Les identifiants de règle qu'une phrase de pose cite (P-…, M-…, S-…, DA-…, N-…, D…). */
 const REGLE = /\b(P\d?-\d+(?: bis| ter)?|M-\d+|S-\d+|DA-\d+|N-\d+|D\d+|C-\d+)\b/g;
@@ -72,13 +140,16 @@ export function composerSur(e: EntreeCompo): IssueCompo {
   }
 }
 
-export function composer(e: EntreeCompo): ResultatCompo {
+export function composer(e0: EntreeCompo): ResultatCompo {
+  const e = e0.v2 ? appliquerCorrections(e0) : e0;
   const journal: Decision[] = [];
   const devinee = devinerFiche(e.photos, e.voyage);
   const fiche0 = ficheEffective(e.fiche, devinee);
   /* M-15 : la taille n'est jamais demandée avant ; la machine la résout (choisie > commandée > M-09) */
   const tt = tailleACompose(fiche0.taille, e.pagesCommandees);
   const fiche = { ...fiche0, taille: tt.taille };
+  /* v2 (décision 10) : l'occasion du questionnaire aide à deviner le thème quand ni la fiche ni le voyage ne le disent */
+  if (e.v2 && !fiche.theme) { const t = themeDeLOccasion(fiche.occasion); if (t) { fiche.theme = t; journal.push({ quoi: "fiche", ou: "thème", detail: `deviné par l'occasion : ${t}`, regles: ["N-54", "D10"] }); } }
   journal.push({ quoi: "taille", ou: "magazine", detail: tt.origine === "commandee" ? `${tt.taille} pages : le nombre commandé` : tt.origine === "machine" ? "la machine propose : tout garder (M-09)" : `${tt.taille === "tout" ? "tout garder" : `${tt.taille} pages`} : choisi par l'atelier`, regles: ["M-15", "M-09"] });
   if (e.lectureDouteuse) journal.push({ quoi: "lecture", ou: "lecture IA", detail: `douteuse, non utilisée pour ${e.lectureDouteuse.photos} photos : ${e.lectureDouteuse.raison}`, regles: ["M-13"] });
   const profil = profilDe(fiche, e.voyage, e.photos);
@@ -89,7 +160,26 @@ export function composer(e: EntreeCompo): ResultatCompo {
   /* les étapes saisies recoupent le temps : les lieux de l'IA (numérotés sur les chapitres du voyage) ne valent plus */
   const lieux = chap.fiche.size ? null : e.lieux;
   const P = charger(e, lieux, chap.chapitreDe);
-  const { cand } = entonnoir(P, e.piles, journal);
+  let selV2: ReturnType<typeof entonnoirV2> | null = null;
+  if (e.v2) {
+    const coeurs = new Set([...(e.marques?.coeurs ?? []), ...(fiche.preferees ?? [])]);
+    const sorties = new Set(e.corrections?.marques?.sorties ?? []);
+    for (const x of P.values()) { if (coeurs.has(x.id)) x.v2!.coeur = true; if (sorties.has(x.id)) x.v2!.sortie = true; }
+    selV2 = entonnoirV2(P, fiche.personnes, journal);
+  }
+  const { cand } = selV2 ?? entonnoir(P, e.piles, journal);
+  /* N-61 (18/11 au soir) : un chapitre minuscule ne coûte pas une double d'ouverture : il se fond dans son voisin */
+  if (e.v2) fondreChapitresMinuscules(P, cand, chap.nom, journal);
+  /* N-62 (18/11 au soir, recette réelle : 44 pages pour 50 photos) : quand la machine propose la taille, c'est celle qui TIENT la densité
+     visée du profil (N-48b) sur les photos gardées, au multiple de 4, dans les tailles que le produit sait vendre ; « tout garder » reste
+     proposé à côté. La composition tient ensuite cette taille en densifiant (N-47b) ; la réserve « pas de place » n'est que le dernier recours */
+  if (e.v2 && tt.origine === "machine") {
+    const d = densiteVisee(profil, sobre, fiche.ambiance === "stylise");
+    const p = tailleDeLaMachine(cand.length, d);
+    fiche.taille = p;
+    tt.taille = p;
+    journal.push({ quoi: "taille", ou: "magazine", detail: `la machine propose ${p} pages : ${cand.length} photos gardées à ${d.toFixed(2)} photos par double (densité visée du profil), entre ${REGLAGES_V2.VENDABLE_MIN} et ${REGLAGES_V2.VENDABLE_MAX} pages`, regles: ["N-62", "N-48b", "M-15"] });
+  }
   /* M-14 : pas de quoi composer : la cause en clair, et le geste */
   if (cand.length < REGLAGES_COMPO.PHOTOS_MIN) {
     const tous = [...P.values()];
@@ -110,10 +200,12 @@ export function composer(e: EntreeCompo): ResultatCompo {
   }
   const style = styleDe(e, PAIRE_DU_PROFIL[profil]);
   const parLieux = fiche.theme === "road_trip" || (!fiche.theme && e.voyage?.type === "road_trip");
-  const motTitre = (e.voyage?.pays ?? "").trim() || e.titre.trim();
+  /* v2 (V2-TXT-03) : le titre du client d'abord (le seul texte qu'on n'invente pas), puis le pays lu, puis le nom du projet */
+  const motTitre = (e.v2 ? (fiche.titreClient ?? "").trim() || (fiche.pays ?? "").trim() : "") || (e.voyage?.pays ?? "").trim() || e.titre.trim();
   const t = construireTrame({
     P, cand, chapNom: chap.nom, chapFiche: chap.fiche, parLieux, lieux: lieux ? { chapitres: lieux.chapitres, ancre: lieux.ancre } : null,
     fiche, titre: e.titre.trim(), motTitre, profil, sobre, style, couverture: e.couverture ?? null,
+    v2: e.v2 && selV2 ? { reglages: e.v2, profil: PARAMETRES_PROFIL[profil], groupe: selV2.groupe, ordreDeSortie: selV2.ordreDeSortie, stylise: fiche.ambiance === "stylise" } : null,
   }, journal);
 
   const pose = new Poseur(t.trame, e.luminances, e.quand).poser();
@@ -152,7 +244,8 @@ export function composer(e: EntreeCompo): ResultatCompo {
   const photos: PhotoChoisie[] = [];
   const pagesCompo = 2 * (pose.magazine.planches.length - 1);
   for (const x of P.values()) {
-    const base = { id: x.id, chapitre: x.chap, note: x.s };
+    const v2 = x.v2 ? { ...(x.v2.notes ? { notes: x.v2.notes } : {}), ...(x.v2.cause ? { cause: x.v2.cause } : {}), ...(x.v2.placement ? { placement: x.v2.placement } : {}), ...(x.v2.serie ? { serie: `${x.v2.serie.id} · ${x.v2.serie.type}${x.v2.serie.elue ? " · l'élue" : ""}` } : {}) } : {};
+    const base = { id: x.id, chapitre: x.chap, note: x.s, ...v2 };
     /* E (18/11) : la raison en mots d'atelier ; la raison technique reste dans `detail` */
     if (x.ecart) photos.push({ ...base, etat: "ecartee", raison: motLaissee(x.ecart[0], pagesCompo), detail: x.ecart[0], regles: x.ecart[1].split(/,\s*/) });
     else if (dansMag.has(x.id)) photos.push({ ...base, etat: "posee", raison: motPlace(t.lieu.get(x.id)), detail: t.place.get(x.id) ?? "posée", regles: x.regles, place: t.place.get(x.id) });
@@ -170,6 +263,8 @@ export function composer(e: EntreeCompo): ResultatCompo {
     ajustement: t.ajustement ? { ...t.ajustement, phrase: phraseAjustement(t.ajustement.demandee, t.ajustement.obtenue, t.ajustement.photos) } : null,
     profil, sobre, chapitres: t.chapitres,
     decisions: journal, selection: { photos, compte }, controle,
+    ...(e.v2 ? { version: 2 as const, doubles: t.doubles, paires: t.paires } : {}),
+    ...(e.v2?.recadrage && e.v2.recadrage !== "aucun" ? { zones: Object.fromEntries([...P.values()].filter((x) => x.v2?.zone21).map((x) => [x.id, { coeur: x.v2!.zone21!.coeur ?? x.v2!.zone21!.zone, air: x.v2!.zone21!.zone, toutLeCadre: x.v2!.zone21!.toutLeCadre, recadrable: !!x.v2!.recadrable, conseil: x.v2!.conseil ?? null, ...(x.v2!.proteges ? { proteges: x.v2!.proteges.raison } : {}) }])) } : {}),
     couverture: pose.magazine.couverture && premiere ? { premiere: premiere.premiere, quatrieme: premiere.quatrieme ?? [] } : null,
   };
 }
