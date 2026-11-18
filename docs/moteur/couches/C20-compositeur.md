@@ -136,6 +136,21 @@ Branche `feat/analyse-et-v2` (T-218), partie de `feat/compositeur-v2` + `main`.
   3 en réserve (inchangé) ; personnes ou visages coupés : 0 et 0 (avant : 0 et 1 visage hors cadre) ; 59 photos protégées dont 57 jamais
   rognées en largeur ; 3 cadres pliés à la photo à 48 pages, 5 en « tout garder ». M-32 ne change rien sur ce lot (aucune double dense n'avait besoin d'une belle photo).
 
+## 18/11 au soir (suite) : la taille que la machine propose (N-62, N-61)
+Recette réelle de l'Analyse (65 photos) : « la machine propose » gardait tout, 44 pages pour 50 photos posées. Désormais
+(`compositeur/index.ts`) : `tailleDeLaMachine(photos gardées, densiteVisee(profil, sobre, stylisé))`, au multiple de 4, entre `VENDABLE_MIN`
+(24) et `VENDABLE_MAX` (60), relus au harnais contre la grille des prix ; la trame tient la taille par N-47b (densité serrée), la réserve « pas
+de place » en dernier. `autresTailles` offre toujours « Tout garder », et « Plus court » jamais sous 24 pages. `fondreChapitresMinuscules`
+(N-61). La pose traite une page presque vide comme une forme dure (v2.1), et le découpage fait payer un gabarit libre de trois photos au plus
+qui mêle une très large non recadrable (`PEN_LIBRE_LARGE_MELEE`).
+- Projet de test (`tests-v2-2/m-v22-machine`) : 60 pages, 110 posées, 50 en réserve « pas de place », 3,72 photos par double, 9 doubles à une
+  photo sur 29, 19 fautes (aucune page presque vide, aucune personne coupée) ; « tout garder » : 128 pages, 157 posées, 2,46 par double, 22 doubles
+  à une photo, 43 fautes.
+- Lots fabriqués déjà triés (harnais) : 30 photos → 24 pages (2,45 par double, sous la fourchette de l'événement : 24 est le plus petit vendu) ;
+  65 → 44 (2,62) ; 164 → 60 (4,38, plafonnée par 60 pages) ; 400 → 60 (3,38, 297 en réserve).
+- Limite : sur les lots de 30 et 65 photos, une ou deux pages presque vides restent, comme en « tout garder » (la pose ne trouve aucune forme
+  qui les remplisse) ; le harnais vérifie seulement que la taille proposée n'en ajoute pas.
+
 ## Historique
 - 18/11 : couche créée (T-217), branche `feat/editeur-qui-compose`.
 - 18/11 au soir : M-13, M-14, M-15 et trois défauts de recette, branche `fix/composer-dossier-reel`.

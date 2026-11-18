@@ -25,6 +25,33 @@ import { cadresDe } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { regleParId } from "@/lib/mise-en-page/regles";
 import { motsDeProjet } from "./regles-mots-interdits";
+import { PAGES_MAX_PUBLIC, PAGES_MIN as PAGES_MIN_GRILLE } from "@/lib/atelier/grille";
+import { PARAMETRES_PROFIL, REGLAGES_V2, autresTailles, densiteVisee, fondreChapitresMinuscules, tailleDeLaMachine } from "@/lib/mise-en-page/compositeur";
+
+/** N-62 : un lot DÉJÀ TRIÉ (aucun doublon, aucune floue), des jours de 14 photos, des gens sur 40 % des photos, des très larges. */
+function lotTrie(n: number, g = 5): PhotoCompo[] {
+  const r = graine(g + n);
+  const DIMS = { U: [4000, 1800], L: [4032, 3024], P: [3024, 4032] } as const;
+  const jours = Math.max(3, Math.round(n / 14));
+  const out: PhotoCompo[] = [];
+  for (let i = 0; i < n; i++) {
+    const jour = Math.floor((i * jours) / n), h = 8 + Math.floor(r() * 12), x = r();
+    const forme = (x < 0.15 ? "U" : x < 0.45 ? "P" : "L") as keyof typeof DIMS;
+    const pers = r() < 0.4 ? 1 + Math.floor(r() * 3) : 0;
+    const [l, hh] = DIMS[forme];
+    const ia: IAPhoto = { interet: 0.5 + 0.45 * r(), role: "satellite", sujet: pers ? "personnes" : "paysage", plan: pers ? "moyen" : "large", personnes: pers >= 3 ? "groupe" : (String(pers) as "0" | "1" | "2"), momentJournee: "jour", ambiance: "calme", lieuLu: null, couverture: false, personnesNombre: pers, forceImage: 0.4 + 0.5 * r(), pose: pers ? "spontane" : null, pointAccroche: true };
+    out.push({ id: `d${i}`, nom: `D_${String(i).padStart(4, "0")}.JPG`, l, h: hh, date: `2025-06-${String(1 + jour).padStart(2, "0")}T${String(h).padStart(2, "0")}:${String(Math.floor(r() * 59)).padStart(2, "0")}:00`, netteteRel: 0.8 + 0.5 * r(),
+      visages: Array.from({ length: pers }, (_, k) => ({ x: 0.3 + 0.12 * k, y: 0.25, l: 0.07, h: 0.09 })), zone: { x: 0.25, y: 0.2, l: 0.5, h: 0.6 }, palette: ["#4a6fa5", "#d9c7a7", "#2b2b2b"], calme: "haut", moment: null, ecart: null, ia, chapitre: null, empreinte: hex(r), numeroGalerie: 100 + i });
+  }
+  out.sort((a, b) => (a.date! < b.date! ? -1 : 1));
+  for (const p of out) p.moment = p.date!.slice(0, 12);
+  return out;
+}
+const densiteDe = (r: ResultatCompo): number => {
+  const inter = r.jet.magazine.planches.slice(1, -1);
+  const tot = inter.reduce((a, p) => a + [p.double, p.gauche, p.droite].reduce((b, d) => b + (d?.photos.filter((y) => y.photoId).length ?? 0), 0), 0);
+  return tot / Math.max(1, inter.length);
+};
 
 type Rapporter = (nom: string, reussi: boolean) => void;
 
@@ -181,6 +208,39 @@ export function verifierMepAnalyseV2(ok: Rapporter, titre: (t: string) => void):
   /* ── registre ── */
   ok("M-30 à M-34 confirmées par Mathias au registre ; N-60 et N-49b codées avec leur contrôle",
     ["M-30", "M-31", "M-32", "M-33", "M-34"].every((id) => regleParId(id)?.statut === "confirmee_mathias") && ["N-60", "N-49b"].every((id) => regleParId(id)?.statut === "codee" && !!regleParId(id)?.controle));
+
+  /* ── N-62 (18/11 au soir) : la machine propose la taille qui tient la densité visée du profil ── */
+  ok("N-62 : les tailles vendues sont celles de la grille des prix (24 à 60 pages au public), relues ici", REGLAGES_V2.VENDABLE_MIN === PAGES_MIN_GRILLE && REGLAGES_V2.VENDABLE_MAX === PAGES_MAX_PUBLIC);
+  ok("N-62 : pages ≈ 2 × photos gardées ÷ densité visée, au multiple de 4, bornées : 65 photos à 2,75 → 48 ; 30 → 24 (le plus petit vendu) ; 400 → 60 (le plus grand)",
+    tailleDeLaMachine(65, 2.75) === 48 && tailleDeLaMachine(30, 3.5) === 24 && tailleDeLaMachine(400, 2.6) === 60 && densiteVisee("long_voyage_famille", true, false) === 2.6);
+  for (const n of [30, 65, 164, 400]) {
+    const rl = composer({ photos: lotTrie(n), voyage: null, lieux: null, fiche: {}, titre: "Essai", piles: 0, quand: "2026-11-18T00:00:00.000Z", v2: REGLAGES_EDITEUR });
+    const d = densiteDe(rl), m = PARAMETRES_PROFIL[rl.profil].moyenne;
+    const borne = rl.pages === REGLAGES_V2.VENDABLE_MIN ? "min" : rl.pages === REGLAGES_V2.VENDABLE_MAX ? "max" : null;
+    const dansLaFourchette = d >= m[0] - 0.5 && d <= m[1] + 0.5;
+    /* à une borne vendue, la densité ne peut pas suivre : au plus petit elle descend (jamais sous 2), au plus grand elle monte jusqu'au
+       plafond du profil (N-47b) avant la réserve « pas de place » */
+    const tenue = borne === "min" ? d >= 2 && d <= m[1] + 0.5 : borne === "max" ? d >= m[0] - 0.5 && d <= PARAMETRES_PROFIL[rl.profil].plafond + 1e-9 : dansLaFourchette;
+    const rien = rl.selection.photos.filter((p) => p.etat === "reserve" && /pas de place/.test(p.detail ?? "")).every((p) => !rl.selection.photos.find((q) => q.id === p.id)?.regles.includes("atelier"));
+    ok(`N-62 : ${n} photos déjà triées : ${rl.pages} pages proposées (« la machine propose »), ${densiteDe(rl).toFixed(2)} photos par double (profil ${rl.profil}, fourchette ${m.join(" à ")}${borne ? `, taille ${borne === "min" ? "la plus petite" : "la plus grande"} vendue` : ""}), jamais sous 2`,
+      rl.origineTaille === "machine" && rl.pages % 4 === 0 && rl.pages >= REGLAGES_V2.VENDABLE_MIN && rl.pages <= REGLAGES_V2.VENDABLE_MAX && tenue && d >= 2 && rien);
+    ok(`M-31 : ${n} photos, la taille proposée : aucune personne ni aucun visage coupé`, !rl.controle.fautes.some((f) => f.regle === "M-31" || f.faute === "visage coupé"));
+    const vides = rl.controle.fautes.filter((f) => f.regle === "M-07").length;
+    const tout = composer({ photos: lotTrie(n), voyage: null, lieux: null, fiche: { taille: "tout" }, titre: "Essai", piles: 0, quand: "2026-11-18T00:00:00.000Z", v2: REGLAGES_EDITEUR });
+    ok(`M-07 : ${n} photos : la taille proposée n'ajoute aucune page presque vide à « tout garder » (${vides} contre ${tout.controle.fautes.filter((f) => f.regle === "M-07").length})`,
+      vides <= tout.controle.fautes.filter((f) => f.regle === "M-07").length);
+  }
+  const au = autresTailles(60, "machine", null);
+  ok("N-62 : à côté de la taille proposée, « Tout garder » et « Plus court » (jamais sous 24 pages)", au.some((a) => a.taille === "tout") && au.every((a) => a.taille === "tout" || (a.taille as number) >= 24));
+
+  /* ── N-61 : un chapitre minuscule se fond dans son voisin ── */
+  const Pc = charger(entree(lot(20, 3)), null, new Map());
+  const xs = [...Pc.values()];
+  xs.forEach((x, i) => { x.chap = i < 9 ? 1 : i < 11 ? 2 : 3; });
+  const journalC: { quoi: string; ou: string; detail: string; regles: string[] }[] = [];
+  fondreChapitresMinuscules(Pc, xs, new Map([[1, "Un"], [2, "Deux"], [3, "Trois"]]), journalC);
+  ok("N-61 : un chapitre de 2 photos se fond dans le précédent (il ne coûte plus une double d'ouverture) ; les autres ne bougent pas ; la décision le dit",
+    xs.slice(9, 11).every((x) => x.chap === 1) && xs.slice(11).every((x) => x.chap === 3) && journalC.some((d) => d.regles.includes("N-61")));
 
   /* ── M-01 : aucune donnée d'un projet dans le code neuf ── */
   const fichiers = [

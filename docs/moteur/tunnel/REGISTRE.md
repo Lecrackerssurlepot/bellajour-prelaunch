@@ -3,11 +3,11 @@
 > **Fichier généré, ne pas éditer.** Source : `src/lib/mise-en-page/regles/` ; régénérer par
 > `npx tsx --tsconfig tsconfig.json scripts/regles-doc.ts`. Le harnais refuse ce fichier s'il n'est pas à jour.
 
-Version du registre : `g6d9b6025` · 361 règles.
+Version du registre : `gec1d2405` · 363 règles.
 
-Par statut : hypothese 298 · confirmee_mathias 31 · codee 32 · en_ombre 0 · retiree 0.
+Par statut : hypothese 298 · confirmee_mathias 31 · codee 34 · en_ombre 0 · retiree 0.
 
-Par domaine : Analyse 18 · Sélection 67 · Structure 87 · Pose 57 · Couleur 65 · Filtres 18 · Typographie 22 · Couverture 17 · Textes 10.
+Par domaine : Analyse 18 · Sélection 67 · Structure 89 · Pose 57 · Couleur 65 · Filtres 18 · Typographie 22 · Couverture 17 · Textes 10.
 
 Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à préciser » : la condition ou l'action n'est pas encore
 écrite en données mesurables (règle reprise d'un cahier). Les réglages sont ceux de `editeur/reglages.ts`, avec leur valeur actuelle.
@@ -107,7 +107,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-145 | préférence (1) | hypothese | Une photo de fond de rafale mieux exposée que la « meilleure » peut revenir par « remplacement » si le visage principal est net ; l'IA donne la raison. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-146 | préférence (1) | hypothese | Ce que la machine écarte, elle le dit dans la réserve en un mot (floue, doublon, capture, œuvre, faible) pour qu'un clic la rende. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Structure (87)
+## Structure (89)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -135,6 +135,8 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | N-50 | préférence (2) | codee · contrôle compositeur/trame.ts#PEN_COUPE_PAIRE | Les paires et les séries sont indivisibles ; un détail n'est jamais seul.<br>**Quand** deux photos forment une paire (pancarte et sujet, portrait et ambiance, large et détail) ou une série<br>**Alors** les couper entre deux doubles coûte ; une double faite de détails seuls coûte | tous |  | Notion Av #08, #16, #18 ; S-032, 2026-11-18 |
 | N-52 | interdit | codee · contrôle compositeur/trame.ts#ENTORSE_PLACES | La petite entorse ne quitte jamais la journée ni le chapitre, et ne bouge que d'une double.<br>**Quand** une pancarte ou un détail rejoint son sujet<br>**Alors** quatre places au plus, la même journée, une heure d'écart au plus | tous |  | M-22, 2026-11-18 |
 | N-59 | interdit | codee · contrôle compositeur/controle.ts#PAGE_PRESQUE_VIDE | Aucune page presque vide, même colorée : seul un texte écrit tient une page sous 30 % de photos.<br>**Quand** une page est imprimée à moins de 30 % sans texte écrit<br>**Alors** faute dure (M-07 redevenue dure) ; le découpage évite les doubles d'une ou deux photos dont aucune ne tient une page, et la belle verticale va à deux | tous |  | M-07, M-29, 2026-11-18 |
+| N-61 | interdit | codee · contrôle compositeur/index.ts#fondreChapitresMinuscules | Un chapitre minuscule ne coûte pas une double d'ouverture : il se fond dans son voisin.<br>**Quand** un chapitre garde moins de 4 photos (réglage de départ)<br>**Alors** ses photos rejoignent le chapitre voisin le plus proche dans le temps (le précédent, sinon le suivant), qui garde son nom ; la décision le dit | tous |  | recette réelle du 18/11 au soir, 2026-11-18 |
+| N-62 | interdit | codee · contrôle compositeur/index.ts#tailleDeLaMachine | La taille que la machine propose tient la densité visée du profil, dans les tailles que le produit vend.<br>**Quand** le nombre de pages n'est ni commandé ni choisi<br>**Alors** pages ≈ 2 × photos gardées ÷ densité visée (N-48b), au multiple de 4 le plus proche, entre la plus petite et la plus grande taille de la grille des prix ; la composition tient cette taille en densifiant (N-47b), la réserve « pas de place » en dernier ; « Tout garder » et « Plus court » restent proposés à côté | tous |  | recette réelle du 18/11 au soir (44 pages pour 50 photos, 128 pages pour 157), 2026-11-18 |
 | N-49b | préférence (2) | codee · contrôle compositeur/trame.ts#admise | Une belle photo entre dans une double dense seulement avec du sens, et en héros.<br>**Quand** une double de six photos et plus contient une belle photo du dixième le plus fort<br>**Alors** admise si elle forme une paire ou une série avec la double, ou si la moitié des autres au moins sont du même moment ou prises à 30 minutes d'elle ; seules restent les recettes qui la posent dans le plus grand cadre | tous |  | M-32, 2026-11-18 |
 | S-049 | préférence (1) | hypothese · banc (jouée) | Page 1 = page droite seule : la plus forte photo des 3 premiers moments, ou, sans photo forte, la plus belle d'ailleurs (accroche). | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-050 | préférence (1) | hypothese · banc (jouée) | L'ouverture annonce le profil : P1 un lieu monumental avec une personne à l'échelle ; P3 un duo ; P2 une image de nuit ou d'action ; P4 l'instant d'avant le départ ; P5 les gens en groupe ; P6 la ville avec une personne. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |

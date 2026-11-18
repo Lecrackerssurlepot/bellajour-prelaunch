@@ -24,6 +24,8 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
   ÉCRITE, PAS APPLIQUÉE. Sans elle la route range ces leçons sous `pretri_renverse` (préfixe `ecart_proposition · `) : rien ne bloque,
   elles comptent quand même par règle à l'écran « Règles ».
 - La route `photos` lit en plus `occasion` et `histoire` du dossier (colonnes d'origine), pour pré-remplir l'Analyse. Lecture seule.
+- 18/11 au soir (suite, recette réelle de Mathias : 58 appels réels, 0,26 $ payés pour 0,23 $ annoncés) : défaut bloquant corrigé sur la
+  même branche : « la machine propose » proposait trop de pages ; désormais la densité visée du profil, entre 24 et 60 pages (N-62, N-61).
 - Le rejeu sort aussi `magazine-editeur.pdf` par l'export PDF de l'éditeur (`pdf.ts`). Projet de test : 0 personne coupée (48 pages et
   « tout garder »), contre 1 visage coupé dans « tout garder » avant.
 

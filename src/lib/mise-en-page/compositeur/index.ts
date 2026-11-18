@@ -22,7 +22,44 @@ import { themeDeLOccasion } from "./fiche";
 import type { EntreeCompo as Entree, PhotoCompo } from "./types";
 import { ImpasseComposition, construireTrame, phraseAjustement } from "./trame";
 import { motLaissee, motPlace } from "./mots";
-import { REGLAGES_COMPO } from "./reglagesCompositeur";
+import { REGLAGES_COMPO, REGLAGES_V2 } from "./reglagesCompositeur";
+import type { Ph } from "./selection";
+import type { Profil } from "./types";
+
+/** N-48b : la densité visée d'un profil : le milieu de sa fourchette, un demi-cran plus bas en sobre, plus haut en stylisé (M-06). */
+export function densiteVisee(profil: Profil, sobre: boolean, stylise: boolean): number {
+  const m = PARAMETRES_PROFIL[profil].moyenne;
+  return (m[0] + m[1]) / 2 + (sobre ? -0.25 : stylise ? 0.25 : 0);
+}
+
+/** N-62 : la taille que la machine propose : pages ≈ 2 × photos gardées ÷ densité visée, au multiple de 4 le plus proche, bornée par les
+ *  tailles vendues (`VENDABLE_MIN`, `VENDABLE_MAX`, la grille des prix). */
+export function tailleDeLaMachine(photos: number, densite: number): number {
+  const brut = (2 * photos) / Math.max(0.5, densite);
+  const p = Math.round(brut / 4) * 4;
+  const min = Math.ceil(REGLAGES_V2.VENDABLE_MIN / 4) * 4, max = Math.floor(REGLAGES_V2.VENDABLE_MAX / 4) * 4;
+  return Math.max(min, Math.min(max, p));
+}
+
+/**
+ * N-61 : un chapitre de moins de `CHAPITRE_PHOTOS_MIN` photos gardées se FOND dans son voisin le plus proche dans le temps (le précédent,
+ * sinon le suivant) : il ne coûte plus une double d'ouverture. Le voisin garde son nom. Rien ne bouge s'il n'y a qu'un chapitre.
+ */
+export function fondreChapitresMinuscules(P: ReadonlyMap<string, Ph>, cand: readonly Ph[], noms: ReadonlyMap<number, string>, journal: Decision[]): void {
+  const min = REGLAGES_V2.CHAPITRE_PHOTOS_MIN;
+  for (;;) {
+    const compte = new Map<number, number>();
+    for (const x of cand) if (x.chap !== null) compte.set(x.chap, (compte.get(x.chap) ?? 0) + 1);
+    const chaps = [...compte.keys()].sort((a, b) => a - b);
+    if (chaps.length < 2) return;
+    const petit = chaps.filter((c) => compte.get(c)! < min).sort((a, b) => compte.get(a)! - compte.get(b)! || a - b)[0];
+    if (petit === undefined) return;
+    const i = chaps.indexOf(petit);
+    const vers = i > 0 ? chaps[i - 1] : chaps[i + 1];
+    for (const x of P.values()) if (x.chap === petit) x.chap = vers;
+    journal.push({ quoi: `chapitre ${petit}`, ou: "structure", detail: `${compte.get(petit)} photo${compte.get(petit)! > 1 ? "s" : ""} gardée${compte.get(petit)! > 1 ? "s" : ""} seulement : fondu dans « ${noms.get(vers) ?? `chapitre ${vers}`} » (pas de double d'ouverture pour lui)`, regles: ["N-61"] });
+  }
+}
 import { templateParId, type Magazine } from "../magazine";
 import type { Decision, EntreeCompo, EtatPhoto, IssueCompo, PhotoChoisie, ResultatCompo } from "./types";
 
@@ -131,6 +168,18 @@ export function composer(e0: EntreeCompo): ResultatCompo {
     selV2 = entonnoirV2(P, fiche.personnes, journal);
   }
   const { cand } = selV2 ?? entonnoir(P, e.piles, journal);
+  /* N-61 (18/11 au soir) : un chapitre minuscule ne coûte pas une double d'ouverture : il se fond dans son voisin */
+  if (e.v2) fondreChapitresMinuscules(P, cand, chap.nom, journal);
+  /* N-62 (18/11 au soir, recette réelle : 44 pages pour 50 photos) : quand la machine propose la taille, c'est celle qui TIENT la densité
+     visée du profil (N-48b) sur les photos gardées, au multiple de 4, dans les tailles que le produit sait vendre ; « tout garder » reste
+     proposé à côté. La composition tient ensuite cette taille en densifiant (N-47b) ; la réserve « pas de place » n'est que le dernier recours */
+  if (e.v2 && tt.origine === "machine") {
+    const d = densiteVisee(profil, sobre, fiche.ambiance === "stylise");
+    const p = tailleDeLaMachine(cand.length, d);
+    fiche.taille = p;
+    tt.taille = p;
+    journal.push({ quoi: "taille", ou: "magazine", detail: `la machine propose ${p} pages : ${cand.length} photos gardées à ${d.toFixed(2)} photos par double (densité visée du profil), entre ${REGLAGES_V2.VENDABLE_MIN} et ${REGLAGES_V2.VENDABLE_MAX} pages`, regles: ["N-62", "N-48b", "M-15"] });
+  }
   /* M-14 : pas de quoi composer : la cause en clair, et le geste */
   if (cand.length < REGLAGES_COMPO.PHOTOS_MIN) {
     const tous = [...P.values()];

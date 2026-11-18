@@ -233,9 +233,10 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
       && m48.origineTaille === "commandee" && m48.pages === 48 && m48.decisions.some((d) => d.detail === "48 pages : le nombre commandé")
       && mChoisi.origineTaille === "choisie" && mChoisi.pages === 24);
   const au = autresTailles(92, "machine", null), auC = autresTailles(48, "commandee", 48), auCh = autresTailles(24, "choisie", 48);
-  ok("M-15 : après la proposition, les autres tailles (« Plus court », « Tout garder », « Commandé ») ; chacune sera composée pour donner ses vrais chiffres",
-    au.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:48" && auC.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:24,Tout garder:tout"
-      && auCh.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:12,Tout garder:tout,Commandé:48" && autresTailles(28, "machine", null).map((a) => a.taille).join() === "16");
+  /* N-62 (18/11 au soir) : « Tout garder » est toujours offert ; « Plus court » jamais sous le plus petit magazine vendu (24 pages) */
+  ok("M-15, N-62 : après la proposition, les autres tailles (« Plus court », jamais sous 24 pages, « Tout garder », toujours, « Commandé ») ; chacune sera composée pour donner ses vrais chiffres",
+    au.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:48,Tout garder:tout" && auC.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:24,Tout garder:tout"
+      && auCh.map((a) => `${a.mot}:${a.taille}`).join() === "Tout garder:tout,Commandé:48" && autresTailles(28, "machine", null).map((a) => a.taille).join() === "tout");
   /* 18/11 soir : les questions vivent dans la page Analyse (`Analyse.tsx`) */
   const questions = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/Analyse.tsx"), "utf8");
   ok("M-15 : la feuille des questions ne demande plus le nombre de pages (aucun bouton « N pages », aucun « Tout garder ») ; une taille gardée d'avant n'est pas reprise ; chaque question peut rester vide",

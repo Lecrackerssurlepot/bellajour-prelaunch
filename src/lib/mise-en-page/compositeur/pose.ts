@@ -20,6 +20,8 @@ import { cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
 import { PROTEGE_TOLERANCE, zoneTient, zoomMiseEnAvant } from "./recadrageV2";
 /** v2.1 : le coût du zoom (P-14) n'empêche pas à lui seul un resserrement proposé (N-58). */
 const R2_ZOOM = 0.8;
+/** v2.1 (M-07 dure) : la part imprimée sous laquelle une page sans texte écrit est presque vide (`PAGE_PRESQUE_VIDE` du contrôle). */
+const PAGE_PRESQUE_VIDE_POSE = 0.3;
 import {
   GABARITS_COUVERTURE, GABARIT_COUVERTURE_DEFAUT, cadresPhotoCouverture, cadresTexteCouverture, gabaritCouverture, titreSurLeSujet,
   type Couverture, type CadreCouverture, type GabaritCouverture,
@@ -1417,7 +1419,16 @@ export class Poseur {
     /* second tour */
     let meilleur: { c: Candidat; k: Construit } | null = null;
     const construits = new Map<Candidat, Construit>();
-    const dur = (k: Construit) => k.photos.some((b) => b.visages_coupes > 0 || b.visages_hors > 0 || b.personnes_coupees > 0);
+    /* v2.1 (M-07 dure, N-59) : une page imprimée sous 30 % sans texte écrit est une faute DURE au contrôle : la pose la traite comme un
+       visage coupé (on pose les formes suivantes tant qu'elle reste), sauf sur une page de titre (ouverture, itinéraire) */
+    const idee = String(this.trame.planches.find((x) => x.n === partie.n)?.idee ?? "");
+    const pageDeTitre = idee === "ouverture" || idee === "itineraire";
+    const pageVide = (k: Construit) => !!this.trame.recadrage && !pageDeTitre && k.couverturePages.some((pg) => {
+      if (pg.part >= PAGE_PRESQUE_VIDE_POSE) return false;
+      const coupe = COUPES[pg.page as "gauche" | "droite"];
+      return !k.textes.some((t) => !!t.contenu && t.contenu.trim() !== "" && !!t.cadre && inter(t.cadre, coupe) > 0);
+    });
+    const dur = (k: Construit) => k.photos.some((b) => b.visages_coupes > 0 || b.visages_hors > 0 || b.personnes_coupees > 0) || pageVide(k);
     /* P3-00 : tant que la meilleure forme coupe un visage (ou sort un visage principal), on pose les suivantes, par paquets, jusqu'à 96 */
     for (let debut = 0; debut < Math.min(ouverts.length, 96); debut += REGLAGES_POSE.TOP_K) {
       if (meilleur && !dur(meilleur.k)) break;

@@ -466,7 +466,7 @@ export function decouperV2(seq: Ph[], nd: number, sommetId: string | null, mode:
           }
           return c;
         };
-        const ajuste = (x: Recette): Recette => [x[0] + petiteRespiration + pageVide(x) + toutCadre(x) + pageRigide(x) + (x[1].idee === "seule" && !pleinDef(g[0]) ? R2.PEN_SEULE_PETITE : 0) + (x[1].idee === "libre" ? (U.length && V.length ? 1.0 : 0) + (U.length >= 2 ? 0.8 : 0) : 0) + (g.length >= 4 && U.some((y) => y.nbPers > 0) ? 0.6 : 0), x[1]];
+        const ajuste = (x: Recette): Recette => [x[0] + petiteRespiration + pageVide(x) + toutCadre(x) + pageRigide(x) + (x[1].idee === "seule" && !pleinDef(g[0]) ? R2.PEN_SEULE_PETITE : 0) + (x[1].idee === "libre" ? (U.length && V.length ? 1.0 : 0) + (U.length >= 2 ? 0.8 : 0) + (cd.recadrage && g.length <= 3 && U.length && V.length ? R2.PEN_LIBRE_LARGE_MELEE : 0) : 0) + (g.length >= 4 && U.some((y) => y.nbPers > 0) ? 0.6 : 0), x[1]];
         let best = ajuste(rsH[0]);
         for (const x0 of rsH) { const x = ajuste(x0); if (x[0] < best[0]) best = x; }
         let c = best[0] + (R2.W_CIBLE * (g.length - v.cible) ** 2) / v.cible + (g.length < v.min ? 2 : 0) + (maigre ? R2.PEN_PAGE_MAIGRE_V21 : 0);

@@ -198,6 +198,12 @@ export const REGLES_V2 = {
   BELLE_DPI_PLEINE: r(200, "N-49", "D6 : une belle photo va en pleine page à 200 ppp"),
   BELLE_DPI_DOUBLE: r(150, "N-49", "D6 : 150 ppp acceptés en double pour un paysage sans visage (provisoire, Cloudprinter inconnu)"),
   JOUR_FORT_PART: r(0.2, "N-53", "un jour fort : dans les 20 % des jours les plus photographiés (S-068)"),
+  /* 18/11 au soir (recette réelle de l'Analyse : 44 pages pour 50 photos, 128 pages pour 157) : la machine propose la taille qui TIENT la
+     densité visée du profil, dans les tailles que le produit sait vendre */
+  VENDABLE_MIN: r(24, "N-62", "le plus petit magazine vendu : la grille des prix (src/lib/atelier/grille.ts, PAGES_MIN), relue au harnais"),
+  VENDABLE_MAX: r(60, "N-62", "le plus grand magazine vendu au public : la grille des prix (PAGES_MAX_PUBLIC), relue au harnais"),
+  PEN_LIBRE_LARGE_MELEE: r(4, "N-59", "v2.1 : trois photos au plus en gabarit libre, dont une très large qui ne se recadre pas, laissent les pages presque vides (M-07 dure) : la recette coûte comme une page rigide"),
+  CHAPITRE_PHOTOS_MIN: r(4, "N-61", "un chapitre de moins de 4 photos gardées ne coûte pas une ouverture : il se fond dans son voisin (réglage de départ)"),
 } as const satisfies Table;
 export const REGLAGES_V2 = valeurs(REGLES_V2);
 

@@ -4,7 +4,7 @@
  * saisie par Mathias prime sur les deux »). Module pur.
  */
 
-import { REGLAGES_COMPO } from "./reglagesCompositeur";
+import { REGLAGES_COMPO, REGLAGES_V2 } from "./reglagesCompositeur";
 import { T, moisFr, plageFr } from "./selection";
 import { AMBIANCES_FICHE, PROFILS, THEMES, type AmbianceFiche, type Fiche, type PhotoCompo, type Profil, type Theme, type Voyage } from "./types";
 
@@ -126,8 +126,10 @@ export function autresTailles(pagesProposees: number, origine: "commandee" | "ma
   const vise = Math.floor((pagesProposees * 0.6) / 4) * 4;
   /* une taille usuelle sous 60 % de la proposition ; un petit magazine (sous la plus petite usuelle) : 60 % arrondi au multiple de 4 */
   const court = [...TAILLES_PROPOSEES].filter((t) => t <= vise).pop() ?? (vise >= REGLAGES_COMPO.PAGES_MIN * 2 ? vise : undefined);
-  if (court && court < pagesProposees) out.push({ mot: "Plus court", taille: court });
-  if (origine !== "machine") out.push({ mot: "Tout garder", taille: "tout" });
+  /* N-62 : jamais plus court que le plus petit magazine vendu (la grille des prix) */
+  if (court && court < pagesProposees && court >= REGLAGES_V2.VENDABLE_MIN) out.push({ mot: "Plus court", taille: court });
+  /* N-62 (18/11 au soir) : « tout garder » est toujours offert à côté de la taille proposée, avec ses vrais chiffres */
+  out.push({ mot: "Tout garder", taille: "tout" });
   if (typeof pagesCommandees === "number" && pagesCommandees >= 4 && origine !== "commandee" && pagesCommandees !== pagesProposees) out.push({ mot: "Commandé", taille: pagesCommandees });
   return out;
 }

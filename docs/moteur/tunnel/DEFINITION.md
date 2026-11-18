@@ -28,6 +28,17 @@ La densité n'est pas un curseur : c'est une décision par double, prise par cet
 | N-48b | le profil et l'ambiance | densité visée = milieu de la fourchette du profil ; sobre : un demi-cran plus bas ; stylisée : un demi-cran plus haut | M-06 | aucune |
 | N-47b | la taille (décision 1, réglage « serrée ») | si les bonnes photos ne tiennent pas, la densité monte jusqu'au plafond du profil (moyenne sur toutes les doubles) AVANT toute réserve « pas de place » | M-16 | réglage « avant » : 2,9 photos par double, le reste en réserve |
 
+## 0 quater. La taille que la machine propose (N-62, N-61, 18/11 au soir)
+
+Constat de la recette réelle de l'Analyse : « la machine propose » gardait tout et les pages suivaient (44 pages pour 50 photos posées,
+128 pages pour 157 sur le projet de test), à peine plus d'une photo par page.
+
+| Règle | Si… | Alors… |
+|---|---|---|
+| N-62 | le nombre de pages n'est ni commandé ni choisi | pages ≈ 2 × photos gardées ÷ densité visée du profil (N-48b), au multiple de 4 le plus proche, entre 24 et 60 pages (la grille des prix, `src/lib/atelier/grille.ts` : `PAGES_MIN`, `PAGES_MAX_PUBLIC`) ; la composition tient cette taille en densifiant (N-47b) ; « pas de place » en dernier recours, par l'ordre de sortie (jamais une photo gardée ou aimée) ; « Tout garder » et « Plus court » (jamais sous 24) restent proposés |
+| N-61 | un chapitre garde moins de 4 photos (RD) | il se fond dans son voisin le plus proche dans le temps : pas de double d'ouverture pour lui |
+| N-59 | trois photos au plus en gabarit libre, dont une très large qui ne se recadre pas | la recette coûte (`PEN_LIBRE_LARGE_MELEE`) ; à la pose, une page presque vide sans texte est traitée comme une faute dure (les formes suivantes sont essayées) |
+
 ## 0 ter. Jamais une personne coupée (M-31, N-60, 18/11 au soir) : interdit absolu
 
 | Règle | Si… | Alors… |
