@@ -926,6 +926,35 @@
   border: 1px solid var(--bj-veil-12);
   border-radius: 14px;
 }
+/* Les rendez-vous pris depuis /partenaires (page Agendas). */
+.eca-root .eca-rdvp {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.eca-root .eca-rdvp-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid var(--bj-veil-12);
+  border-radius: 14px;
+}
+.eca-root .eca-rdvp-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+}
+.eca-root .eca-rdvp-quand::first-letter {
+  text-transform: uppercase;
+}
 .eca-root .eca-agenda-nom {
   margin: 0;
   font-size: 18px;

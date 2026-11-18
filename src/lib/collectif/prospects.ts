@@ -17,7 +17,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { plagesOccupees, poserEvenementComplet, type Raison } from "./agenda";
+import { plagesOccupees, poserEvenementComplet, retirerEvenement, type Raison } from "./agenda";
 import { chevauche, REGLES_RDV, type Creneau, type Plage } from "./creneaux";
 import { colonneAbsente, tableAbsente } from "./migration";
 import type { DemandeProspect } from "./prospectsSaisie";
@@ -153,6 +153,62 @@ export async function reserverProspect(supabase: SupabaseClient, demande: Demand
   console.info(`[partenaires] rendez-vous pris (${demande.organisation})`);
 
   return { ok: true, rdv: { id: ligne.id, debut: creneau.debut, fin: creneau.fin, visio: ev.valeur.visio, avec: equipe.map((p) => p.inter.prenom) } };
+}
+
+/* ───────────── l'atelier : voir les rendez-vous pris, en annuler un (18/11) ───────────── */
+
+/** Un rendez-vous de prospect, tel que l'atelier le lit. Jamais rendu à une page publique. */
+export type RdvProspectAtelier = {
+  id: string;
+  nom: string;
+  organisation: string;
+  email: string;
+  telephone: string | null;
+  message: string | null;
+  debut: string;
+  visio_url: string | null;
+};
+
+/** Les rendez-vous PRIS et à venir, le plus proche d'abord. `null` sans la migration 20261118. */
+export async function lireRdvProspects(supabase: SupabaseClient, maintenant: Date): Promise<RdvProspectAtelier[] | null> {
+  const { data, error } = await supabase
+    .from("collectif_rdv_prospects")
+    .select("id, nom, organisation, email, telephone, message, debut, visio_url")
+    .eq("statut", "pris")
+    .gt("fin", maintenant.toISOString())
+    .order("debut")
+    .limit(100);
+  if (error) return null;
+  return ((data ?? []) as RdvProspectAtelier[]).map((r) => ({ ...r, debut: new Date(r.debut).toISOString() }));
+}
+
+/**
+ * Annuler un rendez-vous de prospect, depuis l'atelier. La LIGNE d'abord
+ * (conditionnée à « pris » : deux clics n'annulent qu'une fois), puis
+ * l'événement chez l'organisateur : Google prévient lui-même le prospect et
+ * les autres invités. Si Google ne retire pas l'événement, la ligne reste
+ * annulée (le créneau est libéré) et l'atelier lit quoi retirer à la main.
+ */
+export async function annulerProspect(supabase: SupabaseClient, id: string): Promise<{ ok: true; avertissement: string | null } | { ok: false; echec: EchecProspect }> {
+  const { data: ligne, error } = await supabase
+    .from("collectif_rdv_prospects")
+    .update({ statut: "annule", annule_le: new Date().toISOString() })
+    .eq("id", id)
+    .eq("statut", "pris")
+    .select("id, organisation, organisateur_cle, google_event_id")
+    .maybeSingle<{ id: string; organisation: string; organisateur_cle: string | null; google_event_id: string | null }>();
+  if (error) return { ok: false, echec: { statut: 500, error: "ecriture_impossible", message: "Le rendez-vous n'a pas été annulé." } };
+  if (!ligne) return { ok: false, echec: { statut: 404, error: "introuvable", message: "Ce rendez-vous est déjà annulé." } };
+
+  const aLaMain = "Annulé ici, mais l'événement reste dans l'agenda : à supprimer à la main.";
+  if (!ligne.google_event_id) return { ok: true, avertissement: null };
+  if (!ligne.organisateur_cle) return { ok: true, avertissement: aLaMain };
+  const { data: inter } = await supabase.from("collectif_interlocuteurs").select("agenda_id").eq("cle", ligne.organisateur_cle).maybeSingle<{ agenda_id: string | null }>();
+  const connexion = await connexionDe(supabase, ligne.organisateur_cle);
+  if (!inter?.agenda_id || !connexion) return { ok: true, avertissement: aLaMain };
+  const ev = await retirerEvenement(inter.agenda_id, ligne.google_event_id, connexion);
+  console.info(`[partenaires] rendez-vous annulé par l'atelier (${ligne.organisation})`);
+  return { ok: true, avertissement: ev.ok ? null : aLaMain };
 }
 
 export const DUREE_APPEL_MINUTES = REGLES_RDV.dureeMinutes;
