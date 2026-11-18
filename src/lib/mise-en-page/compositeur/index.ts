@@ -213,6 +213,7 @@ export function composer(e0: EntreeCompo): ResultatCompo {
     profil, sobre, chapitres: t.chapitres,
     decisions: journal, selection: { photos, compte }, controle,
     ...(e.v2 ? { version: 2 as const, doubles: t.doubles } : {}),
+    ...(e.v2?.recadrage && e.v2.recadrage !== "aucun" ? { zones: Object.fromEntries([...P.values()].filter((x) => x.v2?.zone21).map((x) => [x.id, { coeur: x.v2!.zone21!.coeur ?? x.v2!.zone21!.zone, air: x.v2!.zone21!.zone, toutLeCadre: x.v2!.zone21!.toutLeCadre, recadrable: !!x.v2!.recadrable, conseil: x.v2!.conseil ?? null }])) } : {}),
     couverture: pose.magazine.couverture && premiere ? { premiere: premiere.premiere, quatrieme: premiere.quatrieme ?? [] } : null,
   };
 }

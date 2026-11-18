@@ -31,7 +31,7 @@ import { cadresDe, type Magazine } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import type { StyleMagazine } from "@/lib/mise-en-page/style";
 import { REGLAGES_V2_DEFAUT, type CorrectionsAtelier, type Fiche, type ReglagesV2 } from "@/lib/mise-en-page/compositeur";
-import { comparaison, magazinePdf, planchesContact, planchesEnImages, posesEtLaissees, type Sources, type Variante } from "./compositeur-planche-tests";
+import { comparaison, magazinePdf, planchesContact, planchesEnImages, posesEtLaissees, sectionRognes, type Sources, type Variante } from "./compositeur-planche-tests";
 
 type J = Record<string, unknown>;
 const lire = (f: string): J => JSON.parse(fs.readFileSync(f, "utf8")) as J;
@@ -114,7 +114,7 @@ function entree(): Omit<EntreeCompo, "fiche" | "couverture"> {
         ...(k.couverture ? { rangCouverture: nombre(kc.rang) } : {}),
       } : null,
       chapitre: null,
-      empreinte: chaine(c2.dhash), numeroGalerie: nombre(c1.numeroGalerie),
+      empreinte: chaine(c2.dhash), numeroGalerie: nombre(c1.numeroGalerie), chaleur: chaine(c2.chaleur), recadrageConseil: chaine(rg.recadrage) || null,
     };
   });
   const voyage: Voyage = {
@@ -220,6 +220,7 @@ async function matrice(fichier: string | null, seule: LigneMatrice | null): Prom
   const s: Sources = {
     v1024: V1024, v320: path.join(banc, "cache", projet, "v320"), fichierDe, dims: new Map(e0.photos.map((p) => [p.id, { l: p.l, h: p.h }])),
     personnes: new Map(e0.photos.map((p) => [p.id, Math.max(p.visages.length, p.ia?.personnesNombre ?? 0, p.ia?.personnes === "groupe" ? 3 : Number(p.ia?.personnes ?? 0) || 0)])),
+    chaleur: new Map(e0.photos.filter((p) => p.chaleur).map((p) => [p.id, p.chaleur!])),
   };
   const base = fichier ? path.dirname(path.resolve(fichier)) : process.cwd();
   const lignes: LigneMatrice[] = seule ? [seule] : (JSON.parse(fs.readFileSync(fichier!, "utf8")) as LigneMatrice[]);
@@ -238,13 +239,15 @@ async function matrice(fichier: string | null, seule: LigneMatrice | null): Prom
     if (!i.ok) { console.log(`${l.nom} : ${i.phrase} ${i.cause} (${i.technique})`); continue; }
     const r = i.r;
     const d = path.join(sortie, l.nom);
+    fs.rmSync(d, { recursive: true, force: true });
     fs.mkdirSync(d, { recursive: true });
-    fs.writeFileSync(path.join(d, "selection.json"), JSON.stringify({ reglages: (l.version ?? 2) === 2 ? reglages : "v1", reponses, chapitres: r.chapitres, doubles: r.doubles ?? null, selection: r.selection, controle: r.controle, decisions: r.decisions }, null, 1));
+    fs.writeFileSync(path.join(d, "selection.json"), JSON.stringify({ reglages: (l.version ?? 2) === 2 ? reglages : "v1", reponses, chapitres: r.chapitres, doubles: r.doubles ?? null, zones: r.zones ?? null, selection: r.selection, controle: r.controle, decisions: r.decisions }, null, 1));
     fs.writeFileSync(path.join(d, "premier-jet.json"), JSON.stringify(r.jet, null, 1));
     const petites = await planchesEnImages(r.jet.magazine, s, 1.1);
     await planchesContact(petites, path.join(d, "planche-contact.jpg"), 1.1);
     await magazinePdf(await planchesEnImages(r.jet.magazine, s, 3), path.join(d, "magazine.pdf"));
     await posesEtLaissees(l.titre ?? l.nom, r, s, petites, path.join(d, "photos-posees-et-laissees.html"));
+    if (r.zones) await sectionRognes({ nom: l.nom, titre: l.titre ?? l.nom, r, images: petites }, s, path.join(d, "rognes.jpg"));
     vs.push({ nom: l.nom, titre: l.titre ?? l.nom, r, images: petites });
     console.log(`${l.nom} : ${r.pages} pages, ${r.selection.compte.posee} posées, ${r.selection.compte.couverture} couverture, ${r.selection.compte.reserve} réserve, ${r.selection.compte.ecartee} écartées, ${r.controle.fautes.length} faute(s) en ${ms} ms`);
     for (const f of r.controle.fautes) console.log(`   faute : ${f.faute} · ${f.ou} · ${f.detail} (${f.regle})`);

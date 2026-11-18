@@ -19,7 +19,7 @@ import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { regleParId } from "@/lib/mise-en-page/regles";
 import type { PhotoChoisie, ResultatCompo } from "@/lib/mise-en-page/compositeur";
 
-export type Sources = { v1024: string; v320: string; fichierDe: Map<string, string>; dims: Map<string, { l: number; h: number }>; personnes: Map<string, number> };
+export type Sources = { v1024: string; v320: string; fichierDe: Map<string, string>; dims: Map<string, { l: number; h: number }>; personnes: Map<string, number>; chaleur?: Map<string, string> };
 
 const esc = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -62,7 +62,8 @@ export async function rendrePlanche(m: Magazine, i: number, s: Sources, K: numbe
         const cx = Math.max(0, x), cy = Math.max(0, y);
         const ww = Math.min(w, LP - cx), hh = Math.min(h, HP - cy);
         if (ww < 2 || hh < 2) continue;
-        const corps = Math.max(5, Math.min(hh - 1, (t.taille ?? 10) * 0.35 * K));
+        /* rendu SOMMAIRE : le corps est réduit pour que le texte tienne dans la largeur de son cadre (chasse moyenne d'Helvetica 0,55 em) */
+        const corps = Math.max(5, Math.min(hh - 1, (t.taille ?? 10) * 0.35 * K, ww / Math.max(1, 0.55 * t.contenu.length)));
         comp.push({ input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${ww}" height="${hh}"><text x="1" y="${Math.min(hh - 1, corps)}" font-family="Helvetica" font-size="${corps}" fill="#333">${esc(t.contenu)}</text></svg>`), left: cx, top: cy });
       }
     }
@@ -180,21 +181,26 @@ export type Variante = { nom: string; titre: string; r: ResultatCompo; images: B
 export function chiffres(v: Variante, s: Sources): Record<string, string | number> {
   const m = v.r.jet.magazine;
   const aires: number[] = [];
-  let unes = 0, denses = 0;
+  let unes = 0, denses = 0, vides = 0;
   m.planches.forEach((pl, i) => {
     if (i === 0 || i === m.planches.length - 1) return;
     let n = 0;
+    /* une page presque vide (même règle que le contrôle v2.1) : moins de 30 % de photos, aucun texte écrit sur la page */
+    const surf = { gauche: 0, droite: 0 }, texte = { gauche: false, droite: false };
     for (const [cible, d] of (pl.mode === "double" ? [["double", pl.double]] : [["gauche", pl.gauche], ["droite", pl.droite]]) as ["double" | "gauche" | "droite", typeof pl.double][]) {
       if (!d) continue;
       let ip = 0;
       for (const c of cadresDe(d, cible)) {
-        if (c.role !== "photo") continue;
+        if (c.role !== "photo") { for (const k of ["gauche", "droite"] as const) if (k === "gauche" ? c.x < 210 : c.x + c.l > 210) texte[k] = texte[k] || (d.textes ?? []).some((t) => !!t.contenu?.trim()); continue; }
         const a = d.photos[ip++];
         if (!a?.photoId) continue;
         n++;
+        surf.gauche += Math.max(0, Math.min(c.x + c.l, 210) - Math.max(c.x, 0)) * c.h;
+        surf.droite += Math.max(0, Math.min(c.x + c.l, 420) - Math.max(c.x, 210)) * c.h;
         if ((s.personnes.get(a.photoId) ?? 0) > 0) aires.push((c.l * c.h) / 100);
       }
     }
+    for (const k of ["gauche", "droite"] as const) if (surf[k] < 0.3 * 210 * 297 && !texte[k]) vides++;
     if (n === 1) unes++;
     if (n >= 6) denses++;
   });
@@ -202,19 +208,113 @@ export function chiffres(v: Variante, s: Sources): Record<string, string | numbe
   const med = aires.length ? aires[Math.floor(aires.length / 2)] : 0;
   return {
     pages: v.r.pages, posees: v.r.selection.compte.posee, couverture: v.r.selection.compte.couverture, reserve: v.r.selection.compte.reserve, ecartees: v.r.selection.compte.ecartee,
-    personnes: aires.length, aire: `${Math.round(med)} cm²`, unes, denses, fautes: v.r.controle.fautes.length,
+    personnes: aires.length, aire: `${Math.round(med)} cm²`, unes, denses, vides, fautes: v.r.controle.fautes.length,
   };
+}
+
+/** Les photos posées RECADRÉES de plus de `seuil` : la part retirée de chaque côté, en fractions de la photo. */
+export function rognes(r: ResultatCompo, s: Sources, seuil = 0.25): { id: string; planche: number; part: number; win: { x: number; y: number; l: number; h: number } }[] {
+  const out: { id: string; planche: number; part: number; win: { x: number; y: number; l: number; h: number } }[] = [];
+  r.jet.magazine.planches.forEach((pl, i) => {
+    for (const [cible, d] of (pl.mode === "double" ? [["double", pl.double]] : [["gauche", pl.gauche], ["droite", pl.droite]]) as ["double" | "gauche" | "droite", typeof pl.double][]) {
+      if (!d) continue;
+      let ip = 0;
+      for (const c of cadresDe(d, cible)) {
+        if (c.role !== "photo") continue;
+        const a = d.photos[ip++];
+        const px = a?.photoId ? s.dims.get(a.photoId) : null;
+        if (!a?.photoId || !px) continue;
+        const k = cadrer(px, { l: c.l, h: c.h }, a.recadrage);
+        const win = { x: -k.x / k.l, y: -k.y / k.h, l: c.l / k.l, h: c.h / k.h };
+        const part = 1 - win.l * win.h;
+        if (part > seuil) out.push({ id: a.photoId, planche: i, part, win });
+      }
+    }
+  });
+  return out;
+}
+
+/** La raison d'un rognage en mots d'atelier : ce qu'on enlève (et si c'est calme dans la carte de chaleur), ce qui reste entier. */
+function raisonRognage(win: { x: number; y: number; l: number; h: number }, chaleur: string | undefined, z: NonNullable<ResultatCompo["zones"]>[string] | undefined): string {
+  const cotes: [string, number, (c: number, l: number) => boolean][] = [
+    ["à gauche", win.x, (c) => c / 16 < win.x], ["à droite", 1 - win.x - win.l, (c) => (c + 1) / 16 > win.x + win.l],
+    ["en haut", win.y, (_c, l) => l / 16 < win.y], ["en bas", 1 - win.y - win.h, (_c, l) => (l + 1) / 16 > win.y + win.h],
+  ];
+  const v = chaleur && /^[0-9]{256}$/.test(chaleur) ? [...chaleur].map(Number) : null;
+  const moyenne = v ? v.reduce((a, b) => a + b, 0) / 256 : 0;
+  const morceaux = cotes.filter(([, p]) => p >= 0.04).map(([mot, p, dedans]) => {
+    let calme = "";
+    if (v) {
+      const cases = v.filter((_, i) => dedans(i % 16, Math.floor(i / 16)));
+      const m = cases.length ? cases.reduce((a, b) => a + b, 0) / cases.length : 0;
+      calme = m < moyenne * 0.8 ? " (une partie calme)" : m > moyenne * 1.2 ? " (une partie animée)" : "";
+    }
+    return `${Math.round(p * 100)} % ${mot}${calme}`;
+  });
+  const entier = z ? (() => { const c = z.coeur; const ok = c[0] >= win.x - 0.01 && c[1] >= win.y - 0.01 && c[0] + c[2] <= win.x + win.l + 0.01 && c[1] + c[3] <= win.y + win.h + 0.01; return ok ? "le sujet reste entier" : "ATTENTION : le sujet est entamé"; })() : "";
+  return `On enlève ${morceaux.join(", ") || "très peu"} ; ${entier}${z?.toutLeCadre ? " ; tout le cadre compte pour cette photo" : ""}${z?.conseil ? ` ; le regard fin proposait : « ${z.conseil} »` : ""}.`;
+}
+
+/** La vignette d'origine avec la carte de chaleur en transparence, le cadre gardé (vert) et le cœur de la zone importante (jaune). */
+async function vignetteRognee(s: Sources, id: string, win: { x: number; y: number; l: number; h: number }, z: NonNullable<ResultatCompo["zones"]>[string] | undefined): Promise<string> {
+  const f = s.fichierDe.get(id);
+  if (!f) return "";
+  const src = fs.existsSync(path.join(s.v320, f)) ? path.join(s.v320, f) : path.join(s.v1024, f);
+  const W = 320;
+  const base = await sharp(src).rotate().resize(W).toBuffer({ resolveWithObject: true });
+  const w = base.info.width, h = base.info.height;
+  const ch = s.chaleur?.get(id);
+  let rects = "";
+  if (ch && /^[0-9]{256}$/.test(ch)) for (let i = 0; i < 256; i++) { const a = Number(ch[i]) / 9 * 0.55; if (a > 0.05) rects += `<rect x="${(i % 16) * w / 16}" y="${Math.floor(i / 16) * h / 16}" width="${w / 16 + 0.5}" height="${h / 16 + 0.5}" fill="rgb(255,40,0)" fill-opacity="${a.toFixed(2)}"/>`; }
+  const k = `<rect x="${win.x * w}" y="${win.y * h}" width="${win.l * w}" height="${win.h * h}" fill="none" stroke="#00e676" stroke-width="3"/>`;
+  const c = z ? `<rect x="${z.coeur[0] * w}" y="${z.coeur[1] * h}" width="${z.coeur[2] * w}" height="${z.coeur[3] * h}" fill="none" stroke="#ffd600" stroke-width="2" stroke-dasharray="5,3"/>` : "";
+  const sombre = `<path fill="black" fill-opacity="0.45" fill-rule="evenodd" d="M0 0H${w}V${h}H0Z M${win.x * w} ${win.y * h}h${win.l * w}v${win.h * h}h${-win.l * w}Z"/>`;
+  const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">${rects}${sombre}${c}${k}</svg>`);
+  const img = await sharp(base.data).composite([{ input: svg, left: 0, top: 0 }]).jpeg({ quality: 72 }).toBuffer();
+  return `data:image/jpeg;base64,${img.toString("base64")}`;
+}
+
+/** La section « Ce qu'on a rogné » d'une variante, et la planche-contact des rognages (pour les regarder un par un). */
+export async function sectionRognes(v: Variante, s: Sources, fichierJpg?: string): Promise<string> {
+  const l = rognes(v.r, s);
+  if (!l.length) return `<h3>${esc(v.titre)}</h3><p class="doux">Aucune photo recadrée de plus de 25 %.</p>`;
+  const parts = l.map((x) => x.part).sort((a, b) => a - b);
+  const L: string[] = [`<h3>${esc(v.titre)} : ${l.length} photos recadrées de plus de 25 % (médiane ${Math.round(parts[Math.floor(parts.length / 2)] * 100)} %, au plus ${Math.round(parts[parts.length - 1] * 100)} %)</h3>`,
+    `<p class="doux">Rouge : la carte de chaleur. Jaune pointillé : le cœur de la zone importante (ce qu'on ne coupe jamais). Vert : ce qu'on garde. Assombri : ce qu'on enlève.</p><div class="grille">`];
+  const imgs: Buffer[] = [];
+  for (const x of l) {
+    const z = v.r.zones?.[x.id];
+    const src = await vignetteRognee(s, x.id, x.win, z);
+    if (fichierJpg && src) imgs.push(Buffer.from(src.split(",")[1], "base64"));
+    L.push(`<div class="ph" style="width:330px"><img style="width:320px;height:auto" loading="lazy" src="${src}" alt=""><div class="raison">D${x.planche} · ${Math.round(x.part * 100)} % retirés</div><div>${esc(raisonRognage(x.win, s.chaleur?.get(x.id), z))}</div><div class="doux">${esc(s.fichierDe.get(x.id) ?? x.id)}</div></div>`);
+  }
+  L.push("</div>");
+  if (fichierJpg && imgs.length) {
+    const COL = 5, W = 330, H = 160;
+    const comp: OverlayOptions[] = [];
+    for (let i = 0; i < imgs.length; i++) {
+      const b = await sharp(imgs[i]).resize(W - 10, H - 24, { fit: "inside" }).toBuffer();
+      comp.push({ input: b, left: (i % COL) * W + 5, top: Math.floor(i / COL) * H + 20 });
+      comp.push({ input: Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="18"><text x="5" y="14" font-family="Helvetica" font-size="13">${i + 1} · D${l[i].planche} · ${Math.round(l[i].part * 100)} %</text></svg>`), left: (i % COL) * W, top: Math.floor(i / COL) * H });
+    }
+    await sharp({ create: { width: COL * W, height: Math.ceil(imgs.length / COL) * H, channels: 3, background: "#ffffff" } }).composite(comp).jpeg({ quality: 80 }).toFile(fichierJpg);
+  }
+  return L.join("\n");
 }
 
 export async function comparaison(vs: Variante[], s: Sources, choisies: number[], jugement: string, fichier: string): Promise<void> {
   const c = vs.map((v) => chiffres(v, s));
   const L: string[] = [`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comparaison des variantes</title><style>${CSS}</style></head><body>`,
     `<h1>Compositeur v2 : comparaison des variantes</h1><p class="doux">Projet de test (long voyage en famille, 164 photos). Rejoué sans IA à partir des lectures gardées (passe 1 et complément passe 2). Document de travail, jamais publié.</p>`,
-    `<table><tr><th>Variante</th><th>pages</th><th>posées</th><th>couverture</th><th>en réserve</th><th>écartées</th><th>photos de personnes posées</th><th>leur taille médiane</th><th>doubles à une photo</th><th>doubles denses (6 et plus)</th><th>fautes du contrôle</th></tr>`,
-    ...vs.map((v, i) => `<tr><td><b>${esc(v.titre)}</b></td>${["pages", "posees", "couverture", "reserve", "ecartees", "personnes", "aire", "unes", "denses", "fautes"].map((k) => `<td>${c[i][k]}</td>`).join("")}</tr>`), `</table>`];
+    `<table><tr><th>Variante</th><th>pages</th><th>posées</th><th>couverture</th><th>en réserve</th><th>écartées</th><th>photos de personnes posées</th><th>leur taille médiane</th><th>doubles à une photo</th><th>doubles denses (6 et plus)</th><th>pages presque vides</th><th>fautes du contrôle</th></tr>`,
+    ...vs.map((v, i) => `<tr><td><b>${esc(v.titre)}</b></td>${["pages", "posees", "couverture", "reserve", "ecartees", "personnes", "aire", "unes", "denses", "vides", "fautes"].map((k) => `<td>${c[i][k]}</td>`).join("")}</tr>`), `</table>`];
   if (jugement) L.push(`<h2>Ce que j'en vois, à l'œil</h2>${jugement}`);
   L.push(`<h2>Fautes du contrôle</h2>`);
   for (const v of vs) L.push(`<p><b>${esc(v.titre)}</b> : ${v.r.controle.fautes.length ? v.r.controle.fautes.map((f) => esc(`${f.faute} (${f.ou}, ${f.regle})`)).join(" · ") : "aucune"}</p>`);
+  if (vs.some((v) => v.r.zones)) {
+    L.push(`<h2>Ce qu'on a rogné</h2><p class="doux">Pour chaque photo recadrée de plus de 25 % : l'originale, la carte de chaleur, le cadre gardé, la part retirée et la raison.</p>`);
+    for (const v of vs) if (v.r.zones || vs.indexOf(v) === 0) L.push(await sectionRognes(v, s));
+  }
   L.push(`<h2>Douze doubles expliquées : « on l'a créée comme ça parce que… »</h2>`);
   const v2 = vs.filter((v) => v.r.doubles);
   for (const n of choisies) {

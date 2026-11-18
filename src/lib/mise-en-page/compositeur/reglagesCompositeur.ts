@@ -177,6 +177,7 @@ export const REGLES_V2 = {
   DENSES_DE_SUITE: r(2, "N-47", "jamais plus de deux doubles denses d'affilée (Notion Mai)"),
   CHARGEES_DE_SUITE: r(4, "N-47", "après quatre doubles chargées, une respiration à 1 ou 2 photos (S-051, Notion Mai)"),
   PEN_SANS_RESPIRATION: r(1.2, "N-47", "une cinquième double chargée de suite coûte (la respiration est voulue, pas forcée : forcée, elle posait des photos seules trop petites)"),
+  PEN_PAGE_MAIGRE_V21: r(8, "M-07", "v2.1 : une ou deux photos dont aucune ne tient une page : la double serait presque vide ; elle coûte plus que tout sauf l'impossible"),
   PEN_SEULE_PETITE: r(2, "N-49", "une photo seule sur sa page sans la définition d'une pleine page : la page reste presque vide"),
   PART_TOP_IMAGE: r(0.1, "N-49", "V2-NOT-05 : la photo la plus forte du dixième du lot (note image) ne sort jamais pour la taille"),
   W_CIBLE: r(0.35, "N-48", "coût d'une double qui s'écarte du nombre voulu par la table (au carré, rapporté au nombre voulu)"),

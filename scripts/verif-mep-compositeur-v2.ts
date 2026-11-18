@@ -8,10 +8,13 @@
 
 import { CAUSES_ECART, REGLAGES_V2_DEFAUT, TABLE_DENSITE, composer, nombreVoulu, type CinqNotes, type EntreeCompo, type IAPhoto, type PhotoCompo, type ResultatCompo } from "@/lib/mise-en-page/compositeur";
 import { charger } from "@/lib/mise-en-page/compositeur/selection";
+import { cadresDe } from "@/lib/mise-en-page/magazine";
+import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { belle, entonnoirV2 } from "@/lib/mise-en-page/compositeur/selectionV2";
 import { pairesEtEntorses } from "@/lib/mise-en-page/compositeur/trame";
 import { lireLectureIA, lireReponsePlanche6 } from "@/lib/mise-en-page/editeur";
 import { regleParId } from "@/lib/mise-en-page/regles";
+import { partRetiree, recadrable, zoneTient, zoneV2, zoomMiseEnAvant } from "@/lib/mise-en-page/compositeur/recadrageV2";
 
 type Ok = (nom: string, reussi: boolean) => void;
 
@@ -132,13 +135,19 @@ export function verifierCompositeurV2(ok: Ok): void {
   ok("v2 · table de densité : mêmes entrées, même nombre et mêmes règles ; chaque ligne de la table a sa raison et son exception ; ses identifiants sont au registre",
     JSON.stringify(a1) === JSON.stringify(a2) && TABLE_DENSITE.every((t) => t.pourquoi && t.exception && !!regleParId(t.id)));
   const ids = new Set(r.selection.photos.filter((p) => p.etat === "posee").map((p) => p.id));
-  const belles = [...Pt.values()].filter((x) => ids.has(x.id) && belle(x, true));
+  /* le même lot que la trame : les photos gardées (posées, ou en réserve faute de place), page 1 et dernière page comprises */
+  const lot = new Set(r.selection.photos.filter((p) => p.etat !== "ecartee" && !/^(faible|l'IA|floue|presque identique|sortie)/.test(p.detail ?? "")).map((p) => p.id));
+  const imgs = [...Pt.values()].filter((x) => lot.has(x.id)).map((x) => x.v2?.notes?.image.valeur ?? 0).sort((p, q) => q - p);
+  const seuilTop = imgs[Math.max(0, Math.ceil(imgs.length * 0.1) - 1)];
+  const belles = [...Pt.values()].filter((x) => ids.has(x.id) && belle(x, true) && (x.v2?.notes?.image.valeur ?? 0) > seuilTop + 0.005);
+  const noyees: string[] = [];
   const noyee = belles.some((b) => {
     const pl = r.jet.magazine.planches.find((p) => [p.double, p.gauche, p.droite].some((d) => d?.photos.some((a) => a.photoId === b.id)));
     const n = pl ? [pl.double, pl.gauche, pl.droite].reduce((s, d) => s + (d?.photos.length ?? 0), 0) : 0;
+    if (n >= 6 && !b.v2?.coeur) noyees.push(`${b.id} sur ${pl?.id} (${n})`);
     return n >= 6 && !b.v2?.coeur;
   });
-  ok(`v2 · une belle photo n'est jamais noyée : aucune des ${belles.length} belles posées n'est dans une double dense, 6 photos et plus (N-49)`, !noyee);
+  ok(`v2 · une belle photo du dixième le plus fort n'est jamais noyée : aucune des ${belles.length} belles posées n'est dans une double dense, 6 photos et plus (N-49)${noyees.length ? ` : ${noyees.join(", ")}` : ""}`, !noyee);
   const charge = nombreVoulu(l.slice(0, 5), { ...ctx, momentTaille: new Map([["M", 20]]) });
   const leger = nombreVoulu(l.slice(0, 5), { ...ctx, momentTaille: new Map([["M", 1]]) });
   ok(`v2 · une période chargée n'est jamais étalée en doubles vides : 20 photos sur le moment veulent ${charge.cible} par double, 1 photo en veut ${leger.cible} (N-48)`,
@@ -149,6 +158,52 @@ export function verifierCompositeurV2(ok: Ok): void {
   ok("v2 · déterministe (même entrée, même sortie, au caractère près)", JSON.stringify(r2) === JSON.stringify(r));
   const v1 = composer({ ...entree(ph, { fiche: { theme: "road_trip", taille: 32 } }), v2: null });
   ok("v2 · la v1 reste le témoin : sans réglages v2, ni notes, ni table, ni version 2", v1.version === undefined && v1.doubles === undefined && v1.selection.photos.every((p) => !p.notes));
+
+  /* v2.1 : le recadrage par ce qu'on coupe (M-29, N-55 à N-58) */
+  const Pr = charger(entree(ph), null, new Map());
+  entonnoirV2(Pr, undefined, []);
+  const large = [...Pr.values()].find((x) => x.r >= 1.9 && !x.visages.length)!;
+  const centre = Array.from({ length: 256 }, (_, i) => ((i % 16) >= 6 && (i % 16) <= 9 && Math.floor(i / 16) >= 5 && Math.floor(i / 16) <= 10 ? "9" : "1")).join("");
+  const partout = Array.from({ length: 256 }, (_, i) => (Math.floor(i / 16) >= 5 && Math.floor(i / 16) <= 10 ? "9" : "1")).join("");   // un horizon sur toute la largeur
+  const zc = zoneV2(large, centre, "normal"), zp = zoneV2(large, partout, "normal");
+  ok("v2.1 · zone lue dans la carte de chaleur : un sujet au centre donne une zone étroite et recadrable ; une chaleur étalée fait « tout le cadre compte », jamais recadrable (N-55, N-57)",
+    zc.zone[2] < 0.5 && !zc.toutLeCadre && recadrable(large, zc) && zp.toutLeCadre && !recadrable(large, zp) && JSON.stringify(zoneV2(large, centre, "normal")) === JSON.stringify(zc));
+  ok("v2.1 · la zone tient ou ne tient pas, au rapport du cadre (géométrie exacte) ; la part retirée d'une 21:9 dans une demi-page vaut 1 - 1,45/2,22",
+    zoneTient([0.4, 0, 0.2, 1], { l: 4000, h: 1800 }, 1.45) && !zoneTient([0, 0, 1, 1], { l: 4000, h: 1800 }, 1.45) && Math.abs(partRetiree({ l: 4000, h: 1800 }, 1.45) - (1 - 1.45 / (4000 / 1800))) < 1e-9);
+  const petitSujet = { zone: [0.45, 0.45, 0.1, 0.1] as [number, number, number, number], toutLeCadre: false, regard: null, source: "" };
+  ok("v2.1 · mettre en avant (N-58) : jamais en prudent ; borné par le mode et par 200 ppp ; jamais quand tout le cadre compte",
+    zoomMiseEnAvant(petitSujet, { l: 4000, h: 3000 }, { l: 190, h: 130 }, "prudent") === 1 && zoomMiseEnAvant(petitSujet, { l: 4000, h: 3000 }, { l: 190, h: 130 }, "franc") <= 1.6
+      && zoomMiseEnAvant(petitSujet, { l: 4000, h: 3000 }, { l: 190, h: 130 }, "franc") > 1 && zoomMiseEnAvant(petitSujet, { l: 800, h: 600 }, { l: 190, h: 130 }, "franc") === 1
+      && zoomMiseEnAvant({ ...petitSujet, toutLeCadre: true }, { l: 4000, h: 3000 }, { l: 190, h: 130 }, "franc") === 1);
+  const chaleurs = ph.map((p, i) => ({ ...p, chaleur: i % 3 ? centre : partout }));
+  const rr = composer(entree(chaleurs, { fiche: { theme: "road_trip", taille: 32 }, v2: { ...REGLAGES_V2_DEFAUT, recadrage: "normal" } }));
+  const rr2 = composer(entree(chaleurs, { fiche: { theme: "road_trip", taille: 32 }, v2: { ...REGLAGES_V2_DEFAUT, recadrage: "normal" } }));
+  const f = (re: RegExp) => rr.controle.fautes.filter((x) => re.test(x.faute)).length;
+  /* le rognage n'est jamais silencieux : toute photo dont le cœur de la zone sort du cadre gardé est une faute DURE nommée */
+  const silencieux: string[] = [];
+  rr.jet.magazine.planches.forEach((pl, i) => {
+    for (const [cible, d] of (pl.mode === "double" ? [["double", pl.double]] : [["gauche", pl.gauche], ["droite", pl.droite]]) as ["double" | "gauche" | "droite", typeof pl.double][]) {
+      if (!d) continue;
+      let ip = 0;
+      for (const c of cadresDe(d, cible)) {
+        if (c.role !== "photo") continue;
+        const a = d.photos[ip++];
+        const z = a?.photoId ? rr.zones?.[a.photoId] : undefined;
+        const p = a?.photoId ? chaleurs.find((q) => q.id === a.photoId) : undefined;
+        if (!a?.photoId || !z || !p) continue;
+        const k = cadrer({ l: p.l, h: p.h }, { l: c.l, h: c.h }, a.recadrage);
+        const w = { x: -k.x / k.l, y: -k.y / k.h, l: c.l / k.l, h: c.h / k.h };
+        const dans = Math.max(0, Math.min(w.x + w.l, z.coeur[0] + z.coeur[2]) - Math.max(w.x, z.coeur[0])) * Math.max(0, Math.min(w.y + w.h, z.coeur[1] + z.coeur[3]) - Math.max(w.y, z.coeur[1])) / Math.max(1e-9, z.coeur[2] * z.coeur[3]);
+        const dit = rr.controle.fautes.some((x) => x.detail.includes(p.nom) && /zone importante|sujet entamé|tout le cadre/.test(x.faute));
+        if (dans < 0.9 && !dit) silencieux.push(`${p.nom} (planche ${i})`);
+      }
+    }
+  });
+  ok(`v2.1 · composé avec recadrage : aucun visage coupé, aucune photo sous 150 ppp, et AUCUN rognage silencieux : un sujet entamé est toujours une faute dure nommée (${silencieux.join(", ") || "aucun"} ; fautes restantes : ${rr.controle.fautes.length})`,
+    f(/visage coupé/) === 0 && f(/sous 150/) === 0 && silencieux.length === 0);
+  ok("v2.1 · la zone importante du recadrage est rendue (cœur, air, tout le cadre), et la composition est déterministe", !!rr.zones && Object.keys(rr.zones).length > 0 && JSON.stringify(rr) === JSON.stringify(rr2));
+  const temoin = composer(entree(ph, { fiche: { theme: "road_trip", taille: 32 } }));
+  ok("v2.1 · sans réglage de recadrage, la v2 d'avant à l'identique (le témoin)", JSON.stringify(temoin) === JSON.stringify(r) && !temoin.zones);
 
   /* lecture v4, planche B6 */
   const v4 = { format: "bellajour-lecture-ia", version: 4, photos: { "A.JPG": { personnes: "groupe", personnes_nombre: 4, sujet_special: "animal", force_image: 0.8, pose: "spontane", geste: true, insolite: false } }, rafales: [], groupes: [] };

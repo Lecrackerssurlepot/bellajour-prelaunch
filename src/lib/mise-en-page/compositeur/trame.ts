@@ -15,6 +15,7 @@ import type { ChapitreCompo, Decision, Fiche, PourquoiDouble, ReglagesV2 } from 
 import { REGLAGES_V2, type ParametresProfil } from "./reglagesCompositeur";
 import { nombreVoulu, phraseDouble, type CtxDensite } from "./densite";
 import { belle, ecartPalettes } from "./selectionV2";
+import { recadrable, zoneV2 } from "./recadrageV2";
 import type { StyleMagazine } from "../style";
 
 /* ─────────────────────────── les tests de forme ─────────────────────────── */
@@ -328,12 +329,14 @@ export function echoOuContraste(a: readonly Ph[], b: readonly Ph[]): "écho" | "
 }
 
 /** Les recettes de la v2 : celles du banc et du repli (N-36), plus la belle photo seule (N-49), la double dense (N-44 à N-46) et la série. */
-function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mode: Mode): Recette[] {
+function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mode: Mode, recadrage = false): Recette[] {
   const out = recettes(g, sommetId, mode);
+  /* v2.1 : la pleine et l'encadrée (une verticale pleine page face aux autres) est toujours proposée, jamais seulement en repli */
+  if (recadrage && mode === "banc") out.push(...recettesRepli(g).filter(([, sp]) => sp.idee !== "seule"));
   const n = g.length;
   if (n === 1) {
     const b = belle(g[0], dpiDouble150);
-    if (b === "pleine") {
+    if (b === "pleine" && !g[0].v2?.zone21) {
       const sp: Spec = { idee: "seule", classe: "G", perdu: true, type: "pages", regles: ["N-49", "M-07"], pourquoi: "la belle photo seule, la page d'en face habillée de sa couleur" };
       sp.droite = { photos: [{ id: g[0].id, role: "pleine", poids: 1.0 }] };
       sp.gauche = { photos: [] };
@@ -348,13 +351,14 @@ function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mod
     /* N-46 : la capacité d'une PAGE : trois très larges au plus, en bandes (N-12 : jamais quatre), seules ou avec une autre photo ;
        sans très large, six photos au plus, quatre quand il y a des personnes (M-08 : 70 mm et 100 cm² chacune) */
     const pageOk = (p: Ph[]): boolean => {
-      const U = p.filter((x) => x.r >= 1.6).length;
-      if (U > 3 || (U >= 1 && p.length > U)) return false;
+      const U = p.filter((x) => x.r >= 1.6 && !x.v2?.recadrable).length;
+      /* une très large non recadrable ne va qu'en bandes : deux ou trois sur la page, seules (une seule laisserait du blanc ou serait rognée) */
+      if (U > 3 || (U >= 1 && p.length > U) || (U === 1 && p.length === 1)) return false;
       return p.length <= (p.some((x) => x.nbPers > 0) ? 4 : 6);
     };
     const essais: [Ph[], Ph[]][] = [];
     for (let k = 1; k < n; k++) essais.push([g.slice(0, k), g.slice(k)]);
-    const Ug = g.filter((x) => x.r >= 1.6), Vg = g.filter((x) => x.r < 1.6);
+    const Ug = g.filter((x) => x.r >= 1.6 && !x.v2?.recadrable), Vg = g.filter((x) => !(x.r >= 1.6 && !x.v2?.recadrable));
     if (Ug.length && Vg.length) essais.push(g.indexOf(Ug[0]) < g.indexOf(Vg[0]) ? [Ug, Vg] : [Vg, Ug]);
     const bons = essais.filter(([a, b]) => pageOk(a) && pageOk(b)).sort((x, y) => Math.abs(x[0].length - x[1].length) - Math.abs(y[0].length - y[1].length));
     if (bons.length) {
@@ -407,21 +411,39 @@ export function decouperV2(seq: Ph[], nd: number, sommetId: string | null, mode:
     if (!memo.has(k)) {
       const g = seq.slice(i, j);
       const v = nombreVoulu(g, cd);
-      /* N-49 : une belle photo n'est JAMAIS noyée dans une double dense (6 photos et plus, hors série) ; de 3 à 5, elle coûte */
-      const noyee = !!v.belle && g.length >= REGLAGES_V2.DENSE_MIN && !v.serie;
-      const rs = noyee || g.length > v.max || (sommetId && g.length > 1 && g.some((x) => x.id === sommetId)) ? [] : recettesV2(g, sommetId, cd.dpiDouble150, mode);
+      /* N-49 : une belle photo du dixième le plus fort n'est JAMAIS noyée dans une double dense (6 photos et plus, hors série) ; les autres coûtent */
+      const noyee = g.length >= REGLAGES_V2.DENSE_MIN && !v.serie && g.some((x) => !!belle(x, cd.dpiDouble150) && (x.v2?.notes?.image.valeur ?? 0) >= (cd.seuilTopImage ?? 0));
+      /* v2.1 (M-07 dure) : une ou deux photos dont aucune ne tient une page laissent la double presque vide : refusé */
+      const maigre = !!cd.recadrage && g.length <= 2 && !g.some((x) => pleinDef(x) || (g.length === 1 && tientDouble(x)) || (!!x.v2?.recadrable && x.dpi.demi >= 200) || x.id === sommetId);
+      const rs = noyee || g.length > v.max || (sommetId && g.length > 1 && g.some((x) => x.id === sommetId)) ? [] : recettesV2(g, sommetId, cd.dpiDouble150, mode, !!cd.recadrage);
       if (!rs.length) memo.set(k, null);
       else {
         /* N-46 : le gabarit LIBRE (la pose choisit) coupe les très larges quand elles se mêlent aux verticales : il coûte plus ; M-08 : une
            très large où l'on voit des gens ne devient pas une bande fine dans une double chargée */
-        const U = g.filter((x) => x.r >= 1.6), V = g.filter((x) => x.r <= 0.9);
+        const U = g.filter((x) => x.r >= 1.6 && !x.v2?.recadrable), V = g.filter((x) => x.r <= 0.9 || !!x.v2?.recadrable);
         /* N-49 : une photo seule sur sa page qui ne tient PAS la pleine page laisse une page presque vide : elle coûte */
         /* N-49 : une double à une ou deux photos dont aucune ne tient une page (ni pleine page, ni très large en double) reste presque vide */
-        const petiteRespiration = g.length <= 2 && !g.some((x) => pleinDef(x) || tientDouble(x)) ? R2.PEN_SEULE_PETITE : 0;
-        const ajuste = (x: Recette): Recette => [x[0] + petiteRespiration + (x[1].idee === "seule" && !pleinDef(g[0]) ? R2.PEN_SEULE_PETITE : 0) + (x[1].idee === "libre" ? (U.length && V.length ? 1.0 : 0) + (U.length >= 2 ? 0.8 : 0) : 0) + (g.length >= 4 && U.some((y) => y.nbPers > 0) ? 0.6 : 0), x[1]];
+        const petiteRespiration = g.length <= 2 && !g.some((x) => pleinDef(x) || tientDouble(x) || (!!x.v2?.recadrable && x.dpi.demi >= 200)) ? R2.PEN_SEULE_PETITE * (cd.recadrage ? 3 : 1) : 0;
+        /* v2.1 (M-07 dure) : une photo seule sur sa page, la page d'en face vide : jamais */
+        const pageVide = (x: Recette) => (cd.recadrage && x[1].type === "pages" && (!(x[1].gauche?.photos?.length) || !(x[1].droite?.photos?.length)) ? 6 : 0);
+        const toutCadre = (x: Recette) => (cd.recadrage && (x[1].idee === "libre" || x[1].idee === "dense") && g.some((y) => y.v2?.zone21?.toutLeCadre) ? 3 : 0);   // N-57 : une photo dont tout le cadre compte va en bande ou en grand, pas dans un gabarit libre
+        /* N-46, N-57 : une très large qui ne se recadre pas ne tient une page qu'en BANDES (deux ou trois, seules) : seule sur sa page, ou mêlée à
+           d'autres formats, elle serait rognée en largeur ou laisserait la page à moitié vide */
+        const rigide = (y: Ph) => y.r >= 1.6 && !y.v2?.recadrable;
+        const pageRigide = (x: Recette) => {
+          if (!cd.recadrage || x[1].type !== "pages") return 0;
+          let c = 0;
+          for (const cote of [x[1].gauche, x[1].droite]) {
+            const ps = (cote?.photos ?? []).map((p) => g.find((y) => y.id === p.id)).filter((y): y is Ph => !!y);
+            const n = ps.filter(rigide).length;
+            if (n && (n !== ps.length || n === 1)) c += 4;
+          }
+          return c;
+        };
+        const ajuste = (x: Recette): Recette => [x[0] + petiteRespiration + pageVide(x) + toutCadre(x) + pageRigide(x) + (x[1].idee === "seule" && !pleinDef(g[0]) ? R2.PEN_SEULE_PETITE : 0) + (x[1].idee === "libre" ? (U.length && V.length ? 1.0 : 0) + (U.length >= 2 ? 0.8 : 0) : 0) + (g.length >= 4 && U.some((y) => y.nbPers > 0) ? 0.6 : 0), x[1]];
         let best = ajuste(rs[0]);
         for (const x0 of rs) { const x = ajuste(x0); if (x[0] < best[0]) best = x; }
-        let c = best[0] + (R2.W_CIBLE * (g.length - v.cible) ** 2) / v.cible + (g.length < v.min ? 2 : 0);
+        let c = best[0] + (R2.W_CIBLE * (g.length - v.cible) ** 2) / v.cible + (g.length < v.min ? 2 : 0) + (maigre ? R2.PEN_PAGE_MAIGRE_V21 : 0);
         if (v.belle && g.length >= 3) c += R2.PEN_BELLE_NOYEE;
         if (g.every(estDetail) && g.length < 4) c += R2.PEN_DETAIL_SEUL;
         if (g.length >= 2) { const [a, b] = moities(g, best[1]); if (!echoOuContraste(a, b)) c += R2.PEN_NI_ECHO_NI_CONTRASTE; }
@@ -731,6 +753,17 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   const ouverturesProtegees = new Set<string>();
   if (V2) for (const c of chaps) { const o = meilleur(parChap.get(c)!.filter((x) => pleinDef(x) && x.s >= R.OUVERTURE_MIN)); if (o) ouverturesProtegees.add(o.id); }
   const sortie = (l: readonly Ph[]): Ph[] => (V2 ? V2.ordreDeSortie(l).filter((x) => !ouverturesProtegees.has(x.id)) : []);
+  /* v2.1 (M-29, N-55, N-57) : la zone importante lue dans la carte de chaleur, et ce qui est « recadrable » */
+  const modeRec = V2?.reglages.recadrage ?? "aucun";
+  if (V2 && modeRec !== "aucun") for (const x of tous_) {
+    if (!x.v2) continue;
+    x.v2.zone21 = zoneV2(x, x.v2.chaleur, modeRec);
+    x.v2.recadrable = recadrable(x, x.v2.zone21);
+  }
+  if (V2 && modeRec !== "aucun") {
+    const larges = tous_.filter((x) => x.r >= 1.6 && !x.ecart);
+    journal.push({ quoi: "recadrage", ou: "lot", detail: `mode ${modeRec} : ${larges.filter((x) => x.v2?.recadrable).length} très larges recadrables sur ${larges.length} ; tout le cadre compte pour ${tous_.filter((x) => x.v2?.zone21?.toutLeCadre).length} photos`, regles: ["M-29", "N-55", "N-57"] });
+  }
   /* N-48b : la densité visée = le milieu de la fourchette du profil, un demi-cran plus bas en sobre, plus haut en stylisé (M-06) */
   let moyenneV2 = V2 ? (V2.profil.moyenne[0] + V2.profil.moyenne[1]) / 2 + (ctx.sobre ? -0.25 : V2.stylise ? 0.25 : 0) : 0;
   if (V2) {
@@ -827,8 +860,8 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
       cdV2 = {
         moyenne: moyenneV2, plafond: V2.profil.plafond, maxDouble: Math.min(V2.profil.maxDouble, REGLAGES_V2.PHOTOS_MAX_DOUBLE), maxSerie: Math.min(V2.profil.maxSerie, REGLAGES_V2.PHOTOS_MAX_SERIE),
         serree: V2.reglages.densite === "serree", momentTaille: parMoment, medianeMoment: tailles.length ? tailles[Math.floor(tailles.length / 2)] : 1,
-        sommetId: sommet?.id ?? null, dpiDouble150: V2.reglages.dpiDouble150,
-        seuilTopImage: (() => { const v = milieu.map((x) => x.v2?.notes?.image.valeur ?? 0).sort((a, b) => b - a); return v.length ? v[Math.max(0, Math.ceil(v.length * REGLAGES_V2.PART_TOP_IMAGE) - 1)] : 0; })(),
+        sommetId: sommet?.id ?? null, dpiDouble150: V2.reglages.dpiDouble150, recadrage: modeRec !== "aucun",
+        seuilTopImage: (() => { const v = cand.map((x) => x.v2?.notes?.image.valeur ?? 0).sort((a, b) => b - a); return v.length ? v[Math.max(0, Math.ceil(v.length * REGLAGES_V2.PART_TOP_IMAGE) - 1)] : 0; })(),
       };
     }
     const nPh = chaps.reduce((s, c) => s + seqs.get(c)!.length, 0) + [...ouvertures.values()].filter(Boolean).length;
@@ -1095,7 +1128,7 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   const photosT: Trame["photos"] = {};
   for (const x of tous_) {
     photosT[x.id] = {
-      fichier: x.nom, l: x.l, h: x.h, visages: x.visages.length ? x.visages : null, zone: x.zone as Boite4 | null, corps: x.corps.length ? x.corps : null,
+      fichier: x.nom, l: x.l, h: x.h, visages: x.visages.length ? x.visages : null, zone: (x.v2?.zone21?.coeur ?? x.zone) as Boite4 | null, corps: x.corps.length ? x.corps : null,
       personnes: x.nbPers, teinte: teinteDe(x), ...(x.date ? { date: x.date } : {}),
     };
   }
@@ -1112,6 +1145,7 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
       visees: posees.size || null,
     },
     faits: [...faits].sort(), sommet: sommet?.id ?? null, chapitres: chapitresT, m10: traceM10,
+    ...(V2 && modeRec !== "aucun" ? { recadrage: { mode: modeRec, toutLeCadre: tous_.filter((x) => x.v2?.zone21?.toutLeCadre).map((x) => x.id).sort(), air: Object.fromEntries(tous_.filter((x) => x.v2?.zone21).map((x) => [x.id, x.v2!.zone21!.zone])) } } : {}),
   };
   const chapitres: ChapitreCompo[] = chaps.map((c) => ({ numero: c, titre: titreDe.get(c)!, statut: statutDe.get(c)!, repli: ctx.chapNom.get(c) ?? `Chapitre ${c}` }));
   void rond;

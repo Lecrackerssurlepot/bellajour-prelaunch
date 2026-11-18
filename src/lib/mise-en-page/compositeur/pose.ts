@@ -16,6 +16,9 @@ import { TEMPLATES_DESSINES, TEMPLATE_LIBRE, decorDe, versGabarit, versPlanche }
 import type { Disposition, Magazine, Planche, PhotoRef, TexteCadre, Affectation } from "../magazine";
 import type { Template, Cadre, RoleCadre } from "../types";
 import { cadrer, recadrageParContenu, type Recadrage } from "../recadrage";
+import { zoneTient, zoomMiseEnAvant } from "./recadrageV2";
+/** v2.1 : le coût du zoom (P-14) n'empêche pas à lui seul un resserrement proposé (N-58). */
+const R2_ZOOM = 0.8;
 import {
   GABARITS_COUVERTURE, GABARIT_COUVERTURE_DEFAUT, cadresPhotoCouverture, cadresTexteCouverture, gabaritCouverture, titreSurLeSujet,
   type Couverture, type CadreCouverture, type GabaritCouverture,
@@ -69,6 +72,10 @@ export type Trame = {
   couvertures?: CouvertureTrame[];
   style?: { paire: string; couleurs: Record<string, string>; raison?: string } | null;
   tri?: { choisies?: string[]; ecartees?: ({ id: string; raison?: string } | string)[]; reserve?: string[]; visees?: number | null } | null;
+  /** v2.1 (M-29) : le recadrage par CE QU'ON COUPE. Présent = la règle « plus de 45 % » d'une 21:9 est remplacée par « la zone importante
+   *  (avec son air) tient dans le cadre » ; `toutLeCadre` : les photos dont tout le cadre compte (15 % au plus retirés) ; `mode` : prudent,
+   *  normal ou franc (le resserrement qui met en avant). Absent = la pose d'avant, à l'identique. */
+  recadrage?: { mode: "prudent" | "normal" | "franc"; toutLeCadre: string[]; air?: Record<string, Boite> } | null;
 };
 
 /* Les réglages du poseur (REGLES-POSE.md) vivent dans `reglagesCompositeur.ts` (`REGLAGES_POSE`), mêmes noms, mêmes valeurs. */
@@ -459,6 +466,8 @@ export class Poseur {
       /* P4-02 : une seule photo, centrée sur sa page, sans texte : le passe-partout voulu, pas du blanc perdu */
       const ici = photos.filter((f) => inter(f, coupe) > 1);
       const centree = ici.length === 1 && Math.abs(ici[0].x + ici[0].l / 2 - (coupe.x + coupe.l / 2)) < 12 && !tx.length;
+      /* v2.1 (M-07 dure) : sous 30 % sans texte, la page est presque vide, centrée ou non, colorée ou non */
+      if (this.trame.recadrage && part < 0.3 && !tx.length && part >= R.PAGE_VIDE_PART) { cout += R.PEN_PAGE_VIDE; raisons.push(`page ${pg} imprimée à ${Math.round(part * 100)} % (presque vide, M-07)`); }
       if (part < R.PAGE_VIDE_PART) { cout += R.PEN_PAGE_VIDE; raisons.push(`page ${pg} imprimée sur ${Math.round(part * 100)} % (presque vide)`); }
       else if (part < R.PAGE_MAIGRE_PART && !centree) {
         cout += (R.PEN_PAGE_MAIGRE * (R.PAGE_MAIGRE_PART - part)) / (R.PAGE_MAIGRE_PART - R.PAGE_VIDE_PART);
@@ -566,6 +575,8 @@ export class Poseur {
       if (zp && ctx.dessus?.length) zoneCachee = Math.min(1, ctx.dessus.reduce((t, d) => t + inter(zp, d), 0) / Math.max(1e-9, aire(zp)));
     }
     cout += R.W_ZONE * (zonePerdue + zoneCachee) + R.W_ZOOM * (c.zoom - 1) + (zonePerdue > 0.5 ? 10 : 0);   // la moitié du sujet perdue : presque interdit
+    /* v2.1 (M-29, N-55) : la zone importante porte son air ; en entamer plus de 10 % coupe le sujet : interdit */
+    if (this.trame.recadrage && zonePerdue > 0.1) cout += R.PEN_VISAGE_DUR * zonePerdue;   // dès 10 % : la faute dure du contrôle est à 20 %
     const dpi = Math.round(info.px.l / (c.l / 25.4));
     return {
       cout,
@@ -576,7 +587,21 @@ export class Poseur {
   /** P-14 : le recadrage de l'éditeur (`recadrageParContenu`, zone au centre) d'abord ; s'il coupe un visage, en met un dans le pli ou
    *  sous un texte, on cherche le glissement (puis le zoom, jusqu'à 1,5) qui l'évite en perdant le moins de la zone. */
   meilleurRecadrage(info: InfoPhoto, F: Rect, ctx: Ctx): { cout: number; bilan: ReturnType<Poseur["evaluer"]>["bilan"]; editeur: Recadrage } {
-    const r0 = this.M.rec.recadrageParContenu(info.px, F, info.zone);
+    let r0 = this.M.rec.recadrageParContenu(info.px, F, info.zone);
+    /* v2.1 (N-58) : quand le sujet tient peu de place, le resserrement qui le met en avant est PROPOSÉ (mode normal ou franc), centré sur
+       la zone ; gardé seulement s'il ne coûte pas plus (aucun visage, aucune zone, aucune définition perdus) */
+    const rc = this.trame.recadrage;
+    if (rc && rc.mode !== "prudent" && info.zone && !rc.toutLeCadre.includes(info.id)) {
+      const z = zoomMiseEnAvant({ zone: rc.air?.[info.id] ?? [info.zone.x, info.zone.y, info.zone.l, info.zone.h], toutLeCadre: false, regard: null, source: "" }, info.px, F, rc.mode);
+      if (z > 1) {
+        const c = this.M.rec.cadrer(info.px, F, { zoom: z, dx: 0, dy: 0 });
+        const zx = (info.zone.x + info.zone.l / 2) * c.l, zy = (info.zone.y + info.zone.h / 2) * c.h;
+        const rz = this.M.rec.cadrer(info.px, F, { zoom: z, dx: c.l / 2 - zx, dy: c.h / 2 - zy });
+        const essai: Recadrage = { zoom: z, dx: Math.round(rz.dx * 100) / 100, dy: Math.round(rz.dy * 100) / 100 };
+        const e0 = this.evaluer(info, F, r0, ctx), e1 = this.evaluer(info, F, essai, ctx);
+        if (e1.cout - R2_ZOOM * (z - 1) <= e0.cout + 1e-9 && e1.bilan.dpi >= 200) r0 = essai;
+      }
+    }
     let best = this.evaluer(info, F, r0, ctx);
     const probleme = (b: typeof best) => b.bilan.corps_pli + b.bilan.visages_coupes + b.bilan.visages_pli + b.bilan.visages_sous_texte + b.bilan.visages_sous_photo + b.bilan.visages_hors > 0 || b.bilan.zone_cachee > 0.05;
     if (!probleme(best)) return { ...best, editeur: r0 };
@@ -629,8 +654,14 @@ export class Poseur {
     /* M-08 (Mathias, 17/11) : une photo où l'on voit des personnes ne se pose jamais en petite vignette (profil P1 : 70 mm au plus petit côté
        et 120 cm² au moins, réglage de départ) */
     if (info.personnes >= 1 && (Math.min(F.l, F.h) < R.PERSONNES_COTE_MIN || F.l * F.h < R.PERSONNES_AIRE_MIN)) extra += R.PEN_VISAGE_DUR;
-    /* compositeur du 17/11, S-098 : une 21:9 (rapport ≥ 1,9) ne perd jamais plus de 45 % de sa surface (jamais seule en portrait) */
-    if (info.px.l / info.px.h >= 1.9 && perte > R.PERTE_MAX_LARGE) extra += R.PEN_LARGE_COUPEE;
+    /* compositeur du 17/11, S-098 : une 21:9 (rapport ≥ 1,9) ne perd jamais plus de 45 % de sa surface (jamais seule en portrait).
+       v2.1 (M-29, N-55, N-57) : ce qui compte est CE QU'ON COUPE : la zone importante (avec son air) doit tenir dans le cadre ; une photo dont
+       tout le cadre compte ne perd jamais plus de 15 %. La surface retirée seule ne refuse plus rien. */
+    const rc = this.trame.recadrage;
+    if (rc) {
+      /* « tout le cadre compte » : sa zone fait toute la LARGEUR ; elle se rogne en hauteur seulement (le ciel, le premier plan) */
+      if (info.zone && !zoneTient(rc.air?.[info.id] ?? [info.zone.x, info.zone.y, info.zone.l, info.zone.h], info.px, F.l / F.h)) extra += R.PEN_LARGE_COUPEE;
+    } else if (info.px.l / info.px.h >= 1.9 && perte > R.PERTE_MAX_LARGE) extra += R.PEN_LARGE_COUPEE;
     /* P2-04 : la définition */
     const dpi = this.dpiDans(info, F);
     if (dpi < 150) extra += R.PEN_DPI_150;

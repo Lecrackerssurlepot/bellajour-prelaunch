@@ -44,6 +44,8 @@ export type PhV2 = {
   personnesDeduites: boolean;
   notes?: CinqNotes; cause?: CauseEcart; placement?: string; belle?: boolean; seuleTrace?: boolean;
   serie?: { id: string; type: string; elue: boolean };
+  /** v2.1 : la carte de chaleur, le conseil de recadrage du regard fin, la zone importante v2.1, et « recadrable ». */
+  chaleur?: string | null; conseil?: string | null; zone21?: import("./recadrageV2").ZoneV2; recadrable?: boolean;
 };
 
 /* ─────────────────────────── petits outils, au comportement de Python ─────────────────────────── */
@@ -129,6 +131,7 @@ export function charger(e: EntreeCompo, lieux: LieuxChapitres | null, chapitreDe
       ...(e.v2 ? { v2: {
         ia, empreinte: p.empreinte ?? null, galerie: p.numeroGalerie ?? null, coeur: false, floue: p.ecart?.regle === "S-023", sortie: false,
         personnesDeduites: exact === null && !(pers && (pers === "groupe" || /^\d+$/.test(pers))),
+        chaleur: p.chaleur ?? null, conseil: p.recadrageConseil ?? null,
       } } : {}),
     };
     P.set(x.id, x);

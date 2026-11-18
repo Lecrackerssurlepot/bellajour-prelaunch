@@ -66,6 +66,12 @@ Ses mots, tels qu'il les a donnés ; la règle générale ; le statut. Les règl
 | D11 | « OK » | **M-26** Une passe d'analyse de plus lit les tags manquants ; une lecture ancienne reste lisible et un tag absent n'est jamais un zéro. | codée (planche B6, lecture v4) ; passe de complément jouée au banc le 18/11 (0,28 $) |
 | D12 | « OUI » | **M-27** Les corrections de l'atelier sont gardées à part et priment toujours ; la composition se lance seule après l'Analyse. | primauté codée (`appliquerCorrections`) ; le lancement seul reste à brancher à l'écran |
 
+## 18/11/2026, sur les photos très larges de la planche de tests
+
+| Ses mots | Règle générale | Statut |
+|---|---|---|
+| « Qu'entends-tu par large ? Car les découpages et rognages font partie du boulot aussi, c'est pour cela qu'il est important d'avoir la heat map pour définir ce qu'on peut potentiellement enlever / mettre en avant. » | **M-29** Rogner fait partie du métier : ce qui compte, c'est CE QU'ON COUPE, pas combien. Un recadrage est permis, quelle que soit la surface retirée, tant que la zone importante (lue dans la carte de chaleur, avec visages, corps et l'air du regard) reste entière, que la définition suffit et qu'aucun visage ni corps n'est coupé ; quand tout le cadre compte (panorama, horizon), la photo garde sa largeur ; resserrer sur un petit sujet est une proposition (réglage prudent, normal, franc). Remplace la règle « une 21:9 ne perd jamais plus de 45 % ». | codée (v2.1, `compositeur/recadrageV2.ts`, N-55 à N-59) ; réglage `recadrage` à trancher à l'œil |
+
 ## 18/11/2026, sa demande sur la densité
 
 | Ses mots | Règle générale | Statut |

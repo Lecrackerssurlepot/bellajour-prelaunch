@@ -44,6 +44,8 @@ export type CtxDensite = {
   dpiDouble150: boolean;
   /** V2-NOT-05 : la note image du dixième le plus fort du lot ; au-dessus, la belle photo se pose SEULE, en dessous à deux. */
   seuilTopImage?: number;
+  /** v2.1 : le recadrage par ce qu'on coupe est actif (M-29) ; une page ne reste jamais presque vide (M-07 dure). */
+  recadrage?: boolean;
 };
 
 export type Voulu = { cible: number; min: number; max: number; regles: string[]; belle: Ph | null; serie: boolean; personnes: boolean; moment: number };
@@ -65,7 +67,8 @@ export function nombreVoulu(g: readonly Ph[], c: CtxDensite): Voulu {
   regles.push("N-44");
   const personnes = g.some((x) => x.nbPers > 0);
   if (personnes && !serie && R.PERSONNES_MAX_DOUBLE < max) { max = R.PERSONNES_MAX_DOUBLE; regles.push("N-45"); }
-  const U = g.filter((x) => x.r >= 1.6).length, V = g.filter((x) => x.r <= 0.9).length;
+  /* v2.1 (M-29) : une très large RECADRABLE compte comme une photo de format libre */
+  const U = g.filter((x) => x.r >= 1.6 && !x.v2?.recadrable).length, V = g.filter((x) => x.r <= 0.9 || !!x.v2?.recadrable).length;
   const cap = serie ? max : U === g.length ? 6 : V === g.length ? 8 : 7;
   if (cap < max) { max = cap; regles.push("N-46"); }
   let min = 1;
@@ -74,7 +77,12 @@ export function nombreVoulu(g: readonly Ph[], c: CtxDensite): Voulu {
   const b = g.find((x) => belle(x, c.dpiDouble150)) ?? null;
   let cible: number;
   if (c.sommetId && g.some((x) => x.id === c.sommetId)) { cible = 1; regles.push("N-23"); }
-  else if (b) { cible = (b.v2?.notes?.image.valeur ?? 0) >= (c.seuilTopImage ?? 0) && !(c.serree && mom > 2 * c.moyenne) ? 1 : 2; regles.push("N-49"); }
+  else if (b) {
+    /* v2.1 (M-07 dure) : une belle verticale seule laisserait la page d'en face vide : elle va à deux (pleine et encadrée) ; une très large
+       belle traverse la double, seule */
+    const seule = (b.v2?.notes?.image.valeur ?? 0) >= (c.seuilTopImage ?? 0) && !(c.serree && mom > 2 * c.moyenne) && !(c.recadrage && belle(b, c.dpiDouble150) === "pleine");
+    cible = seule ? 1 : 2; regles.push("N-49");
+  }
   else {
     cible = Math.round(c.moyenne * Math.sqrt(mom / Math.max(1, c.medianeMoment)));
     regles.push("N-48");

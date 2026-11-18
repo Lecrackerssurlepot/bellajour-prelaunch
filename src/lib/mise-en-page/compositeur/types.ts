@@ -85,6 +85,10 @@ export type PhotoCompo = {
   empreinte?: string | null;
   /** v2 (V2-CHR-04) : le numéro de galerie du fichier (ordre d'arrivée), un indice pour placer une photo sans date. */
   numeroGalerie?: number | null;
+  /** v2.1 (M-29) : la carte de chaleur 16 × 16 (256 chiffres de 0 à 9, `Mesure.chaleur`) : ce qu'on peut enlever, ce qu'on met en avant. */
+  chaleur?: string | null;
+  /** v2.1 : ce que le regard fin propose d'enlever (« couper légèrement bas du trottoir »), en mots, pour la raison d'un rognage. */
+  recadrageConseil?: string | null;
 };
 
 export const THEMES = ["road_trip", "ville", "plage", "fete", "evenement", "annee", "autre"] as const;
@@ -178,7 +182,12 @@ export type EntreeCompo = {
  *  - `entorses` (décision 7) : le nombre de grandes entorses titrées permises ;
  *  - `dpiDouble150` (décision 6) : 150 ppp acceptés en double pour un paysage sans visage (provisoire).
  */
-export type ReglagesV2 = { densite: "serree" | "avant"; lieux: "chapitres" | "nouveaux" | "partout"; entorses: "strict" | "normal" | "genereux"; dpiDouble150: boolean };
+export type ReglagesV2 = {
+  densite: "serree" | "avant"; lieux: "chapitres" | "nouveaux" | "partout"; entorses: "strict" | "normal" | "genereux"; dpiDouble150: boolean;
+  /** v2.1 (M-29) : le recadrage par CE QU'ON COUPE. Absent ou « aucun » = la v2 d'avant (une 21:9 ne perd jamais plus de 45 %) ;
+   *  « prudent » (beaucoup d'air, aucun resserrement : le réglage d'un profil sobre), « normal », « franc » (peu d'air, resserrement fort). */
+  recadrage?: "aucun" | "prudent" | "normal" | "franc";
+};
 export const REGLAGES_V2_DEFAUT: ReglagesV2 = { densite: "serree", lieux: "nouveaux", entorses: "normal", dpiDouble150: true };
 
 /** Les corrections de l'atelier (décision 12, V2-ANA-01) : tags corrigés, marques, réponses. Elles priment TOUJOURS et survivent à une
@@ -242,6 +251,8 @@ export type ResultatCompo = {
   /** v2 : la version du compositeur, et pour chaque double « N photos ici parce que… ». */
   version?: 1 | 2;
   doubles?: PourquoiDouble[];
+  /** v2.1 : la zone importante lue de chaque photo (cœur sans air, avec l'air, « tout le cadre compte »), pour montrer ce qu'on a rogné. */
+  zones?: Record<string, { coeur: [number, number, number, number]; air: [number, number, number, number]; toutLeCadre: boolean; recadrable: boolean; conseil: string | null }>;
 };
 
 /** M-14 (18/11) : jamais d'impasse montrée telle quelle. Quand il n'y a vraiment pas de quoi composer, la phrase dit la cause et le

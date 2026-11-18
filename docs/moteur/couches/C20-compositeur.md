@@ -105,6 +105,15 @@ Branche `feat/compositeur-v2`, NON fusionnée (Mathias valide les sorties d'abor
   (expression, yeux, accroche, regard) et le classement des couvertures ne sont lus qu'au banc ; l'écran (Composer.tsx) ne montre pas encore
   les cinq notes ni les réglages : il compose toujours en v1.
 
+## 18/11 (suite) : la v2.1, le recadrage par ce qu'on coupe (M-29, N-55 à N-59)
+Réglage `ReglagesV2.recadrage` (« aucun » = la v2 d'avant à l'identique ; « prudent », « normal », « franc »). `compositeur/recadrageV2.ts` :
+la zone importante lue dans la carte de chaleur (chaleur au-dessus de la médiane, visages, corps, air du regard), « recadrable », « tout le
+cadre compte », le resserrement qui met en avant. La pose (`pose.ts`) remplace la règle « une 21:9 ne perd jamais plus de 45 % » par
+« la zone avec son air tient dans le cadre » et propose le resserrement ; le contrôle (`controle.ts`) en fait des fautes dures (cœur de la
+zone entamé, très large rognée en largeur quand tout le cadre compte, page presque vide même colorée). Planche : `tests-v2-1/` (hors dépôt),
+avec la section « Ce qu'on a rogné ». Constat : deux fois moins de sujets entamés, même nombre de photos sur le projet de test ; les visages
+au bord non détectés restent le point faible.
+
 ## Historique
 - 18/11 : couche créée (T-217), branche `feat/editeur-qui-compose`.
 - 18/11 au soir : M-13, M-14, M-15 et trois défauts de recette, branche `fix/composer-dossier-reel`.

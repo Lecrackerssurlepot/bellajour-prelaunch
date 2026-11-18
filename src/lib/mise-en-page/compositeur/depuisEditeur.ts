@@ -121,7 +121,7 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
           ...(ia.pose && ia.pose !== "sans_personne" ? { pose: ia.pose } : {}),
           ...(ia.geste !== undefined ? { geste: ia.geste } : {}), ...(ia.insolite !== undefined ? { insolite: ia.insolite } : {}),
         } : null,
-        empreinte: m?.dhash ?? null,
+        empreinte: m?.dhash ?? null, chaleur: m?.chaleur ?? null,
         chapitre: chapDe.get(p.id) ?? null,
         ...(gardees.has(p.id) && !d.ecarteesAtelier.has(p.id) ? { gardee: true as const } : {}),
       };
