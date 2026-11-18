@@ -77,3 +77,20 @@ touchées. Lire l'index AVANT de toucher une couche.
 Les règles d'analyse, de sélection, de structure, de couleur, de filtres et de polices vivent dans `docs/moteur/tunnel/` (D32). Une règle y est
 GÉNÉRALE (un profil ou une donnée, jamais un projet), et les retours de Mathias (`RETOURS-MATHIAS.md`, M-…) priment. Avant de coder une règle
 de tri ou de composition : la trouver ou l'écrire là, avec son identifiant, puis la citer dans le code et la contrôler au harnais.
+
+## Le registre des règles (18/11, T-216, M-11)
+`regles/` : les règles du tunnel en DONNÉES (`Regle` dans `types.ts`), LA source ; `docs/moteur/tunnel/regles/` n'est plus que la matière
+d'origine. `tunnel.ts` (à la main : M-02 à M-10, interdits durs I-01 à I-07, banc N-… et DA-…), `reprise.ts` (GÉNÉRÉ par
+`scripts/regles-reprise.ts` depuis les cahiers S, C, F, R-T, jamais édité), `surcharges.ts` (les retouches d'une règle reprise),
+`registre.ts` (`REGISTRE`, `regleParId`, `versionRegles()` : empreinte de tout le registre), `retours.ts` (`correctionsParRegle` : le compte
+des leçons par règle, pur). Le compositeur (lot suivant) écrira une `Decision` qui cite sa règle à chaque choix.
+**Ajouter ou changer une règle, toujours dans cet ordre :**
+1. **registre** : une règle neuve dans `tunnel.ts` (ou une retouche dans `surcharges.ts`) ; GÉNÉRALE (profil ou donnée, jamais un projet,
+   un client, une photo : le harnais lit `scripts/regles-mots-interdits.ts`) ; un interdit sans poids, une préférence avec ; ses seuils
+   NOMMÉS dans `editeur/reglages.ts` et cités par `reglages` ; un retour de Mathias = un M-… qui a sa ligne dans `RETOURS-MATHIAS.md` ;
+2. **contrôle** : une règle ne passe `codee` qu'avec `controle: "<fichier sous src/lib/mise-en-page>#<mot>"` (le harnais relit le fichier)
+   et son test ; une règle neuve peut d'abord tourner `en_ombre` ;
+3. **doc générée** : `npx tsx --tsconfig tsconfig.json scripts/regles-doc.ts` réécrit `docs/moteur/tunnel/REGISTRE.md` (et
+   `scripts/regles-reprise.ts` si un cahier a changé) ; le harnais refuse une doc ou une reprise en retard.
+L'écran : `/admin/atelier/mise-en-page/regles` (lecture seule ; corrections lues par `GET …/lecons?bilan=regles`). Le navigateur n'importe
+jamais l'index de `regles/` (le registre entier passerait dans son paquet) : `types.ts` et `retours.ts` seulement.
