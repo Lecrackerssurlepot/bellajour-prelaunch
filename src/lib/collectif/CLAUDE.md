@@ -1304,6 +1304,13 @@ aujourd'hui ignoré.
   l'événement directement dans Google Agenda ne libère rien ici (le verrou de la base et « un rendez-vous par adresse »
   tiennent) : toujours annuler depuis l'atelier. ⚠️ Pour un essai, jamais l'adresse du compte Google connecté comme
   prospect : Google n'invite pas l'organisateur (vu le 18/11).
+- **Un rendez-vous pris prévient la routine « Prépa call »** (`prepaCall.ts`, 18/11) : une routine Claude Code dans le
+  cloud (`trig_01Ko1KxppWBoe5nYghyDz1Kk`, connecteur Notion seul) appelée par son « API trigger », après la réponse au
+  prospect (`after`). `PREPA_CALL_ROUTINE_ID` + `PREPA_CALL_ROUTINE_TOKEN` (le jeton se génère sur claude.ai, montré
+  une seule fois) ; l'un absent, rien ne part. Elle crée ou complète la fiche « Prospects B2B » et écrit le brief dans
+  « Appels B2B ». ⚠️ Ce qui part a été tapé par un inconnu : le bloc le dit, chaque champ tient sur une ligne
+  (`uneLigne`), et la routine n'a ni Supabase ni agenda. Ne pas lui donner d'autre connecteur sans y repenser. La
+  routine du soir de Mathias (sur son Mac, non appelable) rattrape ce que celle-ci aurait manqué.
 - **Les routes sont HORS de `/api/collectif`** (`/api/partenaires/creneaux`, `/api/partenaires/rendez-vous`) : elles
   n'ont ni token ni rôle, et le harnais exige `peut(…)` de toute route de `api/collectif`. Derrière `COLLECTIF_OUVERT`,
   un frein par appelant (40 lectures, 5 réservations par minute), un champ piège (`site`) qui répond comme une réussite
