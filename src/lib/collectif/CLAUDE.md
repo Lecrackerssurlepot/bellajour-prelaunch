@@ -1298,6 +1298,12 @@ aujourd'hui ignoré.
   page ne sait jamais qui est pris. L'ordre d'une réservation : l'équipe → un seul rendez-vous à venir par adresse → les
   agendas → le VERROU (index unique sur `debut`) → l'événement chez l'organisateur (Mathias s'il est de l'appel), les
   autres et le prospect invités ; un événement raté défait la ligne.
+- **L'atelier voit et annule** (`lireRdvProspects`, `annulerProspect`, section 3 de `/admin/collectif/agendas`, route
+  `/api/admin/collectif/prospects`) : la LIGNE d'abord, conditionnée à « pris », puis l'événement chez l'organisateur
+  (Google prévient le prospect) ; un événement que Google ne retire pas se dit, la ligne reste annulée. ⚠️ Supprimer
+  l'événement directement dans Google Agenda ne libère rien ici (le verrou de la base et « un rendez-vous par adresse »
+  tiennent) : toujours annuler depuis l'atelier. ⚠️ Pour un essai, jamais l'adresse du compte Google connecté comme
+  prospect : Google n'invite pas l'organisateur (vu le 18/11).
 - **Les routes sont HORS de `/api/collectif`** (`/api/partenaires/creneaux`, `/api/partenaires/rendez-vous`) : elles
   n'ont ni token ni rôle, et le harnais exige `peut(…)` de toute route de `api/collectif`. Derrière `COLLECTIF_OUVERT`,
   un frein par appelant (40 lectures, 5 réservations par minute), un champ piège (`site`) qui répond comme une réussite

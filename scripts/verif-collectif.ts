@@ -2170,6 +2170,8 @@ titre("— D23 / T-148 : les rendez-vous dans l'espace —");
 
 titre("— 18/11 : la connexion Google de chacun, le titre par étape, la page /partenaires —");
 {
+  const routeC = lire("src/app/api/partenaires/creneaux/route.ts");
+  const routeRdvPublique = () => lire("src/app/api/partenaires/rendez-vous/route.ts");
   const agendaSrc = lire("src/lib/collectif/agenda.ts");
   const avant = { id: process.env.GOOGLE_AGENDA_CLIENT_ID, secret: process.env.GOOGLE_AGENDA_CLIENT_SECRET };
   delete process.env.GOOGLE_AGENDA_CLIENT_ID;
@@ -2227,12 +2229,19 @@ titre("— 18/11 : la connexion Google de chacun, le titre par étape, la page /
   ok("un événement Google raté défait la ligne ; une personne active non connectée ferme tout (jamais un créneau sans savoir si elle est libre)",
     /if \(!ev\.ok\) \{[\s\S]{0,260}statut: "annule"/.test(reserver) && /if \(!connexion\) return \{ ok: false, echec: PAS_PRET \};/.test(prospectsSrc));
   ok("les prospects n'écrivent dans aucune table d'édition ni du B2C, et n'envoient aucun mail", !/collectif_editions|collectif_rendez_vous"|brevo|envoyerMail/i.test(prospectsSrc));
+  const annulerSrc = prospectsSrc.slice(prospectsSrc.indexOf("export async function annulerProspect"));
+  ok("annuler un rendez-vous de prospect : la LIGNE d'abord, conditionnée à « pris » (deux clics n'annulent qu'une fois), puis l'événement ; un événement resté dans l'agenda se DIT, la ligne reste annulée",
+    annulerSrc.indexOf('.eq("statut", "pris")') < annulerSrc.indexOf("retirerEvenement(") && annulerSrc.indexOf(".update(") < annulerSrc.indexOf("retirerEvenement(") && /avertissement: ev\.ok \? null : aLaMain/.test(annulerSrc));
+  const routeProspects = lire("src/app/api/admin/collectif/prospects/route.ts");
+  ok("la route d'annulation : atelier connecté d'abord, un uuid, rien d'autre que « annuler »",
+    routeProspects.indexOf("quiEstConnecteRequete(") < routeProspects.indexOf("annulerProspect(") && /estUuid\(corps\.id\)/.test(routeProspects) && /corps\.action !== "annuler"/.test(routeProspects));
+  ok("la liste des rendez-vous de prospects (noms, adresses) n'est lue que par l'atelier : aucune page ni route publique ne l'appelle",
+    !/lireRdvProspects|annulerProspect/.test(routeC + routeRdvPublique() + lire("src/app/(atelier)/partenaires/Partenaires.tsx") + lire("src/app/(atelier)/partenaires/page.tsx")));
   const migP = lire("supabase/migrations/20261118_partenaires_rendez_vous.sql");
   ok("migration 20261118 : atomique, RLS sans policy, un créneau pris l'est pour tout l'atelier (index unique sur le début)",
     /^begin;/m.test(migP) && /^commit;/m.test(migP) && /collectif_rdv_prospects enable row level security/.test(migP) && !/create policy/i.test(migP)
       && /create unique index if not exists collectif_rdv_prospects_creneau_unique[\s\S]{0,80}\(debut\)[\s\S]{0,40}where statut = 'pris'/.test(migP));
-  const routeC = lire("src/app/api/partenaires/creneaux/route.ts");
-  const routeR = lire("src/app/api/partenaires/rendez-vous/route.ts");
+  const routeR = routeRdvPublique();
   ok("les deux routes publiques : interrupteur, frein par appelant, et le créneau REFAIT depuis les règles avant de réserver",
     /collectifOuvert\(\)/.test(routeC) && /collectifOuvert\(\)/.test(routeR) && /tropVite\(request\)/.test(routeC) && /tropVite\(request\)/.test(routeR) && routeR.indexOf("lireCreneau(") < routeR.indexOf("reserverProspect(") && routeR.indexOf("lireDemandeProspect(") < routeR.indexOf("reserverProspect("));
   ok("le piège à robots répond comme une réussite sans rien écrire", routeR.indexOf("corps.site") < routeR.indexOf("reserverProspect(") && /typeof corps\.site === "string" && corps\.site\.trim\(\) !== ""/.test(routeR));
