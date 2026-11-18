@@ -1,0 +1,137 @@
+/**
+ * Les SEUILS du compositeur (C20, 18/11/2026), au patron des réglages de l'éditeur (`editeur/reglages.ts`) : chaque seuil a une
+ * valeur, la règle qui le porte, sa date et sa raison. Ce sont les réglages de départ du banc (decider.py et poser/pose.ts, passe 10
+ * du 18/11), recopiés à l'identique : un seuil ne change pas sans un rejeu au banc (`scripts/compositeur-rejeu.ts`) et un oui de Mathias.
+ * Le raccord au registre des règles (`regles/`) se fera par les identifiants cités ici. Module pur.
+ */
+
+export type ReglageCompo = { valeur: number; regle: string; depuis: string; raison: string };
+type Table = Record<string, ReglageCompo>;
+const r = (valeur: number, regle: string, raison: string, depuis = "2026-11-18"): ReglageCompo => ({ valeur, regle, depuis, raison });
+const valeurs = <T extends Table>(t: T): { readonly [K in keyof T]: number } =>
+  Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.valeur])) as { readonly [K in keyof T]: number };
+
+/* ─────────────────────────── la sélection et la trame (decider.py) ─────────────────────────── */
+
+export const REGLES_COMPO = {
+  DENSITE_TAILLE: r(2.9, "D-TAI-01", "taille imposée : 2,9 photos par double (au lieu de 3,05) pour que les ouvertures et l'itinéraire tiennent (passe 7)"),
+  MSG_PX_MAX: r(2000, "S-022", "une image reçue par messagerie (sans date, 2 000 px au plus) reste petite"),
+  PANO_MIN: r(0.78, "S-109", "une 21:9 seule sur la double : forte (note ≥ 0,78) et en pleine définition"),
+  PLEINE_MIN_DPI: r(200, "S-004", "une pleine page tient à 200 dpi"),
+  DOUBLE_MIN_DPI: r(150, "S-105", "seuil provisoire de la campagne : 150 dpi en double"),
+  BANDE_MIN_DPI: r(150, "S-098", "une 21:9 dans une bande de 173 mm de haut : 150 dpi"),
+  DERNIER_TIERS: r(0.66, "S-055", "la dernière page vient du dernier tiers"),
+  C_GG: r(0.7, "S-087", "deux grandes de suite"),
+  C_DD: r(0.9, "S-087", "deux denses de suite"),
+  C_MM: r(0.15, "S-087", "deux moyennes de suite"),
+  C_COUPE_MOMENT: r(0.35, "S-069", "une double qui coupe un moment"),
+  PLANCHER: r(0.45, "M-09", "sous cette note, une photo est FAIBLE et va en réserve"),
+  DENSITE_TOUT: r(3.0, "M-09", "« tout garder » : la densité du milieu de la fourchette P1 ; ce sont les pages qui s'adaptent"),
+  MEME_SCENE_S: r(300, "DA-6", "deux photos à moins de 5 min, même chapitre, sujet, format et plan : la même scène, la plus faible en réserve"),
+  TROP_PETITE_PX: r(1500, "S-017", "sous 200 dpi même en quart de page ET sous 1 500 px de grand côté : trop petite"),
+  OUVERTURE_MIN: r(0.55, "DA-1", "l'ouverture d'un chapitre : une verticale en pleine définition, note ≥ 0,55"),
+  SOMMET_DEBUT: r(0.55, "DA-9", "le sommet est cherché entre 55 et 85 % du livre"),
+  SOMMET_FIN: r(0.85, "DA-9", "le sommet est cherché entre 55 et 85 % du livre"),
+  SOMMET_VISE: r(0.65, "S-053", "le sommet vers 65 % du livre"),
+  ECART_REPARTITION: r(0.4, "D-TRA-04", "coût d'un chapitre qui s'écarte de sa part de doubles"),
+  LOT_TRIE_RAFALES: r(0.08, "M-09", "lot déjà trié : moins de 8 % de rafales, doublons ou mêmes scènes"),
+  LOT_TRIE_NOTE: r(0.6, "M-09", "lot déjà trié : note médiane d'au moins 0,6"),
+  LEGENDE_MINUTES: r(45, "N-02", "un lieu lu légende une autre photo de la même double prise à ± 45 min"),
+  /* généralisations du 18/11 (M-01), sans effet sur le projet de test : elles ne jouent que là où le banc n'avait pas de donnée */
+  CHAPITRES_MIN: r(1, "N-32", "sans voyage lu : au moins un chapitre"),
+  CHAPITRES_MAX: r(8, "N-32", "sans voyage lu : au plus 8 chapitres (consigne de la couche 7 : 4 à 8)"),
+  JOURS_PAR_CHAPITRE: r(3, "N-32", "sans voyage lu : un chapitre pour trois jours photographiés, coupé aux plus grands silences"),
+  PAGES_MAX: r(120, "D-TAI-01", "borne de la taille « tout garder »"),
+  INTERET_SANS_IA: r(0.6, "N-33", "sans lecture IA, une photo part d'un intérêt neutre au-dessus du plancher : seules les faibles mesurées (floues, doublons, trop petites) vont en réserve (M-09)"),
+} as const satisfies Table;
+export const REGLAGES_COMPO = valeurs(REGLES_COMPO);
+
+/** POIDS (decider.py) : le poids d'une photo dans sa double, par rôle. */
+export const POIDS_ROLE: Readonly<Record<string, number>> = { pleine: 1.0, double: 1.0, heros: 1.0, vue_ensemble: 0.6, satellite: 0.4, detail: 0.3 };
+
+/* ─────────────────────────── la pose (poser/pose.ts, REGLES-POSE.md) ─────────────────────────── */
+
+export const REGLES_POSE = {
+  W_POIDS: r(1.0, "P-04", "poids de l'écart entre la surface relative du cadre et le poids voulu (au carré)"),
+  PEN_HEROS: r(2.0, "P-03", "le héros hors du plus grand cadre (à 5 % près)"),
+  PEN_PLEINE: r(1.5, "P-06", "une pleine qui partage sa page ou ne couvre pas 90 % de sa page"),
+  PEN_DOUBLE: r(4.0, "P-05", "une double dont le cadre ne traverse pas le pli"),
+  PEN_PLI_NON_DEMANDE: r(2.0, "P-05", "une photo qui traverse le pli sans qu'on l'ait demandé"),
+  W_ORDRE: r(0.08, "P-07", "l'ordre de lecture suit l'ordre de la trame"),
+  PEN_PAGE_VIDE: r(8, "P2-03", "une page imprimée sur moins de 10 % coûte plus que tout autre défaut de pose"),
+  PAGE_VIDE_PART: r(0.1, "P2-03", "part d'une page presque vide"),
+  PAGE_MAIGRE_PART: r(0.4, "P4-02", "sous 40 % une page est maigre"),
+  PEN_PAGE_MAIGRE: r(5, "P4-02", "coût maximal d'une page maigre"),
+  TROU_PART: r(0.45, "P2-03", "une bande horizontale vide de plus de 45 % de la hauteur utile"),
+  PEN_TROU: r(1.5, "P2-03", "coût d'un trou blanc horizontal"),
+  PEN_MAIGRE_FACE_PLEINE: r(2, "P3-01", "page maigre en face d'une pleine"),
+  FACE_MAIGRE_PART: r(0.35, "P3-01", "seuil de la page maigre en face d'une pleine"),
+  MOT_LARGEUR_MIN: r(0.4, "P2-03", "un texte seul sur sa page fait au moins 40 % de la largeur"),
+  PEN_MOT_PETIT: r(3, "P2-03", "un texte seul trop étroit"),
+  MOT_GEANT_MOTS_MAX: r(6, "P2-03", "un texte de 6 mots au plus sur une page sans photo devient un mot géant"),
+  MOT_GEANT_ENCRE_MIN: r(0.06, "P2-03", "un mot géant tient sa page à 6 % de surface d'encre"),
+  PEN_DPI_150: r(100, "P2-04", "une photo posée sous 150 dpi coûte plus qu'un visage coupé"),
+  PEN_DPI_200: r(0.3, "P2-04", "sous 200 dpi, un peu"),
+  PERTE_MAX_LARGE: r(0.45, "S-098", "une 21:9 coupée de plus de 45 % est refusée"),
+  PERSONNES_COTE_MIN: r(70, "M-08", "une photo de personnes : 70 mm au plus petit côté"),
+  PERSONNES_AIRE_MIN: r(10000, "M-08", "une photo de personnes : 100 cm² au moins"),
+  OCCUPATION_MIN: r(0.4, "M-07", "sous 40 % de page imprimée, une page sans texte reçoit un fond pris dans sa photo"),
+  PEN_PAS_FOND_PERDU: r(3, "N-13", "une photo « fond perdu » posée dans une bande"),
+  PEN_LARGE_COUPEE: r(60, "S-098", "coût dur d'une 21:9 trop coupée"),
+  W_SERIE: r(2, "P2-06", "une série veut des cadres égaux et alignés"),
+  PEN_ESCALIER: r(0.6, "P2-02", "deux cadres égaux sans bord commun"),
+  LEGENDE_COLLEE_MM: r(12, "P2-05", "une légende liée est collée à sa photo"),
+  LISIBLE_ECART_TITRE: r(0.15, "P3-02", "un titre se lit sur un fond d'écart-type sous 0,15"),
+  LISIBLE_ECART_TEXTE: r(0.14, "P2-05", "un petit texte se lit sous 0,14"),
+  LISIBLE_MILIEU: r(0.53, "P2-05", "sous cette luminance, papier ; au-dessus, encre"),
+  LISIBLE_MARGE: r(0.12, "P2-05", "marge de lisibilité"),
+  PEN_VISAGE_DUR: r(100, "P3-00", "un visage coupé est INTERDIT"),
+  SECONDAIRE_TAILLE: r(0.5, "P3-00", "une personne secondaire : visage moins de la moitié du plus grand"),
+  SECONDAIRE_BORD: r(0.15, "P3-00", "une personne secondaire : centre à moins de 15 % du bord"),
+  FACE_PLEINE_MIN: r(0.45, "P3-01", "en face d'une pleine, l'autre page est imprimée à 45 % au moins"),
+  PEN_FACE_PLEINE: r(3, "P3-01", "coût d'une page trop maigre en face d'une pleine"),
+  W_CADRE_VIDE: r(2, "P3-01", "un cadre de texte du gabarit resté vide est du blanc qui coûte"),
+  SILHOUETTE_LARGEUR: r(3, "P3-02", "la silhouette : la boîte du visage trois fois plus large"),
+  SILHOUETTE_HAUTEUR: r(7, "P3-02", "la silhouette : sept fois plus haute vers le bas"),
+  ZONE_SOUS_TITRE_MAX: r(0.1, "P3-02", "un titre sur une photo recouvre au plus 10 % de la zone importante"),
+  COUV_BLANC_MAX: r(0.62, "P3-03", "titre de couverture blanc sur un fond de luminance 0,62 au plus"),
+  COUV_ENCRE_MIN: r(0.5, "P3-03", "titre de couverture à l'encre sur 0,5 au moins"),
+  COUV_ECART_MAX: r(0.18, "P3-03", "fond de titre de couverture : écart-type sous 0,18"),
+  SERIE_PART_MIN: r(0.6, "P4-02", "une grille de série couvre 60 % de sa page"),
+  SERIE_CENTRE_TOL: r(0.1, "P4-02", "une grille de série centrée en hauteur à 10 % près"),
+  PEN_SERIE_PAGE: r(2, "P4-02", "coût d'une grille de série mal posée"),
+  CORPS_MOT_GEANT: r(80, "P4-03", "un cadre de texte d'au moins 80 pt est un mot géant"),
+  FORMES_PAGE: r(10, "P2-01", "les formes « deux pages » : les dix premiers gabarits de page de l'éditeur"),
+  PEN_TEXTE_AJOUTE_VIDE: r(0.15, "P-09", "un cadre de texte ajouté dans une zone vide"),
+  PEN_TEXTE_SUR_PHOTO: r(0.4, "P-12", "un texte posé sur une photo"),
+  PEN_LEGENDE_SUR_SA_PHOTO: r(0.2, "P-10", "une légende posée sur sa photo"),
+  AIRE_MIN_CM2: r(35, "P-04 bis", "HYPOTHÈSE : sous 35 cm² une photo est une vignette"),
+  W_PETITE: r(1.0, "P-04 bis", "coût d'une vignette"),
+  PEN_TEXTE_SANS_CADRE: r(2.5, "P-09", "un texte sans place"),
+  ECART_LEGENDE_MAX: r(30, "P-10", "une légende liée est « près » de sa photo à 30 mm au plus"),
+  MARGE_PLI_VISAGE: r(15, "P-15", "HYPOTHÈSE : bande interdite aux visages de chaque côté du pli"),
+  MARGE_PLI_CORPS: r(15, "DA-3", "le corps entier hors de ± 15 mm du pli"),
+  MAX_FOIS: r(6, "M-06", "M-06 prime sur DA-7 : une forme propre revient jusqu'à 6 fois par 48 pages"),
+  TROU_H: r(0.12, "DA-5", "un trou blanc dans l'enveloppe des photos : 12 % de la hauteur"),
+  TROU_L: r(0.25, "DA-5", "un trou blanc dans l'enveloppe des photos : 25 % de la largeur"),
+  PEN_TROU_ENV: r(8, "DA-5", "coût d'un trou blanc dans l'enveloppe"),
+  AIR_TETE: r(0.25, "P-14", "l'air au-dessus d'une tête"),
+  AIR_COTE: r(0.1, "P-14", "l'air sur les côtés d'un visage"),
+  PART_MAX: r(0.25, "N-11", "la page « trois bandes » jusqu'à 25 % des planches"),
+  FENETRE: r(2, "N-11 bis", "seule la planche voisine est interdite"),
+  PEN_REPETITION_FORCEE: r(1.0, "P-13 bis", "un gabarit repris malgré la répétition coûte un point"),
+  PEN_SUR_APLAT: r(0.3, "P-17 bis", "une disposition retouchée posée sur un aplat"),
+  APLAT_VISIBLE_MIN: r(0.2, "P-17 bis", "part de l'aplat qui doit rester visible"),
+  TOP_K: r(16, "P-21", "les gabarits posés en entier au second tour"),
+  W_VISAGE_COUPE: r(6, "P-14", "coût d'un visage coupé au recadrage"),
+  W_VISAGE_HORS: r(3, "P-14", "coût d'un visage hors cadre"),
+  W_VISAGE_PLI: r(6, "P-15", "coût d'un visage au pli"),
+  W_VISAGE_TEXTE: r(6, "P-16", "coût d'un visage sous un texte ou une photo"),
+  W_ZONE: r(1.0, "P-14", "coût de la zone importante perdue"),
+  W_ZOOM: r(0.8, "P-14", "coût du zoom"),
+  ZONE_SOUS_TEXTE_MAX: r(0.35, "P-12", "un texte sur une photo couvre au plus 35 % de la zone importante"),
+  LUMA_TEXTE_CLAIR: r(0.6, "P-12", "luminance sous un texte au-dessus de laquelle il reste à l'encre"),
+} as const satisfies Table;
+
+/** Les valeurs seules, lues par la pose (même noms que `REGLAGES_POSE` du banc), plus les zooms essayés au recadrage (P-14). */
+export const REGLAGES_POSE = { ...valeurs(REGLES_POSE), ZOOMS: [1, 1.1, 1.2, 1.35, 1.5] as readonly number[] } as const;

@@ -10,6 +10,13 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 18/11/2026 — « Composer le magazine » (l'éditeur qui compose) : sur branche, PAS en production
+
+- Branche `feat/editeur-qui-compose` (T-217, poussée, pas de PR) : bouton « Composer le magazine » du panneau Photos (questions, analyse,
+  proposition, « Posées et laissées »), compositeur porté du banc (`src/lib/mise-en-page/compositeur/`), lecture IA v3, étapes `voyage` et
+  `lieux` de la route `lecture-ia` (même garde). Rejoué sur le projet de test du banc : mêmes magazines que le Python (passe 10).
+- Aucun appel réel à OpenAI pour les étapes nouvelles (recette avec réponses simulées). Aucune migration, aucune écriture en base.
+
 ## 18/11/2026 — Registre des règles du tunnel : sur branche, PAS en production
 
 - Branche `feat/tunnel-registre-des-regles` (T-216, poussée, pas de PR) : 314 règles en données (`src/lib/mise-en-page/regles/`),

@@ -135,3 +135,11 @@ le même nom. Une erreur dans le fichier se corrige dans la démo, pas à la mai
 double de trois photos avec son titre, la dernière page (1 photo), une couverture `CV-01`, le style `T-01`, un tri (six gardées,
 une écartée, objectif 24) et trois raisons. 4 pages composées (2 × (3 − 1)). Pour l'essayer : créer un projet libre, importer
 sept photos portant ces noms, cliquer sur « Premier jet ».
+
+## Le compositeur l'écrit (18/11, C20)
+
+« Composer le magazine » produit un premier jet DANS l'éditeur (`src/lib/mise-en-page/compositeur/`, `composer`) : même enveloppe,
+même version (1), relu par `lirePremierJet` avant d'être chargé par le geste `chargerPremierJet` (une entrée d'historique). Les identifiants
+du fichier sont ceux des photos de l'éditeur et la table `photos` porte leurs noms de fichier : le lien par le nom les retrouve tels quels.
+Le magazine porte `tri` (choisies, écartées, réserve, visées), `style` (paire du profil, nuancier tiré des photos), `couverture` (la
+première proposition qui passe P-19 à P4-01), et `raisons` (les écartées, 120 signes). Le format n'a pas changé.

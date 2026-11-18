@@ -250,3 +250,34 @@ Numérotées à la suite des signatures, à partir de R188 (la plage R180 à R19
 - **R194** (17/11, T-215) LA CORRECTION : un clic sur un tag lu ouvre un petit choix ; la correction s'écrit dans `corrige`, PRIME sur la proposition partout (vignette, filtres, mises en avant, Lecture), et devient une leçon `tag_corrige` de règle IA (la proposition, le geste). Revenir à la proposition retire la correction, sans leçon. Corrigée « à écarter », une photo perd sa candidature à la couverture.
 - **R195** (17/11, T-215) LE COÛT : avant de lancer, une ligne dit « N photos · M lues par l'IA · ≈ X $ », d'après les seuls chiffres mesurés (essai du 17/11 : 0,061 $ pour 57 photos en planche, 0,034 $ pour 17 regardées) ; à la fin, une fois, le coût RÉEL (« Lu : 57 photos · 0,09 $ ») = jetons de chaque réponse × prix datés du 13/11 (gpt-5.4 2,50 / 15,00 $, gpt-5.1 1,25 / 10,00 $ par million), cumulé dans `lecture.dollars`. Une réponse hors contrat est comptée : elle a été payée.
 - **R196** (17/11, T-215, T-203) LES PHOTOS DE CLIENTS ne partent pas chez OpenAI tant que la politique de confidentialité n'est pas changée et que Mathias n'a pas donné son accord : la route refuse toute clé qui n'est pas une création libre (403 `photos_clients_non_autorisees`), sauf `MEP_LECTURE_IA_CLIENTS=1`, posée nulle part ; l'écran grise le bouton et le dit. Sans clé OpenAI : 503 `openai_absente`. Rien n'est écrit en base, aucune photo n'est gardée côté serveur.
+
+## « Composer le magazine » : le compositeur (18/11, C20)
+
+Numérotées à la suite de « Lire les photos » (R197). Branche `feat/editeur-qui-compose` (T-217). Tests : `scripts/verif-mep-compositeur.ts` ;
+fidélité au banc : `scripts/compositeur-rejeu.ts`. Fiche `docs/moteur/couches/C20-compositeur.md`. Les règles du tunnel qu'il applique
+(M-…, S-…, DA-…, N-…, P-…) gardent leurs identifiants ; celles-ci disent ce que l'ÉDITEUR fait autour.
+
+- **R197** (18/11, T-217) LES QUESTIONS : avant de composer, une feuille de cinq champs facultatifs (type d'album, personnes du groupe,
+  ambiance, taille, lieux à faire apparaître), pré-remplis par ce que la machine devine (en pointillé) ; ce que l'atelier saisit PRIME
+  (`ficheEffective`). La fiche est gardée avec le projet dans le navigateur (IndexedDB `bj-mep-composer`), jamais en base.
+- **R198** (18/11, T-217) L'ANALYSE SOUS LES YEUX : six étapes affichées (mesures locales, planches, regard fin, le voyage, les lieux, la
+  composition), chacune avec son avancement ; le coût est ESTIMÉ avant (chiffres du banc du 17/11) et PAYÉ après ; « Arrêter » à tout
+  moment. Une étape sans objet est sautée et le dit (déjà lue, pas un road trip, GPS, IA fermée).
+- **R199** (18/11, T-217) JAMAIS DEUX FOIS LA MÊME PHOTO : une photo dont la lecture porte un rôle n'est pas relue (R192) ; le voyage n'est
+  relu que si des photos viennent d'être lues ; les lieux, seulement s'ils manquent ou si le voyage vient d'être relu.
+- **R200** (18/11, T-217) LA DÉGRADATION (1 € par projet) : regard fin plafonné à 40 candidates et 20 photos à texte lisible ; au-delà de
+  600 photos à lire, 600 lues réparties dans le temps et les autres héritent des tags de leur voisine la plus ressemblante (empreinte),
+  sans sa candidature ni son texte lisible. Non mesuré sur un vrai gros lot.
+- **R201** (18/11, T-217) LES LIEUX PAR CHAPITRE (M-05) : seulement pour un road trip sans GPS et sans étapes saisies ; deux planches au
+  plus (les repères de chaque chapitre, les photos sans date) ; la consigne est construite par le SERVEUR (`consigneLieux`), jamais reçue
+  du navigateur ; une enseigne n'est jamais un lieu, un lieu sans preuve ne porte pas de nom.
+- **R202** (18/11, T-217) LA PROPOSITION : le magazine composé est chargé par le geste du premier jet (une entrée d'historique, Annuler
+  rend l'état d'avant) ; rien n'écrase un magazine commencé sans « Remplacer la mise en page ? ».
+- **R203** (18/11, T-217) POSÉES ET LAISSÉES (M-02) : un bandeau dit les pages, les posées, la réserve, le coût et les fautes à revoir ;
+  le panneau montre par chapitre chaque photo posée, en couverture, en réserve ou écartée, avec sa raison et ses règles. « Faire entrer »
+  dépose une photo de la réserve sur la page de son chapitre la plus proche dans le temps (le geste `deposer` de l'éditeur).
+- **R204** (18/11, T-217) M-10 À L'ÉCRAN : une photo de couverture qui se trouve aussi à l'intérieur fait recomposer l'intérieur sans elle,
+  la couverture de l'atelier gardée telle quelle ; automatiquement si l'intérieur n'a pas bougé depuis la proposition (empreinte), par
+  « Recomposer sans doublon » sinon.
+- **R205** (18/11, T-217) IA FERMÉE, COMPOSITION LOCALE : sans lecture IA (dossier sans `MEP_LECTURE_IA_CLIENTS=1`, édition, pas de clé),
+  le compositeur compose avec les mesures locales seules (N-33) ; la feuille le dit.
