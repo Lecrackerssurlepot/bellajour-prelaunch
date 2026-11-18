@@ -327,12 +327,14 @@ export const estCleLibre = (cle: string): boolean => CLE_LIBRE.test(cle);
 
 export type Garde = { ok: true; cle: string } | { ok: false; statut: 400 | 403 | 503; erreur: "cle_invalide" | "photos_clients_non_autorisees" | "openai_absente" };
 /**
- * R196, T-203 : les photos de CLIENTS n'ont pas encore le droit de partir chez OpenAI (politique de confidentialité à changer, accord
- * de Mathias attendu). Seule une création libre passe, sauf `MEP_LECTURE_IA_CLIENTS=1` (posée nulle part). Sans clé : 503.
+ * R196, T-203 : une création libre passe toujours. Un DOSSIER de particulier (`dossier:<token>`) ne passe qu'avec `MEP_LECTURE_IA_CLIENTS=1`
+ * (décision de Mathias du 18/11 : « Oui, ouvre », pour ses essais à l'atelier ; la politique de confidentialité reste à mettre à jour).
+ * Une ÉDITION collective ne passe JAMAIS, variable ou non : ses photos viennent de participants (accord propre, vrai client en cours). Sans clé : 503.
  */
+export const estCleDossier = (cle: string): boolean => cle.startsWith("dossier:");
 export function gardeLecture(cle: unknown, env: { OPENAI_API_KEY?: string; MEP_LECTURE_IA_CLIENTS?: string }): Garde {
   if (typeof cle !== "string" || !cle || cle.length > 120) return { ok: false, statut: 400, erreur: "cle_invalide" };
-  if (!estCleLibre(cle) && env.MEP_LECTURE_IA_CLIENTS !== "1") return { ok: false, statut: 403, erreur: "photos_clients_non_autorisees" };
+  if (!estCleLibre(cle) && !(estCleDossier(cle) && env.MEP_LECTURE_IA_CLIENTS === "1")) return { ok: false, statut: 403, erreur: "photos_clients_non_autorisees" };
   if (!env.OPENAI_API_KEY) return { ok: false, statut: 503, erreur: "openai_absente" };
   return { ok: true, cle };
 }

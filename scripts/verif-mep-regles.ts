@@ -41,6 +41,7 @@ const lire = (chemin: string): string => readFileSync(join(RACINE, chemin), "utf
 export const RETOURS_DE_METHODE: Readonly<Record<string, string>> = {
   "M-01": "une règle est générale : tenue par ce harnais (mots interdits), pas par le compositeur",
   "M-11": "une règle n'existe que dans le dépôt : c'est le registre lui-même",
+  "M-12": "une décision d'accès (« Lire les photos » ouvert à l'atelier sur les dossiers), tenue par la garde de la route, pas par le compositeur",
 };
 
 /** Ce qu'une leçon peut porter sans être une règle : l'origine d'une proposition ou un jalon. */
