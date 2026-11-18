@@ -1302,10 +1302,14 @@ aujourd'hui ignoré.
   n'ont ni token ni rôle, et le harnais exige `peut(…)` de toute route de `api/collectif`. Derrière `COLLECTIF_OUVERT`,
   un frein par appelant (40 lectures, 5 réservations par minute), un champ piège (`site`) qui répond comme une réussite
   sans rien écrire. Le créneau est refait par `lireCreneau`, la demande par `lireDemandeProspect` (la même règle que l'écran).
-- **La page** (`src/app/(atelier)/partenaires/`, monde sombre, tout sous `.pa-page`) est statique. La brochure est un
-  défilement horizontal natif ; la page courante se lit à la position du défilement, et `.pa-piste` est en
-  `position: relative` (sinon `offsetLeft` se lit depuis un ancêtre et le centrage est faux). Les images sont
-  versionnées (`brochure-ecoles-v1-N-800|1600.webp`) : une brochure refaite = `v2`, jamais un fichier écrasé.
+- **La page** (`src/app/(atelier)/partenaires/`, monde sombre, tout sous `.pa-page`) est statique. Retour de Mathias du
+  18/11 : « on veut juste prendre un rendez-vous comme CTA, et que le PDF soit gros ». Donc : la brochure prend TOUTE
+  la page, une feuille sous l'autre (1 040 px au plus, bord à bord au téléphone), et UN seul geste, « Prendre
+  rendez-vous » (en-tête collé en haut, et fin de brochure), ouvre le panneau des créneaux : un volet à droite à
+  l'ordinateur, une feuille du bas au téléphone, monté dès l'arrivée (créneaux déjà lus). Ni encart à côté de la
+  brochure, ni titre, ni bouton fixe en bas (il faisait trois fois le même bouton). Le carrousel du premier jet est dans
+  le commit 336ab946. Les images sont versionnées (`brochure-ecoles-v1-N-800|1600.webp`) : une brochure refaite =
+  `v2`, jamais un fichier écrasé.
 - **Sans la migration `20261118`** : rien ne casse. `connexionDe` et `lireConnexions` rendent `null` (compte de service
   comme avant), « Connecter Google » dit la migration à appliquer, `/partenaires` montre la brochure et l'adresse.
 

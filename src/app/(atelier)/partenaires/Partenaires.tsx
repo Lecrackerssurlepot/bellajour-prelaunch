@@ -1,22 +1,23 @@
 'use client'
 
-/* La page /partenaires : la brochure à gauche, le rendez-vous à droite ;
-   au téléphone, l'une sous l'autre et un bouton fixe qui mène au rendez-vous.
+/* La page /partenaires (retour de Mathias du 18/11 : « on veut juste prendre
+   un rendez-vous comme CTA, et que le PDF soit gros »).
 
-   LA BROCHURE est un défilement horizontal natif (scroll-snap) : le doigt, le
-   pavé tactile, les flèches du clavier et les deux boutons font la même chose.
-   La page courante se lit à la position du défilement (jamais un
-   IntersectionObserver : il se fige dans un onglet masqué). Toucher une page
-   l'ouvre en grand.
+   LA BROCHURE prend toute la page : une page sous l'autre, en grand, comme on
+   lit un PDF. Rien autour.
+
+   UN SEUL GESTE : « Prendre rendez-vous » (dans l'en-tête, qui reste collé en
+   haut, et à la fin de la brochure) ouvre le panneau des créneaux : un volet à droite à
+   l'ordinateur, une feuille du bas au téléphone. Il reste monté : les
+   créneaux sont lus dès l'arrivée.
 
    LE RENDEZ-VOUS ne croit rien de ce qu'il affiche : chaque créneau vient du
-   serveur, et le serveur le refait avant de réserver. Si les agendas ne sont
-   pas reliés (503) ou que l'Édition collective est fermée (404), le panneau
-   montre l'adresse de contact : la page ne promet jamais un créneau
-   qu'elle n'a pas. */
+   serveur, et le serveur le refait avant de réserver. Tant que les agendas ne
+   sont pas reliés (503) ou que l'Édition collective est fermée (404), le
+   panneau dit que les créneaux ouvrent bientôt : jamais un créneau inventé. */
 
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { lireDemandeProspect, PROSPECT_MESSAGE_MAX, type ChampProspect } from '@/lib/collectif/prospectsSaisie'
 
 type PageBrochure = { alt: string; petite: string; grande: string }
@@ -39,16 +40,16 @@ function court(libelle: string): { jour: string; numero: string } {
 }
 
 export default function Partenaires({ pages, pdf, contact }: { pages: PageBrochure[]; pdf: string; contact: string }) {
-  /* Le bouton fixe du téléphone s'efface quand le rendez-vous est à l'écran : il ne couvre jamais le formulaire. */
-  const carte = useRef<HTMLElement>(null)
-  const [carteVue, setCarteVue] = useState(false)
+  const [ouvert, setOuvert] = useState(false)
+
   useEffect(() => {
-    const el = carte.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver(([e]) => setCarteVue(e.isIntersecting), { rootMargin: '0px 0px -120px 0px' })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
+    if (!ouvert) return
+    const fermer = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOuvert(false)
+    }
+    window.addEventListener('keydown', fermer)
+    return () => window.removeEventListener('keydown', fermer)
+  }, [ouvert])
 
   return (
     <main className="pa-page">
@@ -56,142 +57,50 @@ export default function Partenaires({ pages, pdf, contact }: { pages: PageBrochu
         <Link className="pa-logo" href="/" prefetch={false} aria-label="Bellajour, retour à l’accueil">
           <img src="/images/v2/ui/signature-bellajour-240.webp" alt="" width={240} height={92} decoding="async" />
         </Link>
-        <span className="pa-tete-etiq">Écoles et associations</span>
+        <button type="button" className="pa-bouton pa-tete-cta" onClick={() => setOuvert(true)}>
+          Prendre rendez-vous
+        </button>
       </header>
 
-      <div className="pa-corps">
-        <section className="pa-gauche" aria-label="La brochure">
-          <h1 className="pa-titre">
-            Vos années étudiantes, <em>imprimées en magazine.</em>
-          </h1>
-          <Brochure pages={pages} pdf={pdf} />
-        </section>
-
-        <section className="pa-droite" id="rendez-vous" aria-label="Prendre rendez-vous" ref={carte}>
-          <RendezVous contact={contact} />
-        </section>
-      </div>
-
-      <a className={`pa-fixe ${carteVue ? 'est-cache' : ''}`} href="#rendez-vous" tabIndex={carteVue ? -1 : undefined}>
-        Prendre rendez-vous
-      </a>
-    </main>
-  )
-}
-
-/* ─────────────────────────────── la brochure ─────────────────────────────── */
-
-function Brochure({ pages, pdf }: { pages: PageBrochure[]; pdf: string }) {
-  const piste = useRef<HTMLDivElement>(null)
-  const [courante, setCourante] = useState(0)
-  const [grande, setGrande] = useState<number | null>(null)
-
-  const aller = useCallback((i: number) => {
-    const p = piste.current
-    const cible = p?.children[Math.min(Math.max(i, 0), (p?.children.length ?? 1) - 1)] as HTMLElement | undefined
-    if (!p || !cible) return
-    /* Le compteur suit le geste tout de suite : le défilement confirme ensuite (`lire`). */
-    setCourante(Array.from(p.children).indexOf(cible))
-    p.scrollTo({ left: cible.offsetLeft - (p.clientWidth - cible.clientWidth) / 2, behavior: 'smooth' })
-  }, [])
-
-  /* La page courante : celle dont le centre est le plus près du centre de la piste. */
-  function lire() {
-    const p = piste.current
-    if (!p) return
-    const centre = p.scrollLeft + p.clientWidth / 2
-    let mieux = 0
-    let ecart = Infinity
-    Array.from(p.children).forEach((el, i) => {
-      const e = el as HTMLElement
-      const d = Math.abs(e.offsetLeft + e.clientWidth / 2 - centre)
-      if (d < ecart) {
-        ecart = d
-        mieux = i
-      }
-    })
-    setCourante(mieux)
-  }
-
-  useEffect(() => {
-    if (grande === null) return
-    const fermer = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setGrande(null)
-      if (e.key === 'ArrowRight') setGrande((g) => (g === null ? g : Math.min(g + 1, pages.length - 1)))
-      if (e.key === 'ArrowLeft') setGrande((g) => (g === null ? g : Math.max(g - 1, 0)))
-    }
-    window.addEventListener('keydown', fermer)
-    return () => window.removeEventListener('keydown', fermer)
-  }, [grande, pages.length])
-
-  return (
-    <div className="pa-bro">
-      <div
-        className="pa-piste"
-        ref={piste}
-        onScroll={lire}
-        tabIndex={0}
-        role="group"
-        aria-roledescription="carrousel"
-        aria-label={`La brochure, ${pages.length} pages`}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowRight') {
-            e.preventDefault()
-            aller(courante + 1)
-          }
-          if (e.key === 'ArrowLeft') {
-            e.preventDefault()
-            aller(courante - 1)
-          }
-        }}
-      >
+      {/* La brochure, en grand : une page sous l'autre, comme on lit un PDF. */}
+      <h1 className="pa-sr">Bellajour pour les écoles et les associations : la brochure</h1>
+      <div className="pa-bro">
         {pages.map((p, i) => (
-          <button
-            type="button"
+          <img
             key={p.grande}
-            className={`pa-feuille ${i === courante ? 'est-courante' : ''}`}
-            aria-label={`Page ${i + 1} sur ${pages.length} : agrandir`}
-            onClick={() => (i === courante ? setGrande(i) : aller(i))}
-          >
-            <img
-              src={p.petite}
-              srcSet={`${p.petite} 800w, ${p.grande} 1600w`}
-              sizes="(max-width: 999px) 78vw, 40vw"
-              alt={p.alt}
-              width={800}
-              height={1131}
-              loading={i < 2 ? 'eager' : 'lazy'}
-              decoding="async"
-              draggable={false}
-            />
-          </button>
+            className="pa-feuille"
+            src={p.grande}
+            srcSet={`${p.petite} 800w, ${p.grande} 1600w`}
+            sizes="(max-width: 1100px) 100vw, 1040px"
+            alt={p.alt}
+            width={1600}
+            height={2262}
+            loading={i === 0 ? 'eager' : 'lazy'}
+            fetchPriority={i === 0 ? 'high' : undefined}
+            decoding="async"
+          />
         ))}
       </div>
 
-      <div className="pa-bro-barre">
-        <button type="button" className="pa-rond" onClick={() => aller(courante - 1)} disabled={courante === 0} aria-label="Page précédente">
-          ‹
-        </button>
-        <span className="pa-compte" aria-live="polite">
-          {courante + 1} / {pages.length}
-        </span>
-        <button type="button" className="pa-rond" onClick={() => aller(courante + 1)} disabled={courante === pages.length - 1} aria-label="Page suivante">
-          ›
+      <div className="pa-fin">
+        <button type="button" className="pa-bouton" onClick={() => setOuvert(true)}>
+          Prendre rendez-vous
         </button>
         <a className="pa-pilule" href={pdf} download>
           Télécharger le PDF
         </a>
       </div>
 
-      {grande !== null ? (
-        <div className="pa-grand" role="dialog" aria-modal="true" aria-label={`Page ${grande + 1} sur ${pages.length}`} onClick={() => setGrande(null)}>
-          <button type="button" className="pa-rond pa-grand-fermer" aria-label="Fermer" autoFocus>
+      {/* Le panneau reste monté : les créneaux sont lus dès l'arrivée, il s'ouvre plein. */}
+      <div className={`pa-voile ${ouvert ? 'est-ouvert' : ''}`} onClick={() => setOuvert(false)} aria-hidden={!ouvert}>
+        <section className="pa-panneau" role="dialog" aria-modal="true" aria-label="Prendre rendez-vous" onClick={(e) => e.stopPropagation()} inert={!ouvert}>
+          <button type="button" className="pa-rond pa-fermer" aria-label="Fermer" onClick={() => setOuvert(false)}>
             ×
           </button>
-          <img src={pages[grande].grande} alt={pages[grande].alt} width={1600} height={2262} onClick={(e) => e.stopPropagation()} />
-        </div>
-      ) : null}
-    </div>
+          <RendezVous contact={contact} />
+        </section>
+      </div>
+    </main>
   )
 }
 
@@ -274,10 +183,7 @@ function RendezVous({ contact }: { contact: string }) {
 
   return (
     <div className="pa-carte" aria-busy={attente}>
-      <p className="pa-etiq">Premier échange</p>
-      <h2 className="pa-carte-titre">
-        Parlons de votre <em>projet.</em>
-      </h2>
+      <h2 className="pa-carte-titre">Prendre rendez-vous</h2>
 
       {etat.vue === 'chargement' ? (
         <div className="pa-attente" role="status">
@@ -290,8 +196,8 @@ function RendezVous({ contact }: { contact: string }) {
 
       {etat.vue === 'ferme' ? (
         <>
-          <p className="pa-texte">Sans engagement, pour cadrer votre événement.</p>
-          <a className="pa-bouton" href={`mailto:${contact}?subject=${encodeURIComponent('Un magazine pour notre événement')}`}>
+          <p className="pa-texte">Les créneaux ouvrent bientôt.</p>
+          <a className="pa-pilule" href={`mailto:${contact}`}>
             {contact}
           </a>
         </>
