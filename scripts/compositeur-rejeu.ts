@@ -16,7 +16,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import sharp, { type OverlayOptions } from "sharp";
-import { composer, type EntreeCompo, type LieuxChapitres, type Luminance, type PhotoCompo, type ResultatCompo, type Voyage } from "@/lib/mise-en-page/compositeur";
+import { composer, composerSur, type EntreeCompo, type LieuxChapitres, type Luminance, type PhotoCompo, type ResultatCompo, type Voyage } from "@/lib/mise-en-page/compositeur";
+import { lectureSuspecte, type VerdictLu } from "@/lib/mise-en-page/editeur";
 import { cadresDe, type Magazine } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import type { StyleMagazine } from "@/lib/mise-en-page/style";
@@ -216,6 +217,34 @@ async function main(): Promise<void> {
   }
   md.push("");
   for (const l of lignes) md.push(`- ${l.taille} : ${l.posees_communes} posées en commun ; seulement TS : ${l.seulement_ts.join(", ") || "aucune"} ; seulement Python : ${l.seulement_py.join(", ") || "aucune"}`);
+  /* 18/11 soir (M-13, M-14) : la LECTURE EMPOISONNÉE du vrai dossier de Mathias, rejouée sur le projet de test sans aucun appel :
+     toutes les photos « à écarter » (des cases blanches lues par l'IA), 85 gardées par l'atelier, 60 pages demandées. Avant la correction,
+     le compositeur jetait « aucune répartition des doubles (60) ». */
+  md.push("", "## Lecture empoisonnée (toutes « à écarter », 85 gardées par l'atelier, 60 pages)", "", "| Cas | issue | pages | posées | réserve | ajustement | fautes dures |", "|---|---|---|---|---|---|---|");
+  const poison: PhotoCompo[] = e0.photos.map((p) => ({ ...p, ia: { ...(p.ia ?? { role: null, sujet: null, plan: null, personnes: null, momentJournee: null, ambiance: null, lieuLu: null, couverture: false }), role: "a_ecarter", interet: 0.1 } }));
+  const gardees = poison.filter((p) => !p.ecart && p.date).sort((a, b) => (a.date! < b.date! ? -1 : 1)).slice(0, 85).map((p) => p.id);
+  const avecGardees = poison.map((p) => (gardees.includes(p.id) ? { ...p, gardee: true as const } : p));
+  const verdicts: VerdictLu[][] = [];
+  for (let i = 0; i < poison.length; i += 16) verdicts.push(poison.slice(i, i + 16).map((p) => ({ id: p.id, role: p.ia?.role ?? null, corrige: false })));
+  const susp = lectureSuspecte(verdicts);
+  const sansLecture = avecGardees.map((p) => (susp.douteuses.has(p.id) ? { ...p, ia: null } : p));
+  const cas: [string, PhotoCompo[], Partial<EntreeCompo>][] = [
+    ["lecture utilisée, aucune marque", poison, {}],
+    ["lecture utilisée, 85 gardées (M-13 : la marque prime)", avecGardees, { marques: { coeurs: [], gardees } }],
+    [`lecture vue douteuse (${susp.raisons.join(", ")}) et non utilisée, 85 gardées`, sansLecture, { marques: { coeurs: [], gardees }, lectureDouteuse: { photos: susp.douteuses.size, raison: susp.raisons.join(", ") } }],
+  ];
+  for (const [nom, photos, o] of cas) {
+    const i = composerSur({ ...e0, photos, luminances: lum, fiche: { taille: 60, theme: "road_trip" }, couverture: null, ...o });
+    if (!i.ok) { md.push(`| ${nom} | phrase : « ${i.phrase} » ${i.cause} ${i.geste} | | | | | |`); console.log(`empoisonnée · ${nom} : ${i.phrase} ${i.cause} ${i.geste}`); continue; }
+    const r = i.r;
+    md.push(`| ${nom} | magazine | ${r.pages} | ${r.selection.compte.posee} | ${r.selection.compte.reserve} | ${r.ajustement?.phrase ?? "aucun"} | ${r.controle.fautes.length} |`);
+    console.log(`empoisonnée · ${nom} : ${r.pages} pages, ${r.selection.compte.posee} posées (dont ${gardees.filter((id) => r.selection.photos.find((p) => p.id === id)?.etat === "posee").length} gardées), ${r.selection.compte.reserve} en réserve${r.ajustement ? ` · ${r.ajustement.phrase}` : ""}`);
+    const d = path.join(sortie, "empoisonnee", nom.startsWith("lecture vue") ? "douteuse-non-utilisee" : nom.includes("85") ? "gardees" : "brute");
+    fs.mkdirSync(d, { recursive: true });
+    fs.writeFileSync(path.join(d, "premier-jet.json"), JSON.stringify(r.jet, null, 1));
+    fs.writeFileSync(path.join(d, "selection.json"), JSON.stringify({ chapitres: r.chapitres, selection: r.selection, controle: r.controle, decisions: r.decisions }, null, 1));
+    await contact(r.jet.magazine, fichierDe, dims, path.join(d, "planche-contact.jpg"));
+  }
   fs.writeFileSync(path.join(sortie, "comparaison.md"), md.join("\n") + "\n");
   console.log(md.join("\n"));
 }

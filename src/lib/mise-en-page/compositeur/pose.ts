@@ -26,6 +26,7 @@ import { ROLES_COULEUR, contraste } from "../nuancier";
 import { gabaritsClasses, noterGabarit, partDansLePli, perteCadre } from "../editeur/operations";
 import { PENALITE_PLI, POIDS_GRANDE_COUPE, SEUIL_DPI, TAILLE_DEFAUT } from "../editeur/outils";
 import { REGLAGES_POSE } from "./reglagesCompositeur";
+import { ImpasseComposition } from "./trame";
 import type { Luminance } from "./types";
 
 /** Le moteur de l'éditeur, par ses modules purs (le poseur du banc les recevait par chemin ; ici par import, rien n'est copié). */
@@ -1599,7 +1600,7 @@ export class Poseur {
   poser(): Resultat {
     const T = this.trame;
     const planchesT = [...(T.planches ?? [])].sort((a, b) => a.n - b.n);
-    if (!planchesT.length) throw new Error("trame sans planche");
+    if (!planchesT.length) throw new ImpasseComposition("Aucune page à poser.", "La trame ne contient aucune planche : une erreur de l'outil, rien n'a été changé.", "Relance ; si ça recommence, dis-le.", "trame sans planche");
     if (planchesT[0].type !== "page1") this.ecartsGlobaux.push(`la planche 0 est « ${planchesT[0].type} », pas « page1 » : posée en page 1 (page droite seule)`);
     const derniereT = planchesT[planchesT.length - 1];
     const aDerniere = derniereT.type === "derniere" && planchesT.length >= 2;

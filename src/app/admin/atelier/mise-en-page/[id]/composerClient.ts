@@ -19,10 +19,16 @@ export type Proposition = {
   quand: string;
   dollars: number;
   pages: number;
-  resultat: Pick<ResultatCompo, "selection" | "chapitres" | "controle" | "couverture" | "profil" | "sobre" | "taille">;
+  resultat: Pick<ResultatCompo, "selection" | "chapitres" | "controle" | "couverture" | "profil" | "sobre" | "taille"> & Partial<Pick<ResultatCompo, "origineTaille" | "ajustement">>;
   /** Une empreinte de l'intérieur chargé : s'il n'a pas bougé, M-10 recompose sans demander. */
   empreinte: string;
+  /** M-15 : les autres tailles, composées pour de vrai (leurs chiffres ne sont jamais estimés). */
+  autres?: AutreTaille[];
+  /** M-13 : ce que la MACHINE a marqué « gardée » en chargeant la proposition (le premier jet écrit ses posées dans le tri), et ce que
+   *  l'atelier gardait avant : une recomposition ne prend jamais un choix de la machine pour une marque de l'atelier. */
+  machine?: { choisies: string[]; avant: string[] };
 };
+export type AutreTaille = { mot: string; taille: "tout" | number; pages: number; posees: number };
 export type Garde = { fiche: Fiche; proposition: Proposition | null };
 
 let basePromise: Promise<IDBDatabase | null> | null = null;
@@ -85,6 +91,12 @@ export function empreinte(planches: unknown): string {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
   return `${s.length}-${(h >>> 0).toString(16)}`;
 }
+
+/* ─────────────── les luminances de la séance (le bandeau recompose une autre taille avec les mêmes) ─────────────── */
+
+const luminancesDeSeance = new Map<string, ReadonlyMap<string, Luminance>>();
+export const garderLuminances = (cle: string, l: ReadonlyMap<string, Luminance>): void => { luminancesDeSeance.set(cle, l); };
+export const luminancesGardees = (cle: string | undefined): ReadonlyMap<string, Luminance> | undefined => (cle ? luminancesDeSeance.get(cle) : undefined);
 
 /* ─────────────── les pixels ─────────────── */
 

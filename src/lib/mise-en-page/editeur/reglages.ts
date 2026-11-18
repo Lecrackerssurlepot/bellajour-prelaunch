@@ -54,6 +54,11 @@ export const REGLAGES = {
   personnes_surface_min_cm2: { valeur: 100, regle: "M-08", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 : ni dans un cadre de moins de 100 cm²" },
   densite_tout_garder: { valeur: 3, regle: "M-09", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 : quand le lot arrive déjà trié (presque aucune rafale ni doublon, notes hautes), la machine garde presque tout et vise 3,0 photos par double ; c'est le nombre de pages qui s'adapte" },
   definition_double_ppp: { valeur: 150, regle: "I-04", depuis: "2026-11-18", raison: "PROVISOIRE, à trancher par Mathias : le banc du 17/11 a accepté 150 ppp pour une photo en pleine double (photos signalées à chaque passe) ; ailleurs le seuil reste 200 ppp (SEUIL_DPI, outils.ts)" },
+  /* 18/11 soir (M-13) : jamais une case vide chez l'IA, jamais une lecture douteuse utilisée. Retour de Mathias sur un vrai dossier de 164
+     photos : toutes les vignettes « à écarter », parce que les images ne se chargeaient plus et que les cases blanches étaient payées. */
+  lecture_illisibles_max: { valeur: 0.1, regle: "M-13", depuis: "2026-11-18", raison: "au-delà de 10 % de photos dont l'image ne se charge pas (planche ou lot), la cause est l'accès aux images (adresses périmées, réseau), pas les photos : on s'arrête AVANT de payer. Sous ce seuil, les illisibles sont retirées de la planche et comptées" },
+  lecture_ecarter_max: { valeur: 0.5, regle: "M-13", depuis: "2026-11-18", raison: "sur le projet de test du banc (161 photos d'un client), l'IA a jugé 2 photos « à écarter » (1 %) ; un client dépose des photos qu'il a choisies (M-09) : quand plus de la moitié des photos lues sont « à écarter », c'est la lecture qui a échoué, pas les photos" },
+  lecture_planche_uniforme_min: { valeur: 8, regle: "M-13", depuis: "2026-11-18", raison: "une planche d'au moins 8 photos lues qui reçoivent TOUTES le même rôle est le signe d'une planche mal vue (cases blanches, image ratée) ; sous 8 (la dernière planche d'un lot), l'uniformité peut être un hasard" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;

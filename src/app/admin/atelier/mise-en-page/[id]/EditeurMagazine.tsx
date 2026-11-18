@@ -5,7 +5,7 @@ import {
   appliquer, apercuDepot, creerEtat, estTour, lectureSeule as estLectureSeule, visibles, zoneApresDepot,
   type CibleDepot, type EtatEditeur, type Geste, type Projet, type SourceGlisser,
 } from "@/lib/mise-en-page/editeur";
-import type { CatalogueCharge, SourceCatalogue } from "./chargerCatalogue";
+import { adressesEncoreValables, chargerCatalogue, type CatalogueCharge, type SourceCatalogue } from "./chargerCatalogue";
 import { chargerGabarits } from "./gabaritsClient";
 import { CtxEd, basculerGrille, fermerTexteDom, uiDeDepart, type Adresse, type Ctx, type Import, type Ui } from "./contexte";
 import { cibleSous, type Glisse } from "./glisser";
@@ -46,6 +46,9 @@ type Props = {
   imp?: Import;
 };
 
+const tableAdresses = (c: CatalogueCharge): ReadonlyMap<string, Adresse> =>
+  new Map(c.photos.map((p) => [p.id, { vignette: p.vignette, moyenne: p.moyenne, original: c.originaux[p.id] ?? null }]));
+
 export default function EditeurMagazine({ catalogue, source, cle, projet, archive, collecteOuverte, retour, suite, selecteur, imp }: Props) {
   const [etat, setEtat] = useState<EtatEditeur | null>(null);
   const [ui, setUi] = useState<Ui>(uiDeDepart);
@@ -58,10 +61,23 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
   const pointeur = useRef<{ x: number; y: number } | null>(null);
   const clavierRef = useRef<(e: KeyboardEvent) => void>(() => {});
 
-  const adresses = useMemo<ReadonlyMap<string, Adresse>>(
-    () => new Map(catalogue.photos.map((p) => [p.id, { vignette: p.vignette, moyenne: p.moyenne, original: catalogue.originaux[p.id] ?? null }])),
-    [catalogue],
-  );
+  /* M-13 (18/11) : les adresses signées périment (vignettes une à deux heures, originaux une heure). Un éditeur resté ouvert les relit
+     AVANT une lecture payée (`rafraichirAdresses`) ; le catalogue relu ne sert qu'aux adresses (le magazine et l'export n'en dépendent pas). */
+  const [frais, setFrais] = useState<CatalogueCharge | null>(null);
+  const catAdresses = frais ?? catalogue;
+  const adresses = useMemo<ReadonlyMap<string, Adresse>>(() => tableAdresses(catAdresses), [catAdresses]);
+  const adressesRef = useRef(adresses);
+  useEffect(() => { adressesRef.current = adresses; });
+  const rafraichirAdresses = async (forcer = false): Promise<ReadonlyMap<string, Adresse>> => {
+    const c = frais ?? catalogue;
+    if (projet.source === "libre" || (!forcer && adressesEncoreValables(c, Date.now()))) return adressesRef.current;
+    const r = await chargerCatalogue(source);
+    if (!r.ok) return adressesRef.current;
+    const m = tableAdresses(r);
+    adressesRef.current = m;
+    setFrais(r);
+    return m;
+  };
 
   /* 06/11 : la barre latérale et le grand écran ont chacun leur vue. Les tours ne vivent qu'en grand écran ;
      la barre garde « Toutes » (ou « À côté »). Chacun retrouve la sienne en revenant. */
@@ -355,6 +371,7 @@ export default function EditeurMagazine({ catalogue, source, cle, projet, archiv
   const ro = estLectureSeule(etat);
   const ctx: Ctx = {
     etat, envoyer, envoyerAvec, adresses, ui, majUi, lectureSeule: ro, commencerAppui, clicSupprime, flasher, gesteAvecAnnuler, imp, cleProjet: cle.cle,
+    rafraichirAdresses,
   };
   /* le tri plein écran vit dans la bande des photos : elle doit être ouverte */
   if (ui.grand && !etat.panneau.ouvert) envoyer({ type: "panneau", ouvert: true });

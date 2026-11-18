@@ -902,3 +902,91 @@ export function lireDemandeCompo(c: unknown): Relu<DemandeCompo> {
   }
   return { ok: false, phrase: "etape_invalide" };
 }
+
+/* ─────────────────────────── M-13 (18/11 soir) : jamais une case vide chez l'IA, jamais une lecture douteuse utilisée ─────────────────────────── */
+
+/**
+ * Le retour de Mathias du 18/11 (« C'est un échec ! ») : un dossier ouvert depuis longtemps, des adresses d'images périmées, des cases
+ * BLANCHES numérotées envoyées et payées, 164 photos « à écarter », gardées ensuite comme une vraie lecture. Les trois règles :
+ *  1. une photo dont l'image ne se charge pas n'est jamais envoyée : elle est RETIRÉE de la planche (ni case, ni numéro) et comptée ;
+ *  2. au-delà de `lecture_illisibles_max` illisibles (planche ou lot), on s'ARRÊTE avant de payer, avec une phrase et un geste ;
+ *  3. une lecture où plus de `lecture_ecarter_max` des photos lues sont « à écarter », ou dont une planche d'au moins
+ *     `lecture_planche_uniforme_min` photos a reçu partout le même rôle, est DOUTEUSE : elle ne sert pas à écarter, et l'écran propose de
+ *     relire ces photos. Un rôle CORRIGÉ par l'atelier n'est jamais douteux (sa marque prime).
+ */
+export const lectureSure = () => {
+  const v = valeursReglages();
+  return { illisiblesMax: v.lecture_illisibles_max, ecarterMax: v.lecture_ecarter_max, uniformeMin: v.lecture_planche_uniforme_min };
+};
+
+export type ArretIllisibles = { arreter: false; illisibles: number } | { arreter: true; illisibles: number; total: number; phrase: string };
+
+/** M-13 : faut-il s'arrêter avant de payer ? (plus de 10 % des photos d'une planche ou du lot sans image). */
+export function arretIllisibles(total: number, illisibles: number): ArretIllisibles {
+  if (total <= 0 || illisibles <= 0 || illisibles / total <= lectureSure().illisiblesMax) return { arreter: false, illisibles: Math.max(0, illisibles) };
+  const n = illisibles === 1 ? "1 photo ne se charge pas" : `${illisibles} photos ne se chargent pas`;
+  return { arreter: true, illisibles, total, phrase: `${n}. Recharge la page, puis relance.` };
+}
+
+/** M-13 : la planche sans case vide : les photos LISIBLES seules, dans l'ordre, numérotées à la suite depuis `n0`. */
+export function plancheSansVide(ids: readonly string[], lisible: (id: string) => boolean, n0: number): { n0: number; ids: string[]; illisibles: string[] } {
+  return { n0, ids: ids.filter(lisible), illisibles: ids.filter((id) => !lisible(id)) };
+}
+
+export type VerdictLu = { id: string; role: string | null; corrige: boolean };
+export type Suspicion = {
+  suspecte: boolean;
+  /** Les raisons, en mots d'atelier (« 164 photos sur 164 jugées à écarter »). */
+  raisons: string[];
+  /** Les photos dont la lecture ne fait pas foi (à relire ; le compositeur les prend sans lecture IA). */
+  douteuses: Set<string>;
+  /** Toute la lecture est douteuse : le voyage et les lieux qui en sont tirés ne valent pas non plus. */
+  toute: boolean;
+  lues: number;
+  aEcarter: number;
+};
+
+/** M-13 : la lecture fait-elle foi ? `planches` : les photos lues, groupées par planche (dans l'ordre de lecture). Pure. */
+export function lectureSuspecte(planches: readonly (readonly VerdictLu[])[]): Suspicion {
+  const S = lectureSure();
+  const toutes = planches.flat().filter((v) => v.role);
+  const ia = toutes.filter((v) => !v.corrige);
+  const aEcarter = ia.filter((v) => v.role === "a_ecarter").length;
+  const douteuses = new Set<string>();
+  const raisons: string[] = [];
+  const toute = ia.length > 0 && aEcarter / ia.length > S.ecarterMax;
+  if (toute) {
+    for (const v of ia) douteuses.add(v.id);
+    raisons.push(`${aEcarter} photo${aEcarter > 1 ? "s" : ""} sur ${ia.length} jugée${aEcarter > 1 ? "s" : ""} à écarter`);
+  }
+  let uniformes = 0;
+  for (const p of planches) {
+    const l = p.filter((v) => v.role && !v.corrige);
+    if (l.length < S.uniformeMin || !l.every((v) => v.role === l[0].role)) continue;
+    uniformes++;
+    for (const v of l) douteuses.add(v.id);
+  }
+  if (uniformes) raisons.push(`${uniformes} planche${uniformes > 1 ? "s" : ""} au même verdict partout`);
+  return { suspecte: douteuses.size > 0, raisons, douteuses, toute, lues: toutes.length, aEcarter };
+}
+
+/**
+ * Les planches d'une lecture GARDÉE, rejouées : les photos lues, dans l'ordre où l'entonnoir les envoie (`ordre`, la chronologie),
+ * par paquets de `PAR_PLANCHE`. Une lecture gardée ne dit pas ses planches : c'est l'ordre d'envoi qui les refait (exact pour une lecture
+ * faite d'un seul passage, approché sinon).
+ */
+export function verdictsDeLecture(l: LectureIA | null, cat: Catalogue, ordre: readonly string[]): VerdictLu[][] {
+  if (!l) return [];
+  const parNom = new Map<string, PhotoIA>();
+  for (const [n, p] of Object.entries(l.photos)) parNom.set(nomComparable(n), p);
+  const lus: VerdictLu[] = [];
+  for (const id of ordre) {
+    const ph = cat.get(id);
+    const p = ph ? parNom.get(nomComparable(ph.nom)) : undefined;
+    if (!p?.role) continue;
+    lus.push({ id, role: p.corrige?.role ?? p.role.role, corrige: !!p.corrige?.role });
+  }
+  const out: VerdictLu[][] = [];
+  for (let i = 0; i < lus.length; i += PAR_PLANCHE) out.push(lus.slice(i, i + PAR_PLANCHE));
+  return out;
+}

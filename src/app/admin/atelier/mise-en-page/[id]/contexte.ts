@@ -137,6 +137,9 @@ export type Ctx = {
   imp?: Import;
   /** Lot F : la clé locale du projet (`cleLocale`), sous laquelle ce navigateur garde la lecture IA. */
   cleProjet?: string;
+  /** M-13 (18/11) : les adresses d'images FRAÎCHES. Les adresses signées périment (une à deux heures) : avant toute lecture payée, l'écran
+   *  relit le catalogue si elles ne sont plus sûres (ou si `forcer`), et rend la nouvelle table. Ne lève jamais (en échec : l'ancienne). */
+  rafraichirAdresses?: (forcer?: boolean) => Promise<ReadonlyMap<string, Adresse>>;
 };
 
 export const CtxEd = createContext<Ctx | null>(null);

@@ -3,14 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  MODELE_PLANCHE, MODELE_REGARD, MOT_ROLE, MOT_SUJET, ROLES_PLANCHE, SUJETS_IA, aEnvoyer, choisirPourRegard, cleDeRoute, corrigerTag, entonnoirA,
-  estCleLibre, estRolePlanche, estimer, indiceDuProjet, motDollars, photosLues, planchesDe, relierLectureIA, triDe, versLectureIA,
+  MODELE_PLANCHE, MODELE_REGARD, MOT_ROLE, MOT_SUJET, ROLES_PLANCHE, SUJETS_IA, aEnvoyer, arretIllisibles, choisirPourRegard, cleDeRoute, corrigerTag, entonnoirA,
+  estCleLibre, estRolePlanche, estimer, indiceDuProjet, lectureSuspecte, motDollars, photosLues, planchesDe, plancheSansVide, relierLectureIA, triDe, verdictsDeLecture, versLectureIA,
   type Correction, type EtatEditeur, type LectureIA, type LuPlanche, type LuRegard, type PhotoIA,
 } from "@/lib/mise-en-page/editeur";
 import { cls, pluriel, useEd } from "./contexte";
-import { grandeDe } from "./images";
 import { garderLectureIA } from "./lectureIAClient";
-import { composerPlanche, imageRegard, lirePlanche, regarder } from "./lireLesPhotosClient";
+import { chargerImages, composerPlanche, controlerImages, imageRegard, lirePlanche, regarder } from "./lireLesPhotosClient";
 
 /* « Lire les photos » (17/11) : un bouton dans la tête du panneau Photos. Avant de lancer, une ligne dit ce que ça coûtera
    (« N photos · M lues par l'IA · ≈ X $ », d'après l'essai du 17/11) ; un clic lance. Les tags arrivent planche par planche sur les
@@ -33,7 +32,7 @@ const MOT_ERREUR: Readonly<Record<string, string>> = {
 };
 
 export function BoutonLireLesPhotos() {
-  const { etat, envoyer, adresses, cleProjet, lectureSeule: ro } = useEd();
+  const { etat, envoyer, adresses, cleProjet, lectureSeule: ro, rafraichirAdresses } = useEd();
   const etatRef = useRef<EtatEditeur>(etat);
   useEffect(() => { etatRef.current = etat; });
   const [ouvert, setOuvert] = useState(false);
@@ -64,7 +63,10 @@ export function BoutonLireLesPhotos() {
   const cat = etat.catalogue;
   const lues = photosLues(etat.lectureIA?.source ?? null, cat);
   const A = entonnoirA(cat, etat.lecture, new Set(triDe(etat.magazine).ecartees));
-  const nouvelles = aEnvoyer(A.lues, lues, false).length;
+  /* M-13 : une lecture douteuse ne compte pas comme lue : ses photos sont proposées à la relecture */
+  const susp = lectureSuspecte(verdictsDeLecture(etat.lectureIA?.source ?? null, cat, A.lues));
+  const luesSures = new Set([...lues].filter((id) => !susp.douteuses.has(id)));
+  const nouvelles = aEnvoyer(A.lues, luesSures, false).length;
   const est = estimer(nouvelles);
   const estTout = estimer(A.lues.length);
 
@@ -77,7 +79,8 @@ export function BoutonLireLesPhotos() {
     const e0 = etatRef.current;
     const c0 = e0.catalogue;
     const a = entonnoirA(c0, e0.lecture, new Set(triDe(e0.magazine).ecartees));
-    const ids = aEnvoyer(a.lues, photosLues(e0.lectureIA?.source ?? null, c0), toutRelire);
+    const s0 = lectureSuspecte(verdictsDeLecture(e0.lectureIA?.source ?? null, c0, a.lues));
+    const ids0 = aEnvoyer(a.lues, new Set([...photosLues(e0.lectureIA?.source ?? null, c0)].filter((id) => !s0.douteuses.has(id))), toutRelire);
     const base = e0.lectureIA?.source ?? null;
     const ctrl = new AbortController();
     arret.current = ctrl;
@@ -89,20 +92,38 @@ export function BoutonLireLesPhotos() {
     const quand = () => new Date().toISOString();
     const maj = () => publier(versLectureIA(base, etatRef.current.catalogue, { planche, regard, dollars, modeles: [...modeles], quand: quand() }));
 
-    /* B : les planches, trois en vol */
+    /* M-13 : avant de payer, chaque image est essayée (adresses relues si besoin) ; au-delà de 10 % d'illisibles, on s'arrête */
+    let arretPhrase: string | null = null;
+    setPhase({ type: "planches", fait: 0, total: 0 });
+    const ctl = await controlerImages(ids0, adresses, rafraichirAdresses, ctrl.signal);
+    const table = ctl.adresses;
+    const avant = arretIllisibles(ids0.length, ctl.illisibles.size);
+    if (avant.arreter || ctrl.signal.aborted) {
+      arret.current = null;
+      setPhase(avant.arreter ? { type: "erreur", texte: avant.phrase } : { type: "repos" });
+      return;
+    }
+    const ids = ids0.filter((id) => !ctl.illisibles.has(id));
+
+    /* B : les planches, trois en vol ; jamais une case vide (une image qui ne vient pas est retirée, ni case ni numéro) */
     const lots = planchesDe(ids);
     setPhase({ type: "planches", fait: 0, total: lots.length });
     let suivant = 0, faits = 0;
     const ouvrier = async () => {
-      while (!ctrl.signal.aborted && !bloquant && suivant < lots.length) {
+      while (!ctrl.signal.aborted && !bloquant && !arretPhrase && suivant < lots.length) {
         const lot = lots[suivant++];
-        const image = await composerPlanche(lot.ids.map((id) => grandeDe(adresses.get(id))), lot.n0, ctrl.signal);
-        if (ctrl.signal.aborted) return;
-        const r = await lirePlanche(cle, image, lot.n0, lot.ids.length, ctrl.signal);
+        const ims = await chargerImages(lot.ids, (id) => table.get(id), ctrl.signal);
+        if (ctrl.signal.aborted) { for (const im of ims.values()) im?.close(); return; }
+        const p = plancheSansVide(lot.ids, (id) => !!ims.get(id), lot.n0);
+        const ar = arretIllisibles(lot.ids.length, p.illisibles.length);
+        if (ar.arreter) { for (const im of ims.values()) im?.close(); arretPhrase = ar.phrase; return; }
+        if (!p.ids.length) continue;
+        const image = composerPlanche(p.ids.map((id) => ims.get(id)!), p.n0);
+        const r = await lirePlanche(cle, image, p.n0, p.ids.length, ctrl.signal);
         dollars += r.dollars;
         if (r.ok) {
           modeles.add(r.modele || MODELE_PLANCHE);
-          for (const x of r.resultat.photos) { const id = lot.ids[x.numero - lot.n0]; if (id) planche.set(id, x); }
+          for (const x of r.resultat.photos) { const id = p.ids[x.numero - p.n0]; if (id) planche.set(id, x); }
           maj();
         } else if (r.statut === 401 || r.statut === 403 || r.statut === 503) bloquant = r.erreur;
         else if (r.erreur !== "arrete") echecs += 1;
@@ -113,7 +134,7 @@ export function BoutonLireLesPhotos() {
     await Promise.all(Array.from({ length: Math.min(EN_VOL, lots.length) }, ouvrier));
 
     /* C : le regard fin, sur la lecture réunie (les photos lues avant comprises) */
-    if (!ctrl.signal.aborted && !bloquant) {
+    if (!ctrl.signal.aborted && !bloquant && !arretPhrase) {
       const tout = versLectureIA(base, etatRef.current.catalogue, { planche, regard, dollars, modeles: [...modeles], quand: quand() });
       const rel = relierLectureIA(tout, etatRef.current.catalogue);
       const avecB = [...rel.photos].filter(([, p]) => p.candidate !== undefined).map(([id, p]) => ({ id, candidate: p.candidate ?? "aucune", interet: p.role?.interet ?? 0, texte: !!p.texte }));
@@ -121,12 +142,13 @@ export function BoutonLireLesPhotos() {
       const choix = choisirPourRegard(avecB, deja);
       const indice = indiceDuProjet(etatRef.current.projet?.nom);
       setPhase({ type: "regard", fait: 0, total: choix.length });
-      let k = 0, fait = 0;
+      let k = 0, fait = 0, illisibles = 0;
       const regardeur = async () => {
-        while (!ctrl.signal.aborted && !bloquant && k < choix.length) {
+        while (!ctrl.signal.aborted && !bloquant && !arretPhrase && k < choix.length) {
           const x = choix[k++];
-          const image = await imageRegard(grandeDe(adresses.get(x.id)), ctrl.signal);
-          if (image && !ctrl.signal.aborted) {
+          const image = await imageRegard(table.get(x.id), ctrl.signal);
+          if (!image) { illisibles += 1; const ar = arretIllisibles(choix.length, illisibles); if (ar.arreter) arretPhrase = ar.phrase; }
+          else if (!ctrl.signal.aborted) {
             const r = await regarder(cle, image, x.pourquoi, indice, ctrl.signal);
             dollars += r.dollars;
             if (r.ok) { modeles.add(r.modele || MODELE_REGARD); regard.set(x.id, r.resultat); maj(); }
@@ -143,7 +165,8 @@ export function BoutonLireLesPhotos() {
     if (planche.size || regard.size || dollars) maj();
     arret.current = null;
     const bilan = `Lu : ${pluriel(planche.size, "photo")} · ${motDollars(dollars)}`;
-    if (bloquant) setPhase({ type: "erreur", texte: MOT_ERREUR[bloquant] ?? "Lecture impossible" });
+    if (arretPhrase) setPhase({ type: "erreur", texte: `${arretPhrase}${dollars ? ` · payé ${motDollars(dollars)}` : ""}` });
+    else if (bloquant) setPhase({ type: "erreur", texte: MOT_ERREUR[bloquant] ?? "Lecture impossible" });
     else setPhase({ type: "fini", texte: ctrl.signal.aborted ? `Arrêté · ${bilan}` : echecs ? `${bilan} · ${pluriel(echecs, "échec")}` : bilan });
   };
 
@@ -168,7 +191,8 @@ export function BoutonLireLesPhotos() {
           ) : (
             <>
               {phase.type === "fini" || phase.type === "erreur" ? <p className={cls("ed-lire-l", "ed-lire-fin", phase.type === "erreur" && "ed-lire-err")} role="status">{phase.texte}</p> : null}
-              <p className="ed-lire-l">{pluriel(cat.size, "photo")} · {nouvelles} lues par l&apos;IA · ≈ {motDollars(est.dollars)}</p>
+              {susp.suspecte ? <p className="ed-lire-l ed-lire-err">Lecture douteuse : {susp.raisons.join(", ")}</p> : null}
+              <p className="ed-lire-l">{pluriel(cat.size, "photo")} · {nouvelles} {susp.suspecte ? "à relire" : "lues par l'IA"} · ≈ {motDollars(est.dollars)}</p>
               <span className="ed-lire-gestes">
                 <button type="button" className="ed-bt ed-bt--plein" disabled={ro || !nouvelles} onClick={() => { void lancer(false); }}>Lancer</button>
                 {lues.size ? (

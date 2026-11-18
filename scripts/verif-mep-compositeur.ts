@@ -13,7 +13,7 @@
 
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { composer, entreeDepuisEditeur, type EntreeCompo, type IAPhoto, type PhotoCompo, type ResultatCompo } from "@/lib/mise-en-page/compositeur";
+import { autresTailles, composer, composerSur, entreeDepuisEditeur, lireFiche, motLaissee, motPlace, motsPorteurs, titreImprimable, type EntreeCompo, type IAPhoto, type PhotoCompo, type ResultatCompo } from "@/lib/mise-en-page/compositeur";
 import { appliquerPremierJet, lirePremierJet } from "@/lib/mise-en-page/editeur/premierJet";
 import { nouveauMagazine } from "@/lib/mise-en-page/magazine";
 import * as O from "@/lib/mise-en-page/editeur";
@@ -131,7 +131,7 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   /* la fiche prime : la taille saisie, le nombre de personnes */
   const t24 = composer(entree(voyageLarge(), { fiche: { taille: 24, theme: "road_trip" } }));
   ok("la fiche prime : 24 pages saisies → 24 pages, les bonnes photos sans place vont en réserve avec cette raison", t24.pages === 24
-    && t24.selection.photos.some((p) => p.etat === "reserve" && /pas de place dans 24 pages/.test(p.raison)));
+    && t24.selection.photos.some((p) => p.etat === "reserve" && /pas de place en 24 pages/.test(p.raison) && /pas de place dans 24 pages/.test(p.detail ?? "")));
   const devine = O.estimerComposition(10, 0, false);
   void devine;
 
@@ -185,6 +185,101 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   ok("dégradation : au-delà de 600, 600 lues réparties et les autres héritent d'une lue ; regard plafonné à 40 + 20 ; l'estimation la suit",
     deg.aLire.length === 600 && deg.heritage.size === 100 && [...deg.heritage.values()].every((s) => deg.aLire.includes(s)) && est.lues === 600 && est.heritees === 200 && est.regard === 40
       && O.choisirPourRegard(Array.from({ length: 400 }, (_, i) => ({ id: `q${i}`, candidate: "pleine" as const, interet: 0.5, texte: true })), new Set()).length === 60);
+
+  /* ── 18/11 soir (« C'est un échec ! ») : M-13, M-14, M-15 et les trois défauts de la recette (E) ── */
+  titre("— compositeur, 18/11 soir : jamais d'impasse (M-14), la machine propose la taille (M-15), les marques de l'atelier priment (M-13) —");
+  const gros = (n: number, role: string | null, interet = 0.65): PhotoCompo[] => {
+    const r = graine(n);
+    return Array.from({ length: n }, (_, i) => {
+      const x = r(); const [l, h] = x < 0.5 ? DIMS.L : x < 0.8 ? DIMS.P : DIMS.U;
+      return {
+        id: `g${i}`, nom: `G_${String(i).padStart(4, "0")}.JPG`, l, h, date: heure(Math.floor((i * 12) / n), 8 + (i % 12), (i * 7) % 60), netteteRel: 1,
+        visages: r() < 0.3 ? [{ x: 0.3, y: 0.3, l: 0.07, h: 0.09 }, { x: 0.5, y: 0.3, l: 0.07, h: 0.09 }] : [], zone: { x: 0.25, y: 0.2, l: 0.5, h: 0.6 },
+        palette: ["#4a6fa5"], calme: "haut" as const, moment: null, ecart: null, chapitre: null,
+        ia: role ? { interet, role, sujet: "paysage", plan: "large" as const, personnes: "0" as const, momentJournee: "jour" as const, ambiance: "calme" as const, lieuLu: null, couverture: false } : null,
+      };
+    });
+  };
+  const lignes: string[] = [];
+  let toutesOk = true;
+  for (const n of [10, 85, 164]) for (const t of [4, 8, 60, 200] as const) {
+    const i = composerSur(entree(gros(n, "satellite"), { fiche: { taille: t } }));
+    const bon = i.ok ? valide(i.r, gros(n, "satellite")) && i.r.pages % 4 === 0 && (i.r.pages === t || (!!i.r.ajustement && i.r.ajustement.phrase === `${t} pages impossible avec ${i.r.ajustement.photos} photos : ${i.r.pages} pages proposées`))
+      : !!i.phrase && !/répartition|undefined|Error/.test(`${i.phrase} ${i.cause} ${i.geste}`);
+    toutesOk &&= bon;
+    lignes.push(`${n}/${t}→${i.ok ? i.r.pages : "phrase"}`);
+  }
+  ok(`M-14 : toute taille demandée donne un magazine valide ou une phrase claire, jamais une impasse : 4, 8, 60, 200 pages sur 10, 85 et 164 photos (${lignes.join(" ")}) ; une taille infaisable est remplacée par la plus proche et DITE`, toutesOk);
+  const g164 = composerSur(entree(gros(164, "satellite"), { fiche: { taille: "tout" } }));
+  ok("M-14 : 164 photos en « tout garder » (le banc n'avait AUCUNE taille : 4 chapitres de 41 photos, 12 doubles au plus) composent en repli, et le disent", g164.ok && g164.r.pages >= 4 && valide(g164.r, gros(164, "satellite")));
+  const rien = composerSur(entree(gros(12, "a_ecarter", 0.1)));
+  const deux = composerSur(entree(gros(2, "satellite")));
+  ok("M-14 : pas de quoi composer (toutes « à écarter », ou 2 photos) : une phrase en clair, la cause comptée, le geste ; jamais un message technique",
+    !rien.ok && rien.phrase === "Aucune photo utilisable : pas de quoi faire un magazine." && rien.cause.includes("12 jugées faibles à la lecture") && rien.geste.startsWith("Relis les photos")
+      && !deux.ok && deux.phrase.startsWith("Seulement 2 photos utilisables"));
+  const codeCompo = readdirSync(resolve(process.cwd(), "src/lib/mise-en-page/compositeur")).map((n) => readFileSync(join(resolve(process.cwd(), "src/lib/mise-en-page/compositeur"), n), "utf8")).join("\n");
+  const ecranC = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/Composer.tsx"), "utf8");
+  ok("M-14 : aucun `throw` nu ne remonte à l'écran : chaque `throw` du compositeur est une `ImpasseComposition` (phrase, cause, geste) et l'écran ne passe que par `composerSur`, qui n'en laisse sortir aucune",
+    (codeCompo.match(/\bthrow\b/g) ?? []).length === (codeCompo.match(/throw new ImpasseComposition\(/g) ?? []).length && (codeCompo.match(/throw new ImpasseComposition\(/g) ?? []).length >= 4
+      && !/\bcomposer\(entreeDepuisEditeur/.test(ecranC) && ecranC.includes("composerSur(entreeDepuisEditeur(") && !ecranC.includes("(err as Error).message"));
+
+  /* M-15 : la machine propose la taille */
+  const m0 = composer(entree(voyageLarge(), { fiche: {} }));
+  const m48 = composer(entree(voyageLarge(), { fiche: {}, pagesCommandees: 48 }));
+  const mChoisi = composer(entree(voyageLarge(), { fiche: { taille: 24 }, pagesCommandees: 48 }));
+  ok("M-15 : sans rien demander, « la machine propose » (M-09 : tout garder) ; un nombre de pages COMMANDÉ devient la taille par défaut et le dit ; une taille choisie après coup prime",
+    m0.origineTaille === "machine" && m0.taille === "tout"
+      && m48.origineTaille === "commandee" && m48.pages === 48 && m48.decisions.some((d) => d.detail === "48 pages : le nombre commandé")
+      && mChoisi.origineTaille === "choisie" && mChoisi.pages === 24);
+  const au = autresTailles(92, "machine", null), auC = autresTailles(48, "commandee", 48), auCh = autresTailles(24, "choisie", 48);
+  ok("M-15 : après la proposition, les autres tailles (« Plus court », « Tout garder », « Commandé ») ; chacune sera composée pour donner ses vrais chiffres",
+    au.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:48" && auC.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:24,Tout garder:tout"
+      && auCh.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:12,Tout garder:tout,Commandé:48" && autresTailles(28, "machine", null).map((a) => a.taille).join() === "16");
+  const questions = ecranC.slice(ecranC.indexOf("phase.type === \"questions\" ? ("), ecranC.indexOf("phase.type === \"analyse\" ? ("));
+  ok("M-15 : la feuille des questions ne demande plus le nombre de pages (aucun bouton « N pages », aucun « Tout garder ») ; une taille gardée d'avant n'est pas reprise ; chaque question peut rester vide",
+    !questions.includes("TAILLES_PROPOSEES") && !questions.includes("Tout garder") && questions.includes("la machine la propose") && ecranC.includes("const { taille: _t, ...sansTaille } = saisie;")
+      && lireFiche({ taille: "machine" }).taille === "machine" && !questions.includes("required"));
+
+  /* M-13 : une photo gardée par l'atelier n'est jamais écartée par la machine */
+  const poison = gros(40, "a_ecarter", 0.1);
+  const gardees = poison.slice(0, 20).map((p) => p.id);
+  for (const p of poison) if (gardees.includes(p.id)) p.gardee = true;
+  poison[3].ecart = { raison: "floue", regle: "S-023" };
+  const rg = composer(entree(poison, { marques: { coeurs: [gardees[0]], gardees: gardees.slice(1) } }));
+  const etatDe = (id: string) => rg.selection.photos.find((p) => p.id === id)?.etat;
+  ok("M-13 : une photo gardée par l'atelier (coup de cœur ou gardée) n'est JAMAIS écartée ni mise en réserve par la machine (ni « à écarter », ni note basse, ni floue) ; les 20 autres « à écarter » vont en réserve",
+    gardees.every((id) => etatDe(id) === "posee" || etatDe(id) === "couverture") && poison.slice(20).every((p) => etatDe(p.id) === "reserve")
+      && rg.jet.magazine.tri?.coupsDeCoeur?.join() === gardees[0] && gardees.slice(1).every((id) => rg.jet.magazine.tri?.choisies.includes(id)) && !(rg.jet.magazine.tri?.reserve ?? []).some((id) => gardees.includes(id)));
+
+  /* M-13 : une lecture douteuse n'est pas utilisée par l'adaptateur de l'éditeur */
+  const catD = new Map(gros(30, null).map((p) => [p.id, { id: p.id, nom: p.nom, l: p.l, h: p.h, date: p.date, personne: "", lien: null, type: "atelier" as const, coeur: false, signalee: false, autresMagazines: [], nouvelle: false, vignette: null }]));
+  const lD: O.LectureIA = { format: "bellajour-lecture-ia", version: 2, photos: Object.fromEntries([...catD.values()].map((p) => [p.nom, { role: { role: "a_ecarter" as const, interet: 0.1, raison: "x" }, sujet: "autre" as const }])), rafales: [], groupes: [] };
+  const relD = O.relierLectureIA(lD, catD);
+  const susD = O.lectureSuspecte(O.verdictsDeLecture(lD, catD, [...catD.keys()]));
+  const baseD = { catalogue: catD, lecture: { floues: [], piles: [], mesurees: 0, zones: {} }, lectureIA: relD, ecarteesAtelier: new Set<string>(), fiche: {}, titre: "", quand: "2026-11-18T00:00:00.000Z" };
+  const sansGarde = composerSur(entreeDepuisEditeur(baseD));
+  const avecGarde = composerSur(entreeDepuisEditeur({ ...baseD, douteuse: { photos: susD.douteuses, toute: susD.toute, raison: susD.raisons.join(", ") } }));
+  ok("M-13 : une lecture empoisonnée (30 « à écarter » sur 30) est vue DOUTEUSE ; sans la garde le compositeur n'a rien à poser (une phrase, plus d'impasse) ; avec elle il compose sans elle et le dit (décision M-13)",
+    susD.toute && !sansGarde.ok && avecGarde.ok && avecGarde.r.selection.compte.posee >= 20 && avecGarde.r.decisions.some((d) => d.regles.includes("M-13") && d.detail.startsWith("douteuse")));
+
+  /* E : la page 1 sans repère, un bout de panneau jamais en chapitre, des raisons en mots d'atelier */
+  const p1 = composer(entree(sansDate(), { titre: "" })).jet.magazine.planches[0];
+  const textesP1 = [...(p1.droite?.textes ?? []), ...(p1.double?.textes ?? [])];
+  ok("E : la page 1 ne montre JAMAIS un repère (« Titre », « Légende ») comme un contenu : sans titre ni date, aucun cadre de texte vide ; avec un titre, il est écrit ; un nom par défaut de l'outil n'est pas un titre",
+    textesP1.every((t) => t.contenu.trim() !== "" && !/^(titre|légende|texte)$/i.test(t.contenu.trim()))
+      && composer(entree(minuscule(), { titre: "Été à Porto" })).jet.magazine.planches[0].droite?.textes.some((t) => t.contenu === "Été à Porto") === true
+      && titreImprimable("Création libre") === "" && titreImprimable("Dossier de Paul") === "" && titreImprimable("Été à Porto") === "Été à Porto");
+  const pano = voyageLarge();
+  for (const [i, x] of pano.entries()) if (i % 5 === 0 && x.ia) x.ia = { ...x.ia, lieuLu: "VIEW" };
+  for (const [i, x] of pano.entries()) if (i % 7 === 1 && x.ia) x.ia = { ...x.ia, lieuLu: "SCENIC VIEW POINT" };
+  const rv = composer(entree(pano, { fiche: { theme: "road_trip" } }));
+  ok("E : un bout de panneau (« View », « Scenic View Point » : moins de deux mots porteurs) ne devient JAMAIS un nom de chapitre ; le nom thématique reste",
+    rv.chapitres.length > 0 && rv.chapitres.every((c) => !/view|point/i.test(c.titre)) && motsPorteurs("Great Ocean Road").length === 2 && motsPorteurs("Scenic View Point").length === 1);
+  const toutesRaisons = [...resultats.values(), rv, rg].flatMap((r) => r.selection.photos.map((p) => p.raison));
+  ok("E : les raisons de « Posées et laissées » sont en mots d'atelier (« Double 2, à côté d'une pleine page », « Note trop basse », « Presque la même photo que … »), jamais des identifiants de code ; l'identifiant reste au survol",
+    toutesRaisons.every((s) => !/\b(S|M|DA|N|P\d?)-\d|_[a-z]|\(\w+\)|plancher|taux/.test(s)) && motPlace({ n: 2, type: "pages", idee: "pleine_et_bandes", role: "satellite" }) === "Double 2, à côté d'une pleine page"
+      && motLaissee("note 0.31 sous le plancher 0.45", 48) === "Note trop basse" && motLaissee("même scène que IMG_0044.JPG (12 s, même sujet, même plan)", 48) === "Presque la même photo que IMG_0044"
+      && rg.selection.photos.every((p) => !!p.detail) && !ecranC.includes("<em>{x.regles"));
 
   /* la garde de la route pour les étapes nouvelles */
   const route = readFileSync(resolve(process.cwd(), "src/app/api/admin/atelier/mise-en-page/lecture-ia/route.ts"), "utf8");

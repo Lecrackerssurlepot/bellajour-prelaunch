@@ -21,7 +21,7 @@ export function lireFiche(x: unknown): Fiche {
   if (typeof x.theme === "string" && (THEMES as readonly string[]).includes(x.theme)) f.theme = x.theme as Theme;
   if (typeof x.personnes === "number" && Number.isInteger(x.personnes) && x.personnes >= 1 && x.personnes <= 60) f.personnes = x.personnes;
   if (typeof x.ambiance === "string" && (AMBIANCES_FICHE as readonly string[]).includes(x.ambiance)) f.ambiance = x.ambiance as AmbianceFiche;
-  if (x.taille === "tout") f.taille = "tout";
+  if (x.taille === "tout" || x.taille === "machine") f.taille = x.taille;
   else if (typeof x.taille === "number" && Number.isInteger(x.taille) && x.taille >= 8 && x.taille <= 200 && x.taille % 4 === 0) f.taille = x.taille;
   if (Array.isArray(x.lieux)) {
     const l = x.lieux.filter((v): v is string => typeof v === "string").map((v) => v.replace(/\s+/g, " ").trim()).filter((v) => v && v.length <= 60).slice(0, LIEUX_MAX);
@@ -66,8 +66,42 @@ export function devinerFiche(photos: readonly PhotoCompo[], voyage: Voyage | nul
   if (G) f.personnes = G;
   if (voyage?.qui === "famille" || voyage?.profil === "long_voyage_famille") f.ambiance = "sobre";
   else if (voyage?.profil === "vacances_festives_jeunes") f.ambiance = "stylise";
-  f.taille = "tout";
+  /* M-15 (18/11) : la taille n'est plus une question ; la machine la propose (nombre commandé, sinon M-09) */
+  f.taille = "machine";
   return f;
+}
+
+/**
+ * M-15 (18/11, « il y a des questions comme le nombre de pages, je ne peux pas te dire ! ») : la taille que la machine compose.
+ *  - une taille CHOISIE (un nombre, ou « tout », pris dans le bandeau après la proposition) est composée telle quelle ;
+ *  - sinon le nombre de pages COMMANDÉ du dossier, quand l'éditeur le connaît (D20 : il est payé et gelé) ;
+ *  - sinon M-09 : « tout garder » (la réserve n'a pris que les faibles, les pages s'adaptent à `DENSITE_TOUT` photos par double, la seule
+ *    densité mesurée au banc ; il n'existe pas encore de densité par profil, rien n'est inventé).
+ */
+export function tailleACompose(taille: Fiche["taille"], pagesCommandees: number | null | undefined): { taille: "tout" | number; origine: "commandee" | "machine" | "choisie" } {
+  if (typeof taille === "number" || taille === "tout") return { taille, origine: "choisie" };
+  if (typeof pagesCommandees === "number" && Number.isInteger(pagesCommandees) && pagesCommandees >= 4) return { taille: pagesCommandees, origine: "commandee" };
+  return { taille: "tout", origine: "machine" };
+}
+
+/** M-15 : les autres tailles que le bandeau offre APRÈS la proposition (chacune sera composée pour donner ses vrais chiffres). */
+export function autresTailles(pagesProposees: number, origine: "commandee" | "machine" | "choisie", pagesCommandees: number | null | undefined): { mot: string; taille: "tout" | number }[] {
+  const out: { mot: string; taille: "tout" | number }[] = [];
+  const vise = Math.floor((pagesProposees * 0.6) / 4) * 4;
+  /* une taille usuelle sous 60 % de la proposition ; un petit magazine (sous la plus petite usuelle) : 60 % arrondi au multiple de 4 */
+  const court = [...TAILLES_PROPOSEES].filter((t) => t <= vise).pop() ?? (vise >= REGLAGES_COMPO.PAGES_MIN * 2 ? vise : undefined);
+  if (court && court < pagesProposees) out.push({ mot: "Plus court", taille: court });
+  if (origine !== "machine") out.push({ mot: "Tout garder", taille: "tout" });
+  if (typeof pagesCommandees === "number" && pagesCommandees >= 4 && origine !== "commandee" && pagesCommandees !== pagesProposees) out.push({ mot: "Commandé", taille: pagesCommandees });
+  return out;
+}
+
+/** Le titre qu'on peut imprimer en page 1 et en couverture : le nom du projet, jamais un nom PAR DÉFAUT de l'outil (« Création libre »,
+ *  « Dossier de … », « Dossier »), qui n'est pas un titre (E, 18/11 : sinon le cadre reste vide et n'est pas imprimé). */
+export function titreImprimable(nom: string | null | undefined): string {
+  const n = (nom ?? "").replace(/\s+/g, " ").trim();
+  if (!n || /^création libre$/i.test(n) || /^dossier( de .*)?$/i.test(n)) return "";
+  return n;
 }
 
 /** La fiche effective : ce que l'atelier a saisi, sinon ce que la machine devine. */

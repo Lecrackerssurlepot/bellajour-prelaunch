@@ -3,19 +3,20 @@
 > **Fichier généré, ne pas éditer.** Source : `src/lib/mise-en-page/regles/` ; régénérer par
 > `npx tsx --tsconfig tsconfig.json scripts/regles-doc.ts`. Le harnais refuse ce fichier s'il n'est pas à jour.
 
-Version du registre : `g63742dbb` · 314 règles.
+Version du registre : `g87bb21dd` · 317 règles.
 
-Par statut : hypothese 298 · confirmee_mathias 9 · codee 7 · en_ombre 0 · retiree 0.
+Par statut : hypothese 298 · confirmee_mathias 12 · codee 7 · en_ombre 0 · retiree 0.
 
-Par domaine : Analyse 10 · Sélection 59 · Structure 73 · Pose 43 · Couleur 64 · Filtres 18 · Typographie 22 · Couverture 17 · Textes 8.
+Par domaine : Analyse 11 · Sélection 59 · Structure 75 · Pose 43 · Couleur 64 · Filtres 18 · Typographie 22 · Couverture 17 · Textes 8.
 
 Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à préciser » : la condition ou l'action n'est pas encore
 écrite en données mesurables (règle reprise d'un cahier). Les réglages sont ceux de `editeur/reglages.ts`, avec leur valeur actuelle.
 
-## Analyse (10)
+## Analyse (11)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
+| M-13 | interdit | confirmee_mathias | Jamais une case vide chez l'IA, jamais une lecture douteuse utilisée ; les marques de l'atelier priment toujours sur la machine.<br>**Quand** une photo à lire n'a pas d'image chargée, ou plus de `lecture_illisibles_max` des photos d'une planche ou du lot n'en ont pas, ou plus de `lecture_ecarter_max` des photos lues sont « à écarter », ou une planche d'au moins `lecture_planche_uniforme_min` photos a partout le même rôle, ou une photo est gardée par l'atelier<br>**Alors** l'illisible est retirée de la planche (ni case ni numéro) ; au-delà du seuil on s'arrête AVANT de payer, avec la phrase et le geste ; la lecture douteuse ne sert pas à écarter et l'écran propose de relire ses photos ; une photo gardée ou coup de cœur n'est jamais écartée ni mise en réserve par la machine | tous | lecture_illisibles_max = 0.1, lecture_ecarter_max = 0.5, lecture_planche_uniforme_min = 8 | M-13, 2026-11-18 |
 | I-07 | interdit | codee · contrôle editeur/lectureIA.ts#lireLectureIA | Aucune identité : on compte les visages, on ne les reconnaît jamais.<br>**Quand** une lecture (locale ou IA) est chargée dans l'éditeur<br>**Alors** toute clé d'identité (personne, nom, empreinte de visage) est refusée ; seuls le nombre, la taille et le selfie entrent | tous |  | D29, 2026-11-14 |
 | N-01 | interdit | hypothese · banc (jouée) | Une image reçue par messagerie n'a qu'une date de réception : elle ne date jamais un chapitre ; son chapitre est signalé douteux.<br>**Quand** une photo sans date de prise, à la taille d'une image de messagerie<br>**Alors** sa date est tenue pour douteuse ; elle se range à côté de sa voisine et son chapitre est signalé | tous |  | banc N-01, 2026-11-17 |
 | S-131 | préférence (1) | hypothese | Un lot sans date s'ordonne par séries de lumière et de scène (même lieu, même vêtement), puis par numéro d'image d'appareil (IMG_nnnn) quand les numéros se suivent, puis par rang de dépôt en dernier recours. | evenement, annee_de_vie |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
@@ -91,11 +92,13 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-145 | préférence (1) | hypothese | Une photo de fond de rafale mieux exposée que la « meilleure » peut revenir par « remplacement » si le visage principal est net ; l'IA donne la raison. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-146 | préférence (1) | hypothese | Ce que la machine écarte, elle le dit dans la réserve en un mot (floue, doublon, capture, œuvre, faible) pour qu'un clic la rende. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Structure (73)
+## Structure (75)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
 | M-07 | interdit | confirmee_mathias | Aucune page n'est vide ou presque : du texte ou de la couleur, jamais du vide complet.<br>**Quand** la surface occupée d'une page (photos, textes, fonds) est sous le plancher `page_occupee_min`<br>**Alors** la page reçoit un texte (un fait) ou un fond de couleur du nuancier, ou change de gabarit | tous | page_occupee_min = 0.4 | M-07, 2026-11-18 |
+| M-14 | interdit | confirmee_mathias | Jamais d'impasse : une taille infaisable devient la plus proche faisable, et c'est dit ; sans de quoi composer, la cause et le geste en clair.<br>**Quand** aucune répartition des doubles ne tient la taille demandée, ou moins de trois photos sont utilisables<br>**Alors** la machine compose la taille faisable la plus proche (multiple de 4) et le dit (« 60 pages impossible avec 85 photos : 48 pages proposées ») ; sinon une phrase d'atelier dit la cause comptée et le geste, jamais un message technique | tous |  | M-14, 2026-11-18 |
+| M-15 | interdit | confirmee_mathias | La machine propose la taille : le nombre de pages n'est jamais demandé avant la composition ; les autres tailles sont offertes après, avec leurs vrais chiffres.<br>**Quand** l'atelier lance « Composer le magazine »<br>**Alors** la taille par défaut est le nombre de pages commandé s'il est connu, sinon M-09 (tout garder, `densite_tout_garder` photos par double) ; après la proposition, le bandeau offre « Plus court », « Tout garder », « Commandé », chacun composé pour de vrai | tous | densite_tout_garder = 3 | M-15, 2026-11-18 |
 | I-05 | interdit | codee · contrôle editeur/selecteurs.ts#pagesVides | Aucune page intérieure sans photo.<br>**Quand** une planche autre que la première et la dernière ne porte aucune photo<br>**Alors** l'export la liste (page vide) | tous |  | F4, M-07, 2026-11-02 |
 | N-04 | préférence (1) | hypothese · banc (jouée) | L'ouverture d'un chapitre peut prendre la plus forte photo de son premier tiers.<br>**Quand** une ouverture de chapitre se choisit<br>**Alors** les candidates sont les photos du premier tiers du chapitre, la mieux notée d'abord | tous |  | banc N-04, 2026-11-17 |
 | N-05 | interdit | hypothese · banc (jouée) | Une ouverture de chapitre n'est jamais « deux pleines pages » : le titre n'y tient pas.<br>**Quand** une double ouvre un chapitre<br>**Alors** la recette « deux pleines » lui est refusée | tous |  | banc N-05, 2026-11-17 |

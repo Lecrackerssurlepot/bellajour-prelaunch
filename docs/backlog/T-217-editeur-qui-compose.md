@@ -30,6 +30,23 @@ Branche `feat/editeur-qui-compose`, 18/11 (couche C20, règles R197 à R205) :
   (une entrée d'historique), « Remplacer la mise en page ? », le bandeau, « Posées et laissées » avec « Faire entrer », M-10 à l'écran.
 - Harnais `scripts/verif-mep-compositeur.ts` (cinq lots fabriqués, M-05, fiche, M-10, M-01, v3, garde) dans `verif-atelier.ts`.
 
+## 18/11 au soir : « C'est un échec ! » (vrai dossier de 164 photos, en production)
+Vu par Mathias : « Composition impossible : aucune répartition des doubles (60) », toutes les vignettes « À écarter », la question du
+nombre de pages. Vérifié dans le code : `[id]/lireLesPhotosClient.ts` avalait tout échec de chargement (`bitmap` → null) et laissait la
+case BLANCHE mais numérotée, payée ; l'éditeur ne relisait JAMAIS ses adresses signées (`adressesEncoreValables` ne servait qu'à l'export),
+qui périment après une à deux heures ; la lecture fausse était gardée ; `trame.ts` jetait pour toute taille infaisable (et 164 photos
+en « tout garder » n'avaient AUCUNE taille possible : 4 chapitres de 41 photos, 12 doubles au plus par chapitre) ; `selection.ts`
+ignorait les coups de cœur et les gardées de l'atelier. Branche `fix/composer-dossier-reel` :
+- M-13 : adresses relues avant une lecture, chaque image essayée à toutes ses tailles puis réessayée après une relecture forcée ; une
+  illisible est retirée de la planche ; au-delà de 10 % on s'arrête AVANT de payer (« 37 photos ne se chargent pas. Recharge la page,
+  puis relance. » + « Réessayer ») ; lecture douteuse (plus de la moitié « à écarter », ou une planche de 8 et plus au même verdict) non
+  utilisée, « Relire N photos · ≈ X $ » proposé ; les marques de l'atelier priment (jamais écartées, jamais en réserve, gardées dans le tri).
+- M-14 : la taille faisable la plus proche, dite ; une phrase d'atelier (cause comptée, geste) quand il n'y a rien à composer ; tous les
+  `throw` du compositeur sont des `ImpasseComposition`, l'écran ne passe que par `composerSur`.
+- M-15 : plus de question sur la taille ; « la machine propose » (le nombre commandé, sinon tout garder) ; le bandeau offre « Plus court »,
+  « Tout garder », « Commandé » avec leurs vrais chiffres, un clic recompose.
+- Recette du 18/11 : page 1 sans repère vide, « View » jamais en chapitre, raisons en mots d'atelier.
+
 ## Ce qui reste
 - L'essai de Mathias sur une création libre, puis sur un dossier (`MEP_LECTURE_IA_CLIENTS=1`).
 - Un premier appel RÉEL des étapes voyage et lieux depuis l'éditeur (la recette les a simulés) ; mesurer leur coût réel.

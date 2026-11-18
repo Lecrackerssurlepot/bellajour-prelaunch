@@ -206,4 +206,56 @@ export async function verifierMepLireLesPhotos(ok: (nom: string, reussi: boolean
   const migration = readFileSync(resolve(process.cwd(), "supabase/migrations/20261117_mep_lecons_tag_corrige.sql"), "utf8");
   ok("la leçon `tag_corrige` : la migration 20261117 l'ajoute à la contrainte ; sans elle, la route envoie les autres leçons et dit `perdues` (23514), jamais un lot bloqué",
     migration.includes("'tag_corrige'") && lecons.includes("\"23514\"") && lecons.includes("perdues") && lecons.includes("20261117_mep_lecons_tag_corrige.sql"));
+
+  /* ── 7. M-13 (18/11 soir, « C'est un échec ! ») : jamais une case vide chez l'IA, jamais une lecture douteuse utilisée ── */
+  titre("— M-13 (18/11) : jamais une case vide chez l'IA, arrêt avant de payer, lecture douteuse —");
+  const S = O.lectureSure();
+  const seize = Array.from({ length: 16 }, (_, i) => `x${i}`);
+  const sv = O.plancheSansVide(seize, (id) => id !== "x3", 17);
+  ok("M-13 : une photo illisible est RETIRÉE de la planche (ni case, ni numéro) : 15 photos numérotées à la suite depuis 17, l'illisible comptée",
+    sv.ids.length === 15 && !sv.ids.includes("x3") && sv.illisibles.join() === "x3" && sv.n0 === 17 && sv.ids[3] === "x4");
+  const a1 = O.arretIllisibles(16, 1), a2 = O.arretIllisibles(16, 2), a37 = O.arretIllisibles(164, 37), a16 = O.arretIllisibles(164, 16), a17 = O.arretIllisibles(164, 17);
+  ok("M-13 : au-delà de 10 % (seuil nommé `lecture_illisibles_max`) on s'ARRÊTE avant de payer : 1 sur 16 continue, 2 sur 16 arrête ; 16 sur 164 continue, 17 arrête ; la phrase dit le nombre et le geste",
+    S.illisiblesMax === 0.1 && !a1.arreter && a2.arreter && !a16.arreter && a17.arreter
+      && a37.arreter && a37.phrase === "37 photos ne se chargent pas. Recharge la page, puis relance." && !O.arretIllisibles(0, 0).arreter);
+  const client = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/lireLesPhotosClient.ts"), "utf8");
+  const ecranCompo = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/Composer.tsx"), "utf8");
+  const ecranLire = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/LireLesPhotos.tsx"), "utf8");
+  const avantPaiement = (src: string) => src.indexOf("controlerImages(") > 0 && src.indexOf("controlerImages(") < src.indexOf("lirePlanche(")
+    && src.indexOf("plancheSansVide(") < src.indexOf("lirePlanche(") && src.indexOf("arretIllisibles(lot.ids.length") < src.indexOf("lirePlanche(")
+    && /if \(!image\) \{ illisibles \+= 1/.test(src);
+  ok("M-13 : case illisible JAMAIS envoyée : la planche ne se compose qu'avec des images chargées (`composerPlanche(ims: readonly ImageBitmap[]`), chaque image essayée à toutes ses tailles (moyenne, vignette, original), adresses relues avant ; les deux écrans contrôlent les images, retirent les illisibles et s'arrêtent AVANT `lirePlanche` ; le regard fin ne part jamais sans image",
+    /export function composerPlanche\(ims: readonly ImageBitmap\[\], n0: number\)/.test(client) && !/fillRect\(0, 0[^]*?if \(im\)/.test(client.slice(client.indexOf("composerPlanche")))
+      && /\[a\?\.moyenne, a\?\.vignette, a\?\.original\]/.test(client) && client.includes("await rafraichir(true)")
+      && avantPaiement(ecranCompo) && avantPaiement(ecranLire));
+  const ed = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/EditeurMagazine.tsx"), "utf8");
+  ok("M-13 : l'éditeur relit ses adresses signées (périmées après une à deux heures) quand elles ne sont plus sûres (`adressesEncoreValables`) ; une création libre n'en a pas besoin",
+    ed.includes("adressesEncoreValables(c, Date.now())") && ed.includes("rafraichirAdresses,") && ed.includes("projet.source === \"libre\""));
+
+  const v = (n: number, role: (i: number) => string, corrige: (i: number) => boolean = () => false): O.VerdictLu[][] => {
+    const l = Array.from({ length: n }, (_, i) => ({ id: `v${i}`, role: role(i), corrige: corrige(i) }));
+    const out: O.VerdictLu[][] = [];
+    for (let i = 0; i < l.length; i += 16) out.push(l.slice(i, i + 16));
+    return out;
+  };
+  const ROLES = ["heros", "satellite", "detail", "vue_ensemble"];
+  const empoisonnee = O.lectureSuspecte(v(164, () => "a_ecarter"));
+  const saine = O.lectureSuspecte(v(161, (i) => (i === 7 || i === 90 ? "a_ecarter" : ROLES[i % 4])));
+  const uniforme = O.lectureSuspecte(v(48, (i) => (i >= 16 && i < 32 ? "satellite" : ROLES[i % 4])));
+  const derniere = O.lectureSuspecte(v(36, (i) => (i >= 32 ? "detail" : ROLES[i % 4])));
+  const corrigee = O.lectureSuspecte(v(16, () => "a_ecarter", (i) => i < 10));
+  ok("M-13 : 164 photos « à écarter » sur 164 = lecture DOUTEUSE (plus de la moitié, `lecture_ecarter_max` = 0,5), toutes à relire, voyage et lieux compris ; un lot réel (2 sur 161, le banc) fait foi",
+    S.ecarterMax === 0.5 && empoisonnee.suspecte && empoisonnee.toute && empoisonnee.douteuses.size === 164 && empoisonnee.raisons[0].startsWith("164 photos sur 164")
+      && !saine.suspecte && saine.douteuses.size === 0);
+  ok("M-13 : une planche de 16 au même verdict partout est douteuse (ses 16 photos seulement) ; une dernière planche de 4 ne l'est pas (`lecture_planche_uniforme_min` = 8) ; un rôle corrigé par l'atelier n'est jamais douteux",
+    S.uniformeMin === 8 && uniforme.suspecte && !uniforme.toute && uniforme.douteuses.size === 16 && [...uniforme.douteuses].every((id) => Number(id.slice(1)) >= 16 && Number(id.slice(1)) < 32)
+      && !derniere.suspecte && corrigee.douteuses.size === 6 && [...corrigee.douteuses].every((id) => Number(id.slice(1)) >= 10));
+  const catV = new Map<string, PhotoMaq>(Array.from({ length: 20 }, (_, i) => [`p${i}`, photo(`p${i}`, `P${i}.JPG`, { date: `2026-06-12T10:${String(i).padStart(2, "0")}:00` })]));
+  const lV: LectureIA = { format: "bellajour-lecture-ia", version: 2, photos: Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`P${i}.JPG`, { role: { role: "a_ecarter" as const, interet: 0.1, raison: "x" }, sujet: "autre" as const }])), rafales: [], groupes: [] };
+  const rejouee = O.verdictsDeLecture(lV, catV, [...catV.keys()]);
+  ok("M-13 : une lecture GARDÉE est rejouée en planches de 16 dans l'ordre d'envoi : 20 photos = 16 + 4, et la lecture empoisonnée est vue douteuse",
+    rejouee.length === 2 && rejouee[0].length === 16 && rejouee[1].length === 4 && O.lectureSuspecte(rejouee).toute);
+  ok("M-13 : « Composer le magazine » propose de RELIRE une lecture douteuse au lieu de composer sur du faux (« Lecture douteuse », « Relire N photos · ≈ X $ », « Relire tout » toujours là) ; une lecture qui vient d'être lue douteuse ne paie ni regard, ni voyage, ni lieux",
+    ecranCompo.includes("Lecture douteuse") && /Relire \{pluriel\(aRelire, "photo"\)\} · ≈ \{motDollars\(est\.dollars\)\}/.test(ecranCompo) && ecranCompo.includes(">Relire tout<")
+      && ecranCompo.includes("!douteuseLue && (!base?.voyage") && ecranLire.includes("Lecture douteuse"));
 }
