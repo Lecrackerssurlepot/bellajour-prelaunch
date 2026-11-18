@@ -78,7 +78,7 @@ la page « Les agendas », pas des règles ni de l'écran client.
 5. Claude : rejouer le parcours complet en vrai (prendre, déplacer, annuler, agenda, mail à
    l'adresse de Mathias), puis PR.
 
-## Repris le 18/11/2026 (D32, branche `feat/partenaires-rendez-vous`)
+## Repris le 18/11/2026 (D33, branche `feat/partenaires-rendez-vous`)
 Mathias : « on va en profiter pour connecter le Calendar pour la session BtoB […] mettre le nom du cal suivant
 l'avancée du projet ». La question de la visio est tranchée : la connexion Google de chacun.
 - Fait : `agenda.ts` (OAuth, jeton chiffré, Meet, invitations par Google), « Connecter Google » sur

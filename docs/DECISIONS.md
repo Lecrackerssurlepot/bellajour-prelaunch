@@ -811,7 +811,7 @@ validateur refuse toute clé inconnue, le harnais le vérifie) ; rien de `castin
 couche ne doit réintroduire des « personnes principales » sans une nouvelle décision. La détection de visages de l'éditeur
 (MediaPipe, C04) reste une détection : des boîtes, jamais une identité.
 
-D32 (18/11/2026) — **Une page `/partenaires` montre la brochure et laisse prendre rendez-vous, sur les agendas Google de
+D33 (18/11/2026) — **Une page `/partenaires` montre la brochure et laisse prendre rendez-vous, sur les agendas Google de
 Mathias ET de Louis, chacun connecté par son propre compte.** Demande de Mathias : « limiter les aller-retours en B2B ».
 Elle complète D23 (les rendez-vous de l'espace client) et tranche sa question restée ouverte, la connexion.
 

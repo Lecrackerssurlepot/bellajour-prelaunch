@@ -1996,7 +1996,7 @@ Rappel utile : toutes ces faces sont en `display: swap`. Elles ne bloquent pas l
 texte s'affiche en repli puis bascule. Les 202 Ko coûtent de la bande passante, pas un écran
 blanc.
 
-## 18/11/2026 — La page /partenaires et la connexion Google de chacun (D32, T-148), sur branche
+## 18/11/2026 — La page /partenaires et la connexion Google de chacun (D33, T-148), sur branche
 
 - **Code** sur `feat/partenaires-rendez-vous`. Rien en production.
 - **Migration `20261118_partenaires_rendez_vous.sql` : APPLIQUÉE le 18/11 via le MCP Supabase, sur accord explicite de

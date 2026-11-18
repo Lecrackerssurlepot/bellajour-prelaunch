@@ -1272,7 +1272,7 @@ l'éditeur de styles), `demo`, `photos_supprimees_le`. Aucun mail ne part avant 
 jamais sans l'accord de Mathias. Le webhook Brevo ne connaît que `numeros` : un rebond B2B y est
 aujourd'hui ignoré.
 
-## La connexion Google de chacun et la page /partenaires (D32, 18/11)
+## La connexion Google de chacun et la page /partenaires (D33, 18/11)
 
 - **Deux connexions, une seule porte** (`agenda.ts`) : chaque fonction prend en dernier `connexion` (le jeton de
   renouvellement de la personne, en clair) ; `null` = le compte de service d'avant. Avec une connexion, et seulement
