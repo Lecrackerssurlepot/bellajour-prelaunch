@@ -72,3 +72,8 @@ sans : sa fiche (`docs/moteur/couches/Cxx-*.md`), son test au harnais, ses seuil
 un rejeu sur des photos réelles (`scripts/calibrer-lecture.ts`) et sa ligne dans l'index. Chaque recette de Mathias
 laisse un rapport daté dans `docs/moteur/recettes/` (modèle `MODELE.md`) et une ligne dans l'historique des fiches
 touchées. Lire l'index AVANT de toucher une couche.
+
+## Le tunnel (analyse → magazine proposé)
+Les règles d'analyse, de sélection, de structure, de couleur, de filtres et de polices vivent dans `docs/moteur/tunnel/` (D32). Une règle y est
+GÉNÉRALE (un profil ou une donnée, jamais un projet), et les retours de Mathias (`RETOURS-MATHIAS.md`, M-…) priment. Avant de coder une règle
+de tri ou de composition : la trouver ou l'écrire là, avec son identifiant, puis la citer dans le code et la contrôler au harnais.

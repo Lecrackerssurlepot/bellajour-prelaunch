@@ -37,6 +37,8 @@ Documents lus à la demande, jamais chargés d'office :
   dans `/composer` → `/numero` → `/admin/atelier`.**
 - `docs/DECISIONS.md` — ce qu'on a tranché et pourquoi. À lire avant de rouvrir un débat.
 - `docs/moteur/INDEX.md` — le registre du moteur de mise en page : une fiche par couche, une recette datée par test.
+- `docs/moteur/tunnel/README.md` — le tunnel « des photos au magazine proposé » : analyse, règles générales, et
+  `RETOURS-MATHIAS.md` (ses retours, qui priment). **À lire avant tout travail sur l'analyse, la sélection ou la composition automatique.**
 - `docs/produit/VISION.md` et `ROADMAP.md` — où on va, et dans quel ordre.
 - `docs/marque/` — la charte graphique, le ton, la façon de poser une information. **À lire avant
   toute maquette, tout texte visible et tout mail.**
