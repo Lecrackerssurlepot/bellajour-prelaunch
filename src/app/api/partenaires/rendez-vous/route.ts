@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { creerPlafond } from "@/lib/compte/garde";
 import { makeSupabase } from "@/lib/supabase";
 import { libelleCreneau, lireCreneau } from "@/lib/collectif/creneaux";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
+import { prevenirPrepaCall, texteRdvPartenaires } from "@/lib/collectif/prepaCall";
 import { reserverProspect } from "@/lib/collectif/prospects";
 import { lireDemandeProspect } from "@/lib/collectif/prospectsSaisie";
 
@@ -14,6 +15,10 @@ import { lireDemandeProspect } from "@/lib/collectif/prospectsSaisie";
  * depuis les règles (`lireCreneau`), la demande relue (`lireDemandeProspect`),
  * les agendas relus, et la base sert de verrou. Aucun mail ne part de chez
  * nous : Google invite le prospect (événement posé au nom de l'atelier).
+ *
+ * Une fois le rendez-vous pris, la routine cloud « Prépa call » est prévenue
+ * (lib/collectif/prepaCall.ts), après la réponse, si ses deux variables sont
+ * posées.
  *
  * Trois freins : cinq demandes par minute et par appelant ; un seul
  * rendez-vous à venir par adresse ; le champ `site`, invisible à l'écran,
@@ -47,5 +52,11 @@ export async function POST(request: Request) {
 
   const r = await reserverProspect(makeSupabase(), lue.demande, creneau, maintenant);
   if (!r.ok) return NextResponse.json({ error: r.echec.error, message: r.echec.message }, { status: r.echec.statut });
+  /* La préparation de l'appel (routine cloud) part APRÈS la réponse : elle ne coûte jamais un rendez-vous. */
+  const texte = texteRdvPartenaires(r.rdv, lue.demande);
+  after(async () => {
+    const issue = await prevenirPrepaCall(texte);
+    if (issue !== "non_branchee") console.info(`[partenaires] prépa call : ${issue}`);
+  });
   return NextResponse.json({ ok: true, quand: libelleCreneau(r.rdv.debut), visio: r.rdv.visio, avec: r.rdv.avec });
 }
