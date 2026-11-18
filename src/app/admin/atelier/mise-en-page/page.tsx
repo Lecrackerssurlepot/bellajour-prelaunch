@@ -41,6 +41,9 @@ export default async function PageMiseEnPage() {
           <Link href="/admin/atelier/mise-en-page/gabarits" className="mep-lien-discret">
             Gabarits
           </Link>
+          <Link href="/admin/atelier/mise-en-page/regles" className="mep-lien-discret">
+            Règles
+          </Link>
           <CreationLibre />
         </div>
       </header>

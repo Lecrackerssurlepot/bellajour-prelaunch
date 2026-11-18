@@ -4,6 +4,7 @@
  * POST { cle, miseEnPageId?, lecons: [{ lecon, quand }], instantane? } : enregistre un lot de leçons (au plus 200) et,
  * s'il est là, l'instantané du magazine. Sans les tables : 503 `migration_mep_lecons_absente`, l'écran garde tout sur
  * l'appareil et réessaie. GET ?cle=… : les leçons d'un projet, les plus récentes d'abord (pour la relecture, G3).
+ * GET ?bilan=regles (18/11, T-216) : `regle`, `type`, `quand` de toutes les leçons, pour l'écran « Règles ».
  *
  * Seules tables écrites : `mep_lecons`, `mep_instantanes` (migration 20261110). Aucun dossier, aucun mail, aucun état
  * de magazine changé. Chaque leçon est relue (`leconValide`), jamais crue du navigateur ; la date `quand` doit être
@@ -42,7 +43,9 @@ function quandValide(q: unknown, maintenant: number): string | null {
 export async function GET(request: Request) {
   const qui = await quiEstConnecteRequete(request);
   if (!qui) return refus(401, "non_authentifie");
-  const cle = new URL(request.url).searchParams.get("cle");
+  const params = new URL(request.url).searchParams;
+  if (params.get("bilan") === "regles") return bilanParRegle();
+  const cle = params.get("cle");
   if (!cleValide(cle)) return refus(400, "cle_invalide");
   try {
     const { data, error } = await makeSupabase()
@@ -59,6 +62,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, lecons: data ?? [], migration: true }, { status: 200, headers: SANS_CACHE });
   } catch (err) {
     console.error("[admin/mise-en-page/lecons] exception", (err as Error)?.message);
+    return refus(500, "internal");
+  }
+}
+
+/** 18/11 (T-216) : la plus grande lecture du bilan par règle (au-delà, les plus récentes). */
+const BILAN_MAX = 10_000;
+
+/**
+ * GET ?bilan=regles : les leçons de TOUS les projets, réduites à `regle`, `type`, `quand` (l'écran « Règles » de l'atelier les compte par
+ * règle avec `correctionsParRegle`). Lecture seule. Sans la table : une liste vide et `migration: false`, jamais une erreur.
+ */
+async function bilanParRegle() {
+  try {
+    const { data, error } = await makeSupabase()
+      .from("mep_lecons")
+      .select("regle, type, quand")
+      .order("quand", { ascending: false })
+      .limit(BILAN_MAX);
+    if (error) {
+      if (tableMepAbsente(error.code)) return NextResponse.json({ ok: true, lecons: [], migration: false }, { status: 200, headers: SANS_CACHE });
+      console.error("[admin/mise-en-page/lecons] bilan", error.code, error.message);
+      return refus(500, "lecture_impossible");
+    }
+    return NextResponse.json({ ok: true, lecons: data ?? [], migration: true, plafond: (data ?? []).length >= BILAN_MAX }, { status: 200, headers: SANS_CACHE });
+  } catch (err) {
+    console.error("[admin/mise-en-page/lecons] bilan exception", (err as Error)?.message);
     return refus(500, "internal");
   }
 }

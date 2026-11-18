@@ -1,4 +1,4 @@
-# État du système — au 17/11/2026
+# État du système — au 18/11/2026
 
 **Ce fichier est le SEUL endroit où va un fait périssable.** Un `CLAUDE.md` ne contient que des
 règles qui survivent ; tout ce qui porte une date, un identifiant ou une mesure vient ici.
@@ -9,6 +9,13 @@ Règle d'entretien : quiconque change l'état du système met ce fichier à jour
 Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
+
+## 18/11/2026 — Registre des règles du tunnel : sur branche, PAS en production
+
+- Branche `feat/tunnel-registre-des-regles` (T-216, poussée, pas de PR) : 314 règles en données (`src/lib/mise-en-page/regles/`),
+  écran en lecture `/admin/atelier/mise-en-page/regles`, doc générée `docs/moteur/tunnel/REGISTRE.md`, harnais `verif-mep-regles.ts`.
+  Le compositeur ne lit pas encore le registre (lot suivant). Six réglages de départ du banc ajoutés à `editeur/reglages.ts`
+  (`definition_double_ppp` = 150 PROVISOIRE, à trancher par Mathias). Aucune migration, aucune écriture en base.
 
 ## 17/11/2026 — « Lire les photos » de l'éditeur : sur branche, PAS en production
 
