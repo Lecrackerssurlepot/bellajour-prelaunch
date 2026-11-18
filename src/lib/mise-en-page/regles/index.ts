@@ -8,3 +8,4 @@ export { REGISTRE, regleParId, versionDe, versionRegles, comptesParStatut, compt
 export { correctionsParRegle, type Corrections, type LeconComptee } from "./retours";
 export { SURCHARGES, type Surcharge } from "./surcharges";
 export { RETOURS_MATHIAS, INTERDITS_DURS, REGLES_DU_BANC } from "./tunnel";
+export { DECISIONS_V2, REGLES_DEFINITION_V2 } from "./definitionV2";

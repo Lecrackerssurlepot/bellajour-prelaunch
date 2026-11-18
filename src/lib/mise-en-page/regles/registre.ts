@@ -12,6 +12,7 @@
 import { REPRISE } from "./reprise";
 import { SURCHARGES } from "./surcharges";
 import { INTERDITS_DURS, REGLES_DU_BANC, RETOURS_MATHIAS } from "./tunnel";
+import { DECISIONS_V2, REGLES_DEFINITION_V2 } from "./definitionV2";
 import { DOMAINES, STATUTS, type Domaine, type IdRegle, type Regle, type Statut } from "./types";
 
 /** Une règle reprise, avec sa retouche. */
@@ -20,7 +21,7 @@ const retouchee = (r: Regle): Regle => {
   return s ? { ...r, ...s, id: r.id } : r;
 };
 
-export const REGISTRE: readonly Regle[] = [...RETOURS_MATHIAS, ...INTERDITS_DURS, ...REGLES_DU_BANC, ...REPRISE.map(retouchee)];
+export const REGISTRE: readonly Regle[] = [...RETOURS_MATHIAS, ...DECISIONS_V2, ...INTERDITS_DURS, ...REGLES_DU_BANC, ...REGLES_DEFINITION_V2, ...REPRISE.map(retouchee)];
 
 const PAR_ID: ReadonlyMap<IdRegle, Regle> = new Map(REGISTRE.map((r) => [r.id, r]));
 

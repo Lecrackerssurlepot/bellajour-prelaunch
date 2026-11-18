@@ -11,6 +11,15 @@
  * Le script LIT le banc (photos.json, ia.json, voyage.json, ensembles.json, lieux-chapitres.json, et le titre et le style de la trame de
  * référence, pour rejouer à l'identique) et n'écrit QUE dans le dossier de sortie. Aucun réseau, aucun appel d'IA. Aucun nom de client
  * n'est écrit ici : tout vient des fichiers du banc.
+ *
+ * LA MATRICE (18/11, définition v2) : rejoue À COÛT NUL toute une liste de variantes, chacune avec ses RÉGLAGES et ses RÉPONSES :
+ *   … compositeur-rejeu.ts <banc> <projet> <sortie> --matrice <matrice.json> [--jugement <jugement.html>]
+ * matrice.json : [{ "nom": "2-v2-48-serree", "titre": "v2 · 48 pages · serrée", "version": 2, "taille": 48 | "tout" | "machine",
+ *                   "reglages": { densite, lieux, entorses, dpiDouble150 } (fichier ou objet), "reponses": { … la fiche … } (fichier ou objet),
+ *                   "corrections": { tags, marques, reponses } }]
+ * Une variante peut aussi être lancée seule : --reglages <fichier.json> --reponses <fichier.json> [--taille 48] [--version 1|2].
+ * Les lectures du complément (passe-2/ia-complement.json) sont fondues dans la lecture quand elles existent (la v1 les ignore).
+ * Sortie par variante : planche-contact.jpg, magazine.pdf, photos-posees-et-laissees.html, selection.json ; puis COMPARAISON.html.
  */
 
 import fs from "node:fs";
@@ -21,6 +30,8 @@ import { lectureSuspecte, type VerdictLu } from "@/lib/mise-en-page/editeur";
 import { cadresDe, type Magazine } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import type { StyleMagazine } from "@/lib/mise-en-page/style";
+import { REGLAGES_V2_DEFAUT, type CorrectionsAtelier, type Fiche, type ReglagesV2 } from "@/lib/mise-en-page/compositeur";
+import { comparaison, magazinePdf, planchesContact, planchesEnImages, posesEtLaissees, type Sources, type Variante } from "./compositeur-planche-tests";
 
 type J = Record<string, unknown>;
 const lire = (f: string): J => JSON.parse(fs.readFileSync(f, "utf8")) as J;
@@ -29,7 +40,10 @@ const liste = (v: unknown): J[] => (Array.isArray(v) ? (v as J[]) : []);
 const chaine = (v: unknown): string | null => (typeof v === "string" ? v : null);
 const nombre = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
-const [banc, projet, sortie, passe = "passe-10"] = process.argv.slice(2);
+const ARGS = process.argv.slice(2);
+const option = (nom: string): string | null => { const i = ARGS.indexOf(nom); return i >= 0 ? ARGS[i + 1] ?? null : null; };
+const positionnels = ARGS.filter((a, i) => !a.startsWith("--") && !(i > 0 && ARGS[i - 1].startsWith("--")));
+const [banc, projet, sortie, passe = "passe-10"] = positionnels;
 if (!banc || !projet || !sortie) { console.error("usage : compositeur-rejeu.ts <dossier du banc> <projet> <dossier de sortie> [<passe>]"); process.exit(2); }
 const ENTREES = path.join(banc, "sorties", projet, "passe-1");
 const REF = path.join(banc, "sorties", projet, "compo", passe);
@@ -59,10 +73,15 @@ function entree(): Omit<EntreeCompo, "fiche" | "couverture"> {
   const sortes: Record<string, "lieu" | "enseigne" | "autre"> = {};
   const lc = lire(path.join(banc, "compositeur", "lieux-chapitres.json"));
   for (const n of liste(lc.noms_lus)) sortes[String(n.nom).toUpperCase()] = n.sorte as "lieu" | "enseigne" | "autre";
+  /* le complément de la passe 2 (définition v2, décision 11), s'il a été lu : fondu dans la lecture, ignoré par la v1 */
+  const fComp = path.join(banc, "sorties", projet, "passe-2", "ia-complement.json");
+  const comp = fs.existsSync(fComp) ? objet(lire(fComp).photos) : {};
   const out: PhotoCompo[] = photos.map((p) => {
     const c1 = objet(p.c1), c2 = objet(p.c2);
     const f = String(p.fichier);
     const a = objet(ia.get(f)), pl = objet(a.planche), rg = objet(a.regard);
+    const k = objet(comp[f]), kp = objet(k.planche), kr = objet(k.regard), kc = objet(k.couverture);
+    const sansVisage = (v: unknown) => (v === "sans_visage" ? null : v);
     const vis: number[][] = liste(c2.visages).map((v) => [Number(v.x), Number(v.y), Number(v.l), Number(v.h)]);
     for (const b of liste(objet(c2.visagesTuiles).boites)) {
       const bb = [Number(b.x), Number(b.y), Number(b.l), Number(b.h)];
@@ -85,8 +104,17 @@ function entree(): Omit<EntreeCompo, "fiche" | "couverture"> {
         personnes: (pers === "0" || pers === "1" || pers === "2" || pers === "groupe" ? pers : null),
         momentJournee: chaine(pl.moment_journee) as never, ambiance: chaine(pl.ambiance) as never,
         lieuLu: chaine(rg.lieu)?.trim() || null, couverture: !!rg.couverture,
+        ...(k.planche ? {
+          personnesNombre: nombre(kp.personnes_nombre), sujetSpecial: kp.sujet_special === "animal" || kp.sujet_special === "document" ? kp.sujet_special : null,
+          forceImage: nombre(kp.force_image), pose: kp.pose === "pose" || kp.pose === "spontane" ? kp.pose : null, geste: kp.geste === true, insolite: kp.insolite === true,
+        } : {}),
+        ...(k.regard ? {
+          expression: sansVisage(kr.expression) as never, yeuxFermes: sansVisage(kr.yeux_fermes) as never, pointAccroche: kr.point_accroche === true, regardVers: sansVisage(kr.regard) as never,
+        } : {}),
+        ...(k.couverture ? { rangCouverture: nombre(kc.rang) } : {}),
       } : null,
       chapitre: null,
+      empreinte: chaine(c2.dhash), numeroGalerie: nombre(c1.numeroGalerie),
     };
   });
   const voyage: Voyage = {
@@ -180,7 +208,66 @@ async function contact(m: Magazine, nomDe: Map<string, string>, dims: Map<string
 
 type Ligne = { taille: string; ts: Record<string, number>; py: Record<string, number>; posees_communes: number; seulement_ts: string[]; seulement_py: string[] };
 
+/* ─────────────── la matrice (définition v2) ─────────────── */
+
+type LigneMatrice = { nom: string; titre?: string; version?: 1 | 2; taille?: "tout" | "machine" | number; reglages?: Partial<ReglagesV2> | string; reponses?: Fiche | string; corrections?: CorrectionsAtelier | string };
+const lireOuObjet = <X>(v: X | string | undefined, base: string): X | undefined => (typeof v === "string" ? (JSON.parse(fs.readFileSync(path.resolve(base, v), "utf8")) as X) : v);
+
+async function matrice(fichier: string | null, seule: LigneMatrice | null): Promise<void> {
+  const e0 = entree();
+  const lum = await luminances(e0.photos.map((p) => p.id));
+  const fichierDe = new Map(liste(lire(path.join(ENTREES, "photos.json"))).map((p) => [idDe(String(p.fichier)), String(p.fichier)]));
+  const s: Sources = {
+    v1024: V1024, v320: path.join(banc, "cache", projet, "v320"), fichierDe, dims: new Map(e0.photos.map((p) => [p.id, { l: p.l, h: p.h }])),
+    personnes: new Map(e0.photos.map((p) => [p.id, Math.max(p.visages.length, p.ia?.personnesNombre ?? 0, p.ia?.personnes === "groupe" ? 3 : Number(p.ia?.personnes ?? 0) || 0)])),
+  };
+  const base = fichier ? path.dirname(path.resolve(fichier)) : process.cwd();
+  const lignes: LigneMatrice[] = seule ? [seule] : (JSON.parse(fs.readFileSync(fichier!, "utf8")) as LigneMatrice[]);
+  const vs: Variante[] = [];
+  for (const l of lignes) {
+    const reglages = { ...REGLAGES_V2_DEFAUT, ...(lireOuObjet(l.reglages, base) ?? {}) };
+    const reponses = lireOuObjet(l.reponses, base) ?? {};
+    const corrections = lireOuObjet(l.corrections, base) ?? null;
+    const taille = l.taille ?? 48;
+    const debut = Date.now();
+    const i = composerSur({
+      ...e0, luminances: lum, couverture: null, fiche: { theme: "road_trip", ...reponses, taille: taille === "machine" ? "machine" : taille },
+      ...((l.version ?? 2) === 2 ? { v2: reglages, corrections } : {}),
+    });
+    const ms = Date.now() - debut;
+    if (!i.ok) { console.log(`${l.nom} : ${i.phrase} ${i.cause} (${i.technique})`); continue; }
+    const r = i.r;
+    const d = path.join(sortie, l.nom);
+    fs.mkdirSync(d, { recursive: true });
+    fs.writeFileSync(path.join(d, "selection.json"), JSON.stringify({ reglages: (l.version ?? 2) === 2 ? reglages : "v1", reponses, chapitres: r.chapitres, doubles: r.doubles ?? null, selection: r.selection, controle: r.controle, decisions: r.decisions }, null, 1));
+    fs.writeFileSync(path.join(d, "premier-jet.json"), JSON.stringify(r.jet, null, 1));
+    const petites = await planchesEnImages(r.jet.magazine, s, 1.1);
+    await planchesContact(petites, path.join(d, "planche-contact.jpg"), 1.1);
+    await magazinePdf(await planchesEnImages(r.jet.magazine, s, 3), path.join(d, "magazine.pdf"));
+    await posesEtLaissees(l.titre ?? l.nom, r, s, petites, path.join(d, "photos-posees-et-laissees.html"));
+    vs.push({ nom: l.nom, titre: l.titre ?? l.nom, r, images: petites });
+    console.log(`${l.nom} : ${r.pages} pages, ${r.selection.compte.posee} posées, ${r.selection.compte.couverture} couverture, ${r.selection.compte.reserve} réserve, ${r.selection.compte.ecartee} écartées, ${r.controle.fautes.length} faute(s) en ${ms} ms`);
+    for (const f of r.controle.fautes) console.log(`   faute : ${f.faute} · ${f.ou} · ${f.detail} (${f.regle})`);
+  }
+  if (vs.length > 1) {
+    const jug = option("--jugement");
+    const n = Math.max(...vs.map((v) => v.images.length));
+    const pas = Math.max(1, Math.floor((n - 2) / 12));
+    const choisies = Array.from({ length: 12 }, (_, k) => 1 + k * pas).filter((x) => x < n - 1);
+    await comparaison(vs, s, choisies, jug && fs.existsSync(jug) ? fs.readFileSync(jug, "utf8") : "", path.join(sortie, "COMPARAISON.html"));
+    console.log(`COMPARAISON.html : ${vs.length} variantes, doubles expliquées ${choisies.join(", ")}`);
+  }
+}
+
 async function main(): Promise<void> {
+  const fM = option("--matrice");
+  if (fM || option("--reglages") || option("--reponses")) {
+    const seule: LigneMatrice | null = fM ? null : {
+      nom: "variante", version: option("--version") === "1" ? 1 : 2, taille: option("--taille") === "tout" ? "tout" : option("--taille") === "machine" ? "machine" : Number(option("--taille") ?? 48),
+      ...(option("--reglages") ? { reglages: path.resolve(option("--reglages")!) } : {}), ...(option("--reponses") ? { reponses: path.resolve(option("--reponses")!) } : {}),
+    };
+    return matrice(fM, seule);
+  }
   const e0 = entree();
   const lum = await luminances(e0.photos.map((p) => p.id));
   const fichierDe = new Map(liste(lire(path.join(ENTREES, "photos.json"))).map((p) => [idDe(String(p.fichier)), String(p.fichier)]));

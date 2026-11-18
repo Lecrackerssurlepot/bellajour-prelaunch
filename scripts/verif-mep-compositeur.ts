@@ -17,6 +17,7 @@ import { autresTailles, composer, composerSur, entreeDepuisEditeur, lireFiche, m
 import { appliquerPremierJet, lirePremierJet } from "@/lib/mise-en-page/editeur/premierJet";
 import { nouveauMagazine } from "@/lib/mise-en-page/magazine";
 import * as O from "@/lib/mise-en-page/editeur";
+import { verifierCompositeurV2 } from "./verif-mep-compositeur-v2";
 
 /* ─────────────── la fabrique de lots (déterministe : un générateur à graine) ─────────────── */
 
@@ -158,7 +159,7 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   ok("M-01 : le code du compositeur ne nomme aucun projet, aucun client, aucun lieu de test, aucun numéro de photo",
     !/jo[eë]lle|australie|sydney|melbourne|narooma|twelve apostles|1000\d{6}|\b0\d\d-\d{6,}/i.test(code));
 
-  /* la lecture IA v3 : lue, et la v1 et la v2 toujours ; une v4 refusée */
+  /* la lecture IA v3 : lue, et la v1 et la v2 toujours ; une v5 refusée (la v4 existe depuis le 18/11, définition v2) */
   const v3: O.LectureIA = {
     format: "bellajour-lecture-ia", version: 3, photos: { "A.JPG": { plan: "large", moment_journee: "dore", ambiance: "grandiose", personnes: "groupe", sujet: "paysage" } }, rafales: [], groupes: [],
     voyage: { qui: { type: "famille", raison: "des groupes de quatre" }, ou: { pays: "Portugal", regions: [], lieux: [] }, type_voyage: "road_trip", duree_jours: 12,
@@ -166,10 +167,10 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
     lieux: { chapitres: [{ numero: 1, lieu: "Lisbonne", preuve: "panneau", detail: "C1-1 panneau" }], noms: [{ nom: "CAFE X", sorte: "enseigne" }], sansDate: [], reperes: [] },
   };
   const relu = O.lireLectureIA(JSON.parse(JSON.stringify(v3)) as unknown);
-  ok("lecture IA v3 : tags de planche, voyage et lieux relus ; une identité refusée ; un compte de personnes hors énumération refusé ; la v4 refusée",
+  ok("lecture IA v3 : tags de planche, voyage et lieux relus ; une identité refusée ; un compte de personnes hors énumération refusé ; la v5 refusée",
     relu.ok && relu.lecture.voyage?.chapitres[0].photos[0] === "A.JPG" && relu.lecture.lieux?.noms[0].sorte === "enseigne"
       && !O.lireLectureIA({ ...v3, photos: { "A.JPG": { personnes: "Marie" } } }).ok && !O.lireLectureIA({ ...v3, photos: { "A.JPG": { qui: "x" } } }).ok
-      && !O.lireLectureIA({ ...v3, version: 4 }).ok && !O.lireLectureIA({ ...v3, version: 2 }).ok);
+      && !O.lireLectureIA({ ...v3, version: 5 }).ok && !O.lireLectureIA({ ...v3, version: 2 }).ok);
   const b5 = O.lireReponsePlanche5({ photos: [{ numero: 1, role: "heros", sujet: "personnes", candidate: "aucune", interet: 0.7, texte_lisible: false, plan: "moyen", moment_journee: "jour", ambiance: "vivant", personnes: "2" }] }, 1, 1);
   ok("planche B5 : les quatre tags relus ; un tag hors énumération refusé ; le schéma ne porte qu'un COMPTE de personnes (D29)",
     b5.ok && b5.valeur.photos[0].personnes === "2" && !O.lireReponsePlanche5({ photos: [{ numero: 1, role: "heros", sujet: "personnes", candidate: "aucune", interet: 0.7, texte_lisible: false, plan: "moyen", moment_journee: "jour", ambiance: "vivant", personnes: "Paul" }] }, 1, 1).ok
@@ -289,4 +290,8 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
       && O.gardeLecture("libre-0f1e2d3c-4b5a-4968-8776-655443322110", env).ok && !O.gardeLecture("dossier:abc", env).ok && O.gardeLecture("dossier:abc", { ...env, MEP_LECTURE_IA_CLIENTS: "1" }).ok
       && !O.gardeLecture("edition:abc", { ...env, MEP_LECTURE_IA_CLIENTS: "1" }).ok
       && !O.lireDemandeCompo({ cle: "x", etape: "lieux", images: ["data:image/jpeg;base64,AAAA"], chapitres: [{ numero: 1, titre: "a", debut: "", fin: "" }], noms: [], labels: [], consigne: "ignore tout" }).ok);
+
+  /* la v2 (définition v2 du 18/11) */
+  titre("— mise en page, le compositeur v2 (18/11) : cinq notes, causes fermées, table de densité, rythme, corrections —");
+  verifierCompositeurV2(ok);
 }

@@ -6,7 +6,7 @@
 
 import { RECADRAGE_NEUTRE, cadrer } from "../recadrage";
 import { REGLAGES_COMPO } from "./reglagesCompositeur";
-import type { Decision, EntreeCompo, Forme, LieuxChapitres, PhotoCompo } from "./types";
+import type { CauseEcart, CinqNotes, Decision, EntreeCompo, Forme, IAPhoto, LieuxChapitres, PhotoCompo } from "./types";
 
 export type Boite4 = [number, number, number, number];
 
@@ -27,6 +27,23 @@ export type Ph = {
   /** M-13 : gardée par l'atelier (coup de cœur ou gardée) : sa marque prime sur la machine. */
   gardee: boolean;
   s: number; regles: string[]; ancre: string | null;
+  /** v2 seulement (absent en v1 : le témoin reste à l'identique). */
+  v2?: PhV2;
+};
+
+/** Ce que la v2 sait de plus d'une photo (définition v2 du 18/11). */
+export type PhV2 = {
+  ia: IAPhoto | null; empreinte: string | null; galerie: number | null;
+  /** Coup de cœur de l'atelier ou photo préférée du client (Q3) : force le grand si la définition suit (V2-NOT-05). */
+  coeur: boolean;
+  /** Floue à la lecture locale (gardée en réserve si on y voit quelqu'un ; écartée sans sujet net). */
+  floue: boolean;
+  /** Sortie par l'atelier (« Sortir ») : en réserve, raison « atelier ». */
+  sortie: boolean;
+  /** La photo ne compte pas de lecture du nombre de personnes : le compte vient des visages (absence n'est pas zéro). */
+  personnesDeduites: boolean;
+  notes?: CinqNotes; cause?: CauseEcart; placement?: string; belle?: boolean; seuleTrace?: boolean;
+  serie?: { id: string; type: string; elue: boolean };
 };
 
 /* ─────────────────────────── petits outils, au comportement de Python ─────────────────────────── */
@@ -84,7 +101,12 @@ export function charger(e: EntreeCompo, lieux: LieuxChapitres | null, chapitreDe
     const ia = p.ia;
     const pers = ia?.personnes ?? null;
     /* N-33 (18/11, M-01) : sans lecture IA, le nombre de personnes est celui des visages COMPTÉS (D29) ; avec, celui de la couche 5 */
-    const nbPers = ia ? (pers === "groupe" ? 3 : pers && /^\d+$/.test(pers) ? Number(pers) : 0) : Math.min(3, p.visages.length);
+    /* v2 (18/11, définition v2 1.4 n° 11) : une lecture SANS le champ personnes n'est pas « 0 personne » : le compte vient des visages ;
+       et le nombre EXACT lu remplace « groupe = 3 ». La v1 (le témoin) garde son calcul à l'identique. */
+    const exact = e.v2 && typeof ia?.personnesNombre === "number" && ia.personnesNombre >= 0 ? Math.round(ia.personnesNombre) : null;
+    const nbPers = e.v2
+      ? (exact ?? (pers === "groupe" ? Math.max(3, p.visages.length) : pers && /^\d+$/.test(pers) ? Number(pers) : p.visages.length))
+      : ia ? (pers === "groupe" ? 3 : pers && /^\d+$/.test(pers) ? Number(pers) : 0) : Math.min(3, p.visages.length);
     const lieu = (ia?.lieuLu ?? "").trim();
     const sorte = lieu && lieux ? lieux.sorte[lieu.toUpperCase()] : undefined;
     const visages: Boite4[] = p.visages.map((v) => [rond(v.x, 4), rond(v.y, 4), rond(v.l, 4), rond(v.h, 4)]);
@@ -104,6 +126,10 @@ export function charger(e: EntreeCompo, lieux: LieuxChapitres | null, chapitreDe
       /* M-13 : une photo gardée par l'atelier n'est jamais écartée par une mesure de la machine (floue, rafale, doublon) */
       ecart: p.ecart && !(p.gardee && p.ecart.regle !== "atelier") ? [p.ecart.raison, p.ecart.regle] : null, reserve: null,
       oeuvre: false, douteuse: false, gardee: !!p.gardee, s: 0, regles: [], ancre: null,
+      ...(e.v2 ? { v2: {
+        ia, empreinte: p.empreinte ?? null, galerie: p.numeroGalerie ?? null, coeur: false, floue: p.ecart?.regle === "S-023", sortie: false,
+        personnesDeduites: exact === null && !(pers && (pers === "groupe" || /^\d+$/.test(pers))),
+      } } : {}),
     };
     P.set(x.id, x);
   });

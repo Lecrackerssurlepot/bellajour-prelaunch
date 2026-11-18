@@ -123,9 +123,9 @@ export async function verifierMepLireLesPhotos(ok: (nom: string, reussi: boolean
   const v1 = O.lireLectureIA(exemple);
   const v1Ex = JSON.parse(exemple) as { photos: Record<string, Record<string, unknown>> };
   const avecSujet = { ...v1Ex, photos: { ...v1Ex.photos, "IMG_0101.JPG": { ...v1Ex.photos["IMG_0101.JPG"], sujet: "personnes" } } };
-  ok("la v1 est toujours lue (l'exemple de la doc, version 1) ; un champ de la v2 dans un fichier v1 reste un champ en trop ; la v2 l'accepte ; une version inconnue (4) est refusée (la v3 existe depuis le 18/11, C20)",
+  ok("la v1 est toujours lue (l'exemple de la doc, version 1) ; un champ de la v2 dans un fichier v1 reste un champ en trop ; la v2 l'accepte ; une version inconnue (5) est refusée (la v3 et la v4 existent depuis le 18/11, C20)",
     v1.ok && v1.lecture.version === 1 && !O.lireLectureIA(avecSujet).ok && O.lireLectureIA({ ...avecSujet, version: 2 }).ok
-      && !O.lireLectureIA({ ...v1Ex, version: 4 }).ok && !O.lireLectureIA({ ...v1Ex, lecture: { modeles: [], dollars: 0, quand: "2026-11-17" } }).ok);
+      && !O.lireLectureIA({ ...v1Ex, version: 5 }).ok && !O.lireLectureIA({ ...v1Ex, lecture: { modeles: [], dollars: 0, quand: "2026-11-17" } }).ok);
   ok("v2 refusée : un sujet inconnu, un moment de 7 mots, une correction vide ou d'un rôle inconnu",
     !O.lireLectureIA({ ...v2, photos: { "A.JPG": { sujet: "chat" } } }).ok
       && !O.lireLectureIA({ ...v2, photos: { "A.JPG": { regard: { moment: "un deux trois quatre cinq six sept", idee: "", recadrage: "", plat: "" } } } }).ok

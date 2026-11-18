@@ -144,3 +144,72 @@ export const REGLES_POSE = {
 
 /** Les valeurs seules, lues par la pose (même noms que `REGLAGES_POSE` du banc), plus les zooms essayés au recadrage (P-14). */
 export const REGLAGES_POSE = { ...valeurs(REGLES_POSE), ZOOMS: [1, 1.1, 1.2, 1.35, 1.5] as readonly number[] } as const;
+
+/* ─────────────────────────── la v2 (définition v2 du 18/11, décisions de Mathias D1 à D12) ─────────────────────────── */
+
+/** Les seuils de la v2. Réglages de DÉPART (« RD » de la définition) sauf mention : chacun dit sa règle et sa raison ; un seuil ne change
+ *  qu'avec un rejeu de la matrice (`scripts/compositeur-rejeu.ts --matrice`) et le oui de Mathias. */
+export const REGLES_V2 = {
+  /* les notes (V2-NOT-01, D5) */
+  CRAN_BAS: r(0.25, "N-40", "cran « faible » : sous le premier quart DU LOT (l'IA note planche par planche, jamais un seuil absolu)"),
+  CRAN_MILIEU: r(0.5, "N-40", "cran « correcte » : sous la médiane du lot"),
+  CRAN_HAUT: r(0.75, "N-40", "cran « forte » : au-dessus du dernier quart du lot"),
+  NET_REFERENCE: r(1.5, "N-40", "netteté du sujet : 1,5 fois la médiane du lot vaut la note technique pleine"),
+  DPI_REFERENCE: r(300, "N-40", "300 ppp en pleine page : la part « définition » de la note technique est pleine"),
+  /* l'écartement (V2-ECA-01, D2) */
+  INIMPRIMABLE_DPI: r(100, "N-41", "inimprimable : sous 100 ppp même en vignette de 40 mm (RD, à valider)"),
+  VIGNETTE_MM: r(40, "N-41", "la plus petite vignette posée : 40 mm de côté"),
+  /* la réserve, les séries (V2-RAF-01, D4) */
+  QUASI_IDENTIQUE_BITS: r(8, "N-42", "presque identiques : 8 bits d'empreinte sur 64 ou moins (la mesure de doublon de l'éditeur)"),
+  SIMILAIRE_BITS: r(12, "N-42", "similaires : 12 bits ou moins ; au-delà, deux photos ne se ressemblent PAS, même prises à la même minute"),
+  SERIE_S: r(120, "N-42", "une série : des photos prises à 2 minutes au plus l'une de l'autre"),
+  ACTION_S: r(10, "N-42", "une série d'action : quelques secondes"),
+  ACTION_GARDE: r(3, "N-42", "une action garde trois photos (début, sommet, fin)"),
+  PHOTOMATON_GARDE: r(6, "N-42", "un photomaton garde six poses au plus"),
+  /* sans date (V2-CHR-04, D3) */
+  RESSEMBLANCE_GALERIE: r(40, "N-43", "deux numéros de galerie à 40 au plus : la photo sans date est arrivée avec sa voisine"),
+  /* la densité (ajout de Mathias du 18/11 : les règles du nombre de photos par page) */
+  PHOTOS_MAX_DOUBLE: r(9, "N-44", "D8 : 9 photos au plus sur une double"),
+  PHOTOS_MAX_SERIE: r(12, "N-44", "D8 : 12 en série voulue (planche-contact, photomaton, journée en vrac)"),
+  PERSONNES_MAX_DOUBLE: r(6, "N-45", "M-08 : avec des personnes, 6 photos au plus sur une double (chacune garde 70 mm et 100 cm²)"),
+  DENSE_MIN: r(6, "N-47", "une double « dense » : 6 photos et plus"),
+  CHARGEE_MIN: r(3, "N-47", "une double « chargée » : 3 photos et plus"),
+  DENSES_DE_SUITE: r(2, "N-47", "jamais plus de deux doubles denses d'affilée (Notion Mai)"),
+  CHARGEES_DE_SUITE: r(4, "N-47", "après quatre doubles chargées, une respiration à 1 ou 2 photos (S-051, Notion Mai)"),
+  PEN_SANS_RESPIRATION: r(1.2, "N-47", "une cinquième double chargée de suite coûte (la respiration est voulue, pas forcée : forcée, elle posait des photos seules trop petites)"),
+  PEN_SEULE_PETITE: r(2, "N-49", "une photo seule sur sa page sans la définition d'une pleine page : la page reste presque vide"),
+  PART_TOP_IMAGE: r(0.1, "N-49", "V2-NOT-05 : la photo la plus forte du dixième du lot (note image) ne sort jamais pour la taille"),
+  W_CIBLE: r(0.35, "N-48", "coût d'une double qui s'écarte du nombre voulu par la table (au carré, rapporté au nombre voulu)"),
+  PEN_BELLE_NOYEE: r(3, "N-49", "une belle photo noyée dans une double de 3 photos et plus coûte plus qu'une coupure de moment"),
+  PEN_SANS_RECIT: r(1.5, "N-47", "un chapitre sans aucune double de 3 photos et plus (la page récit)"),
+  PEN_DETAIL_SEUL: r(4, "N-50", "un détail posé seul, ou une double faite de détails seuls (Notion Av #08)"),
+  PEN_COUPE_PAIRE: r(1.2, "N-50", "une paire coupée entre deux doubles (pancarte + sujet, portrait + ambiance, large + détail)"),
+  PEN_NI_ECHO_NI_CONTRASTE: r(0.25, "N-51", "les deux pages ne se répondent ni par la couleur ni par le contraste (Notion R-55)"),
+  ECHO_DELTA_E: r(22, "N-51", "écho de couleur : écart Lab des couleurs dominantes de 22 au plus"),
+  CONTRASTE_DELTA_E: r(48, "N-51", "contraste : écart Lab de 48 et plus, ou plans opposés"),
+  PAIRE_MINUTES: r(60, "N-50", "une paire se forme à une heure au plus d'écart, dans la même journée"),
+  ENTORSE_PLACES: r(4, "N-52", "D7 : petite entorse : une photo bouge de 4 places au plus (une double), dans la même journée"),
+  ENTORSES_STRICT: r(1, "N-52", "D7 : grandes entorses titrées, réglage strict"),
+  ENTORSES_NORMAL: r(2, "N-52", "D7 : grandes entorses titrées, réglage normal"),
+  ENTORSES_GENEREUX: r(3, "N-52", "D7 : grandes entorses titrées, réglage généreux"),
+  ENTORSE_PHOTOS_MIN: r(4, "N-52", "une grande entorse rassemble au moins 4 photos assez différentes"),
+  BELLE_DPI_PLEINE: r(200, "N-49", "D6 : une belle photo va en pleine page à 200 ppp"),
+  BELLE_DPI_DOUBLE: r(150, "N-49", "D6 : 150 ppp acceptés en double pour un paysage sans visage (provisoire, Cloudprinter inconnu)"),
+  JOUR_FORT_PART: r(0.2, "N-53", "un jour fort : dans les 20 % des jours les plus photographiés (S-068)"),
+} as const satisfies Table;
+export const REGLAGES_V2 = valeurs(REGLES_V2);
+
+/**
+ * Les PARAMÈTRES PAR PROFIL (`PARAMETRES.csv` de la définition v2, portés en DONNÉES) : la densité moyenne visée, le plafond de densité
+ * avant réserve (D1, neuf, NON MESURÉ), la part de pleines pages. Les règles ne changent pas d'un profil à l'autre ; seuls ces réglages
+ * changent (M-01). Les fourchettes sont gardées telles qu'écrites ; « moyenne » est le milieu de la fourchette.
+ */
+export type ParametresProfil = { moyenne: [number, number]; plafond: number; pleines: [number, number]; maxDouble: number; maxSerie: number; denses: [number, number] | null; source: string };
+export const PARAMETRES_PROFIL: Readonly<Record<"long_voyage_famille" | "vacances_festives_jeunes" | "couple" | "evenement_un_jour" | "annee_de_vie" | "sejour_court", ParametresProfil>> = {
+  long_voyage_famille: { moyenne: [2.5, 3.2], plafond: 4.5, pleines: [0.25, 0.35], maxDouble: 9, maxSerie: 12, denses: [0.2, 0.3], source: "PROFILS (17/11), D1, D8" },
+  vacances_festives_jeunes: { moyenne: [3, 5], plafond: 6, pleines: [0.1, 0.15], maxDouble: 12, maxSerie: 16, denses: null, source: "PROFILS (17/11), D1, D8" },
+  couple: { moyenne: [2, 3], plafond: 3.5, pleines: [0.4, 0.55], maxDouble: 9, maxSerie: 9, denses: null, source: "PROFILS (17/11), D1" },
+  evenement_un_jour: { moyenne: [3, 4], plafond: 5, pleines: [0.2, 0.3], maxDouble: 9, maxSerie: 12, denses: null, source: "PROFILS (17/11), D1, D8" },
+  annee_de_vie: { moyenne: [2, 3], plafond: 4, pleines: [0.35, 0.5], maxDouble: 9, maxSerie: 9, denses: null, source: "PROFILS (17/11), D1" },
+  sejour_court: { moyenne: [2.5, 3], plafond: 4, pleines: [0.3, 0.4], maxDouble: 9, maxSerie: 9, denses: null, source: "PROFILS (17/11), D1" },
+};

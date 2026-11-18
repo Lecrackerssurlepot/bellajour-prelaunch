@@ -24,8 +24,8 @@
 import { NextResponse } from "next/server";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import {
-  LIEUX_PLANCHE_MAX_PX, PLANCHE_MAX_PX, REGARD_MAX_PX, TAILLE_MAX_DEMANDE_COMPO, corpsLieux, corpsPlanche5, corpsRegard, corpsVoyage, coutDollars, dimensionsJpeg,
-  estEtapeCompo, gardeLecture, lireDemande, lireDemandeCompo, lireEnveloppe, lireReponseLieux, lireReponsePlanche5, lireReponseRegard, repliEffort,
+  LIEUX_PLANCHE_MAX_PX, PLANCHE_MAX_PX, REGARD_MAX_PX, TAILLE_MAX_DEMANDE_COMPO, corpsLieux, corpsPlanche6, corpsRegard, corpsVoyage, coutDollars, dimensionsJpeg,
+  estEtapeCompo, gardeLecture, lireDemande, lireDemandeCompo, lireEnveloppe, lireReponseLieux, lireReponsePlanche6, lireReponseRegard, repliEffort,
   type CorpsCompo, type Jetons,
 } from "@/lib/mise-en-page/editeur";
 import { SANS_CACHE, lireCorpsBorne, refus, refusCorps } from "../magazines/commun";
@@ -103,10 +103,10 @@ export async function POST(request: Request) {
 
   const fin = Date.now() + BUDGET_MS;
   const cleOpenAI = process.env.OPENAI_API_KEY as string;
-  const r = await appeler(dem.etape === "planche" ? corpsPlanche5(dem.image) : corpsRegard(dem.image, dem.pourquoi, dem.indice), cleOpenAI, fin);
+  const r = await appeler(dem.etape === "planche" ? corpsPlanche6(dem.image) : corpsRegard(dem.image, dem.pourquoi, dem.indice), cleOpenAI, fin);
   if (!r.ok) return refus(r.statut, r.erreur);
   const dollars = coutDollars(r.modele, r.jetons);
-  const relu = dem.etape === "planche" ? lireReponsePlanche5(r.reponse, dem.n0, dem.n) : lireReponseRegard(r.reponse);
+  const relu = dem.etape === "planche" ? lireReponsePlanche6(r.reponse, dem.n0, dem.n) : lireReponseRegard(r.reponse);
   /* une réponse hors contrat est payée quand même : le coût est rendu pour que l'écran le compte */
   if (!relu.ok) return refus(502, "reponse_hors_contrat", { phrase: relu.phrase, jetons: r.jetons, dollars, modele: r.modele });
   return NextResponse.json({ ok: true, resultat: relu.valeur, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });

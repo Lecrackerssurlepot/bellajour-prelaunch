@@ -23,11 +23,39 @@ export function lireFiche(x: unknown): Fiche {
   if (typeof x.ambiance === "string" && (AMBIANCES_FICHE as readonly string[]).includes(x.ambiance)) f.ambiance = x.ambiance as AmbianceFiche;
   if (x.taille === "tout" || x.taille === "machine") f.taille = x.taille;
   else if (typeof x.taille === "number" && Number.isInteger(x.taille) && x.taille >= 8 && x.taille <= 200 && x.taille % 4 === 0) f.taille = x.taille;
+  /* v2 (décision 10) : les photos préférées (Q3), l'occasion et le titre du questionnaire de /composer */
+  if (Array.isArray(x.preferees)) { const l = x.preferees.filter((v): v is string => typeof v === "string" && v.length <= 80).slice(0, 10); if (l.length) f.preferees = l; }
+  if (typeof x.occasion === "string" && x.occasion.trim()) f.occasion = x.occasion.replace(/\s+/g, " ").trim().slice(0, 200);
+  if (typeof x.titreClient === "string" && x.titreClient.trim()) f.titreClient = x.titreClient.replace(/\s+/g, " ").trim().slice(0, 80);
   if (Array.isArray(x.lieux)) {
     const l = x.lieux.filter((v): v is string => typeof v === "string").map((v) => v.replace(/\s+/g, " ").trim()).filter((v) => v && v.length <= 60).slice(0, LIEUX_MAX);
     if (l.length) f.lieux = l;
   }
   return f;
+}
+
+/**
+ * Les QUESTIONS AU CLIENT (définition v2, décision 10 de Mathias : « OKAY, un peu comme notre processus d'avant ») : trois, toutes
+ * facultatives, dans le ton du questionnaire de /composer (vouvoiement, une phrase courte, jamais « combien de pages » ni « qui est qui »).
+ * Ce que le dossier porte DÉJÀ n'est jamais redemandé : l'occasion (écran 1, « Quel était ce moment ? »), l'histoire (écran 2) et le
+ * titre (écran 3, « Donnez un titre à votre numéro. ») ; l'occasion aide à deviner le thème, le titre est le seul texte qu'on n'invente pas.
+ */
+export const QUESTIONS_CLIENT = [
+  { cle: "personnes", question: "Combien étiez-vous ?", aide: "Un nombre suffit.", siVide: "le plus grand nombre de personnes compté sur au moins trois photos", regle: "M-04" },
+  { cle: "lieux", question: "Les lieux ou les étapes à ne pas oublier ?", aide: "Dans l'ordre, séparés par une virgule.", siVide: "les lieux lus sur les panneaux, sinon des chapitres par le temps", regle: "M-05" },
+  { cle: "preferees", question: "Vos photos préférées ?", aide: "Touchez-en trois à dix.", siVide: "la note « image » décide", regle: "N-49" },
+] as const;
+
+/** Le thème que suggèrent les mots du client (l'occasion du questionnaire), quand rien d'autre ne le dit. Jamais imprimé. */
+export function themeDeLOccasion(occasion: string | undefined): Theme | null {
+  const o = (occasion ?? "").toLowerCase();
+  if (!o) return null;
+  if (/road ?trip|circuit|itin[ée]rant/.test(o)) return "road_trip";
+  if (/anniversaire|mariage|bapt[êe]me|communion|f[êe]te|soir[ée]e|enterrement de vie/.test(o)) return /soir[ée]e|f[êe]te entre/.test(o) ? "fete" : "evenement";
+  if (/ann[ée]e|12 mois|grandir/.test(o)) return "annee";
+  if (/plage|mer\b|bord de mer/.test(o)) return "plage";
+  if (/week-end [àa] |city|ville/.test(o)) return "ville";
+  return null;
 }
 
 /** Les lieux saisis en une ligne (« Lyon, Annecy › Chamonix ») : coupés aux virgules, points-virgules, flèches et retours. */

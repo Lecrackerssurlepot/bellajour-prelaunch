@@ -114,7 +114,14 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
           interet: ia.role?.interet ?? 0.5, role: ia.role?.role ?? null, sujet: ia.sujet ?? null, plan: ia.plan ?? null, personnes: ia.personnes ?? null,
           momentJournee: ia.moment_journee ?? null, ambiance: ia.ambiance ?? null,
           lieuLu: ia.lieu && ia.lieu.source === "ia" && ia.lieu.preuve === "panneau" ? ia.lieu.nom : null, couverture: !!ia.role?.couverture,
+          /* v4 (18/11) : le complément de planche ; ABSENT reste absent (une lecture ancienne n'a pas « 0 personne », le compte vient des visages) */
+          ...(ia.personnes_nombre !== undefined ? { personnesNombre: ia.personnes_nombre } : {}),
+          ...(ia.sujet_special && ia.sujet_special !== "aucun" ? { sujetSpecial: ia.sujet_special } : {}),
+          ...(ia.force_image !== undefined ? { forceImage: ia.force_image } : {}),
+          ...(ia.pose && ia.pose !== "sans_personne" ? { pose: ia.pose } : {}),
+          ...(ia.geste !== undefined ? { geste: ia.geste } : {}), ...(ia.insolite !== undefined ? { insolite: ia.insolite } : {}),
         } : null,
+        empreinte: m?.dhash ?? null,
         chapitre: chapDe.get(p.id) ?? null,
         ...(gardees.has(p.id) && !d.ecarteesAtelier.has(p.id) ? { gardee: true as const } : {}),
       };
