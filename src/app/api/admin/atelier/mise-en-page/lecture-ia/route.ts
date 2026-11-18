@@ -18,6 +18,15 @@
  *   - lieux : { cle, etape: "lieux", images: [1 ou 2 planches], pays?, chapitres, noms, labels } : gpt-5.4 ; la consigne est construite
  *     ICI par le module pur (`consigneLieux`), jamais reçue du navigateur ; réponse relue par `lireReponseLieux`.
  *
+ * 18/11 (feat/analyse-et-v2, la lecture COMPLÈTE) : trois étapes de plus, sous LA MÊME garde, pour qu'une lecture porte tous les tags de la
+ * définition et qu'une lecture ancienne se complète sans tout repayer (`editeur/lectureComplete.ts`, consignes du complément du banc) :
+ *   - complement : { cle, etape: "complement", image (planche ≤ 1 536 px), numeros: [n0, n], champs: "six" | "dix" } : gpt-5.4, les six tags
+ *     de B6 (« dix » : plus les quatre de B5) ; relu par `lireReponseComplement` ;
+ *   - classement : { cle, etape: "classement", image (planche de 2 à 16 candidates couverture), numeros: [1, n] } : gpt-5.4 ; relu par
+ *     `lireReponseClassement` ;
+ *   - regard_complement : { cle, etape: "regard_complement", image (≤ 1 024 px) } : gpt-5.1 (effort « none », même repli) ; relu par
+ *     `lireReponseRegardComplement`.
+ *
  * Rien n'est écrit en base, aucune image n'est gardée : l'image traverse la route vers OpenAI et n'est jamais journalisée.
  */
 
@@ -26,6 +35,8 @@ import { quiEstConnecteRequete } from "@/lib/admin-session";
 import {
   LIEUX_PLANCHE_MAX_PX, PLANCHE_MAX_PX, REGARD_MAX_PX, TAILLE_MAX_DEMANDE_COMPO, corpsLieux, corpsPlanche6, corpsRegard, corpsVoyage, coutDollars, dimensionsJpeg,
   estEtapeCompo, gardeLecture, lireDemande, lireDemandeCompo, lireEnveloppe, lireReponseLieux, lireReponsePlanche6, lireReponseRegard, repliEffort,
+  MAX_PX_COMPLEMENT, corpsClassement, corpsComplement, corpsRegardComplement, estEtapeComplement, lireDemandeComplement, lireReponseClassement,
+  lireReponseComplement, lireReponseRegardComplement,
   type CorpsCompo, type Jetons,
 } from "@/lib/mise-en-page/editeur";
 import { SANS_CACHE, lireCorpsBorne, refus, refusCorps } from "../magazines/commun";
@@ -93,6 +104,7 @@ export async function POST(request: Request) {
   const garde = gardeLecture(lu.corps.cle, { OPENAI_API_KEY: process.env.OPENAI_API_KEY, MEP_LECTURE_IA_CLIENTS: process.env.MEP_LECTURE_IA_CLIENTS });
   if (!garde.ok) return refus(garde.statut, garde.erreur);
   if (estEtapeCompo(lu.corps)) return etapeCompo(lu.corps);
+  if (estEtapeComplement(lu.corps)) return etapeComplement(lu.corps);
   const d = lireDemande(lu.corps);
   if (!d.ok) return refus(400, d.phrase);
   const dem = d.valeur;
@@ -135,6 +147,26 @@ async function etapeCompo(corps: Record<string, unknown>): Promise<Response> {
     return NextResponse.json({ ok: true, resultat: brut, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });
   }
   const relu = lireReponseLieux(r.reponse, dem.chapitres, dem.labels);
+  if (!relu.ok) return refus(502, "reponse_hors_contrat", { phrase: relu.phrase, jetons: r.jetons, dollars, modele: r.modele });
+  return NextResponse.json({ ok: true, resultat: relu.valeur, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });
+}
+
+/** La lecture COMPLÈTE (18/11), APRÈS la garde : la planche de complément, le classement des couvertures, le regard complémentaire. */
+async function etapeComplement(corps: Record<string, unknown>): Promise<Response> {
+  const d = lireDemandeComplement(corps);
+  if (!d.ok) return refus(400, d.phrase);
+  const dem = d.valeur;
+  const octets = Buffer.from(dem.image.slice(dem.image.indexOf(",") + 1), "base64");
+  const dim = dimensionsJpeg(new Uint8Array(octets.buffer, octets.byteOffset, octets.byteLength));
+  if (!dim || dim.l < 1 || dim.h < 1 || Math.max(dim.l, dim.h) > MAX_PX_COMPLEMENT[dem.etape]) return refus(400, "image_hors_bornes");
+  const fin = Date.now() + BUDGET_MS;
+  const c = dem.etape === "complement" ? corpsComplement(dem.image, dem.champs) : dem.etape === "classement" ? corpsClassement(dem.image) : corpsRegardComplement(dem.image);
+  const r = await appeler(c, process.env.OPENAI_API_KEY as string, fin);
+  if (!r.ok) return refus(r.statut, r.erreur);
+  const dollars = coutDollars(r.modele, r.jetons);
+  const relu = dem.etape === "complement" ? lireReponseComplement(r.reponse, dem.n0, dem.n, dem.champs)
+    : dem.etape === "classement" ? lireReponseClassement(r.reponse, dem.n) : lireReponseRegardComplement(r.reponse);
+  /* une réponse hors contrat est payée quand même : le coût est rendu pour que l'écran le compte */
   if (!relu.ok) return refus(502, "reponse_hors_contrat", { phrase: relu.phrase, jetons: r.jetons, dollars, modele: r.modele });
   return NextResponse.json({ ok: true, resultat: relu.valeur, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });
 }

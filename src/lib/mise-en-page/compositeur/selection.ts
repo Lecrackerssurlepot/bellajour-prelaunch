@@ -46,6 +46,8 @@ export type PhV2 = {
   serie?: { id: string; type: string; elue: boolean };
   /** v2.1 : la carte de chaleur, le conseil de recadrage du regard fin, la zone importante v2.1, et « recadrable ». */
   chaleur?: string | null; conseil?: string | null; zone21?: import("./recadrageV2").ZoneV2; recadrable?: boolean;
+  /** M-31 : les côtés protégés (des personnes peut-être au bord, non détectées) : aucun recadrage ne les entame. */
+  proteges?: import("./recadrageV2").Cotes & { raison: string };
 };
 
 /* ─────────────────────────── petits outils, au comportement de Python ─────────────────────────── */

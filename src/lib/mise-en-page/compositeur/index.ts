@@ -27,6 +27,8 @@ import { templateParId, type Magazine } from "../magazine";
 import type { Decision, EntreeCompo, EtatPhoto, IssueCompo, PhotoChoisie, ResultatCompo } from "./types";
 
 export * from "./types";
+export * from "./releve";
+export * from "./analyse";
 export { REGLAGES_COMPO, REGLAGES_POSE, REGLES_COMPO, REGLES_POSE } from "./reglagesCompositeur";
 export { AMBIANCES_FICHE, PROFILS, THEMES } from "./types";
 export { LIEUX_MAX, MOT_AMBIANCE, MOT_THEME, TAILLES_PROPOSEES, autresTailles, devinerFiche, ficheEffective, lieuxDeTexte, lireFiche, profilDe, sobreDe, tailleACompose, titreImprimable } from "./fiche";
@@ -150,7 +152,7 @@ export function composer(e0: EntreeCompo): ResultatCompo {
   const style = styleDe(e, PAIRE_DU_PROFIL[profil]);
   const parLieux = fiche.theme === "road_trip" || (!fiche.theme && e.voyage?.type === "road_trip");
   /* v2 (V2-TXT-03) : le titre du client d'abord (le seul texte qu'on n'invente pas), puis le pays lu, puis le nom du projet */
-  const motTitre = (e.v2 ? (fiche.titreClient ?? "").trim() : "") || (e.voyage?.pays ?? "").trim() || e.titre.trim();
+  const motTitre = (e.v2 ? (fiche.titreClient ?? "").trim() || (fiche.pays ?? "").trim() : "") || (e.voyage?.pays ?? "").trim() || e.titre.trim();
   const t = construireTrame({
     P, cand, chapNom: chap.nom, chapFiche: chap.fiche, parLieux, lieux: lieux ? { chapitres: lieux.chapitres, ancre: lieux.ancre } : null,
     fiche, titre: e.titre.trim(), motTitre, profil, sobre, style, couverture: e.couverture ?? null,
@@ -212,8 +214,8 @@ export function composer(e0: EntreeCompo): ResultatCompo {
     ajustement: t.ajustement ? { ...t.ajustement, phrase: phraseAjustement(t.ajustement.demandee, t.ajustement.obtenue, t.ajustement.photos) } : null,
     profil, sobre, chapitres: t.chapitres,
     decisions: journal, selection: { photos, compte }, controle,
-    ...(e.v2 ? { version: 2 as const, doubles: t.doubles } : {}),
-    ...(e.v2?.recadrage && e.v2.recadrage !== "aucun" ? { zones: Object.fromEntries([...P.values()].filter((x) => x.v2?.zone21).map((x) => [x.id, { coeur: x.v2!.zone21!.coeur ?? x.v2!.zone21!.zone, air: x.v2!.zone21!.zone, toutLeCadre: x.v2!.zone21!.toutLeCadre, recadrable: !!x.v2!.recadrable, conseil: x.v2!.conseil ?? null }])) } : {}),
+    ...(e.v2 ? { version: 2 as const, doubles: t.doubles, paires: t.paires } : {}),
+    ...(e.v2?.recadrage && e.v2.recadrage !== "aucun" ? { zones: Object.fromEntries([...P.values()].filter((x) => x.v2?.zone21).map((x) => [x.id, { coeur: x.v2!.zone21!.coeur ?? x.v2!.zone21!.zone, air: x.v2!.zone21!.zone, toutLeCadre: x.v2!.zone21!.toutLeCadre, recadrable: !!x.v2!.recadrable, conseil: x.v2!.conseil ?? null, ...(x.v2!.proteges ? { proteges: x.v2!.proteges.raison } : {}) }])) } : {}),
     couverture: pose.magazine.couverture && premiere ? { premiere: premiere.premiere, quatrieme: premiere.quatrieme ?? [] } : null,
   };
 }

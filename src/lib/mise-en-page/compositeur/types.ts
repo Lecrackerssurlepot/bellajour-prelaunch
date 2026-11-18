@@ -118,6 +118,13 @@ export type Fiche = {
   occasion?: string;
   /** Le titre donné par le client (écran 3 de /composer) : le seul texte qu'on n'invente pas (couverture, page 1). */
   titreClient?: string;
+  /* ── la page Analyse (18/11 soir, M-34) : chaque mot de la ligne du projet se corrige d'un clic ; la correction prime ── */
+  /** « Où » corrigé (le pays ou la région) : il passe avant le pays lu par le voyage pour le mot-titre. */
+  pays?: string;
+  /** « Profil » corrigé : il passe avant le profil déduit du thème et de la durée. */
+  profil?: Profil;
+  /** Les chapitres RENOMMÉS par l'atelier (numéro → titre) : le nom saisi passe avant tout nom lu. */
+  chapitres?: Record<string, string>;
 };
 
 /** Le voyage (couche 7, un appel texte) : chapitres en identifiants de l'éditeur. */
@@ -189,6 +196,9 @@ export type ReglagesV2 = {
   recadrage?: "aucun" | "prudent" | "normal" | "franc";
 };
 export const REGLAGES_V2_DEFAUT: ReglagesV2 = { densite: "serree", lieux: "nouveaux", entorses: "normal", dpiDouble150: true };
+/** 18/11 (soir) : ce que l'ÉDITEUR compose par défaut : la v2.1 (densité par les règles, recadrage « normal »). La v1 reste rejouable
+ *  (`DonneesEditeur.version: 1`, `scripts/compositeur-rejeu.ts --version 1`). */
+export const REGLAGES_EDITEUR: ReglagesV2 = { ...REGLAGES_V2_DEFAUT, recadrage: "normal" };
 
 /** Les corrections de l'atelier (décision 12, V2-ANA-01) : tags corrigés, marques, réponses. Elles priment TOUJOURS et survivent à une
  *  nouvelle analyse (elles ne sont jamais écrites dans la lecture). */
@@ -252,7 +262,9 @@ export type ResultatCompo = {
   version?: 1 | 2;
   doubles?: PourquoiDouble[];
   /** v2.1 : la zone importante lue de chaque photo (cœur sans air, avec l'air, « tout le cadre compte »), pour montrer ce qu'on a rogné. */
-  zones?: Record<string, { coeur: [number, number, number, number]; air: [number, number, number, number]; toutLeCadre: boolean; recadrable: boolean; conseil: string | null }>;
+  zones?: Record<string, { coeur: [number, number, number, number]; air: [number, number, number, number]; toutLeCadre: boolean; recadrable: boolean; conseil: string | null; proteges?: string }>;
+  /** v2 : les paires (N-50, « a|b ») que la trame garde ensemble, pour l'Analyse (les relations d'une photo). */
+  paires?: string[];
 };
 
 /** M-14 (18/11) : jamais d'impasse montrée telle quelle. Quand il n'y a vraiment pas de quoi composer, la phrase dit la cause et le

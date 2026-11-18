@@ -189,6 +189,7 @@ export const REGLES_V2 = {
   ECHO_DELTA_E: r(22, "N-51", "écho de couleur : écart Lab des couleurs dominantes de 22 au plus"),
   CONTRASTE_DELTA_E: r(48, "N-51", "contraste : écart Lab de 48 et plus, ou plans opposés"),
   PAIRE_MINUTES: r(60, "N-50", "une paire se forme à une heure au plus d'écart, dans la même journée"),
+  SENS_SCENE_MINUTES: r(30, "N-49b", "M-32 : une belle photo entre dans une double dense quand la plupart des autres sont de la même scène, prises à 30 minutes d'elle au plus (réglage de départ)"),
   ENTORSE_PLACES: r(4, "N-52", "D7 : petite entorse : une photo bouge de 4 places au plus (une double), dans la même journée"),
   ENTORSES_STRICT: r(1, "N-52", "D7 : grandes entorses titrées, réglage strict"),
   ENTORSES_NORMAL: r(2, "N-52", "D7 : grandes entorses titrées, réglage normal"),

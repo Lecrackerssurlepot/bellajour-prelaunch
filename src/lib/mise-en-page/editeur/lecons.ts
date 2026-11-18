@@ -30,6 +30,9 @@ export type TypeLecon =
   | "pretri_renverse"
   /* R194 (17/11) : l'atelier a corrigé un tag de « Lire les photos » (rôle ou sujet) : la proposition, et ce qu'il a mis. */
   | "tag_corrige"
+  /* 18/11 (« je repasserai après toi ») : l'atelier a changé la PROPOSITION du compositeur (photo ajoutée, retirée, agrandie, déplacée,
+     gabarit, recadrage, texte, double, couverture) ; la règle de la décision de la machine, relevée par `compositeur/releve.ts`. */
+  | "ecart_proposition"
   /* G3 : la réponse de l'atelier à une question (la leçon d'origine dans `photos` et `proposition`). */
   | "reponse"
   /* Jalons : la vie d'un magazine (G6). */
@@ -206,7 +209,7 @@ export function instantane(e: EtatEditeur, mesuresConnues?: ReadonlyMap<string, 
 export function leconValide(x: unknown): x is Lecon {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
-  const types: TypeLecon[] = ["floue_gardee", "pile_autre_gardee", "pile_pas_un_doublon", "tete_ecartee", "pretri_renverse", "tag_corrige", "reponse", "ouverture", "export"];
+  const types: TypeLecon[] = ["floue_gardee", "pile_autre_gardee", "pile_pas_un_doublon", "tete_ecartee", "pretri_renverse", "tag_corrige", "ecart_proposition", "reponse", "ouverture", "export"];
 
   return types.includes(o.type as TypeLecon) && typeof o.regle === "string" && o.regle.length <= 8
     && Array.isArray(o.photos) && o.photos.length <= 50 && o.photos.every((p) => typeof p === "string" && p.length <= 80)

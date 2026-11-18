@@ -58,6 +58,8 @@ export function controler(trame: Trame & { faits: string[] }, pose: Resultat, ma
         else if (b.dpi < 200) signal("photo entre 150 et 200 dpi", ou, `${nom(b.id)} à ${b.dpi} dpi`, "P2-04");
         if (b.visages_coupes + b.visages_hors > 0) dur("visage coupé", ou, `${nom(b.id)} : ${b.visages_coupes} coupé(s), ${b.visages_hors} hors cadre`, "P3-00");
         if (b.visages_pli > 0) dur("visage dans le pli", ou, nom(b.id), "P-15");
+        /* M-31 (N-60) : jamais une personne coupée (corps détecté coupé en largeur, ou côté protégé entamé : dans le doute, on ne coupe pas) */
+        if ((b.personnes_coupees ?? 0) > 0) dur("personne coupée", ou, `${nom(b.id)} : ${b.personnes_coupees} côté(s) ou corps entamé(s)`, "M-31");
         if (b.corps_pli > 0) dur("personne sur le pli", ou, nom(b.id), "DA-3");
         if ((trame.photos[b.id]?.personnes ?? 0) >= 1 && (Math.min(b.cadre.l, b.cadre.h) < REGLAGES_POSE.PERSONNES_COTE_MIN || b.cadre.l * b.cadre.h < REGLAGES_POSE.PERSONNES_AIRE_MIN))
           dur("photo de personnes trop petite", ou, `${nom(b.id)} dans ${Math.round(b.cadre.l)} × ${Math.round(b.cadre.h)} mm`, "M-08");

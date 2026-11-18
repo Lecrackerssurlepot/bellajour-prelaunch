@@ -29,7 +29,7 @@ import { valeursReglages, versionReglages } from "./reglages";
 import { nomComparable } from "./premierJet";
 import {
   CANDIDATES_IA, COUVERTURES_IA, FORMAT_LECTURE_IA, IDEE_REGARD_MOTS_MAX, MOMENT_MOTS_MAX, MOT_ROLE, MOT_SUJET, RECADRAGE_MOTS_MAX, REGLE_IA,
-  AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, lireLectureIA, PROFILS_IA, QUI_IA, ROLES_PLANCHE, SUJETS_IA, TONS_IA, TYPES_VOYAGE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3, VERSION_LECTURE_IA_4, POSES_IA, SUJETS_SPECIAUX_IA, PERSONNES_NOMBRE_MAX,
+  AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, lireLectureIA, PROFILS_IA, QUI_IA, ROLES_PLANCHE, SUJETS_IA, TONS_IA, TYPES_VOYAGE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3, VERSION_LECTURE_IA_4, VERSION_LECTURE_IA_5, POSES_IA, SUJETS_SPECIAUX_IA, PERSONNES_NOMBRE_MAX,
   type AmbianceIA, type CandidateIA, type CouvertureIA, type LectureIA, type LieuxIA, type MomentIA, type PersonnesIA, type PhotoIA, type PlanIA, type RoleIA,
   type RolePlanche, type SujetIA, type VoyageIA,
 } from "./lectureIA";
@@ -428,7 +428,9 @@ export type ResultatsLecture = {
 
 /** La version la plus BASSE qui porte tout (une 3 seulement si un champ de la 3 existe, une 4 si un champ du complément existe : un fichier
  *  relu par un éditeur d'avant reste lisible). */
-function versionPour(photos: Readonly<Record<string, PhotoIA>>, voyage?: VoyageIA, lieux?: LieuxIA): 2 | 3 | 4 {
+export function versionPour(photos: Readonly<Record<string, PhotoIA>>, voyage?: VoyageIA, lieux?: LieuxIA): 2 | 3 | 4 | 5 {
+  /* v5 (18/11) : le regard complémentaire ou le classement des couvertures */
+  if (Object.values(photos).some((p) => p.expression || p.yeux_fermes || p.point_accroche !== undefined || p.accroche !== undefined || p.regard_vers || p.couverture_classee)) return VERSION_LECTURE_IA_5;
   if (Object.values(photos).some((p) => p.personnes_nombre !== undefined || p.force_image !== undefined || p.sujet_special || p.pose || p.geste !== undefined || p.insolite !== undefined)) return VERSION_LECTURE_IA_4;
   if (voyage || lieux) return VERSION_LECTURE_IA_3;
   return Object.values(photos).some((p) => p.plan || p.moment_journee || p.ambiance || p.personnes) ? VERSION_LECTURE_IA_3 : VERSION_LECTURE_IA_2;
@@ -549,7 +551,7 @@ export function corrigerTag(l: LectureIA, cat: Catalogue, id: string, quoi: Corr
   const { corrige: _v, ...sans } = p;
   void _v;
   const np: PhotoIA = Object.keys(corrige).length ? { ...sans, corrige } : sans;
-  const lecture: LectureIA = { ...l, version: l.version === VERSION_LECTURE_IA_3 || l.version === VERSION_LECTURE_IA_4 ? l.version : VERSION_LECTURE_IA_2, photos: { ...l.photos, [k]: np } };
+  const lecture: LectureIA = { ...l, version: l.version === VERSION_LECTURE_IA_3 || l.version === VERSION_LECTURE_IA_4 || l.version === VERSION_LECTURE_IA_5 ? l.version : VERSION_LECTURE_IA_2, photos: { ...l.photos, [k]: np } };
   const mot = (v: string | undefined): string => (v === undefined ? "rien" : champ === "role" ? (MOT_ROLE[v as RoleIA] ?? v) : (MOT_SUJET[v as SujetIA] ?? v));
   const lecon: Lecon | null = voulu === propose ? null : {
     type: "tag_corrige", regle: REGLE_IA, photos: [id],

@@ -25,6 +25,16 @@ export const ERREUR_MEP_LECONS_ABSENTE = "migration_mep_lecons_absente";
 export const MIGRATION_MEP_LECONS = "supabase/migrations/20261110_mep_lecons.sql";
 /** 17/11 : la contrainte de `mep_lecons.type` d'avant le type `tag_corrige` (migration 20261117, écrite, pas appliquée le 17/11). */
 export const MIGRATION_TAG_CORRIGE = "supabase/migrations/20261117_mep_lecons_tag_corrige.sql";
+/** 18/11 : le type `ecart_proposition` (le relevé des différences, `compositeur/releve.ts`) n'est admis qu'après la migration 20261119
+ *  (ÉCRITE, pas appliquée). Avant elle, ces leçons partent sous `pretri_renverse` (« l'atelier a renversé une proposition de la machine »,
+ *  déjà admis et compté par règle), le vrai type en tête de `proposition` : rien ne bloque, rien n'est perdu. */
+export const MIGRATION_ECART_PROPOSITION = "supabase/migrations/20261119_mep_lecons_ecart_proposition.sql";
+const TYPE_REPLI_ECART = "pretri_renverse";
+/** La leçon d'écart réécrite sous le type de repli (la même règle, le vrai type gardé dans `proposition`). */
+function enRepliEcart(l: Record<string, unknown>): Record<string, unknown> {
+  if (l.type !== "ecart_proposition") return l;
+  return { ...l, type: TYPE_REPLI_ECART, proposition: `ecart_proposition · ${String(l.proposition ?? "")}`.slice(0, 200) };
+}
 const TYPES_AVANT_20261117: ReadonlySet<string> = new Set(["floue_gardee", "pile_autre_gardee", "pile_pas_un_doublon", "tete_ecartee", "pretri_renverse", "reponse", "ouverture", "export"]);
 
 /** 200 leçons de quelques centaines d'octets, plus un instantané de 2 000 photos (≈ 300 Ko) : 2 Mo est une borne large. */
@@ -116,14 +126,23 @@ export async function POST(request: Request) {
   if (inst !== undefined && !instantaneOk) return refus(400, "instantane_invalide");
   try {
     const sb = makeSupabase();
+    let replis = 0;
     if (lignes.length) {
       let { error } = await sb.from("mep_lecons").insert(lignes);
       /* 17/11 : une leçon `tag_corrige` (« Lire les photos ») refusée par la contrainte d'avant la migration 20261117 (23514) : les
          autres leçons partent quand même, celles-là sont dites perdues (`perdues`), jamais un lot bloqué à l'infini. */
       let perdues = 0;
-      if (error?.code === "23514" && lignes.some((l) => !TYPES_AVANT_20261117.has(String(l.type)))) {
-        const reste = lignes.filter((l) => TYPES_AVANT_20261117.has(String(l.type)));
-        perdues = lignes.length - reste.length;
+      /* 18/11 : une leçon `ecart_proposition` refusée par la contrainte d'avant 20261119 : renvoyée sous le type de repli */
+      let envoi = lignes;
+      if (error?.code === "23514" && lignes.some((l) => l.type === "ecart_proposition")) {
+        replis = lignes.filter((l) => l.type === "ecart_proposition").length;
+        envoi = lignes.map(enRepliEcart);
+        error = (await sb.from("mep_lecons").insert(envoi)).error;
+        if (!error) console.warn(`[admin/mise-en-page/lecons] ${replis} leçon(s) ecart_proposition envoyée(s) sous ${TYPE_REPLI_ECART} : appliquer ${MIGRATION_ECART_PROPOSITION}`);
+      }
+      if (error?.code === "23514" && envoi.some((l) => !TYPES_AVANT_20261117.has(String(l.type)))) {
+        const reste = envoi.filter((l) => TYPES_AVANT_20261117.has(String(l.type)));
+        perdues = envoi.length - reste.length;
         error = reste.length ? (await sb.from("mep_lecons").insert(reste)).error : null;
         if (!error) console.warn(`[admin/mise-en-page/lecons] ${perdues} leçon(s) tag_corrige refusée(s) : appliquer ${MIGRATION_TAG_CORRIGE}`);
       }
@@ -142,7 +161,7 @@ export async function POST(request: Request) {
         return refus(500, "ecriture_impossible");
       }
     }
-    return NextResponse.json({ ok: true, lecons: lignes.length, instantane: !!instantaneOk }, { status: 200, headers: SANS_CACHE });
+    return NextResponse.json({ ok: true, lecons: lignes.length, instantane: !!instantaneOk, ...(replis ? { replis, migration: MIGRATION_ECART_PROPOSITION } : {}) }, { status: 200, headers: SANS_CACHE });
   } catch (err) {
     console.error("[admin/mise-en-page/lecons] exception", (err as Error)?.message);
     return refus(500, "internal");

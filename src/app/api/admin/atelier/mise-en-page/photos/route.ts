@@ -41,12 +41,13 @@ export async function GET(request: Request) {
     const supabase = makeSupabase();
     /* La finition (migration 20260911) se lit avec le reste du dossier, mais SANS jamais le faire tomber : une colonne
        absente rend 42703, on relit alors sans elle (même repli que `lireNumeros`, donnees.ts) et la finition reste inconnue. */
-    type LigneNumero = { id: string; titre: string | null; prenom: string | null; etat: string; nb_pages: number | null; finition?: string | null };
+    type LigneNumero = { id: string; titre: string | null; prenom: string | null; etat: string; nb_pages: number | null; finition?: string | null; occasion?: string | null; histoire?: string | null };
     const lireNumero = (colonnes: string) =>
       supabase.from("numeros").select(colonnes).eq("token", token).maybeSingle<LigneNumero>();
-    const avecFinition = await lireNumero("id, titre, prenom, etat, nb_pages, finition");
+    /* 18/11 : l'occasion et l'histoire (colonnes d'origine, 20260821) pré-remplissent la page Analyse ; lecture seule */
+    const avecFinition = await lireNumero("id, titre, prenom, etat, nb_pages, finition, occasion, histoire");
     const numero = avecFinition.error?.code === "42703"
-      ? (await lireNumero("id, titre, prenom, etat, nb_pages")).data
+      ? (await lireNumero("id, titre, prenom, etat, nb_pages, occasion, histoire")).data
       : avecFinition.data;
 
     if (!numero) return NextResponse.json({ error: "introuvable" }, { status: 404, headers: SANS_CACHE });
@@ -80,6 +81,8 @@ export async function GET(request: Request) {
       etat: numero.etat,
       /* Le nombre de pages PAYÉ (gelé, D20) ; null s'il n'est pas connu. */
       nbPages: numero.nb_pages ?? null,
+      occasion: numero.occasion ?? null,
+      histoire: numero.histoire ?? null,
       /* Le pelliculage du dossier : `normaliserFinition` rend null pour « jamais choisi », une valeur inconnue ou une
          colonne absente (jamais le défaut brillant : le dos d'une couverture ne se devine pas). Lecture seule. */
       finition: normaliserFinition(numero.finition),

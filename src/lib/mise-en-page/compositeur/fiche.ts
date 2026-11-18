@@ -6,7 +6,7 @@
 
 import { REGLAGES_COMPO } from "./reglagesCompositeur";
 import { T, moisFr, plageFr } from "./selection";
-import { AMBIANCES_FICHE, THEMES, type AmbianceFiche, type Fiche, type PhotoCompo, type Profil, type Theme, type Voyage } from "./types";
+import { AMBIANCES_FICHE, PROFILS, THEMES, type AmbianceFiche, type Fiche, type PhotoCompo, type Profil, type Theme, type Voyage } from "./types";
 
 export const MOT_THEME: Readonly<Record<Theme, string>> = { road_trip: "Road trip", ville: "Ville", plage: "Plage", fete: "Fête", evenement: "Événement", annee: "Année", autre: "Autre" };
 export const MOT_AMBIANCE: Readonly<Record<AmbianceFiche, string>> = { sobre: "Sobre", equilibre: "Équilibrée", stylise: "Stylisée" };
@@ -27,6 +27,14 @@ export function lireFiche(x: unknown): Fiche {
   if (Array.isArray(x.preferees)) { const l = x.preferees.filter((v): v is string => typeof v === "string" && v.length <= 80).slice(0, 10); if (l.length) f.preferees = l; }
   if (typeof x.occasion === "string" && x.occasion.trim()) f.occasion = x.occasion.replace(/\s+/g, " ").trim().slice(0, 200);
   if (typeof x.titreClient === "string" && x.titreClient.trim()) f.titreClient = x.titreClient.replace(/\s+/g, " ").trim().slice(0, 80);
+  /* la page Analyse (M-34) : le « où » et le profil corrigés, les chapitres renommés */
+  if (typeof x.pays === "string" && x.pays.trim()) f.pays = x.pays.replace(/\s+/g, " ").trim().slice(0, 60);
+  if (typeof x.profil === "string" && (PROFILS as readonly string[]).includes(x.profil)) f.profil = x.profil as Profil;
+  if (estObjet(x.chapitres)) {
+    const c: Record<string, string> = {};
+    for (const [k, v] of Object.entries(x.chapitres)) if (/^\d{1,2}$/.test(k) && typeof v === "string" && v.trim()) c[k] = v.replace(/\s+/g, " ").trim().slice(0, 60);
+    if (Object.keys(c).length) f.chapitres = c;
+  }
   if (Array.isArray(x.lieux)) {
     const l = x.lieux.filter((v): v is string => typeof v === "string").map((v) => v.replace(/\s+/g, " ").trim()).filter((v) => v && v.length <= 60).slice(0, LIEUX_MAX);
     if (l.length) f.lieux = l;
@@ -137,6 +145,8 @@ export const ficheEffective = (saisie: Fiche, devinee: Fiche): Fiche => ({ ...de
 
 /** Le profil (PROFILS.md) : le thème de la fiche d'abord, puis le profil lu par la couche 7, puis les données. */
 export function profilDe(fiche: Fiche, voyage: Voyage | null, photos: readonly PhotoCompo[]): Profil {
+  /* M-34 : le profil corrigé dans l'Analyse prime */
+  if (fiche.profil) return fiche.profil;
   const j = jours(photos);
   switch (fiche.theme) {
     case "road_trip": return j.duree >= 10 || !j.duree ? "long_voyage_famille" : "sejour_court";

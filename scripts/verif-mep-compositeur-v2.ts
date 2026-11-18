@@ -11,7 +11,7 @@ import { charger } from "@/lib/mise-en-page/compositeur/selection";
 import { cadresDe } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { belle, entonnoirV2 } from "@/lib/mise-en-page/compositeur/selectionV2";
-import { pairesEtEntorses } from "@/lib/mise-en-page/compositeur/trame";
+import { pairesEtEntorses, sensPourBelle } from "@/lib/mise-en-page/compositeur/trame";
 import { lireLectureIA, lireReponsePlanche6 } from "@/lib/mise-en-page/editeur";
 import { regleParId } from "@/lib/mise-en-page/regles";
 import { partRetiree, recadrable, zoneTient, zoneV2, zoomMiseEnAvant } from "@/lib/mise-en-page/compositeur/recadrageV2";
@@ -140,14 +140,29 @@ export function verifierCompositeurV2(ok: Ok): void {
   const imgs = [...Pt.values()].filter((x) => lot.has(x.id)).map((x) => x.v2?.notes?.image.valeur ?? 0).sort((p, q) => q - p);
   const seuilTop = imgs[Math.max(0, Math.ceil(imgs.length * 0.1) - 1)];
   const belles = [...Pt.values()].filter((x) => ids.has(x.id) && belle(x, true) && (x.v2?.notes?.image.valeur ?? 0) > seuilTop + 0.005);
+  /* M-32 (N-49b) : une belle photo n'entre dans une double dense que si la double a du SENS pour elle (paire, série, même moment, même
+     scène), et elle y est alors la PLUS GRANDE */
   const noyees: string[] = [];
+  const pairesT = pairesEtEntorses([...Pt.values()].filter((x) => x.date && !x.ecart).sort((a, b) => (a.date! < b.date! ? -1 : 1)), [], "essai").paires;
   const noyee = belles.some((b) => {
     const pl = r.jet.magazine.planches.find((p) => [p.double, p.gauche, p.droite].some((d) => d?.photos.some((a) => a.photoId === b.id)));
-    const n = pl ? [pl.double, pl.gauche, pl.droite].reduce((s, d) => s + (d?.photos.length ?? 0), 0) : 0;
-    if (n >= 6 && !b.v2?.coeur) noyees.push(`${b.id} sur ${pl?.id} (${n})`);
-    return n >= 6 && !b.v2?.coeur;
+    if (!pl) return false;
+    const n = [pl.double, pl.gauche, pl.droite].reduce((s, d) => s + (d?.photos.length ?? 0), 0);
+    if (n < 6 || b.v2?.coeur) return false;
+    const autres = [pl.double, pl.gauche, pl.droite].flatMap((d) => d?.photos.map((a) => a.photoId) ?? []).filter((id): id is string => !!id).map((id) => Pt.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
+    const sens = sensPourBelle(b, autres, pairesT);
+    const aires: { id: string | null; a: number }[] = [];
+    for (const [cible, d] of (pl.mode === "double" ? [["double", pl.double]] : [["gauche", pl.gauche], ["droite", pl.droite]]) as ["double" | "gauche" | "droite", typeof pl.double][]) {
+      if (!d) continue;
+      let k = 0;
+      for (const c of cadresDe(d, cible)) if (c.role === "photo") aires.push({ id: d.photos[k++]?.photoId ?? null, a: c.l * c.h });
+    }
+    const max = Math.max(...aires.map((x) => x.a));
+    const plusGrande = (aires.find((x) => x.id === b.id)?.a ?? 0) >= max - 1e-6;
+    if (!sens || !plusGrande) noyees.push(`${b.id} sur ${pl.id} (${n}${sens ? "" : ", sans sens"}${plusGrande ? "" : ", pas la plus grande"})`);
+    return !sens || !plusGrande;
   });
-  ok(`v2 · une belle photo du dixième le plus fort n'est jamais noyée : aucune des ${belles.length} belles posées n'est dans une double dense, 6 photos et plus (N-49)${noyees.length ? ` : ${noyees.join(", ")}` : ""}`, !noyee);
+  ok(`v2 · M-32 : une belle photo du dixième le plus fort n'entre dans une double dense (6 photos et plus) qu'avec du sens (même moment, même scène, paire, série), et elle y est la plus grande (${belles.length} belles posées)${noyees.length ? ` : ${noyees.join(", ")}` : ""}`, !noyee);
   const charge = nombreVoulu(l.slice(0, 5), { ...ctx, momentTaille: new Map([["M", 20]]) });
   const leger = nombreVoulu(l.slice(0, 5), { ...ctx, momentTaille: new Map([["M", 1]]) });
   ok(`v2 · une période chargée n'est jamais étalée en doubles vides : 20 photos sur le moment veulent ${charge.cible} par double, 1 photo en veut ${leger.cible} (N-48)`,

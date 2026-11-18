@@ -15,7 +15,7 @@ import type { ChapitreCompo, Decision, Fiche, PourquoiDouble, ReglagesV2 } from 
 import { REGLAGES_V2, type ParametresProfil } from "./reglagesCompositeur";
 import { nombreVoulu, phraseDouble, type CtxDensite } from "./densite";
 import { belle, ecartPalettes } from "./selectionV2";
-import { recadrable, zoneV2 } from "./recadrageV2";
+import { cotesProteges, recadrable, zoneV2 } from "./recadrageV2";
 import type { StyleMagazine } from "../style";
 
 /* ─────────────────────────── les tests de forme ─────────────────────────── */
@@ -328,8 +328,29 @@ export function echoOuContraste(a: readonly Ph[], b: readonly Ph[]): "écho" | "
   return null;
 }
 
-/** Les recettes de la v2 : celles du banc et du repli (N-36), plus la belle photo seule (N-49), la double dense (N-44 à N-46) et la série. */
-function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mode: Mode, recadrage = false): Recette[] {
+/**
+ * M-32 (18/11, Mathias : « Oui, tout dépend de la chronologie, du fait d'avoir du sens dans la double page ») : une BELLE photo entre
+ * dans une double dense quand la double a du SENS pour elle (N-49b) : elle appartient à une paire ou à une série de la double, ou la
+ * plupart des autres photos sont du même moment qu'elle, ou de la même scène (prises à `SENS_SCENE_MINUTES` d'elle au plus). Rend la
+ * raison en mots, ou null (alors la règle d'avant tient : jamais noyée).
+ */
+export function sensPourBelle(b: Ph, g: readonly Ph[], paires: ReadonlySet<string>): string | null {
+  const autres = g.filter((x) => x !== b);
+  if (!autres.length) return null;
+  if (autres.some((x) => paires.has(`${b.id}|${x.id}`) || paires.has(`${x.id}|${b.id}`))) return "une paire de la double";
+  if (b.v2?.serie && b.v2.serie.type !== "quasi_identiques" && autres.some((x) => x.v2?.serie?.id === b.v2!.serie!.id)) return "une série de la double";
+  const moitie = Math.ceil(autres.length / 2);
+  if (b.moment && autres.filter((x) => x.moment === b.moment).length >= moitie) return "le même moment";
+  if (b.date) {
+    const t0 = T(b.date).getTime(), M = REGLAGES_V2.SENS_SCENE_MINUTES * 60000;
+    if (autres.filter((x) => x.date && Math.abs(T(x.date).getTime() - t0) <= M).length >= moitie) return "la même scène";
+  }
+  return null;
+}
+
+/** Les recettes de la v2 : celles du banc et du repli (N-36), plus la belle photo seule (N-49), la double dense (N-44 à N-46) et la série.
+ *  `heros` (M-32) : la belle photo admise dans la double dense, qui y est alors la plus grande. */
+function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mode: Mode, recadrage = false, heros: Ph | null = null): Recette[] {
   const out = recettes(g, sommetId, mode);
   /* v2.1 : la pleine et l'encadrée (une verticale pleine page face aux autres) est toujours proposée, jamais seulement en repli */
   if (recadrage && mode === "banc") out.push(...recettesRepli(g).filter(([, sp]) => sp.idee !== "seule"));
@@ -363,8 +384,8 @@ function recettesV2(g: Ph[], sommetId: string | null, dpiDouble150: boolean, mod
     const bons = essais.filter(([a, b]) => pageOk(a) && pageOk(b)).sort((x, y) => Math.abs(x[0].length - x[1].length) - Math.abs(y[0].length - y[1].length));
     if (bons.length) {
       const [G, D] = bons[0];
-      const h = meilleur(g, (x) => !x.msg) ?? meilleur(g);
-      const sp: Spec = { idee: "dense", classe: n >= 6 ? "D" : "M", perdu: false, type: "pages", regles: ["N-48", "N-44", "N-46", "S-088"], pourquoi: `le moment dense : ${G.length} et ${D.length} photos` };
+      const h = heros ?? meilleur(g, (x) => !x.msg) ?? meilleur(g);
+      const sp: Spec = { idee: "dense", classe: n >= 6 ? "D" : "M", perdu: false, type: "pages", regles: heros ? ["N-48", "N-44", "N-46", "S-088", "M-32", "N-49b"] : ["N-48", "N-44", "N-46", "S-088"], pourquoi: heros ? `le moment dense : ${G.length} et ${D.length} photos, la belle photo en héros` : `le moment dense : ${G.length} et ${D.length} photos` };
       sp.gauche = { photos: rolesSatellites(G, h && G.includes(h) ? h : null) };
       sp.droite = { photos: rolesSatellites(D, h && D.includes(h) ? h : null) };
       out.push([0.5 + 0.03 * n, sp]);
@@ -411,12 +432,17 @@ export function decouperV2(seq: Ph[], nd: number, sommetId: string | null, mode:
     if (!memo.has(k)) {
       const g = seq.slice(i, j);
       const v = nombreVoulu(g, cd);
-      /* N-49 : une belle photo du dixième le plus fort n'est JAMAIS noyée dans une double dense (6 photos et plus, hors série) ; les autres coûtent */
-      const noyee = g.length >= REGLAGES_V2.DENSE_MIN && !v.serie && g.some((x) => !!belle(x, cd.dpiDouble150) && (x.v2?.notes?.image.valeur ?? 0) >= (cd.seuilTopImage ?? 0));
+      /* N-49 : une belle photo du dixième le plus fort n'est jamais noyée dans une double dense (6 photos et plus, hors série) ; les autres coûtent.
+         M-32 (N-49b) : sauf quand la double a du SENS pour elle (paire, série, même moment, même scène) : elle y entre, et y est la plus grande */
+      const belles = g.length >= REGLAGES_V2.DENSE_MIN && !v.serie ? g.filter((x) => !!belle(x, cd.dpiDouble150) && (x.v2?.notes?.image.valeur ?? 0) >= (cd.seuilTopImage ?? 0)) : [];
+      const admise = belles.length === 1 && sensPourBelle(belles[0], g, paires) ? belles[0] : null;
+      const noyee = belles.length > 0 && !admise;
       /* v2.1 (M-07 dure) : une ou deux photos dont aucune ne tient une page laissent la double presque vide : refusé */
       const maigre = !!cd.recadrage && g.length <= 2 && !g.some((x) => pleinDef(x) || (g.length === 1 && tientDouble(x)) || (!!x.v2?.recadrable && x.dpi.demi >= 200) || x.id === sommetId);
-      const rs = noyee || g.length > v.max || (sommetId && g.length > 1 && g.some((x) => x.id === sommetId)) ? [] : recettesV2(g, sommetId, cd.dpiDouble150, mode, !!cd.recadrage);
-      if (!rs.length) memo.set(k, null);
+      const rs = noyee || g.length > v.max || (sommetId && g.length > 1 && g.some((x) => x.id === sommetId)) ? [] : recettesV2(g, sommetId, cd.dpiDouble150, mode, !!cd.recadrage, admise);
+      /* M-32 : admise, la belle photo est le HÉROS de la double : seules les recettes qui la posent en héros (la plus grande) restent */
+      const rsH = admise ? rs.filter(([, sp]) => [...(sp.photos ?? []), ...(sp.gauche?.photos ?? []), ...(sp.droite?.photos ?? [])].some((p) => p.id === admise.id && (p.role === "heros" || p.role === "pleine" || p.role === "double"))) : rs;
+      if (!rsH.length) memo.set(k, null);
       else {
         /* N-46 : le gabarit LIBRE (la pose choisit) coupe les très larges quand elles se mêlent aux verticales : il coûte plus ; M-08 : une
            très large où l'on voit des gens ne devient pas une bande fine dans une double chargée */
@@ -441,10 +467,10 @@ export function decouperV2(seq: Ph[], nd: number, sommetId: string | null, mode:
           return c;
         };
         const ajuste = (x: Recette): Recette => [x[0] + petiteRespiration + pageVide(x) + toutCadre(x) + pageRigide(x) + (x[1].idee === "seule" && !pleinDef(g[0]) ? R2.PEN_SEULE_PETITE : 0) + (x[1].idee === "libre" ? (U.length && V.length ? 1.0 : 0) + (U.length >= 2 ? 0.8 : 0) : 0) + (g.length >= 4 && U.some((y) => y.nbPers > 0) ? 0.6 : 0), x[1]];
-        let best = ajuste(rs[0]);
-        for (const x0 of rs) { const x = ajuste(x0); if (x[0] < best[0]) best = x; }
+        let best = ajuste(rsH[0]);
+        for (const x0 of rsH) { const x = ajuste(x0); if (x[0] < best[0]) best = x; }
         let c = best[0] + (R2.W_CIBLE * (g.length - v.cible) ** 2) / v.cible + (g.length < v.min ? 2 : 0) + (maigre ? R2.PEN_PAGE_MAIGRE_V21 : 0);
-        if (v.belle && g.length >= 3) c += R2.PEN_BELLE_NOYEE;
+        if (v.belle && g.length >= 3 && v.belle !== admise) c += R2.PEN_BELLE_NOYEE;   // M-32 : admise avec du sens, elle n'est pas noyée
         if (g.every(estDetail) && g.length < 4) c += R2.PEN_DETAIL_SEUL;
         if (g.length >= 2) { const [a, b] = moities(g, best[1]); if (!echoOuContraste(a, b)) c += R2.PEN_NI_ECHO_NI_CONTRASTE; }
         c += coupe(j);
@@ -649,6 +675,8 @@ export type LieuPhoto = { n: number; type: string; idee: string; role: string };
 export type ResultatTrame = {
   trame: Trame & { faits: string[]; sommet: string | null; chapitres: Record<string, { titre: string; statut: string; repli: string }>; m10: unknown[] };
   pages: number;
+  /** v2 : les paires (N-50) gardées ensemble. */
+  paires?: string[];
   chapitres: ChapitreCompo[];
   journal: Decision[];
   /** La place et la raison de chaque photo (M-02). */
@@ -710,7 +738,10 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   for (const c of chaps) {
     const repli = ctx.chapNom.get(c) ?? `Chapitre ${c}`;
     const fiche = ctx.chapFiche.get(c);
-    if (fiche) { titreDe.set(c, fiche); statutDe.set(c, "sûr : saisi dans la fiche"); }
+    /* M-34 : un chapitre renommé dans l'Analyse garde le nom de l'atelier */
+    const renomme = ctx.fiche.chapitres?.[String(c)]?.trim();
+    if (renomme) { titreDe.set(c, renomme); statutDe.set(c, "sûr : renommé par l'atelier"); }
+    else if (fiche) { titreDe.set(c, fiche); statutDe.set(c, "sûr : saisi dans la fiche"); }
     else if (!ctx.parLieux) { titreDe.set(c, repli); statutDe.set(c, "thème de l'album : nom du chapitre"); }
     else {
       /* E (18/11) : un bout de panneau (« View ») ne devient jamais un nom de chapitre. Un nom de lieu vaut un titre s'il est CONFIRMÉ
@@ -759,10 +790,15 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     if (!x.v2) continue;
     x.v2.zone21 = zoneV2(x, x.v2.chaleur, modeRec);
     x.v2.recadrable = recadrable(x, x.v2.zone21);
+    /* M-31 (N-60) : dans le doute, on ne coupe pas une personne */
+    const p = cotesProteges(x, x.v2.zone21);
+    if (p) x.v2.proteges = p;
   }
   if (V2 && modeRec !== "aucun") {
     const larges = tous_.filter((x) => x.r >= 1.6 && !x.ecart);
     journal.push({ quoi: "recadrage", ou: "lot", detail: `mode ${modeRec} : ${larges.filter((x) => x.v2?.recadrable).length} très larges recadrables sur ${larges.length} ; tout le cadre compte pour ${tous_.filter((x) => x.v2?.zone21?.toutLeCadre).length} photos`, regles: ["M-29", "N-55", "N-57"] });
+    const prot = tous_.filter((x) => x.v2?.proteges && !x.ecart);
+    if (prot.length) journal.push({ quoi: "recadrage", ou: "lot", detail: `${prot.length} photos protégées : des personnes peut-être au bord (${prot.filter((x) => x.v2!.proteges!.gauche && x.v2!.proteges!.droite).length} jamais rognées en largeur)`, regles: ["M-31", "N-60"] });
   }
   /* N-48b : la densité visée = le milieu de la fourchette du profil, un demi-cran plus bas en sobre, plus haut en stylisé (M-06) */
   let moyenneV2 = V2 ? (V2.profil.moyenne[0] + V2.profil.moyenne[1]) / 2 + (ctx.sobre ? -0.25 : V2.stylise ? 0.25 : 0) : 0;
@@ -1130,6 +1166,7 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     photosT[x.id] = {
       fichier: x.nom, l: x.l, h: x.h, visages: x.visages.length ? x.visages : null, zone: (x.v2?.zone21?.coeur ?? x.zone) as Boite4 | null, corps: x.corps.length ? x.corps : null,
       personnes: x.nbPers, teinte: teinteDe(x), ...(x.date ? { date: x.date } : {}),
+      ...(x.v2?.proteges ? { proteges: { gauche: x.v2.proteges.gauche, droite: x.v2.proteges.droite, haut: x.v2.proteges.haut, bas: x.v2.proteges.bas } } : {}),
     };
   }
   const chapitresT: Record<string, { titre: string; statut: string; repli: string }> = {};
@@ -1149,5 +1186,5 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   };
   const chapitres: ChapitreCompo[] = chaps.map((c) => ({ numero: c, titre: titreDe.get(c)!, statut: statutDe.get(c)!, repli: ctx.chapNom.get(c) ?? `Chapitre ${c}` }));
   void rond;
-  return { trame, pages, chapitres, journal, place, lieu, nommees, propositions: props, ajustement, doubles };
+  return { trame, pages, chapitres, journal, place, lieu, nommees, propositions: props, ajustement, doubles, paires: [...pairesV2].sort() };
 }

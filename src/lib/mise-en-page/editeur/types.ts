@@ -163,7 +163,11 @@ export type FinitionMep = "gloss" | "matte";
  * intérieur donc le dos. L'un et l'autre valent `null` pour une édition, une création libre, ou quand on ne sait pas
  * (colonne absente, jamais choisi) : l'inconnu n'est jamais deviné.
  */
-export type Projet = { nom: string; source: SourceMep; nbPagesCible: number | null; finition: FinitionMep | null };
+export type Projet = {
+  nom: string; source: SourceMep; nbPagesCible: number | null; finition: FinitionMep | null;
+  /** 18/11 (page Analyse, M-25) : ce que le questionnaire de /composer a déjà dit (dossier seulement) : jamais redemandé. */
+  dossier?: { occasion: string | null; histoire: string | null; titre: string | null };
+};
 
 export type EntreeHistorique = { libelle: string; avant: Magazine; apres: Magazine; plancheId: string };
 

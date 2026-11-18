@@ -31,7 +31,7 @@ import { cadresDe, type Magazine } from "@/lib/mise-en-page/magazine";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import type { StyleMagazine } from "@/lib/mise-en-page/style";
 import { REGLAGES_V2_DEFAUT, type CorrectionsAtelier, type Fiche, type ReglagesV2 } from "@/lib/mise-en-page/compositeur";
-import { comparaison, magazinePdf, planchesContact, planchesEnImages, posesEtLaissees, sectionRognes, type Sources, type Variante } from "./compositeur-planche-tests";
+import { comparaison, magazinePdf, magazinePdfEditeur, planchesContact, planchesEnImages, posesEtLaissees, sectionRognes, type Sources, type Variante } from "./compositeur-planche-tests";
 
 type J = Record<string, unknown>;
 const lire = (f: string): J => JSON.parse(fs.readFileSync(f, "utf8")) as J;
@@ -246,6 +246,9 @@ async function matrice(fichier: string | null, seule: LigneMatrice | null): Prom
     const petites = await planchesEnImages(r.jet.magazine, s, 1.1);
     await planchesContact(petites, path.join(d, "planche-contact.jpg"), 1.1);
     await magazinePdf(await planchesEnImages(r.jet.magazine, s, 3), path.join(d, "magazine.pdf"));
+    /* 18/11 soir : le VRAI rendu, par l'export PDF de l'éditeur (pdf.ts) */
+    const vrai = await magazinePdfEditeur(r.jet.magazine, s, path.join(d, "magazine-editeur.pdf"));
+    if (vrai.alertes.length) console.log(`   export PDF : ${vrai.alertes.join(" ; ")}`);
     await posesEtLaissees(l.titre ?? l.nom, r, s, petites, path.join(d, "photos-posees-et-laissees.html"));
     if (r.zones) await sectionRognes({ nom: l.nom, titre: l.titre ?? l.nom, r, images: petites }, s, path.join(d, "rognes.jpg"));
     vs.push({ nom: l.nom, titre: l.titre ?? l.nom, r, images: petites });

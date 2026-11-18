@@ -70,7 +70,12 @@ function fenetre(masse: number[], p: number): [number, number] {
 }
 
 /** `zone` : avec son air (ce que le cadre doit contenir) ; `coeur` : sans l'air (ce qu'un recadrage ne doit jamais entamer). */
-export type ZoneV2 = { zone: Boite4; coeur?: Boite4; toutLeCadre: boolean; regard: "gauche" | "droite" | null; source: string };
+export type ZoneV2 = {
+  zone: Boite4; coeur?: Boite4; toutLeCadre: boolean; regard: "gauche" | "droite" | null; source: string;
+  /** M-31 : la fenêtre de chaleur (avant l'air) touche-t-elle ce bord de la photo ? (une personne peut y être, coupée par un rognage) */
+  touche?: Cotes;
+};
+export type Cotes = { gauche: boolean; droite: boolean; haut: boolean; bas: boolean };
 
 const union = (a: Boite4, b: Boite4): Boite4 => {
   const x0 = Math.min(a[0], b[0]), y0 = Math.min(a[1], b[1]), x1 = Math.max(a[0] + a[2], b[0] + b[2]), y1 = Math.max(a[1] + a[3], b[1] + b[3]);
@@ -84,6 +89,7 @@ export function zoneV2(x: Ph, chaleur: string | null | undefined, mode: Exclude<
   let z: Boite4 | null = null;
   let source = "zone de l'éditeur";
   let etalee = false;
+  let touche: Cotes = { gauche: false, droite: false, haut: false, bas: false };
   if (chaleur && /^[0-9]{256}$/.test(chaleur)) {
     /* la chaleur AU-DESSUS de la médiane de la photo : le fond uniforme (ciel, mer) ne vote pas pour rester */
     const brut = [...chaleur].map(Number);
@@ -96,6 +102,7 @@ export function zoneV2(x: Ph, chaleur: string | null | undefined, mode: Exclude<
       /* N-57 : une chaleur aussi ÉTALÉE en largeur qu'une chaleur uniforme (la fenêtre vaut la part demandée) : l'horizon fait la photo */
       etalee = (c1 - c0) / 16 >= TOUT_LE_CADRE_ETALEMENT * R.chaleur.valeur;
       z = [c0 / 16, l0 / 16, (c1 - c0) / 16, (l1 - l0) / 16];
+      touche = { gauche: c0 === 0, droite: c1 === 16, haut: l0 === 0, bas: l1 === 16 };
       source = `carte de chaleur (${Math.round(R.chaleur.valeur * 100)} % de la chaleur)`;
     } else {
       /* une chaleur uniforme ne désigne rien : la zone de l'éditeur, sinon le centre ; pour une très large, tout le cadre compte */
@@ -116,8 +123,38 @@ export function zoneV2(x: Ph, chaleur: string | null | undefined, mode: Exclude<
   let y0 = z[1] - a, y1 = z[1] + z[3] + a;
   x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(1, x1); y1 = Math.min(1, y1);
   const coeur: Boite4 = toutLeCadre ? [0, r4(z[1]), 1, r4(z[3])] : [r4(z[0]), r4(z[1]), r4(z[2]), r4(z[3])];
-  return { zone: toutLeCadre ? [0, r4(y0), 1, r4(y1 - y0)] : [r4(x0), r4(y0), r4(x1 - x0), r4(y1 - y0)], coeur, toutLeCadre, regard, source };
+  return { zone: toutLeCadre ? [0, r4(y0), 1, r4(y1 - y0)] : [r4(x0), r4(y0), r4(x1 - x0), r4(y1 - y0)], coeur, toutLeCadre, regard, source, touche };
 }
+
+/**
+ * M-31 (18/11, Mathias : « TU ne coupes jamais une personne ! ») : les CÔTÉS d'une photo qu'aucun recadrage n'entame (N-60).
+ * La zone à protéger porte déjà tous les visages ET corps détectés (`zoneV2`) ; mais un détecteur rate les personnes au bord, de profil, de
+ * dos ou petites. Dans le doute, on ne coupe pas :
+ *  - la lecture IA compte PLUS de personnes que le détecteur n'a trouvé de visages (ou des personnes et aucun visage) : la photo n'est plus
+ *    rognée en LARGEUR, ni en hauteur du côté où la chaleur touche le bord (le côté que les visages trouvés ne couvrent pas) ;
+ *  - sans lecture du nombre de personnes : chaque côté où la carte de chaleur touche le bord est protégé.
+ * Rend null quand rien n'est à protéger de plus que les visages et corps détectés.
+ */
+export function cotesProteges(x: Ph, z: ZoneV2): (Cotes & { raison: string }) | null {
+  const ia = x.v2?.ia ?? null;
+  const lu = !!ia && (typeof ia.personnesNombre === "number" || (ia.personnes !== null && ia.personnes !== undefined));
+  const t = z.touche ?? { gauche: false, droite: false, haut: false, bas: false };
+  const nVis = x.visages.length;
+  if (lu && x.nbPers > nVis) {
+    const s = (n: number) => (n > 1 ? "s" : "");
+    return {
+      gauche: true, droite: true, haut: t.haut, bas: t.bas,
+      raison: nVis ? `${x.nbPers} personnes lues, ${nVis} visage${s(nVis)} trouvé${s(nVis)} : jamais rognée en largeur` : `${x.nbPers} personne${s(x.nbPers)} lue${s(x.nbPers)}, aucun visage trouvé : jamais rognée en largeur`,
+    };
+  }
+  if (!lu && (t.gauche || t.droite || t.haut || t.bas)) {
+    const c = (["gauche", "droite", "haut", "bas"] as const).filter((k) => t[k]);
+    return { ...t, raison: `sans lecture des personnes, la chaleur touche le bord (${c.join(", ")}) : ce côté n'est pas rogné` };
+  }
+  return null;
+}
+/** M-31 : la part d'un côté protégé qu'un recadrage peut quand même retirer (l'arrondi d'un gabarit, pas un rognage). */
+export const PROTEGE_TOLERANCE = 0.02;
 
 /** La zone (fractions) tient-elle dans un recadrage au rapport `rapport` (largeur / hauteur du cadre) de la photo `px` ? */
 export function zoneTient(zone: Boite4, px: { l: number; h: number }, rapport: number): boolean {
@@ -133,7 +170,11 @@ export const partRetiree = (px: { l: number; h: number }, rapport: number): numb
 };
 
 /** N-55 : une très large est « recadrable » quand sa zone tient dans un cadre de demi-page (rapport 1,45) et que tout le cadre ne compte pas. */
-export const recadrable = (x: Ph, z: ZoneV2): boolean => x.r >= 1.6 && !z.toutLeCadre && zoneTient(z.zone, { l: x.l, h: x.h }, RECADRABLE_RAPPORT);
+export const recadrable = (x: Ph, z: ZoneV2): boolean => {
+  const p = cotesProteges(x, z);
+  /* M-31 : une très large dont la largeur est protégée (des personnes peut-être au bord) ne se recadre pas */
+  return x.r >= 1.6 && !z.toutLeCadre && !(p && (p.gauche || p.droite)) && zoneTient(z.zone, { l: x.l, h: x.h }, RECADRABLE_RAPPORT);
+};
 
 /** N-58 : le zoom qui met le sujet en avant (1 = aucun), borné par le mode et la définition (200 ppp au cadre). */
 export function zoomMiseEnAvant(z: ZoneV2, px: { l: number; h: number }, cadre: { l: number; h: number }, mode: Exclude<ModeRecadrage, "aucun">): number {

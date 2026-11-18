@@ -132,3 +132,16 @@ export { estPng } from "./tags";
 export { colorerFond, colorerTexte, colorerTextes, couleursPosees, libelleFond, libelleTexte, nomCouleur, propositionsApres, textesDuCote, textesLisibles, REGLAGES_PROPOSITIONS } from "./couleurs";
 export type { PoseCouleur, PropositionCouleur, GesteProposition } from "./couleurs";
 export { fondsPlanche } from "./selecteurs";
+/* 18/11 (feat/analyse-et-v2, point 3) : la lecture COMPLÈTE (regard complémentaire, classement des couvertures, lecture v5) et le complément
+   d'une lecture ancienne sans tout repayer */
+export {
+  ACCROCHE_MOTS_MAX, CLASSEMENT_MAX, EXPRESSIONS_IA, REGARDS_VERS_IA, TYPES_CLASSEMENT_IA, VERSION_LECTURE_IA_5, YEUX_FERMES_IA,
+} from "./lectureIA";
+export type { CouvertureClassee, ExpressionIA, RegardVersIA, TypeClassementIA, YeuxFermesIA } from "./lectureIA";
+export { versionPour } from "./lireLesPhotos";
+export {
+  BANC_18_11_COMPLEMENT, CLASSEMENT_MIN, CONSIGNE_K, CONSIGNE_P, CONSIGNE_P10, CONSIGNE_R, ETAPES_COMPLEMENT, MAX_PX_COMPLEMENT, REGARD_COMPLEMENT_MAX,
+  SCHEMA_K, SCHEMA_P, SCHEMA_P10, SCHEMA_R, appliquerComplement, classementVersPhotos, corpsClassement, corpsComplement, corpsRegardComplement,
+  estEtapeComplement, lireDemandeComplement, lireReponseClassement, lireReponseComplement, lireReponseRegardComplement, manque, planComplement,
+} from "./lectureComplete";
+export type { ChampsComplement, DemandeComplement, LuComplement, LuRegardComplement, PlanComplement, ResultatsComplement } from "./lectureComplete";

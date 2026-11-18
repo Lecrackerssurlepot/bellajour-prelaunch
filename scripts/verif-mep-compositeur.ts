@@ -149,7 +149,7 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
 
   /* l'adaptateur de l'éditeur : un catalogue sans lecture compose */
   const cat = new Map(minuscule().map((p) => [p.id, { id: p.id, nom: p.nom, l: p.l, h: p.h, date: p.date, personne: "", lien: null, type: "atelier" as const, coeur: false, signalee: false, autresMagazines: [], nouvelle: false, vignette: null }]));
-  const e = entreeDepuisEditeur({ catalogue: cat, lecture: { floues: [], piles: [], mesurees: 0, zones: {} }, lectureIA: null, ecarteesAtelier: new Set(), fiche: {}, titre: "", quand: "2026-11-18T00:00:00.000Z" });
+  const e = entreeDepuisEditeur({ catalogue: cat, lecture: { floues: [], piles: [], mesurees: 0, zones: {} }, lectureIA: null, ecarteesAtelier: new Set(), fiche: {}, titre: "", quand: "2026-11-18T00:00:00.000Z", version: 1 });
   const rE = composer(e);
   ok("depuis l'éditeur : un catalogue sans mesure ni lecture compose un premier jet valide (N-33)", valide(rE, e.photos) && rE.controle.fautes.length === 0);
 
@@ -159,7 +159,7 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   ok("M-01 : le code du compositeur ne nomme aucun projet, aucun client, aucun lieu de test, aucun numéro de photo",
     !/jo[eë]lle|australie|sydney|melbourne|narooma|twelve apostles|1000\d{6}|\b0\d\d-\d{6,}/i.test(code));
 
-  /* la lecture IA v3 : lue, et la v1 et la v2 toujours ; une v5 refusée (la v4 existe depuis le 18/11, définition v2) */
+  /* la lecture IA v3 : lue, et la v1 et la v2 toujours ; une v6 refusée (la v4 et la v5 existent depuis le 18/11) */
   const v3: O.LectureIA = {
     format: "bellajour-lecture-ia", version: 3, photos: { "A.JPG": { plan: "large", moment_journee: "dore", ambiance: "grandiose", personnes: "groupe", sujet: "paysage" } }, rafales: [], groupes: [],
     voyage: { qui: { type: "famille", raison: "des groupes de quatre" }, ou: { pays: "Portugal", regions: [], lieux: [] }, type_voyage: "road_trip", duree_jours: 12,
@@ -167,10 +167,10 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
     lieux: { chapitres: [{ numero: 1, lieu: "Lisbonne", preuve: "panneau", detail: "C1-1 panneau" }], noms: [{ nom: "CAFE X", sorte: "enseigne" }], sansDate: [], reperes: [] },
   };
   const relu = O.lireLectureIA(JSON.parse(JSON.stringify(v3)) as unknown);
-  ok("lecture IA v3 : tags de planche, voyage et lieux relus ; une identité refusée ; un compte de personnes hors énumération refusé ; la v5 refusée",
+  ok("lecture IA v3 : tags de planche, voyage et lieux relus ; une identité refusée ; un compte de personnes hors énumération refusé ; la v6 refusée",
     relu.ok && relu.lecture.voyage?.chapitres[0].photos[0] === "A.JPG" && relu.lecture.lieux?.noms[0].sorte === "enseigne"
       && !O.lireLectureIA({ ...v3, photos: { "A.JPG": { personnes: "Marie" } } }).ok && !O.lireLectureIA({ ...v3, photos: { "A.JPG": { qui: "x" } } }).ok
-      && !O.lireLectureIA({ ...v3, version: 5 }).ok && !O.lireLectureIA({ ...v3, version: 2 }).ok);
+      && !O.lireLectureIA({ ...v3, version: 6 }).ok && !O.lireLectureIA({ ...v3, version: 2 }).ok);
   const b5 = O.lireReponsePlanche5({ photos: [{ numero: 1, role: "heros", sujet: "personnes", candidate: "aucune", interet: 0.7, texte_lisible: false, plan: "moyen", moment_journee: "jour", ambiance: "vivant", personnes: "2" }] }, 1, 1);
   ok("planche B5 : les quatre tags relus ; un tag hors énumération refusé ; le schéma ne porte qu'un COMPTE de personnes (D29)",
     b5.ok && b5.valeur.photos[0].personnes === "2" && !O.lireReponsePlanche5({ photos: [{ numero: 1, role: "heros", sujet: "personnes", candidate: "aucune", interet: 0.7, texte_lisible: false, plan: "moyen", moment_journee: "jour", ambiance: "vivant", personnes: "Paul" }] }, 1, 1).ok
@@ -222,7 +222,7 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   const ecranC = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/Composer.tsx"), "utf8");
   ok("M-14 : aucun `throw` nu ne remonte à l'écran : chaque `throw` du compositeur est une `ImpasseComposition` (phrase, cause, geste) et l'écran ne passe que par `composerSur`, qui n'en laisse sortir aucune",
     (codeCompo.match(/\bthrow\b/g) ?? []).length === (codeCompo.match(/throw new ImpasseComposition\(/g) ?? []).length && (codeCompo.match(/throw new ImpasseComposition\(/g) ?? []).length >= 4
-      && !/\bcomposer\(entreeDepuisEditeur/.test(ecranC) && ecranC.includes("composerSur(entreeDepuisEditeur(") && !ecranC.includes("(err as Error).message"));
+      && !/\bcomposer\(entreeDepuisEditeur|\bcomposer\(entreeLocale/.test(ecranC) && ecranC.includes("composerSur(entreeLocale(") && ecranC.includes("return (entreeDepuisEditeur({") && !ecranC.includes("(err as Error).message"));
 
   /* M-15 : la machine propose la taille */
   const m0 = composer(entree(voyageLarge(), { fiche: {} }));
@@ -236,9 +236,10 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   ok("M-15 : après la proposition, les autres tailles (« Plus court », « Tout garder », « Commandé ») ; chacune sera composée pour donner ses vrais chiffres",
     au.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:48" && auC.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:24,Tout garder:tout"
       && auCh.map((a) => `${a.mot}:${a.taille}`).join() === "Plus court:12,Tout garder:tout,Commandé:48" && autresTailles(28, "machine", null).map((a) => a.taille).join() === "16");
-  const questions = ecranC.slice(ecranC.indexOf("phase.type === \"questions\" ? ("), ecranC.indexOf("phase.type === \"analyse\" ? ("));
+  /* 18/11 soir : les questions vivent dans la page Analyse (`Analyse.tsx`) */
+  const questions = readFileSync(resolve(process.cwd(), "src/app/admin/atelier/mise-en-page/[id]/Analyse.tsx"), "utf8");
   ok("M-15 : la feuille des questions ne demande plus le nombre de pages (aucun bouton « N pages », aucun « Tout garder ») ; une taille gardée d'avant n'est pas reprise ; chaque question peut rester vide",
-    !questions.includes("TAILLES_PROPOSEES") && !questions.includes("Tout garder") && questions.includes("la machine la propose") && ecranC.includes("const { taille: _t, ...sansTaille } = saisie;")
+    !questions.includes("TAILLES_PROPOSEES") && !questions.includes("Tout garder") && questions.includes("La machine propose la taille") && ecranC.includes("const { taille: _t, ...sansTaille } = saisie;")
       && lireFiche({ taille: "machine" }).taille === "machine" && !questions.includes("required"));
 
   /* M-13 : une photo gardée par l'atelier n'est jamais écartée par la machine */
@@ -257,7 +258,7 @@ export async function verifierMepCompositeur(ok: (nom: string, reussi: boolean) 
   const lD: O.LectureIA = { format: "bellajour-lecture-ia", version: 2, photos: Object.fromEntries([...catD.values()].map((p) => [p.nom, { role: { role: "a_ecarter" as const, interet: 0.1, raison: "x" }, sujet: "autre" as const }])), rafales: [], groupes: [] };
   const relD = O.relierLectureIA(lD, catD);
   const susD = O.lectureSuspecte(O.verdictsDeLecture(lD, catD, [...catD.keys()]));
-  const baseD = { catalogue: catD, lecture: { floues: [], piles: [], mesurees: 0, zones: {} }, lectureIA: relD, ecarteesAtelier: new Set<string>(), fiche: {}, titre: "", quand: "2026-11-18T00:00:00.000Z" };
+  const baseD = { catalogue: catD, lecture: { floues: [], piles: [], mesurees: 0, zones: {} }, lectureIA: relD, ecarteesAtelier: new Set<string>(), fiche: {}, titre: "", quand: "2026-11-18T00:00:00.000Z", version: 1 as const };
   const sansGarde = composerSur(entreeDepuisEditeur(baseD));
   const avecGarde = composerSur(entreeDepuisEditeur({ ...baseD, douteuse: { photos: susD.douteuses, toute: susD.toute, raison: susD.raisons.join(", ") } }));
   ok("M-13 : une lecture empoisonnée (30 « à écarter » sur 30) est vue DOUTEUSE ; sans la garde le compositeur n'a rien à poser (une phrase, plus d'impasse) ; avec elle il compose sans elle et le dit (décision M-13)",

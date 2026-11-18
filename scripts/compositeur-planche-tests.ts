@@ -15,6 +15,9 @@ import path from "node:path";
 import sharp, { type OverlayOptions } from "sharp";
 import { PDFDocument } from "pdf-lib";
 import { cadresDe, type Magazine } from "@/lib/mise-en-page/magazine";
+import { avecLieuxParDefaut } from "@/lib/mise-en-page/editeur";
+import { QUALITE_JPEG_PDF, clePolice, decoupe, ecrirePdf, photosDuPlan, planPdf, policesDuPlan } from "@/lib/mise-en-page/pdf";
+import { cheminPolice } from "@/lib/mise-en-page/style";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { regleParId } from "@/lib/mise-en-page/regles";
 import type { PhotoChoisie, ResultatCompo } from "@/lib/mise-en-page/compositeur";
@@ -100,6 +103,40 @@ export async function magazinePdf(images: Buffer[], fichier: string): Promise<vo
     page.drawImage(img, { x: 3 * pt, y: 3 * pt, width: 420 * pt, height: 297 * pt });
   }
   fs.writeFileSync(fichier, await doc.save());
+}
+
+/**
+ * 18/11 soir (point 6) : le VRAI rendu. Le magazine passe par l'export PDF de l'éditeur (`pdf.ts` : `planPdf`, `photosDuPlan`, `decoupe`,
+ * `ecrirePdf`, polices embarquées de `public/polices/`), exactement le chemin de « Exporter pour Canva » ; seules les images viennent des
+ * vignettes 1 024 px du banc (le navigateur lirait l'original au coffre), découpées par `decoupe` comme dans `[id]/exporterPdf.ts`.
+ * La couverture n'est pas rendue (son dos dépend des pages et de la finition, connus à l'écran seulement).
+ */
+export async function magazinePdfEditeur(m: Magazine, s: Sources, fichier: string): Promise<{ pages: number; photos: number; alertes: string[] }> {
+  const mag = avecLieuxParDefaut(m, new Map());
+  const pages = planPdf(mag);
+  const par = photosDuPlan(pages);
+  const images = new Map<string, Uint8Array>();
+  for (const [id, objets] of par) {
+    const nom = s.fichierDe.get(id);
+    const f = nom ? path.join(s.v1024, nom) : null;
+    if (!f || !fs.existsSync(f)) continue;
+    const { data, info } = await sharp(f).rotate().toBuffer({ resolveWithObject: true });
+    for (const o of objets) {
+      const d = decoupe({ l: info.width, h: info.height }, o.cadre, o.recadrage);
+      const left = Math.max(0, Math.round(d.sx)), top = Math.max(0, Math.round(d.sy));
+      const width = Math.max(1, Math.min(info.width - left, Math.round(d.sl))), height = Math.max(1, Math.min(info.height - top, Math.round(d.sh)));
+      const b = await sharp(data).extract({ left, top, width, height }).resize(d.l, d.h, { fit: "fill" }).jpeg({ quality: Math.round(QUALITE_JPEG_PDF * 100) }).toBuffer();
+      images.set(o.cle, new Uint8Array(b));
+    }
+  }
+  const polices = new Map<string, Uint8Array>();
+  for (const p of policesDuPlan(pages)) {
+    const f = path.join(process.cwd(), "public", cheminPolice(p.id, p.graisse));
+    if (fs.existsSync(f)) polices.set(clePolice(p.id, p.graisse), new Uint8Array(fs.readFileSync(f)));
+  }
+  const r = await ecrirePdf(pages, images, m.titre || "Magazine", polices);
+  fs.writeFileSync(fichier, r.octets);
+  return { pages: r.pages, photos: images.size, alertes: r.alertes };
 }
 
 const vignettes = new Map<string, string>();
