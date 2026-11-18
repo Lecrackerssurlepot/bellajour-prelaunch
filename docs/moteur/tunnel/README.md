@@ -46,6 +46,12 @@ par règle) et écrit en clair dans [`REGISTRE.md`](REGISTRE.md), **généré, �
 | `RETOURS-MATHIAS.md` | les retours de Mathias et leurs règles générales |
 | `REGISTRE.md` | **généré** par `scripts/regles-doc.ts` : le registre des règles, par domaine, avec sa version |
 
+## État (18/11/2026)
+- Dans l'éditeur, sur branche (`feat/editeur-qui-compose`, T-217, couche C20) : « Composer le magazine » : les questions (fiche, qui prime),
+  l'analyse (planches avec quatre tags de plus, regard fin, le voyage, les lieux par chapitre), la composition par le compositeur porté du
+  banc (`src/lib/mise-en-page/compositeur/`), chargée comme un premier jet, « Posées et laissées » (M-02), M-10. Rejoué sur le projet de
+  test : les mêmes magazines que le Python de la passe 10, dans les deux tailles. Fiche : `docs/moteur/couches/C20-compositeur.md`.
+
 ## État (17/11/2026)
 - Dans l'éditeur : couches 1 à 3, et « Lire les photos » (couches 5 et 6) sur les créations libres (T-215, D31).
 - Sur le banc seulement (`design-explorations/tunnel-2026-11-17/`, hors git, photos de clients) : couche 7, compositeur, contrôle, sept passes sur un

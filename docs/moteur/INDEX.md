@@ -44,6 +44,7 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C17](couches/C17-palette-a-glisser.md) | Palette à glisser : une couleur lâchée sur une page (fond uni) ou un texte, et ce qui va avec (texte lisible, page d'en face, fond) | R160 à R166 | EN PROD (vague 2, #369, 16/11, T-209 second temps) |
 | [C18](couches/C18-types-de-gabarits.md) | Types de gabarits : une disposition par vignette du tiroir, ses variantes (taille, orientation, calage) dessous ; R par types, V par variantes | R170 à R179 | EN PROD (vague 2, #370, 16/11, T-208) |
 | [C19](couches/C19-signatures.md) | Doubles signature tirées de la vitrine du 14/11 : textes tirés des faits, mot ou chiffre géant ajusté, fond proposé, ombre douce des tirages | R180 à R185 | EN PROD (vague 2, #371, 16/11, T-214) ; essai Affinity de l'ombre FIDÈLE (D28) |
+| [C20](couches/C20-compositeur.md) | Le compositeur : les questions (fiche qui prime), l'analyse (planches B5, regard fin, voyage, lieux), la composition portée du banc du tunnel (sélection, trame, pose, contrôle), chargée comme un premier jet ; « Posées et laissées », M-10 | R197 à R205 ; M-01 à M-10, N-32 à N-36 | sur branche (T-217, 18/11), PAS en prod |
 
 La **lecture IA** (lot F, #363, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 

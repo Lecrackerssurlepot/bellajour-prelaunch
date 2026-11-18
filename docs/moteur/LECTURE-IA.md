@@ -183,6 +183,22 @@ rôles et les sujets ; la Lecture (touche L) montre le sujet, le moment, l'idée
 Rien n'est écrit en base, aucune photo n'est gardée côté serveur ; la lecture vit dans ce navigateur, avec le projet, comme une lecture
 chargée par fichier.
 
+## La version 3 (18/11) : ce que « Composer le magazine » écrit
+
+La version 3 = la 2, plus :
+- par photo, ce que la planche lit aussi (planche « B5 », consigne du banc du tunnel) : `plan` (large, moyen, serre), `moment_journee`
+  (matin, jour, dore, nuit, interieur), `ambiance` (calme, vivant, festif, intime, grandiose), `personnes` (0, 1, 2, groupe : un COMPTE en
+  mots, jamais une identité, D29) ;
+- à la racine, `voyage` (couche 7) : `{ qui: { type: solo|couple|famille|bande, raison }, ou: { pays, regions, lieux }, type_voyage,
+  duree_jours, chapitres: [{ titre, sous_titre, debut, fin, photos: [noms de fichier], pourquoi }], ton, profil, style_conseille, doutes }` ;
+  les numéros de l'appel sont rendus en NOMS DE FICHIER, une photo n'est que dans un chapitre ;
+- à la racine, `lieux` (M-05) : `{ chapitres: [{ numero, lieu, preuve: panneau|reconnu|aucune, detail }], noms: [{ nom, sorte:
+  lieu|enseigne|autre }], sansDate: [{ photo, chapitre (0 = incertain), raison }], reperes: [{ photo, repere }] }`. Une enseigne n'est
+  jamais un lieu ; un lieu « reconnu » est à vérifier ; sans preuve, le nom thématique reste.
+
+Une lecture n'est écrite en version 3 que si l'un de ces champs existe (sinon 2, comme avant) ; les versions 1 et 2 se lisent exactement
+comme avant ; une version inconnue est refusée. Validateur : `lireLectureIA` ; tests : `scripts/verif-mep-compositeur.ts`.
+
 ## L'exemple
 
 
