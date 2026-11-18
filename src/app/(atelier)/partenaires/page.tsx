@@ -20,11 +20,18 @@ const TITLE = 'Bellajour pour les écoles et les associations'
 const DESCRIPTION =
   'Le WEI, les événements d’association, la fin d’année : dans notre atelier, nous composons un vrai magazine pour chacun de ces moments. La brochure, et un premier échange.'
 
+const APERCU = { url: 'https://www.bellajour.fr/images/partenaires/apercu-partenaires-v1.jpg', width: 1200, height: 630, alt: 'Les magazines Bellajour étalés sur une table, sous la signature Bellajour.' }
+
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: '/partenaires' },
-  openGraph: { type: 'website', locale: 'fr_FR', url: 'https://www.bellajour.fr/partenaires', siteName: 'Bellajour', title: TITLE, description: DESCRIPTION },
+  /* L'aperçu du lien (demande de Mathias du 18/11 : « quand on envoie sur Insta, qu'ils aient
+     une présentation, pas juste un lien moche ») : la couverture de la brochure, 1 200 × 630.
+     Adresse ABSOLUE et nom versionné : les messageries gardent l'image longtemps, une image
+     refaite prend `v2`. Le bloc est entier (un bloc partiel efface celui du layout). */
+  openGraph: { type: 'website', locale: 'fr_FR', url: 'https://www.bellajour.fr/partenaires', siteName: 'Bellajour', title: TITLE, description: DESCRIPTION, images: [APERCU] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [APERCU.url] },
 }
 
 /* Les pages de la brochure : noms versionnés (`v1`), jamais écrasés. Une
