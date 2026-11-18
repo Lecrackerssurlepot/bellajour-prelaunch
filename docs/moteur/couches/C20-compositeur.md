@@ -56,6 +56,26 @@ Seuils : `compositeur/reglagesCompositeur.ts` (valeur, règle, date, raison), m�
   proposition, « Posées et laissées », « Faire entrer », « Remplacer la mise en page ? », Annuler ; captures hors git dans
   `design-explorations/tunnel-2026-11-17/recette-editeur-compose/`.
 
+## 18/11 au soir : un vrai dossier (M-13, M-14, M-15)
+Retour de Mathias en production sur un dossier de 164 photos (`tunnel/RETOURS-MATHIAS.md`) :
+- **M-13** jamais une case vide chez l'IA : `editeur/lireLesPhotos.ts` porte la règle pure (`arretIllisibles`, `plancheSansVide`,
+  `lectureSuspecte`, `verdictsDeLecture`), seuils `lecture_illisibles_max` (0,1), `lecture_ecarter_max` (0,5), `lecture_planche_uniforme_min`
+  (8) dans `editeur/reglages.ts` ; l'écran relit les adresses (`rafraichirAdresses`, `EditeurMagazine.tsx`), essaie chaque image à toutes
+  ses tailles (`controlerImages`, `chargerImages`), retire les illisibles, s'arrête avant de payer. Une lecture douteuse n'entre pas dans le
+  compositeur (`DonneesEditeur.douteuse` : les photos concernées passent sans lecture IA, N-33 ; toute douteuse = ni voyage ni lieux).
+  Les marques de l'atelier priment (`PhotoCompo.gardee`, `EntreeCompo.marques`) ; le premier jet écrit les posées de la machine dans le tri : une
+  recomposition (autre taille, M-10) les retire des marques de l'atelier (`Proposition.machine`, `marquesAtelier` dans `[id]/Composer.tsx`).
+- **M-14** jamais d'impasse : `trame.ts` cherche la taille faisable la plus proche (multiple de 4, de `PAGES_MIN` à `PAGES_MAX` ou à la taille
+  demandée), recettes du banc puis repli (un chapitre peut prendre jusqu'à `DOUBLES_CHAPITRE_MAX_REPLI` doubles en repli seulement) ;
+  `ResultatCompo.ajustement` le dit. Sous `PHOTOS_MIN` photos utilisables : `ImpasseComposition` (phrase, cause comptée, geste). `composerSur`
+  ne laisse sortir aucune exception.
+- **M-15** la taille : `tailleACompose` (choisie > commandée > M-09), `autresTailles` (composées pour de vrai à l'écran).
+- **E** (recette du 18/11) : page 1 sans cadre de texte vide (`sansCadreVidePage1`), titre de page 1 = `titreImprimable` ; un titre de
+  chapitre lu n'est jamais un mot de panneau (`motsPorteurs`, `LIEU_MOTS_PORTEURS`, `LIEU_LECTURES_MIN`) ; raisons en mots d'atelier
+  (`mots.ts` : `motPlace`, `motLaissee`, la raison technique dans `detail`).
+- Rejeu : les deux tailles du projet de test rendent les MÊMES planches qu'avant la correction (comparées à l'octet) ; la « lecture
+  empoisonnée » (toutes « à écarter », 85 gardées, 60 pages) donne 60 pages au lieu de l'impasse.
+
 ## Limites, dites
 - Le moteur n'a pas de gabarit pour les photos très larges (21:9) au-delà des bandes existantes, ni d'ouverture de chapitre à plusieurs
   photos, ni de couverture panoramique, ni de filtres : rien n'a été inventé dans ce lot.
@@ -68,3 +88,4 @@ Seuils : `compositeur/reglagesCompositeur.ts` (valeur, règle, date, raison), m�
 
 ## Historique
 - 18/11 : couche créée (T-217), branche `feat/editeur-qui-compose`.
+- 18/11 au soir : M-13, M-14, M-15 et trois défauts de recette, branche `fix/composer-dossier-reel`.

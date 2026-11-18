@@ -121,6 +121,9 @@ export {
   planDegradation, releveVoyage,
 } from "./lireLesPhotos";
 export type { ChapitreDemande, CorpsCompo, DemandeCompo, EstimationCompo, InfoRepere, LigneReleve, LuLieux } from "./lireLesPhotos";
+/* 18/11 soir (M-13) : jamais une case vide chez l'IA, jamais une lecture douteuse utilisée */
+export { arretIllisibles, lectureSure, lectureSuspecte, plancheSansVide, verdictsDeLecture } from "./lireLesPhotos";
+export type { ArretIllisibles, Suspicion, VerdictLu } from "./lireLesPhotos";
 export { libelleGroupeIA } from "./bibliotheque";
 
 export { lieuDeTexte } from "./lieuxTextes";

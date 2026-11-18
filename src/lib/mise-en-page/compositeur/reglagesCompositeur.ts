@@ -42,6 +42,15 @@ export const REGLES_COMPO = {
   CHAPITRES_MAX: r(8, "N-32", "sans voyage lu : au plus 8 chapitres (consigne de la couche 7 : 4 à 8)"),
   JOURS_PAR_CHAPITRE: r(3, "N-32", "sans voyage lu : un chapitre pour trois jours photographiés, coupé aux plus grands silences"),
   PAGES_MAX: r(120, "D-TAI-01", "borne de la taille « tout garder »"),
+  /* 18/11 soir (M-14, retour de Mathias sur un vrai dossier : « C'est un échec ! ») : jamais d'impasse. Ces seuils ne jouent QUE quand
+     les règles du banc ne trouvent rien : le projet de test ne les rencontre jamais (le rejeu le prouve). */
+  PAGES_MIN: r(4, "M-14", "le plus petit magazine : la page 1, une double, la dernière page"),
+  PHOTOS_MIN: r(3, "M-14", "moins de 3 photos utilisables (page 1, une double, dernière page) : il n'y a pas de quoi composer, la feuille dit pourquoi"),
+  DOUBLES_CHAPITRE_MAX: r(12, "D-TRA-04", "le banc découpe un chapitre en 12 doubles au plus"),
+  DOUBLES_CHAPITRE_MAX_REPLI: r(30, "M-14", "en repli seulement (aucune taille ne se compose avec les recettes du banc) : un grand chapitre peut prendre jusqu'à 30 doubles, sinon un lot de 160 photos en 4 chapitres n'a AUCUNE taille possible"),
+  /* E (recette du 18/11) : un bout de panneau (« View ») ne devient jamais un nom de chapitre */
+  LIEU_MOTS_PORTEURS: r(2, "M-05", "un nom de lieu lu vaut un titre de chapitre s'il porte au moins deux mots porteurs (3 lettres, pas un mot de panneau générique)"),
+  LIEU_LECTURES_MIN: r(2, "M-05", "un nom d'un seul mot porteur doit avoir été lu sur au moins deux photos du chapitre"),
   INTERET_SANS_IA: r(0.6, "N-33", "sans lecture IA, une photo part d'un intérêt neutre au-dessus du plancher : seules les faibles mesurées (floues, doublons, trop petites) vont en réserve (M-09)"),
 } as const satisfies Table;
 export const REGLAGES_COMPO = valeurs(REGLES_COMPO);

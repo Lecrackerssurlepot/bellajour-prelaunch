@@ -45,6 +45,12 @@ export type DonneesEditeur = {
   luminances?: ReadonlyMap<string, Luminance>;
   couverture?: { premiere: string[]; quatrieme: string[] } | null;
   style?: StyleMagazine | null;
+  /** M-13 : les marques de l'atelier (coups de cœur, gardées) : elles priment sur la machine. */
+  marques?: { coeurs: readonly string[]; gardees: readonly string[] };
+  /** M-13 : une lecture DOUTEUSE (`lectureSuspecte`) : ces photos sont prises sans lecture IA ; `toute` : le voyage et les lieux aussi. */
+  douteuse?: { photos: ReadonlySet<string>; toute: boolean; raison: string } | null;
+  /** M-15 : le nombre de pages commandé (payé) du dossier, s'il est connu. */
+  pagesCommandees?: number | null;
 };
 
 export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
@@ -59,7 +65,10 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
   for (const p of cat.values()) { const k = nomComparable(p.nom); if (!parNom.has(k)) parNom.set(k, p.id); }
   const idDe = (nom: string) => parNom.get(nomComparable(nom));
   const decoupe = decoupage(cat);
-  const src = d.lectureIA?.source ?? null;
+  /* M-13 : une lecture toute douteuse ne donne ni voyage ni lieux (ils en sont tirés) */
+  const src = d.douteuse?.toute ? null : d.lectureIA?.source ?? null;
+  const douteuses = d.douteuse?.photos ?? new Set<string>();
+  const gardees = new Set([...(d.marques?.coeurs ?? []), ...(d.marques?.gardees ?? [])]);
 
   /* le voyage (couche 7), ses chapitres rendus aux photos de l'éditeur */
   let voyage: Voyage | null = null;
@@ -87,7 +96,7 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
     .map((p) => {
       const m = mesures[p.id];
       const zone = (d.lecture.zones[p.id] ?? m?.zone ?? null) as Boite | null;
-      const ia = d.lectureIA?.photos.get(p.id);
+      const ia = douteuses.has(p.id) ? undefined : d.lectureIA?.photos.get(p.id);
       const n = m?.netteteSujet ?? m?.nettete;
       const raisonPile = sousPile.get(p.id);
       const ecart = d.ecarteesAtelier.has(p.id) ? { raison: "écartée par l'atelier", regle: "atelier" }
@@ -107,10 +116,14 @@ export function entreeDepuisEditeur(d: DonneesEditeur): EntreeCompo {
           lieuLu: ia.lieu && ia.lieu.source === "ia" && ia.lieu.preuve === "panneau" ? ia.lieu.nom : null, couverture: !!ia.role?.couverture,
         } : null,
         chapitre: chapDe.get(p.id) ?? null,
+        ...(gardees.has(p.id) && !d.ecarteesAtelier.has(p.id) ? { gardee: true as const } : {}),
       };
     });
   return {
     photos, voyage, lieux, fiche: d.fiche, titre: d.titre, piles: d.lecture.piles.length, quand: d.quand,
     ...(d.luminances ? { luminances: d.luminances } : {}), ...(d.couverture !== undefined ? { couverture: d.couverture } : {}), ...(d.style !== undefined ? { style: d.style } : {}),
+    ...(d.marques ? { marques: d.marques } : {}),
+    ...(d.pagesCommandees ? { pagesCommandees: d.pagesCommandees } : {}),
+    ...(d.douteuse && d.douteuse.photos.size ? { lectureDouteuse: { photos: d.douteuse.photos.size, raison: d.douteuse.raison } } : {}),
   };
 }

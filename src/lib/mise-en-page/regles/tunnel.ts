@@ -78,6 +78,28 @@ export const RETOURS_MATHIAS: readonly Regle[] = [
     alors: "elle quitte l'intérieur et la page qui la portait est recomposée ; M-03 et M-04 ne valent que pour les propositions",
     profils: "tous", donnees: ["photos posées"], statut: "confirmee_mathias", source: "M-10", depuis: "2026-11-18",
   },
+  {
+    id: "M-13", domaine: "analyse", famille: "interdit",
+    enonce: "Jamais une case vide chez l'IA, jamais une lecture douteuse utilisée ; les marques de l'atelier priment toujours sur la machine.",
+    quand: "une photo à lire n'a pas d'image chargée, ou plus de `lecture_illisibles_max` des photos d'une planche ou du lot n'en ont pas, ou plus de `lecture_ecarter_max` des photos lues sont « à écarter », ou une planche d'au moins `lecture_planche_uniforme_min` photos a partout le même rôle, ou une photo est gardée par l'atelier",
+    alors: "l'illisible est retirée de la planche (ni case ni numéro) ; au-delà du seuil on s'arrête AVANT de payer, avec la phrase et le geste ; la lecture douteuse ne sert pas à écarter et l'écran propose de relire ses photos ; une photo gardée ou coup de cœur n'est jamais écartée ni mise en réserve par la machine",
+    profils: "tous", donnees: ["image chargée", "rôle lu", "marque de l'atelier"], reglages: ["lecture_illisibles_max", "lecture_ecarter_max", "lecture_planche_uniforme_min"],
+    statut: "confirmee_mathias", source: "M-13", depuis: "2026-11-18",
+  },
+  {
+    id: "M-14", domaine: "structure", famille: "interdit",
+    enonce: "Jamais d'impasse : une taille infaisable devient la plus proche faisable, et c'est dit ; sans de quoi composer, la cause et le geste en clair.",
+    quand: "aucune répartition des doubles ne tient la taille demandée, ou moins de trois photos sont utilisables",
+    alors: "la machine compose la taille faisable la plus proche (multiple de 4) et le dit (« 60 pages impossible avec 85 photos : 48 pages proposées ») ; sinon une phrase d'atelier dit la cause comptée et le geste, jamais un message technique",
+    profils: "tous", donnees: ["photos utilisables", "pages"], statut: "confirmee_mathias", source: "M-14", depuis: "2026-11-18",
+  },
+  {
+    id: "M-15", domaine: "structure", famille: "interdit",
+    enonce: "La machine propose la taille : le nombre de pages n'est jamais demandé avant la composition ; les autres tailles sont offertes après, avec leurs vrais chiffres.",
+    quand: "l'atelier lance « Composer le magazine »",
+    alors: "la taille par défaut est le nombre de pages commandé s'il est connu, sinon M-09 (tout garder, `densite_tout_garder` photos par double) ; après la proposition, le bandeau offre « Plus court », « Tout garder », « Commandé », chacun composé pour de vrai",
+    profils: "tous", donnees: ["pages commandées", "photos gardées"], reglages: ["densite_tout_garder"], statut: "confirmee_mathias", source: "M-15", depuis: "2026-11-18",
+  },
 ];
 
 /* ─────────────────────────── 2. Les interdits durs déjà contrôlés ─────────────────────────── */

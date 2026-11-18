@@ -24,6 +24,8 @@ export type Ph = {
   chap: number | null; chapSource: string;
   ecart: [string, string] | null; reserve: [string, string] | null;
   oeuvre: boolean; douteuse: boolean;
+  /** M-13 : gardée par l'atelier (coup de cœur ou gardée) : sa marque prime sur la machine. */
+  gardee: boolean;
   s: number; regles: string[]; ancre: string | null;
 };
 
@@ -99,8 +101,9 @@ export function charger(e: EntreeCompo, lieux: LieuxChapitres | null, chapitreDe
       visages, zone: p.zone ? [p.zone.x, p.zone.y, p.zone.l, p.zone.h] : null, corps: [],
       calme: p.calme, net: p.netteteRel, moment: p.moment, palette: p.palette,
       chap: chapitreDe.get(p.id) ?? null, chapSource: !p.date ? "IA (couche 7)" : "date de prise",
-      ecart: p.ecart ? [p.ecart.raison, p.ecart.regle] : null, reserve: null,
-      oeuvre: false, douteuse: false, s: 0, regles: [], ancre: null,
+      /* M-13 : une photo gardée par l'atelier n'est jamais écartée par une mesure de la machine (floue, rafale, doublon) */
+      ecart: p.ecart && !(p.gardee && p.ecart.regle !== "atelier") ? [p.ecart.raison, p.ecart.regle] : null, reserve: null,
+      oeuvre: false, douteuse: false, gardee: !!p.gardee, s: 0, regles: [], ancre: null,
     };
     P.set(x.id, x);
   });
@@ -153,7 +156,7 @@ export function entonnoir(P: Map<string, Ph>, piles: number, journal: Decision[]
     x.reserve = null;
   }
   for (const x of P.values()) {
-    if (x.ecart) continue;
+    if (x.ecart || x.gardee) continue;   // M-13 : la marque de l'atelier prime (ni note, ni « à écarter », ni taille)
     if (x.tropPetite && Math.max(x.l, x.h) < R.TROP_PETITE_PX) x.reserve = ["trop petite pour l'imprimer au-delà d'un timbre", "S-017, M-09"];
     else if (x.roleIa === "a_ecarter") x.reserve = ["l'IA la juge faible", "S-025, M-09"];
     else if (x.s < R.PLANCHER) x.reserve = [`note ${x.s.toFixed(2)} sous le plancher ${R.PLANCHER.toFixed(2)}`, "M-09"];
@@ -167,7 +170,8 @@ export function entonnoir(P: Map<string, Ph>, piles: number, journal: Decision[]
       const dt = (T(b.date!).getTime() - T(a.date!).getTime()) / 1000;
       if (dt > R.MEME_SCENE_S) break;
       if (a.reserve || b.reserve || a.chap !== b.chap || a.sujet !== b.sujet || a.forme !== b.forme || a.plan !== b.plan) continue;
-      const [faible, forte] = a.s < b.s ? [a, b] : [b, a];
+      if (a.gardee && b.gardee) continue;   // M-13 : deux gardées par l'atelier restent toutes les deux
+      const [faible, forte] = a.gardee ? [b, a] : b.gardee ? [a, b] : a.s < b.s ? [a, b] : [b, a];
       faible.reserve = [`même scène que ${forte.nom} (${Math.trunc(dt)} s, même sujet, même plan)`, "S-034, DA-6, M-09"];
     }
   }

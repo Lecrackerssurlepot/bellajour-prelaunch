@@ -61,6 +61,9 @@ export type PhotoCompo = {
   ia: IAPhoto | null;
   /** Le chapitre donné par le voyage (couche 7), 1 à n ; null sans voyage. */
   chapitre: number | null;
+  /** M-13 (18/11) : gardée par l'atelier (coup de cœur ou gardée). Sa marque PRIME : la machine ne l'écarte jamais, ne la met jamais en
+   *  réserve pour une note ou un « à écarter », et la pose avant les autres quand la place manque. Absente = sans marque. */
+  gardee?: true;
 };
 
 export const THEMES = ["road_trip", "ville", "plage", "fete", "evenement", "annee", "autre"] as const;
@@ -76,8 +79,10 @@ export type Fiche = {
   /** Combien de personnes dans le groupe (M-04 : une couverture montre tout le groupe, ou personne). */
   personnes?: number;
   ambiance?: AmbianceFiche;
-  /** « tout » (M-09 : on garde les bonnes, les pages s'adaptent) ou un nombre de pages (multiple de 4). */
-  taille?: "tout" | number;
+  /** M-15 (18/11) : « machine » (absente = la même chose) : la machine propose la taille (le nombre de pages commandé s'il est connu,
+   *  sinon M-09) ; « tout » (M-09 : on garde les bonnes, les pages s'adaptent) ; ou un nombre de pages (multiple de 4), choisi APRÈS
+   *  la proposition dans le bandeau, jamais demandé avant. */
+  taille?: "machine" | "tout" | number;
   /** Les lieux ou les mots à faire apparaître, dans l'ordre (les étapes d'un road trip). */
   lieux?: string[];
 };
@@ -121,13 +126,21 @@ export type EntreeCompo = {
   piles: number;
   /** L'horodatage du magazine (le module ne lit pas l'horloge). */
   quand: string;
+  /** M-15 : le nombre de pages COMMANDÉ (payé) du dossier, quand l'éditeur le connaît : la taille par défaut. */
+  pagesCommandees?: number | null;
+  /** M-13 : les marques de l'atelier, gardées telles quelles dans le tri du magazine proposé (elles priment). */
+  marques?: { coeurs: readonly string[]; gardees: readonly string[] } | null;
+  /** M-13 : une lecture IA jugée douteuse et donc NON utilisée (les photos concernées sont passées sans lecture IA), pour le dire. */
+  lectureDouteuse?: { photos: number; raison: string } | null;
 };
 
 /** Une décision, et la ou les règles qui l'ont prise (identifiants en chaînes : « M-07 », « S-098 », « N-13 », « P3-00 »…). */
 export type Decision = { quoi: string; ou: string; detail: string; regles: string[] };
 
 export type EtatPhoto = "posee" | "couverture" | "reserve" | "ecartee";
-export type PhotoChoisie = { id: string; etat: EtatPhoto; chapitre: number | null; raison: string; regles: string[]; note: number; place?: string };
+/** `raison` : en mots d'atelier (E, 18/11 : « Double 2, à côté d'une pleine page », « Note trop basse ») ; `detail` : la raison technique
+ *  (identifiants, notes), pour la trace et le survol, jamais affichée comme raison. */
+export type PhotoChoisie = { id: string; etat: EtatPhoto; chapitre: number | null; raison: string; detail?: string; regles: string[]; note: number; place?: string };
 export type Selection = { photos: PhotoChoisie[]; compte: Record<EtatPhoto, number> };
 
 export type Faute = { faute: string; ou: string; detail: string; regle: string };
@@ -135,10 +148,17 @@ export type Controle = { fautes: Faute[]; signaux: Faute[] };
 
 export type ChapitreCompo = { numero: number; titre: string; statut: string; repli: string };
 
+/** M-14 : la taille demandée était infaisable ; la plus proche faisable a été composée, et on le dit. */
+export type Ajustement = { demandee: "tout" | number; obtenue: number; photos: number; phrase: string };
+
 export type ResultatCompo = {
   jet: PremierJet;
   pages: number;
+  /** La taille composée (M-15 : « machine » est résolue en « tout » ou en un nombre). */
   taille: "tout" | number;
+  /** M-15 : d'où vient la taille (« commandée », « machine », « choisie »), pour le bandeau. */
+  origineTaille: "commandee" | "machine" | "choisie";
+  ajustement: Ajustement | null;
   profil: Profil;
   sobre: boolean;
   chapitres: ChapitreCompo[];
@@ -148,3 +168,8 @@ export type ResultatCompo = {
   /** Les photos de la couverture proposée (1re, 4e) : M-10 les surveille. */
   couverture: { premiere: string[]; quatrieme: string[] } | null;
 };
+
+/** M-14 (18/11) : jamais d'impasse montrée telle quelle. Quand il n'y a vraiment pas de quoi composer, la phrase dit la cause et le
+ *  geste, en mots d'atelier ; `technique` garde le détail pour la trace. */
+export type ImpasseCompo = { ok: false; phrase: string; cause: string; geste: string; technique: string };
+export type IssueCompo = { ok: true; r: ResultatCompo } | ImpasseCompo;

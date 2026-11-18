@@ -329,7 +329,9 @@ function composerChapitres(chaps: number[], seqs: Map<number, Ph[]>, ouvertures:
     const ouv = !!ouvertures.get(c);
     /* N-34 (18/11) : un chapitre sans autre photo que son ouverture prend UNE double (decider.py lui en comptait deux, une vide) */
     if (!seq.length) { o.set(ouv ? 1 : 0, [R.ECART_REPARTITION * Math.abs((ouv ? 1 : 0) - brut.get(c)!), [], null]); continue; }
-    for (let k = ouv ? 2 : 1; k <= Math.min(12, seq.length + 1); k++) {
+    /* M-14 : en repli seulement, un grand chapitre peut prendre plus de doubles que le banc (12) : sinon un gros lot n'a aucune taille */
+    const kMax = etendu ? R.DOUBLES_CHAPITRE_MAX_REPLI : R.DOUBLES_CHAPITRE_MAX;
+    for (let k = ouv ? 2 : 1; k <= Math.min(kMax, seq.length + 1); k++) {
       const nD = k - (ouv ? 1 : 0);
       if (nD < 1) continue;
       let r: Decoupe = null;
@@ -367,6 +369,27 @@ function composerChapitres(chaps: number[], seqs: Map<number, Ph[]>, ouvertures:
 
 const MOTS_GENERIQUES = new Set(["park", "parc", "national", "marine", "garden", "gardens", "botanic", "royal", "building", "service", "municipal", "lifeguard",
   "forest", "the", "of", "de", "du", "la", "le", "des", "beach", "plage", "centre", "center", "museum", "musée"]);
+/* E (recette du 18/11) : les mots de PANNEAU qui ne nomment aucun lieu à eux seuls (« View » n'est pas un chapitre) : ni porteurs, ni titres */
+const MOTS_DE_PANNEAU = new Set(["view", "views", "point", "lookout", "vista", "viewpoint", "exit", "entrance", "entry", "welcome", "parking", "car",
+  "road", "street", "way", "walk", "trail", "track", "drive", "north", "south", "east", "west", "info", "information", "visitor", "visitors", "toilets",
+  "open", "closed", "sortie", "entrée", "accueil", "bienvenue", "belvédère", "vue", "nord", "sud", "est", "ouest", "rue", "route", "chemin",
+  "and", "et", "les", "aux", "une"]);
+/** Les mots PORTEURS d'un nom de lieu : trois lettres au moins, ni générique, ni mot de panneau. */
+export const motsPorteurs = (nom: string): string[] =>
+  (nom.match(/[A-Za-zÀ-ÿ']{3,}/g) ?? []).filter((m) => !MOTS_GENERIQUES.has(m.toLowerCase()) && !MOTS_DE_PANNEAU.has(m.toLowerCase()));
+
+/** M-14 : une composition vraiment impossible, dite en mots d'atelier (jamais un message technique à l'écran). */
+export class ImpasseComposition extends Error {
+  constructor(readonly phrase: string, readonly cause: string, readonly geste: string, readonly technique: string) { super(technique); }
+}
+
+/** M-14 : « 60 pages impossible avec 85 photos : 48 pages proposées ». */
+export function phraseAjustement(demandee: "tout" | number, obtenue: number, photos: number): string {
+  const avec = `${photos} photo${photos > 1 ? "s" : ""}`;
+  return demandee === "tout"
+    ? `Tout garder impossible avec ${avec} : ${obtenue} pages proposées`
+    : `${demandee} pages impossible avec ${avec} : ${obtenue} pages proposées`;
+}
 
 export type Contexte = {
   P: Map<string, Ph>;
@@ -388,6 +411,8 @@ export type Contexte = {
   couverture: { premiere: string[]; quatrieme: string[] } | null;
 };
 
+export type LieuPhoto = { n: number; type: string; idee: string; role: string };
+
 export type ResultatTrame = {
   trame: Trame & { faits: string[]; sommet: string | null; chapitres: Record<string, { titre: string; statut: string; repli: string }>; m10: unknown[] };
   pages: number;
@@ -395,6 +420,10 @@ export type ResultatTrame = {
   journal: Decision[];
   /** La place et la raison de chaque photo (M-02). */
   place: Map<string, string>;
+  /** E (18/11) : la même place, en données (pour la dire en mots d'atelier). */
+  lieu: Map<string, LieuPhoto>;
+  /** M-14 : la taille demandée était infaisable : la plus proche a été prise. */
+  ajustement: { demandee: "tout" | number; obtenue: number; photos: number } | null;
   nommees: Set<string>;
   propositions: CouvertureTrame[];
 };
@@ -449,17 +478,28 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     if (fiche) { titreDe.set(c, fiche); statutDe.set(c, "sûr : saisi dans la fiche"); }
     else if (!ctx.parLieux) { titreDe.set(c, repli); statutDe.set(c, "thème de l'album : nom du chapitre"); }
     else {
+      /* E (18/11) : un bout de panneau (« View ») ne devient jamais un nom de chapitre. Un nom de lieu vaut un titre s'il est CONFIRMÉ
+         par deux lectures (un mot porteur lu sur au moins `LIEU_LECTURES_MIN` photos du chapitre : la règle du banc, sans les mots de
+         panneau), ou par le lieu de l'IA des lieux, ou s'il porte au moins `LIEU_MOTS_PORTEURS` mots porteurs (le nom entier lu) */
       const mots = new Map<string, number>();
+      const noms = new Map<string, number>();
       for (const x of P.values()) {
         if (x.chap !== c || !x.lieuSur) continue;
-        for (const m of new Set(x.lieuSur.match(/[A-Za-zÀ-ÿ']{4,}/g) ?? [])) if (!MOTS_GENERIQUES.has(m.toLowerCase())) mots.set(m, (mots.get(m) ?? 0) + 1);
+        noms.set(x.lieuSur, (noms.get(x.lieuSur) ?? 0) + 1);
+        for (const m of new Set(x.lieuSur.match(/[A-Za-zÀ-ÿ']{4,}/g) ?? [])) if (motsPorteurs(m).length) mots.set(m, (mots.get(m) ?? 0) + 1);
       }
       let best: [string, number] | null = null;
       for (const e of mots) if (!best || e[1] > best[1]) best = e;
+      let entier: [string, number] | null = null;
+      for (const [nom, n] of [...noms].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))) {
+        if (motsPorteurs(nom).length >= R.LIEU_MOTS_PORTEURS && (!entier || n > entier[1])) entier = [nom, n];
+      }
       const iaC = ctx.lieux?.chapitres[c];
-      if (best && best[1] >= 2) { titreDe.set(c, best[0]); statutDe.set(c, `sûr : lu ${best[1]} fois dans les photos du chapitre`); }
-      else if (iaC?.lieu && iaC.preuve === "panneau") { titreDe.set(c, casseTitre(iaC.lieu)); statutDe.set(c, `sûr : ${iaC.detail}`); }
-      else if (iaC?.lieu && iaC.preuve === "reconnu") { titreDe.set(c, casseTitre(iaC.lieu)); statutDe.set(c, `à vérifier : reconnu, ${iaC.detail}`); }
+      const iaSur = (l: string) => motsPorteurs(l).length >= 1;
+      if (best && best[1] >= R.LIEU_LECTURES_MIN) { titreDe.set(c, best[0]); statutDe.set(c, `sûr : lu ${best[1]} fois dans les photos du chapitre`); }
+      else if (iaC?.lieu && iaC.preuve === "panneau" && iaSur(iaC.lieu)) { titreDe.set(c, casseTitre(iaC.lieu)); statutDe.set(c, `sûr : ${iaC.detail}`); }
+      else if (iaC?.lieu && iaC.preuve === "reconnu" && iaSur(iaC.lieu)) { titreDe.set(c, casseTitre(iaC.lieu)); statutDe.set(c, `à vérifier : reconnu, ${iaC.detail}`); }
+      else if (entier) { titreDe.set(c, entier[0]); statutDe.set(c, `sûr : nom entier lu (${motsPorteurs(entier[0]).length} mots porteurs)`); }
       else { titreDe.set(c, repli); statutDe.set(c, "repli : aucun lieu prouvé, nom thématique"); }
     }
     journal.push({ quoi: `chapitre ${c}`, ou: "titre", detail: `« ${titreDe.get(c)} » (${statutDe.get(c)}) ; repli « ${repli} »`, regles: ["M-05"] });
@@ -479,7 +519,9 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     garde = new Set();
     for (const xs of parChap.values()) {
       const k = Math.max(3, rondPy(taux * xs.length));
-      for (const x of [...xs].sort((a, b) => b.s - a.s).slice(0, k)) garde.add(x.id);
+      /* M-13 : les photos gardées par l'atelier passent avant toutes les autres ; puis la note */
+      const k2 = Math.max(k, xs.filter((x) => x.gardee).length);
+      for (const x of [...xs].sort((a, b) => Number(b.gardee) - Number(a.gardee) || b.s - a.s).slice(0, k2)) garde.add(x.id);
       for (const x of xs) if (!garde.has(x.id)) x.reserve = [`bonne photo, mais pas de place dans ${taille} pages (taux ${Math.round(100 * taux)} % par chapitre)`, `taille ${taille} pages, S-066`];
     }
   } else {
@@ -507,7 +549,7 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
 
   const avant = 1 + (carte ? 1 : 0);
   const memoire: Memoire = { decoupes: new Map(), modes: new Map() };
-  const composer = (interdites: ReadonlySet<string> = new Set()): { pages: number; rep: Repartition; ouvertures: Map<number, Ph | null>; sommet: Ph | null } => {
+  const composer = (interdites: ReadonlySet<string> = new Set()): { pages: number; rep: Repartition; ouvertures: Map<number, Ph | null>; sommet: Ph | null; ajustee: boolean } => {
     const ouvertures = new Map(chaps.map((c) => [c, ouvertureDe(c, interdites)]));
     const pan = enOrdre([...garde]).filter((x) => tientDouble(x) && x.nbPers === 0 && !x.corps.length && !interdites.has(x.id));
     const ordreG = enOrdre([...garde]).sort((a, b) => (a.chap! - b.chap!) || rang.get(a.id)! - rang.get(b.id)!);
@@ -516,19 +558,41 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
     const sommet = pan.length ? meilleur(dans.length ? dans : pan) : null;
     const seqs = new Map(chaps.map((c) => [c, parChap.get(c)!.filter((x) => garde.has(x.id) && x !== ouvertures.get(c) && !interdites.has(x.id)).sort((a, b) => rang.get(a.id)! - rang.get(b.id)!)]));
     const nPh = chaps.reduce((s, c) => s + seqs.get(c)!.length, 0) + [...ouvertures.values()].filter(Boolean).length;
-    const depart = pagesVoulues ?? Math.max(4, Math.ceil((2 * (Math.ceil(nPh / R.DENSITE_TOUT) + avant)) / 4.0) * 4);
+    const depart = pagesVoulues ?? Math.max(R.PAGES_MIN, Math.ceil((2 * (Math.ceil(nPh / R.DENSITE_TOUT) + avant)) / 4.0) * 4);
+    const essai = (p: number, etendu: boolean): Repartition | null => {
+      const ndDispo = Math.floor(p / 2) - 1 - (carte ? 1 : 0);
+      return ndDispo >= 0 ? composerChapitres(chaps, seqs, ouvertures, ndDispo, sommet, avant, etendu, memoire) : null;
+    };
     /* d'abord les recettes du banc (comme decider.py) ; puis, si aucune taille ne se compose, le repli (N-36) depuis la même taille */
     for (const etendu of [false, true]) {
       for (let p = depart; ; p += 4) {
-        const ndDispo = Math.floor(p / 2) - 1 - (carte ? 1 : 0);
-        const rep = ndDispo >= 0 ? composerChapitres(chaps, seqs, ouvertures, ndDispo, sommet, avant, etendu, memoire) : null;
-        if (rep !== null) return { pages: p, rep, ouvertures, sommet };
+        const rep = essai(p, etendu);
+        if (rep !== null) return { pages: p, rep, ouvertures, sommet, ajustee: false };
         if (pagesVoulues !== null || p >= R.PAGES_MAX) break;
       }
     }
-    throw new Error(`aucune répartition des doubles (${pagesVoulues ?? "tout garder"})`);
+    /* M-14 (18/11) : jamais d'impasse. La taille faisable la PLUS PROCHE de celle demandée (multiple de 4, la plus petite à distance
+       égale), recettes du banc puis repli ; elle est dite (« 60 pages impossible avec 85 photos : 48 pages proposées »). */
+    const haut = Math.max(R.PAGES_MAX, depart);
+    for (let d = 4; depart - d >= R.PAGES_MIN || depart + d <= haut; d += 4) {
+      for (const p of [depart - d, depart + d]) {
+        if (p < R.PAGES_MIN || p > haut) continue;
+        for (const etendu of [false, true]) {
+          const rep = essai(p, etendu);
+          if (rep !== null) return { pages: p, rep, ouvertures, sommet, ajustee: true };
+        }
+      }
+    }
+    throw new ImpasseComposition(
+      "Aucune mise en page ne tient ces photos.",
+      `${nPh} photo${nPh > 1 ? "s" : ""} à poser en ${chaps.length} chapitre${chaps.length > 1 ? "s" : ""} : aucune taille de ${R.PAGES_MIN} à ${haut} pages ne les découpe.`,
+      "Garde ou écarte quelques photos à la main, puis relance.",
+      `aucune répartition des doubles (${pagesVoulues ?? "tout garder"}), ${nPh} photos, ${chaps.length} chapitres`,
+    );
   };
-  let { pages, rep: repartition, ouvertures, sommet } = composer();
+  const premier = composer();
+  let { pages, rep: repartition, ouvertures, sommet } = premier;
+  let ajustee = premier.ajustee;
   for (const [c, m] of [...memoire.modes].filter(([c]) => repartition.has(c))) journal.push({ quoi: `chapitre ${c}`, ou: "découpage", detail: m === "repli" ? "recettes du banc insuffisantes : recettes générales" : "recettes générales, et trois doubles sans fond perdu permises (aucune photo ne tient un fond perdu)", regles: ["N-36", ...(m === "repli-sans-DA2" ? ["DA-2"] : [])] });
 
   /* 7. M-03 / M-04 : trois couvertures simples (l'atelier les reprendra) ; la fiche dit la taille du groupe, sinon on la compte */
@@ -589,7 +653,7 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
       /* N-34 : si le chapitre ne se redécoupe pas dans le même nombre de doubles, on refait toute la répartition sans ces photos */
       if (r === null && !(nD === 0 && !seq.length)) {
         const tout = composer(ids);
-        pages = tout.pages; repartition = tout.rep; ouvertures = tout.ouvertures; sommet = tout.sommet;
+        pages = tout.pages; repartition = tout.rep; ouvertures = tout.ouvertures; sommet = tout.sommet; ajustee = ajustee || tout.ajustee;
         traceM10.push({ chapitre: c, retirees: [...ids].filter((i) => poses.get(i) === c), ouverture: ouvertures.get(c)?.id ?? null });
         journal.push({ quoi: `chapitre ${c}`, ou: "M-10", detail: "couverture choisie : tout l'intérieur recomposé sans elle", regles: ["M-10", "N-34"] });
         break;
@@ -601,6 +665,10 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
       journal.push({ quoi: `chapitre ${c}`, ou: "M-10", detail: `${retirees.map((i) => P.get(i)?.nom ?? i).join(", ")} en couverture : chapitre recomposé`, regles: ["M-10"] });
     }
   }
+
+  /* M-14 : la taille obtenue (après M-10) quand la demandée était infaisable, dite */
+  const ajustement = (pagesVoulues !== null ? pages !== pagesVoulues : ajustee) ? { demandee: (pagesVoulues ?? "tout") as "tout" | number, obtenue: pages, photos: garde.size } : null;
+  if (ajustement) journal.push({ quoi: "taille", ou: "magazine", detail: phraseAjustement(ajustement.demandee, ajustement.obtenue, ajustement.photos), regles: ["M-14"] });
 
   /* 9. les planches */
   const planches: PlancheTrame[] = [];
@@ -670,7 +738,8 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   }
   const p1: PlancheTrame = {
     n: 0, type: "page1", idee: "page1", raison: "la plus forte des premiers moments (S-049)",
-    droite: { photos: page1 ? [{ id: page1.id, role: "pleine", poids: 1.0 }] : [], textes: [{ role: "titre", contenu: ctx.motTitre, lie_a: null, source: "brief" }, ...(periode ? [{ role: "texte", contenu: periode, lie_a: null, source: "dates" }] : [])] },
+    /* E (18/11) : jamais un repère (« Titre », « Légende ») montré comme un contenu : sans mot-titre, pas de cadre de titre */
+    droite: { photos: page1 ? [{ id: page1.id, role: "pleine", poids: 1.0 }] : [], textes: [...(ctx.motTitre ? [{ role: "titre", contenu: ctx.motTitre, lie_a: null, source: "brief" }] : []), ...(periode ? [{ role: "texte", contenu: periode, lie_a: null, source: "dates" }] : [])] },
   };
   const pf: PlancheTrame = { n: numero + 1, type: "derniere", idee: "derniere", raison: "les gens ensemble (S-055)", gauche: { photos: derniere ? [{ id: derniere.id, role: "pleine", poids: 1.0 }] : [], textes: [] } };
   if (page1) journal.push({ quoi: "page 1", ou: "page 1", detail: `${page1.nom} : la plus forte des premiers moments`, regles: ["S-049", "S-050"] });
@@ -679,9 +748,11 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
 
   /* 10. la trame et la sélection */
   const posees = new Set<string>();
+  const lieu = new Map<string, LieuPhoto>();
   for (const pl of toutes) for (const p of [...(pl.photos ?? []), ...(pl.gauche?.photos ?? []), ...(pl.droite?.photos ?? [])]) {
     posees.add(p.id);
     place.set(p.id, pl.n === 0 ? "page 1" : pl.type === "derniere" ? "dernière page" : `double ${pl.n} (${pl.idee})`);
+    lieu.set(p.id, { n: pl.n, type: pl.type, idee: pl.idee ?? "", role: p.role });
   }
   const nommees = new Set(posees);
   for (const p of props) for (const id of [...p.premiere, ...(p.quatrieme ?? [])]) nommees.add(id);
@@ -708,5 +779,5 @@ export function construireTrame(ctx: Contexte, journal: Decision[]): ResultatTra
   };
   const chapitres: ChapitreCompo[] = chaps.map((c) => ({ numero: c, titre: titreDe.get(c)!, statut: statutDe.get(c)!, repli: ctx.chapNom.get(c) ?? `Chapitre ${c}` }));
   void rond;
-  return { trame, pages, chapitres, journal, place, nommees, propositions: props };
+  return { trame, pages, chapitres, journal, place, lieu, nommees, propositions: props, ajustement };
 }

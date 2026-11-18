@@ -10,6 +10,17 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 18/11/2026 au soir — correction de « Composer le magazine » sur un vrai dossier : sur branche, PAS en production
+
+- Constat de Mathias EN PRODUCTION (PR #388 fusionnée), dossier de 164 photos ouvert depuis longtemps : « Composition impossible : aucune
+  répartition des doubles (60) », 164 vignettes « À écarter », une question sur le nombre de pages. La lecture fausse est GARDÉE dans
+  l'IndexedDB de son navigateur (clé du projet) : elle est maintenant vue « douteuse » et l'écran propose de la relire.
+- Branche `fix/composer-dossier-reel` (poussée, pas de PR) : M-13 (jamais une case vide chez l'IA, arrêt avant de payer au-delà de 10 %
+  d'images illisibles, lecture douteuse non utilisée, marques de l'atelier qui priment), M-14 (jamais d'impasse), M-15 (la machine propose
+  la taille, le nombre commandé par défaut, les autres tailles après), et trois défauts de la recette du 18/11 (repères de la page 1,
+  « View » en chapitre, raisons en identifiants). Aucune migration, aucune écriture en base, aucun appel à OpenAI.
+- Non vérifié en production : le CORS d'un `fetch()` d'une vignette R2 encore valide (hypothèse écartée par le code, pas par une mesure).
+
 ## 18/11/2026 — « Composer le magazine » (l'éditeur qui compose) : sur branche, PAS en production
 
 - Branche `feat/editeur-qui-compose` (T-217, poussée, pas de PR) : bouton « Composer le magazine » du panneau Photos (questions, analyse,

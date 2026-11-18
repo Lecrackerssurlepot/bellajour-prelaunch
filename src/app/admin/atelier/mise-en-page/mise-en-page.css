@@ -2198,5 +2198,14 @@
 .mep-editeur .ed-compo-raison { flex: 1; min-width: 0; font-size: var(--bj-fs-xxs); line-height: 1.3; }
 .mep-editeur .ed-compo-raison em { display: block; color: var(--bj-text-faint); font-style: normal; font-size: 10px; }
 .mep-editeur .ed-compo-photo .ed-bt { flex: none; min-height: 24px; }
+/* M-13 / M-14 / M-15 (18/11 soir) : la lecture douteuse, la taille proposée, l'arrêt et l'impasse dits en clair */
+.mep-editeur .ed-compo-alerte { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--bj-veil-8); border: 1px solid var(--bj-veil-12); font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-compo-alerte strong { font-weight: 600; }
+.mep-editeur .ed-compo-taille { margin: 0; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); }
+.mep-editeur .ed-compo-sous { color: var(--bj-text-faint); }
+.mep-editeur .ed-compo-trace { font-size: 11px; color: var(--bj-text-faint); }
+.mep-editeur .ed-compo-trace code { display: block; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.mep-editeur .ed-compo-douteuse { font-weight: 600; }
+.mep-editeur .ed-compo-confirmer { display: inline-flex; align-items: center; gap: 6px; }
 @media (prefers-reduced-motion: reduce) { .mep-editeur .ed-compo-etape--encours .ed-compo-pastille { animation: none; } }
 @media (max-width: 560px) { .mep-editeur .ed-compo { padding: 14px 16px; } .mep-editeur .ed-compo-groupe ul { grid-template-columns: 1fr; } }
