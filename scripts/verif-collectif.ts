@@ -182,7 +182,7 @@ import { cheminSection, MENU, RAISON_VERROU, sectionDuChemin, verrousPour } from
 import { chevauche, creneauxDuJour, creneauxLibres, heuresDeDebut, joursOuvres, libelleCreneau, lireCreneau, lireMotif, lireReglageAgenda, lundiDeSemaine, REGLES_RDV } from "@/lib/collectif/creneaux";
 import { invitationIcs, replier } from "@/lib/collectif/ics";
 import { mailRendezVous } from "@/lib/collectif/mailsRdv";
-import { chiffrerJeton, clientOAuth, dechiffrerJeton, emailDuJetonIdentite, lireCompteAgenda, urlConsentement } from "@/lib/collectif/agenda";
+import { sansBlancs, chiffrerJeton, clientOAuth, dechiffrerJeton, emailDuJetonIdentite, lireCompteAgenda, urlConsentement } from "@/lib/collectif/agenda";
 import { lireDemandeProspect } from "@/lib/collectif/prospectsSaisie";
 import { titreRendezVous } from "@/lib/collectif/rendezvous";
 import * as Pieces from "@/app/edition/[token]/style/pieces";
@@ -2175,6 +2175,10 @@ titre("— 18/11 : la connexion Google de chacun, le titre par étape, la page /
   delete process.env.GOOGLE_AGENDA_CLIENT_ID;
   delete process.env.GOOGLE_AGENDA_CLIENT_SECRET;
   ok("sans les deux variables, pas de client OAuth, et rien ne se chiffre ni ne se déchiffre", clientOAuth() === null && chiffrerJeton("x") === null && dechiffrerJeton("v1.a.b.c") === null);
+  process.env.GOOGLE_AGENDA_CLIENT_ID = "123456-abc\ndef.apps.googleusercontent.com \n";
+  process.env.GOOGLE_AGENDA_CLIENT_SECRET = ' "GOCSPX-se\r\ncret" ';
+  ok("18/11 : un ID ou un secret collé sur deux lignes, avec des espaces ou des guillemets, se lit d'un seul tenant (Google répondait 401 invalid_client)",
+    clientOAuth()?.id === "123456-abcdef.apps.googleusercontent.com" && clientOAuth()?.secret === "GOCSPX-secret" && sansBlancs(" \n ") === "" && sansBlancs(undefined) === "");
   process.env.GOOGLE_AGENDA_CLIENT_ID = "id-essai";
   process.env.GOOGLE_AGENDA_CLIENT_SECRET = "secret-essai";
   const chiffre = chiffrerJeton("1//jeton-de-renouvellement") ?? "";

@@ -123,10 +123,20 @@ const PORTEES_OAUTH = ["openid", "email", ...PORTEES.split(" ")].join(" ");
 
 export type ClientOAuth = { id: string; secret: string };
 
+/**
+ * Une valeur collée dans Vercel arrive parfois sur deux lignes (18/11 : l'ID
+ * client portait un saut de ligne en son milieu, Google répondait « 401
+ * invalid_client »). Ni l'ID ni le secret ne contiennent d'espace : on les
+ * retire tous, et les guillemets qui auraient suivi le copier-coller.
+ */
+export function sansBlancs(v: string | undefined | null): string {
+  return (v ?? "").replace(/\s+/g, "").replace(/^["']+|["']+$/g, "");
+}
+
 /** Le client OAuth de l'atelier, ou `null` : « Connecter Google » reste éteint. */
 export function clientOAuth(): ClientOAuth | null {
-  const id = (process.env[VAR_OAUTH_ID] ?? "").trim();
-  const secret = (process.env[VAR_OAUTH_SECRET] ?? "").trim();
+  const id = sansBlancs(process.env[VAR_OAUTH_ID]);
+  const secret = sansBlancs(process.env[VAR_OAUTH_SECRET]);
   return id && secret ? { id, secret } : null;
 }
 
