@@ -2145,3 +2145,58 @@
 .mep-editeur .ed-menu.ed-tag-menu .ed-tag-menu-l button[aria-checked="true"]::after { content: none; }
 
 @media (prefers-reduced-motion: reduce) { .mep-editeur .ed-lire-jauge i { transition: none; } }
+
+/* 18/11 (C20) : « Composer le magazine ». Une feuille de verre au centre (les questions, l'analyse, « Remplacer la mise en page ? »),
+   le bandeau de la proposition, et « Posées et laissées » (par chapitre : posées, couverture, réserve, écartées, chacune sa raison).
+   Porcelaine / Charbon : rien que des jetons de l'admin. Une valeur devinée par la machine est en pointillé ; ce que l'atelier choisit est plein. */
+.mep-editeur .ed-bandeaux:empty { display: none; }
+.mep-editeur .ed-compo-fond {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px;
+  background: color-mix(in srgb, var(--bj-charcoal) 28%, transparent);
+}
+.mep-editeur .ed-compo {
+  display: flex; flex-direction: column; gap: 14px; width: min(560px, 100%); max-height: calc(var(--app-height, 100vh) - 32px); overflow: auto;
+  padding: 18px 20px; border-radius: 20px; border: var(--bj-glass-card-border); background: var(--bj-glass-card-bg-active); box-shadow: var(--bj-shadow-pop);
+  -webkit-backdrop-filter: var(--bj-glass-card-blur); backdrop-filter: var(--bj-glass-card-blur); color: var(--bj-text);
+}
+.mep-editeur .ed-compo--large { width: min(920px, 100%); }
+.mep-editeur .ed-compo-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.mep-editeur .ed-compo-tete h3 { margin: 0; font-size: var(--bj-fs-md, 18px); font-weight: 600; font-style: normal; }
+.mep-editeur .ed-compo-champ { display: flex; flex-direction: column; gap: 6px; }
+.mep-editeur .ed-compo-l { color: var(--bj-text-faint); font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.mep-editeur .ed-compo-choix { display: flex; flex-wrap: wrap; gap: 6px; }
+.mep-editeur .ed-compo-choix button {
+  height: 28px; padding: 0 12px; border: 1px solid var(--bj-veil-12); border-radius: var(--bj-r-pill); background: var(--bj-cream-tint-1);
+  color: var(--bj-text); font-size: var(--bj-fs-xs); cursor: pointer;
+}
+.mep-editeur .ed-compo-choix button:hover { box-shadow: 0 0 0 3px var(--bj-veil-8); }
+.mep-editeur .ed-compo-choix button[aria-pressed="true"] { border-color: transparent; background: var(--bj-action); color: var(--bj-on-action); }
+.mep-editeur .ed-compo-choix button.ed-compo-devine[aria-pressed="true"] { border: 1px dashed var(--bj-action); background: var(--bj-action-soft); color: var(--bj-action); }
+.mep-editeur .ed-compo-champ input {
+  height: 32px; padding: 0 10px; border: 1px solid var(--bj-veil-12); border-radius: 10px; background: var(--bj-cream-tint-1); color: var(--bj-text); font: inherit; font-size: var(--bj-fs-xs);
+}
+.mep-editeur .ed-compo-champ input[type="number"] { width: 96px; }
+.mep-editeur .ed-compo-pied { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-top: 4px; }
+.mep-editeur .ed-compo-cout { margin-right: auto; color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); font-variant-numeric: tabular-nums; }
+.mep-editeur .ed-compo-texte { margin: 0; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-compo-etapes { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-compo-etape { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 10px; font-size: var(--bj-fs-xs); }
+.mep-editeur .ed-compo-pastille { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--bj-veil-12); }
+.mep-editeur .ed-compo-etape--encours .ed-compo-pastille { border-color: var(--bj-action); background: var(--bj-action-soft); animation: ed-compo-battre 1.2s ease-in-out infinite; }
+.mep-editeur .ed-compo-etape--fait .ed-compo-pastille { border-color: transparent; background: var(--bj-action); }
+.mep-editeur .ed-compo-etape--saute { color: var(--bj-text-faint); }
+.mep-editeur .ed-compo-etape--saute .ed-compo-pastille { border-style: dashed; }
+.mep-editeur .ed-compo-note { color: var(--bj-text-faint); font-size: var(--bj-fs-xxs); font-variant-numeric: tabular-nums; }
+@keyframes ed-compo-battre { 50% { opacity: 0.35; } }
+.mep-editeur .ed-compo-liste { display: flex; flex-direction: column; gap: 16px; }
+.mep-editeur .ed-compo-chap h4 { margin: 0 0 8px; font-size: var(--bj-fs-sm, 14px); font-weight: 600; font-style: normal; }
+.mep-editeur .ed-compo-groupe { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.mep-editeur .ed-compo-groupe ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.mep-editeur .ed-compo-photo { display: flex; align-items: center; gap: 8px; padding: 4px; border-radius: 10px; background: var(--bj-cream-tint-1); }
+.mep-editeur .ed-compo-photo img { width: 44px; height: 44px; flex: none; border-radius: 6px; object-fit: cover; background: var(--bj-veil-8); }
+.mep-editeur .ed-compo-photo--ecartee img { opacity: 0.45; }
+.mep-editeur .ed-compo-raison { flex: 1; min-width: 0; font-size: var(--bj-fs-xxs); line-height: 1.3; }
+.mep-editeur .ed-compo-raison em { display: block; color: var(--bj-text-faint); font-style: normal; font-size: 10px; }
+.mep-editeur .ed-compo-photo .ed-bt { flex: none; min-height: 24px; }
+@media (prefers-reduced-motion: reduce) { .mep-editeur .ed-compo-etape--encours .ed-compo-pastille { animation: none; } }
+@media (max-width: 560px) { .mep-editeur .ed-compo { padding: 14px 16px; } .mep-editeur .ed-compo-groupe ul { grid-template-columns: 1fr; } }

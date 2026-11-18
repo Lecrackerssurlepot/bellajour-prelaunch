@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CHOIX_GRILLE, libelleAnnuler, libelleRetablir, pagesLibelle, photosIndisponibles, idsPlanche, type Projet } from "@/lib/mise-en-page/editeur";
 import { CLE_AIMANT, choisirGrille, cls, pluriel, useEd } from "./contexte";
 import { Ico } from "./icones";
+import { BandeauProposition } from "./Composer";
 import type { EtatSauvegarde } from "./sauvegardeClient";
 
 /* La barre fine du haut et les bandeaux. Les mots de la sauvegarde sont courts : « Sauvé sur ce Mac » est l'état
@@ -152,6 +153,8 @@ export function Bandeaux({ projet, sv, collecteOuverte, prendreSaVersion, garder
       </div>
     );
   }
+  /* 18/11 (C20) : la proposition du compositeur, ce qui est posé et laissé */
+  out.push(<BandeauProposition key="compo" />);
   void projet;
   return out.length ? <div className="ed-bandeaux">{out}</div> : null;
 }

@@ -29,8 +29,9 @@ import { valeursReglages, versionReglages } from "./reglages";
 import { nomComparable } from "./premierJet";
 import {
   CANDIDATES_IA, COUVERTURES_IA, FORMAT_LECTURE_IA, IDEE_REGARD_MOTS_MAX, MOMENT_MOTS_MAX, MOT_ROLE, MOT_SUJET, RECADRAGE_MOTS_MAX, REGLE_IA,
-  ROLES_PLANCHE, SUJETS_IA, VERSION_LECTURE_IA_2,
-  type CandidateIA, type CouvertureIA, type LectureIA, type PhotoIA, type RoleIA, type RolePlanche, type SujetIA,
+  AMBIANCES_IA, MOMENTS_IA, PERSONNES_IA, PLANS_IA, lireLectureIA, PROFILS_IA, QUI_IA, ROLES_PLANCHE, SUJETS_IA, TONS_IA, TYPES_VOYAGE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3,
+  type AmbianceIA, type CandidateIA, type CouvertureIA, type LectureIA, type LieuxIA, type MomentIA, type PersonnesIA, type PhotoIA, type PlanIA, type RoleIA,
+  type RolePlanche, type SujetIA, type VoyageIA,
 } from "./lectureIA";
 
 /* ─────────────────────────── les modèles et leurs prix ─────────────────────────── */
@@ -164,7 +165,11 @@ Pour CHAQUE numéro, rends :
 Ne décris pas les photos : les vignettes sont petites, un nom d'objet serait une invention. Juge la forme (cadrage, lumière, échelle) plus que le contenu.
 Interdit : identifier, nommer ou décrire l'identité d'une personne. Tu peux dire « deux personnes », « un groupe », « un selfie ».`;
 
-export type LuPlanche = { numero: number; role: RolePlanche; sujet: SujetIA; candidate: CandidateIA; interet: number; texte: boolean };
+export type LuPlanche = {
+  numero: number; role: RolePlanche; sujet: SujetIA; candidate: CandidateIA; interet: number; texte: boolean;
+  /* 18/11 (planche « B5 » du banc du tunnel) : facultatifs, absents d'une planche lue avant */
+  plan?: PlanIA; moment_journee?: MomentIA; ambiance?: AmbianceIA; personnes?: PersonnesIA;
+};
 
 /* ─────────────────────────── C. le regard fin ─────────────────────────── */
 
@@ -396,10 +401,12 @@ export type PourRegard = { id: string; pourquoi: PourquoiRegard };
  * (`plafondRegard`), PLUS toute photo à texte lisible (« un panneau à lire »). Une photo déjà regardée n'est pas reprise.
  */
 export function choisirPourRegard(lues: readonly { id: string; candidate: CandidateIA; interet: number; texte: boolean }[], dejaRegardees: ReadonlySet<string>): PourRegard[] {
-  const cand = lues.filter((x) => x.candidate !== "aucune").map((x, i) => ({ x, i })).sort((a, b) => b.x.interet - a.x.interet || a.i - b.i).map((a) => a.x).slice(0, plafondRegard(lues.length));
+  /* 18/11, la règle de dégradation (1 € par projet, TUNNEL.md) : au plus 40 candidates et 20 photos à texte lisible */
+  const cand = lues.filter((x) => x.candidate !== "aucune").map((x, i) => ({ x, i })).sort((a, b) => b.x.interet - a.x.interet || a.i - b.i).map((a) => a.x)
+    .slice(0, Math.min(plafondRegard(lues.length), REGARD_MAX_CANDIDATES));
   const pris = new Set(cand.map((x) => x.id));
   const l: PourRegard[] = cand.map((x) => ({ id: x.id, pourquoi: x.candidate as PourquoiRegard }));
-  for (const x of lues) if (x.texte && !pris.has(x.id)) l.push({ id: x.id, pourquoi: "panneau" });
+  for (const x of lues) if (x.texte && !pris.has(x.id) && l.length < cand.length + REGARD_MAX_TEXTES) l.push({ id: x.id, pourquoi: "panneau" });
   return l.filter((x) => !dejaRegardees.has(x.id));
 }
 
@@ -412,7 +419,16 @@ export type ResultatsLecture = {
   dollars: number;
   modeles: readonly string[];
   quand: string;
+  /** 18/11 : le voyage (couche 7) et les lieux (M-05), quand ils viennent d'être lus. */
+  voyage?: VoyageIA;
+  lieux?: LieuxIA;
 };
+
+/** La version la plus BASSE qui porte tout (une 3 seulement si un champ de la 3 existe : un fichier relu par un éditeur d'avant reste lisible). */
+function versionPour(photos: Readonly<Record<string, PhotoIA>>, voyage?: VoyageIA, lieux?: LieuxIA): 2 | 3 {
+  if (voyage || lieux) return VERSION_LECTURE_IA_3;
+  return Object.values(photos).some((p) => p.plan || p.moment_journee || p.ambiance || p.personnes) ? VERSION_LECTURE_IA_3 : VERSION_LECTURE_IA_2;
+}
 
 /** La confiance d'un lieu lu en entier sur la photo (preuve : le panneau). */
 export const CONFIANCE_LIEU_LU = 0.9;
@@ -435,8 +451,8 @@ export function versLectureIA(avant: LectureIA | null, cat: Catalogue, r: Result
     if (!ph) continue;
     const k = cleDe(photos, ph.nom);
     const vieux = photos[k] ?? {};
-    const { role: _r, sujet: _s, candidate: _c, texte: _t, regard: _g, ...garde } = vieux;
-    void _r; void _s; void _c; void _t; void _g;
+    const { role: _r, sujet: _s, candidate: _c, texte: _t, regard: _g, plan: _p, moment_journee: _m, ambiance: _a, personnes: _n, ...garde } = vieux;
+    void _r; void _s; void _c; void _t; void _g; void _p; void _m; void _a; void _n;
     const c = r.regard.get(id);
     const role: RoleIA = b.candidate === "pleine" || b.candidate === "double" ? b.candidate : b.role;
     const couverture: CouvertureIA | null = c && c.couverture && c.type !== "aucune" ? c.type : null;
@@ -444,6 +460,8 @@ export function versLectureIA(avant: LectureIA | null, cat: Catalogue, r: Result
       ...garde,
       role: { role, interet: b.interet, raison: `${MOT_SUJET[b.sujet]} · ${c ? "regard fin" : "planche"}`, ...(couverture ? { couverture } : {}) },
       sujet: b.sujet, candidate: b.candidate, texte: b.texte,
+      ...(b.plan ? { plan: b.plan } : {}), ...(b.moment_journee ? { moment_journee: b.moment_journee } : {}),
+      ...(b.ambiance ? { ambiance: b.ambiance } : {}), ...(b.personnes ? { personnes: b.personnes } : {}),
     };
     if (c) {
       p.regard = { moment: c.moment, idee: c.idee, recadrage: c.recadrage, plat: c.plat };
@@ -469,12 +487,14 @@ export function versLectureIA(avant: LectureIA | null, cat: Catalogue, r: Result
     photos[k] = p;
   }
   const modeles = [...new Set([...(avant?.lecture?.modeles ?? []), ...r.modeles])];
+  const voyage = r.voyage ?? avant?.voyage, lieux = r.lieux ?? avant?.lieux;
   return {
-    format: FORMAT_LECTURE_IA, version: VERSION_LECTURE_IA_2,
+    format: FORMAT_LECTURE_IA, version: versionPour(photos, voyage, lieux),
     ...(avant?.projet ? { projet: avant.projet } : {}),
     photos, rafales: avant?.rafales ?? [], groupes: avant?.groupes ?? [],
     ...(avant?.couleurs ? { couleurs: avant.couleurs } : {}),
     lecture: { modeles, dollars: (avant?.lecture?.dollars ?? 0) + r.dollars, quand: r.quand },
+    ...(voyage ? { voyage } : {}), ...(lieux ? { lieux } : {}),
   };
 }
 
@@ -522,7 +542,7 @@ export function corrigerTag(l: LectureIA, cat: Catalogue, id: string, quoi: Corr
   const { corrige: _v, ...sans } = p;
   void _v;
   const np: PhotoIA = Object.keys(corrige).length ? { ...sans, corrige } : sans;
-  const lecture: LectureIA = { ...l, version: VERSION_LECTURE_IA_2, photos: { ...l.photos, [k]: np } };
+  const lecture: LectureIA = { ...l, version: l.version === VERSION_LECTURE_IA_3 ? VERSION_LECTURE_IA_3 : VERSION_LECTURE_IA_2, photos: { ...l.photos, [k]: np } };
   const mot = (v: string | undefined): string => (v === undefined ? "rien" : champ === "role" ? (MOT_ROLE[v as RoleIA] ?? v) : (MOT_SUJET[v as SujetIA] ?? v));
   const lecon: Lecon | null = voulu === propose ? null : {
     type: "tag_corrige", regle: REGLE_IA, photos: [id],
@@ -530,4 +550,355 @@ export function corrigerTag(l: LectureIA, cat: Catalogue, id: string, quoi: Corr
     reglages: valeursReglages(), version: versionReglages(),
   };
   return { lecture, lecon };
+}
+
+/* ═══════════════════════════ 18/11 : « Composer le magazine » (C20) ═══════════════════════════
+   La planche lit quatre tags de plus (B5 du banc du tunnel), puis deux étapes nouvelles : le VOYAGE (couche 7, un appel texte, gpt-5.1)
+   et les LIEUX par chapitre (M-05, gpt-5.4, au plus deux planches de photos repères). Consignes et schémas du banc
+   (`design-explorations/tunnel-2026-11-17/banc/ia.ts`, `compositeur/lieux.ts`), rendus GÉNÉRAUX (M-01) : le pays vient du voyage lu,
+   jamais d'une consigne écrite pour un projet. La garde de la route vaut pour toutes les étapes (`gardeLecture`). */
+
+/** La règle de dégradation (TUNNEL.md, budget de 1 € par projet) : regard fin plafonné, lecture plafonnée, les autres héritent. */
+export const REGARD_MAX_CANDIDATES = 40;
+export const REGARD_MAX_TEXTES = 20;
+export const LECTURE_MAX_PHOTOS = 600;
+
+export const SCHEMA_B5 = {
+  type: "object", additionalProperties: false, required: ["photos"], properties: {
+    photos: {
+      type: "array", items: {
+        type: "object", additionalProperties: false,
+        required: ["numero", "role", "sujet", "candidate", "interet", "texte_lisible", "plan", "moment_journee", "ambiance", "personnes"],
+        properties: {
+          ...SCHEMA_B.properties.photos.items.properties,
+          plan: { type: "string", enum: [...PLANS_IA] },
+          moment_journee: { type: "string", enum: [...MOMENTS_IA] },
+          ambiance: { type: "string", enum: [...AMBIANCES_IA] },
+          personnes: { type: "string", enum: [...PERSONNES_IA] },
+        },
+      },
+    },
+  },
+} as const;
+
+/** La consigne B du 17/11, telle quelle, plus les quatre tags du banc (B5), tels quels. « personnes » est un COMPTE (D29). */
+export const CONSIGNE_B5 = `${CONSIGNE_B}
+Rends aussi, pour chaque numéro :
+- plan : large (on voit le lieu, les personnes sont petites), moyen (personnes en pied ou à mi-corps, ou un sujet entier), serre (visage, détail, objet de près) ;
+- moment_journee : matin, jour, dore (lumière rasante et chaude du lever ou du coucher), nuit, interieur (intérieur éclairé, on ne sait pas l'heure) ;
+- ambiance : calme, vivant (mouvement, rue, activité), festif (fête, verres levés, danse), intime (proche, tendre), grandiose (paysage immense, panorama) ;
+- personnes : combien de personnes on voit nettement, en mots : 0, 1, 2 ou groupe (3 et plus). Compte, n'identifie pas.`;
+
+export const MODELE_VOYAGE = MODELE_REGARD;
+export const MODELE_LIEUX = MODELE_PLANCHE;
+
+/** Un corps de requête des étapes de la composition (même forme que `CorpsOpenAI`, schéma libre). */
+export type CorpsCompo = {
+  model: ModeleLecture;
+  reasoning: { effort: Effort };
+  input: { role: "user"; content: ({ type: "input_text"; text: string } | { type: "input_image"; image_url: string; detail: "high" })[] }[];
+  text: { format: { type: "json_schema"; name: string; schema: unknown; strict: true } };
+};
+
+export const corpsPlanche5 = (image: string): CorpsCompo => ({
+  model: MODELE_PLANCHE, reasoning: { effort: "low" },
+  input: [{ role: "user", content: [{ type: "input_text", text: CONSIGNE_B5 }, { type: "input_image", image_url: image, detail: "high" }] }],
+  text: { format: { type: "json_schema", name: "lecture_planche", schema: SCHEMA_B5, strict: true } },
+});
+
+/** La planche B5 : la relecture stricte de B pour les six champs d'origine, plus les quatre nouveaux, chacun dans son énumération. */
+export function lireReponsePlanche5(x: unknown, n0: number, n: number): Relu<{ photos: LuPlanche[]; absents: number[] }> {
+  const r = json(x);
+  if (!estObjet(r) || !clesExactes(r, ["photos"]) || !Array.isArray(r.photos)) return { ok: false, phrase: "planche : il faut { photos: [...] }, rien d'autre" };
+  const extra = new Map<number, Pick<LuPlanche, "plan" | "moment_journee" | "ambiance" | "personnes">>();
+  const base: unknown[] = [];
+  for (const e of r.photos) {
+    if (!estObjet(e)) return { ok: false, phrase: "planche : une entrée n'est pas un objet" };
+    const { plan, moment_journee, ambiance, personnes, ...reste } = e;
+    if (!dans(PLANS_IA, plan) || !dans(MOMENTS_IA, moment_journee) || !dans(AMBIANCES_IA, ambiance) || !dans(PERSONNES_IA, personnes)) {
+      return { ok: false, phrase: `planche : un tag nouveau hors énumération (n° ${String(e.numero)})` };
+    }
+    if (typeof e.numero === "number") extra.set(e.numero, { plan, moment_journee, ambiance, personnes });
+    base.push(reste);
+  }
+  const lu = lireReponsePlanche({ photos: base }, n0, n);
+  if (!lu.ok) return lu;
+  return { ok: true, valeur: { photos: lu.valeur.photos.map((p) => ({ ...p, ...extra.get(p.numero) })), absents: lu.valeur.absents } };
+}
+
+/* ─────────────────────────── 7. le voyage (un appel texte) ─────────────────────────── */
+
+export const SCHEMA_VOYAGE = {
+  type: "object", additionalProperties: false,
+  required: ["qui", "ou", "type_voyage", "duree_jours", "chapitres", "ton", "profil", "style_conseille", "doutes"],
+  properties: {
+    qui: { type: "object", additionalProperties: false, required: ["type", "raison"], properties: { type: { type: "string", enum: [...QUI_IA] }, raison: { type: "string" } } },
+    ou: { type: "object", additionalProperties: false, required: ["pays", "regions", "lieux"], properties: { pays: { type: "string" }, regions: { type: "array", items: { type: "string" } }, lieux: { type: "array", items: { type: "string" } } } },
+    type_voyage: { type: "string", enum: [...TYPES_VOYAGE_IA] },
+    duree_jours: { type: "integer" },
+    chapitres: { type: "array", items: { type: "object", additionalProperties: false, required: ["titre", "sous_titre", "debut", "fin", "numeros", "pourquoi"], properties: {
+      titre: { type: "string" }, sous_titre: { type: "string" }, debut: { type: "string" }, fin: { type: "string" }, numeros: { type: "array", items: { type: "integer" } }, pourquoi: { type: "string" } } } },
+    ton: { type: "string", enum: [...TONS_IA] },
+    profil: { type: "string", enum: [...PROFILS_IA] },
+    style_conseille: { type: "string" },
+    doutes: { type: "string" },
+  },
+} as const;
+
+/** La consigne de la couche 7 du banc, telle quelle ; l'indice du client est cité entre « » et peut être vide. */
+export function consigneVoyage(indice: string): string {
+  return `Tu es le directeur artistique d'un magazine photo personnel imprimé. Tu ne vois pas les photos : tu lis leur relevé, une ligne par photo,
+dans l'ordre du temps (numéro | date et heure locales ou « sans date » | rôle | sujet | plan | moment | ambiance | personnes vues | visages comptés | lieu LU sur un panneau | ce que la photo raconte).
+Le nom du projet, donné par le client, est un INDICE qui peut être vague : « ${indicePropre(indice)} ».
+Rends :
+- qui : solo, couple, famille ou bande, D'APRÈS LES COMPTES (personnes par photo, visages), avec la raison en une phrase. N'identifie, ne nomme, ne décris personne ;
+- ou : le pays, les régions et les lieux SEULEMENT s'ils sont lus sur une photo ou dans l'indice ; sinon des listes vides. N'invente aucun nom de lieu ;
+- type_voyage, duree_jours (du premier au dernier jour daté) ;
+- chapitres : de 4 à 8, contigus dans le temps, chacun avec un titre court (2 à 5 mots, en français, sans nom de lieu non lu), un sous-titre (6 mots au plus),
+  ses dates de début et de fin (AAAA-MM-JJ), la liste de SES numéros (chaque numéro dans exactement un chapitre ; les photos sans date vont dans le chapitre que leur contenu suggère, ou dans le dernier), et pourquoi on coupe là (une phrase) ;
+- ton ; profil parmi long_voyage_famille, vacances_festives_jeunes, couple, evenement_un_jour, annee_de_vie ;
+- style_conseille : 15 mots au plus (grandes photos, densité, fond, couleur) ;
+- doutes : ce qui reste incertain, une phrase.
+Réponds en français.`;
+}
+
+export type LigneReleve = {
+  date: string | null; role: string | null; sujet: string | null; plan: string | null; moment: string | null; ambiance: string | null;
+  personnes: string | null; visages: number; lieu: string; raconte: string;
+};
+/** Le relevé envoyé à la couche 7 : une ligne par photo, dans l'ordre donné (le temps), numérotée de 1 à n. Aucun nom de fichier ne part. */
+export function releveVoyage(l: readonly LigneReleve[]): { lignes: string[]; comptes: Record<string, number> } {
+  const nettoie = (s: string) => s.replace(/[|\n\r\t]+/g, " ").replace(/\s+/g, " ").trim().slice(0, 80);
+  const lignes = l.map((p, i) => [i + 1, p.date ? p.date.slice(0, 16).replace("T", " ") : "sans date", p.role ?? "?", p.sujet ?? "?", p.plan ?? "?", p.moment ?? "?", p.ambiance ?? "?", p.personnes ?? "?", p.visages, nettoie(p.lieu), nettoie(p.raconte)].join(" | "));
+  const comptes = {
+    photos: l.length, avecPersonnes: l.filter((p) => p.personnes && p.personnes !== "0").length, une: l.filter((p) => p.personnes === "1").length,
+    deux: l.filter((p) => p.personnes === "2").length, groupe: l.filter((p) => p.personnes === "groupe").length, visagesMax: Math.max(0, ...l.map((p) => p.visages)),
+  };
+  return { lignes, comptes };
+}
+
+export const entreeVoyage = (indice: string, comptes: Record<string, number>, lignes: readonly string[]): string =>
+  `${consigneVoyage(indice)}\n\nComptes : ${JSON.stringify(comptes)}\n\n${lignes.join("\n")}`;
+
+export const corpsVoyage = (texte: string): CorpsCompo => ({
+  model: MODELE_VOYAGE, reasoning: { effort: "low" },
+  input: [{ role: "user", content: [{ type: "input_text", text: texte }] }],
+  text: { format: { type: "json_schema", name: "voyage", schema: SCHEMA_VOYAGE, strict: true } },
+});
+
+/** La réponse du voyage, relue ; ses numéros deviennent les NOMS DE FICHIER (`noms[numero − 1]`). Un numéro inconnu ou repris est oublié. */
+export function lireReponseVoyage(x: unknown, noms: readonly string[]): Relu<VoyageIA> {
+  const r = json(x);
+  if (!estObjet(r) || !clesExactes(r, ["qui", "ou", "type_voyage", "duree_jours", "chapitres", "ton", "profil", "style_conseille", "doutes"])) return { ok: false, phrase: "voyage : champs attendus manquants ou en trop" };
+  if (!Array.isArray(r.chapitres)) return { ok: false, phrase: "voyage : chapitres absents" };
+  const vus = new Set<number>();
+  const chapitres: { titre: string; sous_titre: string; debut: string; fin: string; photos: string[]; pourquoi: string }[] = [];
+  for (const c of r.chapitres) {
+    if (!estObjet(c)) return { ok: false, phrase: "voyage : un chapitre illisible" };
+    const nums: number[] = [];
+    for (const n of Array.isArray(c.numeros) ? c.numeros : []) if (typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= noms.length && !vus.has(n)) { vus.add(n); nums.push(n); }
+    const jour = (v: unknown) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : "");
+    if (!nums.length) continue;
+    chapitres.push({
+      titre: (typeof c.titre === "string" ? c.titre.trim().slice(0, 80) : "") || "Chapitre", sous_titre: typeof c.sous_titre === "string" ? c.sous_titre.trim().slice(0, 120) : "",
+      debut: jour(c.debut), fin: jour(c.fin), photos: nums.map((n) => noms[n - 1]), pourquoi: typeof c.pourquoi === "string" ? c.pourquoi.trim().slice(0, 300) : "",
+    });
+  }
+  const ou = estObjet(r.ou) ? r.ou : {};
+  const coupe = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
+  const brut: unknown = {
+    qui: estObjet(r.qui) ? { type: r.qui.type, raison: coupe(r.qui.raison, 300) } : r.qui,
+    ou: { pays: coupe(ou.pays, 80), regions: Array.isArray(ou.regions) ? ou.regions.slice(0, 30).map((v) => coupe(v, 120)) : [], lieux: Array.isArray(ou.lieux) ? ou.lieux.slice(0, 60).map((v) => coupe(v, 120)) : [] },
+    type_voyage: r.type_voyage, duree_jours: r.duree_jours, chapitres, ton: r.ton, profil: r.profil, style_conseille: coupe(r.style_conseille, 300), doutes: coupe(r.doutes, 400),
+  };
+  const l = lireLectureIA({ format: FORMAT_LECTURE_IA, version: VERSION_LECTURE_IA_3, photos: {}, rafales: [], groupes: [], voyage: brut });
+  return l.ok && l.lecture.voyage ? { ok: true, valeur: l.lecture.voyage } : { ok: false, phrase: l.ok ? "voyage absent" : l.phrase };
+}
+
+/* ─────────────────────────── M-05 : les lieux par chapitre (au plus deux planches) ─────────────────────────── */
+
+export const LIEUX_PAR_CHAPITRE = 3;
+export const LIEUX_COLONNES = 6;
+export const LIEUX_CASE_PX = 320;
+export const LIEUX_PLANCHE_MAX_PX = LIEUX_COLONNES * LIEUX_CASE_PX;
+export const LIEUX_SANS_DATE_MAX = 36;
+
+export const SCHEMA_LIEUX = {
+  type: "object", additionalProperties: false, required: ["chapitres", "noms_lus", "sans_date"],
+  properties: {
+    chapitres: { type: "array", items: { type: "object", additionalProperties: false, required: ["numero", "lieu", "preuve", "detail"],
+      properties: { numero: { type: "integer" }, lieu: { type: "string" }, preuve: { type: "string", enum: ["panneau", "reconnu", "aucune"] }, detail: { type: "string" } } } },
+    noms_lus: { type: "array", items: { type: "object", additionalProperties: false, required: ["nom", "sorte"],
+      properties: { nom: { type: "string" }, sorte: { type: "string", enum: ["lieu", "enseigne", "autre"] } } } },
+    sans_date: { type: "array", items: { type: "object", additionalProperties: false, required: ["label", "chapitre", "raison"],
+      properties: { label: { type: "string" }, chapitre: { type: "integer" }, raison: { type: "string" } } } },
+  },
+} as const;
+
+export type ChapitreDemande = { numero: number; debut: string; fin: string; titre: string };
+/** La consigne des lieux du banc (`lieux.ts`), rendue générale : le pays vient du voyage lu (sinon il n'est pas dit). */
+export function consigneLieux(pays: string, chapitres: readonly ChapitreDemande[], noms: readonly string[], avecSansDate: boolean): string {
+  const p = indicePropre(pays);
+  return [
+    `Tu aides à composer le magazine d'un road trip${p ? ` (pays : ${p})` : ""}. ${avecSansDate ? "Deux planches" : "Une planche"} de vignettes numérotées.`,
+    `Planche 1 : des photos REPÈRES de chaque chapitre, étiquetées C<chapitre>-<n>.${avecSansDate ? " Planche 2 : des photos SANS date, étiquetées S<n>." : ""}`,
+    "Les chapitres, dans l'ordre du trajet :", ...chapitres.map((c) => `Chapitre ${c.numero} (${c.debut} au ${c.fin}) : « ${indicePropre(c.titre)} »`),
+    `Noms lus dans les photos (panneaux, enseignes) : ${noms.map(indicePropre).filter(Boolean).join(" ; ") || "aucun"}.`,
+    "1. Pour chaque chapitre, le LIEU principal (ville, région, parc, site) : « panneau » si un texte lisible sur une vignette de CE chapitre le nomme ; « reconnu » si un monument ou un paysage célèbre est reconnaissable sans doute ; sinon « aucune » et lieu vide. Ne devine jamais : pas de lieu plausible sans preuve. Une enseigne (commerce, marque, restaurant) n'est jamais un lieu. detail = la vignette et ce qui prouve (8 mots au plus).",
+    "2. Pour chaque nom lu : « lieu » (ville, parc, site, bâtiment public) ou « enseigne » (commerce, marque, restaurant) ou « autre ».",
+    avecSansDate ? "3. Pour chaque photo sans date (S<n>) : le numéro du chapitre dont elle vient, d'après un monument, un panneau, un paysage ou une scène identique à une vignette repère ; 0 si rien ne le prouve. Ne parle jamais de l'identité des personnes. raison en 8 mots au plus." : "3. sans_date : liste vide. Ne parle jamais de l'identité des personnes.",
+    "Réponds en français, JSON seulement.",
+  ].join("\n");
+}
+
+export const corpsLieux = (consigne: string, images: readonly string[]): CorpsCompo => ({
+  model: MODELE_LIEUX, reasoning: { effort: "low" },
+  input: [{ role: "user", content: [{ type: "input_text", text: consigne }, ...images.map((i) => ({ type: "input_image" as const, image_url: i, detail: "high" as const }))] }],
+  text: { format: { type: "json_schema", name: "lieux_chapitres", schema: SCHEMA_LIEUX, strict: true } },
+});
+
+export type LuLieux = { chapitres: LieuxIA["chapitres"]; noms: LieuxIA["noms"]; sansDate: { label: string; chapitre: number; raison: string }[] };
+/** La réponse des lieux : chaque chapitre demandé au plus une fois ; un lieu sans preuve n'a pas de nom ; une étiquette inconnue est oubliée. */
+export function lireReponseLieux(x: unknown, chapitres: readonly number[], labels: readonly string[]): Relu<LuLieux> {
+  const r = json(x);
+  if (!estObjet(r) || !clesExactes(r, ["chapitres", "noms_lus", "sans_date"]) || !Array.isArray(r.chapitres) || !Array.isArray(r.noms_lus) || !Array.isArray(r.sans_date)) return { ok: false, phrase: "lieux : il faut { chapitres, noms_lus, sans_date }" };
+  const out: LuLieux = { chapitres: [], noms: [], sansDate: [] };
+  const vus = new Set<number>();
+  for (const c of r.chapitres) {
+    if (!estObjet(c) || !clesExactes(c, ["numero", "lieu", "preuve", "detail"])) return { ok: false, phrase: "lieux : un chapitre a un champ en trop ou en moins" };
+    const num = c.numero;
+    if (typeof num !== "number" || !Number.isInteger(num) || !chapitres.includes(num) || vus.has(num)) continue;
+    if (!dans(["panneau", "reconnu", "aucune"] as const, c.preuve) || typeof c.lieu !== "string" || typeof c.detail !== "string") return { ok: false, phrase: "lieux : preuve inconnue" };
+    vus.add(num);
+    const lieu = c.lieu.trim().slice(0, 120);
+    const preuve = c.preuve !== "aucune" && !lieu ? "aucune" : c.preuve;
+    out.chapitres.push({ numero: num, lieu: preuve === "aucune" ? "" : lieu, preuve, detail: couperMots(c.detail, 12) });
+  }
+  for (const n of r.noms_lus) {
+    if (!estObjet(n) || !clesExactes(n, ["nom", "sorte"]) || typeof n.nom !== "string" || !dans(["lieu", "enseigne", "autre"] as const, n.sorte)) return { ok: false, phrase: "lieux : un nom lu illisible" };
+    if (n.nom.trim()) out.noms.push({ nom: n.nom.trim().slice(0, 120), sorte: n.sorte });
+  }
+  for (const s of r.sans_date) {
+    if (!estObjet(s) || !clesExactes(s, ["label", "chapitre", "raison"]) || typeof s.label !== "string" || typeof s.chapitre !== "number" || !Number.isInteger(s.chapitre) || typeof s.raison !== "string") return { ok: false, phrase: "lieux : une photo sans date illisible" };
+    if (!labels.includes(s.label) || !(s.chapitre === 0 || chapitres.includes(s.chapitre))) continue;
+    out.sansDate.push({ label: s.label, chapitre: s.chapitre, raison: couperMots(s.raison, 12) });
+  }
+  return { ok: true, valeur: out };
+}
+
+export type InfoRepere = { date: string | null; sujet: string | null; interet: number; lieuLu: string };
+/** Les photos repères de chaque chapitre (les panneaux lus d'abord, puis les lieux et paysages les mieux notés, 3 au plus) et les photos
+ *  sans date (36 au plus) : ce que les deux planches montreront, avec leurs étiquettes. */
+export function choisirReperes(chapitres: readonly { numero: number; photos: readonly string[] }[], info: ReadonlyMap<string, InfoRepere>): { reperes: { id: string; label: string }[]; sansDate: { id: string; label: string }[]; noms: string[] } {
+  const reperes: { id: string; label: string }[] = [];
+  const noms = new Set<string>();
+  for (const c of chapitres) {
+    const xs = c.photos.filter((id) => info.get(id)?.date);
+    const lus = xs.filter((id) => info.get(id)!.lieuLu.trim());
+    for (const id of lus) noms.add(info.get(id)!.lieuLu.trim());
+    const forts = xs.filter((id) => ["lieu", "paysage"].includes(info.get(id)!.sujet ?? "")).sort((a, b) => info.get(b)!.interet - info.get(a)!.interet);
+    const pris: string[] = [];
+    for (const id of [...lus, ...forts]) if (!pris.includes(id) && pris.length < LIEUX_PAR_CHAPITRE) pris.push(id);
+    pris.forEach((id, k) => reperes.push({ id, label: `C${c.numero}-${k + 1}` }));
+  }
+  const sansDate = chapitres.flatMap((c) => c.photos).filter((id) => info.has(id) && !info.get(id)!.date).slice(0, LIEUX_SANS_DATE_MAX).map((id, k) => ({ id, label: `S${k + 1}` }));
+  return { reperes: reperes.slice(0, 8 * LIEUX_PAR_CHAPITRE), sansDate, noms: [...noms] };
+}
+
+/* ─────────────────────────── la règle de dégradation (au-delà de 600 photos lues) ─────────────────────────── */
+
+const hamming = (a: string, b: string): number => {
+  if (!a || !b || a.length !== b.length) return 64;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) { let x = parseInt(a[i], 16) ^ parseInt(b[i], 16); while (x) { d += x & 1; x >>= 1; } }
+  return d;
+};
+
+/** Au-delà de 600 photos à lire, on en lit 600 réparties dans le temps ; chaque autre HÉRITE des tags de la lue la plus ressemblante
+ *  (empreinte la plus proche ; à égalité, la plus proche dans le temps). Non mesuré sur un vrai gros lot : c'est la règle écrite du tunnel. */
+export function planDegradation(ids: readonly string[], empreinte: ReadonlyMap<string, string>, max = LECTURE_MAX_PHOTOS): { aLire: string[]; heritage: Map<string, string> } {
+  if (ids.length <= max) return { aLire: [...ids], heritage: new Map() };
+  const pas = ids.length / max;
+  const choisis = new Set<number>();
+  for (let k = 0; k < max; k++) choisis.add(Math.min(ids.length - 1, Math.floor(k * pas)));
+  const aLire = [...choisis].sort((a, b) => a - b).map((i) => ids[i]);
+  const lues = new Set(aLire);
+  const idx = new Map(ids.map((id, i) => [id, i]));
+  const heritage = new Map<string, string>();
+  for (const id of ids) {
+    if (lues.has(id)) continue;
+    let best = aLire[0], bd = Infinity, bt = Infinity;
+    for (const s of aLire) {
+      const d = hamming(empreinte.get(id) ?? "", empreinte.get(s) ?? ""), t = Math.abs(idx.get(s)! - idx.get(id)!);
+      if (d < bd || (d === bd && t < bt)) { best = s; bd = d; bt = t; }
+    }
+    heritage.set(id, best);
+  }
+  return { aLire, heritage };
+}
+
+/** Les tags de planche des héritières : ceux de leur voisine lue (jamais sa candidature ni son texte lisible). */
+export function heriterPlanche(planche: ReadonlyMap<string, LuPlanche>, heritage: ReadonlyMap<string, string>): Map<string, LuPlanche> {
+  const out = new Map(planche);
+  for (const [id, src] of heritage) { const p = planche.get(src); if (p && !out.has(id)) out.set(id, { ...p, candidate: "aucune", texte: false }); }
+  return out;
+}
+
+/* ─────────────────────────── l'estimation, avant ─────────────────────────── */
+
+/** Les seuls chiffres mesurés de la composition : le banc du tunnel du 17/11 (161 photos lues : 11 planches B5, 0,2323 $ ; voyage 0,0472 $,
+ *  dont 0,0083 $ d'entrée qui croît avec le nombre de photos ; lieux 0,0418 $). Le regard fin reprend l'essai du 17/11 (`ESSAI_17_11`). */
+export const BANC_17_11 = { planche: { dollars: 0.2323, photos: 161 }, voyage: { fixe: 0.0389, parPhoto: 0.0083 / 161 }, lieux: { dollars: 0.0418 } } as const;
+
+export type EstimationCompo = { lues: number; heritees: number; regard: number; planche: number; regardDollars: number; voyage: number; lieux: number; dollars: number };
+export function estimerComposition(aLireTotal: number, dejaLues: number, avecLieux: boolean): EstimationCompo {
+  const lues = Math.min(aLireTotal, LECTURE_MAX_PHOTOS);
+  const nouvelles = Math.max(0, lues - dejaLues);
+  const regard = nouvelles ? Math.min(plafondRegard(lues), REGARD_MAX_CANDIDATES) : 0;
+  const planche = (nouvelles * BANC_17_11.planche.dollars) / BANC_17_11.planche.photos;
+  const regardDollars = (regard * ESSAI_17_11.regard.dollars) / ESSAI_17_11.regard.photos;
+  const voyage = lues ? BANC_17_11.voyage.fixe + lues * BANC_17_11.voyage.parPhoto : 0;
+  const lieux = avecLieux && lues ? BANC_17_11.lieux.dollars : 0;
+  return { lues, heritees: Math.max(0, aLireTotal - lues), regard, planche, regardDollars, voyage, lieux, dollars: planche + regardDollars + voyage + lieux };
+}
+
+/* ─────────────────────────── les demandes des deux étapes nouvelles ─────────────────────────── */
+
+export const TAILLE_MAX_DEMANDE_COMPO = 2 * TAILLE_MAX_DEMANDE + 256 * 1024;
+export type DemandeCompo =
+  | { etape: "voyage"; texte: string; noms: number }
+  | { etape: "lieux"; consigne: string; images: string[]; chapitres: number[]; labels: string[] };
+
+const PREFIXE_JPEG_C = "data:image/jpeg;base64,";
+const B64 = /^[A-Za-z0-9+/]+={0,2}$/;
+export const estEtapeCompo = (c: unknown): boolean => estObjet(c) && (c.etape === "voyage" || c.etape === "lieux");
+export function lireDemandeCompo(c: unknown): Relu<DemandeCompo> {
+  if (!estObjet(c)) return { ok: false, phrase: "corps_illisible" };
+  if (c.etape === "voyage") {
+    if (Object.keys(c).some((k) => !["cle", "etape", "indice", "comptes", "lignes"].includes(k))) return { ok: false, phrase: "champ_inconnu" };
+    const l = c.lignes;
+    if (!Array.isArray(l) || !l.length || l.length > LECTURE_MAX_PHOTOS * 2 || !l.every((x) => typeof x === "string" && x.length <= 300)) return { ok: false, phrase: "lignes_invalides" };
+    const co = c.comptes;
+    if (!estObjet(co) || Object.keys(co).length > 10 || !Object.values(co).every((v) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 100000)) return { ok: false, phrase: "comptes_invalides" };
+    if (c.indice !== undefined && (typeof c.indice !== "string" || c.indice.length > 400)) return { ok: false, phrase: "indice_invalide" };
+    return { ok: true, valeur: { etape: "voyage", texte: entreeVoyage(typeof c.indice === "string" ? c.indice : "", co as Record<string, number>, l as string[]), noms: l.length } };
+  }
+  if (c.etape === "lieux") {
+    if (Object.keys(c).some((k) => !["cle", "etape", "images", "pays", "chapitres", "noms", "labels"].includes(k))) return { ok: false, phrase: "champ_inconnu" };
+    const im = c.images;
+    if (!Array.isArray(im) || im.length < 1 || im.length > 2 || !im.every((i) => typeof i === "string" && i.startsWith(PREFIXE_JPEG_C) && i.length <= TAILLE_MAX_DEMANDE && B64.test(i.slice(PREFIXE_JPEG_C.length)))) return { ok: false, phrase: "image_invalide" };
+    const ch = c.chapitres;
+    if (!Array.isArray(ch) || !ch.length || ch.length > 20) return { ok: false, phrase: "chapitres_invalides" };
+    const chapitres: ChapitreDemande[] = [];
+    for (const x of ch) {
+      if (!estObjet(x) || typeof x.numero !== "number" || !Number.isInteger(x.numero) || typeof x.titre !== "string" || x.titre.length > 120 || typeof x.debut !== "string" || typeof x.fin !== "string" || x.debut.length > 10 || x.fin.length > 10) return { ok: false, phrase: "chapitres_invalides" };
+      chapitres.push({ numero: x.numero, titre: x.titre, debut: x.debut, fin: x.fin });
+    }
+    const noms = Array.isArray(c.noms) && c.noms.length <= 200 && c.noms.every((n) => typeof n === "string" && n.length <= 120) ? (c.noms as string[]) : null;
+    const labels = Array.isArray(c.labels) && c.labels.length <= 100 && c.labels.every((n) => typeof n === "string" && /^[CS]\d{1,2}(-\d)?$/.test(n)) ? (c.labels as string[]) : null;
+    if (!noms || !labels) return { ok: false, phrase: "champ_invalide" };
+    if (c.pays !== undefined && (typeof c.pays !== "string" || c.pays.length > 80)) return { ok: false, phrase: "pays_invalide" };
+    return { ok: true, valeur: { etape: "lieux", consigne: consigneLieux(typeof c.pays === "string" ? c.pays : "", chapitres, noms, im.length === 2), images: im as string[], chapitres: chapitres.map((x) => x.numero), labels } };
+  }
+  return { ok: false, phrase: "etape_invalide" };
 }

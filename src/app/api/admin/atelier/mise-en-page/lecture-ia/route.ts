@@ -11,14 +11,22 @@
  * (`libre-<uuid>`) passe ; un dossier ou une édition reçoit 403 `photos_clients_non_autorisees`, sauf `MEP_LECTURE_IA_CLIENTS=1`
  * (posée nulle part). Sans `OPENAI_API_KEY` : 503 `openai_absente`.
  *
+ * 18/11 (« Composer le magazine », C20) : la planche lit quatre tags de plus (B5 : plan, moment, ambiance, personnes comptées), et deux
+ * étapes s'ajoutent, sous LA MÊME garde :
+ *   - voyage : { cle, etape: "voyage", indice?, comptes, lignes } : le relevé des photos (aucun nom de fichier), un appel texte gpt-5.1 ;
+ *     réponse relue par `lireReponseVoyage` (les numéros restent des numéros : l'écran les rend aux photos) ;
+ *   - lieux : { cle, etape: "lieux", images: [1 ou 2 planches], pays?, chapitres, noms, labels } : gpt-5.4 ; la consigne est construite
+ *     ICI par le module pur (`consigneLieux`), jamais reçue du navigateur ; réponse relue par `lireReponseLieux`.
+ *
  * Rien n'est écrit en base, aucune image n'est gardée : l'image traverse la route vers OpenAI et n'est jamais journalisée.
  */
 
 import { NextResponse } from "next/server";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
 import {
-  PLANCHE_MAX_PX, REGARD_MAX_PX, TAILLE_MAX_DEMANDE, corpsPlanche, corpsRegard, coutDollars, dimensionsJpeg, gardeLecture, lireDemande, lireEnveloppe,
-  lireReponsePlanche, lireReponseRegard, repliEffort, type CorpsOpenAI, type Jetons,
+  LIEUX_PLANCHE_MAX_PX, PLANCHE_MAX_PX, REGARD_MAX_PX, TAILLE_MAX_DEMANDE_COMPO, corpsLieux, corpsPlanche5, corpsRegard, corpsVoyage, coutDollars, dimensionsJpeg,
+  estEtapeCompo, gardeLecture, lireDemande, lireDemandeCompo, lireEnveloppe, lireReponseLieux, lireReponsePlanche5, lireReponseRegard, repliEffort,
+  type CorpsCompo, type Jetons,
 } from "@/lib/mise-en-page/editeur";
 import { SANS_CACHE, lireCorpsBorne, refus, refusCorps } from "../magazines/commun";
 
@@ -32,9 +40,9 @@ const URL_OPENAI = "https://api.openai.com/v1/responses";
 const BUDGET_MS = 55_000;
 const ATTENTES_MS = [3_000, 6_000];
 
-type Appel = { ok: true; reponse: unknown; jetons: Jetons; modele: CorpsOpenAI["model"] } | { ok: false; statut: number; erreur: string };
+type Appel = { ok: true; reponse: unknown; jetons: Jetons; modele: CorpsCompo["model"] } | { ok: false; statut: number; erreur: string };
 
-async function appeler(corps: CorpsOpenAI, cle: string, fin: number): Promise<Appel> {
+async function appeler(corps: CorpsCompo, cle: string, fin: number): Promise<Appel> {
   let c = corps;
   let relances = 0;
   let repliFait = false;
@@ -80,10 +88,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const qui = await quiEstConnecteRequete(request);
   if (!qui) return refus(401, "non_authentifie");
-  const lu = await lireCorpsBorne(request, TAILLE_MAX_DEMANDE + 4096);
+  const lu = await lireCorpsBorne(request, TAILLE_MAX_DEMANDE_COMPO);
   if (!lu.ok) return refusCorps(lu.raison);
   const garde = gardeLecture(lu.corps.cle, { OPENAI_API_KEY: process.env.OPENAI_API_KEY, MEP_LECTURE_IA_CLIENTS: process.env.MEP_LECTURE_IA_CLIENTS });
   if (!garde.ok) return refus(garde.statut, garde.erreur);
+  if (estEtapeCompo(lu.corps)) return etapeCompo(lu.corps);
   const d = lireDemande(lu.corps);
   if (!d.ok) return refus(400, d.phrase);
   const dem = d.valeur;
@@ -94,11 +103,38 @@ export async function POST(request: Request) {
 
   const fin = Date.now() + BUDGET_MS;
   const cleOpenAI = process.env.OPENAI_API_KEY as string;
-  const r = await appeler(dem.etape === "planche" ? corpsPlanche(dem.image) : corpsRegard(dem.image, dem.pourquoi, dem.indice), cleOpenAI, fin);
+  const r = await appeler(dem.etape === "planche" ? corpsPlanche5(dem.image) : corpsRegard(dem.image, dem.pourquoi, dem.indice), cleOpenAI, fin);
   if (!r.ok) return refus(r.statut, r.erreur);
   const dollars = coutDollars(r.modele, r.jetons);
-  const relu = dem.etape === "planche" ? lireReponsePlanche(r.reponse, dem.n0, dem.n) : lireReponseRegard(r.reponse);
+  const relu = dem.etape === "planche" ? lireReponsePlanche5(r.reponse, dem.n0, dem.n) : lireReponseRegard(r.reponse);
   /* une réponse hors contrat est payée quand même : le coût est rendu pour que l'écran le compte */
+  if (!relu.ok) return refus(502, "reponse_hors_contrat", { phrase: relu.phrase, jetons: r.jetons, dollars, modele: r.modele });
+  return NextResponse.json({ ok: true, resultat: relu.valeur, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });
+}
+
+/** Les deux étapes de la composition (18/11), APRÈS la garde : le voyage (texte seul) et les lieux (une ou deux planches). */
+async function etapeCompo(corps: Record<string, unknown>): Promise<Response> {
+  const d = lireDemandeCompo(corps);
+  if (!d.ok) return refus(400, d.phrase);
+  const dem = d.valeur;
+  if (dem.etape === "lieux") {
+    for (const image of dem.images) {
+      const octets = Buffer.from(image.slice(image.indexOf(",") + 1), "base64");
+      const dim = dimensionsJpeg(new Uint8Array(octets.buffer, octets.byteOffset, octets.byteLength));
+      if (!dim || dim.l < 1 || dim.h < 1 || dim.l > LIEUX_PLANCHE_MAX_PX || dim.h > LIEUX_PLANCHE_MAX_PX) return refus(400, "image_hors_bornes");
+    }
+  }
+  const fin = Date.now() + BUDGET_MS;
+  const r = await appeler(dem.etape === "voyage" ? corpsVoyage(dem.texte) : corpsLieux(dem.consigne, dem.images), process.env.OPENAI_API_KEY as string, fin);
+  if (!r.ok) return refus(r.statut, r.erreur);
+  const dollars = coutDollars(r.modele, r.jetons);
+  /* le voyage revient tel quel (les numéros sont rendus aux photos par l'écran, puis relus par `lireReponseVoyage`) ; les lieux sont relus ici */
+  if (dem.etape === "voyage") {
+    let brut: unknown;
+    try { brut = typeof r.reponse === "string" ? (JSON.parse(r.reponse) as unknown) : r.reponse; } catch { return refus(502, "reponse_hors_contrat", { phrase: "voyage illisible", jetons: r.jetons, dollars, modele: r.modele }); }
+    return NextResponse.json({ ok: true, resultat: brut, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });
+  }
+  const relu = lireReponseLieux(r.reponse, dem.chapitres, dem.labels);
   if (!relu.ok) return refus(502, "reponse_hors_contrat", { phrase: relu.phrase, jetons: r.jetons, dollars, modele: r.modele });
   return NextResponse.json({ ok: true, resultat: relu.valeur, jetons: r.jetons, dollars, modele: r.modele }, { status: 200, headers: SANS_CACHE });
 }

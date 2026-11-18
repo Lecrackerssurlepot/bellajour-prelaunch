@@ -12,6 +12,7 @@ import { cls, useEd } from "./contexte";
 import { Ico } from "./icones";
 import { BoutonPremierJet } from "./PremierJet";
 import { BoutonLireLesPhotos, TagsLus } from "./LireLesPhotos";
+import { BoutonComposer } from "./Composer";
 import { grandeDe, precharger, vignetteDe } from "./images";
 import Tri from "./Tri";
 import { BoutonsTri, BullesTri, COEUR, CROIX, DEMI, ETIQUETTE_UI, ETINCELLE, ETOILE, JaugeTri, MARQUE_UI, OngletsTri, PaletteTri, VuesBarre } from "./TriBulles";
@@ -414,6 +415,8 @@ function PanneauOuvert() {
         ) : null}
         {/* 17/11 : « Lire les photos » (création libre ; un dossier ou une édition le montre grisé : T-203) */}
         <BoutonLireLesPhotos />
+        {/* 18/11 (C20) : « Composer le magazine » : les questions, l'analyse, la proposition ; « Lire les photos » en reste la première étape, seul */}
+        <BoutonComposer />
         {grand ? <><PaletteTri /><JaugeTri /></> : (
           <span className="ed-seg" role="group" aria-label="Taille des vignettes">
             {(["S", "M", "L"] as const).map((t) => (

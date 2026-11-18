@@ -22,6 +22,11 @@
  * `corrige` (les tags corrigés par l'atelier, qui priment partout), plus `lecture` à la racine ({ modeles, dollars, quand }).
  * Le validateur lit les deux versions ; un fichier v1 se lit exactement comme avant (un champ de la v2 y reste un champ en trop).
  *
+ * VERSION 3 (18/11, « Composer le magazine ») : la 2 plus, par photo, ce que la planche lit aussi (`plan`, `moment_journee`, `ambiance`,
+ * `personnes` : un COMPTE en mots, 0, 1, 2 ou groupe, jamais qui), et à la racine `voyage` (couche 7 : qui à peu près, où, type, chapitres
+ * en noms de fichier, profil) et `lieux` (M-05 : le lieu de chaque chapitre avec sa preuve, la sorte de chaque nom lu, le chapitre des
+ * photos sans date). Les versions 1 et 2 se lisent exactement comme avant ; une 3 n'est écrite que si l'un de ces champs existe.
+ *
  * Module PUR : ni React, ni réseau, ni horloge.
  */
 
@@ -34,7 +39,9 @@ export const FORMAT_LECTURE_IA = "bellajour-lecture-ia";
 export const VERSION_LECTURE_IA = 1;
 /** 17/11 : la version 2, écrite par « Lire les photos » (lireLesPhotos.ts). Une autre forme sera une autre version, jamais une retouche. */
 export const VERSION_LECTURE_IA_2 = 2;
-export const VERSIONS_LECTURE_IA = [VERSION_LECTURE_IA, VERSION_LECTURE_IA_2] as const;
+/** 18/11 : la version 3, écrite par « Composer le magazine » (tags de la planche, voyage, lieux). */
+export const VERSION_LECTURE_IA_3 = 3;
+export const VERSIONS_LECTURE_IA = [VERSION_LECTURE_IA, VERSION_LECTURE_IA_2, VERSION_LECTURE_IA_3] as const;
 export type VersionLectureIA = (typeof VERSIONS_LECTURE_IA)[number];
 /** Bornes TECHNIQUES (octets du fichier, nombre de photos) : un magazine en porte quelques centaines. */
 export const TAILLE_MAX_LECTURE_IA = 8 * 1024 * 1024;
@@ -65,6 +72,8 @@ export type PhotoIA = {
   visages?: VisagesIA; role?: RoleProposeIA; lieu?: LieuIA; capture?: CaptureIA;
   /* v2 seulement */
   sujet?: SujetIA; candidate?: CandidateIA; texte?: boolean; regard?: RegardIA; corrige?: CorrigeIA;
+  /* v3 seulement */
+  plan?: PlanIA; moment_journee?: MomentIA; ambiance?: AmbianceIA; personnes?: PersonnesIA;
 };
 export type RafaleIA = { photos: string[]; garder: string[]; usage: UsageRafale; pourquoi: string };
 export type GroupeIA = { type: TypeGroupe; photos: string[]; idee: string };
@@ -85,6 +94,43 @@ export const IDEE_REGARD_MOTS_MAX = 10;
 export const RECADRAGE_MOTS_MAX = 10;
 /** Les tags corrigés par l'atelier : ils priment sur la proposition, partout (filtres, vignette, mises en avant). */
 export type CorrigeIA = { role?: RoleIA; sujet?: SujetIA };
+/* ── v3 (18/11) ── */
+export const PLANS_IA = ["large", "moyen", "serre"] as const;
+export type PlanIA = (typeof PLANS_IA)[number];
+export const MOMENTS_IA = ["matin", "jour", "dore", "nuit", "interieur"] as const;
+export type MomentIA = (typeof MOMENTS_IA)[number];
+export const AMBIANCES_IA = ["calme", "vivant", "festif", "intime", "grandiose"] as const;
+export type AmbianceIA = (typeof AMBIANCES_IA)[number];
+/** Combien de personnes on voit nettement, en mots (D29 : un compte, jamais une identité). */
+export const PERSONNES_IA = ["0", "1", "2", "groupe"] as const;
+export type PersonnesIA = (typeof PERSONNES_IA)[number];
+export const TYPES_VOYAGE_IA = ["road_trip", "circuit", "sejour", "city_break", "croisiere", "randonnee", "evenement", "vie_quotidienne", "autre"] as const;
+export const QUI_IA = ["solo", "couple", "famille", "bande"] as const;
+export const TONS_IA = ["tendre", "joyeux", "contemplatif", "aventureux", "festif", "elegant"] as const;
+export const PROFILS_IA = ["long_voyage_famille", "vacances_festives_jeunes", "couple", "evenement_un_jour", "annee_de_vie"] as const;
+/** Le voyage (couche 7) : chapitres en NOMS DE FICHIER (les numéros de l'appel ne valent que pour lui). Aucune identité : `qui` est une sorte de groupe. */
+export type ChapitreIA = { titre: string; sous_titre: string; debut: string; fin: string; photos: string[]; pourquoi: string };
+export type VoyageIA = {
+  qui: { type: (typeof QUI_IA)[number]; raison: string };
+  ou: { pays: string; regions: string[]; lieux: string[] };
+  type_voyage: (typeof TYPES_VOYAGE_IA)[number];
+  duree_jours: number;
+  chapitres: ChapitreIA[];
+  ton: (typeof TONS_IA)[number];
+  profil: (typeof PROFILS_IA)[number];
+  style_conseille: string;
+  doutes: string;
+};
+/** M-05 : le lieu de chaque chapitre et sa preuve (« panneau » = sûr, « reconnu » = à vérifier, « aucune » = le nom thématique reste),
+ *  la sorte de chaque nom lu (une enseigne n'est jamais un lieu), le chapitre de chaque photo sans date (0 = incertain). */
+export type LieuxIA = {
+  chapitres: { numero: number; lieu: string; preuve: "panneau" | "reconnu" | "aucune"; detail: string }[];
+  noms: { nom: string; sorte: "lieu" | "enseigne" | "autre" }[];
+  sansDate: { photo: string; chapitre: number; raison: string }[];
+  /** La photo repère (datée) que chaque photo sans date rejoint (S-133). */
+  reperes: { photo: string; repere: string }[];
+};
+
 /** Qui a lu, combien ça a coûté (jetons × prix datés), quand. */
 export type SourceLecture = { modeles: string[]; dollars: number; quand: string };
 
@@ -98,6 +144,9 @@ export type LectureIA = {
   couleurs?: ComboCouleurs[];
   /** v2 : la lecture faite par « Lire les photos ». */
   lecture?: SourceLecture;
+  /** v3 : le voyage et les lieux. */
+  voyage?: VoyageIA;
+  lieux?: LieuxIA;
 };
 
 export type LectureLectureIA = { ok: true; lecture: LectureIA } | { ok: false; phrase: string };
@@ -118,13 +167,14 @@ export const IDEE_MOTS_MAX = 6;
 
 const CLES_PHOTO_V1 = ["visages", "role", "lieu", "capture"] as const;
 const CLES_PHOTO_V2 = [...CLES_PHOTO_V1, "sujet", "candidate", "texte", "regard", "corrige"] as const;
+const CLES_PHOTO_V3 = [...CLES_PHOTO_V2, "plan", "moment_journee", "ambiance", "personnes"] as const;
 /** Un texte de mots comptés : vide permis, 120 signes au plus. */
 const motsAuPlus = (v: unknown, max: number): v is string => typeof v === "string" && v.length <= 120 && mots(v) <= max;
 
 function lirePhoto(nom: string, x: unknown, version: VersionLectureIA): string | PhotoIA {
   const ou = `la photo « ${nom} »`;
   if (!estObjet(x)) return `${ou} doit être un objet.`;
-  const admises: readonly string[] = version === VERSION_LECTURE_IA ? CLES_PHOTO_V1 : CLES_PHOTO_V2;
+  const admises: readonly string[] = version === VERSION_LECTURE_IA ? CLES_PHOTO_V1 : version === VERSION_LECTURE_IA_2 ? CLES_PHOTO_V2 : CLES_PHOTO_V3;
   const k = clesEn(x, admises);
   if (k) return `${ou} : le champ « ${k} » n'existe pas (${admises.join(", ")}). Aucune identité de personne n'est admise.`;
   const p: PhotoIA = {};
@@ -193,7 +243,78 @@ function lirePhoto(nom: string, x: unknown, version: VersionLectureIA): string |
     if (c.sujet !== undefined && !dans(SUJETS_IA, c.sujet)) return `${ou} : sujet corrigé inconnu (${SUJETS_IA.join(", ")}).`;
     p.corrige = { ...(dans(ROLES_IA, c.role) ? { role: c.role } : {}), ...(dans(SUJETS_IA, c.sujet) ? { sujet: c.sujet } : {}) };
   }
+  if (version !== VERSION_LECTURE_IA_3) return p;
+  if (x.plan !== undefined) { if (!dans(PLANS_IA, x.plan)) return `${ou} : plan inconnu (${PLANS_IA.join(", ")}).`; p.plan = x.plan; }
+  if (x.moment_journee !== undefined) { if (!dans(MOMENTS_IA, x.moment_journee)) return `${ou} : moment de la journée inconnu (${MOMENTS_IA.join(", ")}).`; p.moment_journee = x.moment_journee; }
+  if (x.ambiance !== undefined) { if (!dans(AMBIANCES_IA, x.ambiance)) return `${ou} : ambiance inconnue (${AMBIANCES_IA.join(", ")}).`; p.ambiance = x.ambiance; }
+  if (x.personnes !== undefined) { if (!dans(PERSONNES_IA, x.personnes)) return `${ou} : « personnes » est un compte en mots (${PERSONNES_IA.join(", ")}), jamais une identité.`; p.personnes = x.personnes; }
   return p;
+}
+
+const courte = (v: unknown, max: number): v is string => typeof v === "string" && v.length <= max;
+const JOUR = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Le voyage (v3) : chaque champ dans son énumération ou ses bornes ; aucune identité (`qui` est une sorte de groupe). */
+function lireVoyage(v: unknown): string | VoyageIA {
+  const ou = "Le voyage";
+  if (!estObjet(v) || clesEn(v, ["qui", "ou", "type_voyage", "duree_jours", "chapitres", "ton", "profil", "style_conseille", "doutes"])) return `${ou} = { qui, ou, type_voyage, duree_jours, chapitres, ton, profil, style_conseille, doutes }.`;
+  const q = v.qui, o = v.ou;
+  if (!estObjet(q) || clesEn(q, ["type", "raison"]) || !dans(QUI_IA, q.type) || !courte(q.raison, 300)) return `${ou} : « qui » = { type : ${QUI_IA.join(", ")} ; raison } (on compte, on ne nomme personne).`;
+  if (!estObjet(o) || clesEn(o, ["pays", "regions", "lieux"]) || !courte(o.pays, 80) || !Array.isArray(o.regions) || !Array.isArray(o.lieux)
+    || o.regions.length > 30 || o.lieux.length > 60 || ![...o.regions, ...o.lieux].every((x) => courte(x, 120))) return `${ou} : « ou » = { pays, regions, lieux } (des noms lus, courts).`;
+  if (!dans(TYPES_VOYAGE_IA, v.type_voyage)) return `${ou} : type inconnu (${TYPES_VOYAGE_IA.join(", ")}).`;
+  if (!Number.isInteger(v.duree_jours) || !entre(v.duree_jours, 0, 10000)) return `${ou} : la durée est un nombre de jours.`;
+  if (!dans(TONS_IA, v.ton)) return `${ou} : ton inconnu (${TONS_IA.join(", ")}).`;
+  if (!dans(PROFILS_IA, v.profil)) return `${ou} : profil inconnu (${PROFILS_IA.join(", ")}).`;
+  if (!courte(v.style_conseille, 300) || !courte(v.doutes, 400)) return `${ou} : le style et les doutes sont des phrases courtes.`;
+  if (!Array.isArray(v.chapitres) || v.chapitres.length > 20) return `${ou} : 20 chapitres au plus.`;
+  const chapitres: ChapitreIA[] = [];
+  const vus = new Set<string>();
+  for (const [i, c] of v.chapitres.entries()) {
+    if (!estObjet(c) || clesEn(c, ["titre", "sous_titre", "debut", "fin", "photos", "pourquoi"])) return `${ou} : le chapitre ${i + 1} = { titre, sous_titre, debut, fin, photos, pourquoi }.`;
+    if (!texte(c.titre, 80) || !courte(c.sous_titre, 120) || !courte(c.pourquoi, 300)) return `${ou} : le chapitre ${i + 1} a un titre court.`;
+    if (!(c.debut === "" || (typeof c.debut === "string" && JOUR.test(c.debut))) || !(c.fin === "" || (typeof c.fin === "string" && JOUR.test(c.fin)))) return `${ou} : le chapitre ${i + 1} a des dates AAAA-MM-JJ.`;
+    const ph = Array.isArray(c.photos) ? c.photos : null;
+    if (!ph || ph.length > PHOTOS_MAX_LECTURE_IA || !ph.every((n) => texte(n, NOM_FICHIER_MAX))) return `${ou} : le chapitre ${i + 1} liste ses photos par nom de fichier.`;
+    for (const n of ph as string[]) { const k = nomComparable(n); if (vus.has(k)) return `${ou} : « ${n} » est dans deux chapitres.`; vus.add(k); }
+    chapitres.push({ titre: c.titre.trim(), sous_titre: (c.sous_titre as string).trim(), debut: c.debut as string, fin: c.fin as string, photos: (ph as string[]).map((n) => n.trim()), pourquoi: (c.pourquoi as string).trim() });
+  }
+  return {
+    qui: { type: q.type, raison: (q.raison as string).trim() }, ou: { pays: (o.pays as string).trim(), regions: (o.regions as string[]).map((x) => x.trim()), lieux: (o.lieux as string[]).map((x) => x.trim()) },
+    type_voyage: v.type_voyage, duree_jours: v.duree_jours as number, chapitres, ton: v.ton, profil: v.profil, style_conseille: (v.style_conseille as string).trim(), doutes: (v.doutes as string).trim(),
+  };
+}
+
+/** Les lieux par chapitre (v3, M-05). */
+function lireLieux(v: unknown): string | LieuxIA {
+  const ou = "Les lieux";
+  if (!estObjet(v) || clesEn(v, ["chapitres", "noms", "sansDate", "reperes"])) return `${ou} = { chapitres, noms, sansDate, reperes }.`;
+  if (!Array.isArray(v.chapitres) || !Array.isArray(v.noms) || !Array.isArray(v.sansDate) || !Array.isArray(v.reperes)) return `${ou} : quatre listes.`;
+  if (v.chapitres.length > 20 || v.noms.length > 200 || v.sansDate.length > PHOTOS_MAX_LECTURE_IA || v.reperes.length > PHOTOS_MAX_LECTURE_IA) return `${ou} : listes trop longues.`;
+  const chapitres: LieuxIA["chapitres"] = [];
+  for (const c of v.chapitres) {
+    if (!estObjet(c) || clesEn(c, ["numero", "lieu", "preuve", "detail"]) || !Number.isInteger(c.numero) || !entre(c.numero, 1, 20) || !courte(c.lieu, 120) || !dans(["panneau", "reconnu", "aucune"] as const, c.preuve) || !courte(c.detail, 200)) {
+      return `${ou} : un chapitre = { numero, lieu, preuve : panneau, reconnu ou aucune, detail }.`;
+    }
+    if (c.preuve !== "aucune" && !(c.lieu as string).trim()) return `${ou} : un lieu prouvé a un nom.`;
+    chapitres.push({ numero: c.numero as number, lieu: (c.lieu as string).trim(), preuve: c.preuve, detail: (c.detail as string).trim() });
+  }
+  const noms: LieuxIA["noms"] = [];
+  for (const n of v.noms) {
+    if (!estObjet(n) || clesEn(n, ["nom", "sorte"]) || !texte(n.nom, 120) || !dans(["lieu", "enseigne", "autre"] as const, n.sorte)) return `${ou} : un nom lu = { nom, sorte : lieu, enseigne ou autre }.`;
+    noms.push({ nom: n.nom.trim(), sorte: n.sorte });
+  }
+  const sansDate: LieuxIA["sansDate"] = [];
+  for (const s of v.sansDate) {
+    if (!estObjet(s) || clesEn(s, ["photo", "chapitre", "raison"]) || !texte(s.photo, NOM_FICHIER_MAX) || !Number.isInteger(s.chapitre) || !entre(s.chapitre, 0, 20) || !courte(s.raison, 200)) return `${ou} : une photo sans date = { photo, chapitre (0 = incertain), raison }.`;
+    sansDate.push({ photo: s.photo.trim(), chapitre: s.chapitre as number, raison: (s.raison as string).trim() });
+  }
+  const reperes: LieuxIA["reperes"] = [];
+  for (const r of v.reperes) {
+    if (!estObjet(r) || clesEn(r, ["photo", "repere"]) || !texte(r.photo, NOM_FICHIER_MAX) || !texte(r.repere, NOM_FICHIER_MAX)) return `${ou} : un repère = { photo, repere }.`;
+    reperes.push({ photo: r.photo.trim(), repere: r.repere.trim() });
+  }
+  return { chapitres, noms, sansDate, reperes };
 }
 
 function listeNoms(v: unknown, min: number, max: number): string[] | null {
@@ -214,9 +335,9 @@ export function lireLectureIA(entree: unknown): LectureLectureIA {
   }
   if (!estObjet(x)) return refus("Ce fichier n'est pas une lecture : il faut un objet JSON.");
   if (x.format !== FORMAT_LECTURE_IA) return refus(`Ce JSON n'est pas une lecture IA Bellajour : le champ « format » doit valoir « ${FORMAT_LECTURE_IA} ».`);
-  if (x.version !== VERSION_LECTURE_IA && x.version !== VERSION_LECTURE_IA_2) return refus(`Version ${typeof x.version === "number" || typeof x.version === "string" ? String(x.version) : "absente"} inconnue : seules les versions 1 et 2 se chargent.`);
+  if (x.version !== VERSION_LECTURE_IA && x.version !== VERSION_LECTURE_IA_2 && x.version !== VERSION_LECTURE_IA_3) return refus(`Version ${typeof x.version === "number" || typeof x.version === "string" ? String(x.version) : "absente"} inconnue : seules les versions 1, 2 et 3 se chargent.`);
   const version: VersionLectureIA = x.version;
-  const racine = ["format", "version", "projet", "photos", "rafales", "groupes", "couleurs", ...(version === VERSION_LECTURE_IA_2 ? ["lecture"] : [])];
+  const racine = ["format", "version", "projet", "photos", "rafales", "groupes", "couleurs", ...(version !== VERSION_LECTURE_IA ? ["lecture"] : []), ...(version === VERSION_LECTURE_IA_3 ? ["voyage", "lieux"] : [])];
   const k = clesEn(x, racine);
   if (k) return refus(`Le champ « ${k} » n'existe pas dans une lecture (${racine.join(", ")}).`);
 
@@ -304,7 +425,12 @@ export function lireLectureIA(entree: unknown): LectureLectureIA {
     lecture = { modeles: ms.map((m) => String(m).trim()), dollars: s.dollars, quand: s.quand };
   }
 
-  return { ok: true, lecture: { format: FORMAT_LECTURE_IA, version, ...(projet ? { projet } : {}), photos, rafales, groupes, ...(couleurs ? { couleurs } : {}), ...(lecture ? { lecture } : {}) } };
+  let voyage: VoyageIA | undefined;
+  if (x.voyage !== undefined) { const v = lireVoyage(x.voyage); if (typeof v === "string") return refus(v); voyage = v; }
+  let lieux: LieuxIA | undefined;
+  if (x.lieux !== undefined) { const v = lireLieux(x.lieux); if (typeof v === "string") return refus(v); lieux = v; }
+
+  return { ok: true, lecture: { format: FORMAT_LECTURE_IA, version, ...(projet ? { projet } : {}), photos, rafales, groupes, ...(couleurs ? { couleurs } : {}), ...(lecture ? { lecture } : {}), ...(voyage ? { voyage } : {}), ...(lieux ? { lieux } : {}) } };
 }
 
 /** Le fichier est-il une lecture IA (et pas un premier jet) ? Juste le marqueur : le bouton « Premier jet » aiguille ainsi. */
