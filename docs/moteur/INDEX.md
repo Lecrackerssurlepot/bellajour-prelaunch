@@ -72,6 +72,17 @@ Le lot A (12/11, #356) = la branche `feat/mise-en-page-couche1-mesures`, fusionn
 `tunnel/README.md` : de l'analyse au magazine proposé. L'analyse en sept couches, les règles générales par équipe, les retours de Mathias
 (`tunnel/RETOURS-MATHIAS.md`, qui priment). Point d'entrée de tout travail sur l'analyse, la sélection et la composition automatique.
 
+**Le registre des règles (18/11, T-216, M-11)** : les règles du tunnel sont des DONNÉES, dans `src/lib/mise-en-page/regles/`
+(un identifiant, un domaine, interdit ou préférence avec un poids, quand / alors sur des données mesurables, profils, réglages, statut,
+source, contrôle), versionnées (`versionRegles()`), contrôlées au harnais (`scripts/verif-mep-regles.ts`), montrées dans l'atelier
+(`/admin/atelier/mise-en-page/regles`) et écrites en clair dans [`tunnel/REGISTRE.md`](tunnel/REGISTRE.md) (généré). C'est LA source ;
+les fichiers des équipes (`tunnel/regles/`) sont la matière d'origine.
+
+| Rangé où | Quoi | Qui l'écrit |
+|---|---|---|
+| Règles du tunnel | `src/lib/mise-en-page/regles/` (`tunnel.ts` à la main, `reprise.ts` généré, `surcharges.ts`) | registre → contrôle → doc générée |
+| Corrections par règle | `mep_lecons` lu par `GET …/lecons?bilan=regles`, compté par `correctionsParRegle` | l'écran « Règles » |
+
 ## Les recettes
 Un fichier par séance de test : `recettes/AAAA-MM-JJ.md`, sur le modèle `recettes/MODELE.md`. Ce que Mathias a testé,
 ce qu'il a dit (ses mots), ce qui a été mesuré, ce qui a changé, ce qui est enregistré et où.

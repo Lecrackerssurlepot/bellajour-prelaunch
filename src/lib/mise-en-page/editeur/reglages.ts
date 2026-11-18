@@ -46,6 +46,14 @@ export const REGLAGES = {
   texte_marge_sujet: { valeur: 3, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : sur une photo, 3 mm gardés autour de chaque visage et de la zone importante" },
   texte_chaleur_max: { valeur: 4, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : sur une photo, au-delà d'une chaleur moyenne de 4 (sur 9) sous le texte, l'endroit n'est pas calme et rien n'est posé" },
   texte_claire: { valeur: 150, regle: "R159", depuis: "2026-11-16", raison: "réglage de départ : sous ce gris moyen (sur 255, la photo entière : aucune mesure locale), le titre posé sur la photo est blanc ; au-dessus, à l'encre" },
+  /* 18/11 (T-216) : les réglages de départ nés du banc du tunnel (17/11), lus par les règles du registre (`regles/`). Le compositeur ne les
+     applique pas encore (lot suivant) : ce sont des valeurs de départ, à revoir sur l'œil de Mathias et les leçons. */
+  note_plancher: { valeur: 0.45, regle: "M-09", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 : sous cette note (0 à 1), une photo peut aller en réserve ; au-dessus, une bonne photo n'est jamais laissée de côté (M-09 : « tu as retiré beaucoup dont énormément qui sont bien »)" },
+  page_occupee_min: { valeur: 0.4, regle: "M-07", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 (DA-5) : une page imprimée à moins de 40 % de sa surface est « trop vide » ; elle reçoit un texte (fait) ou un fond du nuancier, ou change de gabarit" },
+  personnes_cote_min_mm: { valeur: 70, regle: "M-08", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 : une photo où l'on voit des personnes ne se pose pas dans un cadre dont le petit côté fait moins de 70 mm" },
+  personnes_surface_min_cm2: { valeur: 100, regle: "M-08", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 : ni dans un cadre de moins de 100 cm²" },
+  densite_tout_garder: { valeur: 3, regle: "M-09", depuis: "2026-11-18", raison: "réglage de départ du banc du 17/11 : quand le lot arrive déjà trié (presque aucune rafale ni doublon, notes hautes), la machine garde presque tout et vise 3,0 photos par double ; c'est le nombre de pages qui s'adapte" },
+  definition_double_ppp: { valeur: 150, regle: "I-04", depuis: "2026-11-18", raison: "PROVISOIRE, à trancher par Mathias : le banc du 17/11 a accepté 150 ppp pour une photo en pleine double (photos signalées à chaque passe) ; ailleurs le seuil reste 200 ppp (SEUIL_DPI, outils.ts)" },
 } as const satisfies Record<string, Reglage>;
 
 export type NomReglage = keyof typeof REGLAGES;
