@@ -198,6 +198,7 @@
   color: var(--c-text);
 }
 .pa-choisi span::first-letter { text-transform: uppercase; }
+.pa-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .pa-champ { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--c-text-faint); }
 .pa-champ input,
 .pa-champ textarea {
@@ -218,6 +219,11 @@
 .pa-champ input:focus,
 .pa-champ textarea:focus { border-color: var(--c-line-strong); }
 .pa-champ input[aria-invalid='true'] { border-color: var(--c-accent); }
+.pa-champ input::placeholder { color: var(--c-text-faint); opacity: 0.6; }
+.pa-duo .pa-champ { min-width: 0; }
+/* Safari iOS : un champ date vide s'affiche sans hauteur ni couleur. */
+.pa-champ input[type='date'] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; color-scheme: dark; }
+.pa-champ input[type='date']::-webkit-date-and-time-value { text-align: left; }
 .pa-miel { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 
 .pa-page .pa-bouton {

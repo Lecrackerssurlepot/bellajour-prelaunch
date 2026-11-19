@@ -23,7 +23,7 @@
 
 import { sansBlancs } from "./agenda";
 import { libelleCreneau } from "./creneaux";
-import type { DemandeProspect } from "./prospectsSaisie";
+import { periodeEvenement, type DemandeProspect } from "./prospectsSaisie";
 
 export const VAR_ROUTINE_ID = "PREPA_CALL_ROUTINE_ID";
 export const VAR_ROUTINE_TOKEN = "PREPA_CALL_ROUTINE_TOKEN";
@@ -45,6 +45,8 @@ export function texteRdvPartenaires(rdv: { id: string; debut: string; visio: str
     `nom : ${uneLigne(d.nom, 80)}`,
     `e-mail : ${uneLigne(d.email, 200)}`,
     `téléphone : ${uneLigne(d.telephone, 30)}`,
+    `événement : ${periodeEvenement(d.evenement_debut, d.evenement_fin)} (début ${d.evenement_debut}, fin ${d.evenement_fin})`,
+    `participants : ${d.participants}`,
     `message : ${uneLigne(d.message, 500)}`,
     `début (heure de Paris) : ${libelleCreneau(rdv.debut)}`,
     `début (UTC) : ${rdv.debut}`,

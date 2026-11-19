@@ -283,7 +283,12 @@ function RendezVous({ contact }: { contact: string }) {
           <Champ nom="nom" libelle="Votre nom" auto="name" erreur={erreur} />
           <Champ nom="organisation" libelle="École, association ou entreprise" auto="organization" erreur={erreur} />
           <Champ nom="email" libelle="E-mail" type="email" auto="email" erreur={erreur} />
-          <Champ nom="telephone" libelle="Téléphone (facultatif)" type="tel" auto="tel" erreur={erreur} />
+          <Champ nom="telephone" libelle="Téléphone" type="tel" auto="tel" erreur={erreur} />
+          <div className="pa-duo">
+            <Champ nom="evenement_debut" libelle="Début de l’événement" type="date" auto="off" erreur={erreur} />
+            <Champ nom="evenement_fin" libelle="Fin" type="date" auto="off" erreur={erreur} />
+          </div>
+          <Champ nom="participants" libelle="Nombre de participants" type="text" mode="numeric" auto="off" indice="ex. 120" erreur={erreur} />
           <label className="pa-champ">
             <span>Votre événement, en un mot (facultatif)</span>
             <textarea name="message" rows={2} maxLength={PROSPECT_MESSAGE_MAX} />
@@ -320,11 +325,27 @@ function RendezVous({ contact }: { contact: string }) {
   )
 }
 
-function Champ({ nom, libelle, type = 'text', auto, erreur }: { nom: ChampProspect; libelle: string; type?: string; auto: string; erreur: { champ: ChampProspect | null } | null }) {
+function Champ({
+  nom,
+  libelle,
+  type = 'text',
+  mode,
+  auto,
+  indice,
+  erreur,
+}: {
+  nom: ChampProspect
+  libelle: string
+  type?: string
+  mode?: 'numeric'
+  auto: string
+  indice?: string
+  erreur: { champ: ChampProspect | null } | null
+}) {
   return (
     <label className="pa-champ">
       <span>{libelle}</span>
-      <input name={nom} type={type} autoComplete={auto} aria-invalid={erreur?.champ === nom || undefined} />
+      <input name={nom} type={type} inputMode={mode} autoComplete={auto} placeholder={indice} aria-invalid={erreur?.champ === nom || undefined} />
     </label>
   )
 }

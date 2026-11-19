@@ -8,6 +8,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { RdvProspectAtelier } from "@/lib/collectif/prospects";
+import { periodeEvenement } from "@/lib/collectif/prospectsSaisie";
 
 export type RdvAffiche = RdvProspectAtelier & { quand: string };
 
@@ -67,6 +68,13 @@ export default function RdvProspects({ rendezVous }: { rendezVous: RdvAffiche[] 
                   </>
                 ) : null}
               </span>
+              {r.evenement_debut || r.participants ? (
+                <span className="eca-sous">
+                  {[r.evenement_debut && r.evenement_fin ? `Événement ${periodeEvenement(r.evenement_debut, r.evenement_fin)}` : null, r.participants ? `${r.participants} participants` : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              ) : null}
               {r.message ? <span className="eca-sous">{r.message}</span> : null}
             </div>
             {aConfirmer === r.id ? (
