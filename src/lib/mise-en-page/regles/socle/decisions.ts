@@ -1,0 +1,386 @@
+/**
+ * Ce qui a été TRANCHÉ sur le socle, écrit à la main (19/11) et appliqué par `scripts/socle-import.ts` aux règles importées :
+ *   1. les arbitrages de l'intégration (`30-INTEGRATION.md` §4, conflits B…) : des réglages que l'équipe a tranchés, restés HYPOTHÈSES ;
+ *   2. les réponses de Mathias du 19/11 (M-35 à M-57) : ses mots, la règle générale, les règles du socle qu'elles confirment et les
+ *      paramètres qu'elles posent (`confirmee_mathias`) ; ce qui reste ambigu garde ses mots et est marqué « à préciser » ;
+ *   3. les questions « à trancher » (`A-TRANCHER.md`) et leur état ; 4. les conflits relevés et la façon dont chacun est tenu.
+ * Rien n'est inventé : une valeur qu'il n'a pas donnée reste celle du socle, ou « à préciser ».
+ * Module pur.
+ */
+
+import type { ATrancher, Conflit, ReponseMathias, RetoucheRegle } from "./types";
+
+/* ─────────────────────────── 1. Les arbitrages de l'intégration (hypothèses) ─────────────────────────── */
+
+/** Par règle : l'arbitrage proposé par l'intégration, appliqué tel quel ; la règle reste une hypothèse. */
+export const ARBITRAGES_INTEGRATION: Readonly<Record<string, RetoucheRegle>> = {
+  "LEC-073": { etat: "gardee", note: "arbitrage B8 de l'intégration : `air_tete` = 0,15 dans la zone importante (code R-21) ; 0,25 devient un confort P5 de la pose" },
+  "MEP-076": { etat: "gardee", note: "arbitrage B8 : l'air au-dessus de la tête est pris dans la zone importante (0,15) ; 0,25 n'est plus qu'un confort P5" },
+  "VER-013": { etat: "gardee", note: "arbitrage B8 : le contrôle bloque sous 0,15 (la zone), signale sous 0,25 (le confort)" },
+  "LEC-108": { etat: "gardee", note: "arbitrage B10 : le groupe = le plus grand nombre récurrent de sujets (M-04), et le refus des foules (7 et plus sans pose, REC-006)" },
+  "LEC-133": { etat: "gardee", note: "arbitrage B19 : deux paramètres (chercher un lieu nommé, le titrer) ; la confirmation d'un panneau se fait au niveau de la commune" },
+  "TRI-042": { etat: "gardee", note: "arbitrage B13 : `seuil_ppp_demi` = 150 plancher ; 200 pour une pleine page ou une photo principale (MEP-142)" },
+  "REC-123": { etat: "gardee", note: "arbitrage B16 : le repli de REC-089 couvre la première double (la réunion glisse d'une double) ; annexe A-12" },
+  "ASS-098": { etat: "gardee", note: "arbitrage B17 : 9 photos au plus, 12 en série voulue, 6 avec des personnes (MEP-064) ; l'Assortiment lit `personnes_max_double`" },
+  "MEP-014": { etat: "gardee", note: "arbitrage B7 : `texte_pli_mm` = 20 jusqu'à l'exemplaire témoin de l'imprimeur" },
+  "VER-003": { etat: "gardee", note: "arbitrage B14 : 3 essais par faute, 5 tours, plafond du magazine gardé" },
+  "VER-082": { etat: "gardee", note: "arbitrage B18 : `corps_legende_min_pt` = 8 jusqu'à l'épreuve imprimée" },
+};
+
+/** Les valeurs de paramètres que ces arbitrages posent (réglages de départ, non validés). */
+export const PARAMETRES_ARBITRES: Readonly<Record<string, { valeur: string; note: string }>> = {
+  air_tete: { valeur: "0,15 de la hauteur du visage (zone importante) ; 0,25 en confort", note: "arbitrage B8" },
+  seuil_ppp_demi: { valeur: "150", note: "arbitrage B13 (200 pour une pleine ou une photo principale)" },
+  texte_pli_mm: { valeur: "20", note: "arbitrage B7, jusqu'à l'exemplaire témoin" },
+  corps_legende_min_pt: { valeur: "8", note: "arbitrage B18, jusqu'à l'épreuve imprimée" },
+  essais_reparation: { valeur: "3 par faute ; 5 tours", note: "arbitrage B14" },
+  photos_max_double: { valeur: "9 ; 12 en série voulue ; 6 avec des personnes", note: "arbitrage B17" },
+  visage_sujet_min: { valeur: "0,04 de la largeur (seuil de la Lecture, lu par tous)", note: "arbitrage B9" },
+};
+
+/* ─────────────────────────── 2. Les réponses de Mathias du 19/11 ─────────────────────────── */
+
+const J = "réponse de Mathias du 19/11";
+
+export const REPONSES_19_11: readonly ReponseMathias[] = [
+  {
+    id: "M-35", sur: "n° 1 (la dernière page)", mots: "« Auto »",
+    domaine: "structure", famille: "preference",
+    enonce: "La dernière page se choisit seule : l'au revoir s'il existe une image forte des derniers jours, sinon les gens devant le lieu, sinon les gens.",
+    quand: "la dernière page du magazine se choisit",
+    alors: "`fin_type` = auto : une image large et calme des derniers jours si elle est forte, sinon les gens devant le lieu, sinon le groupe dans le dernier tiers",
+    regles: { "REC-162": { etat: "gardee", note: `${J} : « Auto » (conflit B21 tranché)` }, "REC-158": { note: "une des formes de la fin automatique (M-35)" }, "REC-160": { note: "une des formes de la fin automatique (M-35)" } },
+    parametres: { fin_type: { valeur: "auto" } },
+  },
+  {
+    id: "M-36", sur: "n° 2 (sujets répétés rassemblés dès 3 photos)", mots: "« S'ils sont à des moments peu espacés ! »",
+    domaine: "structure", famille: "preference",
+    enonce: "Les photos d'un même sujet (plats, animaux, objets) se rassemblent dès trois, seulement si elles sont prises à des moments peu espacés.",
+    quand: "au moins trois photos d'un même sujet récurrent, prises à des moments peu espacés",
+    alors: "elles se réunissent sur une page ou une double (grande entorse) ; trop espacées, chacune reste à sa date",
+    aPreciser: "l'écart maximal entre les photos réunies : « peu espacés » n'a pas de chiffre (`reunion_ecart_max`)",
+    regles: { "REC-087": { note: `${J} : oui, si les moments sont peu espacés`, aPreciser: "écart maximal entre les photos réunies (`reunion_ecart_max`)" } },
+    parametres: { sujet_reunion_min: { valeur: "3" }, serie_sujet_regroupement: { valeur: "oui, si les moments sont peu espacés" }, reunion_ecart_max: { valeur: "à préciser", note: "ses mots : « des moments peu espacés »" } },
+  },
+  {
+    id: "M-37", sur: "n° 3 (page de plats : muette ou titrée)",
+    mots: "« Cela dépend de la mise en page mais cela peut le faire ! Après, s'il y a beaucoup de plats on les laisse dans l'histoire (cela permet de définir un profil style instagrammeur), pareil avec les paysages et tout autre type de photos. Cela permet de déceler un profil. »",
+    domaine: "analyse", famille: "preference",
+    enonce: "La part de chaque sujet dans le lot (plats, paysages, personnes…) est une information de profil : un sujet très présent reste dans le fil de l'histoire, il n'est pas regroupé ; une page rassemblée peut porter un titre si la mise en page s'y prête.",
+    quand: "un sujet couvre une grande part du lot, ou une page rassemble un sujet",
+    alors: "la part du sujet est lue et gardée comme signal de profil ; au-delà du seuil, pas de réunion : les photos restent à leur date ; une réunion peut être titrée selon sa mise en page",
+    aPreciser: "à partir de quelle part un sujet est « beaucoup » (`sujet_part_lot_max`, 0,45 dans le socle, non validé) ; quelles mises en page portent un titre de réunion",
+    regles: {
+      "REC-090": { etat: "gardee", note: `${J} : titrée possible, selon la mise en page (conflit B23 tranché)`, aPreciser: "quelles mises en page portent le titre" },
+      "REC-092": { note: `${J} : un sujet très présent reste dans l'histoire et dit un profil`, aPreciser: "seuil de « beaucoup » (`sujet_part_lot_max`)" },
+    },
+    parametres: { entorse_signalement: { valeur: "titrée si la mise en page s'y prête, sinon muette", note: "à préciser par gabarit" }, sujet_part_lot_max: { valeur: "à préciser", note: "0,45 dans le socle (S-074), non validé ; ses mots : « beaucoup de plats »" } },
+  },
+  {
+    id: "M-38", sur: "n° 4 (les noms de lieux)", mots: "« Nom de lieux : dès que cela peut être intéressant (ville, activité, lieu connu ou monument…) »",
+    domaine: "texte", famille: "preference",
+    enonce: "Un nom de lieu s'écrit dès qu'il est intéressant : une ville, une activité, un lieu connu ou un monument.",
+    quand: "une double ou une page porte une photo d'un lieu sûr qui est une ville, une activité, un lieu connu ou un monument",
+    alors: "le nom est proposé (titre ou légende) même hors d'une ouverture ou d'un lieu nouveau ; toujours un fait (GPS, panneau confirmé, saisie), deux noms par double au plus",
+    aPreciser: "ce qui rend un lieu « intéressant » au-delà des quatre exemples qu'il donne",
+    regles: { "TXT-023": { etat: "gardee", note: `${J} : les lieux « dès que cela peut être intéressant » (conflit B11 tranché ; ferme la question de M-24)`, aPreciser: "le critère « intéressant »" } },
+    parametres: { lieux: { valeur: "interessants : ville, activité, lieu connu ou monument", note: "au-delà de « nouveaux » ; les trois valeurs d'avant restent lisibles" } },
+  },
+  {
+    id: "M-39", sur: "n° 5 (chapitre sans lieu sûr)", mots: "« Si on ne sait pas, on ne met rien par défaut »",
+    domaine: "texte", famille: "interdit",
+    enonce: "Un chapitre sans lieu sûr n'a pas de titre par défaut : ni date, ni thème inventé.",
+    quand: "un chapitre n'a aucun lieu sûr",
+    alors: "le titre reste vide (l'atelier peut en écrire un) ; la page reçoit un fait ou un fond (TXT-030) ; remplace le repli « nom thématique » de M-05",
+    regles: { "TXT-003": { etat: "gardee", note: `${J} : rien par défaut (conflit B24 tranché ; remplace le repli de M-05)` } },
+    parametres: { repli_titre_sans_lieu: { valeur: "rien" } },
+  },
+  {
+    id: "M-40", sur: "n° 6 (couverture aussi à l'intérieur)", mots: "« Non, on évite, et vu qu'on va avoir 3 propositions de couvertures : dès qu'on en sélectionne une, les photos s'adaptent dans les doubles pages ! »",
+    domaine: "couverture", famille: "interdit",
+    enonce: "Une photo de couverture n'est pas à l'intérieur : dès qu'une des trois propositions est choisie, les doubles se recomposent sans elle.",
+    quand: "une des trois propositions de couverture est choisie",
+    alors: "la photo et ses quasi-identiques quittent l'intérieur, le chapitre se recompose ; le contrôle refuse un doublon (VER-030) ; confirme M-10",
+    regles: {
+      "CV-014": { note: `${J} : variante A (non)` },
+      "VER-030": { etat: "gardee", note: `${J} : le contrôle bloque un doublon, couverture comprise (conflit B5 tranché)` },
+    },
+    parametres: { couverture_dans_interieur: { valeur: "non" }, propositions_couverture: { valeur: "3" } },
+  },
+  {
+    id: "M-41", sur: "n° 7 (ouverture : titre sur la photo ou page de titre)", mots: "« Cela dépend du profil donc à définir. Mais soit on le fait de partout, soit on ne le fait pas. »",
+    domaine: "structure", famille: "interdit",
+    enonce: "Un seul mode d'ouverture par magazine : toutes les ouvertures posent le titre sur la photo, ou aucune.",
+    quand: "les ouvertures de chapitre d'un magazine se composent",
+    alors: "le mode (titre sur la première photo ou page de titre) est choisi une fois pour le magazine et tenu partout ; le mode par profil reste à définir",
+    aPreciser: "quel mode pour quel profil",
+    regles: { "MEP-156": { note: `${J} : un seul mode d'ouverture par magazine` }, "VER-050": { note: `${J} : des ouvertures de formes différentes sont une faute` } },
+    parametres: { ouverture_mode_unique: { valeur: "oui" }, ouverture_forme: { valeur: "à préciser par profil", note: "ses mots : « cela dépend du profil donc à définir »" } },
+  },
+  {
+    id: "M-42", sur: "n° 9 (les bonnes photos ne tiennent pas)", mots: "« On propose plus de pages ! »",
+    domaine: "selection", famille: "interdit",
+    enonce: "Quand les bonnes photos ne tiennent pas, la machine propose plus de pages ; une bonne photo ne va jamais en réserve pour la place.",
+    quand: "les bonnes photos dépassent ce que la taille tient",
+    alors: "la taille au-dessus est proposée avec ses vrais chiffres ; la réserve « pas de place » ne prend jamais une bonne photo",
+    aPreciser: "si la densité serrée (M-16) passe avant ou après la proposition de pages ; qui paie les pages ajoutées à un dossier déjà payé (D20)",
+    regles: {
+      "TRI-151": { etat: "gardee", note: `${J} : plus de pages (conflit B1 tranché)`, aPreciser: "ordre avec la densité serrée (M-16)" },
+      "TRI-153": { etat: "gardee", note: `${J} : la raison « pas de place » montre la taille qui garde tout` },
+      "VER-071": { etat: "gardee", note: `${J} : une bonne photo en réserve est un signal` },
+    },
+    parametres: { densite_mode: { valeur: "plus de pages", note: "à préciser : avant ou après la densité serrée (M-16)" } },
+  },
+  {
+    id: "M-43", sur: "n° 10 (photo qui traverse le pli)", mots: "« Oui, c'est ça qui permet d'avoir du style, mais pas de visage trop proche du pli (donc adapter la photo). »",
+    domaine: "pose", famille: "preference",
+    enonce: "Une photo peut traverser le pli, c'est du style, à condition qu'aucun visage ne soit trop proche du pli : la photo s'adapte.",
+    quand: "une photo est candidate à la pleine double",
+    alors: "elle peut traverser le pli ; aucun visage à moins de `pli_visage_mm` du pli : le recadrage ou la place s'adapte, sinon la photo reste sur une page",
+    aPreciser: "la distance du visage au pli : 10 mm dans le socle (réglage de départ, non validé)",
+    regles: { "MEP-119": { note: `${J} : oui` }, "MEP-116": { note: `${J} : jamais un visage trop proche du pli` }, "MEP-121": { note: `${J} : oui, quand la photo s'y prête` } },
+    parametres: { pli_traversable: { valeur: "oui" } },
+  },
+  {
+    id: "M-44", sur: "n° 11 (plancher d'impression)", mots: "« On ne met pas de limite pour l'instant ! »",
+    domaine: "pose", famille: "preference",
+    enonce: "Pas de plancher d'impression pour l'instant : une définition basse est un signal à l'atelier, plus un blocage.",
+    quand: "une photo a moins que `ppp_plancher` dans son cadre",
+    alors: "la machine le signale (« photo trop petite en pixels ») et préfère un cadre plus petit ; rien ne bloque l'export pour cette raison",
+    aPreciser: "si la cause d'écart « inimprimable même en vignette » (M-17, TRI-056) tient encore ; le code bloque toujours sous 150 ppp (N-56) : rien n'est câblé",
+    regles: {
+      "VER-021": { priorite: "P5", note: `${J} : signal, plus un blocage (était P1)` },
+      "VER-089": { priorite: "P5", note: `${J} : signal, plus un blocage (était P1)` },
+      "MEP-138": { priorite: "P5", note: `${J} : le cadre rétrécit si possible, sinon la photo reste et c'est signalé (était P1)` },
+      "TRI-056": { note: `${J} : pas de limite ; l'écart « inimprimable » de M-17 est à revoir (conflit B6)`, aPreciser: "garder ou non la cause d'écart « inimprimable »" },
+    },
+    parametres: { ppp_plancher: { valeur: "aucun blocage pour l'instant (150 reste le seuil du signal)", note: "le chiffre de 150 vient du socle, non validé" } },
+  },
+  {
+    id: "M-45", sur: "n° 12 (recadrage par défaut)", mots: "« Normal, et prudent si beaucoup d'infos importantes sur la photo via la heatmap »",
+    domaine: "pose", famille: "preference",
+    enonce: "Le recadrage est normal par défaut, et prudent quand la carte de chaleur montre beaucoup d'éléments importants sur la photo.",
+    quand: "une photo est recadrée",
+    alors: "mode normal ; mode prudent quand la zone importante lue dans la carte de chaleur couvre une grande part de la photo",
+    aPreciser: "à partir de quelle part de chaleur la photo passe en prudent (`zone_importante_part_prudent`)",
+    regles: { "MEP-094": { note: `${J} : normal par défaut, prudent si beaucoup d'éléments importants`, aPreciser: "seuil de chaleur du mode prudent" } },
+    parametres: { recadrage_franchise: { valeur: "normal ; prudent si la zone importante est grande" }, zone_importante_part_prudent: { valeur: "à préciser", note: "ses mots : « beaucoup d'infos importantes via la heatmap »" } },
+  },
+  {
+    id: "M-46", sur: "n° 13 (l'atelier peut-il forcer une faute)", mots: "« Non, ok »",
+    domaine: "pose", famille: "interdit",
+    enonce: "L'atelier ne force pas une faute dure : l'outil refuse le geste qui la créerait.",
+    quand: "un geste de l'atelier créerait une faute dure (visage au pli, personne coupée, page presque vide)",
+    alors: "l'outil refuse le geste avec une phrase ; une faute dure restante bloque l'impression",
+    regles: { "VER-002": { etat: "gardee", note: `${J} : non (conflit B15 tranché)` } },
+    parametres: {},
+  },
+  {
+    id: "M-47", sur: "n° 14 (couverture d'un couple)", mots: "« L'idée : trois propositions, l'une reste le duo. Pareil pour tout type de groupe ! »",
+    domaine: "couverture", famille: "preference",
+    enonce: "Trois propositions de couverture, la meilleure idée recommandée, et l'une d'elles montre tout le groupe (le duo pour un couple), quel que soit le groupe.",
+    quand: "les propositions de couverture se forment",
+    alors: "trois propositions (émotion, lieu, graphique) ; l'une montre tout le groupe du projet (M-04)",
+    regles: { "CV-007": { etat: "gardee", note: `${J} : l'idée, l'une reste le groupe (conflit B22 tranché)` }, "CV-006": { note: `${J} : trois propositions, l'une avec tout le groupe` } },
+    parametres: { type_couverture_par_profil: { valeur: "idée ; l'une des trois montre tout le groupe" } },
+  },
+  {
+    id: "M-48", sur: "n° 15 (nommer un site : commune ou lieu connu)", mots: "« Les deux peuvent être sympa ! Donc dans les propositions autres que tu me proposeras sur chaque double page, cela peut être une option. »",
+    domaine: "texte", famille: "preference",
+    enonce: "Chaque double propose des variantes ; l'autre nom du lieu (commune ou lieu connu) en fait partie.",
+    quand: "une double porte un nom de lieu qui a deux formes (commune, lieu connu)",
+    alors: "une forme est posée, l'autre est proposée en variante de la double ; traduit ou nom local : la valeur par défaut du socle (traduit), non validée",
+    aPreciser: "laquelle est posée d'abord ; combien de variantes par double ; traduit ou local (non répondu)",
+    regles: { "TXT-020": { note: `${J} : les deux, l'autre en variante`, aPreciser: "laquelle d'abord" }, "TXT-063": { note: "non répondu : valeur par défaut (forme française du géocodage), non validée" } },
+    parametres: { niveau_commune: { valeur: "les deux : l'une posée, l'autre en variante de la double" }, variantes_par_double: { valeur: "à préciser", note: "ses mots : « dans les propositions autres […] sur chaque double page »" } },
+  },
+  {
+    id: "M-49", sur: "A-07 (passants exclus par la taille du visage)", mots: "« ok mais dépend aussi de la qualité de la photo »",
+    domaine: "analyse", famille: "preference",
+    enonce: "Une personne est un sujet ou un passant selon la taille de son visage, et aussi selon la qualité de la photo ; « combien étiez-vous » est proposée dans le doute.",
+    quand: "les personnes d'une photo sont comptées",
+    alors: "visage sous `visage_sujet_min` : passant, sauf si la qualité de la photo en fait un sujet ; la question « combien étiez-vous » est proposée",
+    aPreciser: "comment la qualité de la photo change le seuil",
+    regles: { "LEC-090": { etat: "gardee", note: `${J} : oui, et la qualité compte (conflit B9 tranché par l'intégration : le seuil de la Lecture)`, aPreciser: "effet de la qualité" } },
+    parametres: {},
+  },
+  {
+    id: "M-50", sur: "A-09 (grandes entorses : 2, et 3 dès 14 doubles)", mots: "« plus si stylisé (on déterminera les mises en page qui le déterminent) »",
+    domaine: "structure", famille: "preference",
+    enonce: "Deux grandes entorses par magazine, trois dès quatorze doubles, et plus en style stylisé.",
+    quand: "le budget de grandes entorses se fixe",
+    alors: "2 ; 3 dès 14 doubles ; davantage en stylisé, selon des mises en page à déterminer",
+    aPreciser: "combien de plus en stylisé, et quelles mises en page le déterminent",
+    regles: { "REC-082": { etat: "gardee", note: `${J} : oui, plus si stylisé (conflit B20)`, aPreciser: "combien en stylisé" } },
+    parametres: { entorses_max: { valeur: "2 ; 3 dès 14 doubles ; plus en stylisé (à préciser)" } },
+  },
+  {
+    id: "M-51", sur: "A-13 (temps gris : un léger malus)", mots: "« oui sauf si photo belle tout de même ou si toujours temps gris »",
+    domaine: "selection", famille: "preference",
+    enonce: "Un temps gris coûte un léger malus, sauf si la photo est belle quand même ou si tout le lot est gris ; jamais une réserve pour la météo.",
+    quand: "une photo de lieu sans personne a un ciel laiteux ou gris",
+    alors: "léger malus d'image, jamais une réserve ; aucun malus si la photo est belle tout de même, ni si le temps est gris sur tout le lot",
+    aPreciser: "à partir de quelle part de photos grises le lot est « toujours gris »",
+    regles: { "TRI-049": { note: `${J} : oui, sauf belle photo, sauf lot toujours gris`, aPreciser: "part du lot « toujours gris »" } },
+    parametres: { meteo_malus: { valeur: "0,05 (léger)", note: "réglage de départ du socle, le principe est validé, pas le chiffre" } },
+  },
+  {
+    id: "M-52", sur: "A-37 (échelle des tailles de texte)", mots: "« on viendra déterminer les règles suivant le projet mais pour l'instant restons sur 4 »",
+    domaine: "typo", famille: "preference",
+    enonce: "Quatre tailles de texte par magazine pour l'instant ; les règles par projet viendront.",
+    quand: "les tailles de texte d'un magazine se fixent",
+    alors: "une échelle de quatre tailles",
+    regles: { "POL-027": { note: `${J} : quatre tailles` } },
+    parametres: { tailles_max: { valeur: "4" } },
+  },
+  {
+    id: "M-53", sur: "A-39 (numéros de page)", mots: "« peut se faire si demandé, donc on viendra rajouter dans les options supplémentaires »",
+    domaine: "texte", famille: "preference",
+    enonce: "Pas de numéros de page par défaut ; ils deviennent une option supplémentaire, posée seulement si le client la demande.",
+    quand: "un magazine se compose",
+    alors: "aucun numéro de page ; avec l'option demandée, des numéros à la même place partout, absents des pleines pages et des ouvertures",
+    regles: { "STY-018": { note: `${J} : non par défaut, option supplémentaire sur demande` } },
+    parametres: { folios: { valeur: "non par défaut ; option supplémentaire sur demande" } },
+  },
+  {
+    id: "M-54", sur: "Q-C04 (l'occasion)",
+    mots: "« on a déjà les infos actuellement sur le site quand ils font une demande pour le B2C et pareil sur l'édition pour les B2B ; si cela vient à changer on doit penser à réenregistrer ces infos correctement »",
+    domaine: "analyse", famille: "interdit",
+    enonce: "L'occasion et le récit du client se lisent dans ce que le dossier porte déjà (questionnaire du site, fiche de l'édition) ; aucune question nouvelle ; si ces champs changent, leur lecture se réenregistre.",
+    quand: "l'occasion d'un projet est lue",
+    alors: "particulier : l'occasion, l'histoire et le titre du questionnaire de /composer ; édition collective : l'organisation, l'événement, les dates et le texte d'invitation de l'édition ; un changement de ces champs se reporte dans `QUESTIONS_SOCLE`",
+    regles: {},
+    parametres: {},
+  },
+  {
+    id: "M-55", sur: "Q-C09 (« Dans cinq ans… »)", mots: "« on enlève complet »",
+    domaine: "analyse", famille: "interdit",
+    enonce: "La question « Dans cinq ans, qu'est-ce qui vous touchera le plus ? » est retirée.",
+    quand: "les questions au client se choisissent",
+    alors: "Q-C09 n'est jamais posée ; ses paramètres gardent la valeur du profil",
+    regles: {},
+    parametres: {},
+  },
+  {
+    id: "M-56", sur: "les tags et les informations",
+    mots: "« Il y a une grosse liste de tags intéressante. Si l'IA fait l'analyse alors cela ne coûte pas plus d'avoir les infos, et après on trouvera comment les utiliser. Moi cela me servira dans un premier temps ! »",
+    domaine: "analyse", famille: "interdit",
+    enonce: "Toute information lue est gardée, même sans règle qui la lit encore : elle n'est plus retirée faute d'usage, elle est « gardée pour l'atelier ».",
+    quand: "une information est lue (fichier, pixels, IA, géocodage) et aucune règle ne la lit",
+    alors: "elle est gardée et montrée à l'atelier ; son état est « obtenue, gardée pour l'atelier » ; remplace le principe « une information n'existe que si une décision la lit » (PROCESSUS §1, principe 2)",
+    regles: {},
+    parametres: {},
+  },
+  {
+    id: "M-57", sur: "« satellite »", mots: "« Satellite : je ne comprends pas »",
+    domaine: "analyse", famille: "interdit",
+    enonce: "Tout ce que l'atelier lit est un mot clair : chaque rôle et chaque étiquette a un libellé d'atelier (« photo d'accompagnement », jamais « satellite »).",
+    quand: "un rôle, une étiquette ou une valeur est montré à l'atelier",
+    alors: "il porte son libellé d'atelier (`ROLES_ATELIER`, `libelleDe`) ; les écrans ne changent pas tant que ces libellés n'y sont pas branchés",
+    regles: {},
+    parametres: {},
+  },
+];
+
+/** La question n° 8 reste OUVERTE : il ne l'a pas comprise ; elle lui sera réexpliquée. */
+export const QUESTION_OUVERTE_19_11 = { sur: "n° 8 (couple : deux photos par double)", mots: "« Je ne comprends pas »" } as const;
+
+/* ─────────────────────────── 3. Les questions à trancher ─────────────────────────── */
+
+const t = (id: string, question: string, reponsesPossibles: string, parDefaut: string, conflits?: string[]): ATrancher =>
+  ({ id, question, reponsesPossibles, parDefaut, etat: "par_defaut", ...(conflits ? { conflits } : {}) });
+
+const tranchee = (base: ATrancher, retour: string): ATrancher => {
+  const r = REPONSES_19_11.find((x) => x.id === retour);
+  return { ...base, etat: "tranchee", retour, sesMots: r?.mots, ...(r?.aPreciser ? { aPreciser: r.aPreciser } : {}) };
+};
+
+export const A_TRANCHER: readonly ATrancher[] = [
+  tranchee(t("Q-01", "La dernière page : le paysage d'au revoir, ou les gens ?", "au revoir · gens · auto", "auto, réglé par thème", ["B21"]), "M-35"),
+  tranchee(t("Q-02", "Les sujets qui reviennent (plats, animaux, objets) : on les rassemble dès trois photos ?", "oui · non", "oui, à trois"), "M-36"),
+  tranchee(t("Q-03", "Une page de plats rassemblés : muette ou titrée ?", "muette · datée · titrée", "muette par défaut", ["B23"]), "M-37"),
+  tranchee(t("Q-04", "Les noms de lieux : aux chapitres, aux lieux nouveaux, ou partout ?", "chapitres · nouveaux · partout", "nouveaux", ["B11"]), "M-38"),
+  tranchee(t("Q-05", "Un chapitre sans lieu sûr : on écrit les dates, un thème, ou rien ?", "dates · thème · rien", "dates", ["B24"]), "M-39"),
+  tranchee(t("Q-06", "Une photo de couverture peut-elle aussi être à l'intérieur ?", "oui · non", "oui, dans un autre cadrage", ["B5"]), "M-40"),
+  tranchee(t("Q-07", "L'ouverture d'un chapitre : le titre posé sur la première photo, ou une page de titre ?", "sur la photo · page de titre", "sur la photo, dans le premier jour"), "M-41"),
+  { ...t("Q-08", "Un couple reste « couple » même en long voyage, avec deux photos par double par défaut ?", "oui · non", "oui"), etat: "ouverte", sesMots: QUESTION_OUVERTE_19_11.mots, aPreciser: "à lui réexpliquer : le profil se lit sur « qui » (deux personnes) et non sur la durée ; deux photos par double par défaut" },
+  tranchee(t("Q-09", "Les bonnes photos ne tiennent pas dans les pages : on serre, on propose plus de pages, ou on met en réserve ?", "serrer · plus de pages · réserve", "serrer, puis proposer plus de pages", ["B1"]), "M-42"),
+  tranchee(t("Q-10", "Une photo peut-elle traverser le pli (pleine double) ?", "non · oui, rarement", "non tant que l'imprimeur n'a pas montré un exemplaire témoin"), "M-43"),
+  tranchee(t("Q-11", "Le plancher d'impression : sous combien une photo bloque-t-elle ?", "150 · 200 · 300 (ppp)", "150 bloque, 200 pour une pleine", ["B6"]), "M-44"),
+  tranchee(t("Q-12", "Le recadrage par défaut : prudent, normal ou franc ?", "prudent · normal · franc", "normal"), "M-45"),
+  tranchee(t("Q-13", "L'atelier peut-il forcer une faute (un visage au pli, une photo à 140 ppp en pleine page) ?", "oui avec signature · non", "oui avec sa signature", ["B15"]), "M-46"),
+  tranchee(t("Q-14", "La couverture d'un couple : le duo, ou la meilleure idée ?", "duo · idée", "idée", ["B22"]), "M-47"),
+  tranchee(t("Q-15", "Nommer un site : la commune ou le lieu connu ? Traduit ou nom local ?", "commune · lieu connu ; traduit · local", "commune, et traduit par le géocodage"), "M-48"),
+  t("A-01", "Netteté relative au lot : seulement pour départager ?", "oui · non", "oui"),
+  t("A-02", "Le plancher absolu de note (0,45) : désactivé ?", "oui · non", "oui, désactivé (M-09 le cite : à confirmer)"),
+  t("A-03", "Empreinte des doublons : dHash à 8 bits ?", "oui · non", "oui"),
+  t("A-04", "Rafale : suite à 30 s ?", "oui · non", "oui"),
+  t("A-05", "Départage d'un portrait : yeux, puis expression, puis regard ?", "oui · non", "oui"),
+  t("A-06", "Personnes de dos : pénalisées ?", "oui · non", "non"),
+  tranchee(t("A-07", "Passants exclus par la taille du visage, et « combien étiez-vous » proposée ?", "oui · non", "oui (seuil de la Lecture, conflit B9)", ["B9"]), "M-49"),
+  t("A-08", "Lieu lu : confiance de départ 0,5 ?", "oui · non", "oui"),
+  tranchee(t("A-09", "Grandes entorses : 2, et 3 dès 14 doubles ?", "oui · non", "oui", ["B20"]), "M-50"),
+  t("A-10", "Géocodage d'un lieu lu sans GPS, marqué « approché » ?", "oui · non", "oui"),
+  t("A-11", "Regard fin : toutes les candidates pleine page et double, dans le budget de 1 € ?", "oui · non", "oui"),
+  t("A-12", "La première double peut-elle être une page de plats rassemblés ?", "oui · non", "non : la réunion glisse d'une double", ["B16"]),
+  tranchee(t("A-13", "Temps gris : un léger malus ?", "oui · non", "oui, jamais une réserve"), "M-51"),
+  t("A-14", "Inconnu au premier plan : grille à trois niveaux ?", "oui · non", "oui"),
+  t("A-15", "Animal déclaré par le client : compté dans « gens » ?", "oui · non", "oui"),
+  t("A-16", "Un moment se coupe après 2 h sans photo ?", "oui · non", "oui (120 min)"),
+  t("A-17", "Panorama à partir de 2,2 (Lecture) ; bande à 2,4 (Mise en page) ?", "oui · non", "oui"),
+  t("A-18", "Trop petite pour le regard fin : 1 600 px ?", "oui · non", "oui"),
+  t("A-19", "IA « à écarter » seule : réserve seulement si rien d'autre n'est bon ?", "oui · non", "oui"),
+  t("A-20", "Deuxième lecture des champs à enjeu (yeux d'une photo principale, groupe complet) ?", "oui · non", "oui si le budget le permet"),
+  t("A-21", "Plafond de densité par profil (long voyage 4,5…) ?", "oui · non", "oui, réglé au banc en deux versions"),
+  t("A-22", "Place du moment fort : 55 à 75 % (60 à 70 en long voyage) ?", "oui · non", "oui"),
+  t("A-23", "Coupure de chapitre sans GPS : après 8 h de silence ?", "oui · non", "8 h"),
+  t("A-24", "Une photo encadrée seule avec sa légende (≈ 30 % de la page) est un blanc voulu ?", "oui · non", "oui"),
+  t("A-25", "Une vignette sur une photo à motif répétitif (sans personne ni texte) ?", "oui · non", "oui"),
+  t("A-26", "Coupe aux articulations : préférence et non interdit ?", "oui · non", "préférence"),
+  t("A-27", "Miroir automatique : jamais ?", "oui · non", "jamais (geste de l'atelier)"),
+  t("A-28", "Les marges des pages margées : les siennes (pli 20, extérieur 17,5, haut 17,5, bas 22,5 mm, à remesurer) ?", "oui · non", "oui"),
+  t("A-29", "Superposition en sobre : jamais ?", "oui · non", "jamais ; 4 % en équilibré, 8 % en stylisé"),
+  t("A-30", "Part minimale de pleines en sobre : 30 % ?", "oui · non", "30 %"),
+  t("A-31", "Photo de groupe (3 et plus) : 100 mm au plus petit côté ?", "oui · non", "oui"),
+  t("A-32", "Combos de polices : deux familles (trois sur les combos marqués) ?", "oui · non", "deux"),
+  t("A-33", "Le client voit quatre styles, rangés chacun sur des écoles en coulisse ?", "oui · non", "oui"),
+  t("A-34", "Dates en sous-titre de couverture ?", "oui · non", "non (oui en événement)"),
+  t("A-35", "Couleur des titres : deux (le papier sur fond sombre, l'accent sur fond clair) ?", "oui · non", "deux, comme il le fait"),
+  t("A-36", "Écriture au feutre pour le titre d'un pays, si elle n'imite pas l'écriture du pays ?", "oui · non", "oui"),
+  tranchee(t("A-37", "Échelle des tailles de texte : quatre ?", "oui · non", "quatre"), "M-52"),
+  t("A-38", "Les comptes (« 214 photos ce jour-là ») proposés à l'atelier, jamais posés seuls ?", "oui · non", "oui"),
+  tranchee(t("A-39", "Numéros de page ?", "oui · non", "non (aucun de ses magazines n'en a)"), "M-53"),
+  t("A-40", "S'arrêter à chaque arrêt au début, puis seulement quand la machine doute ?", "oui · non", "oui"),
+  t("A-41", "Une séance de critique par semaine au début ; un chiffre qui baisse bloque une fusion ; « automatique » après 10 magazines de suite ; le banc dans l'atelier ?", "oui · non", "oui, oui, oui, oui"),
+  tranchee(t("A-42", "La question « Dans cinq ans, qu'est-ce qui vous touchera ? » : l'essayer ?", "oui · non", "non pour l'instant"), "M-55"),
+  t("A-43", "Ajouter le thème « couple sur plusieurs années » ?", "oui · non", "oui"),
+];
+
+/* ─────────────────────────── 4. Les conflits relevés (30-INTEGRATION §4.b) ─────────────────────────── */
+
+export const CONFLITS: readonly Conflit[] = [
+  { id: "B1", regles: ["TRI-151", "TRI-153", "REC-153", "VER-071"], quoi: "la réserve « pas de place » contre « la réserve ne contient que des faibles »", resolution: "mathias", retour: "M-42", arbitrage: "on propose plus de pages ; une bonne photo ne va jamais en réserve pour la place" },
+  { id: "B2", regles: ["VER-019", "REC-153"], quoi: "réparer une photo de gens trop petite en sortant la plus faible", resolution: "mathias", retour: "M-09", arbitrage: "sortir seulement une photo déjà faible ; sinon une double voisine du même jour" },
+  { id: "B3", regles: ["MEP-126", "TXT-030", "TXT-031"], quoi: "une couleur seule sauve-t-elle une page presque vide", resolution: "mathias", retour: "M-07", arbitrage: "un fond sauve la page ; MEP-126 à corriger" },
+  { id: "B4", regles: ["ASS-102", "MEP-057"], quoi: "une belle photo seule ou dans une double dense", resolution: "mathias", retour: "M-32", arbitrage: "elle entre dans une double dense qui a du sens, en photo principale" },
+  { id: "B5", regles: ["VER-030", "CV-014"], quoi: "une photo vue deux fois, couverture comprise", resolution: "mathias", retour: "M-40", arbitrage: "non : la couverture n'est pas à l'intérieur, le contrôle bloque" },
+  { id: "B6", regles: ["TRI-056", "VER-021", "VER-089"], quoi: "écartée sous 100 ppp, bloquée sous 150", resolution: "mathias", retour: "M-44", arbitrage: "pas de limite pour l'instant : un signal ; l'écart « inimprimable » reste à préciser", parametres: ["ppp_plancher"] },
+  { id: "B7", regles: ["MEP-014", "POL-032"], quoi: "texte au pli : 20 mm contre 10 mm", resolution: "integration", arbitrage: "20 mm jusqu'à l'exemplaire témoin", parametres: ["texte_pli_mm"] },
+  { id: "B8", regles: ["LEC-073", "MEP-076", "VER-013"], quoi: "air au-dessus de la tête : 0,15 contre 0,25", resolution: "integration", arbitrage: "0,15 dans la zone, 0,25 en confort P5", parametres: ["air_tete"] },
+  { id: "B9", regles: ["LEC-090", "REC-004", "CV-004"], quoi: "trois seuils de « nos personnes »", resolution: "integration", arbitrage: "celui de la Lecture, lu par tous ; la qualité compte aussi (M-49)", retour: "M-49", parametres: ["visage_sujet_min"] },
+  { id: "B10", regles: ["LEC-108", "REC-006"], quoi: "le groupe du projet", resolution: "integration", arbitrage: "le plus grand nombre récurrent (M-04) et le refus des foules", parametres: ["groupe_recurrence_min"] },
+  { id: "B11", regles: ["TXT-023"], quoi: "les lieux réglés par thème ou par profil", resolution: "mathias", retour: "M-38", arbitrage: "les lieux dès qu'ils sont intéressants", parametres: ["lieux"] },
+  { id: "B12", regles: ["STY-013"], quoi: "l'échelle de sobriété inversée", resolution: "mathias", retour: "M-06", arbitrage: "famille = sobre ; STY-013 à corriger", parametres: ["sobriete"] },
+  { id: "B13", regles: ["TRI-042", "ASS-068"], quoi: "définition d'une demi-page : 150 contre 200", resolution: "integration", arbitrage: "150 plancher, 200 pour une pleine ou une photo principale", parametres: ["seuil_ppp_demi"] },
+  { id: "B14", regles: ["VER-003"], quoi: "essais de réparation : 6 contre 3", resolution: "integration", arbitrage: "3 par faute, 5 tours", parametres: ["essais_reparation"] },
+  { id: "B15", regles: ["VER-002"], quoi: "jamais un P0 accepté contre l'atelier qui corrige tout", resolution: "mathias", retour: "M-46", arbitrage: "l'atelier ne force pas une faute" },
+  { id: "B16", regles: ["REC-123", "REC-089"], quoi: "première double jamais dense contre réunion à la date de sa première photo", resolution: "integration", arbitrage: "la réunion glisse d'une double (A-12)" },
+  { id: "B17", regles: ["ASS-098", "MEP-064"], quoi: "plafond d'une double en fête : 9 contre 12", resolution: "integration", arbitrage: "9, 12 en série voulue, 6 avec des personnes", parametres: ["photos_max_double"] },
+  { id: "B18", regles: ["VER-082", "POL-031"], quoi: "corps minimal d'une légende : 8 contre 7 pt", resolution: "integration", arbitrage: "8 pt jusqu'à l'épreuve imprimée", parametres: ["corps_legende_min_pt"] },
+  { id: "B19", regles: ["LEC-133", "LEC-136"], quoi: "rayon du lieu nommé et de la confirmation", resolution: "integration", arbitrage: "deux paramètres (chercher, titrer) ; confirmation au niveau de la commune", parametres: ["lieu_nomme_rayon_m"] },
+  { id: "B20", regles: ["REC-082"], quoi: "nombre de grandes entorses", resolution: "mathias", retour: "M-50", arbitrage: "2, 3 dès 14 doubles, plus en stylisé", parametres: ["entorses_max"] },
+  { id: "B21", regles: ["REC-162", "REC-158", "REC-160"], quoi: "la fin : au revoir, nous deux ou gens", resolution: "mathias", retour: "M-35", arbitrage: "auto", parametres: ["fin_type"] },
+  { id: "B22", regles: ["CV-007", "CV-006"], quoi: "couverture d'un couple : duo ou idée", resolution: "mathias", retour: "M-47", arbitrage: "l'idée, l'une des trois reste le groupe" },
+  { id: "B23", regles: ["REC-090"], quoi: "réunion muette ou titrée", resolution: "mathias", retour: "M-37", arbitrage: "titrée si la mise en page s'y prête", parametres: ["entorse_signalement"] },
+  { id: "B24", regles: ["TXT-003"], quoi: "titre sans lieu : dates ou thème", resolution: "mathias", retour: "M-39", arbitrage: "rien par défaut", parametres: ["repli_titre_sans_lieu"] },
+];

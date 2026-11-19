@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { REGISTRE, comptesParDomaine, comptesParStatut, reglesDuDomaine, versionRegles } from "@/lib/mise-en-page/regles";
 import { A_PRECISER, DOMAINES, STATUTS, type Regle } from "@/lib/mise-en-page/regles/types";
 import { REGLAGES } from "@/lib/mise-en-page/editeur/reglages";
+import { texteRegistreSocle } from "./socle-doc";
 
 export const FICHIER_DOC = "docs/moteur/tunnel/REGISTRE.md";
 
@@ -60,6 +61,8 @@ export function texteDoc(): string {
     l.push("", `## ${NOM_DOMAINE[d]} (${rs.length})`, "", "| Id | Famille | Statut | Règle | Profils | Réglages | Source |", "|---|---|---|---|---|---|---|");
     for (const r of rs) l.push(ligne(r));
   }
+  /* 19/11 (T-226) : le socle, par moteur et par priorité */
+  l.push(...texteRegistreSocle());
   l.push("");
   return l.join("\n");
 }
