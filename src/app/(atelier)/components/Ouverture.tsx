@@ -19,7 +19,7 @@ import { useEffect, useRef } from 'react'
 /* Le prix d'appel vient de content.ts, qui le dérive de la grille : la note
    sous le bouton ne peut pas rester en arrière d'un changement de prix. */
 import { CTA_NOTE_PRICE } from '../content'
-import { auClicGlisser } from '../noel/glisser'
+import { auClicGlisser, glisserVers } from '../noel/glisser'
 import './ouverture.css'
 
 const PLI = 120, FONDU = 1700, BATTEMENT = 1000
@@ -282,6 +282,11 @@ export default function Ouverture({ noel = false }: { noel?: boolean }) {
      Au CLIC seulement, jamais à la molette. Le hero recule pendant que la
      première page de l'univers monte le prendre. */
   const descendre = () => {
+    /* PENDANT NOËL (Mathias, 19/11) : le chapitre de la carte cadeau est
+       juste dessous ; on y glisse, court, au lieu de la longue page qui se
+       tourne jusqu'à l'univers. `noel` s'éteint seul après le 25/12
+       (noelAuSite) : le bouton retrouve alors sa descente d'origine. */
+    if (noel && glisserVers('noel-accueil')) return
     const cible = document.getElementById('u1')
     const hero = cadre.current
     if (!cible || !hero) return
