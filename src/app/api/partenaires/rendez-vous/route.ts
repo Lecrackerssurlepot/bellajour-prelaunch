@@ -9,7 +9,8 @@ import { lireDemandeProspect } from "@/lib/collectif/prospectsSaisie";
 
 /**
  * POST /api/partenaires/rendez-vous — réserver un premier échange depuis
- * /partenaires. `{ debut, nom, organisation, email, telephone?, message? }`.
+ * /partenaires. `{ debut, nom, organisation, email, telephone, evenement_debut,
+ * evenement_fin, participants, message? }` : tout est obligatoire sauf le message..
  *
  * Route PUBLIQUE, sans token. Elle ne croit rien : le créneau est refait
  * depuis les règles (`lireCreneau`), la demande relue (`lireDemandeProspect`),

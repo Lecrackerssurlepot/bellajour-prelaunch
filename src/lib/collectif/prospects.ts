@@ -20,6 +20,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { plagesOccupees, poserEvenementComplet, retirerEvenement, type Raison } from "./agenda";
 import { chevauche, REGLES_RDV, type Creneau, type Plage } from "./creneaux";
 import { colonneAbsente, tableAbsente } from "./migration";
+import { periodeEvenement } from "./prospectsSaisie";
 import type { DemandeProspect } from "./prospectsSaisie";
 import { connexionDe, lireInterlocuteurs, type Interlocuteur } from "./rendezvous";
 
@@ -102,21 +103,26 @@ export async function reserverProspect(supabase: SupabaseClient, demande: Demand
   if (occ.occupes.some((o) => chevauche(o, creneau))) return { ok: false, echec: pris() };
 
   const organisateur = organisateurDe(equipe);
-  const { data: ligne, error } = await supabase
-    .from("collectif_rdv_prospects")
-    .insert({
-      nom: demande.nom,
-      organisation: demande.organisation,
-      email: demande.email,
-      telephone: demande.telephone,
-      message: demande.message,
-      debut: creneau.debut,
-      fin: creneau.fin,
-      organisateur_cle: organisateur.inter.cle,
-    })
-    .select("id")
-    .single<{ id: string }>();
-  if (error) {
+  const base = {
+    nom: demande.nom,
+    organisation: demande.organisation,
+    email: demande.email,
+    telephone: demande.telephone,
+    message: demande.message,
+    debut: creneau.debut,
+    fin: creneau.fin,
+    organisateur_cle: organisateur.inter.cle,
+  };
+  const inserer = (ligne: Record<string, unknown>) => supabase.from("collectif_rdv_prospects").insert(ligne).select("id").single<{ id: string }>();
+  let { data: ligne, error } = await inserer({ ...base, evenement_debut: demande.evenement_debut, evenement_fin: demande.evenement_fin, participants: demande.participants });
+  /* Repli tant que 20261119 n'est pas appliquée : le rendez-vous passe, la date et le nombre ne vivent
+     que dans l'événement Google et le bloc de la routine. INSERT d'une colonne inconnue = PGRST204. */
+  if (error && (error.code === "PGRST204" || colonneAbsente(error.code))) {
+    console.warn("[partenaires] colonnes evenement_debut/evenement_fin/participants absentes : migration 20261119 à appliquer");
+    ({ data: ligne, error } = await inserer(base));
+  }
+  if (error || !ligne) {
+    if (!error) return { ok: false, echec: { statut: 500, error: "ecriture_impossible", message: "Le rendez-vous n'a pas été enregistré." } };
     if (error.code === "23505") return { ok: false, echec: pris() };
     return { ok: false, echec: tableAbsente(error.code) ? PAS_PRET : { statut: 500, error: "ecriture_impossible", message: "Le rendez-vous n'a pas été enregistré." } };
   }
@@ -132,6 +138,7 @@ export async function reserverProspect(supabase: SupabaseClient, demande: Demand
         "Rendez-vous pris depuis bellajour.fr/partenaires.",
         `${demande.nom} · ${demande.organisation}`,
         `${demande.email}${demande.telephone ? ` · ${demande.telephone}` : ""}`,
+        `Événement : ${periodeEvenement(demande.evenement_debut, demande.evenement_fin)} · ${demande.participants} participants`,
         demande.message ? `Projet : ${demande.message}` : null,
       ]
         .filter(Boolean)
@@ -165,21 +172,29 @@ export type RdvProspectAtelier = {
   email: string;
   telephone: string | null;
   message: string | null;
+  evenement_debut: string | null;
+  evenement_fin: string | null;
+  participants: number | null;
   debut: string;
   visio_url: string | null;
 };
 
 /** Les rendez-vous PRIS et à venir, le plus proche d'abord. `null` sans la migration 20261118. */
 export async function lireRdvProspects(supabase: SupabaseClient, maintenant: Date): Promise<RdvProspectAtelier[] | null> {
-  const { data, error } = await supabase
-    .from("collectif_rdv_prospects")
-    .select("id, nom, organisation, email, telephone, message, debut, visio_url")
-    .eq("statut", "pris")
-    .gt("fin", maintenant.toISOString())
-    .order("debut")
-    .limit(100);
+  const lire = (colonnes: string) =>
+    supabase.from("collectif_rdv_prospects").select(colonnes).eq("statut", "pris").gt("fin", maintenant.toISOString()).order("debut").limit(100);
+  const COLONNES = "id, nom, organisation, email, telephone, message, debut, visio_url";
+  let { data, error } = await lire(`${COLONNES}, evenement_debut, evenement_fin, participants`);
+  /* Repli 42703 tant que 20261119 n'est pas appliquée. */
+  if (error && colonneAbsente(error.code)) ({ data, error } = await lire(COLONNES));
   if (error) return null;
-  return ((data ?? []) as RdvProspectAtelier[]).map((r) => ({ ...r, debut: new Date(r.debut).toISOString() }));
+  return ((data ?? []) as unknown as Partial<RdvProspectAtelier>[]).map((r) => ({
+    ...(r as RdvProspectAtelier),
+    evenement_debut: r.evenement_debut ?? null,
+    evenement_fin: r.evenement_fin ?? null,
+    participants: r.participants ?? null,
+    debut: new Date(r.debut as string).toISOString(),
+  }));
 }
 
 /**
