@@ -2036,6 +2036,12 @@ blanc.
 ## 18/11/2026 — La page /partenaires et la connexion Google de chacun (D33, T-148), sur branche
 
 - **Code** sur `feat/partenaires-rendez-vous`. Rien en production.
+- **19/11 : formulaire de /partenaires complété (PR #394, en production)** : téléphone, début et fin de l'événement,
+  nombre de participants, tout obligatoire sauf le message. **Migration `20261119_partenaires_evenement.sql` APPLIQUÉE
+  le 19/11 via le MCP Supabase, sur accord explicite de Mathias** : `evenement_debut`, `evenement_fin` (date),
+  `participants` (integer), contraintes vérifiées, l'API de la base les lit. Jamais encore vu sur un vrai rendez-vous.
+  La routine cloud « Prépa call » est branchée (jeton et variables posés le 19/11) et a écrit dans Notion lors du test
+  UQAT (pages ensuite mises à la corbeille).
 - **Migration `20261118_partenaires_rendez_vous.sql` : APPLIQUÉE le 18/11 via le MCP Supabase, sur accord explicite de
   Mathias, vérifiée en SQL** (avant : aucune des trois colonnes, pas de table ; après : `google_refresh`, `google_email`,
   `google_connecte_le` sur `collectif_interlocuteurs`, `collectif_rdv_prospects` à 14 colonnes, RLS activée, zéro policy,

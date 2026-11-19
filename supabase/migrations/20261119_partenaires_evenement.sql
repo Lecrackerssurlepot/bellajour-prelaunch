@@ -5,6 +5,10 @@
 -- à la préparation de l'appel. `evenement_debut` et `evenement_fin` sont des
 -- jours (la fin peut être le jour du début) ; `participants` un entier.
 --
+-- APPLIQUÉE le 19/11/2026 via le MCP Supabase, sur accord explicite de Mathias
+-- (« Oui, applique »), et vérifiée : trois colonnes (date, date, integer), les
+-- deux contraintes, et l'API de la base les lit (200).
+--
 -- Sans cette migration : le code replie (PGRST204 à l'écriture, 42703 à la
 -- lecture), le rendez-vous passe, les trois valeurs vont dans l'événement Google
 -- et dans le bloc envoyé à la routine, mais pas en base ni dans l'atelier.
