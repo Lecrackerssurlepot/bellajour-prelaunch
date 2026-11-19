@@ -80,6 +80,14 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
     ok(`${page} : Noël s'éteint seul après le 25/12 (noelAuSite + revalidate)`,
       src.includes(".ouvert && noelAuSite(new Date())") && /export const revalidate = \d+/.test(src));
   }
+  {
+    /* « Découvrir l'univers » : pendant Noël, une glissade courte vers la carte
+       cadeau ; hors Noël (ou sans le chapitre), la descente d'origine vers #u1. */
+    const ouv = readFileSync("src/app/(atelier)/components/Ouverture.tsx", "utf8");
+    const corps = ouv.slice(ouv.indexOf("const descendre = () => {"));
+    ok("Découvrir l'univers : vers la carte pendant Noël, vers #u1 après",
+      /^const descendre = \(\) => \{[\s\S]*?if \(noel && glisserVers\('noel-accueil'\)\) return\n\s*const cible = document\.getElementById\('u1'\)/.test(corps));
+  }
   ok("jour d'envoi : vide = tout de suite (null)", jourEnvoiValide("", "2026-11-20") === null && jourEnvoiValide(undefined, "2026-11-20") === null);
   ok("jour d'envoi : du lendemain au 24 décembre",
     jourEnvoiValide("2026-11-21", "2026-11-20") === "2026-11-21" && jourEnvoiValide("2026-12-24", "2026-11-20") === "2026-12-24");
