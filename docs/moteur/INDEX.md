@@ -47,6 +47,10 @@ Un réglage ne change que sur un oui de Mathias, avec la preuve chiffrée (leço
 | [C20](couches/C20-compositeur.md) | Le compositeur : les questions (fiche qui prime), l'analyse (planches B5, regard fin, voyage, lieux), la composition portée du banc du tunnel (sélection, trame, pose, contrôle), chargée comme un premier jet ; « Posées et laissées », M-10 | R197 à R205 ; M-01 à M-10, N-32 à N-36 | sur branche (T-217, 18/11), PAS en prod |
 | [C21](couches/C21-analyse.md) | La page Analyse : le projet en une ligne, les questions, les chapitres, chaque photo (tags corrigeables, cinq notes, zone importante, relations), gardée / réserve / écartée renversable ; la composition qui se lance seule ; « Ce que j'ai changé » et ses leçons | M-30 à M-34, N-60, N-49b | sur branche (T-218, 18/11 soir), PAS en prod |
 
+Le **socle du moteur** (19/11, T-219, D34) n'est pas une couche : c'est le plan des sept moteurs et de l'échelle P0 à P7, en données
+(`src/lib/mise-en-page/regles/socle/`), contrôlé (`scripts/verif-mep-socle.ts`), lisible dans [tunnel/socle/](tunnel/socle/) et
+[tunnel/REGISTRE.md](tunnel/REGISTRE.md). Rien n'y est câblé : une couche future qui en applique une règle la cite par son identifiant.
+
 La **lecture IA** (lot F, #363, 14/11) a son format : [LECTURE-IA.md](LECTURE-IA.md), exemple [exemple-lecture-ia.json](exemple-lecture-ia.json), chargée par le même bouton « Premier jet ».
 
 Le **premier jet** (lot E, #362, 14/11) n'est pas une couche : c'est le format du magazine que la démo de composition écrit hors de l'éditeur et que « Premier jet » charge sur les photos importées, reliées par leur nom de fichier. [PREMIER-JET.md](PREMIER-JET.md), exemple [exemple-premier-jet.json](exemple-premier-jet.json), règle R136.

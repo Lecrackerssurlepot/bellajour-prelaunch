@@ -23,6 +23,42 @@ par règle) et écrit en clair dans [`REGISTRE.md`](REGISTRE.md), **généré, �
   pour un retour de Mathias ; `retiree` sans jamais réutiliser l'identifiant. Le compositeur citera une règle à chaque décision (`Decision`).
 - Comment ajouter une règle : `src/lib/mise-en-page/CLAUDE.md`, section « Le registre des règles ».
 
+## Le socle (19/11, T-219, D34) : le moteur en sept moteurs et huit priorités
+Le plan du moteur écrit le 19/11 (hors git) et approuvé par Mathias est inscrit dans le dépôt, en DONNÉES. **Rien n'est câblé** :
+le compositeur et l'éditeur n'en lisent rien ; c'est la carte de ce qu'on va construire, contrôlée au harnais.
+- **Les sept moteurs**, dans l'ordre, chacun reçoit des données, en rend, et ne revient jamais sur le précédent : Lecture, Tri, Récit,
+  Assortiment, Mise en page, Habillage (6a : il annonce les textes AVANT la mise en page ; 6b : il les écrit APRÈS), Revérification.
+- **L'échelle P0 à P7** : interdit absolu, fabrication, vérité, récit, assortiment, mise en page, style, préférence. Une règle ne force
+  jamais la violation d'un niveau au-dessus ; de P3 à P7 elle dit son repli.
+
+| Quoi | Où vit la donnée | Lisible dans |
+|---|---|---|
+| 1 234 règles (état d'intégration, statut, liens vers le registre) | `src/lib/mise-en-page/regles/socle/genere/regles.ts` (généré) | `REGISTRE.md`, partie « Le socle » |
+| 1 023 paramètres (doubles fusionnés, alias, valeur, plage, statut, réglage du code) | `…/socle/genere/parametres.ts` (généré) | `socle/PARAMETRES.md` |
+| 151 informations et leur libellé d'atelier, les rôles d'une photo | `…/socle/genere/informations.ts`, `…/socle/libelles.ts` | `socle/INFORMATIONS-TABLE.md` |
+| 27 questions et ce que chaque réponse règle | `…/socle/questions.ts` | `socle/QUESTIONS-TABLE.md` |
+| profils, thèmes, modificateurs, curseurs, écoles | `…/socle/genere/profils.ts` (généré) | `socle/QUESTIONS-TABLE.md` |
+| arbitrages, réponses de Mathias (M-35 à M-57), questions à trancher, conflits | `…/socle/decisions.ts` | `socle/A-TRANCHER.md` |
+| ce que chaque moteur reçoit et rend | `src/lib/mise-en-page/moteurs/contrats.ts` (types) | `socle/PROCESSUS.md` §2 |
+| le processus, les informations, les questions, l'entraînement, l'intégration, l'avis | copies NETTOYÉES (M-01) | `socle/*.md` |
+
+**Comment ajouter**, toujours : la donnée, puis `npx tsx --tsconfig tsconfig.json scripts/socle-doc.ts` et `scripts/regles-doc.ts`,
+puis le harnais (`scripts/verif-mep-socle.ts`).
+- **Une règle** : le socle hors git reste la matière ; on écrit la règle dans le lot du socle (`20` à `23`, puis `outils/extraire.py`)
+  et on rejoue `npx tsx --tsconfig tsconfig.json scripts/socle-import.ts`. Une retouche d'une règle importée (état, priorité, texte)
+  s'écrit dans `socle/decisions.ts` (`ARBITRAGES_INTEGRATION`, ou la réponse de Mathias qui la tranche), jamais dans `genere/`.
+  Identifiant du lot (`LEC-`, `TRI-`, `REC-`, `ASS-`, `MEP-`, `TXT-`, `COU-`, `POL-`, `FIL-`, `STY-`, `CV-`, `VER-` et trois chiffres),
+  un repli de P3 à P7, chaque chiffre en paramètre nommé, GÉNÉRALE (M-01).
+- **Un paramètre** : il naît avec la règle qui le cite ; un nom en double se fusionne (le nom gardé, l'ancien en alias) ; une valeur
+  tranchée par Mathias s'écrit dans sa réponse (`REPONSES_19_11`), une valeur d'arbitrage dans `PARAMETRES_ARBITRES`.
+- **Une information** : dans `11-INFORMATIONS` du socle (puis `outils/informations.py`), ou dans `INFOS_19_11` de `scripts/socle-import.ts` ;
+  son libellé d'atelier dans `socle/libelles.ts` quand la traduction mot à mot ne suffit pas (M-57). Une information lue n'est jamais
+  retirée faute d'usage : elle est « gardée pour l'atelier » (M-56).
+- **Une question** : dans `socle/questions.ts`, chaque réponse avec les paramètres qu'elle règle ; si le dossier porte déjà la réponse,
+  `depuisLeDossier` cite le champ réel (`fichier#mot`, relu par le harnais) et rien n'est demandé (M-54).
+- **Une réponse de Mathias** : ses mots dans `RETOURS-MATHIAS.md` (un M-…) ET dans `REPONSES_19_11` (à la lettre, le harnais compare),
+  avec les règles qu'elle confirme et les paramètres qu'elle pose ; ce qui reste ambigu va dans `aPreciser`.
+
 ## Le parcours
 1. **Analyse** (`TUNNEL.md`, `INVENTAIRE-PHOTO.md`) : sept couches. 1 fichier, 2 pixels, 3 ensembles, 4 lieux : sans IA, gratuites. 5 planches de
    16 vignettes, 6 regard fin photo par photo, 7 le voyage en un appel texte : IA, payantes. Seules les photos utiles arrivent à l'IA, jamais deux fois.
@@ -45,7 +81,8 @@ par règle) et écrit en clair dans [`REGISTRE.md`](REGISTRE.md), **généré, �
 | `regles/REGLES-CODEES-AU-BANC.md` | les règles réellement codées dans le compositeur du banc, celles qui n'ont pas pu l'être, les règles nées des critiques |
 | `RETOURS-MATHIAS.md` | les retours de Mathias et leurs règles générales |
 | `DEFINITION.md` | la définition v2 (18/11) : la table du nombre de photos par double, les cinq notes, écarter et réserver, structure, textes, questions, tags, corrections, paramètres par profil |
-| `REGISTRE.md` | **généré** par `scripts/regles-doc.ts` : le registre des règles, par domaine, avec sa version |
+| `REGISTRE.md` | **généré** par `scripts/regles-doc.ts` : le registre des règles, par domaine, avec sa version ; puis le socle, par moteur et par priorité |
+| `socle/` | le socle du 19/11 : copies nettoyées (PROCESSUS, INFORMATIONS, QUESTIONS-PARAMETRES, ENTRAINEMENT, INTEGRATION, AVIS) et tables générées (PARAMETRES, INFORMATIONS-TABLE, QUESTIONS-TABLE, A-TRANCHER) |
 
 ## État (18/11/2026)
 - Dans l'éditeur, sur branche (`feat/editeur-qui-compose`, T-217, couche C20) : « Composer le magazine » : les questions (fiche, qui prime),

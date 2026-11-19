@@ -10,6 +10,15 @@ Un fait sans date ne vaut rien — chaque ligne porte la sienne.
 
 ---
 
+## 19/11/2026 — Le socle du moteur inscrit en données : sur branche, PAS en production, RIEN DE CÂBLÉ
+
+- Branche `feat/socle-enregistre` (T-219, poussée, pas de PR) : le socle du 19/11 (sept moteurs, P0 à P7) en données dans
+  `src/lib/mise-en-page/regles/socle/` (1 234 règles, 1 023 paramètres, 151 informations, 27 questions, profils, thèmes, conflits),
+  contrats entre moteurs en types (`src/lib/mise-en-page/moteurs/contrats.ts`), harnais `verif-mep-socle.ts`, docs `docs/moteur/tunnel/socle/`.
+- Les réponses de Mathias du 19/11 (M-35 à M-57) sont au registre et dans les données ; la question n° 8 reste ouverte.
+- Le compositeur et l'éditeur n'en lisent rien (rejeu de fidélité identique). Le code bloque toujours sous 150 ppp (N-56) alors que M-44
+  dit « pas de limite pour l'instant » : à câbler. Aucune migration, aucune écriture en base, aucun appel à OpenAI.
+
 ## 18/11/2026 au soir — la version 2 dans l'éditeur, la page Analyse, « Ce que j'ai changé » : sur branche, PAS en production
 
 - Branche `feat/analyse-et-v2` (poussée, pas de PR), partie de `origin/feat/compositeur-v2` + `origin/main`. L'éditeur compose en v2.1
