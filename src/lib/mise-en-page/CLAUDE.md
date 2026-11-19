@@ -104,3 +104,15 @@ des leçons par règle, pur). Le compositeur (lot suivant) écrira une `Decision
    `scripts/regles-reprise.ts` si un cahier a changé) ; le harnais refuse une doc ou une reprise en retard.
 L'écran : `/admin/atelier/mise-en-page/regles` (lecture seule ; corrections lues par `GET …/lecons?bilan=regles`). Le navigateur n'importe
 jamais l'index de `regles/` (le registre entier passerait dans son paquet) : `types.ts` et `retours.ts` seulement.
+
+## Le socle (19/11, T-219, D34)
+`regles/socle/` : le plan du moteur en DONNÉES (sept moteurs, priorités P0 à P7), **lu par aucun module du compositeur ni de l'éditeur**.
+`types.ts` (les formes), `genere/` (GÉNÉRÉ par `scripts/socle-import.ts` depuis le socle hors git, nettoyé M-01, jamais édité : règles,
+paramètres, informations, profils), `decisions.ts` (à la main : arbitrages de l'intégration, réponses de Mathias M-35 à M-57, questions
+à trancher, conflits), `questions.ts`, `libelles.ts` (les libellés d'atelier, M-57), `conflits.ts` (le test des rivaux, forme simple),
+`index.ts`. Les réponses du 19/11 entrent aussi au registre des règles par `regles/decisions1911.ts`. `moteurs/contrats.ts` : ce que
+chaque moteur reçoit et rend, en TYPES seulement. Harnais `scripts/verif-mep-socle.ts` ; docs `docs/moteur/tunnel/socle/`, régénérées
+par `scripts/socle-doc.ts` et `scripts/regles-doc.ts`. Comment ajouter : `docs/moteur/tunnel/README.md`, section « Le socle ».
+Câbler une règle du socle dans le compositeur = la jouer au banc d'abord (rejeu identique hors de ce qu'elle change), comme toute règle.
+Le navigateur n'importe jamais `regles/socle/index.ts` (un mégaoctet de règles).
+

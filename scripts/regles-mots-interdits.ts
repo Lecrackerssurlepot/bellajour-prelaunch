@@ -31,3 +31,30 @@ export function motsDeProjet(texte: string): string[] {
   for (const f of FORMES_NUMERO_PHOTO) { const x = texte.match(f); if (x) vus.push(x[0].trim()); }
   return vus;
 }
+
+/**
+ * Le SOCLE (19/11, T-219) : la même garde, élargie aux lieux, enseignes et objets des deux magazines de référence du socle et aux formes
+ * de leurs repères (codes de magazine suivis d'un numéro, pages « p07 », numéros à deux chiffres « 07 »). Séparée de `MOTS_INTERDITS` :
+ * la reprise des cahiers (`regles-reprise.ts`) lit la première liste et doit rester ce qu'elle est.
+ */
+export const MOTS_INTERDITS_SOCLE: readonly string[] = [
+  ...MOTS_INTERDITS,
+  "Japon", "Japan", "japonais", "Tokyo", "Kyoto", "Osaka", "Nara", "Fuji", "Hiroshima", "Miyajima", "Hakone", "Hatsukaichi",
+  "Blue Elephant", "Mutekiya", "Antilles", "torii", "daruma", "Uluru", "Melbourne", "Brisbane", "Cairns", "Queensland",
+];
+
+export const FORMES_SOCLE: readonly RegExp[] = [
+  ...FORMES_NUMERO_PHOTO,
+  /\b(?:JAP|JAP-R|AUS|JP|AU)[- ]?(?:R )?\d{1,3}\b/,
+  /\[(?:AUS|AU|JAP|JP)\]/,
+  /\bp\d{2}\b/,
+  /(?<![\d,.\-:/h°A-Za-z#])(?<!h )0\d(?![\d,.:/h%\-])/,
+];
+
+/** Les mots et formes interdits par le socle trouvés dans un texte (vide = propre). */
+export function motsDuSocle(texte: string): string[] {
+  const t = sansAccent(texte);
+  const vus = MOTS_INTERDITS_SOCLE.filter((m) => new RegExp(`(^|[^a-z])${sansAccent(m).replace(/[-]/g, "\\-")}([^a-z]|$)`).test(t));
+  for (const f of FORMES_SOCLE) { const x = texte.match(f); if (x) vus.push(x[0].trim()); }
+  return vus;
+}

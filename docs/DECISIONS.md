@@ -830,3 +830,16 @@ Ce qui est tranché.
 `GOOGLE_AGENDA_CLIENT_SECRET`), le pas-à-pas sur `/admin/collectif/agendas`. Les règles sont dans
 `src/lib/collectif/CLAUDE.md`. Reste ouvert : un délai minimum avant un appel pris par un inconnu (aujourd'hui aucun,
 comme D23), et la durée annoncée (la brochure dit « 15 minutes », le créneau en fait 30).
+
+D34 (19/11/2026, plan approuvé par Mathias le 19/11) — **Le moteur de magazines a un SOCLE : sept moteurs qui se suivent sans jamais revenir
+sur le précédent (Lecture, Tri, Récit, Assortiment, Mise en page, Habillage, Revérification) et une échelle de priorité P0 à P7** (interdit
+absolu, fabrication, vérité, récit, assortiment, mise en page, style, préférence) : une règle d'un niveau ne force jamais la violation d'un
+niveau au-dessus, et toute règle de P3 à P7 dit son repli. Écrit hors git le 19/11 (`design-explorations/tunnel-2026-11-17/socle/`),
+il est inscrit dans le dépôt en DONNÉES (`src/lib/mise-en-page/regles/socle/`), avec ses contrôles (`scripts/verif-mep-socle.ts`) et ses
+documents (`docs/moteur/tunnel/socle/`). Demande de Mathias : « Tu peux juste enregistrer toutes les infos ? On verra la partie UX plus tard ! »
+Ses réponses du 19/11 y sont portées (M-35 à M-57) ; ce qu'elles laissent ouvert est « à préciser », jamais inventé.
+**Rien n'est câblé** : le compositeur et l'éditeur composent comme avant ; les paramètres du socle ne remplacent pas encore
+`editeur/reglages.ts` ni `compositeur/reglagesCompositeur.ts`. Le câblage se fera moteur par moteur, chaque fois rejoué au banc.
+(Le numéro D33 demandé était déjà pris par la page `/partenaires`.)
+**Conséquence :** une règle, un paramètre, une information ou une question du moteur s'ajoute d'abord au socle (README du tunnel,
+section « Le socle »), passe le harnais, puis seulement entre dans le code.

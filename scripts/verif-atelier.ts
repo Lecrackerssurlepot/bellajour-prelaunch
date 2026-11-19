@@ -504,6 +504,7 @@ import { verifierMepReleve } from "./verif-mep-releve";
 import { verifierMepAnalyseV2 } from "./verif-mep-analyse-v2";
 /* 18/11 (T-216, M-11) : le registre des règles du tunnel (forme, retours de Mathias, contrôles, M-01, version, docs générées). */
 import { verifierMepRegles } from "./verif-mep-regles";
+import { verifierMepSocle } from "./verif-mep-socle";
 import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
@@ -7519,7 +7520,7 @@ verifierMepGeneres(ok, titre);
 verifierNoelCartes(ok, titre);
 verifierNoelExemplaires(ok, titre);
 
-void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => verifierMepLireLesPhotos(ok, titre)).then(() => verifierMepLectureComplete(ok, titre)).then(() => verifierMepRegles(ok, titre)).then(() => verifierMepCompositeur(ok, titre)).then(() => verifierMepReleve(ok, titre)).then(() => verifierMepAnalyseV2(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
+void verifierT005().then(verifierProtection).then(verifierT203).then(verifierT176).then(verifierLot1RudeEpreuve).then(verifierHeicComposer).then(verifierPdfCanva).then(() => verifierMepCouverture(ok, titre)).then(() => verifierMepStyle(ok, titre)).then(() => verifierMepRecette(ok, titre)).then(() => verifierMepDerniere(ok, titre)).then(() => verifierMepLectureIA(ok, titre)).then(() => verifierMepCouleurs(ok, titre)).then(() => verifierMepVague1(ok, titre)).then(() => verifierMepPalette(ok, titre)).then(() => verifierMepTypes(ok, titre)).then(() => verifierMepSignatures(ok, titre)).then(() => verifierMepLireLesPhotos(ok, titre)).then(() => verifierMepLectureComplete(ok, titre)).then(() => verifierMepRegles(ok, titre)).then(() => verifierMepSocle(ok, titre)).then(() => verifierMepCompositeur(ok, titre)).then(() => verifierMepReleve(ok, titre)).then(() => verifierMepAnalyseV2(ok, titre)).then(() => verifierNoelParcours(ok, titre)).then(() => {
   console.log(ko === 0 ? "\nTOUT PASSE\n" : `\n${ko} ECHEC(S)\n`);
   process.exit(ko === 0 ? 0 : 1);
 });
