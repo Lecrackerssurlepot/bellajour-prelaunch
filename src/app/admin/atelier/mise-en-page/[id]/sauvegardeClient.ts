@@ -94,7 +94,16 @@ async function lireLocal(cle: string): Promise<CopieLocale | null> {
   if (!db) return null;
   try {
     const v = await promesse<unknown>(db.transaction(MAGASIN, "readonly").objectStore(MAGASIN).get(cle));
-    return copieLocaleValide(v, cle);
+    const c = copieLocaleValide(v, cle);
+    /* M-58 (21/11) : une copie locale que la sauvegarde refuserait n'est JAMAIS écrasée en silence par celle du serveur. On la met
+       de côté sous une clé à part (`<clé>#refusee-<date>`, jamais relue par l'éditeur, récupérable) et on le dit dans la console.
+       Le 21/11, un magazine composé de 29 doubles a été remplacé à l'ouverture par une copie de 2 doubles (rattrapé à la main). */
+    if (!c && v !== undefined && v !== null) {
+      const de = `${cle}#refusee-${new Date().toISOString()}`;
+      try { await promesse(db.transaction(MAGASIN, "readwrite").objectStore(MAGASIN).put({ ...(v as object), cle: de })); } catch { /* quota : rien */ }
+      console.error("[mise-en-page] copie locale refusée par la sauvegarde, mise de côté sous", de);
+    }
+    return c;
   } catch {
     return null;
   }

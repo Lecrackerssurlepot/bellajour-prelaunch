@@ -139,7 +139,7 @@ export async function verifierMepLireLesPhotos(ok: (nom: string, reussi: boolean
       && relCor?.photos.get("g")?.role?.role === "heros" && (O.tagsIA(relCor).get("g") ?? []).includes("ia_heros") && !(O.tagsIA(relCor).get("g") ?? []).includes("ia_detail")
       && O.lireLectureIA(JSON.parse(JSON.stringify(cor.lecture)) as unknown).ok);
   ok("R194 : la correction devient une LEÇON `tag_corrige` de règle IA, valide pour la route (`leconValide`), avec la proposition et le geste",
-    !!cor?.lecon && cor.lecon.type === "tag_corrige" && cor.lecon.regle === "IA" && cor.lecon.proposition === "rôle : Détail" && cor.lecon.geste === "rôle : Héros"
+    !!cor?.lecon && cor.lecon.type === "tag_corrige" && cor.lecon.regle === "IA" && cor.lecon.proposition === "rôle : Détail" && cor.lecon.geste === "rôle : Principale"
       && cor.lecon.photos[0] === "g" && O.leconValide(cor.lecon));
   const cor2 = cor ? O.corrigerTag(cor.lecture, cat, "g", { sujet: "objet" }) : null;
   const retour = cor2 ? O.corrigerTag(cor2.lecture, cat, "g", { role: "detail" }) : null;

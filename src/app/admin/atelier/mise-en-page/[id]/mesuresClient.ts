@@ -15,7 +15,7 @@ import type { Adresse } from "./contexte";
 
 const COTE = 256;
 const EN_VOL_MAX = 4;
-const PAQUET = 150;
+const PAQUET = 20;   // 21/11 (M-58) : la lecture se pose tous les 20, pas à la fin seulement (150 dépassait un album de 100)
 const BASE = "bj-mep-mesures";
 const MAGASIN = "mesures";
 /** Changer la mesure change la version : les anciennes mesures ne sont plus relues. */
@@ -147,6 +147,43 @@ async function mesurer(source: string): Promise<Mesure | null> {
 const TOUTES = new Map<string, Mesure>();
 export const mesuresConnues = (): ReadonlyMap<string, Mesure> => TOUTES;
 
+/** Une promesse bornée : au-delà de `ms`, null (une photo qui ne répond pas ne bloque jamais les autres). */
+const borne = <T,>(p: Promise<T>, ms: number): Promise<T | null> =>
+  Promise.race([p, new Promise<null>((ok) => setTimeout(() => ok(null), ms))]);
+/** 21/11 (M-58) : le délai d'une mesure à la demande ; au-delà, la photo est dite « sans mesure », jamais attendue en silence. */
+export const MESURE_DELAI_MS = 15000;
+
+/**
+ * 21/11 (M-58) : mesurer À LA DEMANDE les photos qui n'ont pas encore leur mesure, et ATTENDRE. « Composer » l'appelle avant
+ * de composer : la zone importante, les visages et la netteté de chaque photo sont connus avant le moindre recadrage. Le 21/11,
+ * un magazine de 100 photos a été composé avec 15 mesures seulement (la mesure de fond n'avait pas fini) : 85 photos sans
+ * zone chaude, donc recadrées sans savoir ce qu'elles montrent. Rend le nombre de photos mesurées et celles restées sans mesure.
+ */
+export async function mesurerManquantes(
+  catalogue: Catalogue, adresses: ReadonlyMap<string, Adresse>, envoyer: (g: Geste) => void,
+  avance: (fait: number, total: number) => void, signal?: AbortSignal,
+): Promise<{ mesurees: number; sans: string[] }> {
+  const ids = [...catalogue.keys()].filter((id) => !TOUTES.has(id));
+  const sans: string[] = [];
+  let fait = 0, k = 0;
+  avance(0, ids.length);
+  const une = async (id: string) => {
+    let m = await lire(id);
+    if (!m) {
+      const a = adresses.get(id);
+      const source = a?.vignette ?? a?.moyenne ?? null;
+      m = source ? await borne(mesurer(source), MESURE_DELAI_MS) : null;
+      if (m) void ecrire(id, m);
+    }
+    if (m) TOUTES.set(id, m); else sans.push(id);
+    avance(++fait, ids.length);
+  };
+  const filer = async () => { while (!signal?.aborted && k < ids.length) await une(ids[k++]); };
+  await Promise.all(Array.from({ length: EN_VOL_MAX }, filer));
+  envoyer({ type: "poserLecture", lecture: lireMesures(catalogue, TOUTES) });
+  return { mesurees: catalogue.size - sans.length, sans };
+}
+
 export function useLecture(catalogue: Catalogue | null, adresses: ReadonlyMap<string, Adresse>, envoyer: (g: Geste) => void): void {
   const mesures = useRef(TOUTES);
   const tentees = useRef(new Set<string>());
@@ -170,7 +207,7 @@ export function useLecture(catalogue: Catalogue | null, adresses: ReadonlyMap<st
     const une = async (x: { id: string; source: string }) => {
       tentees.current.add(x.id);
       let m = await lire(x.id);
-      if (!m) { m = await mesurer(x.source); if (m) void ecrire(x.id, m); }
+      if (!m) { m = await borne(mesurer(x.source), MESURE_DELAI_MS); if (m) void ecrire(x.id, m); }
       if (m) mesures.current.set(x.id, m);
       if (!fini && ++depuis >= PAQUET) { depuis = 0; poser(); }
     };

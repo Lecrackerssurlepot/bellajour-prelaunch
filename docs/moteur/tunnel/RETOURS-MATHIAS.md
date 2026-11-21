@@ -122,3 +122,29 @@ Statut : `confirmee_mathias` dans les données du socle (`regles/socle/decisions
 | n° 8 (couple : deux photos par double) | « Je ne comprends pas » | (aucune règle : la question reste OUVERTE, à lui réexpliquer) | ouverte |
 
 Les autres questions de l'annexe, sans réponse, prennent la valeur annoncée dans `A-TRANCHER.md`, marquée « par défaut, non validée ».
+
+## Le 21/11 : un événement d'une journée, photographié à l'appareil (M-58 à M-71)
+
+Son essai : un projet d'un inconnu, une centaine de très belles photos d'appareil photo (aucune date), beaucoup de photos proches.
+Ses mots ci-dessous sont des extraits de son message (dicté) ; le diagnostic chiffré est dans
+`docs/moteur/recettes/2026-11-21-evenement-appareil.md`. Règles au registre : `regles/retours2111.ts`.
+
+| Sur | Ses mots | Règle générale | Statut |
+|---|---|---|---|
+| (incident) | (constaté en vérifiant : le magazine composé n'était pas enregistré, et 85 photos sur 100 n'avaient pas leur zone chaude) | **M-58** Rien ne se compose sur des photos à moitié lues, et rien de ce qui est composé ne se perd : mesures locales prises AVANT de composer, gabarit de l'atelier posé avec ses cadres, copie locale refusée mise de côté. | codée (`compositeur/pose.ts`, `[id]/mesuresClient.ts`, `[id]/sauvegardeClient.ts`) |
+| les gabarits | « le vrai problème, dans un premier temps, c'est qu'il y a trop peu, en fait, de gabarits » ; « le gabarit revient souvent » ; « je pense que le vrai problème c'est les gabarits. Et définir pourquoi un gabarit. » | **M-59** Assez de formes distinctes pour qu'aucune ne soit forcée plusieurs fois ; chaque gabarit posé porte sa raison. | non câblée |
+| le texte | « Il y a trop peu d'emplacements texte pour faire des trucs vraiment sympas que tu pourrais remplir, en fait, avec même du faux texte » | **M-60** Des places de texte dans les gabarits, montrées avec un faux texte d'exemple à l'écran, jamais exporté ; un texte vrai n'est jamais retiré faute de place. | non câblée |
+| les photos enlevées | « Je ne sais pas trop pourquoi tu as enlevé certaines photos » | **M-61** Une photo hors du magazine dit pourquoi, sur sa vignette. | non câblée |
+| les couleurs | « est-ce que quand c'est classique, du coup c'est souvent les mêmes couleurs, est-ce que quand c'est artistique, les couleurs changent un peu par rapport à la photo principale » | **M-62** Classique : la palette du magazine ; artistique : le fond pris dans la photo principale de la double. | non câblée |
+| le recadrage | « page 48-49, il y a une photo, celle en bas à droite, où tu vois, t'as complètement coupé la lotus, alors que ça reste quand même l'élément principal » | **M-63** Le sujet principal n'est jamais coupé, même un objet ; sans lecture, on rogne peu et au centre, et on le dit. | non câblée |
+| la police | « le gros problème, c'est que tu as du mal à choisir encore la typo qu'il faut » | **M-64** La police suit le thème lu dans les photos et le style, et se justifie. | non câblée |
+| les photos proches | « est-ce qu'ils veulent un magazine assez grand, avec beaucoup de fois les mêmes photos, ou pas, ou beaucoup de textes. Donc là, on n'avait pas les infos. » | **M-65** Beaucoup de photos proches : le format se demande (grand, court, ou avec du texte). | non câblée |
+| la couverture | « le titre ne se voit pas trop par rapport à la couleur du fond » | **M-66** Le contraste du titre de couverture est vérifié. | non câblée |
+| les vues d'ensemble | « j'en faudrait, plusieurs, avec des photos plus de groupes » ; « Vue d'ensemble, c'est bien pour des couvertures, surtout. » | **M-67** Des propositions de couverture avec le groupe ; la vue d'ensemble d'abord candidate de couverture. | non câblée |
+| la fin | « La dernière photo, elle est jolie […] mais je vois pas ce qu'elle apporte comme fin. Contrairement à des photos de l'avant-dernière page où il y a beaucoup plus les photos de groupes » | **M-68** La fin donne l'attention aux photos de groupe fortes des derniers moments. | non câblée |
+| les angles | « il y a beaucoup de photos qui sont du type détail d'une autre photo […] ça aurait été vraiment intéressant de faire des compositions de ce style-là » | **M-69** Plusieurs angles d'une même scène : une double de scène, la principale et ses détails. | non câblée |
+| « satellite » | « Le rôle satellite, encore une fois, j'ai pas compris ce que c'était, donc alors que tu m'expliques pour qu'on enlève ce truc bizarre. Et peut-être qu'il pourrait y avoir d'autres tags qui pourraient plus aider dans la sélection. » | **M-70** « Principale » et « Accompagnement » sur les vignettes, jamais « héros » ni « satellite ». | codée (`editeur/lectureIA.ts`) |
+| les questions | « les questions là, je sais pas quoi répondre de manière générale, donc on fera un truc peut-être un peu plus stylé, un peu plus généraliste […] sur lequel peut-être le client pourrait poser des questions » | **M-71** Des questions générales qu'on sait répondre, qu'on peut poser au client. | non câblée |
+
+Ce qu'il a aimé, à garder : le fond de page qui reprend une couleur de la photo ; le dos adapté aux pages ; un ensemble « joli ».
+La question n° 8 (couple : une photo par page) reste ouverte.

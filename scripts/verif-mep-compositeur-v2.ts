@@ -8,7 +8,8 @@
 
 import { CAUSES_ECART, REGLAGES_V2_DEFAUT, TABLE_DENSITE, composer, nombreVoulu, type CinqNotes, type EntreeCompo, type IAPhoto, type PhotoCompo, type ResultatCompo } from "@/lib/mise-en-page/compositeur";
 import { charger } from "@/lib/mise-en-page/compositeur/selection";
-import { cadresDe } from "@/lib/mise-en-page/magazine";
+import { cadresDe, enregistrerGabarits, TEMPLATES_DESSINES } from "@/lib/mise-en-page/magazine";
+import { contenuValide } from "@/lib/mise-en-page/sauvegarde";
 import { cadrer } from "@/lib/mise-en-page/recadrage";
 import { belle, entonnoirV2 } from "@/lib/mise-en-page/compositeur/selectionV2";
 import { pairesEtEntorses, sensPourBelle } from "@/lib/mise-en-page/compositeur/trame";
@@ -56,6 +57,21 @@ const entree = (photos: PhotoCompo[], o: Partial<EntreeCompo> = {}): EntreeCompo
 const doublesDe = (r: ResultatCompo) => r.doubles ?? [];
 
 export function verifierCompositeurV2(ok: Ok): void {
+  /* M-58 (21/11) : un gabarit ENREGISTRÉ par l'atelier (« M-… », inconnu du serveur) posé par le compositeur garde ses cadres :
+     sans eux, la sauvegarde refuse le magazine ENTIER (vécu le 21/11 : 29 doubles jamais enregistrées) */
+  {
+    const atelier = TEMPLATES_DESSINES.filter((t) => t.portee === "page" && !t.decor?.length).slice(0, 12)
+      .map((t, k) => ({ ...t, id: `M-essai-${k}`, origine: "atelier" as const, cadres: t.cadres.map((c) => ({ ...c })) }));
+    enregistrerGabarits(atelier);
+    try {
+      const ra = composer(entree(voyage(), { fiche: { theme: "road_trip", taille: 32 } }));
+      const ds = ra.jet.magazine.planches.flatMap((pl) => [pl.double, pl.gauche, pl.droite]).filter((d) => !!d);
+      const poses = ds.filter((d) => d!.templateId.startsWith("M-essai-"));
+      ok(`M-58 : un gabarit enregistré par l'atelier posé par le compositeur garde ses cadres, et le magazine reste sauvegardable (${poses.length} posés)`,
+        poses.length > 0 && poses.every((d) => Array.isArray(d!.cadres) && d!.cadres.length > 0) && contenuValide(ra.jet.magazine));
+    } finally { enregistrerGabarits([]); }
+  }
+
   const ph = voyage();
   const r = composer(entree(ph, { fiche: { theme: "road_trip", taille: 32 } }));
 
