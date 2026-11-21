@@ -3,16 +3,16 @@
 > **Fichier généré, ne pas éditer.** Source : `src/lib/mise-en-page/regles/` ; régénérer par
 > `npx tsx --tsconfig tsconfig.json scripts/regles-doc.ts`. Le harnais refuse ce fichier s'il n'est pas à jour.
 
-Version du registre : `g57e02bba` · 386 règles.
+Version du registre : `ga31b81bc` · 400 règles.
 
-Par statut : hypothese 298 · confirmee_mathias 54 · codee 34 · en_ombre 0 · retiree 0.
+Par statut : hypothese 298 · confirmee_mathias 68 · codee 34 · en_ombre 0 · retiree 0.
 
-Par domaine : Analyse 24 · Sélection 69 · Structure 93 · Pose 61 · Couleur 65 · Filtres 18 · Typographie 23 · Couverture 19 · Textes 14.
+Par domaine : Analyse 28 · Sélection 70 · Structure 94 · Pose 64 · Couleur 66 · Filtres 18 · Typographie 24 · Couverture 21 · Textes 15.
 
 Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à préciser » : la condition ou l'action n'est pas encore
 écrite en données mesurables (règle reprise d'un cahier). Les réglages sont ceux de `editeur/reglages.ts`, avec leur valeur actuelle.
 
-## Analyse (24)
+## Analyse (28)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -29,6 +29,10 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | M-55 | interdit | confirmee_mathias | La question « Dans cinq ans, qu'est-ce qui vous touchera le plus ? » est retirée.<br>**Quand** les questions au client se choisissent<br>**Alors** Q-C09 n'est jamais posée ; ses paramètres gardent la valeur du profil | tous |  | M-55 (socle, Q-C09 (« Dans cinq ans… »)), 2026-11-19 |
 | M-56 | interdit | confirmee_mathias | Toute information lue est gardée, même sans règle qui la lit encore : elle n'est plus retirée faute d'usage, elle est « gardée pour l'atelier ».<br>**Quand** une information est lue (fichier, pixels, IA, géocodage) et aucune règle ne la lit<br>**Alors** elle est gardée et montrée à l'atelier ; son état est « obtenue, gardée pour l'atelier » ; remplace le principe « une information n'existe que si une décision la lit » (PROCESSUS §1, principe 2) | tous |  | M-56 (socle, les tags et les informations), 2026-11-19 |
 | M-57 | interdit | confirmee_mathias | Tout ce que l'atelier lit est un mot clair : chaque rôle et chaque étiquette a un libellé d'atelier (« photo d'accompagnement », jamais « satellite »).<br>**Quand** un rôle, une étiquette ou une valeur est montré à l'atelier<br>**Alors** il porte son libellé d'atelier (`ROLES_ATELIER`, `libelleDe`) ; les écrans ne changent pas tant que ces libellés n'y sont pas branchés | tous |  | M-57 (socle, « satellite »), 2026-11-19 |
+| M-58 | interdit | confirmee_mathias · contrôle compositeur/pose.ts#M-58 | Rien ne se compose sur des photos à moitié lues, et rien de ce qui est composé ne se perd.<br>**Quand** l'atelier lance « Composer », ou rouvre un projet<br>**Alors** les mesures locales de chaque photo (zone chaude, visages, netteté) sont prises AVANT de composer, et l'écran dit combien en manquent ; un gabarit enregistré par l'atelier garde ses cadres pour que la sauvegarde accepte le magazine ; une copie locale refusée est mise de côté, jamais écrasée | tous |  | M-58 (incident du 21/11), 2026-11-21 |
+| M-65 | préférence (1) | confirmee_mathias | Beaucoup de photos presque pareilles : le format du magazine se demande (grand avec beaucoup de photos proches, court, ou avec du texte).<br>**Quand** une grande part du lot est faite de photos proches (mêmes scènes, plusieurs angles)<br>**Alors** une question au client ou à l'atelier tranche : magazine grand avec les photos proches, plus court et choisi, ou plus de texte ; sans réponse, la machine propose et le dit | tous |  | M-65 (21/11), 2026-11-21 |
+| M-70 | interdit | confirmee_mathias · contrôle editeur/lectureIA.ts#Accompagnement | Un rôle de photo s'affiche en mot d'atelier : « Principale », « Accompagnement », jamais « héros » ni « satellite ».<br>**Quand** une vignette ou un filtre montre le rôle lu par l'IA<br>**Alors** le mot clair s'affiche ; d'autres tags qui aident la sélection restent à définir | tous |  | M-70 (21/11), M-57, 2026-11-21 |
+| M-71 | préférence (1) | confirmee_mathias | Les questions se posent en termes généraux qu'on sait répondre, et peuvent venir du client.<br>**Quand** la machine pose ses questions de départ<br>**Alors** des questions simples et générales (le format voulu, la place du texte, le groupe), qu'on peut aussi poser au client ; une question à laquelle l'atelier ne sait pas répondre est réécrite | tous |  | M-71 (21/11), 2026-11-21 |
 | I-07 | interdit | codee · contrôle editeur/lectureIA.ts#lireLectureIA | Aucune identité : on compte les visages, on ne les reconnaît jamais.<br>**Quand** une lecture (locale ou IA) est chargée dans l'éditeur<br>**Alors** toute clé d'identité (personne, nom, empreinte de visage) est refusée ; seuls le nombre, la taille et le selfie entrent | tous |  | D29, 2026-11-14 |
 | N-01 | interdit | hypothese · banc (jouée) | Une image reçue par messagerie n'a qu'une date de réception : elle ne date jamais un chapitre ; son chapitre est signalé douteux.<br>**Quand** une photo sans date de prise, à la taille d'une image de messagerie<br>**Alors** sa date est tenue pour douteuse ; elle se range à côté de sa voisine et son chapitre est signalé | tous |  | banc N-01, 2026-11-17 |
 | N-54 | préférence (1) | codee · contrôle compositeur/fiche.ts#themeDeLOccasion | L'occasion écrite par le client aide à deviner le thème quand rien d'autre ne le dit.<br>**Quand** ni la fiche ni le voyage lu ne donnent le thème<br>**Alors** quelques mots de l'occasion (anniversaire, mariage, road trip…) proposent un thème ; jamais imprimés | tous |  | M-25, 2026-11-18 |
@@ -41,7 +45,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-137 | préférence (1) | hypothese | Un lot de photographe sans EXIF s'aide de la FICHE : l'heure du départ, l'ordre de l'étape. | evenement |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-138 | préférence (1) | hypothese | Un lot partiellement daté (60 % ou moins) ordonne les photos datées, et insère les autres par scène ; le taux de confiance est montré au client. | annee_de_vie |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Sélection (69)
+## Sélection (70)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -53,6 +57,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | M-20 | interdit | confirmee_mathias · contrôle compositeur/notes.ts#noterCinq | La note unique disparaît : cinq notes lisibles (technique, histoire, image, gens, unicité), chacune avec sa phrase.<br>**Quand** une photo est notée<br>**Alors** cinq notes de 0 à 1, affichées en mots sur quatre crans pris dans le lot, chacune avec la phrase qui l'explique ; aucune décision ne lit une note unique opaque | tous |  | M-20 (D5), 2026-11-18 |
 | M-42 | interdit | confirmee_mathias | Quand les bonnes photos ne tiennent pas, la machine propose plus de pages ; une bonne photo ne va jamais en réserve pour la place.<br>**Quand** les bonnes photos dépassent ce que la taille tient<br>**Alors** la taille au-dessus est proposée avec ses vrais chiffres ; la réserve « pas de place » ne prend jamais une bonne photo | tous |  | M-42 (socle, n° 9 (les bonnes photos ne tiennent pas)), 2026-11-19 |
 | M-51 | préférence (1) | confirmee_mathias | Un temps gris coûte un léger malus, sauf si la photo est belle quand même ou si tout le lot est gris ; jamais une réserve pour la météo.<br>**Quand** une photo de lieu sans personne a un ciel laiteux ou gris<br>**Alors** léger malus d'image, jamais une réserve ; aucun malus si la photo est belle tout de même, ni si le temps est gris sur tout le lot | tous |  | M-51 (socle, A-13 (temps gris : un léger malus)), 2026-11-19 |
+| M-61 | interdit | confirmee_mathias | Une photo laissée hors du magazine dit pourquoi, à l'endroit où l'atelier la cherche.<br>**Quand** une photo n'est posée sur aucune double<br>**Alors** sa raison est écrite sur sa vignette (en couverture, réserve, quasi identique à une autre, place) ; jamais une photo absente sans raison visible | tous |  | M-61 (21/11), 2026-11-21 |
 | N-10 | interdit | hypothese · banc (jouée) | Une photo au chapitre douteux ne va pas à l'intérieur : elle reste en réserve.<br>**Quand** le chapitre d'une photo est signalé douteux (N-01)<br>**Alors** elle va en réserve avec cette raison | tous |  | banc N-10, 2026-11-17 |
 | N-15 | préférence (1) | hypothese · banc (jouée) | Une image de messagerie descend dans la note.<br>**Quand** une photo est une image reçue par messagerie<br>**Alors** sa note baisse de 0,12 (réglage de départ du banc) | tous |  | banc N-15, 2026-11-17 |
 | N-19 | interdit | hypothese · banc (jouée) | Deux photos de la même scène ne vont jamais ensemble, même quand leur empreinte ne les rapproche pas.<br>**Quand** deux photos à 5 minutes au plus, même sujet, même plan, même format<br>**Alors** une seule est posée, l'autre en réserve | tous |  | banc N-19, DA-6, 2026-11-17 |
@@ -115,7 +120,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-145 | préférence (1) | hypothese | Une photo de fond de rafale mieux exposée que la « meilleure » peut revenir par « remplacement » si le visage principal est net ; l'IA donne la raison. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-146 | préférence (1) | hypothese | Ce que la machine écarte, elle le dit dans la réserve en un mot (floue, doublon, capture, œuvre, faible) pour qu'un clic la rende. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Structure (93)
+## Structure (94)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -130,6 +135,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | M-36 | préférence (1) | confirmee_mathias | Les photos d'un même sujet (plats, animaux, objets) se rassemblent dès trois, seulement si elles sont prises à des moments peu espacés.<br>**Quand** au moins trois photos d'un même sujet récurrent, prises à des moments peu espacés<br>**Alors** elles se réunissent sur une page ou une double (grande entorse) ; trop espacées, chacune reste à sa date | tous |  | M-36 (socle, n° 2 (sujets répétés rassemblés dès 3 photos)), 2026-11-19 |
 | M-41 | interdit | confirmee_mathias | Un seul mode d'ouverture par magazine : toutes les ouvertures posent le titre sur la photo, ou aucune.<br>**Quand** les ouvertures de chapitre d'un magazine se composent<br>**Alors** le mode (titre sur la première photo ou page de titre) est choisi une fois pour le magazine et tenu partout ; le mode par profil reste à définir | tous |  | M-41 (socle, n° 7 (ouverture : titre sur la photo ou page de titre)), 2026-11-19 |
 | M-50 | préférence (1) | confirmee_mathias | Deux grandes entorses par magazine, trois dès quatorze doubles, et plus en style stylisé.<br>**Quand** le budget de grandes entorses se fixe<br>**Alors** 2 ; 3 dès 14 doubles ; davantage en stylisé, selon des mises en page à déterminer | tous |  | M-50 (socle, A-09 (grandes entorses : 2, et 3 dès 14 doubles)), 2026-11-19 |
+| M-68 | préférence (2) | confirmee_mathias | La fin donne l'attention aux photos de groupe fortes des derniers moments, plutôt qu'à une jolie photo qui n'apporte rien comme fin.<br>**Quand** la dernière page se choisit (M-35)<br>**Alors** une photo du groupe forte des derniers moments passe avant une photo seulement belle ; les photos de groupe de l'avant-dernière double peuvent monter à la fin | tous |  | M-68 (21/11), 2026-11-21 |
 | I-05 | interdit | codee · contrôle editeur/selecteurs.ts#pagesVides | Aucune page intérieure sans photo.<br>**Quand** une planche autre que la première et la dernière ne porte aucune photo<br>**Alors** l'export la liste (page vide) | tous |  | F4, M-07, 2026-11-02 |
 | N-04 | préférence (1) | hypothese · banc (jouée) | L'ouverture d'un chapitre peut prendre la plus forte photo de son premier tiers.<br>**Quand** une ouverture de chapitre se choisit<br>**Alors** les candidates sont les photos du premier tiers du chapitre, la mieux notée d'abord | tous |  | banc N-04, 2026-11-17 |
 | N-05 | interdit | hypothese · banc (jouée) | Une ouverture de chapitre n'est jamais « deux pleines pages » : le titre n'y tient pas.<br>**Quand** une double ouvre un chapitre<br>**Alors** la recette « deux pleines » lui est refusée | tous |  | banc N-05, 2026-11-17 |
@@ -213,7 +219,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-157 | interdit | hypothese | P2 : une double sur trois peut passer au noir et blanc, par double entière, jamais une seule photo. | fete_entre_jeunes, couple |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-158 | interdit | hypothese | P2 : le fond noir est un noir TEINTÉ, jamais du noir pur (330 % d'encre en conversion sans recette) ; les photos de nuit y sont posées sans bord blanc. | fete_entre_jeunes, evenement |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Pose (61)
+## Pose (64)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -227,6 +233,9 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | M-44 | préférence (1) | confirmee_mathias | Pas de plancher d'impression pour l'instant : une définition basse est un signal à l'atelier, plus un blocage.<br>**Quand** une photo a moins que `ppp_plancher` dans son cadre<br>**Alors** la machine le signale (« photo trop petite en pixels ») et préfère un cadre plus petit ; rien ne bloque l'export pour cette raison | tous |  | M-44 (socle, n° 11 (plancher d'impression)), 2026-11-19 |
 | M-45 | préférence (1) | confirmee_mathias | Le recadrage est normal par défaut, et prudent quand la carte de chaleur montre beaucoup d'éléments importants sur la photo.<br>**Quand** une photo est recadrée<br>**Alors** mode normal ; mode prudent quand la zone importante lue dans la carte de chaleur couvre une grande part de la photo | tous |  | M-45 (socle, n° 12 (recadrage par défaut)), 2026-11-19 |
 | M-46 | interdit | confirmee_mathias | L'atelier ne force pas une faute dure : l'outil refuse le geste qui la créerait.<br>**Quand** un geste de l'atelier créerait une faute dure (visage au pli, personne coupée, page presque vide)<br>**Alors** l'outil refuse le geste avec une phrase ; une faute dure restante bloque l'impression | tous |  | M-46 (socle, n° 13 (l'atelier peut-il forcer une faute)), 2026-11-19 |
+| M-59 | interdit | confirmee_mathias | Le premier manque est celui des gabarits : la machine doit avoir le choix, et dire pourquoi elle a pris un gabarit.<br>**Quand** une double se compose et aucune forme non répétée ne tient le rôle voulu<br>**Alors** la bibliothèque offre assez de formes distinctes par nombre de photos, par orientation et par rôle pour qu'aucune ne soit forcée plusieurs fois ; chaque gabarit posé porte sa raison lisible (rôle tenu, photos, ce qu'il évite) ; une répétition forcée est un signal à l'atelier et un manque de bibliothèque à combler | tous |  | M-59 (21/11), 2026-11-21 |
+| M-63 | interdit | confirmee_mathias | Le sujet principal d'une photo n'est jamais coupé, même un objet (une voiture, un bateau, un plat).<br>**Quand** une photo est recadrée dans son cadre<br>**Alors** la boîte du sujet principal (lue par l'IA, ou par la zone chaude quand elle est sûre) reste entière ; sans aucune lecture de la photo, le cadre ne la rogne que de peu et au centre, et le dit | tous |  | M-63 (21/11), 2026-11-21 |
+| M-69 | préférence (2) | confirmee_mathias | Plusieurs angles ou détails d'une même scène se composent ensemble : une principale et ses détails.<br>**Quand** des photos d'une même scène se ressemblent (angles, détails d'une autre photo)<br>**Alors** elles forment une double de scène : la plus forte en grand, les autres en détails autour ; jamais dispersées sur plusieurs doubles | tous |  | M-69 (21/11), 2026-11-21 |
 | I-01 | interdit | codee · contrôle recadrage.ts#recadrageParContenu | Un visage n'est jamais coupé par le bord d'un cadre.<br>**Quand** une photo à visages détectés est recadrée dans un cadre<br>**Alors** le recadrage garde la zone importante (visages, air au-dessus de la tête, masse saillante) entière dans le cadre | tous | air_tete = 0.15, masse_saillance = 0.85 | R83, banc, 2026-11-09 |
 | I-02 | interdit | codee · contrôle editeur/selecteurs.ts#visagesAuPli | Aucune personne sur le pli d'une double.<br>**Quand** la zone importante d'une photo posée à cheval sur le pli tombe à plus de 30 % dans la bande du pli<br>**Alors** l'export avertit (visage au pli) ; la pose pénalise le gabarit qui la met là | tous | pli_mm = 5 | R-25, B3, DA-3, 2026-11-09 |
 | I-03 | interdit | codee · contrôle editeur/invariants.ts#deux fois sur | Une photo ne se pose jamais deux fois sur une même planche, ni deux fois sur la couverture.<br>**Quand** une planche ou la couverture porte deux fois le même identifiant de photo<br>**Alors** l'état est refusé par les invariants (I9, C3) | tous |  | invariants I9 et C3, 2026-11-02 |
@@ -279,10 +288,11 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-113 | préférence (1) | hypothese · banc (jouée) | Une vue d'ensemble (panorama) mérite la double dans le blanc : papier autour, titre dessous. | long_voyage_famille | definition_double_ppp = 150 | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-114 | préférence (1) | hypothese | Une photo qui deviendrait une double SEULEMENT en la recadrant à 60 % de sa surface reste en pleine page. | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Couleur (65)
+## Couleur (66)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
+| M-62 | préférence (2) | confirmee_mathias | Le style décide du rôle des couleurs : classique, peu de couleurs qui reviennent ; artistique, le fond se prend dans la photo principale de la double.<br>**Quand** un fond ou un aplat se choisit pour une double<br>**Alors** en sobre ou classique, les fonds restent dans la palette du magazine ; en stylisé ou artistique, le fond reprend une couleur réelle de la photo principale (et change d'une double à l'autre) ; jamais le même fond sur toutes les doubles | tous |  | M-62 (21/11), 2026-11-21 |
 | DA-10 | interdit | hypothese · banc (jouée) | La couleur vient de la photo.<br>**Quand** un titre, une date ou un aplat reçoit une couleur<br>**Alors** elle est prise dans une photo du magazine (l'accent, ou la couleur franche d'une photo voisine pour un aplat) | tous |  | DA, C-047, 2026-11-17 |
 | N-51 | préférence (1) | codee · contrôle compositeur/trame.ts#echoOuContraste | Les deux moitiés d'une double se répondent par un écho de couleur ou par un contraste.<br>**Quand** une double porte deux photos ou plus<br>**Alors** écart de couleur des dominantes faible = écho ; fort, ou plans opposés = contraste ; ni l'un ni l'autre coûte | tous |  | Notion R-55, 2026-11-18 |
 | C-001 | préférence (1) | hypothese | Des dominantes réelles, pas des moyennes.<br>**Quand** à préciser<br>**Alors** chaque photo (vignette 200 px) passe en Lab, se regroupe en 5 amas (k-moyennes en Lab, départs déterministes) ; chaque amas est représenté par un pixel RÉEL (le plus proche du centre). | tous |  | REGLES-COULEUR.md, 2026-11-17 |
@@ -372,11 +382,12 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | F-017 | préférence (1) | hypothese | Limite de dérive. | tous |  | FILTRES.md, 2026-11-17 |
 | F-018 | préférence (1) | hypothese | Apprentissage. | tous |  | FILTRES.md, 2026-11-17 |
 
-## Typographie (23)
+## Typographie (24)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
 | M-52 | préférence (1) | confirmee_mathias | Quatre tailles de texte par magazine pour l'instant ; les règles par projet viendront.<br>**Quand** les tailles de texte d'un magazine se fixent<br>**Alors** une échelle de quatre tailles | tous |  | M-52 (socle, A-37 (échelle des tailles de texte)), 2026-11-19 |
+| M-64 | préférence (2) | confirmee_mathias | La police se choisit sur ce que montrent les photos et sur le style, et se justifie.<br>**Quand** la feuille de style du magazine se choisit<br>**Alors** la paire de polices suit le thème lu dans les photos (sport, nature, ville, fête…) et la sobriété ; la raison du choix est dite ; à définir avec une lecture plus fine des photos | tous |  | M-64 (21/11), 2026-11-21 |
 | N-25 | préférence (1) | hypothese · banc (écrite) | Les lignes d'un itinéraire se composent en corps 14.<br>**Quand** une page d'itinéraire est posée<br>**Alors** ses lignes sont en corps 14 | tous |  | banc N-25, 2026-11-17 |
 | R-T-40 | préférence (1) | hypothese | Une police entre en banque, puis au catalogue, avec ses preuves.<br>**Quand** avant toute entrée.<br>**Alors** licence OFL ou Apache relue sur la fiche Google Fonts et copiée dans la fiche de la police ; test des accents de BANQUE-POLICES §0 vide pour les caractères indispensables ; TrueType statique disponible pour chaque graisse employée ; styles nommés (R-T-07). | tous |  | COMBOS-TYPO.md, 2026-11-17 |
 | R-T-41 | préférence (1) | hypothese | Le contraste de structure : deux classes opposées, ou une seule famille en deux graisses.<br>**Quand** choix d'un combo.<br>**Alors** titre et texte de classes différentes (didone / grotesque, lapidaire / humaniste, condensée / serif, manuscrite / serif de lecture, mincho / gothique), ou la même famille (Archivo, Nunito, Plex). Jamais deux de la même classe voisine (deux serifs, deux grotesques). | tous |  | COMBOS-TYPO.md, 2026-11-17 |
@@ -400,7 +411,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | R-T-59 | préférence (1) | hypothese | Une paire n'est « validée » qu'imprimée | tous |  | COMBOS-TYPO.md, 2026-11-17 |
 | R-T-60 | préférence (1) | hypothese | L'export garde ce qu'il sait garder | tous |  | COMBOS-TYPO.md, 2026-11-17 |
 
-## Couverture (19)
+## Couverture (21)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -409,6 +420,8 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | M-10 | interdit | confirmee_mathias | La couverture reste un choix de l'atelier ; quand une photo est prise en couverture, l'intérieur se recompose pour ne pas la porter en double.<br>**Quand** une photo est posée sur la 1re ou la 4e de couverture<br>**Alors** elle quitte l'intérieur et la page qui la portait est recomposée ; M-03 et M-04 ne valent que pour les propositions | tous |  | M-10, 2026-11-18 |
 | M-40 | interdit | confirmee_mathias | Une photo de couverture n'est pas à l'intérieur : dès qu'une des trois propositions est choisie, les doubles se recomposent sans elle.<br>**Quand** une des trois propositions de couverture est choisie<br>**Alors** la photo et ses quasi-identiques quittent l'intérieur, le chapitre se recompose ; le contrôle refuse un doublon (VER-030) ; confirme M-10 | tous |  | M-40 (socle, n° 6 (couverture aussi à l'intérieur)), 2026-11-19 |
 | M-47 | préférence (1) | confirmee_mathias | Trois propositions de couverture, la meilleure idée recommandée, et l'une d'elles montre tout le groupe (le duo pour un couple), quel que soit le groupe.<br>**Quand** les propositions de couverture se forment<br>**Alors** trois propositions (émotion, lieu, graphique) ; l'une montre tout le groupe du projet (M-04) | tous |  | M-47 (socle, n° 14 (couverture d'un couple)), 2026-11-19 |
+| M-66 | interdit | confirmee_mathias | Le titre de couverture se lit : son contraste avec le fond est vérifié.<br>**Quand** le titre de couverture est posé sur un fond (couleur ou photo)<br>**Alors** le contraste titre et fond est mesuré ; trop faible, la couleur du titre ou du fond change ; jamais un titre clair sur un fond clair | tous |  | M-66 (21/11), 2026-11-21 |
+| M-67 | préférence (2) | confirmee_mathias | Les propositions de couverture comptent des photos de groupe ; la vue d'ensemble sert surtout la couverture.<br>**Quand** les propositions de couverture se forment et le lot porte des photos de groupe<br>**Alors** au moins une proposition montre le groupe (M-47) ; la vue d'ensemble est candidate de couverture avant d'être une page intérieure | tous |  | M-67 (21/11), 2026-11-21 |
 | N-08 | préférence (2) | hypothese · banc (jouée) | Les couvertures se classent d'abord par le type de photo que veut le profil.<br>**Quand** les candidates de couverture se classent<br>**Alors** le type voulu par le profil passe devant (un long voyage : un lieu avec des gens) | tous |  | banc N-08, 2026-11-17 |
 | N-18 | interdit | hypothese · banc (écrite) | La vignette de 4e se prend parmi les photos de gens dont aucun visage ne touche le bord.<br>**Quand** une photo de gens est candidate à la vignette de 4e<br>**Alors** refusée si un visage touche le bord de la photo | tous |  | banc N-18, 2026-11-17 |
 | N-18b | préférence (1) | hypothese · banc (jouée) | La vignette de 4e est verticale.<br>**Quand** la vignette de 4e se choisit<br>**Alors** les verticales passent devant | tous |  | banc N-18 bis, 2026-11-17 |
@@ -424,7 +437,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | S-123 | préférence (1) | hypothese | Une couverture de photo ultra-panoramique (21:9) est une couverture à plat sur la 1re + la 4e (et le dos), non un recadrage en portrait. | long_voyage_famille |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 | S-124 | préférence (1) | hypothese · banc (jouée) | Les dates de voyage sont toujours en sous-titre de couverture (plage des dates de prise). | tous |  | REGLES-STRUCTURE-SELECTION.md, 2026-11-17 |
 
-## Textes (14)
+## Textes (15)
 
 | Id | Famille | Statut | Règle | Profils | Réglages | Source |
 |---|---|---|---|---|---|---|
@@ -434,6 +447,7 @@ Un INTERDIT bloque, une PRÉFÉRENCE pèse (poids relatif, 1 = ordinaire). « à
 | M-39 | interdit | confirmee_mathias | Un chapitre sans lieu sûr n'a pas de titre par défaut : ni date, ni thème inventé.<br>**Quand** un chapitre n'a aucun lieu sûr<br>**Alors** le titre reste vide (l'atelier peut en écrire un) ; la page reçoit un fait ou un fond (TXT-030) ; remplace le repli « nom thématique » de M-05 | tous |  | M-39 (socle, n° 5 (chapitre sans lieu sûr)), 2026-11-19 |
 | M-48 | préférence (1) | confirmee_mathias | Chaque double propose des variantes ; l'autre nom du lieu (commune ou lieu connu) en fait partie.<br>**Quand** une double porte un nom de lieu qui a deux formes (commune, lieu connu)<br>**Alors** une forme est posée, l'autre est proposée en variante de la double ; traduit ou nom local : la valeur par défaut du socle (traduit), non validée | tous |  | M-48 (socle, n° 15 (nommer un site : commune ou lieu connu)), 2026-11-19 |
 | M-53 | préférence (1) | confirmee_mathias | Pas de numéros de page par défaut ; ils deviennent une option supplémentaire, posée seulement si le client la demande.<br>**Quand** un magazine se compose<br>**Alors** aucun numéro de page ; avec l'option demandée, des numéros à la même place partout, absents des pleines pages et des ouvertures | tous |  | M-53 (socle, A-39 (numéros de page)), 2026-11-19 |
+| M-60 | préférence (2) | confirmee_mathias | Les gabarits portent assez de places de texte pour des pages vivantes, et la proposition les montre remplies d'un texte d'exemple.<br>**Quand** la machine propose un magazine<br>**Alors** des gabarits avec places de texte (titre, chapeau, légende, citation) sont proposés ; une place vide se montre à l'écran avec un faux texte d'exemple pour juger la page, jamais exporté ; un texte vrai (lieu sûr, nom donné) n'est jamais retiré faute de place | tous |  | M-60 (21/11), 2026-11-21 |
 | I-06 | interdit | codee · contrôle editeur/faits.ts#texteDeFait | Un texte posé par la machine est un fait (titre du dossier, pays, chapitre, dates de prise, lieu lu sûr), jamais inventé.<br>**Quand** un cadre de texte reçoit un texte par défaut<br>**Alors** le texte vient d'un fait ; sans source, le cadre reste vide et ne s'imprime pas (D2) | tous |  | banc D30, D2, 2026-11-16 |
 | N-02 | interdit | hypothese · banc (jouée) | Un lieu lu sur un panneau légende une autre photo de la même double prise à 45 minutes au plus, jamais le panneau lui-même.<br>**Quand** un lieu lu sûr vient d'une photo de panneau<br>**Alors** il légende une photo voisine de la même double (± 45 min), pas le panneau | tous |  | banc N-02, 2026-11-17 |
 | N-03 | interdit | hypothese · banc (jouée) | Un nom de commerce lu (enseigne) n'est jamais un texte du magazine.<br>**Quand** un texte lu sur une photo est un nom de commerce<br>**Alors** il n'entre dans aucun titre ni aucune légende | tous |  | banc N-03, 2026-11-17 |

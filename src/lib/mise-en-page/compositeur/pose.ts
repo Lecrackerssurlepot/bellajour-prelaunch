@@ -1161,14 +1161,19 @@ export class Poseur {
         for (let j = j0; j < j1; j++) photos.push(aff(j));
         const textes = [...g.textes.filter((tg) => tg.index >= t0 && tg.index < t0 + t.cadres.filter((c) => c.role !== "photo").length).map(texteDe), ...ajouts.map((a) => ({ contenu: a.contenu, taille: a.cadreG.taille ?? 10, gras: !!a.cadreG.gras }))];
         const cadres = retouche(t, t0, ajouts);
-        return cadres ? { templateId: t.id, photos, textes, cadres } : { templateId: t.id, photos, textes };
+        /* M-58 (21/11) : un gabarit ENREGISTRÉ par l'atelier (« M-… », inconnu du serveur) garde la copie de ses cadres, comme
+           `composerDisposition` (operations.ts) : sans elle, `contenuValide` refuse le magazine ENTIER et rien n'est sauvegardé */
+        const propres = cadres ?? (t.origine === "atelier" ? t.cadres.map((c) => ({ ...c })) : null);
+        return propres ? { templateId: t.id, photos, textes, cadres: propres } : { templateId: t.id, photos, textes };
       };
       pagesD = { gauche: faire(P.gauche, 0, P.nPhotosG, 0, "gauche"), droite: faire(P.droite, P.nPhotosG, n, P.nTextesG, "droite") };
     } else {
       const photos: Affectation[] = [];
       for (let j = 0; j < n; j++) photos.push(aff(j));
       const textesG = g.textes.map(texteDe);
-      if (mode === "gabarit") disposition = { templateId: g.t.id, photos, textes: textesG };
+      if (mode === "gabarit") disposition = g.t.origine === "atelier"
+        ? { templateId: g.t.id, photos, textes: textesG, cadres: g.t.cadres.map((c) => ({ ...c })) }   // M-58
+        : { templateId: g.t.id, photos, textes: textesG };
       else {
         const cadres = retouche(g.t, 0, vivants) ?? g.t.cadres.map((c) => ({ ...c }));
         const textes = [...textesG, ...vivants.map((a) => ({ contenu: a.contenu, taille: a.cadreG.taille ?? 10, gras: !!a.cadreG.gras }))];

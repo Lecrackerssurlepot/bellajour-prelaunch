@@ -599,8 +599,8 @@ export const MOT_TAG_IA: Readonly<Record<TagIA, { mot: string; regle: string }>>
   ia_inutile: { mot: "Capture inutile", regle: "R146" },
   ia_lieu: { mot: "Lieu nommé", regle: "R147" },
   ia_lieu_a_verifier: { mot: "Lieu à vérifier", regle: "R147" },
-  ia_heros: { mot: "Héros", regle: "R193" },
-  ia_satellite: { mot: "Satellite", regle: "R193" },
+  ia_heros: { mot: "Principale", regle: "R193" },
+  ia_satellite: { mot: "Accompagnement", regle: "R193" },
   ia_detail: { mot: "Détail", regle: "R193" },
   ia_vue_ensemble: { mot: "Vue d'ensemble", regle: "R193" },
   ia_personnes: { mot: "Personnes", regle: "R193" },
@@ -620,7 +620,7 @@ export const estTagIA = (t: string): t is TagIA => (TAGS_IA as readonly string[]
 /** Le mot d'une capture lue (« Billet », « Carte »…) : ce que la capture raconte, sur la vignette. */
 export const MOT_CAPTURE: Readonly<Record<TypeCapture, string>> = { billet: "Billet", carte: "Carte", message: "Message", recu: "Reçu", meme: "Mème", autre: "Capture" };
 export const MOT_ROLE: Readonly<Record<RoleIA, string>> = {
-  couverture: "Couverture", pleine: "Pleine page", double: "Double page", heros: "Héros", satellite: "Satellite", detail: "Détail", vue_ensemble: "Vue d'ensemble", a_ecarter: "À écarter",
+  couverture: "Couverture", pleine: "Pleine page", double: "Double page", heros: "Principale", satellite: "Accompagnement", detail: "Détail", vue_ensemble: "Vue d'ensemble", a_ecarter: "À écarter",
 };
 export const MOT_USAGE: Readonly<Record<UsageRafale, string>> = { meilleure_seule: "la meilleure seule", sequence: "une séquence", photomaton: "un photomaton", page_rafale: "une page rafale" };
 

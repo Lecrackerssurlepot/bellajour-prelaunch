@@ -147,7 +147,9 @@ function verifierGeneralite(ok: Rapporter): void {
 function verifierMathias(ok: Rapporter): void {
   const retours = lire("docs/moteur/tunnel/RETOURS-MATHIAS.md");
   const i = retours.indexOf("## 19/11/2026, ses réponses sur le socle");
-  const section = i >= 0 ? retours.slice(i) : "";
+  /* la section s'arrête à la suivante (« ## Le 21/11… », M-58 et après) */
+  const fin = i >= 0 ? retours.indexOf("\n## ", i + 3) : -1;
+  const section = i >= 0 ? retours.slice(i, fin >= 0 ? fin : undefined) : "";
   const dansLeFichier = [...section.matchAll(/\*\*(M-\d{2})\*\*/g)].map((m) => m[1]);
   const ids = REPONSES_19_11.map((r) => r.id);
   ok(`Mathias : les ${ids.length} réponses du 19/11 (${ids[0]} à ${ids[ids.length - 1]}) sont dans RETOURS-MATHIAS.md, et rien de plus`, section !== "" && dansLeFichier.join() === ids.join());

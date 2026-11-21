@@ -22,6 +22,7 @@ import { cadresPhotoCouverture, gabaritCouverture } from "@/lib/mise-en-page/cou
 import { cls, pluriel, useEd, type Adresse } from "./contexte";
 import { vignetteDe } from "./images";
 import { garderLectureIA } from "./lectureIAClient";
+import { mesurerManquantes } from "./mesuresClient";
 import { chargerImages, composerPlanche, controlerImages, imageRegard, lirePlanche, regarder } from "./lireLesPhotosClient";
 import {
   charger, empreinte, garder, garderLuminances, lireLieux, lireVoyage, luminance, luminancesGardees, plancheLieux, useGarde,
@@ -209,9 +210,11 @@ function Feuille({ fermer }: { fermer: () => void }) {
     const etapes: Record<Etape, Avance> = { images: { etat: "attente" }, mesures: { etat: "encours" }, planches: { etat: "attente" }, regard: { etat: "attente" }, complement: { etat: "attente" }, voyage: { etat: "attente" }, lieux: { etat: "attente" }, composition: { etat: "attente" } };
     let dollars = 0;
     const maj = () => setPhase({ type: "analyse", etapes: { ...etapes }, dollars });
+    /* M-58 (21/11) : les mesures locales (zone chaude, visages, netteté) AVANT tout : on mesure ce qui manque et on attend */
+    const mes = await mesurerManquantes(etatRef.current.catalogue, adresses, envoyer, (fait, total) => { etapes.mesures = { etat: "encours", fait, total }; maj(); }, ctrl.signal);
     const e0 = etatRef.current;
     const cat = e0.catalogue;
-    etapes.mesures = { etat: "fait", note: `${e0.lecture.mesurees} sur ${cat.size}` };
+    etapes.mesures = { etat: "fait", note: mes.sans.length ? `${mes.mesurees} sur ${cat.size}, ${mes.sans.length} sans mesure (recadrées au centre)` : `${mes.mesurees} sur ${cat.size}` };
     maj();
 
     const base: LectureIA | null = e0.lectureIA?.source ?? null;
