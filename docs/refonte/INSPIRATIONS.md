@@ -29,7 +29,7 @@ l'ambiance ».
 | [newmixcoffee.com](https://newmixcoffee.com/en) | un titre typographique géant qui se compose en particules à l'ouverture | le fond noir uniforme |
 | [petrillo.studio](https://petrillo.studio) | les chiffres géants aux quatre coins, une grille de points : la date comme élément graphique (un numéro de magazine, un folio) | le rouge plein écran |
 | [laxspace.co](https://www.laxspace.co) | l'ouverture en noir avec un seul mot, le silence avant le récit | |
-| [igloo.inc](https://www.igloo.inc), [thibaut.cool](https://www.thibaut.cool), [rolfjensen.studio](https://www.rolfjensen.studio), [Heat Bureau](https://heatbureau.com), [rohithmanikkoth.framer.website](https://rohithmanikkoth.framer.website), [found.runable.site](https://found.runable.site), [Wix Studio vidéo transparente](https://www.wix.com/studio/design/inspiration/transparentvideo) | à regarder un par un pendant les propositions | |
+| [igloo.inc](https://www.igloo.inc), [thibaut.cool](https://www.thibaut.cool), [rolfjensen.studio](https://www.rolfjensen.studio), Heat Bureau (studio, adresse non donnée sur la page), [rohithmanikkoth.framer.website](https://rohithmanikkoth.framer.website), [found.runable.site](https://found.runable.site), [Wix Studio vidéo transparente](https://www.wix.com/studio/design/inspiration/transparentvideo) | à regarder un par un pendant les propositions | |
 
 ### Les modèles (page Notion « Free portfolio templates PT.3 »)
 
