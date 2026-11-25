@@ -115,13 +115,20 @@ STATUS: PHASE 3 DONE
 - G : visuels préparés en avance, aperçu `/brand/visuels`, drapeau `valide`, emplacements dont `offrir.carte` (proposé, construit en phase 4).
 - J : noms d'angles alignés (`pose-a-plat`), retours 3D consignés.
 
+## Phase 4 : la refonte des pages client (lancée le 25/11/2026 au soir, en autonomie)
+
+Mathias : « lancer la phase 4 en autonomie ! Pas en main car on a pas défini les visuels. »
+- Tout reste sur `refonte-charte-v2` : aucune fusion dans `main` (la gate 5 et les visuels d'abord).
+- Références visuelles validées : banc RKkzi (structure, Offrir, Magazine, Groupes, menu téléphone) et duplicata Essai photos 14BmVZ v4 (titre d'exemple tournant, section « La matière » dans l'écran, espacement normal).
+- Visuels non définis : chaque emplacement de `media.ts` part d'une image existante du dépôt, marquée « provisoire ».
+
 ## Phases suivantes
 
 | Phase | Contenu | État |
 |---|---|---|
 | 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | FAITE (25/11) |
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | FAITE |
-| 4 | Refonte des pages client, une page par commit | à faire |
+| 4 | Refonte des pages client, une page par commit | lancée en autonomie le 25/11 au soir |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
 | 6 | Mails depuis `mail.json` | à faire |
 | 7 | Nettoyage vers `archive/ancienne-charte/`, Notion, liste claude.ai | à faire |
