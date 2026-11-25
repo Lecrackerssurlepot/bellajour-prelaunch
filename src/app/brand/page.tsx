@@ -313,12 +313,8 @@ export default function PageCharte() {
         <p className="ch-note">Désactivées par défaut sur le site, jamais dans les mails pour l’instant. Montrées ici pour choisir.</p>
         <div className="ch-grille ch-grille--variations">
           <figure className="ch-variation">
-            <div className="ch-var" aria-hidden="true">
-              <div className="ch-var-signatures">
-                {Array.from({ length: 36 }, (_, i) => <span key={i}>Bellajour</span>)}
-              </div>
-            </div>
-            <figcaption><Nom chemin="variation.signatures-fond" j={variation['signatures-fond']['opacite-page']} /></figcaption>
+            <div className="ch-var" aria-hidden="true"><div className="ch-var-motif" /></div>
+            <figcaption><Nom chemin="variation.signatures-fond" j={variation['signatures-fond']['tuile-largeur']} /></figcaption>
           </figure>
           <figure className="ch-variation">
             <div className="ch-var ch-var--points" />
@@ -341,21 +337,7 @@ export default function PageCharte() {
             <figcaption><Nom chemin="variation.grain" j={variation.grain.opacite} /></figcaption>
           </figure>
           <figure className="ch-variation">
-            <div className="ch-var ch-var--canson">
-              <svg aria-hidden="true">
-                <filter id="ch-canson">
-                  <feTurbulence type="fractalNoise" baseFrequency={String(variation.canson.frequence.valeur)} numOctaves={Number(variation.canson.octaves.valeur)} result="b" />
-                  <feDiffuseLighting in="b" surfaceScale={Number(variation.canson.relief.valeur)} lightingColor="#ffffff">
-                    <feDistantLight azimuth={Number(variation.canson['lumiere-azimut'].valeur)} elevation={Number(variation.canson['lumiere-elevation'].valeur)} />
-                  </feDiffuseLighting>
-                </filter>
-                <rect width="100%" height="100%" filter="url(#ch-canson)" />
-              </svg>
-            </div>
-            <figcaption><Nom chemin="variation.canson" j={variation.canson.tuile} /></figcaption>
-          </figure>
-          <figure className="ch-variation">
-            <div className="ch-var ch-var--pied"><span>Bellajour</span></div>
+            <div className="ch-var ch-var--pied"><span className="ch-var-pied-logo" /></div>
             <figcaption><Nom chemin="variation.signature-pied" j={variation['signature-pied'].angle} /></figcaption>
           </figure>
         </div>
@@ -363,11 +345,21 @@ export default function PageCharte() {
 
       <Section id="logo" lettre="B" titre="Logo">
         <div className="ch-grille ch-grille--logo">
-          <div className="ch-logo-cadre"><div className="ch-logo ch-logo--grand" role="img" aria-label="Bellajour sur papier" /></div>
-          <div className="ch-logo-cadre ch-logo-cadre--nuit"><div className="ch-logo ch-logo--grand" role="img" aria-label="Bellajour sur nuit" /></div>
+          <figure className="ch-forme">
+            <div className="ch-logo-cadre"><div className="ch-logo ch-logo--grand" role="img" aria-label="Bellajour vectoriel sur papier" /></div>
+            <figcaption className="ch-etiquette">Vectoriel · sur papier</figcaption>
+          </figure>
+          <figure className="ch-forme">
+            <div className="ch-logo-cadre ch-logo-cadre--nuit"><div className="ch-logo ch-logo--grand" role="img" aria-label="Bellajour vectoriel sur nuit" /></div>
+            <figcaption className="ch-etiquette">Vectoriel · sur nuit</figcaption>
+          </figure>
+          <figure className="ch-forme">
+            <div className="ch-logo-cadre"><div className="ch-logo ch-logo--grand ch-logo--ancien" role="img" aria-label="Bellajour, image actuelle" /></div>
+            <figcaption className="ch-etiquette">Image actuelle du site, pour comparer</figcaption>
+          </figure>
         </div>
         <p className="ch-note">
-          Logo actuel, en image. Le tracé vectoriel fait depuis votre export Procreate viendra ici, à côté, pour comparer.
+          Tracé depuis votre PNG Procreate (brand/assets/logo/bellajour.svg). Il prend la couleur du texte : encre sur papier, blanc sur nuit.
         </p>
       </Section>
 

@@ -79,10 +79,15 @@
 ### Constat en passant
 - En `next dev` local, le middleware ne bloque rien, `/admin` compris. La production redirige bien (307 vérifié). Ne pas tester une protection en mode dev.
 
+### Retours de Mathias (25/11), appliqués
+- Logo vectoriel tracé depuis son PNG blanc (fiche B). La version bleue n'est pas nécessaire.
+- Signatures en fond et en pied : faites avec le logo, serrées et répétées. Le canson est retiré. Les points fins restent, sans usage prévu.
+- Réseaux : formats habituels, gabarits à voir avec Louis. Priorité : la typo se lit sur n'importe quelle photo (fiche N).
+- Mails : trop sobres. En phase 6 : magazines empilés pour la couleur, gros textes, jeu de graisses, côté atelier (fiche N).
+
 ### Reste pour fermer la gate 2
-1. Le logo PNG de Mathias, à vectoriser et poser à côté de l'actuel.
-2. Le choix du format de brochure (A4 portrait ou 16:9), sur la page.
-3. La validation à l'œil de Mathias et Louis, ordinateur et iPhone, une fois la préversion Vercel en ligne.
+1. Le choix du format de brochure (A4 portrait ou 16:9).
+2. La validation à l'œil de Mathias et Louis, ordinateur et iPhone, sur la préversion Vercel.
 
 ## Phases suivantes
 

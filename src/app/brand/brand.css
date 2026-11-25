@@ -72,10 +72,10 @@
 .ch-tete { padding: var(--m-espace-tete-page) 0 var(--m-espace-8); border-bottom: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); }
 .ch-logo {
   width: calc(var(--m-espace-9) + var(--m-espace-4));
-  aspect-ratio: 640 / 452;
+  aspect-ratio: 3154 / 1192;
   background: currentColor;
-  -webkit-mask: url(/images/v2/ui/logo-bellajour-640.webp) center / contain no-repeat;
-  mask: url(/images/v2/ui/logo-bellajour-640.webp) center / contain no-repeat;
+  -webkit-mask: url(/images/v2/ui/logo-bellajour.svg) center / contain no-repeat;
+  mask: url(/images/v2/ui/logo-bellajour.svg) center / contain no-repeat;
   margin-bottom: var(--m-espace-6);
 }
 .ch-sommaire { display: flex; flex-wrap: wrap; gap: var(--m-espace-2); margin-top: var(--m-espace-7); }
@@ -270,17 +270,14 @@
 /* ── Variations ── */
 .ch-variation { display: grid; gap: var(--m-espace-3); }
 .ch-var { position: relative; aspect-ratio: 4 / 3; border-radius: var(--m-rayon-bloc); border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); overflow: hidden; background: var(--m-couleur-papier-fond); }
-.ch-var-signatures {
-  position: absolute; left: -50%; top: -50%;
-  display: grid;
-  grid-template-columns: repeat(6, var(--m-variation-signatures-fond-tuile-largeur));
-  grid-auto-rows: var(--m-variation-signatures-fond-tuile-hauteur);
+.ch-var-motif {
+  position: absolute; inset: -50%;
+  background: var(--m-couleur-accent);
+  -webkit-mask: url(/images/v2/ui/motif-signatures.svg) 0 0 / var(--m-variation-signatures-fond-tuile-largeur) var(--m-variation-signatures-fond-tuile-hauteur) repeat;
+  mask: url(/images/v2/ui/motif-signatures.svg) 0 0 / var(--m-variation-signatures-fond-tuile-largeur) var(--m-variation-signatures-fond-tuile-hauteur) repeat;
   transform: rotate(var(--m-variation-signatures-fond-angle));
-  opacity: calc(var(--m-variation-signatures-fond-opacite-page) * 6);
+  opacity: var(--m-variation-signatures-fond-opacite-objet);
 }
-.ch-var-signatures span { font-family: var(--m-police-signature-famille); font-size: var(--m-taille-h3); display: grid; place-items: center; }
-.ch-var-signatures span:nth-child(12n + 7), .ch-var-signatures span:nth-child(12n + 8), .ch-var-signatures span:nth-child(12n + 9),
-.ch-var-signatures span:nth-child(12n + 10), .ch-var-signatures span:nth-child(12n + 11), .ch-var-signatures span:nth-child(12n + 12) { transform: translateX(var(--m-variation-signatures-fond-decalage-x)); }
 .ch-var--points {
   background-image: radial-gradient(circle, color-mix(in srgb, var(--m-couleur-accent) calc(var(--m-variation-points-fins-opacite) * 100%), transparent) var(--m-variation-points-fins-rayon), transparent calc(var(--m-variation-points-fins-rayon) + 0.5px));
   background-size: var(--m-variation-points-fins-tuile) var(--m-variation-points-fins-tuile);
@@ -294,12 +291,19 @@
 .ch-var svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ch-var--grain svg { opacity: calc(var(--m-variation-grain-opacite) * 6); }
 .ch-var--pied { display: grid; place-items: end; padding: var(--m-espace-5); }
-.ch-var--pied span { font-family: var(--m-police-signature-famille); font-size: var(--m-taille-exception-signature-pied); transform: rotate(var(--m-variation-signature-pied-angle)); }
+.ch-var-pied-logo {
+  width: var(--m-variation-signature-pied-largeur); height: var(--m-variation-signature-pied-hauteur);
+  background: var(--m-couleur-accent);
+  -webkit-mask: url(/images/v2/ui/logo-bellajour.svg) center / contain no-repeat;
+  mask: url(/images/v2/ui/logo-bellajour.svg) center / contain no-repeat;
+  transform: rotate(var(--m-variation-signature-pied-angle));
+}
 
 /* ── Logo ── */
 .ch-logo-cadre { display: grid; place-items: center; aspect-ratio: 16 / 10; border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-bloc); }
 .ch-logo-cadre--nuit { background: var(--m-couleur-nuit-fond); color: var(--m-couleur-nuit-texte); border-color: var(--m-couleur-nuit-fond); }
-.ch-logo--grand { width: 50%; margin: 0; }
+.ch-logo--grand { width: 60%; margin: 0; }
+.ch-logo--ancien { aspect-ratio: 640 / 452; -webkit-mask-image: url(/images/v2/ui/logo-bellajour-640.webp); mask-image: url(/images/v2/ui/logo-bellajour-640.webp); }
 
 /* ── Hors site ── */
 .ch-mail { background: var(--m-couleur-papier-survol); border-radius: var(--m-rayon-bloc); padding: var(--m-espace-6) var(--m-espace-4); }

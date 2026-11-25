@@ -3,7 +3,7 @@
 //   brand/build/tokens.ts  : les mêmes valeurs pour le code (page /brand, JS qui doit lire une rupture)
 //   brand/build/mail.json  : valeurs brutes, alias résolus, pour écrire les styles en ligne des mails
 // Ne jamais éditer brand/build/ à la main : relancer `node brand/scripts/build-tokens.mjs`.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RACINE_BRAND, lireArbre, lireJetons, nomCss, enCss, cibleAlias } from './lire-tokens.mjs';
 
@@ -53,3 +53,18 @@ for (const j of jetons) {
 writeFileSync(join(sortie, 'mail.json'), JSON.stringify(mail, null, 2) + '\n');
 
 console.log(`charte ${version} : ${jetons.length} jetons, ${tel.length} surcharges téléphone → brand/build/{tokens.css,tokens.ts,mail.json}`);
+
+// 4. Le motif des signatures en fond : le logo vectoriel en quinconce, aux mesures des jetons.
+//    Servi comme masque (la couleur vient du CSS), donc un seul fichier pour le papier et la nuit.
+const brut = (c) => jetons.find((j) => j.chemin === c).brut;
+const px = (c) => parseFloat(brut(c));
+const logo = readFileSync(join(RACINE_BRAND, 'assets/logo/bellajour.svg'), 'utf8');
+const vb = logo.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number);
+const corps = logo.slice(logo.indexOf('>', logo.indexOf('<svg')) + 1, logo.lastIndexOf('</svg>'));
+const [W, H, lw] = [px('variation.signatures-fond.tuile-largeur'), px('variation.signatures-fond.tuile-hauteur'), px('variation.signatures-fond.logo-largeur')];
+const lh = +(lw * vb[3] / vb[2]).toFixed(2);
+const motif = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><!-- ${entete} --><symbol id="l" viewBox="${vb.join(' ')}">${corps.trim()}</symbol>`
+  + `<use href="#l" x="0" y="0" width="${lw}" height="${lh}"/><use href="#l" x="${W / 2}" y="${H / 2}" width="${lw}" height="${lh}"/>`
+  + `<use href="#l" x="${-W / 2}" y="${H / 2}" width="${lw}" height="${lh}"/></svg>\n`;
+writeFileSync(join(RACINE_BRAND, '..', 'public/images/v2/ui/motif-signatures.svg'), motif);
+console.log(`motif des signatures : tuile ${W} × ${H} px, logo ${lw} × ${lh} px → public/images/v2/ui/motif-signatures.svg`);

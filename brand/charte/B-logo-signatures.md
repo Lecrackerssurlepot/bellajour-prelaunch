@@ -9,7 +9,7 @@
 | `public/images/ui/logo.webp`, `Bellajour_Blanc.png`, `signature-blanche.webp` | Anciennes versions, à ranger en phase 7. |
 | `public/logo-mail-*.png` | Mails (six variantes de l'ancienne charte). Ils seront remplacés en phase 6 par une seule version encre et une version blanche. |
 
-**Logo vectoriel : tranché le 25/11.** Le logo est dessiné dans Procreate, qui n'exporte pas de SVG. Mathias exporte un PNG transparent à la plus grande taille possible (encre seule, sans fond). En phase 2, Claude le vectorise (potrace) en `brand/assets/logo/bellajour.svg`, et Mathias valide le tracé à l'œil sur `/brand` avant qu'il remplace les `.webp`.
+**Logo vectoriel : fait le 25/11.** Source : le PNG blanc de Procreate (`brand/assets/logo/source-procreate-blanc.png`, 3508 × 2480). Tracé par potrace en `brand/assets/logo/bellajour.svg` (27 Ko, couleur `currentColor`), copié en `public/images/v2/ui/logo-bellajour.svg`. Le pinceau gris de l'original devient de l'encre pleine : un vectoriel n'a pas de demi-teinte. Les `.webp` actuels restent jusqu'à la phase 4. La version bleue n'est pas reprise.
 
 ## Tailles et protection (proposées)
 
@@ -35,5 +35,5 @@
 |---|---|---|
 | **Phrase en Interlope** | Une phrase seule à l'écran : l'accueil (« Vivez. Nous composons. »), les mots de la frise, la légende du livre | Voir D. 40 px au moins, une fois par écran. |
 | **Filigrane du pied** | Le grand mot « Bellajour » en bas de chaque page | Fraunces 400, opsz 144, taille `taille.exception.filigrane-pied`, couleur `couleur.papier.filigrane` |
-| **Signature répétée en fond** | Variation facultative, **désactivée** par défaut et jamais dans les mails | `variation.signatures-fond` : logo en masque, tuile de 168 × 119 px décalée de 84 × 60 px, inclinée de -12°, opacité 5,5 % sur une page et 10 % sur un objet |
-| **Signature en bas de page** | Variation facultative, désactivée | `variation.signature-pied` : 118 × 84 px, inclinée de -5°, couleur d'accent |
+| **Signature répétée en fond** | Variation facultative, **désactivée** par défaut et jamais dans les mails | `variation.signatures-fond` : **le logo vectoriel** répété serré en quinconce (logo de 96 px, tuile de 108 × 91 px), incliné de -12°, opacité 5,5 % sur une page et 10 % sur un objet. Motif généré : `public/images/v2/ui/motif-signatures.svg` |
+| **Signature en bas de page** | Variation facultative, désactivée | `variation.signature-pied` : **le logo vectoriel**, 118 × 45 px, incliné de -5°, couleur d'accent |

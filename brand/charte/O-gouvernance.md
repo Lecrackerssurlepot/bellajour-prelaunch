@@ -41,4 +41,4 @@ Il est rangé dans `archive/ancienne-charte/` en phase 7, jamais supprimé.
 
 | Version | Date | Changement |
 |---|---|---|
-| 2.0.0 | 25/11/2026 | Première charte écrite, depuis le banc RKkzi v7 « Blanc pur · Fraunces » et les variations du catalogue DEZh. Accent encre, un seul mode, étiquettes en Inter Tight, deux points de rupture, cinq rayons, trois ombres, bord de champ relevé à 3:1. |
+| 2.0.0 | 25/11/2026 | Première charte écrite, depuis le banc RKkzi v7 « Blanc pur · Fraunces » et les variations du catalogue DEZh. Accent encre, un seul mode, étiquettes en Inter Tight, deux points de rupture, cinq rayons, trois ombres, bord de champ relevé à 3:1. Ajusté le 25/11 en phase 2 : logo vectoriel tracé depuis Procreate, signatures (fond et pied) faites avec le logo, canson retiré. |

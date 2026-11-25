@@ -845,25 +845,20 @@ export const jetons = {
         "css": "-12deg",
         "variable": "--m-variation-signatures-fond-angle"
       },
+      "logo-largeur": {
+        "valeur": "96px",
+        "css": "96px",
+        "variable": "--m-variation-signatures-fond-logo-largeur"
+      },
       "tuile-largeur": {
-        "valeur": "168px",
-        "css": "168px",
+        "valeur": "108px",
+        "css": "108px",
         "variable": "--m-variation-signatures-fond-tuile-largeur"
       },
       "tuile-hauteur": {
-        "valeur": "119px",
-        "css": "119px",
+        "valeur": "91px",
+        "css": "91px",
         "variable": "--m-variation-signatures-fond-tuile-hauteur"
-      },
-      "decalage-x": {
-        "valeur": "84px",
-        "css": "84px",
-        "variable": "--m-variation-signatures-fond-decalage-x"
-      },
-      "decalage-y": {
-        "valeur": "60px",
-        "css": "60px",
-        "variable": "--m-variation-signatures-fond-decalage-y"
       }
     },
     "points-fins": {
@@ -927,8 +922,8 @@ export const jetons = {
         "variable": "--m-variation-signature-pied-largeur"
       },
       "hauteur": {
-        "valeur": "84px",
-        "css": "84px",
+        "valeur": "45px",
+        "css": "45px",
         "variable": "--m-variation-signature-pied-hauteur"
       },
       "angle": {
@@ -962,43 +957,6 @@ export const jetons = {
         "valeur": "180px",
         "css": "180px",
         "variable": "--m-variation-grain-tuile"
-      }
-    },
-    "canson": {
-      "actif": {
-        "valeur": false,
-        "css": "0",
-        "variable": "--m-variation-canson-actif"
-      },
-      "frequence": {
-        "valeur": 0.6,
-        "css": "0.6",
-        "variable": "--m-variation-canson-frequence"
-      },
-      "octaves": {
-        "valeur": 4,
-        "css": "4",
-        "variable": "--m-variation-canson-octaves"
-      },
-      "relief": {
-        "valeur": 0.9,
-        "css": "0.9",
-        "variable": "--m-variation-canson-relief"
-      },
-      "lumiere-azimut": {
-        "valeur": 40,
-        "css": "40",
-        "variable": "--m-variation-canson-lumiere-azimut"
-      },
-      "lumiere-elevation": {
-        "valeur": 62,
-        "css": "62",
-        "variable": "--m-variation-canson-lumiere-elevation"
-      },
-      "tuile": {
-        "valeur": "320px",
-        "css": "320px",
-        "variable": "--m-variation-canson-tuile"
       }
     }
   },

@@ -42,12 +42,13 @@ On les active cas par cas, en mettant `actif` à `true` dans `tokens.json`.
 | Variation | Rendu | Valeurs |
 |---|---|---|
 | `signatures-fond` | Le logo répété en fond | Voir B |
-| `points-fins` | Trame de points | Tuile de 7 px, points de 0,9 px, encre à 15 % |
+| `points-fins` | Trame de points (gardée, sans usage prévu) | Tuile de 7 px, points de 0,9 px, encre à 15 % |
 | `grain` | Bruit de papier | SVG `feTurbulence` : fréquence 0,9, 2 octaves, opacité 5,5 %, tuile de 180 px |
-| `canson` | Papier à grain, en relief | SVG `feTurbulence` + `feDiffuseLighting` : fréquence 0,6, 4 octaves, relief 0,9, lumière azimut 40° et élévation 62°, tuile de 320 px. Texture générée, pas un fichier : elle ne pèse rien. |
 | `signature-pied` | Le logo signé en bas de page | Voir B |
 
 ## Exemples
 
 - ✅ Une carte à bord fin, rayon 24, sans ombre.
 - ❌ Un bouton avec une ombre portée, ou un rayon de 10 px.
+
+**Retiré le 25/11 (Mathias)** : le canson. Il n'existe plus dans les jetons.

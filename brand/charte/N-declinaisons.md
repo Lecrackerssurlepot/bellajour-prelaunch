@@ -6,12 +6,16 @@
 - **Structure** : tableaux HTML, largeur `mail.largeur` (600 px), marges `mail.marge` (24 px), une seule colonne.
 - **Polices** : `police.mail.titre` (Georgia) et `police.mail.texte` (Helvetica, Arial). Pas de webfont.
 - **Couleurs** : papier `#ffffff` et encre `#111111`, un bouton principal en encre, rayon pilule.
-- **Variations** (signatures, canson, points) : **jamais** dans les mails pour l'instant.
+- **Variations** (signatures, points) : **jamais** dans les mails pour l'instant.
 - **Mode sombre forcé** (Gmail, Outlook, Apple Mail) :
   - `<meta name="color-scheme" content="light only">` et `supported-color-schemes` ;
   - deux logos, encre et blanc, avec bascule `@media (prefers-color-scheme: dark)` là où c'est lu ;
   - aucun texte dans une image ;
   - un bouton en tableau, avec bordure d'encre, pour rester lisible même inversé.
+- **Direction (Mathias, 25/11), à concevoir en phase 6** : les mails actuels sont trop sobres. Il faut un effet marquant :
+  - des **magazines empilés**, comme sur le site : la couverture photo apporte la couleur que la charte n'a pas ;
+  - des **gros textes**, en jouant sur les graisses (Fraunces fin contre gras) pour un côté atelier ;
+  - toujours une structure qui tient (tableaux, 600 px, mode sombre forcé).
 - **Envoi** : aucun envoi réel. Les tests partent seulement vers l'adresse de Mathias, et sur son accord à chaque fois.
 
 ## Brochures (PDF numériques)
@@ -34,6 +38,10 @@ Tranché le 25/11 : des PDF numériques, **pas** d'impression.
 
 **La règle** : une photo de numéro, un titre court en Fraunces (ou une phrase Interlope seule),
 le logo petit. Fond papier ou photo pleine, jamais un aplat coloré.
+
+**Priorité (Mathias, 25/11) : la typo se lit, quoi qu'il y ait derrière.** Sur une photo, le texte
+pose toujours le voile `couleur.voile.photo-*` (dégradé noir en haut et en bas). Les gabarits
+précis se feront avec Louis : des structures intéressantes, pas un modèle unique.
 
 ## Mockups et couvertures
 
