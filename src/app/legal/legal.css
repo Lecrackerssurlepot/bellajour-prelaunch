@@ -1,254 +1,139 @@
-/* Pages légales — charte SOMBRE de l'Atelier (« la charte avec le noir »).
-   Bascule du monde crème vers la palette sombre le 01/09/2026 : fond quasi-noir,
-   texte crème, accent terracotta. Titres Cormorant italic, corps DM Sans. Zéro
-   box-shadow, positions en %/vw. Lecture longue : colonne unique centrée,
-   interligne aéré.
-
-   POURQUOI ON NE PASSE PAS PAR .bj-atelier
-   Le thème sombre (theme.css) n'est chargé que par le layout du groupe
-   (atelier) ; les pages légales vivent sous le layout RACINE. Envelopper .lg
-   dans .bj-atelier tirerait aussi ses règles de base — h1/h2 en
-   clamp(56px..150px), reset des liens — qui se battraient avec la mise en page
-   de lecture. On REMAPPE donc ici, sur le seul scope .lg, les tokens --bj-* que
-   ce fichier consomme vers les valeurs EXACTES de la charte (theme.css).
-   Aucune couleur en dur dans les règles : tout passe par ces tokens.
-
-   LE LISERÉ CRÈME — même piège que l'atelier, signalé par Mathias le 31/08
-   html/body portent le dégradé crème de globals.css. Sous un site noir il
-   déborde aux jonctions (barre iOS rétractée, safe-area, fin de document).
-   `html:has(.lg)` repeint le fond de page en noir sur les seules routes
-   légales — même technique que `html:has(.bj-atelier)` dans theme.css. */
-
-:root { --lg-void: #020202; }
-html:has(.lg),
-body:has(.lg) { background: var(--lg-void); }
+/* Les pages légales, habillage charte V2 (fiche K, 25/11/2026).
+   Papier blanc, une colonne de 72 ch, interligne 1,7, sommaire en haut,
+   fil d'Ariane, sélecteur de langue. Jetons --m-* seulement.
+   Ancienne feuille (monde sombre) : archive/ancienne-charte/legal.css. */
 
 .lg {
-  /* ── Remap vers la charte sombre (valeurs de theme.css) ── */
-  --bj-text:          #f5f0e7;
-  --bj-text-soft:     #c7c2b8;
-  --bj-text-faint:    #928d84;
-  --bj-action:        #d68a63;                    /* terracotta : liens + langue active.
-                                                     Le bleu est RÉSERVÉ au bouton de paiement (PRD §4). */
-  --bj-action-border: rgba(214, 138, 99, 0.40);
-  --bj-veil-8:        rgba(255, 255, 255, 0.11);
-  --bj-veil-6:        rgba(255, 255, 255, 0.06);
-  --lg-grad:          radial-gradient(120% 120% at 50% -10%, #0e0e12 0%, #020202 60%);
-
-  width: 100%;
-  min-height: var(--app-height);
-  background: var(--lg-grad);
-  color: var(--bj-text);
-  font-family: var(--bj-font-ui);
-  padding: clamp(88px, 12vh, 140px) 6vw clamp(56px, 9vh, 100px);
-  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
+  line-height: var(--m-interligne-legal);
 }
-
 .lg-inner {
-  width: 100%;
-  max-width: 760px;
+  max-width: calc(var(--m-mesure-legal) + 2 * var(--m-espace-marge));
   margin: 0 auto;
+  padding: var(--m-espace-6) var(--m-espace-marge) var(--m-espace-section);
 }
 
-/* ── En-tête : retour + sélecteur de langue ── */
+.lg-logo { width: calc(var(--m-espace-9) - var(--m-espace-2)); color: var(--m-couleur-papier-texte); }
+
 .lg-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--bj-sp-4);
-  margin-bottom: clamp(32px, 5vh, 56px);
+  gap: var(--m-espace-3);
+  margin: var(--m-espace-6) 0 var(--m-espace-7);
+  padding-bottom: var(--m-espace-4);
+  border-bottom: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
 }
-
-/* `.lg-back` se rend en <a> (repli) ou en <button> (retour d'historique,
-   lot 1) : le reset du bouton vit ici pour que l'œil ne voie qu'un lien.
-   Lot 6 (07/09) — il ne faisait que 21 px de haut alors que c'est le seul
-   geste de navigation de la page : rembourrage porté à 44 px de cible,
-   annulé par une marge négative de même valeur (remède maison), l'en-tête
-   ne bouge donc pas d'un pixel. */
 .lg-back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
+  font: inherit;
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte);
   background: none;
-  border: none;
-  padding: 0 10px;
-  margin: -11px -10px;
-  font-family: inherit;
+  border: 0;
+  padding: 0;
   cursor: pointer;
-  font-size: var(--bj-fs-sm);
-  letter-spacing: 0.04em;
-  color: var(--bj-text-soft);
   text-decoration: none;
-  transition: color var(--bj-dur-fast) var(--bj-ease);
-}
-.lg-back:hover { color: var(--bj-text); }
-
-.lg-langs {
+  min-height: var(--m-cible-bouton-entete);
   display: inline-flex;
   align-items: center;
-  gap: var(--bj-sp-2);
 }
+.lg-back:hover { text-decoration: underline; text-underline-offset: var(--m-espace-1); }
 
-/* Lot 6 (07/09) — 30 px de haut pour trois pastilles de deux lettres,
-   collées les unes aux autres : le doigt qui vise PT attrapait EN. La
-   cible passe à 44 px par le rembourrage vertical, compensé par la marge
-   négative pour ne pas grossir l'en-tête. */
+.lg-langs { display: flex; gap: var(--m-espace-1); font-size: var(--m-taille-petit); }
 .lg-lang {
+  min-height: var(--m-cible-bouton-entete);
+  min-width: var(--m-cible-bouton-entete);
+  padding: 0 var(--m-espace-3);
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  font-size: var(--bj-fs-xs);
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  padding: 4px 10px;
-  margin: -7px 0;
-  border-radius: var(--bj-r-pill);
+  justify-content: center;
+  border-radius: var(--m-rayon-pilule);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: none;
-  color: var(--bj-text-soft);
-  border: 1px solid transparent;
-  transition: color var(--bj-dur-fast) var(--bj-ease),
-              border-color var(--bj-dur-fast) var(--bj-ease);
 }
-.lg-lang:hover { color: var(--bj-action); }
-.lg-lang--current {
-  color: var(--bj-action);
-  border-color: var(--bj-action-border);
-}
-.lg-lang--off {
-  color: var(--bj-text-faint);
-  opacity: 0.5;
-  cursor: default;
-}
+.lg-lang:hover { background: var(--m-couleur-papier-survol); color: var(--m-couleur-papier-texte); }
+.lg-lang--current,
+.lg-lang--current:hover { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); }
+.lg-lang--off { opacity: 0.4; }
 
-/* ── Titre ── */
-.lg-title {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(2rem, 5vw, 2.8rem);
-  line-height: 1.15;
-  margin-bottom: var(--bj-sp-3);
-}
-
-.lg-version {
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
-  line-height: 1.6;
-  margin-bottom: clamp(32px, 4vh, 48px);
-}
-
-/* ── Intro (entité, préambule) ── */
-.lg-intro {
+.lg-ariane {
   display: flex;
-  flex-direction: column;
-  gap: var(--bj-sp-4);
-  font-size: var(--bj-fs-body);
-  line-height: 1.75;
-  color: var(--bj-text-soft);
-  padding-bottom: clamp(24px, 3vh, 36px);
-  margin-bottom: clamp(24px, 3vh, 36px);
-  border-bottom: 1px solid var(--bj-veil-8);
+  flex-wrap: wrap;
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
+.lg-ariane a { color: inherit; }
 
-/* ── Sections ── */
-.lg-section {
-  margin-bottom: clamp(32px, 4.5vh, 52px);
-  scroll-margin-top: clamp(88px, 12vh, 120px); /* ancres : marge sous le sommet */
+.lg .lg-title {
+  margin: var(--m-espace-4) 0 var(--m-espace-2);
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  letter-spacing: var(--m-police-titre-approche);
+  font-size: calc(var(--m-taille-h1) * var(--m-police-titre-facteur));
+  line-height: var(--m-police-titre-interligne);
 }
+.lg-version { margin: 0 0 var(--m-espace-6); font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
 
-.lg-h2 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(1.4rem, 3vw, 1.7rem);
-  line-height: 1.25;
-  color: var(--bj-text);
-  margin-bottom: var(--bj-sp-4);
+.lg-intro { margin-bottom: var(--m-espace-6); }
+.lg-intro p { margin: 0 0 var(--m-espace-3); }
+
+.lg-sommaire {
+  margin: 0 0 var(--m-espace-7);
+  padding: var(--m-espace-5);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
 }
-
-.lg-h3 {
-  font-family: var(--bj-font-ui);
-  font-weight: 600;
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text);
-  margin: var(--bj-sp-5) 0 var(--bj-sp-2);
-}
-
-.lg-p {
-  font-size: var(--bj-fs-body);
-  line-height: 1.8;
-  color: var(--bj-text-soft);
-  margin-bottom: var(--bj-sp-4);
-}
-
-.lg-list {
-  list-style: disc;
-  padding-left: 1.4rem;
-  margin-bottom: var(--bj-sp-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--bj-sp-2);
-  font-size: var(--bj-fs-body);
-  line-height: 1.7;
-  color: var(--bj-text-soft);
-}
-
-.lg-anchor-link,
-.lg-p a,
-.lg-intro a,
-.lg-list a {
-  color: var(--bj-action);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-/* ── Tableaux (Fiche produit, grilles confidentialité) ── */
-.lg-table-wrap {
-  width: 100%;
-  overflow-x: auto; /* pas de débordement horizontal sur mobile */
-  margin-bottom: var(--bj-sp-5);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-8);
-}
-
-.lg-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--bj-fs-sm);
-  line-height: 1.55;
-}
-
-.lg-table th,
-.lg-table td {
-  text-align: left;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--bj-veil-8);
-  vertical-align: top;
-  color: var(--bj-text-soft);
-}
-
-.lg-table thead th {
-  font-family: var(--bj-font-ui);
-  font-weight: 600;
-  font-size: var(--bj-fs-xs);
-  letter-spacing: 0.04em;
+.lg-sommaire-t {
+  margin: 0 0 var(--m-espace-3);
+  font-family: var(--m-police-etiquette-famille);
+  font-weight: var(--m-police-etiquette-graisse);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: var(--m-police-etiquette-approche);
   text-transform: uppercase;
-  color: var(--bj-text);
-  background: var(--bj-veil-6);
+  color: var(--m-couleur-papier-texte-doux);
 }
+.lg-sommaire ol { margin: 0; padding-left: var(--m-espace-5); display: grid; gap: var(--m-espace-1); font-size: var(--m-taille-petit); }
+.lg-sommaire a { color: var(--m-couleur-papier-texte); text-decoration: none; }
+.lg-sommaire a:hover { text-decoration: underline; text-underline-offset: var(--m-espace-1); }
 
-.lg-table tbody tr:last-child td { border-bottom: none; }
-.lg-table td:first-child { color: var(--bj-text); font-weight: 500; }
+.lg-section { padding-top: var(--m-espace-6); scroll-margin-top: var(--m-espace-5); }
+.lg .lg-h2 {
+  margin: 0 0 var(--m-espace-3);
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  letter-spacing: var(--m-police-titre-approche);
+  font-size: calc(var(--m-taille-h3) * var(--m-police-titre-facteur));
+  line-height: var(--m-police-titre-interligne);
+}
+.lg .lg-h3 {
+  margin: var(--m-espace-5) 0 var(--m-espace-2);
+  font-family: var(--m-police-texte-famille);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  font-size: var(--m-taille-base);
+}
+.lg-p { margin: 0 0 var(--m-espace-3); }
+.lg-list { margin: 0 0 var(--m-espace-3); padding-left: var(--m-espace-5); }
+.lg-list li { margin-bottom: var(--m-espace-1); }
+.lg-anchor-link, .lg-p a, .lg-intro a { color: var(--m-couleur-papier-texte); text-decoration: underline; text-underline-offset: var(--m-espace-1); }
 
-/* ── Pied ── */
+.lg-table-wrap { overflow-x: auto; margin: var(--m-espace-4) 0; border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-bloc); }
+.lg-table { width: 100%; border-collapse: collapse; font-size: var(--m-taille-petit); line-height: var(--m-interligne-texte); }
+.lg-table th, .lg-table td { padding: var(--m-espace-2) var(--m-espace-3); text-align: left; vertical-align: top; border-bottom: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); }
+.lg-table th { font-weight: var(--m-police-texte-graisse-moyenne); background: var(--m-couleur-papier-survol); }
+.lg-table tr:last-child td { border-bottom: 0; }
+
 .lg-copy {
-  margin-top: clamp(40px, 5vh, 64px);
-  padding-top: var(--bj-sp-5);
-  border-top: 1px solid var(--bj-veil-8);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
-}
-
-@media (max-width: 600px) {
-  .lg-head { flex-wrap: wrap; }
+  margin-top: var(--m-espace-section);
+  padding-top: var(--m-espace-5);
+  border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }

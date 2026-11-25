@@ -3,12 +3,13 @@ import { type Block, type Para, type Locale, type LocalizedDoc } from './types'
 import { resolveDoc, backHref } from './resolve'
 import RetourLien from './RetourLien'
 import SelecteurLangue from './SelecteurLangue'
-import { cormorantCremeClassName } from '../creme-fonts'
 import './legal.css'
 
 /* Composant partagé des pages légales (Server Component).
-   Chrome à la charte SOMBRE de l'Atelier : fond quasi-noir, titres Cormorant
-   italic, corps DM Sans, accent terracotta (voir legal.css).
+   Habillage charte V2 (fiche K, 25/11/2026) : papier blanc, une colonne de
+   72 ch, interligne 1,7, sommaire en haut, fil d'Ariane, sélecteur de langue.
+   Le TEXTE légal ne change pas : seuls l'habillage et la navigation autour.
+   Ancienne feuille sombre : archive/ancienne-charte/legal.css.
    - Sélecteur de langue : FR rendu, EN/PT activés dès que la clé locale existe.
    - Lien retour : l'historique quand on vient du site, sinon l'accueil (T-070).
 
@@ -22,6 +23,16 @@ import './legal.css'
    Les quatre documents ne changent que quand on les réécrit : rien ici ne
    justifie une fonction serveur. Ne pas réintroduire de `searchParams` sans
    savoir qu'on rend les douze pages dynamiques du même geste. */
+
+/* Les mots de la navigation autour du texte (pas du texte légal). */
+const MOTS: Record<Locale, { accueil: string; sommaire: string }> = {
+  fr: { accueil: 'Accueil', sommaire: 'Sommaire' },
+  en: { accueil: 'Home', sommaire: 'Contents' },
+  pt: { accueil: 'Início', sommaire: 'Índice' },
+}
+
+/* L'ancre d'une section : son id déclaré, sinon son rang (pour le sommaire). */
+const ancre = (id: string | undefined, i: number) => id ?? `section-${i + 1}`
 
 interface LegalPageProps {
   slug: string
@@ -40,8 +51,10 @@ export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
        document déclaré français — lu par une voix de synthèse française au
        lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
        demandée : une locale absente retombe sur fr, l'attribut doit suivre). */
-    <main className={`lg ${cormorantCremeClassName}`} lang={lang} data-theme="dark" data-section="legal">
+    <main className="lg" lang={lang} data-section="legal">
       <div className="lg-inner">
+
+        <a className="lg-logo m-logo" href="/" aria-label="Bellajour" />
 
         <header className="lg-head">
           {/* Lot 1 (07/09) — revient d'où l'on vient quand la page
@@ -50,6 +63,12 @@ export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
 
           <SelecteurLangue slug={slug} doc={doc} lang={lang} />
         </header>
+
+        <nav className="lg-ariane" aria-label="Fil d’Ariane">
+          <a href="/">{MOTS[lang].accueil}</a>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{content.title}</span>
+        </nav>
 
         <h1 className="lg-title">{content.title}</h1>
         <p className="lg-version">{content.lastUpdated}</p>
@@ -62,8 +81,19 @@ export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
           </div>
         )}
 
+        {content.sections.length > 1 && (
+          <nav className="lg-sommaire" aria-label={MOTS[lang].sommaire}>
+            <p className="lg-sommaire-t">{MOTS[lang].sommaire}</p>
+            <ol>
+              {content.sections.map((s, i) => (
+                <li key={ancre(s.id, i)}><a href={`#${ancre(s.id, i)}`}>{s.heading}</a></li>
+              ))}
+            </ol>
+          </nav>
+        )}
+
         {content.sections.map((section, si) => (
-          <section key={si} id={section.id} className="lg-section">
+          <section key={si} id={ancre(section.id, si)} className="lg-section">
             <h2 className="lg-h2">{section.heading}</h2>
             {section.blocks.map((block, bi) => (
               <Block key={bi} block={block} />
