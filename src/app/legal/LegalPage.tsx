@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { type Block, type Para, type Locale, type LocalizedDoc } from './types'
 import { resolveDoc, backHref } from './resolve'
 import RetourLien from './RetourLien'
@@ -54,7 +55,7 @@ export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
     <main className="lg" lang={lang} data-section="legal">
       <div className="lg-inner">
 
-        <a className="lg-logo m-logo" href="/" aria-label="Bellajour" />
+        <Link className="lg-logo m-logo" href="/" aria-label="Bellajour" />
 
         <header className="lg-head">
           {/* Lot 1 (07/09) — revient d'où l'on vient quand la page
@@ -65,7 +66,7 @@ export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
         </header>
 
         <nav className="lg-ariane" aria-label="Fil d’Ariane">
-          <a href="/">{MOTS[lang].accueil}</a>
+          <Link href="/">{MOTS[lang].accueil}</Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{content.title}</span>
         </nav>
