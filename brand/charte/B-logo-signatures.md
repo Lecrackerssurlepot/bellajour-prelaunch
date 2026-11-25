@@ -9,7 +9,7 @@
 | `public/images/ui/logo.webp`, `Bellajour_Blanc.png`, `signature-blanche.webp` | Anciennes versions, à ranger en phase 7. |
 | `public/logo-mail-*.png` | Mails (six variantes de l'ancienne charte). Ils seront remplacés en phase 6 par une seule version encre et une version blanche. |
 
-**Ouvert : il manque un logo vectoriel (SVG).** Sans lui, le favicon et les très petites tailles restent approximatifs. Mathias doit fournir le fichier source.
+**Logo vectoriel : tranché le 25/11.** Le logo est dessiné dans Procreate, qui n'exporte pas de SVG. Mathias exporte un PNG transparent à la plus grande taille possible (encre seule, sans fond). En phase 2, Claude le vectorise (potrace) en `brand/assets/logo/bellajour.svg`, et Mathias valide le tracé à l'œil sur `/brand` avant qu'il remplace les `.webp`.
 
 ## Tailles et protection (proposées)
 
@@ -27,7 +27,7 @@
 ## Favicon et icônes d'application
 
 - **Existants** : `src/app/favicon.ico`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`.
-- **Règle** : le logo en encre sur papier blanc, et rien d'autre. Ils seront refaits à partir du SVG dès qu'il existera.
+- **Règle** : le logo en encre sur papier blanc, et rien d'autre. Ils seront refaits à partir du SVG vectorisé en phase 2.
 
 ## Signatures
 

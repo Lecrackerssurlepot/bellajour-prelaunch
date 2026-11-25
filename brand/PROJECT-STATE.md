@@ -7,7 +7,7 @@
 - **Copie de travail** : `/Users/mathiasdurand/bellajour-charte-v2`. Le dossier principal garde des fichiers Noël non versionnés qui diffèrent de `main`.
 - **Règle** : on ne passe à la phase suivante qu'avec la gate verte ET « OK phase N » de Mathias.
 
-## Phase 1 : la charte écrite (en cours, 25/11/2026)
+## Phase 1 : la charte écrite (FAITE, gate fermée le 25/11/2026)
 
 ### Fait
 
@@ -50,12 +50,12 @@
 - Les apparitions et les boucles se coupent avec « moins d'animations » ; le livre et la pile restent.
 - L'ancien `MOTION.md` disait « tout se coupe ». **Conflit signalé.**
 
-### Reste pour fermer la gate 1
+### Gate 1 : fermée le 25/11 par Mathias (« Okay pour l'instant »)
 
-1. **Logo vectoriel (SVG)** : Mathias en a-t-il un ? (fiche B)
-2. **Valeurs marquées « proposé »** : états, survol, désactivé, chargement, poids des médias, zones de sécurité. Elles sont exactes et seront validées à l'œil en phase 2. Mathias accepte-t-il de fermer la gate 1 ainsi ?
-3. **Format des brochures** : A4 portrait ou 16:9 (fiche N). Il peut se choisir en phase 2.
-4. **URL de la page Groupes** : `/groupes` (banc) ou `/partenaires` (main) (fiche L). Elle peut se trancher en phase 4.
+1. **Logo** : pas de SVG (dessiné dans Procreate). Mathias fournit un PNG transparent haute définition, vectorisé en phase 2 (fiche B).
+2. **Valeurs « proposé »** : acceptées pour l'instant, validées à l'œil en phase 2 sur `/brand`.
+3. **Format des brochures** : à choisir en phase 2 (fiche N).
+4. **URL de la page Groupes** : à trancher en phase 4 (fiche L).
 
 ### Écarts découverts à l'étape 0
 
@@ -69,7 +69,7 @@
 
 | Phase | Contenu | État |
 |---|---|---|
-| 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts` | à faire |
+| 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | prochaine |
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | à faire |
 | 4 | Refonte des pages client, une page par commit | à faire |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
