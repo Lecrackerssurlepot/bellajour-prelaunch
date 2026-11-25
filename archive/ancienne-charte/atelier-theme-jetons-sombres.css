@@ -1,0 +1,117 @@
+/* Les jetons sombres de l'atelier (nuit et cuivre), tels qu'ils étaient dans
+   src/app/(atelier)/theme.css jusqu'au 25/11/2026. Remplacés par la charte V2
+   (brand/tokens.json) : voir archive/ancienne-charte/README.md. */
+:root { --c-atelier-void: #020202; }
+html:has(.bj-atelier),
+body:has(.bj-atelier) { background: var(--c-atelier-void); }
+
+.bj-atelier {
+  /* ---- surfaces ---- */
+  --c-void: var(--c-atelier-void);
+  --c-bg: #070708;
+  --c-surface-1: #0e0e10;
+  --c-surface-2: #161618;
+  --c-surface-3: #1f1f22;
+  --c-surface-4: #29292e;
+
+  /* ---- texte ---- */
+  --c-text: #f5f0e7;
+  --c-text-soft: #c7c2b8;
+  --c-text-faint: #928d84;
+  --c-text-onaccent: #1a1210;
+  --c-text-pure: #ffffff;              /* hover du CTA primaire, lui seul */
+
+  /* ---- accents ----
+     --c-accent : moments forts et états actifs.
+     --c-order  : RÉSERVÉ au seul bouton de paiement (PRD §4). */
+  --c-accent: #d68a63;
+  --c-accent-strong: #e39a73;
+  --c-accent-soft: rgba(214, 138, 99, 0.14);
+  --c-order: #4a90d9;
+  --c-order-strong: #5aa0e6;
+
+  /* ---- filets ---- */
+  --c-line: rgba(255, 255, 255, 0.07);
+  --c-line-md: rgba(255, 255, 255, 0.11);
+  --c-line-strong: rgba(255, 255, 255, 0.16);
+  --c-veil-hover: rgba(255, 255, 255, 0.02);
+  --c-overlay-text: rgba(255, 255, 255, 0.55);
+  --c-overlay-faint: rgba(255, 255, 255, 0.45);
+  --c-overlay-mid: rgba(255, 255, 255, 0.5);
+
+  /* ---- verre ---- */
+  --glass-bg: rgba(22, 22, 26, 0.55);
+  --glass-bg-strong: rgba(16, 16, 18, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: 20px;
+
+  /* ---- ombres (posées, jamais animées — PRD §15) ---- */
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.6);
+  --shadow-float: 0 24px 70px rgba(0, 0, 0, 0.7);
+  --glow-accent: 0 0 28px rgba(214, 138, 99, 0.35);
+
+  /* ---- dégradés ---- */
+  --grad-ambient: radial-gradient(120% 120% at 50% -10%, #0e0e12 0%, #020202 60%);
+  --grad-hero-veil: radial-gradient(75% 60% at 50% 45%,
+      rgba(2, 2, 2, 0.62) 0%, rgba(2, 2, 2, 0.86) 55%, #020202 100%);
+  --grad-slot: linear-gradient(135deg, #cdbfae, #a89482 60%, #8e7a68);
+  --grad-thumb: linear-gradient(135deg, #cdbfae, #8e7a68);
+  --grad-cover: linear-gradient(160deg, #8e7a68, #4a4038 55%, #211d1a);
+
+  /* ---- les quatre dos de l'étagère (S2) ---- */
+  --spine-1-bg: linear-gradient(180deg, #2b2b30, #17171a);
+  --spine-2-bg: linear-gradient(180deg, #e7dfd2, #cbbfae);
+  --spine-3-bg: linear-gradient(180deg, #d68a63, #a85f3f);
+  --spine-4-bg: linear-gradient(180deg, #1f1f22, #0e0e10);
+
+  /* ---- papier (pages du magazine en fond de hero) ---- */
+  --paper: #f7f1e9;
+  --paper-2: #efe6d8;
+  /* Le papier dans l'ombre — tranches et blocs de pages du support magazine
+     de la visionneuse (04/09). La teinte vit déjà dans --spine-2-bg et
+     --grad-slot : on la nomme, on n'invente rien. */
+  --paper-3: #cbbfae;
+  --paper-text: #1c1c1c;
+  --paper-text-soft: #5b554d;
+
+  /* ---- typographie ---- */
+  --font-display: var(--font-atelier-display), 'Cormorant Garamond', Georgia, serif;
+  --font-ui: var(--font-atelier-ui), 'DM Sans', system-ui, sans-serif;
+
+  /* ---- motion (PRD §15) ---- */
+  --dur: 240ms;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Courbes et durées du RÉCIT (ouverture + univers). Les courbes natives
+     du CSS sont trop molles pour une entrée, elles manquent de tenue.
+     `--ease-recit` est celle de la révélation par masque (PRD §15,
+     mouvement nº1). Aucune n'est un `ease-in` : une interface qui démarre
+     lentement paraît lente à l'instant où l'œil regarde le plus. */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-recit: cubic-bezier(0.23, 1, 0.32, 1);
+  --t-reveal: 700ms;
+  --t-lux: 800ms;
+  --t-lent: 1200ms;
+  --t-tres-lent: 1700ms;
+
+  /* Verre plein : la barre de tête une fois l'ouverture quittée. Un cran
+     plus opaque que --glass-bg-strong, jamais un aplat. */
+  --glass-bg-plein: rgba(10, 10, 12, 0.86);
+
+  /* Repli anti-jank Chrome/Android (T-019, posé le 08/09) : équivalent sombre
+     de --bj-nav-android-bg (tokens.css, monde crème) — jamais le token crème
+     lui-même, les deux palettes ne se mélangent pas. Quasi-opaque comme lui,
+     posé UNIQUEMENT quand `useAndroid()` ajoute .pv-nav--flat ; ni le flou ni
+     ce fond ne bougent ailleurs (voir .at-nav.pv-nav--flat, nav.css). */
+  --c-nav-android-bg: rgba(10, 10, 12, 0.96);
+
+  /* Gouttières du récit. --pad sert les sections existantes ; l'ouverture
+     et l'univers ont leur propre grille, volontairement asymétrique. */
+  --mg: 8vw;
+  --md: 5.4vw;
+
+  /* ---- gouttière ---- */
+  --pad: clamp(20px, 6vw, 80px);
+}

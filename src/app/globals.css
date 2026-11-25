@@ -5,6 +5,9 @@
    Fonts via next/font dans layout.tsx (--font-display / --font-ui).
    ════════════════════════════════════════════════════════════ */
 @import './tokens.css';
+/* Charte V2 (25/11/2026) : les jetons --m-*, générés depuis brand/tokens.json. */
+@import '../../brand/build/tokens.css';
+@import './charte.css';
 
 :root {
   /* Hauteur viewport FIGÉE en px (posée par le script inline dans <head>).

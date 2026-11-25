@@ -3,6 +3,7 @@ import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import WebViewBanner from './components/WebViewBanner'
 import Mesure from './components/Mesure'
+import { classesPolices } from './polices'
 import { EUROS_MIN } from '@/lib/atelier/grille'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
@@ -137,7 +138,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="fr"
-      className={dmSans.variable}
+      className={`${dmSans.variable} ${classesPolices}`}
       /* APP_HEIGHT_SCRIPT pose --app-height en inline style sur <html> avant
          l'hydratation → attendu, on supprime l'avertissement de mismatch. */
       suppressHydrationWarning

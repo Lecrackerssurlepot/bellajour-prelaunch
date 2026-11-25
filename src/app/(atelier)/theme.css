@@ -28,120 +28,106 @@
    present. /preventes, /merci, /inviter et les pages legales restent creme.
    C'est la seule entorse au « aucun jeton de la charte sur :root », et elle
    est technique, pas esthetique. */
-:root { --c-atelier-void: #020202; }
+:root { --c-atelier-void: var(--m-couleur-papier-fond); }
 html:has(.bj-atelier),
 body:has(.bj-atelier) { background: var(--c-atelier-void); }
 
+/* CHARTE V2 (25/11/2026) : les anciens noms --c-* restent, ils pointent tous
+   vers les jetons --m-* de brand/tokens.json. Les pages se migrent une à une
+   vers les --m-* ; d'ici là, aucune n'a de couleur à elle. L'ancienne palette
+   sombre est rangée dans archive/ancienne-charte/atelier-theme-jetons-sombres.css. */
 .bj-atelier {
   /* ---- surfaces ---- */
   --c-void: var(--c-atelier-void);
-  --c-bg: #070708;
-  --c-surface-1: #0e0e10;
-  --c-surface-2: #161618;
-  --c-surface-3: #1f1f22;
-  --c-surface-4: #29292e;
+  --c-bg: var(--m-couleur-papier-fond);
+  --c-surface-1: var(--m-couleur-papier-champ-fond);
+  --c-surface-2: var(--m-couleur-papier-survol);
+  --c-surface-3: var(--m-couleur-papier-filigrane);
+  --c-surface-4: var(--m-couleur-papier-ligne);
 
   /* ---- texte ---- */
-  --c-text: #f5f0e7;
-  --c-text-soft: #c7c2b8;
-  --c-text-faint: #928d84;
-  --c-text-onaccent: #1a1210;
-  --c-text-pure: #ffffff;              /* hover du CTA primaire, lui seul */
+  --c-text: var(--m-couleur-papier-texte);
+  --c-text-soft: var(--m-couleur-papier-texte-doux);
+  --c-text-faint: var(--m-couleur-papier-texte-doux);
+  --c-text-onaccent: var(--m-couleur-nuit-texte);
+  --c-text-pure: var(--m-couleur-papier-fond);
 
-  /* ---- accents ----
-     --c-accent : moments forts et états actifs.
-     --c-order  : RÉSERVÉ au seul bouton de paiement (PRD §4). */
-  --c-accent: #d68a63;
-  --c-accent-strong: #e39a73;
-  --c-accent-soft: rgba(214, 138, 99, 0.14);
-  --c-order: #4a90d9;
-  --c-order-strong: #5aa0e6;
+  /* ---- accents : l'encre, aucun bleu (fiche C) ---- */
+  --c-accent: var(--m-couleur-accent);
+  --c-accent-strong: var(--m-couleur-accent);
+  --c-accent-soft: var(--m-couleur-papier-survol);
+  --c-order: var(--m-couleur-accent);
+  --c-order-strong: var(--m-couleur-accent);
 
   /* ---- filets ---- */
-  --c-line: rgba(255, 255, 255, 0.07);
-  --c-line-md: rgba(255, 255, 255, 0.11);
-  --c-line-strong: rgba(255, 255, 255, 0.16);
-  --c-veil-hover: rgba(255, 255, 255, 0.02);
-  --c-overlay-text: rgba(255, 255, 255, 0.55);
-  --c-overlay-faint: rgba(255, 255, 255, 0.45);
-  --c-overlay-mid: rgba(255, 255, 255, 0.5);
+  --c-line: var(--m-couleur-papier-ligne);
+  --c-line-md: var(--m-couleur-papier-ligne);
+  --c-line-strong: var(--m-couleur-papier-pointille);
+  --c-veil-hover: var(--m-couleur-papier-survol);
+  --c-overlay-text: var(--m-couleur-papier-texte-doux);
+  --c-overlay-faint: var(--m-couleur-papier-texte-doux);
+  --c-overlay-mid: var(--m-couleur-papier-texte-doux);
 
   /* ---- verre ---- */
-  --glass-bg: rgba(22, 22, 26, 0.55);
-  --glass-bg-strong: rgba(16, 16, 18, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-blur: 20px;
+  --glass-bg: var(--m-couleur-voile-barre);
+  --glass-bg-strong: var(--m-couleur-voile-barre);
+  --glass-border: var(--m-couleur-papier-ligne);
+  --glass-blur: var(--m-flou-barre);
 
-  /* ---- ombres (posées, jamais animées — PRD §15) ---- */
-  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.45);
-  --shadow-pop: 0 20px 60px rgba(0, 0, 0, 0.6);
-  --shadow-float: 0 24px 70px rgba(0, 0, 0, 0.7);
-  --glow-accent: 0 0 28px rgba(214, 138, 99, 0.35);
+  /* ---- ombres ---- */
+  --shadow-soft: var(--m-ombre-flottant);
+  --shadow-pop: var(--m-ombre-objet);
+  --shadow-float: var(--m-ombre-livre);
+  --glow-accent: none;
 
-  /* ---- dégradés ---- */
-  --grad-ambient: radial-gradient(120% 120% at 50% -10%, #0e0e12 0%, #020202 60%);
-  --grad-hero-veil: radial-gradient(75% 60% at 50% 45%,
-      rgba(2, 2, 2, 0.62) 0%, rgba(2, 2, 2, 0.86) 55%, #020202 100%);
-  --grad-slot: linear-gradient(135deg, #cdbfae, #a89482 60%, #8e7a68);
-  --grad-thumb: linear-gradient(135deg, #cdbfae, #8e7a68);
-  --grad-cover: linear-gradient(160deg, #8e7a68, #4a4038 55%, #211d1a);
+  /* ---- fonds ---- */
+  --grad-ambient: var(--m-couleur-papier-fond);
+  --grad-hero-veil: linear-gradient(var(--m-couleur-voile-photo-bas), var(--m-couleur-voile-photo-haut));
+  --grad-slot: var(--m-couleur-papier-filigrane);
+  --grad-thumb: var(--m-couleur-papier-filigrane);
+  --grad-cover: var(--m-couleur-papier-filigrane);
 
-  /* ---- les quatre dos de l'étagère (S2) ---- */
-  --spine-1-bg: linear-gradient(180deg, #2b2b30, #17171a);
-  --spine-2-bg: linear-gradient(180deg, #e7dfd2, #cbbfae);
-  --spine-3-bg: linear-gradient(180deg, #d68a63, #a85f3f);
-  --spine-4-bg: linear-gradient(180deg, #1f1f22, #0e0e10);
+  /* ---- les quatre dos de l'étagère ---- */
+  --spine-1-bg: var(--m-couleur-nuit-fond);
+  --spine-2-bg: var(--m-couleur-papier-survol);
+  --spine-3-bg: var(--m-couleur-papier-ligne);
+  --spine-4-bg: var(--m-couleur-nuit-survol);
 
-  /* ---- papier (pages du magazine en fond de hero) ---- */
-  --paper: #f7f1e9;
-  --paper-2: #efe6d8;
-  /* Le papier dans l'ombre — tranches et blocs de pages du support magazine
-     de la visionneuse (04/09). La teinte vit déjà dans --spine-2-bg et
-     --grad-slot : on la nomme, on n'invente rien. */
-  --paper-3: #cbbfae;
-  --paper-text: #1c1c1c;
-  --paper-text-soft: #5b554d;
+  /* ---- papier ---- */
+  --paper: var(--m-couleur-papier-fond);
+  --paper-2: var(--m-couleur-papier-survol);
+  --paper-3: var(--m-couleur-papier-ligne);
+  --paper-text: var(--m-couleur-papier-texte);
+  --paper-text-soft: var(--m-couleur-papier-texte-doux);
 
-  /* ---- typographie ---- */
-  --font-display: var(--font-atelier-display), 'Cormorant Garamond', Georgia, serif;
-  --font-ui: var(--font-atelier-ui), 'DM Sans', system-ui, sans-serif;
+  /* ---- typographie : les rôles de la fiche D ---- */
+  --font-display: var(--m-police-titre-famille);
+  --font-ui: var(--m-police-texte-famille);
 
-  /* ---- motion (PRD §15) ---- */
-  --dur: 240ms;
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Courbes et durées du RÉCIT (ouverture + univers). Les courbes natives
-     du CSS sont trop molles pour une entrée, elles manquent de tenue.
-     `--ease-recit` est celle de la révélation par masque (PRD §15,
-     mouvement nº1). Aucune n'est un `ease-in` : une interface qui démarre
-     lentement paraît lente à l'instant où l'œil regarde le plus. */
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-recit: cubic-bezier(0.23, 1, 0.32, 1);
+  /* ---- motion (fiche I) ---- */
+  --dur: var(--m-duree-micro);
+  --ease: var(--m-courbe-sortie);
+  --ease-out: var(--m-courbe-sortie);
+  --ease-spring: var(--m-courbe-sortie);
+  --ease-recit: var(--m-courbe-sortie);
   --t-reveal: 700ms;
   --t-lux: 800ms;
   --t-lent: 1200ms;
   --t-tres-lent: 1700ms;
 
-  /* Verre plein : la barre de tête une fois l'ouverture quittée. Un cran
-     plus opaque que --glass-bg-strong, jamais un aplat. */
-  --glass-bg-plein: rgba(10, 10, 12, 0.86);
+  --glass-bg-plein: var(--m-couleur-voile-barre);
+  --c-nav-android-bg: var(--m-couleur-papier-fond);
 
-  /* Repli anti-jank Chrome/Android (T-019, posé le 08/09) : équivalent sombre
-     de --bj-nav-android-bg (tokens.css, monde crème) — jamais le token crème
-     lui-même, les deux palettes ne se mélangent pas. Quasi-opaque comme lui,
-     posé UNIQUEMENT quand `useAndroid()` ajoute .pv-nav--flat ; ni le flou ni
-     ce fond ne bougent ailleurs (voir .at-nav.pv-nav--flat, nav.css). */
-  --c-nav-android-bg: rgba(10, 10, 12, 0.96);
-
-  /* Gouttières du récit. --pad sert les sections existantes ; l'ouverture
-     et l'univers ont leur propre grille, volontairement asymétrique. */
+  /* Gouttières du récit. */
   --mg: 8vw;
   --md: 5.4vw;
 
-  /* ---- gouttière ---- */
-  --pad: clamp(20px, 6vw, 80px);
+  /* ---- gouttière : la marge de la charte ---- */
+  --pad: var(--m-espace-marge);
 }
+
+/* Les titres en Fraunces portent leurs axes (fiche D). */
+.bj-atelier :is(h1, h2, h3) { font-variation-settings: var(--m-police-titre-axes); font-weight: var(--m-police-titre-graisse); }
 
 /* ════════════════════════════════════════════════════════════
    NEUTRALISATION DE globals.css

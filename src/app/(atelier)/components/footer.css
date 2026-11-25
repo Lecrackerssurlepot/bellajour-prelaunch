@@ -220,3 +220,50 @@
     font-size: clamp(64px, 18vw, 90px);
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   CHARTE V2 (25/11/2026) : le pied du banc validé (fiche H).
+   La signature en Interlope, les sections du site, les liens à 55 %
+   d'encre, le mot « Bellajour » en Fraunces à 7 %, coupé par le bas.
+   ════════════════════════════════════════════════════════════ */
+.bj-atelier .at-footer {
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  font-family: var(--m-police-texte-famille);
+}
+.bj-atelier .at-footer-tagline {
+  font-family: var(--m-police-signature-famille);
+  font-style: normal;
+  font-weight: var(--m-police-signature-graisse);
+  font-size: var(--m-taille-exception-signature-pied);
+  line-height: var(--m-police-signature-interligne);
+  color: var(--m-couleur-papier-texte);
+}
+.at-footer-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-espace-2) var(--m-espace-5);
+  font-size: var(--m-taille-petit);
+  margin-bottom: var(--m-espace-3);
+}
+.bj-atelier .at-footer-sections a { color: var(--m-couleur-papier-texte); text-decoration: none; }
+.bj-atelier .at-footer-sections a:hover { text-decoration: underline; text-underline-offset: var(--m-espace-1); }
+.bj-atelier .at-footer-label,
+.bj-atelier .at-footer-links a,
+.bj-atelier .at-footer-lien-social,
+.bj-atelier .at-footer-copy { color: var(--m-couleur-papier-texte-doux); }
+.bj-atelier .at-footer-links a:hover,
+.bj-atelier .at-footer-lien-social:hover { color: var(--m-couleur-papier-texte); }
+.bj-atelier .at-footer-sep { color: var(--m-couleur-papier-pointille); }
+.bj-atelier .at-footer-word {
+  font-family: var(--m-police-titre-famille);
+  font-style: normal;
+  font-weight: var(--m-police-texte-graisse);
+  font-variation-settings: "SOFT" 40, "opsz" 144;
+  font-size: var(--m-taille-exception-filigrane-pied);
+  color: var(--m-couleur-papier-filigrane);
+}
+@media (max-width: 767px) {
+  .at-footer-sections { gap: var(--m-espace-3) var(--m-espace-5); }
+}

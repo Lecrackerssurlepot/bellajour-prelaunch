@@ -28,6 +28,13 @@ import { CONTACT_EMAIL } from '../content'
 import './footer.css'
 import Link from 'next/link'
 
+const SECTIONS = [
+  { href: '/magazine', label: 'Le magazine' },
+  { href: '/offrir', label: 'Offrir' },
+  { href: '/partenaires', label: 'Pour les groupes' },
+  { href: '/compte', label: 'Mon numéro' },
+]
+
 const LIENS = [
   { href: '/mentions-legales', label: 'Mentions légales' },
   { href: '/confidentialite', label: 'Confidentialité' },
@@ -44,6 +51,12 @@ export default function Footer() {
         {/* Gauche — tagline, invitation à écrire, liens */}
         <div className="at-footer-left">
           <p className="at-footer-tagline">Vivez. Nous composons.</p>
+          {/* Charte V2 : les sections du site, comme dans le banc validé. */}
+          <nav className="at-footer-sections" aria-label="Le site">
+            {SECTIONS.map((l) => (
+              <Link key={l.href} href={l.href} prefetch={false}>{l.label}</Link>
+            ))}
+          </nav>
           <p className="at-footer-label">Une question&nbsp;? Écrivez-nous&nbsp;:</p>
           <nav className="at-footer-links" aria-label="Liens de bas de page">
             <a className="at-footer-mail" href={`mailto:${CONTACT_EMAIL}`}>

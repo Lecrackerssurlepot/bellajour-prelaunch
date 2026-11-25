@@ -1,0 +1,51 @@
+/* Les composants de la charte V2 partagés par tout le site (fiche H).
+   Valeurs : uniquement des jetons --m-* (brand/tokens.json). La vitrine /brand
+   les montre dans tous leurs états. */
+
+/* Le logo vectoriel : il prend la couleur du texte (encre sur papier, blanc sur nuit). */
+.m-logo {
+  display: block;
+  aspect-ratio: 3154 / 1192;
+  background: currentColor;
+  -webkit-mask: url(/images/v2/ui/logo-bellajour.svg) left center / contain no-repeat;
+  mask: url(/images/v2/ui/logo-bellajour.svg) left center / contain no-repeat;
+}
+
+/* ── Composants de la charte (.m-*) ── */
+.m-btn, .m-second, .m-texte {
+  font-family: var(--m-police-texte-famille);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  font-size: var(--m-taille-bouton);
+  min-height: var(--m-cible-bouton);
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--m-espace-2);
+  cursor: pointer;
+  transition: transform var(--m-duree-micro) var(--m-courbe-sortie), background-color var(--m-duree-micro) var(--m-courbe-sortie);
+}
+.m-btn { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); border: 0; }
+.m-second { background: transparent; color: var(--m-couleur-papier-texte); border: var(--m-trait-fin) solid color-mix(in srgb, var(--m-couleur-papier-texte) 24%, transparent); }
+.m-texte { background: none; border: 0; color: var(--m-couleur-papier-texte); padding: 0 var(--m-espace-2); }
+.m-texte span { display: inline-block; transition: transform var(--m-duree-micro) var(--m-courbe-sortie); }
+@media (hover: hover) and (pointer: fine) {
+  .m-btn:not(:disabled):hover { background: color-mix(in srgb, var(--m-couleur-accent) 86%, var(--m-couleur-papier-fond)); }
+  .m-second:not(:disabled):hover { background: var(--m-couleur-papier-survol); }
+  .m-texte:not(:disabled):hover span { transform: translateX(var(--m-espace-1)); }
+}
+.m-btn.est-survol { background: color-mix(in srgb, var(--m-couleur-accent) 86%, var(--m-couleur-papier-fond)); }
+.m-second.est-survol { background: var(--m-couleur-papier-survol); }
+.m-texte.est-survol span { transform: translateX(var(--m-espace-1)); }
+.m-btn:focus-visible, .m-second:focus-visible, .m-texte:focus-visible,
+.m-btn.est-focus, .m-second.est-focus, .m-texte.est-focus, .ch-sommaire a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--m-focus-anneau-interieur) var(--m-couleur-papier-fond), 0 0 0 var(--m-focus-anneau-exterieur) var(--m-couleur-accent);
+}
+.m-btn:active:not(:disabled), .m-second:active:not(:disabled) { transform: scale(var(--m-mouvement-appui-echelle)); }
+.m-btn:disabled, .m-second:disabled, .m-texte:disabled { opacity: .4; cursor: not-allowed; }
+
+.m-points { display: inline-flex; gap: var(--m-espace-1); }
+.m-points i { width: var(--m-espace-1); height: var(--m-espace-1); border-radius: var(--m-rayon-rond); background: currentColor; animation: m-bat var(--m-duree-entree) var(--m-courbe-sortie) infinite; }
+.m-points i:nth-child(2) { animation-delay: var(--m-duree-decalage); }
+.m-points i:nth-child(3) { animation-delay: calc(var(--m-duree-decalage) * 2); }
+@keyframes m-bat { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .m-points i { animation: none; opacity: .6; } }

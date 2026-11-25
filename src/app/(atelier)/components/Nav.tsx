@@ -6,7 +6,7 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { COMPOSER_HREF, CTA_HREF, CTA_MAGAZINE_LABEL, CTA_REPRISE_LABEL } from '../content'
+import { COMPOSER_HREF, CTA_LABEL, CTA_REPRISE_LABEL } from '../content'
 import { draftEnCours } from '../composer/draft'
 import { useAndroid } from '@/hooks/useClient'
 import NavCompte from './NavCompte'
@@ -40,9 +40,18 @@ const RIEN = () => () => {}
    tient mot pour mot — et y ajoute la navigation côté client : on ne recharge
    plus tout le document à chaque clic, et la page visée est préchargée dès que
    le bouton entre à l'écran. */
+/* Charte V2 (25/11/2026) : la barre du banc validé. Le logo vectoriel, trois
+   liens, le compte, et « Composer avec l'atelier » partout (fiche H). Au
+   téléphone, les liens passent dans un menu plein écran. */
+const LIENS = [
+  { href: '/magazine', label: 'Le magazine' },
+  { href: '/offrir', label: 'Offrir' },
+  { href: '/partenaires', label: 'Pour les groupes' },
+] as const
+
 export default function Nav({
-  href = CTA_HREF,
-  label = CTA_MAGAZINE_LABEL,
+  href = COMPOSER_HREF,
+  label = CTA_LABEL,
   retour,
   compteOuvert = false,
 }: {
@@ -56,6 +65,7 @@ export default function Nav({
   compteOuvert?: boolean
 }) {
   const [stuck, setStuck] = useState(false)
+  const [menu, setMenu] = useState(false)
   const frame = useRef(0)
   /* Repli anti-jank Chrome/Android (T-019) : `false` côté serveur donc côté
      Desktop et Safari iOS le rendu ne bouge pas d'un pixel — voir nav.css. */
@@ -86,6 +96,19 @@ export default function Nav({
       if (frame.current) cancelAnimationFrame(frame.current)
     }
   }, [])
+
+  useEffect(() => {
+    if (!menu) return
+    const fermer = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false) }
+    const racine = document.documentElement
+    const avant = racine.style.overflow
+    racine.style.overflow = 'hidden'
+    window.addEventListener('keydown', fermer)
+    return () => {
+      racine.style.overflow = avant
+      window.removeEventListener('keydown', fermer)
+    }
+  }, [menu])
 
   /* La signature ramene a la couverture. Meme mecanique que « Decouvrir
      l'univers » dans Ouverture.tsx : meme famille d'acceleration, meme garde
@@ -127,14 +150,7 @@ export default function Nav({
           rien depuis /magazine (perf, 27/10). Le clic charge la page. */}
       {retour ? (
         <Link className="at-nav-logo-btn" href={retour} prefetch={false} aria-label="Bellajour, retour à l’accueil">
-          <img
-            className="at-nav-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
+          <span className="at-nav-logo m-logo" aria-hidden="true" />
         </Link>
       ) : (
         <button
@@ -143,23 +159,45 @@ export default function Nav({
           onClick={remonter}
           aria-label="Bellajour, revenir en haut de la page"
         >
-          <img
-            className="at-nav-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
+          <span className="at-nav-logo m-logo" aria-hidden="true" />
         </button>
       )}
       {/* La droite de la barre : le coin compte (icône, et « Suivre mon
           numéro » quand un magazine est en fabrication), puis le CTA
           marketing — qui ne disparaît JAMAIS (décision de Mathias, 04/09). */}
+      <span className="at-nav-liens">
+        {LIENS.map((l) => (
+          <Link key={l.href} href={l.href} prefetch={false}>{l.label}</Link>
+        ))}
+      </span>
       <span className="at-nav-droite">
+        <button
+          type="button"
+          className="at-nav-menu-b"
+          aria-label={menu ? 'Fermer le menu' : 'Menu'}
+          aria-expanded={menu}
+          aria-controls="at-menu"
+          onClick={() => setMenu((m) => !m)}
+        >
+          {menu ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M4 9h16M4 15h16" /></svg>
+          )}
+        </button>
         <NavCompte ouvertAuBuild={compteOuvert} />
         <Link className="at-nav-cta" href={href}>{labelAffiche}</Link>
       </span>
+      <div className={`at-menu${menu ? ' est-ouvert' : ''}`} id="at-menu" hidden={!menu}>
+        <nav aria-label="Menu">
+          {LIENS.map((l) => (
+            <Link key={l.href} href={l.href} prefetch={false} onClick={() => setMenu(false)}>{l.label}</Link>
+          ))}
+          <Link href="/compte" prefetch={false} onClick={() => setMenu(false)}>Mon numéro</Link>
+        </nav>
+        <Link className="m-btn at-menu-cta" href={href} onClick={() => setMenu(false)}>{labelAffiche}</Link>
+        <p className="at-menu-sign">Vivez. Nous composons.</p>
+      </div>
     </nav>
   )
 }
