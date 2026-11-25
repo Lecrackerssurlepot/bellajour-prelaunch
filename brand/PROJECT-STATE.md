@@ -122,13 +122,39 @@ Mathias : « lancer la phase 4 en autonomie ! Pas en main car on a pas défini l
 - Références visuelles validées : banc RKkzi (structure, Offrir, Magazine, Groupes, menu téléphone) et duplicata Essai photos 14BmVZ v4 (titre d'exemple tournant, section « La matière » dans l'écran, espacement normal).
 - Visuels non définis : chaque emplacement de `media.ts` part d'une image existante du dépôt, marquée « provisoire ».
 
+### Nuit du 25/11 : ce qui est fait (commits poussés sur `refonte-charte-v2`)
+
+| Commit | Étape | Vérifié |
+|---|---|---|
+| f9b521bb | **Socle** : `brand/build/tokens.css` dans globals ; les jetons `--c-*` de l'atelier pointent vers les `--m-*` (anciennes valeurs dans `archive/ancienne-charte/`) ; 4 polices en `src/app/polices.ts` ; en-tête, menu téléphone, pied du banc ; `.m-btn` & cie dans `src/app/charte.css` | tsc, lint (0 erreur), build ; navigateur 390 et 1440 |
+| 385ead02 | **Visuels** : `src/content/media.ts` (11 emplacements), `visuelPour`, harnais `scripts/verif-media.ts` (41/41), aperçu `/brand/visuels`, mode d'emploi dans G | harnais, tsc, lint ; navigateur 390 et 1440 |
+| ada01f1e | **Garde-fou** `brand/scripts/controle-charte.mjs` | compteur : 616 couleurs, 7 719 px avant les pages |
+| f1ad0e68 | **404 + error.tsx** (fiche K) | tsc, lint, build ; navigateur 390 et 1440, erreur provoquée par une route temporaire (retirée) |
+| e1ca27f6, 856eda43 | **Pages légales** FR, EN, PT : habillage, sommaire, fil d'Ariane ; aucun texte légal touché | tsc, lint, build ; navigateur 390 et 1440 |
+| 7c514dd6 | **/merci** : CSS seulement (en-tête et pied de prévente rhabillés depuis merci.css) | tsc, lint, build ; navigateur 390 et 1440 (état sans session Stripe seulement) |
+
+### Ce qui reste (dans l'ordre)
+
+1. **Accueil** : PAS COMMENCÉ. Le port du banc (ouverture du livre + essai photos v4) est un chantier à lui seul : environ 15 Ko de balisage, 80 Ko de CSS en cascade de patchs commun à toutes les pages du banc, 45 Ko de chorégraphie GSAP. Il faut aussi ajouter `gsap` aux dépendances (décision), et le texte du banc contient des chiffres (« 24 à 60 pages », « Sous 48 h », « De 40 à 100 », bloc prix) à confronter à `content.ts`. **Aujourd'hui l'accueil est l'ancienne ouverture, repeinte par le remap : texte sombre sur photo sombre, à peine lisible.** C'est la page la plus abîmée de la branche.
+2. **/magazine** : lisible en V2 par le remap (390 et 1440, 0 erreur, aucun débordement), mais PAS porté au banc ; grand titre en capitales, 154 px en dur.
+3. **Tunnel** (`/composer`, `/numero`, `/compte`) : pas touché au-delà du remap ; harnais `verif-atelier` à repasser à ce moment-là.
+4. **Édition collective** (`/edition`, `/depot`, `/inviter`) : pas touché (2 567 px en dur dans `/edition`).
+5. Offrir, Pour les groupes, Noël : remap seulement.
+
+### Pas vérifié
+
+- `/brand` et `/brand/visuels` derrière le middleware : vérifiable seulement avec `next start` (le middleware ne bloque rien sous `next dev`).
+- `/merci` avec une vraie session Stripe (états « confirmé » et « en attente ») : non rendus.
+- Les pages atelier autres que `/`, `/magazine` : pas regardées une par une après le remap.
+- Le garde-fou ne compte pas les styles en ligne `style={{…}}` en nombres JS (seulement les chaînes `px`).
+
 ## Phases suivantes
 
 | Phase | Contenu | État |
 |---|---|---|
 | 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | FAITE (25/11) |
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | FAITE |
-| 4 | Refonte des pages client, une page par commit | lancée en autonomie le 25/11 au soir |
+| 4 | Refonte des pages client, une page par commit | en cours : socle, visuels, 404, légal, merci faits ; accueil, magazine, tunnel, collectif restent |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
 | 6 | Mails depuis `mail.json` | à faire |
 | 7 | Nettoyage vers `archive/ancienne-charte/`, Notion, liste claude.ai | à faire |
