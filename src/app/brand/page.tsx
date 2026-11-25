@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import type { CSSProperties, ReactNode } from 'react'
 import { jetons, versionCharte, requeteTelephone } from '../../../brand/build/tokens'
 import Magazine from './Magazine'
@@ -52,9 +54,44 @@ function Nom({ chemin, j }: { chemin: string; j: Jeton }) {
   )
 }
 
+
+/* Les textes de la charte (ton, vocabulaire, photo) sont lus dans les fiches .md au build :
+   la page ne peut pas dire autre chose que la charte écrite. */
+function fiche(nom: string): string {
+  return readFileSync(join(process.cwd(), 'brand', 'charte', nom), 'utf8')
+}
+function partie(texte: string, titre: string): string {
+  const i = texte.indexOf(`## ${titre}`)
+  if (i < 0) return ''
+  const reste = texte.slice(i + 3)
+  const j = reste.search(/\n##? /)
+  return j < 0 ? reste : reste.slice(0, j)
+}
+const nettoyer = (c: string) => c.trim().replace(/\*\*/g, '').replace(/`/g, '')
+function tableau(bloc: string): { tete: string[]; lignes: string[][] } {
+  const rangs = bloc.split('\n').filter((l) => l.trim().startsWith('|'))
+  const cellules = (l: string) => l.trim().slice(1, -1).split('|').map(nettoyer)
+  return { tete: rangs[0] ? cellules(rangs[0]) : [], lignes: rangs.slice(2).map(cellules) }
+}
+function puces(bloc: string): string[] {
+  return bloc.split('\n').filter((l) => l.startsWith('- ')).map((l) => nettoyer(l.slice(2)))
+}
+
+function Tableau({ t }: { t: { tete: string[]; lignes: string[][] } }) {
+  return (
+    <div className="ch-tableau-cadre">
+      <table className="ch-tableau">
+        <thead><tr>{t.tete.map((c) => <th key={c} scope="col">{c}</th>)}</tr></thead>
+        <tbody>{t.lignes.map((l) => <tr key={l[0]}>{l.map((c, i) => <td key={i}>{c}</td>)}</tr>)}</tbody>
+      </table>
+    </div>
+  )
+}
+
 const { couleur, police, taille, espace, rayon, ombre, duree, courbe, variation } = jetons
 
 const SECTIONS = [
+  ['ton', 'Ton'],
   ['couleurs', 'Couleurs'],
   ['typo', 'Typographie'],
   ['espaces', 'Espacements'],
@@ -62,6 +99,7 @@ const SECTIONS = [
   ['composants', 'Composants'],
   ['motion', 'Motion'],
   ['magazine', 'Magazine'],
+  ['visuels', 'Photo et visuels'],
   ['variations', 'Variations'],
   ['logo', 'Logo'],
   ['declinaisons', 'Hors site'],
@@ -74,6 +112,13 @@ export default function PageCharte() {
   const tailles = aplatir(taille).filter(([k]) => !k.startsWith('exception.'))
   const exceptions = aplatir(taille).filter(([k]) => k.startsWith('exception.'))
   const espaces = aplatir(espace).filter(([k]) => /^\d+$/.test(k))
+  const A = fiche('A-fondations.md')
+  const G = fiche('G-iconographie.md')
+  const parPublic = tableau(partie(A, 'Ton par public'))
+  const parCanal = tableau(partie(A, 'Ton par canal'))
+  const vocabulaire = tableau(partie(A, 'Vocabulaire'))
+  const reglesPhoto = puces(partie(G, 'Règles photo'))
+  const emplacements = tableau(partie(G, '# Les emplacements'))
   const libelleEtat: Record<string, string> = { succes: 'Succès', erreur: 'Erreur', alerte: 'Alerte', info: 'Info' }
 
   return (
@@ -91,6 +136,18 @@ export default function PageCharte() {
           ))}
         </nav>
       </header>
+
+
+      <Section id="ton" lettre="A" titre="Ton et vocabulaire">
+        <p className="ch-signature">Vivez. Nous composons.</p>
+        <h3 className="ch-h3">Par public <span className="ch-propose">proposé</span></h3>
+        <Tableau t={parPublic} />
+        <h3 className="ch-h3">Par canal</h3>
+        <Tableau t={parCanal} />
+        <h3 className="ch-h3">Vocabulaire</h3>
+        <Tableau t={vocabulaire} />
+        <p className="ch-note">Lu dans brand/charte/A-fondations.md.</p>
+      </Section>
 
       <Section id="couleurs" lettre="C" titre="Couleurs">
         <h3 className="ch-h3">Papier</h3>
@@ -287,10 +344,15 @@ export default function PageCharte() {
             <p className="ch-etiquette">Carte</p>
             <p>Bord fin, sans ombre.</p>
           </div>
-          <div className="m-carte-cadeau">
-            <p className="ch-etiquette">Carte cadeau</p>
-            <p className="m-carte-cadeau-titre">Un numéro à offrir</p>
-          </div>
+          <figure className="m-carte-cadeau-cadre">
+            <div className="m-carte-cadeau">
+              <span className="m-carte-cadeau-visuel" aria-hidden="true" />
+              <span className="ch-logo m-carte-cadeau-logo" role="img" aria-label="Bellajour" />
+              <p className="m-carte-cadeau-titre">Vos photos deviennent un magazine.</p>
+              <p className="m-carte-cadeau-bas"><span className="m-carte-cadeau-montant">50 €</span><span className="ch-etiquette">Code · validité</span></p>
+            </div>
+            <figcaption className="ch-note">Carte cadeau : visuel = emplacement <code>offrir.carte</code>, daté. Montant d’exemple.</figcaption>
+          </figure>
           <div className="m-attente">Photo en attente</div>
           <div className="m-notification" role="status">Photo ajoutée <span className="ch-propose ch-propose--nuit">proposé</span></div>
         </div>
@@ -313,6 +375,25 @@ export default function PageCharte() {
 
       <Section id="magazine" lettre="J" titre="Magazine">
         <Magazine />
+      </Section>
+
+
+      <Section id="visuels" lettre="G · J" titre="Photo et visuels">
+        <h3 className="ch-h3">Règles photo</h3>
+        <ul className="ch-liste ch-liste--texte">{reglesPhoto.map((r) => <li key={r}>{r}</li>)}</ul>
+        <h3 className="ch-h3">Visuels datés <span className="ch-propose">proposé · construit en phase 4</span></h3>
+        <div className="ch-rotations" aria-label="Exemple d’un emplacement et de ses rotations">
+          <p className="ch-rotations-nom"><code>offrir.carte</code></p>
+          <ol className="ch-rotations-liste">
+            <li><span className="ch-etiquette">Par défaut</span><span>Toute l’année</span><span className="ch-rotation-etat ch-rotation-etat--en-ligne">en ligne</span></li>
+            <li><span className="ch-etiquette">Noël</span><span>du 1er au 26 décembre</span><span className="ch-rotation-etat ch-rotation-etat--valide">validé</span></li>
+            <li><span className="ch-etiquette">Été</span><span>du 15 juin au 31 août</span><span className="ch-rotation-etat">à valider</span></li>
+          </ol>
+          <p className="ch-note">Exemple. Une rotation « à valider » ne passe jamais en ligne. L’aperçu /brand/visuels montre le site à la date choisie.</p>
+        </div>
+        <h3 className="ch-h3">Emplacements</h3>
+        <Tableau t={emplacements} />
+        <p className="ch-note">Lu dans brand/charte/G-iconographie.md. Tout se règle dans src/content/media.ts.</p>
       </Section>
 
       <Section id="variations" lettre="B · F" titre="Variations du catalogue">

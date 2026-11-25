@@ -19,6 +19,16 @@ et du récapitulatif, ces deux fichiers restent la référence. Ils seront fondu
 | La vérité | Aucun chiffre inventé : un prix, un délai ou un grammage sans source est un mensonge au client. |
 | La simplicité | Moins de boutons. Un bouton qui peut être remplacé, déplacé, ou qui ajoute une étape n'a pas sa place. |
 
+## Ton par public *(proposé le 25/11, à valider)*
+
+| Public | Ce qu'il veut | Ton | ✅ | ❌ |
+|---|---|---|---|---|
+| Le client qui compose pour lui | Garder une année, un voyage, sans y passer des heures | Complice, léger | « Vos photos sont là » | « Téléversez vos fichiers » |
+| Celui qui offre | Faire plaisir sans se tromper | Rassurant, concret | « Il choisit ses photos, nous composons. » | « Le cadeau parfait ! » |
+| Celui qui reçoit une carte | Comprendre ce qu'on lui offre | Accueillant, il est attendu | « La carte de Léa a offert votre numéro » | « Votre carte a servi » |
+| Le responsable d'un groupe (école, association, entreprise) | Un projet clair, qui ne lui prend pas de temps | Clair, concret, posé | « Un magazine pour chaque moment » | Le jargon commercial |
+| Le participant d'une Édition collective | Déposer ses photos vite | Très court, registre de l'édition (vous ou tu) | « Ajoutez vos photos » | Une phrase qui explique le système |
+
 ## Ton par canal
 
 | Canal | Ton | ✅ | ❌ |

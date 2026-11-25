@@ -223,15 +223,44 @@
 }
 .m-pastille-point { width: var(--m-espace-2); height: var(--m-espace-2); border-radius: var(--m-rayon-rond); background: var(--etat); }
 .m-carte { border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-bloc); padding: var(--m-espace-6); display: grid; gap: var(--m-espace-2); }
+.m-carte-cadeau-cadre { margin: 0; display: grid; gap: var(--m-espace-2); }
 .m-carte-cadeau {
+  position: relative; overflow: hidden;
   background: var(--m-couleur-nuit-fond); color: var(--m-couleur-nuit-texte);
-  border-radius: var(--m-rayon-bloc); padding: var(--m-espace-6);
+  border-radius: var(--m-rayon-bloc); padding: 7%;
   aspect-ratio: 1.586; display: flex; flex-direction: column; justify-content: space-between;
+  box-shadow: var(--m-ombre-objet);
   transition: transform var(--m-duree-standard) var(--m-courbe-sortie);
 }
-.m-carte-cadeau .ch-etiquette { color: var(--m-couleur-nuit-texte-doux); }
-.m-carte-cadeau-titre { font-family: var(--m-police-titre-famille); font-weight: var(--m-police-titre-graisse); font-variation-settings: var(--m-police-titre-axes); font-size: var(--m-taille-h3); line-height: var(--m-police-titre-interligne); }
+/* L'emplacement offrir.carte : un numéro incliné qui déborde de la carte. */
+.m-carte-cadeau-visuel {
+  position: absolute; right: -8%; bottom: -34%; width: 40%; aspect-ratio: 210 / 297;
+  background: url(/images/v2/accueil/couverture-lisbonne-640.webp) center / cover;
+  border-radius: var(--m-rayon-image); transform: rotate(-12deg); box-shadow: var(--m-ombre-livre);
+}
+.m-carte-cadeau-logo { position: relative; background: currentColor; }
+.m-carte-cadeau-titre { position: relative; max-width: 11ch; margin: 0; font-family: var(--m-police-titre-famille); font-weight: var(--m-police-titre-graisse); font-variation-settings: var(--m-police-titre-axes); font-size: var(--m-taille-chapo); line-height: var(--m-police-titre-interligne); }
+.m-carte-cadeau-bas { position: relative; margin: 0; display: flex; align-items: flex-end; gap: var(--m-espace-4); }
+.m-carte-cadeau-bas .ch-etiquette { color: var(--m-couleur-nuit-texte-doux); }
+.m-carte-cadeau-montant { font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes); font-size: var(--m-taille-h3); line-height: 1; }
 @media (hover: hover) and (pointer: fine) { .m-carte-cadeau:hover { transform: rotate(-1.5deg); } }
+
+/* A et G : tableaux lus dans les fiches. */
+.ch-signature { font-family: var(--m-police-signature-famille); font-weight: var(--m-police-signature-graisse); font-size: var(--m-taille-h2); margin: var(--m-espace-5) 0; }
+.ch-tableau-cadre { overflow-x: auto; margin: var(--m-espace-4) 0; }
+.ch-tableau { border-collapse: collapse; width: 100%; font-size: var(--m-taille-petit); }
+.ch-tableau th, .ch-tableau td { text-align: left; vertical-align: top; padding: var(--m-espace-3) var(--m-espace-4) var(--m-espace-3) 0; border-bottom: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); }
+.ch-tableau th { font-weight: var(--m-police-etiquette-graisse); color: var(--m-couleur-papier-texte-doux); }
+.ch-tableau td:first-child { font-weight: var(--m-police-etiquette-graisse); min-width: 10ch; }
+.ch-liste--texte { display: grid; grid-template-columns: 1fr; gap: var(--m-espace-2); max-width: var(--m-mesure-texte); }
+.ch-rotations { border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-bloc); padding: var(--m-espace-5); max-width: var(--m-mesure-texte); }
+.ch-rotations-nom { margin: 0 0 var(--m-espace-3); }
+.ch-rotations-liste { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--m-espace-2); }
+.ch-rotations-liste li { display: grid; grid-template-columns: 10ch 1fr auto; gap: var(--m-espace-3); align-items: center; font-size: var(--m-taille-petit); }
+.ch-rotation-etat { border: var(--m-trait-fin) dashed var(--m-couleur-papier-pointille); border-radius: var(--m-rayon-pilule); padding: 0 var(--m-espace-3); }
+.ch-rotation-etat--valide { border-style: solid; }
+.ch-rotation-etat--en-ligne { border-style: solid; border-color: var(--m-couleur-etat-succes); }
+
 .m-attente {
   border: var(--m-trait-attente) dashed var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-bloc);

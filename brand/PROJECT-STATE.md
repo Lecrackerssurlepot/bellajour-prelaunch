@@ -91,7 +91,7 @@
 - Copie autonome de `/brand` publiée pour Louis : https://claude.ai/artifact/UprjSK57wJyHC3XNfeMpes (privée, Mathias la partage). À republier au même lien si la charte change.
 - Les valeurs « proposé » restent acceptées telles quelles ; un retour de Louis se corrige dans `tokens.json` puis on régénère.
 
-## Phase 3 : le magazine en 3D (construit le 25/11/2026, gate 3 ouverte)
+## Phase 3 : le magazine en 3D (FAITE, gate fermée le 25/11/2026)
 
 ### Fait (agent Fable 5.2, relu)
 - `brand/assets/3d/magazine/` : `magazine.js` (modèle Three.js paramétré), `dimensions.js` (formule du dos recopiée d'`impression.ts`, 38 cas comparés, 0 écart), `angles.json` (6 angles), `exporter.mjs` (PNG transparents 2048 px + turntable MP4/WebM), `README.md`.
@@ -105,16 +105,22 @@
 - Pas de feuilletage à l'ouverture ; dos sans titre.
 - Retours de Mathias du 25/11 appliqués : 4e et dos blancs par défaut ; bloc en liasses décalées (effet de pages en tranche, tête et pied) ; rainure de charnière sur la 1re et la 4e ; ouverture bombée (galbe ~13 mm, éventail) et angle « ouvert » vu de plus bas (élévation 44°). Démo et vidéo refaites.
 
-### Reste pour fermer la gate 3
-1. Mathias valide chaque angle et les exports.
-2. Test sur un vrai iPhone (seule l'émulation 390 px a été faite).
+### Gate 3 (fermée le 25/11/2026)
+Mathias : « Le 3D est validé. » Rendus et vidéo validés en local ; le test sur un vrai iPhone reste à faire en phase 5.
+
+STATUS: PHASE 3 DONE
+
+### Ajouts à la charte le 25/11 (après la gate 3)
+- A : « Ton par public » (proposé).
+- G : visuels préparés en avance, aperçu `/brand/visuels`, drapeau `valide`, emplacements dont `offrir.carte` (proposé, construit en phase 4).
+- J : noms d'angles alignés (`pose-a-plat`), retours 3D consignés.
 
 ## Phases suivantes
 
 | Phase | Contenu | État |
 |---|---|---|
 | 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | FAITE (25/11) |
-| 3 | Magazine 3D (`brand/assets/3d/magazine/`) | construit, gate 3 ouverte |
+| 3 | Magazine 3D (`brand/assets/3d/magazine/`) | FAITE |
 | 4 | Refonte des pages client, une page par commit | à faire |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
 | 6 | Mails depuis `mail.json` | à faire |

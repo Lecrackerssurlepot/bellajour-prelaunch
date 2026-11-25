@@ -39,6 +39,7 @@ mockups, brochures, posts.
 
 - **Où il vit** : `brand/assets/3d/magazine/`, avec le modèle, les angles nommés, l'exporteur et un README.
 - **Paramètres** : le format et les marges viennent de `src/lib/mise-en-page/`. L'épaisseur est une approximation visuelle selon le nombre de pages, jamais affichée comme une mesure. Mat ou brillant, comme la finition (D19). La couverture est une image.
-- **Angles nommés** : `face`, `trois-quarts-gauche`, `trois-quarts-droite`, `dos`, `ouvert`, `a-plat`.
+- **Angles nommés** : `face`, `trois-quarts-gauche`, `trois-quarts-droite`, `dos`, `ouvert`, `pose-a-plat`.
 - **Web** : Three.js, chargé seulement quand le magazine entre à l'écran. Sans WebGL, le PNG de l'angle s'affiche à la place. Sur téléphone, textures de 1024 px et ombres simplifiées.
 - **Exports** : PNG transparents par angle, et une vidéo turntable en MP4 et WebM.
+- **Validé le 25/11** : 4e et dos blancs par défaut ; bloc en liasses légèrement décalées (la tranche montre des pages) ; rainure de charnière sur la 1re et la 4e ; ouverture bombée. Réglages visuels, détaillés dans le README du modèle.

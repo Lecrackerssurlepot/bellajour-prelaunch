@@ -36,4 +36,37 @@ Chaque **emplacement** a un visuel par défaut, plus des visuels datés pour les
 
 - **Règle** : le site affiche le visuel dont la période contient la date du jour (heure de Paris), sinon le visuel par défaut.
 - **Pour changer un visuel** : déposer le fichier dans `public/images/v3/…` sous un **nom nouveau**, puis changer la ligne. Le cache de l'hébergeur garde un même nom pendant 24 h.
-- **Pour une rotation** : ajouter une ligne `{ du, au, fichier, alt }`.
+- **Pour une rotation** : ajouter une ligne `{ du, au, fichier, alt, valide }`.
+
+### Préparer en avance, voir, valider *(proposé le 25/11, construit en phase 4)*
+
+```ts
+rotations: [
+  { du: '2026-12-01', au: '2026-12-26', fichier: '/images/v3/accueil/hero-noel.webp', alt: '…', valide: true },
+  { du: '2027-06-15', au: '2027-08-31', fichier: '/images/v3/accueil/hero-ete.webp', alt: '…', valide: false },
+],
+```
+
+- **Une rotation non validée n'est jamais en ligne**, même à sa date : le site garde le visuel par défaut.
+- **L'aperçu** : `/brand/visuels` (protégé comme `/brand`). Chaque emplacement y montre le visuel du jour,
+  et un sélecteur de date fait voir le site à n'importe quel jour (« le 5 décembre ») : visuels
+  validés et visuels « à valider », marqués comme tels.
+- **Valider** : passer `valide: false` à `valide: true`. Une ligne, que je change sur votre mot.
+- **Où vous le faites** : vous déposez les fichiers (dans la conversation ou dans `public/images/v3/<page>/`),
+  vous dites l'emplacement et les dates ; j'ajoute la ligne, vous regardez l'aperçu, vous validez.
+- **Vidéos** : même mécanique, avec trois fichiers par vidéo (poster `.webp`, `.mp4`, `.webm`).
+
+### Les emplacements
+
+Chaque visuel du site a un nom d'emplacement (`page.place`), listé dans `media.ts` et repris dans
+le bouton « Visuels » du banc (`R-<page><n>`, avec ratio et taille). Exemples :
+
+| Emplacement | Ce que c'est | Ratio |
+|---|---|---|
+| `accueil.hero` | La couverture de l'ouverture | 210 / 297 |
+| `magazine.video` | La vidéo du magazine (verticale) | 9 / 16 |
+| `offrir.carte` | Le visuel posé sur la carte cadeau (un numéro incliné) | 210 / 297 |
+
+**La carte cadeau a son emplacement visuel** (`offrir.carte`), daté comme les autres : un visuel de
+Noël peut être préparé, vu sur la carte dans l'aperçu, puis validé. Le reste de la carte (logo,
+phrase, montant, code) est du texte, jamais une image.
