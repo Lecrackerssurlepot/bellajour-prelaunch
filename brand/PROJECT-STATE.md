@@ -54,7 +54,7 @@
 
 1. **Logo** : pas de SVG (dessiné dans Procreate). Mathias fournit un PNG transparent haute définition, vectorisé en phase 2 (fiche B).
 2. **Valeurs « proposé »** : acceptées pour l'instant, validées à l'œil en phase 2 sur `/brand`.
-3. **Format des brochures** : à choisir en phase 2 (fiche N).
+3. **Format des brochures** : A4 portrait, tranché le 25/11 en phase 2 (fiche N).
 4. **URL de la page Groupes** : à trancher en phase 4 (fiche L).
 
 ### Écarts découverts à l'étape 0
@@ -85,9 +85,10 @@
 - Réseaux : formats habituels, gabarits à voir avec Louis. Priorité : la typo se lit sur n'importe quelle photo (fiche N).
 - Mails : trop sobres. En phase 6 : magazines empilés pour la couleur, gros textes, jeu de graisses, côté atelier (fiche N).
 
+- Brochures : A4 portrait (25/11), le 16:9 n'est pas retenu (fiche N).
+
 ### Reste pour fermer la gate 2
-1. Le choix du format de brochure (A4 portrait ou 16:9).
-2. La validation à l'œil de Mathias et Louis, ordinateur et iPhone, sur la préversion Vercel.
+1. La validation à l'œil de Mathias et Louis, ordinateur et iPhone, sur la préversion Vercel.
 
 ## Phases suivantes
 

@@ -390,7 +390,7 @@ export default function PageCharte() {
           </figure>
         </div>
 
-        <h3 className="ch-h3">Brochure PDF : quel format ?</h3>
+        <h3 className="ch-h3">Brochure PDF · A4 portrait</h3>
         <div className="ch-grille ch-grille--brochures">
           <figure className="ch-brochure ch-brochure--a4">
             <div className="ch-brochure-page">
@@ -399,16 +399,7 @@ export default function PageCharte() {
               <div className="ch-brochure-photo" />
               <p className="ch-etiquette ch-brochure-num">01</p>
             </div>
-            <figcaption><strong>A4 portrait</strong> · se lit et s’imprime partout</figcaption>
-          </figure>
-          <figure className="ch-brochure ch-brochure--169">
-            <div className="ch-brochure-page">
-              <div className="ch-logo" role="img" aria-label="Bellajour" />
-              <p className="ch-brochure-titre">L’Édition collective</p>
-              <div className="ch-brochure-photo" />
-              <p className="ch-etiquette ch-brochure-num">01</p>
-            </div>
-            <figcaption><strong>16:9 paysage</strong> · se lit sur écran, se projette</figcaption>
+            <figcaption><strong>A4 portrait</strong> · 210 × 297 mm, marges 15 mm</figcaption>
           </figure>
         </div>
       </Section>

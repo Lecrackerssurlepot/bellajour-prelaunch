@@ -22,9 +22,9 @@
 
 Tranché le 25/11 : des PDF numériques, **pas** d'impression.
 - **Espace couleur** : RVB (sRGB). Pas de CMJN, pas de fond perdu, pas de traits de coupe.
-- **Format** : à choisir en phase 2 entre deux propositions. A4 portrait (210 × 297 mm), qui se lit et s'imprime partout. Ou 16:9 paysage (1920 × 1080 px), qui se lit sur un écran et se projette.
+- **Format** : A4 portrait (210 × 297 mm), tranché le 25/11 par Mathias. Il se lit à l'écran et s'imprime partout. Le 16:9 paysage n'est pas retenu.
 - **Typo** : les quatre rôles de D, incorporés au PDF (licences OFL : c'est permis).
-- **Marges** : 15 mm (A4) ou 96 px (16:9). Logo en haut à gauche, numéro de page en étiquette.
+- **Marges** : 15 mm. Logo en haut à gauche, numéro de page en étiquette.
 - **Poids** *(proposé)* : 10 Mo au plus. Images en 150 dpi.
 
 ## Réseaux sociaux

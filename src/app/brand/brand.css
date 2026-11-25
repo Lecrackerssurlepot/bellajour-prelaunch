@@ -327,15 +327,13 @@
 .ch-reseau-titre { top: 14%; font-family: var(--m-police-titre-famille); font-weight: var(--m-police-titre-graisse); font-variation-settings: var(--m-police-titre-axes); font-size: var(--m-taille-h3); line-height: var(--m-police-titre-interligne); }
 .ch-reseau-signature { top: 40%; text-align: center; font-family: var(--m-police-signature-famille); font-size: var(--m-police-signature-taille-mini); line-height: var(--m-police-signature-interligne); }
 
-.ch-brochure { display: grid; gap: var(--m-espace-3); font-size: var(--m-taille-petit); }
+.ch-brochure { display: grid; gap: var(--m-espace-3); font-size: var(--m-taille-petit); max-width: calc(var(--m-espace-10) * 3.5); }
 .ch-brochure-page {
   position: relative; border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-image);
   background: var(--m-couleur-papier-fond); display: grid; align-content: start; gap: var(--m-espace-3); overflow: hidden;
 }
 .ch-brochure--a4 .ch-brochure-page { aspect-ratio: 210 / 297; padding: calc(15 / 210 * 100%); }
-.ch-brochure--169 .ch-brochure-page { aspect-ratio: 16 / 9; padding: calc(96 / 1920 * 100%); grid-template-columns: 1fr 1fr; }
 .ch-brochure-page .ch-logo { width: var(--m-espace-8); margin: 0; }
-.ch-brochure--169 .ch-logo { grid-column: 1 / -1; }
 .ch-brochure-titre { font-family: var(--m-police-titre-famille); font-weight: var(--m-police-titre-graisse); font-variation-settings: var(--m-police-titre-axes); font-size: var(--m-taille-h3); line-height: var(--m-police-titre-interligne); }
 .ch-brochure-photo { aspect-ratio: 4 / 3; border-radius: var(--m-rayon-image); background: url(/images/v2/accueil/header-magazines-paysage-1280.webp) center / cover; }
 .ch-brochure-num { position: absolute; right: var(--m-espace-4); bottom: var(--m-espace-3); }
