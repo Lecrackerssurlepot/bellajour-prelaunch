@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Magazine 3D · exporteur</title>
+<link rel="icon" href="data:,">
+<!-- Page nue servie par exporter.mjs. Elle ne sert qu'à rendre les images. -->
+<script type="importmap">
+{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/" } }
+</script>
+<style>html, body { margin: 0; background: transparent; } #scene { width: 100vw; height: 100vh; }</style>
+</head>
+<body>
+<div id="scene"></div>
+<script type="module">
+import { creerStudio, webglDisponible } from './magazine.js'
+
+const angles = await (await fetch('./angles.json')).json()
+let studio = null
+
+window.magazine3d = {
+  angles,
+  webgl: webglDisponible(),
+  /* Monte un studio à taille fixe. Un seul à la fois. */
+  async monter(options) {
+    studio?.liberer()
+    studio = creerStudio(document.getElementById('scene'), { ...options, angles, densite: 1 })
+    await studio.pret
+  },
+  /* Un angle nommé, posé sans transition, rendu en PNG. */
+  angle(nom) {
+    studio.allerA(nom, { anime: false })
+    return studio.capturer('image/png')
+  },
+  /* Une image de la vidéo : même vue, le magazine tourné de `rotation` degrés. */
+  tour(nom, rotation) {
+    const a = angles.angles[nom]
+    studio.poser({
+      rotation,
+      elevation: a.camera.elevation,
+      distance: a.camera.distance,
+      champ: a.camera.champ,
+      couche: a.pose === 'a-plat' ? 1 : 0,
+      ouverture: a.ouverture,
+    })
+    return studio.capturer('image/png')
+  },
+}
+window.pret = true
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { jetons, versionCharte, requeteTelephone } from '../../../brand/build/tokens'
+import Magazine from './Magazine'
 import Motion from './Motion'
 
 /* La page ne recopie AUCUNE valeur : tout vient de brand/build/tokens.ts, généré
@@ -60,6 +61,7 @@ const SECTIONS = [
   ['formes', 'Formes'],
   ['composants', 'Composants'],
   ['motion', 'Motion'],
+  ['magazine', 'Magazine'],
   ['variations', 'Variations'],
   ['logo', 'Logo'],
   ['declinaisons', 'Hors site'],
@@ -307,6 +309,10 @@ export default function PageCharte() {
           ))}
         </ul>
         <Motion />
+      </Section>
+
+      <Section id="magazine" lettre="J" titre="Magazine">
+        <Magazine />
       </Section>
 
       <Section id="variations" lettre="B · F" titre="Variations du catalogue">

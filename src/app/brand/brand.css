@@ -338,6 +338,24 @@
 .ch-brochure-photo { aspect-ratio: 4 / 3; border-radius: var(--m-rayon-image); background: url(/images/v2/accueil/header-magazines-paysage-1280.webp) center / cover; }
 .ch-brochure-num { position: absolute; right: var(--m-espace-4); bottom: var(--m-espace-3); }
 
+/* ── Magazine 3D ── */
+.ch-mag { display: grid; gap: var(--m-espace-6); }
+.ch-mag-scene { position: relative; aspect-ratio: 1; background: var(--m-couleur-papier-champ-fond); border-radius: var(--m-rayon-bloc); overflow: hidden; }
+.ch-mag-toile, .ch-mag-fixe { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ch-mag-fixe { object-fit: contain; }
+.ch-mag-toile canvas { outline: none; }
+.ch-mag-toile canvas:focus-visible { box-shadow: inset 0 0 0 var(--m-focus-anneau-interieur) var(--m-couleur-accent); }
+.ch-mag-reglages { display: grid; gap: var(--m-espace-6); align-content: start; justify-items: start; min-width: 0; }
+.ch-mag-groupe { display: grid; gap: var(--m-espace-3); min-width: 0; }
+.ch-mag-pages { width: 100%; font-size: var(--m-taille-petit); }
+.ch-mag-pages input { width: 100%; min-height: var(--m-cible-mini); margin: 0; accent-color: var(--m-couleur-accent); }
+.ch-mag-pages input:disabled { opacity: .4; }
+.ch-mag-pages output { font-variant-numeric: tabular-nums; }
+@media (min-width: 901px) {
+  .ch-mag { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--m-espace-8); align-items: center; }
+  .ch-mag-scene { aspect-ratio: 4 / 3; }
+}
+
 /* ── Pied ── */
 .ch-pied { margin-top: var(--m-espace-section); padding: var(--m-espace-8) 0 var(--m-espace-6); border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); overflow: hidden; }
 .ch-filigrane { font-family: var(--m-police-titre-famille); font-weight: var(--m-police-titre-graisse); font-variation-settings: var(--m-police-titre-axes); font-size: var(--m-taille-exception-filigrane-pied); line-height: 1; color: var(--m-couleur-papier-filigrane); }

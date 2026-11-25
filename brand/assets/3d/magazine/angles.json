@@ -1,0 +1,49 @@
+{
+  "$description": "Les angles nommés du magazine 3D. Lus par magazine.js (vitrine, site) et par exporter.mjs. pose : debout (sur sa tranche de pied) ou a-plat (posé sur la 4e). ouverture : 0 fermé, 1 ouvert à plat sur une double page. rotation : le magazine tourné sur lui-même, en degrés (positif = le dos carré vient vers nous). camera : hauteur de vue en degrés (elevation, 0 = à hauteur du magazine, 90 = à la verticale), distance en hauteurs de page, angle de champ en degrés.",
+  "ordre": ["face", "trois-quarts-gauche", "trois-quarts-droite", "dos", "ouvert", "pose-a-plat"],
+  "defaut": "trois-quarts-gauche",
+  "angles": {
+    "face": {
+      "libelle": "Face",
+      "pose": "debout",
+      "ouverture": 0,
+      "rotation": 0,
+      "camera": { "elevation": 2, "distance": 2.9, "champ": 28 }
+    },
+    "trois-quarts-gauche": {
+      "libelle": "Trois quarts gauche",
+      "pose": "debout",
+      "ouverture": 0,
+      "rotation": 32,
+      "camera": { "elevation": 8, "distance": 2.9, "champ": 28 }
+    },
+    "trois-quarts-droite": {
+      "libelle": "Trois quarts droite",
+      "pose": "debout",
+      "ouverture": 0,
+      "rotation": -32,
+      "camera": { "elevation": 8, "distance": 2.9, "champ": 28 }
+    },
+    "dos": {
+      "libelle": "Dos",
+      "pose": "debout",
+      "ouverture": 0,
+      "rotation": 148,
+      "camera": { "elevation": 8, "distance": 2.9, "champ": 28 }
+    },
+    "ouvert": {
+      "libelle": "Ouvert",
+      "pose": "a-plat",
+      "ouverture": 1,
+      "rotation": 0,
+      "camera": { "elevation": 58, "distance": 3.9, "champ": 28 }
+    },
+    "pose-a-plat": {
+      "libelle": "Posé à plat",
+      "pose": "a-plat",
+      "ouverture": 0,
+      "rotation": -24,
+      "camera": { "elevation": 42, "distance": 3.1, "champ": 28 }
+    }
+  }
+}
