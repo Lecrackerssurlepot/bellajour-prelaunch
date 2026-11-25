@@ -1,133 +1,32 @@
-/* La page « cette adresse n'existe pas » (07/09/2026).
-   Feuille à elle seule, chargée par `not-found.tsx` : ce fichier sert TOUTES
-   les routes du site, y compris celles du monde crème, donc il ne peut
-   emprunter ni à `pdp.css` ni à `numero.css` — les deux sont scopées sous un
-   conteneur que cette page n'a pas. Les couleurs viennent de `theme.css`
-   (monde sombre), importé juste au-dessus. */
-
-/* ⚠️ LES POLICES, ET POURQUOI ON PASSE PAR UN ALIAS.
-   `theme.css` redéfinit `--font-display` sous `.bj-atelier` en pointant vers
-   `--font-atelier-display`, que le layout du groupe (atelier) pose sur SON
-   conteneur. Cette page-ci vit à la racine : la variable n'existe pas, la
-   déclaration devient invalide au calcul, et la propriété retombe sur
-   l'héritage — le titre s'affichait en DM Sans au lieu du Cormorant.
-   ⚠️ Et depuis T-064, `--font-display` n'est même plus posée sur <html>.
-   Depuis le 09/09 la page ne la pose plus non plus : importer un module
-   next/font ICI l'expédiait sur tout le site (voir not-found.tsx).
-
-   ⚠️⚠️ LES REPLIS SONT DANS LE `var()`, PAS APRÈS LA VIRGULE — et c'est
-   toute la différence. `var(--font-display), Georgia, serif` n'est PAS une
-   chaîne de repli : si `--font-display` n'existe pas, la déclaration entière
-   devient invalide au calcul, et la propriété est HÉRITÉE du body, donc en
-   DM Sans. Constaté à l'écran le 09/09 : le titre est passé en sans-serif,
-   et sa taille — réglée au `clamp()` pour un serif étroit — a débordé de la
-   page. C'est le même piège que celui payé sur /ambassadeurs le 07/09
-   (creme-fonts.ts). Le repli va donc DANS la parenthèse : sans variable, on
-   tombe sur Cormorant si une autre partie de la page l'a chargée, sinon sur
-   Georgia — un serif, comme prévu. */
+/* La 404 et la page d'erreur (charte V2, fiche K). Jetons --m-* seulement.
+   Ancienne feuille : archive/ancienne-charte/not-found.css. */
 .nf {
-  --nf-display: var(--font-display, 'Cormorant Garamond'), Georgia, serif;
-  --nf-ui: var(--font-ui, 'DM Sans'), system-ui, sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
-  place-items: center;
-  min-height: var(--app-height);
-  padding: var(--pad);
-  background: var(--c-void);
-  color: var(--c-text);
+  place-content: center;
+  justify-items: center;
+  gap: var(--m-espace-5);
+  padding: var(--m-espace-section) var(--m-espace-marge);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  font-family: var(--m-police-texte-famille);
   text-align: center;
 }
-
-.nf-in {
-  max-width: 34rem;
-}
-
-.nf-kicker {
-  margin: 0 0 clamp(10px, 2vw, 16px);
-  font-family: var(--nf-ui), system-ui, sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--c-text-faint);
-}
-
-/* ⚠️ ÉCRIT EN (0,2,0), ET CE N'EST PAS DU ZÈLE — DÉFAUT TROUVÉ LE 09/09/2026.
-   `theme.css` pose `.bj-atelier h1 { font-family: var(--font-display);
-   font-size: clamp(56px, 15vw, 150px) }`, en (0,1,1). Une classe seule est
-   en (0,1,0) : elle perdait. Le titre de cette page s'affichait donc en
-   150 px et dans la police d'INTERFACE, sur quatre lignes qui remplissaient
-   l'écran — vérifié en production le 09/09 avant toute modification, DM Sans,
-   150 px, 612 px de haut. Le réglage écrit ci-dessous n'avait jamais servi.
-   `.nf` devant la classe suffit à repasser devant. */
+.nf-logo { width: calc(var(--m-espace-9) + var(--m-espace-6)); color: var(--m-couleur-papier-texte); margin-bottom: var(--m-espace-5); }
 .nf .nf-mot {
   margin: 0;
-  font-family: var(--nf-display), 'Cormorant Garamond', Georgia, serif;
-  font-weight: 400;
-  font-size: clamp(30px, 7vw, 52px);
-  line-height: 1.06;
-  letter-spacing: -0.01em;
+  font-family: var(--m-police-signature-famille);
+  font-weight: var(--m-police-signature-graisse);
+  font-size: var(--m-taille-exception-signature-accueil);
+  line-height: var(--m-police-signature-interligne);
+  letter-spacing: var(--m-police-signature-approche);
 }
-
 .nf-sub {
-  /* Un titre de 52 px a besoin de plus qu'un interligne pour respirer. */
-  margin: clamp(20px, 3.5vw, 30px) auto 0;
-  max-width: 30rem;
-  font-family: var(--nf-ui), system-ui, sans-serif;
-  font-weight: 300;
-  font-size: clamp(14px, 1.3vw, 16px);
-  line-height: 1.65;
-  color: var(--c-text-soft);
+  margin: 0 0 var(--m-espace-3);
+  max-width: var(--m-mesure-chapo);
+  font-size: var(--m-taille-chapo);
+  color: var(--m-couleur-papier-texte-doux);
 }
-
-.nf-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(14px, 2.5vw, 22px);
-  margin-top: clamp(26px, 4vw, 38px);
-}
-
-/* Cible tactile de 44 px, comme partout ailleurs depuis le lot 6. */
-.bj-atelier .nf-cta {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 10px 22px;
-  border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
-  font-family: var(--nf-ui), system-ui, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--c-text);
-  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
-}
-
-.bj-atelier .nf-cta:hover {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
-}
-
-.bj-atelier .nf-skip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-family: var(--nf-ui), system-ui, sans-serif;
-  font-size: 13px;
-  color: var(--c-text-faint);
-  transition: color var(--dur) var(--ease);
-}
-
-.bj-atelier .nf-skip:hover { color: var(--c-text); }
-
-.nf-aide {
-  margin: clamp(26px, 4vw, 38px) auto 0;
-  max-width: 28rem;
-  font-family: var(--nf-ui), system-ui, sans-serif;
-  font-weight: 300;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--c-text-faint);
-}
-
-.nf-aide b { font-weight: 500; color: var(--c-text-soft); }
+.nf-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--m-espace-4); }
+.nf .m-btn, .nf .m-texte { display: inline-flex; align-items: center; text-decoration: none; }
