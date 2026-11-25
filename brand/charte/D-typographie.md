@@ -54,7 +54,8 @@ Les polices sont rangées **par rôle**. Changer une police ne touche aucune pag
 
 1. Dans `brand/tokens.json`, changer `police.<rôle>.famille` (et la graisse ou les axes si besoin).
 2. Dans `src/app/polices.ts`, remplacer l'import `next/font/google` de l'ancienne police par la nouvelle. Next exige un import écrit en toutes lettres ; c'est la seule ligne de code.
-3. Lancer `node brand/scripts/build-tokens.mjs`, puis regarder `/brand`.
+3. Garder la même `variable` (`--police-<rôle>`) dans l'appel : c'est le relais que lit `tokens.css`.
+4. Lancer `node brand/scripts/build-tokens.mjs`, puis regarder `/brand`.
 
 Une police payante ou issue de `assets/typo/` : vérifier d'abord sa licence (servir une police
 sur le web, c'est la redistribuer).

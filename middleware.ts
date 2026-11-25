@@ -176,5 +176,7 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/compte/:path*"],
+  /* /brand (vitrine de la charte V2, 25/11/2026) suit la branche admin : sans
+     cookie bj_admin, retour à /admin/login. */
+  matcher: ["/admin/:path*", "/api/admin/:path*", "/compte/:path*", "/brand", "/brand/:path*"],
 };

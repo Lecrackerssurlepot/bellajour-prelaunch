@@ -17,7 +17,17 @@ const entete = `Charte Bellajour ${version}. FICHIER GÉNÉRÉ depuis brand/toke
 const versVar = (alias) => `var(${nomCss(cibleAlias(alias))})`;
 
 // 1. CSS
-const lignes = jetons.map((j) => `  ${nomCss(j.chemin)}: ${enCss(j.type, j.valeur, versVar)};`);
+// Une famille de rôle passe d'abord par la variable que pose next/font (src/app/polices.ts),
+// qui donne à la police un nom haché : sans ce relais, "Fraunces" ne trouverait rien.
+const roleDePolice = (j) => j.type === 'fontFamily' && /^police\.[^.]+\.famille$/.test(j.chemin) && typeof j.valeur !== 'string' ? j.chemin.split('.')[1] : null;
+const valeurCss = (j) => {
+  const css = enCss(j.type, j.valeur, versVar);
+  const role = roleDePolice(j);
+  if (!role) return css;
+  const [premiere, ...reste] = css.split(', ');
+  return [`var(--police-${role}, ${premiere})`, ...reste].join(', ');
+};
+const lignes = jetons.map((j) => `  ${nomCss(j.chemin)}: ${valeurCss(j)};`);
 const tel = jetons.filter((j) => j.telephone !== undefined).map((j) => `    ${nomCss(j.chemin)}: ${enCss(j.type, j.telephone, versVar)};`);
 const css = `/* ${entete} */\n:root {\n${lignes.join('\n')}\n}\n\n@media (max-width: ${rupture}) {\n  :root {\n${tel.join('\n')}\n  }\n}\n`;
 writeFileSync(join(sortie, 'tokens.css'), css);

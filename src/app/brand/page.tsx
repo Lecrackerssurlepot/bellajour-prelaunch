@@ -1,0 +1,430 @@
+import type { CSSProperties, ReactNode } from 'react'
+import { jetons, versionCharte, requeteTelephone } from '../../../brand/build/tokens'
+import Motion from './Motion'
+
+/* La page ne recopie AUCUNE valeur : tout vient de brand/build/tokens.ts, généré
+   depuis brand/tokens.json. Changer un jeton, relancer le build, recharger. */
+
+type Jeton = { valeur: unknown; css: string; variable: string; telephone?: string }
+
+function estJeton(x: unknown): x is Jeton {
+  return typeof x === 'object' && x !== null && 'variable' in x && 'css' in x
+}
+
+function aplatir(n: unknown, prefixe = ''): Array<[string, Jeton]> {
+  if (estJeton(n)) return [[prefixe, n]]
+  if (typeof n !== 'object' || n === null) return []
+  return Object.entries(n).flatMap(([k, v]) => aplatir(v, prefixe ? `${prefixe}.${k}` : k))
+}
+
+const v = (j: Jeton) => `var(${j.variable})`
+
+/* Contraste WCAG, le même calcul que brand/scripts/contrastes.mjs. */
+function luminance(hex: string): number {
+  const c = [1, 3, 5]
+    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((x) => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+function rapport(a: string, b: string): number {
+  const [h, l] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (h + 0.05) / (l + 0.05)
+}
+const hex = (j: Jeton) => String(j.valeur)
+
+function Section({ id, lettre, titre, children }: { id: string; lettre: string; titre: string; children: ReactNode }) {
+  return (
+    <section className="ch-section" id={id} aria-labelledby={`${id}-t`}>
+      <p className="ch-etiquette">{lettre}</p>
+      <h2 className="ch-h2" id={`${id}-t`}>{titre}</h2>
+      {children}
+    </section>
+  )
+}
+
+function Nom({ chemin, j }: { chemin: string; j: Jeton }) {
+  return (
+    <span className="ch-nom">
+      <code>{chemin}</code>
+      <span>{j.css}{j.telephone ? ` · téléphone ${j.telephone}` : ''}</span>
+    </span>
+  )
+}
+
+const { couleur, police, taille, espace, rayon, ombre, duree, courbe, variation } = jetons
+
+const SECTIONS = [
+  ['couleurs', 'Couleurs'],
+  ['typo', 'Typographie'],
+  ['espaces', 'Espacements'],
+  ['formes', 'Formes'],
+  ['composants', 'Composants'],
+  ['motion', 'Motion'],
+  ['variations', 'Variations'],
+  ['logo', 'Logo'],
+  ['declinaisons', 'Hors site'],
+] as const
+
+export default function PageCharte() {
+  const fond = hex(couleur.papier.fond)
+  const fondNuit = hex(couleur.nuit.fond)
+  const etats = (['succes', 'erreur', 'alerte', 'info'] as const).map((e) => [e, couleur.etat[e]] as const)
+  const tailles = aplatir(taille).filter(([k]) => !k.startsWith('exception.'))
+  const exceptions = aplatir(taille).filter(([k]) => k.startsWith('exception.'))
+  const espaces = aplatir(espace).filter(([k]) => /^\d+$/.test(k))
+  const libelleEtat: Record<string, string> = { succes: 'Succès', erreur: 'Erreur', alerte: 'Alerte', info: 'Info' }
+
+  return (
+    <main className="ch-page">
+      <header className="ch-tete">
+        <div className="ch-logo" role="img" aria-label="Bellajour" />
+        <p className="ch-etiquette">Charte {versionCharte} · source brand/tokens.json</p>
+        <h1 className="ch-h1">La charte, en vrai.</h1>
+        <p className="ch-chapo">
+          Chaque valeur de cette page est lue dans les jetons. Ce qui est marqué « proposé » attend votre œil.
+        </p>
+        <nav className="ch-sommaire" aria-label="Sommaire">
+          {SECTIONS.map(([id, t]) => (
+            <a key={id} href={`#${id}`}>{t}</a>
+          ))}
+        </nav>
+      </header>
+
+      <Section id="couleurs" lettre="C" titre="Couleurs">
+        <h3 className="ch-h3">Papier</h3>
+        <div className="ch-grille ch-grille--nuancier">
+          {aplatir(couleur.papier).map(([k, j]) => (
+            <figure key={k} className="ch-nuance">
+              <span className="ch-pastille" style={{ background: v(j) }} />
+              <Nom chemin={`papier.${k}`} j={j} />
+              {k.startsWith('texte') || k === 'champ-bord' ? (
+                <span className="ch-contraste">{rapport(hex(j), fond).toFixed(2)}:1 sur le fond</span>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+
+        <h3 className="ch-h3">Nuit, le bloc ponctuel</h3>
+        <div className="ch-bloc-nuit">
+          <div className="ch-grille ch-grille--nuancier">
+            {aplatir(couleur.nuit).map(([k, j]) => (
+              <figure key={k} className="ch-nuance">
+                <span className="ch-pastille" style={{ background: v(j) }} />
+                <Nom chemin={`nuit.${k}`} j={j} />
+                {k.startsWith('texte') || k === 'champ-bord' ? (
+                  <span className="ch-contraste">{rapport(hex(j), fondNuit).toFixed(2)}:1 sur le fond</span>
+                ) : null}
+              </figure>
+            ))}
+          </div>
+        </div>
+
+        <h3 className="ch-h3">États <span className="ch-propose">proposé</span></h3>
+        <div className="ch-grille ch-grille--etats">
+          {etats.map(([e, j]) => (
+            <div key={e} className="ch-etat" style={{ '--etat': v(j) } as CSSProperties}>
+              <span className="ch-etat-point" />
+              <strong>{libelleEtat[e]}</strong>
+              <Nom chemin={`etat.${e}`} j={j} />
+              <span className="ch-contraste">{rapport(hex(j), fond).toFixed(2)}:1</span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section id="typo" lettre="D" titre="Typographie">
+        <div className="ch-roles">
+          <div className="ch-role">
+            <p className="ch-etiquette">Titre · {police.titre.famille.css}</p>
+            <p className="ch-ex-titre">Chaque moment mérite son numéro</p>
+          </div>
+          <div className="ch-role">
+            <p className="ch-etiquette">Signature · {police.signature.famille.css} · {police.signature['taille-mini'].css} au moins</p>
+            <p className="ch-ex-signature">Vivez. Nous composons.</p>
+          </div>
+          <div className="ch-role">
+            <p className="ch-etiquette">Texte · {police.texte.famille.css}</p>
+            <p className="ch-ex-texte">
+              Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. Un numéro par moment, un aperçu avant de payer.
+            </p>
+          </div>
+          <div className="ch-role">
+            <p className="ch-etiquette">Étiquette · même famille, capitales espacées</p>
+            <p className="ch-etiquette ch-etiquette--grande">Numéro 01 · Été 2026</p>
+          </div>
+          <div className="ch-role">
+            <p className="ch-etiquette">Titre imprimé · {police.magazine.famille.css} · sur le magazine seulement</p>
+            <p className="ch-ex-magazine">Lisbonne</p>
+          </div>
+        </div>
+
+        <h3 className="ch-h3">L’échelle</h3>
+        <div className="ch-echelle">
+          {tailles.map(([k, j]) => (
+            <div key={k} className="ch-palier">
+              <Nom chemin={`taille.${k}`} j={j} />
+              <span
+                className={['h1', 'h2', 'h3', 'display'].includes(k) ? 'ch-palier-titre' : 'ch-palier-texte'}
+                style={{ fontSize: v(j) }}
+              >
+                Bellajour
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <h3 className="ch-h3">Les exceptions nommées</h3>
+        <ul className="ch-liste">
+          {exceptions.map(([k, j]) => (
+            <li key={k}><Nom chemin={`taille.${k}`} j={j} /></li>
+          ))}
+        </ul>
+      </Section>
+
+      <Section id="espaces" lettre="E" titre="Espacements et ruptures">
+        <div className="ch-espaces">
+          {espaces.map(([k, j]) => (
+            <div key={k} className="ch-espace">
+              <span className="ch-espace-barre" style={{ width: v(j) }} />
+              <Nom chemin={`espace.${k}`} j={j} />
+            </div>
+          ))}
+        </div>
+        <ul className="ch-liste">
+          <li><Nom chemin="espace.marge" j={espace.marge} /></li>
+          <li><Nom chemin="espace.section" j={espace.section} /></li>
+          <li><Nom chemin="rupture.telephone" j={jetons.rupture.telephone} /></li>
+          <li><Nom chemin="rupture.large" j={jetons.rupture.large} /></li>
+          <li><span className="ch-nom"><code>requeteTelephone</code><span>{requeteTelephone}</span></span></li>
+        </ul>
+      </Section>
+
+      <Section id="formes" lettre="F" titre="Rayons, traits, ombres">
+        <div className="ch-grille ch-grille--formes">
+          {aplatir(rayon).map(([k, j]) => (
+            <figure key={k} className="ch-forme">
+              <span className="ch-forme-boite" style={{ borderRadius: v(j) }} />
+              <Nom chemin={`rayon.${k}`} j={j} />
+            </figure>
+          ))}
+        </div>
+        <p className="ch-note">L’ombre est réservée aux objets imprimés. L’interface n’en porte pas.</p>
+        <div className="ch-grille ch-grille--formes">
+          {aplatir(ombre).map(([k, j]) => (
+            <figure key={k} className="ch-forme">
+              <span className="ch-objet" style={{ boxShadow: v(j) }} />
+              <Nom chemin={`ombre.${k}`} j={j} />
+            </figure>
+          ))}
+        </div>
+      </Section>
+
+      <Section id="composants" lettre="H" titre="Composants">
+        <h3 className="ch-h3">Boutons</h3>
+        <div className="ch-tableau">
+          {(
+            [
+              ['Repos', ''],
+              ['Survol', 'est-survol'],
+              ['Focus clavier', 'est-focus'],
+              ['Désactivé', 'est-desactive'],
+              ['Chargement', 'est-charge'],
+            ] as const
+          ).map(([nom, cls]) => (
+            <div key={nom} className="ch-ligne">
+              <span className="ch-etiquette">
+                {nom}
+                {nom !== 'Repos' && nom !== 'Focus clavier' ? <span className="ch-propose">proposé</span> : null}
+              </span>
+              <button type="button" className={`m-btn ${cls}`} disabled={cls === 'est-desactive'} aria-busy={cls === 'est-charge' || undefined}>
+                {cls === 'est-charge' ? <span className="m-points" aria-label="Chargement"><i /><i /><i /></span> : 'Composer mon numéro'}
+              </button>
+              <button type="button" className={`m-second ${cls}`} disabled={cls === 'est-desactive'}>
+                Voir un numéro
+              </button>
+              <button type="button" className={`m-texte ${cls}`} disabled={cls === 'est-desactive'}>
+                Offrir <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="ch-note">Survolez et tabulez sur les boutons du haut pour voir le vrai comportement.</p>
+
+        <h3 className="ch-h3">Champs</h3>
+        <div className="ch-grille ch-grille--champs">
+          <label className="m-champ">
+            <span>Prénom</span>
+            <input placeholder="Camille" />
+          </label>
+          <label className="m-champ est-focus">
+            <span>Focus</span>
+            <input defaultValue="Lisbonne, été 2026" />
+          </label>
+          <label className="m-champ est-erreur">
+            <span>Email <span className="ch-propose">proposé</span></span>
+            <input defaultValue="camille@" aria-invalid="true" aria-describedby="err-mail" />
+            <small id="err-mail">Adresse incomplète</small>
+          </label>
+          <label className="m-champ est-desactive">
+            <span>Désactivé <span className="ch-propose">proposé</span></span>
+            <input disabled defaultValue="Indisponible" />
+          </label>
+        </div>
+
+        <h3 className="ch-h3">Pastilles, cartes, notification</h3>
+        <div className="ch-grille ch-grille--divers">
+          <div className="ch-pile">
+            <span className="m-pastille">Nouveau</span>
+            {etats.slice(0, 3).map(([e, j]) => (
+              <span key={e} className="m-pastille" style={{ '--etat': v(j) } as CSSProperties}>
+                <i className="m-pastille-point" />{libelleEtat[e]}
+              </span>
+            ))}
+          </div>
+          <div className="m-carte">
+            <p className="ch-etiquette">Carte</p>
+            <p>Bord fin, sans ombre.</p>
+          </div>
+          <div className="m-carte-cadeau">
+            <p className="ch-etiquette">Carte cadeau</p>
+            <p className="m-carte-cadeau-titre">Un numéro à offrir</p>
+          </div>
+          <div className="m-attente">Photo en attente</div>
+          <div className="m-notification" role="status">Photo ajoutée <span className="ch-propose ch-propose--nuit">proposé</span></div>
+        </div>
+
+        <h3 className="ch-h3">Bandeau</h3>
+        <div className="m-bandeau">Une phrase courte, une seule</div>
+      </Section>
+
+      <Section id="motion" lettre="I" titre="Motion">
+        <ul className="ch-liste">
+          {aplatir(duree).map(([k, j]) => (
+            <li key={k}><Nom chemin={`duree.${k}`} j={j} /></li>
+          ))}
+          {aplatir(courbe).map(([k, j]) => (
+            <li key={k}><Nom chemin={`courbe.${k}`} j={j} /></li>
+          ))}
+        </ul>
+        <Motion />
+      </Section>
+
+      <Section id="variations" lettre="B · F" titre="Variations du catalogue">
+        <p className="ch-note">Désactivées par défaut sur le site, jamais dans les mails pour l’instant. Montrées ici pour choisir.</p>
+        <div className="ch-grille ch-grille--variations">
+          <figure className="ch-variation">
+            <div className="ch-var" aria-hidden="true">
+              <div className="ch-var-signatures">
+                {Array.from({ length: 36 }, (_, i) => <span key={i}>Bellajour</span>)}
+              </div>
+            </div>
+            <figcaption><Nom chemin="variation.signatures-fond" j={variation['signatures-fond']['opacite-page']} /></figcaption>
+          </figure>
+          <figure className="ch-variation">
+            <div className="ch-var ch-var--points" />
+            <figcaption><Nom chemin="variation.points-fins" j={variation['points-fins'].tuile} /></figcaption>
+          </figure>
+          <figure className="ch-variation">
+            <div className="ch-var ch-var--frise"><span /></div>
+            <figcaption><Nom chemin="variation.pointille-frise (active)" j={variation['pointille-frise'].pas} /></figcaption>
+          </figure>
+          <figure className="ch-variation">
+            <div className="ch-var ch-var--grain">
+              <svg aria-hidden="true">
+                <filter id="ch-grain">
+                  <feTurbulence type="fractalNoise" baseFrequency={String(variation.grain.frequence.valeur)} numOctaves={Number(variation.grain.octaves.valeur)} stitchTiles="stitch" />
+                  <feColorMatrix type="saturate" values="0" />
+                </filter>
+                <rect width="100%" height="100%" filter="url(#ch-grain)" />
+              </svg>
+            </div>
+            <figcaption><Nom chemin="variation.grain" j={variation.grain.opacite} /></figcaption>
+          </figure>
+          <figure className="ch-variation">
+            <div className="ch-var ch-var--canson">
+              <svg aria-hidden="true">
+                <filter id="ch-canson">
+                  <feTurbulence type="fractalNoise" baseFrequency={String(variation.canson.frequence.valeur)} numOctaves={Number(variation.canson.octaves.valeur)} result="b" />
+                  <feDiffuseLighting in="b" surfaceScale={Number(variation.canson.relief.valeur)} lightingColor="#ffffff">
+                    <feDistantLight azimuth={Number(variation.canson['lumiere-azimut'].valeur)} elevation={Number(variation.canson['lumiere-elevation'].valeur)} />
+                  </feDiffuseLighting>
+                </filter>
+                <rect width="100%" height="100%" filter="url(#ch-canson)" />
+              </svg>
+            </div>
+            <figcaption><Nom chemin="variation.canson" j={variation.canson.tuile} /></figcaption>
+          </figure>
+          <figure className="ch-variation">
+            <div className="ch-var ch-var--pied"><span>Bellajour</span></div>
+            <figcaption><Nom chemin="variation.signature-pied" j={variation['signature-pied'].angle} /></figcaption>
+          </figure>
+        </div>
+      </Section>
+
+      <Section id="logo" lettre="B" titre="Logo">
+        <div className="ch-grille ch-grille--logo">
+          <div className="ch-logo-cadre"><div className="ch-logo ch-logo--grand" role="img" aria-label="Bellajour sur papier" /></div>
+          <div className="ch-logo-cadre ch-logo-cadre--nuit"><div className="ch-logo ch-logo--grand" role="img" aria-label="Bellajour sur nuit" /></div>
+        </div>
+        <p className="ch-note">
+          Logo actuel, en image. Le tracé vectoriel fait depuis votre export Procreate viendra ici, à côté, pour comparer.
+        </p>
+      </Section>
+
+      <Section id="declinaisons" lettre="N" titre="Hors site">
+        <h3 className="ch-h3">Mail · {jetons.mail.largeur.css}, polices de secours</h3>
+        <div className="ch-mail">
+          <div className="ch-mail-corps">
+            <div className="ch-logo" role="img" aria-label="Bellajour" />
+            <p className="ch-mail-titre">Votre numéro est prêt</p>
+            <p className="ch-mail-texte">L’aperçu vous attend. Vous pouvez le relire avant de commander.</p>
+            <span className="ch-mail-bouton">Voir mon numéro</span>
+          </div>
+        </div>
+
+        <h3 className="ch-h3">Réseaux <span className="ch-propose">zones proposées</span></h3>
+        <div className="ch-grille ch-grille--reseaux">
+          <figure className="ch-reseau ch-reseau--post">
+            <div className="ch-reseau-photo" />
+            <span className="ch-reseau-sur" />
+            <p className="ch-reseau-titre">Été à Lisbonne</p>
+            <figcaption className="ch-etiquette">Post 1080 × 1350</figcaption>
+          </figure>
+          <figure className="ch-reseau ch-reseau--story">
+            <div className="ch-reseau-photo" />
+            <span className="ch-reseau-sur" />
+            <p className="ch-reseau-signature">Vivez. Nous composons.</p>
+            <figcaption className="ch-etiquette">Story 1080 × 1920</figcaption>
+          </figure>
+        </div>
+
+        <h3 className="ch-h3">Brochure PDF : quel format ?</h3>
+        <div className="ch-grille ch-grille--brochures">
+          <figure className="ch-brochure ch-brochure--a4">
+            <div className="ch-brochure-page">
+              <div className="ch-logo" role="img" aria-label="Bellajour" />
+              <p className="ch-brochure-titre">L’Édition collective</p>
+              <div className="ch-brochure-photo" />
+              <p className="ch-etiquette ch-brochure-num">01</p>
+            </div>
+            <figcaption><strong>A4 portrait</strong> · se lit et s’imprime partout</figcaption>
+          </figure>
+          <figure className="ch-brochure ch-brochure--169">
+            <div className="ch-brochure-page">
+              <div className="ch-logo" role="img" aria-label="Bellajour" />
+              <p className="ch-brochure-titre">L’Édition collective</p>
+              <div className="ch-brochure-photo" />
+              <p className="ch-etiquette ch-brochure-num">01</p>
+            </div>
+            <figcaption><strong>16:9 paysage</strong> · se lit sur écran, se projette</figcaption>
+          </figure>
+        </div>
+      </Section>
+
+      <footer className="ch-pied">
+        <p className="ch-filigrane" aria-hidden="true">Bellajour</p>
+        <p className="ch-etiquette">Charte {versionCharte}</p>
+      </footer>
+    </main>
+  )
+}

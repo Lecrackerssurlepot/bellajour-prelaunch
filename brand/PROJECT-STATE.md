@@ -65,11 +65,30 @@
   - les logos `public/images/v2/ui/logo-bellajour-*.webp`.
 - La liste de nettoyage de la phase 7 sera refaite sur `main` avant d'être montrée.
 
+## Phase 2 : la vitrine `/brand` (en cours, 25/11/2026)
+
+### Fait
+- `src/app/brand/` : `page.tsx` (lit `brand/build/tokens.ts`, aucune valeur recopiée), `Motion.tsx` (démo des courbes, sur geste), `brand.css` (que des `var(--m-…)`), `layout.tsx` (`noindex`).
+- Les classes `.m-*` de `brand.css` sont les composants de la charte : la phase 4 les reprendra.
+- `src/app/polices.ts` : les quatre polices en un seul endroit, une variable par rôle (`--police-titre`…). Interlope copiée dans `src/app/polices/` avec sa licence OFL.
+- `build-tokens.mjs` : chaque famille de rôle passe par `var(--police-<rôle>, "Nom")`, le relais vers next/font.
+- `middleware.ts` : `/brand` exige le cookie admin.
+- Preuve sur une vraie construction (`next start`) : sans cookie, 307 vers `/admin/login` ; avec, 200 et `noindex, nofollow, nocache`.
+- Vérifié à l'écran sur ordinateur et téléphone (375 px), sans débordement horizontal.
+
+### Constat en passant
+- En `next dev` local, le middleware ne bloque rien, `/admin` compris. La production redirige bien (307 vérifié). Ne pas tester une protection en mode dev.
+
+### Reste pour fermer la gate 2
+1. Le logo PNG de Mathias, à vectoriser et poser à côté de l'actuel.
+2. Le choix du format de brochure (A4 portrait ou 16:9), sur la page.
+3. La validation à l'œil de Mathias et Louis, ordinateur et iPhone, une fois la préversion Vercel en ligne.
+
 ## Phases suivantes
 
 | Phase | Contenu | État |
 |---|---|---|
-| 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | prochaine |
+| 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | en cours (voir ci-dessus) |
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | à faire |
 | 4 | Refonte des pages client, une page par commit | à faire |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
