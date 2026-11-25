@@ -65,7 +65,7 @@
   - les logos `public/images/v2/ui/logo-bellajour-*.webp`.
 - La liste de nettoyage de la phase 7 sera refaite sur `main` avant d'être montrée.
 
-## Phase 2 : la vitrine `/brand` (en cours, 25/11/2026)
+## Phase 2 : la vitrine `/brand` (FAITE, gate fermée le 25/11/2026)
 
 ### Fait
 - `src/app/brand/` : `page.tsx` (lit `brand/build/tokens.ts`, aucune valeur recopiée), `Motion.tsx` (démo des courbes, sur geste), `brand.css` (que des `var(--m-…)`), `layout.tsx` (`noindex`).
@@ -87,15 +87,16 @@
 
 - Brochures : A4 portrait (25/11), le 16:9 n'est pas retenu (fiche N).
 
-### Reste pour fermer la gate 2
-1. La validation à l'œil de Mathias et Louis, ordinateur et iPhone, sur la préversion Vercel.
+### Gate 2 : fermée le 25/11 par Mathias (« Ok phase 2 »)
+- Copie autonome de `/brand` publiée pour Louis : https://claude.ai/artifact/UprjSK57wJyHC3XNfeMpes (privée, Mathias la partage). À republier au même lien si la charte change.
+- Les valeurs « proposé » restent acceptées telles quelles ; un retour de Louis se corrige dans `tokens.json` puis on régénère.
 
 ## Phases suivantes
 
 | Phase | Contenu | État |
 |---|---|---|
-| 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | en cours (voir ci-dessus) |
-| 3 | Magazine 3D (`brand/assets/3d/magazine/`) | à faire |
+| 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | FAITE (25/11) |
+| 3 | Magazine 3D (`brand/assets/3d/magazine/`) | en cours (25/11) |
 | 4 | Refonte des pages client, une page par commit | à faire |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
 | 6 | Mails depuis `mail.json` | à faire |
