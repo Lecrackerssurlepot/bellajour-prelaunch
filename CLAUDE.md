@@ -40,8 +40,16 @@ Documents lus à la demande, jamais chargés d'office :
 - `docs/moteur/tunnel/README.md` — le tunnel « des photos au magazine proposé » : analyse, règles générales, et
   `RETOURS-MATHIAS.md` (ses retours, qui priment). **À lire avant tout travail sur l'analyse, la sélection ou la composition automatique.**
 - `docs/produit/VISION.md` et `ROADMAP.md` — où on va, et dans quel ordre.
-- `docs/marque/` — la charte graphique, le ton, la façon de poser une information. **À lire avant
-  toute maquette, tout texte visible et tout mail.**
+- `docs/marque/` — le ton (`TON.md`), la façon de poser une information (`STRUCTURE-INFO.md`), les
+  pièges de mise en page. Ses couleurs et polices (`CHARTE-GRAPHIQUE.md`, `MOTION.md`) sont remplacées.
+
+## Charte
+
+**Avant toute tâche visuelle (page, composant, mail, PDF, visuel), lire `brand/charte/README.md`.**
+La charte V2 (25/11/2026) prime sur tout ce qui existe : `src/app/CLAUDE.md`, skills, `docs/marque/`.
+En cas de conflit, elle gagne, et je le signale. Toute valeur de style vient de `brand/tokens.json`
+(jamais en dur) ; après une modification : `node brand/scripts/build-tokens.mjs` puis
+`node brand/scripts/contrastes.mjs`. Le chantier et son état : `brand/PROJECT-STATE.md`.
 
 ## Comment on travaille
 

@@ -1,5 +1,8 @@
 # Charte graphique Bellajour
 
+> **Remplacé le 25/11/2026 par la charte V2 : [`brand/charte/README.md`](../../brand/charte/README.md).** Ce fichier décrit l'ancienne charte ; il reste lisible jusqu'au nettoyage (phase 7), mais n'est plus à suivre.
+
+
 > « Vivez. Nous composons. »
 
 Maison d'édition du souvenir : le client dépose ses photos et son histoire, l'atelier compose un magazine, on imprime, on livre. **Premium, jamais solennel** : un artisan qui travaille dans l'ombre pendant que l'on vit, pas une application qui réclame de l'attention.

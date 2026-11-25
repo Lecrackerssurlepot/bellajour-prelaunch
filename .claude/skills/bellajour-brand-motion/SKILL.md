@@ -3,6 +3,8 @@ name: bellajour-brand-motion
 description: "Brand Guidelines & Motion System complet de Bellajour. Se déclenche SYSTÉMATIQUEMENT dès que Mathias mentionne : motion design, animation, transition, design site, améliorer le site, effet visuel, apparition, scroll, glassmorphism, gradient, profondeur, ambiance visuelle, refaire une section, rendre le site plus beau, ou toute demande de modification visuelle ou d'animation sur la landing page Bellajour. Ce skill est le document d'exécution de référence — Claude ne touche pas au site sans l'avoir consulté."
 ---
 
+> **PÉRIMÉ depuis le 25/11/2026.** Ce skill décrit une ancienne charte (Playfair, beige, ardoise). **Ne pas le suivre : lire `brand/charte/README.md`** (charte V2) et `brand/tokens.json`. Il sera réécrit en phase 7 du chantier charte.
+
 # Bellajour — Brand & Motion System
 
 > Document d'exécution. À lire intégralement avant toute modification visuelle ou animation du site Bellajour.

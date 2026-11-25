@@ -1,5 +1,8 @@
 # Motion
 
+> **Remplacé le 25/11/2026 par la charte V2 : [`brand/charte/README.md`](../../brand/charte/README.md).** Ce fichier décrit l'ancienne charte ; il reste lisible jusqu'au nettoyage (phase 7), mais n'est plus à suivre.
+
+
 Le code (`src/app/(atelier)/theme.css`, `src/app/tokens.css`) et le skill `bellajour-brand-motion` (Brand Guidelines & Motion System) disent presque la même chose sur le mouvement. Ce qui suit est **ce que le code fait** ; l'écart avec le skill est signalé.
 
 ## Le tempo

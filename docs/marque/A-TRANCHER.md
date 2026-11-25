@@ -1,5 +1,8 @@
 # À trancher par Mathias
 
+> **Remplacé le 25/11/2026 par la charte V2 : [`brand/charte/README.md`](../../brand/charte/README.md).** Ce fichier décrit l'ancienne charte ; il reste lisible jusqu'au nettoyage (phase 7), mais n'est plus à suivre.
+
+
 Ce qui est flou ou contradictoire entre deux sources. Copie de l'artefact « Charte Bellajour » du 09/11/2026. Rien ici n'a été résolu : les deux valeurs sont citées, la décision est à prendre. Une fois tranché, le code change d'abord, puis cette page.
 
 ## Entre le skill `bellajour-brand-motion` et le code
