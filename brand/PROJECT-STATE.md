@@ -102,7 +102,8 @@
 ### À savoir
 - Si `impression.ts` change, reporter la formule dans `dimensions.js`.
 - La fiche J écrit `a-plat`, le modèle `pose-a-plat` : à aligner.
-- Pas de feuilletage à l'ouverture ; dos uni sans titre ; démo 4e en encre.
+- Pas de feuilletage à l'ouverture ; dos sans titre.
+- Retours de Mathias du 25/11 appliqués : 4e et dos blancs par défaut ; bloc en liasses décalées (effet de pages en tranche, tête et pied) ; rainure de charnière sur la 1re et la 4e ; ouverture bombée (galbe ~13 mm, éventail) et angle « ouvert » vu de plus bas (élévation 44°). Démo et vidéo refaites.
 
 ### Reste pour fermer la gate 3
 1. Mathias valide chaque angle et les exports.

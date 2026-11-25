@@ -48,7 +48,7 @@ Tout le reste est optionnel :
 | `--nom ete-lisbonne` | Le nom du dossier de sortie | Le nom du fichier de couverture |
 | `--quatrieme image.webp` | L'image du dos du magazine (la 4e de couverture) | Une couleur unie |
 | `--couleur-quatrieme "#ffffff"` | La couleur de la 4e quand il n'y a pas d'image | La couleur du dos |
-| `--dos "#111111"` | La couleur du dos carré (la tranche reliée) | L'encre de la charte |
+| `--dos "#111111"` | La couleur du dos carré (la tranche reliée) | Blanc |
 | `--double-page image.webp` | L'image de la double page, visible sur l'angle « ouvert » | Des pages blanches |
 | `--pages 48` | Le nombre de pages, pair, de 24 à 60 | 32 |
 | `--finition matte` | Couverture mate (`matte`) ou brillante (`gloss`) | Brillante |
@@ -118,13 +118,15 @@ couverture (décision D19), et le papier du mat est un peu plus épais.
   une estimation.
 - La couverture est dessinée avec 0,5 mm d'épaisseur de chaque côté : c'est le forfait de la
   formule (1 mm pour les deux), pas l'épaisseur réelle du carton.
-- Le léger galbe des pages quand le magazine est ouvert, l'ombre dans le pli, la teinte crème de la
-  tranche et ses stries, le reflet du brillant et le velouté du mat, la lumière et les ombres : tout
-  cela est réglé à l'œil.
+- Le galbe de l'ouverture (environ 13 mm au plus haut, vers 50 mm du pli), l'éventail des pages,
+  le retrait des liasses en tranche, la rainure de charnière (à 7 mm de la reliure, 0,2 mm de creux),
+  l'ombre dans le pli, la teinte crème de la tranche et ses stries, le reflet du brillant et le
+  velouté du mat, la lumière et les ombres : tout cela est réglé à l'œil, rien n'est une mesure.
 - Le magazine s'ouvre toujours en son milieu, en deux moitiés rigides : les pages ne se feuillettent pas.
-- Le dos carré est d'une seule couleur, sans titre.
-- Sur la tranche, les stries sont trop fines pour se compter : un magazine de 3 à 4 mm d'épaisseur
-  ne montre qu'un filet crème, comme en vrai.
+- Le dos carré et la 4e sont blancs par défaut, sans titre.
+- Le bloc de pages est fait de 4 à 12 liasses par moitié, chacune légèrement en retrait (0,1 à 0,6 mm
+  en tranche, jusqu'à 0,35 mm en tête et en pied) : la tranche montre des pages, pas un pavé.
+  Ouvert, les liasses du dessus se bombent un peu plus que celles du dessous.
 
 ## Sur le site
 
@@ -145,7 +147,7 @@ import angles from 'brand/assets/3d/magazine/angles.json'
 const studio = creerStudio(element, {
   angles, angle: 'trois-quarts-gauche',
   couverture: '/images/…webp', doublePage: '/images/…webp',
-  pages: 32, finition: 'gloss', couleurDos: '#111111',
+  pages: 32, finition: 'gloss', couleurDos: '#ffffff',
   fond: null,            // null = transparent
   leger: false,          // true sur téléphone
   interactif: true, rotationAuto: true,

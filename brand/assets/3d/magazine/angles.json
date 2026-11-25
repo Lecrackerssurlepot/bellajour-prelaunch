@@ -36,7 +36,7 @@
       "pose": "a-plat",
       "ouverture": 1,
       "rotation": 0,
-      "camera": { "elevation": 58, "distance": 3.9, "champ": 28 }
+      "camera": { "elevation": 44, "distance": 3.9, "champ": 28 }
     },
     "pose-a-plat": {
       "libelle": "Posé à plat",

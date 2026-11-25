@@ -54,8 +54,9 @@ const U = 0.01
 /* Les teintes du papier : visuelles, sans valeur de mesure. */
 const PAPIER = '#fbfaf6'
 const TRANCHE_CLAIR = '#f6f2e8'
-const TRANCHE_TRAIT = '#d9d2c2'
-const COULEUR_DEFAUT = '#111111'
+const TRANCHE_TRAIT = '#cdc4b2'
+const TRANCHE_BORD = '#b9ae99'
+const COULEUR_DEFAUT = '#ffffff'
 
 /* Le rendu de la couverture pelliculée, par finition. */
 const RENDU = {
@@ -147,18 +148,25 @@ function toilePage(image, cote, hauteurPx, ratio) {
  */
 function toileTranche(feuilles, sens) {
   const pas = 8
-  const n = Math.max(1, Math.round(feuilles))
+  const n = Math.max(2, Math.round(feuilles))
   const c = sens === 'long' ? toile(n * pas, 8) : toile(8, n * pas)
   const ctx = c.getContext('2d')
   ctx.fillStyle = TRANCHE_CLAIR
   ctx.fillRect(0, 0, c.width, c.height)
+  const trait = (position, epaisseur, alpha, couleur) => {
+    ctx.globalAlpha = alpha
+    ctx.fillStyle = couleur
+    if (sens === 'long') ctx.fillRect(position, 0, epaisseur, c.height)
+    else ctx.fillRect(0, position, c.width, epaisseur)
+  }
   for (let i = 0; i < n; i += 1) {
     /* Une variation régulière, sans hasard : deux exports identiques donnent le même fichier. */
-    ctx.globalAlpha = 0.55 + 0.45 * Math.abs(Math.sin(i * 12.9898))
-    ctx.fillStyle = TRANCHE_TRAIT
-    if (sens === 'long') ctx.fillRect(i * pas + pas - 2, 0, 2, c.height)
-    else ctx.fillRect(0, i * pas + pas - 2, c.width, 2)
+    trait(i * pas + pas - 2, 2, 0.6 + 0.4 * Math.abs(Math.sin(i * 12.9898)), TRANCHE_TRAIT)
   }
+  /* Les bords de la liasse, un peu plus marqués : on lit des paquets de pages. */
+  const total = n * pas
+  trait(0, 2, 0.9, TRANCHE_BORD)
+  trait(total - 2, 2, 0.9, TRANCHE_BORD)
   ctx.globalAlpha = 1
   return c
 }
@@ -243,25 +251,52 @@ export function creerMagazine(options = {}) {
     return { L: etat.largeurMm * U, H: etat.hauteurMm * U, dos, couv, bloc: Math.max(dos / 2 - couv, U * 0.05) }
   }
 
-  /** Le galbe des pages ouvertes : elles montent près du pli, puis redescendent. Visuel. */
+  /**
+   * Le galbe de l'ouverture. Visuel, jamais une mesure : chaque élément (couverture,
+   * liasse de pages) se bombe en partant de la reliure, monte vers 50 mm puis
+   * redescend vers la tranche. Les liasses du dessus montent un peu plus que celles
+   * du dessous : les pages s'écartent légèrement en éventail, en tête et en pied.
+   */
   let galbeFait = -1
   function galber() {
     if (galbeFait === etat.ouverture) return
     galbeFait = etat.ouverture
-    const { L, bloc } = mesures()
-    const amplitude = (0.6 * U + 0.5 * bloc) * etat.ouverture
-    const portee = 16 * U
-    for (const { geometrie, base, zInterieur, signe } of blocs) {
+    const amplitude = 13 * U * etat.ouverture
+    const portee = 50 * U
+    for (const { geometrie, base, niveau, signe, x0 } of blocs) {
       const p = geometrie.attributes.position
+      const a = amplitude * (0.72 + 0.28 * niveau)
       for (let i = 0; i < p.count; i += 1) {
-        const z = base[i * 3 + 2]
-        if (Math.abs(z - zInterieur) > 1e-6) continue
-        const x = (base[i * 3] + L / 2) / portee
-        p.setZ(i, z + signe * amplitude * x * Math.exp(1 - x))
+        const x = Math.max(0, base[i * 3] + x0) / portee
+        p.setZ(i, base[i * 3 + 2] + signe * a * x * Math.exp(1 - x))
       }
       p.needsUpdate = true
       geometrie.computeVertexNormals()
     }
+  }
+
+  /** Un écart régulier, sans hasard : deux exports identiques donnent le même fichier. */
+  const bruit = (k) => {
+    const v = Math.sin(k * 12.9898 + 78.233) * 43758.5453
+    return v - Math.floor(v)
+  }
+
+  /**
+   * La rainure de charnière : le fin creux que laisse la colle du dos sur la 1re
+   * et la 4e, à quelques millimètres de la reliure. Même couleur que la couverture,
+   * seule la lumière la révèle. Position et profondeur visuelles.
+   */
+  const RAINURE = { x: 7 * U, demiLargeur: 0.45 * U, profondeur: 0.22 * U }
+  function creuserRainure(g, epaisseur, faceExterieure) {
+    const p = g.attributes.position
+    const zExt = faceExterieure * epaisseur / 2
+    for (let i = 0; i < p.count; i += 1) {
+      if (Math.abs(p.getZ(i) - zExt) > 1e-7) continue
+      const d = (p.getX(i) + g.parameters.width / 2 - RAINURE.x) / RAINURE.demiLargeur
+      p.setZ(i, zExt - faceExterieure * RAINURE.profondeur * Math.exp(-d * d))
+    }
+    p.needsUpdate = true
+    g.computeVertexNormals()
   }
 
   function construire() {
@@ -275,31 +310,59 @@ export function creerMagazine(options = {}) {
     const { L, H, dos, couv, bloc } = mesures()
     const feuillesParMoitie = etat.pages / 4
 
-    poserTexture('trancheLong', mat.trancheLong, toileTranche(feuillesParMoitie, 'long'))
-    poserTexture('trancheBout', mat.trancheBout, toileTranche(feuillesParMoitie, 'bout'))
+    /* Le bloc de pages n'est pas un pavé : il est fait de liasses, chacune un peu
+       en retrait ou décalée, pour que la tranche montre des pages et pas un bloc. */
+    const liasses = Math.min(12, Math.max(4, Math.round(feuillesParMoitie * 0.75)))
+    const pas = bloc / liasses
+    const epaisseurLiasse = pas * 0.84
 
+    poserTexture('trancheLong', mat.trancheLong, toileTranche(feuillesParMoitie / liasses, 'long'))
+    poserTexture('trancheBout', mat.trancheBout, toileTranche(feuillesParMoitie / liasses, 'bout'))
+
+    const segments = etat.leger ? 40 : 72
     /* Ordre des faces d'une boîte : +X, −X, +Y, −Y, +Z, −Z. */
-    const boite = (parent, epaisseur, z, materiaux, segments) => {
-      const g = new BoxGeometry(L, H, epaisseur, segments, 1, 1)
+    const boite = (parent, largeur, hauteur, epaisseur, x, y, z, materiaux, seg) => {
+      const g = new BoxGeometry(largeur, hauteur, epaisseur, seg, 1, 1)
       const m = new Mesh(g, materiaux)
-      m.position.set(L / 2, 0, z)
+      m.position.set(x, y, z)
       m.castShadow = true
+      m.receiveShadow = !etat.leger
       parent.add(m)
       mailles.push(m)
-      return g
+      return { g, m }
     }
     const P = mat.papier
-    /* La moitié arrière : 4e de couverture, puis les pages de droite. */
-    boite(arriere, couv, -dos / 2 + couv / 2, [P, mat.dos, P, P, P, mat.quatrieme], 1)
-    const gArriere = boite(arriere, bloc, -bloc / 2, [mat.trancheLong, mat.dos, mat.trancheBout, mat.trancheBout, mat.pageDroite, P], 36)
-    /* La moitié avant, qui pivote autour de la reliure : pages de gauche, puis 1re de couverture. */
-    const gAvant = boite(avant, bloc, bloc / 2, [mat.trancheLong, mat.dos, mat.trancheBout, mat.trancheBout, P, mat.pageGauche], 36)
-    boite(avant, couv, bloc + couv / 2, [P, mat.dos, P, P, mat.premiere, P], 1)
+    const segCouv = Math.round(L / (etat.leger ? 0.5 * U : 0.25 * U))
+    /* x0 : le décalage qui ramène l'abscisse locale à la distance depuis la reliure. */
+    const garder = (g, m, niveau, signe) =>
+      blocs.push({ geometrie: g, base: Float32Array.from(g.attributes.position.array), niveau, signe, x0: m.position.x })
 
-    blocs = [
-      { geometrie: gArriere, base: Float32Array.from(gArriere.attributes.position.array), zInterieur: bloc / 2, signe: 1 },
-      { geometrie: gAvant, base: Float32Array.from(gAvant.attributes.position.array), zInterieur: -bloc / 2, signe: -1 },
-    ]
+    /* La moitié arrière : 4e de couverture, puis les liasses de droite. */
+    const q = boite(arriere, L, H, couv, L / 2, 0, -dos / 2 + couv / 2, [P, mat.dos, P, P, P, mat.quatrieme], segCouv)
+    creuserRainure(q.g, couv, -1)
+    garder(q.g, q.m, 0, 1)
+    /* La moitié avant, qui pivote autour de la reliure : 1re de couverture, puis les liasses de gauche. */
+    const c = boite(avant, L, H, couv, L / 2, 0, dos / 2 - couv / 2, [P, mat.dos, P, P, mat.premiere, P], segCouv)
+    creuserRainure(c.g, couv, 1)
+    garder(c.g, c.m, 0, -1)
+
+    for (const [moitie, signe, graine] of [[arriere, 1, 0], [avant, -1, 100]]) {
+      for (let k = 0; k < liasses; k += 1) {
+        const interieure = k === liasses - 1
+        /* Un retrait de 0,1 à 0,6 mm en tranche, de 0 à 0,35 mm en tête et en pied. */
+        const retrait = (0.1 + 0.5 * bruit(graine + k)) * U
+        const tete = 0.35 * bruit(graine + k + 37) * U
+        const pied = 0.35 * bruit(graine + k + 71) * U
+        const l = L - retrait
+        const h = H - tete - pied
+        const zCentre = signe * (-bloc + pas * k + pas / 2)
+        const faces = signe > 0
+          ? [mat.trancheLong, mat.dos, mat.trancheBout, mat.trancheBout, interieure ? mat.pageDroite : P, P]
+          : [mat.trancheLong, mat.dos, mat.trancheBout, mat.trancheBout, P, interieure ? mat.pageGauche : P]
+        const { g, m } = boite(moitie, l, h, interieure ? pas : epaisseurLiasse, l / 2, (pied - tete) / 2, interieure ? signe * (-pas / 2) : zCentre, faces, segments)
+        garder(g, m, (k + 1) / liasses, signe)
+      }
+    }
     poserOuverture(etat.ouverture)
   }
 
