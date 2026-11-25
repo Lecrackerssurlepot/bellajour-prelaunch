@@ -38,7 +38,7 @@ Chaque **emplacement** a un visuel par défaut, plus des visuels datés pour les
 - **Pour changer un visuel** : déposer le fichier dans `public/images/v3/…` sous un **nom nouveau**, puis changer la ligne. Le cache de l'hébergeur garde un même nom pendant 24 h.
 - **Pour une rotation** : ajouter une ligne `{ du, au, fichier, alt, valide }`.
 
-### Préparer en avance, voir, valider *(proposé le 25/11, construit en phase 4)*
+### Préparer en avance, voir, valider *(construit le 25/11, phase 4)*
 
 ```ts
 rotations: [
@@ -70,3 +70,23 @@ le bouton « Visuels » du banc (`R-<page><n>`, avec ratio et taille). Exemples 
 **La carte cadeau a son emplacement visuel** (`offrir.carte`), daté comme les autres : un visuel de
 Noël peut être préparé, vu sur la carte dans l'aperçu, puis validé. Le reste de la carte (logo,
 phrase, montant, code) est du texte, jamais une image.
+
+### Mode d'emploi *(25/11, phase 4)*
+
+Tout vit dans `src/content/media.ts`. L'aperçu : `/brand/visuels`. Le contrôle : `npx tsx --tsconfig tsconfig.json scripts/verif-media.ts`.
+
+**Pour changer un visuel**
+1. Vous m'envoyez l'image et vous dites l'emplacement (`accueil.hero`, `offrir.carte`…).
+2. Je la dépose dans `public/images/v3/<page>/` sous un nom nouveau, je change la ligne `defaut`, j'enlève `provisoire`.
+3. Vous regardez `/brand/visuels` : l'emplacement montre la nouvelle image.
+
+**Pour préparer une saison**
+1. Vous dites l'emplacement, les dates (« du 1er au 26 décembre ») et vous envoyez l'image.
+2. J'ajoute une ligne de rotation avec `valide: false`. Rien ne change sur le site.
+3. Dans `/brand/visuels`, vous choisissez un jour de la période : la rotation y est marquée « à valider ».
+
+**Pour valider**
+1. Vous dites « je valide » pour l'emplacement et la période.
+2. Je passe la ligne à `valide: true`. Le jour venu, le site la montre tout seul, et revient au défaut le lendemain du dernier jour.
+
+Les jours sont ceux de Paris, bornes incluses. Si deux rotations validées tombent le même jour, la première écrite passe ; l'aperçu marque l'autre « masquée ».

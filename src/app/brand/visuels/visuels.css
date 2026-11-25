@@ -1,0 +1,30 @@
+/* L'aperçu des visuels datés. Jetons --m-* seulement. */
+.vi-barre { display: flex; flex-wrap: wrap; align-items: end; gap: var(--m-espace-4); margin: var(--m-espace-7) 0; }
+.vi-date input { min-width: 0; }
+.vi-liste { list-style: none; padding: 0; margin: 0 0 var(--m-espace-section); display: grid; gap: var(--m-espace-8); }
+.vi-emplacement { display: grid; gap: var(--m-espace-4); padding-top: var(--m-espace-6); border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); }
+.vi-tete { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--m-espace-2) var(--m-espace-4); }
+.vi-tete code { font-family: inherit; font-weight: var(--m-police-texte-graisse-moyenne); }
+.vi-meta, .vi-fichier { font-size: var(--m-taille-etiquette); color: var(--m-couleur-papier-texte-doux); overflow-wrap: anywhere; }
+.vi-jour { margin: 0; display: grid; grid-template-columns: minmax(0, calc(var(--m-espace-10) * 2)) minmax(0, 1fr); gap: var(--m-espace-4); align-items: start; }
+.vi-jour figcaption { display: grid; gap: var(--m-espace-2); justify-items: start; font-size: var(--m-taille-petit); }
+.vi-cadre { display: block; overflow: hidden; border-radius: var(--m-rayon-image); background: var(--m-couleur-papier-survol); }
+.vi-cadre img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vi-rotations { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--m-espace-4); grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--m-espace-10)), 1fr)); }
+.vi-rotations li { display: grid; gap: var(--m-espace-2); justify-items: start; }
+.vi-etat {
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: var(--m-police-etiquette-approche);
+  text-transform: uppercase;
+  padding: var(--m-espace-1) var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+}
+.vi-etat--en-ligne { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); border-color: transparent; }
+.vi-etat--a-valider, .vi-etat--provisoire { border-style: dashed; }
+.vi-etat--passée, .vi-etat--masquée { color: var(--m-couleur-papier-texte-doux); }
+@media (max-width: 700px) {
+  .vi-jour { grid-template-columns: minmax(0, 1fr); }
+  .vi-jour > .vi-cadre { max-width: calc(var(--m-espace-10) * 2); }
+}
