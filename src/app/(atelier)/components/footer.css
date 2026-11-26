@@ -253,6 +253,8 @@
 .bj-atelier .at-footer-links a,
 .bj-atelier .at-footer-lien-social,
 .bj-atelier .at-footer-copy { color: var(--m-couleur-papier-texte-doux); }
+/* Sans le voile de 0,7 hérité : #626262 voilé tombait à 3,1:1 (axe, phase 5). */
+.bj-atelier .at-footer-copy { opacity: 1; }
 .bj-atelier .at-footer-links a:hover,
 .bj-atelier .at-footer-lien-social:hover { color: var(--m-couleur-papier-texte); }
 .bj-atelier .at-footer-sep { color: var(--m-couleur-papier-pointille); }
