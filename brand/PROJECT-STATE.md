@@ -147,10 +147,27 @@ Mathias : « lancer la phase 4 en autonomie ! Pas en main car on a pas défini l
 
 Garde-fou (`controle-charte.mjs`), pages client (hors admin et `src/lib`) : **318 couleurs / 5 192 px avant → 338 / 2 381 px après**. Les +20 couleurs sont les ombres et voiles du banc (accueil, magazine).
 
+### 26/11 après-midi : fidélité au duplicata (retour de Mathias sur la préversion)
+
+Rapport des écarts : `brand/reports/ecarts-duplicata.md`.
+
+| Commit | Étape |
+|---|---|
+| 2c506b50 | **/magazine** : l'espace sous le menu n'est plus compté deux fois (titre 230 → 170 px au téléphone, 281 → 201 à l'ordinateur ; duplicata 160 / 188). Bloc de Noël déplacé vers /offrir |
+| f16527de | **/offrir** : structure du duplicata (carte qui suit la saisie, bloc nuit de Noël, « La carte, en clair. »), Achat et Stripe inchangés |
+| b3df3c02 | **/partenaires** : la page Groupes du duplicata remplace la brochure feuilletée ; cas centrés sur mobile ; panneau de rendez-vous inchangé |
+| 6350583b | **Règle d'espacement** (fiche E) : la tête de page porte seule `espace.tete-page` 120 / 96 px, `main` jamais ; `espace.section` clamp(96px, 72px + 6vw, 160px) / 72 px ; bandeau au jeton 40 / 36 px |
+| fd4796f3 | **Favicon** : le b seul par défaut ; carré blanc pour l'écran d'accueil (iOS) |
+| 57386818 | **/ambassadeurs/\*\*** archivé (`archive/ambassadeurs/espace-2026-11/`), 307 vers l'accueil sans le jeton |
+
+⚠️ **Avant de fusionner sur main** : les mails du webhook (parrainage), de `confirmer` et de
+`request-access` envoient encore un lien vers `/ambassadeurs/espace`, qui mène désormais à
+l'accueil. À trancher par Mathias : couper ces mails, ou garder l'espace en ligne.
+
 ### Ce qui reste
 
 1. Restes du garde-fou côté client, pour la phase 7 : `univers.css`, `ouverture.css`, `magazine/pdp.css`, `Kiosque.tsx`, `Corps.tsx` (plus routés, à archiver) ; `noel-preview/` (outil interne) ; les px fins du banc dans `accueil.css` et `magazine.css` ; les `@media` (une variable n'y est pas lue) ; tailles de titre > 30 px et `clamp()` des pages collectif.
-2. `offrir.carte` et `groupes.brochure` : emplacements déclarés, pas encore branchés (la carte est dessinée en CSS, la brochure est une suite de pages-documents).
+2. `offrir.carte` branché ; `groupes.brochure` ne sert plus (la page Groupes lit `groupes.numero-*`, `wei`, `ski`, `entreprise`, ce dernier vide).
 3. Images de partage propres à `/partenaires` (jpg) : en dur, hors librairie.
 
 ### Pas vérifié
@@ -166,7 +183,7 @@ Garde-fou (`controle-charte.mjs`), pages client (hors admin et `src/lib`) : **31
 Rapport `brand/reports/phase5.md`, script `brand/scripts/phase5/verifier.mjs` (Playwright, axe, Lighthouse en dev).
 - Prouvé : 32 pages, 0 lien cassé, 0 5xx, redirections 8/8 ; 144 rendus (8 pages × 6 largeurs × Chromium, WebKit, Firefox) sans débordement ni erreur JS ; motion réduite respectée ; préversion Vercel passée (liens, cache, réseau lent).
 - Corrigé : porte de l'Édition collective illisible (bloquante), /partenaires qui plantait sur une réponse vide, contrastes /composer et pied, tableau légal au clavier, repère main, préchargement de la frise (perf accueil 62 → 75).
-- Reste : accueil lent sur 3G (7 s, il faut des `srcset` par emplacement), /ambassadeurs encore dans l'ancienne charte, liens /offrir si l'interrupteur carte cadeau se referme.
+- Reste : accueil lent sur 3G (7 s, il faut des `srcset` par emplacement), liens /offrir si l'interrupteur carte cadeau se referme.
 - À Mathias : le test sur iPhone réel. Pas testé : paiement, /merci après paiement, dossiers et comptes réels (écritures interdites).
 
 ## Phases suivantes

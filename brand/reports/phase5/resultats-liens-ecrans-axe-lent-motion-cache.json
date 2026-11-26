@@ -1,12 +1,12 @@
 {
- "base": "http://localhost:3970",
- "date": "2026-11-26T10:20:58.573Z",
+ "base": "http://localhost:3960",
+ "date": "2026-11-26T11:37:52.909Z",
  "liens": {
-  "pages": 32,
+  "pages": 31,
   "statuts": {
    "/": 200,
    "/magazine": 200,
-   "/offrir": 200,
+   "/offrir": 404,
    "/partenaires": 200,
    "/composer": 200,
    "/compte": 200,
@@ -34,10 +34,19 @@
    "/pt/remboursement": 200,
    "/page-qui-nexiste-pas": 404,
    "/compte/mot-de-passe-oublie": 200,
-   "/ambassadeurs/espace": 200,
    "/compte/connexion": 200
   },
-  "casses": [],
+  "casses": [
+   {
+    "p": "/offrir",
+    "s": 404,
+    "depuis": [
+     "/",
+     "/magazine",
+     "/partenaires"
+    ]
+   }
+  ],
   "5xx": [],
   "redirections": [
    {
@@ -115,7 +124,7 @@
    "moteur": "chromium",
    "w": 375,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -195,7 +204,7 @@
    "moteur": "chromium",
    "w": 390,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -275,7 +284,7 @@
    "moteur": "chromium",
    "w": 768,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -355,7 +364,7 @@
    "moteur": "chromium",
    "w": 1024,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -435,7 +444,7 @@
    "moteur": "chromium",
    "w": 1440,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -515,7 +524,7 @@
    "moteur": "chromium",
    "w": 1920,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -599,7 +608,7 @@
    "moteur": "webkit",
    "w": 375,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -695,7 +704,7 @@
    "moteur": "webkit",
    "w": 390,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -791,7 +800,7 @@
    "moteur": "webkit",
    "w": 768,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -887,7 +896,7 @@
    "moteur": "webkit",
    "w": 1024,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -983,7 +992,7 @@
    "moteur": "webkit",
    "w": 1440,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1079,7 +1088,7 @@
    "moteur": "webkit",
    "w": 1920,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1171,7 +1180,7 @@
    "moteur": "firefox",
    "w": 375,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1251,7 +1260,7 @@
    "moteur": "firefox",
    "w": 390,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1331,7 +1340,7 @@
    "moteur": "firefox",
    "w": 768,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1411,7 +1420,7 @@
    "moteur": "firefox",
    "w": 1024,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1491,7 +1500,7 @@
    "moteur": "firefox",
    "w": 1440,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1571,7 +1580,7 @@
    "moteur": "firefox",
    "w": 1920,
    "p": "/offrir",
-   "st": 200,
+   "st": 404,
    "debord": 0,
    "fautifs": [],
    "imgs": [],
@@ -1647,7 +1656,29 @@
    "n": 31,
    "ex": [
     ".gestes > .cadre > .lab.sub.rv",
-    ".gestes > .cadre > .d1"
+    ".gestes > .cadre > h2"
+   ]
+  },
+  {
+   "w": 390,
+   "p": "/offrir",
+   "id": "color-contrast",
+   "impact": "serious",
+   "n": 24,
+   "ex": [
+    ".cadre > div:nth-child(1) > .lab.sub.rv",
+    "#noel-titre"
+   ]
+  },
+  {
+   "w": 390,
+   "p": "/partenaires",
+   "id": "color-contrast",
+   "impact": "serious",
+   "n": 34,
+   "ex": [
+    ".recit-tete > .lab.sub.rv",
+    ".recit-tete > h2"
    ]
   },
   {
@@ -1655,10 +1686,9 @@
    "p": "/ambassadeurs/charte",
    "id": "color-contrast",
    "impact": "serious",
-   "n": 2,
+   "n": 1,
    "ex": [
-    ".footer-tagline",
-    ".footer-copy"
+    ".at-footer-word"
    ]
   },
   {
@@ -1679,7 +1709,29 @@
    "n": 34,
    "ex": [
     ".gestes > .cadre > .lab.sub.rv",
-    ".gestes > .cadre > .d1"
+    ".gestes > .cadre > h2"
+   ]
+  },
+  {
+   "w": 1440,
+   "p": "/offrir",
+   "id": "color-contrast",
+   "impact": "serious",
+   "n": 24,
+   "ex": [
+    ".cadre > div:nth-child(1) > .lab.sub.rv",
+    "#noel-titre"
+   ]
+  },
+  {
+   "w": 1440,
+   "p": "/partenaires",
+   "id": "color-contrast",
+   "impact": "serious",
+   "n": 39,
+   "ex": [
+    ".recit-tete > .lab.sub.rv",
+    ".recit-tete > h2"
    ]
   },
   {
@@ -1687,27 +1739,26 @@
    "p": "/ambassadeurs/charte",
    "id": "color-contrast",
    "impact": "serious",
-   "n": 2,
+   "n": 1,
    "ex": [
-    ".footer-tagline",
-    ".footer-copy"
+    ".at-footer-word"
    ]
   }
  ],
  "lent": [
   {
    "p": "/",
-   "fcp_ms": 1528,
-   "lcp_ms": 6984,
-   "load_ms": 6966,
-   "ko": 1277
+   "fcp_ms": 1568,
+   "lcp_ms": 7000,
+   "load_ms": 6982,
+   "ko": 1278
   },
   {
    "p": "/magazine",
-   "fcp_ms": 1244,
-   "lcp_ms": 1244,
-   "load_ms": 4328,
-   "ko": 779
+   "fcp_ms": 1508,
+   "lcp_ms": 1508,
+   "load_ms": 4255,
+   "ko": 768
   }
  ],
  "motion": [
