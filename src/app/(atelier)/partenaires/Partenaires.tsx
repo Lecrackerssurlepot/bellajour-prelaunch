@@ -117,7 +117,9 @@ async function lireSemaine(n: number): Promise<Semaine | 'ferme'> {
   try {
     const rep = await fetch('/api/partenaires/creneaux', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ semaine: n }) })
     if (!rep.ok) return 'ferme'
-    return (await rep.json()) as Semaine
+    const s = (await rep.json()) as Partial<Semaine>
+    /* Une réponse sans `jours` (proxy, panne) ne doit pas casser la page. */
+    return Array.isArray(s?.jours) ? (s as Semaine) : 'ferme'
   } catch {
     return 'ferme'
   }
