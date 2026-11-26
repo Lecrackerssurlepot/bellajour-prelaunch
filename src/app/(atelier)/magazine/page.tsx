@@ -1,76 +1,77 @@
-/* LA PAGE PRODUIT — /magazine
-   Direction « Le Kiosque », validée sur maquette le 30/08/2026.
+/* LA PAGE PRODUIT, /magazine, charte V2 (26/11/2026).
+   Port du banc validé (duplicata 14BmVZ v4, page « magazine ») : la tête
+   avec l'éventail de couvertures, les trois gestes, la fiche de l'objet, les
+   questions, l'appel. Toutes les classes du banc sont scopées sous `.m-banc`
+   (magazine.css) : retirer la racine dépeindrait la page.
 
-   POURQUOI ELLE EXISTE
-   Jusqu'ici, « Composer avec l'atelier » ouvrait le questionnaire. Quelqu'un
-   qui sortait des sept pages de l'univers savait ce qu'est Bellajour et
-   ignorait toujours le prix, le papier, le délai et ce qui se passe s'il
-   n'aime pas sa couverture. Cette page est l'écran qui manquait entre les
-   deux, et c'est désormais elle que visent tous les boutons du site
-   (CTA_HREF) ; les siens ouvrent le questionnaire (COMPOSER_HREF).
+   La page d'avant (« Le Kiosque », 30/08) est gardée dans
+   archive/magazine-kiosque/ ; Kiosque.tsx, Corps.tsx et pdp.css restent en
+   place, non importés ici, jusqu'au ménage de la phase 7.
 
-   ⚠️ ELLE RECUEILLE LE CONTENU DES COMPOSANTS ORPHELINS. L'étagère des quatre
-   dos (S2Collection), les trois temps du parcours (S3Method) et la grille des
-   paliers vivent maintenant ici, et lisent la MÊME source — content.ts. Les
-   fichiers S1Hero/S2Collection/S3Method/S4Final ont fini leur office : ils
-   vivent dans `archive/accueil-v1/` depuis le 31/08/2026 (T-016).
+   CHIFFRES : aucun n'est recopié du banc. Chacun vient du code :
+   - prix, pages, photos, reliure : lib/atelier/grille.ts ;
+   - franco : lib/atelier/livraison.ts ;
+   - exemplaires et Noël : lib/atelier/exemplaires.ts (phrases incluses) ;
+   - délai de livraison : lib/atelier/urgence.ts (JOURS_LIVRAISON) ;
+   - « sous 48 h », « rien à payer avant la couverture », impression en
+     Europe, version digitale HD, retouches sans frais : textes déjà en ligne
+     sur l'ancienne page (Kiosque.tsx, Corps.tsx, sourcés là : CGV 1.2,
+     cloudprinter.ts, le geste 3).
+   ⚠️ Le grammage (130 g / 250 g) de l'ancien JSON-LD n'a pas de source dans
+   le dépôt : il n'est plus déclaré (CLAUDE.md, interdit 5).
 
-   Composant SERVEUR. Les métadonnées et les trois blocs JSON-LD doivent être
-   DANS le document, pas montés par le navigateur. Seuls Nav et Reveal sont
-   clients. */
+   Composant SERVEUR : métadonnées et JSON-LD dans le document. */
 
 import type { Metadata } from 'next'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
-import Kiosque from './Kiosque'
-import Corps from './Corps'
 import Bandeau from '../noel/Bandeau'
 import BlocMagazine from '../noel/BlocMagazine'
-import AmorceMagazine from '../noel/AmorceMagazine'
+import Apparitions from '@/components/Apparitions'
+import { fichiersVisuels, lireVisuel } from '@/components/Visuel'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { noelAuSite } from '@/lib/atelier/carteCadeau'
-import { EUROS_MAX_PUBLIC, EUROS_MIN, GRILLE_PUBLIQUE } from '@/lib/atelier/grille'
+import {
+  BANDES_PHOTOS,
+  EUROS_MAX_PUBLIC,
+  EUROS_MIN,
+  GRILLE_PUBLIQUE,
+  PAGES_MAX_PUBLIC,
+  PAGES_MIN,
+  RELIURE_LIBELLE,
+} from '@/lib/atelier/grille'
+import { FRANCO_CENTIMES } from '@/lib/atelier/livraison'
 import { PAYS_LIVRAISON } from '@/lib/atelier/pays'
-import { COMPOSER_HREF, CTA_LABEL, FAQ } from '../content'
-import './pdp.css'
+import { JOURS_LIVRAISON } from '@/lib/atelier/urgence'
+import { PHRASE_DEGRESSIF, PHRASE_NOEL, QUANTITE_MAX, dansFenetreNoel } from '@/lib/atelier/exemplaires'
+import { visuelPour } from '@/content/media'
 import { compteOuvert } from '@/lib/compte/session'
+import { COMPOSER_HREF, CTA_LABEL } from '../content'
+import './magazine.css'
 
 const URL = 'https://www.bellajour.fr/magazine'
+const PHOTOS_MIN = BANDES_PHOTOS[0].photosMin
+const PHOTOS_MAX = BANDES_PHOTOS[BANDES_PHOTOS.length - 1].photosMax
+const FRANCO = FRANCO_CENTIMES / 100
+const RELIURE = RELIURE_LIBELLE.dos_carre
 
-const TITLE = 'Le magazine d’un moment de vie — l’atelier Bellajour'
-/* ⚠️ Cette phrase est reprise TELLE QUELLE par openGraph et Twitter plus bas :
-   une seule constante, donc le résultat de recherche, l'aperçu Instagram et
-   la carte Twitter ne peuvent pas raconter trois choses différentes.
-   « magazine personnalisé » y est écrit d'un seul tenant et dans les mêmes
-   mots que le chapô de la page : un extrait qui promet autre chose que ce
-   qu'on lit en arrivant est un extrait qui fait repartir.
-
-   ⚠️ 154 CARACTÈRES, ET C'EST UNE CONTRAINTE, PAS UN HASARD. Google en affiche
-   environ 155 sur ordinateur et moins sur téléphone. La version longue faisait
-   196 : elle était coupée juste avant le prix, c'est-à-dire avant ce qui
-   déclenche le clic. Le détail sacrifié (le format A4, l'échelle complète des
-   prix) est sur la page, à trois lignes du haut. Rallonger cette phrase, c'est
-   reperdre le prix.
-   ⚠️ Le montant est DÉRIVÉ de la grille (EUROS_MIN) : la description de Google
-   ne peut pas rester en arrière d'un changement de prix. */
+const TITLE = 'Le magazine d’un moment de vie · Bellajour'
+/* ⚠️ Moins de 155 caractères : au-delà, Google coupe avant le prix. */
 const DESCRIPTION =
-  'Vous déposez 40 à 100 photos, l’atelier compose votre magazine ' +
+  `Vous déposez ${PHOTOS_MIN} à ${PHOTOS_MAX} photos, l’atelier compose votre magazine ` +
   'personnalisé, imprimé et livré. Couverture gratuite sous 48 h, ' +
   `vous décidez après. Dès ${EUROS_MIN} €.`
 
-/* ⚠️ `openGraph` REMPLACE celui du layout racine — Next ne fusionne pas en
-   profondeur. Un bloc partiel efface og:image, og:url, og:site_name et
-   og:locale, et empêche l'injection de l'image générée par
-   opengraph-image.tsx. C'est la panne constatée le 27/08/2026 sur l'accueil,
-   qui était alors la seule page du site sans aperçu de partage — sur le
-   premier canal d'acquisition, un lien collé dans un DM Instagram. Tout ce
-   qui est écrasé se redéclare donc ici, en entier. */
-/* Noël s'éteint seul après le 25 décembre (noelAuSite) : la page, statique,
-   se refait au plus tard une heure après minuit. */
+const PARTAGE = visuelPour('partage.image')
+const PARTAGE_URL = `https://www.bellajour.fr${PARTAGE.fichier}`
+
+/* Noël s'éteint seul (noelAuSite, fenêtre des exemplaires) : la page,
+   statique, se refait au plus tard une heure après minuit. */
 export const revalidate = 3600
 
+/* ⚠️ `openGraph` REMPLACE celui du layout : tout est redéclaré. */
 export const metadata: Metadata = {
-  title: TITLE,
+  title: { absolute: TITLE },
   description: DESCRIPTION,
   alternates: { canonical: '/magazine' },
   openGraph: {
@@ -80,141 +81,265 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{
-      url: 'https://www.bellajour.fr/images/v2/partage/bellajour-magazines-1200.png',
-      width: 1200,
-      height: 630,
-      alt: 'Dix magazines photo personnalisés Bellajour, imprimés et posés côte à côte',
-    }],
+    images: [{ url: PARTAGE_URL, width: 1200, height: 630, alt: PARTAGE.alt }],
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: TITLE,
-    description: DESCRIPTION,
-    images: ['https://www.bellajour.fr/images/v2/partage/bellajour-magazines-1200.png'],
-  },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [PARTAGE_URL] },
 }
 
-/* ─────────────────────────── données structurées ───────────────────────────
-   Trois blocs, trois rôles distincts :
+type Question = { q: string; r: string; lien?: { href: string; label: string } }
 
-   Product + AggregateOffer — la fiche produit. `AggregateOffer` et NON
-   `Offer` : `lowPrice`/`highPrice` n'existent pas sur Offer et le test des
-   résultats enrichis les rejette en bloc (leçon déjà payée sur l'accueil).
-   Les bornes sont LUES depuis GRILLE (@/lib/atelier/grille), la même source
-   que la page et que le prix ferme du serveur — en NOMBRES, jamais en parsant
-   une chaîne d'affichage. `offerCount` vaut le nombre de PRIX DISTINCTS de la
-   grille (vingt depuis le 10/09/2026, un par pagination), ce qui est bien ce
-   que `AggregateOffer` décrit : combien d'offres l'agrégat recouvre.
-
-   FAQPage — décrit EXACTEMENT les quatre <details> rendus par Corps.tsx.
-   Déclarer une question qui n'est pas visible sur la page est une infraction
-   aux règles de Google, pas une astuce.
-
-   BreadcrumbList — dit à Google que cette page est fille de l'accueil.
-
-   ⚠️ `offers.url` pointe sur CETTE page, pas sur /composer : c'est ici qu'on
-   voit le prix. /composer est un questionnaire, et il est en noindex. */
-const JSON_LD = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: 'Numéro Bellajour — le magazine d’un moment de vie',
-    description:
-      'Magazine photo imprimé, composé à la main à partir de vos photos. ' +
-      'Format A4, papier intérieur couché 130 g, couverture 250 g ' +
-      'pelliculée brillante ou mate au choix, papier intérieur assorti. Un numéro par moment.',
-    brand: { '@type': 'Brand', name: 'Bellajour' },
-    offers: {
-      '@type': 'AggregateOffer',
-      priceCurrency: 'EUR',
-      lowPrice: String(EUROS_MIN),
-      highPrice: String(EUROS_MAX_PUBLIC),
-      offerCount: GRILLE_PUBLIQUE.length,
-      availability: 'https://schema.org/InStock',
-      url: URL,
-      /* La zone dérive de PAYS_LIVRAISON (toute l'Europe depuis le 11/09/2026),
-         jamais recopiée. */
-      areaServed: [...PAYS_LIVRAISON],
+/* UNE source pour les <details> ET le FAQPage : Google refuse une question
+   déclarée qui n'est pas lisible sur la page. */
+function questions(noelExemplaires: boolean): Question[] {
+  return [
+    {
+      q: 'Mate ou brillante ?',
+      r: 'À vous de choisir, sans supplément. Le papier intérieur suit : brillant sous la brillante, satiné sous la mate.',
     },
-    url: URL,
-    /* T-085 — l'image que Google peut montrer a cote du prix. Elle faisait
-       450 px de large jusqu'au 14/09/2026, sous le minimum de 1200 px que
-       Google demande pour un resultat enrichi produit : elle etait donc
-       probablement ignoree. 1600x1131 desormais.
-       ⚠️ Un SEUL cadrage, et c'est delibere. Google en prefere trois (1:1,
-       4:3, 16:9) ; ils ont ete produits puis jetes le 14/09 parce qu'ils
-       tranchent le lettrage du visuel en deux. Les trois reviendront avec le
-       master demande : une photo de l'objet imprime, sur fond uni. */
-    image: ['https://www.bellajour.fr/images/v2/magazine/magazine-photo-personnalise-1600.webp'],
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQ.map((f) => ({
-      '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.r },
-    })),
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Accueil', item: 'https://www.bellajour.fr' },
-      { '@type': 'ListItem', position: 2, name: 'Le magazine', item: URL },
-    ],
-  },
-]
+    {
+      q: 'Combien de pages aura-t-il ?',
+      r: `De ${PAGES_MIN} à ${PAGES_MAX_PUBLIC}, selon vos photos. L’atelier vous l’annonce avec la couverture, avant de payer.`,
+    },
+    { q: 'Je peux corriger la maquette ?', r: 'Oui, sans frais, avant l’impression. Rien ne part sans votre accord.' },
+    {
+      q: 'Je peux en commander plusieurs ?',
+      r: `Jusqu’à ${QUANTITE_MAX}. ${PHRASE_DEGRESSIF}` + (noelExemplaires ? ` Pour Noël : ${PHRASE_NOEL}` : ''),
+    },
+    { q: 'Il y a une version numérique ?', r: 'Oui, la version digitale HD est incluse.' },
+    {
+      q: 'Comment je suis mon numéro ?',
+      r: 'Avec le lien reçu par e-mail. Le compte est facultatif.',
+      lien: { href: '/compte', label: 'Mon numéro' },
+    },
+  ]
+}
 
-export default function PageProduit() {
-  /* Noël 2026 : drapeau fermé = la page d'avant, au pixel près. */
-  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
+function jsonLd(faq: Question[], image: string) {
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: 'Numéro Bellajour, le magazine d’un moment de vie',
+      description:
+        'Magazine photo imprimé, composé par l’atelier à partir de vos photos. ' +
+        `Format A4, ${RELIURE}, couverture brillante ou mate au choix, papier intérieur assorti.`,
+      brand: { '@type': 'Brand', name: 'Bellajour' },
+      offers: {
+        '@type': 'AggregateOffer',
+        priceCurrency: 'EUR',
+        lowPrice: String(EUROS_MIN),
+        highPrice: String(EUROS_MAX_PUBLIC),
+        offerCount: GRILLE_PUBLIQUE.length,
+        availability: 'https://schema.org/InStock',
+        url: URL,
+        areaServed: [...PAYS_LIVRAISON],
+      },
+      url: URL,
+      image: image ? [`https://www.bellajour.fr${image}`] : undefined,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.r } })),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Accueil', item: 'https://www.bellajour.fr' },
+        { '@type': 'ListItem', position: 2, name: 'Le magazine', item: URL },
+      ],
+    },
+  ]
+}
+
+const NOMS = ['magazine.couverture', 'magazine.eventail-2', 'magazine.eventail-3'] as const
+
+export default async function PageProduit() {
+  const maintenant = new Date()
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(maintenant)
+  const noelExemplaires = dansFenetreNoel(maintenant.toISOString().slice(0, 10))
+  const V = await fichiersVisuels(NOMS)
+  const dp = await lireVisuel('magazine.double-page')
+  const faq = questions(noelExemplaires)
+
   return (
     <>
-      {/* La première photo du collage est l'élément LCP. On la demande AVANT
-          que le navigateur ait fini de lire Kiosque.tsx. React 19 remonte ce
-          <link> dans le <head> tout seul.
-          ⚠️ Il vit ICI, pas dans le layout : le layout sert aussi /composer et
-          /numero, qui n'affichent jamais cette image. Un préchargement posé
-          trop haut est un téléchargement offert à des pages qui n'en veulent
-          pas — 283 Ko sur tout le site, la panne du 27/08/2026. */}
-      {/* ⚠️ MIROIR EXACT du src/srcSet/sizes de la premiere figure du collage
-          (Kiosque.tsx, `.c1`). Si l'un des deux cotes change sans l'autre, le
-          navigateur precharge une variante et en affiche une autre : l'element
-          LCP est telecharge DEUX fois. */}
-      <link
-        rel="preload"
-        as="image"
-        href="/images/v2/magazine/couverture-sicile-900.webp"
-        imageSrcSet="/images/v2/magazine/couverture-sicile-450.webp 450w, /images/v2/magazine/couverture-sicile-900.webp 900w"
-        imageSizes="(max-width: 720px) 40vw, 22vw"
-        fetchPriority="high"
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
-      />
-
-      {/* La barre de tête de CETTE page mène au questionnaire : on est déjà
-          sur la page produit, l'y renvoyer serait un bouton qui ne fait rien.
-          Le libellé, lui, ne change pas — invariant nº5.
-          `retour` rend à la signature son rôle de logo : ici elle ramène à
-          l'accueil. Sur l'accueil, elle remonte à la couverture — c'est là,
-          et là seulement, que le geste a un sens sans quitter la page. */}
-      {/* `compteOuvert()` lu au build : la silhouette du compte entre dans le
-          HTML au lieu d'attendre l'hydratation (cf. NavCompte). */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(faq, V['magazine.couverture'])) }} />
       {noel && <Bandeau />}
+      {/* Sur la page produit, la barre mène au questionnaire (invariant nº5 :
+          le libellé ne change pas). */}
       <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" compteOuvert={compteOuvert()} />
 
-      {/* ⚠️ `.at-pdp` n'est pas décoratif : toute pdp.css y est scopée, et les
-          noms de classes y sont courts (.mot, .pas, .prix). Le retirer
-          dépeindrait la page ET repeindrait /composer. */}
-      <main className="at-pdp">
-        {/* Noël : le repère sous le bouton, et le bloc juste après le premier
-            écran (piège 2 : le kiosque va toujours jusqu'au bouton). */}
-        <Kiosque amorce={noel ? <AmorceMagazine /> : undefined} noel={noel ? <BlocMagazine /> : undefined} />
-        <Corps />
+      <main className="m-banc m-page" aria-label="Le magazine">
+        <section className="pg-tete duo2">
+          <div className="cadre">
+            <div>
+              <span className="lab sub rv">Le magazine</span>
+              <h1 className="titre rv d1">Un moment de vie, en magazine.</h1>
+              <p className="chapo sub rv d2">
+                Vous racontez le moment, vous déposez vos photos. L’atelier compose votre magazine, imprimé page à page.
+              </p>
+              <div className="rv d2">
+                <p className="prix-tete">
+                  <b>Dès {EUROS_MIN} €</b>
+                  <span className="sub">TTC France, hors livraison</span>
+                </p>
+                <ul className="puces-ligne">
+                  <li>
+                    {PAGES_MIN} à {PAGES_MAX_PUBLIC} pages
+                  </li>
+                  <li>
+                    {PHOTOS_MIN} à {PHOTOS_MAX} photos
+                  </li>
+                  <li>Livraison offerte dès {FRANCO} €</li>
+                </ul>
+                <div className="ctas">
+                  <a className="btn" href={COMPOSER_HREF}>
+                    {CTA_LABEL}
+                  </a>
+                </div>
+                <div className="rassure sub">
+                  <span>Aperçu gratuit sous 48 h</span>
+                  <span>Rien à payer avant la couverture</span>
+                </div>
+              </div>
+            </div>
+            <div className="eventail rv">
+              {NOMS.map((n, i) =>
+                V[n] ? (
+                  <img
+                    key={n}
+                    src={V[n]}
+                    alt=""
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={i === 0 ? 'high' : undefined}
+                    decoding="async"
+                  />
+                ) : null,
+              )}
+            </div>
+          </div>
+        </section>
+
+        {noel && <BlocMagazine />}
+
+        <section className="bloc gestes">
+          <div className="cadre">
+            <span className="lab sub rv">Le parcours avec l’atelier</span>
+            <h2 className="titre rv d1">Trois gestes, depuis le téléphone.</h2>
+            <div className="liste">
+              <div className="geste rv">
+                <span className="n">1</span>
+                <div>
+                  <h3 className="titre">Vous racontez le moment</h3>
+                  <p className="sub">Deux minutes. Vous choisissez même le titre.</p>
+                </div>
+                <span className="pf">2 min</span>
+              </div>
+              <div className="geste rv">
+                <span className="n">2</span>
+                <div>
+                  <h3 className="titre">Vous déposez vos photos</h3>
+                  <p className="sub">
+                    De {PHOTOS_MIN} à {PHOTOS_MAX}, depuis le téléphone.
+                  </p>
+                </div>
+                <span className="pf">
+                  {PHOTOS_MIN} à {PHOTOS_MAX}
+                </span>
+              </div>
+              <div className="geste rv">
+                <span className="n">3</span>
+                <div>
+                  <h3 className="titre">Vous recevez votre couverture</h3>
+                  <p className="sub">Sous 48 h, gratuitement. Vous décidez après.</p>
+                </div>
+                <span className="pf">48 h</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bloc fiche">
+          <div className="cadre">
+            <div>
+              <span className="lab sub rv">L’objet</span>
+              <h2 className="titre rv d1">Un vrai magazine, pas un tirage.</h2>
+              <ul className="specs rv d2">
+                <li>
+                  <span>Format</span>
+                  <span>A4, {RELIURE}</span>
+                </li>
+                <li>
+                  <span>Pages</span>
+                  <span>
+                    De {PAGES_MIN} à {PAGES_MAX_PUBLIC}, selon vos photos
+                  </span>
+                </li>
+                <li>
+                  <span>Couverture</span>
+                  <span>Brillante ou mate, sans supplément</span>
+                </li>
+                <li>
+                  <span>Papier</span>
+                  <span>Il suit la couverture : brillant ou satiné</span>
+                </li>
+                <li>
+                  <span>Impression</span>
+                  <span>En Europe, au plus près de chez vous</span>
+                </li>
+                <li>
+                  <span>Inclus</span>
+                  <span>La version digitale HD</span>
+                </li>
+                <li>
+                  <span>Retouches</span>
+                  <span>Sur la maquette, sans frais</span>
+                </li>
+                <li>
+                  <span>Livraison</span>
+                  <span>Sous {JOURS_LIVRAISON} jours après validation</span>
+                </li>
+              </ul>
+              <p className="note-bas sub rv">Le nombre de pages vous est annoncé avec votre couverture, avant tout paiement.</p>
+            </div>
+            {dp && dp.fichier ? <img className="rv" src={dp.fichier} alt={dp.alt} loading="lazy" decoding="async" /> : null}
+          </div>
+        </section>
+
+        <section className="bloc faq">
+          <div className="cadre cadre-etroit">
+            <span className="lab sub">Questions</span>
+            <h2 className="titre">Avant de commencer.</h2>
+            {faq.map((f) => (
+              <details key={f.q}>
+                <summary>{f.q}</summary>
+                <p className="sub">
+                  {f.r}
+                  {f.lien ? (
+                    <>
+                      {' '}
+                      <a href={f.lien.href}>{f.lien.label}</a>
+                    </>
+                  ) : null}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="bloc appel">
+          <div className="cadre">
+            <span className="lab sub rv">Vivez. Nous composons.</span>
+            <h2 className="titre rv d1">Quel est votre numéro 1 ?</h2>
+            <p className="chapo sub rv d2">Premier aperçu gratuit. Votre magazine dès {EUROS_MIN} €.</p>
+            <a className="btn rv d2" href={COMPOSER_HREF}>
+              {CTA_LABEL}
+            </a>
+          </div>
+        </section>
+        <Apparitions racine=".m-banc.m-page" />
       </main>
 
       <Footer />

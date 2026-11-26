@@ -195,13 +195,35 @@ export const MEDIA = {
     rotations: [],
   },
   'magazine.couverture': {
-    role: 'La couverture de la page magazine',
+    role: "La première couverture de l'éventail, en tête de la page magazine",
     ratio: '210 / 297',
     type: 'image',
     provisoire: true,
     defaut: {
       fichier: '/images/v2/magazine/couverture-sicile-900.webp',
       alt: 'La couverture d’un numéro sur la Sicile',
+    },
+    rotations: [],
+  },
+  'magazine.eventail-2': {
+    role: "La deuxième couverture de l'éventail, en tête de la page magazine",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-rio-700.webp',
+      alt: 'La couverture d’un numéro sur Rio',
+    },
+    rotations: [],
+  },
+  'magazine.eventail-3': {
+    role: "La troisième couverture de l'éventail, en tête de la page magazine",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-cote-azur-640.webp',
+      alt: 'La couverture d’un numéro sur la Côte d’Azur',
     },
     rotations: [],
   },
