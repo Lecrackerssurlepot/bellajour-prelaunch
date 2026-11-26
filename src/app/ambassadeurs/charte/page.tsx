@@ -12,7 +12,7 @@ import './charte.css'
    ambassadeur. Contenu verbatim, aucune réécriture. */
 
 export const metadata: Metadata = {
-  title: 'Charte du Cercle Ambassadeur — Bellajour',
+  title: 'Charte du Cercle Ambassadeur · Bellajour',
   description:
     'La charte du Cercle Ambassadeur Bellajour (Vague 1) : nature de l’engagement, mécanique des pages, récompenses, calendrier et conditions.',
   alternates: {

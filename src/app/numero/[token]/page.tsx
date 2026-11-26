@@ -287,7 +287,7 @@ async function lireBrouillons(numeroId: string): Promise<Array<{ type: string; p
    l'historique d'un téléphone qu'on prête, et dans la liste des onglets
    ouverts qu'on montre par-dessus l'épaule. */
 export const metadata: Metadata = {
-  title: 'Votre numéro — Bellajour',
+  title: 'Votre numéro · Bellajour',
   robots: { index: false, follow: false },
 }
 

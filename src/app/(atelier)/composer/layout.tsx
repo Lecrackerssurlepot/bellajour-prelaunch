@@ -28,7 +28,7 @@ const composerItalique = DM_Sans({
    fausse, puis il saute. */
 
 export const metadata: Metadata = {
-  title: 'Composer avec l’atelier — Bellajour',
+  title: 'Composer avec l’atelier · Bellajour',
   robots: { index: false, follow: false },
 }
 

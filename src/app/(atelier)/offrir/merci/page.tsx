@@ -20,7 +20,7 @@ import '../offrir.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
-  title: 'Votre carte est prête — Bellajour',
+  title: 'Votre carte est prête · Bellajour',
   robots: { index: false, follow: false },
 }
 

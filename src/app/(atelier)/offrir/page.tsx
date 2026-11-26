@@ -11,7 +11,7 @@ import '../noel-preview/noel.css'
 import './offrir.css'
 
 export const metadata: Metadata = {
-  title: 'Offrir une carte cadeau — Bellajour',
+  title: 'Offrir une carte cadeau · Bellajour',
   robots: { index: false, follow: false },
 }
 

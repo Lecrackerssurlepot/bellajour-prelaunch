@@ -4,7 +4,7 @@ import { REMBOURSEMENT } from '../legal/content/remboursement'
 import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
-  title: 'Politique de remboursement et retours — Bellajour',
+  title: 'Politique de remboursement et retours · Bellajour',
   description:
     'Politique de remboursement et de retours Bellajour : remboursement de l’acompte, défauts pris en charge, garanties légales.',
   alternates: legalAlternates('remboursement', 'fr', REMBOURSEMENT),

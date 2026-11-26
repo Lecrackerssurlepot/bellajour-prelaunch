@@ -5,6 +5,18 @@ import { CONFIDENTIALITE } from './legal/content/confidentialite'
 import { MENTIONS_LEGALES } from './legal/content/mentions-legales'
 import { REMBOURSEMENT } from './legal/content/remboursement'
 import { LIVRAISON } from './legal/content/livraison'
+import { visuelPour, type NomEmplacement } from '@/content/media'
+
+/* Les emplacements de contenu de chaque page (jamais un décor). */
+const ACCUEIL: NomEmplacement[] = [
+  'accueil.couverture', 'accueil.couverture-2', 'accueil.couverture-3', 'accueil.couverture-4',
+  'accueil.couverture-5', 'accueil.double-page-1', 'accueil.double-page-2', 'accueil.photo-exemple',
+]
+const MAGAZINE: NomEmplacement[] = ['magazine.couverture', 'magazine.eventail-2', 'magazine.eventail-3', 'magazine.double-page']
+function imagesDe(noms: NomEmplacement[]): string[] {
+  const urls = noms.map((n) => visuelPour(n).fichier).filter(Boolean).map((f) => `https://www.bellajour.fr${f}`)
+  return [...new Set(urls)]
+}
 
 /* Le plan du site, refait à la bascule du 24/08/2026.
  *
@@ -48,18 +60,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
          ⚠️ Chemins ABSOLUS : Google refuse les relatifs ici. Ils suivent les
          noms produits par scripts/images-v2.mjs — s'ils changent, cette liste
          change avec eux. */
-      images: [
-        /* Le header en tete : c'est la photographie des magazines IMPRIMES,
-           la seule image du site qui montre l'objet fini. */
-        'https://www.bellajour.fr/images/v2/accueil/header-magazines-paysage-2560.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-the-boys-640.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-this-night-640.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-lisbonne-640.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-cote-azur-640.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-aussie-640.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-thats-life-640.webp',
-        'https://www.bellajour.fr/images/v2/accueil/couverture-rio-1050.webp',
-      ],
+      /* Les images de contenu de la page, LUES dans la librairie (media.ts) :
+         ce que Google indexe est ce que la page montre ce jour-là. */
+      images: imagesDe(ACCUEIL),
     },
     /* La page produit. Elle porte le prix, le papier, le delai et la FAQ :
        c'est elle qui repond a une recherche « magazine photo personnalise »,
@@ -73,12 +76,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
          La cinquième, `magazine-photo-personnalise-1600`, n'est pas ici : elle
          n'est affichée nulle part, elle vit dans le JSON-LD `Product.image`,
          qui est le bon endroit pour elle. */
-      images: [
-        'https://www.bellajour.fr/images/v2/magazine/couverture-sicile-900.webp',
-        'https://www.bellajour.fr/images/v2/magazine/couverture-noosa-1000.webp',
-        'https://www.bellajour.fr/images/v2/magazine/double-page-lagon-1000.webp',
-        'https://www.bellajour.fr/images/v2/magazine/double-page-australie-1400.webp',
-      ],
+      images: imagesDe(MAGAZINE),
+    },
+    /* La page des écoles et associations (brochure, rendez-vous). */
+    {
+      url: 'https://www.bellajour.fr/partenaires',
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
     /* T-083 — chaque page legale existe en fr, en et pt, sur des adresses
        distinctes (`/cgv`, `/en/cgv`, `/pt/cgv`). On declare la famille par

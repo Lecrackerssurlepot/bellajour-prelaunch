@@ -4,7 +4,7 @@ import { MENTIONS_LEGALES } from '../legal/content/mentions-legales'
 import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
-  title: 'Mentions légales — Bellajour',
+  title: 'Mentions légales · Bellajour',
   description:
     'Mentions légales et informations précontractuelles Bellajour : éditeur, hébergeur, propriété intellectuelle, médiation.',
   alternates: legalAlternates('mentions-legales', 'fr', MENTIONS_LEGALES),

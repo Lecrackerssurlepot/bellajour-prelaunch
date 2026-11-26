@@ -4,7 +4,7 @@ import { CGV } from '../legal/content/cgv'
 import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
-  title: 'Conditions générales de vente — Bellajour',
+  title: 'Conditions générales de vente · Bellajour',
   description:
     'Conditions générales de vente Bellajour : commande, acompte, droit de rétractation, garanties, livraison. Fiche produit en annexe.',
   alternates: legalAlternates('cgv', 'fr', CGV),

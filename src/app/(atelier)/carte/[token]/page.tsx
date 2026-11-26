@@ -15,7 +15,7 @@ import '../../offrir/offrir.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
-  title: 'Votre carte cadeau — Bellajour',
+  title: 'Votre carte cadeau · Bellajour',
   robots: { index: false, follow: false },
 }
 

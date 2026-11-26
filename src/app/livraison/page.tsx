@@ -4,7 +4,7 @@ import { LIVRAISON } from '../legal/content/livraison'
 import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
-  title: 'Livraison — Bellajour',
+  title: 'Livraison · Bellajour',
   description:
     'Frais de livraison par zone, livraison offerte dès 50 € de magazines, délais et pays desservis. La page Livraison de l’Atelier Bellajour.',
   alternates: legalAlternates('livraison', 'fr', LIVRAISON),

@@ -8,7 +8,7 @@ import Footer from '../../sections/Footer'
    noindex : page personnelle, jamais indexée. useSearchParams → Suspense requis. */
 
 export const metadata: Metadata = {
-  title: 'Espace ambassadeur — Bellajour',
+  title: 'Espace ambassadeur · Bellajour',
   robots: { index: false, follow: false },
 }
 

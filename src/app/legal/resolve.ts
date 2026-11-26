@@ -72,7 +72,7 @@ export function legalAlternates(slug: string, servedLang: Locale, doc: Localized
 export function legalRouteMetadata(slug: string, lang: Locale, doc: LocalizedDoc): Metadata {
   const d = doc[lang] ?? doc.fr
   return {
-    title: `${d.title} — Bellajour`,
+    title: `${d.title} · Bellajour`,
     alternates: legalAlternates(slug, lang, doc),
     openGraph: legalOpenGraph(slug, lang, d.title),
   }
@@ -91,7 +91,7 @@ export function legalOpenGraph(slug: string, lang: Locale, titre: string): Metad
   return {
     type: 'website',
     url: SITE + legalPath(slug, lang),
-    title: `${titre} — Bellajour`,
+    title: `${titre} · Bellajour`,
     locale: lang === 'fr' ? 'fr_FR' : lang === 'pt' ? 'pt_PT' : 'en_GB',
   }
 }

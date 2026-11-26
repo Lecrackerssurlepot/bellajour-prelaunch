@@ -22,7 +22,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'Merci — Bellajour',
+  title: 'Merci · Bellajour',
   description: 'Votre pré-commande Bellajour est confirmée.',
   robots: { index: false, follow: false },
 }

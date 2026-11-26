@@ -4,7 +4,7 @@ import { CONFIDENTIALITE } from '../legal/content/confidentialite'
 import { legalAlternates, legalOpenGraph } from '../legal/resolve'
 
 export const metadata: Metadata = {
-  title: 'Politique de confidentialité — Bellajour',
+  title: 'Politique de confidentialité · Bellajour',
   description: 'Comment Bellajour collecte et traite vos données personnelles et vos photos (RGPD).',
   alternates: legalAlternates('confidentialite', 'fr', CONFIDENTIALITE),
   /* Sans ce bloc, un partage de cette page affiche la carte de
