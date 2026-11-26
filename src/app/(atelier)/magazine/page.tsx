@@ -30,7 +30,7 @@ import BlocMagazine from '../noel/BlocMagazine'
 import Apparitions from '@/components/Apparitions'
 import { fichiersVisuels, lireVisuel } from '@/components/Visuel'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
-import { noelAuSite } from '@/lib/atelier/carteCadeau'
+import { jourDeParis, noelAuSite } from '@/lib/atelier/carteCadeau'
 import {
   BANDES_PHOTOS,
   EUROS_MAX_PUBLIC,
@@ -156,9 +156,9 @@ function jsonLd(faq: Question[], image: string) {
 const NOMS = ['magazine.couverture', 'magazine.eventail-2', 'magazine.eventail-3'] as const
 
 export default async function PageProduit() {
-  const maintenant = new Date()
-  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(maintenant)
-  const noelExemplaires = dansFenetreNoel(maintenant.toISOString().slice(0, 10))
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
+  /* Le jour de Paris, comme le prix (verif-noel lit la ligne du dessus telle quelle). */
+  const noelExemplaires = dansFenetreNoel(jourDeParis(new Date()))
   const V = await fichiersVisuels(NOMS)
   const dp = await lireVisuel('magazine.double-page')
   const faq = questions(noelExemplaires)

@@ -36,14 +36,14 @@
    l'a créé, c'est lui qui l'a rendu visible : la ligne de progression
    nouvelle version est plus longue, et se faisait couper en deux.
    La réserve est donc reprise ici, pour ce seul écran. */
-.at-d-page { padding-bottom: 90px; }
+.at-d-page { padding-bottom: var(--m-espace-9); }
 
 .at-d-appel {
   display: flex;
   justify-content: center;
-  margin-top: 14px;
-  padding: 10px 0;
-  border-radius: 20px;
+  margin-top: var(--m-espace-4);
+  padding: var(--m-espace-3) 0;
+  border-radius: var(--m-rayon-bloc);
   transition: background var(--dur) var(--ease);
 }
 
@@ -63,11 +63,11 @@
   /* De l'air au-dessus : la progression et la planche sont deux objets, pas
      une légende et son image. Il y en a de reste depuis que la planche est
      passée dessous. */
-  margin: 28px 0 10px;
+  margin: var(--m-espace-6) 0 var(--m-espace-3);
   /* 12 px, le plancher des micro-libellés en capitales posé sur la page
      produit le 08/09. Il était à 11 : un pixel de moins que la règle qu'on
      venait d'écrire, dans un fichier voisin. */
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -80,13 +80,13 @@
   list-style: none;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--m-espace-2);
   max-width: 640px;
 }
 
 .at-d-planche li {
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: var(--m-rayon-champ);
   border: 1px dashed var(--c-line);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.008));
 }
@@ -101,8 +101,8 @@
 /* La mention de format, descendue de la zone de dépôt : elle sert une fois
    sur cinquante et elle occupait le centre de l'écran. */
 .at-d-formats {
-  margin: 0 0 12px;
-  font-size: 13px;
+  margin: 0 0 var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   letter-spacing: 0.02em;
   color: var(--c-text-faint);
@@ -121,12 +121,12 @@
 }
 
 .bj-atelier .at-d-parcourir {
-  padding: 13px 26px;
+  padding: var(--m-espace-3) var(--m-espace-5);
   border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
-  font-family: var(--font-ui);
-  font-size: 15px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
   font-weight: 400;
   color: var(--c-text);
   cursor: pointer;
@@ -161,7 +161,7 @@
 
 /* ── compteur, jauge, palier ───────────────────────────────────────────── */
 
-.at-d-etat { margin-top: 16px; max-width: 640px; }
+.at-d-etat { margin-top: var(--m-espace-4); max-width: 640px; }
 
 /* ⚠️ `[hidden]` NE SUFFIT PAS QUAND ON DÉCLARE UN `display`.
    L'attribut HTML pose `display: none` par la feuille du navigateur ; une
@@ -169,11 +169,11 @@
    « caché » reste à l'écran. C'est le piège qui a laissé « 0 photo prête »
    visible à la première pose de ce lot. La ligne suivante rend son sens à
    l'attribut, et elle doit rester APRÈS la déclaration qu'elle annule. */
-.at-d-compteur { display: flex; align-items: baseline; gap: 12px; }
+.at-d-compteur { display: flex; align-items: baseline; gap: var(--m-espace-3); }
 .at-d-compteur[hidden] { display: none; }
 
 .at-d-compteur b {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(44px, 11vw, 72px);
   font-weight: 400;
   line-height: 1;
@@ -183,16 +183,16 @@
   font-variant-numeric: tabular-nums;
 }
 
-.at-d-compteur span { font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
+.at-d-compteur span { font-size: var(--m-taille-bouton); font-weight: 300; color: var(--c-text-soft); }
 
 /* PRD §15 : la jauge est posée à 100 % et comprimée en scaleX. Animer sa
    largeur, c'est un reflow par frame ; la comprimer, c'est une composition. */
 .at-d-jauge {
   position: relative;
   height: 3px;
-  margin-top: 18px;
+  margin-top: var(--m-espace-4);
   background: var(--c-line);
-  border-radius: 2px;
+  border-radius: var(--m-rayon-image);
   overflow: hidden;
 }
 
@@ -215,8 +215,8 @@
 }
 
 .bj-atelier .at-d-palier {
-  margin-top: 14px;
-  font-size: 15px;
+  margin-top: var(--m-espace-4);
+  font-size: var(--m-taille-bouton);
   font-weight: 300;
   color: var(--c-text-soft);
 }
@@ -227,13 +227,13 @@
    d'être lu comme un prix ferme. Discrète, jamais absente. */
 .at-d-palier em { font-style: normal; color: var(--c-text-faint); }
 
-.at-d-transfert { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.at-d-transfert { display: flex; align-items: center; gap: var(--m-espace-3); margin-top: var(--m-espace-4); }
 
 .at-d-barre {
   flex: 1;
   height: 2px;
   background: var(--c-line);
-  border-radius: 2px;
+  border-radius: var(--m-rayon-image);
   overflow: hidden;
 }
 
@@ -247,9 +247,9 @@
 }
 
 .at-d-transfert span,
-.at-d-reste { font-size: 13px; font-weight: 300; color: var(--c-text-faint); }
+.at-d-reste { font-size: var(--m-taille-petit); font-weight: 300; color: var(--c-text-faint); }
 
-.bj-atelier .at-d-reste { margin-top: 10px; }
+.bj-atelier .at-d-reste { margin-top: var(--m-espace-3); }
 
 /* ── T-156 : le dossier qui reçoit (17/10/2026) ─────────────────────────
    À la place du chapeau des autres écrans, et dans sa typographie, mais en
@@ -259,7 +259,7 @@
 .bj-atelier .at-d-dossier {
   text-transform: none;
   letter-spacing: 0.01em;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 400;
   color: var(--c-text-soft);
 }
@@ -268,8 +268,8 @@
    geste est un lien souligné, pas un second bouton qui concurrencerait
    « Choisir des photos ». */
 .bj-atelier .at-d-autre {
-  margin-top: 4px;
-  font-size: 13px;
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
 }
@@ -288,13 +288,13 @@
 /* ── avis et refus ─────────────────────────────────────────────────────── */
 
 .bj-atelier .at-d-avis {
-  margin-top: 22px;
+  margin-top: var(--m-espace-5);
   max-width: 56ch;
-  padding: 12px 16px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   border-left: 2px solid var(--c-accent);
   background: var(--c-accent-soft);
-  border-radius: 0 8px 8px 0;
-  font-size: 13px;
+  border-radius: 0 var(--m-rayon-champ) var(--m-rayon-champ) 0;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-soft);
 }
@@ -320,14 +320,14 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 14px;
+  gap: var(--m-espace-4);
 }
 
 .bj-atelier .at-d-refus {
-  margin-top: 18px;
+  margin-top: var(--m-espace-4);
   max-width: 56ch;
   list-style: none;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
 }
@@ -349,15 +349,15 @@
 .bj-atelier .at-d-grille {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 26vw, 150px), 1fr));
-  gap: 10px;
-  margin-top: 30px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-6);
   max-width: 900px;
   list-style: none;
 }
 
 .bj-atelier .at-d-grille--toutes {
   grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 
 .at-d-tuile {
@@ -365,7 +365,7 @@
   aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid var(--c-line);
-  border-radius: 10px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-2);
   /* Tant que le serveur n'a pas confirmé, la tuile est en retrait : l'écran
      ne dit jamais « c'est arrivé » avant de le savoir. */
@@ -391,32 +391,32 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--m-espace-1);
   border: none;
   background: none;
   cursor: pointer;
-  font-family: var(--font-ui);
+  font-family: var(--m-police-texte-famille);
   color: var(--c-text-soft);
   transition: color var(--dur) var(--ease);
 }
 
 .at-d-tuile--plus button:hover { color: var(--c-text); }
-.at-d-tuile--plus b { font-size: 20px; font-weight: 400; }
+.at-d-tuile--plus b { font-size: var(--m-taille-chapo); font-weight: 400; }
 .at-d-tuile--plus small {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--c-text-faint);
 }
 
 .at-d-replier {
-  margin-top: 14px;
-  padding: 8px 18px;
-  border-radius: 999px;
+  margin-top: var(--m-espace-4);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--c-line-md);
   background: transparent;
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text-soft);
   cursor: pointer;
 }
@@ -430,10 +430,10 @@
   position: absolute;
   top: 5px;
   left: 5px;
-  padding: 3px 8px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: var(--glass-bg-strong);
-  font-size: 9px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -448,16 +448,16 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
+  gap: var(--m-espace-1);
   width: 100%;
   height: 100%;
-  padding: 10px;
+  padding: var(--m-espace-3);
   text-align: center;
   background: var(--c-surface-3);
 }
 
 .at-d-sobre b {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
   line-height: 1.35;
   color: var(--c-text-soft);
@@ -470,7 +470,7 @@
   word-break: break-all;
 }
 
-.at-d-sobre small { font-size: 9px; color: var(--c-text-faint); }
+.at-d-sobre small { font-size: var(--m-taille-etiquette); color: var(--c-text-faint); }
 
 /* Le bouton « Reprendre » occupe déjà le bas de la tuile : la mention
    passerait dessous, illisible. On la retire plutôt que de l'empiler. */
@@ -502,10 +502,10 @@
   height: 18px;
   display: grid;
   place-items: center;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--glass-bg-strong);
   color: var(--c-accent);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
 }
 
 .bj-atelier .at-d-suppr {
@@ -517,10 +517,10 @@
   display: grid;
   place-items: center;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--glass-bg-strong);
   color: var(--c-text);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1;
   cursor: pointer;
   opacity: 0;
@@ -543,19 +543,19 @@
   left: 5px;
   right: 5px;
   bottom: 5px;
-  padding: 5px 0;
+  padding: var(--m-espace-1) 0;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   background: var(--glass-bg-strong);
-  font-family: var(--font-ui);
-  font-size: 10px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   color: var(--c-accent-strong);
   cursor: pointer;
 }
 
 /* ── consentement et blocage ───────────────────────────────────────────── */
 
-.at-d-bloc { font-size: 14px; font-weight: 300; color: var(--c-text-faint); }
+.at-d-bloc { font-size: var(--m-taille-petit); font-weight: 300; color: var(--c-text-faint); }
 
 /* ── LA BARRE FIXE DU DÉPÔT (03/09) ──
    L'ancienne barre en flux (`.at-d-envoi`) est partie : consentement et
@@ -574,7 +574,7 @@
 
 .at-q-barre--depot .at-d-pasparti--fond {
   max-width: 1200px;
-  margin: 0 auto 12px;
+  margin: 0 auto var(--m-espace-3);
 }
 
 /* ── le seuil atteint : le badge (03/09) ──
@@ -583,13 +583,13 @@
 .at-d-pret {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-left: 14px;
-  padding: 6px 14px;
+  gap: var(--m-espace-2);
+  margin-left: var(--m-espace-4);
+  padding: var(--m-espace-2) var(--m-espace-4);
   border: 1px solid var(--c-accent);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--c-accent-soft);
-  font-size: 12.5px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
   color: var(--c-accent-strong);
 }
@@ -613,20 +613,20 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3);
   border: none;
   background: none;
   cursor: pointer;
-  font-family: var(--font-ui);
+  font-family: var(--m-police-texte-famille);
   color: var(--c-text-soft);
   transition: color var(--dur) var(--ease);
 }
 
 .at-d-tuile--ajout button:hover { color: var(--c-text); }
-.at-d-tuile--ajout b { font-size: 20px; font-weight: 400; color: var(--c-accent); }
+.at-d-tuile--ajout b { font-size: var(--m-taille-chapo); font-weight: 400; color: var(--c-accent); }
 .at-d-tuile--ajout small {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: center;
@@ -636,25 +636,25 @@
 
 /* Le rappel du glisser-déposer plein écran — un geste de bureau. */
 .bj-atelier .at-d-glisser {
-  margin-top: 16px;
-  font-size: 13px;
+  margin-top: var(--m-espace-4);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
 }
 
 /* Tout l'écran accepte le dépôt : le survol d'un fichier se voit. */
-.at-d-page.is-survol { outline: 1px dashed var(--c-accent); outline-offset: -1px; border-radius: 12px; }
+.at-d-page.is-survol { outline: 1px dashed var(--c-accent); outline-offset: -1px; border-radius: var(--m-rayon-champ); }
 
 /* La barre du dépôt est plus haute que les autres (consentement + bouton,
    parfois la note de transfert) : l'écran réserve un cran de plus que le
    padding commun de .at-q-screen. */
-.at-d-page { padding-bottom: 90px; }
+.at-d-page { padding-bottom: var(--m-espace-9); }
 
 /* La phrase qui manquait : ce qui n'est PAS encore fait. */
 .at-d-pasparti {
   max-width: 56ch;
-  margin-bottom: 4px;
-  font-size: 14px;
+  margin-bottom: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-soft);
 }
@@ -666,10 +666,10 @@
    se confondre avec la phrase du dessus. Palette SOMBRE (--c-*), scope
    .bj-atelier : jamais un token --bj-* ici. */
 .at-d-pasparti--fond {
-  margin-top: 8px;
-  padding: 8px 12px;
+  margin-top: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-3);
   border-left: 2px solid var(--c-accent);
-  border-radius: 0 6px 6px 0;
+  border-radius: 0 var(--m-rayon-image) var(--m-rayon-image) 0;
   background: var(--c-surface-2);
   color: var(--c-text);
 }
@@ -679,13 +679,13 @@
      téléphone que « plus grosses » compte le plus. Deux vignettes par
      rangée, larges, valent mieux que quatre timbres-poste. Le resserrement
      ne vaut que pour la planche contact dépliée. */
-  .bj-atelier .at-d-grille--toutes { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 6px; }
-  .at-d-pasparti { font-size: 13px; }
+  .bj-atelier .at-d-grille--toutes { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: var(--m-espace-2); }
+  .at-d-pasparti { font-size: var(--m-taille-petit); }
 }
 
 @media (max-width: 760px) {
   /* Le badge passe sous le compteur plutôt que de casser la ligne. */
-  .at-d-compteur { flex-wrap: wrap; row-gap: 10px; }
+  .at-d-compteur { flex-wrap: wrap; row-gap: var(--m-espace-3); }
   .at-d-pret { margin-left: 0; }
   /* L'écran du dépôt réserve plus de bas de page : sa barre porte deux
      rangées (consentement + bouton pleine largeur). */
@@ -698,7 +698,7 @@
      le doigt, la seule case à cocher de la page en demandait un de pianiste.
      `min-height: 44px` et `align-items: center` : la ligne devient une cible,
      sans changer un mot. */
-  .at-q-barre--depot .at-d-consent { max-width: none; font-size: 14px; }
+  .at-q-barre--depot .at-d-consent { max-width: none; font-size: var(--m-taille-petit); }
 }
 
 /* Glisser-déposer : un geste de souris, pas de doigt. Décidé au POINTEUR,

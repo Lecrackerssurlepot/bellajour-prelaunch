@@ -30,12 +30,12 @@
   inset: 0 0 auto 0;
   z-index: 60;
   margin: 0;
-  padding: 9px var(--pad);
+  padding: var(--m-espace-2) var(--pad);
   background: var(--glass-bg-plein);
   border-bottom: 1px solid var(--c-accent-soft);
   box-shadow: var(--shadow-soft);
-  font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.35;
   letter-spacing: 0.01em;
   color: var(--c-accent);
@@ -45,11 +45,11 @@
 /* La page descend d'autant : sans ça le bandeau couvre le logo du parcours,
    et un bandeau qui cache le haut de la page qu'on vient vérifier ne sert à
    rien. Deux lignes possibles sur un téléphone étroit, d'où la marge haute. */
-.nu--previs { padding-top: 44px; }
+.nu--previs { padding-top: var(--m-espace-7); }
 
 @media (max-width: 560px) {
-  .bj-atelier .nu-previs { font-size: 11.5px; padding: 8px 14px; }
-  .nu--previs { padding-top: 56px; }
+  .bj-atelier .nu-previs { font-size: var(--m-taille-etiquette); padding: var(--m-espace-2) var(--m-espace-4); }
+  .nu--previs { padding-top: var(--m-espace-8); }
 }
 
 /* ---- barre haute : le logo du parcours, rien d'autre ----
@@ -66,8 +66,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 14px var(--pad);
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4) var(--pad);
 }
 
 .nu-top-logo-img {
@@ -91,14 +91,14 @@
   justify-self: start;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 40px;
-  padding: 8px 14px;
+  padding: var(--m-espace-2) var(--m-espace-4);
   border: 1px solid rgba(245, 240, 231, 0.28);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--c-veil-hover);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text);
   text-decoration: none;
   white-space: nowrap;
@@ -111,14 +111,14 @@
    le mot ne pousse personne. La cible tactile reste à 40 px. */
 @media (max-width: 520px) {
   .nu-retour-mot { display: none; }
-  .bj-atelier .nu-retour { padding: 8px 12px; }
+  .bj-atelier .nu-retour { padding: var(--m-espace-2) var(--m-espace-3); }
 }
 
 .nu-compte {
   text-align: center;
-  padding: 8px var(--pad);
-  font-family: var(--font-ui);
-  font-size: 12.5px;
+  padding: var(--m-espace-2) var(--pad);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.5;
   color: var(--c-text-faint);
   border-bottom: 1px solid var(--c-line);
@@ -137,7 +137,7 @@
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
-  padding: clamp(48px, 10vw, 96px) var(--pad) clamp(72px, 12vw, 130px);
+  padding: clamp(var(--m-espace-7), 10vw, var(--m-espace-9)) var(--pad) clamp(var(--m-espace-8), 12vw, var(--m-espace-10));
 }
 
 /* Le titre du numéro. (0,2,0) — passe devant `.bj-atelier h1` (0,1,1),
@@ -147,7 +147,7 @@
   font-size: clamp(44px, 6vw, 64px);
   line-height: 1.02;
   letter-spacing: -0.01em;
-  margin-top: 14px;
+  margin-top: var(--m-espace-4);
 }
 /* ── L'étiquette « à qui est la balle » (18/09) ──
    Onze pixels, capitales, un point de 6 px : cuivre quand c'est au client
@@ -156,10 +156,10 @@
 .bj-atelier .nu-camp {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   margin-top: 0;
-  font-family: var(--font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
@@ -169,7 +169,7 @@
   display: inline-block;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--c-text-faint);
 }
 .nu-camp.is-vous .nu-camp-dot { background: var(--c-accent); }
@@ -182,24 +182,24 @@
    « n / 5 · nom ». Les deux vivent dans le DOM, le CSS n'en montre qu'un.
    Sous le logo, hors de la colonne de lecture — comme dans le parcours.
    L'ancien fil à pastilles (.nu-fil) est parti avec cette refonte. */
-.nu-etapes { flex: 0 0 auto; padding: 6px var(--pad) 0; }
+.nu-etapes { flex: 0 0 auto; padding: var(--m-espace-2) var(--pad) 0; }
 
 .nu-etapes-noms {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 28px;
+  gap: var(--m-espace-6);
 }
 
 .nu-etape {
-  font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
   color: var(--c-text-faint);
   opacity: 0.55;
-  padding-bottom: 5px;
+  padding-bottom: var(--m-espace-1);
 }
 
 .nu-etape.is-fait { opacity: 1; }
@@ -211,15 +211,15 @@
 
 .nu-etape-v { font-style: normal; color: var(--c-accent); }
 
-.nu-etapes-mini { display: none; align-items: center; gap: 10px; }
+.nu-etapes-mini { display: none; align-items: center; gap: var(--m-espace-3); }
 
-.nu-segments { display: flex; gap: 5px; flex: 1; }
+.nu-segments { display: flex; gap: var(--m-espace-1); flex: 1; }
 
 .nu-segments i {
   display: block;
   height: 2px;
   flex: 1;
-  border-radius: 2px;
+  border-radius: var(--m-rayon-image);
   background: var(--c-line-md);
 }
 
@@ -227,8 +227,8 @@
 
 .nu-etapes-ou {
   flex: 0 0 auto;
-  font-family: var(--font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.1em;
   color: var(--c-text-faint);
 }
@@ -240,7 +240,7 @@
 
 /* ---- le mot d'état : la phrase que la cliente vient lire ---- */
 .nu-mot {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(26px, 4vw, 30px);
   line-height: 1.15;
   letter-spacing: -0.015em;
@@ -254,35 +254,35 @@
    Le sommaire ayant quitté la colonne (il vit sous le logo depuis le
    04/09), c'est la marge du mot qui aère l'espace sous le titre ; le mot
    qui suit « c'est à vous / à nous » se resserre, sinon elles s'empilent. */
-.bj-atelier .nu-mot { margin-top: clamp(24px, 4vw, 28px); }
-.bj-atelier .nu-sub { margin-top: 14px; }
+.bj-atelier .nu-mot { margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6)); }
+.bj-atelier .nu-sub { margin-top: var(--m-espace-4); }
 
 .nu-sub {
-  margin-top: 14px;
+  margin-top: var(--m-espace-4);
   max-width: 50ch;
   font-weight: 300;
   line-height: 1.6;
   color: var(--c-text-soft);
-  font-size: 16px;
+  font-size: var(--m-taille-base);
 }
 .nu-sub b { color: var(--c-text); font-weight: 400; }
 
 /* ── La rangée d'action (18/09) : UN geste plein, le secondaire en lien à
    côté. Sur téléphone, le bouton prend la largeur et le lien passe dessous. */
 .nu-actions {
-  margin-top: 40px;
+  margin-top: var(--m-espace-7);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 22px;
+  gap: var(--m-espace-5);
 }
 /* ── La note sous l'action (18/09). Elle n'avait AUCUNE règle : elle héritait
    du corps en 17 px et se collait au bouton (le « fouilli » de la page de
    Merisa). Treize pixels, un ton plus bas, une seule par page. */
 .bj-atelier .nu-note {
-  margin-top: 16px;
+  margin-top: var(--m-espace-4);
   max-width: 52ch;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   line-height: 1.55;
   font-weight: 300;
   color: var(--c-text-faint);
@@ -313,7 +313,7 @@
   .nu-main .nu-ajuster { display: block; margin-left: auto; margin-right: auto; }
 }
 @media (max-width: 760px) {
-  .nu-actions { flex-direction: column; align-items: stretch; gap: 16px; text-align: center; }
+  .nu-actions { flex-direction: column; align-items: stretch; gap: var(--m-espace-4); text-align: center; }
   .nu-actions .at-cta { justify-content: center; }
 }
 
@@ -324,20 +324,20 @@
    que `.nu-garde` : un filet, un ton plus bas, des tailles réduites.
    Le bouton du magazine reste le SEUL geste plein de la page. */
 .nu-relance {
-  margin-top: clamp(48px, 9vw, 84px);
-  padding-top: clamp(24px, 4.5vw, 32px);
+  margin-top: clamp(var(--m-espace-7), 9vw, var(--m-espace-9));
+  padding-top: clamp(var(--m-espace-5), 4.5vw, var(--m-espace-6));
   border-top: 1px solid var(--c-line);
   max-width: 56ch;
 }
 .nu-relance-mot {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(20px, 3.6vw, 26px);
   line-height: 1.2;
   letter-spacing: -0.01em;
   color: var(--c-text-soft);
 }
 .nu-relance-sub {
-  margin-top: 10px;
+  margin-top: var(--m-espace-3);
   font-size: clamp(14px, 3.4vw, 15px);
   font-weight: 300;
   color: var(--c-text-faint);
@@ -350,15 +350,15 @@
 .bj-atelier .nu-cta-second {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-top: clamp(18px, 3.5vw, 24px);
-  padding: 13px 24px;
+  gap: var(--m-espace-3);
+  margin-top: clamp(var(--m-espace-4), 3.5vw, var(--m-espace-5));
+  padding: var(--m-espace-3) var(--m-espace-5);
   border: 1px solid var(--c-accent);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: var(--c-accent);
-  font-family: var(--font-ui);
-  font-size: 14px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   text-decoration: none;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
@@ -372,24 +372,24 @@
 /* 18/09 : la carte du colis prend l'enveloppe commune (760 px, centrée,
    filet du thème) : champs à gauche, bouton en verre à droite. */
 .nu-carte {
-  margin: 40px auto 0;
+  margin: var(--m-espace-7) auto 0;
   max-width: 760px;
-  padding: 24px 32px;
+  padding: var(--m-espace-5) var(--m-espace-6);
   border: 1px solid var(--c-line-md);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: var(--m-espace-5);
   text-align: left;
 }
-.nu-carte-champs { display: flex; gap: 56px; margin: 0; }
-.nu-carte-champ { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nu-carte-champs { display: flex; gap: var(--m-espace-8); margin: 0; }
+.nu-carte-champ { display: flex; flex-direction: column; gap: var(--m-espace-2); min-width: 0; }
 
 .nu-carte dt {
-  font-family: var(--font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
@@ -398,14 +398,14 @@
 
 .nu-carte dd {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   color: var(--c-text);
 }
 
 .nu-carte .nu-ghost { flex: 0 0 auto; }
 @media (max-width: 760px) {
-  .nu-carte { margin-top: 36px; padding: 20px; flex-direction: column; align-items: stretch; gap: 18px; }
-  .nu-carte-champs { gap: 28px; }
+  .nu-carte { margin-top: var(--m-espace-6); padding: var(--m-espace-5); flex-direction: column; align-items: stretch; gap: var(--m-espace-4); }
+  .nu-carte-champs { gap: var(--m-espace-6); }
 }
 
 /* Le numero de suivi : celui qu'on recopie dans l'appli du transporteur.
@@ -415,7 +415,7 @@
   display: inline;
   margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   letter-spacing: 0.08em;
   color: var(--c-text-soft);
   user-select: all;
@@ -432,17 +432,17 @@
    agrandissement. Le reste du parcours (les deux cases, le paiement) vit en
    dessous, inchangé. */
 .nu-planche {
-  margin-top: clamp(28px, 6vw, 46px);
+  margin-top: clamp(var(--m-espace-6), 6vw, var(--m-espace-7));
   display: flex;
   flex-direction: column;
-  gap: clamp(36px, 7vw, 56px);
+  gap: clamp(var(--m-espace-6), 7vw, var(--m-espace-8));
 }
 
-.nu-pl-section { display: flex; flex-direction: column; gap: 18px; }
+.nu-pl-section { display: flex; flex-direction: column; gap: var(--m-espace-4); }
 
 .nu-pl-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-weight: 400;
   font-size: clamp(18px, 3vw, 23px);
@@ -456,17 +456,17 @@
 .nu-pl-couvertures {
   display: flex;
   flex-direction: column;
-  gap: clamp(24px, 5vw, 36px);
+  gap: clamp(var(--m-espace-5), 5vw, var(--m-espace-6));
 }
 
 .nu-pl-carte {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: clamp(12px, 3vw, 18px);
+  gap: var(--m-espace-3);
+  padding: clamp(var(--m-espace-3), 3vw, var(--m-espace-4));
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--m-rayon-champ);
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 
@@ -485,8 +485,8 @@
 .nu-pl-sous {
   margin: -8px 0 0;
   max-width: 54ch;
-  font-family: var(--font-ui);
-  font-size: 14px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
   color: var(--c-text-soft);
 }
@@ -500,7 +500,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: center;
-  gap: clamp(14px, 3vw, 24px);
+  gap: clamp(var(--m-espace-4), 3vw, var(--m-espace-5));
   width: 100%;
 }
 .nu-pl-tuiles--portrait,
@@ -517,7 +517,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
   margin: 0;
   padding: 0;
   border: 0;
@@ -577,12 +577,12 @@
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   box-shadow: var(--shadow-soft);
 }
 .nu-pl-legende-plat {
-  font-family: var(--font-ui);
-  font-size: 12px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   color: var(--c-text-faint);
   text-align: center;
 }
@@ -599,7 +599,7 @@
   width: 100%;
   height: auto;
   aspect-ratio: auto;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   box-shadow: var(--shadow-soft);
 }
 
@@ -610,13 +610,13 @@
   z-index: 2;
   right: 10px;
   bottom: 10px;
-  padding: 7px 14px;
-  border-radius: 999px;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--glass-border);
   background: var(--glass-bg-strong);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--c-text);
@@ -631,7 +631,7 @@
 /* Le nom de la carte, sous les tuiles — même dessin que l'ancien nom de vue. */
 .nu-pl-nom {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: clamp(16px, 2.4vw, 19px);
   color: var(--c-text);
@@ -652,8 +652,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  margin-top: 4px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-1);
 }
 
 .bj-atelier .nu-pl-btn,
@@ -661,14 +661,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   width: 100%;
   max-width: 320px;
   min-height: 46px;
-  padding: 11px 22px;
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 14px;
+  padding: var(--m-espace-3) var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   letter-spacing: 0.01em;
   text-align: center;
 }
@@ -707,8 +707,8 @@
 .nu-pl-confirme {
   margin: 0;
   max-width: 48ch;
-  font-family: var(--font-ui);
-  font-size: 13.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
   text-align: center;
   color: var(--c-accent-strong);
@@ -721,7 +721,7 @@
 .nu-pl-doubles {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: clamp(16px, 3vw, 28px);
+  gap: clamp(var(--m-espace-4), 3vw, var(--m-espace-6));
 }
 @media (max-width: 720px) {
   .nu-pl-doubles { grid-template-columns: 1fr; }
@@ -760,7 +760,7 @@
     rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
 }
 .nu-pl-nom-tuile {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: clamp(15px, 2.2vw, 18px);
   color: var(--c-text);
@@ -805,12 +805,12 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 9px 20px;
+  padding: var(--m-espace-2) var(--m-espace-5);
   background: none;
   border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 13px;
+  border-radius: var(--m-rayon-pilule);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
@@ -850,15 +850,15 @@
 }
 
 .nu-viz-choix-refus {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   color: var(--c-text-faint);
 }
 
 .nu-viz-note {
   max-width: 42ch;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--c-text-faint);
   align-self: center;
 }
@@ -868,13 +868,13 @@
    Pas de compte, pas de mot de passe : ce lien EST son espace client. Posé en
    pied de page, présent à tous les états, jamais dans le chemin de lecture. */
 .nu-garde {
-  margin-top: 72px;
-  padding-top: 24px;
+  margin-top: var(--m-espace-8);
+  padding-top: var(--m-espace-5);
   border-top: 1px solid var(--c-line);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 13px;
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   line-height: 1.55;
   font-weight: 300;
   color: var(--c-text-faint);
@@ -886,7 +886,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: var(--m-espace-5);
 }
 .nu-garde-l p { max-width: 46ch; }
 .nu-garde .bj-lienpartage { margin-top: 0; flex: 0 0 auto; }
@@ -896,14 +896,14 @@
 }
 .bj-atelier .nu-garde-compte a:hover { color: var(--c-text); text-decoration: underline; }
 @media (max-width: 760px) {
-  .nu-garde { margin-top: 64px; padding-top: 22px; gap: 14px; }
-  .nu-garde-l { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .nu-garde { margin-top: var(--m-espace-8); padding-top: var(--m-espace-5); gap: var(--m-espace-4); }
+  .nu-garde-l { flex-direction: column; align-items: flex-start; gap: var(--m-espace-4); }
 }
 
 .nu-garde-url {
   display: block;
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: var(--m-espace-3);
+  font-size: var(--m-taille-etiquette);
   color: var(--c-text-soft);
   word-break: break-all;
   /* Un lien qu'on veut copier se sélectionne d'un geste, pas de trois. */
@@ -915,31 +915,31 @@
    détaché en accent, l'ensemble est l'ancre visuelle sous la visionneuse. Sur
    mobile il passe en colonne et le bouton prend toute la largeur. */
 .nu-tarif {
-  margin-top: clamp(28px, 5.5vw, 44px);
+  margin-top: clamp(var(--m-espace-6), 5.5vw, var(--m-espace-7));
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: var(--m-espace-4);
   flex-wrap: wrap;
-  padding: clamp(16px, 3vw, 22px) clamp(18px, 3.4vw, 26px);
-  border-radius: 14px;
+  padding: clamp(var(--m-espace-4), 3vw, var(--m-espace-5)) clamp(var(--m-espace-4), 3.4vw, var(--m-espace-5));
+  border-radius: var(--m-rayon-champ);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
-.nu-tarif-p { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.nu-tarif-p { display: flex; flex-direction: column; gap: var(--m-espace-1); min-width: 0; }
 
 .nu-tarif-label {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--c-text-faint);
 }
 
 .nu-tarif-value {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(24px, 4.6vw, 32px);
   line-height: 1.1;
   color: var(--c-text);
@@ -948,7 +948,7 @@
 .nu-tarif-sep { color: var(--c-text-faint); font-weight: 300; }
 .nu-tarif-prix { color: var(--c-accent); white-space: nowrap; }
 
-.nu-prix-sub { margin-top: clamp(16px, 3vw, 22px); font-size: 15px; font-weight: 300; color: var(--c-text-soft); }
+.nu-prix-sub { margin-top: clamp(var(--m-espace-4), 3vw, var(--m-espace-5)); font-size: var(--m-taille-bouton); font-weight: 300; color: var(--c-text-soft); }
 
 /* ── LA CARTE DE LA COMMANDE (18/09/2026) ──
    Même enveloppe que `.nu-doc` (l'état maquette) : 760 px, centrée, surface
@@ -956,31 +956,31 @@
    bas — c'est la carte qui borde, les lignes ne gardent que leurs séparateurs.
    Le texte reste à gauche : un reçu centré ne se lit pas. */
 .nu-commande {
-  margin: 40px auto 0;
+  margin: var(--m-espace-7) auto 0;
   max-width: 760px;
-  padding: 26px 32px 30px;
+  padding: var(--m-espace-5) var(--m-espace-6) var(--m-espace-6);
   border: 1px solid var(--c-line-md);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-1);
   text-align: left;
 }
 .bj-atelier .nu-commande-lbl {
   margin: 0;
-  font-family: var(--font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
   color: var(--c-text-faint);
 }
-.nu-commande .nu-bon { margin-top: 12px; border-top: none; border-bottom: none; padding: 0; }
-.nu-commande .nu-bon-t { padding: 18px 0 0; }
+.nu-commande .nu-bon { margin-top: var(--m-espace-3); border-top: none; border-bottom: none; padding: 0; }
+.nu-commande .nu-bon-t { padding: var(--m-espace-4) 0 0; }
 .nu-commande .nu-bon-t b { font-size: clamp(28px, 4vw, 32px); }
-.nu-commande .nu-promesse { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--c-line); }
-.nu-commande .nu-order--plein { width: auto; margin-top: 22px; }
+.nu-commande .nu-promesse { margin-top: var(--m-espace-5); padding-top: var(--m-espace-5); border-top: 1px solid var(--c-line); }
+.nu-commande .nu-order--plein { width: auto; margin-top: var(--m-espace-5); }
 .nu-commande .nu-accords-mot { text-align: left; }
 @media (max-width: 760px) {
-  .nu-commande { margin-top: 36px; padding: 20px; }
+  .nu-commande { margin-top: var(--m-espace-6); padding: var(--m-espace-5); }
   .nu-commande .nu-order--plein { width: 100%; }
   .nu-commande .nu-accords-mot { text-align: center; }
 }
@@ -998,7 +998,7 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 .nu-bon {
-  margin-top: clamp(20px, 4vw, 30px);
+  margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
   border-top: 1px solid var(--c-line);
   border-bottom: 1px solid var(--c-line);
   padding: 2px 0;
@@ -1008,9 +1008,9 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 20px;
-  padding: 13px 0;
-  font-size: 15px;
+  gap: var(--m-espace-5);
+  padding: var(--m-espace-3) 0;
+  font-size: var(--m-taille-bouton);
   font-weight: 300;
   line-height: 1.4;
   color: var(--c-text-soft);
@@ -1029,13 +1029,13 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 20px;
-  padding: 16px 0 14px;
+  gap: var(--m-espace-5);
+  padding: var(--m-espace-4) 0 var(--m-espace-4);
   border-top: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
 }
 
 .nu-bon-t span {
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1043,7 +1043,7 @@
 }
 
 .nu-bon-t b {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(32px, 6.5vw, 42px);
   font-weight: 400;
   line-height: 1;
@@ -1079,13 +1079,13 @@
 .nu-bon-l--choix {
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px 20px;
+  gap: var(--m-espace-3) var(--m-espace-5);
 }
 
 .nu-finition {
   display: inline-flex;
   border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
 }
 
@@ -1096,10 +1096,10 @@
   /* 44 px de haut au doigt : la cible minimale, et la même que `.nu-select`
      juste en dessous — les deux réglages du bon de commande doivent avoir la
      même assise. */
-  padding: 11px 16px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   min-height: 44px;
-  font-family: var(--font-ui);
-  font-size: 15px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
   font-weight: 300;
   color: var(--c-text-soft);
   cursor: pointer;
@@ -1119,12 +1119,12 @@
    décalé vers l'extérieur serait rogné et le focus deviendrait invisible. */
 .nu-finition-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
 
-.nu-bon-choix { padding: 13px 0 15px; }
+.nu-bon-choix { padding: var(--m-espace-3) 0 var(--m-espace-4); }
 .nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--c-line); }
 
 .nu-bon-choix-lbl {
   display: block;
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1135,8 +1135,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-top: 10px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-3);
 }
 
 .nu-select {
@@ -1147,10 +1147,10 @@
   color-scheme: dark;
   background: transparent;
   border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
-  padding: 11px 30px 11px 12px;
-  font-family: var(--font-ui);
-  font-size: 16px;
+  border-radius: var(--m-rayon-champ);
+  padding: var(--m-espace-3) var(--m-espace-6) var(--m-espace-3) var(--m-espace-3);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
   font-weight: 300;
   color: var(--c-text);
   cursor: pointer;
@@ -1172,11 +1172,11 @@
   flex: 0 0 auto;
   appearance: none;
   border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-2);
-  padding: 11px 16px;
-  font-family: var(--font-ui);
-  font-size: 15px;
+  padding: var(--m-espace-3) var(--m-espace-4);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
   font-weight: 400;
   color: var(--c-text);
   cursor: pointer;
@@ -1188,8 +1188,8 @@
 .nu-bon-calc:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
 
 .nu-bon-choix-mot {
-  margin: 10px 0 0;
-  font-size: 13px;
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.45;
   color: var(--c-text-faint);
@@ -1200,13 +1200,13 @@
    reste. Même dessin que `.nu-ajuster`, à la taille du détail. */
 .nu-bon-changer {
   appearance: none;
-  margin-left: 10px;
+  margin-left: var(--m-espace-3);
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
   text-decoration: underline;
@@ -1216,15 +1216,15 @@
 }
 .nu-bon-changer:hover:not([disabled]) { color: var(--c-text-soft); }
 .nu-bon-changer[disabled] { opacity: 0.4; cursor: not-allowed; }
-.nu-bon-changer:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 4px; }
-.nu-bon-changer--annule { display: inline-block; margin: 10px 0 0; }
+.nu-bon-changer:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
+.nu-bon-changer--annule { display: inline-block; margin: var(--m-espace-3) 0 0; }
 
 /* Les droits de douane des trois destinations hors Union. Dit AVANT le
    paiement, à la suite du bon : une facture de douane découverte devant sa
    porte est la seule mauvaise surprise que cette page peut encore réserver. */
 .nu-bon-note {
-  margin: 12px 0 0;
-  font-size: 13px;
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.45;
   color: var(--c-text-faint);
@@ -1235,7 +1235,7 @@
    information qui demande au client de refaire un choix. Pleine couleur de
    texte, et au-dessus du menu plutôt qu'à la suite du bon. */
 .nu-bon-note--suspendu {
-  margin: 0 0 10px;
+  margin: 0 0 var(--m-espace-3);
   color: var(--c-text);
   font-weight: 400;
 }
@@ -1245,7 +1245,7 @@
    paragraphe gris : c'est-à-dire à l'endroit qu'on saute, alors que c'est
    ce qui fait appuyer — on paie un objet qu'on n'a pas encore vu fini. */
 .nu-promesse {
-  margin: clamp(18px, 3.4vw, 24px) 0 0;
+  margin: clamp(var(--m-espace-4), 3.4vw, var(--m-espace-5)) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -1253,9 +1253,9 @@
 .nu-promesse li {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 6px 0;
-  font-size: 14.5px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-2) 0;
+  font-size: var(--m-taille-bouton);
   font-weight: 300;
   line-height: 1.5;
   color: var(--c-text-soft);
@@ -1265,7 +1265,7 @@
   flex: 0 0 auto;
   width: 7px;
   height: 7px;
-  margin-top: 8px;
+  margin-top: var(--m-espace-2);
   border-radius: 50%;
   background: var(--c-accent);
 }
@@ -1276,28 +1276,28 @@
    ⚠️ La règle `.nu-order` d'origine reste la référence — on n'ajoute ici que
    ce que la sortie de l'encart change. */
 .nu-order--plein {
-  margin-top: clamp(20px, 4vw, 28px);
+  margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
   width: 100%;
   justify-content: center;
 }
 
 .nu-accords-mot {
-  margin: 12px 0 0;
-  font-size: 13px;
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
   text-align: center;
 }
 
 /* ---- les deux cases obligatoires (invariant nº3) ---- */
-.nu-cases { margin-top: clamp(28px, 5vw, 38px); display: grid; gap: 14px; }
+.nu-cases { margin-top: clamp(var(--m-espace-6), 5vw, var(--m-espace-6)); display: grid; gap: var(--m-espace-4); }
 
 .nu-check {
   display: flex;
-  gap: 12px;
+  gap: var(--m-espace-3);
   align-items: flex-start;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.5;
   color: var(--c-text-soft);
@@ -1305,7 +1305,7 @@
 }
 
 .nu-check input {
-  margin-top: 3px;
+  margin-top: var(--m-espace-1);
   flex: 0 0 auto;
   accent-color: var(--c-accent);
   width: 17px;
@@ -1320,14 +1320,14 @@
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
   background: var(--c-order);
-  font-family: var(--font-ui);
-  font-size: 16px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
   font-weight: 500;
-  padding: 18px 34px;
+  padding: var(--m-espace-4) var(--m-espace-6);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   cursor: pointer;
   transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
   will-change: transform;
@@ -1343,13 +1343,13 @@
    au mail »). Souligné fin, jamais dans le chemin de l'achat. */
 .nu-ajuster {
   appearance: none;
-  margin-top: clamp(22px, 4.5vw, 32px);
+  margin-top: clamp(var(--m-espace-5), 4.5vw, var(--m-espace-6));
   background: none;
   border: none;
-  padding: 8px 0;
+  padding: var(--m-espace-2) 0;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 14px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text-faint);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1360,9 +1360,9 @@
 /* Éteint en prévisualisation (l'atelier regarde, il ne dépose pas de demande
    au nom du client) : le lien doit alors CESSER de se proposer. */
 .nu-ajuster[disabled] { opacity: 0.4; cursor: not-allowed; }
-.nu-ajuster:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: 4px; }
+.nu-ajuster:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
 
-.nu-erreur { margin-top: 16px; font-size: 14px; color: var(--c-accent-strong); }
+.nu-erreur { margin-top: var(--m-espace-4); font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
 
 /* ── La feuille d'ajustement (T-091) — bas de l'écran sur mobile, centrée au
    large. Chips + un mot, « Envoyer à l'atelier » : la porte de sortie douce. */
@@ -1384,43 +1384,43 @@
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--c-line-strong);
-  border-radius: 18px 18px 0 0;
-  padding: clamp(22px, 5vw, 34px) clamp(20px, 5vw, 32px) clamp(24px, 6vw, 34px);
+  border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
+  padding: clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-5), 6vw, var(--m-espace-6));
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
   animation: nu-feuille-monte 420ms var(--ease-spring);
 }
 @media (min-width: 620px) {
   .nu-feuille { align-items: center; }
-  .nu-feuille-carte { border-radius: 18px; }
+  .nu-feuille-carte { border-radius: var(--m-rayon-bloc); }
 }
 .nu-feuille-titre {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 500;
   font-size: clamp(22px, 4vw, 28px);
-  margin-bottom: 6px;
+  margin-bottom: var(--m-espace-2);
 }
-.nu-feuille-sub { color: var(--c-text-soft); font-size: 14px; line-height: 1.5; max-width: 44ch; }
-.nu-feuille-chips { display: flex; flex-wrap: wrap; gap: 9px; margin: 20px 0 18px; }
+.nu-feuille-sub { color: var(--c-text-soft); font-size: var(--m-taille-petit); line-height: 1.5; max-width: 44ch; }
+.nu-feuille-chips { display: flex; flex-wrap: wrap; gap: var(--m-espace-2); margin: var(--m-espace-5) 0 var(--m-espace-4); }
 
 /* 04/09 — le groupe « La longueur du numéro » sous les motifs : un intitulé
    discret, puis les deux sens (un seul cochable à la fois, l'exclusivité est
    dans le composant). Les marges recousent le rythme de la feuille. */
 .nu-feuille-chips--motifs { margin-bottom: 0; }
 .bj-atelier .nu-feuille-groupe {
-  margin: 18px 0 0;
-  font-size: 11px;
+  margin: var(--m-espace-4) 0 0;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--c-text-faint);
 }
-.nu-feuille-chips--longueur { margin: 10px 0 18px; }
+.nu-feuille-chips--longueur { margin: var(--m-espace-3) 0 var(--m-espace-4); }
 
 /* La mention du prix, sous les deux sens : elle n'apparaît qu'une fois un
    sens choisi, et se lit comme une note — jamais comme un avertissement.
    (0-2-0) : `.bj-atelier p { margin: 0 }` battrait une classe seule. */
 .bj-atelier .nu-feuille-note {
-  margin: -8px 0 18px;
-  font-size: 13px;
+  margin: -8px 0 var(--m-espace-4);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.5;
   color: var(--c-text-faint);
@@ -1429,13 +1429,13 @@
 .nu-feuille-chip {
   appearance: none;
   cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: 13.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text-soft);
   background: var(--c-surface-2);
   border: 1px solid var(--c-line-strong);
-  border-radius: 999px;
-  padding: 9px 16px;
+  border-radius: var(--m-rayon-pilule);
+  padding: var(--m-espace-2) var(--m-espace-4);
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
     background var(--dur) var(--ease);
 }
@@ -1449,54 +1449,54 @@
   width: 100%;
   min-height: 64px;
   resize: vertical;
-  margin-bottom: 20px;
-  padding: 12px 14px;
+  margin-bottom: var(--m-espace-5);
+  padding: var(--m-espace-3) var(--m-espace-4);
   background: var(--c-void);
   color: var(--c-text);
   border: 1px solid var(--c-line-strong);
-  border-radius: 8px;
-  font-family: var(--font-ui);
-  font-size: 16px;
+  border-radius: var(--m-rayon-champ);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
   line-height: 1.5;
 }
 .nu-feuille-mot::placeholder { color: var(--c-text-faint); }
 .nu-feuille-mot:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
-.nu-feuille-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.nu-feuille-row { display: flex; align-items: center; justify-content: space-between; gap: var(--m-espace-4); }
 .nu-feuille-cancel {
   appearance: none;
   cursor: pointer;
   background: none;
   border: none;
   color: var(--c-text-faint);
-  font-family: var(--font-ui);
-  font-size: 14px;
-  padding: 8px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  padding: var(--m-espace-2);
   transition: color var(--dur) var(--ease);
 }
 .nu-feuille-cancel:hover { color: var(--c-text-soft); }
 .nu-feuille-send {
   appearance: none;
   cursor: pointer;
-  font-family: var(--font-ui);
+  font-family: var(--m-police-texte-famille);
   font-weight: 600;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   color: #1a1210;
   background: var(--c-accent);
   border: 1px solid var(--c-accent-strong);
-  border-radius: 999px;
-  padding: 14px 28px;
+  border-radius: var(--m-rayon-pilule);
+  padding: var(--m-espace-4) var(--m-espace-6);
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease-spring);
 }
 .nu-feuille-send:hover:not([disabled]) { background: var(--c-accent-strong); transform: translateY(-1px); }
 .nu-feuille-send:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
 .nu-feuille-send[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
 .nu-feuille-done {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: clamp(20px, 4vw, 24px);
   color: var(--c-text);
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: var(--m-espace-2);
 }
 @keyframes nu-feuille-fond { from { opacity: 0; } to { opacity: 1; } }
 @keyframes nu-feuille-monte { from { transform: translateY(16px); } to { transform: none; } }
@@ -1508,7 +1508,7 @@
 /* Sous 520px, l'encart tarif se met en colonne : le bouton prend toute la
    largeur, plus jamais serré à côté du prix (piège du 02/09). */
 @media (max-width: 520px) {
-  .nu-tarif { flex-direction: column; align-items: stretch; gap: 14px; }
+  .nu-tarif { flex-direction: column; align-items: stretch; gap: var(--m-espace-4); }
   .nu-tarif .nu-order { width: 100%; justify-content: center; }
 }
 
@@ -1524,15 +1524,15 @@
 }
 .nu-confirmer.is-open { grid-template-rows: 1fr; }
 .nu-confirmer-inner { overflow: hidden; min-height: 0; }
-.nu-confirmer.is-open .nu-confirmer-inner { padding-top: clamp(22px, 5vw, 34px); }
+.nu-confirmer.is-open .nu-confirmer-inner { padding-top: clamp(var(--m-espace-5), 5vw, var(--m-espace-6)); }
 .nu-confirmer-titre {
-  margin: 0 0 14px;
-  font-family: var(--font-display);
+  margin: 0 0 var(--m-espace-4);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(19px, 3.4vw, 24px);
   color: var(--c-text);
 }
 .nu-confirmer .nu-cases { margin-top: 0; }
-.nu-confirmer-aide { margin-top: 12px; font-size: 13px; color: var(--c-text-faint); }
+.nu-confirmer-aide { margin-top: var(--m-espace-3); font-size: var(--m-taille-petit); color: var(--c-text-faint); }
 
 /* La planche n'a plus de scène à hauteur fixe (11/09/2026) : chaque tuile
    suit son propre `aspect-ratio`, la règle qui resserrait `--viz-h` sous
@@ -1542,38 +1542,38 @@
    Venue de l'ecran 6 du composeur (.at-facultatif) : ici elle a du contexte
    et du temps, en pied de page, au-dessus de la consigne du lien. */
 .nu-facultatif {
-  margin-top: clamp(48px, 9vw, 84px);
-  padding-top: clamp(20px, 4vw, 28px);
+  margin-top: clamp(var(--m-espace-7), 9vw, var(--m-espace-9));
+  padding-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
   border-top: 1px solid var(--c-line);
   max-width: 52ch;
 }
-.nu-facultatif + .nu-garde { margin-top: clamp(24px, 5vw, 40px); }
+.nu-facultatif + .nu-garde { margin-top: clamp(var(--m-espace-5), 5vw, var(--m-espace-7)); }
 
 .nu-facultatif-titre {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--c-text-faint);
 }
 
 .nu-facultatif-note {
-  margin-top: 12px;
-  font-size: 13px;
+  margin-top: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
 }
 
-.nu-facultatif .nu-check { margin-top: 16px; }
+.nu-facultatif .nu-check { margin-top: var(--m-espace-4); }
 
 /* ---- l'état 4 : maquette feuilletable + Canva en commentaire ---- */
 /* 18/09 : la visionneuse et ses deux liens dans UNE carte. La carte est
    bornée à 760 px et centrée : la colonne de lecture fait 720, une carte
    déborde d'un souffle, pas d'une marge. */
 .nu-doc {
-  margin: 40px auto 0;
+  margin: var(--m-espace-7) auto 0;
   max-width: 760px;
   border: 1px solid var(--c-line-md);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-1);
   overflow: hidden;
 }
@@ -1589,8 +1589,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
-  padding: 18px 24px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4) var(--m-espace-5);
   border-top: 1px solid var(--c-line);
 }
 /* Le bouton « en verre » des utilitaires (18/09) : les mêmes cotes que
@@ -1600,14 +1600,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 9px 18px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-4);
   border: 1px solid rgba(245, 240, 231, 0.28);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: rgba(255, 255, 255, 0.06);
   color: var(--c-text);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   font-weight: 400;
   text-decoration: none;
   white-space: nowrap;
@@ -1616,20 +1616,20 @@
 .bj-atelier .nu-ghost:hover,
 .bj-atelier .nu-ghost:focus-visible { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
 @media (max-width: 760px) {
-  .nu-doc-liens { flex-direction: column; align-items: stretch; padding: 16px; gap: 10px; }
+  .nu-doc-liens { flex-direction: column; align-items: stretch; padding: var(--m-espace-4); gap: var(--m-espace-3); }
   .nu-doc-liens .nu-ghost { white-space: normal; }
 }
 /* `.nu-liens` : l'ancien rang de liens, gardé pour qui l'utilise encore. */
 .nu-liens {
-  margin-top: 22px;
+  margin-top: var(--m-espace-5);
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: var(--m-espace-4);
 }
 
 /* Lien secondaire — texte souligné, jamais un second bouton (invariant nº5). */
 .bj-atelier .nu-lien {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--c-text-soft);
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -1647,7 +1647,7 @@
   padding: 0;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .bj-atelier .nu-retouches:disabled { opacity: 0.5; cursor: default; }
 
@@ -1677,8 +1677,8 @@
    lise avant le clic sans écraser la ligne. */
 .nu-bon-legende {
   display: block;
-  margin-top: 3px;
-  font-size: 12.5px;
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-etiquette);
   font-weight: 300;
   line-height: 1.35;
   color: var(--c-text-faint);
@@ -1688,7 +1688,7 @@
   display: inline-flex;
   align-items: stretch;
   border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
 }
 
@@ -1698,8 +1698,8 @@
   background: transparent;
   width: 44px;
   min-height: 44px;
-  font-family: var(--font-ui);
-  font-size: 20px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-chapo);
   font-weight: 300;
   line-height: 1;
   color: var(--c-text-soft);
@@ -1717,8 +1717,8 @@
   min-width: 44px;
   border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
   border-right: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  font-family: var(--font-ui);
-  font-size: 16px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
   font-weight: 400;
   color: var(--c-text);
   font-variant-numeric: tabular-nums;
@@ -1729,8 +1729,8 @@
    ce qui reste à gagner. Jamais les deux à la fois pour le même geste. */
 .nu-bon-econ,
 .nu-bon-franco {
-  margin: -4px 0 10px;
-  font-size: 13.5px;
+  margin: -4px 0 var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.4;
   color: var(--c-text-soft);
@@ -1740,19 +1740,19 @@
 /* ── LA CARTE CADEAU (Noël 2026, lot 3) ──
    Un lien discret sous le total ; au clic, un champ et « Appliquer » sur une
    ligne. Appliquée, le code et « Retirer ». Même dessin que le choix du pays. */
-.nu-carte { margin: 12px 0 0; }
+.nu-carte { margin: var(--m-espace-3) 0 0; }
 .nu-carte .nu-bon-changer { margin-left: 0; }
-.nu-carte-form { display: flex; gap: 8px; }
+.nu-carte-form { display: flex; gap: var(--m-espace-2); }
 .nu-carte-champ {
   flex: 1 1 auto;
   min-width: 0;
   appearance: none;
   border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-1);
-  padding: 11px 12px;
-  font-family: var(--font-ui);
-  font-size: 15px;
+  padding: var(--m-espace-3) var(--m-espace-3);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
   letter-spacing: 0.06em;
   color: var(--c-text);
 }
@@ -1760,36 +1760,36 @@
 .nu-carte-ok {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--m-espace-3);
   margin: 0;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   letter-spacing: 0.06em;
   color: var(--c-text-soft);
 }
-.nu-carte-refus { margin: 8px 0 0; font-size: 13.5px; color: var(--c-accent); }
+.nu-carte-refus { margin: var(--m-espace-2) 0 0; font-size: var(--m-taille-petit); color: var(--c-accent); }
 
 /* Le récapitulatif après paiement (16/11) : des lignes courtes, libellé à
    gauche, valeur à droite, comme un ticket. */
 .nu-recap {
   max-width: 520px;
-  margin: 22px auto 0;
+  margin: var(--m-espace-5) auto 0;
   text-align: left;
-  padding: 4px 18px;
+  padding: var(--m-espace-1) var(--m-espace-4);
   border: 1px solid var(--c-line-md);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: var(--c-surface-1);
 }
 .nu-recap > div {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 16px;
-  padding: 13px 0;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-3) 0;
   border-top: 1px solid var(--c-line);
 }
 .nu-recap > div:first-child { border-top: 0; }
-.nu-recap dt { font-size: 14px; color: var(--c-text-soft); }
-.nu-recap dd { margin: 0; font-size: 15px; color: var(--c-text); text-align: right; font-variant-numeric: tabular-nums; }
+.nu-recap dt { font-size: var(--m-taille-petit); color: var(--c-text-soft); }
+.nu-recap dd { margin: 0; font-size: var(--m-taille-bouton); color: var(--c-text); text-align: right; font-variant-numeric: tabular-nums; }
 .nu-recap .nu-recap-fort { color: var(--c-accent); }
 
 /* ── NOËL : L'OFFRE DU 2e EXEMPLAIRE EN ÉVIDENCE (16/11/2026) ────────────
@@ -1798,11 +1798,11 @@
 .nu-noel-offre {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--m-espace-4);
   width: 100%;
-  margin: 6px 0 10px;
-  padding: 14px 16px;
-  border-radius: 14px;
+  margin: var(--m-espace-2) 0 var(--m-espace-3);
+  padding: var(--m-espace-4) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--c-accent);
   background: color-mix(in srgb, var(--c-accent) 10%, transparent);
   color: var(--c-text);
@@ -1815,29 +1815,29 @@
 .nu-noel-offre:disabled { opacity: 0.6; cursor: default; }
 .nu-noel-offre-pct {
   flex: 0 0 auto;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: 34px;
   line-height: 1;
   white-space: nowrap;
   color: var(--c-accent-strong);
 }
 .nu-noel-offre-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.nu-noel-offre-txt b { font-weight: 500; font-size: 15px; white-space: nowrap; }
+.nu-noel-offre-txt b { font-weight: 500; font-size: var(--m-taille-bouton); white-space: nowrap; }
 .nu-noel-offre-txt sup { font-size: 0.7em; }
-.nu-noel-offre-txt small { font-size: 12.5px; color: var(--c-text-soft); }
+.nu-noel-offre-txt small { font-size: var(--m-taille-etiquette); color: var(--c-text-soft); }
 .nu-noel-offre-plus {
   flex: 0 0 auto;
-  padding: 7px 14px;
-  border-radius: 999px;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: var(--c-accent);
   color: var(--c-text-onaccent, #1a1410);
-  font-size: 13.5px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
 }
 @media (max-width: 400px) {
-  .nu-noel-offre { gap: 10px; padding: 12px; }
-  .nu-noel-offre-pct { font-size: 28px; }
-  .nu-noel-offre-plus { padding: 7px 12px; }
+  .nu-noel-offre { gap: var(--m-espace-3); padding: var(--m-espace-3); }
+  .nu-noel-offre-pct { font-size: var(--m-taille-h3); }
+  .nu-noel-offre-plus { padding: var(--m-espace-2) var(--m-espace-3); }
 }
 
 /* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE, DANS LE MÊME PAIEMENT (16/11/2026) ── */
@@ -1845,45 +1845,45 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  margin: 4px 0 14px;
-  padding: 12px 16px;
-  border-radius: 14px;
+  gap: var(--m-espace-3) var(--m-espace-4);
+  margin: var(--m-espace-1) 0 var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   border: 1px dashed var(--c-accent);
   color: var(--c-text);
 }
 .nu-noel-carte.est-choisie { border-style: solid; background: color-mix(in srgb, var(--c-accent) 8%, transparent); }
-.nu-noel-carte-q { flex: 1 1 200px; font-size: 14.5px; line-height: 1.35; }
-.nu-noel-carte-choix { display: flex; gap: 8px; flex: 0 0 auto; }
+.nu-noel-carte-q { flex: 1 1 200px; font-size: var(--m-taille-bouton); line-height: 1.35; }
+.nu-noel-carte-choix { display: flex; gap: var(--m-espace-2); flex: 0 0 auto; }
 .nu-noel-carte-m {
   min-width: 64px;
   min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--c-accent);
   background: transparent;
   color: var(--c-accent-strong);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 .nu-noel-carte-m.est-choisi { background: var(--c-accent); color: var(--c-text-onaccent, #1a1410); }
 .nu-noel-carte-m:disabled { opacity: 0.6; cursor: default; }
-.nu-noel-carte-pour { flex: 1 1 100%; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.nu-noel-carte-pour { flex: 1 1 100%; display: flex; align-items: center; gap: var(--m-espace-3); font-size: var(--m-taille-petit); }
 .nu-noel-carte-input {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 42px;
-  padding: 0 12px;
-  border-radius: 10px;
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
   background: transparent;
   color: var(--c-text);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
 }
 .nu-noel-carte-input:focus { outline: none; border-color: var(--c-accent); }
-.nu-noel-carte-err { flex: 1 1 100%; margin: 0; font-size: 13px; color: var(--c-accent-strong); }
-.nu-noel-carte-note { flex: 1 1 100%; font-size: 12.5px; color: var(--c-text-soft); }
+.nu-noel-carte-err { flex: 1 1 100%; margin: 0; font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
+.nu-noel-carte-note { flex: 1 1 100%; font-size: var(--m-taille-etiquette); color: var(--c-text-soft); }

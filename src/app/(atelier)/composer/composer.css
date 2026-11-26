@@ -19,8 +19,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 10px var(--pad);
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--pad);
 }
 
 .at-q-logo-img {
@@ -39,7 +39,7 @@
   cursor: pointer;
   /* Lot 6 — la signature ne fait que 26 px : le rembourrage porte la cible
      à 44, la marge négative annule son effet sur la barre. */
-  padding: 9px 14px;
+  padding: var(--m-espace-2) var(--m-espace-4);
   margin: -9px -14px;
 }
 
@@ -61,10 +61,10 @@
   /* La marge négative est VERTICALE aussi : sans elle, une cible de 44 px
      imposait sa hauteur à la barre entière (mesuré : 58 → 64 px), et six
      pixels de moins pour la question sur un écran de téléphone. */
-  padding: 6px 10px;
+  padding: var(--m-espace-2) var(--m-espace-3);
   margin: -9px -10px;
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text-faint);
   cursor: pointer;
   transition: color var(--dur) var(--ease);
@@ -88,9 +88,9 @@
   place-items: center;
   background: none;
   border: 1px solid var(--c-line-md);
-  border-radius: 999px;
-  font-family: var(--font-ui);
-  font-size: 13px;
+  border-radius: var(--m-rayon-pilule);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   line-height: 1;
   color: var(--c-text-faint);
   cursor: pointer;
@@ -112,24 +112,24 @@
    Desktop : les cinq noms, l'étape courante soulignée accent, les faites en
    retrait avec leur coche. Mobile : cinq segments + « n / 5 · nom ». Les
    deux vivent dans le DOM, le CSS n'en montre qu'un. */
-.at-q-etapes { flex: 0 0 auto; padding: 6px var(--pad) 0; }
+.at-q-etapes { flex: 0 0 auto; padding: var(--m-espace-2) var(--pad) 0; }
 
 .at-q-etapes-noms {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 28px;
+  gap: var(--m-espace-6);
 }
 
 .at-q-etape {
-  font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
   color: var(--c-text-faint);
   opacity: 0.55;
-  padding-bottom: 5px;
+  padding-bottom: var(--m-espace-1);
 }
 
 .at-q-etape.is-fait { opacity: 1; }
@@ -141,15 +141,15 @@
 
 .at-q-etape-v { font-style: normal; color: var(--c-accent); }
 
-.at-q-etapes-mini { display: none; align-items: center; gap: 10px; }
+.at-q-etapes-mini { display: none; align-items: center; gap: var(--m-espace-3); }
 
-.at-q-segments { display: flex; gap: 5px; flex: 1; }
+.at-q-segments { display: flex; gap: var(--m-espace-1); flex: 1; }
 
 .at-q-segments i {
   display: block;
   height: 2px;
   flex: 1;
-  border-radius: 2px;
+  border-radius: var(--m-rayon-image);
   background: var(--c-line-md);
 }
 
@@ -157,8 +157,8 @@
 
 .at-q-etapes-ou {
   flex: 0 0 auto;
-  font-family: var(--font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.1em;
   color: var(--c-text-faint);
 }
@@ -189,8 +189,8 @@
      de large) et 110 px fixes laissaient alors « Aucune préférence »
      entièrement sous le verre — c'est le retour client du 18/09. Le repli
      (110 px + zone sûre) ne sert qu'avant la première mesure. */
-  padding: 20px var(--pad)
-    calc(var(--at-barre-h, calc(110px + env(safe-area-inset-bottom, 0px))) + 20px);
+  padding: var(--m-espace-5) var(--pad)
+    calc(var(--at-barre-h, calc(var(--m-espace-9) + env(safe-area-inset-bottom, 0px))) + var(--m-espace-5));
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -211,7 +211,7 @@
    14 px d'écart sous le titre, il y était collé (constaté le 14/09/2026). */
 .bj-atelier .at-q-screen h2 { margin-top: var(--esp-etiq); }
 .bj-atelier .at-q-lede { margin-top: var(--esp-sous); }
-.at-q-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.at-q-actions { display: flex; align-items: center; gap: var(--m-espace-4); flex-wrap: wrap; }
 
 /* ---- LA BARRE FIXE (03/09) ----
    Le geste de l'écran, toujours visible, desktop et mobile. Verre plein
@@ -229,7 +229,7 @@
   -webkit-backdrop-filter: blur(20px) saturate(1.1);
   backdrop-filter: blur(20px) saturate(1.1);
   border-top: 1px solid var(--glass-border);
-  padding: 14px var(--pad) calc(14px + env(safe-area-inset-bottom, 0px));
+  padding: var(--m-espace-4) var(--pad) calc(var(--m-espace-4) + env(safe-area-inset-bottom, 0px));
 }
 
 .at-q-barre-int {
@@ -238,12 +238,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
+  gap: var(--m-espace-4);
 }
 
 .at-q-barre-note {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   font-weight: 300;
   color: var(--c-text-faint);
 }
@@ -259,8 +259,8 @@
      le 18/09/2026, jamais masqué depuis le 03/09). Le même piège que
      `.at-nav-suivi`, cf. src/app/CLAUDE.md. */
   .bj-atelier .at-q-barre-retour { display: none; }
-  .at-q-barre-int { flex-direction: column; align-items: stretch; gap: 10px; }
-  .at-q-barre .at-q-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .at-q-barre-int { flex-direction: column; align-items: stretch; gap: var(--m-espace-3); }
+  .at-q-barre .at-q-actions { flex-direction: column; align-items: stretch; gap: var(--m-espace-3); }
   .at-q-barre .at-cta { justify-content: center; }
   .at-q-barre .at-erreur { text-align: center; }
 }
@@ -273,13 +273,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--m-espace-5);
   background: rgba(2, 2, 2, 0.55);
 }
 
 .at-q-quitter {
   width: min(480px, 100%);
-  padding: 40px 36px;
+  padding: var(--m-espace-7) var(--m-espace-6);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -288,29 +288,29 @@
   -webkit-backdrop-filter: blur(20px) saturate(1.1);
   backdrop-filter: blur(20px) saturate(1.1);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: var(--m-rayon-champ);
   box-shadow: var(--shadow-float);
 }
 
 .at-q-quitter h2 { font-size: clamp(26px, 6vw, 32px); }
 
 .bj-atelier .at-q-quitter p {
-  margin-top: 16px;
+  margin-top: var(--m-espace-4);
   max-width: 38ch;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 300;
   line-height: 1.65;
   color: var(--c-text-soft);
 }
 
-.bj-atelier .at-q-quitter-reste { margin-top: 30px; width: 100%; justify-content: center; }
+.bj-atelier .at-q-quitter-reste { margin-top: var(--m-espace-6); width: 100%; justify-content: center; }
 .bj-atelier .at-q-quitter .at-q-quitter-part {
-  margin-top: 6px;
+  margin-top: var(--m-espace-2);
   align-self: center;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 8px;
+  padding: 0 var(--m-espace-2);
 }
 /* Clavier ouvert / paysage : la fenêtre ne dépasse jamais l'écran visible, elle défile. */
 .at-q-voile { overscroll-behavior: contain; overflow-y: auto; align-items: safe center; }
@@ -325,7 +325,7 @@
   color: var(--c-text);
   border: none;
   border-bottom: 1px solid var(--c-line-strong);
-  font-family: var(--font-ui);
+  font-family: var(--m-police-texte-famille);
   /* PRD §4 : 400 sur les champs de formulaire, jamais 300. */
   font-weight: 400;
   transition: border-color var(--dur) var(--ease);
@@ -334,8 +334,8 @@
 .bj-atelier .at-field {
   max-width: 560px;
   margin-top: var(--esp-corps);
-  padding: 10px 0;
-  font-family: var(--font-display);
+  padding: var(--m-espace-3) 0;
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(26px, 6vw, 40px);
 }
 
@@ -343,13 +343,13 @@
   max-width: 620px;
   min-height: 110px;
   margin-top: var(--esp-corps);
-  padding: 12px 0;
-  font-size: 16px;
+  padding: var(--m-espace-3) 0;
+  font-size: var(--m-taille-base);
   line-height: 1.7;
   resize: vertical;
 }
 
-.bj-atelier .at-inp { max-width: 420px; margin-top: var(--esp-corps); padding: 12px 0; font-size: 17px; }
+.bj-atelier .at-inp { max-width: 420px; margin-top: var(--esp-corps); padding: var(--m-espace-3) 0; font-size: var(--m-taille-base); }
 .bj-atelier .at-inp--wide { max-width: 560px; }
 
 /* ── LE SELECT DU PAYS (écran 4, 10/09/2026) ───────────────────────────
@@ -376,7 +376,7 @@
   appearance: none;
   -webkit-appearance: none;
   color-scheme: dark;
-  padding-right: 28px;
+  padding-right: var(--m-espace-6);
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23928d84' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -400,8 +400,8 @@
    champ rempli — c'est toute leur raison d'être face au placeholder. */
 .at-lbl {
   display: block;
-  margin-top: 26px;
-  font-size: 12px;
+  margin-top: var(--m-espace-5);
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -410,7 +410,7 @@
 
 /* Le champ colle à son libellé : les 22 px de .at-inp valent pour un champ
    orphelin, pas pour un champ titré. (0,2,0) pour battre .bj-atelier .at-inp. */
-.bj-atelier .at-lbl + .at-inp { margin-top: 8px; }
+.bj-atelier .at-lbl + .at-inp { margin-top: var(--m-espace-2); }
 
 /* ── LE FOCUS DES CHAMPS ───────────────────────────────────────────────
    Le trait du bas passe à l'accent dès qu'on écrit dedans : c'est le signe
@@ -456,10 +456,10 @@
    en repli nommé, puis system-ui — qui donnerait un oblique synthétique
    si la police ne venait pas, ce qui reste un italique lisible. */
 .at-hint {
-  margin-top: 14px;
+  margin-top: var(--m-espace-4);
   max-width: 56ch;
   font-family: var(--font-composer-italique), 'DM Sans', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   font-style: italic;
   color: var(--c-text-faint);
@@ -471,9 +471,9 @@
    ⚠️ La famille aussi doit revenir à --font-ui : --font-composer-italique
    n'a QU'une face italique, et une famille sans face droite rend ses
    glyphes penchés même sous `font-style: normal`. */
-.at-hint--calme { font-style: normal; font-family: var(--font-ui); }
+.at-hint--calme { font-style: normal; font-family: var(--m-police-texte-famille); }
 
-.at-erreur { margin-top: 20px; font-size: 14px; color: var(--c-accent-strong); }
+.at-erreur { margin-top: var(--m-espace-5); font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
 
 /* 11/09 — l'avis du dossier disparu. Il n'est pas une erreur de saisie : il
    dit ce que le site a fait, au-dessus de la question en cours. Même voix
@@ -481,13 +481,13 @@
    Préfixé .bj-atelier : theme.css pose `.bj-atelier p { margin: 0 }` en
    (0,2,0), une classe simple perdrait sa marge sans erreur. */
 .bj-atelier .at-q-avis {
-  margin-bottom: 18px;
+  margin-bottom: var(--m-espace-4);
   max-width: 56ch;
-  padding: 12px 16px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   border-left: 2px solid var(--c-accent);
   background: var(--c-accent-soft);
-  border-radius: 0 8px 8px 0;
-  font-size: 13px;
+  border-radius: 0 var(--m-rayon-champ) var(--m-rayon-champ) 0;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-soft);
 }
@@ -496,15 +496,15 @@
    Préfixé .bj-atelier : theme.css pose `.bj-atelier p { margin: 0 }` en
    (0,2,0), une classe simple perdrait sa marge sans erreur. */
 .bj-atelier .at-compte {
-  margin-top: 10px;
-  font-size: 13px;
+  margin-top: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
   font-variant-numeric: tabular-nums;
 }
 
 /* ---- suggestions de l'écran 1 ---- */
-.at-chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: var(--esp-corps); max-width: 640px; }
+.at-chips { display: flex; flex-wrap: wrap; gap: var(--m-espace-2); margin-top: var(--esp-corps); max-width: 640px; }
 
 /* Lot 6 (07/09) — 41 px mesurés à 375 px, trois pixels sous le plancher
    d'une cible tactile. Ce sont les DOUZE premiers gestes du parcours, sur
@@ -514,12 +514,12 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 10px 18px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   border: 1px solid var(--c-line-md);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
-  font-family: var(--font-ui);
-  font-size: 14px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text-soft);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease),
@@ -573,8 +573,8 @@
 
 .at-covers {
   display: flex;
-  gap: 12px;
-  margin-top: 30px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-6);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
@@ -595,7 +595,7 @@
     /* La colonne de droite ne rétrécit jamais sous 300 px : en dessous, une
        vignette repasserait sous les 140 px et on aurait refait le problème. */
     grid-template-columns: minmax(0, 1fr) clamp(300px, 32vw, 430px);
-    gap: 54px;
+    gap: var(--m-espace-7);
     align-items: start;
   }
 
@@ -610,7 +610,7 @@
   .at-covers {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    gap: var(--m-espace-4);
     margin-right: 0;
     /* ⚠️ C'EST ICI QUE SE JOUE « SCROLLER SEULEMENT DANS LES TEMPLATES ».
        La boîte est bornée en hauteur et défile pour elle-même ; la page ne
@@ -620,7 +620,7 @@
     max-height: calc(56 * var(--uh));
     overflow-y: auto;
     overscroll-behavior-y: contain;
-    padding: 2px 6px 2px 2px;
+    padding: 2px var(--m-espace-2) 2px 2px;
   }
 
   .bj-atelier .at-cov { flex: none; }
@@ -639,13 +639,13 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--m-espace-4);
   width: 100%;
-  margin-top: 14px;
-  padding: 13px 16px;
+  margin-top: var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
   background: transparent;
   border: 1px solid var(--c-line-md);
-  border-radius: 3px;
+  border-radius: var(--m-rayon-image);
   color: var(--c-text-soft);
   cursor: pointer;
   text-align: left;
@@ -660,11 +660,11 @@
   color: var(--c-accent-strong);
 }
 
-.at-aucun-t { font-family: var(--font-ui); font-size: 13px; }
+.at-aucun-t { font-family: var(--m-police-texte-famille); font-size: var(--m-taille-petit); }
 
 .at-aucun-s {
-  font-family: var(--font-ui);
-  font-size: 9px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--c-text-faint);
@@ -677,7 +677,7 @@
 .at-covers::-webkit-scrollbar { width: 6px; height: 6px; }
 .at-covers::-webkit-scrollbar-thumb {
   background: var(--c-line-strong);
-  border-radius: 3px;
+  border-radius: var(--m-rayon-image);
 }
 .at-covers::-webkit-scrollbar-track { background: transparent; }
 
@@ -714,7 +714,7 @@
   object-fit: cover;
   display: block;
   border: 1px solid var(--c-line-md);
-  border-radius: 3px;
+  border-radius: var(--m-rayon-image);
   transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 
@@ -738,9 +738,9 @@
 /* L'étiquette du style, SOUS la vignette (voir plus haut pourquoi). */
 .at-cov-tag {
   display: block;
-  margin-top: 7px;
-  font-family: var(--font-ui);
-  font-size: 8px;
+  margin-top: var(--m-espace-2);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 500;
@@ -752,14 +752,14 @@
 
 /* ---- lien discret ---- */
 .bj-atelier .at-skip {
-  margin-top: 24px;
+  margin-top: var(--m-espace-5);
   align-self: flex-start;
   padding: 0 0 2px;
   background: none;
   border: none;
   border-bottom: 1px solid var(--c-line-strong);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   color: var(--c-text-faint);
   cursor: pointer;
   transition: color var(--dur) var(--ease);
@@ -771,13 +771,13 @@
 .at-done {
   width: 64px;
   height: 64px;
-  margin-bottom: 26px;
+  margin-bottom: var(--m-espace-5);
   display: grid;
   place-items: center;
   border: 1px solid var(--c-accent);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   color: var(--c-accent);
-  font-size: 26px;
+  font-size: var(--m-taille-h3);
   box-shadow: var(--glow-accent);
 }
 
@@ -785,34 +785,34 @@
    Une case seule sur un écran de fin se lit comme une condition à remplir.
    Un filet, un mot, et elle redevient ce qu'elle est : facultative. */
 .at-facultatif {
-  margin-top: 34px;
-  padding-top: 26px;
+  margin-top: var(--m-espace-6);
+  padding-top: var(--m-espace-5);
   border-top: 1px solid var(--c-line);
   max-width: 52ch;
 }
 
 .at-facultatif-titre {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--c-text-faint);
 }
 
 .at-facultatif-note {
-  margin-top: 8px;
-  font-size: 13px;
+  margin-top: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
 }
 
-.at-facultatif .at-check { margin-top: 16px; }
-.at-facultatif .at-check + .at-facultatif-note { margin-top: 14px; }
+.at-facultatif .at-check { margin-top: var(--m-espace-4); }
+.at-facultatif .at-check + .at-facultatif-note { margin-top: var(--m-espace-4); }
 
 /* La consigne « gardez votre lien » : posée, pas criée. */
 .at-q-note {
-  margin-top: 26px;
+  margin-top: var(--m-espace-5);
   max-width: 52ch;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-soft);
 }
@@ -822,20 +822,20 @@
    LA chose à emporter de l'écran de fin. Verre discret, un libellé, les
    deux gestes (LienPartage), une note. */
 .at-fin-carte {
-  margin-top: 34px;
+  margin-top: var(--m-espace-6);
   width: 100%;
   max-width: 560px;
-  padding: 24px 28px;
+  padding: var(--m-espace-5) var(--m-espace-6);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--m-espace-4);
   background: var(--glass-bg-strong);
   border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  border-radius: var(--m-rayon-champ);
 }
 
 .at-fin-carte-label {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 500;
@@ -843,7 +843,7 @@
 }
 
 .at-fin-carte-note {
-  font-size: 12.5px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 300;
   color: var(--c-text-faint);
 }
@@ -853,10 +853,10 @@
    paragraphe suivant remonterait d'un bond sans qu'on comprenne pourquoi.
    Palette SOMBRE (--c-*) : cet écran vit sous .bj-atelier. */
 .at-fin-queue {
-  margin: 16px 0;
-  padding: 12px 16px;
+  margin: var(--m-espace-4) 0;
+  padding: var(--m-espace-3) var(--m-espace-4);
   border-left: 2px solid var(--c-accent);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--m-rayon-champ) var(--m-rayon-champ) 0;
   background: var(--c-surface-2);
 }
 .at-fin-queue b { color: var(--c-accent); }
@@ -864,19 +864,19 @@
 .at-check {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin-top: 30px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-6);
   max-width: 52ch;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-soft);
   cursor: pointer;
 }
 
-.at-check input { margin-top: 4px; accent-color: var(--c-accent); flex: 0 0 auto; }
+.at-check input { margin-top: var(--m-espace-1); accent-color: var(--c-accent); flex: 0 0 auto; }
 
 @media (max-width: 560px) {
-  .at-covers { gap: 10px; }
+  .at-covers { gap: var(--m-espace-3); }
   .at-q-logo-img { height: 26px; }
 }
 
@@ -884,21 +884,21 @@
    Un déplieur discret sous le titre : la question de l'écran reste LE titre,
    les deux champs n'apparaissent qu'à qui les demande. */
 .at-extras {
-  margin-top: 30px;
+  margin-top: var(--m-espace-6);
   max-width: 520px;
-  padding-top: 20px;
+  padding-top: var(--m-espace-5);
   border-top: 1px solid var(--c-line);
 }
 
 .bj-atelier .at-extras-ouvrir {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   padding: 0;
   background: none;
   border: none;
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
   cursor: pointer;
@@ -906,11 +906,11 @@
 }
 
 .bj-atelier .at-extras-ouvrir:hover { color: var(--c-text-soft); }
-.at-extras-ouvrir span { color: var(--c-accent); font-size: 15px; }
+.at-extras-ouvrir span { color: var(--c-accent); font-size: var(--m-taille-bouton); }
 
 .at-extras-titre {
   display: block;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-faint);
 }
@@ -921,8 +921,8 @@
    notes ont fusionné) et les vignettes ne sont plus cliquables du tout ;
    .at-covers-note reste défini pour l'historique mais n'est plus rendu. */
 .bj-atelier .at-covers-chapeau {
-  margin-top: 34px;
-  font-size: 10px;
+  margin-top: var(--m-espace-6);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 500;
@@ -935,19 +935,19 @@
    phrase entière en capitales à 10 px. */
 .bj-atelier .at-covers-chapeau span {
   display: block;
-  margin-top: 5px;
-  font-size: 12px;
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: normal;
   text-transform: none;
   font-weight: 400;
 }
 
-.bj-atelier .at-covers-chapeau + .at-covers { margin-top: 14px; }
+.bj-atelier .at-covers-chapeau + .at-covers { margin-top: var(--m-espace-4); }
 
 .bj-atelier .at-covers-note {
-  margin-top: 12px;
+  margin-top: var(--m-espace-3);
   max-width: 44ch;
-  font-size: 12.5px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 300;
   color: var(--c-text-faint);
 }
@@ -967,8 +967,8 @@
    question, pas un reproche. Le domaine corrigé est un bouton, souligné, pour
    qu'on voie qu'il se clique. */
 .at-d-suggestion {
-  margin-top: 10px;
-  font-size: 14px;
+  margin-top: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   font-weight: 300;
   color: var(--c-text-soft);
 }
