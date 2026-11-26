@@ -149,3 +149,6 @@
 .bj-atelier .ec-porte-lien {
   color: var(--c-accent);
 }
+
+/* Un lien dans le texte se voit sans la couleur (axe link-in-text-block, phase 5). */
+.bj-atelier .ec-porte p a { color: var(--m-couleur-nuit-texte); text-decoration: underline; text-underline-offset: 0.2em; }
