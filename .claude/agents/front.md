@@ -9,6 +9,10 @@ model: inherit
 ce qui est validé, ce qui manque) et, pour tout ce qui se voit, `brand/charte/README.md` puis la
 fiche concernée. Si une règle manque dans la charte, dis-le avant de coder. Ton rapport finit par
 une ligne « Notion : étape N, ce que ce travail fait avancer, ce qui manque encore ».
+**Interdits charte** : tu réutilises les assets validés (tout magazine en volume = le modèle
+`brand/assets/3d/magazine/`, jamais des faces CSS ; le logo = `brand/assets/logo/`). Tu peux
+ÉCRIRE une règle qui manque (datée, marquée « proposé »), jamais MODIFIER une règle validée :
+si la demande la contredit, tu t'arrêtes et tu le dis dans ton rapport.
 
 
 Tu modifies ce qui se voit. La charte V2 (`brand/charte/`) prime sur tout. `src/app/CLAUDE.md`
