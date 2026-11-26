@@ -36,14 +36,7 @@ export default function Chargement() {
     <div className="bj-atelier cpt cpt-squelette" aria-busy="true" aria-live="polite">
       <header className="cpt-top">
         <span className="cpt-top-marque">
-          <img
-            className="cpt-top-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
+          <span className="cpt-top-logo m-logo" aria-hidden="true" />
         </span>
         <nav className="cpt-onglets" aria-hidden="true">
           <span className="cpt-sq cpt-sq--onglet" />

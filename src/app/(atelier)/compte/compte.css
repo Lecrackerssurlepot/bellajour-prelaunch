@@ -38,6 +38,9 @@
   height: 28px;
   width: auto;
 }
+/* Le logo vectoriel (`.m-logo`) prend la couleur du texte : la même boîte que
+   la barre du site (66 px de tracé). */
+.cpt .cpt-top-logo.m-logo { width: calc(var(--m-espace-8) + var(--m-espace-1) / 2); height: auto; color: var(--m-couleur-papier-texte); }
 
 .cpt-top-moi {
   display: inline-flex;
@@ -163,6 +166,7 @@
   /* Les onglets passent sous la marque, sur toute la largeur. */
   .cpt-onglets { order: 3; width: 100%; }
   .cpt-top-logo { height: 24px; }
+  .cpt .cpt-top-logo.m-logo { height: auto; }
   .cpt .cpt-deconnexion { padding: var(--m-espace-2) var(--m-espace-3); font-size: var(--m-taille-etiquette); }
   .cpt-top-vide { display: none; }
 }

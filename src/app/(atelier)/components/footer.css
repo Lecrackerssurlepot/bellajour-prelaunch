@@ -269,3 +269,22 @@
 @media (max-width: 767px) {
   .at-footer-sections { gap: var(--m-espace-3) var(--m-espace-5); }
 }
+
+/* Alignement sur le duplicata « Essai photos » (26/11) : le cadre de 1240 px
+   des pages (et non le 1200 de l'ancienne charte), l'interligne de 1,6 du
+   banc, l'air sous la signature, et les marges que `.bj-atelier p { margin: 0 }`
+   écrasait (le mot « Bellajour » collait au bloc du dessus). */
+.bj-atelier .at-footer { line-height: 1.6; }
+.bj-atelier .at-footer-top.at-wrap {
+  max-width: calc(1152px + 2 * var(--m-espace-marge));
+  padding-left: var(--m-espace-marge);
+  padding-right: var(--m-espace-marge);
+}
+.bj-atelier .at-footer .at-footer-tagline { margin: 0 0 var(--m-espace-2); }
+.bj-atelier .at-footer .at-footer-label { line-height: inherit; }
+.bj-atelier .at-footer .at-footer-word { margin: clamp(24px, 4vh, 48px) 0 0; padding: 0 var(--m-espace-marge); }
+@media (max-width: 767px) {
+  .bj-atelier .at-footer .at-footer-word { font-size: clamp(64px, 18vw, 90px); }
+  /* Mesuré sur le duplicata au téléphone : 28 px entre les deux colonnes empilées. */
+  .bj-atelier .at-footer .at-footer-top { gap: calc(var(--m-espace-5) + var(--m-espace-1)); }
+}

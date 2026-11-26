@@ -1,117 +1,71 @@
-/* Les pages légales, habillage charte V2 (fiche K, 25/11/2026).
-   Papier blanc, une colonne de 72 ch, interligne 1,7, sommaire en haut,
-   fil d'Ariane, sélecteur de langue. Jetons --m-* seulement.
-   Ancienne feuille (monde sombre) : archive/ancienne-charte/legal.css. */
+/* Les pages légales, habit du duplicata « Essai photos » (14BmVZ, 26/11/2026).
+   La tête et les classes communes (.pg-tete, .cadre, .lab, .titre) viennent de
+   magazine.css (`.m-banc`) ; ici, seulement ce qui est propre au légal.
+   Jetons --m-* seulement. Habit précédent : archive/legal-habit-25-11/. */
 
 .lg {
-  min-height: 100vh;
   background: var(--m-couleur-papier-fond);
   color: var(--m-couleur-papier-texte);
   font-family: var(--m-police-texte-famille);
-  font-size: var(--m-taille-base);
-  line-height: var(--m-interligne-legal);
-}
-.lg-inner {
-  max-width: calc(var(--m-mesure-legal) + 2 * var(--m-espace-marge));
-  margin: 0 auto;
-  padding: var(--m-espace-6) var(--m-espace-marge) var(--m-espace-section);
 }
 
-.lg-logo { width: calc(var(--m-espace-9) - var(--m-espace-2)); color: var(--m-couleur-papier-texte); }
-
-.lg-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--m-espace-3);
-  margin: var(--m-espace-6) 0 var(--m-espace-7);
-  padding-bottom: var(--m-espace-4);
-  border-bottom: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
-}
-.lg-back {
-  font: inherit;
-  font-size: var(--m-taille-petit);
-  color: var(--m-couleur-papier-texte);
-  background: none;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: none;
-  min-height: var(--m-cible-bouton-entete);
+/* Les pastilles de langue, au-dessus de l'étiquette. */
+.lg-langs { display: flex; gap: var(--m-espace-2); margin-bottom: var(--m-espace-5); }
+.bj-atelier .lg-lang {
+  min-height: calc(var(--m-espace-6) + var(--m-espace-1));
+  padding: 0 var(--m-espace-4);
   display: inline-flex;
   align-items: center;
-}
-.lg-back:hover { text-decoration: underline; text-underline-offset: var(--m-espace-1); }
-
-.lg-langs { display: flex; gap: var(--m-espace-1); font-size: var(--m-taille-petit); }
-.lg-lang {
-  min-height: var(--m-cible-bouton-entete);
-  min-width: var(--m-cible-bouton-entete);
-  padding: 0 var(--m-espace-3);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   border-radius: var(--m-rayon-pilule);
-  color: var(--m-couleur-papier-texte-doux);
+  box-shadow: inset 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
+  font-size: var(--m-taille-exception-bandeau);
+  color: var(--m-couleur-papier-texte);
   text-decoration: none;
 }
-.lg-lang:hover { background: var(--m-couleur-papier-survol); color: var(--m-couleur-papier-texte); }
-.lg-lang--current,
-.lg-lang--current:hover { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); }
+.bj-atelier .lg-lang--current,
+.bj-atelier .lg-lang--current:hover { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); box-shadow: none; }
 .lg-lang--off { opacity: 0.4; }
 
-.lg-ariane {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--m-espace-2);
-  font-size: var(--m-taille-etiquette);
-  color: var(--m-couleur-papier-texte-doux);
-}
-.lg-ariane a { color: inherit; }
-
-.lg .lg-title {
-  margin: var(--m-espace-4) 0 var(--m-espace-2);
-  font-family: var(--m-police-titre-famille);
-  font-weight: var(--m-police-titre-graisse);
-  font-variation-settings: var(--m-police-titre-axes);
-  letter-spacing: var(--m-police-titre-approche);
-  font-size: calc(var(--m-taille-h1) * var(--m-police-titre-facteur));
-  line-height: var(--m-police-titre-interligne);
-}
-.lg-version { margin: 0 0 var(--m-espace-6); font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
-
-.lg-intro { margin-bottom: var(--m-espace-6); }
-.lg-intro p { margin: 0 0 var(--m-espace-3); }
-
-.lg-sommaire {
-  margin: 0 0 var(--m-espace-7);
-  padding: var(--m-espace-5);
-  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
-  border-radius: var(--m-rayon-bloc);
-}
-.lg-sommaire-t {
+.m-banc .lg-version {
   margin: 0 0 var(--m-espace-3);
   font-family: var(--m-police-etiquette-famille);
-  font-weight: var(--m-police-etiquette-graisse);
   font-size: var(--m-taille-etiquette);
-  letter-spacing: var(--m-police-etiquette-approche);
+  letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--m-couleur-papier-texte-doux);
 }
-.lg-sommaire ol { margin: 0; padding-left: var(--m-espace-5); display: grid; gap: var(--m-espace-1); font-size: var(--m-taille-petit); }
-.lg-sommaire a { color: var(--m-couleur-papier-texte); text-decoration: none; }
-.lg-sommaire a:hover { text-decoration: underline; text-underline-offset: var(--m-espace-1); }
 
-.lg-section { padding-top: var(--m-espace-6); scroll-margin-top: var(--m-espace-5); }
-.lg .lg-h2 {
-  margin: 0 0 var(--m-espace-3);
-  font-family: var(--m-police-titre-famille);
-  font-weight: var(--m-police-titre-graisse);
-  font-variation-settings: var(--m-police-titre-axes);
-  letter-spacing: var(--m-police-titre-approche);
+/* Le corps : sommaire collant de 240 px, texte de 72 ch. */
+.lg-corps { padding-bottom: var(--m-espace-section); }
+.lg-corps .cadre {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--m-espace-9);
+  align-items: start;
+}
+.lg-som {
+  position: sticky;
+  top: calc(var(--nl-bh, 0px) + var(--m-espace-9) + var(--m-espace-1));
+  display: grid;
+  gap: var(--m-espace-2);
+  max-height: calc(100svh - var(--m-espace-9) - var(--m-espace-7));
+  overflow: auto;
+  padding-right: var(--m-espace-3);
+  font-size: var(--m-taille-exception-bandeau);
+  line-height: 1.6;
+}
+.bj-atelier .lg-som a { color: var(--m-couleur-papier-texte-doux); text-decoration: none; transition: color var(--m-duree-micro) var(--m-courbe-sortie); }
+.bj-atelier .lg-som a:hover,
+.bj-atelier .lg-som a.ici { color: var(--m-couleur-papier-texte); }
+
+.lg-texte { max-width: var(--m-mesure-legal); }
+.m-banc .lg-texte p,
+.m-banc .lg-texte li { font-size: 15px; line-height: var(--m-interligne-legal); max-width: none; }
+.m-banc .lg-texte p { margin: 0 0 var(--m-espace-3); }
+.lg-section { scroll-margin-top: calc(var(--nav-h) + var(--nl-bh, 0px) + var(--m-espace-6)); }
+.m-banc .lg-h2 {
   font-size: calc(var(--m-taille-h3) * var(--m-police-titre-facteur));
-  line-height: var(--m-police-titre-interligne);
+  margin: var(--m-espace-8) 0 var(--m-espace-4);
 }
 .lg .lg-h3 {
   margin: var(--m-espace-5) 0 var(--m-espace-2);
@@ -120,9 +74,12 @@
   font-size: var(--m-taille-base);
 }
 .lg-p { margin: 0 0 var(--m-espace-3); }
+.lg-texte b { font-weight: 600; }
 .lg-list { margin: 0 0 var(--m-espace-3); padding-left: var(--m-espace-5); }
 .lg-list li { margin-bottom: var(--m-espace-1); }
-.lg-anchor-link, .lg-p a, .lg-intro a { color: var(--m-couleur-papier-texte); text-decoration: underline; text-underline-offset: var(--m-espace-1); }
+.bj-atelier .lg-anchor-link,
+.bj-atelier .lg-p a,
+.bj-atelier .lg-intro a { color: var(--m-couleur-papier-texte); text-decoration: underline; text-underline-offset: var(--m-espace-1); }
 
 .lg-table-wrap { overflow-x: auto; margin: var(--m-espace-4) 0; border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-bloc); }
 .lg-table { width: 100%; border-collapse: collapse; font-size: var(--m-taille-petit); line-height: var(--m-interligne-texte); }
@@ -130,10 +87,7 @@
 .lg-table th { font-weight: var(--m-police-texte-graisse-moyenne); background: var(--m-couleur-papier-survol); }
 .lg-table tr:last-child td { border-bottom: 0; }
 
-.lg-copy {
-  margin-top: var(--m-espace-section);
-  padding-top: var(--m-espace-5);
-  border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
-  font-size: var(--m-taille-etiquette);
-  color: var(--m-couleur-papier-texte-doux);
+@media (max-width: 900px) {
+  .lg-corps .cadre { grid-template-columns: 1fr; gap: var(--m-espace-5); }
+  .lg-som { display: none; }
 }

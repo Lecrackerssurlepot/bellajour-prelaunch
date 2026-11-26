@@ -37,11 +37,11 @@
 .m-groupes .cas-n{font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;color:var(--m-couleur-accent)}
 .m-groupes .cas-txt h3{font-size:calc(var(--m-taille-h3) * 1.2 * var(--m-police-titre-facteur));margin:var(--m-espace-3) 0 var(--m-espace-2)}
 .m-groupes .cas-txt p{margin:0}
-.m-groupes .doubles{grid-area:d;position:relative;padding-bottom:22%;width:100%;max-width:620px;justify-self:center}
+.m-groupes .doubles{grid-area:d;position:relative;padding-bottom:22%;width:100%;max-width:620px;justify-self:start}
 .m-groupes .doubles .dp{width:78%;aspect-ratio:757/530;object-fit:cover;box-shadow:var(--m-ombre-livre);border-radius:2px}
 .m-groupes .doubles .dp2{position:absolute;right:0;bottom:0;width:58%}
-.m-groupes .doubles .dp.a-venir{display:grid;place-items:center;background:color-mix(in srgb,var(--m-couleur-papier-texte) 4%,var(--m-couleur-papier-fond));border:1.5px dashed var(--m-couleur-papier-ligne);box-shadow:none;color:var(--m-couleur-papier-texte-doux);font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;text-transform:uppercase;margin:0 auto}
-.m-groupes .doubles:has(.a-venir){padding-bottom:0}
+.m-groupes .doubles .dp.a-venir{display:grid;place-items:center;background:color-mix(in srgb,var(--m-couleur-papier-texte) 4%,var(--m-couleur-papier-fond));border:1.5px dashed var(--m-couleur-papier-ligne);box-shadow:none;color:var(--m-couleur-papier-texte-doux);font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;text-transform:uppercase}
+/* L'emplacement vide tient la place d'une double page, comme le duplicata. */
 .m-groupes .usages{grid-area:u;align-self:start;display:grid;gap:var(--m-espace-5)}
 .m-groupes .usages div{display:grid;gap:var(--m-espace-1);padding-top:var(--m-espace-3);border-top:1px solid var(--m-couleur-papier-texte)}
 .m-groupes .usages b{font-weight:500}

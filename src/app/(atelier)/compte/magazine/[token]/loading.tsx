@@ -23,14 +23,7 @@ export default function Chargement() {
           <span aria-hidden="true">←</span> Ma bibliothèque
         </a>
         <span className="cpt-top-marque">
-          <img
-            className="cpt-top-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
+          <span className="cpt-top-logo m-logo" aria-hidden="true" />
         </span>
         <span className="cpt-top-vide" />
       </header>

@@ -297,7 +297,8 @@ html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px
    Ces règles viennent APRÈS les anciennes et l'emportent ; les anciennes
    restent pour les classes du compte (NavCompte), retokenisées par theme.css.
    ════════════════════════════════════════════════════════════ */
-:root { --nav-h: calc(var(--m-cible-bouton-entete) + 2 * var(--m-espace-2)); }
+/* La barre du duplicata (fiche H) : boîte du logo 74 × 52, donc 68 px de haut. */
+:root { --nav-h: calc(var(--m-espace-7) + var(--m-espace-1) + 2 * var(--m-espace-2)); }
 
 .bj-atelier .at-nav,
 .bj-atelier .at-nav.is-stuck {
@@ -310,20 +311,29 @@ html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px
 }
 .bj-atelier .at-nav.pv-nav--flat { background: var(--m-couleur-papier-fond); }
 
-.bj-atelier .at-nav .at-nav-logo-btn { color: inherit; min-height: var(--m-cible-mini); }
-.bj-atelier .at-nav .at-nav-logo { width: calc(var(--m-espace-9) - var(--m-espace-3)); height: auto; opacity: 1; }
+/* Le logo du duplicata : une boîte de 74 × 52 où le tracé, centré à gauche,
+   mesure 66 px de large, à 5 px du bord (le PNG du banc porte ce blanc). */
+.bj-atelier .at-nav .at-nav-logo-btn { color: inherit; min-height: calc(var(--m-espace-7) + var(--m-espace-1)); padding: 0; margin: 0; }
+.bj-atelier .at-nav .at-nav-logo {
+  width: calc(var(--m-espace-8) + var(--m-espace-1) / 2);
+  height: auto;
+  /* Le tracé du banc est un peu sous le milieu de sa boîte. */
+  margin: var(--m-espace-1) 0 0 var(--m-espace-1);
+  opacity: 1;
+}
 
 .at-nav-liens {
   display: flex;
   gap: var(--m-espace-6);
   font-size: var(--m-taille-petit);
-  margin-right: auto;
-  margin-left: var(--m-espace-6);
+  /* Centrée entre le logo et la droite, comme le duplicata (space-between). */
+  margin: 0 auto;
 }
 .bj-atelier .at-nav-liens a { color: inherit; text-decoration: none; }
+.bj-atelier .at-nav-liens a[aria-current='page'] { text-decoration: underline; text-underline-offset: calc(var(--m-espace-1) + var(--m-espace-1) / 2); text-decoration-thickness: var(--m-trait-fin); }
 .bj-atelier .at-nav-liens a:hover { text-decoration: underline; text-underline-offset: var(--m-espace-2); text-decoration-thickness: var(--m-trait-fin); }
 
-.bj-atelier .at-nav-droite { gap: var(--m-espace-4); }
+.bj-atelier .at-nav-droite { gap: calc(var(--m-espace-4) + var(--m-espace-1) / 2); }
 .bj-atelier .at-nav .at-nav-cta {
   min-height: var(--m-cible-bouton-entete);
   padding: 0 var(--m-espace-4);
@@ -353,9 +363,14 @@ html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px
 
 .at-menu { display: none; }
 
+/* Les seuils du duplicata : la navigation passe au menu sous 900 px ; le bouton
+   et le mot « Mon numéro » disparaissent sous 700 px. */
 @media (max-width: 700px) {
-  .at-nav-liens { display: none; }
   .bj-atelier .at-nav .at-nav-cta { display: none; }
+  .bj-atelier .at-nav-compte-t { display: none; }
+}
+@media (max-width: 900px) {
+  .at-nav-liens { display: none; }
   /* Menu PUIS compte, comme le duplicata (26/11) : l'ordre du DOM, sans `order`. */
   .at-nav-menu-b { display: inline-flex; }
   .bj-atelier .at-nav:has(.at-menu.est-ouvert) { background: var(--m-couleur-papier-fond); -webkit-backdrop-filter: none; backdrop-filter: none; }
@@ -366,7 +381,8 @@ html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px
     z-index: -1;
     display: flex;
     flex-direction: column;
-    padding: calc(var(--nav-h) + var(--m-espace-6)) var(--m-espace-marge) var(--m-espace-7);
+    /* Duplicata : bandeau + 88 px (la barre de 68 et 20 d'air). */
+    padding: calc(var(--nl-bh, 0px) + var(--nav-h) + var(--m-espace-5) - var(--m-espace-1)) var(--m-espace-marge) var(--m-espace-7);
     background: var(--m-couleur-papier-fond);
     color: var(--m-couleur-papier-texte);
     animation: at-menu-entre var(--m-duree-menu) var(--m-courbe-bascule) both;
@@ -378,19 +394,44 @@ html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px
     text-decoration: none;
     font-family: var(--m-police-titre-famille);
     font-variation-settings: var(--m-police-titre-axes);
-    font-weight: var(--m-police-titre-graisse);
+    font-weight: var(--m-police-texte-graisse); /* le duplicata ne graisse pas ses liens de menu */
     font-size: var(--m-taille-exception-menu-lien);
     line-height: 1.15;
     letter-spacing: var(--m-police-titre-approche);
   }
-  .bj-atelier .at-menu-cta { margin-top: auto; width: 100%; color: var(--m-couleur-papier-fond); }
-  .at-menu-sign {
+  .bj-atelier .at-menu-cta { margin-top: auto; width: 100%; min-height: calc(var(--m-espace-7) + var(--m-espace-1)); color: var(--m-couleur-papier-fond); }
+  .bj-atelier .at-menu-sign {
     margin: var(--m-espace-4) 0 0;
     text-align: center;
     font-family: var(--m-police-signature-famille);
-    font-size: var(--m-taille-chapo);
+    font-size: calc(var(--m-police-signature-taille-mini) / 2);
     color: var(--m-couleur-papier-texte-doux);
   }
 }
 @keyframes at-menu-entre { from { transform: translateY(-100%); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .at-menu { animation: none; } }
+
+/* Charte V2 (duplicata) : le compte dit « Mon numéro » à côté de l'icône, à
+   l'encre, sans pastille. Écrit en (0,2,0) pour passer devant les règles
+   de l'ancienne barre ci-dessus. */
+.bj-atelier .at-nav .at-nav-compte:not(.est-connecte) {
+  width: auto;
+  min-width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
+  margin: 0;
+  gap: var(--m-espace-2);
+  color: var(--m-couleur-papier-texte);
+  font-size: var(--m-taille-petit);
+  text-decoration: none;
+  background: none;
+}
+.bj-atelier .at-nav .at-nav-compte:not(.est-connecte):hover { background: none; text-decoration: underline; text-underline-offset: var(--m-espace-1); }
+@media (max-width: 700px) {
+  /* L'icône seule tient 20 px dans la barre (duplicata), la cible reste de
+     44 px : le rembourrage l'agrandit, la marge négative l'annule. */
+  .bj-atelier .at-nav .at-nav-compte:not(.est-connecte) {
+    min-width: 0;
+    padding: 0 var(--m-espace-3);
+    margin: 0 calc(-1 * var(--m-espace-3));
+  }
+}

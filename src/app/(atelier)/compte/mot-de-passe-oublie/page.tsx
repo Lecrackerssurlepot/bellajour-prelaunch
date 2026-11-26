@@ -19,14 +19,7 @@ export default function MotDePasseOubliePage() {
     <div className="bj-atelier cpt cpt--porte">
       <header className="cpt-top">
         <Link href="/" aria-label="Bellajour, retour à l’accueil">
-          <img
-            className="cpt-top-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
+          <span className="cpt-top-logo m-logo" aria-hidden="true" />
         </Link>
       </header>
 

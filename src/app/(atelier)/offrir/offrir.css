@@ -241,7 +241,45 @@
   pointer-events: none;
 }
 .m-offrir .nl-carte-face > * { position: relative; z-index: 1; }
-.m-offrir .nl-carte-marque { filter: invert(1); }
+/* La carte du duplicata (26/11). Le logo WebP est DÉJÀ blanc : l'ancien
+   `filter: invert(1)` le rendait noir sur la carte noire, donc invisible. Le
+   montant héritait de l'accent, devenu l'encre : noir sur noir, invisible
+   lui aussi. Tout ce qui est écrit sur la carte passe au texte de nuit. */
+.m-offrir .nl-carte-face::after { width: 62%; box-shadow: var(--m-ombre-livre); }
+.m-offrir .nl-carte-marque { filter: none; width: calc(var(--m-espace-8) + var(--m-espace-1) / 2); }
+.m-offrir .nl-carte-type { display: none; }
+.m-offrir .nl-carte-phrase {
+  font-family: var(--m-police-titre-famille);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  max-width: 13ch;
+}
+.m-offrir .nl-carte-milieu[data-mot='1'] .nl-carte-phrase { font-size: clamp(20px, 2vw, 28px); }
+.m-offrir .nl-carte-pour,
+.m-offrir .nl-carte-montant { color: var(--m-couleur-nuit-texte); }
+.m-offrir .nl-carte-message { color: var(--m-couleur-nuit-texte-doux); }
+.m-offrir .nl-carte-montant {
+  font-family: var(--m-police-titre-famille);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1;
+}
+.m-offrir .nl-carte-bas { justify-content: flex-start; gap: var(--m-espace-4); }
+.m-offrir .nl-carte-infos {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 .5em;
+  text-align: left;
+  font-family: var(--m-police-etiquette-famille);
+  font-size: 11px;
+  letter-spacing: .14em;
+  color: var(--m-couleur-nuit-texte);
+  opacity: .8;
+}
+.m-offrir .nl-carte-infos > span + span::before { content: "· "; }
 
 /* Les choix : des pastilles, l'encre quand elles sont prises. */
 .m-offrir .nl-puce {
@@ -296,7 +334,8 @@
 .m-offrir .savoir .bon div:last-child { grid-column: 1 / -1; }
 
 @media (max-width: 900px) {
-  .m-offrir .nl-achat { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fil" "carte" "form"; row-gap: var(--m-espace-5); }
+  /* Le duplicata : la carte d'abord, puis les étapes et le formulaire. */
+  .m-offrir .nl-achat { grid-template-columns: minmax(0, 1fr); grid-template-areas: "carte" "fil" "form"; row-gap: var(--m-espace-5); }
   .m-offrir .nl-achat .nl-achat-scene .nl-recit-carte,
   .m-offrir .nl-achat .nl-recit-carte { position: static; width: 86%; justify-self: center; }
   .m-offrir .nl-achat .nl-recit-temps--large { grid-row: auto; }
@@ -304,10 +343,68 @@
 }
 @media (max-width: 700px) {
   .m-offrir .nl-fil li { font-size: 0; gap: 0; }
-  .m-offrir .nl-carte-face::after { width: 34%; right: -6%; bottom: -24%; }
+  .m-offrir .nl-carte-face::after { width: 46%; right: -6%; bottom: -24%; }
+  .m-offrir .nl-carte-bas { flex-direction: column; align-items: flex-start; gap: var(--m-espace-1); }
+  .m-offrir .nl-carte-infos { max-width: 52%; line-height: 1.5; }
   .m-offrir .savoir .bon { grid-template-columns: 1fr 1fr; }
   .m-offrir .savoir .bon div { padding: var(--m-espace-4); }
 }
 @media (max-width: 420px) {
   .m-offrir .savoir .bon { grid-template-columns: 1fr; }
 }
+
+/* Les champs du duplicata : « MONTANT » en étiquette, les libellés à l'encre
+   en 500, les champs de 54 px (« .champ » du banc). */
+.m-offrir .nl-achat .nl-champ legend {
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte);
+}
+.m-offrir .nl-achat .nl-label {
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  color: var(--m-couleur-papier-texte);
+}
+.m-offrir .nl-achat .nl-label .nl-faible { float: right; font-weight: var(--m-police-texte-graisse); font-size: var(--m-taille-etiquette); color: var(--m-couleur-papier-texte-doux); }
+.m-offrir .nl-achat .nl-input {
+  min-height: calc(var(--m-espace-7) + var(--m-espace-2) - 2px);
+  border-radius: var(--m-rayon-champ);
+  border: var(--m-trait-fin) solid color-mix(in srgb, var(--m-couleur-papier-texte) 18%, transparent);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 2%, var(--m-couleur-papier-fond));
+  font-size: var(--m-taille-base);
+}
+.m-offrir .nl-achat .nl-input:focus {
+  outline: none;
+  border-color: var(--m-couleur-accent);
+  box-shadow: 0 0 0 var(--m-espace-1) color-mix(in srgb, var(--m-couleur-accent) 14%, transparent);
+}
+.m-offrir .nl-achat .nl-recit-temps { gap: var(--m-espace-5); }
+.m-offrir .nl-achat .nl-champ { gap: var(--m-espace-2); }
+.m-offrir .nl-achat .nl-label,
+.m-offrir .nl-achat .nl-champ legend { margin-bottom: 0; }
+.m-offrir .nl-achat .nl-suivant { margin-top: var(--m-espace-2); }
+.m-offrir .nl-puce { min-height: var(--m-espace-7); }
+.m-offrir .nl-suivant,
+.m-offrir .nl-payer { font-weight: var(--m-police-texte-graisse-moyenne); }
+/* Une ligne qui grandit avec le texte (le « .pousse » du banc). */
+.m-offrir .nl-achat .nl-textarea { min-height: calc(var(--m-espace-7) + var(--m-espace-2) - 2px); height: auto; field-sizing: content; resize: none; }
+/* La proportion d'une carte bancaire (fiche H), marge intérieure de 7 %. */
+.m-offrir .nl-carte-face { aspect-ratio: 1.586; padding: 7%; border-radius: calc(var(--m-espace-5) - 2px); }
+@media (max-width: 900px) {
+  /* Mesuré sur le duplicata au téléphone : 85 px de la carte aux étapes, 32 des étapes au titre. */
+  .m-offrir .nl-achat .nl-fil { margin-top: calc(var(--m-espace-8) - var(--m-espace-1)); }
+  .m-offrir .nl-achat .nl-recit-temps { margin-top: var(--m-espace-2); }
+}
+@media (max-width: 700px) {
+  /* Le logo de la carte se fait petit : la phrase, le montant et le code tiennent. */
+  .m-offrir .nl-carte-marque { width: var(--m-espace-7); }
+  .m-offrir .nl-carte-face { gap: 0; }
+  .m-offrir .nl-achat .nl-recit-temps { gap: var(--m-espace-4); }
+}
+/* Le compteur des places s'ajoute sous « Jusqu'au 7 décembre » : l'air d'un
+   em reste sous la DERNIÈRE ligne, avant le bouton (duplicata : 18 px). */
+.m-offrir .noel p.sub { margin: 0; }
+.m-offrir .noel p.sub:last-of-type { margin-bottom: 1em; }

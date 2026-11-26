@@ -62,7 +62,7 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
         window.location.assign(suite)
         return
       }
-      setErreur('Email ou mot de passe incorrect.')
+      setErreur('E-mail ou mot de passe incorrect.')
     } catch {
       setErreur('La connexion n’a pas abouti. Vérifiez votre réseau et réessayez.')
     } finally {
@@ -85,8 +85,8 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
   }
 
   return (
-    <div className="cpt-porte">
-      <a className="cpt-google" href={`/api/compte/google?suite=${encodeURIComponent(suite)}`}>
+    <>
+      <a className="btn blanc" href={`/api/compte/google?suite=${encodeURIComponent(suite)}`}>
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <path
             fill="#EA4335"
@@ -108,11 +108,11 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
         Continuer avec Google
       </a>
 
-      <p className="cpt-ou"><span>ou par email</span></p>
+      <p className="ou">ou par e-mail</p>
 
       <form className="cpt-form" onSubmit={envoyer}>
         <label className="cpt-champ">
-          <span>Email</span>
+          <span>E-mail</span>
           <input
             type="email"
             name="email"
@@ -138,7 +138,7 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
           </p>
         ) : null}
 
-        <button type="submit" className="at-cta cpt-cta cpt-cta--pleine" disabled={enCours}>
+        <button type="submit" className="btn plein" disabled={enCours}>
           {enCours
             ? 'Un instant…'
             : mode === 'connexion'
@@ -147,22 +147,21 @@ export default function FormulaireConnexion({ suite }: { suite: string }) {
         </button>
       </form>
 
-      <div className="cpt-porte-pied">
+      <div className="bas">
         {mode === 'connexion' ? (
           <>
-            <button type="button" className="cpt-lien" onClick={() => basculer('inscription')}>
-              Première fois ? Créer mon compte
+            <button type="button" onClick={() => basculer('inscription')}>
+              Créer mon compte
             </button>
-            <a className="cpt-lien" href="/compte/mot-de-passe-oublie">
-              Mot de passe oublié
-            </a>
+            <a href="/compte/mot-de-passe-oublie">Mot de passe oublié</a>
           </>
         ) : (
-          <button type="button" className="cpt-lien" onClick={() => basculer('connexion')}>
-            J’ai déjà un compte, me connecter
+          <button type="button" onClick={() => basculer('connexion')}>
+            J’ai déjà un compte
           </button>
         )}
       </div>
-    </div>
+      <p className="astuce-lien sub">Pas de compte ? Le lien reçu par e-mail suffit.</p>
+    </>
   )
 }

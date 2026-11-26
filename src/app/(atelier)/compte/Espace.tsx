@@ -184,14 +184,9 @@ export default function Espace({
     <div className="bj-atelier cpt">
       <header className="cpt-top">
         <Link className="cpt-top-marque" href="/" aria-label="Bellajour, retour à l’accueil">
-          <img
-            className="cpt-top-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
+          {/* Le logo vectoriel à l'encre (fiche B) : l'ancienne signature en
+              WebP était blanche, donc invisible sur le papier (audit du 26/11). */}
+          <span className="cpt-top-logo m-logo" aria-hidden="true" />
         </Link>
 
         {/* Les deux onglets, au centre de la barre — le sommaire de l'espace. */}

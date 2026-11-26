@@ -103,7 +103,7 @@
 .m-banc .specs{list-style:none;padding:0;margin:var(--m-espace-6) 0 0;border-top:1px solid var(--m-couleur-papier-ligne)}
 .m-banc .specs li{display:grid;grid-template-columns:minmax(120px,.42fr) 1fr;gap:var(--m-espace-4);padding:var(--m-espace-4) 0;border-bottom:1px solid var(--m-couleur-papier-ligne);font-size:var(--m-taille-petit)}
 .m-banc .specs li span:first-child{font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;text-transform:uppercase;color:var(--m-couleur-papier-texte-doux);padding-top:2px}
-.m-banc .note-bas{font-size:var(--m-taille-petit);margin-top:var(--m-espace-5)}
+.m-banc .note-bas{font-size:var(--m-taille-petit);margin-top:var(--m-espace-5);margin-bottom:1em}
 .m-banc .appel{text-align:center}
 .m-banc .appel h2{margin-left:auto;margin-right:auto}
 .m-banc .appel .chapo{margin:0 auto var(--m-espace-6)}

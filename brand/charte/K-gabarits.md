@@ -36,9 +36,22 @@ La référence vivante est le banc d'essai RKkzi v7 :
 Même grammaire que le parcours client. Le Charbon et le Porcelaine, ainsi que la bascule
 jour/nuit, disparaissent au profit du papier, avec un bloc nuit ponctuel.
 
+## Mon compte, la connexion (`/compte/connexion`)
+
+La barre, le bandeau et le pied du site. Au centre, une boîte de 440 px : étiquette « Mon compte »,
+titre h2 « Tous vos numéros au même endroit. », chapo, bouton Google blanc à filet sur toute la
+largeur, séparateur « ou par e-mail » entre deux filets, les champs, « Me connecter » sur toute la
+largeur, une ligne « Créer mon compte » / « Mot de passe oublié » soulignés, puis l'encadré « Pas de
+compte ? Le lien reçu par e-mail suffit. ». L'espace connecté garde sa propre barre (onglets).
+
 ## Légal (`/cgv` …, trois langues)
 
-Une colonne de 72 ch, interligne 1,7, sommaire en haut, fil d'Ariane, sélecteur de langue.
+Duplicata du 26/11 : la barre, le bandeau et le pied du site. En tête : les pastilles de langue
+(FR / EN / PT, la langue servie à l'encre), l'étiquette « Bellajour », le titre h1, la ligne de version
+en étiquette (« Version 4.1 · En vigueur le … »). Dessous : un **sommaire collant de 240 px** à gauche
+(entrées courtes, « Article 3 » ; l'entrée lue passe à l'encre), le texte à droite en 72 ch, 15 px,
+interligne 1,7, titres h3 à `espace.8` au-dessus. Sous 900 px, le sommaire disparaît. Le texte légal
+ne change jamais avec l'habit.
 
 ## 404 et erreur
 

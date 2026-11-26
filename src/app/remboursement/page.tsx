@@ -21,6 +21,10 @@ export const metadata: Metadata = {
    déjà partagés restent donc valides, en 308, code parrain repris au passage.
    Le `?ref=` du sélecteur de langue est repris côté client par
    `SelecteurLangue`. Lire l'URL ici rendrait la page dynamique. */
+/* Le bandeau de Noël s'éteint seul (noelAuSite) : la page reste figée, mais
+   se refait toutes les 5 minutes, comme /magazine. */
+export const revalidate = 300
+
 export default function RemboursementPage() {
   return <LegalPage slug="remboursement" doc={REMBOURSEMENT} />
 }

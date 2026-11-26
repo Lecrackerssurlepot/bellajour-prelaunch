@@ -51,7 +51,8 @@ l'ordinateur, bandeau compris.
 | `rupture.large` | `min-width: 901px` | Menu complet dans l'en-tête. En dessous : le menu burger |
 
 - **Le JS lit la même valeur** : `requeteTelephone` dans `brand/build/tokens.ts`, avec `matchMedia`. Jamais `innerWidth < 700`.
-- Les ruptures 420, 767 et 800 du banc disparaissent.
+- Les ruptures 420, 767 et 800 du banc disparaissent, **sauf le pied** : il s'empile sous 767 px,
+  comme le duplicata (audit du 26/11).
 - Entre 701 et 900 px (tablette) : la mise en page ordinateur, avec le menu burger.
 
 ## Hauteur d'écran

@@ -1,9 +1,16 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { compteOuvert, utilisateurConnecte } from '@/lib/compte/session'
 import { suiteSure } from '@/lib/compte/garde'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { noelAuSite } from '@/lib/atelier/carteCadeau'
+import Nav from '../../components/Nav'
+import Footer from '../../components/Footer'
+import Bandeau from '../../noel/Bandeau'
+import { COMPOSER_HREF, CTA_LABEL } from '../../content'
 import FormulaireConnexion from './FormulaireConnexion'
 import '../compte.css'
+import '../../magazine/magazine.css'
+import './connexion.css'
 
 /**
  * /compte/connexion — la porte du compte. Google d'abord (un seul geste),
@@ -37,33 +44,30 @@ export default async function ConnexionPage({
   const qui = await utilisateurConnecte()
   if (qui) redirect(suite)
 
-  return (
-    <div className="bj-atelier cpt cpt--porte">
-      <header className="cpt-top">
-        <Link href="/" aria-label="Bellajour, retour à l’accueil">
-          <img
-            className="cpt-top-logo"
-            src="/images/v2/ui/signature-bellajour-240.webp"
-            alt=""
-            width={240}
-            height={92}
-            decoding="async"
-          />
-        </Link>
-      </header>
+  /* Charte V2 : la page « Mon compte » du duplicata (26/11). La barre, le
+     bandeau et le pied du site ; une boîte de 440 px au centre. */
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
 
-      <main className="cpt-main cpt-main--etroit">
-        <h1 className="cpt-titre">Mon compte</h1>
-        <p className="cpt-sous-titre">
-          Tous vos numéros au même endroit : le suivi, les anciens projets, les PDF.
-        </p>
-        {params.erreur && Object.hasOwn(MOTS_ERREUR, params.erreur) ? (
-          <p className="cpt-alerte" role="alert">
-            {MOTS_ERREUR[params.erreur]}
-          </p>
-        ) : null}
-        <FormulaireConnexion suite={suite} />
+  return (
+    <>
+      {noel && <Bandeau />}
+      <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" compteOuvert={compteOuvert()} />
+      <main className="m-banc m-connexion" aria-label="Mon compte">
+        <section className="connexion">
+          <div className="boite">
+            <span className="lab sub">Mon compte</span>
+            <h1 className="titre">Tous vos numéros au même endroit.</h1>
+            <p className="chapo sub">Le suivi, les anciens projets, les PDF.</p>
+            {params.erreur && Object.hasOwn(MOTS_ERREUR, params.erreur) ? (
+              <p className="cpt-alerte" role="alert">
+                {MOTS_ERREUR[params.erreur]}
+              </p>
+            ) : null}
+            <FormulaireConnexion suite={suite} />
+          </div>
+        </section>
       </main>
-    </div>
+      <Footer />
+    </>
   )
 }

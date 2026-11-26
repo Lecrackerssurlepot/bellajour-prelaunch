@@ -5,6 +5,7 @@
    listener ne fait que lever un drapeau, la mesure a lieu dans la frame. */
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { COMPOSER_HREF, CTA_LABEL, CTA_REPRISE_LABEL } from '../content'
 import { draftEnCours } from '../composer/draft'
@@ -66,6 +67,8 @@ export default function Nav({
 }) {
   const [stuck, setStuck] = useState(false)
   const [menu, setMenu] = useState(false)
+  /* Le lien de la page courante est souligné (duplicata, `aria-current`). */
+  const chemin = usePathname()
   const frame = useRef(0)
   /* Repli anti-jank Chrome/Android (T-019) : `false` côté serveur donc côté
      Desktop et Safari iOS le rendu ne bouge pas d'un pixel — voir nav.css. */
@@ -167,7 +170,7 @@ export default function Nav({
           marketing — qui ne disparaît JAMAIS (décision de Mathias, 04/09). */}
       <span className="at-nav-liens">
         {LIENS.map((l) => (
-          <Link key={l.href} href={l.href} prefetch={false}>{l.label}</Link>
+          <Link key={l.href} href={l.href} prefetch={false} aria-current={chemin === l.href ? 'page' : undefined}>{l.label}</Link>
         ))}
       </span>
       <span className="at-nav-droite">

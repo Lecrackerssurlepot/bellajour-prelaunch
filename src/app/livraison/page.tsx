@@ -15,6 +15,10 @@ export const metadata: Metadata = {
 
 /* ⚠️ AUCUN `searchParams` — c'est ce qui garde cette page FIGÉE, comme les
    quatre autres pages légales (09/09/2026). La langue vient de l'adresse. */
+/* Le bandeau de Noël s'éteint seul (noelAuSite) : la page reste figée, mais
+   se refait toutes les 5 minutes, comme /magazine. */
+export const revalidate = 300
+
 export default function LivraisonPage() {
   return <LegalPage slug="livraison" doc={LIVRAISON} />
 }

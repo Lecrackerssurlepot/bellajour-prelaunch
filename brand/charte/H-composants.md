@@ -37,11 +37,20 @@ La valeur est donnée, et elle sera validée sur `/brand`.
 | | Ordinateur (≥ 901 px) | Téléphone et tablette (≤ 900 px) |
 |---|---|---|
 | Position | Fixe, plan `plan.entete`, marges `espace.2` × `espace.marge` | idem |
-| Contenu | Logo 74 × 52 · navigation `taille.petit`, espacée de 26 px · compte · bouton principal | Logo · bouton principal · burger 44 × 44 |
+| Contenu | Logo 74 × 52 · navigation `taille.petit`, espacée de 32 px · compte · bouton principal | Logo · burger 44 × 44 · compte (icône seule) |
+| Hauteur | 68 px : la boîte du logo (52) et `espace.2` dessus et dessous | idem |
+| Logo | Tracé de 66 px de large dans la boîte de 74 × 52, 4 px du bord gauche, un peu sous le milieu | idem |
+| Navigation | **Centrée** entre le logo et la droite. Le lien de la page courante est **souligné** (`aria-current`, 6 px sous la ligne, trait fin) | Dans le menu, dès 900 px |
+| Compte | Icône de 20 px **et le mot « Mon numéro »**, à l'encre, 8 px entre les deux, 18 px avant le bouton | Icône seule (le mot disparaît sous 700 px), 20 px dans la barre, cible de 44 px |
 | Au défilement | Fond `voile.barre` et flou de 12 px dès que la page a défilé | idem |
-| Menu | — | Plein écran, fond papier, glisse du haut (`duree.menu`, `courbe.bascule`), liens en `taille.exception.menu-lien`, signature Interlope en bas |
+| Menu | — | Plein écran, fond papier, glisse du haut (`duree.menu`, `courbe.bascule`), liens Fraunces **en graisse 400** (40 px, 36 px sous 700 px), « Mon numéro » en dernier lien, bouton principal de 52 px en bas, signature Interlope de 20 px. Le haut du menu : bandeau + 88 px |
 
-**Bandeau** (au-dessus de l'en-tête, facultatif) :
+Seuils (duplicata) : la navigation passe au menu **sous 900 px** ; le bouton principal et le mot
+« Mon numéro » disparaissent **sous 700 px**.
+
+**Bandeau** (au-dessus de l'en-tête, facultatif) — **sur toutes les pages hors du tunnel** : accueil,
+Magazine, Offrir, Groupes, Mon compte (connexion), pages légales. Jamais dans `/composer`, `/numero`
+ni l'espace connecté `/compte`, qui ont leur propre barre :
 - bloc nuit de `bandeau.hauteur` (40 px, 36 px sur téléphone), texte `taille.exception.bandeau` ;
 - se replie après `bandeau.repli` (12 px de défilement).
 - **texte fixe**, dans cet ordre : mot-titre (« Noël ») · phrase du milieu · précision (cachée au téléphone) · lien pilule « Voir l'offre », **toujours présent** ;
@@ -53,11 +62,19 @@ La valeur est donnée, et elle sera validée sur `/brand`.
 - **Liens** : liens légaux, contact, réseaux. Icônes de 15 px, cibles de 44 px sur téléphone.
 - **Filigrane** : le mot « Bellajour » (voir B).
 - **Sur toutes les pages client** : le même pied.
+- **Mesures du duplicata** : cadre de 1152 px plus les marges (le même que les pages), interligne 1,6,
+  `espace.2` sous la signature. Sous 767 px, les deux colonnes s'empilent avec 28 px entre elles et le
+  filigrane descend à `clamp(64px, 18vw, 90px)`.
 
 ## Cartes et encarts
 
 - **Carte** : `rayon.bloc`, bord fin ou fond `survol`, sans ombre, marge intérieure `espace.6`.
 - **Carte cadeau** : bloc nuit, proportion 1,586 (une carte bancaire). Au survol, elle s'incline de -1,5°.
+  Sur `/offrir` (duplicata) : marge intérieure de 7 %, logo **blanc**, la phrase en Fraunces de 20 à 28 px,
+  le montant en Fraunces de 36 à 56 px **au texte de nuit**, le code et la validité sur une ligne en
+  étiquette de 11 px, la couverture à 62 % de la largeur qui dépasse en bas à droite. Pas de mot
+  « Carte cadeau » sur l'aperçu. Rien d'écrit sur la carte ne prend l'accent : il est l'encre, donc
+  noir sur noir.
 - **Encart en attente** : pointillé (voir F).
 
 ## Pastilles (badges)

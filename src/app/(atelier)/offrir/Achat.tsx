@@ -197,7 +197,7 @@ export default function Achat() {
             <span className="nl-label">
               Un mot <span className="nl-faible">{message.length}/{MESSAGE_CARTE_MAX}</span>
             </span>
-            <textarea className="nl-input nl-textarea" rows={2} maxLength={MESSAGE_CARTE_MAX} value={message} onChange={(e) => setMessage(e.target.value)} />
+            <textarea className="nl-input nl-textarea" rows={1} maxLength={MESSAGE_CARTE_MAX} placeholder="Facultatif" value={message} onChange={(e) => setMessage(e.target.value)} />
           </label>
           {erreur && <p className="nl-erreur" role="alert">{erreur}</p>}
           <button type="button" className="nl-suivant" onClick={() => verifierTemps1() && setTemps(2)}>Continuer</button>

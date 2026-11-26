@@ -209,6 +209,8 @@ export default function NavCompte({ ouvertAuBuild = false }: { ouvertAuBuild?: b
             />
           </svg>
         )}
+        {/* Le mot du duplicata, caché sous 700 px (nav.css). */}
+        {statut.connecte ? null : <span className="at-nav-compte-t">Mon numéro</span>}
       </Link>
     </span>
   )

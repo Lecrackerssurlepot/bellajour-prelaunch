@@ -1,18 +1,27 @@
 import type { ReactNode } from 'react'
-import Link from 'next/link'
 import { type Block, type Para, type Locale, type LocalizedDoc } from './types'
-import { resolveDoc, backHref } from './resolve'
-import RetourLien from './RetourLien'
+import { resolveDoc } from './resolve'
 import SelecteurLangue from './SelecteurLangue'
+import SommaireVivant from './SommaireVivant'
+import Nav from '../(atelier)/components/Nav'
+import Footer from '../(atelier)/components/Footer'
+import Bandeau from '../(atelier)/noel/Bandeau'
+import { COMPOSER_HREF, CTA_LABEL } from '../(atelier)/content'
+import { compteOuvert } from '@/lib/compte/session'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { noelAuSite } from '@/lib/atelier/carteCadeau'
+import '../(atelier)/theme.css'
+import '../(atelier)/magazine/magazine.css'
 import './legal.css'
 
 /* Composant partagé des pages légales (Server Component).
-   Habillage charte V2 (fiche K, 25/11/2026) : papier blanc, une colonne de
-   72 ch, interligne 1,7, sommaire en haut, fil d'Ariane, sélecteur de langue.
+   Habit du duplicata « Essai photos » (14BmVZ, 26/11/2026) : la barre, le
+   bandeau et le pied du site ; pastilles de langue, étiquette, titre, ligne de
+   version ; sommaire collant de 240 px à gauche, texte de 72 ch à droite.
    Le TEXTE légal ne change pas : seuls l'habillage et la navigation autour.
-   Ancienne feuille sombre : archive/ancienne-charte/legal.css.
+   Habit précédent (25/11) : archive/legal-habit-25-11/. Le lien retour et le
+   fil d'Ariane sont partis avec lui : la barre du site ramène partout.
    - Sélecteur de langue : FR rendu, EN/PT activés dès que la clé locale existe.
-   - Lien retour : l'historique quand on vient du site, sinon l'accueil (T-070).
 
    ⚠️ PLUS AUCUN `searchParams` (09/09/2026, audit de vitesse). Les douze routes
    légales étaient rendues à CHAQUE visite — 212 ms contre 77 pour une page
@@ -26,11 +35,18 @@ import './legal.css'
    savoir qu'on rend les douze pages dynamiques du même geste. */
 
 /* Les mots de la navigation autour du texte (pas du texte légal). */
-const MOTS: Record<Locale, { accueil: string; sommaire: string }> = {
-  fr: { accueil: 'Accueil', sommaire: 'Sommaire' },
-  en: { accueil: 'Home', sommaire: 'Contents' },
-  pt: { accueil: 'Início', sommaire: 'Índice' },
+const MOTS: Record<Locale, { sommaire: string }> = {
+  fr: { sommaire: 'Sommaire' },
+  en: { sommaire: 'Contents' },
+  pt: { sommaire: 'Índice' },
 }
+
+/* L'entrée courte du sommaire : le titre avant son tiret (« Article 3 »),
+   comme le duplicata. Le titre complet reste dans le texte. */
+const court = (titre: string) => titre.split(/\s[—–]\s/)[0]
+
+/* La ligne de version, en étiquette : « Version 4.1 · En vigueur le … ». */
+const version = (ligne: string) => ligne.replace(/\s[—–]\s/g, ' · ')
 
 /* L'ancre d'une section : son id déclaré, sinon son rang (pour le sommaire). */
 const ancre = (id: string | undefined, i: number) => id ?? `section-${i + 1}`
@@ -46,66 +62,63 @@ interface LegalPageProps {
 export default function LegalPage({ slug, doc, forceLang }: LegalPageProps) {
   const { doc: content, lang } = resolveDoc(doc, forceLang ?? 'fr')
 
+  /* Le bandeau de Noël, comme sur toutes les pages hors tunnel (fiche H). */
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
+
   return (
-    /* `lang` = la langue SERVIE (T-057) : le layout racine fixe lang="fr" en
-       dur, et `/cgv?lang=pt` servait le texte opposable en portugais dans un
-       document déclaré français — lu par une voix de synthèse française au
-       lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
-       demandée : une locale absente retombe sur fr, l'attribut doit suivre). */
-    <main className="lg" lang={lang} data-section="legal">
-      <div className="lg-inner">
-
-        <Link className="lg-logo m-logo" href="/" aria-label="Bellajour" />
-
-        <header className="lg-head">
-          {/* Lot 1 (07/09) — revient d'où l'on vient quand la page
-              précédente est une page du site ; sinon le repli backHref(). */}
-          <RetourLien repli={backHref()} />
-
-          <SelecteurLangue slug={slug} doc={doc} lang={lang} />
-        </header>
-
-        <nav className="lg-ariane" aria-label="Fil d’Ariane">
-          <Link href="/">{MOTS[lang].accueil}</Link>
-          <span aria-hidden="true">/</span>
-          <span aria-current="page">{content.title}</span>
-        </nav>
-
-        <h1 className="lg-title">{content.title}</h1>
-        <p className="lg-version">{content.lastUpdated}</p>
-
-        {content.intro && content.intro.length > 0 && (
-          <div className="lg-intro">
-            {content.intro.map((p, i) => (
-              <p key={i}>{renderPara(p)}</p>
-            ))}
+    /* `.bj-atelier` : la barre et le pied du site vivent dans ce scope (ces
+       pages sont hors du groupe (atelier), voir son layout). */
+    <div className="bj-atelier">
+      {noel && <Bandeau />}
+      <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" compteOuvert={compteOuvert()} />
+      {/* `lang` = la langue SERVIE (T-057) : le layout racine fixe lang="fr" en
+          dur, et `/cgv?lang=pt` servait le texte opposable en portugais dans un
+          document déclaré français — lu par une voix de synthèse française au
+          lecteur d'écran. On pose la langue résolue par resolveDoc (jamais la
+          demandée : une locale absente retombe sur fr, l'attribut doit suivre). */}
+      <main className="m-banc lg" lang={lang} data-section="legal">
+        <section className="pg-tete">
+          <div className="cadre">
+            <SelecteurLangue slug={slug} doc={doc} lang={lang} />
+            <span className="lab sub">Bellajour</span>
+            <h1 className="titre">{content.title}</h1>
+            <p className="lg-version">{version(content.lastUpdated)}</p>
           </div>
-        )}
+        </section>
 
-        {content.sections.length > 1 && (
-          <nav className="lg-sommaire" aria-label={MOTS[lang].sommaire}>
-            <p className="lg-sommaire-t">{MOTS[lang].sommaire}</p>
-            <ol>
-              {content.sections.map((s, i) => (
-                <li key={ancre(s.id, i)}><a href={`#${ancre(s.id, i)}`}>{s.heading}</a></li>
+        <section className="lg-corps">
+          <div className="cadre">
+            {content.sections.length > 1 ? (
+              <SommaireVivant label={MOTS[lang].sommaire}>
+                {content.sections.map((s, i) => (
+                  <a key={ancre(s.id, i)} href={`#${ancre(s.id, i)}`}>{court(s.heading)}</a>
+                ))}
+              </SommaireVivant>
+            ) : <span aria-hidden="true" />}
+
+            <div className="lg-texte">
+              {content.intro && content.intro.length > 0 && (
+                <div className="lg-intro">
+                  {content.intro.map((p, i) => (
+                    <p key={i}>{renderPara(p)}</p>
+                  ))}
+                </div>
+              )}
+
+              {content.sections.map((section, si) => (
+                <section key={si} id={ancre(section.id, si)} className="lg-section">
+                  <h2 className="lg-h2 titre">{section.heading}</h2>
+                  {section.blocks.map((block, bi) => (
+                    <Block key={bi} block={block} />
+                  ))}
+                </section>
               ))}
-            </ol>
-          </nav>
-        )}
-
-        {content.sections.map((section, si) => (
-          <section key={si} id={ancre(section.id, si)} className="lg-section">
-            <h2 className="lg-h2">{section.heading}</h2>
-            {section.blocks.map((block, bi) => (
-              <Block key={bi} block={block} />
-            ))}
-          </section>
-        ))}
-
-        <p className="lg-copy">© 2026 Bellajour. Vivez. Nous composons.</p>
-
-      </div>
-    </main>
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
   )
 }
 

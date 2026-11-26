@@ -14,6 +14,9 @@
 import type { Metadata } from 'next'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
+import Bandeau from '../noel/Bandeau'
+import { lireInterrupteur } from '@/lib/collectif/interrupteur'
+import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import Apparitions from '@/components/Apparitions'
 import { lireVisuel } from '@/components/Visuel'
 import { compteOuvert } from '@/lib/compte/session'
@@ -107,9 +110,12 @@ async function images(noms: readonly NomEmplacement[]): Promise<Image[]> {
 export default async function PagePartenaires() {
   const numeros = await images(NUMEROS)
   const doubles = await Promise.all(CAS.map((c) => images(c.doubles)))
+  /* Le bandeau de Noël sur toutes les pages hors tunnel (duplicata, fiche H). */
+  const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
 
   return (
     <>
+      {noel && <Bandeau />}
       <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" compteOuvert={compteOuvert()} />
       <main className="m-banc m-groupes" aria-label="Pour les groupes">
         <section className="pg-tete duo2 grp-ouv">
