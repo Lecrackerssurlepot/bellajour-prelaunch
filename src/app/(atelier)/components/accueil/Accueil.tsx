@@ -58,7 +58,7 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
   } as CSSProperties
 
   return (
-    <div className="m-banc" data-u="votre" data-e2="rien" style={fonds}>
+    <main className="m-banc" data-u="votre" data-e2="rien" style={fonds}>
       {/* 01 OUVERTURE : le magazine qu'on voit est celui qui s'ouvre */}
       <section className="ouv" id="ouv" aria-label="Ouverture">
         <svg className="traits" data-n="6" data-seed="3" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -177,6 +177,6 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
 
       {/* ===================== PAGE PRODUIT ===================== */}
       <AccueilMotion photos={PH} />
-    </div>
+    </main>
   )
 }
