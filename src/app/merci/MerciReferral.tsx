@@ -3,8 +3,8 @@
 import { useReferralShare } from '../components/useReferralShare'
 
 /**
- * Affichage du code de parrainage sur /merci — charte PRÉVENTE
- * (glass, #4a90d9, radius ≥12px, fonts --bj-*).
+ * Affichage du code de parrainage sur /merci — charte V2 (26/11)
+ * (jetons --m-*, boutons .m-btn et .m-second).
  *
  * Réutilise la logique copier/partager TELLE QUELLE via useReferralShare
  * (le même code testé que ReferralCard). Ici on ne fait QUE le style + le texte.
@@ -24,7 +24,7 @@ export default function MerciReferral({ refCode }: { refCode: string }) {
         <span className="merci-ref-link-text">{referralLink}</span>
         <button
           type="button"
-          className="merci-ref-copy-btn"
+          className="m-second merci-ref-copy-btn"
           onClick={() => copyLink(false)}
           aria-label="Copier le lien de parrainage"
         >
@@ -34,7 +34,7 @@ export default function MerciReferral({ refCode }: { refCode: string }) {
 
       <button
         type="button"
-        className="merci-ref-share-btn"
+        className="m-btn merci-ref-share-btn"
         onClick={shareLink}
         aria-label="Partager votre lien de parrainage"
       >

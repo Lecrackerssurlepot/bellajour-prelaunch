@@ -1,0 +1,1889 @@
+/* ════════════════════════════════════════════════════════════
+   LA PAGE D'ÉTAT — /numero/[token] (PRD §7.5 et §8).
+
+   Une seule page, huit rendus. C'est le seul lien que la cliente possède :
+   elle le reçoit une fois, elle le garde, et il remplace un espace client
+   sans en coder un. Il sera rouvert dix fois en trois semaines — d'où une
+   mise en page qui tient debout avec une phrase comme avec trois visuels.
+
+   Invariant nº1 : aucune couleur en dur. Tout vient de .bj-atelier
+   (src/app/(atelier)/theme.css), importé par le layout de /numero.
+   ════════════════════════════════════════════════════════════ */
+
+.nu {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--app-height);
+}
+
+/* ---- le bandeau de prévisualisation (10/09/2026) ----
+   L'atelier regarde la page AVANT de publier (/numero/<token>?brouillon=1,
+   réservé au cookie admin). Le bandeau existe pour une seule raison : rendre
+   impossible de confondre cette page avec celle qui est en ligne. Il est donc
+   FIXE — il reste sous les yeux même après un défilement jusqu'au bouton de
+   paiement, qui est justement l'endroit où la confusion coûterait le plus.
+
+   Aucune couleur en dur (invariant nº1 de ce fichier) : l'accent du thème
+   sombre, sur le voile plein que la barre du questionnaire utilise déjà. */
+.bj-atelier .nu-previs {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  margin: 0;
+  padding: var(--m-espace-2) var(--pad);
+  background: var(--glass-bg-plein);
+  border-bottom: 1px solid var(--c-accent-soft);
+  box-shadow: var(--shadow-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: var(--c-accent);
+  text-align: center;
+}
+
+/* La page descend d'autant : sans ça le bandeau couvre le logo du parcours,
+   et un bandeau qui cache le haut de la page qu'on vient vérifier ne sert à
+   rien. Deux lignes possibles sur un téléphone étroit, d'où la marge haute. */
+.nu--previs { padding-top: var(--m-espace-7); }
+
+@media (max-width: 560px) {
+  .bj-atelier .nu-previs { font-size: var(--m-taille-etiquette); padding: var(--m-espace-2) var(--m-espace-4); }
+  .nu--previs { padding-top: var(--m-espace-8); }
+}
+
+/* ---- barre haute : le logo du parcours, rien d'autre ----
+   04/09 (maquettes validées) : le logo officiel centré — le même fichier et
+   les mêmes cotes que la barre du questionnaire (composer.css, .at-q-logo-img).
+   Le mot « Bellajour » en toutes lettres et le rappel « Votre numéro » sont
+   partis avec l'ancien dessin. Pas de CTA ici. Invariant nº5 : un seul
+   libellé de bouton sur tout le site, et il n'a rien à faire au-dessus d'un
+   dossier en cours. */
+/* 18/09 : une GRILLE 1fr · auto · 1fr remplace les deux cales flex. Le logo
+   est au milieu du viewport que le bouton de retour soit là ou non, et le
+   bouton ne pousse plus rien sur 375 px. */
+.nu-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4) var(--pad);
+}
+
+.nu-top-logo-img {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
+@media (max-width: 560px) {
+  .nu-top-logo-img { height: 26px; }
+}
+
+/* ── Le retour au compte, et l'invitation (04/09) ─────────────────────
+   Le haut de page devient : [retour] · logo centré · [cale]. Les deux cales
+   de même largeur gardent le logo au MILIEU du viewport, pas au milieu de
+   ce qui reste — sinon il se décale dès que le bouton apparaît. */
+.nu-top-cale { min-width: 0; }
+/* Le retour au compte : le même bouton en verre que les utilitaires du pied
+   (18/09), à gauche ; il se lit comme un chemin, pas comme l'action de la page. */
+.bj-atelier .nu-retour {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-espace-2);
+  min-height: 40px;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border: 1px solid rgba(245, 240, 231, 0.28);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--c-veil-hover);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--c-text);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.bj-atelier .nu-retour:hover { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+.nu-retour-mot { display: inline; }
+
+/* Sur un téléphone, la flèche seule : le logo garde sa place centrale et
+   le mot ne pousse personne. La cible tactile reste à 40 px. */
+@media (max-width: 520px) {
+  .nu-retour-mot { display: none; }
+  .bj-atelier .nu-retour { padding: var(--m-espace-2) var(--m-espace-3); }
+}
+
+.nu-compte {
+  text-align: center;
+  padding: var(--m-espace-2) var(--pad);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  line-height: 1.5;
+  color: var(--c-text-faint);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.bj-atelier .nu-compte a {
+  color: var(--c-accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bj-atelier .nu-compte a:hover { color: var(--c-text); }
+
+.nu-main {
+  flex: 1 0 auto;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: clamp(var(--m-espace-7), 10vw, var(--m-espace-9)) var(--pad) clamp(var(--m-espace-8), 12vw, var(--m-espace-10));
+}
+
+/* Le titre du numéro. (0,2,0) — passe devant `.bj-atelier h1` (0,1,1),
+   qui vaut clamp(56px,15vw,150px) : la taille du hero écraserait une page
+   qui n'est pas une page d'accueil. */
+.bj-atelier .nu-titre {
+  font-size: clamp(44px, 6vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  margin-top: var(--m-espace-4);
+}
+/* ── L'étiquette « à qui est la balle » (18/09) ──
+   Onze pixels, capitales, un point de 6 px : cuivre quand c'est au client
+   d'agir (`is-vous`), gris sinon. Elle ouvre la colonne, d'où `margin-top: 0`
+   en (0,2,0) pour battre le `p { margin: 0 }` du thème sans le contredire. */
+.bj-atelier .nu-camp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-espace-2);
+  margin-top: 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+.nu-camp-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--m-rayon-pilule);
+  background: var(--c-text-faint);
+}
+.nu-camp.is-vous .nu-camp-dot { background: var(--c-accent); }
+
+/* ---- le sommaire des jalons (04/09, maquettes validées) ----
+   Cinq jalons, jamais huit : la cliente ne connaît pas notre machine à
+   états, elle veut savoir si c'est fini. Le dessin est CELUI du sommaire du
+   questionnaire (composer.css, .at-q-etapes) : desktop les cinq noms avec
+   leur coche et le courant souligné accent, mobile cinq segments +
+   « n / 5 · nom ». Les deux vivent dans le DOM, le CSS n'en montre qu'un.
+   Sous le logo, hors de la colonne de lecture — comme dans le parcours.
+   L'ancien fil à pastilles (.nu-fil) est parti avec cette refonte. */
+.nu-etapes { flex: 0 0 auto; padding: var(--m-espace-2) var(--pad) 0; }
+
+.nu-etapes-noms {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--m-espace-6);
+}
+
+.nu-etape {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+  opacity: 0.55;
+  padding-bottom: var(--m-espace-1);
+}
+
+.nu-etape.is-fait { opacity: 1; }
+.nu-etape.is-la {
+  opacity: 1;
+  color: var(--c-accent-strong);
+  border-bottom: 1px solid var(--c-accent);
+}
+
+.nu-etape-v { font-style: normal; color: var(--c-accent); }
+
+.nu-etapes-mini { display: none; align-items: center; gap: var(--m-espace-3); }
+
+.nu-segments { display: flex; gap: var(--m-espace-1); flex: 1; }
+
+.nu-segments i {
+  display: block;
+  height: 2px;
+  flex: 1;
+  border-radius: var(--m-rayon-image);
+  background: var(--c-line-md);
+}
+
+.nu-segments i.is-fait { background: var(--c-accent); }
+
+.nu-etapes-ou {
+  flex: 0 0 auto;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.1em;
+  color: var(--c-text-faint);
+}
+
+@media (max-width: 760px) {
+  .nu-etapes-noms { display: none; }
+  .nu-etapes-mini { display: flex; }
+}
+
+/* ---- le mot d'état : la phrase que la cliente vient lire ---- */
+.nu-mot {
+  font-family: var(--m-police-titre-famille);
+  font-size: clamp(26px, 4vw, 30px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  max-width: 24ch;
+}
+
+/* ⚠️ Spécificité : `.bj-atelier p { margin: 0 }` (theme.css, 0-1-1) écrase
+   la marge d'une classe seule (0-1-0) — une marge posée sur `.nu-mot` nu
+   n'existe pas. Les marges des <p> de la colonne vivent donc ICI, en
+   (0-2-0) — même parade que `.bj-atelier .at-cta` (theme.css).
+   Le sommaire ayant quitté la colonne (il vit sous le logo depuis le
+   04/09), c'est la marge du mot qui aère l'espace sous le titre ; le mot
+   qui suit « c'est à vous / à nous » se resserre, sinon elles s'empilent. */
+.bj-atelier .nu-mot { margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6)); }
+.bj-atelier .nu-sub { margin-top: var(--m-espace-4); }
+
+.nu-sub {
+  margin-top: var(--m-espace-4);
+  max-width: 50ch;
+  font-weight: 300;
+  line-height: 1.6;
+  color: var(--c-text-soft);
+  font-size: var(--m-taille-base);
+}
+.nu-sub b { color: var(--c-text); font-weight: 400; }
+
+/* ── La rangée d'action (18/09) : UN geste plein, le secondaire en lien à
+   côté. Sur téléphone, le bouton prend la largeur et le lien passe dessous. */
+.nu-actions {
+  margin-top: var(--m-espace-7);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-espace-5);
+}
+/* ── La note sous l'action (18/09). Elle n'avait AUCUNE règle : elle héritait
+   du corps en 17 px et se collait au bouton (le « fouilli » de la page de
+   Merisa). Treize pixels, un ton plus bas, une seule par page. */
+.bj-atelier .nu-note {
+  margin-top: var(--m-espace-4);
+  max-width: 52ch;
+  font-size: var(--m-taille-petit);
+  line-height: 1.55;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+.nu-note b { font-weight: 400; color: var(--c-text-soft); }
+
+/* ── L'AXE CENTRÉ, desktop seulement (18/09, planche validée). La tête de
+   page — étiquette, titre, mot, corps, action, note — vit sur l'axe, comme
+   les pages texte de l'univers depuis le 14/09. Le contenu des cartes (bon
+   de commande, suivi) garde son alignement à gauche : un tableau centré ne
+   se lit pas. Sous 760 px, tout revient à gauche. */
+/* ⚠️ Le centrage est posé ÉLÉMENT PAR ÉLÉMENT, jamais hérité de .nu-main :
+   hérité, il centrait aussi les légendes de la visionneuse et le bon de
+   commande (constaté le 18/09 sur un dossier à l'état couverture). Ce qui
+   n'est pas nommé ici garde son alignement. */
+@media (min-width: 761px) {
+  .nu-main .nu-camp { display: flex; justify-content: center; text-align: center; }
+  .nu-main .nu-titre,
+  .nu-main .nu-mot,
+  .nu-main .nu-sub,
+  .nu-main .nu-note,
+  .nu-main .nu-erreur,
+  .nu-main .nu-relance { text-align: center; margin-left: auto; margin-right: auto; }
+  .nu-main .nu-actions { justify-content: center; }
+  .nu-main .nu-relance-mot,
+  .nu-main .nu-relance-sub { margin-left: auto; margin-right: auto; }
+  /* La porte de sortie douce sous la carte de commande, sur l'axe elle aussi. */
+  .nu-main .nu-ajuster { display: block; margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 760px) {
+  .nu-actions { flex-direction: column; align-items: stretch; gap: var(--m-espace-4); text-align: center; }
+  .nu-actions .at-cta { justify-content: center; }
+}
+
+/* ── La relance, en pied de page (état livrée) ──────────────────────────
+   03/09 : deux CTA pleins identiques l'un sous l'autre se lisaient comme
+   une répétition, et le magazine offert perdait la vedette au profit de la
+   vente. La relance descend donc au rang d'un pied de page — même patron
+   que `.nu-garde` : un filet, un ton plus bas, des tailles réduites.
+   Le bouton du magazine reste le SEUL geste plein de la page. */
+.nu-relance {
+  margin-top: clamp(var(--m-espace-7), 9vw, var(--m-espace-9));
+  padding-top: clamp(var(--m-espace-5), 4.5vw, var(--m-espace-6));
+  border-top: 1px solid var(--c-line);
+  max-width: 56ch;
+}
+.nu-relance-mot {
+  font-family: var(--m-police-titre-famille);
+  font-size: clamp(20px, 3.6vw, 26px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--c-text-soft);
+}
+.nu-relance-sub {
+  margin-top: var(--m-espace-3);
+  font-size: clamp(14px, 3.4vw, 15px);
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+/* Le second geste : cuivre et cerné, jamais plein. La couleur le distingue
+   du bouton du magazine, et le contour dit « c'est une proposition », pas
+   « c'est l'action de cette page ». Scopé `.bj-atelier` comme `.nu-lien` :
+   les tokens `--c-*` n'existent que sous ce conteneur. */
+.bj-atelier .nu-cta-second {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-espace-3);
+  margin-top: clamp(var(--m-espace-4), 3.5vw, var(--m-espace-5));
+  padding: var(--m-espace-3) var(--m-espace-5);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--m-rayon-pilule);
+  background: transparent;
+  color: var(--c-accent);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.bj-atelier .nu-cta-second:hover {
+  background: var(--c-accent-soft);
+  color: var(--c-accent-strong);
+}
+
+/* ---- encart secondaire (suivi, adresse, rappel) ---- */
+/* 18/09 : la carte du colis prend l'enveloppe commune (760 px, centrée,
+   filet du thème) : champs à gauche, bouton en verre à droite. */
+.nu-carte {
+  margin: var(--m-espace-7) auto 0;
+  max-width: var(--m-largeur-colonne);
+  padding: var(--m-espace-5) var(--m-espace-6);
+  border: 1px solid var(--c-line-md);
+  border-radius: var(--m-rayon-champ);
+  background: var(--c-surface-1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--m-espace-5);
+  text-align: left;
+}
+.nu-carte-champs { display: flex; gap: var(--m-espace-8); margin: 0; }
+.nu-carte-champ { display: flex; flex-direction: column; gap: var(--m-espace-2); min-width: 0; }
+
+.nu-carte dt {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+
+.nu-carte dd {
+  margin: 0;
+  font-size: var(--m-taille-bouton);
+  color: var(--c-text);
+}
+
+.nu-carte .nu-ghost { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .nu-carte { margin-top: var(--m-espace-6); padding: var(--m-espace-5); flex-direction: column; align-items: stretch; gap: var(--m-espace-4); }
+  .nu-carte-champs { gap: var(--m-espace-6); }
+}
+
+/* Le numero de suivi : celui qu'on recopie dans l'appli du transporteur.
+   Selectionnable d'un geste, et lisible chiffre par chiffre (un 0 et un O
+   ne se confondent pas dans une chasse fixe). */
+.nu-suivi-code {
+  display: inline;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--m-taille-petit);
+  letter-spacing: 0.08em;
+  color: var(--c-text-soft);
+  user-select: all;
+}
+
+/* ---- l'état 2 : la maquette, en PLANCHE façon Airbnb (11/09/2026) ----
+   Remplace la visionneuse en carrousel de T-089 (02/09) — archivée dans
+   `archive/numero-carrousel-2026-09/`, avec le détail de ce qui reste vivant
+   ici (la famille `.nu-viz-mag*`, les boutons de choix) et de ce qui est
+   mort. Mathias, capture à l'appui : « l'affichage n'est pas au format » —
+   une planche à plat vue une vue à la fois, en paysage plein cadre, ne
+   montre pas ce qu'on va tenir en main. Tout est visible d'un coup, en
+   grille, chaque visuel à ses proportions réelles ; la loupe reste le seul
+   agrandissement. Le reste du parcours (les deux cases, le paiement) vit en
+   dessous, inchangé. */
+.nu-planche {
+  margin-top: clamp(var(--m-espace-6), 6vw, var(--m-espace-7));
+  display: flex;
+  flex-direction: column;
+  gap: clamp(var(--m-espace-6), 7vw, var(--m-espace-8));
+}
+
+.nu-pl-section { display: flex; flex-direction: column; gap: var(--m-espace-4); }
+
+.nu-pl-titre {
+  margin: 0;
+  font-family: var(--m-police-titre-famille);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(18px, 3vw, 23px);
+  color: var(--c-text);
+}
+
+/* ── Les cartes de couverture ──────────────────────────────────────────
+   Une carte par couverture proposée, empilée : chacune porte déjà une ou
+   deux tuiles côte à côte, l'empiler en colonne évite qu'une carte à deux
+   tuiles et une carte à une tuile ne tombent jamais sur la même largeur. */
+.nu-pl-couvertures {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(var(--m-espace-5), 5vw, var(--m-espace-6));
+}
+
+.nu-pl-carte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-espace-3);
+  padding: clamp(var(--m-espace-3), 3vw, var(--m-espace-4));
+  border: 1px solid transparent;
+  border-radius: var(--m-rayon-champ);
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+
+/* LA CARTE RETENUE SE VOIT DE LOIN (11/09/2026). Un mot sous la carte ne
+   suffisait pas : sur un téléphone, la marque « · votre choix » tombait sous
+   la ligne de flottaison de l'image et personne ne la reliait à la bonne
+   couverture. La bordure accentuée dit QUELLE carte, avant même de lire. */
+.nu-pl-carte--retenue {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+/* Le sous-titre de la question, sous le chapeau. Il DIT ce qu'on attend
+   (« choisissez, ou laissez-nous décider ») : sans lui, la question seule
+   laisse croire qu'une réponse est obligatoire avant de payer. */
+.nu-pl-sous {
+  margin: -8px 0 0;
+  max-width: 54ch;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  line-height: 1.5;
+  color: var(--c-text-soft);
+}
+
+/* Les tuiles d'une même carte : côte à côte sur ordinateur (la première de
+   couverture, étroite et verticale, à côté de la planche entière, large et
+   posée) ; empilées sous 720 px, où les deux à la fois n'ont plus la place
+   d'être lisibles. */
+.nu-pl-tuiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(var(--m-espace-4), 3vw, var(--m-espace-5));
+  width: 100%;
+}
+.nu-pl-tuiles--portrait,
+.nu-pl-tuiles--inconnu {
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .nu-pl-tuiles--planche { flex-direction: column; align-items: center; }
+}
+
+/* La tuile de base : un bouton (rien ne se charge, la loupe s'ouvre). */
+.nu-pl-tuile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: zoom-in;
+  max-width: 100%;
+}
+
+/* La première de couverture : le format RÉEL du magazine, A4 portrait exact
+   (FORMAT_FINI_MM, lib/atelier/impression.ts) — c'est l'objet qu'on tient en
+   main. Cadre en `object-fit: cover` ; le cadrage vient de l'atelier, absent
+   = la face avant de la planche (à droite du fichier C4 | dos | C1). C'est
+   la SEULE tuile qui porte le support magazine (`.nu-viz-mag`) : « ce qui
+   fait objet » (11/09, retour Mathias) reste sur elle. */
+.nu-pl-tuile--premiere {
+  flex: 0 0 auto;
+  width: clamp(150px, 26vw, 240px);
+}
+.nu-pl-tuile--premiere .nu-viz-mag,
+.nu-pl-tuile--premiere .nu-viz-mag-face {
+  width: 100%;
+  aspect-ratio: 210 / 297;
+}
+.nu-pl-tuile--premiere img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: right center;
+}
+
+/* La planche entière : l'export tel qu'il est, jamais rognée — c'est ce qui
+   part à l'impression. Pas de support magazine ici (volontaire, 11/09) : un
+   imprimé posé à plat n'est pas un objet fermé. La largeur suit la colonne,
+   la hauteur suit le ratio naturel de l'image. */
+.nu-pl-tuile--entiere {
+  flex: 1 1 340px;
+  min-width: 220px;
+  max-width: 560px;
+  align-items: stretch;
+}
+/* ⚠️ `flex-basis` suit l'AXE PRINCIPAL du conteneur : les 340px ci-dessus
+   visent une LARGEUR minimale en rangée (desktop). En colonne (mobile,
+   `.nu-pl-tuiles--planche` passe en `flex-direction: column` plus haut), le
+   MÊME flex-basis devient une HAUTEUR forcée et laisse un vide sous la
+   légende, l'image gardant son ratio réel dans une boîte trop haute (mesuré
+   à 375 px : bouton de 340px pour une image de 233px). `flex-basis: auto`
+   rend la hauteur à l'image + sa légende ; la largeur, déjà 100 % en
+   colonne, n'a pas besoin de cette règle. Placée APRÈS la déclaration de
+   base : même spécificité (0-1-0 des deux côtés), c'est l'ORDRE qui
+   tranche en CSS, et une media query plus haut dans le fichier perdait. */
+@media (max-width: 720px) {
+  .nu-pl-tuile--entiere { flex-basis: auto; width: 100%; }
+}
+.nu-pl-tuile--entiere img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--m-rayon-image);
+  box-shadow: var(--shadow-soft);
+}
+.nu-pl-legende-plat {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  color: var(--c-text-faint);
+  text-align: center;
+}
+
+/* Couverture seule (portrait) ou format pas encore mesuré : une tuile
+   unique, l'image ENTIÈRE — jamais de découpe au hasard. Le premier rendu
+   avant mesure passe par cette même règle (`aspect-ratio: auto`, la hauteur
+   suit l'image) : jamais une demi-couverture le temps que la mesure arrive. */
+.nu-pl-tuile--seule {
+  width: clamp(180px, 40vw, 320px);
+}
+.nu-pl-tuile--seule img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  border-radius: var(--m-rayon-image);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Le badge « Agrandir », au survol (souris) ou posé en permanence (doigt) —
+   même comportement que l'ancienne visionneuse. */
+.nu-pl-zoom {
+  position: absolute;
+  z-index: 2;
+  right: 10px;
+  bottom: 10px;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+  pointer-events: none;
+}
+.nu-pl-tuile:hover .nu-pl-zoom,
+.nu-pl-tuile:focus-visible .nu-pl-zoom { opacity: 1; }
+@media (hover: none) { .nu-pl-zoom { opacity: 0.85; } }
+
+/* Le nom de la carte, sous les tuiles — même dessin que l'ancien nom de vue. */
+.nu-pl-nom {
+  margin: 0;
+  font-family: var(--m-police-titre-famille);
+  font-style: italic;
+  font-size: clamp(16px, 2.4vw, 19px);
+  color: var(--c-text);
+  text-align: center;
+}
+
+/* ── LE CHOIX : UN BOUTON PLEIN SOUS CHAQUE CARTE (11/09/2026) ─────────
+   L'ancien « Je préfère celle-ci » était un bouton fantôme (trait fin, fond
+   transparent) qui ne s'affichait QUE sur la carte non retenue : l'écran ne
+   proposait donc rien tant qu'on n'avait pas compris qu'il fallait cliquer.
+   Le bouton est maintenant PLEIN, identique sur chaque carte, et pleine
+   largeur de sa carte : sur 375 px, il se prend au pouce sans viser.
+   « Sans préférence » reste, sous la grille, en SECONDAIRE
+   (`.nu-viz-choix-btn--doux`, plus bas) : c'est une porte de sortie, pas une
+   option égale. */
+.nu-pl-choix-carte { display: flex; justify-content: center; width: 100%; }
+.nu-pl-choix-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-1);
+}
+
+.bj-atelier .nu-pl-btn,
+.nu-pl-retenue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-espace-2);
+  width: 100%;
+  max-width: 320px;
+  min-height: 46px;
+  padding: var(--m-espace-3) var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+/* Les mêmes couleurs que le bouton d'envoi de la feuille d'ajustement
+   (`.nu-feuille-send`, plus bas) : c'est le geste plein de cette page, il ne
+   s'invente pas une seconde fois. L'encre sombre est en dur là-bas comme
+   ici — `--c-void` est le noir du fond, trop profond sur cette terre. */
+.bj-atelier .nu-pl-btn {
+  appearance: none;
+  border: 1px solid var(--c-accent-strong);
+  background: var(--c-accent);
+  color: #1a1210;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.bj-atelier .nu-pl-btn:hover:not(:disabled) { background: var(--c-accent-strong); }
+.bj-atelier .nu-pl-btn:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+/* ÉTEINT EN PRÉVISUALISATION : l'atelier voit l'écran du client, il ne
+   choisit pas à sa place. Le bouton reste LISIBLE — un bouton qu'on ne voit
+   plus est un bouton qu'on ne relit jamais. */
+.bj-atelier .nu-pl-btn:disabled { opacity: 0.45; cursor: default; }
+.bj-atelier .nu-pl-btn:disabled:hover { background: var(--c-accent); }
+
+/* La carte retenue ne perd PAS son bouton : il devient un état, à la même
+   place et à la même taille. Rien ne saute sous le doigt au moment du clic. */
+.nu-pl-retenue {
+  border: 1px solid var(--c-accent);
+  background: transparent;
+  color: var(--c-accent-strong);
+}
+
+/* La confirmation, sous la section. Elle répète le NUMÉRO choisi : lue
+   seule, au téléphone ou sur une capture, elle reste vraie. */
+.nu-pl-confirme {
+  margin: 0;
+  max-width: 48ch;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  line-height: 1.5;
+  text-align: center;
+  color: var(--c-accent-strong);
+}
+
+/* ── Les doubles pages ─────────────────────────────────────────────────
+   Deux par rangée sur ordinateur, une sous 720 px (Mathias, 11/09) — la
+   colonne de la page fait environ 900 px, large assez pour deux tuiles au
+   format réel côte à côte. */
+.nu-pl-doubles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: clamp(var(--m-espace-4), 3vw, var(--m-espace-6));
+}
+@media (max-width: 720px) {
+  .nu-pl-doubles { grid-template-columns: 1fr; }
+}
+
+/* La double page : le magazine OUVERT, au format RÉEL — deux A4 côte à côte,
+   420 × 297 mm (FORMAT_FINI_MM, vérifié sur products/info Cloudprinter). Le
+   cadre impose le ratio ; un export de double de l'atelier est exactement à
+   ce format, rien n'est rogné. Ratio par défaut faute de mesure spécifique
+   aux doubles (aucune infrastructure de mesure ne les couvre aujourd'hui) :
+   si une mesure arrive un jour, cette règle est celle à remplacer. */
+.nu-pl-tuile--double { width: 100%; }
+.nu-pl-tuile--double .nu-viz-mag,
+.nu-pl-tuile--double .nu-viz-mag-face {
+  width: 100%;
+  aspect-ratio: 420 / 297;
+}
+.nu-pl-tuile--double img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.nu-pl-tuile--double .nu-viz-mag::before { content: none; }
+.nu-pl-tuile--double .nu-viz-mag::after { transform: translate(0, 5px); background: var(--paper-3); }
+.nu-pl-tuile--double .nu-viz-mag-pli {
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 90px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.14) 42%, rgba(0, 0, 0, 0.32) 50%,
+    rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
+}
+.nu-pl-nom-tuile {
+  font-family: var(--m-police-titre-famille);
+  font-style: italic;
+  font-size: clamp(15px, 2.2vw, 18px);
+  color: var(--c-text);
+  text-align: center;
+}
+
+/* ══ LE SUPPORT MAGAZINE — SURVIT de l'ancienne visionneuse (04/09, revu
+   SOBRE sur retour de Mathias), posé maintenant sur la première de
+   couverture et chaque double page : angles DROITS, pas de tranche
+   dessinée. Il reste l'essentiel — l'épaisseur du papier en feuilles
+   décalées, l'ombre portée, et le seul pli central de la double ouverte. */
+.nu-viz-mag {
+  position: relative;
+  display: block;
+  max-width: 100%;
+}
+.nu-viz-mag-face {
+  position: relative;
+  display: block;
+  z-index: 1;
+  overflow: hidden;
+  background: var(--c-void);
+  box-shadow: var(--shadow-float);
+}
+.nu-viz-mag::before,
+.nu-viz-mag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.nu-viz-mag::before { transform: translate(6px, 5px); background: var(--paper-3); }
+.nu-viz-mag::after { transform: translate(3px, 2px); background: var(--paper-2); }
+/* Le pli central — RÉSERVÉ à la double ouverte (règle ci-dessus). */
+.nu-viz-mag-pli { display: none; }
+
+/* T-093 — le choix de couverture, sous la scène. Discret : ce n'est PAS
+   l'action principale de l'écran (celle-là, c'est payer), c'est une
+   préférence qu'on peut exprimer ou ignorer. Boutons SURVIVANTS de l'ancienne
+   visionneuse, inchangés. */
+.bj-atelier .nu-viz-choix-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--m-cible-mini);
+  padding: var(--m-espace-2) var(--m-espace-5);
+  background: none;
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--m-rayon-pilule);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--c-text);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.bj-atelier .nu-viz-choix-btn:hover {
+  border-color: var(--c-accent);
+  background: var(--c-accent-soft);
+}
+
+/* La seconde réponse est SECONDAIRE, pas égale : le trait s'efface, le mot
+   reste lisible. Dire « je vous fais confiance » doit rester possible sans
+   être la première chose que l'œil attrape. */
+.bj-atelier .nu-viz-choix-btn--doux {
+  border-color: transparent;
+  color: var(--c-text-faint);
+}
+.bj-atelier .nu-viz-choix-btn--doux:hover {
+  border-color: var(--c-line-strong);
+  background: none;
+  color: var(--c-text);
+}
+
+/* ÉTEINT EN PRÉVISUALISATION (11/09/2026) : l'atelier voit l'écran du
+   client, il ne choisit pas à sa place. Le bouton reste lisible — un bouton
+   qu'on ne voit plus est un bouton qu'on ne relit jamais. */
+.bj-atelier .nu-viz-choix-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bj-atelier .nu-viz-choix-btn:disabled:hover {
+  border-color: var(--c-line-strong);
+  background: none;
+}
+.bj-atelier .nu-viz-choix-btn--doux:disabled:hover {
+  border-color: transparent;
+  color: var(--c-text-faint);
+}
+
+.nu-viz-choix-refus {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  color: var(--c-text-faint);
+}
+
+.nu-viz-note {
+  max-width: 42ch;
+  text-align: center;
+  font-size: var(--m-taille-petit);
+  color: var(--c-text-faint);
+  align-self: center;
+}
+
+
+/* ── Gardez ce lien ──
+   Pas de compte, pas de mot de passe : ce lien EST son espace client. Posé en
+   pied de page, présent à tous les états, jamais dans le chemin de lecture. */
+.nu-garde {
+  margin-top: var(--m-espace-8);
+  padding-top: var(--m-espace-5);
+  border-top: 1px solid var(--c-line);
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
+  line-height: 1.55;
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+.nu-garde b { font-weight: 400; color: var(--c-text-soft); }
+/* 18/09 : le texte à gauche, les deux boutons à droite, sur UNE ligne. Les
+   boutons ne sont plus DANS le paragraphe (le texte coulait autour d'eux). */
+.nu-garde-l {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--m-espace-5);
+}
+.nu-garde-l p { max-width: 46ch; }
+.nu-garde .bj-lienpartage { margin-top: 0; flex: 0 0 auto; }
+.bj-atelier .nu-garde-compte a {
+  color: var(--c-accent-strong);
+  text-decoration: none;
+}
+.bj-atelier .nu-garde-compte a:hover { color: var(--c-text); text-decoration: underline; }
+@media (max-width: 760px) {
+  .nu-garde { margin-top: var(--m-espace-8); padding-top: var(--m-espace-5); gap: var(--m-espace-4); }
+  .nu-garde-l { flex-direction: column; align-items: flex-start; gap: var(--m-espace-4); }
+}
+
+.nu-garde-url {
+  display: block;
+  margin-top: var(--m-espace-3);
+  font-size: var(--m-taille-etiquette);
+  color: var(--c-text-soft);
+  word-break: break-all;
+  /* Un lien qu'on veut copier se sélectionne d'un geste, pas de trois. */
+  user-select: all;
+}
+
+/* L'encart tarif — verre dépoli, pages + prix à gauche, « Commander » à droite
+   (02/09, « une plus belle présentation, comme sur desktop »). Le montant est
+   détaché en accent, l'ensemble est l'ancre visuelle sous la visionneuse. Sur
+   mobile il passe en colonne et le bouton prend toute la largeur. */
+.nu-tarif {
+  margin-top: clamp(var(--m-espace-6), 5.5vw, var(--m-espace-7));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-espace-4);
+  flex-wrap: wrap;
+  padding: clamp(var(--m-espace-4), 3vw, var(--m-espace-5)) clamp(var(--m-espace-4), 3.4vw, var(--m-espace-5));
+  border-radius: var(--m-rayon-champ);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.nu-tarif-p { display: flex; flex-direction: column; gap: var(--m-espace-1); min-width: 0; }
+
+.nu-tarif-label {
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-tarif-value {
+  font-family: var(--m-police-titre-famille);
+  font-size: clamp(24px, 4.6vw, 32px);
+  line-height: 1.1;
+  color: var(--c-text);
+}
+.nu-tarif-value b { font-weight: 500; }
+.nu-tarif-sep { color: var(--c-text-faint); font-weight: 300; }
+.nu-tarif-prix { color: var(--c-accent); white-space: nowrap; }
+
+.nu-prix-sub { margin-top: clamp(var(--m-espace-4), 3vw, var(--m-espace-5)); font-size: var(--m-taille-bouton); font-weight: 300; color: var(--c-text-soft); }
+
+/* ── LA CARTE DE LA COMMANDE (18/09/2026) ──
+   Même enveloppe que `.nu-doc` (l'état maquette) : 760 px, centrée, surface
+   et filet du thème. Le bon de commande y perd ses propres filets haut et
+   bas — c'est la carte qui borde, les lignes ne gardent que leurs séparateurs.
+   Le texte reste à gauche : un reçu centré ne se lit pas. */
+.nu-commande {
+  margin: var(--m-espace-7) auto 0;
+  max-width: var(--m-largeur-colonne);
+  padding: var(--m-espace-5) var(--m-espace-6) var(--m-espace-6);
+  border: 1px solid var(--c-line-md);
+  border-radius: var(--m-rayon-champ);
+  background: var(--c-surface-1);
+  text-align: left;
+}
+.bj-atelier .nu-commande-lbl {
+  margin: 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--c-text-faint);
+}
+.nu-commande .nu-bon { margin-top: var(--m-espace-3); border-top: none; border-bottom: none; padding: 0; }
+.nu-commande .nu-bon-t { padding: var(--m-espace-4) 0 0; }
+.nu-commande .nu-bon-t b { font-size: clamp(28px, 4vw, 32px); }
+.nu-commande .nu-promesse { margin-top: var(--m-espace-5); padding-top: var(--m-espace-5); border-top: 1px solid var(--c-line); }
+.nu-commande .nu-order--plein { width: auto; margin-top: var(--m-espace-5); }
+.nu-commande .nu-accords-mot { text-align: left; }
+@media (max-width: 760px) {
+  .nu-commande { margin-top: var(--m-espace-6); padding: var(--m-espace-5); }
+  .nu-commande .nu-order--plein { width: 100%; }
+  .nu-commande .nu-accords-mot { text-align: center; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LE BON DE COMMANDE — 08/09/2026.
+   Mathias : « je n'ai pas l'impression d'être sur un site haut de gamme ».
+   L'encart de verre dépoli qui tenait cette place mettait le nombre de pages
+   et le montant au même corps, sous une capitale de 11 px qui décrivait un
+   procédé (« impression et façonnage compris »). Au moment où l'on engage de
+   l'argent, ce qui doit dominer, c'est le total.
+   Ce qui suit énonce une commande : deux lignes de détail, un trait plus
+   marqué, puis le total en display. C'est la forme d'un reçu, et c'est
+   exactement ce qu'on attend d'une maison qui fabrique un objet.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.nu-bon {
+  margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
+  border-top: 1px solid var(--c-line);
+  border-bottom: 1px solid var(--c-line);
+  padding: 2px 0;
+}
+
+.nu-bon-l {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--m-espace-5);
+  padding: var(--m-espace-3) 0;
+  font-size: var(--m-taille-bouton);
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--c-text-soft);
+}
+
+.nu-bon-l + .nu-bon-l { border-top: 1px solid var(--c-line); }
+
+/* Le détail reste en graisse normale : ce sont des montants intermédiaires,
+   ils informent, ils ne concluent pas. */
+.nu-bon-l b { font-weight: 400; color: var(--c-text); white-space: nowrap; }
+
+/* Le total. Trait plus marqué au-dessus, libellé en petites capitales, et le
+   montant en display : c'est la seule ligne du bloc qui doit s'attraper d'un
+   regard, de l'autre bout de la pièce. */
+.nu-bon-t {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--m-espace-5);
+  padding: var(--m-espace-4) 0 var(--m-espace-4);
+  border-top: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+}
+
+.nu-bon-t span {
+  font-size: var(--m-taille-etiquette);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-bon-t b {
+  font-family: var(--m-police-titre-famille);
+  font-size: clamp(32px, 6.5vw, 42px);
+  font-weight: 400;
+  line-height: 1;
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LE CHOIX DU PAYS, DANS LE BON DE COMMANDE — 11/09/2026.
+
+   Il prend la PLACE EXACTE de la ligne « Livraison » tant que la destination
+   n'est pas connue : la question se pose là où le montant s'affichera, et pas
+   dans un encart à côté. C'est la même raison qui a fait descendre le prix
+   sur le bouton le 08/09 — au moment d'engager de l'argent, chaque chose à
+   l'endroit où on la cherche.
+
+   Le select est dessiné comme celui de l'écran 4 du questionnaire
+   (`.at-inp--select`, composer.css) : même retrait du chrome système, même
+   chevron SVG en ligne, même `color-scheme: dark` pour la popup native. Les
+   deux feuilles ne sont PAS partagées (`/composer` et `/numero` ont chacune
+   la leur), d'où le dessin redit ici plutôt qu'une classe empruntée à une
+   feuille qui n'est pas chargée sur cette page.
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── LA FINITION DE LA COUVERTURE (11/09/2026) ──────────────────────────
+   Une ligne du bon de commande comme les autres, mais dont la partie droite
+   n'est pas un montant : deux boutons collés, celui qui est choisi en plein.
+   `align-items: center` et non `baseline` — deux boutons ne s'alignent pas
+   sur une ligne de base, ils se centrent sur le libellé.
+   Le retour à la ligne sur mobile est assumé (`flex-wrap`) : à 320 px, le
+   libellé et les deux boutons ne tiennent pas côte à côte, et un bouton
+   rogné vaut moins qu'un bouton dessous. */
+.nu-bon-l--choix {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--m-espace-3) var(--m-espace-5);
+}
+
+.nu-finition {
+  display: inline-flex;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--m-rayon-champ);
+  overflow: hidden;
+}
+
+.nu-finition-b {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  /* 44 px de haut au doigt : la cible minimale, et la même que `.nu-select`
+     juste en dessous — les deux réglages du bon de commande doivent avoir la
+     même assise. */
+  padding: var(--m-espace-3) var(--m-espace-4);
+  min-height: var(--m-cible-mini);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
+  font-weight: 300;
+  color: var(--c-text-soft);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nu-finition-b + .nu-finition-b {
+  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+}
+.nu-finition-b:hover:not([disabled]):not(.est-choisi) { background: var(--c-surface-2); }
+.nu-finition-b.est-choisi {
+  background: var(--c-surface-3);
+  color: var(--c-text);
+  font-weight: 400;
+}
+.nu-finition-b[disabled] { opacity: 0.45; cursor: not-allowed; }
+/* L'outline à l'INTÉRIEUR : le groupe a `overflow: hidden`, un outline
+   décalé vers l'extérieur serait rogné et le focus deviendrait invisible. */
+.nu-finition-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+
+.nu-bon-choix { padding: var(--m-espace-3) 0 var(--m-espace-4); }
+.nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--c-line); }
+
+.nu-bon-choix-lbl {
+  display: block;
+  font-size: var(--m-taille-etiquette);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-bon-choix-l {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-3);
+}
+
+.nu-select {
+  flex: 1 1 150px;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  color-scheme: dark;
+  background: transparent;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--m-rayon-champ);
+  padding: var(--m-espace-3) var(--m-espace-6) var(--m-espace-3) var(--m-espace-3);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
+  font-weight: 300;
+  color: var(--c-text);
+  cursor: pointer;
+  /* Le chevron, en SVG de données : une image de plus serait une requête de
+     plus pour douze pixels. La couleur est écrite en dur (%23928d84 =
+     --c-text-faint), parce qu'une URL de données ne lit pas une variable CSS. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23928d84' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px 8px;
+}
+/* Firefox et Chrome sous Windows dessinent les options eux-mêmes : sans ces
+   deux lignes, du texte crème s'affiche sur du blanc, donc invisible. */
+.nu-select option { background: var(--c-surface-2); color: var(--c-text); }
+.nu-select:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-select[disabled] { opacity: 0.45; cursor: not-allowed; }
+
+.nu-bon-calc {
+  flex: 0 0 auto;
+  appearance: none;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--m-rayon-champ);
+  background: var(--c-surface-2);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
+  font-weight: 400;
+  color: var(--c-text);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.nu-bon-calc:hover:not([disabled]) { background: var(--c-surface-3); }
+.nu-bon-calc:active:not([disabled]) { transform: scale(0.98); }
+.nu-bon-calc[disabled] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.nu-bon-calc:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+
+.nu-bon-choix-mot {
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  line-height: 1.45;
+  color: var(--c-text-faint);
+}
+
+/* « Changer de pays » : un lien, pas un bouton. Il ne doit pas rivaliser avec
+   « Commander » — il se propose à qui le cherche, il ne se propose pas au
+   reste. Même dessin que `.nu-ajuster`, à la taille du détail. */
+.nu-bon-changer {
+  appearance: none;
+  margin-left: var(--m-espace-3);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  color: var(--c-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--c-line-strong);
+  transition: color var(--dur) var(--ease);
+}
+.nu-bon-changer:hover:not([disabled]) { color: var(--c-text-soft); }
+.nu-bon-changer[disabled] { opacity: 0.4; cursor: not-allowed; }
+.nu-bon-changer:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
+.nu-bon-changer--annule { display: inline-block; margin: var(--m-espace-3) 0 0; }
+
+/* Les droits de douane des trois destinations hors Union. Dit AVANT le
+   paiement, à la suite du bon : une facture de douane découverte devant sa
+   porte est la seule mauvaise surprise que cette page peut encore réserver. */
+.nu-bon-note {
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  line-height: 1.45;
+  color: var(--c-text-faint);
+}
+
+/* Une destination qui n'est plus desservie (D21). Même note, mais LUE : le
+   gris estompé convient à une mention de douane qu'on parcourt, pas à une
+   information qui demande au client de refaire un choix. Pleine couleur de
+   texte, et au-dessus du menu plutôt qu'à la suite du bon. */
+.nu-bon-note--suspendu {
+  margin: 0 0 var(--m-espace-3);
+  color: var(--c-text);
+  font-weight: 400;
+}
+
+/* ── LA PROMESSE, AU-DESSUS DU BOUTON ──
+   Deux lignes, deux points à l'accent. Elles vivaient sous le bouton, en
+   paragraphe gris : c'est-à-dire à l'endroit qu'on saute, alors que c'est
+   ce qui fait appuyer — on paie un objet qu'on n'a pas encore vu fini. */
+.nu-promesse {
+  margin: clamp(var(--m-espace-4), 3.4vw, var(--m-espace-5)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nu-promesse li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-2) 0;
+  font-size: var(--m-taille-bouton);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--c-text-soft);
+}
+
+.nu-promesse li i {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: var(--m-espace-2);
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+
+.nu-promesse li b { font-weight: 500; color: var(--c-text); }
+
+/* Le bouton n'est plus dans un encart : il prend la laisse et se pose seul.
+   ⚠️ La règle `.nu-order` d'origine reste la référence — on n'ajoute ici que
+   ce que la sortie de l'encart change. */
+.nu-order--plein {
+  margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
+  width: 100%;
+  justify-content: center;
+}
+
+.nu-accords-mot {
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  color: var(--c-text-faint);
+  text-align: center;
+}
+
+/* ---- les deux cases obligatoires (invariant nº3) ---- */
+.nu-cases { margin-top: clamp(var(--m-espace-6), 5vw, var(--m-espace-6)); display: grid; gap: var(--m-espace-4); }
+
+.nu-check {
+  display: flex;
+  gap: var(--m-espace-3);
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--c-text-soft);
+  max-width: 60ch;
+}
+
+.nu-check input {
+  margin-top: var(--m-espace-1);
+  flex: 0 0 auto;
+  accent-color: var(--c-accent);
+  width: 17px;
+  height: 17px;
+}
+
+.nu-check:hover { color: var(--c-text); }
+
+/* ---- le bouton de paiement ----
+   --c-order est RÉSERVÉ à ce bouton et à lui seul (PRD §4). */
+.nu-order {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-espace-3);
+  background: var(--c-order);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
+  font-weight: 500;
+  padding: var(--m-espace-4) var(--m-espace-6);
+  border: none;
+  border-radius: var(--m-rayon-pilule);
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), background var(--dur) var(--ease);
+  will-change: transform;
+}
+
+.bj-atelier .nu-order { color: var(--c-text-pure); }
+
+.nu-order:hover:not([disabled]) { background: var(--c-order-strong); transform: scale(1.02); }
+.nu-order:active:not([disabled]) { transform: scale(0.98); }
+.nu-order[disabled] { opacity: 0.32; cursor: not-allowed; transform: none; }
+
+/* T-091 — le lien discret qui ouvre la feuille d'ajustement (plus « répondez
+   au mail »). Souligné fin, jamais dans le chemin de l'achat. */
+.nu-ajuster {
+  appearance: none;
+  margin-top: clamp(var(--m-espace-5), 4.5vw, var(--m-espace-6));
+  background: none;
+  border: none;
+  padding: var(--m-espace-2) 0;
+  cursor: pointer;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--c-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--c-line-strong);
+  transition: color var(--dur) var(--ease);
+}
+.nu-ajuster:hover:not([disabled]) { color: var(--c-text-soft); }
+/* Éteint en prévisualisation (l'atelier regarde, il ne dépose pas de demande
+   au nom du client) : le lien doit alors CESSER de se proposer. */
+.nu-ajuster[disabled] { opacity: 0.4; cursor: not-allowed; }
+.nu-ajuster:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
+
+.nu-erreur { margin-top: var(--m-espace-4); font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
+
+/* ── La feuille d'ajustement (T-091) — bas de l'écran sur mobile, centrée au
+   large. Chips + un mot, « Envoyer à l'atelier » : la porte de sortie douce. */
+.nu-feuille {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(2, 2, 2, 0.62);
+  animation: nu-feuille-fond var(--dur) var(--ease);
+}
+.nu-feuille-carte {
+  width: min(560px, 100%);
+  max-height: calc(var(--app-height) * 0.92);
+  overflow-y: auto;
+  background: var(--glass-bg-plein);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
+  padding: clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-5), 6vw, var(--m-espace-6));
+  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  animation: nu-feuille-monte 420ms var(--ease-spring);
+}
+@media (min-width: 620px) {
+  .nu-feuille { align-items: center; }
+  .nu-feuille-carte { border-radius: var(--m-rayon-bloc); }
+}
+.nu-feuille-titre {
+  font-family: var(--m-police-titre-famille);
+  font-weight: 500;
+  font-size: clamp(22px, 4vw, 28px);
+  margin-bottom: var(--m-espace-2);
+}
+.nu-feuille-sub { color: var(--c-text-soft); font-size: var(--m-taille-petit); line-height: 1.5; max-width: 44ch; }
+.nu-feuille-chips { display: flex; flex-wrap: wrap; gap: var(--m-espace-2); margin: var(--m-espace-5) 0 var(--m-espace-4); }
+
+/* 04/09 — le groupe « La longueur du numéro » sous les motifs : un intitulé
+   discret, puis les deux sens (un seul cochable à la fois, l'exclusivité est
+   dans le composant). Les marges recousent le rythme de la feuille. */
+.nu-feuille-chips--motifs { margin-bottom: 0; }
+.bj-atelier .nu-feuille-groupe {
+  margin: var(--m-espace-4) 0 0;
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+.nu-feuille-chips--longueur { margin: var(--m-espace-3) 0 var(--m-espace-4); }
+
+/* La mention du prix, sous les deux sens : elle n'apparaît qu'une fois un
+   sens choisi, et se lit comme une note — jamais comme un avertissement.
+   (0-2-0) : `.bj-atelier p { margin: 0 }` battrait une classe seule. */
+.bj-atelier .nu-feuille-note {
+  margin: -8px 0 var(--m-espace-4);
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--c-text-faint);
+  max-width: 44ch;
+}
+.nu-feuille-chip {
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--c-text-soft);
+  background: var(--c-surface-2);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--m-rayon-pilule);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
+}
+.nu-feuille-chip[aria-pressed='true'] {
+  color: var(--c-text);
+  background: var(--c-accent-soft);
+  border-color: rgba(214, 138, 99, 0.5);
+}
+.nu-feuille-chip:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-feuille-mot {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  margin-bottom: var(--m-espace-5);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  background: var(--c-void);
+  color: var(--c-text);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--m-rayon-champ);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
+  line-height: 1.5;
+}
+.nu-feuille-mot::placeholder { color: var(--c-text-faint); }
+.nu-feuille-mot:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+.nu-feuille-row { display: flex; align-items: center; justify-content: space-between; gap: var(--m-espace-4); }
+.nu-feuille-cancel {
+  appearance: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--c-text-faint);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  padding: var(--m-espace-2);
+  transition: color var(--dur) var(--ease);
+}
+.nu-feuille-cancel:hover { color: var(--c-text-soft); }
+.nu-feuille-send {
+  appearance: none;
+  cursor: pointer;
+  font-family: var(--m-police-texte-famille);
+  font-weight: 600;
+  font-size: var(--m-taille-bouton);
+  color: #1a1210;
+  background: var(--c-accent);
+  border: 1px solid var(--c-accent-strong);
+  border-radius: var(--m-rayon-pilule);
+  padding: var(--m-espace-4) var(--m-espace-6);
+  transition: background var(--dur) var(--ease), transform var(--dur) var(--ease-spring);
+}
+.nu-feuille-send:hover:not([disabled]) { background: var(--c-accent-strong); transform: translateY(-1px); }
+.nu-feuille-send:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+.nu-feuille-send[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
+.nu-feuille-done {
+  font-family: var(--m-police-titre-famille);
+  font-style: italic;
+  font-size: clamp(20px, 4vw, 24px);
+  color: var(--c-text);
+  text-align: center;
+  margin-bottom: var(--m-espace-2);
+}
+@keyframes nu-feuille-fond { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nu-feuille-monte { from { transform: translateY(16px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .nu-feuille,
+  .nu-feuille-carte { animation: none; }
+}
+
+/* Sous 520px, l'encart tarif se met en colonne : le bouton prend toute la
+   largeur, plus jamais serré à côté du prix (piège du 02/09). */
+@media (max-width: 520px) {
+  .nu-tarif { flex-direction: column; align-items: stretch; gap: var(--m-espace-4); }
+  .nu-tarif .nu-order { width: 100%; justify-content: center; }
+}
+
+/* T2 refonte mobile (02/09) — les deux accords obligatoires, repliés jusqu'au
+   tap sur « Commander », révélés d'un coup avant le paiement. Sous la
+   visionneuse, l'écran reste dégagé : le prix et un seul bouton. Le texte des
+   cases est INCHANGÉ (information légale, CGV art. 8.5). Repli/ouverture par la
+   hauteur de grille (0fr -> 1fr), animée vers la hauteur réelle. */
+.nu-confirmer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur) var(--ease);
+}
+.nu-confirmer.is-open { grid-template-rows: 1fr; }
+.nu-confirmer-inner { overflow: hidden; min-height: 0; }
+.nu-confirmer.is-open .nu-confirmer-inner { padding-top: clamp(var(--m-espace-5), 5vw, var(--m-espace-6)); }
+.nu-confirmer-titre {
+  margin: 0 0 var(--m-espace-4);
+  font-family: var(--m-police-titre-famille);
+  font-size: clamp(19px, 3.4vw, 24px);
+  color: var(--c-text);
+}
+.nu-confirmer .nu-cases { margin-top: 0; }
+.nu-confirmer-aide { margin-top: var(--m-espace-3); font-size: var(--m-taille-petit); color: var(--c-text-faint); }
+
+/* La planche n'a plus de scène à hauteur fixe (11/09/2026) : chaque tuile
+   suit son propre `aspect-ratio`, la règle qui resserrait `--viz-h` sous
+   520 px est partie avec elle — voir `archive/numero-carrousel-2026-09/`. */
+
+/* ---- la case facultative « montrer des extraits » (T2-1) ----
+   Venue de l'ecran 6 du composeur (.at-facultatif) : ici elle a du contexte
+   et du temps, en pied de page, au-dessus de la consigne du lien. */
+.nu-facultatif {
+  margin-top: clamp(var(--m-espace-7), 9vw, var(--m-espace-9));
+  padding-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
+  border-top: 1px solid var(--c-line);
+  max-width: 52ch;
+}
+.nu-facultatif + .nu-garde { margin-top: clamp(var(--m-espace-5), 5vw, var(--m-espace-7)); }
+
+.nu-facultatif-titre {
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+
+.nu-facultatif-note {
+  margin-top: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  color: var(--c-text-faint);
+}
+
+.nu-facultatif .nu-check { margin-top: var(--m-espace-4); }
+
+/* ---- l'état 4 : maquette feuilletable + Canva en commentaire ---- */
+/* 18/09 : la visionneuse et ses deux liens dans UNE carte. La carte est
+   bornée à 760 px et centrée : la colonne de lecture fait 720, une carte
+   déborde d'un souffle, pas d'une marge. */
+.nu-doc {
+  margin: var(--m-espace-7) auto 0;
+  max-width: var(--m-largeur-colonne);
+  border: 1px solid var(--c-line-md);
+  border-radius: var(--m-rayon-champ);
+  background: var(--c-surface-1);
+  overflow: hidden;
+}
+.nu-doc .nu-pdf {
+  display: block;
+  margin: 0;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  border: 0;
+  background: var(--c-surface-2);
+}
+.nu-doc-liens {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4) var(--m-espace-5);
+  border-top: 1px solid var(--c-line);
+}
+/* Le bouton « en verre » des utilitaires (18/09) : les mêmes cotes que
+   `.bj-lienpartage-btn` (lienpartage.css), pour que « Ouvrir le Canva »,
+   « Copier mon lien » et « Mon compte » soient un seul et même objet. */
+.bj-atelier .nu-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border: 1px solid rgba(245, 240, 231, 0.28);
+  border-radius: var(--m-rayon-pilule);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--c-text);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.bj-atelier .nu-ghost:hover,
+.bj-atelier .nu-ghost:focus-visible { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+@media (max-width: 760px) {
+  .nu-doc-liens { flex-direction: column; align-items: stretch; padding: var(--m-espace-4); gap: var(--m-espace-3); }
+  .nu-doc-liens .nu-ghost { white-space: normal; }
+}
+/* `.nu-liens` : l'ancien rang de liens, gardé pour qui l'utilise encore. */
+.nu-liens {
+  margin-top: var(--m-espace-5);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-espace-4);
+}
+
+/* Lien secondaire — texte souligné, jamais un second bouton (invariant nº5). */
+.bj-atelier .nu-lien {
+  font-size: var(--m-taille-petit);
+  color: var(--c-text-soft);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--c-line-strong);
+  transition: color var(--dur) var(--ease);
+}
+
+.bj-atelier .nu-lien:hover { color: var(--c-text); }
+
+/* T2-13 — le troisieme geste de l'etat 4 est un <button>, pas un <a> :
+   on lui retire l'habit de bouton pour qu'il se lise comme les liens voisins. */
+.bj-atelier .nu-retouches {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--m-taille-petit);
+}
+.bj-atelier .nu-retouches:disabled { opacity: 0.5; cursor: default; }
+
+/* ---- page inconnue (token faux ou expiré) ---- */
+.nu-perdu {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  min-height: var(--app-height);
+  padding: var(--pad);
+}
+
+/* Les largeurs de lecture de .nu-mot / .nu-sub sont pensées pour une colonne
+   alignée à gauche — ici elles doivent se recentrer avec le bloc. */
+.nu-perdu .nu-mot,
+.nu-perdu .nu-sub { margin-left: auto; margin-right: auto; }
+
+@media (hover: none) {
+  .nu-order:active:not([disabled]) { transform: scale(0.98); transition-duration: 120ms; }
+}
+
+/* ── LES EXEMPLAIRES (15/09/2026, T-073 levé) ────────────────────────────
+   Le sélecteur vit dans le bon de commande, sur la même ligne que son
+   libellé, avec la même assise que les boutons de finition juste au-dessus :
+   même cadre, même hauteur au doigt (44 px), même transition. La légende du
+   dégressif est SOUS le mot « Exemplaires », en petit, pour que la remise se
+   lise avant le clic sans écraser la ligne. */
+.nu-bon-legende {
+  display: block;
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-etiquette);
+  font-weight: 300;
+  line-height: 1.35;
+  color: var(--c-text-faint);
+}
+
+.nu-nombre {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--m-rayon-champ);
+  overflow: hidden;
+}
+
+.nu-nombre-b {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: var(--m-cible-mini);
+  min-height: var(--m-cible-mini);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-chapo);
+  font-weight: 300;
+  line-height: 1;
+  color: var(--c-text-soft);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.nu-nombre-b:hover:not([disabled]) { background: var(--c-surface-2); color: var(--c-text); }
+.nu-nombre-b[disabled] { opacity: 0.35; cursor: not-allowed; }
+.nu-nombre-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+
+.nu-nombre-v {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--m-cible-mini);
+  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-right: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
+  font-weight: 400;
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* L'économie et le seuil : deux phrases courtes, alignées sur les lignes du
+   bon, en gris calme. L'économie dit ce qu'on vient de gagner ; le seuil dit
+   ce qui reste à gagner. Jamais les deux à la fois pour le même geste. */
+.nu-bon-econ,
+.nu-bon-franco {
+  margin: -4px 0 var(--m-espace-3);
+  font-size: var(--m-taille-petit);
+  font-weight: 300;
+  line-height: 1.4;
+  color: var(--c-text-soft);
+}
+.nu-bon-franco { color: var(--c-accent); }
+
+/* ── LA CARTE CADEAU (Noël 2026, lot 3) ──
+   Un lien discret sous le total ; au clic, un champ et « Appliquer » sur une
+   ligne. Appliquée, le code et « Retirer ». Même dessin que le choix du pays. */
+.nu-carte { margin: var(--m-espace-3) 0 0; }
+.nu-carte .nu-bon-changer { margin-left: 0; }
+.nu-carte-form { display: flex; gap: var(--m-espace-2); }
+.nu-carte-champ {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-radius: var(--m-rayon-champ);
+  background: var(--c-surface-1);
+  padding: var(--m-espace-3) var(--m-espace-3);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
+  letter-spacing: 0.06em;
+  color: var(--c-text);
+}
+.nu-carte-champ:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-carte-ok {
+  display: flex;
+  align-items: baseline;
+  gap: var(--m-espace-3);
+  margin: 0;
+  font-size: var(--m-taille-petit);
+  letter-spacing: 0.06em;
+  color: var(--c-text-soft);
+}
+.nu-carte-refus { margin: var(--m-espace-2) 0 0; font-size: var(--m-taille-petit); color: var(--c-accent); }
+
+/* Le récapitulatif après paiement (16/11) : des lignes courtes, libellé à
+   gauche, valeur à droite, comme un ticket. */
+.nu-recap {
+  max-width: 520px;
+  margin: var(--m-espace-5) auto 0;
+  text-align: left;
+  padding: var(--m-espace-1) var(--m-espace-4);
+  border: 1px solid var(--c-line-md);
+  border-radius: var(--m-rayon-champ);
+  background: var(--c-surface-1);
+}
+.nu-recap > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-3) 0;
+  border-top: 1px solid var(--c-line);
+}
+.nu-recap > div:first-child { border-top: 0; }
+.nu-recap dt { font-size: var(--m-taille-petit); color: var(--c-text-soft); }
+.nu-recap dd { margin: 0; font-size: var(--m-taille-bouton); color: var(--c-text); text-align: right; font-variant-numeric: tabular-nums; }
+.nu-recap .nu-recap-fort { color: var(--c-accent); }
+
+/* ── NOËL : L'OFFRE DU 2e EXEMPLAIRE EN ÉVIDENCE (16/11/2026) ────────────
+   Un encart-bouton dans le bon de commande, tant qu'un seul exemplaire est
+   commandé pendant la fenêtre de Noël. Le chiffre d'abord. */
+.nu-noel-offre {
+  display: flex;
+  align-items: center;
+  gap: var(--m-espace-4);
+  width: 100%;
+  margin: var(--m-espace-2) 0 var(--m-espace-3);
+  padding: var(--m-espace-4) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+  color: var(--c-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
+}
+.nu-noel-offre:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 18%, transparent); }
+.nu-noel-offre:disabled { opacity: 0.6; cursor: default; }
+.nu-noel-offre-pct {
+  flex: 0 0 auto;
+  font-family: var(--m-police-titre-famille);
+  font-size: 34px;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--c-accent-strong);
+}
+.nu-noel-offre-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.nu-noel-offre-txt b { font-weight: 500; font-size: var(--m-taille-bouton); white-space: nowrap; }
+.nu-noel-offre-txt sup { font-size: 0.7em; }
+.nu-noel-offre-txt small { font-size: var(--m-taille-etiquette); color: var(--c-text-soft); }
+.nu-noel-offre-plus {
+  flex: 0 0 auto;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--c-accent);
+  color: var(--c-text-onaccent, #1a1410);
+  font-size: var(--m-taille-petit);
+  font-weight: 500;
+}
+@media (max-width: 400px) {
+  .nu-noel-offre { gap: var(--m-espace-3); padding: var(--m-espace-3); }
+  .nu-noel-offre-pct { font-size: var(--m-taille-h3); }
+  .nu-noel-offre-plus { padding: var(--m-espace-2) var(--m-espace-3); }
+}
+
+/* ── NOËL : UNE CARTE CADEAU POUR UN PROCHE, DANS LE MÊME PAIEMENT (16/11/2026) ── */
+.nu-noel-carte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-espace-3) var(--m-espace-4);
+  margin: var(--m-espace-1) 0 var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  border: 1px dashed var(--c-accent);
+  color: var(--c-text);
+}
+.nu-noel-carte.est-choisie { border-style: solid; background: color-mix(in srgb, var(--c-accent) 8%, transparent); }
+.nu-noel-carte-q { flex: 1 1 200px; font-size: var(--m-taille-bouton); line-height: 1.35; }
+.nu-noel-carte-choix { display: flex; gap: var(--m-espace-2); flex: 0 0 auto; }
+.nu-noel-carte-m {
+  min-width: 64px;
+  min-height: 40px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--c-accent);
+  background: transparent;
+  color: var(--c-accent-strong);
+  font: inherit;
+  font-size: var(--m-taille-petit);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.nu-noel-carte-m.est-choisi { background: var(--c-accent); color: var(--c-text-onaccent, #1a1410); }
+.nu-noel-carte-m:disabled { opacity: 0.6; cursor: default; }
+.nu-noel-carte-pour { flex: 1 1 100%; display: flex; align-items: center; gap: var(--m-espace-3); font-size: var(--m-taille-petit); }
+.nu-noel-carte-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  background: transparent;
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--m-taille-base);
+}
+.nu-noel-carte-input:focus { outline: none; border-color: var(--c-accent); }
+.nu-noel-carte-err { flex: 1 1 100%; margin: 0; font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
+.nu-noel-carte-note { flex: 1 1 100%; font-size: var(--m-taille-etiquette); color: var(--c-text-soft); }

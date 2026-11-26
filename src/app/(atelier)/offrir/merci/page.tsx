@@ -6,17 +6,19 @@
    `enregistrerCarte` est idempotente (un seul enregistrement par session). */
 
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Stripe from 'stripe'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { makeSupabase } from '@/lib/supabase'
 import { enregistrerCarte, type CarteLigne } from '@/lib/atelier/carteServeur'
 import { dansFenetreNoel, NOEL_REMISE_AUTRE_PCT, NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
-import CarteCadeau from '../../noel-preview/CarteCadeau'
+import Carte from '../Carte'
+import VueMerci from './VueMerci'
+import { lireVisuel } from '@/components/Visuel'
 import { PHRASES, TEXTES } from '../../noel-preview/contenu'
-import '../../noel-preview/noel.css'
-import '../offrir.css'
+import '../../magazine/magazine.css'
+import '../carte.css'
+import '../retour.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
@@ -52,16 +54,11 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
   const carte = await carteDeLaSession(sessionId)
   if (!carte) notFound()
 
+  const visuel = await lireVisuel('offrir.carte')
+  const couverture = visuel?.fichier ?? null
+
   if (carte === 'attente') {
-    return (
-      <main className="nl-preview nl-page">
-        <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/logo-bellajour.svg" alt="Bellajour" width={240} height={91} /></Link>
-        <div className="nl-merci">
-          <h1 className="nl-recit-titre">Paiement en cours.</h1>
-          <p className="nl-faible">Rechargez cette page dans un instant. Votre carte arrive aussi par e-mail.</p>
-        </div>
-      </main>
-    )
+    return <VueMerci couverture={couverture} attente />
   }
 
   const quoi =
@@ -76,43 +73,29 @@ export default async function MerciPage({ searchParams }: { searchParams: Promis
   const fenetre = dansFenetreNoel(new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' }))
 
   return (
-    <main className="nl-preview nl-page">
-      <Link className="nl-page-marque" href="/"><img src="/images/v2/ui/logo-bellajour.svg" alt="Bellajour" width={240} height={91} /></Link>
-      <div className="nl-merci">
-        <h1 className="nl-recit-titre">{TEXTES.sobre.apresAchat}</h1>
-        <div className="nl-recit-carte">
-          <CarteCadeau
-            phrase={PHRASES[0]}
-            montant={`${carte.montant_centimes / 100} €`}
-            prenom={carte.destinataire_prenom}
-            message={carte.message ?? ''}
-            entree={false}
-            code={carte.code}
-            validite={`Valable jusqu’au ${new Date(carte.expire_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' })}`}
-          />
-        </div>
-        <p className="nl-section-sous">{quoi}</p>
-        {!carte.livemode && <p className="nl-faible">Paiement de test : cette carte ne vaut rien en vrai.</p>}
-        <div className="nl-merci-actions">
-          <a className="nl-suivant" href={`/carte/${carte.token}`}>
-            {carte.remise === 'imprimer' ? 'Imprimer la carte' : 'Imprimer aussi'}
-          </a>
-        </div>
-        {/* L'upsell après la carte (16/11) : l'acheteur a un Noël en tête,
-            le sien est le magazine qu'il n'a pas encore commandé. Un achat à
-            part : la carte ne paie pas sa propre commande. */}
-        <aside className="nl-merci-pour-vous">
-          <p className="nl-merci-pour-vous-titre">Et pour vous&nbsp;?</p>
-          <p className="nl-faible">
-            {fenetre ? (
-              <>Composez votre magazine. Le 2<sup>e</sup> à −{NOEL_REMISE_MEME_PCT}&nbsp;%, −{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture, jusqu&apos;au 7 décembre, en France.</>
-            ) : (
-              <>Vos photos, notre atelier, votre magazine.</>
-            )}
-          </p>
-          <a className="nl-suivant nl-suivant--plein" href="/composer?nouveau=1">Composer mon magazine</a>
-        </aside>
-      </div>
-    </main>
+    <VueMerci
+      couverture={couverture}
+      titre={TEXTES.sobre.apresAchat}
+      quoi={quoi}
+      essai={!carte.livemode}
+      imprimerLabel={carte.remise === 'imprimer' ? 'Imprimer la carte' : 'Imprimer aussi'}
+      lienCarte={`/carte/${carte.token}`}
+      pourVous={
+        fenetre ? (
+          <>Composez votre magazine. Le 2<sup>e</sup> à −{NOEL_REMISE_MEME_PCT}&nbsp;%, −{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture, jusqu&apos;au 7 décembre, en France.</>
+        ) : (
+          <>Vos photos, notre atelier, votre magazine.</>
+        )
+      }
+    >
+      <Carte
+        phrase={PHRASES[0]}
+        montant={`${carte.montant_centimes / 100} €`}
+        prenom={carte.destinataire_prenom}
+        message={carte.message ?? ''}
+        code={carte.code}
+        validite={`Valable jusqu’au ${new Date(carte.expire_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' })}`}
+      />
+    </VueMerci>
   )
 }

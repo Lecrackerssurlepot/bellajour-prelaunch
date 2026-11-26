@@ -1,14 +1,15 @@
 /* /merci : confirmation après paiement de la prévente (charte V2, 25/11/2026).
    CSS seulement : le code de la page (Stripe, waitlist) ne change pas.
    Papier blanc, titre Fraunces, une colonne. Jetons --m-* seulement.
-   Ancienne feuille (prévente, --bj-*) : archive/ancienne-charte/merci.css. */
+   Ancienne feuille (prévente, --bj-*) : archive/ancienne-charte/merci.css.
+   La barre et le pied sont ceux du site (Nav, Footer) depuis le 26/11 ; anciens : archive/pages-restantes-2026-11-26/. */
 
 .merci {
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: var(--app-height);
   display: grid;
   place-items: center;
-  padding: var(--m-espace-section) var(--m-espace-marge);
+  /* La tête de page porte seule l'espace sous la barre fixe (fiche E). */
+  padding: var(--m-espace-tete-page) var(--m-espace-marge) var(--m-espace-section);
   background: var(--m-couleur-papier-fond);
   color: var(--m-couleur-papier-texte);
   font-family: var(--m-police-texte-famille);
@@ -38,19 +39,7 @@
 .merci-lede { margin: 0; font-size: var(--m-taille-chapo); line-height: var(--m-interligne-chapo); color: var(--m-couleur-papier-texte-doux); }
 .merci-hint { margin: 0; font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
 
-.merci-back {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--m-cible-bouton);
-  padding: 0 var(--m-espace-5);
-  border-radius: var(--m-rayon-pilule);
-  background: var(--m-couleur-accent);
-  color: var(--m-couleur-papier-fond);
-  font-weight: var(--m-police-texte-graisse-moyenne);
-  font-size: var(--m-taille-bouton);
-  text-decoration: none;
-  margin-top: var(--m-espace-3);
-}
+.merci-back { margin-top: var(--m-espace-3); }
 
 /* Le code de parrainage */
 .merci-ref {
@@ -86,18 +75,6 @@
   font-size: var(--m-taille-petit);
   text-align: left;
 }
-.merci-ref-copy-btn,
-.merci-ref-share-btn {
-  font: inherit;
-  font-size: var(--m-taille-bouton);
-  font-weight: var(--m-police-texte-graisse-moyenne);
-  min-height: var(--m-cible-bouton);
-  padding: 0 var(--m-espace-5);
-  border-radius: var(--m-rayon-pilule);
-  cursor: pointer;
-}
-.merci-ref-copy-btn { background: transparent; color: var(--m-couleur-papier-texte); border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); }
-.merci-ref-share-btn { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); border: 0; }
 .merci-ref-explain { margin: 0; font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
 
 .merci-ref-toast {
@@ -126,50 +103,3 @@
 @media (prefers-reduced-motion: reduce) {
   .merci-ref-toast { transition: opacity var(--m-duree-standard) linear; }
 }
-
-/* L'en-tête et le pied de la prévente, rhabillés ici seulement (CSS seulement :
-   Navbar.tsx et sections/Footer.tsx servent encore ailleurs, intacts).
-   Le logo image (ancienne signature bleue) laisse place au logo vectoriel en masque. */
-main:has(> .merci) .pv-nav {
-  background: var(--m-couleur-voile-barre);
-  border-bottom: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: none;
-}
-main:has(> .merci) .pv-nav-logo { visibility: hidden; }
-main:has(> .merci) .pv-nav-logo-btn {
-  color: var(--m-couleur-papier-texte);
-  background: currentColor;
-  -webkit-mask: url(/images/v2/ui/logo-bellajour.svg) left center / contain no-repeat;
-  mask: url(/images/v2/ui/logo-bellajour.svg) left center / contain no-repeat;
-  width: calc(var(--m-espace-9) - var(--m-espace-2));
-  aspect-ratio: 3154 / 1192;
-  overflow: hidden;
-}
-main:has(> .merci) .pv-nav-cta {
-  background: var(--m-couleur-accent);
-  color: var(--m-couleur-papier-fond);
-  font-family: var(--m-police-texte-famille);
-  font-weight: var(--m-police-texte-graisse-moyenne);
-  font-size: var(--m-taille-bouton);
-  min-height: var(--m-cible-bouton-entete);
-  border-radius: var(--m-rayon-pilule);
-  box-shadow: none;
-}
-main:has(> .merci) .footer {
-  background: var(--m-couleur-papier-fond);
-  color: var(--m-couleur-papier-texte);
-  border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
-  font-family: var(--m-police-texte-famille);
-}
-main:has(> .merci) .footer-tagline {
-  font-family: var(--m-police-signature-famille);
-  font-style: normal;
-  font-size: var(--m-taille-exception-signature-pied);
-  color: var(--m-couleur-papier-texte);
-}
-main:has(> .merci) .footer-link,
-main:has(> .merci) .footer-contact-label,
-main:has(> .merci) .footer :is(p, a, span) { color: var(--m-couleur-papier-texte-doux); font-family: var(--m-police-texte-famille); }
-main:has(> .merci) .footer .footer-tagline { font-family: var(--m-police-signature-famille); color: var(--m-couleur-papier-texte); }

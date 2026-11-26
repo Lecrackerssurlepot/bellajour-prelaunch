@@ -1,0 +1,41 @@
+/* Les pages de la carte une fois achetée : /offrir/merci et /carte/<token>.
+   Un parcours client (fiche K) : une colonne, le logo, LA carte (Carte.tsx), l'action.
+   Jetons --m-* seulement ; tout est scopé sous `.m-retour`.
+   Ancienne feuille : archive/pages-restantes-2026-11-26/offrir.css. */
+
+.m-retour { min-height: var(--app-height); padding: var(--m-espace-5) var(--m-espace-marge) var(--m-espace-section); }
+.m-retour .rt-logo { display: block; width: calc(var(--m-espace-8) + var(--m-espace-2)); margin: 0 auto var(--m-espace-7); color: var(--m-couleur-papier-texte); }
+.m-retour .rt-logo .m-logo { width: 100%; mask-position: center; -webkit-mask-position: center; }
+.m-retour .rt-corps { max-width: 520px; width: 100%; margin: 0 auto; display: grid; justify-items: center; gap: var(--m-espace-5); text-align: center; }
+.m-retour .rt-titre { font-size: calc(var(--m-taille-h2) * var(--m-police-titre-facteur)); }
+.m-retour .rt-carte { width: 100%; }
+.m-retour .rt-quoi { margin: 0; font-size: var(--m-taille-chapo); line-height: var(--m-interligne-chapo); }
+.m-retour .rt-note { margin: 0; font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
+.m-retour .rt-erreur { margin: 0; font-size: var(--m-taille-base); color: var(--m-couleur-etat-erreur); }
+.m-retour .rt-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--m-espace-3); }
+.m-retour .rt-pour-vous {
+  width: 100%;
+  margin-top: var(--m-espace-5);
+  padding: var(--m-espace-6) var(--m-espace-5);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+  display: grid;
+  justify-items: center;
+  gap: var(--m-espace-3);
+}
+.m-retour .rt-pour-vous-titre { margin: 0; font-family: var(--m-police-titre-famille); font-weight: var(--m-police-titre-graisse); font-variation-settings: var(--m-police-titre-axes); font-size: calc(var(--m-taille-h3) * var(--m-police-titre-facteur)); line-height: var(--m-police-titre-interligne); }
+
+@media (max-width: 700px) {
+  .m-retour .rt-logo { margin-bottom: var(--m-espace-6); }
+  .m-retour .rt-actions > * { width: 100%; }
+}
+
+/* L'impression : la carte seule, à sa taille (A6 paysage), noire comme à l'écran. */
+@media print {
+  .m-retour { padding: 0; }
+  .nl-imprimer-non { display: none !important; }
+  .m-retour .rt-corps { max-width: 148mm; }
+  .m-retour .rt-carte { width: 148mm; }
+  .m-retour .ct-face { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-shadow: none; }
+}
+.m-btn,.m-second{text-decoration:none}

@@ -75,6 +75,12 @@ ni l'espace connecté `/compte`, qui ont leur propre barre :
   étiquette de 11 px, la couverture à 62 % de la largeur qui dépasse en bas à droite. Pas de mot
   « Carte cadeau » sur l'aperçu. Rien d'écrit sur la carte ne prend l'accent : il est l'encre, donc
   noir sur noir.
+- **Pages de la carte achetée** *(proposé, 26/11)* : `/offrir/merci` et `/carte/<token>` sont des écrans du
+  parcours client (K) : le logo vectoriel centré, une colonne de 520 px, **la même carte** que `/offrir`
+  (`src/app/(atelier)/offrir/Carte.tsx`, tailles en `cqw` : le texte reste dans la moitié noire, la couverture
+  occupe la moitié droite), un seul bouton plein (« Imprimer la carte »), puis l'encart « Et pour vous ? »
+  à bord fin avec un second bouton. Pas de bandeau ni de barre de site. À l'impression : la carte seule,
+  148 mm, noire (`print-color-adjust: exact`).
 - **Encart en attente** : pointillé (voir F).
 
 ## Pastilles (badges)

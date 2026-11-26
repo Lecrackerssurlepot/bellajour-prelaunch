@@ -23,7 +23,7 @@ import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import { compteOuvert } from '@/lib/compte/session'
 import { COMPOSER_HREF, CTA_LABEL } from '../content'
 import Achat from './Achat'
-import '../noel-preview/noel.css'
+import './carte.css'
 import '../magazine/magazine.css'
 import './offrir.css'
 

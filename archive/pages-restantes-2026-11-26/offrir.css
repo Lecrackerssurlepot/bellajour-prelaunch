@@ -1,0 +1,410 @@
+/* Les pages réelles de la carte (/offrir, /offrir/merci, /carte/<token>),
+   sur le scope .nl-preview de noel.css. */
+
+.nl-preview.nl-page { padding-top: var(--m-espace-5); }
+.nl-preview .nl-page-marque {
+  display: block;
+  width: fit-content;
+  margin: 0 auto var(--m-espace-6);
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-h3);
+  color: var(--c-text);
+  text-decoration: none;
+}
+.nl-preview .nl-erreur {
+  margin: 0;
+  color: var(--c-accent);
+  font-size: var(--m-taille-petit);
+  text-align: center;
+}
+.nl-preview .nl-payer:disabled { opacity: 0.6; cursor: progress; }
+.nl-preview .nl-merci {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--m-espace-5);
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+.nl-preview .nl-merci .nl-recit-carte { width: min(100%, 440px); }
+.nl-preview .nl-merci-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--m-espace-3); }
+.nl-preview .nl-merci-actions a { text-decoration: none; }
+
+/* ── /offrir : le moins de défilement possible (retour du 16/11) ──
+   Ordinateur : la carte à gauche, le formulaire à droite, tout tient dans
+   l'écran. Téléphone : carte réduite, champs serrés, prénoms côte à côte. */
+.nl-preview .nl-achat { gap: var(--m-espace-4); }
+.nl-preview .nl-achat .nl-recit-temps { gap: var(--m-espace-3); }
+.nl-preview .nl-achat .nl-recit-titre { font-size: clamp(26px, 3.4vw, 36px); }
+.nl-preview .nl-achat .nl-label,
+.nl-preview .nl-achat .nl-champ legend { margin-bottom: var(--m-espace-1); }
+.nl-preview .nl-achat .nl-champ { gap: var(--m-espace-1); }
+.nl-preview .nl-achat .nl-input { padding: var(--m-espace-3) var(--m-espace-4); }
+.nl-preview .nl-achat .nl-suivant { padding: var(--m-espace-3) var(--m-espace-5); }
+.nl-preview .nl-achat-scene { display: flex; flex-direction: column; align-items: center; gap: var(--m-espace-4); width: 100%; }
+.nl-preview .nl-achat .nl-achat-scene .nl-recit-carte { width: min(78%, 340px); }
+.nl-preview .nl-achat .nl-recit-carte[data-temps='2'] { transform: none; }
+.nl-preview .nl-achat .nl-achat-scene .nl-recit-carte[data-temps='2'] { width: min(58%, 260px); }
+.nl-preview .nl-achat .nl-egaux { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.nl-preview .nl-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--m-espace-3); }
+.nl-preview .nl-achat-aide { margin: -4px 0 0; text-align: center; }
+
+.nl-preview .nl-recu-actions { display: flex; flex-direction: column; gap: var(--m-espace-3); margin-top: var(--m-espace-2); }
+.nl-preview .nl-achat .nl-recit-temps--large .nl-recu-actions .nl-payer { width: 100%; }
+.nl-preview .nl-achat .nl-recu { gap: clamp(var(--m-espace-5), 4vw, var(--m-espace-7)); }
+
+/* Les deux remises se cumulent : une coche ronde dit qu'on peut les prendre ensemble. */
+.nl-preview .nl-achat .nl-choix { position: relative; padding: var(--m-espace-3) var(--m-espace-4); }
+.nl-preview .nl-achat .nl-choix-titre { font-size: var(--m-taille-chapo); }
+.nl-preview .nl-choix-coche {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--c-line-strong);
+}
+.nl-preview .nl-choix[aria-pressed='true'] .nl-choix-coche {
+  border-color: var(--c-accent);
+  background: radial-gradient(circle, var(--c-accent) 0 4px, transparent 5px);
+}
+
+/* Le bandeau des jours, à la place du calendrier du navigateur. */
+.nl-preview .nl-jours {
+  display: flex;
+  gap: var(--m-espace-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  padding: 2px 2px var(--m-espace-1);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
+}
+.nl-preview .nl-jours::-webkit-scrollbar { display: none; }
+.nl-preview .nl-jour {
+  flex: 0 0 58px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--m-espace-2) 0 var(--m-espace-2);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--c-line-md);
+  background: transparent;
+  color: var(--c-text-soft);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.nl-preview .nl-jour[aria-pressed='true'] { border-color: var(--c-accent); background: var(--c-accent-soft); color: var(--c-text); }
+.nl-preview .nl-jour-sem,
+.nl-preview .nl-jour-mois { font-size: var(--m-taille-etiquette); letter-spacing: 0.06em; text-transform: lowercase; color: var(--c-text-faint); }
+.nl-preview .nl-jour-n { font-family: var(--m-police-titre-famille); font-size: var(--m-taille-h3); line-height: 1; }
+
+@media (min-width: 900px) {
+  .nl-preview .nl-achat-scene {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(var(--m-espace-6), 5vw, var(--m-espace-8));
+    max-width: 1040px;
+  }
+  .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte,
+  .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte[data-temps='2'] { width: 100%; position: sticky; top: 24px; }
+  .nl-preview .nl-achat .nl-achat-scene .nl-recit-temps { width: 100%; }
+  .nl-preview .nl-achat-scene .nl-recit-titre { text-align: left; }
+}
+@media (max-width: 767px) {
+  .nl-preview.nl-page { padding-top: var(--m-espace-3); }
+  .nl-preview .nl-page-marque { margin-bottom: var(--m-espace-4); }
+}
+
+@media print {
+  .nl-preview .nl-imprimer-non { display: none !important; }
+  .nl-preview.nl-page { padding: 0; }
+  .nl-preview .nl-merci .nl-recit-carte { width: 148mm; }
+}
+
+.nl-preview .nl-page-marque img { display: block; width: 116px; height: auto; }
+
+/* La suggestion d'adresse (gmial.com → gmail.com) et l'adresse relue avant de payer. */
+.nl-suggestion { margin: var(--m-espace-2) 0 0; font-size: var(--m-taille-petit); color: var(--c-text-soft); }
+.nl-suggestion button { font: inherit; color: var(--c-accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
+.nl-adresse strong { font-weight: 500; color: inherit; overflow-wrap: anywhere; }
+
+/* « Bon à savoir » (#conditions) : le récapitulatif de STRUCTURE-INFO.md,
+   libellé à gauche, valeur à droite, un filet entre deux lignes. */
+.nl-preview .nl-conditions { max-width: 640px; margin: var(--m-espace-8) auto var(--m-espace-7); padding: 0 var(--m-espace-4); scroll-margin-top: 24px; }
+.nl-preview .nl-conditions h2 { margin: 0 0 var(--m-espace-4); font-family: var(--m-police-titre-famille); font-weight: 500; font-size: var(--m-taille-h3); color: var(--c-text); }
+.nl-preview .nl-conditions dl { margin: 0; }
+.nl-preview .nl-conditions dl > div { display: grid; grid-template-columns: 9em 1fr; gap: var(--m-espace-4); padding: var(--m-espace-3) 0; border-bottom: 1px solid var(--c-line-md); font-size: var(--m-taille-petit); line-height: 1.55; }
+.nl-preview .nl-conditions dl > div:last-child { border-bottom: 0; }
+.nl-preview .nl-conditions dt { color: var(--c-text-faint); }
+.nl-preview .nl-conditions dd { margin: 0; color: var(--c-text-soft); }
+@media (max-width: 520px) {
+  .nl-preview .nl-conditions dl > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* Et pour vous ? : le magazine de l'acheteur, après sa carte (16/11). */
+.nl-preview .nl-merci-pour-vous {
+  margin-top: var(--m-espace-6);
+  width: min(100%, 440px);
+  padding: var(--m-espace-5) var(--m-espace-5) var(--m-espace-5);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--c-line-strong);
+  background: var(--c-surface-2);
+  display: flex; flex-direction: column; align-items: center; gap: var(--m-espace-3);
+  text-align: center;
+}
+.nl-preview .nl-merci-pour-vous-titre { margin: 0; font-family: var(--m-police-titre-famille); font-size: var(--m-taille-h3); line-height: 1.1; }
+.nl-preview .nl-merci-pour-vous .nl-faible { margin: 0 0 var(--m-espace-2); }
+.nl-preview .nl-merci-pour-vous a { text-decoration: none; }
+.nl-preview .nl-suivant--plein { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+.nl-preview .nl-suivant--plein:hover { background: var(--c-accent); filter: brightness(1.06); }
+
+/* ══ /offrir, charte V2 (26/11) : la page du duplicata validé ══
+   Tout est scopé sous .m-offrir : /offrir/merci et /carte/<token> gardent
+   leur feuille. La base (.pg-tete, .bloc, .cadre, .btn, .lab, .titre) vient
+   de magazine.css (.m-banc). */
+.m-offrir .offre { padding-bottom: var(--m-espace-section); }
+.m-offrir .offre .nl-preview { max-width: 1280px; padding: 0 var(--m-espace-marge); }
+
+/* Le récit : la carte à gauche (collée en défilant), le formulaire à droite. */
+.m-offrir .nl-achat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "carte fil" "carte form";
+  column-gap: var(--m-espace-9);
+  row-gap: var(--m-espace-6);
+  align-items: start;
+}
+.m-offrir .nl-achat-scene { display: contents; }
+.m-offrir .nl-achat .nl-achat-scene .nl-recit-carte,
+.m-offrir .nl-achat .nl-recit-carte {
+  grid-area: carte;
+  width: 100%;
+  position: sticky;
+  top: calc(var(--nl-bh, 0px) + var(--m-espace-tete-page));
+}
+.m-offrir .nl-achat .nl-recit-carte[data-temps='2'] { width: 100%; transform: none; }
+.m-offrir .nl-achat > .nl-fil { grid-area: fil; }
+.m-offrir .nl-achat .nl-recit-temps { grid-area: form; width: 100%; gap: var(--m-espace-4); }
+.m-offrir .nl-achat .nl-recit-temps--large { grid-column: 1 / -1; grid-row: 2; }
+.m-offrir .nl-achat .nl-recit-titre {
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-size: calc(var(--m-taille-h2) * var(--m-police-titre-facteur));
+  line-height: var(--m-police-titre-interligne);
+  letter-spacing: var(--m-police-titre-approche);
+  text-align: left;
+  margin: 0;
+}
+
+/* Le fil : trois barres, l'étape en cours à l'encre (duplicata « .etapes »). */
+.m-offrir .nl-fil { display: flex; gap: var(--m-espace-2); width: 100%; max-width: 640px; }
+.m-offrir .nl-fil li {
+  flex: 1;
+  display: grid;
+  gap: var(--m-espace-2);
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte-doux);
+}
+.m-offrir .nl-fil li::before { content: ""; height: 3px; border-radius: 3px; background: var(--m-couleur-papier-ligne); transition: background-color .5s; }
+.m-offrir .nl-fil li[data-etat='ici'],
+.m-offrir .nl-fil li[data-etat='fait'] { color: var(--m-couleur-papier-texte); }
+.m-offrir .nl-fil li[data-etat='ici']::before,
+.m-offrir .nl-fil li[data-etat='fait']::before { background: var(--m-couleur-accent); }
+.m-offrir .nl-fil-n { display: none; }
+
+/* La carte : à l'encre, une couverture qui dépasse en bas à droite (offrir.carte). */
+.m-offrir .nl-carte-face {
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-texte);
+  color: var(--m-couleur-papier-fond);
+  border: 0;
+  box-shadow: var(--m-ombre-objet);
+}
+.m-offrir .nl-carte-face::after {
+  content: "";
+  position: absolute;
+  right: -12%;
+  bottom: -30%;
+  width: 42%;
+  aspect-ratio: 210 / 297;
+  background: var(--carte-visuel, none) center / cover;
+  transform: rotate(-12deg);
+  opacity: .9;
+  pointer-events: none;
+}
+.m-offrir .nl-carte-face > * { position: relative; z-index: 1; }
+/* La carte du duplicata (26/11). Le logo WebP est DÉJÀ blanc : l'ancien
+   `filter: invert(1)` le rendait noir sur la carte noire, donc invisible. Le
+   montant héritait de l'accent, devenu l'encre : noir sur noir, invisible
+   lui aussi. Tout ce qui est écrit sur la carte passe au texte de nuit. */
+.m-offrir .nl-carte-face::after { width: 62%; box-shadow: var(--m-ombre-livre); }
+.m-offrir .nl-carte-marque { filter: none; width: calc(var(--m-espace-8) + var(--m-espace-1) / 2); }
+.m-offrir .nl-carte-type { display: none; }
+.m-offrir .nl-carte-phrase {
+  font-family: var(--m-police-titre-famille);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.1;
+  letter-spacing: 0;
+  max-width: 13ch;
+}
+.m-offrir .nl-carte-milieu[data-mot='1'] .nl-carte-phrase { font-size: clamp(20px, 2vw, 28px); }
+.m-offrir .nl-carte-pour,
+.m-offrir .nl-carte-montant { color: var(--m-couleur-nuit-texte); }
+.m-offrir .nl-carte-message { color: var(--m-couleur-nuit-texte-doux); }
+.m-offrir .nl-carte-montant {
+  font-family: var(--m-police-titre-famille);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: clamp(36px, 4vw, 56px);
+  line-height: 1;
+}
+.m-offrir .nl-carte-bas { justify-content: flex-start; gap: var(--m-espace-4); }
+.m-offrir .nl-carte-infos {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 .5em;
+  text-align: left;
+  font-family: var(--m-police-etiquette-famille);
+  font-size: 11px;
+  letter-spacing: .14em;
+  color: var(--m-couleur-nuit-texte);
+  opacity: .8;
+}
+.m-offrir .nl-carte-infos > span + span::before { content: "· "; }
+
+/* Les choix : des pastilles, l'encre quand elles sont prises. */
+.m-offrir .nl-puce {
+  min-height: var(--m-cible-mini, 44px);
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-champ-bord);
+  font-size: var(--m-taille-bouton);
+}
+.m-offrir .nl-puce[aria-pressed='true'] { background: var(--m-couleur-papier-texte); color: var(--m-couleur-papier-fond); border-color: var(--m-couleur-papier-texte); }
+.m-offrir .nl-suivant,
+.m-offrir .nl-payer {
+  align-self: flex-start;
+  min-height: 52px;
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  border: 0;
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
+  font-size: var(--m-taille-bouton);
+}
+.m-offrir .nl-retour { align-self: flex-start; }
+
+/* Le bloc de Noël, en nuit (duplicata « .noel »). */
+.m-offrir .noel { background: var(--m-couleur-nuit-fond); color: var(--m-couleur-nuit-texte); }
+.m-offrir .noel .sub { color: var(--m-couleur-nuit-texte-doux); }
+.m-offrir .noel .cadre { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--m-espace-8); align-items: center; }
+.m-offrir .noel .remises { display: grid; gap: var(--m-espace-4); margin: var(--m-espace-5) 0; }
+.m-offrir .noel .remises div { display: flex; align-items: baseline; gap: var(--m-espace-4); padding-bottom: var(--m-espace-4); border-bottom: 1px solid var(--m-couleur-nuit-ligne); }
+.m-offrir .noel .remises b {
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: calc(var(--m-taille-h2) * var(--m-police-titre-facteur));
+  line-height: 1;
+  min-width: 3.2ch;
+}
+.m-offrir .noel .btn { background: var(--m-couleur-nuit-texte); color: var(--m-couleur-nuit-fond); }
+.m-offrir .noel-vis { position: relative; aspect-ratio: 4 / 3; }
+.m-offrir .noel-vis img { position: absolute; width: 46%; aspect-ratio: 210 / 297; object-fit: cover; box-shadow: var(--m-ombre-livre); }
+.m-offrir .noel-vis img:first-child { left: 12%; top: 6%; transform: rotate(-5deg); }
+.m-offrir .noel-vis img:last-child { right: 10%; top: 12%; transform: rotate(6deg); }
+
+/* « La carte, en clair. » : des cartes, la première à l'encre, la dernière en long. */
+.m-offrir .savoir .titre { margin-bottom: 0; }
+.m-offrir .savoir .bon { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--m-espace-4); margin: var(--m-espace-6) 0 0; }
+.m-offrir .savoir .bon div { border-radius: var(--m-rayon-bloc); padding: var(--m-espace-5); background: var(--m-couleur-papier-survol); display: grid; align-content: start; gap: var(--m-espace-2); }
+.m-offrir .savoir .bon dt { margin: 0; font-family: var(--m-police-etiquette-famille); font-size: var(--m-taille-etiquette); letter-spacing: .12em; text-transform: uppercase; color: var(--m-couleur-papier-texte-doux); }
+.m-offrir .savoir .bon dd { margin: 0; font-size: var(--m-taille-base); line-height: 1.45; }
+.m-offrir .savoir .bon div:first-child { background: var(--m-couleur-papier-texte); color: var(--m-couleur-papier-fond); }
+.m-offrir .savoir .bon div:first-child dt { color: var(--m-couleur-nuit-texte-doux); }
+.m-offrir .savoir .bon div:last-child { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+  /* Le duplicata : la carte d'abord, puis les étapes et le formulaire. */
+  .m-offrir .nl-achat { grid-template-columns: minmax(0, 1fr); grid-template-areas: "carte" "fil" "form"; row-gap: var(--m-espace-5); }
+  .m-offrir .nl-achat .nl-achat-scene .nl-recit-carte,
+  .m-offrir .nl-achat .nl-recit-carte { position: static; width: 86%; justify-self: center; }
+  .m-offrir .nl-achat .nl-recit-temps--large { grid-row: auto; }
+  .m-offrir .noel .cadre { grid-template-columns: minmax(0, 1fr); gap: var(--m-espace-7); }
+}
+@media (max-width: 700px) {
+  .m-offrir .nl-fil li { font-size: 0; gap: 0; }
+  .m-offrir .nl-carte-face::after { width: 46%; right: -6%; bottom: -24%; }
+  .m-offrir .nl-carte-bas { flex-direction: column; align-items: flex-start; gap: var(--m-espace-1); }
+  .m-offrir .nl-carte-infos { max-width: 52%; line-height: 1.5; }
+  .m-offrir .savoir .bon { grid-template-columns: 1fr 1fr; }
+  .m-offrir .savoir .bon div { padding: var(--m-espace-4); }
+}
+@media (max-width: 420px) {
+  .m-offrir .savoir .bon { grid-template-columns: 1fr; }
+}
+
+/* Les champs du duplicata : « MONTANT » en étiquette, les libellés à l'encre
+   en 500, les champs de 54 px (« .champ » du banc). */
+.m-offrir .nl-achat .nl-champ legend {
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte);
+}
+.m-offrir .nl-achat .nl-label {
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  color: var(--m-couleur-papier-texte);
+}
+.m-offrir .nl-achat .nl-label .nl-faible { float: right; font-weight: var(--m-police-texte-graisse); font-size: var(--m-taille-etiquette); color: var(--m-couleur-papier-texte-doux); }
+.m-offrir .nl-achat .nl-input {
+  min-height: calc(var(--m-espace-7) + var(--m-espace-2) - 2px);
+  border-radius: var(--m-rayon-champ);
+  border: var(--m-trait-fin) solid color-mix(in srgb, var(--m-couleur-papier-texte) 18%, transparent);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 2%, var(--m-couleur-papier-fond));
+  font-size: var(--m-taille-base);
+}
+.m-offrir .nl-achat .nl-input:focus {
+  outline: none;
+  border-color: var(--m-couleur-accent);
+  box-shadow: 0 0 0 var(--m-espace-1) color-mix(in srgb, var(--m-couleur-accent) 14%, transparent);
+}
+.m-offrir .nl-achat .nl-recit-temps { gap: var(--m-espace-5); }
+.m-offrir .nl-achat .nl-champ { gap: var(--m-espace-2); }
+.m-offrir .nl-achat .nl-label,
+.m-offrir .nl-achat .nl-champ legend { margin-bottom: 0; }
+.m-offrir .nl-achat .nl-suivant { margin-top: var(--m-espace-2); }
+.m-offrir .nl-puce { min-height: var(--m-espace-7); }
+.m-offrir .nl-suivant,
+.m-offrir .nl-payer { font-weight: var(--m-police-texte-graisse-moyenne); }
+/* Une ligne qui grandit avec le texte (le « .pousse » du banc). */
+.m-offrir .nl-achat .nl-textarea { min-height: calc(var(--m-espace-7) + var(--m-espace-2) - 2px); height: auto; field-sizing: content; resize: none; }
+/* La proportion d'une carte bancaire (fiche H), marge intérieure de 7 %. */
+.m-offrir .nl-carte-face { aspect-ratio: 1.586; padding: 7%; border-radius: calc(var(--m-espace-5) - 2px); }
+@media (max-width: 900px) {
+  /* Mesuré sur le duplicata au téléphone : 85 px de la carte aux étapes, 32 des étapes au titre. */
+  .m-offrir .nl-achat .nl-fil { margin-top: calc(var(--m-espace-8) - var(--m-espace-1)); }
+  .m-offrir .nl-achat .nl-recit-temps { margin-top: var(--m-espace-2); }
+}
+@media (max-width: 700px) {
+  /* Le logo de la carte se fait petit : la phrase, le montant et le code tiennent. */
+  .m-offrir .nl-carte-marque { width: var(--m-espace-7); }
+  .m-offrir .nl-carte-face { gap: 0; }
+  .m-offrir .nl-achat .nl-recit-temps { gap: var(--m-espace-4); }
+}
+/* Le compteur des places s'ajoute sous « Jusqu'au 7 décembre » : l'air d'un
+   em reste sous la DERNIÈRE ligne, avant le bouton (duplicata : 18 px). */
+.m-offrir .noel p.sub { margin: 0; }
+.m-offrir .noel p.sub:last-of-type { margin-bottom: 1em; }

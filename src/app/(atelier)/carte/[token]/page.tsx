@@ -3,15 +3,18 @@
    indexée, jamais en cache partagé. Lue côté serveur par la service key. */
 
 import type { Metadata } from 'next'
+import type React from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { makeSupabase } from '@/lib/supabase'
 import { carteParToken } from '@/lib/atelier/carteServeur'
-import CarteCadeau from '../../noel-preview/CarteCadeau'
+import Carte from '../../offrir/Carte'
 import { PHRASES } from '../../noel-preview/contenu'
 import Imprimer from './Imprimer'
-import '../../noel-preview/noel.css'
-import '../../offrir/offrir.css'
+import { lireVisuel } from '@/components/Visuel'
+import '../../magazine/magazine.css'
+import '../../offrir/carte.css'
+import '../../offrir/retour.css'
 
 export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
@@ -28,26 +31,27 @@ export default async function CartePage({ params }: { params: Promise<{ token: s
   const carte = await carteParToken(makeSupabase(), token)
   if (!carte) notFound()
   const annulee = carte.statut === 'remboursee'
+  /* La couverture qui dépasse de la carte : le même emplacement que /offrir. */
+  const visuel = await lireVisuel('offrir.carte')
   return (
-    <main className="nl-preview nl-page">
-      <Link className="nl-page-marque nl-imprimer-non" href="/"><img src="/images/v2/ui/logo-bellajour.svg" alt="Bellajour" width={240} height={91} /></Link>
-      <div className="nl-merci">
-        <div className="nl-recit-carte">
-          <CarteCadeau
+    <main className="m-banc m-retour" style={visuel?.fichier ? ({ '--carte-visuel': `url(${visuel.fichier})` } as React.CSSProperties) : undefined}>
+      <Link className="rt-logo nl-imprimer-non" href="/" aria-label="Bellajour, accueil"><span className="m-logo" /></Link>
+      <div className="rt-corps">
+        <div className="rt-carte">
+          <Carte
             phrase={PHRASES[0]}
             montant={`${carte.montant_centimes / 100} €`}
             prenom={carte.destinataire_prenom}
             message={carte.message ?? ''}
-            entree={false}
             code={carte.code}
             validite={validiteLisible(carte.expire_le)}
           />
         </div>
         {annulee ? (
-          <p className="nl-erreur">Cette carte a été annulée.</p>
+          <p className="rt-erreur" role="status">Cette carte a été annulée.</p>
         ) : (
           <>
-            <p className="nl-faible nl-imprimer-non">À utiliser sur bellajour.fr, au moment de payer son magazine.</p>
+            <p className="rt-note nl-imprimer-non">À utiliser sur bellajour.fr, au moment de payer son magazine.</p>
             <Imprimer />
           </>
         )}

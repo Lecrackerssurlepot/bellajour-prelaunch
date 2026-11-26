@@ -6,7 +6,7 @@
    ouvre la session ; la carte naît au paiement. */
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import CarteCadeau from '../noel-preview/CarteCadeau'
+import Carte from './Carte'
 import { MailRendu } from '../noel-preview/ApercuMails'
 import { COUVERTURES_ACCUEIL, MAILS, PHRASES } from '../noel-preview/contenu'
 import { suggestionEmail } from '@/lib/atelier/questionnaire'
@@ -154,7 +154,7 @@ export default function Achat() {
       {temps !== 3 && (
       <div className="nl-achat-scene">
         <div className="nl-recit-carte" data-temps={temps}>
-          <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code={codeApercu} />
+          <Carte phrase={PHRASE} montant={affiche} prenom={prenom} message={message} code={codeApercu} />
         </div>
 
       {temps === 1 && (
@@ -282,7 +282,7 @@ export default function Achat() {
                   valeurs={{ PRENOM: prenom, PRENOM_DONATEUR: donateur || 'Un proche', MESSAGE: message, CODE: codeApercu }}
                 />
               ) : (
-                <CarteCadeau phrase={PHRASE} montant={affiche} prenom={prenom} message={message} entree={false} code={codeApercu} />
+                <Carte phrase={PHRASE} montant={affiche} prenom={prenom} message={message} code={codeApercu} />
               )}
               {parEmail && <p className="nl-faible nl-adresse">Envoyée à <strong>{email.trim().toLowerCase()}</strong>{quand === 'date' && jour ? `, le ${fmtJour(jour, { day: 'numeric', month: 'long' })} au matin` : ''}</p>}
               {parEmail && imprime && <p className="nl-faible">La carte à imprimer vous attend après le paiement.</p>}

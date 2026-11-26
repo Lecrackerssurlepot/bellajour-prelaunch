@@ -6,7 +6,7 @@
    sans en coder un. Il sera rouvert dix fois en trois semaines — d'où une
    mise en page qui tient debout avec une phrase comme avec trois visuels.
 
-   Invariant nº1 : aucune couleur en dur. Tout vient de .bj-atelier
+   Charte V2 (26/11) : jetons --m-* directement, aucune couleur en dur. Le scope .bj-atelier
    (src/app/(atelier)/theme.css), importé par le layout de /numero.
    ════════════════════════════════════════════════════════════ */
 
@@ -32,13 +32,13 @@
   margin: 0;
   padding: var(--m-espace-2) var(--pad);
   background: var(--glass-bg-plein);
-  border-bottom: 1px solid var(--c-accent-soft);
+  border-bottom: 1px solid var(--m-couleur-papier-survol);
   box-shadow: var(--shadow-soft);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-etiquette);
   line-height: 1.35;
   letter-spacing: 0.01em;
-  color: var(--c-accent);
+  color: var(--m-couleur-accent);
   text-align: center;
 }
 
@@ -94,17 +94,17 @@
   gap: var(--m-espace-2);
   min-height: 40px;
   padding: var(--m-espace-2) var(--m-espace-4);
-  border: 1px solid rgba(245, 240, 231, 0.28);
+  border: 1px solid color-mix(in srgb, var(--m-couleur-papier-texte) 24%, transparent);
   border-radius: var(--m-rayon-pilule);
-  background: var(--c-veil-hover);
+  background: var(--m-couleur-papier-survol);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   text-decoration: none;
   white-space: nowrap;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.bj-atelier .nu-retour:hover { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+.bj-atelier .nu-retour:hover { border-color: var(--m-couleur-papier-texte); background: var(--m-couleur-papier-survol); }
 .nu-retour-mot { display: inline; }
 
 /* Sur un téléphone, la flèche seule : le logo garde sa place centrale et
@@ -120,17 +120,17 @@
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-etiquette);
   line-height: 1.5;
-  color: var(--c-text-faint);
-  border-bottom: 1px solid var(--c-line);
+  color: var(--m-couleur-papier-texte-doux);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
 }
 
 .bj-atelier .nu-compte a {
-  color: var(--c-accent-strong);
+  color: var(--m-couleur-accent);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-.bj-atelier .nu-compte a:hover { color: var(--c-text); }
+.bj-atelier .nu-compte a:hover { color: var(--m-couleur-papier-texte); }
 
 .nu-main {
   flex: 1 0 auto;
@@ -163,16 +163,16 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .nu-camp-dot {
   display: inline-block;
   width: 6px;
   height: 6px;
   border-radius: var(--m-rayon-pilule);
-  background: var(--c-text-faint);
+  background: var(--m-couleur-papier-texte-doux);
 }
-.nu-camp.is-vous .nu-camp-dot { background: var(--c-accent); }
+.nu-camp.is-vous .nu-camp-dot { background: var(--m-couleur-accent); }
 
 /* ---- le sommaire des jalons (04/09, maquettes validées) ----
    Cinq jalons, jamais huit : la cliente ne connaît pas notre machine à
@@ -197,7 +197,7 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   opacity: 0.55;
   padding-bottom: var(--m-espace-1);
 }
@@ -205,11 +205,11 @@
 .nu-etape.is-fait { opacity: 1; }
 .nu-etape.is-la {
   opacity: 1;
-  color: var(--c-accent-strong);
-  border-bottom: 1px solid var(--c-accent);
+  color: var(--m-couleur-accent);
+  border-bottom: 1px solid var(--m-couleur-accent);
 }
 
-.nu-etape-v { font-style: normal; color: var(--c-accent); }
+.nu-etape-v { font-style: normal; color: var(--m-couleur-accent); }
 
 .nu-etapes-mini { display: none; align-items: center; gap: var(--m-espace-3); }
 
@@ -220,17 +220,17 @@
   height: 2px;
   flex: 1;
   border-radius: var(--m-rayon-image);
-  background: var(--c-line-md);
+  background: var(--m-couleur-papier-ligne);
 }
 
-.nu-segments i.is-fait { background: var(--c-accent); }
+.nu-segments i.is-fait { background: var(--m-couleur-accent); }
 
 .nu-etapes-ou {
   flex: 0 0 auto;
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-etiquette);
   letter-spacing: 0.1em;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 @media (max-width: 760px) {
@@ -262,10 +262,10 @@
   max-width: 50ch;
   font-weight: 300;
   line-height: 1.6;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   font-size: var(--m-taille-base);
 }
-.nu-sub b { color: var(--c-text); font-weight: 400; }
+.nu-sub b { color: var(--m-couleur-papier-texte); font-weight: 400; }
 
 /* ── La rangée d'action (18/09) : UN geste plein, le secondaire en lien à
    côté. Sur téléphone, le bouton prend la largeur et le lien passe dessous. */
@@ -285,9 +285,9 @@
   font-size: var(--m-taille-petit);
   line-height: 1.55;
   font-weight: 300;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
-.nu-note b { font-weight: 400; color: var(--c-text-soft); }
+.nu-note b { font-weight: 400; color: var(--m-couleur-papier-texte-doux); }
 
 /* ── L'AXE CENTRÉ, desktop seulement (18/09, planche validée). La tête de
    page — étiquette, titre, mot, corps, action, note — vit sur l'axe, comme
@@ -326,7 +326,7 @@
 .nu-relance {
   margin-top: clamp(var(--m-espace-7), 9vw, var(--m-espace-9));
   padding-top: clamp(var(--m-espace-5), 4.5vw, var(--m-espace-6));
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
   max-width: 56ch;
 }
 .nu-relance-mot {
@@ -334,13 +334,13 @@
   font-size: clamp(20px, 3.6vw, 26px);
   line-height: 1.2;
   letter-spacing: -0.01em;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .nu-relance-sub {
   margin-top: var(--m-espace-3);
   font-size: clamp(14px, 3.4vw, 15px);
   font-weight: 300;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* Le second geste : cuivre et cerné, jamais plein. La couleur le distingue
@@ -353,10 +353,10 @@
   gap: var(--m-espace-3);
   margin-top: clamp(var(--m-espace-4), 3.5vw, var(--m-espace-5));
   padding: var(--m-espace-3) var(--m-espace-5);
-  border: 1px solid var(--c-accent);
+  border: 1px solid var(--m-couleur-accent);
   border-radius: var(--m-rayon-pilule);
   background: transparent;
-  color: var(--c-accent);
+  color: var(--m-couleur-accent);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
   font-weight: 500;
@@ -364,8 +364,8 @@
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .bj-atelier .nu-cta-second:hover {
-  background: var(--c-accent-soft);
-  color: var(--c-accent-strong);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-accent);
 }
 
 /* ---- encart secondaire (suivi, adresse, rappel) ---- */
@@ -375,9 +375,9 @@
   margin: var(--m-espace-7) auto 0;
   max-width: var(--m-largeur-colonne);
   padding: var(--m-espace-5) var(--m-espace-6);
-  border: 1px solid var(--c-line-md);
+  border: 1px solid var(--m-couleur-papier-ligne);
   border-radius: var(--m-rayon-champ);
-  background: var(--c-surface-1);
+  background: var(--m-couleur-papier-champ-fond);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -393,13 +393,13 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-carte dd {
   margin: 0;
   font-size: var(--m-taille-bouton);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
 }
 
 .nu-carte .nu-ghost { flex: 0 0 auto; }
@@ -417,7 +417,7 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: var(--m-taille-petit);
   letter-spacing: 0.08em;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   user-select: all;
 }
 
@@ -446,7 +446,7 @@
   font-style: italic;
   font-weight: 400;
   font-size: clamp(18px, 3vw, 23px);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
 }
 
 /* ── Les cartes de couverture ──────────────────────────────────────────
@@ -475,8 +475,8 @@
    la ligne de flottaison de l'image et personne ne la reliait à la bonne
    couverture. La bordure accentuée dit QUELLE carte, avant même de lire. */
 .nu-pl-carte--retenue {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+  border-color: var(--m-couleur-accent);
+  background: var(--m-couleur-papier-survol);
 }
 
 /* Le sous-titre de la question, sous le chapeau. Il DIT ce qu'on attend
@@ -488,7 +488,7 @@
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
   line-height: 1.5;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* Les tuiles d'une même carte : côte à côte sur ordinateur (la première de
@@ -583,7 +583,7 @@
 .nu-pl-legende-plat {
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-etiquette);
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   text-align: center;
 }
 
@@ -619,7 +619,7 @@
   font-size: var(--m-taille-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   opacity: 0;
   transition: opacity var(--dur) var(--ease);
   pointer-events: none;
@@ -634,7 +634,7 @@
   font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: clamp(16px, 2.4vw, 19px);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   text-align: center;
 }
 
@@ -679,27 +679,27 @@
    ici — `--c-void` est le noir du fond, trop profond sur cette terre. */
 .bj-atelier .nu-pl-btn {
   appearance: none;
-  border: 1px solid var(--c-accent-strong);
-  background: var(--c-accent);
-  color: #1a1210;
+  border: 1px solid var(--m-couleur-accent);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
   font-weight: 600;
   cursor: pointer;
   transition: background var(--dur) var(--ease), opacity var(--dur) var(--ease);
 }
-.bj-atelier .nu-pl-btn:hover:not(:disabled) { background: var(--c-accent-strong); }
-.bj-atelier .nu-pl-btn:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+.bj-atelier .nu-pl-btn:hover:not(:disabled) { background: var(--m-couleur-accent); }
+.bj-atelier .nu-pl-btn:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 3px; }
 /* ÉTEINT EN PRÉVISUALISATION : l'atelier voit l'écran du client, il ne
    choisit pas à sa place. Le bouton reste LISIBLE — un bouton qu'on ne voit
    plus est un bouton qu'on ne relit jamais. */
 .bj-atelier .nu-pl-btn:disabled { opacity: 0.45; cursor: default; }
-.bj-atelier .nu-pl-btn:disabled:hover { background: var(--c-accent); }
+.bj-atelier .nu-pl-btn:disabled:hover { background: var(--m-couleur-accent); }
 
 /* La carte retenue ne perd PAS son bouton : il devient un état, à la même
    place et à la même taille. Rien ne saute sous le doigt au moment du clic. */
 .nu-pl-retenue {
-  border: 1px solid var(--c-accent);
+  border: 1px solid var(--m-couleur-accent);
   background: transparent;
-  color: var(--c-accent-strong);
+  color: var(--m-couleur-accent);
 }
 
 /* La confirmation, sous la section. Elle répète le NUMÉRO choisi : lue
@@ -711,7 +711,7 @@
   font-size: var(--m-taille-petit);
   line-height: 1.5;
   text-align: center;
-  color: var(--c-accent-strong);
+  color: var(--m-couleur-accent);
 }
 
 /* ── Les doubles pages ─────────────────────────────────────────────────
@@ -756,14 +756,14 @@
   transform: translateX(-50%);
   pointer-events: none;
   background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.14) 42%, rgba(0, 0, 0, 0.32) 50%,
-    rgba(0, 0, 0, 0.14) 58%, rgba(0, 0, 0, 0) 100%);
+    transparent 0%, color-mix(in srgb, var(--m-couleur-nuit-fond) 14%, transparent) 42%, color-mix(in srgb, var(--m-couleur-nuit-fond) 32%, transparent) 50%,
+    color-mix(in srgb, var(--m-couleur-nuit-fond) 14%, transparent) 58%, transparent 100%);
 }
 .nu-pl-nom-tuile {
   font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: clamp(15px, 2.2vw, 18px);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   text-align: center;
 }
 
@@ -782,7 +782,7 @@
   display: block;
   z-index: 1;
   overflow: hidden;
-  background: var(--c-void);
+  background: var(--m-couleur-papier-fond);
   box-shadow: var(--shadow-float);
 }
 .nu-viz-mag::before,
@@ -807,17 +807,17 @@
   min-height: var(--m-cible-mini);
   padding: var(--m-espace-2) var(--m-espace-5);
   background: none;
-  border: 1px solid var(--c-line-strong);
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-pilule);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .bj-atelier .nu-viz-choix-btn:hover {
-  border-color: var(--c-accent);
-  background: var(--c-accent-soft);
+  border-color: var(--m-couleur-accent);
+  background: var(--m-couleur-papier-survol);
 }
 
 /* La seconde réponse est SECONDAIRE, pas égale : le trait s'efface, le mot
@@ -825,12 +825,12 @@
    être la première chose que l'œil attrape. */
 .bj-atelier .nu-viz-choix-btn--doux {
   border-color: transparent;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .bj-atelier .nu-viz-choix-btn--doux:hover {
-  border-color: var(--c-line-strong);
+  border-color: var(--m-couleur-papier-pointille);
   background: none;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
 }
 
 /* ÉTEINT EN PRÉVISUALISATION (11/09/2026) : l'atelier voit l'écran du
@@ -841,25 +841,25 @@
   cursor: default;
 }
 .bj-atelier .nu-viz-choix-btn:disabled:hover {
-  border-color: var(--c-line-strong);
+  border-color: var(--m-couleur-papier-pointille);
   background: none;
 }
 .bj-atelier .nu-viz-choix-btn--doux:disabled:hover {
   border-color: transparent;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-viz-choix-refus {
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-etiquette);
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-viz-note {
   max-width: 42ch;
   text-align: center;
   font-size: var(--m-taille-petit);
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   align-self: center;
 }
 
@@ -870,16 +870,16 @@
 .nu-garde {
   margin-top: var(--m-espace-8);
   padding-top: var(--m-espace-5);
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
   display: flex;
   flex-direction: column;
   gap: var(--m-espace-3);
   font-size: var(--m-taille-petit);
   line-height: 1.55;
   font-weight: 300;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
-.nu-garde b { font-weight: 400; color: var(--c-text-soft); }
+.nu-garde b { font-weight: 400; color: var(--m-couleur-papier-texte-doux); }
 /* 18/09 : le texte à gauche, les deux boutons à droite, sur UNE ligne. Les
    boutons ne sont plus DANS le paragraphe (le texte coulait autour d'eux). */
 .nu-garde-l {
@@ -891,10 +891,10 @@
 .nu-garde-l p { max-width: 46ch; }
 .nu-garde .bj-lienpartage { margin-top: 0; flex: 0 0 auto; }
 .bj-atelier .nu-garde-compte a {
-  color: var(--c-accent-strong);
+  color: var(--m-couleur-accent);
   text-decoration: none;
 }
-.bj-atelier .nu-garde-compte a:hover { color: var(--c-text); text-decoration: underline; }
+.bj-atelier .nu-garde-compte a:hover { color: var(--m-couleur-papier-texte); text-decoration: underline; }
 @media (max-width: 760px) {
   .nu-garde { margin-top: var(--m-espace-8); padding-top: var(--m-espace-5); gap: var(--m-espace-4); }
   .nu-garde-l { flex-direction: column; align-items: flex-start; gap: var(--m-espace-4); }
@@ -904,7 +904,7 @@
   display: block;
   margin-top: var(--m-espace-3);
   font-size: var(--m-taille-etiquette);
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   word-break: break-all;
   /* Un lien qu'on veut copier se sélectionne d'un geste, pas de trois. */
   user-select: all;
@@ -935,20 +935,20 @@
   font-size: var(--m-taille-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-tarif-value {
   font-family: var(--m-police-titre-famille);
   font-size: clamp(24px, 4.6vw, 32px);
   line-height: 1.1;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
 }
 .nu-tarif-value b { font-weight: 500; }
-.nu-tarif-sep { color: var(--c-text-faint); font-weight: 300; }
-.nu-tarif-prix { color: var(--c-accent); white-space: nowrap; }
+.nu-tarif-sep { color: var(--m-couleur-papier-texte-doux); font-weight: 300; }
+.nu-tarif-prix { color: var(--m-couleur-accent); white-space: nowrap; }
 
-.nu-prix-sub { margin-top: clamp(var(--m-espace-4), 3vw, var(--m-espace-5)); font-size: var(--m-taille-bouton); font-weight: 300; color: var(--c-text-soft); }
+.nu-prix-sub { margin-top: clamp(var(--m-espace-4), 3vw, var(--m-espace-5)); font-size: var(--m-taille-bouton); font-weight: 300; color: var(--m-couleur-papier-texte-doux); }
 
 /* ── LA CARTE DE LA COMMANDE (18/09/2026) ──
    Même enveloppe que `.nu-doc` (l'état maquette) : 760 px, centrée, surface
@@ -959,9 +959,9 @@
   margin: var(--m-espace-7) auto 0;
   max-width: var(--m-largeur-colonne);
   padding: var(--m-espace-5) var(--m-espace-6) var(--m-espace-6);
-  border: 1px solid var(--c-line-md);
+  border: 1px solid var(--m-couleur-papier-ligne);
   border-radius: var(--m-rayon-champ);
-  background: var(--c-surface-1);
+  background: var(--m-couleur-papier-champ-fond);
   text-align: left;
 }
 .bj-atelier .nu-commande-lbl {
@@ -971,12 +971,12 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .nu-commande .nu-bon { margin-top: var(--m-espace-3); border-top: none; border-bottom: none; padding: 0; }
 .nu-commande .nu-bon-t { padding: var(--m-espace-4) 0 0; }
 .nu-commande .nu-bon-t b { font-size: clamp(28px, 4vw, 32px); }
-.nu-commande .nu-promesse { margin-top: var(--m-espace-5); padding-top: var(--m-espace-5); border-top: 1px solid var(--c-line); }
+.nu-commande .nu-promesse { margin-top: var(--m-espace-5); padding-top: var(--m-espace-5); border-top: 1px solid var(--m-couleur-papier-ligne); }
 .nu-commande .nu-order--plein { width: auto; margin-top: var(--m-espace-5); }
 .nu-commande .nu-accords-mot { text-align: left; }
 @media (max-width: 760px) {
@@ -999,8 +999,8 @@
 
 .nu-bon {
   margin-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
-  border-top: 1px solid var(--c-line);
-  border-bottom: 1px solid var(--c-line);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
   padding: 2px 0;
 }
 
@@ -1013,14 +1013,14 @@
   font-size: var(--m-taille-bouton);
   font-weight: 300;
   line-height: 1.4;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
-.nu-bon-l + .nu-bon-l { border-top: 1px solid var(--c-line); }
+.nu-bon-l + .nu-bon-l { border-top: 1px solid var(--m-couleur-papier-ligne); }
 
 /* Le détail reste en graisse normale : ce sont des montants intermédiaires,
    ils informent, ils ne concluent pas. */
-.nu-bon-l b { font-weight: 400; color: var(--c-text); white-space: nowrap; }
+.nu-bon-l b { font-weight: 400; color: var(--m-couleur-papier-texte); white-space: nowrap; }
 
 /* Le total. Trait plus marqué au-dessus, libellé en petites capitales, et le
    montant en display : c'est la seule ligne du bloc qui doit s'attraper d'un
@@ -1031,7 +1031,7 @@
   align-items: baseline;
   gap: var(--m-espace-5);
   padding: var(--m-espace-4) 0 var(--m-espace-4);
-  border-top: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-top: 1px solid var(--m-couleur-papier-pointille);
 }
 
 .nu-bon-t span {
@@ -1039,7 +1039,7 @@
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-bon-t b {
@@ -1047,7 +1047,7 @@
   font-size: clamp(32px, 6.5vw, 42px);
   font-weight: 400;
   line-height: 1;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   white-space: nowrap;
 }
 
@@ -1084,7 +1084,7 @@
 
 .nu-finition {
   display: inline-flex;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-champ);
   overflow: hidden;
 }
@@ -1101,26 +1101,26 @@
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-bouton);
   font-weight: 300;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .nu-finition-b + .nu-finition-b {
-  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-left: 1px solid var(--m-couleur-papier-pointille);
 }
-.nu-finition-b:hover:not([disabled]):not(.est-choisi) { background: var(--c-surface-2); }
+.nu-finition-b:hover:not([disabled]):not(.est-choisi) { background: var(--m-couleur-papier-survol); }
 .nu-finition-b.est-choisi {
-  background: var(--c-surface-3);
-  color: var(--c-text);
+  background: var(--m-couleur-papier-filigrane);
+  color: var(--m-couleur-papier-texte);
   font-weight: 400;
 }
 .nu-finition-b[disabled] { opacity: 0.45; cursor: not-allowed; }
 /* L'outline à l'INTÉRIEUR : le groupe a `overflow: hidden`, un outline
    décalé vers l'extérieur serait rogné et le focus deviendrait invisible. */
-.nu-finition-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+.nu-finition-b:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: -3px; }
 
 .nu-bon-choix { padding: var(--m-espace-3) 0 var(--m-espace-4); }
-.nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--c-line); }
+.nu-bon-l + .nu-bon-choix { border-top: 1px solid var(--m-couleur-papier-ligne); }
 
 .nu-bon-choix-lbl {
   display: block;
@@ -1128,7 +1128,7 @@
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-bon-choix-l {
@@ -1146,13 +1146,13 @@
   -webkit-appearance: none;
   color-scheme: dark;
   background: transparent;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-champ);
   padding: var(--m-espace-3) var(--m-espace-6) var(--m-espace-3) var(--m-espace-3);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-base);
   font-weight: 300;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   cursor: pointer;
   /* Le chevron, en SVG de données : une image de plus serait une requête de
      plus pour douze pixels. La couleur est écrite en dur (%23928d84 =
@@ -1164,35 +1164,35 @@
 }
 /* Firefox et Chrome sous Windows dessinent les options eux-mêmes : sans ces
    deux lignes, du texte crème s'affiche sur du blanc, donc invisible. */
-.nu-select option { background: var(--c-surface-2); color: var(--c-text); }
-.nu-select:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-select option { background: var(--m-couleur-papier-survol); color: var(--m-couleur-papier-texte); }
+.nu-select:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; }
 .nu-select[disabled] { opacity: 0.45; cursor: not-allowed; }
 
 .nu-bon-calc {
   flex: 0 0 auto;
   appearance: none;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-champ);
-  background: var(--c-surface-2);
+  background: var(--m-couleur-papier-survol);
   padding: var(--m-espace-3) var(--m-espace-4);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-bouton);
   font-weight: 400;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   cursor: pointer;
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-.nu-bon-calc:hover:not([disabled]) { background: var(--c-surface-3); }
+.nu-bon-calc:hover:not([disabled]) { background: var(--m-couleur-papier-filigrane); }
 .nu-bon-calc:active:not([disabled]) { transform: scale(0.98); }
 .nu-bon-calc[disabled] { opacity: 0.45; cursor: not-allowed; transform: none; }
-.nu-bon-calc:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-bon-calc:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; }
 
 .nu-bon-choix-mot {
   margin: var(--m-espace-3) 0 0;
   font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.45;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* « Changer de pays » : un lien, pas un bouton. Il ne doit pas rivaliser avec
@@ -1208,15 +1208,15 @@
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
   font-weight: 300;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: var(--c-line-strong);
+  text-decoration-color: var(--m-couleur-papier-pointille);
   transition: color var(--dur) var(--ease);
 }
-.nu-bon-changer:hover:not([disabled]) { color: var(--c-text-soft); }
+.nu-bon-changer:hover:not([disabled]) { color: var(--m-couleur-papier-texte-doux); }
 .nu-bon-changer[disabled] { opacity: 0.4; cursor: not-allowed; }
-.nu-bon-changer:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
+.nu-bon-changer:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
 .nu-bon-changer--annule { display: inline-block; margin: var(--m-espace-3) 0 0; }
 
 /* Les droits de douane des trois destinations hors Union. Dit AVANT le
@@ -1227,7 +1227,7 @@
   font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.45;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* Une destination qui n'est plus desservie (D21). Même note, mais LUE : le
@@ -1236,7 +1236,7 @@
    texte, et au-dessus du menu plutôt qu'à la suite du bon. */
 .nu-bon-note--suspendu {
   margin: 0 0 var(--m-espace-3);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   font-weight: 400;
 }
 
@@ -1258,7 +1258,7 @@
   font-size: var(--m-taille-bouton);
   font-weight: 300;
   line-height: 1.5;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-promesse li i {
@@ -1267,10 +1267,10 @@
   height: 7px;
   margin-top: var(--m-espace-2);
   border-radius: 50%;
-  background: var(--c-accent);
+  background: var(--m-couleur-accent);
 }
 
-.nu-promesse li b { font-weight: 500; color: var(--c-text); }
+.nu-promesse li b { font-weight: 500; color: var(--m-couleur-papier-texte); }
 
 /* Le bouton n'est plus dans un encart : il prend la laisse et se pose seul.
    ⚠️ La règle `.nu-order` d'origine reste la référence — on n'ajoute ici que
@@ -1285,7 +1285,7 @@
   margin: var(--m-espace-3) 0 0;
   font-size: var(--m-taille-petit);
   font-weight: 300;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   text-align: center;
 }
 
@@ -1300,19 +1300,19 @@
   font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.5;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   max-width: 60ch;
 }
 
 .nu-check input {
   margin-top: var(--m-espace-1);
   flex: 0 0 auto;
-  accent-color: var(--c-accent);
+  accent-color: var(--m-couleur-accent);
   width: 17px;
   height: 17px;
 }
 
-.nu-check:hover { color: var(--c-text); }
+.nu-check:hover { color: var(--m-couleur-papier-texte); }
 
 /* ---- le bouton de paiement ----
    --c-order est RÉSERVÉ à ce bouton et à lui seul (PRD §4). */
@@ -1321,7 +1321,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--m-espace-3);
-  background: var(--c-order);
+  background: var(--m-couleur-accent);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-base);
   font-weight: 500;
@@ -1333,9 +1333,9 @@
   will-change: transform;
 }
 
-.bj-atelier .nu-order { color: var(--c-text-pure); }
+.bj-atelier .nu-order { color: var(--m-couleur-papier-fond); }
 
-.nu-order:hover:not([disabled]) { background: var(--c-order-strong); transform: scale(1.02); }
+.nu-order:hover:not([disabled]) { background: var(--m-couleur-accent); transform: scale(1.02); }
 .nu-order:active:not([disabled]) { transform: scale(0.98); }
 .nu-order[disabled] { opacity: 0.32; cursor: not-allowed; transform: none; }
 
@@ -1350,19 +1350,19 @@
   cursor: pointer;
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: var(--c-line-strong);
+  text-decoration-color: var(--m-couleur-papier-pointille);
   transition: color var(--dur) var(--ease);
 }
-.nu-ajuster:hover:not([disabled]) { color: var(--c-text-soft); }
+.nu-ajuster:hover:not([disabled]) { color: var(--m-couleur-papier-texte-doux); }
 /* Éteint en prévisualisation (l'atelier regarde, il ne dépose pas de demande
    au nom du client) : le lien doit alors CESSER de se proposer. */
 .nu-ajuster[disabled] { opacity: 0.4; cursor: not-allowed; }
-.nu-ajuster:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
+.nu-ajuster:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; border-radius: var(--m-rayon-image); }
 
-.nu-erreur { margin-top: var(--m-espace-4); font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
+.nu-erreur { margin-top: var(--m-espace-4); font-size: var(--m-taille-petit); color: var(--m-couleur-accent); }
 
 /* ── La feuille d'ajustement (T-091) — bas de l'écran sur mobile, centrée au
    large. Chips + un mot, « Envoyer à l'atelier » : la porte de sortie douce. */
@@ -1373,7 +1373,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(2, 2, 2, 0.62);
+  background: var(--m-couleur-voile-feuille); -webkit-backdrop-filter: blur(var(--m-flou-feuille)); backdrop-filter: blur(var(--m-flou-feuille));
   animation: nu-feuille-fond var(--dur) var(--ease);
 }
 .nu-feuille-carte {
@@ -1383,10 +1383,9 @@
   background: var(--glass-bg-plein);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--c-line-strong);
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
   padding: clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-5), 6vw, var(--m-espace-6));
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
   animation: nu-feuille-monte 420ms var(--ease-spring);
 }
 @media (min-width: 620px) {
@@ -1399,7 +1398,7 @@
   font-size: clamp(22px, 4vw, 28px);
   margin-bottom: var(--m-espace-2);
 }
-.nu-feuille-sub { color: var(--c-text-soft); font-size: var(--m-taille-petit); line-height: 1.5; max-width: 44ch; }
+.nu-feuille-sub { color: var(--m-couleur-papier-texte-doux); font-size: var(--m-taille-petit); line-height: 1.5; max-width: 44ch; }
 .nu-feuille-chips { display: flex; flex-wrap: wrap; gap: var(--m-espace-2); margin: var(--m-espace-5) 0 var(--m-espace-4); }
 
 /* 04/09 — le groupe « La longueur du numéro » sous les motifs : un intitulé
@@ -1411,7 +1410,7 @@
   font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .nu-feuille-chips--longueur { margin: var(--m-espace-3) 0 var(--m-espace-4); }
 
@@ -1423,7 +1422,7 @@
   font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.5;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   max-width: 44ch;
 }
 .nu-feuille-chip {
@@ -1431,70 +1430,70 @@
   cursor: pointer;
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
-  color: var(--c-text-soft);
-  background: var(--c-surface-2);
-  border: 1px solid var(--c-line-strong);
+  color: var(--m-couleur-papier-texte-doux);
+  background: var(--m-couleur-papier-survol);
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-pilule);
   padding: var(--m-espace-2) var(--m-espace-4);
   transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
     background var(--dur) var(--ease);
 }
 .nu-feuille-chip[aria-pressed='true'] {
-  color: var(--c-text);
-  background: var(--c-accent-soft);
-  border-color: rgba(214, 138, 99, 0.5);
+  color: var(--m-couleur-papier-texte);
+  background: var(--m-couleur-papier-survol);
+  border-color: var(--m-couleur-accent);
 }
-.nu-feuille-chip:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-feuille-chip:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; }
 .nu-feuille-mot {
   width: 100%;
   min-height: 64px;
   resize: vertical;
   margin-bottom: var(--m-espace-5);
   padding: var(--m-espace-3) var(--m-espace-4);
-  background: var(--c-void);
-  color: var(--c-text);
-  border: 1px solid var(--c-line-strong);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-champ);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-base);
   line-height: 1.5;
 }
-.nu-feuille-mot::placeholder { color: var(--c-text-faint); }
-.nu-feuille-mot:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+.nu-feuille-mot::placeholder { color: var(--m-couleur-papier-texte-doux); }
+.nu-feuille-mot:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 1px; }
 .nu-feuille-row { display: flex; align-items: center; justify-content: space-between; gap: var(--m-espace-4); }
 .nu-feuille-cancel {
   appearance: none;
   cursor: pointer;
   background: none;
   border: none;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
   padding: var(--m-espace-2);
   transition: color var(--dur) var(--ease);
 }
-.nu-feuille-cancel:hover { color: var(--c-text-soft); }
+.nu-feuille-cancel:hover { color: var(--m-couleur-papier-texte-doux); }
 .nu-feuille-send {
   appearance: none;
   cursor: pointer;
   font-family: var(--m-police-texte-famille);
   font-weight: 600;
   font-size: var(--m-taille-bouton);
-  color: #1a1210;
-  background: var(--c-accent);
-  border: 1px solid var(--c-accent-strong);
+  color: var(--m-couleur-papier-fond);
+  background: var(--m-couleur-accent);
+  border: 1px solid var(--m-couleur-accent);
   border-radius: var(--m-rayon-pilule);
   padding: var(--m-espace-4) var(--m-espace-6);
   transition: background var(--dur) var(--ease), transform var(--dur) var(--ease-spring);
 }
-.nu-feuille-send:hover:not([disabled]) { background: var(--c-accent-strong); transform: translateY(-1px); }
-.nu-feuille-send:focus-visible { outline: 2px solid var(--c-accent-strong); outline-offset: 3px; }
+.nu-feuille-send:hover:not([disabled]) { background: var(--m-couleur-accent); transform: translateY(-1px); }
+.nu-feuille-send:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 3px; }
 .nu-feuille-send[disabled] { opacity: 0.4; cursor: not-allowed; transform: none; }
 .nu-feuille-done {
   font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: clamp(20px, 4vw, 24px);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   text-align: center;
   margin-bottom: var(--m-espace-2);
 }
@@ -1529,10 +1528,10 @@
   margin: 0 0 var(--m-espace-4);
   font-family: var(--m-police-titre-famille);
   font-size: clamp(19px, 3.4vw, 24px);
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
 }
 .nu-confirmer .nu-cases { margin-top: 0; }
-.nu-confirmer-aide { margin-top: var(--m-espace-3); font-size: var(--m-taille-petit); color: var(--c-text-faint); }
+.nu-confirmer-aide { margin-top: var(--m-espace-3); font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
 
 /* La planche n'a plus de scène à hauteur fixe (11/09/2026) : chaque tuile
    suit son propre `aspect-ratio`, la règle qui resserrait `--viz-h` sous
@@ -1544,7 +1543,7 @@
 .nu-facultatif {
   margin-top: clamp(var(--m-espace-7), 9vw, var(--m-espace-9));
   padding-top: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
   max-width: 52ch;
 }
 .nu-facultatif + .nu-garde { margin-top: clamp(var(--m-espace-5), 5vw, var(--m-espace-7)); }
@@ -1553,14 +1552,14 @@
   font-size: var(--m-taille-etiquette);
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-facultatif-note {
   margin-top: var(--m-espace-3);
   font-size: var(--m-taille-petit);
   font-weight: 300;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-facultatif .nu-check { margin-top: var(--m-espace-4); }
@@ -1572,9 +1571,9 @@
 .nu-doc {
   margin: var(--m-espace-7) auto 0;
   max-width: var(--m-largeur-colonne);
-  border: 1px solid var(--c-line-md);
+  border: 1px solid var(--m-couleur-papier-ligne);
   border-radius: var(--m-rayon-champ);
-  background: var(--c-surface-1);
+  background: var(--m-couleur-papier-champ-fond);
   overflow: hidden;
 }
 .nu-doc .nu-pdf {
@@ -1583,7 +1582,7 @@
   width: 100%;
   aspect-ratio: 3 / 2;
   border: 0;
-  background: var(--c-surface-2);
+  background: var(--m-couleur-papier-survol);
 }
 .nu-doc-liens {
   display: flex;
@@ -1591,7 +1590,7 @@
   justify-content: center;
   gap: var(--m-espace-3);
   padding: var(--m-espace-4) var(--m-espace-5);
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
 }
 /* Le bouton « en verre » des utilitaires (18/09) : les mêmes cotes que
    `.bj-lienpartage-btn` (lienpartage.css), pour que « Ouvrir le Canva »,
@@ -1602,10 +1601,10 @@
   justify-content: center;
   gap: var(--m-espace-2);
   padding: var(--m-espace-2) var(--m-espace-4);
-  border: 1px solid rgba(245, 240, 231, 0.28);
+  border: 1px solid color-mix(in srgb, var(--m-couleur-papier-texte) 24%, transparent);
   border-radius: var(--m-rayon-pilule);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--c-text);
+  background: transparent;
+  color: var(--m-couleur-papier-texte);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-petit);
   font-weight: 400;
@@ -1614,7 +1613,7 @@
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .bj-atelier .nu-ghost:hover,
-.bj-atelier .nu-ghost:focus-visible { border-color: var(--c-text); background: rgba(255, 255, 255, 0.1); }
+.bj-atelier .nu-ghost:focus-visible { border-color: var(--m-couleur-papier-texte); background: var(--m-couleur-papier-survol); }
 @media (max-width: 760px) {
   .nu-doc-liens { flex-direction: column; align-items: stretch; padding: var(--m-espace-4); gap: var(--m-espace-3); }
   .nu-doc-liens .nu-ghost { white-space: normal; }
@@ -1630,14 +1629,14 @@
 /* Lien secondaire — texte souligné, jamais un second bouton (invariant nº5). */
 .bj-atelier .nu-lien {
   font-size: var(--m-taille-petit);
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: var(--c-line-strong);
+  text-decoration-color: var(--m-couleur-papier-pointille);
   transition: color var(--dur) var(--ease);
 }
 
-.bj-atelier .nu-lien:hover { color: var(--c-text); }
+.bj-atelier .nu-lien:hover { color: var(--m-couleur-papier-texte); }
 
 /* T2-13 — le troisieme geste de l'etat 4 est un <button>, pas un <a> :
    on lui retire l'habit de bouton pour qu'il se lise comme les liens voisins. */
@@ -1681,13 +1680,13 @@
   font-size: var(--m-taille-etiquette);
   font-weight: 300;
   line-height: 1.35;
-  color: var(--c-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .nu-nombre {
   display: inline-flex;
   align-items: stretch;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-champ);
   overflow: hidden;
 }
@@ -1702,25 +1701,25 @@
   font-size: var(--m-taille-chapo);
   font-weight: 300;
   line-height: 1;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.nu-nombre-b:hover:not([disabled]) { background: var(--c-surface-2); color: var(--c-text); }
+.nu-nombre-b:hover:not([disabled]) { background: var(--m-couleur-papier-survol); color: var(--m-couleur-papier-texte); }
 .nu-nombre-b[disabled] { opacity: 0.35; cursor: not-allowed; }
-.nu-nombre-b:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -3px; }
+.nu-nombre-b:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: -3px; }
 
 .nu-nombre-v {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: var(--m-cible-mini);
-  border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
-  border-right: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border-left: 1px solid var(--m-couleur-papier-pointille);
+  border-right: 1px solid var(--m-couleur-papier-pointille);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-base);
   font-weight: 400;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1733,9 +1732,9 @@
   font-size: var(--m-taille-petit);
   font-weight: 300;
   line-height: 1.4;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
-.nu-bon-franco { color: var(--c-accent); }
+.nu-bon-franco { color: var(--m-couleur-accent); }
 
 /* ── LA CARTE CADEAU (Noël 2026, lot 3) ──
    Un lien discret sous le total ; au clic, un champ et « Appliquer » sur une
@@ -1747,16 +1746,16 @@
   flex: 1 1 auto;
   min-width: 0;
   appearance: none;
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--m-couleur-papier-pointille);
   border-radius: var(--m-rayon-champ);
-  background: var(--c-surface-1);
+  background: var(--m-couleur-papier-champ-fond);
   padding: var(--m-espace-3) var(--m-espace-3);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-bouton);
   letter-spacing: 0.06em;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
 }
-.nu-carte-champ:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+.nu-carte-champ:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; }
 .nu-carte-ok {
   display: flex;
   align-items: baseline;
@@ -1764,9 +1763,9 @@
   margin: 0;
   font-size: var(--m-taille-petit);
   letter-spacing: 0.06em;
-  color: var(--c-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
-.nu-carte-refus { margin: var(--m-espace-2) 0 0; font-size: var(--m-taille-petit); color: var(--c-accent); }
+.nu-carte-refus { margin: var(--m-espace-2) 0 0; font-size: var(--m-taille-petit); color: var(--m-couleur-accent); }
 
 /* Le récapitulatif après paiement (16/11) : des lignes courtes, libellé à
    gauche, valeur à droite, comme un ticket. */
@@ -1775,9 +1774,9 @@
   margin: var(--m-espace-5) auto 0;
   text-align: left;
   padding: var(--m-espace-1) var(--m-espace-4);
-  border: 1px solid var(--c-line-md);
+  border: 1px solid var(--m-couleur-papier-ligne);
   border-radius: var(--m-rayon-champ);
-  background: var(--c-surface-1);
+  background: var(--m-couleur-papier-champ-fond);
 }
 .nu-recap > div {
   display: flex;
@@ -1785,12 +1784,12 @@
   align-items: baseline;
   gap: var(--m-espace-4);
   padding: var(--m-espace-3) 0;
-  border-top: 1px solid var(--c-line);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
 }
 .nu-recap > div:first-child { border-top: 0; }
-.nu-recap dt { font-size: var(--m-taille-petit); color: var(--c-text-soft); }
-.nu-recap dd { margin: 0; font-size: var(--m-taille-bouton); color: var(--c-text); text-align: right; font-variant-numeric: tabular-nums; }
-.nu-recap .nu-recap-fort { color: var(--c-accent); }
+.nu-recap dt { font-size: var(--m-taille-petit); color: var(--m-couleur-papier-texte-doux); }
+.nu-recap dd { margin: 0; font-size: var(--m-taille-bouton); color: var(--m-couleur-papier-texte); text-align: right; font-variant-numeric: tabular-nums; }
+.nu-recap .nu-recap-fort { color: var(--m-couleur-accent); }
 
 /* ── NOËL : L'OFFRE DU 2e EXEMPLAIRE EN ÉVIDENCE (16/11/2026) ────────────
    Un encart-bouton dans le bon de commande, tant qu'un seul exemplaire est
@@ -1803,15 +1802,15 @@
   margin: var(--m-espace-2) 0 var(--m-espace-3);
   padding: var(--m-espace-4) var(--m-espace-4);
   border-radius: var(--m-rayon-champ);
-  border: 1px solid var(--c-accent);
-  background: color-mix(in srgb, var(--c-accent) 10%, transparent);
-  color: var(--c-text);
+  border: 1px solid var(--m-couleur-accent);
+  background: color-mix(in srgb, var(--m-couleur-accent) 10%, transparent);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
   text-align: left;
   cursor: pointer;
   transition: background-color 0.25s ease;
 }
-.nu-noel-offre:hover:not(:disabled) { background: color-mix(in srgb, var(--c-accent) 18%, transparent); }
+.nu-noel-offre:hover:not(:disabled) { background: color-mix(in srgb, var(--m-couleur-accent) 18%, transparent); }
 .nu-noel-offre:disabled { opacity: 0.6; cursor: default; }
 .nu-noel-offre-pct {
   flex: 0 0 auto;
@@ -1819,18 +1818,18 @@
   font-size: 34px;
   line-height: 1;
   white-space: nowrap;
-  color: var(--c-accent-strong);
+  color: var(--m-couleur-accent);
 }
 .nu-noel-offre-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .nu-noel-offre-txt b { font-weight: 500; font-size: var(--m-taille-bouton); white-space: nowrap; }
 .nu-noel-offre-txt sup { font-size: 0.7em; }
-.nu-noel-offre-txt small { font-size: var(--m-taille-etiquette); color: var(--c-text-soft); }
+.nu-noel-offre-txt small { font-size: var(--m-taille-etiquette); color: var(--m-couleur-papier-texte-doux); }
 .nu-noel-offre-plus {
   flex: 0 0 auto;
   padding: var(--m-espace-2) var(--m-espace-4);
   border-radius: var(--m-rayon-pilule);
-  background: var(--c-accent);
-  color: var(--c-text-onaccent, #1a1410);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
   font-size: var(--m-taille-petit);
   font-weight: 500;
 }
@@ -1849,10 +1848,10 @@
   margin: var(--m-espace-1) 0 var(--m-espace-4);
   padding: var(--m-espace-3) var(--m-espace-4);
   border-radius: var(--m-rayon-champ);
-  border: 1px dashed var(--c-accent);
-  color: var(--c-text);
+  border: 1px dashed var(--m-couleur-accent);
+  color: var(--m-couleur-papier-texte);
 }
-.nu-noel-carte.est-choisie { border-style: solid; background: color-mix(in srgb, var(--c-accent) 8%, transparent); }
+.nu-noel-carte.est-choisie { border-style: solid; background: color-mix(in srgb, var(--m-couleur-accent) 8%, transparent); }
 .nu-noel-carte-q { flex: 1 1 200px; font-size: var(--m-taille-bouton); line-height: 1.35; }
 .nu-noel-carte-choix { display: flex; gap: var(--m-espace-2); flex: 0 0 auto; }
 .nu-noel-carte-m {
@@ -1860,16 +1859,16 @@
   min-height: 40px;
   padding: 0 var(--m-espace-4);
   border-radius: var(--m-rayon-pilule);
-  border: 1px solid var(--c-accent);
+  border: 1px solid var(--m-couleur-accent);
   background: transparent;
-  color: var(--c-accent-strong);
+  color: var(--m-couleur-accent);
   font: inherit;
   font-size: var(--m-taille-petit);
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
-.nu-noel-carte-m.est-choisi { background: var(--c-accent); color: var(--c-text-onaccent, #1a1410); }
+.nu-noel-carte-m.est-choisi { background: var(--m-couleur-accent); color: var(--m-couleur-papier-fond); }
 .nu-noel-carte-m:disabled { opacity: 0.6; cursor: default; }
 .nu-noel-carte-pour { flex: 1 1 100%; display: flex; align-items: center; gap: var(--m-espace-3); font-size: var(--m-taille-petit); }
 .nu-noel-carte-input {
@@ -1878,12 +1877,12 @@
   min-height: 42px;
   padding: 0 var(--m-espace-3);
   border-radius: var(--m-rayon-champ);
-  border: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
+  border: 1px solid var(--m-couleur-papier-pointille);
   background: transparent;
-  color: var(--c-text);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
   font-size: var(--m-taille-base);
 }
-.nu-noel-carte-input:focus { outline: none; border-color: var(--c-accent); }
-.nu-noel-carte-err { flex: 1 1 100%; margin: 0; font-size: var(--m-taille-petit); color: var(--c-accent-strong); }
-.nu-noel-carte-note { flex: 1 1 100%; font-size: var(--m-taille-etiquette); color: var(--c-text-soft); }
+.nu-noel-carte-input:focus { outline: none; border-color: var(--m-couleur-accent); }
+.nu-noel-carte-err { flex: 1 1 100%; margin: 0; font-size: var(--m-taille-petit); color: var(--m-couleur-accent); }
+.nu-noel-carte-note { flex: 1 1 100%; font-size: var(--m-taille-etiquette); color: var(--m-couleur-papier-texte-doux); }

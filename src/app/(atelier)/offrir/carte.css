@@ -1,0 +1,86 @@
+/* La carte cadeau de la charte V2 (fiche H, duplicata du 26/11) : le composant
+   Carte.tsx, partagé par /offrir, /offrir/merci et /carte/<token>.
+   Jetons --m-* seulement. Tout est scopé sous `.ct`. */
+
+.ct { container-type: inline-size; width: 100%; }
+.ct-face {
+  position: relative;
+  aspect-ratio: 1.586;
+  overflow: hidden;
+  padding: 7%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: calc(var(--m-espace-5) - 2px);
+  background: var(--m-couleur-nuit-fond);
+  color: var(--m-couleur-nuit-texte);
+  box-shadow: var(--m-ombre-objet);
+  text-align: left;
+  transition: transform var(--m-duree-standard) var(--m-courbe-sortie);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ct-face:hover { transform: rotate(-1.5deg) translateY(calc(-1 * var(--m-espace-1))); }
+}
+/* La couverture qui dépasse en bas à droite (emplacement `offrir.carte`). */
+.ct-face::after {
+  content: "";
+  position: absolute;
+  right: -12%;
+  bottom: -30%;
+  width: 62%;
+  aspect-ratio: 210 / 297;
+  background: var(--carte-visuel, none) center / cover;
+  transform: rotate(-12deg);
+  opacity: .9;
+  box-shadow: var(--m-ombre-livre);
+  pointer-events: none;
+}
+.ct-face > * { position: relative; z-index: 1; }
+/* Le logo WebP est DÉJÀ blanc : jamais de filtre. */
+.ct-logo { display: block; width: 17cqw; height: auto; }
+.ct-milieu { display: flex; flex-direction: column; gap: 1cqw; min-width: 0; }
+.ct-pour { font-family: var(--m-police-etiquette-famille); font-size: clamp(9px, 2.8cqw, 12px); letter-spacing: .14em; text-transform: uppercase; color: var(--m-couleur-nuit-texte); }
+.ct-phrase {
+  font-family: var(--m-police-titre-famille);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: 5cqw;
+  line-height: 1.1;
+  max-width: 14ch;
+}
+.ct-message { font-size: clamp(11px, 3.3cqw, 14px); line-height: 1.3; color: var(--m-couleur-nuit-texte-doux); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; max-width: 24ch; }
+.ct-bas { display: flex; flex-direction: column; align-items: flex-start; gap: .6cqw; }
+/* Le texte reste dans la partie noire : la couverture occupe la moitié droite. */
+.ct-milieu, .ct-bas { max-width: 48%; }
+.ct-montant {
+  font-family: var(--m-police-titre-famille);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: 9cqw;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--m-couleur-nuit-texte);
+}
+.ct-infos {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: baseline;
+  gap: 0 .5em;
+  font-family: var(--m-police-etiquette-famille);
+  font-size: clamp(9px, 2.6cqw, 11px);
+  letter-spacing: .14em;
+  color: var(--m-couleur-nuit-texte);
+  opacity: .8;
+}
+.ct-code { font-variant-numeric: tabular-nums; }
+/* Le point sépare le code de la validité ; il reste en fin de ligne si elles se coupent. */
+.ct-code::after { content: " ·"; }
+
+@media (max-width: 700px) {
+  .ct-face::after { width: 46%; right: -6%; bottom: -24%; }
+  .ct-infos { line-height: 1.5; }
+  .ct-milieu, .ct-bas { max-width: 56%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ct-face { transition: none; }
+  .ct-face:hover { transform: none; }
+}
+.ct-face { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

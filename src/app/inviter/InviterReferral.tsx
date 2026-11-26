@@ -4,8 +4,8 @@ import { useReferralShare } from '../components/useReferralShare'
 import InstagramLink from '../components/InstagramLink'
 
 /**
- * Carte parrainage de la page /inviter — charte PRÉVENTE
- * (glass, --bj-action #4a90d9, radius --bj-r-*, fonts --bj-font-display/ui).
+ * Carte parrainage de la page /inviter — charte V2 (26/11)
+ * (jetons --m-*, boutons .m-btn et .m-second).
  *
  * Calqué sur MerciReferral : composant de STYLE dédié posé sur le hook partagé
  * useReferralShare (logique copie/partage/toast/fallback réutilisée VERBATIM,
@@ -38,7 +38,7 @@ export default function InviterReferral({
         <span className="inviter-ref-link-text">{referralLink}</span>
         <button
           type="button"
-          className="inviter-ref-copy-btn"
+          className="m-second inviter-ref-copy-btn"
           onClick={() => copyLink(false)}
           aria-label="Copier le lien de parrainage"
         >
@@ -48,7 +48,7 @@ export default function InviterReferral({
 
       <button
         type="button"
-        className="inviter-ref-share-btn"
+        className="m-btn inviter-ref-share-btn"
         onClick={shareLink}
         aria-label="Partager votre lien de parrainage"
       >
@@ -60,7 +60,7 @@ export default function InviterReferral({
       </p>
 
       <p className="inviter-ref-footer">
-        Vos 5 pages s&rsquo;appliquent dès que chacun de vos proches passera commande au lancement. Pas de limite — plus vous parrainez, plus vous cumulez.
+        Vos 5 pages s&rsquo;appliquent dès que chacun de vos proches passera commande au lancement. Pas de limite : plus vous parrainez, plus vous cumulez.
       </p>
 
       <InstagramLink className="inviter-ref-insta" />

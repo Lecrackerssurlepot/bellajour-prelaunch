@@ -33,7 +33,7 @@ export default function MerciBackLink() {
     /* eslint-disable-next-line @next/next/no-html-link-for-pages --
        un <Link> ferait une navigation CÔTÉ CLIENT, qui garde la mémoire de
        l'onglet : c'est précisément ce que ce composant cherche à éviter. */
-    <a className="merci-back" href="/" onClick={handleClick}>
+    <a className="m-second merci-back" href="/" onClick={handleClick}>
       Retour à Bellajour
     </a>
   )

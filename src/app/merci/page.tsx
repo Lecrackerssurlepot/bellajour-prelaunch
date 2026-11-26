@@ -1,13 +1,12 @@
 import type { Metadata } from 'next'
 import Stripe from 'stripe'
 import { makeSupabase } from '@/lib/supabase'
-import Link from 'next/link'
-import Navbar from './Navbar'
-import Footer from '../sections/Footer'
-import MerciReferral from './MerciReferral'
-import MerciBackLink from './MerciBackLink'
-import MerciPendingRefresh from './MerciPendingRefresh'
-import { cormorantCremeClassName } from '../creme-fonts'
+import Nav from '../(atelier)/components/Nav'
+import Footer from '../(atelier)/components/Footer'
+import { COMPOSER_HREF, CTA_LABEL } from '../(atelier)/content'
+import { compteOuvert } from '@/lib/compte/session'
+import MerciVue, { type EtatMerci } from './MerciVue'
+import '../(atelier)/theme.css'
 import './merci.css'
 
 /* Route /merci — page de confirmation post-paiement prévente.
@@ -27,12 +26,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-type MerciState =
-  | { kind: 'invalid' }
-  | { kind: 'pending' }
-  | { kind: 'confirmed'; refCode: string; prenom: string | null; numeroFondateur: number | null }
-
-async function resolveState(sessionId: string | undefined): Promise<MerciState> {
+async function resolveState(sessionId: string | undefined): Promise<EtatMerci> {
   if (!sessionId) return { kind: 'invalid' }
 
   const stripeKey = process.env.STRIPE_SECRET_KEY
@@ -106,56 +100,16 @@ export default async function MerciPage({
   const state = await resolveState(sessionId)
 
   return (
-    /* T-064 — Cormorant du monde CRÈME (creme-fonts.ts), déplacée hors du
-       layout racine : /merci est la seule route à la peindre ici. */
-    <main className={cormorantCremeClassName}>
-      <Navbar />
-      <section className="merci">
-        <div className="merci-inner">
-          {state.kind === 'confirmed' && (
-            <>
-              <p className="merci-eyebrow">Paiement confirmé</p>
-              <h1 className="merci-title">
-                {state.prenom ? `Merci, ${state.prenom}.` : 'Merci.'}
-              </h1>
-              {state.numeroFondateur != null && (
-                <p className="merci-founder">
-                  Vous êtes le Fondateur n°{state.numeroFondateur}.
-                </p>
-              )}
-              <p className="merci-lede">
-                Votre pré-commande est enregistrée. Vous allez recevoir votre e-mail de confirmation
-                dans quelques instants.
-              </p>
-              <MerciReferral refCode={state.refCode} />
-              <MerciBackLink />
-            </>
-          )}
-
-          {state.kind === 'pending' && (
-            <>
-              <p className="merci-eyebrow">Paiement reçu</p>
-              <h1 className="merci-title">Un instant…</h1>
-              <p className="merci-lede">Nous finalisons la confirmation de votre pré-commande.</p>
-              <MerciPendingRefresh attempt={attempt} />
-            </>
-          )}
-
-          {state.kind === 'invalid' && (
-            <>
-              <h1 className="merci-title">Merci pour votre confiance.</h1>
-              <p className="merci-lede">
-                Nous n&rsquo;avons pas pu afficher le détail de votre pré-commande ici. Si vous venez
-                de régler votre acompte, votre e-mail de confirmation vous parviendra sous peu.
-              </p>
-              <Link className="merci-back" href="/">
-                Retour à Bellajour
-              </Link>
-            </>
-          )}
-        </div>
-      </section>
+    /* Charte V2 (26/11) : la barre et le pied du site, comme les pages légales.
+       `.bj-atelier` porte leur scope (cette route est hors du groupe (atelier)).
+       Pas de bandeau : c'est un écran du parcours client (fiche H). Le code qui
+       lit Stripe et la base ne change pas, seul l'habit. */
+    <div className="bj-atelier">
+      <Nav href={COMPOSER_HREF} label={CTA_LABEL} retour="/" compteOuvert={compteOuvert()} />
+      <main>
+        <MerciVue state={state} attempt={attempt} />
+      </main>
       <Footer />
-    </main>
+    </div>
   )
 }
