@@ -1,56 +1,55 @@
 /* L'écran « Règles » de l'atelier (18/11, T-216) : le registre des règles du tunnel, en lecture.
-   Tout est scopé sous `.mep-regles`. La Porcelaine d'`admin.css` fournit les jetons (`--bj-*` sous `.adm-root`,
-   `--adm-verre*`) : aucune couleur de marque en dur, aucune animation. Les teintes des statuts sont des voiles
+   Tout est scopé sous `.mep-regles`. Les jetons `--m-*` de la charte V2 (brand/build/tokens.css) : aucune couleur en dur, aucune animation. Les teintes des statuts sont des voiles
    des encres de l'atelier. */
 
 .mep-regles {
-  --rg-confirmee: #1f7a4d;
-  --rg-confirmee-fond: rgba(31, 122, 77, 0.1);
-  --rg-codee: var(--bj-action);
-  --rg-codee-fond: var(--bj-action-soft);
-  --rg-ombre: #8a5a00;
-  --rg-ombre-fond: rgba(178, 120, 0, 0.12);
-  --rg-interdit: #b42318;
+  --rg-confirmee: var(--m-couleur-etat-succes);
+  --rg-confirmee-fond: color-mix(in srgb, var(--m-couleur-etat-succes) 10%, transparent);
+  --rg-codee: var(--m-couleur-accent);
+  --rg-codee-fond: var(--m-couleur-papier-survol);
+  --rg-ombre: var(--m-couleur-etat-alerte);
+  --rg-ombre-fond: color-mix(in srgb, var(--m-couleur-etat-alerte) 12%, transparent);
+  --rg-interdit: var(--m-couleur-etat-erreur);
 }
 
 .mep-regles .mep-regles-version {
-  margin: var(--bj-sp-1) 0 0;
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  margin: var(--m-espace-1) 0 0;
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .mep-regles .mep-regles-version code {
   font-size: 0.95em;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 
 /* ── comptes par statut ── */
 .mep-regles .mep-regles-comptes {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bj-sp-3);
-  margin: 0 0 var(--bj-sp-5);
+  gap: var(--m-espace-3);
+  margin: 0 0 var(--m-espace-5);
   padding: 0;
   list-style: none;
 }
 .mep-regles .mep-regles-compte {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-2);
-  padding: var(--bj-sp-2) var(--bj-sp-4);
-  border-radius: var(--bj-r-md);
-  background: var(--adm-verre);
-  border: 1px solid var(--adm-verre-bord);
-  box-shadow: var(--adm-verre-ombre);
-  backdrop-filter: var(--adm-flou);
-  -webkit-backdrop-filter: var(--adm-flou);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-fond);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
+  
+  
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .mep-regles .mep-regles-compte-n {
-  font-size: var(--bj-fs-lg, 1.25rem);
+  font-size: var(--m-taille-chapo);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .mep-regles .mep-regles-compte--confirmee_mathias .mep-regles-compte-n { color: var(--rg-confirmee); }
 .mep-regles .mep-regles-compte--codee .mep-regles-compte-n { color: var(--rg-codee); }
@@ -59,57 +58,57 @@
 .mep-regles .mep-regles-filtres {
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-2);
-  margin-bottom: var(--bj-sp-3);
+  gap: var(--m-espace-2);
+  margin-bottom: var(--m-espace-3);
 }
 .mep-regles .mep-regles-filtre {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 .mep-regles .mep-regles-pastille {
-  padding: 6px 14px;
-  border-radius: var(--bj-r-btn);
-  border: 1px solid var(--bj-veil-12);
-  background: var(--bj-cream-tint-1);
-  color: var(--bj-text-soft);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte-doux);
   font: inherit;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
-.mep-regles .mep-regles-pastille:hover { border-color: var(--bj-action-border, var(--bj-action)); color: var(--bj-text); }
+.mep-regles .mep-regles-pastille:hover { border-color: var(--m-couleur-accent); color: var(--m-couleur-papier-texte); }
 .mep-regles .mep-regles-pastille[aria-pressed="true"] {
-  background: var(--bj-text);
-  border-color: var(--bj-text);
-  color: var(--bj-cream-tint-1);
+  background: var(--m-couleur-papier-texte);
+  border-color: var(--m-couleur-papier-texte);
+  color: var(--m-couleur-papier-fond);
 }
-.mep-regles .mep-regles-pastille:focus-visible { outline: 2px solid var(--bj-action); outline-offset: 2px; }
+.mep-regles .mep-regles-pastille:focus-visible { outline: 2px solid var(--m-couleur-accent); outline-offset: 2px; }
 
 .mep-regles .mep-regles-etat {
-  margin: 0 0 var(--bj-sp-4);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
+  margin: 0 0 var(--m-espace-4);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   font-variant-numeric: tabular-nums;
 }
 
 /* ── domaines ── */
-.mep-regles .mep-regles-domaine { margin-bottom: var(--bj-sp-6); }
+.mep-regles .mep-regles-domaine { margin-bottom: var(--m-espace-6); }
 .mep-regles .mep-regles-titre {
-  margin: 0 0 var(--bj-sp-3);
-  font-size: var(--bj-fs-lg, 1.25rem);
+  margin: 0 0 var(--m-espace-3);
+  font-size: var(--m-taille-chapo);
   font-weight: 600;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .mep-regles .mep-regles-titre span {
-  margin-left: var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
+  margin-left: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   font-weight: 400;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .mep-regles .mep-regles-liste {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 460px), 1fr));
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -118,13 +117,13 @@
 /* ── une règle ── */
 .mep-regles .mep-regle {
   position: relative;
-  padding: var(--bj-sp-4);
-  border-radius: var(--bj-r-md);
-  background: var(--adm-verre);
-  border: 1px solid var(--adm-verre-bord);
-  box-shadow: var(--adm-verre-ombre);
-  backdrop-filter: var(--adm-flou);
-  -webkit-backdrop-filter: var(--adm-flou);
+  padding: var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-fond);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
+  
+  
 }
 .mep-regles .mep-regle--interdit::before {
   content: "";
@@ -133,72 +132,72 @@
   top: 16px;
   bottom: 16px;
   width: 3px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 var(--m-rayon-image) var(--m-rayon-image) 0;
   background: var(--rg-interdit);
 }
 .mep-regles .mep-regle-tete {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--bj-sp-2);
-  margin-bottom: var(--bj-sp-2);
-  font-size: var(--bj-fs-xs, 0.8rem);
+  gap: var(--m-espace-2);
+  margin-bottom: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
 }
 .mep-regles .mep-regle-id {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .mep-regles .mep-regle-statut,
 .mep-regles .mep-regle-banc {
-  padding: 2px 10px;
-  border-radius: var(--bj-r-btn);
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .mep-regles .mep-regle-statut--confirmee_mathias { background: var(--rg-confirmee-fond); color: var(--rg-confirmee); }
 .mep-regles .mep-regle-statut--codee { background: var(--rg-codee-fond); color: var(--rg-codee); }
 .mep-regles .mep-regle-statut--en_ombre { background: var(--rg-ombre-fond); color: var(--rg-ombre); }
 .mep-regles .mep-regle-statut--retiree { text-decoration: line-through; }
-.mep-regles .mep-regle-banc { background: transparent; border: 1px dashed var(--bj-veil-16); }
-.mep-regles .mep-regle-famille { color: var(--bj-text-soft); }
+.mep-regles .mep-regle-banc { background: transparent; border: 1px dashed var(--m-couleur-papier-pointille); }
+.mep-regles .mep-regle-famille { color: var(--m-couleur-papier-texte-doux); }
 .mep-regles .mep-regle--interdit .mep-regle-famille { color: var(--rg-interdit); }
 .mep-regles .mep-regle-corrections {
   margin-left: auto;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-variant-numeric: tabular-nums;
 }
 .mep-regles .mep-regle-enonce {
-  margin: 0 0 var(--bj-sp-3);
-  font-size: var(--bj-fs-ui);
+  margin: 0 0 var(--m-espace-3);
+  font-size: var(--m-taille-bouton);
   line-height: 1.45;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .mep-regles .mep-regle-si,
 .mep-regles .mep-regle-meta {
   display: grid;
-  gap: 6px;
-  margin: 0 0 var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-2);
+  margin: 0 0 var(--m-espace-2);
+  font-size: var(--m-taille-petit);
 }
 .mep-regles .mep-regle-si div,
 .mep-regles .mep-regle-meta div {
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 .mep-regles .mep-regle-si dt,
-.mep-regles .mep-regle-meta dt { color: var(--bj-text-faint); }
+.mep-regles .mep-regle-meta dt { color: var(--m-couleur-papier-texte-doux); }
 .mep-regles .mep-regle-si dd,
-.mep-regles .mep-regle-meta dd { margin: 0; color: var(--bj-text-soft); overflow-wrap: anywhere; }
-.mep-regles .mep-regle-si dd { color: var(--bj-text); }
+.mep-regles .mep-regle-meta dd { margin: 0; color: var(--m-couleur-papier-texte-doux); overflow-wrap: anywhere; }
+.mep-regles .mep-regle-si dd { color: var(--m-couleur-papier-texte); }
 .mep-regles .mep-regle-meta { margin-bottom: 0; }
 .mep-regles .mep-regle-reglage {
   display: inline-block;
-  margin: 0 6px 4px 0;
-  padding: 1px 8px;
-  border-radius: var(--bj-r-btn);
-  background: var(--bj-action-soft);
-  color: var(--bj-text);
+  margin: 0 var(--m-espace-2) var(--m-espace-1) 0;
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte);
   font-size: 0.92em;
 }

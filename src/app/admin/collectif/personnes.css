@@ -10,7 +10,7 @@
 .eca-root .eca-pe-tete-droite {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .eca-root .eca-pe-tete-droite .eca-lien-texte:disabled {
   opacity: 0.5;
@@ -18,25 +18,25 @@
 }
 .eca-root .eca-pe-aide {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
 }
 
 /* La planche 4C : les personnes à gauche, la personne choisie à droite. */
 .eca-root .eca-pe-corps {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
-  gap: 18px 22px;
+  gap: var(--m-espace-4) var(--m-espace-5);
   align-items: start;
 }
 .eca-root .eca-pe-colonne {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-pe-recherche {
-  border-radius: 999px;
-  padding: 9px 14px;
+  border-radius: var(--m-rayon-pilule);
+  padding: var(--m-espace-2) var(--m-espace-3);
 }
 .eca-root .eca-choix.eca-pe-filtre {
   align-self: flex-start;
@@ -44,10 +44,10 @@
 .eca-root .eca-pe-liste {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   max-height: 25rem;
   margin: 0;
-  padding: 2px;
+  padding: var(--m-espace-1);
   list-style: none;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -58,28 +58,28 @@
 .eca-root .eca-pe-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--m-espace-3);
   width: 100%;
   min-width: 0;
-  padding: 6px 14px 6px 8px;
+  padding: var(--m-espace-2) var(--m-espace-3) var(--m-espace-2) var(--m-espace-2);
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
   background: var(--eca-gris-fond);
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   text-align: left;
   cursor: pointer;
 }
 .eca-root .eca-pe-item:hover {
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
 }
 .eca-root .eca-pe-item[aria-current="true"] {
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08), inset 0 0 0 1px var(--bj-action-border);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
 }
 .eca-root .eca-pe-item:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 .eca-root .eca-pe-item-nom {
@@ -92,8 +92,8 @@
 }
 .eca-root .eca-pe-item-n {
   flex: none;
-  color: var(--bj-text-soft);
-  font-size: 13px;
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-petit);
   font-variant-numeric: tabular-nums;
 }
 .eca-root .eca-pe-point {
@@ -104,7 +104,7 @@
   background: var(--eca-chaud-point);
 }
 .eca-root .eca-pe-aucune {
-  margin: 4px 8px;
+  margin: var(--m-espace-1) var(--m-espace-2);
   list-style: none;
 }
 
@@ -116,90 +116,90 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
   color: var(--eca-bleu-encre);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 .eca-root .eca-pe-ini--grand {
   width: 56px;
   height: 56px;
-  font-size: 18px;
+  font-size: var(--m-taille-base);
 }
 
 .eca-root .eca-pe-detail {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--m-espace-3);
 }
 .eca-root .eca-pe-fiche {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px 14px;
+  gap: var(--m-espace-2) var(--m-espace-3);
 }
 .eca-root .eca-pe-titres {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 .eca-root .eca-pe-nom {
   margin: 0;
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
   font-style: normal;
-  font-weight: 400;
+  font-weight: var(--m-police-titre-graisse);
   font-size: 30px;
   line-height: 1.1;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-pe-sous {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   overflow-wrap: anywhere;
 }
 .eca-root .eca-pe-gestes {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-pe-renommer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 18px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-gris-fond);
 }
 .eca-root .eca-pe-champs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 14px;
+  gap: var(--m-espace-3) var(--m-espace-3);
 }
 
 /* « Peut-être la même personne » : un cadre en pointillé bleu, comme la planche (une proposition, jamais d'office). */
 .eca-root .eca-pe-doublons {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px dashed var(--bj-action-border);
-  border-radius: 18px;
-  background: rgba(234, 242, 252, 0.45);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3);
+  border: 1px dashed var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-survol);
 }
 .eca-root .eca-pe-doublons-tete {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 14px;
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
 }
 .eca-root .eca-pe-doublons ul {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -208,10 +208,10 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 4px 12px;
-  padding: 8px 8px 8px 10px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.82);
+  gap: var(--m-espace-1) var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-2) var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 82%, transparent);
 }
 .eca-root .eca-pe-doublon-texte {
   min-width: 0;
@@ -224,7 +224,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: var(--m-espace-1) var(--m-espace-2);
 }
 .eca-root .eca-pe-doublon-texte .eca-sous {
   font-size: 12.5px;
@@ -234,20 +234,20 @@
 .eca-root .eca-pe-fusions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-pe-sous-titre {
   margin: 0;
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
   font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  color: var(--bj-text);
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-chapo);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-pe-fusions ul {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -256,9 +256,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px 12px;
-  padding: 8px 8px 8px 14px;
-  border-radius: 16px;
+  gap: var(--m-espace-2) var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-2) var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-gris-fond);
 }
 .eca-root .eca-pe-fusion--defaite {
@@ -277,11 +277,11 @@
 /* La confirmation de « Défaire » pose sur une pastille grise : le bleu doux plein, pas le voile translucide de `.eca-confirm` (il y tournait au bleu soutenu). */
 .eca-root .eca-confirm.eca-pe-confirm {
   grid-column: 1 / -1;
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
 }
 .eca-root .eca-pe-toutes {
   align-self: flex-start;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
 }
 
 /* La fenêtre « Fusionner deux personnes » (planche 4B) : les deux personnes côte à côte, le nom gardé, la phrase. */
@@ -292,15 +292,15 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .eca-root .eca-pe-duo-carte {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-3) var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-gris-fond);
   overflow-wrap: anywhere;
 }
@@ -314,32 +314,32 @@
   overflow-wrap: anywhere;
 }
 .eca-root .eca-pe-duo-signe {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-pe-noms {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   margin: 0;
   padding: 0;
   border: 0;
 }
 .eca-root .eca-pe-noms legend {
   padding: 0;
-  margin-bottom: 6px;
-  font-size: 13px;
+  margin-bottom: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
 }
 .eca-root .eca-pe-nom-choix {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid var(--bj-veil-12);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
-  font-size: 14px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-3);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 70%, transparent);
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .eca-root .eca-pe-nom-choix input {
@@ -347,11 +347,11 @@
   width: 17px;
   height: 17px;
   margin: 0;
-  accent-color: var(--bj-action);
+  accent-color: var(--m-couleur-accent);
 }
 .eca-root .eca-pe-nom-choix--on {
-  border-color: var(--bj-action);
-  background: var(--bj-action-soft);
+  border-color: var(--m-couleur-accent);
+  background: var(--m-couleur-papier-survol);
 }
 .eca-root .eca-pe-nom-choix--refus {
   opacity: 0.6;
@@ -361,7 +361,7 @@
   margin: 0;
   font-size: 13.5px;
   line-height: 1.5;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-pe-fen-gestes {
   align-items: center;
@@ -369,7 +369,7 @@
 }
 .eca-root .eca-pe-fen-gestes .eca-lien-texte {
   margin-right: auto;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
 }
 
 @media (max-width: 860px) {
@@ -425,17 +425,17 @@
     flex: 1 1 0;
   }
   .eca-root .eca-fen.eca-pe-fen {
-    padding: 18px;
+    padding: var(--m-espace-4);
   }
 }
 
 /* Un autre nom tapé sous une adresse connue (audit S5 du 20/10) : une remarque, jamais un renommage d'office. */
 .eca-root .eca-pe-propose {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px dashed var(--bj-action-border);
-  background: rgba(234, 242, 252, 0.45);
-  font-size: 13px;
+  padding: var(--m-espace-3) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  border: 1px dashed var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
 }

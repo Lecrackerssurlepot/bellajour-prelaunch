@@ -45,7 +45,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 
 .ec-espace .ec-docs-liste {
@@ -139,7 +139,7 @@
   align-self: start;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   padding: var(--m-espace-5) var(--m-espace-5);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-panneau);

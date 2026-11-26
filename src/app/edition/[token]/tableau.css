@@ -16,7 +16,7 @@
 .ec-espace .ec-tdb .ec-ecran-titres {
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 /* 40 px sur ordinateur seulement : sur téléphone, TOUS les écrans ont le même grand titre de 34 px (espace.css,
    planche 1 du 21/10) ; ce (0,3,0) chargé APRÈS espace.css l'aurait remplacé. */
@@ -380,7 +380,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-tdb-fin-titre {
   font-family: var(--m-police-titre-famille);
@@ -646,7 +646,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-envoi-recu-texte strong {
   font-weight: 500;
@@ -684,7 +684,7 @@
   color: var(--ec-muted);
 }
 .ec-espace .ec-reponses dd {
-  margin: 2px 0 0;
+  margin: var(--m-espace-1) 0 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

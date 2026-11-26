@@ -5,24 +5,24 @@
    pages se ressemblent. */
 
 .ck-root .ate-fiche-tete {
-  margin-bottom: var(--bj-sp-5);
+  margin-bottom: var(--m-espace-5);
 }
 
 .ck-section {
-  margin-top: var(--bj-sp-6);
+  margin-top: var(--m-espace-6);
 }
 
 .ck-h2 {
-  margin: 0 0 var(--bj-sp-2);
-  font-family: var(--bj-font-display);
-  font-weight: 500;
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text);
+  margin: 0 0 var(--m-espace-2);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-chapo);
+  color: var(--m-couleur-papier-texte);
 }
 
 .ck-note {
   max-width: 78ch;
-  margin-bottom: var(--bj-sp-4);
+  margin-bottom: var(--m-espace-4);
 }
 
 /* ── le verdict : un seul bloc, une couleur par état ── */
@@ -30,16 +30,16 @@
 .ck-verdict {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: var(--bj-sp-5) var(--bj-sp-5);
-  margin-bottom: var(--bj-sp-4);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-12);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-5) var(--m-espace-5);
+  margin-bottom: var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: var(--ate-carte-bg);
   border-left-width: 5px;
 }
 .ck-verdict--observation {
-  border-left-color: var(--bj-text-faint);
+  border-left-color: var(--m-couleur-papier-texte-doux);
 }
 .ck-verdict--marge {
   border-left-color: var(--ate-vert);
@@ -53,10 +53,10 @@
 
 
 .ck-verdict-mot {
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
   font-size: clamp(30px, 3vw, 44px);
   line-height: 1.05;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ck-verdict--retard_sature .ck-verdict-mot {
   color: var(--ate-rouge);
@@ -69,19 +69,19 @@
 }
 
 .ck-verdict-phrase {
-  margin: 4px 0 0;
+  margin: var(--m-espace-1) 0 0;
   max-width: 70ch;
-  font-size: var(--bj-fs-md);
+  font-size: var(--m-taille-base);
   line-height: 1.5;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ck-verdict-fiab,
 .ck-verdict-constat {
   margin: 0;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ck-verdict-constat {
   color: var(--ate-orange);
@@ -90,21 +90,21 @@
 /* ── les quatre chiffres, puis le financement ── */
 
 .ck-cles {
-  margin-bottom: var(--bj-sp-3);
+  margin-bottom: var(--m-espace-3);
 }
 
 .ck-finance {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
 }
 .ck-finance-case {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: var(--bj-sp-3) var(--bj-sp-4);
-  border: 1px solid var(--bj-veil-8);
-  border-radius: var(--bj-r-md);
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
 }
 
 /* ── les curseurs ── */
@@ -112,30 +112,30 @@
 .ck-curseurs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--bj-sp-3) var(--bj-sp-6);
+  gap: var(--m-espace-3) var(--m-espace-6);
 }
 
 .ck-curseur {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: var(--bj-sp-3) 0;
-  border-bottom: 1px solid var(--bj-veil-8);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3) 0;
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
   cursor: pointer;
 }
 .ck-curseur-tete {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: var(--bj-sp-3);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-3);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
 }
 .ck-curseur-label {
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ck-curseur-val {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -143,26 +143,26 @@
 .ck-curseur input[type="range"] {
   width: 100%;
   margin: 0;
-  accent-color: var(--bj-action);
+  accent-color: var(--m-couleur-accent);
 }
 
 .ck-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--bj-sp-3);
-  margin-top: var(--bj-sp-4);
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-4);
 }
 .ck-actions-note {
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ck-msg {
-  margin: var(--bj-sp-2) 0 0;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
+  margin: var(--m-espace-2) 0 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
 }
 .ck-msg--ok {
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ck-msg--ko {
   color: var(--ate-rouge);
@@ -172,30 +172,30 @@
 
 .ck-tableau-cadre {
   overflow-x: auto;
-  border: 1px solid var(--bj-veil-8);
-  border-radius: var(--bj-r-md);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
 }
 .ck-tableau {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   font-variant-numeric: tabular-nums;
 }
 .ck-tableau th,
 .ck-tableau td {
-  padding: 8px 12px;
+  padding: var(--m-espace-2) var(--m-espace-3);
   text-align: left;
   white-space: nowrap;
-  border-bottom: 1px solid var(--bj-veil-8);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
 }
 .ck-tableau th {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--bj-text-faint);
-  background: var(--bj-veil-6);
+  color: var(--m-couleur-papier-texte-doux);
+  background: var(--m-couleur-papier-survol);
 }
 .ck-tableau tbody tr:last-child td {
   border-bottom: 0;
@@ -212,12 +212,12 @@
 }
 
 .ck-pied {
-  margin-top: var(--bj-sp-6);
-  padding-top: var(--bj-sp-3);
-  border-top: 1px solid var(--bj-veil-8);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
+  margin-top: var(--m-espace-6);
+  padding-top: var(--m-espace-3);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   max-width: 78ch;
 }
 

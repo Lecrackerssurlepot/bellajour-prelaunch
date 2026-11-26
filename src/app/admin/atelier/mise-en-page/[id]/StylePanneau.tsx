@@ -99,9 +99,9 @@ export function StylePanneau() {
 
       {paire && style ? (
         <div className="ed-sty-echantillon" aria-hidden="true">
-          <span className="ed-sty-ech-t" style={{ fontFamily: `var(--pf-${paire.niveaux.titre.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.titre.graisse, textTransform: paire.niveaux.titre.capitales ? "uppercase" : "none", color: `var(--mep-r-encre)` }}>{titreEchantillon}</span>
-          <span className="ed-sty-ech-x" style={{ fontFamily: `var(--pf-${paire.niveaux.texte.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.texte.graisse }}>{texteTypo("Le texte courant s'écrit ainsi.")}</span>
-          <span className="ed-sty-ech-l" style={{ fontFamily: `var(--pf-${paire.niveaux.legende.police}), var(--bj-font-ui)`, fontWeight: paire.niveaux.legende.graisse, textTransform: paire.niveaux.legende.capitales ? "uppercase" : "none", letterSpacing: paire.niveaux.legende.approche ? `${paire.niveaux.legende.approche}em` : undefined }}>Légende de la photo</span>
+          <span className="ed-sty-ech-t" style={{ fontFamily: `var(--pf-${paire.niveaux.titre.police}), var(--m-police-texte-famille)`, fontWeight: paire.niveaux.titre.graisse, textTransform: paire.niveaux.titre.capitales ? "uppercase" : "none", color: `var(--mep-r-encre)` }}>{titreEchantillon}</span>
+          <span className="ed-sty-ech-x" style={{ fontFamily: `var(--pf-${paire.niveaux.texte.police}), var(--m-police-texte-famille)`, fontWeight: paire.niveaux.texte.graisse }}>{texteTypo("Le texte courant s'écrit ainsi.")}</span>
+          <span className="ed-sty-ech-l" style={{ fontFamily: `var(--pf-${paire.niveaux.legende.police}), var(--m-police-texte-famille)`, fontWeight: paire.niveaux.legende.graisse, textTransform: paire.niveaux.legende.capitales ? "uppercase" : "none", letterSpacing: paire.niveaux.legende.approche ? `${paire.niveaux.legende.approche}em` : undefined }}>Légende de la photo</span>
         </div>
       ) : (
         <p className="ed-sty-vide">Rendu d&apos;origine. Choisir une paire de polices applique un style à tout le magazine.</p>

@@ -74,7 +74,7 @@
 .ec-espace .ec-s-retour {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--m-espace-1);
   height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
   border: 1px solid var(--ec-carte-bord);
@@ -104,7 +104,7 @@
   gap: var(--m-espace-2);
   max-width: calc(100% - 32px);
   min-height: var(--m-cible-mini);
-  margin: 2px var(--m-espace-4) var(--m-espace-2);
+  margin: var(--m-espace-1) var(--m-espace-4) var(--m-espace-2);
   padding: 0 var(--m-espace-4);
   box-sizing: border-box;
   border: 0;
@@ -134,7 +134,7 @@
   align-items: center;
   gap: var(--m-espace-2);
   min-height: 36px;
-  margin: 2px var(--m-espace-4) var(--m-espace-2);
+  margin: var(--m-espace-1) var(--m-espace-4) var(--m-espace-2);
   padding: 0 var(--m-espace-4);
   box-sizing: border-box;
   border-radius: var(--m-rayon-pilule);
@@ -324,7 +324,7 @@
     border-top: 1px solid var(--ec-line);
   }
   .ec-espace .ec-s-jour {
-    padding-left: 2px;
+    padding-left: var(--m-espace-1);
     padding-right: var(--m-espace-1);
     background: color-mix(in srgb, var(--ec-bg) 72%, transparent);
   }
@@ -431,7 +431,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--m-espace-1);
     padding: 0 var(--m-espace-2);
     border: 0;
     border-radius: var(--m-rayon-pilule);
@@ -559,7 +559,7 @@
     align-self: center;
     width: 40px;
     height: 5px;
-    margin: 2px 0;
+    margin: var(--m-espace-1) 0;
     border-radius: var(--m-rayon-pilule);
     background: rgba(var(--ec-fg-rgb), 0.22);
   }
@@ -638,14 +638,14 @@
     max-height: calc(var(--app-height) * 0.24);
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 2px 0;
+    padding: var(--m-espace-1) 0;
   }
   .ec-espace .ec-s-nuage-vide {
     margin: var(--m-espace-1);
   }
   /* « Terminer la collecte » : deux grands choix, le premier plein, et UNE phrase dessous. */
   .ec-espace .ec-s-pied-feuille {
-    margin: 2px var(--m-espace-1) 0;
+    margin: var(--m-espace-1) var(--m-espace-1) 0;
     font-size: var(--m-taille-petit);
     color: var(--ec-muted);
     text-align: center;
@@ -700,7 +700,7 @@
     overflow: hidden;
     border-radius: var(--m-rayon-bloc);
     background: rgba(var(--ec-fg-rgb), 0.08);
-    box-shadow: 0 24px 60px rgba(var(--ec-noir-rgb), 0.45);
+    box-shadow: none;
   }
   .ec-espace .ec-s-souleve img {
     position: absolute;
@@ -803,7 +803,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-s-choix-fin b {
   font-size: var(--m-taille-base);

@@ -1,116 +1,60 @@
 /* Le lien de dépôt des participants (PRD §5.1) : d'abord sur téléphone.
    Scopé `.bj-atelier .ec-dp` (le layout pose `.bj-atelier.ec-depot`).
-   Cormorant 400 et DM Sans ; pas de `dvh`.
 
-   ══════════════════════════════════════════════════════════════════════════
-   LE MODE SUIT LE TÉLÉPHONE (question 16 du 20/10, décision de Mathias)
-   La page n'a pas de bouton soleil / lune : elle lit `prefers-color-scheme`.
-   - par défaut : le CHARBON de l'espace (15/10), plus de noir pur, un panneau
-     de verre arrondi sur un fond vivant. C'est ce que lit un navigateur qui ne
-     comprend pas la requête, et c'est ce qui était écrit ici avant le 20/10 ;
-   - `@media (prefers-color-scheme: light)` : la PORCELAINE, les valeurs de
-     `edition/[token]/espace.css` (`data-ec-mode="jour"`), copiées et non
-     importées : cette page n'a pas la racine `.ec-espace`. Si Porcelaine change
-     là-bas, elle change ICI aussi, à la main.
-   Les couleurs sont des jetons `--dp-*`, posés sur `.bj-atelier.ec-depot` (la
-   racine du lien) et non sur `.ec-dp` : la page « Ce lien ne fonctionne plus »
-   (`Porte`, porte.css) vit sous la même racine et les lit aussi. Un composant
-   n'écrit jamais une couleur, il écrit un rôle.
+   UN SEUL MODE, LE PAPIER (charte V2, 26/11/2026). Plus de Charbon ni de
+   Porcelaine, plus de lecture de `prefers-color-scheme`, plus de lueurs ni de
+   verre : l'accent est l'encre. Les couleurs sont des rôles `--dp-*`, posés sur
+   `.bj-atelier.ec-depot` (la racine du lien) et lus par la page ET par la porte
+   (`Porte`, porte.css, qui reste un bloc nuit). Un composant n'écrit jamais une
+   couleur, il écrit un rôle. L'ancien habit est rangé dans archive/charte-v1-interfaces/.
    ⚠️ Une feuille chargée ne se décharge jamais en navigation client : tout est
-   sous `.ec-depot`, jamais une classe courte, jamais `.ec-porte` seul (la porte
-   de /edition garde son aspect).
-   ══════════════════════════════════════════════════════════════════════════ */
+   sous `.ec-depot`, jamais une classe courte, jamais `.ec-porte` seul. */
 
 .bj-atelier.ec-depot {
-  /* ── le CHARBON (défaut) ── */
-  --dp-bg: #17181c;
-  --dp-texte: #ecedf0;
-  --dp-doux: #a9adb5;
-  --dp-filet: rgba(255, 255, 255, 0.12);
-  --dp-surface: rgba(255, 255, 255, 0.05);
-  --dp-accent: #e3a27f;
-  --dp-accent-texte: #e3a27f;
-  --dp-sur-accent: #1b1410;
-  --dp-danger: #ff9b7a;
-  --dp-carte: rgba(255, 255, 255, 0.045);
-  --dp-carte-bord: rgba(255, 255, 255, 0.08);
-  --dp-ombre-carte: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3);
-  --dp-ombre-bouton: 0 10px 26px rgba(227, 162, 127, 0.22);
-  --dp-creux: rgba(0, 0, 0, 0.2);
-  --dp-piste: rgba(255, 255, 255, 0.08);
-  --dp-aurore-1: #3a2a22;
-  --dp-aurore-2: #23262f;
-  --dp-aurore-force: 0.8;
-  /* Planches 6 à 9 du 20/10 : les jetons RÉELS de espace.css (Charbon), copiés comme les autres. */
-  --dp-titre: #ffffff;
-  --dp-pale: #8b9099;
-  --dp-ligne: rgba(255, 255, 255, 0.08);
-  --dp-accent-doux: rgba(227, 162, 127, 0.16);
-  --dp-accent-sur-doux: #f2c7af;
-  --dp-accent-rgb: 227, 162, 127;
-  --dp-ok: #8ee0b0;
-  --dp-ok-doux: rgba(110, 207, 151, 0.14);
-  --dp-sur-ok: #0d3a24;
-  --dp-sur-danger: #1b1410;
-  --dp-verre: rgba(30, 31, 36, 0.8);
-  --dp-carte-pleine: #1f2126;
-  --dp-voile: rgba(0, 0, 0, 0.4);
-  --dp-ombre-c: rgba(0, 0, 0, 0.45);
-  --dp-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --dp-actif: rgba(255, 255, 255, 0.09);
-  --dp-actif-ombre: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --dp-fg-rgb: 236, 237, 240;
-  /* Sur une photo, dans les deux modes : une pastille sombre, un texte blanc. */
-  --dp-sur-photo: #ffffff;
+  /* ── le papier : un seul mode ── */
+  --dp-bg: var(--m-couleur-papier-fond);
+  --dp-texte: var(--m-couleur-papier-texte);
+  --dp-doux: var(--m-couleur-papier-texte-doux);
+  --dp-filet: var(--m-couleur-papier-ligne);
+  --dp-surface: var(--m-couleur-papier-survol);
+  --dp-accent: var(--m-couleur-accent);
+  --dp-accent-texte: var(--m-couleur-papier-texte);
+  --dp-sur-accent: var(--m-couleur-papier-fond);
+  --dp-danger: var(--m-couleur-etat-erreur);
+  --dp-carte: var(--m-couleur-papier-fond);
+  --dp-carte-bord: var(--m-couleur-papier-ligne);
+  --dp-ombre-carte: none;
+  --dp-ombre-bouton: none;
+  --dp-creux: var(--m-couleur-papier-survol);
+  --dp-piste: var(--m-couleur-papier-ligne);
+  --dp-aurore-1: transparent;
+  --dp-aurore-2: transparent;
+  --dp-aurore-force: 0;
+  /* Planches 6 à 9 du 20/10 : les mêmes rôles que espace.css. */
+  --dp-titre: var(--m-couleur-papier-texte);
+  --dp-pale: var(--m-couleur-papier-texte-doux);
+  --dp-ligne: var(--m-couleur-papier-ligne);
+  --dp-accent-doux: var(--m-couleur-papier-survol);
+  --dp-accent-sur-doux: var(--m-couleur-papier-texte);
+  --dp-accent-rgb: 17, 17, 17;
+  --dp-ok: var(--m-couleur-etat-succes);
+  --dp-ok-doux: color-mix(in srgb, var(--m-couleur-etat-succes) 10%, var(--m-couleur-papier-fond));
+  --dp-sur-ok: var(--m-couleur-papier-fond);
+  --dp-sur-danger: var(--m-couleur-papier-fond);
+  --dp-verre: var(--m-couleur-papier-fond);
+  --dp-carte-pleine: var(--m-couleur-papier-fond);
+  --dp-voile: var(--m-couleur-voile-feuille);
+  --dp-ombre-c: var(--m-couleur-voile-feuille);
+  --dp-reflet: none;
+  --dp-actif: var(--m-couleur-papier-survol);
+  --dp-actif-ombre: none;
+  --dp-fg-rgb: 17, 17, 17;
+  /* Sur une photo : une pastille sombre, un texte blanc. */
+  --dp-sur-photo: var(--m-couleur-papier-fond);
   --dp-noir-rgb: 0, 0, 0;
   --dp-blanc-rgb: 255, 255, 255;
-  color-scheme: dark;
-  /* Cormorant écrit ses chiffres « à l'ancienne » : le 1 se lit I. Des chiffres
-     modernes partout (titres, « Merci Léa, 18 photos reçues ») ; DM Sans n'en
-     est pas changée. */
+  color-scheme: light;
   font-variant-numeric: lining-nums;
-}
-@media (prefers-color-scheme: light) {
-  /* ── la PORCELAINE (15/10 : un blanc froid, du verre blanc, le bleu de Bellajour) ── */
-  .bj-atelier.ec-depot {
-    --dp-bg: #f3f4f7;
-    --dp-texte: #101828;
-    --dp-doux: #5b6577;
-    --dp-filet: rgba(16, 24, 40, 0.14);
-    --dp-surface: rgba(255, 255, 255, 0.72);
-    --dp-accent: #4a90d9;
-    --dp-accent-texte: #1d4f8a;
-    --dp-sur-accent: #ffffff;
-    --dp-danger: #b3412c;
-    --dp-carte: rgba(255, 255, 255, 0.7);
-    --dp-carte-bord: rgba(255, 255, 255, 0.95);
-    --dp-ombre-carte: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
-    --dp-ombre-bouton: 0 8px 20px rgba(74, 144, 217, 0.3);
-    --dp-creux: rgba(16, 24, 40, 0.05);
-    --dp-piste: rgba(16, 24, 40, 0.1);
-    --dp-aurore-1: #dce8fa;
-    --dp-aurore-2: #eae5f6;
-    --dp-aurore-force: 1;
-    --dp-titre: #101828;
-    --dp-pale: #7c8698;
-    --dp-ligne: rgba(16, 24, 40, 0.08);
-    --dp-accent-doux: rgba(74, 144, 217, 0.12);
-    --dp-accent-sur-doux: #1d4f8a;
-    --dp-accent-rgb: 74, 144, 217;
-    --dp-ok: #157347;
-    --dp-ok-doux: #e7f6ee;
-    --dp-sur-ok: #ffffff;
-    --dp-sur-danger: #ffffff;
-    --dp-verre: rgba(255, 255, 255, 0.82);
-    --dp-carte-pleine: #ffffff;
-    --dp-voile: rgba(16, 24, 40, 0.16);
-    --dp-ombre-c: rgba(16, 24, 40, 0.14);
-    --dp-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    --dp-actif: #ffffff;
-    --dp-actif-ombre: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 14px rgba(16, 24, 40, 0.05);
-    --dp-fg-rgb: 16, 24, 40;
-    color-scheme: light;
-  }
 }
 
 /* Le fond DERRIÈRE la page (rebond, marge basse d'une fenêtre qu'on agrandit,
@@ -120,20 +64,12 @@
    de `--dp-bg` (un jeton posé sur un descendant n'est pas lisible ici). */
 html:has(.bj-atelier.ec-depot),
 body:has(.bj-atelier.ec-depot) {
-  background: #17181c;
+  background: var(--m-couleur-papier-fond);
 }
 html:has(.bj-atelier.ec-depot) {
-  color-scheme: dark;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: light) {
-  html:has(.bj-atelier.ec-depot),
-  body:has(.bj-atelier.ec-depot) {
-    background: #f3f4f7;
-  }
-  html:has(.bj-atelier.ec-depot) {
-    color-scheme: light;
-  }
-}
+
 
 .bj-atelier .ec-dp {
   position: relative;
@@ -144,67 +80,6 @@ html:has(.bj-atelier.ec-depot) {
   color: var(--dp-texte);
   padding: var(--m-espace-5) var(--m-espace-3) var(--m-espace-7);
   box-sizing: border-box;
-}
-.bj-atelier .ec-dp::before,
-.bj-atelier .ec-dp::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  border-radius: 50%;
-  filter: blur(100px);
-  pointer-events: none;
-}
-/* La nuit : le cuivre en haut à DROITE, un gris bleuté en bas à gauche. */
-.bj-atelier .ec-dp::before {
-  right: -160px;
-  top: -180px;
-  width: 520px;
-  height: 460px;
-  background: var(--dp-aurore-1);
-  opacity: var(--dp-aurore-force);
-}
-.bj-atelier .ec-dp::after {
-  left: -140px;
-  bottom: -200px;
-  width: 520px;
-  height: 420px;
-  background: var(--dp-aurore-2);
-}
-/* Le jour (planche 6 du 20/10, téléphone) : le bleu en haut à GAUCHE, le lilas
-   en bas à droite ; plus grandes dès que la page s'élargit (espace.css). */
-@media (prefers-color-scheme: light) {
-  .bj-atelier .ec-dp::before {
-    right: auto;
-    left: -140px;
-    top: -160px;
-    width: 420px;
-    height: 380px;
-    filter: blur(90px);
-  }
-  .bj-atelier .ec-dp::after {
-    left: auto;
-    right: -160px;
-    bottom: -180px;
-    width: 420px;
-    height: 380px;
-    filter: blur(90px);
-  }
-}
-@media (prefers-color-scheme: light) and (min-width: 760px) {
-  .bj-atelier .ec-dp::before {
-    left: -160px;
-    top: -200px;
-    width: 720px;
-    height: 620px;
-    filter: blur(110px);
-  }
-  .bj-atelier .ec-dp::after {
-    right: -180px;
-    bottom: -220px;
-    width: 760px;
-    height: 600px;
-    filter: blur(110px);
-  }
 }
 .bj-atelier .ec-dp-in {
   max-width: 460px;
@@ -344,7 +219,7 @@ html:has(.bj-atelier.ec-depot) {
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-accord input {
-  margin-top: 2px;
+  margin-top: var(--m-espace-1);
   width: 20px;
   height: 20px;
   accent-color: var(--dp-accent);
@@ -444,71 +319,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier.ec-depot .ec-porte-titre {
   font-variant-numeric: lining-nums;
 }
-@media (prefers-color-scheme: light) {
-  .bj-atelier.ec-depot .ec-porte {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    background: var(--dp-bg);
-    color: var(--dp-texte);
-  }
-  .bj-atelier.ec-depot .ec-porte::before,
-  .bj-atelier.ec-depot .ec-porte::after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    border-radius: 50%;
-    filter: blur(90px);
-    pointer-events: none;
-  }
-  .bj-atelier.ec-depot .ec-porte::before {
-    left: -140px;
-    top: -160px;
-    width: 420px;
-    height: 380px;
-    background: var(--dp-aurore-1);
-  }
-  .bj-atelier.ec-depot .ec-porte::after {
-    right: -160px;
-    bottom: -180px;
-    width: 420px;
-    height: 380px;
-    background: var(--dp-aurore-2);
-  }
-  /* La signature est une image BLANCHE : sur Porcelaine, on l'encre. */
-  .bj-atelier.ec-depot .ec-porte-signature {
-    filter: brightness(0);
-  }
-  .bj-atelier.ec-depot .ec-porte-surtitre {
-    color: var(--dp-accent-texte);
-  }
-  .bj-atelier.ec-depot .ec-porte-titre {
-    color: var(--dp-texte);
-  }
-  .bj-atelier.ec-depot .ec-porte-texte p {
-    color: var(--dp-doux);
-  }
-  .bj-atelier.ec-depot .ec-porte-detail {
-    border-top-color: var(--dp-filet);
-    color: var(--dp-doux);
-  }
-}
-@media (prefers-color-scheme: light) and (min-width: 760px) {
-  .bj-atelier.ec-depot .ec-porte::before {
-    left: -160px;
-    top: -200px;
-    width: 720px;
-    height: 620px;
-    filter: blur(110px);
-  }
-  .bj-atelier.ec-depot .ec-porte::after {
-    right: -180px;
-    bottom: -220px;
-    width: 760px;
-    height: 600px;
-    filter: blur(110px);
-  }
-}
+
 
 /* ══════════════════════════════════════════════════════════════════════════
    LES PLANCHES 6 À 9 DU 20/10 (lot w2) : se présenter, l'album du lien, les
@@ -577,7 +388,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-reconnu > span:last-child {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   min-width: 0;
 }
 .bj-atelier .ec-dp-reconnu b {
@@ -700,7 +511,7 @@ html:has(.bj-atelier.ec-depot) {
   place-items: center;
   width: 52px;
   height: 52px;
-  margin: var(--m-espace-1) 0 2px;
+  margin: var(--m-espace-1) 0 var(--m-espace-1);
   border-radius: var(--m-rayon-pilule);
   background: var(--dp-surface);
   color: var(--dp-accent);
@@ -920,7 +731,7 @@ html:has(.bj-atelier.ec-depot) {
   bottom: 6px;
   max-width: calc(100% - 12px);
   overflow: hidden;
-  padding: 2px var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-2);
   border-radius: var(--m-rayon-pilule);
   background: rgba(var(--dp-noir-rgb), 0.55);
   color: var(--dp-sur-photo);
@@ -1169,7 +980,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-bas .ec-dp-merci {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   padding: var(--m-espace-3) var(--m-espace-4);
   border-radius: var(--m-rayon-bloc);
   background: var(--dp-ok-doux);

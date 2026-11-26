@@ -81,7 +81,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--m-espace-1);
-  padding: 2px var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-2);
   border: 0;
   border-radius: var(--m-rayon-pilule);
   background: transparent;
@@ -119,7 +119,7 @@
 .ec-espace .ec-parler-reponse {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   max-width: 100%;
   padding: var(--m-espace-2) var(--m-espace-3);
   box-sizing: border-box;
@@ -347,7 +347,7 @@
   background: var(--ec-glass);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
-  box-shadow: 0 24px 60px rgba(var(--ec-noir-rgb), 0.4);
+  box-shadow: none;
 }
 .ec-espace .ec-parler-menu button {
   display: flex;
@@ -439,7 +439,7 @@
 .ec-espace .ec-parler-demandes li {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   font-size: var(--m-taille-petit);
   overflow-wrap: anywhere;
 }

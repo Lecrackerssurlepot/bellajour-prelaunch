@@ -3,8 +3,7 @@
 /* La coquille de l'espace client (PRD §4.1, révision §14.1) : le menu de
    gauche, persistant, identique sur tous les écrans.
 
-   - Révision du 13/10 : le vrai logo (cuivre la nuit, bleu le jour), le
-     bouton soleil / lune en bas du menu (le mode vit dans `RacineEspace`),
+   - Révision du 13/10 : le logo de la charte (à l'encre ; le bouton soleil / lune a disparu le 26/11),
      la pastille des non-lus sur « Parler à l'atelier », et AUCUNE page qui
      défile sur un écran d'ordinateur : chaque section tient dans la colonne
      de contenu et fait défiler ses propres zones longues (espace.css).
@@ -34,13 +33,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { LOGO_MODE } from "@/lib/collectif/affichage";
 import { relireAuRetour } from "@/lib/collectif/arrivees";
 import { curseur, type Message } from "@/lib/collectif/messages";
 import { cheminSection, MENU, sectionDuChemin, type CleSection, type Verrous } from "@/lib/collectif/verrous";
 import { AppareilFournisseur } from "../_composants/AppareilContexte";
 import { DepotFournisseur, HoteFenetreEnvoi } from "../_composants/depot/DepotContexte";
-import { useModeEspace } from "../_composants/RacineEspace";
 import { useRetourFerme } from "../_composants/useRetourFerme";
 import { useSondage } from "../_composants/useSondage";
 import { useVerrouDefilement } from "../_composants/useVerrouDefilement";
@@ -78,7 +75,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" | "soleil" | "lune" }) {
+function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" }) {
   const p = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true };
   switch (cle) {
     case "tableau":
@@ -101,10 +98,6 @@ function Icone({ cle }: { cle: CleSection | "cadenas" | "menu" | "fermer" | "sol
       return <svg {...p} width={22} height={22}><path d="M4 7h16M4 12h16M4 17h16" /></svg>;
     case "fermer":
       return <svg {...p} width={22} height={22}><path d="M6 6l12 12M18 6 6 18" /></svg>;
-    case "soleil":
-      return <svg {...p} width={16} height={16} strokeWidth={1.8}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>;
-    case "lune":
-      return <svg {...p} width={16} height={16} strokeWidth={1.8}><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>;
   }
 }
 
@@ -117,7 +110,6 @@ export function ouvrirMenuEspace() {
 export default function Coquille(props: Props) {
   const chemin = usePathname();
   const active = sectionDuChemin(chemin);
-  const { mode, basculer } = useModeEspace();
   /* La pastille vient du layout (lu une fois) ; la conversation l'éteint en
      marquant les messages lus. */
   const [nonLus, setNonLus] = useState(props.nonLus);
@@ -270,7 +262,7 @@ export default function Coquille(props: Props) {
       <header className="ec-barre-mobile" ref={setBarre} data-defile={defile ? "oui" : undefined}>
         <span className="ec-barre-gauche">
           <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien ec-logo-lien--mobile" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
-            <img className="ec-logo ec-logo--mobile" src={LOGO_MODE[mode]} alt="" width={96} height={36} />
+            <span className="m-logo ec-logo ec-logo--mobile" role="img" aria-label="Bellajour" />
           </Link>
           <button type="button" className="ec-barre-titre" aria-label="Revenir en haut" disabled={!defile} onClick={revenirEnHaut} ref={setCibleTitre} />
         </span>
@@ -298,7 +290,7 @@ export default function Coquille(props: Props) {
             reste un enfant du menu, rien ne bouge. */}
         <div className="ec-menu-tete">
           <Link href={`/edition/${props.token}`} prefetch={false} className="ec-logo-lien" aria-label="Tableau de bord" onClick={() => setOuvert(false)}>
-            <img className="ec-logo" src={LOGO_MODE[mode]} alt="" width={116} height={43} />
+            <span className="m-logo ec-logo" role="img" aria-label="Bellajour" />
           </Link>
           <button type="button" className="ec-bouton-tiroir ec-menu-fermer" aria-label="Fermer le menu" onClick={() => setOuvert(false)}>
             <Icone cle="fermer" />
@@ -323,14 +315,6 @@ export default function Coquille(props: Props) {
           <span className="ec-moi-texte">
             <span className="ec-moi-nom">{props.nom}</span>
             <span className="ec-moi-role">{props.libelleRole}</span>
-          </span>
-          <span className="ec-mode-choix" role="group" aria-label="Affichage">
-            <button type="button" className="ec-mode" aria-pressed={mode === "jour"} onClick={() => mode !== "jour" && basculer()} aria-label="Mode jour" title="Mode jour">
-              <Icone cle="soleil" />
-            </button>
-            <button type="button" className="ec-mode" aria-pressed={mode === "nuit"} onClick={() => mode !== "nuit" && basculer()} aria-label="Mode nuit" title="Mode nuit">
-              <Icone cle="lune" />
-            </button>
           </span>
         </div>
       </aside>

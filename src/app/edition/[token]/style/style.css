@@ -8,14 +8,9 @@
    feuille) et le voile d'accent d'une pièce choisie. Ici et pas dans
    espace.css : seul le style s'en sert. ── */
 .bj-atelier.ec-espace {
-  --ec-ombre-haute: 0 30px 70px rgba(0, 0, 0, 0.55);
-  --ec-ombre-vignette: 0 14px 30px rgba(0, 0, 0, 0.35);
-  --ec-accent-voile: rgba(227, 162, 127, 0.07);
-}
-.bj-atelier.ec-espace[data-ec-mode="jour"] {
-  --ec-ombre-haute: 0 24px 60px rgba(16, 24, 40, 0.18);
-  --ec-ombre-vignette: 0 14px 30px rgba(16, 24, 40, 0.18);
-  --ec-accent-voile: rgba(74, 144, 217, 0.06);
+  --ec-ombre-haute: none;
+  --ec-ombre-vignette: var(--m-ombre-flottant);
+  --ec-accent-voile: var(--m-couleur-papier-survol);
 }
 
 /* ─────────────────────────── les pièces communes ─────────────────────────── */
@@ -201,7 +196,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   font-size: var(--m-taille-petit);
 }
 
@@ -219,7 +214,7 @@
   flex-direction: column;
   align-items: stretch;
   gap: var(--m-espace-3);
-  padding-bottom: 2px;
+  padding-bottom: var(--m-espace-1);
 }
 .ec-espace .ec-mur-mur {
   flex: 1;
@@ -248,7 +243,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: var(--m-espace-1);
   min-height: 48px;
   padding: var(--m-espace-2) var(--m-espace-4);
   box-sizing: border-box;
@@ -452,7 +447,7 @@
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px var(--m-espace-3);
+  gap: var(--m-espace-1) var(--m-espace-3);
   max-width: min(100%, 680px);
   margin: 0;
   padding: var(--m-espace-2) var(--m-espace-2) var(--m-espace-2) var(--m-espace-4);
@@ -608,7 +603,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--m-espace-4);
-  padding: 2px var(--m-espace-5) var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-5) var(--m-espace-2);
 }
 .ec-espace .ec-compo-reprendre {
   display: flex;
@@ -1145,7 +1140,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-bf-pied .ec-bouton {
@@ -1539,7 +1534,7 @@
     font-size: 34px;
   }
   .ec-espace .ec-compo-corps {
-    padding: 2px var(--m-espace-3) var(--m-espace-3);
+    padding: var(--m-espace-1) var(--m-espace-3) var(--m-espace-3);
   }
   .ec-espace .ec-compo-planche {
     grid-template-columns: minmax(0, 1fr);

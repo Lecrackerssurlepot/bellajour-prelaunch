@@ -289,7 +289,7 @@
 .ec-espace .ec-mo-pied {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   box-sizing: border-box;
   width: calc(100% - 20px);
   max-width: 640px;

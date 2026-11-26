@@ -6,18 +6,18 @@
    client » est en Charbon, comme l'espace du client la nuit. */
 
 .eca-root .eca-dem {
-  --eca-dem-ligne: rgba(16, 24, 40, 0.08);
-  --eca-dem-ligne-forte: rgba(16, 24, 40, 0.16);
-  --eca-dem-verre: rgba(255, 255, 255, 0.92);
-  --eca-dem-accent-doux: rgba(74, 144, 217, 0.14);
-  --eca-dem-accent-texte: #1d4f8a;
-  --eca-dem-charbon: #17181c;
-  --eca-dem-charbon-texte: #ecedf0;
-  --eca-dem-charbon-doux: #a9adb5;
-  --eca-dem-cuivre: #e3a27f;
+  --eca-dem-ligne: color-mix(in srgb, var(--m-couleur-papier-texte) 8%, transparent);
+  --eca-dem-ligne-forte: color-mix(in srgb, var(--m-couleur-papier-texte) 16%, transparent);
+  --eca-dem-verre: color-mix(in srgb, var(--m-couleur-papier-fond) 92%, transparent);
+  --eca-dem-accent-doux: color-mix(in srgb, var(--m-couleur-papier-texte) 14%, transparent);
+  --eca-dem-accent-texte: var(--m-couleur-papier-texte);
+  --eca-dem-charbon: var(--m-couleur-nuit-fond);
+  --eca-dem-charbon-texte: var(--m-couleur-nuit-texte);
+  --eca-dem-charbon-doux: var(--m-couleur-nuit-texte-doux);
+  --eca-dem-cuivre: var(--m-couleur-nuit-texte);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--m-espace-3);
   min-width: 0;
   container-type: inline-size;
 }
@@ -29,33 +29,33 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-dem-ligne {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto 36px;
-  gap: 10px;
+  gap: var(--m-espace-3);
   align-items: center;
-  padding: 10px;
-  border-radius: 16px;
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-dem-verre);
   border: 1px solid var(--eca-dem-ligne);
 }
 .eca-root .eca-dem-ico {
   width: 34px;
   height: 34px;
-  border-radius: 10px;
+  border-radius: var(--m-rayon-champ);
   display: grid;
   place-items: center;
-  background: var(--eca-dem-accent-doux, rgba(74, 144, 217, 0.14));
-  color: var(--eca-dem-accent-texte, #1d4f8a);
-  font-size: 15px;
+  background: var(--eca-dem-accent-doux, color-mix(in srgb, var(--m-couleur-papier-texte) 14%, transparent));
+  color: var(--eca-dem-accent-texte, var(--m-couleur-papier-texte));
+  font-size: var(--m-taille-bouton);
   line-height: 1;
 }
 .eca-root .eca-dem-nom {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   min-width: 0;
 }
 /* Le nom s'écrit EN PLACE : il a l'air du texte de la maquette, et devient un champ au survol et au clavier. */
@@ -64,17 +64,17 @@
   width: 100%;
   min-width: 0;
   margin: -3px 0 -3px -7px;
-  padding: 2px 6px;
+  padding: var(--m-espace-1) var(--m-espace-2);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
 }
 .eca-root .eca-dem-champ::placeholder {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 400;
 }
 .eca-root .eca-dem-champ:hover {
@@ -82,51 +82,51 @@
 }
 .eca-root .eca-dem-champ:focus-visible {
   outline: none;
-  border-color: var(--bj-action);
+  border-color: var(--m-couleur-accent);
   box-shadow: 0 0 0 3px var(--eca-dem-accent-doux);
-  background: #ffffff;
+  background: var(--m-couleur-papier-fond);
 }
 .eca-root .eca-dem-champ[aria-invalid="true"] {
   border-color: var(--eca-alerte);
 }
 .eca-root .eca-dem-nom small {
   font-size: 11.5px;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* La forme, en pastille segmentée. */
 .eca-root .eca-dem-formes {
   display: flex;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 999px;
-  background: rgba(16, 24, 40, 0.05);
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 5%, transparent);
 }
 .eca-root .eca-dem-formes button {
-  padding: 5px 10px;
+  padding: var(--m-espace-1) var(--m-espace-3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   font: inherit;
   font-size: 11.5px;
   white-space: nowrap;
   cursor: pointer;
 }
 .eca-root .eca-dem-formes button:hover {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-dem-formes button[aria-checked="true"] {
-  background: #ffffff;
-  color: var(--bj-text);
-  box-shadow: 0 1px 4px rgba(16, 24, 40, 0.1);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--m-couleur-papier-texte) 10%, transparent);
 }
 
 .eca-root .eca-dem-poubelle {
   width: 36px;
   height: 36px;
   padding: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   display: grid;
   place-items: center;
   border: 1px solid var(--eca-dem-ligne-forte);
@@ -143,29 +143,29 @@
 .eca-root .eca-dem-modeles {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--m-espace-2);
   flex-wrap: wrap;
-  padding: 10px;
-  border-radius: 16px;
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   border: 1.5px dashed var(--eca-dem-ligne-forte);
 }
 .eca-root .eca-dem-modeles b {
-  margin-right: 4px;
-  font-size: 13px;
+  margin-right: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
 }
 .eca-root .eca-dem-modeles button {
-  padding: 5px 11px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--eca-dem-ligne);
   background: var(--eca-dem-verre);
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   cursor: pointer;
 }
 .eca-root .eca-dem-modeles button:hover:not(:disabled) {
-  border-color: var(--bj-action);
+  border-color: var(--m-couleur-accent);
 }
 .eca-root .eca-dem-modeles button:disabled {
   opacity: 0.5;
@@ -176,29 +176,29 @@
 .eca-root .eca-dem-client {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 16px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-dem-charbon);
   color: var(--eca-dem-charbon-texte);
 }
 .eca-root .eca-dem-client-titre {
   width: 100%;
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--eca-dem-charbon-doux);
 }
 .eca-root .eca-dem-client-puce {
   max-width: 100%;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 7%, transparent);
   font-size: 12.5px;
   overflow-wrap: anywhere;
 }
 .eca-root .eca-dem-client-puce i {
-  margin-right: 6px;
+  margin-right: var(--m-espace-2);
   font-style: normal;
   color: var(--eca-dem-cuivre);
 }
@@ -213,7 +213,7 @@
 
 /* La migration qui manque : la phrase dit ce qui marche et ce qui attend. */
 .eca-root .eca-dem-migration {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   line-height: 1.45;
 }
 
@@ -240,47 +240,47 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-dem-fiche-ligne {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
-  gap: 10px;
+  gap: var(--m-espace-3);
   align-items: start;
-  padding: 10px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(16, 24, 40, 0.08);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 92%, transparent);
+  border: 1px solid color-mix(in srgb, var(--m-couleur-papier-texte) 8%, transparent);
 }
 .eca-root .eca-dem-fiche-ligne .eca-dem-ico {
-  background: rgba(74, 144, 217, 0.14);
-  color: #1d4f8a;
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 14%, transparent);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-dem-fiche-corps {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--m-espace-1);
   min-width: 0;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
 }
 .eca-root .eca-dem-fiche-tete {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .eca-root .eca-dem-fiche-tete strong {
   font-weight: 500;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   overflow-wrap: anywhere;
 }
 .eca-root .eca-dem-etat {
   flex: none;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--eca-gris-fond, rgba(16, 24, 40, 0.05));
-  color: var(--bj-text-soft);
-  font-size: 11px;
+  padding: var(--m-espace-1) var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--eca-gris-fond, color-mix(in srgb, var(--m-couleur-papier-texte) 5%, transparent));
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-etiquette);
   white-space: nowrap;
 }
 .eca-root .eca-dem-etat--recu {
@@ -289,16 +289,16 @@
 }
 .eca-root .eca-dem-envois {
   list-style: none;
-  margin: 4px 0 0;
+  margin: var(--m-espace-1) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-dem-envoi {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding-left: 10px;
-  border-left: 2px solid rgba(16, 24, 40, 0.08);
+  gap: var(--m-espace-1);
+  padding-left: var(--m-espace-3);
+  border-left: 2px solid color-mix(in srgb, var(--m-couleur-papier-texte) 8%, transparent);
 }

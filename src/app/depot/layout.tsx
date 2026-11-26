@@ -1,8 +1,9 @@
 /* Layout du lien de dépôt des participants (/depot/[token]).
 
    Même frontière que /edition (voir edition/layout.tsx) : l'interrupteur
-   d'abord, `notFound()` levé avant toute silhouette, monde SOMBRE sous
-   `.bj-atelier`, polices jumelles de (atelier)/layout.tsx, noindex. Le scope
+   d'abord, `notFound()` levé avant toute silhouette, scope
+   `.bj-atelier` (que `depot.css` redéfinit en papier, charte V2), polices de la
+   charte posées à la racine, noindex. Le scope
    propre est `.ec-depot`.
 
    Ce lien est D'ABORD MOBILE (PRD §5.1) : il circule sur WhatsApp et Slack,
@@ -11,23 +12,8 @@
 
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Cormorant_Garamond, DM_Sans } from 'next/font/google'
 import { collectifOuvert } from '@/lib/collectif/interrupteur'
 import '../(atelier)/theme.css'
-
-const atelierDisplay = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['400'],
-  style: ['normal', 'italic'],
-  variable: '--font-atelier-display',
-  display: 'swap',
-})
-
-const atelierUi = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-atelier-ui',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: 'Bellajour',
@@ -38,7 +24,7 @@ export const metadata: Metadata = {
 export default function DepotLayout({ children }: { children: React.ReactNode }) {
   if (!collectifOuvert()) notFound()
   return (
-    <div className={`bj-atelier ec-depot ${atelierDisplay.variable} ${atelierUi.variable}`}>
+    <div className="bj-atelier ec-depot">
       {children}
     </div>
   )

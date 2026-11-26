@@ -38,7 +38,7 @@
 /* Téléphone : l'accueil prend la largeur de la colonne, et les noms se touchent au pouce (44 px). */
 @media (max-width: 860px) {
   .ec-espace .ec-li .ec-cl-vide {
-    margin: 0 2px;
+    margin: 0 var(--m-espace-1);
   }
   .ec-espace .ec-cl-exemples .ec-ph-pilule {
     min-height: var(--m-cible-mini);

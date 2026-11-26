@@ -520,7 +520,7 @@ function TexteVue({ f, st, fantome }: { f: CadreTexte; st: React.CSSProperties; 
   /* lot G : la couleur choisie pour ce texte prime sur celle du gabarit ; un rôle lit sa variable, un hexa est tel quel */
   const style: React.CSSProperties = ts
     ? {
-        ...st, fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
+        ...st, fontFamily: `var(${ts.police.variable}), var(--m-police-texte-famille)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
         fontSize: corpsEcran(ts.corps), color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
         textTransform: ts.capitales ? "uppercase" : "none", ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
       }

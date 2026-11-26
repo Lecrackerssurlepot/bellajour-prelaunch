@@ -17,16 +17,16 @@
    ════════════════════════════════════════════════════════════════════════ */
 
 .ate-root {
-  --ate-rouge: #c0392b;
-  --ate-rouge-fond: rgba(192, 57, 43, 0.08);
-  --ate-vert: var(--bj-save-ok);
-  --ate-orange: var(--bj-save-warn);
-  --ate-ligne-h: 1px solid var(--bj-veil-8);
-  --ate-carte-bg: var(--adm-verre, rgba(255, 255, 255, 0.7));
+  --ate-rouge: var(--m-couleur-etat-erreur);
+  --ate-rouge-fond: color-mix(in srgb, var(--m-couleur-etat-erreur) 8%, transparent);
+  --ate-vert: var(--m-couleur-etat-succes);
+  --ate-orange: var(--m-couleur-etat-alerte);
+  --ate-ligne-h: 1px solid var(--m-couleur-papier-ligne);
+  --ate-carte-bg: var(--m-couleur-papier-fond);
 
   max-width: 1240px;
   margin: 0 auto;
-  padding-top: var(--bj-sp-5);
+  padding-top: var(--m-espace-5);
 }
 
 /* ─────────────────────────── en-tête ─────────────────────────── */
@@ -36,25 +36,25 @@
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--bj-sp-4);
-  margin-bottom: var(--bj-sp-6);
+  gap: var(--m-espace-4);
+  margin-bottom: var(--m-espace-6);
 }
 .ate-h1 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: clamp(1.9rem, 4vw, var(--bj-fs-h2));
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-weight: var(--m-police-titre-graisse);
+  font-size: clamp(1.9rem, 4vw, var(--m-taille-h3));
   line-height: 1.05;
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   margin: 0;
 }
 .ate-bonjour {
-  margin: var(--bj-sp-1) 0 0;
-  font-size: var(--bj-fs-ui);
-  color: var(--bj-text-soft);
+  margin: var(--m-espace-1) 0 0;
+  font-size: var(--m-taille-bouton);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-bonjour strong {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-weight: 500;
 }
 .ate-alerte {
@@ -64,7 +64,7 @@
 .ate-header-outils {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
 }
 .ate-recherche {
@@ -73,17 +73,17 @@
 .ate-liens {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
 }
 .ate-liens a {
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: none;
   border-bottom: 1px solid transparent;
 }
 .ate-liens a:hover {
-  color: var(--bj-action);
-  border-bottom-color: var(--bj-action-border);
+  color: var(--m-couleur-accent);
+  border-bottom-color: var(--m-couleur-papier-ligne);
 }
 .ate-liens .adm-logout-form {
   margin: 0;
@@ -95,23 +95,23 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--bj-sp-3) var(--bj-sp-4);
-  padding: 8px 10px 8px 22px;
-  margin-bottom: var(--bj-sp-5);
+  gap: var(--m-espace-3) var(--m-espace-4);
+  padding: var(--m-espace-2) var(--m-espace-3) var(--m-espace-2) var(--m-espace-5);
+  margin-bottom: var(--m-espace-5);
   border-radius: 32px;
-  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
-  background: var(--adm-verre, rgba(255, 255, 255, 0.7));
-  box-shadow: var(--adm-verre-ombre, none);
-  -webkit-backdrop-filter: var(--adm-flou, none);
-  backdrop-filter: var(--adm-flou, none);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: none;
+  
+  
 }
 .atb-marque {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 500;
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-weight: var(--m-police-titre-graisse);
   font-size: 1.75rem;
   line-height: 1;
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   text-decoration: none;
 }
 /* Le commutateur : deux côtés, un curseur qui glisse sous le côté ouvert. */
@@ -119,9 +119,9 @@
   position: relative;
   display: inline-grid;
   grid-template-columns: 1fr 1fr;
-  padding: 3px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-veil-8);
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
 }
 .atb-switch-cote {
   position: relative;
@@ -129,21 +129,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--m-espace-2);
   min-width: 128px;
   min-height: 36px;
-  padding: 0 var(--bj-sp-4);
-  border-radius: var(--bj-r-pill);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: none;
-  transition: color var(--bj-dur-fast) var(--bj-ease);
+  transition: color var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .atb-switch-cote:hover {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .atb-switch-cote[aria-current="page"] {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-weight: 500;
 }
 .atb-switch-curseur {
@@ -152,10 +152,10 @@
   bottom: 3px;
   left: 3px;
   width: calc(50% - 3px);
-  border-radius: var(--bj-r-pill);
-  background: #ffffff;
-  box-shadow: 0 1px 3px var(--bj-veil-16);
-  transition: transform 0.22s var(--bj-ease);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 1px 3px var(--m-couleur-papier-pointille);
+  transition: transform 0.22s var(--m-courbe-sortie);
 }
 .atb-switch-curseur--editions {
   transform: translateX(100%);
@@ -165,11 +165,11 @@
   place-items: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-action);
-  color: var(--bj-on-action);
-  font-size: 11px;
+  padding: 0 var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
@@ -178,26 +178,26 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
 }
 .atb-liens a {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--m-espace-2);
   min-height: 36px;
-  padding: 0 11px;
-  border-radius: 999px;
-  color: var(--bj-text-soft);
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: none;
 }
 .atb-liens a:hover {
-  color: var(--bj-text);
-  background: var(--bj-veil-6);
+  color: var(--m-couleur-papier-texte);
+  background: var(--m-couleur-papier-survol);
 }
 .atb-liens a[aria-current="page"] {
-  color: #1d4f8a;
-  background: var(--bj-action-soft);
+  color: var(--m-couleur-papier-texte);
+  background: var(--m-couleur-papier-survol);
   font-weight: 600;
 }
 .atb-liens .adm-logout-form {
@@ -220,14 +220,14 @@
 /* ─────────────────────────── les piles ─────────────────────────── */
 
 .ate-pile {
-  margin-bottom: var(--bj-sp-6);
+  margin-bottom: var(--m-espace-6);
 }
 .ate-pile-tete {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   width: 100%;
-  padding: 0 0 var(--bj-sp-2);
+  padding: 0 0 var(--m-espace-2);
   background: none;
   border: none;
   border-bottom: var(--ate-ligne-h);
@@ -236,27 +236,27 @@
   color: inherit;
 }
 .ate-pile-titre {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: var(--bj-fs-lg);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-chapo);
 }
 .ate-pile-compte {
-  font-size: var(--bj-fs-xxs);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
-  padding: 1px 8px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-veil-8);
-  color: var(--bj-text-soft);
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-pile-sous {
   flex: 1;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-chevron {
-  color: var(--bj-text-faint);
-  font-size: var(--bj-fs-xs);
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-petit);
 }
 /* Les deux piles qui appellent une action se distinguent par leur titre,
    pas par un fond coloré : un bloc rouge de dix lignes cesse d'alerter. */
@@ -264,7 +264,7 @@
   color: var(--ate-rouge);
 }
 .ate-pile--a_faire .ate-pile-titre {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
 }
 
 /* ── la boîte du jour : « Depuis hier » (11/09/2026) ──
@@ -274,59 +274,59 @@
    sans photos) est en pointillé et sans camp coloré : il informe, il ne
    demande rien. */
 .ate-jour {
-  margin-bottom: var(--bj-sp-4);
-  padding: var(--bj-sp-3) var(--bj-sp-4) var(--bj-sp-2);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-8);
+  margin-bottom: var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4) var(--m-espace-2);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: var(--ate-carte-bg);
 }
 .ate-jour-tete {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
-  padding-bottom: var(--bj-sp-2);
+  padding-bottom: var(--m-espace-2);
 }
 .ate-jour-titre {
   margin: 0;
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: var(--bj-fs-h4);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-chapo);
   line-height: 1.1;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-jour-sous {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-jour-vide {
   margin: 0;
-  padding: var(--bj-sp-2) 0 var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
+  padding: var(--m-espace-2) 0 var(--m-espace-2);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-jour-groupe {
-  padding-top: var(--bj-sp-2);
+  padding-top: var(--m-espace-2);
 }
 .ate-jour-groupe-titre {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-2);
-  margin: 0 0 2px;
-  font-size: var(--bj-fs-xs);
+  gap: var(--m-espace-2);
+  margin: 0 0 var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-jour-groupe-compte {
   font-variant-numeric: tabular-nums;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 400;
 }
 .ate-jour-groupe-sous {
   font-weight: 400;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-jour-liste {
   list-style: none;
@@ -343,17 +343,17 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 21rem;
   align-items: center;
-  gap: var(--bj-sp-3);
-  padding: var(--bj-sp-2) var(--bj-sp-2);
-  margin: 0 calc(-1 * var(--bj-sp-2));
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-2);
+  margin: 0 calc(-1 * var(--m-espace-2));
   color: inherit;
   text-decoration: none;
-  border-radius: var(--bj-r-sm);
-  transition: background var(--bj-dur-fast) var(--bj-ease);
+  border-radius: var(--m-rayon-champ);
+  transition: background var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .ate-jour-lien:hover,
 .ate-jour-lien:focus-visible {
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
   outline: none;
 }
 .ate-jour-dossier {
@@ -361,7 +361,7 @@
 }
 .ate-jour-dossier-titre {
   display: block;
-  font-size: var(--bj-fs-ui);
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -369,38 +369,38 @@
 }
 .ate-jour-dossier-sous {
   display: block;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   margin-top: 1px;
 }
 .ate-jour-groupe--reponse_client .ate-jour-dossier-sous,
 .ate-jour-groupe--nouvelle_demande .ate-jour-dossier-sous {
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-jour-groupe--sans_photos .ate-jour-dossier-titre {
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 400;
 }
 .ate-jour-suite {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   min-width: 0;
 }
 .ate-jour-geste {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .ate-jour-note {
-  margin: var(--bj-sp-2) 0 0;
-  font-size: 11px;
+  margin: var(--m-espace-2) 0 0;
+  font-size: var(--m-taille-etiquette);
   color: var(--ate-orange);
 }
 .ate-jour-note code {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
 }
 
 /* ── la pastille de camp ──
@@ -412,44 +412,44 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: var(--bj-r-pill);
-  font-size: var(--bj-fs-xxs);
+  padding: var(--m-espace-1) var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-camp--atelier {
-  background: var(--bj-action-soft);
-  color: var(--bj-action);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-accent);
 }
 .ate-camp--cliente {
-  background: var(--bj-warn-soft);
+  background: color-mix(in srgb, var(--m-couleur-etat-alerte) 10%, var(--m-couleur-papier-fond));
   color: var(--ate-orange);
 }
 .ate-camp--fini {
-  background: rgba(63, 166, 106, 0.12);
+  background: color-mix(in srgb, var(--m-couleur-etat-succes) 12%, transparent);
   color: var(--ate-vert);
 }
 
 /* « Tout marquer vu », dans la barre de filtres depuis le 11/09/2026. */
 .ate-vu-btn {
   min-height: 34px;
-  padding: 0 var(--bj-sp-3);
-  border-radius: var(--bj-r-btn);
-  border: 1px solid var(--bj-veil-12);
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
   white-space: nowrap;
 }
 .ate-vu-btn:hover {
-  border-color: var(--bj-action-border);
-  color: var(--bj-action);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-accent);
 }
 
 /* La marque « jamais ouvert » : un point, pas une étiquette. Sur vingt
@@ -459,24 +459,24 @@
   flex: none;
   width: 7px;
   height: 7px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-action);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-accent);
 }
 
 /* ── le fil d'activité ── */
 .ate-activite {
-  margin-bottom: var(--bj-sp-3);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-8);
+  margin-bottom: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: var(--ate-carte-bg);
   overflow: hidden;
 }
 .ate-activite-tete {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   width: 100%;
-  padding: var(--bj-sp-3) var(--bj-sp-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
   background: none;
   border: none;
   text-align: left;
@@ -484,30 +484,30 @@
   color: inherit;
 }
 .ate-activite-titre {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-weight: 600;
-  font-size: var(--bj-fs-lg);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-chapo);
 }
 .ate-activite-compte {
   flex: 1;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-activite-corps {
-  padding: 0 var(--bj-sp-4) var(--bj-sp-3);
+  padding: 0 var(--m-espace-4) var(--m-espace-3);
   max-height: 24rem;
   overflow-y: auto;
 }
 .ate-activite-jour + .ate-activite-jour {
-  margin-top: var(--bj-sp-4);
+  margin-top: var(--m-espace-4);
 }
 .ate-activite-jour-titre {
-  margin: 0 0 var(--bj-sp-1);
-  font-size: var(--bj-fs-xxs);
+  margin: 0 0 var(--m-espace-1);
+  font-size: var(--m-taille-etiquette);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 500;
 }
 .ate-activite-liste {
@@ -520,25 +520,25 @@
 .ate-activite-liste .ate-ev {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-3);
-  padding: var(--bj-sp-2) 0;
-  font-size: var(--bj-fs-xs);
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-2) 0;
+  font-size: var(--m-taille-petit);
   border-bottom: var(--ate-ligne-h);
 }
 .ate-activite-liste .ate-ev:last-child {
   border-bottom: none;
 }
 .ate-activite-lien {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   text-decoration: none;
 }
 .ate-activite-lien:hover {
   text-decoration: underline;
 }
 .ate-activite-pied {
-  margin: var(--bj-sp-3) 0 0;
-  font-size: 11px;
-  color: var(--bj-text-faint);
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* ── barre collante : filtres + recherche ── */
@@ -549,22 +549,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--bj-sp-4);
+  gap: var(--m-espace-4);
   flex-wrap: wrap;
-  padding: 10px 12px;
-  margin-bottom: var(--bj-sp-3);
-  border-radius: 24px;
-  background: rgba(243, 244, 247, 0.82);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
+  padding: var(--m-espace-3) var(--m-espace-3);
+  margin-bottom: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 82%, transparent);
+  
+  
 }
 .ate-seg {
   display: inline-flex;
   max-width: 100%;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-veil-6);
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -576,34 +576,34 @@
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px var(--bj-sp-4);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-4);
   min-height: 34px;
   border: none;
-  border-radius: var(--bj-r-pill);
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
-  transition: background var(--bj-dur-fast) var(--bj-ease);
+  transition: background var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .ate-seg-btn:hover {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-seg-btn--actif {
-  background: #ffffff;
-  color: var(--bj-text);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
   font-weight: 600;
-  box-shadow: 0 1px 3px var(--bj-veil-12);
+  box-shadow: 0 1px 3px var(--m-couleur-papier-ligne);
 }
 .ate-seg-compte {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-variant-numeric: tabular-nums;
-  padding: 0 6px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-action);
-  color: var(--bj-on-action);
+  padding: 0 var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
 }
 .ate-recherche-boite {
   position: relative;
@@ -617,16 +617,16 @@
 .ate-kbd,
 .ate-recherche-compte {
   position: absolute;
-  right: var(--bj-sp-3);
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  right: var(--m-espace-3);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   pointer-events: none;
 }
 .ate-kbd {
-  padding: 1px 6px;
-  border: 1px solid var(--bj-veil-12);
-  border-radius: 4px;
-  font-family: var(--bj-font-ui);
+  padding: 1px var(--m-espace-2);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-image);
+  font-family: var(--m-police-texte-famille);
 }
 .ate-recherche-compte {
   font-variant-numeric: tabular-nums;
@@ -638,7 +638,7 @@
   align-items: center;
   flex-wrap: wrap;
   max-width: 100%;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
 }
 .ate-vues {
   position: relative;
@@ -646,25 +646,25 @@
 .ate-vues-btn {
   display: inline-flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   min-height: 38px;
-  padding: 0 var(--bj-sp-4);
-  border-radius: var(--bj-r-btn);
-  border: 1px solid var(--bj-veil-12);
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
 }
 .ate-vues-btn--ouvert,
 .ate-vues-btn:hover {
-  border-color: var(--bj-action-border);
-  color: var(--bj-text);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-vues-etat {
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-action);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-accent);
 }
 .ate-vues-panneau {
   position: absolute;
@@ -672,56 +672,56 @@
   right: 0;
   z-index: 30;
   width: 17rem;
-  padding: var(--bj-sp-4);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-12);
-  background: var(--bj-cream);
-  box-shadow: var(--bj-shadow-pop);
+  padding: var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
 }
 .ate-vues-bloc + .ate-vues-bloc {
-  margin-top: var(--bj-sp-4);
-  padding-top: var(--bj-sp-4);
+  margin-top: var(--m-espace-4);
+  padding-top: var(--m-espace-4);
   border-top: var(--ate-ligne-h);
 }
 .ate-vues-titre {
   display: block;
-  margin-bottom: var(--bj-sp-2);
-  font-size: var(--bj-fs-xxs);
+  margin-bottom: var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 500;
 }
 .ate-vues-options {
   display: flex;
-  gap: 2px;
-  padding: 2px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-veil-6);
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
 }
 .ate-vues-option {
   flex: 1;
   min-height: 30px;
   border: none;
-  border-radius: var(--bj-r-pill);
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
 }
 .ate-vues-option--actif {
-  background: var(--bj-cream);
-  color: var(--bj-text);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
   font-weight: 500;
-  box-shadow: 0 1px 2px var(--bj-veil-8);
+  box-shadow: 0 1px 2px var(--m-couleur-papier-ligne);
 }
 .ate-vues-aide {
   display: block;
-  margin-top: var(--bj-sp-2);
-  font-size: 11px;
+  margin-top: var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.4;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* ── densité ──
@@ -730,14 +730,14 @@
    n'est pas une vue dense, c'est une vue illisible. */
 .ate-root--compact .ate-ligne,
 .ate-root--compact .ate-entete {
-  padding-top: var(--bj-sp-2);
-  padding-bottom: var(--bj-sp-2);
+  padding-top: var(--m-espace-2);
+  padding-bottom: var(--m-espace-2);
 }
 .ate-root--compact .ate-ligne-sous {
   margin-top: 0;
 }
 .ate-root--compact .ate-pile {
-  margin-bottom: var(--bj-sp-5);
+  margin-bottom: var(--m-espace-5);
 }
 .ate-root--compact .ate-delai-sub {
   display: none;
@@ -758,11 +758,11 @@
 /* ── en-tête de colonnes ── */
 .ate-entete {
   padding-top: 0;
-  padding-bottom: var(--bj-sp-1);
-  font-size: 10px;
+  padding-bottom: var(--m-espace-1);
+  font-size: var(--m-taille-etiquette);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-entete > span:last-child {
   text-align: right;
@@ -774,12 +774,12 @@
 .ate-lignes {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 6px;
-  border-radius: var(--bj-r-lg);
-  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
-  background: var(--adm-verre, rgba(255, 255, 255, 0.7));
-  box-shadow: var(--adm-verre-ombre, none);
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-2);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: none;
 }
 /* La grille est déclarée une fois et servie deux fois : aux lignes et à
    l'en-tête de colonnes. Deux déclarations, c'est deux alignements qui
@@ -789,19 +789,19 @@
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr) 12rem 9.5rem 7.5rem 16rem;
   align-items: center;
-  gap: var(--bj-sp-3);
-  padding: var(--bj-sp-3) var(--bj-sp-2);
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-2);
 }
 .ate-ligne {
   position: relative;
-  border-radius: 16px;
+  border-radius: var(--m-rayon-bloc);
   color: inherit;
-  transition: background var(--bj-dur-fast) var(--bj-ease), box-shadow var(--bj-dur-fast) var(--bj-ease);
+  transition: background var(--m-duree-micro) var(--m-courbe-sortie), box-shadow var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .ate-ligne:hover,
 .ate-ligne:focus-within {
-  background: #ffffff;
-  box-shadow: 0 1px 2px var(--bj-veil-6), 0 6px 18px var(--bj-veil-6);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 1px 2px var(--m-couleur-papier-survol), 0 6px 18px var(--m-couleur-papier-survol);
 }
 /* Le lien couvre la ligne mais s'arrête avant la zone d'action : sans ça,
    viser un bouton, c'est ouvrir la fiche. */
@@ -811,9 +811,9 @@
   z-index: 0;
 }
 .ate-ligne-lien:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: -2px;
-  border-radius: var(--bj-r-sm);
+  border-radius: var(--m-rayon-champ);
 }
 .ate-ligne > span {
   position: relative;
@@ -831,7 +831,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 4px;
+  gap: var(--m-espace-1);
   min-width: 0;
 }
 /* La ligne qui porte un panneau ouvert doit passer AU-DESSUS de ses voisines.
@@ -852,7 +852,7 @@
 .ate-ligne--atelier,
 .ate-ligne--cliente,
 .ate-ligne--retard {
-  --ate-lisere: var(--bj-action);
+  --ate-lisere: var(--m-couleur-accent);
 }
 .ate-ligne--cliente {
   --ate-lisere: var(--ate-orange);
@@ -869,7 +869,7 @@
   top: 12px;
   bottom: 12px;
   width: 3px;
-  border-radius: 3px;
+  border-radius: var(--m-rayon-image);
   background: var(--ate-lisere);
   pointer-events: none;
 }
@@ -881,12 +881,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
+  gap: var(--m-espace-1);
   min-width: 0;
 }
 .ate-prochaine-geste {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -898,11 +898,11 @@
   height: 2rem;
   display: grid;
   place-items: center;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-veil-8);
-  font-size: var(--bj-fs-sm);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .ate-ligne-corps {
@@ -911,8 +911,8 @@
 .ate-ligne-titre {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
-  font-size: var(--bj-fs-ui);
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -920,12 +920,12 @@
 }
 .ate-ligne-sous {
   display: block;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   margin-top: 1px;
 }
 .ate-sep {
-  margin: 0 6px;
+  margin: 0 var(--m-espace-2);
   opacity: 0.5;
 }
 
@@ -936,13 +936,13 @@
 .ate-etat {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 10px 3px 4px;
-  border-radius: var(--bj-r-pill);
-  font-size: var(--bj-fs-xxs);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-3) var(--m-espace-1) var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
   white-space: nowrap;
   width: fit-content;
 }
@@ -951,27 +951,27 @@
   place-items: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 4px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-cream);
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: 11px;
+  padding: 0 var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-fond);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-size: var(--m-taille-etiquette);
 }
 .ate-etat--photos_recues,
 .ate-etat--payee,
 .ate-etat--validee {
-  background: var(--bj-action-soft);
-  color: var(--bj-action);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-accent);
 }
 .ate-etat--photos_insuffisantes,
 .ate-etat--apercu_pret,
 .ate-etat--maquette_prete {
-  background: var(--bj-warn-soft);
+  background: color-mix(in srgb, var(--m-couleur-etat-alerte) 10%, var(--m-couleur-papier-fond));
   color: var(--ate-orange);
 }
 .ate-etat--livree {
-  background: rgba(63, 166, 106, 0.12);
+  background: color-mix(in srgb, var(--m-couleur-etat-succes) 12%, transparent);
   color: var(--ate-vert);
 }
 
@@ -982,8 +982,8 @@
   min-width: 0;
 }
 .ate-delai-val {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   font-variant-numeric: tabular-nums;
 }
 .ate-delai-val--retard {
@@ -991,8 +991,8 @@
   font-weight: 500;
 }
 .ate-delai-sub {
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1019,8 +1019,8 @@
 }
 .ate-ligne:hover .ate-relance-btn:not(.ate-relance-btn--eteint),
 .ate-ligne:focus-within .ate-relance-btn:not(.ate-relance-btn--eteint) {
-  border-color: var(--bj-action-border);
-  color: var(--bj-action);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-accent);
 }
 /* Éteint, mais CLIQUABLE : le clic ouvre la raison. Un bouton mort qui ne
    dit pas pourquoi finit contourné en SQL. */
@@ -1035,60 +1035,60 @@
    elle informe, elle ne réclame pas. La sienne se distingue au premier
    coup d'oeil — c'est le seul cas où on veut être arrêté. */
 .ate-tag--moi {
-  color: var(--bj-action);
-  background: var(--bj-action-soft);
-  border-color: var(--bj-action-border);
+  color: var(--m-couleur-accent);
+  background: var(--m-couleur-papier-survol);
+  border-color: var(--m-couleur-papier-ligne);
 }
 
 /* Le sélecteur, en tête de fiche. */
 .ate-charge {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
-  margin-bottom: var(--bj-sp-4);
-  padding: var(--bj-sp-3) var(--bj-sp-4);
-  border: 1px solid var(--adm-verre-bord, var(--bj-veil-12));
-  border-radius: 20px;
-  background: var(--adm-verre, var(--bj-veil-8));
-  box-shadow: var(--bj-shadow-soft);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  margin-bottom: var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-charge-etat {
   display: inline-flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   margin-right: auto;
 }
 .ate-charge-etat strong {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-weight: 500;
 }
 .ate-charge-pastille {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--bj-text-faint);
+  background: var(--m-couleur-papier-texte-doux);
   flex: none;
 }
 .ate-charge-pastille--moi {
-  background: var(--bj-action);
+  background: var(--m-couleur-accent);
 }
 .ate-charge-erreur {
   flex-basis: 100%;
   margin: 0;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-save-warn);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-etat-alerte);
 }
 
 .ate-tag {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 1px 6px;
-  border-radius: var(--bj-r-pill);
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
 }
 .ate-tag--alerte {
   background: var(--ate-rouge-fond);
@@ -1107,19 +1107,19 @@
    ni une alarme rouge ni une attente orange. Absent tant qu'il n'a rien dit :
    voir Liste.tsx, le silence ne porte pas de tag. */
 .ate-tag--choix {
-  background: color-mix(in srgb, var(--bj-action) 12%, transparent);
-  color: var(--bj-action);
+  background: color-mix(in srgb, var(--m-couleur-accent) 12%, transparent);
+  color: var(--m-couleur-accent);
 }
 
 .ate-vide,
 .ate-faint {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-pied {
-  margin-top: var(--bj-sp-6);
+  margin-top: var(--m-espace-6);
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   flex-wrap: wrap;
 }
 
@@ -1129,12 +1129,12 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--bj-veil-12);
+  background: var(--m-couleur-papier-ligne);
   flex: none;
 }
 .ate-pouls--actif {
-  background: var(--bj-action);
-  animation: ate-pouls-bat 900ms var(--bj-ease) infinite;
+  background: var(--m-couleur-accent);
+  animation: ate-pouls-bat 900ms var(--m-courbe-sortie) infinite;
 }
 @keyframes ate-pouls-bat {
   0%, 100% { opacity: 1; }
@@ -1146,12 +1146,12 @@
   border: 0;
   background: transparent;
   font: inherit;
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   text-decoration: underline;
   cursor: pointer;
 }
 .ate-pied-btn:disabled {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: default;
   text-decoration: none;
 }
@@ -1161,7 +1161,7 @@
 }
 .ate-mono {
   font-variant-numeric: tabular-nums;
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
   word-break: break-all;
 }
 
@@ -1173,9 +1173,9 @@
   /* Huit colonnes ne tiennent pas sur un écran : on défile horizontalement
      plutôt que d'écraser les cartes jusqu'à l'illisible. */
   grid-auto-columns: minmax(15rem, 1fr);
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   overflow-x: auto;
-  padding-bottom: var(--bj-sp-4);
+  padding-bottom: var(--m-espace-4);
   scrollbar-width: thin;
 }
 .ate-col {
@@ -1187,81 +1187,81 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--bj-sp-2);
-  padding-bottom: var(--bj-sp-2);
+  gap: var(--m-espace-2);
+  padding-bottom: var(--m-espace-2);
   border-bottom: var(--ate-ligne-h);
-  margin-bottom: var(--bj-sp-3);
+  margin-bottom: var(--m-espace-3);
 }
 .ate-col-compte {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   font-variant-numeric: tabular-nums;
 }
 .ate-col-retard {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ate-rouge);
 }
 .ate-col-corps {
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 .ate-col-vide {
   margin: 0;
-  padding: var(--bj-sp-4) 0;
+  padding: var(--m-espace-4) 0;
   text-align: center;
-  color: var(--bj-veil-16);
+  color: var(--m-couleur-papier-pointille);
 }
 
 .ate-carte-d {
   position: relative;
-  border-radius: var(--bj-r-sm);
-  border: 1px solid var(--bj-veil-8);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: var(--ate-carte-bg);
-  transition: border-color var(--bj-dur-fast) var(--bj-ease);
+  transition: border-color var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .ate-carte-d:hover {
-  border-color: var(--bj-action-border);
+  border-color: var(--m-couleur-papier-ligne);
 }
 .ate-carte-d--retard {
   box-shadow: inset 2px 0 0 var(--ate-rouge);
 }
 .ate-carte-d-lien {
   display: block;
-  padding: var(--bj-sp-3);
+  padding: var(--m-espace-3);
   text-decoration: none;
   color: inherit;
 }
 .ate-carte-d-titre {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   line-height: 1.3;
 }
 .ate-carte-d-sous {
   display: block;
-  margin: 2px 0 var(--bj-sp-2);
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  margin: var(--m-espace-1) 0 var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-carte-d-act {
-  padding: 0 var(--bj-sp-3) var(--bj-sp-3);
+  padding: 0 var(--m-espace-3) var(--m-espace-3);
 }
 /* Sur une carte, l'action est toujours visible : il n'y a pas de « ligne
    survolée » sur laquelle se reposer. */
 .ate-carte-d .ate-act-btn--principal {
   width: 100%;
-  border-color: var(--bj-action-border);
-  color: var(--bj-action);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-accent);
 }
 .ate-carte-d:hover .ate-act-btn--principal {
-  background: var(--bj-action);
-  color: var(--bj-on-action);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
 }
 /* Le panneau armé sort de la carte : sans ça il serait rogné par la colonne
    suivante et son défilement horizontal. */
@@ -1278,44 +1278,44 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--m-espace-1);
   justify-content: flex-end;
 }
 .ate-act-rien {
-  color: var(--bj-veil-16);
-  font-size: var(--bj-fs-xs);
+  color: var(--m-couleur-papier-pointille);
+  font-size: var(--m-taille-petit);
 }
 .ate-act-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 32px;
-  padding: 0 var(--bj-sp-3);
-  border-radius: var(--bj-r-btn);
-  border: 1px solid var(--bj-veil-12);
-  background: var(--bj-cream);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  transition: all var(--bj-dur-fast) var(--bj-ease);
+  transition: all var(--m-duree-micro) var(--m-courbe-sortie);
 }
 /* Discret au repos, net au survol de la ligne : l'action ne doit pas hurler
    sur vingt lignes à la fois, mais elle doit être là quand on arrive dessus. */
 .ate-ligne:hover .ate-act-btn--principal,
 .ate-ligne:focus-within .ate-act-btn--principal {
-  border-color: var(--bj-action-border);
-  background: var(--bj-action);
-  color: var(--bj-on-action);
+  border-color: var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
 }
 .ate-act-btn:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 .ate-act-btn--plus {
-  padding: 0 8px;
+  padding: 0 var(--m-espace-2);
   letter-spacing: 0.1em;
 }
 .ate-act-plus {
@@ -1328,28 +1328,28 @@
   z-index: 20;
   min-width: 13rem;
   margin: 0;
-  padding: 4px;
+  padding: var(--m-espace-1);
   list-style: none;
-  border-radius: var(--bj-r-sm);
-  border: 1px solid var(--bj-veil-12);
-  background: var(--bj-cream);
-  box-shadow: var(--bj-shadow-soft);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
 }
 .ate-act-menu button {
   display: block;
   width: 100%;
-  padding: var(--bj-sp-2) var(--bj-sp-3);
+  padding: var(--m-espace-2) var(--m-espace-3);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   background: none;
   text-align: left;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte);
   cursor: pointer;
 }
 .ate-act-menu button:hover {
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
 }
 
 /* ── l'action armée ──
@@ -1361,48 +1361,48 @@
   right: 0;
   z-index: 20;
   width: 20rem;
-  padding: var(--bj-sp-3);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-action-border);
-  background: var(--bj-cream);
-  box-shadow: var(--bj-shadow-pop);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
   text-align: left;
   white-space: normal;
 }
 .ate-act-quoi {
-  margin: 0 0 var(--bj-sp-2);
-  font-size: var(--bj-fs-xs);
+  margin: 0 0 var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   line-height: 1.45;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-act-input {
   width: 100%;
-  margin-bottom: var(--bj-sp-2);
-  font-size: var(--bj-fs-xs);
+  margin-bottom: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
 }
 .ate-act-mail {
-  margin: 0 0 var(--bj-sp-3);
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  margin: 0 0 var(--m-espace-3);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.4;
 }
 .ate-act-erreur {
-  margin: 0 0 var(--bj-sp-2);
-  font-size: var(--bj-fs-xxs);
+  margin: 0 0 var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   color: var(--ate-rouge);
 }
 .ate-act-boutons {
   display: flex;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   justify-content: flex-end;
 }
 .ate-act-btn--annuler {
   background: transparent;
 }
 .ate-act-btn--confirmer {
-  background: var(--bj-action);
-  border-color: var(--bj-action);
-  color: var(--bj-on-action);
+  background: var(--m-couleur-accent);
+  border-color: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
   font-weight: 500;
 }
 .ate-act-btn--confirmer:disabled {
@@ -1415,7 +1415,7 @@
 .ate-toast-zone {
   position: fixed;
   left: 50%;
-  bottom: var(--bj-sp-5);
+  bottom: var(--m-espace-5);
   transform: translateX(-50%);
   z-index: 60;
   pointer-events: none;
@@ -1423,21 +1423,21 @@
 .ate-toast {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
-  padding: var(--bj-sp-3) var(--bj-sp-4);
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-charcoal);
-  color: var(--bj-glass-dark-text);
-  font-size: var(--bj-fs-sm);
-  box-shadow: var(--bj-shadow-pop);
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-texte);
+  color: var(--m-couleur-papier-fond);
+  font-size: var(--m-taille-petit);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
   pointer-events: auto;
-  animation: ate-toast-entre var(--bj-dur) var(--bj-ease);
+  animation: ate-toast-entre var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .ate-toast button {
   border: none;
   background: none;
   color: inherit;
-  font-size: var(--bj-fs-lg);
+  font-size: var(--m-taille-chapo);
   line-height: 1;
   cursor: pointer;
   opacity: 0.6;
@@ -1453,22 +1453,22 @@
 /* ─────────────────────────── bandeaux ─────────────────────────── */
 
 .ate-demo-bar {
-  margin-bottom: var(--bj-sp-4);
-  padding: var(--bj-sp-2) var(--bj-sp-4);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-action-soft);
-  border: 1px solid var(--bj-action-border);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-action);
+  margin-bottom: var(--m-espace-4);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-accent);
 }
 .ate-demo-bar a {
   color: inherit;
 }
 .ate-bandeau {
-  margin-bottom: var(--bj-sp-4);
-  padding: var(--bj-sp-3) var(--bj-sp-4);
-  border-radius: var(--bj-r-sm);
-  font-size: var(--bj-fs-sm);
+  margin-bottom: var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
 }
 .ate-bandeau--alerte {
@@ -1476,7 +1476,7 @@
   color: var(--ate-rouge);
 }
 .ate-bandeau--attention {
-  background: var(--bj-warn-soft);
+  background: color-mix(in srgb, var(--m-couleur-etat-alerte) 10%, var(--m-couleur-papier-fond));
   color: var(--ate-orange);
 }
 
@@ -1486,23 +1486,23 @@
    tout l'admin, et il ne s'allume que depuis un dossier déjà archivé. */
 .ate-rangement {
   position: relative;
-  margin: calc(-1 * var(--bj-sp-2)) 0 var(--bj-sp-3);
+  margin: calc(-1 * var(--m-espace-2)) 0 var(--m-espace-3);
   display: flex;
   justify-content: flex-end;
 }
 .ate-arch-lien {
   border: none;
   background: transparent;
-  padding: 2px 0;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  padding: var(--m-espace-1) 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: underline dotted;
   text-underline-offset: 3px;
   cursor: pointer;
 }
 .ate-arch-lien:hover:not(:disabled) {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-arch-lien:disabled {
   cursor: default;
@@ -1510,20 +1510,20 @@
 }
 .ate-arch-boite {
   width: min(28rem, 100%);
-  padding: var(--bj-sp-3);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-action-border);
-  background: var(--bj-cream);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
 }
 .ate-arch-boite--danger {
-  margin-top: var(--bj-sp-3);
+  margin-top: var(--m-espace-3);
   width: 100%;
   border-color: var(--ate-rouge);
   background: var(--ate-rouge-fond);
 }
 .ate-arch-boutons {
   display: flex;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -1531,27 +1531,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
 }
 .ate-arch-raison,
 .ate-arch-erreur {
-  margin: var(--bj-sp-2) 0 0;
-  font-size: var(--bj-fs-xs);
+  margin: var(--m-espace-2) 0 0;
+  font-size: var(--m-taille-petit);
   color: var(--ate-rouge);
 }
 .ate-arch-avert {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-arch-ligne {
   display: inline-flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 .ate-bandeau--archive {
-  border-color: var(--bj-veil-12);
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
+  border-color: var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-btn-danger {
   border-color: var(--ate-rouge);
@@ -1560,7 +1560,7 @@
 }
 .ate-btn-danger:hover:not(:disabled) {
   background: var(--ate-rouge);
-  color: #fff;
+  color: var(--m-couleur-papier-fond);
 }
 .ate-btn-danger:disabled {
   opacity: 0.45;
@@ -1575,12 +1575,12 @@
   opacity: 1;
 }
 .ate-tag--archive {
-  background: var(--bj-veil-8);
-  color: var(--bj-text-soft);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-seg-compte--gris {
-  background: var(--bj-veil-12);
-  color: var(--bj-text-soft);
+  background: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* ─────────────────────────── les métriques ─────────────────────────── */
@@ -1597,58 +1597,58 @@
 .ate-m-cles {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--bj-sp-3);
-  margin-bottom: var(--bj-sp-4);
+  gap: var(--m-espace-3);
+  margin-bottom: var(--m-espace-4);
 }
 
 .ate-m-cle {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: var(--bj-sp-4) var(--bj-sp-4);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-4) var(--m-espace-4);
   background: var(--ate-carte-bg);
-  border: 1px solid var(--bj-veil-8);
-  border-radius: var(--bj-r-md);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
 }
 
 .ate-m-cle-titre {
-  font-family: var(--bj-font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* La grande valeur. `tabular-nums` : sans elle, deux cartes voisines
    n'alignent pas leurs chiffres et la rangée tremble d'une période à
    l'autre. */
 .ate-m-cle-val {
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
   font-size: clamp(28px, 2.6vw, 40px);
   line-height: 1.05;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-variant-numeric: tabular-nums;
 }
 
 .ate-m-cle-unite {
-  margin-left: 3px;
+  margin-left: var(--m-espace-1);
   font-size: 0.55em;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .ate-m-cle-pied {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 18px;
 }
 
 .ate-m-cle-note {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 @media (max-width: 980px) {
@@ -1659,65 +1659,65 @@
 }
 
 .ate-m-avertissement {
-  margin: 0 0 var(--bj-sp-4);
-  padding: var(--bj-sp-2) var(--bj-sp-3);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-6);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  margin: 0 0 var(--m-espace-4);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.5;
 }
 .ate-m-colonnes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
-  gap: var(--bj-sp-4);
-  margin: var(--bj-sp-4) 0;
+  gap: var(--m-espace-4);
+  margin: var(--m-espace-4) 0;
 }
 .ate-m-entonnoir {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: var(--bj-sp-4);
+  gap: var(--m-espace-4);
 }
 .ate-m-etape,
 .ate-m-mesure {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 .ate-m-mesure + .ate-m-mesure {
-  margin-top: var(--bj-sp-4);
-  padding-top: var(--bj-sp-4);
+  margin-top: var(--m-espace-4);
+  padding-top: var(--m-espace-4);
   border-top: var(--ate-ligne-h);
 }
 .ate-m-mesure-titre {
-  font-size: var(--bj-fs-xxs);
+  font-size: var(--m-taille-etiquette);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   order: -1;
 }
 .ate-m-val {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-2);
-  font-family: var(--bj-font-display);
-  font-size: var(--bj-fs-h2);
+  gap: var(--m-espace-2);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-variant-numeric: tabular-nums;
 }
 .ate-m-sous {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.4;
 }
 /* « pas encore » n'est PAS un zéro : un zéro se lirait comme une
    contre-performance, alors qu'il ne dit que « pas assez de dossiers ». */
 .ate-m-vide {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text-faint);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-size: var(--m-taille-chapo);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-m-ok {
   color: var(--ate-vert);
@@ -1726,9 +1726,9 @@
   color: var(--ate-orange);
 }
 .ate-m-ecart {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-m-ecart--bon {
   color: var(--ate-vert);
@@ -1740,9 +1740,9 @@
 .ate-m-courbe {
   display: flex;
   align-items: flex-end;
-  gap: 4px;
+  gap: var(--m-espace-1);
   height: 8rem;
-  padding-top: var(--bj-sp-2);
+  padding-top: var(--m-espace-2);
 }
 .ate-m-jour {
   flex: 1;
@@ -1755,10 +1755,10 @@
 .ate-m-barre {
   flex: 1;
   min-height: 2px;
-  border-radius: 2px 2px 0 0;
+  border-radius: var(--m-rayon-image) var(--m-rayon-image) 0 0;
 }
 .ate-m-barre--arrivees {
-  background: var(--bj-action-faint);
+  background: var(--m-couleur-papier-survol);
 }
 .ate-m-barre--paiements {
   background: var(--ate-vert);
@@ -1766,19 +1766,19 @@
 .ate-m-legende {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
-  margin: var(--bj-sp-3) 0 0;
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  gap: var(--m-espace-2);
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-m-puce {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
-  margin-left: var(--bj-sp-3);
+  border-radius: var(--m-rayon-image);
+  margin-left: var(--m-espace-3);
 }
 .ate-m-puce--arrivees {
-  background: var(--bj-action-faint);
+  background: var(--m-couleur-papier-survol);
   margin-left: 0;
 }
 .ate-m-puce--paiements {
@@ -1791,7 +1791,7 @@
 .ate-m-fun {
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
 }
 .ate-m-fun-ligne {
   display: grid;
@@ -1800,7 +1800,7 @@
     "titre n"
     "taux n"
     "piste piste";
-  column-gap: var(--bj-sp-3);
+  column-gap: var(--m-espace-3);
   align-items: baseline;
 }
 .ate-m-fun-titre {
@@ -1811,11 +1811,11 @@
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
-  gap: var(--bj-sp-2);
-  font-family: var(--bj-font-display);
-  font-size: var(--bj-fs-lg);
+  gap: var(--m-espace-2);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  font-size: var(--m-taille-chapo);
   line-height: 1.1;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-variant-numeric: tabular-nums;
 }
 .ate-m-fun-taux {
@@ -1824,17 +1824,17 @@
 .ate-m-fun-piste {
   grid-area: piste;
   height: 10px;
-  margin-top: var(--bj-sp-1);
-  border-radius: 3px;
-  background: var(--bj-veil-6);
+  margin-top: var(--m-espace-1);
+  border-radius: var(--m-rayon-image);
+  background: var(--m-couleur-papier-survol);
   overflow: hidden;
 }
 .ate-m-fun-barre {
   display: block;
   height: 100%;
   min-width: 2px;
-  border-radius: 3px;
-  background: var(--bj-action-faint);
+  border-radius: var(--m-rayon-image);
+  background: var(--m-couleur-papier-survol);
 }
 
 /* Les étapes de la vie d'un dossier : une grille de médianes, chacune avec
@@ -1842,7 +1842,7 @@
 .ate-m-etapes {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
-  gap: var(--bj-sp-5) var(--bj-sp-4);
+  gap: var(--m-espace-5) var(--m-espace-4);
 }
 
 /* La lecture : des phrases calculées, pas un tableau. */
@@ -1851,20 +1851,20 @@
   padding-left: 1.1em;
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.5;
 }
 
 .ate-m-seaux-chapeau {
-  margin: 0 0 var(--bj-sp-4);
+  margin: 0 0 var(--m-espace-4);
 }
 
 /* Le rapport CSV : un lien discret dans la barre, à droite des périodes. */
 .ate-m-export {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-action);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-accent);
   text-decoration: none;
 }
 .ate-m-export:hover {
@@ -1874,7 +1874,7 @@
 /* ─────────────────────────── la page santé ─────────────────────────── */
 
 .ate-sante {
-  margin-bottom: var(--bj-sp-4);
+  margin-bottom: var(--m-espace-4);
 }
 /* Le liseré porte la gravité, pas le fond : quatre cartes rouge plein, et on
    arrête de lire la page. */
@@ -1894,37 +1894,37 @@
   color: var(--ate-vert);
 }
 .ate-sante-remede {
-  margin: 0 0 var(--bj-sp-3);
-  font-size: var(--bj-fs-sm);
+  margin: 0 0 var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-sante-liste {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ate-sante-liste li {
-  padding: var(--bj-sp-2) 0;
+  padding: var(--m-espace-2) 0;
   border-top: var(--ate-ligne-h);
 }
 .ate-sante-liste a {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   text-decoration: none;
-  border-bottom: 1px solid var(--bj-action-border);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
 }
 .ate-sante-liste a:hover {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
 }
 
 /* ─────────────────────── la frise du dossier ─────────────────────── */
 
 .ate-parcours {
-  margin-bottom: var(--bj-sp-5);
-  padding: var(--bj-sp-4) var(--bj-sp-5);
-  border-radius: var(--bj-r-md);
-  border: 1px solid var(--bj-veil-8);
+  margin-bottom: var(--m-espace-5);
+  padding: var(--m-espace-4) var(--m-espace-5);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: var(--ate-carte-bg);
 }
 .ate-frise {
@@ -1945,9 +1945,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--m-espace-1);
   min-width: 6.5rem;
-  padding: 0 var(--bj-sp-1);
+  padding: 0 var(--m-espace-1);
   text-align: center;
 }
 /* La barre relie les pastilles : elle part du centre du jalon précédent. */
@@ -1957,14 +1957,14 @@
   right: 50%;
   left: -50%;
   height: 2px;
-  background: var(--bj-veil-8);
+  background: var(--m-couleur-papier-survol);
 }
 .ate-jalon:first-child .ate-jalon-barre {
   display: none;
 }
 .ate-jalon--fait .ate-jalon-barre,
 .ate-jalon--encours .ate-jalon-barre {
-  background: var(--bj-action-border);
+  background: var(--m-couleur-papier-ligne);
 }
 .ate-jalon-pastille {
   position: relative;
@@ -1973,125 +1973,125 @@
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: var(--bj-r-pill);
-  border: 2px solid var(--bj-veil-12);
-  background: var(--bj-cream);
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: 12px;
-  color: var(--bj-text-faint);
+  border-radius: var(--m-rayon-pilule);
+  border: 2px solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-jalon--fait .ate-jalon-pastille {
-  border-color: var(--bj-action-border);
-  background: var(--bj-action-soft);
-  color: var(--bj-action);
-  font-family: var(--bj-font-ui);
+  border-color: var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-accent);
+  font-family: var(--m-police-texte-famille);
   font-style: normal;
 }
 /* Le SEUL élément en couleur pleine de toute la frise. Si tout est coloré,
    plus rien ne dit « c'est ici ». */
 .ate-jalon--encours .ate-jalon-pastille {
-  border-color: var(--bj-action);
-  background: var(--bj-action);
-  color: var(--bj-on-action);
+  border-color: var(--m-couleur-accent);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
   font-style: normal;
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-weight: 500;
 }
 .ate-jalon-titre {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.25;
 }
 .ate-jalon--encours .ate-jalon-titre {
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font-weight: 500;
 }
 .ate-jalon--avenir .ate-jalon-titre {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-jalon-note {
-  font-size: 11px;
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.2;
 }
 .ate-jalon--encours .ate-jalon-note strong {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   font-weight: 500;
 }
 .ate-jalon-par {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .ate-detour {
-  margin: var(--bj-sp-4) 0 0;
-  padding: var(--bj-sp-2) var(--bj-sp-3);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-6);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  margin: var(--m-espace-4) 0 0;
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.5;
 }
 .ate-detour--actif {
-  background: var(--bj-warn-soft);
+  background: color-mix(in srgb, var(--m-couleur-etat-alerte) 10%, var(--m-couleur-papier-fond));
   color: var(--ate-orange);
 }
 
 .ate-suite {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
-  margin: var(--bj-sp-4) 0 0;
-  padding-top: var(--bj-sp-4);
+  gap: var(--m-espace-3);
+  margin: var(--m-espace-4) 0 0;
+  padding-top: var(--m-espace-4);
   border-top: var(--ate-ligne-h);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-suite-qui {
   flex: none;
-  padding: 2px 10px;
-  border-radius: var(--bj-r-pill);
-  font-size: var(--bj-fs-xxs);
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  background: var(--bj-veil-8);
-  color: var(--bj-text-faint);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-suite-qui--atelier {
-  background: var(--bj-action);
-  color: var(--bj-on-action);
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
 }
 .ate-suite-qui--cliente {
-  background: var(--bj-warn-soft);
+  background: color-mix(in srgb, var(--m-couleur-etat-alerte) 10%, var(--m-couleur-papier-fond));
   color: var(--ate-orange);
 }
 
 /* ─────────────────────────── la fiche ─────────────────────────── */
 
 .ate-fiche-tete {
-  margin-bottom: var(--bj-sp-5);
+  margin-bottom: var(--m-espace-5);
 }
 .ate-retour {
   display: inline-block;
-  margin-bottom: var(--bj-sp-3);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  margin-bottom: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: none;
 }
 .ate-retour:hover {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
 }
 .ate-fiche-sous {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--bj-sp-3);
-  margin: var(--bj-sp-2) 0 0;
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-3);
+  margin: var(--m-espace-2) 0 0;
+  font-size: var(--m-taille-petit);
 }
 .ate-lien-page {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   text-decoration: none;
 }
 
@@ -2107,16 +2107,16 @@
 
 .ate-sq {
   display: block;
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-8);
-  animation: ate-sq-pulse 1400ms var(--bj-ease) infinite;
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  animation: ate-sq-pulse 1400ms var(--m-courbe-sortie) infinite;
 }
 
-.ate-sq--texte { width: 42%; height: var(--bj-fs-sm); }
+.ate-sq--texte { width: 42%; height: var(--m-taille-petit); }
 .ate-sq--titre { width: 34%; height: 1em; }
-.ate-sq--flux { height: 5.5rem; margin-bottom: var(--bj-sp-4); }
-.ate-sq--barre { height: 2.6rem; margin-bottom: var(--bj-sp-4); }
-.ate-sq--frise { height: 6rem; margin-bottom: var(--bj-sp-5); }
+.ate-sq--flux { height: 5.5rem; margin-bottom: var(--m-espace-4); }
+.ate-sq--barre { height: 2.6rem; margin-bottom: var(--m-espace-4); }
+.ate-sq--frise { height: 6rem; margin-bottom: var(--m-espace-5); }
 .ate-sq--carte { height: 12rem; }
 .ate-sq--carte-haute { height: 22rem; }
 
@@ -2126,7 +2126,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 .ate-sq--ligne { height: 3.4rem; }
 
@@ -2147,48 +2147,48 @@
 .ate-colonnes {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-  gap: var(--bj-sp-5);
+  gap: var(--m-espace-5);
   align-items: start;
 }
 .ate-colonne {
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-4);
+  gap: var(--m-espace-4);
   min-width: 0;
 }
 
 /* 15/10 : des cartes de verre arrondies qui flottent (Porcelaine). */
 .ate-carte {
   background: var(--ate-carte-bg);
-  border: 1px solid var(--adm-verre-bord, var(--bj-veil-8));
-  border-radius: var(--bj-r-lg);
-  box-shadow: var(--adm-verre-ombre, none);
-  -webkit-backdrop-filter: var(--adm-flou, none);
-  backdrop-filter: var(--adm-flou, none);
-  padding: var(--bj-sp-5);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+  box-shadow: none;
+  
+  
+  padding: var(--m-espace-5);
 }
 .ate-carte-tete {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
 }
 .ate-carte-titre {
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
   font-style: normal;
-  font-weight: 500;
-  font-size: var(--bj-fs-display-sm);
-  margin: 0 0 var(--bj-sp-3);
-  color: var(--bj-text);
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-chapo);
+  margin: 0 0 var(--m-espace-3);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-carte-tete .ate-carte-titre {
-  margin-bottom: var(--bj-sp-3);
+  margin-bottom: var(--m-espace-3);
 }
 .ate-carte-outils {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 /* T-131 — trois boutons d'ordre plus le brief, le choix et le lot : la barre
    passe à la ligne, jamais un libellé. */
@@ -2196,56 +2196,56 @@
   white-space: nowrap;
 }
 .ate-compte {
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-style: normal;
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-sous-titre {
-  margin: var(--bj-sp-4) 0 var(--bj-sp-2);
-  font-size: var(--bj-fs-xxs);
+  margin: var(--m-espace-4) 0 var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 500;
 }
 
 /* ── l'action du moment : la seule carte qui a le droit d'attirer l'œil ── */
 .ate-action {
-  border-color: var(--bj-action-border);
-  background: var(--bj-action-soft);
+  border-color: var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-survol);
 }
 .ate-action-explication {
-  margin: 0 0 var(--bj-sp-4);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  margin: 0 0 var(--m-espace-4);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   line-height: 1.5;
 }
 .ate-choix {
   display: flex;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   flex-wrap: wrap;
-  margin-bottom: var(--bj-sp-4);
+  margin-bottom: var(--m-espace-4);
 }
 .ate-choix-btn {
-  padding: var(--bj-sp-2) var(--bj-sp-4);
-  border-radius: var(--bj-r-pill);
-  border: 1px solid var(--bj-veil-12);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
 }
 .ate-choix-btn--actif {
-  background: var(--bj-action);
-  border-color: var(--bj-action);
-  color: var(--bj-on-action);
+  background: var(--m-couleur-accent);
+  border-color: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
 }
 
 .ate-champ {
   display: block;
-  margin-bottom: var(--bj-sp-4);
+  margin-bottom: var(--m-espace-4);
 }
 .ate-champ--court .adm-input {
   max-width: 9rem;
@@ -2265,10 +2265,10 @@
    d'un champ court, prévus pour un nombre de pages. */
 .ate-champ select.adm-input {
   cursor: pointer;
-  padding-right: var(--bj-sp-6);
+  padding-right: var(--m-espace-6);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%238c8579' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right var(--bj-sp-3) center;
+  background-position: right var(--m-espace-3) center;
   background-size: 10px 7px;
 }
 
@@ -2277,15 +2277,15 @@
 }
 .ate-champ-label {
   display: block;
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
-  margin-bottom: var(--bj-sp-1);
+  margin-bottom: var(--m-espace-1);
 }
 .ate-champ-aide {
   display: block;
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
-  margin-top: var(--bj-sp-1);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+  margin-top: var(--m-espace-1);
 }
 /* ── T-134 : LA CASE « J'AI CORRIGÉ » ──────────────────────────────────
    Un champ dont l'étiquette est à DROITE de la case, et non au-dessus
@@ -2295,7 +2295,7 @@
 .ate-case {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   cursor: pointer;
 }
 .ate-case input {
@@ -2314,12 +2314,12 @@
 }
 .ate-erreur {
   display: block;
-  margin-top: var(--bj-sp-1);
-  font-size: var(--bj-fs-xs);
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   color: var(--ate-rouge);
 }
 .ate-erreur--bloc {
-  margin: var(--bj-sp-3) 0;
+  margin: var(--m-espace-3) 0;
 }
 /* T-126 : une ligne de confirmation qui dit « non vérifié » (Canva muet). */
 .ate-confirm-attention {
@@ -2330,14 +2330,14 @@
 .ate-slots {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--bj-sp-3);
-  margin-bottom: var(--bj-sp-4);
+  gap: var(--m-espace-3);
+  margin-bottom: var(--m-espace-4);
 }
 .ate-slot-label {
   display: block;
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-soft);
-  margin-bottom: var(--bj-sp-1);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+  margin-bottom: var(--m-espace-1);
 }
 .ate-slot-zone {
   width: 100%;
@@ -2346,9 +2346,9 @@
   place-items: center;
   overflow: hidden;
   padding: 0;
-  border: 1px dashed var(--bj-action-border);
-  border-radius: var(--bj-r-sm);
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px dashed var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 50%, transparent);
   cursor: pointer;
 }
 .ate-slot-zone--pleine {
@@ -2364,28 +2364,28 @@
 .ate-bords {
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-1);
-  margin-top: var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-1);
+  margin-top: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   max-width: 44ch;
 }
 .ate-bords-remarque {
-  color: var(--bj-charcoal);
+  color: var(--m-couleur-papier-texte);
   line-height: 1.35;
 }
 /* T-121 : le lien vers le PDF fabriqué par la fiche, sous le cadre. */
 .ate-slot-lien {
   display: inline-block;
-  margin-top: var(--bj-sp-2);
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-action);
+  margin-top: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-accent);
   text-decoration: underline;
   text-underline-offset: 0.15em;
 }
 .ate-slot-vide {
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
-  padding: var(--bj-sp-2);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+  padding: var(--m-espace-2);
   text-align: center;
 }
 /* La double page est un paysage : lui imposer le format d'une couverture la
@@ -2400,8 +2400,8 @@
 .ate-maquette {
   display: flex;
   flex-direction: column;
-  gap: var(--bj-sp-4);
-  margin-bottom: var(--bj-sp-4);
+  gap: var(--m-espace-4);
+  margin-bottom: var(--m-espace-4);
 }
 
 /* ── la planche : 4e · dos · 1re en un fichier large ── */
@@ -2412,15 +2412,15 @@
   place-items: center;
   overflow: hidden;
   padding: 0;
-  border: 1px dashed var(--bj-action-border);
-  border-radius: var(--bj-r-sm);
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px dashed var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 50%, transparent);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .ate-planche-zone:hover:not(:disabled) {
-  border-color: var(--bj-action);
-  background: rgba(255, 255, 255, 0.75);
+  border-color: var(--m-couleur-accent);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 75%, transparent);
 }
 /* La planche est montrée ENTIÈRE (contain) : l'atelier doit voir que la coupe
    tombe pile au centre, jamais un bord rogné. */
@@ -2432,8 +2432,8 @@
 .ate-doubles-liste {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bj-sp-3);
-  margin-top: var(--bj-sp-1);
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-1);
 }
 .ate-double {
   position: relative;
@@ -2453,9 +2453,9 @@
   place-items: center;
   overflow: hidden;
   padding: 0;
-  border: 1px solid var(--bj-action-border);
-  border-radius: var(--bj-r-sm);
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 50%, transparent);
   /* On tire l'image dans son cadre pour la recadrer (T-090, 07/09).
      ⚠️ `touch-action: none` est OBLIGATOIRE : sans lui, sur tablette le
      navigateur prend le geste pour un défilement et l'image ne bouge jamais.
@@ -2472,50 +2472,50 @@
   cursor: pointer;
 }
 .ate-double-zone--ajout:hover:not(:disabled) {
-  border-color: var(--bj-action);
-  background: rgba(255, 255, 255, 0.75);
+  border-color: var(--m-couleur-accent);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 75%, transparent);
 }
 .ate-double-plus {
-  font-size: var(--bj-fs-lg);
+  font-size: var(--m-taille-chapo);
   line-height: 1;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 /* Le rang, en pastille : c'est l'ordre exact que verra la cliente. */
 .ate-double-rang {
   position: absolute;
-  left: var(--bj-sp-1);
-  bottom: var(--bj-sp-1);
+  left: var(--m-espace-1);
+  bottom: var(--m-espace-1);
   min-width: 1.3rem;
   padding: 0 0.3rem;
-  font-size: var(--bj-fs-xxs);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.3rem;
   text-align: center;
-  border-radius: 999px;
-  background: rgba(28, 28, 28, 0.72);
-  color: #fff;
+  border-radius: var(--m-rayon-pilule);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 72%, transparent);
+  color: var(--m-couleur-papier-fond);
 }
 /* Le × de retrait, coin haut-droit, toujours atteignable au doigt. */
 .ate-double-retirer {
   position: absolute;
-  top: calc(-1 * var(--bj-sp-2));
-  right: calc(-1 * var(--bj-sp-2));
+  top: calc(-1 * var(--m-espace-2));
+  right: calc(-1 * var(--m-espace-2));
   width: 1.6rem;
   height: 1.6rem;
   display: grid;
   place-items: center;
   padding: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   line-height: 1;
-  border: 1px solid var(--bj-action-border);
-  border-radius: 999px;
-  background: var(--bj-cream);
-  color: var(--bj-charcoal);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
   cursor: pointer;
-  box-shadow: var(--bj-shadow-soft);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
 }
 .ate-double-retirer:hover:not(:disabled) {
-  border-color: var(--bj-terracotta);
-  color: var(--bj-terracotta);
+  border-color: var(--m-couleur-etat-alerte);
+  color: var(--m-couleur-etat-alerte);
 }
 .ate-double-retirer:disabled,
 .ate-double-zone:disabled,
@@ -2530,25 +2530,25 @@
    geste, elles montrent la coupe centrée automatique — rien ne change pour
    un dossier qu'on ne touche pas. */
 .ate-plat-cadrage {
-  padding-top: var(--bj-sp-2);
-  border-top: 1px dashed var(--bj-action-border);
+  padding-top: var(--m-espace-2);
+  border-top: 1px dashed var(--m-couleur-papier-ligne);
 }
 .ate-plat-faces {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bj-sp-3);
-  margin-top: var(--bj-sp-1);
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-1);
 }
 .ate-plat-face {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: var(--bj-sp-1);
+  gap: var(--m-espace-1);
   width: clamp(96px, 40%, 140px);
 }
 .ate-plat-face-nom {
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-plat-face-zone {
   width: 100%;
@@ -2558,8 +2558,8 @@
      jamais dans le thème sombre de /numero (CLAUDE.md, src/app). */
   aspect-ratio: 210 / 297;
   overflow: hidden;
-  border-radius: var(--bj-r-sm);
-  border: 1px solid var(--bj-action-border);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--m-couleur-papier-ligne);
   cursor: grab;
   /* Comme le recadrage des doubles pages : sans ces deux lignes, un doigt
      sur tablette fait défiler la page au lieu de tirer l'image. */
@@ -2577,8 +2577,8 @@
   pointer-events: none;
 }
 .ate-plat-face-reset {
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-action);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-accent);
   background: none;
   border: 0;
   padding: 0;
@@ -2586,44 +2586,44 @@
   text-decoration: underline;
 }
 .ate-plat-face-reset:hover {
-  color: var(--bj-terracotta);
+  color: var(--m-couleur-etat-alerte);
 }
 
 /* ── l'écran de confirmation ── */
 .ate-confirm {
-  margin-top: var(--bj-sp-4);
-  padding: var(--bj-sp-4);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-cream);
-  border: 1px solid var(--bj-veil-12);
+  margin-top: var(--m-espace-4);
+  padding: var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-fond);
+  border: 1px solid var(--m-couleur-papier-ligne);
 }
 .ate-confirm-titre {
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: var(--bj-fs-lg);
-  margin: 0 0 var(--bj-sp-3);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-size: var(--m-taille-chapo);
+  margin: 0 0 var(--m-espace-3);
 }
 .ate-confirm-liste {
   display: grid;
   grid-template-columns: 8rem minmax(0, 1fr);
-  gap: var(--bj-sp-2) var(--bj-sp-3);
-  margin: 0 0 var(--bj-sp-4);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-2) var(--m-espace-3);
+  margin: 0 0 var(--m-espace-4);
+  font-size: var(--m-taille-petit);
 }
 .ate-confirm-liste dt {
-  color: var(--bj-text-faint);
-  font-size: var(--bj-fs-xs);
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-petit);
 }
 .ate-confirm-liste dd {
   margin: 0;
 }
 .ate-confirm-prix {
-  font-size: var(--bj-fs-lg);
+  font-size: var(--m-taille-chapo);
   font-weight: 500;
 }
 .ate-confirm-boutons {
   display: flex;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
 }
 .ate-btn-preparer,
@@ -2631,8 +2631,8 @@
   min-height: 44px; /* la cible du pouce */
 }
 .ate-fait {
-  margin: var(--bj-sp-3) 0 0;
-  font-size: var(--bj-fs-sm);
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
   color: var(--ate-vert);
 }
 
@@ -2640,13 +2640,13 @@
 .ate-defs {
   display: grid;
   grid-template-columns: 7.5rem minmax(0, 1fr);
-  gap: var(--bj-sp-2) var(--bj-sp-3);
+  gap: var(--m-espace-2) var(--m-espace-3);
   margin: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ate-defs dt {
-  color: var(--bj-text-faint);
-  font-size: var(--bj-fs-xs);
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-petit);
 }
 .ate-defs dd {
   margin: 0;
@@ -2654,10 +2654,10 @@
   overflow-wrap: anywhere;
 }
 .ate-histoire {
-  margin: var(--bj-sp-4) 0 0;
-  padding-top: var(--bj-sp-4);
+  margin: var(--m-espace-4) 0 0;
+  padding-top: var(--m-espace-4);
   border-top: var(--ate-ligne-h);
-  font-size: var(--bj-fs-body);
+  font-size: var(--m-taille-base);
   line-height: 1.65;
   white-space: pre-wrap;
 }
@@ -2665,14 +2665,14 @@
 .ate-photos {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
 }
 .ate-photo {
   position: relative;
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-6);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
   display: grid;
   place-items: center;
 }
@@ -2692,13 +2692,13 @@
   position: absolute;
   left: 0;
   right: 0;
-  padding: 2px 5px;
-  font-family: var(--bj-font-ui);
-  font-size: 10px;
+  padding: var(--m-espace-1) var(--m-espace-1);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.2;
   letter-spacing: 0.04em;
-  color: var(--bj-cream);
-  background: color-mix(in srgb, var(--bj-charcoal) 62%, transparent);
+  color: var(--m-couleur-papier-fond);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 62%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2735,7 +2735,7 @@
   font: inherit;
 }
 .ate-photo--choix:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 .ate-photo--ecartee img {
@@ -2750,60 +2750,60 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-family: var(--bj-font-ui);
-  font-size: 11px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   line-height: 1;
-  color: var(--bj-cream);
-  background: var(--bj-action);
+  color: var(--m-couleur-papier-fond);
+  background: var(--m-couleur-accent);
 }
 .ate-photo--ecartee .ate-photo-coche {
-  background: color-mix(in srgb, var(--bj-charcoal) 70%, transparent);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 70%, transparent);
 }
 .ate-photos-choix {
-  margin-bottom: var(--bj-sp-3);
+  margin-bottom: var(--m-espace-3);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   align-items: center;
 }
 .ate-photos-choix-btn {
-  padding: 2px var(--bj-sp-2);
-  border-radius: var(--bj-r-btn);
-  border: 1px solid var(--bj-veil-12);
+  padding: var(--m-espace-1) var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
 }
 .ate-photos-choix-btn:hover:not(:disabled) {
-  border-color: var(--bj-action-border);
-  color: var(--bj-action);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-accent);
 }
 .ate-photos-choix-btn:disabled {
   opacity: 0.45;
   cursor: default;
 }
 .ate-photos-resume {
-  margin-bottom: var(--bj-sp-3);
+  margin-bottom: var(--m-espace-3);
 }
 /* T-156 — la remarque d'un lot retrouvé dans un autre dossier : le bandeau
    « attention » de la fiche, posé DANS la carte des photos, là où l'on
    regarde avant de composer. Le lien garde la couleur du bandeau. */
 .ate-photos-ailleurs p { margin: 0; }
-.ate-photos-ailleurs p + p { margin-top: var(--bj-sp-2); }
+.ate-photos-ailleurs p + p { margin-top: var(--m-espace-2); }
 .ate-photos-ailleurs a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 /* T-130 — le titre d'un sous-groupe par lieu, sur toute la largeur de la
    grille : la ville (sinon le pays) et son compte. Le premier n'a pas de
    filet au-dessus, il suit directement la phrase de résumé. */
 .ate-photos-lieu {
   grid-column: 1 / -1;
-  padding-top: var(--bj-sp-2);
-  border-top: 1px solid var(--bj-veil-12);
-  font-family: var(--bj-font-display);
-  font-style: italic;
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text);
+  padding-top: var(--m-espace-2);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte);
 }
 .ate-photos-lieu .ate-compte {
   margin-left: 0.4em;
@@ -2811,11 +2811,11 @@
 /* La période du séjour, en retrait, dans la voix des libellés. */
 .ate-photos-lieu-quand {
   margin-left: 0.8em;
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-style: normal;
-  font-size: var(--bj-fs-xxs);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.02em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-photos-lieu:first-child {
   padding-top: 0;
@@ -2823,77 +2823,77 @@
 }
 /* Les boutons « Par date » et « Par lieu » enfoncés : même accent que le survol des outils. */
 .ate-carte-outils .adm-btn[aria-pressed="true"] {
-  border-color: var(--bj-action-border);
-  color: var(--bj-action);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-accent);
 }
 .ate-photos-plus {
-  margin-top: var(--bj-sp-3);
-  padding: var(--bj-sp-2) var(--bj-sp-4);
-  border-radius: var(--bj-r-btn);
-  border: 1px solid var(--bj-veil-12);
+  margin-top: var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: transparent;
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: pointer;
 }
 .ate-photos-plus:hover {
-  border-color: var(--bj-action-border);
-  color: var(--bj-action);
+  border-color: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-accent);
 }
 /* ── Le téléchargement du lot ──
    Un lot de deux cents photos prend des minutes : le bloc dit toujours où on
    en est, et donne le moyen d'arrêter. Zéro ombre (règle de la maison). */
 .ate-lot {
-  margin-top: var(--bj-sp-3);
-  padding: var(--bj-sp-3);
-  border: 1px solid var(--bj-veil-12);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-8);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  margin-top: var(--m-espace-3);
+  padding: var(--m-espace-3);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-lot p {
   margin: 0;
 }
 .ate-lot--erreur {
-  background: var(--bj-warn-soft);
+  background: color-mix(in srgb, var(--m-couleur-etat-alerte) 10%, var(--m-couleur-papier-fond));
 }
 .ate-lot-barre {
   height: 4px;
-  margin-bottom: var(--bj-sp-2);
-  border-radius: 2px;
-  background: var(--bj-veil-12);
+  margin-bottom: var(--m-espace-2);
+  border-radius: var(--m-rayon-image);
+  background: var(--m-couleur-papier-ligne);
   overflow: hidden;
 }
 .ate-lot-jauge {
   display: block;
   height: 100%;
-  background: var(--bj-action);
-  transition: width var(--bj-dur-fast) var(--bj-ease);
+  background: var(--m-couleur-accent);
+  transition: width var(--m-duree-micro) var(--m-courbe-sortie);
 }
 .ate-lot-arret {
-  margin-left: var(--bj-sp-2);
+  margin-left: var(--m-espace-2);
   padding: 0;
   border: 0;
   background: transparent;
   font: inherit;
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   text-decoration: underline;
   cursor: pointer;
 }
 .ate-lot-ratees {
-  color: var(--bj-save-warn);
+  color: var(--m-couleur-etat-alerte);
 }
 .ate-lot-cmd {
   display: block;
-  margin: var(--bj-sp-2) 0;
-  padding: var(--bj-sp-2);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-8);
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text);
+  margin: var(--m-espace-2) 0;
+  padding: var(--m-espace-2);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte);
   user-select: all;
   word-break: break-all;
 }
@@ -2902,73 +2902,73 @@
 }
 
 .ate-photo-vide {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .ate-apercu {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
 }
 .ate-apercu-item {
   margin: 0;
 }
 .ate-apercu-item img {
   width: 100%;
-  border-radius: var(--bj-r-sm);
+  border-radius: var(--m-rayon-champ);
   display: block;
 }
 .ate-apercu-item figcaption {
-  margin-top: var(--bj-sp-1);
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* T2-5 — le filet qui separe le premier depot des ajouts, dans la grille
    des photos. Pleine largeur de la grille. */
 .ate-photos-filet {
   grid-column: 1 / -1;
-  padding-top: var(--bj-sp-2);
-  border-top: 1px solid var(--bj-veil-12);
-  font-size: var(--bj-fs-xxs);
+  padding-top: var(--m-espace-2);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* T2-6 — l'etat 2 attend le paiement : le panneau le dit en grand, la
    correction se replie derriere un lien discret. */
 .ate-attente {
-  font-size: var(--bj-fs-lg);
+  font-size: var(--m-taille-chapo);
   font-weight: 500;
-  margin: var(--bj-sp-2) 0 var(--bj-sp-1);
+  margin: var(--m-espace-2) 0 var(--m-espace-1);
 }
 .ate-lien-discret {
   appearance: none;
   background: none;
   border: none;
   padding: 0;
-  margin-top: var(--bj-sp-3);
+  margin-top: var(--m-espace-3);
   cursor: pointer;
   font: inherit;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.ate-lien-discret:hover { color: var(--bj-text); }
+.ate-lien-discret:hover { color: var(--m-couleur-papier-texte); }
 
 /* 11/09/2026 — le brouillon LOCAL du panneau (voir PanneauAction.tsx). Une
    ligne, pas un bandeau : elle prévient que l'ecran n'est pas le dossier,
    sans prendre la place du travail. Le liseré à gauche suffit à la
    distinguer du texte courant. */
 .ate-brouillon {
-  margin: 0 0 var(--bj-sp-3);
-  padding-left: var(--bj-sp-2);
-  border-left: 2px solid var(--bj-terracotta);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  margin: 0 0 var(--m-espace-3);
+  padding-left: var(--m-espace-2);
+  border-left: 2px solid var(--m-couleur-etat-alerte);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-brouillon-annuler {
   appearance: none;
@@ -2981,7 +2981,7 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.ate-brouillon-annuler:hover { color: var(--bj-text); }
+.ate-brouillon-annuler:hover { color: var(--m-couleur-papier-texte); }
 
 /* T2-3 — le mot de l'atelier (textarea sur l'action Demander plus de photos). */
 .ate-mot {
@@ -3013,11 +3013,11 @@
   border: 0;
   background: transparent;
   cursor: zoom-in;
-  border-radius: var(--bj-r-sm);
+  border-radius: var(--m-rayon-champ);
 }
 .ate-apercu-clic:hover img,
 .ate-apercu-clic:focus-visible img {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 
@@ -3029,7 +3029,7 @@
 .ate-style {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
 }
 .ate-style-vignette {
   appearance: none;
@@ -3038,11 +3038,11 @@
   aspect-ratio: 2 / 3;
   padding: 0;
   border: 0;
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-6);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
   overflow: hidden;
   cursor: zoom-in;
-  box-shadow: var(--bj-shadow-soft);
+  box-shadow: 0 0 0 var(--m-trait-fin) var(--m-couleur-papier-ligne);
 }
 .ate-style-vignette img {
   display: block;
@@ -3052,16 +3052,16 @@
 }
 .ate-style-vignette:hover,
 .ate-style-vignette:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 .ate-style-texte {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   min-width: 0;
 }
-.ate-style-texte .ate-faint { font-size: var(--bj-fs-xs); }
+.ate-style-texte .ate-faint { font-size: var(--m-taille-petit); }
 
 /* ── LA RÉPONSE DU CLIENT SUR SA COUVERTURE (11/09/2026) ───────────────
    Elle était une ligne grise sous le chapeau de la carte, indiscernable
@@ -3072,55 +3072,55 @@
 .ate-choix {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin: 0 0 var(--bj-sp-3);
-  padding: var(--bj-sp-2) var(--bj-sp-3);
-  border-left: 3px solid var(--bj-veil-8);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-6);
-  font-size: var(--bj-fs-sm);
+  gap: var(--m-espace-1);
+  margin: 0 0 var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-left: 3px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-petit);
 }
 .ate-choix strong { font-weight: 600; }
-.ate-choix .ate-faint { font-size: var(--bj-fs-xs); }
+.ate-choix .ate-faint { font-size: var(--m-taille-petit); }
 .ate-choix--dit {
-  border-left-color: var(--bj-action);
-  background: color-mix(in srgb, var(--bj-action) 8%, transparent);
+  border-left-color: var(--m-couleur-accent);
+  background: color-mix(in srgb, var(--m-couleur-accent) 8%, transparent);
 }
 
 /* Le chapeau d'une carte : une phrase qui dit à quoi sert ce qu'on regarde. */
 .ate-carte-sous {
-  margin: calc(-1 * var(--bj-sp-1)) 0 var(--bj-sp-3);
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  margin: calc(-1 * var(--m-espace-1)) 0 var(--m-espace-3);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .ate-autres {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ate-autres li {
   display: flex;
   justify-content: space-between;
-  gap: var(--bj-sp-2);
-  padding: var(--bj-sp-2) 0;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) 0;
   border-bottom: var(--ate-ligne-h);
 }
 .ate-autres .ate-faint {
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
 }
 .ate-prevente {
-  margin-top: var(--bj-sp-3);
-  padding-top: var(--bj-sp-3);
+  margin-top: var(--m-espace-3);
+  padding-top: var(--m-espace-3);
   border-top: var(--ate-ligne-h);
 }
 .ate-credit {
   margin: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
 }
 /* 11/09 — le téléphone, ajouté ou corrigé depuis la fiche.
    Il vit dans un `<dd>` de `.ate-defs`, c'est-à-dire dans une colonne
@@ -3132,12 +3132,12 @@
 .ate-telephone {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   flex-wrap: wrap;
 }
 .ate-telephone .adm-btn {
-  padding: var(--bj-sp-1) var(--bj-sp-2);
-  font-size: var(--bj-fs-xs);
+  padding: var(--m-espace-1) var(--m-espace-2);
+  font-size: var(--m-taille-petit);
 }
 .ate-telephone-manque {
   color: var(--ate-orange);
@@ -3154,23 +3154,23 @@
 
 /* T-021 — le code fondatrice, créé et copié depuis la fiche. */
 .ate-code-fondatrice {
-  margin-top: var(--bj-sp-2);
+  margin-top: var(--m-espace-2);
 }
 .ate-code-fondatrice .ate-faint,
 .ate-code-fondatrice .ate-erreur {
-  margin: var(--bj-sp-1) 0 0;
-  font-size: var(--bj-fs-xs);
+  margin: var(--m-espace-1) 0 0;
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
 }
 .ate-code-ligne {
   margin: 0;
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   flex-wrap: wrap;
 }
 .ate-code-ligne code {
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   overflow-wrap: anywhere;
 }
 
@@ -3181,12 +3181,12 @@
 .ate-rattacher {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   flex-wrap: wrap;
 }
 .ate-rattacher-label {
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-rattacher-input {
   width: 5.5rem;
@@ -3199,16 +3199,16 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ate-accords li {
-  padding: var(--bj-sp-1) 0 var(--bj-sp-1) 1.4rem;
+  padding: var(--m-espace-1) 0 var(--m-espace-1) 1.4rem;
   position: relative;
 }
 .ate-accords li::before {
   position: absolute;
   left: 0;
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
 }
 .ate-oui::before {
   content: "✓";
@@ -3216,37 +3216,37 @@
 }
 .ate-non::before {
   content: "—";
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-non {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-adresse {
   font-style: normal;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
 }
 .ate-pi {
-  margin-top: var(--bj-sp-3);
+  margin-top: var(--m-espace-3);
 }
 
 .ate-mails {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ate-mails li {
   display: flex;
   justify-content: space-between;
-  gap: var(--bj-sp-2);
-  padding: var(--bj-sp-1) 0;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-1) 0;
 }
 
 /* ── le carnet de l'éditeur ── */
 .ate-carnet-lien {
   display: flex;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   align-items: center;
 }
 .ate-carnet-lien .adm-input {
@@ -3255,15 +3255,15 @@
 }
 .ate-note-saisie {
   display: flex;
-  gap: var(--bj-sp-2);
+  gap: var(--m-espace-2);
   align-items: flex-end;
-  margin-bottom: var(--bj-sp-3);
+  margin-bottom: var(--m-espace-3);
 }
 .ate-note-champ {
   flex: 1;
   min-width: 0;
   resize: vertical;
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   line-height: 1.45;
 }
 .ate-notes {
@@ -3272,25 +3272,25 @@
   padding: 0;
 }
 .ate-note {
-  padding: var(--bj-sp-3) 0;
+  padding: var(--m-espace-3) 0;
   border-top: var(--ate-ligne-h);
 }
 .ate-note-texte {
   margin: 0;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
   white-space: pre-wrap;
 }
 .ate-note-pied {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-2);
-  margin: var(--bj-sp-1) 0 0;
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  gap: var(--m-espace-2);
+  margin: var(--m-espace-1) 0 0;
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-note-qui {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   font-weight: 500;
 }
 /* Discret par défaut : effacer une note est rare, et un × noir sur chaque
@@ -3299,19 +3299,19 @@
   margin-left: auto;
   border: none;
   background: none;
-  color: var(--bj-veil-16);
-  font-size: var(--bj-fs-lg);
+  color: var(--m-couleur-papier-pointille);
+  font-size: var(--m-taille-chapo);
   line-height: 1;
   cursor: pointer;
 }
 .ate-note:hover .ate-note-suppr {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-note-suppr:hover {
   color: var(--ate-rouge);
 }
 .ate-canva-partage {
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 
 /* ── le journal ── */
@@ -3328,15 +3328,15 @@
 .ate-ev-tete {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   width: 100%;
-  padding: var(--bj-sp-2) 0;
+  padding: var(--m-espace-2) 0;
   background: none;
   border: none;
   text-align: left;
   cursor: pointer;
   color: inherit;
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
 }
 /* Un point coloré par acteur : d'un coup d'œil vertical, on voit qui a fait
    avancer le dossier et à quel rythme les échanges se sont enchaînés. */
@@ -3344,12 +3344,12 @@
   flex: none;
   width: 7px;
   height: 7px;
-  margin-top: 5px;
-  border-radius: var(--bj-r-pill);
-  background: var(--bj-veil-16);
+  margin-top: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-pointille);
 }
 .ate-ev--nous .ate-ev-point {
-  background: var(--bj-action);
+  background: var(--m-couleur-accent);
 }
 .ate-ev--elle .ate-ev-point {
   background: var(--ate-orange);
@@ -3366,7 +3366,7 @@
 }
 .ate-ev-texte {
   display: block;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   line-height: 1.4;
 }
 .ate-ev--alerte .ate-ev-texte {
@@ -3375,21 +3375,21 @@
 .ate-ev-detail {
   display: block;
   margin-top: 1px;
-  font-size: 11px;
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-ev-date {
   flex: none;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .ate-ev-payload {
-  margin: 0 0 var(--bj-sp-2);
-  padding: var(--bj-sp-2);
-  border-radius: var(--bj-r-sm);
-  background: var(--bj-veil-6);
-  font-size: 11px;
+  margin: 0 0 var(--m-espace-2);
+  padding: var(--m-espace-2);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.5;
   overflow-x: auto;
 }
@@ -3401,12 +3401,12 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .ate-parcours {
-    padding: var(--bj-sp-4) var(--bj-sp-3);
+    padding: var(--m-espace-4) var(--m-espace-3);
   }
   .ate-suite {
     align-items: flex-start;
     flex-direction: column;
-    gap: var(--bj-sp-2);
+    gap: var(--m-espace-2);
   }
 }
 
@@ -3425,15 +3425,15 @@
       "avatar corps etat"
       ". delai delai"
       "action action action";
-    row-gap: var(--bj-sp-2);
-    padding-top: var(--bj-sp-3);
-    padding-bottom: var(--bj-sp-3);
+    row-gap: var(--m-espace-2);
+    padding-top: var(--m-espace-3);
+    padding-bottom: var(--m-espace-3);
   }
   .ate-avatar { grid-area: avatar; }
   .ate-ligne-corps { grid-area: corps; }
   .ate-prochaine { grid-area: etat; align-items: flex-end; }
   .ate-prochaine-geste { display: none; }
-  .ate-delai { grid-area: delai; flex-direction: row; gap: var(--bj-sp-2); }
+  .ate-delai { grid-area: delai; flex-direction: row; gap: var(--m-espace-2); }
   .ate-dernier { display: none; }
   .ate-delai-sub { display: none; }
   .ate-entete { display: none; }
@@ -3451,31 +3451,31 @@
   .ate-act-btn--principal {
     flex: 1;
     min-height: 40px;
-    border-color: var(--bj-action-border);
-    color: var(--bj-action);
+    border-color: var(--m-couleur-papier-ligne);
+    color: var(--m-couleur-accent);
   }
   .ate-act-boite {
-    width: min(20rem, calc(100vw - var(--bj-sp-6)));
+    width: min(20rem, calc(100vw - var(--m-espace-6)));
   }
 }
 
 @media (max-width: 680px) {
   .ate-root {
-    padding-left: var(--bj-sp-4);
-    padding-right: var(--bj-sp-4);
+    padding-left: var(--m-espace-4);
+    padding-right: var(--m-espace-4);
   }
   .ate-barre {
-    gap: var(--bj-sp-2);
+    gap: var(--m-espace-2);
   }
   /* Sur téléphone, la boîte du jour empile : le dossier, puis le camp et
      le geste en dessous. */
   .ate-jour {
-    padding-left: var(--bj-sp-3);
-    padding-right: var(--bj-sp-3);
+    padding-left: var(--m-espace-3);
+    padding-right: var(--m-espace-3);
   }
   .ate-jour-lien {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--bj-sp-1);
+    gap: var(--m-espace-1);
   }
   .ate-vu-btn {
     flex: 1 1 100%;
@@ -3497,14 +3497,14 @@
     aspect-ratio: 3 / 2;
   }
   .ate-carte {
-    padding: var(--bj-sp-4);
+    padding: var(--m-espace-4);
   }
   .ate-confirm-liste {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--bj-sp-1);
+    gap: var(--m-espace-1);
   }
   .ate-confirm-liste dt {
-    margin-top: var(--bj-sp-2);
+    margin-top: var(--m-espace-2);
   }
   .ate-header-outils {
     width: 100%;
@@ -3519,41 +3519,41 @@
    contrôle, pas une galerie — le seul relief est celui des verdicts. */
 .ate-impr-liste {
   list-style: none;
-  margin: 0 0 var(--bj-sp-4);
+  margin: 0 0 var(--m-espace-4);
   padding: 0;
   display: grid;
-  gap: var(--bj-sp-4);
+  gap: var(--m-espace-4);
 }
 .ate-impr-item {
-  border: 1px solid var(--bj-veil-12);
-  border-radius: var(--bj-r-sm);
-  padding: var(--bj-sp-3);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  padding: var(--m-espace-3);
 }
 .ate-impr-tete {
   display: flex;
   align-items: baseline;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
 }
 .ate-impr-label {
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
 }
 .ate-impr-nom {
-  font-size: var(--bj-fs-xxs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   overflow-wrap: anywhere;
 }
 .ate-impr-tete .ate-lien-page {
   margin-left: auto;
 }
 .ate-impr-plis {
-  margin-top: var(--bj-sp-2);
+  margin-top: var(--m-espace-2);
 }
 .ate-impr-plis summary {
   cursor: pointer;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 /* Le cadre de l'aperçu : assez haut pour juger une double page, jamais plus
    haut que l'écran — le PDF a son propre ascenseur dans le cadre. */
@@ -3561,28 +3561,28 @@
   display: block;
   width: 100%;
   height: min(70vh, 40rem);
-  margin-top: var(--bj-sp-2);
-  border: 1px solid var(--bj-veil-12);
-  border-radius: var(--bj-r-sm);
-  background: rgba(255, 255, 255, 0.5);
+  margin-top: var(--m-espace-2);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 50%, transparent);
 }
 .ate-impr-verdicts {
   list-style: none;
-  margin: var(--bj-sp-2) 0 0;
+  margin: var(--m-espace-2) 0 0;
   padding: 0;
   display: grid;
-  gap: var(--bj-sp-1);
+  gap: var(--m-espace-1);
 }
 .ate-impr-verdict {
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
-  padding-left: var(--bj-sp-4);
+  padding-left: var(--m-espace-4);
   position: relative;
 }
 .ate-impr-verdict::before {
   content: "•";
   position: absolute;
-  left: var(--bj-sp-1);
+  left: var(--m-espace-1);
 }
 .ate-impr-verdict--ok::before {
   content: "✓";
@@ -3605,7 +3605,7 @@
 .ate-impr-outils {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
 }
 
@@ -3619,39 +3619,39 @@
 .ate-cn-barre {
   display: flex;
   align-items: center;
-  gap: var(--bj-sp-3);
+  gap: var(--m-espace-3);
   flex-wrap: wrap;
-  padding: var(--bj-sp-3) 0;
+  padding: var(--m-espace-3) 0;
   border-bottom: var(--ate-ligne-h);
 }
 .ate-cn-compte {
-  margin: var(--bj-sp-3) 0 0;
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  margin: var(--m-espace-3) 0 0;
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .ate-cn-tronque {
-  margin: var(--bj-sp-2) 0 0;
-  font-size: var(--bj-fs-xs);
+  margin: var(--m-espace-2) 0 0;
+  font-size: var(--m-taille-petit);
   color: var(--ate-orange);
 }
 .ate-cn-vide {
-  margin: var(--bj-sp-6) 0;
+  margin: var(--m-espace-6) 0;
   text-align: center;
 }
 .ate-cn-notes {
   list-style: none;
-  margin: var(--bj-sp-3) 0 0;
+  margin: var(--m-espace-3) 0 0;
   padding: 0;
 }
 /* Une note du carnet complet respire plus que sur la fiche : on en lit
    quarante d'affilée, et un mur compact devient illisible au bout de dix. */
 .ate-cn-note {
-  padding: var(--bj-sp-4) 0;
+  padding: var(--m-espace-4) 0;
   border-top: var(--ate-ligne-h);
   max-width: 68ch;
 }
 .ate-cn-dossier {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   font-weight: 500;
   text-decoration: none;
 }
@@ -3666,28 +3666,28 @@
 .ate-factures table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--bj-fs-sm);
+  font-size: var(--m-taille-petit);
 }
 .ate-factures th,
 .ate-factures td {
   text-align: left;
-  padding: var(--bj-sp-2) var(--bj-sp-3);
-  border-bottom: 1px solid var(--bj-veil-8);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
   vertical-align: top;
 }
 .ate-factures th {
-  font-size: var(--bj-fs-xs);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
   font-weight: 500;
   white-space: nowrap;
 }
 .ate-factures td:nth-child(3) {
-  font-size: var(--bj-fs-xs);
+  font-size: var(--m-taille-petit);
   word-break: break-all;
 }
 .ate-facture-origine {
-  color: var(--bj-text-faint);
-  font-size: var(--bj-fs-xxs);
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-etiquette);
 }
 .ate-facture--manual_review td:first-child,
 .ate-facture--failed td:first-child {

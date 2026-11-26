@@ -94,7 +94,7 @@
   color: var(--ec-accent);
 }
 .ec-espace .ec-ph-fl-aide {
-  padding: 2px var(--m-espace-2) var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-2) var(--m-espace-2);
   font-size: var(--m-taille-etiquette);
 }
 
@@ -154,7 +154,7 @@
 .ec-espace .ec-ph-branche {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-ph-nom {
   flex: 1;
@@ -215,7 +215,7 @@
   align-items: center;
   gap: var(--m-espace-2);
   height: 36px;
-  margin: 2px 0 var(--m-espace-1);
+  margin: var(--m-espace-1) 0 var(--m-espace-1);
   padding: 0 var(--m-espace-3);
   border-radius: var(--m-rayon-champ);
   border: 1px solid var(--ec-line-fort);
@@ -295,7 +295,7 @@
 }
 /* Trois choix dans la colonne de 242 px (Toutes, Favoris, Par lien : 28/10) : le texte et l'icône tiennent sans couper le dernier. */
 .ec-espace .ec-ph-seg--plein {
-  gap: 2px;
+  gap: var(--m-espace-1);
   padding: var(--m-espace-1);
 }
 .ec-espace .ec-ph-seg--plein > button {
@@ -370,7 +370,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
 }
 @media (min-width: 861px) and (max-width: 1180px) {
   .ec-espace .ec-ph-panneau {
@@ -414,7 +414,7 @@
 }
 .ec-espace .ec-ph-zone .ec-ph-fil {
   gap: var(--m-espace-2);
-  margin-bottom: 2px;
+  margin-bottom: var(--m-espace-1);
 }
 /* (0,2,0) contre `.bj-atelier h2`, qui pose la taille des titres du site. */
 .ec-espace .ec-ph-zone-titre {
@@ -772,7 +772,7 @@
   border: 1px solid var(--ec-carte-bord);
   overflow: hidden;
 }
-.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-ag-scene {
+.bj-atelier.ec-espace .ec-ag-scene {
   background: rgba(var(--ec-fg-rgb), 0.05);
 }
 .ec-espace .ec-ag-haut {
@@ -838,7 +838,7 @@
   border-radius: var(--m-rayon-image);
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.05);
-  box-shadow: 0 20px 60px rgba(var(--ec-noir-rgb), 0.35);
+  box-shadow: none;
 }
 /* La vignette d'abord (déjà en cache), l'original par-dessus dès qu'il est arrivé (lot w2). */
 .ec-espace .ec-ag-cadre img {
@@ -1050,7 +1050,7 @@
 }
 .ec-espace .ec-cb-info > svg {
   flex: none;
-  margin-top: 2px;
+  margin-top: var(--m-espace-1);
 }
 .ec-espace .ec-cb-info b {
   color: var(--ec-text);
@@ -1117,7 +1117,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--m-espace-1);
   line-height: 1.35;
 }
 /* (21/10) Des lignes au lieu d'une ellipse : « IMG_3195.jpeg · supprimée par son auteu… » et « mer. 21 o… »
@@ -1245,7 +1245,7 @@
     overflow: visible;
   }
   .ec-espace .ec-ph-defile {
-    padding: var(--m-espace-2) 2px 0;
+    padding: var(--m-espace-2) var(--m-espace-1) 0;
   }
   /* Rien ne passe sous la barre flottante : tout ce qui défile (la grille, les albums, la liste des personnes) garde en bas la
      place de la barre, de la zone sûre de l'iPhone et d'un souffle (`--ec-fl-reserve`) ; la barre d'actions des cochées est
@@ -1258,7 +1258,7 @@
   }
   .ec-espace .ec-ph-g {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 2px;
+    gap: var(--m-espace-1);
   }
   .ec-espace .ec-ph-t {
     border-radius: var(--m-rayon-image);
@@ -1283,7 +1283,7 @@
   .ec-espace .ec-ph-liste-verre {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--m-espace-1);
     margin: var(--m-espace-1) var(--m-espace-2) var(--m-espace-2);
     padding: var(--m-espace-2);
     border-radius: var(--m-rayon-bloc);
@@ -1449,7 +1449,7 @@
     border-radius: 0;
     background: none;
   }
-  .bj-atelier.ec-espace[data-ec-mode="jour"] .ec-ag-scene {
+  .bj-atelier.ec-espace .ec-ag-scene {
     background: none;
   }
   .ec-espace .ec-ag-haut {
@@ -1555,7 +1555,7 @@
 
 @media (min-width: 861px) and (max-width: 1180px) {
   .ec-espace .ec-ph-sep {
-    margin: 0 2px;
+    margin: 0 var(--m-espace-1);
   }
   .ec-espace .ec-ph-act {
     padding: 0 var(--m-espace-3);

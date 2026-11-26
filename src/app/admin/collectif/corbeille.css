@@ -9,7 +9,7 @@
 .eca-root .eca-co-tete-droite {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .eca-root .eca-co-tete-droite .eca-lien-texte:disabled {
   opacity: 0.5;
@@ -22,7 +22,7 @@
   line-height: 1.5;
 }
 .eca-root .eca-co-info .eca-point {
-  margin-top: 7px;
+  margin-top: var(--m-espace-2);
 }
 
 /* La barre : tout cocher à gauche, les deux gestes à droite. */
@@ -31,55 +31,55 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px 14px;
+  gap: var(--m-espace-3) var(--m-espace-3);
 }
 .eca-root .eca-co-tout {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .eca-root .eca-co-gestes {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-co-case {
   flex: none;
   width: 18px;
   height: 18px;
   margin: 0;
-  accent-color: var(--bj-action);
+  accent-color: var(--m-couleur-accent);
   cursor: pointer;
 }
 .eca-root .adm-btn.eca-co-danger {
   color: var(--eca-alerte);
-  border-color: rgba(179, 65, 44, 0.3);
+  border-color: color-mix(in srgb, var(--m-couleur-etat-erreur) 30%, transparent);
 }
 .eca-root .adm-btn.eca-co-danger:hover:not(:disabled) {
-  box-shadow: 0 0 0 3px rgba(179, 65, 44, 0.14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-couleur-etat-erreur) 14%, transparent);
 }
 
 /* Le geste armé : chaud, pas bleu (c'est le seul de la fiche qui ne se rattrape pas). */
 .eca-root .eca-confirm.eca-co-confirm {
-  border-color: rgba(179, 65, 44, 0.3);
+  border-color: color-mix(in srgb, var(--m-couleur-etat-erreur) 30%, transparent);
   background: var(--eca-alerte-fond);
 }
 .eca-root .adm-btn.eca-co-effacer {
-  color: #ffffff;
+  color: var(--m-couleur-papier-fond);
   background: var(--eca-alerte);
   border-color: var(--eca-alerte);
 }
 .eca-root .adm-btn.eca-co-effacer:hover:not(:disabled) {
-  box-shadow: 0 0 0 3px rgba(179, 65, 44, 0.22);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--m-couleur-etat-erreur) 22%, transparent);
 }
 
 /* Une ligne par photo : case, vignette, qui et quand, l'échéance, « Restaurer ». */
 .eca-root .eca-co-liste {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -88,30 +88,30 @@
   display: grid;
   grid-template-columns: 18px 56px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 10px 14px;
-  padding: 8px 10px 8px 14px;
-  border-radius: 18px;
+  gap: var(--m-espace-3) var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-3) var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-gris-fond);
 }
 .eca-root .eca-co-ligne--cochee {
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
 }
 .eca-root .eca-co-vignette {
   display: block;
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: var(--m-rayon-champ);
   object-fit: cover;
   background: var(--eca-gris-signe);
 }
 .eca-root .eca-co-vignette--vide {
   display: grid;
   place-items: center;
-  padding: 4px;
+  padding: var(--m-espace-1);
   text-align: center;
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.15;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-co-texte {
   min-width: 0;
@@ -127,8 +127,8 @@
   font-size: 12.5px;
 }
 .eca-root .eca-puce.eca-co-echeance {
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--bj-text-soft);
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 78%, transparent);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-puce.eca-co-echeance--alerte {
   background: var(--eca-alerte-fond);
@@ -136,8 +136,8 @@
   font-weight: 600;
 }
 .eca-root .eca-co-restaurer {
-  padding: 6px 16px;
-  font-size: 13px;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
 }
 .eca-root .adm-btn.eca-co-suite {
@@ -148,8 +148,8 @@
   /* Téléphone : la case, la vignette et le texte sur le premier rang ; l'échéance et « Restaurer » sous le texte. */
   .eca-root .eca-co-ligne {
     grid-template-columns: 18px 56px minmax(0, 1fr) auto;
-    padding: 10px;
-    gap: 6px 10px;
+    padding: var(--m-espace-3);
+    gap: var(--m-espace-2) var(--m-espace-3);
   }
   .eca-root .eca-co-texte {
     grid-column: 3 / -1;

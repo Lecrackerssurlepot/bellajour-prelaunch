@@ -210,7 +210,7 @@ function TexteCouv({ f, W, fantome, sous }: { f: CadreCouvertureEcran & { role: 
     left: pc(f.x, W), top: pc(f.y, PAGE_H), width: pc(f.l, W), height: pc(f.h, PAGE_H),
     ...(ts
       ? {
-          fontFamily: `var(${ts.police.variable}), var(--bj-font-ui)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
+          fontFamily: `var(${ts.police.variable}), var(--m-police-texte-famille)`, fontWeight: ts.graisse, lineHeight: ts.interligne,
           fontSize: `max(6px, ${((ts.corps * 25.4) / 72 / W) * 100}cqw)`, color: ts.role ? `var(--mep-r-${classeRole(ts.role)})` : ts.couleur,
           textTransform: ts.capitales ? ("uppercase" as const) : ("none" as const), ...(ts.approche ? { letterSpacing: `${ts.approche}em` } : {}),
         }

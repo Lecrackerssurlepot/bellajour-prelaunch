@@ -472,7 +472,7 @@
   overflow-y: auto;
 }
 .ec-espace .ec-b3-vide {
-  padding: var(--m-espace-2) 2px;
+  padding: var(--m-espace-2) var(--m-espace-1);
 }
 .ec-espace .ec-b3-carte {
   border-radius: var(--m-rayon-champ);
@@ -576,7 +576,7 @@
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--m-rayon-bloc);
   background: var(--ec-carte-pleine);
-  box-shadow: 0 20px 50px rgba(var(--ec-noir-rgb), 0.24);
+  box-shadow: none;
 }
 .ec-espace .ec-b3-noter {
   display: flex;
@@ -663,7 +663,7 @@
   box-sizing: border-box;
   border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
   background: var(--ec-carte-pleine);
-  box-shadow: 0 -12px 40px rgba(var(--ec-noir-rgb), 0.2);
+  box-shadow: none;
 }
 .ec-espace .ec-b3-poignee {
   display: block;
@@ -690,7 +690,7 @@
   box-sizing: border-box;
   border-radius: var(--m-rayon-bloc);
   background: var(--ec-carte-pleine);
-  box-shadow: 0 24px 60px rgba(var(--ec-noir-rgb), 0.3);
+  box-shadow: none;
 }
 .ec-espace .ec-b3-choix .ec-b3-poignee {
   display: none;
@@ -978,7 +978,7 @@
     height: var(--ec-barre-h);
     margin-top: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px));
     gap: var(--m-espace-2);
-    padding: 0 var(--m-espace-2) 0 2px;
+    padding: 0 var(--m-espace-2) 0 var(--m-espace-1);
     border-radius: var(--m-rayon-bloc);
   }
   .ec-espace .ec-b3-titre {

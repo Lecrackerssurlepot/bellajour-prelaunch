@@ -5,10 +5,10 @@
    Tout est écrit sous `.eca-root` : une feuille chargée ne se décharge jamais. */
 
 .eca-root {
-  --eca-cal-accent-doux: rgba(74, 144, 217, 0.14);
-  --eca-cal-verre: rgba(255, 255, 255, 0.66);
-  --eca-cal-ombre: 0 24px 60px rgba(16, 24, 40, 0.18);
-  --eca-cal-ombre-choisi: 0 6px 14px rgba(74, 144, 217, 0.35);
+  --eca-cal-accent-doux: color-mix(in srgb, var(--m-couleur-papier-texte) 14%, transparent);
+  --eca-cal-verre: color-mix(in srgb, var(--m-couleur-papier-fond) 66%, transparent);
+  --eca-cal-ombre: 0 24px 60px color-mix(in srgb, var(--m-couleur-papier-texte) 18%, transparent);
+  --eca-cal-ombre-choisi: 0 6px 14px color-mix(in srgb, var(--m-couleur-papier-texte) 35%, transparent);
 }
 
 /* L'ancre : le champ et son panneau. Le panneau se POSE sous le champ, par-dessus la suite. */
@@ -22,13 +22,13 @@
   display: flex;
   align-items: center;
   min-height: 42px;
-  border: 1px solid var(--bj-veil-16);
-  border-radius: 12px;
-  background: #ffffff;
+  border: 1px solid var(--m-couleur-papier-pointille);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-fond);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .eca-root .eca-cal-champ--ouvert {
-  border-color: var(--bj-action);
+  border-color: var(--m-couleur-accent);
   box-shadow: 0 0 0 3px var(--eca-cal-accent-doux);
 }
 .eca-root .eca-cal-champ--erreur,
@@ -45,11 +45,11 @@
   cursor: pointer;
 }
 .eca-root .eca-cal-champ--bouton:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 1px;
 }
 .eca-root .eca-cal-champ--bouton .eca-cal-valeur {
-  padding: 9px 0 9px 12px;
+  padding: var(--m-espace-2) 0 var(--m-espace-2) var(--m-espace-3);
 }
 .eca-root .eca-cal-saisie,
 .eca-root .eca-cal-valeur {
@@ -57,13 +57,13 @@
   min-width: 0;
   align-self: stretch;
   margin: 0;
-  padding: 9px 0 9px 12px;
+  padding: var(--m-espace-2) 0 var(--m-espace-2) var(--m-espace-3);
   border: 0;
-  border-radius: 12px 0 0 12px;
+  border-radius: var(--m-rayon-champ) 0 0 var(--m-rayon-champ);
   background: transparent;
   font: inherit;
-  font-size: 14px;
-  color: var(--bj-text);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte);
   text-align: left;
 }
 .eca-root .eca-cal-saisie:focus-visible,
@@ -74,10 +74,10 @@
   cursor: pointer;
 }
 .eca-root .eca-cal-valeur--vide {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-cal-champ:focus-within:not(.eca-cal-champ--ouvert) {
-  border-color: var(--bj-action);
+  border-color: var(--m-couleur-accent);
 }
 .eca-root .eca-cal-ico {
   flex: none;
@@ -87,15 +87,15 @@
   width: 38px;
   padding: 0;
   border: 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 0 var(--m-rayon-champ) var(--m-rayon-champ) 0;
   background: transparent;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .eca-root .eca-cal-ico:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: -4px;
 }
 
@@ -104,8 +104,8 @@
    couvre. Tant qu'un calendrier est ouvert, le corps pose donc son flou : derrière lui il
    n'y a que le fond déjà flouté (les deux taches de `.adm-root`), rien ne change à l'œil. */
 .eca-root .eca-form-corps:has(.eca-cal) {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  
+  
 }
 
 /* ── le panneau de verre ── */
@@ -117,32 +117,32 @@
   box-sizing: border-box;
   width: 300px;
   max-width: 100%;
-  padding: 14px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.95);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
+  border: 1px solid color-mix(in srgb, var(--m-couleur-papier-fond) 95%, transparent);
   background: var(--eca-cal-verre);
   box-shadow: var(--eca-cal-ombre);
-  -webkit-backdrop-filter: blur(26px) saturate(1.5);
-  backdrop-filter: blur(26px) saturate(1.5);
-  color: var(--bj-text);
+  
+  
+  color: var(--m-couleur-papier-texte);
   text-align: left;
 }
 .eca-root .eca-cal-tete {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: var(--m-espace-2);
 }
 .eca-root .eca-cal-tete b {
-  font-family: var(--bj-font-display);
-  font-size: 22px;
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  font-size: var(--m-taille-chapo);
   font-style: normal;
-  font-weight: 400;
+  font-weight: var(--m-police-titre-graisse);
   line-height: 1.2;
 }
 .eca-root .eca-cal-nav {
   display: flex;
-  gap: 4px;
+  gap: var(--m-espace-1);
 }
 .eca-root .eca-cal-nav button {
   display: grid;
@@ -151,17 +151,17 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   line-height: 1;
   cursor: pointer;
 }
 .eca-root .eca-cal-nav button:hover:not(:disabled) {
-  background: var(--bj-veil-12);
-  color: var(--bj-text);
+  background: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-cal-nav button:disabled {
   opacity: 0.35;
@@ -170,8 +170,8 @@
 .eca-root .eca-cal-grille {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  font-size: 13px;
+  gap: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -180,10 +180,10 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 .eca-root .eca-cal-j {
-  padding-bottom: 4px;
+  padding-bottom: var(--m-espace-1);
   font-size: 10.5px;
   letter-spacing: 0.06em;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-cal-d {
   display: grid;
@@ -197,26 +197,26 @@
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: inherit;
   font: inherit;
   cursor: pointer;
 }
 .eca-root .eca-cal-d button:hover {
-  background: var(--bj-veil-6);
+  background: var(--m-couleur-papier-survol);
 }
 .eca-root .eca-cal-d button:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 1px;
 }
 .eca-root .eca-cal-d--hors {
-  color: rgba(16, 24, 40, 0.25);
+  color: color-mix(in srgb, var(--m-couleur-papier-texte) 25%, transparent);
 }
 .eca-root .eca-cal-d--passe {
-  color: rgba(16, 24, 40, 0.3);
+  color: color-mix(in srgb, var(--m-couleur-papier-texte) 30%, transparent);
   text-decoration: line-through;
-  text-decoration-color: rgba(16, 24, 40, 0.2);
+  text-decoration-color: color-mix(in srgb, var(--m-couleur-papier-texte) 20%, transparent);
 }
 .eca-root .eca-cal-d--passe button {
   cursor: not-allowed;
@@ -225,7 +225,7 @@
   background: transparent;
 }
 .eca-root .eca-cal-d--auj button {
-  box-shadow: inset 0 0 0 1.5px var(--bj-action);
+  box-shadow: inset 0 0 0 1.5px var(--m-couleur-accent);
 }
 .eca-root .eca-cal-d--plage {
   background: var(--eca-cal-accent-doux);
@@ -237,12 +237,12 @@
   background: linear-gradient(90deg, var(--eca-cal-accent-doux) 50%, transparent 50%);
 }
 .eca-root .eca-cal-d--choisi {
-  color: #ffffff;
+  color: var(--m-couleur-papier-fond);
   text-decoration: none;
 }
 .eca-root .eca-cal-d--choisi button,
 .eca-root .eca-cal-d--choisi button:hover {
-  background: var(--bj-action);
+  background: var(--m-couleur-accent);
   font-weight: 600;
   box-shadow: var(--eca-cal-ombre-choisi);
 }
@@ -253,12 +253,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--bj-veil-8);
-  font-size: 12px;
-  color: var(--bj-text-soft);
+  gap: var(--m-espace-2);
+  margin-top: var(--m-espace-3);
+  padding-top: var(--m-espace-3);
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-cal-pied > * {
   min-width: 0;
@@ -269,37 +269,37 @@
 .eca-root .eca-cal-heure {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--bj-veil-6);
-  font-size: 12px;
-  color: var(--bj-text);
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-cal-puces {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-cal-puce {
-  padding: 6px 11px;
+  padding: var(--m-espace-2) var(--m-espace-3);
   border: 0;
-  border-radius: 999px;
-  background: var(--bj-veil-6);
-  color: var(--bj-text);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
   font-size: 12.5px;
   cursor: pointer;
 }
 .eca-root .eca-cal-puce:hover {
-  background: var(--bj-veil-12);
+  background: var(--m-couleur-papier-ligne);
 }
 .eca-root .eca-cal-puce--on,
 .eca-root .eca-cal-puce--on:hover {
-  background: var(--bj-action);
-  color: #ffffff;
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
 }
 .eca-root .eca-cal-puce:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }

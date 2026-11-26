@@ -1,0 +1,300 @@
+/* L'espace client de l'Édition collective : jour et nuit (révision §14.1).
+
+   Tout est écrit sous `.bj-atelier.ec-espace` (posé par edition/layout.tsx) :
+   une feuille chargée ne se décharge jamais en navigation client, une classe
+   courte non scopée repeindrait le B2C.
+
+   ══════════════════════════════════════════════════════════════════════════
+   LES COULEURS SONT DES RÔLES, PAS DES TEINTES
+   Le mode vit dans `data-ec-mode` (nuit par défaut, jour sur demande, gardé
+   dans un cookie de l'appareil). Chaque couleur de l'interface est un jeton
+   ci-dessous ; un composant n'écrit JAMAIS une couleur, il écrit un rôle
+   (`--ec-text`, `--ec-line`, `--ec-accent`…), et pour une transparence
+   `rgba(var(--ec-fg-rgb), x)` ou `rgba(var(--ec-ac-rgb), x)`.
+   Exception voulue : les PAGES DE MAGAZINE (BAT, styles) gardent leurs vraies
+   couleurs dans les deux modes (`--ec-page`, `--ec-encre`, et les palettes,
+   qui viennent des données).
+   Les anciens noms (`--ec-blanc`, `--ec-orange`…) sont des alias des rôles,
+   le temps que chaque feuille passe aux nouveaux.
+   ══════════════════════════════════════════════════════════════════════════
+
+   Polices : Cormorant Garamond 400, DM Sans. Pas de `dvh` : la hauteur pleine
+   est `var(--app-height)`. */
+
+.bj-atelier.ec-espace {
+  /* ── la nuit (défaut) : CHARBON (15/10, Mathias) ──
+     Plus de noir pur : un charbon, un blanc cassé, des gris qu'on lit. Mesuré :
+     texte 15,2 : 1, texte doux 7,9 : 1, légendes 5,5 : 1 (le noir d'avant
+     donnait 20,4 : 1 au texte, qui « bavait », et 3,0 : 1 aux légendes). */
+  --ec-fg-rgb: 236, 237, 240;
+  --ec-ac-rgb: 227, 162, 127;
+  --ec-bg: #17181c;
+  --ec-panel: rgba(255, 255, 255, 0.04);
+  --ec-surface: rgba(255, 255, 255, 0.05);
+  --ec-text: #ecedf0;
+  --ec-titre: #ffffff;
+  --ec-muted: #a9adb5;
+  --ec-faint: #8b9099;
+  --ec-line: rgba(255, 255, 255, 0.08);
+  --ec-line-fort: rgba(255, 255, 255, 0.14);
+  --ec-accent: #e3a27f;
+  --ec-accent-fort: #ecb394;
+  --ec-accent-texte: #f2c7af;
+  --ec-on-accent: #1b1410;
+  --ec-accent-soft: rgba(227, 162, 127, 0.16);
+  --ec-glass: rgba(30, 31, 36, 0.8);
+  --ec-voile: rgba(0, 0, 0, 0.4);
+  --ec-ombre: rgba(0, 0, 0, 0.45);
+  --ec-danger: #ff9b7a;
+  --ec-danger-rgb: 255, 155, 122;
+  --ec-ok: #8ee0b0;
+  --ec-ok-soft: rgba(110, 207, 151, 0.14);
+  /* le verre et la profondeur (15/10) */
+  --ec-carte: rgba(255, 255, 255, 0.045);
+  --ec-carte-bord: rgba(255, 255, 255, 0.08);
+  --ec-carte-pleine: #1f2126;
+  --ec-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --ec-ombre-carte: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.3);
+  --ec-ombre-douce: 0 10px 30px rgba(0, 0, 0, 0.28);
+  --ec-ombre-bouton: 0 10px 26px rgba(227, 162, 127, 0.22);
+  --ec-actif: rgba(255, 255, 255, 0.09);
+  --ec-actif-ombre: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --ec-creux: rgba(0, 0, 0, 0.22);
+  --ec-ombre-couv: 0 24px 50px rgba(0, 0, 0, 0.5);
+  --ec-ombre-couv-forte: 0 30px 64px rgba(0, 0, 0, 0.6);
+  --ec-aurore-1: #3a2a22;
+  --ec-aurore-2: #23262f;
+  --ec-aurore-force: 0.75;
+  color-scheme: dark;
+
+  /* ── la forme, commune aux deux modes : arrondis emboîtés, verre ── */
+  --ec-r-panneau: 28px;
+  --ec-r-carte: 24px;
+  --ec-r-bloc: 16px;
+  --ec-r-champ: 14px;
+  --ec-flou: blur(24px) saturate(1.4);
+
+  /* ── les pages de magazine : les mêmes de jour comme de nuit ── */
+  --ec-page: #ffffff;
+  --ec-page-gris: #f1ebe6;
+  --ec-encre: #050505;
+  /* ombres et reflets PHYSIQUES d'un objet posé (couverture en 3D, double
+     page) : la lumière ne change pas avec le mode */
+  --ec-noir-rgb: 0, 0, 0;
+  --ec-reflet-rgb: 255, 255, 255;
+
+  /* ── alias des anciens noms ── */
+  --ec-fond: var(--ec-bg);
+  --ec-blanc: var(--ec-text);
+  --ec-blanc-72: rgba(var(--ec-fg-rgb), 0.78);
+  --ec-blanc-56: var(--ec-muted);
+  --ec-blanc-32: var(--ec-faint);
+  --ec-filet: var(--ec-line);
+  --ec-filet-fort: var(--ec-line-fort);
+  --ec-orange: var(--ec-accent);
+  --ec-orange-voile: var(--ec-accent-soft);
+
+  /* ── le monde sombre partagé (theme.css), repeint DANS ce scope seulement :
+     sans cela l'anneau de focus et les survols resteraient orange en jour ── */
+  --c-accent: var(--ec-accent);
+  --c-accent-strong: var(--ec-accent-fort);
+  --c-text-onaccent: var(--ec-on-accent);
+  --c-text: var(--ec-text);
+
+  --ec-menu-l: 248px;
+  --ec-tete-h: 68px;
+
+  /* ── L'ÉCHELLE DES COUCHES (21/10, « vérifier bien les chevauchements ») ──
+     UNE seule, lue par TOUTES les feuilles de l'espace : un `z-index` écrit en
+     dur dans une feuille, c'est ce qui laissait la barre d'actions des photos
+     cochées et le bouton « Déposer » passer par-dessus le tiroir du menu (leurs
+     40 et 35 valaient ceux du tiroir et de son voile, et le DOM tranchait).
+     De bas en haut, tout se joue dans `.ec-coquille` (`isolation: isolate`) :
+       contenu (0)
+       < collants d'une page            la barre d'outils Photos, le pied du mur, la zone d'écriture
+       < en-tête du téléphone           collé en haut
+       < barres FIXES d'une page        « Déposer », les actions des photos cochées, les notes du BAT,
+                                        la barre d'actions de l'ordinateur
+       < voile du tiroir                assombrit TOUT ce qui est dessous, barres fixes comprises
+       < tiroir du menu
+       < fenêtres                       (et le menu « … » d'un lien, juste au-dessus de leur voile)
+       < feuille « Filtrer »
+       < photo agrandie
+       < avis qui passe                 « Annuler », la seule chose au-dessus d'une photo agrandie.
+     Une barre fixe n'écrit donc JAMAIS un nombre supérieur à `--ec-z-barre`. */
+  --ec-z-collant: 20;
+  --ec-z-entete: 30;
+  --ec-z-barre: 34;
+  --ec-z-voile: 50;
+  --ec-z-tiroir: 55;
+  --ec-z-fenetre: 60;
+  --ec-z-feuille: 65;
+  --ec-z-photo: 70;
+  --ec-z-avis: 75;
+
+  /* ── LE TÉLÉPHONE : la barre du haut et la barre flottante du bas (planches 1 et 2 du 21/10) ──
+     Des jetons, jamais un nombre : `top: 78px` collait la barre d'outils de Photos sous une barre qui faisait 62 px ;
+     quand la barre a maigri, tout ce qui comptait ses 62 px est resté faux sans que rien ne le dise.
+       `--ec-barre-h`     la barre du haut (logo / titre, menu) : 52 px, elle ne grossit JAMAIS (hauteur écrite, plus
+                          un reste réparti par la grille) ;
+       `--ec-barre-marge` son écart avec le haut de l'écran (plus la zone sûre) ;
+       `--ec-fl-h`        la barre flottante du bas de Photos (« Toutes · Par lien » et le rond « Personnes ») : 64 px depuis le 22/10
+                          (planche 10, composition A : « plus haute, une icône par choix ») ; la barre des deux gestes de la
+                          sélection (le cœur, Supprimer) fait la même hauteur ;
+       `--ec-fl-bas`      son écart avec le bas de l'écran, zone sûre de l'iPhone comprise ;
+       `--ec-fl-reserve`  ce qu'un contenu qui défile derrière elle garde libre en bas, pour que rien ne passe dessous. */
+  --ec-barre-h: 52px;
+  --ec-barre-marge: 6px;
+  --ec-fl-h: 64px;
+  --ec-fl-actions-h: 64px;
+  --ec-fl-bas: calc(10px + env(safe-area-inset-bottom, 0px));
+  --ec-fl-reserve: calc(var(--ec-fl-h) + var(--ec-fl-bas) + 16px);
+  background: var(--ec-bg);
+  color: var(--ec-text);
+  line-height: 1.5;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+/* ── le jour : PORCELAINE (15/10, Mathias : « le beige fait vieillot ») ──
+   Un blanc froid, du verre blanc sur deux taches de couleur très floues, le
+   bleu de Bellajour en accent. */
+.bj-atelier.ec-espace[data-ec-mode="jour"] {
+  --ec-fg-rgb: 16, 24, 40;
+  --ec-ac-rgb: 74, 144, 217;
+  --ec-bg: #f3f4f7;
+  --ec-panel: rgba(255, 255, 255, 0.62);
+  --ec-surface: rgba(255, 255, 255, 0.72);
+  --ec-text: #101828;
+  --ec-titre: #101828;
+  --ec-muted: #5b6577;
+  --ec-faint: #7c8698;
+  --ec-line: rgba(16, 24, 40, 0.08);
+  --ec-line-fort: rgba(16, 24, 40, 0.14);
+  /* Le bleu de Bellajour (--bj-action du site, Mathias le 14/10). */
+  --ec-accent: #4a90d9;
+  --ec-accent-fort: #3a7cc4;
+  --ec-accent-texte: #1d4f8a;
+  --ec-on-accent: #ffffff;
+  --ec-accent-soft: rgba(74, 144, 217, 0.12);
+  --ec-glass: rgba(255, 255, 255, 0.82);
+  --ec-voile: rgba(16, 24, 40, 0.16);
+  --ec-ombre: rgba(16, 24, 40, 0.14);
+  --ec-danger: #b3412c;
+  --ec-danger-rgb: 179, 65, 44;
+  --ec-ok: #157347;
+  --ec-ok-soft: #e7f6ee;
+  --ec-carte: rgba(255, 255, 255, 0.7);
+  --ec-carte-bord: rgba(255, 255, 255, 0.95);
+  --ec-carte-pleine: #ffffff;
+  --ec-reflet: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --ec-ombre-carte: 0 1px 2px rgba(16, 24, 40, 0.04), 0 18px 48px rgba(16, 24, 40, 0.07);
+  --ec-ombre-douce: 0 6px 18px rgba(16, 24, 40, 0.06);
+  --ec-ombre-bouton: 0 8px 20px rgba(74, 144, 217, 0.3);
+  --ec-actif: #ffffff;
+  --ec-actif-ombre: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 14px rgba(16, 24, 40, 0.05);
+  --ec-creux: rgba(16, 24, 40, 0.05);
+  --ec-ombre-couv: 0 18px 40px rgba(16, 24, 40, 0.18);
+  --ec-ombre-couv-forte: 0 24px 56px rgba(16, 24, 40, 0.24);
+  --ec-aurore-1: #dce8fa;
+  --ec-aurore-2: #eae5f6;
+  --ec-aurore-force: 1;
+  color-scheme: light;
+}
+
+/* ─────────────────────────────── la coquille ─────────────────────────────── */
+
+/* Sur un écran d'ordinateur, la coquille est EXACTEMENT la hauteur de la
+   fenêtre : rien ne fait défiler la page. La colonne de contenu ne défile
+   qu'en dernier recours (un écran qui n'aurait pas encore ses zones). */
+.ec-espace .ec-coquille {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: var(--ec-menu-l) minmax(0, 1fr);
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-4);
+  box-sizing: border-box;
+  height: var(--app-height);
+  overflow: hidden;
+}
+/* Le fond vivant (15/10) : deux grandes taches de couleur très floues, que le
+   verre des panneaux laisse deviner. Rien ne bouge, rien ne se charge. */
+/* Les deux lueurs, aux places des maquettes (15/10, retour de Mathias : « la
+   lumière n'est même pas du même côté ») : la NUIT, le cuivre en haut à DROITE
+   et un gris bleuté en bas ; le JOUR, le bleu en haut à gauche et le lilas en
+   bas à droite. */
+.ec-espace .ec-coquille::before,
+.ec-espace .ec-coquille::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(120px);
+}
+.ec-espace .ec-coquille::before {
+  right: -200px;
+  top: -260px;
+  width: 760px;
+  height: 620px;
+  filter: blur(130px);
+  opacity: var(--ec-aurore-force);
+  background: var(--ec-aurore-1);
+}
+.ec-espace .ec-coquille::after {
+  left: 240px;
+  bottom: -300px;
+  width: 760px;
+  height: 560px;
+  background: var(--ec-aurore-2);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-coquille::before {
+  right: auto;
+  left: -160px;
+  top: -200px;
+  width: 720px;
+  height: 620px;
+  filter: blur(110px);
+}
+.bj-atelier.ec-espace[data-ec-mode="jour"] .ec-coquille::after {
+  left: auto;
+  right: -180px;
+  bottom: -220px;
+  width: 760px;
+  height: 600px;
+}
+
+.ec-espace .ec-barre-mobile {
+  display: none;
+}
+/* L'en-tête du tiroir : sur ordinateur il disparaît (le logo reste un enfant du menu), la croix est cachée. */
+.ec-espace .ec-menu-tete {
+  display: contents;
+}
+.ec-espace .ec-menu-fermer {
+  display: none;
+}
+
+.ec-espace .ec-menu {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-5) var(--m-espace-4) var(--m-espace-4);
+  border: 1px solid var(--ec-carte-bord);
+  border-radius: var(--ec-r-panneau);
+  background: var(--ec-panel);
+  box-shadow: var(--ec-ombre-carte);
+  -webkit-backdrop-filter: var(--ec-flou);
+  backdrop-filter: var(--ec-flou);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.ec-espace .ec-logo {
+  display: block;
+  width: 116px;
+  height: auto;
+  margin: 0 var(--m-espace-3) var(--m-espace-1);
+}
+.ec-espace .ec-logo--mobile {

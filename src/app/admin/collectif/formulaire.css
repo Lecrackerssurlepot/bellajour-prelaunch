@@ -8,20 +8,20 @@
 
 .eca-root {
   /* La planche : le verre fort des pastilles et le voile bleu du survol. */
-  --eca-fm-verre-fort: rgba(255, 255, 255, 0.92);
-  --eca-fm-accent-doux: rgba(74, 144, 217, 0.14);
-  --eca-fm-ombre: 0 14px 36px rgba(16, 24, 40, 0.06);
+  --eca-fm-verre-fort: color-mix(in srgb, var(--m-couleur-papier-fond) 92%, transparent);
+  --eca-fm-accent-doux: color-mix(in srgb, var(--m-couleur-papier-texte) 14%, transparent);
+  --eca-fm-ombre: 0 14px 36px color-mix(in srgb, var(--m-couleur-papier-texte) 6%, transparent);
   /* La page des participants, en Charbon (depot.css). */
-  --eca-tel-cadre: #0c0d10;
-  --eca-tel-fond: #17181c;
-  --eca-tel-lueur: #3a2a22;
-  --eca-tel-texte: #ecedf0;
-  --eca-tel-doux: #a9adb5;
-  --eca-tel-accent: #e3a27f;
-  --eca-tel-bouton: rgba(227, 162, 127, 0.45);
-  --eca-tel-champ: rgba(255, 255, 255, 0.06);
-  --eca-tel-champ-bord: rgba(255, 255, 255, 0.1);
-  --eca-tel-ombre: 0 24px 60px rgba(16, 24, 40, 0.18);
+  --eca-tel-cadre: var(--m-couleur-nuit-fond);
+  --eca-tel-fond: var(--m-couleur-nuit-fond);
+  --eca-tel-lueur: var(--m-couleur-nuit-fond);
+  --eca-tel-texte: var(--m-couleur-nuit-texte);
+  --eca-tel-doux: var(--m-couleur-nuit-texte-doux);
+  --eca-tel-accent: var(--m-couleur-nuit-texte);
+  --eca-tel-bouton: color-mix(in srgb, var(--m-couleur-nuit-texte) 45%, transparent);
+  --eca-tel-champ: color-mix(in srgb, var(--m-couleur-papier-fond) 6%, transparent);
+  --eca-tel-champ-bord: color-mix(in srgb, var(--m-couleur-papier-fond) 10%, transparent);
+  --eca-tel-ombre: 0 24px 60px color-mix(in srgb, var(--m-couleur-papier-texte) 18%, transparent);
 }
 
 /* ─────────────── un chiffre : « − 30 photos par personne + » ─────────────── */
@@ -33,14 +33,14 @@
   box-sizing: border-box;
   min-height: 44px;
   max-width: 100%;
-  border: 1px solid var(--bj-veil-16);
-  border-radius: 999px;
+  border: 1px solid var(--m-couleur-papier-pointille);
+  border-radius: var(--m-rayon-pilule);
   background: var(--eca-fm-verre-fort);
   overflow: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .eca-root .eca-fm-pas:focus-within {
-  border-color: var(--bj-action);
+  border-color: var(--m-couleur-accent);
   box-shadow: 0 0 0 3px var(--eca-fm-accent-doux);
 }
 .eca-root .eca-fm-pas--erreur {
@@ -54,7 +54,7 @@
   background: transparent;
   color: var(--eca-bleu-encre);
   font: inherit;
-  font-size: 18px;
+  font-size: var(--m-taille-base);
   line-height: 1;
   cursor: pointer;
 }
@@ -66,18 +66,18 @@
   cursor: default;
 }
 .eca-root .eca-fm-pas > button:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: -4px;
 }
 .eca-root .eca-fm-pas-val {
   display: flex;
   align-items: baseline;
   align-self: center;
-  gap: 6px;
+  gap: var(--m-espace-2);
   min-width: 0;
-  padding: 4px 6px;
-  font-size: 14px;
-  color: var(--bj-text-soft);
+  padding: var(--m-espace-1) var(--m-espace-2);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-fm-pas-val input {
   box-sizing: content-box;
@@ -87,9 +87,9 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
   font: inherit;
-  font-size: 18px;
+  font-size: var(--m-taille-base);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -98,12 +98,12 @@
   outline: none;
 }
 .eca-root .eca-fm-pas-val input:placeholder-shown {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 400;
   text-align: center;
 }
 .eca-root .eca-fm-pas-val input::placeholder {
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   opacity: 1;
 }
 .eca-root .eca-fm-pas-unite {
@@ -114,26 +114,26 @@
   align-self: flex-start;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 2px;
+  gap: var(--m-espace-1);
+  margin-top: var(--m-espace-1);
 }
 .eca-root .eca-fm-rapides button {
-  padding: 4px 9px;
+  padding: var(--m-espace-1) var(--m-espace-2);
   border: 0;
-  border-radius: 999px;
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
   font: inherit;
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 .eca-root .eca-fm-rapides button:hover {
-  background: var(--bj-veil-12);
-  color: var(--bj-text);
+  background: var(--m-couleur-papier-ligne);
+  color: var(--m-couleur-papier-texte);
 }
 .eca-root .eca-fm-rapides button:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 
@@ -142,12 +142,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: var(--m-espace-2) var(--m-espace-3);
 }
 .eca-root .eca-fm-heure > label {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 
 /* ─────────────── les magazines : une poubelle par ligne ─────────────── */
@@ -155,12 +155,12 @@
 .eca-root .eca-fm-mags {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .eca-root .eca-fm-mag {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) 36px;
-  gap: 10px;
+  gap: var(--m-espace-3);
   align-items: center;
 }
 .eca-root .eca-fm-num {
@@ -168,36 +168,36 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 999px;
-  background: var(--bj-veil-6);
-  font-family: var(--bj-font-display);
-  font-size: 17px;
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  font-size: var(--m-taille-base);
   line-height: 1;
-  color: var(--bj-text);
+  color: var(--m-couleur-papier-texte);
 }
 /* Le nom et, au bout, où en est le client : le cadre est porté par la ligne, le champ est nu. */
 .eca-root .eca-fm-nom {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: var(--m-espace-1) var(--m-espace-2);
   min-width: 0;
   min-height: 42px;
-  padding-right: 12px;
-  border: 1px solid var(--bj-veil-16);
-  border-radius: 12px;
-  background: #ffffff;
+  padding-right: var(--m-espace-3);
+  border: 1px solid var(--m-couleur-papier-pointille);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-fond);
   box-sizing: border-box;
 }
 .eca-root .eca-fm-nom:focus-within {
-  border-color: var(--bj-action);
+  border-color: var(--m-couleur-accent);
 }
 .eca-root .eca-form-corps .eca-fm-nom .eca-input {
   flex: 1 1 140px;
   min-width: 0;
   min-height: 40px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
 }
 .eca-root .eca-form-corps .eca-fm-nom .eca-input:focus-visible {
@@ -208,22 +208,22 @@
 }
 .eca-root .eca-fm-etat {
   flex: none;
-  font-size: 12px;
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
   white-space: nowrap;
 }
 .eca-root .eca-fm-etat--fait,
 .eca-root .eca-fm-etat--en_cours {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
+  padding: var(--m-espace-1) var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-etiquette);
 }
 .eca-root .eca-fm-etat--fait {
   background: var(--eca-vert-fond);
   color: var(--eca-vert);
 }
 .eca-root .eca-fm-etat--en_cours {
-  background: var(--bj-action-soft);
+  background: var(--m-couleur-papier-survol);
   color: var(--eca-bleu-encre);
 }
 .eca-root .eca-fm-poubelle {
@@ -232,8 +232,8 @@
   width: 36px;
   height: 36px;
   padding: 0;
-  border: 1px solid var(--bj-veil-16);
-  border-radius: 999px;
+  border: 1px solid var(--m-couleur-papier-pointille);
+  border-radius: var(--m-rayon-pilule);
   background: var(--eca-fm-verre-fort);
   color: var(--eca-alerte);
   cursor: pointer;
@@ -242,7 +242,7 @@
   background: var(--eca-alerte-fond);
 }
 .eca-root .eca-fm-poubelle:focus-visible {
-  outline: 2px solid var(--bj-action);
+  outline: 2px solid var(--m-couleur-accent);
   outline-offset: 2px;
 }
 .eca-root .eca-fm-poubelle svg {
@@ -253,20 +253,20 @@
 .eca-root .eca-fm-poubelle--off:hover {
   border-style: dashed;
   background: transparent;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
   cursor: not-allowed;
 }
 /* La raison d'une poubelle grisée : au survol ou au clavier (en CSS), au toucher (l'état). */
 .eca-root .eca-fm-bulle {
-  margin: 0 0 0 44px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--bj-veil-8);
+  margin: 0 0 0 var(--m-espace-7);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  border: 1px solid var(--m-couleur-papier-ligne);
   background: var(--eca-fm-verre-fort);
   box-shadow: var(--eca-fm-ombre);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.45;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-fm-mag:has(.eca-fm-poubelle--off:hover) + .eca-fm-bulle[hidden],
 .eca-root .eca-fm-mag:has(.eca-fm-poubelle--off:focus-visible) + .eca-fm-bulle[hidden] {
@@ -275,10 +275,10 @@
 /* « + Ajouter un magazine » : le petit bouton de la planche. */
 .eca-root .eca-bouton.eca-fm-ajouter {
   min-height: 0;
-  padding: 5px 11px;
-  border-color: var(--bj-veil-16);
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-color: var(--m-couleur-papier-pointille);
   background: var(--eca-fm-verre-fort);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
 }
 
@@ -287,7 +287,7 @@
 .eca-root .eca-fm-apercu-zone {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 16px;
+  gap: var(--m-espace-4);
   align-items: start;
 }
 /* La planche : un message sur trois lignes au moins (84 px), pas une ligne de champ. */
@@ -295,51 +295,51 @@
   min-height: 84px;
 }
 .eca-root .eca-fm-tel {
-  padding: 8px;
-  border-radius: 26px;
+  padding: var(--m-espace-2);
+  border-radius: var(--m-rayon-bloc);
   background: var(--eca-tel-cadre);
   box-shadow: var(--eca-tel-ombre);
 }
 .eca-root .eca-fm-tel-ecran {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 300px;
-  padding: 14px 12px 18px;
-  border-radius: 20px;
+  padding: var(--m-espace-3) var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   background: radial-gradient(120% 60% at 100% 0%, var(--eca-tel-lueur), var(--eca-tel-fond) 60%);
   color: var(--eca-tel-texte);
   overflow-wrap: anywhere;
 }
 .eca-root .eca-fm-tel-marque {
-  font-family: var(--bj-font-display);
-  font-size: 15px;
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
+  font-size: var(--m-taille-bouton);
   line-height: 1.2;
 }
 .eca-root .eca-fm-tel-marque small {
-  margin-left: 4px;
-  font-family: var(--bj-font-ui);
+  margin-left: var(--m-espace-1);
+  font-family: var(--m-police-texte-famille);
   font-size: 8.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--eca-tel-doux);
 }
 .eca-root .eca-fm-tel-sur {
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   color: var(--eca-tel-accent);
 }
 .eca-root .eca-fm-tel-titre {
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille); font-variation-settings: var(--m-police-titre-axes);
   font-size: 24px;
-  font-weight: 400;
+  font-weight: var(--m-police-titre-graisse);
   line-height: 1;
 }
 .eca-root .eca-fm-tel-msg {
-  padding: 6px 8px;
-  border-radius: 8px;
+  padding: var(--m-espace-2) var(--m-espace-2);
+  border-radius: var(--m-rayon-champ);
   outline: 1.5px dashed var(--eca-tel-accent);
   outline-offset: 2px;
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.45;
   white-space: pre-line;
 }
@@ -353,14 +353,14 @@
 }
 .eca-root .eca-fm-tel-champ {
   height: 26px;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--eca-tel-champ-bord);
   background: var(--eca-tel-champ);
 }
 .eca-root .eca-fm-tel-bouton {
   height: 30px;
-  margin-top: 4px;
-  border-radius: 999px;
+  margin-top: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   background: var(--eca-tel-bouton);
 }
 
@@ -389,26 +389,26 @@
 
 /* La pastille « facultatif » à côté d'un libellé (le lien de rendez-vous). */
 .eca-root .eca-facultatif {
-  margin-left: 8px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--bj-veil-6);
-  color: var(--bj-text-soft);
-  font-size: 11px;
+  margin-left: var(--m-espace-2);
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.02em;
   vertical-align: 1px;
 }
 /* La ligne de tête de la création : « * Obligatoire. Tout le reste peut attendre… ». (⚠️ pas `eca-legende` : ce nom est pris, par les <legend> de l'éditeur de styles.) */
 .eca-root .eca-oblig-ligne {
-  margin: 0 0 4px;
-  font-family: var(--bj-font-ui);
+  margin: 0 0 var(--m-espace-1);
+  font-family: var(--m-police-texte-famille);
   font-style: normal;
-  font-size: 13px;
-  color: var(--bj-text-soft);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }
 .eca-root .eca-oblig-ligne b {
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
 }
 /* Le rail de la création dit sous chaque étape ce qu'elle demande. */
 .eca-root .eca-pas-txt {
@@ -417,17 +417,17 @@
   gap: 1px;
 }
 .eca-root .eca-pas-txt small {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
-  color: var(--bj-text-faint);
+  color: var(--m-couleur-papier-texte-doux);
 }
 /* L'encart rassurant de l'étape « Le devis » : rien n'est obligatoire ici. */
 .eca-root .eca-encart.eca-encart--doux {
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--bj-action-soft);
-  color: var(--bj-text);
+  padding: var(--m-espace-3) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-survol);
+  color: var(--m-couleur-papier-texte);
   font-size: 13.5px;
 }
 /* « Étape suivante » et « Créer l'édition » côte à côte, au pied de chaque étape. */
@@ -435,6 +435,6 @@
   display: inline-flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--m-espace-2);
   align-items: center;
 }

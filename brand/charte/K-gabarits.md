@@ -67,7 +67,39 @@ ne change jamais avec l'habit.
 | Frise | Posée sur la largeur | Défile horizontalement |
 | Navigation | Dans l'en-tête | Menu burger plein écran |
 
+## Back-office et éditeur (`/admin/**`, éditeur de mise en page, espace de l'Édition collective)
+
+*Ajouté le 26/11 (étape 6 du chantier). Proposé, à valider par Mathias.*
+
+C'est un **outil de travail**, pas une vitrine : dense, lisible, sans décor.
+
+- **Un seul mode, papier.** Fond `couleur.papier.fond`, texte `couleur.papier.texte`. Plus de
+  Porcelaine ni de Charbon, plus de bascule jour/nuit, plus de taches de couleur floues derrière.
+- **Aucun verre.** Pas de flou, pas de transparence qui laisse voir le fond : les cartes sont
+  blanches à bord fin (`rayon.bloc`, 1 px `ligne`). Le flou reste réservé à l'en-tête du site et au
+  voile derrière une feuille (F).
+- **Aucune ombre** sur l'interface (menus, cartes, feuilles) : un filet de 1 px. Les ombres restent
+  pour les objets imprimés (couverture, double page).
+- **Accent = encre.** Le bouton plein est noir, l'onglet ou la pastille actifs sont à l'encre.
+  Le bleu disparaît. Une pastille de statut garde un fond `survol` et un bord `ligne`, et dit son
+  état par un mot. Les états (retard, succès, alerte) utilisent `couleur.etat.*` et un mot,
+  jamais la couleur seule.
+- **Polices.** Inter Tight pour tout (texte, étiquettes, chiffres), Fraunces 560 pour les titres de
+  page et de carte, jamais d'italique. Une donnée (cellule, chiffre, date) n'est jamais en Fraunces.
+  Interlope n'y entre pas.
+- **Tailles et espaces** sur les échelles `taille.*` et `espace.*`. Une taille d'outil dense
+  (12 et 14 px) reste sur l'échelle (`etiquette`, `petit`).
+- **Boutons** : `.m-btn`, `.m-second`, `.m-texte`. Un seul bouton plein par écran. Cibles de 44 px
+  au téléphone, champs en 16 px.
+- **Le nuit en bloc** s'y emploie pour un seul bloc par écran, jamais une page : la barre d'état
+  d'une impression, une bannière de mode démonstration.
+
+**Exception déclarée : le contenu imprimé.** Dans l'éditeur de mise en page, les **pages du
+magazine** (couleurs de la couverture et de la palette, polices des styles, géométrie en mm,
+recadrage unique écran = IDML) gardent leurs valeurs : c'est le produit, pas l'interface. On
+habille l'interface autour, jamais la page imprimée.
+
 ## Hors de ce chantier
 
-L'admin (`/admin/**`) et l'éditeur de mise en page passeront dans la charte plus tard, dans un
-lot séparé.
+Rien : tout le site client, l'espace de l'Édition collective, le back-office et l'éditeur sont dans
+la charte.
