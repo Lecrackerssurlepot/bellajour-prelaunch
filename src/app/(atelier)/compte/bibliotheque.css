@@ -210,6 +210,27 @@
   );
 }
 
+/* Le numéro en volume : l'image rendue par le magazine 3D de la charte
+   (rendu3d.ts, angle « trois-quarts-droite », détourée : sans l'ombre au sol
+   du studio). Elle porte déjà sa tranche et sa reliure : celles dessinées en
+   CSS se retirent. Le magazine garde la hauteur de la boîte ; son ombre est
+   celle de la bibliothèque, portée par sa silhouette et plus par la boîte. */
+.bib-livre.est-3d { box-shadow: none; }
+.bib-livre.est-3d::after { content: none; }
+.bib-livre.est-3d .bib-couv { visibility: hidden; }
+.bib-rendu {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 var(--m-espace-3) var(--m-espace-3) color-mix(in srgb, var(--m-couleur-papier-texte) 26%, transparent));
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Vue « Étagère » : des tablettes murales, les numéros de face ──── */
 
 .bib-rayon {
@@ -271,6 +292,15 @@
 .bib-pose:focus-visible .bib-livre {
   transform: translateY(calc(-1 * var(--m-espace-4))) rotateY(0deg);
   box-shadow: var(--m-ombre-livre);
+}
+
+/* En volume, l'angle est dans l'image : la boîte ne tourne plus, elle se
+   décolle seulement. */
+.bib-pose .bib-livre.est-3d { transform: none; }
+.bib-pose:hover .bib-livre.est-3d,
+.bib-pose:focus-visible .bib-livre.est-3d {
+  transform: translateY(calc(-1 * var(--m-espace-4)));
+  box-shadow: none;
 }
 
 .bib-legende {
@@ -338,6 +368,8 @@
   box-shadow: var(--m-ombre-livre);
   animation: bib-flotte 5s ease-in-out infinite;
 }
+
+.bib-carte.est-centre .bib-livre.est-3d { box-shadow: none; }
 
 @keyframes bib-flotte {
   0%, 100% { transform: translateY(0); }

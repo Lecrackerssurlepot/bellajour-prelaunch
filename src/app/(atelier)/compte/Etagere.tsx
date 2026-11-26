@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import type { LivreVue } from './Espace'
 import Focus3D from './Focus3D'
+import { rendreNumero } from './rendu3d'
 
 /* ═══════════════════════════════════════════════════════════════════
    L'étagère de la bibliothèque (charte V2, fiche H « Bibliothèque »,
@@ -17,6 +18,10 @@ import Focus3D from './Focus3D'
    archive/compte-etagere-2026-11/vue-tranches.md.)
    Un clic ouvre « le numéro en grand » (Focus3D) : le magazine 3D de la
    charte quand le navigateur le permet, sa couverture sinon.
+   Dans les deux vues, chaque numéro est une image du même magazine 3D
+   (rendu3d.ts : un seul studio hors écran, angle « trois-quarts-droite »,
+   épaisseur selon le nombre de pages). Le temps du rendu, et sans WebGL,
+   c'est la couverture à plat.
    Rien n'est refetché : tout arrive déjà signé de la page serveur.
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -50,6 +55,16 @@ export function Couverture({ l, taille }: { l: LivreVue; taille?: string }) {
   )
 }
 
+/* Le numéro posé : sa couverture à plat, puis son image en volume dès qu'elle existe. */
+function Livre({ l, taille, rendu }: { l: LivreVue; taille: string; rendu: string | undefined }) {
+  return (
+    <span className={`bib-livre${rendu ? ' est-3d' : ''}`}>
+      <Couverture l={l} taille={taille} />
+      {rendu ? <img className="bib-rendu" src={rendu} alt="" aria-hidden="true" decoding="async" draggable={false} /> : null}
+    </span>
+  )
+}
+
 const sAbonner = () => () => {}
 
 function lireVue(): VueEtagere | null {
@@ -71,6 +86,8 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
   const [ouvert, setOuvert] = useState<number | null>(null)
   const [parRang, setParRang] = useState(4)
   const rayon = useRef<HTMLDivElement>(null)
+  const racine = useRef<HTMLDivElement>(null)
+  const [rendus, setRendus] = useState<Record<string, string>>({})
   const glisse = useRef<{ x: number; id: number } | null>(null)
 
   const choisirVue = (v: VueEtagere) => {
@@ -98,6 +115,32 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
     obs.observe(el)
     return () => obs.disconnect()
   }, [vue])
+
+  /* Les numéros en volume : demandés quand la bibliothèque approche de
+     l'écran (Three.js ne se charge qu'à ce moment), posés un par un. */
+  useEffect(() => {
+    const el = racine.current
+    if (!el) return
+    let annule = false
+    const veille = new IntersectionObserver(
+      (entrees) => {
+        if (!entrees.some((e) => e.isIntersecting)) return
+        veille.disconnect()
+        for (const l of livres) {
+          if (!l.couverture || l.couvertureEstPlanche) continue
+          void rendreNumero(l.couverture, l.nbPages).then((src) => {
+            if (src && !annule) setRendus((r) => (r[l.token] === src ? r : { ...r, [l.token]: src }))
+          })
+        }
+      },
+      { rootMargin: '300px 0px' },
+    )
+    veille.observe(el)
+    return () => {
+      annule = true
+      veille.disconnect()
+    }
+  }, [livres])
 
   const aller = useCallback(
     (pas: number) => setCentre((c) => Math.min(livres.length - 1, Math.max(0, c + pas))),
@@ -132,7 +175,7 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
   for (let i = 0; i < livres.length; i += parRang) rangs.push(livres.slice(i, i + parRang))
 
   return (
-    <div className="bib">
+    <div className="bib" ref={racine}>
       <div className="bib-vues" role="group" aria-label="Affichage">
         {VUES.map(([v, libelle]) => (
           <button
@@ -162,9 +205,7 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
                     onClick={() => setOuvert(index)}
                     aria-label={`${l.titre}, ouvrir en grand`}
                   >
-                    <span className="bib-livre">
-                      <Couverture l={l} taille="(max-width: 700px) 42vw, 200px" />
-                    </span>
+                    <Livre l={l} taille="(max-width: 700px) 42vw, 200px" rendu={rendus[l.token]} />
                     <span className="bib-legende">
                       <span className="bib-legende-titre">{l.titre}</span>
                       <span className="bib-legende-meta">{l.annee}</span>
@@ -204,9 +245,7 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
                   aria-hidden={loin}
                   onClick={() => (d === 0 ? setOuvert(i) : setCentre(i))}
                 >
-                  <span className="bib-livre">
-                    <Couverture l={l} taille="(max-width: 700px) 60vw, 320px" />
-                  </span>
+                  <Livre l={l} taille="(max-width: 700px) 60vw, 320px" rendu={rendus[l.token]} />
                 </div>
               )
             })}

@@ -7,6 +7,9 @@
    rien et pose, une fois monté, ce que faisait le script du banc :
    - les traits de l'atelier ;
    - l'ouverture du livre et la pile qui devient une année (GSAP + ScrollTrigger) ;
+     le livre s'ouvre par le magazine 3D de la charte (livre3d.ts), chargé après
+     coup : la timeline lui donne l'ouverture, de 0 à 1. Sans WebGL, le livre
+     HTML s'ouvre comme avant ;
    - l'écran d'essai « Avant d'ouvrir » et ses quatre états ;
    - vos photos partout dans la page (elles restent sur l'appareil) ;
    - le titre : écrit à la souris sur la couverture, ou dans une petite feuille au doigt ;
@@ -23,6 +26,7 @@
 
 import { useEffect } from 'react'
 import type { gsap } from 'gsap'
+import type { Livre3D } from './livre3d'
 
 export type PhotoExemple = { s: string; p: string }
 
@@ -500,10 +504,57 @@ export default function AccueilMotion({ photos }: Props) {
       t1?: Tl | null
       t2?: Tl | null
       t1Phase?: boolean
+      t1P?: number
       t2Dernier?: boolean
       faireT1?: () => void
       faireT2?: () => void
     } = {}
+
+    /* ---------- le magazine 3D ouvre le livre (livre3d.ts) ----------
+       L'ouverture `o` et le second temps `b` se LISENT sur la timeline, aux
+       instants où tournaient les deux feuilles (jamais un état gardé à côté :
+       un refresh de ScrollTrigger rejoue la timeline sans prévenir). Le modèle
+       ne prend la main que livre fermé : jamais de relève en pleine ouverture,
+       même si Three.js arrive tard. */
+    let livre3d: Livre3D | null = null
+    let main3d = false
+    function maj3d() {
+      const t1 = G.t1
+      const g = G.g
+      if (!livre3d || !t1 || !g) return
+      const doux = g.parseEase('power1.inOut')
+      const part = (debut: number, duree: number) => doux(Math.min(1, Math.max(0, (t1.time() - debut) / duree)))
+      const P = G.t1P ?? 0
+      const o = part(P + 0.18, 0.9)
+      if (!main3d) {
+        if (o > 0) return
+        main3d = true
+        R.dataset.m3d = '1'
+      }
+      livre3d.poser(o, part(P + 1.8, 0.8))
+    }
+    let demande3d = false
+    function charger3d() {
+      if (demande3d || !vivant) return
+      demande3d = true
+      const livre = $('.livre')
+      if (!livre) return
+      import('./livre3d')
+        .then((m) => m.monterLivre3D(livre, { leger: tactile || mobile() }))
+        .then((l) => {
+          if (!vivant) return l.liberer()
+          livre3d = l
+          maj3d()
+        })
+        .catch(() => {
+          /* Pas de WebGL, ou un chargement manqué : le livre HTML reste. */
+        })
+    }
+    nettoyer.push(() => {
+      livre3d?.liberer()
+      livre3d = null
+      delete R.dataset.m3d
+    })
 
     function construireTitre(delai: number) {
       const g = G.g
@@ -549,9 +600,10 @@ export default function AccueilMotion({ photos }: Props) {
           }
           const phase = !(R.dataset.perso && R.dataset.titre)
           const P = phase ? 1.05 : 0
-          const t1 = g.timeline({ scrollTrigger: { trigger: '#ouv', start: 'top top', end: '+=' + (phase ? 480 : 380) + '%', scrub: 0.8, pin: true, anticipatePin: 1, invalidateOnRefresh: true, refreshPriority: 2 } })
+          const t1 = g.timeline({ scrollTrigger: { trigger: '#ouv', start: 'top top', end: '+=' + (phase ? 480 : 380) + '%', scrub: 0.8, pin: true, anticipatePin: 1, invalidateOnRefresh: true, refreshPriority: 2, onRefresh: maj3d }, onUpdate: maj3d })
           G.t1 = t1
           G.t1Phase = phase
+          G.t1P = P
           const sp = () => Math.min(mobile() ? 1.2 : 0.8, (innerHeight * (mobile() ? 0.34 : 0.4)) / livre.offsetHeight)
           const xc = () => (-sp() * livre.offsetWidth) / 4
           const e2 = $$('#e2 .e2-haut, #e2 .e2-bas')
@@ -640,6 +692,13 @@ export default function AccueilMotion({ photos }: Props) {
       }, R)
       ST.refresh()
       caler()
+      /* Three.js : jamais dans le premier rendu. Au premier geste, ou un peu
+         après le chargement si personne ne bouge. */
+      const tot = () => charger3d()
+      ecoute(window, 'scroll', tot, { passive: true, once: true })
+      ecoute(window, 'pointerdown', tot, { passive: true, once: true })
+      const plusTard = window.setTimeout(tot, 2500)
+      nettoyer.push(() => clearTimeout(plusTard))
     }
 
     poserPhotos()

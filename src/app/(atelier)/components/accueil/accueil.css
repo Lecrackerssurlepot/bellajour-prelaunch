@@ -374,3 +374,22 @@
 }
 .m-banc .couv-titre.ex-fondu{transition:opacity .45s ease}
 .m-banc .couv-titre.ex-cache{opacity:0}
+/* Le magazine 3D de la charte ouvre le livre (livre3d.ts). Sa toile est posée
+   dans `.livre` : elle suit ses déplacements. Fermé, on voit le livre HTML ;
+   dès que l'ouverture commence, le modèle monte en fondu (`.ouvre3d`) puis
+   reste seul (`.seul3d`). Les
+   repères de coupe encadraient une double page à plat : ils se retirent. */
+.m-banc .livre-3d{position:absolute;left:50%;top:50%;max-width:none;z-index:5;pointer-events:none;visibility:hidden}
+.m-banc .livre-3d canvas{display:block;width:100%;height:100%;max-width:none}
+.m-banc .livre.ouvre3d .livre-3d{visibility:visible}
+.m-banc .livre.seul3d>.base,.m-banc .livre.seul3d>.feuille{visibility:hidden}
+.m-banc[data-m3d] .livre .repere{display:none}
+/* L'étiquette « pages » suit le livre en volume : elle désigne la tranche du
+   bloc. Sa place d'origine est en ligne dans Accueil.tsx (livre à plat), d'où
+   !important. */
+.m-banc[data-m3d] .livre .note.nB:not(.inv){left:78%!important;top:94%!important}
+/* Au téléphone, le livre en volume est trop petit pour porter une étiquette
+   sans cacher ce qu'elle désigne : elles se retirent. */
+@media (max-width:700px){
+.m-banc[data-m3d] .livre .note{display:none}
+}
