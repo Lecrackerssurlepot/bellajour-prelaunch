@@ -74,7 +74,7 @@
 @media (prefers-reduced-motion:reduce){
 .m-banc *{transition:none!important}
 }
-.m-banc .pg-tete{padding-top:calc(0px + 120px)}
+.m-banc .pg-tete{padding-top:var(--m-espace-tete-page)}
 .m-banc[data-anime] .rv{opacity:0;transform:translateY(24px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
 .m-banc .rv.vu{opacity:1;transform:none}
 .m-banc .rv.d1{transition-delay:.08s}
@@ -113,7 +113,7 @@
 .m-banc .eventail{justify-self:center;max-width:420px}
 }
 @media (max-width:700px){
-.m-banc .pg-tete{padding-top:calc(0px + var(--m-espace-9));padding-bottom:var(--m-espace-6)}
+.m-banc .pg-tete{padding-bottom:var(--m-espace-6)}
 .m-banc .pg-tete h1{font-size:calc(44px * var(--m-police-titre-facteur))}
 .m-banc .specs li{grid-template-columns:1fr;gap:var(--m-espace-1)}
 }
@@ -126,8 +126,8 @@
 @keyframes p-bas{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 @keyframes v-souffle{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.07);opacity:1}}
 @keyframes barre-cl{0%,49%{opacity:1}50%,100%{opacity:0}}
-/* la page démarre sous la barre fixe (le banc le faisait sur .page) */
-.m-banc.m-page{padding-top:var(--m-espace-tete-page)}
+/* La tête de page porte seule l'écart sous la barre fixe (fiche E, « tête de page ») :
+   jamais un second padding sur <main>, qui doublait l'espace (retour du 26/11). */
 .m-banc .prix-tete small{display:block}
 .m-banc .geste p{margin:0}
 .m-banc .cadre-etroit{max-width:860px}

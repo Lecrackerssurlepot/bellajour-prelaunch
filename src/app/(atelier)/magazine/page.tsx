@@ -26,7 +26,6 @@ import type { Metadata } from 'next'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Bandeau from '../noel/Bandeau'
-import BlocMagazine from '../noel/BlocMagazine'
 import Apparitions from '@/components/Apparitions'
 import { fichiersVisuels, lireVisuel } from '@/components/Visuel'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
@@ -220,8 +219,6 @@ export default async function PageProduit() {
             </div>
           </div>
         </section>
-
-        {noel && <BlocMagazine />}
 
         <section className="bloc gestes">
           <div className="cadre">
