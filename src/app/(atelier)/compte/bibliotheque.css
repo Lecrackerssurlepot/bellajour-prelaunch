@@ -282,7 +282,7 @@
 
 .bib-pose .bib-livre {
   transform-origin: 50% 100%;
-  transform: rotateY(-12deg);
+  transform: rotateY(-6deg);
   transition:
     transform var(--m-duree-standard) var(--m-courbe-sortie),
     box-shadow var(--m-duree-standard) var(--m-courbe-sortie);
@@ -355,7 +355,7 @@
     translate(-50%, -50%)
     translateX(calc(var(--d) * 58%))
     translateZ(calc(var(--ad) * -160px))
-    rotateY(calc(var(--d) * -24deg));
+    rotateY(calc(var(--d) * -10deg));
   opacity: max(0, calc(1 - var(--ad) * 0.24));
   z-index: calc(10 - var(--ad));
   cursor: pointer;
@@ -486,7 +486,7 @@
 }
 .bib-focus-plat .bib-livre {
   --bib-livre: clamp(200px, 26vw, 320px);
-  transform: rotateY(-18deg) rotateX(4deg);
+  transform: rotateY(-8deg);
   box-shadow: var(--m-ombre-livre);
   animation: bib-flotte 5s ease-in-out infinite;
 }

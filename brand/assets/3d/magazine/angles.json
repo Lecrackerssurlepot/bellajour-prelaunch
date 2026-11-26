@@ -38,6 +38,14 @@
       "rotation": 0,
       "camera": { "elevation": 44, "distance": 3.9, "champ": 28 }
     },
+    "presque-face": {
+      "libelle": "Presque de face",
+      "$note": "Proposé le 26/11 : la bibliothèque du compte. Le magazine reste de face, à peine tourné pour laisser voir l'épaisseur des pages.",
+      "pose": "debout",
+      "ouverture": 0,
+      "rotation": -18,
+      "camera": { "elevation": 3, "distance": 2.9, "champ": 28 }
+    },
     "pose-a-plat": {
       "libelle": "Posé à plat",
       "pose": "a-plat",

@@ -17,9 +17,9 @@ import { PAGE_H, PAGE_L } from '@/lib/mise-en-page/geometrie'
 
    La timeline GSAP d'AccueilMotion donne deux nombres, de 0 à 1 :
    - `o` : de l'angle nommé « face » (debout, fermé) à l'angle nommé
-     « ouvert » (à plat, ouvert) ;
-   - `b` : le second temps, le livre ouvert tourne un peu, sa tranche vient
-     vers nous (à mi-chemin de l'angle nommé « pose-a-plat »).
+     « ouvert », mais vu de face : il s'ouvre debout, sans basculer ;
+   - `b` : le second temps. Le livre reste de face (26/11) : seul le recul
+     sur écran étroit en dépend.
    Rien ne joue seul : chaque image est posée par le défilement.
 
    Sans WebGL, ou si quoi que ce soit échoue ici, monterLivre3D rejette et
@@ -29,16 +29,12 @@ import { PAGE_H, PAGE_L } from '@/lib/mise-en-page/geometrie'
 const PAGES = 32
 const FACE = angles.angles.face
 const OUVERT = angles.angles.ouvert
-const A_PLAT = angles.angles['pose-a-plat']
 const RAD = Math.PI / 180
 /* La toile est plus grande que le livre : assez haute pour que, à la distance
    de l'angle « ouvert », une page debout ait exactement la hauteur du livre
    HTML (la relève se fait sans saut), et assez large pour l'ombre. */
 const HAUTEUR = OUVERT.camera.distance * 2 * Math.tan((OUVERT.camera.champ / 2) * RAD)
 const LARGEUR = 1.5
-/* Le second temps : le livre ouvert tourne à mi-chemin de l'angle nommé
-   « pose-a-plat », la tranche des pages vient vers nous. */
-const SECOND_TEMPS = 0.5
 /* La part de l'ouverture pendant laquelle le modèle remplace le livre HTML. */
 const RELEVE = 0.012
 
@@ -242,9 +238,12 @@ export async function monterLivre3D(livre: HTMLElement, { leger }: { leger: bool
     const recul = etroit ? 1.14 : 1
     studio.poser({
       ouverture: o,
-      couche: o,
-      rotation: FACE.rotation + (OUVERT.rotation - FACE.rotation) * o + (A_PLAT.rotation - OUVERT.rotation) * SECOND_TEMPS * b,
-      elevation: FACE.camera.elevation + (OUVERT.camera.elevation - FACE.camera.elevation) * o + (A_PLAT.camera.elevation - OUVERT.camera.elevation) * SECOND_TEMPS * b,
+      /* Il reste de face, ouvert comme fermé (Mathias, 26/11) : debout, sans
+         tourner, la caméra à hauteur de l'angle « face ». Le second temps ne
+         le fait plus pivoter. */
+      couche: 0,
+      rotation: FACE.rotation,
+      elevation: FACE.camera.elevation,
       distance: OUVERT.camera.distance * (1 + (recul - 1) * o) * (etroit ? 1 + 0.08 * b : 1),
       champ: OUVERT.camera.champ,
     })

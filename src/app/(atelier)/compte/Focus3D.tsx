@@ -81,10 +81,9 @@ export default function Focus3D({
         if (annule) return
         if (!webglDisponible()) throw new Error('webgl')
         const leger = window.matchMedia('(pointer: coarse)').matches
-        const calme = window.matchMedia('(prefers-reduced-motion: reduce)').matches
         monte = creerStudio(el, {
           angles,
-          angle: 'trois-quarts-droite',
+          angle: 'presque-face',
           couverture: livre.couverture,
           largeurMm: PAGE_L,
           hauteurMm: PAGE_H,
@@ -94,7 +93,8 @@ export default function Focus3D({
           fond: null,
           leger,
           interactif: true,
-          rotationAuto: !calme,
+          /* Il reste de face : pas de rotation seule (Mathias, 26/11). */
+          rotationAuto: false,
         })
         monte.canvas.setAttribute('role', 'img')
         monte.canvas.setAttribute('aria-label', `${livre.titre}, en trois dimensions`)

@@ -5,14 +5,14 @@ import { PAGE_H, PAGE_L } from '@/lib/mise-en-page/geometrie'
 
 /* Les numéros de la bibliothèque, photographiés par le magazine 3D de la
    charte (brand/assets/3d/magazine). UN seul studio, hors écran : il rend
-   chaque couverture sous l'angle nommé « trois-quarts-droite » (la tranche
-   des pages se voit, à l'épaisseur du nombre de pages réel), on garde
+   chaque couverture sous l'angle nommé « presque-face » (de face, la tranche
+   des pages se voit à peine, à l'épaisseur du nombre de pages réel), on garde
    l'image, et le studio est rendu dès que la file est vide. Jamais un
    contexte WebGL par numéro.
    Sans WebGL, ou si une couverture ne se laisse pas lire (CORS), la promesse
    rend null : la couverture à plat reste. */
 
-const ANGLE = 'trois-quarts-droite'
+const ANGLE = 'presque-face'
 const PAGES_PAR_DEFAUT = 32
 /* Le côté de la prise de vue, en pixels. Le magazine en occupe environ 70 %. */
 const COTE = 1200
