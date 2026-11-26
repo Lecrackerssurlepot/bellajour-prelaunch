@@ -1,26 +1,19 @@
 'use client'
 
-/* La page /partenaires (retour de Mathias du 18/11 : « on veut juste prendre
-   un rendez-vous comme CTA, et que le PDF soit gros »).
-
-   LA BROCHURE prend toute la page : une page sous l'autre, en grand, comme on
-   lit un PDF. Rien autour.
-
-   UN SEUL GESTE : « Prendre rendez-vous » (dans l'en-tête, qui reste collé en
-   haut, et à la fin de la brochure) ouvre le panneau des créneaux : un volet à droite à
-   l'ordinateur, une feuille du bas au téléphone. Il reste monté : les
-   créneaux sont lus dès l'arrivée.
+/* Le rendez-vous de /partenaires (18/11), détaché de la brochure le 26/11 :
+   la page « Pour les groupes » du duplicata validé est maintenant une page
+   serveur, et ses boutons « Prendre rendez-vous » ouvrent ce panneau
+   (un volet à droite à l'ordinateur, une feuille du bas au téléphone).
 
    LE RENDEZ-VOUS ne croit rien de ce qu'il affiche : chaque créneau vient du
    serveur, et le serveur le refait avant de réserver. Tant que les agendas ne
    sont pas reliés (503) ou que l'Édition collective est fermée (404), le
    panneau dit que les créneaux ouvrent bientôt : jamais un créneau inventé. */
 
-import Link from 'next/link'
+import type React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { lireDemandeProspect, PROSPECT_MESSAGE_MAX, type ChampProspect } from '@/lib/collectif/prospectsSaisie'
 
-type PageBrochure = { alt: string; petite: string; grande: string }
 type CreneauVu = { debut: string; heure: string }
 type JourVu = { jour: string; libelle: string; creneaux: CreneauVu[] }
 type Semaine = { semaine: number; derniere: boolean; libelle: string; avec: string[]; jours: JourVu[] }
@@ -39,8 +32,27 @@ function court(libelle: string): { jour: string; numero: string } {
   return { jour: `${jour.slice(0, 3)}.`, numero }
 }
 
-export default function Partenaires({ pages, pdf, contact }: { pages: PageBrochure[]; pdf: string; contact: string }) {
+/* Le geste qui ouvre le panneau, posé où la page veut (en-tête, fin de page) :
+   un événement de fenêtre, pour que la page reste un composant serveur. */
+const OUVRIR = 'bj:rendez-vous'
+
+export function BoutonRendezVous({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <button type="button" className={className} onClick={() => window.dispatchEvent(new Event(OUVRIR))}>
+      {children}
+    </button>
+  )
+}
+
+/* Le panneau des créneaux. Il reste monté : les créneaux sont lus dès l'arrivée. */
+export default function PanneauRendezVous({ contact }: { contact: string }) {
   const [ouvert, setOuvert] = useState(false)
+
+  useEffect(() => {
+    const ouvrir = () => setOuvert(true)
+    window.addEventListener(OUVRIR, ouvrir)
+    return () => window.removeEventListener(OUVRIR, ouvrir)
+  }, [])
 
   useEffect(() => {
     if (!ouvert) return
@@ -52,55 +64,16 @@ export default function Partenaires({ pages, pdf, contact }: { pages: PageBrochu
   }, [ouvert])
 
   return (
-    <main className="pa-page">
-      <header className="pa-tete">
-        <Link className="pa-logo" href="/" prefetch={false} aria-label="Bellajour, retour à l’accueil">
-          <img src="/images/v2/ui/signature-bellajour-240.webp" alt="" width={240} height={92} decoding="async" />
-        </Link>
-        <button type="button" className="pa-bouton pa-tete-cta" onClick={() => setOuvert(true)}>
-          Prendre rendez-vous
+    <div className="pa-page pa-hote">
+    <div className={`pa-voile ${ouvert ? 'est-ouvert' : ''}`} onClick={() => setOuvert(false)} aria-hidden={!ouvert}>
+      <section className="pa-panneau" role="dialog" aria-modal="true" aria-label="Prendre rendez-vous" onClick={(e) => e.stopPropagation()} inert={!ouvert}>
+        <button type="button" className="pa-rond pa-fermer" aria-label="Fermer" onClick={() => setOuvert(false)}>
+          ×
         </button>
-      </header>
-
-      {/* La brochure, en grand : une page sous l'autre, comme on lit un PDF. */}
-      <h1 className="pa-sr">Bellajour pour les écoles et les associations : la brochure</h1>
-      <div className="pa-bro">
-        {pages.map((p, i) => (
-          <img
-            key={p.grande}
-            className="pa-feuille"
-            src={p.grande}
-            srcSet={`${p.petite} 800w, ${p.grande} 1600w`}
-            sizes="(max-width: 1100px) 100vw, 1040px"
-            alt={p.alt}
-            width={1600}
-            height={2262}
-            loading={i === 0 ? 'eager' : 'lazy'}
-            fetchPriority={i === 0 ? 'high' : undefined}
-            decoding="async"
-          />
-        ))}
-      </div>
-
-      <div className="pa-fin">
-        <button type="button" className="pa-bouton" onClick={() => setOuvert(true)}>
-          Prendre rendez-vous
-        </button>
-        <a className="pa-pilule" href={pdf} download>
-          Télécharger le PDF
-        </a>
-      </div>
-
-      {/* Le panneau reste monté : les créneaux sont lus dès l'arrivée, il s'ouvre plein. */}
-      <div className={`pa-voile ${ouvert ? 'est-ouvert' : ''}`} onClick={() => setOuvert(false)} aria-hidden={!ouvert}>
-        <section className="pa-panneau" role="dialog" aria-modal="true" aria-label="Prendre rendez-vous" onClick={(e) => e.stopPropagation()} inert={!ouvert}>
-          <button type="button" className="pa-rond pa-fermer" aria-label="Fermer" onClick={() => setOuvert(false)}>
-            ×
-          </button>
-          <RendezVous contact={contact} />
-        </section>
-      </div>
-    </main>
+        <RendezVous contact={contact} />
+      </section>
+    </div>
+    </div>
   )
 }
 

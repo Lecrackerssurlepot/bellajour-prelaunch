@@ -262,3 +262,7 @@
   .pa-panneau { transition: none; }
   .pa-attente i { animation: none; }
 }
+
+/* 26/11 : la page est celle du duplicata (groupes.css) ; il ne reste ici que le panneau,
+   posé dans un hôte `.pa-page` qui ne dessine plus rien de la page. */
+.pa-page.pa-hote { min-height: 0; padding: 0; background: none; }

@@ -1,0 +1,83 @@
+/* /partenaires, « Pour les groupes » : port de la page Groupes du duplicata
+   validé (26/11), scopé sous .m-groupes, sur la base .m-banc (magazine.css).
+   Les jetons --m-* remplacent les variables du banc (--s*, --fs-*, --acc).
+   Correction demandée par Mathias : les cas (« Week-end d'intégration »…)
+   sont CENTRÉS dans leur colonne, la paire de doubles pages centrée sous le
+   titre sur mobile, au lieu d'être collée à gauche. */
+
+.m-groupes .lien{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 var(--m-espace-5);border-radius:var(--m-rayon-pilule);border:1px solid var(--m-couleur-papier-ligne);font-size:var(--m-taille-bouton);font-weight:500;white-space:nowrap;transition:background-color .2s,transform .2s}
+.m-groupes .lien:hover{background:color-mix(in srgb,var(--m-couleur-papier-texte) 5%,transparent)}
+.m-groupes .lien:active{transform:scale(.97)}
+.m-groupes button.btn,.m-groupes button.vide{font:inherit;cursor:pointer}
+
+/* Ouverture : le texte, et la pile de quatre numéros qui s'ouvre en éventail. */
+.m-groupes .grp-ouv .cadre{align-items:center}
+.m-groupes .pile-grp{position:relative;aspect-ratio:1/1;width:100%;max-width:440px;justify-self:end}
+.m-groupes .pile-grp img{position:absolute;top:10%;left:22%;width:50%;aspect-ratio:210/297;object-fit:cover;box-shadow:var(--m-ombre-livre);transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.m-groupes .pile-grp.vu img:nth-child(1){transform:translate(-38%,6%) rotate(-10deg)}
+.m-groupes .pile-grp.vu img:nth-child(2){transform:translate(-12%,-2%) rotate(-3deg)}
+.m-groupes .pile-grp.vu img:nth-child(3){transform:translate(14%,3%) rotate(4deg)}
+.m-groupes .pile-grp.vu img:nth-child(4){transform:translate(38%,8%) rotate(11deg)}
+
+/* Le récit et les derniers numéros. */
+.m-groupes .recit-tete{max-width:760px}
+.m-groupes .numeros{position:relative;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:var(--m-espace-4);margin-top:var(--m-espace-8);padding-top:var(--m-espace-6)}
+.m-groupes .numeros-lab{position:absolute;top:0;left:0}
+.m-groupes .numeros img{width:100%;aspect-ratio:210/297;object-fit:cover;box-shadow:var(--m-ombre-objet);transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.m-groupes .numeros img:hover{transform:translateY(-6px) rotate(-1deg)}
+.m-groupes .vide{aspect-ratio:210/297;width:100%;padding:0;background:none;border:1.5px dashed var(--m-couleur-papier-ligne);color:inherit;display:grid;place-content:center;justify-items:center;gap:var(--m-espace-2);text-align:center;transition:background-color .3s}
+.m-groupes .vide:hover{background:color-mix(in srgb,var(--m-couleur-papier-texte) 4%,transparent)}
+.m-groupes .vide .titre{font-size:calc(var(--m-taille-h3) * var(--m-police-titre-facteur));color:var(--m-couleur-accent)}
+
+/* Les cas : texte et usages d'un côté, la paire de doubles pages de l'autre. */
+.m-groupes .cas{padding-top:0}
+.m-groupes .cas .cas-1{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"t d" "u d";gap:var(--m-espace-6) var(--m-espace-8);align-items:center;margin-top:var(--m-espace-8)}
+.m-groupes .cas .cas-1.inverse{grid-template-columns:minmax(0,7fr) minmax(0,5fr);grid-template-areas:"d t" "d u"}
+.m-groupes .cas-txt{grid-area:t;align-self:end}
+.m-groupes .cas-n{font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;color:var(--m-couleur-accent)}
+.m-groupes .cas-txt h3{font-size:calc(var(--m-taille-h3) * 1.2 * var(--m-police-titre-facteur));margin:var(--m-espace-3) 0 var(--m-espace-2)}
+.m-groupes .cas-txt p{margin:0}
+.m-groupes .doubles{grid-area:d;position:relative;padding-bottom:22%;width:100%;max-width:620px;justify-self:center}
+.m-groupes .doubles .dp{width:78%;aspect-ratio:757/530;object-fit:cover;box-shadow:var(--m-ombre-livre);border-radius:2px}
+.m-groupes .doubles .dp2{position:absolute;right:0;bottom:0;width:58%}
+.m-groupes .doubles .dp.a-venir{display:grid;place-items:center;background:color-mix(in srgb,var(--m-couleur-papier-texte) 4%,var(--m-couleur-papier-fond));border:1.5px dashed var(--m-couleur-papier-ligne);box-shadow:none;color:var(--m-couleur-papier-texte-doux);font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;text-transform:uppercase;margin:0 auto}
+.m-groupes .doubles:has(.a-venir){padding-bottom:0}
+.m-groupes .usages{grid-area:u;align-self:start;display:grid;gap:var(--m-espace-5)}
+.m-groupes .usages div{display:grid;gap:var(--m-espace-1);padding-top:var(--m-espace-3);border-top:1px solid var(--m-couleur-papier-texte)}
+.m-groupes .usages b{font-weight:500}
+.m-groupes .usages span{font-size:var(--m-taille-petit)}
+
+/* Quatre étapes, un trait qui court sur desktop. */
+.m-groupes .etapes-grp{padding-top:0}
+.m-groupes .quatre{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--m-espace-5);margin-top:var(--m-espace-7);counter-reset:q}
+.m-groupes .quatre div{padding-top:var(--m-espace-4);border-top:1px solid var(--m-couleur-papier-texte);counter-increment:q}
+.m-groupes .quatre div::before{content:"0" counter(q);display:block;font-family:var(--m-police-etiquette-famille);font-size:var(--m-taille-etiquette);letter-spacing:.12em;color:var(--m-couleur-accent);margin-bottom:var(--m-espace-3)}
+.m-groupes .quatre b{font-family:var(--m-police-titre-famille);font-weight:var(--m-police-titre-graisse);font-size:calc(var(--m-taille-h3) * var(--m-police-titre-facteur));line-height:1.1}
+.m-groupes .quatre p{margin:var(--m-espace-2) 0 0;font-size:var(--m-taille-petit)}
+.m-groupes .q-ligne{position:absolute;top:0;left:0;right:0;height:1px;background:var(--m-couleur-papier-texte);display:none}
+@media (min-width:901px){ .m-groupes .q-ligne{display:block} .m-groupes .quatre div{border-top-color:transparent} }
+
+/* Le rendez-vous. */
+.m-groupes .rdv-bloc{padding-top:0}
+.m-groupes .rdv{border-radius:var(--m-rayon-bloc);background:color-mix(in srgb,var(--m-couleur-papier-texte) 4%,var(--m-couleur-papier-fond));padding:clamp(32px,6vw,72px);display:grid;grid-template-columns:minmax(0,1.2fr) auto;gap:var(--m-espace-6);align-items:center}
+.m-groupes .rdv h2{margin-top:var(--m-espace-3)}
+.m-groupes .rdv-phrase{margin:0 0 var(--m-espace-3)}
+.m-groupes .rdv-actions{display:grid;gap:var(--m-espace-3);justify-items:stretch}
+.m-groupes .sign-fond{margin:0;font-family:'Interlope',cursive;font-size:22px;color:var(--m-couleur-accent)}
+
+@media (max-width:900px){
+  .m-groupes .numeros{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .m-groupes .quatre{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--m-espace-6) var(--m-espace-5)}
+  .m-groupes .rdv{grid-template-columns:1fr}
+  .m-groupes .pile-grp{justify-self:center;max-width:380px}
+  /* Un cas par colonne, centré : titre, paire de doubles, usages. */
+  .m-groupes .cas .cas-1,.m-groupes .cas .cas-1.inverse{grid-template-columns:1fr;grid-template-areas:"t" "d" "u";gap:var(--m-espace-5);justify-items:center;text-align:center}
+  .m-groupes .cas-txt{align-self:auto}
+  .m-groupes .cas-txt p{margin:0 auto}
+  .m-groupes .doubles{max-width:520px}
+  .m-groupes .usages{width:100%;max-width:520px;grid-template-columns:1fr 1fr;gap:var(--m-espace-4);text-align:left}
+}
+@media (max-width:700px){
+  .m-groupes .numeros{gap:var(--m-espace-3)}
+  .m-groupes .pile-grp{max-width:300px}
+}
