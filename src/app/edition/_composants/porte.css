@@ -9,9 +9,18 @@
   place-items: center;
   min-height: var(--app-height);
   padding: clamp(var(--m-espace-6), 8vw, var(--m-espace-8)) var(--m-espace-4);
-  background: #17181c;
-  color: #ecedf0;
+  background: var(--m-couleur-nuit-fond);
+  color: var(--m-couleur-nuit-texte);
   text-align: center;
+  /* Bloc nuit de la charte (fiche C) : les jetons --c-* de l'atelier pointent
+     vers l'encre du papier depuis le socle V2 ; ici on les ramène à la nuit,
+     sinon le texte sort noir sur noir (axe, phase 5, 26/11). */
+  --c-text-pure: var(--m-couleur-nuit-texte);
+  --c-text-soft: var(--m-couleur-nuit-texte-doux);
+  --c-text-faint: var(--m-couleur-nuit-texte-doux);
+  --c-accent: var(--m-couleur-nuit-texte);
+  --c-text-onaccent: var(--m-couleur-nuit-fond);
+  --c-line-md: var(--m-couleur-nuit-ligne);
 }
 
 .bj-atelier .ec-porte-in {
