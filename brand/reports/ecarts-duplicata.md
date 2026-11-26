@@ -16,8 +16,8 @@ ceux du code, les textes légaux restent tels quels.
 | favicon | Carré noir derrière le b. | Le b seul par défaut ; carré blanc seulement pour l'écran d'accueil (iOS exige une icône opaque). | fd4796f3 |
 | /ambassadeurs/** | Pages de l'ancienne charte encore en ligne. | Archivées, 307 vers l'accueil. | 57386818 |
 
-| / (accueil) | Un chapitre de Noël (pile de couvertures, « le 2e magazine −40 % », scène épinglée de 2 500 à 2 700 px) après l'ouverture. Dans le duplicata, Noël n'est que le bandeau. La page faisait 14 753 px (390) et 14 707 px (1440), contre 12 144 et 11 977. | Chapitre retiré de l'accueil. Page à 12 221 et 12 007 px. Les épinglages étaient déjà identiques (ouverture 4 895 / 5 220 px, « Chaque moment » 4 558 / 3 870 px). | voir le commit accueil |
-| en-tête téléphone | Le compte passait avant le menu (`order: 2` sur le bouton menu). | Menu puis compte, comme le duplicata. | idem |
+| / (accueil) | Un chapitre de Noël (pile de couvertures, « le 2e magazine −40 % », scène épinglée de 2 500 à 2 700 px) après l'ouverture. Dans le duplicata, Noël n'est que le bandeau. La page faisait 14 753 px (390) et 14 707 px (1440), contre 12 144 et 11 977. | Chapitre retiré de l'accueil. Page à 12 221 et 12 007 px. Les épinglages étaient déjà identiques (ouverture 4 895 / 5 220 px, « Chaque moment » 4 558 / 3 870 px). | 26ffeaf8 |
+| en-tête téléphone | Le compte passait avant le menu (`order: 2` sur le bouton menu). | Menu puis compte, comme le duplicata. | 26ffeaf8 |
 
 ## Vérifié sans écrire en base
 
