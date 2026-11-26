@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-303 -91 1009 1009" width="512" height="512" role="img" aria-label="Bellajour"><defs><clipPath id="b"><rect x="0" y="0" width="384" height="1192"/></clipPath></defs><rect x="-303" y="-91" width="1009" height="1009" fill="#111111"/><g clip-path="url(#b)"><g transform="translate(0.000000,1192.000000) scale(0.100000,-0.100000)"
-fill="#ffffff" stroke="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-226 -14 855 855" width="512" height="512" role="img" aria-label="Bellajour"><style>path{fill:#111111}@media (prefers-color-scheme:dark){path{fill:#ffffff}}</style><defs><clipPath id="b"><rect x="0" y="0" width="384" height="1192"/></clipPath></defs><g clip-path="url(#b)"><g transform="translate(0.000000,1192.000000) scale(0.100000,-0.100000)"
+fill="#111111" stroke="none">
 <path d="M3486 11705 c-3 -9 -6 -25 -6 -36 0 -26 -37 -39 -114 -39 -91 0 -169
 -54 -383 -267 -94 -92 -215 -212 -269 -266 -54 -54 -117 -120 -139 -148 -22
 -28 -66 -83 -98 -122 -48 -60 -176 -247 -272 -397 -21 -32 -67 -111 -118 -200

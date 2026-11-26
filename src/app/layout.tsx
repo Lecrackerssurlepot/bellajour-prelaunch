@@ -103,16 +103,17 @@ export const metadata: Metadata = {
     images: imagesTwitter,
   },
 
-  /* Le « b » du logo, carré noir (charte V2, 26/11/2026) : fabriqués par
-     brand/scripts/favicon.mjs, les trois variantes sont sur /brand. */
+  /* Le « b » du logo SEUL, sans carré (charte V2, 26/11/2026) : fabriqués par
+     brand/scripts/favicon.mjs, les trois variantes sont sur /brand. Le SVG
+     passe en noir sur un onglet sombre. Les icônes d'écran d'accueil
+     (apple-touch-icon, 192, 512) gardent un carré blanc : iOS veut une icône
+     opaque. Les 192 / 512 ne sont donc plus proposées aux onglets. */
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
       { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
       { url: '/icon-32.png', type: 'image/png', sizes: '32x32' },
       { url: '/icon-16.png', type: 'image/png', sizes: '16x16' },
-      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
-      { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
     ],
     apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
   },

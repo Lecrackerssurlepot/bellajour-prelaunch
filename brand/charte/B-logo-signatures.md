@@ -26,8 +26,14 @@
 
 ## Favicon et icônes d'application
 
-- **Existants** : `src/app/favicon.ico`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`.
-- **Règle** : le logo en encre sur papier blanc, et rien d'autre. Ils seront refaits à partir du SVG vectorisé en phase 2.
+- **Source** : le « b » découpé dans le tracé du logo, jamais redessiné (`brand/scripts/favicon.mjs`).
+- **Onglet (défaut, tranché le 26/11)** : **le b seul, sans carré**, en encre ; le SVG passe en papier
+  sur un onglet sombre. Fichiers : `public/icon.svg`, `public/favicon.ico`, `src/app/favicon.ico`,
+  `public/icon-16.png`, `public/icon-32.png`.
+- **Écran d'accueil** : carré papier, b encre (`public/apple-touch-icon.png`, `icon-192.png`,
+  `icon-512.png`). iOS exige une icône opaque et remplit la transparence de noir : un b seul y
+  disparaîtrait.
+- Le carré noir reste une variante montrée sur /brand, plus servie.
 
 ## Signatures
 

@@ -5,12 +5,16 @@
    est une seule écriture, et la colonne x = 384 (unités du viewBox) est la
    première où le « b » et le « e » ne se touchent plus (mesuré : 0 pixel noir).
    Trois variantes, en SVG et en PNG :
-   - b      : le « b » noir seul, sur fond transparent (blanc sur un onglet sombre) ;
-   - noir   : carré noir, « b » blanc  ← LE DÉFAUT du site (favicon, icônes) ;
+   - b      : le « b » noir seul, sur fond transparent (blanc sur un onglet sombre)
+              ← LE DÉFAUT du site depuis le 26/11 (Mathias : « enlever le carré ») ;
+   - noir   : carré noir, « b » blanc (le défaut jusqu'au 26/11) ;
    - blanc  : carré blanc, « b » noir.
    Sorties : public/brand/favicon/ (les trois variantes, montrées sur /brand)
    et, pour le défaut : src/app/favicon.ico, public/favicon.ico, public/icon.svg,
-   public/icon-16.png, icon-32.png, icon-192.png, icon-512.png, apple-touch-icon.png (180). */
+   public/icon-16.png, icon-32.png (le « b » seul).
+   Les icônes d'ÉCRAN D'ACCUEIL gardent un fond : apple-touch-icon.png (180) et
+   icon-192/512.png (Android, manifeste) sont en « blanc ». iOS exige une icône
+   opaque et remplit la transparence de noir : un « b » noir y disparaîtrait. */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import sharp from 'sharp'
@@ -81,13 +85,14 @@ for (const v of ['b', 'noir', 'blanc']) {
   for (const t of [180, 512]) writeFileSync(join(SORTIE, `bellajour-${v}-${t}.png`), await png(svg, t))
   for (const t of [16, 32]) writeFileSync(join(SORTIE, `bellajour-${v}-${t}.png`), await png(svgVariante(b, v, true), t))
 }
-const defaut = svgVariante(b, 'noir')
+const defaut = svgVariante(b, 'b')
 writeFileSync(join(RACINE, 'public/icon.svg'), defaut)
-const defautPetit = svgVariante(b, 'noir', true)
+const defautPetit = svgVariante(b, 'b', true)
 for (const t of [16, 32]) writeFileSync(join(RACINE, `public/icon-${t}.png`), await png(defautPetit, t))
-for (const t of [192, 512]) writeFileSync(join(RACINE, `public/icon-${t}.png`), await png(defaut, t))
-writeFileSync(join(RACINE, 'public/apple-touch-icon.png'), await png(defaut, 180))
+const ecran = svgVariante(b, 'blanc')
+for (const t of [192, 512]) writeFileSync(join(RACINE, `public/icon-${t}.png`), await png(ecran, t))
+writeFileSync(join(RACINE, 'public/apple-touch-icon.png'), await png(ecran, 180))
 const fav = ico([{ taille: 16, data: await png(defautPetit, 16) }, { taille: 32, data: await png(defautPetit, 32) }])
 writeFileSync(join(RACINE, 'public/favicon.ico'), fav)
 writeFileSync(join(RACINE, 'src/app/favicon.ico'), fav)
-console.log('b :', b, '→ public/brand/favicon/ (3 variantes) + défaut carré noir')
+console.log('b :', b, '→ public/brand/favicon/ (3 variantes) + défaut « b » seul, écran d\'accueil en carré blanc')

@@ -106,9 +106,9 @@ const SECTIONS = [
 ] as const
 
 const FAVICONS = [
-  { v: 'noir', nom: 'Carré noir, b blanc · défaut du site', alt: 'Favicon carré noir, b blanc' },
-  { v: 'blanc', nom: 'Carré blanc, b noir', alt: 'Favicon carré blanc, b noir' },
-  { v: 'b', nom: 'Le b seul (blanc sur un onglet sombre)', alt: 'Favicon, le b seul' },
+  { v: 'b', nom: 'Le b seul · défaut du site (blanc sur un onglet sombre)', alt: 'Favicon, le b seul' },
+  { v: 'blanc', nom: 'Carré blanc, b noir · écran d’accueil (iPhone, Android)', alt: 'Favicon carré blanc, b noir' },
+  { v: 'noir', nom: 'Carré noir, b blanc', alt: 'Favicon carré noir, b blanc' },
 ] as const
 
 export default function PageCharte() {
@@ -468,7 +468,7 @@ export default function PageCharte() {
           ))}
         </div>
         <p className="ch-note">
-          Découpé dans le tracé, pas redessiné (brand/scripts/favicon.mjs). En 16 et 32 px le trait s&apos;épaissit pour rester lisible. Le site sert le carré noir.
+          Découpé dans le tracé, pas redessiné (brand/scripts/favicon.mjs). En 16 et 32 px le trait s&apos;épaissit pour rester lisible. Le site sert le b seul ; l’écran d’accueil d’un téléphone reçoit le carré blanc (iOS veut une icône opaque).
         </p>
       </Section>
 
