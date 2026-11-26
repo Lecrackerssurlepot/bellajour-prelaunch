@@ -14,7 +14,9 @@
    dessous). Hauteur FIXE, dite une seule fois : `--nl-bh`, posée sur la
    racine dès que le bandeau est dans le document. nav.css la lit (`top` de
    la barre, `--nav-h`) avec un repli à 0, donc sans bandeau rien ne bouge. */
-:root:has(.nl-noel-bandeau) { --nl-bh: 44px; }
+:root:has(.nl-noel-bandeau) { --nl-bh: var(--m-bandeau-hauteur, 40px); }
+/* 26/11 : le jeton de la charte (`bandeau.hauteur`, 40 / 36 px, fiche E),
+   comme le duplicata ; l'ancien 44 px décalait chaque tête de page. */
 /* EN PLUS DE LA PAGE, PAS PAR-DESSUS (Mathias, 16/11 : « tu dois pas venir
    agrandir le reste »). Le bandeau est fixe ; le corps descend de sa hauteur,
    donc l'ouverture et le kiosque gardent leur premier écran entier, et

@@ -15,11 +15,28 @@ de 8.
 |---|---|---|
 | `espace.marge` (la seule marge latérale) | clamp(20px, 5vw, 64px) | (fluide) |
 | `espace.section` (entre deux sections) | clamp(96px, 72px + 6vw, 160px) | 72px |
-| `espace.tete-page` (haut d'une page intérieure, plus le bandeau) | 120px | 96px |
+| `espace.tete-page` (haut d'une page intérieure, porté par la tête seule) | 120px | 96px |
 | `largeur.cadre` (contenu maximal) | 1280px | 100 % moins les marges |
 | `largeur.colonne` (une colonne de lecture) | 760px | 100 % |
 | `largeur.boite` (feuille, fenêtre) | 440px | 100 % |
 | `largeur.livre` (magazine ouvert de l'accueil) | min(92vw, 1100px, (100svh − 270px) × 1,414) | 92vw |
+
+### La tête de page (règle du 26/11)
+
+Retour de Mathias : « un espace énorme entre la barre du menu et le texte ».
+L'espace était compté deux fois (`main` ET la tête de page). La règle :
+
+1. **La tête de page porte seule `espace.tete-page`** (120 px, 96 px au téléphone), mesuré depuis
+   y = 0 de la page, sous l'en-tête fixe. Le `main` n'a **jamais** de padding haut.
+2. **Le bandeau** (Noël) ne s'ajoute pas à la main : il pousse le `body` de `bandeau.hauteur`
+   (40 / 36 px, `--nl-bh` = `--m-bandeau-hauteur`). La tête de page ne le recompte pas.
+3. **Entre deux sections : `espace.section`** (clamp(96px, 72px + 6vw, 160px), 72 px au
+   téléphone), en padding haut et bas de chaque `.bloc`. Une section qui prolonge la précédente
+   (même sujet, sans changement de fond) met son padding haut à 0, jamais une valeur inventée.
+4. Aucune valeur en dur entre ces jetons : un écart qui ne tombe pas sur l'échelle est un défaut.
+
+Mesuré sur le duplicata (26/11) : titre de /magazine à 160 px du haut au téléphone, 188 px à
+l'ordinateur, bandeau compris.
 
 ## Grille
 
