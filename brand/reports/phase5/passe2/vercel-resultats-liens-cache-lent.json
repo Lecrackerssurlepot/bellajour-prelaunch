@@ -1,0 +1,185 @@
+{
+ "base": "https://bellajour-prelaunch-34nw6v80a-lecrackerssurlepots-projects.vercel.app",
+ "date": "2026-11-26T10:18:37.284Z",
+ "liens": {
+  "pages": 32,
+  "statuts": {
+   "/": 200,
+   "/magazine": 200,
+   "/offrir": 404,
+   "/partenaires": 200,
+   "/composer": 200,
+   "/compte": 200,
+   "/merci": 200,
+   "/inviter": 200,
+   "/ambassadeurs/charte": 200,
+   "/edition/retrouver": 200,
+   "/numero/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 200,
+   "/edition/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 404,
+   "/depot/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 404,
+   "/cgv": 200,
+   "/en/cgv": 200,
+   "/pt/cgv": 200,
+   "/confidentialite": 200,
+   "/en/confidentialite": 200,
+   "/pt/confidentialite": 200,
+   "/mentions-legales": 200,
+   "/en/mentions-legales": 200,
+   "/pt/mentions-legales": 200,
+   "/livraison": 200,
+   "/en/livraison": 200,
+   "/pt/livraison": 200,
+   "/remboursement": 200,
+   "/en/remboursement": 200,
+   "/pt/remboursement": 200,
+   "/page-qui-nexiste-pas": 404,
+   "/compte/mot-de-passe-oublie": 200,
+   "/ambassadeurs/espace": 200,
+   "/compte/connexion": 200
+  },
+  "casses": [
+   {
+    "p": "/offrir",
+    "s": 404,
+    "depuis": [
+     "/",
+     "/magazine"
+    ]
+   }
+  ],
+  "5xx": [],
+  "redirections": [
+   {
+    "src": "/cgv?lang=en",
+    "attendu": "308 → /en/cgv?lang=en",
+    "obtenu": "308 → /en/cgv?lang=en",
+    "ok": true
+   },
+   {
+    "src": "/livraison?lang=pt",
+    "attendu": "308 → /pt/livraison?lang=pt",
+    "obtenu": "308 → /pt/livraison?lang=pt",
+    "ok": true
+   },
+   {
+    "src": "/atelier",
+    "attendu": "308 → /",
+    "obtenu": "308 → /",
+    "ok": true
+   },
+   {
+    "src": "/atelier/composer",
+    "attendu": "308 → /composer",
+    "obtenu": "308 → /composer",
+    "ok": true
+   },
+   {
+    "src": "/preventes",
+    "attendu": "307 → /",
+    "obtenu": "307 → /",
+    "ok": true
+   },
+   {
+    "src": "/preventes/prix",
+    "attendu": "307 → /",
+    "obtenu": "307 → /",
+    "ok": true
+   },
+   {
+    "src": "/lancement",
+    "attendu": "307 → /",
+    "obtenu": "307 → /",
+    "ok": true
+   },
+   {
+    "src": "/espace",
+    "attendu": "307 → /edition/retrouver",
+    "obtenu": "307 → /edition/retrouver",
+    "ok": true
+   }
+  ]
+ },
+ "cache": [
+  {
+   "u": "/_next/static/immutable/media/4a0b7dd978568ff2-s.p.2q0khlq77_eaw.woff2",
+   "st": 200,
+   "cc": "public,max-age=31536000,immutable"
+  },
+  {
+   "u": "/_next/static/immutable/media/660acf689794c992-s.p.0lsanbtneewqp.woff2",
+   "st": 200,
+   "cc": "public,max-age=31536000,immutable"
+  },
+  {
+   "u": "/_next/static/immutable/media/70df8053de025513-s.p.2lqxmkod_rcx3.woff2",
+   "st": 200,
+   "cc": "public,max-age=31536000,immutable"
+  },
+  {
+   "u": "/_next/static/immutable/media/e368dbf2d3b24ea3-s.p.1h6pn64pmfi2q.woff2",
+   "st": 200,
+   "cc": "public,max-age=31536000,immutable"
+  },
+  {
+   "u": "/_next/static/immutable/media/f25dee53ed59e80e-s.p.1f_jumqnjfbl-.woff2",
+   "st": 200,
+   "cc": "public,max-age=31536000,immutable"
+  },
+  {
+   "u": "/images/v2/composer/modele-aussie-900.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/magazine/double-page-australie-1400.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/magazine/couverture-noosa-1000.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/magazine/double-page-lagon-1000.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/accueil/header-magazines-paysage-1792.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/composer/modele-sicile-900.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/accueil/couverture-cote-azur-640.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/ (html)",
+   "st": 200,
+   "cc": "public, max-age=0, must-revalidate"
+  }
+ ],
+ "lent": [
+  {
+   "p": "/",
+   "fcp_ms": 1008,
+   "lcp_ms": 7412,
+   "load_ms": 7856,
+   "ko": 1499
+  },
+  {
+   "p": "/magazine",
+   "fcp_ms": 772,
+   "lcp_ms": 772,
+   "load_ms": 4262,
+   "ko": 787
+  }
+ ]
+}

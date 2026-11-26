@@ -161,6 +161,14 @@ Garde-fou (`controle-charte.mjs`), pages client (hors admin et `src/lib`) : **31
 - `/brand` (section favicon) dans le navigateur.
 - Lighthouse, axe : phase 5.
 
+### Phase 5 (26/11) : parcours par agents
+
+Rapport `brand/reports/phase5.md`, script `brand/scripts/phase5/verifier.mjs` (Playwright, axe, Lighthouse en dev).
+- Prouvé : 32 pages, 0 lien cassé, 0 5xx, redirections 8/8 ; 144 rendus (8 pages × 6 largeurs × Chromium, WebKit, Firefox) sans débordement ni erreur JS ; motion réduite respectée ; préversion Vercel passée (liens, cache, réseau lent).
+- Corrigé : porte de l'Édition collective illisible (bloquante), /partenaires qui plantait sur une réponse vide, contrastes /composer et pied, tableau légal au clavier, repère main, préchargement de la frise (perf accueil 62 → 75).
+- Reste : accueil lent sur 3G (7 s, il faut des `srcset` par emplacement), /ambassadeurs encore dans l'ancienne charte, liens /offrir si l'interrupteur carte cadeau se referme.
+- À Mathias : le test sur iPhone réel. Pas testé : paiement, /merci après paiement, dossiers et comptes réels (écritures interdites).
+
 ## Phases suivantes
 
 | Phase | Contenu | État |
@@ -168,6 +176,6 @@ Garde-fou (`controle-charte.mjs`), pages client (hors admin et `src/lib`) : **31
 | 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | FAITE (25/11) |
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | FAITE |
 | 4 | Refonte des pages client, une page par commit | en cours : toutes les pages client portées ou rhabillées, outil Visuels fusionné ; restes listés plus haut |
-| 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
+| 5 | Vérification par agents (Playwright, Lighthouse, axe) | passée le 26/11 (rapport phase5.md) ; reste le test iPhone de Mathias |
 | 6 | Mails depuis `mail.json` | à faire |
 | 7 | Nettoyage vers `archive/ancienne-charte/`, Notion, liste claude.ai | à faire |

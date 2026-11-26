@@ -1,0 +1,252 @@
+{
+ "base": "http://localhost:3960",
+ "date": "2026-11-26T09:59:02.486Z",
+ "liens": {
+  "pages": 37,
+  "statuts": {
+   "/": 200,
+   "/magazine": 200,
+   "/offrir": 404,
+   "/partenaires": 200,
+   "/composer": 200,
+   "/compte": 200,
+   "/merci": 200,
+   "/inviter": 200,
+   "/ambassadeurs/charte": 200,
+   "/edition/retrouver": 404,
+   "/numero/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 200,
+   "/edition/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 404,
+   "/depot/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": 404,
+   "/fr/cgv": 404,
+   "/fr/confidentialite": 404,
+   "/fr/mentions-legales": 404,
+   "/fr/livraison": 404,
+   "/fr/remboursement": 404,
+   "/en/cgv": 200,
+   "/en/confidentialite": 200,
+   "/en/mentions-legales": 200,
+   "/en/livraison": 200,
+   "/en/remboursement": 200,
+   "/pt/cgv": 200,
+   "/pt/confidentialite": 200,
+   "/pt/mentions-legales": 200,
+   "/pt/livraison": 200,
+   "/pt/remboursement": 200,
+   "/page-qui-nexiste-pas": 404,
+   "/cgv": 200,
+   "/confidentialite": 200,
+   "/mentions-legales": 200,
+   "/remboursement": 200,
+   "/livraison": 200,
+   "/compte/mot-de-passe-oublie": 200,
+   "/ambassadeurs/espace": 200,
+   "/compte/connexion": 200
+  },
+  "casses": [
+   {
+    "p": "/offrir",
+    "s": 404,
+    "depuis": [
+     "/",
+     "/magazine"
+    ]
+   },
+   {
+    "p": "/edition/retrouver",
+    "s": 404,
+    "depuis": []
+   },
+   {
+    "p": "/fr/cgv",
+    "s": 404,
+    "depuis": []
+   },
+   {
+    "p": "/fr/confidentialite",
+    "s": 404,
+    "depuis": []
+   },
+   {
+    "p": "/fr/mentions-legales",
+    "s": 404,
+    "depuis": []
+   },
+   {
+    "p": "/fr/livraison",
+    "s": 404,
+    "depuis": []
+   },
+   {
+    "p": "/fr/remboursement",
+    "s": 404,
+    "depuis": []
+   }
+  ],
+  "5xx": [],
+  "redirections": [
+   {
+    "src": "/cgv",
+    "attendu": "301 → /fr/cgv",
+    "obtenu": "200 → ",
+    "ok": false
+   },
+   {
+    "src": "/atelier",
+    "attendu": "308 → /",
+    "obtenu": "308 → /",
+    "ok": true
+   },
+   {
+    "src": "/atelier/composer",
+    "attendu": "308 → /composer",
+    "obtenu": "308 → /composer",
+    "ok": true
+   },
+   {
+    "src": "/preventes",
+    "attendu": "307 → /",
+    "obtenu": "307 → /",
+    "ok": true
+   },
+   {
+    "src": "/preventes/prix",
+    "attendu": "307 → /",
+    "obtenu": "307 → /",
+    "ok": true
+   },
+   {
+    "src": "/lancement",
+    "attendu": "307 → /",
+    "obtenu": "307 → /",
+    "ok": true
+   },
+   {
+    "src": "/espace",
+    "attendu": "307 → /edition/retrouver",
+    "obtenu": "307 → /edition/retrouver",
+    "ok": true
+   }
+  ]
+ },
+ "cache": [
+  {
+   "u": "/_next/static/media/4a0b7dd978568ff2-s.p.3fofz6dws3mg0.woff2",
+   "st": 200,
+   "cc": "public, max-age=31536000, immutable"
+  },
+  {
+   "u": "/_next/static/media/660acf689794c992-s.p.2_mbdogr7ni8i.woff2",
+   "st": 200,
+   "cc": "public, max-age=31536000, immutable"
+  },
+  {
+   "u": "/_next/static/media/70df8053de025513-s.p.2fp922fonczfn.woff2",
+   "st": 200,
+   "cc": "public, max-age=31536000, immutable"
+  },
+  {
+   "u": "/_next/static/media/e368dbf2d3b24ea3-s.p.20jfceqj9zyw9.woff2",
+   "st": 200,
+   "cc": "public, max-age=31536000, immutable"
+  },
+  {
+   "u": "/_next/static/media/f25dee53ed59e80e-s.p.2wff_81h8x61u.woff2",
+   "st": 200,
+   "cc": "public, max-age=31536000, immutable"
+  },
+  {
+   "u": "/images/v2/composer/modele-aussie-900.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/magazine/double-page-australie-1400.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/magazine/couverture-noosa-1000.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/magazine/double-page-lagon-1000.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/accueil/header-magazines-paysage-1792.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/composer/modele-sicile-900.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/images/v2/accueil/couverture-cote-azur-640.webp",
+   "st": 200,
+   "cc": "public, max-age=86400, stale-while-revalidate=2592000"
+  },
+  {
+   "u": "/ (html)",
+   "st": 200,
+   "cc": "s-maxage=60, stale-while-revalidate=31535940"
+  }
+ ],
+ "motion": [
+  {
+   "reduit": false,
+   "p": "/",
+   "err": [],
+   "gsap": true,
+   "animations": 1,
+   "h1Visible": true,
+   "invisibles": 0
+  },
+  {
+   "reduit": false,
+   "p": "/magazine",
+   "err": [],
+   "gsap": false,
+   "animations": 8,
+   "h1Visible": true,
+   "invisibles": 0
+  },
+  {
+   "reduit": true,
+   "p": "/",
+   "err": [],
+   "gsap": true,
+   "animations": 0,
+   "h1Visible": true,
+   "invisibles": 0
+  },
+  {
+   "reduit": true,
+   "p": "/magazine",
+   "err": [],
+   "gsap": false,
+   "animations": 0,
+   "h1Visible": true,
+   "invisibles": 0
+  }
+ ],
+ "lent": [
+  {
+   "p": "/",
+   "fcp_ms": 1532,
+   "lcp_ms": 8148,
+   "load_ms": 8133,
+   "ko": 1481
+  },
+  {
+   "p": "/magazine",
+   "fcp_ms": 1232,
+   "lcp_ms": 1232,
+   "load_ms": 4261,
+   "ko": 771
+  }
+ ]
+}
