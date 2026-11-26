@@ -356,7 +356,8 @@ html:has(.bj-atelier) { scroll-padding-top: calc(var(--nav-h) + var(--nl-bh, 0px
 @media (max-width: 700px) {
   .at-nav-liens { display: none; }
   .bj-atelier .at-nav .at-nav-cta { display: none; }
-  .at-nav-menu-b { display: inline-flex; order: 2; }
+  /* Menu PUIS compte, comme le duplicata (26/11) : l'ordre du DOM, sans `order`. */
+  .at-nav-menu-b { display: inline-flex; }
   .bj-atelier .at-nav:has(.at-menu.est-ouvert) { background: var(--m-couleur-papier-fond); -webkit-backdrop-filter: none; backdrop-filter: none; }
 
   .at-menu {

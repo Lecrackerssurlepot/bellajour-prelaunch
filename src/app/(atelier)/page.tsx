@@ -15,7 +15,6 @@ import Nav from './components/Nav'
 import Footer from './components/Footer'
 import Accueil from './components/accueil/Accueil'
 import Bandeau from './noel/Bandeau'
-import ChapitreAccueil from './noel/ChapitreAccueil'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import { compteOuvert } from '@/lib/compte/session'
@@ -75,9 +74,12 @@ export default function AtelierHome() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
       {noel && <Bandeau />}
       <Nav compteOuvert={compteOuvert()} />
-      {/* Le chapitre de Noël JUSTE SOUS l'ouverture (Mathias, 16/11 : « la
-          carte cadeau juste en dessous de la section header »). */}
-      <Accueil apresOuverture={noel ? <ChapitreAccueil /> : null} />
+      {/* Noël n'est QUE le bandeau du haut, comme dans le duplicata validé
+          (26/11) : le chapitre qui suivait l'ouverture (ChapitreAccueil, une
+          scène épinglée de 2 500 px) est retiré de l'accueil ; l'offre vit
+          sur /offrir, où mène le bandeau. Le composant reste en place pour
+          le ménage de la phase 7. */}
+      <Accueil />
       <Footer />
     </>
   )

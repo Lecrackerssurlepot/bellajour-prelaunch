@@ -16,6 +16,9 @@ ceux du code, les textes légaux restent tels quels.
 | favicon | Carré noir derrière le b. | Le b seul par défaut ; carré blanc seulement pour l'écran d'accueil (iOS exige une icône opaque). | fd4796f3 |
 | /ambassadeurs/** | Pages de l'ancienne charte encore en ligne. | Archivées, 307 vers l'accueil. | 57386818 |
 
+| / (accueil) | Un chapitre de Noël (pile de couvertures, « le 2e magazine −40 % », scène épinglée de 2 500 à 2 700 px) après l'ouverture. Dans le duplicata, Noël n'est que le bandeau. La page faisait 14 753 px (390) et 14 707 px (1440), contre 12 144 et 11 977. | Chapitre retiré de l'accueil. Page à 12 221 et 12 007 px. Les épinglages étaient déjà identiques (ouverture 4 895 / 5 220 px, « Chaque moment » 4 558 / 3 870 px). | voir le commit accueil |
+| en-tête téléphone | Le compte passait avant le menu (`order: 2` sur le bouton menu). | Menu puis compte, comme le duplicata. | idem |
+
 ## Vérifié sans écrire en base
 
 - En-tête non connecté : « Mon compte », silhouette neutre.
@@ -30,8 +33,7 @@ ceux du code, les textes légaux restent tels quels.
 - **Titre de /magazine encore 10 à 13 px plus bas** que dans le duplicata (170 contre 160 au
   téléphone, 201 contre 188 à l'ordinateur), bandeau compris. L'écart vient des marges du titre et
   de l'étiquette, pas de l'espace de tête. Il était de 70 à 93 px avant correction.
-- **Ordre des icônes de l'en-tête au téléphone** : le site met le compte avant le menu,
-  le duplicata fait l'inverse. Relevé, pas modifié.
+- **Accueil** : 77 px de plus au téléphone et 30 à l'ordinateur. Cela vient du bandeau, qui pousse la page de 36 / 40 px alors qu'il recouvre la page dans le duplicata, et de 13 px de plus dans les blocs « Le premier numéro » et « Avant de commencer » (enfants identiques).
 - **Pile d'ouverture Groupes** : le duplicata utilise deux couvertures en affiche de film
   (c-boys, c-nuit), écartées pour droits de tiers ; remplacées par Rio, Côte d'Azur, Sicile et
   Australie (emplacements `groupes.numero-*`, modifiables dans l'outil Visuels).
