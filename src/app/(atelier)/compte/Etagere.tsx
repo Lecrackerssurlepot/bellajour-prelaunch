@@ -7,34 +7,27 @@ import Focus3D from './Focus3D'
 
 /* ═══════════════════════════════════════════════════════════════════
    L'étagère de la bibliothèque (charte V2, fiche H « Bibliothèque »,
-   proposé le 26/11/2026). Trois vues d'un même rayon :
+   proposé le 26/11/2026). Deux vues d'un même rayon :
    - « Étagère » : les numéros posés de face sur des tablettes, comme des
      magazines sur un présentoir mural ; au survol, le numéro se décolle.
    - « Défilé » : un numéro au centre, les autres en arc de part et d'autre,
      au doigt, au clavier, aux flèches.
-   - « Tranches » : les dos alignés, comme un rayon de librairie ; la largeur
-     du dos suit le nombre de pages.
+   (La vue « Tranches » est retirée le 26/11 : à l'épaisseur réelle d'un
+   magazine, le dos est trop fin pour porter un visuel. Archivée dans
+   archive/compte-etagere-2026-11/vue-tranches.md.)
    Un clic ouvre « le numéro en grand » (Focus3D) : le magazine 3D de la
    charte quand le navigateur le permet, sa couverture sinon.
    Rien n'est refetché : tout arrive déjà signé de la page serveur.
    ═══════════════════════════════════════════════════════════════════ */
 
-export type VueEtagere = 'etagere' | 'defile' | 'tranches'
+export type VueEtagere = 'etagere' | 'defile'
 
 const VUES: ReadonlyArray<[VueEtagere, string]> = [
   ['etagere', 'Étagère'],
   ['defile', 'Défilé'],
-  ['tranches', 'Tranches'],
 ]
 
 const CLE_VUE = 'bj-compte-vue'
-
-/* La largeur d'un dos, en px d'écran, pour la vue Tranches. Ce n'est pas une
-   mesure affichée : un repère visuel qui grandit avec le nombre de pages. */
-function dosPx(nbPages: number | null): number {
-  const p = nbPages ?? 32
-  return Math.round(Math.min(64, Math.max(30, 18 + p * 0.6)))
-}
 
 export function Couverture({ l, taille }: { l: LivreVue; taille?: string }) {
   return (
@@ -62,7 +55,7 @@ const sAbonner = () => () => {}
 function lireVue(): VueEtagere | null {
   try {
     const v = window.localStorage.getItem(CLE_VUE)
-    return v === 'etagere' || v === 'defile' || v === 'tranches' ? v : null
+    return v === 'etagere' || v === 'defile' ? v : null
   } catch {
     return null
   }
@@ -239,37 +232,6 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
             >
               →
             </button>
-          </div>
-        </div>
-      ) : null}
-
-      {vue === 'tranches' ? (
-        <div className="bib-tranches">
-          <div className="bib-tranches-rang">
-            {livres.map((l, i) => (
-              <button
-                key={l.token}
-                type="button"
-                className="bib-dos"
-                style={{ '--dos': `${dosPx(l.nbPages)}px` } as CSSProperties}
-                onClick={() => setOuvert(i)}
-                aria-label={`${l.titre}, ouvrir en grand`}
-              >
-                <span className="bib-dos-fond" aria-hidden="true">
-                  {l.couverture ? (
-                    <img
-                      src={l.couverture}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      className={l.couvertureEstPlanche ? 'est-planche' : undefined}
-                    />
-                  ) : null}
-                </span>
-                <span className="bib-dos-titre">{l.titre}</span>
-                <span className="bib-dos-annee">{l.annee}</span>
-              </button>
-            ))}
           </div>
         </div>
       ) : null}

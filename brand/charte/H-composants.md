@@ -18,6 +18,12 @@ La valeur est donnée, et elle sera validée sur `/brand`.
 - **Dans l'en-tête**, le bouton mesure `cible.bouton-entete` (44 px) en `taille.petit`.
 - **Bouton d'essai** (« Choisir mes photos ») : 54 px, bord de 1,5 px. Dans l'état sombre, c'est un bloc nuit.
 
+
+> **Un bouton de la charte garde toujours sa couleur** (26/11). Aucune règle de page ne doit
+> repeindre `.m-btn`, `.m-second` ou `.m-texte` : une règle large comme `.zone a { color: inherit }`
+> les épargne avec `:where(:not(.m-btn, .m-second, .m-texte))`. Contrôle : la 404 et les
+> boutons se regardent sur la préversion Vercel, pas seulement en local.
+
 ## Champs
 
 - **Mesures** : hauteur `cible.champ` (54 px), `rayon.champ`, fond `champ-fond`, bord 1 px `champ-bord`, texte `taille.champ` (16 px).
@@ -80,10 +86,10 @@ L'espace personnel `/compte`, en blanc. Maquette : `/brand/bibliotheque`. Source
 
 - **Deux onglets** : « À l'atelier » (les numéros en cours) et « Ma bibliothèque » (les numéros livrés).
 - **À l'atelier = une épreuve** : carte `rayon.bloc`, vignette A4 en filet pointillé `ligne`, sans ombre ni photo ; étiquette du geste attendu, nom réel de l'état, jauge des cinq jalons. Le numéro qui attend le client prend un filet `texte`.
-- **Bibliothèque = un objet** : la couverture a une tranche (dégradé de reliure) et l'ombre `ombre.livre`. Trois vues, mémorisées sur l'appareil :
+- **Bibliothèque = un objet** : la couverture a une tranche (dégradé de reliure) et l'ombre `ombre.livre`. Deux vues, pas plus, mémorisées sur l'appareil (Étagère par défaut) :
   - **Étagère** : couvertures de face sur des tablettes, légère rotation (12°), le numéro se décolle au survol. Largeur d'un numéro : 132 à 192 px selon l'écran.
   - **Défilé** : un numéro au centre qui flotte, les autres en arc (décalage, profondeur, rotation croissants). Flèches, clavier ← →, balayage au doigt.
-  - **Tranches** : les dos alignés ; la largeur du dos grandit avec le nombre de pages (repère visuel, pas une mesure).
+  - ❌ **Pas de vue « Tranches »** (tranché le 26/11) : à l'épaisseur réelle d'un magazine, le dos fait quelques millimètres, trop fin pour porter un visuel. Une vue qui dessine des dos épais ment sur l'objet. Règle générale : on ne montre jamais le magazine plus épais qu'il n'est.
 - **Le numéro en grand** : fenêtre sur voile blanc flouté. Le magazine 3D de la charte (`brand/assets/3d/magazine`), chargé à l'ouverture seulement ; sans WebGL, la couverture à plat. Échap ferme, ← → changent de numéro. Un seul bouton plein : « Ouvrir le numéro ».
 - **États** : vide (« Votre étagère attend son premier numéro » + un bouton), un seul numéro, rayon plein.
 - **Mouvement** : même chose sur téléphone et ordinateur ; seul `prefers-reduced-motion` coupe flottement, rotation et transitions.

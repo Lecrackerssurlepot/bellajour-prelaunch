@@ -164,6 +164,18 @@ Rapport des écarts : `brand/reports/ecarts-duplicata.md`.
 `request-access` envoient encore un lien vers `/ambassadeurs/espace`, qui mène désormais à
 l'accueil. À trancher par Mathias : couper ces mails, ou garder l'espace en ligne.
 
+### 26/11 soir : retours de Mathias sur la préversion
+
+- **404 de `/offrir`** : « Revenir à l'accueil » noir sur noir. Cause : la vieille règle
+  `.bj-atelier a { color: inherit }` (0,1,1) battait `.m-btn` (0,1,0) ; invisible en local
+  (`next dev`), visible sur Vercel. Corrigé dans `(atelier)/theme.css` : la règle épargne
+  `.m-btn`, `.m-second`, `.m-texte`. Règle ajoutée à la fiche H.
+- **Bibliothèque** : deux vues seulement, Étagère (par défaut) et Défilé. Tranches retirée
+  (dos réel trop fin pour un visuel), archivée dans `archive/compte-etagere-2026-11/vue-tranches.md`.
+  Règle ajoutée à la fiche H : on ne montre jamais le magazine plus épais qu'il n'est.
+- **Favicon** : les navigateurs gardent l'ancienne icône en mémoire longtemps ; le carré noir
+  vu venait d'une préversion antérieure ou du cache. Se vérifie en navigation privée.
+
 ### Ce qui reste
 
 1. Restes du garde-fou côté client, pour la phase 7 : `univers.css`, `ouverture.css`, `magazine/pdp.css`, `Kiosque.tsx`, `Corps.tsx` (plus routés, à archiver) ; `noel-preview/` (outil interne) ; les px fins du banc dans `accueil.css` et `magazine.css` ; les `@media` (une variable n'y est pas lue) ; tailles de titre > 30 px et `clamp()` des pages collectif.
@@ -194,5 +206,5 @@ Rapport `brand/reports/phase5.md`, script `brand/scripts/phase5/verifier.mjs` (P
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | FAITE |
 | 4 | Refonte des pages client, une page par commit | en cours : toutes les pages client portées ou rhabillées, outil Visuels fusionné ; restes listés plus haut |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | passée le 26/11 (rapport phase5.md) ; reste le test iPhone de Mathias |
-| 6 | Mails depuis `mail.json` | à faire |
-| 7 | Nettoyage vers `archive/ancienne-charte/`, Notion, liste claude.ai | à faire |
+| 6 | Mails : réécrire seulement ceux qui servent vraiment, dans la charte, depuis `mail.json` ; liste des mails montrée à Mathias avant d'écrire ; tests vers son adresse seulement | à faire, après la gate 5 |
+| 7 | Nettoyage vers `archive/ancienne-charte/` (liste montrée avant), Notion, liste claude.ai | à faire, après la phase 6 |

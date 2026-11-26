@@ -185,7 +185,10 @@ body:has(.bj-atelier) { background: var(--c-atelier-void); }
    de composant en classe simple comme `.at-cta` (0,1,0) — le texte du CTA
    passerait en crème sur fond crème. Les composants qui portent une couleur
    propre sont donc écrits `.bj-atelier .at-x` (0,2,0). */
-.bj-atelier a { color: inherit; text-decoration: none; }
+/* Les boutons de la charte (.m-btn, .m-second, .m-texte) portent leur couleur :
+   la règle les épargne, sinon le texte du bouton prend la couleur du fond
+   (404 de /offrir sur la préversion, 26/11). */
+.bj-atelier a:where(:not(.m-btn, .m-second, .m-texte)) { color: inherit; text-decoration: none; }
 
 .bj-atelier :focus-visible {
   outline: 2px solid var(--c-accent);

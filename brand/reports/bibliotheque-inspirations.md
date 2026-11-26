@@ -8,7 +8,7 @@ Maquette : `/brand/bibliotheque` (noindex). Fiche : `brand/charte/H-composants.m
 |---|---|---|---|
 | 1 | Les couvertures posées de face sur des tablettes murales, comme un présentoir de magazines | Photos décor contenus | Oui : vue **Étagère** |
 | 2 | Un arc de cartes : celle du centre en grand, les autres inclinées en profondeur | Virtual world (carrousel « Acropolis ») | Oui : vue **Défilé** |
-| 3 | Les dos alignés sur un rayon, titres à la verticale | Mon - Compte (« My favourite books ») | Oui : vue **Tranches** |
+| 3 | Les dos alignés sur un rayon, titres à la verticale | Mon - Compte (« My favourite books ») | Non (26/11) : le dos réel est trop fin pour un visuel |
 | 4 | Un rebord coloré sous chaque rangée, qui donne le sol de l'objet | Mon - Compte | Oui : filet clair sous chaque tablette |
 | 5 | L'objet livre sur fond neutre, ombre douce, légère rotation | Livre | Oui : chaque numéro a une tranche et l'ombre `ombre.livre` |
 | 6 | Des panneaux de verre qui flottent au-dessus d'une pièce réelle | Virtual world (Vision Pro) | Oui : « le numéro en grand » sur voile flouté, magazine 3D qui tourne |
