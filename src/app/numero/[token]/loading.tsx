@@ -26,10 +26,10 @@ export default function Chargement() {
         <span className="nu-top-cale" />
         <img
           className="nu-top-logo-img"
-          src="/images/v2/ui/signature-bellajour-240.webp"
+          src="/images/v2/ui/logo-bellajour.svg"
           alt="Bellajour"
           width={240}
-          height={92}
+          height={91}
           decoding="async"
         />
         <span className="nu-top-cale" />
