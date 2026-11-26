@@ -127,12 +127,12 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   font-weight: 500;
-  color: var(--c-text-faint);
-  opacity: 0.55;
+  /* Texte doux plein (5,9:1) et non plus voilé à 0,55 (2,3:1, axe phase 5). */
+  color: var(--m-couleur-papier-texte-doux);
   padding-bottom: var(--m-espace-1);
 }
 
-.at-q-etape.is-fait { opacity: 1; }
+.at-q-etape.is-fait { color: var(--m-couleur-papier-texte); }
 .at-q-etape.is-la {
   opacity: 1;
   color: var(--c-accent-strong);
