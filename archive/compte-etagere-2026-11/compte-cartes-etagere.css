@@ -1,0 +1,290 @@
+/* ── Les sections du dashboard ────────────────────────────────────── */
+
+.cpt-section { margin-top: clamp(var(--m-espace-7), 7vw, var(--m-espace-8)); }
+
+.cpt .cpt-section-titre {
+  font-family: var(--m-police-texte-famille);
+  font-weight: 500;
+  font-size: var(--m-taille-petit);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  padding-bottom: var(--m-espace-3);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.cpt-grille {
+  margin-top: var(--m-espace-5);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--m-espace-4);
+}
+
+/* ── Les cartes ───────────────────────────────────────────────────── */
+
+.cpt-carte {
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: var(--m-rayon-champ);
+  padding: clamp(var(--m-espace-5), 4vw, var(--m-espace-6));
+  display: flex;
+  flex-direction: column;
+}
+
+.cpt-carte--attente { border-color: rgba(214, 138, 99, 0.35); }
+
+/* ⚠️ L'ÉTIQUETTE EST AU-DESSUS DU TITRE, PAS À CÔTÉ. Côte à côte dans un
+   flex, le badge (« UN GESTE VOUS ATTEND », nowrap) gardait sa largeur et
+   écrasait le titre : dans une carte de 316 px il restait ~130 px, et
+   « TEST ADMIN PRES » se cassait en « TEST ADMI N PRES ». Mesuré le 04/09.
+   Empilés, le titre a toute la largeur de la carte, quel que soit le badge. */
+.cpt-carte-tete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--m-espace-3);
+}
+
+.cpt .cpt-carte-titre {
+  font-family: var(--m-police-titre-famille);
+  font-weight: 400;
+  font-size: clamp(21px, 3vw, 26px);
+  line-height: 1.15;
+  color: var(--c-text);
+  /* `break-word` et pas `anywhere` : on coupe un mot SEULEMENT s'il ne
+     tient pas seul sur une ligne (globals.css impose `anywhere` sous
+     767 px, qui couperait « Madrid » au milieu). */
+  overflow-wrap: break-word;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cpt-carte-camp {
+  order: -1; /* l'étiquette se lit avant le titre */
+  flex: 0 0 auto;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+  border: 1px solid var(--c-line-md);
+  border-radius: var(--m-rayon-pilule);
+  padding: var(--m-espace-1) var(--m-espace-3);
+  white-space: nowrap;
+}
+
+.cpt-carte-camp--vous {
+  color: var(--c-accent);
+  border-color: rgba(214, 138, 99, 0.4);
+}
+
+.cpt-carte-etat {
+  margin-top: var(--m-espace-3);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  line-height: 1.55;
+  color: var(--c-text-soft);
+}
+
+/* (Les titres ci-dessus sont en (0,2,0) : .bj-atelier h2/h3 pose des
+   tailles de hero en (0,1,1), et un selecteur simple perdrait.) */
+
+/* La jauge : cinq segments, le vocabulaire de /numero en miniature. */
+.cpt-jauge {
+  display: flex;
+  gap: var(--m-espace-1);
+  margin-top: var(--m-espace-4);
+}
+
+.cpt-jauge i {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--m-rayon-image);
+  background: var(--c-surface-3);
+}
+
+.cpt-jauge i.is-fait { background: var(--c-accent); }
+
+.cpt-carte-jalons {
+  margin-top: var(--m-espace-2);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  color: var(--c-text-faint);
+}
+
+.cpt-carte-gestes {
+  margin-top: auto;
+  padding-top: var(--m-espace-5);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--m-espace-3);
+}
+
+.cpt .cpt-cta {
+  font-size: var(--m-taille-petit);
+  padding: var(--m-espace-4) var(--m-espace-5);
+}
+
+.cpt .cpt-cta--pleine {
+  width: 100%;
+  justify-content: center;
+}
+
+.cpt .cpt-lien {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--c-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+
+.cpt .cpt-lien:hover { color: var(--c-text-soft); }
+
+/* 27/10 : la zone tactile, pas le dessin. 22 px de haut au pouce se ratent ;
+   le pseudo-élément porte la cible à 44 sans bouger la mise en page. */
+.cpt .cpt-lien { position: relative; }
+.cpt .cpt-lien::after {
+  content: '';
+  position: absolute;
+  inset: -11px -6px;
+}
+
+/* globals.css pose `overflow-wrap: anywhere !important` sur h1..h4 et p sous
+   767 px — une règle de sécurité de la landing waitlist, qui coupe AU MILIEU
+   D'UN MOT, sans césure. Sur un titre de numéro (« Madrid », « Nuit Sonore »)
+   c'est une coupure gratuite : les cartes ont une largeur confortable et un
+   `break-word` normal suffit. Même contournement que `.at-accueil` dans
+   ouverture.css, et il faut un !important pour répondre au sien.
+   ⚠️ Les titres seulement : les paragraphes de carte gardent la règle, un
+   token ou une adresse mail y débordait vraiment. */
+@media (max-width: 767px) {
+  .cpt .cpt-carte-titre,
+  .cpt .cpt-titre,
+  .cpt .cpt-envoye-mot {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+}
+
+/* ── L'ÉTAGÈRE — la bibliothèque en couvertures ───────────────────────
+   Structure voulue par Mathias (04/09, référence à l'appui) : une grille de
+   couvertures, titre et année en haut de carte, une action en bas. On ne
+   décrit pas un magazine avec du texte : on le montre. */
+
+.cpt-etagere {
+  margin-top: var(--m-espace-5);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: clamp(var(--m-espace-4), 2vw, var(--m-espace-5));
+}
+
+.bj-atelier .cpt-livre {
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface-1);
+  border: 1px solid var(--c-line);
+  border-radius: var(--m-rayon-champ);
+  padding: var(--m-espace-4);
+  color: inherit;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.bj-atelier .cpt-livre:hover {
+  border-color: var(--c-line-strong);
+  transform: translateY(-2px);
+}
+
+.cpt-livre-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--m-espace-3);
+  padding: 2px 2px var(--m-espace-3);
+}
+
+.cpt-livre-titre {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: 500;
+  color: var(--c-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpt-livre-annee {
+  flex: 0 0 auto;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  color: var(--c-text-faint);
+}
+
+/* Le cadre garde le format d'un magazine (A4) quelle que soit l'image :
+   une étagère dont les livres n'ont pas la même hauteur n'est pas une
+   étagère. */
+.cpt-livre-cadre {
+  display: block;
+  position: relative;
+  aspect-ratio: 210 / 297;
+  border-radius: var(--m-rayon-champ);
+  overflow: hidden;
+  background: var(--grad-cover);
+}
+
+.cpt-livre-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* La planche entière (C4 · dos · C1) : sa couverture est à DROITE. On la
+   cadre là plutôt que de montrer le dos au milieu de l'étagère. */
+.cpt-livre-img.est-planche { object-position: right center; }
+
+.cpt-livre-vide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--m-espace-3);
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-petit);
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cpt-livre-pied {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) 2px 2px;
+}
+
+.cpt-livre-meta {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  color: var(--c-text-faint);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cpt-livre-geste {
+  flex: 0 0 auto;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  font-weight: 500;
+  color: var(--c-accent-strong);
+}
+

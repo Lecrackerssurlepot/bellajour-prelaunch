@@ -21,6 +21,8 @@ const DEPUIS_COMPTE = `${PARAM_PROVENANCE}=compte`
    `brouillonDuDepart` (composer/draft.ts). */
 const NOUVEAU_DEPUIS_COMPTE = `${PARAM_NOUVEAU}=1&${DEPUIS_COMPTE}`
 import BoutonDeconnexion from './BoutonDeconnexion'
+import Etagere, { LienNumero } from './Etagere'
+import './bibliotheque.css'
 
 /**
  * L'espace en deux onglets (Mathias, 04/09) : « Mes numéros » et
@@ -67,10 +69,26 @@ function Jauge({ avancement }: { avancement: number }) {
   )
 }
 
-function CarteDossier({ d }: { d: DossierVue }) {
+/* L'épreuve : un numéro qui n'existe pas encore en papier. Pas de photo, pas
+   d'épaisseur : une feuille au format du magazine, en pointillés, avec son
+   titre composé. C'est ce qui le distingue d'un coup d'œil d'un numéro de la
+   bibliothèque (charte, fiche H « Bibliothèque »). */
+function Epreuve({ d }: { d: DossierVue }) {
+  return (
+    <span className="bib-epreuve" aria-hidden="true">
+      <span className="bib-epreuve-titre">{d.titre}</span>
+      <span className="bib-epreuve-etape">
+        {JALONS[Math.min(d.avancement, JALONS.length - 1)]}
+      </span>
+    </span>
+  )
+}
+
+function CarteDossier({ d, demo }: { d: DossierVue; demo: boolean }) {
   if (d.depotEnPlan) {
     return (
       <article className="cpt-carte cpt-carte--attente">
+        <Epreuve d={d} />
         <div className="cpt-carte-tete">
           <span className="cpt-carte-camp cpt-carte-camp--vous">À vous de jouer</span>
           <h3 className="cpt-carte-titre">{d.titre}</h3>
@@ -90,21 +108,23 @@ function CarteDossier({ d }: { d: DossierVue }) {
               désigne — « je clique sur reprendre le dépôt, ça prend du temps ».
               Le `loading.tsx` d'à côté couvre le reste : ce que le préchargement
               met en réserve sur une route dynamique, c'est justement lui. */}
-          <Link
-            className="at-cta cpt-cta"
+          <LienNumero
+            demo={demo}
+            className="m-btn cpt-cta"
             href={`/composer?reprendre=${d.token}&${DEPUIS_COMPTE}`}
           >
             Reprendre le dépôt
-          </Link>
-          <Link className="cpt-lien" href={`/numero/${d.token}`}>
+          </LienNumero>
+          <LienNumero demo={demo} className="cpt-lien" href={`/numero/${d.token}`}>
             Voir la page du numéro
-          </Link>
+          </LienNumero>
         </div>
       </article>
     )
   }
   return (
     <article className="cpt-carte">
+      <Epreuve d={d} />
       <div className="cpt-carte-tete">
         {d.camp ? <span className="cpt-carte-camp">{d.camp}</span> : null}
         <h3 className="cpt-carte-titre">{d.titre}</h3>
@@ -119,49 +139,11 @@ function CarteDossier({ d }: { d: DossierVue }) {
         {Math.min(d.avancement + 1, JALONS.length)} / {JALONS.length}
       </p>
       <div className="cpt-carte-gestes">
-        <Link className="at-cta cpt-cta" href={`/numero/${d.token}`}>
+        <LienNumero demo={demo} className="m-btn cpt-cta" href={`/numero/${d.token}`}>
           {d.cta}
-        </Link>
+        </LienNumero>
       </div>
     </article>
-  )
-}
-
-/* La carte d'étagère : la COUVERTURE d'abord, en grand — c'est l'objet que
-   la cliente reconnaît. Titre et année l'encadrent en haut, le geste est en
-   bas. Toute la carte est cliquable et mène au magazine. */
-function CarteLivre({ l }: { l: LivreVue }) {
-  return (
-    <Link className="cpt-livre" href={`/compte/magazine/${l.token}`}>
-      <span className="cpt-livre-tete">
-        <span className="cpt-livre-titre">{l.titre}</span>
-        {l.annee ? <span className="cpt-livre-annee">{l.annee}</span> : null}
-      </span>
-
-      <span className="cpt-livre-cadre">
-        {l.couverture ? (
-          <img
-            className={`cpt-livre-img${l.couvertureEstPlanche ? ' est-planche' : ''}`}
-            src={l.couverture}
-            alt={`Couverture de ${l.titre}`}
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <span className="cpt-livre-vide" aria-hidden="true">
-            {l.titre}
-          </span>
-        )}
-      </span>
-
-      <span className="cpt-livre-pied">
-        <span className="cpt-livre-meta">
-          {l.nbPages ? `${l.nbPages} pages` : 'Livré'}
-          {l.livreLe ? ` · ${l.livreLe}` : ''}
-        </span>
-        <span className="cpt-livre-geste">Ouvrir</span>
-      </span>
-    </Link>
   )
 }
 
@@ -174,6 +156,7 @@ export default function Espace({
   livres,
   ongletInitial = null,
   credit = null,
+  demo = false,
 }: {
   email: string
   photo: string | null
@@ -187,6 +170,9 @@ export default function Espace({
   ongletInitial?: Onglet | null
   /* Noël 2026 : le crédit du compte (reste d'une carte cadeau), déjà formaté. */
   credit?: { montant: string; jusquau: string | null } | null
+  /* /brand/bibliotheque : la même page avec de faux numéros. Les liens vers
+     les dossiers y sont inertes et la déconnexion n'y figure pas. */
+  demo?: boolean
 }) {
   const numeros = [...aTerminer, ...enCours]
   const [onglet, setOnglet] = useState<Onglet>(
@@ -216,7 +202,7 @@ export default function Espace({
             aria-current={onglet === 'numeros' ? 'page' : undefined}
             onClick={() => setOnglet('numeros')}
           >
-            Mes numéros
+            À l’atelier
             {numeros.length > 0 ? <i className="cpt-onglet-nb">{numeros.length}</i> : null}
           </button>
           <button
@@ -238,7 +224,7 @@ export default function Espace({
               <span aria-hidden="true">{initiale}</span>
             )}
           </span>
-          <BoutonDeconnexion />
+          {demo ? null : <BoutonDeconnexion />}
         </div>
       </header>
 
@@ -256,9 +242,9 @@ export default function Espace({
           numeros.length === 0 ? (
             <section className="cpt-vide">
               <p className="cpt-vide-mot">
-                Aucun numéro en cours. Le prochain moment n’attend que vous.
+                Rien à l’atelier
               </p>
-              <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
+              <Link className="m-btn cpt-cta" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
                 {CTA_LABEL}
               </Link>
             </section>
@@ -273,11 +259,11 @@ export default function Espace({
                   voir CTA_NOUVEAU_LABEL. */}
               <div className="cpt-tete">
                 <div>
-                  <h1 className="cpt-titre">Mes numéros</h1>
+                  <h1 className="cpt-titre">À l’atelier</h1>
                   <p className="cpt-sous-titre">
                     {aTerminer.length > 0
-                      ? `${aTerminer.length} attend${aTerminer.length > 1 ? 'ent' : ''} un geste de votre part.`
-                      : 'Tout est entre nos mains. On vous écrit à chaque étape.'}
+                      ? `${aTerminer.length} attend${aTerminer.length > 1 ? 'ent' : ''} votre geste`
+                      : 'Entre nos mains'}
                   </p>
                 </div>
                 <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
@@ -286,7 +272,7 @@ export default function Espace({
               </div>
               <div className="cpt-grille">
                 {numeros.map((d) => (
-                  <CarteDossier key={d.token} d={d} />
+                  <CarteDossier key={d.token} d={d} demo={demo} />
                 ))}
               </div>
             </>
@@ -294,9 +280,9 @@ export default function Espace({
         ) : livres.length === 0 ? (
           <section className="cpt-vide">
             <p className="cpt-vide-mot">
-              Votre étagère est encore vide. Elle se remplira à la première livraison.
+              Votre étagère attend son premier numéro
             </p>
-            <Link className="at-cta cpt-cta" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
+            <Link className="m-btn cpt-cta" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
               {CTA_LABEL}
             </Link>
           </section>
@@ -307,18 +293,14 @@ export default function Espace({
                 <h1 className="cpt-titre">Ma bibliothèque</h1>
                 <p className="cpt-sous-titre">
                   {livres.length} numéro{livres.length > 1 ? 's' : ''} livré
-                  {livres.length > 1 ? 's' : ''}, à revoir et à télécharger quand vous voulez.
+                  {livres.length > 1 ? 's' : ''}
                 </p>
               </div>
               <Link className="cpt-nouveau" href={`${COMPOSER_HREF}?${NOUVEAU_DEPUIS_COMPTE}`}>
                 <span aria-hidden="true">+</span> {CTA_NOUVEAU_LABEL}
               </Link>
             </div>
-            <div className="cpt-etagere">
-              {livres.map((l) => (
-                <CarteLivre key={l.token} l={l} />
-              ))}
-            </div>
+            <Etagere livres={livres} demo={demo} />
           </>
         )}
       </main>

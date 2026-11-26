@@ -1,0 +1,618 @@
+/* ═══════════════════════════════════════════════════════════════════
+   La bibliothèque du client (charte V2, fiche H « Bibliothèque »,
+   PROPOSÉ le 26/11/2026, à valider par Mathias).
+
+   Deux mondes, lisibles d'un coup d'œil :
+   - À L'ATELIER : des ÉPREUVES. Une feuille au format du magazine, en
+     pointillés, sans photo ni épaisseur : le numéro n'existe pas encore en
+     papier.
+   - LA BIBLIOTHÈQUE : des OBJETS. La couverture, une tranche, une ombre de
+     livre ; au survol le numéro se décolle de sa tablette (flottant).
+
+   Tout vient des jetons --m-* (brand/build/tokens.css). Scopé sous .cpt.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── À l'atelier : la carte et son épreuve ─────────────────────────── */
+
+.cpt .cpt-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: var(--m-espace-5);
+  margin-top: var(--m-espace-6);
+}
+
+.cpt .cpt-carte {
+  display: grid;
+  grid-template-columns: clamp(84px, 9vw, 112px) minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  column-gap: var(--m-espace-5);
+  row-gap: var(--m-espace-2);
+  padding: var(--m-espace-5);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-fond);
+}
+
+.cpt .cpt-carte > :not(.bib-epreuve) { grid-column: 2; min-width: 0; }
+
+.cpt .cpt-carte--attente { border-color: var(--m-couleur-papier-texte); }
+
+.bib-epreuve {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  align-self: start;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  aspect-ratio: 210 / 297;
+  padding: var(--m-espace-2);
+  border: 1px dashed var(--m-couleur-papier-pointille);
+  border-radius: var(--m-rayon-image);
+  background: var(--m-couleur-papier-champ-fond);
+  overflow: hidden;
+}
+
+.bib-epreuve-titre {
+  font-family: var(--m-police-magazine-famille);
+  font-size: var(--m-taille-petit);
+  line-height: var(--m-police-magazine-interligne);
+  letter-spacing: var(--m-police-magazine-approche);
+  color: var(--m-couleur-papier-texte-doux);
+  overflow-wrap: anywhere;
+}
+
+.bib-epreuve-etape,
+.cpt .cpt-carte-camp {
+  font-family: var(--m-police-etiquette-famille);
+  font-weight: var(--m-police-etiquette-graisse);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: var(--m-police-etiquette-approche);
+  text-transform: var(--m-police-etiquette-casse);
+  line-height: var(--m-police-etiquette-interligne);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.cpt .cpt-carte-tete { display: flex; flex-direction: column; gap: var(--m-espace-1); }
+.cpt .cpt-carte-camp--vous { color: var(--m-couleur-papier-texte); }
+
+.cpt .cpt-carte-titre {
+  margin: 0;
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  font-size: var(--m-taille-chapo);
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.cpt .cpt-carte-etat,
+.cpt .cpt-carte-jalons {
+  margin: 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  line-height: 1.5;
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.cpt .cpt-jauge { display: flex; gap: var(--m-espace-1); }
+.cpt .cpt-jauge i {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-ligne);
+}
+.cpt .cpt-jauge i.is-fait { background: var(--m-couleur-papier-texte); }
+
+.cpt .cpt-carte-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-espace-3) var(--m-espace-4);
+  margin-top: var(--m-espace-2);
+}
+
+.cpt .cpt-carte-gestes [aria-disabled='true'] { cursor: default; }
+
+/* ── Le choix de la vue ────────────────────────────────────────────── */
+
+.bib { margin-top: var(--m-espace-6); }
+
+.bib-vues {
+  display: inline-flex;
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-1);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-pilule);
+  margin-bottom: var(--m-espace-7);
+}
+
+.bib-vue {
+  min-height: var(--m-cible-mini);
+  padding: 0 var(--m-espace-4);
+  border: 0;
+  border-radius: var(--m-rayon-pilule);
+  background: none;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  color: var(--m-couleur-papier-texte-doux);
+  cursor: pointer;
+  transition: background var(--m-duree-micro) var(--m-courbe-sortie), color var(--m-duree-micro) var(--m-courbe-sortie);
+}
+.bib-vue:hover { color: var(--m-couleur-papier-texte); }
+.bib-vue.est-active { background: var(--m-couleur-papier-texte); color: var(--m-couleur-papier-fond); }
+.bib-vue:focus-visible,
+.bib-pose:focus-visible,
+.bib-dos:focus-visible,
+.bib-scene:focus-visible,
+.bib-fleche:focus-visible {
+  outline: 2px solid var(--m-couleur-papier-texte);
+  outline-offset: 4px;
+}
+
+/* ── L'objet : une couverture qui a une tranche et une ombre ──────── */
+
+.bib-couv {
+  position: absolute;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: 1px var(--m-rayon-image) var(--m-rayon-image) 1px;
+  background: var(--m-couleur-papier-filigrane);
+}
+
+.bib-couv-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* La planche entière (C4 · dos · C1) : la couverture est à DROITE. */
+.bib-couv-img.est-planche,
+.bib-dos-fond img.est-planche { object-position: right center; }
+
+.bib-couv-vide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--m-espace-3);
+  font-family: var(--m-police-magazine-famille);
+  font-size: var(--m-taille-chapo);
+  line-height: var(--m-police-magazine-interligne);
+  color: var(--m-couleur-papier-texte);
+}
+
+.bib-livre {
+  position: relative;
+  display: block;
+  width: var(--bib-livre, 180px);
+  aspect-ratio: 210 / 297;
+  box-shadow: var(--m-ombre-objet);
+  border-radius: 1px var(--m-rayon-image) var(--m-rayon-image) 1px;
+}
+
+/* La reliure : un creux le long du dos, puis un reflet, comme sur le
+   magazine 3D (rainure de la couverture). */
+.bib-livre::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--m-couleur-papier-texte) 22%, transparent) 0,
+    color-mix(in srgb, var(--m-couleur-papier-fond) 30%, transparent) 1.6%,
+    transparent 3.4%,
+    color-mix(in srgb, var(--m-couleur-papier-texte) 8%, transparent) 4.2%,
+    transparent 6%
+  );
+}
+
+/* ── Vue « Étagère » : des tablettes murales, les numéros de face ──── */
+
+.bib-rayon {
+  --bib-livre: clamp(132px, 14vw, 192px);
+  --bib-ecart: clamp(var(--m-espace-5), 3.4vw, var(--m-espace-7));
+  --bib-legende-h: 44px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-8);
+}
+
+.bib-tablette {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bib-ecart);
+  padding: 0 var(--m-espace-3);
+  perspective: 1400px;
+}
+
+/* La tablette : une planche claire, juste sous les numéros, au-dessus des
+   légendes. */
+.bib-tablette::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--bib-legende-h) + var(--m-espace-2));
+  height: 10px;
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: 0 0 var(--m-rayon-image) var(--m-rayon-image);
+  background: linear-gradient(var(--m-couleur-papier-filigrane), var(--m-couleur-papier-survol));
+  box-shadow: var(--m-ombre-flottant);
+  z-index: 0;
+}
+
+.bib-pose {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--m-espace-2) + 10px);
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bib-pose .bib-livre {
+  transform-origin: 50% 100%;
+  transform: rotateY(-12deg);
+  transition:
+    transform var(--m-duree-standard) var(--m-courbe-sortie),
+    box-shadow var(--m-duree-standard) var(--m-courbe-sortie);
+}
+
+.bib-pose:hover .bib-livre,
+.bib-pose:focus-visible .bib-livre {
+  transform: translateY(calc(-1 * var(--m-espace-4))) rotateY(0deg);
+  box-shadow: var(--m-ombre-livre);
+}
+
+.bib-legende {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: var(--bib-livre);
+  height: var(--bib-legende-h);
+  overflow: hidden;
+}
+
+.bib-legende-titre {
+  font-family: var(--m-police-texte-famille);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  font-size: var(--m-taille-petit);
+  line-height: 1.3;
+  color: var(--m-couleur-papier-texte);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bib-legende-meta {
+  margin: 0;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  line-height: 1.4;
+  color: var(--m-couleur-papier-texte-doux);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Vue « Défilé » : un numéro au centre, les autres en arc ───────── */
+
+.bib-defile { display: flex; flex-direction: column; gap: var(--m-espace-5); }
+
+.bib-scene {
+  --bib-livre: clamp(180px, 24vw, 280px);
+  position: relative;
+  height: calc(var(--bib-livre) * 1.414 + var(--m-espace-8));
+  perspective: 1600px;
+  overflow: hidden;
+  touch-action: pan-y;
+  border-radius: var(--m-rayon-bloc);
+  user-select: none;
+}
+
+.bib-carte {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform:
+    translate(-50%, -50%)
+    translateX(calc(var(--d) * 58%))
+    translateZ(calc(var(--ad) * -160px))
+    rotateY(calc(var(--d) * -24deg));
+  opacity: max(0, calc(1 - var(--ad) * 0.24));
+  z-index: calc(10 - var(--ad));
+  cursor: pointer;
+  transition:
+    transform var(--m-duree-menu) var(--m-courbe-sortie),
+    opacity var(--m-duree-menu) var(--m-courbe-sortie);
+}
+.bib-carte[aria-hidden='true'] { visibility: hidden; }
+.bib-carte.est-centre .bib-livre {
+  box-shadow: var(--m-ombre-livre);
+  animation: bib-flotte 5s ease-in-out infinite;
+}
+
+@keyframes bib-flotte {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(-1 * var(--m-espace-2))); }
+}
+
+.bib-defile-pied {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--m-espace-4);
+  max-width: var(--m-largeur-boite);
+  width: 100%;
+  margin: 0 auto;
+}
+
+.bib-defile-texte { display: flex; flex-direction: column; align-items: center; gap: var(--m-espace-1); text-align: center; min-width: 0; }
+
+.bib-defile-titre,
+.bib-focus-titre {
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  letter-spacing: var(--m-police-titre-approche);
+  font-size: var(--m-taille-chapo);
+  line-height: 1.2;
+  color: var(--m-couleur-papier-texte);
+  overflow-wrap: anywhere;
+}
+
+.bib-fleche {
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
+  border: 1px solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-rond);
+  background: var(--m-couleur-papier-fond);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
+  color: var(--m-couleur-papier-texte);
+  cursor: pointer;
+  transition: border-color var(--m-duree-micro) var(--m-courbe-sortie);
+}
+.bib-fleche:hover:not(:disabled) { border-color: var(--m-couleur-papier-texte); }
+.bib-fleche:disabled { opacity: 0.3; cursor: default; }
+
+/* ── Vue « Tranches » : les dos alignés, comme un rayon de librairie ─ */
+
+.bib-tranches {
+  overflow-x: auto;
+  padding-top: var(--m-espace-6);
+  -webkit-overflow-scrolling: touch;
+}
+
+.bib-tranches-rang {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 var(--m-espace-3) 10px;
+}
+
+.bib-tranches-rang::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  background: linear-gradient(var(--m-couleur-papier-filigrane), var(--m-couleur-papier-survol));
+  box-shadow: var(--m-ombre-flottant);
+}
+
+.bib-dos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: var(--dos);
+  height: clamp(220px, 30vw, 320px);
+  padding: var(--m-espace-3) 0;
+  border: 0;
+  border-radius: 2px 2px 0 0;
+  background: var(--m-couleur-papier-filigrane);
+  box-shadow: var(--m-ombre-flottant);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--m-duree-standard) var(--m-courbe-sortie);
+}
+.bib-dos:hover,
+.bib-dos:focus-visible { transform: translateY(calc(-1 * var(--m-espace-4))); }
+
+.bib-dos-fond { position: absolute; inset: 0; }
+.bib-dos-fond img { width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(0.9); }
+
+/* Le titre sur une bande de papier blanc, de bas en haut (sens français). */
+.bib-dos-titre,
+.bib-dos-annee {
+  position: relative;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  padding: var(--m-espace-2) 3px;
+  max-height: 72%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bib-dos-titre {
+  font-family: var(--m-police-magazine-famille);
+  font-size: var(--m-taille-petit);
+  letter-spacing: var(--m-police-magazine-approche);
+}
+.bib-dos-annee {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Le numéro en grand ────────────────────────────────────────────── */
+
+.bib-focus {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding:
+    max(var(--m-espace-4), env(safe-area-inset-top, 0px))
+    max(var(--m-espace-4), env(safe-area-inset-right, 0px))
+    max(var(--m-espace-4), env(safe-area-inset-bottom, 0px))
+    max(var(--m-espace-4), env(safe-area-inset-left, 0px));
+}
+
+.bib-focus-voile {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--m-couleur-papier-fond) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: default;
+}
+
+.bib-focus-boite {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--m-espace-6);
+  width: min(100%, 1080px);
+  max-height: 100%;
+  overflow: auto;
+  padding: var(--m-espace-6);
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-fond);
+  box-shadow: var(--m-ombre-livre);
+  outline: none;
+  animation: bib-entre var(--m-duree-standard) var(--m-courbe-sortie);
+}
+
+@keyframes bib-entre {
+  from { opacity: 0; transform: translateY(var(--m-espace-5)) scale(0.98); }
+}
+
+.bib-focus-fermer {
+  position: absolute;
+  top: var(--m-espace-3);
+  right: var(--m-espace-3);
+  min-height: var(--m-cible-mini);
+  z-index: 2;
+}
+
+.bib-focus-scene {
+  position: relative;
+  height: min(64vh, 560px);
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+}
+.bib-focus-toile { position: absolute; inset: 0; }
+.bib-focus-toile canvas { width: 100% !important; height: 100% !important; display: block; }
+.bib-focus-scene.est-pret .bib-focus-plat { display: none; }
+
+.bib-focus-plat {
+  position: relative;
+  perspective: 1400px;
+}
+.bib-focus-plat .bib-livre {
+  --bib-livre: clamp(200px, 26vw, 320px);
+  transform: rotateY(-18deg) rotateX(4deg);
+  box-shadow: var(--m-ombre-livre);
+  animation: bib-flotte 5s ease-in-out infinite;
+}
+
+.bib-focus-texte { display: flex; flex-direction: column; gap: var(--m-espace-3); min-width: 0; }
+.bib-focus-titre { margin: 0; font-size: var(--m-taille-h3); line-height: 1.05; }
+.bib-focus-position {
+  font-family: var(--m-police-etiquette-famille);
+  font-weight: var(--m-police-etiquette-graisse);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: var(--m-police-etiquette-approche);
+  text-transform: var(--m-police-etiquette-casse);
+  color: var(--m-couleur-papier-texte-doux);
+  font-variant-numeric: tabular-nums;
+}
+.bib-focus-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-espace-4);
+  margin-top: var(--m-espace-4);
+}
+.bib-focus-nav { display: inline-flex; gap: var(--m-espace-2); }
+.bib-focus-gestes [aria-disabled='true'] { cursor: default; }
+
+/* ── Téléphone ─────────────────────────────────────────────────────── */
+
+@media (max-width: 700px) {
+  .bib-rayon { --bib-livre: calc((100vw - 2 * var(--pad, 20px) - var(--bib-ecart) - 2 * var(--m-espace-3)) / 2); }
+  .bib-scene { --bib-livre: 56vw; }
+  .bib-vues { margin-bottom: var(--m-espace-6); }
+  .bib-focus-boite {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--m-espace-4);
+    padding: var(--m-espace-5);
+  }
+  .bib-focus-scene { height: 48vh; min-height: 260px; }
+  .bib-focus-plat .bib-livre { --bib-livre: 52vw; }
+}
+
+/* ── Moins d'animations : tout se pose, rien ne flotte ─────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bib-pose .bib-livre,
+  .bib-carte,
+  .bib-dos,
+  .bib-vue,
+  .bib-fleche { transition: none; }
+  .bib-carte.est-centre .bib-livre,
+  .bib-focus-plat .bib-livre,
+  .bib-focus-boite { animation: none; }
+}
+
+/* `.bj-atelier a { color: inherit }` passe devant `.m-btn` : un lien-bouton
+   noir perdait son texte. On rend sa couleur au bouton plein. */
+.cpt a.m-btn { color: var(--m-couleur-papier-fond); }
+
+/* La boîte reçoit le focus pour le clavier, sans cadre visible. */
+.bib-focus-boite:focus,
+.bib-focus-boite:focus-visible { outline: none; }
+
+/* ── /brand/bibliotheque : la barre de l'exemple fictif ────────────── */
+
+.bib-demo-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-4);
+  background: var(--m-couleur-voile-barre);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: var(--m-police-etiquette-approche);
+  text-transform: var(--m-police-etiquette-casse);
+  color: var(--m-couleur-papier-texte-doux);
+}

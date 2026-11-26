@@ -1,0 +1,38 @@
+/* La carte d'étagère : la COUVERTURE d'abord, en grand — c'est l'objet que
+   la cliente reconnaît. Titre et année l'encadrent en haut, le geste est en
+   bas. Toute la carte est cliquable et mène au magazine. */
+function CarteLivre({ l }: { l: LivreVue }) {
+  return (
+    <Link className="cpt-livre" href={`/compte/magazine/${l.token}`}>
+      <span className="cpt-livre-tete">
+        <span className="cpt-livre-titre">{l.titre}</span>
+        {l.annee ? <span className="cpt-livre-annee">{l.annee}</span> : null}
+      </span>
+
+      <span className="cpt-livre-cadre">
+        {l.couverture ? (
+          <img
+            className={`cpt-livre-img${l.couvertureEstPlanche ? ' est-planche' : ''}`}
+            src={l.couverture}
+            alt={`Couverture de ${l.titre}`}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span className="cpt-livre-vide" aria-hidden="true">
+            {l.titre}
+          </span>
+        )}
+      </span>
+
+      <span className="cpt-livre-pied">
+        <span className="cpt-livre-meta">
+          {l.nbPages ? `${l.nbPages} pages` : 'Livré'}
+          {l.livreLe ? ` · ${l.livreLe}` : ''}
+        </span>
+        <span className="cpt-livre-geste">Ouvrir</span>
+      </span>
+    </Link>
+  )
+}
+
