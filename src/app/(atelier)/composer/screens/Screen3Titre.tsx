@@ -70,7 +70,7 @@ export default function Screen3Titre({
      <div className="at-t-col">
       <h2>Donnez un titre<br />à votre numéro.</h2>
       <p className="at-lede at-q-lede">
-        Il sera imprimé sur la couverture. Vous pourrez encore le changer plus tard.
+        Imprimé sur la couverture. Modifiable plus tard.
       </p>
 
       <input

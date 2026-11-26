@@ -443,11 +443,9 @@ export default function Composer() {
      là, et le parcours n'a pas bougé. */
   useEffect(() => {
     if (!quitter) return
-    const titre = modale.current?.querySelector('h2')
-    if (titre instanceof HTMLElement) {
-      titre.setAttribute('tabindex', '-1')
-      titre.focus({ preventScroll: true })
-    }
+    /* Comme le duplicata : le focus se pose sur « Continuer », le geste sûr. */
+    const reste = modale.current?.querySelector('.at-q-quitter-reste')
+    if (reste instanceof HTMLElement) reste.focus({ preventScroll: true })
     const auClavier = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setQuitter(null)
     }
@@ -644,40 +642,24 @@ export default function Composer() {
      frame avant de retomber sur le sien — infiniment préférable au vide. */
   const n = draft.screen
 
-  /* T-088 (07/09) — vrai dès la première réponse : le logo s'interpose
-     alors avant de quitter, au lieu de jeter la composition d'un clic. */
-  const aCommence = Boolean(
-    draft.token || draft.occasion || draft.histoire || draft.titre ||
-    draft.prenom || draft.email || draft.telephone,
-  )
+  /* T-088 `aCommence` (le logo qui s'interposait) : archivé avec le logo,
+     archive/composer-duplicata-2026-11/README.md. */
 
   /* Le sommaire nommé (Option A des maquettes du 03/09). Deux rendus, un
      seul affiché par le CSS : les noms sur desktop, segments + « n / 5 »
      sur mobile. Décoratif à l'oreille — la région live sr-only porte déjà
      l'étape, l'annoncer deux fois serait du bruit. */
-  const sommaire = n <= TOTAL_ETAPES && (
-    <div className="at-q-etapes" aria-hidden="true">
-      <div className="at-q-etapes-noms">
-        {NOMS_ETAPES.map((nom, i) => {
-          const num = i + 1
-          const etat = num < n ? 'is-fait' : num === n ? 'is-la' : ''
-          return (
-            <span key={nom} className={`at-q-etape ${etat}`}>
-              {num < n && <i className="at-q-etape-v" aria-hidden="true">✓ </i>}
-              {String(num).padStart(2, '0')} · {nom}
-            </span>
-          )
-        })}
-      </div>
-      <div className="at-q-etapes-mini">
-        <span className="at-q-segments">
-          {NOMS_ETAPES.map((nom, i) => (
-            <i key={nom} className={i + 1 <= n ? 'is-fait' : ''} />
-          ))}
-        </span>
-        <span className="at-q-etapes-ou">{n} / {TOTAL_ETAPES} · {NOMS_ETAPES[n - 1]}</span>
-      </div>
-    </div>
+  const sommaire = (
+    /* Le fil d'étapes du duplicata « Essai photos » (26/11) : cinq barres,
+       le nom dessous ; au téléphone, les barres seules. Il vit DANS la barre
+       du haut, entre le retour et la croix. À l'écran 6, les cinq sont faites. */
+    <ol className="at-q-etapes" aria-hidden="true">
+      {NOMS_ETAPES.map((nom, i) => {
+        const num = i + 1
+        const etat = num < n ? 'is-fait' : num === n ? 'is-la' : ''
+        return <li key={nom} className={etat}>{nom}</li>
+      })}
+    </ol>
   )
 
   /* ── T-058 : LE LIEN DE REPRISE ABÎMÉ S'ARRÊTE ICI ─────────────────────
@@ -732,34 +714,18 @@ export default function Composer() {
       </p>
 
       <div className="at-q-top">
+        {/* Duplicata (26/11) : « ← Retour » à gauche, les étapes au milieu,
+            la croix à droite ; plus de logo. À l'écran 1, le retour n'a pas
+            d'écran derrière lui : il ouvre la même confirmation que la croix. */}
         <button
           type="button"
           className="at-q-back"
-          onClick={() => reculer(n)}
-          style={{ visibility: n === 1 || n === 6 ? 'hidden' : 'visible' }}
+          onClick={() => (n === 1 ? setQuitter('croix') : reculer(n))}
+          style={{ visibility: n === 6 ? 'hidden' : 'visible' }}
         >
           ← Retour
         </button>
-        {/* T-088 (07/09) — le logo n'est plus un clic mort : il mène à
-            l'accueil. Composition commencée : la confirmation s'interpose
-            (même mécanique que la croix), et sa sortie ramène à l'accueil,
-            pas à /magazine. Écran 6 : parcours fini, <a> nu — rechargement
-            voulu, le moteur d'envoi est un singleton hors React. */}
-        {aCommence && n !== 6 ? (
-          <button
-            type="button"
-            className="at-q-logo"
-            onClick={() => setQuitter('logo')}
-            aria-label="Revenir à l’accueil Bellajour"
-          >
-            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={240} height={92} decoding="async" />
-          </button>
-        ) : (
-          // eslint-disable-next-line @next/next/no-html-link-for-pages
-          <a className="at-q-logo" href="/" aria-label="Revenir à l’accueil Bellajour">
-            <img className="at-q-logo-img" src={LOGO} alt="Bellajour" width={240} height={92} decoding="async" />
-          </a>
-        )}
+        {sommaire}
         {/* La croix N'EST PLUS un lien (03/09) : elle ouvre la confirmation.
             C'est le <a> DE LA MODALE qui quitte — et il RECHARGE la page,
             exprès : le moteur d'envoi est un singleton hors React
@@ -781,10 +747,12 @@ export default function Composer() {
         )}
       </div>
 
-      {sommaire}
-
       <div className="at-q-scroll" ref={scroller}>
-        <div className="at-q-screen" key={n}>
+        <div className={`at-q-screen${n === 6 ? ' at-q-screen--fin' : ''}`} key={n}>
+          {/* Le repère du duplicata : « 1 / 5 · Le moment ». */}
+          {n <= TOTAL_ETAPES && (
+            <p className="at-q-repere">{n} / {TOTAL_ETAPES} · {NOMS_ETAPES[n - 1]}</p>
+          )}
           {/* ── LE DOSSIER A DISPARU, LES RÉPONSES SONT LÀ (11/09/2026) ───
               Deux moments, deux phrases, toutes les deux vraies : avant la
               recréation on annonce ce qui va se passer, après on nomme ce
@@ -878,13 +846,10 @@ export default function Composer() {
       {n !== 5 && (
         <div className="at-q-barre">
           <div className="at-q-barre-int">
-            {n === 1 && (
+            {/* Duplicata (26/11) : la note à gauche, le geste à droite, à
+                chaque écran ; le retour ne vit plus qu'en haut. */}
+            {n < 6 && (
               <span className="at-q-barre-note">Vos réponses s’enregistrent au fur et à mesure.</span>
-            )}
-            {n > 1 && n < 6 && (
-              <button type="button" className="at-q-back at-q-barre-retour" onClick={() => reculer(n)}>
-                ← Retour
-              </button>
             )}
             <div className="at-q-actions">
               {/* T-051 — key : même message deux fois de suite = deux annonces
@@ -943,8 +908,8 @@ export default function Composer() {
             aria-labelledby="at-q-quitter-titre"
             ref={modale}
           >
-            <h2 id="at-q-quitter-titre">Quitter la composition ?</h2>
-            <p>Vos réponses sont gardées.</p>
+            <h2 id="at-q-quitter-titre">On garde vos réponses.</h2>
+            <p>Vous reprendrez là où vous en étiez.</p>
             <button type="button" className="at-cta at-q-quitter-reste" onClick={() => setQuitter(null)}>
               Continuer
             </button>
@@ -961,11 +926,14 @@ export default function Composer() {
             {quitter === 'logo' ? (
               // eslint-disable-next-line @next/next/no-html-link-for-pages
               <a className="at-skip at-q-quitter-part" href="/">
-                Quitter et revenir à l’accueil
+                Quitter pour l’instant
               </a>
             ) : (
-              <a className="at-skip at-q-quitter-part" href={cheminRetour(de)}>
-                {motRetour(de)}
+              /* Le mot du duplicata ; l'ADRESSE suit toujours la provenance
+                 (cheminRetour), seule la phrase a changé. motRetour reste
+                 pour le libellé accessible. */
+              <a className="at-skip at-q-quitter-part" href={cheminRetour(de)} aria-label={motRetour(de)}>
+                Quitter pour l’instant
               </a>
             )}
           </div>

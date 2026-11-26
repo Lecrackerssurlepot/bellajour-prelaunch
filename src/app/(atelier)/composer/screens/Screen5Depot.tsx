@@ -231,7 +231,7 @@ export default function Screen5Depot({
           <button type="button" onClick={onAutreDossier}>Commencer un nouveau numéro</button>
         </p>
       )}
-      <h2>Vos photos,<br />maintenant.</h2>
+      <h2>Vos photos, maintenant.</h2>
       {/* Le chiffre qui compte est le PLANCHER, pas la fourchette. « Entre 40
           et 100 » posait deux nombres dont un seul décide de quelque chose ;
           le plafond se dit plus bas, quand il approche. */}
@@ -329,9 +329,14 @@ export default function Screen5Depot({
               c'est la section entière qui écoute), et la mention de format est
               descendue en note de pied de barre.
               Reste le seul objet qui compte : le geste. */}
+          {/* 26/11 : le duplicata « Essai photos », validé comme référence,
+              rend la zone en pointillés (titre, une ligne, le bouton). Elle
+              revient, sans le « de 40 à 100 » que le chapo dit déjà. */}
           <div className={`at-d-appel${survol ? ' is-survol' : ''}`}>
+            <b className="at-d-appel-titre">Déposez vos photos</b>
+            <span className="at-d-appel-note">Depuis le téléphone ou l’ordinateur.</span>
             <button type="button" className="at-d-parcourir" onClick={selecteur.ouvrir}>
-              Choisir des photos
+              Choisir les photos
             </button>
           </div>
 

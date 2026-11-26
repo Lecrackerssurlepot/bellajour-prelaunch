@@ -17,8 +17,7 @@ export default function Screen2Histoire({
     <>
       <h2>Racontez-nous ce moment.</h2>
       <p className="at-lede at-q-lede">
-        Trois phrases suffisent. Le lieu, ceux qui étaient là, et ce qu’on doit
-        ressentir en tournant les pages.
+        Trois phrases suffisent. Le lieu, ceux qui étaient là, ce qu’on doit ressentir.
       </p>
 
       <textarea
@@ -39,11 +38,9 @@ export default function Screen2Histoire({
         </p>
       )}
 
-      <p className="at-hint">
-        « Quatre jours de festival avec la bande. Des concerts jusqu’au bout de
-        la nuit, des siestes au soleil, des fous rires. Je veux que ça respire
-        l’été et l’insouciance. »
-      </p>
+      {/* L'exemple en italique (« Quatre jours de festival avec la bande… »)
+          n'est pas dans le duplicata du 26/11 : rangé dans
+          archive/composer-duplicata-2026-11/README.md. */}
     </>
   )
 }

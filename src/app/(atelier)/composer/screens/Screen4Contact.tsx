@@ -59,24 +59,32 @@ export default function Screen4Contact({
           en <label> — qui reste affiché quand le champ est rempli, ce qu'un
           placeholder ne sait pas faire. Les placeholders, devenus redondants,
           sont partis. */}
-      <label className="at-lbl" htmlFor="at-c-prenom">Prénom</label>
-      <input
-        id="at-c-prenom"
-        className="at-inp"
-        value={prenom}
-        onChange={(e) => onChange('prenom', e.target.value)}
-        autoComplete="given-name"
-      />
-      <label className="at-lbl" htmlFor="at-c-email">Email</label>
-      <input
-        id="at-c-email"
-        className="at-inp"
-        type="email"
-        value={email}
-        onChange={(e) => onChange('email', e.target.value)}
-        autoComplete="email"
-        inputMode="email"
-      />
+      {/* Prénom et email côte à côte, comme le duplicata (26/11) ; l’un sous
+          l’autre au téléphone. */}
+      <div className="at-q-duo">
+        <div>
+          <label className="at-lbl" htmlFor="at-c-prenom">Prénom</label>
+          <input
+            id="at-c-prenom"
+            className="at-inp"
+            value={prenom}
+            onChange={(e) => onChange('prenom', e.target.value)}
+            autoComplete="given-name"
+          />
+        </div>
+        <div>
+          <label className="at-lbl" htmlFor="at-c-email">E-mail</label>
+          <input
+            id="at-c-email"
+            className="at-inp"
+            type="email"
+            value={email}
+            onChange={(e) => onChange('email', e.target.value)}
+            autoComplete="email"
+            inputMode="email"
+          />
+        </div>
+      </div>
       {/* ── LA FAUTE DE FRAPPE, ATTRAPÉE AVANT L'ENVOI ────────────────
           Une adresse mal tapée est le seul échec du parcours qui ne se voit
           nulle part : le dossier se crée, elle ne reçoit rien, et elle croit

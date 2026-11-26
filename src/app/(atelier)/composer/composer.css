@@ -108,64 +108,41 @@
 .bj-atelier .at-q-back:hover { color: var(--c-text); }
 .bj-atelier .at-q-close:hover { color: var(--c-text); border-color: var(--c-line-strong); }
 
-/* ---- le sommaire nommé (Option A, maquettes du 03/09) ----
-   Desktop : les cinq noms, l'étape courante soulignée accent, les faites en
-   retrait avec leur coche. Mobile : cinq segments + « n / 5 · nom ». Les
-   deux vivent dans le DOM, le CSS n'en montre qu'un. */
-.at-q-etapes { flex: 0 0 auto; padding: var(--m-espace-2) var(--pad) 0; }
-
-.at-q-etapes-noms {
+/* ---- le fil d'étapes (duplicata « Essai photos », 26/11) ----
+   Cinq barres de 3 px, le nom dessous en étiquette ; faites et courante à
+   l'encre. Au téléphone, les barres seules. Il vit dans la barre du haut. */
+.at-q-etapes {
+  list-style: none;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--m-espace-6);
-}
-
-.at-q-etape {
-  font-family: var(--m-police-texte-famille);
-  font-size: var(--m-taille-etiquette);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  font-weight: 500;
-  /* Texte doux plein (5,9:1) et non plus voilé à 0,55 (2,3:1, axe phase 5). */
-  color: var(--m-couleur-papier-texte-doux);
-  padding-bottom: var(--m-espace-1);
-}
-
-.at-q-etape.is-fait { color: var(--m-couleur-papier-texte); }
-.at-q-etape.is-la {
-  opacity: 1;
-  color: var(--c-accent-strong);
-  border-bottom: 1px solid var(--c-accent);
-}
-
-.at-q-etape-v { font-style: normal; color: var(--c-accent); }
-
-.at-q-etapes-mini { display: none; align-items: center; gap: var(--m-espace-3); }
-
-.at-q-segments { display: flex; gap: var(--m-espace-1); flex: 1; }
-
-.at-q-segments i {
-  display: block;
-  height: 2px;
+  gap: var(--m-espace-2);
+  margin: 0;
+  padding: 0;
   flex: 1;
-  border-radius: var(--m-rayon-image);
-  background: var(--c-line-md);
+  max-width: 640px;
 }
-
-.at-q-segments i.is-fait { background: var(--c-accent); }
-
-.at-q-etapes-ou {
-  flex: 0 0 auto;
-  font-family: var(--m-police-texte-famille);
-  font-size: var(--m-taille-etiquette);
+.at-q-etapes li {
+  flex: 1;
+  display: grid;
+  gap: var(--m-espace-2);
+  font-family: var(--m-police-etiquette-famille);
+  font-size: 11px;
+  font-weight: var(--m-police-etiquette-graisse);
   letter-spacing: 0.1em;
-  color: var(--c-text-faint);
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte-doux);
 }
-
-@media (max-width: 760px) {
-  .at-q-etapes-noms { display: none; }
-  .at-q-etapes-mini { display: flex; }
+.at-q-etapes li::before {
+  content: '';
+  height: 3px;
+  border-radius: 3px;
+  background: var(--m-couleur-papier-ligne);
+  transition: background-color var(--m-duree-standard) var(--m-courbe-sortie);
+}
+.at-q-etapes li.is-fait::before,
+.at-q-etapes li.is-la::before { background: var(--m-couleur-accent); }
+.at-q-etapes li.is-la { color: var(--m-couleur-papier-texte); }
+@media (max-width: 700px) {
+  .at-q-etapes li { font-size: 0; gap: 0; }
 }
 
 /* ---- l'écran ---- */
@@ -981,4 +958,304 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+}
+
+
+/* ════════ DUPLICATA « ESSAI PHOTOS » (26/11/2026) ════════
+   Référence unique : la page Composer de l'artefact 14BmVZ. Ces règles
+   viennent en dernier et portent le cadre : barre du haut, colonne de
+   760 px, repère, titres, pastilles, champs, barre du bas, sortie. */
+
+/* Barre du haut : retour · étapes · croix. */
+.at-q-top {
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-4) var(--m-espace-marge);
+}
+.bj-atelier .at-q-back {
+  margin: 0;
+  padding: 0 var(--m-espace-2);
+  min-height: var(--m-cible-mini);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte);
+}
+.bj-atelier .at-q-close {
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
+  border: 0;
+  font-size: 18px;
+  color: var(--m-couleur-papier-texte);
+  opacity: 0.6;
+  transition: opacity var(--m-duree-micro) var(--m-courbe-sortie);
+}
+.bj-atelier .at-q-close:hover { opacity: 1; border: 0; }
+.bj-atelier .at-q-close::after { content: none; }
+.at-q-cote { width: var(--m-cible-mini); height: var(--m-cible-mini); }
+
+/* La colonne : 760 px, centrée, le contenu part du haut. */
+.at-q-screen {
+  max-width: 760px;
+  justify-content: flex-start;
+  padding-top: var(--m-espace-8);
+  padding-left: var(--m-espace-marge);
+  padding-right: var(--m-espace-marge);
+}
+@media (max-width: 700px) {
+  .at-q-screen { padding-top: var(--m-espace-6); }
+}
+
+/* Le repère « 1 / 5 · Le moment ». */
+.bj-atelier .at-q-repere {
+  margin: 0;
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-etiquette);
+  font-weight: var(--m-police-etiquette-graisse);
+  letter-spacing: var(--m-police-etiquette-approche);
+  /* Le duplicata pose le repère en ligne dans un bloc de texte courant :
+     la ligne a la hauteur du texte, pas celle de l'étiquette. */
+  line-height: calc(var(--m-taille-base) * var(--m-interligne-texte));
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+/* Titre et chapo. */
+.bj-atelier .at-q-screen h2 {
+  margin: var(--m-espace-3) 0 var(--m-espace-4);
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  letter-spacing: var(--m-police-titre-approche);
+  line-height: var(--m-police-titre-interligne);
+  font-size: calc(var(--m-taille-h2) * var(--m-police-titre-facteur));
+}
+.bj-atelier .at-q-screen .at-q-repere + h2 { margin-top: var(--m-espace-3); }
+.bj-atelier .at-q-lede {
+  margin: 0 0 var(--m-espace-6);
+  max-width: 44ch;
+  font-size: var(--m-taille-chapo);
+  line-height: 1.5;
+  font-weight: var(--m-police-texte-graisse);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+/* Les pastilles de l'écran 1. */
+.at-chips { gap: var(--m-espace-3); margin-top: 0; max-width: none; }
+.bj-atelier .at-chip {
+  min-height: 48px;
+  padding: 0 var(--m-espace-5);
+  border: 1px solid color-mix(in srgb, var(--m-couleur-papier-texte) 20%, transparent);
+  font-size: var(--m-taille-bouton);
+  color: var(--m-couleur-papier-texte);
+  transition: background-color var(--m-duree-micro) var(--m-courbe-sortie), color var(--m-duree-micro) var(--m-courbe-sortie), border-color var(--m-duree-micro) var(--m-courbe-sortie), transform var(--m-duree-micro) var(--m-courbe-sortie);
+}
+.bj-atelier .at-chip:hover {
+  border-color: var(--m-couleur-papier-texte);
+  background: transparent;
+  color: var(--m-couleur-papier-texte);
+  transform: none;
+}
+.bj-atelier .at-chip:active { transform: scale(var(--m-mouvement-appui-echelle)); }
+.bj-atelier .at-chip.is-on,
+.bj-atelier .at-chip.is-on:hover {
+  background: var(--m-couleur-papier-texte);
+  border-color: var(--m-couleur-papier-texte);
+  color: var(--m-couleur-papier-fond);
+}
+
+/* Les champs (fiche H « Champs ») : boîte de 54 px, rayon champ. */
+.bj-atelier .at-field,
+.bj-atelier .at-area,
+.bj-atelier .at-inp {
+  max-width: none;
+  min-height: var(--m-cible-champ);
+  margin-top: var(--m-espace-5);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border: 1px solid var(--m-couleur-papier-champ-bord);
+  border-radius: var(--m-rayon-champ);
+  background: var(--m-couleur-papier-champ-fond);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-champ);
+  transition: border-color var(--m-duree-micro) var(--m-courbe-sortie), box-shadow var(--m-duree-micro) var(--m-courbe-sortie);
+}
+.bj-atelier .at-area { min-height: 150px; line-height: 1.55; }
+.bj-atelier .at-field:focus,
+.bj-atelier .at-area:focus,
+.bj-atelier .at-inp:focus {
+  outline: none;
+  border-color: var(--m-couleur-accent);
+  box-shadow: 0 0 0 var(--m-focus-champ-anneau) color-mix(in srgb, var(--m-couleur-accent) 14%, transparent);
+}
+.bj-atelier .at-lbl + .at-inp { margin-top: var(--m-espace-2); }
+
+/* Barre du bas : la note à gauche, le geste à droite, sur le papier. */
+.at-q-barre {
+  background: var(--m-couleur-papier-fond);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  padding: var(--m-espace-4) var(--m-espace-marge) calc(var(--m-espace-4) + env(safe-area-inset-bottom, 0px));
+  font-size: var(--m-taille-petit);
+}
+.at-q-barre-int { max-width: none; }
+.at-q-barre-note {
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse);
+  color: var(--m-couleur-papier-texte-doux);
+}
+.at-q-barre-int:has(> .at-q-barre-note) .at-cta { min-width: 180px; justify-content: center; }
+/* Au téléphone, seule la barre des écrans 1 à 4 (celle qui porte la note)
+   passe en rangée ; l'écran 5 garde sa barre à lui, l'écran 6 sa colonne. */
+@media (max-width: 760px) {
+  .at-q-barre-int:has(> .at-q-barre-note) { flex-direction: row; align-items: center; }
+  .at-q-barre-int:has(> .at-q-barre-note) .at-q-actions { flex: 1; }
+  .at-q-barre-int:has(> .at-q-barre-note) .at-cta { flex: 1; }
+}
+
+/* La sortie : boîte arrondie sur voile flouté ; centrée à l'ordinateur,
+   posée en bas au téléphone. */
+.at-q-voile {
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 30%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: var(--m-espace-4);
+}
+@media (max-width: 700px) {
+  .at-q-voile { align-items: flex-end; }
+}
+.at-q-quitter {
+  width: min(440px, 100%);
+  padding: var(--m-espace-7) var(--m-espace-6) var(--m-espace-5);
+  gap: var(--m-espace-3);
+  background: var(--m-couleur-papier-fond);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border: 0;
+  border-radius: 28px;
+  box-shadow: none;
+  animation: at-q-monte var(--m-duree-standard) var(--m-courbe-sortie);
+}
+@keyframes at-q-monte { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.bj-atelier .at-q-quitter h2 {
+  margin: 0;
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  letter-spacing: var(--m-police-titre-approche);
+  line-height: var(--m-police-titre-interligne);
+  font-size: calc(var(--m-taille-h3) * var(--m-police-titre-facteur));
+}
+.bj-atelier .at-q-quitter p {
+  margin: 0 auto var(--m-espace-3);
+  font-size: var(--m-taille-base);
+  font-weight: var(--m-police-texte-graisse);
+  color: var(--m-couleur-papier-texte-doux);
+}
+.bj-atelier .at-q-quitter-reste { margin-top: 0; }
+.bj-atelier .at-q-quitter .at-q-quitter-part {
+  margin-top: 0;
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
+  text-decoration: none;
+  border-bottom: 0;
+  align-self: center;
+}
+@media (prefers-reduced-motion: reduce) { .at-q-quitter { animation: none; } }
+
+/* Le focus posé au code sur le titre (tabindex -1) ne se dessine pas :
+   le duplicata n'a aucun cadre autour de ses titres. */
+.bj-atelier .at-q-screen h2[tabindex="-1"]:focus { outline: none; }
+
+/* Le premier champ sous le chapo : l'écart est celui du chapo seul. */
+.bj-atelier .at-q-lede + .at-area,
+.bj-atelier .at-q-lede + .at-field { margin-top: 0; }
+
+/* Les libellés du duplicata : petit texte, graisse moyenne, encre. */
+.bj-atelier .at-lbl {
+  font-size: var(--m-taille-petit);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--m-couleur-papier-texte);
+}
+
+/* Prénom · email sur deux colonnes (duplicata), une seule au téléphone. */
+.at-q-duo { display: grid; grid-template-columns: 1fr 1fr; gap: var(--m-espace-4); }
+.at-q-duo > div { min-width: 0; }
+@media (max-width: 700px) {
+  .at-q-duo { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* Écran 3 dans la colonne de 760 px : le titre d'abord, les modèles en
+   dessous sur une rangée de quatre (deux colonnes n'y tiennent plus). */
+@media (min-width: 900px) {
+  .bj-atelier .at-q-screen .at-t-deux { display: flex; flex-direction: column; gap: 0; }
+  .bj-atelier .at-q-screen .at-covers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
+    padding: 2px;
+  }
+}
+.bj-atelier .at-q-screen .at-t-col { width: 100%; }
+.bj-atelier .at-q-screen .at-t-col .at-field { display: block; width: 100%; }
+
+/* Les titres suivent la colonne, sans équilibrage (le duplicata coupe au bord). */
+.bj-atelier .at-q-screen h2 { text-wrap: wrap; }
+
+/* Écran 6, comme la fin du duplicata : centré, sans pastille cochée. */
+.bj-atelier .at-q-screen--fin { align-items: center; text-align: center; }
+.bj-atelier .at-q-screen--fin .at-done { display: none; }
+.bj-atelier .at-q-screen--fin h2,
+.bj-atelier .at-q-screen--fin .at-q-lede,
+.bj-atelier .at-q-screen--fin .at-fin-carte { margin-left: auto; margin-right: auto; }
+.bj-atelier .at-q-screen--fin .at-fin-carte { align-items: center; }
+
+/* « Copier mon lien » était crème sur papier blanc (couleurs de l'ancienne
+   charte sombre, lienpartage.css) : sur l'écran 6, il prend l'encre. */
+.bj-atelier .at-fin-carte .bj-lienpartage {
+  --lp-texte: var(--m-couleur-papier-texte);
+  --lp-filet: color-mix(in srgb, var(--m-couleur-papier-texte) 20%, transparent);
+  --lp-verre: transparent;
+}
+.bj-atelier .at-fin-carte .bj-lienpartage-btn { min-height: var(--m-cible-mini); }
+
+/* La sortie au téléphone : posée au-dessus du bord, comme le duplicata. */
+@media (max-width: 700px) {
+  .at-q-quitter { margin-bottom: max(var(--m-espace-4), env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Écran 5 : la zone de dépôt du duplicata, en pointillés. */
+.bj-atelier .at-q-screen .at-d-appel {
+  display: grid;
+  justify-items: center;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-5);
+  padding: var(--m-espace-8) var(--m-espace-5);
+  border: 1.5px dashed color-mix(in srgb, var(--m-couleur-papier-texte) 28%, transparent);
+  border-radius: 22px;
+  text-align: center;
+}
+.bj-atelier .at-q-screen .at-d-appel.is-survol {
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 4%, transparent);
+}
+.bj-atelier .at-d-appel-titre {
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: var(--m-police-titre-axes);
+  letter-spacing: var(--m-police-titre-approche);
+  line-height: var(--m-police-titre-interligne);
+  font-size: calc(var(--m-taille-h3) * var(--m-police-titre-facteur));
+}
+.bj-atelier .at-d-appel-note {
+  font-size: var(--m-taille-base);
+  color: var(--m-couleur-papier-texte-doux);
+}
+.bj-atelier .at-q-screen .at-d-parcourir {
+  min-height: var(--m-cible-mini);
+  border-color: color-mix(in srgb, var(--m-couleur-papier-texte) 20%, transparent);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 6%, transparent);
+  color: var(--m-couleur-papier-texte);
+}
+.bj-atelier .at-q-screen .at-d-parcourir:hover {
+  border-color: var(--m-couleur-papier-texte);
+  background: color-mix(in srgb, var(--m-couleur-papier-texte) 6%, transparent);
 }

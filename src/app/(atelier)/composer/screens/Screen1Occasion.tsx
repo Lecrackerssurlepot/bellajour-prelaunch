@@ -46,9 +46,7 @@ export default function Screen1Occasion({
   return (
     <>
       <h2>Quel était ce moment ?</h2>
-      <p className="at-lede at-q-lede">
-        Sélectionnez les moments qui correspondent. Un seul, ou plusieurs.
-      </p>
+      <p className="at-lede at-q-lede">Un seul, ou plusieurs.</p>
 
       <div className="at-chips">
         {MOTS_CLES.map((mot) => (

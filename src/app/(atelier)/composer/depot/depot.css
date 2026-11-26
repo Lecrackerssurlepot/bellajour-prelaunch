@@ -155,8 +155,9 @@
 .bj-atelier .at-d-actions .at-cta[disabled] {
   opacity: 1;
   background: transparent;
-  border: 1px solid rgba(214, 138, 99, 0.34);
-  color: rgba(214, 138, 99, 0.66);
+  /* 26/11, charte V2 : l'ancien orange quitte la maison ; le creux est à l'encre. */
+  border: 1px solid color-mix(in srgb, var(--m-couleur-papier-texte) 20%, transparent);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 /* ── compteur, jauge, palier ───────────────────────────────────────────── */
