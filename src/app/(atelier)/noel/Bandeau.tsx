@@ -20,7 +20,7 @@ import Link from 'next/link'
 import { useAndroid } from '@/hooks/useClient'
 import { NOEL_REMISE_AUTRE_PCT, NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
 import { useFenetreNoel, usePlaces } from './places'
-import { VERS_NOEL_MAGAZINE, auClicGlisser } from './glisser'
+import { VERS_NOEL, auClicGlisser } from './glisser'
 import './noel.css'
 
 /* LE BANDEAU DÉFILE (Mathias, 16/11 : « bandeau défilant pour que ce ne soit
@@ -55,7 +55,7 @@ export default function Bandeau() {
     <div className={`nl-noel-bandeau ${plat ? 'nl-noel-bandeau--plat' : ''}`}>
       <Link
         className="nl-noel-bandeau-offre"
-        href={VERS_NOEL_MAGAZINE}
+        href={VERS_NOEL}
         prefetch={false}
         onClick={auClicGlisser('noel')}
         data-defile={phrases.length > 1 ? '1' : undefined}
@@ -65,7 +65,7 @@ export default function Bandeau() {
           {phrases.length > 1 && suite(true)}
         </span>
       </Link>
-      <Link className="nl-noel-bandeau-lien" href={VERS_NOEL_MAGAZINE} prefetch={false} onClick={auClicGlisser('noel')}>Carte cadeau</Link>
+      <Link className="nl-noel-bandeau-lien" href={VERS_NOEL} prefetch={false} onClick={auClicGlisser('noel')}>Carte cadeau</Link>
     </div>
   )
 }

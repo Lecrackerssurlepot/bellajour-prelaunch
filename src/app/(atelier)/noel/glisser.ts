@@ -15,7 +15,8 @@ import { useEffect } from 'react'
 import type { MouseEvent } from 'react'
 
 export const PARAM_VERS = 'vers'
-export const VERS_NOEL_MAGAZINE = `/magazine?${PARAM_VERS}=noel`
+/* 26/11 : le bloc de Noël vit sur /offrir (duplicata validé), plus sur /magazine. */
+export const VERS_NOEL = `/offrir?${PARAM_VERS}=noel`
 
 /* La course : une courbe douce (lente au départ et à l'arrivée), d'une durée
    qui suit la distance, comme « Découvrir l'univers » de l'ouverture. Le

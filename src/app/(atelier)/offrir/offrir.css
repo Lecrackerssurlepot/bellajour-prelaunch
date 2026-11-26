@@ -162,3 +162,152 @@
 .nl-preview .nl-merci-pour-vous a { text-decoration: none; }
 .nl-preview .nl-suivant--plein { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
 .nl-preview .nl-suivant--plein:hover { background: var(--c-accent); filter: brightness(1.06); }
+
+/* ══ /offrir, charte V2 (26/11) : la page du duplicata validé ══
+   Tout est scopé sous .m-offrir : /offrir/merci et /carte/<token> gardent
+   leur feuille. La base (.pg-tete, .bloc, .cadre, .btn, .lab, .titre) vient
+   de magazine.css (.m-banc). */
+.m-offrir .offre { padding-bottom: var(--m-espace-section); }
+.m-offrir .offre .nl-preview { max-width: 1280px; padding: 0 var(--m-espace-marge); }
+
+/* Le récit : la carte à gauche (collée en défilant), le formulaire à droite. */
+.m-offrir .nl-achat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "carte fil" "carte form";
+  column-gap: var(--m-espace-9);
+  row-gap: var(--m-espace-6);
+  align-items: start;
+}
+.m-offrir .nl-achat-scene { display: contents; }
+.m-offrir .nl-achat .nl-achat-scene .nl-recit-carte,
+.m-offrir .nl-achat .nl-recit-carte {
+  grid-area: carte;
+  width: 100%;
+  position: sticky;
+  top: calc(var(--nl-bh, 0px) + var(--m-espace-tete-page));
+}
+.m-offrir .nl-achat .nl-recit-carte[data-temps='2'] { width: 100%; transform: none; }
+.m-offrir .nl-achat > .nl-fil { grid-area: fil; }
+.m-offrir .nl-achat .nl-recit-temps { grid-area: form; width: 100%; gap: var(--m-espace-4); }
+.m-offrir .nl-achat .nl-recit-temps--large { grid-column: 1 / -1; grid-row: 2; }
+.m-offrir .nl-achat .nl-recit-titre {
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-size: calc(var(--m-taille-h2) * var(--m-police-titre-facteur));
+  line-height: var(--m-police-titre-interligne);
+  letter-spacing: var(--m-police-titre-approche);
+  text-align: left;
+  margin: 0;
+}
+
+/* Le fil : trois barres, l'étape en cours à l'encre (duplicata « .etapes »). */
+.m-offrir .nl-fil { display: flex; gap: var(--m-espace-2); width: 100%; max-width: 640px; }
+.m-offrir .nl-fil li {
+  flex: 1;
+  display: grid;
+  gap: var(--m-espace-2);
+  font-family: var(--m-police-etiquette-famille);
+  font-size: var(--m-taille-etiquette);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte-doux);
+}
+.m-offrir .nl-fil li::before { content: ""; height: 3px; border-radius: 3px; background: var(--m-couleur-papier-ligne); transition: background-color .5s; }
+.m-offrir .nl-fil li[data-etat='ici'],
+.m-offrir .nl-fil li[data-etat='fait'] { color: var(--m-couleur-papier-texte); }
+.m-offrir .nl-fil li[data-etat='ici']::before,
+.m-offrir .nl-fil li[data-etat='fait']::before { background: var(--m-couleur-accent); }
+.m-offrir .nl-fil-n { display: none; }
+
+/* La carte : à l'encre, une couverture qui dépasse en bas à droite (offrir.carte). */
+.m-offrir .nl-carte-face {
+  border-radius: var(--m-rayon-bloc);
+  background: var(--m-couleur-papier-texte);
+  color: var(--m-couleur-papier-fond);
+  border: 0;
+  box-shadow: var(--m-ombre-objet);
+}
+.m-offrir .nl-carte-face::after {
+  content: "";
+  position: absolute;
+  right: -12%;
+  bottom: -30%;
+  width: 42%;
+  aspect-ratio: 210 / 297;
+  background: var(--carte-visuel, none) center / cover;
+  transform: rotate(-12deg);
+  opacity: .9;
+  pointer-events: none;
+}
+.m-offrir .nl-carte-face > * { position: relative; z-index: 1; }
+.m-offrir .nl-carte-marque { filter: invert(1); }
+
+/* Les choix : des pastilles, l'encre quand elles sont prises. */
+.m-offrir .nl-puce {
+  min-height: var(--m-cible-mini, 44px);
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--m-couleur-papier-champ-bord);
+  font-size: var(--m-taille-bouton);
+}
+.m-offrir .nl-puce[aria-pressed='true'] { background: var(--m-couleur-papier-texte); color: var(--m-couleur-papier-fond); border-color: var(--m-couleur-papier-texte); }
+.m-offrir .nl-suivant,
+.m-offrir .nl-payer {
+  align-self: flex-start;
+  min-height: 52px;
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
+  border: 0;
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
+  font-size: var(--m-taille-bouton);
+}
+.m-offrir .nl-retour { align-self: flex-start; }
+
+/* Le bloc de Noël, en nuit (duplicata « .noel »). */
+.m-offrir .noel { background: var(--m-couleur-nuit-fond); color: var(--m-couleur-nuit-texte); }
+.m-offrir .noel .sub { color: var(--m-couleur-nuit-texte-doux); }
+.m-offrir .noel .cadre { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--m-espace-8); align-items: center; }
+.m-offrir .noel .remises { display: grid; gap: var(--m-espace-4); margin: var(--m-espace-5) 0; }
+.m-offrir .noel .remises div { display: flex; align-items: baseline; gap: var(--m-espace-4); padding-bottom: var(--m-espace-4); border-bottom: 1px solid var(--m-couleur-nuit-ligne); }
+.m-offrir .noel .remises b {
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-variation-settings: "SOFT" 40, "opsz" 96;
+  font-size: calc(var(--m-taille-h2) * var(--m-police-titre-facteur));
+  line-height: 1;
+  min-width: 3.2ch;
+}
+.m-offrir .noel .btn { background: var(--m-couleur-nuit-texte); color: var(--m-couleur-nuit-fond); }
+.m-offrir .noel-vis { position: relative; aspect-ratio: 4 / 3; }
+.m-offrir .noel-vis img { position: absolute; width: 46%; aspect-ratio: 210 / 297; object-fit: cover; box-shadow: var(--m-ombre-livre); }
+.m-offrir .noel-vis img:first-child { left: 12%; top: 6%; transform: rotate(-5deg); }
+.m-offrir .noel-vis img:last-child { right: 10%; top: 12%; transform: rotate(6deg); }
+
+/* « La carte, en clair. » : des cartes, la première à l'encre, la dernière en long. */
+.m-offrir .savoir .titre { margin-bottom: 0; }
+.m-offrir .savoir .bon { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--m-espace-4); margin: var(--m-espace-6) 0 0; }
+.m-offrir .savoir .bon div { border-radius: var(--m-rayon-bloc); padding: var(--m-espace-5); background: var(--m-couleur-papier-survol); display: grid; align-content: start; gap: var(--m-espace-2); }
+.m-offrir .savoir .bon dt { margin: 0; font-family: var(--m-police-etiquette-famille); font-size: var(--m-taille-etiquette); letter-spacing: .12em; text-transform: uppercase; color: var(--m-couleur-papier-texte-doux); }
+.m-offrir .savoir .bon dd { margin: 0; font-size: var(--m-taille-base); line-height: 1.45; }
+.m-offrir .savoir .bon div:first-child { background: var(--m-couleur-papier-texte); color: var(--m-couleur-papier-fond); }
+.m-offrir .savoir .bon div:first-child dt { color: var(--m-couleur-nuit-texte-doux); }
+.m-offrir .savoir .bon div:last-child { grid-column: 1 / -1; }
+
+@media (max-width: 900px) {
+  .m-offrir .nl-achat { grid-template-columns: minmax(0, 1fr); grid-template-areas: "fil" "carte" "form"; row-gap: var(--m-espace-5); }
+  .m-offrir .nl-achat .nl-achat-scene .nl-recit-carte,
+  .m-offrir .nl-achat .nl-recit-carte { position: static; width: 86%; justify-self: center; }
+  .m-offrir .nl-achat .nl-recit-temps--large { grid-row: auto; }
+  .m-offrir .noel .cadre { grid-template-columns: minmax(0, 1fr); gap: var(--m-espace-7); }
+}
+@media (max-width: 700px) {
+  .m-offrir .nl-fil li { font-size: 0; gap: 0; }
+  .m-offrir .nl-carte-face::after { width: 34%; right: -6%; bottom: -24%; }
+  .m-offrir .savoir .bon { grid-template-columns: 1fr 1fr; }
+  .m-offrir .savoir .bon div { padding: var(--m-espace-4); }
+}
+@media (max-width: 420px) {
+  .m-offrir .savoir .bon { grid-template-columns: 1fr; }
+}

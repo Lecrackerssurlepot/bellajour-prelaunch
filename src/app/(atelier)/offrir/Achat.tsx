@@ -159,7 +159,7 @@ export default function Achat() {
 
       {temps === 1 && (
         <div className="nl-recit-temps">
-          <h1 className="nl-recit-titre">Écrivez-lui.</h1>
+          <h2 className="nl-recit-titre">Écrivez-lui.</h2>
           <fieldset className="nl-champ">
             <legend>Montant</legend>
             <div className="nl-puces">
@@ -206,7 +206,7 @@ export default function Achat() {
 
       {temps === 2 && (
         <div className="nl-recit-temps">
-          <h1 className="nl-recit-titre">Comment la lui donner ?</h1>
+          <h2 className="nl-recit-titre">Comment la lui donner ?</h2>
           <p className="nl-faible nl-achat-aide">L&apos;un, l&apos;autre, ou les deux.</p>
           <div className="nl-egaux nl-egaux--grands">
             <button type="button" className="nl-choix" aria-pressed={parEmail} onClick={() => setParEmail((v) => !v)}>
@@ -271,7 +271,7 @@ export default function Achat() {
 
       {temps === 3 && (
         <div className="nl-recit-temps nl-recit-temps--large">
-          <h1 className="nl-recit-titre">Voici ce qu&apos;il recevra.</h1>
+          <h2 className="nl-recit-titre">Voici ce qu&apos;il recevra.</h2>
           <div className="nl-recu">
             <div className="nl-recu-mail">
               <span className="nl-recu-legende">{parEmail && !imprime ? 'Dans sa boîte' : parEmail ? 'Dans sa boîte, et dans vos mains' : 'Dans vos mains'}</span>

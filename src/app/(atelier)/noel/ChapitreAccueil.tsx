@@ -17,7 +17,7 @@ import CarteCadeau from '../noel-preview/CarteCadeau'
 import { COUVERTURES_ACCUEIL, PHRASES, TEXTES } from '../noel-preview/contenu'
 import { NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
 import { ligneCompteur, useFenetreNoel, usePlaces } from './places'
-import { VERS_NOEL_MAGAZINE } from './glisser'
+import { VERS_NOEL } from './glisser'
 import './noel.css'
 
 const T = TEXTES.sobre
@@ -92,7 +92,7 @@ export default function ChapitreAccueil() {
               Le 2<sup>e</sup> magazine à <strong>−{NOEL_REMISE_MEME_PCT}&nbsp;%</strong>
             </p>
           )}
-          <Link className="nl-cta nl-cta--plein" href={VERS_NOEL_MAGAZINE} prefetch={false}>Offrir une carte cadeau</Link>
+          <Link className="nl-cta nl-cta--plein" href={VERS_NOEL} prefetch={false}>Offrir une carte cadeau</Link>
           {places !== null && <p className="nl-scene-places">{ligneCompteur(places)}</p>}
         </div>
       </div>

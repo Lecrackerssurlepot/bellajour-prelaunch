@@ -75,7 +75,7 @@ export function verifierNoelCartes(ok: Ok, titre: (t: string) => void): void {
     ok("/offrir : « Un autre jour » n'est proposé que s'il reste un jour à proposer (après le 23/12, plus rien)",
       /\{jours\.length > 0 && \(\s*<button[^\n]*>Un autre jour<\/button>/.test(achat));
   }
-  for (const page of ["src/app/(atelier)/page.tsx", "src/app/(atelier)/magazine/page.tsx"]) {
+  for (const page of ["src/app/(atelier)/page.tsx", "src/app/(atelier)/magazine/page.tsx", "src/app/(atelier)/offrir/page.tsx"]) {
     const src = readFileSync(page, "utf8");
     ok(`${page} : Noël s'éteint seul après le 25/12 (noelAuSite + revalidate)`,
       src.includes(".ouvert && noelAuSite(new Date())") && /export const revalidate = \d+/.test(src));
