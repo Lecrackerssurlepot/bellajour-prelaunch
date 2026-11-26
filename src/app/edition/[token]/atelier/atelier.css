@@ -277,7 +277,7 @@
 }
 .ec-espace .ec-parler-zone {
   flex: 1;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   max-height: 160px;
   padding: var(--m-espace-3) var(--m-espace-4);
   resize: none;
@@ -285,15 +285,15 @@
 }
 .ec-espace .ec-parler-plus {
   flex: none;
-  width: 44px;
-  height: 44px;
-  min-height: 44px;
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
+  min-height: var(--m-cible-mini);
   padding: 0;
   font-size: var(--m-taille-chapo);
   line-height: 1;
 }
 .ec-espace .ec-parler-ligne .ec-bouton {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
 }
 .ec-espace .ec-parler-joints {
   display: flex;

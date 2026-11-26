@@ -335,7 +335,7 @@
   flex-direction: column;
 }
 .ec-espace .ec-tdb-n {
-  min-width: 44px;
+  min-width: var(--m-cible-mini);
   text-align: right;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -659,7 +659,7 @@
   gap: var(--m-espace-2);
 }
 .ec-espace .ec-envoi-ajouter {
-  height: 44px;
+  height: var(--m-cible-mini);
   border-radius: var(--m-rayon-pilule);
   border: 1px dashed var(--ec-filet-fort);
   background: transparent;
@@ -831,7 +831,7 @@
     font-size: var(--m-taille-h3);
   }
   .ec-espace .ec-tdb-style--bientot .ec-bouton--plein {
-    min-height: 44px;
+    min-height: var(--m-cible-mini);
   }
 }
 @media (max-width: 860px) {
@@ -855,6 +855,6 @@
 @media (hover: none) and (pointer: coarse) {
   .ec-espace .ec-tdb .ec-bouton--petit,
   .ec-espace .ec-tdb-puce {
-    min-height: 44px;
+    min-height: var(--m-cible-mini);
   }
 }

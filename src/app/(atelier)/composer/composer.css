@@ -55,7 +55,7 @@
 .bj-atelier .at-q-back {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   background: none;
   border: none;
   /* La marge négative est VERTICALE aussi : sans elle, une cible de 44 px
@@ -309,7 +309,7 @@
   align-self: center;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: 0 var(--m-espace-2);
 }
 /* Clavier ouvert / paysage : la fenêtre ne dépasse jamais l'écran visible, elle défile. */
@@ -513,7 +513,7 @@
 .bj-atelier .at-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: var(--m-espace-3) var(--m-espace-4);
   border: 1px solid var(--c-line-md);
   border-radius: var(--m-rayon-pilule);

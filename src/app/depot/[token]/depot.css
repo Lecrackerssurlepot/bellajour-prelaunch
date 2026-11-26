@@ -378,7 +378,7 @@ html:has(.bj-atelier.ec-depot) {
   cursor: not-allowed;
 }
 .bj-atelier .ec-dp-bouton--clair {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   background: transparent;
   color: var(--dp-texte);
   border: 1px solid var(--dp-filet);
@@ -655,7 +655,7 @@ html:has(.bj-atelier.ec-depot) {
 }
 /* « ‹ Retour » tout en haut de la carte (28/10) : la place de la marque, cible de 44 px. */
 .bj-atelier .ec-dp-lien--retour {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   margin: -8px 0 2px -8px;
   padding: 0 var(--m-espace-4) 0 var(--m-espace-3);
   gap: var(--m-espace-2);

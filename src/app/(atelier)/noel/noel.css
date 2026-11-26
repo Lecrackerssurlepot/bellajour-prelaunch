@@ -35,7 +35,7 @@
   /* Au-dessus du grain de l'accueil (.grain, z 900, ouverture.css) : sous
      lui, le verre clair du bandeau le montrait pixelisé (retour du 16/11). */
   z-index: 901;
-  height: var(--nl-bh, 44px);
+  height: var(--nl-bh, var(--m-cible-mini));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,7 +62,7 @@
 .nl-noel-bandeau .nl-noel-bandeau-offre {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: 760px;
+  max-width: var(--m-largeur-colonne);
   overflow: hidden;
   color: var(--c-text);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
@@ -209,7 +209,7 @@
 
 /* ════════ LE BLOC DE /magazine ════════ */
 .nl-noel.nl-noel-mag {
-  max-width: 1280px;
+  max-width: var(--m-largeur-cadre);
   margin: 0 auto;
   padding: clamp(var(--m-espace-8), 8vw, var(--m-espace-9)) clamp(var(--m-espace-5), 6vw, var(--m-espace-9));
   border-top: 1px solid var(--c-line);
@@ -437,7 +437,7 @@
    deux colonnes et le parcours. Le repère vit sous les gages. */
 .at-pdp .kiosque > .kiosque-noel { grid-column: 1 / -1; display: block; }
 .at-pdp .kiosque-noel .nl-noel.nl-noel-mag { padding: clamp(var(--m-espace-7), 6vw, var(--m-espace-8)) 0; border-bottom: 1px solid var(--c-line); margin-bottom: clamp(var(--m-espace-5), 4vw, var(--m-espace-7)); }
-.at-pdp .nl-amorce-bloc { display: flex; flex-direction: column; gap: var(--m-espace-3); margin-top: var(--m-espace-4); max-width: 440px; }
+.at-pdp .nl-amorce-bloc { display: flex; flex-direction: column; gap: var(--m-espace-3); margin-top: var(--m-espace-4); max-width: var(--m-largeur-boite); }
 .at-pdp .nl-amorce-info { margin: 0; font-size: var(--m-taille-petit); line-height: 1.45; color: var(--c-text-soft); }
 .at-pdp .nl-amorce-info strong { font-weight: 600; color: var(--c-accent-strong); }
 .at-pdp .nl-amorce-info sup { font-size: 0.7em; }

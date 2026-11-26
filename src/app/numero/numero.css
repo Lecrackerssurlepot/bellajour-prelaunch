@@ -373,7 +373,7 @@
    filet du thème) : champs à gauche, bouton en verre à droite. */
 .nu-carte {
   margin: var(--m-espace-7) auto 0;
-  max-width: 760px;
+  max-width: var(--m-largeur-colonne);
   padding: var(--m-espace-5) var(--m-espace-6);
   border: 1px solid var(--c-line-md);
   border-radius: var(--m-rayon-champ);
@@ -804,7 +804,7 @@
 .bj-atelier .nu-viz-choix-btn {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: var(--m-espace-2) var(--m-espace-5);
   background: none;
   border: 1px solid var(--c-line-strong);
@@ -957,7 +957,7 @@
    Le texte reste à gauche : un reçu centré ne se lit pas. */
 .nu-commande {
   margin: var(--m-espace-7) auto 0;
-  max-width: 760px;
+  max-width: var(--m-largeur-colonne);
   padding: var(--m-espace-5) var(--m-espace-6) var(--m-espace-6);
   border: 1px solid var(--c-line-md);
   border-radius: var(--m-rayon-champ);
@@ -1097,7 +1097,7 @@
      juste en dessous — les deux réglages du bon de commande doivent avoir la
      même assise. */
   padding: var(--m-espace-3) var(--m-espace-4);
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-bouton);
   font-weight: 300;
@@ -1571,7 +1571,7 @@
    déborde d'un souffle, pas d'une marge. */
 .nu-doc {
   margin: var(--m-espace-7) auto 0;
-  max-width: 760px;
+  max-width: var(--m-largeur-colonne);
   border: 1px solid var(--c-line-md);
   border-radius: var(--m-rayon-champ);
   background: var(--c-surface-1);
@@ -1696,8 +1696,8 @@
   appearance: none;
   border: 0;
   background: transparent;
-  width: 44px;
-  min-height: 44px;
+  width: var(--m-cible-mini);
+  min-height: var(--m-cible-mini);
   font-family: var(--m-police-texte-famille);
   font-size: var(--m-taille-chapo);
   font-weight: 300;
@@ -1714,7 +1714,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
+  min-width: var(--m-cible-mini);
   border-left: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
   border-right: 1px solid var(--c-line-strong, rgba(255, 255, 255, 0.16));
   font-family: var(--m-police-texte-famille);

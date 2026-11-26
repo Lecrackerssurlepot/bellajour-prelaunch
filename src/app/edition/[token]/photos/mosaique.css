@@ -193,8 +193,8 @@
   z-index: 3;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
   padding: 0;
   border: 0;
   background: none;

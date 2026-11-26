@@ -338,7 +338,7 @@
   display: flex;
   align-items: center;
   gap: var(--m-espace-3);
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4);
   border-radius: var(--ec-r-bloc);
   font-size: var(--m-taille-petit);
@@ -3070,13 +3070,13 @@
     top: 50%;
     display: flex;
     align-items: center;
-    height: 44px;
+    height: var(--m-cible-mini);
     transform: translateY(-50%);
     transition: opacity 180ms var(--ease), transform 180ms var(--ease);
   }
   /* Le titre est un bouton (28/10) : il ne répond au toucher que quand il est affiché (`data-defile`), et remonte la page. */
   .ec-espace .ec-barre-titre {
-    height: 44px;
+    height: var(--m-cible-mini);
     margin: 0;
     padding: 0;
     border: 0;
@@ -3116,8 +3116,8 @@
     position: relative;
     display: grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: var(--m-cible-mini);
+    height: var(--m-cible-mini);
     margin-right: 0;
     border: 0;
     background: none;
@@ -3155,7 +3155,7 @@
   .ec-espace .ec-pastille-appareil {
     order: 2;
     flex: none;
-    height: 44px;
+    height: var(--m-cible-mini);
     margin-left: auto;
     gap: var(--m-espace-2);
   }
@@ -3370,7 +3370,7 @@
 /* Au doigt, « petit » ne vaut que pour le dessin : la cible reste de 44 px. */
 @media (pointer: coarse) {
   .ec-espace .ec-bouton--petit {
-    min-height: 44px;
+    min-height: var(--m-cible-mini);
   }
 }
 .ec-espace .ec-bouton--plein {
@@ -3443,13 +3443,13 @@
   gap: var(--m-espace-1);
 }
 .ec-espace .ec-partage--un .ec-bouton {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   width: 100%;
 }
 /* Le QR code au téléphone : un lien-pilule discret sous « Partager » (28/10), cible de 44 px. */
 .ec-espace .ec-partage-qr {
   align-self: center;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4);
   border: 0;
   background: transparent;
@@ -3467,13 +3467,13 @@
   gap: var(--m-espace-1);
 }
 .ec-espace .ec-partage--un .ec-bouton {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   width: 100%;
 }
 /* Le QR code au téléphone : un lien-pilule discret sous « Partager » (28/10), cible de 44 px. */
 .ec-espace .ec-partage-qr {
   align-self: center;
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4);
   border: 0;
   border-radius: var(--m-rayon-pilule);
@@ -3503,7 +3503,7 @@
   }
   .ec-espace .ec-partage--quatre .ec-bouton,
   .ec-espace .ec-partage--deux .ec-bouton {
-    min-height: 44px;
+    min-height: var(--m-cible-mini);
     padding: 0 var(--m-espace-3);
     white-space: nowrap;
   }

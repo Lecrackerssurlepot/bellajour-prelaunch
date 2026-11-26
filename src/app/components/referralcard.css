@@ -215,7 +215,7 @@
   font-size: clamp(11px, 0.85vw, 13px);
   color: var(--m-couleur-papier-texte-doux);
   line-height: 1.7;
-  max-width: 440px;
+  max-width: var(--m-largeur-boite);
 }
 
 /* ─── Footer phrase mécanique (variant full only) ─── */
@@ -269,7 +269,7 @@
   }
   .ref-card--full .ref-card-copy-btn {
     width: 100%;
-    height: 44px;
+    height: var(--m-cible-mini);
   }
   .ref-card--full .ref-card-share-btn {
     width: 100%;

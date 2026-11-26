@@ -77,8 +77,8 @@
 .ec-espace .ec-b3-menu,
 .ec-espace .ec-b3-icone {
   flex: none;
-  width: 44px;
-  height: 44px;
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
   padding: 0;
   display: grid;
   place-items: center;
@@ -289,8 +289,8 @@
   position: absolute;
   top: 50%;
   z-index: 4;
-  width: 44px;
-  height: 44px;
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
   margin-top: -22px;
   padding: 0;
   border: 1px solid var(--ec-carte-bord);
@@ -371,13 +371,13 @@
   background: rgba(var(--ec-fg-rgb), 0.06);
 }
 .ec-espace .ec-b3-vignette-couv {
-  width: 44px;
+  width: var(--m-cible-mini);
 }
 .ec-espace .ec-b3-vignette-couv img,
 .ec-espace .ec-b3-vignette-pages img,
 .ec-espace .ec-b3-vignette-pages > span:not([class]) {
   display: block;
-  width: 44px;
+  width: var(--m-cible-mini);
   height: 62px;
   object-fit: cover;
 }
@@ -1014,8 +1014,8 @@
     display: grid;
     place-items: center;
     flex: none;
-    width: 44px;
-    height: 44px;
+    width: var(--m-cible-mini);
+    height: var(--m-cible-mini);
     padding: 0;
     border: 0;
     border-radius: var(--m-rayon-pilule);

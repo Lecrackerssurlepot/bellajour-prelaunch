@@ -114,7 +114,7 @@
   gap: var(--m-espace-2);
 }
 .ec-espace .ec-st-choix {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: var(--m-espace-2) var(--m-espace-4);
   border-radius: var(--ec-r-champ);
   border: 1px solid var(--ec-line-fort);
@@ -164,7 +164,7 @@
   cursor: pointer;
 }
 .ec-espace .ec-st-mag--court {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
 }
 .ec-espace .ec-st-mag[aria-pressed="true"],
 .ec-espace .ec-st-mag[aria-current="true"] {

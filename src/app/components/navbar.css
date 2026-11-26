@@ -81,7 +81,7 @@
 @media (min-width: 768px) {
   .pv-nav-logo { height: clamp(80px, 6vw, 88px); }
 }
-.pv-nav--solid .pv-nav-logo { height: 44px; }
+.pv-nav--solid .pv-nav-logo { height: var(--m-cible-mini); }
 @media (min-width: 768px) {
   .pv-nav--solid .pv-nav-logo { height: 52px; }
 }

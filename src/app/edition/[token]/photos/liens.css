@@ -41,6 +41,6 @@
     margin: 0 2px;
   }
   .ec-espace .ec-cl-exemples .ec-ph-pilule {
-    min-height: 44px;
+    min-height: var(--m-cible-mini);
   }
 }

@@ -568,7 +568,7 @@
   max-width: 40ch;
   /* La cible tactile de la case. Voir le mot plus bas, dans la requête
      téléphone : la ligne faisait 21 px. */
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   align-items: center;
 }
 

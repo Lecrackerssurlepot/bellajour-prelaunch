@@ -8,7 +8,7 @@
 /* ═════════ un rond de verre (le « … »), une pilule (« Terminé ») ═════════ */
 .ec-espace .ec-s-rond,
 .ec-espace .ec-s-pilule {
-  height: 44px;
+  height: var(--m-cible-mini);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte);
   color: var(--ec-text);
@@ -22,7 +22,7 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 44px;
+  width: var(--m-cible-mini);
   padding: 0;
   border-radius: 50%;
 }
@@ -75,7 +75,7 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  height: 44px;
+  height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--m-rayon-pilule);
@@ -103,7 +103,7 @@
   align-items: center;
   gap: var(--m-espace-2);
   max-width: calc(100% - 32px);
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   margin: 2px var(--m-espace-4) var(--m-espace-2);
   padding: 0 var(--m-espace-4);
   box-sizing: border-box;
@@ -242,7 +242,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
-  height: 44px;
+  height: var(--m-cible-mini);
   padding: 0 0 0 var(--m-espace-4);
   border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
@@ -254,8 +254,8 @@
 .ec-espace .ec-s-puce button {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
   padding: 0;
   border: 0;
   background: none;
@@ -269,7 +269,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--m-espace-2);
-  height: 44px;
+  height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4);
   border: 0;
   border-radius: var(--m-rayon-pilule);
@@ -376,7 +376,7 @@
     padding-bottom: var(--ec-fl-reserve);
   }
   .ec-espace .ec-cb-tete .ec-ph-pilule {
-    min-height: 44px;
+    min-height: var(--m-cible-mini);
     padding: 0 var(--m-espace-5);
     border-color: var(--ec-carte-bord);
     background: var(--ec-carte);
@@ -388,7 +388,7 @@
   }
   /* « Terminé » : l'action de la sélection, en haut à droite, à la place du « + » et du « … ». */
   .ec-espace .ec-ecran-actions .ec-s-pilule {
-    height: 44px;
+    height: var(--m-cible-mini);
   }
 
   /* La barre du bas : un voile doux derrière, deux choix avec une icône, le rond « Personnes ». */
@@ -584,7 +584,7 @@
   }
   .ec-espace .ec-s-ok {
     flex: none;
-    height: 44px;
+    height: var(--m-cible-mini);
     padding: 0 var(--m-espace-5);
     border: 0;
     border-radius: var(--m-rayon-pilule);
@@ -845,7 +845,7 @@
   display: inline-flex;
   align-items: center;
   gap: var(--m-espace-2);
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
   border: 1.5px dashed var(--ec-line-fort);
   border-radius: var(--m-rayon-pilule);

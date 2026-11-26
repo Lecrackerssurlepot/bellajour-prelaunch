@@ -15,7 +15,7 @@
   flex-direction: column;
   gap: var(--m-espace-3);
   padding: var(--m-espace-5) var(--m-espace-6);
-  max-width: 760px;
+  max-width: var(--m-largeur-colonne);
 }
 .ec-espace .ec-vt-etiquette {
   align-self: flex-start;

@@ -118,8 +118,8 @@
   position: absolute;
   top: 2.4vh;
   right: 2.4vw;
-  width: clamp(34px, 3.4vw, 44px);
-  height: clamp(34px, 3.4vw, 44px);
+  width: clamp(34px, 3.4vw, var(--m-cible-mini));
+  height: clamp(34px, 3.4vw, var(--m-cible-mini));
   font-size: clamp(20px, 2vw, 26px);
   padding-bottom: 0.3vh;
 }

@@ -31,9 +31,9 @@
   background: var(--glass-bg-plein);
   border-bottom: 1px solid var(--c-line-md);
 }
-.pa-logo { display: inline-flex; align-items: center; min-height: 44px; }
+.pa-logo { display: inline-flex; align-items: center; min-height: var(--m-cible-mini); }
 .pa-logo img { height: 24px; width: auto; opacity: 0.94; }
-.pa-page .pa-tete-cta { min-height: 44px; padding: 0 var(--m-espace-5); font-size: var(--m-taille-petit); }
+.pa-page .pa-tete-cta { min-height: var(--m-cible-mini); padding: 0 var(--m-espace-5); font-size: var(--m-taille-petit); }
 
 /* ── la brochure, en grand ── */
 .pa-bro {
@@ -51,8 +51,8 @@
 .pa-page .pa-fin .pa-bouton { min-width: min(100%, 320px); }
 
 .pa-rond {
-  width: 44px;
-  height: 44px;
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -164,7 +164,7 @@
 
 .pa-heures { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--m-espace-2); }
 .pa-heure {
-  min-height: 44px;
+  min-height: var(--m-cible-mini);
   border-radius: var(--m-rayon-champ);
   border: 1px solid var(--glass-border);
   background: var(--c-veil-hover);
@@ -179,7 +179,7 @@
 .pa-heure:focus-visible { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-text-onaccent); outline: none; }
 
 .pa-attente { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--m-espace-2); padding: var(--m-espace-2) 0; }
-.pa-attente i { height: 44px; border-radius: var(--m-rayon-champ); background: var(--c-veil-hover); border: 1px solid var(--c-line-md); animation: pa-pouls 1.4s var(--ease) infinite; }
+.pa-attente i { height: var(--m-cible-mini); border-radius: var(--m-rayon-champ); background: var(--c-veil-hover); border: 1px solid var(--c-line-md); animation: pa-pouls 1.4s var(--ease) infinite; }
 .pa-attente i:nth-child(2) { animation-delay: 0.15s; }
 .pa-attente i:nth-child(3) { animation-delay: 0.3s; }
 @keyframes pa-pouls { 50% { opacity: 0.4; } }
