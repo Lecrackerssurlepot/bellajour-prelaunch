@@ -33,11 +33,16 @@ ne redessine un bouton ni un en-tête. Elle lit ses valeurs dans `brand/build/ma
   sur le fond devenu noir. Le bandeau est peint deux fois, `bgcolor` et
   `background-image: linear-gradient(…)`, parce que Gmail n'inverse pas une image de fond : il reste
   noir, le logo reste lisible.
+- **Une photo ouvre chaque mail** (piste C, choisie par Mathias le 26/11) : sous le bandeau, une vraie
+  photo de magazine pleine largeur (600 px, sans coin arrondi), `photoEnTete` de la coquille. Les mails
+  de l'atelier et du compte prennent `PHOTO_MAIL` (provisoire, en attendant les visuels de Mathias)
+  sauf s'ils ont la leur ; ceux de Noël gardent leur scène. Les mails de la carte cadeau n'en ont pas :
+  la carte est leur image. Au-dessus du titre, le titre du numéro en étiquette quand on le connaît.
 - **Corps** : papier `#ffffff`, encre `#111111`, texte doux `#626262` pour le pied et les étiquettes,
   filets `#dedede`. Rien d'autre : ni cuivre, ni crème, ni bleu.
 - **Marges** : `mail.marge` (24 px) de chaque côté, au téléphone comme sur ordinateur.
-- **Tailles** (prises dans l'échelle de D, en px fixes) : titre 40 px (36 px au téléphone), interligne
-  1,1 (Georgia en a besoin) ; chapo 18 px, interligne 1,5 ; texte 16 px, interligne 1,6 ; pied 14 px ;
+- **Tailles** (prises dans l'échelle de D, en px fixes) : titre 52 px (40 px au téléphone), interligne
+  1,04 (piste C, 26/11) ; chapo 18 px, interligne 1,5 ; texte 16 px, interligne 1,6 ; pied 14 px ;
   étiquette 12 px en capitales, approche 0,12 em ; bouton 15 px.
 - **Le bouton** : un tableau, cellule encre bordée d'encre, rayon pilule, 52 px de haut, texte papier
   en 15 px ; une forme VML pour Outlook sous Windows. Inversé par un mode sombre, il devient une pilule

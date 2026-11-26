@@ -63,11 +63,27 @@ export const ligne = (contenu, bas = 32, align = "left") =>
 export const etiquette = (t, couleur = C.doux) =>
   `<div style="font-family: ${SANS}; font-size: 12px; line-height: 1.3; letter-spacing: ${APPROCHE}; text-transform: uppercase; font-weight: 500; color: ${couleur};">${t}</div>`;
 
-export const titre = (t, bas = 20) =>
+/* Le titre : grand, comme un titre de magazine (piste C, choisie par Mathias le 26/11). */
+export const titre = (t, bas = 24) =>
   ligne(
-    `<h1 class="titre-mail" style="margin: 0; font-family: ${SERIF}; font-size: 40px; font-weight: normal; line-height: 1.1; letter-spacing: -0.01em; color: ${C.encre};">${t}</h1>`,
+    `<h1 class="titre-mail" style="margin: 0; font-family: ${SERIF}; font-size: 52px; font-weight: normal; line-height: 1.04; letter-spacing: -0.015em; color: ${C.encre};">${t}</h1>`,
     bas,
   );
+
+/** Le surtitre, au-dessus du titre : le titre du numéro, en étiquette. */
+export const surtitre = (t, bas = 14) => ligne(etiquette(t), bas);
+
+/**
+ * La photo d'en-tête, pleine largeur, juste sous le bandeau (piste C, 26/11) : une vraie photo de
+ * magazine ouvre chaque mail. Sans coin arrondi ni marge, elle tient les 600 px.
+ */
+export function photoEnTete(src, alt, lien = null) {
+  const img = `<img src="${src}" width="${LARGEUR}" alt="${alt}" style="display: block; width: 100%; max-width: ${LARGEUR}px; height: auto; border: 0; outline: none; text-decoration: none;" />`;
+  return `<!-- photo-en-tete --><tr><td style="padding: 0 0 40px 0;">${lien ? `<a href="${lien}" style="display: block; text-decoration: none;">${img}</a>` : img}</td></tr>`;
+}
+
+/** La photo par défaut des mails de l'atelier et du compte. PROVISOIRE : remplacée par les visuels de Mathias. */
+export const PHOTO_MAIL = { src: `${SITE}/images/mails/charte/aussie-1040.jpg`, alt: "Un magazine Bellajour, une ville la nuit en couverture" };
 
 export const chapo = (t, bas = 32) =>
   ligne(`<p style="margin: 0; font-family: ${SANS}; font-size: 18px; line-height: 1.5; color: ${C.encre};">${t}</p>`, bas);
@@ -214,7 +230,7 @@ u + .body .gm-ecran { background: #000000; mix-blend-mode: screen; }
 u + .body .gm-diff { background: #000000; mix-blend-mode: difference; }
 @media screen and (max-width: 620px) {
   .conteneur { width: 100% !important; max-width: 100% !important; }
-  .titre-mail { font-size: 36px !important; }
+  .titre-mail { font-size: 40px !important; }
   .duo { display: block !important; width: 100% !important; padding: 0 0 16px 0 !important; }
   .code-carte { font-size: 16px !important; letter-spacing: 0.5px !important; }
 }
@@ -228,9 +244,10 @@ u + .body .gm-diff { background: #000000; mix-blend-mode: difference; }
 <a href="${SITE}/" style="display: inline-block;"><img src="${LOGO_MAIL}" width="${LOGO_L}" height="${LOGO_H}" alt="Bellajour" style="display: block; width: ${LOGO_L}px; height: auto; border: 0; margin: 0 auto;" /></a>
 </td></tr>
 
-<tr><td align="center" style="padding: 48px 0 0 0;">
+<tr><td align="center" style="padding: 0;">
 <table role="presentation" class="conteneur" width="${LARGEUR}" cellpadding="0" cellspacing="0" border="0" style="width: ${LARGEUR}px; max-width: ${LARGEUR}px;">
 
+${corps.trimStart().startsWith("<!-- photo-en-tete -->") ? "" : `<tr><td height="48" style="height: 48px; font-size: 0; line-height: 0;">&nbsp;</td></tr>`}
 ${corps}
 
 <tr><td style="padding: 8px ${MARGE}px 0 ${MARGE}px;">

@@ -40,7 +40,6 @@ import {
   C,
   SERIF,
   SITE,
-  UTILE,
   bouton,
   chapo,
   chiffres,
@@ -48,8 +47,10 @@ import {
   encart,
   encartRecap,
   etiquette,
-  image,
   ligne,
+  photoEnTete,
+  PHOTO_MAIL,
+  surtitre,
   lienSecondaire,
   pied,
   titre,
@@ -247,7 +248,10 @@ function encartCarteCredit() {
 /** La ligne de la maison, en bas de chaque mail de l'atelier et du compte. */
 const MENTION = "contact@bellajour.com";
 
-export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero }) {
+export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero, sujet, surtitre: sur }) {
+  /* Piste C (26/11) : une photo ouvre chaque mail, le titre du numéro en surtitre quand on le connaît. */
+  const photo = hero ?? PHOTO_MAIL
+  const dessus = sur ?? (String(sujet ?? "").includes("params.TITRE") ? TITRE : null)
   return coquille({
     titreHtml,
     preheader,
@@ -255,7 +259,8 @@ export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pie
     corps: [
       /* L'image d'en-tête est FACULTATIVE (16/09/2026, C0 seulement) : sans
          elle, rien n'est rendu. JPEG, jamais WebP : Outlook ne le lit pas. */
-      hero ? image(hero.src, hero.alt, UTILE, null, 40) : "",
+      photoEnTete(photo.src, photo.alt),
+      dessus ? surtitre(dessus) : "",
       titre(h1),
       chapo(sous),
       carte ?? "",

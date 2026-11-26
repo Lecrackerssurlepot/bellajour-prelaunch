@@ -55,6 +55,7 @@ import {
   image as imageCharte,
   ligne,
   lienSecondaire,
+  photoEnTete,
   signature,
   titre,
 } from "./mails-charte.mjs";
@@ -90,9 +91,9 @@ const IMG_CHARTE = `${SITE}/images/mails/charte`;
 const SUR_PAPIER = new Set(["aussie-1040.jpg", "lisbonne-480.jpg", "trois-numeros-1040.jpg"]);
 const SIGNATURE = `${IMG}/signature-240.png`;
 
-/** Une image de la saison : la scène sur papier quand elle existe, la photo sinon. */
-function image(fichier, alt, largeur = UTILE, lien = null) {
-  return imageCharte(`${SUR_PAPIER.has(fichier) ? IMG_CHARTE : IMG}/${fichier}`, alt, largeur, lien, 40);
+/** La photo d'en-tête d'un mail, pleine largeur (piste C, 26/11). */
+function enTete(fichier, alt, lien = null) {
+  return photoEnTete(`${SUR_PAPIER.has(fichier) ? IMG_CHARTE : IMG}/${fichier}`, alt, lien);
 }
 
 /**
@@ -223,7 +224,7 @@ export const MAILS = [
     preheader: "Une carte cadeau, et votre magazine pour les fêtes.",
     liens: [LIENS.offrir, LIENS.magazine, LIENS.conditions],
     blocs: [
-      image("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table", 520, LIENS.magazine),
+      enTete("magazines-table-1040.jpg", "Des magazines Bellajour posés sur une table", LIENS.magazine),
       titre("Un premier Noël."),
       evocation(
         `${vous("vous faites partie des premiers à suivre Bellajour.")} Merci. Bellajour grandit, et pour son premier Noël, nous avons pensé à vous.`,
@@ -262,7 +263,7 @@ export const MAILS = [
     preheader: "Le 7 décembre, nous fermons les dépôts.",
     liens: [LIENS.magazine, LIENS.composer, LIENS.offrir],
     blocs: [
-      image("aussie-1040.jpg", "Le magazine Aussie, une ville la nuit en couverture", 520, LIENS.magazine),
+      enTete("aussie-1040.jpg", "Le magazine Aussie, une ville la nuit en couverture", LIENS.magazine),
       titre("Plus qu&rsquo;un week-end."),
       evocation(
         `${vous("lundi 7 décembre, nous fermons les dépôts pour Noël.")}${SI("PLACES", ` Il reste ${P("PLACES")} places.`)} Vos photos du week-end ont encore le temps d&rsquo;y entrer.`,
@@ -284,7 +285,7 @@ export const MAILS = [
     preheader: "La carte cadeau part par e-mail, le jour de votre choix.",
     liens: [LIENS.magazine, LIENS.offrir, LIENS.conditions],
     blocs: [
-      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail", 520, LIENS.magazine),
+      enTete("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail", LIENS.magazine),
       titre("Pas trop tard."),
       evocation(
         `${vous("les dépôts pour Noël sont fermés.")} La carte cadeau, elle, part encore : par e-mail le jour que vous choisissez, ou à imprimer ce soir.`,
@@ -497,7 +498,7 @@ export const MAILS = [
     preheader: `Votre carte de ${P("MONTANT")} € attend toujours.`,
     liens: ["LIEN_COMPOSER", LIENS.conditions],
     blocs: [
-      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail"),
+      enTete("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail"),
       titre("Vos photos des fêtes ?"),
       evocation(
         `${DEST}, les fêtes sont passées, les photos sont dans votre téléphone. Votre carte de ${MONTANT} attend toujours : un Noël, un voyage, une année.`,
@@ -517,7 +518,7 @@ export const MAILS = [
     preheader: "Votre carte vient d'offrir un numéro.",
     liens: [LIENS.offrir],
     blocs: [
-      image("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail"),
+      enTete("trois-numeros-1040.jpg", "Trois magazines Bellajour en éventail"),
       titre(`${DEST} a choisi ses photos.`),
       evocation(`${vous(`votre carte vient d&rsquo;offrir un magazine à ${DEST}.`)} L&rsquo;atelier le compose en ce moment. Merci pour ce cadeau.`),
       bouton("Offrir une autre carte", LIENS.offrir),
