@@ -46,7 +46,7 @@ export type Emplacement = {
 
 export const MEDIA = {
   'accueil.hero': {
-    role: "La photo de l'ouverture du livre",
+    role: "Une photo d'exemple posée dans le livre de l'ouverture (avant celles du client)",
     type: 'image',
     provisoire: true,
     defaut: {
@@ -56,13 +56,13 @@ export const MEDIA = {
     rotations: [],
   },
   'accueil.couverture': {
-    role: "La couverture qui s'ouvre",
+    role: "La couverture qui s'ouvre, la première de la frise « une année »",
     ratio: '210 / 297',
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/accueil/couverture-rio-1050.webp',
-      alt: 'La couverture d’un numéro sur Rio',
+      fichier: '/images/v2/composer/modele-aussie-900.webp',
+      alt: 'La couverture d’un numéro sur l’Australie',
     },
     rotations: [],
   },
@@ -83,6 +83,114 @@ export const MEDIA = {
     defaut: {
       fichier: '/images/v2/accueil/reseaux-photo-telephone-480.webp',
       alt: 'Une photo du numéro sur un téléphone',
+    },
+    rotations: [],
+  },
+  'accueil.couverture-2': {
+    role: "La deuxième couverture de l'ouverture et de la frise (mai)",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/composer/modele-sicile-900.webp',
+      alt: 'La couverture d’un numéro sur la Sicile',
+    },
+    rotations: [],
+  },
+  'accueil.couverture-3': {
+    role: "La troisième couverture de l'ouverture et de la frise (juillet)",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-cote-azur-640.webp',
+      alt: 'La couverture d’un numéro sur la Côte d’Azur',
+    },
+    rotations: [],
+  },
+  'accueil.couverture-4': {
+    role: "La quatrième couverture de l'ouverture et de la frise (octobre)",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-rio-700.webp',
+      alt: 'La couverture d’un numéro sur Rio',
+    },
+    rotations: [],
+  },
+  'accueil.couverture-5': {
+    role: "La cinquième couverture de l'ouverture et de la frise (décembre)",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/composer/modele-mon-annee-grand-900.webp',
+      alt: 'La couverture d’un numéro « Mon année »',
+    },
+    rotations: [],
+  },
+  'accueil.double-page-1': {
+    role: "La double page sous la couverture qui s'ouvre",
+    ratio: '1400 / 990',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/magazine/double-page-lagon-1000.webp',
+      alt: 'Une double page d’un numéro sur un lagon',
+    },
+    rotations: [],
+  },
+  'accueil.double-page-2': {
+    role: "La double page qui se tourne ensuite",
+    ratio: '1400 / 990',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/magazine/double-page-australie-1400.webp',
+      alt: 'Une double page d’un numéro sur l’Australie',
+    },
+    rotations: [],
+  },
+  'accueil.photo-exemple': {
+    role: "Une photo d'exemple de l'essai (avant celles du client)",
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/magazine/couverture-noosa-1000.webp',
+      alt: 'Une photo de vacances à Noosa',
+    },
+    rotations: [],
+  },
+  'accueil.matiere': {
+    role: "La vidéo de la section « La matière » (verticale à tourner)",
+    ratio: '9 / 16',
+    type: 'video',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/matiere/magazine-tour-provisoire.webp',
+      alt: 'Le magazine tourne sur lui-même',
+      video: { mp4: '/images/v2/matiere/magazine-tour-provisoire.mp4', webm: '/images/v2/matiere/magazine-tour-provisoire.webm' },
+    },
+    rotations: [],
+  },
+  'accueil.porte-offrir': {
+    role: "La vignette de la porte « Pour offrir »",
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/composer/modele-mon-annee-grand-900.webp',
+      alt: '',
+    },
+    rotations: [],
+  },
+  'accueil.porte-groupes': {
+    role: "La vignette de la porte « Pour un groupe »",
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/header-magazines-paysage-1792.webp',
+      alt: '',
     },
     rotations: [],
   },

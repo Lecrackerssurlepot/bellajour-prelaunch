@@ -1,86 +1,46 @@
-/* LA HOMEPAGE DE BELLAJOUR — l'ouverture, puis l'univers en sept pages.
-   Sert `/` depuis la bascule du 24/08/2026 ; `/atelier` y renvoie en 308
-   permanent (next.config.ts), les liens déjà donnés continuent de marcher.
+/* LA HOMEPAGE DE BELLAJOUR, charte V2 (26/11/2026).
+   Port du banc validé (duplicata 14BmVZ v4) : l'ouverture du livre avec
+   l'écran d'essai, la pile qui devient une année, la matière, les portes,
+   les questions. Le balisage est dans components/accueil/Accueil.tsx.
 
-   REFONTE DU 27/08/2026
-   Les quatre sections empilées (hero, collection, méthode, CTA final) sont
-   remplacées par la maquette validée : une couverture qui se pose puis
-   s'ouvre en plein écran, et le récit de la marque en sept pages qui
-   s'enchaînent comme une projection.
+   L'accueil d'avant (Ouverture + Univers, 27/08) n'est plus routé : sa page
+   est gardée dans archive/accueil-v1-ouverture/, ses composants restent en
+   place jusqu'au ménage de la phase 7.
+   `/atelier` renvoie toujours ici en 308 (next.config.ts).
 
-   Les anciens composants (S1Hero, S2Collection, S3Method, S4Final) ne sont
-   PAS supprimés : ils vivent dans archive/accueil-v1/ (T-016, 31/08/2026),
-   parce que leur contenu — l'étagère des quatre numéros, les trois temps du
-   parcours, la grille des paliers — est passé dans la page produit. Les
-   effacer, c'est réécrire ce texte-là une deuxième fois.
-
-   Ce fichier reste un composant SERVEUR : les métadonnées et le JSON-LD
-   doivent être dans le document, pas montés par le navigateur. Seuls
-   Ouverture et Univers sont clients, parce qu'eux seuls ont besoin du DOM.
-
-   ⚠️ `.at-accueil` n'est pas décoratif : les deux feuilles de style de la
-   page y sont entièrement scopées. Le retirer dépeindrait tout. */
+   Composant SERVEUR : métadonnées et JSON-LD doivent être dans le document. */
 
 import type { Metadata } from 'next'
-import { Cormorant_Garamond } from 'next/font/google'
 import Nav from './components/Nav'
-import Ouverture from './components/Ouverture'
-import Univers from './components/Univers'
 import Footer from './components/Footer'
+import Accueil from './components/accueil/Accueil'
 import Bandeau from './noel/Bandeau'
 import ChapitreAccueil from './noel/ChapitreAccueil'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import { compteOuvert } from '@/lib/compte/session'
 import { EUROS_MIN } from '@/lib/atelier/grille'
+import { visuelPour } from '@/content/media'
 
-/* LE GRAS DU TITRE DE COUVERTURE, ET LUI SEUL.
-   Cormorant Garamond n'est pas variable chez Google : chaque graisse est un
-   fichier. Le layout du groupe ne charge que le 400 (normal + italique) pour
-   les trois routes ; demander le 600 la-haut le servirait aussi a /magazine
-   et /composer, qui n'en ont pas l'usage. Il est donc demande ICI, sur la
-   seule page qui l'affiche — meme raison et meme geste que l'italique du
-   questionnaire, isole dans composer/layout.tsx.
-   L'italique du 600 est indispensable : « magazine » est en <em>, et sans
-   elle le navigateur fabriquerait une italique penchee a la main sur un
-   serif a fort contraste — ce qui se voit immediatement. */
-const titreFort = Cormorant_Garamond({
-  subsets: ['latin'],
-  weight: ['600'],
-  style: ['normal', 'italic'],
-  variable: '--font-titre-fort',
-  display: 'swap',
-})
-
-/* Le drapeau « la couverture s'est deja ouverte dans cet onglet ». Ecrit par
-   Ouverture.tsx (cle `bj:ouverture-vue`), relu ici avant tout affichage.
-   Volontairement minuscule et sans dependance : il tourne sur le chemin
-   critique du premier rendu. */
-const OUVERTURE_VUE =
-  "(function(){try{if(sessionStorage.getItem('bj:ouverture-vue')==='1')" +
-  "document.documentElement.setAttribute('data-ouverture-vue','')}catch(e){}})()"
-
-const TITLE = 'L’atelier Bellajour — vos meilleurs moments méritent leur magazine'
+const TITLE = 'Bellajour · Vos photos deviennent un vrai magazine'
 /* Le prix d'appel vient de la GRILLE (EUROS_MIN), jamais recopié : ce que
    Google affiche et ce que Stripe débite sortent de la même table. */
 const DESCRIPTION =
-  'Ce festival, cette soirée, ce road trip. Vous envoyez vos photos, ' +
-  'l’atelier compose le magazine de cet instant de vie. ' +
-  `Premier aperçu gratuit, votre magazine sur-mesure dès ${EUROS_MIN} €.`
+  'Vous déposez vos photos, l’atelier compose votre magazine, imprimé et livré chez vous. ' +
+  `Couverture offerte, votre numéro dès ${EUROS_MIN} €.`
 
-/* ⚠️ `openGraph` REMPLACE celui du layout racine, Next ne fusionne pas en
-   profondeur. Un bloc partiel effacait donc og:image, og:url, og:site_name et
-   og:locale — et surtout empechait l'injection de l'image generee par
-   opengraph-image.tsx. Resultat verifie le 27/08/2026 : l'accueil etait la
-   SEULE page du site sans apercu de partage. Un lien colle dans une story ou
-   un DM Instagram, c'est-a-dire le premier canal d'acquisition, montrait un
-   rectangle vide. Tout ce qui est ecrase doit donc etre redeclare ici. */
+/* L'image de partage vient de la librairie (emplacement `partage.image`). */
+const PARTAGE = visuelPour('partage.image')
+const PARTAGE_URL = `https://www.bellajour.fr${PARTAGE.fichier}`
+
 /* Noël s'éteint seul après le 25 décembre (noelAuSite) : la page, statique,
    se refait au plus tard une heure après minuit. */
 export const revalidate = 3600
 
+/* ⚠️ `openGraph` REMPLACE celui du layout racine (Next ne fusionne pas en
+   profondeur) : tout ce qui est écrasé est redéclaré ici. */
 export const metadata: Metadata = {
-  title: TITLE,
+  title: { absolute: TITLE },
   description: DESCRIPTION,
   alternates: { canonical: '/' },
   openGraph: {
@@ -90,31 +50,13 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{
-      url: 'https://www.bellajour.fr/images/v2/partage/bellajour-magazines-1200.png',
-      width: 1200,
-      height: 630,
-      alt: 'Dix magazines photo personnalisés Bellajour, imprimés et posés côte à côte',
-    }],
+    images: [{ url: PARTAGE_URL, width: 1200, height: 630, alt: PARTAGE.alt }],
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: TITLE,
-    description: DESCRIPTION,
-    images: ['https://www.bellajour.fr/images/v2/partage/bellajour-magazines-1200.png'],
-  },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [PARTAGE_URL] },
 }
 
-/* Données structurées Organization + WebSite — PAS de Product ici (T-068).
-   Jusqu'au 31/08/2026 cette page déclarait un second `Product` du même
-   magazine que celui de /magazine, sans `@id` pour les relier : deux fiches
-   concurrentes pour un seul produit, et Google pouvait retenir celle-ci —
-   envoyant l'acheteuse sur le récit de marque, sans prix ni acte d'achat.
-   De plus son `highPrice` n'apparaissait nulle part sur la page rendue (seul
-   le prix d'appel est visible, Ouverture.tsx) : balisage non conforme, motif
-   de rejet du résultat enrichi. LE Product vit sur /magazine, la page qui
-   porte la grille. Ici, la marque : `sameAs` relie le domaine aux
-   comptes réels écrits en dur dans Footer.tsx. */
+/* Organization + WebSite, PAS de Product ici (T-068) : LE Product vit sur
+   /magazine, la page qui porte la grille. */
 const JSON_LD = [
   {
     '@context': 'https://schema.org',
@@ -122,98 +64,22 @@ const JSON_LD = [
     name: 'Bellajour',
     url: 'https://www.bellajour.fr',
     logo: 'https://www.bellajour.fr/icon-512.png',
-    sameAs: [
-      'https://www.instagram.com/bellajour__/',
-      'https://www.tiktok.com/@bellajourmagazine',
-    ],
+    slogan: 'Vivez. Nous composons.',
+    sameAs: ['https://www.instagram.com/bellajour__/', 'https://www.tiktok.com/@bellajourmagazine'],
   },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: 'Bellajour',
-    url: 'https://www.bellajour.fr',
-  },
+  { '@context': 'https://schema.org', '@type': 'WebSite', name: 'Bellajour', url: 'https://www.bellajour.fr' },
 ]
 
 export default function AtelierHome() {
-  /* Noël 2026 : drapeau fermé = la page d'avant, au pixel près. Lu ICI (page
-     serveur), comme compteOuvert() : le bandeau entre dans le HTML prérendu. */
   const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
   return (
     <>
-      {/* L'image de couverture est l'element LCP de la page : elle occupe tout
-          l'ecran des la premiere seconde. On la demande donc AVANT que le
-          navigateur ait fini de lire Ouverture.tsx, qui est un composant client.
-          React 19 remonte ce <link> dans le <head> tout seul.
-          ⚠️ Ce prechargement vit ICI et pas dans le layout racine : le layout
-          sert AUSSI /composer, /preventes et les pages legales, qui n'affichent
-          pas cette image. Un prechargement pose trop haut est un telechargement
-          offert a des pages qui n'en veulent pas. C'etait le cas jusqu'au
-          27/08/2026 avec header-bellajour.webp (283 Ko, sur tout le site, pour
-          un Hero qui n'est plus route nulle part). */}
-      {/* ⚠️ imageSrcSet/imageSizes MIROIRS EXACTS du srcSet/sizes de l'<img>
-          d'Ouverture.tsx : si l'un des deux cotes change sans l'autre, le
-          navigateur precharge une variante et en affiche une autre, et
-          l'element LCP est telecharge DEUX fois. */}
-      {/* ⚠️ DEUX PRECHARGEMENTS, UN PAR ORIENTATION, et leurs `media` sont
-          les MIROIRS EXACTS du <picture> d'Ouverture.tsx. Un `media` qui
-          diverge d'un cote precharge un fichier pendant que l'autre en
-          affiche un second : l'element LCP part DEUX fois, et c'est la plus
-          lourde image du site. */}
-      <link
-        rel="preload"
-        as="image"
-        media="(orientation: landscape)"
-        href="/images/v2/accueil/header-magazines-paysage-1792.webp"
-        imageSrcSet="/images/v2/accueil/header-magazines-paysage-1280.webp 1280w, /images/v2/accueil/header-magazines-paysage-1792.webp 1792w, /images/v2/accueil/header-magazines-paysage-2560.webp 2560w"
-        imageSizes="100vw"
-        fetchPriority="high"
-      />
-      <link
-        rel="preload"
-        as="image"
-        media="(orientation: portrait)"
-        href="/images/v2/accueil/header-magazines-960.webp"
-        imageSrcSet="/images/v2/accueil/header-magazines-640.webp 640w, /images/v2/accueil/header-magazines-960.webp 960w, /images/v2/accueil/header-magazines-1280.webp 1280w, /images/v2/accueil/header-magazines-2125.webp 2125w"
-        imageSizes="100vw"
-        fetchPriority="high"
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
-      />
-      {/* ⚠️ AVANT LA PREMIERE PEINTURE, et c'est tout son interet.
-          Si la couverture s'est deja ouverte dans cet onglet, on le dit au
-          document tout de suite : ouverture.css sert alors l'etat final et
-          Ouverture.tsx ne rejoue rien. Pose dans un `useEffect`, ce meme
-          drapeau arriverait APRES le premier rendu, et on verrait la
-          couverture repliee clignoter a chaque retour sur l'accueil.
-          Il ne lit rien d'autre que sa propre trace, et un mode prive qui
-          refuse `sessionStorage` retombe simplement sur l'animation. */}
-      <script dangerouslySetInnerHTML={{ __html: OUVERTURE_VUE }} />
-      {/* `compteOuvert()` est lu ICI, au build de cette page statique, pour
-          que la silhouette du compte soit dans le HTML plutôt que dessinée une
-          seconde plus tard (cf. NavCompte). Optimiste : `false` ne ferme rien,
-          le fetch de la barre ouvrira quand même. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }} />
       {noel && <Bandeau />}
       <Nav compteOuvert={compteOuvert()} />
-      <div className={`at-accueil ${titreFort.variable}`}>
-        {/* Le grain : aucun aplat parfaitement plat. Fixe, par-dessus tout,
-            insensible au pointeur. C'est une turbulence SVG en ligne, pas
-            une image — voir ouverture.css. */}
-        <div className="grain" aria-hidden="true" />
-        {/* Le curseur qui légende : au survol d'un visuel il en donne le
-            nom. Desktop et pointeur fin uniquement, monté vide et piloté
-            par Ouverture. */}
-        <div className="curseur" aria-hidden="true"><i /><b /></div>
-        <Ouverture noel={noel} />
-        {/* Le chapitre de Noël JUSTE SOUS l'ouverture (Mathias, 16/11 : « la
-            carte cadeau juste en dessous de la section header »). Le
-            séquenceur et le chemin de fer d'Univers ne le connaissent pas ;
-            « Découvrir l'univers » vise #u1 et passe par-dessus. */}
-        {noel && <ChapitreAccueil />}
-        <Univers />
-      </div>
+      {/* Le chapitre de Noël JUSTE SOUS l'ouverture (Mathias, 16/11 : « la
+          carte cadeau juste en dessous de la section header »). */}
+      <Accueil apresOuverture={noel ? <ChapitreAccueil /> : null} />
       <Footer />
     </>
   )
