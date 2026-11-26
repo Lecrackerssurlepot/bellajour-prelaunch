@@ -359,3 +359,9 @@
   .ch-espace { grid-template-columns: var(--m-espace-9) 1fr; }
   .ch-reseau--story { max-width: 100%; }
 }
+
+/* Favicon : les trois variantes, en grand puis à leur vraie taille. */
+.ch-grille--favicon { grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--m-espace-10) * 2)), 1fr)); }
+.ch-favicon-cadre { display: flex; align-items: center; justify-content: center; gap: var(--m-espace-5); padding: var(--m-espace-6); background: var(--m-couleur-papier-survol); border-radius: var(--m-rayon-bloc); }
+.ch-favicon-cadre img { display: block; }
+.ch-sous-titre { margin: var(--m-espace-7) 0 var(--m-espace-4); font-size: var(--m-taille-chapo); }

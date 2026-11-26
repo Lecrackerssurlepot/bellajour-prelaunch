@@ -105,6 +105,12 @@ const SECTIONS = [
   ['declinaisons', 'Hors site'],
 ] as const
 
+const FAVICONS = [
+  { v: 'noir', nom: 'Carré noir, b blanc · défaut du site', alt: 'Favicon carré noir, b blanc' },
+  { v: 'blanc', nom: 'Carré blanc, b noir', alt: 'Favicon carré blanc, b noir' },
+  { v: 'b', nom: 'Le b seul (blanc sur un onglet sombre)', alt: 'Favicon, le b seul' },
+] as const
+
 export default function PageCharte() {
   const fond = hex(couleur.papier.fond)
   const fondNuit = hex(couleur.nuit.fond)
@@ -447,6 +453,22 @@ export default function PageCharte() {
         </div>
         <p className="ch-note">
           Tracé depuis votre PNG Procreate (brand/assets/logo/bellajour.svg). Il prend la couleur du texte : encre sur papier, blanc sur nuit.
+        </p>
+        <h3 className="ch-sous-titre">Favicon : le « b » du logo</h3>
+        <div className="ch-grille ch-grille--favicon">
+          {FAVICONS.map((f) => (
+            <figure key={f.v} className="ch-forme">
+              <div className="ch-favicon-cadre">
+                <img src={`/brand/favicon/bellajour-${f.v}.svg`} alt={f.alt} width={96} height={96} />
+                <img src={`/brand/favicon/bellajour-${f.v}-32.png`} alt="" width={32} height={32} />
+                <img src={`/brand/favicon/bellajour-${f.v}-16.png`} alt="" width={16} height={16} />
+              </div>
+              <figcaption className="ch-etiquette">{f.nom}</figcaption>
+            </figure>
+          ))}
+        </div>
+        <p className="ch-note">
+          Découpé dans le tracé, pas redessiné (brand/scripts/favicon.mjs). En 16 et 32 px le trait s&apos;épaissit pour rester lisible. Le site sert le carré noir.
         </p>
       </Section>
 

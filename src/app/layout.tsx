@@ -5,6 +5,7 @@ import WebViewBanner from './components/WebViewBanner'
 import Mesure from './components/Mesure'
 import { classesPolices } from './polices'
 import { EUROS_MIN } from '@/lib/atelier/grille'
+import { visuelPour } from '@/content/media'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
    requête runtime vers fonts.gstatic.com). Exposées en variables CSS et
@@ -51,9 +52,13 @@ const DESCRIPTION =
   'Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. ' +
   `Un numéro par moment. À partir de ${EUROS_MIN} €, aperçu gratuit avant de payer.`
 
+/* L'image de partage par défaut vient de la librairie (emplacement `partage.image`). */
+const PARTAGE = visuelPour('partage.image')
+const PARTAGE_URL = `https://www.bellajour.fr${PARTAGE.fichier}`
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
-  title: "Bellajour — chaque moment mérite son numéro",
+  title: "Bellajour · chaque moment mérite son numéro",
   description: DESCRIPTION,
   /* Le défaut de tout le site depuis la bascule du 24/08/2026. Les pages qui
      ont leur propre `metadata` (la racine, /preventes) l'emportent ; c'est ce
@@ -88,30 +93,30 @@ export const metadata: Metadata = {
     locale: 'fr_FR',
     url: 'https://www.bellajour.fr',
     siteName: 'Bellajour',
-    title: "Bellajour — chaque moment mérite son numéro",
+    title: "Bellajour · chaque moment mérite son numéro",
     description: DESCRIPTION,
-    images: [{
-      url: 'https://www.bellajour.fr' + '/images/v2/partage/bellajour-magazines-1200.png',
-      width: 1200,
-      height: 630,
-      alt: 'Dix magazines photo personnalisés Bellajour, imprimés et posés côte à côte',
-    }],
+    images: [{ url: PARTAGE_URL, width: 1200, height: 630, alt: PARTAGE.alt }],
   },
 
   twitter: {
     card: 'summary_large_image',
-    title: "Bellajour — chaque moment mérite son numéro",
+    title: "Bellajour · chaque moment mérite son numéro",
     description: DESCRIPTION,
-    images: ['https://www.bellajour.fr' + '/images/v2/partage/bellajour-magazines-1200.png'],
+    images: [PARTAGE_URL],
   },
 
+  /* Le « b » du logo, carré noir (charte V2, 26/11/2026) : fabriqués par
+     brand/scripts/favicon.mjs, les trois variantes sont sur /brand. */
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/icon-16.png', type: 'image/png', sizes: '16x16' },
       { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
       { url: '/icon-512.png', type: 'image/png', sizes: '512x512' },
     ],
-    apple: '/apple-touch-icon.png',
+    apple: { url: '/apple-touch-icon.png', sizes: '180x180' },
   },
 
   robots: {
