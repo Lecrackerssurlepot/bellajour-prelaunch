@@ -30,3 +30,27 @@ export function origineDuSite(brut: string | undefined | null): string {
   if (VRAI_SITE.test(o) || POSTE_LOCAL.test(o)) return o;
   return ORIGINE_SITE;
 }
+
+/**
+ * L'origine d'un RETOUR DE CONNEXION (Google, confirmation de compte), pas
+ * d'un lien qui part chez un client. Sur une préversion Vercel de CE projet
+ * (`VERCEL_ENV=preview`), on revient sur la préversion elle-même : sinon une
+ * connexion faite pour essayer la branche atterrit sur le vrai site (Mathias,
+ * 26/11). L'adresse n'est jamais écrite dans un mail : seul le navigateur qui
+ * vient de cliquer la reçoit. Partout ailleurs : `origineDuSite`, inchangé.
+ *
+ * ⚠️ Côté Supabase, la liste des URL de redirection doit contenir
+ * `https://*-lecrackerssurlepots-projects.vercel.app/**` ; sans elle,
+ * Supabase renvoie vers le Site URL (le vrai site), comme avant.
+ */
+const PREVERSION = /^https:\/\/bellajour-prelaunch-[a-z0-9-]+-lecrackerssurlepots-projects\.vercel\.app$/;
+
+export function origineDeRetour(
+  brut: string | undefined | null,
+  origineRequete: string,
+  env: { nodeEnv?: string; vercelEnv?: string },
+): string {
+  if (env.nodeEnv !== "production") return origineRequete;
+  if (env.vercelEnv === "preview" && PREVERSION.test(origineRequete)) return origineRequete;
+  return origineDuSite(brut);
+}

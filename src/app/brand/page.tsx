@@ -364,7 +364,25 @@ export default function PageCharte() {
         </div>
 
         <h3 className="ch-h3">Bandeau</h3>
-        <div className="m-bandeau">Une phrase courte, une seule</div>
+        <p className="ch-note">Texte fixe ; seule la phrase du milieu change. « Voir l’offre » toujours là.</p>
+        <div className="ch-alternance">
+          <div className="m-bandeau ch-bandeau-noel">
+            <span className="ch-bandeau-mot">Noël</span><i aria-hidden="true" />
+            <span>Le 2<sup>e</sup> magazine à −40&nbsp;%</span><i aria-hidden="true" />
+            <span>Photos avant le 7 décembre</span>
+            <span className="ch-bandeau-lien">Voir l’offre</span>
+          </div>
+          <div className="ch-alternance-barre"><span className="ch-logo" role="img" aria-label="Bellajour" /><span className="ch-note">Le magazine · Offrir · Pour les groupes</span></div>
+        </div>
+
+        <h3 className="ch-h3">Alternance noir et blanc</h3>
+        <p className="ch-note">Quand c’est blanc dessous, c’est noir au-dessus, et inversement (fiche C).</p>
+        <div className="ch-alternance-grille">
+          <figure className="ch-alt ch-alt-oui"><div className="ch-alt-haut ch-alt-nuit" /><div className="ch-alt-bas ch-alt-papier" /><figcaption>✅ Bandeau noir sur barre blanche</figcaption></figure>
+          <figure className="ch-alt ch-alt-oui"><div className="ch-alt-bloc ch-alt-nuit"><span className="ch-alt-btn ch-alt-papier">Bouton</span></div><figcaption>✅ Bouton blanc dans un bloc noir</figcaption></figure>
+          <figure className="ch-alt ch-alt-non"><div className="ch-alt-haut ch-alt-papier ch-alt-filet" /><div className="ch-alt-bas ch-alt-papier" /><figcaption>❌ Blanc sur blanc</figcaption></figure>
+          <figure className="ch-alt ch-alt-non"><div className="ch-alt-bloc ch-alt-nuit"><span className="ch-alt-btn ch-alt-nuit ch-alt-filet-nuit">Bouton</span></div><figcaption>❌ Noir sur noir</figcaption></figure>
+        </div>
       </Section>
 
       <Section id="motion" lettre="I" titre="Motion">

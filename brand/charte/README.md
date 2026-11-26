@@ -19,7 +19,7 @@ charte.
 
 1. **Un seul mode.** Papier blanc `#ffffff`, encre `#111111`. Pas de jour/nuit.
 2. **L'accent est l'encre.** Aucun bleu, aucun cuivre, aucune troisième couleur d'interface.
-3. **Le noir en bloc** (`couleur.nuit`) sert à rythmer : bandeau, carte cadeau, Noël. Jamais une page entière.
+3. **Le noir en bloc** (`couleur.nuit`) sert à rythmer : bandeau, carte cadeau, Noël. Jamais une page entière. **Alternance** : quand c'est blanc dessous, c'est noir au-dessus, et inversement (fiche C).
 4. **Les titres sont en Fraunces 560**, axes SOFT 40 / opsz 96.
 5. **Interlope** sert pour une phrase seule à l'écran, une fois par écran, et à 40 px au moins.
 6. **Le texte et les étiquettes sont en Inter Tight.**

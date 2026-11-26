@@ -1,4 +1,4 @@
-import { origineDuSite } from "@/lib/site";
+import { origineDeRetour, origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { clientCompte } from "@/lib/compte/session";
@@ -22,7 +22,10 @@ const SITE_URL = origineDuSite(process.env.NEXT_PUBLIC_SITE_URL);
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const origine = process.env.NODE_ENV === "production" ? SITE_URL : url.origin;
+  const origine = origineDeRetour(process.env.NEXT_PUBLIC_SITE_URL, url.origin, {
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+  });
   const code = url.searchParams.get("code");
 
   const magasin = await cookies();

@@ -1,4 +1,4 @@
-import { origineDuSite } from "@/lib/site";
+import { origineDeRetour, origineDuSite } from "@/lib/site";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { clientCompte, compteOuvert } from "@/lib/compte/session";
@@ -34,7 +34,10 @@ export async function GET(request: Request) {
   }
 
   const url = new URL(request.url);
-  const origine = process.env.NODE_ENV === "production" ? SITE_URL : url.origin;
+  const origine = origineDeRetour(process.env.NEXT_PUBLIC_SITE_URL, url.origin, {
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV,
+  });
   const suite = suiteSure(url.searchParams.get("suite"));
 
   const { data, error } = await client.auth.signInWithOAuth({

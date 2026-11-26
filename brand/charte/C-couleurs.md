@@ -25,6 +25,21 @@ C'est l'inverse exact du papier, pour **un bloc** : bandeau du haut, carte cadea
 - **Valeurs** : fond `#0c0c0d`, texte `#f4f4f2`, texte doux `#a5a5a4`, ligne `#2c2c2d`, champ-bord `#646464`.
 - **Accent dans un bloc nuit** : il devient `couleur.nuit.texte`.
 
+### La règle de l'alternance (Mathias, 26/11 : « quand c'est blanc, c'est noir au-dessus, et inversement »)
+
+Deux surfaces qui se touchent sont **toujours de couleurs opposées** : jamais papier contre papier
+sans filet, jamais nuit contre nuit. C'est ce qui donne au site son rythme noir et blanc.
+
+| Ce qui est dessous | Ce qui se pose dessus ou au-dessus |
+|---|---|
+| En-tête papier (blanc) | Bandeau **nuit** (noir) |
+| Section nuit (Groupes, Noël, carte cadeau) | Bouton **papier** (blanc, texte noir) |
+| Page papier | Bouton principal **nuit** (noir, texte blanc) |
+| Bloc nuit | Lien pilule à filet clair, texte clair |
+
+✅ Bandeau noir au-dessus de la barre blanche (duplicata 14BmVZ).
+❌ Bandeau blanc au-dessus d'une barre blanche, bouton noir dans une section noire.
+
 ## États (proposés, toujours sur papier)
 
 | Jeton | Valeur | Contraste |

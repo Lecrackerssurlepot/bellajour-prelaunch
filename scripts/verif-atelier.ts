@@ -505,7 +505,7 @@ import { verifierMepAnalyseV2 } from "./verif-mep-analyse-v2";
 /* 18/11 (T-216, M-11) : le registre des règles du tunnel (forme, retours de Mathias, contrôles, M-01, version, docs générées). */
 import { verifierMepRegles } from "./verif-mep-regles";
 import { verifierMepSocle } from "./verif-mep-socle";
-import { origineDuSite, ORIGINE_SITE } from "@/lib/site";
+import { origineDeRetour, origineDuSite, ORIGINE_SITE } from "@/lib/site";
 import { nommeurDePersonnes, nommeurDeLiens, photoEditionMep, lieuDeLaPhoto, COLONNES_PHOTOS_EDITION_MEP, type RangeePhotoEdition } from "@/app/admin/atelier/mise-en-page/photosEdition";
 
 let ko = 0;
@@ -7496,6 +7496,14 @@ verifierMepLot0();
       && origineDuSite("https://bellajour.fr.pirate.example") === ORIGINE_SITE
       && origineDuSite("http://bellajour.fr") === ORIGINE_SITE
       && origineDuSite("https://www.bellajour.fr/numero") === ORIGINE_SITE);
+  {
+    const prev = "https://bellajour-prelaunch-7s863l1nd-lecrackerssurlepots-projects.vercel.app";
+    ok("site : un retour de connexion reste sur la préversion, jamais ailleurs (26/11)",
+      origineDeRetour("https://www.bellajour.fr", prev, { nodeEnv: "production", vercelEnv: "preview" }) === prev
+        && origineDeRetour("https://www.bellajour.fr", prev, { nodeEnv: "production", vercelEnv: "production" }) === ORIGINE_SITE
+        && origineDeRetour("https://www.bellajour.fr", "https://pirate.vercel.app", { nodeEnv: "production", vercelEnv: "preview" }) === ORIGINE_SITE
+        && origineDeRetour(undefined, "http://localhost:3940", { nodeEnv: "development" }) === "http://localhost:3940");
+  }
   ok("site : le poste local passe (essais en développement)",
     origineDuSite("http://localhost:3005") === "http://localhost:3005" && origineDuSite("http://127.0.0.1") === "http://127.0.0.1"
       && origineDuSite("http://localhost.pirate.example") === ORIGINE_SITE);

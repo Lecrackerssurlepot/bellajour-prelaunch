@@ -245,6 +245,26 @@
   font-size: var(--m-taille-exception-bandeau);
   border-radius: var(--m-rayon-image);
 }
+.ch-alternance { border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-radius: var(--m-rayon-image); overflow: hidden; }
+.ch-alternance .m-bandeau { border-radius: 0; }
+.ch-bandeau-noel { display: flex; justify-content: center; align-items: center; gap: var(--m-espace-4); white-space: nowrap; overflow: hidden; padding: 0 var(--m-espace-4); }
+.ch-bandeau-noel i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .45; }
+.ch-bandeau-mot { font-family: var(--m-police-titre-famille); font-size: calc(var(--m-taille-exception-bandeau) + 3px); }
+.ch-bandeau-lien { padding: var(--m-espace-1) var(--m-espace-3); border-radius: var(--m-rayon-pilule); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--m-couleur-nuit-texte) 40%, transparent); font-weight: 500; }
+.ch-alternance-barre { display: flex; align-items: center; justify-content: space-between; gap: var(--m-espace-4); padding: var(--m-espace-3) var(--m-espace-4); background: var(--m-couleur-papier-fond); }
+.ch-alternance-barre .ch-logo { width: 74px; height: 32px; }
+.ch-alternance-grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--m-espace-5); margin-top: var(--m-espace-4); }
+.ch-alt { margin: 0; display: grid; gap: var(--m-espace-2); font-size: var(--m-taille-petit); }
+.ch-alt > div { border-radius: var(--m-rayon-image); }
+.ch-alt-haut { height: var(--m-espace-6); border-radius: var(--m-rayon-image) var(--m-rayon-image) 0 0 !important; }
+.ch-alt-bas { height: var(--m-espace-9); border-radius: 0 0 var(--m-rayon-image) var(--m-rayon-image) !important; border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); border-top: 0; }
+.ch-alt-bloc { height: calc(var(--m-espace-6) + var(--m-espace-9)); display: grid; place-items: center; }
+.ch-alt-nuit { background: var(--m-couleur-nuit-fond); color: var(--m-couleur-nuit-texte); }
+.ch-alt-papier { background: var(--m-couleur-papier-fond); color: var(--m-couleur-papier-texte); }
+.ch-alt-filet { border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne); }
+.ch-alt-filet-nuit { box-shadow: inset 0 0 0 1px var(--m-couleur-nuit-ligne); }
+.ch-alt-btn { padding: var(--m-espace-2) var(--m-espace-5); border-radius: var(--m-rayon-pilule); font-weight: 500; }
+.ch-alt-non figcaption { color: var(--m-couleur-etat-erreur); }
 
 /* ── Motion ── */
 .ch-motion { margin-top: var(--m-espace-6); display: grid; gap: var(--m-espace-6); justify-items: start; }
