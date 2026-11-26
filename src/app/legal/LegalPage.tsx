@@ -137,7 +137,7 @@ function Block({ block }: { block: Block }) {
       )
     case 'table':
       return (
-        <div className="lg-table-wrap">
+        <div className="lg-table-wrap" tabIndex={0} role="region" aria-label="Tableau, défilable">
           <table className="lg-table">
             <thead>
               <tr>
