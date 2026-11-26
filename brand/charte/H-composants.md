@@ -73,3 +73,17 @@ Pastille d'état : un point de 8 px couleur de l'état, plus le mot.
 - **Tableaux** : filets `ligne` horizontaux seulement, en-tête en étiquette, chiffres alignés à droite en `tabular-nums`. Sur téléphone, une carte par ligne.
 - **Fil d'Ariane** : seulement sur le légal et les pages profondes, en `taille.petit`, séparateur « / » couleur `texte-doux`.
 - **Pagination** : boutons ronds de 44 px, page active en bloc nuit.
+
+## Bibliothèque (proposé, à valider par Mathias)
+
+L'espace personnel `/compte`, en blanc. Maquette : `/brand/bibliotheque`. Sources : `brand/reports/bibliotheque-inspirations.md`.
+
+- **Deux onglets** : « À l'atelier » (les numéros en cours) et « Ma bibliothèque » (les numéros livrés).
+- **À l'atelier = une épreuve** : carte `rayon.bloc`, vignette A4 en filet pointillé `ligne`, sans ombre ni photo ; étiquette du geste attendu, nom réel de l'état, jauge des cinq jalons. Le numéro qui attend le client prend un filet `texte`.
+- **Bibliothèque = un objet** : la couverture a une tranche (dégradé de reliure) et l'ombre `ombre.livre`. Trois vues, mémorisées sur l'appareil :
+  - **Étagère** : couvertures de face sur des tablettes, légère rotation (12°), le numéro se décolle au survol. Largeur d'un numéro : 132 à 192 px selon l'écran.
+  - **Défilé** : un numéro au centre qui flotte, les autres en arc (décalage, profondeur, rotation croissants). Flèches, clavier ← →, balayage au doigt.
+  - **Tranches** : les dos alignés ; la largeur du dos grandit avec le nombre de pages (repère visuel, pas une mesure).
+- **Le numéro en grand** : fenêtre sur voile blanc flouté. Le magazine 3D de la charte (`brand/assets/3d/magazine`), chargé à l'ouverture seulement ; sans WebGL, la couverture à plat. Échap ferme, ← → changent de numéro. Un seul bouton plein : « Ouvrir le numéro ».
+- **États** : vide (« Votre étagère attend son premier numéro » + un bouton), un seul numéro, rayon plein.
+- **Mouvement** : même chose sur téléphone et ordinateur ; seul `prefers-reduced-motion` coupe flottement, rotation et transitions.
