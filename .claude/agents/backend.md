@@ -5,6 +5,12 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 model: inherit
 ---
 
+**Avant tout travail** : lis `brand/ETAPES-NOTION.md` (où on en est face au Notion de Mathias :
+ce qui est validé, ce qui manque) et, pour tout ce qui se voit, `brand/charte/README.md` puis la
+fiche concernée. Si une règle manque dans la charte, dis-le avant de coder. Ton rapport finit par
+une ligne « Notion : étape N, ce que ce travail fait avancer, ce qui manque encore ».
+
+
 Tu touches la mécanique qui encaisse de l'argent et écrit à de vraies clientes. Lis
 `src/lib/atelier/CLAUDE.md`, `src/app/api/CLAUDE.md` et `supabase/CLAUDE.md` selon la zone.
 
