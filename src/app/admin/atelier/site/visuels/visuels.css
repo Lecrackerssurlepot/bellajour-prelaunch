@@ -1,0 +1,442 @@
+/* ── /admin/atelier/site/visuels : Site · Visuels ──────────────
+   Charte V2 (--m-* de brand/build/tokens.css). Tout est scopé sous
+   `.vis-root` : le reste de l'admin ne change pas. */
+
+.vis-root {
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
+  min-height: 100svh;
+}
+
+/* Les halos de verre de l'admin (Porcelaine) n'ont pas leur place sur papier blanc. */
+.vis-root::before,
+.vis-root::after {
+  display: none;
+}
+
+.vis-root .vis {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  max-width: var(--m-largeur-cadre);
+  margin: 0 auto;
+  padding: var(--m-espace-6) var(--m-espace-marge) var(--m-espace-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-6);
+}
+
+.vis-root .vis-surtitre {
+  margin: 0;
+  font-size: var(--m-taille-etiquette);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.vis-root .vis-h1 {
+  margin: var(--m-espace-1) 0 0;
+  font-family: var(--m-police-titre-famille);
+  font-weight: var(--m-police-titre-graisse);
+  font-size: var(--m-taille-h3);
+  font-style: normal;
+  line-height: 1.05;
+}
+
+.vis-root .vis-sous {
+  color: var(--m-couleur-papier-texte-doux);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.vis-root .vis-alerte {
+  margin: 0;
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border: var(--m-trait-fin) solid var(--m-couleur-etat-alerte);
+  border-radius: var(--m-rayon-champ);
+  color: var(--m-couleur-etat-alerte);
+}
+
+/* La barre « le site le… » : collée en haut au défilement. */
+.vis-root .vis-barre {
+  position: sticky;
+  top: 0;
+  z-index: var(--m-plan-entete);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-espace-3) var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  background: var(--m-couleur-voile-barre);
+  backdrop-filter: blur(var(--m-flou-barre));
+  -webkit-backdrop-filter: blur(var(--m-flou-barre));
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+}
+
+.vis-root .vis-btn {
+  min-height: var(--m-cible-mini);
+  padding: 0 var(--m-espace-5);
+  font-size: var(--m-taille-petit);
+  text-decoration: none;
+}
+
+.vis-root .vis-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.vis-root .vis-lien {
+  background: none;
+  border: 0;
+  padding: var(--m-espace-1) 0;
+  font: inherit;
+  color: var(--m-couleur-papier-texte);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.vis-root .vis-lien--fort {
+  color: var(--m-couleur-etat-erreur);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+}
+
+.vis-root .vis-champ {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-1);
+  min-width: 0;
+}
+
+.vis-root .vis-champ > span {
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.vis-root .vis-champ--ligne {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--m-espace-2);
+}
+
+.vis-root .vis-champ input[type='date'],
+.vis-root .vis-champ input[type='text'] {
+  min-height: var(--m-cible-mini);
+  padding: 0 var(--m-espace-3);
+  font: inherit;
+  font-size: var(--m-taille-champ);
+  color: var(--m-couleur-papier-texte);
+  background: var(--m-couleur-papier-champ-fond);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-champ-bord);
+  border-radius: var(--m-rayon-champ);
+  min-width: 0;
+}
+
+.vis-root .vis-champ input[type='file'] {
+  font: inherit;
+  max-width: 100%;
+}
+
+.vis-root .vis-case {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--m-espace-2);
+  min-height: var(--m-cible-mini);
+  cursor: pointer;
+}
+
+.vis-root .vis-case input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--m-couleur-accent);
+}
+
+.vis-root :is(input, button, a):focus-visible {
+  outline: var(--m-trait-attente) solid var(--m-couleur-accent);
+  outline-offset: 2px;
+}
+
+/* La liste des emplacements */
+.vis-root .vis-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-7);
+}
+
+.vis-root .vis-emplacement {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-4);
+  padding-top: var(--m-espace-5);
+  border-top: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  scroll-margin-top: var(--m-espace-9);
+}
+
+.vis-root .vis-emp-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--m-espace-2) var(--m-espace-4);
+}
+
+.vis-root .vis-nom {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--m-taille-petit);
+  padding: 2px var(--m-espace-2);
+  background: var(--m-couleur-papier-survol);
+  border-radius: var(--m-rayon-image);
+}
+
+.vis-root .vis-role {
+  font-size: var(--m-taille-base);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+}
+
+.vis-root .vis-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--m-espace-2);
+  color: var(--m-couleur-papier-texte-doux);
+  font-size: var(--m-taille-etiquette);
+}
+
+.vis-root .vis-meta > span {
+  padding: 2px var(--m-espace-2);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-pilule);
+}
+
+.vis-root .vis-emp-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+  gap: var(--m-espace-6);
+  align-items: start;
+}
+
+.vis-root .vis-jour {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-2);
+}
+
+.vis-root .vis-jour figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--m-espace-2);
+}
+
+.vis-root .vis-vignette {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  min-height: 140px;
+  max-height: 320px;
+  background: var(--m-couleur-papier-survol);
+  border-radius: var(--m-rayon-image);
+  overflow: hidden;
+}
+
+.vis-root .vis-vignette img {
+  width: 100%;
+  height: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  display: block;
+}
+
+.vis-root .vis-vignette--petite {
+  width: 64px;
+  height: 80px;
+  min-height: 0;
+  flex: none;
+}
+
+.vis-root .vis-vignette--petite img {
+  object-fit: cover;
+}
+
+.vis-root .vis-rien {
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.vis-root .vis-rotations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-4);
+  min-width: 0;
+}
+
+.vis-root .vis-rotations > ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-2);
+}
+
+.vis-root .vis-rotation {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: var(--m-espace-4);
+  align-items: start;
+  padding: var(--m-espace-3);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+}
+
+.vis-root .vis-rotation--defaut {
+  grid-template-columns: 64px minmax(0, 1fr);
+  border-style: dashed;
+}
+
+.vis-root .vis-rotation-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vis-root .vis-periode {
+  font-weight: var(--m-police-texte-graisse-moyenne);
+}
+
+.vis-root .vis-rotation-droite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--m-espace-2);
+}
+
+.vis-root .vis-liens {
+  display: flex;
+  gap: var(--m-espace-3);
+}
+
+.vis-root .vis-etat {
+  font-size: var(--m-taille-etiquette);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  padding: 2px var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  border: var(--m-trait-fin) solid currentColor;
+  white-space: nowrap;
+}
+
+.vis-root .vis-etat--ligne { color: var(--m-couleur-etat-succes); }
+.vis-root .vis-etat--valider { color: var(--m-couleur-etat-alerte); }
+.vis-root .vis-etat--venir,
+.vis-root .vis-etat--passee,
+.vis-root .vis-etat--masquee { color: var(--m-couleur-papier-texte-doux); }
+
+/* L'interrupteur Brouillon / Validé */
+.vis-root .vis-bascule {
+  display: inline-flex;
+  padding: 3px;
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-pilule);
+  align-self: flex-start;
+}
+
+.vis-root .vis-rotation-droite .vis-bascule {
+  align-self: flex-end;
+}
+
+.vis-root .vis-bascule button {
+  min-height: 34px;
+  padding: 0 var(--m-espace-3);
+  font: inherit;
+  font-size: var(--m-taille-etiquette);
+  border: 0;
+  border-radius: var(--m-rayon-pilule);
+  background: transparent;
+  color: var(--m-couleur-papier-texte-doux);
+  cursor: pointer;
+}
+
+.vis-root .vis-bascule button[aria-pressed='true'] {
+  background: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
+}
+
+/* Le formulaire */
+.vis-root .vis-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-5);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-texte);
+  border-radius: var(--m-rayon-bloc);
+}
+
+.vis-root .vis-form--ligne {
+  padding: var(--m-espace-4);
+  margin-top: var(--m-espace-2);
+  border-color: var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-champ);
+}
+
+.vis-root .vis-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--m-espace-3);
+}
+
+.vis-root .vis-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-espace-3);
+}
+
+.vis-root .vis-erreur {
+  margin: 0;
+  color: var(--m-couleur-etat-erreur);
+}
+
+.vis-root .vis-ajouter {
+  align-self: flex-start;
+}
+
+@media (max-width: 700px) {
+  .vis-root .vis-emp-corps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--m-espace-4);
+  }
+
+  .vis-root .vis-rotation {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .vis-root .vis-rotation-droite {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .vis-root .vis-vignette--petite {
+    width: 56px;
+    height: 70px;
+  }
+
+  /* Au téléphone, la barre ne colle plus : elle mangerait un quart de l'écran. */
+  .vis-root .vis-barre {
+    position: static;
+    gap: var(--m-espace-2) var(--m-espace-3);
+    border-radius: var(--m-rayon-champ);
+  }
+
+  .vis-root .vis-vignette,
+  .vis-root .vis-vignette img {
+    max-height: 240px;
+  }
+}

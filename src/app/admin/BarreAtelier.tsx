@@ -88,6 +88,8 @@ export function liensParticuliers(demo: boolean): LienBarre[] {
     /* L'outil interne de mise en page (brief §2). Il n'a pas de démo : comme
        les autres écrans, le même lien vaut depuis la démo. */
     { href: "/admin/atelier/mise-en-page", libelle: "Mise en page" },
+    /* Les visuels du site, datés et validés par Mathias (26/11, charte V2). */
+    { href: "/admin/atelier/site/visuels", libelle: "Site" },
     { href: "/admin/atelier/metriques", libelle: "Métriques" },
     { href: "/admin/atelier/cockpit", libelle: "Cockpit" },
     { href: "/admin/atelier/sante", libelle: "Santé" },

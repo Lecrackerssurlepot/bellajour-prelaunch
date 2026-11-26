@@ -46,12 +46,12 @@ export default function Apercu() {
                 {e.type === 'video' && <span className="vi-meta">Vidéo : poster, mp4, webm</span>}
               </div>
               <figure className="vi-jour">
-                <Image fichier={enLigne.fichier} alt={enLigne.alt} ratio={e.ratio} />
+                {enLigne ? <Image fichier={enLigne.fichier} alt={enLigne.alt} ratio={e.ratio} /> : <span className="vi-cadre vi-vide">Vide</span>}
                 <figcaption>
                   <strong>En ligne ce jour</strong>
-                  {enLigne.fichier === e.defaut.fichier && e.provisoire && <span className="vi-etat vi-etat--provisoire">Provisoire</span>}
-                  <span className="vi-fichier">{enLigne.fichier}</span>
-                  {e.type === 'video' && !enLigne.video && <span className="vi-meta">Aucune vidéo : poster seul</span>}
+                  {enLigne && enLigne.fichier === e.defaut?.fichier && e.provisoire && <span className="vi-etat vi-etat--provisoire">Provisoire</span>}
+                  <span className="vi-fichier">{enLigne ? enLigne.fichier : 'Rien'}</span>
+                  {e.type === 'video' && enLigne && !enLigne.video && <span className="vi-meta">Aucune vidéo : poster seul</span>}
                 </figcaption>
               </figure>
               {e.rotations.length > 0 ? (
@@ -59,8 +59,8 @@ export default function Apercu() {
                   {e.rotations.map((r, i) => {
                     const etat = etatRotation(e, i, jour)
                     return (
-                      <li key={`${r.du}-${r.fichier}`}>
-                        <Image fichier={r.fichier} alt={r.alt} ratio={e.ratio} />
+                      <li key={`${r.du}-${r.fichier ?? 'vide'}`}>
+                        {r.vide ? <span className="vi-cadre vi-vide">Vide</span> : <Image fichier={r.fichier} alt={r.alt} ratio={e.ratio} />}
                         <span className={`vi-etat vi-etat--${etat.replace(/\s/g, '-').replace('à', 'a')}`}>{etat}</span>
                         <span className="vi-meta">Du {r.du} au {r.au}</span>
                       </li>
