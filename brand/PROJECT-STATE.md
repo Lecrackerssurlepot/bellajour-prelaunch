@@ -133,20 +133,33 @@ Mathias : « lancer la phase 4 en autonomie ! Pas en main car on a pas défini l
 | e1ca27f6, 856eda43 | **Pages légales** FR, EN, PT : habillage, sommaire, fil d'Ariane ; aucun texte légal touché | tsc, lint, build ; navigateur 390 et 1440 |
 | 7c514dd6 | **/merci** : CSS seulement (en-tête et pied de prévente rhabillés depuis merci.css) | tsc, lint, build ; navigateur 390 et 1440 (état sans session Stripe seulement) |
 
-### Ce qui reste (dans l'ordre)
+### 26/11 : ce qui est fait (poussé sur `refonte-charte-v2`)
 
-1. **Accueil** : PAS COMMENCÉ. Le port du banc (ouverture du livre + essai photos v4) est un chantier à lui seul : environ 15 Ko de balisage, 80 Ko de CSS en cascade de patchs commun à toutes les pages du banc, 45 Ko de chorégraphie GSAP. Il faut aussi ajouter `gsap` aux dépendances (décision), et le texte du banc contient des chiffres (« 24 à 60 pages », « Sous 48 h », « De 40 à 100 », bloc prix) à confronter à `content.ts`. **Aujourd'hui l'accueil est l'ancienne ouverture, repeinte par le remap : texte sombre sur photo sombre, à peine lisible.** C'est la page la plus abîmée de la branche.
-2. **/magazine** : lisible en V2 par le remap (390 et 1440, 0 erreur, aucun débordement), mais PAS porté au banc ; grand titre en capitales, 154 px en dur.
-3. **Tunnel** (`/composer`, `/numero`, `/compte`) : pas touché au-delà du remap ; harnais `verif-atelier` à repasser à ce moment-là.
-4. **Édition collective** (`/edition`, `/depot`, `/inviter`) : pas touché (2 567 px en dur dans `/edition`).
-5. Offrir, Pour les groupes, Noël : remap seulement.
+| Commit | Étape | Vérifié |
+|---|---|---|
+| 52794d3d | **Accueil** : port fidèle du banc (14BmVZ v4), GSAP 3.12.5, `Accueil.tsx` + `AccueilMotion.tsx` ; ancienne page dans `archive/accueil-v1-ouverture/` | tsc, lint, build ; navigateur 390 et 1440, 0 erreur |
+| 0c5289f2 | **/magazine** : port du banc (éventail, gestes, fiche, FAQ = FAQPage, appel) ; grammage retiré du JSON-LD (aucune source) ; ancienne page dans `archive/magazine-kiosque/` | idem |
+| 090a4e6a | **Tunnel** `/composer`, `/numero`, `/compte` : CSS seulement (échelle et polices de la charte) | `verif-atelier` TOUT PASSE ; navigateur 390 et 1440 |
+| f1196ab8, 80ad9fd8 | **Édition collective, dépôt, Offrir, Groupes, Noël, inviter, ambassadeurs** : jetons d'espace, de texte, de rayon, de cible ; anciennes polices et jetons `--bj-*` remplacés | build ; navigateur (pages sans jeton seulement) |
+| 966b0502 | **Favicon** : le « b » du logo, 3 variantes (`public/brand/favicon/`), défaut carré noir ; montrées sur `/brand` ; `brand/scripts/favicon.mjs` | rendu PNG relu à 16, 32, 512 |
+| 9d1f4de2 | **SEO** : plan du site lu dans media.ts, `/partenaires` au plan, titres « · Bellajour » | sitemap et robots relus |
+| fusion | **Outil Visuels** (`refonte-charte-v2-visuels`) fusionné ; `Visuel.tsx` lit `visuelDuJour` ; `BandeauApercuVisuels` dans le layout ; `revalidate = 300` sur `/` et `/magazine` ; emplacements `edition.*` (éventail, vitrine) | `verif-media` 111/111, `verif-atelier` TOUT PASSE ; `next start` + aperçu du 20/12 (cookie admin d'essai), `/` et `/magazine` à 390 et 1440 |
+
+Garde-fou (`controle-charte.mjs`), pages client (hors admin et `src/lib`) : **318 couleurs / 5 192 px avant → 338 / 2 381 px après**. Les +20 couleurs sont les ombres et voiles du banc (accueil, magazine).
+
+### Ce qui reste
+
+1. Restes du garde-fou côté client, pour la phase 7 : `univers.css`, `ouverture.css`, `magazine/pdp.css`, `Kiosque.tsx`, `Corps.tsx` (plus routés, à archiver) ; `noel-preview/` (outil interne) ; les px fins du banc dans `accueil.css` et `magazine.css` ; les `@media` (une variable n'y est pas lue) ; tailles de titre > 30 px et `clamp()` des pages collectif.
+2. `offrir.carte` et `groupes.brochure` : emplacements déclarés, pas encore branchés (la carte est dessinée en CSS, la brochure est une suite de pages-documents).
+3. Images de partage propres à `/partenaires` (jpg) : en dur, hors librairie.
 
 ### Pas vérifié
 
-- `/brand` et `/brand/visuels` derrière le middleware : vérifiable seulement avec `next start` (le middleware ne bloque rien sous `next dev`).
-- `/merci` avec une vraie session Stripe (états « confirmé » et « en attente ») : non rendus.
-- Les pages atelier autres que `/`, `/magazine` : pas regardées une par une après le remap.
-- Le garde-fou ne compte pas les styles en ligne `style={{…}}` en nombres JS (seulement les chaînes `px`).
+- L'Édition collective avec un vrai jeton (Audencia interdite, éditions de test purgées) : seulement la page « lien inconnu ».
+- `/offrir` et le bloc Noël de `/magazine` : drapeau carte cadeau fermé en local ; le bloc Noël n'est plus sous `.at-pdp`, ses règles de base suffisent en principe.
+- `/numero` avec un vrai dossier, `/compte` connecté, `/merci` avec une session Stripe.
+- `/brand` (section favicon) dans le navigateur.
+- Lighthouse, axe : phase 5.
 
 ## Phases suivantes
 
@@ -154,7 +167,7 @@ Mathias : « lancer la phase 4 en autonomie ! Pas en main car on a pas défini l
 |---|---|---|
 | 2 | Vitrine `/brand`, protégée, générée depuis `tokens.ts`, plus logo vectorisé et format des brochures | FAITE (25/11) |
 | 3 | Magazine 3D (`brand/assets/3d/magazine/`) | FAITE |
-| 4 | Refonte des pages client, une page par commit | en cours : socle, visuels, 404, légal, merci faits ; accueil, magazine, tunnel, collectif restent |
+| 4 | Refonte des pages client, une page par commit | en cours : toutes les pages client portées ou rhabillées, outil Visuels fusionné ; restes listés plus haut |
 | 5 | Vérification par agents (Playwright, Lighthouse, axe) | à faire |
 | 6 | Mails depuis `mail.json` | à faire |
 | 7 | Nettoyage vers `archive/ancienne-charte/`, Notion, liste claude.ai | à faire |

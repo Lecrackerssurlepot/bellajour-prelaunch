@@ -197,7 +197,7 @@ export const MEDIA = {
     provisoire: true,
     defaut: {
       fichier: '/images/v2/composer/modele-mon-annee-grand-900.webp',
-      alt: '',
+      alt: 'Un numéro « Mon année » à offrir',
     },
     rotations: [],
   },
@@ -207,7 +207,7 @@ export const MEDIA = {
     provisoire: true,
     defaut: {
       fichier: '/images/v2/accueil/header-magazines-paysage-1792.webp',
-      alt: '',
+      alt: 'Des numéros Bellajour posés côte à côte',
     },
     rotations: [],
   },
@@ -294,6 +294,115 @@ export const MEDIA = {
     defaut: {
       fichier: '/images/partenaires/brochure-ecoles-v1-1-1600.webp',
       alt: 'La première page de la brochure pour les écoles',
+    },
+    rotations: [],
+  },
+  'edition.eventail-1': {
+    role: "Édition collective, tableau de bord : couverture 1 de l'éventail",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-lisbonne-640.webp',
+      alt: 'La couverture d’un numéro sur Lisbonne',
+    },
+    rotations: [],
+  },
+  'edition.eventail-2': {
+    role: "Édition collective, tableau de bord : couverture 2 de l'éventail",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-aussie-640.webp',
+      alt: 'La couverture d’un numéro sur l’Australie',
+    },
+    rotations: [],
+  },
+  'edition.eventail-3': {
+    role: "Édition collective, tableau de bord : couverture 3 de l'éventail",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-cote-azur-640.webp',
+      alt: 'La couverture d’un numéro sur la Côte d’Azur',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-1': {
+    role: "Édition collective, vitrine des styles : couverture 1",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-lisbonne-640.webp',
+      alt: 'Lisbonne',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-2': {
+    role: "Édition collective, vitrine des styles : couverture 2",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-the-boys-640.webp',
+      alt: 'The Boys',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-3': {
+    role: "Édition collective, vitrine des styles : couverture 3",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-cote-azur-640.webp',
+      alt: 'Côte d’Azur',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-4': {
+    role: "Édition collective, vitrine des styles : couverture 4",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-rio-700.webp',
+      alt: 'Rio',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-5': {
+    role: "Édition collective, vitrine des styles : couverture 5",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/couverture-aussie-640.webp',
+      alt: 'Aussie',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-6': {
+    role: "Édition collective, vitrine des styles : couverture 6",
+    ratio: '210 / 297',
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/magazine/couverture-sicile-900.webp',
+      alt: 'Sicile',
+    },
+    rotations: [],
+  },
+  'edition.vitrine-double': {
+    role: "Édition collective, vitrine des styles : la double page",
+    type: 'image',
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/magazine/double-page-australie-1400.webp',
+      alt: 'Australia',
     },
     rotations: [],
   },

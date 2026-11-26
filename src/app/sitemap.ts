@@ -14,7 +14,7 @@ const ACCUEIL: NomEmplacement[] = [
 ]
 const MAGAZINE: NomEmplacement[] = ['magazine.couverture', 'magazine.eventail-2', 'magazine.eventail-3', 'magazine.double-page']
 function imagesDe(noms: NomEmplacement[]): string[] {
-  const urls = noms.map((n) => visuelPour(n).fichier).filter(Boolean).map((f) => `https://www.bellajour.fr${f}`)
+  const urls = noms.map((n) => visuelPour(n)?.fichier).filter((f): f is string => Boolean(f)).map((f) => `https://www.bellajour.fr${f}`)
   return [...new Set(urls)]
 }
 

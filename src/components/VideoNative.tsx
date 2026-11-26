@@ -8,7 +8,7 @@
 
 import { useEffect, useRef } from 'react'
 
-type Props = { poster: string; mp4: string; webm: string; label: string; className?: string }
+type Props = { poster: string; mp4: string; webm?: string; label: string; className?: string }
 
 export default function VideoNative({ poster, mp4, webm, label, className }: Props) {
   const ref = useRef<HTMLVideoElement>(null)

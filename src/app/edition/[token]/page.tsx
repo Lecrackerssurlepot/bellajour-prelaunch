@@ -16,6 +16,7 @@
    La porte (lien inconnu, archivé, migration absente) est tenue par le
    layout ; la page relit l'édition par le même `cache`, sans requête de plus. */
 
+import { fichiersVisuels } from '@/components/Visuel'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
@@ -140,20 +141,20 @@ export default async function TableauDeBord({ params }: { params: Promise<{ toke
    Lisbonne à gauche, Aussie à droite, la Côte d'Azur devant. Les tuiles du bas
    disent, elles, le vrai style de chaque magazine. */
 const EVENTAIL = [
-  { nom: 'lisbonne', place: 'gauche' },
-  { nom: 'aussie', place: 'droite' },
-  { nom: 'cote-azur', place: 'centre' },
+  { slot: 'edition.eventail-1', place: 'gauche' },
+  { slot: 'edition.eventail-2', place: 'droite' },
+  { slot: 'edition.eventail-3', place: 'centre' },
 ] as const
 
-function Eventail() {
+/* Images : emplacements edition.eventail-* de la librairie (media.ts). */
+async function Eventail() {
+  const V = await fichiersVisuels(EVENTAIL.map((c) => c.slot))
   return (
     <div className="ec-tdb-eventail" aria-hidden="true">
-      {EVENTAIL.map((c) => (
-        <span key={c.nom} className={`ec-tdb-couv ec-tdb-couv--${c.place}`}>
+      {EVENTAIL.filter((c) => V[c.slot]).map((c) => (
+        <span key={c.slot} className={`ec-tdb-couv ec-tdb-couv--${c.place}`}>
           <img
-            src={`/images/v2/accueil/couverture-${c.nom}-360.webp`}
-            srcSet={`/images/v2/accueil/couverture-${c.nom}-360.webp 360w, /images/v2/accueil/couverture-${c.nom}-640.webp 640w`}
-            sizes="(max-width: 520px) 120px, 240px"
+            src={V[c.slot]}
             alt=""
             decoding="async"
           />

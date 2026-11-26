@@ -3,9 +3,10 @@ import { DM_Sans } from 'next/font/google'
 import './globals.css'
 import WebViewBanner from './components/WebViewBanner'
 import Mesure from './components/Mesure'
+import BandeauApercuVisuels from '@/components/BandeauApercuVisuels'
 import { classesPolices } from './polices'
 import { EUROS_MIN } from '@/lib/atelier/grille'
-import { visuelPour } from '@/content/media'
+import { imagesOpenGraph, imagesTwitter } from '@/content/partage'
 
 /* Fonts DA (charte) chargées via next/font (self-host, zéro FOUC, pas de
    requête runtime vers fonts.gstatic.com). Exposées en variables CSS et
@@ -52,9 +53,6 @@ const DESCRIPTION =
   'Vous envoyez vos photos, l’atelier compose un vrai magazine imprimé. ' +
   `Un numéro par moment. À partir de ${EUROS_MIN} €, aperçu gratuit avant de payer.`
 
-/* L'image de partage par défaut vient de la librairie (emplacement `partage.image`). */
-const PARTAGE = visuelPour('partage.image')
-const PARTAGE_URL = `https://www.bellajour.fr${PARTAGE.fichier}`
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.bellajour.fr'),
@@ -95,14 +93,14 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: "Bellajour · chaque moment mérite son numéro",
     description: DESCRIPTION,
-    images: [{ url: PARTAGE_URL, width: 1200, height: 630, alt: PARTAGE.alt }],
+    images: imagesOpenGraph,
   },
 
   twitter: {
     card: 'summary_large_image',
     title: "Bellajour · chaque moment mérite son numéro",
     description: DESCRIPTION,
-    images: [PARTAGE_URL],
+    images: imagesTwitter,
   },
 
   /* Le « b » du logo, carré noir (charte V2, 26/11/2026) : fabriqués par
@@ -155,6 +153,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
+        {/* Aperçu d'une date dans l'outil Visuels : rien hors mode brouillon admin. */}
+        <BandeauApercuVisuels />
         {/* Bandeau WebView Instagram/Facebook — rend null hors WebView Meta mobile */}
         <WebViewBanner />
         {/* Mesure d'audience Vercel — rend null hors production, et reste inerte

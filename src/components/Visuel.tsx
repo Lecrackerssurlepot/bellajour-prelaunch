@@ -5,18 +5,19 @@
    chemin écrit dans la page : c'est ce qui permet de la changer, de la
    dater et de la valider sans toucher au code de la page.
 
-   ⚠️ UNE SEULE porte vers la librairie : `lireVisuel`. Aujourd'hui elle
-   appelle `visuelPour` (les rotations écrites dans media.ts). Quand l'outil
-   Visuels de l'admin sera fusionné, c'est la seule ligne à changer pour
-   lire aussi les rotations de la base (`visuelDuJour`).
+   ⚠️ UNE SEULE porte vers la librairie : `lireVisuel`, qui appelle
+   `visuelDuJour` (rotations réglées dans l'admin, puis celles de media.ts).
+   Une page qui l'utilise exporte `revalidate = 300` : sinon le jour du
+   visuel reste celui du build.
    ════════════════════════════════════════════════════════════ */
 
-import { visuelPour, type NomEmplacement, type Visuel as VisuelMedia } from '@/content/media'
+import type { NomEmplacement, Visuel as VisuelMedia } from '@/content/media'
+import { visuelDuJour } from '@/content/visuel-du-jour'
 import VideoNative from './VideoNative'
 
 /** Le visuel en ligne aujourd'hui pour un emplacement, ou null (emplacement vide). */
 export async function lireVisuel(nom: NomEmplacement): Promise<VisuelMedia | null> {
-  return visuelPour(nom)
+  return visuelDuJour(nom)
 }
 
 /** Plusieurs emplacements d'un coup : { nom: chemin du fichier } (chaîne vide si vide). */

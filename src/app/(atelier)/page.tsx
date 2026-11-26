@@ -20,7 +20,7 @@ import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import { compteOuvert } from '@/lib/compte/session'
 import { EUROS_MIN } from '@/lib/atelier/grille'
-import { visuelPour } from '@/content/media'
+import { imagesOpenGraph, imagesTwitter } from '@/content/partage'
 
 const TITLE = 'Bellajour · Vos photos deviennent un vrai magazine'
 /* Le prix d'appel vient de la GRILLE (EUROS_MIN), jamais recopié : ce que
@@ -29,13 +29,11 @@ const DESCRIPTION =
   'Vous déposez vos photos, l’atelier compose votre magazine, imprimé et livré chez vous. ' +
   `Couverture offerte, votre numéro dès ${EUROS_MIN} €.`
 
-/* L'image de partage vient de la librairie (emplacement `partage.image`). */
-const PARTAGE = visuelPour('partage.image')
-const PARTAGE_URL = `https://www.bellajour.fr${PARTAGE.fichier}`
 
 /* Noël s'éteint seul après le 25 décembre (noelAuSite) : la page, statique,
-   se refait au plus tard une heure après minuit. */
-export const revalidate = 3600
+   se refait au plus tard cinq minutes après minuit, et un visuel daté
+   change de jour dans les cinq minutes (Visuel.tsx). */
+export const revalidate = 300
 
 /* ⚠️ `openGraph` REMPLACE celui du layout racine (Next ne fusionne pas en
    profondeur) : tout ce qui est écrasé est redéclaré ici. */
@@ -50,9 +48,9 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: PARTAGE_URL, width: 1200, height: 630, alt: PARTAGE.alt }],
+    images: imagesOpenGraph,
   },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [PARTAGE_URL] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: imagesTwitter },
 }
 
 /* Organization + WebSite, PAS de Product ici (T-068) : LE Product vit sur

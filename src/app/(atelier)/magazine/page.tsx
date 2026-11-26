@@ -44,7 +44,7 @@ import { FRANCO_CENTIMES } from '@/lib/atelier/livraison'
 import { PAYS_LIVRAISON } from '@/lib/atelier/pays'
 import { JOURS_LIVRAISON } from '@/lib/atelier/urgence'
 import { PHRASE_DEGRESSIF, PHRASE_NOEL, QUANTITE_MAX, dansFenetreNoel } from '@/lib/atelier/exemplaires'
-import { visuelPour } from '@/content/media'
+import { imagesOpenGraph, imagesTwitter } from '@/content/partage'
 import { compteOuvert } from '@/lib/compte/session'
 import { COMPOSER_HREF, CTA_LABEL } from '../content'
 import './magazine.css'
@@ -62,12 +62,11 @@ const DESCRIPTION =
   'personnalisé, imprimé et livré. Couverture gratuite sous 48 h, ' +
   `vous décidez après. Dès ${EUROS_MIN} €.`
 
-const PARTAGE = visuelPour('partage.image')
-const PARTAGE_URL = `https://www.bellajour.fr${PARTAGE.fichier}`
 
 /* Noël s'éteint seul (noelAuSite, fenêtre des exemplaires) : la page,
-   statique, se refait au plus tard une heure après minuit. */
-export const revalidate = 3600
+   statique, se refait au plus tard cinq minutes après minuit, et un visuel daté
+   change de jour dans les cinq minutes (Visuel.tsx). */
+export const revalidate = 300
 
 /* ⚠️ `openGraph` REMPLACE celui du layout : tout est redéclaré. */
 export const metadata: Metadata = {
@@ -81,9 +80,9 @@ export const metadata: Metadata = {
     siteName: 'Bellajour',
     title: TITLE,
     description: DESCRIPTION,
-    images: [{ url: PARTAGE_URL, width: 1200, height: 630, alt: PARTAGE.alt }],
+    images: imagesOpenGraph,
   },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: [PARTAGE_URL] },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: imagesTwitter },
 }
 
 type Question = { q: string; r: string; lien?: { href: string; label: string } }
