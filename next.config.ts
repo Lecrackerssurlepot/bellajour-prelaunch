@@ -298,7 +298,8 @@ const nextConfig: NextConfig = {
 
          ⚠️ Ce qui n'est PAS redirigé, et ne doit pas l'être : `/merci` (les
          fondateurs y reviennent depuis leur mail de confirmation), les pages
-         légales, `/ambassadeurs`, `/inviter`, et les routes d'API — les
+         légales, `/inviter`, et les routes d'API (`/ambassadeurs` est fermé depuis le
+         26/11 par son propre handler, src/app/ambassadeurs/[[...chemin]]/route.ts) — les
          remboursements et les crédits de parrainage passent par là. */
       {
         source: "/preventes",

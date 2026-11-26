@@ -32,10 +32,6 @@ export default function Footer() {
             <Link href="/livraison" prefetch={false} className="footer-link">Livraison</Link>
             <span className="footer-sep" aria-hidden="true">&middot;</span>
             <Link href="/remboursement" prefetch={false} className="footer-link">Remboursement</Link>
-            <span className="footer-sep" aria-hidden="true">&middot;</span>
-            <Link href="/ambassadeurs/espace" prefetch={false} className="footer-link footer-link--amb">
-              Espace ambassadeur
-            </Link>
           </nav>
         </div>
 
