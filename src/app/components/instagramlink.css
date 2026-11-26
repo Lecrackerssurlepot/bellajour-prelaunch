@@ -5,13 +5,13 @@
 .bj-insta {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--m-espace-2);
   text-decoration: none;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
   transition: color 0.22s;
 }
 
-.bj-insta:hover { color: var(--bj-text); }
+.bj-insta:hover { color: var(--m-couleur-papier-texte); }
 
 .bj-insta-icon {
   width: 15px;
@@ -20,7 +20,7 @@
 }
 
 .bj-insta span {
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.04em;
 }

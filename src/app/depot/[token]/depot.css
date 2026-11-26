@@ -142,7 +142,7 @@ html:has(.bj-atelier.ec-depot) {
   min-height: var(--app-height);
   background: var(--dp-bg);
   color: var(--dp-texte);
-  padding: 20px 12px 40px;
+  padding: var(--m-espace-5) var(--m-espace-3) var(--m-espace-7);
   box-sizing: border-box;
 }
 .bj-atelier .ec-dp::before,
@@ -211,9 +211,9 @@ html:has(.bj-atelier.ec-depot) {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 26px 22px 28px;
-  border-radius: 28px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-5) var(--m-espace-5) var(--m-espace-6);
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid var(--dp-carte-bord);
   background: var(--dp-carte);
   box-shadow: var(--dp-ombre-carte);
@@ -222,29 +222,29 @@ html:has(.bj-atelier.ec-depot) {
   box-sizing: border-box;
 }
 .bj-atelier .ec-dp-marque {
-  margin: 0 0 6px;
-  font-family: var(--font-display);
-  font-size: 24px;
+  margin: 0 0 var(--m-espace-2);
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-h3);
   line-height: 1;
   font-variant-numeric: lining-nums;
 }
 .bj-atelier .ec-dp-marque span {
-  margin-left: 8px;
-  font-family: var(--font-ui);
-  font-size: 12px;
+  margin-left: var(--m-espace-2);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-surtitre {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-accent-texte);
 }
 /* (0,2,0) contre `.bj-atelier h1` (0,1,1). */
 .bj-atelier .ec-dp-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   /* Planche 6 : 40 px à 375 de large. */
@@ -255,40 +255,40 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-texte {
   margin: 0;
-  font-size: 15.5px;
+  font-size: var(--m-taille-base);
   line-height: 1.5;
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-ferme {
-  padding: 16px;
+  padding: var(--m-espace-4);
   border: 1px solid var(--dp-filet);
-  border-radius: 18px;
+  border-radius: var(--m-rayon-bloc);
 }
 /* T-195 : « pas encore ouvert » en deux phrases, dans le même cadre. */
 .bj-atelier .ec-dp-ferme > .ec-dp-texte + .ec-dp-texte {
-  margin-top: 8px;
+  margin-top: var(--m-espace-2);
 }
 .bj-atelier .ec-dp-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 8px;
+  gap: var(--m-espace-4);
+  margin-top: var(--m-espace-2);
 }
 /* `min-width: 0` : un <label> en colonne d'une grille garde sinon la largeur
    native de son champ (≈ 20 caractères) et pousse la grille hors de la carte. */
 .bj-atelier .ec-dp-champ {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   min-width: 0;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
 }
 /* Le nom : prénom et nom côte à côte, puis, une fois donné, une ligne figée (participant.ts). */
 .bj-atelier .ec-dp-nom {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 /* ⚠️ `minmax(0, 1fr)`, pas `1fr` : `1fr` vaut `minmax(auto, 1fr)`, et la colonne
    ne descend jamais sous la largeur native d'un champ. À 375 px, « Ton nom »
@@ -296,7 +296,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-duo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .bj-atelier .ec-dp-duo .ec-dp-input {
   min-width: 0;
@@ -304,15 +304,15 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-qui {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 14px;
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--dp-filet);
   background: var(--dp-surface);
 }
 .bj-atelier .ec-dp-qui p {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-qui strong {
@@ -323,13 +323,13 @@ html:has(.bj-atelier.ec-depot) {
   box-sizing: border-box;
   width: 100%;
   min-height: 48px;
-  padding: 0 14px;
-  border-radius: 14px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--dp-filet);
   background: var(--dp-surface);
   color: var(--dp-texte);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
 }
 .bj-atelier .ec-dp-input:focus-visible {
   outline: 2px solid var(--dp-accent);
@@ -337,9 +337,9 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-accord {
   display: flex;
-  gap: 10px;
+  gap: var(--m-espace-3);
   align-items: flex-start;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   line-height: 1.45;
   color: var(--dp-doux);
 }
@@ -354,16 +354,16 @@ html:has(.bj-atelier.ec-depot) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   width: 100%;
   min-height: 52px;
-  padding: 0 22px;
+  padding: 0 var(--m-espace-5);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-accent);
   color: var(--dp-sur-accent);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   font-weight: 600;
   box-shadow: var(--dp-ombre-bouton);
   cursor: pointer;
@@ -387,16 +387,16 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-progres {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4);
   border: 0;
-  border-radius: 20px;
+  border-radius: var(--m-rayon-bloc);
   background: var(--dp-creux);
 }
 .bj-atelier .ec-dp-compte {
   display: flex;
   justify-content: space-between;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-compte strong {
@@ -405,7 +405,7 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-barre {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-piste);
   overflow: hidden;
 }
@@ -416,15 +416,15 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-merci {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 26px;
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-h3);
   line-height: 1.2;
   color: var(--dp-texte);
   font-variant-numeric: lining-nums;
 }
 .bj-atelier .ec-dp-note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   line-height: 1.45;
   color: var(--dp-doux);
 }
@@ -432,8 +432,8 @@ html:has(.bj-atelier.ec-depot) {
   color: var(--dp-danger);
 }
 .bj-atelier .ec-dp-pied {
-  margin: 8px 0 0;
-  font-size: 13px;
+  margin: var(--m-espace-2) 0 0;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
 }
 
@@ -518,7 +518,7 @@ html:has(.bj-atelier.ec-depot) {
 
 /* La carte de présentation : un peu d'air au-dessus sur un grand écran. */
 .bj-atelier .ec-dp-carte {
-  padding-top: clamp(0px, 4vw, 48px);
+  padding-top: clamp(0px, 4vw, var(--m-espace-7));
 }
 /* Au téléphone, cet air et la marge du bas font défiler la carte de quelques pixels (13 à 390 px) : on les rend. */
 @media (max-width: 560px) {
@@ -526,7 +526,7 @@ html:has(.bj-atelier.ec-depot) {
     padding-top: 0;
   }
   .bj-atelier .ec-dp:has(.ec-dp-carte) {
-    padding-bottom: 20px;
+    padding-bottom: var(--m-espace-5);
   }
 }
 .bj-atelier .ec-dp-input::placeholder {
@@ -541,9 +541,9 @@ html:has(.bj-atelier.ec-depot) {
 /* La phrase de l'album, encadrée sous le texte du 17/10 (planche 6). */
 .bj-atelier .ec-dp-accord-album {
   display: block;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  margin-top: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   border: 1.5px dashed var(--dp-accent);
   color: var(--dp-texte);
 }
@@ -551,12 +551,12 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-videos {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 14px;
+  padding: var(--m-espace-3) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   background: var(--dp-surface);
-  font-size: 13.5px;
+  font-size: var(--m-taille-petit);
   line-height: 1.4;
   color: var(--dp-texte);
 }
@@ -568,9 +568,9 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-reconnu {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px;
-  border-radius: 18px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   background: var(--dp-ok-doux);
   color: var(--dp-texte);
 }
@@ -581,12 +581,12 @@ html:has(.bj-atelier.ec-depot) {
   min-width: 0;
 }
 .bj-atelier .ec-dp-reconnu b {
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   font-weight: 600;
   line-height: 1.3;
 }
 .bj-atelier .ec-dp-reconnu span span {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   line-height: 1.45;
   color: var(--dp-doux);
 }
@@ -596,22 +596,22 @@ html:has(.bj-atelier.ec-depot) {
   place-items: center;
   width: 40px;
   height: 40px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-ok);
   color: var(--dp-sur-ok);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 700;
 }
 /* « Ce téléphone n'envoie plus au nom de Léa » (8C). */
 .bj-atelier .ec-dp-info {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--m-espace-3);
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 16px;
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   background: var(--dp-surface);
-  font-size: 13.5px;
+  font-size: var(--m-taille-petit);
   line-height: 1.45;
   color: var(--dp-doux);
 }
@@ -632,13 +632,13 @@ html:has(.bj-atelier.ec-depot) {
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-accent-doux);
   color: var(--dp-accent-sur-doux);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -657,9 +657,9 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-lien--retour {
   min-height: 44px;
   margin: -8px 0 2px -8px;
-  padding: 0 16px 0 12px;
-  gap: 6px;
-  font-size: 15px;
+  padding: 0 var(--m-espace-4) 0 var(--m-espace-3);
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-bouton);
 }
 .bj-atelier .ec-dp-lien--retour::after {
   inset: 0;
@@ -693,22 +693,22 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-etat .ec-dp-in {
   width: 100%;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .bj-atelier .ec-dp-etat-ico {
   display: grid;
   place-items: center;
   width: 52px;
   height: 52px;
-  margin: 4px 0 2px;
-  border-radius: 999px;
+  margin: var(--m-espace-1) 0 2px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-surface);
   color: var(--dp-accent);
 }
 /* (0,2,0) contre `.bj-atelier h1` / `h2` (0,1,1). */
 .bj-atelier .ec-dp-etat-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: 36px;
@@ -726,26 +726,26 @@ html:has(.bj-atelier.ec-depot) {
   max-width: 960px;
   margin: 0 auto;
   /* La réserve sous la grille suit la barre du bas (`--dp-bas-h`, mesurée par Album.tsx). */
-  padding-bottom: calc(var(--dp-bas-h, 150px) + 40px);
+  padding-bottom: calc(var(--dp-bas-h, var(--m-espace-10)) + var(--m-espace-7));
 }
 .bj-atelier .ec-dp-al-tete {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 0 4px;
+  gap: var(--m-espace-1);
+  padding: 0 var(--m-espace-1);
 }
 .bj-atelier .ec-dp-al-marque {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  font-size: 12.5px;
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-etiquette);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-al-marque b {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 20px;
+  font-size: var(--m-taille-chapo);
   color: var(--dp-texte);
 }
 .bj-atelier .ec-dp-al-marque span {
@@ -755,12 +755,12 @@ html:has(.bj-atelier.ec-depot) {
   white-space: nowrap;
 }
 .bj-atelier .ec-dp-al-retour {
-  margin-top: 6px;
+  margin-top: var(--m-espace-2);
 }
 /* (0,2,0) contre `.bj-atelier h1` (0,1,1). */
 .bj-atelier .ec-dp-al-titre {
-  margin: 6px 0 0;
-  font-family: var(--font-display);
+  margin: var(--m-espace-2) 0 0;
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: 40px;
@@ -770,15 +770,15 @@ html:has(.bj-atelier.ec-depot) {
 }
 .bj-atelier .ec-dp-al-compte {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-al-qui {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
-  margin-top: 6px;
+  gap: var(--m-espace-1) var(--m-espace-3);
+  margin-top: var(--m-espace-2);
 }
 .bj-atelier .ec-dp-al-qui .ec-dp-lien {
   align-self: center;
@@ -786,14 +786,14 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-moi {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-width: 0;
   max-width: 100%;
-  padding: 4px 12px 4px 4px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-3) var(--m-espace-1) var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--dp-ligne);
   background: var(--dp-surface);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
   white-space: nowrap;
   overflow: hidden;
@@ -811,33 +811,33 @@ html:has(.bj-atelier.ec-depot) {
   place-items: center;
   width: 26px;
   height: 26px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-accent-doux);
   color: var(--dp-accent-sur-doux);
   font-style: normal;
-  font-size: 10.5px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 700;
 }
 /* Les deux onglets : une pilule segmentée sur toute la largeur. */
 .bj-atelier .ec-dp-al-onglets {
   display: flex;
-  gap: 4px;
-  margin: 14px 0 0;
-  padding: 4px;
-  border-radius: 999px;
+  gap: var(--m-espace-1);
+  margin: var(--m-espace-4) 0 0;
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-creux);
 }
 .bj-atelier .ec-dp-al-onglets button {
   flex: 1;
   min-width: 0;
   height: 40px;
-  padding: 0 10px;
+  padding: 0 var(--m-espace-3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: var(--dp-texte);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -852,9 +852,9 @@ html:has(.bj-atelier.ec-depot) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 4px 0;
-  font-size: 13px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-1) 0;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-al-mes .ec-dp-lien {
@@ -862,19 +862,19 @@ html:has(.bj-atelier.ec-depot) {
 }
 /* « 2 autres photos à votre nom, envoyées d'un autre appareil, sont dans Tout l'album » (21/10) : discret, sous la ligne de « Mes photos ». */
 .bj-atelier .ec-dp-al-autres {
-  padding: 8px 4px 0;
+  padding: var(--m-espace-2) var(--m-espace-1) 0;
 }
 .bj-atelier .ec-dp-al-grille {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-top: 8px;
+  gap: var(--m-espace-2);
+  padding-top: var(--m-espace-2);
 }
 /* La grille : trois colonnes sur téléphone (planche 7), plus sur un grand écran. */
 .bj-atelier .ec-dp-g {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: var(--m-espace-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -882,7 +882,7 @@ html:has(.bj-atelier.ec-depot) {
 @media (min-width: 600px) {
   .bj-atelier .ec-dp-g {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: var(--m-espace-2);
   }
 }
 @media (min-width: 900px) {
@@ -898,7 +898,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-t {
   position: relative;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
   background: rgba(var(--dp-fg-rgb), 0.07);
 }
@@ -920,11 +920,11 @@ html:has(.bj-atelier.ec-depot) {
   bottom: 6px;
   max-width: calc(100% - 12px);
   overflow: hidden;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 2px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--dp-noir-rgb), 0.55);
   color: var(--dp-sur-photo);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.4;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -944,11 +944,11 @@ html:has(.bj-atelier.ec-depot) {
   position: absolute;
   top: 6px;
   left: 6px;
-  padding: 1px 7px;
-  border-radius: 999px;
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-accent);
   color: var(--dp-sur-accent);
-  font-size: 10.5px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
 }
 /* L'envoi : l'anneau qui avance, puis la coche (planche 7B). */
@@ -962,7 +962,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-anneau {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: conic-gradient(var(--dp-sur-photo) var(--p, 0%), rgba(var(--dp-blanc-rgb), 0.28) 0);
   -webkit-mask: radial-gradient(circle, transparent 11px, #000 12px);
   mask: radial-gradient(circle, transparent 11px, #000 12px);
@@ -975,7 +975,7 @@ html:has(.bj-atelier.ec-depot) {
   place-items: center;
   width: 20px;
   height: 20px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-ok);
   color: var(--dp-sur-ok);
 }
@@ -992,8 +992,8 @@ html:has(.bj-atelier.ec-depot) {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 8px;
-  font-size: 11px;
+  padding: var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.3;
   text-align: center;
   color: var(--dp-pale);
@@ -1036,7 +1036,7 @@ html:has(.bj-atelier.ec-depot) {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   border: 2px solid rgba(var(--dp-blanc-rgb), 0.92);
   background: rgba(var(--dp-noir-rgb), 0.18);
   color: transparent;
@@ -1062,22 +1062,22 @@ html:has(.bj-atelier.ec-depot) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 28px 18px;
-  border-radius: 18px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-6) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   background: var(--dp-surface);
   text-align: center;
 }
 .bj-atelier .ec-dp-al-vide p {
   margin: 0;
   max-width: 30rem;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-al-vide .ec-dp-al-vide-titre {
-  font-family: var(--font-display);
-  font-size: 24px;
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-h3);
   line-height: 1.15;
   color: var(--dp-texte);
 }
@@ -1087,7 +1087,7 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-al-plus {
   align-self: center;
   max-width: 260px;
-  margin-top: 8px;
+  margin-top: var(--m-espace-2);
 }
 
 /* La barre du bas : fixée sous le pouce, en verre (plein sur Android, `--plat`). */
@@ -1099,7 +1099,7 @@ html:has(.bj-atelier.ec-depot) {
   z-index: 40;
   margin: 0 auto;
   max-width: 520px;
-  border-radius: 26px;
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid var(--dp-carte-bord);
   background: var(--dp-verre);
   box-shadow: var(--dp-reflet), 0 18px 50px var(--dp-ombre-c);
@@ -1114,12 +1114,12 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-bas-in {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3);
 }
 .bj-atelier .ec-dp-reste {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.4;
   text-align: center;
   color: var(--dp-doux);
@@ -1131,38 +1131,38 @@ html:has(.bj-atelier.ec-depot) {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 4px;
+  gap: var(--m-espace-2);
+  padding: 0 var(--m-espace-1);
 }
 .bj-atelier .ec-dp-progres-l b {
-  font-size: 22px;
+  font-size: var(--m-taille-h3);
   font-weight: 600;
   font-variant-numeric: lining-nums tabular-nums;
 }
 .bj-atelier .ec-dp-progres-l b small {
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-progres-l > span {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
 }
 .bj-atelier .ec-dp-jauge {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--dp-fg-rgb), 0.1);
   overflow: hidden;
 }
 .bj-atelier .ec-dp-jauge i {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-accent);
   transition: width 300ms ease;
 }
 .bj-atelier .ec-dp-bas .ec-dp-note {
-  padding: 0 4px;
+  padding: 0 var(--m-espace-1);
 }
 /* Le merci (planche 7C), avec le compte confirmé par le serveur. */
 /* (0,3,0) contre l'ancien `.ec-dp-merci` (une ligne en Cormorant, gardée plus haut) : ici, un cadre. */
@@ -1170,23 +1170,23 @@ html:has(.bj-atelier.ec-depot) {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   background: var(--dp-ok-doux);
-  font-family: var(--font-ui);
-  font-size: 13px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
 }
 .bj-atelier .ec-dp-bas .ec-dp-merci b {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 26px;
+  font-size: var(--m-taille-h3);
   line-height: 1.15;
   color: var(--dp-texte);
   font-variant-numeric: lining-nums;
   font-feature-settings: "lnum" 1;
 }
 .bj-atelier .ec-dp-bas .ec-dp-merci span {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-doux);
 }
 
@@ -1201,13 +1201,13 @@ html:has(.bj-atelier.ec-depot) {
   max-width: 520px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid var(--dp-filet);
   background: var(--dp-carte-pleine);
   box-shadow: 0 18px 50px var(--dp-ombre-c);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--dp-texte);
 }
 .bj-atelier .ec-dp-annonce > span:last-child {
@@ -1219,7 +1219,7 @@ html:has(.bj-atelier.ec-depot) {
   font-weight: 600;
 }
 .bj-atelier .ec-dp-annonce span span {
-  font-size: 12.5px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.4;
   color: var(--dp-doux);
 }
@@ -1229,10 +1229,10 @@ html:has(.bj-atelier.ec-depot) {
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--dp-accent-doux);
   color: var(--dp-accent-sur-doux);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
 }
 
@@ -1251,12 +1251,12 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-feuille {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--m-espace-3);
   width: 100%;
   max-width: 520px;
   box-sizing: border-box;
-  padding: 0 18px calc(26px + env(safe-area-inset-bottom, 0px));
-  border-radius: 28px 28px 0 0;
+  padding: 0 var(--m-espace-4) calc(var(--m-espace-5) + env(safe-area-inset-bottom, 0px));
+  border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
   border: 1px solid var(--dp-carte-bord);
   border-bottom: 0;
   background: var(--dp-carte-pleine);
@@ -1265,17 +1265,17 @@ html:has(.bj-atelier.ec-depot) {
 .bj-atelier .ec-dp-poignee {
   width: 40px;
   height: 5px;
-  margin: 8px auto 4px;
-  border-radius: 999px;
+  margin: var(--m-espace-2) auto var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--dp-fg-rgb), 0.22);
 }
 /* (0,2,0) contre `.bj-atelier h2` (0,1,1). */
 .bj-atelier .ec-dp-feuille-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   letter-spacing: 0;
   color: var(--dp-titre);
@@ -1285,8 +1285,8 @@ html:has(.bj-atelier.ec-depot) {
     align-items: center;
   }
   .bj-atelier .ec-dp-feuille {
-    padding-bottom: 22px;
-    border-radius: 28px;
+    padding-bottom: var(--m-espace-5);
+    border-radius: var(--m-rayon-bloc);
     border-bottom: 1px solid var(--dp-carte-bord);
   }
 }

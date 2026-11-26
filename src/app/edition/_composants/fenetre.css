@@ -12,10 +12,10 @@
   }
   .ec-espace .ec-fenetre-voile--feuille > .ec-fenetre {
     width: 100%;
-    gap: 12px;
+    gap: var(--m-espace-3);
     max-height: calc(var(--ec-vis-h, var(--app-height)) - env(safe-area-inset-top, 0px) - 56px);
-    padding: 8px 16px calc(14px + env(safe-area-inset-bottom, 0px));
-    border-radius: 28px 28px 0 0;
+    padding: var(--m-espace-2) var(--m-espace-4) calc(var(--m-espace-4) + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
     border-bottom: 0;
     background: var(--ec-carte-pleine);
     -webkit-backdrop-filter: none;
@@ -29,7 +29,7 @@
     width: 40px;
     height: 5px;
     margin: 2px 0;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: rgba(var(--ec-fg-rgb), 0.22);
   }
 }

@@ -33,10 +33,10 @@
 .ec-espace .ec-s-pilule {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 0 18px;
-  border-radius: 999px;
-  font-size: 15px;
+  gap: var(--m-espace-2);
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-bouton);
   font-weight: 600;
 }
 .ec-espace .ec-s-pilule--plein {
@@ -55,12 +55,12 @@
 .ec-espace .ec-li-menu--droite > button {
   flex-direction: row-reverse;
   justify-content: space-between;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
 }
 .ec-espace .ec-li-menu > .ec-li-menu-filet {
-  margin-top: 5px;
+  margin-top: var(--m-espace-1);
   border-top: 1px solid var(--ec-line);
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 var(--m-rayon-champ) var(--m-rayon-champ);
 }
 
 /* ═════════ le retour : une capsule en haut à gauche, jamais un lien de texte ═════════ */
@@ -68,24 +68,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 4px 16px 0 12px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-4) 0 var(--m-espace-3);
 }
 .ec-espace .ec-s-retour {
   display: inline-flex;
   align-items: center;
   gap: 2px;
   height: 44px;
-  padding: 0 16px 0 8px;
+  padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
   border: 1px solid var(--ec-carte-bord);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-carte);
   box-shadow: var(--ec-reflet);
   -webkit-backdrop-filter: var(--ec-flou);
   backdrop-filter: var(--ec-flou);
   color: var(--ec-text);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -101,18 +101,18 @@
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   max-width: calc(100% - 32px);
   min-height: 44px;
-  margin: 2px 16px 6px;
-  padding: 0 16px;
+  margin: 2px var(--m-espace-4) var(--m-espace-2);
+  padding: 0 var(--m-espace-4);
   box-sizing: border-box;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent-texte);
   font: inherit;
-  font-size: 14.5px;
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
   cursor: pointer;
 }
@@ -124,7 +124,7 @@
 }
 .ec-espace .ec-s-nouvelles b {
   flex: none;
-  margin-left: 4px;
+  margin-left: var(--m-espace-1);
   font-weight: 700;
 }
 /* « Collecte terminée le 15 novembre » (planche 9, vue 11D) : une pastille calme sous le titre, sans bouton ; « rien ne s'ajoute plus ». */
@@ -132,15 +132,15 @@
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 36px;
-  margin: 2px 16px 6px;
-  padding: 0 14px;
+  margin: 2px var(--m-espace-4) var(--m-espace-2);
+  padding: 0 var(--m-espace-4);
   box-sizing: border-box;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-ok-soft);
   color: var(--ec-ok);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
 }
 
@@ -156,11 +156,11 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--m-espace-3);
   margin: 0;
-  padding: 10px 16px 7px;
-  font-family: var(--font-ui);
-  font-size: 15px;
+  padding: var(--m-espace-3) var(--m-espace-4) var(--m-espace-2);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0;
@@ -173,8 +173,8 @@
 .ec-espace .ec-s-jour small {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
+  gap: var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   color: var(--ec-muted);
   font-variant-numeric: tabular-nums;
@@ -229,8 +229,8 @@
 .ec-espace .ec-s-puces {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 16px 8px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-1) var(--m-espace-4) var(--m-espace-2);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -243,11 +243,11 @@
   align-items: center;
   gap: 0;
   height: 44px;
-  padding: 0 0 0 16px;
-  border-radius: 999px;
+  padding: 0 0 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent-texte);
-  font-size: 14.5px;
+  font-size: var(--m-taille-bouton);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -268,15 +268,15 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--m-espace-2);
   height: 44px;
-  padding: 0 18px;
+  padding: 0 var(--m-espace-4);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-creux);
   color: var(--ec-text);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -300,7 +300,7 @@
   .ec-espace .ec-ph-filtres {
     overflow: hidden;
     gap: 0;
-    padding: 18px 12px 12px 18px;
+    padding: var(--m-espace-4) var(--m-espace-3) var(--m-espace-3) var(--m-espace-4);
     -webkit-mask-image: none;
     mask-image: none;
   }
@@ -309,8 +309,8 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    padding: 0 0 36px;
+    gap: var(--m-espace-4);
+    padding: 0 0 var(--m-espace-6);
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -320,12 +320,12 @@
   /* « Supprimées récemment » : tout en bas de la colonne, à part. */
   .ec-espace .ec-s-pied {
     flex: none;
-    padding-top: 10px;
+    padding-top: var(--m-espace-3);
     border-top: 1px solid var(--ec-line);
   }
   .ec-espace .ec-s-jour {
     padding-left: 2px;
-    padding-right: 4px;
+    padding-right: var(--m-espace-1);
     background: color-mix(in srgb, var(--ec-bg) 72%, transparent);
   }
   .ec-espace .ec-s-ag-bas {
@@ -335,7 +335,7 @@
   .ec-espace .ec-s-fin-choix {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--m-espace-3);
   }
 }
 
@@ -349,11 +349,11 @@
     padding: 0;
   }
   .ec-espace .ec-s-grille {
-    padding-bottom: 8px;
+    padding-bottom: var(--m-espace-2);
   }
   /* Une phrase d'erreur (« Vos préférées n'ont pas pu être enregistrées… ») s'aligne sur le titre. */
   .ec-espace .ec-collecte .ec-ph-erreur {
-    margin: 4px 16px;
+    margin: var(--m-espace-1) var(--m-espace-4);
   }
   /* « Supprimées récemment » (planche 11 « 3C ») : le titre tient sur une ligne (31 px) et « Sélectionner » est sur la ligne de la capsule « ‹ Les photos »,
      à droite : la même place qu'ailleurs. */
@@ -370,18 +370,18 @@
   }
   /* La grille de vignettes (rien d'autre, comme la grille par jour) : d'un bord à l'autre, la place de « Restaurer · N » gardée en bas. */
   .ec-espace .ec-cb-defile {
-    padding: 8px 0 0;
+    padding: var(--m-espace-2) 0 0;
   }
   .ec-espace .ec-cb--cocher .ec-cb-defile {
     padding-bottom: var(--ec-fl-reserve);
   }
   .ec-espace .ec-cb-tete .ec-ph-pilule {
     min-height: 44px;
-    padding: 0 20px;
+    padding: 0 var(--m-espace-5);
     border-color: var(--ec-carte-bord);
     background: var(--ec-carte);
     color: var(--ec-text);
-    font-size: 15px;
+    font-size: var(--m-taille-bouton);
     font-weight: 600;
     -webkit-backdrop-filter: var(--ec-flou);
     backdrop-filter: var(--ec-flou);
@@ -405,11 +405,11 @@
   .ec-espace .ec-s-onglets,
   .ec-espace .ec-s-bas {
     display: flex;
-    gap: 4px;
-    padding: 4px;
+    gap: var(--m-espace-1);
+    padding: var(--m-espace-1);
     height: var(--ec-fl-h);
     box-sizing: border-box;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     border: 1px solid var(--ec-carte-bord);
     background: var(--ec-glass);
     box-shadow: var(--ec-reflet), 0 12px 34px var(--ec-ombre);
@@ -432,13 +432,13 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    padding: 0 6px;
+    padding: 0 var(--m-espace-2);
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: none;
     color: var(--ec-muted);
     font: inherit;
-    font-size: 11.5px;
+    font-size: var(--m-taille-etiquette);
     font-weight: 600;
     letter-spacing: 0.01em;
     cursor: pointer;
@@ -455,13 +455,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--m-espace-2);
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: none;
     color: var(--ec-text);
     font: inherit;
-    font-size: 16px;
+    font-size: var(--m-taille-base);
     font-weight: 600;
     cursor: pointer;
   }
@@ -511,14 +511,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: var(--m-espace-3);
     height: var(--ec-fl-h);
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: var(--ec-accent);
     color: var(--ec-on-accent);
     font: inherit;
-    font-size: 17px;
+    font-size: var(--m-taille-base);
     font-weight: 700;
     box-shadow: var(--ec-ombre-bouton);
     cursor: pointer;
@@ -543,11 +543,11 @@
     bottom: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--m-espace-3);
     max-height: calc(var(--app-height) - env(safe-area-inset-top, 0px) - 56px);
-    padding: 8px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    padding: var(--m-espace-2) var(--m-espace-4) calc(var(--m-espace-4) + env(safe-area-inset-bottom, 0px));
     box-sizing: border-box;
-    border-radius: 28px 28px 0 0;
+    border-radius: var(--m-rayon-bloc) var(--m-rayon-bloc) 0 0;
     border: 1px solid var(--ec-carte-bord);
     border-bottom: 0;
     background: var(--ec-carte-pleine);
@@ -560,7 +560,7 @@
     width: 40px;
     height: 5px;
     margin: 2px 0;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: rgba(var(--ec-fg-rgb), 0.22);
   }
   .ec-espace .ec-s-feuille-tete {
@@ -568,14 +568,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--m-espace-3);
   }
   .ec-espace .ec-s-feuille-titre {
     margin: 0;
-    font-family: var(--font-display);
+    font-family: var(--m-police-titre-famille);
     font-weight: 400;
     font-style: normal;
-    font-size: 28px;
+    font-size: var(--m-taille-h3);
     line-height: 1.05;
     letter-spacing: 0;
     font-variant-numeric: lining-nums;
@@ -585,13 +585,13 @@
   .ec-espace .ec-s-ok {
     flex: none;
     height: 44px;
-    padding: 0 20px;
+    padding: 0 var(--m-espace-5);
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: var(--ec-accent-soft);
     color: var(--ec-accent-texte);
     font: inherit;
-    font-size: 15px;
+    font-size: var(--m-taille-bouton);
     font-weight: 700;
     cursor: pointer;
   }
@@ -599,11 +599,11 @@
     flex: none;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--m-espace-3);
     height: 48px;
-    padding: 0 14px;
+    padding: 0 var(--m-espace-4);
     box-sizing: border-box;
-    border-radius: 14px;
+    border-radius: var(--m-rayon-champ);
     background: var(--ec-creux);
     color: var(--ec-faint);
   }
@@ -618,7 +618,7 @@
     color: var(--ec-text);
     font: inherit;
     /* 16 px au moins : en dessous, Safari zoome la page à la prise de focus. */
-    font-size: 16px;
+    font-size: var(--m-taille-base);
     -webkit-appearance: none;
     appearance: none;
   }
@@ -634,19 +634,19 @@
     display: flex;
     flex-wrap: wrap;
     align-content: flex-start;
-    gap: 8px;
+    gap: var(--m-espace-2);
     max-height: calc(var(--app-height) * 0.24);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 2px 0;
   }
   .ec-espace .ec-s-nuage-vide {
-    margin: 4px;
+    margin: var(--m-espace-1);
   }
   /* « Terminer la collecte » : deux grands choix, le premier plein, et UNE phrase dessous. */
   .ec-espace .ec-s-pied-feuille {
-    margin: 2px 4px 0;
-    font-size: 13.5px;
+    margin: 2px var(--m-espace-1) 0;
+    font-size: var(--m-taille-petit);
     color: var(--ec-muted);
     text-align: center;
   }
@@ -657,8 +657,8 @@
     place-items: center;
     width: min(100%, 288px);
     aspect-ratio: 1;
-    margin-bottom: 8px;
-    border-radius: 24px;
+    margin-bottom: var(--m-espace-2);
+    border-radius: var(--m-rayon-bloc);
     background: var(--ec-page);
     box-shadow: var(--ec-ombre-douce);
   }
@@ -677,7 +677,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    padding: calc(env(safe-area-inset-top, 0px) + var(--m-espace-3)) var(--m-espace-4) calc(env(safe-area-inset-bottom, 0px) + var(--m-espace-3));
     box-sizing: border-box;
     background: var(--ec-voile);
     -webkit-backdrop-filter: blur(10px) saturate(1.1);
@@ -688,7 +688,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
+    gap: var(--m-espace-4);
     width: min(300px, 100%);
     max-height: 100%;
   }
@@ -698,7 +698,7 @@
     width: 100%;
     max-height: calc(var(--app-height) * 0.5);
     overflow: hidden;
-    border-radius: 22px;
+    border-radius: var(--m-rayon-bloc);
     background: rgba(var(--ec-fg-rgb), 0.08);
     box-shadow: 0 24px 60px rgba(var(--ec-noir-rgb), 0.45);
   }
@@ -720,9 +720,9 @@
   .ec-espace .ec-s-menu {
     flex: none;
     width: 100%;
-    padding: 6px;
+    padding: var(--m-espace-2);
     box-sizing: border-box;
-    border-radius: 22px;
+    border-radius: var(--m-rayon-bloc);
     border: 1px solid var(--ec-carte-bord);
     background: var(--ec-carte-pleine);
     box-shadow: var(--ec-reflet), 0 24px 60px var(--ec-ombre);
@@ -731,17 +731,17 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
+    gap: var(--m-espace-4);
     width: 100%;
     min-height: 48px;
-    padding: 0 14px;
+    padding: 0 var(--m-espace-4);
     box-sizing: border-box;
     border: 0;
-    border-radius: 16px;
+    border-radius: var(--m-rayon-champ);
     background: none;
     color: var(--ec-text);
     font: inherit;
-    font-size: 16px;
+    font-size: var(--m-taille-base);
     text-align: left;
     cursor: pointer;
   }
@@ -757,9 +757,9 @@
     color: var(--ec-accent);
   }
   .ec-espace .ec-s-menu .ec-s-filet {
-    margin-top: 5px;
+    margin-top: var(--m-espace-1);
     border-top: 1px solid var(--ec-line);
-    border-radius: 0 0 16px 16px;
+    border-radius: 0 0 var(--m-rayon-champ) var(--m-rayon-champ);
   }
   .ec-espace .ec-s-menu .ec-s-danger,
   .ec-espace .ec-s-menu .ec-s-danger svg {
@@ -771,13 +771,13 @@
 .ec-espace .ec-s-choix-fin {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--m-espace-4);
   width: 100%;
   min-height: 78px;
-  padding: 12px 16px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   box-sizing: border-box;
   border: 1px solid var(--ec-carte-bord);
-  border-radius: 22px;
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-creux);
   color: var(--ec-text);
   font: inherit;
@@ -806,12 +806,12 @@
   gap: 2px;
 }
 .ec-espace .ec-s-choix-fin b {
-  font-size: 17px;
+  font-size: var(--m-taille-base);
   font-weight: 600;
   line-height: 1.25;
 }
 .ec-espace .ec-s-choix-fin small {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 .ec-espace .ec-s-choix-fin--plein {
@@ -830,7 +830,7 @@
 }
 .ec-espace .ec-s-fin-choix .ec-s-pied-feuille {
   margin: 0;
-  font-size: 13.5px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
   text-align: center;
 }
@@ -839,20 +839,20 @@
 .ec-espace .ec-mo-tete {
   display: flex;
   max-width: 640px;
-  margin: 0 auto 8px;
+  margin: 0 auto var(--m-espace-2);
 }
 .ec-espace .ec-mo-nouveau {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 44px;
-  padding: 0 16px 0 8px;
+  padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
   border: 1.5px dashed var(--ec-line-fort);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: var(--ec-accent-texte);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 600;
   cursor: pointer;
 }

@@ -13,20 +13,20 @@
   --lp-verre: rgba(255, 255, 255, 0.06);
 
   display: inline-flex;
-  gap: 10px;
-  margin-top: 12px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-3);
 }
 
 .bj-lienpartage-btn {
   appearance: none;
   cursor: pointer;
-  padding: 9px 18px;
+  padding: var(--m-espace-2) var(--m-espace-4);
   background: var(--lp-verre);
   border: 1px solid var(--lp-filet);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   color: var(--lp-texte);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 

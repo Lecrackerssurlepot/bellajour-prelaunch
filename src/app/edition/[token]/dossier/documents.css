@@ -6,16 +6,16 @@
 .ec-espace .ec-docs {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 16px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-docs-gauche {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-docs-etiquette {
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -29,8 +29,8 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 22px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-4) var(--m-espace-5);
   border-radius: var(--ec-r-carte);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte);
@@ -66,11 +66,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 22px 24px 10px;
+  padding: var(--m-espace-5) var(--m-espace-5) var(--m-espace-3);
 }
 .ec-espace .ec-docs-vide {
   margin: 0;
-  padding: 18px 22px;
+  padding: var(--m-espace-4) var(--m-espace-5);
 }
 /* Sans document, la carte garde sa taille naturelle. */
 .ec-espace .ec-docs-liste:has(.ec-docs-vide) {
@@ -81,17 +81,17 @@
   flex: 1;
   list-style: none;
   margin: 0;
-  padding: 6px 14px 14px;
+  padding: var(--m-espace-2) var(--m-espace-4) var(--m-espace-4);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-docs-lignes li {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  border-radius: 18px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-surface);
 }
 .ec-espace .ec-docs-lignes svg {
@@ -103,14 +103,14 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-docs-telecharger {
   display: grid;
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--ec-line);
   color: var(--ec-muted);
   text-decoration: none;
@@ -131,7 +131,7 @@
 }
 .ec-espace .ec-docs-statut {
   flex: none;
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-muted);
 }
 
@@ -140,7 +140,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 22px 24px;
+  padding: var(--m-espace-5) var(--m-espace-5);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-panneau);
   background: var(--ec-carte);
@@ -150,16 +150,16 @@
 }
 .ec-espace .ec-docs-prevu {
   list-style: none;
-  margin: 10px 0 0;
+  margin: var(--m-espace-3) 0 0;
   padding: 0;
 }
 .ec-espace .ec-docs-prevu li {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) 0;
   border-bottom: 1px solid var(--ec-line);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-docs-prevu li > span:first-child {
   color: var(--ec-muted);
@@ -172,8 +172,8 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  margin-top: 4px;
-  font-size: 13px;
+  margin-top: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   color: var(--ec-accent);
   text-decoration: none;
 }
@@ -184,13 +184,13 @@
 @media (max-width: 860px) {
   .ec-espace .ec-docs {
     grid-template-columns: minmax(0, 1fr);
-    padding-top: 16px;
+    padding-top: var(--m-espace-4);
   }
   .ec-espace .ec-docs-nouvelle {
     flex-wrap: wrap;
   }
   .ec-espace .ec-docs-lignes li {
     flex-wrap: wrap;
-    padding: 14px 16px;
+    padding: var(--m-espace-4) var(--m-espace-4);
   }
 }

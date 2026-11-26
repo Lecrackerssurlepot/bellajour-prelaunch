@@ -13,7 +13,7 @@
 
 .ec-espace .ec-mo {
   flex: none;
-  padding: 4px 10px 0;
+  padding: var(--m-espace-1) var(--m-espace-3) 0;
 }
 /* La zone est le conteneur (`cqw` = sa largeur). 27/10 : une rangée n'est plus un carré de 640 px (une tuile géante, les autres liens
    hors écran) mais une hauteur BORNÉE (`--mo-h`) : au téléphone 4 à 6 liens dans le premier écran, à l'ordinateur tous d'un coup. */
@@ -36,7 +36,7 @@
 
 /* Sous l'accueil « Les photos arriveront ici » (aucune photo, mais des liens) : la mosaïque ne colle pas au cadre pointillé. */
 .ec-espace .ec-ph-accueil + .ec-mo {
-  padding-top: 14px;
+  padding-top: var(--m-espace-4);
 }
 
 /* ─────────────────────────── une tuile ─────────────────────────── */
@@ -95,7 +95,7 @@
   inset: 0;
   display: flex;
   align-items: flex-end;
-  padding: 0 var(--tu-bord) calc(var(--tu-bord) - 4px);
+  padding: 0 var(--tu-bord) calc(var(--tu-bord) - var(--m-espace-1));
   border: 0;
   background: none;
   color: rgba(var(--ec-reflet-rgb), 0.96);
@@ -118,7 +118,7 @@
   -webkit-line-clamp: 3;
   overflow: hidden;
   max-width: 100%;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-size: var(--tu-nom);
   line-height: 0.94;
@@ -147,15 +147,15 @@
   align-items: center;
   max-width: calc(100% - 60px);
   height: 30px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
   box-sizing: border-box;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid rgba(var(--ec-reflet-rgb), 0.24);
   background: rgba(var(--ec-noir-rgb), 0.3);
   -webkit-backdrop-filter: blur(16px) saturate(1.5);
   backdrop-filter: blur(16px) saturate(1.5);
   color: rgba(var(--ec-reflet-rgb), 0.97);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
   letter-spacing: 0.005em;
   white-space: nowrap;
@@ -168,8 +168,8 @@
 }
 .ec-espace .ec-tu--petit .ec-tu-pastille {
   height: 28px;
-  padding: 0 10px;
-  font-size: 12.5px;
+  padding: 0 var(--m-espace-3);
+  font-size: var(--m-taille-etiquette);
 }
 .ec-espace .ec-tu--petit .ec-tu-long,
 .ec-espace .ec-tu:not(.ec-tu--petit) .ec-tu-court {
@@ -264,7 +264,7 @@
   left: var(--tu-bord);
   top: 34%;
   z-index: -1;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: calc(var(--tu-nom) * 2.1);
   line-height: 1;
   letter-spacing: -0.03em;
@@ -293,8 +293,8 @@
   box-sizing: border-box;
   width: calc(100% - 20px);
   max-width: 640px;
-  margin: 10px auto 0;
-  padding: 4px;
+  margin: var(--m-espace-3) auto 0;
+  padding: var(--m-espace-1);
   border-radius: var(--ec-r-carte);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte);
@@ -303,13 +303,13 @@
 .ec-espace .ec-mo-ligne {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
   width: 100%;
   min-height: 60px;
-  padding: 10px 12px;
+  padding: var(--m-espace-3) var(--m-espace-3);
   box-sizing: border-box;
   border: 0;
-  border-radius: 18px;
+  border-radius: var(--m-rayon-bloc);
   background: transparent;
   color: var(--ec-text);
   font: inherit;
@@ -328,14 +328,14 @@
   line-height: 1.3;
 }
 .ec-espace .ec-mo-ligne-txt b {
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ec-espace .ec-mo-ligne-txt span {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 .ec-espace .ec-mo-ligne > svg {
@@ -343,7 +343,7 @@
   color: var(--ec-faint);
 }
 .ec-espace .ec-mo-ligne .ec-ph-n {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 
@@ -359,9 +359,9 @@
    Jamais un texte souligné : on touche une pastille. */
 .ec-espace .ec-ch {
   display: flex;
-  gap: 8px;
-  margin: 10px -2px 2px;
-  padding: 0 16px 6px;
+  gap: var(--m-espace-2);
+  margin: var(--m-espace-3) -2px 2px;
+  padding: 0 var(--m-espace-4) var(--m-espace-2);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -385,13 +385,13 @@
   }
   .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-tete {
     min-height: 0;
-    padding: 4px 16px 0 8px;
+    padding: var(--m-espace-1) var(--m-espace-4) 0 var(--m-espace-2);
   }
   .ec-espace .ec-collecte.ec-collecte--tuile .ec-ecran-actions {
     flex: 1 1 100%;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: var(--m-espace-2);
   }
 }
 
@@ -399,7 +399,7 @@
 
 @media (min-width: 861px) {
   .ec-espace .ec-mo {
-    padding: 4px 4px 24px;
+    padding: var(--m-espace-1) var(--m-espace-1) var(--m-espace-5);
   }
   /* Quatre colonnes : toute la largeur de la page ; deux colonnes (trois liens ou moins) gardent 640 px, centrées. */
   .ec-espace .ec-mo-zone[data-colonnes="4"] {
@@ -428,7 +428,7 @@
   }
   .ec-espace .ec-tu--petit .ec-tu-pastille {
     height: 30px;
-    font-size: 13px;
+    font-size: var(--m-taille-petit);
   }
   .ec-espace .ec-tu:hover .ec-tu-photo {
     transform: scale(1.04);

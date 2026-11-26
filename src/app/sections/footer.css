@@ -8,7 +8,7 @@
      <body> de ces 8 pages est un degrade creme (--bj-cream -> --bj-cream-2) :
      il y avait une couture de couleur visible entre la page et son pied. */
   background: var(--bj-cream-2);
-  padding: clamp(28px, 5vh, 44px) clamp(32px, 6vw, 96px) 0;
+  padding: clamp(var(--m-espace-6), 5vh, var(--m-espace-7)) clamp(var(--m-espace-6), 6vw, var(--m-espace-9)) 0;
   overflow: hidden;
 }
 
@@ -17,7 +17,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding-bottom: clamp(28px, 6vh, 60px);
+  padding-bottom: clamp(var(--m-espace-6), 6vh, var(--m-espace-8));
   position: relative;
   z-index: 1;
 }
@@ -26,12 +26,12 @@
 .footer-left {
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.8vh, 16px);
+  gap: clamp(var(--m-espace-3), 1.8vh, var(--m-espace-4));
 }
 
 .footer-tagline {
   margin: 0;
-  font-family: var(--bj-font-display);
+  font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-weight: 300;
   font-size: clamp(15px, 1.35vw, 21px);
@@ -42,7 +42,7 @@
 
 .footer-contact-label {
   margin: 0;
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.02em;
   color: var(--bj-text-soft);
@@ -53,11 +53,11 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 5px 10px;
+  gap: var(--m-espace-1) var(--m-espace-3);
 }
 
 .footer-link {
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.02em;
   color: var(--bj-text-soft);
@@ -81,12 +81,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: clamp(8px, 1.4vh, 14px);
+  gap: clamp(var(--m-espace-2), 1.4vh, var(--m-espace-4));
 }
 
 .footer-copy {
   margin: 0;
-  font-family: var(--bj-font-ui);
+  font-family: var(--m-police-texte-famille);
   font-size: clamp(13px, 0.85vw, 13px);
   letter-spacing: 0.02em;
   color: rgba(28, 28, 28, 0.35);
@@ -97,14 +97,14 @@
 .footer-word {
   display: block;
   width: 100%;
-  font-family: 'Cormorant', serif;
+  font-family: var(--m-police-titre-famille);
   font-weight: 700;
   font-size: clamp(108px, 16vw, 196px);
   white-space: nowrap;
   color: var(--bj-text);
   opacity: 1;
   line-height: 1;
-  margin: clamp(32px, 5vh, 56px) 0 0;
+  margin: clamp(var(--m-espace-6), 5vh, var(--m-espace-8)) 0 0;
   padding: 0;
   transform: translateY(0.2em);
   pointer-events: none;
@@ -116,7 +116,7 @@
   .footer-top {
     flex-direction: column;
     align-items: flex-start;
-    gap: clamp(28px, 5vh, 40px);
+    gap: clamp(var(--m-espace-6), 5vh, var(--m-espace-7));
   }
 
   .footer-right {
@@ -126,7 +126,7 @@
   .footer-links {
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: var(--m-espace-2);
   }
 
   .footer-sep { display: none; }

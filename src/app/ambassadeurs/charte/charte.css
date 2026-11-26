@@ -3,8 +3,8 @@
    (pas de position:fixed + backdrop-filter → règle anti-jank). Zéro ombre. */
 
 .amb-charte {
-  background: var(--bj-cream);
-  color: var(--bj-text);
+  background: var(--m-couleur-papier-fond);
+  color: var(--m-couleur-papier-texte);
   min-height: 100vh;
 }
 
@@ -13,10 +13,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: clamp(16px, 2.6vh, 24px) clamp(20px, 5vw, 48px);
-  background: var(--bj-cream);
-  border-bottom: 1px solid var(--bj-glass-light-border);
+  gap: var(--m-espace-4);
+  padding: clamp(var(--m-espace-4), 2.6vh, var(--m-espace-5)) clamp(var(--m-espace-5), 5vw, var(--m-espace-7));
+  background: var(--m-couleur-papier-fond);
+  border-bottom: 1px solid var(--m-couleur-papier-ligne);
 }
 .amb-charte-logo-link {
   display: inline-flex;
@@ -28,10 +28,10 @@
   display: block;
 }
 .amb-charte-back {
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-ui);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
-  color: var(--bj-action);
+  color: var(--m-couleur-accent);
   text-decoration: none;
   white-space: nowrap;
 }
@@ -44,60 +44,60 @@
 .amb-charte-body {
   max-width: 720px;
   margin: 0 auto;
-  padding: clamp(36px, 7vh, 72px) clamp(20px, 5vw, 32px) clamp(48px, 9vh, 96px);
-  font-family: var(--bj-font-ui);
-  font-size: var(--bj-fs-body);
+  padding: clamp(var(--m-espace-6), 7vh, var(--m-espace-8)) clamp(var(--m-espace-5), 5vw, var(--m-espace-6)) clamp(var(--m-espace-7), 9vh, var(--m-espace-9));
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
   line-height: 1.7;
-  color: var(--bj-text-soft);
+  color: var(--m-couleur-papier-texte-doux);
 }
 
 .amb-charte-body h1 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
+  font-family: var(--m-police-titre-famille);
+  font-style: normal;
   font-weight: 500;
-  font-size: var(--bj-fs-h1-screen);
+  font-size: var(--m-taille-h1);
   line-height: 1.15;
-  color: var(--bj-text);
-  margin: 0 0 12px;
+  color: var(--m-couleur-papier-texte);
+  margin: 0 0 var(--m-espace-3);
 }
 
 .amb-charte-tagline {
-  font-family: var(--bj-font-display);
-  font-size: var(--bj-fs-lg);
-  color: var(--bj-text-faint);
-  margin: 0 0 clamp(28px, 5vh, 44px);
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-chapo);
+  color: var(--m-couleur-papier-texte-doux);
+  margin: 0 0 clamp(var(--m-espace-6), 5vh, var(--m-espace-7));
 }
 
 .amb-charte-body h2 {
-  font-family: var(--bj-font-display);
-  font-style: italic;
+  font-family: var(--m-police-titre-famille);
+  font-style: normal;
   font-weight: 500;
-  font-size: var(--bj-fs-h2);
+  font-size: var(--m-taille-h2);
   line-height: 1.2;
-  color: var(--bj-text);
-  margin: clamp(32px, 5.5vh, 48px) 0 12px;
+  color: var(--m-couleur-papier-texte);
+  margin: clamp(var(--m-espace-6), 5.5vh, var(--m-espace-7)) 0 var(--m-espace-3);
 }
 
 .amb-charte-body p {
-  margin: 0 0 16px;
+  margin: 0 0 var(--m-espace-4);
 }
 
 .amb-charte-body ul,
 .amb-charte-body ol {
-  margin: 0 0 16px;
-  padding-left: 24px;
+  margin: 0 0 var(--m-espace-4);
+  padding-left: var(--m-espace-5);
 }
 .amb-charte-body li {
-  margin: 0 0 8px;
+  margin: 0 0 var(--m-espace-2);
 }
 
 .amb-charte-rule {
   border: none;
-  border-top: 1px solid var(--bj-glass-light-border);
-  margin: clamp(32px, 5.5vh, 48px) 0 24px;
+  border-top: 1px solid var(--m-couleur-papier-ligne);
+  margin: clamp(var(--m-espace-6), 5.5vh, var(--m-espace-7)) 0 var(--m-espace-5);
 }
 
 .amb-charte-version {
-  font-size: var(--bj-fs-sm);
-  color: var(--bj-text-faint);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-texte-doux);
 }

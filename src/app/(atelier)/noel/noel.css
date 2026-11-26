@@ -39,11 +39,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px 14px;
-  padding: 0 var(--mg, 16px);
+  gap: var(--m-espace-2) var(--m-espace-4);
+  padding: 0 var(--mg, var(--m-espace-4));
   white-space: nowrap;
   overflow: hidden;
-  font-size: 13.5px;
+  font-size: var(--m-taille-petit);
   letter-spacing: 0.01em;
   color: var(--c-text-soft);
   background: var(--glass-bg-plein);
@@ -81,7 +81,7 @@
    entre les deux copies a le même écart que les autres. */
 .nl-noel-bandeau .nl-noel-bandeau-offre[data-defile] .nl-noel-bandeau-phrase::after {
   content: '·';
-  margin: 0 22px;
+  margin: 0 var(--m-espace-5);
   color: var(--c-text-faint);
 }
 .nl-noel-bandeau .nl-noel-bandeau-phrase sup { font-size: 0.7em; }
@@ -98,16 +98,16 @@
 .nl-noel-bandeau .nl-noel-bandeau-lien {
   flex: 0 0 auto;
   font-weight: 500;
-  padding: 5px 14px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--c-accent);
   color: var(--c-accent-strong);
 }
 .nl-noel-bandeau .nl-noel-bandeau-lien::after { content: ' \2192'; }
 .nl-noel-bandeau .nl-noel-bandeau-lien:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
 @media (max-width: 479px) {
-  .nl-noel-bandeau { font-size: 12.5px; gap: 10px; padding: 0 12px; }
-  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: 8px 12px; }
+  .nl-noel-bandeau { font-size: var(--m-taille-etiquette); gap: var(--m-espace-3); padding: 0 var(--m-espace-3); }
+  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: var(--m-espace-2) var(--m-espace-3); }
 }
 
 /* ════════ LA CARTE ════════ */
@@ -154,7 +154,7 @@
 .nl-noel .nl-carte-milieu { position: relative; display: flex; flex-direction: column; gap: 2.2cqw; min-width: 0; }
 .nl-noel .nl-carte-pour { font-size: 2.5cqw; letter-spacing: 0.2em; text-transform: uppercase; color: var(--c-accent-strong); }
 .nl-noel .nl-carte-phrase {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: 9.4cqw;
   line-height: 0.98;
   letter-spacing: -0.015em;
@@ -162,7 +162,7 @@
 }
 .nl-noel .nl-carte-milieu[data-mot='1'] .nl-carte-phrase { font-size: 8.2cqw; }
 .nl-noel .nl-carte-message {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-style: italic;
   font-size: 3.6cqw;
   line-height: 1.25;
@@ -172,31 +172,31 @@
   -webkit-line-clamp: 2;
   overflow: hidden;
 }
-.nl-noel .nl-carte-montant { font-family: var(--font-display); font-size: 8cqw; line-height: 0.9; white-space: nowrap; color: var(--c-accent-strong); }
+.nl-noel .nl-carte-montant { font-family: var(--m-police-titre-famille); font-size: 8cqw; line-height: 0.9; white-space: nowrap; color: var(--c-accent-strong); }
 .nl-noel .nl-carte-infos { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; font-size: 2.7cqw; line-height: 1.4; text-align: right; color: var(--c-overlay-text); }
 .nl-noel .nl-carte-code { letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
 
 /* ════════ TEXTES ET BOUTONS (communs) ════════ */
-.nl-noel .nl-texte { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; min-width: 0; }
-.nl-noel .nl-surtitre { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-accent); }
+.nl-noel .nl-texte { display: flex; flex-direction: column; align-items: flex-start; gap: var(--m-espace-4); min-width: 0; }
+.nl-noel .nl-surtitre { font-size: var(--m-taille-etiquette); letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-accent); }
 .nl-noel .nl-titre {
   font-size: clamp(30px, 4.6vw, 48px);
   line-height: 1.05;
   overflow-wrap: normal !important;
 }
 .nl-noel .nl-sous { color: var(--c-text-soft); max-width: 36ch; }
-.nl-noel .nl-places { font-size: 14px; color: var(--c-text-faint); }
-.nl-noel .nl-gestes { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 6px; }
+.nl-noel .nl-places { font-size: var(--m-taille-petit); color: var(--c-text-faint); }
+.nl-noel .nl-gestes { display: flex; flex-wrap: wrap; align-items: center; gap: var(--m-espace-3); margin-top: var(--m-espace-2); }
 .nl-noel .nl-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: 48px;
-  padding: 0 24px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--c-line-strong);
   color: var(--c-text);
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   text-align: center;
   text-decoration: none;
   white-space: nowrap;
@@ -205,19 +205,19 @@
 .nl-noel .nl-cta:hover { background: var(--c-surface-3); }
 .nl-noel .nl-cta.nl-cta--plein { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-text-onaccent); font-weight: 500; }
 .nl-noel .nl-cta.nl-cta--plein:hover { background: var(--c-accent-strong); }
-.nl-noel .nl-cta.nl-cta--discret { border-color: transparent; color: var(--c-text-soft); padding: 0 12px; }
+.nl-noel .nl-cta.nl-cta--discret { border-color: transparent; color: var(--c-text-soft); padding: 0 var(--m-espace-3); }
 
 /* ════════ LE BLOC DE /magazine ════════ */
 .nl-noel.nl-noel-mag {
   max-width: 1280px;
   margin: 0 auto;
-  padding: clamp(56px, 8vw, 96px) clamp(20px, 6vw, 80px);
+  padding: clamp(var(--m-espace-8), 8vw, var(--m-espace-9)) clamp(var(--m-espace-5), 6vw, var(--m-espace-9));
   border-top: 1px solid var(--c-line);
 }
 .nl-noel .nl-mag-grille {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(24px, 4vw, 48px);
+  gap: clamp(var(--m-espace-5), 4vw, var(--m-espace-7));
   align-items: center;
 }
 .nl-noel .nl-mag-carte { max-width: 520px; width: 100%; justify-self: center; }
@@ -246,12 +246,12 @@
   align-items: center;
   gap: calc(2 * var(--uh));
   /* La barre (et son bandeau) est fixe : la scène démarre dessous. */
-  padding: calc(var(--nav-h) + var(--nl-bh, 0px) + 2 * var(--uh)) 20px calc(5 * var(--uh));
+  padding: calc(var(--nav-h) + var(--nl-bh, 0px) + 2 * var(--uh)) var(--m-espace-5) calc(5 * var(--uh));
   background: radial-gradient(90% 70% at 50% 40%, var(--c-surface-2), var(--c-void));
   text-align: center;
 }
 .nl-noel .nl-scene-titre {
-  margin: 8px 0 0;
+  margin: var(--m-espace-2) 0 0;
   font-size: clamp(32px, 5vw, 56px);
   line-height: 1.02;
   overflow-wrap: normal !important;
@@ -264,12 +264,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
   opacity: clamp(0, calc((var(--p) - 0.66) * 6), 1);
   transform: translateY(calc((1 - clamp(0, calc((var(--p) - 0.66) * 6), 1)) * 24px));
 }
-.nl-noel .nl-scene-sous { color: var(--c-text-soft); max-width: 34ch; font-size: 17px; }
-.nl-noel .nl-scene-places { font-size: 14px; color: var(--c-text-faint); }
+.nl-noel .nl-scene-sous { color: var(--c-text-soft); max-width: 34ch; font-size: var(--m-taille-base); }
+.nl-noel .nl-scene-places { font-size: var(--m-taille-petit); color: var(--c-text-faint); }
 
 .nl-noel .nl-scene-objet {
   grid-area: objet;
@@ -288,7 +288,7 @@
   opacity: clamp(0, calc((0.6 - var(--p)) * 6), 1);
   transform: translateY(calc(clamp(0, calc((var(--p) - 0.4) * 2), 1) * 40%));
 }
-.nl-noel .nl-env-fond { position: absolute; inset: 0; border-radius: 10px; background: var(--c-surface-3); border: 1px solid var(--c-line-md); }
+.nl-noel .nl-env-fond { position: absolute; inset: 0; border-radius: var(--m-rayon-champ); background: var(--c-surface-3); border: 1px solid var(--c-line-md); }
 .nl-noel .nl-env-rabat {
   position: absolute;
   left: 0;
@@ -304,7 +304,7 @@
 .nl-noel.nl-noel-chapitre[data-ouverte='1'] .nl-env-rabat { z-index: 0; }
 .nl-noel .nl-env-poche {
   z-index: 2;
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 var(--m-rayon-champ) var(--m-rayon-champ);
   background: var(--c-surface-3);
   clip-path: polygon(0 34%, 50% 70%, 100% 34%, 100% 100%, 0 100%);
   pointer-events: none;
@@ -333,7 +333,7 @@
   width: auto;
   aspect-ratio: 3 / 4;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--m-rayon-image);
   box-shadow: var(--shadow-pop);
   opacity: var(--q);
 }
@@ -375,30 +375,30 @@
 .nl-noel .nl-offre {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
   width: 100%;
   max-width: 460px;
-  padding: 18px 20px;
-  border-radius: 20px;
+  padding: var(--m-espace-4) var(--m-espace-5);
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid color-mix(in srgb, var(--c-accent) 45%, transparent);
   background: color-mix(in srgb, var(--c-accent) 9%, transparent);
 }
-.nl-noel .nl-offre-ligne { display: flex; align-items: baseline; gap: 16px; }
+.nl-noel .nl-offre-ligne { display: flex; align-items: baseline; gap: var(--m-espace-4); }
 .nl-noel .nl-offre-pct {
   flex: 0 0 auto;
   min-width: 3.3ch;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(40px, 5vw, 56px);
   line-height: 1;
   white-space: nowrap;
   color: var(--c-accent-strong);
   font-variant-numeric: lining-nums;
 }
-.nl-noel .nl-offre-quoi { font-size: 16px; line-height: 1.35; color: var(--c-text); }
+.nl-noel .nl-offre-quoi { font-size: var(--m-taille-base); line-height: 1.35; color: var(--c-text); }
 .nl-noel .nl-offre-quoi sup, .nl-noel .nl-scene-offre sup { font-size: 0.7em; }
-.nl-noel .nl-offre-note { font-size: 13px; color: var(--c-text-faint); margin-top: -4px; }
-.nl-noel .nl-scene-offre { font-size: 17px; color: var(--c-text); }
-.nl-noel .nl-scene-offre strong { font-family: var(--font-display); font-size: 1.6em; font-weight: 400; color: var(--c-accent-strong); }
+.nl-noel .nl-offre-note { font-size: var(--m-taille-petit); color: var(--c-text-faint); margin-top: -4px; }
+.nl-noel .nl-scene-offre { font-size: var(--m-taille-base); color: var(--c-text); }
+.nl-noel .nl-scene-offre strong { font-family: var(--m-police-titre-famille); font-size: 1.6em; font-weight: 400; color: var(--c-accent-strong); }
 
 /* ════════ L'OUVERTURE DE L'ACCUEIL : « CE NOËL » (16/11) ════════
    Le mot de Noël en orange dans l'amorce, et un lien (il glisse vers le
@@ -421,7 +421,7 @@
    écran rien ne bouge : 10 unités dépassent la taille indexée sur la largeur. */
 @media (min-width: 768px) {
   :root:has(.nl-noel-bandeau) .at-accueil .h-titre { font-size: min(clamp(36px, 6.4vw, 122px), calc(10.4 * var(--uh)), calc(var(--app-height) - 500px)); }
-  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-bottom: clamp(24px, calc(var(--app-height) - 600px), calc(5 * var(--uh))); }
+  :root:has(.nl-noel-bandeau) .at-accueil .hero { padding-bottom: clamp(var(--m-espace-5), calc(var(--app-height) - var(--m-espace-10)), calc(5 * var(--uh))); }
   /* L'espace réservé à la photo entre les lignes du titre (h-bandeau, 19vh,
      128 px au moins) est ce qui faisait déborder les portables de 650 à
      820 px de haut, bouton sous le pli. Il se reprend sur la hauteur gelée :
@@ -436,22 +436,22 @@
    Le bloc entre dans la grille du kiosque, sur toute sa largeur, entre les
    deux colonnes et le parcours. Le repère vit sous les gages. */
 .at-pdp .kiosque > .kiosque-noel { grid-column: 1 / -1; display: block; }
-.at-pdp .kiosque-noel .nl-noel.nl-noel-mag { padding: clamp(40px, 6vw, 72px) 0; border-bottom: 1px solid var(--c-line); margin-bottom: clamp(24px, 4vw, 48px); }
-.at-pdp .nl-amorce-bloc { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; max-width: 440px; }
-.at-pdp .nl-amorce-info { margin: 0; font-size: 14px; line-height: 1.45; color: var(--c-text-soft); }
+.at-pdp .kiosque-noel .nl-noel.nl-noel-mag { padding: clamp(var(--m-espace-7), 6vw, var(--m-espace-8)) 0; border-bottom: 1px solid var(--c-line); margin-bottom: clamp(var(--m-espace-5), 4vw, var(--m-espace-7)); }
+.at-pdp .nl-amorce-bloc { display: flex; flex-direction: column; gap: var(--m-espace-3); margin-top: var(--m-espace-4); max-width: 440px; }
+.at-pdp .nl-amorce-info { margin: 0; font-size: var(--m-taille-petit); line-height: 1.45; color: var(--c-text-soft); }
 .at-pdp .nl-amorce-info strong { font-weight: 600; color: var(--c-accent-strong); }
 .at-pdp .nl-amorce-info sup { font-size: 0.7em; }
 .bj-atelier .at-pdp .nl-amorce {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 16px 10px 10px;
-  border-radius: 14px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4) var(--m-espace-3) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--c-line-md);
   background: rgba(255, 255, 255, 0.04);
   color: var(--c-text);
   text-decoration: none;
-  font-size: 14.5px;
+  font-size: var(--m-taille-bouton);
   line-height: 1.35;
 }
 .bj-atelier .at-pdp .nl-amorce:hover { border-color: var(--c-accent); background: rgba(255, 255, 255, 0.07); }
@@ -462,17 +462,17 @@
   flex: 0 0 auto;
   width: 68px;
   height: 46px;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   background: url('/images/mails/noel/carte-fond-1040.jpg') center / cover, #4a3d33;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   transform: rotate(-5deg);
 }
 .at-pdp .nl-amorce-carte img { position: absolute; left: 7px; top: 7px; width: 34px; height: auto; }
-.at-pdp .nl-amorce-carte span { position: absolute; right: 6px; bottom: 4px; font-family: var(--font-display); font-style: italic; font-size: 13px; color: #fff; }
+.at-pdp .nl-amorce-carte span { position: absolute; right: 6px; bottom: 4px; font-family: var(--m-police-titre-famille); font-style: italic; font-size: var(--m-taille-petit); color: #fff; }
 .at-pdp .nl-amorce-texte { display: flex; flex-direction: column; min-width: 0; }
 .at-pdp .nl-amorce-titre { font-weight: 500; }
-.at-pdp .nl-amorce-sous { font-size: 12.5px; color: var(--c-text-faint); }
-.at-pdp .nl-amorce-fleche { margin-left: auto; color: var(--c-accent-strong); font-size: 18px; }
+.at-pdp .nl-amorce-sous { font-size: var(--m-taille-etiquette); color: var(--c-text-faint); }
+.at-pdp .nl-amorce-fleche { margin-left: auto; color: var(--c-accent-strong); font-size: var(--m-taille-chapo); }
 
 /* Le « e » de « 2e » dans le bandeau : sans ça il décroche la ligne et se lit « 2 e ». */
 .nl-noel-bandeau sup { font-size: 0.68em; line-height: 0; vertical-align: 0.45em; margin-left: 0.04em; }
@@ -482,8 +482,8 @@
    corps et bouton se rapprochent, toujours par la hauteur gelée. */
 @media (min-width: 768px) and (max-width: 1000px) {
   :root:has(.nl-noel-bandeau) .bj-atelier .at-accueil .h-bas {
-    margin-top: clamp(6px, calc(var(--app-height) - 580px), calc(3 * var(--uh)));
-    gap: clamp(6px, calc(var(--app-height) - 580px), calc(2.8 * var(--uh)));
+    margin-top: clamp(var(--m-espace-2), calc(var(--app-height) - var(--m-espace-10)), calc(3 * var(--uh)));
+    gap: clamp(var(--m-espace-2), calc(var(--app-height) - var(--m-espace-10)), calc(2.8 * var(--uh)));
   }
-  :root:has(.nl-noel-bandeau) .bj-atelier .at-accueil .h-lede { margin-top: clamp(8px, calc(var(--app-height) - 560px), 20px); }
+  :root:has(.nl-noel-bandeau) .bj-atelier .at-accueil .h-lede { margin-top: clamp(var(--m-espace-2), calc(var(--app-height) - var(--m-espace-10)), var(--m-espace-5)); }
 }

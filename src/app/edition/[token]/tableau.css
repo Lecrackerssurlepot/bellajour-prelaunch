@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: var(--m-espace-4);
 }
 /* L'en-tête du tableau de bord : « Bonjour » SOUS l'événement. */
 .ec-espace .ec-tdb .ec-ecran-titres {
@@ -32,22 +32,22 @@
   }
 }
 .ec-espace .ec-tdb .ec-ecran-sous {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-tdb-carte {
   min-height: 0;
-  gap: 14px;
-  padding: 28px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-6);
   border-radius: var(--ec-r-panneau);
 }
 .ec-espace .ec-tdb-carte-tete {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-tdb-etiquette {
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -59,7 +59,7 @@
 /* (0,2,0) contre `.bj-atelier h2`, qui pose 32 à 60 px. */
 .ec-espace .ec-tdb-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: clamp(28px, 2.4vw, 36px);
@@ -73,11 +73,11 @@
 .ec-espace .ec-tdb-etat {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--m-espace-2);
   height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 12px;
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -104,7 +104,7 @@
   position: relative;
   flex: 1;
   min-height: 0;
-  margin: 4px 0;
+  margin: var(--m-espace-1) 0;
   container-type: size;
 }
 .ec-espace .ec-tdb-couv {
@@ -113,7 +113,7 @@
   top: 50%;
   height: min(58cqh, 52cqw);
   aspect-ratio: 210 / 297;
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.06);
   box-shadow: var(--ec-ombre-couv);
@@ -133,7 +133,7 @@
 .ec-espace .ec-tdb-couv--centre {
   z-index: 2;
   height: min(66cqh, 58cqw);
-  border-radius: 18px;
+  border-radius: var(--m-rayon-bloc);
   transform: translate(-50%, -52%);
   box-shadow: var(--ec-ombre-couv-forte);
 }
@@ -144,16 +144,16 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-tdb-tuile {
   flex: 1 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 8px 12px;
-  border-radius: 14px;
-  font-size: 13px;
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
+  font-size: var(--m-taille-petit);
   line-height: 1.35;
   background: var(--ec-surface);
   color: var(--ec-text);
@@ -171,7 +171,7 @@
   white-space: nowrap;
 }
 .ec-espace .ec-tdb-tuile .ec-note {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -181,7 +181,7 @@
 }
 .ec-espace .ec-tdb-tuile-action {
   margin-top: 1px;
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
   color: var(--ec-accent-texte);
 }
@@ -190,11 +190,11 @@
   display: inline-flex;
   align-items: center;
   height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-text);
   color: var(--ec-bg);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
   text-decoration: none;
 }
@@ -223,9 +223,9 @@
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-tdb-centre .ec-carte-lien {
-  padding: 18px;
+  padding: var(--m-espace-4);
   border: 1px solid var(--ec-carte-bord);
-  border-radius: 20px;
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-surface);
   box-shadow: var(--ec-ombre-douce);
   text-align: left;
@@ -236,11 +236,11 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0 14px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-carte-bord);
   color: var(--ec-text);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
   text-decoration: none;
 }
@@ -252,7 +252,7 @@
 .ec-espace .ec-tdb-total {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-tdb-total strong {
   font-family: inherit;
@@ -270,20 +270,20 @@
   min-height: 0;
   list-style: none;
   margin: 0;
-  padding: 6px;
-  border-radius: 22px;
+  padding: var(--m-espace-2);
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-creux);
 }
 .ec-espace .ec-tdb-dossiers li {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 /* Un dossier du tableau de bord mène à la page Photos, ce dossier ouvert
    (retour du 14/10 : « un clic sur un dossier n'emmène nulle part »). */
 .ec-espace .ec-tdb-dossier-lien {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-3);
   margin: 0;
   border-radius: var(--ec-r-bloc);
   color: inherit;
@@ -301,7 +301,7 @@
 .ec-espace .ec-tdb-dossier-barre {
   flex: 0 0 96px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-line);
   overflow: hidden;
 }
@@ -321,7 +321,7 @@
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: var(--m-rayon-champ);
   object-fit: cover;
   background: var(--ec-creux);
 }
@@ -346,7 +346,7 @@
   flex: 1 0 auto;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--m-espace-2);
   align-content: start;
 }
 .ec-espace .ec-tdb-mosaique img {
@@ -354,12 +354,12 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
 }
 .ec-espace .ec-tdb-gestes {
   flex: none;
   display: flex;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 /* « Toutes les photos sont là ? » (D25, planche 4) : une bande claire au-dessus des gestes,
    la question à gauche, « Terminer la collecte » à droite. */
@@ -367,8 +367,8 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 12px 12px 16px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) var(--m-espace-3) var(--m-espace-3) var(--m-espace-4);
   border-radius: var(--ec-r-bloc);
   background: var(--ec-accent-soft);
 }
@@ -383,8 +383,8 @@
   gap: 2px;
 }
 .ec-espace .ec-tdb-fin-titre {
-  font-family: var(--font-display);
-  font-size: 20px;
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-chapo);
   font-weight: 400;
   line-height: 1.15;
   color: var(--ec-titre);
@@ -397,26 +397,26 @@
 }
 .ec-espace .ec-tdb-fin-liste {
   margin: 0;
-  padding-left: 18px;
+  padding-left: var(--m-espace-4);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   color: var(--ec-muted);
 }
 .ec-espace .ec-tdb-gestes .ec-bouton {
   flex: 1 1 0;
   align-self: stretch;
   min-height: 46px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
 }
 .ec-espace .ec-tdb-inviter {
   flex: none;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-4) var(--m-espace-4);
   border: 1px solid var(--ec-line);
-  border-radius: 20px;
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-surface);
   color: var(--ec-text);
   font: inherit;
@@ -434,7 +434,7 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent);
 }
@@ -442,11 +442,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-tdb-fleche {
   color: var(--ec-accent);
-  font-size: 18px;
+  font-size: var(--m-taille-chapo);
 }
 
 /* ── la ligne des contenus ── */
@@ -456,8 +456,8 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px 12px;
-  padding: 14px 20px;
+  gap: var(--m-espace-3) var(--m-espace-3);
+  padding: var(--m-espace-4) var(--m-espace-5);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-carte);
   background: var(--ec-carte);
@@ -470,20 +470,20 @@
   min-width: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-tdb-puce {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 38px;
-  padding: 0 14px 0 8px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   border: 1px dashed var(--ec-line-fort);
   background: var(--ec-surface);
   color: var(--ec-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .ec-espace .ec-tdb-puce:disabled {
@@ -493,8 +493,8 @@
    un nom long passe à la ligne dans sa puce, jamais hors de la carte. */
 .ec-espace .ec-tdb-puce {
   max-width: 100%;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: var(--m-espace-2);
+  padding-bottom: var(--m-espace-2);
 }
 .ec-espace .ec-tdb-puce .ec-tdb-coche {
   flex: none;
@@ -516,9 +516,9 @@
   width: 22px;
   height: 22px;
   box-sizing: border-box;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   border: 1.5px solid var(--ec-line-fort);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
 }
 .ec-espace .ec-tdb-puce--recue .ec-tdb-coche {
   border-color: var(--ec-accent);
@@ -547,8 +547,8 @@
   align-self: stretch;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px 14px 20px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-4) var(--m-espace-4) var(--m-espace-4) var(--m-espace-5);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-carte);
   background: var(--ec-carte);
@@ -567,11 +567,11 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-text);
   color: var(--ec-bg);
-  font-family: var(--font-display);
-  font-size: 18px;
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-chapo);
 }
 .ec-espace .ec-tdb-message-texte {
   flex: 1;
@@ -587,17 +587,17 @@
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-tdb-message-action {
   flex: none;
   display: inline-flex;
   align-items: center;
   min-height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
   color: var(--ec-accent-texte);
 }
@@ -610,14 +610,14 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-envoi-recu {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px;
-  border-radius: 18px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-surface);
 }
 /* L'aperçu d'une image reçue, sur le papier : un logo blanc reste lisible sur
@@ -626,12 +626,12 @@
   flex: none;
   width: 120px;
   height: 72px;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   display: grid;
   place-items: center;
   overflow: hidden;
   background: repeating-conic-gradient(rgba(var(--ec-fg-rgb), 0.1) 0% 25%, transparent 0% 50%) 50% / 16px 16px, var(--ec-panel);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.08em;
   color: var(--ec-muted);
 }
@@ -656,11 +656,11 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-envoi-ajouter {
   height: 44px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   border: 1px dashed var(--ec-filet-fort);
   background: transparent;
   color: var(--ec-text);
@@ -677,10 +677,10 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-reponses dt {
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-muted);
 }
 .ec-espace .ec-reponses dd {
@@ -779,8 +779,8 @@
 /* Téléphone : le QR de la carte du lien se réduit, pour que « 20 photos par personne » tienne sur une ligne. */
 @media (max-width: 520px) {
   .ec-espace .ec-tdb-centre .ec-carte-lien {
-    gap: 12px;
-    padding: 14px;
+    gap: var(--m-espace-3);
+    padding: var(--m-espace-4);
   }
   .ec-espace .ec-tdb-centre .ec-carte-lien .ec-qr {
     width: 92px;
@@ -821,14 +821,14 @@
     min-height: 0;
   }
   .ec-espace .ec-tdb-style--bientot {
-    gap: 10px;
-    padding: 18px 20px;
+    gap: var(--m-espace-3);
+    padding: var(--m-espace-4) var(--m-espace-5);
   }
   .ec-espace .ec-tdb-style--bientot .ec-tdb-eventail {
     display: none;
   }
   .ec-espace .ec-tdb-style--bientot .ec-tdb-titre {
-    font-size: 22px;
+    font-size: var(--m-taille-h3);
   }
   .ec-espace .ec-tdb-style--bientot .ec-bouton--plein {
     min-height: 44px;
@@ -836,7 +836,7 @@
 }
 @media (max-width: 860px) {
   .ec-espace .ec-tdb-carte {
-    padding: 20px;
+    padding: var(--m-espace-5);
   }
   /* Les trois gestes des photos : « Voir les photos » en pleine largeur, puis « Déposer » et « Inviter » côte à côte. */
   .ec-espace .ec-tdb-gestes {

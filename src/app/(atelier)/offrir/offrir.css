@@ -1,20 +1,20 @@
 /* Les pages réelles de la carte (/offrir, /offrir/merci, /carte/<token>),
    sur le scope .nl-preview de noel.css. */
 
-.nl-preview.nl-page { padding-top: 24px; }
+.nl-preview.nl-page { padding-top: var(--m-espace-5); }
 .nl-preview .nl-page-marque {
   display: block;
   width: fit-content;
-  margin: 0 auto 28px;
-  font-family: var(--font-display);
-  font-size: 26px;
+  margin: 0 auto var(--m-espace-6);
+  font-family: var(--m-police-titre-famille);
+  font-size: var(--m-taille-h3);
   color: var(--c-text);
   text-decoration: none;
 }
 .nl-preview .nl-erreur {
   margin: 0;
   color: var(--c-accent);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   text-align: center;
 }
 .nl-preview .nl-payer:disabled { opacity: 0.6; cursor: progress; }
@@ -22,41 +22,41 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: var(--m-espace-5);
   max-width: 520px;
   margin: 0 auto;
   text-align: center;
 }
 .nl-preview .nl-merci .nl-recit-carte { width: min(100%, 440px); }
-.nl-preview .nl-merci-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.nl-preview .nl-merci-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--m-espace-3); }
 .nl-preview .nl-merci-actions a { text-decoration: none; }
 
 /* ── /offrir : le moins de défilement possible (retour du 16/11) ──
    Ordinateur : la carte à gauche, le formulaire à droite, tout tient dans
    l'écran. Téléphone : carte réduite, champs serrés, prénoms côte à côte. */
-.nl-preview .nl-achat { gap: 16px; }
-.nl-preview .nl-achat .nl-recit-temps { gap: 12px; }
+.nl-preview .nl-achat { gap: var(--m-espace-4); }
+.nl-preview .nl-achat .nl-recit-temps { gap: var(--m-espace-3); }
 .nl-preview .nl-achat .nl-recit-titre { font-size: clamp(26px, 3.4vw, 36px); }
 .nl-preview .nl-achat .nl-label,
-.nl-preview .nl-achat .nl-champ legend { margin-bottom: 4px; }
-.nl-preview .nl-achat .nl-champ { gap: 4px; }
-.nl-preview .nl-achat .nl-input { padding: 10px 14px; }
-.nl-preview .nl-achat .nl-suivant { padding: 13px 24px; }
-.nl-preview .nl-achat-scene { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+.nl-preview .nl-achat .nl-champ legend { margin-bottom: var(--m-espace-1); }
+.nl-preview .nl-achat .nl-champ { gap: var(--m-espace-1); }
+.nl-preview .nl-achat .nl-input { padding: var(--m-espace-3) var(--m-espace-4); }
+.nl-preview .nl-achat .nl-suivant { padding: var(--m-espace-3) var(--m-espace-5); }
+.nl-preview .nl-achat-scene { display: flex; flex-direction: column; align-items: center; gap: var(--m-espace-4); width: 100%; }
 .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte { width: min(78%, 340px); }
 .nl-preview .nl-achat .nl-recit-carte[data-temps='2'] { transform: none; }
 .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte[data-temps='2'] { width: min(58%, 260px); }
 .nl-preview .nl-achat .nl-egaux { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.nl-preview .nl-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.nl-preview .nl-duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--m-espace-3); }
 .nl-preview .nl-achat-aide { margin: -4px 0 0; text-align: center; }
 
-.nl-preview .nl-recu-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.nl-preview .nl-recu-actions { display: flex; flex-direction: column; gap: var(--m-espace-3); margin-top: var(--m-espace-2); }
 .nl-preview .nl-achat .nl-recit-temps--large .nl-recu-actions .nl-payer { width: 100%; }
-.nl-preview .nl-achat .nl-recu { gap: clamp(20px, 4vw, 48px); }
+.nl-preview .nl-achat .nl-recu { gap: clamp(var(--m-espace-5), 4vw, var(--m-espace-7)); }
 
 /* Les deux remises se cumulent : une coche ronde dit qu'on peut les prendre ensemble. */
-.nl-preview .nl-achat .nl-choix { position: relative; padding: 12px 14px; }
-.nl-preview .nl-achat .nl-choix-titre { font-size: 20px; }
+.nl-preview .nl-achat .nl-choix { position: relative; padding: var(--m-espace-3) var(--m-espace-4); }
+.nl-preview .nl-achat .nl-choix-titre { font-size: var(--m-taille-chapo); }
 .nl-preview .nl-choix-coche {
   position: absolute;
   top: 12px;
@@ -74,11 +74,11 @@
 /* Le bandeau des jours, à la place du calendrier du navigateur. */
 .nl-preview .nl-jours {
   display: flex;
-  gap: 8px;
+  gap: var(--m-espace-2);
   overflow-x: auto;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
-  padding: 2px 2px 4px;
+  padding: 2px 2px var(--m-espace-1);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
   mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent);
 }
@@ -90,8 +90,8 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: 8px 0 9px;
-  border-radius: 14px;
+  padding: var(--m-espace-2) 0 var(--m-espace-2);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--c-line-md);
   background: transparent;
   color: var(--c-text-soft);
@@ -99,15 +99,15 @@
 }
 .nl-preview .nl-jour[aria-pressed='true'] { border-color: var(--c-accent); background: var(--c-accent-soft); color: var(--c-text); }
 .nl-preview .nl-jour-sem,
-.nl-preview .nl-jour-mois { font-size: 11px; letter-spacing: 0.06em; text-transform: lowercase; color: var(--c-text-faint); }
-.nl-preview .nl-jour-n { font-family: var(--font-display); font-size: 24px; line-height: 1; }
+.nl-preview .nl-jour-mois { font-size: var(--m-taille-etiquette); letter-spacing: 0.06em; text-transform: lowercase; color: var(--c-text-faint); }
+.nl-preview .nl-jour-n { font-family: var(--m-police-titre-famille); font-size: var(--m-taille-h3); line-height: 1; }
 
 @media (min-width: 900px) {
   .nl-preview .nl-achat-scene {
     display: grid;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     align-items: center;
-    gap: clamp(32px, 5vw, 72px);
+    gap: clamp(var(--m-espace-6), 5vw, var(--m-espace-8));
     max-width: 1040px;
   }
   .nl-preview .nl-achat .nl-achat-scene .nl-recit-carte,
@@ -116,8 +116,8 @@
   .nl-preview .nl-achat-scene .nl-recit-titre { text-align: left; }
 }
 @media (max-width: 767px) {
-  .nl-preview.nl-page { padding-top: 12px; }
-  .nl-preview .nl-page-marque { margin-bottom: 14px; }
+  .nl-preview.nl-page { padding-top: var(--m-espace-3); }
+  .nl-preview .nl-page-marque { margin-bottom: var(--m-espace-4); }
 }
 
 @media print {
@@ -129,16 +129,16 @@
 .nl-preview .nl-page-marque img { display: block; width: 116px; height: auto; }
 
 /* La suggestion d'adresse (gmial.com → gmail.com) et l'adresse relue avant de payer. */
-.nl-suggestion { margin: 8px 0 0; font-size: 14px; color: var(--c-text-soft); }
+.nl-suggestion { margin: var(--m-espace-2) 0 0; font-size: var(--m-taille-petit); color: var(--c-text-soft); }
 .nl-suggestion button { font: inherit; color: var(--c-accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: none; }
 .nl-adresse strong { font-weight: 500; color: inherit; overflow-wrap: anywhere; }
 
 /* « Bon à savoir » (#conditions) : le récapitulatif de STRUCTURE-INFO.md,
    libellé à gauche, valeur à droite, un filet entre deux lignes. */
-.nl-preview .nl-conditions { max-width: 640px; margin: 72px auto 40px; padding: 0 16px; scroll-margin-top: 24px; }
-.nl-preview .nl-conditions h2 { margin: 0 0 16px; font-family: var(--font-display); font-weight: 500; font-size: 28px; color: var(--c-text); }
+.nl-preview .nl-conditions { max-width: 640px; margin: var(--m-espace-8) auto var(--m-espace-7); padding: 0 var(--m-espace-4); scroll-margin-top: 24px; }
+.nl-preview .nl-conditions h2 { margin: 0 0 var(--m-espace-4); font-family: var(--m-police-titre-famille); font-weight: 500; font-size: var(--m-taille-h3); color: var(--c-text); }
 .nl-preview .nl-conditions dl { margin: 0; }
-.nl-preview .nl-conditions dl > div { display: grid; grid-template-columns: 9em 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--c-line-md); font-size: 14px; line-height: 1.55; }
+.nl-preview .nl-conditions dl > div { display: grid; grid-template-columns: 9em 1fr; gap: var(--m-espace-4); padding: var(--m-espace-3) 0; border-bottom: 1px solid var(--c-line-md); font-size: var(--m-taille-petit); line-height: 1.55; }
 .nl-preview .nl-conditions dl > div:last-child { border-bottom: 0; }
 .nl-preview .nl-conditions dt { color: var(--c-text-faint); }
 .nl-preview .nl-conditions dd { margin: 0; color: var(--c-text-soft); }
@@ -148,17 +148,17 @@
 
 /* Et pour vous ? : le magazine de l'acheteur, après sa carte (16/11). */
 .nl-preview .nl-merci-pour-vous {
-  margin-top: 28px;
+  margin-top: var(--m-espace-6);
   width: min(100%, 440px);
-  padding: 22px 22px 24px;
-  border-radius: 22px;
+  padding: var(--m-espace-5) var(--m-espace-5) var(--m-espace-5);
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid var(--c-line-strong);
   background: var(--c-surface-2);
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--m-espace-3);
   text-align: center;
 }
-.nl-preview .nl-merci-pour-vous-titre { margin: 0; font-family: var(--font-display); font-size: 26px; line-height: 1.1; }
-.nl-preview .nl-merci-pour-vous .nl-faible { margin: 0 0 6px; }
+.nl-preview .nl-merci-pour-vous-titre { margin: 0; font-family: var(--m-police-titre-famille); font-size: var(--m-taille-h3); line-height: 1.1; }
+.nl-preview .nl-merci-pour-vous .nl-faible { margin: 0 0 var(--m-espace-2); }
 .nl-preview .nl-merci-pour-vous a { text-decoration: none; }
 .nl-preview .nl-suivant--plein { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
 .nl-preview .nl-suivant--plein:hover { background: var(--c-accent); filter: brightness(1.06); }

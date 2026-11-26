@@ -7,30 +7,30 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding-bottom: 8px;
+  gap: var(--m-espace-4);
+  padding-bottom: var(--m-espace-2);
 }
 .ec-espace .ec-vt-intro {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 26px 28px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-5) var(--m-espace-6);
   max-width: 760px;
 }
 .ec-espace .ec-vt-etiquette {
   align-self: flex-start;
-  padding: 5px 12px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent-texte);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .ec-espace .ec-vt-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-size: clamp(30px, 3vw, 40px);
   line-height: 1.08;
@@ -39,8 +39,8 @@
 .ec-espace .ec-vt-gestes {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 6px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-2);
 }
 .ec-espace .ec-vt-gestes .ec-bouton {
   align-self: auto;
@@ -52,13 +52,13 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 18px;
+  gap: var(--m-espace-4);
   max-width: 1200px;
 }
 .ec-espace .ec-vt-couv {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
   margin: 0;
 }
 .ec-espace .ec-vt-couv img {
@@ -66,12 +66,12 @@
   width: 100%;
   aspect-ratio: 1 / 1.414;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   box-shadow: var(--ec-ombre-couv);
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .ec-espace .ec-vt-nom {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 @media (hover: hover) {
@@ -84,25 +84,25 @@
 .ec-espace .ec-vt-double {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 6px 0 0;
+  gap: var(--m-espace-2);
+  margin: var(--m-espace-2) 0 0;
   max-width: 900px;
 }
 .ec-espace .ec-vt-double img {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   box-shadow: var(--ec-ombre-couv);
 }
 
 @media (max-width: 860px) {
   .ec-espace .ec-vt-intro {
-    padding: 20px 18px;
+    padding: var(--m-espace-5) var(--m-espace-4);
   }
   .ec-espace .ec-vt-couvs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: var(--m-espace-3);
   }
 }
 @media (prefers-reduced-motion: reduce) {

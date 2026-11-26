@@ -211,8 +211,8 @@
   isolation: isolate;
   display: grid;
   grid-template-columns: var(--ec-menu-l) minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-4);
   box-sizing: border-box;
   height: var(--app-height);
   overflow: hidden;
@@ -279,8 +279,8 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 14px 14px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-5) var(--m-espace-4) var(--m-espace-4);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-panneau);
   background: var(--ec-panel);
@@ -295,7 +295,7 @@
   display: block;
   width: 116px;
   height: auto;
-  margin: 0 12px 4px;
+  margin: 0 var(--m-espace-3) var(--m-espace-1);
 }
 .ec-espace .ec-logo--mobile {
   width: 96px;
@@ -312,17 +312,17 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 0 12px 4px;
+  padding: 0 var(--m-espace-3) var(--m-espace-1);
   margin-top: -6px;
 }
 .ec-espace .ec-edition-nom {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   color: var(--ec-text);
   overflow-wrap: anywhere;
 }
 .ec-espace .ec-edition-orga {
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-muted);
 }
 
@@ -337,11 +337,11 @@
 .ec-espace .ec-menu-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 var(--m-espace-4);
   border-radius: var(--ec-r-bloc);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
   text-decoration: none;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
@@ -373,51 +373,51 @@
 .ec-espace .ec-menu-pastille {
   min-width: 20px;
   height: 20px;
-  padding: 0 6px;
+  padding: 0 var(--m-espace-2);
   box-sizing: border-box;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent);
   color: var(--ec-on-accent);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
   line-height: 20px;
   text-align: center;
 }
 .ec-espace .ec-menu-bulle {
   display: block;
-  margin: 4px 12px 8px 42px;
-  padding: 8px 12px;
-  border-radius: 14px;
+  margin: var(--m-espace-1) var(--m-espace-3) var(--m-espace-2) var(--m-espace-7);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   background: rgba(var(--ec-fg-rgb), 0.06);
   border: 1px solid var(--ec-line);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   line-height: 1.4;
   color: var(--ec-muted);
 }
 .ec-espace .ec-menu-filet {
   border: 0;
-  margin: 6px 12px;
+  margin: var(--m-espace-2) var(--m-espace-3);
 }
 
 .ec-espace .ec-moi {
   margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
-  border-radius: 20px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-surface);
 }
 .ec-espace .ec-avatar {
   flex: none;
   width: 36px;
   height: 36px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   display: grid;
   place-items: center;
   background: var(--ec-accent-soft);
   color: var(--ec-text);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
 }
 .ec-espace .ec-moi-texte {
@@ -427,12 +427,12 @@
   min-width: 0;
 }
 .ec-espace .ec-moi-nom {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-text);
   overflow-wrap: anywhere;
 }
 .ec-espace .ec-moi-role {
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-muted);
 }
 /* « Partager avec mon équipe » (T-187) : une entrée discrète au-dessus du nom,
@@ -441,15 +441,15 @@
   margin-top: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--m-espace-3);
   min-height: 40px;
-  padding: 0 14px;
+  padding: 0 var(--m-espace-4);
   border: 0;
   border-radius: var(--ec-r-bloc);
   background: transparent;
   color: var(--ec-muted);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   text-align: left;
   cursor: pointer;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
@@ -469,8 +469,8 @@
 .ec-espace .ec-mode-choix {
   flex: none;
   display: flex;
-  padding: 3px;
-  border-radius: 999px;
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-creux);
 }
 .ec-espace .ec-mode {
@@ -480,7 +480,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: var(--ec-faint);
   cursor: pointer;
@@ -513,15 +513,15 @@
 .ec-espace .ec-pastille-envoi {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--m-espace-3);
   height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
   background: var(--ec-accent-soft);
   color: var(--ec-text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -529,11 +529,11 @@
 .ec-espace .ec-code {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-code p {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   line-height: 1.55;
   color: var(--ec-text);
 }
@@ -543,23 +543,23 @@
 .ec-espace .ec-code-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-code-label {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 .ec-espace .ec-code-champ {
   width: 100%;
   box-sizing: border-box;
   height: 56px;
-  padding: 0 16px;
+  padding: 0 var(--m-espace-4);
   border: 1px solid var(--ec-line-fort);
   border-radius: var(--ec-r-champ);
   background: var(--ec-surface);
   color: var(--ec-text);
   font: inherit;
-  font-size: 26px;
+  font-size: var(--m-taille-h3);
   letter-spacing: 0.3em;
   text-align: center;
   font-variant-numeric: lining-nums tabular-nums;
@@ -570,21 +570,21 @@
 }
 .ec-espace .ec-code-renvoyer {
   align-self: flex-start;
-  padding: 4px 0;
+  padding: var(--m-espace-1) 0;
   border: 0;
   background: none;
   color: var(--ec-muted);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   text-decoration: underline;
   cursor: pointer;
 }
 .ec-espace .ec-code-message {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-accent-texte);
 }
 .ec-espace .ec-code p.ec-code-note {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-faint);
 }
 /* T-154 : le responsable sur un appareil pas encore reconnu lit l'espace ; la
@@ -592,10 +592,10 @@
 .ec-espace .ec-pastille-appareil {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   height: 40px;
-  padding: 0 16px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte);
   box-shadow: var(--ec-ombre-douce);
@@ -603,7 +603,7 @@
   backdrop-filter: var(--ec-flou);
   color: var(--ec-text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -624,7 +624,7 @@
   display: block;
   width: 64px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.18);
 }
@@ -639,10 +639,10 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-envoi-n {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-size: 44px;
   line-height: 1;
@@ -650,7 +650,7 @@
   font-feature-settings: "lnum" 1, "tnum" 1;
 }
 .ec-espace .ec-envoi-n > span {
-  font-size: 20px;
+  font-size: var(--m-taille-chapo);
   color: var(--ec-muted);
 }
 .ec-espace .ec-envoi-lignes {
@@ -658,16 +658,16 @@
 }
 .ec-espace .ec-envoi-info {
   margin: 0;
-  padding: 12px;
-  border-radius: 16px;
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   background: var(--ec-surface);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-72);
 }
 .ec-espace .ec-envoi-gestes {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-envoi-gestes > .ec-bouton {
   flex: 1;
@@ -690,20 +690,20 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 2px 8px 12px;
+  gap: var(--m-espace-4);
+  padding: 2px var(--m-espace-2) var(--m-espace-3);
 }
 .ec-espace .ec-ecran-titres {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: var(--m-espace-1) var(--m-espace-4);
   min-width: 0;
 }
 /* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
 .ec-espace .ec-ecran-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: 36px;
@@ -712,7 +712,7 @@
   color: var(--ec-titre);
 }
 .ec-espace .ec-ecran-sous {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 .ec-espace .ec-ecran-actions {
@@ -720,7 +720,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 /* Le corps d'un écran ne trace plus rien : ses blocs sont des panneaux de
    verre qui flottent sur le fond (15/10), chacun dans sa feuille. */
@@ -729,7 +729,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--m-espace-4);
   padding: 0 0 2px;
   box-sizing: border-box;
 }
@@ -744,16 +744,16 @@
 .ec-espace .ec-verrou {
   max-width: 640px;
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: clamp(30px, 3.4vw, 46px);
   line-height: 1.1;
   color: var(--ec-text);
 }
 .ec-espace .ec-verrou.ec-verrou--ligne {
   max-width: 560px;
-  padding: 0 8px;
+  padding: 0 var(--m-espace-2);
   font-family: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   line-height: 1.5;
   color: var(--ec-muted);
 }
@@ -780,7 +780,7 @@
   z-index: var(--ec-z-fenetre);
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: var(--m-espace-5);
   border-radius: var(--ec-r-panneau);
   background: var(--ec-voile);
   -webkit-backdrop-filter: blur(6px);
@@ -793,8 +793,8 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 28px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-6);
   border-radius: var(--ec-r-panneau);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-glass);
@@ -823,12 +823,12 @@
   overflow: hidden;
   gap: 0;
   padding: 0;
-  border-radius: 24px 0 0 24px;
+  border-radius: var(--m-rayon-bloc) 0 0 var(--m-rayon-bloc);
   border-right: 0;
 }
 .ec-espace .ec-fenetre--cote > .ec-fenetre-tete {
   flex: none;
-  padding: 24px 28px 18px;
+  padding: var(--m-espace-5) var(--m-espace-6) var(--m-espace-4);
   border-bottom: 1px solid var(--ec-line);
 }
 .ec-espace .ec-fenetre-corps {
@@ -836,31 +836,31 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 20px 28px;
+  padding: var(--m-espace-5) var(--m-espace-6);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-fenetre-pied {
   flex: none;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 28px 20px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-4) var(--m-espace-6) var(--m-espace-5);
   border-top: 1px solid var(--ec-line);
 }
 .ec-espace .ec-fenetre-tete {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-fenetre-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
-  font-size: 30px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   letter-spacing: 0;
   color: var(--ec-text);
@@ -872,7 +872,7 @@
   width: 36px;
   height: 36px;
   padding: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--ec-line);
   background: transparent;
   color: var(--ec-muted);
@@ -885,7 +885,7 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace a.ec-fenetre-fermer {
   text-decoration: none;
@@ -904,11 +904,11 @@
 .ec-espace .ec-fenetre--pleine > .ec-fenetre-tete {
   flex: none;
   align-items: center;
-  padding: 16px 18px 14px 26px;
+  padding: var(--m-espace-4) var(--m-espace-4) var(--m-espace-4) var(--m-espace-5);
   border-bottom: 1px solid var(--ec-line);
 }
 .ec-espace .ec-fenetre--pleine .ec-fenetre-titre {
-  font-size: 24px;
+  font-size: var(--m-taille-h3);
   overflow-wrap: anywhere;
 }
 .ec-espace .ec-visionneuse {
@@ -919,7 +919,7 @@
   justify-content: center;
   overflow: auto;
   background: rgba(var(--ec-fg-rgb), 0.03);
-  border-radius: 0 0 23px 23px;
+  border-radius: 0 0 var(--m-rayon-bloc) var(--m-rayon-bloc);
 }
 .ec-espace .ec-visionneuse iframe {
   display: block;
@@ -927,28 +927,28 @@
   height: 100%;
   border: 0;
   background: var(--ec-page);
-  border-radius: 0 0 23px 23px;
+  border-radius: 0 0 var(--m-rayon-bloc) var(--m-rayon-bloc);
 }
 .ec-espace .ec-visionneuse img {
   display: block;
   max-width: calc(100% - 48px);
   max-height: calc(100% - 48px);
   object-fit: contain;
-  border-radius: 6px;
+  border-radius: var(--m-rayon-image);
   box-shadow: 0 10px 40px var(--ec-ombre);
 }
 .ec-espace .ec-visionneuse-autre {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 32px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-6);
   text-align: center;
 }
 .ec-espace .ec-visionneuse-autre .ec-bouton {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 
 /* ─────────────────────────────── les pages ─────────────────────────────── */
@@ -957,18 +957,18 @@
    défile dans la colonne de contenu, jamais la page entière. */
 .ec-espace .ec-page {
   max-width: 1080px;
-  padding: 28px 32px 40px;
+  padding: var(--m-espace-6) var(--m-espace-6) var(--m-espace-7);
   box-sizing: border-box;
 }
 .ec-espace .ec-surtitre {
-  margin: 0 0 10px;
-  font-size: 13px;
+  margin: 0 0 var(--m-espace-3);
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 /* (0,2,0) contre `.bj-atelier h1` (0,1,1), qui pose 56 à 150 px. */
 .ec-espace .ec-h1 {
-  margin: 0 0 12px;
-  font-family: var(--font-display);
+  margin: 0 0 var(--m-espace-3);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: clamp(36px, 5.5vw, 64px);
@@ -976,8 +976,8 @@
   color: var(--ec-blanc);
 }
 .ec-espace .ec-h2 {
-  margin: 0 0 8px;
-  font-family: var(--font-display);
+  margin: 0 0 var(--m-espace-2);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: clamp(26px, 3vw, 34px);
@@ -986,17 +986,17 @@
 }
 .ec-espace .ec-texte {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   line-height: 1.6;
   color: var(--ec-blanc-72);
 }
 .ec-espace .ec-echeance {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: var(--m-espace-2) var(--m-espace-3);
   align-items: baseline;
-  margin: 0 0 22px;
-  font-size: 15px;
+  margin: 0 0 var(--m-espace-5);
+  font-size: var(--m-taille-bouton);
   color: var(--ec-blanc-72);
 }
 .ec-espace .ec-echeance strong {
@@ -1009,20 +1009,20 @@
 
 .ec-espace .ec-etapes {
   list-style: none;
-  margin: 0 0 34px;
+  margin: 0 0 var(--m-espace-6);
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-etape {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--ec-filet);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-etape--faite {
@@ -1037,14 +1037,14 @@
 .ec-espace .ec-cartes {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 28px;
+  gap: var(--m-espace-4);
+  margin-bottom: var(--m-espace-6);
 }
 .ec-espace .ec-carte {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 24px;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-5);
   border: 1px solid var(--ec-carte-bord);
   border-radius: var(--ec-r-carte);
   background: var(--ec-carte);
@@ -1056,22 +1056,22 @@
 .ec-espace .ec-carte-tete {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--m-espace-3);
   align-items: baseline;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-statut {
-  padding: 3px 10px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-orange-voile);
   color: var(--ec-orange);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   white-space: nowrap;
 }
 .ec-espace p.ec-statut {
   display: inline-block;
-  margin: 4px 0;
+  margin: var(--m-espace-1) 0;
 }
 .ec-espace .ec-statut--ok {
   background: var(--ec-ok-soft);
@@ -1088,10 +1088,10 @@
 .ec-espace .ec-lignes li {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) 0;
   border-top: 1px solid var(--ec-filet);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-72);
 }
 .ec-espace .ec-lignes li strong {
@@ -1100,20 +1100,20 @@
 }
 .ec-espace .ec-compteurs {
   display: flex;
-  gap: 28px;
+  gap: var(--m-espace-6);
 }
 .ec-espace .ec-compteur {
   display: flex;
   flex-direction: column;
 }
 .ec-espace .ec-compteur-n {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-size: 40px;
   line-height: 1;
   color: var(--ec-blanc);
 }
 .ec-espace .ec-compteur-l {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 
@@ -1122,16 +1122,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 46px;
-  padding: 0 22px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-5);
+  border-radius: var(--m-rayon-pilule);
   border: 0;
   background: var(--ec-accent);
   box-shadow: var(--ec-ombre-bouton);
   color: var(--ec-on-accent);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -1160,7 +1160,7 @@
 
 .ec-espace .ec-lien-ligne {
   display: flex;
-  gap: 8px;
+  gap: var(--m-espace-2);
   align-items: center;
 }
 .ec-espace .ec-champ {
@@ -1168,13 +1168,13 @@
   min-width: 0;
   box-sizing: border-box;
   min-height: 46px;
-  padding: 0 14px;
+  padding: 0 var(--m-espace-4);
   border-radius: var(--ec-r-champ);
   border: 1px solid var(--ec-line-fort);
   background: var(--ec-surface);
   color: var(--ec-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-champ:focus-visible,
 .ec-espace .ec-zone:focus-visible {
@@ -1184,8 +1184,8 @@
 .ec-espace .ec-curseur {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-72);
 }
 .ec-espace .ec-curseur input[type="range"] {
@@ -1194,7 +1194,7 @@
 }
 .ec-espace .ec-note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-note--erreur {
@@ -1204,16 +1204,16 @@
 .ec-espace .ec-puces {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-puce {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-2) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--ec-filet-fort);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc);
 }
 .ec-espace .ec-puce--recue {
@@ -1221,14 +1221,14 @@
   border-color: var(--ec-filet);
 }
 .ec-espace .ec-ensuite {
-  margin: 28px 0 0;
-  padding-top: 20px;
+  margin: var(--m-espace-6) 0 0;
+  padding-top: var(--m-espace-5);
   border-top: 1px solid var(--ec-filet);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-section {
-  margin-bottom: 34px;
+  margin-bottom: var(--m-espace-6);
 }
 
 /* ─────────────────────────────── le dossier ─────────────────────────────── */
@@ -1236,7 +1236,7 @@
 .ec-espace .ec-dossier {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 22px;
+  gap: var(--m-espace-5);
   align-items: start;
 }
 .ec-espace .ec-documents {
@@ -1248,10 +1248,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 12px 0;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-3) 0;
   border-top: 1px solid var(--ec-filet);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-documents a {
   color: var(--ec-orange);
@@ -1265,17 +1265,17 @@
 .ec-espace .ec-fil {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
   max-height: calc(60 * var(--uh));
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: var(--m-espace-1);
 }
 .ec-espace .ec-bulle {
   max-width: 82%;
-  padding: 10px 14px;
-  border-radius: 14px;
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   background: rgba(var(--ec-fg-rgb), 0.06);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
   color: var(--ec-blanc);
   white-space: pre-wrap;
@@ -1288,20 +1288,20 @@
 .ec-espace .ec-bulle-qui {
   display: block;
   margin-bottom: 2px;
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-zone {
   width: 100%;
   box-sizing: border-box;
   min-height: 92px;
-  padding: 10px 12px;
-  border-radius: 16px;
+  padding: var(--m-espace-3) var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid var(--ec-filet-fort);
   background: rgba(var(--ec-fg-rgb), 0.04);
   color: var(--ec-blanc);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   resize: vertical;
 }
 
@@ -1311,7 +1311,7 @@
 /* Révision §14.3 : la page ne défile plus ; la grille et la colonne de
    droite défilent chacune chez elle (Collecte.tsx). */
 .ec-espace .ec-collecte-zone {
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 /* La colonne principale : les filtres, la barre de présélection, puis la
    grille qui prend le reste et défile chez elle. */
@@ -1320,7 +1320,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-collecte-principal > .ec-collecte-grille {
   flex: 1;
@@ -1329,9 +1329,9 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px 14px;
-  padding: 10px 14px;
-  border-radius: 14px;
+  gap: var(--m-espace-3) var(--m-espace-4);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
   border: 1px solid rgba(var(--ec-ac-rgb), 0.45);
   background: var(--ec-accent-soft);
 }
@@ -1351,10 +1351,10 @@
 /* « Qui a déposé » : chaque source, son nombre, et son lien. */
 .ec-espace .ec-cote-titre {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
-  font-size: 26px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   color: var(--ec-text);
 }
@@ -1368,14 +1368,14 @@
 .ec-espace .ec-source {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px 0;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3) 0;
   border-top: 1px solid var(--ec-line);
 }
 .ec-espace .ec-source-tete {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-source-tete strong {
   font-weight: 500;
@@ -1391,7 +1391,7 @@
 }
 .ec-espace .ec-nom-dossier--renommable {
   cursor: text;
-  border-radius: 4px;
+  border-radius: var(--m-rayon-image);
 }
 .ec-espace .ec-nom-dossier--renommable:hover {
   text-decoration: underline dotted;
@@ -1406,7 +1406,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-nom-dossier-champ {
   min-height: 34px;
@@ -1415,7 +1415,7 @@
 .ec-espace .ec-source-gestes {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-source-creer {
   margin-top: auto;
@@ -1428,7 +1428,7 @@
 }
 .ec-espace .ec-partage-corps {
   display: flex;
-  gap: 18px;
+  gap: var(--m-espace-4);
   align-items: flex-start;
 }
 .ec-espace .ec-partage-message {
@@ -1436,29 +1436,29 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
+  gap: var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-muted);
 }
 .ec-espace .ec-partage-message textarea {
-  padding: 12px 14px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   resize: none;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   line-height: 1.5;
   color: var(--ec-text);
 }
 .ec-espace .ec-qr-grand {
   display: grid;
   place-items: center;
-  gap: 14px;
+  gap: var(--m-espace-4);
 }
 /* T-197 : le nom du lien sous le code, lisible de loin (le QR scotché à bord, projeté en salle). */
 .ec-espace .ec-qr-grand-nom {
   max-width: 100%;
   font-variant-numeric: lining-nums;
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 30px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   text-align: center;
   text-wrap: balance;
@@ -1477,29 +1477,29 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: var(--m-espace-4);
+  margin-bottom: var(--m-espace-4);
 }
 .ec-espace .ec-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-onglets {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 18px;
+  gap: var(--m-espace-2);
+  margin-bottom: var(--m-espace-4);
 }
 .ec-espace .ec-onglet {
   min-height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid var(--ec-line-fort);
   background: transparent;
   color: var(--ec-muted);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .ec-espace .ec-onglet:hover {
@@ -1517,17 +1517,17 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 22px;
+  gap: var(--m-espace-5);
   align-items: stretch;
 }
 .ec-espace .ec-collecte-grille {
-  padding-right: 4px;
+  padding-right: var(--m-espace-1);
 }
 .ec-espace .ec-collecte-cote {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-left: 22px;
+  gap: var(--m-espace-3);
+  padding-left: var(--m-espace-5);
   border-left: 1px solid var(--ec-line);
 }
 .ec-espace .ec-lien-ligne-nom {
@@ -1537,15 +1537,15 @@
 .ec-espace .ec-grille {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
-  gap: 8px;
-  margin: 12px 0;
+  gap: var(--m-espace-2);
+  margin: var(--m-espace-3) 0;
 }
 .ec-espace .ec-grille-titre {
   grid-column: 1 / -1;
-  margin: 14px 0 2px;
-  font-family: var(--font-ui);
+  margin: var(--m-espace-4) 0 2px;
+  font-family: var(--m-police-texte-famille);
   font-style: normal;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   color: var(--ec-blanc-72);
 }
@@ -1553,20 +1553,20 @@
 
 .ec-espace .ec-ph-onglets {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 999px;
+  gap: var(--m-espace-1);
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-creux);
 }
 .ec-espace .ec-ph-onglets > button {
   height: 36px;
-  padding: 0 18px;
+  padding: 0 var(--m-espace-4);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: var(--ec-text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .ec-espace .ec-ph-onglets > button[aria-pressed="true"] {
@@ -1576,7 +1576,7 @@
   font-weight: 600;
 }
 .ec-espace .ec-ph-erreur {
-  margin: 0 8px 10px;
+  margin: 0 var(--m-espace-2) var(--m-espace-3);
 }
 /* Les grands chiffres, en tête (l'ancienne maquette que Mathias trouvait plus claire). */
 /* 15/10 : en pastilles de verre, chiffres en DM Sans (modernes, sans le « I »). */
@@ -1585,15 +1585,15 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 0 8px 14px;
+  gap: var(--m-espace-3);
+  padding: 0 var(--m-espace-2) var(--m-espace-4);
 }
 .ec-espace .ec-ph-chiffre {
   display: inline-flex;
   align-items: baseline;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 20px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3) var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte);
   box-shadow: var(--ec-ombre-douce);
@@ -1602,7 +1602,7 @@
 .ec-espace .ec-ph-chiffre strong {
   font-family: inherit;
   font-weight: 500;
-  font-size: 26px;
+  font-size: var(--m-taille-h3);
   letter-spacing: -0.02em;
   line-height: 1;
   color: var(--ec-text);
@@ -1617,7 +1617,7 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
 }
 /* Le contenu de la page : un grand panneau de verre (15/10). */
 .ec-espace .ec-ph-corps {
@@ -1642,10 +1642,10 @@
   max-width: 100%;
   box-sizing: border-box;
   display: flex;
-  gap: 4px;
-  margin: 0 0 6px;
-  padding: 4px;
-  border-radius: 999px;
+  gap: var(--m-espace-1);
+  margin: 0 0 var(--m-espace-2);
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-creux);
   overflow-x: auto;
   scrollbar-width: none;
@@ -1654,15 +1654,15 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 38px;
-  padding: 0 16px;
+  padding: 0 var(--m-espace-4);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: transparent;
   color: var(--ec-muted);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1683,10 +1683,10 @@
 }
 /* Le nombre d'un rayon : discret ; celui du rayon ouvert dans une pastille de l'accent. */
 .ec-espace .ec-ph-rayon-n {
-  padding: 1px 7px;
-  border-radius: 999px;
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   color: var(--ec-faint);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 400;
   font-variant-numeric: lining-nums tabular-nums;
 }
@@ -1700,19 +1700,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
-  margin-bottom: 4px;
-  font-size: 13px;
+  gap: var(--m-espace-1) var(--m-espace-2);
+  margin-bottom: var(--m-espace-1);
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 .ec-espace .ec-ph-fil-etape {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-ph-fil .ec-ph-lien {
-  border-radius: 6px;
-  padding: 2px 4px;
+  border-radius: var(--m-rayon-image);
+  padding: 2px var(--m-espace-1);
   margin: -2px -4px;
 }
 .ec-espace .ec-ph-fil--cible {
@@ -1722,7 +1722,7 @@
 .ec-espace .ec-ph-titre {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-ph-nom-champ {
   min-height: 40px;
@@ -1734,19 +1734,19 @@
 .ec-espace .ec-ph-albums {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 22px 18px;
-  padding: 4px 0 6px;
+  gap: var(--m-espace-5) var(--m-espace-4);
+  padding: var(--m-espace-1) 0 var(--m-espace-2);
 }
 .ec-espace .ec-ph-albums--petits {
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: var(--m-espace-4);
+  margin-bottom: var(--m-espace-4);
 }
 .ec-espace .ec-ph-album {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-width: 0;
   padding: 0;
   border: 0;
@@ -1764,7 +1764,7 @@
   padding: 0;
   overflow: hidden;
   border: 1px solid var(--ec-line);
-  border-radius: 22px;
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-surface);
   box-shadow: var(--ec-ombre-douce);
   color: var(--ec-muted);
@@ -1792,13 +1792,13 @@
   position: absolute;
   left: 10px;
   bottom: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-glass);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   color: var(--ec-text);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
   font-variant-numeric: lining-nums tabular-nums;
   pointer-events: none;
@@ -1806,22 +1806,22 @@
 .ec-espace .ec-ph-album--petit .ec-ph-album-n {
   left: 8px;
   bottom: 8px;
-  padding: 3px 8px;
-  font-size: 11px;
+  padding: var(--m-espace-1) var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
 }
 /* Les personnes d'un lien : une pastille avec ses initiales (maquette Photos Charbon). */
 .ec-espace .ec-ph-personne {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 38px;
-  padding: 0 14px 0 6px;
+  padding: 0 var(--m-espace-4) 0 var(--m-espace-2);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-surface);
   color: var(--ec-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   cursor: pointer;
 }
 .ec-espace .ec-ph-personne:hover {
@@ -1844,12 +1844,12 @@
   place-items: center;
   min-width: 26px;
   height: 26px;
-  padding: 0 4px;
+  padding: 0 var(--m-espace-1);
   box-sizing: border-box;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent-texte);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
 }
 .ec-espace .ec-ph-personne[aria-pressed="true"] .ec-ph-initiales {
@@ -1862,21 +1862,21 @@
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: 4px 16px;
-  margin-top: 16px;
-  padding: 0 4px;
+  gap: var(--m-espace-1) var(--m-espace-4);
+  margin-top: var(--m-espace-4);
+  padding: 0 var(--m-espace-1);
 }
 .ec-espace .ec-ph-arrivees-titre {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 24px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   color: var(--ec-titre);
 }
 .ec-espace .ec-grille--arrivees {
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 8px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-2);
 }
 .ec-espace .ec-ph-album:hover .ec-ph-album-couv {
   border-color: rgba(var(--ec-ac-rgb), 0.6);
@@ -1900,7 +1900,7 @@
   background: none;
   color: var(--ec-text);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
   text-align: left;
   overflow: hidden;
@@ -1909,7 +1909,7 @@
   cursor: pointer;
 }
 .ec-espace .ec-ph-album--petit .ec-ph-album-nom {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-ph-album-renommer {
   position: absolute;
@@ -1921,7 +1921,7 @@
   height: 32px;
   padding: 0;
   border: 1px solid rgba(var(--ec-fg-rgb), 0.14);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-glass);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -1964,11 +1964,11 @@
 .ec-espace .ec-ph-personnes {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: var(--m-espace-2);
+  margin-bottom: var(--m-espace-4);
 }
 .ec-espace .ec-ph-albums ~ .ec-ph-aide {
-  margin-top: 16px;
+  margin-top: var(--m-espace-4);
   padding: 0;
 }
 .ec-espace .ec-ph-album--vide .ec-ph-album-couv {
@@ -1985,16 +1985,16 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: var(--m-espace-3);
   max-width: 620px;
-  padding: 36px 32px;
+  padding: var(--m-espace-6) var(--m-espace-6);
   border: 1px dashed var(--ec-filet-fort);
   border-radius: var(--ec-r-carte);
 }
 .ec-espace .ec-ph-accueil-titre {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 30px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
 }
 .ec-espace .ec-ph-accueil .ec-texte {
@@ -2004,24 +2004,24 @@
 .ec-espace .ec-ph-accueil-gestes {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 6px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-2);
 }
 .ec-espace .ec-ph-dossiers {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 16px 14px;
+  padding: var(--m-espace-4) var(--m-espace-4);
   border-right: 1px solid var(--ec-line);
   background: var(--ec-panel);
 }
 .ec-espace .ec-ph-groupe {
-  padding: 14px 12px 6px;
-  font-size: 11px;
+  padding: var(--m-espace-4) var(--m-espace-3) var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ec-muted);
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
 }
 .ec-espace .ec-ph-groupe--cible {
   background: var(--ec-accent-soft);
@@ -2035,15 +2035,15 @@
 .ec-espace .ec-ph-noeud {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--m-espace-3);
   min-height: 40px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
   border: 1px solid transparent;
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
   color: var(--ec-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   text-align: left;
   cursor: pointer;
 }
@@ -2078,7 +2078,7 @@
 }
 .ec-espace .ec-ph-noeud-n {
   flex: none;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 400;
   color: var(--ec-muted);
   font-variant-numeric: tabular-nums;
@@ -2091,13 +2091,13 @@
   border-color: var(--ec-accent);
 }
 .ec-espace .ec-ph-vide {
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
 }
 .ec-espace .ec-ph-nouveau {
-  margin-top: 10px;
+  margin-top: var(--m-espace-3);
   min-height: 40px;
   border: 1px dashed var(--ec-filet-fort);
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
   color: var(--ec-muted);
   font: inherit;
@@ -2109,7 +2109,7 @@
 }
 .ec-espace .ec-ph-aide {
   margin-top: auto;
-  padding: 14px 12px 0;
+  padding: var(--m-espace-4) var(--m-espace-3) 0;
 }
 .ec-espace .ec-ph-principal {
   flex: 1;
@@ -2117,8 +2117,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px 24px 0;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-5) var(--m-espace-5) 0;
 }
 .ec-espace .ec-ph-principal > .ec-collecte-grille {
   flex: 1;
@@ -2127,7 +2127,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  gap: var(--m-espace-3) var(--m-espace-4);
 }
 .ec-espace .ec-ph-titres {
   display: flex;
@@ -2135,9 +2135,9 @@
   min-width: 0;
 }
 .ec-espace .ec-ph-titre {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 30px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   overflow-wrap: anywhere;
 }
@@ -2145,14 +2145,14 @@
   margin-left: auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-ph-aide-selection {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 14px;
-  font-size: 13px;
+  gap: var(--m-espace-2) var(--m-espace-4);
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 /* Un geste de texte de la page Photos (« Tout cocher », « Annuler », « Tout effacer », « Voir ses photos »…) : un BOUTON, jamais un texte
@@ -2163,13 +2163,13 @@
   display: inline-flex;
   align-items: center;
   min-height: 32px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent-texte);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -2206,7 +2206,7 @@
   right: 8px;
   width: 24px;
   height: 24px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   display: grid;
   place-items: center;
   background: var(--ec-accent);
@@ -2216,11 +2216,11 @@
   position: absolute;
   bottom: 6px;
   right: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 2px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--ec-noir-rgb), 0.6);
   color: var(--ec-page);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
 }
 
 /* Qui l'a envoyée (T-180) : son nom en bas à gauche de chaque vignette, une
@@ -2231,11 +2231,11 @@
   left: 6px;
   max-width: calc(100% - 12px);
   overflow: hidden;
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 2px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--ec-noir-rgb), 0.55);
   color: var(--ec-page);
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   line-height: 1.4;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2253,11 +2253,11 @@
   position: absolute;
   top: 6px;
   left: 6px;
-  padding: 1px 7px;
-  border-radius: 999px;
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent);
   color: var(--ec-on-accent);
-  font-size: 10.5px;
+  font-size: var(--m-taille-etiquette);
   font-weight: 600;
 }
 /* L'annonce des arrivées, au-dessus de la grille, sans recharger la page. */
@@ -2266,13 +2266,13 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin: 0 0 12px;
-  padding: 8px 8px 8px 14px;
+  gap: var(--m-espace-3);
+  margin: 0 0 var(--m-espace-3);
+  padding: var(--m-espace-2) var(--m-espace-2) var(--m-espace-2) var(--m-espace-4);
   border-radius: var(--ec-r-bloc);
   background: var(--ec-accent-soft);
   color: var(--ec-accent-texte);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-ph-annonce strong {
   font-weight: 600;
@@ -2284,7 +2284,7 @@
   flex: none;
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent);
   box-shadow: 0 0 0 4px var(--ec-accent-soft);
   animation: ec-ph-pouls 1.8s ease-in-out infinite;
@@ -2303,13 +2303,13 @@
 /* ─────────── L'onglet « Les liens » (T-152) ─────────── */
 
 .ec-espace .ec-li {
-  gap: 16px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-li-intro {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px 16px;
+  gap: var(--m-espace-2) var(--m-espace-4);
   color: var(--ec-muted);
 }
 .ec-espace .ec-li-intro .ec-note {
@@ -2340,8 +2340,8 @@
   bottom: var(--m-bas, auto);
   width: min(292px, calc(100vw - 24px));
   box-sizing: border-box;
-  padding: 6px;
-  border-radius: 22px;
+  padding: var(--m-espace-2);
+  border-radius: var(--m-rayon-bloc);
   border: 1px solid var(--ec-carte-bord);
   background: var(--ec-carte-pleine);
   box-shadow: var(--ec-reflet), 0 24px 60px var(--ec-ombre);
@@ -2352,16 +2352,16 @@
 .ec-espace .ec-li-menu > button {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
   width: 100%;
   min-height: 48px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
   color: var(--ec-text);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   text-align: left;
   cursor: pointer;
 }
@@ -2381,9 +2381,9 @@
   box-shadow: inset 0 0 0 2px var(--ec-accent);
 }
 .ec-espace .ec-li-menu > .ec-li-menu-danger {
-  margin-top: 5px;
+  margin-top: var(--m-espace-1);
   border-top: 1px solid var(--ec-line);
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 var(--m-rayon-champ) var(--m-rayon-champ);
   color: var(--ec-danger);
 }
 .ec-espace .ec-li-menu > .ec-li-menu-danger > svg {
@@ -2397,7 +2397,7 @@
 /* ─────────── La fenêtre de dépôt : choisir où, puis les chiffres en grand ─────────── */
 
 .ec-espace .ec-envoi-question {
-  padding: 0 0 10px;
+  padding: 0 0 var(--m-espace-3);
   font-weight: 500;
   color: var(--ec-text);
 }
@@ -2417,15 +2417,15 @@
 .ec-espace .ec-dest {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
   min-height: 52px;
-  padding: 0 12px;
+  padding: 0 var(--m-espace-3);
   border: 0;
   border-radius: var(--ec-r-champ);
   background: none;
   color: var(--ec-text);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   text-align: left;
   cursor: pointer;
 }
@@ -2457,7 +2457,7 @@
 .ec-espace .ec-dest-n {
   flex: none;
   color: var(--ec-muted);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-variant-numeric: tabular-nums;
 }
 .ec-espace .ec-dest--nouveau {
@@ -2471,7 +2471,7 @@
 .ec-espace .ec-dest-ici {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 /* La destination proposée depuis un lien se lit comme la ligne choisie de la liste : le même encadré à l'accent (28/10). */
 .ec-espace .ec-dest--ici {
@@ -2491,13 +2491,13 @@
 .ec-espace .ec-dest-changer {
   flex: none;
   height: 36px;
-  padding: 0 14px;
+  padding: 0 var(--m-espace-4);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-creux);
   color: var(--ec-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   cursor: pointer;
 }
@@ -2505,26 +2505,26 @@
   width: 100%;
 }
 .ec-espace .ec-dest-glisser {
-  padding: 16px 20px;
-  gap: 4px;
+  padding: var(--m-espace-4) var(--m-espace-5);
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-depose--centre {
   align-items: center;
   text-align: center;
-  padding: 26px 20px;
+  padding: var(--m-espace-5) var(--m-espace-5);
 }
 .ec-espace .ec-depose-icone {
   color: var(--ec-accent);
 }
 .ec-espace .ec-depose-titre {
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   font-weight: 500;
 }
 .ec-espace .ec-depose--centre .ec-bouton {
   align-self: center;
 }
 .ec-espace .ec-envoi-sur {
-  font-size: 20px;
+  font-size: var(--m-taille-chapo);
   color: var(--ec-muted);
 }
 .ec-espace .ec-envoi .ec-envoi-n {
@@ -2536,8 +2536,8 @@
 }
 .ec-espace .ec-envoi-barre {
   height: 10px;
-  margin: 10px 0 6px;
-  border-radius: 999px;
+  margin: var(--m-espace-3) 0 var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.12);
 }
@@ -2548,20 +2548,20 @@
 .ec-espace .ec-envoi-cases {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-envoi-case {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 12px;
-  border-radius: 14px;
+  padding: var(--m-espace-3);
+  border-radius: var(--m-rayon-champ);
   background: var(--ec-surface);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-muted);
 }
 .ec-espace .ec-envoi-case strong {
-  font-size: 24px;
+  font-size: var(--m-taille-h3);
   font-weight: 500;
   color: var(--ec-text);
 }
@@ -2573,7 +2573,7 @@
   contain-intrinsic-size: 132px 160px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-tuile-image {
   position: relative;
@@ -2610,23 +2610,23 @@
   display: grid;
   place-items: center;
   height: 100%;
-  padding: 6px;
-  font-size: 11px;
+  padding: var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-blanc-56);
   overflow-wrap: anywhere;
 }
 .ec-espace .ec-tuile-legende {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: var(--m-espace-1);
   align-items: center;
   min-height: 18px;
 }
 .ec-espace .ec-badge {
-  padding: 1px 6px;
-  border-radius: 999px;
+  padding: 1px var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--ec-fg-rgb), 0.08);
-  font-size: 10px;
+  font-size: var(--m-taille-etiquette);
   color: var(--ec-blanc-72);
 }
 .ec-espace .ec-badge--signal {
@@ -2640,7 +2640,7 @@
   background: none;
   color: var(--ec-blanc-56);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--m-taille-etiquette);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -2649,7 +2649,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-fieldset {
   margin: 0;
@@ -2657,7 +2657,7 @@
   border: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-puce--active {
   border-color: rgba(var(--ec-ac-rgb), 0.6);
@@ -2670,10 +2670,10 @@
 .ec-espace .ec-depose {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-5);
   border: 1px dashed var(--ec-filet-fort);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
 }
 .ec-espace .ec-depose--survol {
   border-color: var(--ec-orange);
@@ -2681,10 +2681,10 @@
 }
 .ec-espace .ec-dp-barre-espace {
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--ec-fg-rgb), 0.1);
   overflow: hidden;
-  margin: 8px 0;
+  margin: var(--m-espace-2) 0;
 }
 .ec-espace .ec-dp-barre-espace > div {
   height: 100%;
@@ -2696,13 +2696,13 @@
 /* ─────────────────────────────── le style ─────────────────────────────── */
 
 .ec-espace .ec-regle {
-  margin: 0 0 20px;
+  margin: 0 0 var(--m-espace-5);
   max-width: 720px;
 }
 .ec-espace .ec-mur-corps {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
-  gap: 22px;
+  gap: var(--m-espace-5);
   align-items: start;
 }
 .ec-espace .ec-brief {
@@ -2712,7 +2712,7 @@
 .ec-espace .ec-planches {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 14px;
+  gap: var(--m-espace-4);
 }
 .ec-espace .ec-planches--larges {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -2720,11 +2720,11 @@
 .ec-espace .ec-planche {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   margin: 0;
-  padding: 10px;
+  padding: var(--m-espace-3);
   border: 1px solid var(--ec-filet);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: var(--ec-surface);
   color: var(--ec-blanc);
   text-decoration: none;
@@ -2736,7 +2736,7 @@
 .ec-espace .ec-planche-image {
   position: relative;
   aspect-ratio: 3 / 4;
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.05);
 }
@@ -2750,33 +2750,33 @@
   display: block;
 }
 .ec-espace .ec-planche-nom {
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   font-weight: 500;
 }
 .ec-espace .ec-planche-ouvrir {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-orange);
 }
 .ec-espace .ec-tag {
   position: absolute;
   top: 8px;
   left: 8px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: var(--m-espace-1) var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-glass);
   border: 1px solid rgba(var(--ec-ac-rgb), 0.55);
   color: var(--ec-blanc);
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   backdrop-filter: blur(6px);
 }
 .ec-espace .ec-tag--en-ligne {
   position: static;
-  margin-left: 8px;
+  margin-left: var(--m-espace-2);
 }
 .ec-espace .ec-bandes {
   display: flex;
   height: 34px;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
 }
 .ec-espace .ec-bandes > span {
@@ -2796,8 +2796,8 @@
   text-decoration: none;
 }
 .ec-espace .ec-ariane {
-  margin-bottom: 14px;
-  font-size: 13px;
+  margin-bottom: var(--m-espace-4);
+  font-size: var(--m-taille-petit);
   color: var(--ec-blanc-56);
 }
 .ec-espace .ec-ariane a {
@@ -2806,58 +2806,58 @@
 .ec-espace .ec-style-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
-  gap: 28px;
+  gap: var(--m-espace-6);
   align-items: start;
-  margin-bottom: 34px;
+  margin-bottom: var(--m-espace-6);
 }
 .ec-espace .ec-style-couverture {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-style-couverture img {
   width: 100%;
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   display: block;
   box-shadow: 0 30px 60px var(--ec-ombre);
 }
 .ec-espace .ec-style-deux {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 28px;
+  gap: var(--m-espace-6);
 }
 .ec-espace .ec-decale {
-  margin-top: 48px;
+  margin-top: var(--m-espace-7);
 }
 .ec-espace .ec-numero {
   display: inline-grid;
   place-items: center;
   width: 30px;
   height: 30px;
-  margin-right: 8px;
-  border-radius: 999px;
+  margin-right: var(--m-espace-2);
+  border-radius: var(--m-rayon-pilule);
   border: 1px solid rgba(var(--ec-ac-rgb), 0.6);
   color: var(--ec-orange);
-  font-family: var(--font-ui);
-  font-size: 14px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
   vertical-align: middle;
 }
 .ec-espace .ec-palettes {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-palette-choix {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3);
   border: 1px solid var(--ec-filet);
-  border-radius: 16px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
   color: var(--ec-blanc-72);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   text-align: left;
   cursor: pointer;
 }
@@ -2867,22 +2867,22 @@
 }
 .ec-espace .ec-echantillon {
   width: 100%;
-  border-radius: 14px;
-  margin: 10px 0;
+  border-radius: var(--m-rayon-champ);
+  margin: var(--m-espace-3) 0;
   display: block;
 }
 .ec-espace .ec-doubles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-double {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
+  gap: var(--m-espace-2);
+  padding: var(--m-espace-3);
   border: 2px solid var(--ec-filet);
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
   background: var(--ec-surface);
   color: var(--ec-blanc);
   font: inherit;
@@ -2895,7 +2895,7 @@
 .ec-espace .ec-double-image {
   display: block;
   aspect-ratio: 3 / 2;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   overflow: hidden;
   background: rgba(var(--ec-fg-rgb), 0.05);
 }
@@ -2913,11 +2913,11 @@
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-top: 24px;
-  padding: 14px 18px;
+  gap: var(--m-espace-3);
+  margin-top: var(--m-espace-5);
+  padding: var(--m-espace-4) var(--m-espace-4);
   border: 1px solid var(--ec-filet-fort);
-  border-radius: 18px;
+  border-radius: var(--m-rayon-bloc);
   background: var(--ec-glass);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
@@ -2927,9 +2927,9 @@
 
 .ec-espace .ec-a-venir {
   max-width: 560px;
-  padding: 28px;
+  padding: var(--m-espace-6);
   border: 1px dashed var(--ec-filet-fort);
-  border-radius: 20px;
+  border-radius: var(--m-rayon-bloc);
 }
 
 /* ─────────────────────────────── téléphone ─────────────────────────────── */
@@ -2975,8 +2975,8 @@
      La ligne de titre ne fait plus 68 px (`--ec-tete-h` vaut pour l'ordinateur) : la hauteur de son bouton. */
   .ec-espace .ec-ecran-tete {
     min-height: 0;
-    padding: 8px 16px 6px;
-    gap: 8px 12px;
+    padding: var(--m-espace-2) var(--m-espace-4) var(--m-espace-2);
+    gap: var(--m-espace-2) var(--m-espace-3);
     flex-wrap: wrap;
   }
   .ec-espace .ec-ecran-titre {
@@ -2986,25 +2986,25 @@
     font-feature-settings: "lnum" 1;
   }
   .ec-espace .ec-ecran-corps {
-    padding: 0 12px 32px;
+    padding: 0 var(--m-espace-3) var(--m-espace-6);
   }
   .ec-espace .ec-defile {
     overflow: visible;
   }
   .ec-espace .ec-page {
-    padding: 20px 16px 40px;
+    padding: var(--m-espace-5) var(--m-espace-4) var(--m-espace-7);
   }
   .ec-espace .ec-fenetre-voile,
   .ec-espace .ec-panneau-voile {
     position: fixed;
     z-index: var(--ec-z-fenetre);
-    padding: 12px;
+    padding: var(--m-espace-3);
     border-radius: 0;
   }
   .ec-espace .ec-fenetre,
   .ec-espace .ec-panneau {
     max-height: calc(var(--app-height) - 24px);
-    padding: 22px;
+    padding: var(--m-espace-5);
   }
   .ec-espace .ec-fenetre-voile--cote {
     padding: 0;
@@ -3040,9 +3040,9 @@
     justify-content: space-between;
     box-sizing: border-box;
     height: var(--ec-barre-h);
-    margin: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px)) 8px 0;
-    padding: 0 4px 0 16px;
-    border-radius: 20px;
+    margin: calc(var(--ec-barre-marge) + env(safe-area-inset-top, 0px)) var(--m-espace-2) 0;
+    padding: 0 var(--m-espace-1) 0 var(--m-espace-4);
+    border-radius: var(--m-rayon-bloc);
     border: 1px solid var(--ec-carte-bord);
     background: var(--ec-glass);
     box-shadow: var(--ec-ombre-douce);
@@ -3090,8 +3090,8 @@
     top: 50%;
     transform: translateY(calc(-50% + 8px));
     opacity: 0;
-    font-family: var(--font-display);
-    font-size: 25px;
+    font-family: var(--m-police-titre-famille);
+    font-size: var(--m-taille-h3);
     line-height: 1.1;
     font-variant-numeric: lining-nums;
     font-feature-settings: "lnum" 1;
@@ -3131,12 +3131,12 @@
     right: 1px;
     min-width: 18px;
     height: 18px;
-    padding: 0 5px;
+    padding: 0 var(--m-espace-1);
     box-sizing: border-box;
-    border-radius: 999px;
+    border-radius: var(--m-rayon-pilule);
     background: var(--ec-accent);
     color: var(--ec-on-accent);
-    font-size: 11px;
+    font-size: var(--m-taille-etiquette);
     font-weight: 700;
     line-height: 18px;
     text-align: center;
@@ -3150,14 +3150,14 @@
     flex: 1 0 100%;
     flex-wrap: nowrap;
     justify-content: flex-start;
-    gap: 8px;
+    gap: var(--m-espace-2);
   }
   .ec-espace .ec-pastille-appareil {
     order: 2;
     flex: none;
     height: 44px;
     margin-left: auto;
-    gap: 6px;
+    gap: var(--m-espace-2);
   }
   .ec-espace .ec-ecran-actions:has(> .ec-pastille-appareil) .ec-pilule {
     min-width: 0;
@@ -3170,8 +3170,8 @@
     left: 8px;
     width: min(86vw, 300px);
     height: calc(var(--app-height) - 2 * var(--ec-barre-marge) - env(safe-area-inset-top, 0px));
-    padding-top: 22px;
-    gap: 14px;
+    padding-top: var(--m-espace-5);
+    gap: var(--m-espace-4);
     background: var(--ec-glass);
     transform: translateX(-108%);
     transition: transform var(--dur) var(--ease);
@@ -3188,7 +3188,7 @@
     align-items: center;
     justify-content: space-between;
     height: calc(var(--ec-barre-h) - 2px);
-    margin: -22px -10px 0 12px;
+    margin: -22px -10px 0 var(--m-espace-3);
   }
   .ec-espace .ec-menu-tete .ec-logo {
     width: 78px;
@@ -3215,7 +3215,7 @@
   }
   .ec-espace .ec-grille {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: var(--m-espace-2);
   }
   .ec-espace .ec-collecte-cote {
     padding-left: 0;
@@ -3228,8 +3228,8 @@
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
-    gap: 6px;
-    padding: 10px 16px;
+    gap: var(--m-espace-2);
+    padding: var(--m-espace-3) var(--m-espace-4);
     border-right: 0;
     border-bottom: 1px solid var(--ec-line);
   }
@@ -3243,34 +3243,34 @@
   }
   .ec-espace .ec-ph-noeud {
     flex: none;
-    padding: 0 12px !important;
+    padding: 0 var(--m-espace-3) !important;
     border-color: var(--ec-line);
   }
   .ec-espace .ec-ph-nouveau {
     flex: none;
     margin-top: 0;
-    padding: 0 12px;
+    padding: 0 var(--m-espace-3);
   }
   .ec-espace .ec-ph-principal {
-    padding: 14px 16px 0;
+    padding: var(--m-espace-4) var(--m-espace-4) 0;
   }
   .ec-espace .ec-ph-rayons {
-    margin: 0 0 8px;
+    margin: 0 0 var(--m-espace-2);
   }
   .ec-espace .ec-ph-rayon {
     min-height: 40px;
-    padding: 0 12px;
+    padding: 0 var(--m-espace-3);
   }
   .ec-espace .ec-ph-albums {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px 12px;
+    gap: var(--m-espace-4) var(--m-espace-3);
   }
   .ec-espace .ec-ph-albums--petits {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ec-espace .ec-ph-chiffres {
-    padding: 0 12px 12px;
-    gap: 8px;
+    padding: 0 var(--m-espace-3) var(--m-espace-3);
+    gap: var(--m-espace-2);
   }
   /* Sur téléphone, les personnes défilent de côté sur une ligne (planche 3 du 19/10) :
      vingt pastilles empilées repousseraient les photos loin sous le pouce. */
@@ -3279,19 +3279,19 @@
     overflow-x: auto;
     scrollbar-width: none;
     margin-right: -12px;
-    padding-right: 12px;
+    padding-right: var(--m-espace-3);
   }
   .ec-espace .ec-ph-personne {
     flex: none;
   }
   .ec-espace .ec-ph-chiffre {
-    padding: 8px 14px;
+    padding: var(--m-espace-2) var(--m-espace-4);
   }
   .ec-espace .ec-ph-chiffre strong {
-    font-size: 22px;
+    font-size: var(--m-taille-h3);
   }
   .ec-espace .ec-ph-corps {
-    margin: 0 8px;
+    margin: 0 var(--m-espace-2);
     border-radius: var(--ec-r-carte);
   }
   .ec-espace .ec-presel {
@@ -3317,7 +3317,7 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .ec-espace .ec-carte {
-    padding: 20px;
+    padding: var(--m-espace-5);
   }
 
   /* ── Cibles au pouce (21/10) : 44 px, jamais 28 ni 34 ──
@@ -3347,25 +3347,25 @@
 .ec-espace .ec-pilule {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
   min-height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-text);
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   white-space: nowrap;
 }
 .ec-espace .ec-pilule-point {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent);
 }
 .ec-espace .ec-bouton--petit {
   min-height: 34px;
-  padding: 0 14px;
-  font-size: 13px;
+  padding: 0 var(--m-espace-4);
+  font-size: var(--m-taille-petit);
 }
 /* Au doigt, « petit » ne vaut que pour le dessin : la cible reste de 44 px. */
 @media (pointer: coarse) {
@@ -3387,7 +3387,7 @@
   background: none;
   color: var(--ec-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--m-taille-etiquette);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -3398,8 +3398,8 @@
 /* Dans la fenêtre de dépôt de Photos (« Rangées dans « Mes photos » · changer de dossier ») : une petite pilule, pas un texte souligné (21/10). */
 .ec-espace .ec-lien-discret.ec-lien-discret--bouton {
   min-height: 36px;
-  padding: 6px 14px;
-  border-radius: 999px;
+  padding: var(--m-espace-2) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--ec-fg-rgb), 0.07);
   font-weight: 500;
   text-align: center;
@@ -3407,7 +3407,7 @@
 }
 .ec-espace .ec-zone-texte {
   min-height: 0;
-  padding: 10px 12px;
+  padding: var(--m-espace-3) var(--m-espace-3);
   resize: vertical;
   line-height: 1.5;
 }
@@ -3416,7 +3416,7 @@
 .ec-espace .ec-qr {
   flex: none;
   display: block;
-  border-radius: 8px;
+  border-radius: var(--m-rayon-champ);
   box-shadow: 0 0 0 1px var(--ec-line);
 }
 .ec-espace .ec-qr-fond {
@@ -3430,7 +3430,7 @@
 .ec-espace .ec-partage {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-partage--quatre {
   display: grid;
@@ -3440,7 +3440,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-partage--un .ec-bouton {
   min-height: 44px;
@@ -3450,12 +3450,12 @@
 .ec-espace .ec-partage-qr {
   align-self: center;
   min-height: 44px;
-  padding: 0 16px;
+  padding: 0 var(--m-espace-4);
   border: 0;
   background: transparent;
   color: var(--ec-text-doux, var(--ec-text));
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -3464,7 +3464,7 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 4px;
+  gap: var(--m-espace-1);
 }
 .ec-espace .ec-partage--un .ec-bouton {
   min-height: 44px;
@@ -3474,13 +3474,13 @@
 .ec-espace .ec-partage-qr {
   align-self: center;
   min-height: 44px;
-  padding: 0 18px;
+  padding: 0 var(--m-espace-4);
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: rgba(var(--ec-fg-rgb), 0.07);
   color: var(--ec-text);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -3504,7 +3504,7 @@
   .ec-espace .ec-partage--quatre .ec-bouton,
   .ec-espace .ec-partage--deux .ec-bouton {
     min-height: 44px;
-    padding: 0 10px;
+    padding: 0 var(--m-espace-3);
     white-space: nowrap;
   }
 }
@@ -3526,19 +3526,19 @@
 .ec-espace .ec-lien-pret {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: var(--m-espace-4);
   min-width: 0;
 }
 .ec-espace .ec-carte-lien-texte,
 .ec-espace .ec-lien-pret-texte {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--m-espace-2);
   min-width: 0;
 }
 .ec-espace .ec-carte-lien-texte strong,
 .ec-espace .ec-lien-pret-texte strong {
-  font-size: 16px;
+  font-size: var(--m-taille-base);
   color: var(--ec-text);
 }
 .ec-espace .ec-lien-pret-texte {
@@ -3548,24 +3548,24 @@
   flex: none;
   width: 100%;
   min-height: 40px;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--ec-muted);
 }
 .ec-espace .ec-lien-plafond {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-lien-plafond-tete {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 .ec-espace .ec-lien-valeur {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 30px;
+  font-size: var(--m-taille-h3);
   line-height: 1;
   color: var(--ec-text);
   white-space: nowrap;
@@ -3583,10 +3583,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 20px;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-5);
   border: 1.5px dashed rgba(var(--ec-ac-rgb), 0.6);
-  border-radius: 18px;
+  border-radius: var(--m-rayon-bloc);
   background: radial-gradient(circle at 50% 40%, var(--ec-accent-soft), transparent 70%);
   text-align: center;
   box-sizing: border-box;
@@ -3601,27 +3601,27 @@
 }
 .ec-espace .ec-zone-depot .ec-texte {
   max-width: 380px;
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
 }
 .ec-espace .ec-zone-depot-icone {
   display: grid;
   place-items: center;
   width: 54px;
   height: 54px;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--ec-accent-soft);
   color: var(--ec-accent);
 }
 .ec-espace .ec-zone-depot-titre {
-  font-family: var(--font-display);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
-  font-size: 30px;
+  font-size: var(--m-taille-h3);
   line-height: 1.1;
   color: var(--ec-text);
 }
 .ec-espace .ec-zone-depot-dossier {
   display: flex;
-  gap: 8px;
+  gap: var(--m-espace-2);
   width: min(320px, 100%);
 }
 .ec-espace .ec-zone-depot-envoi {
@@ -3629,7 +3629,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--m-espace-2);
 }
 .ec-espace .ec-zone-depot-envoi .ec-dp-barre-espace {
   align-self: stretch;
@@ -3637,7 +3637,7 @@
 .ec-espace .ec-questionnaire {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--m-espace-3);
 }
 
 /* ─────────── La fin de la collecte, dite là où l'on regarde (21/10) ───────────
@@ -3648,13 +3648,13 @@
   flex: none;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--m-espace-3);
   margin: 0;
-  padding: 10px 14px;
+  padding: var(--m-espace-3) var(--m-espace-4);
   border-radius: var(--ec-r-bloc);
   background: var(--ec-ok-soft);
   color: var(--ec-text);
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   line-height: 1.4;
 }
 .ec-espace .ec-fin-coche {
@@ -3665,7 +3665,7 @@
   height: 22px;
   margin-top: 1px;
   border: 1.5px solid var(--ec-ok);
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   color: var(--ec-ok);
 }
 .ec-espace .ec-fin-texte {
@@ -3679,7 +3679,7 @@
   color: var(--ec-ok);
 }
 .ec-espace .ec-collecte > .ec-fin-ligne {
-  margin: 0 8px 12px;
+  margin: 0 var(--m-espace-2) var(--m-espace-3);
 }
 .ec-espace .ec-bouton--discret {
   background: transparent;
@@ -3694,7 +3694,7 @@
 }
 .ec-espace .ec-collecte > .ec-fin-tel {
   align-self: flex-start;
-  margin: 0 8px 12px;
+  margin: 0 var(--m-espace-2) var(--m-espace-3);
 }
 
 /* Téléphone, clavier ouvert (26/10) : `--app-height` est gelé à la largeur, donc le clavier ne le réduit pas et la
@@ -3720,7 +3720,7 @@
     top: -22px;
     z-index: 2;
     margin: -22px -22px 0;
-    padding: 22px 22px 10px;
+    padding: var(--m-espace-5) var(--m-espace-5) var(--m-espace-3);
     background: var(--ec-glass);
     -webkit-backdrop-filter: blur(32px);
     backdrop-filter: blur(32px);
@@ -3730,7 +3730,7 @@
   }
   .ec-espace .ec-champ,
   .ec-espace .ec-partage-message textarea {
-    font-size: 16px;
+    font-size: var(--m-taille-base);
   }
 }
 

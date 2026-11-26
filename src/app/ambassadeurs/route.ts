@@ -31,8 +31,8 @@ const HTML = `<!doctype html>
 <style>
   html, body { margin: 0; padding: 0; }
   body {
-    background: #f7f1e9;
-    color: #1c1c1c;
+    background: #ffffff;
+    color: #111111;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     min-height: 100vh;
     display: flex;
@@ -44,8 +44,8 @@ const HTML = `<!doctype html>
   }
   main { max-width: 440px; }
   h1 { font-size: 1.4rem; line-height: 1.3; margin: 0 0 12px; }
-  p { line-height: 1.6; margin: 0 0 16px; color: #4a4a4a; }
-  a { color: #4a90d9; text-decoration: none; font-weight: 600; }
+  p { line-height: 1.6; margin: 0 0 16px; color: #626262; }
+  a { color: #111111; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
   a:hover { text-decoration: underline; }
 </style>
 </head>

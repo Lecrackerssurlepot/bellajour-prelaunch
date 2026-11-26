@@ -8,7 +8,7 @@
   display: grid;
   place-items: center;
   min-height: var(--app-height);
-  padding: clamp(32px, 8vw, 72px) 16px;
+  padding: clamp(var(--m-espace-6), 8vw, var(--m-espace-8)) var(--m-espace-4);
   background: #17181c;
   color: #ecedf0;
   text-align: center;
@@ -23,14 +23,14 @@
   display: block;
   width: 120px;
   height: auto;
-  margin: 0 auto clamp(28px, 6vw, 44px);
+  margin: 0 auto clamp(var(--m-espace-6), 6vw, var(--m-espace-7));
   opacity: 0.9;
 }
 
 .bj-atelier .ec-porte-surtitre {
-  margin: 0 0 14px;
-  font-family: var(--font-ui);
-  font-size: 11px;
+  margin: 0 0 var(--m-espace-4);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -41,8 +41,8 @@
    seule perdrait, comme sur la page 404 avant le 09/09. Sous 767 px,
    globals.css coupe un mot trop long au milieu : la taille reste modeste. */
 .bj-atelier .ec-porte-titre {
-  margin: 0 0 18px;
-  font-family: var(--font-display);
+  margin: 0 0 var(--m-espace-4);
+  font-family: var(--m-police-titre-famille);
   font-weight: 400;
   font-style: normal;
   font-size: clamp(32px, 7vw, 52px);
@@ -51,21 +51,21 @@
 }
 
 .bj-atelier .ec-porte-texte p {
-  margin: 0 auto 10px;
+  margin: 0 auto var(--m-espace-3);
   max-width: 30rem;
-  font-family: var(--font-ui);
-  font-size: 16px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-base);
   line-height: 1.6;
   color: var(--c-text-soft);
 }
 
 .bj-atelier .ec-porte-detail {
-  margin: 26px auto 0;
-  padding-top: 18px;
+  margin: var(--m-espace-5) auto 0;
+  padding-top: var(--m-espace-4);
   max-width: 30rem;
   border-top: 1px solid var(--c-line-md);
-  font-family: var(--font-ui);
-  font-size: 12px;
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-etiquette);
   line-height: 1.5;
   color: var(--c-text-faint);
   overflow-wrap: anywhere;
@@ -76,15 +76,15 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 12px;
+  gap: var(--m-espace-3);
   width: min(360px, 100%);
   margin: 0 auto;
-  font-family: var(--font-ui);
+  font-family: var(--m-police-texte-famille);
   color: var(--c-text-soft);
 }
 .bj-atelier .ec-retrouver p {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--m-taille-bouton);
   line-height: 1.55;
 }
 .bj-atelier .ec-retrouver strong {
@@ -92,20 +92,20 @@
   overflow-wrap: anywhere;
 }
 .bj-atelier .ec-retrouver-label {
-  margin-top: 6px;
+  margin-top: var(--m-espace-2);
   text-align: left;
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--c-text-faint);
 }
 .bj-atelier .ec-retrouver-champ {
   height: 52px;
-  padding: 0 16px;
+  padding: 0 var(--m-espace-4);
   border: 1px solid var(--c-line-md);
-  border-radius: 14px;
+  border-radius: var(--m-rayon-champ);
   background: transparent;
   color: var(--c-text-pure);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--m-taille-base);
 }
 .bj-atelier .ec-retrouver-champ:focus {
   outline: 2px solid var(--c-accent);
@@ -114,7 +114,7 @@
 .bj-atelier .ec-retrouver-bouton {
   height: 52px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--m-rayon-pilule);
   background: var(--c-accent);
   color: var(--c-text-onaccent);
   font: inherit;
@@ -127,14 +127,14 @@
 }
 .bj-atelier .ec-retrouver-mail {
   color: var(--c-accent);
-  font-size: 16px;
+  font-size: var(--m-taille-base);
 }
 .bj-atelier .ec-retrouver-note {
-  font-size: 13px;
+  font-size: var(--m-taille-petit);
   color: var(--c-text-faint);
 }
 .bj-atelier .ec-retrouver-erreur {
-  font-size: 14px;
+  font-size: var(--m-taille-petit);
   color: var(--c-accent);
 }
 .bj-atelier .ec-porte-lien {
