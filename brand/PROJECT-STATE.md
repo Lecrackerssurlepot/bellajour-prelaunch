@@ -173,6 +173,11 @@ l'accueil. À trancher par Mathias : couper ces mails, ou garder l'espace en lig
 - **Bibliothèque** : deux vues seulement, Étagère (par défaut) et Défilé. Tranches retirée
   (dos réel trop fin pour un visuel), archivée dans `archive/compte-etagere-2026-11/vue-tranches.md`.
   Règle ajoutée à la fiche H : on ne montre jamais le magazine plus épais qu'il n'est.
+- **Bandeau de Noël** : le code portait encore celui du 16/11 (texte qui défile, verre et cuivre
+  de l'ancienne charte, bouton « Carte cadeau ») : il n'avait jamais été porté. Remplacé par celui
+  du duplicata (bloc nuit, texte fixe, seule la phrase du milieu change, « Voir l'offre » toujours
+  là). Ancien rangé dans `archive/noel-bandeau-defilant-2026-11/`. Couleur : le duplicata est noir ;
+  Mathias le dit blanc, à trancher.
 - **Favicon** : les navigateurs gardent l'ancienne icône en mémoire longtemps ; le carré noir
   vu venait d'une préversion antérieure ou du cache. Se vérifie en navigation privée.
 

@@ -1,71 +1,75 @@
 'use client'
 
-/* Le bandeau de Noël : une bande de verre au-dessus de la barre du site
-   (`/` et `/magazine`). Deux gestes (Mathias, 16/11 : « on ne comprend pas
-   que c'est une carte cadeau », le −40 % doit pousser l'achat) :
-   l'offre du 2ᵉ magazine ET « Carte cadeau » mènent au bloc de Noël de
-   /magazine, dans le parcours d'achat (Mathias, 16/11 : /offrir directement
-   « bloque ») ; c'est le bloc qui ouvre /offrir. Pas de croix (« moins de boutons »). Il n'existe que si le
-   drapeau de Noël est ouvert : la page serveur ne le monte pas sinon.
+/* Le bandeau de Noël (charte V2, fiche H « Bandeau »), tel que le duplicata
+   « Essai photos » (14BmVZ, 26/11) : un bloc nuit d'une ligne.
 
-   ⚠️ La barre `.at-nav` est fixe. Le bandeau entre donc dans son calcul :
-   noel.css pose `--nl-bh` sur la racine dès qu'il est dans le document, et
-   nav.css le lit (`top` de la barre, `--nav-h`) avec un repli à 0 : sans
-   bandeau, la barre est exactement celle d'avant.
+     Noël · [phrase du milieu] · Photos avant le 7 décembre · Voir l'offre
 
-   Hors de la fenêtre de la règle (exemplaires.ts), l'offre s'efface et seule
-   la carte cadeau reste. */
+   Le texte NE BOUGE PAS (Mathias, 26/11). Seule la phrase du milieu change,
+   en fondu, toutes les 4 s : le 2ᵉ magazine à −40 %, −20 % avec une autre
+   couverture, offrir une carte cadeau. « Voir l'offre » est toujours là.
+   Sous `prefers-reduced-motion`, la première phrase reste seule.
+   Hors de la fenêtre de la règle (exemplaires.ts), seule la carte cadeau reste.
+
+   Le bandeau pousse la page de sa hauteur (`--nl-bh`, fiche E) : noel.css.
+   L'ancien bandeau défilant est dans archive/noel-bandeau-defilant-2026-11/. */
 
 import Link from 'next/link'
-import { useAndroid } from '@/hooks/useClient'
+import { useEffect, useState, type ReactNode } from 'react'
 import { NOEL_REMISE_AUTRE_PCT, NOEL_REMISE_MEME_PCT } from '@/lib/atelier/exemplaires'
-import { useFenetreNoel, usePlaces } from './places'
+import { useFenetreNoel } from './places'
 import { VERS_NOEL, auClicGlisser } from './glisser'
 import './noel.css'
 
-/* LE BANDEAU DÉFILE (Mathias, 16/11 : « bandeau défilant pour que ce ne soit
-   pas trop long, avec le CTA toujours actif »). À gauche, une bande qui
-   tourne en boucle : l'offre, l'autre couverture, la date limite, les places.
-   À droite, « Carte cadeau » NE BOUGE PAS. La bande est écrite deux fois et
-   glisse de la moitié de sa largeur : la boucle ne se voit pas ; la copie est
-   muette pour les lecteurs d'écran. Le survol l'arrête. Sous
-   `prefers-reduced-motion`, rien ne défile : la première phrase seule. */
+const INTERVALLE_MS = 4000
+const FONDU_MS = 450
+
 export default function Bandeau() {
   const fenetre = useFenetreNoel()
-  const plat = useAndroid()
-  const places = usePlaces()
 
-  const phrases = fenetre
+  const phrases: ReactNode[] = fenetre
     ? [
-        <>Noël : le 2<sup>e</sup> magazine à <strong>−{NOEL_REMISE_MEME_PCT}&nbsp;%</strong></>,
+        <>Le 2<sup>e</sup> magazine à −{NOEL_REMISE_MEME_PCT}&nbsp;%</>,
         <>−{NOEL_REMISE_AUTRE_PCT}&nbsp;% avec une autre couverture</>,
-        <>Photos avant le 7 décembre pour Noël</>,
-        ...(places !== null && places > 0 ? [<>{places} {places === 1 ? 'place' : 'places'}</>] : []),
+        <>Offrir une carte cadeau</>,
       ]
-    : [<>Noël : offrez une carte cadeau</>]
-  const suite = (copie: boolean) => (
-    <span className="nl-noel-bandeau-suite" aria-hidden={copie || undefined}>
-      {phrases.map((p, i) => (
-        <span key={i} className="nl-noel-bandeau-phrase">{p}</span>
-      ))}
-    </span>
-  )
+    : [<>Offrir une carte cadeau</>]
+
+  const [rang, setRang] = useState(0)
+  const [cache, setCache] = useState(false)
+  const n = phrases.length
+
+  useEffect(() => {
+    if (n < 2) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    let fondu: ReturnType<typeof setTimeout> | undefined
+    const tour = setInterval(() => {
+      setCache(true)
+      fondu = setTimeout(() => {
+        setRang((r) => (r + 1) % n)
+        setCache(false)
+      }, FONDU_MS)
+    }, INTERVALLE_MS)
+    return () => {
+      clearInterval(tour)
+      if (fondu) clearTimeout(fondu)
+    }
+  }, [n])
 
   return (
-    <div className={`nl-noel-bandeau ${plat ? 'nl-noel-bandeau--plat' : ''}`}>
-      <Link
-        className="nl-noel-bandeau-offre"
-        href={VERS_NOEL}
-        prefetch={false}
-        onClick={auClicGlisser('noel')}
-        data-defile={phrases.length > 1 ? '1' : undefined}
-      >
-        <span className="nl-noel-bandeau-piste">
-          {suite(false)}
-          {phrases.length > 1 && suite(true)}
-        </span>
+    <div className="nl-noel-bandeau" role="region" aria-label="Noël">
+      <span className="nl-noel-bandeau-mot">Noël</span>
+      <span className="nl-noel-bandeau-sep" aria-hidden="true" />
+      <span className={`nl-noel-bandeau-milieu${cache ? ' est-cache' : ''}`}>{phrases[rang % n]}</span>
+      {fenetre ? (
+        <>
+          <span className="nl-noel-bandeau-sep est-long" aria-hidden="true" />
+          <span className="nl-noel-bandeau-long">Photos avant le 7 décembre</span>
+        </>
+      ) : null}
+      <Link className="nl-noel-bandeau-lien" href={VERS_NOEL} prefetch={false} onClick={auClicGlisser('noel')}>
+        Voir l’offre
       </Link>
-      <Link className="nl-noel-bandeau-lien" href={VERS_NOEL} prefetch={false} onClick={auClicGlisser('noel')}>Carte cadeau</Link>
     </div>
   )
 }

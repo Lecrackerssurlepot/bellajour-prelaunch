@@ -44,6 +44,9 @@ La valeur est donnée, et elle sera validée sur `/brand`.
 **Bandeau** (au-dessus de l'en-tête, facultatif) :
 - bloc nuit de `bandeau.hauteur` (40 px, 36 px sur téléphone), texte `taille.exception.bandeau` ;
 - se replie après `bandeau.repli` (12 px de défilement).
+- **texte fixe**, dans cet ordre : mot-titre (« Noël ») · phrase du milieu · précision (cachée au téléphone) · lien pilule « Voir l'offre », **toujours présent** ;
+- **seule la phrase du milieu change**, en fondu (`duree.standard`), toutes les 4 s ; jamais de texte qui défile ; sous `prefers-reduced-motion`, la première phrase reste ;
+- Noël 2026 : milieu = « Le 2ᵉ magazine à −40 % » → « −20 % avec une autre couverture » → « Offrir une carte cadeau » (Mathias, 26/11). Référence : duplicata 14BmVZ.
 
 ## Pied
 

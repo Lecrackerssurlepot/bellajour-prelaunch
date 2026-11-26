@@ -1,0 +1,83 @@
+.nl-noel-bandeau {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Au-dessus du grain de l'accueil (.grain, z 900, ouverture.css) : sous
+     lui, le verre clair du bandeau le montrait pixelisé (retour du 16/11). */
+  z-index: 901;
+  height: var(--nl-bh, var(--m-cible-mini));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--m-espace-2) var(--m-espace-4);
+  padding: 0 var(--mg, var(--m-espace-4));
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: var(--m-taille-petit);
+  letter-spacing: 0.01em;
+  color: var(--c-text-soft);
+  background: var(--glass-bg-plein);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+}
+/* Repli Android (piège 3 de src/app/CLAUDE.md) : un flou sur un fixe rame. */
+.nl-noel-bandeau.nl-noel-bandeau--plat {
+  background: var(--c-nav-android-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.nl-noel-bandeau a { color: inherit; text-decoration: none; }
+/* La bande qui défile : elle prend toute la place sauf le bouton, et un
+   fondu sur ses deux bords pour que les phrases entrent et sortent. */
+.nl-noel-bandeau .nl-noel-bandeau-offre {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: var(--m-largeur-colonne);
+  overflow: hidden;
+  color: var(--c-text);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+}
+.nl-noel-bandeau .nl-noel-bandeau-offre:not([data-defile]) { -webkit-mask-image: none; mask-image: none; text-align: center; }
+.nl-noel-bandeau .nl-noel-bandeau-piste { display: inline-flex; width: max-content; }
+.nl-noel-bandeau .nl-noel-bandeau-offre[data-defile] .nl-noel-bandeau-piste {
+  animation: nl-bandeau-defile 26s linear infinite;
+}
+.nl-noel-bandeau .nl-noel-bandeau-offre[data-defile]:hover .nl-noel-bandeau-piste,
+.nl-noel-bandeau .nl-noel-bandeau-offre[data-defile]:focus-visible .nl-noel-bandeau-piste { animation-play-state: paused; }
+.nl-noel-bandeau .nl-noel-bandeau-suite { display: inline-flex; flex: 0 0 auto; }
+.nl-noel-bandeau .nl-noel-bandeau-phrase { display: inline-flex; align-items: baseline; gap: 0.25em; white-space: nowrap; }
+/* Le séparateur suit chaque phrase, la dernière comprise : la jointure
+   entre les deux copies a le même écart que les autres. */
+.nl-noel-bandeau .nl-noel-bandeau-offre[data-defile] .nl-noel-bandeau-phrase::after {
+  content: '·';
+  margin: 0 var(--m-espace-5);
+  color: var(--c-text-faint);
+}
+.nl-noel-bandeau .nl-noel-bandeau-phrase sup { font-size: 0.7em; }
+.nl-noel-bandeau .nl-noel-bandeau-phrase strong { font-weight: 600; color: var(--c-accent-strong); }
+@keyframes nl-bandeau-defile {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nl-noel-bandeau .nl-noel-bandeau-offre[data-defile] .nl-noel-bandeau-piste { animation: none; }
+  .nl-noel-bandeau .nl-noel-bandeau-offre[data-defile] { -webkit-mask-image: none; mask-image: none; text-overflow: ellipsis; }
+  .nl-noel-bandeau .nl-noel-bandeau-suite + .nl-noel-bandeau-suite { display: none; }
+}
+.nl-noel-bandeau .nl-noel-bandeau-lien {
+  flex: 0 0 auto;
+  font-weight: 500;
+  padding: var(--m-espace-1) var(--m-espace-4);
+  border-radius: var(--m-rayon-pilule);
+  border: 1px solid var(--c-accent);
+  color: var(--c-accent-strong);
+}
+.nl-noel-bandeau .nl-noel-bandeau-lien::after { content: ' \2192'; }
+.nl-noel-bandeau .nl-noel-bandeau-lien:hover { background: var(--c-accent); color: var(--c-text-onaccent); }
+@media (max-width: 479px) {
+  .nl-noel-bandeau { font-size: var(--m-taille-etiquette); gap: var(--m-espace-3); padding: 0 var(--m-espace-3); }
+  .nl-noel-bandeau .nl-noel-bandeau-lien { padding: var(--m-espace-2) var(--m-espace-3); }
+}
+
