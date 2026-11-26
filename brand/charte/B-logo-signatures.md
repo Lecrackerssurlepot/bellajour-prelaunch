@@ -7,7 +7,8 @@
 | `public/images/v2/ui/logo-bellajour-240.webp` et `-640.webp` | **La source** sur le site (versionnée depuis le 16/11). Le banc l'emploie en masque CSS (`mask: url(…)`) : il prend alors la couleur `currentColor`, encre sur papier, papier sur un bloc nuit. C'est la règle. |
 | `public/images/v2/ui/signature-bellajour-240.webp` | La signature, blanche, sur fond sombre (carte cadeau). |
 | `public/images/ui/logo.webp`, `Bellajour_Blanc.png`, `signature-blanche.webp` | Anciennes versions, à ranger en phase 7. |
-| `public/logo-mail-*.png` | Mails (six variantes de l'ancienne charte). Ils seront remplacés en phase 6 par une seule version encre et une version blanche. |
+| `public/images/v2/mail/logo-papier-420.png` et `logo-encre-420.png` | **Mails, depuis le 26/11** : tirés du logo vectoriel par `brand/scripts/logo-mail.mjs`, affichés à 140 px. Le papier est servi, sur le bandeau nuit (fiche N) ; l'encre est prête, pas servie. |
+| `public/logo-mail-*.png` | Mails de l'ancienne charte (six variantes). Restent en ligne : les mails déjà partis et les mails de l'Édition collective (`logo-mail-cuivre.png`) les lisent encore. |
 
 **Logo vectoriel : fait le 25/11.** Source : le PNG blanc de Procreate (`brand/assets/logo/source-procreate-blanc.png`, 3508 × 2480). Tracé par potrace en `brand/assets/logo/bellajour.svg` (27 Ko, couleur `currentColor`), copié en `public/images/v2/ui/logo-bellajour.svg`. Le pinceau gris de l'original devient de l'encre pleine : un vectoriel n'a pas de demi-teinte. Les `.webp` actuels restent jusqu'à la phase 4. La version bleue n'est pas reprise.
 

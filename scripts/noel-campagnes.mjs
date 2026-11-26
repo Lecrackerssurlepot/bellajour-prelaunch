@@ -40,7 +40,7 @@ export function campagneHtml(mail) {
   });
   return html.replace(
     "Une question ? R&eacute;pondez &agrave; ce message.</p>",
-    'Une question ? R&eacute;pondez &agrave; ce message.<br /><a href="{{ unsubscribe }}" style="color: #928d84; text-decoration: underline;">Se d&eacute;sinscrire</a></p>',
+    'Une question ? R&eacute;pondez &agrave; ce message.<br /><a href="{{ unsubscribe }}" style="color: #626262; font-weight: bold; text-decoration: none;">Se d&eacute;sinscrire</a></p>',
   );
 }
 

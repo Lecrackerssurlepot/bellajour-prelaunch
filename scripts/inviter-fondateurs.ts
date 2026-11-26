@@ -26,6 +26,7 @@
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { sendBrevoEmail } from "@/lib/brevo";
+import { ORIGINE_SITE } from "@/lib/site";
 
 function sansGuillemets(v: string): string {
   const t = v.trim();
@@ -45,7 +46,10 @@ function argument(nom: string): string | null {
   return i >= 0 ? (process.argv[i + 1] ?? null) : null;
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bellajour.fr";
+/* Le lien du mail vise TOUJOURS le vrai site (26/11) : ce script tourne sur un
+   poste, et un NEXT_PUBLIC_SITE_URL local (localhost, préversion vercel.app)
+   aurait écrit une adresse morte dans la boîte d'un fondateur. */
+const SITE_URL = ORIGINE_SITE;
 
 type Fondateur = { email: string; prenom: string | null; numero_fondateur: number };
 

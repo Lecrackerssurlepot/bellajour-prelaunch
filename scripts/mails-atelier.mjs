@@ -27,12 +27,33 @@
  *    on montre les magazines.
  * 3. Vouvoiement chaleureux. Jamais « Cliquez ici », jamais « Bonne
  *    réception ». Le ton d'un magazine, pas d'un SaaS.
+ * 4. La charte V2 (26/11) : la coquille vient de `mails-charte.mjs`, jamais
+ *    redessinée ici (brand/charte/N-declinaisons.md). Le harnais
+ *    `verif-mails-charte.ts` en tient les règles sur chaque mail.
  * ══════════════════════════════════════════════════════════════════════════
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  C,
+  SERIF,
+  SITE,
+  UTILE,
+  bouton,
+  chapo,
+  chiffres,
+  coquille,
+  encart,
+  encartRecap,
+  etiquette,
+  image,
+  ligne,
+  lienSecondaire,
+  pied,
+  titre,
+} from "./mails-charte.mjs";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
 const RACINE = resolve(ICI, "..");
@@ -60,33 +81,15 @@ const REMISE_SUIVANTS = lireConstante("src/lib/atelier/exemplaires.ts", "REMISE_
 const PHRASE_FRANCO = `Offerte dès ${FRANCO_EUROS} € de magazines : le deuxième exemplaire est à moins ${REMISE_DEUXIEME} %, les suivants à moins ${REMISE_SUIVANTS} %.`;
 
 /* ─────────────────────────── la maquette ─────────────────────────── */
-/* Reprise à l'identique du template 28 (M3), déjà validé en production sur
-   Gmail, Apple Mail et Outlook. On ne la redessine pas : on la remplit. */
+/* Charte V2 (26/11) : la coquille et les briques vivent dans `mails-charte.mjs`,
+   partagées avec les mails de Noël (fiche N, « Le gabarit commun »). Ici, on ne
+   fait que les remplir. Papier et encre, bandeau nuit en tête, un seul bouton.
+   Jusqu'au 26/11, la maquette était celle du template 28 (fond nuit, cuivre,
+   Cormorant) : son HTML est dans l'historique git de ce fichier. */
 
-const bloc = (contenu, padBas = 44) =>
-  `<tr><td align="left" class="px-mobile" style="padding: 0 40px ${padBas}px 40px;">${contenu}</td></tr>`;
-
-/** La carte à deux chiffres (pages / prix, ou transporteur / date). */
+/** La carte à deux chiffres (pages / prix, ou pages / date). */
 function carteChiffres(gauche, droite, note) {
-  const cellule = (c, bord) =>
-    `<td width="50%" align="center" valign="middle" style="padding: 34px 16px;${bord}">
-<div style="font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-size: ${
-      c.grand ? 54 : 30
-    }px; font-weight: 500; color: #d68a63; line-height: 1.1;">${c.valeur}</div>
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84; font-weight: 500; padding-top: 12px;">${c.legende}</div>
-</td>`;
-
-  return `<tr><td align="center" class="px-mobile" style="padding: 0 40px 46px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border: 1px solid rgba(255,255,255,0.11); border-radius: 18px;">
-<tr>${cellule(gauche, "")}${cellule(droite, " border-left: 1px solid rgba(255,255,255,0.11);")}</tr>
-${
-  note
-    ? `<tr><td colspan="2" align="center" style="padding: 0 26px 30px 26px;">
-<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.7; color: #928d84;">${note}</p>
-</td></tr>`
-    : ""
-}</table>
-</td></tr>`;
+  return chiffres(gauche, droite, note);
 }
 
 /**
@@ -97,38 +100,34 @@ ${
  * hébergée serait masquée par Gmail au premier affichage. Le titre du numéro
  * dans un cadre au format d'une couverture évoque l'objet sans rien promettre
  * de faux. La page fait le spectacle, le mail fait le clic.
+ * Charte V2 : un objet papier au filet d'encre, coins `rayon.image`, aux
+ * proportions d'une couverture (240 × 340 environ) ; le titre en Georgia, le
+ * repli du rôle « magazine » (Instrument Serif) dans un mail. Pas d'ombre :
+ * un mode sombre forcé l'inverse en halo blanc.
  */
 function carteCouverture(titre) {
-  return `<tr><td align="center" class="px-mobile" style="padding: 0 40px 46px 40px;">
-<table role="presentation" width="250" cellpadding="0" cellspacing="0" border="0" style="width: 250px; max-width: 250px; background-color: #161618; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px;">
-<tr><td align="center" style="padding: 58px 26px 14px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Le num&eacute;ro</div>
+  return ligne(
+    `<table role="presentation" width="240" cellpadding="0" cellspacing="0" border="0" style="width: 240px; max-width: 240px; border: 1px solid ${C.encre}; border-radius: 4px; border-collapse: separate;">
+<tr><td align="center" style="padding: 88px 24px 14px 24px;">${etiquette("Le num&eacute;ro")}</td></tr>
+<tr><td align="center" style="padding: 0 24px 88px 24px;">
+<div style="font-family: ${SERIF}; font-style: italic; font-size: 30px; line-height: 1.15; color: ${C.encre};">${titre}</div>
 </td></tr>
-<tr><td align="center" style="padding: 0 26px 58px 26px;">
-<div style="font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 32px; font-weight: 500; color: #f5f0e7; line-height: 1.2;">${titre}</div>
-</td></tr>
-<tr><td align="center" style="padding: 0 26px 24px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #d68a63;">Bellajour</div>
-</td></tr>
-</table>
-</td></tr>`;
+<tr><td align="center" style="padding: 0 24px 22px 24px;">${etiquette("Bellajour", C.encre)}</td></tr>
+</table>`,
+    40,
+    "center",
+  );
 }
+
+/* Le texte d'un encart en Georgia : le mot de l'atelier, une couverture qui attend. */
+const phraseSerif = (t) => `<span style="font-family: ${SERIF}; font-size: 19px; line-height: 1.5; color: ${C.encre};">${t}</span>`;
 
 /**
  * L'encart « Un mot de l'atelier » de M9 (T2-3), rendu SEULEMENT si le mot
  * existe : la syntaxe conditionnelle est celle des templates Brevo.
  */
 function encartMot() {
-  return `{% if params.MOT %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
-<tr><td style="padding: 24px 26px 8px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Un mot de l&rsquo;atelier</div>
-</td></tr>
-<tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">{{ params.MOT }}</p>
-</td></tr>
-</table>
-</td></tr>{% endif %}`;
+  return `{% if params.MOT %}${encart("Un mot de l&rsquo;atelier", phraseSerif("{{ params.MOT }}"))}{% endif %}`;
 }
 
 /**
@@ -149,16 +148,10 @@ function encartMot() {
  * n'existe plus sur l'écran de Stripe.
  */
 function encartCredit() {
-  return `{% if params.CREDIT_FONDATRICE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
-<tr><td style="padding: 24px 26px 8px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre cr&eacute;dit de fondateur</div>
-</td></tr>
-<tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Vos {{ params.CREDIT_FONDATRICE }}&nbsp;&euro; de cr&eacute;dit et la livraison sont offerts : ils sont d&eacute;j&agrave; d&eacute;duits du prix ci-dessous. Vous n&rsquo;avez rien &agrave; saisir, la remise vous attend sur la page de paiement.</p>
-</td></tr>
-</table>
-</td></tr>{% endif %}`;
+  return `{% if params.CREDIT_FONDATRICE %}${encart(
+    "Votre cr&eacute;dit de fondateur",
+    "Vos {{ params.CREDIT_FONDATRICE }}&nbsp;&euro; de cr&eacute;dit et la livraison sont offerts : ils sont d&eacute;j&agrave; d&eacute;duits du prix ci-dessous. Vous n&rsquo;avez rien &agrave; saisir, la remise vous attend sur la page de paiement.",
+  )}{% endif %}`;
 }
 
 /**
@@ -176,16 +169,10 @@ function encartCredit() {
  * qui rappelle.
  */
 function encartCouverturePrete() {
-  return `{% if params.COUVERTURE_PRETE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
-<tr><td style="padding: 24px 26px 8px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Votre couverture vous attend</div>
-</td></tr>
-<tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.PAYS_A_CHOISIR %} Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus, soit {{ params.TOTAL }}&nbsp;&euro; à payer. ${PHRASE_FRANCO}{% endif %}</p>
-</td></tr>
-</table>
-</td></tr>{% endif %}`;
+  return `{% if params.COUVERTURE_PRETE %}${encart(
+    "Votre couverture vous attend",
+    `Elle est prête depuis longtemps, et elle n&rsquo;a pas bougé. {{ params.NB_PAGES }} pages, {{ params.PRIX }}&nbsp;&euro; impression comprise.{% if params.PAYS_A_CHOISIR %} Livraison chiffrée selon votre pays, avant le paiement.{% elif params.LIVRAISON_OFFERTE %} Livraison offerte.{% else %} Livraison {{ params.LIVRAISON }}&nbsp;&euro; en sus, soit {{ params.TOTAL }}&nbsp;&euro; à payer. ${PHRASE_FRANCO}{% endif %}`,
+  )}{% endif %}`;
 }
 
 /**
@@ -204,16 +191,10 @@ function encartCouverturePrete() {
  * CREDIT_FONDATRICE et MOT, pour la même raison.
  */
 function encartPhotosEnAttente() {
-  return `{% if params.PHOTOS_DEPOSEES %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
-<tr><td style="padding: 24px 26px 8px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Vos photos sont encore l&agrave;</div>
-</td></tr>
-<tr><td style="padding: 0 26px 24px 26px;">
-<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 20px; line-height: 1.55; color: #c7c2b8;">{{ params.PHOTOS_DEPOSEES }} photos vous attendent dans ce num&eacute;ro. Elles seront effac&eacute;es en m&ecirc;me temps que le dossier, et nous n&rsquo;en garderons aucune copie.</p>
-</td></tr>
-</table>
-</td></tr>{% endif %}`;
+  return `{% if params.PHOTOS_DEPOSEES %}${encart(
+    "Vos photos sont encore l&agrave;",
+    "{{ params.PHOTOS_DEPOSEES }} photos vous attendent dans ce num&eacute;ro. Elles seront effac&eacute;es en m&ecirc;me temps que le dossier, et nous n&rsquo;en garderons aucune copie.",
+  )}{% endif %}`;
 }
 
 /**
@@ -228,29 +209,17 @@ function encartPhotosEnAttente() {
  * Trois cas, dans l'ordre : une adresse de suivi (SUIVI) donne un lien ; un
  * simple numéro (CODE_SUIVI, transporteur dont suivi.ts ne sait pas
  * construire l'adresse) s'affiche en texte copiable, avec le transporteur ;
- * rien du tout, et l'encart disparaît. Avant le troisième paramètre, le cas
- * du milieu tombait dans le troisième : le mail disait « confié à DPD » et
- * n'offrait RIEN à suivre, la cliente devait deviner qu'il fallait retourner
- * sur sa page. Un bouton qui ne mène nulle part reste interdit : sans URL,
- * on montre le numéro, pas un lien.
+ * rien du tout, et l'encart disparaît. Un bouton qui ne mène nulle part reste
+ * interdit : sans URL, on montre le numéro, pas un lien. Le lien est un lien
+ * SECONDAIRE (charte N) : le seul bouton du mail reste « Suivre mon numéro ».
  */
 function encartSuivi() {
-  const cadre = (contenu) => `<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #161618; border-left: 2px solid #d68a63; border-radius: 0 12px 12px 0;">
-<tr><td style="padding: 24px 26px 8px 26px;">
-<div style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84;">Le suivi</div>
-</td></tr>
-<tr><td style="padding: 0 26px 24px 26px;">
-${contenu}
-</td></tr>
-</table>
-</td></tr>`;
-
-  return `{% if params.SUIVI %}${cadre(
-    `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #c7c2b8;"><a href="{{ params.SUIVI }}" style="color: #d68a63; text-decoration: underline;">Suivre le colis chez {{ params.TRANSPORTEUR }}</a></p>`,
-  )}{% elif params.CODE_SUIVI %}${cadre(
-    `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.7; color: #c7c2b8;">Votre num&eacute;ro de suivi chez {{ params.TRANSPORTEUR }} :</p>
-<p style="margin: 8px 0 0 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 500; letter-spacing: 1px; color: #f5f0e7;">{{ params.CODE_SUIVI }}</p>`,
+  return `{% if params.SUIVI %}${encart(
+    "Le suivi",
+    lienSecondaire("Suivre le colis chez {{ params.TRANSPORTEUR }}", "{{ params.SUIVI }}"),
+  )}{% elif params.CODE_SUIVI %}${encart(
+    "Le suivi",
+    `Votre num&eacute;ro de suivi chez {{ params.TRANSPORTEUR }} :<br /><span style="display: inline-block; padding-top: 8px; font-family: ${SERIF}; font-size: 24px; letter-spacing: 1px; color: ${C.encre};">{{ params.CODE_SUIVI }}</span>`,
   )}{% endif %}`;
 }
 
@@ -265,128 +234,39 @@ ${contenu}
  * `lireCarteDuNumero` (mails.ts), jamais écrits ici.
  */
 function encartCarteCredit() {
-  const rang = (lib, val, fort = false, bord = true) =>
-    `<tr><td style="padding: 13px 0;${bord ? " border-bottom: 1px solid #26262a;" : ""} font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: #928d84;">${lib}</td><td align="right" style="padding: 13px 0;${bord ? " border-bottom: 1px solid #26262a;" : ""} font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: ${fort ? "#d68a63" : "#e9e4da"}; font-weight: ${fort ? 500 : 400}; white-space: nowrap;">${val}</td></tr>`;
-  return `{% if params.RECAP_CARTE %}<tr><td align="left" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border-radius: 16px;">
-<tr><td style="padding: 4px 20px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-{% if params.CARTE_MONTANT %}${rang("{% if params.CARTE_DE %}La carte de {{ params.CARTE_DE }}{% else %}Carte cadeau{% endif %}", "&minus;{{ params.CARTE_MONTANT }}&nbsp;&euro;")}{% endif %}
-{% if params.CREDIT %}${rang("Cr&eacute;dit de votre compte", "&minus;{{ params.CREDIT }}&nbsp;&euro;")}{% endif %}
-{% if params.RELIQUAT %}${rang("Pour le prochain num&eacute;ro", "{{ params.RELIQUAT }}&nbsp;&euro;", true, false)}{% endif %}
-</table>
-</td></tr>
-{% if params.RELIQUAT %}<tr><td style="padding: 0 20px 18px 20px; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #928d84;">Ils restent sur votre compte jusqu&rsquo;au {{ params.RELIQUAT_JUSQU }} et se d&eacute;duisent tout seuls au prochain num&eacute;ro.</td></tr>{% endif %}
-</table>
-</td></tr>{% endif %}`;
+  return `{% if params.RECAP_CARTE %}${encartRecap(
+    [
+      { si: "CARTE_MONTANT", lib: "{% if params.CARTE_DE %}La carte de {{ params.CARTE_DE }}{% else %}Carte cadeau{% endif %}", val: "&minus;{{ params.CARTE_MONTANT }}&nbsp;&euro;" },
+      { si: "CREDIT", lib: "Cr&eacute;dit de votre compte", val: "&minus;{{ params.CREDIT }}&nbsp;&euro;" },
+      { si: "RELIQUAT", lib: "Pour le prochain num&eacute;ro", val: "{{ params.RELIQUAT }}&nbsp;&euro;", fort: true },
+    ],
+    "{% if params.RELIQUAT %}Ils restent sur votre compte jusqu&rsquo;au {{ params.RELIQUAT_JUSQU }} et se d&eacute;duisent tout seuls au prochain num&eacute;ro.{% endif %}",
+  )}{% endif %}`;
 }
 
-function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied, hero }) {
-  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="x-apple-disable-message-reformatting" />
-<meta name="color-scheme" content="dark" />
-<meta name="supported-color-schemes" content="dark" />
-<title>${titreHtml}</title>
-<!--[if mso]>
-<style type="text/css">
-table { border-collapse: collapse; border-spacing: 0; }
-td { padding: 0; }
-body, table, td, p, a, h1 { font-family: Georgia, 'Times New Roman', serif !important; }
-</style>
-<![endif]-->
-<style type="text/css">
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@400;500&display=swap');
-body, table, td, p, a, h1 { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-body { margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #070708; }
-a { text-decoration: none; }
-.btn-cta:hover { background-color: #ffffff !important; }
-@media screen and (max-width: 620px) {
-  .container { width: 100% !important; max-width: 100% !important; }
-  .px-mobile { padding-left: 24px !important; padding-right: 24px !important; }
-  .hero-title { font-size: 38px !important; line-height: 1.08 !important; }
-}
-</style>
-</head>
-<body style="margin: 0; padding: 0; background-color: #070708;">
-<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${preheader}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#070708" style="background-color: #070708;">
-<tr><td align="center" style="padding: 56px 12px 60px 12px;">
-<table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; max-width: 600px;">
+/** La ligne de la maison, en bas de chaque mail de l'atelier et du compte. */
+const MENTION = "contact@bellajour.com";
 
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 30px 40px;">
-<a href="https://www.bellajour.fr/"><img src="https://www.bellajour.fr/logo-mail-cuivre.png" width="170" alt="Bellajour" style="display: block; width: 170px; max-width: 170px; height: auto; border: 0; margin: 0 auto;" /></a>
-</td></tr>
-
-<tr><td align="center" style="padding: 0 40px 54px 40px;">
-<table role="presentation" width="52" cellpadding="0" cellspacing="0" border="0"><tr><td height="1" bgcolor="#d68a63" style="background-color: #d68a63; height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</td></tr></table>
-</td></tr>
-${
-  /* L'image d'en-tête est FACULTATIVE (16/09/2026, C0 seulement) : sans
-     elle, rien n'est rendu, pas même une ligne vide : le HTML des quinze
-     autres mails reste identique à l'octet près. Largeur 520 = les 600 px
-     du conteneur moins les deux marges de 40 ; `width: 100%` la fait suivre
-     l'écran du téléphone. L'alt reprend le nom de la maison, pour le client
-     Outlook qui ne saura pas afficher le WebP. */
-  hero
-    ? `
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 44px 40px;">
-<img src="${hero.src}" width="520" alt="${hero.alt}" style="display: block; width: 100%; max-width: 520px; height: auto; border: 0; outline: none; text-decoration: none; border-radius: 2px;" />
-</td></tr>
-`
-    : ""
-}
-${bloc(
-  `<h1 class="hero-title" style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-size: 46px; font-weight: 500; color: #f5f0e7; line-height: 1.06; letter-spacing: -0.01em;">${h1}</h1>`,
-  26,
-)}
-
-${bloc(
-  `<p style="margin: 0; font-family: 'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif; font-style: italic; font-size: 21px; line-height: 1.55; color: #c7c2b8;">${sous}</p>`,
-)}
-
-${carte ?? ""}
-
-${bloc(
-  `<!--[if mso]>
-<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${lien}" style="height:54px;v-text-anchor:middle;width:300px;" arcsize="50%" stroke="f" fillcolor="#f5f0e7"><w:anchorlock/><center style="color:#1a1210;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">${cta}</center></v:roundrect>
-<![endif]-->
-<!--[if !mso]><!-- -->
-<a href="${lien}" class="btn-cta" style="display: inline-block; padding: 17px 34px; background-color: #f5f0e7; border-radius: 999px; text-decoration: none; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 500; color: #1a1210;">${cta}</a>
-<!--<![endif]-->`,
-)}
-
-${
-  /* Le pied est FACULTATIF depuis le 03/09 (M7b n'en veut pas) : sans lui, le
-     bloc entier disparaît. Le rendre vide laisserait une réserve de 56 px sous
-     le bouton, et l'oeil la lirait comme un défaut de maquette. */
-  pied
-    ? bloc(
-        `<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.8; color: #928d84;">${pied}</p>`,
-        56,
-      )
-    : ""
-}
-
-<tr><td align="center" style="padding: 0 40px 26px 40px;">
-<table role="presentation" width="52" cellpadding="0" cellspacing="0" border="0"><tr><td height="1" bgcolor="#26262a" style="background-color: #26262a; height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</td></tr></table>
-</td></tr>
-
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 10px 40px;">
-<a href="https://www.instagram.com/bellajour__/" style="font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 14px; color: #c7c2b8; text-decoration: none;">@bellajour__</a>
-</td></tr>
-
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 0 40px;">
-<p style="margin: 0; font-family: 'DM Sans', Helvetica, Arial, sans-serif; font-size: 12px; color: #928d84; line-height: 1.7;">Bellajour &middot; Maison d&rsquo;&eacute;dition du souvenir<br />contact@bellajour.com</p>
-</td></tr>
-
-</table>
-</td></tr></table>
-</body>
-</html>`;
+export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero }) {
+  return coquille({
+    titreHtml,
+    preheader,
+    mention: MENTION,
+    corps: [
+      /* L'image d'en-tête est FACULTATIVE (16/09/2026, C0 seulement) : sans
+         elle, rien n'est rendu. JPEG, jamais WebP : Outlook ne le lit pas. */
+      hero ? image(hero.src, hero.alt, UTILE, null, 40) : "",
+      titre(h1),
+      chapo(sous),
+      carte ?? "",
+      bouton(cta, lien),
+      /* Le pied est FACULTATIF depuis le 03/09 (M7b n'en veut pas) : sans lui, le
+         bloc entier disparaît, pas de réserve vide sous le bouton. */
+      texteDuPied ? pied(texteDuPied) : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n"),
+  });
 }
 
 const LIEN = "{{ params.LIEN }}";
@@ -735,7 +615,9 @@ export const MAILS = [
     titreHtml: "L'atelier est en ligne",
     h1: "L'atelier<br />est en ligne.",
     hero: {
-      src: "https://www.bellajour.fr/images/v2/accueil/header-magazines-paysage-2560.webp",
+      /* Charte V2 (26/11) : la même photo des magazines, en JPEG. Le WebP
+         d'avant ne s'affichait pas dans Outlook (fiche N, « Images »). */
+      src: `${SITE}/images/mails/noel/magazines-table-1040.jpg`,
       alt: "Les magazines Bellajour",
     },
     sous: "{{ params.PRENOM }}, le jour est arrivé : l'atelier ouvre aujourd'hui, et vous en êtes. Fondateur nº{{ params.NUMERO }}, vous composez votre premier magazine avant tout le monde. Vos 30 € de crédit et la livraison offerte sont déjà posés sur votre premier numéro.",
@@ -824,6 +706,56 @@ function cleBrevo() {
   return sansGuillemets(m[1]);
 }
 
+/* Les aperçus LOCAUX sont remplis de valeurs d'exemple : un écran couvert
+   de « {{ params.NB_PAGES }} » ne permet pas de juger une mise en page —
+   ni de voir qu'un mot déborde. Ce qui part chez Brevo garde évidemment
+   les variables. */
+export const EXEMPLE = {
+  PRENOM: "Camille",
+  /* Le numéro de fondateur ne sert qu'à C0 (16/09/2026). */
+  NUMERO: "7",
+  TITRE: "Notre été à Séville",
+  NB_PAGES: "34",
+  NB_PHOTOS: "12",
+  PRIX: "37",
+  /* Le port du relevé RÉEL du 10/09/2026 (France, 32 pages, dos carré :
+     9,22 € HT chez Cloudprinter, 11,06 € TTC au taux normal français). Ce
+     n'est PAS un tarif décidé — c'est un exemple d'aperçu, comme « Camille »
+     et « Notre été à Séville ». Le vrai montant vient du devis, dossier par
+     dossier. Le cas fondateur (livraison offerte) se lit en posant
+     LIVRAISON_OFFERTE à « oui ». */
+  LIVRAISON: "11,06",
+  LIVRAISON_OFFERTE: "",
+  TOTAL: "48,06",
+  /* Le cas « le client choisira son pays » (11/09/2026) se lit en posant
+     « oui » ici : les trois mails qui vendent basculent alors sur la phrase
+     sans montant. Vide par défaut, parce que le cas le plus fréquent reste
+     le dossier chiffré d'avance. */
+  PAYS_A_CHOISIR: "",
+  TRANSPORTEUR: "Colissimo",
+  SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
+  CODE_SUIVI: "6A123456789FR",
+  DATE_LIMITE: "3 septembre",
+  DATE_CLOTURE: "12 décembre",
+  /* T-076 : le cas à REGARDER dans l'aperçu de M10 est celui où il y a des
+     photos, parce que c'est le seul où le mail annonce une perte concrète.
+     Le cas vide se lit en supprimant la ligne. */
+  PHOTOS_DEPOSEES: "42",
+  /* L'aperçu montre la population B, celle qui a une couverture prête : le
+     cas le plus riche des deux, et celui qu'il faut juger à l'oeil. Le cas
+     du questionnaire abandonné se lit en vidant cette valeur. */
+  COUVERTURE_PRETE: "oui",
+  LIEN: "https://www.bellajour.fr/numero/apercu",
+  /* Noël : le récapitulatif carte et crédit de M4 (vider RECAP_CARTE pour
+     le cas sans carte, de loin le plus fréquent). */
+  RECAP_CARTE: "oui",
+  CARTE_DE: "Léa",
+  CARTE_MONTANT: "38",
+  CREDIT: "",
+  RELIQUAT: "12",
+  RELIQUAT_JUSQU: "16 novembre 2027",
+};
+
 async function main() {
   const pousser = process.argv.includes("--pousser");
 
@@ -871,55 +803,6 @@ async function main() {
   }
   console.log(`Forme vérifiée : ${MAILS.length} mails, aucun tiret, aucune formule interdite.\n`);
 
-  /* Les aperçus LOCAUX sont remplis de valeurs d'exemple : un écran couvert
-     de « {{ params.NB_PAGES }} » ne permet pas de juger une mise en page —
-     ni de voir qu'un mot déborde. Ce qui part chez Brevo garde évidemment
-     les variables. */
-  const EXEMPLE = {
-    PRENOM: "Camille",
-    /* Le numéro de fondateur ne sert qu'à C0 (16/09/2026). */
-    NUMERO: "7",
-    TITRE: "Notre été à Séville",
-    NB_PAGES: "34",
-    NB_PHOTOS: "12",
-    PRIX: "37",
-    /* Le port du relevé RÉEL du 10/09/2026 (France, 32 pages, dos carré :
-       9,22 € HT chez Cloudprinter, 11,06 € TTC au taux normal français). Ce
-       n'est PAS un tarif décidé — c'est un exemple d'aperçu, comme « Camille »
-       et « Notre été à Séville ». Le vrai montant vient du devis, dossier par
-       dossier. Le cas fondateur (livraison offerte) se lit en posant
-       LIVRAISON_OFFERTE à « oui ». */
-    LIVRAISON: "11,06",
-    LIVRAISON_OFFERTE: "",
-    TOTAL: "48,06",
-    /* Le cas « le client choisira son pays » (11/09/2026) se lit en posant
-       « oui » ici : les trois mails qui vendent basculent alors sur la phrase
-       sans montant. Vide par défaut, parce que le cas le plus fréquent reste
-       le dossier chiffré d'avance. */
-    PAYS_A_CHOISIR: "",
-    TRANSPORTEUR: "Colissimo",
-    SUIVI: "https://www.laposte.fr/outils/suivre-vos-envois?code=6A123456789FR",
-    CODE_SUIVI: "6A123456789FR",
-    DATE_LIMITE: "3 septembre",
-    DATE_CLOTURE: "12 décembre",
-    /* T-076 : le cas à REGARDER dans l'aperçu de M10 est celui où il y a des
-       photos, parce que c'est le seul où le mail annonce une perte concrète.
-       Le cas vide se lit en supprimant la ligne. */
-    PHOTOS_DEPOSEES: "42",
-    /* L'aperçu montre la population B, celle qui a une couverture prête : le
-       cas le plus riche des deux, et celui qu'il faut juger à l'oeil. Le cas
-       du questionnaire abandonné se lit en vidant cette valeur. */
-    COUVERTURE_PRETE: "oui",
-    LIEN: "https://www.bellajour.fr/numero/apercu",
-    /* Noël : le récapitulatif carte et crédit de M4 (vider RECAP_CARTE pour
-       le cas sans carte, de loin le plus fréquent). */
-    RECAP_CARTE: "oui",
-    CARTE_DE: "Léa",
-    CARTE_MONTANT: "38",
-    CREDIT: "",
-    RELIQUAT: "12",
-    RELIQUAT_JUSQU: "16 novembre 2027",
-  };
   const remplir = (html) =>
     html.replace(/\{\{\s*params\.([A-Z_]+)\s*\}\}/g, (t, cle) => EXEMPLE[cle] ?? t);
 
@@ -991,7 +874,10 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+/* Importable par le harnais (verif-mails-charte.ts) sans rien lancer. */
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

@@ -3,8 +3,16 @@
  *
  *   node scripts/images-mails-noel.mjs
  *
+ *   node scripts/images-mails-noel.mjs --charte
+ *
  * Local seulement : lit les couvertures de `public/images/v2/accueil/` et écrit
  * dans `public/images/mails/noel/`. Ni base, ni réseau.
+ *
+ * `--charte` (26/11, charte V2, fiche N) écrit SEULEMENT les mêmes scènes sur
+ * le PAPIER du mail (#ffffff), sous `public/images/mails/charte/`, et ne touche
+ * à rien d'autre. Des fichiers NEUFS et jamais un remplacement : les adresses
+ * de `noel/` sont celles des mails déjà partis (N1) et des campagnes déjà
+ * programmées (N2 à N4), au fond nuit de l'ancienne charte.
  *
  * Mathias, 16/11 : « tous les visuels doivent s'apparenter à des magazines ».
  * Une couverture seule ne se lit pas comme un magazine dans un mail : c'est
@@ -19,7 +27,10 @@ import { fileURLToPath } from "node:url";
 const RACINE = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = resolve(RACINE, "public/images/v2/accueil");
 const SORTIE = resolve(RACINE, "public/images/mails/noel");
+const CHARTE = process.argv.includes("--charte");
+const SORTIE_CHARTE = resolve(RACINE, "public/images/mails/charte");
 const FOND = "#070708";
+const PAPIER = "#ffffff";
 
 /** Une couverture devenue objet : reliure, tranche, coins nets. */
 async function magazine(nom, largeur) {
@@ -54,10 +65,13 @@ async function magazine(nom, largeur) {
 }
 
 /** Une ombre douce sous un objet de la taille donnée. */
-function ombre(l, h, flou = 26) {
+function ombre(l, h, flou = 26, papier = false) {
+  /* Sur le papier (charte V2), l'ombre d'un objet posé : plus légère, portée
+     vers le bas (ombre.objet), sinon un halo gris entoure chaque magazine. */
+  const [opacite, marge, bas] = papier ? [0.26, -6, 22] : [0.55, 10, 0];
   return sharp(
     Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${l + flou * 4}" height="${h + flou * 4}">
-<rect x="${flou * 2 - 10}" y="${flou * 2 - 10}" width="${l + 20}" height="${h + 20}" fill="#2a2622" opacity="0.55"/></svg>`),
+<rect x="${flou * 2 - marge}" y="${flou * 2 - marge + bas}" width="${l + marge * 2}" height="${h + marge * 2}" fill="#2a2622" opacity="${opacite}"/></svg>`),
   )
     .blur(flou)
     .png()
@@ -65,7 +79,7 @@ function ombre(l, h, flou = 26) {
 }
 
 /** Des magazines posés sur un fond, à des positions données (gauche, haut, largeur, rotation). */
-async function scene(fichier, largeur, hauteur, poses, fond = FOND) {
+async function scene(fichier, largeur, hauteur, poses, fond = FOND, sortie = SORTIE) {
   const calques = [];
   for (const p of poses) {
     let objet = await magazine(p.nom, p.largeur);
@@ -74,14 +88,27 @@ async function scene(fichier, largeur, hauteur, poses, fond = FOND) {
       objet = await sharp(objet).rotate(p.rotation, { background: { r: 0, g: 0, b: 0, alpha: 0 } }).png().toBuffer();
       meta = await sharp(objet).metadata();
     }
-    calques.push({ input: await ombre(meta.width, meta.height), left: p.gauche - 52, top: p.haut - 52 });
+    calques.push({ input: await ombre(meta.width, meta.height, 26, fond === PAPIER), left: p.gauche - 52, top: p.haut - 52 });
     calques.push({ input: objet, left: p.gauche, top: p.haut });
   }
   await sharp({ create: { width: largeur, height: hauteur, channels: 3, background: fond } })
     .composite(calques)
     .jpeg({ quality: 84, mozjpeg: true })
-    .toFile(resolve(SORTIE, fichier));
+    .toFile(resolve(sortie, fichier));
   console.log("✓", fichier);
+}
+
+if (CHARTE) {
+  /* Les scènes de la charte V2, sur le papier du mail. Mêmes poses que plus bas. */
+  mkdirSync(SORTIE_CHARTE, { recursive: true });
+  await scene("aussie-1040.jpg", 1040, 760, [{ nom: "aussie", largeur: 440, gauche: 296, haut: 70 }], PAPIER, SORTIE_CHARTE);
+  await scene("lisbonne-480.jpg", 480, 420, [{ nom: "lisbonne", largeur: 210, gauche: 132, haut: 56 }], PAPIER, SORTIE_CHARTE);
+  await scene("trois-numeros-1040.jpg", 1040, 700, [
+    { nom: "cote-azur", largeur: 330, gauche: 120, haut: 110, rotation: -6 },
+    { nom: "thats-life", largeur: 330, gauche: 590, haut: 110, rotation: 6 },
+    { nom: "lisbonne", largeur: 360, gauche: 340, haut: 60 },
+  ], PAPIER, SORTIE_CHARTE);
+  process.exit(0);
 }
 
 mkdirSync(SORTIE, { recursive: true });

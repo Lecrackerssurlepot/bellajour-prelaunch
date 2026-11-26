@@ -38,12 +38,32 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import {
+  C,
+  SANS,
+  SERIF,
+  SITE,
+  UTILE,
+  blocNuit,
+  bouton,
+  cadre,
+  chapo,
+  clair,
+  coquille,
+  encartRecap,
+  etiquette,
+  image as imageCharte,
+  ligne,
+  lienSecondaire,
+  signature,
+  titre,
+} from "./mails-charte.mjs";
 
 const RACINE = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SORTIE = resolve(RACINE, ".mails-apercus/noel");
 
-/** Un lien de mail vise TOUJOURS le vrai site (PR « liens-mails-vrai-site »). */
-export const SITE = "https://www.bellajour.fr";
+/** Un lien de mail vise TOUJOURS le vrai site (PR « liens-mails-vrai-site ») : `SITE` vient de mails-charte.mjs. */
+export { SITE };
 const IMG = `${SITE}/images/mails/noel`;
 export const LIENS = {
   offrir: `${SITE}/offrir`,
@@ -53,94 +73,82 @@ export const LIENS = {
   compte: `${SITE}/compte`,
 };
 
-/* ─────────────────────────── les polices et couleurs ─────────────────────────── */
-const SERIF = "'Cormorant Garamond', Cormorant, Georgia, 'Times New Roman', serif";
-const SANS = "'DM Sans', Helvetica, Arial, sans-serif";
+/* ─────────────────────────── les briques ─────────────────────────── */
+/* Charte V2 (26/11) : la coquille, le bouton, les encarts et la signature
+   viennent de `mails-charte.mjs`, partagés avec les mails de l'atelier (fiche
+   N, « Le gabarit commun »). Ici ne restent que les objets propres à la saison :
+   la carte cadeau, le duo d'offres, le code, « À noter ». Jusqu'au 26/11, le
+   cadre était nuit et cuivre (format du 16/11) : son HTML est dans l'historique
+   git de ce fichier, et c'est lui que portent N1 (parti) et les campagnes déjà
+   programmées. */
+
 const P = (n) => `{{ params.${n} }}`;
 const SI = (n, oui, non = "") => `{% if params.${n} %}${oui}${non ? `{% else %}${non}` : ""}{% endif %}`;
 
-/* ─────────────────────────────── les blocs ─────────────────────────────── */
+/** Les scènes de magazines posées sur le PAPIER du mail (images-mails-noel.mjs --charte). */
+const IMG_CHARTE = `${SITE}/images/mails/charte`;
+const SUR_PAPIER = new Set(["aussie-1040.jpg", "lisbonne-480.jpg", "trois-numeros-1040.jpg"]);
+const SIGNATURE = `${IMG}/signature-240.png`;
 
-const ligne = (contenu, bas = 40, align = "left") =>
-  `<tr><td align="${align}" class="px-mobile" style="padding: 0 40px ${bas}px 40px;">${contenu}</td></tr>`;
-
-function image(fichier, alt, largeur = 520, lien = null) {
-  const img = `<img src="${IMG}/${fichier}" width="${largeur}" alt="${alt}" style="display: block; width: 100%; max-width: ${largeur}px; height: auto; border: 0; outline: none; text-decoration: none; margin: 0 auto;" />`;
-  return ligne(
-    lien ? `<a href="${lien}" style="display: block; text-decoration: none;">${img}</a>` : img,
-    40,
-    "center",
-  );
+/** Une image de la saison : la scène sur papier quand elle existe, la photo sinon. */
+function image(fichier, alt, largeur = UTILE, lien = null) {
+  return imageCharte(`${SUR_PAPIER.has(fichier) ? IMG_CHARTE : IMG}/${fichier}`, alt, largeur, lien, 40);
 }
 
 /**
- * La carte cadeau, en HTML : le même objet que `/carte/<token>` (fond brun
- * dégradé, signature, phrase, montant). `pour` et `bas` sont du HTML déjà
+ * La carte cadeau, en HTML : le même objet que `/carte/<token>` (signature,
+ * montant, pour qui, la phrase, le mot). `pour` et `bas` sont du HTML déjà
  * conditionnel.
  *
- * Mathias, 16/11, deux retours sur le premier envoi :
- * - « pas visible en mode sombre » : le fond était une COULEUR, que Gmail et
- *   Outlook assombrissent jusqu'à la confondre avec le noir du mail. Il est
- *   maintenant une IMAGE (`carte-fond-1040.jpg`, jamais retouchée par le mode
- *   sombre), la couleur ne sert que de repli, plus claire, et un filet cuivre
- *   dessine le bord quoi qu'il arrive ;
- * - « le prix est collé au titre » : le montant monte en haut, face à la
- *   signature ; la phrase garde toute la largeur.
+ * Charte V2 : c'est LE bloc nuit du mail (fiche C, « carte cadeau »), peint deux
+ * fois pour que Gmail le laisse noir, et son texte clair passe par la parade
+ * Gmail (`clair`). Le retour de Mathias du 16/11 tient toujours : le montant en
+ * haut, face à la signature ; la phrase garde toute la largeur.
  */
 function carte({ pour, mot = true, bas, montant }) {
-  const fond = `${IMG}/carte-fond-1040.jpg`;
+  const t = (taille, extra = "") => `font-family: ${SERIF}; font-size: ${taille}px; color: ${C.nuitTexte};${extra}`;
   return ligne(
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#6e5d4f" background="${fond}" style="background-color: #6e5d4f; background-image: url('${fond}'); background-size: cover; background-position: center; border: 1px solid #a07c64; border-radius: 16px;">
-<tr><td style="padding: 24px 26px 0 26px;">
+    blocNuit(`<tr><td style="padding: 24px 24px 0 24px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-<td align="left" valign="middle"><img src="${IMG}/signature-240.png" width="84" alt="Bellajour" style="display: block; width: 84px; height: auto; border: 0;" /></td>
-<td align="right" valign="middle" style="font-family: ${SERIF}; font-size: 34px; line-height: 1; font-weight: 500; color: #f5f0e7; white-space: nowrap;">${montant}</td>
+<td align="left" valign="middle"><img src="${SIGNATURE}" width="84" alt="Bellajour" style="display: block; width: 84px; height: auto; border: 0;" /></td>
+<td align="right" valign="middle" style="${t(34, " line-height: 1; white-space: nowrap;")}">${clair(montant)}</td>
 </tr></table>
 </td></tr>
-<tr><td style="padding: 40px 26px 0 26px; font-family: ${SANS}; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #f0c3a6;">${pour}</td></tr>
-<tr><td style="padding: 8px 26px 0 26px; font-family: ${SERIF}; font-size: 30px; line-height: 1.1; color: #f5f0e7;">Vos photos deviennent un magazine.</td></tr>
-${mot ? `{% if params.MESSAGE %}<tr><td style="padding: 12px 26px 0 26px; font-family: ${SERIF}; font-style: italic; font-size: 17px; line-height: 1.4; color: #eee6da;">« ${P("MESSAGE")} »</td></tr>{% endif %}` : ""}
-<tr><td style="padding: 32px 26px 24px 26px;">
+<tr><td style="padding: 40px 24px 0 24px;">${etiquette(clair(pour), C.nuitDoux)}</td></tr>
+<tr><td style="padding: 8px 24px 0 24px; ${t(30, " line-height: 1.1;")}">${clair("Vos photos deviennent un magazine.")}</td></tr>
+${mot ? `{% if params.MESSAGE %}<tr><td style="padding: 12px 24px 0 24px; ${t(17, " font-style: italic; line-height: 1.4;")}">${clair(`« ${P("MESSAGE")} »`)}</td></tr>{% endif %}` : ""}
+<tr><td style="padding: 32px 24px 24px 24px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-<td align="left" valign="bottom" style="font-family: ${SANS}; font-size: 12px; color: #e9e1d6;">${bas}</td>
-<td align="right" valign="bottom" style="font-family: ${SANS}; font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: #e9e1d6; white-space: nowrap;">Carte cadeau</td>
+<td align="left" valign="bottom" style="font-family: ${SANS}; font-size: 12px; color: ${C.nuitTexte};">${clair(bas)}</td>
+<td align="right" valign="bottom" style="white-space: nowrap;">${etiquette(clair("Carte cadeau"), C.nuitDoux)}</td>
 </tr></table>
-</td></tr>
-</table>`,
+</td></tr>`),
+    40,
   );
 }
-
-const titre = (t) =>
-  ligne(
-    `<h1 class="hero-title" style="margin: 0; font-family: ${SERIF}; font-size: 44px; font-weight: 500; color: #f5f0e7; line-height: 1.06; letter-spacing: -0.01em;">${t}</h1>`,
-    22,
-  );
-
-const evocation = (t) =>
-  ligne(`<p style="margin: 0; font-family: ${SERIF}; font-style: italic; font-size: 21px; line-height: 1.55; color: #c7c2b8;">${t}</p>`);
 
 /** Deux offres côte à côte (empilées au téléphone), chacune avec son lien. */
 function duo(a, b) {
-  const cellule = (o) => `<td class="duo" width="50%" valign="top" style="padding: 0 7px;">
+  const cellule = (o, cote) => `<td class="duo" width="50%" valign="top" style="padding: 0 ${cote === "g" ? 8 : 0}px 0 ${cote === "d" ? 8 : 0}px;">
 <a href="${o.lien}" style="text-decoration: none; display: block;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border: 1px solid rgba(255,255,255,0.11); border-radius: 16px;">
-<tr><td align="center" style="padding: 16px 16px 0 16px;">${o.visuel}</td></tr>
-<tr><td style="padding: 16px 18px 4px 18px; font-family: ${SANS}; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: #928d84;">${o.titre}</td></tr>
-<tr><td style="padding: 0 18px 12px 18px; font-family: ${SERIF}; font-size: 18px; line-height: 1.4; color: #e9e4da;">${o.texte}</td></tr>
-<tr><td style="padding: 0 18px 20px 18px; font-family: ${SANS}; font-size: 14px; font-weight: 500; color: #d68a63;">${o.libelle} &rarr;</td></tr>
-</table>
+${cadre(`<tr><td align="center" style="padding: 16px 16px 0 16px;">${o.visuel}</td></tr>
+<tr><td style="padding: 16px 18px 6px 18px;">${etiquette(o.titre)}</td></tr>
+<tr><td style="padding: 0 18px 12px 18px; font-family: ${SERIF}; font-size: 18px; line-height: 1.4; color: ${C.encre};">${o.texte}</td></tr>
+<tr><td style="padding: 0 18px 20px 18px; font-family: ${SANS}; font-size: 14px; font-weight: bold; color: ${C.encre};">${o.libelle}&nbsp;&rarr;</td></tr>`)}
 </a>
 </td>`;
-  return `<tr><td class="px-mobile-duo" style="padding: 0 33px 40px 33px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${cellule(a)}${cellule(b)}</tr></table>
-</td></tr>`;
+  return ligne(
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>${cellule(a, "g")}${cellule(b, "d")}</tr></table>`,
+    40,
+  );
 }
 
-/** Une petite carte cadeau pour le bloc « Pour offrir » du duo. */
-const miniCarte = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#6e5d4f" background="${IMG}/carte-fond-1040.jpg" style="background-color: #6e5d4f; background-image: url('${IMG}/carte-fond-1040.jpg'); background-size: cover; background-position: center; border: 1px solid #a07c64; border-radius: 10px;">
-<tr><td style="padding: 14px 14px 0 14px;"><img src="${IMG}/signature-240.png" width="64" alt="Bellajour" style="display: block; width: 64px; height: auto; border: 0;" /></td></tr>
-<tr><td style="padding: 34px 14px 16px 14px; font-family: ${SERIF}; font-size: 19px; line-height: 1.15; color: #f5f0e7;">Vos photos deviennent un magazine.</td></tr>
-</table>`;
+/** Une petite carte cadeau pour le bloc « Pour offrir » du duo : le seul bloc nuit de N1. */
+const miniCarte = blocNuit(
+  `<tr><td style="padding: 14px 14px 0 14px;"><img src="${SIGNATURE}" width="64" alt="Bellajour" style="display: block; width: 64px; height: auto; border: 0;" /></td></tr>
+<tr><td style="padding: 34px 14px 16px 14px; font-family: ${SERIF}; font-size: 19px; line-height: 1.15; color: ${C.nuitTexte};">${clair("Vos photos deviennent un magazine.")}</td></tr>`,
+  "14px",
+);
 
 /**
  * Le code de la carte, à recopier si le bouton ne sert pas. Le libellé AU-DESSUS
@@ -148,42 +156,14 @@ const miniCarte = `<table role="presentation" width="100%" cellpadding="0" cells
  * d'un libellé sur un téléphone.
  */
 const codeCarte = () =>
-  ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border: 1px dashed #8a5a40; border-radius: 14px;">
-<tr><td style="padding: 16px 20px 4px 20px; font-family: ${SANS}; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #928d84;">Votre code</td></tr>
-<tr><td class="code-carte" style="padding: 0 20px 16px 20px; font-family: ${SANS}; font-size: 19px; font-weight: 500; letter-spacing: 1px; color: #f5f0e7; white-space: nowrap;">${P("CODE")}</td></tr>
-</table>`);
-
-/**
- * Le récapitulatif (docs/marque/STRUCTURE-INFO.md) : libellé à gauche, valeur
- * à droite. Une ligne peut être conditionnelle (`si`) : absente vaut mieux
- * qu'à zéro.
- */
-function recap(lignes) {
-  const rangs = lignes.map((l, i) => {
-    const bord = i < lignes.length - 1 ? "border-bottom: 1px solid #26262a;" : "";
-    const rang = `<tr><td style="padding: 13px 0; ${bord} font-family: ${SANS}; font-size: 14px; color: #928d84;">${l.lib}</td>
-<td align="right" style="padding: 13px 0; ${bord} font-family: ${SANS}; font-size: 14px; color: ${l.fort ? "#d68a63" : "#e9e4da"}; font-weight: ${l.fort ? 500 : 400}; white-space: nowrap;">${l.val}</td></tr>`;
-    return l.si ? `{% if params.${l.si} %}${rang}{% endif %}` : rang;
-  });
-  return ligne(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#161618" style="background-color: #161618; border-radius: 16px;">
-<tr><td style="padding: 4px 20px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${rangs.join("")}</table>
-</td></tr></table>`);
-}
-
-function bouton(cta, lien) {
-  return ligne(
-    `<!--[if mso]>
-<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${lien}" style="height:54px;v-text-anchor:middle;width:300px;" arcsize="50%" stroke="f" fillcolor="#f5f0e7"><w:anchorlock/><center style="color:#1a1210;font-family:Helvetica,Arial,sans-serif;font-size:15px;font-weight:500;">${cta}</center></v:roundrect>
-<![endif]-->
-<!--[if !mso]><!-- -->
-<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td bgcolor="#f5f0e7" style="background-color: #f5f0e7; border-radius: 999px;">
-<a href="${lien}" class="btn-cta" style="display: inline-block; padding: 17px 34px; background-color: #f5f0e7; border-radius: 999px; text-decoration: none; font-family: ${SANS}; font-size: 15px; font-weight: 500; color: #1a1210;">${cta}</a>
-</td></tr></table>
-<!--<![endif]-->`,
-    44,
+  ligne(
+    cadre(`<tr><td style="padding: 18px 24px 4px 24px;">${etiquette("Votre code")}</td></tr>
+<tr><td class="code-carte" style="padding: 0 24px 18px 24px; font-family: ${SANS}; font-size: 19px; font-weight: bold; letter-spacing: 1px; color: ${C.encre}; white-space: nowrap;">${P("CODE")}</td></tr>`),
+    32,
   );
-}
+
+/** Le récapitulatif (docs/marque/STRUCTURE-INFO.md), dans son cadre. */
+const recapCarte = (lignes) => encartRecap(lignes);
 
 /** « À noter » : trois puces au plus, puis un lien vers le détail. */
 function aNoter(puces, lien = { href: LIENS.conditions, texte: "Toutes les conditions" }) {
@@ -193,86 +173,28 @@ function aNoter(puces, lien = { href: LIENS.conditions, texte: "Toutes les condi
     .map((p) => {
       const cond = p.match(/^\{% if params\.([A-Z_]+) %\}((?:(?!\{% else %\})[\s\S])*)\{% endif %\}$/);
       const texte = cond ? cond[2] : p;
-      const rang = `<tr><td valign="top" width="16" style="padding: 0 0 8px 0; font-family: ${SANS}; font-size: 14px; line-height: 1.6; color: #d68a63;">&middot;</td>
-<td style="padding: 0 0 8px 0; font-family: ${SANS}; font-size: 14px; line-height: 1.6; color: #a9a49b;">${texte}</td></tr>`;
+      const rang = `<tr><td valign="top" width="16" style="padding: 0 0 8px 0; font-family: ${SANS}; font-size: 14px; line-height: 1.6; color: ${C.encre};">&middot;</td>
+<td style="padding: 0 0 8px 0; font-family: ${SANS}; font-size: 14px; line-height: 1.6; color: ${C.doux};">${texte}</td></tr>`;
       return cond ? `{% if params.${cond[1]} %}${rang}{% endif %}` : rang;
     })
     .join("");
-  return ligne(`<div style="font-family: ${SANS}; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #928d84; padding-bottom: 12px;">À noter</div>
+  return ligne(`<div style="padding-bottom: 12px;">${etiquette("À noter")}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}</table>
-${lien ? `<p style="margin: 6px 0 0 0; font-family: ${SANS}; font-size: 14px;"><a href="${lien.href}" style="color: #d68a63; text-decoration: none;">${lien.texte} &rarr;</a></p>` : ""}`);
+${lien ? `<p style="margin: 6px 0 0 0; font-family: ${SANS}; font-size: 14px;">${lienSecondaire(lien.texte, lien.href)}</p>` : ""}`, 40);
 }
 
-const signature = () =>
-  ligne(
-    `<p style="margin: 0; font-family: ${SERIF}; font-style: italic; font-size: 20px; color: #e9e4da;">L&rsquo;atelier Bellajour</p>`,
-    48,
-  );
+const evocation = (t) => chapo(t);
 
 /* ─────────────────────────────── le cadre ─────────────────────────────── */
 
 export function maquette(mail) {
-  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="fr">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="x-apple-disable-message-reformatting" />
-<meta name="color-scheme" content="dark" />
-<meta name="supported-color-schemes" content="dark" />
-<title>${mail.sujet}</title>
-<!--[if mso]>
-<style type="text/css">
-table { border-collapse: collapse; border-spacing: 0; }
-td { padding: 0; }
-body, table, td, p, a, h1 { font-family: Georgia, 'Times New Roman', serif !important; }
-</style>
-<![endif]-->
-<style type="text/css">
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@400;500&display=swap');
-body, table, td, p, a, h1 { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-body { margin: 0 !important; padding: 0 !important; width: 100% !important; background-color: #070708; }
-a { text-decoration: none; }
-.btn-cta:hover { background-color: #ffffff !important; }
-@media screen and (max-width: 620px) {
-  .container { width: 100% !important; max-width: 100% !important; }
-  .px-mobile { padding-left: 24px !important; padding-right: 24px !important; }
-  .px-mobile-duo { padding-left: 17px !important; padding-right: 17px !important; }
-  .duo { display: block !important; width: 100% !important; padding-bottom: 14px !important; }
-  .hero-title { font-size: 36px !important; line-height: 1.08 !important; }
-  .code-carte { font-size: 16px !important; letter-spacing: 0.5px !important; }
-}
-</style>
-</head>
-<body style="margin: 0; padding: 0; background-color: #070708;">
-<div style="display: none; max-height: 0; overflow: hidden; mso-hide: all;">${mail.preheader}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#070708" style="background-color: #070708;">
-<tr><td align="center" style="padding: 48px 12px 56px 12px;">
-<table role="presentation" class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; max-width: 600px;">
-
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 26px 40px;">
-<a href="${SITE}/"><img src="${SITE}/logo-mail-cuivre.png" width="150" alt="Bellajour" style="display: block; width: 150px; max-width: 150px; height: auto; border: 0; margin: 0 auto;" /></a>
-</td></tr>
-<tr><td align="center" style="padding: 0 40px 40px 40px;">
-<table role="presentation" width="52" cellpadding="0" cellspacing="0" border="0"><tr><td height="1" bgcolor="#d68a63" style="background-color: #d68a63; height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</td></tr></table>
-</td></tr>
-
-${mail.blocs.join("\n")}
-
-<tr><td align="center" style="padding: 0 40px 24px 40px;">
-<table role="presentation" width="52" cellpadding="0" cellspacing="0" border="0"><tr><td height="1" bgcolor="#26262a" style="background-color: #26262a; height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</td></tr></table>
-</td></tr>
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 10px 40px;">
-<a href="https://www.instagram.com/bellajour__/" style="font-family: ${SANS}; font-size: 14px; color: #c7c2b8; text-decoration: none;">@bellajour__</a>
-</td></tr>
-<tr><td align="center" class="px-mobile" style="padding: 0 40px 0 40px;">
-<p style="margin: 0; font-family: ${SANS}; font-size: 12px; color: #928d84; line-height: 1.7;">Bellajour &middot; Maison d&rsquo;&eacute;dition du souvenir<br />Une question ? R&eacute;pondez &agrave; ce message.</p>
-</td></tr>
-
-</table>
-</td></tr></table>
-</body>
-</html>`;
+  return coquille({
+    titreHtml: mail.sujet,
+    preheader: mail.preheader,
+    corps: mail.blocs.join("\n"),
+    /* ⚠️ noel-campagnes.mjs accroche le lien de désinscription à cette fin exacte. */
+    mention: "Une question ? R&eacute;pondez &agrave; ce message.",
+  });
 }
 
 /* ─────────────────────────────── les mails ─────────────────────────────── */
@@ -316,7 +238,7 @@ export const MAILS = [
         },
         {
           lien: LIENS.magazine,
-          visuel: `<img src="${IMG}/lisbonne-480.jpg" width="240" alt="Le magazine Lisbonne" style="display: block; width: 100%; max-width: 240px; height: auto; border: 0;" />`,
+          visuel: `<img src="${IMG_CHARTE}/lisbonne-480.jpg" width="240" alt="Le magazine Lisbonne" style="display: block; width: 100%; max-width: 240px; height: auto; border: 0;" />`,
           titre: "Pour vous",
           texte: "Votre magazine sous le sapin, et un deuxième dans le même colis, à prix doux.",
           libelle: "Voir les magazines",
@@ -418,13 +340,13 @@ export const MAILS = [
           `${vous(`votre carte pour ${DEST} est prête.`)} Imprimez-la et glissez-la sous le sapin.`,
         ),
       ),
-      recap([
+      recapCarte([
         { lib: "Pour", val: DEST },
         { lib: "Envoyée à", val: P("EMAIL_DEST"), si: "EMAIL_DEST" },
         { lib: "Montant", val: MONTANT },
         { lib: "Code", val: P("CODE") },
         { lib: "Valable jusqu&rsquo;au", val: P("DATE") },
-        { lib: "Reçu", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
+        { lib: "Reçu", val: lienSecondaire("Le voir", P("LIEN_RECU")) },
       ]),
       bouton("Voir et imprimer la carte", P("LIEN_CARTE")),
       aNoter([
@@ -449,13 +371,13 @@ export const MAILS = [
       evocation(
         `${vous(`votre carte pour ${DEST} est prête.`)} Nous la lui envoyons le ${P("DATE_ENVOI")} au matin. D&rsquo;ici là, elle reste une surprise.`,
       ),
-      recap([
+      recapCarte([
         { lib: "Pour", val: DEST },
         { lib: "Envoyée à", val: P("EMAIL_DEST") },
         { lib: "Le", val: `${P("DATE_ENVOI")} au matin`, fort: true },
         { lib: "Montant", val: MONTANT },
         { lib: "Code", val: P("CODE") },
-        { lib: "Reçu", val: `<a href="${P("LIEN_RECU")}" style="color: #d68a63; text-decoration: none;">Le voir &rarr;</a>` },
+        { lib: "Reçu", val: lienSecondaire("Le voir", P("LIEN_RECU")) },
       ]),
       bouton("Voir et imprimer la carte", P("LIEN_CARTE")),
       aNoter([
