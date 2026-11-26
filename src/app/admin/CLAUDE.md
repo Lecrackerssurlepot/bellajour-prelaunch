@@ -172,3 +172,13 @@ montre un mail sans template**) · `demo/` (fixtures, sans base).
 réécrit toutes les semaines complètes, idempotent. L'origine chaud/froid se pose sur la fiche
 (`Origine.tsx`) ; un fondateur est chaud d'office ; l'inconnu est compté À PART, jamais deviné.
 `demo/cockpit` montre l'écran sur une série inventée.
+
+## Site · Visuels (26/11, charte V2)
+
+`/admin/atelier/site/visuels` (lien « Site » de la barre) : Mathias y règle les visuels datés du
+site sans passer par le code. La LISTE des emplacements et leurs défauts restent dans
+`src/content/media.ts` (ajouter, retirer, redimensionner = du code) ; les rotations vivent dans
+`visuels_rotations`, les fichiers dans le panier public `visuels-site`. Écran en charte V2, CSS scopé
+`.vis-root` (les halos de l'admin y sont éteints). « Voir le site » ouvre l'aperçu à la date choisie
+(mode brouillon de Next, pastille `BandeauApercuVisuels` posée dans le layout racine). Les états
+(en ligne, à valider, à venir, passée, masquée) sont ceux de `etatRotation`, rejoués dans le navigateur.

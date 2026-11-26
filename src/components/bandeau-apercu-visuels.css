@@ -1,0 +1,32 @@
+/* Le rappel d'aperçu des visuels (BandeauApercuVisuels.tsx) : une pastille
+   d'encre en bas de l'écran, au-dessus de tout, visible seulement par l'atelier. */
+.bav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--m-espace-4) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: var(--m-plan-feuille);
+  display: flex;
+  align-items: center;
+  gap: var(--m-espace-4);
+  padding: var(--m-espace-2) var(--m-espace-2) var(--m-espace-2) var(--m-espace-5);
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  color: var(--m-couleur-papier-fond);
+  background: var(--m-couleur-accent);
+  border-radius: var(--m-rayon-pilule);
+  box-shadow: var(--m-ombre-flottant);
+  white-space: nowrap;
+}
+
+.bav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--m-cible-mini);
+  padding: 0 var(--m-espace-4);
+  color: var(--m-couleur-accent);
+  background: var(--m-couleur-papier-fond);
+  border-radius: var(--m-rayon-pilule);
+  text-decoration: none;
+  font-weight: var(--m-police-texte-graisse-moyenne);
+}

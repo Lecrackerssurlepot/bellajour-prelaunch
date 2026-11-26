@@ -6,15 +6,21 @@
    (heure de Paris), sinon le visuel par défaut. Une rotation `valide: false`
    n'est jamais en ligne : elle ne se voit que dans l'aperçu /brand/visuels.
 
-   Pour changer un visuel : déposer le fichier sous un NOM NOUVEAU (le cache
-   de l'hébergeur garde un même nom 24 h), puis changer la ligne.
+   Ce fichier tient la LISTE des emplacements et leur visuel par défaut.
+   Les rotations datées se règlent surtout dans l'admin (Site · Visuels,
+   /admin/atelier/site/visuels, table `visuels_rotations`) : le site les lit par
+   `visuelDuJour` (src/content/visuel-du-jour.ts), qui les place AVANT celles
+   d'ici. Ajouter, retirer ou redimensionner un emplacement reste du code.
+
+   Pour changer un défaut ici : déposer le fichier sous un NOM NOUVEAU (le
+   cache de l'hébergeur garde un même nom 24 h), puis changer la ligne.
 
    `provisoire: true` : le visuel par défaut est une image déjà dans le dépôt,
    posée en attendant le vrai visuel (phase 4, 25/11/2026 : aucun n'est choisi).
    ════════════════════════════════════════════════════════════ */
 
-/** Une vidéo = un poster (le `fichier` du visuel) + deux encodages. */
-export type Video = { mp4: string; webm: string }
+/** Une vidéo = un poster (le `fichier` du visuel) + un mp4, et un webm facultatif. */
+export type Video = { mp4: string; webm?: string }
 
 export type Visuel = {
   /** Chemin public de l'image (ou du poster pour une vidéo). */
@@ -23,7 +29,7 @@ export type Visuel = {
   video?: Video
 }
 
-export type Rotation = Visuel & {
+type Periode = {
   /** Premier jour inclus, AAAA-MM-JJ, heure de Paris. */
   du: string
   /** Dernier jour inclus, AAAA-MM-JJ, heure de Paris. */
@@ -32,6 +38,14 @@ export type Rotation = Visuel & {
   valide: boolean
 }
 
+/**
+ * Une rotation montre un visuel sur sa période, ou, avec `vide: true`, n'en
+ * montre AUCUN (un fond présent certains jours seulement). Une rotation vide
+ * n'a pas de place dans un emplacement qui n'est pas `optionnel` : l'admin la
+ * refuse, et le harnais aussi.
+ */
+export type Rotation = Periode & ((Visuel & { vide?: false }) | { vide: true; fichier?: undefined; alt?: undefined; video?: undefined })
+
 export type Emplacement = {
   /** Ce que c'est, en clair, pour l'aperçu. */
   role: string
@@ -39,7 +53,10 @@ export type Emplacement = {
   ratio?: string
   /** 'video' : l'emplacement attend un poster + mp4 + webm. */
   type: 'image' | 'video'
-  defaut: Visuel
+  /** `null` : l'emplacement est vide par défaut (seules ses rotations le remplissent). Exige `optionnel`. */
+  defaut: Visuel | null
+  /** L'emplacement peut ne rien montrer : la page sait s'en passer. */
+  optionnel?: true
   provisoire?: boolean
   rotations: Rotation[]
 }
@@ -310,8 +327,17 @@ export function couvre(rotation: Pick<Rotation, 'du' | 'au'>, jour: string): boo
   return rotation.du <= jour && jour <= rotation.au
 }
 
+/** Options de calcul : l'aperçu de l'admin peut compter les brouillons comme validés. */
+export type OptionsVisuel = { brouillons?: boolean }
+
+/** La rotation qui gagne ce jour (la première déclarée), ou -1. */
+export function rotationGagnante(e: Pick<Emplacement, 'rotations'>, jour: string, options: OptionsVisuel = {}): number {
+  return e.rotations.findIndex((x) => (x.valide || options.brouillons === true) && couvre(x, jour))
+}
+
 /**
- * Le visuel en ligne pour un emplacement à un instant donné.
+ * Le visuel en ligne pour un emplacement à un instant donné, ou `null` quand
+ * l'emplacement ne montre rien (défaut vide, ou rotation `vide` ce jour-là).
  * Pure : la table est passée en paramètre (par défaut MEDIA) pour le harnais.
  * Si deux rotations validées se chevauchent, la première déclarée gagne.
  */
@@ -319,11 +345,13 @@ export function visuelPour<T extends Record<string, Emplacement> = typeof MEDIA>
   emplacement: keyof T & string,
   instant: Date = new Date(),
   table: T = MEDIA as unknown as T,
-): Visuel {
+  options: OptionsVisuel = {},
+): Visuel | null {
   const e = table[emplacement]
-  const jour = jourParis(instant)
-  const r = e.rotations.find((x) => x.valide && couvre(x, jour))
-  if (!r) return e.defaut
+  const i = rotationGagnante(e, jourParis(instant), options)
+  if (i < 0) return e.defaut
+  const r = e.rotations[i]
+  if (r.vide) return null
   const { fichier, alt, video } = r
   return video ? { fichier, alt, video } : { fichier, alt }
 }
@@ -339,6 +367,5 @@ export function etatRotation(e: Emplacement, index: number, jour: string): EtatR
   if (!r.valide) return 'à valider'
   if (jour < r.du) return 'à venir'
   if (jour > r.au) return 'passée'
-  const gagnante = e.rotations.findIndex((x) => x.valide && couvre(x, jour))
-  return gagnante === index ? 'en ligne' : 'masquée'
+  return rotationGagnante(e, jour) === index ? 'en ligne' : 'masquée'
 }

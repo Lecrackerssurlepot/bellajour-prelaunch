@@ -56,6 +56,9 @@ import type { NextConfig } from "next";
    (aucun `report-uri` aujourd'hui), personne d'autre que celui qui ouvre la
    console ne voit une violation en production. */
 const COFFRE_R2 = "https://*.r2.cloudflarestorage.com";
+/* Le panier public des visuels du site (Site · Visuels, 26/11) : images et
+   vidéos servies par Supabase Storage, et l'envoi signé de l'admin. */
+const PANIER_VISUELS = "https://*.supabase.co";
 
 function politiqueRapportSeul(enDeveloppement: boolean, ancetres: "'none'" | "'self'"): string {
   const directives: Array<[string, string[]]> = [
@@ -63,9 +66,10 @@ function politiqueRapportSeul(enDeveloppement: boolean, ancetres: "'none'" | "'s
     /* `next dev` exige `eval` (piles d'appel de React) et sa socket de rechargement. */
     ["script-src", ["'self'", "'unsafe-inline'", "'wasm-unsafe-eval'", ...(enDeveloppement ? ["'unsafe-eval'"] : [])]],
     ["style-src", ["'self'", "'unsafe-inline'"]],
-    ["img-src", ["'self'", "data:", "blob:", COFFRE_R2, "https://*.googleusercontent.com"]],
+    ["img-src", ["'self'", "data:", "blob:", COFFRE_R2, PANIER_VISUELS, "https://*.googleusercontent.com"]],
+    ["media-src", ["'self'", "blob:", PANIER_VISUELS]],
     ["font-src", ["'self'", "data:"]],
-    ["connect-src", ["'self'", COFFRE_R2, ...(enDeveloppement ? ["ws:", "wss:"] : [])]],
+    ["connect-src", ["'self'", COFFRE_R2, PANIER_VISUELS, ...(enDeveloppement ? ["ws:", "wss:"] : [])]],
     ["frame-src", ["'self'", "https:"]],
     ["worker-src", ["'self'"]],
     ["object-src", ["'none'"]],

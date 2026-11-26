@@ -68,6 +68,7 @@ Chargé dès qu'on touche une route.
 | `/api/admin/atelier/mise-en-page/photos` | GET, lecture seule : les photos d'un dossier pour l'éditeur. **18/11 au soir** : lit aussi `occasion` et `histoire` (colonnes d'origine, 20260821) pour pré-remplir la page Analyse ; même repli 42703 que la finition |
 | `/api/admin/atelier/mise-en-page/lieux` | trois appels
  Geoapify par endroit (quota gratuit de 3 000 par jour), 12 endroits au plus par requête ; n'écrit RIEN, le navigateur garde les réponses |
+| `/api/admin/visuels/*` (26/11) | `depot` : une URL d'envoi SIGNÉE vers le panier PUBLIC Supabase Storage `visuels-site` (le navigateur envoie lui-même, image ≤ 15 Mo, vidéo ≤ 50 Mo, nom unique) ; `rotations` POST / `rotations/<id>` PATCH, DELETE : la seule table `visuels_rotations` (fichier refusé s'il n'est pas dans le panier), puis `revalidateTag('visuels-site')` ; `apercu` : `draftMode` + cookie `bj_apercu_visuels` (« le site à une date »), `?fin=1` le referme. Aucun mail, aucun autre état |
 | `/api/admin/cockpit/*`, `/api/admin/atelier/origine` | réglages du cockpit, recalcul de l'agrégat, origine chaud/froid d'un dossier : aucun mail, aucun état, une ligne de journal pour l'origine |
 | `/api/compte/inscription`, `/api/compte/mot-de-passe-oublie` | crée un compte `auth.users` et **envoie C1/C2 par Brevo** (lien frappé par `generateLink`, URL du site, jamais celle de Supabase) |
 
