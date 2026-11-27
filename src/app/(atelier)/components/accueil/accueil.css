@@ -372,6 +372,14 @@
 .m-banc .mat-grille .mat-infos{grid-column:1;grid-row:3;display:grid;grid-template-columns:1fr 1fr;column-gap:var(--m-espace-4)}
 .m-banc .mat-infos li{flex-direction:column;gap:2px;padding:var(--m-espace-3) 0}
 }
+/* La vidéo de « La matière » est CARRÉE (Mathias, 27/11 : pas de format vertical). Elle prend la
+   colonne de droite entière, au plus la hauteur de l'écran. */
+.m-banc .mat-video{grid-column:7/13;height:auto;width:100%;align-self:center;display:block}
+.m-banc .mat-video video{width:100%;height:auto;max-width:min(100%,calc(100svh - 2 * var(--m-espace-8) - 40px),780px);max-height:none;aspect-ratio:1/1;margin-left:auto}
+@media (max-width:900px){
+.m-banc .mat-video{grid-column:1;align-self:center}
+.m-banc .mat-video video{max-width:min(100%,calc(100svh - 360px));margin:0 auto}
+}
 .m-banc .couv-titre.ex-fondu{transition:opacity .45s ease}
 .m-banc .couv-titre.ex-cache{opacity:0}
 /* Le magazine 3D de la charte ouvre le livre (livre3d.ts). Sa toile est posée

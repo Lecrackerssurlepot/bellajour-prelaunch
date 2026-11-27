@@ -88,6 +88,8 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
   const rayon = useRef<HTMLDivElement>(null)
   const racine = useRef<HTMLDivElement>(null)
   const [rendus, setRendus] = useState<Record<string, string>>({})
+  /* Le défilé a ses propres images, de face : le numéro du centre doit être droit (27/11). */
+  const [rendusFace, setRendusFace] = useState<Record<string, string>>({})
   const glisse = useRef<{ x: number; id: number } | null>(null)
 
   const choisirVue = (v: VueEtagere) => {
@@ -141,6 +143,20 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
       veille.disconnect()
     }
   }, [livres])
+
+  useEffect(() => {
+    if (vue !== 'defile') return
+    let annule = false
+    for (const l of livres) {
+      if (!l.couverture || l.couvertureEstPlanche) continue
+      void rendreNumero(l.couverture, l.nbPages, 'face').then((src) => {
+        if (src && !annule) setRendusFace((r) => (r[l.token] === src ? r : { ...r, [l.token]: src }))
+      })
+    }
+    return () => {
+      annule = true
+    }
+  }, [livres, vue])
 
   const aller = useCallback(
     (pas: number) => setCentre((c) => Math.min(livres.length - 1, Math.max(0, c + pas))),
@@ -245,7 +261,7 @@ export default function Etagere({ livres, demo = false }: { livres: LivreVue[]; 
                   aria-hidden={loin}
                   onClick={() => (d === 0 ? setOuvert(i) : setCentre(i))}
                 >
-                  <Livre l={l} taille="(max-width: 700px) 60vw, 320px" rendu={rendus[l.token]} />
+                  <Livre l={l} taille="(max-width: 700px) 60vw, 320px" rendu={rendusFace[l.token]} />
                 </div>
               )
             })}

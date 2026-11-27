@@ -254,7 +254,9 @@
 /* La tablette : une planche claire, juste sous les numéros, au-dessus des
    légendes. */
 .bib-tablette::after {
-  content: '';
+  /* Plus de planche sous les numéros (Mathias, 27/11 : « il pourrait ne pas exister ») :
+     chaque numéro porte sa propre ombre. */
+  content: none;
   position: absolute;
   left: 0;
   right: 0;
@@ -356,11 +358,15 @@
     translateX(calc(var(--d) * 58%))
     translateZ(calc(var(--ad) * -160px))
     rotateY(calc(var(--d) * -10deg));
-  opacity: max(0, calc(1 - var(--ad) * 0.24));
+  /* Pas de transparence (« ça fait fourbi », 27/11) : les numéros des côtés sont pleins, un peu
+     assombris, et s'éclairent en arrivant au centre. Au-delà de trois, ils disparaissent. */
+  opacity: clamp(0, calc(4 - var(--ad)), 1);
+  filter: brightness(calc(1 - min(var(--ad), 3) * 0.16));
   z-index: calc(10 - var(--ad));
   cursor: pointer;
   transition:
     transform var(--m-duree-menu) var(--m-courbe-sortie),
+    filter var(--m-duree-menu) var(--m-courbe-sortie),
     opacity var(--m-duree-menu) var(--m-courbe-sortie);
 }
 .bib-carte[aria-hidden='true'] { visibility: hidden; }

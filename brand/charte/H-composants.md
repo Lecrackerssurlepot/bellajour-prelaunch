@@ -113,8 +113,8 @@ L'espace personnel `/compte`, en blanc. Maquette : `/brand/bibliotheque`. Source
 - **Deux onglets** : « À l'atelier » (les numéros en cours) et « Ma bibliothèque » (les numéros livrés).
 - **À l'atelier = une épreuve** : carte `rayon.bloc`, vignette A4 en filet pointillé `ligne`, sans ombre ni photo ; étiquette du geste attendu, nom réel de l'état, jauge des cinq jalons. Le numéro qui attend le client prend un filet `texte`.
 - **Bibliothèque = un objet** : la couverture a une tranche (dégradé de reliure) et l'ombre `ombre.livre`. Deux vues, pas plus, mémorisées sur l'appareil (Étagère par défaut) :
-  - **Étagère** : couvertures de face sur des tablettes, légère rotation (12°), le numéro se décolle au survol. Largeur d'un numéro : 132 à 192 px selon l'écran.
-  - **Défilé** : un numéro au centre qui flotte, les autres en arc (décalage, profondeur, rotation croissants). Flèches, clavier ← →, balayage au doigt.
+  - **Étagère** : les numéros presque de face (angle 3D « presque-face », -18°), posés sans planche ni trait (retirés le 27/11), le numéro se décolle au survol. Largeur d'un numéro : 132 à 192 px selon l'écran.
+  - **Défilé** : le numéro du centre **droit** (angle 3D « face »), les autres en arc (décalage, profondeur, rotation de 10° par rang). **Jamais de transparence** (27/11, « ça fait fourbi ») : les numéros des côtés sont pleins, assombris de 16 % par rang, et s'éclairent en arrivant au centre. Flèches, clavier ← →, balayage au doigt.
   - ❌ **Pas de vue « Tranches »** (tranché le 26/11) : à l'épaisseur réelle d'un magazine, le dos fait quelques millimètres, trop fin pour porter un visuel. Une vue qui dessine des dos épais ment sur l'objet. Règle générale : on ne montre jamais le magazine plus épais qu'il n'est.
 - **Le numéro en grand** : fenêtre sur voile blanc flouté. Le magazine 3D de la charte (`brand/assets/3d/magazine`), chargé à l'ouverture seulement ; sans WebGL, la couverture à plat. Échap ferme, ← → changent de numéro. Un seul bouton plein : « Ouvrir le numéro ».
 - **États** : vide (« Votre étagère attend son premier numéro » + un bouton), un seul numéro, rayon plein.

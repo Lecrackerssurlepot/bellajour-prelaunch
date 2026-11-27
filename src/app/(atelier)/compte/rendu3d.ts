@@ -84,10 +84,10 @@ function detourer(donnees: Uint8ClampedArray, cote: number) {
   return { x: Math.max(0, x0 - 1), y: Math.max(0, y0 - 1), l: Math.min(cote, x1 + 2) - Math.max(0, x0 - 1), h: Math.min(cote, y1 + 2) - Math.max(0, y0 - 1) }
 }
 
-async function photographier(couverture: string, pages: number): Promise<string | null> {
+async function photographier(couverture: string, pages: number, angle: string): Promise<string | null> {
   const { studio, toile } = await ouvrir()
   await studio.regler({ couverture, pages, dosMm: dosMmPourPages(pages, FINITION_DEFAUT) })
-  studio.allerA(ANGLE, { anime: false })
+  studio.allerA(angle, { anime: false })
   /* Le rendu et sa copie dans la même tâche : la toile WebGL ne garde pas son image. */
   studio.rendre()
   toile.width = COTE
@@ -108,16 +108,18 @@ async function photographier(couverture: string, pages: number): Promise<string 
   return blob ? URL.createObjectURL(blob) : null
 }
 
-/** L'image du numéro en volume (fond transparent), ou null s'il faut garder la couverture à plat. */
-export function rendreNumero(couverture: string, nbPages: number | null): Promise<string | null> {
+/** L'image du numéro en volume (fond transparent), ou null s'il faut garder la couverture à plat.
+    `angle` : un angle nommé de brand/assets/3d/magazine/angles.json (« face » pour le défilé, où le
+    numéro du centre doit être droit, Mathias le 27/11). */
+export function rendreNumero(couverture: string, nbPages: number | null, angle: string = ANGLE): Promise<string | null> {
   const pages = nbPages ?? PAGES_PAR_DEFAUT
-  const cle = `${pages}|${couverture}`
+  const cle = `${angle}|${pages}|${couverture}`
   const connue = memoire.get(cle)
   if (connue) return connue
   if (impossible) return Promise.resolve(null)
   enAttente += 1
   const promesse = file
-    .then(() => photographier(couverture, pages))
+    .then(() => photographier(couverture, pages, angle))
     .catch(() => {
       /* Pas de WebGL : inutile de réessayer pour chaque numéro. Une image
          illisible, elle, ne condamne que ce numéro. */

@@ -1,6 +1,6 @@
 # Visuels à fournir : la liste et le mode d'emploi
 
-26/11/2026. Source : `src/content/media.ts` (la liste des emplacements) et l'outil
+26/11/2026, mis à jour le 27/11 (vidéo carrée). Source : `src/content/media.ts` (la liste des emplacements) et l'outil
 **Site · Visuels** de l'admin (`/admin/atelier/site/visuels`). Tous les visuels actuels sont
 **provisoires** : des images déjà dans le dépôt, posées en attendant les vrais.
 
@@ -24,7 +24,7 @@ couvertures**, réutilisables d'un emplacement à l'autre.
 | Accueil | `accueil.double-page-1`, `-2` (2) | 1400 / 990 | La double page sous la couverture qui s'ouvre, puis celle qui se tourne |
 | Accueil | `accueil.hero` | libre | Une photo d'exemple posée dans le livre de l'ouverture |
 | Accueil | `accueil.photo-exemple` | libre | La photo d'exemple de l'essai photos |
-| Accueil | `accueil.matiere` | **vidéo 9 / 16** | La vidéo de Louis (section « La matière ») |
+| Accueil | `accueil.matiere` | **vidéo carrée 1 / 1** | La vidéo de Louis (section « La matière ») |
 | Accueil | `accueil.porte-offrir`, `porte-groupes` (2) | libre | Les vignettes des deux portes |
 | Magazine | `magazine.couverture`, `eventail-2`, `-3` (3) | 210 / 297 | L'éventail en tête de page |
 | Magazine | `magazine.double-page` | libre | Une double page ouverte |
@@ -47,8 +47,8 @@ décor de fond.**
   vidéo du duplicata.
 - **Ce qu'on voit** : le magazine dans des conditions sympas (feuilleté, tenu, posé). 10 secondes,
   en boucle, **sans son**. Fin et début raccord, pour que la boucle ne saute pas.
-- **Cadre** : vertical **9 / 16**, par exemple 1080 × 1920. Sur ordinateur, elle est affichée à
-  780 px de haut au plus, donc 1080 px de large suffisent (fiche J).
+- **Cadre** : **carré 1 / 1**, par exemple 1080 × 1080 (Mathias, 27/11 : pas de format vertical).
+  Sur ordinateur, elle est affichée à 780 px de côté au plus, donc 1080 px suffisent (fiche J).
 - **À livrer, trois fichiers** :
   - MP4 en H.264, sans piste son ;
   - WebM en VP9, sans piste son (facultatif, mais plus léger) ;

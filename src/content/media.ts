@@ -180,8 +180,8 @@ export const MEDIA = {
     rotations: [],
   },
   'accueil.matiere': {
-    role: "La vidéo de la section « La matière » (verticale à tourner)",
-    ratio: '9 / 16',
+    role: "La vidéo de la section « La matière » (carrée, 27/11)",
+    ratio: '1 / 1',
     type: 'video',
     provisoire: true,
     defaut: {
