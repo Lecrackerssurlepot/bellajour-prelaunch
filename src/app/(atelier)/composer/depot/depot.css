@@ -707,3 +707,66 @@
 @media (hover: none) and (pointer: coarse) {
   .bj-atelier .at-d-glisser { display: none; }
 }
+
+/* ══ LUMIÈRE ET VERRE (charte F, variation validée par Mathias le 27/11) ══════════
+   Le dépôt est une surface « où l'on travaille » : il porte la variation. Deux
+   lumières floues derrière l'écran, dont la couleur vient UNIQUEMENT des photos
+   (LumieresPhotos.tsx, rien sans photo), et des panneaux de verre dépoli aux
+   rayons de la charte. Subtil : si l'on remarque la lumière avant les photos,
+   elle est trop forte. Toutes les valeurs viennent de tokens.json. */
+@property --lumiere-a { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lumiere-b { syntax: "<color>"; inherits: true; initial-value: transparent; }
+
+.at-lumieres {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  transition:
+    --lumiere-a var(--m-variation-lumiere-verre-lumiere-transition) ease,
+    --lumiere-b var(--m-variation-lumiere-verre-lumiere-transition) ease;
+}
+.at-lumieres::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(40% 36% at 18% 28%, var(--lumiere-a), transparent 72%),
+    radial-gradient(44% 40% at 84% 74%, var(--lumiere-b), transparent 72%);
+  filter: blur(var(--m-variation-lumiere-verre-lumiere-flou));
+  opacity: var(--m-variation-lumiere-verre-lumiere-opacite);
+  animation: at-lumiere-derive var(--m-variation-lumiere-verre-lumiere-derive) ease-in-out infinite alternate;
+}
+@keyframes at-lumiere-derive { to { transform: translate(4%, -3%) scale(1.06); } }
+
+/* Le verre : sur le compteur, la planche des photos et la zone d'appel. */
+.bj-atelier .at-d-etat,
+.bj-atelier .at-d-grille,
+.bj-atelier .at-d-appel {
+  background: var(--m-variation-lumiere-verre-verre-fond);
+  -webkit-backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou)) saturate(var(--m-variation-lumiere-verre-verre-saturation));
+  backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou)) saturate(var(--m-variation-lumiere-verre-verre-saturation));
+  box-shadow: inset 0 0 0 1px var(--m-variation-lumiere-verre-verre-trait);
+  border-radius: var(--m-rayon-bloc);
+}
+.bj-atelier .at-d-etat { padding: var(--m-espace-4) var(--m-espace-5); }
+.bj-atelier .at-d-grille { padding: var(--m-espace-4); }
+.bj-atelier .at-d-appel { padding: var(--m-espace-6) var(--m-espace-4); }
+
+/* La barre du bas laisse passer la lumière au lieu de la couper net. */
+.bj-atelier .at-q-barre--depot {
+  background: var(--m-variation-lumiere-verre-verre-fond);
+  -webkit-backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou)) saturate(var(--m-variation-lumiere-verre-verre-saturation));
+  backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou)) saturate(var(--m-variation-lumiere-verre-verre-saturation));
+  border-top-color: var(--m-variation-lumiere-verre-verre-trait);
+}
+
+@media (max-width: 560px) {
+  .bj-atelier .at-d-etat { padding: var(--m-espace-3) var(--m-espace-4); }
+  .bj-atelier .at-d-grille { padding: var(--m-espace-3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .at-lumieres { transition: none; }
+  .at-lumieres::before { animation: none; }
+}

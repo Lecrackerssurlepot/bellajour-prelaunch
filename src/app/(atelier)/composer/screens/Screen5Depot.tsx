@@ -40,6 +40,7 @@ import {
 } from '../depot/paliers'
 import type { Refus } from '../depot/moteur'
 import { ligneDepot, phraseAtelier } from '../dossier'
+import LumieresPhotos from '../depot/LumieresPhotos'
 import '../depot/depot.css'
 
 const ACCEPTE = 'image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif'
@@ -134,6 +135,8 @@ export default function Screen5Depot({
         return [...tete, ...enErreur.filter((p) => !dedans.has(p.id))]
       })()
   const repliees = vue.photos.length - visibles.length
+  /* Les lumières de fond (charte F, « lumière et verre ») : la couleur des six dernières vignettes. */
+  const sourcesLumiere = vue.photos.flatMap((p) => (p.apercu ? [p.apercu] : [])).slice(-6)
 
   /**
    * Le dernier filet : prévenir avant de fermer l'onglet.
@@ -203,6 +206,7 @@ export default function Screen5Depot({
       onDragLeave={() => setSurvol(false)}
       onDrop={(e) => { e.preventDefault(); setSurvol(false); recevoir(e.dataTransfer.files) }}
     >
+      <LumieresPhotos sources={sourcesLumiere} />
       {/* ⚠️ PLUS DE CHAPEAU ICI (08/09/2026). « Vos photos » était écrit
           TROIS fois dans les 400 premiers pixels : le chapeau, le titre, et
           la barre d'étape (« 5 / 5 · Vos photos »). Le chapeau est le seul

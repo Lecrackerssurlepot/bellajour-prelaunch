@@ -1,6 +1,6 @@
-/* Charte Bellajour 2.2.0. FICHIER GÉNÉRÉ depuis brand/tokens.json : ne pas modifier à la main. */
+/* Charte Bellajour 2.3.0. FICHIER GÉNÉRÉ depuis brand/tokens.json : ne pas modifier à la main. */
 
-export const versionCharte = "2.2.0";
+export const versionCharte = "2.3.0";
 
 export const jetons = {
   "couleur": {

@@ -1,6 +1,6 @@
 {
-  "$description": "Charte Bellajour 2.2.0. FICHIER GÉNÉRÉ depuis brand/tokens.json : ne pas modifier à la main.",
-  "version": "2.2.0",
+  "$description": "Charte Bellajour 2.3.0. FICHIER GÉNÉRÉ depuis brand/tokens.json : ne pas modifier à la main.",
+  "version": "2.3.0",
   "couleur.papier.fond": "#ffffff",
   "couleur.papier.texte": "#111111",
   "couleur.papier.texte-doux": "#626262",

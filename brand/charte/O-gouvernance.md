@@ -2,7 +2,7 @@
 
 ## Version
 
-- **Version actuelle** : 2.2.0 (27/11/2026), dans `tokens.json` → `$extensions.bellajour.version`.
+- **Version actuelle** : 2.3.0 (27/11/2026), dans `tokens.json` → `$extensions.bellajour.version`.
 - **Numérotation** :
   - **2.0.x** : une valeur ajustée (une nuance, une taille) ;
   - **2.x.0** : un jeton ou un composant ajouté ;
@@ -45,3 +45,4 @@ Il est rangé dans `archive/ancienne-charte/` en phase 7, jamais supprimé.
 | 2.1.0 | 26/11/2026 | Alignement sur le duplicata « Essai photos » (14BmVZ), devenu la référence visuelle unique (copie dans `brand/reference/`). Ajouts : règle de l'alternance blanc/noir (C), bandeau de Noël à texte fixe (H), bibliothèque Étagère + Défilé (H), gabarit « Back-office et éditeur » (K, proposé), gabarit commun des mails avec en-tête nuit (N, remplace la bascule `prefers-color-scheme`, à valider). Le modèle 3D est utilisé à l'accueil et dans la bibliothèque (J). |
 | 2.1.1 | 27/11/2026 | Retours de Mathias. Magazine 3D toujours de face : l'accueil s'ouvre debout, angle « presque-face » (J, proposé) pour l'étagère, « face » au centre du défilé, plus de transparence ni de planche (H). Vidéo de « La matière » carrée (J, G). Mails : photo seulement sur les mails de moment, titre 52 px, carte cadeau au format carte (N) ; refonte plus riche à venir. |
 | 2.2.0 | 27/11/2026 | Les structures de mails (N) : atelier, lettre, magazine, simple, choisies par Mathias sur trois propositions sourcées. Chaque mail déclare la sienne ; validés avec elles : une bande nuit au plus par mail et un second bouton bordé, dans la bande seulement. Images cuites par `scripts/mails-collages.py`. |
+| 2.3.0 | 27/11/2026 | Variation « lumière et verre » (F), validée par Mathias : lumières floues dont la couleur vient des photos du client, panneaux de verre dépoli aux rayons de la charte. Le verre d'abord. Active sur le dépôt des photos ; l'éditeur interne ensuite ; mails au cas par cas selon la structure. |

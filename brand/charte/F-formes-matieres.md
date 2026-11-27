@@ -45,9 +45,9 @@ On les active cas par cas, en mettant `actif` à `true` dans `tokens.json`.
 | `points-fins` | Trame de points (gardée, sans usage prévu) | Tuile de 7 px, points de 0,9 px, encre à 15 % |
 | `grain` | Bruit de papier | SVG `feTurbulence` : fréquence 0,9, 2 octaves, opacité 5,5 %, tuile de 180 px |
 | `signature-pied` | Le logo signé en bas de page | Voir B |
-| `lumiere-verre` | **Proposée le 27/11, à valider.** Lumières floues derrière la page, panneaux de verre dépoli | Voir ci-dessous |
+| `lumiere-verre` | **Validée le 27/11.** Lumières floues derrière la page, panneaux de verre dépoli. Active sur le dépôt | Voir ci-dessous |
 
-### Lumière et verre (proposée, 27/11)
+### Lumière et verre (validée par Mathias, 27/11)
 
 Mathias trouve l'éditeur « triste » en blanc pur : on y travaille, il faut un peu de vie. La réponse
 reste dans la charte : papier, encre, Fraunces et Inter Tight ne changent pas. On ajoute deux matières.
@@ -60,8 +60,11 @@ reste dans la charte : papier, encre, Fraunces et Inter Tight ne changent pas. O
   verre dépoli, `rgba(255,255,255,.58)`, flou 22 px, saturation 1,4, filet d'encre à 7 %.
 - **Dans un mail** : le flou CSS n'existe pas dans Gmail ni Outlook. La lumière est **cuite** dans
   l'image d'en-tête (ellipses floues à 38 %), comme les autres images des structures.
-- **Où** : l'éditeur client (le dépôt) et l'éditeur interne d'abord ; l'en-tête des mails ensuite ;
-  le site plus tard, cas par cas. Jamais sur une page de texte (légal, compte).
+- **Le verre d'abord** : c'est lui qui compte (Mathias, 27/11). Il habille les structures, les blocs
+  et les panneaux, toujours avec les rayons de la charte (`rayon.bloc` pour un panneau).
+- **Où** : les surfaces « technologiques », là où l'on travaille. Le dépôt des photos (actif depuis
+  le 27/11), puis l'éditeur interne. Les mails : au cas par cas, selon la structure de chaque mail.
+  Le site : plus tard, cas par cas. Jamais sur une page de texte (légal, compte).
 - **Subtil** : si l'on remarque la lumière avant les photos, elle est trop forte.
 
 Maquette : https://claude.ai/artifact/HGwjwCqAYamYDZ8jSjE47w
