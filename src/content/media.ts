@@ -55,6 +55,8 @@ export type Emplacement = {
   role: string
   /** Ratio largeur / hauteur quand la charte le fixe (fiche G). */
   ratio?: string
+  /** Pas de version téléphone : l'image est posée par le script de la page, pas par <ImageSite>. */
+  sansTelephone?: true
   /** 'video' : l'emplacement attend un poster + mp4 + webm. */
   type: 'image' | 'video'
   /** `null` : l'emplacement est vide par défaut (seules ses rotations le remplissent). Exige `optionnel`. */
@@ -157,7 +159,7 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/double-page-lagon-1000.webp',
+      fichier: '/images/v2/ouverture/lagon-2000.webp',
       alt: 'Une double page d’un numéro sur un lagon',
     },
     rotations: [],
@@ -168,7 +170,7 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/double-page-australie-1400.webp',
+      fichier: '/images/v2/ouverture/australia-2000.webp',
       alt: 'Une double page d’un numéro sur l’Australie',
     },
     rotations: [],
@@ -178,8 +180,83 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/couverture-noosa-1000.webp',
+      fichier: '/images/v2/ouverture/noosa-2000.webp',
       alt: 'Une photo de vacances à Noosa',
+    },
+    rotations: [],
+  },
+  'accueil.ouverture-1': {
+    role: "Le magazine qui s'ouvre : la photo de la couverture (remplacée par celle du client)",
+    ratio: '210 / 297',
+    type: 'image',
+    sansTelephone: true,
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/ouverture/lagon-2000.webp',
+      alt: 'Un lagon',
+      cadrage: '22% 50%',
+    },
+    rotations: [],
+  },
+  'accueil.ouverture-2': {
+    role: "Le magazine qui s'ouvre : la page 2, en pleine page",
+    ratio: '210 / 297',
+    type: 'image',
+    sansTelephone: true,
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/ouverture/australia-2000.webp',
+      alt: 'Un voyage en Australie',
+      cadrage: '0% 40%',
+    },
+    rotations: [],
+  },
+  'accueil.ouverture-3': {
+    role: "Le magazine qui s'ouvre : la page 3, la photo sous le titre",
+    type: 'image',
+    sansTelephone: true,
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/ouverture/noosa-2000.webp',
+      alt: 'Une plage au coucher du soleil',
+      cadrage: '12% 60%',
+    },
+    rotations: [],
+  },
+  'accueil.ouverture-4': {
+    role: "Le magazine qui s'ouvre : la page 4, photo de gauche",
+    type: 'image',
+    sansTelephone: true,
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/ouverture/lagon-2000.webp',
+      alt: 'Un lagon',
+      cadrage: '85% 50%',
+    },
+    rotations: [],
+  },
+  'accueil.ouverture-5': {
+    role: "Le magazine qui s'ouvre : la page 4, photo de droite",
+    type: 'image',
+    sansTelephone: true,
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/accueil/header-magazines-paysage-1792.webp',
+      alt: 'Des numéros posés sur une table',
+      cadrage: '40% 60%',
+    },
+    rotations: [],
+  },
+  'accueil.ouverture-6': {
+    role: "Le magazine qui s'ouvre : la page 5, en pleine page",
+    ratio: '210 / 297',
+    type: 'image',
+    sansTelephone: true,
+    provisoire: true,
+    defaut: {
+      fichier: '/images/v2/ouverture/australia-2000.webp',
+      alt: 'Un voyage en Australie',
+      cadrage: '22% 70%',
     },
     rotations: [],
   },
@@ -200,8 +277,8 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/composer/modele-mon-annee-grand-900.webp',
-      alt: 'Un numéro « Mon année » à offrir',
+      fichier: '/images/v2/accueil/porte-offrir-drap-900.webp',
+      alt: 'Un numéro posé sur un drap, prêt à être offert',
     },
     rotations: [],
   },
@@ -221,7 +298,7 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/couverture-sicile-900.webp',
+      fichier: '/images/v2/magazine/couverture-sicile-1400.webp',
       alt: 'La couverture d’un numéro sur la Sicile',
     },
     rotations: [],
@@ -232,7 +309,7 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/accueil/couverture-rio-700.webp',
+      fichier: '/images/v2/accueil/couverture-rio-1400.webp',
       alt: 'La couverture d’un numéro sur Rio',
     },
     rotations: [],
@@ -253,8 +330,8 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/double-page-australie-1400.webp',
-      alt: 'Une double page d’un numéro sur l’Australie',
+      fichier: '/images/v2/magazine/magazine-imprime-ouvert-1600.webp',
+      alt: 'Un numéro imprimé, ouvert sur une double page',
     },
     rotations: [],
   },

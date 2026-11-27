@@ -25,7 +25,8 @@ import './accueil.css'
 
 const NOMS = [
   'accueil.couverture', 'accueil.couverture-2', 'accueil.couverture-3', 'accueil.couverture-4', 'accueil.couverture-5',
-  'accueil.double-page-1', 'accueil.double-page-2', 'accueil.photo-exemple', 'accueil.hero',
+  'accueil.double-page-1', 'accueil.double-page-2', 'accueil.hero',
+  'accueil.ouverture-1', 'accueil.ouverture-2', 'accueil.ouverture-3', 'accueil.ouverture-4', 'accueil.ouverture-5', 'accueil.ouverture-6',
   'accueil.porte-offrir', 'accueil.porte-groupes',
 ] as const
 
@@ -42,15 +43,13 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
   const VV = await visuelsDuJour(NOMS)
   const V = Object.fromEntries(NOMS.map((n) => [n, VV[n]?.fichier ?? ''])) as Record<(typeof NOMS)[number], string>
   const matiere = await lireVisuel('accueil.matiere')
-  /* Les photos d'exemple, dans l'ordre du banc (DEF) : remplacées par celles du client s'il en met. */
-  const PH: PhotoExemple[] = [
-    { s: V['accueil.double-page-1'], p: '22% 50%' },
-    { s: V['accueil.double-page-2'], p: '0% 40%' },
-    { s: V['accueil.photo-exemple'], p: '12% 60%' },
-    { s: V['accueil.double-page-1'], p: '85% 50%' },
-    { s: V['accueil.hero'], p: '40% 60%' },
-    { s: V['accueil.double-page-2'], p: '22% 70%' },
-  ]
+  /* Les photos d'exemple du magazine qui s'ouvre, une par place (27/11) : chacune est un emplacement
+     à part, réglable dans Site · Visuels. Remplacées par celles du client s'il en met. */
+  const OUVERTURE = [
+    'accueil.ouverture-1', 'accueil.ouverture-2', 'accueil.ouverture-3',
+    'accueil.ouverture-4', 'accueil.ouverture-5', 'accueil.ouverture-6',
+  ] as const
+  const PH: PhotoExemple[] = OUVERTURE.map((n) => ({ s: VV[n]?.fichier ?? '', p: VV[n]?.cadrage ?? '50% 50%' }))
   const photo = (n: number) => PH[n % PH.length].s
   const fonds = {
     '--mb-dp1': `url(${V['accueil.double-page-1']})`,
@@ -84,17 +83,17 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
         </div>
         <div className="scene-livre">
           <div className="livre">
-            <div className="base" role="img" aria-label="Double page d’un numéro"><div className="face"><div className="page-perso plein perso"><img data-ph="5" src={photo(5)} style={{'objectPosition': '22% 70%'}} alt="" /></div></div></div>
-            <div className="feuille f2"><div className="face recto"><div className="page-perso titre-photo perso"><div className="p-titre">Un été en Grèce</div><img data-ph="2" src={photo(2)} style={{'objectPosition': '12% 60%'}} alt="" /><span className="p-leg">Page 3 · composée par l’atelier</span></div></div><div className="face verso"><div className="page-perso deux perso"><img data-ph="3" src={photo(3)} style={{'objectPosition': '85% 50%'}} alt="" /><img data-ph="4" src={photo(4)} style={{'objectPosition': '40% 60%'}} alt="" /></div></div></div>
+            <div className="base" role="img" aria-label="Double page d’un numéro"><div className="face"><div className="page-perso plein perso"><img data-ph="5" data-emplacement="accueil.ouverture-6" src={photo(5)} style={{ objectPosition: PH[5].p }} alt="" /></div></div></div>
+            <div className="feuille f2"><div className="face recto"><div className="page-perso titre-photo perso"><div className="p-titre">Un été en Grèce</div><img data-ph="2" data-emplacement="accueil.ouverture-3" src={photo(2)} style={{ objectPosition: PH[2].p }} alt="" /><span className="p-leg">Page 3 · composée par l’atelier</span></div></div><div className="face verso"><div className="page-perso deux perso"><img data-ph="3" data-emplacement="accueil.ouverture-4" src={photo(3)} style={{ objectPosition: PH[3].p }} alt="" /><img data-ph="4" data-emplacement="accueil.ouverture-5" src={photo(4)} style={{ objectPosition: PH[4].p }} alt="" /></div></div></div>
             <div className="feuille f1"><div className="face recto">
               <ImageSite v={VV['accueil.couverture']} nom="accueil.couverture" className="on" fetchPriority="high" decoding="auto" alt="Couverture d’un numéro sur l’Australie" />
               <div className="couv-perso perso">
-                <label className="photo" htmlFor="f-photos" aria-label="Mettre vos photos sur la couverture"><img data-ph="0" src={photo(0)} style={{'objectPosition': '22% 50%'}} alt="Votre photo de couverture" /></label>
+                <label className="photo" htmlFor="f-photos" aria-label="Mettre vos photos sur la couverture"><img data-ph="0" data-emplacement="accueil.ouverture-1" src={photo(0)} style={{ objectPosition: PH[0].p }} alt="Votre photo de couverture" /></label>
                 <div className="couv-zone"><span className="couv-titre" id="couv-titre" contentEditable={true} suppressContentEditableWarning spellCheck="false" role="textbox" aria-label="Le titre de votre numéro">Un été en Grèce</span><span className="construit" aria-hidden="true"><i className="c1"></i><i className="c2"></i><i className="c3"></i><i className="v"></i><b>Corps 120 · approche −20</b></span></div>
 
                 <div className="couv-pied"><span>Bellajour</span><span>N°01</span></div>
               </div>
-            </div><div className="face verso"><div className="page-perso plein perso"><img data-ph="1" src={photo(1)} style={{'objectPosition': '0% 40%'}} alt="" /></div></div></div>
+            </div><div className="face verso"><div className="page-perso plein perso"><img data-ph="1" data-emplacement="accueil.ouverture-2" src={photo(1)} style={{ objectPosition: PH[1].p }} alt="" /></div></div></div>
             <i className="repere a"></i><i className="repere b"></i><i className="repere c"></i><i className="repere d"></i>
             <div className="note nA" style={{'left': '57%', 'top': '14%'}}><i className="pt"></i><i className="tr"></i><span>Votre titre, en grand</span></div>
             <div className="note nA inv" style={{'right': '57%', 'top': '36%'}}><i className="pt"></i><i className="tr"></i><span>Vos photos, posées par l’atelier</span></div>
@@ -119,7 +118,7 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
           <figure className="moment"><ImageSite v={VV['accueil.couverture-3']} nom="accueil.couverture-3" className="cv" loading="lazy" alt="Numéro Côte d’Azur" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Juillet</span><span className="titre seul nom">Côte d’Azur</span><span className="quoi sub">L’été en famille</span></figcaption></figure>
           <figure className="moment"><ImageSite v={VV['accueil.couverture-4']} nom="accueil.couverture-4" className="cv" loading="lazy" alt="Numéro Rio" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Octobre</span><span className="titre seul nom">Rio</span><span className="quoi sub">Une ville, un ami</span></figcaption></figure>
           <figure className="moment"><ImageSite v={VV['accueil.couverture-5']} nom="accueil.couverture-5" className="cv" loading="lazy" alt="Numéro Mon année" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Décembre</span><span className="titre seul nom">Mon année</span><span className="quoi sub">Tout, en un numéro</span></figcaption></figure>
-          <figure className="moment m-perso"><div className="cv mini"><img loading="lazy" decoding="async" data-ph="0" src={photo(0)} style={{'objectPosition': '22% 50%'}} alt="Votre numéro" /><span className="mini-titre">Un été en Grèce</span></div><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Aujourd’hui</span><span className="titre seul nom">Votre numéro</span><span className="quoi sub">En haut de la pile</span></figcaption></figure>
+          <figure className="moment m-perso"><div className="cv mini"><img loading="lazy" decoding="async" data-ph="0" data-emplacement="accueil.ouverture-1" src={photo(0)} style={{ objectPosition: PH[0].p }} alt="Votre numéro" /><span className="mini-titre">Un été en Grèce</span></div><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Aujourd’hui</span><span className="titre seul nom">Votre numéro</span><span className="quoi sub">En haut de la pile</span></figcaption></figure>
         </div></div>
       </section>
 

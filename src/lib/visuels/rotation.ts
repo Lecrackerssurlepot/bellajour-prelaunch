@@ -54,8 +54,8 @@ export const PERIODE_DEFAUT = { du: '2000-01-01', au: '9999-12-31' } as const
  * L'emplacement accepte-t-il une version téléphone ? Pas une couverture
  * (210 × 297 : la même sur tous les écrans), pas une vidéo.
  */
-export function accepteMobile(e: Pick<Emplacement, 'type' | 'ratio'>): boolean {
-  return e.type === 'image' && e.ratio !== '210 / 297'
+export function accepteMobile(e: Pick<Emplacement, 'type' | 'ratio' | 'sansTelephone'>): boolean {
+  return e.type === 'image' && e.ratio !== '210 / 297' && !e.sansTelephone
 }
 
 /** Un cadrage `object-position` en pour cent : « 50% 30% ». */
