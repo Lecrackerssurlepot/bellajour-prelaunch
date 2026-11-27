@@ -958,6 +958,63 @@ export const jetons = {
         "css": "180px",
         "variable": "--m-variation-grain-tuile"
       }
+    },
+    "lumiere-verre": {
+      "actif": {
+        "valeur": false,
+        "css": "0",
+        "variable": "--m-variation-lumiere-verre-actif"
+      },
+      "lumiere-opacite": {
+        "valeur": 0.6,
+        "css": "0.6",
+        "variable": "--m-variation-lumiere-verre-lumiere-opacite"
+      },
+      "lumiere-flou": {
+        "valeur": "90px",
+        "css": "90px",
+        "variable": "--m-variation-lumiere-verre-lumiere-flou"
+      },
+      "lumiere-saturation": {
+        "valeur": 2.2,
+        "css": "2.2",
+        "variable": "--m-variation-lumiere-verre-lumiere-saturation"
+      },
+      "lumiere-derive": {
+        "valeur": "26s",
+        "css": "26s",
+        "variable": "--m-variation-lumiere-verre-lumiere-derive"
+      },
+      "lumiere-transition": {
+        "valeur": "2.4s",
+        "css": "2.4s",
+        "variable": "--m-variation-lumiere-verre-lumiere-transition"
+      },
+      "verre-fond": {
+        "valeur": "rgba(255, 255, 255, 0.58)",
+        "css": "rgba(255, 255, 255, 0.58)",
+        "variable": "--m-variation-lumiere-verre-verre-fond"
+      },
+      "verre-flou": {
+        "valeur": "22px",
+        "css": "22px",
+        "variable": "--m-variation-lumiere-verre-verre-flou"
+      },
+      "verre-saturation": {
+        "valeur": 1.4,
+        "css": "1.4",
+        "variable": "--m-variation-lumiere-verre-verre-saturation"
+      },
+      "verre-trait": {
+        "valeur": "rgba(17, 17, 17, 0.07)",
+        "css": "rgba(17, 17, 17, 0.07)",
+        "variable": "--m-variation-lumiere-verre-verre-trait"
+      },
+      "mail-opacite": {
+        "valeur": 0.38,
+        "css": "0.38",
+        "variable": "--m-variation-lumiere-verre-mail-opacite"
+      }
     }
   },
   "mail": {

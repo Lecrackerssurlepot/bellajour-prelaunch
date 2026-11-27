@@ -32,7 +32,7 @@ Le flou n'est permis qu'à deux endroits :
 - l'en-tête, avec `couleur.voile.barre` et `flou.barre` à 12 px ;
 - le voile derrière une feuille, avec `flou.feuille` à 6 px.
 
-Pas d'autre verre.
+Pas d'autre verre, sauf la variation `lumiere-verre` quand elle est active (ci-dessous).
 
 ## Variations (catalogue DEZh)
 
@@ -45,6 +45,26 @@ On les active cas par cas, en mettant `actif` à `true` dans `tokens.json`.
 | `points-fins` | Trame de points (gardée, sans usage prévu) | Tuile de 7 px, points de 0,9 px, encre à 15 % |
 | `grain` | Bruit de papier | SVG `feTurbulence` : fréquence 0,9, 2 octaves, opacité 5,5 %, tuile de 180 px |
 | `signature-pied` | Le logo signé en bas de page | Voir B |
+| `lumiere-verre` | **Proposée le 27/11, à valider.** Lumières floues derrière la page, panneaux de verre dépoli | Voir ci-dessous |
+
+### Lumière et verre (proposée, 27/11)
+
+Mathias trouve l'éditeur « triste » en blanc pur : on y travaille, il faut un peu de vie. La réponse
+reste dans la charte : papier, encre, Fraunces et Inter Tight ne changent pas. On ajoute deux matières.
+
+- **La lumière** : deux taches floues (90 px) derrière la page, opacité 0,6. **Leur couleur vient
+  uniquement des photos du client** : la teinte moyenne des dernières photos, rendue plus franche
+  (×2,2) puis éclaircie. Sans photo, pas de lumière. Aucune couleur de marque n'est ajoutée.
+  Elles dérivent lentement (26 s) et changent de couleur en 2,4 s ; figées si l'on réduit les animations.
+- **Le verre** : les panneaux posés sur la lumière (compteur, magazine, table des photos) sont en
+  verre dépoli, `rgba(255,255,255,.58)`, flou 22 px, saturation 1,4, filet d'encre à 7 %.
+- **Dans un mail** : le flou CSS n'existe pas dans Gmail ni Outlook. La lumière est **cuite** dans
+  l'image d'en-tête (ellipses floues à 38 %), comme les autres images des structures.
+- **Où** : l'éditeur client (le dépôt) et l'éditeur interne d'abord ; l'en-tête des mails ensuite ;
+  le site plus tard, cas par cas. Jamais sur une page de texte (légal, compte).
+- **Subtil** : si l'on remarque la lumière avant les photos, elle est trop forte.
+
+Maquette : https://claude.ai/artifact/HGwjwCqAYamYDZ8jSjE47w
 
 ## Exemples
 

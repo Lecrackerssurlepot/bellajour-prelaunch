@@ -163,6 +163,17 @@
   --m-variation-grain-octaves: 2;
   --m-variation-grain-opacite: 0.055;
   --m-variation-grain-tuile: 180px;
+  --m-variation-lumiere-verre-actif: 0;
+  --m-variation-lumiere-verre-lumiere-opacite: 0.6;
+  --m-variation-lumiere-verre-lumiere-flou: 90px;
+  --m-variation-lumiere-verre-lumiere-saturation: 2.2;
+  --m-variation-lumiere-verre-lumiere-derive: 26s;
+  --m-variation-lumiere-verre-lumiere-transition: 2.4s;
+  --m-variation-lumiere-verre-verre-fond: rgba(255, 255, 255, 0.58);
+  --m-variation-lumiere-verre-verre-flou: 22px;
+  --m-variation-lumiere-verre-verre-saturation: 1.4;
+  --m-variation-lumiere-verre-verre-trait: rgba(17, 17, 17, 0.07);
+  --m-variation-lumiere-verre-mail-opacite: 0.38;
   --m-mail-largeur: 600px;
   --m-mail-marge: 24px;
   --m-mail-rayon-bouton: var(--m-rayon-pilule);
