@@ -26,8 +26,11 @@ patte ») ; **rien n'est appliqué aux vrais mails** avant le choix de Mathias.
   (à fournir, avec son accord), bande noire « Offrez-en un » avec un bouton bordé.
 - **C · La lettre** (M4) : s'ouvre comme une lettre, encarts bordés à pastille, bande de numéros inclinés.
 
-Deux points touchent une règle validée (fiche N) et attendent Mathias : **un second bouton bordé**
-(la règle dit « un seul bouton ») et **plusieurs bandes nuit par mail** (la règle les limite à la carte cadeau).
+**Choix de Mathias (27/11)** : « A, l'atelier, j'adore. Et C, suivant les types de mails. B aussi peut
+être sympa », plus une quatrième, « simple », pour les mails basiques (un petit visuel en mode atelier).
+Les quatre sont devenues les structures de la fiche N et sont appliquées à tous les mails de l'atelier
+et du compte. Les deux règles touchées sont tranchées avec elles : **une bande nuit au plus par mail**, et
+**un second bouton bordé, dans la bande nuit seulement**. La citation de client reste à fournir.
 
 ## Ce que les boîtes mail permettent (caniemail.com)
 

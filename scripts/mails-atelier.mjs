@@ -18,13 +18,11 @@
  * ── RÈGLES DE FORME, NON NÉGOCIABLES ─────────────────────────────────────
  * 1. AUCUN TIRET CADRATIN ni demi-cadratin dans les textes. Consigne
  *    explicite de Mathias, vérifiée par le script avant tout envoi.
- * 2. Aucune image dans le corps (PRD §10) : une phrase, un bouton. Ça passe
- *    les filtres, ça s'ouvre en une seconde, et ça envoie sur la page où
- *    tout est beau. Seul le logo, hébergé sur le site, fait exception.
- *    Depuis le 16/09/2026, UNE seconde exception, voulue par Mathias : le
- *    mail de lancement C0 porte une image d'en-tête (champ facultatif
- *    `hero`, absent de tous les autres mails). C'est le jour de l'ouverture,
- *    on montre les magazines.
+ * 2. Les images : jusqu'au 26/11, aucune dans le corps (PRD §10). Depuis le
+ *    27/11, chaque mail déclare sa STRUCTURE (atelier, lettre, magazine,
+ *    simple, fiche N « Les structures de mails ») et la structure porte ses
+ *    images, cuites par `scripts/mails-collages.py`. Toujours des JPEG
+ *    hébergés sur le site, jamais l'aperçu signé d'un numéro.
  * 3. Vouvoiement chaleureux. Jamais « Cliquez ici », jamais « Bonne
  *    réception ». Le ton d'un magazine, pas d'un SaaS.
  * 4. La charte V2 (26/11) : la coquille vient de `mails-charte.mjs`, jamais
@@ -40,20 +38,16 @@ import {
   C,
   SERIF,
   SITE,
-  bouton,
-  chapo,
+  STRUCTURES,
+  VISUELS,
   chiffres,
   coquille,
+  corpsSelon,
   encart,
   encartRecap,
   etiquette,
   ligne,
-  photoEnTete,
-  PHOTO_MAIL,
-  surtitre,
   lienSecondaire,
-  pied,
-  titre,
 } from "./mails-charte.mjs";
 
 const ICI = dirname(fileURLToPath(import.meta.url));
@@ -248,33 +242,50 @@ function encartCarteCredit() {
 /** La ligne de la maison, en bas de chaque mail de l'atelier et du compte. */
 const MENTION = "contact@bellajour.com";
 
-export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero, photo: avecPhoto, sujet, surtitre: sur }) {
-  /* Piste C (26/11), puis Mathias le 27/11 : « faut que ça dépende des mails ». La photo n'ouvre
-     que les mails qui le portent (`photo: true` ou leur propre `hero`) : les moments, pas les
-     consignes. Le titre du numéro en surtitre quand on le connaît. */
-  const photo = hero ?? (avecPhoto ? PHOTO_MAIL : null)
-  const dessus = sur ?? (String(sujet ?? "").includes("params.TITRE") ? TITRE : null)
+export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero, sujet, surtitre: sur, structure, encarts, etapes, nuit }) {
+  /* Le 27/11, Mathias choisit les structures (fiche N, « Les structures de mails ») : chaque
+     mail déclare la sienne. Le titre du numéro va en surtitre quand on le connaît. La lettre
+     ouvre sur « Bonjour Prénom, » : le prénom quitte alors le début du texte. */
+  if (!STRUCTURES.includes(structure)) throw new Error(`${titreHtml} : structure manquante ou inconnue (${structure})`);
+  const dessus = sur ?? (String(sujet ?? "").includes("params.TITRE") ? TITRE : null);
+  let salut = null;
+  let texte = sous;
+  if (structure === "lettre" && sous.startsWith(`${PRENOM}, `)) {
+    salut = PRENOM;
+    const reste = sous.slice(PRENOM.length + 2);
+    texte = reste.charAt(0).toUpperCase() + reste.slice(1);
+  }
   return coquille({
     titreHtml,
     preheader,
     mention: MENTION,
-    corps: [
-      /* L'image d'en-tête est FACULTATIVE (16/09/2026, C0 seulement) : sans
-         elle, rien n'est rendu. JPEG, jamais WebP : Outlook ne le lit pas. */
-      photo ? photoEnTete(photo.src, photo.alt) : "",
-      dessus ? surtitre(dessus) : "",
-      titre(h1),
-      chapo(sous),
-      carte ?? "",
-      bouton(cta, lien),
-      /* Le pied est FACULTATIF depuis le 03/09 (M7b n'en veut pas) : sans lui, le
-         bloc entier disparaît, pas de réserve vide sous le bouton. */
-      texteDuPied ? pied(texteDuPied) : "",
-    ]
-      .filter(Boolean)
-      .join("\n\n"),
+    corps: corpsSelon(structure, {
+      surtitre: dessus,
+      salut,
+      h1,
+      sous: texte,
+      carte,
+      encarts,
+      cta,
+      lien,
+      /* Le pied est FACULTATIF depuis le 03/09 (M7b n'en veut pas). */
+      pied: texteDuPied,
+      /* L'image de tête propre au mail (C0). JPEG, jamais WebP : Outlook ne le lit pas. */
+      visuel: hero,
+      etapes,
+      nuit,
+    }),
   });
 }
+
+/* La bande « Offrez-en un » des structures magazine (M7b, M8) : le second bouton bordé. */
+const NUIT_OFFRIR = {
+  etiquette: "Pour la suite",
+  titre: "Offrez-en un.",
+  texte: "Un &eacute;t&eacute;, un anniversaire, une ann&eacute;e : l&rsquo;atelier compose le leur.",
+  cta: "Offrir une carte",
+  lien: `${SITE}/offrir`,
+};
 
 const LIEN = "{{ params.LIEN }}";
 const PRENOM = "{{ params.PRENOM }}";
@@ -298,7 +309,7 @@ export const MAILS = [
        dans le localStorage de son appareil : onglet fermé, dossier
        injoignable jusqu'à M2, le lendemain. */
     code: "M0",
-    photo: true,
+    structure: "atelier",
     nom: "M0 · Atelier · Votre numéro est ouvert",
     sujet: `${TITRE} est ouvert, il attend vos photos`,
     preheader: "Votre dossier existe. Il lui manque encore la matière.",
@@ -316,6 +327,7 @@ export const MAILS = [
   },
   {
     code: "M2",
+    structure: "atelier",
     nom: "M2 · Atelier · Il manque les photos",
     sujet: `Il manque les photos de ${TITRE}`,
     preheader: "Votre numéro est ouvert, son dossier est encore vide.",
@@ -338,6 +350,7 @@ export const MAILS = [
        bouton. On ne rouvre jamais la question « sont-elles arrivées ou
        pas » — elles le sont, c'est le titre du mail. */
     code: "M2b",
+    structure: "simple",
     nom: "M2b · Atelier · Vos photos sont arrivées",
     sujet: `Vos photos sont arrivées, ${TITRE} attend le dernier geste`,
     preheader: "Elles sont bien chez nous. Votre dépôt n'est pas encore parti.",
@@ -354,6 +367,7 @@ export const MAILS = [
        geste. La carte-couverture évoque l'objet, le bouton fait le reste, la
        page fait le spectacle. */
     code: "M3",
+    structure: "lettre",
     nom: "M3 · Atelier · Votre couverture est prête",
     sujet: `${TITRE} : votre couverture est prête`,
     preheader: "Elle vous attend, avec sa pagination et son prix.",
@@ -375,6 +389,7 @@ export const MAILS = [
   },
   {
     code: "M3b",
+    structure: "lettre",
     nom: "M3b · Atelier · Votre numéro vous attend",
     sujet: `${TITRE} vous attend`,
     preheader: "Votre couverture est prête depuis quelques jours.",
@@ -406,6 +421,11 @@ export const MAILS = [
        réglé, il renvoie à la facture Stripe, qui seule connaît le montant
        exact (port et crédit compris). */
     code: "M4",
+    structure: "lettre",
+    encarts: [
+      { signe: "1", t: "Sous trois jours ouvr&eacute;s", s: "Votre num&eacute;ro complet, &agrave; feuilleter." },
+      { signe: "?", t: "Un changement ?", s: "R&eacute;pondez &agrave; ce message, nous le notons." },
+    ],
     nom: "M4 · Atelier · Paiement reçu",
     sujet: `${TITRE}, nous composons`,
     preheader: "C’est réglé. Votre numéro est en composition.",
@@ -419,10 +439,11 @@ export const MAILS = [
     ) + encartCarteCredit(),
     cta: "Suivre mon numéro",
     lien: LIEN,
-    pied: "Vous n’avez rien à faire d’ici là. Une question, une envie de changement ? Répondez simplement à ce message.",
+    pied: "Vous n’avez rien à faire d’ici là.",
   },
   {
     code: "M5",
+    structure: "lettre",
     nom: "M5 · Atelier · La maquette complète",
     sujet: `${TITRE}, la maquette complète`,
     preheader: "Chaque page est en place. Prenez le temps de le feuilleter.",
@@ -463,6 +484,7 @@ export const MAILS = [
      ────────────────────────────────────────────────────────────────── */
   {
     code: "M5c",
+    structure: "lettre",
     nom: "M5c · Atelier · La maquette corrigée",
     sujet: `${TITRE}, vos corrections sont faites`,
     preheader: "Nous avons repris vos remarques. Le numéro est à jour.",
@@ -483,6 +505,7 @@ export const MAILS = [
   },
   {
     code: "M6",
+    structure: "lettre",
     nom: "M6 · Atelier · Départ à l'impression",
     sujet: `${TITRE} part à l’impression`,
     preheader: "Votre numéro est entre les mains de l'imprimeur.",
@@ -498,6 +521,7 @@ export const MAILS = [
   },
   {
     code: "M7",
+    structure: "lettre",
     nom: "M7 · Atelier · Votre numéro est en route",
     sujet: `${TITRE} est en route`,
     preheader: "Il a quitté l'atelier.",
@@ -520,7 +544,8 @@ export const MAILS = [
        du fichier, et le reste de son numéro. « Le mail fait le clic, la page
        fait le spectacle. » */
     code: "M7b",
-    photo: true,
+    structure: "magazine",
+    nuit: NUIT_OFFRIR,
     nom: "M7b · Atelier · Votre magazine est arrivé",
     sujet: `${TITRE} est chez vous`,
     preheader: "Et sa version numérique vous attend.",
@@ -534,7 +559,8 @@ export const MAILS = [
   },
   {
     code: "M8",
-    photo: true,
+    structure: "magazine",
+    nuit: NUIT_OFFRIR,
     nom: "M8 · Atelier · Le prochain moment",
     sujet: "Le prochain moment ?",
     preheader: "Votre numéro est arrivé. Nous espérons qu'il vous ressemble.",
@@ -549,6 +575,7 @@ export const MAILS = [
   },
   {
     code: "M9",
+    structure: "lettre",
     nom: "M9 · Atelier · Quelques photos de plus",
     sujet: `Quelques photos de plus pour ${TITRE} ?`,
     preheader: "On peut faire encore mieux avec quelques photos de plus.",
@@ -582,6 +609,7 @@ export const MAILS = [
        croit en sécurité chez nous. Les effacer sans l'avoir écrit noir sur
        blanc serait indéfendable. D'où l'encart conditionnel. */
     code: "M10",
+    structure: "lettre",
     nom: "M10 · Atelier · Votre numéro va se refermer",
     sujet: `${TITRE} va se refermer`,
     preheader: "Sans nouvelles de vous, nous refermerons son dossier.",
@@ -619,6 +647,12 @@ export const MAILS = [
        (les magazines de l'accueil) coiffe le mail. La mécanique du lien ne
        bouge pas d'un caractère. */
     code: "C0",
+    structure: "atelier",
+    etapes: [
+      { n: "01", img: VISUELS.etape1, t: "Votre histoire", s: "Quelques questions, quelques minutes." },
+      { n: "02", img: VISUELS.etape2, t: "Vos photos", s: "Depuis votre t&eacute;l&eacute;phone, &agrave; votre rythme." },
+      { n: "03", img: VISUELS.etape3, t: "L&rsquo;atelier compose", s: "Vous validez, nous imprimons." },
+    ],
     nom: "C0 · Compte · L'atelier est en ligne",
     sujet: "L'atelier est en ligne",
     preheader: "Composez votre premier magazine, votre espace est prêt.",
@@ -644,6 +678,7 @@ export const MAILS = [
        annoncée est le réglage « Email OTP expiry » du dashboard (une heure) :
        si Mathias le change là-bas, cette phrase doit suivre. */
     code: "C1",
+    structure: "simple",
     nom: "C1 · Compte · Votre espace vous attend",
     sujet: "Votre espace Bellajour vous attend",
     preheader: "Un lien pour l'activer, et tous vos numéros au même endroit.",
@@ -661,6 +696,7 @@ export const MAILS = [
        nouveau mot de passe se choisit sur la page, et c'est lui qui compte
        (invariant nº4, src/lib/compte/session.ts). */
     code: "C2",
+    structure: "simple",
     nom: "C2 · Compte · Choisir un nouveau mot de passe",
     sujet: "Votre nouveau mot de passe Bellajour",
     preheader: "Un lien pour le choisir. Il est valable une heure.",

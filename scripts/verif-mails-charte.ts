@@ -47,7 +47,7 @@ function routesDuSite(): RegExp[] {
 
 export async function verifierMailsCharte(ok: Ok, titre: (t: string) => void): Promise<void> {
   titre("Mails : la charte V2 (26/11, fiche N)");
-  const Charte = (await import("./mails-charte.mjs")) as unknown as { SITE: string; LOGO_MAIL: string; INSTAGRAM: string };
+  const Charte = (await import("./mails-charte.mjs")) as unknown as { SITE: string; LOGO_MAIL: string; INSTAGRAM: string; STRUCTURES: string[] };
   const Atelier = (await import("./mails-atelier.mjs")) as unknown as { MAILS: MailAtelier[]; maquette: (m: MailAtelier) => string };
   const Noel = (await import("./mails-noel.mjs")) as unknown as { MAILS: MailNoel[]; maquette: (m: MailNoel) => string };
   const Campagnes = (await import("./noel-campagnes.mjs")) as unknown as { campagneHtml: (m: MailNoel) => string };
@@ -87,6 +87,15 @@ export async function verifierMailsCharte(ok: Ok, titre: (t: string) => void): P
   const bandeau = fautes((h) => /<tr><td align="center" bgcolor="#0c0c0d" style="background-color: #0c0c0d; background-image: linear-gradient\(#0c0c0d, #0c0c0d\);[^"]*">\s*<a href="https:\/\/www\.bellajour\.fr\/"[^>]*><img src="([^"]+)"/.test(h)
     && h.includes(`<img src="${Charte.LOGO_MAIL}" width="140"`));
   ok(`charte : le bandeau nuit est peint deux fois et porte le logo papier${dire(bandeau)}`, bandeau.length === 0);
+
+  /* Les structures (27/11, fiche N « Les structures de mails ») : chaque mail de l'atelier et du
+     compte en déclare une ; une bande nuit au plus ; le bouton bordé ne vit que dans la bande. */
+  const sansStructure = Atelier.MAILS.filter((m) => !Charte.STRUCTURES.includes(String(m.structure ?? ""))).map((m) => m.code);
+  ok(`charte : chaque mail de l'atelier et du compte déclare sa structure (${Charte.STRUCTURES.join(", ")})${dire(sansStructure)}`, sansStructure.length === 0);
+  const uneBande = fautes((h) => (h.match(/<!-- bande-nuit -->/g) ?? []).length <= 1);
+  ok(`charte : une bande nuit au plus par mail${dire(uneBande)}`, uneBande.length === 0);
+  const borde = fautes((h) => (h.match(/class="bouton-borde"/g) ?? []).length <= (h.match(/<!-- bande-nuit -->/g) ?? []).length);
+  ok(`charte : le bouton bordé n'existe que dans la bande nuit${dire(borde)}`, borde.length === 0);
 
   /* Toute image vient du site, en JPEG ou PNG, avec un alt, et le fichier existe dans public/. */
   const images = mails.flatMap((m) => [...m.html.matchAll(/<img ([^>]+)>/g)].map((i) => ({ code: m.code, attrs: i[1] })));

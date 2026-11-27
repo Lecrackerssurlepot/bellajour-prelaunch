@@ -33,12 +33,10 @@ ne redessine un bouton ni un en-tête. Elle lit ses valeurs dans `brand/build/ma
   sur le fond devenu noir. Le bandeau est peint deux fois, `bgcolor` et
   `background-image: linear-gradient(…)`, parce que Gmail n'inverse pas une image de fond : il reste
   noir, le logo reste lisible.
-- **Une photo ouvre les mails de moment, pas les mails de consigne** (piste C du 26/11, précisée par
-  Mathias le 27/11 : « faut que ça dépende des mails ») : sous le bandeau, une vraie photo de magazine
-  pleine largeur (600 px, sans coin arrondi), `photoEnTete` de la coquille. Avec photo : C0, M0, M7b,
-  M8 et les campagnes de Noël ; les autres n'en ont pas. `PHOTO_MAIL` est provisoire, en attendant les
-  visuels de Mathias. La carte cadeau d'un mail a le format d'une carte (ratio 1,586, 400 × 252). Les mails de la carte cadeau n'en ont pas :
-  la carte est leur image. Au-dessus du titre, le titre du numéro en étiquette quand on le connaît.
+- **Chaque mail a une structure** (choisie par Mathias le 27/11, voir « Les structures de mails »
+  plus bas) : c'est elle qui décide de ses images. Au-dessus du titre, le titre du numéro en étiquette
+  quand on le connaît. La carte cadeau d'un mail a le format d'une carte (ratio 1,586, 400 × 252) ; les
+  mails de la carte cadeau n'ont pas d'autre image : la carte est leur image.
 - **Corps** : papier `#ffffff`, encre `#111111`, texte doux `#626262` pour le pied et les étiquettes,
   filets `#dedede`. Rien d'autre : ni cuivre, ni crème, ni bleu.
 - **Marges** : `mail.marge` (24 px) de chaque côté, au téléphone comme sur ordinateur.
@@ -47,12 +45,15 @@ ne redessine un bouton ni un en-tête. Elle lit ses valeurs dans `brand/build/ma
   étiquette 12 px en capitales, approche 0,12 em ; bouton 15 px.
 - **Le bouton** : un tableau, cellule encre bordée d'encre, rayon pilule, 52 px de haut, texte papier
   en 15 px ; une forme VML pour Outlook sous Windows. Inversé par un mode sombre, il devient une pilule
-  claire à texte foncé : il se lit toujours. **Un seul par mail.**
+  claire à texte foncé : il se lit toujours. **Un seul bouton plein par mail.** Un second bouton,
+  **bordé** (contour papier, sans fond), est permis dans la bande nuit seulement, pour l'action d'à côté
+  (offrir une carte) : validé le 27/11 avec la structure « magazine ».
 - **Un lien secondaire** (suivi, reçu, conditions) : encre, en gras, suivi d'une flèche, jamais
   souligné (règle de A).
 - **Les encarts** (chiffres, crédit, mot de l'atelier, récapitulatif) : fond papier, filet `#dedede`,
   rayon `rayon.bloc`, étiquette en haut. Le récapitulatif suit A : libellé à gauche, valeur à droite.
-- **Le bloc nuit** : seulement la carte cadeau, au plus un par mail. Même double peinture que le bandeau ;
+- **La bande nuit** (structures « atelier » et « magazine ») : pleine largeur, **une au plus par mail**,
+  validée le 27/11 avec ces structures. **Le bloc nuit** arrondi : seulement la carte cadeau. Même double peinture que le bandeau ;
   son texte clair passe par la parade Gmail (`u + .body`, fusion `screen` puis `difference`), sans quoi
   Gmail l'assombrirait sur un fond resté noir.
 - **Images** : JPEG ou PNG hébergés sur le site, jamais WebP (Outlook ne le lit pas), toujours un `alt`.
@@ -67,6 +68,35 @@ ne redessine un bouton ni un en-tête. Elle lit ses valeurs dans `brand/build/ma
 - **Liens** : tout lien vise `https://www.bellajour.fr` (ou un paramètre que le code construit sur
   `origineDuSite`), sauf `@bellajour__` (Instagram), le suivi du transporteur et le lien de
   désinscription des campagnes.
+### Les structures de mails (27/11)
+
+Mathias, le 27/11, sur trois propositions sourcées (`brand/reports/mails-inspirations-27-11.md`) :
+« A, l'atelier, j'adore. Et C, suivant les types de mails. B aussi peut être sympa. » Puis : « quand
+c'est un mail assez basique, juste un petit visuel en mode atelier ». **Quand on crée un mail, la
+première question est : quelle structure ?** Dans le code, chaque mail porte `structure: "…"` et la
+coquille la construit (`corpsSelon` dans `scripts/mails-charte.mjs`). Le harnais refuse un mail sans
+structure.
+
+| Structure | Pour quel mail | Ce qu'elle contient, dans l'ordre | Inspirations |
+|---|---|---|---|
+| **atelier** | un moment qui ouvre : le numéro est ouvert, il manque les photos, le lancement (M0, M2, C0) | pile de magazines inclinés, surtitre, grand titre, chapo, bouton ; bande nuit « Ce qui se passe ensuite » avec des tirages en vrac ; trois étapes, chacune avec sa photo carrée et son numéro (01, 02, 03) ; pied | Artifact Uprising (étapes en photo), Polaroid (tirages en vrac) |
+| **lettre** | un suivi, une information : paiement, couverture, maquette, impression, en route, relances (M3, M3b, M4, M5, M5c, M6, M7, M9, M10) | « Bonjour Prénom, » en Georgia italique, grand titre, texte, encarts (chiffres, récapitulatif, ou encarts à pastille), bouton, pied ; bande de couvertures posées de travers « Ils sont passés par l'atelier » ; signature « L'atelier Bellajour » | Aesop (la lettre), Artifact Uprising (encarts à pastille) |
+| **magazine** | un moment qui se vit : il est arrivé, le prochain numéro (M7b, M8) | grande photo, titre centré 60 px, chapo centré, deux demi-photos bord à bord, bouton centré ; bande nuit « Offrez-en un » avec le bouton bordé | Wallpaper* (demi-photos), Hermès (bouton bordé), Artifact Uprising « Thank you » |
+| **simple** | une consigne : compte, mot de passe, dépôt à finir (C1, C2, M2b) | petit visuel de l'atelier (la pile, 300 px, centrée), titre, chapo, bouton, pied | « un petit visuel en mode atelier » (Mathias) |
+
+Les mails de Noël et de la carte cadeau (`mails-noel.mjs`) ont leur propre suite de photos et de
+cartes, déjà dans l'esprit « magazine » ; ils ne déclarent pas de structure.
+
+**Les images des structures** sont cuites par `scripts/mails-collages.py` dans
+`public/images/mails/charte/structures/` : les inclinaisons, les ombres et les superpositions sont
+dans le JPEG, parce que Gmail et Outlook ignorent `transform` et `position` (caniemail.com). Elles
+partent des visuels du site : **quand un visuel change, relancer le script**, puis
+`node scripts/mails-apercus-charte.mjs`. Une citation de client (proposée en B) attend une vraie phrase,
+avec son accord : sans elle, la structure n'en a pas.
+
+**Les briques**, dans `mails-charte.mjs` : `bandeNuit`, `boutonBorde`, `etape`, `encartPastille`,
+`demiPhotos`, `salutation`, `imagePleine`, `espace`, et les images dans `VISUELS`.
+
 - **Hors gabarit, à trancher** : les mails de l'Édition collective et des rendez-vous (`pageMail`,
   `src/lib/collectif/mailsTextes.ts`) gardent leur Porcelaine bleue, validée le 28/10 et tenue par
   `verif-collectif.ts` : l'espace collectif n'est pas encore passé à la charte.

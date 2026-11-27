@@ -10,7 +10,9 @@
  * - papier et encre, rien d'autre ; le bandeau du haut est nuit, le logo papier y est posé ;
  * - le bandeau et la carte cadeau sont peints deux fois (bgcolor + linear-gradient) : Gmail
  *   inverse les couleurs, jamais une image de fond ;
- * - un seul bouton, en tableau, encre bordée d'encre : inversé, il se lit encore ;
+ * - un seul bouton plein, en tableau, encre bordée d'encre : inversé, il se lit encore ; un second
+ *   bouton, bordé, seulement dans la bande nuit (structure « magazine », 27/11) ;
+ * - quatre structures (atelier, lettre, magazine, simple) : `corpsSelon`, plus bas ;
  * - Georgia et Helvetica, jamais de police chargée.
  */
 
@@ -64,10 +66,11 @@ export const etiquette = (t, couleur = C.doux) =>
   `<div style="font-family: ${SANS}; font-size: 12px; line-height: 1.3; letter-spacing: ${APPROCHE}; text-transform: uppercase; font-weight: 500; color: ${couleur};">${t}</div>`;
 
 /* Le titre : grand, comme un titre de magazine (piste C, choisie par Mathias le 26/11). */
-export const titre = (t, bas = 24) =>
+export const titre = (t, bas = 24, align = "left", taille = 52) =>
   ligne(
-    `<h1 class="titre-mail" style="margin: 0; font-family: ${SERIF}; font-size: 52px; font-weight: normal; line-height: 1.04; letter-spacing: -0.015em; color: ${C.encre};">${t}</h1>`,
+    `<h1 class="titre-mail" style="margin: 0; font-family: ${SERIF}; font-size: ${taille}px; font-weight: normal; line-height: 1.04; letter-spacing: -0.015em; color: ${C.encre};">${t}</h1>`,
     bas,
+    align,
   );
 
 /** Le surtitre, au-dessus du titre : le titre du numéro, en étiquette. */
@@ -82,17 +85,15 @@ export function photoEnTete(src, alt, lien = null) {
   return `<!-- photo-en-tete --><tr><td style="padding: 0 0 40px 0;">${lien ? `<a href="${lien}" style="display: block; text-decoration: none;">${img}</a>` : img}</td></tr>`;
 }
 
-/** La photo par défaut des mails de l'atelier et du compte. PROVISOIRE : remplacée par les visuels de Mathias. */
-export const PHOTO_MAIL = { src: `${SITE}/images/mails/charte/aussie-1040.jpg`, alt: "Un magazine Bellajour, une ville la nuit en couverture" };
 
-export const chapo = (t, bas = 32) =>
-  ligne(`<p style="margin: 0; font-family: ${SANS}; font-size: 18px; line-height: 1.5; color: ${C.encre};">${t}</p>`, bas);
+export const chapo = (t, bas = 32, align = "left") =>
+  ligne(`<p style="margin: 0; font-family: ${SANS}; font-size: 18px; line-height: 1.5; color: ${C.encre}; text-align: ${align};">${t}</p>`, bas, align);
 
 export const texte = (t, bas = 32) =>
   ligne(`<p style="margin: 0; font-family: ${SANS}; font-size: 16px; line-height: 1.6; color: ${C.encre};">${t}</p>`, bas);
 
-export const pied = (t, bas = 40) =>
-  ligne(`<p style="margin: 0; font-family: ${SANS}; font-size: 14px; line-height: 1.6; color: ${C.doux};">${t}</p>`, bas);
+export const pied = (t, bas = 40, align = "left") =>
+  ligne(`<p style="margin: 0; font-family: ${SANS}; font-size: 14px; line-height: 1.6; color: ${C.doux}; text-align: ${align};">${t}</p>`, bas, align);
 
 /** Un lien secondaire : encre, en gras, une flèche, jamais souligné (charte A). */
 export const lienSecondaire = (libelle, href, couleur = C.encre) =>
@@ -102,7 +103,7 @@ export const lienSecondaire = (libelle, href, couleur = C.encre) =>
  * LE bouton : une cellule encre bordée d'encre, rayon pilule, 52 px. La forme VML ne sert qu'à
  * Outlook sous Windows, qui ignore le rayon d'une cellule.
  */
-export function bouton(cta, lien, bas = 40) {
+export function bouton(cta, lien, bas = 40, align = "left") {
   return ligne(
     `<!--[if mso]>
 <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${lien}" style="height:52px;v-text-anchor:middle;width:300px;" arcsize="50%" strokecolor="${C.encre}" fillcolor="${C.encre}"><w:anchorlock/><center style="color:${C.papier};font-family:Helvetica,Arial,sans-serif;font-size:15px;">${cta}</center></v:roundrect>
@@ -113,6 +114,7 @@ export function bouton(cta, lien, bas = 40) {
 </td></tr></table>
 <!--<![endif]-->`,
     bas,
+    align,
   );
 }
 
@@ -194,6 +196,137 @@ export function image(src, alt, largeur = UTILE, lien = null, bas = 32) {
 export const signature = (bas = 40) =>
   ligne(`<p style="margin: 0; font-family: ${SERIF}; font-size: 20px; line-height: 1.3; color: ${C.encre};">L&rsquo;atelier Bellajour</p>`, bas);
 
+/* ─────────────────────────── les structures (27/11) ───────────────────────────
+   Quatre façons de construire un mail, choisies par Mathias le 27/11 sur trois propositions
+   sourcées (brand/reports/mails-inspirations-27-11.md). Fiche N, « Les structures de mails » :
+   quand on crée un mail, on choisit d'abord sa structure.
+   - atelier  : un moment qui ouvre (numéro ouvert, lancement). Pile de magazines, titre, bouton,
+                puis la bande nuit « ce qui se passe ensuite » et trois étapes en photo.
+   - lettre   : un suivi (paiement, maquette, impression, route, relances). Une salutation, le
+                titre, le texte, les encarts, le bouton, la bande de couvertures, la signature.
+   - magazine : un moment qui se vit (il est arrivé, le prochain). Grande photo, titre centré,
+                deux demi-photos, le bouton, puis la bande nuit et son second bouton bordé.
+   - simple   : une consigne (compte, mot de passe, dépôt à finir). Un petit visuel de l'atelier,
+                le titre, le texte, le bouton.
+   Les images sont cuites par `scripts/mails-collages.py` (inclinaisons comprises : Gmail et
+   Outlook ignorent transform). */
+
+export const STRUCTURES = ["atelier", "lettre", "magazine", "simple"];
+
+const IMG = `${SITE}/images/mails/charte/structures`;
+export const VISUELS = {
+  pile: { src: `${IMG}/pile.jpg`, alt: "Trois magazines Bellajour posés en éventail" },
+  tirages: { src: `${IMG}/tirages-nuit.jpg`, alt: "Des doubles pages de magazines Bellajour" },
+  arrivee: { src: `${IMG}/arrivee.jpg`, alt: "Des magazines Bellajour" },
+  demi1: { src: `${IMG}/demi-1.jpg`, alt: "Une couverture Bellajour, le lagon" },
+  demi2: { src: `${IMG}/demi-2.jpg`, alt: "Une couverture Bellajour, la Sicile" },
+  bande: { src: `${IMG}/bande.jpg`, alt: "Quatre magazines Bellajour posés en vrac" },
+  etape1: { src: `${IMG}/etape-1.jpg`, alt: "Des photos sur un téléphone" },
+  etape2: { src: `${IMG}/etape-2.jpg`, alt: "Une double page composée" },
+  etape3: { src: `${IMG}/etape-3.jpg`, alt: "Une couverture Bellajour" },
+};
+
+/** Les trois étapes par défaut de la structure « atelier ». */
+export const ETAPES = [
+  { n: "01", img: VISUELS.etape1, t: "Vos photos", s: "Maintenant ou plus tard, depuis votre t&eacute;l&eacute;phone." },
+  { n: "02", img: VISUELS.etape2, t: "L&rsquo;atelier compose", s: "Nous mettons votre histoire en pages." },
+  { n: "03", img: VISUELS.etape3, t: "Vous validez", s: "Puis on imprime, et il arrive chez vous." },
+];
+
+/** Un blanc vertical. */
+export const espace = (h) => `<tr><td height="${h}" style="height: ${h}px; font-size: 0; line-height: 0;">&nbsp;</td></tr>`;
+
+/** Une image pleine largeur, dans le corps (pas en tête). */
+export const imagePleine = (v, bas = 0) =>
+  `<tr><td style="padding: 0 0 ${bas}px 0;"><img src="${v.src}" width="${LARGEUR}" alt="${v.alt}" style="display: block; width: 100%; max-width: ${LARGEUR}px; height: auto; border: 0; outline: none; text-decoration: none;" /></td></tr>`;
+
+/**
+ * La bande nuit pleine largeur : UNE au plus par mail (harnais). Peinte deux fois, texte clair
+ * protégé de Gmail. `contenu` est du HTML de cellule ; `image` (facultative) la prolonge.
+ */
+export function bandeNuit({ etiquette: lib, titre: t, texte: tx, cta, lien, image: v, align = "left" }) {
+  const haut = `<!-- bande-nuit --><tr><td bgcolor="${C.nuit}" align="${align}" style="${peint(C.nuit)} padding: 48px ${MARGE}px ${v ? 32 : 48}px ${MARGE}px;">
+${lib ? `${etiquette(clair(lib), C.nuitDoux)}<div style="height: 14px; line-height: 14px; font-size: 0;">&nbsp;</div>` : ""}<div class="titre-nuit" style="font-family: ${SERIF}; font-size: 40px; line-height: 1.05; color: ${C.nuitTexte};">${clair(t)}</div>
+${tx ? `<div style="margin: 16px 0 0 0; font-family: ${SANS}; font-size: 16px; line-height: 1.6; color: ${C.nuitTexte};">${clair(tx)}</div>` : ""}
+${cta ? `<div style="height: 28px; line-height: 28px; font-size: 0;">&nbsp;</div>${boutonBorde(cta, lien, C.nuitTexte, align)}` : ""}
+</td></tr>`;
+  const bas = v ? `\n<tr><td bgcolor="${C.nuit}" style="${peint(C.nuit)} padding: 0;"><img src="${v.src}" width="${LARGEUR}" alt="${v.alt}" style="display: block; width: 100%; max-width: ${LARGEUR}px; height: auto; border: 0;" /></td></tr>` : "";
+  return haut + bas;
+}
+
+/**
+ * Le second bouton : bordé, sans fond (Hermès, Wallpaper*). Validé le 27/11 avec la structure
+ * « magazine » : il ne vit QUE dans la bande nuit, pour l'action d'à côté (offrir), jamais à la
+ * place du bouton principal. Pas de forme VML : Outlook sous Windows le rend carré, il reste lisible.
+ */
+export function boutonBorde(cta, lien, couleur = C.encre, align = "left") {
+  return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="${align === "center" ? "center" : "left"}"><tr><td style="border: 1px solid ${couleur}; border-radius: ${PILULE};"><a href="${lien}" class="bouton-borde" style="display: inline-block; padding: 14px 28px; line-height: 20px; font-family: ${SANS}; font-size: 14px; font-weight: 500; letter-spacing: 0.02em; color: ${couleur}; text-decoration: none;">${clair(`${cta}&nbsp;&rarr;`)}</a></td></tr></table>`;
+}
+
+/** Une étape : la photo carrée, le numéro en grand, son titre et sa phrase. */
+export const etape = ({ n, img, t, s }) => `<tr><td style="padding: 0 ${MARGE}px 28px ${MARGE}px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td width="180" valign="top" class="etape-photo"><img src="${img.src}" width="180" alt="${img.alt}" class="etape-photo" style="display: block; width: 180px; height: auto; border: 0;" /></td>
+<td valign="top" style="padding: 4px 0 0 20px;">
+<div style="font-family: ${SERIF}; font-size: 44px; line-height: 1; color: ${C.encre};">${n}</div>
+<div style="padding-top: 12px; font-family: ${SANS}; font-size: 16px; font-weight: bold; color: ${C.encre};">${t}</div>
+<div style="padding-top: 6px; font-family: ${SANS}; font-size: 15px; line-height: 1.5; color: ${C.doux};">${s}</div>
+</td></tr></table></td></tr>`;
+
+/** Un encart à pastille (Artifact Uprising) : un signe dans un rond, un titre, une phrase. */
+export const encartPastille = ({ signe, t, s }, bas = 16) => ligne(
+  `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border: 1px solid ${C.encre}; border-radius: ${BLOC}; border-collapse: separate;">
+<tr><td style="padding: 22px 24px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="table-layout: fixed;"><tr>
+<td width="40" height="40" align="center" valign="middle" style="width: 40px; min-width: 40px; max-width: 40px; height: 40px; border: 1px solid ${C.encre}; border-radius: 20px; font-family: ${SERIF}; font-size: 18px; color: ${C.encre};">${signe}</td>
+<td style="padding-left: 16px;"><div style="font-family: ${SANS}; font-size: 16px; font-weight: bold; color: ${C.encre};">${t}</div><div style="padding-top: 4px; font-family: ${SANS}; font-size: 15px; line-height: 1.5; color: ${C.doux};">${s}</div></td>
+</tr></table></td></tr></table>`, bas);
+
+/** Deux demi-photos bord à bord (Wallpaper*). Jamais la classe `duo` : elles resteraient géantes en colonne. */
+export const demiPhotos = (a = VISUELS.demi1, b = VISUELS.demi2, bas = 48) => `<tr><td style="padding: 0 0 ${bas}px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td width="50%"><img src="${a.src}" width="300" alt="${a.alt}" style="display: block; width: 100%; height: auto; border: 0;" /></td>
+<td width="50%"><img src="${b.src}" width="300" alt="${b.alt}" style="display: block; width: 100%; height: auto; border: 0;" /></td>
+</tr></table></td></tr>`;
+
+/** La salutation de la lettre, en Georgia italique. Neutre : « Bonjour », jamais « Cher » ou « Chère ». */
+export const salutation = (prenom, bas = 20) =>
+  ligne(`<p style="margin: 0; font-family: ${SERIF}; font-style: italic; font-size: 24px; line-height: 1.3; color: ${C.encre};">Bonjour ${prenom},</p>`, bas);
+
+/**
+ * Le corps d'un mail selon sa structure. Champs : surtitre, salut (lettre), h1, sous, carte
+ * (HTML déjà rendu), encarts (lettre), cta, lien, pied, visuel (remplace la photo de tête),
+ * etapes (atelier), nuit (magazine : { etiquette, titre, texte, cta, lien }).
+ */
+export function corpsSelon(structure, o) {
+  const r = [];
+  const sur = o.surtitre ? surtitre(o.surtitre) : "";
+  if (structure === "atelier") {
+    const v = o.visuel ?? VISUELS.pile;
+    r.push(photoEnTete(v.src, v.alt), sur, titre(o.h1), chapo(o.sous), o.carte ?? "", bouton(o.cta, o.lien, 48));
+    r.push(bandeNuit({ etiquette: "&Agrave; l&rsquo;atelier", titre: "Ce qui se passe<br />ensuite.", image: VISUELS.tirages }));
+    r.push(espace(48), ...(o.etapes ?? ETAPES).map(etape));
+    if (o.pied) r.push(pied(o.pied));
+  } else if (structure === "lettre") {
+    r.push(sur, o.salut ? salutation(o.salut) : "", titre(o.h1), texte(o.sous, 24), o.carte ?? "");
+    for (const e of o.encarts ?? []) r.push(encartPastille(e));
+    r.push(espace(16), bouton(o.cta, o.lien));
+    if (o.pied) r.push(pied(o.pied));
+    r.push(imagePleine(VISUELS.bande, 16), ligne(etiquette("Ils sont pass&eacute;s par l&rsquo;atelier"), 40, "center"), signature(40));
+  } else if (structure === "magazine") {
+    const v = o.visuel ?? VISUELS.arrivee;
+    r.push(photoEnTete(v.src, v.alt), sur ? ligne(etiquette(o.surtitre), 14, "center") : "", titre(o.h1, 16, "center", 60), chapo(o.sous, 40, "center"), o.carte ?? "");
+    r.push(demiPhotos(), bouton(o.cta, o.lien, 48, "center"));
+    if (o.nuit) r.push(bandeNuit({ ...o.nuit, align: "center" }), espace(40));
+    if (o.pied) r.push(pied(o.pied, 40, "center"));
+  } else if (structure === "simple") {
+    r.push(image(VISUELS.pile.src, VISUELS.pile.alt, 300, null, 32), sur, titre(o.h1), chapo(o.sous), o.carte ?? "", bouton(o.cta, o.lien));
+    if (o.pied) r.push(pied(o.pied));
+  } else {
+    throw new Error(`structure inconnue : ${structure} (${STRUCTURES.join(", ")})`);
+  }
+  return r.filter(Boolean).join("\n\n");
+}
+
 /* ─────────────────────────────── la coquille ─────────────────────────────── */
 
 /**
@@ -233,6 +366,8 @@ u + .body .gm-diff { background: #000000; mix-blend-mode: difference; }
   .titre-mail { font-size: 40px !important; }
   .duo { display: block !important; width: 100% !important; padding: 0 0 16px 0 !important; }
   .code-carte { font-size: 16px !important; letter-spacing: 0.5px !important; }
+  .etape-photo { width: 112px !important; }
+  .titre-nuit { font-size: 34px !important; }
 }
 </style>
 </head>
