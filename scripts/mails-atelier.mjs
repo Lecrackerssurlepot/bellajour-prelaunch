@@ -248,9 +248,11 @@ function encartCarteCredit() {
 /** La ligne de la maison, en bas de chaque mail de l'atelier et du compte. */
 const MENTION = "contact@bellajour.com";
 
-export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero, sujet, surtitre: sur }) {
-  /* Piste C (26/11) : une photo ouvre chaque mail, le titre du numéro en surtitre quand on le connaît. */
-  const photo = hero ?? PHOTO_MAIL
+export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pied: texteDuPied, hero, photo: avecPhoto, sujet, surtitre: sur }) {
+  /* Piste C (26/11), puis Mathias le 27/11 : « faut que ça dépende des mails ». La photo n'ouvre
+     que les mails qui le portent (`photo: true` ou leur propre `hero`) : les moments, pas les
+     consignes. Le titre du numéro en surtitre quand on le connaît. */
+  const photo = hero ?? (avecPhoto ? PHOTO_MAIL : null)
   const dessus = sur ?? (String(sujet ?? "").includes("params.TITRE") ? TITRE : null)
   return coquille({
     titreHtml,
@@ -259,7 +261,7 @@ export function maquette({ titreHtml, preheader, h1, sous, carte, cta, lien, pie
     corps: [
       /* L'image d'en-tête est FACULTATIVE (16/09/2026, C0 seulement) : sans
          elle, rien n'est rendu. JPEG, jamais WebP : Outlook ne le lit pas. */
-      photoEnTete(photo.src, photo.alt),
+      photo ? photoEnTete(photo.src, photo.alt) : "",
       dessus ? surtitre(dessus) : "",
       titre(h1),
       chapo(sous),
@@ -296,6 +298,7 @@ export const MAILS = [
        dans le localStorage de son appareil : onglet fermé, dossier
        injoignable jusqu'à M2, le lendemain. */
     code: "M0",
+    photo: true,
     nom: "M0 · Atelier · Votre numéro est ouvert",
     sujet: `${TITRE} est ouvert, il attend vos photos`,
     preheader: "Votre dossier existe. Il lui manque encore la matière.",
@@ -517,6 +520,7 @@ export const MAILS = [
        du fichier, et le reste de son numéro. « Le mail fait le clic, la page
        fait le spectacle. » */
     code: "M7b",
+    photo: true,
     nom: "M7b · Atelier · Votre magazine est arrivé",
     sujet: `${TITRE} est chez vous`,
     preheader: "Et sa version numérique vous attend.",
@@ -530,6 +534,7 @@ export const MAILS = [
   },
   {
     code: "M8",
+    photo: true,
     nom: "M8 · Atelier · Le prochain moment",
     sujet: "Le prochain moment ?",
     preheader: "Votre numéro est arrivé. Nous espérons qu'il vous ressemble.",

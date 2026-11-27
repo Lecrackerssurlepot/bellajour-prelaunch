@@ -33,10 +33,11 @@ ne redessine un bouton ni un en-tête. Elle lit ses valeurs dans `brand/build/ma
   sur le fond devenu noir. Le bandeau est peint deux fois, `bgcolor` et
   `background-image: linear-gradient(…)`, parce que Gmail n'inverse pas une image de fond : il reste
   noir, le logo reste lisible.
-- **Une photo ouvre chaque mail** (piste C, choisie par Mathias le 26/11) : sous le bandeau, une vraie
-  photo de magazine pleine largeur (600 px, sans coin arrondi), `photoEnTete` de la coquille. Les mails
-  de l'atelier et du compte prennent `PHOTO_MAIL` (provisoire, en attendant les visuels de Mathias)
-  sauf s'ils ont la leur ; ceux de Noël gardent leur scène. Les mails de la carte cadeau n'en ont pas :
+- **Une photo ouvre les mails de moment, pas les mails de consigne** (piste C du 26/11, précisée par
+  Mathias le 27/11 : « faut que ça dépende des mails ») : sous le bandeau, une vraie photo de magazine
+  pleine largeur (600 px, sans coin arrondi), `photoEnTete` de la coquille. Avec photo : C0, M0, M7b,
+  M8 et les campagnes de Noël ; les autres n'en ont pas. `PHOTO_MAIL` est provisoire, en attendant les
+  visuels de Mathias. La carte cadeau d'un mail a le format d'une carte (ratio 1,586, 400 × 252). Les mails de la carte cadeau n'en ont pas :
   la carte est leur image. Au-dessus du titre, le titre du numéro en étiquette quand on le connaît.
 - **Corps** : papier `#ffffff`, encre `#111111`, texte doux `#626262` pour le pied et les étiquettes,
   filets `#dedede`. Rien d'autre : ni cuivre, ni crème, ni bleu.

@@ -105,24 +105,34 @@ function enTete(fichier, alt, lien = null) {
  * haut, face à la signature ; la phrase garde toute la largeur.
  */
 function carte({ pour, mot = true, bas, montant }) {
+  /* Au format d'une vraie carte (ratio 1,586, comme /carte et /offrir) : 400 × 252, centrée.
+     La hauteur est tenue par la cellule ; au téléphone la carte se resserre en largeur. */
   const t = (taille, extra = "") => `font-family: ${SERIF}; font-size: ${taille}px; color: ${C.nuitTexte};${extra}`;
   return ligne(
-    blocNuit(`<tr><td style="padding: 24px 24px 0 24px;">
+    `<table role="presentation" width="400" cellpadding="0" cellspacing="0" border="0" style="width: 400px; max-width: 100%; margin: 0 auto;"><tr><td>
+${blocNuit(`<tr><td height="252" valign="top" style="height: 252px; padding: 0;">
+<table role="presentation" width="100%" height="252" cellpadding="0" cellspacing="0" border="0" style="height: 252px;">
+<tr><td valign="top" style="padding: 20px 22px 0 22px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-<td align="left" valign="middle"><img src="${SIGNATURE}" width="84" alt="Bellajour" style="display: block; width: 84px; height: auto; border: 0;" /></td>
-<td align="right" valign="middle" style="${t(34, " line-height: 1; white-space: nowrap;")}">${clair(montant)}</td>
+<td align="left" valign="middle"><img src="${SIGNATURE}" width="72" alt="Bellajour" style="display: block; width: 72px; height: auto; border: 0;" /></td>
+<td align="right" valign="middle" style="${t(26, " line-height: 1; white-space: nowrap;")}">${clair(montant)}</td>
 </tr></table>
 </td></tr>
-<tr><td style="padding: 40px 24px 0 24px;">${etiquette(clair(pour), C.nuitDoux)}</td></tr>
-<tr><td style="padding: 8px 24px 0 24px; ${t(30, " line-height: 1.1;")}">${clair("Vos photos deviennent un magazine.")}</td></tr>
-${mot ? `{% if params.MESSAGE %}<tr><td style="padding: 12px 24px 0 24px; ${t(17, " font-style: italic; line-height: 1.4;")}">${clair(`« ${P("MESSAGE")} »`)}</td></tr>{% endif %}` : ""}
-<tr><td style="padding: 32px 24px 24px 24px;">
+<tr><td valign="bottom" style="padding: 0 22px 0 22px;">${etiquette(clair(pour), C.nuitDoux)}
+<div style="padding-top: 6px; ${t(21, " line-height: 1.15;")}">${clair("Vos photos deviennent un magazine.")}</div>
+${mot ? `{% if params.MESSAGE %}<div style="padding-top: 6px; ${t(14, " font-style: italic; line-height: 1.35;")}">${clair(`« ${P("MESSAGE")} »`)}</div>{% endif %}` : ""}
+</td></tr>
+<tr><td valign="bottom" style="padding: 14px 22px 18px 22px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-<td align="left" valign="bottom" style="font-family: ${SANS}; font-size: 12px; color: ${C.nuitTexte};">${clair(bas)}</td>
+<td align="left" valign="bottom" style="font-family: ${SANS}; font-size: 11px; color: ${C.nuitTexte};">${clair(bas)}</td>
 <td align="right" valign="bottom" style="white-space: nowrap;">${etiquette(clair("Carte cadeau"), C.nuitDoux)}</td>
 </tr></table>
-</td></tr>`),
+</td></tr>
+</table>
+</td></tr>`, "16px")}
+</td></tr></table>`,
     40,
+    "center",
   );
 }
 
