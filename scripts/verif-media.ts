@@ -4,7 +4,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { MEDIA, visuelPour, jourParis, etatRotation, type Emplacement } from '../src/content/media'
-import { estEmplacement, estJour, ligneVersRotation, lireCookieApercu, normaliserSaisie, rotationsFusionnees, cheminDepot, type LigneRotation } from '../src/lib/visuels/rotation'
+import { accepteMobile, aEcrire, defautFusionne, demandeMigrationV2, emplacementFusionne, estCadrage, estEmplacement, estJour, ligneVersRotation, lireCookieApercu, normaliserSaisie, rotationsFusionnees, cheminDepot, PERIODE_DEFAUT, type LigneRotation } from '../src/lib/visuels/rotation'
 
 let ok = 0
 let ko = 0
@@ -104,6 +104,7 @@ verifie('« constructor » n’est pas un emplacement', !estEmplacement('constru
 verifie('accueil.hero est un emplacement', estEmplacement('accueil.hero'))
 verifie('31 février refusé', !estJour('2027-02-31') && estJour('2027-02-28'))
 const sain = { emplacement: 'accueil.hero', du: '2026-12-01', au: '2026-12-26', fichier: `${P}accueil.hero/20261126-ab.webp`, alt: 'Noël', valide: true }
+const sainLu = normaliserSaisie(sain, P)
 verifie('saisie saine acceptée', normaliserSaisie(sain, P).ok)
 verifie('fichier hors du panier refusé', !normaliserSaisie({ ...sain, fichier: 'https://ailleurs.fr/x.webp' }, P).ok)
 verifie('remontée « .. » refusée', !normaliserSaisie({ ...sain, fichier: `${P}../x.webp` }, P).ok)
@@ -131,6 +132,36 @@ verifie('fusion : la plus récente gagne un chevauchement', !fus[0].vide && fus[
 verifie('cookie d’aperçu lu', lireCookieApercu('2026-12-15|brouillons')?.brouillons === true && lireCookieApercu('2026-12-15')?.brouillons === false)
 verifie('cookie d’aperçu faux ignoré', lireCookieApercu('demain') === null && lireCookieApercu(undefined) === null)
 verifie('chemin de dépôt unique et rangé', cheminDepot('accueil.hero', 'webp', new Date('2026-11-26T10:00:00Z'), 'ab12') === 'accueil.hero/20261126-ab12.webp')
+
+console.log('Version téléphone, cadrage, défaut (27/11)')
+const tel = normaliserSaisie({ ...sain, fichier_mobile: `${P}tel.webp`, cadrage: '30% 70%' }, P)
+verifie('version téléphone et cadrage acceptés', tel.ok && tel.valeur.fichier_mobile === `${P}tel.webp` && tel.valeur.cadrage === '30% 70%')
+verifie('version téléphone hors panier refusée', !normaliserSaisie({ ...sain, fichier_mobile: 'https://ailleurs.com/a.webp' }, P).ok)
+verifie('version téléphone refusée sur une couverture', !normaliserSaisie({ ...sain, emplacement: 'accueil.couverture', fichier_mobile: `${P}tel.webp` }, P).ok)
+verifie('couverture et vidéo sans version téléphone', !accepteMobile(MEDIA['accueil.couverture']) && !accepteMobile(MEDIA['magazine.video']) && accepteMobile(MEDIA['accueil.hero']))
+verifie('cadrage faux refusé', !normaliserSaisie({ ...sain, cadrage: '120% 0%' }, P).ok && !normaliserSaisie({ ...sain, cadrage: 'center' }, P).ok)
+verifie('cadrage : bornes', estCadrage('0% 100%') && estCadrage('100% 0%') && !estCadrage('50%') && !estCadrage('-1% 0%'))
+const def = normaliserSaisie({ ...sain, du: 'nimporte', au: 'quoi', defaut: true }, P)
+verifie('défaut : dates ignorées, posées fixes', def.ok && def.valeur.defaut && def.valeur.du === PERIODE_DEFAUT.du && def.valeur.au === PERIODE_DEFAUT.au)
+verifie('saisie simple : sans colonnes neuves (table d’avant)', sainLu.ok && !demandeMigrationV2(sainLu.valeur) && !('defaut' in aEcrire(sainLu.valeur)) && !('cadrage' in aEcrire(sainLu.valeur)))
+verifie('saisie neuve : colonnes neuves écrites', tel.ok && demandeMigrationV2(tel.valeur) && aEcrire(tel.valeur).fichier_mobile === `${P}tel.webp`)
+const lt = ligne({ fichier_mobile: '/tel.webp', cadrage: '10% 20%' })
+const rt = ligneVersRotation(lt)
+verifie('ligne → rotation avec téléphone et cadrage', !!rt && !rt.vide && rt.mobile === '/tel.webp' && rt.cadrage === '10% 20%')
+verifie('cadrage illisible ignoré', (() => { const r = ligneVersRotation(ligne({ cadrage: 'n’importe' })); return !!r && !r.vide && r.cadrage === undefined })())
+const lignesDef = [
+  ligne({ id: 'd-vieux', defaut: true, fichier: '/d-vieux.webp', cree_le: '2026-11-20T10:00:00Z', ...PERIODE_DEFAUT }),
+  ligne({ id: 'd-neuf', defaut: true, fichier: '/d-neuf.webp', cree_le: '2026-11-25T10:00:00Z', ...PERIODE_DEFAUT }),
+  ligne({ id: 'd-brouillon', defaut: true, valide: false, fichier: '/d-brouillon.webp', cree_le: '2026-11-26T10:00:00Z', ...PERIODE_DEFAUT }),
+]
+verifie('défaut : la ligne validée la plus récente gagne', defautFusionne('accueil.hero', lignesDef)?.fichier === '/d-neuf.webp')
+verifie('défaut : le brouillon seulement dans l’aperçu', defautFusionne('accueil.hero', lignesDef, true)?.fichier === '/d-brouillon.webp')
+verifie('défaut : sans ligne, celui du code', defautFusionne('accueil.hero', [])?.fichier === MEDIA['accueil.hero'].defaut.fichier)
+verifie('défaut : n’est pas une rotation datée', rotationsFusionnees('accueil.hero', lignesDef).length === MEDIA['accueil.hero'].rotations.length)
+const avecDate = emplacementFusionne('accueil.hero', [...lignesDef, ligne({ id: 'noel', fichier: '/noel.webp', du: '2026-12-01', au: '2026-12-26' })])
+verifie('défaut remplacé hors période', visuelPour('accueil.hero', new Date('2026-11-27T12:00:00Z'), { 'accueil.hero': avecDate })?.fichier === '/d-neuf.webp')
+verifie('rotation datée passe avant le défaut remplacé', visuelPour('accueil.hero', new Date('2026-12-10T12:00:00Z'), { 'accueil.hero': avecDate })?.fichier === '/noel.webp')
+verifie('visuelPour rend la version téléphone', visuelPour('accueil.hero', new Date('2026-12-10T12:00:00Z'), { 'accueil.hero': emplacementFusionne('accueil.hero', [lt]) })?.mobile === '/tel.webp')
 
 console.log('La vraie table')
 const racine = join(__dirname, '..', 'public')

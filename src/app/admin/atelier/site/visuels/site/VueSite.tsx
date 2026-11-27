@@ -26,6 +26,7 @@ import {
   PAGES_DU_SITE,
   PAGE_DU_SITE,
   Vignette,
+  fusionDe,
   instantDe,
   jourLisible,
   rotationsDe,
@@ -40,7 +41,7 @@ const LARGEUR: Record<Appareil, number> = { ordinateur: 1280, telephone: 390 }
 function visuelsDuJour(emplacements: EmplacementVu[], jour: string, brouillons: boolean): Map<NomEmplacement, Visuel | null> {
   const out = new Map<NomEmplacement, Visuel | null>()
   for (const e of emplacements) {
-    const fusion: Emplacement = { ...e, rotations: rotationsDe(e).map((x) => x.rotation) }
+    const fusion = fusionDe(e, brouillons)
     out.set(e.nom, visuelPour(e.nom, instantDe(jour), { [e.nom]: fusion } as Record<string, Emplacement>, { brouillons }))
   }
   return out
@@ -57,6 +58,7 @@ function tableDesFichiers(duJour: Map<NomEmplacement, Visuel | null>, base: stri
   for (const [nom, v] of duJour) {
     if (!v) continue
     ajouter(v.fichier, nom)
+    ajouter(v.mobile, nom)
     ajouter(v.video?.mp4, nom)
     ajouter(v.video?.webm, nom)
   }
@@ -358,6 +360,7 @@ function Fiche({
   brouillons,
   aujourdhui,
   bibliotheque,
+  v2,
   fermer,
   fini,
 }: {
@@ -366,10 +369,11 @@ function Fiche({
   brouillons: boolean
   aujourdhui: string
   bibliotheque: VisuelBibliotheque[]
+  v2: boolean
   fermer: () => void
   fini: () => void
 }) {
-  const [ajout, setAjout] = useState(false)
+  const [ajout, setAjout] = useState<'date' | 'defaut' | null>(null)
   const v = visuelsDuJour([e], jour, brouillons).get(e.nom) ?? null
   const lignes = rotationsDe(e)
   useEffect(() => {
@@ -400,14 +404,28 @@ function Fiche({
               <dt>Rotations</dt>
               <dd>{lignes.length}</dd>
             </div>
+            <div>
+              <dt>Sur téléphone</dt>
+              <dd>{v?.mobile ? 'Autre image' : 'Même image'}</dd>
+            </div>
           </dl>
         </div>
         {ajout ? (
-          <Ajout e={e} aujourdhui={jour < aujourdhui ? aujourdhui : jour} bibliotheque={bibliotheque} fini={fini} />
+          <Ajout
+            e={e}
+            aujourdhui={jour < aujourdhui ? aujourdhui : jour}
+            bibliotheque={bibliotheque}
+            v2={v2}
+            defaut={ajout === 'defaut'}
+            fini={fini}
+          />
         ) : (
           <div className="vis-gestes">
-            <button type="button" className="m-btn vis-btn" onClick={() => setAjout(true)}>
+            <button type="button" className="m-btn vis-btn" onClick={() => setAjout('date')}>
               Changer ce visuel
+            </button>
+            <button type="button" className="m-second vis-btn" onClick={() => setAjout('defaut')} disabled={!v2}>
+              Changer le défaut
             </button>
             <a className="m-second vis-btn" href={`/admin/atelier/site/visuels#${e.nom}`} target="_top">
               Voir sa fiche
@@ -425,11 +443,13 @@ export default function VueSite({
   emplacements,
   bibliotheque,
   aujourdhui,
+  v2,
   depart,
 }: {
   emplacements: EmplacementVu[]
   bibliotheque: VisuelBibliotheque[]
   aujourdhui: string
+  v2: boolean
   depart: Depart
 }) {
   const router = useRouter()
@@ -573,6 +593,7 @@ export default function VueSite({
           brouillons={brouillons}
           aujourdhui={aujourdhui}
           bibliotheque={bibliotheque}
+          v2={v2}
           fermer={() => setFiche(null)}
           fini={() => {
             setFiche(null)

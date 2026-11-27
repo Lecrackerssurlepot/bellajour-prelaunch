@@ -2,9 +2,9 @@ import { draftMode } from "next/headers";
 import { redirect } from "next/navigation";
 import { quiEstConnecte } from "@/lib/admin-session";
 import { collectifOuvert } from "@/lib/collectif/interrupteur";
-import { makeSupabase } from "@/lib/supabase";
 import { MEDIA, jourParis, type Emplacement, type NomEmplacement } from "@/content/media";
-import { COLONNES_ROTATION, estJour, type LigneRotation } from "@/lib/visuels/rotation";
+import { estJour, type LigneRotation } from "@/lib/visuels/rotation";
+import { lireLignesVisuels } from "@/lib/visuels/serveur";
 import { bibliothequeVisuels } from "@/lib/visuels/bibliotheque";
 import BarreAtelier, { liensParticuliers } from "../../../../BarreAtelier";
 import type { EmplacementVu } from "../Visuels";
@@ -53,9 +53,9 @@ export default async function PageVueSite({ searchParams }: { searchParams: Prom
   }
 
   let lignes: LigneRotation[] = [];
+  let v2 = false;
   try {
-    const { data } = await makeSupabase().from("visuels_rotations").select(COLONNES_ROTATION);
-    lignes = (data ?? []) as LigneRotation[];
+    ({ lignes, v2 } = await lireLignesVisuels());
   } catch {
     lignes = [];
   }
@@ -72,6 +72,7 @@ export default async function PageVueSite({ searchParams }: { searchParams: Prom
         emplacements={emplacements}
         bibliotheque={bibliothequeVisuels(lignes)}
         aujourdhui={aujourdhui}
+        v2={v2}
         depart={{ a, b, page, brouillons, montrer }}
       />
     </div>

@@ -18,7 +18,7 @@ import { useGlisserAuChargement } from './glisser'
 /* Composer pour Noël COMMENCE un numéro (`?nouveau=1`, piège 8 du questionnaire). */
 const COMPOSER_NOEL = `${COMPOSER_HREF}?${PARAM_NOUVEAU}=1`
 
-type Couverture = { fichier: string; alt: string }
+type Couverture = { fichier: string; alt: string; cadrage?: string }
 
 export default function BlocOffrir({ couvertures }: { couvertures: Couverture[] }) {
   useGlisserAuChargement('noel', 'noel')
@@ -55,7 +55,7 @@ export default function BlocOffrir({ couvertures }: { couvertures: Couverture[] 
         {couvertures.length > 0 && (
           <div className="noel-vis rv" aria-hidden="true">
             {couvertures.map((c) => (
-              <img key={c.fichier} src={c.fichier} alt="" loading="lazy" decoding="async" />
+              <img key={c.fichier} src={c.fichier} alt="" loading="lazy" decoding="async" style={c.cadrage ? { objectPosition: c.cadrage } : undefined} />
             ))}
           </div>
         )}

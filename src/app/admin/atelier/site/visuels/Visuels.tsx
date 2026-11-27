@@ -16,7 +16,7 @@ import {
   type Rotation,
   type Visuel,
 } from '@/content/media'
-import { ligneVersRotation, trierLignes, type LigneRotation } from '@/lib/visuels/rotation'
+import { accepteMobile, defautFusionne, ligneVersRotation, ligneVersVisuel, trierLignes, type LigneRotation } from '@/lib/visuels/rotation'
 import ChampDate from '@/components/calendrier/ChampDate'
 import type { VisuelBibliotheque } from '@/lib/visuels/bibliotheque'
 
@@ -58,18 +58,108 @@ export const instantDe = (j: string) => new Date(`${j}T12:00:00+01:00`)
 
 export type Ligne = { rotation: Rotation; ligne: LigneRotation | null }
 
+/** Les rotations DATÉES d'un emplacement : celles de l'admin d'abord, puis celles du code. */
 export function rotationsDe(e: EmplacementVu): Ligne[] {
-  const base: Ligne[] = trierLignes(e.lignes)
+  const base: Ligne[] = trierLignes(e.lignes.filter((l) => l.defaut !== true))
     .map((l) => ({ rotation: ligneVersRotation(l), ligne: l }))
     .filter((x): x is { rotation: Rotation; ligne: LigneRotation } => x.rotation !== null)
   return [...base, ...e.rotations.map((r) => ({ rotation: r, ligne: null }))]
 }
 
+/** Les lignes « défaut » de l'admin, la plus récente d'abord. */
+export function defautsDe(e: EmplacementVu): LigneRotation[] {
+  return trierLignes(e.lignes.filter((l) => l.defaut === true))
+}
+
+/** L'emplacement tel que le site le calcule (défaut remplacé, rotations de l'admin d'abord). */
+export function fusionDe(e: EmplacementVu, brouillons: boolean): Emplacement {
+  return { ...e, defaut: defautFusionne(e.nom, e.lignes, brouillons), rotations: rotationsDe(e).map((x) => x.rotation) }
+}
+
 export function Vignette({ v, ratio, petite }: { v: Visuel | null; ratio?: string; petite?: boolean }) {
   return (
     <span className={`vis-vignette${petite ? ' vis-vignette--petite' : ''}`} style={ratio && !petite ? { aspectRatio: ratio } : undefined}>
-      {v ? <img src={v.fichier} alt={v.alt} loading="lazy" /> : <span className="vis-rien">Rien</span>}
+      {v ? <img src={v.fichier} alt={v.alt} loading="lazy" style={v.cadrage ? { objectPosition: v.cadrage } : undefined} /> : <span className="vis-rien">Rien</span>}
+      {v?.mobile ? <span className="vis-pastille-tel" title="Version téléphone">Tél.</span> : null}
     </span>
+  )
+}
+
+/** « 210 / 297 » → 0,707. */
+function valeurRatio(r: string | undefined): number | null {
+  if (!r) return null
+  const [a, b] = r.split('/').map((x) => Number(x.trim()))
+  return a > 0 && b > 0 ? a / b : null
+}
+
+/**
+ * Le cadrage : un clic sur l'image pose le point gardé quand la page la
+ * recadre ; à côté, le rendu dans le format de l'emplacement. Flèches du
+ * clavier : 5 % par appui.
+ */
+export function Cadrage({
+  src,
+  ratio,
+  valeur,
+  changer,
+}: {
+  src: string
+  ratio?: string
+  valeur: string | null
+  changer: (v: string | null) => void
+}) {
+  const [taille, setTaille] = useState<{ l: number; h: number } | null>(null)
+  const [x, y] = (valeur ?? '50% 50%').split(' ').map((v) => parseFloat(v))
+  const borne = (n: number) => Math.round(Math.min(100, Math.max(0, n)))
+  const poser = (px: number, py: number) => changer(`${borne(px)}% ${borne(py)}%`)
+  const cible = valeurRatio(ratio)
+  const reel = taille ? taille.l / taille.h : null
+  const recadre = cible && reel ? Math.abs(reel / cible - 1) > 0.05 : false
+
+  return (
+    <div className="vis-cadrage">
+      <div className="vis-cadrage-vues">
+        <div
+          className="vis-cadrage-source"
+          role="slider"
+          tabIndex={0}
+          aria-label="Point de cadrage"
+          aria-valuetext={`${x} % depuis la gauche, ${y} % depuis le haut`}
+          aria-valuenow={x}
+          onClick={(ev) => {
+            const r = ev.currentTarget.getBoundingClientRect()
+            poser(((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100)
+          }}
+          onKeyDown={(ev) => {
+            const pas: Record<string, [number, number]> = { ArrowLeft: [-5, 0], ArrowRight: [5, 0], ArrowUp: [0, -5], ArrowDown: [0, 5] }
+            const d = pas[ev.key]
+            if (!d) return
+            ev.preventDefault()
+            poser(x + d[0], y + d[1])
+          }}
+        >
+          <img src={src} alt="" onLoad={(ev) => setTaille({ l: ev.currentTarget.naturalWidth, h: ev.currentTarget.naturalHeight })} />
+          <i className="vis-cadrage-point" style={{ left: `${x}%`, top: `${y}%` }} aria-hidden="true" />
+        </div>
+        {ratio ? (
+          <span className="vis-cadrage-rendu" style={{ aspectRatio: ratio }}>
+            <img src={src} alt="" style={{ objectPosition: valeur ?? '50% 50%' }} />
+          </span>
+        ) : null}
+      </div>
+      <p className="vis-sous">
+        {taille ? `Image ${taille.l} × ${taille.h} px. ` : ''}
+        {ratio ? (recadre ? `Recadrée au format ${ratio.replace(' / ', ' × ')} : touchez ce qui doit rester.` : 'Même format que l’emplacement.') : 'Touchez ce qui doit rester.'}
+        {valeur ? (
+          <>
+            {' '}
+            <button type="button" className="vis-lien" onClick={() => changer(null)}>
+              Recentrer
+            </button>
+          </>
+        ) : null}
+      </p>
+    </div>
   )
 }
 
@@ -129,9 +219,18 @@ async function enregistrer(
   const r = await fetch(url, { method: methode, headers: { 'content-type': 'application/json' }, body: JSON.stringify(corps) })
   if (r.ok) return
   const j = (await r.json().catch(() => ({}))) as { error?: string; champ?: string }
-  const champ: Record<string, string> = { du: 'Date de début', au: 'Date de fin', alt: 'Description', fichier: 'Image', vide: 'Vide' }
+  const champ: Record<string, string> = {
+    du: 'Date de début',
+    au: 'Date de fin',
+    alt: 'Description',
+    fichier: 'Image',
+    vide: 'Vide',
+    fichier_mobile: 'Image téléphone',
+    cadrage: 'Cadrage',
+  }
   if (j.error === 'champ_invalide' && j.champ) throw new Error(`${champ[j.champ] ?? j.champ} à revoir`)
   if (j.error === 'migration_visuels_absente') throw new Error('Table absente')
+  if (j.error === 'migration_visuels_v2_absente') throw new Error('Migration 20261127 à appliquer')
   throw new Error('Enregistrement impossible')
 }
 
@@ -181,26 +280,96 @@ function Bibliotheque({
   )
 }
 
+/** Une image : reprise de la bibliothèque, ou un nouveau fichier. */
+type Source = { mode: 'bibliotheque'; repris: VisuelBibliotheque | null } | { mode: 'fichier'; fichier: File | null; apercu: string | null }
+
+function ChoixImage({
+  id,
+  libelle,
+  liste,
+  source,
+  changer,
+  reprendre,
+}: {
+  id: string
+  libelle: string
+  liste: VisuelBibliotheque[]
+  source: Source
+  changer: (s: Source) => void
+  reprendre?: (v: VisuelBibliotheque) => void
+}) {
+  return (
+    <>
+      <div className="vis-bascule" role="group" aria-label={`${libelle} : origine`}>
+        <button type="button" aria-pressed={source.mode === 'bibliotheque'} onClick={() => changer({ mode: 'bibliotheque', repris: null })}>
+          Déjà sur le site
+        </button>
+        <button type="button" aria-pressed={source.mode === 'fichier'} onClick={() => changer({ mode: 'fichier', fichier: null, apercu: null })}>
+          Nouveau fichier
+        </button>
+      </div>
+      {source.mode === 'bibliotheque' ? (
+        <Bibliotheque
+          liste={liste}
+          choisi={source.repris?.fichier ?? null}
+          choisir={(v) => {
+            changer({ mode: 'bibliotheque', repris: v })
+            reprendre?.(v)
+          }}
+        />
+      ) : (
+        <label className="vis-champ" htmlFor={id}>
+          <span>{libelle}</span>
+          <input
+            id={id}
+            type="file"
+            accept="image/webp,image/jpeg,image/png"
+            onChange={(x) => {
+              const f = x.target.files?.[0] ?? null
+              changer({ mode: 'fichier', fichier: f, apercu: f ? URL.createObjectURL(f) : null })
+            }}
+          />
+        </label>
+      )}
+    </>
+  )
+}
+
+const adresseDe = (s: Source): string | null => (s.mode === 'bibliotheque' ? (s.repris?.fichier ?? null) : s.apercu)
+
+async function fichierDe(nom: NomEmplacement, s: Source): Promise<string | null> {
+  if (s.mode === 'bibliotheque') return s.repris?.fichier ?? null
+  return s.fichier ? deposer(nom, await preparerImage(s.fichier)) : null
+}
+
 export function Ajout({
   e,
   aujourdhui,
   fini,
   bibliotheque,
+  v2,
+  defaut,
 }: {
   e: EmplacementVu
   aujourdhui: string
   fini: () => void
   bibliotheque: VisuelBibliotheque[]
+  /** La migration 20261127 est en place : version téléphone, cadrage et défaut s'enregistrent. */
+  v2: boolean
+  /** Le visuel remplace le défaut (pas de dates). */
+  defaut?: boolean
 }) {
-  const [mode, setMode] = useState<'bibliotheque' | 'fichier'>('bibliotheque')
-  const [repris, setRepris] = useState<VisuelBibliotheque | null>(null)
   const liste = useMemo(() => (e.type === 'video' ? bibliotheque.filter((v) => v.video) : bibliotheque), [bibliotheque, e.type])
+  const [principal, setPrincipal] = useState<Source>({ mode: 'bibliotheque', repris: null })
+  const [mobile, setMobile] = useState<Source | null>(null)
+  const [cadrage, setCadrage] = useState<string | null>(null)
   const [s, setS] = useState<Saisie>({ du: aujourdhui, au: aujourdhui, alt: '', valide: false, vide: false })
-  const [image, setImage] = useState<File | null>(null)
   const [mp4, setMp4] = useState<File | null>(null)
   const [webm, setWebm] = useState<File | null>(null)
   const [etat, setEtat] = useState<{ enCours: boolean; erreur: string | null }>({ enCours: false, erreur: null })
-  const id = `ajout-${e.nom}`
+  const id = `ajout-${e.nom}${defaut ? '-defaut' : ''}`
+  const vue = adresseDe(principal)
+  const images = useMemo(() => bibliotheque.filter((v) => !v.video), [bibliotheque])
 
   async function envoyer(ev: React.FormEvent) {
     ev.preventDefault()
@@ -209,20 +378,29 @@ export function Ajout({
       let fichier: string | null = null
       let video_mp4: string | null = null
       let video_webm: string | null = null
-      if (!s.vide && mode === 'bibliotheque') {
-        if (!repris) throw new Error('Choisir un visuel')
+      let fichier_mobile: string | null = null
+      if (!s.vide) {
+        if (!vue) throw new Error(principal.mode === 'bibliotheque' ? 'Choisir un visuel' : e.type === 'video' ? 'Image d’attente manquante' : 'Image manquante')
         if (!s.alt.trim()) throw new Error('Description manquante')
-        fichier = repris.fichier
-        video_mp4 = e.type === 'video' ? (repris.video?.mp4 ?? null) : null
-        video_webm = e.type === 'video' ? (repris.video?.webm ?? null) : null
-      } else if (!s.vide) {
-        if (!image) throw new Error(e.type === 'video' ? 'Image d’attente manquante' : 'Image manquante')
-        if (!s.alt.trim()) throw new Error('Description manquante')
-        fichier = await deposer(e.nom, await preparerImage(image))
-        if (e.type === 'video' && mp4) video_mp4 = await deposer(e.nom, mp4)
-        if (e.type === 'video' && webm && mp4) video_webm = await deposer(e.nom, webm)
+        fichier = await fichierDe(e.nom, principal)
+        if (e.type === 'video' && principal.mode === 'bibliotheque') {
+          video_mp4 = principal.repris?.video?.mp4 ?? null
+          video_webm = principal.repris?.video?.webm ?? null
+        }
+        if (e.type === 'video' && principal.mode === 'fichier' && mp4) video_mp4 = await deposer(e.nom, mp4)
+        if (e.type === 'video' && principal.mode === 'fichier' && webm && mp4) video_webm = await deposer(e.nom, webm)
+        if (mobile) fichier_mobile = await fichierDe(e.nom, mobile)
       }
-      await enregistrer('POST', '/api/admin/visuels/rotations', { emplacement: e.nom, ...s, fichier, video_mp4, video_webm })
+      await enregistrer('POST', '/api/admin/visuels/rotations', {
+        emplacement: e.nom,
+        ...s,
+        fichier,
+        video_mp4,
+        video_webm,
+        fichier_mobile,
+        cadrage: s.vide ? null : cadrage,
+        defaut: defaut === true,
+      })
       fini()
     } catch (err) {
       setEtat({ enCours: false, erreur: (err as Error).message })
@@ -231,70 +409,85 @@ export function Ajout({
 
   return (
     <form className="vis-form" onSubmit={envoyer}>
+      {defaut ? <p className="vis-form-titre">Nouveau visuel par défaut</p> : null}
+      {defaut && !v2 ? <p className="vis-alerte">Migration 20261127 à appliquer</p> : null}
       {e.optionnel ? (
         <label className="vis-case">
           <input type="checkbox" checked={s.vide} onChange={(x) => setS({ ...s, vide: x.target.checked })} />
-          Rien sur la période
+          {defaut ? 'Rien par défaut' : 'Rien sur la période'}
         </label>
       ) : null}
       {!s.vide ? (
-        <div className="vis-bascule" role="group" aria-label="Origine du visuel">
-          <button type="button" aria-pressed={mode === 'bibliotheque'} onClick={() => setMode('bibliotheque')}>
-            Déjà sur le site
-          </button>
-          <button type="button" aria-pressed={mode === 'fichier'} onClick={() => setMode('fichier')}>
-            Nouveau fichier
-          </button>
-        </div>
-      ) : null}
-      {!s.vide && mode === 'bibliotheque' ? (
-        <Bibliotheque
+        <ChoixImage
+          id={`${id}-image`}
+          libelle={e.type === 'video' ? 'Image d’attente' : 'Image'}
           liste={liste}
-          choisi={repris?.fichier ?? null}
-          choisir={(v) => {
-            setRepris(v)
-            setS((x) => ({ ...x, alt: x.alt.trim() ? x.alt : v.alt }))
+          source={principal}
+          changer={(x) => {
+            setPrincipal(x)
+            setCadrage(null)
           }}
+          reprendre={(v) => setS((x) => ({ ...x, alt: x.alt.trim() ? x.alt : v.alt }))}
         />
       ) : null}
-      {!s.vide && mode === 'bibliotheque' ? (
-        <label className="vis-champ" htmlFor={`${id}-alt-b`}>
-          <span>Description</span>
-          <input id={`${id}-alt-b`} type="text" maxLength={200} value={s.alt} placeholder="Ce que montre l’image" onChange={(x) => setS({ ...s, alt: x.target.value })} />
-        </label>
-      ) : null}
-      {!s.vide && mode === 'fichier' ? (
+      {!s.vide && e.type === 'video' && principal.mode === 'fichier' ? (
         <>
-          <label className="vis-champ" htmlFor={`${id}-image`}>
-            <span>{e.type === 'video' ? 'Image d’attente' : 'Image'}</span>
-            <input id={`${id}-image`} type="file" accept="image/webp,image/jpeg,image/png" onChange={(x) => setImage(x.target.files?.[0] ?? null)} />
+          <label className="vis-champ" htmlFor={`${id}-mp4`}>
+            <span>Vidéo mp4</span>
+            <input id={`${id}-mp4`} type="file" accept="video/mp4" onChange={(x) => setMp4(x.target.files?.[0] ?? null)} />
           </label>
-          {e.type === 'video' ? (
-            <>
-              <label className="vis-champ" htmlFor={`${id}-mp4`}>
-                <span>Vidéo mp4</span>
-                <input id={`${id}-mp4`} type="file" accept="video/mp4" onChange={(x) => setMp4(x.target.files?.[0] ?? null)} />
-              </label>
-              <label className="vis-champ" htmlFor={`${id}-webm`}>
-                <span>Vidéo webm (facultatif)</span>
-                <input id={`${id}-webm`} type="file" accept="video/webm" onChange={(x) => setWebm(x.target.files?.[0] ?? null)} />
-              </label>
-            </>
-          ) : null}
-          <label className="vis-champ" htmlFor={`${id}-alt`}>
-            <span>Description</span>
-            <input id={`${id}-alt`} type="text" maxLength={200} value={s.alt} placeholder="Ce que montre l’image" onChange={(x) => setS({ ...s, alt: x.target.value })} />
+          <label className="vis-champ" htmlFor={`${id}-webm`}>
+            <span>Vidéo webm (facultatif)</span>
+            <input id={`${id}-webm`} type="file" accept="video/webm" onChange={(x) => setWebm(x.target.files?.[0] ?? null)} />
           </label>
         </>
       ) : null}
-      <div className="vis-dates">
-        <ChampDate libelle="Du" valeur={s.du} aujourdhui={aujourdhui} changer={(j) => setS({ ...s, du: j, au: j > s.au ? j : s.au })} />
-        <ChampDate libelle="Au" valeur={s.au} aujourdhui={aujourdhui} min={s.du} changer={(j) => setS({ ...s, au: j })} />
-      </div>
+      {!s.vide ? (
+        <label className="vis-champ" htmlFor={`${id}-alt`}>
+          <span>Description</span>
+          <input id={`${id}-alt`} type="text" maxLength={200} value={s.alt} placeholder="Ce que montre l’image" onChange={(x) => setS({ ...s, alt: x.target.value })} />
+        </label>
+      ) : null}
+      {!s.vide && vue && v2 ? (
+        <fieldset className="vis-groupe">
+          <legend>Cadrage</legend>
+          <Cadrage src={vue} ratio={e.ratio} valeur={cadrage} changer={setCadrage} />
+        </fieldset>
+      ) : null}
+      {!s.vide && accepteMobile(e) ? (
+        <fieldset className="vis-groupe">
+          <legend>Sur téléphone</legend>
+          {!v2 ? (
+            <p className="vis-sous">Migration 20261127 à appliquer</p>
+          ) : mobile ? (
+            <>
+              <ChoixImage id={`${id}-mobile`} libelle="Image téléphone" liste={images} source={mobile} changer={setMobile} />
+              <button type="button" className="vis-lien" onClick={() => setMobile(null)}>
+                Même image partout
+              </button>
+            </>
+          ) : (
+            <div className="vis-bascule" role="group" aria-label="Sur téléphone">
+              <button type="button" aria-pressed="true">
+                Même image
+              </button>
+              <button type="button" aria-pressed="false" onClick={() => setMobile({ mode: 'bibliotheque', repris: null })}>
+                Une autre
+              </button>
+            </div>
+          )}
+        </fieldset>
+      ) : null}
+      {!defaut ? (
+        <div className="vis-dates">
+          <ChampDate libelle="Du" valeur={s.du} aujourdhui={aujourdhui} changer={(j) => setS({ ...s, du: j, au: j > s.au ? j : s.au })} />
+          <ChampDate libelle="Au" valeur={s.au} aujourdhui={aujourdhui} min={s.du} changer={(j) => setS({ ...s, au: j })} />
+        </div>
+      ) : null}
       <Interrupteur valide={s.valide} changer={(v) => setS({ ...s, valide: v })} />
       {etat.erreur ? <p className="vis-erreur" role="alert">{etat.erreur}</p> : null}
       <div className="vis-gestes">
-        <button type="submit" className="m-btn vis-btn" disabled={etat.enCours}>
+        <button type="submit" className="m-btn vis-btn" disabled={etat.enCours || (defaut === true && !v2)}>
           {etat.enCours ? 'Envoi…' : 'Enregistrer'}
         </button>
         <button type="button" className="m-second vis-btn" onClick={fini} disabled={etat.enCours}>
@@ -326,22 +519,27 @@ function LigneVue({
   ratio,
   rafraichir,
   aujourdhui,
+  v2,
+  defaut,
 }: {
   l: Ligne
-  etat: EtatRotation
+  etat: EtatRotation | 'remplacé'
   ratio?: string
   rafraichir: () => void
   aujourdhui: string
+  v2: boolean
+  /** Une ligne « défaut » : pas de dates. */
+  defaut?: boolean
 }) {
   const [edition, setEdition] = useState(false)
   const [retrait, setRetrait] = useState(false)
-  const [d, setD] = useState({ du: l.rotation.du, au: l.rotation.au, alt: l.ligne?.alt ?? '' })
+  const [d, setD] = useState({ du: l.rotation.du, au: l.rotation.au, alt: l.ligne?.alt ?? '', cadrage: l.ligne?.cadrage ?? null })
   const [erreur, setErreur] = useState<string | null>(null)
   const [enCours, setEnCours] = useState(false)
   const r = l.rotation
-  const v: Visuel | null = r.vide ? null : { fichier: r.fichier, alt: r.alt }
+  const v: Visuel | null = l.ligne ? ligneVersVisuel(l.ligne) : r.vide ? null : { fichier: r.fichier, alt: r.alt, ...(r.mobile ? { mobile: r.mobile } : {}), ...(r.cadrage ? { cadrage: r.cadrage } : {}) }
 
-  async function patch(changes: Partial<{ du: string; au: string; alt: string; valide: boolean }>) {
+  async function patch(changes: Partial<{ du: string; au: string; alt: string; valide: boolean; cadrage: string | null; fichier_mobile: string | null }>) {
     if (!l.ligne) return
     setEnCours(true)
     setErreur(null)
@@ -357,6 +555,9 @@ function LigneVue({
         video_mp4: x.video_mp4,
         video_webm: x.video_webm,
         valide: x.valide,
+        fichier_mobile: x.fichier_mobile ?? null,
+        cadrage: x.cadrage ?? null,
+        defaut: x.defaut === true,
         ...changes,
       })
       setEdition(false)
@@ -382,22 +583,37 @@ function LigneVue({
       <Vignette v={v} ratio={ratio} petite />
       <div className="vis-rotation-texte">
         <span className="vis-periode">
-          {jourLisible(r.du)} → {jourLisible(r.au)}
+          {defaut ? 'Par défaut' : `${jourLisible(r.du)} → ${jourLisible(r.au)}`}
         </span>
-        <span className="vis-sous">{r.vide ? 'Rien sur la période' : r.alt}</span>
+        <span className="vis-sous">{r.vide ? (defaut ? 'Rien' : 'Rien sur la période') : r.alt}</span>
         {!l.ligne ? <span className="vis-sous">Dans le code</span> : null}
         {r.vide ? null : r.video ? <span className="vis-sous">Avec vidéo</span> : null}
+        {v?.mobile ? <span className="vis-sous">Autre image sur téléphone</span> : null}
+        {v?.cadrage ? <span className="vis-sous">Cadrage {v.cadrage.replace(' ', ' · ')}</span> : null}
         {edition ? (
           <div className="vis-form vis-form--ligne">
-            <div className="vis-dates">
-              <ChampDate libelle="Du" valeur={d.du} aujourdhui={aujourdhui} changer={(j) => setD({ ...d, du: j, au: j > d.au ? j : d.au })} />
-              <ChampDate libelle="Au" valeur={d.au} aujourdhui={aujourdhui} min={d.du} changer={(j) => setD({ ...d, au: j })} />
-            </div>
+            {!defaut ? (
+              <div className="vis-dates">
+                <ChampDate libelle="Du" valeur={d.du} aujourdhui={aujourdhui} changer={(j) => setD({ ...d, du: j, au: j > d.au ? j : d.au })} />
+                <ChampDate libelle="Au" valeur={d.au} aujourdhui={aujourdhui} min={d.du} changer={(j) => setD({ ...d, au: j })} />
+              </div>
+            ) : null}
             {!r.vide ? (
               <label className="vis-champ">
                 <span>Description</span>
                 <input type="text" maxLength={200} value={d.alt} onChange={(x) => setD({ ...d, alt: x.target.value })} />
               </label>
+            ) : null}
+            {!r.vide && v && v2 ? (
+              <fieldset className="vis-groupe">
+                <legend>Cadrage</legend>
+                <Cadrage src={v.fichier} ratio={ratio} valeur={d.cadrage} changer={(c) => setD({ ...d, cadrage: c })} />
+              </fieldset>
+            ) : null}
+            {v?.mobile ? (
+              <button type="button" className="vis-lien" disabled={enCours} onClick={() => patch({ fichier_mobile: null })}>
+                Même image sur téléphone
+              </button>
             ) : null}
             <div className="vis-gestes">
               <button type="button" className="m-btn vis-btn" disabled={enCours} onClick={() => patch(d)}>
@@ -412,7 +628,7 @@ function LigneVue({
         {erreur ? <p className="vis-erreur" role="alert">{erreur}</p> : null}
       </div>
       <div className="vis-rotation-droite">
-        <span className={`vis-etat ${CLASSE_ETAT[etat]}`}>{etat}</span>
+        <span className={`vis-etat ${etat === 'remplacé' ? 'vis-etat--masquee' : CLASSE_ETAT[etat]}`}>{etat}</span>
         {l.ligne ? (
           <>
             <Interrupteur valide={r.valide} desactive={enCours} changer={(valide) => patch({ valide })} />
@@ -452,26 +668,28 @@ export default function Visuels({
   absente,
   erreur,
   bibliotheque,
+  v2,
 }: {
   emplacements: EmplacementVu[]
   aujourdhui: string
   absente: boolean
   erreur: boolean
   bibliotheque: VisuelBibliotheque[]
+  v2: boolean
 }) {
   const router = useRouter()
   const [jour, setJour] = useState(aujourdhui)
   const [brouillons, setBrouillons] = useState(false)
-  const [ajout, setAjout] = useState<NomEmplacement | null>(null)
+  const [ajout, setAjout] = useState<{ nom: NomEmplacement; defaut: boolean } | null>(null)
   const rafraichir = () => router.refresh()
 
   const vus = useMemo(
     () =>
       emplacements.map((e) => {
         const lignes = rotationsDe(e)
-        const fusion: Emplacement = { ...e, rotations: lignes.map((x) => x.rotation) }
+        const fusion = fusionDe(e, brouillons)
         const table = { [e.nom]: fusion } as Record<string, Emplacement>
-        return { e, lignes, fusion, duJour: visuelPour(e.nom, instantDe(jour), table, { brouillons }) }
+        return { e, lignes, defauts: defautsDe(e), fusion, duJour: visuelPour(e.nom, instantDe(jour), table, { brouillons }) }
       }),
     [emplacements, jour, brouillons],
   )
@@ -495,6 +713,7 @@ export default function Visuels({
 
       {absente ? <p className="vis-alerte">Table absente : migration 20261126 à appliquer.</p> : null}
       {erreur ? <p className="vis-alerte">Base injoignable : rien n’est perdu, réessayer.</p> : null}
+      {!absente && !erreur && !v2 ? <p className="vis-alerte">Version téléphone, cadrage et défaut : migration 20261127 à appliquer.</p> : null}
 
       <section className="vis-barre" aria-label="Le site à une date">
         <ChampDate libelle="Le site le" valeur={jour} aujourdhui={aujourdhui} marques={changements} changer={setJour} />
@@ -517,7 +736,9 @@ export default function Visuels({
       </section>
 
       <ul className="vis-liste">
-        {vus.map(({ e, lignes, fusion, duJour }) => {
+        {vus.map(({ e, lignes, defauts, fusion, duJour }) => {
+          /* Le défaut en ligne : la ligne « défaut » validée la plus récente, sinon celui du code. */
+          const defautActif = defauts.find((x) => x.valide)?.id ?? null
           const page = PAGE_DU_SITE[e.nom.split('.')[0]] ?? '/'
           return (
             <li key={e.nom} className="vis-emplacement" id={e.nom}>
@@ -553,30 +774,59 @@ export default function Visuels({
                         ratio={e.ratio}
                         rafraichir={rafraichir}
                         aujourdhui={aujourdhui}
+                        v2={v2}
                       />
                     ))}
+                    {defauts.map((x) => {
+                      const rot = ligneVersRotation(x)
+                      if (!rot) return null
+                      const etatD: EtatRotation | 'remplacé' = !x.valide ? 'à valider' : x.id === defautActif ? 'en ligne' : 'remplacé'
+                      return (
+                        <LigneVue
+                          key={x.id}
+                          l={{ rotation: rot, ligne: x }}
+                          etat={etatD}
+                          ratio={e.ratio}
+                          rafraichir={rafraichir}
+                          aujourdhui={aujourdhui}
+                          v2={v2}
+                          defaut
+                        />
+                      )
+                    })}
                     <li className="vis-rotation vis-rotation--defaut">
                       <Vignette v={e.defaut} ratio={e.ratio} petite />
                       <div className="vis-rotation-texte">
                         <span className="vis-periode">Par défaut</span>
                         <span className="vis-sous">{e.defaut ? e.defaut.alt : 'Rien'}</span>
+                        <span className="vis-sous">Dans le code</span>
+                      </div>
+                      <div className="vis-rotation-droite">
+                        {defautActif ? <span className="vis-etat vis-etat--masquee">remplacé</span> : null}
                       </div>
                     </li>
                   </ul>
-                  {ajout === e.nom ? (
+                  {ajout?.nom === e.nom ? (
                     <Ajout
                       e={e}
                       bibliotheque={bibliotheque}
                       aujourdhui={jour}
+                      v2={v2}
+                      defaut={ajout.defaut}
                       fini={() => {
                         setAjout(null)
                         rafraichir()
                       }}
                     />
                   ) : (
-                    <button type="button" className="m-second vis-btn vis-ajouter" onClick={() => setAjout(e.nom)} disabled={absente}>
-                      Ajouter un visuel
-                    </button>
+                    <div className="vis-gestes">
+                      <button type="button" className="m-second vis-btn vis-ajouter" onClick={() => setAjout({ nom: e.nom, defaut: false })} disabled={absente}>
+                        Ajouter un visuel
+                      </button>
+                      <button type="button" className="vis-lien" onClick={() => setAjout({ nom: e.nom, defaut: true })} disabled={absente || !v2}>
+                        Changer le défaut
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

@@ -27,6 +27,10 @@ export type Visuel = {
   fichier: string
   alt: string
   video?: Video
+  /** La version des écrans de 700 px et moins (autre format, autre taille). Absente : la même image. */
+  mobile?: string
+  /** Le point gardé quand la page recadre l'image (`object-position`, « 50% 30% »). Absent : le centre. */
+  cadrage?: string
 }
 
 type Periode = {
@@ -607,8 +611,8 @@ export function visuelPour<T extends Record<string, Emplacement> = typeof MEDIA>
   if (i < 0) return e.defaut
   const r = e.rotations[i]
   if (r.vide) return null
-  const { fichier, alt, video } = r
-  return video ? { fichier, alt, video } : { fichier, alt }
+  const { fichier, alt, video, mobile, cadrage } = r
+  return { fichier, alt, ...(video ? { video } : {}), ...(mobile ? { mobile } : {}), ...(cadrage ? { cadrage } : {}) }
 }
 
 export type EtatRotation = 'en ligne' | 'à valider' | 'à venir' | 'passée' | 'masquée'

@@ -27,7 +27,7 @@ import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import Bandeau from '../noel/Bandeau'
 import Apparitions from '@/components/Apparitions'
-import { fichiersVisuels, lireVisuel } from '@/components/Visuel'
+import { ImageSite, lireVisuel, visuelsDuJour } from '@/components/Visuel'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { jourDeParis, noelAuSite } from '@/lib/atelier/carteCadeau'
 import {
@@ -157,7 +157,8 @@ export default async function PageProduit() {
   const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
   /* Le jour de Paris, comme le prix (verif-noel lit la ligne du dessus telle quelle). */
   const noelExemplaires = dansFenetreNoel(jourDeParis(new Date()))
-  const V = await fichiersVisuels(NOMS)
+  const VV = await visuelsDuJour(NOMS)
+  const V = Object.fromEntries(NOMS.map((n) => [n, VV[n]?.fichier ?? ''])) as Record<(typeof NOMS)[number], string>
   const dp = await lireVisuel('magazine.double-page')
   const faq = questions(noelExemplaires)
 
@@ -206,13 +207,13 @@ export default async function PageProduit() {
             <div className="eventail rv">
               {NOMS.map((n, i) =>
                 V[n] ? (
-                  <img
+                  <ImageSite
                     key={n}
-                    src={V[n]}
+                    v={VV[n]}
+                    nom={n}
                     alt=""
                     loading={i === 0 ? 'eager' : 'lazy'}
                     fetchPriority={i === 0 ? 'high' : undefined}
-                    decoding="async"
                   />
                 ) : null,
               )}
@@ -300,7 +301,7 @@ export default async function PageProduit() {
               </ul>
               <p className="note-bas sub rv">Le nombre de pages vous est annoncé avec votre couverture, avant tout paiement.</p>
             </div>
-            {dp && dp.fichier ? <img className="rv" src={dp.fichier} alt={dp.alt} loading="lazy" decoding="async" /> : null}
+            <ImageSite v={dp} nom="magazine.double-page" className="rv" loading="lazy" />
           </div>
         </section>
 

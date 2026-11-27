@@ -42,7 +42,7 @@ export default async function OffrirPage() {
   const carte = await lireVisuel('offrir.carte')
   const couvertures = (await Promise.all([lireVisuel('offrir.noel-1'), lireVisuel('offrir.noel-2')]))
     .filter((v): v is NonNullable<typeof v> => !!v && !!v.fichier)
-    .map((v) => ({ fichier: v.fichier, alt: v.alt }))
+    .map((v) => ({ fichier: v.fichier, alt: v.alt, ...(v.cadrage ? { cadrage: v.cadrage } : {}) }))
 
   return (
     <>

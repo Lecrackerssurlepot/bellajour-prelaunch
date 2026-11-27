@@ -90,3 +90,14 @@ Tout vit dans `src/content/media.ts`. L'aperçu : `/brand/visuels`. Le contrôle
 2. Je passe la ligne à `valide: true`. Le jour venu, le site la montre tout seul, et revient au défaut le lendemain du dernier jour.
 
 Les jours sont ceux de Paris, bornes incluses. Si deux rotations validées tombent le même jour, la première écrite passe ; l'aperçu marque l'autre « masquée ».
+
+### Téléphone, cadrage, défaut (27/11)
+
+Tout se règle dans l'admin (Site · Visuels), visuel par visuel.
+
+- **Cadrage** : un clic sur l'image pose le point qui reste quand la page la recadre (`object-position`). Le format de l'emplacement ne change pas : c'est la mise en page qui le fixe.
+- **Sur téléphone** : une autre image pour les écrans de 700 px et moins. Pas sur une couverture (210 × 297, la même partout) ni sur une vidéo.
+- **Changer le défaut** : une ligne « défaut » remplace celui du code. La plus récente validée gagne ; une rotation datée passe toujours avant. La retirer rend le défaut du code.
+
+✅ Un fond de page large sur ordinateur, une version verticale sur téléphone.
+❌ Une version téléphone d'une couverture : une couverture est un objet, elle ne change pas de forme.

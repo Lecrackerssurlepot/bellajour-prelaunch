@@ -18,9 +18,9 @@ import Bandeau from '../noel/Bandeau'
 import { lireInterrupteur } from '@/lib/collectif/interrupteur'
 import { noelAuSite } from '@/lib/atelier/carteCadeau'
 import Apparitions from '@/components/Apparitions'
-import { lireVisuel } from '@/components/Visuel'
+import { ImageSite, lireVisuel } from '@/components/Visuel'
 import { compteOuvert } from '@/lib/compte/session'
-import type { NomEmplacement } from '@/content/media'
+import type { NomEmplacement, Visuel } from '@/content/media'
 import { COMPOSER_HREF, CTA_LABEL } from '../content'
 import PanneauRendezVous, { BoutonRendezVous } from './Partenaires'
 import '../magazine/magazine.css'
@@ -100,11 +100,9 @@ const ETAPES = [
   { titre: 'La livraison', phrase: 'Tous les exemplaires en une fois.' },
 ]
 
-type Image = { fichier: string; alt: string }
-
-async function images(noms: readonly NomEmplacement[]): Promise<Image[]> {
+async function images(noms: readonly NomEmplacement[]): Promise<Visuel[]> {
   const lus = await Promise.all(noms.map((n) => lireVisuel(n)))
-  return lus.flatMap((v) => (v && v.fichier ? [{ fichier: v.fichier, alt: v.alt ?? '' }] : []))
+  return lus.flatMap((v) => (v && v.fichier ? [{ ...v, alt: v.alt ?? '' }] : []))
 }
 
 export default async function PagePartenaires() {
@@ -133,7 +131,7 @@ export default async function PagePartenaires() {
             </div>
             <div className="pile-grp rv" aria-hidden="true">
               {numeros.slice(0, 4).map((v) => (
-                <img key={v.fichier} src={v.fichier} alt="" decoding="async" />
+                <ImageSite key={v.fichier} v={v} alt="" />
               ))}
             </div>
           </div>
@@ -151,7 +149,7 @@ export default async function PagePartenaires() {
             <div className="numeros">
               <span className="lab sub numeros-lab">Nos derniers numéros</span>
               {numeros.map((v) => (
-                <img key={v.fichier} src={v.fichier} alt={v.alt} loading="lazy" decoding="async" />
+                <ImageSite key={v.fichier} v={v} loading="lazy" />
               ))}
               <BoutonRendezVous className="vide">
                 <span className="titre">Votre numéro</span>
@@ -177,7 +175,7 @@ export default async function PagePartenaires() {
                 <div className="doubles">
                   {doubles[i].length > 0 ? (
                     doubles[i].map((v, j) => (
-                      <img key={v.fichier} className={j ? 'dp dp2' : 'dp'} src={v.fichier} alt={v.alt} loading="lazy" decoding="async" />
+                      <ImageSite key={v.fichier} v={v} className={j ? 'dp dp2' : 'dp'} loading="lazy" />
                     ))
                   ) : (
                     <div className="dp a-venir">Visuel à venir</div>

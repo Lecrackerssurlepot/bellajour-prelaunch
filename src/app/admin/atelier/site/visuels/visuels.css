@@ -232,6 +232,7 @@
 }
 
 .vis-root .vis-vignette {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -504,4 +505,95 @@
   border-color: var(--m-couleur-accent);
   box-shadow: 0 0 0 1px var(--m-couleur-accent);
   color: var(--m-couleur-papier-texte);
+}
+
+/* ── Cadrage, version téléphone, défaut (27/11) ─────────────── */
+
+.vis-root .vis-groupe {
+  display: grid;
+  gap: var(--m-espace-3);
+  margin: 0;
+  padding: var(--m-espace-4);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-radius: var(--m-rayon-bloc);
+  min-width: 0;
+}
+.vis-root .vis-groupe > legend {
+  padding: 0 var(--m-espace-2);
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+}
+.vis-root .vis-form-titre {
+  margin: 0;
+  font-size: var(--m-taille-base);
+  font-weight: 600;
+}
+
+.vis-root .vis-cadrage {
+  display: grid;
+  gap: var(--m-espace-2);
+}
+.vis-root .vis-cadrage-vues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--m-espace-4);
+  align-items: flex-start;
+}
+.vis-root .vis-cadrage-source {
+  position: relative;
+  flex: 1 1 220px;
+  max-width: 360px;
+  cursor: crosshair;
+  border-radius: var(--m-rayon-image);
+  overflow: hidden;
+  background: var(--m-couleur-papier-survol);
+  line-height: 0;
+}
+.vis-root .vis-cadrage-source:focus-visible {
+  outline: 2px solid var(--m-couleur-papier-texte);
+  outline-offset: 2px;
+}
+.vis-root .vis-cadrage-source img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 260px;
+  object-fit: contain;
+}
+.vis-root .vis-cadrage-point {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--m-couleur-papier-texte);
+  box-shadow: 0 0 0 1px var(--m-couleur-papier-texte), 0 4px 10px -4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.vis-root .vis-cadrage-rendu {
+  display: block;
+  flex: 0 0 auto;
+  width: 120px;
+  max-height: 200px;
+  border-radius: var(--m-rayon-image);
+  overflow: hidden;
+  background: var(--m-couleur-papier-survol);
+}
+.vis-root .vis-cadrage-rendu img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.vis-root .vis-pastille-tel {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 1px 6px;
+  border-radius: var(--m-rayon-pilule);
+  background: var(--m-couleur-papier-texte);
+  color: var(--m-couleur-papier-fond);
+  font-size: 10px;
+  line-height: 1.6;
 }

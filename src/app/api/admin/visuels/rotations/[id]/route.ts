@@ -9,8 +9,8 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
-import { COLONNES_ROTATION, normaliserSaisie } from "@/lib/visuels/rotation";
-import { expirerVisuels, prefixePublic, tableVisuelsAbsente } from "@/lib/visuels/serveur";
+import { COLONNES_ROTATION, COLONNES_ROTATION_BASE, aEcrire, demandeMigrationV2, normaliserSaisie } from "@/lib/visuels/rotation";
+import { colonneAbsente, expirerVisuels, prefixePublic, tableVisuelsAbsente } from "@/lib/visuels/serveur";
 
 export const runtime = "nodejs";
 
@@ -34,13 +34,22 @@ export async function PATCH(request: Request, { params }: Contexte) {
   if (!lu.ok) return NextResponse.json({ error: "champ_invalide", champ: lu.champ }, { status: 400 });
 
   try {
-    const { data, error } = await makeSupabase()
-      .from("visuels_rotations")
-      .update({ ...lu.valeur, modifie_le: new Date().toISOString(), modifie_par: qui })
-      .eq("id", id)
-      .select(COLONNES_ROTATION)
-      .maybeSingle();
+    /* Toutes les colonnes d'abord (une version téléphone retirée doit repasser à
+       null) ; sans la migration 20261127, on réessaie sans les colonnes neuves
+       seulement si la saisie n'en a pas besoin. */
+    const modifier = (corps: Record<string, unknown>, colonnes: string) =>
+      makeSupabase()
+        .from("visuels_rotations")
+        .update({ ...corps, modifie_le: new Date().toISOString(), modifie_par: qui })
+        .eq("id", id)
+        .select(colonnes)
+        .maybeSingle();
+    let { data, error } = await modifier({ ...lu.valeur }, COLONNES_ROTATION);
+    if (error && colonneAbsente(error.code) && !demandeMigrationV2(lu.valeur)) {
+      ({ data, error } = await modifier(aEcrire(lu.valeur), COLONNES_ROTATION_BASE));
+    }
     if (error) {
+      if (colonneAbsente(error.code)) return NextResponse.json({ error: "migration_visuels_v2_absente" }, { status: 503 });
       if (tableVisuelsAbsente(error.code)) return NextResponse.json({ error: "migration_visuels_absente" }, { status: 503 });
       console.error("[admin/visuels/rotations/id] modification échouée", error.code, error.message);
       return NextResponse.json({ error: "internal" }, { status: 500 });

@@ -10,8 +10,8 @@
 import { NextResponse } from "next/server";
 import { makeSupabase } from "@/lib/supabase";
 import { quiEstConnecteRequete } from "@/lib/admin-session";
-import { COLONNES_ROTATION, normaliserSaisie } from "@/lib/visuels/rotation";
-import { expirerVisuels, prefixePublic, tableVisuelsAbsente } from "@/lib/visuels/serveur";
+import { COLONNES_ROTATION, COLONNES_ROTATION_BASE, aEcrire, demandeMigrationV2, normaliserSaisie } from "@/lib/visuels/rotation";
+import { colonneAbsente, expirerVisuels, prefixePublic, tableVisuelsAbsente } from "@/lib/visuels/serveur";
 
 export const runtime = "nodejs";
 
@@ -29,12 +29,16 @@ export async function POST(request: Request) {
   if (!lu.ok) return NextResponse.json({ error: "champ_invalide", champ: lu.champ }, { status: 400 });
 
   try {
+    /* Sans la migration 20261127, on n'écrit ni ne relit les colonnes neuves ;
+       une saisie qui en a besoin est refusée en clair (jamais perdue en silence). */
+    const v2 = demandeMigrationV2(lu.valeur);
     const { data, error } = await makeSupabase()
       .from("visuels_rotations")
-      .insert({ ...lu.valeur, cree_par: qui, modifie_par: qui })
-      .select(COLONNES_ROTATION)
+      .insert({ ...aEcrire(lu.valeur), cree_par: qui, modifie_par: qui })
+      .select(v2 ? COLONNES_ROTATION : COLONNES_ROTATION_BASE)
       .single();
     if (error) {
+      if (colonneAbsente(error.code)) return NextResponse.json({ error: "migration_visuels_v2_absente" }, { status: 503 });
       if (tableVisuelsAbsente(error.code)) return NextResponse.json({ error: "migration_visuels_absente" }, { status: 503 });
       console.error("[admin/visuels/rotations] insertion échouée", error.code, error.message);
       return NextResponse.json({ error: "internal" }, { status: 500 });

@@ -15,7 +15,7 @@
    ════════════════════════════════════════════════════════════ */
 
 import type { CSSProperties, ReactNode } from 'react'
-import { fichiersVisuels, lireVisuel } from '@/components/Visuel'
+import { FondsTelephone, ImageSite, lireVisuel, visuelsDuJour } from '@/components/Visuel'
 import VideoNative from '@/components/VideoNative'
 import { BANDES_PHOTOS, EUROS_MIN, PAGES_MIN, PAGES_MAX_PUBLIC, RELIURE_LIBELLE } from '@/lib/atelier/grille'
 import { ZONES_PORT, FRANCO_CENTIMES } from '@/lib/atelier/livraison'
@@ -39,7 +39,8 @@ const PHOTOS_MIN = BANDES_PHOTOS[0].photosMin
 const PHOTOS_MAX = BANDES_PHOTOS[BANDES_PHOTOS.length - 1].photosMax
 
 export default async function Accueil({ apresOuverture }: { apresOuverture?: ReactNode }) {
-  const V = await fichiersVisuels(NOMS)
+  const VV = await visuelsDuJour(NOMS)
+  const V = Object.fromEntries(NOMS.map((n) => [n, VV[n]?.fichier ?? ''])) as Record<(typeof NOMS)[number], string>
   const matiere = await lireVisuel('accueil.matiere')
   /* Les photos d'exemple, dans l'ordre du banc (DEF) : remplacées par celles du client s'il en met. */
   const PH: PhotoExemple[] = [
@@ -59,6 +60,10 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
 
   return (
     <main className="m-banc" data-u="votre" data-e2="rien" style={fonds}>
+      <FondsTelephone
+        selecteur=".m-banc"
+        fonds={{ '--mb-dp1': VV['accueil.double-page-1'], '--mb-dp2': VV['accueil.double-page-2'], '--mb-table': VV['accueil.hero'] }}
+      />
       {/* 01 OUVERTURE : le magazine qu'on voit est celui qui s'ouvre */}
       <section className="ouv" id="ouv" aria-label="Ouverture">
         <svg className="traits" data-n="6" data-seed="3" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
@@ -82,7 +87,7 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
             <div className="base" role="img" aria-label="Double page d’un numéro"><div className="face"><div className="page-perso plein perso"><img data-ph="5" src={photo(5)} style={{'objectPosition': '22% 70%'}} alt="" /></div></div></div>
             <div className="feuille f2"><div className="face recto"><div className="page-perso titre-photo perso"><div className="p-titre">Un été en Grèce</div><img data-ph="2" src={photo(2)} style={{'objectPosition': '12% 60%'}} alt="" /><span className="p-leg">Page 3 · composée par l’atelier</span></div></div><div className="face verso"><div className="page-perso deux perso"><img data-ph="3" src={photo(3)} style={{'objectPosition': '85% 50%'}} alt="" /><img data-ph="4" src={photo(4)} style={{'objectPosition': '40% 60%'}} alt="" /></div></div></div>
             <div className="feuille f1"><div className="face recto">
-              <img className="on" src={V['accueil.couverture']} fetchPriority="high" alt="Couverture d’un numéro sur l’Australie" />
+              <ImageSite v={VV['accueil.couverture']} nom="accueil.couverture" className="on" fetchPriority="high" decoding="auto" alt="Couverture d’un numéro sur l’Australie" />
               <div className="couv-perso perso">
                 <label className="photo" htmlFor="f-photos" aria-label="Mettre vos photos sur la couverture"><img data-ph="0" src={photo(0)} style={{'objectPosition': '22% 50%'}} alt="Votre photo de couverture" /></label>
                 <div className="couv-zone"><span className="couv-titre" id="couv-titre" contentEditable={true} suppressContentEditableWarning spellCheck="false" role="textbox" aria-label="Le titre de votre numéro">Un été en Grèce</span><span className="construit" aria-hidden="true"><i className="c1"></i><i className="c2"></i><i className="c3"></i><i className="v"></i><b>Corps 120 · approche −20</b></span></div>
@@ -109,11 +114,11 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
         <span className="titre seul mot m3">votre vie.</span>
         <div className="vie-tete"><span className="lab sub">Une année entre les mains</span><h2 className="titre">Chaque moment a le sien.</h2></div>
         <div className="rail"><div className="piste">
-          <figure className="moment"><img className="cv" loading="lazy" decoding="async" src={V['accueil.couverture']} alt="Numéro Australie" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Février</span><span className="titre seul nom">Australie</span><span className="quoi sub">Le grand voyage</span></figcaption></figure>
-          <figure className="moment"><img className="cv" loading="lazy" decoding="async" src={V['accueil.couverture-2']} alt="Numéro Sicile" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Mai</span><span className="titre seul nom">Sicile</span><span className="quoi sub">Le pont de mai</span></figcaption></figure>
-          <figure className="moment"><img className="cv" loading="lazy" decoding="async" src={V['accueil.couverture-3']} alt="Numéro Côte d’Azur" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Juillet</span><span className="titre seul nom">Côte d’Azur</span><span className="quoi sub">L’été en famille</span></figcaption></figure>
-          <figure className="moment"><img className="cv" loading="lazy" decoding="async" src={V['accueil.couverture-4']} alt="Numéro Rio" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Octobre</span><span className="titre seul nom">Rio</span><span className="quoi sub">Une ville, un ami</span></figcaption></figure>
-          <figure className="moment"><img className="cv" loading="lazy" decoding="async" src={V['accueil.couverture-5']} alt="Numéro Mon année" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Décembre</span><span className="titre seul nom">Mon année</span><span className="quoi sub">Tout, en un numéro</span></figcaption></figure>
+          <figure className="moment"><ImageSite v={VV['accueil.couverture']} nom="accueil.couverture" className="cv" loading="lazy" alt="Numéro Australie" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Février</span><span className="titre seul nom">Australie</span><span className="quoi sub">Le grand voyage</span></figcaption></figure>
+          <figure className="moment"><ImageSite v={VV['accueil.couverture-2']} nom="accueil.couverture-2" className="cv" loading="lazy" alt="Numéro Sicile" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Mai</span><span className="titre seul nom">Sicile</span><span className="quoi sub">Le pont de mai</span></figcaption></figure>
+          <figure className="moment"><ImageSite v={VV['accueil.couverture-3']} nom="accueil.couverture-3" className="cv" loading="lazy" alt="Numéro Côte d’Azur" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Juillet</span><span className="titre seul nom">Côte d’Azur</span><span className="quoi sub">L’été en famille</span></figcaption></figure>
+          <figure className="moment"><ImageSite v={VV['accueil.couverture-4']} nom="accueil.couverture-4" className="cv" loading="lazy" alt="Numéro Rio" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Octobre</span><span className="titre seul nom">Rio</span><span className="quoi sub">Une ville, un ami</span></figcaption></figure>
+          <figure className="moment"><ImageSite v={VV['accueil.couverture-5']} nom="accueil.couverture-5" className="cv" loading="lazy" alt="Numéro Mon année" /><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Décembre</span><span className="titre seul nom">Mon année</span><span className="quoi sub">Tout, en un numéro</span></figcaption></figure>
           <figure className="moment m-perso"><div className="cv mini"><img loading="lazy" decoding="async" data-ph="0" src={photo(0)} style={{'objectPosition': '22% 50%'}} alt="Votre numéro" /><span className="mini-titre">Un été en Grèce</span></div><figcaption><i className="trait"></i><i className="pt"></i><span className="lab date">Aujourd’hui</span><span className="titre seul nom">Votre numéro</span><span className="quoi sub">En haut de la pile</span></figcaption></figure>
         </div></div>
       </section>
@@ -147,12 +152,12 @@ export default async function Accueil({ apresOuverture }: { apresOuverture?: Rea
               <a className="btn" href="/composer">Composer avec l’atelier</a>
             </div>
             <a className="porte p-lien" id="offrir" href="/offrir">
-              <img src={V['accueil.porte-offrir']} alt="" loading="lazy" />
+              <ImageSite v={VV['accueil.porte-offrir']} nom="accueil.porte-offrir" alt="" loading="lazy" />
               <span className="p-txt"><span className="lab sub">Pour offrir</span><span className="titre p-t">Le plus beau cadeau</span><span className="p-s sub">Un numéro ou une carte cadeau</span></span>
               <span className="fl" aria-hidden="true">→</span>
             </a>
             <a className="porte p-lien" id="groupes" href="/partenaires">
-              <img src={V['accueil.porte-groupes']} alt="" loading="lazy" />
+              <ImageSite v={VV['accueil.porte-groupes']} nom="accueil.porte-groupes" alt="" loading="lazy" />
               <span className="p-txt"><span className="lab sub">Pour un groupe</span><span className="titre p-t">Tous ensemble</span><span className="p-s sub">École, équipe, association</span></span>
               <span className="fl" aria-hidden="true">→</span>
             </a>

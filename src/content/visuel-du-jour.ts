@@ -20,28 +20,24 @@
 
 import { unstable_cache } from 'next/cache'
 import { cookies, draftMode, headers } from 'next/headers'
-import { makeSupabase } from '@/lib/supabase'
 import { ADMIN_COOKIE, verifierCookieAdmin } from '@/lib/admin-auth'
-import { MEDIA, visuelPour, type Emplacement, type NomEmplacement, type Visuel } from './media'
+import { visuelPour, type Emplacement, type NomEmplacement, type Visuel } from './media'
 import {
-  COLONNES_ROTATION,
   COOKIE_APERCU_VISUELS,
   TAG_VISUELS,
+  emplacementFusionne,
   lireCookieApercu,
-  rotationsFusionnees,
   type LigneRotation,
 } from '@/lib/visuels/rotation'
+import { lireLignesVisuels } from '@/lib/visuels/serveur'
 import { ENTETE_APERCU, lireValeurApercu } from '@/lib/visuels/apercu'
 
 /** Toutes les lignes de la table. Une erreur rend une liste vide (repli sur le code). */
 async function lireLignes(): Promise<LigneRotation[]> {
   try {
-    const { data, error } = await makeSupabase().from('visuels_rotations').select(COLONNES_ROTATION)
-    if (error) {
-      console.error('[visuels] lecture des rotations impossible', error.code, error.message)
-      return []
-    }
-    return (data ?? []) as LigneRotation[]
+    const { lignes, code } = await lireLignesVisuels()
+    if (code) console.error('[visuels] lecture des rotations impossible', code)
+    return lignes
   } catch (err) {
     console.error('[visuels] lecture des rotations : exception', (err as Error)?.message)
     return []
@@ -75,10 +71,9 @@ export async function apercuVisuels(): Promise<ApercuVisuels | null> {
   }
 }
 
-/** L'emplacement avec ses rotations de l'admin, pour un calcul ou un affichage. */
-export async function emplacementDuSite(nom: NomEmplacement): Promise<Emplacement> {
-  const lignes = await lignesEnCache()
-  return { ...(MEDIA[nom] as Emplacement), rotations: rotationsFusionnees(nom, lignes) }
+/** L'emplacement avec ses rotations et son défaut réglés dans l'admin. */
+export async function emplacementDuSite(nom: NomEmplacement, brouillons = false): Promise<Emplacement> {
+  return emplacementFusionne(nom, await lignesEnCache(), brouillons)
 }
 
 /**
@@ -86,7 +81,8 @@ export async function emplacementDuSite(nom: NomEmplacement): Promise<Emplacemen
  * rien (emplacement vide, ou rotation « vide » ce jour-là).
  */
 export async function visuelDuJour(nom: NomEmplacement, instant: Date = new Date()): Promise<Visuel | null> {
-  const [e, ap] = await Promise.all([emplacementDuSite(nom), apercuVisuels()])
+  const ap = await apercuVisuels()
+  const e = await emplacementDuSite(nom, ap?.brouillons === true)
   const table = { [nom]: e } as Record<string, Emplacement>
   if (ap) return visuelPour(nom, new Date(`${ap.jour}T12:00:00+01:00`), table, { brouillons: ap.brouillons })
   return visuelPour(nom, instant, table)
