@@ -10,6 +10,8 @@
   (photos de groupe de la brochure, This Night, The Boys) n'y entrent qu'après l'accord de Mathias.
 - Jamais de magazine tiers, d'affiche ni de BD (Vogue, ELLE, Tintin, films), même en décor.
 - Jamais de photo de client sans son accord écrit.
+- Jamais de visuel de l'ancien album photo (couverture rigide, section « L'objet », Mockup Visuel,
+  Moodboard) : ce n'est plus le produit et on n'a pas le droit de s'en servir (Mathias, 27/11).
 
 | Fichier | D'où il vient | Taille d'origine | Où il sert |
 |---|---|---|---|
@@ -20,15 +22,6 @@
 | `double-page-australia.jpg` | `Magazine/Images SITE/BJ-M04.png` (BJ-M07 est le même) | 4 000 × 2 828 | `accueil.ouverture-2` et `-6`, `accueil.double-page-2` |
 | `double-page-australia-portrait.jpg` | `Magazine/Images SITE/BJ-M04V.png` | 2 828 × 4 000 | en réserve |
 | `objet-magazines-sur-la-table.jpg` | `Visuels/IMG_2909.jpeg` | 4 284 × 2 410 | `accueil.hero`, `accueil.porte-groupes` (déjà en ligne) |
-| `objet-mise-en-page.jpg` | `Visuels sites/Section - L'objet/La mise en page.jpeg` | 4 284 × 5 712 | en réserve |
-| `objet-mise-en-page-2.jpg` | `Visuels sites/Section - L'objet/La mise en page 2.jpeg` | 4 284 × 5 712 (tournée à l’horizontale) | `magazine.double-page` |
-| `objet-reliure.jpg` | `Visuels sites/Section - L'objet/Reliure.jpeg` | 4 284 × 5 712 | en réserve |
-| `objet-format.jpg` | `Visuels sites/Section - L'objet/Le format.jpeg` | 4 284 × 5 712 | en réserve |
-| `objet-illustration.jpg` | `Visuels sites/Section - L'objet/L'illustration.jpeg` | 4 284 × 5 712 | en réserve (couverture peinte : montre l'objet, jamais un modèle) |
-| `scene-drap.jpg` | `Mockup Visuel/Moodboard.jpg` (image générée) | 1 792 × 2 400 | `accueil.porte-offrir` |
-| `scene-cafe.jpg` | `Mockup Visuel/Generated Image June 25, 2026 - 11_29AM.jpg` | 1 792 × 2 400 | en réserve |
-| `scene-salon.jpg` | `Mockup Visuel/Generated Image June 25, 2026 - 11_38AM.jpg` | 1 792 × 2 400 | en réserve |
-| `scene-table-fleurs.jpg` | `Mockup Visuel/Generated Image June 25, 2026 - 11_41AM.jpg` | 1 792 × 2 400 | en réserve |
 
 ## Encore ailleurs
 
@@ -37,7 +30,9 @@
   export Canva en pleine résolution les remplacerait.
 - **Brochure Écoles et Entreprise** (`Magazine/Brochures/Visuels - Ecoles` et `- Entreprise`) :
   couvertures et doubles pages de groupe en 2 000 × 1 414. Droits à confirmer.
-- **La vidéo de Louis** (`accueil.matiere`) : pas encore reçue.
+- **La vidéo de Louis** (`accueil.matiere`) : l'original est `~/Desktop/SITE.mov` (2160 × 2160,
+  4,6 s, 21 Mo). Le site sert `public/images/v2/matiere/magazine-tour.mp4` et `.webm` (1080 px,
+  sans son, environ 1,2 Mo) et l'image d'attente `magazine-tour.webp`.
 
 ## Ajouter un visuel
 
