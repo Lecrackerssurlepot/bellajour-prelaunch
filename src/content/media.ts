@@ -517,7 +517,7 @@ export const MEDIA = {
     rotations: [],
   },
   'groupes.entreprise': {
-    role: 'Pour les groupes : une année d’équipe (vide tant qu’il n’y a pas de visuel entreprise)',
+    role: 'Pour les groupes : une année d’équipe (vide = la section est cachée ; un visuel la rouvre)',
     type: 'image',
     optionnel: true,
     defaut: null,

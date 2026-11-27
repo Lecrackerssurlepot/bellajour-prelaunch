@@ -57,6 +57,8 @@ type Cas = {
   doubles: readonly NomEmplacement[]
   usages: { titre: string; phrase: string }[]
   inverse?: boolean
+  /** Caché tant que ses visuels sont vides : déposer un visuel dans Site · Visuels le rouvre. */
+  siVisuel?: true
 }
 
 const CAS: Cas[] = [
@@ -86,6 +88,7 @@ const CAS: Cas[] = [
     titre: 'Une année d’équipe',
     phrase: 'Un séminaire, un lancement, une fin d’année.',
     doubles: ['groupes.entreprise'],
+    siVisuel: true,
     usages: [
       { titre: 'Remercier une équipe', phrase: 'Un exemplaire à chaque collaborateur.' },
       { titre: 'Marquer une étape', phrase: 'Un lancement, un anniversaire, un départ.' },
@@ -107,7 +110,8 @@ async function images(noms: readonly NomEmplacement[]): Promise<Visuel[]> {
 
 export default async function PagePartenaires() {
   const numeros = await images(NUMEROS)
-  const doubles = await Promise.all(CAS.map((c) => images(c.doubles)))
+  const lus = await Promise.all(CAS.map(async (c) => ({ c, doubles: await images(c.doubles) })))
+  const cas = lus.filter(({ c, doubles }) => !c.siVisuel || doubles.length > 0)
   /* Le bandeau de Noël sur toutes les pages hors tunnel (duplicata, fiche H). */
   const noel = lireInterrupteur(process.env.NEXT_PUBLIC_GIFT_CARD_ENABLED).ouvert && noelAuSite(new Date())
 
@@ -165,7 +169,7 @@ export default async function PagePartenaires() {
               <span className="lab sub rv">Une composition sur mesure</span>
               <h2 className="titre rv d1">Chaque événement a son numéro.</h2>
             </div>
-            {CAS.map((c, i) => (
+            {cas.map(({ c, doubles }) => (
               <article key={c.n} className={c.inverse ? 'cas-1 inverse' : 'cas-1'}>
                 <div className="cas-txt rv">
                   <span className="cas-n">{c.n}</span>
@@ -173,8 +177,8 @@ export default async function PagePartenaires() {
                   <p className="sub">{c.phrase}</p>
                 </div>
                 <div className="doubles">
-                  {doubles[i].length > 0 ? (
-                    doubles[i].map((v, j) => (
+                  {doubles.length > 0 ? (
+                    doubles.map((v, j) => (
                       <ImageSite key={v.fichier} v={v} className={j ? 'dp dp2' : 'dp'} loading="lazy" />
                     ))
                   ) : (
