@@ -501,6 +501,22 @@ export default function PageCharte() {
           </div>
         </div>
 
+        <h3 className="ch-h3">Les quatre structures de mails · un nouveau mail commence par choisir la sienne</h3>
+        <div className="ch-grille ch-grille--divers">
+          {[
+            { img: "pile", nom: "Atelier", pour: "M0, M2, C0 · pile de numéros, bande nuit, trois étapes" },
+            { img: "bande", nom: "Lettre", pour: "M3 à M10 · « Bonjour Prénom, », encarts, bande de couvertures" },
+            { img: "arrivee", nom: "Magazine", pour: "M7b, M8 · grande photo, demi-photos, bande nuit « Offrez-en un »" },
+            { img: "etape-3", nom: "Simple", pour: "C1, C2, M2b · un petit visuel, un titre, un bouton" },
+          ].map((s) => (
+            <figure key={s.nom} className="ch-structure">
+              <img src={`/images/mails/charte/structures/${s.img}.jpg`} alt="" width={300} height={200} loading="lazy" />
+              <p className="ch-mail-titre">{s.nom}</p>
+              <figcaption className="ch-note">{s.pour}</figcaption>
+            </figure>
+          ))}
+        </div>
+
         <h3 className="ch-h3">Réseaux <span className="ch-propose">zones proposées</span></h3>
         <div className="ch-grille ch-grille--reseaux">
           <figure className="ch-reseau ch-reseau--post">

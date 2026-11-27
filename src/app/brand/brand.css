@@ -385,3 +385,7 @@
 .ch-favicon-cadre { display: flex; align-items: center; justify-content: center; gap: var(--m-espace-5); padding: var(--m-espace-6); background: var(--m-couleur-papier-survol); border-radius: var(--m-rayon-bloc); }
 .ch-favicon-cadre img { display: block; }
 .ch-sous-titre { margin: var(--m-espace-7) 0 var(--m-espace-4); font-size: var(--m-taille-chapo); }
+
+/* Les quatre structures de mails (27/11, fiche N) */
+.ch-structure { display: grid; gap: var(--m-espace-2); }
+.ch-structure img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--m-rayon-bloc); background: var(--m-couleur-papier-survol); }
