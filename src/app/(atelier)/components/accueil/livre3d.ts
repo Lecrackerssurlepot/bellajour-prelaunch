@@ -280,8 +280,12 @@ export async function monterLivre3D(livre: HTMLElement, { leger }: { leger: bool
       largeurMm: PAGE_L,
       hauteurMm: PAGE_H,
       pages: PAGES,
-      finition: FINITION_DEFAUT,
+      /* Sobre (Mathias, 27/11 : « très saturé, ça fait mal aux yeux ») : rendu mat,
+         sans vernis ni reflet vif ; seule l'épaisseur suit la finition vendue. */
+      finition: 'matte',
       dosMm: dosMmPourPages(PAGES, FINITION_DEFAUT),
+      exposition: 0.95,
+      reflets: 0.6,
       fond: null,
       leger,
       interactif: false,

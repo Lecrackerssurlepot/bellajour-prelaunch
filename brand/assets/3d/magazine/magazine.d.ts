@@ -64,6 +64,10 @@ export type OptionsStudio = OptionsMagazine & {
   largeur?: number
   hauteur?: number
   densite?: number
+  /** Lumière d'ensemble (1 = réglage d'origine). Moins de 1 : plus sobre, moins saturé. */
+  exposition?: number
+  /** Reflets de la pièce sur le papier (0.85 = réglage d'origine). */
+  reflets?: number
 }
 
 export type Vue = {

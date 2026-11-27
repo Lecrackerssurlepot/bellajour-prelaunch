@@ -576,7 +576,7 @@ export function creerStudio(conteneur, options = {}) {
   const rendu = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
   rendu.outputColorSpace = SRGBColorSpace
   rendu.toneMapping = NeutralToneMapping
-  rendu.toneMappingExposure = 1
+  rendu.toneMappingExposure = options.exposition ?? 1
   rendu.shadowMap.enabled = true
   rendu.shadowMap.type = VSMShadowMap
   const densite = () => options.densite ?? Math.min(window.devicePixelRatio || 1, 2)
@@ -593,7 +593,7 @@ export function creerStudio(conteneur, options = {}) {
   const piece = new RoomEnvironment()
   const ambiance = pmrem.fromScene(piece, 0.04)
   scene.environment = ambiance.texture
-  scene.environmentIntensity = 0.85
+  scene.environmentIntensity = options.reflets ?? 0.85
   function poserFond(couleur) {
     scene.background = couleur ? new Color(couleur) : null
     rendu.setClearColor(0x000000, 0)

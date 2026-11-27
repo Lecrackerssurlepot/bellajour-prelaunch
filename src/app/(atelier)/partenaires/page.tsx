@@ -87,7 +87,7 @@ const CAS: Cas[] = [
     n: '03',
     titre: 'Une année d’équipe',
     phrase: 'Un séminaire, un lancement, une fin d’année.',
-    doubles: ['groupes.entreprise'],
+    doubles: ['groupes.entreprise', 'groupes.entreprise-2'],
     siVisuel: true,
     usages: [
       { titre: 'Remercier une équipe', phrase: 'Un exemplaire à chaque collaborateur.' },
