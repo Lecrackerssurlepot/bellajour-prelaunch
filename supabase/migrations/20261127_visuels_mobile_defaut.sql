@@ -1,7 +1,7 @@
 -- 20261127_visuels_mobile_defaut.sql : la version téléphone, le cadrage et le défaut modifiable (Site · Visuels).
 --
 -- ADDITIVE : trois colonnes facultatives sur `visuels_rotations`, rien d'autre. Aucune ligne n'est modifiée.
--- ⚠️ À appliquer SEULEMENT avec l'accord explicite de Mathias.
+-- Accord explicite de Mathias le 27/11/2026 (« Oui, applique-la »), appliquée via le MCP Supabase, vérifiée en SQL.
 --
 -- Sans elle, le site et l'admin marchent comme avant (lecture en repli 42703) ; seule l'écriture
 -- d'une version téléphone, d'un cadrage ou d'un défaut répond 503 `migration_visuels_v2_absente`
