@@ -339,47 +339,37 @@
 .m-banc .e2-btn .eventail-mini i{width:22px;height:30px;left:var(--m-espace-3)}
 .m-banc .e2-s{font-size:12.5px}
 }
-.m-banc .matiere .cadre.mat-grille{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:auto auto 1fr;column-gap:var(--m-espace-5);align-items:start}
-.m-banc .mat-grille .mat-tete{grid-column:1/7;grid-row:1;max-width:none;margin:var(--m-espace-9) 0 0}
-.m-banc .mat-grille .mat-tete h2{font-size:calc(var(--m-taille-h2) * 1.08 * var(--m-police-titre-facteur));max-width:11ch}
-.m-banc .mat-grille .mat-infos{grid-column:3/7;grid-row:2;list-style:none;padding:0;margin:var(--m-espace-8) 0 0;border-top:1px solid var(--m-couleur-papier-ligne)}
 .m-banc .mat-infos li{display:flex;justify-content:space-between;align-items:baseline;gap:var(--m-espace-4);padding:var(--m-espace-4) 0;border-bottom:1px solid var(--m-couleur-papier-ligne)}
 .m-banc .mat-infos b{font-weight:500}
-.m-banc .mat-video{grid-column:8/13;grid-row:1/4;margin:0;justify-self:end;width:min(100%,min(70svh,620px))}
-/* La vidéo de Louis (carrée, fond presque blanc) : sans cadre, fondue dans la page (Mathias, 27/11). */
-.m-banc .mat-video video{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--m-couleur-papier-fond);filter:brightness(1.012);-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(transparent,#000 7%,#000 93%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(transparent,#000 7%,#000 93%,transparent);mask-composite:intersect}
-.m-banc .mat-video figcaption{margin-top:var(--m-espace-3);text-align:right}
-@media (max-width:900px){
-.m-banc .matiere .cadre.mat-grille{display:flex;flex-direction:column;align-items:stretch}
-.m-banc .mat-grille .mat-tete{margin:0 0 var(--m-espace-6)}
-.m-banc .mat-video{align-self:center;width:min(100%,calc(100svh - 150px))}
-.m-banc .mat-video figcaption{text-align:center}
-.m-banc .mat-grille .mat-infos{margin:var(--m-espace-6) 0 0}
-}
+/* « La matière » (Mathias, 27/11) : le même ordre partout, titre, vidéo, repères.
+   Ordinateur : le titre sur une ligne en haut, la vidéo carrée dessous à gauche,
+   à sa droite le chapo en haut et les repères en bas, calés sur la vidéo.
+   `.mat-tete` s'efface (display:contents) pour que ses trois lignes entrent dans la grille. */
 .m-banc .bloc.matiere{padding:var(--m-espace-8) 0;margin-top:calc(-1 * var(--tire,0px))}
-.m-banc .matiere .cadre.mat-grille{height:calc(100svh - 2 * var(--m-espace-8));max-height:900px;grid-template-rows:auto minmax(0,1fr) auto}
-.m-banc .mat-grille .mat-tete{margin:var(--m-espace-7) 0 0;align-self:start}
-.m-banc .mat-grille .mat-infos{grid-row:3;align-self:end;margin:0}
-.m-banc .mat-video{grid-row:1/4;height:100%;width:auto;display:grid;grid-template-rows:minmax(0,1fr) auto;justify-items:end}
-.m-banc .mat-video video{height:100%;width:auto;max-width:100%;max-height:780px}
+.m-banc .matiere .cadre.mat-grille{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-template-rows:auto auto 1fr auto;column-gap:var(--m-espace-5);row-gap:0}
+.m-banc .mat-grille .mat-tete h2{grid-column:1/13;grid-row:2;font-size:calc(var(--m-taille-h2) * 1.08 * var(--m-police-titre-facteur));max-width:none;text-wrap:balance;margin-bottom:var(--m-espace-6)}
+@media (min-width:901px){
+.m-banc .mat-grille .mat-tete{display:contents}
+.m-banc .mat-grille .mat-tete .lab{grid-column:1/13;grid-row:1;margin-top:var(--m-espace-7)}
+.m-banc .mat-grille .mat-tete .chapo{grid-column:9/13;grid-row:3;align-self:start;margin:var(--m-espace-5) 0 0}
+}
+.m-banc .mat-video{grid-column:1/9;grid-row:3/5;margin:0;width:100%}
+/* La vidéo de Louis (carrée, fond presque blanc) : sans cadre, fondue dans la page. */
+.m-banc .mat-video video{display:block;width:100%;height:auto;max-width:min(100%,calc(100svh - 300px),660px);aspect-ratio:1/1;object-fit:cover;background:var(--m-couleur-papier-fond);filter:brightness(1.012);-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(transparent,#000 7%,#000 93%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(transparent,#000 7%,#000 93%,transparent);mask-composite:intersect}
+.m-banc .mat-video figcaption{margin-top:var(--m-espace-3)}
+.m-banc .mat-grille .mat-infos{grid-column:9/13;grid-row:4;align-self:end;list-style:none;padding:0;margin:0 0 var(--m-espace-5);border-top:1px solid var(--m-couleur-papier-ligne)}
+/* Téléphone : inchangé (validé le 27/11), tout tient dans un écran. */
 @media (max-width:900px){
 .m-banc .bloc.matiere{padding:var(--m-espace-8) 0 var(--m-espace-5)}
-.m-banc .matiere .cadre.mat-grille{display:grid;height:calc(100svh - var(--m-espace-8) - var(--m-espace-5));grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;row-gap:var(--m-espace-4)}
+.m-banc .matiere .cadre.mat-grille{height:calc(100svh - var(--m-espace-8) - var(--m-espace-5));max-height:900px;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;row-gap:var(--m-espace-4);align-items:start}
 .m-banc .mat-grille .mat-tete{margin:0;grid-column:1;grid-row:1}
 .m-banc .mat-grille .mat-tete h2{font-size:calc(34px * var(--m-police-titre-facteur));line-height:1.08;max-width:none;margin:var(--m-espace-2) 0 var(--m-espace-3)}
 .m-banc .mat-grille .mat-tete .chapo{font-size:var(--m-taille-petit)}
-.m-banc .mat-video{grid-column:1;grid-row:2;justify-items:center;width:100%;min-height:0}
-.m-banc .mat-video figcaption{margin-top:var(--m-espace-2)}
-.m-banc .mat-grille .mat-infos{grid-column:1;grid-row:3;display:grid;grid-template-columns:1fr 1fr;column-gap:var(--m-espace-4)}
-.m-banc .mat-infos li{flex-direction:column;gap:2px;padding:var(--m-espace-3) 0}
-}
-/* La vidéo de « La matière » est CARRÉE (Mathias, 27/11 : pas de format vertical). Elle prend la
-   colonne de droite entière, au plus la hauteur de l'écran. */
-.m-banc .mat-video{grid-column:7/13;height:auto;width:100%;align-self:center;display:block}
-.m-banc .mat-video video{width:100%;height:auto;max-width:min(100%,calc(100svh - 2 * var(--m-espace-8) - 40px),780px);max-height:none;aspect-ratio:1/1;margin-left:auto}
-@media (max-width:900px){
-.m-banc .mat-video{grid-column:1;align-self:center}
+.m-banc .mat-video{grid-column:1;grid-row:2;align-self:center;min-height:0}
 .m-banc .mat-video video{max-width:min(100%,calc(100svh - 360px));margin:0 auto}
+.m-banc .mat-video figcaption{margin-top:var(--m-espace-2);text-align:center}
+.m-banc .mat-grille .mat-infos{grid-column:1;grid-row:3;align-self:end;margin:0;display:grid;grid-template-columns:1fr 1fr;column-gap:var(--m-espace-4)}
+.m-banc .mat-infos li{flex-direction:column;gap:2px;padding:var(--m-espace-3) 0}
 }
 .m-banc .couv-titre.ex-fondu{transition:opacity .45s ease}
 .m-banc .couv-titre.ex-cache{opacity:0}

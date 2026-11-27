@@ -7,9 +7,8 @@
    rien et pose, une fois monté, ce que faisait le script du banc :
    - les traits de l'atelier ;
    - l'ouverture du livre et la pile qui devient une année (GSAP + ScrollTrigger) ;
-     le livre s'ouvre par le magazine 3D de la charte (livre3d.ts), chargé après
-     coup : la timeline lui donne l'ouverture, de 0 à 1. Sans WebGL, le livre
-     HTML s'ouvre comme avant ;
+     le livre HTML tourne ses deux pages (le magazine 3D, livre3d.ts, est coupé
+     depuis le 27/11 : la relève 3D vers plat sautait d'une image) ;
    - l'écran d'essai « Avant d'ouvrir » et ses quatre états ;
    - vos photos partout dans la page (elles restent sur l'appareil) ;
    - le titre : écrit à la souris sur la couverture, ou dans une petite feuille au doigt ;
@@ -27,6 +26,9 @@
 import { useEffect } from 'react'
 import type { gsap } from 'gsap'
 import type { Livre3D } from './livre3d'
+
+/** Le magazine 3D dans le livre de l'ouverture : coupé (27/11), voir charger3d. */
+const LIVRE_3D = false
 
 export type PhotoExemple = { s: string; p: string }
 
@@ -535,6 +537,10 @@ export default function AccueilMotion({ photos }: Props) {
     }
     let demande3d = false
     function charger3d() {
+      /* Coupé le 27/11 (Mathias : « bug de frame ») : passer du modèle 3D au livre
+         plat à la seconde page saute d'une image. On garde UN seul livre, le plat,
+         qui tourne les deux pages sans relève. Le code reste prêt : LIVRE_3D = true. */
+      if (!LIVRE_3D) return
       if (demande3d || !vivant) return
       demande3d = true
       const livre = $('.livre')
