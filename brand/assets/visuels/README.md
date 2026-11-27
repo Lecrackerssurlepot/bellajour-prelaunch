@@ -25,13 +25,19 @@
 | `double-page-pelican-feed.jpg` | `~/Desktop/Book double page.pdf`, p. 18 | PDF vectoriel | `magazine.double-page` |
 | `double-page-24h-hautes-alpes.jpg` | `Magazine Clients Atelier/Jeanne - 24h des hautes alpes 2026/fevrejeanne91.pdf`, p. 1 | PDF | `edition.vitrine-double` |
 | `double-page-australia-portrait.jpg` | `Magazine/Images SITE/BJ-M04V.png` | 2 828 × 4 000 | en réserve |
+| `couverture-perth.jpg`, `-playa`, `-la-vida` | Canva « MODÈLES COUVERTURES » (DAHTZ-r83q0), p. 6, 13, 15, moitié droite | 2 480 × 3 508 | `magazine.couverture`, `magazine.eventail-2`, `-3` |
+| `couverture-this-night.jpg`, `-the-boys` | Canva « MODÈLES COUVERTURES », p. 28 et 25 | 2 480 × 3 508 | `accueil.porte-offrir`, `groupes.numero-6` |
+| `couverture-tout-schuss.jpg`, `-wei`, `-seminaire`, `-soiree-entreprise` | `Magazine/Brochures/Visuels - Ecoles` et `- Entreprise`, moitié droite | 1 000 × 1 414 | `groupes.numero-1` à `-4` |
+| `couverture-24h-hautes-alpes.jpg`, `-japon-*`, `-madrid` | `Magazine Clients Atelier` (Jeanne, Margaux, Candice), moitié droite | 1 000 à 1 200 px | `groupes.numero-5`, `-7`, `offrir.carte` |
+| `double-page-kalbarri.jpg`, `-new-south-wales` | `~/Desktop/Book double page.pdf`, p. 2 et 15 | PDF | `accueil.double-page-1`, `-2` |
+| `double-atelier-cuisine.jpg`, `double-soiree-entreprise.jpg` | `Magazine/Brochures/Visuels - Entreprise/3.png`, `7.png` | 2 000 × 1 414 | `groupes.entreprise`, `-2` |
 | `objet-magazines-sur-la-table.jpg` | `Visuels/IMG_2909.jpeg` | 4 284 × 2 410 | `accueil.hero`, `accueil.porte-groupes` (déjà en ligne) |
 
 ## Encore ailleurs
 
-- **Canva**, designs « MODÈLES COUVERTURES » et « visus bellajour » : les couvertures Aussie,
-  2026, Lisbonne, Perth, Playa, Noosa, The Boys, This Night. Les copies du site font 640 px ; un
-  export Canva en pleine résolution les remplacerait.
+- **Canva** : export complet (27/11, accord de Mathias) dans
+  `design-explorations/visuels-a-placer/canva/` (79 pages, hors git). Noosa, Tropic et USA ont
+  un titre qui passe sur le dos : pas utilisables seules.
 - **Brochure Écoles et Entreprise** (`Magazine/Brochures/Visuels - Ecoles` et `- Entreprise`) :
   couvertures et doubles pages de groupe en 2 000 × 1 414. Droits à confirmer.
 - **La vidéo de Louis** (`accueil.matiere`) : l'original est `~/Desktop/SITE.mov` (2160 × 2160,
