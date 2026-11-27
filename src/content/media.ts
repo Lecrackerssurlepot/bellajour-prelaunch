@@ -159,8 +159,8 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/ouverture/lagon-2000.webp',
-      alt: 'Une double page d’un numéro sur un lagon',
+      fichier: '/images/v2/ouverture/double-page-mission-beach-2000.webp',
+      alt: 'Une double page : Mission Beach',
     },
     rotations: [],
   },
@@ -170,8 +170,8 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/ouverture/australia-2000.webp',
-      alt: 'Une double page d’un numéro sur l’Australie',
+      fichier: '/images/v2/ouverture/double-page-coral-bay-2000.webp',
+      alt: 'Une double page : Coral Bay',
     },
     rotations: [],
   },
@@ -329,8 +329,8 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/double-page-australie-1400.webp',
-      alt: 'Une double page d’un numéro sur l’Australie',
+      fichier: '/images/v2/magazine/double-page-pelican-feed-1400.webp',
+      alt: 'Une double page : Pelican Feed',
     },
     rotations: [],
   },
@@ -627,8 +627,8 @@ export const MEDIA = {
     type: 'image',
     provisoire: true,
     defaut: {
-      fichier: '/images/v2/magazine/double-page-australie-1400.webp',
-      alt: 'Australia',
+      fichier: '/images/v2/magazine/double-page-24h-hautes-alpes-1400.webp',
+      alt: 'La couverture ouverte des 24h des Hautes-Alpes',
     },
     rotations: [],
   },

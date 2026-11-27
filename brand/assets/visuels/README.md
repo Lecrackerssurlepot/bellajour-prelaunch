@@ -18,8 +18,12 @@
 | `couverture-rio.jpg` | `Magazine/Images SITE/BJ-A11.jpeg` | 10 524 × 14 973 | `magazine.eventail-2` |
 | `couverture-sicile.jpg` | `Magazine/Images SITE/BJ-M01.jpeg` | 8 770 × 12 478 | `magazine.couverture` |
 | `double-page-noosa.jpg` | `Magazine/Images SITE/BJ-M02.jpeg` | 12 468 × 8 770 | `accueil.ouverture-3`, `accueil.photo-exemple` |
-| `double-page-lagon.jpg` | `Magazine/Images SITE/BJ-M03.png` | 4 000 × 2 828 | `accueil.ouverture-1` et `-4`, `accueil.double-page-1` |
-| `double-page-australia.jpg` | `Magazine/Images SITE/BJ-M04.png` (BJ-M07 est le même) | 4 000 × 2 828 | `accueil.ouverture-2` et `-6`, `accueil.double-page-2` |
+| `double-page-lagon.jpg` | `Magazine/Images SITE/BJ-M03.png` | 4 000 × 2 828 | `accueil.ouverture-1` et `-4` |
+| `double-page-australia.jpg` | `Magazine/Images SITE/BJ-M04.png` (BJ-M07 est le même) | 4 000 × 2 828 | `accueil.ouverture-2` et `-6` |
+| `double-page-mission-beach.jpg` | `~/Desktop/Book double page.pdf`, p. 9 (Affinity) | PDF vectoriel | `accueil.double-page-1` |
+| `double-page-coral-bay.jpg` | `~/Desktop/Book double page.pdf`, p. 20 | PDF vectoriel | `accueil.double-page-2` |
+| `double-page-pelican-feed.jpg` | `~/Desktop/Book double page.pdf`, p. 18 | PDF vectoriel | `magazine.double-page` |
+| `double-page-24h-hautes-alpes.jpg` | `Magazine Clients Atelier/Jeanne - 24h des hautes alpes 2026/fevrejeanne91.pdf`, p. 1 | PDF | `edition.vitrine-double` |
 | `double-page-australia-portrait.jpg` | `Magazine/Images SITE/BJ-M04V.png` | 2 828 × 4 000 | en réserve |
 | `objet-magazines-sur-la-table.jpg` | `Visuels/IMG_2909.jpeg` | 4 284 × 2 410 | `accueil.hero`, `accueil.porte-groupes` (déjà en ligne) |
 
