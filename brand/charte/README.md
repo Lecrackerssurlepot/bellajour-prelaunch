@@ -50,7 +50,7 @@ charte.
 | K | [Gabarits](K-gabarits.md) | structure des pages |
 | L | [Navigation et liens](L-navigation.md) | CTA, liens externes, 404, redirections |
 | M | [Accessibilité](M-accessibilite.md) | contraste, focus, cibles, alt |
-| N | [Hors site](N-declinaisons.md) | mail, PDF, réseaux, mockups |
+| N | [Hors site](N-declinaisons.md) | mail, PDF, réseaux, mockups ; **un nouveau mail commence par le choix de sa structure** (atelier, lettre, magazine, simple) |
 | O | [Gouvernance](O-gouvernance.md) | versions, validation, modification |
 
 **Statut des valeurs.** Les valeurs relevées sur le banc validé (RKkzi v7) sont acquises. Celles
