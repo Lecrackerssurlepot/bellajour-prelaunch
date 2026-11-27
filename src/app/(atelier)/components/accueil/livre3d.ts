@@ -37,6 +37,8 @@ const HAUTEUR = OUVERT.camera.distance * 2 * Math.tan((OUVERT.camera.champ / 2) 
 const LARGEUR = 1.5
 /* La part de l'ouverture pendant laquelle le modèle remplace le livre HTML. */
 const RELEVE = 0.012
+/* La part du second temps (0 à 1) pendant laquelle le modèle s'efface. */
+const RENDU = 0.08
 
 export type Livre3D = {
   /** o : 0 fermé, 1 ouvert. b : 0 à 1, le second temps. */
@@ -226,9 +228,12 @@ export async function monterLivre3D(livre: HTMLElement, { leger }: { leger: bool
     /* La relève : le modèle monte en fondu sur le livre HTML pendant les tout
        premiers degrés (c'est le défilement qui conduit), puis reste seul. */
     const ouvre = o > 0.0005
-    livre.classList.toggle('ouvre3d', ouvre)
-    livre.classList.toggle('seul3d', o >= RELEVE)
-    boite.style.opacity = String(Math.min(1, o / RELEVE))
+    /* La seconde page tourne dans le livre HTML (Mathias, 27/11 : « livre plat ») :
+       dès que le second temps commence, le modèle s'efface et rend la main. */
+    const rendu = Math.min(1, b / RENDU)
+    livre.classList.toggle('ouvre3d', ouvre && rendu < 1)
+    livre.classList.toggle('seul3d', o >= RELEVE && b <= 0)
+    boite.style.opacity = String(Math.min(1, o / RELEVE) * (1 - rendu))
     /* Fermé, le modèle est centré sur sa couverture (la moitié droite du livre
        HTML) ; ouvert, sur son pli (le milieu). */
     boite.style.transform = `translate(calc(-50% + ${((1 - o) * 25) / LARGEUR}%), -50%)`
