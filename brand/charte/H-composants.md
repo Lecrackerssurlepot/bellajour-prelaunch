@@ -32,6 +32,18 @@ La valeur est donnée, et elle sera validée sur `/brand`.
 - **Erreur** *(proposé)* : bord `etat.erreur`, message en dessous en `taille.petit` couleur `etat.erreur`, avec `aria-invalid` et `aria-describedby`.
 - **Désactivé** *(proposé)* : opacité 0,5.
 
+## Calendrier (27/11)
+
+Tout choix d'un jour passe par le calendrier de la charte, jamais par le sélecteur du navigateur (`<input type="date">`, différent sur chaque appareil). Source : `src/components/calendrier/` (`Calendrier`, `ChampDate`), repris de la réservation de `/partenaires`.
+
+- **Tête** : le mois en clair, deux flèches rondes `‹ ›` de `cible.mini` (44 px), trait fin `papier-ligne`.
+- **Cases** : 7 colonnes, lundi d'abord, carrées, `rayon.champ`. Le numéro en police de titre (`taille.chapo`).
+- **États** : aujourd'hui cerclé d'encre ; jour choisi en encre pleine, numéro blanc ; jours d'un autre mois à 45 % ; hors bornes à 25 %, inactifs.
+- **Marque** : un point de 4 px sous le numéro, pour un jour qui porte quelque chose (un changement de visuel, un créneau libre).
+- **Champ date** : un bouton qui dit le jour en clair (« ven. 27 nov. 2026 »), le calendrier s'ouvre dessous dans une feuille de verre (`rayon.bloc`, `ombre.flottant`). Échap ou un clic dehors la referme.
+- **Clavier** : les flèches déplacent le jour, Entrée le choisit.
+- ✅ Un calendrier par choix de jour, admin compris. ❌ Un champ date natif.
+
 ## En-tête
 
 | | Ordinateur (≥ 901 px) | Téléphone et tablette (≤ 900 px) |

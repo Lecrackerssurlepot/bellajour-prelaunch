@@ -192,6 +192,22 @@ const nextConfig: NextConfig = {
         source: "/depot/:chemin*",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
+      /* Le site à une date (Site · Visuels, 27/11) : la vue « Sur le site »
+         de l'admin encadre les pages publiques qui portent `?apercu_jour=`,
+         pour montrer deux dates côte à côte. Par le site seul. Jamais l'admin,
+         l'API ni le compte : la règle ne s'y applique pas. */
+      {
+        source: "/:chemin((?!admin|api|compte|brand|_next|_vercel).*)",
+        has: [{ type: "query" as const, key: "apercu_jour" }],
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: politiqueRapportSeul(process.env.NODE_ENV !== "production", "'self'"),
+          },
+        ],
+      },
       /* L'aperçu du mail, encadré par `FinCreation.tsx` : par le site seul. */
       {
         source: "/api/admin/collectif/editions/:id/mail-espace",

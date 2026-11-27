@@ -19,7 +19,7 @@
    ════════════════════════════════════════════════════════════ */
 
 import { unstable_cache } from 'next/cache'
-import { cookies, draftMode } from 'next/headers'
+import { cookies, draftMode, headers } from 'next/headers'
 import { makeSupabase } from '@/lib/supabase'
 import { ADMIN_COOKIE, verifierCookieAdmin } from '@/lib/admin-auth'
 import { MEDIA, visuelPour, type Emplacement, type NomEmplacement, type Visuel } from './media'
@@ -31,6 +31,7 @@ import {
   rotationsFusionnees,
   type LigneRotation,
 } from '@/lib/visuels/rotation'
+import { ENTETE_APERCU, lireValeurApercu } from '@/lib/visuels/apercu'
 
 /** Toutes les lignes de la table. Une erreur rend une liste vide (repli sur le code). */
 async function lireLignes(): Promise<LigneRotation[]> {
@@ -49,14 +50,25 @@ async function lireLignes(): Promise<LigneRotation[]> {
 
 const lignesEnCache = unstable_cache(lireLignes, ['visuels-rotations'], { revalidate: 60, tags: [TAG_VISUELS] })
 
-/** Le jour et l'option d'aperçu, seulement pour l'atelier en mode brouillon. */
-async function apercu(): Promise<{ jour: string; brouillons: boolean } | null> {
+export type ApercuVisuels = { jour: string; brouillons: boolean; source: 'adresse' | 'cookie' }
+
+/**
+ * Le jour et l'option d'aperçu, seulement pour l'atelier en mode brouillon.
+ * L'adresse (`?apercu_jour=`, recopiée en en-tête par le middleware) passe
+ * AVANT le cookie : c'est elle qui permet deux dates côte à côte.
+ * ⚠️ `headers()` n'est lu qu'APRÈS le contrôle du mode brouillon : hors aperçu,
+ * une page statique doit le rester.
+ */
+export async function apercuVisuels(): Promise<ApercuVisuels | null> {
   try {
     const brouillon = await draftMode()
     if (!brouillon.isEnabled) return null
     const jar = await cookies()
     if (!(await verifierCookieAdmin(jar.get(ADMIN_COOKIE)?.value))) return null
-    return lireCookieApercu(jar.get(COOKIE_APERCU_VISUELS)?.value)
+    const parAdresse = lireValeurApercu((await headers()).get(ENTETE_APERCU))
+    if (parAdresse) return { ...parAdresse, source: 'adresse' }
+    const parCookie = lireCookieApercu(jar.get(COOKIE_APERCU_VISUELS)?.value)
+    return parCookie ? { ...parCookie, source: 'cookie' } : null
   } catch {
     /* Hors requête (construction, script) : pas d'aperçu. */
     return null
@@ -74,7 +86,7 @@ export async function emplacementDuSite(nom: NomEmplacement): Promise<Emplacemen
  * rien (emplacement vide, ou rotation « vide » ce jour-là).
  */
 export async function visuelDuJour(nom: NomEmplacement, instant: Date = new Date()): Promise<Visuel | null> {
-  const [e, ap] = await Promise.all([emplacementDuSite(nom), apercu()])
+  const [e, ap] = await Promise.all([emplacementDuSite(nom), apercuVisuels()])
   const table = { [nom]: e } as Record<string, Emplacement>
   if (ap) return visuelPour(nom, new Date(`${ap.jour}T12:00:00+01:00`), table, { brouillons: ap.brouillons })
   return visuelPour(nom, instant, table)

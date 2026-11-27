@@ -1,0 +1,212 @@
+/* ── /admin/atelier/site/visuels/site : le site à une date (27/11) ──
+   Charte V2, jetons --m-* seuls ; le pop-up est en verre (variation F). */
+
+.vs-root .vs {
+  font-family: var(--m-police-texte-famille);
+  font-size: var(--m-taille-petit);
+  max-width: 1840px;
+  margin: 0 auto;
+  padding: var(--m-espace-6) var(--m-espace-marge) var(--m-espace-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-5);
+}
+
+.vs-root .vs-tete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--m-espace-4);
+}
+
+.vs-root .vis-surtitre a {
+  color: inherit;
+}
+
+.vs-root .vs-barre {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.vs-root .vs-cadres {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--m-espace-5);
+}
+
+@media (min-width: 900px) {
+  .vs-root .vs-cadres--deux {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.vs-root .vs-cadre {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-2);
+  min-width: 0;
+}
+
+.vs-root .vs-cadre-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--m-espace-3);
+}
+
+.vs-root .vs-cadre-tete strong {
+  font-family: var(--m-police-titre-famille);
+  font-weight: 400;
+  font-size: var(--m-taille-chapo);
+}
+
+.vs-root .vs-ecran {
+  position: relative;
+  height: calc(100svh - 260px);
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: var(--m-rayon-bloc);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-survol);
+}
+
+.vs-root .vs-ecran iframe {
+  position: absolute;
+  top: 0;
+  border: 0;
+  background: var(--m-couleur-papier-fond);
+  transform-origin: top left;
+}
+
+.vs-root .vs-ecran[data-appareil='telephone'] iframe {
+  border-left: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  border-right: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+}
+
+.vs-root .vs-attente {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--m-couleur-papier-texte-doux);
+  pointer-events: none;
+}
+
+.vs-root .vs-non-vus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-espace-2);
+}
+
+.vs-root .vs-puce {
+  min-height: 32px;
+  padding: 0 var(--m-espace-3);
+  border-radius: var(--m-rayon-pilule);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte);
+  cursor: pointer;
+}
+
+.vs-root .vs-puce:hover {
+  border-color: var(--m-couleur-papier-texte);
+}
+
+/* Le pop-up de l'emplacement. */
+
+.vs-root .vs-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--m-espace-4);
+  background: var(--m-couleur-voile-feuille);
+}
+
+.vs-root .vs-fiche {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100svh - 2 * var(--m-espace-4));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-3);
+  padding: var(--m-espace-6);
+  border-radius: var(--m-rayon-bloc);
+  border: var(--m-trait-fin) solid var(--m-variation-lumiere-verre-verre-trait);
+  background: var(--m-couleur-voile-barre);
+  -webkit-backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou)) saturate(var(--m-variation-lumiere-verre-verre-saturation));
+  backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou)) saturate(var(--m-variation-lumiere-verre-verre-saturation));
+  box-shadow: var(--m-ombre-objet);
+}
+
+.vs-root .vs-fermer {
+  position: absolute;
+  top: var(--m-espace-3);
+  right: var(--m-espace-3);
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
+  border-radius: var(--m-rayon-rond);
+  border: 0;
+  background: transparent;
+  font-size: var(--m-taille-h3);
+  line-height: 1;
+  color: var(--m-couleur-papier-texte);
+  cursor: pointer;
+}
+
+.vs-root .vs-fermer:hover {
+  background: var(--m-couleur-papier-survol);
+}
+
+.vs-root .vs-role {
+  margin: 0;
+  font-size: var(--m-taille-bouton);
+  line-height: 1.45;
+  padding-right: var(--m-espace-7);
+}
+
+.vs-root .vs-fiche-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--m-espace-4);
+  align-items: start;
+}
+
+.vs-root .vs-faits {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-3);
+}
+
+.vs-root .vs-faits dt {
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.vs-root .vs-faits dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .vs-root .vs-fiche-corps {
+    grid-template-columns: 1fr;
+  }
+  .vs-root .vs-tete {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Le rappel « Aperçu du… » du layout racine n'a rien à faire sur cette vue :
+   chaque cadre porte déjà sa date. */
+body:has(.vs-root) .bav {
+  display: none;
+}

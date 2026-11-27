@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { jetons, versionCharte, requeteTelephone } from '../../../brand/build/tokens'
 import Magazine from './Magazine'
 import Motion from './Motion'
+import CalendrierDemo from './CalendrierDemo'
 
 /* La page ne recopie AUCUNE valeur : tout vient de brand/build/tokens.ts, généré
    depuis brand/tokens.json. Changer un jeton, relancer le build, recharger. */
@@ -374,6 +375,10 @@ export default function PageCharte() {
           </div>
           <div className="ch-alternance-barre"><span className="ch-logo" role="img" aria-label="Bellajour" /><span className="ch-note">Le magazine · Offrir · Pour les groupes</span></div>
         </div>
+
+        <h3 className="ch-h3">Calendrier</h3>
+        <p className="ch-note">Repris de la réservation de /partenaires. Remplace partout le sélecteur de date du navigateur.</p>
+        <CalendrierDemo aujourdhui={new Date().toISOString().slice(0, 10)} />
 
         <h3 className="ch-h3">Alternance noir et blanc</h3>
         <p className="ch-note">Quand c’est blanc dessous, c’est noir au-dessus, et inversement (fiche C).</p>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ADMIN_COOKIE, verifierCookieAdmin } from "@/lib/admin-auth";
+import { ENTETE_APERCU, PARAM_APERCU, lireValeurApercu } from "@/lib/visuels/apercu";
 
 /**
  * Protection du back-office par comptes nominatifs (Mathias, Louis).
@@ -114,8 +115,29 @@ async function rafraichirSessionCompte(req: NextRequest): Promise<NextResponse> 
   return reponse;
 }
 
+/** Les zones que la branche « site à une date » ne doit jamais court-circuiter. */
+function estZoneGardee(pathname: string): boolean {
+  return ["/admin", "/api", "/compte", "/brand"].some(
+    (z) => pathname === z || pathname.startsWith(`${z}/`),
+  );
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  /* ── LE SITE À UNE DATE, PAR ADRESSE (27/11) ──
+     Seules les pages publiques portant `?apercu_jour=` arrivent ici (voir le
+     matcher). On recopie la date dans un en-tête de requête et on laisse
+     passer, SANS aucune garde : c'est `visuelDuJour` qui ne l'écoute qu'en mode
+     brouillon avec un cookie admin valide. Un visiteur qui tape l'adresse voit
+     le site du jour. Un en-tête forgé par le visiteur est toujours effacé. */
+  if (!estZoneGardee(pathname)) {
+    const entetes = new Headers(req.headers);
+    entetes.delete(ENTETE_APERCU);
+    const valeur = req.nextUrl.searchParams.get(PARAM_APERCU);
+    if (lireValeurApercu(valeur)) entetes.set(ENTETE_APERCU, valeur as string);
+    return NextResponse.next({ request: { headers: entetes } });
+  }
 
   if (pathname === "/compte" || pathname.startsWith("/compte/")) {
     /* ── LA REDIRECTION REDEVIENT UNE VRAIE REDIRECTION HTTP (08/09/2026) ──
@@ -178,5 +200,16 @@ export async function middleware(req: NextRequest) {
 export const config = {
   /* /brand (vitrine de la charte V2, 25/11/2026) suit la branche admin : sans
      cookie bj_admin, retour à /admin/login. */
-  matcher: ["/admin/:path*", "/api/admin/:path*", "/compte/:path*", "/brand", "/brand/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/api/admin/:path*",
+    "/compte/:path*",
+    "/brand",
+    "/brand/:path*",
+    /* Le site à une date (27/11) : seules les pages qui portent ?apercu_jour=. */
+    {
+      source: "/((?!admin|api|_next|compte|brand|images|favicon).*)",
+      has: [{ type: "query", key: "apercu_jour" }],
+    },
+  ],
 };

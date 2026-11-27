@@ -5,7 +5,7 @@
    media.ts. La table est dans supabase/migrations/20261126_visuels_rotations.sql.
    ════════════════════════════════════════════════════════════ */
 
-import { MEDIA, type NomEmplacement, type Rotation } from '@/content/media'
+import { MEDIA, type Emplacement, type NomEmplacement, type Rotation } from '@/content/media'
 
 export const PANIER_VISUELS = 'visuels-site'
 export const TAG_VISUELS = 'visuels-site'
@@ -117,8 +117,13 @@ export function normaliserSaisie(corps: unknown, prefixePublic: string): Lu<Sais
   const vide = c.vide === true
   if (vide && !('optionnel' in e && e.optionnel === true)) return { ok: false, champ: 'vide' }
   const valide = c.valide === true
+  /* La bibliothèque (27/11) : un fichier déjà en place sur le site (défauts et
+     rotations de media.ts) se réutilise sans nouveau dépôt. Liste fermée : on
+     n'accepte toujours aucune adresse quelconque. */
+  const connus = fichiersDuCode()
   const dansLePanier = (u: unknown): u is string =>
-    typeof u === 'string' && u.startsWith(prefixePublic) && u.length < 600 && !u.includes('..')
+    typeof u === 'string' &&
+    (connus.has(u) || (u.startsWith(prefixePublic) && u.length < 600 && !u.includes('..')))
 
   if (vide) {
     return {
@@ -143,6 +148,20 @@ export function normaliserSaisie(corps: unknown, prefixePublic: string): Lu<Sais
     ok: true,
     valeur: { emplacement: c.emplacement, du: c.du as string, au: c.au as string, vide, fichier: c.fichier, alt, video_mp4, video_webm, valide },
   }
+}
+
+/** Tous les fichiers que media.ts met déjà en place (défauts, rotations, vidéos). */
+export function fichiersDuCode(): Set<string> {
+  const out = new Set<string>()
+  for (const e of Object.values(MEDIA) as Emplacement[]) {
+    for (const v of [e.defaut, ...e.rotations]) {
+      if (!v || !('fichier' in v) || !v.fichier) continue
+      out.add(v.fichier)
+      if (v.video?.mp4) out.add(v.video.mp4)
+      if (v.video?.webm) out.add(v.video.webm)
+    }
+  }
+  return out
 }
 
 /** Le chemin d'un fichier déposé : unique, jamais réutilisé (le cache garde un même nom). */

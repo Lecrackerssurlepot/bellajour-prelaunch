@@ -6018,11 +6018,15 @@ const verifierProtection = async () => {
   };
   const prod = await reglesEn("production");
   const dev = await reglesEn("development");
-  const entetesPour = (regles: typeof prod, chemin: string): Map<string, string> => {
+  /* `requete` : les paramètres de l'adresse. Une règle à condition `has`
+     (type query, 27/11 : le site à une date) ne s'applique que s'ils la portent. */
+  const entetesPour = (regles: typeof prod, chemin: string, requete: Record<string, string> = {}): Map<string, string> => {
     const m = new Map<string, string>();
     for (const r of regles) {
       const correspond = getPathMatch(r.source, { strict: true, removeUnnamedParams: true, regexModifier: (x) => modifyRouteRegex(x) });
       if (correspond(chemin) === false) continue;
+      const conditions = (r as { has?: Array<{ type: string; key: string }> }).has ?? [];
+      if (!conditions.every((c) => c.type === "query" && c.key in requete)) continue;
       for (const h of r.headers) m.set(h.key.toLowerCase(), h.value);
     }
     return m;
@@ -6065,6 +6069,19 @@ const verifierProtection = async () => {
   ok("l'aperçu du mail « Votre espace est prêt » s'encadre par le site SEUL (SAMEORIGIN, frame-ancestors 'self')",
      mailP.get("x-frame-options") === "SAMEORIGIN" && mailP.get("content-security-policy") === "frame-ancestors 'self'"
      && /(^|; )frame-ancestors 'self'($|;)/.test(mailP.get("content-security-policy-report-only") ?? ""));
+  /* Le site à une date (27/11) : une page publique portant `?apercu_jour=`
+     s'encadre par le site seul ; l'admin, l'API et le compte jamais. */
+  const AP = { apercu_jour: "2026-12-20" };
+  const publiquesApercu = ["/", "/magazine", "/offrir", "/partenaires", "/composer"].filter((c) => {
+    const x = entetesPour(prod, c, AP);
+    return !(x.get("x-frame-options") === "SAMEORIGIN" && x.get("content-security-policy") === "frame-ancestors 'self'"
+      && /(^|; )frame-ancestors 'self'($|;)/.test(x.get("content-security-policy-report-only") ?? ""));
+  });
+  ok(`?apercu_jour= : les pages publiques s'encadrent par le site seul${publiquesApercu.length ? " : " + publiquesApercu.join(", ") : ""}`, publiquesApercu.length === 0);
+  const gardeesApercu = ["/admin/atelier", "/admin/login", "/api/admin/atelier/transition", "/api/atelier/checkout", "/compte", "/brand"]
+    .filter((c) => !refuseLeCadre(entetesPour(prod, c, AP)) || !refuseLeCadre(entetesPour(dev, c, AP)));
+  ok(`?apercu_jour= n'ouvre jamais le cadre de l'admin, de l'API, du compte ni de /brand${gardeesApercu.length ? " : " + gardeesApercu.join(", ") : ""}`, gardeesApercu.length === 0);
+
   /* L'exception suit l'écran qui encadre : si l'iframe change d'adresse, ou si
      une autre iframe vers le site apparaît, l'exception doit être revue. */
   const fichiersTsx = (dossier: string): string[] =>

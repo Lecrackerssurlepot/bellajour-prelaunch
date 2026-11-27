@@ -389,3 +389,11 @@
 /* Les quatre structures de mails (27/11, fiche N) */
 .ch-structure { display: grid; gap: var(--m-espace-2); }
 .ch-structure img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; border-radius: var(--m-rayon-bloc); background: var(--m-couleur-papier-survol); }
+
+/* Le calendrier (fiche H, 27/11). */
+.ch-calendriers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--m-espace-7);
+}

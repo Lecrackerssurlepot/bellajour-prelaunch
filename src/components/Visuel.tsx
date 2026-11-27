@@ -41,10 +41,11 @@ export default async function Visuel({ nom, className, sizes, priority, alt }: P
   const v = await lireVisuel(nom)
   if (!v || !v.fichier) return null
   if (v.video) {
-    return <VideoNative poster={v.fichier} mp4={v.video.mp4} webm={v.video.webm} label={alt ?? v.alt} className={className} />
+    return <VideoNative poster={v.fichier} mp4={v.video.mp4} webm={v.video.webm} label={alt ?? v.alt} className={className} emplacement={nom} />
   }
   return (
     <img
+      data-emplacement={nom}
       src={v.fichier}
       alt={alt ?? v.alt}
       className={className}

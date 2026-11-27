@@ -440,3 +440,68 @@
     max-height: 240px;
   }
 }
+
+/* ── La bibliothèque : reprendre un visuel déjà sur le site (27/11) ── */
+
+.vis-root .vis-biblio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-3);
+}
+
+.vis-root .vis-biblio-filtre {
+  min-height: var(--m-cible-mini);
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-champ-bord);
+  background: var(--m-couleur-papier-champ-fond);
+  font: inherit;
+  font-size: var(--m-taille-champ);
+}
+
+.vis-root .vis-biblio-grille {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--m-espace-2);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.vis-root .vis-biblio-case {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-1);
+  width: 100%;
+  padding: var(--m-espace-1);
+  border-radius: var(--m-rayon-champ);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  background: var(--m-couleur-papier-fond);
+  font: inherit;
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+  text-align: left;
+  cursor: pointer;
+}
+
+.vis-root .vis-biblio-case img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--m-rayon-image);
+  display: block;
+}
+
+.vis-root .vis-biblio-case span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vis-root .vis-biblio-case.est-choisi {
+  border-color: var(--m-couleur-accent);
+  box-shadow: 0 0 0 1px var(--m-couleur-accent);
+  color: var(--m-couleur-papier-texte);
+}

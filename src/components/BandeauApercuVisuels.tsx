@@ -1,6 +1,4 @@
-import { cookies, draftMode } from "next/headers";
-import { ADMIN_COOKIE, verifierCookieAdmin } from "@/lib/admin-auth";
-import { COOKIE_APERCU_VISUELS, lireCookieApercu } from "@/lib/visuels/rotation";
+import { apercuVisuels } from "@/content/visuel-du-jour";
 import "./bandeau-apercu-visuels.css";
 
 /* Le rappel « vous regardez le site à une autre date », posé dans le layout
@@ -11,22 +9,18 @@ import "./bandeau-apercu-visuels.css";
 const JOUR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
 export default async function BandeauApercuVisuels() {
-  try {
-    if (!(await draftMode()).isEnabled) return null;
-    const jar = await cookies();
-    if (!(await verifierCookieAdmin(jar.get(ADMIN_COOKIE)?.value))) return null;
-    const ap = lireCookieApercu(jar.get(COOKIE_APERCU_VISUELS)?.value);
-    if (!ap) return null;
-    return (
-      <aside className="bav" aria-label="Aperçu des visuels">
-        <span>
-          Aperçu du {JOUR.format(new Date(`${ap.jour}T12:00:00Z`))}
-          {ap.brouillons ? " · brouillons" : ""}
-        </span>
-        <a href="/api/admin/visuels/apercu?fin=1">Quitter</a>
-      </aside>
-    );
-  } catch {
-    return null;
-  }
+  /* `apercuVisuels` ne lève jamais : hors requête ou sans droit, elle rend null. */
+  const ap = await apercuVisuels();
+  /* Dans un cadre de la vue « Sur le site », la date est déjà écrite
+     au-dessus du cadre : pas de bandeau dans la page. */
+  if (!ap || ap.source === "adresse") return null;
+  return (
+    <aside className="bav" aria-label="Aperçu des visuels">
+      <span>
+        Aperçu du {JOUR.format(new Date(`${ap.jour}T12:00:00Z`))}
+        {ap.brouillons ? " · brouillons" : ""}
+      </span>
+      <a href="/api/admin/visuels/apercu?fin=1">Quitter</a>
+    </aside>
+  );
 }

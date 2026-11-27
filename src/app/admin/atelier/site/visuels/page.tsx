@@ -5,6 +5,7 @@ import { makeSupabase } from "@/lib/supabase";
 import { MEDIA, jourParis, type Emplacement, type NomEmplacement } from "@/content/media";
 import { COLONNES_ROTATION, type LigneRotation } from "@/lib/visuels/rotation";
 import { tableVisuelsAbsente } from "@/lib/visuels/serveur";
+import { bibliothequeVisuels } from "@/lib/visuels/bibliotheque";
 import BarreAtelier, { liensParticuliers } from "../../../BarreAtelier";
 import Visuels, { type EmplacementVu } from "./Visuels";
 import "../../../admin.css";
@@ -47,7 +48,7 @@ export default async function PageVisuels() {
   return (
     <div className="adm-root ate-root vis-root">
       <BarreAtelier monde="particuliers" collectif={collectifOuvert()} liens={liensParticuliers(false)} />
-      <Visuels emplacements={emplacements} aujourdhui={jourParis(new Date())} absente={absente} erreur={erreur} />
+      <Visuels emplacements={emplacements} aujourdhui={jourParis(new Date())} absente={absente} erreur={erreur} bibliotheque={bibliothequeVisuels(lignes)} />
     </div>
   );
 }

@@ -8,9 +8,9 @@
 
 import { useEffect, useRef } from 'react'
 
-type Props = { poster: string; mp4: string; webm?: string; label: string; className?: string }
+type Props = { poster: string; mp4: string; webm?: string; label: string; className?: string; emplacement?: string }
 
-export default function VideoNative({ poster, mp4, webm, label, className }: Props) {
+export default function VideoNative({ poster, mp4, webm, label, className, emplacement }: Props) {
   const ref = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function VideoNative({ poster, mp4, webm, label, className }: Pro
   }, [])
 
   return (
-    <video ref={ref} className={className} muted loop playsInline preload="none" poster={poster} aria-label={label}>
+    <video ref={ref} data-emplacement={emplacement} className={className} muted loop playsInline preload="none" poster={poster} aria-label={label}>
       {webm && <source src={webm} type="video/webm" />}
       {mp4 && <source src={mp4} type="video/mp4" />}
     </video>

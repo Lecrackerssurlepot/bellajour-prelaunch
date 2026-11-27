@@ -17,11 +17,15 @@ import {
   type Visuel,
 } from '@/content/media'
 import { ligneVersRotation, trierLignes, type LigneRotation } from '@/lib/visuels/rotation'
+import ChampDate from '@/components/calendrier/ChampDate'
+import type { VisuelBibliotheque } from '@/lib/visuels/bibliotheque'
 
 export type EmplacementVu = Emplacement & { nom: NomEmplacement; lignes: LigneRotation[] }
 
+export type { VisuelBibliotheque }
+
 /* La page du site où vit chaque famille d'emplacements, pour « Voir sur le site ». */
-const PAGE_DU_SITE: Record<string, string> = {
+export const PAGE_DU_SITE: Record<string, string> = {
   accueil: '/',
   magazine: '/magazine',
   composer: '/composer',
@@ -30,20 +34,38 @@ const PAGE_DU_SITE: Record<string, string> = {
   partage: '/',
 }
 
+/** L'adresse de la vue « Sur le site » (une date, ou deux côte à côte). */
+export function vueSite(o: { a: string; b?: string; brouillons?: boolean; page?: string; montrer?: string }): string {
+  const q = new URLSearchParams({ a: o.a })
+  if (o.b) q.set('b', o.b)
+  if (o.brouillons) q.set('brouillons', '1')
+  if (o.page) q.set('page', o.page)
+  if (o.montrer) q.set('montrer', o.montrer)
+  return `/admin/atelier/site/visuels/site?${q.toString()}`
+}
+
+export const PAGES_DU_SITE = [
+  { chemin: '/', nom: 'Accueil' },
+  { chemin: '/magazine', nom: 'Magazine' },
+  { chemin: '/offrir', nom: 'Offrir' },
+  { chemin: '/partenaires', nom: 'Groupes' },
+  { chemin: '/composer', nom: 'Composer' },
+] as const
+
 const MOIS = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
-const jourLisible = (j: string) => MOIS.format(new Date(`${j}T12:00:00Z`))
-const instantDe = (j: string) => new Date(`${j}T12:00:00+01:00`)
+export const jourLisible = (j: string) => MOIS.format(new Date(`${j}T12:00:00Z`))
+export const instantDe = (j: string) => new Date(`${j}T12:00:00+01:00`)
 
-type Ligne = { rotation: Rotation; ligne: LigneRotation | null }
+export type Ligne = { rotation: Rotation; ligne: LigneRotation | null }
 
-function rotationsDe(e: EmplacementVu): Ligne[] {
+export function rotationsDe(e: EmplacementVu): Ligne[] {
   const base: Ligne[] = trierLignes(e.lignes)
     .map((l) => ({ rotation: ligneVersRotation(l), ligne: l }))
     .filter((x): x is { rotation: Rotation; ligne: LigneRotation } => x.rotation !== null)
   return [...base, ...e.rotations.map((r) => ({ rotation: r, ligne: null }))]
 }
 
-function Vignette({ v, ratio, petite }: { v: Visuel | null; ratio?: string; petite?: boolean }) {
+export function Vignette({ v, ratio, petite }: { v: Visuel | null; ratio?: string; petite?: boolean }) {
   return (
     <span className={`vis-vignette${petite ? ' vis-vignette--petite' : ''}`} style={ratio && !petite ? { aspectRatio: ratio } : undefined}>
       {v ? <img src={v.fichier} alt={v.alt} loading="lazy" /> : <span className="vis-rien">Rien</span>}
@@ -115,7 +137,64 @@ async function enregistrer(
 
 /* ── Le formulaire d'ajout ───────────────────────────────── */
 
-function Ajout({ e, aujourdhui, fini }: { e: EmplacementVu; aujourdhui: string; fini: () => void }) {
+function Bibliotheque({
+  liste,
+  choisi,
+  choisir,
+}: {
+  liste: VisuelBibliotheque[]
+  choisi: string | null
+  choisir: (v: VisuelBibliotheque) => void
+}) {
+  const [filtre, setFiltre] = useState('')
+  const vus = filtre.trim()
+    ? liste.filter((v) => `${v.alt} ${v.source}`.toLowerCase().includes(filtre.trim().toLowerCase()))
+    : liste
+  return (
+    <div className="vis-biblio">
+      <input
+        type="search"
+        className="vis-biblio-filtre"
+        placeholder="Chercher"
+        aria-label="Chercher dans la bibliothèque"
+        value={filtre}
+        onChange={(x) => setFiltre(x.target.value)}
+      />
+      <ul className="vis-biblio-grille">
+        {vus.map((v) => (
+          <li key={v.fichier}>
+            <button
+              type="button"
+              className={`vis-biblio-case${choisi === v.fichier ? ' est-choisi' : ''}`}
+              aria-pressed={choisi === v.fichier}
+              title={v.alt}
+              onClick={() => choisir(v)}
+            >
+              <img src={v.fichier} alt="" loading="lazy" />
+              <span>{v.source}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {vus.length === 0 ? <p className="vis-sous">Aucun visuel</p> : null}
+    </div>
+  )
+}
+
+export function Ajout({
+  e,
+  aujourdhui,
+  fini,
+  bibliotheque,
+}: {
+  e: EmplacementVu
+  aujourdhui: string
+  fini: () => void
+  bibliotheque: VisuelBibliotheque[]
+}) {
+  const [mode, setMode] = useState<'bibliotheque' | 'fichier'>('bibliotheque')
+  const [repris, setRepris] = useState<VisuelBibliotheque | null>(null)
+  const liste = useMemo(() => (e.type === 'video' ? bibliotheque.filter((v) => v.video) : bibliotheque), [bibliotheque, e.type])
   const [s, setS] = useState<Saisie>({ du: aujourdhui, au: aujourdhui, alt: '', valide: false, vide: false })
   const [image, setImage] = useState<File | null>(null)
   const [mp4, setMp4] = useState<File | null>(null)
@@ -130,7 +209,13 @@ function Ajout({ e, aujourdhui, fini }: { e: EmplacementVu; aujourdhui: string; 
       let fichier: string | null = null
       let video_mp4: string | null = null
       let video_webm: string | null = null
-      if (!s.vide) {
+      if (!s.vide && mode === 'bibliotheque') {
+        if (!repris) throw new Error('Choisir un visuel')
+        if (!s.alt.trim()) throw new Error('Description manquante')
+        fichier = repris.fichier
+        video_mp4 = e.type === 'video' ? (repris.video?.mp4 ?? null) : null
+        video_webm = e.type === 'video' ? (repris.video?.webm ?? null) : null
+      } else if (!s.vide) {
         if (!image) throw new Error(e.type === 'video' ? 'Image d’attente manquante' : 'Image manquante')
         if (!s.alt.trim()) throw new Error('Description manquante')
         fichier = await deposer(e.nom, await preparerImage(image))
@@ -153,6 +238,32 @@ function Ajout({ e, aujourdhui, fini }: { e: EmplacementVu; aujourdhui: string; 
         </label>
       ) : null}
       {!s.vide ? (
+        <div className="vis-bascule" role="group" aria-label="Origine du visuel">
+          <button type="button" aria-pressed={mode === 'bibliotheque'} onClick={() => setMode('bibliotheque')}>
+            Déjà sur le site
+          </button>
+          <button type="button" aria-pressed={mode === 'fichier'} onClick={() => setMode('fichier')}>
+            Nouveau fichier
+          </button>
+        </div>
+      ) : null}
+      {!s.vide && mode === 'bibliotheque' ? (
+        <Bibliotheque
+          liste={liste}
+          choisi={repris?.fichier ?? null}
+          choisir={(v) => {
+            setRepris(v)
+            setS((x) => ({ ...x, alt: x.alt.trim() ? x.alt : v.alt }))
+          }}
+        />
+      ) : null}
+      {!s.vide && mode === 'bibliotheque' ? (
+        <label className="vis-champ" htmlFor={`${id}-alt-b`}>
+          <span>Description</span>
+          <input id={`${id}-alt-b`} type="text" maxLength={200} value={s.alt} placeholder="Ce que montre l’image" onChange={(x) => setS({ ...s, alt: x.target.value })} />
+        </label>
+      ) : null}
+      {!s.vide && mode === 'fichier' ? (
         <>
           <label className="vis-champ" htmlFor={`${id}-image`}>
             <span>{e.type === 'video' ? 'Image d’attente' : 'Image'}</span>
@@ -177,14 +288,8 @@ function Ajout({ e, aujourdhui, fini }: { e: EmplacementVu; aujourdhui: string; 
         </>
       ) : null}
       <div className="vis-dates">
-        <label className="vis-champ" htmlFor={`${id}-du`}>
-          <span>Du</span>
-          <input id={`${id}-du`} type="date" value={s.du} onChange={(x) => setS({ ...s, du: x.target.value, au: x.target.value > s.au ? x.target.value : s.au })} />
-        </label>
-        <label className="vis-champ" htmlFor={`${id}-au`}>
-          <span>Au</span>
-          <input id={`${id}-au`} type="date" value={s.au} min={s.du} onChange={(x) => setS({ ...s, au: x.target.value })} />
-        </label>
+        <ChampDate libelle="Du" valeur={s.du} aujourdhui={aujourdhui} changer={(j) => setS({ ...s, du: j, au: j > s.au ? j : s.au })} />
+        <ChampDate libelle="Au" valeur={s.au} aujourdhui={aujourdhui} min={s.du} changer={(j) => setS({ ...s, au: j })} />
       </div>
       <Interrupteur valide={s.valide} changer={(v) => setS({ ...s, valide: v })} />
       {etat.erreur ? <p className="vis-erreur" role="alert">{etat.erreur}</p> : null}
@@ -220,11 +325,13 @@ function LigneVue({
   etat,
   ratio,
   rafraichir,
+  aujourdhui,
 }: {
   l: Ligne
   etat: EtatRotation
   ratio?: string
   rafraichir: () => void
+  aujourdhui: string
 }) {
   const [edition, setEdition] = useState(false)
   const [retrait, setRetrait] = useState(false)
@@ -283,14 +390,8 @@ function LigneVue({
         {edition ? (
           <div className="vis-form vis-form--ligne">
             <div className="vis-dates">
-              <label className="vis-champ">
-                <span>Du</span>
-                <input type="date" value={d.du} onChange={(x) => setD({ ...d, du: x.target.value })} />
-              </label>
-              <label className="vis-champ">
-                <span>Au</span>
-                <input type="date" value={d.au} min={d.du} onChange={(x) => setD({ ...d, au: x.target.value })} />
-              </label>
+              <ChampDate libelle="Du" valeur={d.du} aujourdhui={aujourdhui} changer={(j) => setD({ ...d, du: j, au: j > d.au ? j : d.au })} />
+              <ChampDate libelle="Au" valeur={d.au} aujourdhui={aujourdhui} min={d.du} changer={(j) => setD({ ...d, au: j })} />
             </div>
             {!r.vide ? (
               <label className="vis-champ">
@@ -350,11 +451,13 @@ export default function Visuels({
   aujourdhui,
   absente,
   erreur,
+  bibliotheque,
 }: {
   emplacements: EmplacementVu[]
   aujourdhui: string
   absente: boolean
   erreur: boolean
+  bibliotheque: VisuelBibliotheque[]
 }) {
   const router = useRouter()
   const [jour, setJour] = useState(aujourdhui)
@@ -373,8 +476,12 @@ export default function Visuels({
     [emplacements, jour, brouillons],
   )
 
-  const apercu = (vers: string) =>
-    `/api/admin/visuels/apercu?jour=${jour}${brouillons ? '&brouillons=1' : ''}&vers=${encodeURIComponent(vers)}`
+  /* Les jours où quelque chose change sur le site : un point dans le calendrier. */
+  const changements = useMemo(() => {
+    const out = new Set<string>()
+    for (const { lignes } of vus) for (const { rotation } of lignes) out.add(rotation.du)
+    return out
+  }, [vus])
 
   return (
     <main className="vis">
@@ -390,10 +497,7 @@ export default function Visuels({
       {erreur ? <p className="vis-alerte">Base injoignable : rien n’est perdu, réessayer.</p> : null}
 
       <section className="vis-barre" aria-label="Le site à une date">
-        <label className="vis-champ vis-champ--ligne" htmlFor="vis-jour">
-          <span>Le site le</span>
-          <input id="vis-jour" type="date" value={jour} onChange={(x) => x.target.value && setJour(x.target.value)} />
-        </label>
+        <ChampDate libelle="Le site le" valeur={jour} aujourdhui={aujourdhui} marques={changements} changer={setJour} />
         <button type="button" className="m-second vis-btn" onClick={() => setJour(aujourdhui)} disabled={jour === aujourdhui}>
           Aujourd’hui
         </button>
@@ -401,8 +505,11 @@ export default function Visuels({
           <input type="checkbox" checked={brouillons} onChange={(x) => setBrouillons(x.target.checked)} />
           Avec brouillons
         </label>
-        <a className="m-btn vis-btn" href={apercu('/')}>
+        <a className="m-btn vis-btn" href={vueSite({ a: jour, brouillons })}>
           Voir le site
+        </a>
+        <a className="m-second vis-btn" href={vueSite({ a: aujourdhui, b: jour === aujourdhui ? undefined : jour, brouillons })}>
+          Comparer deux dates
         </a>
         <a className="vis-lien" href="/api/admin/visuels/apercu?fin=1">
           Quitter l’aperçu
@@ -430,8 +537,8 @@ export default function Visuels({
                   <Vignette v={duJour} ratio={e.ratio} />
                   <figcaption>
                     <strong>Le {jourLisible(jour)}</strong>
-                    <a className="vis-lien" href={apercu(page)}>
-                      Voir sur le site
+                    <a className="vis-lien" href={vueSite({ a: jour, brouillons, page, montrer: e.nom })}>
+                      Voir où, sur le site
                     </a>
                   </figcaption>
                 </figure>
@@ -445,6 +552,7 @@ export default function Visuels({
                         etat={etatRotation(fusion, i, jour)}
                         ratio={e.ratio}
                         rafraichir={rafraichir}
+                        aujourdhui={aujourdhui}
                       />
                     ))}
                     <li className="vis-rotation vis-rotation--defaut">
@@ -458,6 +566,7 @@ export default function Visuels({
                   {ajout === e.nom ? (
                     <Ajout
                       e={e}
+                      bibliotheque={bibliotheque}
                       aujourdhui={jour}
                       fini={() => {
                         setAjout(null)

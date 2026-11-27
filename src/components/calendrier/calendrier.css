@@ -1,0 +1,192 @@
+/* ── Le calendrier de la charte (fiche H, 27/11) ──────────────
+   Repris de la réservation de /partenaires : flèches rondes, cases au rayon
+   des champs, numéro en titre, jour choisi en encre pleine. Jetons --m-* seuls. */
+
+.m-cal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-espace-3);
+  width: 100%;
+  max-width: 360px;
+  font-family: var(--m-police-texte-famille);
+  color: var(--m-couleur-papier-texte);
+}
+
+.m-cal-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-espace-2);
+}
+
+.m-cal-mois {
+  font-size: var(--m-taille-petit);
+  font-weight: var(--m-police-texte-graisse-moyenne);
+  text-transform: capitalize;
+}
+
+.m-cal-rond {
+  width: var(--m-cible-mini);
+  height: var(--m-cible-mini);
+  border-radius: var(--m-rayon-rond);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-ligne);
+  background: transparent;
+  color: var(--m-couleur-papier-texte);
+  font: inherit;
+  font-size: var(--m-taille-chapo);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.m-cal-rond:hover {
+  background: var(--m-couleur-papier-survol);
+}
+
+.m-cal-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--m-espace-1);
+}
+
+.m-cal-nom {
+  text-align: center;
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+  padding-bottom: var(--m-espace-1);
+}
+
+.m-cal-jour {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: 40px;
+  border-radius: var(--m-rayon-champ);
+  border: var(--m-trait-fin) solid transparent;
+  background: transparent;
+  color: var(--m-couleur-papier-texte);
+  font: inherit;
+  cursor: pointer;
+}
+
+.m-cal-jour strong {
+  font-family: var(--m-police-titre-famille);
+  font-weight: 400;
+  font-size: var(--m-taille-chapo);
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+
+.m-cal-jour:hover {
+  border-color: var(--m-couleur-papier-ligne);
+}
+
+.m-cal-jour.est-dehors {
+  color: var(--m-couleur-papier-texte-doux);
+  opacity: 0.45;
+}
+
+.m-cal-jour.est-aujourdhui {
+  border-color: var(--m-couleur-papier-texte);
+}
+
+.m-cal-jour.est-choisi {
+  background: var(--m-couleur-accent);
+  border-color: var(--m-couleur-accent);
+  color: var(--m-couleur-papier-fond);
+  opacity: 1;
+}
+
+.m-cal-jour:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.m-cal-jour:focus-visible,
+.m-cal-rond:focus-visible {
+  outline: 2px solid var(--m-couleur-accent);
+  outline-offset: 2px;
+}
+
+.m-cal-point {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: var(--m-rayon-rond);
+  background: currentColor;
+}
+
+.m-cal--compact .m-cal-jour {
+  min-height: 34px;
+}
+
+.m-cal--compact .m-cal-jour strong {
+  font-size: var(--m-taille-bouton);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .m-cal-jour,
+  .m-cal-rond {
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  }
+}
+
+/* ── Le champ date (bouton + calendrier en feuille de verre) ── */
+
+.m-champ-date {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--m-espace-1);
+}
+
+.m-champ-date-nom {
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.m-champ-date-bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--m-espace-3);
+  min-height: var(--m-cible-mini);
+  padding: 0 var(--m-espace-4);
+  border-radius: var(--m-rayon-champ);
+  border: var(--m-trait-fin) solid var(--m-couleur-papier-champ-bord);
+  background: var(--m-couleur-papier-champ-fond);
+  color: var(--m-couleur-papier-texte);
+  font: inherit;
+  font-size: var(--m-taille-champ);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.m-champ-date-bouton:focus-visible {
+  outline: 2px solid var(--m-couleur-accent);
+  outline-offset: 2px;
+}
+
+.m-champ-date-fleche {
+  font-size: var(--m-taille-etiquette);
+  color: var(--m-couleur-papier-texte-doux);
+}
+
+.m-champ-date-feuille {
+  position: absolute;
+  top: calc(100% + var(--m-espace-2));
+  left: 0;
+  z-index: 40;
+  width: min(340px, calc(100vw - 2 * var(--m-espace-marge)));
+  padding: var(--m-espace-4);
+  border-radius: var(--m-rayon-bloc);
+  border: var(--m-trait-fin) solid var(--m-variation-lumiere-verre-verre-trait, var(--m-couleur-papier-ligne));
+  background: var(--m-couleur-voile-barre);
+  -webkit-backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou, 22px)) saturate(1.4);
+  backdrop-filter: blur(var(--m-variation-lumiere-verre-verre-flou, 22px)) saturate(1.4);
+  box-shadow: var(--m-ombre-flottant);
+}
