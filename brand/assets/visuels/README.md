@@ -21,7 +21,7 @@
 | `double-page-australia-portrait.jpg` | `Magazine/Images SITE/BJ-M04V.png` | 2 828 × 4 000 | en réserve |
 | `objet-magazines-sur-la-table.jpg` | `Visuels/IMG_2909.jpeg` | 4 284 × 2 410 | `accueil.hero`, `accueil.porte-groupes` (déjà en ligne) |
 | `objet-mise-en-page.jpg` | `Visuels sites/Section - L'objet/La mise en page.jpeg` | 4 284 × 5 712 | en réserve |
-| `objet-mise-en-page-2.jpg` | `Visuels sites/Section - L'objet/La mise en page 2.jpeg` | 4 284 × 5 712 | `magazine.double-page` |
+| `objet-mise-en-page-2.jpg` | `Visuels sites/Section - L'objet/La mise en page 2.jpeg` | 4 284 × 5 712 (tournée à l’horizontale) | `magazine.double-page` |
 | `objet-reliure.jpg` | `Visuels sites/Section - L'objet/Reliure.jpeg` | 4 284 × 5 712 | en réserve |
 | `objet-format.jpg` | `Visuels sites/Section - L'objet/Le format.jpeg` | 4 284 × 5 712 | en réserve |
 | `objet-illustration.jpg` | `Visuels sites/Section - L'objet/L'illustration.jpeg` | 4 284 × 5 712 | en réserve (couverture peinte : montre l'objet, jamais un modèle) |
