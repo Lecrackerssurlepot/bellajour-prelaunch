@@ -60,6 +60,14 @@ décor de fond.**
 
 ## Comment tu mets un visuel toi-même
 
+**Où** : sur la **préversion** de la branche (pas encore sur bellajour.fr). Connexion admin
+habituelle, puis l'onglet **Site** de la barre du haut. L'adresse de la dernière préversion
+change à chaque envoi de code : demande-la, ou prends la dernière ligne « refonte-charte-v2 »
+dans Vercel. **Les dates sont au jour** (du, au), pas à l'heure.
+
+**Un visuel qui montre un magazine** (mockup, pile, magazine posé) se fabrique avec le modèle 3D
+de la charte (fiche J, règle d'or 16), même de face. Donne-moi la couverture, je sors le rendu.
+
 Dans l'admin, **Site · Visuels** (`/admin/atelier/site/visuels`), chaque emplacement montre ce
 qui est en ligne aujourd'hui.
 

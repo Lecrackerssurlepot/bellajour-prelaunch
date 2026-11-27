@@ -15,7 +15,7 @@ charte.
 - **Le CSS** les lit en `var(--m-…)`, depuis [`brand/build/tokens.css`](../build/tokens.css), qui est généré.
 - **Après toute modification** : `node brand/scripts/build-tokens.mjs`, puis `node brand/scripts/contrastes.mjs`.
 
-## Les 15 règles d'or
+## Les 16 règles d'or
 
 1. **Un seul mode.** Papier blanc `#ffffff`, encre `#111111`. Pas de jour/nuit.
 2. **L'accent est l'encre.** Aucun bleu, aucun cuivre, aucune troisième couleur d'interface.
@@ -32,6 +32,7 @@ charte.
 13. **Toute cible tactile mesure 44 px au moins, tout champ est en 16 px au moins**, et tout élément interactif a un focus visible.
 14. **Les textes sont courts** (2 à 6 mots pour un bouton ou un titre), au masculin générique, sans tiret cadratin.
 15. **On n'invente jamais un chiffre, un prix, un délai ou une mesure.**
+16. **Un magazine montré = le modèle 3D** (`brand/assets/3d/magazine/`), même de face, pour tout visuel et tout mockup (fiche J).
 
 ## Les fiches
 

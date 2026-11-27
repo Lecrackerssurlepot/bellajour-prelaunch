@@ -128,6 +128,6 @@ précis se feront avec Louis : des structures intéressantes, pas un modèle uni
 
 ## Mockups et couvertures
 
-- **Les mockups** se font avec le magazine 3D de la phase 3 (`brand/assets/3d/magazine/`), sous les angles nommés.
+- **Les mockups** se font **toujours** avec le magazine 3D de la phase 3 (`brand/assets/3d/magazine/`), sous les angles nommés, même de face (règle de la fiche J). Commande : `node brand/assets/3d/magazine/exporter.mjs <couverture>`.
 - **La couverture** porte toujours une vraie photo.
 - **Le titre imprimé** est en Instrument Serif (`police.magazine`). La couleur du titre passe au noir quand la photo est claire (luminance supérieure à 0,6).

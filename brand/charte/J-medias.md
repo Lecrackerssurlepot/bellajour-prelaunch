@@ -37,6 +37,13 @@ Pas de YouTube, pas de GIF.
 C'est un modèle unique, construit une fois en phase 3 et réutilisé partout : site, `/brand`,
 mockups, brochures, posts.
 
+**Règle (Mathias, 26/11 et 27/11) : tout visuel qui montre un magazine part de ce modèle.** Un
+mockup, un post, une brochure, une image de mail, une maquette d'écran : on le rend avec le
+modèle 3D, sous un angle nommé, même de face. On ne dessine jamais un magazine en CSS, on ne
+pose jamais une couverture à plat en guise de magazine. Les deux seules exceptions : une vraie
+photo d'un vrai magazine (fiche G), et les emplacements « couverture » du site, qui montrent la
+page de couverture elle-même.
+
 - **Où il vit** : `brand/assets/3d/magazine/`, avec le modèle, les angles nommés, l'exporteur et un README.
 - **Paramètres** : le format et les marges viennent de `src/lib/mise-en-page/`. L'épaisseur est une approximation visuelle selon le nombre de pages, jamais affichée comme une mesure. Mat ou brillant, comme la finition (D19). La couverture est une image.
 - **Angles nommés** : `face`, `trois-quarts-gauche`, `trois-quarts-droite`, `dos`, `ouvert`, `pose-a-plat`.
